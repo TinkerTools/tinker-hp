@@ -41,8 +41,21 @@ c
      &        /,1x,'###',23x,'All Rights Reserved',30x,'###',
      &        /,2x,'###',70x,'###',
      &        /,3x,74('#'),
-     &        /,5x,70('#'),/,/,'License Number : LICENSENUMBER'
-     &        /)
-
+     &        /,5x,70('#'),/,/,'License Number : 20171214_13595'
+     &       /,/,
+     &      'Cite this work as :'/,/,
+     &      '   Tinker-HP: a Massively Parallel Molecular Dynamics',
+     &      ' Package for Multiscale',/,'   Simulations of Large',
+     &      ' Complex ',
+     &       'Systems with Advanced Polarizable Force Fields.',/,/,
+     &       '   Louis Lagardère, Luc-Henri Jolly, Filippo Lipparini,',
+     &       ' Felix Aviat,',/,
+     &       '   Benjamin Stamm, Zhifeng F. Jing, Matthew ',
+     &       'Harger, Hedieh Torabifard,'/,
+     &       '   G. Andrès Cisneros, Michael J. Schnieders, Nohad ',
+     &       'Gresh, Yvon Maday,',/,
+     &       '   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal',
+     &       ',',/,/, '   Chem. Sci., 2018, 9, 956-972,  '
+     &       'doi: 10.1039/c7sc04531j',/)
       return
       end
