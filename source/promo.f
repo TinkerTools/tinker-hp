@@ -41,7 +41,7 @@ c
      &        /,1x,'###',23x,'All Rights Reserved',30x,'###',
      &        /,2x,'###',70x,'###',
      &        /,3x,74('#'),
-     &        /,5x,70('#'),/,/,'License Number : 20171214_13595'
+     &        /,5x,70('#'),/,/,'License Number : LICENSENUMBER'
      &       /,/,
      &      'Cite this work as :'/,/,
      &      '   Tinker-HP: a Massively Parallel Molecular Dynamics',
