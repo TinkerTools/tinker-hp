@@ -21,7 +21,7 @@ c
       include 'iounit.i'
       include 'keys.i'
       include 'params.i'
-      integer i,iprm,next
+      integer i,iprm,next,length
       integer freeunit
       logical exist,useprm
       character*4 none
@@ -29,6 +29,7 @@ c
       character*120 prmfile
       character*120 record
       character*120 string
+      character*120 paramdir
 c
 c
 c     set the default name for the parameter file
@@ -50,6 +51,11 @@ c
             if (next .eq. 1)  call gettext (string,prmfile,next)
          end if
       end do
+c     Try to read $TINKER_PARAMS from environment
+c     get_environment_variable is fortran intrinsic
+      call get_environment_variable ('TINKER_PARAMS', paramdir,length)
+c     if lenght is 0, the TINKER_PARAMS variable is not set
+      if (length.ne.0) prmfile = trim(paramdir)//'/'//prmfile
 c
 c     check existence of default or specified parameter file
 c
