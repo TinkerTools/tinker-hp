@@ -11,8 +11,7 @@ http://tinker-hp.ip2ct.upmc.fr/
 
 
 
-Tinker-HP is a CPU based, double precision, massively parallel package dedicated to long polarizable molecular dynamics simulations and 
-to polarizable QM/MM. Tinker-HP is an evolution of the popular Tinker package that conserves it simplicity of use but brings new 
+Tinker-HP is a CPU based, double precision, MPI massively parallel package dedicated to long polarizable molecular dynamics simulations and to polarizable QM/MM. Tinker-HP is an evolution of the popular Tinker package that conserves it simplicity of use but brings new 
 capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores. 
 The Tinker-HP approach offers various strategies using domain decomposition techniques for periodic boundary conditions in the 
 framework of the (n)log(n) Smooth Particle Mesh Ewald.  Tinker-HP proposes a high performance scalable computing environment for 
