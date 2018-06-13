@@ -32,3 +32,9 @@ with Advanced Polarizable Force Fields.
 L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, 
 M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (open access)
 http://dx.doi.org/10.1039/C7SC04531J
+
+Support
+
+we provide support to registered users (http://tinker-hp.ip2ct.upmc.fr/?Download-instructions).
+
+Email: TinkerHP_Support@ip2ct.upmc.fr
