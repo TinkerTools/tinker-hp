@@ -21,7 +21,8 @@ The Tinker-HP approach offers various strategies using domain decomposition tech
 framework of the (n)log(n) Smooth Particle Mesh Ewald.  Tinker-HP proposes a high performance scalable computing environment for 
 polarizable force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters.
 
-Tinker-HP is available for free for Academic Institutions: the license can be downloaded here: https://dasher.wustl.edu/tinker/downloads/license.pdf
+Tinker-HP is available free of charge for Academic Institutions: please send us the license at the support email. The license can be downloaded here: https://dasher.wustl.edu/tinker/downloads/license.pdf
+Non-academic entities (i.e. companies) should contact the managing universities (see license).
 
 If you are using Tinker-HP:
 
