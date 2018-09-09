@@ -23,6 +23,7 @@ polarizable force fields giving access to large systems up to millions of atoms.
 
 Tinker-HP is available free of charge for Academic Institutions: please send us the license at the support email. The license can be downloaded here: https://dasher.wustl.edu/tinker/downloads/license.pdf
 Non-academic entities (i.e. companies) should contact the managing universities (see license).
+Preferably register at http://tinker-hp.ip2ct.upmc.fr/ to get full access to the latest version.
 
 If you are using Tinker-HP:
 
