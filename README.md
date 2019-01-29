@@ -3,11 +3,11 @@ The high performance massively parallel evolution of Tinker.
 
 Versions:
 
-Current Github version: 1.0 (11/27/2017)
+Current Github version: 1.1 (06/14/2018)
 
-Current Tinker-HP's website version: 1.1 (06/14/2018)
+Current Tinker-HP's website version: 1.2 (02/01/2019)
 
-Current development version: 1.2
+Current development version: 1.3
 
 For a more recent version, please register and download the phase advanced and/or performance enhanced sources at :
 http://tinker-hp.ip2ct.upmc.fr/
