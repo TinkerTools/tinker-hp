@@ -19,7 +19,7 @@ Tinker-HP is a CPU based, double precision, MPI massively parallel package dedic
 capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores. 
 The Tinker-HP approach offers various strategies using domain decomposition techniques for periodic boundary conditions in the 
 framework of the (n)log(n) Smooth Particle Mesh Ewald.  Tinker-HP proposes a high performance scalable computing environment for 
-polarizable (AMOEBA) and classical (Amber, Charmm, OPLS...) force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters.
+polarizable (AMOEBA, Amberpol...) and classical (Amber, Charmm, OPLS...) force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters.
 
 Tinker-HP 1.1 is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf).
 Non-academic entities (i.e. companies) should contact the managing universities (see license).
