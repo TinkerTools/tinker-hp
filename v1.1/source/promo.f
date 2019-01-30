@@ -41,7 +41,7 @@ c
      &        /,1x,'###',23x,'All Rights Reserved',30x,'###',
      &        /,2x,'###',70x,'###',
      &        /,3x,74('#'),
-     &        /,5x,70('#'),/,/,'License Number : 20190128_14907'
+     &        /,5x,70('#'),/,/,'License Number : PUBLIC_LICENSE'
      &       /,/,
      &      'Cite this work as :'/,/,
      &      '   Tinker-HP: a Massively Parallel Molecular Dynamics',
