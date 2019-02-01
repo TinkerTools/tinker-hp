@@ -4,7 +4,7 @@
 
 Current Github version: 1.1 (06/14/2018)
 
-Current Tinker-HP's website version: 1.2 (02/01/2019)
+Current Tinker-HP's website version: 1.2 (02/2019)
 
 Current development version: 1.3
 
@@ -17,7 +17,7 @@ The Tinker-HP approach offers various strategies using domain decomposition tech
 framework of the (n)log(n) Smooth Particle Mesh Ewald. Tinker-HP proposes a high performance scalable computing environment for 
 polarizable (AMOEBA, Amberpol...) and classical (Amber, Charmm, OPLS...) force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters.
 
-Tinker-HP 1.1 is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf).
+Tinker-HP 1.2 is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf).
 Non-academic entities (e.g., companies, for profit organizations) should contact the managing universities (see license).
 
 If you want to access the latest Tinker-HP version or want support, it is under the same license but you have to register:
