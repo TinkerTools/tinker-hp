@@ -1,0 +1,6 @@
+FFLAGS = -O3 -xCORE-AVX512 -qopt-zmm-usage=high
+         -no-ipo -no-prec-div -shared-intel
+         -align array64byte -falign-functions=64
+         -qopt-report-phase=vec -qopt-report=5 -S 
+         -qoverride-limits  
+FFLAGS2 = -mkl=sequential -qopenmp-stubs
