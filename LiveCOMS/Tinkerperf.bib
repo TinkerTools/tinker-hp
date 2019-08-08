@@ -192,10 +192,10 @@ eprint = {
 author = {C\'{e}lerse, Fr\'{e}d\'{e}ric and Lagard\`{e}re, Louis and Derat, Etienne and Piquemal, Jean-Philip},
 title = {Massively Parallel Implementation of Steered Molecular Dynamics in Tinker-HP: Comparisons of Polarizable and Non-Polarizable Simulations of Realistic Systems},
 journal = {Journal of Chemical Theory and Computation},
-volume = {0},
-number = {0},
-pages = {null},
-year = {0},
+volume = {15},
+number = {6},
+pages = {3694--3709},
+year = {2019},
 doi = {10.1021/acs.jctc.9b00199},
     note ={PMID: 31059250},
 
@@ -274,13 +274,28 @@ URL = {https://doi.org/10.1021/acs.jctc.8b00529},
 eprint = {https://doi.org/10.1021/acs.jctc.8b00529}
 }
 
-@ARTICLE{AMOEBA+,
-  author = {Liu, Chengwen, and Piquemal, Jean-Philip and Ren, Pengyu},
-  title = {AMOEBA+ Classical Potential for Modeling Molecular Interactions},
-  journal = {J. Chem. Theory. Comput.},
-  year = {2019},
-  doi = {10.1021/acs.jctc.9b00261},
+@article{AMOEBA+,
+author = {Liu, Chengwen and Piquemal, Jean-Philip and Ren, Pengyu},
+title = {AMOEBA+ Classical Potential for Modeling Molecular Interactions},
+journal = {Journal of Chemical Theory and Computation},
+volume = {15},
+number = {7},
+pages = {4122-4139},
+year = {2019},
+doi = {10.1021/acs.jctc.9b00261},
+    note ={PMID: 31136175},
+
+URL = { 
+        https://doi.org/10.1021/acs.jctc.9b00261
+    
+},
+eprint = { 
+        https://doi.org/10.1021/acs.jctc.9b00261
+    
 }
+
+}
+
 @ARTICLE{jorgensen1996development,
   author = {Jorgensen, William L.  and  Maxwell, David S. and Tirado-Rives, Julian},
   title = {"Development and Testing of the OPLS All-Atom Force Field on Conformational Energetics and Properties of Organic Liquids"},
@@ -520,6 +535,101 @@ eprint = {
 }
 
 }
+@article{VectorizationLJ,
+  author    = {Hiroshi Watanabe and
+               Koh M. Nakagawa},
+  title     = {{SIMD} Vectorization for the Lennard-Jones Potential with {AVX2} and
+               {AVX-512} instructions},
+  journal   = {CoRR},
+  volume    = {abs/1806.05713},
+  year      = {2018},
+  url       = {http://arxiv.org/abs/1806.05713},
+  archivePrefix = {arXiv},
+  eprint    = {1806.05713},
+  timestamp = {Tue, 05 Mar 2019 16:17:58 +0100},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1806-05713},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+@Article{Shabanov2019,
+author="Shabanov, B. M.and Rybakov, A. A.and Shumilin,S. S.",
+title="Vectorization of High-performance Scientific Calculations Using AVX-512 Intruction Set",
+journal="Lobachevskii Journal of Mathematics",
+year="2019",
+month="May",
+day="01",
+volume="40",
+number="5",
+pages="580--598",
+abstract="Modern calculation codes used in supercomputing are very demanding of computing resources. For their effective appliance requires the use of parallelization at all levels, starting with the use of multiprocess and multi-threaded programming, and ending with vectorization. The AVX-512 instruction set, first introduced in Intel Xeon Phi Knights Landing and Intel Xeon Skylake microprocessors, opens up broad possibilities for vectorizing code and allows to speed up the execution of applications in several times. This article discusses some aspects of the application of vectorization in the program code of some kinds, which is found in high-performance scientific computing.",
+issn="1818-9962",
+doi="10.1134/S1995080219050196",
+url="https://doi.org/10.1134/S1995080219050196"
+}
+@inproceedings{Bowers_2006,
+ author = {Bowers, Kevin J. and Chow, Edmond and Xu, Huafeng and Dror, Ron O. and Eastwood, Michael P. and Gregersen, Brent A. and Klepeis, John L. and Kolossvary, Istvan and Moraes, Mark A. and Sacerdoti, Federico D. and Salmon, John K. and Shan, Yibing and Shaw, David E.},
+ title = {Scalable Algorithms for Molecular Dynamics Simulations on Commodity Clusters},
+ booktitle = {Proceedings of the 2006 ACM/IEEE Conference on Supercomputing},
+ series = {SC '06},
+ year = {2006},
+ isbn = {0-7695-2700-0},
+ location = {Tampa, Florida},
+ articleno = {84},
+ url = {http://doi.acm.org/10.1145/1188455.1188544},
+ doi = {10.1145/1188455.1188544},
+ acmid = {1188544},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+} 
+@article{DBLP1708-02645,
+  author    = {Amrita Mathuriya and
+               Ye Luo and
+               Raymond C. Clay III and
+               Anouar Benali and
+               Luke Shulenburger and
+               Jeongnim Kim},
+  title     = {Embracing a new era of highly efficient and productive quantum Monte
+               Carlo simulations},
+  journal   = {CoRR},
+  volume    = {abs/1708.02645},
+  year      = {2017},
+  url       = {http://arxiv.org/abs/1708.02645},
+  archivePrefix = {arXiv},
+  eprint    = {1708.02645},
+  timestamp = {Mon, 13 Aug 2018 16:48:19 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1708-02645},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
 
-
-
+@inproceedings{QMCpackavx,
+ author = {Mathuriya, Amrita and Luo, Ye and Clay,III, Raymond C. and Benali, Anouar and Shulenburger, Luke and Kim, Jeongnim},
+ title = {Embracing a New Era of Highly Efficient and Productive Quantum Monte Carlo Simulations},
+ booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis},
+ series = {SC '17},
+ year = {2017},
+ isbn = {978-1-4503-5114-0},
+ location = {Denver, Colorado},
+ pages = {38:1--38:12},
+ articleno = {38},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/3126908.3126952},
+ doi = {10.1145/3126908.3126952},
+ acmid = {3126952},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {CPUs, QMC, optimizations, portability, vectorization},
+} 
+@inproceedings{Desmond,
+ author = {Bowers, Kevin J. and Chow, Edmond and Xu, Huafeng and Dror, Ron O. and Eastwood, Michael P. and Gregersen, Brent A. and Klepeis, John L. and Kolossvary, Istvan and Moraes, Mark A. and Sacerdoti, Federico D. and Salmon, John K. and Shan, Yibing and Shaw, David E.},
+ title = {Scalable Algorithms for Molecular Dynamics Simulations on Commodity Clusters},
+ booktitle = {Proceedings of the 2006 ACM/IEEE Conference on Supercomputing},
+ series = {SC '06},
+ year = {2006},
+ isbn = {0-7695-2700-0},
+ location = {Tampa, Florida},
+ articleno = {84},
+ url = {http://doi.acm.org/10.1145/1188455.1188544},
+ doi = {10.1145/1188455.1188544},
+ acmid = {1188544},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+} 
