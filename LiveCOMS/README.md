@@ -19,10 +19,10 @@ processors, justifying important vectorization efforts for developers. We then
 brie2y review the organization of the Tinker-HP code and identify the
 computational hotspots which require Intel AVX-512 optimization and we propose
 a general and optimal strategy to vectorize those particular parts of the code.
-We present our optimization strategy in a pedagogical way so it can bene1t
+We present our optimization strategy in a pedagogical way so it can benefit
 other researchers interested in improving performances of their own software.
 Finally we compare the performance enhancements obtained to unoptimized code,
 both sequentially and at the scaling limit in parallel for classical
 non-polarizable (CHARMM) and polarizable force 1elds (AMOEBA). This paper will
-be updated as we accumulate new data available on the associated Github
-repository between versions of this living document.
+be updated on the associated Github repository as we accumulate new data available
+between versions of this living document.
