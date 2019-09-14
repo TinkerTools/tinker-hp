@@ -3,7 +3,7 @@
 %%% ADAPTED FROM ELIFE ARTICLE TEMPLATE (8/10/2017)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PREAMBLE
-\documentclass[9pt,comparison]{livecoms}
+\documentclass[9pt,comparison,ASAPversion]{livecoms}
 %\documentclass[9pt]{livecoms}
 % Use the 'onehalfspacing' option for 1.5 line spacing
 % Use the 'doublespacing' option for 2.0 line spacing
@@ -13,7 +13,8 @@
 % The 'bestpractices' option for indicates that this is a best practices guide.
 % Omit the bestpractices option to remove the marking as a LiveCoMS paper.
 % Please note that these options may affect formatting.
-
+\datereceived{06/01/2019 }
+\dateaccepted{09/08/2019 }
 \usepackage{lipsum} % Required to insert dummy text
 \usepackage[version=4]{mhchem}
 \usepackage{siunitx}
@@ -78,7 +79,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ARTICLE SETUP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\title{Raising the Performance of the Tinker-HP Molecular Modeling Package on Intel\rr's HPC Architectures: a Living Review [Article v1.0]}
+\title{Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0]}
 
 \author[1*]{Luc-Henri Jolly}
 \author[2]{Alejandro Duran}
@@ -109,8 +110,8 @@
 \pubissue{<issue>}
 \pubyear{<year>}
 \articlenum{<number>}
-\datereceived{Day Month Year}
-\dateaccepted{Day Month Year}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ARTICLE START
@@ -126,6 +127,11 @@ This living paper reviews the present High Performance Computing (HPC) capabilit
 \end{abstract}
 
 \end{frontmatter}
+
+\newpage
+\hbox{} 
+
+\newpage
 
 \section{Introduction}
 
@@ -511,6 +517,7 @@ In all the modules, we used an {\color{codepurple}\lv|ATTRIBUTE ALIGN::64|} dire
 \label{figure:datalayout}
 \end{figure}
 \setlength\tabcolsep\mytabsav % Restore normal columns separation
+
 We decided to implement the setup {\huge\ding{174}}, which represents the best trade-off between speed and memory consumption. So, we ended up with the typical array declarations in a module (here, {\color{codepurple}\lv|MOD_vec_vdw|}) shown in listing~\ref{listing:declaration}, where~:
 \lstinputlisting[label=listing:declaration,language=Fortran, firstline=2, lastline=13,caption=Typical array declarations in a module with alignment directives. Integer arrays precede real*8 arrays. Arrays are ordered as per their utilization wherever possible.]{Tinkerperf.f}
 
@@ -694,7 +701,7 @@ Naive users may expect a higher boost, since Intel AVX-512 registers are designe
 
 In a recent study, Watanabe and Nakagawa\cite{VectorizationLJ} have obtained a boost factor between 1.4 and 1.8, depending on the data setup, for the vectorization of the Lennard-Jones potential on AVX2 and AVX-512 architectures. So, achieving comparable, and often superior, boost factors on all the vectorized routines of Tinker-HP seems quite satisfactory. One interesting way to see what could be achieved is also to look at what has been done in another community code developed at Argonne and devoted to Quantum  Monte-Carlo\cite{QMCpackavx}. By definition, Monte-Carlo is the opposite of MD, as it is a highly parallel approach with few communications. In that context,  gains up to 4.5 have been obtained, highlighting some kind of upper limit of what is possible to achieve.
 
-They also showed that the boost factors are very dependent of the structure of data. This means a code written with AVX-512 capabilities in mind will not be so efficient on AVX2-capable processors. Thus, developers need to adapt their code to a specific processor in order to obtain significant boosts. But the general strategy used here should remain useful on all kind of architectures.
+Watanabe and Nakagawa also showed that the boost factors are very dependent of the structure of data. This means a code written with AVX-512 capabilities in mind will not be so efficient on AVX2-capable processors. Thus, developers need to adapt their code to a specific processor in order to obtain significant boosts. But the general strategy used here should remain useful on all kind of architectures.
 
 \section{Performance on Intel Scalable Processors}
 
@@ -704,7 +711,7 @@ They also showed that the boost factors are very dependent of the structure of d
 We chose to measure three execution times :
 \begin{enumerate}
     \item \textbf{time\_vdw}, which is the time taken by Van der Waals calculations. Depending on the setup, we used  {\color{codepurple} ehal1(vec)} or {\color{codepurple} elj1(vec)}.
-    \item \textbf{time\_elec}, which is the time taken by electrostatic calculations. Depending on the setup, we used {\color{codepurple}echarge1(vec)} (direct charges) + reciprocal charges or {\color{codepurple}empole1(vec)} (direct multipoles) + reciprocal multipoles + {\color{codepurple} torque(vec)}.
+    \item \textbf{time\_elec}, which is the time taken by electrostatic calculations. Depending on the setup, we used {\color{codepurple}echarge1(vec)} (direct charges) + reciprocal charges or {\color{codepurple}empole1(vec)} (direct multipoles) + reciprocal multipoles + {\color{codepurple} torque(vec2)}.
     \item \textbf{time\_polar}, which is the time taken by polarization calculation and by far the biggest. We used {\color{codepurple} epolar1(vec)} (direct polarization)  + {\color{codepurple}efld0\_direct(vec)} + reciprocal polarization + 9 calls to {\color{codepurple}tmatxb\_pme2(vec)} + 2 calls to {\color{codepurple}torque(vec2)}
 \end{enumerate}
 
@@ -1013,7 +1020,7 @@ For a more detailed description  of contributions from the community and others,
 %%%%%%%
 % Authors should acknowledge funding sources here. Reference specific grants.
 %%%%%%%
-\hspace{\parindent}The authors acknowledge the generous support provided by GENCI (Grand Equipement National de Calcul Intensif, France) through the Grand Challenge and grant no A0050707671, which provided computing allocations on the Irène Joliot-Curie (TGCC, Bruyère le Châtel, France), Occigen and Frioul machines (CINES, Montpellier, France). The authors also thank the TACC (Texas Advanced Computer Center) for computational resources provided on the Stampede-2 machine. JWP and PR acknowledge support from the U.S. National Institutes of Health (R01GM106137 and R01GM114237).
+\hspace{\parindent}This work has received funding from the European Research Council (ERC) under the European Union's Horizon 2020 research and innovation programme (grant agreement No 810367), project EMC2 (JPP). JWP and PR acknowledge support from the U.S. National Institutes of Health (R01GM106137 and R01GM114237). The authors acknowledge the generous support provided by GENCI (Grand Equipement National de Calcul Intensif, France) through the Grand Challenge and grant no A0050707671, which provided computing allocations on the Irène Joliot-Curie (TGCC, Bruyère le Châtel, France), Occigen and Frioul machines (CINES, Montpellier, France). The authors also thank the TACC (Texas Advanced Computer Center) for computational resources provided on the Stampede-2 machine.
 
 \section*{Disclaimers}
 \hspace{\parindent} Software and workloads used in performance tests may have been optimized for performance only on Intel microprocessors.
