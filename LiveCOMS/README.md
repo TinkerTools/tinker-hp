@@ -1,9 +1,9 @@
 # LiveCOMS Paper
-Raising the Performance of the Tinker-HP Molecular Modeling Package on Intel's HPC Architectures: a Living Review [Article v1.0]
+Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0]
 
 Versions:
 
-Current Github version: Reviewed Preprint version 1.0 (08/08/2019)
+Current Github version: Final Preprint version 1.0 (09/14/2019)
 
 This living paper reviews the present High Performance Computing (HPC)
 capabilities of the Tinker-HP molecular modeling package. We focus here on the
