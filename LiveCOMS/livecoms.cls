@@ -213,9 +213,9 @@
 % nothing
 \fi
 
-\if@comparison
+\if@software
 \documenttypetrue
-\newcommand{\documenttype}{Molecular Simulation Comparison}
+\newcommand{\documenttype}{Software Analysis}
 \else
 % nothing
 \fi
