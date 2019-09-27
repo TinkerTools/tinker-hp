@@ -26,7 +26,7 @@
 \DeclareOption{lineno}{\@reqslinenotrue}
 
 %% the type of document this is.  The current types:
-% bestpractices, editorial, tutorial, review, comparison, lessons
+% bestpractices, editorial, tutorial, review, software, lessons
 \newif\if@bestpractices
 \DeclareOption{bestpractices}{\@bestpracticestrue}
 
@@ -39,8 +39,8 @@
 \newif\if@review
 \DeclareOption{review}{\@reviewtrue}
 
-\newif\if@comparison
-\DeclareOption{comparison}{\@comparisontrue}
+\newif\if@software
+\DeclareOption{software}{\@softwaretrue}
 
 \newif\if@lessons
 \DeclareOption{lessons}{\@lessonstrue}
