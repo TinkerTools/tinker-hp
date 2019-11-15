@@ -89,7 +89,7 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
 OBJSNZ = nblist.o newinduce_pme.o newinduce_pme2.o\
    nextarg.o nexttext.o nspline.o number.o\
    numeral.o openend.o optsave.o pmestuff.o\
-   precise.o pressure.o prime.o prmkey.o\
+   precise.o pressure.o prime.o prmkey.o promo.o\
    prtdyn.o prtxyz.o random.o readdyn.o\
    readprm.o readxyz.o respa.o\
    rings.o rotpole.o search.o sort.o\
