@@ -3,7 +3,7 @@ Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.
 
 Versions:
 
-Current Github version: Final Preprint version 1.0 (09/14/2019)
+Current Github version: Final Published version 1.0 (11/24/2019)
 
 This living paper reviews the present High Performance Computing (HPC)
 capabilities of the Tinker-HP molecular modeling package. We focus here on the
