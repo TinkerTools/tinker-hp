@@ -4,11 +4,11 @@
 
 Current Github version: 1.1 (06/14/2018)
 
-Current Tinker-HP's website version: 1.2 (02/2019)
+Current Tinker-HP's website version: 1.2 (12/09/2019) + 1.1v (enhanced vectorized version)
 
-Current development version: 1.3
+Current development version: 1.3 (CPUs + GPUs)
 
-For a more recent version, please register and download the phase advanced and/or performance enhanced source at:
+For the more recent versions, please register and download the phase advanced and/or performance enhanced source at:
 http://tinker-hp.ip2ct.upmc.fr/
 
 Tinker-HP is a CPU based, double precision, MPI massively parallel package dedicated to long polarizable molecular dynamics simulations and to polarizable QM/MM. Tinker-HP is an evolution of the popular Tinker package that conserves it simplicity of use but brings new 
