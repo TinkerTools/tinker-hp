@@ -37,8 +37,9 @@ http://dx.doi.org/10.1039/C7SC04531J
 
 if you are using the vectorized version, please also cite:
 Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0].
-L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access) 
-http://dx.doi.org/10.33011/livecoms.1.2.10409
+L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access)
+ http://dx.doi.org/10.33011/livecoms.1.2.10409
+
 iii) Support:
 
 We provide support to registered users only (http://tinker-hp.ip2ct.upmc.fr/?Download-instructions).
