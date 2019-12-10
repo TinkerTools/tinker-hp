@@ -46,6 +46,4 @@ We provide support to registered users only (http://tinker-hp.ip2ct.upmc.fr/?Dow
 
 Email: TinkerHP_Support@ip2ct.upmc.fr
 
-iv) Science with Tinker-HP:
 
-An updated list of papers using Tinker-HP: http://piquemalresearch.com/wp-content/uploads/2018/06/pub-TinkerHP.pdf
