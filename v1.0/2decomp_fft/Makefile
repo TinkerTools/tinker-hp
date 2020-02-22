@@ -10,7 +10,7 @@ lib:
 clean:
 	cd src; $(MAKE) $@
 	cd lib; $(MAKE) $@
-	cd include; rm -f *.mod
+	rm -f include/*.mod
 
 install_dir:
 	mkdir -p $(DESTDIR)$(prefix)
