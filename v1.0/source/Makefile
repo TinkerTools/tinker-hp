@@ -71,24 +71,28 @@ analyze: $(OBJS)
 	./library.make
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o analyze.x analyze.o $(LIBS) $(BLAS) $(FFTDECOMP)
 	strip analyze.x
+	mkdir -p ../bin
 	mv analyze.x ../bin/analyze
 #
 dynamic: $(OBJS)
 	./library.make
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o dynamic.x dynamic.o $(LIBS) $(BLAS) $(FFTDECOMP)
 	strip dynamic.x
+	mkdir -p ../bin
 	mv dynamic.x ../bin/dynamic
 #
 testgrad: $(OBJS)
 	./library.make
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o testgrad.x testgrad.o $(LIBS) $(BLAS) $(FFTDECOMP)
 	strip testgrad.x
+	mkdir -p ../bin
 	mv testgrad.x ../bin/testgrad
 #
 minimize: $(OBJS)
 	./library.make
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o minimize.x minimize.o $(LIBS) $(BLAS) $(FFTDECOMP)
 	strip minimize.x
+	mkdir -p ../bin
 	mv minimize.x ../bin/minimize
 #
 libtinker: $(OBJS)
