@@ -29,6 +29,7 @@ lib: includes lib2decomp_fft.a
 	mv lib2decomp_fft.a ../lib
 
 includes: lib2decomp_fft.a
+	mkdir -p ../include
 	-mv *.mod ../include
 
 lib2decomp_fft.a: $(MKL_MOD) $(OBJS)
