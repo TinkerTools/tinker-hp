@@ -42,7 +42,7 @@ c
       real*8 time0,time1
 c
       parameter (nrhs=2)
-      real*8  wtime0, wtime1, wtime2, omp_get_wtime, udsum, upsum
+      real*8  wtime0, wtime1, wtime2, udsum, upsum
       real*8  term, xx(1)
       real*8, allocatable :: ef(:,:,:), mu(:,:,:), murec(:,:,:)
       real*8, allocatable :: cphi(:,:)
@@ -97,11 +97,11 @@ c
 c
 c     compute the electric fields:
 c
-c$    wtime0 = omp_get_wtime()
+      wtime0 = mpi_wtime()
 c
 c    compute the reciprocal space contribution (fields)
 c
-      call efld0_recip2(cphi)
+      call efld0_recip(cphi)
 c
 c     Begin the reception of the reciprocal fields
 c
@@ -144,7 +144,7 @@ c
      $       term*rpole(j+1,iipole)
         end do
       end do
-c$    wtime1 = omp_get_wtime()
+      wtime1 = mpi_wtime()
 
 c
 c     guess the dipoles:
@@ -203,7 +203,7 @@ c
       end if
 
 
-c$    wtime2 = omp_get_wtime()
+      wtime2 = mpi_wtime()
       if (polprt.ge.1.and.rank.eq.0) then
         if (polprt.ge.2) then
           write(iout,1010) 'fields:  ', wtime1-wtime0
@@ -262,11 +262,9 @@ c
       deallocate (buffermpimu1)
       deallocate (buffermpimu2)
       deallocate (ef)
-c      deallocate (fphi)
       deallocate (mu)
       deallocate (murec)
       deallocate (cphi)
-c      deallocate (cphirec)
       return
       end
 
@@ -374,7 +372,7 @@ c
         end do
 c
         time0 = mpi_wtime()
-        call tmatxbrecip2(mu,murec,nrhs,dipfield,dipfieldbis)
+        call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
         time1 = mpi_wtime()
         if (it.eq.1) timerecdip = timerecdip + time1-time0
         call matvec(nrhs,.false.,mu,h)
@@ -472,7 +470,7 @@ c
      $      bmat,nmat)
           else
             call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,
-     $        bmat,nmat,reqdiis,comm_dir)
+     $        bmat,nmat,reqdiis,MPI_COMM_WORLD)
             do i = 1, 2*nmat-3
               call MPI_WAIT(reqdiis(i),status,ierr)
             end do
@@ -588,7 +586,7 @@ c
       real*8  erfc, cutoff2
       save    zero, one, f50
       data    zero/0.d0/, one/1.d0/, f50/50.d0/
-      character*6 mode
+      character*10 mode
 
 c
 c     initialize the result vector
@@ -687,12 +685,16 @@ c     i.e., the diagonal portion of the matrix/vector product.
 c
         do i = 1, npoleloc
           iipole = poleglob(i)
-          do irhs = 1, nrhs
-            do j = 1, 3
-              efi(j,irhs,i) = efi(j,irhs,i) +
-     $           mu(j,irhs,i)/polarity(iipole)
+          if (polarity(iipole) .eq. 0d0) then
+            cycle
+          else 
+            do irhs = 1, nrhs
+              do j = 1, 3
+                efi(j,irhs,i) = efi(j,irhs,i) +
+     $             mu(j,irhs,i)/polarity(iipole)
+              end do
             end do
-          end do
+          end if
         end do
       end if
 
@@ -736,7 +738,7 @@ c
       real*8  erfc, cutoff2
       save    zero, one, f50
       data    zero/0.d0/, one/1.d0/, f50/50.d0/
-      character*6 mode
+      character*10 mode
       external erfc
 c
 c     initialize the result vector
@@ -913,12 +915,16 @@ c     i.e., the diagonal portion of the matrix/vector product.
 c
         do i = 1, npoleloc
           iipole = poleglob(i)
-          do irhs = 1, nrhs
-            do j = 1, 3
-              efi(j,irhs,i) = efi(j,irhs,i) +
-     $           mu(j,irhs,i)/polarity(iipole)
+          if (polarity(iipole) .eq. 0d0) then
+            cycle
+          else 
+            do irhs = 1, nrhs
+              do j = 1, 3
+                efi(j,irhs,i) = efi(j,irhs,i) +
+     $             mu(j,irhs,i)/polarity(iipole)
+              end do
             end do
-          end do
+          end if
         end do
       end if
 c
