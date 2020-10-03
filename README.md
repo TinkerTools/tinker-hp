@@ -1,5 +1,7 @@
 # Tinker-HP: High Performance Massively Parallel Evolution of Tinker
 
+=> (October 2020) A major update is coming with the availibility of the Tinker-HP GPU code that will be released. Preprint online soon.
+
 <H2><B>Versions</B></H2>
 
 Current Github version: 1.1 (06/14/2018)
@@ -7,6 +9,7 @@ Current Github version: 1.1 (06/14/2018)
 Current Tinker-HP's website version: 1.2 (12/09/2019) + 1.1v (enhanced vectorized version)
 
 Current development version: 1.3 (CPUs + GPUs)
+
 
 For the more recent versions, please register and download the phase advanced and/or performance enhanced source at:
 http://tinker-hp.ip2ct.upmc.fr/
