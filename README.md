@@ -1,7 +1,7 @@
 # Tinker-HP: High Performance Massively Parallel Evolution of Tinker
-
-=> (October 2020) A major update is coming with the availibility of the Tinker-HP GPU code that will be released. Preprint online soon.
-
+-----------------------------------------------------------------------------------------------------------------------------------------------
+=> (October 2020) A major update is coming with the availability of the Tinker-HP GPU code. Preprint to come in the incoming weeks. Stay tuned!
+-----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
 Current Github version: 1.1 (06/14/2018)
