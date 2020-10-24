@@ -1,6 +1,7 @@
 # Tinker-HP: the massivelly parallel High Performance Evolution of Tinker on CPUs and GPUs 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 => (October 2020) 
+
 A major update is coming with the availability of the Tinker-HP (multi) GPU code. Preprint to come in the incoming weeks. Stay tuned!
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
