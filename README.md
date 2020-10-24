@@ -1,4 +1,4 @@
-# Tinker-HP: High Performance Massively Parallel Evolution of Tinker
+# Tinker-HP: the massivelly parallel High Performance Evolution of Tinkeron CPUs and GPUs 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 => (October 2020) A major update is coming with the availability of the Tinker-HP GPU code. Preprint to come in the incoming weeks. Stay tuned!
 -----------------------------------------------------------------------------------------------------------------------------------------------
