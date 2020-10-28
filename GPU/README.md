@@ -1,6 +1,8 @@
 Tinker-HP: High Performance Massively Parallel Evolution of Tinker
 ================================================
 
+WARNING ! This GPU version is NOT an official release of Tinker-HP. This is the version that is fighting against the COVID-19 since the beginning of March 2020.
+          
 # Getting started with Tinker-HP
    - Installation Guide
 

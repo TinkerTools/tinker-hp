@@ -46,7 +46,7 @@ You can almost do any construct in the code with `source/Makefile` linked to `so
     be sure that your library is being compiled in the correct precision
 
   - `2decomp_fft_rebuild_single` ;  
-    Same as previous target but excpet from the precision's construct which happen here to in single. There is only two precision modes for 2decomp_fft Library. Tinker mixed precision building requires 2decomp_fft single precision library.
+    Same as previous target but except for the precision's construct which happen here to be in single. There is only two precision modes for 2decomp_fft Library. Tinker mixed precision building requires 2decomp_fft single precision library.
 
   - `thrust_lib_rebuild` ;  
     [Re]Build the wrapper on CUDA thrust library
