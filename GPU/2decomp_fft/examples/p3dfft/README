@@ -1,0 +1,23 @@
+p3dfft
+------
+
+This program
+
+* Crosschecks the results computed by 2DECOMP&FFT and P3DFFT.
+* Compares the performance of 2DECOMP&FFT and P3DFFT. 
+
+Prerequisite:
+
+* P3DFFT version 2.5.1 required (API not compatible with older versions)
+* P3DFFT is installed at $P3DFFT_HOME and path set properly in Makefile.
+* Both P3DFFT and 2DECOMP&FFT are built in double precision.
+* P3DFFT is built with -DDIMS_C flag (same decomposition as 2DECOMP&FFT) 
+* P3DFFT is built against FFTW; 2DECOMP&FFT can use any FFT engine.
+
+What to expect:
+
+* Results from P3DFFT and 2DECOMP&FFT should be almost the same, even when
+  different FFT engines are used. As we are comparing large numbers (>>1),
+  the difference should be small but not as small as machine accuracy.
+* Each library should recover the input after one forward and one backward
+  transform with errors reported close to machine accuracy.

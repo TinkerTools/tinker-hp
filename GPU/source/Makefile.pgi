@@ -1,0 +1,645 @@
+#
+#   Makefile for Tinker-HP using PGI compilers
+#
+
+#
+#   Compiler
+#
+RunF77       = mpif90
+RunCXX       = mpic++
+RunCUFC      = mpif90
+RunCUCC      = nvcc
+
+# Comma and space characters
+comma__     := ,
+space__     :=
+space__     +=
+empty__     :=
+
+# Installation directory and programm suffix
+prefix      :=../bin
+# Suffix on executables
+prog_suffix :=
+# Compilation optimisation (release|debug)
+opt         := release
+# Precision of floating point numbers and options (double|[m]ixed|[s]ingle)
+prec        := double
+
+#
+#  OPTIONS
+# ________
+
+# Wether to build with NVSHMEM
+NVSHMEM_SUPPORT ?= 0
+# Wether to build with NVTX
+NVTX_SUPPORT ?= 0
+# Select FFTW (0=generic; 1=other)
+FFTW_SUPPORT ?= 0
+# Force Othrogonal box shape
+ORTHO_BOX_ONLY_SUPPORT ?= 0
+# Remove Soft core computation
+# NO_MUTATION ?= 0
+
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir := $(dir $(mkfile_path))
+
+#  librarie's directory (MKL, FFT, 2DECOMP, CUDA, std C++, Thrust Wrapper)
+#  ___________________________________________________________
+
+MKLROOT       ?= /opt/intel/mkl
+FFTW_DIR      ?= $(FFTW)
+FFTDECOMPDIR  ?= ../2decomp_fft
+CUDA_HOME     ?= /usr/local/cuda
+#  For regular linux system
+GNUROOT       ?= /usr/local/x86_64-linux-gnu
+THRUST_WRAP   ?= ../wrappers
+NVSHMEM_HOME  ?= /usr/local/nvshmem
+
+
+# MKL
+INC_MKL      = $(MKLROOT)/include
+LIB_MKL      = $(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+# FFTW
+ifeq ($(FFTW_SUPPORT), 1)
+  INC_FFT        = $(FFTW_DIR)/include
+  LIB_FFT        = $(FFTW_DIR)/lib -lfftw3 -lfftw3f
+endif
+#  Path to gcc library on Jean Zay Cluster
+## /### GNUROOT is supplied when sourcing ../ci/pgi_config.sh in the corresponding branch
+## Don't forget to do so if rebuilding
+INC_CPP        = $(GNUROOT)
+LIB_CPP        = $(GNUROOT)/lib64 -lstdc++
+
+inc_decompfft := include
+lib_decompfft := l2decomp_fft
+INC_FFTDECOMP  = $(FFTDECOMPDIR)/$(inc_decompfft)
+LIB_FFTDECOMP  = $(FFTDECOMPDIR)/lib -$(lib_decompfft)
+
+INC_CUDA       = $(CUDA_HOME)/include
+LIB_CUDA       = $(CUDA_HOME)/lib64
+LIB_CUDA_DRIVER= $(CUDA_HOME)/lib64/stubs -lcuda
+
+INC_WRAP       = $(THRUST_WRAP)
+LIB_WRAP       = $(THRUST_WRAP) -lwrapper
+
+INC_NVSHMEM    = $(NVSHMEM_HOME)/include
+LIB_NVSHMEM    = $(NVSHMEM_HOME)/lib -lnvshmem
+
+#  Preprocessor options
+#  ____________________
+f_preprocess_flag__ := -cpp
+add_options         :=
+
+ifeq ($(prec),$(filter $(prec),single s))
+   OPTIONS   := -DSINGLE
+   CUOPTIONS := $(OPTIONS) -DUSE_ERFC_HASTINGS
+else ifeq ($(prec),$(filter $(prec),mixed m))
+   OPTIONS   := -DMIXED
+   CUOPTIONS := $(OPTIONS) -DUSE_ERFC_HASTINGS
+endif
+ifeq ($(NVSHMEM_SUPPORT),1)
+ifeq ($(arch),$(filter $(arch),device gpu))
+   OPTIONS   += -DUSE_NVSHMEM
+   CUOPTIONS += -DUSE_NVSHMEM
+endif
+endif
+#OPTIONS   += -DUSE_NVTX -DORTHOGONAL_BOX_SHAPE_ONLY
+ifeq ($(NVTX_SUPPORT),1)
+   OPTIONS += -DUSE_NVTX
+endif
+ifeq ($(ORTHO_BOX_ONLY_SUPPORT),1)
+   OPTIONS   += -DORTHOGONAL_BOX_SHAPE_ONLY
+   CUOPTIONS += -DORTHOGONAL_BOX_SHAPE_ONLY
+endif
+ifeq ($(NO_MUTATION),1)
+   OPTIONS   += -DTINKER_NO_MUTATE
+   CUOPTIONS += -DTINKER_NO_MUTATE
+endif
+ifneq ($(add_options),$(empty__))
+   OPTIONS   +=$(add_options)
+   CUOPTIONS +=$(add_options)
+endif
+FOPTIONS   = $(f_preprocess_flag__) $(OPTIONS)
+CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
+
+#  Optimisation flags
+#  __________________
+ifeq ($(opt), release)
+   COMMON       = -Mdalign -fast -g
+   CCOMMON      = -std=c++11 -O3 -g
+else ifeq ($(opt), debug+)
+   COMMON       = -traceback -O0 -g -C
+   CCOMMON      = -std=c++11 -O0 -g
+   ifeq ($(arch),$(filter $(arch),device gpu))
+     OPTIONS += -DTINKER_DEBUG
+   CUOPTIONS += -DTINKER_DEBUG
+   endif
+else
+   COMMON       = -O0 -g#-rc=${HOME}/localrc
+   CCOMMON      = -std=c++11 -O0 -g
+endif
+
+#   Compile flags for target architecture, extracting, inlining, modules, host and device
+#   ____________________________________________________________________________________
+#/ # compute_capability=60,70
+#/ CUDA Compute Capability
+#/   - 35, 60, 70, 75, etc.
+#/   - Can be comma-separated, e.g. `35,60`.
+#/
+compute_capability := 70,80
+cuda_version       := 11.0
+
+cc_list__          := $(subst $(comma__), ,$(compute_capability))
+acc_cc_flag__      := $(foreach var,$(cc_list__),cc$(var))
+# 60,70 => cc60,cc70
+acc_cc_flag__      := $(subst $(space__),$(comma__),$(acc_cc_flag__))
+# 60,70 => -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70
+cuda_cc_flag__     := $(foreach var,$(cc_list__),-gencode arch=compute_$(var)$(comma__)code=sm_$(var))
+
+
+#   Target architecture to build binaries
+#   _____________________________________
+arch        := device
+ifeq ($(arch),$(filter $(arch),device gpu))
+   TARGET = -ta=tesla:$(acc_cc_flag__),cuda$(cuda_version)
+else ifeq ($(arch),$(filter $(arch),host cpu))
+   TARGET = -ta=host
+endif
+
+#  Fill flags containers
+#  _____________________
+CUCFLAGS     = $(CUOPTIONS) $(CCOMMON) $(cuda_cc_flag__)
+OPTFLAGS     = -Minline
+
+ifeq ($(prec),$(filter $(prec),mixed m single s))
+   OPTFLAGS += -Mcuda=$(acc_cc_flag__),fastmath
+   CUCFLAGS += --use_fast_math
+else
+   OPTFLAGS += -Mcuda=$(acc_cc_flag__)
+endif
+
+OPTFLAGS += -I$(INC_WRAP)
+
+ifeq ($(NVSHMEM_SUPPORT), 1)
+   CUCFLAGS += -ccbin $(RunCXX) -rdc=true -I$(INC_NVSHMEM)
+endif
+
+ifeq ($(arch),$(filter $(arch),device gpu))
+   CUFFLAGS     = $(COMMON) $(CUFOPTIONS) -Mcuda=cuda$(cuda_version) $(OPTFLAGS)
+   MODFLAGS     = $(COMMON) $(FOPTIONS) $(TARGET) $(OPTFLAGS)
+   GPUFLAGS     = $(COMMON) $(FOPTIONS) $(TARGET) $(OPTFLAGS)
+   HFLAGS       = $(COMMON) $(FOPTIONS)
+   TFLAGS       = $(COMMON) $(FOPTIONS) $(TARGET)
+else ifeq ($(arch),$(filter $(arch),host cpu))
+   OPTFLAGS     = -Minline
+   MODFLAGS     = $(COMMON) $(FOPTIONS) $(TARGET)
+   GPUFLAGS     = $(COMMON) $(FOPTIONS) $(TARGET) $(OPTFLAGS)
+   HFLAGS       = $(COMMON) $(FOPTIONS) $(OPTFLAGS)
+   TFLAGS       = $(COMMON) $(FOPTIONS) $(TARGET) $(OPTFLAGS)
+endif
+
+# compile flags
+FFLAGS       = $(TFLAGS)
+# linking flags
+FFLAGS2      = $(FFLAGS)
+
+#  Finalize library
+#  _______________
+LIBS         = libtinker.a
+
+LDLIBS       = -lm -L$(LIB_MKL) -L$(LIB_FFTDECOMP) -L$(LIB_CPP)
+#CULIBS       = -Mcudalib=cufft,cublas,curand -lcuda -lcudafor -lcudafor2 -lcudafor91 -lcusparse -lcudaforwrapblas -lcudadevice
+CULIBS       = -Mcudalib=curand,cufft,cublas -Mcuda=$(acc_cc_flag__) -lcusolver
+
+ifeq ($(findstring NVTX, $(OPTIONS)),NVTX)
+   CULIBS += -lnvToolExt
+endif
+
+CULIBS += -L$(LIB_WRAP)
+
+ifeq ($(NVSHMEM_SUPPORT),1)
+   CULIBS += -L$(LIB_NVSHMEM) -L/$(LIB_CUDA_DRIVER) -lmpi_cxx
+endif
+
+ifneq ($(FFTW_SUPPORT),0)
+   LDLIBS += -L$(LIB_FFT)
+endif
+
+ifeq ($(arch),$(filter $(arch),device gpu))
+   LDLIBS += $(CULIBS)
+   ifeq ($(NVSHMEM_SUPPORT),1)
+      ADD_OBJECTS = cu_nvshmem_wrap.o
+   endif
+endif
+ 
+
+# Object Files
+# ____________
+MODSHA = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o
+MODSAM = MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
+   MOD_angpot.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
+   MOD_atoms.o MOD_atmtyp.o MOD_bath.o MOD_bitor.o\
+   MOD_bndpot.o MOD_bond.o MOD_bound.o MOD_boxes.o\
+   MOD_cell.o MOD_charge.o MOD_chgpot.o MOD_chunks.o\
+   MOD_couple.o MOD_cutoff.o MOD_deriv.o MOD_divcon.o\
+   MOD_domdec.o MOD_energi.o MOD_ewald.o MOD_fft.o\
+   MOD_fields.o MOD_files.o MOD_freeze.o MOD_group.o\
+   MOD_improp.o MOD_imptor.o MOD_inform.o MOD_inter.o MOD_interfaces.o\
+   MOD_iounit.o MOD_kanang.o MOD_kangs.o MOD_katoms.o\
+   MOD_kbonds.o MOD_kchrge.o MOD_keys.o MOD_khbond.o\
+   MOD_kiprop.o MOD_kgeoms.o MOD_kitors.o MOD_kmulti.o\
+   MOD_kopbnd.o MOD_kopdst.o MOD_kpitor.o MOD_kpolr.o\
+   MOD_kstbnd.o MOD_ksttor.o MOD_ktorsn.o MOD_ktrtor.o\
+   MOD_kurybr.o MOD_kvdwpr.o MOD_kvdws.o MOD_langevin.o\
+   MOD_linmin.o
+MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
+   MOD_minima.o MOD_molcul.o MOD_moldyn.o MOD_mplpot.o\
+   MOD_mutant.o MOD_neigh.o MOD_opbend.o MOD_opdist.o\
+   MOD_output.o MOD_params.o MOD_pitors.o MOD_pme.o\
+   MOD_polar.o MOD_polgrp.o MOD_polpot.o MOD_erf.o\
+   MOD_potent.o MOD_precis.o MOD_ptable.o MOD_random.o MOD_resdue.o\
+   MOD_ring.o MOD_scales.o MOD_shunt.o MOD_strbnd.o\
+   MOD_strtor.o MOD_timestat.o MOD_titles.o MOD_torpot.o\
+   MOD_tors.o MOD_tortor.o MOD_units.o MOD_uprior.o\
+   MOD_urey.o MOD_urypot.o MOD_usage.o MOD_vec.o MOD_vdwpot.o MOD_virial.o\
+   MOD_vdw.o MOD_utils.o MOD_utilcomm.o MOD_utilvec.o MOD_utilgpu.o\
+	MOD_subDeriv.o MOD_subMemory.o MOD_subInform.o MOD_subAtoms.o\
+   MOD_vec_elec.o MOD_vec_vdw.o\
+   MOD_vec_list.o MOD_vec_mpole.o MOD_vec_polar.o MOD_vec_charge.o\
+   MOD_precompute_polegpu.o MOD_USampling.o
+# Cuda Fortran module files
+MODCU = MOD_utilcu.o echargecu.o eljcu.o ehal1cu.o nblistcu.o tmatxb_pmecu.o epolar1cu.o empole1cu.o pmestuffcu.o
+
+OBJSAM = active.o analysis.o analyze.o angles.o\
+   attach.o basefile.o beeman.o bicubic.o\
+   baoab.o baoabrespa.o baoabrespa1.o bbk.o\
+   bitors.o bonds.o bounds.o calendar.o\
+   chkpole.o chkpolegpu.o chkring.o chkxyz.o cholesky.o cluster.o\
+   command.o control.o cspline.o\
+   cutoffs.o diis.o domdecstuff.o dynamic.o\
+   dcinduce_pme.o dcinduce_pmegpu.o dcinduce_pme2.o dcinduce_pme2gpu.o dcinduce_shortreal.o dcinduce_shortrealgpu.o\
+   eamd1.o eangang.o eangang1.o eangang3.o\
+   eangle.o eangle1.o eangle1gpu.o eangle3.o eangle3gpu.o\
+   ebond.o ebond1.o ebond1gpu.o ebond3.o ebond3gpu.o\
+   echarge.o echarge1.o echarge1vec.o echarge1gpu.o echarge3.o echarge3vec.o echarge3gpu.o\
+   efld0_direct.o efld0_directvec.o efld0_directgpu.o\
+   egeom.o egeom1.o egeom1gpu.o egeom3.o egeom3gpu.o\
+   ehal.o ehal1.o ehal1vec.o ehal1gpu.o ehal3.o ehal3vec.o ehal3gpu.o\
+   eimprop.o eimprop1.o eimprop1gpu.o eimprop3.o\
+   eimptor.o eimptor1.o eimptor3.o\
+   elj.o elj1.o elj1vec.o elj1gpu.o elj3.o elj3vec.o elj3gpu.o\
+   empole.o empole0.o empole1.o empole1vec.o empole1gpu.o\
+   empole3.o  empole3vec.o empole3gpu.o\
+   energy.o eopbend.o eopbend1.o eopbend1gpu.o eopbend3.o eopbend3gpu.o\
+   eopdist.o eopdist1.o eopdist3.o\
+   epitors.o epitors1.o epitors1gpu.o epitors3.o\
+   epolar.o epolarvec.o epolar1.o epolar1vec.o epolar1gpu.o\
+   epolar3.o epolar3vec.o epolar3gpu.o\
+   eprecip1vec.o esmd1.o\
+   estrbnd.o estrbnd1.o estrbnd1gpu.o estrbnd3.o\
+   estrtor.o estrtor1.o estrtor1gpu.o estrtor3.o\
+   etors.o etors1.o etors1gpu.o etors3.o\
+   etortor.o etortor1.o etortor1gpu.o etortor3.o\
+   eurey.o eurey1.o eurey1gpu.o eurey3.o  eurey3gpu.o\
+   evcorr.o extra.o extra1.o extra3.o\
+   fatal.o fft_mpi.o field.o\
+   final.o freeunit.o geometry.o getkey.o\
+   getnumb.o getprm.o getstring.o gettext.o\
+   getword.o getxyz.o gradient.o\
+   hybrid.o image.o \
+   initatom.o initial.o initprm.o initres.o\
+   invert.o kangang.o kangle.o\
+   kamd.o katom.o kbond.o kcharge.o kewald.o kgeom.o\
+   kimprop.o kimptor.o kinetic.o kmpole.o\
+   kopbend.o kopdist.o kpitors.o kpolar.o\
+   kstrbnd.o kstrtor.o kscalfactor.o ksmd.o ktors.o ktortor.o\
+   kurey.o kvdw.o lattice.o lbfgs.o\
+   linalg.o maxwell.o mdinit.o mdrest.o\
+   mdsave.o mdstat.o mechanic.o minimize.o\
+   molecule.o mpistuff.o mutate.o
+
+# Cuda-C object Files
+OBJCU = cu_CholeskySolver.o cu_nblist.o cu_tmatxb_pme.o cu_mpole1.o
+ifeq ($(NVSHMEM_SUPPORT),1)
+   OBJCU += cu_nvshmem_wrap.o
+else ifeq ($(findstring NVSHMEM, $(OPTIONS)),NVSHMEM)
+   OBJCU += cu_nvshmem_wrap.o
+endif
+
+OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o newinduce_pmegpu.o\
+   newinduce_pme2.o newinduce_pme2vec.o newinduce_pme2gpu.o\
+   newinduce_shortreal.o newinduce_shortrealgpu.o\
+   nextarg.o nexttext.o nspline.o number.o\
+   numeral.o openend.o optsave.o pmestuff.o pmestuffgpu.o\
+   precise.o pressure.o prime.o promo.o promoamd.o promosmd.o prmkey.o\
+   prtdyn.o prtxyz.o readdyn.o\
+   readprm.o readxyz.o respa.o respa1.o\
+   rings.o rotpole.o rotpolegpu.o search.o sort.o\
+   rattle.o shakeup.o\
+   suffix.o switch.o temper.o testgrad.o tmatxb_pme.o tmatxb_pmevec.o tmatxb_pmegpu.o\
+   torphase.o torque.o torquegpu.o torquevec2.o torsions.o trimtext.o\
+   unitcell.o verlet.o version.o
+
+# Objects that need to be reprocessed when using multi-platform compilation
+OBJHOST = baoabrespa1.o cluster.o domdecstuff.o dynamic.o echarge.o efld0_directgpu.o\
+          ehal1gpu.o empole.o empole1gpu.o epolar1gpu.o\
+          fft_mpi.o getprm.o kpolar.o kvdw.o kscalfactor.o lattice.o maxwell.o mdinit.o mechanic.o\
+			 nblistgpu.o initial.o newinduce_pmegpu.o newinduce_pme2gpu.o newinduce_shortrealgpu.o\
+          dcinduce_pmegpu.o dcinduce_pme2gpu.o dcinduce_shortrealgpu.o\
+          rotpolegpu.o temper.o
+
+# Inline files and virtual targets
+FILVINL = MOD_erf.vinl MOD_utils.vinl MOD_utilgpu.vinl image.vinl pmestuff.vinl linalg.vinl bicubic.vinl etortor.vinl
+
+ifeq ($(arch),$(filter $(arch),device gpu))
+   MODS   = $(MODSHA) $(MODSAM) $(MODSNZ) $(MODCU)
+   OBJS   = $(OBJCU) $(OBJSAM) $(OBJSNZ)
+	library = library.make
+else ifeq ($(arch),$(filter $(arch),host cpu))
+   MODS   = $(MODSHA) $(MODSAM) $(MODSNZ)
+   OBJS   = $(OBJSAM) $(OBJSNZ)
+	library = library_host.make
+endif
+
+
+###############################
+#  List and describe Targets
+###############################
+
+all: analyze dynamic minimize
+
+everything: analyze dynamic minimize testgrad
+
+#
+analyze: build_mod $(OBJS) libtinker
+	$(RunF77) $(FFLAGS2) -o analyze.x analyze.o $(LIBS) $(LDLIBS)
+	mv analyze.x $(prefix)/$@$(prog_suffix)
+#
+analyze.OK:
+	@$(MAKE) prog_suffix=.OK analyze
+#
+.PHONY: analyze.mixed
+analyze.mixed:
+	@$(MAKE) prec=mixed prog_suffix=.mixed analyze
+#
+.PHONY: analyze.single
+analyze.single:
+	@$(MAKE) prec=single prog_suffix=.single analyze
+#
+.PHONY: analyze.cpu
+analyze.cpu:
+	@$(MAKE) arch=host prog_suffix=.cpu analyze
+#
+.PHONY: analyze.cpuh
+analyze.cpuh: build_mod $(OBJS)
+	@$(MAKE) cleanobjhost
+	@$(MAKE) compilehost
+	@$(MAKE) link_analyze.cpu
+	@$(MAKE) cleanobjhost
+#
+link_analyze.cpu: build_mod $(OBJS)
+	@./$(library) $(ADD_OBJECTS)
+	$(RunF77) $(FFLAGS2) -o $(prefix)/analyze.cpu analyze.o $(LIBS) $(LDLIBS)
+	@echo "**"
+	@echo "**  analyze.cpu hybrid binary is successfully made"
+	@echo "**"
+#
+dynamic: build_mod $(OBJS) libtinker
+	$(RunF77) $(FFLAGS2) -o dynamic.x dynamic.o $(LIBS) $(LDLIBS)
+	mv dynamic.x $(prefix)/$@$(prog_suffix)
+#
+.PHONY: dynamic.cpu
+dynamic.cpu:
+	@$(MAKE) arch=host prog_suffix=.cpu dynamic
+#
+.PHONY: dynamic.single
+dynamic.single:
+	@$(MAKE) prec=single prog_suffix=.single dynamic
+#
+.PHONY: dynamic.mixed
+dynamic.mixed:
+	@$(MAKE) prec=mixed prog_suffix=.mixed dynamic
+#
+.PHONY: dynamic.gpu
+dynamic.gpu:
+	@$(MAKE) prog_suffix=.gpu dynamic
+#
+.PHONY: dynamic.cpuh
+dynamic.cpuh: build_mod $(OBJS)
+	@$(MAKE) cleanobjhost
+	@$(MAKE) compilehost
+	@$(MAKE) link_dynamic.cpu
+	@$(MAKE) cleanobjhost
+	@$(MAKE) dynamic
+#
+link_dynamic.cpu: libtinker
+	$(RunF77) $(FFLAGS2) -o $(prefix)/dynamic.cpuh dynamic.o $(LIBS) $(LDLIBS)
+	@echo "**"
+	@echo "**  dynamic.cpu hybrid binary is successfully made "
+	@echo "**"
+#
+#  Building modules files
+#
+build_mod: FFLAGS=$(MODFLAGS)
+build_mod: $(MODS)
+#
+#  Building object files
+#
+build_obj: $(OBJS)
+#
+#  Compiling files targeting host platform (CPU)
+#
+compilehost: FFLAGS=$(HFLAGS)
+compilehost: OPTFLAGS=
+compilehost: GPUFLAGS=$(HFLAGS)
+compilehost: $(OBJHOST)
+#
+testgrad: libtinker
+	$(RunF77) $(FFLAGS2) -o testgrad.x testgrad.o $(LIBS) $(LDLIBS)
+	mv testgrad.x $(prefix)/$@$(prog_suffix)
+#
+testgrad.OK: libtinker
+	$(RunF77) $(FFLAGS2) -o testgrad.x testgrad.o $(LIBS) $(LDLIBS)
+	mv testgrad.x $(prefix)/$@
+#
+minimize: libtinker
+	$(RunF77) $(FFLAGS2) -o minimize.x minimize.o $(LIBS) $(LDLIBS)
+	mv minimize.x $(prefix)/$@$(prog_suffix)
+#
+minimize.OK: libtinker
+	$(RunF77) $(FFLAGS2) -o minimize.x minimize.o $(LIBS) $(LDLIBS)
+	mv minimize.x $(prefix)/$@
+#
+.PHONY: minimize.cpu
+minimize.cpu:
+	@$(MAKE) arch=host prog_suffix=.cpu minimize
+#
+.PHONY: minimize.single
+minimize.single:
+	@$(MAKE) prec=single prog_suffix=.single minimize
+#
+.PHONY: minimize.mixed
+minimize.mixed:
+	@$(MAKE) prec=mixed prog_suffix=.mixed minimize
+#
+.PHONY: minimize.gpu
+minimize.gpu:
+	@$(MAKE) prog_suffix=.gpu minimize
+#
+.PHONY: libtinker
+libtinker: build_mod $(OBJS)
+	@./$(library) $(ADD_OBJECTS)
+
+
+# This sections adds some dependencies on include files
+# _____________________________________________________
+ifeq ($(arch),$(filter $(arch),device gpu))
+echargecu.o: MOD_utilcu.o pair_charge.f.inc
+eljcu.o: MOD_utilcu.o pair_elj.f.inc
+ehal1cu.o: MOD_utilcu.o pair_ehal1.f.inc
+nblistcu.o: MOD_utilcu.o
+tmatxb_pmecu.o: MOD_utilcu.o
+epolar1cu.o: MOD_utilcu.o pair_polar.f.inc
+empole1cu.o: MOD_utilcu.o pair_mpole1.f.inc
+pmestuffcu.o: MOD_utilcu.o
+cu_CholeskySolver.o: utils.h
+cu_nblist.o: utils.h image.h
+cu_tmatxb_pme.o: utils.h image.h
+cu_mpole1.o: utils.h image.h
+elj1gpu.o: eljcu.o
+elj3gpu.o: eljcu.o
+ehal1gpu.o: ehal1cu.o
+ehal3gpu.o: ehal1cu.o
+echarge1gpu.o: echargecu.o
+echarge3gpu.o: echargecu.o
+empole1gpu.o: empole1cu.o
+empole3gpu.o: empole1cu.o
+epolar1gpu.o: epolar1cu.o
+epolar3gpu.o: epolar1cu.o
+lattice.o: pmestuffcu.o MOD_utilcu.o
+lattice.o: lattice.f
+	$(RunF77) $(GPUFLAGS) -c $<
+nblistgpu.o: nblistcu.o
+tmatxb_pmegpu.o: tmatxb_pmecu.o
+pmestuffgpu.o: pmestuffcu.o
+endif
+MOD_subAtoms.o: MOD_atoms.o
+MOD_subMemory.o: MOD_memory.o
+MOD_subDeriv.o: MOD_deriv.o
+MOD_subInform.o: MOD_inform.o
+
+#
+#  Generics rules
+#  ____________________
+#%.vinl: %.f
+#	@touch $@
+#	$(RunF77) $(EXTFLAGS) -c $*.f
+promoamd.o: promoamd.f
+	$(RunF77) $(FFLAGS) -Mbackslash -c $*.f
+promosmd.o: promosmd.f
+	$(RunF77) $(FFLAGS) -Mbackslash -c $*.f 
+active.o: active.f
+	$(RunF77) $(GPUFLAGS) -c $<
+attach.o: attach.f
+	$(RunF77) $(GPUFLAGS) -c $<
+angles.o: angles.f
+	$(RunF77) $(GPUFLAGS) -c $<
+bonds.o: bonds.f
+	$(RunF77) $(GPUFLAGS) -c $<
+bitors.o: bitors.f
+	$(RunF77) $(GPUFLAGS) -c $<
+cluster.o: cluster.f
+	$(RunF77) $(GPUFLAGS) -c $<
+domdecstuff.o: domdecstuff.f
+	$(RunF77) $(GPUFLAGS) -c $<
+torsions.o: torsions.f
+	$(RunF77) $(GPUFLAGS) -c $<
+%cu.o: %cu.f
+	$(RunCUFC) $(CUFFLAGS) -c $*cu.f 
+%.o: %.cu
+	$(RunCUCC) $(CUCFLAGS) -c $*.cu
+%gpu.o: %gpu.f
+	$(RunF77) $(GPUFLAGS) -c $*gpu.f 
+e%.o: e%.f
+	$(RunF77) $(GPUFLAGS) -c e$*.f 
+k%.o: k%.f
+	$(RunF77) $(GPUFLAGS) -c k$*.f 
+%.o: %.f
+	$(RunF77) $(FFLAGS) -c $*.f
+%.o: %.F
+	$(RunF77) $(FFLAGS) -c $*.F
+%.o: %.f90
+	$(RunF77) $(FFLAGS) -c $*.f90 -I$(INC_FFTDECOMP)
+
+#
+#  Build directories
+#
+BUILD_DIR  := ../build
+TINKER_SOURCE := ../source
+.PHONY: create_build
+create_build:
+	mkdir -p $(BUILD_DIR)
+	@echo "Copy tinker source files and Makefile.pgi to $(BUILD_DIR)"
+	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.f .
+	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.f90 .
+	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.f.inc .
+	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.h .
+	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.cu .
+	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.make .
+	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/Makefile.pgi Makefile
+	@echo "--- done ---"
+
+infos:
+	@echo "architecture      " $(arch)
+	@echo "precision         " $(prec)
+	@echo "OPTIONS           " $(FOPTIONS)
+	@echo "CUDA OPTIONS      " $(CUOPTIONS)
+	@echo "acc config        " $(TARGET)
+	@echo "cuda config       " $(OPTFLAGS)
+	@echo "fortran config    " $(COMMON)
+	@echo "CUDA libraries    " $(CULIBS)
+
+#
+#  Cleaning rules
+#
+.PHONY: cleanobjhost
+cleanobjhost:
+	rm -f $(OBJHOST)
+clean_vinl:
+	rm -f $(FILVINL)
+clean:
+	rm -fr $(MODS) $(OBJS) *.exe *.mod
+	rm -f libtinker.a 
+
+#
+# 2decomp_fft library rules
+#
+2decomp_fft_install:
+	cd $(FFTDECOMPDIR); $(MAKE)
+2decomp_fft_clean:
+	cd $(FFTDECOMPDIR); $(MAKE) clean
+2decomp_fft_rebuild:
+	@cd $(FFTDECOMPDIR); $(MAKE) clean; $(MAKE) "OPTIM=$(COMMON) $(TARGET)"
+2decomp_fft_rebuild_single:
+	@cd $(FFTDECOMPDIR); $(MAKE) clean; $(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
+
+#
+# Thrust wrapper target
+#
+.PHONY: thrust_lib_rebuild
+thrust_lib_rebuild:
+	@cd ../wrappers; $(MAKE) clean; $(MAKE) "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)"
+
+#
+tags: tags-mark
+	-'rm' -f tags
+	ctags *.f
+	-'rm' -f tags-mark
+
+tags-mark:
+	touch tags-mark
+
+debug:
+	cat *.f > xxx.f
+	ftnchek xxx.f
+	rm xxx.f

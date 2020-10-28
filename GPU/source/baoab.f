@@ -1,0 +1,209 @@
+c
+c     Sorbonne University
+c     Washington University in Saint Louis
+c     University of Texas at Austin
+c
+c     ######################################################################
+c     ##                                                                  ##
+c     ##  subroutine baoab  --  BAOAB Langevin molecular dynamics step    ##
+c     ##                                                                  ##
+c     ######################################################################
+c
+c
+c     "baoab" performs a single molecular dynamics time step
+c     via the BAOAB recursion formula
+c
+c     literature reference:
+c
+c     Efficient molecular dynamics using geodesic integration 
+c     and solvent-solute splitting B. Leimkuhler and C. Matthews,
+c     Proceedings of the Royal Society A, 472: 20160138, 2016
+c
+c
+#include "tinker_precision.h"
+      subroutine baoab (istep,dt)
+      use atmtyp
+      use atoms
+      use bath
+      use cutoff
+      use domdec
+      use energi
+      use freeze
+      use langevin
+      use mdstuf
+      use moldyn
+      use random_mod
+      use timestat
+      use units
+      use usage
+      use mpi
+      implicit none
+      integer i,j,istep,iglob
+      real(t_p) dt,dt_x,factor
+      real(r_p) etot,eksum,epot
+      real(t_p) temp,pres
+      real(t_p) part1,part2
+      real(t_p) a1,a2
+      real(r_p) ekin(3,3)
+      real(t_p) stress(3,3)
+      real(r_p) time0,time1
+      real(r_p), allocatable :: derivs(:,:)
+c
+c     set time values and coefficients for BAOAB integration
+c
+      a1 = exp(-gamma*dt)
+      a2 = sqrt((1-a1**2)*boltzmann*kelvin)
+c
+c     find quarter step velocities and half step positions via BAOAB recursion
+c
+      do i = 1, nloc
+         iglob = glob(i)
+         if (use(iglob)) then
+            do j = 1, 3
+               v(j,iglob) = v(j,iglob) + 0.5*dt*a(j,iglob)
+            end do
+         end if
+      end do
+c
+      if (use_rattle) call rattle2(dt)
+c
+      do i = 1, nloc
+        iglob = glob(i)
+        if (use(iglob)) then
+          xold(iglob) = x(iglob)
+          yold(iglob) = y(iglob)
+          zold(iglob) = z(iglob)
+          x(iglob) = x(iglob) + v(1,iglob)*0.5*dt
+          y(iglob) = y(iglob) + v(2,iglob)*0.5*dt
+          z(iglob) = z(iglob) + v(3,iglob)*0.5*dt
+        end if
+      end do
+!$acc update device(x(:),y(:),z(:))
+c
+      if (use_rattle) call rattle(0.5*dt)
+      if (use_rattle) call rattle2(0.5*dt)
+c
+      if (use_rattle) call rattle2(dt)
+c
+c     compute random part
+c
+      deallocate (Rn)
+      allocate (Rn(3,nloc))
+      do i = 1, nloc
+        do j = 1, 3
+          Rn(j,i) = normal()
+        end do
+      end do
+      do i = 1, nloc
+         iglob = glob(i)
+         if (use(iglob)) then
+            do j = 1, 3
+               v(j,iglob) = a1*v(j,iglob) + 
+     $            a2*Rn(j,i)/sqrt(mass(iglob))
+            end do
+         end if
+      end do
+c
+      if (use_rattle) call rattle2(dt)
+c
+c     find full step positions via BAOAB recursion
+c
+      do i = 1, nloc
+         iglob = glob(i)
+         if (use(iglob)) then
+            xold(iglob) = x(iglob)
+            yold(iglob) = y(iglob)
+            zold(iglob) = z(iglob)
+            x(iglob) = x(iglob) + v(1,iglob)*0.5*dt
+            y(iglob) = y(iglob) + v(2,iglob)*0.5*dt
+            z(iglob) = z(iglob) + v(3,iglob)*0.5*dt
+         end if
+      end do
+c
+      if (use_rattle) call rattle(0.5*dt)
+      if (use_rattle) call rattle2(0.5*dt)
+c
+c
+c     make half-step temperature and pressure corrections
+c
+c      call temper (dt,eksum,ekin,temp)
+      call pressure2 (epot,temp)
+c
+c     Reassign the particules that have changed of domain
+c
+c     -> real space
+      call reassign
+c
+c     -> reciprocal space
+      call reassignpme(.false.)
+c
+c     communicate positions
+c
+      call commpos
+      call commposrec
+c
+      allocate (derivs(3,nbloc))
+      derivs = 0_ti_p
+c
+      call reinitnl(istep)
+c
+      call mechanicstep(istep)
+c
+      call allocstep
+c
+c     rebuild the neighbor lists
+c
+      if (use_list) call nblist(istep)
+c
+c     get the potential energy and atomic forces
+c
+      call gradient (epot,derivs)
+c
+c     MPI : get total energy
+c
+      call reduceen(epot)
+c
+c     communicate forces
+c
+      call commforces(derivs)
+c
+c     aMD/GaMD contributions
+c
+      call aMD (derivs,epot)
+c
+c     use Newton's second law to get the next accelerations;
+c     find the full-step velocities using the BAOAB recursion
+c
+      do i = 1, nloc
+         iglob = glob(i)
+         if (use(iglob)) then
+            do j = 1, 3
+               a(j,iglob) = -convert * derivs(j,i)/mass(iglob)
+               v(j,iglob) = v(j,iglob) + 0.5*dt*a(j,iglob)
+            end do
+         end if
+      end do
+c
+c     perform deallocation of some local arrays
+c
+      deallocate (derivs)
+c
+c     find the constraint-corrected full-step velocities
+c
+      if (use_rattle)  call rattle2 (dt)
+c
+      call temper (dt,eksum,ekin,temp)
+      call pressure (dt,ekin,pres,stress,istep)
+c
+c     total energy is sum of kinetic and potential energies
+c
+      etot = eksum + esum
+c
+c     compute statistics and save trajectory for this step
+c
+      call mdstat (istep,dt,etot,epot,eksum,temp,pres)
+      call mdsave (istep,dt,epot)
+      call mdrest (istep)
+!$acc update device(v,a)
+      return
+      end
