@@ -233,12 +233,6 @@ cc       perform deallocation of some local arrays
 cc
 c        deallocate (jopb)
 c
-c       mark angles at trigonal sites to use projected in-plane values
-c
-        do i = 1, nopbend
-           j = iopb(i)
-           if (angtyp(j) .eq. 'HARMONIC')  angtyp(j) = 'IN-PLANE'
-        end do
 c
 c       turn off the out-of-plane bending term if it is not used
 c

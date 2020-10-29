@@ -216,7 +216,7 @@ c
             an1 = 0.0_ti_p
             an2 = 0.0_ti_p
             jen = 0
-            string = record(next:240)
+            string = record(next:120)
             read (string,*,err=160,end=160)  ia,ib,ic,fc,an1,an2
   160       continue
             if (an2 .ne. 0.0_ti_p)  jen = 1

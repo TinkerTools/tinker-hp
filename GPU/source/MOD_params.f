@@ -18,6 +18,6 @@ c
       use sizes
       implicit none
       integer nprm
-      character*120 prmline(maxprm)
+      character*240 prmline(maxprm)
       save
       end
