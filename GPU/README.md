@@ -27,6 +27,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Accelerate Molecular Dynamics : aMD and GaMD Simulations
    - Steered Molecuar Dynamcis (SMD)
    - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process)
+   - Plumed support (to appear)
    
    If you use the code please cite :
    
@@ -38,4 +39,4 @@ O. Adjoua,  L. Lagardère, L.-H. Jolly, Arnaud Durocher, Z. Wang, T. Very, I. Du
 Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
 L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access) DOI: 10.1039/C7SC04531J
 
-This work has received funding from the European Research Council (ERC) under the European Union's Horizon 2020 research and innovation programme (grant agreement No 810367), project EMC2 (see preprint for full acknowledgments)
+Funding : this work has received funding from the European Research Council (ERC) under the European Union's Horizon 2020 research and innovation programme (grant agreement No 810367), project EMC2 (see preprint for full acknowledgments)
