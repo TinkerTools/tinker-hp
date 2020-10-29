@@ -4,7 +4,6 @@
 A relatively easy way to build GPU version of Tinker-HP is to checkout the ci branch of the code. The master branch is in constant development and may contains bugs and errors. The ci branch is more stable. After setting your environment according to the Prerequisites, you can proceed to installation by typing in your shell.
 ```
 $> pwd
-#> /home/user/PME
 $> ci/install.sh
 ```
 
