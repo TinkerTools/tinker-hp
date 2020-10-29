@@ -1,4 +1,4 @@
-Tinker-HP: High Performance Massively Parallel Evolution of Tinker
+Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
 ==================================================================
 
 
