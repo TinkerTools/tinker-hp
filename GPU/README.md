@@ -47,4 +47,4 @@ License : Tinker-HP is available free of charge for ALL Academic Institutions, N
 Funding : 
 - this work has received funding from the European Research Council (ERC) under the European Union's Horizon 2020 research and innovation programme (grant agreement No 810367), project EMC2 (see preprint for full acknowledgments)
 
-- we thank GENCI, NVIDIA and HPE as well as the engineering team of the IDRIS Supercomputer center (CNRS/GENCI).
+- we thank GENCI, NVIDIA and HPE as well as the engineering team of the IDRIS Supercomputer center (CNRS/GENCI, France). 
