@@ -4,7 +4,7 @@ Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
 
 <H2><B>WARNING ! </b></h2>   <b>This phase-advance GPU version is NOT an official release of Tinker-HP.</b>
 
-      But this is the version that is currently fighting against the COVID-19 since the beginning of March 2020.
+      But this is the version that is currently fighting against the COVID-19 outbreak since the beginning of March 2020.
       We decided to make it freely available to the scientific community. This work will be part of a larger 2021 Tinker-HP 1.3 official release.
 
 # Getting started with Tinker-HP
