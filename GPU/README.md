@@ -15,7 +15,7 @@ Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
    -  [Build Tinker-HP (GPU version)](build.md)
 
 ## Run Tinker-HP (CPU/GPU)
-There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature we are looking for is available on the GPU.
+There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature we are looking for is available on the GPU. The present version is optimized to accelerate AMOEBA. Some minimal non-polarizable capabilities are present (enhanced support will be available in 2021).
 
 ### GPU available features
    - dynamic analyze and minimize program
@@ -28,6 +28,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Octahedron and Orthogonal Box Shape (to be used only on single MPI process)
    
    If you use the code please cite :
+   
    Tinker-HP : Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using GPUs and Multi-GPUs systems.
 O. Adjoua,  L. Lagardère, L.-H. Jolly, Arnaud Durocher, Z. Wang, T. Very, I. Dupays, T. Jaffrelot Inizan, F. Célerse, P. Ren, J. Ponder, J-P. Piquemal, 2020, preprint to come
    
