@@ -5,7 +5,7 @@ Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
 <H2><B>WARNING ! </b></h2>   <b>This GPU version is NOT an official release of Tinker-HP.</b>
 
       But this is the version that is fighting against the COVID-19 since the beginning of March 2020.
-      We decided to make it freely available to the scientific community. The code has been extensively tested on 2080, V100 and A100 NVIDIA cards. It will be part of the major Tinker-HP 1.3 2021 release.
+      We decided to make it freely available to the scientific community. 
 
 # Getting started with Tinker-HP
    - Installation Guide
@@ -15,7 +15,7 @@ Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
    -  [Build Tinker-HP (GPU version)](build.md)
 
 ## Run Tinker-HP (CPU/GPU)
-There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature we are looking for is available on the GPU. The present version is optimized to accelerate simulations using the AMOEBA polarizable force field. Some minimal non-polarizable capabilities are present (enhanced support will be available in 2021).
+There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature we are looking for is available on the GPU. The present version is optimized to accelerate simulations using the AMOEBA polarizable force field. Some minimal non-polarizable capabilities are present (enhanced support will be available in 2021). The code has been extensively tested on 2080, V100 and A100 NVIDIA cards. It will be part of the major Tinker-HP 1.3 2021 release.
 
 ### GPU available features
    - dynamic analyze and minimize program
@@ -24,8 +24,8 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - New implementation of PCG and DC-DIIS solver for polarization (DC-DIIS is not adapted to device ! use PCG instead)
    - Bussi Thermostat for NVT simulations  (it is default)
    - Montecarlo and Berendsen barostat for NPT simulations (default is Berendsen)
-   - aMD and GaMD Simulations
-   - Orthogonal and Octahedron Box Shape (the latest to be used only on a single MPI process)
+   - Accelerate Molecular Dynamics : aMD and GaMD Simulations
+   - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process)
    
    If you use the code please cite :
    
