@@ -15,7 +15,7 @@ Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
    -  [Build Tinker-HP (GPU version)](build.md)
 
 ## Run Tinker-HP (CPU/GPU)
-There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature we are looking for is available on the GPU. The present version is optimized to accelerate simulations using the AMOEBA polarizable force field. Some minimal non-polarizable capabilities are present (enhanced support will be available in 2021). The code has been extensively tested on 1080, 2080, V100 and A100 NVIDIA GPU cards and support multi-GPUs computations. It will be part of the major Tinker-HP 1.3 2021 release.
+There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature we are looking for is available on the GPU. The present version is optimized to accelerate simulations using the AMOEBA polarizable force field. Some minimal non-polarizable capabilities are present (enhanced support will be available in 2021). The code has been extensively tested on 1080, 2080, V100 and A100 NVIDIA GPU cards and support multi-GPUs computations. It will be part of the major Tinker-HP 1.3 2021 release but this present version will continue to evolve. Feedbacks are welcomed : 
 
 ### GPU available features
    - dynamic analyze and minimize program
