@@ -20,9 +20,16 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
 ### GPU available features
    - dynamic analyze and minimize program
    - Integrators (respa, respa1, baoab, baoabrespa1, verlet)
-   - Amoeba forcefield
-   - PCG and DC-DIIS solver for polarisation (DC-DIIS is not adapted to device ! use PCG instead)
+   - Amoeba polarizable force field, classical force fields (AMBER/CHARMM/OPLS)
+   - New implementation of PCG and DC-DIIS solver for polarization (DC-DIIS is not adapted to device ! use PCG instead)
    - Bussi Thermostat for NVT simulations  (it is default)
    - Montecarlo and Berendsen barostat for NPT simulations (default is Berendsen)
    - aMD and GaMD Simulations
    - Octahedron and Orthogonal Box Shape (to be used only on single MPI process)
+   
+   If you use the code please cite :
+   Tinker-HP : Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using GPUs and Multi-GPUs systems.
+O. Adjoua,  L. Lagardère, L.-H. Jolly, Arnaud Durocher, Z. Wang, T. Very, I. Dupays, T. Jaffrelot Inizan, F. Célerse, P. Ren, J. Ponder, J-P. Piquemal, 2020, preprint to come
+   and 
+Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access) DOI: 10.1039/C7SC04531J
