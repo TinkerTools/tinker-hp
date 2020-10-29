@@ -27,7 +27,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Bussi Thermostat for NVT simulations  (it is default)
    - Montecarlo and Berendsen barostat for NPT simulations (default is Berendsen)
    - Accelerate Molecular Dynamics : aMD and GaMD Simulations
-   - Steered Molecuar Dynamcis (SMD)
+   - Steered Molecular Dynamics (SMD)
    - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process)
    - Plumed support (to appear)
    - More to come
