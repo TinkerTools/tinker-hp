@@ -19,13 +19,13 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
 
 ### GPU available features
    - dynamic analyze and minimize program
-   - Integrators (respa, respa1, baoab, baoabrespa1, verlet)
+   - Integrators (RESPA, RESPA1, BAOAB, BAOAB-RESPA1, VERLET)
    - Amoeba polarizable force field, classical force fields (AMBER/CHARMM/OPLS)
    - New implementation of PCG and DC-DIIS solver for polarization (DC-DIIS is not adapted to device ! use PCG instead)
    - Bussi Thermostat for NVT simulations  (it is default)
    - Montecarlo and Berendsen barostat for NPT simulations (default is Berendsen)
    - aMD and GaMD Simulations
-   - Octahedron and Orthogonal Box Shape (to be used only on single MPI process)
+   - Orthogonal and Octahedron Box Shape (the latest to be used only on a single MPI process)
    
    If you use the code please cite :
    
