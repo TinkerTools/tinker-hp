@@ -15,7 +15,7 @@ Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
    -  [Build Tinker-HP (GPU version)](build.md)
 
 ## Run Tinker-HP (CPU/GPU)
-There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature we are looking for is available on the GPU. The present version is optimized to accelerate simulations using the AMOEBA polarizable force field. Some minimal non-polarizable capabilities are present (enhanced support will be available in 2021). The code has been extensively tested on 2080, V100 and A100 NVIDIA cards. It will be part of the major Tinker-HP 1.3 2021 release.
+There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature we are looking for is available on the GPU. The present version is optimized to accelerate simulations using the AMOEBA polarizable force field. Some minimal non-polarizable capabilities are present (enhanced support will be available in 2021). The code has been extensively tested on 1080, 2080, V100 and A100 NVIDIA cards and support multi-GPUs computations. It will be part of the major Tinker-HP 1.3 2021 release.
 
 ### GPU available features
    - dynamic analyze and minimize program
@@ -25,6 +25,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Bussi Thermostat for NVT simulations  (it is default)
    - Montecarlo and Berendsen barostat for NPT simulations (default is Berendsen)
    - Accelerate Molecular Dynamics : aMD and GaMD Simulations
+   - Steered Molecuar Dynamcis (SMD)
    - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process)
    
    If you use the code please cite :
