@@ -28,6 +28,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Steered Molecuar Dynamcis (SMD)
    - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process)
    - Plumed support (to appear)
+   - More to come
    
    If you use the code please cite :
    
