@@ -5,7 +5,7 @@ Tinker-HP: High Performance Massively Parallel Evolution of Tinker
 <H2><B>WARNING ! </b></h2>   <b>This GPU version is NOT an official release of Tinker-HP.</b>
 
       But this is the version that is fighting against the COVID-19 since the beginning of March 2020.
-      We decided to make it freely available to the scientific community.
+      We decided to make it freely available to the scientific community. The code has been extensively tested on 2080, V100 and A100 NVIDIA cards. It will be part of the major Tinker-HP 1.3 2021 release.
 
 # Getting started with Tinker-HP
    - Installation Guide
