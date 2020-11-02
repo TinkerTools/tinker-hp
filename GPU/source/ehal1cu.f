@@ -21,7 +21,7 @@ c     *_t texture variable destined to be attached to their target
         use cudafor
         use tinheader,only: ti_p
         use sizes    ,only: maxclass
-        use utilcu   ,only: nproc
+        use utilcu   ,only: nproc,all_lanes
         use utilgpu  ,only: BLOCK_SIZE,RED_BUFF_SIZE
 
         type(dim3) :: gridDim,blockDim
@@ -598,21 +598,19 @@ c                end if
                  vyz_  = vyz_  + zpos * dedy
                  vzz_  = vzz_  + zpos * dedz
 
+
+                 !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
+
+                 ! Accumulate interaction gradient
+                 gxi(threadIdx%x) = gxi(threadIdx%x) + real(dedx,r_p)
+                 gyi(threadIdx%x) = gyi(threadIdx%x) + real(dedy,r_p)
+                 gzi(threadIdx%x) = gzi(threadIdx%x) + real(dedz,r_p)
+
+                 gxk(klane) = gxk(klane) + real(dedx,r_p)
+                 gyk(klane) = gyk(klane) + real(dedy,r_p)
+                 gzk(klane) = gzk(klane) + real(dedz,r_p)
+
               end if
-
-              dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
-
-              ! Accumulate interaction gradient
-              gxi(threadIdx%x) = gxi(threadIdx%x) + real(dedx,r_p)
-              gyi(threadIdx%x) = gyi(threadIdx%x) + real(dedy,r_p)
-              gzi(threadIdx%x) = gzi(threadIdx%x) + real(dedz,r_p)
-
-              gxk(threadIdx%x) = gxk(threadIdx%x) +
-     &               real(__shfl(dedx,dstlane),r_p)
-              gyk(threadIdx%x) = gyk(threadIdx%x) +
-     &               real(__shfl(dedy,dstlane),r_p)
-              gzk(threadIdx%x) = gzk(threadIdx%x) +
-     &               real(__shfl(dedz,dstlane),r_p)
 
            end do
 
@@ -643,6 +641,230 @@ c                end if
 
         end do
         end subroutine
+
+c        attributes(global)
+c     &  subroutine ehal1_cu3
+c     &           (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
+c     &           ,ivblst,vblst,jvdw,epsilon,radmin
+c     &           ,ired,kred,dev,ev_buff,vir_buff
+c     &           ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
+c     &           ,nvdwclass
+c     &           ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
+c     &           ,scexp,vlambda,scalpha,mut
+c     &           ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+c#ifdef TINKER_DEBUG
+c     &           ,inter,rank
+c#endif
+c     &           )
+c
+c        implicit none
+c        integer  ,value,intent(in):: nvdwlocnlb_pair,n,nbloc
+c     &           ,nvdwlocnl,nvdwlocnlb,nvdwclass
+c        real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
+c     &           ,cut2,cut,ghal,dhal,off2,off
+c     &           ,scexp,vlambda,scalpha
+c        logical  ,device :: mut(n)
+c        real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
+c     &           ,p_zbeg,p_zend
+c        real(r_p),device :: ev_buff (RED_BUFF_SIZE)
+c        real(t_p),device :: vir_buff(RED_BUFF_SIZE)
+c        integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
+c     &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
+c     &           ,vblst(nvdwlocnlb_pair*(BLOCK_SIZE))
+c     &           ,cellv_loc(nvdwlocnlb)
+c        integer  ,device,intent(in)::ired(n),jvdw(nvdwlocnlb)
+c        real(t_p),device,intent(in)::radmin(nvdwclass,nvdwclass)
+c     &           ,epsilon(nvdwclass,nvdwclass),kred(n)
+c        real(t_p),device,intent(in):: xred(nvdwlocnlb)
+c     &           ,yred(nvdwlocnlb),zred(nvdwlocnlb)
+c        real(r_p),device,intent(inout)::dev(3,nbloc)
+c#ifdef TINKER_DEBUG
+c        integer,device:: inter(*)
+c        integer,value :: rank
+c#endif
+c
+c        integer ithread,iwarp,nwarp,ilane,srclane
+c        integer dstlane,klane,iilane,iblock
+c        integer idx,kdx,kdx_,kglob_,ii,j,i,i1
+c        integer ,shared,dimension(VDW_BLOCK_DIM):: iglob,it
+c        integer kbis,ist
+c        integer ,shared,dimension(VDW_BLOCK_DIM):: kt,kglob,ikstat
+c        real(t_p) e,istat
+c        real(r_p) ev_
+c        real(t_p) xk_,yk_,zk_,xpos,ypos,zpos
+c        real(t_p) rik2,rv2,eps2
+c        real(t_p),shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
+c     &           ,xi,yi,zi
+c        real(t_p) dedx,dedy,dedz
+c        real(r_p),shared,dimension(VDW_BLOCK_DIM)::
+c     &            gxi,gyi,gzi,gxk,gyk,gzk
+c        real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
+c        logical do_pair,same_block,accept_mid
+c        logical,shared::mutk(VDW_BLOCK_DIM)
+c     &         ,muti(VDW_BLOCK_DIM)
+c
+c        ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
+c        iwarp   = (ithread-1) / warpsize
+c        nwarp   = blockDim%x*gridDim%x / warpsize
+c        ilane   = iand( threadIdx%x-1,warpsize-1 ) + 1
+c        accept_mid = .true.
+cc       ninte   = 0
+c
+cc       if (ithread.eq.1) print*,'ehal1c_cu2_in'
+cc    &   ,blockDim%x,gridDim%x,nwarp,nvdwlocnlb_pair,n
+cc    &   ,c0,c1,c2,c3,c3,cut2,ghal,dhal
+cc    &   ,ev,vxx,vxy,vxz,vyy,nproc
+cc    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+c
+c        do ii = iwarp, nvdwlocnlb_pair-1, nwarp
+c
+c           ! Set Data to compute to zero
+c           ev_    = 0
+c           gxi(threadIdx%x)    = 0
+c           gyi(threadIdx%x)    = 0
+c           gzi(threadIdx%x)    = 0
+c           gxk(threadIdx%x)    = 0
+c           gyk(threadIdx%x)    = 0
+c           gzk(threadIdx%x)    = 0
+c           vxx_   = 0
+c           vxy_   = 0
+c           vxz_   = 0
+c           vyy_   = 0
+c           vyz_   = 0
+c           vzz_   = 0
+c
+c           ! Set interaction mask
+c           ikstat(threadIdx%x) = 0
+c
+c           ! Load atom block i parameters
+c           iblock = ivblst(ii+1)
+c           if (iblock.eq.0) cycle
+c           idx    = (iblock-1)*warpsize + ilane 
+c           iglob(threadIdx%x)  = cellv_glob(idx)
+c           i      = cellv_loc (idx)
+c           it(threadIdx%x) = jvdw  (idx)
+c           xi(threadIdx%x) = xred  (idx)
+c           yi(threadIdx%x) = yred  (idx)
+c           zi(threadIdx%x) = zred  (idx)
+c#ifndef TINKER_NO_MUTATE
+c           muti(threadIdx%x)   = mut(iglob(threadIdx%x))
+c#endif
+c
+c           ! Load atom block k neighbor parameter
+c           kdx    = vblst( ii*warpsize + ilane )
+c           kglob(threadIdx%x)  = cellv_glob(kdx)
+c           kbis   = cellv_loc(kdx)
+c           kt(threadIdx%x) = jvdw(kdx)
+c           xk(threadIdx%x) = xred(kdx)
+c           yk(threadIdx%x) = yred(kdx)
+c           zk(threadIdx%x) = zred(kdx)
+c           same_block = (idx.ne.kdx)
+c#ifndef TINKER_NO_MUTATE
+c           mutk(threadIdx%x) = mut(kglob(threadIdx%x))
+c#endif
+c
+c           ! Interact block i with block k
+c           do i1 = 0, 1
+c              srclane = iand( ilane+i1-1,warpsize-1 ) + 1
+c              iilane  = threadIdx%x-ilane + srclane
+c           do j = 0,warpsize-1
+c              ist     = AtomicOr(ikstat(iilane),ishft(1,j))
+c              if (btest(ist,j)) cycle
+c              srclane = iand( ilane+j-1,warpsize-1 ) + 1
+c              klane   = threadIdx%x-ilane + srclane
+c              if (nproc.gt.1) then
+c                 xk_   = xk(klane)
+c                 yk_   = yk(klane)
+c                 zk_   = zk(klane)
+c                 xpos  = xi(iilane) - xk_
+c                 ypos  = yi(iilane) - yk_
+c                 zpos  = zi(iilane) - zk_
+c                 call midpointimage_inl(xk_,yk_,zk_,xpos,ypos,zpos)
+c                 if ((zk_.lt.p_zbeg).or.(zk_.ge.p_zend)
+c     &           .or.(yk_.lt.p_ybeg).or.(yk_.ge.p_yend)
+c     &           .or.(xk_.lt.p_xbeg).or.(xk_.ge.p_xend)) then
+c                    accept_mid = .false.
+c                 else
+c                    accept_mid = .true.
+c                 end if
+c              else
+c                 xpos    = xi(iilane) - xk(klane)
+c                 ypos    = yi(iilane) - yk(klane)
+c                 zpos    = zi(iilane) - zk(klane)
+c                 call image_inl(xpos,ypos,zpos)
+c              end if
+c
+c              dedx = 0.0; dedy = 0.0; dedz = 0.0;
+c
+c              rik2  = xpos**2 + ypos**2 + zpos**2
+c
+c              do_pair = merge(.true.,iglob(iilane).lt.kglob(klane)
+c     &                       ,same_block)
+c              if (do_pair.and.rik2<=off2
+c     &           .and.accept_mid) then
+c
+c                 rv2   =  radmin_t (kt(klane),it(iilane))
+c                 eps2  = epsilon_t (kt(klane),it(iilane))
+c
+c                 call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
+c     &                         ,cut2,cut,off,ghal,dhal
+c     &                         ,scexp,vlambda,scalpha,muti(iilane)
+c     &                         ,mutk(klane),e,dedx,dedy,dedz)
+c
+c                 ev_   = ev_   + e
+c
+c                 vxx_  = vxx_  + xpos * dedx
+c                 vxy_  = vxy_  + ypos * dedx
+c                 vxz_  = vxz_  + zpos * dedx
+c                 vyy_  = vyy_  + ypos * dedy
+c                 vyz_  = vyz_  + zpos * dedy
+c                 vzz_  = vzz_  + zpos * dedz
+c
+c
+c                 !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
+c
+c                 ! Accumulate interaction gradient
+c                 gxi(iilane) = gxi(iilane) + real(dedx,r_p)
+c                 gyi(iilane) = gyi(iilane) + real(dedy,r_p)
+c                 gzi(iilane) = gzi(iilane) + real(dedz,r_p)
+c
+c                 gxk(klane)  = gxk(klane) + real(dedx,r_p)
+c                 gyk(klane)  = gyk(klane) + real(dedy,r_p)
+c                 gzk(klane)  = gzk(klane) + real(dedz,r_p)
+c
+c              end if
+c
+c           end do
+c           end do
+c
+c           call syncwarp(ALL_LANES)
+c           ist  = iand(ithread-1,RED_BUFF_SIZE-1) + 1
+c           !increment the van der Waals energy
+c           istat = atomicAdd( ev_buff(ist) ,ev_ )
+c 
+c           !increment the van der Waals derivatives
+c           if (idx.le.nvdwlocnl) then
+c              istat   = atomicAdd (dev(1,i),gxi(threadIdx%x))
+c              istat   = atomicAdd (dev(2,i),gyi(threadIdx%x))
+c              istat   = atomicAdd (dev(3,i),gzi(threadIdx%x))
+c           end if
+c
+c           if (kdx.le.nvdwlocnl) then
+c              istat   = atomicSub (dev(1,kbis),gxk(threadIdx%x))
+c              istat   = atomicSub (dev(2,kbis),gyk(threadIdx%x))
+c              istat   = atomicSub (dev(3,kbis),gzk(threadIdx%x))
+c           end if
+c
+c           ! Increment virial term of van der Waals
+c           istat = atomicAdd( vir_buff(0*RED_BUFF_SIZE+ist),vxx_ )
+c           istat = atomicAdd( vir_buff(1*RED_BUFF_SIZE+ist),vxy_ )
+c           istat = atomicAdd( vir_buff(2*RED_BUFF_SIZE+ist),vxz_ )
+c           istat = atomicAdd( vir_buff(3*RED_BUFF_SIZE+ist),vyy_ )
+c           istat = atomicAdd( vir_buff(4*RED_BUFF_SIZE+ist),vyz_ )
+c           istat = atomicAdd( vir_buff(5*RED_BUFF_SIZE+ist),vzz_ )
+c
+c        end do
+c        end subroutine
 
         attributes(global)
      &  subroutine ehalshortlong3_cu
@@ -856,8 +1078,8 @@ c                end if
         integer ithread,iwarp,nwarp,ilane,srclane
         integer dstlane,klane,iblock
         integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it
-        integer kglob,kbis,ist
-        integer,shared,dimension(VDW_BLOCK_DIM):: kt
+        integer kbis,ist
+        integer,shared,dimension(VDW_BLOCK_DIM):: kt,kglob
         real(t_p) e,istat
         real(r_p) ev_
         real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
@@ -917,7 +1139,7 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 
            ! Load atom block k neighbor parameter
            kdx    = vblst( ii*warpsize + ilane )
-           kglob  = cellv_glob(kdx)
+           kglob(threadIdx%x)  = cellv_glob(kdx)
            kbis   = cellv_loc(kdx)
            kt(threadIdx%x) = jvdw  (kdx)
            xk(threadIdx%x) = xred  (kdx)
@@ -925,7 +1147,7 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
            zk(threadIdx%x) = zred  (kdx)
            same_block = (idx.ne.kdx)
 #ifndef TINKER_NO_MUTATE
-           mutk(threadIdx%x) = mut(kglob)
+           mutk(threadIdx%x) = mut(kglob(threadIdx%x))
 #endif
 
            ! Interact block i with block k
@@ -934,7 +1156,6 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
               klane   = threadIdx%x-ilane + srclane
 #ifdef TINKER_DEBUG
               kdx_    = __shfl(kdx  ,srclane)
-              kglob_  = __shfl(kglob,srclane)
 #endif
 
               if (nproc.gt.1) then
@@ -963,7 +1184,7 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 
               rik2  = xpos**2 + ypos**2 + zpos**2
 
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
+              do_pair = merge(.true.,iglob.lt.kglob(klane)
      &                       ,same_block)
               if (do_pair.and.rik2<=off2
      &           .and.accept_mid) then
@@ -979,21 +1200,21 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
                  ev_   = ev_ + e
 
 #ifdef TINKER_DEBUG
-                 if (iglob<kglob_) then
+                 if (iglob<kglob(klane)) then
                     ist = Atomicadd(inter(iglob),1)
                  else
-                    ist = Atomicadd(inter(kglob_),1)
+                    ist = Atomicadd(inter(kglob(klane)),1)
                  end if
 c                if (rank.eq.0) then
 c                if (iglob.eq.12) then
-c                   if (iglob<kglob_) then
-c                      print*,kglob_, kdx_,ii+1,iblock,j,ilane,'i'
+c                   if (iglob<kglob(klane)) then
+c                      print*,kglob(klane), kdx_,ii+1,iblock,j,ilane,'i'
 c                   else
-c                      print*, kglob_,real(-xpos,4),real(-ypos,4),-zpos
+c                      print*, kglob(klane),real(-xpos,4),real(-ypos,4),-zpos
 c                   end if
 c                end if
-c                if (kglob_.eq.12) then
-c                   if (iglob<kglob_) then
+c                if (kglob(klane).eq.12) then
+c                   if (iglob<kglob(klane)) then
 c                      print*, iglob, kdx_,ii+1,iblock,j,ilane,'i'
 c                   else
 c                      print*, iglob,real(-xpos,4),real(-ypos,4),-zpos
@@ -1009,21 +1230,18 @@ c                end if
                  vyz_  = vyz_  + zpos * dedy
                  vzz_  = vzz_  + zpos * dedz
 
+                 !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
+
+                 ! Resolve gradient
+                 gxi(threadIdx%x) = gxi(threadIdx%x) + real(dedx,r_p)
+                 gyi(threadIdx%x) = gyi(threadIdx%x) + real(dedy,r_p)
+                 gzi(threadIdx%x) = gzi(threadIdx%x) + real(dedz,r_p)
+
+                 gxk(klane) = gxk(klane) + real(dedx,r_p)
+                 gyk(klane) = gyk(klane) + real(dedy,r_p)
+                 gzk(klane) = gzk(klane) + real(dedz,r_p)
+
               end if
-
-              dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
-
-              ! Resolve gradient
-              gxi(threadIdx%x) = gxi(threadIdx%x) + real(dedx,r_p)
-              gyi(threadIdx%x) = gyi(threadIdx%x) + real(dedy,r_p)
-              gzi(threadIdx%x) = gzi(threadIdx%x) + real(dedz,r_p)
-
-              gxk(threadIdx%x) = gxk(threadIdx%x) 
-     &                         + real(__shfl(dedx,dstlane),r_p)
-              gyk(threadIdx%x) = gyk(threadIdx%x) 
-     &                         + real(__shfl(dedy,dstlane),r_p)
-              gzk(threadIdx%x) = gzk(threadIdx%x) 
-     &                         + real(__shfl(dedz,dstlane),r_p)
 
            end do
 
@@ -1255,21 +1473,18 @@ c                end if
                  vyz_  = vyz_  + zpos * dedy
                  vzz_  = vzz_  + zpos * dedz
 
+                 !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
+
+                 ! Accumulate gradient
+                 gxi(threadIdx%x)= gxi(threadIdx%x) + real(dedx,r_p)
+                 gyi(threadIdx%x)= gyi(threadIdx%x) + real(dedy,r_p)
+                 gzi(threadIdx%x)= gzi(threadIdx%x) + real(dedz,r_p)
+
+                 gxk(klane) = gxk(klane) + real(dedx,r_p)
+                 gyk(klane) = gyk(klane) + real(dedy,r_p)
+                 gzk(klane) = gzk(klane) + real(dedz,r_p)
+
               end if
-
-              dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
-
-              ! Resolve gradient
-              gxi(threadIdx%x)= gxi(threadIdx%x) + real(dedx,r_p)
-              gyi(threadIdx%x)= gyi(threadIdx%x) + real(dedy,r_p)
-              gzi(threadIdx%x)= gzi(threadIdx%x) + real(dedz,r_p)
-
-              gxk(threadIdx%x)= gxk(threadIdx%x)
-     &                        + real(__shfl(dedx,dstlane),r_p)
-              gyk(threadIdx%x)= gyk(threadIdx%x)
-     &                        + real(__shfl(dedy,dstlane),r_p)
-              gzk(threadIdx%x)= gzk(threadIdx%x)
-     &                        + real(__shfl(dedz,dstlane),r_p)
 
            end do
 
