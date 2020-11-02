@@ -397,7 +397,7 @@ c
       poltyp = 'MUTUAL'
       politer = 500
       polprt = 0
-      polalg = 2   !TODO 1.2 Set this to 5 when finished
+      polalg = 1   !TODO 1.2 Set this to 5 when finished
       polalgshort = 5
       polgsf = 0
       polff  = 0
