@@ -9,7 +9,7 @@ c
 #include "tinker_cudart.h"
 
       module tmatxb_pmecu
-        use utilcu  ,only: nproc,BLOCK_DIM
+        use utilcu  ,only: nproc,BLOCK_DIM,ALL_LANES
         use utilgpu ,only: real3,real6,BLOCK_SIZE
 
         contains
@@ -40,7 +40,8 @@ c
         integer ithread,iwarp,nwarp,ilane,klane,istat,srclane
         integer beg,ii,j
         integer iblock,idx,kdx,kdx_
-        integer iipole,iglob,iploc,kpole,kglob,kploc
+        integer iipole,iglob,iploc,kpole,kploc
+        integer,shared:: kglob(BLOCK_DIM)
         real(t_p) xk_,yk_,zk_,d2
         real(t_p) ipdp,ipgm,pdp,pgm,rstat
         type(real6) dpui,dpuk_
@@ -85,7 +86,7 @@ c    &     ,aewald,npolelocnlb_pair
            ! Load atom block k parameters
            kdx     = eblst(ii*warpsize + ilane)
            kpole   = pglob(kdx)
-           kglob   = ipole(kdx)
+           kglob(threadIdx%x)   = ipole(kdx)
            kploc   = ploc(kdx)
            posk(threadIdx%x)%x  = x(kdx)
            posk(threadIdx%x)%y  = y(kdx)
@@ -144,7 +145,7 @@ c    &     ,aewald,npolelocnlb_pair
                  call image_inl(pos%x,pos%y,pos%z)
               end if
               d2      = pos%x**2 + pos%y**2 + pos%z**2
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
+              do_pair = merge(.true.,iglob.lt.kglob(klane)
      &                       ,same_block)
               if (do_pair.and.d2<=cut2.and.accept_mid) then
                   ! compute one interaction
@@ -155,6 +156,7 @@ c    &     ,aewald,npolelocnlb_pair
  
            end do
 
+           call syncwarp(ALL_LANES)
            ! increment electric field for each atoms
            rstat = atomicAdd( efi(1,1,iploc),fid%x )
            rstat = atomicAdd( efi(2,1,iploc),fid%y )
