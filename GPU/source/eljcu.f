@@ -20,7 +20,7 @@ c
         use tinheader,only: ti_p
         use tintypes ,only: real3
         use sizes    ,only: maxclass
-        use utilcu   ,only: ndir
+        use utilcu   ,only: ndir,VDW_BLOCK_DIM,ALL_LANES,use_virial
         use utilgpu  ,only: BLOCK_SIZE,RED_BUFF_SIZE
 
         contains
@@ -68,18 +68,20 @@ c
         integer,value :: rank
 #endif
 
-        integer ithread,iwarp,nwarp,ilane,srclane
+        integer ithread,iwarp,nwarp,ilane,srclane,klane
         integer dstlane,iblock
-        integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it,ivloc
-        integer kglob,kbis,kt,kt_,kvloc,ist
+        integer idx,kdx,kdx_,ii,j,i,iglob,it,ivloc
+        integer kbis,kt_,kvloc,ist
+        integer,shared,dimension(VDW_BLOCK_DIM)::kglob,kt
         real(t_p) e,istat
         real(r_p) ev_
-        real(t_p) xi,yi,zi,xk,yk,zk,xk_,yk_,zk_,xpos,ypos,zpos
+        real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
+        real(t_p),shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
         real(t_p) rik2,rv2,eps2,redi,redk,redk_
         type(real3) ded
         real(t_p) devx,devy,devz
-        real(r_p) gxi,gyi,gzi,gxil,gyil,gzil
-        real(r_p) gxk,gyk,gzk,gxkl,gykl,gzkl
+        real(r_p) gxi,gyi,gzi
+        real(r_p),shared,dimension(VDW_BLOCK_DIM):: gxk,gyk,gzk
         real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
         logical do_pair,same_block,accept_mid
 
@@ -103,15 +105,9 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
            gxi    = 0
            gyi    = 0
            gzi    = 0
-           gxk    = 0
-           gyk    = 0
-           gzk    = 0
-           gxil   = 0
-           gyil   = 0
-           gzil   = 0
-           gxkl   = 0
-           gykl   = 0
-           gzkl   = 0
+           gxk(threadIdx%x) = 0
+           gyk(threadIdx%x) = 0
+           gzk(threadIdx%x) = 0
            vxx_   = 0
            vxy_   = 0
            vxz_   = 0
@@ -125,38 +121,34 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
            idx    = (iblock-1)*warpsize + ilane 
            iglob  = cellv_glob(idx)
            i      = cellv_loc (idx)
-           ivloc  = loc_ired  (idx)
            it     = jvdw  (idx)
            xi     = xred  (idx)
            yi     = yred  (idx)
            zi     = zred  (idx)
-           redi   = merge (1.0_ti_p,kred(iglob),(i.eq.ivloc))
 
            ! Load atom block k neighbor parameter
            kdx    = vblst( ii*warpsize + ilane )
-           kglob  = cellv_glob(kdx)
+           kglob(threadIdx%x) = cellv_glob(kdx)
            kbis   = cellv_loc(kdx)
-           kvloc  = loc_ired  (kdx)
-           kt     = jvdw  (kdx)
-           xk     = xred  (kdx)
-           yk     = yred  (kdx)
-           zk     = zred  (kdx)
+           kt(threadIdx%x) = jvdw  (kdx)
+           xk(threadIdx%x) = xred  (kdx)
+           yk(threadIdx%x) = yred  (kdx)
+           zk(threadIdx%x) = zred  (kdx)
            same_block = (idx.ne.kdx)
-           redk   = merge (1.0_ti_p,kred(kglob),(kbis.eq.kvloc))
 
            ! Interact block i with block k
            do j = 0,warpsize-1
               srclane = iand( ilane+j-1,warpsize-1 ) + 1
+              klane   = threadIdx%x-ilane + srclane
 #ifdef TINKER_DEBUG
               kdx_    = __shfl(kdx  ,srclane)
-              kglob_  = __shfl(kglob,srclane)
 #endif
-              kt_     = __shfl(kt   ,srclane)
+              kt_     = kt(klane)
 
               if (ndir.gt.1) then
-                 xk_   = __shfl(xk,srclane)
-                 yk_   = __shfl(yk,srclane)
-                 zk_   = __shfl(zk,srclane)
+                 xk_   = xk(klane)
+                 yk_   = yk(klane)
+                 zk_   = zk(klane)
                  xpos  = xi - xk_
                  ypos  = yi - yk_
                  zpos  = zi - zk_
@@ -169,9 +161,9 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
                     accept_mid = .true.
                  end if
               else
-                 xpos    = xi - __shfl(xk,srclane)
-                 ypos    = yi - __shfl(yk,srclane)
-                 zpos    = zi - __shfl(zk,srclane)
+                 xpos    = xi - xk(klane)
+                 ypos    = yi - yk(klane)
+                 zpos    = zi - zk(klane)
                  call image_inl(xpos,ypos,zpos)
               end if
 
@@ -179,7 +171,7 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 
               rik2  = xpos**2 + ypos**2 + zpos**2
 
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
+              do_pair = merge(.true.,iglob.lt.kglob(klane)
      &                       ,same_block)
               if (do_pair.and.rik2<=off2
      &           .and.accept_mid) then
@@ -193,82 +185,64 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
                  ev_   = ev_ + e
 
 #ifdef TINKER_DEBUG
-                 if (iglob<kglob_) then
+                 if (iglob<kglob(klane)) then
                     ist = Atomicadd(inter(iglob),1)
                  else
-                    ist = Atomicadd(inter(kglob_),1)
+                    ist = Atomicadd(inter(kglob(klane)),1)
                  end if
 #endif
 
+                 if (use_virial) then
                  vxx_  = vxx_  + xpos * ded%x
                  vxy_  = vxy_  + ypos * ded%x
                  vxz_  = vxz_  + zpos * ded%x
                  vyy_  = vyy_  + ypos * ded%y
                  vyz_  = vyz_  + zpos * ded%y
                  vzz_  = vzz_  + zpos * ded%z
+                 end if
 
               end if
 
               dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
-              devx    = __shfl(ded%x,dstlane)
-              devy    = __shfl(ded%y,dstlane)
-              devz    = __shfl(ded%z,dstlane)
 
-              ! Resolve gradient
-              gxi     =  gxi + redi*ded%x
-              gyi     =  gyi + redi*ded%y
-              gzi     =  gzi + redi*ded%z
-              if (i.ne.ivloc) then
-                 gxil = gxil + (1.0_ti_p - redi)*ded%x
-                 gyil = gyil + (1.0_ti_p - redi)*ded%y
-                 gzil = gzil + (1.0_ti_p - redi)*ded%z
-              end if
+              ! Accumulate interaction gradient
+              gxi = gxi + real(ded%x,r_p)
+              gyi = gyi + real(ded%y,r_p)
+              gzi = gzi + real(ded%z,r_p)
 
-              gxk     = gxk + redk*devx
-              gyk     = gyk + redk*devy
-              gzk     = gzk + redk*devz
-              if (kbis.ne.kvloc) then
-                 gxkl = gxkl + (1.0_ti_p - redk)*devx
-                 gykl = gykl + (1.0_ti_p - redk)*devy
-                 gzkl = gzkl + (1.0_ti_p - redk)*devz
-              end if
+              gxk(klane) = gxk(klane) + real(ded%x,r_p)
+              gyk(klane) = gyk(klane) + real(ded%y,r_p)
+              gzk(klane) = gzk(klane) + real(ded%z,r_p)
 
            end do
 
+           call syncwarp(ALL_LANES)
            kt_   = iand(ithread-1,RED_BUFF_SIZE-1) + 1
            !increment the van der Waals energy
            istat = atomicAdd( ev_buff(kt_) ,ev_ )
  
            !increment the van der Waals derivatives
            if (idx.le.nvdwlocnl) then
-              istat   = atomicAdd (dev(1,i),real(gxi,r_p))
-              istat   = atomicAdd (dev(2,i),real(gyi,r_p))
-              istat   = atomicAdd (dev(3,i),real(gzi,r_p))
-              if (i.ne.ivloc) then
-                istat = atomicAdd (dev(1,ivloc),real(gxil,r_p))
-                istat = atomicAdd (dev(2,ivloc),real(gyil,r_p))
-                istat = atomicAdd (dev(3,ivloc),real(gzil,r_p))
-              end if
+              istat   = atomicAdd (dev(1,i),gxi)
+              istat   = atomicAdd (dev(2,i),gyi)
+              istat   = atomicAdd (dev(3,i),gzi)
            end if
 
            if (kdx.le.nvdwlocnl) then
-              istat   = atomicSub (dev(1,kbis),real(gxk,r_p))
-              istat   = atomicSub (dev(2,kbis),real(gyk,r_p))
-              istat   = atomicSub (dev(3,kbis),real(gzk,r_p))
-              if (kbis.ne.kvloc) then
-                istat = atomicSub (dev(1,kvloc),real(gxkl,r_p))
-                istat = atomicSub (dev(2,kvloc),real(gykl,r_p))
-                istat = atomicSub (dev(3,kvloc),real(gzkl,r_p))
-              end if
+              istat   = atomicSub (dev(1,kbis),gxk(threadIdx%x))
+              istat   = atomicSub (dev(2,kbis),gyk(threadIdx%x))
+              istat   = atomicSub (dev(3,kbis),gzk(threadIdx%x))
            end if
 
            ! Increment virial term of van der Waals
+           if (use_virial) then
            istat = atomicAdd( vir_buff(0*RED_BUFF_SIZE+kt_),vxx_ )
            istat = atomicAdd( vir_buff(1*RED_BUFF_SIZE+kt_),vxy_ )
            istat = atomicAdd( vir_buff(2*RED_BUFF_SIZE+kt_),vxz_ )
            istat = atomicAdd( vir_buff(3*RED_BUFF_SIZE+kt_),vyy_ )
            istat = atomicAdd( vir_buff(4*RED_BUFF_SIZE+kt_),vyz_ )
            istat = atomicAdd( vir_buff(5*RED_BUFF_SIZE+kt_),vzz_ )
+           end if
 
         end do
         end subroutine

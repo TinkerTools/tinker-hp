@@ -262,7 +262,7 @@ c=============================================================
       subroutine elj1c_cu
       use atmlst    ,only: vdwglobnl,vdwglob
       use atoms     ,only: x,y,z,n
-      use deriv     ,only: dev
+      use deriv     ,only: dev=>debond
       use domdec    ,only: loc,rank,nbloc,nproc
      &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
      &              ,zendproc,glob
@@ -374,6 +374,7 @@ c
       end do
 
       call zero_evir_red_buffer(def_queue)
+      call resetForces_buff(def_queue)
 c
 c     set the coefficients for the switching function
 c
@@ -405,7 +406,7 @@ c
      &             ,inter,rank
 #endif
      &             )
-      call check_launch_kernel(" ehal1_cu2 ")
+      call check_launch_kernel(" elj1_cu2 ")
 
 !$acc end host_data
 
@@ -425,6 +426,8 @@ c
 
       call elj1_scaling(xredc,yredc,zredc,
      &            g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+
+      call vdw_gradient_reduce
 
       call timer_exit(timer_elj3)
       end subroutine
