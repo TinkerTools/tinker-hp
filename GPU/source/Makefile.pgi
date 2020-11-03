@@ -146,8 +146,8 @@ endif
 #/   - 35, 60, 70, 75, etc.
 #/   - Can be comma-separated, e.g. `35,60`.
 #/
-compute_capability := 70,80
-cuda_version       := 11.0
+compute_capability := 60,70
+cuda_version       := 10.1
 
 cc_list__          := $(subst $(comma__), ,$(compute_capability))
 acc_cc_flag__      := $(foreach var,$(cc_list__),cc$(var))
