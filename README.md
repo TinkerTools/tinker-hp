@@ -2,7 +2,7 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------
 => (October 2020) 
 
-A major update has been pushed to github (28/10/2020) : availability of the Tinker-HP (multi) GPU code. Preprint to come in a few days.
+A major update has been pushed to GitHub (28/10/2020) : availability of the Tinker-HP (multi)GPUs code. Check the preprint : https://arxiv.org/abs/2011.01207
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
