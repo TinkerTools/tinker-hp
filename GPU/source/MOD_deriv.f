@@ -100,6 +100,8 @@ c
       end subroutine
       module subroutine resetForcesWaterAm
       end subroutine
+      module subroutine resetForcesCharmm
+      end subroutine
       module subroutine resetForcesSMD
       end subroutine
       module subroutine resetForcesAMD
@@ -112,6 +114,8 @@ c
       module subroutine addForcesAmoeba
       end subroutine
       module subroutine addForcesAmoeba18
+      end subroutine
+      module subroutine addForcesCharmm
       end subroutine
       module subroutine addForcesWaterAm
       end subroutine

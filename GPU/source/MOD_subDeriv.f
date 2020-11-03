@@ -49,11 +49,11 @@ c
      &      .and..not.use_tors.and..not.use_pitors.and..not.use_strtor
      &      .and..not.use_tortor.and.use_vdw.and.use_charge
      &      .and..not.use_mpole.and..not.use_polar.and..not.use_extra
-      PotentialCharmm = use_bond.and.use_angle.and.use_strbnd
-     &      .and.use_urey.and..not.use_angang.and.use_opbend
-     &      .and..not.use_opdist.and..not.use_improp.and..not.use_imptor
-     &      .and.use_tors.and.use_pitors.and..not.use_strtor
-     &      .and.use_tortor.and.use_vdw.and.use_charge
+      PotentialCharmm = use_bond.and.use_angle.and..not.use_strbnd
+     &      .and.use_urey.and..not.use_angang.and..not.use_opbend
+     &      .and..not.use_opdist.and.use_improp.and..not.use_imptor
+     &      .and.use_tors.and..not.use_pitors.and..not.use_strtor
+     &      .and..not.use_tortor.and.use_vdw.and.use_charge
      &      .and..not.use_mpole.and..not.use_polar.and..not.use_extra
 
       if (PotentialAmoeba) then
@@ -84,10 +84,11 @@ c
          addForces_p   =>   addForcesDefault
       end if
       if (PotentialCharmm) then
-         PotentialAll=.true.
+         PotentialAll=.false.
+         if (deb_Path) print*,'Using Charmm Potential'
          watchPot = watchPot + 1
-         resetForces_p => resetForcesDefault
-         addForces_p   =>   addForcesDefault
+         resetForces_p => resetForcesCharmm
+         addForces_p   =>   addForcesCharmm
       end if
       if (PotentialAll) then
          if (deb_Path) print*,'Using Default Potential'
@@ -265,6 +266,42 @@ c
             desum(j,i) = deb(j,i) + dea(j,i) + deub(j,i)
      &                 + dev(j,i) + dem(j,i) + dep (j,i)
            debond(j,i) = deb(j,i) + dea(j,i) + deub(j,i)
+         end do
+      end do
+      if (use_geom) call addForcesRestrain
+      if (use_smd_velconst .or. use_smd_forconst) call addForcesSMD
+      end subroutine
+
+      module subroutine resetForcesCharmm
+      implicit none
+      integer i,j
+      if (deb_Path) print*,'resetForcesCharmm'
+!$acc parallel loop collapse(2) default(present) async
+      do i = 1, nbloc
+         do j = 1, 3
+            deb  (j,i) = 0.0_re_p ! ebond
+            dea  (j,i) = 0.0_re_p ! eangle
+            deub (j,i) = 0.0_re_p ! eurey
+            deid (j,i) = 0.0_re_p ! eimprop
+            det  (j,i) = 0.0_re_p ! etors
+            dec  (j,i) = 0.0_re_p ! echarge
+            dev  (j,i) = 0.0_re_p ! ehal1
+         end do
+      end do
+      if (use_geom) call addForcesRestrain
+      if (use_smd_velconst .or. use_smd_forconst) call addForcesSMD
+      end subroutine
+
+      module subroutine addForcesCharmm
+      implicit none
+      integer i,j
+
+      if (deb_Path) print*, 'addForcesCharmm'
+!$acc parallel loop collapse(2) default(present) async
+      do i = 1, nbloc
+         do j = 1, 3
+            desum(j,i) = dea(j,i) + deb(j,i) + deid(j,i) + deub(j,i)
+     &                 + det(j,i) + dec(j,i) + dev(j,i)
          end do
       end do
       if (use_geom) call addForcesRestrain
