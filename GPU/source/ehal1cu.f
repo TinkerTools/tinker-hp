@@ -21,11 +21,10 @@ c     *_t texture variable destined to be attached to their target
         use cudafor
         use tinheader,only: ti_p
         use sizes    ,only: maxclass
-        use utilcu   ,only: nproc,all_lanes
+        use utilcu   ,only: nproc,all_lanes,VDW_BLOCK_DIM
         use utilgpu  ,only: BLOCK_SIZE,RED_BUFF_SIZE
 
         type(dim3) :: gridDim,blockDim
-        integer  ,parameter:: VDW_BLOCK_DIM=4*BLOCK_SIZE
         integer  ,pointer,device::ired_t(:),cellv_glob_t(:)
      &           ,cellv_loc_t(:),loc_ired_t(:),vblst_t(:),ivblst_t(:)
      &           ,jvdw_t(:)
