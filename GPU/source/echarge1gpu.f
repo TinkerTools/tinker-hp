@@ -1066,28 +1066,28 @@ c     end if
             if (k2 .gt. nf2)  m2 = m2 - nfft2
             if (k3 .gt. nf3)  m3 = m3 - nfft3
             if ((m1.eq.0).and.(m2.eq.0).and.(m3.eq.0)) goto 10
-            r1 = dble(m1)
-            r2 = dble(m2)
-            r3 = dble(m3)
+            r1 = real(m1,t_p)
+            r2 = real(m2,t_p)
+            r3 = real(m3,t_p)
             h1 = recip(1,1)*r1 + recip(1,2)*r2 + recip(1,3)*r3
             h2 = recip(2,1)*r1 + recip(2,2)*r2 + recip(2,3)*r3
             h3 = recip(3,1)*r1 + recip(3,2)*r2 + recip(3,3)*r3
             hsq = h1*h1 + h2*h2 + h3*h3
             term = -pterm * hsq
-            expterm = 0.0d0
-            if (term .gt. -50.0d0) then
+            expterm = 0.0_ti_p
+            if (term .gt. -50.0_ti_p) then
                denom = volterm*hsq*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
                expterm = exp(term) / denom
                if (.not. use_bounds) then
-                  expterm = expterm * (1.0d0-cos(pi*xbox*sqrt(hsq)))
+                  expterm = expterm * (1.0_ti_p-cos(pi*xbox*sqrt(hsq)))
                else if (octahedron) then
-                  if (mod(m1+m2+m3,2).ne.0)  expterm = 0.0d0
+                  if (mod(m1+m2+m3,2).ne.0)  expterm = 0.0_ti_p
                end if
                struc2 = qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1)**2
      $                + qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1)**2
                 e = f * expterm * struc2
                ecrec = ecrec + e
-               vterm = (2.0d0/hsq) * (1.0d0-term) * e
+               vterm = (2.0_ti_p/hsq) * (1.0_ti_p-term) * e
                vxx   = vxx + h1*h1*vterm - e
                vxy   = vxy + h1*h2*vterm
                vxz   = vxz + h1*h3*vterm
@@ -1110,7 +1110,7 @@ c
       if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
      $   (kstart2(rankloc+1).eq.1)) then
         if (.not. use_bounds) then
-           expterm = 0.5d0 * pi / xbox
+           expterm = 0.5_ti_p * pi / xbox
 !$acc serial async(rec_queue)
            struc2 = qgridout_2d(1,1,1,1)**2 + qgridout_2d(2,1,1,1)**2
                e = f * expterm * struc2
