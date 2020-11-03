@@ -32,7 +32,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Plumed support (to appear)
    - More to come
    
-   If you use the code please cite :
+   <B>If you use the code please cite :</B>
    
    Tinker-HP : Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using GPUs and Multi-GPUs systems.
 O. Adjoua,  L. Lagardère, L.-H. Jolly, Arnaud Durocher, Z. Wang, T. Very, I. Dupays, T. Jaffrelot Inizan, F. Célerse, P. Ren, J. Ponder, J-P. Piquemal, ArXiv, 2020, https://arxiv.org/abs/2011.01207  
@@ -42,13 +42,14 @@ O. Adjoua,  L. Lagardère, L.-H. Jolly, Arnaud Durocher, Z. Wang, T. Very, I. Du
 Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
 L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access) https://doi.org/10.1039/C7SC04531J
 
-License : Tinker-HP is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf). Non-academic entities (e.g., companies, for profit organizations) should contact the managing universities (see license).
+<B>License :</B> Tinker-HP is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf). Non-academic entities (e.g., companies, for profit organizations) should contact the managing universities (see license).
 
+<B>Support :</B>
 We provide support to registered users only (http://tinker-hp.ip2ct.upmc.fr/?Download-instructions).
 
 Email: TinkerHP_Support@ip2ct.upmc.fr
 
-Funding : 
+<B>Funding :</B> 
 - this work has received funding from the European Research Council (ERC) under the European Union's Horizon 2020 research and innovation programme (grant agreement No 810367), project EMC2 (see preprint for full acknowledgments)
 
 - we thank GENCI, NVIDIA and HPE as well as the engineering team of the IDRIS Supercomputer center (CNRS/GENCI, France). 
