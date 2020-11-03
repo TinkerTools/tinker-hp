@@ -269,7 +269,7 @@ c
       implicit none
       logical fast
       integer i,j
-      integer size_dir,size_rec
+      integer,save:: nb=0,nbr=0
       real(8) m1,m2,m3
 c
 c     Optimise reallocation of direct force array
@@ -278,10 +278,12 @@ c
      &   call mem_get(m1,m2)
       call timer_enter( timer_clear )
 
-      if (allocated(dep)) then
-         size_dir = size(dep,dim=2)
-         if (nbloc<=size_dir) goto 10
+      if (nb.lt.nbloc) then
+         nb = nbloc
          if (deb_Path) print*, 'allocsteprespa',nbloc
+!$acc wait
+      else
+         goto 10
       end if
 
       ! bonded force array
@@ -321,10 +323,12 @@ c
 c     Optimise reallocation of reciproqual force array
 c
  10   continue
-      if (allocated(deprec)) then
-         size_rec = size(deprec,dim=2)
-         if (nblocrec<=size_rec) goto 20
+      if (nbr.lt.nblocrec) then
+         nbr = nblocrec
          if (deb_Path) print*, 'allocsteprespa rec',nblocrec
+!$acc wait
+      else
+         goto 20
       end if
 
       if(pa.or.use_charge) call prmem_requestm(decrec,3,nblocrec)
@@ -340,7 +344,6 @@ c
          end if
       end if
 
-!$acc wait
  20   continue
 #ifndef TINKER_DEBUG
       if (.not.(fast)) then
