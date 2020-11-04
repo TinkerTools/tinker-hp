@@ -978,14 +978,14 @@ c
 c     MPI : Begin reception
 c
       if (nrec_send.gt.0) then
-!$acc wait
+!$acc wait(rec_queue)
       end if
       call timer_enter( timer_recreccomm )
 !$acc host_data use_device(qgridmpi,qgridin_2d)
       do i = 1, nrec_recep
         tag = nprocloc*rankloc + prec_recep(i) + 1
         call MPI_IRECV(qgridmpi(1,1,1,1,i),
-     $       2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,
+     $       2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
      $       prec_recep(i),tag,commloc,req(tag),ierr)
       end do
 c
@@ -1146,7 +1146,7 @@ c
 c     MPI : Begin reception
 c
       if (nrec_recep.gt.0) then
-!$acc wait
+!$acc wait(rec_queue)
       end if
       call timer_enter( timer_recreccomm )
 !$acc host_data use_device(qgridin_2d)
@@ -1154,7 +1154,7 @@ c
          proc = prec_send(i)
          tag  = nprocloc*rankloc + prec_send(i) + 1
          call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),
-     $        2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,
+     $        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
      $        prec_send(i),tag,commloc,reqbcast(tag),ierr)
       end do
 c
@@ -1163,7 +1163,7 @@ c
       do i = 1, nrec_recep
          tag = nprocloc*prec_recep(i) + rankloc + 1
          call MPI_ISEND(qgridin_2d,2*n1mpimax*n2mpimax*n3mpimax,
-     $        MPI_REAL8,prec_recep(i),tag,commloc,reqbcast(tag),
+     $        MPI_TPREC,prec_recep(i),tag,commloc,reqbcast(tag),
      $        ierr)
       end do
 !$acc end host_data
