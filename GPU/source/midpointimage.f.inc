@@ -64,9 +64,9 @@ c
 c
 c     Adjust mid point position if necessary
 c
-      if ((xcell2-xk).lt.eps_cell) xk = xk - 5*eps_cell
-      if ((ycell2-yk).lt.eps_cell) yk = yk - 5*eps_cell
-      if ((zcell2-zk).lt.eps_cell) zk = zk - 5*eps_cell
+      if ((xcell2-f_abs(xk)).lt.eps_cell) xk= xk- f_sign(5*eps_cell,xk)
+      if ((ycell2-f_abs(yk)).lt.eps_cell) yk= yk- f_sign(5*eps_cell,yk)
+      if ((zcell2-f_abs(zk)).lt.eps_cell) zk= zk- f_sign(5*eps_cell,zk)
 
       end subroutine
 
@@ -94,9 +94,9 @@ c
 c
 c     Adjust mid point position if necessary
 c
-      if ((xcell2-xk).lt.eps_cell) xk = xk - 4*eps_cell
-      if ((ycell2-yk).lt.eps_cell) yk = yk - 4*eps_cell
-      if ((zcell2-zk).lt.eps_cell) zk = zk - 4*eps_cell
+      if ((xcell2-f_abs(xk)).lt.eps_cell) xk= xk- f_sign(5*eps_cell,xk)
+      if ((ycell2-f_abs(yk)).lt.eps_cell) yk= yk- f_sign(5*eps_cell,yk)
+      if ((zcell2-f_abs(zk)).lt.eps_cell) zk= zk- f_sign(5*eps_cell,zk)
 
       if   ((zk.ge.zbegproc(rank+1)).and.(zk.lt.zendproc(rank+1))
      & .and.(yk.ge.ybegproc(rank+1)).and.(yk.lt.yendproc(rank+1))
