@@ -14,7 +14,7 @@ Current development version: 1.3 (CPUs + GPUs)
 
 
 For the more recent versions, please register and download the phase advanced and/or performance enhanced source at:
-http://tinker-hp.ip2ct.upmc.fr/
+http://tinker-hp.ip2ct.upmc.fr/   (new website design to be announced)
 
 Tinker-HP is a CPUs and GPUs based, multi-precision, MPI massively parallel package dedicated to long polarizable molecular dynamics simulations and to polarizable QM/MM. Tinker-HP is an evolution of the popular Tinker package that conserves it simplicity of use but brings new 
 capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores. 
