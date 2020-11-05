@@ -6,9 +6,9 @@ A major update has been pushed to GitHub (28/10/2020) : availability of the Tink
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
-Current Github version: 1.2 + GPUs
+Current Github version: 1.2 + (multi)GPUs
 
-Current Tinker-HP's website version: 1.2 + GPU + 1.1v (enhanced vectorized version)
+Current Tinker-HP's website version: 1.2 + (multi)GPUs + 1.1v (enhanced vectorized version)
 
 Current development version: 1.3 (CPUs + GPUs)
 
@@ -20,7 +20,7 @@ Tinker-HP is a CPUs and GPUs based, multi-precision, MPI massively parallel pack
 capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores. 
 The Tinker-HP approach offers various strategies using domain decomposition techniques for periodic boundary conditions in the 
 framework of the (n)log(n) Smooth Particle Mesh Ewald. Tinker-HP proposes a high performance scalable computing environment for 
-polarizable (AMOEBA, Amberpol...) and classical (Amber, Charmm, OPLS...) force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters.
+polarizable (AMOEBA, Amberpol...) and classical (Amber, Charmm, OPLS...) force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters. Tinker-HP supports Intel (AVX5212 enhanced version) and AMD CPUs platforms as well as NVIDIA GPUs (1080, 2080, 3090, V100, A100). 
 
 Tinker-HP is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf).
 Non-academic entities (e.g., companies, for profit organizations) should contact the managing universities (see license).
