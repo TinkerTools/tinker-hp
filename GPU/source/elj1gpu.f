@@ -119,9 +119,9 @@ c
      $   ' update, try lowering nlupdate VDW')
       if (deb_Path) write(*,*) 'elj1cgpu'
 
-      call prmem_request(xred,nvdwbloc,queue=dir_queue)
-      call prmem_request(yred,nvdwbloc,queue=dir_queue)
-      call prmem_request(zred,nvdwbloc,queue=dir_queue)
+      call prmem_request(xred,nbloc,queue=dir_queue)
+      call prmem_request(yred,nbloc,queue=dir_queue)
+      call prmem_request(zred,nbloc,queue=dir_queue)
 c
 c     zero out the van der Waals energy and first derivatives
 c
@@ -305,9 +305,9 @@ c
       call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(yred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(zred    ,nvdwlocnlb,queue=def_queue)
-      call prmem_request(xredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(yredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(zredc   ,nvdwbloc  ,queue=def_queue)
+      call prmem_request(xredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(yredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(zredc   ,nbloc     ,queue=def_queue)
       call prmem_request(loc_ired,nvdwlocnlb,queue=def_queue)
       call prmem_request(loc_kred,nvdwlocnlb,queue=def_queue)
 
@@ -500,9 +500,9 @@ c
 c
 c     perform dynamic allocation of some local arrays
 c
-      call prmem_request(xred,nvdwbloc,queue=dir_queue)
-      call prmem_request(yred,nvdwbloc,queue=dir_queue)
-      call prmem_request(zred,nvdwbloc,queue=dir_queue)
+      call prmem_request(xred,nbloc,queue=dir_queue)
+      call prmem_request(yred,nbloc,queue=dir_queue)
+      call prmem_request(zred,nbloc,queue=dir_queue)
 c
 c     set the coefficients for the switching function
 c

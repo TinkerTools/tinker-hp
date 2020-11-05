@@ -121,9 +121,9 @@ c     zero out the van der Waals energy and partitioning terms
 c
       if(deb_Path) print*, 'elj3cgpu'
 
-      call prmem_request(xred,nvdwbloc,queue=dir_queue)
-      call prmem_request(yred,nvdwbloc,queue=dir_queue)
-      call prmem_request(zred,nvdwbloc,queue=dir_queue)
+      call prmem_request(xred,nbloc,queue=dir_queue)
+      call prmem_request(yred,nbloc,queue=dir_queue)
+      call prmem_request(zred,nbloc,queue=dir_queue)
 c
 c     set the coefficients for the switching function
 c     update the number of gangs required for gpu
@@ -263,9 +263,9 @@ c               aev(i) = aev(i) + 0.5_ti_p * e
       call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(yred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(zred    ,nvdwlocnlb,queue=def_queue)
-      call prmem_request(xredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(yredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(zredc   ,nvdwbloc  ,queue=def_queue)
+      call prmem_request(xredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(yredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(zredc   ,nbloc     ,queue=def_queue)
       call prmem_request(loc_ired,nvdwlocnlb,queue=def_queue)
       call prmem_request(loc_kred,nvdwlocnlb,queue=def_queue)
 
