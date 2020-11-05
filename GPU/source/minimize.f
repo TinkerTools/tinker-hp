@@ -16,7 +16,7 @@ c
 c
 #include "tinker_precision.h"
       program minimize
-      use atoms
+      use atomsMirror
       use domdec
       use deriv ,only:info_forces,cDef
       use energi,only:info_energy
@@ -174,6 +174,7 @@ c
 c      if (analytic) then
 c         call commstep
          call sendallpos
+         call reCast_position
          call AllDirAssign
          call reassignpme(.false.)
          allocate (derivs(3,nbloc))
@@ -292,7 +293,7 @@ c
 c
       function minimiz1 (xx,g)
       use sizes
-      use atoms
+      use atomsMirror
       use domdec
       use deriv ,only:info_forces,cDef
       use energi,only:info_energy
@@ -333,6 +334,7 @@ c
 c
 c      call commstep
       call sendallpos
+      call reCast_position
       call AllDirAssign
       call reassignpme(.false.)
 c
