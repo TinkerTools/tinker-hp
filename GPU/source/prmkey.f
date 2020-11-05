@@ -191,6 +191,14 @@ c     set control parameters for bond stretching potentials
 c
       else if (keyword(1:9) .eq. 'BONDTYPE ') then
          call getword (record,bndtyp,next)
+         if (bndtyp.eq.'MORSE') then
+            bndtyp_i = BND_MORSE
+         else if (bndtyp.eq.'HARMONIC') then
+            bndtyp_i = BND_HARMONIC
+         else
+            print*, ' !!!  Unrecognize BONDTYPE in keyfile !!!'
+            bndtyp_i = BND_NO_TYPE
+         end if
       else if (keyword(1:9) .eq. 'BONDUNIT ') then
          read (string,*,err=10,end=10)  bndunit
       else if (keyword(1:11) .eq. 'BOND-CUBIC ') then

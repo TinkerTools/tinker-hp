@@ -62,9 +62,8 @@ c
       real(t_p) vyx,vzx,vzy
       logical proceed
 c
-!$acc data present(deit,vir,eit)
-!$acc update host(deit,vir,eit)
-!$acc end data
+!$acc wait
+!$acc update host(imptorglob,loc,deit,vir,eit)
 c
 c     zero out energy and first derivative components
 c
@@ -238,8 +237,6 @@ c
             end if
          end if
       end do
-!$acc data present(deit,vir,eit)
-!$acc update device(deit,vir)
-!$acc end data
+!$acc update device(deit,vir,eit)
       return
       end

@@ -214,6 +214,7 @@ eimprop1gpu.o \
 eimprop3.o \
 eimptor.o \
 eimptor1.o \
+eimptor1gpu.o \
 eimptor3.o \
 elj.o \
 elj1.o \

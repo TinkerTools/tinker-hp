@@ -14,12 +14,18 @@ c     "eimptor" calculates the improper torsion potential energy
 c
 c
 #include "tinker_precision.h"
+      module eimptor_inl
+      contains
+#include "image.f.inc"
+      end module
+
       subroutine eimptor
       use atmlst
       use atmtyp
       use atoms
       use bound
       use energi
+      use eimptor_inl
       use group
       use imptor
       use torpot
@@ -56,6 +62,8 @@ c
 c
 c     calculate the improper torsional angle energy term
 c
+!$acc parallel loop present(imptorglob,iitors,itors1,itors2,
+!$acc&    itors3,use,x,y,z) present(eid)
       do iimptor = 1, nitorsloc
          i = imptorglob(iimptor)
          ia = iitors(1,i)
@@ -94,9 +102,9 @@ c
             ydc = yid - yic
             zdc = zid - zic
             if (use_polymer) then
-               call image (xba,yba,zba)
-               call image (xcb,ycb,zcb)
-               call image (xdc,ydc,zdc)
+               call image_inl (xba,yba,zba)
+               call image_inl (xcb,ycb,zcb)
+               call image_inl (xdc,ydc,zdc)
             end if
             xt = yba*zcb - ycb*zba
             yt = zba*xcb - zcb*xba

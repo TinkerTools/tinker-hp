@@ -238,10 +238,10 @@ c
       call shmem_request( vprop, winvprop,  [ntors],config=mhostacc)
       call shmem_request(iiprop,winiiprop,[4,ntors],config=mhostacc)
 
-      call shmem_request(itors1,winitors1,[4,ntors])
-      call shmem_request(itors2,winitors2,[4,ntors])
-      call shmem_request(itors3,winitors3,[4,ntors])
-      call shmem_request(iitors,winiitors,[4,ntors])
+      call shmem_request(itors1,winitors1,[4,ntors],config=mhostacc)
+      call shmem_request(itors2,winitors2,[4,ntors],config=mhostacc)
+      call shmem_request(itors3,winitors3,[4,ntors],config=mhostacc)
+      call shmem_request(iitors,winiitors,[4,ntors],config=mhostacc)
       !TODO 1.2 Warn louis about iiprop's double allocation in Tinker-HP 1.2
       call shmem_request(kpit,winkpit,  [ntors],config=mhostacc)
       call shmem_request(ipit,winipit,[6,ntors],config=mhostacc)

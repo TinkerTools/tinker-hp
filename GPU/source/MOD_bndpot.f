@@ -22,5 +22,11 @@ c
       real(t_p) cbnd,qbnd
       real(t_p) bndunit
       character*8 bndtyp
-      save 
+      integer bndtyp_i
+      enum,bind(C)
+      enumerator BND_HARMONIC
+      enumerator BND_MORSE
+      enumerator BND_NO_TYPE
+      end enum
+      save
       end

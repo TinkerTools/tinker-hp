@@ -117,6 +117,12 @@ ifeq ($(NO_MUTATION),1)
    OPTIONS   += -DTINKER_NO_MUTATE
    CUOPTIONS += -DTINKER_NO_MUTATE
 endif
+ifeq ($(FPA_SUPPORT),1)
+ifeq ($(prec),$(filter $(prec),mixed m))
+   OPTIONS   += -DUSE_DETERMINISTIC_REDUCTION
+   CUOPTIONS += -DUSE_DETERMINISTIC_REDUCTION
+endif
+endif
 ifneq ($(add_options),$(empty__))
    OPTIONS   +=$(add_options)
    CUOPTIONS +=$(add_options)
@@ -288,7 +294,7 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    egeom.o egeom1.o egeom1gpu.o egeom3.o egeom3gpu.o\
    ehal.o ehal1.o ehal1vec.o ehal1gpu.o ehal3.o ehal3vec.o ehal3gpu.o\
    eimprop.o eimprop1.o eimprop1gpu.o eimprop3.o\
-   eimptor.o eimptor1.o eimptor3.o\
+   eimptor.o eimptor1.o eimptor1gpu.o eimptor3.o\
    elj.o elj1.o elj1vec.o elj1gpu.o elj3.o elj3vec.o elj3gpu.o\
    empole.o empole0.o empole1.o empole1vec.o empole1gpu.o\
    empole3.o  empole3vec.o empole3gpu.o\

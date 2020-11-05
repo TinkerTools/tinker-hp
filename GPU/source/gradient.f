@@ -128,7 +128,7 @@ c
       if (use_opbend)   call eopbend1gpu
       if (use_opdist)   call eopdist1     !no acc
       if (use_improp)   call eimprop1gpu
-      if (use_imptor)   call eimptor1     !no acc
+      if (use_imptor)   call eimptor1gpu
       if (use_tors)     call etors1gpu
       if (use_pitors)   call epitors1gpu
       if (use_strtor)   call estrtor1gpu
