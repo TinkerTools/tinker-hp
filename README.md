@@ -25,12 +25,12 @@ Non-academic entities (e.g., companies, for profit organizations) should contact
 
 If you want to access the latest Tinker-HP version or want support, it is under the same license but you have to register:
 
-i) Please fill in the form at:
+i) <B>Please fill in the form at:</B>
 http://tinker-hp.ip2ct.upmc.fr/?Download-instructions
 
 You'll receive the License Form to be signed and sent back to TinkerHP_Download@ip2ct.upmc.fr.
 
-ii) Please cite:
+ii) <B>Please cite:</B>
 
 - Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems 
 with Advanced Polarizable Force Fields.
@@ -47,7 +47,7 @@ L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, L
 Tinker-HP : Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using GPUs and Multi-GPUs systems
 Olivier Adjoua, Louis Lagardère, Luc-Henri Jolly, Arnaud Durocher, Thibaut Very, Isabelle Dupays, Zhi Wang, Théo Jaffrelot Inizan, Frédéric Célerse, Pengyu Ren, Jay W. Ponder, Jean-Philip Piquemal, ArXiv, 2020, 2011.01207 (Open Access) https://arxiv.org/abs/2011.01207
 
-iii) Support:
+iii) <B>Support:</B>
 
 We provide support to registered users only (http://tinker-hp.ip2ct.upmc.fr/?Download-instructions).
 
