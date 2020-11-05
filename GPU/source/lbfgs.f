@@ -50,7 +50,7 @@ c
       use linmin
       use math
       use minima
-      use interfaces,only: search
+      use interfaces,only: search,sendvecmin
       use output
       use scales
       use usage
@@ -75,8 +75,8 @@ c
       real(r_p) rms
       real(r_p) ys,yy,gamma
       real(r_p) x0(*)
-      real(t_p) rho(maxsav)
-      real(t_p) alpha(maxsav)
+      real(r_p) rho(maxsav)
+      real(r_p) alpha(maxsav)
       real(r_p), allocatable :: x_old(:)
       real(r_p), allocatable :: g(:)
       real(r_p), allocatable :: g_old(:)
@@ -302,6 +302,8 @@ c
          do j = 1, muse
             k = k - 1
             if (k .eq. 0)  k = msav
+            call sendvecmin(s(:,k))
+            call sendvecmin(y(:,k))
 !$acc serial async
             alpha(k) = 0.0_re_p
 !$acc end serial
