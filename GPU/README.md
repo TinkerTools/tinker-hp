@@ -35,7 +35,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    <B>If you use the code please cite :</B>
    
    Tinker-HP : Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using GPUs and Multi-GPUs systems.
-O. Adjoua,  L. Lagardère, L.-H. Jolly, Arnaud Durocher, Z. Wang, T. Very, I. Dupays, T. Jaffrelot Inizan, F. Célerse, P. Ren, J. Ponder, J-P. Piquemal, ArXiv, 2020, https://arxiv.org/abs/2011.01207  
+O. Adjoua,  L. Lagardère, L.-H. Jolly, Arnaud Durocher, Z. Wang, T. Very, I. Dupays, T. Jaffrelot Inizan, F. Célerse, P. Ren, J. Ponder, J-P. Piquemal, ArXiv, 2020, 2011.01207 https://arxiv.org/abs/2011.01207  
    
    and 
    
