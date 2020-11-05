@@ -22,8 +22,8 @@ c
       module  linmin
       implicit none
       integer intmax
-      real(t_p) stpmin,stpmax
-      real(t_p) cappa,slpmax
-      real(t_p) angmax
+      real(r_p) stpmin,stpmax
+      real(r_p) cappa,slpmax
+      real(r_p) angmax
       save 
       end
