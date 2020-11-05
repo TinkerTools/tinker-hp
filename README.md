@@ -4,11 +4,11 @@ A phase advance update has been pushed to GitHub (28/10/2020) to support COVID-1
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
-Current Github version: 1.2 (CPUs) + (multi)GPUs
+Current Github version: 1.2 (CPUs) + (multi)-GPUs
 
-Current Tinker-HP's website version: 1.2 (CPUs) + (multi)GPUs + 1.1v (enhanced AVX512 vectorized CPUs version)
+Current Tinker-HP's website version: 1.2 (CPUs) + (multi)-GPUs + 1.1v (enhanced AVX512 vectorized CPUs version)
 
-Current development version: 1.3 (CPUs + GPUs)
+Current development version: 1.3 (CPUs + multi-GPUs)
 
 
 For the more recent versions, please register and download the phase advanced and/or performance enhanced source at:
