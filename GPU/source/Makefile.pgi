@@ -38,7 +38,9 @@ FFTW_SUPPORT ?= 0
 # Force Othrogonal box shape
 ORTHO_BOX_ONLY_SUPPORT ?= 0
 # Remove Soft core computation
-# NO_MUTATION ?= 0
+NO_MUTATION ?= 0
+# Fixed Precision Arithmetic
+FPA_SUPPORT ?= 0
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
