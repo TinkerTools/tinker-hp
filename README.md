@@ -34,18 +34,18 @@ You'll receive the License Form to be signed and sent back to TinkerHP_Download@
 
 ii) Please cite:
 
-Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems 
+- Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems 
 with Advanced Polarizable Force Fields.
 L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, 
 M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access)
 https://doi.org/10.1039/C7SC04531J
 
-if you are using the vectorized version, please also cite:
+- if you are using the AVX512 vectorized version, please also cite:
 Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0].
 L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access)
  https://doi.org/10.33011/livecoms.1.2.10409
  
-if you are using the GPUs version, please also cite:
+- if you are using the GPUs version, please also cite:
 Tinker-HP : Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using GPUs and Multi-GPUs systems
 Olivier Adjoua, Louis Lagardère, Luc-Henri Jolly, Arnaud Durocher, Thibaut Very, Isabelle Dupays, Zhi Wang, Théo Jaffrelot Inizan, Frédéric Célerse, Pengyu Ren, Jay W. Ponder, Jean-Philip Piquemal, ArXiv, 2020, 2011.01207 (Open Access) https://arxiv.org/abs/2011.01207
 
