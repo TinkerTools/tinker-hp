@@ -424,10 +424,10 @@ c
       write(*,35)'nev & ev & rank ',sum(inter),ev,rank
 #endif
 
+      call vdw_gradient_reduce
+
       call elj1_scaling(xredc,yredc,zredc,
      &            g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-
-      call vdw_gradient_reduce
 
       call timer_exit(timer_elj3)
       end subroutine
