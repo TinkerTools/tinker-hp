@@ -79,7 +79,6 @@ c
         real(t_p),shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
         real(t_p) rik2,rv2,eps2,redi,redk,redk_
         type(real3) ded
-        real(t_p) devx,devy,devz
         real(r_p) gxi,gyi,gzi
         real(r_p),shared,dimension(VDW_BLOCK_DIM):: gxk,gyk,gzk
         real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
@@ -90,15 +89,17 @@ c
         nwarp   = blockDim%x*gridDim%x / warpsize
         ilane   = iand( threadIdx%x-1,warpsize-1 ) + 1
         accept_mid = .true.
-c       ninte   = 0
-
-c       if (ithread.eq.1) print*,'ehal1c_cu2_in'
-c    &   ,blockDim%x,gridDim%x,nwarp,nvdwlocnlb_pair,n
-c    &   ,c0,c1,c2,c3,c3,cut2,ghal,dhal
-c    &   ,ev,vxx,vxy,vxz,vyy,ndir
-c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 
         do ii = iwarp, nvdwlocnlb_pair-1, nwarp
+
+           ! Load atom block k neighbor parameter
+           kdx    = vblst( ii*warpsize + ilane )
+           kglob(threadIdx%x) = cellv_glob(kdx)
+           kbis   = cellv_loc(kdx)
+           kt(threadIdx%x) = jvdw  (kdx)
+           xk(threadIdx%x) = xred  (kdx)
+           yk(threadIdx%x) = yred  (kdx)
+           zk(threadIdx%x) = zred  (kdx)
 
            ! Set Data to compute to zero
            ev_    = 0
@@ -126,15 +127,8 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
            yi     = yred  (idx)
            zi     = zred  (idx)
 
-           ! Load atom block k neighbor parameter
-           kdx    = vblst( ii*warpsize + ilane )
-           kglob(threadIdx%x) = cellv_glob(kdx)
-           kbis   = cellv_loc(kdx)
-           kt(threadIdx%x) = jvdw  (kdx)
-           xk(threadIdx%x) = xred  (kdx)
-           yk(threadIdx%x) = yred  (kdx)
-           zk(threadIdx%x) = zred  (kdx)
            same_block = (idx.ne.kdx)
+           call syncwarp(ALL_LANES)
 
            ! Interact block i with block k
            do j = 0,warpsize-1
@@ -182,7 +176,7 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
                  call elj1_couple(rik2,xpos,ypos,zpos,rv2,eps2,cut2
      &                           ,cut,off,e,ded)
 
-                 ev_   = ev_ + e
+                 ev_   = ev_ + (e)
 
 #ifdef TINKER_DEBUG
                  if (iglob<kglob(klane)) then
@@ -201,39 +195,25 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
                  vzz_  = vzz_  + zpos * ded%z
                  end if
 
+                 !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
+
+                 ! Accumulate interaction gradient
+                 gxi = gxi + (ded%x)
+                 gyi = gyi + (ded%y)
+                 gzi = gzi + (ded%z)
+
+                 gxk(klane) = gxk(klane) + (ded%x)
+                 gyk(klane) = gyk(klane) + (ded%y)
+                 gzk(klane) = gzk(klane) + (ded%z)
+
               end if
-
-              dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
-
-              ! Accumulate interaction gradient
-              gxi = gxi + real(ded%x,r_p)
-              gyi = gyi + real(ded%y,r_p)
-              gzi = gzi + real(ded%z,r_p)
-
-              gxk(klane) = gxk(klane) + real(ded%x,r_p)
-              gyk(klane) = gyk(klane) + real(ded%y,r_p)
-              gzk(klane) = gzk(klane) + real(ded%z,r_p)
 
            end do
 
-           call syncwarp(ALL_LANES)
            kt_   = iand(ithread-1,RED_BUFF_SIZE-1) + 1
            !increment the van der Waals energy
            istat = atomicAdd( ev_buff(kt_) ,ev_ )
  
-           !increment the van der Waals derivatives
-           if (idx.le.nvdwlocnl) then
-              istat   = atomicAdd (dev(1,i),gxi)
-              istat   = atomicAdd (dev(2,i),gyi)
-              istat   = atomicAdd (dev(3,i),gzi)
-           end if
-
-           if (kdx.le.nvdwlocnl) then
-              istat   = atomicSub (dev(1,kbis),gxk(threadIdx%x))
-              istat   = atomicSub (dev(2,kbis),gyk(threadIdx%x))
-              istat   = atomicSub (dev(3,kbis),gzk(threadIdx%x))
-           end if
-
            ! Increment virial term of van der Waals
            if (use_virial) then
            istat = atomicAdd( vir_buff(0*RED_BUFF_SIZE+kt_),vxx_ )
@@ -242,6 +222,20 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
            istat = atomicAdd( vir_buff(3*RED_BUFF_SIZE+kt_),vyy_ )
            istat = atomicAdd( vir_buff(4*RED_BUFF_SIZE+kt_),vyz_ )
            istat = atomicAdd( vir_buff(5*RED_BUFF_SIZE+kt_),vzz_ )
+           end if
+
+           !increment the van der Waals derivatives
+           if (idx.le.nvdwlocnl) then
+              istat   = atomicAdd (dev(1,i),gxi)
+              istat   = atomicAdd (dev(2,i),gyi)
+              istat   = atomicAdd (dev(3,i),gzi)
+           end if
+
+           call syncwarp(ALL_LANES)
+           if (kdx.le.nvdwlocnl) then
+              istat   = atomicSub (dev(1,kbis),gxk(threadIdx%x))
+              istat   = atomicSub (dev(2,kbis),gyk(threadIdx%x))
+              istat   = atomicSub (dev(3,kbis),gzk(threadIdx%x))
            end if
 
         end do
