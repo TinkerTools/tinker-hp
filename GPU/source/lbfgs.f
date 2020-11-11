@@ -361,7 +361,6 @@ c
 !$acc end host_data
             end if
 !$acc serial async present(beta)
-            alpha(k) = alpha(k) * rho(k)
             beta = beta * rho(k)
 !$acc end serial
 !$acc parallel loop collapse(2) async present(beta)
