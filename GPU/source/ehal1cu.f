@@ -306,6 +306,17 @@ c       end if
 
         do ii = iwarp, nvdwlocnlb_pair-1, nwarp
 
+           ! Load atom block k neighbor parameter
+           kdx    = vblst( ii*warpsize + ilane )
+           kglob  = cellv_glob(kdx)
+           kbis   = cellv_loc(kdx)
+           kt     = jvdw  (kdx)
+           xk     = xred  (kdx)
+           yk     = yred  (kdx)
+           zk     = zred  (kdx)
+           same_block = (idx.ne.kdx)
+           mutk(threadIdx%x) = mut(kglob)
+
            ! Set Data to compute to zero
            ev_    = 0
            nev_   = 0
@@ -321,17 +332,7 @@ c       end if
            yi     = yred  (idx)
            zi     = zred  (idx)
            muti   = mut(iglob)
-
-           ! Load atom block k neighbor parameter
-           kdx    = vblst( ii*warpsize + ilane )
-           kglob  = cellv_glob(kdx)
-           kbis   = cellv_loc(kdx)
-           kt     = jvdw  (kdx)
-           xk     = xred  (kdx)
-           yk     = yred  (kdx)
-           zk     = zred  (kdx)
-           same_block = (idx.ne.kdx)
-           mutk(threadIdx%x) = mut(kglob)
+           call syncwarp(ALL_LANES)
 
            ! Interact block i with block k
            do j = 0,warpsize-1
