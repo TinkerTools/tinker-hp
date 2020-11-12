@@ -588,7 +588,7 @@ c
 c     initialize virial from fast-evolving potential energy terms
 c
 !$acc data present(ealt,ealt2,viralt,viralt2)
-!$acc&     present(use,v,aalt,glob,use,mass) async
+!$acc&     present(use,v,aalt,glob,use,mass)
 
 !$acc parallel loop collapse(2) async
       do i = 1, 3
