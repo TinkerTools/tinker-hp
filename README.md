@@ -1,6 +1,8 @@
 # Tinker-HP: the massivelly parallel CPUs/GPUs High Performance Evolution of Tinker
 -----------------------------------------------------------------------------------------------------------------------------------------------
-A phase advance update has been pushed to GitHub (28/10/2020) to support COVID-19 research: the Tinker-HP (multi)-GPUs plateform is available: https://github.com/TinkerTools/tinker-hp/tree/master/GPU Check the preprint : https://arxiv.org/abs/2011.01207
+A phase advance update has been pushed to GitHub (28/10/2020) to support COVID-19 research: the Tinker-HP (multi)-GPUs plateform is available: https://github.com/TinkerTools/tinker-hp/tree/master/GPU 
+
+Check the ArXiv preprint (11/03/2020) : https://arxiv.org/abs/2011.01207
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
