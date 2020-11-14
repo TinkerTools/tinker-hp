@@ -2,7 +2,7 @@ Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
 ==================================================================
 
 
-<b>This phase-advance GPU version is not (yet) an official release of Tinker-HP but is freely in link with the COVID-19 HPC community effort.</b>
+<b>This phase-advance GPU version is not (yet) an official release of Tinker-HP but is made freely available in link with the COVID-19 HPC community effort.</b>
 
 This work will be part of a larger 2021 Tinker-HP 1.3 official release.
 
