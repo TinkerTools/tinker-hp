@@ -134,10 +134,10 @@ CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
 #  __________________
 ifeq ($(opt), release)
    COMMON       = -Mdalign -fast -g
-   CCOMMON      = -std=c++11 -O3 -g
+   CCOMMON      = -std=c++14 -O3 -g
 else ifeq ($(opt), debug+)
    COMMON       = -traceback -O0 -g -C
-   CCOMMON      = -std=c++11 -O0 -g
+   CCOMMON      = -std=c++14 -O0 -g
    ifeq ($(arch),$(filter $(arch),device gpu))
      OPTIONS += -DTINKER_DEBUG
    CUOPTIONS += -DTINKER_DEBUG
