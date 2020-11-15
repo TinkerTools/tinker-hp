@@ -18,7 +18,9 @@ c
       use domdec   ,only:nproc,nrec
       use inform   ,only:deb_Path
       use interfaces,only:grid_pchg_site_p,grid_pchg_sitecu
+     &              ,grid_mpole_site_p,grid_mpole_sitecu
       use mpole
+      use neigh    ,only:celle_pole,celle_chg
       use pme
       use tinheader,only:ti_p,prec1_eps
       use utilgpu  ,only:rec_queue,ngangs_rec
@@ -26,7 +28,7 @@ c
       implicit none
       integer,intent(in),optional::config
       integer c_mpole,c_charge,c_n
-      integer i,ifr,k,cfg,iipole
+      integer i,ifr,k,cfg,iipole,iichg
       integer,pointer,save:: glob_p(:),type_p(:)
       real(t_p) xi,yi,zi
       real(t_p) w,fr
@@ -44,10 +46,16 @@ c
          glob_p => ipole
          type_p => polerecglob
          c_n    =  npolerecloc
+         if (associated(grid_mpole_site_p,grid_mpole_sitecu)) then
+            type_p => celle_pole
+         end if
       else if (cfg.eq.c_charge) then
          glob_p => iion
          type_p => chgrecglob
          c_n    =  nionrecloc
+         if (associated(grid_pchg_site_p,grid_pchg_sitecu)) then
+            type_p => celle_chg
+         end if
       end if
 
       if (cfg.eq.c_mpole) then
@@ -87,53 +95,13 @@ c
 
       else if (cfg.eq.c_charge) then
 
-#ifdef _OPENACC
-      if (nion.ne.n.and.associated(grid_pchg_site_p,grid_pchg_sitecu)
-     &   .and.(nproc.eq.1.or.nrec.eq.1)) then
-
 !$acc parallel loop num_gangs(4*ngangs_rec)
 !$acc&         present(x,y,z,recip,igrid,thetai1,thetai2,
 !$acc&  thetai3,type_p,glob_p)
 !$acc&         async(rec_queue)
       do k=1,c_n
-         iipole = type_p(k)
-         i      = glob_p(iipole)
-c
-c     get the b-spline coefficients for the i-th atomic site
-c
-         xi   = x(i)
-         yi   = y(i)
-         zi   = z(i)
-         w    = xi*recip(1,1) + yi*recip(2,1) + zi*recip(3,1)
-         fr   = real(nfft1,t_p) * (w-anint(w)+0.5_ti_p)
-         ifr  = int(fr-pme_eps)
-         w    = fr - real(ifr,t_p)
-         igrid(1,i) = ifr - bsorder
-         call bsplgen_chg (w,i,thetai1(1,1,1))
-         w    = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
-         fr   = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
-         ifr  = int(fr-pme_eps)
-         w    = fr - real(ifr,t_p)
-         igrid(2,i) = ifr - bsorder
-         call bsplgen_chg (w,i,thetai2(1,1,1))
-         w    = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
-         fr   = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
-         ifr  = int(fr-pme_eps)
-         w    = fr - real(ifr,t_p)
-         igrid(3,i) = ifr - bsorder
-         call bsplgen_chg (w,i,thetai3(1,1,1))
-      end do
-
-      else
-#endif
-
-!$acc parallel loop num_gangs(4*ngangs_rec)
-!$acc&         present(x,y,z,recip,igrid,thetai1,thetai2,
-!$acc&  thetai3,type_p,glob_p)
-!$acc&         async(rec_queue)
-      do k=1,c_n
-         iipole = type_p(k)
-         i      = glob_p(iipole)
+         iichg  = type_p(k)
+         i      = glob_p(iichg)
 c
 c     get the b-spline coefficients for the i-th atomic site
 c
@@ -159,10 +127,6 @@ c
          igrid(3,i) = ifr - bsorder
          call bsplgen_chg (w,k,thetai3(1,1,1))
       end do
-
-#ifdef _OPENACC
-      end if
-#endif
 
       end if
       end
@@ -796,7 +760,7 @@ c
       use charge
       use chgpot
       use domdec ,only: rank,rank_bis,nproc,nrec,ndir,comm_rec
-     &           ,COMM_TINKER,nrec_send,locrec1,prec_send
+     &           ,COMM_TINKER,nrec_send,locrec1,prec_send,nbloc
       use deriv  ,only: decrec
       use fft
       use inform ,only: deb_Path
@@ -836,7 +800,7 @@ c
       dn2     = real(nfft2,t_p)
       dn3     = real(nfft3,t_p)
 
-!$acc parallel loop gang vector async(rec_queue) 
+!$acc parallel loop num_gangs(1) vector async(rec_queue) 
 !$acc&         present(chgrecglob,iion,locrec1,igrid,
 !$acc&     pchg,thetai1_p,thetai2_p,thetai3_p,qgridin_2d,
 !$acc&     decrec)
@@ -849,9 +813,9 @@ c
         jgrd0 = igrid(2,iatm)
         kgrd0 = igrid(3,iatm)
         fi    = f * pchg(iichg)
-        de1   = 0.0d0
-        de2   = 0.0d0
-        de3   = 0.0d0
+        de1   = 0.0_ti_p
+        de2   = 0.0_ti_p
+        de3   = 0.0_ti_p
         k0    = kgrd0
 !$acc loop seq
         do it3 = 1, bsorder
@@ -914,6 +878,7 @@ c
         decrec(3,iloc) =decrec(3,iloc)+fi*(recip(3,1)*de1+recip(3,2)*de2
      &                                    +recip(3,3)*de3)
       end do
+
       end subroutine
 c
 c     "fphi_uind_site" extracts the induced dipole potential at the i-th site from
@@ -1704,7 +1669,7 @@ c
       use charge
       use chgpot
       use domdec ,only: rank,rank_bis,nproc,nrec,ndir,comm_rec
-     &           ,COMM_TINKER,nrec_send,locrec1,prec_send
+     &           ,COMM_TINKER,nrec_send,locrec1,prec_send,nbloc
       use deriv  ,only: decrec
       use fft
       use inform ,only: deb_Path
@@ -1763,7 +1728,7 @@ c
      &        ,decrec
      &        ,kstat,ked,jstat,jed,istat,ied
      &        ,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3
-     &        ,dn1,dn2,dn3)
+     &        ,f,dn1,dn2,dn3)
          call check_launch_kernel(" grid_pchg_force_core1")
       else
          call grid_pchg_force_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
@@ -1772,7 +1737,7 @@ c
      &        ,decrec
      &        ,kstat,ked,jstat,jed,istat,ied
      &        ,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3
-     &        ,dn1,dn2,dn3)
+     &        ,f,dn1,dn2,dn3)
          call check_launch_kernel(" grid_pchg_force_core")
       end if
 !$acc end host_data
@@ -1834,7 +1799,7 @@ c
 !$acc&    ,x,y,z,recip,thetai1,thetai2,thetai3,fdip_phi1,fdip_phi2
 !$acc&    ,kstart1,kend1,jstart1,jend1,istart1,iend1,prec_send)
 
-      if (nproc.eq.1) then
+      if (nproc.eq.1.or.nrec.eq.1) then
       call fphi_uind_sitecu2_core_1p<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
      &     (kstat,ked,jstat,jed,istat,ied
      &     ,npolerecloc,nlocrec,bsorder,n1mpimax,n2mpimax,n3mpimax

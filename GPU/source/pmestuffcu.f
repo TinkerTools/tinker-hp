@@ -287,9 +287,9 @@ c
               fmp(threadIdx%x) = fmpvec(threadIdx%x,isite)
            else
               do i=threadIdx%x-10,4*order,blockDim%x-10
-                 theta1(i) = thetai1(i,isite)
-                 theta2(i) = thetai2(i,isite)
-                 theta3(i) = thetai3(i,isite)
+                 theta1(i) = thetai1(i,impi)
+                 theta2(i) = thetai2(i,impi)
+                 theta3(i) = thetai3(i,impi)
               end do
            end if
            if (blockDim%x>warpsize) call syncthreads
@@ -385,9 +385,9 @@ c
 
            ! Load data into shared memory
            do i=threadIdx%x,2*order,blockDim%x
-              theta1(i) = thetai1(i,isite)
-              theta2(i) = thetai2(i,isite)
-              theta3(i) = thetai3(i,isite)
+              theta1(i) = thetai1(i,impi)
+              theta2(i) = thetai2(i,impi)
+              theta3(i) = thetai3(i,impi)
            end do
            if (blockDim%x>warpsize) call syncthreads
 c
@@ -479,9 +479,9 @@ c
               fuinp(threadIdx%x) = fuinpvec(threadIdx%x,isite)
            else
               do i=threadIdx%x-3,4*order,blockDim%x-3
-                 theta1(i) = thetai1(i,isite)
-                 theta2(i) = thetai2(i,isite)
-                 theta3(i) = thetai3(i,isite)
+                 theta1(i) = thetai1(i,impi)
+                 theta2(i) = thetai2(i,impi)
+                 theta3(i) = thetai3(i,impi)
               end do
            end if
            if (blockDim%x>warpsize) call syncthreads
@@ -1644,11 +1644,11 @@ c
      &                 ,decrec
      &                 ,kstat,ked,jstat,jed,istat,ied
      &                 ,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3
-     &                 ,dn1,dn2,dn3)
+     &                 ,f,dn1,dn2,dn3)
       implicit none
       integer,value,intent(in)::kstat,ked,jstat,jed,istat,ied,nrec_send
      &       ,nfft1,nfft2,nfft3,nionrecloc,n
-      real(t_p),value,intent(in):: dn1,dn2,dn3
+      real(t_p),value,intent(in):: dn1,dn2,dn3,f
       integer,device,intent(in)::chgrec(nionrecloc),iion(n),locrec1(n)
      &       ,igrid(3,n)
       real(t_p),device,intent(in):: pchg(n),thetai1(2,bsorder,*)
@@ -1659,10 +1659,10 @@ c
      &       ,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3
      &       ,istart,iend,jstart,jend,kstart,kend
      &       ,iproc,proc
-      real(t_p) f,fi,de1,de2,de3,t1,t2,t3,dt1,dt2,dt3,term
+      real(t_p) fi,de1,de2,de3,t1,t2,t3,dt1,dt2,dt3,term
 #if (defined(SINGLE) || defined(MIXED))
-      integer fr,ifr
-      real(t_p),xi,yi,zi,w
+      integer ifr
+      real(t_p),xi,yi,zi,w,fr
       real(t_p),dimension(2,bsorder):: theta1,theta2,theta3
       real(t_p),shared::temp(bsorder*bsorder*PME_BLOCK_DIM)
 #endif
@@ -1788,11 +1788,11 @@ c
      &                 ,decrec
      &                 ,kstat,ked,jstat,jed,istat,ied
      &                 ,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3
-     &                 ,dn1,dn2,dn3)
+     &                 ,f,dn1,dn2,dn3)
       implicit none
       integer,value,intent(in)::kstat,ked,jstat,jed,istat,ied,nrec_send
      &       ,nfft1,nfft2,nfft3,nionrecloc,n
-      real(t_p),value,intent(in):: dn1,dn2,dn3
+      real(t_p),value,intent(in):: f,dn1,dn2,dn3
       integer,device,intent(in)::chgrec(nionrecloc),iion(n),locrec1(n)
      &       ,igrid(3,n)
       real(t_p),device,intent(in):: pchg(n),thetai1(2,bsorder,*)
@@ -1803,10 +1803,10 @@ c
      &       ,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3
      &       ,istart,iend,jstart,jend,kstart,kend
      &       ,iproc,proc
-      real(t_p) f,fi,de1,de2,de3,t1,t2,t3,dt1,dt2,dt3,term
+      real(t_p) fi,de1,de2,de3,t1,t2,t3,dt1,dt2,dt3,term
 #if (defined(SINGLE) || defined(MIXED))
-      integer fr,ifr
-      real(t_p),xi,yi,zi,w
+      integer ifr
+      real(t_p),xi,yi,zi,w,fr
       real(t_p),dimension(2,bsorder):: theta1,theta2,theta3
       real(t_p),shared::temp(bsorder*bsorder*PME_BLOCK_DIM)
 #endif
