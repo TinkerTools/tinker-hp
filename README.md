@@ -1,20 +1,20 @@
 # Tinker-HP: High-Performance Massively Parallel Evolution of Tinker on CPUs & GPUs
 -----------------------------------------------------------------------------------------------------------------------------------------------
-A phase advance update has been pushed to GitHub (28/10/2020) to support COVID-19 research: the Tinker-HP (multi)-GPUs plateform is available: https://github.com/TinkerTools/tinker-hp/tree/master/GPU 
+A phase advance update (GPUs) has been pushed to GitHub (28/10/2020) to support COVID-19 research: the Tinker-HP (multi)-GPUs plateform is now available: https://github.com/TinkerTools/tinker-hp/tree/master/GPU 
 
-Check the ArXiv preprint (11/03/2020) : https://arxiv.org/abs/2011.01207
+Check out the ArXiv preprint (11/03/2020) : https://arxiv.org/abs/2011.01207
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
 Current Github version: 1.2 (CPUs) + (multi)-GPUs
 
-Current Tinker-HP's website version: 1.2 (CPUs) + (multi)-GPUs + 1.1v (enhanced AVX512 vectorized CPUs version)
+Current Tinker-HP's website version: 1.2 (CPUs) + (multi)-GPUs + 1.1v (enhanced AVX512 vectorized CPUs version) ->to be pushed on Github 12/2020
 
 Current development version: 1.3 (CPUs + multi-GPUs)
 
 
-For the more recent versions, please register and download the phase advanced and/or performance enhanced source at:
-http://tinker-hp.ip2ct.upmc.fr/   (new website design to be announced)
+All releases of the Tinker-HP are now being performed on Github. For news, benchmarks and additional tutorials, please visit the Tinker-HP website
+http://tinker-hp.ip2ct.upmc.fr/   (new website design to appear)
 
 Tinker-HP is a CPUs and GPUs based, multi-precision, MPI massively parallel package dedicated to long polarizable molecular dynamics simulations and to polarizable QM/MM. Tinker-HP is an evolution of the popular Tinker package that conserves it simplicity of use but brings new 
 capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores. 
