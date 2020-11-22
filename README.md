@@ -6,11 +6,7 @@ Check out the ArXiv preprint (11/03/2020) : https://arxiv.org/abs/2011.01207
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
-Current Github version: 1.2 (CPUs) + (multi)-GPUs
-
-1.1v (enhanced AVX512 vectorized CPUs version) pushed
-on 11/22/2020
-
+Current Github version: 1.1v (enhanced AVX512 vectorized CPUs version), 1.2 (CPUs) + 1.2 (multi)-GPUs
 Current development version: 1.3 (CPUs + multi-GPUs)
 
 
