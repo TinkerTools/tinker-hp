@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+ <title>Documentation: Open Petascale Libraries Project</title>
+</head>
+<body>
+ <h1>The Open Petascale Libraries Project Documentation</h1>
+<h2>Sub-project: Library for 2D pencil decomposition and distributed Fast Fourier Transform
+</h2>
+
+<h3>Introduction</h3> 
+
+The 2DECOMP&amp;FFT library is a software framework in Fortran to build large-scale parallel applications. It is designed for applications using three-dimensional structured mesh and spatially implicit numerical algorithms. At the foundation it implements a general-purpose 2D pencil decomposition for data distribution on distributed-memory platforms. On top it provides a highly scalable and efficient interface to perform three-dimensional distributed FFTs. The library is optimised for supercomputers and scales well to hundreds of thousands of cores. It relies on MPI but provides a user-friendly programming interface that hides communication details from application developers.
+
+<h3>Features</h3>
+
+      <p>Here is a list of 2DECOMP&amp;FFT's main features: </p>
+      <ul>
+	<li>General-purpose 2D pencil decomposition module to support building large-scale parallel applications on distributed memory systems.</li>
+	<li>Highly scalable and efficient distributed Fast Fourier Transform module, supporting three dimensional FFTs (both complex-to-complex and real-to-complex/complex-to-real).</li>
+	<li>Halo-cell support allowing explicit message passing between neighbouring blocks.</li>  
+	<li>Parallel I/O module to support the handling of large data sets.</li>
+
+	<li>Shared-memory optimisation on the communication code for multi-code systems.</li>
+	<li>Interface with most popular external FFT libraries.</li>
+      </ul>
+
+      <p>2DECOMP&amp;FFT is designed to be:</p>
+      <ul>
+	<li><b>Scalable</b> - The library and applications built upon it are known to scale to o(10^5) cores on major supercomputers.</li>
+
+	<li><b>Flexible</b> - Software framework to support building higher-level libraries and many types of applications.</li> 
+	<li><b>User-friendly</b> - Black-box implementation and very clean application programming interface hiding most communication details from applications.</li>
+	<li><b>Portable</b> - Code tested on major hardware architectures, including Cray XT/XE, IBM Blue Gene and many others.</li>
+      </ul>
+
+      <h3>Publication</h3>
+
+      <p>If you wish to cite this work, you are recommended to use the following paper:</p>
+      <ul>
+	<li>N. Li and S. Laizet, "2DECOMP&amp;FFT – A highly scalable 2D decomposition library and FFT interface", <i>Cray User Group 2010 conference</i>, Edinburgh, <b>2010</b>. 
+
+      </ul>
+
+<h3>Project Website</h3>
+
+Please visit the official project website <a href="http://www.2decomp.org">http://www.2decomp.org</a> where more background information, source download and up-to-date documentations can be found. While the binary distribution as part of the Open Petascale Libraries can offer a quick start, for building serious applications, it is recommended to compile this library from source so that many more software features (such as hardware dependent optimisations, programming interface with multiple external libraries) can be explored. 
+
+<h3>Feedback</h3>
+
+You are welcome to contact the developer Dr. Ning Li (ning.li at nag.co.uk) with
+ bug reports, comments and suggestions.
+
+</body>
+</html>

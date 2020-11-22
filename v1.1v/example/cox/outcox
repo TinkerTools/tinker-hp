@@ -1,0 +1,98 @@
+
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            Tinker-HP  ---  Software Tools for Molecular Design         ###
+ ##                                                                          ##
+ ##                         Version 1.1v  December 2019                      ##
+ ##                                                                          ##
+ ##     Copyright (c) Washington University in Saint Louis (WU)              ##
+ ##                   The University of Texas at Austin                      ##
+ ##                   Sorbonne Universite, UPMC (Sorbonne)                   ##
+ ##                              1990-2019                                   ##
+ ###                       All Rights Reserved                              ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+License Number : LICENSENUMBER
+
+Cite this work as :
+
+   Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale
+   Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+
+   Louis Lagardere, Luc-Henri Jolly, Filippo Lipparini, Felix Aviat,
+   Benjamin Stamm, Zhifeng F. Jing, Matthew Harger, Hedieh Torabifard,
+   G. Andres Cisneros, Michael J. Schnieders, Nohad Gresh, Yvon Maday,
+   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal,
+
+   Chem. Sci., 2018, 9, 956-972,  doi: 10.1039/c7sc04531j
+
+For this particular version, please cite also :
+
+   Raising the Performance of the Tinker-HP Molecular Modeling Package
+   [Article v1.0]
+
+   Luc-Henri Jolly, Alejandro Duran, Louis Lagardere, Jay W. Ponder,
+   Pengyu Y. Ren and Jean-Philip Piquemal,
+
+   LiveCoMS, 2019, 1 (2), 10409, doi: 10.33011/livecoms.1.2.10409
+
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+ In auto-tuning mode......
+ factors:            1           2           4           8
+ processor grid           1  by            8  time=  1.333791902288795E-002
+ processor grid           2  by            4  time=  1.035884069278836E-002
+ processor grid           4  by            2  time=  9.649449493736029E-003
+ processor grid           8  by            1  time=  1.024730084463954E-002
+ the best processor grid is probably            4  by            2
+  
+ ***** Using the generic FFT engine *****
+  
+
+ Smooth Particle Mesh Ewald Parameters :
+
+    Ewald Coefficient      Charge Grid Dimensions      B-Spline Order
+
+          0.5446              128   128   128                 5
+
+ Random Number Generator Initialized with SEED :      123456789
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+
+ Langevin Molecular Dynamics Trajectory via BAOAB Algorithm
+ time vdw =   0.135011199861765     
+ time elec =   0.316068068146706     
+
+    MD Step      E Total   E Potential     E Kinetic       Temp       Pres
+
+         1  -295261.8231  -434288.4792   139026.6561     267.71   -9257.78
+ time vdw =   0.133676841855049     
+ time elec =   0.252550482749939     
+         2  -320458.8237  -507618.2793   187159.4556     360.40  -13851.21
+ time vdw =   0.133383613079786     
+ time elec =   0.242195211350918     
+         3  -297337.7027  -457896.5804   160558.8777     309.18   -7903.77
+ time vdw =   0.133801419287920     
+ time elec =   0.249327823519707     
+         4  -317103.4367  -504044.6144   186941.1777     359.98    5658.38
+ time vdw =   0.134023152291775     
+ time elec =   0.244394738227129     
+         5  -302510.1140  -459641.4778   157131.3638     302.58    1766.87
+ time vdw =   0.133845951408148     
+ time elec =   0.250224761664867     
+         6  -307242.2819  -472512.4209   165270.1391     318.25   -9871.36
+ time vdw =   0.133963648229837     
+ time elec =   0.251496676355600     
+         7  -313874.5741  -500058.3143   186183.7402     358.52  -12420.21
+ time vdw =   0.133883092552423     
+ time elec =   0.250561311841011     
+         8  -301723.0692  -471979.9090   170256.8399     327.85   -3313.43
+ time vdw =   0.133904505521059     
+ time elec =   0.246033404022455     
+         9  -318417.6639  -503288.3943   184870.7304     355.99    7166.20
+ time vdw =   0.134063988924026     
+ time elec =   0.248063653707504     
+        10  -296756.5932  -441060.9870   144304.3938     277.88    -248.74

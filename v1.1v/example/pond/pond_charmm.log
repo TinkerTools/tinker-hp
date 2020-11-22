@@ -1,0 +1,92 @@
+
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            Tinker-HP  ---  Software Tools for Molecular Design         ###
+ ##                                                                          ##
+ ##                        Version 1.1v  Septembre 2018                      ##
+ ##                                                                          ##
+ ##     Copyright (c) Washington University in Saint Louis (WU)              ##
+ ##                   The University of Texas at Austin                      ##
+ ##                   Sorbonne Universites, UPMC (Sorbonne)                  ##
+ ##                              1990-2017                                   ##
+ ###                       All Rights Reserved                              ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+License Number : LICENSENUMBER
+
+Cite this work as :
+
+   Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale
+   Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+
+   Louis Lagardere, Luc-Henri Jolly, Filippo Lipparini, Felix Aviat,
+   Benjamin Stamm, Zhifeng F. Jing, Matthew Harger, Hedieh Torabifard,
+   G. Andres Cisneros, Michael J. Schnieders, Nohad Gresh, Yvon Maday,
+   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal,
+
+   Chem. Sci., 2018, 9, 956-972,  doi: 10.1039/c7sc04531j
+
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+ In auto-tuning mode......
+ factors:            1           2           4           8
+ processor grid           1  by            8  time=  7.598549127578735E-003
+ processor grid           2  by            4  time=  1.032000780105591E-002
+ processor grid           4  by            2  time=  1.107999682426453E-002
+ processor grid           8  by            1  time=  1.097637414932251E-002
+ the best processor grid is probably            1  by            8
+  
+ ***** Using the MKL engine *****
+  
+
+ Smooth Particle Mesh Ewald Parameters :
+
+    Ewald Coefficient      Charge Grid Dimensions      B-Spline Order
+
+          0.5446              144   144   144                 5
+ time clistcell    =    2.88268303871155     
+ time vlistcell    =    3.36538815498352     
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+ time clistcell    =    2.92018604278564     
+ time vlistcell    =    3.33089208602905     
+
+ Molecular Dynamics Trajectory via r-RESPA MTS Algorithm
+ time vdw =   0.392354965209961     
+ time elec =   0.461560964584351     
+
+ Random Number Generator Initialized with SEED :          12345
+
+    MD Step      E Total   E Potential     E Kinetic       Temp       Pres
+
+         1  -564193.0484  -854198.9169   290005.8686     337.82   10375.42
+ time vdw =   0.398828029632568     
+ time elec =   0.448056936264038     
+         2  -569131.5690  -870282.9574   301151.3884     350.80    1477.49
+ time vdw =   0.396338939666748     
+ time elec =   0.437376022338867     
+         3  -579564.7672  -920699.8148   341135.0476     397.38  -13027.62
+ time vdw =   0.401694059371948     
+ time elec =   0.436846017837524     
+         4  -570757.2716  -828496.9250   257739.6535     300.23  -17015.03
+ time vdw =   0.390970945358276     
+ time elec =   0.444475889205933     
+         5  -575638.1362  -912734.4098   337096.2736     392.67     639.40
+ time vdw =   0.401279211044312     
+ time elec =   0.435069084167480     
+         6  -567977.4810  -854751.3490   286773.8680     334.05   11035.44
+ time vdw =   0.402147054672241     
+ time elec =   0.429377079010010     
+         7  -574328.8766  -886915.9490   312587.0724     364.12    2314.88
+ time vdw =   0.399570941925049     
+ time elec =   0.432806015014648     
+         8  -580729.6510  -909673.9662   328944.3151     383.18  -13326.15
+ time vdw =   0.401861906051636     
+ time elec =   0.434829950332642     
+         9  -571772.9343  -829949.2463   258176.3119     300.74  -17080.71
+ time vdw =   0.396006822586060     
+ time elec =   0.442958831787109     
+        10  -575992.2400  -912791.6390   336799.3990     392.33    1347.03

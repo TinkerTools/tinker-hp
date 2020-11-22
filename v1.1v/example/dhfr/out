@@ -1,0 +1,279 @@
+
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            Tinker-HP  ---  Software Tools for Molecular Design         ###
+ ##                                                                          ##
+ ##                         Version 1.1v  December 2019                      ##
+ ##                                                                          ##
+ ##     Copyright (c) Washington University in Saint Louis (WU)              ##
+ ##                   The University of Texas at Austin                      ##
+ ##                   Sorbonne Universite, UPMC (Sorbonne)                   ##
+ ##                              1990-2019                                   ##
+ ###                       All Rights Reserved                              ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+License Number : LICENSENUMBER
+
+Cite this work as :
+
+   Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale
+   Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+
+   Louis Lagardere, Luc-Henri Jolly, Filippo Lipparini, Felix Aviat,
+   Benjamin Stamm, Zhifeng F. Jing, Matthew Harger, Hedieh Torabifard,
+   G. Andres Cisneros, Michael J. Schnieders, Nohad Gresh, Yvon Maday,
+   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal,
+
+   Chem. Sci., 2018, 9, 956-972,  doi: 10.1039/c7sc04531j
+
+For this particular version, please cite also :
+
+   Raising the Performance of the Tinker-HP Molecular Modeling Package
+   [Article v1.0]
+
+   Luc-Henri Jolly, Alejandro Duran, Louis Lagardere, Jay W. Ponder,
+   Pengyu Y. Ren and Jean-Philip Piquemal,
+
+   LiveCoMS, 2019, 1 (2), 10409, doi: 10.33011/livecoms.1.2.10409
+
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+ In auto-tuning mode......
+ factors:            1           2           4           8
+ processor grid           1  by            8  time=  1.542389392852783E-003
+ processor grid           2  by            4  time=  9.081661701202393E-004
+ processor grid           4  by            2  time=  8.378922939300537E-004
+ processor grid           8  by            1  time=  6.962418556213379E-004
+ the best processor grid is probably            8  by            1
+  
+ ***** Using the generic FFT engine *****
+  
+
+ Smooth Particle Mesh Ewald Parameters :
+
+    Ewald Coefficient      Charge Grid Dimensions      B-Spline Order
+
+          0.5446               64    64    64                 5
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+
+ Molecular Dynamics Trajectory via r-RESPA MTS Algorithm
+ time vdw =   3.953886032104492E-002
+ time torquevec2  4.796981811523438E-003
+ time elec =   6.434297561645508E-002
+ time efld0_directvec   2.011704444885254E-002
+ time tmatxbvec   1.707196235656738E-002
+ time tmatxbvec   1.710009574890137E-002
+ time tmatxbvec   1.709389686584473E-002
+ time tmatxbvec   1.705193519592285E-002
+ time tmatxbvec   1.702094078063965E-002
+ time tmatxbvec   1.700401306152344E-002
+ time tmatxbvec   1.712799072265625E-002
+ time tmatxbvec   1.698994636535645E-002
+ time tmatxbvec   1.699399948120117E-002
+ time tmatxbvec   1.705098152160645E-002
+ time tmatxbvec   1.698589324951172E-002
+ time tmatxbvec   1.712679862976074E-002
+ time eprecip1vec =   3.892993927001953E-002
+ time torquevec2  4.105091094970703E-003
+ time eprealcvec =   5.283188819885254E-002
+ time torquevec2  1.227140426635742E-003
+ time polar =   0.602143049240112     
+
+ Random Number Generator Initialized with SEED :          12345
+
+    MD Step      E Total   E Potential     E Kinetic       Temp       Pres
+
+         1   -45564.1921   -69515.9858    23951.7937     341.10    2098.30
+ time vdw =   3.897094726562500E-002
+ time torquevec2  3.113031387329102E-003
+ time elec =   4.921817779541016E-002
+ time efld0_directvec   2.001309394836426E-002
+ time tmatxbvec   1.709294319152832E-002
+ time tmatxbvec   1.704406738281250E-002
+ time tmatxbvec   1.703000068664551E-002
+ time tmatxbvec   1.701188087463379E-002
+ time tmatxbvec   1.704597473144531E-002
+ time tmatxbvec   1.705789566040039E-002
+ time tmatxbvec   1.704907417297363E-002
+ time tmatxbvec   1.706600189208984E-002
+ time tmatxbvec   1.704096794128418E-002
+ time tmatxbvec   1.712298393249512E-002
+ time tmatxbvec   1.702499389648438E-002
+ time tmatxbvec   1.706910133361816E-002
+ time eprecip1vec =   3.815197944641113E-002
+ time torquevec2  3.150939941406250E-003
+ time eprealcvec =   5.258083343505859E-002
+ time torquevec2  1.255035400390625E-003
+ time polar =   0.590709924697876     
+         2   -45476.1292   -69769.4797    24293.3505     345.97    4731.61
+ time vdw =   3.893494606018066E-002
+ time torquevec2  3.184080123901367E-003
+ time elec =   4.830598831176758E-002
+ time efld0_directvec   2.009105682373047E-002
+ time tmatxbvec   1.707696914672852E-002
+ time tmatxbvec   1.694202423095703E-002
+ time tmatxbvec   1.692390441894531E-002
+ time tmatxbvec   1.694107055664062E-002
+ time tmatxbvec   1.699209213256836E-002
+ time tmatxbvec   1.701283454895020E-002
+ time tmatxbvec   1.697206497192383E-002
+ time tmatxbvec   1.700282096862793E-002
+ time tmatxbvec   1.694703102111816E-002
+ time tmatxbvec   1.693320274353027E-002
+ time tmatxbvec   1.703405380249023E-002
+ time tmatxbvec   1.708912849426270E-002
+ time eprecip1vec =   3.777599334716797E-002
+ time torquevec2  3.206968307495117E-003
+ time eprealcvec =   5.261802673339844E-002
+ time torquevec2  1.337051391601562E-003
+ time polar =   0.590816020965576     
+         3   -45561.2085   -70208.4662    24647.2577     351.01    3450.26
+ time vdw =   3.882694244384766E-002
+ time torquevec2  3.148078918457031E-003
+ time elec =   4.765295982360840E-002
+ time efld0_directvec   2.007508277893066E-002
+ time tmatxbvec   1.696610450744629E-002
+ time tmatxbvec   1.695084571838379E-002
+ time tmatxbvec   1.694703102111816E-002
+ time tmatxbvec   1.694798469543457E-002
+ time tmatxbvec   1.699876785278320E-002
+ time tmatxbvec   1.701784133911133E-002
+ time tmatxbvec   1.696109771728516E-002
+ time tmatxbvec   1.695108413696289E-002
+ time tmatxbvec   1.694297790527344E-002
+ time tmatxbvec   1.693701744079590E-002
+ time tmatxbvec   1.695990562438965E-002
+ time tmatxbvec   1.699781417846680E-002
+ time eprecip1vec =   3.769707679748535E-002
+ time torquevec2  3.210067749023438E-003
+ time eprealcvec =   5.262494087219238E-002
+ time torquevec2  1.337051391601562E-003
+ time polar =   0.588479042053223     
+         4   -45809.5057   -71655.7101    25846.2044     368.08   -2429.56
+ time vdw =   3.894901275634766E-002
+ time torquevec2  3.159046173095703E-003
+ time elec =   4.857492446899414E-002
+ time efld0_directvec   2.007007598876953E-002
+ time tmatxbvec   1.701402664184570E-002
+ time tmatxbvec   1.694202423095703E-002
+ time tmatxbvec   1.700711250305176E-002
+ time tmatxbvec   1.693201065063477E-002
+ time tmatxbvec   1.693487167358398E-002
+ time tmatxbvec   1.698899269104004E-002
+ time tmatxbvec   1.712989807128906E-002
+ time tmatxbvec   1.696896553039551E-002
+ time tmatxbvec   1.696705818176270E-002
+ time tmatxbvec   1.698398590087891E-002
+ time tmatxbvec   1.699995994567871E-002
+ time tmatxbvec   1.693892478942871E-002
+ time eprecip1vec =   3.768992424011230E-002
+ time torquevec2  3.182172775268555E-003
+ time eprealcvec =   5.259394645690918E-002
+ time torquevec2  1.355886459350586E-003
+ time polar =   0.584137201309204     
+         5   -45494.1194   -69154.5556    23660.4362     336.95    -155.17
+ time vdw =   3.889703750610352E-002
+ time torquevec2  3.150939941406250E-003
+ time elec =   4.814100265502930E-002
+ time efld0_directvec   2.008295059204102E-002
+ time tmatxbvec   1.689600944519043E-002
+ time tmatxbvec   1.689195632934570E-002
+ time tmatxbvec   1.698493957519531E-002
+ time tmatxbvec   1.699900627136230E-002
+ time tmatxbvec   1.692891120910645E-002
+ time tmatxbvec   1.699709892272949E-002
+ time tmatxbvec   1.698803901672363E-002
+ time tmatxbvec   1.700305938720703E-002
+ time tmatxbvec   1.699590682983398E-002
+ time tmatxbvec   1.699185371398926E-002
+ time tmatxbvec   1.701807975769043E-002
+ time tmatxbvec   1.694107055664062E-002
+ time eprecip1vec =   3.797602653503418E-002
+ time torquevec2  3.175973892211914E-003
+ time eprealcvec =   5.261397361755371E-002
+ time torquevec2  1.332998275756836E-003
+ time polar =   0.587196111679077     
+         6   -45920.1198   -72701.6403    26781.5205     381.40    3241.78
+ time vdw =   3.897309303283691E-002
+ time torquevec2  3.157138824462891E-003
+ time elec =   4.757785797119141E-002
+ time efld0_directvec   2.007985115051270E-002
+ time tmatxbvec   1.699113845825195E-002
+ time tmatxbvec   1.695418357849121E-002
+ time tmatxbvec   1.702713966369629E-002
+ time tmatxbvec   1.703906059265137E-002
+ time tmatxbvec   1.696801185607910E-002
+ time tmatxbvec   1.699113845825195E-002
+ time tmatxbvec   1.696395874023438E-002
+ time tmatxbvec   1.705002784729004E-002
+ time tmatxbvec   1.699995994567871E-002
+ time tmatxbvec   1.701092720031738E-002
+ time tmatxbvec   1.705193519592285E-002
+ time tmatxbvec   1.699995994567871E-002
+ time eprecip1vec =   3.776288032531738E-002
+ time torquevec2  3.181934356689453E-003
+ time eprealcvec =   5.265212059020996E-002
+ time torquevec2  1.333951950073242E-003
+ time polar =   0.586309909820557     
+         7   -45623.3336   -70684.2710    25060.9374     356.90    4542.34
+ time vdw =   3.881597518920898E-002
+ time torquevec2  3.191947937011719E-003
+ time elec =   4.862380027770996E-002
+ time efld0_directvec   2.007412910461426E-002
+ time tmatxbvec   1.711106300354004E-002
+ time tmatxbvec   1.704192161560059E-002
+ time tmatxbvec   1.704883575439453E-002
+ time tmatxbvec   1.703906059265137E-002
+ time tmatxbvec   1.691699028015137E-002
+ time tmatxbvec   1.705193519592285E-002
+ time tmatxbvec   1.708698272705078E-002
+ time tmatxbvec   1.698803901672363E-002
+ time tmatxbvec   1.708793640136719E-002
+ time eprecip1vec =   3.807091712951660E-002
+ time torquevec2  3.236055374145508E-003
+ time eprealcvec =   5.266213417053223E-002
+ time torquevec2  1.344919204711914E-003
+ time polar =   0.477620840072632     
+         8   -46034.2885   -72797.9836    26763.6951     381.15     364.77
+ time vdw =   3.889298439025879E-002
+ time torquevec2  3.148078918457031E-003
+ time elec =   4.853606224060059E-002
+ time efld0_directvec   2.006697654724121E-002
+ time tmatxbvec   1.704502105712891E-002
+ time tmatxbvec   1.699995994567871E-002
+ time tmatxbvec   1.694798469543457E-002
+ time tmatxbvec   1.710200309753418E-002
+ time tmatxbvec   1.701211929321289E-002
+ time tmatxbvec   1.696896553039551E-002
+ time tmatxbvec   1.696586608886719E-002
+ time tmatxbvec   1.703786849975586E-002
+ time tmatxbvec   1.696085929870605E-002
+ time eprecip1vec =   3.727793693542480E-002
+ time torquevec2  3.170967102050781E-003
+ time eprealcvec =   5.260801315307617E-002
+ time torquevec2  1.331090927124023E-003
+ time polar =   0.476921081542969     
+         9   -45808.2234   -69862.2851    24054.0617     342.56   -1526.33
+ time vdw =   3.876900672912598E-002
+ time torquevec2  3.196001052856445E-003
+ time elec =   4.911684989929199E-002
+ time efld0_directvec   2.003002166748047E-002
+ time tmatxbvec   1.705408096313477E-002
+ time tmatxbvec   1.696515083312988E-002
+ time tmatxbvec   1.698112487792969E-002
+ time tmatxbvec   1.699900627136230E-002
+ time tmatxbvec   1.701593399047852E-002
+ time tmatxbvec   1.704788208007812E-002
+ time tmatxbvec   1.701903343200684E-002
+ time tmatxbvec   1.693105697631836E-002
+ time tmatxbvec   1.694607734680176E-002
+ time eprecip1vec =   3.811502456665039E-002
+ time torquevec2  3.121137619018555E-003
+ time eprealcvec =   5.254793167114258E-002
+ time torquevec2  1.363992691040039E-003
+ time polar =   0.475865840911865     
+        10   -45886.0264   -69472.6474    23586.6210     335.90    3414.11

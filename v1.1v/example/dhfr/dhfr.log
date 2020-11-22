@@ -1,0 +1,223 @@
+
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            Tinker-HP  ---  Software Tools for Molecular Design         ###
+ ##                                                                          ##
+ ##                        Version 1.1v  Septembre 2018                      ##
+ ##                                                                          ##
+ ##     Copyright (c) Washington University in Saint Louis (WU)              ##
+ ##                   The University of Texas at Austin                      ##
+ ##                   Sorbonne Universites, UPMC (Sorbonne)                  ##
+ ##                              1990-2017                                   ##
+ ###                       All Rights Reserved                              ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+License Number : LICENSENUMBER
+
+Cite this work as :
+
+   Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale
+   Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+
+   Louis Lagardere, Luc-Henri Jolly, Filippo Lipparini, Felix Aviat,
+   Benjamin Stamm, Zhifeng F. Jing, Matthew Harger, Hedieh Torabifard,
+   G. Andres Cisneros, Michael J. Schnieders, Nohad Gresh, Yvon Maday,
+   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal,
+
+   Chem. Sci., 2018, 9, 956-972,  doi: 10.1039/c7sc04531j
+
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+ In auto-tuning mode......
+ factors:            1           2           4           8
+ processor grid           1  by            8  time=  1.570522785186768E-003
+ processor grid           2  by            4  time=  9.069740772247314E-004
+ processor grid           4  by            2  time=  8.118748664855957E-004
+ processor grid           8  by            1  time=  7.070302963256836E-004
+ the best processor grid is probably            8  by            1
+  
+ ***** Using the MKL engine *****
+  
+
+ Smooth Particle Mesh Ewald Parameters :
+
+    Ewald Coefficient      Charge Grid Dimensions      B-Spline Order
+
+          0.5446               64    64    64                 5
+ time vlistcell    =   0.649709939956665     
+ time mlistcell    =   0.486884117126465     
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+ time vlistcell    =   0.625802993774414     
+ time mlistcell    =   0.474846124649048     
+
+ Molecular Dynamics Trajectory via r-RESPA MTS Algorithm
+ time vdw =   8.229112625122070E-002
+ time elec =   6.466889381408691E-002
+ time tmatxb   2.455806732177734E-002
+ time tmatxb   2.457880973815918E-002
+ time tmatxb   2.463817596435547E-002
+ time tmatxb   2.444005012512207E-002
+ time tmatxb   2.455902099609375E-002
+ time tmatxb   2.459692955017090E-002
+ time tmatxb   2.456998825073242E-002
+ time tmatxb   2.461194992065430E-002
+ time tmatxb   2.441096305847168E-002
+ time tmatxb   2.446699142456055E-002
+ time tmatxb   2.459096908569336E-002
+ time tmatxb   2.445387840270996E-002
+ time epreal =   6.663918495178223E-002
+ time polar =   0.717432975769043     
+
+ Random Number Generator Initialized with SEED :          12345
+
+    MD Step      E Total   E Potential     E Kinetic       Temp       Pres
+
+         1   -45564.1921   -69515.9858    23951.7937     341.10    2098.30
+ time vdw =   8.198904991149902E-002
+ time elec =   5.503296852111816E-002
+ time tmatxb   2.450489997863770E-002
+ time tmatxb   2.442979812622070E-002
+ time tmatxb   2.445602416992188E-002
+ time tmatxb   2.447795867919922E-002
+ time tmatxb   2.451801300048828E-002
+ time tmatxb   2.447986602783203E-002
+ time tmatxb   2.455806732177734E-002
+ time tmatxb   2.442312240600586E-002
+ time tmatxb   2.440595626831055E-002
+ time tmatxb   2.446603775024414E-002
+ time tmatxb   2.442598342895508E-002
+ time tmatxb   2.448892593383789E-002
+ time epreal =   6.678605079650879E-002
+ time polar =   0.689440011978149     
+         2   -45476.1292   -69769.4797    24293.3505     345.97    4731.61
+ time vdw =   8.223509788513184E-002
+ time elec =   5.540394783020020E-002
+ time tmatxb   2.457404136657715E-002
+ time tmatxb   2.460598945617676E-002
+ time tmatxb   2.465009689331055E-002
+ time tmatxb   2.449202537536621E-002
+ time tmatxb   2.444291114807129E-002
+ time tmatxb   2.469611167907715E-002
+ time tmatxb   2.479290962219238E-002
+ time tmatxb   2.449393272399902E-002
+ time tmatxb   2.444696426391602E-002
+ time tmatxb   2.460503578186035E-002
+ time tmatxb   2.456402778625488E-002
+ time tmatxb   2.453804016113281E-002
+ time epreal =   6.661891937255859E-002
+ time polar =   0.701654195785522     
+         3   -45561.2085   -70208.4662    24647.2577     351.01    3450.26
+ time vdw =   8.227086067199707E-002
+ time elec =   5.371713638305664E-002
+ time tmatxb   2.452301979064941E-002
+ time tmatxb   2.462100982666016E-002
+ time tmatxb   2.444410324096680E-002
+ time tmatxb   2.448296546936035E-002
+ time tmatxb   2.449297904968262E-002
+ time tmatxb   2.462816238403320E-002
+ time tmatxb   2.451801300048828E-002
+ time tmatxb   2.464795112609863E-002
+ time tmatxb   2.443408966064453E-002
+ time tmatxb   2.458381652832031E-002
+ time tmatxb   2.448701858520508E-002
+ time tmatxb   2.441382408142090E-002
+ time epreal =   6.660413742065430E-002
+ time polar =   0.691140890121460     
+         4   -45809.5057   -71655.7101    25846.2044     368.08   -2429.56
+ time vdw =   8.208298683166504E-002
+ time elec =   5.678701400756836E-002
+ time tmatxb   2.451992034912109E-002
+ time tmatxb   2.465701103210449E-002
+ time tmatxb   2.446198463439941E-002
+ time tmatxb   2.443218231201172E-002
+ time tmatxb   2.469992637634277E-002
+ time tmatxb   2.448105812072754E-002
+ time tmatxb   2.454900741577148E-002
+ time tmatxb   2.447795867919922E-002
+ time tmatxb   2.450394630432129E-002
+ time tmatxb   2.462196350097656E-002
+ time tmatxb   2.447080612182617E-002
+ time tmatxb   2.460908889770508E-002
+ time epreal =   6.688904762268066E-002
+ time polar =   0.708716869354248     
+         5   -45494.1194   -69154.5556    23660.4362     336.95    -155.17
+ time vdw =   8.229708671569824E-002
+ time elec =   5.492615699768066E-002
+ time tmatxb   2.447104454040527E-002
+ time tmatxb   2.442789077758789E-002
+ time tmatxb   2.441096305847168E-002
+ time tmatxb   2.443099021911621E-002
+ time tmatxb   2.443695068359375E-002
+ time tmatxb   2.444291114807129E-002
+ time tmatxb   2.445197105407715E-002
+ time tmatxb   2.441310882568359E-002
+ time tmatxb   2.443194389343262E-002
+ time tmatxb   2.464699745178223E-002
+ time tmatxb   2.439093589782715E-002
+ time tmatxb   2.466106414794922E-002
+ time epreal =   6.679511070251465E-002
+ time polar =   0.703106880187988     
+         6   -45920.1198   -72701.6403    26781.5205     381.40    3241.78
+ time vdw =   8.203315734863281E-002
+ time elec =   5.551910400390625E-002
+ time tmatxb   2.446007728576660E-002
+ time tmatxb   2.445602416992188E-002
+ time tmatxb   2.442598342895508E-002
+ time tmatxb   2.448701858520508E-002
+ time tmatxb   2.449488639831543E-002
+ time tmatxb   2.450895309448242E-002
+ time tmatxb   2.442193031311035E-002
+ time tmatxb   2.446007728576660E-002
+ time tmatxb   2.441191673278809E-002
+ time tmatxb   2.444982528686523E-002
+ time tmatxb   2.444481849670410E-002
+ time tmatxb   2.444696426391602E-002
+ time epreal =   6.693220138549805E-002
+ time polar =   0.690643072128296     
+         7   -45623.3336   -70684.2710    25060.9374     356.90    4542.34
+ time vdw =   8.216714859008789E-002
+ time elec =   5.568194389343262E-002
+ time tmatxb   2.448296546936035E-002
+ time tmatxb   2.453804016113281E-002
+ time tmatxb   2.447700500488281E-002
+ time tmatxb   2.447414398193359E-002
+ time tmatxb   2.456712722778320E-002
+ time tmatxb   2.448391914367676E-002
+ time tmatxb   2.447199821472168E-002
+ time tmatxb   2.453708648681641E-002
+ time tmatxb   2.504587173461914E-002
+ time epreal =   6.663799285888672E-002
+ time polar =   0.574399948120117     
+         8   -46034.2885   -72797.9836    26763.6951     381.15     364.77
+ time vdw =   8.222603797912598E-002
+ time elec =   5.384612083435059E-002
+ time tmatxb   2.455306053161621E-002
+ time tmatxb   2.454590797424316E-002
+ time tmatxb   2.451610565185547E-002
+ time tmatxb   2.449297904968262E-002
+ time tmatxb   2.455997467041016E-002
+ time tmatxb   2.453494071960449E-002
+ time tmatxb   2.454304695129395E-002
+ time tmatxb   2.458095550537109E-002
+ time tmatxb   2.456307411193848E-002
+ time epreal =   6.658411026000977E-002
+ time polar =   0.576647996902466     
+         9   -45808.2234   -69862.2851    24054.0617     342.56   -1526.33
+ time vdw =   8.237814903259277E-002
+ time elec =   5.466198921203613E-002
+ time tmatxb   2.442312240600586E-002
+ time tmatxb   2.445101737976074E-002
+ time tmatxb   2.452087402343750E-002
+ time tmatxb   2.454900741577148E-002
+ time tmatxb   2.444100379943848E-002
+ time tmatxb   2.449107170104980E-002
+ time tmatxb   2.451705932617188E-002
+ time tmatxb   2.438712120056152E-002
+ time tmatxb   2.443504333496094E-002
+ time epreal =   6.718015670776367E-002
+ time polar =   0.571120023727417     
+        10   -45886.0264   -69472.6474    23586.6210     335.90    3414.11

@@ -1,0 +1,433 @@
+
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            Tinker-HP  ---  Software Tools for Molecular Design         ###
+ ##                                                                          ##
+ ##                         Version 1.1v  December 2019                      ##
+ ##                                                                          ##
+ ##     Copyright (c) Washington University in Saint Louis (WU)              ##
+ ##                   The University of Texas at Austin                      ##
+ ##                   Sorbonne Universite, UPMC (Sorbonne)                   ##
+ ##                              1990-2019                                   ##
+ ###                       All Rights Reserved                              ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+License Number : LICENSENUMBER
+
+Cite this work as :
+
+   Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale
+   Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+
+   Louis Lagardere, Luc-Henri Jolly, Filippo Lipparini, Felix Aviat,
+   Benjamin Stamm, Zhifeng F. Jing, Matthew Harger, Hedieh Torabifard,
+   G. Andres Cisneros, Michael J. Schnieders, Nohad Gresh, Yvon Maday,
+   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal,
+
+   Chem. Sci., 2018, 9, 956-972,  doi: 10.1039/c7sc04531j
+
+For this particular version, please cite also :
+
+   Raising the Performance of the Tinker-HP Molecular Modeling Package
+   [Article v1.0]
+
+   Luc-Henri Jolly, Alejandro Duran, Louis Lagardere, Jay W. Ponder,
+   Pengyu Y. Ren and Jean-Philip Piquemal,
+
+   LiveCoMS, 2019, 1 (2), 10409, doi: 10.33011/livecoms.1.2.10409
+
+ 3D Domain Decomposition
+Nx =    23  Ny =     1  Nz =     1
+ In auto-tuning mode......
+ factors:            1          23
+ processor grid           1  by           23  time=  6.502983686716660E-003
+ processor grid          23  by            1  time=  4.341444405524627E-003
+ the best processor grid is probably           23  by            1
+  
+ ***** Using the generic FFT engine *****
+  
+
+ Smooth Particle Mesh Ewald Parameters :
+
+    Ewald Coefficient      Charge Grid Dimensions      B-Spline Order
+
+          0.5446              128   128   128                 5
+ 3D Domain Decomposition
+Nx =    23  Ny =     1  Nz =     1
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle      101753-H   101752-O   101754-H      104.5200  122.7320      5.5569
+ Angle      138593-H   138592-O   138594-H      104.5200  121.9494      5.0896
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond          915-CT1    919-HB                  1.0800    1.2127      5.8073
+ Bond         5145-NH1   5146-CT1                 1.4300    1.5635      5.7023
+ Bond         6793-CT1   6798-CT1                 1.5000    1.6528      5.1936
+ Bond         7817-NC2   7828-HC                  1.0000    1.1218      6.7495
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle        4183-C     4188-NH1   4189-CT1    120.0000  139.5591      5.8267
+ Angle       93911-H    93910-O    93912-H      104.5200  122.8750      5.6445
+ Angle      159677-H   159676-O   159678-H      104.5200  123.2578      5.8824
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         2769-CT1   2774-CT1                 1.5000    1.6635      5.9479
+ Bond         8015-CT1   8020-CT3                 1.5380    1.6910      5.2098
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       19124-H    19123-O    19125-H      104.5200  122.9463      5.6884
+ Angle       76412-H    76411-O    76413-H      104.5200  122.3086      5.3016
+ Angle       79034-H    79033-O    79035-H      104.5200  122.5545      5.4491
+ Angle      139025-H   139024-O   139026-H      104.5200  126.7429      8.2740
+
+ Individual Improper Dihedral Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Improper     3686-C     3685-CT1   3705-N     3687-O     -12.8692      6.0539
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         1040-NY    1049-H                   0.9760    1.0814      5.1649
+ Bond       110320-O   110322-H                   0.9572    1.0633      5.0703
+ Bond       117721-O   117723-H                   0.9572    1.0640      5.1323
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       78209-H    78208-O    78210-H      104.5200  122.5870      5.4688
+ Angle       83987-H    83986-O    83988-H      104.5200  121.9687      5.1009
+
+ Individual Torsional Angle Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Torsion      7225-CT1   7230-CT1   7231-OH1   7234-H     -31.9238      3.0060
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         5918-CT1   5922-HB                  1.0800    1.2156      6.0673
+ Bond         6584-CT1   6588-HB                  1.0800    1.2342      7.8440
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         6200-CT1   6205-CT1                 1.5000    1.6687      6.3308
+ Bond         7250-CT1   7254-HB                  1.0800    1.2297      7.3905
+ Bond        77257-O    77259-H                   0.9572    1.0750      6.2442
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond        38506-O    38508-H                   0.9572    1.0654      5.2692
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       21197-H    21196-O    21198-H      104.5200  123.8089      6.2335
+ Angle       89585-H    89584-O    89586-H      104.5200  123.0575      5.7573
+ Angle      120920-H   120919-O   120921-H      104.5200  124.6399      6.7822
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond        31246-O    31248-H                   0.9572    1.0643      5.1649
+ Bond        87709-O    87711-H                   0.9572    1.0732      6.0547
+ Bond       149014-O   149016-H                   0.9572    1.0701      5.7370
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         9657-C     9669-N                   1.3000    1.4439      5.3844
+ Bond        12492-CT1  12497-CT1                 1.5000    1.6611      5.7753
+ Bond        14577-CT1  14582-CT2                 1.5380    1.7003      5.8609
+ Bond        14584-CT3  14589-HA                  1.1110    1.2504      6.2574
+ Bond        16535-CA   16543-HP                  1.0800    1.2053      5.3365
+ Bond        35758-O    35760-H                   0.9572    1.0649      5.2171
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       76061-H    76060-O    76062-H      104.5200  122.7236      5.5518
+ Angle      126647-H   126646-O   126648-H      104.5200  124.7245      6.8393
+ Angle      138437-H   138436-O   138438-H      104.5200  123.4948      6.0321
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond        15032-CT1  15036-HB                  1.0800    1.2033      5.0186
+ Bond        15602-CT3  15609-HA                  1.1110    1.2592      7.0692
+ Bond        38599-O    38600-H                   0.9572    1.0642      5.1488
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond        11328-CT1  11333-CT2                 1.5380    1.7184      7.2438
+ Bond        11343-CT1  11347-HB                  1.0800    1.2400      8.4530
+ Bond       160702-O   160704-H                   0.9572    1.0645      5.1856
+ Bond       149521-O   149522-H                   0.9572    1.0640      5.1357
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       16384-NH1  16385-CT1  16386-C      107.0000  125.9293      5.4575
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       39422-H    39421-O    39423-H      104.5200  122.7630      5.5758
+ Angle       40424-H    40423-O    40425-H      104.5200  122.8306      5.6172
+ Angle       50906-H    50905-O    50907-H      104.5200  121.9257      5.0758
+ Angle      154967-H   154966-O   154968-H      104.5200  121.9520      5.0911
+
+ Individual Improper Dihedral Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Improper    13061-C    13060-CT1  13078-NH1  13062-O      11.7730      5.0665
+
+ Individual Torsional Angle Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Torsion     16386-C    16405-NH1  16406-CT1  16411-CT2   -45.3413      3.0652
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond        13841-CT1  13846-CT1                 1.5000    1.6638      5.9728
+ Bond        71311-O    71312-H                   0.9572    1.0757      6.3163
+ Bond       105910-O   105911-H                   0.9572    1.0688      5.6085
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       92159-H    92158-O    92160-H      104.5200  122.3276      5.3129
+
+ Individual Improper Dihedral Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Improper    10258-C    10257-CT1  10267-NH1  10259-O     -11.6988      5.0028
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         1513-N     1514-CP1                 1.4340    1.5689      5.8262
+ Bond        13591-NH1  13595-H                   0.9970    1.1139      6.0087
+ Bond       110062-O   110064-H                   0.9572    1.0664      5.3658
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       13539-CT2  13540-CT2  13541-CC     108.0000  128.4111      6.5992
+ Angle       45662-H    45661-O    45663-H      104.5200  123.7190      6.1755
+ Angle      141779-H   141778-O   141780-H      104.5200  121.9954      5.1165
+ Angle      172031-H   172030-O   172032-H      104.5200  125.1096      7.1026
+
+ Individual Improper Dihedral Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Improper     9243-C     9242-CT1   9255-NH1   9244-O     -11.7844      5.0764
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond        14548-NH1  14549-CT1                 1.4300    1.5614      5.5269
+ Bond        15948-CT2  15954-HA                  1.1110    1.2444      5.4957
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       77873-H    77872-O    77874-H      104.5200  122.9639      5.6993
+ Angle       99353-H    99352-O    99354-H      104.5200  121.9088      5.0659
+ Angle      151481-H   151480-O   151482-H      104.5200  124.3552      6.5916
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         1984-CT1   1988-HB                  1.0800    1.2465      9.1451
+ Bond         3056-CT2   3060-HB                  1.0800    1.2171      6.2050
+ Bond         3114-CT1   3118-HB                  1.0800    1.2204      6.5033
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       57233-H    57232-O    57234-H      104.5200  126.3942      8.0164
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond       124021-O   124022-H                   0.9572    1.0692      5.6480
+
+ Individual Torsional Angle Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Torsion       129-C      141-NH1    142-CT1    147-CT2   -42.9212      3.1181
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       22610-H    22609-O    22611-H      104.5200  123.1496      5.8146
+ Angle       52622-H    52621-O    52623-H      104.5200  123.5741      6.0827
+ Angle       25691-H    25690-O    25692-H      104.5200  122.4247      5.3710
+ Angle       62858-H    62857-O    62859-H      104.5200  122.7200      5.5496
+ Angle       66992-H    66991-O    66993-H      104.5200  122.3351      5.3173
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         9300-NH1   9301-CT1                 1.4300    1.5655      5.8790
+ Bond         9402-CT1   9407-CT1                 1.5000    1.6763      6.9124
+ Bond        10302-NH1  10303-CT1                 1.4300    1.5681      6.1059
+ Bond        11985-CT1  11990-CT1                 1.5000    1.6868      7.7678
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       34988-H    34987-O    34989-H      104.5200  123.4424      5.9989
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond        15463-NC2  15473-HC                  1.0000    1.1267      7.3088
+ Bond        87430-O    87431-H                   0.9572    1.0646      5.1872
+
+ Individual Torsional Angle Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Torsion      9000-C     9012-NH1   9013-CT1   9018-CT2   -38.9742      3.1994
+ Torsion     11954-C    11959-NH1  11960-CT1  11965-CT2   -47.8136      3.0088
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         3348-NR3   3354-H                   1.0000    1.1323      7.9332
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       51737-H    51736-O    51738-H      104.5200  121.8573      5.0359
+ Bond         8154-CT2   8159-HB                  1.0800    1.2626     11.0063
+ Bond        10636-CA   10643-HP                  1.0800    1.2032      5.1596
+ Angle      118754-H   118753-O   118755-H      104.5200  123.6063      6.1032
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle        8386-NH1   8387-CT2   8388-C      107.0000  126.0432      5.5234
+
+ Individual Torsional Angle Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Torsion      3262-CT3   3260-CT1   3261-OH1   3264-H     -14.6052      3.5050
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       20492-H    20491-O    20493-H      104.5200  124.9507      6.9933
+ Angle       28664-H    28663-O    28665-H      104.5200  126.7682      8.2929
+ Angle      146468-H   146467-O   146469-H      104.5200  122.8704      5.6417
+
+ Individual Improper Dihedral Interactions :
+
+ Type                         Atom Names                     Angle      Energy
+
+ Improper    13449-C    13448-CT1  13469-NH1  13450-O     -13.0446      6.2201
+
+ Individual Bond Stretching Interactions :
+
+ Type              Atom Names                      Ideal    Actual      Energy
+
+ Bond         1968-CT1   1972-HB                  1.0800    1.2129      5.8244
+ Bond         4970-CT1   4975-CT1                 1.5000    1.6755      6.8518
+ Bond        41545-O    41546-H                   0.9572    1.0641      5.1433
+ Bond       126211-O   126213-H                   0.9572    1.0790      6.6763
+ Bond       145570-O   145572-H                   0.9572    1.0644      5.1689
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle        1338-C     1337-CT1   1341-HB     109.5000   90.9837      5.2220
+ Angle      144566-H   144565-O   144567-H      104.5200  122.0684      5.1593
+
+ Individual Angle Bending Interactions :
+
+ Type                  Atom Names                  Ideal    Actual      Energy
+
+ Angle       58760-H    58759-O    58761-H      104.5200  126.4788      8.0786
+ Angle      106781-H   106780-O   106782-H      104.5200  125.1467      7.1282
+ time elj3 =   3.455342724919319E-002
+ time echarge3 =   0.117988176643848     
+
+ Total Potential Energy :            -492633.4457 Kcal/mole
+
+ Energy Component Breakdown :           Kcal/mole      Interactions
+
+ Bond Stretching                       42065.5122         122324
+ Angle Bending                         28917.3105          84707
+ Urey-Bradley                           1378.3670          15474
+ Improper Dihedral                       941.7231           3124
+ Torsional Angle                        6274.0785          48026
+ Van der Waals                         52804.5504       26549774
+ Charge-Charge                       -625014.9874       12481415
