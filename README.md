@@ -37,7 +37,7 @@ L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Har
 M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access)
 https://doi.org/10.1039/C7SC04531J
 
-- if you are using the AVX512 vectorized version, please also cite:
+- if you are using the AVX512 vectorized version (1.1v) dedicated to Intel's CPUs (Skylake, CascadeLake etc...), please also cite:
 Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0].
 L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access)
  https://doi.org/10.33011/livecoms.1.2.10409
