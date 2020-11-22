@@ -25,12 +25,12 @@ polarizable (AMOEBA, Amberpol...) and classical (Amber, Charmm, OPLS...) force f
 Tinker-HP is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf).
 Non-academic entities (e.g., companies, for profit organizations) should contact the managing universities (see license).
 
-If you want to access the latest Tinker-HP version or want support, it is under the same license but you have to register:
+If you want support, support is only provided to registered users:
 
 i) <B>Please fill in the form at:</B>
-http://tinker-hp.ip2ct.upmc.fr/?Download-instructions
+https://dasher.wustl.edu/tinker/downloads/license.pdf
 
-You'll receive the License Form to be signed and sent back to TinkerHP_Download@ip2ct.upmc.fr.
+and sent it back to TinkerHP_Download@ip2ct.upmc.fr to be added to the user support.
 
 ii) <B>Please cite:</B>
 
@@ -58,7 +58,7 @@ J. A. Rackers, Z. Wang, C. Lu, M. L. Maury, L. Lagardère, M. J. Schnieders, J.-
 
 iii) <B>Support:</B>
 
-We provide support to registered users only (http://tinker-hp.ip2ct.upmc.fr/?Download-instructions).
+We provide support to registered users only (see i) ).
 
 Email: TinkerHP_Support@ip2ct.upmc.fr
 
