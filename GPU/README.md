@@ -17,16 +17,16 @@ This work will be part of a larger 2021 Tinker-HP 1.3 official release.
 There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) as long as the feature you are looking for is available on the GPU version. The present version is optimized to accelerate simulations using the AMOEBA polarizable force field. Some minimal non-polarizable capabilities are present (enhanced support will be available in 2021). The code has been extensively tested on 1080, 2080, 3090, P100, V100 and A100 NVIDIA GPU cards and support multi-GPUs computations. It will be part of the major Tinker-HP 1.3 2021 release but this present version will continue to evolve. 
 
 ### GPU available features
-   - dynamic analyze and minimize program
+   - dynamic analyze and minimize programs
    - Integrators (RESPA, RESPA1, BAOAB, BAOAB-RESPA1, VERLET)
    - Amoeba polarizable force field, classical force fields (AMBER/CHARMM/OPLS)
-   - New implementation of PCG and DC-DIIS solver for polarization (DC-DIIS is not adapted to device ! use PCG instead)
+   - New implementation of PCG and DC-DIIS solver for polarization (DC-DIIS is not adapted to the device, use PCG instead)
    - Bussi Thermostat for NVT simulations  (it is default)
    - Montecarlo and Berendsen barostat for NPT simulations (default is Berendsen)
    - Accelerate Molecular Dynamics : aMD and GaMD Simulations
    - Steered Molecular Dynamics (SMD)
-   - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process)
-   - Plumed support (to appear)
+   - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process for now)
+   - Plumed support (to appear : 12/2020)
    - More to come
    
    <B>If you use the code please cite :</B>
