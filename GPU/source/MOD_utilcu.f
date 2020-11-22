@@ -30,10 +30,12 @@ c
         integer  ,parameter  :: BLOCK_DIM=128
         integer  ,parameter  :: PME_BLOCK_DIM=64
         integer  ,parameter  :: PME_BLOCK_DIM1=32
+        integer  ,parameter  :: VDW_BLOCK_DIM=BLOCK_DIM
         integer  ,constant   :: nproc, ndir
         real(t_p),constant :: xcell,ycell,zcell,i_xcell,i_ycell,i_zcell
      &           ,xcell2,ycell2,zcell2,eps_cell,box34
         logical  ,constant   :: octahedron
+        logical  ,constant   :: use_virial
 
         contains
 
@@ -70,6 +72,12 @@ c
         octahedron = octahedron_
         box34   = box34_
         !call disp_cell_cu<<<1,1>>>()
+        end subroutine
+
+        subroutine cu_update_vir_switch(use_vir)
+        implicit none
+        logical,intent(in):: use_vir
+        use_virial = use_vir
         end subroutine
 
         subroutine check_launch_kernel(msg)

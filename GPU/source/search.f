@@ -47,6 +47,7 @@ c
      &                          fgvalue,status)
       use domdec
       use linmin
+      use interfaces,only:sendvecmin
       use math
       use mpi
       use sizes     ,only:tinkerdebug
@@ -191,6 +192,8 @@ c
       call sendvecmin(s)
       call sendvecmin(x_0)
       call sendvecmin(x)
+      call sendvecmin(g)
+      call sendvecmin(p)
 c
 c     get new function and projected gradient following a step
 c
@@ -284,7 +287,14 @@ c
           x(3*(iglob-1)+j) = x(3*(iglob-1)+j) - cube*s(3*(iglob-1)+j)
         end do
       end do
+c
+c     send s,x_0,x,g and p vector among the neighbors, the dd is going to change
+c
+      call sendvecmin(s)
+      call sendvecmin(x_0)
       call sendvecmin(x)
+      call sendvecmin(g)
+      call sendvecmin(p)
 c
 c     get new function and gradient, then test for termination
 c
@@ -396,6 +406,14 @@ c
 c     try to restart from best point with smaller stepsize
 c
       if (f_1 .gt. f_0) then
+c
+c     send s,x_0,x,g and p vector among the neighbors, the dd is going to change
+c
+         call sendvecmin(s)
+         call sendvecmin(x_0)
+         call sendvecmin(x)
+         call sendvecmin(g)
+         call sendvecmin(p)
          ncalls = ncalls + 1
          f = fgvalue (x,g)
          status = 'IntplnErr'
@@ -422,6 +440,14 @@ c
 c     if already restarted once, then return with best point
 c
       if (status .eq. ' ReSearch') then
+c
+c     send s,x_0,x,g and p vector among the neighbors, the dd is going to change
+c
+         call sendvecmin(s)
+         call sendvecmin(x_0)
+         call sendvecmin(x)
+         call sendvecmin(g)
+         call sendvecmin(p)
          ncalls = ncalls + 1
          f = fgvalue (x,g)
          status = 'BadIntpln'

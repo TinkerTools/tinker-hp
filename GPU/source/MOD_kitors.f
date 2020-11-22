@@ -24,6 +24,7 @@ c
       integer maxnti
       parameter (maxnti=500)
       real(t_p) ti1(2,maxnti),ti2(2,maxnti),ti3(2,maxnti)
-      character*16 kti(maxnti)
-      save
+      integer(8) kti(maxnti)
+      integer(8) kti_sys(0:maxnti)
+!$acc declare create(kti_sys)
       end

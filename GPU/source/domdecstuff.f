@@ -269,7 +269,7 @@ c
       implicit none
       logical fast
       integer i,j
-      integer size_dir,size_rec
+      integer,save:: nb=0,nbr=0
       real(8) m1,m2,m3
 c
 c     Optimise reallocation of direct force array
@@ -278,10 +278,12 @@ c
      &   call mem_get(m1,m2)
       call timer_enter( timer_clear )
 
-      if (allocated(dep)) then
-         size_dir = size(dep,dim=2)
-         if (nbloc<=size_dir) goto 10
+      if (nb.lt.nbloc) then
+         nb = nbloc
          if (deb_Path) print*, 'allocsteprespa',nbloc
+!$acc wait
+      else
+         goto 10
       end if
 
       ! bonded force array
@@ -321,10 +323,12 @@ c
 c     Optimise reallocation of reciproqual force array
 c
  10   continue
-      if (allocated(deprec)) then
-         size_rec = size(deprec,dim=2)
-         if (nblocrec<=size_rec) goto 20
+      if (nbr.lt.nblocrec) then
+         nbr = nblocrec
          if (deb_Path) print*, 'allocsteprespa rec',nblocrec
+!$acc wait
+      else
+         goto 20
       end if
 
       if(pa.or.use_charge) call prmem_requestm(decrec,3,nblocrec)
@@ -340,7 +344,6 @@ c
          end if
       end if
 
-!$acc wait
  20   continue
 #ifndef TINKER_DEBUG
       if (.not.(fast)) then
@@ -1279,6 +1282,7 @@ c
       call image_inl(x3,y3,z3)
 c
       if (do3d) then
+        dist = 1000.0_ti_p
         x1 = xbegproc(iproc+1)
         x2 = xendproc(iproc+1)
         y1 = ybegproc(iproc+1)
@@ -1352,7 +1356,6 @@ c
 c     along one "edge"
 c
         else if ((x1.le.x3).and.(x2.ge.x3)) then
-          dist = 1000.0_ti_p
           xtemp(1) = x3
           ytemp(1) = y1
           ztemp(1) = z1
@@ -1375,7 +1378,6 @@ c
             if (disttemp.le.dist) dist = disttemp
           end do
         else if ((y1.le.y3).and.(y2.ge.y3)) then
-          dist = 1000.0_ti_p
           xtemp(1) = x1
           ytemp(1) = y3
           ztemp(1) = z1
@@ -1398,7 +1400,6 @@ c
             if (disttemp.le.dist) dist = disttemp
           end do
         else if ((z1.le.z3).and.(z2.ge.z3)) then
-          dist = 1000.0_ti_p
           xtemp(1) = x1
           ytemp(1) = y1
           ztemp(1) = z3
@@ -1425,7 +1426,6 @@ c
 c
 c       on a "corner"
 c
-          dist = 1000.0_ti_p
           xtemp(1) = x1
           ytemp(1) = y1
           ztemp(1) = z1
@@ -2220,46 +2220,6 @@ c
       return
       end
 
-
-      subroutine midpoint_acc(xi,yi,zi,xk,yk,zk,docompute)
-!$acc routine seq
-      use domdec
-      use cell
-      implicit none
-      real(t_p) xi,yi,zi
-      real(t_p) xk,yk,zk
-      real(t_p) xr,yr,zr
-      real(t_p) xrmid,yrmid,zrmid
-      logical docompute
-!$acc routine(image_acc) seq 
-c
-      docompute = .false.
-c     call image(xi,yi,zi)
-c     call image(xk,yk,zk)
-      xr = xi - xk
-      yr = yi - yk
-      zr = zi - zk
-      call image_acc(xr,yr,zr)
-c
-c     definition of the middle point between i and k atoms
-c                                 
-      xrmid = xk + xr/2
-      yrmid = yk + yr/2
-      zrmid = zk + zr/2
-      call image_acc(xrmid,yrmid,zrmid)
-      if (abs(xrmid-xcell2).lt.eps_cell) xrmid = xrmid-4*eps_cell
-      if (abs(yrmid-ycell2).lt.eps_cell) yrmid = yrmid-4*eps_cell
-      if (abs(zrmid-zcell2).lt.eps_cell) zrmid = zrmid-4*eps_cell
-      if ((zrmid.ge.zbegproc(rank+1)).and.
-     $  (zrmid.lt.zendproc(rank+1)).and.(yrmid.ge.ybegproc(rank+1))
-     $  .and.(yrmid.lt.yendproc(rank+1))
-     $  .and.(xrmid.ge.xbegproc(rank+1))
-     $  .and.(xrmid.lt.xendproc(rank+1))) then
-        docompute = .true.
-      end if
-      return
-      end
-
 c
 c     subroutine midpointimage : routine that says whether an interaction between two particules
 c     has to be computed within the current domain or not (dd midpoint method), also returns
@@ -2291,14 +2251,17 @@ c
       yrmid = yk + yr/2
       zrmid = zk + zr/2
       call image(xrmid,yrmid,zrmid)
-      if (abs(xrmid-xcell2).lt.eps_cell) xrmid = xrmid-4*eps_cell
-      if (abs(yrmid-ycell2).lt.eps_cell) yrmid = yrmid-4*eps_cell
-      if (abs(zrmid-zcell2).lt.eps_cell) zrmid = zrmid-4*eps_cell
+      if (abs(xrmid-xcell2).lt.eps_cell)
+     &   xrmid = xrmid-sign(4*eps_cell,xrmid)
+      if (abs(yrmid-ycell2).lt.eps_cell)
+     &   yrmid = yrmid-sign(4*eps_cell,xrmid)
+      if (abs(zrmid-zcell2).lt.eps_cell)
+     &   zrmid = zrmid-sign(4*eps_cell,xrmid)
       if ((zrmid.ge.zbegproc(rank+1)).and.
-     $  (zrmid.lt.zendproc(rank+1)).and.(yrmid.ge.ybegproc(rank+1))
-     $  .and.(yrmid.lt.yendproc(rank+1))
-     $  .and.(xrmid.ge.xbegproc(rank+1))
-     $  .and.(xrmid.lt.xendproc(rank+1))) then
+     &  (zrmid.lt.zendproc(rank+1)).and.(yrmid.ge.ybegproc(rank+1))
+     &  .and.(yrmid.lt.yendproc(rank+1))
+     &  .and.(xrmid.ge.xbegproc(rank+1))
+     &  .and.(xrmid.lt.xendproc(rank+1))) then
         docompute = .true.
       end if
       return

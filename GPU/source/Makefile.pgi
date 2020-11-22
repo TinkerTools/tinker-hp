@@ -38,7 +38,9 @@ FFTW_SUPPORT ?= 0
 # Force Othrogonal box shape
 ORTHO_BOX_ONLY_SUPPORT ?= 0
 # Remove Soft core computation
-# NO_MUTATION ?= 0
+NO_MUTATION ?= 0
+# Fixed Precision Arithmetic
+FPA_SUPPORT ?= 0
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
@@ -115,6 +117,12 @@ ifeq ($(NO_MUTATION),1)
    OPTIONS   += -DTINKER_NO_MUTATE
    CUOPTIONS += -DTINKER_NO_MUTATE
 endif
+ifeq ($(FPA_SUPPORT),1)
+ifeq ($(prec),$(filter $(prec),mixed m))
+   OPTIONS   += -DUSE_DETERMINISTIC_REDUCTION
+   CUOPTIONS += -DUSE_DETERMINISTIC_REDUCTION
+endif
+endif
 ifneq ($(add_options),$(empty__))
    OPTIONS   +=$(add_options)
    CUOPTIONS +=$(add_options)
@@ -126,10 +134,10 @@ CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
 #  __________________
 ifeq ($(opt), release)
    COMMON       = -Mdalign -fast -g
-   CCOMMON      = -std=c++11 -O3 -g
+   CCOMMON      = -std=c++14 -O3 -g
 else ifeq ($(opt), debug+)
    COMMON       = -traceback -O0 -g -C
-   CCOMMON      = -std=c++11 -O0 -g
+   CCOMMON      = -std=c++14 -O0 -g
    ifeq ($(arch),$(filter $(arch),device gpu))
      OPTIONS += -DTINKER_DEBUG
    CUOPTIONS += -DTINKER_DEBUG
@@ -146,8 +154,8 @@ endif
 #/   - 35, 60, 70, 75, etc.
 #/   - Can be comma-separated, e.g. `35,60`.
 #/
-compute_capability := 70,80
-cuda_version       := 11.0
+compute_capability := 60,70
+cuda_version       := 10.1
 
 cc_list__          := $(subst $(comma__), ,$(compute_capability))
 acc_cc_flag__      := $(foreach var,$(cc_list__),cc$(var))
@@ -286,7 +294,7 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    egeom.o egeom1.o egeom1gpu.o egeom3.o egeom3gpu.o\
    ehal.o ehal1.o ehal1vec.o ehal1gpu.o ehal3.o ehal3vec.o ehal3gpu.o\
    eimprop.o eimprop1.o eimprop1gpu.o eimprop3.o\
-   eimptor.o eimptor1.o eimptor3.o\
+   eimptor.o eimptor1.o eimptor1gpu.o eimptor3.o\
    elj.o elj1.o elj1vec.o elj1gpu.o elj3.o elj3vec.o elj3gpu.o\
    empole.o empole0.o empole1.o empole1vec.o empole1gpu.o\
    empole3.o  empole3vec.o empole3gpu.o\

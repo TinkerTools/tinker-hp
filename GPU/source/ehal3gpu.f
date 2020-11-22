@@ -93,11 +93,13 @@ cold  use analyz    ,only: aev
       use mutant    ,only: scexp,scalpha,vlambda,mut
       use neigh     ,only: vlst,nvlst
       use tinheader ,only: ti_p,re_p
+      use tinMemory ,only: prmem_request
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin,
      &                     epsilon,nvdwbloc,nvdwlocnl,
      &                     nvdwclass
       use vdwpot    ,only: dhal,ghal
+      use vdw_locArray
       use utilgpu   ,only: def_queue,dir_queue,rec_queue
 #ifdef _OPENACC
      &                    ,dir_stream
@@ -127,9 +129,6 @@ cold  use analyz    ,only: aev
       logical    muti,mutk
       character*10 mode
 
-      real(t_p)  xred(nvdwbloc)
-      real(t_p)  yred(nvdwbloc)
-      real(t_p)  zred(nvdwbloc)
       parameter(half=0.5_ti_p,
      &           one=1.0_ti_p)
 
@@ -141,6 +140,9 @@ c
          call stream_wait_async(rec_stream,dir_stream,rec_event)
       end if
 #endif
+      call prmem_request(xred,nbloc,queue=def_queue)
+      call prmem_request(yred,nbloc,queue=def_queue)
+      call prmem_request(zred,nbloc,queue=def_queue)
 
 !$acc data create(xred,yred,zred)
 !$acc&     present(loc,ired,kred,x,y,z,vdwglobnl,ivdw,loc,jvdw,
@@ -297,9 +299,9 @@ cold  use analyz    ,only: aev
       logical    muti,mutk
       character*10 mode
 
-      real(t_p)  xred(nvdwbloc)
-      real(t_p)  yred(nvdwbloc)
-      real(t_p)  zred(nvdwbloc)
+      real(t_p)  xred(nbloc)
+      real(t_p)  yred(nbloc)
+      real(t_p)  zred(nbloc)
       parameter(half=0.5_ti_p,
      &           one=1.0_ti_p)
 
@@ -479,9 +481,9 @@ c
       call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(yred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(zred    ,nvdwlocnlb,queue=def_queue)
-      call prmem_request(xredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(yredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(zredc   ,nvdwbloc  ,queue=def_queue)
+      call prmem_request(xredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(yredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(zredc   ,nbloc     ,queue=def_queue)
       call prmem_request(loc_ired,nvdwlocnlb,queue=def_queue)
       call prmem_request(loc_kred,nvdwlocnlb,queue=def_queue)
 
@@ -641,9 +643,9 @@ c!$acc end data
       call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(yred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(zred    ,nvdwlocnlb,queue=def_queue)
-      call prmem_request(xredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(yredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(zredc   ,nvdwbloc  ,queue=def_queue)
+      call prmem_request(xredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(yredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(zredc   ,nbloc     ,queue=def_queue)
       call prmem_request(loc_ired,nvdwlocnlb,queue=def_queue)
       call prmem_request(loc_kred,nvdwlocnlb,queue=def_queue)
 c

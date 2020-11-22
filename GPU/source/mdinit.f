@@ -43,6 +43,9 @@ c
       use units 
       use uprior
       use utils
+#ifdef _OPENACC
+      use utilcu  ,only: cu_update_vir_switch
+#endif
       use utilgpu ,only: prmem_requestm,rec_queue
       use usage
       use virial
@@ -378,6 +381,9 @@ c
 c     check wether or not to compute virial
 c
       if (isobaric.and.barostat.eq.'BERENDSEN') use_virial=.true.
+#ifdef _OPENACC
+      call cu_update_vir_switch(use_virial)
+#endif
 c
 c     check for a nonzero number of degrees of freedom
 c

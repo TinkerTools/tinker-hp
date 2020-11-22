@@ -7,19 +7,26 @@ c     ##                                                            ##
 c     ################################################################
 c
 c
-c     "eimptor1" calculates improper torsion energy and its
+c     "eimptor1gpu" calculates on device improper torsion energy and its
 c     first derivatives with respect to Cartesian coordinates
 c
 c
 #include "tinker_precision.h"
-      subroutine eimptor1
+      module eimptor1gpu_inl
+      contains
+#include "image.f.inc"
+      end module
+
+      subroutine eimptor1gpu
       use atmlst
       use atoms
       use bound
       use deriv
       use domdec
       use energi
+      use eimptor1gpu_inl
       use group
+      use inform    ,only: deb_Path
       use imptor
       use torpot
       use tinheader ,only:ti_p,re_p
@@ -58,22 +65,24 @@ c
       real(t_p) dedxib,dedyib,dedzib
       real(t_p) dedxic,dedyic,dedzic
       real(t_p) dedxid,dedyid,dedzid
+      real(r_p) dedx,dedy,dedz
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
       logical proceed
+
+      if (deb_Path) write(*,*) "eimptor1gpu",nitorsloc
 c
-!$acc data present(deit,vir,eit)
-!$acc update host(deit,vir,eit)
-!$acc end data
 c
 c     zero out energy and first derivative components
 c
-      eit = 0.0_ti_p
+c     eit = 0.0_ti_p
 c
 c     calculate the improper torsional angle energy term
 c
+!$acc parallel loop async default(present)
+!$acc&         present(eit,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do iimptor = 1, nitorsloc
-         i = imptorglob(iimptor)
+         i  = imptorglob(iimptor)
          ia = iitors(1,i)
          ib = iitors(2,i)
          ic = iitors(3,i)
@@ -87,7 +96,7 @@ c     decide whether to compute the current interaction
 c
          proceed = .true.
          if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                              use(ic) .or. use(id))
+     &                            use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
 c
@@ -114,9 +123,9 @@ c
             ydc = yid - yic
             zdc = zid - zic
             if (use_polymer) then
-               call image (xba,yba,zba)
-               call image (xcb,ycb,zcb)
-               call image (xdc,ydc,zdc)
+               call image_inl (xba,yba,zba)
+               call image_inl (xcb,ycb,zcb)
+               call image_inl (xdc,ydc,zdc)
             end if
             xt = yba*zcb - ycb*zba
             yt = zba*xcb - zcb*xba
@@ -174,8 +183,8 @@ c
                ydb = yid - yib
                zdb = zid - zib
                if (use_polymer) then
-                  call image (xca,yca,zca)
-                  call image (xdb,ydb,zdb)
+                  call image_inl (xca,yca,zca)
+                  call image_inl (xdb,ydb,zdb)
                end if
                dedxt = dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
                dedyt = dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
@@ -202,44 +211,55 @@ c
 c     increment the improper torsion energy and gradient
 c
                eit = eit + e
-               deit(1,icloc) = deit(1,icloc) + dedxic
-               deit(2,icloc) = deit(2,icloc) + dedyic
-               deit(3,icloc) = deit(3,icloc) + dedzic
+               dedx = dedxic
+               dedy = dedyic
+               dedz = dedzic
+!$acc atomic
+               deit(1,icloc) = deit(1,icloc) + dedx
+!$acc atomic
+               deit(2,icloc) = deit(2,icloc) + dedy
+!$acc atomic
+               deit(3,icloc) = deit(3,icloc) + dedz
 c
-               deit(1,ialoc) = deit(1,ialoc) + dedxia
-               deit(2,ialoc) = deit(2,ialoc) + dedyia
-               deit(3,ialoc) = deit(3,ialoc) + dedzia
+               dedx = dedxia
+               dedy = dedyia
+               dedz = dedzia
+!$acc atomic
+               deit(1,ialoc) = deit(1,ialoc) + dedx
+!$acc atomic
+               deit(2,ialoc) = deit(2,ialoc) + dedy
+!$acc atomic
+               deit(3,ialoc) = deit(3,ialoc) + dedz
 c
-               deit(1,ibloc) = deit(1,ibloc) + dedxib
-               deit(2,ibloc) = deit(2,ibloc) + dedyib
-               deit(3,ibloc) = deit(3,ibloc) + dedzib
+               dedx = dedxib
+               dedy = dedyib
+               dedz = dedzib
+!$acc atomic
+               deit(1,ibloc) = deit(1,ibloc) + dedx
+!$acc atomic
+               deit(2,ibloc) = deit(2,ibloc) + dedy
+!$acc atomic
+               deit(3,ibloc) = deit(3,ibloc) + dedz
 c
-               deit(1,idloc) = deit(1,idloc) + dedxid
-               deit(2,idloc) = deit(2,idloc) + dedyid
-               deit(3,idloc) = deit(3,idloc) + dedzid
+               dedx = dedxid
+               dedy = dedyid
+               dedz = dedzid
+!$acc atomic
+               deit(1,idloc) = deit(1,idloc) + dedx
+!$acc atomic
+               deit(2,idloc) = deit(2,idloc) + dedy
+!$acc atomic
+               deit(3,idloc) = deit(3,idloc) + dedz
 c
 c     increment the internal virial tensor components
 c
-               vxx = xcb*(dedxic+dedxid) - xba*dedxia + xdc*dedxid
-               vyx = ycb*(dedxic+dedxid) - yba*dedxia + ydc*dedxid
-               vzx = zcb*(dedxic+dedxid) - zba*dedxia + zdc*dedxid
-               vyy = ycb*(dedyic+dedyid) - yba*dedyia + ydc*dedyid
-               vzy = zcb*(dedyic+dedyid) - zba*dedyia + zdc*dedyid
-               vzz = zcb*(dedzic+dedzid) - zba*dedzia + zdc*dedzid
-               vir(1,1) = vir(1,1) + vxx
-               vir(2,1) = vir(2,1) + vyx
-               vir(3,1) = vir(3,1) + vzx
-               vir(1,2) = vir(1,2) + vyx
-               vir(2,2) = vir(2,2) + vyy
-               vir(3,2) = vir(3,2) + vzy
-               vir(1,3) = vir(1,3) + vzx
-               vir(2,3) = vir(2,3) + vzy
-               vir(3,3) = vir(3,3) + vzz
+           g_vxx = g_vxx + xcb*(dedxic+dedxid) - xba*dedxia + xdc*dedxid
+           g_vxy = g_vxy + ycb*(dedxic+dedxid) - yba*dedxia + ydc*dedxid
+           g_vxz = g_vxz + zcb*(dedxic+dedxid) - zba*dedxia + zdc*dedxid
+           g_vyy = g_vyy + ycb*(dedyic+dedyid) - yba*dedyia + ydc*dedyid
+           g_vyz = g_vyz + zcb*(dedyic+dedyid) - zba*dedyia + zdc*dedyid
+           g_vzz = g_vzz + zcb*(dedzic+dedzid) - zba*dedzia + zdc*dedzid
             end if
          end if
       end do
-!$acc data present(deit,vir,eit)
-!$acc update device(deit,vir)
-!$acc end data
-      return
       end

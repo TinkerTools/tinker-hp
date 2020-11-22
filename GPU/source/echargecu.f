@@ -12,7 +12,7 @@ c
 #include "tinker_precision.h"
 #include "tinker_cudart.h"
       module echargecu
-        use utilcu  ,only: nproc,ndir,BLOCK_DIM
+        use utilcu  ,only: nproc,ndir,BLOCK_DIM,ALL_LANES,use_virial
         use utilgpu ,only: real3,real6,real3_red,rpole_elt
      &              ,BLOCK_SIZE,RED_BUFF_SIZE,WARP_SIZE
         contains
@@ -51,11 +51,12 @@ c
         integer ithread,iwarp,nwarp,ilane,klane,srclane
         integer ii,j,i,kbis
         integer iblock,idx,kdx
-        integer iichg,iglob,icloc,kchg,kglob,kcloc
+        integer iichg,iglob,icloc,kchg,kcloc
 #ifdef TINKER_DEBUG
-        integer kglob_,kdx_,istat
+        integer kdx_,istat
 #endif
         integer location
+        integer,shared,dimension(BLOCK_DIM)::kglob
         integer,parameter::no_scaling=0
         real(t_p) xk_,yk_,zk_,d2,fi
         real(t_p) ec_
@@ -91,7 +92,7 @@ c
            !  Load atom block k parameters
            kdx     = eblst( (ii-1)*WARP_SIZE+ ilane )
            kchg    = cglob(kdx)
-           kglob   = iion (kdx)
+           kglob(threadIdx%x)   = iion (kdx)
            kbis    = loc  (kdx)
            posk(threadIdx%x)%x  = x(kdx)
            posk(threadIdx%x)%y  = y(kdx)
@@ -118,7 +119,6 @@ c
               klane    = threadIdx%x-ilane + srclane
 #ifdef TINKER_DEBUG
               kdx_     = __shfl(kdx ,srclane)
-              kglob_   = __shfl(kglob ,srclane)
 #endif
               if (ndir.gt.1) then
                  xk_   = posk(klane)%x
@@ -143,7 +143,7 @@ c
               end if
 
               d2      = pos%x**2 + pos%y**2 + pos%z**2
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
+              do_pair = merge(.true.,iglob.lt.kglob(klane)
      &                        ,same_block)
 
               if (do_pair.and.d2<=off2.and.accept_mid) then
@@ -164,15 +164,16 @@ c
                  frc_i%z = frc_i%z + frc%z
 
 #ifdef TINKER_DEBUG
-                 if (iglob<kglob_) then
+                 if (iglob<kglob(klane)) then
                     istat=AtomicAdd(inter(iglob),1)
                  else
-                    istat=AtomicAdd(inter(kglob_),1)
+                    istat=AtomicAdd(inter(kglob(klane)),1)
                  end if
 #endif
               end if
            end do
 
+           call syncwarp(ALL_LANES)
            location = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
 
            ! Update energy buffer

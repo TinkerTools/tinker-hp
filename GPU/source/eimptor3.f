@@ -15,6 +15,11 @@ c     also partitions the energy terms among the atoms
 c
 c
 #include "tinker_precision.h"
+      module eimptor3_inl
+      contains
+#include "image.f.inc"
+      end module
+
       subroutine eimptor3
       use action
       use analyz
@@ -24,6 +29,7 @@ c
       use bound
       use domdec
       use energi
+      use eimptor3_inl
       use group
       use imptor
       use inform
@@ -63,11 +69,14 @@ c     zero out the torsional energy and partitioning terms
 c
       neit = 0
       eit = 0.0_ti_p
-      aeit = 0.0_ti_p
+c     aeit = 0.0_ti_p
       header = .true.
+      if (deb_Path) write(*,*) 'eimptor3gpu'
 c
 c     calculate the improper torsional angle energy term
 c
+!$acc parallel loop default(present) async
+!$acc&         reduction(+:eit,neit)
       do iimptor = 1, nitorsloc
          i = imptorglob(iimptor)
          ia = iitors(1,i)
@@ -82,7 +91,7 @@ c     decide whether to compute the current interaction
 c
          proceed = .true.
          if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                              use(ic) .or. use(id))
+     &                            use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
 c
@@ -109,9 +118,9 @@ c
             ydc = yid - yic
             zdc = zid - zic
             if (use_polymer) then
-               call image (xba,yba,zba)
-               call image (xcb,ycb,zcb)
-               call image (xdc,ydc,zdc)
+               call image_inl (xba,yba,zba)
+               call image_inl (xcb,ycb,zcb)
+               call image_inl (xdc,ydc,zdc)
             end if
             xt = yba*zcb - ycb*zba
             yt = zba*xcb - zcb*xba
@@ -126,11 +135,11 @@ c
             ru2 = xu*xu + yu*yu + zu*zu
             rtru = sqrt(rt2 * ru2)
             if (rtru .ne. 0.0_ti_p) then
-               rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+               rcb    = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
                cosine = (xt*xu + yt*yu + zt*zu) / rtru
-               sine = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
+               sine   = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
                cosine = min(1.0_ti_p,max(-1.0_ti_p,cosine))
-               angle = radian * acos(cosine)
+               angle  = radian * acos(cosine)
                if (sine .lt. 0.0_ti_p)  angle = -angle
 c
 c     set the improper torsional parameters for this angle
@@ -162,9 +171,10 @@ c
 c     increment the total torsional angle energy
 c
                neit = neit + 1
-               eit = eit + e
-               aeit(ibloc) = aeit(ibloc) + 0.5_ti_p*e
-               aeit(icloc) = aeit(icloc) + 0.5_ti_p*e
+               eit  = eit + e
+c              aeit(ibloc) = aeit(ibloc) + 0.5_ti_p*e
+c              aeit(icloc) = aeit(icloc) + 0.5_ti_p*e
+#ifndef _OPENACC
 c
 c     print a message if the energy of this interaction is large
 c
@@ -182,8 +192,8 @@ c
      &                             name(ic),id,name(id),angle,e
    20             format (' Improper',2x,4(i7,'-',a3),f11.4,f12.4)
                end if
+#endif
             end if
          end if
       end do
-      return
       end

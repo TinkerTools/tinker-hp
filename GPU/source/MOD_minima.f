@@ -19,6 +19,6 @@ c
       module minima
       implicit none
       integer maxiter,nextiter
-      real(t_p) fctmin
+      real(r_p) fctmin
       save
       end

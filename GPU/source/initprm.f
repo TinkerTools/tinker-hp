@@ -126,7 +126,7 @@ c
          kdi(i) = -1
       end do
       do i = 1, maxnti
-         kti(i) = blank16
+         kti(i) = -1
       end do
       do i = 1, maxnt
          kt(i) = blank16
@@ -312,6 +312,7 @@ c
 c     set default control parameters for local geometry terms
 c
       bndtyp = 'HARMONIC'
+      bndtyp_i = BND_HARMONIC
       bndunit = 1.0_ti_p
       cbnd = 0.0_ti_p
       qbnd = 0.0_ti_p
@@ -397,7 +398,7 @@ c
       poltyp = 'MUTUAL'
       politer = 500
       polprt = 0
-      polalg = 2   !TODO 1.2 Set this to 5 when finished
+      polalg = 1   !TODO 1.2 Set this to 5 when finished
       polalgshort = 5
       polgsf = 0
       polff  = 0

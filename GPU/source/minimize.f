@@ -16,7 +16,17 @@ c
 c
 #include "tinker_precision.h"
       program minimize
-      use atoms
+      use mpi
+      implicit none
+      integer ierr
+      call MPI_INIT(ierr)
+      call minimize_bis
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      call MPI_FINALIZE(ierr)
+      end 
+
+      subroutine minimize_bis
+      use atomsMirror
       use domdec
       use deriv ,only:info_forces,cDef
       use energi,only:info_energy
@@ -51,7 +61,6 @@ c
       external energy
       external minimiz1
       external optsave
-      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
 c
 c
 c     set up the structure and mechanics calculation
@@ -174,6 +183,7 @@ c
 c      if (analytic) then
 c         call commstep
          call sendallpos
+         call reCast_position
          call AllDirAssign
          call reassignpme(.false.)
          allocate (derivs(3,nbloc))
@@ -199,7 +209,7 @@ c      end if
       if(deb_Energy)call info_energy(rank)
 
       gnorm = 0.0_re_p
-!$acc parallel loop async present(derivs)
+!$acc parallel loop collapse(2) async present(derivs)
       do i = 1, nloc
          do j = 1, 3
             iglob = glob(i)
@@ -209,9 +219,9 @@ c      end if
          end do
       end do
       call MPI_ALLREDUCE(MPI_IN_PLACE,gnorm,1,MPI_RPREC,
-     $     MPI_SUM,MPI_COMM_WORLD,ierr)
+     $     MPI_SUM,COMM_TINKER,ierr)
       gnorm = sqrt(gnorm)
-      grms = gnorm / sqrt(real(3*n,t_p))
+      grms = gnorm / sqrt(real(3*n,r_p))
 c
 c     perform deallocation of some local arrays
 c
@@ -274,7 +284,6 @@ c
 c     perform any final tasks before program exit
 c
       call final
-      call MPI_FINALIZE(ierr)
       end
 c
 c
@@ -292,7 +301,7 @@ c
 c
       function minimiz1 (xx,g)
       use sizes
-      use atoms
+      use atomsMirror
       use domdec
       use deriv ,only:info_forces,cDef
       use energi,only:info_energy
@@ -317,7 +326,7 @@ c     use either analytical or numerical gradients
 c
       analytic = .true.
       eps = 0.00001_re_p
-      if (rank.eq.0.and.tinkerdebug) write(*,'(x,a)') 'minimiz1'
+      if (deb_Path) write(*,'(x,a)') 'minimiz1'
 c
 c     translate optimization parameters to atomic coordinates
 c
@@ -333,13 +342,14 @@ c
 c
 c      call commstep
       call sendallpos
+      call reCast_position
       call AllDirAssign
       call reassignpme(.false.)
 c
 c     perform dynamic allocation of some local arrays
 c
       allocate (derivs(3,nbloc))
-!$acc enter data create(derivs,e) async
+!$acc enter data create(derivs,e)
       call set_to_zero1m(derivs,size(derivs),rec_queue)
       call reinitnl(0)
       call mechanicstep(0)
@@ -379,6 +389,6 @@ c
 c
 c     perform deallocation of some local arrays
 c
-!$acc exit data delete(derivs,e) async
+!$acc exit data delete(derivs,e)
       deallocate (derivs)
       end

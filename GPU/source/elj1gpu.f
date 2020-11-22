@@ -119,9 +119,9 @@ c
      $   ' update, try lowering nlupdate VDW')
       if (deb_Path) write(*,*) 'elj1cgpu'
 
-      call prmem_request(xred,nvdwbloc,queue=dir_queue)
-      call prmem_request(yred,nvdwbloc,queue=dir_queue)
-      call prmem_request(zred,nvdwbloc,queue=dir_queue)
+      call prmem_request(xred,nbloc,queue=dir_queue)
+      call prmem_request(yred,nbloc,queue=dir_queue)
+      call prmem_request(zred,nbloc,queue=dir_queue)
 c
 c     zero out the van der Waals energy and first derivatives
 c
@@ -262,7 +262,7 @@ c=============================================================
       subroutine elj1c_cu
       use atmlst    ,only: vdwglobnl,vdwglob
       use atoms     ,only: x,y,z,n
-      use deriv     ,only: dev
+      use deriv     ,only: dev=>debond
       use domdec    ,only: loc,rank,nbloc,nproc
      &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
      &              ,zendproc,glob
@@ -305,9 +305,9 @@ c
       call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(yred    ,nvdwlocnlb,queue=def_queue)
       call prmem_request(zred    ,nvdwlocnlb,queue=def_queue)
-      call prmem_request(xredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(yredc   ,nvdwbloc  ,queue=def_queue)
-      call prmem_request(zredc   ,nvdwbloc  ,queue=def_queue)
+      call prmem_request(xredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(yredc   ,nbloc     ,queue=def_queue)
+      call prmem_request(zredc   ,nbloc     ,queue=def_queue)
       call prmem_request(loc_ired,nvdwlocnlb,queue=def_queue)
       call prmem_request(loc_kred,nvdwlocnlb,queue=def_queue)
 
@@ -374,6 +374,7 @@ c
       end do
 
       call zero_evir_red_buffer(def_queue)
+      call resetForces_buff(def_queue)
 c
 c     set the coefficients for the switching function
 c
@@ -405,7 +406,7 @@ c
      &             ,inter,rank
 #endif
      &             )
-      call check_launch_kernel(" ehal1_cu2 ")
+      call check_launch_kernel(" elj1_cu2 ")
 
 !$acc end host_data
 
@@ -422,6 +423,8 @@ c
       write(*,36)'nvdw pair block ',nvdwlocnlb_pair,nvdwlocnlb2_pair
       write(*,35)'nev & ev & rank ',sum(inter),ev,rank
 #endif
+
+      call vdw_gradient_reduce
 
       call elj1_scaling(xredc,yredc,zredc,
      &            g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
@@ -497,9 +500,9 @@ c
 c
 c     perform dynamic allocation of some local arrays
 c
-      call prmem_request(xred,nvdwbloc,queue=dir_queue)
-      call prmem_request(yred,nvdwbloc,queue=dir_queue)
-      call prmem_request(zred,nvdwbloc,queue=dir_queue)
+      call prmem_request(xred,nbloc,queue=dir_queue)
+      call prmem_request(yred,nbloc,queue=dir_queue)
+      call prmem_request(zred,nbloc,queue=dir_queue)
 c
 c     set the coefficients for the switching function
 c

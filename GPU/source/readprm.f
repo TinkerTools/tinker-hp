@@ -684,13 +684,14 @@ c
             read (string,*,err=270,end=270)  ia,ib,ic,id,
      &                                       (vt(j),st(j),ft(j),j=1,6)
   270       continue
-            call numeral (ia,pa,size)
-            call numeral (ib,pb,size)
-            call numeral (ic,pc,size)
-            call numeral (id,pd,size)
+c           call numeral (ia,pa,size)
+c           call numeral (ib,pb,size)
+c           call numeral (ic,pc,size)
+c           call numeral (id,pd,size)
             nti = nti + 1
-            kti(nti) = pa//pb//pc//pd
+c           kti(nti) = pa//pb//pc//pd
             call torphase (ft,vt,st)
+            call front_convert_base(0,ia,ib,ic,id,kti(nti))
             ti1(1,nti) = vt(1)
             ti1(2,nti) = st(1)
             ti2(1,nti) = vt(2)

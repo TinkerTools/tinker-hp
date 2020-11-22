@@ -28,8 +28,7 @@ c
 c          compute the energy contribution for this interaction
 c
 #ifndef TINKER_NO_MUTATE
-           if ((muti .and. .not.mutk) .or.
-     &         (mutk .and. .not.muti)) then
+           if (muti .neqv. mutk) then
               rik  = f_sqrt(rik2)
               rho  = rik / rv2
               rho6 = rho**6
@@ -132,16 +131,13 @@ c    &                +       c1
 
            real(ti_p) rik,rik3,rik4,rik5,rik6,rik7,rv7,rv7orho
            real(ti_p) dtau,gtau,tau,tau7,de,s,ds
-#ifndef TINKER_NO_MUTATE
            real(ti_p) rho,rho6,rho7
            real(ti_p) scal,s1,s2,t1,t2,dt1drho,dt2drho
-#endif
 c
 c          compute the energy contribution for this interaction
 c
 #ifndef TINKER_NO_MUTATE
-           if ((muti .and. .not.mutk) .or.
-     &         (mutk .and. .not.muti)) then
+           if (muti .neqv. mutk) then
               rik  = f_sqrt(rik2)
               rho  = rik / rv2
               rho6 = rho**6
@@ -217,8 +213,7 @@ c
 c          compute the energy contribution for this interaction
 c
 #ifndef TINKER_NO_MUTATE
-           if ((muti .and. .not.mutk) .or.
-     &         (mutk .and. .not.muti)) then
+           if (muti .neqv. mutk) then
               rik  = f_sqrt(rik2)
               rho  = rik / rv2
               rho6 = rho**6

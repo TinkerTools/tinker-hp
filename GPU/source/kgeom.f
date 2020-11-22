@@ -20,7 +20,8 @@ c
       use atmlst
       use argue ,only: arg
       use atmtyp
-      use atoms
+      use atoms ,only:type
+      use atomsMirror
       use bound
       use couple
       use domdec
@@ -63,6 +64,7 @@ c
       real(t_p) pos(3,4)
       real(t_p), allocatable :: posgroup(:,:)
 c
+!$acc update host(x,y,z)
       if (init) then
 c
 c     allocate global arrays

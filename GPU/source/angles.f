@@ -236,5 +236,5 @@ c    &   .and.16*n.eq.size(anglist)) return ! Exit condition
       call shmem_request(nbopbend,winnbopbend,[nangle],config=mhostacc)
       call shmem_request(nbopdist,winnbopdist,     [n],config=mhostonly)
       call shmem_request(nbimprop,winnbimprop,     [n],config=mhostacc)
-      call shmem_request(nbimptor,winnbimptor,     [n],config=mhostonly)
+      call shmem_request(nbimptor,winnbimptor,     [n],config=mhostacc)
       end

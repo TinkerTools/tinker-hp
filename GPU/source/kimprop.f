@@ -362,7 +362,7 @@ c
 !$acc end serial
       if (ndi .ne. 0) then
 
-!$acc parallel loop async private(pt)
+!$acc parallel loop gang vector async private(pt)
 !$acc&         present(glob,nbimprop,n12,i12,class,impropglob,kdi_sys)
 !$acc&         present(niproploc)
          do i = 1, nloc

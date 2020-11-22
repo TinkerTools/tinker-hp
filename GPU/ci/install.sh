@@ -32,7 +32,7 @@ fi
 #set -x
 tinkerdir=`pwd`
 
-[ $# -ge 1 ]&& par=$1 || par=6
+[ $# -ge 1 ]&& par=$1 || par=4
 
 ln -sf $tinkerdir/2decomp_fft/src/Makefile.inc.pgi $tinkerdir/2decomp_fft/src/Makefile.inc
 ln -sf Makefile.pgi source/Makefile

@@ -271,7 +271,8 @@ c
 c
 c     compute linear velocity of the system center of mass
 c
-!$acc parallel loop collapse(2) async
+!$acc parallel loop gang vector collapse(2) async
+!$acc&         reduction(vtot1,vtot2,vtot3,totmass)
       do i = 1, nloc
          do j = 1, 3
             iglob = glob(i)

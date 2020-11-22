@@ -536,10 +536,12 @@ c
       use math
       use mutant
       use tinheader
+      use utils
       implicit none
       integer i,j,k
       integer ia,ib,ic,id
       integer ita,itb,itc,itd
+      integer bta,btb,btc,btd,bte
       integer nti,size
       real(t_p) zero,one,two,six
       real(t_p) angle,symm
@@ -549,9 +551,8 @@ c
       real(t_p) s1_1,s2_1,s3_1
       logical header,used
       character*4 pa,pb,pc,pd
-      character*4 zeros
       character*16 blank
-      character*16 pt0,pt(6)
+      integer(8) pt0,pt(6)
       parameter(zero=0.0_ti_p,  one=1.0_ti_p,
      &           two=2.0_ti_p,  six=6.0_ti_p)
 c
@@ -559,14 +560,13 @@ c
 c     construct hybrid improper torsion parameters
 c
       blank = '                '
-      zeros = '0000'
       header = .true.
 c
 c     determine the total number of forcefield parameters
 c
       nti = maxnti
       do i = maxnti, 1, -1
-         if (kti(i) .eq. blank)  nti = i - 1
+         if (kti(i) .eq. -1)  nti = i - 1
       end do
 c
 c     construct hybrid improper torsion parameters
@@ -594,17 +594,17 @@ c
                   if (k .eq. id)  itd = class0(j)
                end do
                size = 4
-               call numeral (ita,pa,size)
-               call numeral (itb,pb,size)
-               call numeral (itc,pc,size)
-               call numeral (itd,pd,size)
-               pt(1) = pa//pb//pc//pd
-               pt(2) = pb//pa//pc//pd
-               pt(3) = pa//pd//pc//pb
-               pt(4) = pd//pa//pc//pb
-               pt(5) = pb//pd//pc//pa
-               pt(6) = pd//pb//pc//pa
-               pt0 = zeros//zeros//pc//zeros
+c              call numeral (ita,pa,size)
+c              call numeral (itb,pb,size)
+c              call numeral (itc,pc,size)
+c              call numeral (itd,pd,size)
+               call front_convert_base(0,ita,itb,itc,itd,pt(1))
+               call front_convert_base(0,itb,ita,itc,itd,pt(2))
+               call front_convert_base(0,ita,itd,itc,itb,pt(3))
+               call front_convert_base(0,itd,ita,itc,itb,pt(4))
+               call front_convert_base(0,itb,itd,itc,ita,pt(5))
+               call front_convert_base(0,itd,itb,itc,ita,pt(6))
+               call front_convert_base(0,0,0,itc,0,pt0)
                symm = one
                if (pa.eq.pb .or. pa.eq.pd .or. pb.eq.pd)  symm = two
                if (pa.eq.pb .and. pa.eq.pd .and. pb.eq.pd)  symm = six
@@ -615,7 +615,8 @@ c
                v3_0 = zero
                s3_0 = zero
                do j = 1, nti
-                  if (kti(j)(9:12) .eq. pc) then
+                  call back_convert_base(bta,btb,btc,btd,bte,kti(j))
+                  if (btc .eq. itc) then
                      do k = 1, 6
                         if (kti(j) .eq. pt(k)) then
                            used = .true.
@@ -654,17 +655,17 @@ c
                   if (k .eq. id)  itd = class1(j)
                end do
                size = 4
-               call numeral (ita,pa,size)
-               call numeral (itb,pb,size)
-               call numeral (itc,pc,size)
-               call numeral (itd,pd,size)
-               pt(1) = pa//pb//pc//pd
-               pt(2) = pb//pa//pc//pd
-               pt(3) = pa//pd//pc//pb
-               pt(4) = pd//pa//pc//pb
-               pt(5) = pb//pd//pc//pa
-               pt(6) = pd//pb//pc//pa
-               pt0 = zeros//zeros//pc//zeros
+c              call numeral (ita,pa,size)
+c              call numeral (itb,pb,size)
+c              call numeral (itc,pc,size)
+c              call numeral (itd,pd,size)
+               call front_convert_base(0,ita,itb,itc,itd,pt(1))
+               call front_convert_base(0,itb,ita,itc,itd,pt(2))
+               call front_convert_base(0,ita,itd,itc,itb,pt(3))
+               call front_convert_base(0,itd,ita,itc,itb,pt(4))
+               call front_convert_base(0,itb,itd,itc,ita,pt(5))
+               call front_convert_base(0,itd,itb,itc,ita,pt(6))
+               call front_convert_base(0,0,0,itc,0,pt0)
                symm = one
                if (pa.eq.pb .or. pa.eq.pd .or. pb.eq.pd)  symm = two
                if (pa.eq.pb .and. pa.eq.pd .and. pb.eq.pd)  symm = six
@@ -675,7 +676,8 @@ c
                v3_1 = zero
                s3_1 = zero
                do j = 1, nti
-                  if (kti(j)(9:12) .eq. pc) then
+                  call back_convert_base(bta,btb,btc,btd,bte,kti(j))
+                  if ( btc .eq. itc ) then
                      do k = 1, 6
                         if (kti(j) .eq. pt(k)) then
                            used = .true.

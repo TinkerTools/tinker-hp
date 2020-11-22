@@ -839,6 +839,11 @@ c
           external fgvalue
         end subroutine
       end interface
+      interface
+        subroutine sendvecmin(xx)
+        real(r_p) xx(*)
+        end subroutine
+      end interface
 
 
       contains

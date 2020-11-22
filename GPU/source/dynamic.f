@@ -98,7 +98,7 @@ c
 c
 c     check for keywords containing any altered parameters
 c
-      integrate = 'BEEMAN'
+      integrate = 'VERLET'
       do i = 1, nkey
          next = 1
          record = keyline(i)

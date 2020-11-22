@@ -8,12 +8,13 @@ FC       = pgf90
 #CUDA_DIR  = $(PGI)/linux86-64-llvm/2019/cuda/10.0
 
 # Flags
-FCFLAGS   = -O3 -Mcuda=cc70,cc80#-rc=rc4.0
-CUFLAGS   = -std=c++11 -O3 -gencode arch=compute_70,code=sm_70 \
+FCFLAGS   = -O3 -Mcuda=cc60,cc70#-rc=rc4.0
+CUFLAGS   = -std=c++14 -O3 -gencode arch=compute_70,code=sm_70 \
                 -gencode arch=compute_80,code=sm_80 \
 
 # Directories
 #INCLUDE       = -I$(CUDA_DIR)/include
+INCLUDE       = -I.
 TINKER_SOURCE =../source
 
 # Objects
