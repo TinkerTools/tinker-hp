@@ -6,15 +6,12 @@ Check out the ArXiv preprint (11/03/2020) : https://arxiv.org/abs/2011.01207
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
-Current Github version: 1.2 (CPUs) + (multi)-GPUs
+Current Github version: 1.1v (enhanced AVX512 vectorized CPUs version), 1.2 (CPUs) + 1.2 (multi)-GPUs
 
-1.1v (enhanced AVX512 vectorized CPUs version) pushed
-on 11/22/2020
-
-Current development version: 1.3 (CPUs + multi-GPUs)
+Current Development version: 1.3 (CPUs + multi-GPUs)
 
 
-All releases of the Tinker-HP are now being performed on Github. For news, benchmarks and additional tutorials, please visit the Tinker-HP website
+All releases of the Tinker-HP code are now being performed on Github. For news, benchmarks and additional tutorials, please visit the Tinker-HP website
 http://tinker-hp.ip2ct.upmc.fr/   (new website design to appear)
 
 Tinker-HP is a CPUs and GPUs based, multi-precision, MPI massively parallel package dedicated to long polarizable molecular dynamics simulations and to polarizable QM/MM. Tinker-HP is an evolution of the popular Tinker package that conserves it simplicity of use but brings new 
@@ -41,7 +38,7 @@ L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Har
 M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access)
 https://doi.org/10.1039/C7SC04531J
 
-- if you are using the AVX512 vectorized version, please also cite:
+- if you are using the AVX512 vectorized version (1.1v) dedicated to Intel's CPUs (Skylake, CascadeLake etc...), please also cite:
 Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0].
 L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access)
  https://doi.org/10.33011/livecoms.1.2.10409
