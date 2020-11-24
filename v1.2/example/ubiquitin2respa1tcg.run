@@ -1,0 +1,8 @@
+#
+# as the restart file comes from a 2fs simulation, the system is not equilibrated yet
+#
+# The use of the respa1 integrator and heavy hydrogens allows to take 10fs as an outer time step
+#
+# The use of a simple tcg1 as a short range polarization solver allows faster computations
+#
+mpirun -np 8 ../bin/dynamic ubiquitin2 -k ubiquitin2respa1tcg.key  10 10.0 1.0 2 300.0 

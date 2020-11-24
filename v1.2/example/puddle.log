@@ -1,0 +1,37 @@
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+ In auto-tuning mode......
+ factors:            1           2           4           8
+ processor grid           1  by            8  time=   1.1707961559295654E-002
+ processor grid           2  by            4  time=   1.1096954345703125E-002
+ processor grid           4  by            2  time=   1.0640531778335571E-002
+ processor grid           8  by            1  time=   1.0762363672256470E-002
+ the best processor grid is probably            4  by            2
+  
+ ***** Using the generic FFT engine *****
+  
+
+ Smooth Particle Mesh Ewald Parameters :
+
+    Ewald Coefficient      Charge Grid Dimensions      B-Spline Order
+
+          0.5446              120   120   120                 5
+ 3D Domain Decomposition
+Nx =     2  Ny =     2  Nz =     2
+
+ Molecular Dynamics Trajectory via r-RESPA MTS Algorithm
+
+ Random Number Generator Initialized with SEED :          12345
+
+    MD Step      E Total   E Potential     E Kinetic       Temp       Pres
+
+         1  -192360.7769  -276488.8752    84128.0983     294.00     777.39
+         2  -192590.4245  -278430.3089    85839.8844     299.98    -245.59
+         3  -192516.2135  -277477.5514    84961.3378     296.91   -1114.30
+         4  -192453.9118  -277678.5404    85224.6286     297.83     145.77
+         5  -192471.7023  -279295.2748    86823.5725     303.42     844.68
+         6  -192461.5856  -276978.8252    84517.2395     295.36     635.28
+         7  -192580.2228  -279193.4763    86613.2535     302.68    -672.48
+         8  -192454.5968  -276928.2153    84473.6185     295.20    -922.65
+         9  -192409.3886  -278989.2634    86579.8748     302.56     399.34
+        10  -192361.2769  -277993.8270    85632.5501     299.25     834.12

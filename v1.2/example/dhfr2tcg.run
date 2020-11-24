@@ -1,0 +1,1 @@
+mpirun -np 16 ../bin/dynamic dhfr2 -k dhfr2tcg.key 100 2.0 1.0 2 300.0 

@@ -1,0 +1,568 @@
+%% Template for ENG 401 reports
+%% by Robin Turner
+%% Adapted from the IEEE peer review template
+
+%
+% note that the "draftcls" or "draftclsnofoot", not "draft", option
+% should be used if it is desired that the figures are to be displayed in
+% draft mode.
+
+\documentclass[peerreview]{IEEEtran}
+\usepackage{cite} % Tidies up citation numbers.
+\usepackage{url} % Provides better formatting of URLs.
+\usepackage[utf8]{inputenc} % Allows Turkish characters.
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables for horizontal lines
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{makebox}
+\usepackage{eqparbox}
+\usepackage{multirow}
+
+
+\hyphenation{op-tical net-works semi-conduc-tor} % Corrects some bad hyphenation 
+\def\fft{\textsc{fft}}
+\def\fftw{\textsc{fftw}}
+\def\mkl{\textsc{mkl}}
+\def\lapack{\textsc{lapack}}
+\def\LAPACK{\texttt{\$LAPACK}}
+\def\MKLROOT{\texttt{\$MKLROOT}}
+\def\FFTW{\texttt{\$FFTW}}
+\def\PATH{\texttt{\$PATH}}
+\def\mpi{\textsc{mpi}}
+\def\blas{\textsc{blas}}
+\def\fftwt{\textsc{fftw3}}
+\def\decomp{\textsc{2decomp\_fft}}
+\def\config{\texttt{configure}}
+\def\configp{\texttt{./}\config}
+\def\prefix{\texttt{--prefix=<DIR>}}
+\def\enasky{\texttt{--enable-slylake}}
+\def\enaknl{\texttt{--enable-knl}}
+\def\enafftgen{\texttt{--enable-fft-generic}}
+\def\enafftmkl{\texttt{--enable-fft-mkl\hskip5em}}
+\def\enafftw{\texttt{--enable-fft-fftw3}}
+\def\enafftwf{\texttt{--enable-fft-fftw3\_f03}}
+\def\enafftmkl{\texttt{--enable-fft-mkl}}
+\def\enadeb{\texttt{--enable-debug}}
+\def\withfft{\texttt{--with-fftlib=}}
+\def\withfftlib{\withfft\texttt{<FFT LIB>}}
+\def\withblas{\texttt{--with-blaslib=}}
+\def\withblaslib{\withblas\texttt{<BLAS LIB>}}
+\def\analyze{\texttt{analyze}}
+\def\bar{\texttt{bar}}
+\def\dynamic{\texttt{dynamic}}
+\def\minimize{\texttt{minimize}}
+\def\testgrad{\texttt{testgrad}}
+\def\mpirun{\texttt{mpirun -np}}
+\def\beeman{\textbf{\textsc{Beeman}}}
+\def\verlet{\textbf{\textsc{Verlet}}}
+\def\bbk{\textbf{\textsc{Bbk}}}
+\def\baoab{\textbf{\textsc{Baoab}}}
+\def\respa{\textbf{\textsc{Respa}}}
+\def\baoabrespa{\textbf{\textsc{BaoabRespa}}}
+\def\respaone{\textbf{\textsc{Respa1}}}
+\def\baoabrespaone{\textbf{\textsc{BaoabRespa1}}}
+\def\baoabpiston{\textbf{\textsc{BaoabPiston}}}
+\newlength{\mylen}
+\begin{document}
+%\begin{titlepage}
+% paper title
+% can use linebreaks \\ within to get better formatting as desired
+
+
+\title{Tinker-HP : Readme/Quickstart (v1.2)}
+
+
+% author names and affiliations
+
+\author{Louis Lagardère, Luc-Henri Jolly, Jean-Philip Piquemal 
+
+Sorbonne Université, Paris, France. \\
+TinkerHP\_Support@ip2ct.upmc.fr
+}
+
+\date{25/11/19}
+
+% make the title area
+\maketitle
+
+\section{Citing Tinker-HP}
+If you use Tinker-HP please cite the following reference : 
+
+\begin{center}
+\fbox{\begin{minipage}{16.5cm}
+{\em Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems with Advanced Polarizable Force Fields.}
+L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access)
+\href{https://pubs.rsc.org/en/content/articlelanding/2018/sc/c7sc04531j}{DOI: 10.1039/C7SC04531J}
+\end{minipage}}
+\end{center}
+
+
+\vskip5mm
+If you use the AVX512 vectorized version of Tinker-HP 1.2, please also cite :
+
+\begin{center}
+\fbox{\begin{minipage}{16.5cm}
+{\em Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0]}.
+L.-H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access)
+\href{https://www.livecomsjournal.org/article/10409-raising-the-performance-of-the-tinker-hp-molecular-modeling-package-article-v1-0}{DOI: 10.33011/livecoms.1.2.10409}
+\end{minipage}}
+\end{center}
+\section{Prerequisites}
+\subsection{Calculation Libraries}
+\hskip\parindent Tinker-HP requires the \mkl\  library, a FFT library (such as \fftw) and a slightly modified \decomp\ library (shipped with Tinker-HP) in order to run. The \decomp\ library enables parallel 3D \fft\ computations based on 2d-pencils data distribution (see \href{http://www.2decomp.org}{\decomp\ site}) based on a sequential implementation of \textsc{FFTs} such as the one provided by the \fftw\  library.
+\subsection{Parallel library}
+Tinker-HP also requires a recent enough \mpi\ library supporting \mpi\  3.x standards such as non blocking collectives. The code has been extensively tested with recent Intel\mpi\  versions (such as intel \mpi\  5.1) and better performances have been observed with this family of \mpi\ implementation compared to other ones such as Open\mpi\ .
+
+
+\section{Installation}
+
+As Tinker-HP is shipped in source form, you need to compile it. This was not always an easy task in the previous releases. Tinker-HP now uses a \config\ script built with autotools packages from \textsc{Gnu} to ease the compilation and installation process. Apart from the usual options available with all \config\ scripts, there are specific options for Tinker-HP.
+\begin{verbatim}
+Usage: ./configure [OPTION]... [VAR=VALUE]...
+
+Optional Features:
+  --enable-debug                Enable debug mode (check array bounds, implicit
+                                none, etc...). Should not be active in normal
+                                operations [default is no]
+  --enable-skylake              Enable AVX512 Optimization for Skylake Processors
+                                [default is no]
+  --enable-knl                  Enable AVX512 Optimization for KNL (Xeon Phi)
+                                Processors [default is no]
+  --enable-fft-generic          Enable generic FFT mode [default is yes]
+  --enable-fft-mkl              Enable MKL   FFT mode [default is no]
+  --enable-fft-fftw3            Enable fftw3 FFT mode [default is no]
+  --enable-fft-fftw3_f03        Enable fftw3_f03 FFT mode [default is no]
+
+Optional Packages:
+  --with-blaslib=<BLAS LIB>     Specify BLAS library [mkl, lapack or 
+                                /absolute/path/to/BLAS_library]
+  --with-fftlib=<FFT LIB>       Specify a library for FFT called by 2decomp [mkl or
+                                fftw3 or /absolute/path/to/FFTW_library]
+\end{verbatim}
+
+The ultimate goal of this script is to let you type
+\begin{verbatim}
+    ./configure ; make ; make install ; cd example ; ./ubiquitin2.run
+\end{verbatim}
+
+and have everything compiled, installed and running.
+
+\subsection{List of Options}
+
+\hskip\parindent As for all the \config\ scripts, you can choose the directory in which the binaries will be copied. So, \config\ has \prefix.
+
+Tinker-HP has a special interest to know if it will run on AVX-512 capable processors. So, \config\ has options for that:
+\begin{itemize}
+    \item[] \enasky
+    \item[] \enaknl
+\end{itemize}
+
+Recall that Tinker-HP needs to make a \fft\  decomposition with a modified version of the \decomp\ library, which in turn needs a working \fftw\  library. This is why you can find \config\ options about \fft\  interface and library:
+\begin{itemize}
+    \item[] \enafftgen
+    \item[] \enafftmkl
+    \item[] \enafftw
+    \item[] \enafftwf
+    \item[] \withfftlib
+\end{itemize}
+
+Tinker-HP also needs some functions that resides in a working  \blas\ library. So, there is an option for that:
+\begin{itemize}
+    \item[] \withblaslib
+\end{itemize}
+
+Finally, as there might be some execution problems, or compilation problems for the users who develop code, Tinker-HP as an \texttt{--enable-debug} option.
+
+\vskip5mm
+\config\ tries to find its path to reach a valid \mpi\ compiler and  a valid Fortran compiler by unsetting the environment variables \texttt{\$FC} and \texttt{\$F77}, and reading the environment variable \PATH. It also tries to find  valid \fft\  and  \blas\ libraries by reading \FFTW\ and \MKLROOT\ or \LAPACK\  respectively. Most of the time, these environment variables are defined through the \texttt{module} framework. As a try, do a 
+\begin{verbatim}
+    module available 2>&1 | less
+\end{verbatim}
+
+to see if you have the \texttt{module} framework installed on your machine, and to know what \texttt{module} you can load.  \config\ then figures out how to build the correct Makefiles.
+
+By default, \config\ chooses the \mkl\  library from Intel as the \blas\ and \fftwt\ libraries, sets the \enafftmkl\ option, does not make any processor optimization, and disables debugging. Thus, typing \configp\ give the same result as if you have typed \configp\ \enafftmkl\ \withblas\texttt{mkl}\  \withfft\texttt{mkl}.
+
+\subsection{Using \config}
+If you want to have different settings than those used by default, you'll have to give \config\ more information. Be aware that \config\ cannot magically guess anything. So, the information you give must be precise and complete.
+
+\vskip5mm
+\subsubsection{Install Directory}
+By default, this is where you have unzipped and untarred the distribution.
+If you want another place, use \prefix. You can choose any directory you want, providing that you have permission to create this directory and/or write in it.
+
+\vskip5mm
+\subsubsection{Processor optimization}
+The machine on which you compile is not always the one on which Tinker-HP will run. If you know that Tinker-HP is going to run on AVX-512 capable processors, you are strongly encouraged to use one of~:
+\settowidth{\mylen}{\enasky}
+\begin{itemize}
+    \item[]\makebox[\mylen][l]{\enaknl} for KNL processors (also known as Xeon-Phi)
+    \item[]\makebox[\mylen][l]{\enasky} for Skylake processors.
+\end{itemize}
+
+as this will dramatically improve the execution speed. Otherwise, the optimization will be done using the capabilities of the compilation machine, as determined by the compiler.
+
+\vskip5mm
+\subsubsection{FFT interface}
+\settowidth{\mylen}{\enafftwf}
+You can choose the interface of \fftw\ you want to use. This has an effect on the \decomp\ library. So~:
+\begin{itemize}
+    \item[]\makebox[\mylen][l]{\enafftgen} gives the generic \fft, with no call to \fftw\ library
+   \item[]\makebox[\mylen][l]{\enafftmkl} gives the \mkl\ \fft. It also automatically selects the \mkl\ library as the \fftw\ library.
+    \item[]\makebox[\mylen][l]{\enafftw} gives the fftw3 interface, and is designed to work with an external \fftw\ library.
+    \item[]\makebox[\mylen][l]{\enafftwf} gives the fftw3 Fortran2003 interface, and is designed to work with an external \fftw\ library
+\end{itemize}
+
+\vskip5mm
+\subsubsection{FFT  Library}
+You can choose the \fftw\  library you want to use. It can come from the \mkl\ suite, or some \fftwt\ package (either system installed, or compiled by you). So~:
+\settowidth{\mylen}{\withfft\texttt{/path/to/fftw3/library}}
+\begin{itemize}
+    \item[]\makebox[\mylen][l]{\withfft\texttt{mkl}} : \begin{minipage}[t]{9.5cm} {selects the \mkl\  library, but needs the variable \MKLROOT\ to be set to the absolute path of the \mkl\  library}\end{minipage}
+    \item[]\makebox[\mylen][l]{\withfft\texttt{/path/to/mkl/library}} :  \begin{minipage}[t]{9.5cm}{selects the \mkl\ library by giving the absolute path of the \mkl\  library}\end{minipage}
+    \item[]\makebox[\mylen][l]{\withfft\texttt{fftw3}} : \begin{minipage}[t]{9.5cm} {selects the \fftwt\ library, but needs the variable {\tt \$FFTW} to be set to the absolute path of the \fftwt\ library}\end{minipage}
+    \item[]\makebox[\mylen][l]{\withfft\texttt{/path/to/fftw3/library}} :  \begin{minipage}[t]{9.5cm} {selects the \fftwt\ library by giving  the absolute path of the \fftwt\ library}\end{minipage}
+\end{itemize}
+
+Here are typical commands you can type. If \MKLROOT\ has been correctly set~:
+
+\begin{verbatim}
+    ./configure --enable-fft-mkl --with-fftlib=mkl
+\end{verbatim}
+
+If you wish to give the absolute path of the library~:
+\begin{verbatim}
+    ./configure --enable-fft-mkl   --with-fftlib=/path/to/mkl/library
+    ./configure --enable-fft-fftw3 --with-fftlib=/path/to/fftw3/library
+\end{verbatim}
+
+These last commands can also be written this way~:
+\begin{verbatim}
+    MKLROOT=/path/to/mkl/library ./configure --enable-fft-mkl   --with-fftlib=mkl
+    FFTW=/path/to/fftw3/library  ./configure --enable-fft-fftw3 --with-fftlib=fftw3
+\end{verbatim}
+
+\vskip5mm
+\subsubsection{BLAS library}
+You can choose the \blas\ library you want to use. It can come from the \mkl\ suite or  some \lapack\ package (either system installed, or compiled by you). So~:
+\settowidth{\mylen}{\withblas\texttt{/path/to/lapack/library}}
+\begin{itemize}
+    \item[]\makebox[\mylen][l]{\withblas\texttt{mkl}} : \begin{minipage}[t]{9.0cm}{selects the \mkl\ library, but needs the variable \MKLROOT\ to be set to the absolute path of the \mkl\ library}\end{minipage}
+    \item[] \makebox[\mylen][l]{\withblas\texttt{/path/to/mkl/library}} : \begin{minipage}[t]{9.0cm}{selects the \mkl\ library, by giving the absolute path of the \mkl\ library}\end{minipage}
+    \item[]\makebox[\mylen][l]{ \withblas\texttt{lapack}} : \begin{minipage}[t]{9.0cm}{selects the \lapack\ library, but needs the variable \LAPACK to be set to the absolute path of the \lapack\ library}\end{minipage}
+    \item[]\makebox[\mylen][l]{ \withblas\texttt{/path/to/lapack/library}}\ :  \begin{minipage}[t]{9.0cm}{selects the \lapack\ library, by giving the absolute path of the \lapack\ library.}\end{minipage}
+\end{itemize}
+
+Here are typical commands you can type. If \MKLROOT\ has been correctly set~:
+\begin{verbatim}
+    ./configure --enable-fft-mkl --with-blas=mkl
+\end{verbatim}
+
+If you wish to give the absolute path of the library~:
+\begin{verbatim}
+    ./configure --enable-fft-mkl --with-blas=/path/to/mkl/library
+    ./configure --enable-fft-mkl --with-blas=/path/to/lapack/library
+\end{verbatim}
+
+These last commands can also be written this way~:
+\begin{verbatim}
+    MKLROOT=/path/to/mkl/library    ./configure --enable-fft-mkl --with-blas=mkl
+    LAPACK=/path/to/lapack/library  ./configure --enable-fft-mkl --with-blas=lapack
+\end{verbatim}
+
+\vskip5mm
+\subsubsection{DEBUG mode}
+This mode is primarily intended for developers, but can also be useful if you experience errors while running Tinker-HP. Adding \enadeb\ to the \config\ command turns on \textbf{boundary checking}, forces  \textbf{implicit none}, sets the optimization level to \textbf{0} (the lowest value) and enables \textbf{backtracing} and  \textbf{all warnings}. The compilation produces all the binaries and gives them the \texttt{.debug} extension, so that you know that these binaries are not optimized. 
+
+\subsection{Output of configure}
+\config\ produces a final log to resume what will be done. It displays using colors (if available) all the information you gave, and everything it has been able to catch from the environment. 
+
+Here is the result of a successful run of the \config\ command~:
+
+\begin{verbatim}
+FFTW=/usr/local/fftw-3.3.7/Intel/2018/impi/
+./configure --enable-debug --enable-fft-fftw3 --with-fftlib=fftw3 --with-blas=lapack
+\end{verbatim}
+
+where we give the absolute path of the \fftwt\  library in the \texttt{\$FFTW} variable, ask for the DEBUG mode, enable the fftw3 interface, use the \fftwt\ library and want the lapack library for  \blas, assuming that the  \LAPACK\  variable is already set.
+
+\begin{verbatim}
+configure: 
+configure: **********************************************************************
+configure: **
+configure: ** Running Mode         : DEBUG (binaries'extension is .debug)   
+configure: ** MPI Fortran Wrapper  : mpiifort                    
+configure: ** Fortran Compiler     : ifort              
+configure: ** Fortran flags        : -O0 -g -u -warn all -check bounds -no-ipo 
+                                     -no-prec-div -inline -heap-arrays -traceback -xHost                  
+configure: ** 2decomp Library      : -L ../2decomp_fft/src/ -l2decomp_fft           
+configure: ** FFTW3 Interface      : fftw3 of the FFTW3 library
+configure: ** FFTW3 Path           : /usr/local/fftw-3.3.7/Intel/2018/impi//lib     
+configure: ** FFTW3 Includes       : -I /usr/local/fftw-3.3.7/Intel/2018/impi//include 
+configure: ** FFTW3 Library        : -lfftw3                  
+configure: ** BLAS Type            : LAPACK                 
+configure: ** BLAS Path            : /usr/local/Libraries/lapack-3.8.0/Intel/2018
+configure: ** Prefix installation  : /home/lhj/neutron/Tinker/REL/PME/v1.2
+configure: ** Binaries location    : /home/lhj/neutron/Tinker/REL/PME/v1.2/bin 
+configure: **
+configure: **********************************************************************
+configure: 
+\end{verbatim}
+
+This log confirms that we are in DEBUG mode and that we use the Intel compiler \texttt{ifort} and the \texttt{mpiifort} wrapper from Intel\mpi. The installation directory where all binaries (with \texttt{.debug} extension) will be installed is shown as well.
+\subsection{Making binaries}
+
+\hskip\parindent Once you are happy with the option you selected, it's time to run the \texttt{make} command, or even the \texttt{make install} command, which will compile and install all at once.
+
+As the compilation process takes care of the dependencies between subroutines and modules, you can safely use the \texttt{-j} flag of the \texttt{make} command to do parallel compilation. This would dramatically speedup the compilation process. 
+
+Anyway, on modern machines, the compilation is not very long, except for 2 or 3 subroutines that can take up to 5(!) minutes to compile, depending on the compiler you use and even on the fastest machines. Everything should compile and link gracefully. Using \texttt{make install} will copy the binaries into the directory you selected with the \prefix\ option. Don't forget to install the binaries you created, or you will not be able to run the examples.
+
+\section{Note for developers}
+\subsection{Writing new sources}
+We don't want to impose you a unique style of writing. Indeed, we don't have one. But we just want to give you some rules we believe are important for the consistency of Tinker-HP's code.
+
+\paragraph{File format}
+We use \textsc{Fixed Form} format throughout all the code, even though the code is written in \textsc{Fortran90}. This is mandatory. The compilation process would not work otherwise.
+\paragraph{Editing}
+We always use lowercase letters for code (except for printing purposes). We indent all lines embedded in \texttt{do.....enddo}, \texttt{do.....while}, etc...  statements, or in \texttt{if...else...endif} constructs. 
+\paragraph{Variable declarations} You are required to use \texttt{implicit none}. If you compile in debug mode, that will be enforced by the compiler.
+
+The order we use to declare variables is:
+\begin{enumerate}
+    \item \texttt{integer} (4 bytes sized)
+    \item \texttt{real}    (8 bytes sized)
+    \item \texttt{logical}
+    \item \texttt{array} (in the same order)
+    \item \texttt{character} (single string or array)
+\end{enumerate}
+
+We always try not to mix different types of variables in the same declaration line. This is not just because it is easier to read. That is also because it is more memory efficient, particularly for vectorization, where alignment in memory is crucial. \texttt{character} should be put at the very end, since they can have arbitrary lengths and almost never align to a memory boundary. We also try to choose significant names for the variables.
+
+\paragraph{Comments} We always begin a comment line by the \texttt{c} character. The \texttt{!} character should only appear in the middle of a line.
+This is because the \texttt{!} character at the beginning is reserved to introduce compiler directives.
+
+If ever you create modules, please comment all the new variables you create, like :
+\begin{verbatim}
+   c     maxvalue        atoms directly bonded to an atom
+   c     maxgrp          user-defined groups of atoms
+   c     maxtyp          force field atom type definitions
+   c     maxclass        force field atom class definitions
+\end{verbatim}
+
+In subroutines or functions, give as many comments as you believe is needed to understand what your code is doing. That would be precious for you, and for us as well. 
+\subsection{Compiling new sources}
+If you make development on Tinker-HP, it is likely that you would need to add subroutines and modules in the source directory.
+
+All modules should be put in files named \texttt{MOD\_xxxxx.f}, even though they are written in \textsc{Fortran90}. All functions and routines should be put in files with names beginning by a lowercase letter and with \texttt{.f} extension. Please, try to find significant names ( \texttt{epolar1tcg2shortreal.f} is far better than \texttt{ep1tc2shre.f}). You are required to follow this scheme as much as possible.
+
+To compile your new sources, you should add them in the \texttt{Makefile.am} file of the \texttt{source} directory. We've put some comments in this file, to help you know where to put things. Search for the string \texttt{Add} in the file. 
+
+There are 3 different cases\footnote{Of course, you can match all three at the same time!}:
+
+\begin{enumerate}
+    \item You created a new main program (like \analyze\ or \dynamic). Add a line
+    
+    \hskip1.5cm \texttt{bin\_PROGRAMS += yourmain}
+    
+    (with no extension) below the line \texttt{bin\_PROGRAMS += testgrad}. Then, add the lines
+    
+    \hskip1.5cm \texttt{yourmain\_SOURCES = yourmain.f}
+    
+    and
+    
+    \hskip1.5cm \texttt{yourmain\_DEPENDENCIES = libtinkermod.a libtinkercalc.a }
+    
+    after the similar lines concerning \testgrad.
+    \item You created new module(s). Add lines 
+    
+    \hskip1.5cm \texttt{libtinkermod\_a\_SOURCES += MOD\_xxxxx.f}
+    
+    just below\footnote{As the compilation process takes care of all the dependencies, the positions of the lines you add are not really significant. But putting the new lines at the end is just a way of remembering they are -- well -- new.} \texttt{libtinkermod\_a\_SOURCES += MOD\_virial.f}
+    \item You created functions and subroutines. Add lines like
+    
+    \hskip1.5cm \texttt{libtinkercalc\_a\_SOURCES += yourexplicitfilename.f}
+    
+    just below\footnote{Same remark as above.} the line \texttt{libtinkercalc\_a\_SOURCES += version.f}
+\end{enumerate}
+
+You should now go in the main directory, where \texttt{configure.ac} resides, and type \texttt{autoconf} and \texttt{automake}. \texttt{autoconf} should not generate any message. \texttt{automake} will probably do, mainly because of a different version than the one we used to create the distribution. In this case, just type \texttt{aclocal} before running \texttt{automake} again. These 2 (or 3) commands will generate a new \config\ script that takes care of your new sources. You should then run \configp\footnote{Presumably with the \enadeb\ option flag.}, compile, install and enjoy debugging your code.
+
+\section{Executables}
+After having successfully compiled the code, five executable files should be present in the install directory: \analyze, \bar, \dynamic, \testgrad\ and \minimize\footnote{If you have ever compiled with \enadeb\ before, you should  have 5 more binaries.}, which are the analogous of the binaries of the Tinker-8.4 release and require similarly a geometry (given by a *.xyz file), a simulation setup (given by a *.key file) and possibly a restart (given by a *.dyn file) for the \dynamic\ program. 
+
+All these executables must run in the same environment you had during the compilation phase. That means the same set of modules, or the correct \texttt{LIBRARY\_PATH}. They should be launched with the \mpirun\texttt{ x} prefix in order to run in parallel with \texttt{x} \mpi\  processes. 
+
+The only boundary conditions that are available in this release are periodic boundary conditions treated with Particle Mesh Ewald. Classical force fields such as AMBER, CHARMM and OPLS are available in Tinker-HP as well as polarizable force fields such as AMOEBA.
+\subsection{\analyze\ } 
+The \analyze\ executable allows potential energy analysis. Compared to the Tinker-8.4 software, the only option compatible with this binary is "e".
+
+For example the command line: 
+\begin{itemize}
+\item[] \mpirun\texttt{ 16 ./analyze dhfr2 e} \\
+will give you as an output the potential energy terms of the geometry given by a dhfr2.xyz file and with the simulation setup given by the dhfr2.key file. Furthermore, this computation will run on 16 \mpi\  processes.
+\end{itemize}
+\subsection{\dynamic\ }
+The \dynamic\ executable allows to run molecular dynamics simulation. As for Tinker-8.4, the command line used to run the MD should give first the number of MD steps to make, then the size of each time step (in femtoseconds), then the time between each writing of geometry (in picoseconds), then the statistical ensemble to sample : 1 is NVE, 2 is NVT, 4 is NPT. For NVT and NPT simulations, this number should be followed by the temperature (in Kelvin) of the simulation, and for NPT simulation by the pressure (in Atmosphere) of the simulation.
+
+For example the command lines:
+\begin{itemize}
+    \item[] \mpirun\texttt{  16 ./dynamic dhfr2 1000 1 1 1} \\
+    will give you as an output 1000 MD steps in NVE for the dhfr2 system, with a 1  {\em fs} time step and a 1 {\em ps} frequency output.
+    \item[] \mpirun\texttt{  16 ./dynamic dhfr2 1000 1 1 2 300} \\
+    will give you as an output 1000 MD steps in NVT at 300K for the dhfr2 system, with a 1  {\em fs} time step and a 1  {\em ps} frequency output.
+    \item[] \mpirun\texttt{  16 ./dynamic dhfr2 1000 1 1 4 300 1} \\
+    will give you as an output 1000 MD steps in NPT at 300K and 1atm for the dhfr2 system, with a 1  {\em fs} time step and a 1  {\em ps} frequency output.
+\end{itemize}
+\subsection{\testgrad\ }
+The \testgrad\ program is absolutely equivalent to the one of the Tinker-8.4 release: it allows the output of the components of the analytical and/or numerical gradients of the different energy terms.
+
+For example, the command line:
+\begin{itemize}
+\item []\mpirun\texttt{  16 ./testgrad dhfr2 Y Y 0.0001 Y} \\
+will give you as an output all the analytical and numerical gradients (computed with an increment of 0.0001 Angstroms for the positions of the atoms) of all the energy terms of the dhfr2 system.
+\end{itemize}
+\subsection{\minimize}
+The \minimize\ program computes energy minimization starting from a given structure, using a low memory quasi-newton BFGS algorithm as in Tinker-8.4. The command line used should give the numerical threshold for the convergence of the algorithm.
+
+For example, the command line:
+\begin{itemize}
+\item []\mpirun\texttt{  16 ./minimize dhfr2 0.1} \\
+will compute energy minimization on the dhfr2 structure until the RMS on the gradient is inferior to 0.1. The new geometry will be written at each iteration of the algorithm in the file dhfr2.xyz\_2.
+\end{itemize}
+\section{Keywords}
+The main keywords of Tinker-8.4 are available in Tinker-HP. So, a description of these keywords can be found in the \href{https://dasher.wustl.edu/tinker/downloads/guide.pdf}{Tinker user guide}. Let us review a few of these and some new ones which are specific to  Tinker-HP.
+
+\settowidth{\mylen}{\baoabpiston}
+\subsection{Keywords specific to the \dynamic\  program}
+\begin{itemize}
+
+\item \textbf{Integrators: } 
+As in Tinker, the integrator of a dynamic is imposed by the keyword \textbf{"integrator x"}, x being one of the available integrator:
+
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{llp{14.60cm}}
+\beeman &:& The default one\\
+\verlet &: & Verlet\\
+\bbk &: &Langevin Dynamics for constant temperature simulations\\
+\baoab &: &Langevin Dynamics for constant temperature simulations\\
+\respa &: &Bonded/non bonded respa-split with a velocity-verlet inner loop and with a 0.25 {\em fs} default timestep for the inner loop\\
+\baoabrespa & : & Bonded/non bonded respa-split for Langevin dynamics with a \baoab\ inner loop, the default time step for the inner loop is also 0.25 {\em fs}\\
+\respaone & : &(Bonded)/(short range non bonded)/(long range non bonded) three level respa1-split with a velocity verlet inner loop. The default timesteps are 0.25 {\em fs} for the inner loop and 2 {\em fs} for the intermediate one\\
+\baoabrespaone &: &(Bonded)/(short range non bonded)/(long range non bonded) three level respa1-split for Langevin dynamics with a \baoab\ inner loop. The default timesteps are 0.25 {\em fs} for the inner loop and 2 {\em fs} for the intermediate one\\
+\baoabpiston &:& Constant pressure \baoab\  Langevin dynamics with a Langevin Piston pressure control and a \baoab\  evolution of the volume extended variable. The default mass of the piston is 2e$^{-5}$ atomic units and the default friction for the piston is 20.0  {\em ps}$^{-1}$.\\
+\end{tabular}
+
+\vskip2.5mm
+For all the Langevin integrators (\bbk, \baoab, \baoabrespa, \baoabrespaone\ and \baoabpiston), the friction (in  {\em ps}$^{-1}$) can be controlled by the keyword \texttt{gamma x}, the default being 1  {\em ps}$^{-1}$.
+
+For \respa, \baoabrespa, \respaone\ and \baoabrespaone, the inner timestep can be imposed by the keyword \texttt{dshort x}, \texttt{x} being its desired value in  {\em ps}.
+
+For \respaone\ and \baoabrespaone, the intermediate timestep can be imposed by the keyword \texttt{dinter x}, \texttt{x} being its desired value in  {\em ps}.
+
+For \baoabpiston,  the mass of the piston (in atomic units) can be set by the keyword \texttt{masspiston x} and 
+the friction of the piston (in  {\em ps}$^{-1}$) can be set by the keyword \texttt{gammapiston x}.
+
+\vskip5mm
+\item \textbf{Thermostats and barostats}: Aside from the Langevin integrators, the thermostats available in Tinker-HP are Berendsen, Bussi (which is the default one) and Andersen. Aside from the Langevin Piston, the barostats available in Tinker-HP are the Berendsen (which is the default one) and the Monte-Carlo one. These option can be set by putting the keywords: \texttt{thermostat berendsen}, \texttt{thermostat bussi}, \texttt{thermostat andersen}, \texttt{barostat berendsen} and \texttt{barostat montecarlo} in the key file.
+\end{itemize}
+
+Tinker-HP deals with restart files for dynamic trajectories the same way as Tinker-8.4 does by creating a *.dyn file encompassing current positions, velocities and accelerations of the system.
+
+\subsection{New keywords specific to Tinker-HP}
+Some new keywords have been introduced in Tinker-HP. The first one concern the algorithm used to converge the polarization equations. 
+
+\settowidth{\mylen}{\textbf{polar-alg} \texttt{x}}
+\begin{itemize}
+\item[]\makebox[\mylen][l]{\textbf{polar-alg} \texttt{x}} : choose  the algorithm used to compute the dipoles solution of the polarization equations. \texttt{x} can be:
+
+    \item[]\makebox[\mylen][r]{\texttt{1}} : Conjugate Gradient with a diagonal preconditioner
+    \item[]\makebox[\mylen][r]{\texttt{2}} : Jacobi/DIIS
+    \item[]\makebox[\mylen][r]{\texttt{3}} : Truncated Conjugate Gradient (TCG)
+    \item[]\makebox[\mylen][r]{\texttt{5}} : Divide and Conquer Jacobi/DIIS (default)
+
+\end{itemize}
+
+\vskip5mm
+TCG is a systematically improvable method with 4 tunable parameters that can be controlled by different keywords, each of them being prefixed by \texttt{tcg}:
+
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{llp{15.9cm}}
+\textbf{tcgorder} \texttt{x}& : &order of the TCG truncation, \texttt{x} can take the value 1 (TCG1) or 2 (TCG2), default is 2\\
+\textbf{tcgprec} \texttt{x} &: &use of a diagonal preconditioner. \texttt{x} can take the value 1 (\textsc{Yes}) or 0 (\textsc{No}), default is 1\\
+\textbf{tcggues} \texttt{x} &: &use of a "direct guess" ($polarizability\times permanent_electric_field$) as a guess. \texttt{x} can take the value 1 (\textsc{Yes}) or 0 (\textsc{No}), default is 0.\\
+\textbf{tcgpeek}\texttt{x} &: &use of a peek step. \texttt{x} can take the value 1 (\textsc{Yes}) or 0 (\textsc{No}), default is 1. When a peek step is used, a Jacobi Over Relaxation (JOR) is applied to the TCG values of the dipoles with a parameter \textbf{$\omega$}. By default, this value is $\omega=1$. (regular Jacobi step) but three keywords can modify this:\\
+\end{tabular}
+\settowidth{\mylen}{\textbf{tcgomegafitfreq} \texttt{x}}
+
+\hskip5mm
+\begin{tabular}{llp{14.25cm}}
+\textbf{tcgomega} \texttt{x} &: &change the value of the  $\omega$ parameter to \texttt{x}.\\
+\textbf{tcgomegafit} &: &impose a regular fitting of the $\omega$ parameter to match at regular intervals the fully converged polarization energy.\\
+\textbf{tcgomegafitfreq} \texttt{x}& :& number of timesteps between two updates of the fitted $\omega$ parameter. The default of \texttt{x} is 1000.\\
+\end{tabular}
+
+\vskip5mm
+When the \respaone\ and \baoabrespaone\ integrators are used, one has to solve the short range real space polarization equations at the intermediate time steps. By default, this is done using the same algorithm as the one used to solve the complete polarization equations at the outer time steps. But one can chose a different algorithm to solve the short range polarization by using the keyword \textbf{polar-algshort} with the same possible values as for \textbf{polar-alg}. If TCG is chosen as a short range polarization solver, one can define all the related option for this solver by taking the same keywords defined above and adding the suffix \textbf{short}:
+
+\settowidth{\mylen}{\textbf{tcgomegashort $\omega$}}
+\begin{itemize}
+\item[]\makebox[\mylen][l]{\textbf{tcgordershort}} : order of the short range TCG truncation
+\item[]\makebox[\mylen][l]{\textbf{tcgprecshort}} : use of diagonal preconditioner or not
+\item[]\makebox[\mylen][l]{\textbf{tcgguessshort}} : use of a "direct guess"
+\item[]\makebox[\mylen][l]{\textbf{tcgpeekshort}} : use of a peek 
+\item[]\makebox[\mylen][l]{\textbf{tcgomegashort $\omega$}} : choice of the peek step parameter
+\end{itemize}
+
+\vskip5mm
+With the introduction of Steered Molecular Dynamics come two keywords:
+\begin{itemize}
+\item[] \textbf{CVSMD} for Constant Velocity Steered Molecular Dynamics
+\item[]\textbf{CFSMD} for Constant Force Steered Molecular Dynamics.
+\end{itemize}
+
+ The use of those two forms of steered molecular dynamics (SMD) is described in a dedicated tutorial which can be found in the \texttt{tutorials/SMD/} directory, along with two subdirectories (\texttt{CFSMD} and \texttt{CVSMD}) containing input files, running scripts and output files. The 2 Tinker Archives corresponding to \textbf{CVSMD} and \textbf{CFSMD} (178MB each) can be downloaded at \texttt{http://tinker-hp.ip2ct.upmc.fr/?Download-Process}.
+ 
+\vskip5mm
+Unlike Tinker-8.4, the neighbor-lists for non bonded interactions are computed every x steps (x=20 being the default for a 2 {\em fs} time step) and not adjusted dynamically at each time step. This frequency of update can be modified by using the keywords \textbf{nlupdate x}, 1 corresponding to a neighbor-list update at each time step (which can be useful during equilibration for example).
+
+\vskip5mm
+Other keywords have been introduced to specify parallel options when running Tinker-HP. The current distributed release is only available with the PME algorithm which involves direct and reciprocal space computations in the electrostatic and polarization interactions. As the reciprocal space interactions are known to have a less efficient parallel scaling (because of FFTs) it is possible to specify a lower number of \mpi\  processes that will be dedicated to these computations for both the computation of electrostatic and polarization interactions. This can be done by using the keyword \textbf{pme-procs} \texttt{x}, corresponding to \texttt{x} \mpi\  processes dedicated to reciprocal space computations.
+
+\vskip5mm
+To find the ideal \texttt{x} value of \textbf{pme-procs}, a good starting point, when a large number of cores is used, is usually to dedicate about $\frac{1}{4}$ of the total cores to reciprocal space computations. But this parameter depends greatly on the machine used and on the setup of your simulation so it should be adjusted manually by comparing the timings obtained with different values for \textbf{pme-procs}. During a dynamic, detailed timings are written when the \textbf{verbose} keyword is in the *.key file. In the future, the parameter \textbf{pme-procs} will be adapted heuristically by the program as it is done in popular MD packages.
+
+\vskip5mm
+As explained in the beginning of the document, Tinker-HP distributes the data on a grid used to run 3D \fft\  in 2d pencils which can be associated to a 2d processor grid as explained in \href{http://www.2decomp.org/decomp.html}{\decomp\ web page}. By default, the library looks for an optimal 2d processor grid given the number of cores available but this decomposition can be imposed by the user by setting the keyword: \textbf{decompfft-grid n1 n2}, corresponding to a n1$\times$n2 processor grid.
+
+\vskip5mm
+Note that the user does not have to specify that he wants neighbor-lists to be used as it is the only available option in Tinker-HP.
+
+\section{Examples}
+4 examples of systems with associated *.key files are given in the distribution: ubiquitin2, dhfr2, puddle and pond. The sizes of these systems are respectively: 9737, 23558, 96000 and 288000 atoms, making them good various benchmarks for the program. 
+
+4 different setups are given for the ubiquitin system with 4 different key files:
+
+\begin{tabular}{lllp{13.3cm}}
+1)&\textbf{ubiquitin2.key}& : &regular (langevin with BAOAB integration based) 2 {\em fs} respa (bonded/non-bonded split) computations with DC-JI/DIIS as a polarization solver \\
+2)&\textbf{ubiquitin2tcg.key}& : &2 {\em fs} respa computations with TCG2 (with a diagonal preconditioner, no guess and a peek step with $\omega=1$ as a polarization solver\\
+3)&\textbf{ubiquitin2respa1.key}& : &6 {\em fs} respa1 (bonded/short range non-bonded/long range non-bonded split) langevin with BAOAB integration computations with DC-JI/DIIS as a short and total polarization solver\\
+4)&\textbf{ubiquitin2respa1tcg.key}& : &10 {\em fs} respa1 langevin with BAOAB integration computations with heavy hydrogen, TCG1 (with a diagonal preconditioner, no guess and no peek step) as a short range polarization solver and DC-JI/DIIS as a total polarization solver\\
+\end{tabular}
+
+A fifth example is reserved for debug purposes. It's exactly the same as the first one. \texttt{./ubiquitin2.debug.run} runs the \dynamic.\texttt{debug} binary. 
+\section{Tutorials}
+Three tutorials can be found in the directory \textbf{tutorials} of the release:
+
+\begin{tabular}[t]{lcl}
+    A general tutorial to prepare systems for Tinker/Tinker-HP&:& \textbf{Tinker\_preparation\_tutorial.pdf}\\
+     A tutorial to use Umbrella Sampling with Tinker/Tinker-HP&:& \textbf{Umbrella\_sampling\_tutorial.pdf}\\
+    A tutorial to use Steered MD with Tinker-HP&:& \textbf{SMD/SMD\_manual.pdf}\\
+\end{tabular}
+
+\section{Support}
+
+Tinker-HP is maintained by few people. That means we cannot promise you to answer in a minute to your requests. Anyway, if you have any question or need any support for Tinker-HP, feel free to send a mail to our team at \texttt{TinkerHP\_Support@ip2ct.upmc.fr}. We will answer as soon as we can, providing that we can ! 
+\end{document}
+
+

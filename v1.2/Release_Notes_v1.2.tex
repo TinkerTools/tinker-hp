@@ -1,0 +1,138 @@
+\documentclass[]{article}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{hmargin=2.5cm}
+\title{Tinker-HP 1.2 : Release Notes}
+\author{Louis Lagardère, Luc-Henri Jolly, Jean-Philip Piquemal \\
+Sorbonne Université, Paris, France.\\
+}
+
+\begin{document}
+\maketitle
+\newpage
+\section{Citing Tinker-HP}
+
+If you use Tinker-HP 1.2 please cite the following reference : 
+\\
+\\
+{\em Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems with Advanced Polarizable Force Fields.}
+L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access)
+DOI: 10.1039/C7SC04531J
+\\
+\\
+If you use the AVX512 vectorized version of Tinker-HP 1.2, please also cite :
+\\
+\\
+{\em Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0].}
+L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access) DOI: 10.33011/livecoms.1.2.10409
+
+
+\section{New methods and improvement}
+Several new methods and improvements have been included in Tinker-HP version 1.2, they can be listed as follows:
+\begin{itemize}
+\item \textbf{Truncated Conjugate Gradient (TCG) non iterative solver(s) for the polarization equations:}
+\\
+\\
+ This method approximates the fully converged dipoles by a (systematically improvable) analytic expression which thus avoids the error in the computation of the related forces due to the use of a (never fully converged) iterative method. Furthermore, depending on its level of accuracy, TCG can be faster than the standard solution of the dipoles via an iterative method.
+ \\
+ 
+\textbf{KEYWORDS:} The use of TCG is set by using the line: \textbf{polar-alg 3} in the *.key file, additional keywords to control the parameters of TCG (preconditioner, peek step and guess) can be found in the \textbf{Readme} of Tinker-HP.
+\\
+Because no analytical virial tensor is computed for TCG yet, NPT simulations with TCG are limited to the use of the Monte-Carlo barostat.
+
+\textbf{References}
+
+\begin{itemize}
+    \item {\em Truncated Conjugate Gradient (TCG): an optimal strategy for the analytical evaluation of the many-body polarization energy and forces in molecular simulations.}
+F. Aviat, A. Levitt, Y. Maday, B. Stamm, P. Y. Ren, J. W. Ponder, L. Lagardère, J.-P.Piquemal, J. Chem. Theory. Comput., 2017, 13, 180-190 (Open Access) DOI: 10.1021/acs.jctc.6b00981
+
+\item {\em The Truncated Conjugate Gradient (TCG), a Non-iterative/Fixed-cost Strategy for Computing Polarization in Molecular Dynamics: Fast Evaluation of Analytical Forces.}
+F. Aviat, L. Lagard\`ere, J.P. Piquemal, J. Chem. Phys., 2017, 147, 161724 
+DOI: 10.1063/1.4985911
+\end{itemize}
+
+\item \textbf{New multi-timesteps integrators:}
+Three-levels \textbf{Respa1}-like integrators have been introduced where the potential is evaluated at three different levels (and not just two as for the standard Respa integrator):
+\begin{itemize}
+    \item the fast bonded terms
+    \item the intermediate short-range non-bonded terms: short range van der Waals, short range (real space) electrostatics and short range (real space) polarization for polarizable force fields
+\item the long range non-bonded terms: long range van der Waals, long range     + reciprocal space electrostatics, total polarization-short range (real     space) polarization for polarizable force fields
+\end{itemize}
+
+\textbf{KEYWORDS:} These splittings can be used with a \textbf{BAOAB} inner loop for NVT simulations (keyword \textbf{baoabrespa1}) or with a velocity-verlet inner loop (keyword \textbf{respa1}), it has been showed that the BAOAB based respa1 integrators are always more stable than the Velocity-verlet based respa1 integrators.
+
+ The timesteps used for the three levels can be controlled in the key-file as well as the solver used for short-range polarization for polarizable force fields as described in the README of Tinker-HP. When used in conjunction with Hydrogen-Mass-Repartitioning (keyword \textbf{heavy-hydrogen}) and the use of a simple TCG1 short range polarization solver, AMOEBA computation can be made up to 7 times faster than with a standard 1fs Velocity Verlet integrator as described in the reference above.
+ 
+\textbf{Reference}
+
+\begin{itemize}
+    \item {\em Pushing the limits of Multiple-Timestep Strategies for Polarizable Point Dipole Molecular Dynamics.}
+L. Lagardère, F. Aviat, J.-P. Piquemal, J. Phys. Chem. Lett., 2019, 10, 2593-2599 \\ DOI: 10.1021/acs.jpclett.9b00901
+\end{itemize}
+
+\item \textbf{Langevin Piston for NPT simulations:}
+
+The Langevin Piston extended Lagrangian method has been implemented with a baoab integration of the volume extended variable, with the keyword \textbf{barostat langevin} or \textbf{integrator baoabpiston}. In both cases, the only compatible integrator is a standard \textbf{BAOAB} limiting the usable timestep to around 1fs. The mass of the piston as well as the associated friction can be controlled by keyword reviewed in the Readme  of Tinker-HP.
+
+\textbf{Reference}
+
+\begin{itemize}
+
+\item {\em Constant pressure molecular dynamics simulation: The Langevin piston method.}
+Scott E. Feller, Yuhong Zhang, and Richard W. Pastor J. Chem. Phys., 1995,  103, 4613 DOI: 10.1063/1.470648
+\end{itemize}
+
+\item \textbf{Addition of Steered Molecular Dynamics:}
+
+Steered Molecular Dynamics (SMD) was added to Tinker-HP 1.2 version.\\\\
+\textbf{KEYWORDS:} SMD can be set with the keywords \textbf{CVSMD} for constant velocity SMD and \textbf{CFSMD} for constant force SMD. Details of how to use SMD within Tinker-HP can be found in the \textbf{SMD Tutorial} made by Frederic Célerse which can be found within in the tutorials/SMD/ directory of the release.
+
+\textbf{Reference}
+
+\begin{itemize}
+    \item {\em Massively parallel implementation of Steered Molecular Dynamics in Tinker-HP: polarizable versus non-polarizable simulations.}
+F. Célerse, L. Lagardère, E. Derat, J.-P.Piquemal, J. Chem. Theory. Comput. 2019, 15, 3694-3709 DOI: 10.1021/acs.jctc.9b00199
+\end{itemize}
+
+\item \textbf{Parallel version of the regular Tinker BAR program for Free Energy differences}
+
+The exact equivalent of the regular Tinker "BAR" program has been implemented within the massively parallel Tinker-HP framework. Given two trajectories stored in *.arc files and the corresponding two Hamiltonians characterized by to two different *key files, it allows to compute the free energy difference between the two states with the Bennett Acceptance Ratio method.
+\item \textbf{Faster linked-cell method to compute neighbor lists}
+\item \textbf{Faster rattle algorithm in parallel}
+\end{itemize}
+\section{New compilation and installation method}
+
+Tinker-HP now uses a \texttt{configure} script built with  autotools packages from \textsc{Gnu} to ease the compilation and installation process. Apart from the usual options available with all \texttt{configure} scripts, there are specific options for Tinker-HP.
+
+
+\begin{verbatim}
+Usage: ./configure [OPTION]... [VAR=VALUE]...
+
+Optional Features:
+  --enable-debug                Enable debug mode (check array bounds, implicit
+                                none, etc...). Should not be active in normal
+                                operations [default is no]
+  --enable-skylake              Enable AVX512 Optimization for Skylake Processors
+                                [default is no]
+  --enable-knl                  Enable AVX512 Optimization for KNL (Xeon Phi)
+                                Processors [default is no]
+  --enable-fft-generic          Enable generic FFT mode [default is yes]
+  --enable-fft-mkl              Enable MKL   FFT mode [default is no]
+  --enable-fft-fftw3            Enable fftw3 FFT mode [default is no]
+  --enable-fft-fftw3_f03        Enable fftw3_f03 FFT mode [default is no]
+
+Optional Packages:
+  --with-blaslib=<BLAS LIB>     Specify BLAS library [mkl, lapack or 
+                                /absolute/path/to/BLAS_library]
+  --with-fftlib=<FFT LIB>       Specify a library for FFT called by 2decomp [mkl or
+                                fftw3 or /absolute/path/to/FFTW_library]
+
+\end{verbatim}
+
+Users should now be able to have Tinker-HP running by doing~:
+\begin{verbatim}
+    ./configure ; make ; make install
+\end{verbatim}
+
+Please read the instructions on how to use the \texttt{configure} script in the Readme\_v1.2.pdf.
+\end{document}
