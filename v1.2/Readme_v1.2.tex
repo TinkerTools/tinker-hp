@@ -454,14 +454,14 @@ As in Tinker, the integrator of a dynamic is imposed by the keyword \textbf{"int
 \end{tabular}
 
 \vskip2.5mm
-For all the Langevin integrators (\bbk, \baoab, \baoabrespa, \baoabrespaone\ and \baoabpiston), the friction (in  {\em ps}$^{-1}$) can be controlled by the keyword \texttt{gamma x}, the default being 1  {\em ps}$^{-1}$.
+For all the Langevin integrators (\bbk, \baoab, \baoabrespa, \baoabrespaone\ and \baoabpiston), the friction (in  {\em ps}$^{-1}$) can be controlled by the keyword \texttt{friction x}, the default being 1  {\em ps}$^{-1}$.
 
 For \respa, \baoabrespa, \respaone\ and \baoabrespaone, the inner timestep can be imposed by the keyword \texttt{dshort x}, \texttt{x} being its desired value in  {\em ps}.
 
 For \respaone\ and \baoabrespaone, the intermediate timestep can be imposed by the keyword \texttt{dinter x}, \texttt{x} being its desired value in  {\em ps}.
 
 For \baoabpiston,  the mass of the piston (in atomic units) can be set by the keyword \texttt{masspiston x} and 
-the friction of the piston (in  {\em ps}$^{-1}$) can be set by the keyword \texttt{gammapiston x}.
+the friction of the piston (in  {\em ps}$^{-1}$) can be set by the keyword \texttt{frictionpiston x}.
 
 \vskip5mm
 \item \textbf{Thermostats and barostats}: Aside from the Langevin integrators, the thermostats available in Tinker-HP are Berendsen, Bussi (which is the default one) and Andersen. Aside from the Langevin Piston, the barostats available in Tinker-HP are the Berendsen (which is the default one) and the Monte-Carlo one. These option can be set by putting the keywords: \texttt{thermostat berendsen}, \texttt{thermostat bussi}, \texttt{thermostat andersen}, \texttt{barostat berendsen} and \texttt{barostat montecarlo} in the key file.
