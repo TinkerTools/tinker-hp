@@ -86,7 +86,7 @@ c
 c
 c     set default parameters for the dynamics trajectory
 c
-      integrate = 'BEEMAN'
+      integrate = 'VERLET'
       bmnmix    = 8
       nfree     = 0
       irest     = 1
@@ -328,7 +328,6 @@ c
         use_shortclist = use_clist
         use_shortvlist = use_vlist
       end if
-
 c    
 c     initialization for Langevin dynamics
 c

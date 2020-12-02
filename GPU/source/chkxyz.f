@@ -17,12 +17,12 @@ c
 #include "tinker_precision.h"
       subroutine chkxyz (clash)
       use sizes
-      use atoms
+      use atomsMirror
       use iounit
       implicit none
       integer i,j
-      real(t_p) xi,yi,zi
-      real(t_p) eps,r2
+      real(r_p) xi,yi,zi
+      real(r_p) eps,r2
       logical clash
       logical header
 c
@@ -30,11 +30,7 @@ c
 c     initialize atom collision flag and distance tolerance
 c
       clash = .false.
-#if defined(SINGLE)||defined(MIXED)
-      eps   = 0.00001
-#else
-      eps   = 0.000001
-#endif
+      eps   = 1d-6
 c
 c     loop over atom pairs testing for identical coordinates
 c
@@ -58,5 +54,4 @@ c
             end if
          end do
       end do
-      return
       end

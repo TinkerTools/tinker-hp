@@ -1911,8 +1911,6 @@ c
          sd_prmem =sd_prmem +2*sizeof(qgridin_2d) +2*sizeof(qgridout_2d)
 #endif
 c
-
-c
 c     Associate 1D grid pointer with his 5D grid target
 c
           grid_ptr = c_loc(qgridin_2d)
@@ -1926,7 +1924,10 @@ c
 c
 !$acc enter data attach(qgridin_p,qgrid2in_p,
 !$acc&      qgridout_p,qgrid2out_p) async
-c
+#ifdef _OPENACC
+          ! Attach CUDA grid device pointers
+          call attach_pmecu_pointer(0)
+#endif
 !!$acc enter data create(qgridin_2d,qgrid2in_2d,
 !!$acc&    qgridout_2d,qgrid2out_2d) async
 

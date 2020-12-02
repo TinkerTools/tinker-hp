@@ -46,6 +46,8 @@ c
          real(r_p),allocatable::derivs(:,:)
          real(r_p) ealt2
          real(r_p) viralt2(3,3)
+         contains
+#include "convert.f.inc"
       end module
       
       subroutine baoabrespa1(istep,dt)
@@ -157,16 +159,10 @@ c     MPI : get total energy
 c
       call reduceen(epot)
 c
-c     Debug print information
-c
-      if (deb_Energy) call info_energy(rank)
-      if (deb_Force)  call info_forces(cNBond)
-      if (deb_Atom)   call info_minmax_pva
-c
 c     make half-step temperature and pressure corrections
 c
-      call temper2 (temp)
-c      call pressure2 (epot,temp)
+c     call temper2 (temp)
+c     call pressure2 (epot,temp)
 c
 c     use Newton's second law to get the slow accelerations;
 c     find full-step velocities using BAOAB recursion
@@ -182,6 +178,12 @@ c
             end if
          end do
       end do
+c
+c     Debug print information
+c
+      if (deb_Energy) call info_energy(rank)
+      if (deb_Force)  call info_forces(cNBond)
+      if (deb_Atom)   call info_minmax_pva
 c
 c     find the constraint-corrected full-step velocities
 c
@@ -290,6 +292,7 @@ c     for the fast-evolving local valence potential energy terms
 c
 c
       subroutine gradintbaoab1 (energy,derivs)
+      use baoabrespa1_mod
       use cutoff
       use domdec ,only: nbloc
       use deriv
@@ -424,7 +427,7 @@ c
 !$acc parallel loop collapse(2) present(desave,dep) async
       do i = 1,nbloc
          do j = 1,3
-            desave(j,i) = dep(j,i)
+            desave(j,i) = mdr2md(dep(j,i))
          end do
       end do
 
@@ -650,6 +653,7 @@ c
          if (deb_Energy) call info_energy(rank)
          if (deb_Force)  call info_forces(cSNBond)
          if (deb_Atom)   call info_minmax_pva
+         if (abort)      call fatal
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the BAOAB recursion
@@ -810,9 +814,9 @@ c
 c        -> real space
 c        call reassignrespa(.true.,k,nalt2)
          call reassignrespa(k,nalt2)
-c        
+c
 c        communicate positions
-c        
+c
          call commposrespa(k.ne.nalt2)
          call reCast_position
 c

@@ -38,10 +38,10 @@ c
 c     ask for the user specified input structure filename
 c
       do while (.not. exist)
-         write (iout,'(a)',advance='no')
-     &         ' Enter Cartesian Coordinate File Name :  '
-         read (input,20)  xyzfile
+   10    format(/,' Enter Cartesian Coordinate File Name :  ',$)
    20    format (a120)
+         write (iout,10)
+         read (input,20) xyzfile
          call basefile (xyzfile)
          call suffix (xyzfile,'xyz','old')
          inquire (file=xyzfile,exist=exist)
@@ -64,5 +64,4 @@ c
      &              ' does not Contain Any Atoms')
          call fatal
       end if
-      return
       end

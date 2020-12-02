@@ -1,12 +1,18 @@
+#ifndef PAIR_POLAR_INC
+#define PAIR_POLAR_INC
+
+#include "tinker_types.h"
 #include "tinker_cudart.h"
-      M_subroutine 
+#include "switch_respa.f.inc"
+
+      M_subroutine
      &               epolar1_couple(dpui,ip,dpuk,kp,r2,pos,
      &                  aewald,alsq2,alsq2n,pgamma,damp,f,
      &                  dscale,pscale,uscale,
      &                  e,frc,frc_r,trqi,trqk,do_correct)
 !$acc routine
       use tinheader ,only: ti_p
-      use utilgpu   ,only: rpole_elt,real3,real6,real3_red
+      use tinTypes  ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
       use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)
@@ -25,7 +31,7 @@
       real(t_p)  ,intent(inout):: e
       type(real3),intent(inout):: frc
       type(real3),intent(inout):: trqi,trqk
-      type(real3_red),intent(inout)::frc_r
+      type(mdyn3_r),intent(inout)::frc_r
 
       real(t_p) exp2a,ralpha
       real(t_p) one,two,half
@@ -888,9 +894,9 @@ c
       frc%x   = frc%x + depx
       frc%y   = frc%y + depy
       frc%z   = frc%z + depz
-      frc_r%x = WRITE_C(frc_r%x +) frc%x
-      frc_r%y = WRITE_C(frc_r%y +) frc%y
-      frc_r%z = WRITE_C(frc_r%z +) frc%z
+      frc_r%x = WRITE_C(frc_r%x +) tp2mdr(frc%x)
+      frc_r%y = WRITE_C(frc_r%y +) tp2mdr(frc%y)
+      frc_r%z = WRITE_C(frc_r%z +) tp2mdr(frc%z)
 c
 c     t the induced dipole field used for dipole torques
 c
@@ -1000,7 +1006,11 @@ c
       type(real6),intent(in):: dpuk,dpui
       logical    ,intent(in):: do_correct
       logical    ,intent(in):: use_short
+#ifdef TINKER_CUF
+      ener_rtyp  ,intent(inout):: e
+#else
       real(t_p)  ,intent(inout):: e
+#endif
 
       real(t_p) exp2a,ralpha
       real(t_p) one,two,half
@@ -1131,6 +1141,7 @@ c
       e_       = s*e_
       end if
 
-      e        = WRITE_C(e +) e_
+      e        = WRITE_C(e + tp2enr) (e_)
 
       end subroutine
+#endif

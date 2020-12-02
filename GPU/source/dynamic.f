@@ -23,11 +23,11 @@ c
 #endif
       implicit none
       integer ierr,nthreadsupport
-c      call MPI_INIT(ierr)
 #ifdef _OPENACC
       call bind_gpu
 #endif
-      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
+c      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
+      call MPI_INIT(ierr)
       call dynamic_bis
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       call MPI_FINALIZE(ierr)

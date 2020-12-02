@@ -14,8 +14,8 @@ c
         s = 1.0_ti_p
         ds = 0.0_ti_p
       else if (((rc-lambda).le.r).and.(r.le.rc)) then
-        u = (1.0_ti_p/lambda)*(r-rc+lambda)
-        du = 1.0_ti_p/lambda
+        u = (lambda**(-1))*(r-rc+lambda)
+        du = lambda**(-1)
         s = 1 + u**3*(15*u - 6*u**2 - 10)
         ds = 3*du*u**2*(15*u - 6*u**2 - 10) + 
      $   u**3*(15*du - 12*du*u)

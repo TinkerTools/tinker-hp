@@ -39,6 +39,7 @@ c
       use molcul
       use tinheader ,only:ti_p,re_p
       use usage
+      use utilgpu   ,only:def_queue,rec_queue
       use USampling ,only:USdt=>timestep,US_save,Rd_save
      &              ,cpt_wh,US_enable,USwrite,step,step_save
       use virial
@@ -105,26 +106,24 @@ c
       if(rank.eq.0.and.tinkerdebug) write(*,*) 'egeom1gpu'
       eg = 0.0_ti_p
       save_US = .false.
+      def_queue = rec_queue
       if (US_enable) save_US=(US_enable.and.mod(step,USwrite).eq.0
      &                                 .and.step.ne.step_save)
 
 c
-!$acc data present(mass,xpfix,ypfix,zpfix,kpfix,    
-!$acc&  use,npfixglob,ndfixglob,nafixglob,ntfixglob,ngfixglob,
-!$acc&  nchirglob,igrp,kgrp,loc,x,y,z)
-
-
-!$acc parallel vector_length(32) default(present) async
+!$acc data present(loc,x,y,z,use,deg)
 !$acc&     present(eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,einter)
-!$acc& reduction(+:eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
 
-!$acc loop gang vector
+      if (npfix.ne.0) then
+
+!$acc parallel loop async(def_queue)
+!$acc&         default(present)
       do inpfix = 1, npfixloc
-         i = npfixglob(inpfix)
+         i  = npfixglob(inpfix)
          ia = ipfix(i)
-         ialoc = loc(ia)
+         ialoc   = loc(ia)
          proceed = .true.
-         if (proceed)  proceed = (use(ia))
+         if (proceed) proceed = (use(ia))
          if (proceed) then
             xr = 0.0_ti_p
             yr = 0.0_ti_p
@@ -168,11 +167,13 @@ c
          end if
       end do
 
-
+      end if
+      if (ndfix.ne.0) then
 c
 c     get energy and derivatives for distance restraint terms
 c
-!$acc loop gang vector
+!$acc parallel loop async(def_queue)
+!$acc&         default(present)
       do indfix = 1, ndfixloc
          i = ndfixglob(indfix)
          ia = idfix(1,i)
@@ -218,18 +219,18 @@ c
 c     increment the total energy and first derivatives
 c
             eg = eg + e
-!$acc atomic update
+!$acc atomic
             deg(1,ialoc) = deg(1,ialoc) + dedx
-!$acc atomic update
+!$acc atomic
             deg(2,ialoc) = deg(2,ialoc) + dedy
-!$acc atomic update
+!$acc atomic
             deg(3,ialoc) = deg(3,ialoc) + dedz
 c
-!$acc atomic update
+!$acc atomic
             deg(1,ibloc) = deg(1,ibloc) - dedx
-!$acc atomic update
+!$acc atomic
             deg(2,ibloc) = deg(2,ibloc) - dedy
-!$acc atomic update
+!$acc atomic
             deg(3,ibloc) = deg(3,ibloc) - dedz
 c
 c     increment the internal virial tensor components
@@ -249,12 +250,13 @@ c           end if
          end if
       end do
 
-
+      end if
+      if (nafix.ne.0) then
 c
 c     get energy and derivatives for angle restraint terms
 c
-
-!$acc loop gang vector
+!$acc parallel loop async(def_queue)
+!$acc&         default(present)
       do inafix = 1, nafixloc
          i = nafixglob(inafix)
          ia = iafix(1,i)
@@ -359,10 +361,14 @@ c              end if
             end if
          end if
       end do
+
+      end if
+      if (ntfix.ne.0) then
 c
 c     get energy and derivatives for torsion restraint terms
 c
-!$acc loop gang vector
+!$acc parallel loop async(def_queue)
+!$acc&         default(present)
       do intfix = 1, ntfixloc
          i = ntfixglob(intfix)
          ia = itfix(1,i)
@@ -375,7 +381,7 @@ c
          idloc = loc(id)
          proceed = .true.
          if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                              use(ic) .or. use(id))
+     &                            use(ic) .or. use(id))
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -535,10 +541,15 @@ c              end if
             end if
          end if
       end do
+
+      end if
+      if (ngfix.ne.0) then
 c
 c     get energy and derivatives for group distance restraint terms
 c
-!$acc loop gang private(r,e)
+!$acc parallel loop gang vector_length(32) 
+!$acc&         default(present)
+!$acc&         private(r,e) async(def_queue)
       do ingfix = 1, ngfixloc
          i = ngfixglob(ingfix)
          ia = igfix(1,i)
@@ -659,10 +670,14 @@ c        if (intermol) then
 c           einter = einter + e
 c        end if
       end do
+
+      end if
+      if (nchir.ne.0) then
 c
 c     get energy and derivatives for chirality restraint terms
 c
-!$acc loop gang vector
+!$acc parallel loop async(def_queue)
+!$acc&         default(present)
       do inchir = 1, nchirloc
          i = nchirglob(inchir)
          ia = ichir(1,i)
@@ -694,8 +709,8 @@ c
             cf1 = chir(2,i)
             cf2 = chir(3,i)
             target = vol
-            if (vol .lt. min(cf1,cf2))  target = min(cf1,cf2)
-            if (vol .gt. max(cf1,cf2))  target = max(cf1,cf2)
+            if (vol .lt. min(cf1,cf2)) target = min(cf1,cf2)
+            if (vol .gt. max(cf1,cf2)) target = max(cf1,cf2)
             dt = vol - target
             dt2 = dt * dt
             e = force * dt2
@@ -765,7 +780,8 @@ c              einter = einter + e
 c           end if
          end if
       end do
-!$acc end parallel
+
+      end if
 
       if(US_enable) then
          step_save=step
@@ -775,11 +791,8 @@ c           end if
 c
 c     get energy and derivatives for a Gaussian basin restraint
 c
-c      print *,"use_basin",use_basin
       if (use_basin) then
-!$acc parallel loop default(present) async
-!$acc&         present(eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-!$acc&     reduction(+:eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc parallel loop async(def_queue)
          do i = 1, nloc
             iglob = glob(i)
             xi = x(iglob)
@@ -817,18 +830,18 @@ c
 c     increment the overall energy term and derivatives
 c
                   eg = eg + e
-!$acc atomic update  
+!$acc atomic
                   deg(1,i) = deg(1,i) + dedx
-!$acc atomic update  
+!$acc atomic
                   deg(2,i) = deg(2,i) + dedy
-!$acc atomic update  
+!$acc atomic
                   deg(3,i) = deg(3,i) + dedz
 c
-!$acc atomic update  
+!$acc atomic
                   deg(1,k) = deg(1,k) - dedx
-!$acc atomic update  
+!$acc atomic
                   deg(2,k) = deg(2,k) - dedy
-!$acc atomic update  
+!$acc atomic
                   deg(3,k) = deg(3,k) - dedz
 c
 c     increment the internal virial tensor components
@@ -843,23 +856,17 @@ c
             end do
          end do
       end if
-
 c
 c     get energy and derivatives for a spherical droplet restraint
 c
-c      print *,"use-wall",use_wall
       if (use_wall) then
          buffer = 2.5_ti_p
          a = 2048.0_ti_p
          b = 64.0_ti_p
-!$acc parallel loop default(present) async
-!$acc&         present(eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-!$acc&     reduction(+:eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc parallel loop default(present) async(def_queue)
          do i = 1, nloc
             iglob = glob(i)
-            proceed = .true.
-            if (proceed)  proceed = (use(iglob))
-            if (proceed) then
+            if (use(iglob)) then
                xi = x(iglob)
                yi = y(iglob)
                zi = z(iglob)
@@ -904,6 +911,4 @@ c
       end if
 
 !$acc end data
-c
-      return
       end

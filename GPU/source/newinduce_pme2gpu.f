@@ -29,6 +29,7 @@ c
       use nvshmem
       use pme
       use polar
+      use polar_temp,only: ef,mu,murec,cphi
       use polpot
       use potent
       use units
@@ -60,9 +61,6 @@ c
       real(t_p),parameter :: zero=0.0_ti_p
       real(8) wtime0, wtime1, wtime2
       real(t_p) term, xx(1), comp
-      real(t_p),save, allocatable :: ef(:,:,:), mu(:,:,:),
-     &                          murec(:,:,:)
-      real(t_p),save, allocatable :: cphi(:,:)
 c
 c     real(t_p), allocatable ::buffermpi1(:,:),buffermpi2(:,:),
 c    &                buffermpimu1(:,:,:),buffermpimu2(:,:,:)
@@ -155,7 +153,7 @@ c
 c     compute the reciprocal space contribution (fields)
 c
       call timer_enter( timer_recdip )
-      call efld0_recipgpu(cphi)
+      call efld0_recipgpu(cphi,ef)
       call timer_exit( timer_recdip,quiet_timers )
 c
       call commrecdirfieldsgpu(0,cphirec,cphi,buffermpi1,buffermpi2,
@@ -245,7 +243,7 @@ c
       end if
       wtime2 = mpi_wtime()
 
-      if (polprt.ge.1.and.rank.eq.0.and.tinkertime) then
+      if (polprt.ge.1.and.rank.eq.0) then
          if (polprt.ge.2) then
             write(iout,1010) 'fields:  ', wtime1-wtime0
             write(iout,1010) 'dipoles: ', wtime2-wtime1
@@ -548,6 +546,8 @@ c
       use utils
       use utilcomm ,buffermpi1=>buffermpi3d,buffermpi2=>buffermpi3d1
       use utilgpu
+      use polar_temp,only: res,h,pp,zr,diag
+     &              , dipfield,dipfieldbis
       use mpi
       implicit none
 c
@@ -576,14 +576,10 @@ c
       real(t_p)  zero, one, term
       real(r_p) zerom, pt5
       real(r_p) resnrm
-      real(t_p),save,allocatable :: res(:,:,:), h(:,:,:),
-     &                pp(:,:,:), zr(:,:,:), diag(:)
       parameter(zero=0.0,zerom=0,pt5=0.5,one=1.0)
 c
 c     MPI
 c
-      real(t_p),save,allocatable :: dipfield(:,:,:),
-     &                       dipfieldbis(:,:,:)
       integer iglob, iipole, ierr, tag, proc, sizeloc, sizebloc
       integer ::place, place_tmp=0, place1=0
       integer req1, req2, req3, req4, req5
@@ -611,9 +607,11 @@ c
 
       if (deb_Path) 
      &   write(*,'(3x,a)') 'inducepcg_pme2gpu'
-c
 
       call timer_enter ( timer_other )
+c
+c     Allocate some memory
+c
       if (nproc.gt.1) then
       call prmem_request(buffermpi1,3,nrhs,max(npoleloc,1),
      &     async=.true.)
@@ -649,18 +647,6 @@ c
       allocate (reqendrec(nproc))
       allocate (req2endsend(nproc))
       allocate (req2endrec(nproc))
-c     allocate (dipfield(3,nrhs,max(1,npoleloc)))
-c     allocate (dipfieldbis(3,nrhs,max(1,npolerecloc)))
-c
-c     allocate some memory and setup the preconditioner:
-c
-c     allocate (zr (3,nrhs,max(1,npoleloc)))
-c     allocate (res(3,nrhs,max(1,npoleloc)))
-c     allocate (h  (3,nrhs,max(1,npolebloc)))
-c     allocate (pp (3,nrhs,max(1,npolebloc)))
-c     allocate (diag(npoleloc))
-!!$acc enter data create(res,pp,dipfield,dipfieldbis) async
-!!$acc data create(zr,h,diag) async
 
       sizeloc  = 3*nrhs*npoleloc
       sizebloc = 3*nrhs*npolebloc
@@ -670,8 +656,9 @@ c     allocate (diag(npoleloc))
 !$acc enter data create(gg1,gg2) async
          first_in=.false.
       end if
-
-
+c
+c     setup the preconditioner
+c
       if (precnd) then
 !$acc parallel loop present(poleglob,polarity) async
          do i = 1, npoleloc
@@ -707,15 +694,14 @@ c
       ggold2 = 0.0_ti_p
 
 #ifdef _OPENACC
-      ! Start async overlapping
       if (dir_queue.ne.rec_queue)
-     &   call stream_wait_async(rec_stream,dir_stream,rec_event)
+     &   call start_dir_stream_cover
 #endif
 c
       call timer_enter( timer_realdip )
       call matvec(nrhs,.true.,mu,h)
       call timer_exit ( timer_realdip,quiet_timers )
-
+c
       call timer_enter( timer_recdip )
       call tmatxbrecipgpu(mu,murec,nrhs,dipfield,dipfieldbis)
       call timer_exit ( timer_recdip,quiet_timers )
@@ -734,13 +720,8 @@ c
       term = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
 
       call timer_enter( timer_other )
-#ifdef _OPENACC
-      ! Start async overlapping
-      if (dir_queue.ne.rec_queue) then
-         call stream_wait_async(dir_stream,rec_stream,dir_event)
-      end if
-#endif
-!$acc parallel loop collapse(3) present(ef) async
+
+!$acc parallel loop collapse(3) present(ef) async(rec_queue)
       do k=1,npoleloc
          do j=1,nrhs
             do i=1,3
@@ -756,13 +737,15 @@ c
             end do
          end do
       end do
-!$acc wait
+!$acc wait(rec_queue)
 
       ggold(1) = ggold1
       ggold(2) = ggold2
 
-      call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,MPI_SUM,
-     &     COMM_TINKER,req1,ierr)
+      if (nproc.gt.1) then
+         call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC
+     &                      ,MPI_SUM,COMM_TINKER,req1,ierr)
+      end if
       call timer_exit ( timer_other )
 
 c
@@ -774,16 +757,11 @@ c
      &     buffermpimu2,req2rec,req2send)
       call commrecdirdipgpu(nrhs,2,murec,pp,buffermpimu1,
      &     buffermpimu2,req2rec,req2send)
-      call MPI_WAIT(req1,status,ierr)
+
+      if (nproc.gt.1) call MPI_WAIT(req1,status,ierr)
 
       ggold1 = ggold(1)
       ggold2 = ggold(2)
-
-#ifdef _OPENACC
-      !start Async overlapping with matvec
-      if (dir_queue.ne.rec_queue)
-     &   call stream_wait_async(rec_stream,dir_stream,rec_event)
-#endif
 
 !!$acc update host(pp,murec,zr,res,h,dipfield,dipfieldbis,diag)
 c
@@ -812,14 +790,8 @@ c
 c
 c     MPI : begin reception
 c
-         call commdirdirgpu(nrhs,0,pp,reqrec,reqsend)
          call commrecdirsolvgpu(nrhs,1,dipfieldbis,dipfield,buffermpi1,
      &        buffermpi2,reqrecdirrec,reqrecdirsend)
-c
-c     Begin reception of mu for PME
-c
-         call commrecdirdipgpu(nrhs,0,murec,pp,buffermpimu1,
-     &        buffermpimu2,req2rec,req2send)
 c
 c       Wait for the reciprocal fields
 c
@@ -832,7 +804,7 @@ c
          if (dir_queue.ne.rec_queue) then
 !$acc wait(dir_queue)
          end if
-!$acc parallel loop collapse(3) present(gg1,gg2) async
+!$acc parallel loop collapse(3) present(gg1,gg2) async(rec_queue)
 !$acc&         default(present)
          do k=1,npoleloc
             do j=1,nrhs
@@ -848,25 +820,24 @@ c
          end do
 
          if (nproc.gt.1) then
-!$acc wait
 !$acc host_data use_device(gg1,gg2)
+!$acc wait(rec_queue)
             call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_TPREC,MPI_SUM,
      $           COMM_TINKER,ierr)
             call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_TPREC,MPI_SUM,
      $           COMM_TINKER,ierr)
 !$acc end host_data
-            !call MPI_WAIT(req2,status,ierr)
-            !call MPI_WAIT(req5,status,ierr)
          end if
 
          ! This check might be unecessary
          ! the only for residu this to reach zero is for the field itself to be equal to zero
          ! TODO Find a proper place for that check
          if (deb_Path) then
-!$acc update host(gg1,gg2) async
+!$acc update host(gg1,gg2) async(rec_queue)
 !$acc wait
             if (gg1.eq.zerom) then
                print*, 'Residu equals zero in polarisation solver'
+               call timer_exit(timer_other)
                goto 50
             end if
             if (gg2.eq.zerom) goto 50
@@ -879,7 +850,7 @@ c
          ggnew1 = zerom; ggnew2 = zerom
          ene1 = zerom; ene2 = zerom
 
-!$acc parallel loop collapse(3) async present(gg1,gg2,mu,ef)
+!$acc parallel loop collapse(3) async(rec_queue) present(gg1,gg2,mu,ef)
          do k=1,npoleloc
             do j=1,nrhs
                do i=1,3
@@ -919,7 +890,7 @@ c    &                         pp(:,k,1:npoleloc)
 c        end do
 
          ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
-!$acc parallel loop collapse(3) async
+!$acc parallel loop collapse(3) async(rec_queue)
          do k=1,npoleloc
             do j=1,nrhs
                do i=1,3
@@ -935,6 +906,11 @@ c        end do
          call timer_exit( timer_other )
 c
          call commdirdirgpu(nrhs,1,pp,reqrec,reqsend)
+         call commdirdirgpu(nrhs,0,pp,reqrec,reqsend)
+ 
+         ! Begin reception of mu for PME
+         call commrecdirdipgpu(nrhs,0,murec,pp,buffermpimu1,
+     &        buffermpimu2,req2rec,req2send)
 c
          do k = 1, nrhs
             gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
@@ -953,30 +929,30 @@ c
          call commrecdirdipgpu(nrhs,2,murec,pp,buffermpimu1,
      &        buffermpimu2,req2rec,req2send)
 c
+         if ((it.eq.politer.and.resnrm.gt.poleps)
+     &      .or.tinker_isnan_m(gnorm(1))) then
+            ! Not converged Exit
+            if (rank.eq.0) write(0,1050) it,max(gnorm(1),gnorm(2))
+            abort = .true.
+         end if
+c
          if (resnrm.lt.poleps) then
             if (polprt.ge.1.and.rank.eq.0) write(iout,1000) it,
      &         (ene(k)*coulomb, k = 1, nrhs), (gnorm(k), k = 1, nrhs)
             goto 10
          end if
-         if ((it.eq.politer.and.resnrm.gt.poleps)
-     &      .or.tinker_isnan_m(resnrm)) then
-            ! Not converged Exit
-            if (rank.eq.0) write(0,1050) it,resnrm
-            abort = .true.
-         end if
-c
       end do
  10   continue
 
 c
 c     Begin reception of mu for PME
 c
-      call commdirdirgpu(nrhs,0,mu,reqendrec,reqendsend)
       call commrecdirdipgpu(nrhs,0,murec,mu,buffermpimu1,
      &     buffermpimu2,req2endrec,req2endsend)
 c
 c     MPI : begin direct space communication
 c
+      call commdirdirgpu(nrhs,0,mu,reqendrec,reqendsend)
       call commdirdirgpu(nrhs,1,mu,reqendrec,reqendsend)
       call commdirdirgpu(nrhs,2,mu,reqendrec,reqendsend)
 c
@@ -1509,7 +1485,7 @@ c
       real(t_p), dimension(3,nrhs,npolebloc) :: A,B
       integer :: i,iipole, irhs, j
 
-!$acc parallel loop collapse(3) present(A,B)
+!$acc parallel loop collapse(3) present(A,B) async
       do i = 1, npolebloc
          do irhs = 1, nrhs
             do j = 1,3

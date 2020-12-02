@@ -17,6 +17,7 @@ c
 #include "tinker_precision.h"
       module elj3gpu_inl
         contains
+#include "convert.f.inc"
 #include "image.f.inc"
 #include "switch_respa.f.inc"
 #include "pair_elj.f.inc"
@@ -81,7 +82,7 @@ c
       use bound
       use couple
       use domdec
-      use energi
+      use energi     ,only: ev=>ev_r
       use elj3gpu_inl
       use group
       use inter
@@ -132,7 +133,7 @@ c
       call switch (mode)
       call update_gang(nvdwbloc)
 c     nev_   = 0
-c     ev     = 0.0_re_p
+c     ev     = 0
 
 !$acc data present(vdwglob,vdwlocnl,vdwglobnl,ired,kred,loc,
 !$acc&   ivdw,jvdw,vlst,nvlst,epsilon,epsilon4,radmin,radmin4)
@@ -197,7 +198,7 @@ c
 c
 c     increment the total van der Waals energy and derivatives
 c
-               ev   = ev   + e
+               ev   = ev   + tp2enr(e)
                nev_ = nev_ + 1.0_ti_p
 c!$acc atomic update
 c               aev(i) = aev(i) + 0.5_ti_p * e
@@ -224,9 +225,8 @@ c               aev(i) = aev(i) + 0.5_ti_p * e
       use domdec    ,only: loc,rank,nbloc,nproc
      &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
      &              ,zendproc,glob
-      use ehal1cu   ,only: set_vdw_texture
       use eljcu
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
       use interfaces,only: elj3_scaling
       use neigh     ,only: cellv_glob,cellv_loc,cellv_jvdw
@@ -238,7 +238,7 @@ c               aev(i) = aev(i) + 0.5_ti_p * e
       use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream
      &              ,rec_stream,rec_event,stream_wait_async
      &              ,warp_size,def_stream,inf
-     &              ,ered_buff,nred_buff,reduce_energy_action
+     &              ,ered_buff=>ered_buf1,nred_buff,reduce_energy_action
      &              ,zero_en_red_buffer,prmem_request
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin_c
      &              ,epsilon_c,nvdwbloc,nvdwlocnl
@@ -355,10 +355,6 @@ c
 #endif
 !$acc&    )
 
-      call set_vdw_texture
-     &     (kred,radmin_c,epsilon_c,xred,yred,zred
-     &     ,vblst,ivblst,loc_ired,cellv_jvdw,cellv_glob,cellv_loc
-     &     ,n,nvdwlocnl,nvdwlocnlb,nvdwclass,nvdwlocnlb_pair)
       call elj3_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &             (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
      &             ,ivblst,vblst(lst_start),cellv_jvdw
@@ -375,7 +371,7 @@ c
 
 !$acc end host_data
 
-      call reduce_energy_action(ev,nev,def_queue)
+      call reduce_energy_action(ev,nev,ered_buff,def_queue)
 
 #ifdef TINKER_DEBUG
 #endif
@@ -397,7 +393,7 @@ c
       use atmlst    ,only: vdwglobnl
       use domdec    ,only: loc,rank
       use elj3gpu_inl
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
       use tinheader ,only: ti_p
       use tintypes  ,only: real3
@@ -497,7 +493,7 @@ c
          e    = -e
          end if
 
-         ev   =   ev + e
+         ev   =   ev + tp2enr(e)
          !if(rank.eq.0.and.mod(ii,1).eq.0) print*,iglob,kglob,vscale,e
          if (vscale.eq.1.0_ti_p) nev_=nev_-1
          if (vscale4.lt.0)       nev_=nev_+1

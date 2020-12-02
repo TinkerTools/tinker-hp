@@ -3,7 +3,12 @@
 #  ifdef TINKER_CUDART_H
 #    warning( "tinker_cudart.h  should not be included before tinker_precision.h")
 #  endif
+#  define TINKER_SINGLE_PREC 0
+#  define TINKER_MIXED_PREC  0
+#  define TINKER_DOUBLE_PREC 0
 #  ifdef SINGLE
+#    undef  TINKER_SINGLE_PREC
+#    define TINKER_SINGLE_PREC 1
 #    define t_p 4
 #    define r_p 4
 #    define MPI_TPREC MPI_REAL4
@@ -15,6 +20,8 @@
 #    define M_dgesv sgesv
 #  else
 #    ifdef MIXED
+#      undef  TINKER_MIXED_PREC
+#      define TINKER_MIXED_PREC 1
 #      define t_p 4
 #      define r_p 8
 #      define MPI_TPREC MPI_REAL4
@@ -25,6 +32,8 @@
 #      define M_PPTRF SPPTRF
 #      define M_dgesv sgesv
 #    else
+#      undef  TINKER_DOUBLE_PREC
+#      define TINKER_DOUBLE_PREC 1
 #      define t_p 8
 #      define r_p 8
 #      define MPI_TPREC MPI_REAL8
@@ -37,6 +46,20 @@
 #    endif
 #  endif
 #endif
+
+#if ( TINKER_SINGLE_PREC + TINKER_MIXED_PREC +   \
+      TINKER_DOUBLE_PREC ) != 1
+#   error find error in PRECISION macro !!!
+#endif
+
+#  if TINKER_MIXED_PREC
+#  else
+#    ifdef USE_DETERMINISTIC_REDUCTION
+#      warning 'Disabling Fixed point Arithmetic ! only to be \
+#               Used with Mixed Precision Build -DMIXED'
+#      undef USE_DETERMINISTIC_REDUCTION
+#    endif
+#  endif
 
 #if defined(_CUDA) && defined(USE_NVSHMEM)
 #  ifndef USE_NVSHMEM_CUDA

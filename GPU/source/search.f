@@ -120,6 +120,7 @@ c
           s_norm = s_norm + s(3*(iglob-1)+j)*s(3*(iglob-1)+j)
         end do
       end do
+!$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,g_norm,1,MPI_RPREC,
      $     MPI_SUM,COMM_TINKER,ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,s_norm,1,MPI_RPREC,
@@ -141,6 +142,7 @@ c
           sg_0 = sg_0 + s(3*(iglob-1)+j)*g(3*(iglob-1)+j)
         end do
       end do
+!$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,sg_0,1,MPI_RPREC,
      $     MPI_SUM,COMM_TINKER,ierr)
 c
@@ -208,6 +210,7 @@ c
           sg_b = sg_b + s(3*(iglob-1)+j)*g(3*(iglob-1)+j)
         end do
       end do
+!$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,sg_b,1,MPI_RPREC,
      $     MPI_SUM,COMM_TINKER,ierr)
 c
@@ -308,6 +311,7 @@ c
           sg_c = sg_c + s(3*(iglob-1)+j)*g(3*(iglob-1)+j)
         end do
       end do
+!$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,sg_c,1,MPI_RPREC,
      $     MPI_SUM,COMM_TINKER,ierr)
       if (abs(sg_c/sg_0) .le. cappa) then

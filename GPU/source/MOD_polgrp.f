@@ -73,10 +73,10 @@ c
       integer max_factorp
 
       !TODO Increase parameter to 120 following 1.2 version
-      parameter (maxp11=64,
-     &           maxp12=64,
-     &           maxp13=64,
-     &           maxp14=64)
+      parameter (maxp11=120,
+     &           maxp12=120,
+     &           maxp13=120,
+     &           maxp14=120)
 
       ! TODO Fix Analyze: Remove this
 !$acc declare create(np11,ip11,np12,ip12)

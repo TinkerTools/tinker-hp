@@ -15,6 +15,12 @@ c     and first derivatives with respect to Cartesian coordinates
 c
 c
 #include "tinker_precision.h"
+
+      module gradient_inl
+      contains
+#include "convert.f.inc"
+      end module
+
       subroutine gradient (energy,derivs)
       use atoms
       use atmlst
@@ -24,6 +30,7 @@ c
       use deriv
       use domdec
       use energi
+      use gradient_inl
       use inter
       use iounit
       use inform    ,only:abort
@@ -36,7 +43,7 @@ c
       use timestat
       use tors
       use tortor
-      use utilgpu   ,only:def_queue,inf
+      use utilgpu   ,only:def_queue,inf_r
       use sizes
       use vdwpot
       use virial
@@ -57,11 +64,13 @@ c
 !$acc&     present(eb,eba,eub,eopb,et,ept,ett,ebt,ea
 !$acc&           ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
 !$acc&           ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+!$acc&           ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&           ,ensmd,einter,ePaMD,eDaMD,eW1aMD,vir,desum)
 
       call timer_enter( timer_fmanage )
 !$acc serial async
       eb       = 0.0_re_p  ! ebond
+      eb_r     = 0
       eba      = 0.0_re_p  ! estrbnd
       eub      = 0.0_re_p  ! eurey
       eopb     = 0.0_re_p  ! eopbend
@@ -71,15 +80,19 @@ c
       ebt      = 0.0_re_p  ! estrtor
       ea       = 0.0_re_p  ! eangle
       ev       = 0.0_re_p  ! ehal1
+      ev_r     = 0
       em       = 0.0_re_p  ! empole
-      emrec    = 0.0_re_p
+      emrec    = 0.0_re_p  ! empole (reciprocal)
+      em_r     = 0
       ep       = 0.0_re_p  ! epolar
-      eprec    = 0.0_re_p
+      eprec    = 0.0_re_p  ! epolar (reciprocal)
+      ep_r     = 0
       eaa      = 0.0_re_p  ! eangang 
       eopd     = 0.0_re_p  ! eopdist
       eid      = 0.0_re_p  ! eimprop
       eit      = 0.0_re_p  ! eimptor
       ec       = 0.0_re_p  ! echarge
+      ec_r     = 0
       ecrec    = 0.0_re_p
       eg       = 0.0_re_p  ! egeom
       ensmd    = 0.0_re_p  ! esmd
@@ -206,6 +219,8 @@ c
 c
 c     sum up to get the total energy and first derivatives
 c
+      if (ev_r.ne.0) ev = ev + enr2en(ev_r)
+      if (eb_r.ne.0) eb = eb + enr2en(eb_r)
       esum = eit + eopd + eopb + eaa + eub + eba + ea + eb + em  + ep
      &      + ec + ev   + et   + ept + ebt + ett + eg + ex + eid + ensmd
       energy = esum
@@ -219,7 +234,7 @@ c
 !$acc update host(esum) async
       if (tinkerdebug.gt.0) then
 !$acc wait
-         if (tinker_isnan_m(esum).or.esum.eq.3*huge(0.0_re_p)) then
+         if (tinker_isnan_m(esum).or.esum.eq.inf_r) then
             write  (0,10) esum
    10       format (/,' GRADIENT  --  Illegal Value for the Total',
      &                ' Potential Energy',F16.6)

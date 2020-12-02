@@ -23,8 +23,10 @@ c
 
       subroutine nblist(istep)
       use atoms ,only:n
+      use boxes,only: xbox2,ybox2,zbox2
       use cutoff,only:use_clist,use_mlist,use_vlist
      &          ,use_shortvlist,use_shortclist,use_shortmlist
+      use cutoff,only:vdwcut,chgcut,mpolecut
       use domdec
       use inform,only: deb_Path,tindPath
       use mpole ,only: npolelocnl
@@ -32,6 +34,7 @@ c
      &          ,mlst_en=>mlst_enable,mlst2_en=>mlst2_enable
      &          ,clst_en=>clst_enable,clst2_en=>clst2_enable
      &          ,vlst_en=>vlst_enable,vlst2_en=>vlst2_enable
+      use neigh , only: mbuf2,cbuf2,vbuf2,lbuffer
       use potent
       use sizes ,only:tinkerdebug
       use timestat
@@ -42,6 +45,45 @@ c
       integer istep,modnl
       integer i,j,k
       real(t_p)  time0,time1
+      real(t_p) boxedge2
+c
+c     check the consistency of the cutoffs+buffer compared to the size
+c     of the box (minimum image convention)
+c 
+      boxedge2 = min(xbox2,ybox2,zbox2)
+      if (use_clist) then
+        if (cbuf2.gt.boxedge2*boxedge2) then
+          if (rank.eq.0) then
+            print*,'Error in neigbor list: max cutoff + ',
+     $   'buffer should be less than half one edge of the box'
+            print*,'Charge cutoff = ', chgcut
+            print*,'List buffer = ',lbuffer
+          end if
+          call fatal
+        end if
+      end if
+      if (use_mlist) then
+        if (mbuf2.gt.boxedge2*boxedge2) then
+          if (rank.eq.0) then
+            print*,'Error in neigbor list: max cutoff + ',
+     $   'buffer should be less than half one edge of the box'
+            print*,'Multipole cutoff = ', mpolecut
+            print*,'List buffer = ',lbuffer
+          end if
+          call fatal
+        end if
+      end if
+      if (use_vlist) then
+        if (vbuf2.gt.boxedge2*boxedge2) then
+          if (rank.eq.0) then
+            print*,'Error in neigbor list: max cutoff + ',
+     $   'buffer should be less than half one edge of the box'
+            print*,'VDW cutoff = ', vdwcut
+            print*,'List buffer = ',lbuffer
+          end if
+          call fatal
+        end if
+      end if
 c
 c     check number of steps between nl updates
 c
@@ -729,7 +771,8 @@ c
       subroutine reinitnl(istep)
       use atoms
       use domdec
-      use inform  ,only:deb_Path,tindPath
+      use cell    ,only:xcell,ycell,zcell
+      use inform  ,only:deb_Path,tindPath,abort
       use neigh
       use utilgpu ,only:rec_queue
       use tinMemory
@@ -737,7 +780,7 @@ c
      &            ,quiet_timers
       use sizes   ,only: tinkerdebug
       implicit none
-      real(t_p) d,mbuf,vbuf,torquebuf,bigbuf
+      real(t_p) d,mbuf,vbuf,torquebuf,bigbuf,mcell
       integer iproc,i,iglob,modnl
       integer iloc,istep,idomlen,nloc_cap
       integer ibufbeg
@@ -746,6 +789,7 @@ c
 c
       !if (istep.ne.0) call check_nl_rebuild
       if (mod(istep,ineigup).ne.0) return
+      if (abort) call fatal
 c
       if (deb_Path) write(*,*) ' reinitnl - istep(',istep,')'
       call timer_enter(timer_nl)
@@ -753,6 +797,7 @@ c
       vbuf      = sqrt(vbuf2)
       torquebuf = mbuf + lbuffer + 2.0
       bigbuf    = max( vbuf,torquebuf )
+      mcell     = max(xcell,max(ycell,zcell))
 c
       nlocnl    = nloc
 c
@@ -761,7 +806,7 @@ c
 !$acc wait
       end if
 c
-!$acc data copy(nlocnl)
+!$acc data copy(nlocnl,abort)
 !$acc&     present(ineignl,glob)
 !$acc&     async(rec_queue)
 c
@@ -789,6 +834,10 @@ c
 !$acc end atomic
             ineignl(nloc_cap) = iglob
 c           locnl(iglob) = nloc_cap
+          else if (d.ge.mcell) then
+             !print*,'distprocpart error',iglob,d
+!$acc atomic write
+             abort = .true.
           end if
         end do
       end do
@@ -799,6 +848,10 @@ c           locnl(iglob) = nloc_cap
          s_nlocnl = nlocnl
  15      format('iRank',I4,'; get nlocnl increased to',I10,'; nloc',I10)
          write(*,15) rank,nlocnl,nloc
+      end if
+
+      if (abort) then
+         print*, "errors found in distprocpart1 routine"
       end if
 
       call timer_exit(timer_nl)

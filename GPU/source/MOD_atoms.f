@@ -51,6 +51,14 @@ c
 
         module subroutine reCast_position
         end subroutine
+
+        module subroutine download_position(queue)
+        integer,optional::queue
+        end subroutine
+
+        module subroutine download_mirror_position(queue)
+        integer,optional::queue
+        end subroutine
       end interface
 
       end module

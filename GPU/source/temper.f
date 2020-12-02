@@ -57,23 +57,28 @@ c
       real(r_p) kt,rate,trial
       logical,save::f_in=.true.
 c
+      if (.not. isothermal)  goto 10
       if (f_in) then
          f_in=.false.
 !$acc enter data create(pick1,c,d,pick,scale)
       end if
-
+c
       call timer_enter( timer_other )
-!$acc data present(eksum,ekin,temp)
-      call kineticgpu (eksum,ekin,temp)
-      if (.not. isothermal)  goto 10
+      if (thermostat .eq. 'BERENDSEN' .or.
+     &    thermostat .eq. 'BUSSI'     .or.
+     &    thermostat .eq. 'ANDERSEN' ) then
+         call kineticgpu (eksum,ekin,temp)
+      end if
 c
 c     couple to external temperature bath via Berendsen scaling
 c
       if (thermostat .eq. 'BERENDSEN') then
+!$acc serial async present(scale,temp)
          scale = 1.0_re_p
          if (temp .ne. 0.0_re_p)
      &      scale = sqrt(1.0_re_p + (dt/tautemp)*(kelvin/temp-1.0_re_p))
-!$acc parallel loop collapse(2) present(glob,use,v)
+!$acc end serial
+!$acc parallel loop collapse(2) present(scale,glob,use,v)
 !$acc&         async
             do i = 1, nloc
                do j = 1, 3
@@ -87,12 +92,12 @@ c
 c     couple to external temperature bath via Bussi scaling
 c
       else if (thermostat .eq. 'BUSSI') then
-!$acc data present(pick1,c,d,pick,scale)
+!$acc data present(pick1,c,d,pick,scale,temp)
 !$acc&     present(v,samplevec,use,glob,eta)
 !$acc serial async
          if (temp .eq. 0.0_re_p)  temp = 0.1_re_p
          c = exp(-dt/tautemp)
-         d = (1.0_re_p-c) * (kelvin/temp) / real(nfree,t_p)
+         d = (1.0_re_p-c) * (kelvin/temp) / real(nfree,r_p)
          pick1 = 0.0_re_p
 !$acc end serial
 c
@@ -191,10 +196,10 @@ c
 c
 c     recompute kinetic energy and instantaneous temperature
 c
-      call kineticgpu (eksum,ekin,temp)
-  10  continue
-!$acc end data
+      call kineticgpu ( eksum,ekin,temp )
       call timer_exit ( timer_other,quiet_timers )
+
+  10  continue
       end
 c
 c
@@ -237,16 +242,20 @@ c
       use timestat
       implicit none
 
-      real(r_p) eksum
+      real(r_p),save:: eksum
       real(r_p) temp
-      real(r_p) ekin(3,3)
+      real(r_p),save:: ekin(3,3)
+      logical  ,save::f_in=.true.
+
+      if (f_in) then
+         f_in=.false.
+!$acc enter data create(ekin,eksum)
+      end if
 c
 c     get instantaneous temperature from the kinetic energy
 c
       call timer_enter( timer_other )
-!$acc data create(eksum,ekin) present(temp) async
       call kineticgpu (eksum,ekin,temp)
-!$acc end data
 
       call timer_exit( timer_other,quiet_timers )
       if (.not. isothermal)  return

@@ -99,9 +99,7 @@ c
 c     aeg = 0.0_ti_p
 
 !$acc enter data copyin(neg) async
-!$acc data present(mass,xpfix,ypfix,zpfix,kpfix,
-!$acc&  use,npfixglob,ndfixglob,nafixglob,ntfixglob,ngfixglob,
-!$acc&  nchirglob)
+!$acc data present(mass)
 !$acc&     present(neg, eg, einter)
 !$acc&     async
 
@@ -427,7 +425,7 @@ c     compute the energy for group distance restraint terms
 c
 c     header = .true.
 
-!$acc loop gang vector
+!$acc loop gang
       do ingfix = 1, ngfixloc
          i = ngfixglob(ingfix)
          ia = igfix(1,i)
@@ -435,6 +433,7 @@ c     header = .true.
          xcm = 0.0_ti_p
          ycm = 0.0_ti_p
          zcm = 0.0_ti_p
+!$acc loop vector
          do j = igrp(1,ia), igrp(2,ia)
             k = kgrp(j)
             weigh = mass(k)
@@ -449,6 +448,7 @@ c     header = .true.
          xcm = 0.0_ti_p
          ycm = 0.0_ti_p
          zcm = 0.0_ti_p
+!$acc loop vector
          do j = igrp(1,ib), igrp(2,ib)
             k = kgrp(j)
             weigh = mass(k)
@@ -477,12 +477,14 @@ c         if (use_bounds)  call image (xr,yr,zr)
          neg = neg + 1
          eg = eg + e
          size = real(igrp(2,ia - igrp(1,ia) + 1),t_p)
+!$acc loop vector
          do j = igrp(1,ia), igrp(2,ia)
             k = kgrp(j)
 !$acc atomic update 
             aeg(k) = aeg(k) + 0.5_ti_p*e/size
          end do
          size = real(igrp(2,ib - igrp(1,ib) + 1),t_p)
+!$acc loop vector
          do j = igrp(1,ib), igrp(2,ib)
             k = kgrp(j)
 !$acc atomic update 
@@ -580,7 +582,6 @@ c     header = .true.
 c
 c     compute the energy for a Gaussian basin restraint
 c
-c     call cpu_time(time0)
       if (use_basin) then
          header = .true.
 !$acc parallel loop default(present) async
@@ -690,5 +691,5 @@ c
 !$acc update self(aeg) async
 !$acc end data
 !$acc exit data copyout(neg) async
-
+!$acc wait
       end

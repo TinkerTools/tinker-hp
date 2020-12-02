@@ -14,7 +14,7 @@ jend2,jsize2,kstart2,kend2,ksize2,nx,ny,nz,comm_loc,ngrid1,ngrid2)
 
 use decomp_2d
 use decomp_2d_fft
-use fft      ,only: in, out
+use fft      ,only: in, out, is_fftInit
 use tinMemory,only: s_cufft
 #ifdef _OPENACC
 use utilgpu  ,only: rec_queue,dir_queue
@@ -32,13 +32,18 @@ integer :: kstart2(*),kend2(*),ksize2(*)
 
 integer :: nx, ny, nz
 integer :: p_row, p_col
-
-
 !complex(KIND(0.0D0)), dimension(nx,ny,nz) :: in1, out1
 real(t_p) time0,time1
 
 p_row = ngrid1 
 p_col = ngrid2
+
+! Finalize fft library if necessary
+if (is_fftInit) then
+   call fft_final
+   is_fftInit = .false.
+end if
+
 call decomp_2d_init(nx,ny,nz,p_row,p_col,comm_loc)
 !
 istart1(rank_bis+1) = xstart(1)
@@ -68,7 +73,7 @@ call get_rec_dir_queue(rec_queue,dir_queue)
 call init_cufft_engine
 s_cufft = decomp2d_cufftGetSize()
 #endif
-return
+is_fftInit = .true.
 end
 !
 !
@@ -128,6 +133,7 @@ subroutine cufft2d_frontmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   use decomp_2d
   use decomp_2d_fft
   use decomp_2d_cufft
+  use inform   ,only: deb_Path
   use fft
   use timestat ,only: timer_enter,timer_exit,timer_ffts,quiet_timers
   use utilgpu, only :rec_queue
@@ -140,9 +146,11 @@ subroutine cufft2d_frontmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   logical,save::first_in=.true.
 
   call timer_enter( timer_ffts )
+  if (deb_Path) write(*,'(5x,a)') '>> cufft2d_frontmpi'
+
   if (first_in) then
      first_in = .false.
-     if (.not.grid_pointer_assoc) call alloc_grid_pointer
+     if (.not.grid_pointer_assoc) call malloc_FFtgrid_p
   end if
 
   if (.not.grid_pointer_assoc) then
@@ -166,6 +174,7 @@ subroutine cufft2d_frontmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   if (.not.grid_pointer_assoc) &
      call c2r_grid(out,zsize(1)*zsize(2)*zsize(3),qgridout,rec_queue)
   !
+  if (deb_Path) write(*,'(5x,a)') '<< cufft2d_frontmpi'
   call timer_exit( timer_ffts,quiet_timers )
 end
 #endif
@@ -226,6 +235,7 @@ subroutine cufft2d_backmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   use decomp_2d
   use decomp_2d_fft
   use decomp_2d_cufft
+  use inform   ,only: deb_Path
   use fft
   use timestat ,only: timer_enter,timer_exit,timer_ffts,quiet_timers
   use utilgpu, only:rec_queue
@@ -238,10 +248,11 @@ subroutine cufft2d_backmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   integer i,j,k,l
   integer zstart1,zstart2,zstart3,xstart1,xstart2,xstart3
 
+  call timer_enter( timer_ffts )
+  if (deb_Path) write(*,'(5x,a)') '>> cufft2d_backmpi'
   !
   ! fill out array with qgridout
   !
-  call timer_enter( timer_ffts )
   if (.not.grid_pointer_assoc) &
      call r2c_grid(qgridout,zsize(1)*zsize(2)*zsize(3),out,rec_queue)
   !
@@ -255,18 +266,21 @@ subroutine cufft2d_backmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   if (.not.grid_pointer_assoc) &
      call c2r_grid(in,n1mpimax*n2mpimax*n3mpimax,qgridin,rec_queue)
 
+  if (deb_Path) write(*,'(5x,a)') '<< cufft2d_backmpi'
   call timer_exit( timer_ffts,quiet_timers )
 end
 #endif
 !
-subroutine alloc_grid_pointer()
+subroutine malloc_FFtgrid_p()
 use decomp_2d
 use fft ,only: in,out
 implicit none
 if (associated(in)) then
    print*, "FFT grid pointer should not be associated at this point..."
 end if
+if (.not.associated(in))  &
 allocate (in(xstart(1):xend(1),xstart(2):xend(2),xstart(3):xend(3)))
+if (.not.associated(out)) &
 allocate (out(zstart(1):zend(1),zstart(2):zend(2),zstart(3):zend(3)))
 !$acc enter data create(in,out)
 end subroutine
@@ -310,9 +324,4 @@ call finalize_cufft_engine
 #endif
 call decomp_2d_fft_finalize
 call decomp_2d_finalize
-if (.not.grid_pointer_assoc.and.associated(in)) then
-   !$acc exit data delete(in,out) async
-   deallocate(in)
-   deallocate(out)
-end if
 end 

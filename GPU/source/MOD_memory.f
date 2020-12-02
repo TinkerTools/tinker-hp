@@ -229,7 +229,7 @@ c     s_tinWork Tinker-HP workSpace Estimation
 #ifdef USE_NVSHMEM_CUDA
      &           nshArray,d_nshArray,
 #endif  
-     &           config)
+     &           config,start)
           implicit none
           logical,pointer:: shArray(:)
           integer request_shape(:)
@@ -238,7 +238,7 @@ c     s_tinWork Tinker-HP workSpace Estimation
           type(lDPC),   allocatable,optional::   nshArray(:)
           type(lDPC),device,pointer,optional:: d_nshArray(:)
 #endif  
-          integer,optional::config
+          integer,optional::config,start
         end subroutine
         module subroutine shmem_logical1_req
      &            (shArray,winarray,request_shape,
@@ -455,6 +455,20 @@ c     s_tinWork Tinker-HP workSpace Estimation
         real(r_p), allocatable, intent(inout) :: array(:,:)
         integer  , intent(in) :: nc, nl
         logical  , optional, intent(in) :: async
+      end subroutine
+      module subroutine prmem_int8_req( array, n, async, queue, config )
+        integer(8), allocatable, intent(inout) :: array(:)
+        integer, intent(in) :: n
+        logical, optional, intent(in) :: async
+        integer, optional, intent(in) :: queue, config
+      end subroutine
+      module subroutine prmem_int8_req2( array, nl, nc, async, queue,
+     &                  config, nlst, ncst )
+        integer(8), allocatable, intent(inout) :: array(:,:)
+        integer, intent(in) :: nc, nl
+        logical, optional, intent(in) :: async
+        integer, optional, intent(in) :: queue, config
+        integer, optional, intent(in) :: nlst, ncst
       end subroutine
       module subroutine prmem_realm_req3(array, nx,ny,nz, async, queue_,
      &                  config)

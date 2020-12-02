@@ -43,7 +43,7 @@ c
       do ii = 1, npolelocnl
          iipole = poleglobnl(ii)
          check  = .true.
-         if (.not.btest(ipolaxe(iipole),4))  check = .false. !'Z-then-X'
+         if (ipolaxe(iipole).ne.Ax_Z_Then_X) check = .false.
          if (yaxis(iipole) .eq. 0)  check = .false.
          if (check) then
             k   = yaxis(iipole)

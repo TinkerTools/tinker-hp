@@ -402,6 +402,7 @@ c!$acc end data
 
       subroutine tmatxb_pme_compute(mu,efi)
       use atmlst  , only :  poleglobnl
+      use inform  , only : deb_Path
       use math    , only : sqrtpi
       use mpole   , only : ipole,poleloc,npolebloc,npolelocnl
       use neigh   , only : nelst, elst
@@ -436,6 +437,7 @@ c!$acc end data
 c
 c     Initiate precompute
 c
+      if (deb_Path) write(*,'(5x,A)') 'tmatxb_pme_compute'
       if (precompute_tmat) then
          call tmatxb_precompute()
          precompute_tmat=.false.

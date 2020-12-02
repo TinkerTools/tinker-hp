@@ -593,7 +593,7 @@ c
      &            blockDim%x*gridDim%x
            iipole = polerecglob(impi)
            iatm   = ipole_t(iipole)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
 c       it faster to recompute theta*
@@ -649,7 +649,7 @@ c
               k0   = k0 + 1
 c             k   = k0 + 1 + (nfft3-isign(nfft3,k0))/2
               k   = k0 + 1 + ishft(nfft3-isign(nfft3,k0),-1)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
               v0   = theta3(1,it3)
               v1   = theta3(2,it3)
               v2   = theta3(3,it3)
@@ -675,7 +675,7 @@ c             k   = k0 + 1 + (nfft3-isign(nfft3,k0))/2
                  j0 = j0 + 1
 c                j  = j0 + 1 + (nfft2-isign(nfft2,j0))/2
                  j  = j0 + 1 + ishft(nfft2-isign(nfft2,j0),-1)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                  u0 = theta2(1,it2)
                  u1 = theta2(2,it2)
                  u2 = theta2(3,it2)
@@ -723,7 +723,7 @@ c                   i = i0 + 1 + (nfft1-isign(nfft1,i0))/2
                     cycle
 c       
  10                 continue
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                     t0 = t0 + tq*theta1(1,it1)
                     t1 = t1 + tq*theta1(2,it1)
                     t2 = t2 + tq*theta1(3,it1)
@@ -858,7 +858,7 @@ c
      &            blockDim%x*gridDim%x
            iipole = polerecglob(impi)
            iatm   = ipole_t(iipole)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
 c       it faster to recompute theta*
@@ -904,7 +904,7 @@ c             k0     = k0 + 1
 c             k      = k0 + 1 + (nfft3-isign(nfft3,kgrd0+it3))/2
               k      = kgrd0 +it3 +1 + 
      &                 ishft(nfft3-isign(nfft3,kgrd0+it3),-1)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
               v0     = theta3(1,it3)
               v1     = theta3(2,it3)
               v2     = theta3(3,it3)
@@ -931,7 +931,7 @@ c                j0 = j0 + 1
 c                j    = jgrd0 +it2 + 1 + (nfft2-isign(nfft2,jgrd0+it2))/2
                  j    = jgrd0 +it2 + 1 +
      &                        ishft(nfft2-isign(nfft2,jgrd0+it2),-1)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                  u0   = theta2(1,it2)
                  u1   = theta2(2,it2)
                  u2   = theta2(3,it2)
@@ -986,7 +986,7 @@ c                 tq_2 = qgrid2in_p(ind+1)
                       end do
                     end if
 c
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                     t0   = theta1(1,it1)
                     t1   = theta1(2,it1)
                     t2   = theta1(3,it1)
@@ -1122,7 +1122,7 @@ c
      &            blockDim%x*gridDim%x
            !iipole = polerecglob(impi)  !no need with one MPI process
            iatm   = ipole_t(impi)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
 c       it faster to recompute theta*
@@ -1168,7 +1168,7 @@ c             k0     = k0 + 1
 c             k      = k0 + 1 + (nfft3-isign(nfft3,kgrd0+it3))/2
               k      = kgrd0 +it3 +1 + 
      &                 ishft(nfft3-isign(nfft3,kgrd0+it3),-1)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
               v0     = theta3(1,it3)
               v1     = theta3(2,it3)
               v2     = theta3(3,it3)
@@ -1195,7 +1195,7 @@ c                j0 = j0 + 1
 c                j    = jgrd0 +it2 + 1 + (nfft2-isign(nfft2,jgrd0+it2))/2
                  j    = jgrd0 +it2 + 1 +
      &                        ishft(nfft2-isign(nfft2,jgrd0+it2),-1)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                  u0   = theta2(1,it2)
                  u1   = theta2(2,it2)
                  u2   = theta2(3,it2)
@@ -1220,7 +1220,7 @@ c
                     tq_1 = qgrid_in(1,i-istat+1,j-jstat+1,k-kstat+1)
                     tq_2 = qgrid_in(2,i-istat+1,j-jstat+1,k-kstat+1)
 c
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                     t0   = theta1(1,it1)
                     t1   = theta1(2,it1)
                     t2   = theta1(3,it1)
@@ -1344,7 +1344,7 @@ c
      &            blockDim%x*gridDim%x
            iipole = polerecglob(impi)
            iatm   = ipole_t(iipole)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
 c       it faster to recompute theta*
@@ -1419,7 +1419,7 @@ c
               k0 = k0 + 1
 c             k      = k0 + 1 + (nfft3-isign(nfft3,k0))/2
               k      = k0 + 1 + ishft(nfft3-isign(nfft3,k0),-1)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
               v0     = theta3(1,it3)
               v1     = theta3(2,it3)
               v2     = theta3(3,it3)
@@ -1458,7 +1458,7 @@ c             k      = k0 + 1 + (nfft3-isign(nfft3,k0))/2
                  j0 = j0 + 1
 c                j    = j0 + 1 + (nfft2-isign(nfft2,j0))/2
                  j    = j0 + 1 + ishft(nfft2-isign(nfft2,j0),-1)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                  u0   = theta2(1,it2)
                  u1   = theta2(2,it2)
                  u2   = theta2(3,it2)
@@ -1514,7 +1514,7 @@ c
                     cycle
  10                 continue
 c       
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                     t0_1 = t0_1 +  tq_1      *theta1(1,it1)
                     t1_1 = t1_1 +  tq_1      *theta1(2,it1)
                     t2_1 = t2_1 +  tq_1      *theta1(3,it1)
@@ -1660,7 +1660,7 @@ c
      &       ,istart,iend,jstart,jend,kstart,kend
      &       ,iproc,proc
       real(t_p) fi,de1,de2,de3,t1,t2,t3,dt1,dt2,dt3,term
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
       integer ifr
       real(t_p),xi,yi,zi,w,fr
       real(t_p),dimension(2,bsorder):: theta1,theta2,theta3
@@ -1672,7 +1672,7 @@ c
         iichg = chgrec (isite)
         iglob = iion   (iichg)
         iloc  = locrec1(iglob)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
 c       it faster to recompute theta*
@@ -1711,34 +1711,34 @@ c
         do it3 = 1, bsorder
            k0  = k0 + 1
            k   = k0 + 1 + (nfft3-sign(nfft3,k0))/2
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
            t3  =       theta3(1,it3)
            dt3 = dn3 * theta3(2,it3)
 #else
-           t3  =       thetai3(1,it3,isite)
-           dt3 = dn3 * thetai3(2,it3,isite)
+           t3  =       thetai3(1,it3,iglob)
+           dt3 = dn3 * thetai3(2,it3,iglob)
 #endif
            j0  = jgrd0
            do it2 = 1, bsorder
               j0  = j0 + 1
               j   = j0 + 1 + (nfft2-sign(nfft2,j0))/2
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
               t2  =       theta2(1,it2)
               dt2 = dn2 * theta2(2,it2)
 #else
-              t2  =       thetai2(1,it2,isite)
-              dt2 = dn2 * thetai2(2,it2,isite)
+              t2  =       thetai2(1,it2,iglob)
+              dt2 = dn2 * thetai2(2,it2,iglob)
 #endif
               i0  = igrd0
               do it1 = 1, bsorder
                  i0  = i0 + 1
                  i   = i0 + 1 + (nfft1-sign(nfft1,i0))/2
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                  t1  =       theta1(1,it1)
                  dt1 = dn1 * theta1(2,it1)
 #else
-                 t1  =       thetai1(1,it1,isite)
-                 dt1 = dn1 * thetai1(2,it1,isite)
+                 t1  =       thetai1(1,it1,iglob)
+                 dt1 = dn1 * thetai1(2,it1,iglob)
 #endif
 c
                  if (((k.ge.kstat).and.(k.le.ked)).and.
@@ -1804,7 +1804,7 @@ c
      &       ,istart,iend,jstart,jend,kstart,kend
      &       ,iproc,proc
       real(t_p) fi,de1,de2,de3,t1,t2,t3,dt1,dt2,dt3,term
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
       integer ifr
       real(t_p),xi,yi,zi,w,fr
       real(t_p),dimension(2,bsorder):: theta1,theta2,theta3
@@ -1815,7 +1815,7 @@ c
      &            blockDim%x*gridDim%x
         iichg = chgrec (isite)
         iglob = iion   (iichg)
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
 c       it faster to recompute theta*
@@ -1854,37 +1854,37 @@ c
         do it3 = 1, bsorder
            k0  = k0 + 1
            k   = k0 + 1 + (nfft3-sign(nfft3,k0))/2
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
            t3  =       theta3(1,it3)
            dt3 = dn3 * theta3(2,it3)
 #else
-           t3  =       thetai3(1,it3,iglob)
-           dt3 = dn3 * thetai3(2,it3,iglob)
+           t3  =       thetai3(1,it3,isite)
+           dt3 = dn3 * thetai3(2,it3,isite)
 #endif
            j0  = jgrd0
            do it2 = 1, bsorder
               j0  = j0 + 1
               j   = j0 + 1 + (nfft2-sign(nfft2,j0))/2
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
               t2  =       theta2(1,it2)
               dt2 = dn2 * theta2(2,it2)
 #else
-              t2  =       thetai2(1,it2,iglob)
-              dt2 = dn2 * thetai2(2,it2,iglob)
+              t2  =       thetai2(1,it2,isite)
+              dt2 = dn2 * thetai2(2,it2,isite)
 #endif
               i0  = igrd0
               do it1 = 1, bsorder
                  i0  = i0 + 1
                  i   = i0 + 1 + (nfft1-sign(nfft1,i0))/2
-#if (defined(SINGLE) || defined(MIXED))
+#if 1
                  t1  =       theta1(1,it1)
                  dt1 = dn1 * theta1(2,it1)
 #else
-                 t1  =       thetai1(1,it1,iglob)
-                 dt1 = dn1 * thetai1(2,it1,iglob)
+                 t1  =       thetai1(1,it1,isite)
+                 dt1 = dn1 * thetai1(2,it1,isite)
 #endif
                  term = qgridin_t(1,i-istat+1,j-jstat+1
-     $                                ,k-kstat+1,1)
+     $                             ,k-kstat+1,1)
 c
                  de1 = de1 + term*dt1*t2*t3
                  de2 = de2 + term*dt2*t1*t3

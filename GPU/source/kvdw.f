@@ -608,9 +608,9 @@ c
         end if
 
         if (use_vdw) then
-           call upload_device_kvdw
-           call prmem_request(vdwlocnl,nvdw)
+           call prmem_request(vdwlocnl,n)
            call compress_vdwData
+           call upload_device_kvdw
         else
            call delete_data_vdw
            return
@@ -786,7 +786,7 @@ c#endif
 c
 !$acc end data
       modnl = mod(istep,ineigup)
-      if (modnl.ne.0) return
+      if (modnl.ne.0.or.istep.lt.0) return
  
       call prmem_request(vdwglobnl,nlocnl,async=.true.)
 
@@ -887,7 +887,7 @@ c     nvdwblocloop is nvdwbloc if nvdwbloc is a multiple of 16, or the first one
 
 c
       modnl = mod(istep,ineigup)
-      if (modnl.ne.0) return
+      if (modnl.ne.0.or.istep.lt.0) return
 
       call prmem_request(vdwglobnl,nlocnl,async=.true.)
 c     if (allocated(vdwglobnl)) deallocate(vdwglobnl)
@@ -916,7 +916,12 @@ c
 
 
       subroutine upload_device_kvdw
+      use atoms ,only: n
       use domdec,only: rank,hostcomm
+      use couple,only: i12
+#ifdef _OPENACC
+      use ehal1cu,only: attach_vdwcu_data
+#endif
       use inform,only: deb_Path
       use kvdws
       use mpi   ,only: MPI_BARRIER
@@ -937,6 +942,12 @@ c
 !$acc update device(ivdw,nbvdw)
 !$acc enter data copyin(nvdwloc,nvdwbloc,nvdwlocnl)
 !$acc enter data copyin(rad)
+
+#ifdef _OPENACC
+!$acc host_data use_device(i12,kred,radmin_c,epsilon_c)
+      call attach_vdwcu_data(i12,kred,radmin_c,epsilon_c,n,nvdwclass)
+!$acc end host_data
+#endif
       end subroutine
 
       subroutine delete_data_vdw

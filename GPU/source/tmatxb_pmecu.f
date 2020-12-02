@@ -64,6 +64,25 @@ c       if (ithread.eq.1) print*,npolelocnlb,npolebloc,n,cut2,alsq2
 c    &     ,aewald,npolelocnlb_pair
 
         do ii = iwarp, npolelocnlb_pair-1, nwarp
+
+           ! Load atom block k parameters
+           kdx     = eblst(ii*warpsize + ilane)
+           kpole   = pglob(kdx)
+           kglob(threadIdx%x)   = ipole(kdx)
+           kploc   = ploc(kdx)
+           posk(threadIdx%x)%x  = x(kdx)
+           posk(threadIdx%x)%y  = y(kdx)
+           posk(threadIdx%x)%z  = z(kdx)
+           kpdp(threadIdx%x)    = pdamp(kpole)
+           kpgm(threadIdx%x)    = thole(kpole)
+           dpuk(threadIdx%x)%x  = mu(1,1,kploc)
+           dpuk(threadIdx%x)%y  = mu(2,1,kploc)
+           dpuk(threadIdx%x)%z  = mu(3,1,kploc)
+           dpuk(threadIdx%x)%xx = mu(1,2,kploc)
+           dpuk(threadIdx%x)%yy = mu(2,2,kploc)
+           dpuk(threadIdx%x)%zz = mu(3,2,kploc)
+           call syncwarp(ALL_LANES)
+
            ! Load atom block i parameters
            iblock  = ieblst(ii+1)
            if (iblock.eq.0) cycle
@@ -82,23 +101,6 @@ c    &     ,aewald,npolelocnlb_pair
            dpui%xx = mu(1,2,iploc)
            dpui%yy = mu(2,2,iploc)
            dpui%zz = mu(3,2,iploc)
-
-           ! Load atom block k parameters
-           kdx     = eblst(ii*warpsize + ilane)
-           kpole   = pglob(kdx)
-           kglob(threadIdx%x)   = ipole(kdx)
-           kploc   = ploc(kdx)
-           posk(threadIdx%x)%x  = x(kdx)
-           posk(threadIdx%x)%y  = y(kdx)
-           posk(threadIdx%x)%z  = z(kdx)
-           kpdp(threadIdx%x)    = pdamp(kpole)
-           kpgm(threadIdx%x)    = thole(kpole)
-           dpuk(threadIdx%x)%x  = mu(1,1,kploc)
-           dpuk(threadIdx%x)%y  = mu(2,1,kploc)
-           dpuk(threadIdx%x)%z  = mu(3,1,kploc)
-           dpuk(threadIdx%x)%xx = mu(1,2,kploc)
-           dpuk(threadIdx%x)%yy = mu(2,2,kploc)
-           dpuk(threadIdx%x)%zz = mu(3,2,kploc)
 
            !set compute Data to 0
            fid%x   = 0
@@ -156,7 +158,6 @@ c    &     ,aewald,npolelocnlb_pair
  
            end do
 
-           call syncwarp(ALL_LANES)
            ! increment electric field for each atoms
            rstat = atomicAdd( efi(1,1,iploc),fid%x )
            rstat = atomicAdd( efi(2,1,iploc),fid%y )
@@ -164,6 +165,7 @@ c    &     ,aewald,npolelocnlb_pair
            rstat = atomicAdd( efi(1,2,iploc),fip%x )
            rstat = atomicAdd( efi(2,2,iploc),fip%y )
            rstat = atomicAdd( efi(3,2,iploc),fip%z )
+           call syncwarp(ALL_LANES)
            rstat = atomicAdd( efi(1,1,kploc),fkd(threadIdx%x)%x )
            rstat = atomicAdd( efi(2,1,kploc),fkd(threadIdx%x)%y )
            rstat = atomicAdd( efi(3,1,kploc),fkd(threadIdx%x)%z )
@@ -240,6 +242,7 @@ c    &     ,aewald,npolelocnlb_pair
            dpui%xx = mu(1,2,iploc)
            dpui%yy = mu(2,2,iploc)
            dpui%zz = mu(3,2,iploc)
+           call syncwarp(ALL_LANES)
 
            ! Load atom block k parameters
            kdx     = eblst(ii*warpsize + ilane)
@@ -322,6 +325,7 @@ c    &     ,aewald,npolelocnlb_pair
            rstat = atomicAdd( efi(1,2,iploc),fip%x )
            rstat = atomicAdd( efi(2,2,iploc),fip%y )
            rstat = atomicAdd( efi(3,2,iploc),fip%z )
+           call syncwarp(ALL_LANES)
            rstat = atomicAdd( efi(1,1,kploc),fkd(threadIdx%x)%x )
            rstat = atomicAdd( efi(2,1,kploc),fkd(threadIdx%x)%y )
            rstat = atomicAdd( efi(3,1,kploc),fkd(threadIdx%x)%z )

@@ -143,7 +143,7 @@ c
 c
 c    compute the reciprocal space contribution (fields)
 c
-      call efld0_recipgpu(cphi)
+      call efld0_recipgpu(cphi,ef)
 c
 c     Begin the reception of the reciprocal fields
 c

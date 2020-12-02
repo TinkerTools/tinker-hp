@@ -1,4 +1,8 @@
+#ifndef PAIR_ELJ_INC
+#define PAIR_ELJ_INC
 #include "tinker_cudart.h"
+#include "convert.f.inc"
+#include "switch_respa.f.inc"
 
       M_subroutine 
      &            elj1_couple(rik2,xr,yr,zr,rv,eps,cut2
@@ -135,3 +139,4 @@ c
         ded%y = de * yr
         ded%z = de * zr
       end
+#endif

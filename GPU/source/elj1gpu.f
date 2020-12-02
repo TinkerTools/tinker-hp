@@ -18,8 +18,8 @@ c
 #include "tinker_precision.h"
       module elj1gpu_inl
         contains
+#include "convert.f.inc"
 #include "image.f.inc"
-#include "switch_respa.f.inc"
 #include "pair_elj.f.inc"
       end module
 
@@ -76,10 +76,10 @@ c
       use atoms
       use bound
       use couple
-      use deriv
+      use deriv     ,only: dev=>debond
       use domdec
       use elj1gpu_inl
-      use energi
+      use energi    ,only: ev=>ev_r
       use inform
       use inter
       use interfaces,only: elj1_scaling
@@ -106,7 +106,7 @@ c
       real(t_p) xr,yr,zr
       real(t_p) redi,rediv
       real(t_p) redk,redkv
-      real(r_p) dedx,dedy,dedz
+      mdyn_rtyp dedx,dedy,dedz
       real(t_p) rik,rik2,rik3
       real(t_p) rik4,rik5
       real(t_p) taper,dtaper
@@ -125,7 +125,7 @@ c
 c
 c     zero out the van der Waals energy and first derivatives
 c
-       ev = 0.0
+       ev = 0
 c
 c     set the coefficients for the switching function
 c
@@ -148,6 +148,7 @@ c
          yred(i) = rdn*(y(iglob)-y(iv)) + y(iv)
          zred(i) = rdn*(z(iglob)-z(iv)) + z(iv)
       end do
+      call resetForces_buff(dir_queue)
 c
 c     find van der Waals energy and derivatives via neighbor list
 c
@@ -156,9 +157,7 @@ c
          iivdw = vdwglobnl(ii)
          iglob = ivdw(iivdw)
          i     = loc(iglob)
-         iv    = ired(iglob)
-         ivloc = loc(iv)
-         redi  = merge (kred(iglob),1.0_ti_p,(i.ne.ivloc))
+         !iv    = ired(iglob)
          it    = jvdw(iglob)
          xi    = xred(i)
          yi    = yred(i)
@@ -171,8 +170,7 @@ c
          do kk = 1, nvlst(ii)
             kglob = vlst(kk,ii)
             kbis  = loc(kglob)
-            kv    = ired(kglob)
-            kvloc = loc(kv)
+            !kv    = ired(kglob)
             kt    = jvdw(kglob)
             xr    = xi - xred(kbis)
             yr    = yi - yred(kbis)
@@ -183,7 +181,6 @@ c
 c     check for an interaction distance less than the cutoff
 c
             if (rik2.le.off2) then
-               redk = merge (kred(kglob),1.0_ti_p,(kbis.ne.kvloc))
                rv   = radmin (kt,it)
                eps  = epsilon(kt,it)
 
@@ -193,49 +190,23 @@ c
 c
 c     increment the total van der Waals energy and derivatives
 c
-               ev  = ev  + e
+               ev  = ev  + tp2enr(e)
 
-               dedx = ded%x*redi
-               dedy = ded%y*redi
-               dedz = ded%z*redi
+               dedx = tp2mdr(ded%x)
+               dedy = tp2mdr(ded%y)
+               dedz = tp2mdr(ded%z)
 !$acc atomic
                dev(1,i) = dev(1,i) + dedx
 !$acc atomic
                dev(2,i) = dev(2,i) + dedy
 !$acc atomic
                dev(3,i) = dev(3,i) + dedz
-               if (iglob.ne.iv) then
-                  dedx = ded%x*( 1.0-redi )
-                  dedy = ded%y*( 1.0-redi )
-                  dedz = ded%z*( 1.0-redi )
-!$acc atomic
-                  dev(1,ivloc) = dev(1,ivloc) + dedx
-!$acc atomic
-                  dev(2,ivloc) = dev(2,ivloc) + dedy
-!$acc atomic
-                  dev(3,ivloc) = dev(3,ivloc) + dedz
-               end if
-
-               dedx = ded%x*redk
-               dedy = ded%y*redk
-               dedz = ded%z*redk
 !$acc atomic
                dev(1,kbis) = dev(1,kbis) - dedx
 !$acc atomic
                dev(2,kbis) = dev(2,kbis) - dedy
 !$acc atomic
                dev(3,kbis) = dev(3,kbis) - dedz
-               if (kglob .ne. kv) then
-                  dedx = ded%x*( 1.0-redk )
-                  dedy = ded%y*( 1.0-redk )
-                  dedz = ded%z*( 1.0-redk )
-!$acc atomic
-                  dev(1,kvloc) = dev(1,kvloc) - dedx
-!$acc atomic
-                  dev(2,kvloc) = dev(2,kvloc) - dedy
-!$acc atomic
-                  dev(3,kvloc) = dev(3,kvloc) - dedz
-               end if
 c
 c     increment the internal virial tensor components
 c
@@ -253,6 +224,8 @@ c
       call elj1_scaling(xred,yred,zred
      &     ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
 
+      call vdw_gradient_reduce
+
       end
 
 #ifdef _CUDA
@@ -266,8 +239,11 @@ c=============================================================
       use domdec    ,only: loc,rank,nbloc,nproc
      &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
      &              ,zendproc,glob
-      use eljcu
-      use energi    ,only: ev
+      use eljcu     ,only: elj1_cu
+#ifdef USE_DETERMINISTIC_REDUCTION
+      use elj1gpu_inl,only: enr2en
+#endif
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
       use interfaces,only: elj1_scaling
       use neigh     ,only: cellv_glob,cellv_loc,cellv_jvdw
@@ -275,12 +251,12 @@ c=============================================================
       use tinheader ,only: ti_p
       use timestat  ,only: timer_enter,timer_exit,timer_elj3
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
-      use utilcu    ,only: check_launch_kernel
+      use utilcu    ,only: check_launch_kernel,VDW_BLOCK_DIM
       use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream
      &              ,rec_stream,rec_event,stream_wait_async
      &              ,warp_size,def_stream,inf
-     &              ,ered_buff,vred_buff,reduce_energy_virial
-     &              ,zero_evir_red_buffer,prmem_request
+     &              ,ered_buff=>ered_buf1,vred_buff,reduce_energy_virial
+     &              ,zero_evir_red_buffer,prmem_request,RED_BUFF_SIZE
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin_c
      &              ,epsilon_c,nvdwbloc,nvdwlocnl
      &              ,nvdwlocnlb,nvdwclass
@@ -393,7 +369,7 @@ c
 #endif
 !$acc&    )
 
-      call elj1_cu<<<hal_Gs,4*warp_size,0,def_stream>>>
+      call elj1_cu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
      &             (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
      &             ,ivblst,vblst(lst_start),cellv_jvdw
      &             ,epsilon_c,radmin_c,ired,kred,dev
@@ -411,7 +387,7 @@ c
 !$acc end host_data
 
       call reduce_energy_virial(ev,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
-     &                         ,def_queue)
+     &                         ,ered_buff,def_queue)
 
 #ifdef TINKER_DEBUG
  34   format(2I10,3F12.4)
@@ -421,13 +397,13 @@ c
 !$acc exit data copyout(inter)
 !$acc update host(dev,ev)
       write(*,36)'nvdw pair block ',nvdwlocnlb_pair,nvdwlocnlb2_pair
-      write(*,35)'nev & ev & rank ',sum(inter),ev,rank
+      write(*,35)'nev & ev & rank ',sum(inter),enr2en(ev),rank
 #endif
-
-      call vdw_gradient_reduce
 
       call elj1_scaling(xredc,yredc,zredc,
      &            g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+
+      call vdw_gradient_reduce
 
       call timer_exit(timer_elj3)
       end subroutine
@@ -454,7 +430,7 @@ c
       use deriv
       use domdec
       use elj1gpu_inl
-      use energi
+      use energi    , only:ev=>ev_r
       use inform
       use inter
       use interfaces, only:short_mode,long_mode
@@ -496,7 +472,7 @@ c
 c
 c     zero out the van der Waals energy and first derivatives
 c
-      ev = 0.0
+      ev = 0
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -588,7 +564,7 @@ c
 c
 c     increment the total van der Waals energy and derivatives
 c
-               ev   = ev  + e
+               ev   = ev  + tp2enr(e)
                !if (ii.eq.1) print*,e,kglob,rik2
 
                dedx = ded%x*redi
@@ -658,10 +634,10 @@ c
      &           vxx,vxy,vxz,vyy,vyz,vzz)
 
       use atmlst    ,only: vdwglobnl
-      use deriv     ,only: dev
+      use deriv     ,only: dev=>debond
       use domdec    ,only: loc,rank
       use elj1gpu_inl
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
       use tinheader ,only: ti_p
       use tintypes  ,only: real3
@@ -684,7 +660,7 @@ c
       real(t_p)  rdn,rdn1,redk
       real(t_p)  rik2
       type(real3) ded
-      real(r_p)  devx,devy,devz
+      mdyn_rtyp  devx,devy,devz
       real(t_p)  invrho,rv7orho
       real(t_p)  dtau,gtau,tau,tau7,rv7
       real(t_p)  rv2,eps2
@@ -717,13 +693,8 @@ c
          i      = loc(iglob)
          kbis   = loc(kglob)
 
-         ivloc  = loc (ired(iglob))
-         kvloc  = loc (ired(kglob))
          it     = jvdw(iglob)
          kt     = jvdw(kglob)
-
-         redi   = merge (kred(iglob),1.0_ti_p,(i.ne.ivloc))
-         redk   = merge (kred(kglob),1.0_ti_p,(kbis.ne.kvloc))
 
          do_scale4 = .false.
          vscale4   = 0
@@ -765,12 +736,12 @@ c
          ded%x = -ded%x; ded%y = -ded%y; ded%z = -ded%z;
          end if
 
-         ev   =   ev + e
+         ev   =   ev + tp2enr(e)
          !if(rank.eq.0.and.mod(ii,1).eq.0) print*,iglob,kglob,vscale,e
 
-         devx = redk*ded%x
-         devy = redk*ded%y
-         devz = redk*ded%z
+         devx = tp2mdr(ded%x)
+         devy = tp2mdr(ded%y)
+         devz = tp2mdr(ded%z)
 !$acc atomic update
          dev(1,kbis)  = dev(1,kbis)  - devx
 !$acc atomic update
@@ -778,39 +749,12 @@ c
 !$acc atomic update
          dev(3,kbis)  = dev(3,kbis)  - devz
 
-         if (kbis.ne.kvloc) then
-            devx = (1.0_ti_p - redk)*ded%x
-            devy = (1.0_ti_p - redk)*ded%y
-            devz = (1.0_ti_p - redk)*ded%z
-!$acc atomic update
-            dev(1,kvloc) = dev(1,kvloc) - devx
-!$acc atomic update
-            dev(2,kvloc) = dev(2,kvloc) - devy
-!$acc atomic update
-            dev(3,kvloc) = dev(3,kvloc) - devz
-         end if
-
-         devx  = redi * ded%x
-         devy  = redi * ded%y
-         devz  = redi * ded%z
 !$acc atomic update
          dev(1,i) = dev(1,i) + devx
 !$acc atomic update
          dev(2,i) = dev(2,i) + devy
 !$acc atomic update
          dev(3,i) = dev(3,i) + devz
-
-         if (i.ne.ivloc) then
-            devx  = (1.0_ti_p - redi)* ded%x
-            devy  = (1.0_ti_p - redi)* ded%y
-            devz  = (1.0_ti_p - redi)* ded%z
-!$acc atomic update
-            dev(1,ivloc) = dev(1,ivloc) + devx
-!$acc atomic update
-            dev(2,ivloc) = dev(2,ivloc) + devy
-!$acc atomic update
-            dev(3,ivloc) = dev(3,ivloc) + devz
-         end if
 c
 c     increment the total van der Waals energy 
 c
@@ -842,7 +786,7 @@ c
       use deriv     ,only: dev
       use domdec    ,only: loc,rank
       use elj1gpu_inl
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use interfaces,only: long_mode,short_mode
       use inform    ,only: deb_Path
       use potent    ,only: use_vdwshort
@@ -953,7 +897,7 @@ c
          ded%x = -ded%x; ded%y = -ded%y; ded%z = -ded%z;
          end if
 
-         ev   =   ev + e
+         ev   =   ev + tp2enr(e)
          !if(rank.eq.0.and.mod(ii,1).eq.0) print*,iglob,kglob,rik2,e
 
          devx = redk*ded%x

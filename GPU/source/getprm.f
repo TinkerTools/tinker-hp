@@ -20,10 +20,6 @@ c
       use files
       use keys
       use iounit
-#ifdef _OPENACC
-      use interfaces,only:C_init_env
-      use utilgpu   ,only: devicenum
-#endif
       use params
       use sizes
       implicit none
@@ -140,7 +136,4 @@ c
 c     get control and parameter values from the parameter file
 c
       if (useprm)  call readprm
-#ifdef _OPENACC
-      call C_init_env(devicenum,nproc,rank,tinkerdebug)
-#endif
       end

@@ -51,6 +51,7 @@ c     nvdwlocnlb First multiple of BLOCK_SIZE after nvdwlocnl
 c     nvdwlocnlb_pair  total number of vdw pair blocks interaction
 c     nvdwlocnlb2_pair  total number of vdw pair blocks interaction in C2 nblist
 c     nshortvdwlocnlb2_pair  total number of vdw pair blocks interaction in short range interaction list
+c     skipvdw12  switch to skip vdw 1-2 Interactions computation
 c
 c
 #include "tinker_precision.h"
@@ -74,11 +75,12 @@ c
       real(t_p), pointer:: epsilon_c(:),epsilon4_c(:)
       real(t_p), pointer:: radmin_c(:),radmin4_c(:)
       real(t_p), pointer:: kred(:)
-      integer :: winradmin,winradmin4
-      integer :: winepsilon,winepsilon4
-      integer :: winradmin_c,winradmin4_c
-      integer :: winepsilon_c,winepsilon4_c
-      integer :: winkred,winradhbnd,winepshbnd
+      integer winradmin,winradmin4
+      integer winepsilon,winepsilon4
+      integer winradmin_c,winradmin4_c
+      integer winepsilon_c,winepsilon4_c
+      integer winkred,winradhbnd,winepshbnd
+      logical skipvdw12
       end
 
       module vdw_locArray

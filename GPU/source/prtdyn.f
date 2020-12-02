@@ -23,6 +23,7 @@ c
       use mdstuf
       use moldyn
       use titles
+      use timestat ,only:timer_io,timer_enter,timer_exit,quiet_timers
       implicit none
       integer i,idyn
       integer freeunit
@@ -31,6 +32,7 @@ c
       character*40 fstr
       character*120 dynfile
 c
+      call timer_enter(timer_io)
 c
 c     update an existing restart file or open a new one
 c
@@ -103,5 +105,5 @@ c
 c     close the dynamics trajectory restart file
 c
       close (unit=idyn)
-      return
+      call timer_exit(timer_io)
       end

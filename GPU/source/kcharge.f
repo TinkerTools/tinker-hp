@@ -161,7 +161,8 @@ c
               iion(n-n0ion) = i
               jion(n-n0ion) = i
               kion(n-n0ion) = i
-              list(i)       = n-n0ion
+              !list(i)       = n-n0ion
+              list(i)       = 0
               n0ion = n0ion + 1
            end if
         end do
@@ -311,7 +312,7 @@ c        chgrecloc(ionloc) = icap
 c
 !$acc end data
       modnl = mod(istep,ineigup)
-      if (modnl.ne.0) return
+      if (modnl.ne.0.or.istep.lt.0) return
 
       call prmem_request(chgglobnl,nlocnl,async=.true.)
 c

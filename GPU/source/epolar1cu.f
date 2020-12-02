@@ -17,19 +17,22 @@ c
 #ifdef _CUDA
 #define TINKER_CUF
 #include "tinker_precision.h"
+#include "tinker_types.h"
 #include "tinker_cudart.h"
        
       module epolar1cu
         use utilcu  ,only: nproc,ndir,BLOCK_DIM
-        use utilgpu ,only: real3,real6,real3_red,rpole_elt
-     &              ,BLOCK_SIZE,RED_BUFF_SIZE,WARP_SIZE
+        use utilgpu ,only: BLOCK_SIZE,RED_BUFF_SIZE
+     &              ,WARP_SIZE
+        use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
 
         contains
 
+#include "convert.f.inc"
 #include "image.f.inc"
-#include "switch_respa.f.inc"
 #include "midpointimage.f.inc"
 #include "pair_polar.f.inc"
+
         attributes(global) subroutine epreal1c_core_cu
      &        ( ipole, pglob, loc, ploc, ieblst, eblst
      &        , x, y, z, rpole, pdamp, thole, uind, uinp
@@ -48,23 +51,25 @@ c
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
      &                  ,pdamp(*),thole(*),uind(3,*),uinp(3,*)
         real(t_p),device:: trq(3,*),vir_buff(*)
-        real(r_p),device:: dep(3,*),ep_buff(*)
+        mdyn_rtyp,device:: dep(3,*)
+        ener_rtyp,device:: ep_buff(*)
 
         integer ithread,iwarp,nwarp,ilane,klane,istat,srclane
         integer beg,ii,j,i,kbis
         integer iblock,idx,kdx,kdx_
-        integer iipole,iglob,iploc,kpole,kglob,kploc
+        integer iipole,iglob,iploc,kpole,kploc
         integer location
+        integer,shared::kglob(BLOCK_DIM)
         real(t_p) xk_,yk_,zk_,d2
         real(t_p) ep_
         real(t_p) ipdp,ipgm,pdp,pgm,rstat
         type(real6) dpui,dpuk_
         type(real3) posi,pos
         type(real3) frc
-        type(real3_red) frc_i
-        type(real3_red),shared::frc_k(BLOCK_DIM)
-        type(real3),shared::posk(BLOCK_DIM)
-        real(t_p)  ,shared:: kpdp(BLOCK_DIM),kpgm(BLOCK_DIM)
+        type(mdyn3_r) frc_i
+        type(mdyn3_r),shared::frc_k(BLOCK_DIM)
+        type(real3)  ,shared:: posk(BLOCK_DIM)
+        real(t_p)    ,shared:: kpdp(BLOCK_DIM),kpgm(BLOCK_DIM)
         type(real3) trqi
         type(real3),shared:: trqk(BLOCK_DIM)
         type(real6),shared:: dpuk(BLOCK_DIM)
@@ -111,7 +116,7 @@ c
            !  Load atom block k parameters
            kdx     = eblst( (ii-1)*WARP_SIZE+ ilane )
            kpole   = pglob(kdx)
-           kglob   = ipole(kdx)
+           kglob(threadIdx%x)  = ipole(kdx)
            kbis    = loc  (kdx)
            kploc   = ploc (kdx)
            posk(threadIdx%x)%x  = x(kdx)
@@ -137,21 +142,21 @@ c
            dpuk(threadIdx%x)%yy = uinp ( 2, kpole)
            dpuk(threadIdx%x)%zz = uinp ( 3, kpole)
 
-           frc_i%x = 0.0;
-           frc_i%y = 0.0;
-           frc_i%z = 0.0;
-           frc_k(threadIdx%x)%x = 0.0;
-           frc_k(threadIdx%x)%y = 0.0;
-           frc_k(threadIdx%x)%z = 0.0;
-           trqi%x  = 0.0;
-           trqi%y  = 0.0;
-           trqi%z  = 0.0;
-           trqk(threadIdx%x)%x = 0.0;
-           trqk(threadIdx%x)%y = 0.0;
-           trqk(threadIdx%x)%z = 0.0;
+           frc_i%x = 0;
+           frc_i%y = 0;
+           frc_i%z = 0;
+           frc_k(threadIdx%x)%x = 0;
+           frc_k(threadIdx%x)%y = 0;
+           frc_k(threadIdx%x)%z = 0;
+           trqi%x  = 0.0_ti_p;
+           trqi%y  = 0.0_ti_p;
+           trqi%z  = 0.0_ti_p;
+           trqk(threadIdx%x)%x = 0.0_ti_p;
+           trqk(threadIdx%x)%y = 0.0_ti_p;
+           trqk(threadIdx%x)%z = 0.0_ti_p;
 
            !* set compute Data to 0
-           ep_ = 0.0
+           ep_ = 0
            vir_(1)=0.0; vir_(2)=0.0; vir_(3)=0.0;
            vir_(4)=0.0; vir_(5)=0.0; vir_(6)=0.0;
 
@@ -160,13 +165,6 @@ c
            do j = 1,warpsize
               srclane  = iand( ilane+j-1,warpsize-1 ) + 1
               klane    = threadIdx%x-ilane + srclane
-              !kdx_     = __shfl(kglob ,srclane)
-              !dpuk_%x  = __shfl(dpuk%x ,klane)
-              !dpuk_%y  = __shfl(dpuk%y ,klane)
-              !dpuk_%z  = __shfl(dpuk%z ,klane)
-              !dpuk_%xx = __shfl(dpuk%xx,klane)
-              !dpuk_%yy = __shfl(dpuk%yy,klane)
-              !dpuk_%zz = __shfl(dpuk%zz,klane)
               kp_%c    = __shfl(kp%c   ,klane)
               kp_%dx   = __shfl(kp%dx  ,klane)
               kp_%dy   = __shfl(kp%dy  ,klane)
@@ -203,14 +201,14 @@ c
                  call image_inl(pos%x,pos%y,pos%z)
               end if
               d2      = pos%x**2 + pos%y**2 + pos%z**2
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
+              do_pair = merge(.true.,iglob.lt.kglob(klane)
      &                       ,same_block)
               if (do_pair.and.d2<=off2.and.accept_mid) then
                  ! compute one interaction
                  call epolar1_couple(dpui,ip,dpuk(klane),kp_,d2,pos,
-     &                               aewald,alsq2,alsq2n,pgm,pdp,f,
+     &                                aewald,alsq2,alsq2n,pgm,pdp,f,
      &                                   1.0_ti_p,1.0_ti_p,1.0_ti_p,
-     &                 ep_,frc,frc_k(klane),trqi,trqk(klane),.false.)
+     &                ep_,frc,frc_k(klane),trqi,trqk(klane),.false.)
 
                  vir_(1) = vir_(1) + pos%x * frc%x
                  vir_(2) = vir_(2) + pos%y * frc%x
@@ -219,15 +217,15 @@ c
                  vir_(5) = vir_(5) + pos%z * frc%y
                  vir_(6) = vir_(6) + pos%z * frc%z
 
-                 frc_i%x = frc_i%x - frc%x
-                 frc_i%y = frc_i%y - frc%y
-                 frc_i%z = frc_i%z - frc%z
+                 frc_i%x = frc_i%x - tp2mdr(frc%x)
+                 frc_i%y = frc_i%y - tp2mdr(frc%y)
+                 frc_i%z = frc_i%z - tp2mdr(frc%z)
               end if
            end do
 
            location = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
 
-           rstat = atomicAdd(ep_buff(location), real(ep_,r_p))
+           rstat = atomicAdd(ep_buff(location), tp2enr(ep_))
 
            rstat = atomicAdd( dep(1,i   ), frc_i%x )
            rstat = atomicAdd( dep(2,i   ), frc_i%y )
@@ -274,15 +272,16 @@ c
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
      &                  ,pdamp(*),thole(*),uind(3,*),uinp(3,*)
         integer  ,device:: nep_buff(*)
-        real(r_p),device:: ep_buff(*)
+        mdyn_rtyp,device:: ep_buff(*)
 
         integer ithread,iwarp,nwarp,ilane,klane,istat,srclane
         integer beg,ii,j,i,kbis
         integer iblock,idx,kdx,kdx_
-        integer iipole,iglob,iploc,kpole,kglob,kploc
+        integer iipole,iglob,iploc,kpole,kploc
         integer location,nep_
+        integer,shared::kglob(BLOCK_DIM)
         real(t_p) xk_,yk_,zk_,d2
-        real(t_p) ep_
+        ener_rtyp ep_
         real(t_p) ipdp,ipgm,pdp,pgm,rstat
         type(real6) dpui,dpuk_
         type(real3) posi,pos
@@ -331,7 +330,7 @@ c
            !  Load atom block k parameters
            kdx     = eblst( (ii-1)*WARP_SIZE+ ilane )
            kpole   = pglob(kdx)
-           kglob   = ipole(kdx)
+           kglob(threadIdx%x)   = ipole(kdx)
            kbis    = loc  (kdx)
            kploc   = ploc (kdx)
            posk(threadIdx%x)%x  = x(kdx)
@@ -358,7 +357,7 @@ c
            dpuk(threadIdx%x)%zz = uinp ( 3, kpole)
 
            !* set compute Data to 0
-           ep_ = 0.0
+           ep_ = 0
            nep_= 0
 
            same_block = (idx.ne.kdx)
@@ -402,7 +401,7 @@ c
                  call image_inl(pos%x,pos%y,pos%z)
               end if
               d2      = pos%x**2 + pos%y**2 + pos%z**2
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
+              do_pair = merge(.true.,iglob.lt.kglob(klane)
      &                       ,same_block)
               if (do_pair.and.d2<=off2.and.accept_mid) then
                  ! compute one interaction
@@ -417,7 +416,7 @@ c
 
            location = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
 
-           rstat = atomicAdd(ep_buff(location), real(ep_,r_p))
+           rstat = atomicAdd( ep_buff(location),  ep_)
            istat = atomicAdd(nep_buff(location), nep_)
         end do
 

@@ -224,8 +224,12 @@ c
       if (use_mpole ) write(*,12) 'MPOLE' ,npole
       if (use_polar ) write(*,12) 'POLAR' ,npolar
       if (nmut.ne.0 ) write(*,12) 'MUTATION',nmut
-      if (use_geom  ) write(*,15) 'GEOM RESTRAINS',
-     &          npfix,ndfix,nafix,ntfix,ngfix,nchir
+      if (use_geom  ) then
+         write(*,15) 'GEOM RESTRAINS',
+     &               npfix,ndfix,nafix,ntfix,ngfix,nchir
+         write(*,*)  '     USE_BASIN ',use_basin
+         write(*,*)  '     USE_WALL  ',use_wall
+      end if
       if (use_extra ) write(*,12) 'EXTRA'
       if (use_smd_forconst.or.use_smd_velconst)
      &   write(*,12) rank, 'SMD'
@@ -500,6 +504,73 @@ c
       call timer_exit( timer_param )
       end
 
+      subroutine init_sub_config
+      use atoms      ,only: n
+      use interfaces
+      use mdstuf
+      use neigh      ,only: defaultlbuffer,defaultlbuffer1,lbuffer
+      use utilgpu
+      use sizes
+      implicit none
+      integer devtyp,dev_quadro,dev_geforce,dev_default
+      parameter(dev_quadro=0,dev_geforce=1,dev_default=10)
+      character(256) devname
+
+      if (sub_config.eq.-1) then
+         sub_config = itrf_legacy
+#ifdef _OPENACC
+         devname = devProp%name
+         call upcase(devname)
+         if (index(devname,'GEFORCE').gt.0) then
+            devtyp = dev_geforce
+         else if (index(devname,'QUADRO').gt.0) then
+            devtyp = dev_quadro
+         else
+            devtyp = dev_default
+         end if
+         if (devtyp.eq.dev_quadro) then
+            if ( n.gt.100000 ) then
+               sub_config = itrf_adapted
+#if TINKER_DOUBLE_PREC
+               if (lbuffer.eq.defaultlbuffer1.or.
+     &             lbuffer.eq.defaultlbuffer) then
+                   if (integrate.eq.'RESPA1'.or.
+     &                 integrate.eq.'BAOABRESPA1') then
+                      call update_lbuffer(1.0_ti_p)
+                   else
+                      call update_lbuffer(0.5_ti_p)
+                   end if
+               end if
+#endif
+            else
+#if TINKER_DOUBLE_PREC
+               sub_config = itrf_legacy
+#else
+               sub_config = itrf_adapted
+#endif
+            end if
+         else if (devtyp.eq.dev_geforce) then
+#if TINKER_DOUBLE_PREC
+            sub_config = itrf_legacy
+#else
+            sub_config = itrf_adapted
+#endif
+         else
+            sub_config = itrf_adapted
+         end if
+#endif
+      end if
+      if (tinkerdebug.gt.0.and.rank.eq.0) then
+ 12      format( /,'  --- run mode :  LEGACY  ',/ )
+ 13      format( /,'  --- run mode :  ADAPTED ',/ )
+         if      (sub_config.eq.itrf_legacy) then
+            write(*,12)
+         else if (sub_config.eq.itrf_adapted) then
+            write(*,13)
+         end if
+      end if
+      end subroutine
+
       subroutine configure_routine
       use interfaces
       use domdec ,only: nproc,nrec
@@ -516,37 +587,8 @@ c
       integer configure,shft
       integer,parameter:: hexa_len=16,sh_len=4
 
-      if (associated(ehal1c_p))      nullify(ehal1c_p)
-      if (associated(ehal3c_p))      nullify(ehal3c_p)
-      if (associated(ehalshort1c_p)) nullify(ehalshort1c_p)
-      if (associated(ehallong1c_p))  nullify(ehallong1c_p)
-      if (associated(ehalshortlong3c_p)) nullify(ehalshortlong3c_p)
-      if (associated(elj1c_p))       nullify(elj1c_p)
-      if (associated(eljsl1c_p))     nullify(eljsl1c_p)
-      if (associated(elj3c_p))       nullify(elj3c_p)
-      if (associated(tmatxb_p))      nullify(tmatxb_p)
-      if (associated(tmatxb_pme_core_p)) nullify(tmatxb_pme_core_p)
-      if (associated(otf_dc_tmatxb_pme_core_p)) 
-     &       nullify(otf_dc_tmatxb_pme_core_p)
-      if (associated(otf_dc_efld0_directgpu_p))
-     &       nullify(otf_dc_efld0_directgpu_p)
-      if (associated(emreal1c_core_p))   nullify(emreal1c_core_p)
-      if (associated(efld0_directgpu_p)) nullify(efld0_directgpu_p)
-      if (associated(fphi_uind_site1_p)) nullify(fphi_uind_site1_p)
-      if (associated(fphi_uind_site2_p)) nullify(fphi_uind_site2_p)
-      if (associated(fphi_mpole_site_p)) nullify(fphi_mpole_site_p)
-      if (associated(grid_uind_site_p))  nullify(grid_uind_site_p)
-      if (associated(grid_pchg_site_p))  nullify(grid_pchg_site_p)
-      if (associated(grid_mpole_site_p)) nullify(grid_mpole_site_p)
-      if (associated(ecreal1d_p))        nullify(ecreal1d_p)
-      if (associated(ecrealshortlong1d_p)) nullify(ecrealshortlong1d_p)
-      if (associated(ecreal3d_p))        nullify(ecreal3d_p)
-      if (associated(emrealshortlong1c_core_p))
-     &       nullify(emrealshortlong1c_core_p)
-      if (associated(emreal3d_p))     nullify(emreal3d_p)
-      if (associated(emrealshortlong3d_p)) nullify(emrealshortlong3d_p)
-      if (associated(epreal1c_core_p)) nullify(epreal1c_core_p)
-      if (associated(epreal3d_p))      nullify(epreal3d_p)
+      call init_sub_config
+      call init_routine_pointers
 
       vlst_enable  = .false.
       vlst2_enable = .false.
@@ -664,8 +706,10 @@ c
       if (use_mpole) then
          shft = ishft(sub_config,-conf_mpole*sh_len)
          configure=iand(shft,hexa_len-1)
+         emreal1c_p     => emreal1cgpu
+         emreallong1c_p => emreallong1cgpu
          emrealshortlong1c_core_p => emrealshortlong1c_core
-         emrealshortlong3d_p => emrealshortlong3d
+         emrealshortlong3d_p      => emrealshortlong3d
          if      (configure.eq.conf_emreal1c_1) then
             emreal1c_core_p => emreal1c_core1
             emreal3d_p => emreal3dgpu
@@ -721,6 +765,7 @@ c
          otf_dc_efld0_directgpu_p => otf_dc_efld0_directgpu2
             mlst_enable = .true.
          end if
+         efld0_directgpu_p1  => efld0_directgpu_p
 
          shft = ishft(sub_config,-conf_tmat*sh_len)
          configure=iand(shft,hexa_len-1)
@@ -751,9 +796,11 @@ c
             tmatxb_pme_core_p => tmatxb_pme_core2
             mlst_enable = .true.
          end if
+         tmatxb_p1  => tmatxb_p
 
          shft = ishft(sub_config,-conf_polar*sh_len)
          configure=iand(shft,hexa_len-1)
+         epreal1c_p => epreal1cgpu
          if      (configure.eq.conf_epreal1c_1) then
             epreal1c_core_p => epreal1c_core1
             epreal3d_p      => epreal3dgpu
@@ -827,4 +874,52 @@ c
 c     print '(/,A21,Z16,I30)', 'routine config number ', 
 c    &      sub_config,sub_config
 
+      call config_cover_routines
       end
+
+c
+c     Associate routine pointers related to 
+c           MPI Async Overlapping computation (Real V Rec)
+c
+      subroutine config_cover_routines
+      use interfaces
+      use utilgpu
+      use inform
+      use polpot ,only: polalg
+      use potent ,only: use_pmecore
+      implicit none
+
+      ! Association
+      if (dir_queue.ne.rec_queue) then
+
+         if (use_pmecore) then
+            if (verbose.and.rank.eq.0) then
+ 13            format('--- Disabling Async Comput ---',/,
+     &         'Not Suited with pme-proc option')
+               print 13
+            end if
+#ifdef _OPENACC
+            call finalize_async_recover
+#endif
+            return
+         end if
+
+         emreal1c_cp     => emreal1c_p
+         emreallong1c_cp => emreallong1c_p
+         emreal1c_p      => tinker_void_sub
+         emreallong1c_p  => tinker_void_sub
+
+         efld0_direct_cp   => efld0_directgpu_p
+         efld0_directgpu_p => efld0_direct_void
+
+         if (polalg.eq.1) then
+            tmatxb_cp    => tmatxb_p
+            tmatxb_p     => tmatxb_void
+         end if
+
+         epreal1c_cp     => epreal1c_p
+         epreal1c_p      => tinker_void_sub
+
+      end if
+
+      end subroutine

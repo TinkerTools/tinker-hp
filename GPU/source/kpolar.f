@@ -544,7 +544,7 @@ c
       end if
 c
       modnl = mod(istep,ineigup)
-      if (modnl.ne.0) return
+      if (modnl.ne.0.or.istep.lt.0) return
 c
       call prmem_request(poleglobnl,nlocnl,async=.true.)
 c
@@ -707,7 +707,7 @@ c
       end if
 c
       modnl = mod(istep,ineigup)
-      if (modnl.ne.0) return
+      if (modnl.ne.0.and.istep.ge.0) return
 c
       call prmem_request(poleglobnl,nlocnl,async=.true.)
 c     if (allocated(poleglobnl)) deallocate(poleglobnl)
@@ -782,118 +782,6 @@ c    &                    (mod(npolebloc,16).eq.0))
       ! Communicate to neigbhor process poleglob configuration
       ! This will simplify direct fiels communication when 
       ! poleglob is being construct parallel on device
-      subroutine commpoleglob(polebuff)
-      use atmlst,  only : poleglob
-      use domdec,  only : nproc,rank,p_send1,n_send1,p_recep1,
-     &                    n_recep1,bufbegpole,domlenpole,
-     &                    domlen,bufbeg,glob,comm_dir,ndir
-      use mpole,   only : poleloc,pollist,polsiz,nbpole,npoleloc,
-     &                    npolebloc,nz_Onlyglob
-      use potent,  only : use_pmecore
-      use timestat,only : timer_enter,timer_exit,timer_eneig
-     &            , quiet_timers
-      use utilcomm,only : reqsendpoleglob,reqrecvpoleglob,
-     &                    do_not_commpole
-      use utilgpu ,only : rec_queue
-      use mpi
-      implicit none
-      integer,intent(inout):: polebuff(:)
-      integer ierr,i,j,iproc,ipr,ibufbeg,idomlen
-      integer iipole
-      integer commloc,tag,status(MPI_STATUS_SIZE)
-      integer npolelocmpi(nproc)
-
-      if (nproc.eq.1.or.ndir.eq.1.or.do_not_commpole) return
-
-      if (use_pmecore) then
-         commloc = comm_dir
-      else
-         commloc = MPI_COMM_WORLD
-      end if
-
-      if (.not.allocated(reqsendpoleglob)) then
-         allocate (reqsendpoleglob(nproc))
-         allocate (reqrecvpoleglob(nproc))
-      end if
-      call timer_enter( timer_eneig )
-c
-c     Share npoleloc between neigbhor process
-c
-      do i = 1, n_recep1
-         tag = nproc*rank + p_send1(i) + 1
-         ipr = p_recep1(i) + 1
-         call MPI_IRECV(domlenpole(ipr),1,MPI_INT,p_send1(i),tag,
-     &        commloc,reqrecvpoleglob(i),ierr)
-      end do
-      do i = 1, n_send1
-         tag = nproc*p_recep1(i) + rank + 1
-         call MPI_ISEND(npoleloc,1,MPI_INT,p_recep1(i),tag,commloc,
-     &        reqsendpoleglob(i),ierr)
-      end do
-      ! Wait for comm and construct domlepnpole & bufbegpole
-      do i = 1, n_recep1
-         call MPI_WAIT(reqrecvpoleglob(i),status,ierr)
-         ipr = p_recep1(i) + 1
-         if (domlen(ipr) .ne. 0) then
-            if (i.eq.1) then
-               bufbegpole(ipr) = 1 + npoleloc
-               npolebloc = npolebloc + domlenpole(ipr)
-            else
-               bufbegpole(ipr) = bufbegpole(p_recep1(i-1)+1) +
-     &                           domlenpole(p_recep1(i-1)+1)
-               npolebloc = npolebloc + domlenpole(ipr)
-            end if
-         else
-            bufbegpole(ipr) = 1
-            domlenpole(ipr) = 0
-         end if
-         call MPI_WAIT(reqsendpoleglob(i),status,ierr)
-      end do
-
-      !update switch
-      do_not_commpole = .true.
-c
-c     Begin reception
-c
-!$acc host_data use_device(polebuff)
-      do i = 1, n_recep1
-         ipr = p_recep1(i) + 1
-         tag = nproc*rank + p_send1(i) + 1
-         idomlen = domlenpole(ipr)
-         ibufbeg = bufbegpole(ipr)
-         call MPI_IRECV(polebuff(ibufbeg),idomlen,MPI_INT,p_send1(i),
-     &        tag,commloc,reqrecvpoleglob(i),ierr)
-      end do
-c
-c     Begin polelglob sending
-c
-      do i = 1, n_send1
-         tag = nproc*p_recep1(i) + rank + 1
-!$acc wait(rec_queue)
-         call MPI_ISEND(polebuff(1),npoleloc,MPI_INT,p_recep1(i),tag,
-     &        commloc,reqsendpoleglob(i),ierr)
-      end do
-!$acc end host_data
-c
-c     Wait for poleglob communication
-c
-!$acc data present(poleglob,poleloc)
-      do i = 1, n_recep1
-         ipr = p_recep1(i) + 1
-         idomlen = domlenpole(ipr)
-         ibufbeg = bufbegpole(ipr) - 1
-         call MPI_WAIT(reqrecvpoleglob(i),status,ierr)
-         ! Finish npoleloc construction
-!$acc parallel loop async
-         do j = 1, idomlen
-            iipole = poleglob(ibufbeg+j)
-            poleloc(iipole) = ibufbeg+j
-         end do
-         call MPI_WAIT(reqsendpoleglob(i),status,ierr)
-      end do
-!$acc end data
-      call timer_exit ( timer_eneig,quiet_timers )
-      end subroutine
       subroutine orderPole
       use atoms   ,only : n
       use atmlst  ,only : poleglob
@@ -906,7 +794,7 @@ c
       use potent  ,only : use_pmecore
       use timestat,only : timer_enter,timer_exit,timer_eneig
      &            , quiet_timers
-      use utilcomm,only : reqsendpoleglob,reqrecvpoleglob
+      use utilcomm,only : reqs_poleglob,reqr_poleglob
      &            , do_not_commpole
       use utilgpu ,only : rec_queue
       use mpi
@@ -929,11 +817,6 @@ c
       call timer_enter( timer_eneig )
       if (deb_Path) write(*,'(3X,A)') '>>  orderPole'
 
-      if (.not.allocated(reqsendpoleglob)) then
-         allocate (reqsendpoleglob(nproc))
-         allocate (reqrecvpoleglob(nproc))
-      end if
-
       ! TODO Optimize this routine for multi-time step
       !  --- Short Range
 
@@ -945,7 +828,7 @@ c
 !$acc host_data use_device(poleglob)
       do i = 1, nbig_send
          call MPI_ISEND(poleglob(1),npoleloc,MPI_INT,pbig_send(i)
-     &                 ,tag0,commloc,reqsendpoleglob(i),ierr)
+     &                 ,tag0,commloc,reqs_poleglob(i),ierr)
       end do
 
       if (n.eq.npole) then
@@ -989,7 +872,7 @@ c
          idomlen = domlenpole(ipr)
          ibufbeg = bufbegpole(ipr)
          call MPI_IRECV(poleglob(ibufbeg),idomlen,MPI_INT,pbig_recep(i)
-     &                 ,tag0,commloc,reqrecvpoleglob(i),ierr)
+     &                 ,tag0,commloc,reqr_poleglob(i),ierr)
       end do
 !$acc end host_data
 c
@@ -1001,14 +884,14 @@ c
          ipr     = pbig_recep(i) + 1
          idomlen = domlenpole(ipr)
          ibufbeg = bufbegpole(ipr) - 1
-         call MPI_WAIT(reqrecvpoleglob(i),status,ierr)
+         call MPI_WAIT(reqr_poleglob(i),status,ierr)
          ! Finish npoleloc construction
 !$acc parallel loop async(rec_queue)
          do j = 1, idomlen
             iipole = poleglob(ibufbeg+j)
             poleloc(iipole) = ibufbeg+j
          end do
-         call MPI_WAIT(reqsendpoleglob(i),status,ierr)
+         call MPI_WAIT(reqs_poleglob(i),status,ierr)
       end do
 !$acc end data
 

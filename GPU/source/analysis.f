@@ -16,9 +16,16 @@ c     in terms of type of interaction or atom number
 c
 c
 #include "tinker_precision.h"
+
+      module analysis_inl
+      contains
+#include "convert.f.inc"
+      end module
+
       subroutine analysis (energy)
       use action
       use analyz
+      use analysis_inl
       use domdec
       use energi
       use iounit
@@ -32,7 +39,7 @@ c
       implicit none
       integer ierr
       real(r_p) energy
-      logical tinker_isnan
+      logical tinker_isnan_m
 c
 c     allocate arrays
 c
@@ -86,14 +93,18 @@ c     zero out each of the potential energy components
 c
 !$acc data present(eb,eba,eub,eopb,et,ept,ett,ebt,ea
 !$acc&      ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
+!$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&      ,emrec,eprec,nev,nec,nem,nep,nem_,nep_,nev_)
 
 !$acc serial async
       ec    = 0.0_re_p
+      ec_r  = 0
       em    = 0.0_re_p
       emrec = 0.0_re_p
+      em_r  = 0
       ep    = 0.0_re_p
       eprec = 0.0_re_p
+      ep_r  = 0
       eb    = 0.0_re_p
       ev    = 0.0_re_p
       ea    = 0.0_re_p
@@ -109,6 +120,7 @@ c
       ebt   = 0.0_re_p
       ett   = 0.0_re_p
       eg    = 0.0_re_p
+      ev_r  = 0
       nec   = 0
       nev   = 0
       nem   = 0
@@ -201,9 +213,13 @@ c     Update data on host
 c
 !$acc wait
 !$acc update host(eb,eba,eub,eopb,et,ept,ett,ebt,ea
-!$acc&           ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex
-!$acc&           ,esum
-!$acc&           ,nec,nev,nep,nem)
+!$acc&     ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
+!$acc&     ,eb_r,ev_r,ev_r,em_r,ep_r
+!$acc&     ,nec,nev,nep,nem)
+
+      ! get reducted contribution
+      eb = eb + enr2en(eb_r)
+      ev = ev + enr2en(ev_r)
 c
 c     MPI : get total energy
 c
@@ -388,7 +404,7 @@ c
 c
 c     check for an illegal value for the total energy
 c
-      if (tinker_isnan(esum)) then
+      if (tinker_isnan_m(esum)) then
          write (iout,10)
    10    format (/,' ANALYSIS  --  Illegal Value for the Total',
      &              ' Potential Energy')

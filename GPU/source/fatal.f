@@ -28,6 +28,7 @@ c
       if (rank.eq.0) write (iout,10)
    10 format (/,' TINKER is Unable to Continue; Terminating',
      &          ' the Current Calculation',/)
+      call sleep(2)
       call MPI_ABORT(MPI_COMM_WORLD,errorcode,ierr)
       stop
       end

@@ -505,11 +505,14 @@ c
       use domdec ,only: rank,nlocnl,
      &                  xbegproc,ybegproc,zbegproc,
      &                  xendproc,yendproc,zendproc
+#ifdef _OPENACC
+      use utilcu ,only: cu_update_skipvdw12
+#endif
       use inform ,only: deb_Path
       use kscalfactor_inl
       use tinheader
       use tinMemory ,only: prmem_request
-      use vdw       ,only: nvdwlocnl,ivdw
+      use vdw       ,only: nvdwlocnl,ivdw,skipvdw12
       use vdwpot
 #ifdef _OPENACC
       use thrust
@@ -541,6 +544,17 @@ c
       zbeg = zbegproc(rank+1)
       zend = zendproc(rank+1)
 
+      skipvdw12 = .false.
+      if (v2scale.eq.0.0_ti_p) then
+         skipvdw12 = .true.
+      end if
+      if (vdwtyp.eq.'LENNARD-JONES'.and.v2scale.eq.0.0_ti_p) then
+         skipvdw12 = .false.
+      end if
+#ifdef _OPENACC
+      call cu_update_skipvdw12(skipvdw12)
+#endif
+
 !$acc serial async
       n_vscale  = 0
       vscalevec = (/0.0_ti_p,1.0_ti_p-v2scale,1.0_ti_p-v3scale,
@@ -568,6 +582,7 @@ c
             kglob = allscal_n(iscalbeg+j)
             iscal = typscal_n(iscalbeg+j)
             vscale= vscalevec(iscal)
+            if (skipvdw12.and.iscal.eq.2.and.vscale.eq.1.0_ti_p) cycle
             if (iscal.ne.4.and.vscale.eq.0) cycle
 
             xk   =  x(kglob)

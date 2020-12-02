@@ -110,7 +110,7 @@ MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
    MOD_precompute_polegpu.o MOD_USampling.o
 
 OBJSAM = active.o analysis.o analyze.o angles.o\
-   attach.o basefile.o beeman.o bicubic.o\
+   attach.o bar.o basefile.o beeman.o bicubic.o\
    baoab.o baoabrespa.o baoabrespa1.o bbk.o\
    bitors.o bonds.o bounds.o calendar.o\
    chkpole.o chkpolegpu.o chkring.o chkxyz.o cholesky.o cluster.o\
@@ -174,9 +174,9 @@ OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o new
 MODS   = $(MODSAM) $(MODSNZ)
 OBJS   = $(OBJSAM) $(OBJSNZ)
 
-all: libtinker analyze dynamic testgrad minimize
+all: libtinker analyze dynamic testgrad minimize bar
 
-everything: libtinker analyze dynamic testgrad
+everything: libtinker analyze dynamic testgrad bar
 
 
 #  Installation program target
@@ -211,49 +211,45 @@ infos:
 	@echo " Install Directory   " $(prefix)
 
 #
-analyze: $(MODS) $(OBJS)
-	./library_host.make
+analyze: libtinker
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o analyze.x analyze.o $(LIBS) $(LDLIBS)
 	mv analyze.x $(prefix)/$@$(prog_suffix)
 #
 analyze.OK: $(MODS) $(OBJS)
-	./library_host.make
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o analyze.x analyze.o $(LIBS) $(LDLIBS)
 	strip analyze.x
 	mv analyze.x $(prefix)/$@
 #
-dynamic: $(MODS) $(OBJS)
-	./library_host.make
+dynamic: libtinker
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o dynamic.x dynamic.o $(LIBS) $(LDLIBS)
 	mv dynamic.x $(prefix)/$@$(prog_suffix)
 #
-dynamic.OK: $(MODS) $(OBJS)
-	./library_host.make
+dynamic.OK: libtinker
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o dynamic.x dynamic.o $(LIBS) $(LDLIBS)
 	strip dynamic.x
 	mv dynamic.x $(prefix)/$@
 #
-testgrad: $(MODS) $(OBJS)
-	./library_host.make
+testgrad: libtinker
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o testgrad.x testgrad.o $(LIBS) $(LDLIBS)
 	mv testgrad.x $(prefix)/$@$(prog_suffix)
 #
-testgrad.OK: $(MODS) $(OBJS)
-	./library_host.make
+testgrad.OK: libtinker
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o testgrad.x testgrad.o $(LIBS) $(LDLIBS)
 	strip testgrad.x
 	mv testgrad.x $(prefix)/$@
 #
-minimize: $(MODS) $(OBJS)
-	./library_host.make
+minimize: libtinker
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o minimize.x minimize.o $(LIBS) $(LDLIBS)
 	mv minimize.x $(prefix)/$@$(prog_suffix)
 #
-minimize.OK: $(MODS) $(OBJS)
-	./library_host.make
+minimize.OK: libtinker
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o minimize.x minimize.o $(LIBS) $(LDLIBS)
 	strip minimize.x
 	mv minimize.x $(prefix)/$@
+#
+bar: libtinker
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o bar.x bar.o $(LIBS) $(LDLIBS)
+	mv bar.x $(prefix)/$@$(prog_suffix)
 #
 libtinker: $(MODS) $(OBJS)
 	./library_host.make

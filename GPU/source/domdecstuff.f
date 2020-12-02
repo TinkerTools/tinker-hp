@@ -26,6 +26,7 @@ c
 #ifdef _OPENACC
       use utilcu,only: copy_data_to_cuda_env
 #endif
+      use utilcomm
       use tinMemory
       implicit none
       integer iproc, ierr
@@ -71,6 +72,14 @@ c
       call prmem_request(pbigshort_recep,nproc,config=mhostonly)
       call prmem_request(pbig_send      ,nproc,config=mhostonly)
       call prmem_request(pbigshort_send ,nproc,config=mhostonly)
+      call prmem_request(reqs_dirdir    ,nproc,config=mhostonly)
+      call prmem_request(reqr_dirdir    ,nproc,config=mhostonly)
+      call prmem_request(reqs_recdir    ,nproc,config=mhostonly)
+      call prmem_request(reqr_recdir    ,nproc,config=mhostonly)
+      call prmem_request(reqs_recdirsolv,nproc,config=mhostonly)
+      call prmem_request(reqr_recdirsolv,nproc,config=mhostonly)
+      call prmem_request(reqs_poleglob  ,nproc,config=mhostonly)
+      call prmem_request(reqr_poleglob  ,nproc,config=mhostonly)
       ! TODO Remove declare directive
       if (allocated(zbegproc)) deallocate(zbegproc)
       if (allocated(zendproc)) deallocate(zendproc)
@@ -1488,7 +1497,7 @@ c     assign atom sites to MPI processes based on a domain decomposition
 c
 c
       subroutine ddpme3d
-      use atomsMirror
+      use atoms
       use boxes
       use cell
       use cutoff

@@ -485,7 +485,7 @@ c
 
 #ifdef TINKER_DEBUG
       read_index =0
-!$acc parallel loop vector_length(32) async
+!$acc parallel loop vector_length(32) async(dir_queue)
 !$acc&         present(nblist,nneig,nneig_cut) private(read_index)
       do i = 1,nloc
 !$acc loop vector
@@ -517,6 +517,7 @@ c
       use pme
       use mpi
       use tinMemory
+      use utilgpu ,only: rec_queue
       implicit none
       integer ierr,iipole
       integer i,iproc,tag,iglob
@@ -551,7 +552,7 @@ c     buf2 = 0
 !$acc&  bufbeg1,bufbeg2,buflen2)
 !$acc&     copyin(precdir_recep1,count)
 
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
       do i = 1,nproc
          buflen2(i) = 0
          bufbeg2(i) = 0
@@ -559,7 +560,7 @@ c     buf2 = 0
       buflen1 = 0
       bufbeg1 = 0
 
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
       do i = 1, npolerecloc
          iipole  = polerecglob(i)
          iglob   = ipole(iipole)
@@ -571,7 +572,7 @@ c     buf2 = 0
       end do
 
       count1 = 0
-!$acc serial loop async
+!$acc serial loop async(rec_queue)
       do iproc = 1, nrecdir_recep1
          ipre_rec1 = precdir_recep1(iproc)
          if (ipre_rec1.ne.rank) then
@@ -583,9 +584,9 @@ c     buf2 = 0
             count1 = count1 + buflen2(ipre_rec1+1)
          end if
       end do
-!$acc update host(bufbeg2,buflen2) async
+!$acc update host(bufbeg2,buflen2) async(rec_queue)
 c
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
       do i = 1, npolerecloc
          iipole  = polerecglob(i)
          iglob   = ipole(iipole)
@@ -641,7 +642,7 @@ c
           count1 = count1 + buflen1(precdir_send1(iproc)+1)
         end if
       end do
-!$acc update device(bufbeg1) async
+!$acc update device(bufbeg1) async(rec_queue)
 c
 c     send and receive list of corresponding indexes
 c
@@ -690,6 +691,10 @@ c     call prmem_request(thetai3,4,bsorder,nlocrec,async=.true.)
          allocate (thetai3(4,bsorder,nlocrec))
          s_prmem =  s_prmem + 12*bsorder*nlocrec*szoTp
         sd_prmem = sd_prmem + 12*bsorder*nlocrec*szoTp
+         call AssociateThetai_p
+#ifdef _OPENACC
+         call attach_pmecu_pointer(1)
+#endif
       else if (nlocrec>size(thetai1,dim=3)) then
          tag = size(thetai1,dim=3)
          s_prmem =  s_prmem - 12*bsorder*tag*szoTp
@@ -703,12 +708,40 @@ c     call prmem_request(thetai3,4,bsorder,nlocrec,async=.true.)
          s_prmem =  s_prmem + 12*bsorder*nlocrec*szoTp
         sd_prmem = sd_prmem + 12*bsorder*nlocrec*szoTp
          call AssociateThetai_p
+#ifdef _OPENACC
+         call attach_pmecu_pointer(1)
+#endif
       end if
 
       deallocate (req)
       deallocate (req2)
       deallocate (count)
       end
+c
+c     check Atom Inboxing algorithm
+c
+      subroutine check_atoms_inboxing(cell_len,ncell_tot,nlocnl)
+      use domdec ,only: rank
+      use sizes  ,only: tinkerdebug
+      use utilgpu,only: rec_queue
+      implicit none
+      integer ncell_tot,nlocnl
+      integer,intent(in)::cell_len(ncell_tot)
+      integer i, k
+
+      k = 0
+!$acc parallel loop default(present) async(rec_queue)
+      do i = 1,ncell_tot
+         k = k + cell_len(i)
+      end do
+!$acc wait
+      if (k.ne.nlocnl) then
+32       format( ' build_cell_listgpu : Atoms are missing from',
+     &   ' inboxing procedure  (rank ',I5,')',
+     &   /,' total count',I10,5x,'nlocnl',I10)
+         print 32, rank,k,nlocnl
+      end if
+      end subroutine
 c
 c
 c     subroutine build_cell_list : build the cells in order to build the non bonded neighbor
@@ -727,7 +760,8 @@ c
       use tinheader
       use tinMemory ,only:prmem_request
       use utilgpu,only: nSMP, cores_SMP,
-     &                  openacc_abort
+     &                  openacc_abort,rec_queue
+      use sizes  ,only: tinkerdebug
       implicit none
       integer i,proc,icell,j,k,p,q,r,istep,iglob,ii,kk
       integer count,iloc
@@ -847,7 +881,7 @@ c     Assign atoms to cells
 c
       if (.not.allocated(repartcell)) then
          allocate(repartcell(n))
-!$acc enter data create(repartcell) async
+!$acc enter data create(repartcell) async(rec_queue)
       end if
       call prmem_request(bufbegcell,ncell_tot,async=.true.)
       call prmem_request(cell_len,ncell_tot,async=.true.)
@@ -855,18 +889,18 @@ c
       allocate (indcelltemp(n))
 !$acc data create(indcelltemp)
 !$acc&     present(cell_len,indcell,bufbegcell,repartcell,
-!$acc&  use_bounds) async
+!$acc&  use_bounds) async(rec_queue)
 
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
       do i = 1,ncell_tot
          cell_len(i) = 0
       end do
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
       do i = 1,n
          indcelltemp(i) = 0
       end do
 
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
       do i = 1,nlocnl
          iglob = ineignl(i)
          xr    = x(iglob)
@@ -895,14 +929,16 @@ c
      &         real(0.05*lenz_cell,4),eps_cell
 #endif
       end do
-!$acc update host(cell_len) async
+!$acc update host(cell_len) async(rec_queue)
 
+      if (tinkerdebug.gt.0)
+     &   call check_atoms_inboxing(cell_len,ncell_tot,nlocnl)
 c
 c     Find neighbor cells for octahedron
 c
       if (octahedron) then
       ! loop on every cell
-!$acc parallel loop async private(locat)
+!$acc parallel loop async(rec_queue) private(locat)
 !$acc&         vector_length(32)
 !$acc&         present(neigcell,numneigcell)
       do ii = 1,ncell_tot
@@ -1050,7 +1086,7 @@ c     print*, '---------------------------------'
 c
 c     Find neighbor cells for cubic box
 c
-!$acc parallel loop async private(locat)
+!$acc parallel loop async(rec_queue) private(locat)
 !$acc&         vector_length(32)
 !$acc&         present(neigcell,numneigcell)
       do ii = 1, ncell_tot
@@ -1108,7 +1144,7 @@ c     Scan cell_len and build index for repartcell
 c
       if (.not.allocated(indcell)) then
          allocate(indcell(n))
-!$acc enter data create(indcell) async
+!$acc enter data create(indcell) async(rec_queue)
       end if
 c
 !$acc wait
@@ -1122,9 +1158,9 @@ c
         end if
         count = count + cell_len(icell)
       end do
-!$acc update device(bufbegcell) async
+!$acc update device(bufbegcell) async(rec_queue)
 c
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
       do i = 1, nlocnl
         iglob = ineignl(i)
         icell = repartcell(iglob)
@@ -1318,6 +1354,9 @@ c
             end do
          end if
 !$acc wait
+         if(tinkerdebug.gt.0)
+     &      call check_atoms_inboxing(cell_len,ncell_tot,nlocnl)
+
          if (nproc.ne.1) then
             call MPI_AllReduce(MPI_IN_PLACE,max_cell_len,1,MPI_INT,
      &           MPI_MAX,commloc,ierr)
@@ -1351,7 +1390,7 @@ c
       end do
 #endif
 
-!$acc parallel loop present(cell_len1,cell_len) async
+!$acc parallel loop present(cell_len1,cell_len) async(rec_queue)
       do i = 1,ncell_tot
          !cell_len1(i) = int(cell_len(i),1)  !unsupported by pgi
          cell_len1(i) = cell_len(i)
@@ -1384,7 +1423,7 @@ c
          call prmem_request(celle_y   ,npolelocnlb,async=.true.)
          call prmem_request(celle_z   ,npolelocnlb,async=.true.)
 
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
 !$acc&         present(celle_glob,celle_pole,celle_key,
 !$acc&   poleglobnl,celle_x,celle_y,celle_z,celle_plocnl,polelocnl)
          do i = 1, npolelocnlb
@@ -1409,7 +1448,7 @@ c
 
       else
 
-!$acc parallel loop async
+!$acc parallel loop async(def_queue)
 !$acc&         present(celle_glob,celle_pole,celle_key,
 !$acc&   celle_loc,celle_ploc,celle_x,celle_y,celle_z,x,y,z,
 !$acc&   loc,poleloc)
@@ -1455,7 +1494,7 @@ c
          call prmem_request(celle_y   ,nionlocnlb,async=.true.)
          call prmem_request(celle_z   ,nionlocnlb,async=.true.)
 
-!$acc parallel loop async
+!$acc parallel loop async(rec_queue)
 !$acc&         present(celle_glob,celle_chg,celle_key,
 !$acc&   chgglobnl,celle_x,celle_y,celle_z,celle_plocnl,chglocnl)
          do i = 1, nionlocnlb
@@ -1518,7 +1557,7 @@ c              celle_ploc(i)= nionbloc
       call prmem_request(cellv_loc ,nvdwlocnlb,async=.true.)
       call prmem_request(cellv_jvdw,nvdwlocnlb,async=.true.)
 
-!$acc parallel loop async
+!$acc parallel loop async(def_queue)
 !$acc&         present(cellv_glob,cellv_loc,cellv_jvdw,
 !$acc&   cellv_key,loc,jvdw_c,vdwglobnl)
       do i = 1, nvdwlocnlb
@@ -2006,13 +2045,13 @@ c
       use neigh  ,only: cell_len,cell_lenr,cell_scan1,matb_lst
      &           ,offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb
      &           ,bit_si,bit_sh,cell_len2,cell_len2r
-      use utilgpu,only: BLOCK_SIZE
+      use utilgpu,only: BLOCK_SIZE,rec_queue
       implicit none
       integer,intent(in)   :: nblock,nlocnlb_pair
       integer,intent(inout):: lst(2*nlocnlb_pair)
       integer k,i,iblock,it1,it2,pos2,bit2
 
-!$acc parallel loop async private(k)
+!$acc parallel loop async(rec_queue) private(k)
 !$acc&         present(cell_scan1,matb_lst,lst)
       do it1 = 0,nbMatb-1
          iblock = cell_scan1(offl+it1+1)
@@ -2042,14 +2081,14 @@ c
       use neigh  ,only: cell_len,cell_lenr,cell_scan,cell_scan1
      &           ,offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb
      &           ,bit_si,bit_sh,cell_len2,cell_len2r,matb_lst
-      use utilgpu,only: BLOCK_SIZE
+      use utilgpu,only: BLOCK_SIZE,rec_queue
       implicit none
       integer,intent(in)::nblock
       integer i
 
       if (use_shortvlist.or.use_shortmlist.or.use_shortclist) then
-!$acc parallel loop async present(cell_len,cell_lenr,cell_len2,
-!$acc&         cell_len2r,cell_scan,cell_scan1)
+!$acc parallel loop async(rec_queue) present(cell_len,cell_lenr,
+!$acc&         cell_len2,cell_len2r,cell_scan,cell_scan1)
          do i = 1,nblock
             cell_len  (i) = BLOCK_SIZE
             cell_lenr (i) = 0
@@ -2058,8 +2097,8 @@ c
             cell_scan (i) = cell_scan1(i)
          end do
       else
-!$acc parallel loop async present(cell_len,cell_lenr,cell_scan,
-!$acc&         cell_scan1)
+!$acc parallel loop async(rec_queue) present(cell_len,cell_lenr,
+!$acc&         cell_scan,cell_scan1)
          do i = 1,nblock
             cell_len (i) = BLOCK_SIZE
             cell_lenr(i) = 0

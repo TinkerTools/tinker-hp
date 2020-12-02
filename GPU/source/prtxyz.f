@@ -17,11 +17,12 @@ c
 #include "tinker_precision.h"
       subroutine prtxyz (ixyz)
       use atmtyp
-      use atoms ,only: type
+      use atoms    ,only: type
       use atomsMirror
       use couple
       use files
       use inform
+      use timestat ,only:timer_io,timer_enter,timer_exit,quiet_timers
       use tinheader
       use titles
       implicit none
@@ -35,6 +36,7 @@ c
       character*25 fstr
       character*120 xyzfile
 c
+      call timer_enter(timer_io)
 c
 c     open the output unit if not already done
 c
@@ -96,5 +98,5 @@ c
 c     close the output unit if opened by this routine
 c
       if (.not. opened)  close (unit=ixyz)
-      return
+      call timer_exit(timer_io)
       end

@@ -10,6 +10,7 @@ c     ##                                                                        
 c     #################################################################################
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module interfaces
       use iso_c_binding ,only: c_int,c_float,c_double
 #ifdef _OPENACC
@@ -88,13 +89,10 @@ c
          enumerator PrTestgrad
       end enum
 
-#if (defined(SINGLE) | defined(MIXED))
-                                !fedcba9876543210!
-      integer(8) :: sub_config=Z'0011242402220000'
-#else
-                                !fedcba9876543210!
-      integer(8) :: sub_config=Z'0000131101110000'
-#endif
+      integer(8):: sub_config=-1
+                                           !fedcba9876543210!
+      integer(8),parameter:: itrf_legacy =Z'0000131101110000'
+      integer(8),parameter:: itrf_adapted=Z'0011242402220000'
       ! parameter for long range interactions comput
       integer,parameter :: short_mode=0
       ! parameter for short range interactions comput
@@ -300,7 +298,7 @@ c
            real(t_p) ,intent(out):: efi(:,:,:)
         end subroutine
       end interface
-      procedure(tmatxb_pmegpu)   ,pointer:: tmatxb_p
+      procedure(tmatxb_pmegpu)   ,pointer:: tmatxb_p,tmatxb_p1,tmatxb_cp
       procedure(tmatxb_pme_core1),pointer:: tmatxb_pme_core_p
       procedure(otf_dc_tmatxb_pme_core2),pointer:: 
      &          otf_dc_tmatxb_pme_core_p
@@ -419,12 +417,6 @@ c
 !
 !  #############################################################################
       interface
-        subroutine commpoleglob(polebuff)
-          integer,intent(inout)::polebuff(:)
-        end subroutine
-      end interface
-
-      interface
         subroutine
      &  emreal_correct_interactions(tem,vxx,vxy,vxz,vyy,vyz,vzz)
            real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
@@ -462,6 +454,12 @@ c
         end subroutine
         subroutine emrealshortlong3d_cu
         end subroutine
+        subroutine emrealshort1cgpu
+        end subroutine
+        subroutine emreallong1cgpu
+        end subroutine
+        subroutine emreal1cgpu
+        end subroutine
       end interface
       procedure(emreal1c_core1):: emreal1c_core2,emreal1c_core3
      &                           ,emreal1c_core4,emreal1c_core5
@@ -471,6 +469,8 @@ c
      &                           ,emrealshortlong1c_core_p
       procedure(emreal3dgpu),pointer:: emreal3d_p
      &                      ,emrealshortlong3d_p
+      procedure(emreal1cgpu),pointer:: emreal1c_p,emreallong1c_p
+     &                      ,emreal1c_cp,emreallong1c_cp
 
 
 
@@ -496,6 +496,15 @@ c
            real(t_p),intent(inout):: ef(:,:,:)
         end subroutine
       end interface
+
+      procedure(efld0_directgpu2):: efld0_directgpu,efld0_directgpu3
+      procedure(otf_dc_efld0_directgpu2)::oft_dc_efld0_directgpu3
+
+      procedure(efld0_directgpu2),pointer:: efld0_directgpu_p
+     &                           ,efld0_directgpu_p1,efld0_direct_cp
+      procedure(otf_dc_efld0_directgpu2),pointer:: 
+     &          otf_dc_efld0_directgpu_p
+
 
       interface
         subroutine inducepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
@@ -573,10 +582,13 @@ c
         end subroutine
         subroutine epreal3d_cu
         end subroutine
+        subroutine epreal1cgpu
+        end subroutine
       end interface
       procedure(epreal1c_core1)::epreal1c_core2,epreal1c_core3
       procedure(epreal1c_core1),pointer:: epreal1c_core_p
       procedure(epreal3dgpu)   ,pointer:: epreal3d_p
+      procedure(epreal1cgpu)   ,pointer:: epreal1c_p,epreal1c_cp
 
 
 !  #############################################################################
@@ -694,7 +706,7 @@ c
         integer,device::ipole(*),pglob(*),loc(*),ieblst(*),eblst(*)
         real(t_p),device:: x(*),y(*),z(*),rpole(13,*)
         real(t_p),device:: tem(3,*),vir_buffer(*)
-        real(r_p),device:: dem(3,*),em_buffer(*)
+        mdyn_rtyp,device:: dem(3,*),em_buffer(*)
         end subroutine
       end interface 
 
@@ -787,6 +799,20 @@ c
             real(t_p),intent(out  ),dimension(:,:)::frx,fry,frz
             logical*1,intent(in   )               ::extract
          end subroutine
+#ifdef USE_DETERMINISTIC_REDUCTION
+         subroutine torquefgpu(trqvec,frx,fry,frz,de,extract)
+            real(t_p),intent(in   ),dimension(:,:)::trqvec
+            mdyn_rtyp,intent(inout),dimension(:,:)::de
+            real(t_p),intent(out  ),dimension(:,:)::frx,fry,frz
+            logical*1,intent(in   )               ::extract
+         end subroutine
+         subroutine torquerfgpu(n,pole,poleloc,trqvec,de,queue)
+            integer  ,intent(in   )::n,queue
+            integer  ,intent(in   )::pole(:),poleloc(:)
+            real(t_p),intent(in   )::trqvec(:,:)
+            mdyn_rtyp,intent(inout)::de(:,:)
+         end subroutine
+#endif
          subroutine torquergpu(n,pole,poleloc,trqvec,de,queue)
             integer  ,intent(in   )::n,queue
             integer  ,intent(in   )::pole(:),poleloc(:)
@@ -799,13 +825,6 @@ c
       procedure(tinker_void_sub) :: vlist_block,mlist_block
      &           ,vlistcell,mlistcell,clistcell
 
-
-      procedure(efld0_directgpu2):: efld0_directgpu,efld0_directgpu3
-      procedure(otf_dc_efld0_directgpu2)::oft_dc_efld0_directgpu3
-
-      procedure(efld0_directgpu2),pointer:: efld0_directgpu_p
-      procedure(otf_dc_efld0_directgpu2),pointer:: 
-     &          otf_dc_efld0_directgpu_p
 
 !  #############################################################################
 !  SECTION
@@ -849,7 +868,69 @@ c
       contains
 
       subroutine tinker_void_sub
+         implicit none
       ! Do nothing
+      end subroutine
+
+      subroutine tmatxb_void(nrhs,dodiag,mu,ef)
+         implicit none
+         integer  ,intent(in) :: nrhs
+         logical  ,intent(in) :: dodiag
+         real(t_p),intent(in) :: mu(:,:,:)
+         real(t_p),intent(out):: ef(:,:,:)
+      ! Do nothing
+      end subroutine
+
+      subroutine efld0_direct_void(nrhs,ef)
+         integer  ,intent(in)   :: nrhs
+         real(t_p),intent(inout):: ef(:,:,:)
+      end subroutine
+
+      subroutine init_routine_pointers
+
+      if (associated(ehal1c_p))      nullify(ehal1c_p)
+      if (associated(ehal3c_p))      nullify(ehal3c_p)
+      if (associated(ehalshort1c_p)) nullify(ehalshort1c_p)
+      if (associated(ehallong1c_p))  nullify(ehallong1c_p)
+      if (associated(ehalshortlong3c_p)) nullify(ehalshortlong3c_p)
+      if (associated(elj1c_p))       nullify(elj1c_p)
+      if (associated(eljsl1c_p))     nullify(eljsl1c_p)
+      if (associated(elj3c_p))       nullify(elj3c_p)
+      if (associated(tmatxb_p))      nullify(tmatxb_p)
+      if (associated(tmatxb_p1))     nullify(tmatxb_p1)
+      if (associated(tmatxb_pme_core_p)) nullify(tmatxb_pme_core_p)
+      if (associated(otf_dc_tmatxb_pme_core_p)) 
+     &       nullify(otf_dc_tmatxb_pme_core_p)
+      if (associated(otf_dc_efld0_directgpu_p))
+     &       nullify(otf_dc_efld0_directgpu_p)
+      if (associated(emreal1c_core_p))   nullify(emreal1c_core_p)
+      if (associated(efld0_directgpu_p)) nullify(efld0_directgpu_p)
+      if (associated(efld0_directgpu_p1)) nullify(efld0_directgpu_p1)
+      if (associated(fphi_uind_site1_p)) nullify(fphi_uind_site1_p)
+      if (associated(fphi_uind_site2_p)) nullify(fphi_uind_site2_p)
+      if (associated(fphi_mpole_site_p)) nullify(fphi_mpole_site_p)
+      if (associated(grid_uind_site_p))  nullify(grid_uind_site_p)
+      if (associated(grid_pchg_site_p))  nullify(grid_pchg_site_p)
+      if (associated(grid_mpole_site_p)) nullify(grid_mpole_site_p)
+      if (associated(ecreal1d_p))        nullify(ecreal1d_p)
+      if (associated(ecrealshortlong1d_p)) nullify(ecrealshortlong1d_p)
+      if (associated(ecreal3d_p))          nullify(ecreal3d_p)
+      if (associated(emrealshortlong1c_core_p))
+     &       nullify(emrealshortlong1c_core_p)
+      if (associated(emreal3d_p))     nullify(emreal3d_p)
+      if (associated(emreal1c_p))     nullify(emreal1c_p)
+      if (associated(emreallong1c_p))      nullify(emreallong1c_p)
+      if (associated(emrealshortlong3d_p)) nullify(emrealshortlong3d_p)
+      if (associated(epreal1c_p))      nullify(epreal1c_p)
+      if (associated(epreal1c_core_p)) nullify(epreal1c_core_p)
+      if (associated(epreal3d_p))      nullify(epreal3d_p)
+
+      emreal1c_cp     => tinker_void_sub
+      emreallong1c_cp => tinker_void_sub
+      epreal1c_cp     => tinker_void_sub
+      efld0_direct_cp => efld0_direct_void
+      tmatxb_cp       => tmatxb_void
+
       end subroutine
 
       end module

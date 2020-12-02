@@ -1,9 +1,14 @@
+#ifndef PAIR_EHAL_INC
+#define PAIR_EHAL_INC
 #include "tinker_cudart.h"
+#include "tinker_types.h"
+#include "convert.f.inc"
+#include "switch_respa.f.inc"
 
         M_subroutine
      &             ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,vscale
      &                         ,cut2,cut,off,ghal,dhal
-     &                         ,scexp,vlambda,scalpha,muti,mutk
+     &                         ,scexp,vlambda,scalpha,mutik
      &                         ,e,dedx,dedy,dedz)
 !$acc routine
 #if  defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
@@ -15,28 +20,30 @@
            real(ti_p) rv2,eps2,vscale
            real(ti_p),intent(in) ::cut2,cut,off,ghal,dhal
            real(ti_p),intent(in) ::scexp,vlambda,scalpha
-           logical   ,intent(in) ::muti,mutk
+           integer(1),intent(in) ::mutik
            real(ti_p),intent(out)::e
            real(ti_p),intent(out)::dedx,dedy,dedz
 
+           integer(1) one1
            real(ti_p) rik,rinv,r,r2,r3
            !real(ti_p) rik3,rik4,rik5,rik6,rik7,rv7,rv7orho
            real(ti_p) dtau,gtau,tau,tau7,de,taper,dtaper
            real(ti_p) rho,rho6,rho7
            real(ti_p) scal,s1,s2,t1,t2,dt1drho,dt2drho
+           parameter(one1=1)
 c
 c          compute the energy contribution for this interaction
 c
 #ifndef TINKER_NO_MUTATE
-           if (muti .neqv. mutk) then
+           if (mutik .eq. one1) then
               rik  = f_sqrt(rik2)
               rho  = rik / rv2
               rho6 = rho**6
               rho7 = rho6 * rho
               eps2 = eps2 * vlambda**scexp *vscale
               scal = scalpha * (1.0_ti_p-vlambda)**2
-              s1   = 1.0_ti_p / (scal+(rho+dhal)**7)
-              s2   = 1.0_ti_p / (scal+rho7+ghal)
+              s1   = (scal+(rho+dhal)**7)**(-1)
+              s2   = (scal+rho7+ghal)**(-1)
               t1   = (1.0_ti_p+dhal)**7 * s1
               t2   = (1.0_ti_p+ghal) * s2
               dt1drho = -7.0_ti_p*(rho+dhal)**6 * t1 * s1
@@ -50,8 +57,8 @@ c
               rho6 = rho**6
               rho7 = rho6 * rho
               eps2 = eps2 * vscale
-              s1   = 1.0_ti_p / (rho+dhal)**7
-              s2   = 1.0_ti_p / (rho7+ghal)
+              s1   = ((rho+dhal)**7)**(-1)
+              s2   = (rho7+ghal)**(-1)
               t1   = (1.0_ti_p+dhal)**7 * s1
               t2   = (1.0_ti_p+ghal) * s2
               dt1drho = -7.0_ti_p*(rho+dhal)**6 * t1 * s1
@@ -90,7 +97,7 @@ c    &                + 3.0 * c3 * rik2
 c    &                + 2.0 * c2 * rik
 c    &                +       c1
 
-              rinv   = 1.0_ti_p/(cut - off)
+              rinv   = (cut - off)**(-1)
               r      = (rik - off) * rinv
               r2     = r * r
               r3     = r2 * r
@@ -112,7 +119,7 @@ c    &                +       c1
         M_subroutine
      &          ehal1_couple_short(xpos,ypos,zpos,rik2,rv2,eps2,vscale
      &                         ,cut2,shortcut
-     &                         ,scexp,vlambda,scalpha,muti,mutk
+     &                         ,scexp,vlambda,scalpha,mutik
      &                         ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
 !$acc routine
 #if  defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
@@ -125,27 +132,29 @@ c    &                +       c1
            real(ti_p),intent(in) ::cut2,ghal,dhal
      &                            ,shortcut,shortheal
            real(ti_p),intent(in) ::scexp,vlambda,scalpha
-           logical   ,intent(in) ::muti,mutk
+           integer(1),intent(in) ::mutik
            real(ti_p),intent(out)::e
            real(ti_p),intent(out)::dedx,dedy,dedz
 
+           integer(1) one1
            real(ti_p) rik,rik3,rik4,rik5,rik6,rik7,rv7,rv7orho
            real(ti_p) dtau,gtau,tau,tau7,de,s,ds
            real(ti_p) rho,rho6,rho7
            real(ti_p) scal,s1,s2,t1,t2,dt1drho,dt2drho
+           parameter(one1=1)
 c
 c          compute the energy contribution for this interaction
 c
 #ifndef TINKER_NO_MUTATE
-           if (muti .neqv. mutk) then
+           if (mutik.eq. one1) then
               rik  = f_sqrt(rik2)
               rho  = rik / rv2
               rho6 = rho**6
               rho7 = rho6 * rho
               eps2 = eps2 * vlambda**scexp *vscale
               scal = scalpha * (1.0_ti_p-vlambda)**2
-              s1   = 1.0_ti_p / (scal+(rho+dhal)**7)
-              s2   = 1.0_ti_p / (scal+rho7+ghal)
+              s1   = (scal+(rho+dhal)**7)**(-1)
+              s2   = (scal+rho7+ghal)**(-1)
               t1   = (1.0_ti_p+dhal)**7 * s1
               t2   = (1.0_ti_p+ghal) * s2
               dt1drho = -7.0_ti_p*(rho+dhal)**6 * t1 * s1
@@ -159,8 +168,8 @@ c
               rho6 = rho**6
               rho7 = rho6 * rho
               eps2 = eps2 * vscale
-              s1   = 1.0_ti_p / (rho+dhal)**7
-              s2   = 1.0_ti_p / (rho7+ghal)
+              s1   = ((rho+dhal)**7)**(-1)
+              s2   = (rho7+ghal)**(-1)
               t1   = (1.0_ti_p+dhal)**7 * s1
               t2   = (1.0_ti_p+ghal) * s2
               dt1drho = -7.0_ti_p*(rho+dhal)**6 * t1 * s1
@@ -186,7 +195,7 @@ c
         M_subroutine
      &          ehal1_couple_long(xpos,ypos,zpos,rik2,rv2,eps2,vscale
      &                         ,cut2,cut,off,shortcut
-     &                         ,scexp,vlambda,scalpha,muti,mutk
+     &                         ,scexp,vlambda,scalpha,mutik
      &                         ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
 !$acc routine
 #if  defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
@@ -199,29 +208,31 @@ c
            real(ti_p),intent(in) ::cut2,cut,off,ghal,dhal
      &                            ,shortcut,shortheal
            real(ti_p),intent(in) ::scexp,vlambda,scalpha
-           logical   ,intent(in) ::muti,mutk
+           integer(1),intent(in) ::mutik
            real(ti_p),intent(out)::e
            real(ti_p),intent(out)::dedx,dedy,dedz
 
+           integer(1) one1
 c          real(ti_p) rik,rik3,rik4,rik5,rik6,rik7,rv7,rv7orho
 c          real(ti_p) dtau,gtau,tau,tau7
            real(ti_p) de,taper,dtaper,s,ds
            real(ti_p) rik,rinv,r,r2,r3
            real(ti_p) rho,rho6,rho7
            real(ti_p) scal,s1,s2,t1,t2,dt1drho,dt2drho
+           parameter(one1=1)
 c
 c          compute the energy contribution for this interaction
 c
 #ifndef TINKER_NO_MUTATE
-           if (muti .neqv. mutk) then
+           if (mutik .eq. one1) then
               rik  = f_sqrt(rik2)
               rho  = rik / rv2
               rho6 = rho**6
               rho7 = rho6 * rho
               eps2 = eps2 * vlambda**scexp *vscale
               scal = scalpha * (1.0_ti_p-vlambda)**2
-              s1   = 1.0_ti_p / (scal+(rho+dhal)**7)
-              s2   = 1.0_ti_p / (scal+rho7+ghal)
+              s1   = (scal+(rho+dhal)**7)**(-1)
+              s2   = (scal+rho7+ghal)**(-1)
               t1   = (1.0_ti_p+dhal)**7 * s1
               t2   = (1.0_ti_p+ghal) * s2
               dt1drho = -7.0_ti_p*(rho+dhal)**6 * t1 * s1
@@ -235,8 +246,8 @@ c
               rho6 = rho**6
               rho7 = rho6 * rho
               eps2 = eps2 * vscale
-              s1   = 1.0_ti_p / (rho+dhal)**7
-              s2   = 1.0_ti_p / (rho7+ghal)
+              s1   = ((rho+dhal)**7)**(-1)
+              s2   = (rho7+ghal)**(-1)
               t1   = (1.0_ti_p+dhal)**7 * s1
               t2   = (1.0_ti_p+ghal) * s2
               dt1drho = -7.0_ti_p*(rho+dhal)**6 * t1 * s1
@@ -254,7 +265,7 @@ c
 c          use energy switching if near the cutoff distance
 c
            if(rik2 > cut2) then ! mask energy switch
-              rinv   = 1.0_ti_p/(cut - off)
+              rinv   = (cut - off)**(-1)
               r      = (rik - off) * rinv
               r2     = r * r
               r3     = r2 * r
@@ -271,3 +282,4 @@ c
            dedy  =  de * ypos
            dedz  =  de * zpos
         end
+#endif

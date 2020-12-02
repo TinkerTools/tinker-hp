@@ -37,6 +37,8 @@ c
          real(r_p),allocatable::derivs(:,:)
          real(r_p) ealt2
          real(r_p) viralt2(3,3)
+         contains
+#include "convert.f.inc"
       end module
 
       subroutine respa1(istep,dt)
@@ -144,15 +146,9 @@ c     MPI : get total energy
 c
       call reduceen(epot)
 c
-c     Debug print information
-c
-      if(deb_Energy) call info_energy(rank)
-      if(deb_Force)  call info_forces(cNBond)
-      if(deb_Atom)   call info_minmax_pva
-c
 c     make half-step temperature and pressure corrections
 c
-      call temper2 (temp)
+c     call temper2 (temp)
 c     call pressure2 (epot,temp)
 c
 c     use Newton's second law to get the slow accelerations;
@@ -169,6 +165,12 @@ c
             end if
          end do
       end do
+c
+c     Debug print information
+c
+      if(deb_Energy) call info_energy(rank)
+      if(deb_Force)  call info_forces(cNBond)
+      if(deb_Atom)   call info_minmax_pva
 c
 c     perform deallocation of some local arrays
 c
@@ -288,6 +290,7 @@ c
       use energi
       use polpot
       use potent
+      use respa1_mod
       implicit none
       real(r_p) energy
       real(r_p) derivs(3,nbloc)
@@ -415,7 +418,7 @@ c
 !$acc parallel loop collapse(2) present(desave,dep) async
       do i = 1,nbloc
          do j = 1,3
-            desave(j,i) = dep(j,i)
+            desave(j,i) = mdr2md(dep(j,i))
          end do
       end do
 
@@ -639,6 +642,7 @@ c
          if(deb_Energy) call info_energy(rank)
          if(deb_Force ) call info_forces(cSNBond)
          if(deb_Atom  ) call info_minmax_pva
+         if (abort)      call fatal
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion

@@ -36,10 +36,20 @@ c
       save
       end
  
+      ! Temporary Data allocated by polarisation
       module polar_temp
       implicit none
       integer now
       real(t_p), allocatable,target :: fuind(:,:),fuinp(:,:)
       real(t_p), allocatable,target :: fphid(:,:),fphip(:,:)
       real(t_p), allocatable,target :: p_save(:)
+      real(t_p), allocatable,target :: ef(:,:,:), mu(:,:,:)
+     &         , murec(:,:,:)
+      real(t_p), allocatable :: cphi(:,:)
+      real(t_p), allocatable :: res(:,:,:), h(:,:,:)
+     &         , pp(:,:,:), zr(:,:,:), diag(:)
+      real(t_p), allocatable,target :: dipfield(:,:,:)
+     &         , dipfieldbis(:,:,:)
+      real(t_p), allocatable,target :: cmp(:,:),fmp(:,:),fphidp(:,:)
+     &         , trqrec(:,:)
       end module

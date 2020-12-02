@@ -28,8 +28,8 @@ c
       implicit none
       integer i,next
       real(t_p) big,value
+      real(t_p) readBuf
       logical truncate
-      real(t_p) save_lbuffer,def_lbuffer,def1_lbuffer
       character*20 keyword
       character*120 record
       character*120 string
@@ -37,8 +37,8 @@ c
 c
 c     set defaults for spherical energy cutoff distances
 c
-      integrate = 'BEEMAN'
-      big = 1.0d12
+      integrate = 'VERLET'
+      big       = 1.0d12
       if (use_bounds) then
          vdwcut   = 9.0_ti_p
          chgcut   = 9.0_ti_p
@@ -49,29 +49,20 @@ c
          mpolecut = big
       end if
       ewaldcut      = 7.0_ti_p
-      ewaldshortcut = 5.0d0
-      mpoleshortcut = 5.0d0
-      chgshortcut   = 5.0d0
-      vdwshortcut   = 7.0d0
+      ewaldshortcut = 5.0_ti_p
+      mpoleshortcut = 5.0_ti_p
+      chgshortcut   = 5.0_ti_p
+      vdwshortcut   = 7.0_ti_p
       ddcut         = 0.0_ti_p
+      readBuf       = a_init
 c
-      shortheal = 0.5d0
+      shortheal = 0.5_ti_p
 c
 c     set defaults for tapering, neighbor buffers
 c
       vdwtaper   = 0.90_ti_p
       chgtaper   = 0.65_ti_p
       mpoletaper = 0.65_ti_p
-
-      save_lbuffer = 0
-#if (defined(SINGLE) || defined(MIXED))
-      def_lbuffer = 0.7_ti_p
-      def1_lbuffer = 1.0_ti_p
-#else
-      def_lbuffer = 2.0_ti_p
-      def1_lbuffer = 2.0_ti_p
-#endif
-          lbuffer = def_lbuffer
 c
 c     set defaults for Ewald sum, tapering style and neighbor method
 c
@@ -153,7 +144,7 @@ c
 c     get buffer width for use with pairwise neighbor lists
 c
          else if (keyword(1:12) .eq. 'LIST-BUFFER ') then
-            read (string,*,err=10,end=10)  lbuffer
+            read (string,*,err=10,end=10) readBuf
 c
 c     fetch integrator
 c
@@ -182,53 +173,63 @@ c
      $     F14.5)
   100    continue
       end do
-c
-c     Default buffer with multi-time step integrator
-c
+
+      !Default buffer
       if (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1') then
-         if (def_lbuffer.eq.lbuffer)  lbuffer = def1_lbuffer
+         lbuffer = defaultlbuffer1
+      else
+         lbuffer = defaultlbuffer
       end if
 
-c
-c     return an error if PME is not used
-c
+      ! Change buffer if keyword
+      if (readBuf .ne. a_init) lbuffer = readBuf
+
+      ! Return an error if PME is not used
       if (.not.(use_ewald)) then
         if (rank.eq.0) 
-     $   write(*,*) 'This program is only compatible with PME'
+     $   write (*,*) 'This program is only compatible with PME'
         call fatal
       end if
-c
-c     apply any Ewald cutoff to charge and multipole terms
-c
+
+      !apply any Ewald cutoff to charge and multipole terms
       if (use_ewald) then
-         mpolecut = ewaldcut
+         mpolecut      = ewaldcut
          mpoleshortcut = ewaldshortcut
-         chgcut = ewaldcut
-         chgshortcut = ewaldshortcut
+         chgcut        = ewaldcut
+         chgshortcut   = ewaldshortcut
       end if
 c
 c     convert any tapering percentages to absolute distances
 c
-      if (vdwtaper .lt. 1.0_ti_p)  vdwtaper = vdwtaper * vdwcut
-      if (mpoletaper .lt. 1.0_ti_p)  mpoletaper = mpoletaper * mpolecut
-      if (chgtaper .lt. 1.0_ti_p)  chgtaper = chgtaper * chgcut
+      if (vdwtaper   .lt. 1.0_ti_p) vdwtaper   = vdwtaper   * vdwcut
+      if (mpoletaper .lt. 1.0_ti_p) mpoletaper = mpoletaper * mpolecut
+      if (chgtaper   .lt. 1.0_ti_p) chgtaper   = chgtaper   * chgcut
 c
 c     apply truncation cutoffs if they were requested
 c
       if (truncate) then
-         vdwtaper = big
-         chgtaper = big
+         vdwtaper   = big
+         chgtaper   = big
          mpoletaper = big
       end if
+      call update_lbuffer(lbuffer)
+      end
+
+      subroutine update_lbuffer(list_buff)
+      use cutoff
+      use neigh
+      use tinheader
+      implicit none
+      real(t_p),intent(in):: list_buff
 c
 c     set buffer region limits for pairwise neighbor lists
 c
-      lbuf2 = (0.5_ti_p*lbuffer)**2
-      vbuf2 = (vdwcut+lbuffer)**2
-      cbuf2 = (chgcut+lbuffer)**2
-      mbuf2 = (mpolecut+lbuffer)**2
+      lbuffer = list_buff
+      lbuf2   = (0.5_ti_p*lbuffer)**2
+      vbuf2   = (vdwcut+lbuffer)**2
+      cbuf2   = (chgcut+lbuffer)**2
+      mbuf2   = (mpolecut+lbuffer)**2
       vshortbuf2 = (vdwshortcut+lbuffer)**2
       cshortbuf2 = (chgshortcut+lbuffer)**2
       mshortbuf2 = (mpoleshortcut+lbuffer)**2
-      return
-      end
+      end subroutine

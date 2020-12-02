@@ -204,13 +204,13 @@ c
 c     set the instantaneous temperature from total kinetic energy
 c
          eksum = ekin(1,1) + ekin(2,2) + ekin(3,3)
-         temp  = 2.0_re_p*real(eksum,t_p) / (real(nfree,t_p) * gasconst)
+         temp  = 2.0_re_p*real(eksum,r_p) / (real(nfree,r_p) * gasconst)
 !$acc end serial
       else
       ! set the instantaneous temperature from total kinetic energy
 !$acc serial async
          eksum = ekin(1,1) + ekin(2,2) + ekin(3,3)
-         temp  = 2.0_re_p*real(eksum,t_p) / (real(nfree,t_p) * gasconst)
+         temp  = 2.0_re_p*real(eksum,r_p) / (real(nfree,r_p) * gasconst)
 !$acc end serial
       end if
 c

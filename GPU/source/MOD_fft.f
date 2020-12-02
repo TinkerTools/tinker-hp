@@ -45,7 +45,7 @@ c
 #include "tinker_precision.h"
       module fft
       use iso_c_binding,only: c_ptr
-      use sizes
+      use sizes        ,only: maxfft
       implicit none
       integer maxtable
       integer maxprime
@@ -54,6 +54,7 @@ c
       parameter (maxprime=15)
       integer ngrid1,ngrid2
       logical,parameter:: grid_pointer_assoc=.true.
+      logical:: is_fftInit=.false.
       !DIR$ ATTRIBUTES ALIGN:64:: istart1, iend1
       integer, allocatable, target :: istart1(:), iend1(:)
       !DIR$ ATTRIBUTES ALIGN:64:: jstart1, jend1
@@ -120,6 +121,16 @@ c
             real_g(i) = aimag(cmplx_g((i-1)/2+1))
          end if
       end do
+      end subroutine
+
+      subroutine free_FFTgrid_p
+      implicit none
+
+      if (.not.grid_pointer_assoc.and.associated(in)) then
+         !$acc exit data delete(in,out) async
+         deallocate(in)
+         deallocate(out)
+      end if
       end subroutine
 
       end

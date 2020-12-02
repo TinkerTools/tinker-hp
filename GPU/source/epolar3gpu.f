@@ -15,11 +15,12 @@ c     and partitions the energy among atoms
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module epolar3gpu_inl
         include "erfcore_data.f.inc"
         contains
+#include "convert.f.inc"
 #include "image.f.inc"
-#include "switch_respa.f.inc"
 #if defined(SINGLE) | defined(MIXED)
         include "erfcscore.f.inc"
 #else
@@ -57,8 +58,9 @@ c
       use boxes
       use chgpot
       use domdec
-      use energi
+      use energi     ,only: ep,ep_r,eprec
       use ewald
+      use epolar3gpu_inl
       use inform     ,only: deb_Path
       use interfaces ,only: epreal3d_p
       use math
@@ -89,8 +91,8 @@ c
 !$acc serial async(rec_queue) present(nep,nep_,ep,eprec)
       nep   = 0
       nep_  = 0.0
-      ep    = 0.0_ti_p
-      eprec = 0.0_ti_p
+      ep    = 0
+      eprec = 0
 !$acc end serial
 c     aep = 0.0_ti_p
 c
@@ -139,7 +141,7 @@ c
          end if
 
          if (use_pself) then
-!$acc data present(poleglob,ipole,loc,rpole,uind,ep,nep_) async
+!$acc data present(poleglob,ipole,loc,rpole,uind,ep,ep_r,nep_)
 
 c
 c     compute the Ewald self-energy term over all the atoms
@@ -150,7 +152,6 @@ c
           do ii = 1, npoleloc
              iipole = poleglob(ii)
              iglob  = ipole(iipole)
-             !i      = loc(iglob)
              dix    = rpole(2,iipole)
              diy    = rpole(3,iipole)
              diz    = rpole(4,iipole)
@@ -159,9 +160,8 @@ c
              uiz    = uind(3,iipole)
              uii    = dix*uix + diy*uiy + diz*uiz
              e      = fterm * term * uii / 3.0_ti_p
-             ep     = ep + e
+             ep_r   = ep_r + tp2enr(e)
              nep_   = nep_ + 1
-             !aep(i) = aep(i) + e
           end do
 c
 c         compute the cell dipole boundary correction term
@@ -209,9 +209,6 @@ c
 
 !$acc end data
          end if
-!$acc serial async present(nep_,nep)
-         nep = nep + int(nep_)
-!$acc end serial
          call timer_exit( timer_real,quiet_timers )
       end if
 c
@@ -225,6 +222,10 @@ c
             call timer_exit( timer_rec,quiet_timers )
          end if
       end if
+!$acc serial async(rec_queue) present(nep_,nep,ep,eprec,ep_r)
+         ep  =  ep + eprec + enr2en(ep_r)
+         nep = nep + int(nep_)
+!$acc end serial
       end
 c
 c
@@ -250,7 +251,7 @@ c
       use couple
       use cutoff  ,only: shortheal
       use domdec
-      use energi
+      use energi  ,only: ep=>ep_r
       use ewald
       use epolar3gpu_inl
       use erf_mod
@@ -398,7 +399,7 @@ c
 c
 c     increment energy and interaction
 c
-            ep   =  ep  + e
+            ep   =  ep  + tp2enr(e)
             nep_ = nep_ + 1
          enddo
 
@@ -419,7 +420,7 @@ c
       use domdec  ,only: xbegproc,ybegproc,zbegproc
      &            ,nproc,rank,xendproc,yendproc,zendproc
      &            ,nbloc,loc
-      use energi  ,only: ep
+      use energi  ,only: ep=>ep_r
 #ifdef _CUDA
       use epolar1cu,only:epreal3_cu
 #endif
@@ -446,7 +447,7 @@ c
 #endif
       use utilgpu ,only: def_queue,dir_queue,rec_queue
      &            ,real3,real6,real3_red,rpole_elt
-     &            ,ered_buff,nred_buff,reduce_energy_action
+     &            ,ered_buff=>ered_buf1,nred_buff,reduce_energy_action
      &            ,RED_BUFF_SIZE,zero_en_red_buffer
 #ifdef  _OPENACC
      &            ,dir_stream,def_stream,nSMP
@@ -530,7 +531,7 @@ c
 
 !$acc end host_data
 
-      call reduce_energy_action(ep,nep,def_queue)
+      call reduce_energy_action(ep,nep,ered_buff,def_queue)
 c
       call epreal3c_correct_scale
 #else
@@ -551,7 +552,7 @@ c
       use chgpot  ,only: dielec,electric
       use cutoff  ,only: shortheal
       use domdec  ,only: rank,loc
-      use energi  ,only: ep
+      use energi  ,only: ep=>ep_r
       use epolar3gpu_inl
       use ewald   ,only: aewald
       use inform  ,only: deb_Path
@@ -677,7 +678,7 @@ c
 c
 c     increment energy
 c
-         ep       = ep + e
+         ep       = ep + tp2enr(e)
          if (pscale.eq.1.0) nep = nep-1
       end do
 c
@@ -735,7 +736,7 @@ c
       integer m1,m2,m3
       integer ntot,nff
       integer nf1,nf2,nf3
-      real(t_p) e,r1,r2,r3
+      real(r_p) e
       real(t_p) f,h1,h2,h3
       real(t_p) volterm,denom
       real(t_p) hsq,expterm
@@ -743,6 +744,8 @@ c
       real(t_p) struc2
       real(t_p) a(3,3),ftc(10,10)
       real(t_p) fuind
+c
+      if (aewald .lt. 1.0d-6)  return
 c
       if (deb_Path) write(*,'(2x,a)') 'eprecipgpu'
       call timer_enter( timer_eprecip )
@@ -759,7 +762,6 @@ c
 c
 c     return if the Ewald coefficient is zero
 c
-      if (aewald .lt. 1.0d-6)  return
       f = electric / dielec
 !$acc enter data create(a,e) async(rec_queue)
 c
@@ -767,10 +769,10 @@ c     convert Cartesian induced dipoles to fractional coordinates
 c
 !$acc data async(rec_queue)
 !$acc&     present(ipole,fphirec,polerecglob,uind,qgrid2in_2d,
-!$acc&   istart2,jstart2,kstart2,use_bounds,ep)
+!$acc&   istart2,jstart2,kstart2,use_bounds,eprec)
 
 !$acc serial async(rec_queue) present(e,a)
-      e = 0_ti_p
+      e = 0.0_re_p
 !$acc end serial
 
 !$acc parallel loop async(rec_queue) present(a)
@@ -793,19 +795,19 @@ c
       end do
 
 !$acc serial present(e) async(rec_queue)
-      e   = 0.5_ti_p * electric * e
-      ep  = ep + e
+      e     = 0.5_re_p * electric * e
+      eprec = eprec + e
 c
 c     account for zeroth grid point for nonperiodic system
 c
       if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1)
      &   .and.(kstart2(rankloc+1).eq.1)) then
          if (.not. use_bounds) then
-            expterm = 0.5_ti_p * pi / xbox
+            expterm = 0.5_re_p * real(pi,r_p) / xbox
             struc2  = qgrid2in_2d(1,1,1,1,1)**2 +
      &                qgrid2in_2d(2,1,1,1,1)**2
             e       = f * expterm * struc2
-            ep      = ep + e
+            eprec   = eprec + e
          end if
       end if
 !$acc end serial

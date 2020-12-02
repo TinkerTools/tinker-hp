@@ -9,14 +9,13 @@ c     tinkertime     logical flag to enable timers verbosity
 
 #include "tinker_precision.h"
       module timestat
-        use domdec, only: rank,nproc,COMM_TINKER
+        use domdec, only: rank,nproc,nproctot,COMM_TINKER
         use mpi   , only: MPI_Wtime, MPI_COMM_WORLD, MPI_REAL8
      &            , MPI_SUM, MPI_MAX, MPI_MIN, MPI_ALLREDUCE
      &            , MPI_REDUCE, MPI_IN_PLACE
-        use sizes , only: tinkertime
         implicit none
         ! Timers Parameters
-        logical tinkertime
+        integer tinkertime
         integer, parameter, private:: numslots= 2
         integer, parameter, private:: name_len= 25
         logical, parameter :: quiet_timers = .true.
@@ -25,6 +24,11 @@ c     tinkertime     logical flag to enable timers verbosity
           enumerator normal_disp
           enumerator   stat_disp
           enumerator    ave_disp
+        end enum
+        enum,bind(C)
+          enumerator sumy_time
+          enumerator path_time
+          enumerator all_time=4
         end enum
         ! Timers ids used in code
         enum, bind(C)
@@ -52,13 +56,14 @@ c     tinkertime     logical flag to enable timers verbosity
      &           timer_bonded,timer_nonbonded,
      &           timer_fcomm,timer_dirreccomm,timer_rectorcomm,
      &           timer_dirbondfcomm,timer_recreccomm,
-     &           timer_polsolvcomm, timer_polfieldcomm,
+     &           timer_polsolvcomm,timer_polfieldcomm,
      &           timer_timestep,timer_eneig,timer_commstep,
      &           timer_param,timer_other,timer_clear,
      &           timer_debug,timer_scalfactor,
-     &           timer_ulspred,timer_tinker,
-     &           timer_b0,timer_b1,timer_b2,timer_b3,
-     &           timer_fmanage,last_timer
+     &           timer_ulspred,timer_fmanage,timer_tinker,
+     &           timer_io,timer_prog,
+     &           timer_b1,timer_b2,timer_b3,
+     &           last_timer
         end enum
         ! number Timers
         integer, parameter:: max_timer_count=last_timer
@@ -138,7 +143,12 @@ c    &      disp_timestat
         call get_environment_variable('TINKER_TIME',timeval,
      &       status=ierr)
 
-        if (ierr.eq.sucess) tinkertime = .true.
+        if (ierr.eq.sucess) then
+           read(timeval,*) tinkertime
+        else
+           tinkertime = 0
+           if (nproctot.gt.1) tinkertime=1
+        end if
 
         call init_timestat()
         call timer_init( "bonded"          , timer_bonded)
@@ -183,7 +193,7 @@ c    &      disp_timestat
         call timer_init( "fill grid"       , timer_grid1)
         call timer_init( "extract grid"    , timer_grid2)
         call timer_init( "ffts"            , timer_ffts)
-        call timer_init( "scalar product"  ,timer_scalar)
+        call timer_init( "scalar product"  , timer_scalar)
         call timer_init( "torquegpu"       , timer_torque)
         call timer_init( "timestep"        , timer_timestep)
         call timer_init( "reassign neig"   , timer_eneig)
@@ -199,7 +209,8 @@ c    &      disp_timestat
         call timer_init( "dirbondf    comm", timer_dirbondfcomm)
         call timer_init( "recrec      comm", timer_recreccomm)
         call timer_init( "tinker"          , timer_tinker)
-        call timer_init( "buff0"           , timer_b0)
+        call timer_init( "io"              , timer_io)
+        call timer_init( "program"         , timer_prog)
         call timer_init( "buff1"           , timer_b1)
         call timer_init( "buff2"           , timer_b2)
         call timer_init( "buff3"           , timer_b3)
@@ -255,7 +266,7 @@ c    &      disp_timestat
         real*8 :: time_diff
         logical:: quiet
 
-        quiet = .not.tinkertime
+        quiet = .not.btest(tinkertime,path_time)
         if(present(quiet_)) quiet = quiet_
 
         call verify_timer_id( id )
@@ -270,7 +281,7 @@ c    &      disp_timestat
         ! Print on process 0 if TINKER_TIME env variable is 1
         if (rank.eq.0 .and. .not. quiet) then
           write(*,'(A,A18,A,F10.6,A,F13.6)') 'timer: ', timer_name(id),
-     &                  'last:', time_diff ,' total:', timer_time(id)
+     &                   'last:', time_diff ,' total:', timer_time(id)
         end if
       end subroutine
 

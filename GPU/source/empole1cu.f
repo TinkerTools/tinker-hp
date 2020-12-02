@@ -11,16 +11,17 @@ c
 #define TINKER_CUF
 #include "tinker_precision.h"
 #include "tinker_cudart.h"
+#include "tinker_types.h"
       module empole1cu
         use utilcu  ,only: nproc,BLOCK_DIM
-        use utilgpu ,only: real3,real6,real3_red,rpole_elt
-     &              ,BLOCK_SIZE,RED_BUFF_SIZE,WARP_SIZE
+        use utilgpu ,only: BLOCK_SIZE,RED_BUFF_SIZE,WARP_SIZE
+        use tinTypes,only: real3,real6,mdyn3_r,rpole_elt 
 
         contains
 
+#include "convert.f.inc"
 #include "image.f.inc"
 #include "midpointimage.f.inc"
-#include "switch_respa.f.inc"
 #include "pair_mpole1.f.inc"
 
         attributes(global) subroutine emreal1c_core_cu
@@ -44,7 +45,8 @@ c
      &                ,ieblst(*),eblst(*)
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
         real(t_p),device:: tem(3,*),vir_buff(*)
-        real(r_p),device:: dem(3,*),em_buff(*)
+        ener_rtyp,device:: dem(3,*)
+        ener_rtyp,device:: em_buff(*)
 #ifdef TINKER_DEBUG
         integer  ,device:: inter(*)
 #endif
@@ -58,12 +60,12 @@ c
 #endif
         integer location
         real(t_p) xk_,yk_,zk_,d2
-        real(t_p) em_
+        ener_rtyp em_
         real(t_p) rstat,zero
         type(real3) posi,pos
         type(real3) frc
-        type(real3_red) frc_i
-        type(real3_red),shared::frc_k(BLOCK_DIM)
+        type(mdyn3_r) frc_i
+        type(mdyn3_r),shared::frc_k(BLOCK_DIM)
         type(real3),shared::posk(BLOCK_DIM)
         type(real3) ttmi
         type(real3),shared:: ttmk(BLOCK_DIM)
@@ -120,12 +122,12 @@ c
 
            ! zero data to compute
 
-           frc_i%x = 0.0;
-           frc_i%y = 0.0;
-           frc_i%z = 0.0;
-           frc_k(threadIdx%x)%x = 0.0;
-           frc_k(threadIdx%x)%y = 0.0;
-           frc_k(threadIdx%x)%z = 0.0;
+           frc_i%x = 0;
+           frc_i%y = 0;
+           frc_i%z = 0;
+           frc_k(threadIdx%x)%x = 0;
+           frc_k(threadIdx%x)%y = 0;
+           frc_k(threadIdx%x)%z = 0;
            ttmi%x  = 0.0;
            ttmi%y  = 0.0;
            ttmi%z  = 0.0;
@@ -134,7 +136,7 @@ c
            ttmk(threadIdx%x)%z = 0.0;
 
            !* set compute Data to 0
-           em_ = 0.0
+           em_ = 0
            vir_(1)=0.0; vir_(2)=0.0; vir_(3)=0.0;
            vir_(4)=0.0; vir_(5)=0.0; vir_(6)=0.0;
 
@@ -199,9 +201,9 @@ c
                  vir_(5) = vir_(5) - pos%z * frc%y
                  vir_(6) = vir_(6) - pos%z * frc%z
 
-                 frc_i%x = frc_i%x + frc%x
-                 frc_i%y = frc_i%y + frc%y
-                 frc_i%z = frc_i%z + frc%z
+                 frc_i%x = frc_i%x + tp2mdr(frc%x)
+                 frc_i%y = frc_i%y + tp2mdr(frc%y)
+                 frc_i%z = frc_i%z + tp2mdr(frc%z)
 
 #ifdef TINKER_DEBUG
                  if (iglob<kglob_) then
@@ -217,7 +219,7 @@ c
            location = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
 
            ! Update energy buffer
-           rstat = atomicAdd(em_buff(location), real(em_,r_p))
+           rstat = atomicAdd(em_buff(location), em_)
 
            ! Update forces
            rstat = atomicAdd( dem(1,i   ), frc_i%x )
@@ -269,7 +271,8 @@ c
      &                ,ieblst(*),eblst(*)
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
         real(t_p),device:: tem(3,*),vir_buff(*)
-        real(r_p),device:: dem(3,*),em_buff(*)
+        mdyn_rtyp,device:: dem(3,*)
+        ener_rtyp,device:: em_buff(*)
 #ifdef TINKER_DEBUG
         integer  ,device:: inter(*)
 #endif
@@ -283,15 +286,15 @@ c
 #endif
         integer location
         real(t_p) xk_,yk_,zk_,d2
-        real(t_p) em_
+        ener_rtyp em_
         real(t_p) rstat,zero
         type(real3) posi,pos
         type(real3) frc
-        type(real3_red) frc_i
-        type(real3_red),shared::frc_k(BLOCK_DIM)
-        type(real3),shared::posk(BLOCK_DIM)
+        type(mdyn3_r) frc_i
+        type(mdyn3_r),shared::frc_k(BLOCK_DIM)
+        type(real3) ,shared::posk(BLOCK_DIM)
         type(real3) ttmi
-        type(real3),shared:: ttmk(BLOCK_DIM)
+        type(real3) ,shared:: ttmk(BLOCK_DIM)
         real(t_p) vir_(6)
         type(rpole_elt) ip,kp,kp_
         logical do_pair,same_block,accept_mid
@@ -345,12 +348,12 @@ c
 
            ! zero data to compute
 
-           frc_i%x = 0.0;
-           frc_i%y = 0.0;
-           frc_i%z = 0.0;
-           frc_k(threadIdx%x)%x = 0.0;
-           frc_k(threadIdx%x)%y = 0.0;
-           frc_k(threadIdx%x)%z = 0.0;
+           frc_i%x = 0;
+           frc_i%y = 0;
+           frc_i%z = 0;
+           frc_k(threadIdx%x)%x = 0;
+           frc_k(threadIdx%x)%y = 0;
+           frc_k(threadIdx%x)%z = 0;
            ttmi%x  = 0.0;
            ttmi%y  = 0.0;
            ttmi%z  = 0.0;
@@ -359,7 +362,7 @@ c
            ttmk(threadIdx%x)%z = 0.0;
 
            !* set compute Data to 0
-           em_ = 0.0
+           em_ = 0
            vir_(1)=0.0; vir_(2)=0.0; vir_(3)=0.0;
            vir_(4)=0.0; vir_(5)=0.0; vir_(6)=0.0;
 
@@ -426,9 +429,9 @@ c
                  vir_(5) = vir_(5) - pos%z * frc%y
                  vir_(6) = vir_(6) - pos%z * frc%z
 
-                 frc_i%x = frc_i%x + frc%x
-                 frc_i%y = frc_i%y + frc%y
-                 frc_i%z = frc_i%z + frc%z
+                 frc_i%x = frc_i%x + tp2mdr(frc%x)
+                 frc_i%y = frc_i%y + tp2mdr(frc%y)
+                 frc_i%z = frc_i%z + tp2mdr(frc%z)
 
 #ifdef TINKER_DEBUG
                  if (iglob<kglob_) then
@@ -444,7 +447,7 @@ c
            location = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
 
            ! Update energy buffer
-           rstat = atomicAdd(em_buff(location), real(em_,r_p))
+           rstat = atomicAdd(em_buff(location), em_)
 
            ! Update forces
            rstat = atomicAdd( dem(1,i   ), frc_i%x )
@@ -495,7 +498,7 @@ c
      &                ,ieblst(*),eblst(*)
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
         integer  ,device:: nem_buff(*)
-        real(r_p),device::  em_buff(*)
+        ener_rtyp,device::  em_buff(*)
 #ifdef TINKER_DEBUG
 #endif
 
@@ -509,7 +512,7 @@ c
         integer location,istat
         integer nem_
         real(t_p) xk_,yk_,zk_,d2
-        real(t_p) em_
+        ener_rtyp em_
         real(t_p) rstat,zero
         type(real3) posi,pos
         type(real3),shared::posk(BLOCK_DIM)
@@ -564,7 +567,7 @@ c
            kp%qzz  = rpole(13, kpole)
 
            !* set compute Data to 0
-           em_ = 0.0
+           em_ = 0
            nem_ = 0
 
            same_block = (idx.ne.kdx)
@@ -629,8 +632,8 @@ c
            location = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
 
            ! Update energy & interaction number buffer
-           rstat = atomicAdd( em_buff(location), real(em_,r_p))
-           istat = atomicAdd(nem_buff(location), nem_ )
+           rstat = atomicAdd( em_buff(location),  em_)
+           istat = atomicAdd(nem_buff(location), nem_)
         end do
 
         end subroutine
@@ -656,7 +659,7 @@ c
      &                ,ieblst(*),eblst(*)
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
         integer  ,device:: nem_buff(*)
-        real(r_p),device::  em_buff(*)
+        ener_rtyp,device::  em_buff(*)
 #ifdef TINKER_DEBUG
 #endif
 
@@ -669,7 +672,7 @@ c
 #endif
         integer location,istat,nem_
         real(t_p) xk_,yk_,zk_,d2
-        real(t_p) em_
+        ener_rtyp em_
         real(t_p) rstat,zero
         type(real3) posi,pos
         type(real3),shared::posk(BLOCK_DIM)
@@ -724,7 +727,7 @@ c
            kp%qzz  = rpole(13, kpole)
 
            !* set compute Data to 0
-           em_  = 0.0
+           em_  = 0
            nem_ = 0
 
            same_block = (idx.ne.kdx)
@@ -791,7 +794,7 @@ c
            location = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
 
            ! Update energy & interaction number buffer
-           rstat = atomicAdd( em_buff(location), real(em_,r_p))
+           rstat = atomicAdd( em_buff(location),  em_)
            istat = atomicAdd(nem_buff(location), nem_)
         end do
 

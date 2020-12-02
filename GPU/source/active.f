@@ -220,7 +220,6 @@ c
       call MPI_BCAST(nuse,1,MPI_INT,0,hostcomm,ierr)
       call MPI_BARRIER(hostcomm,ierr)
 !$acc update device(use(0:n))
-      return
       end
 c
 c     subroutine alloc_shared_active : allocate shared memory pointers for active
@@ -242,9 +241,6 @@ c
       if (associated(iuse).and.n.eq.size(iuse)) return !Exit condition
 
       !TODO Make use an logical1 if possible
-      call shmem_request( use,  winuse, [n+1], config=mhostonly)
-      use(0:n) => use
+      call shmem_request( use,  winuse, [n+1], config=mhostacc, start=0)
       call shmem_request(iuse, winiuse,   [n], config=mhostonly)
-!$acc enter data create(use)
-      sd_ddmem = sd_ddmem + sizeof(use)
       end

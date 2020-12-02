@@ -289,12 +289,6 @@ c     MPI : get total energy
 c
       call reduceen(epot)
 c
-c     Debug print information
-c
-      if (deb_Energy) call info_energy(rank)
-      if (deb_Force)  call info_forces(cNBond)
-      if (deb_Atom)   call info_minmax_pva
-c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the BAOAB recursion
 c
@@ -308,6 +302,12 @@ c
             end if
          end do
       end do
+c
+c     Debug print information
+c
+      if (deb_Energy) call info_energy(rank)
+      if (deb_Force)  call info_forces(cNBond)
+      if (deb_Atom)   call info_minmax_pva
 c
 c     find the constraint-corrected full-step velocities
 c

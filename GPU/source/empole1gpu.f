@@ -9,10 +9,14 @@ c     energy and derivatives with respect to Cartesian coordinates
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module empole1gpu_inl
-        use utilgpu , only: real3,real3_red,rpole_elt
+        use tinTypes , only: real3,real3_red,rpole_elt
+        logical:: em1c_fi=.true.
+        ener_rtyp emdir
         include "erfcore_data.f.inc"
         contains
+#include "convert.f.inc"
 #include "image.f.inc"
 #if defined(SINGLE) | defined(MIXED)
         include "erfcscore.f.inc"
@@ -58,11 +62,12 @@ c
       use chgpot
       use deriv
       use domdec
+      use empole1gpu_inl
       use energi
       use ewald
       use inform     ,only: deb_Path
       use interfaces ,only: reorder_nblist
-     &               ,torquegpu,commpoleglob
+     &               ,torquegpu,emreal1c_p,emreallong1c_p
       use math
       use mpole
       use mpi
@@ -76,7 +81,7 @@ c
       integer i,j,ii
       integer iipole,iglob,ierr
       real(t_p) zero,one,two,three,half
-      real(t_p) e,emdir,f
+      real(t_p) e,f
       real(t_p) term,fterm
       real(t_p) cii,dii,qii
       real(t_p) xd,yd,zd
@@ -94,18 +99,20 @@ c
      &          half=0.5_ti_p)
 c
       if (npole .eq. 0)  return
+      if (em1c_fi) then
+         em1c_fi = .false.
+!$acc enter data create(emdir)
+      end if
 c
 c     zero out the atomic multipole energy and derivatives
 c
       if(deb_Path) write(*,*) 'empole1cgpu'
 
-!$acc data create(emdir,emrec)
-!$acc&     present(em,dem)
-!$acc&     async(rec_queue)
+!$acc data present(emdir,em,emrec,em_r,dem)
 c
 !$acc serial async
       em     = zero
-      emdir  = zero
+      emdir  = 0
       emrec  = zero
 !$acc end serial
 c
@@ -159,7 +166,8 @@ c              end do
 !!$acc update host(rpole,pole) async(rec_queue)
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) then
-         call stream_wait_async(dir_stream,rec_stream,dir_event)
+         call end_dir_stream_cover
+         call start_dir_stream_cover
       end if
 #endif
 c
@@ -172,9 +180,9 @@ c
             if (use_mpoleshortreal) then
                call emrealshort1cgpu
             else if (use_mpolelong) then
-               call emreallong1cgpu
+               call emreallong1c_p
             else
-               call emreal1cgpu
+               call emreal1c_p
             end if
          end if
 
@@ -204,12 +212,15 @@ c
      &                  + qixx*qixx + qiyy*qiyy + qizz*qizz
             e      = fterm*(cii + term*(dii/three +
      &                                  two*term*qii/5.0_ti_p))
-            emdir  = emdir + e
+            emdir  = emdir + tp2enr(e)
          end do
 c
 c     compute the cell dipole boundary correction term
 c
          if (boundary .eq. 'VACUUM') then
+
+            write(0,*) 'ERROR VACUUM boundary unavailable'
+            call fatal
 !$acc data create(trq,term,xd,yd,zd,xq,yq,zq,xdfield,
 !$acc&  ydfield,zdfield)
 !$acc&     async(def_queue)
@@ -242,7 +253,7 @@ c
 !$acc end serial
             end if
             term    = (two/3.0_ti_p) * f * (pi/volbox)
-            emdir   = emdir + term*(xd*xd+yd*yd+zd*zd)
+            emdir   = emdir + tp2enr(term*(xd*xd+yd*yd+zd*zd))
             xdfield = -two * term * xd
             ydfield = -two * term * yd
             zdfield = -two * term * zd
@@ -259,7 +270,9 @@ c
                trq(2,ii)=rpole(4,iipole)*xdfield-rpole(2,iipole)*zdfield
                trq(3,ii)=rpole(2,iipole)*ydfield-rpole(3,iipole)*xdfield
             end do
-            call torquegpu(npoleloc,poleglob,loc,trq,dem,def_queue)
+            ! TODO Remove this comment 
+            ! ---( Trouble in fixed precision )---
+            !call torquegpu(npoleloc,poleglob,loc,trq,dem,def_queue)
 c
 c     boundary correction to virial due to overall cell dipole
 c
@@ -338,15 +351,13 @@ c
 c     Finalize async overlapping
 c
 #ifdef _OPENACC
-      if (dir_queue.ne.rec_queue) then
-         call stream_wait_async(dir_stream,rec_stream)
-      end if
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
 #endif
 c
 c     Add both contribution to the energy
 c
 !$acc serial async(rec_queue)
-      em = em + emdir + emrec
+      em = em + enr2en(emdir + em_r) + emrec
 !$acc end serial
 c
 !$acc end data
@@ -369,6 +380,7 @@ c
       use atoms   ,only: x,y,z
       use deriv   ,only: dem
       use domdec  ,only: nbloc
+      use empole1gpu_inl
       use interfaces,only: emreal1c_core_p,torquegpu
       use mpole   ,only: xaxis,yaxis,zaxis,npolelocnl,ipole
       use potent  ,only: use_mpoleshortreal,use_mpolelong
@@ -384,7 +396,7 @@ c
       use timestat,only:timer_enter,timer_exit,timer_emreal
      &            ,quiet_timers
       implicit none
-      integer i,ii,iipole,iglob
+      integer i,j,ii,iipole,iglob
       integer iax,iay,iaz
       real(t_p) zero
       real(t_p) r2,f,e
@@ -397,6 +409,7 @@ c
       real(t_p) fiz(3,npolelocnl)
       real(t_p) tem(3,nbloc)
       character*10 mode
+      real(8) e1,e2,e3
       logical*1,parameter::extract=.true.
       parameter(zero=0.0_ti_p)
 
@@ -695,7 +708,10 @@ c======================================================================
       use deriv  ,only:dem
       use domdec ,only:rank,nbloc,loc
       use empole1gpu_inl ,only: image_inl,mpole1_couple
-      use energi ,only:em
+#ifdef USE_DETERMINISTIC_REDUCTION
+     &                   , tp2enr
+#endif
+      use energi ,only:em=>em_r
       !use erf_mod
       use ewald  ,only:aewald
       use inform ,only:deb_Path
@@ -708,7 +724,7 @@ c======================================================================
       use shunt  ,only:off2
       use tinheader, only: ti_p
       use utilgpu,only:dir_queue,rec_queue,def_queue,warning,
-     &                 real3,real3_red,rpole_elt,maxscaling
+     &                 real3,mdyn3_r,rpole_elt,maxscaling
       use virial
       implicit none
 
@@ -730,7 +746,7 @@ c======================================================================
       real(t_p) xi,yi,zi
       real(t_p) xr,yr,zr
       type(rpole_elt) ip,kp
-      type(real3_red) frc_r
+      type(mdyn3_r) frc_r
       type(real3) ttmi,ttmk,frc
       real(t_p) mscale
       real(t_p) fscal(maxscaling)
@@ -838,7 +854,7 @@ c
      &                         e,frc,frc_r,ttmi,ttmk,.false.)
 
             ! update energy
-            em       = em  + e
+            em          = em  + tp2enr(e)
 c
 c     increment force-based gradient and torque on first site
 c
@@ -895,7 +911,10 @@ c
       use deriv  ,only:dem
       use domdec ,only:rank,nbloc,loc
       use empole1gpu_inl ,only: image_inl,mpole1_couple
-      use energi ,only:em
+#ifdef USE_DETERMINISTIC_REDUCTION
+     &                   , tp2enr
+#endif
+      use energi ,only:em=>em_r
       !use erf_mod
       use ewald  ,only:aewald
       !use iounit ,only:iout
@@ -908,7 +927,8 @@ c
       use neigh  ,only:nelst,elst
       use shunt  ,only:off2
       use utilgpu,only:dir_queue,rec_queue,def_queue,warning,
-     &                 real3,real3_red,rpole_elt,maxscaling
+     &                 rpole_elt,maxscaling
+      use tintypes
       use virial
       implicit none
 
@@ -928,7 +948,7 @@ c
       real(t_p) xi,yi,zi
       real(t_p) xr,yr,zr
       type(rpole_elt) ip,kp
-      type(real3_red) frc_r
+      type(mdyn3_r) frc_r
       type(real3) ttmi,ttmk,frc
       real(t_p) mscale
       parameter(zero=0.0)
@@ -1013,7 +1033,7 @@ c
      &                         e,frc,frc_r,ttmi,ttmk,.false.)
 
             ! update energy
-            em       = em  + e
+            em       = em  + tp2enr(e)
 
 #ifdef TINKER_DEBUG
 !$acc atomic
@@ -1089,7 +1109,10 @@ c      end do
       use deriv  ,only:dem
       use domdec ,only:rank,nbloc,loc
       use empole1gpu_inl ,only: image_inl,mpole1_couple
-      use energi ,only:em
+#ifdef USE_DETERMINISTIC_REDUCTION
+     &                   , tp2enr
+#endif
+      use energi ,only:em=>em_r
       !use erf_mod
       use ewald  ,only:aewald
       use inform ,only: deb_Path
@@ -1104,7 +1127,8 @@ c      end do
      &                     ms_precompute,nprecomp,mpole_precompute
       use shunt  ,only:off2
       use utilgpu,only:dir_queue,rec_queue,def_queue,maxscaling,
-     &                 warning,real3,real3_red,rpole_elt
+     &                 warning,rpole_elt
+      use tintypes
       use virial
       implicit none
 
@@ -1126,7 +1150,7 @@ c      end do
       real(t_p) xi,yi,zi
       real(t_p) xr,yr,zr
       type(rpole_elt) ip,kp
-      type(real3_red) frc_r
+      type(mdyn3_r) frc_r
       type(real3) ttmi,ttmk,frc
       real(t_p) mscale
       real(t_p) fscal(maxscaling)
@@ -1203,7 +1227,7 @@ c
      &                      e,frc,frc_r,ttmi,ttmk,.false.)
 
          ! update energy
-         em     = em  + e
+         em     = em  + tp2enr(e)
 c
 c     increment force-based gradient and torque on first site
 c
@@ -1256,16 +1280,17 @@ c
       use chgpot ,only:electric,dielec
       use cell
       use deriv  ,only:dem
-      use domdec  ,only: xbegproc,ybegproc,zbegproc
-     &            ,nproc,rank,xendproc,yendproc,zendproc
-     &            ,nbloc,loc
-      use energi ,only:em
+      use domdec ,only:xbegproc,ybegproc,zbegproc
+     &           ,nproc,rank,xendproc,yendproc,zendproc
+     &           ,nbloc,loc
+      use energi ,only:em=>em_r
       !use erf_mod
+      use inform
       use ewald  ,only:aewald
-      use inform ,only: deb_Path
-      use interfaces,only: emreal_correct_interactions
+      use inform ,only:deb_Path
+      use interfaces,only:emreal_correct_interactions
 #ifdef _CUDA
-     &              , cu_emreal1c
+     &              ,cu_emreal1c
 #endif
       use math   ,only:sqrtpi
       !use mpi
@@ -1274,12 +1299,12 @@ c
      &           ,npolelocnlb,npolelocnlb_pair,npolebloc
      &           ,npolelocnlb2_pair
       use neigh  ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
-     &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
-     &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
+     &           ,loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
+     &           ,x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
       use shunt  ,only:off2
       use utilgpu,only:dir_queue,rec_queue,def_queue,warning
-     &           ,real3,real3_red,rpole_elt,RED_BUFF_SIZE
-     &           ,ered_buff,vred_buff,reduce_energy_virial
+     &           ,rpole_elt,RED_BUFF_SIZE
+     &           ,ered_buff=>ered_buf1,vred_buff,reduce_energy_virial
      &           ,zero_evir_red_buffer
 #ifdef  _OPENACC
      &           ,dir_stream,def_stream
@@ -1298,6 +1323,12 @@ c
 
       if(deb_Path) write(*,'(2x,a)') 'emreal1c_core4'
 
+#ifdef USE_DETERMINISTIC_REDUCTION
+ 13   format(3x,"ERROR : empole CUDA-C Routine is not to be with"
+     &      ," fixed precision !!! ")
+      write (*,13)
+      call fatal
+#endif
 c
 c     set conversion factor, cutoff and switching coefficients
 c
@@ -1330,13 +1361,14 @@ c
      &                , dem,tem,ered_buff,vred_buff
      &                , npolelocnlb,npolelocnlb2_pair,npolebloc,n
      &                , off2,f,alsq2,alsq2n,aewald
-     &                , xcell, ycell, zcell,xcell2,ycell2,zcell2
-     &                ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-     &                , def_stream)
+     &                , xcell,ycell,zcell,xcell2,ycell2,zcell2
+     &                , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &                , def_stream )
 
 !$acc end host_data
 
-      call reduce_energy_virial(em,vxx,vxy,vxz,vyy,vyz,vzz,def_queue)
+      call reduce_energy_virial(em,vxx,vxy,vxz,vyy,vyz,vzz
+     &                         ,ered_buff,def_queue)
 #else
       print 100
  100  format('emreal1c_core4 is a specific device routine !!',/,
@@ -1356,15 +1388,15 @@ c
       use chgpot ,only:electric,dielec
       use cell
       use deriv  ,only:dem
-      use domdec  ,only: xbegproc,ybegproc,zbegproc
-     &            ,nproc,rank,xendproc,yendproc,zendproc
-     &            ,nbloc,loc
+      use domdec ,only: xbegproc,ybegproc,zbegproc
+     &           ,nproc,rank,xendproc,yendproc,zendproc
+     &           ,nbloc,loc
 #ifdef _CUDA
       use empole1cu ,only: emreal1c_core_cu
 #endif
-      use energi ,only:em
+      use energi ,only:em=>em_r
       use ewald  ,only:aewald
-      use inform ,only: deb_Path
+      use inform ,only: deb_Path,minmaxone
       use interfaces,only: emreal_correct_interactions
       use math   ,only:sqrtpi
       !use mpi
@@ -1380,12 +1412,13 @@ c
       use utilcu ,only:BLOCK_DIM,check_launch_kernel
 #endif
       use utilgpu,only:dir_queue,rec_queue,def_queue,warning
-     &           ,real3,real3_red,rpole_elt,RED_BUFF_SIZE
-     &           ,ered_buff,vred_buff,reduce_energy_virial
+     &           ,RED_BUFF_SIZE
+     &           ,ered_buff=>ered_buf1,vred_buff,reduce_energy_virial
      &           ,zero_evir_red_buffer
 #ifdef  _OPENACC
      &           ,dir_stream,def_stream
 #endif
+      use tinTypes,only:real3,real3_red,rpole_elt
       use virial
       implicit none
 
@@ -1463,7 +1496,8 @@ c
 
 !$acc end host_data
 
-      call reduce_energy_virial(em,vxx,vxy,vxz,vyy,vyz,vzz,def_queue)
+      call reduce_energy_virial(em,vxx,vxy,vxz,vyy,vyz,vzz
+     &                         ,ered_buff,def_queue)
 #else
  100  format('emreal1c_core5 is a specific device routine !!',/,
      &       'you are not supposed to get inside with your compile ',
@@ -1512,7 +1546,10 @@ c======================================================================
       use deriv  ,only:dem
       use domdec ,only:rank,nbloc,loc
       use empole1gpu_inl ,only: image_inl,mpole1_couple_shortlong
-      use energi ,only:em
+#ifdef USE_DETERMINISTIC_REDUCTION
+     &                   ,tp2enr
+#endif
+      use energi ,only:em=>em_r
       use ewald  ,only:aewald
       use inform ,only: deb_Path
       use interfaces,only: emreal_correct_interactions_shortlong
@@ -1525,8 +1562,9 @@ c======================================================================
       use potent ,only:use_mpoleshortreal,use_mpolelong
       use shunt  ,only:off,off2
       use tinheader ,only:ti_p
-      use utilgpu,only:dir_queue,rec_queue,def_queue,warning,
-     &                 real3,real3_red,rpole_elt,maxscaling
+      use utilgpu,only:dir_queue,rec_queue,def_queue,warning
+     &                ,maxscaling
+      use tinTypes
       use virial
       implicit none
 
@@ -1547,7 +1585,7 @@ c======================================================================
       real(t_p) xi,yi,zi
       real(t_p) xr,yr,zr
       type(rpole_elt) ip,kp
-      type(real3_red) frc_r
+      type(mdyn3_r) frc_r
       type(real3) ttmi,ttmk,frc
       real(t_p) mscale
       real(t_p) mpoleshortcut2
@@ -1649,7 +1687,7 @@ c
      &                       e,frc,frc_r,ttmi,ttmk,.false.,mode)
 
             ! update energy
-            em       = em  + e
+            em       = em  + tp2enr(e)
 
 #ifdef TINKER_DEBUG
 !$acc atomic
@@ -1726,9 +1764,9 @@ c
 #ifdef _CUDA
       use empole1cu ,only: emrealshortlong1c_core_cu
 #endif
-      use energi ,only:em
+      use energi ,only:em=>em_r
       use ewald  ,only:aewald
-      use inform ,only: deb_Path
+      use inform ,only: deb_Path,minmaxone
       use interfaces,only: emreal_correct_interactions_shortlong
      &              ,long_mode,short_mode
       use math   ,only:sqrtpi
@@ -1748,12 +1786,13 @@ c
       use utilcu ,only:BLOCK_DIM,check_launch_kernel
 #endif
       use utilgpu,only:dir_queue,rec_queue,def_queue,warning
-     &           ,real3,real3_red,rpole_elt,RED_BUFF_SIZE
-     &           ,ered_buff,vred_buff,reduce_energy_virial
+     &           ,RED_BUFF_SIZE
+     &           ,ered_buff=>ered_buf1,vred_buff,reduce_energy_virial
      &           ,zero_evir_red_buffer
 #ifdef  _OPENACC
      &           ,dir_stream,def_stream
 #endif
+      !use tinTypes
       use virial
       implicit none
 
@@ -1771,6 +1810,7 @@ c
       real(t_p) mpoleshortcut2,r_cut
       logical,save:: first_in=.true.
       integer,save:: gS
+      real(8) e0,e1,e2
 
       if(deb_Path) write(*,'(3x,a)') 'emrealshortlong1c_core2'
 
@@ -1809,7 +1849,7 @@ c
 
       if (first_in) then
 #ifdef _CUDA
-        call cudaMaxGridSize("emrealshortlong1c_core_cu",gS)
+         call cudaMaxGridSize("emrealshortlong1c_core_cu",gS)
 #endif
          first_in = .false.
       end if
@@ -1868,7 +1908,8 @@ c
       call check_launch_kernel(" emrealshortlong1c_core_cu")
 
 
-      call reduce_energy_virial(em,vxx,vxy,vxz,vyy,vyz,vzz,def_queue)
+      call reduce_energy_virial(em,vxx,vxy,vxz,vyy,vyz,vzz
+     &                         ,ered_buff,def_queue)
 #else
  100  format('emrealshortlong1c_core2 is a specific device routine !!',
      &       /,'you are not supposed to get inside with your compile ',
@@ -1920,14 +1961,19 @@ c======================================================================
       use deriv  ,only:dem
       use domdec ,only:rank,nbloc,loc
       use empole1gpu_inl ,only: image_inl,mpole1_couple
-      use energi ,only:em
+#ifdef USE_DETERMINISTIC_REDUCTION
+     &                   ,tp2enr,enr2en,mdr2md
+#endif
+      use energi ,only:em=>em_r
       use ewald  ,only:aewald
       use inform ,only:deb_Path
       use math   ,only:sqrtpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
       use shunt  ,only:off2
-      use utilgpu,only:real3,real3_red,rpole_elt,def_queue
+      use utilgpu,only:def_queue
+      use tinheader,only:ti_p
+      use tinTypes ,only:rpole_elt,mdyn3_r,real3
       use virial
       implicit none
 
@@ -1942,7 +1988,7 @@ c======================================================================
       real(t_p) alsq2,alsq2n
       real(t_p) xr,yr,zr
       type(rpole_elt) ip,kp
-      type(real3_red) frc_r
+      type(mdyn3_r) frc_r
       type(real3) ttmi,ttmk,frc
       real(t_p) mscale
       logical   corre
@@ -2019,7 +2065,7 @@ c20      continue
          !   e = -e
          !end if
          ! update energy
-         em     = em  + e
+         em     = em  + tp2enr(e)
 c
 c     increment force-based gradient and torque on first site
 c
@@ -2078,17 +2124,21 @@ c     increment the virial due to pairwise Cartesian forces c
       use deriv  ,only:dem
       use domdec ,only:rank,nbloc,loc
       use empole1gpu_inl ,only: image_inl,mpole1_couple_shortlong
-      use energi ,only:em
+#ifdef USE_DETERMINISTIC_REDUCTION
+     &                   ,tp2enr
+#endif
+      use energi ,only:em=>em_r
       use ewald  ,only:aewald
       use inform ,only:deb_Path
-      use interfaces ,only:long_mode,short_mode
+      use interfaces,only:long_mode,short_mode
       use math   ,only:sqrtpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
       use potent ,only:use_mpoleshortreal,use_mpolelong
       use shunt  ,only:off2,off
       use tinheader ,only:ti_p
-      use utilgpu,only:real3,real3_red,rpole_elt,def_queue
+      use utilgpu   ,only:def_queue
+      use tinTypes  ,only:real3,mdyn3_r,rpole_elt
       use virial
       implicit none
 
@@ -2104,7 +2154,7 @@ c     increment the virial due to pairwise Cartesian forces c
       real(t_p) alsq2,alsq2n
       real(t_p) xr,yr,zr
       type(rpole_elt) ip,kp
-      type(real3_red) frc_r
+      type(mdyn3_r) frc_r
       type(real3) ttmi,ttmk,frc
       real(t_p) mpoleshortcut2,r_cut
       real(t_p) mscale
@@ -2186,7 +2236,7 @@ c
      &                       e,frc,frc_r,ttmi,ttmk,.true.,mode)
 
          ! update energy
-         em     = em  + e
+         em     = em  + tp2enr(e)
 c
 c     increment force-based gradient and torque on first site
 c
@@ -2268,6 +2318,7 @@ c
       use inform    ,only: deb_Path
       use interfaces,only: torquegpu,fphi_mpole_site_p
      &              ,grid_mpole_site_p,bspline_fill_sitegpu
+     &              ,emreal1c_cp,emreallong1c_cp
       use polar_temp,only: cmp=>fphid,fmp=>fphip !Use register pool
      &              , trqrec=>fuind
       use pme
@@ -2443,6 +2494,17 @@ c
 !$acc end host_data
       end do
 c
+#ifdef _OPENACC
+      ! Recover MPI communication with real space computations
+      if (dir_queue.ne.rec_queue) then
+         call start_dir_stream_cover
+         if   (use_mpolelong) then
+            call emreallong1c_cp
+         else
+            call emreal1c_cp
+         end if
+      end if
+#endif
       do i = 1, nrec_recep
          call MPI_WAIT(reqrec(i),status,ierr)
       end do
@@ -2638,6 +2700,11 @@ c
          call MPI_WAIT(req2send(i),status,ierr)
       end do
       call timer_exit( timer_recreccomm,quiet_timers )
+
+#ifdef _OPENACC
+      ! sync streams
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
 
       call timer_enter ( timer_grid2 )
       call fphi_mpole_site_p

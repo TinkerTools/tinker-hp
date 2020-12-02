@@ -119,6 +119,7 @@ c
 c     set default values for variable scale factors
 c
       if (.not. set_scale) then
+!$acc parallel loop async present(scale)
          do i = 1, 3*n
             if (scale(i) .eq. 0.0_re_p)  scale(i) = 1.0_re_p
          end do
@@ -241,6 +242,10 @@ c
            g_rms  = g_rms + (g(3*(iglob-1)+j)*scale(3*(iglob-1)+j))**2
          end do
       end do
+      ! Wait for reduction to complete since g_norm are not device
+      ! resident.
+      ! Since PGI 20.4 Implicit Wait has been removed at compile
+!$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,g_norm,1,MPI_RPREC,MPI_SUM,
      $     COMM_TINKER,ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,g_rms,1,MPI_RPREC,MPI_SUM,
@@ -353,8 +358,8 @@ c
                 beta = beta + y(3*(iglob-1)+l,k)*r(3*(iglob-1)+l)
               end do
             end do
-            if (nproc.gt.1) then
 !$acc wait
+            if (nproc.gt.1) then
 !$acc host_data use_device(beta)
             call MPI_ALLREDUCE(MPI_IN_PLACE,beta,1,MPI_RPREC,
      $           MPI_SUM,COMM_TINKER,ierr)
@@ -410,6 +415,7 @@ c
              yy = yy + y(3*(iglob-1)+j,m)*y(3*(iglob-1)+j,m)
            end do
          end do
+!$acc wait
          if (nproc.gt.1) then
             call MPI_ALLREDUCE(MPI_IN_PLACE,ys,1,MPI_RPREC,
      $           MPI_SUM,COMM_TINKER,ierr)
@@ -436,6 +442,7 @@ c
              end if
            end do
          end do
+!$acc wait
          if (nproc.gt.1) then
             call MPI_ALLREDUCE(MPI_IN_PLACE,x_move,1,MPI_RPREC,
      $           MPI_SUM,COMM_TINKER,ierr)
@@ -455,6 +462,7 @@ c
              g_rms = g_rms + (g(3*(iglob-1)+j)*scale(3*(iglob-1)+j))**2
            end do
          end do
+!$acc wait
 
          if (nproc.gt.1) then
             call MPI_ALLREDUCE(MPI_IN_PLACE,g_rms,1,MPI_RPREC,

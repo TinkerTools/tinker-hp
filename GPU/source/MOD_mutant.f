@@ -10,9 +10,11 @@ c     ##                                                                ##
 c     ####################################################################
 c
 c
+c     vcouple    van der Waals lambda type (0=decouple, 1=annihilate)
 c     lambda     generic weighting between initial and final states
 c     vlambda    state weighting value for electrostatic potentials
 c     elambda    state weighting value for van der Waals potentials
+c     tlambda    state weighting value for torsional potential
 c     scexp
 c     scalpha
 c     nmut       number of atoms mutated from initial to final state
@@ -27,6 +29,7 @@ c     wintype1    window object corresponding to type1
 c     class1     atom class of each atom in the final state system
 c     winclass1    window object corresponding to class1
 c     mut        true if an atom is to be mutated, false otherwise
+c     mutInt        1 if an atom is to be mutated,     0 otherwise
 c     winmut    window object corresponding to mut
 c
 c
@@ -34,14 +37,16 @@ c
       module mutant
       implicit none
       integer nmut
+      integer vcouple
       integer, pointer :: imut(:),type0(:),class0(:)
       integer :: winimut,wintype0,winclass0
       integer, pointer :: type1(:),class1(:)
       integer :: wintype1,winclass1
       logical, pointer :: mut(:)
-      integer :: winmut
+      integer(1),pointer:: mutInt(:)
+      integer :: winmut,winmutInt
       real(t_p) lambda
-      real(t_p) vlambda,elambda
+      real(t_p) vlambda,elambda,tlambda
       real(t_p) scexp,scalpha
       save
       end

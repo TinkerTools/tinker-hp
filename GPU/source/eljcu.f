@@ -25,9 +25,9 @@ c
 
         contains
 
+#include "convert.f.inc"
 #include "image.f.inc"
 #include "midpointimage.f.inc"
-#include "switch_respa.f.inc"
 #include "pair_elj.f.inc"
 
         attributes(global)
@@ -51,7 +51,7 @@ c
      &           ,cut2,cut,ghal,dhal,off2,off
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
-        real(r_p),device :: ev_buff (RED_BUFF_SIZE)
+        ener_rtyp,device :: ev_buff (RED_BUFF_SIZE)
         real(t_p),device :: vir_buff(RED_BUFF_SIZE)
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
@@ -62,7 +62,7 @@ c
      &           ,epsilon(nvdwclass,nvdwclass),kred(n)
         real(t_p),device,intent(in):: xred(nvdwlocnlb)
      &           ,yred(nvdwlocnlb),zred(nvdwlocnlb)
-        real(r_p),device,intent(inout)::dev(3,nbloc)
+        mdyn_rtyp,device,intent(inout)::dev(3,nbloc)
 #ifdef TINKER_DEBUG
         integer,device:: inter(*)
         integer,value :: rank
@@ -74,13 +74,13 @@ c
         integer kbis,kt_,kvloc,ist
         integer,shared,dimension(VDW_BLOCK_DIM)::kglob,kt
         real(t_p) e,istat
-        real(r_p) ev_
+        ener_rtyp ev_
         real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p),shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
         real(t_p) rik2,rv2,eps2,redi,redk,redk_
         type(real3) ded
-        real(r_p) gxi,gyi,gzi
-        real(r_p),shared,dimension(VDW_BLOCK_DIM):: gxk,gyk,gzk
+        mdyn_rtyp gxi,gyi,gzi
+        mdyn_rtyp,shared,dimension(VDW_BLOCK_DIM):: gxk,gyk,gzk
         real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
         logical do_pair,same_block,accept_mid
 
@@ -176,7 +176,7 @@ c
                  call elj1_couple(rik2,xpos,ypos,zpos,rv2,eps2,cut2
      &                           ,cut,off,e,ded)
 
-                 ev_   = ev_ + (e)
+                 ev_   = ev_ + tp2enr(e)
 
 #ifdef TINKER_DEBUG
                  if (iglob<kglob(klane)) then
@@ -198,13 +198,13 @@ c
                  !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
 
                  ! Accumulate interaction gradient
-                 gxi = gxi + (ded%x)
-                 gyi = gyi + (ded%y)
-                 gzi = gzi + (ded%z)
+                 gxi = gxi + tp2mdr(ded%x)
+                 gyi = gyi + tp2mdr(ded%y)
+                 gzi = gzi + tp2mdr(ded%z)
 
-                 gxk(klane) = gxk(klane) + (ded%x)
-                 gyk(klane) = gyk(klane) + (ded%y)
-                 gzk(klane) = gzk(klane) + (ded%z)
+                 gxk(klane) = gxk(klane) + tp2mdr(ded%x)
+                 gyk(klane) = gyk(klane) + tp2mdr(ded%y)
+                 gzk(klane) = gzk(klane) + tp2mdr(ded%z)
 
               end if
 
@@ -261,7 +261,7 @@ c
      &           ,cut2,cut,off2,off,ghal,dhal
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
-        real(r_p),device :: ev_buff (RED_BUFF_SIZE)
+        ener_rtyp,device :: ev_buff (RED_BUFF_SIZE)
         integer  ,device :: nev_buff(RED_BUFF_SIZE)
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
@@ -281,7 +281,7 @@ c
         integer kglob,kbis,kt,kt_,kvloc,ist
         integer nev_, istat
         real(t_p) e,rstat
-        real(r_p) ev_
+        ener_rtyp ev_
         real(t_p) xi,yi,zi,xk,yk,zk,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p) rik2,rv2,eps2,redi,redk,redk_
         logical do_pair,same_block,accept_mid
@@ -291,13 +291,6 @@ c
         nwarp   = blockDim%x*gridDim%x / warpsize
         ilane   = iand( threadIdx%x-1,warpsize-1 ) + 1
         accept_mid = .true.
-c       ninte   = 0
-
-c       if (ithread.eq.1) print*,'ehal1c_cu2_in'
-c    &   ,blockDim%x,gridDim%x,nwarp,nvdwlocnlb_pair,n
-c    &   ,c0,c1,c2,c3,c3,cut2,ghal,dhal
-c    &   ,ev,vxx,vxy,vxz,vyy,ndir
-c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 
         do ii = iwarp, nvdwlocnlb_pair-1, nwarp
 
@@ -374,7 +367,7 @@ c    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
                  call elj3_couple(rik2,xpos,ypos,zpos,rv2,eps2,cut2
      &                           ,cut,off,e)
 
-                 ev_   = ev_ + e
+                 ev_   = ev_ + tp2enr(e)
                  nev_  = nev_+ 1
 
 #ifdef TINKER_DEBUG
@@ -387,7 +380,7 @@ c                end if
 
               end if
 
-              dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
+              !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
 
            end do
 
