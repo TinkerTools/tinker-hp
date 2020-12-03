@@ -9,8 +9,8 @@ FC       = pgf90
 
 # Flags
 FCFLAGS   = -O3 -Mcuda=cc60,cc70#-rc=rc4.0
-CUFLAGS   = -std=c++14 -O3 -gencode arch=compute_70,code=sm_70 \
-                -gencode arch=compute_80,code=sm_80 \
+CUFLAGS   = -std=c++14 -O3 -gencode arch=compute_60,code=sm_60 \
+                -gencode arch=compute_70,code=sm_70 \
 
 # Directories
 #INCLUDE       = -I$(CUDA_DIR)/include
