@@ -238,6 +238,8 @@ c
 c       get groups restrained to a specified distance range
 c
            else if (keyword(1:16) .eq. 'RESTRAIN-GROUPS ') then
+              ia = 0
+              ib = 0
               g1 = 100.0d0
               g2 = 0.0d0
               g3 = 0.0d0

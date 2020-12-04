@@ -251,7 +251,7 @@ c
 c
 c     write initial intermediate prior to first iteration
 c
-     if (iwrite .gt. 0 .and. rank.eq.0)  call optsave (niter,x0)
+      if (iwrite .gt. 0 .and. rank.eq.0)  call optsave (niter,x0)
 c
 c     tests of the various termination criteria
 c

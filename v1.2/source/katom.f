@@ -13,6 +13,13 @@ c
 c     "katom" assigns an atom type definitions to each atom in
 c     the structure and processes any new or changed values
 c
+c     literature reference:
+c
+c     K. A. Feenstra, B. Hess and H. J. C. Berendsen, "Improving
+c     Efficiency of Large Time-Scale Molecular Dynamics Simulations
+c     of Hydrogen-Rich Systems", Journal of Computational Chemistry,
+c     8, 786-798 (1999)  [heavy hydrogen reweighting]
+c
 c
       subroutine katom
       use atmtyp
@@ -23,11 +30,15 @@ c
       use inform
       use iounit
       use katoms
+      use mpi
       implicit none
-      integer i,k,next
+      integer i,j,k,ierr
+      integer next,nh
       integer cls,atn,lig
-      real*8 wght
-      logical header
+      real*8 wght,sum
+      real*8 hmax,hmass
+      real*8 dmin,dmass
+      logical header,heavy
       character*3 symb
       character*20 keyword
       character*24 notice
@@ -111,6 +122,67 @@ c
          end if
       end do
 c
+c     repartition hydrogen masses to use "heavy" hydrogens
+c
+      heavy = .false.
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call gettext (record,keyword,next)
+         call upcase (keyword)
+         if (keyword(1:15) .eq. 'HEAVY-HYDROGEN ') then
+            heavy = .true.
+         end if
+      end do
+      if (heavy) then
+         if (hostrank.ne.0) goto 11
+         hmax = 4.0d0
+         do i = 1, n
+            nh = 0
+            sum = mass(i)
+            do j = 1, n12(i)
+               k = i12(j,i)
+               if (atomic(k) .eq. 1) then
+                  nh = nh + 1
+                  sum = sum + mass(k)
+               end if
+            end do
+            hmass = min(hmax,sum/dble(nh+1))
+            do j = 1, n12(i)
+               k = i12(j,i)
+               if (atomic(k) .eq. 1) then
+                  dmass = hmass - mass(k)
+                  mass(k) = hmass
+                  mass(i) = mass(i) - dmass
+               end if
+            end do
+         end do
+         do i = 1, n
+            if (mass(i) .lt. hmax) then
+               dmass = hmax - mass(i)
+               dmin = hmax + dmass
+               do j = 1, n12(i)
+                  k = i12(j,i)
+                  if (mass(k) .gt. dmin) then
+                     mass(k) = mass(k) - dmass
+                     mass(i) = hmax
+                     goto 50
+                  end if
+               end do
+               do j = 1, n13(i)
+                  k = i13(j,i)
+                  if (mass(k) .gt. dmin) then
+                     mass(k) = mass(k) - dmass
+                     mass(i) = hmax
+                     goto 50
+                  end if
+               end do
+   50          continue
+            end if
+         end do
+ 11      call MPI_BARRIER(hostcomm,ierr)
+      end if
+c
 c     process keywords containing atom types for specific atoms
 c
       header = .true.
@@ -131,12 +203,12 @@ c
             call gettext (record,symb,next)
             call getstring (record,notice,next)
             string = record(next:120)
-            read (string,*,err=70,end=70)  atn,wght,lig
+            read (string,*,err=80,end=80)  atn,wght,lig
             if (k.lt.0 .and. k.ge.-n) then
                if (header .and. .not.silent) then
                   header = .false.
-                  if (rank.eq.0) write (iout,50)
-   50             format (/,' Additional Atom Types for',
+                  if (rank.eq.0) write (iout,60)
+   60             format (/,' Additional Atom Types for',
      &                       ' Specific Atoms :',
      &                    //,5x,'Atom  Class  Symbol  Description',
      &                       15x,'Atomic',4x,'Mass',3x,'Valence',/)
@@ -150,11 +222,11 @@ c
                mass(k) = wght
                valence(k) = lig
                if ((.not. silent).and.(rank.eq.0)) then
-                  write (iout,60)  k,cls,symb,notice,atn,wght,lig
-   60             format (2x,i6,1x,i6,5x,a3,3x,a24,i6,f11.3,i6)
+                  write (iout,70)  k,cls,symb,notice,atn,wght,lig
+   70             format (2x,i6,1x,i6,5x,a3,3x,a24,i6,f11.3,i6)
                end if
             end if
-   70       continue
+   80       continue
          end if
       end do
 c
@@ -169,13 +241,13 @@ c
             abort = .true.
             if (header) then
                header = .false.
-               if (rank.eq.0) write (iout,80)
-   80          format (/,' Undefined Atom Types or Classes :',
+               if (rank.eq.0) write (iout,90)
+   90          format (/,' Undefined Atom Types or Classes :',
      &                 //,' Type',10x,'Atom Number',5x,'Atom Type',
      &                    5x,'Atom Class',/)
             end if
-            if (rank.eq.0) write (iout,90)  i,k,cls
-   90       format (' Atom',12x,i5,10x,i5,10x,i5)
+            if (rank.eq.0) write (iout,100)  i,k,cls
+  100       format (' Atom',12x,i5,10x,i5,10x,i5)
          end if
       end do
 c
@@ -186,17 +258,17 @@ c
          if (n12(i) .ne. valence(i)) then
             if (header) then
                header = .false.
-               if (rank.eq.0) write (iout,100)
-  100          format (/,' Atoms with an Unusual Number of Attached',
+               if (rank.eq.0) write (iout,110)
+  110          format (/,' Atoms with an Unusual Number of Attached',
      &                    ' Atoms :',
      &                 //,' Type',11x,'Atom Name',6x,'Atom Type',7x,
      &                    'Expected',4x,'Found',/)
             end if
             if (rank.eq.0) then
-               write (iout,110)  i,name(i),type(i),valence(i),
+               write (iout,120)  i,name(i),type(i),valence(i),
      $          n12(i)
             end if
-  110       format (' Valence',7x,i5,'-',a3,8x,i5,10x,i5,5x,i5)
+  120       format (' Valence',7x,i5,'-',a3,8x,i5,10x,i5,5x,i5)
          end if
       end do
       return
