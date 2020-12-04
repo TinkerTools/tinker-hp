@@ -370,15 +370,15 @@ c
 !$acc parallel loop async(def_queue)
 !$acc&         default(present)
       do intfix = 1, ntfixloc
-         i = ntfixglob(intfix)
-         ia = itfix(1,i)
-         ialoc = loc(ia)
-         ib = itfix(2,i)
-         ibloc = loc(ib)
-         ic = itfix(3,i)
-         icloc = loc(ic)
-         id = itfix(4,i)
-         idloc = loc(id)
+         i       = ntfixglob(intfix)
+         ia      = itfix(1,i)
+         ialoc   = loc(ia)
+         ib      = itfix(2,i)
+         ibloc   = loc(ib)
+         ic      = itfix(3,i)
+         icloc   = loc(ic)
+         id      = itfix(4,i)
+         idloc   = loc(id)
          proceed = .true.
          if (proceed)  proceed = (use(ia) .or. use(ib) .or.
      &                            use(ic) .or. use(id))
@@ -404,12 +404,12 @@ c
             xdc = xid - xic
             ydc = yid - yic
             zdc = zid - zic
-            xt = yba*zcb - ycb*zba
-            yt = zba*xcb - zcb*xba
-            zt = xba*ycb - xcb*yba
-            xu = ycb*zdc - ydc*zcb
-            yu = zcb*xdc - zdc*xcb
-            zu = xcb*ydc - xdc*ycb
+             xt = yba*zcb - ycb*zba
+             yt = zba*xcb - zcb*xba
+             zt = xba*ycb - xcb*yba
+             xu = ycb*zdc - ydc*zcb
+             yu = zcb*xdc - zdc*xcb
+             zu = xcb*ydc - xdc*ycb
             xtu = yt*zu - yu*zt
             ytu = zt*xu - zu*xt
             ztu = xt*yu - xu*yt
@@ -652,7 +652,7 @@ c
 c
 c     increment the total energy and first derivatives
 c
-         eg = eg + e
+         eg    = eg + e
 c
 c     increment the internal virial tensor components
 c

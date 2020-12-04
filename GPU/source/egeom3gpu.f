@@ -89,8 +89,7 @@ c
       real(t_p) eg1
       integer neg1
 
-!$acc routine(image_acc) seq 
-!$acc routine(midpoint_acc) seq 
+      if (deb_Path) write(*,*) 'egeom3gpu'
 c
 c     zero out the restraint energy and partitioning terms
 c
@@ -98,20 +97,18 @@ c
       eg  = 0.0_re_p
 c     aeg = 0.0_ti_p
 
-!$acc enter data copyin(neg) async
-!$acc data present(mass)
+!$acc enter data copyin(neg)
+!$acc data present(mass,x,y,z,use)
 !$acc&     present(neg, eg, einter)
-!$acc&     async
-
-      if(rank.eq.0.and.tinkerdebug) write(*,*) 'egeom3gpu'
-
 c
 c     compute the energy for position restraint terms
 c
-c     header = .true.
+      if (npfix.ne.0) then
 
-!$acc parallel vector_length(32) default(present) async
-!$acc loop 
+      header = .true.
+
+!$acc parallel loop async
+!$acc&         default(present)
       do inpfix = 1, npfixloc
          i = npfixglob(inpfix)
          ia = ipfix(i)
@@ -133,7 +130,7 @@ c     header = .true.
             e = force * dt2
             neg = neg + 1
             eg = eg+ e
-!$acc atomic update  
+!$acc atomic
             aeg(ialoc) = aeg(ialoc) + e
 #ifndef _OPENACC
             huge = (e .gt. 10.0_ti_p)
@@ -168,12 +165,16 @@ c     header = .true.
 #endif
          end if
       end do
+
+      end if
+      if (ndfix.ne.0) then
 c
 c     compute the energy for distance restraint terms
 c
-c     header = .true.
+      header = .true.
 
-!$acc loop
+!$acc parallel loop async
+!$acc&         default(present)
       do indfix = 1, ndfixloc
          i = ndfixglob(indfix)
          ia = idfix(1,i)
@@ -227,10 +228,14 @@ c           end if
 #endif
          end if
       end do
+
+      end if
+      if (nafix.ne.0) then
 c
 c     compute the energy for angle restraint terms
 c
-!$acc loop
+!$acc parallel loop async
+!$acc&         default(present)
       do inafix = 1, nafixloc
          i = nafixglob(inafix)
          ia = iafix(1,i)
@@ -275,7 +280,7 @@ c
                e   = force * dt2
                neg = neg + 1
                eg  = eg + e
-!$acc atomic update
+!$acc atomic
                aeg(ibloc) = aeg(ibloc) + e
 #ifndef _OPENACC
                huge = (e .gt. 10.0_ti_p)
@@ -296,12 +301,15 @@ c
          end if
       end do
 
+      end if
+      if (ntfix.ne.0) then
 c
 c     compute the energy for torsional restraint terms
 c
-c     header = .true.
+      header = .true.
 
-!$acc loop
+!$acc parallel loop async
+!$acc&         default(present)
       do intfix = 1, ntfixloc
          i = ntfixglob(intfix)
          ia = itfix(1,i)
@@ -312,7 +320,7 @@ c     header = .true.
          id = itfix(4,i)
          proceed = .true.
          if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                              use(ic) .or. use(id))
+     &                            use(ic) .or. use(id))
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -420,12 +428,16 @@ c              end if
          end if
       end do
 
+      end if
+      if (ngfix.ne.0) then
 c
 c     compute the energy for group distance restraint terms
 c
-c     header = .true.
+      header = .true.
 
-!$acc loop gang
+!$acc parallel loop gang vector_length(32) 
+!$acc&         default(present) async
+!$acc&         private(xcm,ycm,zcm)
       do ingfix = 1, ngfixloc
          i = ngfixglob(ingfix)
          ia = igfix(1,i)
@@ -471,11 +483,17 @@ c         if (use_bounds)  call image (xr,yr,zr)
          target = r
          if (r .lt. gf1)  target = gf1
          if (r .gt. gf2)  target = gf2
-         dt = r - target
+         dt  = r - target
          dt2 = dt * dt
-         e = force * dt2
-         neg = neg + 1
-         eg = eg + e
+         e   = force * dt2
+!$acc loop vector
+         do j = 1,32
+            if (j.eq.1) then
+               neg = neg + 1
+                eg =  eg + e
+            end if
+         end do
+#ifndef _OPENACC
          size = real(igrp(2,ia - igrp(1,ia) + 1),t_p)
 !$acc loop vector
          do j = igrp(1,ia), igrp(2,ia)
@@ -493,7 +511,6 @@ c         if (use_bounds)  call image (xr,yr,zr)
 c        if (intermol) then
 c           einter = einter + e
 c        end if
-#ifndef _OPENACC
          huge = (e .gt. 10.0_ti_p)
          if (debug .or. (verbose.and.huge)) then
             if (header) then
@@ -509,12 +526,16 @@ c        end if
          end if
 #endif
       end do
+
+      end if
+      if (nchir.ne.0) then
 c
 c     compute the energy for chirality restraint terms
 c
-c     header = .true.
+      header = .true.
 
-!$acc loop
+!$acc parallel loop async
+!$acc&         default(present)
       do inchir = 1, nchirloc
          i = nchirglob(inchir)
          ia = ichir(1,i)
@@ -577,12 +598,13 @@ c     header = .true.
 #endif
          end if
       end do
-!$acc end parallel
 
+      end if
 c
 c     compute the energy for a Gaussian basin restraint
 c
       if (use_basin) then
+
          header = .true.
 !$acc parallel loop default(present) async
          do i = 1, nbloc
@@ -640,13 +662,13 @@ c                  term = -width *(xr*xr + yr*yr + zr*zr)
                end if
             end do
          end do
-      end if
-c     call cpu_time(time1)
 
+      end if
 c
 c     compute the energy for a spherical droplet restraint
 c
       if (use_wall) then
+
          header = .true.
          buffer = 2.5_ti_p
          a = 2048.0_ti_p
@@ -686,6 +708,7 @@ c
 #endif
             end if
          end do
+
       end if
 
 !$acc update self(aeg) async

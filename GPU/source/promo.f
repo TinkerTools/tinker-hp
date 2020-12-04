@@ -29,7 +29,7 @@ c
      &        /,1x,'###',12x,'Tinker-HP  ---  Software Tools for',
      &           ' Molecular Design',9x,'###',
      &        /,1x,'##',74x,'##',
-     &        /,1x,'##',24x,'Version 1.1(GPU) Octobre 2020',22x,'##',
+     &        /,1x,'##',24x,'Version 1.2(GPU) Octobre 2020',22x,'##',
      &        /,1x,'##',74x,'##',
      &        /,1x,'##',5x,'Copyright (c) Washington University',
      &          ' in Saint Louis (WU)',14x,'##',
