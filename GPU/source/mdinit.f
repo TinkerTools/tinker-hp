@@ -50,20 +50,18 @@ c
       use usage
       use virial
       implicit none
-      integer i,j,k,idyn,iglob,nh
+      integer i,j,k,idyn,iglob
       integer next
       integer lext,freeunit
       integer ierr
       real(r_p) e
       real(r_p) speed
-      real(r_p) hmax,hmass
-      real(r_p) mass_sum,dmass
       real(t_p) vec(3)
       real(r_p) dt
       real(r_p), allocatable :: derivs(:,:)
       real(r_p), allocatable :: speedvec(:)
       real(r_p) eps
-      logical exist,heavy
+      logical exist
       character*7 ext
       character*20 keyword
       character*120 dynfile
@@ -90,7 +88,6 @@ c
       bmnmix    = 8
       nfree     = 0
       irest     = 1
-      heavy     = .false.
       velsave   = .false.
       frcsave   = .false.
       uindsave  = .false.
@@ -154,8 +151,6 @@ c
             read (string,*,err=10,end=10)  nfree
          else if (keyword(1:15) .eq. 'REMOVE-INERTIA ') then
             read (string,*,err=10,end=10)  irest
-         else if (keyword(1:15) .eq. 'HEAVY-HYDROGEN ') then
-            heavy = .true.
          else if (keyword(1:14) .eq. 'SAVE-VELOCITY ') then
             velsave = .true.
          else if (keyword(1:11) .eq. 'SAVE-FORCE ') then
@@ -259,34 +254,6 @@ c
         nalt2  = int(dinter/(dshort+eps)) + 1
         dinter = real(nalt,r_p)
         dshort = real(nalt2,r_p)
-      end if
-c
-c     repartition hydrogen masses to allow long time steps
-c
-      if (heavy) then
-         if (hostrank.ne.0) goto 11
-         hmax = 4.0_ti_p
-         do i = 1, n
-            nh = 0
-            mass_sum = mass(i)
-            do j = 1, n12(i)
-               k = i12(j,i)
-               if (atomic(k) .eq. 1) then
-                  nh = nh + 1
-                  mass_sum = mass_sum + mass(k)
-               end if
-            end do
-            hmass = max(hmax,mass_sum/real(nh+1,r_p))
-            do j = 1, n12(i)
-               k = i12(j,i)
-               if (atomic(k) .eq. 1) then
-                  dmass = hmass - mass(k)
-                  mass(k) = mass(k) + dmass
-                  mass(i) = mass(i) - dmass
-               end if
-            end do
-         end do
- 11      call MPI_BARRIER(hostcomm,ierr)
       end if
 c
 c     make sure all atoms or groups have a nonzero mass
