@@ -44,7 +44,7 @@ c
       call prmem_requestm(y,n)
       call prmem_requestm(z,n)
 
-!$acc parallel loop default(present) async
+!$acc parallel loop default(present)
       do i = 1,n
          x(i) = 0.0_re_p
          y(i) = 0.0_re_p
@@ -75,6 +75,24 @@ c
          zr(i) = real(z(i),t_p)
       end do
 
+      end subroutine
+
+      module subroutine download_position(queue)
+      integer,optional::queue
+      if (present(queue)) then
+!$acc update host(xr,yr,zr) async(queue)
+      else
+!$acc update host(xr,yr,zr)
+      end if
+      end subroutine
+
+      module subroutine download_mirror_position(queue)
+      integer,optional::queue
+      if (present(queue)) then
+!$acc update host(x,y,z) async(queue)
+      else
+!$acc update host(x,y,z)
+      end if
       end subroutine
 
       subroutine atomsmirror_finalize

@@ -363,7 +363,7 @@ c
 #ifdef USE_NVSHMEM_CUDA
      &                  nshArray,d_nshArray,
 #endif
-     &                  config)
+     &                  config,start)
       implicit none
       logical,pointer:: shArray(:)
       integer request_shape(:)
@@ -372,9 +372,9 @@ c
       type(lDPC)   ,allocatable,optional::   nshArray(:)
       type(lDPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer,optional::config
+      integer,optional::config,start
 
-      integer request_size,configure,i,istat
+      integer request_size,configure,i,istat,start_
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
       integer :: disp_unit,ierr
       type(c_ptr) :: baseptr
@@ -383,12 +383,12 @@ c
       integer(c_size_t) sh_size
 #endif
 
-      if (present(config)) then
-         configure = config
-      else
-         configure = mhostonly
-      end if
-
+      ! Default config
+      configure = mhostonly
+      start_    = 1
+      ! Configurate options
+      if (present(config)) configure = config
+      if (present(start )) start_    = start
 c
 c     Deallocation
 c
@@ -450,6 +450,10 @@ c
         !association with fortran pointer
         CALL C_F_POINTER(baseptr,shArray,request_shape)
         s_shmem = s_shmem + sizeof(shArray)
+
+        ! Reshape pointer if necessary
+        if (start_.ne.1)
+     &  shArray(start_:start_+request_size-1) => shArray
       end if
 
       if (btest(configure,memacc)) then
@@ -1729,6 +1733,71 @@ c
 
       end subroutine
 
+      module subroutine prmem_int8_req( array, n, async, queue, config )
+        implicit none
+        integer(8), allocatable, intent(inout) :: array(:)
+        integer, intent(in) :: n
+        logical, optional, intent(in) :: async
+        integer, optional, intent(in) :: queue, config
+
+        integer cfg
+        integer(int_ptr_kind()) s_array
+#ifdef _OPENACC
+        integer :: async_queue
+        async_queue = acc_async_sync
+        if ( present(async) ) then
+           if( async ) async_queue = acc_async_noval
+        end if
+        if( present(queue) ) then
+            async_queue = queue
+        end if
+#endif
+        if (present(config)) then
+           cfg = config
+        else
+           cfg = mhostacc
+        end if
+
+        if (.not. allocated(array)) then
+           allocate(array(n))
+           s_array = n*szoi8
+           s_prmem =  s_prmem + s_array
+           if (btest(cfg,memacc)) then
+!$acc enter data create(array) async( async_queue )
+              sd_prmem = sd_prmem + s_array
+           end if
+           !print*,'alloc',n
+        else if (btest(cfg,memfree).or.n.eq.0) then
+           s_array = size(array)*szoi8
+           if (btest(cfg,memacc)) then
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+           end if
+           !print*, 'deallocate array'
+           s_prmem = s_prmem - s_array
+           deallocate(array)
+        else
+           if ( n > size(array) .or. n < 4*size(array)/5 ) then
+              !print*,'realloc',n,size(array),(5*size(array)/4)
+              s_array = size(array)*szoi8
+              s_prmem = s_prmem - s_array
+              if (btest(cfg,memacc)) then
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+              end if
+              deallocate(array)
+              allocate(array(n))
+              s_array = n*szoi8
+              s_prmem = s_prmem + s_array
+              if (btest(cfg,memacc)) then
+!$acc enter data create(array) async( async_queue )
+              sd_prmem = sd_prmem + s_array
+              end if
+           end if
+        end if
+
+      end subroutine
+
       module subroutine prmem_int_req1( array, sz_array, n, 
      &                  async, queue, config )
         implicit none
@@ -1990,6 +2059,71 @@ c
 !$acc enter data create(array) async( async_queue )
               s_prmem = s_prmem + int(nl,int_ptr_kind())*nc*sizeof(nc)
              sd_prmem =sd_prmem + int(nl,int_ptr_kind())*nc*sizeof(nc)
+           end if
+        end if
+
+      end subroutine
+
+      module subroutine prmem_int8_req2( array, nl, nc, async, queue,
+     &                  config, nlst, ncst )
+        implicit none
+        integer(8), allocatable, intent(inout) :: array(:,:)
+        integer   , intent(in) :: nc, nl
+        logical   , optional   , intent(in) :: async
+        integer   , optional   , intent(in) :: queue, config
+        integer   , optional   , intent(in) :: nlst, ncst
+
+        integer ashape(2)
+        integer cfg, nlstr, ncstr
+        integer(int_ptr_kind()) s_array
+#ifdef _OPENACC
+        integer :: async_queue
+        async_queue = acc_async_sync
+        if( present(async) ) then
+            if( async ) async_queue = acc_async_noval
+        end if
+        if( present(queue) ) then
+            async_queue = queue
+        end if
+#endif
+        if (present(config)) then
+           cfg = config
+        else
+           cfg = mhostacc
+        end if
+
+        nlstr = 1; ncstr = 1;
+        if (present(nlst)) nlstr = nlst
+        if (present(ncst)) ncstr = ncst
+
+        if (.not.allocated(array)) then
+           allocate(array(nlstr:nl,ncstr:nc))
+           s_array = (nl-nlstr+1)*(nc-ncstr+1)*szoi8
+!$acc enter data create(array) async( async_queue )
+           s_prmem = s_prmem + s_array
+          sd_prmem =sd_prmem + s_array
+        else if (btest(cfg,memfree).or.nc*nl.eq.0) then
+           ashape = shape(array)
+           s_array = ashape(1)*ashape(2)*szoi8
+           if (btest(cfg,memacc)) then
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+           end if
+           s_prmem = s_prmem - s_array
+           deallocate(array)
+        else
+           ashape = shape(array)
+           if ( nc>ashape(2) .or. nl.ne.ashape(1) ) then
+              s_array = ashape(1)*ashape(2)*szoi8
+              s_prmem = s_prmem - s_array
+             sd_prmem =sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+              deallocate(array)
+              allocate(array(nlstr:nl,ncstr:nc))
+!$acc enter data create(array) async( async_queue )
+              s_array = (nl-nlstr+1)*(nc-ncstr+1)*szoi8
+              s_prmem = s_prmem + s_array
+             sd_prmem =sd_prmem + s_array
            end if
         end if
 

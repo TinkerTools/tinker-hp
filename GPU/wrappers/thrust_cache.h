@@ -17,7 +17,7 @@ public:
       //printf(" calling allocator thrust with %lu \n at disposal %lu \n ",num_bytes, nbytes);
       if (num_bytes>nbytes){
          if (ext) {
-            std::cout << "Allocated thrust cache memory is not enough to perform the routine;" <<std::endl;
+            std::cout << "Allocated thrust cache memory is not enough !" <<std::endl;
             std::cout << "Increase initial thrust cache" <<std::endl <<"Switching to thrust regular cache allocator" <<std::endl;
 
             // no allocation of the right size exists
@@ -30,9 +30,10 @@ public:
          else {
             // transform the pointer to cuda::pointer before calling cuda::free
             thrust::cuda::free(thrust::cuda::pointer<char>(ptr)); 
-            // reallocate pointer with th appropriate suze
+            // reallocate pointer with the requested size
             try { ptr  = thrust::cuda::malloc<char>(num_bytes).get(); }
             catch(std::runtime_error &e) { throw; }
+            nbytes = static_cast<size_t>(num_bytes);
          }
          return ptr;
       }

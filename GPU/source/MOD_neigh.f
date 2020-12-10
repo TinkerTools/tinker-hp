@@ -95,7 +95,7 @@ c
       integer::bex_cell=1,bey_cell=1,bez_cell=1
       integer::bcx_cell=1,bcy_cell=1,bcz_cell=1
       integer nx_cell,ny_cell,nz_cell
-      real(t_p) lbuffer,lbuf2
+      real(t_p) defaultlbuffer,defaultlbuffer1,lbuffer,lbuf2
       real(t_p) vbuf2,cbuf2,mbuf2,torquebuf2
       real(t_p) vshortbuf2,cshortbuf2,mshortbuf2,torqueshortbuf2
       logical rebuild_lst,auto_lst,dovlst,doclst,domlst
@@ -114,7 +114,7 @@ c
       ! Adjacency Matrix attributes
       integer, allocatable, target:: matb_lst(:)
       integer(int_ptr_kind()):: szoMatb=0
-      real(8) :: buffMatb=2.0
+      real(8) :: buffMatb=2.0d0
       integer szMatb
       integer nbMatb, niterMatb, offsetlMb, offsetrMb
 
@@ -153,6 +153,15 @@ c
 
       parameter( bit_si=8*sizeof(bvx_cell) )
       parameter( bit_sh=5 )
+      parameter(
+#if (defined(SINGLE) || defined(MIXED))
+     &  defaultlbuffer  = 0.7
+     & ,defaultlbuffer1 = 1.0
+#else
+     &  defaultlbuffer  = 2.0
+     & ,defaultlbuffer1 = 2.0
+#endif
+     & )
 
 !$acc declare create(nvlst,nelst,nelstc)
       end

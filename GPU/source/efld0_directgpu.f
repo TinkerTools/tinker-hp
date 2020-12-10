@@ -822,7 +822,6 @@ c====================================================================
          nlst => nelst
          mode = 'EWALD'
       end if
-!$acc enter data attach(lst,nlst) async(def_queue)
       call switch (mode)
 c
       if (deb_Path)
@@ -836,6 +835,7 @@ c
       alsq2n = 0.0_ti_p
       if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
 
+!$acc enter data attach(lst,nlst) async(def_queue)
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) then
 !!$acc wait(rec_queue) async(rec_queue)

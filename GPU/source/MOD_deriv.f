@@ -51,20 +51,27 @@ c     cDef        Default force communication parameter
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
+
       module deriv
       implicit none
       !DIR$ ATTRIBUTES ALIGN:64:: desum,deb,dea
-      real(r_p),allocatable :: desum(:,:),deb(:,:),dea(:,:)
+      real(r_p),allocatable :: desum(:,:)
+      real(r_p),allocatable :: deb(:,:),dea(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deba,deit,dec
-      real(r_p),allocatable :: deba(:,:),deit(:,:),dec(:,:)
+      real(r_p),allocatable :: deba(:,:),deit(:,:)
+      mdyn_rtyp,allocatable :: dec(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deub,deaa,deopb
       real(r_p),allocatable :: deub(:,:),deaa(:,:),deopb(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deid,det,dept
       real(r_p),allocatable :: deid(:,:),det(:,:),dept(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: debt,dett,dev
-      real(r_p),allocatable :: debt(:,:),dett(:,:),dev(:,:)
+      real(r_p),allocatable :: debt(:,:),dett(:,:)
+      real(r_p),allocatable :: dev(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: dem,dep,deopd
-      real(r_p),allocatable :: dem(:,:),dep(:,:),deopd(:,:)
+      mdyn_rtyp,allocatable :: dem(:,:)
+      mdyn_rtyp,allocatable :: dep(:,:)
+      real(r_p),allocatable :: deopd(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deg,dex
       real(r_p),allocatable :: deg(:,:),dex(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: decrec,demrec
@@ -72,15 +79,15 @@ c
       !DIR$ ATTRIBUTES ALIGN:64:: deprec
       real(r_p),allocatable :: deprec(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: debond
-      real(r_p),allocatable :: debond(:,:)
+      mdyn_rtyp,allocatable :: debond(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: desave
       real(r_p),allocatable :: desave(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: desmd
       real(r_p),allocatable :: desmd(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deamdD,deamdP
-      real(r_p), allocatable :: deamdD(:,:),deamdP(:,:)
+      real(r_p),allocatable :: deamdD(:,:),deamdP(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deW1aMD,deW2aMD
-      real(r_p), allocatable :: deW1aMD(:,:),deW2aMD(:,:)      
+      real(r_p),allocatable :: deW1aMD(:,:),deW2aMD(:,:)      
       logical dotstgrad
       integer cBond,cNBond,cSNBond,cDef
       parameter( cBond=1,cNBond=4,cSNBond=2,cDef=5 )
@@ -143,5 +150,6 @@ c
       subroutine deriv_void()
       implicit none
       end subroutine
+
 
       end

@@ -160,6 +160,7 @@ c
 c     initialize timer values
 c
       call initiate_timers()
+      call timer_enter(timer_prog)
 
       dotstgrad      = .false.
 
@@ -216,7 +217,8 @@ c
       use nvshmem
       use utilgpu
 #ifdef _OPENACC
-      use utilcu ,only: copy_data_to_cuda_env
+      use interfaces,only:C_init_env
+      use utilcu    ,only: copy_data_to_cuda_env
 #endif
       use sizes  ,only: tinkerdebug
       use virial
@@ -270,11 +272,12 @@ c     create energy data on device
 c
       call create_energi_on_device()
 !$acc enter data create(einter)
-!$acc enter data create(ered_buff,vred_buff)
+!$acc enter data create(ered_buff,ered_buf1,vred_buff)
 c
 c     mapping parallelism for gpu execution
 c
 #ifdef _OPENACC
+      call C_init_env(devicenum,nproc,rank,tinkerdebug)
       call copy_data_to_cuda_env(nproc)
 #endif
 

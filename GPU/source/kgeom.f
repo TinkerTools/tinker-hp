@@ -18,14 +18,13 @@ c
 #include "tinker_precision.h"
       subroutine kgeom(init)
       use atmlst
-      use argue ,only: arg
+      use argue  ,only: arg
       use atmtyp
-      use atoms ,only:type
-      use atomsMirror
+      use atoms
       use bound
       use couple
       use domdec
-      use files ,only: filename,leng
+      use files  ,only: filename,leng
       use group
       use iounit
       use keys
@@ -35,7 +34,7 @@ c
       use potent
       use utilgpu,only: prmem_request
       implicit none
-      integer i,j,k
+      integer i,j,k,ncap
       integer ip,next
       integer ia,ib,ic,id
       integer, allocatable :: rpos(:)
@@ -64,7 +63,8 @@ c
       real(t_p) pos(3,4)
       real(t_p), allocatable :: posgroup(:,:)
 c
-!$acc update host(x,y,z)
+!$acc update host(x,y,z) async
+!$acc wait
       if (init) then
 c
 c     allocate global arrays
@@ -477,17 +477,23 @@ c
 c
 
       npfixloc = 0
+      if (npfix.ne.0) then
+!$acc parallel loop async
+!$acc&         copy(npfixloc) present(ipfix,repart,npfixglob)
       do i = 1, npfix
         ip = ipfix(i)
         if (repart(ip).eq.rank) then
+!$acc atomic capture
           npfixloc = npfixloc + 1
-          npfixglob(npfixloc) = i
+          ncap     = npfixloc
+!$acc end atomic
+          npfixglob(ncap) = i
         end if
       end do
-!$acc update device(npfixglob) async
-
+      end if
 
 c
+      if (ndfix.ne.0) then
       ndfixloc = 0
       do i = 1, ndfix
           ia = idfix(1,i)
@@ -505,9 +511,11 @@ c
           end if
       end do
 !$acc update device(ndfixglob) async
+      end if
 
 c
       nafixloc = 0
+      if (nafix.ne.0) then
       do i = 1, nafix
         ia = iafix(1,i)
         pos(1,1) = x(ia)
@@ -528,10 +536,11 @@ c
         end if
       end do
 !$acc update device(nafixglob) async
-
+      end if
 
 c
       ntfixloc = 0
+      if (ntfix.ne.0) then
       do i = 1, ntfix
         ia = itfix(1,i)
         pos(1,1) = x(ia)
@@ -556,9 +565,11 @@ c
         end if
       end do
 !$acc update device(ntfixglob) async
-c
+      end if
 
+c
       ngfixloc = 0
+      if (ngfix.ne.0) then
       do i = 1, ngfix
         ia = igfix(1,i)
         sizegroup = igrp(2,ia)-igrp(1,ia)+1
@@ -579,9 +590,11 @@ c
         deallocate (posgroup)
       end do
 !$acc update device(ngfixglob) async
+      end if
 
 c
       nchirloc = 0
+      if (nchir.ne.0) then
       do i = 1, nchir
         ia = ichir(1,i)
         pos(1,1) = x(ia)
@@ -604,12 +617,9 @@ c
           nchirloc = nchirloc + 1
           nchirglob(nchirloc) = i
         end if
-
       end do
 !$acc update device(nchirglob) async
-
-c     print*,'kgeom ',use_geom,use_basin,use_wall,npfixloc
-c    &      ,ndfixloc,nafixloc,ntfixloc,ngfixloc,nchirloc,rank
+      end if
 
       end
 

@@ -210,11 +210,11 @@ c
       use tinMemory
       use utils
       implicit none
-c
-c     if (associated(ibnd).and.n.eq.size(bl)
-c    &    .and.8*n.eq.size(bndlist)) return
+ 
+c     if (associated(bl)     .and.nbond.eq.size(bl) .and.
+c    &    associated(bndlist).and.  8*n.eq.size(bndlist)) return
 
-#if defined(_CUDA) && defined(USE_NVSHMEM)
+#ifdef USE_NVSHMEM_CUDA
       call shmem_request(ibnd    ,winibnd    ,[2,nbond], c_ibnd, d_ibnd,
      &     mhostnvsh)
       call shmem_request(bndlist ,winbndlist ,[8,n]    , c_bndlist,
@@ -236,7 +236,7 @@ c    &    .and.8*n.eq.size(bndlist)) return
       call shmem_request(nbpitors,winnbpitors,[nbond]  ,config=mhostacc)
 #endif
 
-#if defined(USE_NVSHMEM) && defined(_CUDA)
+#ifdef USE_NVSHMEM_CUDA
       ! Explicit Reassociate to make device pointer data accessible by OpenACC
       i2dDPC_expl => d_ibnd
       d_ibnd      => i2dDPC_expl

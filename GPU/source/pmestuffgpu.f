@@ -46,16 +46,20 @@ c
          glob_p => ipole
          type_p => polerecglob
          c_n    =  npolerecloc
+#ifdef _OPENACC
          if (associated(grid_mpole_site_p,grid_mpole_sitecu)) then
             type_p => celle_pole
          end if
+#endif
       else if (cfg.eq.c_charge) then
          glob_p => iion
          type_p => chgrecglob
          c_n    =  nionrecloc
+#ifdef _OPENACC
          if (associated(grid_pchg_site_p,grid_pchg_sitecu)) then
             type_p => celle_chg
          end if
+#endif
       end if
 
       if (cfg.eq.c_mpole) then
@@ -554,6 +558,7 @@ c
       use atmlst
       use domdec
       use fft
+      use inform ,only:deb_Path
       use mpole
       use pme
       use potent
@@ -578,6 +583,7 @@ c
       real(t_p) tuv003,tuv210,tuv201,tuv120
       real(t_p) tuv021,tuv102,tuv012,tuv111
 c
+      if (deb_Path) write(*,'(4X,A)') "fphi_mpole_sitegpu"
       if (use_pmecore) then
         rankloc  = rank_bis
       else
@@ -1470,7 +1476,7 @@ c
      &     ,nlpts,twonlpts_1,twonlpts_12,nlptsit,grdoff
      &     ,bsorder,n1mpimax,n2mpimax,n3mpimax,nrec_send
      &     ,fmpvec,qgridin_2d,first_in)
-      call check_launch_kernel(" grid_mpole_sitecu")
+      call check_launch_kernel(" grid_mpole_sitecu_core_1p")
 
 !$acc end host_data
       if (first_in) first_in=.false.
@@ -1611,7 +1617,7 @@ c
      &     ,nlpts,twonlpts_1,twonlpts_12,nlptsit,grdoff
      &     ,bsorder,n1mpimax,n2mpimax,n3mpimax,nrec_send
      &     ,fuindvec,fuinpvec,qgrid2loc,first_in)
-      call check_launch_kernel(" grid_uind_sitecu")
+      call check_launch_kernel(" grid_uind_sitecu_core_1p")
 
 !$acc end host_data
       if (first_in) first_in=.false.
@@ -1657,7 +1663,7 @@ c
      &     ,npolerecloc,nlocrec,bsorder,nrec_send,nproc
      &     ,polerecglob,igrid
      &     ,fphirec)
-      call check_launch_kernel("fphi_uind_sitecu2")
+      call check_launch_kernel("fphi_mpole_core")
 !$acc end host_data
 
       end subroutine
@@ -1807,6 +1813,7 @@ c
      &     ,qgrid2in_2d,polerecglob,ipole,igrid,x,y,z,recip
      &     ,thetai1,thetai2,thetai3
      &     ,fdip_phi1,fdip_phi2,first_in)
+      call check_launch_kernel("fphi_uind_sitecu2_core_1p")
       else
       call fphi_uind_sitecu2_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
      &     (kstat,ked,jstat,jed,istat,ied
@@ -1816,8 +1823,8 @@ c
      &     ,qgrid2in_2d,polerecglob,ipole,igrid,x,y,z,recip
      &     ,thetai1,thetai2,thetai3
      &     ,fdip_phi1,fdip_phi2,first_in)
+      call check_launch_kernel("fphi_uind_sitecu2_core")
       end if
-      call check_launch_kernel("fphi_uind_sitecu2")
 
 !$acc end host_data
 
@@ -1876,7 +1883,7 @@ c
      &     (kstat,ked,jstat,jed,istat,ied,nfft1,nfft2,nfft3
      &     ,npolerecloc,nlocrec,bsorder,nrec_send,nproc
      &     ,polerecglob,igrid,fdip_phi1,fdip_phi2,fdip_sum_phi)
-      call check_launch_kernel("fphi_uind_sitecu1")
+      call check_launch_kernel("fphi_uind_sitecu1_core")
 
 !$acc end host_data
 
@@ -2027,6 +2034,52 @@ c
       end if
 
       end
+
+      subroutine attach_pmecu_pointer(config)
+      use atoms    ,only: x,y,z
+      use atmlst   ,only: polerecglob
+      use boxes    ,only: recip
+      use domdec
+      use fft      ,only: kstart1,kend1,istart1,iend1,jstart1,jend1
+      use mpole    ,only: ipole
+      use pme      ,only: igrid,qgrid2in_2d,qgridin_2d
+     &             ,thetai1,thetai2,thetai3
+      use pmestuffcu
+      implicit none
+      integer,intent(in)::config
+      enum,bind(C)
+      enumerator pmeD,thetaD
+      end enum
+
+      select case (config)
+         case (pmeD)
+!$acc host_data use_device(thetai1,thetai2,thetai3,igrid,ipole
+!$acc&  ,x,y,z,qgrid2in_2d,qgridin_2d,kstart1,kend1,jstart1,jend1
+!$acc&  ,istart1,iend1,prec_send)
+         ipole_t     => ipole
+         x_t         => x
+         y_t         => y
+         z_t         => z
+         qgridin_t   => qgridin_2d
+         qgrid2in_t  => qgrid2in_2d
+         kstart1_t   => kstart1
+         kend1_t     => kend1
+         istart1_t   => istart1
+         iend1_t     => iend1
+         jstart1_t   => jstart1
+         jend1_t     => jend1
+         prec_send_t => prec_send
+!$acc end host_data
+         case (thetaD)
+!$acc host_data use_device(thetai1,thetai2,thetai3)
+         thetai1_t => thetai1
+         thetai2_t => thetai2
+         thetai3_t => thetai3
+!$acc end host_data
+         case default
+         print*, 'Unknown configuration for thetai'
+      end select
+      end subroutine
 
       subroutine set_PME_texture
       use atoms    ,only: x,y,z

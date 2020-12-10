@@ -323,6 +323,7 @@ c
       use ewald
       use inter
       use iounit
+      use inform
       use math
       use molcul
       use mpole
@@ -410,7 +411,7 @@ c
  1000 format(' Warning, system moved too much since last neighbor list',
      $   ' update, try lowering nlupdate')
 c
-      if (rank.eq.0.and.tinkertime) write(*,'(2x,a)') 'epreal1c'
+      if (deb_Path) write(*,'(2x,a)') 'epreal1c'
       call timer_enter( timer_epreal )
 c
 c     perform dynamic allocation of some local arrays
@@ -1089,6 +1090,7 @@ c
       use energi
       use ewald
       use fft
+      use inform
       use math
       use mpole
       use pme
@@ -1143,7 +1145,7 @@ c
      &  deriv2=(/ 3, 8,  6, 10, 14, 12, 19, 16, 20, 17 /),
      &  deriv3=(/ 4, 9, 10,  7, 15, 17, 13, 20, 18, 19 /))
 c
-      if (rank.eq.0.and.tinkertime) write(*,'(2x,a)') 'eprecip1'
+      if (deb_Path) write(*,'(2x,a)') 'eprecip1'
       call timer_enter( timer_eprecip )
       if (use_pmecore) then
         nprocloc = nrec

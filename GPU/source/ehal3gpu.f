@@ -15,10 +15,16 @@ c     and partitions the energy among the atoms
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
+
       module ehal3gpu_inl
+        integer(1) one1,two1
+        real(t_p)  half,one
+        parameter( half=0.5, one=1.0
+     &           , one1=1, two1=2 )
         contains
+#include "convert.f.inc"
 #include "image.f.inc"
-#include "switch_respa.f.inc"
 #include "pair_ehal1.f.inc"
       end module
 
@@ -38,7 +44,7 @@ c
 
       implicit none
       integer i
-      real(t_p) elrc,aelrc
+      real(r_p) elrc,aelrc
 c
 c
 c     choose the method for summing over pairwise interactions
@@ -53,10 +59,14 @@ c
 c
 c     apply long range van der Waals correction if desired
 c
-      if (use_vcorr.and.rank.eq.0) then
+      if (use_vcorr) then
+#ifdef _OPENACC
+         print*, 'Long range vaw der Waals correction is unavailable'
+         call fatal
+#endif
          call evcorr (elrc)
          ev = ev + elrc
-         aelrc = elrc / real(n,t_p)
+         aelrc = elrc / real(n,r_p)
          do i = 1, nbloc
             aev(i) = aev(i) + aelrc
          end do
@@ -85,19 +95,21 @@ c
 cold  use analyz    ,only: aev
       use atmlst    ,only: vdwglobnl,vdwglob
       use atoms     ,only: x,y,z,n
+      use couple    ,only: i12,n12
       use domdec    ,only: loc,rank,nbloc
       use ehal3gpu_inl
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
       use interfaces,only: ehal3c_correct_scaling
-      use mutant    ,only: scexp,scalpha,vlambda,mut
+      use mutant    ,only: scexp,scalpha,vlambda,vcouple,mut=>mutInt
       use neigh     ,only: vlst,nvlst
       use tinheader ,only: ti_p,re_p
       use tinMemory ,only: prmem_request
+      use sizes     ,only: maxvalue,tinkerdebug
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin,
      &                     epsilon,nvdwbloc,nvdwlocnl,
-     &                     nvdwclass
+     &                     nvdwclass,skipvdw12
       use vdwpot    ,only: dhal,ghal
       use vdw_locArray
       use utilgpu   ,only: def_queue,dir_queue,rec_queue
@@ -113,8 +125,8 @@ cold  use analyz    ,only: aev
       integer ii,iv,it,ivloc
       integer nnvlst,nnvlst2
       integer nn12,nn13,nn14,ntot
+      integer in12,ai12(maxvalue)
       real(t_p)  xi,yi,zi,redi,e,de
-      real(t_p)  half,one
       real(t_p)  rdn,rdn1,redk
       real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
       real(t_p)  dedx,dedy,dedz
@@ -125,12 +137,10 @@ cold  use analyz    ,only: aev
       real(t_p)  xpos,ypos,zpos
       real(t_p)  dtaper,taper
       real(t_p)  vscale,vscale4
+      integer(1) muti,mutik
       logical    do_scale4
-      logical    muti,mutk
+      logical    ik12
       character*10 mode
-
-      parameter(half=0.5_ti_p,
-     &           one=1.0_ti_p)
 
 c
       if(deb_Path) write (*,*) 'ehal3cgpu'
@@ -144,19 +154,17 @@ c
       call prmem_request(yred,nbloc,queue=def_queue)
       call prmem_request(zred,nbloc,queue=def_queue)
 
-!$acc data create(xred,yred,zred)
+!$acc data present(xred,yred,zred)
 !$acc&     present(loc,ired,kred,x,y,z,vdwglobnl,ivdw,loc,jvdw,
-!$acc&  vdwglob,vlst,nvlst,radmin,epsilon,mut)
-!$acc&     async(def_queue)
+!$acc&  vdwglob,vlst,nvlst,radmin,epsilon,mut,i12,n12)
+!$acc&     present(ev,nev,nev_)
 
-      ev  = 0.0_re_p
+      ev  = 0
       nev_= 0.0
-
 c
 c     apply any reduction factor to the atomic coordinates
 c
-!$acc parallel loop default(present)
-!$acc&         async(def_queue)
+!$acc parallel loop async(def_queue)
       do k = 1,nvdwbloc
          iglob   = ivdw (vdwglob (k))
          i       = loc  (iglob)
@@ -176,8 +184,7 @@ c
 c     find van der Waals energy and derivatives via neighbor list
 c
 !$acc parallel loop gang vector_length(32)
-!$acc&         present(ev,nev_)
-!$acc&         async(def_queue)
+!$acc&         private(ai12) async(def_queue)
       MAINLOOP:
      &do ii = 1, nvdwlocnl
          iivdw = vdwglobnl(ii)
@@ -187,7 +194,6 @@ c
          nnvlst = nvlst(ii)
          if(nnvlst.eq.0) cycle MAINLOOP
          iv    = ired(iglob)
-         redi  = merge (1.0_ti_p,kred(iglob),(iglob.eq.iv))
          ivloc = loc(iv)
          it    = jvdw(iglob)
          muti  = mut(iglob)
@@ -195,19 +201,30 @@ c
          yi    = yred(i)
          zi    = zred(i)
 
+         if (skipvdw12) then
+            in12 = n12(iglob)
+!$acc loop vector
+            do j = 1,in12
+               ai12(j) = i12(j,iglob)
+            end do
+         end if
+
 !$acc loop vector 
          do k = 1, nnvlst
             kglob  = vlst(k,ii)
             kbis   = loc (kglob)
             kvloc  = loc (ired(kglob))
             kt     = jvdw (kglob)
-            mutk   = mut(kglob)
-            if (kbis.ne.kvloc) then
-               redk = kred(kglob)
-            else
-               redk = 1.0_ti_p
-            endif
-            !vscale  = 1.0_ti_p
+            mutik  = muti + mut(kglob)
+
+            if (skipvdw12) then
+               ik12 = .false.
+!$acc loop seq
+               do j = 1, in12
+                  if (ai12(j).eq.kglob) ik12=.true.
+               end do
+               if (ik12) cycle
+            end if
 c
 c     compute the energy contribution for this interaction
 c
@@ -222,15 +239,18 @@ c
             rik2   = xpos**2 + ypos**2 + zpos**2
             if (rik2>off2) cycle
 
+            ! Annihilate
+            if (vcouple.eq.1.and.mutik.eq.two1) mutik=one1
+
             rv2  =  radmin (kt,it)
             eps2 = epsilon (kt,it)
 
             call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
      &                       ,cut2,cut,off,ghal,dhal
-     &                       ,scexp,vlambda,scalpha,muti,mutk
+     &                       ,scexp,vlambda,scalpha,mutik
      &                       ,e,dedx,dedy,dedz)
 
-            ev        =  ev + e
+            ev        =  ev + tp2enr(e)
             nev_      = nev_+ 1
             !aev(i)    = aev(i)    + 0.5_ti_p*e
             !aev(kbis) = aev(kbis) + 0.5_ti_p*e
@@ -240,7 +260,7 @@ c
 
       call ehal3c_correct_scaling(xred,yred,zred)
 
-!$acc serial present(nev,nev_) async(def_queue)
+!$acc serial async(def_queue)
       nev = int(nev_)
 !$acc end serial
 
@@ -253,20 +273,22 @@ c
 cold  use analyz    ,only: aev
       use atmlst    ,only: vdwglobnl,vdwglob
       use atoms     ,only: x,y,z,n
+      use couple    ,only: i12,n12
       use cutoff    ,only: vdwshortcut,shortheal
       use domdec    ,only: loc,rank,nbloc
       use ehal3gpu_inl
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
       use interfaces,only: ehalshortlong3c_correct_scaling
-      use mutant    ,only: scexp,scalpha,vlambda,mut
+      use mutant    ,only: scexp,scalpha,vlambda,vcouple,mut=>mutInt
       use neigh     ,only: shortvlst,nshortvlst,nvlst,vlst
       use tinheader ,only: ti_p,re_p
+      use sizes     ,only: maxvalue,tinkerdebug
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
       use potent    ,only: use_vdwshort,use_vdwlong
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin,
      &                     epsilon,nvdwbloc,nvdwlocnl,
-     &                     nvdwclass
+     &                     nvdwclass,skipvdw12
       use vdwpot    ,only: dhal,ghal
       use utilgpu   ,only: def_queue,dir_queue,rec_queue
 #ifdef _OPENACC
@@ -281,10 +303,10 @@ cold  use analyz    ,only: aev
       integer ii,iv,it,ivloc
       integer nnvlst,nnvlst2
       integer nn12,nn13,nn14,ntot
+      integer in12,ai12(maxvalue)
       integer,pointer::lst(:,:),nlst(:)
       real(t_p)  vdwshortcut2
       real(t_p)  xi,yi,zi,redi,e,de
-      real(t_p)  half,one
       real(t_p)  rdn,rdn1,redk
       real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
       real(t_p)  dedx,dedy,dedz
@@ -295,16 +317,13 @@ cold  use analyz    ,only: aev
       real(t_p)  xpos,ypos,zpos
       real(t_p)  dtaper,taper
       real(t_p)  vscale,vscale4
-      logical    do_scale4
-      logical    muti,mutk
+      logical    do_scale4,ik12
+      integer(1) muti,mutik
       character*10 mode
 
       real(t_p)  xred(nbloc)
       real(t_p)  yred(nbloc)
       real(t_p)  zred(nbloc)
-      parameter(half=0.5_ti_p,
-     &           one=1.0_ti_p)
-
 c
       if(deb_Path) write (*,*) 'ehalshortlong3cgpu'
 
@@ -317,10 +336,10 @@ c
 !$acc data create(xred,yred,zred)
 !$acc&     present(loc,ired,kred,x,y,z,vdwglobnl,ivdw,loc,jvdw,
 !$acc&  vdwglob,radmin,epsilon)
-!$acc&     present(ev,nev_)
+!$acc&     present(ev,nev,nev_)
 !$acc&     async(def_queue)
 
-      ev  = 0.0_re_p
+      ev  = 0
       nev_= 0.0
 
 c
@@ -362,6 +381,7 @@ c
 c     find van der Waals energy and derivatives via neighbor list
 c
 !$acc parallel loop gang vector_length(32)
+!$acc&         private(ai12)
 !$acc&         present(lst,nlst) async(def_queue)
       MAINLOOP:
      &do ii = 1, nvdwlocnl
@@ -372,7 +392,6 @@ c
          nnvlst = nlst(ii)
          if(nnvlst.eq.0) cycle MAINLOOP
          iv    = ired(iglob)
-         redi  = merge (1.0_ti_p,kred(iglob),(iglob.eq.iv))
          ivloc = loc(iv)
          it    = jvdw(iglob)
          xi    = xred(i)
@@ -380,19 +399,31 @@ c
          zi    = zred(i)
          muti  = mut(iglob)
 
+         if (skipvdw12) then
+            in12 = n12(iglob)
+!$acc loop vector
+            do j = 1,in12
+               ai12(j) = i12(j,iglob)
+            end do
+         end if
+
 !$acc loop vector 
          do k = 1, nnvlst
             kglob  = lst(k,ii)
             kbis   = loc (kglob)
             kvloc  = loc (ired(kglob))
             kt     = jvdw (kglob)
-            mutk   = mut  (kglob)
-            if (kbis.ne.kvloc) then
-               redk = kred(kglob)
-            else
-               redk = 1.0_ti_p
-            endif
+            mutik  = muti + mut(kglob)
             !vscale  = 1.0_ti_p
+
+            if (skipvdw12) then
+               ik12 = .false.
+!$acc loop seq
+               do j = 1, in12
+                  if (ai12(j).eq.kglob) ik12=.true.
+               end do
+               if (ik12) cycle
+            end if
 c
 c     compute the energy contribution for this interaction
 c
@@ -407,22 +438,25 @@ c
             rik2   = xpos**2 + ypos**2 + zpos**2
             if (rik2<vdwshortcut2.or.rik2>off2) cycle
 
+            ! Annihilate
+            if (vcouple.eq.1.and.mutik.eq.two1) mutik=one1
+
             rv2  =  radmin (kt,it)
             eps2 = epsilon (kt,it)
 
             if (use_vdwshort) then
                call ehal1_couple_short(xpos,ypos,zpos,rik2,rv2,eps2
      &                    ,1.0_ti_p,cut2,off
-     &                    ,scexp,vlambda,scalpha,muti,mutk
+     &                    ,scexp,vlambda,scalpha,mutik
      &                    ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
             else
                call ehal1_couple_long(xpos,ypos,zpos,rik2,rv2,eps2
      &                    ,1.0_ti_p,cut2,cut,off,vdwshortcut
-     &                    ,scexp,vlambda,scalpha,muti,mutk
+     &                    ,scexp,vlambda,scalpha,mutik
      &                    ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
             end if
 
-            ev   =   ev  + e
+            ev   =   ev  + tp2enr(e)
             nev_ =  nev_ + 1
 
          end do
@@ -448,32 +482,30 @@ c
      &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
      &              ,zendproc,glob
       use ehal1cu
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
       use interfaces,only: ehal3c_correct_scaling
-      use mutant    ,only: scexp,scalpha,vlambda,mut
+      use mutant    ,only: scexp,scalpha,vlambda,mut=>mutInt
       use neigh     ,only: cellv_glob,cellv_loc,cellv_jvdw
      &              ,vblst,ivblst
       use tinheader ,only: ti_p
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
       use utilcu    ,only: check_launch_kernel
       use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream
-     &              ,rec_stream,rec_event,stream_wait_async
-     &              ,warp_size,def_stream,inf
-     &              ,ered_buff,nred_buff,reduce_energy_action
+     &              ,start_dir_stream_cover,def_stream
+     &              ,warp_size,inf
+     &              ,ered_buff=>ered_buf1,nred_buff,reduce_energy_action
      &              ,zero_en_red_buffer,prmem_request
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin_c
      &              ,epsilon_c,nvdwbloc,nvdwlocnl
      &              ,nvdwlocnlb,nvdwclass
      &              ,nvdwlocnlb_pair,nvdwlocnlb2_pair
-      use vdwpot    ,only: dhal,ghal
+      use vdwpot    ,only: dhal,ghal,v2scale
       use vdw_locArray
       implicit none
       integer i,k
       integer iglob,iivdw,iv,grid
       integer ierrSync,lst_start
-#ifdef TINKER_DEBUG
-#endif
       real(t_p)  xbeg,xend,ybeg,yend,zbeg,zend
       real(t_p)  rdn,rdn1
       character*10 mode
@@ -501,10 +533,7 @@ c
 
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue)
-     &   call stream_wait_async(rec_stream,dir_stream,rec_event)
-#endif
-
-#ifdef TINKER_DEBUG
+     &   call start_dir_stream_cover
 #endif
 
 c
@@ -563,14 +592,8 @@ c
 !$acc host_data use_device(xred,yred,zred,cellv_glob,cellv_loc
 !$acc&    ,loc_ired,ivblst,vblst,cellv_jvdw,epsilon_c,mut
 !$acc&    ,radmin_c,ired,kred,ered_buff,nred_buff
-#ifdef TINKER_DEBUG
-#endif
 !$acc&    )
 
-      call set_vdw_texture
-     &     (kred,radmin_c,epsilon_c,xred,yred,zred
-     &     ,vblst,ivblst,loc_ired,cellv_jvdw,cellv_glob,cellv_loc
-     &     ,n,nvdwlocnl,nvdwlocnlb,nvdwclass,nvdwlocnlb_pair)
       call ehal3_cu2<<<*,VDW_BLOCK_DIM,0,def_stream>>>
      &             (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
      &             ,ivblst,vblst(lst_start),cellv_jvdw
@@ -581,17 +604,12 @@ c
      &             ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
      &             ,scexp,vlambda,scalpha,mut
      &             ,xbeg,xend,ybeg,yend,zbeg,zend
-#ifdef TINKER_DEBUG
-#endif
      &             )
       call check_launch_kernel(" ehal3_cu2 ")
 
 !$acc end host_data
 
-      call reduce_energy_action(ev,nev,def_queue)
-
-#ifdef TINKER_DEBUG
-#endif
+      call reduce_energy_action(ev,nev,ered_buff,def_queue)
 
       call ehal3c_correct_scaling(xredc,yredc,zredc)
 
@@ -607,10 +625,10 @@ c!$acc end data
      &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
      &              ,zendproc,glob
       use ehal1cu
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
       use interfaces,only: ehalshortlong3c_correct_scaling
-      use mutant    ,only: scexp,scalpha,vlambda,mut
+      use mutant    ,only: scexp,scalpha,vlambda,mut=>mutInt
       use neigh     ,only: cellv_glob,cellv_loc,cellv_jvdw
      &              ,vblst,ivblst,shortvblst,ishortvblst
       use potent    ,only: use_vdwshort,use_vdwlong
@@ -620,7 +638,7 @@ c!$acc end data
       use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream
      &              ,rec_stream,rec_event,stream_wait_async
      &              ,warp_size,def_stream,inf
-     &              ,ered_buff,nred_buff,reduce_energy_action
+     &              ,ered_buff=>ered_buf1,nred_buff,reduce_energy_action
      &              ,zero_en_red_buffer,prmem_request
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin_c
      &              ,epsilon_c,nvdwbloc,nvdwlocnl
@@ -735,11 +753,6 @@ c
 #endif
 !$acc&    )
 
-      call set_vdw_texture
-     &     (kred,radmin_c,epsilon_c,xred,yred,zred
-     &     ,vblst,ivblst,loc_ired,cellv_jvdw,cellv_glob,cellv_loc
-     &     ,n,nvdwlocnl,nvdwlocnlb,nvdwclass,nvdwlocnlb_pair)
-
       if (use_vdwshort) then
       call ehalshortlong3_cu <<<*,VDW_BLOCK_DIM,0,def_stream>>>
      &           (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
@@ -775,7 +788,7 @@ c
 
 !$acc end host_data
 
-      call reduce_energy_action(ev,nev,def_queue)
+      call reduce_energy_action(ev,nev,ered_buff,def_queue)
 
 #ifdef TINKER_DEBUG
  34   format(2I10,3F12.4)
@@ -785,7 +798,7 @@ c
 !$acc exit data copyout(inter)
 !$acc update host(dev,ev)
       write(*,36)'nvdw pair block ',nvdwlocnlb_pair,nvdwlocnlb2_pair
-      write(*,35)'nev & ev & rank ',sum(inter),ev,rank
+      write(*,35)'nev & ev & rank ',sum(inter),enr2en(ev),rank
 #endif
 
       call ehalshortlong3c_correct_scaling(xredc,yredc,zredc,mode)
@@ -800,9 +813,9 @@ c
       use atmlst    ,only: vdwglobnl
       use domdec    ,only: loc,rank
       use ehal3gpu_inl
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
-      use mutant    ,only: scexp,scalpha,vlambda,mut
+      use mutant    ,only: scexp,scalpha,vlambda,vcouple,mut=>mutInt
       use tinheader ,only: ti_p
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin4,
@@ -818,7 +831,6 @@ c
       integer nn12,nn13,nn14,ntot
       integer interac
       real(t_p)  xi,yi,zi,redi,e,de
-      real(t_p)  half,one
       real(t_p)  rdn,rdn1,redk
       real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
       real(t_p)  dedx,dedy,dedz
@@ -830,17 +842,14 @@ c
       real(t_p)  dtaper,taper
       real(t_p)  vscale,vscale4
       logical    do_scale4
-      logical muti,mutk
+      integer(1) muti,mutik
       character*10 mode
 
       real(t_p),intent(in):: xred(:)
       real(t_p),intent(in):: yred(:)
       real(t_p),intent(in):: zred(:)
 
-      parameter(half=0.5_ti_p,
-     &           one=1.0_ti_p)
       ! Scaling factor correction loop
-
       if (deb_Path)
      &   write(*,'(2x,a)') "ehal0c_correct_scaling"
 
@@ -862,11 +871,8 @@ c
          it     = jvdw(iglob)
          kt     = jvdw(kglob)
 
-         redi   = merge (kred(iglob),1.0_ti_p,(i.ne.ivloc))
-         redk   = merge (kred(kglob),1.0_ti_p,(kbis.ne.kvloc))
-
          muti   = mut(iglob)
-         mutk   = mut(kglob)
+         mutik  = muti + mut(kglob)
 
          do_scale4 = .false.
          vscale4   = 0
@@ -888,9 +894,11 @@ c     and check for an interaction distance less than the cutoff
 c
          rik2   = xpos**2 + ypos**2 + zpos**2
          if (rik2>off2) cycle
-c
-c     replace 1-4 interactions
-c
+
+         ! Annihilate
+         if (vcouple.eq.1.and.mutik.eq.two1) mutik=one1
+
+         ! Replace 1-4 interactions
  20      continue
          if (do_scale4) then
             rv2  = radmin4 (kt,it)
@@ -902,14 +910,14 @@ c
 
          call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,vscale
      &                    ,cut2,cut,off,ghal,dhal
-     &                    ,scexp,vlambda,scalpha,muti,mutk
+     &                    ,scexp,vlambda,scalpha,mutik
      &                    ,e,dedx,dedy,dedz)
 
          if (.not.do_scale4) then
          e    = -e
          end if
 
-         ev           =   ev + e
+         ev           =   ev + tp2enr(e)
 
          ! deal with 1-4 Interactions
          if (vscale4.gt.0) then
@@ -927,9 +935,9 @@ c
       use cutoff    ,only: shortheal,vdwshortcut
       use domdec    ,only: loc,rank
       use ehal3gpu_inl
-      use energi    ,only: ev
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path
-      use mutant    ,only: scexp,scalpha,vlambda,mut
+      use mutant    ,only: scexp,scalpha,vlambda,vcouple,mut=>mutInt
       use tinheader ,only: ti_p
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
       use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin4,
@@ -945,7 +953,6 @@ c
       integer nn12,nn13,nn14,ntot
       integer interac
       real(t_p)  xi,yi,zi,redi,e,de
-      real(t_p)  half,one
       real(t_p)  rdn,rdn1,redk
       real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
       real(t_p)  dedx,dedy,dedz
@@ -957,15 +964,13 @@ c
       real(t_p)  dtaper,taper
       real(t_p)  vscale,vscale4
       logical    do_scale4,short
-      logical    muti,mutk
+      integer(1) muti,mutik
 
       real(t_p),intent(in):: xred(:)
       real(t_p),intent(in):: yred(:)
       real(t_p),intent(in):: zred(:)
       character*10,intent(in):: mode
 
-      parameter(half=0.5_ti_p,
-     &           one=1.0_ti_p)
       ! Scaling factor correction loop
 
       if (deb_Path)
@@ -1001,11 +1006,7 @@ c
          it     = jvdw(iglob)
          kt     = jvdw(kglob)
 
-         redi   = merge (kred(iglob),1.0_ti_p,(i.ne.ivloc))
-         redk   = merge (kred(kglob),1.0_ti_p,(kbis.ne.kvloc))
-
-         muti   = mut(iglob)
-         mutk   = mut(kglob)
+         mutik  = mut(iglob) + mut(kglob)
 
          do_scale4 = .false.
          vscale4   = 0
@@ -1027,9 +1028,11 @@ c     and check for an interaction distance less than the cutoff
 c
          rik2   = xpos**2 + ypos**2 + zpos**2
          if (rik2<vdwshortcut2.or.rik2>off2) cycle
-c
-c     replace 1-4 interactions
-c
+
+         ! Annihilate
+         if (vcouple.eq.1.and.mutik.eq.two1) mutik=one1
+ 
+         !replace 1-4 interactions
  20      continue
          if (do_scale4) then
             rv2  = radmin4 (kt,it)
@@ -1042,12 +1045,12 @@ c
          if (short) then
             call ehal1_couple_short(xpos,ypos,zpos,rik2,rv2,eps2,vscale
      &                       ,cut2,off
-     &                       ,scexp,vlambda,scalpha,muti,mutk
+     &                       ,scexp,vlambda,scalpha,mutik
      &                       ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
          else
             call ehal1_couple_long(xpos,ypos,zpos,rik2,rv2,eps2,vscale
      &                       ,cut2,cut,off,vdwshortcut
-     &                       ,scexp,vlambda,scalpha,muti,mutk
+     &                       ,scexp,vlambda,scalpha,mutik
      &                       ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
          end if
 
@@ -1055,7 +1058,7 @@ c
          e    = -e
          end if
 
-         ev           =   ev + e
+         ev           =   ev + tp2enr(e)
 
          ! deal with 1-4 Interactions
          if (vscale4.gt.0) then

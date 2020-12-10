@@ -23,11 +23,14 @@ c
       use iounit
       use mdstuf
       use moldyn
+      use timestat ,only:timer_io,timer_enter,timer_exit,quiet_timers
       implicit none
       integer i,idyn,ndyn
       logical exist,opened,quit
       character*120 dynfile
       character*120 record
+c
+      call timer_enter(timer_io)
 c
 c     open the input file if it has not already been done
 c
@@ -132,8 +135,12 @@ c!$acc update device(aalt2)
       !TODO 1.2 Check with Louis this part
       if (.not. opened)  close (unit=idyn)
 
-      ! Extend position in mixed precision
-      call reCast_position
+      if (t_p.ne.r_p) then
+         ! Extend position in mixed precision
+         call reCast_position
+!$acc wait
+         call download_position
+      end if
 c
 c     report any error in reading the dynamics restart file
 c
@@ -143,5 +150,5 @@ c
      &              ' File at Atom',i6)
          call fatal
       end if
-      return
+      call timer_exit(timer_io)
       end

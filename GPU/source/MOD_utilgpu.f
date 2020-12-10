@@ -30,6 +30,7 @@ c     nSPcores     number of cores od the device
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module utilgpu
       use tinheader ,only: ti_p,re_p
       use boxes     ,only: orthogonal,octahedron,box34
@@ -56,7 +57,7 @@ c
       logical mod_gangs
       integer gpu_workers
       integer gpu_vector
-      integer:: rec_queue,dir_queue
+      integer rec_queue,dir_queue
       integer def_queue
 #ifdef _OPENACC
       type(cudaDeviceProp) devProp
@@ -68,14 +69,15 @@ c
       integer nSMP,nSPcores,cores_SMP
       integer Ndir_block,Ndir_async_block
       integer count_block
-      real(t_p),parameter:: inf=4*huge(0.0_ti_p)
+      real(t_p),parameter:: inf  =4*huge(0.0_ti_p)
+      real(t_p),parameter:: inf_r=4*huge(0.0_re_p)
 
 c     parameter(rec_queue=0)
-      integer,parameter::maxscaling=64
+      integer,parameter:: maxscaling=64
       integer,parameter::maxscaling1=128
       integer,parameter:: BLOCK_SIZE=32
-      integer,parameter:: WARP_SIZE=32
-      integer,parameter:: RED_BUFF_SIZE=ishft(1,15)
+      integer,parameter::  WARP_SIZE=32
+      integer,parameter::RED_BUFF_SIZE=ishft(1,15)
 
       integer,parameter,dimension(6)::qi1=(/ 1, 2, 3, 1, 1, 2 /)
       integer,parameter,dimension(6)::qi2=(/ 1, 2, 3, 2, 3, 3 /)
@@ -83,6 +85,7 @@ c     parameter(rec_queue=0)
       integer   nred_buff(  RED_BUFF_SIZE)
       real(t_p) vred_buff(6*RED_BUFF_SIZE)
       real(r_p) ered_buff(  RED_BUFF_SIZE)
+      ener_rtyp ered_buf1(  RED_BUFF_SIZE)
       real(t_p),dimension(10,10)::ftc,ctf
 
       character*128 warning,sugest_vdw
@@ -104,6 +107,16 @@ c     parameter(rec_queue=0)
         end subroutine
       end interface
 #endif
+
+      interface reduce_energy_virial
+        module procedure reduce_energy_virial0
+        module procedure reduce_energy_virial1
+      end interface
+
+      interface reduce_energy_action
+         module procedure reduce_energy_action0
+         module procedure reduce_energy_action1
+      end interface
 c
 !$acc declare create(gpu_gangs,gpu_workers,gpu_vector,devicenum,
 !$acc& ngpus,warning,sugest_vdw,ftc,ctf)
@@ -755,9 +768,12 @@ c
       integer length,status,device_type
       integer high_priority,low_priority
 
-      rec_queue = acc_async_noval
-      dir_queue = acc_async_noval
-      def_queue = acc_async_noval
+      rec_queue  = acc_async_noval
+      dir_queue  = acc_async_noval
+      def_queue  = acc_async_noval
+      rec_stream = acc_get_cuda_stream(acc_async_noval)
+      dir_stream = rec_stream
+      def_stream = rec_stream
       call get_environment_variable('TINKER_ASYNC_COVER',value,
      &                               length,status)
 
@@ -767,7 +783,11 @@ c
             dir_queue = acc_async_noval + 1
             if (rank.eq.0) write(*,*) "Async Comput Overlapping enable",
      &         acc_async_noval
+         else
+            return
          end if
+      else
+         return
       end if
 c
 c     Create stream(s) and attach them to Acc queue
@@ -775,10 +795,10 @@ c
       cuda_success = cudaDeviceGetStreamPriorityRange(low_priority,
      &              high_priority)
  
-      ! Create main stream for TINKER
-      cuda_success = cuda_success +
-     &  cudastreamcreate(rec_stream,cudaStreamNonBlocking,high_priority)
-      call acc_set_cuda_stream(rec_queue,rec_stream)
+c     ! Create main stream for TINKER
+c     cuda_success = cuda_success +
+c    &  cudastreamcreate(rec_stream,cudaStreamNonBlocking,high_priority)
+c     call acc_set_cuda_stream(rec_queue,rec_stream)
 
       ! Create Secondary stream if necessary
       if (dir_queue.ne.rec_queue) then
@@ -806,6 +826,22 @@ c
      &   print*,'error creating cuda Events  >', cuda_success
 
       end
+
+      subroutine Finalize_async_recover
+      implicit none
+      integer cuda_success
+
+      if (dir_queue.ne.rec_queue) then
+         cuda_success = cudaStreamDestroy(dir_stream)
+ 12      format('Error destroying direct sream',I10)
+         if (cuda_success.ne.0) print 12, cuda_success
+         dir_stream = rec_stream
+         def_stream = rec_stream
+         dir_queue  = rec_queue
+         def_queue  = rec_queue
+      end if
+
+      end subroutine
 c
 c     A cuda implementation of _pgi_acc_wait_async
 c     Synchonisation within CUDA streams doesn't seem to work with OpenACC
@@ -829,6 +865,36 @@ c
       if (cuda_success.ne.0)
      &   write(*,*) 'Error in stream_wait_async ! ',cuda_success
       end
+
+      subroutine start_dir_stream_cover
+      implicit none
+      integer cuda_success
+      cuda_success = 0
+
+      cuda_success = cuda_success +
+     &     cudaEventRecord(dir_event,rec_stream)
+      cuda_success = cuda_success +
+     &     cudaStreamWaitEvent(dir_stream,dir_event,zero_flag)
+
+      if (cuda_success.ne.0)
+     &   write(*,*) 'Error in start_dir_stream_cover!',cuda_success
+
+      end subroutine
+
+      subroutine end_dir_stream_cover
+      implicit none
+      integer cuda_success
+      cuda_success = 0
+
+      cuda_success = cuda_success +
+     &     cudaEventRecord(rec_event,dir_stream)
+      cuda_success = cuda_success +
+     &     cudaStreamWaitEvent(rec_stream,rec_event,zero_flag)
+
+      if (cuda_success.ne.0)
+     &   write(*,*) 'Error in start_dir_stream_cover!',cuda_success
+
+      end subroutine
 
       subroutine getDeviceProp
       implicit none
@@ -874,7 +940,7 @@ c
       end subroutine
 #endif
 
-      subroutine reduce_energy_virial(energy,vxx,vxy,vxz,vyy,vyz,vzz
+      subroutine reduce_energy_virial0(energy,vxx,vxy,vxz,vyy,vyz,vzz
      &           ,queue)
       implicit none
       integer,intent(in):: queue
@@ -882,7 +948,6 @@ c
       real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
       integer i
       !Make sure data are set zero before calling this routine
-
 
 !$acc parallel loop async(queue) present(energy,vxx,vxy,vxz,
 !$acc&    vyy,vyz,vzz,ered_buff,vred_buff)
@@ -896,7 +961,31 @@ c
          vzz    = vzz + real(vred_buff(5*RED_BUFF_SIZE+i),r_p)
       end do
       end subroutine
-      subroutine reduce_energy_action(energy,n,queue)
+
+      subroutine reduce_energy_virial1(energy,vxx,vxy,vxz,vyy,vyz,vzz
+     &           ,ered_b,queue)
+      implicit none
+      integer,intent(in):: queue
+      ener_rtyp,intent(in):: ered_b(RED_BUFF_SIZE)
+      ener_rtyp energy
+      real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
+      integer i
+      !Make sure data are set zero before calling this routine
+
+!$acc parallel loop async(queue) present(energy,vxx,vxy,vxz,
+!$acc&    vyy,vyz,vzz,ered_buf1,vred_buff)
+      do i = 1,RED_BUFF_SIZE
+         energy = energy + ered_b(i)
+         vxx    = vxx + real(vred_buff(i),r_p)
+         vxy    = vxy + real(vred_buff(  RED_BUFF_SIZE+i),r_p)
+         vxz    = vxz + real(vred_buff(2*RED_BUFF_SIZE+i),r_p)
+         vyy    = vyy + real(vred_buff(3*RED_BUFF_SIZE+i),r_p)
+         vyz    = vyz + real(vred_buff(4*RED_BUFF_SIZE+i),r_p)
+         vzz    = vzz + real(vred_buff(5*RED_BUFF_SIZE+i),r_p)
+      end do
+      end subroutine
+
+      subroutine reduce_energy_action0(energy,n,queue)
       implicit none
       integer,intent(in):: queue
       real(r_p) energy
@@ -911,7 +1000,24 @@ c
          n      = n + nred_buff(i)
       end do
       end subroutine
-      
+
+      subroutine reduce_energy_action1(energy,n,ered_b,queue)
+      implicit none
+      integer,intent(in):: queue
+      ener_rtyp ered_b(RED_BUFF_SIZE)
+      ener_rtyp energy
+      integer   n
+      integer i
+      !Make sure data are set zero before calling this routine
+
+!$acc parallel loop async(queue) present(energy,n,
+!$acc&    ered_buff,vred_buff)
+      do i = 1,RED_BUFF_SIZE
+         energy = energy + ered_b(i)
+         n      = n      + nred_buff(i)
+      end do
+      end subroutine
+
       subroutine zero_evir_red_buffer(queue_)
       implicit none
       integer,optional::queue_
@@ -921,9 +1027,12 @@ c
       if (present(queue_)) queue=queue_
 
 !$acc parallel loop async(queue)
-!$acc&         present(ered_buff,vred_buff)
+!$acc&         present(ered_buff,ered_buf1,vred_buff)
       do i = 1,6*RED_BUFF_SIZE
-         if (i<RED_BUFF_SIZE+1) ered_buff(i)=0
+         if (i<RED_BUFF_SIZE+1) then
+            ered_buff(i)=0
+            ered_buf1(i)=0
+         end if
          vred_buff(i) = 0
       end do
       end subroutine
@@ -943,9 +1052,10 @@ c
       end if
 
 !$acc parallel loop async(queue)
-!$acc&         present(ered_buff,nred_buff)
+!$acc&         present(ered_buff,ered_buf1,nred_buff)
       do i = 1,RED_BUFF_SIZE
          ered_buff(i)=0
+         ered_buf1(i)=0
          nred_buff(i)=0
       end do
 

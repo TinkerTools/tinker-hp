@@ -17,26 +17,32 @@ c     *_t texture variable destined to be attached to their target
 #ifdef _CUDA
 #define TINKER_CUF
 #include  "tinker_precision.h"
+#include  "tinker_types.h"
       module ehal1cu
         use cudafor
         use tinheader,only: ti_p
         use sizes    ,only: maxclass
         use utilcu   ,only: nproc,all_lanes,VDW_BLOCK_DIM
+     &               ,skipvdw12,cu_update_skipvdw12,use_virial
+     &               ,vcouple
         use utilgpu  ,only: BLOCK_SIZE,RED_BUFF_SIZE
+        use sizes    ,only: maxvalue
+        use vdw      ,only: vdw_skipvdw12=>skipvdw12
 
-        type(dim3) :: gridDim,blockDim
+        integer(1),private:: one1,two1
         integer  ,pointer,device::ired_t(:),cellv_glob_t(:)
      &           ,cellv_loc_t(:),loc_ired_t(:),vblst_t(:),ivblst_t(:)
-     &           ,jvdw_t(:)
+     &           ,jvdw_t(:),i12_p(:,:)
         real(t_p),pointer,texture::radmin_t(:,:),epsilon_t(:,:)
         real(t_p),pointer,device::
      &            kred_t(:),xred_t(:),yred_t(:),zred_t(:)
+        parameter(one1=1, two1=2)
 
         contains
 
+#include "convert.f.inc"
 #include "image.f.inc"
 #include "midpointimage.f.inc"
-#include "switch_respa.f.inc"
 #include "pair_ehal1.f.inc"
 
         attributes(global) 
@@ -58,8 +64,8 @@ c     *_t texture variable destined to be attached to their target
         real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
      &           ,cut2,cut,ghal,dhal,off2,off
      &           ,scexp,vlambda,scalpha
-        logical  ,device :: mut(n)
-        real(r_p),device :: ev_buff(RED_BUFF_SIZE)
+        integer(1),device :: mut(n)
+        ener_rtyp,device :: ev_buff(RED_BUFF_SIZE)
         real(t_p),device :: vir_buff(RED_BUFF_SIZE)
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb)
@@ -69,7 +75,7 @@ c     *_t texture variable destined to be attached to their target
      &           ,epsilon(nvdwclass,nvdwclass),kred(n)
         real(t_p),device,intent(in):: xred(nvdwlocnlb)
      &           ,yred(nvdwlocnlb),zred(nvdwlocnlb)
-        real(r_p),device,intent(inout)::dev(3,nbloc)
+        mdyn_rtyp,device,intent(inout)::dev(3,nbloc)
 #ifdef TINKER_DEBUG
         integer,device:: inter(*)
 #endif
@@ -77,33 +83,25 @@ c     *_t texture variable destined to be attached to their target
         integer ithread,iwarp,nwarp,ilane,istat,srclane
         integer dstlane,klane
         integer idx,kdx,kdx_,ii,j,i,iglob,it
-        integer kglob,kbis,kt,kt_,kvloc
-#ifdef TINKER_DEBUG
+        integer kglob,kbis,kt,kt_,kvloc,k
         integer kglob_
-#endif
-c       integer,shared:: ninte
+        integer ai12(maxvalue)
         real(t_p) e
-        real(r_p) ev_
+        ener_rtyp ev_
         real(t_p) xi,yi,zi,xk,yk,zk,xpos,ypos,zpos
         real(t_p) rik2,rv2,eps2
         real(t_p) dedx,dedy,dedz
-        real(r_p) gxi,gyi,gzi
-        real(r_p) gxk,gyk,gzk
+        mdyn_rtyp gxi,gyi,gzi
+        mdyn_rtyp gxk,gyk,gzk
         real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
-        logical do_pair,same_block
-        logical muti
-        logical,shared::mutk(VDW_BLOCK_DIM)
+        logical do_pair,same_block,ik12
+        integer(1) muti,mutik
+        integer(1),shared::mutk(VDW_BLOCK_DIM)
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
         nwarp   = blockDim%x*gridDim%x / warpsize
         ilane   = iand( threadIdx%x-1,warpsize-1 ) + 1
-c       ninte   = 0
-
-c       if (ithread.eq.1) print*,'ehal1c_cu_in'
-c    &   ,blockDim%x,gridDim%x,nwarp,nvdwlocnlb_pair,n
-c    &   ,c0,c1,c2,c3,c3,cut2,ghal,dhal
-c    &   ,ev,vxx,vxy,vxz,vyy
 
         do ii = iwarp, nvdwlocnlb_pair-1, nwarp
 
@@ -133,6 +131,11 @@ c          ivloc  = loc_ired(idx)
            zi     = zred(idx)
 c          redi   = merge (1.0_ti_p,kred(iglob),(i.eq.ivloc))
            muti   = mut(iglob)
+           if (skipvdw12) then
+             do k = 1,maxvalue
+                ai12(k) = i12_p(k,iglob)
+             end do
+           end if
 
            ! Load atom block k parameters
            kdx    = (vblst(2*ii+2)-1)*warpsize + ilane
@@ -154,13 +157,19 @@ c          redk   = merge (1.0_ti_p,kred(kglob),(kbis.eq.kvloc))
               klane   = threadIdx%x-ilane + srclane
               kdx_    = __shfl(kdx  ,srclane)
               kt_     = __shfl(kt   ,srclane)
-#ifdef TINKER_DEBUG
               kglob_  = __shfl(kglob,srclane)
-#endif
 
               xpos    = xi - __shfl(xk,srclane)
               ypos    = yi - __shfl(yk,srclane)
               zpos    = zi - __shfl(zk,srclane)
+              mutik   = muti + mutk(klane)
+
+              if (skipvdw12) then
+                 ik12    = .false.
+                 do k = 1,maxvalue
+                    if (ai12(k).eq.kglob_) ik12=.true.
+                 end do
+              end if
 
               call image_inl(xpos,ypos,zpos)
 
@@ -168,19 +177,22 @@ c          redk   = merge (1.0_ti_p,kred(kglob),(kbis.eq.kvloc))
 
               rik2  = xpos**2 + ypos**2 + zpos**2
 
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
-     &                       ,same_block)
+              if (ik12.and.skipvdw12) goto 10
+              do_pair = merge(.true.,iglob.lt.kglob_,same_block)
+
               if (do_pair.and.kdx_<=nvdwlocnl.and.rik2<=off2) then
 
+                 ! Annihilate
+                 if (vcouple.and.mutik.eq.two1) mutik=one1
                  rv2   =  radmin (kt_,it)
                  eps2  = epsilon (kt_,it)
 
                  call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
      &                         ,cut2,cut,off,ghal,dhal
-     &                         ,scexp,vlambda,scalpha,muti,mutk(klane)
+     &                         ,scexp,vlambda,scalpha,mutik
      &                         ,e,dedx,dedy,dedz)
 
-                 ev_   = ev_ + e
+                 ev_   = ev_ + tp2enr(e)
 
                  vxx_  = vxx_  + xpos * dedx
                  vxy_  = vxy_  + ypos * dedx
@@ -199,16 +211,17 @@ c          redk   = merge (1.0_ti_p,kred(kglob),(kbis.eq.kvloc))
 
               end if
 
+ 10           continue
               dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
 
               ! Increment gradient
-              gxi = gxi + real(dedx,r_p)
-              gyi = gyi + real(dedy,r_p)
-              gzi = gzi + real(dedz,r_p)
+              gxi = gxi + tp2mdr(dedx)
+              gyi = gyi + tp2mdr(dedy)
+              gzi = gzi + tp2mdr(dedz)
 
-              gxk = gxk + real(__shfl(dedx,dstlane),r_p)
-              gyk = gyk + real(__shfl(dedy,dstlane),r_p)
-              gzk = gzk + real(__shfl(dedz,dstlane),r_p)
+              gxk = gxk + tp2mdr(__shfl(dedx,dstlane))
+              gyk = gyk + tp2mdr(__shfl(dedy,dstlane))
+              gzk = gzk + tp2mdr(__shfl(dedz,dstlane))
 
            end do
 
@@ -240,7 +253,6 @@ c          redk   = merge (1.0_ti_p,kred(kglob),(kbis.eq.kvloc))
         end do
 c       call syncthreads
 c       if (ithread.eq.1) then
-c          print*,ev
 c          print*,vxx,vzz,vxz
 c          print*,dev(1,1),dev(2,1),dev(3,1)
 c          print*,dev(1,2),dev(2,2),dev(3,2)
@@ -268,10 +280,10 @@ c       end if
         real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
      &           ,cut2,cut,ghal,dhal,off2,off
      &           ,scexp,vlambda,scalpha
-        logical  ,device :: mut(n)
+        integer(1),device :: mut(n)
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
-        real(r_p),device::  ev_buff(RED_BUFF_SIZE)
+        ener_rtyp,device::  ev_buff(RED_BUFF_SIZE)
         integer  ,device:: nev_buff(RED_BUFF_SIZE)
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
@@ -286,17 +298,22 @@ c       end if
 #endif
 
         integer ithread,iwarp,nwarp,ilane,srclane
-        integer dstlane,klane,iblock
+        integer dstlane,klane,iblock,k
         integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it
-        integer kglob,kbis,kt,kt_,ist,nev_
+        integer kbis,kt_,ist,nev_
+        integer ai12(maxvalue)
         real(t_p) e,istat
-        real(r_p) ev_
-        real(t_p) xi,yi,zi,xk,yk,zk,xk_,yk_,zk_,xpos,ypos,zpos
+        ener_rtyp ev_
+        real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p) rik2,rv2,eps2
         real(t_p) dedx,dedy,dedz,devx,devy,devz
-        logical do_pair,same_block,accept_mid
-        logical muti
-        logical,shared:: mutk(VDW_BLOCK_DIM)
+        logical do_pair,same_block,accept_mid,ik12
+        integer(1) muti,mutik
+#ifndef TINKER_NO_MUTATE
+        integer(1),shared:: mutk(VDW_BLOCK_DIM)
+#endif
+        integer,shared,dimension(VDW_BLOCK_DIM):: kglob,kt
+        real(t_p) ,shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -305,17 +322,6 @@ c       end if
         accept_mid = .true.
 
         do ii = iwarp, nvdwlocnlb_pair-1, nwarp
-
-           ! Load atom block k neighbor parameter
-           kdx    = vblst( ii*warpsize + ilane )
-           kglob  = cellv_glob(kdx)
-           kbis   = cellv_loc(kdx)
-           kt     = jvdw  (kdx)
-           xk     = xred  (kdx)
-           yk     = yred  (kdx)
-           zk     = zred  (kdx)
-           same_block = (idx.ne.kdx)
-           mutk(threadIdx%x) = mut(kglob)
 
            ! Set Data to compute to zero
            ev_    = 0
@@ -331,23 +337,54 @@ c       end if
            xi     = xred  (idx)
            yi     = yred  (idx)
            zi     = zred  (idx)
+#ifndef TINKER_NO_MUTATE
            muti   = mut(iglob)
-           call syncwarp(ALL_LANES)
+#endif
+           do j = 1, maxvalue
+              ai12(j) = i12_p(j,iglob)
+           end do
+
+           ! Load atom block k neighbor parameter
+           kdx    = vblst( ii*warpsize + ilane )
+           kglob(threadIdx%x)  = cellv_glob(kdx)
+           kbis   = cellv_loc(kdx)
+           kt(threadIdx%x) = jvdw  (kdx)
+           xk(threadIdx%x) = xred  (kdx)
+           yk(threadIdx%x) = yred  (kdx)
+           zk(threadIdx%x) = zred  (kdx)
+           same_block = (idx.ne.kdx)
+#ifndef TINKER_NO_MUTATE
+           mutk(threadIdx%x) = mut(kglob(threadIdx%x))
+#endif
 
            ! Interact block i with block k
+           call syncwarp(ALL_LANES)
            do j = 0,warpsize-1
               srclane = iand( ilane+j-1,warpsize-1 ) + 1
               klane   = threadIdx%x-ilane + srclane
 #ifdef TINKER_DEBUG
               kdx_    = __shfl(kdx  ,srclane)
-              kglob_  = __shfl(kglob,srclane)
 #endif
-              kt_     = __shfl(kt   ,srclane)
+              kglob_  = kglob(klane)
+              kt_     = kt(klane)
+#ifndef TINKER_NO_MUTATE
+              mutik   = muti + mutk(klane)
+#endif
+
+              if (skipvdw12) then
+                 ! Look for 1-2 bond interaction
+                 ! and skip it
+                 ik12 = .false.
+                 do k = 1,maxvalue
+                    if (ai12(k).eq.kglob_) ik12=.true.
+                 end do
+                 if (ik12) goto 10
+              end if
 
               if (nproc.gt.1) then
-                 xk_   = __shfl(xk,srclane)
-                 yk_   = __shfl(yk,srclane)
-                 zk_   = __shfl(zk,srclane)
+                 xk_   = xk(klane)
+                 yk_   = yk(klane)
+                 zk_   = zk(klane)
                  xpos  = xi - xk_
                  ypos  = yi - yk_
                  zpos  = zi - zk_
@@ -360,35 +397,41 @@ c       end if
                     accept_mid = .true.
                  end if
               else
-                 xpos    = xi - __shfl(xk,srclane)
-                 ypos    = yi - __shfl(yk,srclane)
-                 zpos    = zi - __shfl(zk,srclane)
+                 xpos    = xi - xk(klane)
+                 ypos    = yi - yk(klane)
+                 zpos    = zi - zk(klane)
                  call image_inl(xpos,ypos,zpos)
               end if
 
               rik2  = xpos**2 + ypos**2 + zpos**2
 
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
-     &                        ,same_block)
+              do_pair = merge(.true.,iglob.lt.kglob_
+     &                       ,same_block)
               if (do_pair.and.rik2<=off2
      &           .and.accept_mid) then
 
+#ifndef TINKER_NO_MUTATE
+                 ! Annihilate
+                 if (vcouple.and.mutik.eq.two1) mutik=one1
+#endif
                  rv2   =  radmin_t (kt_,it)
                  eps2  = epsilon_t (kt_,it)
 
                  call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
      &                         ,cut2,cut,off,ghal,dhal
-     &                         ,scexp,vlambda,scalpha,muti,mutk(klane)
+     &                         ,scexp,vlambda,scalpha,mutik
      &                         ,e,dedx,dedy,dedz)
 
-                 ev_   = ev_ + e
+                 ev_   = ev_ + tp2enr(e)
                  nev_  = nev_ + 1
 
 #ifdef TINKER_DEBUG
 #endif
               end if
 
-              dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
+ 10           continue
+
+              !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
 
            end do
 
@@ -422,10 +465,10 @@ c       end if
         real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
      &           ,cut2,cut,ghal,dhal,off2,off
      &           ,scexp,vlambda,scalpha
-        logical  ,device :: mut(n)
+        integer(1),device :: mut(n)
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
-        real(r_p),device :: ev_buff (RED_BUFF_SIZE)
+        ener_rtyp,device :: ev_buff (RED_BUFF_SIZE)
         real(t_p),device :: vir_buff(RED_BUFF_SIZE)
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
@@ -436,7 +479,7 @@ c       end if
      &           ,epsilon(nvdwclass,nvdwclass),kred(n)
         real(t_p),device,intent(in):: xred(nvdwlocnlb)
      &           ,yred(nvdwlocnlb),zred(nvdwlocnlb)
-        real(r_p),device,intent(inout)::dev(3,nbloc)
+        mdyn_rtyp,device,intent(inout)::dev(3,nbloc)
 #ifdef TINKER_DEBUG
         integer,device:: inter(*)
         integer,value :: rank
@@ -447,19 +490,22 @@ c       end if
         integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it
         integer kbis,ist,k
         integer ,shared,dimension(VDW_BLOCK_DIM):: kt,kglob
+        integer ai12(maxvalue)
         real(t_p) e,istat
-        real(r_p) ev_
+        ener_rtyp ev_
         real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p) rik2,rv2,eps2
         real(t_p),shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
         real(t_p) dedx,dedy,dedz
-        real(r_p),shared,dimension(VDW_BLOCK_DIM)::
+        mdyn_rtyp,shared,dimension(VDW_BLOCK_DIM)::
      &            gxk,gyk,gzk
-        real(r_p) gxi,gyi,gzi
+        mdyn_rtyp gxi,gyi,gzi
         real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
-        logical do_pair,same_block,accept_mid
-        logical muti,ik12
-        logical,shared::mutk(VDW_BLOCK_DIM)
+        logical do_pair,same_block,accept_mid,ik12
+        integer(1) muti,mutik
+#ifndef TINKER_NO_MUTATE
+        integer(1),shared::mutk(VDW_BLOCK_DIM)
+#endif
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -481,6 +527,7 @@ c       ninte   = 0
 #ifndef TINKER_NO_MUTATE
            mutk(threadIdx%x) = mut(kglob(threadIdx%x))
 #endif
+           call syncwarp(ALL_LANES)
 
            ! Set Data to compute to zero
            ev_    = 0
@@ -510,9 +557,13 @@ c       ninte   = 0
 #ifndef TINKER_NO_MUTATE
            muti   = mut(iglob)
 #endif
+           if (skipvdw12) then
+             do k = 1,maxvalue
+                ai12(k) = i12_p(k,iglob)
+             end do
+           end if
 
            same_block = (idx.ne.kdx)
-           call syncwarp(ALL_LANES)
 
            ! Interact block i with block k
            do j = 0,warpsize-1
@@ -522,7 +573,20 @@ c       ninte   = 0
               kdx_    = __shfl(kdx  ,srclane)
 #endif
               kglob_  = kglob(klane)
+#ifndef TINKER_NO_MUTATE
+              mutik   = muti + mutk(klane)
+#endif
 
+              if (skipvdw12) then
+                 ! Look for 1-2 bond interaction
+                 ! and skip it
+                 ik12 =.false.
+                 do k = 1, maxvalue
+                    if (ai12(k).eq.kglob_) ik12=.true.
+                 end do
+                 if (ik12) cycle
+              end if
+                 
               if (nproc.gt.1) then
                  xk_   = xk(klane)
                  yk_   = yk(klane)
@@ -553,15 +617,19 @@ c       ninte   = 0
               if (do_pair.and.rik2<=off2
      &           .and.accept_mid) then
 
+#ifndef TINKER_NO_MUTATE
+                 ! Annihilation
+                 if (vcouple.and.mutik.eq.two1) mutik=one1
+#endif
                  rv2   =  radmin_t (kt(klane),it)
                  eps2  = epsilon_t (kt(klane),it)
 
                  call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
      &                         ,cut2,cut,off,ghal,dhal
-     &                         ,scexp,vlambda,scalpha,muti,mutk(klane)
+     &                         ,scexp,vlambda,scalpha,mutik
      &                         ,e,dedx,dedy,dedz)
 
-                 ev_   = ev_ + e
+                 ev_   = ev_ + tp2enr(e)
 
 #ifdef TINKER_DEBUG
                  if (iglob<kglob_) then
@@ -581,13 +649,13 @@ c       ninte   = 0
                  !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
 
                  ! Accumulate interaction gradient
-                 gxi = gxi + dedx
-                 gyi = gyi + dedy
-                 gzi = gzi + dedz
+                 gxi = gxi + tp2mdr(dedx)
+                 gyi = gyi + tp2mdr(dedy)
+                 gzi = gzi + tp2mdr(dedz)
 
-                 gxk(klane) = gxk(klane) + dedx
-                 gyk(klane) = gyk(klane) + dedy
-                 gzk(klane) = gzk(klane) + dedz
+                 gxk(klane) = gxk(klane) + tp2mdr(dedx)
+                 gyk(klane) = gyk(klane) + tp2mdr(dedy)
+                 gzk(klane) = gzk(klane) + tp2mdr(dedz)
 
               end if
 
@@ -643,10 +711,10 @@ c     &           ,nvdwlocnl,nvdwlocnlb,nvdwclass
 c        real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
 c     &           ,cut2,cut,ghal,dhal,off2,off
 c     &           ,scexp,vlambda,scalpha
-c        logical  ,device :: mut(n)
+c        integer(1),device :: mut(n)
 c        real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
 c     &           ,p_zbeg,p_zend
-c        real(r_p),device :: ev_buff (RED_BUFF_SIZE)
+c        ener_rtyp,device :: ev_buff (RED_BUFF_SIZE)
 c        real(t_p),device :: vir_buff(RED_BUFF_SIZE)
 c        integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
 c     &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
@@ -657,7 +725,7 @@ c        real(t_p),device,intent(in)::radmin(nvdwclass,nvdwclass)
 c     &           ,epsilon(nvdwclass,nvdwclass),kred(n)
 c        real(t_p),device,intent(in):: xred(nvdwlocnlb)
 c     &           ,yred(nvdwlocnlb),zred(nvdwlocnlb)
-c        real(r_p),device,intent(inout)::dev(3,nbloc)
+c        mdyn_rtyp,device,intent(inout)::dev(3,nbloc)
 c#ifdef TINKER_DEBUG
 c        integer,device:: inter(*)
 c        integer,value :: rank
@@ -667,21 +735,23 @@ c        integer ithread,iwarp,nwarp,ilane,srclane
 c        integer dstlane,klane,iilane,iblock
 c        integer idx,kdx,kdx_,kglob_,ii,j,i,i1
 c        integer ,shared,dimension(VDW_BLOCK_DIM):: iglob,it
-c        integer kbis,ist
+c        integer kbis,ist,k
 c        integer ,shared,dimension(VDW_BLOCK_DIM):: kt,kglob,ikstat
+c        integer,shared:: ai12(maxvalue,VDW_BLOCK_DIM)
 c        real(t_p) e,istat
-c        real(r_p) ev_
+c        ener_rtyp ev_
 c        real(t_p) xk_,yk_,zk_,xpos,ypos,zpos
 c        real(t_p) rik2,rv2,eps2
 c        real(t_p),shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
 c     &           ,xi,yi,zi
 c        real(t_p) dedx,dedy,dedz
-c        real(r_p),shared,dimension(VDW_BLOCK_DIM)::
+c        mdyn_rtyp,shared,dimension(VDW_BLOCK_DIM)::
 c     &            gxi,gyi,gzi,gxk,gyk,gzk
 c        real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
-c        logical do_pair,same_block,accept_mid
-c        logical,shared::mutk(VDW_BLOCK_DIM)
-c     &         ,muti(VDW_BLOCK_DIM)
+c        logical do_pair,same_block,accept_mid,ik12
+c        integer(1),shared::mutk(VDW_BLOCK_DIM)
+c     &            ,muti(VDW_BLOCK_DIM)
+c        integer(1) mutik
 c
 c        ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
 c        iwarp   = (ithread-1) / warpsize
@@ -693,10 +763,22 @@ c
 cc       if (ithread.eq.1) print*,'ehal1c_cu2_in'
 cc    &   ,blockDim%x,gridDim%x,nwarp,nvdwlocnlb_pair,n
 cc    &   ,c0,c1,c2,c3,c3,cut2,ghal,dhal
-cc    &   ,ev,vxx,vxy,vxz,vyy,nproc
+cc    &   ,vxx,vxy,vxz,vyy,nproc
 cc    &   ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 c
 c        do ii = iwarp, nvdwlocnlb_pair-1, nwarp
+c
+c           ! Load atom block k neighbor parameter
+c           kdx    = vblst( ii*warpsize + ilane )
+c           kglob(threadIdx%x)  = cellv_glob(kdx)
+c           kbis   = cellv_loc(kdx)
+c           kt(threadIdx%x) = jvdw(kdx)
+c           xk(threadIdx%x) = xred(kdx)
+c           yk(threadIdx%x) = yred(kdx)
+c           zk(threadIdx%x) = zred(kdx)
+c#ifndef TINKER_NO_MUTATE
+c           mutk(threadIdx%x) = mut(kglob(threadIdx%x))
+c#endif
 c
 c           ! Set Data to compute to zero
 c           ev_    = 0
@@ -729,19 +811,14 @@ c           zi(threadIdx%x) = zred  (idx)
 c#ifndef TINKER_NO_MUTATE
 c           muti(threadIdx%x)   = mut(iglob(threadIdx%x))
 c#endif
+c           if (skipvdw12) then
+c             do k = 1,maxvalue
+c                ai12(kn,threadIdx%x) = i12_p(k,iglob)
+c             end do
+c           end if
 c
-c           ! Load atom block k neighbor parameter
-c           kdx    = vblst( ii*warpsize + ilane )
-c           kglob(threadIdx%x)  = cellv_glob(kdx)
-c           kbis   = cellv_loc(kdx)
-c           kt(threadIdx%x) = jvdw(kdx)
-c           xk(threadIdx%x) = xred(kdx)
-c           yk(threadIdx%x) = yred(kdx)
-c           zk(threadIdx%x) = zred(kdx)
 c           same_block = (idx.ne.kdx)
-c#ifndef TINKER_NO_MUTATE
-c           mutk(threadIdx%x) = mut(kglob(threadIdx%x))
-c#endif
+c           call syncwarp(ALL_LANES)
 c
 c           ! Interact block i with block k
 c           do i1 = 0, 1
@@ -752,6 +829,7 @@ c              ist     = AtomicOr(ikstat(iilane),ishft(1,j))
 c              if (btest(ist,j)) cycle
 c              srclane = iand( ilane+j-1,warpsize-1 ) + 1
 c              klane   = threadIdx%x-ilane + srclane
+c              kglob_  = kglob(klane)
 c              if (nproc.gt.1) then
 c                 xk_   = xk(klane)
 c                 yk_   = yk(klane)
@@ -774,24 +852,38 @@ c                 zpos    = zi(iilane) - zk(klane)
 c                 call image_inl(xpos,ypos,zpos)
 c              end if
 c
+c              if (skipvdw12) then
+c                 ! Look for 1-2 bond interaction
+c                 ! and skip it
+c                 ik12 =.false.
+c                 do k = 1, maxvalue
+c                    if (ai12(k,iilane).eq.kglob_) ik12=.true.
+c                 end do
+c                 if (ik12) cycle
+c              end if
+c
+c              mutik = mut(ilane) + mutk(klane)
 c              dedx = 0.0; dedy = 0.0; dedz = 0.0;
 c
 c              rik2  = xpos**2 + ypos**2 + zpos**2
 c
-c              do_pair = merge(.true.,iglob(iilane).lt.kglob(klane)
-c     &                       ,same_block)
+c              do_pair = merge(.true.,iglob(iilane).lt.kglob_,same_block)
 c              if (do_pair.and.rik2<=off2
 c     &           .and.accept_mid) then
 c
+c#ifndef TINKER_NO_MUTATE
+c                 ! Annihilation
+c                 if (vcouple.and.mutik.eq.two1) mutik=one1
+c#endif
 c                 rv2   =  radmin_t (kt(klane),it(iilane))
 c                 eps2  = epsilon_t (kt(klane),it(iilane))
 c
 c                 call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
 c     &                         ,cut2,cut,off,ghal,dhal
-c     &                         ,scexp,vlambda,scalpha,muti(iilane)
-c     &                         ,mutk(klane),e,dedx,dedy,dedz)
+c     &                         ,scexp,vlambda,scalpha,mutik
+c     &                         ,e,dedx,dedy,dedz)
 c
-c                 ev_   = ev_   + e
+c                 ev_   = ev_   + tp2enr(e)
 c
 c                 vxx_  = vxx_  + xpos * dedx
 c                 vxy_  = vxy_  + ypos * dedx
@@ -804,13 +896,13 @@ c
 c                 !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
 c
 c                 ! Accumulate interaction gradient
-c                 gxi(iilane) = gxi(iilane) + real(dedx,r_p)
-c                 gyi(iilane) = gyi(iilane) + real(dedy,r_p)
-c                 gzi(iilane) = gzi(iilane) + real(dedz,r_p)
+c                 gxi(iilane) = gxi(iilane) + tp2mdr(dedx)
+c                 gyi(iilane) = gyi(iilane) + tp2mdr(dedy)
+c                 gzi(iilane) = gzi(iilane) + tp2mdr(dedz)
 c
-c                 gxk(klane)  = gxk(klane) + real(dedx,r_p)
-c                 gyk(klane)  = gyk(klane) + real(dedy,r_p)
-c                 gzk(klane)  = gzk(klane) + real(dedz,r_p)
+c                 gxk(klane)  = gxk(klane) + tp2mdr(dedx)
+c                 gyk(klane)  = gyk(klane) + tp2mdr(dedy)
+c                 gzk(klane)  = gzk(klane) + tp2mdr(dedz)
 c
 c              end if
 c
@@ -867,10 +959,10 @@ c        end subroutine
         real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5,cut2,cut
      &           ,ghal,dhal,off2,off,shortcut2,vdwshortcut
      &           ,shortheal,scexp,vlambda,scalpha
-        logical  ,device :: mut(n)
+        integer(1),device :: mut(n)
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
-        real(r_p),device :: ev_buff(RED_BUFF_SIZE)
+        ener_rtyp,device :: ev_buff(RED_BUFF_SIZE)
         integer  ,device ::nev_buff(RED_BUFF_SIZE)
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
@@ -887,16 +979,18 @@ c        end subroutine
 
         integer ithread,iwarp,nwarp,ilane,srclane
         integer dstlane,klane,iblock
-        integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it
-        integer kglob,kbis,kt,kt_,ist,nev_
+        integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it,k
+        integer kbis,kt,kt_,ist,nev_
+        integer,shared,dimension(VDW_BLOCK_DIM)::kglob
+        integer ai12(maxvalue)
         real(t_p) e,istat
-        real(r_p) ev_
+        ener_rtyp ev_
         real(t_p) xi,yi,zi,xk,yk,zk,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p) rik2,rv2,eps2
         real(t_p) dedx,dedy,dedz,devx,devy,devz
-        logical do_pair,same_block,accept_mid
-        logical muti
-        logical,shared::mutk(VDW_BLOCK_DIM)
+        logical do_pair,same_block,accept_mid,ik12
+        integer(1) muti,mutik
+        integer(1),shared::mutk(VDW_BLOCK_DIM)
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -923,10 +1017,15 @@ c        end subroutine
 #ifndef TINKER_NO_MUTATE
            muti   = mut(iglob)
 #endif
+           if (skipvdw12) then
+             do k = 1,maxvalue
+                ai12(k) = i12_p(k,iglob)
+             end do
+           end if
 
            ! Load atom block k neighbor parameter
            kdx    = vblst( ii*warpsize + ilane )
-           kglob  = cellv_glob(kdx)
+           kglob(threadIdx%x)  = cellv_glob(kdx)
            kbis   = cellv_loc(kdx)
            kt     = jvdw  (kdx)
            xk     = xred  (kdx)
@@ -934,7 +1033,7 @@ c        end subroutine
            zk     = zred  (kdx)
            same_block = (idx.ne.kdx)
 #ifndef TINKER_NO_MUTATE
-           mutk(threadIdx%x) = mut(kglob)
+           mutk(threadIdx%x) = mut(kglob(threadIdx%x))
 #endif
 
            ! Interact block i with block k
@@ -943,9 +1042,12 @@ c        end subroutine
               klane   = threadIdx%x-ilane + srclane
 #ifdef TINKER_DEBUG
               kdx_    = __shfl(kdx  ,srclane)
-              kglob_  = __shfl(kglob,srclane)
 #endif
+              kglob_  = kglob(klane)
               kt_     = __shfl(kt   ,srclane)
+#ifndef TINKER_NO_MUTATE
+              mutik   = muti + mutk(klane)
+#endif
 
               if (nproc.gt.1) then
                  xk_   = __shfl(xk,srclane)
@@ -973,27 +1075,42 @@ c        end subroutine
 
               rik2  = xpos**2 + ypos**2 + zpos**2
 
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
+              do_pair = merge(.true.,iglob.lt.kglob_
      &                       ,same_block)
+
+              if (skipvdw12) then
+                 ! Look for 1-2 bond interaction
+                 ! and skip it
+                 ik12 =.false.
+                 do k = 1, maxvalue
+                    if (ai12(k).eq.kglob_) ik12=.true.
+                 end do
+                 if (ik12) cycle
+              end if
+                 
               if (do_pair.and.rik2>=shortcut2.and.rik2<=off2
      &           .and.accept_mid) then
 
+#ifndef TINKER_NO_MUTATE
+                 ! Annihilate
+                 if (vcouple.and.mutik.eq.two1) mutik=one1
+#endif
                  rv2   =  radmin_t (kt_,it)
                  eps2  = epsilon_t (kt_,it)
 
                  if (use_short) then
                  call ehal1_couple_short(xpos,ypos,zpos,rik2,rv2,eps2
      &                     ,1.0_ti_p,cut2,off
-     &                     ,scexp,vlambda,scalpha,muti,mutk(klane)
+     &                     ,scexp,vlambda,scalpha,mutik
      &                     ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
                  else
                  call ehal1_couple_long(xpos,ypos,zpos,rik2,rv2,eps2
      &                     ,1.0_ti_p,cut2,cut,off,vdwshortcut
-     &                     ,scexp,vlambda,scalpha,muti,mutk(klane)
+     &                     ,scexp,vlambda,scalpha,mutik
      &                     ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
                  end if
 
-                 ev_   = ev_ + e
+                 ev_   = ev_ + tp2enr(e)
                  nev_  = nev_+ 1
 
 #ifdef TINKER_DEBUG
@@ -1034,10 +1151,10 @@ c        end subroutine
         real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
      &           ,cut2,ghal,dhal,off2,off,shortheal
      &           ,scexp,vlambda,scalpha
-        logical  ,device :: mut(n)
+        integer(1),device :: mut(n)
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
-        real(r_p),device :: ev_buff (RED_BUFF_SIZE)
+        ener_rtyp,device :: ev_buff (RED_BUFF_SIZE)
         real(t_p),device :: vir_buff(RED_BUFF_SIZE)
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
@@ -1048,7 +1165,7 @@ c        end subroutine
      &           ,epsilon(nvdwclass,nvdwclass),kred(n)
         real(t_p),device,intent(in):: xred(nvdwlocnlb)
      &           ,yred(nvdwlocnlb),zred(nvdwlocnlb)
-        real(r_p),device,intent(inout)::dev(3,nbloc)
+        mdyn_rtyp,device,intent(inout)::dev(3,nbloc)
         logical  ,value,intent(in)::use_short
 #ifdef TINKER_DEBUG
         integer,device:: inter(*)
@@ -1060,18 +1177,19 @@ c        end subroutine
         integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it
         integer kbis,ist,k
         integer,shared,dimension(VDW_BLOCK_DIM):: kt,kglob
+        integer ai12(maxvalue)
         real(t_p) e,istat
-        real(r_p) ev_
+        ener_rtyp ev_
         real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p),shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
         real(t_p) rik2,rv2,eps2
         real(t_p) dedx,dedy,dedz,devx,devy,devz
-        real(r_p),shared,dimension(VDW_BLOCK_DIM)::gxk,gyk,gzk
-        real(r_p) gxi,gyi,gzi
+        mdyn_rtyp,shared,dimension(VDW_BLOCK_DIM)::gxk,gyk,gzk
+        mdyn_rtyp gxi,gyi,gzi
         real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
-        logical do_pair,same_block,accept_mid
-        logical muti,ik12
-        logical,shared::mutk(VDW_BLOCK_DIM)
+        logical do_pair,same_block,accept_mid,ik12
+        integer(1) muti,mutik
+        integer(1),shared::mutk(VDW_BLOCK_DIM)
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -1092,6 +1210,8 @@ c        end subroutine
 #ifndef TINKER_NO_MUTATE
            mutk(threadIdx%x) = mut(kglob(threadIdx%x))
 #endif
+           call syncwarp(ALL_LANES)
+
            ! Set Data to compute to zero
            ev_    = 0
            gxi               = 0
@@ -1120,18 +1240,35 @@ c        end subroutine
 #ifndef TINKER_NO_MUTATE
            muti   = mut(iglob)
 #endif
+           if (skipvdw12) then
+             do k = 1,maxvalue
+                ai12(k) = i12_p(k,iglob)
+             end do
+           end if
 
            same_block = (idx.ne.kdx)
-           call syncwarp(ALL_LANES)
 
            ! Interact block i with block k
            do j = 0,warpsize-1
               srclane = iand( ilane+j-1,warpsize-1 ) + 1
               klane   = threadIdx%x-ilane + srclane
+              kglob_  = kglob(klane)
 #ifdef TINKER_DEBUG
               kdx_    = __shfl(kdx  ,srclane)
 #endif
-              kglob_  = kglob(klane)
+#ifndef TINKER_NO_MUTATE
+              mutik   = muti + mutk(klane)
+#endif
+
+              if (skipvdw12) then
+                 ! Look for 1-2 bond interaction
+                 ! and skip it
+                 ik12 =.false.
+                 do k = 1, maxvalue
+                    if (ai12(k).eq.kglob_) ik12=.true.
+                 end do
+                 if (ik12) cycle
+              end if
 
               if (nproc.gt.1) then
                  xk_   = xk(klane)
@@ -1163,15 +1300,20 @@ c        end subroutine
               if (do_pair.and.rik2<=off2
      &           .and.accept_mid) then
 
+#ifndef TINKER_NO_MUTATE
+                 ! Annihilate
+                 if (vcouple.and.mutik.eq.two1) mutik=one1
+#endif
+
                  rv2   =  radmin_t (kt(klane),it)
                  eps2  = epsilon_t (kt(klane),it)
 
                  call ehal1_couple_short(xpos,ypos,zpos,rik2,rv2,eps2
      &                     ,1.0_ti_p,cut2,off
-     &                     ,scexp,vlambda,scalpha,muti,mutk(klane)
+     &                     ,scexp,vlambda,scalpha,mutik
      &                     ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
 
-                 ev_   = ev_ + (e)
+                 ev_   = ev_ + tp2enr(e)
 
 #ifdef TINKER_DEBUG
                  if (iglob<kglob(klane)) then
@@ -1181,23 +1323,25 @@ c        end subroutine
                  end if
 #endif
 
+                 if (use_virial) then
                  vxx_  = vxx_  + xpos * dedx
                  vxy_  = vxy_  + ypos * dedx
                  vxz_  = vxz_  + zpos * dedx
                  vyy_  = vyy_  + ypos * dedy
                  vyz_  = vyz_  + zpos * dedy
                  vzz_  = vzz_  + zpos * dedz
+                 end if
 
                  !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
 
                  ! Resolve gradient
-                 gxi = gxi + (dedx)
-                 gyi = gyi + (dedy)
-                 gzi = gzi + (dedz)
+                 gxi = gxi + tp2mdr(dedx)
+                 gyi = gyi + tp2mdr(dedy)
+                 gzi = gzi + tp2mdr(dedz)
 
-                 gxk(klane) = gxk(klane) + (dedx)
-                 gyk(klane) = gyk(klane) + (dedy)
-                 gzk(klane) = gzk(klane) + (dedz)
+                 gxk(klane) = gxk(klane) + tp2mdr(dedx)
+                 gyk(klane) = gyk(klane) + tp2mdr(dedy)
+                 gzk(klane) = gzk(klane) + tp2mdr(dedz)
 
               end if
 
@@ -1207,6 +1351,7 @@ c        end subroutine
            !increment the van der Waals energy
            istat = atomicAdd( ev_buff(it) ,ev_ )
  
+           if (use_virial) then
            ! Increment virial term of van der Waals
            istat = atomicAdd( vir_buff(0*RED_BUFF_SIZE+it),vxx_ )
            istat = atomicAdd( vir_buff(1*RED_BUFF_SIZE+it),vxy_ )
@@ -1214,6 +1359,7 @@ c        end subroutine
            istat = atomicAdd( vir_buff(3*RED_BUFF_SIZE+it),vyy_ )
            istat = atomicAdd( vir_buff(4*RED_BUFF_SIZE+it),vyz_ )
            istat = atomicAdd( vir_buff(5*RED_BUFF_SIZE+it),vzz_ )
+           end if
 
            !increment the van der Waals derivatives
            if (idx.le.nvdwlocnl) then
@@ -1255,10 +1401,10 @@ c        end subroutine
      &           ,cut2,cut,ghal,dhal,off2,off,vdwshortcut,shortheal
      &           ,shortcut2
      &           ,scexp,vlambda,scalpha
-        logical  ,device :: mut(n)
+        integer(1),device :: mut(n)
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
-        real(r_p),device :: ev_buff (RED_BUFF_SIZE)
+        ener_rtyp,device :: ev_buff (RED_BUFF_SIZE)
         real(t_p),device :: vir_buff(RED_BUFF_SIZE)
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
@@ -1269,7 +1415,7 @@ c        end subroutine
      &           ,epsilon(nvdwclass,nvdwclass),kred(n)
         real(t_p),device,intent(in):: xred(nvdwlocnlb)
      &           ,yred(nvdwlocnlb),zred(nvdwlocnlb)
-        real(r_p),device,intent(inout)::dev(3,nbloc)
+        mdyn_rtyp,device,intent(inout)::dev(3,nbloc)
         logical  ,value,intent(in)::use_short
 #ifdef TINKER_DEBUG
         integer,device:: inter(*)
@@ -1281,18 +1427,19 @@ c        end subroutine
         integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it
         integer kbis,ist,k
         integer,shared,dimension(VDW_BLOCK_DIM):: kt,kglob
+        integer ai12(maxvalue)
         real(t_p) e,istat
-        real(r_p) ev_
+        ener_rtyp ev_
         real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p),shared,dimension(VDW_BLOCK_DIM):: xk,yk,zk
         real(t_p) rik2,rv2,eps2
         real(t_p) dedx,dedy,dedz
-        real(r_p),shared,dimension(VDW_BLOCK_DIM)::gxk,gyk,gzk
-        real(r_p) gxi,gyi,gzi
+        mdyn_rtyp,shared,dimension(VDW_BLOCK_DIM)::gxk,gyk,gzk
+        mdyn_rtyp gxi,gyi,gzi
         real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
-        logical do_pair,same_block,accept_mid
-        logical muti,ik12
-        logical,shared::mutk(VDW_BLOCK_DIM)
+        logical do_pair,same_block,accept_mid,ik12
+        integer(1) muti,mutik
+        integer(1),shared::mutk(VDW_BLOCK_DIM)
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -1313,6 +1460,8 @@ c        end subroutine
 #ifndef TINKER_NO_MUTATE
            mutk(threadIdx%x) = mut(kglob(threadIdx%x))
 #endif
+           call syncwarp(ALL_LANES)
+
            ! Set Data to compute to zero
            ev_    = 0
            gxi               = 0
@@ -1341,8 +1490,13 @@ c        end subroutine
 #ifndef TINKER_NO_MUTATE
            muti   = mut(iglob)
 #endif
+           if (skipvdw12) then
+             do k = 1,maxvalue
+                ai12(k) = i12_p(k,iglob)
+             end do
+           end if
+
            same_block = (idx.ne.kdx)
-           call syncwarp(ALL_LANES)
 
            ! Interact block i with block k
            do j = 0,warpsize-1
@@ -1352,7 +1506,20 @@ c        end subroutine
 #ifdef TINKER_DEBUG
               kdx_    = __shfl(kdx  ,srclane)
 #endif
+#ifndef TINKER_NO_MUTATE
+              mutik   = muti + mutk(klane)
+#endif
 
+              if (skipvdw12) then
+                 ! Look for 1-2 bond interaction
+                 ! and skip it
+                 ik12 =.false.
+                 do k = 1, maxvalue
+                    if (ai12(k).eq.kglob_) ik12=.true.
+                 end do
+                 if (ik12) cycle
+              end if
+                 
               if (nproc.gt.1) then
                  xk_   = xk(klane)
                  yk_   = yk(klane)
@@ -1383,15 +1550,20 @@ c        end subroutine
               if (do_pair.and.rik2>=shortcut2.and.rik2<=off2
      &           .and.accept_mid) then
 
+#ifndef TINKER_NO_MUTATE
+                 ! Annihilate
+                 if (vcouple.and.mutik.eq.two1) mutik=one1
+#endif
+
                  rv2   =  radmin_t (kt(klane),it)
                  eps2  = epsilon_t (kt(klane),it)
 
                  call ehal1_couple_long(xpos,ypos,zpos,rik2,rv2,eps2
      &                     ,1.0_ti_p,cut2,cut,off,vdwshortcut
-     &                     ,scexp,vlambda,scalpha,muti,mutk(klane)
+     &                     ,scexp,vlambda,scalpha,mutik
      &                     ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
 
-                 ev_   = ev_ + (e)
+                 ev_   = ev_ + tp2enr(e)
 
 #ifdef TINKER_DEBUG
                  if (iglob<kglob_) then
@@ -1427,13 +1599,13 @@ c                end if
                  !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1
 
                  ! Accumulate gradient
-                 gxi = gxi  + (dedx)
-                 gyi = gyi  + (dedy)
-                 gzi = gzi  + (dedz)
+                 gxi = gxi  + tp2mdr(dedx)
+                 gyi = gyi  + tp2mdr(dedy)
+                 gzi = gzi  + tp2mdr(dedz)
 
-                 gxk(klane) = gxk(klane) + (dedx)
-                 gyk(klane) = gyk(klane) + (dedy)
-                 gzk(klane) = gzk(klane) + (dedz)
+                 gxk(klane) = gxk(klane) + tp2mdr(dedx)
+                 gyk(klane) = gyk(klane) + tp2mdr(dedy)
+                 gzk(klane) = gzk(klane) + tp2mdr(dedz)
 
               end if
 
@@ -1467,88 +1639,102 @@ c                end if
 
         end do
         end subroutine
-        !TODO Instruct reduction kernels for energy and virial
 
-        subroutine set_vdw_texture(kred,radmin,epsilon,xred,yred,zred
-     &                   ,vblst,ivblst,loc_ired,jvdw,cellv_glob
-     &                   ,cellv_loc,n,nvdwlocnl,nvdwlocnlb,nvdwclass
-     &                   ,nvdwlocnlb_pair)
+        subroutine attach_vdwcu_data(i12,kred,radmin,epsilon
+     &                   ,n,nvdwclass)
         implicit none
-        integer  ,value ,intent(in):: n,nvdwlocnl,nvdwlocnlb
-     &           ,nvdwlocnlb_pair,nvdwclass
-        integer  ,target,device:: vblst(nvdwlocnlb_pair*(BLOCK_SIZE+2))
-     &           ,ivblst(nvdwlocnlb_pair),jvdw(nvdwlocnlb)
-     &           ,loc_ired(nvdwlocnlb),cellv_glob(nvdwlocnlb)
-     &           ,cellv_loc(nvdwlocnlb)
-        real(t_p),target,device:: kred(n),xred(nvdwlocnlb)
-     &           ,yred(nvdwlocnlb)
-     &           ,zred(nvdwlocnlb),radmin(nvdwclass,nvdwclass)
+        integer  ,intent(in):: n,nvdwclass
+        integer  ,intent(in),device,target:: i12(maxvalue,n)
+        real(t_p),intent(in),device,target:: kred(n)
+        real(t_p),device,target::radmin(nvdwclass,nvdwclass)
      &           ,epsilon(nvdwclass,nvdwclass)
-
-        type(c_devptr)::base_devptr
-        integer(cuda_count_kind) ::dpitch,spitch
-        integer   istat
-        real(t_p) rstat
-        logical,save:: first_entry=.true.
-
-c       base_devptr = c_devloc(loc_ired)
-c       call c_f_pointer(base_devptr,loc_ired_t,(/nvdwlocnlb/))
-c       base_devptr = c_devloc(jvdw)
-c       call c_f_pointer(base_devptr,jvdw_t,(/nvdwlocnlb/))
-c       base_devptr = c_devloc(xred)
-c       call c_f_pointer(base_devptr,xred_p,(/nvdwlocnlb/))
-c       base_devptr = c_devloc(yred)
-c       call c_f_pointer(base_devptr,yred_p,(/nvdwlocnlb/))
-c       base_devptr = c_devloc(zred)
-c       call c_f_pointer(base_devptr,zred_p,(/nvdwlocnlb/))
-c       base_devptr = c_devloc(vblst)
-c       call c_f_pointer(base_devptr,vblst_t,
-c    &               (/nvdwlocnlb_pair*(BLOCK_SIZE+2)/))
-c       base_devptr = c_devloc(ivblst)
-c       call c_f_pointer(base_devptr,ivblst_t,(/nvdwlocnlb_pair/))
-
-        !xred_t   => xred
-        !yred_t   => yred
-        !zred_t   => zred
-        !vblst_t  => vblst
-        !ivblst_t => ivblst
-        !jvdw_t   => jvdw
-        !loc_ired_t => loc_ired
-
-        if (.not.first_entry) return
         kred_t    => kred
+        i12_p     => i12
         radmin_t  => radmin
         epsilon_t => epsilon
-c       base_devptr = c_devloc(kred)
-c       call c_f_pointer(base_devptr,kred_t,(/n/))
-c       base_devptr = c_devloc(radmin)
-c       call c_f_pointer(base_devptr,radmin_t,(/nvdwclass,nvdwclass/))
-c       base_devptr = c_devloc(epsilon)
-c       call c_f_pointer(base_devptr,epsilon_t,(/nvdwclass,nvdwclass/))
-
-c       allocate (ired_p(n))
-c       allocate (kred_p(n))
-c       allocate (radmin_p(maxclass,maxclass))
-c       allocate (epsilon_p(maxclass,maxclass))
-c       istat = cudaMallocPitch(radmin_p,dpitch,maxclass,maxclass)
-c       istat = cudaMallocPitch(epsilon_p,spitch,maxclass,maxclass)
-
-c       print*,size(radmin_p),shape(epsilon_p),spitch,dpitch
-c       dpitch = maxclass
-c       spitch = dpitch
-c       istat  = cudaMemcpy(ired_p,ired,n)
-c       istat  = istat + cudaMemcpy(kred_p,kred,n)
-c       istat  = istat + cudaMemcpy2d(radmin_p,dpitch,radmin,
-c    &           maxclass,maxclass,maxclass)
-c       istat  = istat + cudaMemcpy2d(epsilon_p,spitch,epsilon,
-c    &           maxclass,maxclass,maxclass)
-
-c       if (istat.ne.0) then
-c          print*, 'Error allocating Cuda Fortran Array',istat
-c       end if
-        first_entry=.false.
-
         end subroutine
+
+c        subroutine set_vdw_texture(kred,radmin,epsilon,xred,yred,zred
+c     &                   ,vblst,ivblst,loc_ired,jvdw,cellv_glob
+c     &                   ,cellv_loc,n,nvdwlocnl,nvdwlocnlb,nvdwclass
+c     &                   ,nvdwlocnlb_pair)
+c        implicit none
+c        integer  ,value ,intent(in):: n,nvdwlocnl,nvdwlocnlb
+c     &           ,nvdwlocnlb_pair,nvdwclass
+c        integer  ,target,device:: vblst(nvdwlocnlb_pair*(BLOCK_SIZE+2))
+c     &           ,ivblst(nvdwlocnlb_pair),jvdw(nvdwlocnlb)
+c     &           ,loc_ired(nvdwlocnlb),cellv_glob(nvdwlocnlb)
+c     &           ,cellv_loc(nvdwlocnlb)
+c        real(t_p),target,device:: kred(n),xred(nvdwlocnlb)
+c     &           ,yred(nvdwlocnlb)
+c     &           ,zred(nvdwlocnlb),radmin(nvdwclass,nvdwclass)
+c     &           ,epsilon(nvdwclass,nvdwclass)
+c
+c        type(c_devptr)::base_devptr
+c        integer(cuda_count_kind) ::dpitch,spitch
+c        integer   istat
+c        real(t_p) rstat
+c        logical,save:: first_entry=.true.
+c        ! TODO Clean interface
+c
+cc       base_devptr = c_devloc(loc_ired)
+cc       call c_f_pointer(base_devptr,loc_ired_t,(/nvdwlocnlb/))
+cc       base_devptr = c_devloc(jvdw)
+cc       call c_f_pointer(base_devptr,jvdw_t,(/nvdwlocnlb/))
+cc       base_devptr = c_devloc(xred)
+cc       call c_f_pointer(base_devptr,xred_p,(/nvdwlocnlb/))
+cc       base_devptr = c_devloc(yred)
+cc       call c_f_pointer(base_devptr,yred_p,(/nvdwlocnlb/))
+cc       base_devptr = c_devloc(zred)
+cc       call c_f_pointer(base_devptr,zred_p,(/nvdwlocnlb/))
+cc       base_devptr = c_devloc(vblst)
+cc       call c_f_pointer(base_devptr,vblst_t,
+cc    &               (/nvdwlocnlb_pair*(BLOCK_SIZE+2)/))
+cc       base_devptr = c_devloc(ivblst)
+cc       call c_f_pointer(base_devptr,ivblst_t,(/nvdwlocnlb_pair/))
+c
+c        !xred_t   => xred
+c        !yred_t   => yred
+c        !zred_t   => zred
+c        !vblst_t  => vblst
+c        !ivblst_t => ivblst
+c        !jvdw_t   => jvdw
+c        !loc_ired_t => loc_ired
+c
+c        if (.not.first_entry) return
+c        kred_t    => kred
+c        radmin_t  => radmin
+c        epsilon_t => epsilon
+cc       base_devptr = c_devloc(kred)
+cc       call c_f_pointer(base_devptr,kred_t,(/n/))
+cc       base_devptr = c_devloc(radmin)
+cc       call c_f_pointer(base_devptr,radmin_t,(/nvdwclass,nvdwclass/))
+cc       base_devptr = c_devloc(epsilon)
+cc       call c_f_pointer(base_devptr,epsilon_t,(/nvdwclass,nvdwclass/))
+c
+cc       allocate (ired_p(n))
+cc       allocate (kred_p(n))
+cc       allocate (radmin_p(maxclass,maxclass))
+cc       allocate (epsilon_p(maxclass,maxclass))
+cc       istat = cudaMallocPitch(radmin_p,dpitch,maxclass,maxclass)
+cc       istat = cudaMallocPitch(epsilon_p,spitch,maxclass,maxclass)
+c
+cc       print*,size(radmin_p),shape(epsilon_p),spitch,dpitch
+cc       dpitch = maxclass
+cc       spitch = dpitch
+cc       istat  = cudaMemcpy(ired_p,ired,n)
+cc       istat  = istat + cudaMemcpy(kred_p,kred,n)
+cc       istat  = istat + cudaMemcpy2d(radmin_p,dpitch,radmin,
+cc    &           maxclass,maxclass,maxclass)
+cc       istat  = istat + cudaMemcpy2d(epsilon_p,spitch,epsilon,
+cc    &           maxclass,maxclass,maxclass)
+c
+cc       if (istat.ne.0) then
+cc          print*, 'Error allocating Cuda Fortran Array',istat
+cc       end if
+c        first_entry=.false.
+c
+c        end subroutine
 
       end module
 

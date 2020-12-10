@@ -15,11 +15,13 @@ c     and first derivatives with respect to Cartesian coordinates
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module echarge1gpu_inl
         use utilgpu , only: real3,real3_red,rpole_elt
         implicit none
         include "erfcore_data.f.inc"
         contains
+#include "convert.f.inc"
 #include "image.f.inc"
 #if defined(SINGLE) | defined(MIXED)
         include "erfcscore.f.inc"
@@ -60,6 +62,7 @@ c
       use charge
       use chgpot
       use deriv
+      use echarge1gpu_inl
       use energi
       use ewald
       use domdec
@@ -175,8 +178,8 @@ c
       if (dir_queue.ne.rec_queue)
      &   call stream_wait_async(dir_stream,rec_stream)
 #endif
-!$acc serial present(ecrec,ec) async(rec_queue)
-      ec = ec + e + ecrec
+!$acc serial present(ecrec,ec,ec_r) async(rec_queue)
+      ec = ec + e + ecrec + enr2en( ec_r )
 !$acc end serial
 
 !$acc end data
@@ -197,7 +200,7 @@ c
       use deriv
       use domdec
       use echarge1gpu_inl
-      use energi
+      use energi ,only: ec=>ec_r
       use ewald
       use iounit
       use inform
@@ -209,6 +212,7 @@ c
       use shunt
       use timestat
       use usage
+      use tinTypes
       use utilgpu
       use virial
       use mpi
@@ -228,7 +232,7 @@ c
 
       real(t_p),parameter:: scale_f=1.0
       type(real3) ded
-      type(real3_red) dedc
+      type(mdyn3_r) dedc
 
       character*10 mode
 
@@ -291,7 +295,7 @@ c
 c
 c     increment the overall energy and derivative expressions
 c
-               ec       = ec + e
+               ec       = ec + tp2enr(e)
 !$acc atomic
                dec(1,i) = dec(1,i) + dedc%x
 !$acc atomic
@@ -355,6 +359,7 @@ c
       use potent
       use shunt
       use timestat
+      use tinTypes
       use usage
       use utilgpu
       use virial
@@ -374,7 +379,7 @@ c
 
       real(t_p),parameter:: scale_f=1.0
       type(real3) ded
-      type(real3_red) dedc
+      type(mdyn3_r) dedc
 
       real(t_p) cshortcut2,coff
       character*10 mode
@@ -455,7 +460,7 @@ c
 c
 c     increment the overall energy and derivative expressions
 c
-               ec       = ec + e
+               ec       = ec + tp2enr(e)
 !$acc atomic
                dec(1,i) = dec(1,i) + dedc%x
 !$acc atomic
@@ -500,7 +505,7 @@ c
       use deriv
       use domdec
       use echargecu
-      use energi
+      use energi , only: ec=>ec_r
       use ewald
       use iounit
       use inform
@@ -516,7 +521,9 @@ c
       use timestat
       use usage
       use utilcu
-      use utilgpu
+      use utilgpu ,only: def_queue,dir_queue,vred_buff
+     &            , reduce_energy_virial,zero_evir_red_buffer
+     &            , ered_buff=>ered_buf1,dir_stream,def_stream
       use virial
       implicit none
       integer i
@@ -584,8 +591,8 @@ c
       call check_launch_kernel(" ecreal1d_core_cu")
 !$acc end host_data
 
-      call reduce_energy_virial(ec,g_vxx,g_vxy,g_vxz,g_vyy
-     &                         ,g_vyz,g_vzz,def_queue)
+      call reduce_energy_virial(ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &                         ,ered_buff,def_queue)
 
       call ecreal_scaling
 #ifdef TINKER_DEBUG
@@ -615,7 +622,7 @@ c
       use deriv
       use domdec
       use echarge1gpu_inl
-      use energi
+      use energi  ,only: ec=>ec_r
       use ewald
       use iounit
       use inform
@@ -626,6 +633,7 @@ c
       use potent
       use shunt
       use timestat
+      use tinTypes
       use usage
       use utilgpu
       use virial
@@ -644,7 +652,7 @@ c
 
       real(t_p) scale_f
       type(real3) ded
-      type(real3_red) dedc
+      type(mdyn3_r) dedc
 
       character*10 mode
 
@@ -690,7 +698,7 @@ c
 c
 c     increment the overall energy and derivative expressions
 c
-            ec       = ec + e
+            ec       = ec + tp2enr(e)
 !$acc atomic
             dec(1,i) = dec(1,i) + dedc%x
 !$acc atomic
@@ -741,6 +749,7 @@ c
       use potent
       use shunt
       use timestat
+      use tinTypes
       use usage
       use utilgpu
       use virial
@@ -760,7 +769,7 @@ c
 
       real(t_p) scale_f
       type(real3) ded
-      type(real3_red) dedc
+      type(mdyn3_r) dedc
 
       real(t_p) cshortcut2,coff
       character*10 mode
@@ -932,15 +941,14 @@ c
       if (use_pmecore) then
         nprocloc = nrec
         commloc  = comm_rec
-        rankloc = rank_bis
+        rankloc  = rank_bis
       else
         nprocloc = nproc
         commloc  = COMM_TINKER
-        rankloc = rank
+        rankloc  = rank
       end if
 
       if (f_in) then
-         call AssociateThetai_p
 !$acc enter data create(vxx,vxy,vxz,vyy,vyz,vzz)
          f_in = .false.
       end if
@@ -948,7 +956,6 @@ c
 c     dynamic allocation of local arrays
 c
       call mallocMpiGrid
-c     allocate (qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,nrec_recep))
       allocate (req(nprocloc*nprocloc))
       allocate (reqbcast(nprocloc*nprocloc))
 

@@ -15,19 +15,26 @@ c     energy terms and sums up to form the total energy
 c
 c
 #include "tinker_precision.h"
+
+      module energy_inl
+      contains
+#include "convert.f.inc"
+      end module
+
       function energy ()
       use action
+      use energy_inl
       use sizes
       use domdec,only: rank
       use energi
-      use inform,only: deb_Path
+      use inform,only: deb_Path,abort
       use iounit
       use potent
       use tinheader
+      use utilgpu,only: inf_r
       use vdwpot
       implicit none
       real(r_p) energy
-      real(t_p) cutoff
       logical tinker_isnan_m
       logical ::first_in=.true.
 
@@ -42,10 +49,12 @@ c     zero out each of the potential energy components
 c
 !$acc data present(eb,eba,eub,eopb,et,ept,ett,ebt,ea
 !$acc&      ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
+!$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&      ,nev,nec,nem,nep,nev_,nec_,nem_,nep_)
 
 !$acc serial async
       eb   = 0.0_re_p
+      eb_r = 0
       ea   = 0.0_re_p
       eba  = 0.0_re_p
       eub  = 0.0_re_p
@@ -59,9 +68,13 @@ c
       ebt  = 0.0_re_p
       ett  = 0.0_re_p
       ev   = 0.0_re_p
+      ev_r = 0
       ec   = 0.0_re_p
+      ec_r = 0
       em   = 0.0_re_p
+      em_r = 0
       ep   = 0.0_re_p
+      ep_r = 0
       eg   = 0.0_re_p
       ex   = 0.0_re_p
       nec  = 0
@@ -111,6 +124,8 @@ c
 c     sum up to give the total potential energy
 c
 !$acc serial async
+      if (ev_r.ne.0) ev = ev + enr2en(ev_r)
+      if (eb_r.ne.0) eb = eb + enr2en(eb_r)
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
      &          + et + ept + ebt + ett + ev + ec + em
      &          + ep + eg + ex + eg
@@ -121,10 +136,10 @@ c
 c
 c     check for an illegal value for the total energy
 c
-      if (tinker_isnan_m(esum).or.esum.eq.3*huge(0.0_re_p)) then
+      if (tinker_isnan_m(esum).or.esum.eq.inf_r) then
          write (iout,10) esum
    10    format (/,' ENERGY  --  Illegal Value for the Total',
-     &              ' Potential Energy',F16.6)
+     &             ' Potential Energy',F16.6)
          call info_energy(0)
          call fatal
       end if

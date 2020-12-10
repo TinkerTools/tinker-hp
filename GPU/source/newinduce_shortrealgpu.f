@@ -20,16 +20,18 @@ c
       use domdec
       use ewald
       use iounit
-      use interfaces,only:inducepcg_shortrealgpu,tmatxb_p,
+      use interfaces,only:inducepcg_shortrealgpu,tmatxb_p1,
      &                    tmatxb_pmevec,efld0_directgpu2,
-     &                    efld0_directgpu_p
+     &                    efld0_directgpu_p1
       use math
       use mpole
       use pme
       use polar
       use polpot
       use potent
+      use polar_temp,only:mu,ef
       use timestat
+      use tinMemory
       use units
       use uprior
       use utils
@@ -42,13 +44,11 @@ c
 c     MPI
 c
       integer iipole
-      integer, allocatable :: reqsend(:),reqrec(:)
-      integer, allocatable :: req2send(:),req2rec(:)
+      integer, dimension(nproc):: reqsend,reqrec
+     &       , req2send,req2rec
 c
       parameter (nrhs=2)
       real(t_p)  udsum, upsum
-
-      real(t_p), allocatable :: ef(:,:,:), mu(:,:,:)
 c
       external tmatxb_shortreal
 c
@@ -56,7 +56,7 @@ c
 
 #ifdef USE_NVSHMEM_CUDA
       if (use_pmecore.and.rank.ge.ndir) then
-         allocate (mu(3,nrhs,max(1,npolebloc)))
+         call prmem_request(mu,3,nrhs,max(npolebloc,1),async=.true.)
          goto 200
       end if
 #else
@@ -71,31 +71,21 @@ c1020 format(' total elapsed time in newinduce: ',F14.5)
 c
 c     allocate some memory and clear the arrays:
 c
-      allocate (mu(3,nrhs,max(1,npolebloc)))
-      allocate (ef(3,nrhs,max(1,npolebloc)))
+      call prmem_request(mu,3,nrhs,max(npolebloc,1),async=.true.)
+      call prmem_request(ef,3,nrhs,max(npolebloc,1),async=.true.)
 c
-      allocate (reqsend(nproc))
-      allocate (reqrec(nproc))
-      allocate (req2send(nproc))
-      allocate (req2rec(nproc))
-
       def_queue = dir_queue
 
 #ifdef _OPENACC
-      if (dir_queue.ne.rec_queue) then
-         ! Start stream overlapping
-         call stream_wait_async(rec_stream,dir_stream,rec_event)
-      end if
+      if (dir_queue.ne.rec_queue) call start_dir_stream_cover
 #endif
-
-!$acc enter data create(mu,ef) async(def_queue)
 
       call set_to_zero2(mu,ef,3*nrhs*npolebloc,def_queue)
 c
 c     compute the electric fields:
 c
       call timer_enter( timer_realdip )
-      call efld0_directgpu_p(nrhs,ef)
+      call efld0_directgpu_p1(nrhs,ef)
       call timer_exit( timer_realdip,quiet_timers )
 c
       call commfieldshort(nrhs,ef)
@@ -115,11 +105,7 @@ c
       if (use_pmecore.and.rank.ge.ndir) goto 300
 #endif
 
-#ifdef USE_NVSHMEM_CUDA
-!$acc data present(poleglob,uind,uinp)
-#else
-!$acc data present(poleglob,udshortalt,upshortalt,uind,uinp)
-#endif
+!$acc data present(poleglob,uind,uinp,ef,mu,polarity)
       if (.not.(use_pred.and.nualt.eq.maxualt)) then
       if (polgsf.eq.0) then
 !$acc parallel loop collapse(3) async(def_queue)
@@ -149,9 +135,9 @@ c
 c     now, call the proper solver.
 c
       if (polalg.eq.1) then
-         call inducepcg_shortrealgpu(tmatxb_p,nrhs,.true.,ef,mu)
+         call inducepcg_shortrealgpu(tmatxb_p1,nrhs,.true.,ef,mu)
       else if (polalg.eq.2) then
-         call inducejac_shortrealgpu(tmatxb_p,nrhs,.true.,ef,mu)
+         call inducejac_shortrealgpu(tmatxb_p1,nrhs,.true.,ef,mu)
       else
          if (rank.eq.0) write(iout,1000) 
          call fatal
@@ -168,10 +154,7 @@ c
 !$acc end data
 
 #ifdef _OPENACC
-      if (dir_queue.ne.rec_queue) then
-         ! End stream overlapping
-         call stream_wait_async(dir_stream,rec_stream,rec_event)
-      end if
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
 #endif
 c
 c     update the lists of previous induced dipole values
@@ -186,13 +169,6 @@ c
       end if
 #endif
 
-      deallocate (reqrec)
-      deallocate (reqsend)
-      deallocate (req2rec)
-      deallocate (req2send)
-!$acc exit data delete(mu,ef) async(def_queue)
-      deallocate (ef)
-      deallocate (mu)
       end
 c
       subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
@@ -207,7 +183,10 @@ c
       use polar
       use polpot
       use potent     ,only: use_pmecore
+      use polar_temp ,only: res,h,pp,zr,diag
       use timestat
+      use tinMemory  ,only: prmem_request
+      use sizes
       use units
       use utils
       use utilgpu
@@ -239,8 +218,7 @@ c
       real(r_p) zerom, pt5
       real(r_p) resnrm
       real(8) time1,time2
-      real(t_p),allocatable :: res(:,:,:),h(:,:,:),pp(:,:,:),
-     $          zr(:,:,:),diag(:)
+      logical,save :: first_in=.true.
       parameter (zero=0.0_ti_p,zerom=0, pt5=0.50_re_p, one=1.0_ti_p)
 c
 c     MPI
@@ -248,11 +226,8 @@ c
       integer iglob, iipole, ierr, commloc
       integer req1, req2, req3, req4
       integer status(MPI_STATUS_SIZE)
-      integer,allocatable :: reqrec(:),reqsend(:)
-      integer,allocatable :: req2rec(:),req2send(:)
-      integer,allocatable :: reqendrec(:),reqendsend(:)
-      integer,allocatable :: req2endrec(:),req2endsend(:)
-      logical,save :: first_in=.true.
+      integer,dimension(nproc) ::reqrec,reqsend,req2rec,req2send
+     &       , reqendrec,reqendsend,req2endrec,req2endsend
       logical tinker_isnan_m
 c
  1000 format(' cgiter shortreal converged after ',I3,' iterations.',/,
@@ -277,32 +252,26 @@ c
          commloc = COMM_TINKER
       end if
 
-      allocate (reqrec(nproc))
-      allocate (reqsend(nproc))
-      allocate (req2rec(nproc))
-      allocate (req2send(nproc))
-      allocate (reqendsend(nproc))
-      allocate (reqendrec(nproc))
-      allocate (req2endsend(nproc))
-      allocate (req2endrec(nproc))
 c
 c     allocate some memory and setup the preconditioner:
 c
-      allocate (res(3,nrhs,max(1,npoleloc)))
-      allocate (h(3,nrhs,max(1,npolebloc)))
-      allocate (pp(3,nrhs,max(1,npolebloc)))
-      allocate (zr(3,nrhs,max(1,npoleloc)))
-      allocate (diag(npoleloc))
+      call prmem_request(zr,3,nrhs,max(npoleloc,1),
+     &     async=.true.)
+      call prmem_request(res,3,nrhs,max(npoleloc,1),
+     &     async=.true.)
+      call prmem_request(h ,3,nrhs,max(npolebloc,1),
+     &     async=.true.)
+      call prmem_request(pp ,3,nrhs,max(npolebloc,1),
+     &     async=.true.)
+      call prmem_request(diag,npoleloc,async=.true.)
 
       if (first_in) then
-!$acc enter data create(gg1,gg2) async(def_queue)
+!$acc enter data create(gg1,gg2)
          first_in=.false.
       end if
 
-!!$acc enter data create(res,h,pp,zr,diag) async(def_queue)
-!$acc data create(res,h,pp,zr,diag)
+!$acc data present(res,h,pp,zr,diag,gg1,gg2)
 !$acc&     present(mu,ef,poleglob,polarity,ipole)
-!$acc&     async(def_queue)
 
       if (precnd) then
 !$acc parallel loop async(def_queue)
@@ -335,7 +304,6 @@ c
       call commfieldshort(nrhs,h)
 c
       !We do exit this sub-routine if (nproc.eq.1)
-      call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
 c
       call timer_enter ( timer_other )
       !FIXME This implicit reduction is undetected by PGI-20.4 Compiler
@@ -369,8 +337,9 @@ c
 c
 c     MPI : begin sending
 c
+         call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
          call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
-         call commdirdirshort(nrhs,2,mu,reqrec,reqsend)
+         call commdirdirshort(nrhs,2,pp,reqrec,reqsend)
          call MPI_WAIT(req1,status,ierr)
          ggold1 = ggold(1)
          ggold2 = ggold(2)
@@ -385,16 +354,12 @@ c
         call timer_exit ( timer_realdip,quiet_timers )
 
         call commfieldshort(nrhs,h)
-c
-c     MPI : begin reception
-c
-        call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
-!$acc serial async(def_queue) present(gg1,gg2)
+!$acc serial async(def_queue)
         gg1=zerom; gg2=zerom
 !$acc end serial
 
         call timer_enter( timer_other )
-!$acc parallel loop collapse(3) present(gg1,gg2) async(def_queue)
+!$acc parallel loop collapse(3) async(def_queue)
         do i = 1,npoleloc
            do j = 1,nrhs
               do k = 1, 3
@@ -484,23 +449,25 @@ c Implicit wait seems to be removed with PGI-20
            end do
         end do
         call timer_exit( timer_other,quiet_timers )
-c
+        ! MPI : begin reception
+        call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
+        ! MPI : send data
         call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
-c
+        ! MPI : wait
         call commdirdirshort(nrhs,2,pp,reqrec,reqsend)
 c
-        ggold = ggnew
+        ggold  = ggnew
         ggold1 = ggold(1); ggold2 = ggold(2)
+        if ((it.eq.politer.and.resnrm.gt.poleps)
+     &     .or.tinker_isnan_m(gnorm(1))) then
+           ! Not converged Exit
+           write(0,1050) it,max(gnorm(1),gnorm(2))
+           abort = .true.
+        end if
         if (resnrm.lt.poleps) then
           if (polprt.ge.1.and.rank.eq.0) write(iout,1000) it,
      $      (ene(k)*coulomb, k = 1, nrhs), (gnorm(k), k = 1, nrhs)
           goto 10
-        end if
-        if ((it.eq.politer.and.resnrm.gt.poleps)
-     &     .or.tinker_isnan_m(resnrm)) then
-           ! Not converged Exit
-           write(0,1050) it,resnrm
-           abort = .true.
         end if
       end do
  10   continue
@@ -541,20 +508,6 @@ c
 
   30  continue
 !$acc end data
-!!$acc exit data delete(res,h,pp,zr,diag) async(def_queue)
-      deallocate (reqsend)
-      deallocate (reqrec)
-      deallocate (req2send)
-      deallocate (req2rec)
-      deallocate (reqendsend)
-      deallocate (reqendrec)
-      deallocate (req2endsend)
-      deallocate (req2endrec)
-      deallocate (res)
-      deallocate (h)
-      deallocate (pp)
-      deallocate (zr)
-      deallocate (diag)
       end
 c
       subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)

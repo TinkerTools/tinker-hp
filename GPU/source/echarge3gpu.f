@@ -15,11 +15,13 @@ c     and partitions the energy among the atoms
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module echarge3gpu_inl
-        use utilgpu , only: real3,real3_red,rpole_elt
+        use tinTypes , only: real3,real3_red,rpole_elt
         implicit none
         include "erfcore_data.f.inc"
         contains
+#include "convert.f.inc"
 #include "image.f.inc"
 #if defined(SINGLE) | defined(MIXED)
         include "erfcscore.f.inc"
@@ -65,6 +67,7 @@ c
       use chgpot
       use couple
       use domdec
+      use echarge3gpu_inl
       use energi
       use erf_mod
       use ewald
@@ -93,7 +96,8 @@ c
       integer nnchg,nnchg1,nnchg2
       integer nn12,nn13,nn14,ntot
       integer nect
-      real(t_p) f,fi,e,efull
+      real(t_p) f,fi
+      real(en_p) e,efull
       real(t_p) fs
       real(t_p) xi,yi,zi
       real(t_p) xd,yd,zd
@@ -135,7 +139,7 @@ c     compute the Ewald self-energy term over all the atoms
 c
       fs   = -f * aewald / sqrtpi
 
-!$acc data create(e) present(ec,nec,nec_) async
+!$acc data create(e) present(ec,ec_r,nec,nec_) async
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.lt.ndir))
      $   then
 
@@ -195,7 +199,7 @@ c
 
 !$acc serial async
       !print*,'echarge3gpu',nec_,nec,nionloc
-       ec = ec + e
+       ec = ec + e + enr2en( ec_r )
       nec = int(nec_) + nionloc + nec
 !$acc end serial
 
@@ -216,7 +220,7 @@ c
       use deriv
       use domdec
       use echarge3gpu_inl
-      use energi
+      use energi  ,only:ec=>ec_r
       use ewald
       use iounit
       use inform
@@ -284,10 +288,9 @@ c
             call image_inl (xr,yr,zr)
             r2 = xr*xr + yr*yr + zr*zr
             if (r2 .le. off2) then
-#ifdef tinker_debug
+#ifdef TINKER_DEBUG
 !$acc atomic
                ninte(iglob) = ninte(iglob) + 1
-               if (iglob.eq.1) print*,kglob
 #endif
                fik   = fi*pchg(kkchg)
                k     = loc(kglob)
@@ -296,7 +299,7 @@ c
 c
 c     increment the overall energy and derivative expressions
 c
-               ec       = ec + e
+               ec       = ec + tp2enr(e)
                nec_     = nec_ + 1
             end if
          end do
@@ -318,7 +321,7 @@ c
       use deriv
       use domdec
       use echargecu
-      use energi
+      use energi ,only: ec=>ec_r
       use ewald
       use iounit
       use inform
@@ -333,7 +336,9 @@ c
       use timestat
       use usage
       use utilcu
-      use utilgpu
+      use utilgpu ,only: def_queue,dir_queue,nred_buff
+     &            , zero_en_red_buffer,reduce_energy_action
+     &            , ered_buff=>ered_buf1,dir_stream,def_stream
       use virial
       use mpi
       implicit none
@@ -403,7 +408,7 @@ c
       call check_launch_kernel(" ecreal1d_core_cu")
 !$acc end host_data
 
-      call reduce_energy_action(ec,nec,def_queue)
+      call reduce_energy_action(ec,nec,ered_buff,def_queue)
 
       call ecreal3_scaling
       end
@@ -423,7 +428,7 @@ c
       use deriv
       use domdec
       use echarge3gpu_inl
-      use energi
+      use energi  ,only: ec=>ec_r
       use ewald
       use iounit
       use inform
@@ -441,17 +446,13 @@ c
       implicit none
       integer i,j,k,iichg,iglob
       integer ii,kkk,kglob,kkchg
-
       real(t_p) e
       real(t_p) f,fi,fik
       real(t_p) r,r2,rew
       real(t_p) rb,rb2
-
       real(t_p) xi,yi,zi
       real(t_p) xr,yr,zr
-
       real(t_p) scale_f
-
       character*10 mode
 
       if (deb_Path) write(*,'(3x,a)') 'ecreal3_scaling'
@@ -491,7 +492,7 @@ c
             call charge3_couple(r2,xr,yr,zr,ebuffer
      &                         ,fik,aewald,scale_f
      &                         ,e,1)
-            ec    = ec  + e
+            ec    = ec  + tp2enr(e)
             if (scale_f.eq.-1.0_ti_p) nec_=nec_-1
          end if
       end do
@@ -553,10 +554,6 @@ c
         nprocloc = nproc
         rankloc = rank
         commloc = MPI_COMM_WORLD
-      end if
-
-      if (f_in) then
-         call AssociateThetai_p
       end if
 c
 c     dynamic allocation of local arrays

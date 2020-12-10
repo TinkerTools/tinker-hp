@@ -85,6 +85,7 @@ c
       integer, allocatable :: ratglob(:)
 !DIR$ ATTRIBUTES ALIGN:64:: chgglobnl,vdwglobnl,poleglobnl
       integer, allocatable :: chgglobnl(:),vdwglobnl(:),poleglobnl(:)
+      integer, pointer :: AtomKind(:)
 
 #ifdef USE_NVSHMEM_CUDA
       !d_*     device data type container for nvshmem feature

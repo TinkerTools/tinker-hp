@@ -105,93 +105,6 @@ c
 c
 c     print energy, temperature and pressure for current step
 c
-!      if (modstep.eq.0) then
-!c
-!c     sum the timing values to get average over the cores
-!c
-!        buffer(01) = timereneig
-!        buffer(02) = timecommstep
-!        buffer(03) = timeparam
-!        buffer(04) = timeforcescomm
-!        buffer(05) = timedirreccomm
-!        buffer(06) = timedirbondfcomm
-!        buffer(07) = timebonded
-!        buffer(08) = timenonbonded
-!        buffer(09) = timereal
-!        buffer(10) = timerealdip
-!        buffer(11) = timegrid1
-!        buffer(12) = timeffts
-!        buffer(13) = timescalar
-!        buffer(14) = timegrid2
-!        buffer(15) = timerecreccomm
-!        buffer(16) = timerec
-!        buffer(17) = timerecdip
-!c
-!        if (rank.eq.0) then
-!          call MPI_REDUCE(MPI_IN_PLACE,buffer,17,MPI_REAL8,MPI_SUM,0,
-!     $       MPI_COMM_WORLD,ierr)
-!        else
-!          call MPI_REDUCE(buffer,buffer,17,MPI_REAL8,MPI_SUM,0,
-!     $       MPI_COMM_WORLD,ierr)
-!        end if
-!c
-!        if (use_pmecore) then
-!          if (rank.eq.0) then
-!            do i = 1, 5
-!              buffer(i) = buffer(i)/ndir
-!            end do
-!            do i = 6, 8
-!              buffer(i) = buffer(i)/nproc
-!            end do
-!            do i = 9, 10
-!              buffer(i) = buffer(i)/ndir
-!            end do
-!            do i = 11, 17
-!              buffer(i) = buffer(i)/nrec
-!            end do
-!            timereneig     = buffer(1)
-!            timecommstep   = buffer(2)
-!            timeparam      = buffer(3)
-!            timeforcescomm = buffer(4)
-!            timedirreccomm = buffer(5)
-!            timedirbondfcomm  = buffer(6)
-!            timebonded     = buffer(7)
-!            timenonbonded  = buffer(8)
-!            timereal       = buffer(9)
-!            timerealdip    = buffer(10)
-!            timegrid1      = buffer(11)
-!            timeffts       = buffer(12)
-!            timescalar     = buffer(13) 
-!            timegrid2      = buffer(14) 
-!            timerecreccomm = buffer(15)
-!            timerec        = buffer(16)
-!            timerecdip     = buffer(17)
-!          end if
-!        else
-!          if (rank.eq.0) then
-!            do i = 1, 17
-!              buffer(i) = buffer(i)/nproc
-!            end do
-!            timereneig     = buffer(1)
-!            timecommstep   = buffer(2)
-!            timeparam      = buffer(3)
-!            timeforcescomm = buffer(4)
-!            timedirreccomm = buffer(5)
-!            timedirbondfcomm  = buffer(6)
-!            timebonded     = buffer(7)
-!            timenonbonded  = buffer(8)
-!            timereal       = buffer(9)
-!            timerealdip    = buffer(10)
-!            timegrid1      = buffer(11)
-!            timeffts       = buffer(12)
-!            timescalar     = buffer(13) 
-!            timegrid2      = buffer(14) 
-!            timerecreccomm = buffer(15)
-!            timerec        = buffer(16)
-!            timerecdip     = buffer(17)
-!          end if
-!        end if
-!      end if
       if (rank.eq.0) then
         if (modstep.eq.0.or.display) then
 !$acc data present(etot,epot,ekin,temp,pres) async
@@ -433,93 +346,11 @@ c        end if
 c
 c     display the different times of the computation
 c
-      if (verbose.and.modstep.eq.0) then
+      if (modstep.eq.0.and.btest(tinkertime,sumy_time)) then
          call timer_exit( timer_timestep,quiet_timers )
          call timer_enter( timer_timestep )
          call display_timers( stat_timers,config=ave_disp,slot=1,
      &        iter=iprint )
          call timer_save( stat_timers,slot=1 )
       end if
-
-!     if ((rank.eq.0).and.(verbose)) then
-!       if (modstep.eq.0) then
-!         write(iout,160) timereneig/real(iprint,d_prec)
-!160      format('Ave time for reneig                  =  ',F24.15)
-!         timereneig = 0.0
-!         write(iout,170) timecommstep/real(iprint,d_prec)
-!170      format('Ave time for positions comm          =  ',F24.15)
-!         timecommstep = 0.0
-!         write(iout,180) timeparam/real(iprint,d_prec)
-!180      format('Ave time for param                   =  ',F24.15)
-!         timeparam = 0.0
-!         write(iout,190) timeforcescomm/real(iprint,d_prec)
-!190      format('Ave time for forces comm             =  ',F24.15)
-!         timeforcescomm = 0.0
-!         write(iout,210) timedirreccomm/real(iprint,d_prec)
-!210      format('Ave time for reciprocal forces comm  =  ',F24.15)
-!         timedirreccomm = 0.0
-!         write(iout,220) timedirbondfcomm/real(iprint,d_prec)
-!220      format('Ave time for real space forces comm  =  ',F24.15)
-!         timedirbondfcomm = 0.0
-!         write(iout,230) timebonded/real(iprint,d_prec)
-!230      format('Ave time for bonded forces           =  ',F24.15)
-!         timebonded = 0.0
-!         write(iout,240) timenonbonded/real(iprint,d_prec)
-!240      format('Ave time for non bonded forces       =  ',F24.15)
-!         timenonbonded = 0.0
-!         write(iout,250) timenl/real(iprint,d_prec)
-!250      format('Ave time for neighbor lists          =  ',F24.15)
-!         timenl = 0.0
-!         write(iout,260) timereal/real(iprint,d_prec)
-!260      format('Ave time for real space (permanent)  =  ',F24.15)
-!         timereal = 0.0
-!         write(iout,270) timerealdip/real(iprint,d_prec)
-!270      format('Ave time for real space (polar)      =  ',F24.15)
-!         timerealdip = 0.0
-!         write(iout,280) timegrid1/real(iprint,d_prec)
-!280      format('Ave time for fill grid (permanent)   =  ',F24.15)
-!         timegrid1 = 0.0
-!         write(iout,290) timeffts/real(iprint,d_prec)
-!290      format('Ave time for ffts (permanent)        =  ',F24.15)
-!         timeffts = 0.0
-!         write(iout,300) timescalar/real(iprint,d_prec)
-!300      format('Ave time for scalar prod (permanent) =  ',F24.15)
-!         timescalar = 0.0
-!         write(iout,310) timegrid2/real(iprint,d_prec)
-!310      format('Ave time for extract grid (permanent)=  ',F24.15)
-!         timegrid2 = 0.0
-!         write(iout,320) timerecreccomm/real(iprint,d_prec)
-!320      format('Ave time for rec-rec comm (permanent)=  ',F24.15)
-!         timerecreccomm = 0.0
-!         write(iout,330) timerec/real(iprint,d_prec)
-!330      format('Ave time for recip space (permanent) =  ',F24.15)
-!         timerec = 0.0
-!         write(iout,340) timerecdip/real(iprint,d_prec)
-!340      format('Ave time for recip space (polar)     =  ',F24.15)
-!         timerecdip = 0.0
-!       end if
-!     end if
-c
-!      if (modstep.eq.0) then
-!c
-!c     put timing variables to zero
-!c
-!         timereneig     = 0.0
-!         timecommstep   = 0.0
-!         timeparam      = 0.0
-!         timeforcescomm = 0.0
-!         timedirreccomm = 0.0
-!         timedirbondfcomm  = 0.0
-!         timebonded     = 0.0
-!         timenonbonded  = 0.0
-!         timereal       = 0.0
-!         timerealdip    = 0.0
-!         timegrid1      = 0.0
-!         timeffts       = 0.0
-!         timescalar     = 0.0
-!         timegrid2      = 0.0
-!         timerecreccomm = 0.0
-!         timerec        = 0.0
-!         timerecdip     = 0.0
-!      end if
       end

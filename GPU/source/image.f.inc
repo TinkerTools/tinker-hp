@@ -1,3 +1,6 @@
+#ifndef IMAGE_INC
+#define IMAGE_INC
+
 #include "tinker_cudart.h"
 
 #ifndef ORTHOGONAL_BOX_SHAPE_ONLY
@@ -139,3 +142,5 @@
      &   val  = val - f_sign(vcell,val)
      &               *f_floor((abs(val)-vcell2)/vcell + 1.0_ti_p)
       end subroutine image1d_inl
+
+#endif

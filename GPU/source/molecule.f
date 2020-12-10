@@ -24,6 +24,9 @@ c
       use domdec
       use molcul
       use mpi
+#ifdef _OPENACC
+      !use thrust
+#endif
       use utilgpu
       implicit none
       integer i,j,k,ii
@@ -155,7 +158,7 @@ c
 c
       end if
 
-      call prmem_request(molculeglob,nbloc,async=.true.)
+      call prmem_request(molculeglob,nmol,async=.true.)
 
       if (nbloc.eq.n) then
 
@@ -167,6 +170,33 @@ c
          end do
 
       else
+
+c!$acc data present(nmoleloc,molecule,glob)
+c!$acc serial async 
+c         nmoleloc = 0
+c!$acc end serial
+c!$acc parallel loop present(moleculeglob)
+c         do i = 1,nmol
+c            molculeglob(i)=0
+c         end do
+c!$acc parallel loop present(molculeglob) async
+c         do i = 1,nbloc
+c            iglob = glob(i)
+c            iimol = molcule(iglob)
+c            molculeglob(iimol) = iimol
+c         end do
+c!$acc host_data use_device(moleculeglob)
+c         call thrust_remove_zero_async_int(moleculeglob,nmol
+c     &             ,rec_stream)
+c!$acc end host_data
+c!$acc parallel loop present(moleculeglob) async
+c         do i = 1, nmol
+c            if (moleculeglob(i).ne.0) then
+c               nmoleloc = nmoleloc+1
+c            end if
+c         end do
+c!$acc end data
+
 
 !$acc serial present(nmoleloc) async 
       nmoleloc = 0

@@ -35,6 +35,7 @@ c
       subroutine respa(istep,dt)
       use atmtyp
       use atomsMirror
+      use bath   ,only: barostat
       use cutoff
       use domdec
       use deriv  ,only: info_forces,cNBond,cBond
@@ -77,10 +78,9 @@ c
          f_in = .false.
       end if
 
-!$acc data present(ekin,ealt,stress,viralt,etot,epot,eksum,
-!$acc&         temp,pres)
-!$acc&     present(x,y,z,v,a,glob,use,aalt,mass,
-!$acc&         xold,yold,zold,vir)
+!$acc data present(ekin,ealt,stress,viralt,etot,epot,
+!$acc&  eksum,temp,pres,x,y,z,v,a,glob,use,aalt,mass,
+!$acc&  xold,yold,zold,vir)
 c
 c     make half-step temperature and pressure corrections
 c
@@ -251,16 +251,12 @@ c     MPI : get total energy
 c
       call reduceen(epot)
 c
-c     Debug print information
-c
-      if(deb_Energy) call info_energy(rank)
-      if(deb_Force)  call info_forces(cNBond)
-      if(deb_Atom)   call info_minmax_pva
-c
 c     make half-step temperature and pressure corrections
 c
-      call temper2 (temp)
-      call pressure2 (epot,temp)
+      if (barostat .eq. 'MONTECARLO') then
+         call temper2 (temp)
+         call pressure2 (epot,temp)
+      end if
 c
 c     use Newton's second law to get the slow accelerations;
 c     find full-step velocities using velocity Verlet recursion
@@ -275,6 +271,13 @@ c
             end if
          end do
       end do
+c
+c     Debug print information
+c
+      if(deb_Energy) call info_energy(rank)
+      if(deb_Force)  call info_forces(cNBond)
+      if(deb_Atom)   call info_minmax_pva
+      if(abort)      call fatal
 c
 c     find the constraint-corrected full-step velocities
 c

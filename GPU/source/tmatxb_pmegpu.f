@@ -27,8 +27,11 @@ c===============================================================================
         use mpole   , only : npoleloc,npolebloc
         use polar   , only : polarity, tinypol
         use utilgpu , only : def_queue, dir_queue
+#ifdef _OPENACC
+     &              , def_stream,dir_stream
+#endif
         use domdec  , only : rank
-        use inform  ,only  : deb_Path
+        use inform  , only : deb_Path
         use interfaces ,only : tmatxb_pme_core1,tmatxb_pme_core2,
      &                  tmatxb_pme_core_p
         use tinheader,only: ti_p
@@ -47,7 +50,10 @@ c===============================================================================
 
         if(deb_Path) write(*,'(4x,a)') 'tmatxb_pmegpu'
         call timer_enter( timer_tmatxb_pmegpu )
-        def_queue = dir_queue
+#ifdef _OPENACC
+        def_queue  = dir_queue
+        def_stream = dir_stream
+#endif
 
         !gather some parameters, then set up the damping factors.
         if (use_polarshortreal) then
@@ -64,7 +70,7 @@ c===============================================================================
         if (dodiag) then
         ! if dodiag is true, also compute the "self-induced" field,
         ! i.e., the diagonal portion of the matrix/vector product.
-!$acc  parallel loop collapse(3) async(dir_queue)
+!$acc  parallel loop collapse(3) async(def_queue)
 !$acc&          present(polarity,poleglob,mu,efi)
            do i = 1, npoleloc
               do irhs = 1, nrhs
@@ -341,7 +347,7 @@ c
       if(dodiag) then
       ! if dodiag is true, also compute the "self-induced" field,
       ! i.e., the diagonal portion of the matrix/vector product.
-!$acc parallel loop gang vector async(dir_queue)
+!$acc parallel loop gang vector async(def_queue)
          do i = 1, npoleloc
           iipole = poleglob(i)
           !if no polarisability, take a negligeable value to allow convergence
@@ -400,14 +406,16 @@ c
       real(t_p),intent(out):: efi(3,nrhs,npolebloc)
 
       integer i, j, irhs, iipole
-      integer ipoleloc
-
-      interface
-      end interface
+      integer ipoleloc,ipolar
+      real(t_p) tmp
 
       if (deb_Path)
      &   write(*,'(4x,a)') 'otf_dc_tmatxb_pmegpu'
 
+#ifdef _OPENACC
+      def_queue  = dir_queue
+      def_stream = dir_stream
+#endif
       !initialize the result vector
       call set_to_zero1(efi,size(efi),def_queue)
 
@@ -418,19 +426,23 @@ c
 c     if dodiag is true, also compute the "self-induced" field,
 c     i.e., the diagonal portion of the matrix/vector product.
 c
-        do i = 1, npoleloc
-           iipole = poleglob(i)
-           if (polarity(iipole) .eq. 0_ti_p) then
-              cycle
-           else
-              do irhs = 1, nrhs
-                 do j = 1, 3
-                   efi(j,irhs,i) = efi(j,irhs,i) +
-     $                    mu(j,irhs,i)/polarity(iipole)
-                 end do
-              end do
-           end if
-        end do
+!$acc  parallel loop collapse(3) async(def_queue)
+!$acc&          present(polarity,poleglob,mu,efi)
+         do i = 1, npoleloc
+            do irhs = 1, nrhs
+               do j = 1, 3
+                  ipolar = polarity(poleglob(i))
+                  !if no polarisability, take a negligeable value to allow convergence
+                  if (ipolar  == 0.0_ti_p) then
+                     tmp = mu(j,irhs,i)*(1.0_ti_p/tinypol)
+                  else
+                     tmp = mu(j,irhs,i)/ipolar
+                  end if
+!$acc atomic
+                  efi(j,irhs,i) = efi(j,irhs,i) + tmp
+               end do
+            end do
+         end do
       end if
       end
 
@@ -930,7 +942,7 @@ c
       use cudafor
       use interfaces, only : cu_tmatxb_pme
       use utilcu    , only : BLOCK_DIM,check_launch_kernel
-      use utilgpu   , only : def_stream,dir_stream, nSMP
+      use utilgpu   , only : def_stream,rec_stream, nSMP
       use tmatxb_pmecu,only: tmatxb_pme_core_cu
 #endif
       implicit none
@@ -955,7 +967,6 @@ c
       alsq2n = 0
       if (aewald > 0) alsq2n = 1 / (sqrtpi*aewald)
 #ifdef _CUDA
-      def_stream = dir_stream
       if (first_in) then
          ! Compute though occupancy the right gridSize to launch the kernel with
          first_in = .false.
@@ -1053,7 +1064,7 @@ c
       use cudafor
       use interfaces, only : cu_tmatxb_pme
       use utilcu    , only : BLOCK_DIM,check_launch_kernel
-      use utilgpu   , only : def_stream,dir_stream, nSMP
+      use utilgpu   , only : def_stream, nSMP
       use tmatxb_pmecu,only: otfdc_tmatxb_pme_core_cu
 #endif
       implicit none
@@ -1079,7 +1090,6 @@ c
       alsq2n = 0
       if (aewald > 0) alsq2n = 1 / (sqrtpi*aewald)
 #ifdef _CUDA
-      def_stream = dir_stream
       if (first_in) then
          ! Compute though occupancy the right gridSize to launch the kernel with
          first_in = .false.

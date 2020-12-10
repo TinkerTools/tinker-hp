@@ -19,11 +19,14 @@ c
      &           , f_sqrt=>sqrtf, f_floor=>floorf, f_erfc=>erfcf
      &           , f_exp=>expf
         use cudadevice ,only: f_inv=>__frcp_rn
+     &                 , __tp2ll_rz=>__float2ll_rz
 #else
         use libm ,only: f_sign=>copysign, f_abs=>fabs
      &           , f_floor=>floor, f_erfc=> erfc
         use cudadevice ,only: f_inv=>__drcp_rn
+     &                 , __tp2ll_rz=>__double2ll_rz
 #endif
+        use cudadevice ,only: __ll_as_tp=>__longlong_as_double
         use sizes ,only: tinkerdebug
         implicit none
         integer  ,parameter  :: all_lanes=Z'ffffffff'
@@ -36,6 +39,8 @@ c
      &           ,xcell2,ycell2,zcell2,eps_cell,box34
         logical  ,constant   :: octahedron
         logical  ,constant   :: use_virial
+        logical  ,constant   :: skipvdw12
+        logical  ,constant   :: vcouple
 
         contains
 
@@ -80,6 +85,21 @@ c
         use_virial = use_vir
         end subroutine
 
+        subroutine cu_update_vcouple(vcouple_)
+        implicit none
+        integer,intent(inout)::vcouple_
+        if      (vcouple_.eq.1) then
+           vcouple = .true.
+        else if (vcouple_.eq.0) then
+           vcouple = .false.
+        else
+           write(*,*) " WARNING !! Unusual value of vcouple",vcouple_
+           write(*,*) " Disabling van der Waals coupling method"
+           vcouple  = .false.
+           vcouple_ = 0
+        end if
+        end subroutine
+
         subroutine check_launch_kernel(msg)
         implicit none
         character(*),optional,intent(in):: msg
@@ -102,6 +122,11 @@ c
               write(*,125) ierrSync,cudaGetErrorString(ierrSync)
            end if
         end if
+        end subroutine
+
+        subroutine cu_update_skipvdw12(skipvdw12_)
+        logical,intent(in):: skipvdw12_
+        skipvdw12 = skipvdw12_
         end subroutine
 
         subroutine copy_data_to_cuda_env(data,flag)

@@ -42,6 +42,7 @@ c     eW2aMD extra term aMD potential energy of waters
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module energi
       implicit none
       real(r_p) esum,eb,ea,eba
@@ -53,26 +54,44 @@ c
       real(r_p) esave
       real(r_p) ensmd
       real(r_p) eDaMD,ePaMD
-      real(r_p) eW1aMD,eW2aMD      
+      real(r_p) eW1aMD,eW2aMD
+      ener_rtyp ev_r,ec_r,em_r,ep_r,eb_r
+
+      interface
+      module subroutine create_energi_on_device()
+      end subroutine
+      module subroutine delete_energi_on_device()
+      end subroutine
+      module subroutine info_energy(rank)
+      integer,intent(in)::rank
+      end subroutine
+      end interface
+
+      end module
+
+      submodule(energi) subEnergi
 
       contains
+#include "convert.f.inc"
 
-      subroutine create_energi_on_device()
+      module subroutine create_energi_on_device()
       implicit none
 !$acc enter data create(esum,eb,ea,eba,eub,eaa,eopb,eopd,
 !$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
-!$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD)
+!$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
+!$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
       end subroutine
-      subroutine delete_energi_on_device()
+      module subroutine delete_energi_on_device()
       implicit none
 !$acc exit data delete(esum,eb,ea,eba,eub,eaa,eopb,eopd,
 !$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
-!$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD)
+!$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
+!$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
       end subroutine
 
-      subroutine info_energy(rank)
+      module subroutine info_energy(rank)
       implicit none
       integer,intent(in):: rank
 
@@ -84,7 +103,9 @@ c
 !$acc update host(esum,eb,ea,eba,eub,eaa,eopb,eopd,
 !$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
-!$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD)
+!$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
+!$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
+
          if (eb   /=real(0,r_p)) print 30, 'eb   = ',eb
          if (ea   /=real(0,r_p)) print 30, 'ea   = ',ea 
          if (eba  /=real(0,r_p)) print 30, 'eba  = ',eba
@@ -99,7 +120,7 @@ c
          if (eopb /=real(0,r_p)) print 30, 'eopb = ',eopb
          if (eopd /=real(0,r_p)) print 30, 'eopd = ',eopd
          if (eg   /=real(0,r_p)) print 30, 'eg   = ',eg
-         if (eg   /=real(0,r_p)) print 30, 'ex   = ',eg
+         if (ex   /=real(0,r_p)) print 30, 'ex   = ',eg
          if (ec   /=real(0,r_p)) print 30, 'ec   = ',ec
          if (ev   /=real(0,r_p)) print 30, 'ev   = ',ev
          if (em   /=real(0,r_p)) print 30, 'em   = ',em
@@ -112,4 +133,4 @@ c
       end if
       end subroutine
 
-      end
+      end submodule

@@ -10,15 +10,24 @@ c     ##                                                                ##
 c     ####################################################################
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
 
       submodule(deriv) subderiv
+      use atoms    ,only: x,y,z,n
       use domdec
-      use inform   ,only:deb_Path
+      use inform   ,only:deb_Path,abort,dint1,dint2
       use mpi
+      use neigh
       use potent
+      use sizes
       use tinheader,only:ti_p,re_p
+      implicit none
+      logical abortall
+      integer inte(2)
 
       contains
+
+#include "convert.f.inc"
 
       module subroutine ConfigPotential
       implicit none
@@ -165,8 +174,8 @@ c
             dept (j,i) = 0.0_re_p ! epitors
             dett (j,i) = 0.0_re_p ! etortor
             dev  (j,i) = 0.0_re_p ! ehal1
-            dem  (j,i) = 0.0_re_p ! empole
-            dep  (j,i) = 0.0_re_p ! epolar
+            dem  (j,i) = 0        ! empole
+            dep  (j,i) = 0        ! epolar
          end do
       end do
       if (use_geom) call resetForcesRestrain
@@ -181,10 +190,10 @@ c
          do j = 1, 3
             desum(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
      &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
-     &                 + dev  (j,i) + dem(j,i) + dep (j,i)
+     &                 + dev  (j,i) + mdr2md(dem(j,i) + dep (j,i))
 
-           debond(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
-     &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
+c          debond(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
+c    &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
          end do
       end do
       if (use_geom) call addForcesRestrain
@@ -208,8 +217,8 @@ c
             debt (j,i) = 0.0_re_p ! estrtor
             dett (j,i) = 0.0_re_p ! etortor
             dev  (j,i) = 0.0_re_p ! ehal1
-            dem  (j,i) = 0.0_re_p ! empole
-            dep  (j,i) = 0.0_re_p ! epolar
+            dem  (j,i) = 0        ! empole
+            dep  (j,i) = 0        ! epolar
          end do
       end do
       if (use_geom) call resetForcesRestrain
@@ -226,11 +235,11 @@ c
             desum(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
      &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
      &                 + debt (j,i)
-     &                 + dev  (j,i) + dem(j,i) + dep (j,i)
+     &                 + dev  (j,i) + mdr2md(dem(j,i) + dep (j,i))
 
-           debond(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
-     &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
-     &                 + debt (j,i)
+c          debond(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
+c    &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
+c    &                 + debt (j,i)
          end do
       end do
       if (use_geom) call addForcesRestrain
@@ -248,8 +257,8 @@ c
             dea  (j,i) = 0.0_re_p ! eangle
             deub (j,i) = 0.0_re_p ! eurey
             dev  (j,i) = 0.0_re_p ! ehal1
-            dem  (j,i) = 0.0_re_p ! empole
-            dep  (j,i) = 0.0_re_p ! epolar
+            dem  (j,i) = 0        ! empole
+            dep  (j,i) = 0        ! epolar
          end do
       end do
       if (use_geom) call resetForcesRestrain
@@ -264,8 +273,8 @@ c
       do i = 1, nbloc
          do j = 1, 3
             desum(j,i) = deb(j,i) + dea(j,i) + deub(j,i)
-     &                 + dev(j,i) + dem(j,i) + dep (j,i)
-           debond(j,i) = deb(j,i) + dea(j,i) + deub(j,i)
+     &                 + dev(j,i) + mdr2md(dem(j,i) + dep (j,i))
+c          debond(j,i) = deb(j,i) + dea(j,i) + deub(j,i)
          end do
       end do
       if (use_geom) call addForcesRestrain
@@ -284,7 +293,7 @@ c
             deub (j,i) = 0.0_re_p ! eurey
             deid (j,i) = 0.0_re_p ! eimprop
             det  (j,i) = 0.0_re_p ! etors
-            dec  (j,i) = 0.0_re_p ! echarge
+            dec  (j,i) = 0        ! echarge
             dev  (j,i) = 0.0_re_p ! ehal1
          end do
       end do
@@ -301,7 +310,7 @@ c
       do i = 1, nbloc
          do j = 1, 3
             desum(j,i) = dea(j,i) + deb(j,i) + deid(j,i) + deub(j,i)
-     &                 + det(j,i) + dec(j,i) + dev(j,i)
+     &                 + det(j,i) + mdr2md(dec(j,i)) + dev(j,i)
          end do
       end do
       if (use_geom) call addForcesRestrain
@@ -325,7 +334,7 @@ c
 !$acc parallel loop collapse(2) default(present) async
       do i = 1, nbloc
          do j = 1, 3
-            debond(j,i) = debond(j,i) + desmd(j,i)
+            desum(j,i) = desum(j,i) + desmd(j,i)
          end do
       end do
       end subroutine
@@ -347,7 +356,7 @@ c
 !$acc parallel loop collapse(2) default(present) async
       do i = 1, nbloc
          do j = 1, 3
-            debond(j,i) = debond(j,i) + deg(j,i)
+c           debond(j,i) = debond(j,i) + deg(j,i)
             desum (j,i) = desum (j,i) + deg(j,i)
          end do
       end do
@@ -388,9 +397,9 @@ c
             debt (j,i) = 0.0_re_p ! estrtor
             dett (j,i) = 0.0_re_p ! etortor
             dev  (j,i) = 0.0_re_p ! ehal1
-            dec  (j,i) = 0.0_re_p ! echarge
-            dem  (j,i) = 0.0_re_p ! empole
-            dep  (j,i) = 0.0_re_p ! epolar
+            dec  (j,i) = 0        ! echarge
+            dem  (j,i) = 0        ! empole
+            dep  (j,i) = 0        ! epolar
             deg  (j,i) = 0.0_re_p ! egeom
             desmd(j,i) = 0.0_re_p ! esmd
             dex  (j,i) = 0.0_re_p ! extra
@@ -407,15 +416,15 @@ c
       do i = 1, nbloc
          do j = 1, 3
             desum(j,i) = deaa(j,i) + deba(j,i) + dea  (j,i) + deb  (j,i)
-     &                 + dec (j,i) + dem (j,i) + deopb(j,i) + deopd(j,i)
-     &                 + deid(j,i) + dep (j,i) + dev  (j,i) + deub (j,i)
+     &         + mdr2md(dec (j,i) + dem (j,i) + dep (j,i)) + deopb(j,i)
+     &                 + deid(j,i) + dev (j,i) + deub (j,i) + deopd(j,i)
      &                 + deit(j,i) + det (j,i) + dept (j,i) + debt (j,i)
      &                 + dett(j,i) + deg (j,i) + dex  (j,i) + desmd(j,i)
 
-           debond(j,i) = deaa (j,i) + deba (j,i) + dea (j,i) + deb (j,i)
-     &                 + deopb(j,i) + deopd(j,i) + deid(j,i) + deub(j,i)
-     &                 + deit (j,i) + det  (j,i) + dept(j,i) + debt(j,i)
-     &                 + dett (j,i) + deg  (j,i)
+c          debond(j,i) = deaa (j,i) + deba (j,i) + dea (j,i) + deb (j,i)
+c    &                 + deopb(j,i) + deopd(j,i) + deid(j,i) + deub(j,i)
+c    &                 + deit (j,i) + det  (j,i) + dept(j,i) + debt(j,i)
+c    &                 + dett (j,i) + deg  (j,i)
          end do
       end do
       end subroutine
@@ -519,7 +528,6 @@ c
       real(r_p),dimension(3,nloc)::demsum,depsum,decsum
       real(8) mmx(3*nf),smm(nf)
       logical tinker_isnan_m
-      logical abort
       real(t_p) dat,dat1
       integer,save:: doin = 1
 
@@ -529,7 +537,6 @@ c
       enumerator ::commNonBonded
       end enum
 
-      abort  = .false.
       mmx    = 0
       sze    = 3*nloc
 
@@ -582,13 +589,17 @@ c
 
 
       if(use_vdw)    call commforce_one(dev,commNonBonded)
-      if(use_charge) call commforce_one(dec,commNonBonded)
-      if(use_mpole)  call commforce_one(dem,commNonBonded)
-      if(use_polar)  call commforce_one(dep,commNonBonded)
 
-      if(use_mpole)  call commforcerecdir_one(dem,demrec,demsum)
-      if(use_polar)  call commforcerecdir_one(dep,deprec,depsum)
+#ifndef USE_DETERMINISTIC_REDUCTION
+      if(use_charge) call commforce_one(dec,commNonBonded)
       if(use_charge) call commforcerecdir_one(dec,decrec,decsum)
+
+      if(use_mpole)  call commforce_one(dem,commNonBonded)
+      if(use_mpole)  call commforcerecdir_one(dem,demrec,demsum)
+
+      if(use_polar)  call commforce_one(dep,commNonBonded)
+      if(use_polar)  call commforcerecdir_one(dep,deprec,depsum)
+#endif
 
       end if
 !$acc wait
@@ -649,40 +660,52 @@ c!$acc update host(glob)
       if (btest(rule,commShortNonBonded)) then
 
       if(use_charge)
-     &call minmaxone(mmx(16),mmx(nf+16),mmx(2*nf+16),dec
+     &call minmaxone1(mmx(16),mmx(nf+16),mmx(2*nf+16),dec
      &     ,sze,'dec');
       if(use_vdw)
      &call minmaxone(mmx(17),mmx(nf+17),mmx(2*nf+17),dev
      &     ,sze,'dev');
       if(use_mpole)
-     &call minmaxone(mmx(18),mmx(nf+18),mmx(2*nf+18),dem
+     &call minmaxone1(mmx(18),mmx(nf+18),mmx(2*nf+18),dem
      &     ,sze,'dem');
       if(use_polar)
-     &call minmaxone(mmx(20),mmx(nf+20),mmx(2*nf+20),dep
+     &call minmaxone1(mmx(20),mmx(nf+20),mmx(2*nf+20),dep
      &     ,sze,'dep');
+
+      if (abort.and.vlst_enable) then
+         dint1 = minval(inte); dint2=maxval(inte)
+         call searchpair(nshortvlst,shortvlst,maxvlst
+     &        ,dint1,dint2)
+      end if
 
       else if (btest(rule,commNonBonded)) then
 
       if(use_charge) then
-      call minmaxone(mmx(16),mmx(nf+16),mmx(2*nf+16),dec
+      call minmaxone1(mmx(16),mmx(nf+16),mmx(2*nf+16),dec
      &     ,sze,'dec');
       call minmaxone(mmx(22),mmx(nf+22),mmx(2*nf+22),decsum
-     &     ,sze,'dec');
+     &     ,sze,'decsum');
       end if
       if(use_vdw)
      &call minmaxone(mmx(17),mmx(nf+17),mmx(2*nf+17),dev
      &     ,sze,'dev');
       if(use_mpole) then
-      call minmaxone(mmx(18),mmx(nf+18),mmx(2*nf+18),dem
+      call minmaxone1(mmx(18),mmx(nf+18),mmx(2*nf+18),dem
      &     ,sze,'dem');
       call minmaxone(mmx(19),mmx(nf+19),mmx(2*nf+19),demsum
      &     ,sze,'demsum');
       end if
       if(use_polar) then
-      call minmaxone(mmx(20),mmx(nf+20),mmx(2*nf+20),dep
+      call minmaxone1(mmx(20),mmx(nf+20),mmx(2*nf+20),dep
      &     ,sze,'dep');
       call minmaxone(mmx(21),mmx(nf+21),mmx(2*nf+21),depsum
      &     ,sze,'depsum');
+      end if
+
+      if (abort.and.vlst_enable) then
+         dint1 = minval(inte); dint2=maxval(inte)
+         call searchpair(nshortvlst,shortvlst,maxvlst,
+     &        dint1,dint2)
       end if
 
       end if
@@ -797,7 +820,6 @@ c     end if
 
       end if
 
-      if (abort) call fatal
       doin = doin +1
       end subroutine
 
@@ -807,12 +829,71 @@ c     end if
       real(8) mi,ma,on
       real(r_p) vector(*)
       character(*),optional,intent(in)::name
-      integer i
+      integer i,j,i1,i2,iglob,cap,cap1,cap2
+      integer gli(2,nproc)
       real(8) val
 
-c     if (present(name)) then
-c        write(0,*) name
-c     end if
+      abortall = .false.
+      if (present(name)) then
+         cap = 1
+         gli = 0
+         if (name.eq.'dev') then
+!$acc parallel loop default(present) copy(abort,cap,gli)
+            do i = 1, sz/3
+               cap2  = 0
+               iglob = glob(i)
+!$acc loop seq
+               do j  = 1,3
+               val   = vector((i-1)*3+j)
+               if (abs(val).gt.300.0_re_p) then
+                  print*,i,iglob,rank,x(iglob),y(iglob),z(iglob),val
+!$acc atomic write
+                  abort=.true.
+                  cap2 = cap2 + 1
+               end if
+               end do
+               if (cap2.gt.0) then
+!$acc atomic capture
+               cap1 = cap
+               cap  = cap + 1
+!$acc end atomic
+               if (cap1.le.2) gli(cap1,rank+1) = iglob
+               end if
+            end do
+            do i = 1, nproc
+               if (rank.eq.i-1) abortall=abort
+               call MPI_BCAST(abortall,1,MPI_LOGICAL,i-1,COMM_TINKER,i1)
+               if (abortall) then
+                  abort = .true.
+                  call MPI_AllGather(MPI_IN_PLACE,2,MPI_DATATYPE_NULL
+     $                              ,gli,2,MPI_INT,COMM_TINKER,i1)
+                  exit
+               end if
+            end do
+
+            if (abort) then
+            
+            cap  = 0
+            cap1 = 0
+            do i1 = 1, nproc
+               do i2 = 1,2
+                  if ( gli(i2,i1).ne.0 ) then
+                     cap = cap + 1
+                     if (cap.lt.3) inte(cap) = gli(i2,i1)
+                  else
+                     cap1 = cap1 + 1
+                  end if
+               end do
+            end do
+            
+            if (cap.ne.2) print*,' more than one interactions find '
+     &                   ,rank,cap1
+            !print*, 'interaction', inte,rank
+            
+            end if
+         end if
+
+      end if
 
 !$acc parallel loop present(vector(1:sz))
       do i = 1, sz
@@ -823,4 +904,23 @@ c     end if
       end do
       end subroutine
 
+      subroutine minmaxone1( mi,ma,on,vector,sz,name )
+      implicit none
+      integer sz
+      real(8) mi,ma,on
+      mdyn_rtyp vector(*)
+      character(*),optional,intent(in)::name
+      integer i,j
+      real(8) val
+
+      abortall = .false.
+
+!$acc parallel loop present(vector(1:sz))
+      do i = 1, sz
+         val = mdr2md(vector(i))
+         mi = min( mi,val )
+         ma = max( ma,val )
+         on = on + abs(val)
+      end do
+      end subroutine
       end submodule

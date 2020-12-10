@@ -15,11 +15,12 @@ c     and derivatives with respect to Cartesian coordinates
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module epolar1gpu_inl
         include "erfcore_data.f.inc"
         contains
+#include "convert.f.inc"
 #include "image.f.inc"
-#include "switch_respa.f.inc"
 #if defined(SINGLE) | defined(MIXED)
         include "erfcscore.f.inc"
 #else
@@ -71,9 +72,10 @@ c
       use deriv
       use domdec
       use energi
+      use epolar1gpu_inl
       use ewald
       use inform ,only: deb_Path
-      use interfaces,only:torquegpu,epreal1c_core_p
+      use interfaces,only:torquegpu,epreal1c_p
      &              ,epreal1c_core3
       use iounit
       use math
@@ -94,7 +96,8 @@ c
 
       implicit none
       integer i,j,ii,iglob,iipole,ierr
-      real(t_p),save:: e,f
+      ener_rtyp,save:: e
+      real(t_p) f
       real(t_p) term,term1,fterm
       real(t_p) dix,diy,diz
       real(t_p) uix,uiy,uiz,uii
@@ -117,10 +120,10 @@ c
 !$acc enter data create(e)
       end if
 
-!$acc data present(e,ep,eprec)
+!$acc data present(e,ep,ep_r,eprec)
 c
 !$acc serial async(rec_queue)
-      e     = 0.0_re_p
+      e     = 0
       ep    = 0.0_re_p
       eprec = 0.0_re_p
 !$acc end serial
@@ -160,10 +163,7 @@ c
       if (precompute_solvpole) precompute_tmat=.true.
 
 #ifdef _OPENACC
-      if (dir_queue.ne.rec_queue) then
-         ! Start stream overlapping
-         call stream_wait_async(rec_stream,dir_stream,rec_event)
-      end if
+      if (dir_queue.ne.rec_queue) call start_dir_stream_cover
 #endif
 
 !!$acc update device(uind,uinp,igrid,thetai1,thetai2,thetai3,qfac_2d,
@@ -175,22 +175,25 @@ c
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
      &   then
          call timer_enter( timer_real )
-         call epreal1cgpu
+         if (use_polarshortreal) then
+            call epreal1cgpu
+         else
+            call epreal1c_p
+         end if
 
          if (use_pself) then
+            def_queue = dir_queue
 c
 c     compute the Ewald self-energy term over all the atoms
 c
 !$acc enter data create(trq) async(def_queue)
 c
-!$acc data present(trq)
-!$acc&     present(poleglob,rpole,ipole,loc,dep,vir,uind,uinp)
-!$acc&     async(def_queue)
+!$acc data present(poleglob,rpole,ipole,loc,dep,vir,uind,uinp)
 c
            term  = 2.0_ti_p * aewald * aewald
            fterm = -f * aewald / sqrtpi
            term1 = (4.0_ti_p/3.0_ti_p) * f * aewald**3 / sqrtpi
-!$acc parallel loop async(def_queue)
+!$acc parallel loop async(def_queue) present(trq)
            do ii = 1, npoleloc
               iipole   = poleglob(ii)
               dix      = rpole(2,iipole)
@@ -200,7 +203,7 @@ c
               uiy      = uind (2,iipole)
               uiz      = uind (3,iipole)
               uii      = dix*uix + diy*uiy + diz*uiz
-              e        = e + fterm * term * uii / 3.0_ti_p
+              e        = e + tp2enr(fterm*term*uii / 3.0_ti_p)
 c
 c     compute the self-energy torque term due to induced dipole
 c
@@ -265,7 +268,7 @@ c
      $           COMM_TINKER,ierr)
               term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
               if (rank.eq.0) then
-                 e = e  + term*(xd*xu+yd*yu+zd*zu)
+                 e = e  + tp2enr(term*(xd*xu+yd*yu+zd*zu))
               end if
               do ii = 1, npoleloc
                  iipole   = poleglob(ii)
@@ -364,14 +367,14 @@ c
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) then
          !End async compute overlapping if necessary
-         call stream_wait_async(dir_stream,rec_stream)
+         call end_dir_stream_cover
       end if
 #endif
 c
 c     Sum contribution of all energy
 c
 !$acc serial async(rec_queue)
-      ep = ep + e + eprec
+      ep = ep + enr2en( e+ep_r ) + eprec
 !$acc end serial
 
 !$acc end data
@@ -447,7 +450,10 @@ c
       if(deb_Path)write(*,'(2x,a)') 'epreal1cgpu'
 
       call timer_enter( timer_epreal )
-      def_queue = dir_queue
+#ifdef _OPENACC
+      def_queue  = dir_queue
+      def_stream = dir_stream
+#endif
 
       if (f_in) then
          f_in=.false.
@@ -639,7 +645,7 @@ c
       type(rpole_elt):: ip,kp
       type(real6) :: dpui,dpuk
       type(real3) :: pos,posi,ufli,uflk,trqi,trqk,frc
-      type(real3_red):: frc_r
+      type(mdyn3_r):: frc_r
       parameter(half=0.5_ti_p)
       parameter(one=1.0_ti_p, two=2.0_ti_p)
       real(t_p),save:: uscalevec(5),dscalevec(5),pscalevec(5)
@@ -850,17 +856,17 @@ c
 c
 c     increment gradient and virial due to Cartesian forces
 c
-!$acc atomic update
+!$acc atomic
             dep(1,i) = dep(1,i) - frc_r%x
-!$acc atomic update
+!$acc atomic
             dep(2,i) = dep(2,i) - frc_r%y
-!$acc atomic update
+!$acc atomic
             dep(3,i) = dep(3,i) - frc_r%z
-!$acc atomic update
+!$acc atomic
             dep(1,kbis) = dep(1,kbis) + frc_r%x
-!$acc atomic update
+!$acc atomic
             dep(2,kbis) = dep(2,kbis) + frc_r%y
-!$acc atomic update
+!$acc atomic
             dep(3,kbis) = dep(3,kbis) + frc_r%z
 
             vxx     = vxx + pos%x * frc%x
@@ -872,17 +878,17 @@ c
 c
 c     increment torque
 c
-!$acc atomic update
+!$acc atomic
             trqvec(1,ii) = trqvec(1,ii) + trqi%x
-!$acc atomic update
+!$acc atomic
             trqvec(2,ii) = trqvec(2,ii) + trqi%y
-!$acc atomic update
+!$acc atomic
             trqvec(3,ii) = trqvec(3,ii) + trqi%z
-!$acc atomic update
+!$acc atomic
             trqvec(1,kploc) = trqvec(1,kploc) + trqk%x
-!$acc atomic update
+!$acc atomic
             trqvec(2,kploc) = trqvec(2,kploc) + trqk%y
-!$acc atomic update
+!$acc atomic
             trqvec(3,kploc) = trqvec(3,kploc) + trqk%z
          enddo
 
@@ -896,7 +902,7 @@ c
       use chgpot  ,only: dielec,electric
       use deriv   ,only: dep
       use domdec  ,only: rank,loc
-      use energi  ,only: ep
+      use energi  ,only: ep=>ep_r
       use epolar1gpu_inl
       use ewald   ,only: aewald
       use inform  ,only: deb_Path
@@ -907,9 +913,10 @@ c
       use polar   ,only: uind,uinp,thole,pdamp
       use potent  ,only: use_polarshortreal
       use shunt   ,only: off2
-      use tinheader,only: ti_p
+      use tinheader  ,only: ti_p
       use virial
-      use utilgpu ,only: def_queue,real3,real6,real3_red,rpole_elt
+      use tinTypes,only: real3,real6,rpole_elt,mdyn3_r
+      use utilgpu ,only: def_queue
 
       implicit none
 
@@ -931,7 +938,7 @@ c
       type(rpole_elt):: ip,kp
       type(real6) :: dpui,dpuk
       type(real3) :: pos,posi,ufli,uflk,trqi,trqk,frc
-      type(real3_red):: frc_r
+      type(mdyn3_r):: frc_r
       parameter(one=1.0_ti_p)
 
       if(deb_Path)write(*,'(2x,a)') 'epreal1c_core2'
@@ -1044,21 +1051,21 @@ c
 c
 c     increment energy
 c
-            ep          = ep + e
+            ep          = ep + tp2enr(e)
 c
 c     increment gradient and virial due to Cartesian forces
 c
-!$acc atomic update
+!$acc atomic
             dep(1,i)    = dep(1,i)    - frc_r%x
-!$acc atomic update
+!$acc atomic
             dep(2,i)    = dep(2,i)    - frc_r%y
-!$acc atomic update
+!$acc atomic
             dep(3,i)    = dep(3,i)    - frc_r%z
-!$acc atomic update
+!$acc atomic
             dep(1,kbis) = dep(1,kbis) + frc_r%x
-!$acc atomic update
+!$acc atomic
             dep(2,kbis) = dep(2,kbis) + frc_r%y
-!$acc atomic update
+!$acc atomic
             dep(3,kbis) = dep(3,kbis) + frc_r%z
 
             vxx         = vxx + pos%x * frc%x
@@ -1070,17 +1077,17 @@ c
 c
 c     increment torque
 c
-!$acc atomic update
+!$acc atomic
             trqvec(1,ii)    = trqvec(1,ii)    + trqi%x
-!$acc atomic update
+!$acc atomic
             trqvec(2,ii)    = trqvec(2,ii)    + trqi%y
-!$acc atomic update
+!$acc atomic
             trqvec(3,ii)    = trqvec(3,ii)    + trqi%z
-!$acc atomic update
+!$acc atomic
             trqvec(1,kploc) = trqvec(1,kploc) + trqk%x
-!$acc atomic update
+!$acc atomic
             trqvec(2,kploc) = trqvec(2,kploc) + trqk%y
-!$acc atomic update
+!$acc atomic
             trqvec(3,kploc) = trqvec(3,kploc) + trqk%z
          enddo
 
@@ -1098,9 +1105,9 @@ c
       use domdec  ,only: xbegproc,ybegproc,zbegproc
      &            ,nproc,rank,xendproc,yendproc,zendproc
      &            ,nbloc,loc
-      use energi  ,only: ep
+      use energi  ,only: ep=>ep_r
 #ifdef _CUDA
-      use epolar1cu,only:epreal1c_core_cu
+      use epolar1cu ,only: epreal1c_core_cu
 #endif
       use ewald   ,only: aewald
       use inform  ,only: deb_Path
@@ -1124,12 +1131,13 @@ c
       use cudafor
       use utilcu  ,only: BLOCK_DIM,check_launch_kernel
 #endif
-      use utilgpu ,only: def_queue,dir_queue,rec_queue
+      use utilgpu ,only: def_queue
      &            ,real3,real6,real3_red,rpole_elt
-     &            ,ered_buff,vred_buff,reduce_energy_virial
+     &            ,ered_buff=>ered_buf1,vred_buff
+     &            ,reduce_energy_virial
      &            ,RED_BUFF_SIZE,zero_evir_red_buffer
 #ifdef  _OPENACC
-     &            ,dir_stream,def_stream,nSMP
+     &            ,dir_stream,def_stream,rec_stream,nSMP
 #endif
 
       implicit none
@@ -1164,7 +1172,6 @@ c
       lst_beg= 2*npolelocnlb_pair+1
 
 #ifdef _CUDA
-      def_stream = dir_stream
       if (first_in) then
          ! Compute though occupancy the right gridSize to launch the kernel with
          call cudaMaxGridSize("epreal1c_core_cu",gS)
@@ -1181,7 +1188,7 @@ c
       
       if (use_polarshortreal) then
 
-      if (dyn_gS) gS = nspnlb2/4
+      if (dyn_gS) gS = nspnlb2/12
       call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,iseblst_s,seblst_s(lst_beg)
@@ -1193,7 +1200,7 @@ c
 
       else
 
-      if (dyn_gS) gS = npolelocnlb2_pair/4
+      if (dyn_gS) gS = npolelocnlb2_pair/12
       call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,ieblst_s,eblst_s(lst_beg)
@@ -1207,7 +1214,8 @@ c
 
 !$acc end host_data
 
-      call reduce_energy_virial(ep,vxx,vxy,vxz,vyy,vyz,vzz,def_queue)
+      call reduce_energy_virial(ep,vxx,vxy,vxz,vyy,vyz,vzz
+     &                         ,ered_buff,def_queue)
 c
       call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 #else
@@ -1228,7 +1236,7 @@ c
       use chgpot  ,only: dielec,electric
       use deriv   ,only: dep
       use domdec  ,only: rank,loc
-      use energi  ,only: ep
+      use energi  ,only: ep=>ep_r
       use epolar1gpu_inl
       use ewald   ,only: aewald
       use inform  ,only: deb_Path
@@ -1238,31 +1246,28 @@ c
       use polar   ,only: uind,uinp,thole,pdamp
       use polpot  ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
       use shunt   ,only: off2
-      use tinheader,only: ti_p
+      use tinheader ,only: ti_p
+      use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
+      use utilgpu ,only: def_queue
       use virial
-      use utilgpu ,only: def_queue,real3,real6,real3_red,rpole_elt
-      use atoms   ,only: x,y,z
-
       implicit none
 
       real(t_p),intent(inout):: trqvec(:,:)
       real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
 
       integer i,k,iglob,kglob,iploc,kploc
+      integer ii,iipole,kpole,j,kbis
       integer nnelst
-      integer ii,iipole,kpole
-      integer j,kbis
       real(t_p) alsq2,alsq2n
       real(t_p) r2,pgamma,damp
       real(t_p) f,e
       real(t_p) pdi,pti
       real(t_p) one
       real(t_p) pscale,dscale,uscale
-
       type(rpole_elt):: ip,kp
-      type(real6) :: dpui,dpuk
-      type(real3) :: pos,posi,ufli,uflk,trqi,trqk,frc
-      type(real3_red):: frc_r
+      type(real6)    :: dpui,dpuk
+      type(real3)    :: pos,posi,ufli,uflk,trqi,trqk,frc
+      type(mdyn3_r)  :: frc_r
 
       parameter(one=1.0_ti_p)
 
@@ -1361,43 +1366,43 @@ c
 c
 c     increment energy
 c
-         ep       = ep + e
+         ep       = ep + tp2enr(e)
 c
 c     increment gradient and virial due to Cartesian forces
 c
-!$acc atomic update
+!$acc atomic
          dep(1,i) = dep(1,i) - frc_r%x
-!$acc atomic update
+!$acc atomic
          dep(2,i) = dep(2,i) - frc_r%y
-!$acc atomic update
+!$acc atomic
          dep(3,i) = dep(3,i) - frc_r%z
-!$acc atomic update
+!$acc atomic
          dep(1,k) = dep(1,k) + frc_r%x
-!$acc atomic update
+!$acc atomic
          dep(2,k) = dep(2,k) + frc_r%y
-!$acc atomic update
+!$acc atomic
          dep(3,k) = dep(3,k) + frc_r%z
 
-            vxx   = vxx + pos%x*frc%x
-            vxy   = vxy + pos%y*frc%x
-            vxz   = vxz + pos%z*frc%x
-            vyy   = vyy + pos%y*frc%y
-            vyz   = vyz + pos%z*frc%y
-            vzz   = vzz + pos%z*frc%z
+         vxx      = vxx + pos%x*frc%x
+         vxy      = vxy + pos%y*frc%x
+         vxz      = vxz + pos%z*frc%x
+         vyy      = vyy + pos%y*frc%y
+         vyz      = vyz + pos%z*frc%y
+         vzz      = vzz + pos%z*frc%z
 c
 c     increment torque
 c
-!$acc atomic update
+!$acc atomic
          trqvec(1,iploc) = trqvec(1,iploc) + trqi%x
-!$acc atomic update
+!$acc atomic
          trqvec(2,iploc) = trqvec(2,iploc) + trqi%y
-!$acc atomic update
+!$acc atomic
          trqvec(3,iploc) = trqvec(3,iploc) + trqi%z
-!$acc atomic update
+!$acc atomic
          trqvec(1,kploc) = trqvec(1,kploc) + trqk%x
-!$acc atomic update
+!$acc atomic
          trqvec(2,kploc) = trqvec(2,kploc) + trqk%y
-!$acc atomic update
+!$acc atomic
          trqvec(3,kploc) = trqvec(3,kploc) + trqk%z
       end do
 c
@@ -1440,7 +1445,7 @@ c
       use inform    ,only: deb_Path
       use interfaces,only: fphi_uind_site1_p
      &              ,torquegpu,grid_uind_site_p
-     &              ,grid_mpole_site_p
+     &              ,grid_mpole_site_p,epreal1c_cp
       use math
       use mpole
       use pme
@@ -1481,16 +1486,8 @@ c     real(t_p) trqrec(3,npolerecloc)
       real(t_p) cphim(4),cphid(4)
       real(t_p) cphip(4)
       real(t_p),save:: a(3,3)
-      integer,dimension(nproc)::reqsend,reqrec,req2send,req2rec
-      real(t_p),save,allocatable:: cmp(:,:),fmp(:,:),fphidp(:,:)
-     &         , trqrec(:,:)
-c     real(t_p), dimension(10,npolerecloc)::cmp,fmp
-c     real(t_p), dimension(20,npolerecloc)::fphidp
-c     real(t_p), dimension(03,npolerecloc)::fuind,fuinp
-c     real(t_p), dimension(10,npolerecloc)::fphid,fphip
+      integer  ,dimension(nproc)::reqsend,reqrec,req2send,req2rec
       real(t_p), allocatable :: qgrip(:,:,:,:)
-c     real(t_p)  qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,
-c    &                   nrec_recep)
       logical,save::f_in=.true.
 c
 c     return if the Ewald coefficient is zero
@@ -1530,9 +1527,6 @@ c     call mallocMpiGrid
 !$acc&      create(vxx,vxy,vxz,vyy,vyz,vzz)
          f_in=.false.
       end if
-c
-!!$acc enter data create(trqrec,cmp,fmp,fphidp)
-!!$acc&     async(rec_queue)
 c
 !$acc data present(trqrec,cmp,fmp,fphidp,a)
 !$acc&     present(vxx,vxy,vxz,vyy,vyz,vzz,eprec,er)
@@ -1642,6 +1636,14 @@ c
 !$acc end host_data
       end do
 c
+#ifdef _OPENACC
+      ! Recover MPI communication with real space computations
+      if (dir_queue.ne.rec_queue) then
+         call start_dir_stream_cover
+         call epreal1c_cp
+      end if
+#endif
+
       do i = 1, nrec_recep
          call MPI_WAIT(reqrec(i),status,ierr)
       end do
@@ -1747,6 +1749,11 @@ c
          call MPI_WAIT(req2send(i),status,ierr)
       end do
       call timer_exit( timer_recreccomm,quiet_timers )
+
+#ifdef _OPENACC
+      ! sync streams
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
 
 c     fphip(1,:) = 0.0_ti_p !flush first line to zero? never use after
 c     fphid(1,:) = 0.0_ti_p !flush first line to zero? same
@@ -2152,13 +2159,6 @@ c
 c!$acc update host(vxx,vxy,vxz,eprec) async(rec_queue)
 c!$acc update host(deprec,fmp) async
 c!$acc update host(fphip,fphid,fphidp) async(rec_queue)
-c#ifdef _OPENACC
-c!$acc wait(dir_queue) async(rec_queue)  !not working
-c      if (dir_queue.ne.rec_queue) then
-c         call stream_wait_async(dir_stream,rec_stream,dir_event)
-c      end if
-c#endif
-
 c      do i = 0,nproc-1
 c         if (rank.eq.i) then
 c         print*,comput_norm( uind,3*n,2),
@@ -2176,9 +2176,6 @@ c      end do
 
 
 !$acc end data
-c
-!!$acc exit data delete(trqrec,cmp,fmp,fphidp)
-!!$acc&     async(rec_queue)
 c
 !!$acc exit data delete(er,a,vxx,vxy,vxz,vyy,vyz,vzz)
 !!$acc&          async(rec_queue)

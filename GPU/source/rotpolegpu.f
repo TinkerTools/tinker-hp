@@ -55,7 +55,7 @@ c
       integer ii,iipole,iglob
       integer ix,iy,iz
       integer i,j,k,m
-      integer::kk=0,ksave
+      integer kk,ksave
       integer axetyp
       real(t_p) r,dot,invr
       real(t_p) xi,yi,zi
@@ -70,7 +70,7 @@ c
 c
 c     get coordinates and frame definition for the multipole site
 c
-
+      kk = 0
 #ifdef _OPENACC
 !$acc data present(samplevec)
       if (host_rand_platform) then
@@ -85,6 +85,7 @@ c
       end if
 !$acc end data
 #endif
+
 !$acc parallel loop private(a,m2,r2) copyin(kk)
 !$acc&         present(poleglobvec,ipole,ipolaxe,x,y,z,rpole,
 !$acc&   pole,xaxis,yaxis,zaxis)
@@ -108,10 +109,10 @@ c
          a(1,3) = 0.0_ti_p
          a(2,3) = 0.0_ti_p
          a(3,3) = 1.0_ti_p
-c        
+c
 c     Z-Only method rotation matrix elements for z-axis only
-c        
-         if (btest(axetyp,3)) then  !'Z-Only'
+c
+         if (axetyp.eq.Ax_Z_Only) then
             dx  = x(iz) - xi
             dy  = y(iz) - yi
             dz  = z(iz) - zi
@@ -145,7 +146,7 @@ c
 c
 c     Z-then-X method rotation matrix elements for z- and x-axes
 c
-         else if (btest(axetyp,4)) then  !'Z-then-X'
+         else if (axetyp.eq.Ax_Z_Then_X) then
             dx  = x(iz) - xi
             dy  = y(iz) - yi
             dz  = z(iz) - zi
@@ -169,7 +170,7 @@ c
 c
 c     Bisector method rotation matrix elements for z- and x-axes
 c
-         else if (btest(axetyp,1)) then  !'Bisector'
+         else if (axetyp.eq.Ax_Bisector) then
             dx  = x(iz) - xi
             dy  = y(iz) - yi
             dz  = z(iz) - zi
@@ -206,7 +207,7 @@ c
 c
 c     Z-Bisect method rotation matrix elements for z- and x-axes
 c
-         else if (btest(axetyp,2)) then  !'Z-Bisect'
+         else if (axetyp.eq.Ax_Z_Bisect) then
             dx  = x(iz) - xi
             dy  = y(iz) - yi
             dz  = z(iz) - zi
@@ -251,7 +252,7 @@ c
 c        
 c     3-Fold method rotation matrix elements for z- and x-axes
 c        
-         else if (btest(axetyp,0)) then  !'3-Fold'
+         else if (axetyp.eq.Ax_3_Fold) then
             dx  = x(iz) - xi
             dy  = y(iz) - yi
             dz  = z(iz) - zi

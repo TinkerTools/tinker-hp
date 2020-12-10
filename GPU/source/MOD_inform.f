@@ -25,6 +25,11 @@ c     deb_Force  logical flag to print Forces information
 c     deb_Energy logical flag to print Energy
 c     deb_Polar  logical flag for polarisation potent
 c
+c     dint1 dint2 dibuff  useful for storing purpose
+
+#include "tinker_precision.h"
+#include "tinker_types.h"
+
       module inform
       implicit none
       integer digits,iprint
@@ -39,6 +44,9 @@ c
       end enum
       logical deb_Path,deb_Force,deb_Energy,deb_Atom,deb_Polar
 
+      integer dint1,dint2
+      integer,allocatable::dibuff(:)
+
       ! Inform separated Subroutines
       interface
         module subroutine initDebugEnv
@@ -52,6 +60,35 @@ c
       interface
          module subroutine info_dyn()
          end subroutine
+      end interface
+
+      interface minmaxone
+#ifdef USE_DETERMINISTIC_REDUCTION
+         module subroutine minmaxonef( vector,sz,name,mi_,ma_,on_ )
+         implicit none
+         integer sz
+         mdyn_rtyp vector(*)
+         character(*),optional,intent(in)::name
+         real(8)     ,optional,intent(inout):: mi_,ma_,on_
+!DIR$ ignore_tkr (r) vector
+         end subroutine
+#endif
+         module subroutine minmaxonet( vector,sz,name )
+         implicit none
+         integer sz
+         real(t_p) vector(*)
+         character(*),optional,intent(in)::name
+!DIR$ ignore_tkr (r) vector
+         end subroutine
+#if TINKER_MIXED_PREC
+         module subroutine minmaxoner( vector,sz,name )
+         implicit none
+         integer sz
+         real(r_p) vector(*)
+         character(*),optional,intent(in)::name
+!DIR$ ignore_tkr (r) vector
+         end subroutine
+#endif
       end interface
 
       end

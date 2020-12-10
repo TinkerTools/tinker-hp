@@ -18,18 +18,23 @@ c     prec_eps  smallest value depending on the precision such that (2+prec_esp>
 c     prec1_eps  smallest value depending on the precision such that (1+prec_esp>1)
 
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module tinheader
       !use mpi,only:MPI_REAL4,MPI_REAL8
       implicit none
       integer ti_p,re_p
+      integer i_init
       !integer MPI_TYPE,MPI_RTYPE
       real(t_p) ti_eps,prec_eps,prec1_eps
       real(r_p) precm_eps
+      real(t_p) a_init
 
       parameter(ti_p=t_p)
       parameter(re_p=r_p)
+      parameter(i_init=-1)
+      parameter(a_init=-1.0)
       parameter(prec_eps =2*epsilon(ti_eps))
-      parameter(prec1_eps=epsilon(ti_eps))
+      parameter(prec1_eps=  epsilon(ti_eps))
       parameter(precm_eps=2*epsilon(precm_eps))
       !parameter(MPI_TYPE=MPI_TPREC)
       !parameter(MPI_RTYPE=MPI_RPREC)
@@ -51,6 +56,9 @@ c
       end type real3
       type real3_red
          real(r_p) x,y,z
+      end type
+      type mdyn3_r
+         mdyn_rtyp x,y,z
       end type
       type real6
          real(t_p) x,y,z

@@ -19,6 +19,7 @@ c
       subroutine final
       use deriv
       use domdec
+      use fft    ,only: free_FFTgrid_p,is_fftInit
       use inform
       use iounit
       use moldyn
@@ -36,9 +37,16 @@ c
       implicit none
       integer i
 c
-      if (tinkertime) call display_timers
-
-      if (.not.use_pmecore.or.use_pmecore.and.rank>=ndir) call fft_final
+      call timer_exit(timer_prog)
+      if (tinkertime.eq.all_time) call display_timers
+c
+c     Free ressources
+c
+      if (is_fftInit) then
+         call fft_final
+         call free_FFTgrid_p
+         is_fftInit = .false.
+      end if
 ! Not supported for synchronous computation
 c#ifdef _OPENACC
 c      if (cudaStreamDestroy(dir_stream).ne.0)
@@ -64,8 +72,8 @@ c
       if (allocated(qfac_2d))    deallocate (qfac_2d)
       if (allocated(udalt))      deallocate (udalt)
       if (allocated(upalt))      deallocate (upalt)
-      if (allocated(udshortalt))  deallocate (udshortalt)
-      if (allocated(upshortalt))  deallocate (upshortalt)
+      if (allocated(udshortalt)) deallocate (udshortalt)
+      if (allocated(upshortalt)) deallocate (upshortalt)
 !!$acc exit data delete(demrec,deprec)
       if (allocated(demrec))     deallocate (demrec)
       if (allocated(deprec))     deallocate (deprec)
@@ -117,8 +125,8 @@ c
       if (allocated(dem))   deallocate (dem)
       if (allocated(dep))   deallocate (dep)
       if (allocated(desmd)) deallocate (desmd)
-      if (allocated(deamdD)) deallocate (deamdD)
-      if (allocated(deamdP)) deallocate (deamdP)
+      if (allocated(deamdD))  deallocate (deamdD)
+      if (allocated(deamdP))  deallocate (deamdP)
       if (allocated(deW1aMD)) deallocate (deW1aMD)
       if (allocated(deW2aMD)) deallocate (deW2aMD)
 c
@@ -127,7 +135,7 @@ c
       if (debug) then
          write (iout,10)
    10    format (/,' TINKER is Exiting following Normal Termination',
-     &              ' of the Program',/)
+     &             ' of the Program',/)
       end if
 c
 c     may need a pause to avoid closing the execution window

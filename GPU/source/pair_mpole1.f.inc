@@ -1,11 +1,15 @@
 #include "tinker_cudart.h"
-      M_subroutine 
+#include "tinker_types.h"
+#include "convert.f.inc"
+#include "switch_respa.f.inc"
+
+      M_subroutine
      &             mpole1_couple(r2,xr,yr,zr,ip,kp,c_mscale
      &                ,aewald,f,alsq2n,alsq2
      &                ,e,frc,frc_r,ttmi,ttmk,do_correct)
 !$acc routine
       use tinheader ,only: ti_p
-      use utilgpu   ,only: rpole_elt,real3,real6,real3_red
+      use tinTypes  ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
       use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)
@@ -17,11 +21,15 @@
          real(t_p)      ,intent(in ):: c_mscale,aewald
          type(rpole_elt),intent(in ):: ip,kp
          logical        ,intent(in ):: do_correct
+#ifdef TINKER_CUF
+         ener_rtyp      ,intent(out):: e
+#else
          real(t_p)      ,intent(out):: e
+#endif
          type(real3)    ,intent(out):: frc,ttmi,ttmk
-         type(real3_red),intent(out):: frc_r
+         type(mdyn3_r)  ,intent(out):: frc_r
          real(t_p) two
-         real(t_p) de
+         real(t_p) de,e_
          real(t_p) r,invr,invr2
          real(t_p) rr1,rr2,rr3,rr5,rr7,rr9,rr11
          real(t_p) bn0,bn1,bn2,bn3,bn4,bn5
@@ -194,8 +202,9 @@ c
 c
 c        compute the energy contributions for this interaction
 c
-         e      = WRITE_C(e) + term1*rr1 + term2*rr3 + term3*rr5
-     &                       + term4*rr7 + term5*rr9
+         e_     = term1*rr1 + term2*rr3 + term3*rr5
+     &                      + term4*rr7 + term5*rr9
+         e      = WRITE_C(e + tp2enr) (e_)
          de     = term1*rr3 + term2*rr5 + term3*rr7
      &          + term4*rr9 + term5*rr11
 c
@@ -244,9 +253,9 @@ c
      &                            + term2*dkrz  - term3*(dqiqkz+diqkzr)
      &                            - term5*qrkzr - term6*(qkirzr-qrrz)
          !store in large container for mixed precision
-         frc_r%x  = WRITE_C( frc_r%x - ) frc%x
-         frc_r%y  = WRITE_C( frc_r%y - ) frc%y
-         frc_r%z  = WRITE_C( frc_r%z - ) frc%z
+         frc_r%x  = WRITE_C( frc_r%x - ) tp2mdr( frc%x )
+         frc_r%y  = WRITE_C( frc_r%y - ) tp2mdr( frc%y )
+         frc_r%z  = WRITE_C( frc_r%z - ) tp2mdr( frc%z )
       end subroutine
 
       M_subroutine
@@ -254,7 +263,7 @@ c
      &                ,aewald,f,alsq2n,alsq2,e,do_correct)
 !$acc routine
       use tinheader ,only: ti_p
-      use utilgpu   ,only: rpole_elt,real3,real6,real3_red
+      use utilgpu   ,only: rpole_elt,real3,real6
 #ifdef TINKER_CUF
       use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)
@@ -266,9 +275,13 @@ c
          real(t_p)      ,intent(in ):: c_mscale,aewald
          type(rpole_elt),intent(in ):: ip,kp
          logical        ,intent(in ):: do_correct
+#ifdef TINKER_CUF
+         ener_rtyp      ,intent(out):: e
+#else
          real(t_p)      ,intent(out):: e
+#endif
          real(t_p) two
-         real(t_p) de
+         real(t_p) de,e_
          real(t_p) r,invr,invr2
          real(t_p) rr1,rr2,rr3,rr5,rr7,rr9,rr11
          real(t_p) bn0,bn1,bn2,bn3,bn4,bn5
@@ -284,7 +297,7 @@ c
 c
 c        get reciprocal distance terms for this interaction
 c
-         invr2  = 1.0/r2
+         invr2  = r2**(-1)
          r      = f_sqrt(r2)
          invr   = f_sqrt(invr2)
          rr1    = c_mscale*f * invr
@@ -305,7 +318,7 @@ c
             bn5 = 0.0
          else
             ralpha = aewald * r
-            exp2a  = exp(-ralpha**2)
+            exp2a  = f_exp(-ralpha**2)
             !call erfcore_inl(ralpha,bn0,1)
             bn0    = f_erfc(ralpha)
             bn0    = bn0*invr
@@ -369,8 +382,9 @@ c
 c
 c        compute the energy contributions for this interaction
 c
-         e      = WRITE_C(e) + term1*rr1 + term2*rr3 + term3*rr5
-     &                       + term4*rr7 + term5*rr9
+         e_     = term1*rr1 + term2*rr3 + term3*rr5
+     &          + term4*rr7 + term5*rr9
+         e      = WRITE_C(e + tp2enr) (e_)
       end subroutine
 
       M_subroutine
@@ -380,7 +394,7 @@ c
 !$acc routine
       use interfaces,only: long_mode
       use tinheader ,only: ti_p
-      use utilgpu   ,only: rpole_elt,real3,real6,real3_red
+      use utilgpu   ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
       use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)
@@ -393,9 +407,13 @@ c
          type(rpole_elt),intent(in ):: ip,kp
          logical        ,intent(in ):: do_correct
          integer        ,intent(in ):: mode
+#ifdef TINKER_CUF
+         ener_rtyp      ,intent(out):: e
+#else
          real(t_p)      ,intent(out):: e
+#endif
          type(real3)    ,intent(out):: frc,ttmi,ttmk
-         type(real3_red),intent(out):: frc_r
+         type(mdyn3_r)  ,intent(out):: frc_r
          real(t_p) two
          real(t_p) e_,de,s,ds
          real(t_p) r,invr,invr2
@@ -449,7 +467,7 @@ c
             bn5 = 0.0
          else
             ralpha = aewald * r
-            exp2a  = exp(-ralpha**2)
+            exp2a  = f_exp(-ralpha**2)
             !call erfcore_inl(ralpha,bn0,1)
             bn0    = f_erfc(ralpha)
             bn0    = bn0*invr
@@ -576,7 +594,7 @@ c
          e_     = term1*rr1 + term2*rr3 + term3*rr5
      &                      + term4*rr7 + term5*rr9
 
-         e      = WRITE_C(e) + s*e_
+         e      = WRITE_C(e + tp2enr) ( + s*e_ )
          de     = term1*rr3 + term2*rr5 + term3*rr7
      &          + term4*rr9 + term5*rr11
 c
@@ -637,9 +655,9 @@ c
      &                            + term2*dkrz  - term3*(dqiqkz+diqkzr)
      &                            - term5*qrkzr - term6*(qkirzr-qrrz))
          !store in large container for mixed precision
-         frc_r%x  = WRITE_C( frc_r%x - ) frc%x
-         frc_r%y  = WRITE_C( frc_r%y - ) frc%y
-         frc_r%z  = WRITE_C( frc_r%z - ) frc%z
+         frc_r%x  = WRITE_C( frc_r%x - ) tp2mdr( frc%x )
+         frc_r%y  = WRITE_C( frc_r%y - ) tp2mdr( frc%y )
+         frc_r%z  = WRITE_C( frc_r%z - ) tp2mdr( frc%z )
       end subroutine
 
       M_subroutine
@@ -649,7 +667,7 @@ c
 !$acc routine
       use interfaces,only: long_mode
       use tinheader ,only: ti_p
-      use utilgpu   ,only: rpole_elt,real3,real6,real3_red
+      use utilgpu   ,only: rpole_elt,real3,real6
 #ifdef TINKER_CUF
       use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)
@@ -662,7 +680,11 @@ c
          type(rpole_elt),intent(in ):: ip,kp
          logical        ,intent(in ):: do_correct
          integer        ,intent(in ):: mode
+#ifdef TINKER_CUF
+         ener_rtyp      ,intent(out):: e
+#else
          real(t_p)      ,intent(out):: e
+#endif
          real(t_p) two
          real(t_p) e_,s,ds
          real(t_p) r,invr,invr2
@@ -771,6 +793,6 @@ c
          e_     = term1*rr1 + term2*rr3 + term3*rr5
      &                      + term4*rr7 + term5*rr9
 
-         e      = WRITE_C(e) + s*e_
+         e      = WRITE_C(e + tp2enr) ( + s*e_ )
       end subroutine
 

@@ -20,12 +20,14 @@ c
       use atoms
       use atomsMirror,only:xm=>x,ym=>y,zm=>z
      &               ,reCast_position,atomsmirror_init
+     &               ,download_position
       use couple
       use files
       use inform
       use iounit
       use nvshmem
       use titles
+      use timestat  ,only:timer_io,timer_enter,timer_exit,quiet_timers
       use tinheader ,only:ti_p,re_p
       use tinMemory
       implicit none
@@ -43,6 +45,7 @@ c
       character*120 record
       character*120 string
 c
+      call timer_enter(timer_io)
 c
 c     initialize the total number of atoms in the system
 c
@@ -197,7 +200,11 @@ c
    70 continue
       if (.not. opened)  close (unit=ixyz)
 
-      call reCast_position
+      if (t_p.ne.r_p) then
+         call reCast_position
+!$acc wait
+         call download_position
+      end if
 c
 c     an error occurred in reading the coordinate file
 c
@@ -278,5 +285,5 @@ c
   120       continue
          end do
       end do
-      return
+      call timer_exit(timer_io)
       end

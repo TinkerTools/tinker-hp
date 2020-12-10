@@ -658,10 +658,10 @@ c
         if (abs(yr-ycell2).lt.eps_cell) yr = yr-5*eps_cell
         if (abs(zr-zcell2).lt.eps_cell) zr = zr-5*eps_cell
         do iproc = 0, nprocloc-1
-          if ((zr.ge.zbegproc(iproc+1)).and.
-     $      (zr.lt.zendproc(iproc+1)).and.(yr.ge.ybegproc(iproc+1))
-     $      .and.(yr.lt.yendproc(iproc+1)).and.(xr.ge.xbegproc(iproc+1))
-     $      .and.(xr.lt.xendproc(iproc+1))) then
+          if ((zr.ge.zbegproc(iproc+1)).and.(zr.lt.zendproc(iproc+1))
+     $   .and.(yr.ge.ybegproc(iproc+1)).and.(yr.lt.yendproc(iproc+1))
+     $   .and.(xr.ge.xbegproc(iproc+1)).and.(xr.lt.xendproc(iproc+1)))
+     &       then
              repart(i) = iproc
 !$acc atomic
              domlen(iproc+1) = domlen(iproc+1) + 1
@@ -4003,56 +4003,76 @@ c        - 0: start reception of direct dipoles
 c        - 1: start sending of direct dipoles
 c        - 2: wait for the communications to be done
 c
-      subroutine commdirdirgpu(nrhs,rule,mu,reqrec,reqsend)
+      subroutine commdirdirgpu(nrhs,rule,mu,reqrec1,reqsend1)
       use domdec
       use iounit
+      use inform  ,only: deb_Path
       use mpole
       use mpi
-      use utilgpu,only:dir_queue
+      use utilgpu ,only:rec_queue
+      use sizes   ,only:tinkerdebug
+      use utilcomm,only:reqsend=>reqs_dirdir,reqrec=>reqr_dirdir
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
       implicit none
-      integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,i
-      integer :: reqrec(nproc),reqsend(nproc)
+      integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,tag0,i
+      integer idomlen,ibufbeg,ipr
+      integer :: reqrec1(nproc),reqsend1(nproc)
 c     real(t_p) ef(3,nrhs,npolebloc)
       real(t_p) mu(3,nrhs,npolebloc)
- 1000 format(' illegal rule in commdirdir.')
+      parameter(tag0=0)
+ 1000 format(' illegal rule in commdirdirgpu.')
+ 41   format(7x,'>> ',A20,   3x,'recv')
+ 42   format(7x,   3x,A20,' >>','send')
+ 43   format(7x,'<< ',A20,   3x,'wait')
 
       if (n_recep1.eq.0.and.n_send1.eq.0) return
 
       call timer_enter( timer_polsolvcomm )
       if (rule.eq.0) then
+         if (deb_Path) write(0,41) 'commdirdirgpu       '
+c        if (btest(tinkerdebug,0).and.nproc.eq.4) then
+c22         format('___',A6,I5,3x,9I5)
+c           write(0,22)
+c    &      'domlenpole',rank,npoleloc,p_send1(1:4),p_recep1(1:4)
+c        end if
 c
 c     MPI : begin reception
 c
          do i = 1, n_recep1
-            tag = nproc*rank + p_recep1(i) + 1
+            tag     = nproc*rank + p_recep1(i) + 1
+            ibufbeg = bufbegpole(p_recep1(i)+1)
+            idomlen = domlenpole(p_recep1(i)+1)
 !$acc host_data use_device(mu)
-            call MPI_IRECV(mu(1,1,bufbegpole(p_recep1(i)+1)),
-     &           3*nrhs*domlen(p_recep1(i)+1),MPI_TPREC,p_recep1(i),
-     &           tag,COMM_TINKER,reqrec(i),ierr)
+            call MPI_IRECV(mu(1,1,ibufbeg),3*nrhs*idomlen
+     &          ,MPI_TPREC,p_recep1(i),tag0
+     &          ,COMM_TINKER,reqrec(i),ierr)
 !$acc end host_data
          end do
       else if (rule.eq.1) then
 c
 c     MPI : begin sending
 c
-!$acc wait(dir_queue)
+!$acc wait(rec_queue)
         do i = 1, n_send1
           tag = nproc*p_send1(i) + rank + 1
 !$acc host_data use_device(mu)
-          call MPI_ISEND(mu,3*nrhs*npoleloc,
-     &         MPI_TPREC,p_send1(i),tag,COMM_TINKER,
-     &         reqsend(i),ierr)
+          call MPI_ISEND(mu,3*nrhs*npoleloc
+     &        ,MPI_TPREC,p_send1(i),tag0
+     &        ,COMM_TINKER,reqsend(i),ierr)
 !$acc end host_data
         end do
+         if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+         if (deb_Path) write(*,42) 'commdirdirgpu       '
       else if (rule.eq.2) then
-         do i = 1, n_recep1
-            call MPI_WAIT(reqrec(i),status,ierr)
-         end do
          do i = 1, n_send1
             call MPI_WAIT(reqsend(i),status,ierr)
          end do
+         do i = 1, n_recep1
+            call MPI_WAIT(reqrec(i),status,ierr)
+         end do
+         if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+         if (deb_Path) write(*,43) 'commdirdirgpu       '
       else
          if (rank.eq.0) write(iout,1000)
          call fatal
@@ -4063,8 +4083,10 @@ c
       subroutine commdirdir(nrhs,rule,mu,reqrec,reqsend)
       use domdec
       use iounit
+      use inform  ,only: deb_Path
       use mpole
       use mpi
+      use sizes   ,only: tinkerdebug
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
       implicit none
@@ -4116,24 +4138,36 @@ c        - 0: start reception of direct dipoles
 c        - 1: start sending of direct dipoles
 c        - 2: wait for the communications to be done
 c
-      subroutine commdirdirshort(nrhs,rule,mu,reqrec,reqsend)
+      subroutine commdirdirshort(nrhs,rule,mu,reqrec1,reqsend1)
       use domdec
       use iounit
+      use inform  ,only: deb_Path
       use mpole
       use mpi
-      use utilgpu,only:def_queue
+      use utilgpu ,only:def_queue
+      use utilcomm,only:reqsend=>reqs_dirdir,reqrec=>reqr_dirdir
+      use sizes
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
       implicit none
       integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,i
       integer ibufbeg
-      integer :: reqrec(nproc),reqsend(nproc)
-      real(t_p) mu(3,nrhs,npolebloc)
+      integer :: reqrec1(nproc),reqsend1(nproc)
+      real(t_p)  mu(3,nrhs,npolebloc)
  1000 format(' illegal rule in commdirdir.')
+ 41   format(7x,'>> ',A20,   3x,'recv')
+ 42   format(7x,   3x,A20,' >>','send')
+ 43   format(7x,'<< ',A20,   3x,'wait')
 c
       if (n_recepshort1.eq.0.and.n_sendshort1.eq.0) return
       call timer_enter( timer_polsolvcomm )
       if (rule.eq.0) then
+         if (deb_Path) write(0,41) 'commdirdirshort     '
+c        if (btest(tinkerdebug,0).and.nproc.eq.4) then
+c22         format('___',A6,I5,3x,10I7)
+c           write(0,22)
+c    &      'domlen',rank,npoleloc,domlen(1:4),npolebloc,bufbegpole(1:4)
+c        end if
 c
 c     MPI : begin reception
 c
@@ -4142,8 +4176,8 @@ c
           tag = nproc*rank + p_recepshort1(i) + 1
           ibufbeg = bufbegpole(p_recepshort1(i)+1)
           call MPI_IRECV(mu(1,1,ibufbeg),
-     $     3*nrhs*domlen(p_recepshort1(i)+1),MPI_TPREC,p_recepshort1(i),
-     $     tag,COMM_TINKER,reqrec(i),ierr)
+     $         3*nrhs*domlenpole(p_recepshort1(i)+1),MPI_TPREC,
+     $         p_recepshort1(i),tag,COMM_TINKER,reqrec(i),ierr)
         end do
 !$acc end host_data
       else if (rule.eq.1) then
@@ -4155,20 +4189,24 @@ c
         do i = 1, n_sendshort1
           tag = nproc*p_sendshort1(i) + rank + 1
           call MPI_ISEND(mu,3*nrhs*npoleloc,
-     $         MPI_TPREC,p_sendshort1(i),tag,comm_tinker,
+     $         MPI_TPREC,p_sendshort1(i),tag,COMM_TINKER,
      $         reqsend(i),ierr)
         end do
 !$acc end host_data
+         if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+         if (deb_Path) write(*,42) 'commdirdirshort     '
       else if (rule.eq.2) then
-        do i = 1, n_recepshort1
-           call mpi_wait(reqrec(i),status,ierr)
+         do i = 1, n_recepshort1
+            call mpi_wait(reqrec(i),status,ierr)
          end do
          do i = 1, n_sendshort1
-           call mpi_wait(reqsend(i),status,ierr)
+            call mpi_wait(reqsend(i),status,ierr)
          end do
+         if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+         if (deb_Path) write(*,43) 'commdirdirshort     '
       else
-        if (rank.eq.0) write(iout,1000)
-        call fatal
+         if (rank.eq.0) write(iout,1000)
+         call fatal
       end if
       call timer_exit( timer_polsolvcomm,quiet_timers )
       end
@@ -4273,6 +4311,9 @@ c
       real(t_p) buffermpi2(10,max(1,npolerecloc))
 !$acc routine(amove) seq
  1000 format(' illegal rule in commrecdirfieldsgpu.')
+ 41   format(7x,'>> ',A20,   3x,'recv')
+ 42   format(7x,   3x,A20,' >>','send')
+ 43   format(7x,'<< ',A20,   3x,'wait')
 
       if (nrecdir_send1.eq.nrecdir_recep1.and.nrecdir_recep1.le.1)
      &   return
@@ -4434,10 +4475,12 @@ c
      $           buffermpi1,buffermpi2,reqrecdirrec,reqrecdirsend)
       use domdec
       use iounit
+      use inform  ,only:deb_Path
       use mpole
       use mpi
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
+      use sizes   ,only:tinkerdebug
       implicit none
       integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,i,j,k,l,proc
       integer lenbuf,ibufbeg
@@ -4448,6 +4491,9 @@ c
       real(t_p) buffermpi2(3,nrhs,max(1,npolerecloc))
 !$acc routine(amove) seq
  1000 format(' illegal rule in commrecdirsolvgpu.')
+ 41   format(7x,'>> ',A20,   3x,'recv')
+ 42   format(7x,   3x,A20,' >>','send')
+ 43   format(7x,'<< ',A20,   3x,'wait')
       !nrhs==2 is a parameter
 
       if (nrecdir_send1.eq.nrecdir_recep1.and.nrecdir_recep1.le.1)
@@ -4497,6 +4543,8 @@ c
 !$acc end host_data
           end if
         end do
+        if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+        if (deb_Path) write(*,42) 'commrecdirsolvgpu   '
       else if (rule.eq.2) then
         do i = 1, nrecdir_recep1
            proc = precdir_recep1(i)
@@ -4523,6 +4571,8 @@ c
           end if
         end do
 !$acc wait
+        if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+        if (deb_Path) write(*,43) 'commrecdirsolvgpu   '
       else
         if (rank.eq.0) write(iout,1000)
         call fatal
@@ -4616,10 +4666,12 @@ c
      $           buffermpimu2,req2rec,req2send)
       use domdec
       use iounit
+      use inform  ,only:deb_path
       use mpole
       use mpi
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
+      use sizes   ,only:tinkerdebug
       implicit none
       integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,i,j,k,l,proc
       integer lenbuf,ibufbeg
@@ -4632,6 +4684,9 @@ c      real(t_p) buffermpimu2(3,nrhs,max(1,npolerecloc))
       real(t_p) buffermpimu2(3,nrhs,*)
 !$acc routine(amove) seq
  1000 format(' illegal rule in commrecdirdipgpu.')
+ 41   format(7x,'>> ',A20,   3x,'recv')
+ 42   format(7x,   3x,A20,' >>','send')
+ 43   format(7x,'<< ',A20,   3x,'wait')
       
       if (nrecdir_send1.eq.nrecdir_recep1.and.nrecdir_recep1.le.1)
      &   return
@@ -4679,6 +4734,8 @@ c
 !$acc end host_data
           end if
         end do
+        if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+        if (deb_Path) write(*,41) 'commrecdirdipgpu    '
       else if (rule.eq.2) then
         do i = 1, nrecdir_send1
           proc = precdir_send1(i)
@@ -4705,6 +4762,8 @@ c
           end if
         end do
 !$acc wait
+        if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+        if (deb_Path) write(*,42) 'commrecdirdipgpu    '
       else
         if (rank.eq.0) write(iout,1000)
         call fatal
@@ -4785,6 +4844,8 @@ c
       use mpi
       use mpole
       use potent
+      use inform  ,only: deb_Path
+      use sizes   ,only: tinkerdebug
       use timestat,only:timer_enter,timer_exit,timer_polfieldcomm
      &            ,quiet_timers
       use utilcomm,only:buff_field
@@ -4798,8 +4859,17 @@ c
       integer :: reqrec(nproc), reqsend(nproc)
       !real(t_p)  :: buffer(3,nrhs,max(npoleloc,1),n_send1)
 c
+ 41   format(7x,'>> ',A20,   3x)
+ 42   format(7x,   3x,A20,' >>')
+ 43   format(7x,'<< ',A20,   3x)
       if (n_send1.gt.0.or.n_recep1.gt.0) then
       call timer_enter( timer_polfieldcomm )
+      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (deb_Path) write(0,41) 'commfieldgpu        '
+c        if (btest(tinkerdebug,0).and.nproc.eq.4) then
+c22         format('_domlenpole ',I5,I7,3x,5I7,' _')
+c           write(0,22) rank,npoleloc,domlenpole(1:4)
+c        end if
 
          if (use_pmecore) then
             commloc = comm_dir
@@ -4818,10 +4888,10 @@ c
 !$acc end host_data
         end do
 c
+!$acc wait(dir_queue)
         do i = 1, n_recep1
            tag = nproc*p_recep1(i) + rank + 1
            ibufbeg = bufbegpole(p_recep1(i)+1)
-!$acc wait(dir_queue)
 !$acc host_data use_device(ef)
            call MPI_ISEND(ef(1,1,ibufbeg),
      &          3*nrhs*domlenpole(p_recep1(i)+1),MPI_TPREC,
@@ -4850,6 +4920,8 @@ c
            end do
         end do
 
+      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (deb_Path) write(*,43) 'commfieldgpu        '
       call timer_exit( timer_polfieldcomm,quiet_timers )
       end if
       end
@@ -4861,6 +4933,8 @@ c
       use mpi
       use mpole
       use potent
+      use inform  ,only: deb_Path
+      use sizes   ,only: tinkerdebug
       use timestat,only:timer_enter,timer_exit,timer_polfieldcomm
      &            ,quiet_timers
       use utilcomm ,only: buffer=>buff_field
@@ -4872,8 +4946,18 @@ c
       real(t_p) ef(3,nrhs,*)
 c
       if (n_sendshort1.eq.0.and.n_recepshort1.eq.0) return
+ 41   format(7x,'>> ',A20,   3x)
+ 42   format(7x,   3x,A20,' >>')
+ 43   format(7x,'<< ',A20,   3x)
 
       call timer_enter( timer_polfieldcomm )
+      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (deb_Path) write(0,41) 'commfieldshort      '
+c        if (btest(tinkerdebug,0).and.nproc.eq.4) then
+c22         format('_',A6,I5,3x,5I7,'_ ')
+c           write(0,22) 'npoleloc',rank,npoleloc
+c        end if
+
       if (use_pmecore) then
         commloc = comm_dir
       else
@@ -4888,7 +4972,7 @@ c
 !$acc host_data use_device(buffer)
       do i = 1, n_sendshort1
         tag = nproc*rank + p_sendshort1(i) + 1
-        call mpi_irecv(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,
+        call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,
      $       p_sendshort1(i),tag,commloc,reqrec(i),ierr)
       end do
 !$acc end host_data
@@ -4898,7 +4982,7 @@ c
       do i = 1, n_recepshort1
         tag     = nproc*p_recepshort1(i) + rank + 1
         ibufbeg = bufbegpole(p_recepshort1(i)+1)
-        call mpi_isend(ef(1,1,ibufbeg),
+        call MPI_ISEND(ef(1,1,ibufbeg),
      $       3*nrhs*domlenpole(p_recepshort1(i)+1),MPI_TPREC,
      $       p_recepshort1(i),tag,commloc,reqsend(i),ierr)
       end do
@@ -4906,11 +4990,11 @@ c
 c
       do i = 1, n_sendshort1
          tag = nproc*rank + p_sendshort1(i) + 1
-         call mpi_wait(reqrec(i),status,ierr)
+         call MPI_WAIT(reqrec(i),status,ierr)
       end do
       do i = 1, n_recepshort1
          tag = nproc*p_recepshort1(i) + rank + 1
-         call mpi_wait(reqsend(i),status,ierr)
+         call MPI_WAIT(reqsend(i),status,ierr)
       end do
 c
 !$acc parallel loop gang vector collapse(3)
@@ -4927,5 +5011,8 @@ c
 c
       deallocate (reqrec)
       deallocate (reqsend)
+
+      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
+      if (deb_Path) write(*,43) 'commfieldshort      '
       call timer_exit( timer_polfieldcomm,quiet_timers )
       end

@@ -134,17 +134,17 @@ CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
 #  __________________
 ifeq ($(opt), release)
    COMMON       = -Mdalign -fast -g
-   CCOMMON      = -std=c++14 -O3 -g
+   CCOMMON      = -ccbin g++ -std=c++14 -O3 -g
 else ifeq ($(opt), debug+)
    COMMON       = -traceback -O0 -g -C
-   CCOMMON      = -std=c++14 -O0 -g
+   CCOMMON      = -ccbin g++ -std=c++14 -O0 -g
    ifeq ($(arch),$(filter $(arch),device gpu))
      OPTIONS += -DTINKER_DEBUG
    CUOPTIONS += -DTINKER_DEBUG
    endif
 else
    COMMON       = -O0 -g#-rc=${HOME}/localrc
-   CCOMMON      = -std=c++11 -O0 -g
+   CCOMMON      = -ccbin g++ -std=c++14 -O0 -g
 endif
 
 #   Compile flags for target architecture, extracting, inlining, modules, host and device
@@ -279,7 +279,7 @@ MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
 MODCU = MOD_utilcu.o echargecu.o eljcu.o ehal1cu.o nblistcu.o tmatxb_pmecu.o epolar1cu.o empole1cu.o pmestuffcu.o
 
 OBJSAM = active.o analysis.o analyze.o angles.o\
-   attach.o basefile.o beeman.o bicubic.o\
+   attach.o bar.o basefile.o beeman.o bicubic.o\
    baoab.o baoabrespa.o baoabrespa1.o bbk.o\
    bitors.o bonds.o bounds.o calendar.o\
    chkpole.o chkpolegpu.o chkring.o chkxyz.o cholesky.o cluster.o\
@@ -374,9 +374,9 @@ endif
 #  List and describe Targets
 ###############################
 
-all: analyze dynamic minimize
+all: analyze dynamic minimize bar
 
-everything: analyze dynamic minimize testgrad
+everything: analyze dynamic minimize testgrad bar
 
 #
 analyze: build_mod $(OBJS) libtinker
@@ -413,6 +413,10 @@ link_analyze.cpu: build_mod $(OBJS)
 	@echo "**"
 #
 dynamic: build_mod $(OBJS) libtinker
+	$(RunF77) $(FFLAGS2) -o dynamic.x dynamic.o $(LIBS) $(LDLIBS)
+	mv dynamic.x $(prefix)/$@$(prog_suffix)
+#
+dynamic1:
 	$(RunF77) $(FFLAGS2) -o dynamic.x dynamic.o $(LIBS) $(LDLIBS)
 	mv dynamic.x $(prefix)/$@$(prog_suffix)
 #
@@ -494,6 +498,19 @@ minimize.mixed:
 minimize.gpu:
 	@$(MAKE) prog_suffix=.gpu minimize
 #
+.PHONY: bar
+bar: libtinker
+	$(RunF77) $(FFLAGS2) -o bar.x bar.o $(LIBS) $(LDLIBS)
+	mv bar.x $(prefix)/$@$(prog_suffix)
+#
+.PHONY: bar.mixed
+bar.mixed:
+	@$(MAKE) prec=mixed prog_suffix=.mixed bar
+#
+.PHONY: bar.cpu
+bar.cpu:
+	@$(MAKE) arch=host prog_suffix=.cpu bar
+
 .PHONY: libtinker
 libtinker: build_mod $(OBJS)
 	@./$(library) $(ADD_OBJECTS)
@@ -524,6 +541,7 @@ empole1gpu.o: empole1cu.o
 empole3gpu.o: empole1cu.o
 epolar1gpu.o: epolar1cu.o
 epolar3gpu.o: epolar1cu.o
+kvdw.o: ehal1cu.o
 lattice.o: pmestuffcu.o MOD_utilcu.o
 lattice.o: lattice.f
 	$(RunF77) $(GPUFLAGS) -c $<

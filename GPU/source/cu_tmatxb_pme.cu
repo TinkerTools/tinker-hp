@@ -579,15 +579,18 @@ void cu_tmatxb_pme_core (TMATXB_PARAMS1){
    int klane,srclane;
    int ii,j;
    int iblock,idx,kdx;
-   int iipole,iglob,iploc,kpole,kglob,kploc;
+   int iipole,iglob,iploc,kpole,kploc;
    int do_pair,same_block;
    real xk_,yk_,zk_,d2;
-   real ipdp,ipgm,kpdp,kpgm,pdp,pgm;
-   real6 dpui,dpuk_;
-   real3 posi,pos;
-   real3 fid,fip;
-   __shared__ real3 posk[BLOCK_DIM],fkd[BLOCK_DIM],fkp[BLOCK_DIM];
-   __shared__ real6 dpuk[BLOCK_DIM];
+   real ipdp,ipgm,pdp,pgm;
+   real6 dpuk_;
+   real3 pos;
+   __shared__ int kglob[BLOCK_DIM], ikstat[BLOCK_DIM];
+   __shared__ real kpdp[BLOCK_DIM],kpgm[BLOCK_DIM];
+   __shared__ real3 posk[BLOCK_DIM],posi[BLOCK_DIM];
+   __shared__ real3 fkd[BLOCK_DIM],fkp[BLOCK_DIM];
+   __shared__ real3 fid[BLOCK_DIM],fip[BLOCK_DIM];
+   __shared__ real6 dpui[BLOCK_DIM],dpuk[BLOCK_DIM];
 
 
    //if (ithread==0) printf( " %i %i %i %i %i %i %i " r_Format r_Format r_Format "\n", nwarp,nproc,npolelocnlb,npolebloc,n,npolelocnlb_pair,cut2,alsq2,aewald);
@@ -600,28 +603,28 @@ void cu_tmatxb_pme_core (TMATXB_PARAMS1){
       iipole  = pglob[idx] -1;
       iglob   = ipole[idx] -1;
       iploc   = ploc [idx] -1;
-      posi.x  = x[idx];
-      posi.y  = y[idx];
-      posi.z  = z[idx];
+      posi[threadIdx.x].x  = x[idx];
+      posi[threadIdx.x].y  = y[idx];
+      posi[threadIdx.x].z  = z[idx];
       ipdp    = pdamp[iipole];
       ipgm    = thole[iipole];
-      dpui.x  = mu[iploc][0];
-      dpui.y  = mu[iploc][1];
-      dpui.z  = mu[iploc][2];
-      dpui.xx = mu[iploc][3];
-      dpui.yy = mu[iploc][4];
-      dpui.zz = mu[iploc][5];
+      dpui[threadIdx.x].x  = mu[iploc][0];
+      dpui[threadIdx.x].y  = mu[iploc][1];
+      dpui[threadIdx.x].z  = mu[iploc][2];
+      dpui[threadIdx.x].xx = mu[iploc][3];
+      dpui[threadIdx.x].yy = mu[iploc][4];
+      dpui[threadIdx.x].zz = mu[iploc][5];
 
       /*  Load atom block k parameters */
       kdx     = eblst[ii*WARP_SIZE+ ilane] -1;
       kpole   = pglob[kdx] -1;
-      kglob   = ipole[kdx] -1;
+      kglob[threadIdx.x]   = ipole[kdx] -1;
       kploc   = ploc [kdx] -1;
       posk[threadIdx.x].x  = x[kdx];
       posk[threadIdx.x].y  = y[kdx];
       posk[threadIdx.x].z  = z[kdx];
-      kpdp    = pdamp[kpole];
-      kpgm    = thole[kpole];
+      kpdp[threadIdx.x]    = pdamp[kpole];
+      kpgm[threadIdx.x]    = thole[kpole];
       dpuk[threadIdx.x].x  = mu[kploc][0];
       dpuk[threadIdx.x].y  = mu[kploc][1];
       dpuk[threadIdx.x].z  = mu[kploc][2];
@@ -630,22 +633,29 @@ void cu_tmatxb_pme_core (TMATXB_PARAMS1){
       dpuk[threadIdx.x].zz = mu[kploc][5];
 
       /* set compute Data to]0 */
-      fid.x   = 0;
-      fid.y   = 0;
-      fid.z   = 0;
-      fip.x   = 0;
-      fip.y   = 0;
-      fip.z   = 0;
-      fkd[threadIdx.x].x = 0;
-      fkd[threadIdx.x].y = 0;
-      fkd[threadIdx.x].z = 0;
-      fkp[threadIdx.x].x = 0;
-      fkp[threadIdx.x].y = 0;
-      fkp[threadIdx.x].z = 0;
+      ikstat[threadIdx.x]   = 0;
+      fid   [threadIdx.x].x = 0;
+      fid   [threadIdx.x].y = 0;
+      fid   [threadIdx.x].z = 0;
+      fip   [threadIdx.x].x = 0;
+      fip   [threadIdx.x].y = 0;
+      fip   [threadIdx.x].z = 0;
+      fkd   [threadIdx.x].x = 0;
+      fkd   [threadIdx.x].y = 0;
+      fkd   [threadIdx.x].z = 0;
+      fkp   [threadIdx.x].x = 0;
+      fkp   [threadIdx.x].y = 0;
+      fkp   [threadIdx.x].z = 0;
 
       same_block = ( idx!=kdx )? 0:1 ;
 
+      #pragma unroll
+      for ( int i=0; i<2; i++ ){
+         srclane     = (ilane+i) & (WARP_SIZE-1);
+         int iilane  = threadIdx.x-ilane + srclane;
       for ( j=0; j<WARP_SIZE; j++ ){
+         if (atomicOr( &ikstat[iilane],1<<j ) & 1<<j) continue;
+
          srclane  = (ilane+j) & (WARP_SIZE-1);
          klane    = threadIdx.x-ilane + srclane;
          dpuk_.x  = dpuk[klane].x ;
@@ -654,45 +664,47 @@ void cu_tmatxb_pme_core (TMATXB_PARAMS1){
          dpuk_.xx = dpuk[klane].xx;
          dpuk_.yy = dpuk[klane].yy;
          dpuk_.zz = dpuk[klane].zz;
-         pdp      = ipdp*__shfl_sync(ALL_LANES,kpdp,srclane);
-         pgm      =      __shfl_sync(ALL_LANES,kpgm,srclane);
+         pdp      = ipdp*kpdp[klane];
+         pgm      =      kpgm[klane];
          if (ipgm<pgm) pgm = ipgm;
 
          if (nproc>1) {
             xk_   = posk[klane].x;
             yk_   = posk[klane].y;
             zk_   = posk[klane].z;
-            pos.x = posi.x - xk_;
-            pos.y = posi.y - yk_;
-            pos.z = posi.z - zk_;
+            pos.x = posi[iilane].x - xk_;
+            pos.y = posi[iilane].y - yk_;
+            pos.z = posi[iilane].z - zk_;
             accept_mid = Midpointimage(xk_,yk_,zk_,pos.x,pos.y,pos.z);
          }
          else {
-            pos.x = posi.x - posk[klane].x;
-            pos.y = posi.y - posk[klane].y;
-            pos.z = posi.z - posk[klane].z;
+            pos.x = posi[iilane].x - posk[klane].x;
+            pos.y = posi[iilane].y - posk[klane].y;
+            pos.z = posi[iilane].z - posk[klane].z;
             Image(pos.x,pos.y,pos.z);
          }
          d2      = pos.x*pos.x + pos.y*pos.y + pos.z*pos.z;
-         do_pair = (same_block)? (iglob < __shfl_sync(ALL_LANES,kglob,srclane)):1;
+         do_pair = (same_block)? iglob < kglob[klane] : 1 ;
 
          if (do_pair && d2<=cut2 && accept_mid) {
              /* compute one interaction */
-             tmatxb_couple(d2,pos,dpui,dpuk_,pdp,pgm,aewald,alsq2,alsq2n,1.
-                          ,fid,fip,fkd[klane],fkp[klane]);
+             tmatxb_couple(d2,pos,dpui[iilane],dpuk_,pdp,pgm,aewald,alsq2,alsq2n,1.
+                          ,fid[iilane],fip[iilane],fkd[klane],fkp[klane]);
          }
       }
+      }
+      __syncwarp(ALL_LANES);
       /*if (ii==0&&ilane==3) printf (" %5d %5d %5i %7d " r10_Format "\n" ,
          ii,iglob,klane,kdx,dpui.x,dpuk_.x,dpui.y,dpuk_.y,
          fid.x,fid.y,fip.x); */
 
       /* increment electric field for each atoms */
-      atomicAdd( &efi[iploc][0],fid.x );
-      atomicAdd( &efi[iploc][1],fid.y );
-      atomicAdd( &efi[iploc][2],fid.z );
-      atomicAdd( &efi[iploc][3],fip.x );
-      atomicAdd( &efi[iploc][4],fip.y );
-      atomicAdd( &efi[iploc][5],fip.z );
+      atomicAdd( &efi[iploc][0],fid[threadIdx.x].x );
+      atomicAdd( &efi[iploc][1],fid[threadIdx.x].y );
+      atomicAdd( &efi[iploc][2],fid[threadIdx.x].z );
+      atomicAdd( &efi[iploc][3],fip[threadIdx.x].x );
+      atomicAdd( &efi[iploc][4],fip[threadIdx.x].y );
+      atomicAdd( &efi[iploc][5],fip[threadIdx.x].z );
       atomicAdd( &efi[kploc][0],fkd[threadIdx.x].x );
       atomicAdd( &efi[kploc][1],fkd[threadIdx.x].y );
       atomicAdd( &efi[kploc][2],fkd[threadIdx.x].z );

@@ -128,7 +128,7 @@ c
 c    compute the reciprocal space contribution (fields)
 c
         call timer_enter( timer_recdip )
-        call efld0_recipgpu(cphi)
+        call efld0_recipgpu(cphi,ef)
 !$acc wait
         call timer_exit ( timer_recdip,quiet_timers )
 c
@@ -157,11 +157,6 @@ c
 c       Add direct and reciprocal fields
 c
         def_queue = rec_queue
-c#ifdef _OPENACC
-c      if (dir_queue.ne.rec_queue) then
-c         call stream_wait_async(dir_stream,rec_stream,dir_event)
-c      end if
-c#endif
 
 !$acc parallel loop collapse(3) async(def_queue)
 !$acc&         default(present)
@@ -506,12 +501,6 @@ c
      $        buffermpi2,reqrecdirrec,reqrecdirsend)
          term = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
          call timer_enter( timer_other )
-#ifdef _OPENACC
-         ! Start async overlapping
-         if (dir_queue.ne.rec_queue) then
-            call stream_wait_async(dir_stream,rec_stream,dir_event)
-         end if
-#endif
 !$acc parallel loop collapse(3) default(present) async
          do k=1,npoleloc
             do j=1,nrhs
@@ -714,16 +703,16 @@ c
             gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
             resnrm   = max(resnrm,gnorm(k))
          end do
+         if ((it.eq.politer.and.resnrm.gt.poleps)
+     &      .or.tinker_isnan_m(gnorm(1))) then
+            ! Not converged Abort call
+            if (rank.eq.0) write(0,1050) it,resnrm
+            abort = .true.
+         end if
          if (resnrm.lt.poleps) then
             if (polprt.ge.1.and.rank.eq.0) write(iout,1000) it,
      $         (ene(k)*coulomb, k = 1, nrhs), (gnorm(k), k = 1, nrhs)
            goto 10
-         end if
-         if ((it.eq.politer.and.resnrm.gt.poleps)
-     &      .or.tinker_isnan_m(resnrm)) then
-            ! Not converged Abort call
-            if (rank.eq.0) write(0,1050) it,resnrm
-            abort = .true.
          end if
          if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
      $      it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
@@ -1086,7 +1075,7 @@ c
 c     Compute the reciprocal space contribution to the electric field due to the permanent 
 c     multipoles
 c
-      subroutine efld0_recipgpu(cphi)
+      subroutine efld0_recipgpu(cphi,ef)
       use atmlst
       use bound
       use boxes
@@ -1095,7 +1084,7 @@ c
       use fft
       use inform     ,only: deb_Path
       use interfaces ,only: fphi_mpole_site_p
-     &               ,grid_mpole_site_p
+     &               ,grid_mpole_site_p,efld0_direct_cp
       use polar_temp ,only: cmp=>fphid,fmp=>fphip !Reuse module memory
       use math
       use mpole
@@ -1116,12 +1105,14 @@ c
       integer istat2,ied2,jstat2,jed2,kstat2,ked2
       integer qgridout_size
       integer qgridin_size
+      integer,parameter::nrhs=2
       real(t_p) r1,r2,r3
       real(t_p) h1,h2,h3
       real(t_p) volterm,denom
       real(t_p) hsq,expterm
       real(t_p) term,pterm
       real(t_p) cphi(10,max(npoleloc,1))
+      real(t_p) ef(3,nrhs,npolebloc)
 c     real(t_p),dimension(10,npolerecloc)::cmp,fmp
       integer, allocatable :: reqrec(:),reqsend(:)
       integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
@@ -1228,6 +1219,13 @@ c
 !$acc end host_data
       end do
 c
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue) then
+         call start_dir_stream_cover
+         call efld0_direct_cp(nrhs,ef)
+      end if
+#endif
+
       do i = 1, nrec_recep
          call MPI_WAIT(reqrec(i),status,ierr)
 c
@@ -1367,6 +1365,10 @@ c
          call MPI_WAIT(reqbcastsend(i),status,ierr)
       end do
       call timer_exit ( timer_recreccomm,quiet_timers )
+
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
 c
 c     get field
 c
@@ -1414,17 +1416,19 @@ c
       use mpole
       use inform    ,only: deb_Path
       use interfaces,only: fphi_uind_site2_p
-     &              ,grid_uind_site_p
+     &              ,grid_uind_site_p,tmatxb_cp
       use pme
       use pme1
       use potent
-      use polar_temp,only: fuind,fuinp
+      use polar_temp,only: fuind,fuinp,h
      &              ,fdip_phi1=>fphid,fdip_phi2=>fphip !Reuse module memory
       use timestat
       use mpi
       use utils
-      use utilgpu,only: rec_queue,ngangs_rec
-     &           ,prmem_request
+      use utilgpu,only: rec_queue,dir_queue,prmem_request
+#ifdef _OPENACC
+     &           ,start_dir_stream_cover,end_dir_stream_cover
+#endif
       implicit none
       integer ierr,iglob
       integer status(MPI_STATUS_SIZE),tag
@@ -1567,6 +1571,13 @@ c
 c
 c     do the reduction 'by hand'
 c
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue) then
+         call start_dir_stream_cover
+         call tmatxb_cp(nrhs,.true.,mu,h)
+      end if
+#endif
+
       do i = 1, nrec_recep
          call MPI_WAIT(reqrec(i),status,ierr)
          call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
@@ -1637,6 +1648,10 @@ c
          call MPI_WAIT(reqbcastsend(i),status,ierr)
       end do
       call timer_exit ( timer_recreccomm,quiet_timers )
+
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
 c
 c     get fields
 c

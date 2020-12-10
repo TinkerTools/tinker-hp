@@ -22,7 +22,8 @@ c
       use cutoff
       use divcon
       use fields
-      use interfaces,only:sub_config
+      use interfaces,only:sub_config,itrf_legacy
+     &              ,itrf_adapted
       use mplpot
       use neigh  ,only: buffMatb
       use polpot
@@ -518,6 +519,12 @@ c
          precompute_solvpole = .true.
       else if (keyword(1:21) .eq. 'PRECOMPUTE-MULTIPOLE ') then
          precompute_mpole = .true.
+      else if (keyword(1:9) .eq. 'RUN-MODE ') then
+         if      (index(string,'LEGACY').gt.0) then
+            sub_config = itrf_legacy
+         else if (index(string,'ADAPTED').gt.0) then
+            sub_config = itrf_adapted
+         end if
       else if (keyword(1:15) .eq. 'CONFIG-ROUTINE ') then
          read (string,'(Z32)',err=10,end=10) sub_config
       else if (keyword(1:11) .eq. 'U-SAMPLING ') then
