@@ -1896,7 +1896,7 @@ c
      &               ,emreal3_cu,emrealshortlong3_cu
      &               ,emrealshortlong1c_core_cu
       use epolar1cu  ,only: epreal1c_core_cu
-     &               ,epreal3_cu
+     &               ,epreal3_cu,mpreal1c_core_cu
       use pmestuffcu
       use tmatxb_pmecu
       use utilcu
@@ -2007,6 +2007,12 @@ c
       else if (kernelname.eq."epreal1c_core_cu") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
      &          (gS,epreal1c_core_cu,BLOCK_DIM,0)
+         if (ierr.ne.cudaSuccess)
+     &      print 200, ierr,cudageterrorstring(ierr)
+         gS   = gS*nSMP
+      else if (kernelname.eq."mpreal1c_core_cu") then
+         ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
+     &          (gS,mpreal1c_core_cu,BLOCK_DIM,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP

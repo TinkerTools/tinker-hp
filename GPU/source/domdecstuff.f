@@ -622,32 +622,6 @@ c
         z3 = zbegproc(iproc2+1)
         z4 = zendproc(iproc2+1)
 c
-c       deal with atom exactly on the boundary of the proc's domain
-c
-c       on the "x" boundary
-c
-        if (((y1.le.y3).and.(y2.ge.y3)).and.((z1.le.z3).and.(z2.ge.z3))
-     $   .and.((x1.eq.x3).or.(x2.eq.x3))) then
-          dist = 0.0_ti_p
-          return
-        end if
-c
-c       on the "y" boundary
-c
-        if (((x1.le.x3).and.(x2.ge.x3)).and.((z1.le.z3).and.(z2.ge.z3))
-     $   .and.((y1.eq.y3).or.(y2.eq.y3))) then
-          dist = 0.0_ti_p
-          return
-        end if
-c
-c       on the "z" boundary
-c
-        if (((x1.le.x3).and.(x2.ge.x3)).and.((y1.le.y3).and.(y2.ge.y3))
-     $   .and.((x1.eq.x3).or.(x2.eq.x3))) then
-          dist = 0.0_ti_p
-          return
-        end if
-c
 c         first case, "same" x,y
 c
         if ((((x1.le.x3).and.(x2.ge.x3)).or.((x1.ge.x3).and.(x1.le.x4)))
@@ -1727,7 +1701,7 @@ c
         end do
       end do
 
-      if (rank.eq.0.And.tinkerdebug.gt.0) then
+      if (rank.eq.0.and.tinkerdebug.gt.0) then
          print*,'---  ddpme3d'
  14      format(A9)
  15      format(F9.3)
@@ -2105,6 +2079,16 @@ c
           end do
         end if
       end do
+      if ( rank.eq.0.and.tinkerdebug.gt.0 ) then
+          write(*,*) 'nbigshort_recep    = ',nbigshort_recep
+          write(*,*) 'nbig_recep         = ',nbig_recep
+          write(*,*) 'n_recepshort1      = ',n_recepshort1
+          write(*,*) 'n_recep1           = ',n_recep1
+          write(*,*) 'n_recepshort2      = ',n_recepshort2
+          write(*,*) 'n_recep2           = ',n_recep2
+          write(*,*) 'ntorqueshort_recep = ',ntorqueshort_recep
+          write(*,*) 'ntorque_recep      = ',ntorque_recep
+      end if
 c
  80   call orderbuffer(.true.)
       deallocate (filledproc)

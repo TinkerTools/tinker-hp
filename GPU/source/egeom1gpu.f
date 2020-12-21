@@ -34,6 +34,7 @@ c
       use egeom1gpu_inl
       use group
       use inter
+      use inform    ,only: deb_Path
       use kgeoms
       use math
       use molcul
@@ -103,9 +104,9 @@ c
 c
 c     zero out the restraint energy term and first derivatives
 c
-      if(rank.eq.0.and.tinkerdebug) write(*,*) 'egeom1gpu'
-      eg = 0.0_ti_p
-      save_US = .false.
+      if(deb_Path) write(*,*) 'egeom1gpu'
+      eg        = 0.0_ti_p
+      save_US   = .false.
       def_queue = rec_queue
       if (US_enable) save_US=(US_enable.and.mod(step,USwrite).eq.0
      &                                 .and.step.ne.step_save)
@@ -369,6 +370,7 @@ c     get energy and derivatives for torsion restraint terms
 c
 !$acc parallel loop async(def_queue)
 !$acc&         default(present)
+!$acc&         reduction(+:eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do intfix = 1, ntfixloc
          i       = ntfixglob(intfix)
          ia      = itfix(1,i)
@@ -678,6 +680,7 @@ c     get energy and derivatives for chirality restraint terms
 c
 !$acc parallel loop async(def_queue)
 !$acc&         default(present)
+!$acc&         reduction(+:eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do inchir = 1, nchirloc
          i = nchirglob(inchir)
          ia = ichir(1,i)
@@ -734,32 +737,32 @@ c
 c     increment the overall energy term and derivatives
 c
             eg = eg + e
-!$acc atomic update  
+!$acc atomic
             deg(1,ialoc) = deg(1,ialoc) + dedxia
-!$acc atomic update  
+!$acc atomic
             deg(2,ialoc) = deg(2,ialoc) + dedyia
-!$acc atomic update  
+!$acc atomic
             deg(3,ialoc) = deg(3,ialoc) + dedzia
 c
-!$acc atomic update  
+!$acc atomic
             deg(1,ibloc) = deg(1,ibloc) + dedxib
-!$acc atomic update  
+!$acc atomic
             deg(2,ibloc) = deg(2,ibloc) + dedyib
-!$acc atomic update  
+!$acc atomic
             deg(3,ibloc) = deg(3,ibloc) + dedzib
 c
-!$acc atomic update  
+!$acc atomic
             deg(1,icloc) = deg(1,icloc) + dedxic
-!$acc atomic update  
+!$acc atomic
             deg(2,icloc) = deg(2,icloc) + dedyic
-!$acc atomic update  
+!$acc atomic
             deg(3,icloc) = deg(3,icloc) + dedzic
 c
-!$acc atomic update  
+!$acc atomic
             deg(1,idloc) = deg(1,idloc) + dedxid
-!$acc atomic update  
+!$acc atomic
             deg(2,idloc) = deg(2,idloc) + dedyid
-!$acc atomic update  
+!$acc atomic
             deg(3,idloc) = deg(3,idloc) + dedzid
 c
 c     increment the internal virial tensor components

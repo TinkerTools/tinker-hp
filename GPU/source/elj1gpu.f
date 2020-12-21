@@ -433,7 +433,7 @@ c
       use energi    , only:ev=>ev_r
       use inform
       use inter
-      use interfaces, only:short_mode,long_mode
+      use interfaces, only:m_short,m_long
      &              , elj1shortlong_scaling
       use iounit
       use molcul
@@ -487,14 +487,14 @@ c
          call switch (mode)
          vdwshortcut2 = 0
          coff = off
-         range_cfg = short_mode
+         range_cfg = m_short
          lst  =>  shortvlst
          nlst => nshortvlst
       else
          mode = 'VDW'
          call switch (mode)
          vdwshortcut2 = (vdwshortcut-shortheal)**2
-         range_cfg = long_mode
+         range_cfg = m_long
          coff = vdwshortcut
          lst  =>  vlst
          nlst => nvlst
@@ -787,7 +787,7 @@ c
       use domdec    ,only: loc,rank
       use elj1gpu_inl
       use energi    ,only: ev=>ev_r
-      use interfaces,only: long_mode,short_mode
+      use interfaces,only: m_long,m_short
       use inform    ,only: deb_Path
       use potent    ,only: use_vdwshort
       use tinheader ,only: ti_p
@@ -827,11 +827,11 @@ c
       if (use_vdwshort) then
          vdwshortcut2 = 0
          coff         = off
-         range_cfg    = short_mode
+         range_cfg    = m_short
       else
          vdwshortcut2 = (vdwshortcut-shortheal)**2
          coff         = vdwshortcut
-         range_cfg    = long_mode
+         range_cfg    = m_long
       end if
 
       ! Scaling factor correction loop

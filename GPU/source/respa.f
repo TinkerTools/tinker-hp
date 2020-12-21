@@ -109,7 +109,7 @@ c
 c
 c     find fast-evolving velocities and positions via Verlet recursion
 c
-      do k = 1, nalt
+      do stepfast = 1, nalt
 !$acc parallel loop async
          do i = 1, nloc
             iglob = glob(i)
@@ -134,11 +134,11 @@ c
 c     Reassign the particules that have changed of domain
 c
 c        -> real space
-         call reassignrespa(k,nalt)
+         call reassignrespa(stepfast,nalt)
 c
 c        communicate positions
 c
-         call commposrespa(k.ne.nalt)
+         call commposrespa(stepfast.ne.nalt)
          call reCast_position
 c
          call prmem_requestm(derivs,3,nbloc,async=.true.)

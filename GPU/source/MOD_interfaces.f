@@ -94,9 +94,10 @@ c
       integer(8),parameter:: itrf_legacy =Z'0000131101110000'
       integer(8),parameter:: itrf_adapted=Z'0011242402220000'
       ! parameter for long range interactions comput
-      integer,parameter :: short_mode=0
       ! parameter for short range interactions comput
-      integer,parameter :: long_mode=1
+      enum,bind(C)
+      enumerator m_normal,m_short,m_long
+      end enum
 
       integer ProgramID
 
@@ -469,8 +470,8 @@ c
      &                           ,emrealshortlong1c_core_p
       procedure(emreal3dgpu),pointer:: emreal3d_p
      &                      ,emrealshortlong3d_p
-      procedure(emreal1cgpu),pointer:: emreal1c_p,emreallong1c_p
-     &                      ,emreal1c_cp,emreallong1c_cp
+      procedure(emreal1cgpu),pointer:: emreal1c_p,emrealshort1c_p
+     &                      ,emreallong1c_p,emreal1c_cp,emreallong1c_cp
 
 
 
@@ -560,6 +561,13 @@ c
 !  #############################################################################
       interface
         subroutine epreal1c_core1(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
+           real(t_p) trqvec(3,*)
+           real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
+        end subroutine
+      end interface
+
+      interface
+        subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
            real(t_p) trqvec(3,*)
            real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
         end subroutine
@@ -919,6 +927,7 @@ c
      &       nullify(emrealshortlong1c_core_p)
       if (associated(emreal3d_p))     nullify(emreal3d_p)
       if (associated(emreal1c_p))     nullify(emreal1c_p)
+      if (associated(emrealshort1c_p))nullify(emrealshort1c_p)
       if (associated(emreallong1c_p))      nullify(emreallong1c_p)
       if (associated(emrealshortlong3d_p)) nullify(emrealshortlong3d_p)
       if (associated(epreal1c_p))      nullify(epreal1c_p)

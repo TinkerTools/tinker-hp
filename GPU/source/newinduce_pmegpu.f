@@ -1568,16 +1568,19 @@ c
      &        prec_send(i),tag,commloc,reqsend(i),ierr)
 !$acc end host_data
       end do
-c
-c     do the reduction 'by hand'
-c
+
+      ! Call to matvec to cover MPI communication
+      ! Only enabled in parallel
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) then
          call start_dir_stream_cover
          call tmatxb_cp(nrhs,.true.,mu,h)
+         call incMatvecStep
       end if
 #endif
-
+c
+c     do the reduction 'by hand'
+c
       do i = 1, nrec_recep
          call MPI_WAIT(reqrec(i),status,ierr)
          call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
@@ -1586,6 +1589,10 @@ c
          call MPI_WAIT(reqsend(i),status,ierr)
       end do
       call timer_exit( timer_recreccomm,quiet_timers )
+#ifdef _OPENACC
+      ! set an event to sync with rec_stream
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
 c
 c     Perform 3-D FFT forward transform
 c
@@ -1641,6 +1648,14 @@ c
 !$acc end host_data
       end do
 c
+      ! Compute second half of matvec
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue) then
+         call start_dir_stream_cover
+         call tmatxb_cp(nrhs,.true.,mu,h)
+         call resetMatvecStep
+      end if
+#endif
       do i = 1, nrec_send
          call MPI_WAIT(reqbcastrec(i),status,ierr)
       end do
@@ -1648,10 +1663,11 @@ c
          call MPI_WAIT(reqbcastsend(i),status,ierr)
       end do
       call timer_exit ( timer_recreccomm,quiet_timers )
-
 #ifdef _OPENACC
+      ! set an event to sync with rec_stream
       if (dir_queue.ne.rec_queue) call end_dir_stream_cover
 #endif
+
 c
 c     get fields
 c

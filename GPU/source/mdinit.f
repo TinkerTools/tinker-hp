@@ -39,6 +39,7 @@ c
       use neigh
       use polpot
       use potent
+      use polar
       use random_mod
       use units 
       use uprior
@@ -94,7 +95,7 @@ c
       use_pred  = .true.
       polpred   = 'ASPC'
 #if (defined(SINGLE) || defined(MIXED))
-      iprint = 500
+      iprint = 1000
       eps    =  0.000001_ti_p
 #else
       iprint = 100
@@ -349,6 +350,12 @@ c
       if (isobaric.and.barostat.eq.'BERENDSEN') use_virial=.true.
 #ifdef _OPENACC
       call cu_update_vir_switch(use_virial)
+      if (use_virial.and.use_polar.and.
+     &   (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1'))
+     &   then
+         call detach_mpolar_pointer
+         use_mpolar_ker = .false.
+      end if
 #endif
 c
 c     check for a nonzero number of degrees of freedom
@@ -530,6 +537,7 @@ c
          call reinitnl(0)
          call reassignpme(.false.)
          call mechanicstep(0)
+         call detach_mpolar_pointer
          call nblist(0)
          allocate (derivs(3,nbloc))
 !$acc data create(derivs,e) async

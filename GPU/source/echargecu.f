@@ -335,5 +335,79 @@ c
 
         end subroutine
 
+        attributes(global) subroutine ecreal_scaling_cu
+     &            ( ccorrect_ik,ccorrect_scale,loc,x,y,z
+     &            , dec,ec_buff,vir_buff,n,nbloc,n_cscale
+     &            , f,aewald,ebuffer,off2 )
+        implicit none
+        integer  ,value,intent(in)::n,nbloc,n_cscale
+        real(t_p),value,intent(in):: f,aewald,ebuffer,off2
+        integer  ,device,intent(in)::ccorrect_ik(n_cscale,2)
+     &           , loc(n)
+        real(t_p),device,intent(in):: ccorrect_scale(*)
+     &           , x(n),y(n),z(n)
+        real(t_p),device:: vir_buff(6*RED_BUFF_SIZE)
+        ener_rtyp,device:: ec_buff(RED_BUFF_SIZE)
+        mdyn_rtyp,device:: dec(3,nbloc)
+
+        integer ii,iglob,kglob,i,k,ithread,lot
+        real(t_p) rstat,r2
+        real(t_p) xi,yi,zi
+        real(t_p) xr,yr,zr
+        real(t_p) scale_f,fik
+        ener_rtyp e
+        type(real3) ded
+        type(mdyn3_r) dedc
+
+        ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
+        do ii = ithread, n_cscale, blockDim%x*gridDim%x
+           iglob   = ccorrect_ik(ii,1)
+           kglob   = ccorrect_ik(ii,2)
+           scale_f =   ccorrect_scale(2*ii+1)
+           fik     = f*ccorrect_scale(2*ii+2)
+           xi      = x(iglob)
+           yi      = y(iglob)
+           zi      = z(iglob)
+c
+c       compute the energy contribution for this interaction
+c
+           xr      = xi - x(kglob)
+           yr      = yi - y(kglob)
+           zr      = zi - z(kglob)
+c
+c       find energy for interactions within real space cutoff
+c
+           call image_inl (xr,yr,zr)
+           r2 = xr*xr + yr*yr + zr*zr
+           if (r2 .le. off2) then
+              i  = loc(iglob)
+              k  = loc(kglob)
+              e  = 0
+              dedc%x=0; dedc%y=0; dedc%z=0;
+              ! correct pair
+              call charge_couple(r2,xr,yr,zr,ebuffer
+     &                          ,fik,aewald,scale_f
+     &                          ,e,ded,dedc,1)
+
+              lot   = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
+              ! increment the overall energy and derivative expressions
+              rstat = atomicAdd( ec_buff(lot),e )
+              rstat = atomicAdd( dec(1,i),-dedc%x )
+              rstat = atomicAdd( dec(2,i),-dedc%y )
+              rstat = atomicAdd( dec(3,i),-dedc%z )
+              rstat = atomicAdd( dec(1,k),+dedc%x )
+              rstat = atomicAdd( dec(2,k),+dedc%y )
+              rstat = atomicAdd( dec(3,k),+dedc%z )
+              ! increment the internal virial tensor components
+              rstat = atomicAdd( vir_buff(0*RED_BUFF_SIZE+lot),xr*ded%x)
+              rstat = atomicAdd( vir_buff(1*RED_BUFF_SIZE+lot),yr*ded%x)
+              rstat = atomicAdd( vir_buff(2*RED_BUFF_SIZE+lot),zr*ded%x)
+              rstat = atomicAdd( vir_buff(3*RED_BUFF_SIZE+lot),yr*ded%y)
+              rstat = atomicAdd( vir_buff(4*RED_BUFF_SIZE+lot),zr*ded%y)
+              rstat = atomicAdd( vir_buff(5*RED_BUFF_SIZE+lot),zr*ded%z)
+           end if
+        end do
+        end subroutine
+
       end module
 #endif

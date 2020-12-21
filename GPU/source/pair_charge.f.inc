@@ -110,7 +110,7 @@ c
      &                          ,en,ded,dedc,config,mode)
 !$acc routine
         use tinheader ,only: ti_p
-        use interfaces,only: long_mode
+        use interfaces,only: m_long
         use math      ,only: sqrtpi
         use tintypes  ,only: real3,mdyn3_r
 #ifdef TINKER_CUF
@@ -153,7 +153,7 @@ c
 c
 c     form the chain rule terms for derivative expressions
 c
-        if (mode.eq.long_mode) then
+        if (mode.eq.m_long) then
            en    = WRITE_C(en + tp2enr) ((1-s)*e)
            de    = (-e*ds+(1-s)*de) / r
            ded%x = de * xr

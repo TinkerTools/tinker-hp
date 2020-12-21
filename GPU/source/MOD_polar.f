@@ -21,6 +21,7 @@ c     uinp      induced dipoles in field used for energy interactions
 c     npolar    total number of polarizable sites in the system
 c     tinypol   negligeable polarisability to allow convergence
 c     npolar_ne_npole     (npolar.ne.npole)
+c     use_mpolar_ker   controls use of mpolar kernel (empole+polar) 
 c
 c
 #include "tinker_precision.h"
@@ -28,6 +29,7 @@ c
       implicit none
       integer npolar
       logical npolar_ne_npole
+      logical use_mpolar_ker
       real(t_p), parameter :: tinypol = 1e-5
       integer :: winpolarity,winthole,winpdamp
       real(t_p), allocatable,target :: uind(:,:),uinp(:,:)

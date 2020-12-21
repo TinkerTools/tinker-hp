@@ -60,7 +60,7 @@
 c
 c        get reciprocal distance terms for this interaction
 c
-         invr2  = 1.0/r2
+         invr2  = r2**(-1)
          r      = f_sqrt(r2)
          invr   = f_sqrt(invr2)
          rr1    = c_mscale*f * invr
@@ -392,7 +392,7 @@ c
      &                         ,r_cut,shortheal,aewald,f,alsq2n,alsq2
      &                         ,e,frc,frc_r,ttmi,ttmk,do_correct,mode)
 !$acc routine
-      use interfaces,only: long_mode
+      use interfaces,only: m_long
       use tinheader ,only: ti_p
       use utilgpu   ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
@@ -589,7 +589,7 @@ c
 c        compute the energy contributions for this interaction
 c
          call switch_respa_inl(r,r_cut,shortheal,s,ds)
-         if (mode.eq.long_mode) s = 1.0-s
+         if (mode.eq.m_long) s = 1.0-s
 
          e_     = term1*rr1 + term2*rr3 + term3*rr5
      &                      + term4*rr7 + term5*rr9
@@ -624,7 +624,7 @@ c
      &          + term3*(diqkz-dkqiz) + term4*qriz
      &          + term5*qrkz          + term6*(qikrz+qkirz))
      &          
-         if (mode.eq.long_mode) then
+         if (mode.eq.m_long) then
             frc%x  = frc%x + ds*xr*e_*invr
             frc%y  = frc%y + ds*yr*e_*invr
             frc%z  = frc%z + ds*zr*e_*invr
@@ -665,7 +665,7 @@ c
      &                         ,r_cut,shortheal,aewald,f,alsq2n,alsq2
      &                         ,e,do_correct,mode)
 !$acc routine
-      use interfaces,only: long_mode
+      use interfaces,only: m_long
       use tinheader ,only: ti_p
       use utilgpu   ,only: rpole_elt,real3,real6
 #ifdef TINKER_CUF
@@ -788,7 +788,7 @@ c
 c        compute the energy contributions for this interaction
 c
          call switch_respa_inl(r,r_cut,shortheal,s,ds)
-         if (mode.eq.long_mode) s = 1.0-s
+         if (mode.eq.m_long) s = 1.0-s
 
          e_     = term1*rr1 + term2*rr3 + term3*rr5
      &                      + term4*rr7 + term5*rr9

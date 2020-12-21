@@ -6,6 +6,7 @@ c
 #include "tinker_precision.h"
       module tmatxb_inl_subroutines
         use utilgpu ,only: real3,real6
+        integer:: icall=1,ndec=1
         include "erfcore_data.f.inc"
         contains
 #include "image.f.inc"
@@ -26,16 +27,17 @@ c===============================================================================
         use atmlst  , only : poleglob
         use mpole   , only : npoleloc,npolebloc
         use polar   , only : polarity, tinypol
-        use utilgpu , only : def_queue, dir_queue
+        use utilgpu , only : def_queue, dir_queue, rec_queue
 #ifdef _OPENACC
      &              , def_stream,dir_stream
 #endif
         use domdec  , only : rank
         use inform  , only : deb_Path
-        use interfaces ,only : tmatxb_pme_core1,tmatxb_pme_core2,
+        use interfaces ,only : tmatxb_pme_core2,tmatxb_pme_core3,
      &                  tmatxb_pme_core_p
         use tinheader,only: ti_p
         use timestat, only : timer_tmatxb_pmegpu, timer_enter,timer_exit
+        use tmatxb_inl_subroutines , only : ndec, icall
         use utils   , only : set_to_zero1
         use potent  , only : use_polarshortreal
         use precompute_pole
@@ -58,16 +60,21 @@ c===============================================================================
         !gather some parameters, then set up the damping factors.
         if (use_polarshortreal) then
            call switch ('SHORTEWALD')
+           ndec = 1
         else
            call switch ('EWALD     ')
+           ! Enable Matvec kernel split
+           if (dir_queue.ne.rec_queue) ndec=2
         end if
 
-        call set_to_zero1(efi,3*nrhs*npolebloc,def_queue)
+        if (icall.eq.1)
+     &  call set_to_zero1(efi,3*nrhs*npolebloc,def_queue)
 
         ! core computation of matrice-vector product
         call tmatxb_pme_core_p(mu,efi)
 
-        if (dodiag) then
+        if (icall.eq.ndec) then
+           if (dodiag) then
         ! if dodiag is true, also compute the "self-induced" field,
         ! i.e., the diagonal portion of the matrix/vector product.
 !$acc  parallel loop collapse(3) async(def_queue)
@@ -87,8 +94,27 @@ c===============================================================================
                  end do
               end do
            end do
+           end if
         end if
         call timer_exit( timer_tmatxb_pmegpu )
+      end subroutine
+
+      subroutine incMatvecStep
+      use tmatxb_inl_subroutines,only:icall
+      icall = icall + 1
+      end subroutine
+
+      subroutine resetMatvecStep
+      use tmatxb_inl_subroutines,only:icall,ndec
+      if (icall.ne.ndec) then
+13       format( ' Error Made spliting Matrix-Vector product '
+     &        ,/,' Either incomplete of over calculated '
+     &        ,/,' ndec  ', I4
+     &        ,/,' icall ', I4 )
+         write(*, 13) ndec, ncall
+         call fatal
+      end if
+      icall = 1
       end subroutine
 
       subroutine tmatxb_pmegpu1(nrhs,dodiag,mu,efi)
@@ -658,6 +684,7 @@ c
       real(t_p) ,intent(inout):: efi(:,:,:)
 
       integer    :: i, j, k, irhs
+      integer    :: start,finla,sized        ! Indexes associated to Matvec split
       integer    :: ii, iipole, iglob, iploc ! Indexes associated to local atom
       integer    :: kpole, kpoleloc, kglob   ! Indexes associated to neighbor atom
       integer,pointer :: lst(:,:),nlst(:)    ! pointers to neighbor list
@@ -676,6 +703,20 @@ c
       alsq2n = 0
       if (aewald > 0) alsq2n = 1 / (sqrtpi*aewald)
 
+      ! Split matvec kernel to ease recovering process in MPI
+      if (ndec.eq.1) then
+         start  = 1
+         finla  = npolelocnl
+      else
+         sized  = npolelocnl/(ndec+1)
+         start  = (icall-1)*sized + 1
+         if (icall.eq.ndec) then
+            finla = npolelocnl
+         else
+            finla = icall*sized
+         end if
+      end if
+
       if (use_polarshortreal) then
           lst =>  shortelst
          nlst => nshortelstc
@@ -690,7 +731,7 @@ c
 !$acc&         private(posi,dpui)
 !$acc&         async(def_queue)
       MAINLOOP:
-     &do ii = 1, npolelocnl
+     &do ii = start, finla
          iipole = poleglobnl(ii)
          !skip atom if it is not polarizable
          !if (polarity(iipole) == 0) cycle MAINLOOP
@@ -937,7 +978,9 @@ c
       use potent  , only : use_polarshortreal
       use shunt   , only : cut2
       use tinheader ,only: ti_p
+      use tmatxb_inl_subroutines ,only : ndec,icall
       use utilgpu , only : def_queue, dir_queue,real3,real6
+     &            , BLOCK_SIZE
 #ifdef _OPENACC
       use cudafor
       use interfaces, only : cu_tmatxb_pme
@@ -946,11 +989,13 @@ c
       use tmatxb_pmecu,only: tmatxb_pme_core_cu
 #endif
       implicit none
+      integer i
+      integer start,start1,sized
       real(t_p) ,intent(in)   :: mu(:,:,:)
       real(t_p) ,intent(inout):: efi(:,:,:)
       integer ierrSync, begin
       integer,save :: gS
-      logical,save :: first_in=.true.,dyn_gS=.true.
+      logical,save :: first_in=.true.,dyn_gS=.false.
       real(t_p) alsq2,alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 
@@ -1001,21 +1046,29 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
 
       else
 
-      if (dyn_gS) gS = npolelocnlb2_pair/4
+      if (dyn_gS) gS = npolelocnlb2_pair/12
+      ! Split matvec kernel to ease recovering process in MPI
+      sized  = npolelocnlb2_pair/ndec
+      start  = (icall-1)*sized + 1
+      start1 = begin+(start-1)*BLOCK_SIZE
+      if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
+
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
 !$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
 
 c     call cu_tmatxb_pme    !Find his interface inside MOD_inteface
-c    &     (ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(begin),x_s,y_s,z_s
-c    &     ,pdamp,thole,polarity,mu,efi
-c    &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n,nproc
+c    &     (ipole_s,pglob_s,ploc_s
+c    &     ,ieblst_s(start),eblst_s(start1)
+c    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
+c    &     ,npolelocnlb,sized,npolebloc,n,nproc
 c    &     ,cut2,alsq2,alsq2n,aewald
 c    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
 c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &     (ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(begin)
+     &     (ipole_s,pglob_s,ploc_s
+     &     ,ieblst_s(start),eblst_s(start1)
      &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
-     &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n
+     &     ,npolelocnlb,sized,npolebloc,n
      &     ,cut2,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
       call check_launch_kernel(" tmatxb_pme_core_cu")

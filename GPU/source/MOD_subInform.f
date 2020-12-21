@@ -154,6 +154,7 @@ c
       integer i
       real(r_p) val
       mi=0;ma=0;on=0
+!$acc wait
 !$acc parallel loop async present(vector(1:sz))
       do i = 1, sz
          val = vector(i)
@@ -162,8 +163,8 @@ c
          on  = on + abs( val )
       end do
 !$acc wait
-12    format(A6,3F16.6)
-      write(*,12) name,mi,ma,on
+12    format(A6,3F16.6,I5)
+      write(*,12) name,mi,ma,on,rank
       end subroutine
 #endif
 c

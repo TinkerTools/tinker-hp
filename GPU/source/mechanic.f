@@ -439,8 +439,9 @@ c
 c     subroutine mechanicsteprespa1: fill the array parameters between two time steps
 c
       subroutine mechanicsteprespa1(istep,rule)
-      use domdec ,only:rank,nproc,ndir,nrec
+      use domdec ,only: rank,nproc,ndir,nrec
       use iounit
+      use moldyn ,only: stepint,nalt
       use potent
       use timestat
       implicit none
@@ -452,7 +453,16 @@ c     rule = 1: intermediate part of the forces
 c     rule = 2: slow part of the forces
 c
       call timer_enter( timer_param )
-      if (nproc.eq.1.or.(use_pmecore.and.ndir.eq.1.and.nrec.eq.1)) then
+      ! Handle fusion between empole & polar routine
+      if (rule.eq.1.and.use_polar) then
+         if (stepint.eq.1) then
+            call attach_mpolar_pointer
+         else if (stepint.eq.nalt) then
+            call detach_mpolar_pointer
+         end if
+      end if
+
+      if (nproc.eq.1.or.(use_pmecore.and.ndir.eq.1)) then
          if (rule.eq.0) call ksmd_recom
          call timer_exit( timer_param )
          return
@@ -512,8 +522,12 @@ c
       use utilgpu
       use sizes
       implicit none
-      integer devtyp,dev_quadro,dev_geforce,dev_default
-      parameter(dev_quadro=0,dev_geforce=1,dev_default=10)
+      integer devtyp
+      enum,bind(C)
+        enumerator dev_quadro,dev_tesla
+        enumerator dev_geforce
+        enumerator dev_default
+      end enum
       character(256) devname
 
       if (sub_config.eq.-1) then
@@ -525,11 +539,13 @@ c
             devtyp = dev_geforce
          else if (index(devname,'QUADRO').gt.0) then
             devtyp = dev_quadro
+         else if (index(devname,'TESLA').gt.0) then
+            devtyp = dev_tesla
          else
             devtyp = dev_default
          end if
-         if (devtyp.eq.dev_quadro) then
-            if ( n.gt.100000 ) then
+         if (devtyp.eq.dev_quadro.or.devtyp.eq.dev_tesla) then
+            if ( n.gt.10000 ) then
                sub_config = itrf_adapted
 #if TINKER_DOUBLE_PREC
                if (lbuffer.eq.defaultlbuffer1.or.
@@ -564,8 +580,10 @@ c
  12      format( /,'  --- run mode :  LEGACY  ',/ )
  13      format( /,'  --- run mode :  ADAPTED ',/ )
          if      (sub_config.eq.itrf_legacy) then
+            write(*,'(5x,a)') trim(devname)
             write(*,12)
          else if (sub_config.eq.itrf_adapted) then
+            write(*,'(5x,a)') trim(devname)
             write(*,13)
          end if
       end if
@@ -578,6 +596,7 @@ c
      &    precompute_solvpole,precompute_mpole
       use potent, only: use_polar,use_mpole,use_vdw
      &          , use_charge,use_pmecore
+      use polar , only: use_mpolar_ker
       use neigh , only: vlst_enable,vlst2_enable
      &          , mlst_enable,mlst2_enable
      &          , clst_enable,clst2_enable
@@ -707,6 +726,7 @@ c
          shft = ishft(sub_config,-conf_mpole*sh_len)
          configure=iand(shft,hexa_len-1)
          emreal1c_p     => emreal1cgpu
+         emrealshort1c_p=> emrealshort1cgpu
          emreallong1c_p => emreallong1cgpu
          emrealshortlong1c_core_p => emrealshortlong1c_core
          emrealshortlong3d_p      => emrealshortlong3d
@@ -804,21 +824,23 @@ c
          if      (configure.eq.conf_epreal1c_1) then
             epreal1c_core_p => epreal1c_core1
             epreal3d_p      => epreal3dgpu
-            mlst_enable = .true.
+            mlst_enable     = .true.
          else if (configure.eq.conf_epreal1c_2) then
             epreal1c_core_p => epreal1c_core2
             epreal3d_p      => epreal3dgpu
-            mlst_enable = .true.
+            mlst_enable     = .true.
 #ifdef _OPENACC
          else if (configure.eq.conf_epreal1c_3) then
             epreal1c_core_p => epreal1c_core3
             epreal3d_p      => epreal3d_cu
-            mlst2_enable = .true.
+            mlst2_enable    = .true.
+            use_mpolar_ker  = .true.
+            call attach_mpolar_pointer
 #endif
          else
             epreal1c_core_p => epreal1c_core2
             epreal3d_p      => epreal3dgpu
-            mlst_enable = .true.
+            mlst_enable     = .true.
          end if
       end if
 
@@ -888,6 +910,7 @@ c
       use polpot ,only: polalg
       use potent ,only: use_pmecore
       implicit none
+      logical,parameter:: OK=.true.
 
       ! Association
       if (dir_queue.ne.rec_queue) then
@@ -898,6 +921,16 @@ c
      &         'Not Suited with pme-proc option')
                print 13
             end if
+#ifdef _OPENACC
+            call finalize_async_recover
+#endif
+            return
+         end if
+
+         if (nproc.eq.1.and.OK) then
+ 14         format('--- Disabling Async Comput ---',/,
+     &             '  Affect performances during sequential run')
+            print 14
 #ifdef _OPENACC
             call finalize_async_recover
 #endif
@@ -922,4 +955,47 @@ c
 
       end if
 
+      end subroutine
+
+      subroutine attach_mpolar_pointer
+      use interfaces
+      use polar ,only: use_mpolar_ker
+      implicit none
+
+#ifdef _OPENACC
+      if (use_mpolar_ker) then
+      epreal1c_core_p => mpreal1c_core
+      emreal1c_p      => tinker_void_sub
+      emrealshort1c_p => tinker_void_sub
+      end if
+#endif
+
+      end subroutine
+
+      subroutine detach_mpolar_pointer
+      use interfaces
+      use polar ,only: use_mpolar_ker
+      implicit none
+      integer shft,configure
+      integer,parameter:: hexa_len=16,sh_len=4
+
+#ifdef _OPENACC
+      if (use_mpolar_ker.and.
+     &   associated(epreal1c_core_p,mpreal1c_core)) 
+     &   then
+         shft = ishft(sub_config,-conf_polar*sh_len)
+         configure=iand(shft,hexa_len-1)
+         if      (configure.eq.conf_epreal1c_1) then
+            epreal1c_core_p => epreal1c_core1
+         else if (configure.eq.conf_epreal1c_2) then
+            epreal1c_core_p => epreal1c_core2
+         else if (configure.eq.conf_epreal1c_3) then
+            epreal1c_core_p => epreal1c_core3
+         else
+            epreal1c_core_p => epreal1c_core2
+         end if
+         emreal1c_p      => emreal1cgpu
+         emrealshort1c_p => emrealshort1cgpu
+      end if
+#endif
       end subroutine

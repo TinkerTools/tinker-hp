@@ -1114,7 +1114,7 @@ c
       use interfaces ,only: epreal1c_correct_scale
       use math    ,only: sqrtpi
       use mpole   ,only: npolelocnl,ipole,rpole,polelocnl
-     &            ,npolelocnlb,npolebloc
+     &            ,ipole,npolelocnlb,npolebloc
      &            ,npolelocnlb_pair,npolelocnlb2_pair
      &            ,nspnlb2=>nshortpolelocnlb2_pair
       use neigh   ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
@@ -1124,6 +1124,7 @@ c
      &            , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
       use polar   ,only: uind,uinp,thole,pdamp
       use potent  ,only: use_polarshortreal
+      use polpot  ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
       use shunt   ,only: off2
       use tinheader,only: ti_p
       use virial
@@ -1136,6 +1137,7 @@ c
      &            ,ered_buff=>ered_buf1,vred_buff
      &            ,reduce_energy_virial
      &            ,RED_BUFF_SIZE,zero_evir_red_buffer
+     &            ,BLOCK_SIZE
 #ifdef  _OPENACC
      &            ,dir_stream,def_stream,rec_stream,nSMP
 #endif
@@ -1145,9 +1147,10 @@ c
       real(t_p),intent(inout):: trqvec(3,npolelocnl)
       real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
 
-      integer i,iglob,j,k,iploc,kploc
-      integer ii,iipole,ierrSync
-      integer lst_beg
+      integer i
+      integer start,start1,sized
+      integer,save::ndec
+      integer lst_beg,gS1
       integer,save:: gS=0
       real(t_p) alsq2,alsq2n,f
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
@@ -1176,6 +1179,8 @@ c
          ! Compute though occupancy the right gridSize to launch the kernel with
          call cudaMaxGridSize("epreal1c_core_cu",gS)
          if (deb_Path) print*, 'epreal1c blockSize ',gS
+         ndec=1
+         if (def_stream.ne.rec_stream) ndec=4
          first_in = .false.
       end if
       !print*,'pair block ',npolelocnlb2_pair
@@ -1184,8 +1189,9 @@ c
 
 !$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s,
 !$acc&    iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,thole,
+!$acc&    loc,x,y,z,ipole,polelocnl,dpucorrect_ik,dpucorrect_scale,
 !$acc&    uind,uinp,dep,trqvec,ered_buff,vred_buff)
-      
+
       if (use_polarshortreal) then
 
       if (dyn_gS) gS = nspnlb2/12
@@ -1201,28 +1207,278 @@ c
       else
 
       if (dyn_gS) gS = npolelocnlb2_pair/12
-      call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+      sized = npolelocnlb2_pair/ndec
+
+      ! Split electrostatic kernel to ease recovering process in MPI
+      do i = 1,ndec
+         start  = (i-1)*sized + 1
+         start1 = lst_beg+(start-1)*BLOCK_SIZE
+         if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
+         call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &        (ipole_s,pglob_s,loc_s,plocnl_s
+     &        ,ieblst_s(start),eblst_s(start1)
+     &        ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
+     &        ,dep,trqvec,ered_buff,vred_buff
+     &        ,npolelocnlb,sized,npolebloc,n
+     &        ,off2,f,alsq2,alsq2n,aewald
+     &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+         call check_launch_kernel(" epreal1c_core_cu")
+      end do
+
+      end if
+
+      gS1 = n_dpuscale/(2*BLOCK_DIM)
+      call epreal1c_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
+     &     ( dpucorrect_ik,dpucorrect_scale,ipole,loc
+     &     , polelocnl,x,y,z,pdamp,thole,rpole,uind,uinp
+     &     , dep,trqvec,ered_buff,vred_buff
+     &     , n,n_dpuscale,nbloc
+     &     , off2,aewald,alsq2,alsq2n,f)
+      call check_launch_kernel(" epreal1c_scaling_cu")
+
+!$acc end host_data
+
+      call reduce_energy_virial(ep,vxx,vxy,vxz,vyy,vyz,vzz
+     &                         ,ered_buff,def_queue)
+c     call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
+#else
+      print 100
+ 100  format('epreal1c_core3 is a specific device routine',/,
+     &       'you are not supposed to get inside with your compile',
+     &       'type.')
+      call fatal
+#endif
+
+      end
+
+      subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
+      use atmlst  ,only: poleglobnl
+      use atoms   ,only: x,y,z,n
+      use chgpot  ,only: dielec,electric
+      use cutoff  ,only: mpoleshortcut,shortheal
+      use deriv   ,only: dep,dem
+      use domdec  ,only: xbegproc,ybegproc,zbegproc
+     &            ,nproc,rank,xendproc,yendproc,zendproc
+     &            ,nbloc,loc
+      use energi  ,only: ep=>ep_r
+#ifdef _CUDA
+      use empole1cu ,only: emreal_scaling_cu
+      use epolar1cu ,only: mpreal1c_core_cu
+#endif
+      use ewald   ,only: aewald
+      use inform  ,only: deb_Path
+      use interfaces ,only: epreal1c_correct_scale
+     &               , m_normal,m_short,m_long
+      use math    ,only: sqrtpi
+      use mpole   ,only: npolelocnl,ipole,rpole,polelocnl
+     &            ,npolelocnlb,npolebloc
+     &            ,npolelocnlb_pair,npolelocnlb2_pair
+     &            ,nspnlb2=>nshortpolelocnlb2_pair
+      use mplpot  ,only:n_mscale,mcorrect_ik,mcorrect_scale
+      use neigh   ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
+     &            ,loc_s=>celle_loc, plocnl_s=>celle_plocnl
+     &            ,ieblst_s=>ieblst, eblst_s=>eblst
+     &            ,iseblst_s=>ishorteblst, seblst_s=>shorteblst
+     &            ,x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
+      use polar   ,only: uind,uinp,thole,pdamp
+      use polpot  ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
+      use potent  ,only: use_polarshortreal,use_mpoleshortreal
+     &            ,use_mpolelong
+      use shunt   ,only: off,off2
+      use tinheader  ,only: ti_p
+      use virial
+#ifdef _CUDA
+      use cudafor
+      use utilcu  ,only: BLOCK_DIM,check_launch_kernel
+#endif
+      use utilgpu ,only: def_queue
+     &            ,real3,real6,real3_red,rpole_elt
+     &            ,ered_buff=>ered_buf1,vred_buff
+     &            ,reduce_energy_virial
+     &            ,RED_BUFF_SIZE,zero_evir_red_buffer
+     &            ,BLOCK_SIZE
+#ifdef  _OPENACC
+     &            ,dir_stream,def_stream,rec_stream,nSMP
+#endif
+
+      implicit none
+
+      real(t_p),intent(inout):: trqvec(3,npolelocnl)
+      real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
+
+      integer i
+      integer start,start1,sized
+      integer,save::ndec
+      integer lst_beg,gS1
+      integer,save:: gS=0
+      real(t_p) alsq2,alsq22,alsq24,alsq2n,f,fem,r_cut,sh_cut2
+      real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+      logical,save::first_in=.true.
+      logical,parameter::dyn_gS=.false.
+
+      if(deb_Path)write(*,'(2x,a)') 'mpreal1c_core'
+c
+c     set conversion factor, cutoff and switching coefficients
+c
+      f      = 0.5_ti_p * electric / dielec
+      fem    = 1.0_ti_p * electric / dielec
+      alsq2  = 2.0_ti_p * aewald**2
+      alsq22 = alsq2**2
+      alsq24 = alsq22**2
+      alsq2n = 0.0_ti_p
+      if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi * aewald)
+
+      p_xbeg = xbegproc(rank+1)
+      p_xend = xendproc(rank+1)
+      p_ybeg = ybegproc(rank+1)
+      p_yend = yendproc(rank+1)
+      p_zbeg = zbegproc(rank+1)
+      p_zend = zendproc(rank+1)
+      lst_beg= 2*npolelocnlb_pair+1
+      sh_cut2= 0.0_ti_p
+      r_cut  = 0.0_ti_p
+
+      if (use_mpoleshortreal) then
+         sh_cut2 = 0.0_ti_p
+         r_cut   = off
+      else if (use_mpolelong) then
+         sh_cut2 = (mpoleshortcut-shortheal)**2
+         r_cut   = mpoleshortcut
+      end if
+
+#ifdef _CUDA
+      if (first_in) then
+         ! Compute though occupancy the right gridSize to launch the kernel with
+         call cudaMaxGridSize("mpreal1c_core_cu",gS)
+         if (deb_Path) print*, ' mpreal1c blockSize ',gS
+         ndec=1
+         if (def_stream.ne.rec_stream) ndec=4
+         first_in = .false.
+      end if
+      !print*,'pair block ',npolelocnlb2_pair
+
+      call zero_evir_red_buffer(def_queue)
+
+!$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s,
+!$acc&    iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,thole,
+!$acc&    mcorrect_ik,mcorrect_scale,dpucorrect_ik,dpucorrect_scale,
+!$acc&    polelocnl,loc,ipole,x,y,z,
+!$acc&    uind,uinp,dep,trqvec,ered_buff,vred_buff)
+
+      if (use_polarshortreal.or.use_mpoleshortreal) then
+
+      if (dyn_gS) gS = nspnlb2/12
+      call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,loc_s,plocnl_s
+     &     ,iseblst_s,seblst_s(lst_beg)
+     &     ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
+     &     ,dep,trqvec,ered_buff,vred_buff
+     &     ,npolelocnlb,nspnlb2,npolebloc,n,m_short
+     &     ,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+
+      else if (use_mpolelong) then
+
+         write(0,*) 'ERROR mpreal1c_core !!'
+         write(0,*) 'This routine sould not be used with long range'
+     &             ,' interaction'
+         call fatal
+
+      if (dyn_gS) gS = npolelocnlb2_pair/12
+      call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,ieblst_s,eblst_s(lst_beg)
      &     ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
      &     ,dep,trqvec,ered_buff,vred_buff
-     &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n
-     &     ,off2,f,alsq2,alsq2n,aewald
+     &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n,m_long
+     &     ,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+
+      else
+
+      if (dyn_gS) gS = npolelocnlb2_pair/12
+      sized = npolelocnlb2_pair/ndec
+
+      ! Split electrostatic kernel to ease recovering process in MPI
+      do i = 1,ndec
+         start  = (i-1)*sized + 1
+         start1 = lst_beg+(start-1)*BLOCK_SIZE
+         if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
+         call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &        (ipole_s,pglob_s,loc_s,plocnl_s
+     &        ,ieblst_s(start),eblst_s(start1)
+     &        ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
+     &        ,dep,trqvec,ered_buff,vred_buff
+     &        ,npolelocnlb,sized,npolebloc,n,m_normal
+     &        ,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal
+     &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+         call check_launch_kernel(" mpreal1c_core_cu")
+      end do
+
       end if
-      call check_launch_kernel(" epreal1c_core_cu")
+
+c     call emreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+c    &        ( ipole_s, pglob_s, loc_s, ieblst_s
+c    &        , eblst_s(2*npolelocnlb_pair+1)
+c    &        , npolelocnlb, npolelocnlb2_pair, npolebloc, n
+c    &        , x_s, y_s, z_s, rpole
+c    &        , off2, fem, alsq2, alsq2n, aewald
+c    &        , dep, trqvec, ered_buff, vred_buff
+c    &        , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
+
+      if (n_mscale.gt.0) then
+         gS1 = n_mscale/(BLOCK_DIM)
+         if (use_mpoleshortreal) then
+         call emrealShLg_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
+     &        ( mcorrect_ik,mcorrect_scale,ipole,loc,polelocnl
+     &        , x,y,z,rpole
+     &        , dep,trqvec,ered_buff,vred_buff
+     &        , n,nbloc,n_mscale,m_short,.true.
+     &        , r_cut,sh_cut2,off2
+     &        , shortheal,fem,aewald,alsq2,alsq2n )
+         call check_launch_kernel(" emrealShLg_scaling_cu")
+         else
+         call emreal_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
+     &        ( mcorrect_ik,mcorrect_scale,ipole,loc,polelocnl
+     &        , x,y,z,rpole
+     &        , dep,trqvec,ered_buff,vred_buff
+     &        , n,nbloc,n_mscale,.true.
+     &        , off2,fem,aewald,alsq2,alsq2n )
+         call check_launch_kernel(" emreal_scaling_cu")
+         end if
+      end if
+
+c     call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+c    &     (ipole_s,pglob_s,loc_s,plocnl_s
+c    &     ,ieblst_s,eblst_s(lst_beg)
+c    &     ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
+c    &     ,dep,trqvec,ered_buff,vred_buff
+c    &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n
+c    &     ,off2,f,alsq2,alsq2n,aewald
+c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
+
+      if (n_dpuscale.gt.0) then
+         gS1 = n_dpuscale/(BLOCK_DIM)
+         call epreal1c_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
+     &        ( dpucorrect_ik,dpucorrect_scale,ipole,loc
+     &        , polelocnl,x,y,z,pdamp,thole,rpole,uind,uinp
+     &        , dep,trqvec,ered_buff,vred_buff
+     &        , n,n_dpuscale,nbloc
+     &        , off2,aewald,alsq2,alsq2n,f )
+         call check_launch_kernel(" epreal1c_scaling_cu")
+      end if
 
 !$acc end host_data
 
       call reduce_energy_virial(ep,vxx,vxy,vxz,vyy,vyz,vzz
      &                         ,ered_buff,def_queue)
 c
-      call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
+c     call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 #else
-      print 100
- 100  format('epreal1c_core3 is a specific device routine',/,
-     &       'you are not supposed to get inside with your compile',
-     &       'type.')
+      write(0,100)
+ 100  format('ERROR ! mpreal1c_core is a specific device routine',/,
+     &       'you are not supposed to get through with your program',
+     &       'build.')
       call fatal
 #endif
 

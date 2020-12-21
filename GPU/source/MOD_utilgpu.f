@@ -668,10 +668,17 @@ c
       implicit none
       integer,intent(in)::n
       logical,save:: f_in=.true.
+      integer factor
 
-      call thrust_alloc_cache_memory(7*n)
+      if (n.lt.12000) then
+         factor=10
+      else
+         factor=7
+      end if
+
+      call thrust_alloc_cache_memory(factor*n)
       if (f_in) then
-      sd_prmem = sd_prmem + 7*n*sizeof(n)
+      sd_prmem = sd_prmem + factor*n*sizeof(n)
       f_in = .false.
       end if
       end
@@ -774,6 +781,7 @@ c
       rec_stream = acc_get_cuda_stream(acc_async_noval)
       dir_stream = rec_stream
       def_stream = rec_stream
+      if (nproc.eq.1) return
       call get_environment_variable('TINKER_ASYNC_COVER',value,
      &                               length,status)
 
@@ -781,8 +789,9 @@ c
          read(value,*) int_val
          if (int_val.gt.0) then
             dir_queue = acc_async_noval + 1
-            if (rank.eq.0) write(*,*) "Async Comput Overlapping enable",
-     &         acc_async_noval
+ 13      format(' ***** Asynchronous Computation Overlapping enable'
+     &          ,I5,/)
+            if (rank.eq.0) write(*,13) acc_async_noval
          else
             return
          end if
@@ -795,10 +804,10 @@ c
       cuda_success = cudaDeviceGetStreamPriorityRange(low_priority,
      &              high_priority)
  
-c     ! Create main stream for TINKER
-c     cuda_success = cuda_success +
-c    &  cudastreamcreate(rec_stream,cudaStreamNonBlocking,high_priority)
-c     call acc_set_cuda_stream(rec_queue,rec_stream)
+      ! Create main stream for TINKER
+      cuda_success = cuda_success +
+     &  cudastreamcreate(rec_stream,cudaStreamNonBlocking,high_priority)
+      call acc_set_cuda_stream(rec_queue,rec_stream)
 
       ! Create Secondary stream if necessary
       if (dir_queue.ne.rec_queue) then
@@ -832,9 +841,13 @@ c
       integer cuda_success
 
       if (dir_queue.ne.rec_queue) then
-         cuda_success = cudaStreamDestroy(dir_stream)
- 12      format('Error destroying direct sream',I10)
-         if (cuda_success.ne.0) print 12, cuda_success
+         !cuda_success = cudaStreamDestroy(dir_stream)
+c12      format('CUDA Error destroying rec/direct streams',I10)
+c        if (cuda_success.ne.0) then
+c           print 12, cuda_success
+c        end if
+ 13     format(' ***** Asynchronous Computation Overlapping disable')
+         if (rank.eq.0) write(*,13)
          dir_stream = rec_stream
          def_stream = rec_stream
          dir_queue  = rec_queue

@@ -67,7 +67,8 @@ c
       use ewald
       use inform     ,only: deb_Path
       use interfaces ,only: reorder_nblist
-     &               ,torquegpu,emreal1c_p,emreallong1c_p
+     &               ,torquegpu,emreal1c_p,emrealshort1c_p
+     &               ,emreallong1c_p
       use math
       use mpole
       use mpi
@@ -178,7 +179,7 @@ c
          call timer_enter( timer_real )
          if (use_mreal) then
             if (use_mpoleshortreal) then
-               call emrealshort1cgpu
+               call emrealshort1c_p
             else if (use_mpolelong) then
                call emreallong1c_p
             else
@@ -1392,18 +1393,19 @@ c
      &           ,nproc,rank,xendproc,yendproc,zendproc
      &           ,nbloc,loc
 #ifdef _CUDA
-      use empole1cu ,only: emreal1c_core_cu
+      use empole1cu ,only: emreal1c_core_cu,emreal_scaling_cu
 #endif
       use energi ,only:em=>em_r
       use ewald  ,only:aewald
       use inform ,only: deb_Path,minmaxone
       use interfaces,only: emreal_correct_interactions
       use math   ,only:sqrtpi
+      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       !use mpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
      &           ,npolelocnlb,npolelocnlb_pair,npolebloc
-     &           ,npolelocnlb2_pair
+     &           ,npolelocnlb2_pair,ipole
       use neigh  ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
      &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
      &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
@@ -1426,7 +1428,7 @@ c
       real(r_p),intent(inout):: vxy,vxz,vyz
       real(t_p),intent(inout):: tem(3,nbloc)
 
-      integer i
+      integer i,gS1
 #ifdef TINKER_DEBUG
       integer inter(n)
 #endif
@@ -1474,6 +1476,7 @@ c
 
 !$acc host_data use_device(ipole_s,pglob_s,loc_s,ieblst_s,eblst_s
 !$acc&    ,x_s,y_s,z_s,rpole,dem,tem,ered_buff,vred_buff
+!$acc&    ,mcorrect_ik,mcorrect_scale,loc,ipole,x,y,z
 #ifdef TINKER_DEBUG
 !$acc&    ,inter
 #endif
@@ -1493,6 +1496,16 @@ c
 #endif
      &        )
       call check_launch_kernel(" emreal1c_core_cu")
+
+      if (n_mscale.gt.0) then
+         gS1 = n_mscale/(2*BLOCK_DIM)
+         call emreal_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
+     &        ( mcorrect_ik,mcorrect_scale,ipole,loc,loc,x,y,z,rpole
+     &        , dem,tem,ered_buff,vred_buff
+     &        , n,nbloc,n_mscale,.false.
+     &        , off2,f,aewald,alsq2,alsq2n )
+         call check_launch_kernel(" emreal_scaling_cu")
+      end if
 
 !$acc end host_data
 
@@ -1518,7 +1531,7 @@ c         print 34,i,inter(i)
 c      end do
 #endif
 
-      call emreal_correct_interactions(tem,vxx,vxy,vxz,vyy,vyz,vzz)
+c     call emreal_correct_interactions(tem,vxx,vxy,vxz,vyy,vyz,vzz)
 
       end
 
@@ -1553,7 +1566,7 @@ c======================================================================
       use ewald  ,only:aewald
       use inform ,only: deb_Path
       use interfaces,only: emreal_correct_interactions_shortlong
-     &              ,long_mode,short_mode
+     &              ,m_long,m_short
       use math   ,only:sqrtpi
       !use mpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
@@ -1612,13 +1625,13 @@ c
 
       ! Configure data to be use in next loop
       if (use_mpoleshortreal) then
-         mode  = short_mode
+         mode  = m_short
          r_cut = off
          mpoleshortcut2 = 0.0_ti_p
           lst =>  shortelst
          nlst => nshortelst
       else
-         mode  = long_mode
+         mode  = m_long
          r_cut = mpoleshortcut
          mpoleshortcut2 = (mpoleshortcut-shortheal)**2
           lst =>  elst
@@ -1763,18 +1776,20 @@ c
      &            ,nbloc,loc
 #ifdef _CUDA
       use empole1cu ,only: emrealshortlong1c_core_cu
+     &              , emrealShLg_scaling_cu
 #endif
       use energi ,only:em=>em_r
       use ewald  ,only:aewald
       use inform ,only: deb_Path,minmaxone
       use interfaces,only: emreal_correct_interactions_shortlong
-     &              ,long_mode,short_mode
+     &              ,m_long,m_short
       use math   ,only:sqrtpi
+      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       !use mpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
      &           ,npolelocnlb,npolelocnlb_pair,npolebloc
-     &           ,npolelocnlb2_pair,nshortpolelocnlb2_pair
+     &           ,npolelocnlb2_pair,nshortpolelocnlb2_pair,ipole
       use neigh  ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
      &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
      &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
@@ -1786,7 +1801,7 @@ c
       use utilcu ,only:BLOCK_DIM,check_launch_kernel
 #endif
       use utilgpu,only:dir_queue,rec_queue,def_queue,warning
-     &           ,RED_BUFF_SIZE
+     &           ,RED_BUFF_SIZE,BLOCK_SIZE
      &           ,ered_buff=>ered_buf1,vred_buff,reduce_energy_virial
      &           ,zero_evir_red_buffer
 #ifdef  _OPENACC
@@ -1800,7 +1815,8 @@ c
       real(r_p),intent(inout):: vxy,vxz,vyz
       real(t_p),intent(inout):: tem(3,nbloc)
 
-      integer i,mode
+      integer i,mode,gS1
+      integer start,start1,sized
 #ifdef TINKER_DEBUG
       integer inter(n)
 #endif
@@ -1808,6 +1824,7 @@ c
       real(t_p) alsq2,alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
       real(t_p) mpoleshortcut2,r_cut
+      integer,save::ndec
       logical,save:: first_in=.true.
       integer,save:: gS
       real(8) e0,e1,e2
@@ -1838,18 +1855,20 @@ c
       p_zend = zendproc(rank+1)
 
       if (use_mpoleshortreal) then
-         mode = short_mode
+         mode           = m_short
          mpoleshortcut2 = 0.0_ti_p
-         r_cut = off
+         r_cut          = off
       else if (use_mpolelong) then
-         mode = long_mode
+         mode           = m_long
          mpoleshortcut2 = (mpoleshortcut-shortheal)**2
-         r_cut = mpoleshortcut
+         r_cut          = mpoleshortcut
       end if
 
       if (first_in) then
 #ifdef _CUDA
          call cudaMaxGridSize("emrealshortlong1c_core_cu",gS)
+         ndec=1
+         if (dir_queue.ne.rec_queue) ndec=4
 #endif
          first_in = .false.
       end if
@@ -1859,15 +1878,18 @@ c
       call zero_evir_red_buffer(def_queue)
 
 
-      if (use_mpoleshortreal) then
-!$acc host_data use_device(ipole_s,pglob_s,loc_s,iseblst_s,seblst_s
+!$acc host_data use_device(ipole_s,pglob_s,loc_s
+!$acc&    ,ieblst_s,eblst_s,iseblst_s,seblst_s
 !$acc&    ,x_s,y_s,z_s,rpole,dem,tem,ered_buff,vred_buff
+!$acc&    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z
 #ifdef TINKER_DEBUG
 !$acc&    ,inter
 #endif
 !$acc&    )
+
       !call CUDA kernel to compute the real space portion of the Ewald summation
-      call emrealshortlong1c_core_cu<<<*,BLOCK_DIM,0,def_stream>>>
+      if (use_mpoleshortreal) then
+      call emrealshortlong1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &        ( ipole_s, pglob_s, loc_s, iseblst_s
      &        , seblst_s(2*npolelocnlb_pair+1)
      &        , npolelocnlb, nshortpolelocnlb2_pair, npolebloc, n
@@ -1880,33 +1902,43 @@ c
      &        , inter
 #endif
      &        )
-!$acc end host_data
 
       else
-!$acc host_data use_device(ipole_s,pglob_s,loc_s,ieblst_s,eblst_s
-!$acc&    ,x_s,y_s,z_s,rpole,dem,tem,ered_buff,vred_buff
+      ! Split long range electrostatic kernel to ease recovering process in MPI
+      sized = npolelocnlb2_pair/ndec
+      do i = 1,ndec
+         start  = (i-1)*sized + 1
+         start1 = 2*npolelocnlb_pair+1+(start-1)*BLOCK_SIZE
+         if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
+         call emrealshortlong1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &           ( ipole_s, pglob_s, loc_s
+     &           , ieblst_s(start), eblst_s(start1)
+     &           , npolelocnlb, sized, npolebloc, n
+     &           , x_s, y_s, z_s, rpole
+     &           , shortheal, r_cut, mpoleshortcut2, off2, f
+     &           , alsq2, alsq2n, aewald, mode
+     &           , dem, tem, ered_buff, vred_buff
+     &           , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 #ifdef TINKER_DEBUG
-!$acc&    ,inter
-#endif
-!$acc&    )
-      !call CUDA kernel to compute the real space portion of the Ewald summation
-      call emrealshortlong1c_core_cu<<<*,BLOCK_DIM,0,def_stream>>>
-     &        ( ipole_s, pglob_s, loc_s, ieblst_s
-     &        , eblst_s(2*npolelocnlb_pair+1)
-     &        , npolelocnlb, npolelocnlb2_pair, npolebloc, n
-     &        , x_s, y_s, z_s, rpole
-     &        , shortheal, r_cut, mpoleshortcut2, off2, f
-     &        , alsq2, alsq2n, aewald, mode
-     &        , dem, tem, ered_buff, vred_buff
-     &        , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-#ifdef TINKER_DEBUG
-     &        , inter
-#endif
-     &        )
-!$acc end host_data
+     &           , inter
+#endif   
+     &           )
+      end do
+
       end if
       call check_launch_kernel(" emrealshortlong1c_core_cu")
 
+      if (n_mscale.gt.0) then
+         gS1 = n_mscale/(2*BLOCK_DIM)
+         call emrealShLg_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
+     &        ( mcorrect_ik,mcorrect_scale,ipole,loc,loc,x,y,z,rpole
+     &        , dem,tem,ered_buff,vred_buff
+     &        , n,nbloc,n_mscale,mode,.false.
+     &        , r_cut,mpoleshortcut2,off2
+     &        , shortheal,f,aewald,alsq2,alsq2n)
+         call check_launch_kernel(" emrealShLg_scaling_cu")
+      end if
+!$acc end host_data
 
       call reduce_energy_virial(em,vxx,vxy,vxz,vyy,vyz,vzz
      &                         ,ered_buff,def_queue)
@@ -1936,8 +1968,8 @@ c         print 34,i,inter(i)
 c      end do
 #endif
 
-      call emreal_correct_interactions_shortlong
-     &            (tem,vxx,vxy,vxz,vyy,vyz,vzz)
+c     call emreal_correct_interactions_shortlong
+c    &            (tem,vxx,vxy,vxz,vyy,vyz,vzz)
 
       end
 
@@ -2130,7 +2162,7 @@ c     increment the virial due to pairwise Cartesian forces c
       use energi ,only:em=>em_r
       use ewald  ,only:aewald
       use inform ,only:deb_Path
-      use interfaces,only:long_mode,short_mode
+      use interfaces,only:m_long,m_short
       use math   ,only:sqrtpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
@@ -2174,11 +2206,11 @@ c
 
       if (use_mpoleshortreal) then
          mpoleshortcut2 = 0.0_ti_p
-         mode = short_mode
+         mode = m_short
          r_cut = off
       else if (use_mpolelong) then
          mpoleshortcut2 = (mpoleshortcut-shortheal)**2
-         mode = long_mode
+         mode = m_long
          r_cut = mpoleshortcut
       else
          print*,'unknown mode for emreal_correct_interactions_shortlong'
@@ -2269,6 +2301,7 @@ c
          tem(3,kbis) = tem(3,kbis) + ttmk%z
 c
 c     increment the virial due to pairwise Cartesian forces c
+c
          vxx    = vxx  - xr * frc%x
          vxy    = vxy  - yr * frc%x
          vxz    = vxz  - zr * frc%x

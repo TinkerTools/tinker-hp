@@ -308,8 +308,8 @@ c     compute the energy for torsional restraint terms
 c
       header = .true.
 
-!$acc parallel loop async
-!$acc&         default(present)
+!$acc parallel loop gang vector async
+!$acc&         default(present) reduction(+:eg,neg)
       do intfix = 1, ntfixloc
          i = ntfixglob(intfix)
          ia = itfix(1,i)
@@ -534,10 +534,10 @@ c     compute the energy for chirality restraint terms
 c
       header = .true.
 
-!$acc parallel loop async
-!$acc&         default(present)
+!$acc parallel loop async gang vector
+!$acc&         default(present) reduction(+:eg,neg)
       do inchir = 1, nchirloc
-         i = nchirglob(inchir)
+         i  = nchirglob(inchir)
          ia = ichir(1,i)
          ialoc = loc(ia)
          ib = ichir(2,i)
@@ -548,7 +548,7 @@ c
          idloc = loc(id)
          proceed = .true.
          if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                              use(ic) .or. use(id))
+     &                            use(ic) .or. use(id))
          if (proceed) then
             xad = x(ia) - x(id)
             yad = y(ia) - y(id)
@@ -562,18 +562,18 @@ c
             c1 = ybd*zcd - zbd*ycd
             c2 = ycd*zad - zcd*yad
             c3 = yad*zbd - zad*ybd
-            vol = xad*c1 + xbd*c2 + xcd*c3
+            vol   = xad*c1 + xbd*c2 + xcd*c3
             force = chir(1,i)
             cf1 = chir(2,i)
             cf2 = chir(3,i)
             target = vol
             if (vol .lt. min(cf1,cf2))  target = min(cf1,cf2)
             if (vol .gt. max(cf1,cf2))  target = max(cf1,cf2)
-            dt = vol - target
+            dt  = vol - target
             dt2 = dt * dt
-            e = force * dt2
-            neg = neg + 1
+            e   = force * dt2
             eg  = eg + e
+            neg = neg + 1
 !$acc atomic update  
             aeg(ialoc) = aeg(ialoc) + 0.25_ti_p*e
 !$acc atomic update  

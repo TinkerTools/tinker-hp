@@ -395,7 +395,7 @@ c
       if (use_cshortreal) then
          mode       = 'SHORTEWALD'
          call switch (mode)
-         range_cfg  = short_mode
+         range_cfg  = m_short
          cshortcut2 = 0
          coff       = off
          lst        => shortelst
@@ -403,7 +403,7 @@ c
       else if (use_clong) then
          mode       = 'EWALD'
          call switch (mode)
-         range_cfg  = long_mode
+         range_cfg  = m_long
          cshortcut2 = (chgshortcut-shortheal)**2
          coff       = chgshortcut
          lst        => elst
@@ -526,7 +526,7 @@ c
      &            , ered_buff=>ered_buf1,dir_stream,def_stream
       use virial
       implicit none
-      integer i
+      integer i,gs1
 #ifdef TINKER_DEBUG
       integer inter(n)
 #endif
@@ -571,11 +571,13 @@ c
       call set_ChgData_CellOrder(.false.)
 
 !$acc host_data use_device(iion_s,chg_s,loc_s,ieblst_s,eblst_s,
-!$acc&   x_s,y_s,z_s,pchg,dec,ered_buff,vred_buff
+!$acc&   x_s,y_s,z_s,pchg,dec,ered_buff,vred_buff,
+!$acc&   ccorrect_ik,ccorrect_scale,loc,x,y,z
 #ifdef TINKER_DEBUG
 !$acc&    ,inter
 #endif
 !$acc&    )
+
       call ecreal1d_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     ( iion_s,chg_s,loc_s,ieblst_s
      &     , eblst_s(2*nionlocnlb_pair+1)
@@ -589,12 +591,19 @@ c
 #endif
      &     )
       call check_launch_kernel(" ecreal1d_core_cu")
+
+      gs1 = n_cscale/(BLOCK_DIM)
+      call ecreal_scaling_cu<<<gs1,BLOCK_DIM,0,def_stream>>>
+     &            ( ccorrect_ik,ccorrect_scale,loc,x,y,z
+     &            , dec,ered_buff,vred_buff,n,nbloc,n_cscale
+     &            , f,aewald,ebuffer,off2 )
+      call check_launch_kernel(" ecreal_scaling_cu")
+
 !$acc end host_data
 
       call reduce_energy_virial(ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
      &                         ,ered_buff,def_queue)
 
-      call ecreal_scaling
 #ifdef TINKER_DEBUG
  34   format(2I10,3F12.4)
  35   format(A30,2I16)
@@ -780,11 +789,11 @@ c     set conversion factor, cutoff and switching coefficients
 c
       f = electric / dielec
       if (use_cshortreal) then
-         range_cfg  = short_mode
+         range_cfg  = m_short
          cshortcut2 = 0
          coff       = off
       else if (use_clong) then
-         range_cfg  = long_mode
+         range_cfg  = m_long
          cshortcut2 = (chgshortcut-shortheal)**2
          coff       = chgshortcut
       else

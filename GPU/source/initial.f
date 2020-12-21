@@ -30,6 +30,7 @@ c
       use keys
       use linmin
       use minima
+      use moldyn
       use neigh
       use output
       use params
@@ -38,6 +39,7 @@ c
       use random_mod
       use timestat
       use tinMemory
+      use tinheader
       use utilgpu
       use mpi
       use virial
@@ -147,6 +149,13 @@ c
 c     Initiate memory manager
 c
       call init_memhandle
+c
+c     Default moldyn data
+c
+      nalt     = i_init
+      nalt2    = i_init
+      stepfast = i_init
+      stepint  = i_init
 c
 c     default parameters used by optimizations
 c

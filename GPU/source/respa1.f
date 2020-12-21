@@ -593,7 +593,7 @@ c
          end do
       end do
 
-      do k = 1, nalt
+      do stepint = 1, nalt
 !$acc parallel loop collapse(2) async
          do i = 1, nloc
             do j = 1, 3
@@ -717,7 +717,7 @@ c
          end do
       end do
 
-      do k = 1, nalt2
+      do stepfast = 1, nalt2
 !$acc parallel loop async
          do i = 1, nloc
             iglob = glob(i)
@@ -739,18 +739,18 @@ c
 c       Reassign the particules that have changed of domain
 c
 c       -> real space
-        call reassignrespa(k,nalt2)
+        call reassignrespa(stepfast,nalt2)
 c
 c       communicate positions
 c
-        call commposrespa(k.ne.nalt2)
+        call commposrespa(stepfast.ne.nalt2)
         call reCast_position
 c
         call prmem_requestm(derivs,3,nbloc,async=.true.)
         call set_to_zero1m(derivs,3*nbloc,rec_queue)
 c
-        if (k.eq.nalt2) call mechanicsteprespa1(-1,0)
-        if (k.eq.nalt2) call allocsteprespa(.true.)
+        if (stepfast.eq.nalt2) call mechanicsteprespa1(-1,0)
+        if (stepfast.eq.nalt2) call allocsteprespa(.true.)
 c
 c       get the fast-evolving potential energy and atomic forces
 c

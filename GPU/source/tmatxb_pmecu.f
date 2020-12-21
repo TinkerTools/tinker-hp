@@ -10,7 +10,8 @@ c
 
       module tmatxb_pmecu
         use utilcu  ,only: nproc,BLOCK_DIM,ALL_LANES
-        use utilgpu ,only: real3,real6,BLOCK_SIZE
+        use utilgpu ,only: BLOCK_SIZE
+        use tintypes,only: rpole_elt,real3,real6
 
         contains
 
@@ -333,6 +334,98 @@ c    &     ,aewald,npolelocnlb_pair
            rstat = atomicAdd( efi(2,2,kploc),fkp(threadIdx%x)%y )
            rstat = atomicAdd( efi(3,2,kploc),fkp(threadIdx%x)%z )
         end do
+        end subroutine
+
+        attributes(global) subroutine efld0_direct_scaling_cu
+     &            (dpcorrect_ik,dpcorrect_scale,poleloc,ipole,pdamp
+     &            ,thole,x,y,z,rpole,ef,n_dpscale,n,npolebloc
+     &            ,cut2,aewald,alsq2,alsq2n)
+        implicit none
+        integer,device,intent(in)::dpcorrect_ik(*),poleloc(n),ipole(n)
+        real(t_p),device,intent(in):: dpcorrect_scale(*),pdamp(n)
+     &           ,thole(n),rpole(13,n),x(*),y(*),z(*)
+        real(t_p),device,intent(inout)::ef(3,2,*)
+        integer,value,intent(in)::n,npolebloc,n_dpscale
+        real(t_p),value,intent(in)::cut2,aewald,alsq2,alsq2n
+
+        integer ii,ithread,iipole,kpole,iploc,iglob,kbis,kglob
+        real(t_p) pdi,pti,d2,damp,thole1,pgamma,d,bn1,bn2,sc3,sc5
+     &           ,pscale,dscale,rstat
+        type(real3) fid,fip,fkd,fkp,pos
+        type(rpole_elt) ip,kp
+
+        ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
+
+        do ii = ithread , n_dpscale, blockDim%x*gridDim%x
+           iipole = dpcorrect_ik(2*(ii-1)+1)
+           kpole  = dpcorrect_ik(2*(ii-1)+2)
+
+           dscale = dpcorrect_scale(2*(ii-1)+1)
+           pscale = dpcorrect_scale(2*(ii-1)+2)
+
+           iploc  = poleloc   (iipole)
+           iglob  = ipole     (iipole)
+
+           kbis   = poleloc(kpole)
+           kglob  = ipole  (kpole)
+
+           pdi    = pdamp(iipole)
+           pti    = thole(iipole)
+
+           pos%x  = x(kglob) - x(iglob)
+           pos%y  = y(kglob) - y(iglob)
+           pos%z  = z(kglob) - z(iglob)
+           call image_inl(pos%x,pos%y,pos%z)
+           d2     = pos%x**2 + pos%y**2 + pos%z**2
+           if (d2.gt.cut2) cycle
+
+           ip%c   = rpole(01,iipole)
+           ip%dx  = rpole(02,iipole)
+           ip%dy  = rpole(03,iipole)
+           ip%dz  = rpole(04,iipole)
+           ip%qxx = rpole(05,iipole)
+           ip%qxy = rpole(06,iipole)
+           ip%qxz = rpole(07,iipole)
+           ip%qyy = rpole(09,iipole)
+           ip%qyz = rpole(10,iipole)
+           ip%qzz = rpole(13,iipole)
+
+           kp%c   = rpole(01, kpole)
+           kp%dx  = rpole(02, kpole)
+           kp%dy  = rpole(03, kpole)
+           kp%dz  = rpole(04, kpole)
+           kp%qxx = rpole(05, kpole)
+           kp%qxy = rpole(06, kpole)
+           kp%qxz = rpole(07, kpole)
+           kp%qyy = rpole(09, kpole)
+           kp%qyz = rpole(10, kpole)
+           kp%qzz = rpole(13, kpole)
+
+           thole1 = thole(kpole)
+           damp   = pdi * pdamp(kpole)
+           pgamma = min( pti,thole1 )
+
+           call efld0_couple(d2,pos,ip,kp,alsq2,alsq2n,
+     &                aewald,damp,pgamma,dscale,pscale,
+     &                fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.true.)
+
+           if (dscale.ne.0.0_ti_p) then
+              rstat = atomicAdd(ef(1,1,iploc), fid%x)
+              rstat = atomicAdd(ef(2,1,iploc), fid%y)
+              rstat = atomicAdd(ef(3,1,iploc), fid%z)
+              rstat = atomicAdd(ef(1,1,kbis ), fkd%x)
+              rstat = atomicAdd(ef(2,1,kbis ), fkd%y)
+              rstat = atomicAdd(ef(3,1,kbis ), fkd%z)
+           end if
+           if (pscale.ne.0.0_ti_p) then
+              rstat = atomicAdd(ef(1,2,iploc), fip%x)
+              rstat = atomicAdd(ef(2,2,iploc), fip%y)
+              rstat = atomicAdd(ef(3,2,iploc), fip%z)
+              rstat = atomicAdd(ef(1,2,kbis ), fkp%x)
+              rstat = atomicAdd(ef(2,2,kbis ), fkp%y)
+              rstat = atomicAdd(ef(3,2,kbis ), fkp%z)
+           end if
+           end do
         end subroutine
       end module
 #else

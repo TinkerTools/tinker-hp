@@ -134,17 +134,17 @@ CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
 #  __________________
 ifeq ($(opt), release)
    COMMON       = -Mdalign -fast -g
-   CCOMMON      = -ccbin g++ -std=c++14 -O3 -g
+   CCOMMON      = -std=c++14 -O3 -g
 else ifeq ($(opt), debug+)
    COMMON       = -traceback -O0 -g -C
-   CCOMMON      = -ccbin g++ -std=c++14 -O0 -g
+   CCOMMON      = -std=c++14 -O0 -g
    ifeq ($(arch),$(filter $(arch),device gpu))
      OPTIONS += -DTINKER_DEBUG
    CUOPTIONS += -DTINKER_DEBUG
    endif
 else
    COMMON       = -O0 -g#-rc=${HOME}/localrc
-   CCOMMON      = -ccbin g++ -std=c++14 -O0 -g
+   CCOMMON      = -std=c++14 -O0 -g
 endif
 
 #   Compile flags for target architecture, extracting, inlining, modules, host and device
@@ -156,6 +156,7 @@ endif
 #/
 compute_capability := 60,70
 cuda_version       := 10.1
+cuda_c_compiler    := -ccbin $(RunCXX)
 
 cc_list__          := $(subst $(comma__), ,$(compute_capability))
 acc_cc_flag__      := $(foreach var,$(cc_list__),cc$(var))
@@ -176,7 +177,7 @@ endif
 
 #  Fill flags containers
 #  _____________________
-CUCFLAGS     = $(CUOPTIONS) $(CCOMMON) $(cuda_cc_flag__)
+CUCFLAGS     = $(CUOPTIONS) $(cuda_c_compiler) $(CCOMMON) $(cuda_cc_flag__)
 OPTFLAGS     = -Minline
 
 ifeq ($(prec),$(filter $(prec),mixed m single s))
@@ -189,7 +190,7 @@ endif
 OPTFLAGS += -I$(INC_WRAP)
 
 ifeq ($(NVSHMEM_SUPPORT), 1)
-   CUCFLAGS += -ccbin $(RunCXX) -rdc=true -I$(INC_NVSHMEM)
+   CUCFLAGS += -rdc=true -I$(INC_NVSHMEM)
 endif
 
 ifeq ($(arch),$(filter $(arch),device gpu))
@@ -215,12 +216,12 @@ FFLAGS2      = $(FFLAGS)
 #  _______________
 LIBS         = libtinker.a
 
-LDLIBS       = -lm -L$(LIB_MKL) -L$(LIB_FFTDECOMP) -L$(LIB_CPP)
+LDLIBS       = -lm -L$(LIB_MKL) -L$(LIB_FFTDECOMP) -L $(LIB_CPP)
 #CULIBS       = -Mcudalib=cufft,cublas,curand -lcuda -lcudafor -lcudafor2 -lcudafor91 -lcusparse -lcudaforwrapblas -lcudadevice
 CULIBS       = -Mcudalib=curand,cufft,cublas -Mcuda=$(acc_cc_flag__) -lcusolver
 
 ifeq ($(findstring NVTX, $(OPTIONS)),NVTX)
-   CULIBS += -lnvToolExt
+   CULIBS += -lnvToolsExt
 endif
 
 CULIBS += -L$(LIB_WRAP)
@@ -546,6 +547,7 @@ lattice.o: pmestuffcu.o MOD_utilcu.o
 lattice.o: lattice.f
 	$(RunF77) $(GPUFLAGS) -c $<
 nblistgpu.o: nblistcu.o
+efld0_directgpu.o: tmatxb_pmecu.o
 tmatxb_pmegpu.o: tmatxb_pmecu.o
 pmestuffgpu.o: pmestuffcu.o
 endif

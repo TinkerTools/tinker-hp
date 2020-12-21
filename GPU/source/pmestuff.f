@@ -1880,6 +1880,15 @@ c
               end if
             end do
           end do
+
+          if ( rank.eq.0.and.tinkerdebug.gt.0 ) then
+              write(*,*) 'nrec_send      = ',nrec_send
+              write(*,*) 'nrec_recep     = ',nrec_recep
+              write(*,*) 'nrecdir_send   = ',nrecdir_send
+              write(*,*) 'nrecdir_send1  = ',nrecdir_send1
+              write(*,*) 'nrecdir_recep  = ',nrec_recep
+              write(*,*) 'nrecdir_recep1 = ',nrecdir_recep1
+          end if
 !$acc update device(prec_send,prec_recep) async
 !$acc update device(nrec_send) async
 c

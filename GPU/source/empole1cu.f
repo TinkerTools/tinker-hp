@@ -24,6 +24,15 @@ c
 #include "midpointimage.f.inc"
 #include "pair_mpole1.f.inc"
 
+        M_subroutine mdyn3r_zr(r3)
+        type(mdyn3_r),intent(out)::r3
+        r3%x=0;r3%y=0;r3%z=0;
+        end subroutine
+        M_subroutine real3_zr(r3)
+        type(real3),intent(out)::r3
+        r3%x=0;r3%y=0;r3%z=0;
+        end subroutine
+
         attributes(global) subroutine emreal1c_core_cu
      &        ( ipole, pglob, loc, ieblst, eblst
      &        , npolelocnlb, npolelocnlb_pair, npolebloc, n
@@ -798,6 +807,223 @@ c
            istat = atomicAdd(nem_buff(location), nem_)
         end do
 
+        end subroutine
+
+        attributes(global) subroutine emreal_scaling_cu
+     &            (mcorrect_ik,mcorrect_scale,ipole,loc,locp,x,y,z,rpole
+     &            ,dem,tem,em_buff,vir_buff
+     &            ,n,nbloc,n_mscale,extract
+     &            ,off2,f,aewald,alsq2,alsq2n)
+        implicit none
+        integer  ,value,intent(in):: n,nbloc,n_mscale
+        logical  ,value,intent(in):: extract
+        real(t_p),value,intent(in):: f,aewald,alsq2n,alsq2,off2
+        integer  ,device,intent(in)::mcorrect_ik(n_mscale,2)
+     &           ,loc(n),locp(n),ipole(n)
+        real(t_p),device,intent(in):: x(n),y(n),z(n),rpole(13,n)
+     &           ,mcorrect_scale(n_mscale)
+        real(t_p),device,intent(inout)::tem(3,*)
+     &           ,vir_buff(6*RED_BUFF_SIZE)
+        ener_rtyp,device,intent(inout)::em_buff(RED_BUFF_SIZE)
+        mdyn_rtyp,device,intent(inout)::dem(3,nbloc)
+        integer   i,j,k,iglob,kglob,kbis,ithread
+        integer   ii,kk,iipole,kkpole,lot
+        ener_rtyp e
+        real(t_p) r2,rstat
+        real(t_p) xr,yr,zr
+        type(rpole_elt) ip,kp
+        type(mdyn3_r) frc_r
+        type(real3) ttmi,ttmk,frc
+        real(t_p) mscale
+
+        ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
+        do ii = ithread, n_mscale, blockDim%x*gridDim%x
+           iipole = mcorrect_ik(ii,1)
+           kkpole = mcorrect_ik(ii,2)
+           mscale = mcorrect_scale(ii)
+           iglob  = ipole(iipole)
+           kglob  = ipole(kkpole)
+           i      = loc(iglob)
+           kbis   = loc(kglob)
+
+           xr     = x(kglob) - x(iglob)
+           yr     = y(kglob) - y(iglob)
+           zr     = z(kglob) - z(iglob)
+           call image_inl(xr,yr,zr)
+           r2     = xr*xr + yr*yr + zr*zr
+           if (r2.gt.off2) cycle       !apply cutoff
+
+           ip%c   = rpole(01,iipole)
+           ip%dx  = rpole(02,iipole)
+           ip%dy  = rpole(03,iipole)
+           ip%dz  = rpole(04,iipole)
+           ip%qxx = rpole(05,iipole)
+           ip%qxy = rpole(06,iipole)
+           ip%qxz = rpole(07,iipole)
+           ip%qyy = rpole(09,iipole)
+           ip%qyz = rpole(10,iipole)
+           ip%qzz = rpole(13,iipole)
+           kp%c   = rpole(01,kkpole)
+           kp%dx  = rpole(02,kkpole)
+           kp%dy  = rpole(03,kkpole)
+           kp%dz  = rpole(04,kkpole)
+           kp%qxx = rpole(05,kkpole)
+           kp%qxy = rpole(06,kkpole)
+           kp%qxz = rpole(07,kkpole)
+           kp%qyy = rpole(09,kkpole)
+           kp%qyz = rpole(10,kkpole)
+           kp%qzz = rpole(13,kkpole)
+
+c          mscale = 0.0
+c20        continue
+           e = 0
+           call mdyn3r_zr(frc_r)
+           call  real3_zr(ttmi)
+           call  real3_zr(ttmk)
+           ! compute mpole one interaction
+           call mpole1_couple(r2,xr,yr,zr,ip,kp,mscale,
+     &                        aewald,f,alsq2n,alsq2,
+     &                        e,frc,frc_r,ttmi,ttmk,.true.)
+
+           lot   = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
+           ! update energy
+           rstat = atomicAdd( em_buff(lot), e )
+           ! increment the virial due to pairwise Cartesian forces c
+           rstat = atomicAdd(vir_buff(0*RED_BUFF_SIZE+lot),-xr*frc%x)
+           rstat = atomicAdd(vir_buff(1*RED_BUFF_SIZE+lot),-yr*frc%x)
+           rstat = atomicAdd(vir_buff(2*RED_BUFF_SIZE+lot),-zr*frc%x)
+           rstat = atomicAdd(vir_buff(3*RED_BUFF_SIZE+lot),-yr*frc%y)
+           rstat = atomicAdd(vir_buff(4*RED_BUFF_SIZE+lot),-zr*frc%y)
+           rstat = atomicAdd(vir_buff(5*RED_BUFF_SIZE+lot),-zr*frc%z)
+           ! increment force-based gradient and torque on first site
+           rstat = atomicAdd( dem(1,i)    ,-frc_r%x )
+           rstat = atomicAdd( dem(2,i)    ,-frc_r%y )
+           rstat = atomicAdd( dem(3,i)    ,-frc_r%z )
+           rstat = atomicAdd( dem(1,kbis) , frc_r%x )
+           rstat = atomicAdd( dem(2,kbis) , frc_r%y )
+           rstat = atomicAdd( dem(3,kbis) , frc_r%z )
+           ! increment force-based gradient and torque on second site
+           if (extract) then
+              i      = locp(iglob)
+              kbis   = locp(kglob)
+           end if
+           rstat = atomicAdd( tem(1,i)    , ttmi%x )
+           rstat = atomicAdd( tem(2,i)    , ttmi%y )
+           rstat = atomicAdd( tem(3,i)    , ttmi%z )
+           rstat = atomicAdd( tem(1,kbis) , ttmk%x )
+           rstat = atomicAdd( tem(2,kbis) , ttmk%y )
+           rstat = atomicAdd( tem(3,kbis) , ttmk%z )
+
+        end do
+        end subroutine
+
+        attributes(global) subroutine emrealShLg_scaling_cu
+     &            (mcorrect_ik,mcorrect_scale,ipole,loc,locp,x,y,z,rpole
+     &            ,dem,tem,em_buff,vir_buff
+     &            ,n,nbloc,n_mscale,mode,extract
+     &            ,r_cut,sh_cut2,off2,shortheal,f,aewald,alsq2,alsq2n)
+        implicit none
+        integer  ,value,intent(in):: n,nbloc,n_mscale,mode
+        logical  ,value,intent(in):: extract
+        real(t_p),value,intent(in):: f,aewald,alsq2n,alsq2,r_cut
+     &           ,sh_cut2,off2,shortheal
+        integer  ,device,intent(in)::mcorrect_ik(n_mscale,2),ipole(n)
+     &           ,loc(n),locp(n)
+        real(t_p),device,intent(in):: x(n),y(n),z(n),rpole(13,n)
+     &           ,mcorrect_scale(n_mscale)
+        real(t_p),device,intent(inout)::tem(3,*)
+     &           ,vir_buff(RED_BUFF_SIZE)
+        ener_rtyp,device,intent(inout)::em_buff(RED_BUFF_SIZE)
+        mdyn_rtyp,device,intent(inout)::dem(3,nbloc)
+        integer   i,j,k,iglob,kglob,kbis,ithread
+        integer   ii,kk,iipole,kkpole,lot
+        ener_rtyp e
+        real(t_p) r2,rstat
+        real(t_p) xr,yr,zr
+        type(rpole_elt) ip,kp
+        type(mdyn3_r) frc_r
+        type(real3) ttmi,ttmk,frc
+        real(t_p) mscale
+
+        ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
+        do ii = ithread, n_mscale, blockDim%x*gridDim%x
+           iipole = mcorrect_ik(ii,1)
+           kkpole = mcorrect_ik(ii,2)
+           mscale = mcorrect_scale(ii)
+           iglob  = ipole(iipole)
+           kglob  = ipole(kkpole)
+           i      = loc(iglob)
+           kbis   = loc(kglob)
+
+           xr     = x(kglob) - x(iglob)
+           yr     = y(kglob) - y(iglob)
+           zr     = z(kglob) - z(iglob)
+           call image_inl(xr,yr,zr)
+           r2     = xr*xr + yr*yr + zr*zr
+           if (sh_cut2.gt.r2.or.r2.gt.off2) cycle  !apply cutoff
+
+           ip%c   = rpole(01,iipole)
+           ip%dx  = rpole(02,iipole)
+           ip%dy  = rpole(03,iipole)
+           ip%dz  = rpole(04,iipole)
+           ip%qxx = rpole(05,iipole)
+           ip%qxy = rpole(06,iipole)
+           ip%qxz = rpole(07,iipole)
+           ip%qyy = rpole(09,iipole)
+           ip%qyz = rpole(10,iipole)
+           ip%qzz = rpole(13,iipole)
+           kp%c   = rpole(01,kkpole)
+           kp%dx  = rpole(02,kkpole)
+           kp%dy  = rpole(03,kkpole)
+           kp%dz  = rpole(04,kkpole)
+           kp%qxx = rpole(05,kkpole)
+           kp%qxy = rpole(06,kkpole)
+           kp%qxz = rpole(07,kkpole)
+           kp%qyy = rpole(09,kkpole)
+           kp%qyz = rpole(10,kkpole)
+           kp%qzz = rpole(13,kkpole)
+
+c          mscale = 0.0
+c20        continue
+           e = 0
+           call mdyn3r_zr(frc_r)
+           call  real3_zr(ttmi)
+           call  real3_zr(ttmk)
+           ! compute mpole one interaction
+           call mpole1_couple_shortlong(r2,xr,yr,zr,ip,kp,mscale,
+     &                     r_cut,shortheal,aewald,f,alsq2n,alsq2,
+     &                         e,frc,frc_r,ttmi,ttmk,.true.,mode)
+
+           ! update energy
+           lot   = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
+           rstat = atomicAdd( em_buff(lot), e )
+           ! increment the virial due to pairwise Cartesian forces c
+           rstat = atomicAdd(vir_buff(0*RED_BUFF_SIZE+lot),-xr*frc%x)
+           rstat = atomicAdd(vir_buff(1*RED_BUFF_SIZE+lot),-yr*frc%x)
+           rstat = atomicAdd(vir_buff(2*RED_BUFF_SIZE+lot),-zr*frc%x)
+           rstat = atomicAdd(vir_buff(3*RED_BUFF_SIZE+lot),-yr*frc%y)
+           rstat = atomicAdd(vir_buff(4*RED_BUFF_SIZE+lot),-zr*frc%y)
+           rstat = atomicAdd(vir_buff(5*RED_BUFF_SIZE+lot),-zr*frc%z)
+           ! increment force-based gradient and torque on first site
+           rstat = atomicAdd( dem(1,i)    ,-frc_r%x )
+           rstat = atomicAdd( dem(2,i)    ,-frc_r%y )
+           rstat = atomicAdd( dem(3,i)    ,-frc_r%z )
+           rstat = atomicAdd( dem(1,kbis) , frc_r%x )
+           rstat = atomicAdd( dem(2,kbis) , frc_r%y )
+           rstat = atomicAdd( dem(3,kbis) , frc_r%z )
+           ! increment force-based gradient and torque on second site
+           if (extract) then
+              i      = locp(iglob)
+              kbis   = locp(kglob)
+           end if
+           rstat = atomicAdd( tem(1,i)    , ttmi%x )
+           rstat = atomicAdd( tem(2,i)    , ttmi%y )
+           rstat = atomicAdd( tem(3,i)    , ttmi%z )
+           rstat = atomicAdd( tem(1,kbis) , ttmk%x )
+           rstat = atomicAdd( tem(2,kbis) , ttmk%y )
+           rstat = atomicAdd( tem(3,kbis) , ttmk%z )
+
+        end do
         end subroutine
 
       end module

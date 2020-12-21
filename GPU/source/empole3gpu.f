@@ -417,7 +417,7 @@ c
       use ewald  ,only:aewald
       use inform ,only:deb_Path
       use interfaces,only: emreal3_correct_interactions_shortlong
-     &              ,long_mode,short_mode
+     &              ,m_long,m_short
       use math   ,only:sqrtpi
       !use mpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
@@ -466,14 +466,14 @@ c
       ! Configure data to be use in next loop
       if (use_mpoleshortreal) then
          call switch('SHORTEWALD')
-         mode  = short_mode
+         mode  = m_short
          r_cut = off
          mpoleshortcut2 = 0.0_ti_p
           lst =>  shortelst
          nlst => nshortelst
       else
          call switch('EWALD     ')
-         mode  = long_mode
+         mode  = m_long
          r_cut = mpoleshortcut
          mpoleshortcut2 = (mpoleshortcut-shortheal)**2
           lst =>  elst
@@ -696,7 +696,7 @@ c
       use ewald  ,only:aewald
       use inform ,only:deb_Path
       use interfaces,only: emreal_correct_interactions_shortlong
-     &              ,long_mode,short_mode
+     &              ,m_long,m_short
       use math   ,only:sqrtpi
       !use mpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
@@ -759,12 +759,12 @@ c
 
       if (use_mpoleshortreal) then
          call switch('SHORTEWALD')
-         mode = short_mode
+         mode = m_short
          mpoleshortcut2 = 0.0_ti_p
          r_cut = off
       else if (use_mpolelong) then
          call switch('EWALD     ')
-         mode = long_mode
+         mode = m_long
          mpoleshortcut2 = (mpoleshortcut-shortheal)**2
          r_cut = mpoleshortcut
       end if
@@ -950,7 +950,7 @@ c
       use energi ,only:em=>em_r
       use ewald  ,only:aewald
       use inform ,only: deb_Path
-      use interfaces ,only:long_mode,short_mode
+      use interfaces ,only:m_long,m_short
       use math   ,only:sqrtpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
@@ -986,11 +986,11 @@ c
 
       if (use_mpoleshortreal) then
          mpoleshortcut2 = 0.0_ti_p
-         mode  = short_mode
+         mode  = m_short
          r_cut = off
       else if (use_mpolelong) then
          mpoleshortcut2 = (mpoleshortcut-shortheal)**2
-         mode  = long_mode
+         mode  = m_long
          r_cut = mpoleshortcut
       else
          write(*,*) 'unknown mode for '

@@ -87,7 +87,7 @@ c
      &            eljshortlong1_couple(rik2,xr,yr,zr,rv,eps,cut2
      &                  ,off,shortheal,c0,c1,c2,c3,c4,c5,e,ded,mode)
 !$acc routine
-        use interfaces,only: long_mode
+        use interfaces,only: m_long
         use tinheader ,only: ti_p,re_p
         use tintypes  ,only: real3
 #if defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
@@ -110,7 +110,7 @@ c
 c     use energy switching if near the cutoff distance
 c
         call switch_respa_inl(rik,off,shortheal,s,ds)
-        if (mode.eq.long_mode) then
+        if (mode.eq.m_long) then
            e  = (1-s)*e
            de = -e*ds-s*de
 c

@@ -15,7 +15,9 @@ jend2,jsize2,kstart2,kend2,ksize2,nx,ny,nz,comm_loc,ngrid1,ngrid2)
 use decomp_2d
 use decomp_2d_fft
 use fft      ,only: in, out, is_fftInit
+use mpi
 use tinMemory,only: s_cufft
+use sizes    ,only: tinkerdebug
 #ifdef _OPENACC
 use utilgpu  ,only: rec_queue,dir_queue
 use decomp_2d_cufft
@@ -74,6 +76,24 @@ call init_cufft_engine
 s_cufft = decomp2d_cufftGetSize()
 #endif
 is_fftInit = .true.
+
+if (tinkerdebug.gt.0) then
+   if (rank_bis.eq.0) write(*,*) '--- fft_setup'
+   do i = 0,nrec-1
+      if (rank_bis.eq.i) then
+13       format(I4,'in ',6I8)
+         write(*,13) i, xstart(1),xend(1),xstart(2),xend(2),xstart(3),xend(3)
+      end if
+      call MPI_Barrier(comm_loc,k)
+   end do
+   do i = 0,nrec-1
+      if (rank_bis.eq.i) then
+14       format(I4,'out',6I8)
+         write(*,14) i, zstart(1),zend(1),zstart(2),zend(2),zstart(3),zend(3)
+      end if
+      call MPI_Barrier(comm_loc,k)
+   end do
+end if
 end
 !
 !
