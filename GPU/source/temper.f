@@ -57,13 +57,13 @@ c
       real(r_p) kt,rate,trial
       logical,save::f_in=.true.
 c
+      call timer_enter( timer_other )
       if (.not. isothermal)  goto 10
       if (f_in) then
          f_in=.false.
 !$acc enter data create(pick1,c,d,pick,scale)
       end if
 c
-      call timer_enter( timer_other )
       if (thermostat .eq. 'BERENDSEN' .or.
      &    thermostat .eq. 'BUSSI'     .or.
      &    thermostat .eq. 'ANDERSEN' ) then
@@ -196,10 +196,10 @@ c
 c
 c     recompute kinetic energy and instantaneous temperature
 c
+  10  continue
       call kineticgpu ( eksum,ekin,temp )
       call timer_exit ( timer_other,quiet_timers )
 
-  10  continue
       end
 c
 c
