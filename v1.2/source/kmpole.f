@@ -55,8 +55,8 @@ c
       character*8 axt
       character*16 blank,pt
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init
 c
       if (init) then
@@ -105,7 +105,7 @@ c
            call upcase (keyword)
            if (keyword(1:10) .eq. 'MULTIPOLE ') then
               k = 0
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=10,end=10)  k,kz,kx,ky,mpl(1)
               goto 40
    10         continue
@@ -173,7 +173,7 @@ c
               do j = 1, 13
                  mpl(j) = 0.0d0
               end do
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=70,end=70)  k,kz,kx,ky,mpl(1)
               goto 100
    70         continue
@@ -252,7 +252,7 @@ c
             emtp1 = 0.0d0
             emtp2 = 0.0d0
             emtp3 = 0.0d0
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=220,end=220) ia,emtp1,emtp2,emtp3
             if (ia.ne.0) then
               sibfacp(1,ia) = emtp1
@@ -486,7 +486,7 @@ c
               do j = 1, 13
                  mpl(j) = 0.0d0
               end do
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=150,end=150)  k,kz,kx,ky,mpl(1)
               goto 180
   150         continue

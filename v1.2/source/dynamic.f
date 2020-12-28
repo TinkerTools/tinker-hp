@@ -43,8 +43,8 @@ c
       real*8 dt,dtdump,time0,time1,timestep
       logical exist,query
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
 c
 c
  1000 Format(' Time for 100 Steps: ',f15.4,/,
@@ -100,7 +100,7 @@ c
          record = keyline(i)
          call gettext (record,keyword,next)
          call upcase (keyword)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:11) .eq. 'INTEGRATOR ') then
             call getword (record,integrate,next)
             call upcase (integrate)

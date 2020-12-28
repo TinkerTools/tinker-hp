@@ -33,9 +33,9 @@ c
       logical exist,opened
       logical quit,reorder
       logical clash
-      character*120 xyzfile
-      character*120 record
-      character*120 string
+      character*240 xyzfile
+      character*240 record
+      character*240 string
 c
 c
 c     initialize the total number of atoms in the system
@@ -67,7 +67,7 @@ c
       size = 0
       do while (size .eq. 0)
          read (ixyz,20,err=70,end=70)  record
-   20    format (a120)
+   20    format (a240)
          size = trimtext (record)
       end do
       abort = .false.
@@ -121,7 +121,7 @@ c
 c
 c     extract the title and determine its length
 c
-      string = record(next:120)
+      string = record(next:240)
       first = nexttext (string)
       last = trimtext (string)
       if (last .eq. 0) then
@@ -167,12 +167,12 @@ c
          size = 0
          do while (size .eq. 0)
             read (ixyz,50,err=70,end=70)  record
-   50       format (a120)
+   50       format (a240)
             size = trimtext (record)
          end do
          read (record,*,err=70,end=70)  tag(i)
          call getword (record,name(i),next)
-         string = record(next:120)
+         string = record(next:240)
          read (string,*,err=60,end=60)  x(i),y(i),z(i),type(i),
      &                                  (i12(j,i),j=1,maxvalue)
    60    continue

@@ -50,8 +50,8 @@ c
       logical intermol
       character*1 letter
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init,docompute
       real*8 xa,ya,za,xb,yb,zb
       real*8 pos(3,4)
@@ -91,7 +91,7 @@ c
            record = keyline(i)
            call gettext (record,keyword,next)
            call upcase (keyword)
-           string = record(next:120)
+           string = record(next:240)
 c
 c       get atom restrained to a specified position range
 c
@@ -126,7 +126,7 @@ c              end do
               else
                  call upcase (letter)
                  read (string,*,err=20,end=20)  ip
-                 string = string(next:120)
+                 string = string(next:240)
                  read (string,*,err=20,end=20)  p1,p2,p3
    20            continue
                  if (p2 .eq. 0.0d0)  p2 = 100.0d0

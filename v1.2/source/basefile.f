@@ -20,7 +20,7 @@ c
       implicit none
       integer i,k,trimtext
       character*1 letter
-      character*120 string
+      character*240 string
 c
 c
 c     store the input filename and find its full length

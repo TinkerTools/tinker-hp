@@ -55,9 +55,9 @@ c
       logical exist
       character*7 ext
       character*20 keyword
-      character*120 dynfile
-      character*120 record
-      character*120 string
+      character*240 dynfile
+      character*240 record
+      character*240 string
 c
 c     set default parameters for the dynamics trajectory
 c
@@ -105,7 +105,7 @@ c
          record = keyline(i)
          call gettext (record,keyword,next)
          call upcase (keyword)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:11) .eq. 'INTEGRATOR ') then
             call getword (record,integrate,next)
             call upcase (integrate)
@@ -196,7 +196,7 @@ c
          record = keyline(i)
          call gettext (record,keyword,next)
          call upcase (keyword)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:7) .eq. 'DSHORT ') then
             read (string,*,err=20,end=20) dshort
          else if (keyword(1:7) .eq. 'DINTER ') then

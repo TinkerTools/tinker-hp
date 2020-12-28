@@ -634,7 +634,7 @@ c
    40    format (/,' First & Last Frame and Step Increment',
      &              ' for Trajectory A :  ',$)
          read (input,50)  record
-   50    format (a120)
+   50    format (a240)
          read (record,*,err=60,end=60)  starta,stopa,stepa
    60    continue
       end if
@@ -663,7 +663,7 @@ c
    80    format (/,' First & Last Frame and Step Increment',
      &              ' for Trajectory B :  ',$)
          read (input,90)  record
-   90    format (a120)
+   90    format (a240)
          read (record,*,err=100,end=100)  startb,stopb,stepb
   100    continue
       end if

@@ -33,8 +33,8 @@ c     subroutine optsave (ncycle,f,xx)
       real*8 xx(*)
       logical exist
       character*7 ext
-      character*120 optfile
-      character*120 endfile
+      character*240 optfile
+      character*240 endfile
 c
 c
 c     nothing to do if coordinate type is undefined

@@ -51,8 +51,8 @@ c
       character*4 pa,pb
       character*8 blank,pt
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init
 c
       blank = '        '
@@ -77,7 +77,7 @@ c
                  rd = rad(k)
                  ep = eps(k)
                  rdn = reduct(k)
-                 string = record(next:120)
+                 string = record(next:240)
                  read (string,*,err=10,end=10)  rd,ep,rdn
    10            continue
                  if (header .and. .not.silent) then
@@ -123,7 +123,7 @@ c
               if (k.ge.1 .and. k.le.maxclass) then
                  rd = rad4(k)
                  ep = eps4(k)
-                 string = record(next:120)
+                 string = record(next:240)
                  read (string,*,err=60,end=60)  rd,ep
    60            continue
                  if (header .and. .not.silent) then
@@ -170,7 +170,7 @@ c
               ib = 0
               rd = 0.0d0
               ep = 0.0d0
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=150,end=150)  ia,ib,rd,ep
               if (header .and. .not.silent) then
                  header = .false.
@@ -229,7 +229,7 @@ c
               ib = 0
               rd = 0.0d0
               ep = 0.0d0
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=200,end=200)  ia,ib,rd,ep
               if (header .and. .not.silent) then
                  header = .false.

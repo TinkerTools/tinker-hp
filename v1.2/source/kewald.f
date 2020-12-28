@@ -38,8 +38,8 @@ c
       integer iproc,ierr
       real*8 delta,rmax,dens
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
 c
 c     allocate global arrays
 c
@@ -98,7 +98,7 @@ c
          next = 1
          call upcase (record)
          call gettext (record,keyword,next)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:12) .eq. 'EWALD-ALPHA ') then
             read (string,*,err=20)  aewald
          else if (keyword(1:15) .eq. 'EWALD-BOUNDARY ') then

@@ -27,8 +27,8 @@ c
       real*8 big,value
       logical truncate
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
 c
 c
 c     set defaults for spherical energy cutoff distances
@@ -82,7 +82,7 @@ c
          record = keyline(i)
          call gettext (record,keyword,next)
          call upcase (keyword)
-         string = record(next:120)
+         string = record(next:240)
 c
 c     get values related to use of Ewald summation
 c
@@ -149,7 +149,7 @@ c
          record = keyline(i)
          call upcase (record)
          call gettext (record,keyword,next)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:15) .eq. 'DD-CUTOFF ') then
             read (string,*,err=100,end=100)  ddcut
             if (rank.eq.0) write(iout,1000) ddcut

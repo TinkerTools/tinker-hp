@@ -18,6 +18,6 @@ c
       use sizes
       implicit none
       integer nkey
-      character*120 keyline(maxkey)
+      character*240 keyline(maxkey)
       save
       end
