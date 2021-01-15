@@ -256,6 +256,7 @@ c
       do i = 1, nkey
          keyline(i) = keys0(i)
       end do
+      call lattice
       call ddpme3d
       call reassignpme(.true.)
       call reinitnl(0)
@@ -285,6 +286,10 @@ c
          vola(i) = volbox
          call readxyz (iarc)
          if (n.eq.0) cycle
+c
+c        the box shape can change between frames
+c
+         call lattice
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)
@@ -306,6 +311,7 @@ c
       do i = 1, nkey
          keyline(i) = keys1(i)
       end do
+      call lattice
       call ddpme3d
       call reassignpme(.true.)
       call reinitnl(0)
@@ -336,6 +342,10 @@ c
          end if
          call readxyz (iarc)
          if (n.eq.0) cycle
+c
+c        the box shape can change between frames
+c
+         call lattice
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)
@@ -358,6 +368,7 @@ c
       do i = 1, nkey
          keyline(i) = keys0(i)
       end do
+      call lattice
       call ddpme3d
       call reassignpme(.true.)
       call reinitnl(0)
@@ -387,6 +398,10 @@ c
          volb(i) = volbox
          call readxyz (iarc)
          if (n.eq.0) cycle
+c
+c        the box shape can change between frames
+c
+         call lattice
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)
@@ -408,6 +423,7 @@ c
       do i = 1, nkey
          keyline(i) = keys1(i)
       end do
+      call lattice
       call ddpme3d
       call reassignpme(.true.)
       call reinitnl(0)
@@ -438,6 +454,10 @@ c
          end if
          call readxyz (iarc)
          if (n.eq.0) cycle
+c
+c        the box shape can change between frames
+c
+         call lattice
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)

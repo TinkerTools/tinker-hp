@@ -17,6 +17,8 @@ c
       subroutine prtxyz (ixyz)
       use atmtyp
       use atoms
+      use bound
+      use boxes
       use couple
       use files
       use inform
@@ -77,6 +79,13 @@ c
       else
          fstr = '('//atmc//',2x,a)'
          write (ixyz,fstr(1:9))  n,title(1:ltitle)
+      end if
+c
+c     write out the periodic cell lengths and angles
+c
+      if (use_bounds) then
+         fstr = '(1x,6f'//crdc//'.'//digc//')'
+         write (ixyz,fstr)  xbox,ybox,zbox,alpha,beta,gamma
       end if
 c
 c     write out the coordinate line for each atom

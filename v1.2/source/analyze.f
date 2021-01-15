@@ -111,6 +111,10 @@ c
    90         format (/,' Analysis for Archive Structure :',8x,i8)
            end if
 c
+c        the box shape can change between frames
+c
+         call lattice
+c
 c       setup for MPI
 c
          call ddpme3d
