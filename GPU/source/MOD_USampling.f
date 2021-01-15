@@ -24,7 +24,7 @@ c
       subroutine init_USampling(nproc,arg)
       implicit none
       integer,intent(in) :: nproc
-      character(len=120) :: arg(0:20)
+      character(len=240) :: arg(0:20)
       integer s_size, iwrite, iunit, freeunit
       real(r_p) dtdump
 

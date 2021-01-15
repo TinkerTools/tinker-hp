@@ -17,6 +17,6 @@ c
       module titles
       implicit none
       integer ltitle
-      character*120 title
+      character*240 title
       save
       end

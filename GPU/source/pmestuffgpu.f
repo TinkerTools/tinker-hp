@@ -1624,7 +1624,9 @@ c
       end subroutine
 
       subroutine fphi_mpole_sitecu
+      use atoms
       use atmlst
+      use boxes
       use domdec
       use fft
       use mpole
@@ -1645,11 +1647,11 @@ c
         rankloc  = rank
       end if
       kstat = kstart1(rankloc+1)
-      ked  = kend1   (rankloc+1)
+      ked   = kend1  (rankloc+1)
       jstat = jstart1(rankloc+1)
-      jed  = jend1   (rankloc+1)
+      jed   = jend1  (rankloc+1)
       istat = istart1(rankloc+1)
-      ied  = iend1   (rankloc+1)
+      ied   = iend1  (rankloc+1)
 
       if (first_in) then
          call cudaMaxgridsize("fphi_mpole_core",gS)
@@ -1657,12 +1659,11 @@ c
       end if
       call set_PME_texture
 
-!$acc host_data use_device(polerecglob,igrid,fphirec)
+!$acc host_data use_device(polerecglob,ipole,igrid,fphirec)
       call fphi_mpole_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
      &     (kstat,ked,jstat,jed,istat,ied,nfft1,nfft2,nfft3
      &     ,npolerecloc,nlocrec,bsorder,nrec_send,nproc
-     &     ,polerecglob,igrid
-     &     ,fphirec)
+     &     ,polerecglob,ipole,igrid,fphirec)
       call check_launch_kernel("fphi_mpole_core")
 !$acc end host_data
 
@@ -1882,7 +1883,7 @@ c
       call fphi_uind_sitecu1_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
      &     (kstat,ked,jstat,jed,istat,ied,nfft1,nfft2,nfft3
      &     ,npolerecloc,nlocrec,bsorder,nrec_send,nproc
-     &     ,polerecglob,igrid,fdip_phi1,fdip_phi2,fdip_sum_phi)
+     &     ,polerecglob,ipole,igrid,fdip_phi1,fdip_phi2,fdip_sum_phi)
       call check_launch_kernel("fphi_uind_sitecu1_core")
 
 !$acc end host_data
@@ -2047,7 +2048,6 @@ c
       use boxes    ,only: recip
       use domdec
       use fft      ,only: kstart1,kend1,istart1,iend1,jstart1,jend1
-      use mpole    ,only: ipole
       use pme      ,only: igrid,qgrid2in_2d,qgridin_2d
      &             ,thetai1,thetai2,thetai3
       use pmestuffcu
@@ -2059,10 +2059,9 @@ c
 
       select case (config)
          case (pmeD)
-!$acc host_data use_device(thetai1,thetai2,thetai3,igrid,ipole
+!$acc host_data use_device(thetai1,thetai2,thetai3,igrid
 !$acc&  ,x,y,z,qgrid2in_2d,qgridin_2d,kstart1,kend1,jstart1,jend1
 !$acc&  ,istart1,iend1,prec_send)
-         ipole_t     => ipole
          x_t         => x
          y_t         => y
          z_t         => z
@@ -2093,7 +2092,6 @@ c
       use boxes    ,only: recip
       use domdec
       use fft      ,only: kstart1,kend1,istart1,iend1,jstart1,jend1
-      use mpole    ,only: ipole
       use pme      ,only: igrid,qgrid2in_2d,qgridin_2d
      &             ,thetai1,thetai2,thetai3
       use pmestuffcu
@@ -2102,10 +2100,9 @@ c
 
 
       if (first_in) then
-!$acc host_data use_device(thetai1,thetai2,thetai3,igrid,ipole
+!$acc host_data use_device(thetai1,thetai2,thetai3,igrid
 !$acc&  ,x,y,z,qgrid2in_2d,qgridin_2d,kstart1,kend1,jstart1,jend1
 !$acc&  ,istart1,iend1,prec_send)
-         ipole_t     => ipole
          x_t         => x
          y_t         => y
          z_t         => z

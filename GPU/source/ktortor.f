@@ -58,8 +58,8 @@ c
       character*4 pa,pb,pc,pd,pe
       character*20 blank
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init
       integer ntortorloc_capture
 c
@@ -89,7 +89,7 @@ c
                  ty(j) = 0.0_ti_p
                  tf(j) = 0.0_ti_p
               end do
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=10,end=10)  ia,ib,ic,id,ie,nx,ny
               nxy = nx * ny
               do j = 1, nxy

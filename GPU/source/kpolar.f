@@ -53,8 +53,8 @@ c
       real(8) m1,m2,m3
       logical header
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init
 c
       if (init) then
@@ -83,7 +83,7 @@ c
                  pg(j) = 0
               end do
               call getnumb (record,k,next)
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=10,end=10) pol,thl,(pg(j),j=1,maxvalue)
    10         continue
               if (k .gt. 0) then
@@ -146,7 +146,7 @@ c
               call getnumb (record,k,next)
               if (k.lt.0 .and. k.ge.-n) then
                  k = -k
-                 string = record(next:120)
+                 string = record(next:240)
                  read (string,*,err=60,end=60)  pol,thl
    60            continue
                  if (header) then

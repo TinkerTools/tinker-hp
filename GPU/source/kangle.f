@@ -46,8 +46,8 @@ c
       character*6 label
       character*12 blank,pt
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
 c
 c
 c     process keywords containing angle bending parameters
@@ -74,7 +74,7 @@ c
             an2 = 0.0_ti_p
             an3 = 0.0_ti_p
             jen = 0
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=10,end=10)  ia,ib,ic,fc,an1,an2,an3
    10       continue
             if (an2.ne.0.0_ti_p .or. an3.ne.0.0_ti_p)  jen = 1
@@ -216,7 +216,7 @@ c
             an1 = 0.0_ti_p
             an2 = 0.0_ti_p
             jen = 0
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=160,end=160)  ia,ib,ic,fc,an1,an2
   160       continue
             if (an2 .ne. 0.0_ti_p)  jen = 1
@@ -282,7 +282,7 @@ c
             fc = 0.0_ti_p
             an = 0.0_ti_p
             pr = 0.0_ti_p
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=240,end=240)  ia,ib,ic,fc,an,pr
   240       continue
             if (.not. silent) then

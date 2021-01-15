@@ -995,7 +995,7 @@ c
       real(t_p) ,intent(inout):: efi(:,:,:)
       integer ierrSync, begin
       integer,save :: gS
-      logical,save :: first_in=.true.,dyn_gS=.false.
+      logical,save :: first_in=.true.,dyn_gS=.true.
       real(t_p) alsq2,alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 
@@ -1046,7 +1046,7 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
 
       else
 
-      if (dyn_gS) gS = npolelocnlb2_pair/12
+      if (dyn_gS) gS = npolelocnlb2_pair/4
       ! Split matvec kernel to ease recovering process in MPI
       sized  = npolelocnlb2_pair/ndec
       start  = (icall-1)*sized + 1

@@ -20,7 +20,8 @@ c
       use analyz
       use atmlst
       use atmtyp
-      use atoms
+      use atoms    ,only: type
+      use atomsMirror
       use bndpot
       use bond
       use bound

@@ -51,7 +51,7 @@ c     *_t texture variable destined to be attached to their target
      &           ,ired,kred,dev,ev_buff,vir_buff
      &           ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &           ,nvdwclass
-     &           ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
+     &           ,c0,c1,c2,c3,c4,c5,cut2,rinv,off2,off,ghal,dhal
      &           ,scexp,vlambda,scalpha,mut
 #ifdef TINKER_DEBUG
      &           ,inter
@@ -62,7 +62,7 @@ c     *_t texture variable destined to be attached to their target
         integer  ,value,intent(in):: nvdwlocnlb_pair,n,nbloc
      &           ,nvdwlocnl,nvdwlocnlb,nvdwclass
         real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
-     &           ,cut2,cut,ghal,dhal,off2,off
+     &           ,cut2,rinv,ghal,dhal,off2,off
      &           ,scexp,vlambda,scalpha
         integer(1),device :: mut(n)
         ener_rtyp,device :: ev_buff(RED_BUFF_SIZE)
@@ -188,7 +188,7 @@ c          redk   = merge (1.0_ti_p,kred(kglob),(kbis.eq.kvloc))
                  eps2  = epsilon (kt_,it)
 
                  call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
-     &                         ,cut2,cut,off,ghal,dhal
+     &                         ,cut2,rinv,off,ghal,dhal
      &                         ,scexp,vlambda,scalpha,mutik
      &                         ,e,dedx,dedy,dedz)
 
@@ -267,7 +267,7 @@ c       end if
      &           ,ired,kred,ev_buff,nev_buff
      &           ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &           ,nvdwclass
-     &           ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
+     &           ,c0,c1,c2,c3,c4,c5,cut2,rinv,off2,off,ghal,dhal
      &           ,scexp,vlambda,scalpha,mut
      &           ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 #ifdef TINKER_DEBUG
@@ -278,7 +278,7 @@ c       end if
         integer  ,value,intent(in):: nvdwlocnlb_pair,n,nbloc
      &           ,nvdwlocnl,nvdwlocnlb,nvdwclass
         real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
-     &           ,cut2,cut,ghal,dhal,off2,off
+     &           ,cut2,rinv,ghal,dhal,off2,off
      &           ,scexp,vlambda,scalpha
         integer(1),device :: mut(n)
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
@@ -418,7 +418,7 @@ c       end if
                  eps2  = epsilon_t (kt_,it)
 
                  call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
-     &                         ,cut2,cut,off,ghal,dhal
+     &                         ,cut2,rinv,off,ghal,dhal
      &                         ,scexp,vlambda,scalpha,mutik
      &                         ,e,dedx,dedy,dedz)
 
@@ -451,7 +451,7 @@ c       end if
      &           ,ired,kred,dev,ev_buff,vir_buff
      &           ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &           ,nvdwclass
-     &           ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
+     &           ,c0,c1,c2,c3,c4,c5,cut2,rinv,off2,off,ghal,dhal
      &           ,scexp,vlambda,scalpha,mut
      &           ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 #ifdef TINKER_DEBUG
@@ -463,7 +463,7 @@ c       end if
         integer  ,value,intent(in):: nvdwlocnlb_pair,n,nbloc
      &           ,nvdwlocnl,nvdwlocnlb,nvdwclass
         real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
-     &           ,cut2,cut,ghal,dhal,off2,off
+     &           ,cut2,rinv,ghal,dhal,off2,off
      &           ,scexp,vlambda,scalpha
         integer(1),device :: mut(n)
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
@@ -625,7 +625,7 @@ c       ninte   = 0
                  eps2  = epsilon_t (kt(klane),it)
 
                  call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
-     &                         ,cut2,cut,off,ghal,dhal
+     &                         ,cut2,rinv,off,ghal,dhal
      &                         ,scexp,vlambda,scalpha,mutik
      &                         ,e,dedx,dedy,dedz)
 
@@ -697,7 +697,7 @@ c     &           ,ivblst,vblst,jvdw,epsilon,radmin
 c     &           ,ired,kred,dev,ev_buff,vir_buff
 c     &           ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
 c     &           ,nvdwclass
-c     &           ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
+c     &           ,c0,c1,c2,c3,c4,c5,cut2,rinv,off2,off,ghal,dhal
 c     &           ,scexp,vlambda,scalpha,mut
 c     &           ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
 c#ifdef TINKER_DEBUG
@@ -709,7 +709,7 @@ c        implicit none
 c        integer  ,value,intent(in):: nvdwlocnlb_pair,n,nbloc
 c     &           ,nvdwlocnl,nvdwlocnlb,nvdwclass
 c        real(t_p),value,intent(in):: c0,c1,c2,c3,c4,c5
-c     &           ,cut2,cut,ghal,dhal,off2,off
+c     &           ,cut2,rinv,ghal,dhal,off2,off
 c     &           ,scexp,vlambda,scalpha
 c        integer(1),device :: mut(n)
 c        real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
@@ -879,7 +879,7 @@ c                 rv2   =  radmin_t (kt(klane),it(iilane))
 c                 eps2  = epsilon_t (kt(klane),it(iilane))
 c
 c                 call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
-c     &                         ,cut2,cut,off,ghal,dhal
+c     &                         ,cut2,rinv,off,ghal,dhal
 c     &                         ,scexp,vlambda,scalpha,mutik
 c     &                         ,e,dedx,dedy,dedz)
 c

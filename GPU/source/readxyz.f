@@ -21,6 +21,8 @@ c
       use atomsMirror,only:xm=>x,ym=>y,zm=>z
      &               ,reCast_position,atomsmirror_init
      &               ,download_position
+      use bound
+      use boxes
       use couple
       use files
       use inform
@@ -38,12 +40,14 @@ c
       integer nexttext
       integer trimtext
       integer, allocatable :: list(:)
+      real*8 :: xlen,ylen,zlen
+      real*8 :: aang,bang,gang
       logical exist,opened
       logical quit,reorder
       logical clash
-      character*120 xyzfile
-      character*120 record
-      character*120 string
+      character*240 xyzfile
+      character*240 record
+      character*240 string
 c
       call timer_enter(timer_io)
 c
@@ -75,8 +79,8 @@ c
       abort = .true.
       size = 0
       do while (size .eq. 0)
-         read (ixyz,20,err=70,end=70)  record
-   20    format (a120)
+         read (ixyz,20,err=80,end=140)  record
+   20    format (a240)
          size = trimtext (record)
       end do
       abort = .false.
@@ -87,7 +91,7 @@ c
       i = 0
       next = 1
       call gettext (record,string,next)
-      read (string,*,err=70,end=70)  n
+      read (string,*,err=80,end=80)  n
 c
 c     allocate global arrays
 c
@@ -132,7 +136,7 @@ c
 c
 c     extract the title and determine its length
 c
-      string = record(next:120)
+      string = record(next:240)
       first = nexttext (string)
       last = trimtext (string)
       if (last .eq. 0) then
@@ -149,11 +153,6 @@ c
          write (iout,30)
    30    format (/,' READXYZ  --  The Coordinate File Does Not',
      &              ' Contain Any Atoms')
-         call fatal
-c      else if (n .gt. maxatm) then
-c         write (iout,40)  maxatm
-c   40    format (/,' READXYZ  --  The Maximum of',i8,' Atoms',
-c     &              ' has been Exceeded')
          call fatal
       end if
 c     nloop help vectorization
@@ -183,21 +182,38 @@ c
          next = 1
          size = 0
          do while (size .eq. 0)
-            read (ixyz,50,err=70,end=70)  record
-   50       format (a120)
+            read (ixyz,50,err=80,end=80)  record
+   50       format (a240)
             size = trimtext (record)
+            if (i .eq. 1) then
+               next = 1
+               call getword (record,name(i),next)
+               if (name(i) .ne. '   ')  goto 60
+               read (record,*,err=60,end=60)  xlen,ylen,zlen,
+     &                                        aang,bang,gang
+               size = 0
+               xbox = xlen
+               ybox = ylen
+               zbox = zlen
+               alpha = aang
+               beta = bang
+               gamma = gang
+               use_bounds = .true.
+c               call lattice
+   60       continue
+            end if
          end do
-         read (record,*,err=70,end=70)  tag(i)
+         read (record,*,err=80,end=80)  tag(i)
          call getword (record,name(i),next)
-         string = record(next:120)
-         read (string,*,err=60,end=60)  xm(i),ym(i),zm(i),type(i),
+         string = record(next:240)
+         read (string,*,err=70,end=70)  xm(i),ym(i),zm(i),type(i),
      &                                  (i12(j,i),j=1,maxvalue)
-   60    continue
+   70    continue
       end do
 !$acc update device(type)
 !$acc update device(xm,ym,zm)
       quit = .false.
-   70 continue
+   80 continue
       if (.not. opened)  close (unit=ixyz)
 
       if (t_p.ne.r_p) then
@@ -209,8 +225,8 @@ c
 c     an error occurred in reading the coordinate file
 c
       if (quit) then
-         write (iout,80)  i
-   80    format (/,' READXYZ  --  Error in Coordinate File at Atom',i6)
+         write (iout,90)  i
+   90    format (/,' READXYZ  --  Error in Coordinate File at Atom',i6)
          call fatal
       end if
 c
@@ -221,10 +237,10 @@ c
          do j = maxvalue, 1, -1
             if (i12(j,i) .ne. 0) then
                n12(i) = j
-               goto 90
+               goto 100
             end if
          end do
-   90    continue
+  100    continue
          call sort (n12(i),i12(1,i))
       end do
 !$acc update device(n12(:))
@@ -248,8 +264,8 @@ c
          if (tag(i) .ne. i)  reorder = .true.
       end do
       if (reorder) then
-         write (iout,100)
-  100    format (/,' READXYZ  --  Atom Labels not Sequential,',
+         write (iout,110)
+  110    format (/,' READXYZ  --  Atom Labels not Sequential,',
      &              ' Attempting to Renumber')
          do i = 1, n
             tag(i) = i
@@ -276,14 +292,18 @@ c
          do j = 1, n12(i)
             k = i12(j,i)
             do m = 1, n12(k)
-               if (i12(m,k) .eq. i)  goto 120
+               if (i12(m,k) .eq. i)  goto 130
             end do
-            write (iout,110)  k,i
-  110       format (/,' READXYZ  --  Check Connection of Atom',
+            write (iout,120)  k,i
+  120       format (/,' READXYZ  --  Check Connection of Atom',
      &                 i6,' to Atom',i6)
             call fatal
-  120       continue
+  130       continue
          end do
       end do
+
+  140 continue
+      if (.not. opened)  close (unit=ixyz)
+
       call timer_exit(timer_io)
       end

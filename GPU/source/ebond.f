@@ -21,7 +21,8 @@ c
 
       subroutine ebond
       use atmlst
-      use atoms
+      use atoms    ,only: type
+      use atomsMirror
       use bndpot
       use bond
       use bound
@@ -31,6 +32,7 @@ c
       use nvshmem
       use tinheader
       use timestat ,only: timer_enter,timer_exit,timer_ebond
+     &             ,quiet_timers
       use usage
       implicit none
       integer i,ia,ib,ibond
@@ -103,5 +105,5 @@ c
             eb = eb + e
          end if
       end do
-      call timer_exit( timer_ebond )
+      call timer_exit( timer_ebond,quiet_timers )
       end

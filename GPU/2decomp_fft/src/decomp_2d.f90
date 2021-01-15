@@ -154,6 +154,9 @@ module decomp_2d
   real(mytype),    allocatable, dimension(:),public :: work1_r, work2_r
   complex(mytype), allocatable, dimension(:),public :: work1_c, work2_c
 
+  procedure(decomp_void),pointer,public:: decomp2d_WhileWait
+  integer,public:: decomp2d_isubwait
+
   ! public user routines
   public :: decomp_2d_init, decomp_2d_finalize, &
        transpose_x_to_y, transpose_y_to_z,      &
@@ -176,7 +179,8 @@ module decomp_2d
 #endif
        alloc_x, alloc_y, alloc_z,    &
        update_halo, decomp_2d_abort, &
-       get_decomp_info
+       get_decomp_info,  &
+       decomp2d_resetIsubwait
 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -424,6 +428,12 @@ contains
     ysize  = decomp_main%ysz
     zsize  = decomp_main%zsz
 !$acc update device(xstart,xend,zstart,zend,xsize,zsize)
+
+    ! Init waiting routine pointer
+    ! We may attach this one to any routine in order to
+    ! recover communications in Decomp2d_mpi_alltoallv
+    nullify(decomp2d_WhileWait)
+    decomp2d_isubwait=1  ! Init recovering counter 
 
 #ifdef SHM_DEBUG
     ! print out shared-memory information
@@ -872,6 +882,11 @@ contains
     
     return
   end subroutine prepare_buffer  
+
+  subroutine decomp_void
+  implicit none
+  ! Do nothing
+  end subroutine
 
 #ifdef SHM
 
@@ -1484,6 +1499,12 @@ contains
        end do
     end if
 
+    ! Call any routine to recover communication
+    if ( associated(decomp2d_WhileWait).and.decomp2d_isubwait.eq.1 ) then
+       call decomp2d_WhileWait
+       decomp2d_isubwait=2
+    end if
+
     !Wait For communication to finish
     do i = 1,n
        send_rank = alltoall_send_pattern(i)
@@ -1496,6 +1517,10 @@ contains
 
   end subroutine
 
+  subroutine decomp2d_resetIsubwait
+  implicit none
+  decomp2d_isubwait=1
+  end subroutine
 
 #include "factor.f90"
 

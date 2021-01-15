@@ -7,7 +7,7 @@
 
         M_subroutine
      &             ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,vscale
-     &                         ,cut2,cut,off,ghal,dhal
+     &                         ,cut2,rinv,off,ghal,dhal
      &                         ,scexp,vlambda,scalpha,mutik
      &                         ,e,dedx,dedy,dedz)
 !$acc routine
@@ -18,14 +18,14 @@
            implicit none
            real(ti_p),intent(in) ::xpos,ypos,zpos,rik2
            real(ti_p) rv2,eps2,vscale
-           real(ti_p),intent(in) ::cut2,cut,off,ghal,dhal
+           real(ti_p),intent(in) ::cut2,rinv,off,ghal,dhal
            real(ti_p),intent(in) ::scexp,vlambda,scalpha
            integer(1),intent(in) ::mutik
            real(ti_p),intent(out)::e
            real(ti_p),intent(out)::dedx,dedy,dedz
 
            integer(1) one1
-           real(ti_p) rik,rinv,r,r2,r3
+           real(ti_p) rik,r,r2,r3
            !real(ti_p) rik3,rik4,rik5,rik6,rik7,rv7,rv7orho
            real(ti_p) dtau,gtau,tau,tau7,de,taper,dtaper
            real(ti_p) rho,rho6,rho7
@@ -97,8 +97,7 @@ c    &                + 3.0 * c3 * rik2
 c    &                + 2.0 * c2 * rik
 c    &                +       c1
 
-              rinv   = (cut - off)**(-1)
-              r      = (rik - off) * rinv
+              r      = (rik - off)*rinv
               r2     = r * r
               r3     = r2 * r
               taper  = r3 * (6*r2 - 15*r + 10)

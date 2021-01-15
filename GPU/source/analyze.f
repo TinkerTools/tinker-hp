@@ -17,9 +17,9 @@ c
       program analyze
       use mpi
       implicit none
-      integer ierr,nthreadsupport
-c      call MPI_INIT(ierr)
-      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
+      integer ierr!,nthreadsupport
+      call MPI_INIT(ierr)
+c      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
       call analyze_bis
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       call MPI_FINALIZE(ierr)
@@ -40,8 +40,8 @@ c
       logical doenergy,dodipoltot,dodipolmol
       logical exist
       character*1 letter
-      character*120 string
-      character*120 xyzfile
+      character*240 string
+      character*240 xyzfile
 c
 c
 c     set up the structure and mechanics calculation
@@ -76,7 +76,7 @@ c
    30    format (/,' Enter the Desired Analysis Types',
      &              ' [E,D,M] :  ',$)
          read (input,40,err=20)  string
-   40    format (a120)
+   40    format (a240)
       end if
 c
 c     set option control flags based desired analysis types
@@ -110,6 +110,10 @@ c
               if (rank.eq.0) write (iout,90)  frame
    90         format (/,' Analysis for Archive Structure :',8x,i8)
            end if
+c
+c        the box shape can change between frames
+c
+         call lattice
 c
 c       setup for MPI
 c
@@ -149,8 +153,6 @@ c     perform any final tasks before program exit
 c
       close (unit=ixyz)
       call final
-!$acc shutdown
-      return
       end
 c
 c
@@ -176,7 +178,7 @@ c
       use molcul
       implicit none
       real(r_p) energy
-      character*120 fstr
+      character*240 fstr
 c
 c
 c     perform the energy analysis by atom and component
@@ -224,7 +226,7 @@ c
       implicit none
       character*12 form1
       character*12 form2
-      character*120 fstr
+      character*240 fstr
 c
 c
 c     write out each energy component to the desired precision
