@@ -57,11 +57,11 @@ c
       integer,parameter::PERIOD_INBOX_ATOMS=500
       logical exist
       character*7 ext
-      character*120 endfile
-      character*120 xyzfile
-      character*120 velfile
-      character*120 frcfile
-      character*120 indfile
+      character*240 endfile
+      character*240 xyzfile
+      character*240 velfile
+      character*240 frcfile
+      character*240 indfile
 c
       moddump = mod(istep,iwrite)
 

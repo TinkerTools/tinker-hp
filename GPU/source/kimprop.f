@@ -47,8 +47,8 @@ c
       integer(8) pt2,pt3
       integer(8) pt(6)
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init
 c
       blank = '                '
@@ -73,7 +73,7 @@ c
               id = 0
               tk = 0.0_ti_p
               tv = 0.0_ti_p
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=10,end=10)  ia,ib,ic,id,tk,tv
    10         continue
               !isize = 4

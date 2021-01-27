@@ -407,8 +407,8 @@ c
       real(r_p) list1(3)
       integer n1,n2,n3,i,res,next
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
  10   format('Nx = ',I5,2x,'Ny = ',I5,2x,'Nz = ',I5,2x)
  11   format('User defined 3D decompostion ','Nx = ',I5,2x,
      $    'Ny = ',I5,2x,'Nz = ',I5,2x)
@@ -424,7 +424,7 @@ c
          record = keyline(i)
          call gettext (record,keyword,next)
          call upcase (keyword)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:9) .eq. 'DECOMP3D ') then
            read (string,*,err=20,end=20)  nxdd,nydd,nzdd
  20        continue

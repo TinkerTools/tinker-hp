@@ -49,8 +49,8 @@ c
       integer(8) pt2,pt3
       integer(8) pt(6)
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init
 c
       if (init) then
@@ -76,7 +76,7 @@ c
                  st(j) = 0.0_ti_p
                  ft(j) = 0
               end do
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=10,end=10)  ia,ib,ic,id,
      &                                       (vt(j),st(j),ft(j),j=1,3)
    10         continue

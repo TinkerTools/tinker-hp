@@ -59,20 +59,17 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         print*, 'vcorr'
-!$acc data  create(elrc,vlrc) async(def_queue)
-!$acc&      present(ev,vir)
-
+!$acc data create(elrc,vlrc) async(def_queue)
          call evcorr1gpu (elrc,vlrc)
-!$acc kernels async(def_queue)
+!$acc serial present(ev,vir,elrc,vlrc) async(def_queue)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
          vir(2,2) = vir(2,2) + vlrc
          vir(3,3) = vir(3,3) + vlrc
-!$acc end kernels
-
+!$acc end serial
 !$acc end data
       end if
+
       end
 c
 c
@@ -129,7 +126,7 @@ c
       real(r_p)  vyy_vdw,vyz_vdw,vzz_vdw
       real(t_p)  xi,yi,zi,redi,e,de
       real(t_p)  rdn,rdn1,redk
-      real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
+      real(t_p)  rik2,rinv
       real(t_p)  dedx,dedy,dedz
       real(r_p)  devx,devy,devz,devt
       real(t_p)  invrho,rv7orho
@@ -197,6 +194,7 @@ c     set the coefficients for the switching function
 c
       mode = 'VDW'
       call switch (mode)
+      rinv = 1.0/(cut-off)
 c
 c     find van der Waals energy and derivatives via neighbor list
 c
@@ -324,7 +322,7 @@ c
             endif
 
             call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,vscale
-     &                       ,cut2,cut,off,ghal,dhal
+     &                       ,cut2,rinv,off,ghal,dhal
      &                       ,scexp,vlambda,scalpha,mutik
      &                       ,e,dedx,dedy,dedz)
             ev    =   ev + e
@@ -445,7 +443,7 @@ c
       logical ik12
       real(t_p) xi,yi,zi,redi,e,de
       real(t_p) rdn,rdn1,redk
-      real(t_p) invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
+      real(t_p) rik2,rinv
       real(t_p) dedx,dedy,dedz
       mdyn_rtyp devx,devy,devz
       real(t_p) invrho,rv7orho
@@ -508,6 +506,7 @@ c     set the coefficients for the switching function
 c
       mode = 'VDW'
       call switch (mode)
+      rinv = 1.0/(cut-off)
 c
 c     find van der Waals energy and derivatives via neighbor list
 c
@@ -573,7 +572,7 @@ c
             eps2 = epsilon (kt,it)
 
             call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
-     &                       ,cut2,cut,off,ghal,dhal
+     &                       ,cut2,rinv,off,ghal,dhal
      &                       ,scexp,vlambda,scalpha,mutik
      &                       ,e,dedx,dedy,dedz)
 
@@ -1155,6 +1154,7 @@ c     end if
       real(r_p)  vxx,vxy,vxz
       real(r_p)  vyy,vyz,vzz
       real(t_p)  rdn,rdn1
+      real(t_p)  rinv
       character*10 mode
 
       call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
@@ -1256,9 +1256,10 @@ c
 c     set the coefficients for the switching function
 c
       !print*, nvdwlocnlb_pair
-      mode = 'VDW'
-      hal_Gs = nvdwlocnlb_pair/4
+      mode   = 'VDW'
       call switch (mode)
+      hal_Gs = nvdwlocnlb_pair/4
+      rinv   = 1.0/(cut-off)
 c!$acc serial loop present(ivblst,vblst)
 c      do i =1,32
 c         print*,ivblst(872970),vblst(lst_start+872969*32+i-1)
@@ -1282,7 +1283,7 @@ c     &             ,epsilon_c,radmin_c,ired,kred,dev
 c     &             ,ered_buff,vred_buff
 c     &             ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
 c     &             ,nvdwclass
-c     &             ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
+c     &             ,c0,c1,c2,c3,c4,c5,cut2,rinv,off2,off,ghal,dhal
 c     &             ,scexp,vlambda,scalpha,mut
 c#ifdef TINKER_DEBUG
 c     &             ,inter
@@ -1311,7 +1312,7 @@ c
      &             ,ered_buff,vred_buff
      &             ,nvdwlocnlb2_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &             ,nvdwclass
-     &             ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
+     &             ,c0,c1,c2,c3,c4,c5,cut2,rinv,off2,off,ghal,dhal
      &             ,scexp,vlambda,scalpha,mut
      &             ,xbeg,xend,ybeg,yend,zbeg,zend
 #ifdef TINKER_DEBUG
@@ -1391,6 +1392,7 @@ c!$acc end data
       real(t_p)  vdwshortcut2
       real(t_p)  xbeg,xend,ybeg,yend,zbeg,zend
       real(t_p)  rdn,rdn1
+      real(t_p)  rinv
       character*10 mode
 
       call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
@@ -1490,6 +1492,7 @@ c
       end if
 
       vdwshortcut2 = (vdwshortcut-shortheal)**2
+c     rinv = 1.0/(cut-off)
 c
 c     Call Vdw kernel in CUDA using C2 nblist
 c
@@ -1655,7 +1658,7 @@ c!$acc end data
       integer(1) muti,mutik
       real(t_p)  xi,yi,zi,redi,e,de
       real(t_p)  rdn,rdn1,redk
-      real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
+      real(t_p)  rik2,rinv
       real(t_p)  dedx,dedy,dedz
       mdyn_rtyp  devx,devy,devz
       real(t_p)  invrho,rv7orho
@@ -1675,6 +1678,7 @@ c!$acc end data
 
       ! Scaling factor correction loop
       if (deb_Path) write(*,*) "ehal1c_correct_scaling"
+      rinv = 1.0/(cut-off)
 
 !$acc parallel loop async(def_queue)
 !$acc&     gang vector
@@ -1729,7 +1733,7 @@ c
          end if
 
          call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,vscale
-     &                    ,cut2,cut,off,ghal,dhal
+     &                    ,cut2,rinv,off,ghal,dhal
      &                    ,scexp,vlambda,scalpha,mutik
      &                    ,e,dedx,dedy,dedz)
 
@@ -1991,7 +1995,7 @@ c
       integer ncell2buffb
       real(t_p) xi,yi,zi,redi,e,de
       real(t_p) rdn,rdn1,redk
-      real(t_p) invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
+      real(t_p) rik2,rinv
       real(t_p) dedx,dedy,dedz
       real(r_p) devx,devy,devz,devt
       real(t_p) invrho,rv7orho
@@ -2034,6 +2038,7 @@ c     set the coefficients for the switching function
 c
       mode = 'SHORTVDW'
       call switch (mode)
+      rinv = 1.0/(cut-off)
 c
 c     apply any reduction factor to the atomic coordinates
 c
@@ -2181,7 +2186,7 @@ c
             eps2 = epsilon (kt,it)
 
             call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
-     &                       ,cut2,cut,off,ghal,dhal
+     &                       ,cut2,rinv,off,ghal,dhal
      &                       ,scexp,vlambda,scalpha,mutik
      &                       ,e,dedx,dedy,dedz)
 
@@ -2315,7 +2320,7 @@ c      call vdw_gradient_reduce
       integer(1) muti,mutik
       real(t_p)  xi,yi,zi,redi,e,de
       real(t_p)  rdn,rdn1,redk
-      real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
+      real(t_p)  rik2,rinv
       real(t_p)  dedx,dedy,dedz
       real(r_p)  devx,devy,devz,devt
       real(t_p)  invrho,rv7orho
@@ -2336,6 +2341,7 @@ c      call vdw_gradient_reduce
 
       ! Scaling factor correction loop
       write(*,*) "searchVdwScaled",n_vscale
+      rinv = 1.0/(cut-off)
 
 !$acc parallel loop async(def_queue)
 !$acc&     gang vector
@@ -2394,7 +2400,7 @@ c
          end if
 
          call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,vscale
-     &                    ,cut2,cut,off,ghal,dhal
+     &                    ,cut2,rinv,off,ghal,dhal
      &                    ,scexp,vlambda,scalpha,mutik
      &                    ,e,dedx,dedy,dedz)
 

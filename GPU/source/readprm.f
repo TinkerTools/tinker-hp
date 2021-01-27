@@ -67,7 +67,7 @@ c
       real(t_p) bt1,bt2,bt3
       real(t_p) an,pr,ds,dk
       real(t_p) vd,cg
-      real(t_p) fc,bd,dl
+      real(r_p) fc,bd,dl
       real(t_p) pt,pol,thl
 
       real(t_p) abc,cba

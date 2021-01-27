@@ -30,10 +30,10 @@ c
       integer omp_get_num_threads
       logical exist,header
       character*20 keyword
-      character*120 keyfile
-      character*120 comment
-      character*120 record
-      character*120 string
+      character*240 keyfile
+      character*240 comment
+      character*240 record
+      character*240 string
 c
 c
 c     check for a keyfile specified on the command line
@@ -84,7 +84,7 @@ c
          rewind (unit=ikey)
          do while (.true.)
             read (ikey,20,err=40,end=40)  record
-   20       format (a120)
+   20       format (a240)
             nkey = nkey + 1
             keyline(nkey) = record
             if (nkey .ge. maxkey) then
@@ -107,7 +107,7 @@ c
          call gettext (record,keyword,next)
          call upcase (keyword)
          if (keyword(1:5) .eq. 'ECHO ') then
-            comment = record(next:120)
+            comment = record(next:240)
             length = trimtext (comment)
             if (header) then
                header = .false.
@@ -131,7 +131,7 @@ c
          record = keyline(i)
          call upcase (record)
          call gettext (record,keyword,next)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:15) .eq. 'OPENMP-THREADS ') then
             read (string,*,err=80,end=80)  nthread
             !call omp_set_num_threads (nthread)
@@ -147,7 +147,7 @@ c
          record = keyline(i)
          call upcase (record)
          call gettext (record,keyword,next)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:15) .eq. 'PME-PROCS ') then
             nrec = 0
             use_pmecore = .true.

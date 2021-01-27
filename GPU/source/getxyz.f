@@ -23,7 +23,7 @@ c
       integer ixyz
       integer freeunit
       logical exist
-      character*120 xyzfile
+      character*240 xyzfile
 c
 c
 c     try to get a filename from the command line arguments
@@ -39,7 +39,7 @@ c     ask for the user specified input structure filename
 c
       do while (.not. exist)
    10    format(/,' Enter Cartesian Coordinate File Name :  ',$)
-   20    format (a120)
+   20    format (a240)
          write (iout,10)
          read (input,20) xyzfile
          call basefile (xyzfile)

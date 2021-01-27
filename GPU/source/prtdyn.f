@@ -30,7 +30,7 @@ c
       logical exist
       character*2 atmc
       character*40 fstr
-      character*120 dynfile
+      character*240 dynfile
 c
       call timer_enter(timer_io)
 c

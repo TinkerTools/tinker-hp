@@ -19,6 +19,8 @@ c
       use atmtyp
       use atoms    ,only: type
       use atomsMirror
+      use bound
+      use boxes
       use couple
       use files
       use inform
@@ -34,7 +36,7 @@ c
       character*2 crdc
       character*2 digc
       character*25 fstr
-      character*120 xyzfile
+      character*240 xyzfile
 c
       call timer_enter(timer_io)
 c
@@ -84,6 +86,13 @@ c
       else
          fstr = '('//atmc//',2x,a)'
          write (ixyz,fstr(1:9))  n,title(1:ltitle)
+      end if
+c
+c     write out the periodic cell lengths and angles
+c
+      if (use_bounds) then
+         fstr = '(1x,6f'//crdc//'.'//digc//')'
+         write (ixyz,fstr)  xbox,ybox,zbox,alpha,beta,gamma
       end if
 c
 c     write out the coordinate line for each atom

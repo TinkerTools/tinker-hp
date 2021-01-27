@@ -53,8 +53,8 @@ c      logical, allocatable :: jopb(:)
       character*8 zero8
       character*16 blank
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init
 c
 c     blank = '                '
@@ -78,7 +78,7 @@ c
               ic = 0
               id = 0
               fopb = 0.0_ti_p
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=10,end=10)  ia,ib,ic,id,fopb
    10         continue
 c             size = 4

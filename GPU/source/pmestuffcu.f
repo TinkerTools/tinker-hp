@@ -32,8 +32,8 @@ c
 #else
         real(t_p),parameter :: pme_eps=1d-8
 #endif
-        integer  ,device, pointer:: ipole_t(:)
-     &           ,igrid_t(:,:),kstart1_t(:),kend1_t(:),jstart1_t(:)
+        integer  ,device, pointer:: igrid_t(:,:)
+     &           ,kstart1_t(:),kend1_t(:),jstart1_t(:)
      &           ,jend1_t(:),istart1_t(:),iend1_t(:)
      &           ,prec_send_t(:)
         real(t_p),device, pointer:: x_t(:),y_t(:),z_t(:)
@@ -556,13 +556,13 @@ c
         attributes(global)  subroutine fphi_mpole_core
      &            (kstat,ked,jstat,jed,istat,ied,nfft1,nfft2,nfft3
      &            ,npolerecloc,nlocrec,order,nrec_send,nproc
-     &            ,polerecglob,igrid
+     &            ,polerecglob,ipole,igrid
      &            ,fphirec)
         implicit none
         integer  ,intent(in),value:: npolerecloc,nlocrec,order
      &           ,nfft1,nfft2,nfft3,nrec_send,nproc
         integer  ,intent(in),value:: kstat,ked,jstat,jed,istat,ied
-        integer  ,intent(in),device::polerecglob(*),igrid(3,*)
+        integer  ,intent(in),device::polerecglob(*),ipole(*),igrid(3,*)
         real(t_p),device::fphirec(20,npolerecloc)
 
         integer istart,iend,jstart,jend,kstart,kend
@@ -592,7 +592,7 @@ c
         do impi = threadIdx%x+(blockIdx%x-1)*blockDim%x,npolerecloc,
      &            blockDim%x*gridDim%x
            iipole = polerecglob(impi)
-           iatm   = ipole_t(iipole)
+           iatm   = ipole(iipole)
 #if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
@@ -857,7 +857,7 @@ c
         do impi = threadIdx%x+(blockIdx%x-1)*blockDim%x,npolerecloc,
      &            blockDim%x*gridDim%x
            iipole = polerecglob(impi)
-           iatm   = ipole_t(iipole)
+           iatm   = ipole(iipole)
 #if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
@@ -1121,7 +1121,7 @@ c
         do impi = threadIdx%x+(blockIdx%x-1)*blockDim%x,npolerecloc,
      &            blockDim%x*gridDim%x
            !iipole = polerecglob(impi)  !no need with one MPI process
-           iatm   = ipole_t(impi)
+           iatm   = ipole(impi)
 #if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
@@ -1293,12 +1293,13 @@ c
         attributes(global) subroutine fphi_uind_sitecu1_core
      &             (kstat,ked,jstat,jed,istat,ied,nfft1,nfft2,nfft3
      &             ,npolerecloc,nlocrec,order,nrec_send,nproc
-     &             ,polerecglob,igrid,fdip_phi1,fdip_phi2,fdip_sum_phi)
+     &             ,polerecglob,ipole,igrid
+     &             ,fdip_phi1,fdip_phi2,fdip_sum_phi)
         implicit none
         integer  ,intent(in),value:: npolerecloc,nlocrec,order
      &           ,nfft1,nfft2,nfft3,nrec_send,nproc
         integer  ,intent(in),value:: kstat,ked,jstat,jed,istat,ied
-        integer  ,intent(in),device::polerecglob(*),igrid(3,*)
+        integer  ,intent(in),device::polerecglob(*),ipole(*),igrid(3,*)
 c       real(t_p),intent(in),device::thetai1(4,order,nlocrec)
 c    &           ,thetai2(4,order,nlocrec),thetai3(4,order,nlocrec)
         real(t_p),device,dimension(10,npolerecloc)::fdip_phi1,fdip_phi2
@@ -1343,7 +1344,7 @@ c
         do impi = threadIdx%x+(blockIdx%x-1)*blockDim%x,npolerecloc,
      &            blockDim%x*gridDim%x
            iipole = polerecglob(impi)
-           iatm   = ipole_t(iipole)
+           iatm   = ipole(iipole)
 #if 1
 c
 c       get the b-spline coefficients for the i-th atomic site

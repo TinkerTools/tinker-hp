@@ -27,8 +27,8 @@ c
       real(t_p) boxmax,rmax
       logical nosymm
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
 c
 c
 c     set the default values for periodic boundary conditions
@@ -58,7 +58,7 @@ c
          record = keyline(i)
          call gettext (record,keyword,next)
          call upcase (keyword)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:7) .eq. 'X-AXIS ') then
             read (string,*,err=10,end=10)  xbox
          else if (keyword(1:7) .eq. 'Y-AXIS ') then

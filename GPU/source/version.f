@@ -27,9 +27,9 @@ c
       logical exist
       character*1 digit(0:9)
       character*3 status
-      character*120 filename
-      character*120 oldfile
-      character*120 newfile
+      character*240 filename
+      character*240 oldfile
+      character*240 newfile
       data digit  / '0','1','2','3','4','5','6','7','8','9' /
 c
 c
@@ -94,7 +94,7 @@ c
                write (iout,'(a)',advance='no')
      &               ' Enter File Name for Coordinate Output :  '
                read (input,20)  filename
-   20          format (a120)
+   20          format (a240)
                inquire (file=filename,exist=exist)
             end do
          end if

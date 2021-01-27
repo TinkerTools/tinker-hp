@@ -22,7 +22,8 @@ c
 
       subroutine ebond1gpu
       use atmlst
-      use atoms
+      use atoms    ,only: type
+      use atomsMirror
       use bndpot
       use bond
       use bound
@@ -39,18 +40,23 @@ c
      &             ,quiet_timers
       use tinheader
       use mamd
-      use potent,only:use_amd_wat1
+      use potent   ,only: use_amd_wat1
       implicit none
       integer i,ia,ib,ialoc,ibloc
       integer iaglob,ibglob
       integer ibond
       integer ia1,ib1,ind,ipe
-      real(t_p) e,de,ideal,force
+      real(t_p) e
+      real(t_p) de
+      real(t_p) ideal,force
       real(t_p) expterm,bde
-      real(t_p) dt,dt2,deddt
+      real(t_p) dt
+      real(t_p) dt2
+      real(t_p) deddt
       real(r_p) dedx,dedy,dedz
-      real(t_p) xab,yab,zab,rab
-      real(t_p) time0,time1
+      real(t_p) rab
+      real(t_p) xab,yab,zab
+      real(r_p) time0,time1
       logical proceed
 !$acc routine(image_acc) seq  
 
@@ -97,7 +103,7 @@ c
             zab = z(ia) - z(ib)
             if (use_polymer)  call image_inl (xab,yab,zab)
             rab = sqrt(xab*xab + yab*yab + zab*zab)
-            dt = rab - ideal
+            dt  = rab - ideal
             if (dt.eq.0.0) cycle
 c
 c     harmonic potential uses Taylor expansion of Morse potential
@@ -171,12 +177,12 @@ c
 c
 c     increment the internal virial tensor components
 c
-            g_vxx = g_vxx + xab * real(dedx,t_p)
-            g_vxy = g_vxy + yab * real(dedx,t_p)
-            g_vxz = g_vxz + zab * real(dedx,t_p)
-            g_vyy = g_vyy + yab * real(dedy,t_p)
-            g_vyz = g_vyz + zab * real(dedy,t_p)
-            g_vzz = g_vzz + zab * real(dedz,t_p)
+            g_vxx = g_vxx + xab*dedx
+            g_vxy = g_vxy + yab*dedx
+            g_vxz = g_vxz + zab*dedx
+            g_vyy = g_vyy + yab*dedy
+            g_vyz = g_vyz + zab*dedy
+            g_vzz = g_vzz + zab*dedz
          end if
       end do
 

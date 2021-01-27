@@ -27,8 +27,8 @@ c
       implicit none
       integer i,idyn,ndyn
       logical exist,opened,quit
-      character*120 dynfile
-      character*120 record
+      character*240 dynfile
+      character*240 record
 c
       call timer_enter(timer_io)
 c
@@ -60,7 +60,7 @@ c
       read (idyn,20)
    20 format ()
       read (idyn,30)  record
-   30 format (a120)
+   30 format (a240)
       read (record,*,err=230,end=230)  ndyn
       if (ndyn .ne. n) then
          write (iout,40)
@@ -74,10 +74,10 @@ c
       read (idyn,50)
    50 format ()
       read (idyn,60)  record
-   60 format (a120)
+   60 format (a240)
       read (record,*,err=230,end=230)  xbox,ybox,zbox
       read (idyn,70)  record
-   70 format (a120)
+   70 format (a240)
       read (record,*,err=230,end=230)  alpha,beta,gamma
       read (idyn,80)
    80 format ()
@@ -92,7 +92,7 @@ c     get the atomic positions, velocities and accelerations
 c
       do i = 1, n
          read (idyn,160)  record
-  160    format (a120)
+  160    format (a240)
          read (record,*,err=230,end=230)  x(i),y(i),z(i)
       end do
 !$acc update device(x(:),y(:),z(:))
@@ -100,7 +100,7 @@ c
   170 format ()
       do i = 1, n
          read (idyn,180)  record
-  180    format (a120)
+  180    format (a240)
          read (record,*,err=230,end=230)  v(1,i),v(2,i),v(3,i)
       end do
 !$acc update device(v)
@@ -108,7 +108,7 @@ c
   190 format ()
       do i = 1, n
          read (idyn,200)  record
-  200    format (a120)
+  200    format (a240)
          read (record,*,err=230,end=230)  a(1,i),a(2,i),a(3,i)
       end do
 !$acc update device(a)
@@ -116,7 +116,7 @@ c
   210 format ()
       do i = 1, n
          read (idyn,220)  record
-  220    format (a120)
+  220    format (a240)
          read (record,*,err=230,end=230)  aalt(1,i),aalt(2,i),
      &                                    aalt(3,i)
       end do
@@ -125,7 +125,7 @@ c      read (idyn,230)
 c  230 format ()
 c      do i = 1, n
 c         read (idyn,240)  record
-c  240    format (a120)
+c  240    format (a240)
 c         read (record,*,err=250,end=250)  aalt2(1,i),aalt2(2,i),
 c     &                                    aalt2(3,i)
 c      end do

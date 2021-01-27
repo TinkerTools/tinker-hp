@@ -39,8 +39,8 @@ c
       real(t_p) fa,faa,aak(3)
       logical header
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       logical init
 c
       if (init) then
@@ -59,7 +59,7 @@ c
               do j = 1, 3
                  aak(j) = 0.0_ti_p
               end do
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=10,end=10)  it,(aak(j),j=1,3)
    10         continue
               if (.not. silent) then

@@ -63,8 +63,8 @@ c
       character*4 zeros
       character*16 blank
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
       parameter(zero=0)
       logical init
 c
@@ -89,7 +89,7 @@ c
               bt1 = 0.0_ti_p
               bt2 = 0.0_ti_p
               bt3 = 0.0_ti_p
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=10,end=10)  ia,ib,ic,id,bt1,bt2,bt3
    10         continue
               if (.not. silent) then

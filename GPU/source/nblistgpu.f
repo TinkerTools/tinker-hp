@@ -753,15 +753,16 @@ c
       use bound
       use cell
       use domdec
-      use inform ,only: deb_Path
+      use inform    ,only: deb_Path
       use nblistgpu_inl
       use neigh
       use mpi
       use tinheader
       use tinMemory ,only:prmem_request
-      use utilgpu,only: nSMP, cores_SMP,
-     &                  openacc_abort,rec_queue
-      use sizes  ,only: tinkerdebug
+      use utilgpu   ,only: nSMP, cores_SMP
+     &              , openacc_abort,rec_queue
+      use utils     ,only: set_to_zero1_int8
+      use sizes     ,only: tinkerdebug
       implicit none
       integer i,proc,icell,j,k,p,q,r,istep,iglob,ii,kk
       integer count,iloc
@@ -773,6 +774,7 @@ c
       integer temi_x,temi_y,temi_z
       integer nx_cell2,ny_cell2,nz_cell2
       integer xw,yw,zw
+      integer box1,box2,box2i,setb,setbi
       integer icell_len,imageCell,distImage2Cell
       integer temp,numneig,numneig_cap,tempcell
       real(t_p) xmin,xmax,ymin,ymax,zmin,zmax
@@ -793,6 +795,8 @@ c
       logical docompute
 !$acc routine(fatal_acc)
 c
+      if (deb_Path) write(*,'(2x,a)') 'build_cell_listgpu'
+
       mbuf = sqrt(mbuf2)
       vbuf = sqrt(vbuf2)
       !FIXME over buffer on vbuf when done
@@ -823,8 +827,6 @@ c
       else
         bigbuf = vbuf/ncell2buffb
       end if
-
-      if (deb_Path) write(*,'(2x,a)') 'build_cell_listgpu'
 c
       lenx       = abs(xmax-xmin)
       nx_cell    = max(2*ncell2buffb+1,int(lenx/(bigbuf)))
@@ -937,18 +939,28 @@ c
 c     Find neighbor cells for octahedron
 c
       if (octahedron) then
+
+c
+c     Build Octahedron Adjacency matrix on cells
+c
+      szMatb  = ((ncell_tot-1)/bit_si) + 1
+      nbMatb  = max(1,ncell_tot)
+      call prmem_request (matb_lst,szMatb*nbMatb,async=.true.)
+      call set_to_zero1_int8(matb_lst(1),int(szMatb,8)*nbMatb,
+     &     rec_queue)
+
       ! loop on every cell
 !$acc parallel loop async(rec_queue) private(locat)
 !$acc&         vector_length(32)
-!$acc&         present(neigcell,numneigcell)
+!$acc&         present(matb_lst,neigcell,numneigcell)
       do ii = 1,ncell_tot
          k  = (ii-1)/(nx_cell*ny_cell)
          j  = (ii-1 - ((ii-1)/(nx_cell*ny_cell))*(nx_cell*ny_cell))
      &        /nx_cell
          i  = mod(ii-1,nx_cell)
          locat = 0
+         numneigcell(ii) = 0
          if (cell_len(ii).eq.0) then
-            numneigcell(ii) = 0
             cycle
          end if
 
@@ -999,16 +1011,18 @@ c
                   far2Zbox   =(abs(cellXmax)+abs(cellYmax)+abs(cellZmax)
      &                         .le.box34)
 
+                  ! Find (tempcell,ii) location in matb_lst
+                  box1 = (ii-1)*szMatb
+                  box2 = box1 + ishft(tempcell-1,-bit_sh) + 1
+                  setb = ishft( 1, iand(tempcell-1,bit_si-1) )
+
                   ! Find neighbor cell attributes
                   if (close2Zbox.and.far2Zbox) then !Inside box
                      ! Avoid ii cell
                      if (p==0.and.q==0.and.r==0) cycle
                      !if (cell_len(tempcell).eq.0) cycle !might be useful with MPI
-!$acc atomic capture
-                     locat = locat+1
-                     count = locat
-!$acc end atomic
-                     neigcell(count,ii) = tempcell
+!$acc atomic
+                     matb_lst(box2) = ior( matb_lst(box2),setb )
                   else if (close2Zbox.and..not.far2Zbox) then !Partially inside box
                      imageCell = imageOutCellOcta(temp_x,temp_y,temp_z
      &                              ,nx_cell2,ny_cell2,nz_cell2,nx_cell
@@ -1016,29 +1030,32 @@ c
                      ! Max Distance between imageCell and cell i
                      distImage2Cell = max(abs(temp_x-i),
      &                                max(abs(temp_y-j),abs(temp_z-k)))
+
+                     ! Find (imageCell,ii) location in matb_lst
+                     box2i = box1 + ishft(imageCell-1,-bit_sh) + 1
+                     setbi = ishft( 1, iand(imageCell-1,bit_si-1) )
+
                      ! Avoid ii cell, only add his image
                      if (p==0.and.q==0.and.r==0.and.
      &                   distImage2Cell>ncell2buffb) then
-!$acc atomic capture
-                        locat = locat+1
-                        count = locat
-!$acc end atomic
-                        neigcell(count  ,ii) = imageCell
+!$acc atomic
+                        matb_lst(box2i) = ior( matb_lst(box2i),setbi )
                      else if (distImage2Cell>ncell2buffb) then
-!$acc atomic capture
-                        locat = locat+2
-                        count = locat
-!$acc end atomic
-                        !if (cell_len(tempcell).eq.0) cycle !!! Pay attention to 'locat'
-                        neigcell(count-1,ii) = tempcell
-                        neigcell(count  ,ii) = imageCell
+c!$acc atomic capture
+c                        locat = locat+2
+c                        count = locat
+c!$acc end atomic
+c                        !if (cell_len(tempcell).eq.0) cycle !!! Pay attention to 'locat'
+c                        neigcell(count-1,ii) = tempcell
+c                        neigcell(count  ,ii) = imageCell
+!$acc atomic
+                        matb_lst(box2 ) = ior( matb_lst(box2 ),setb  )
+!$acc atomic
+                        matb_lst(box2i) = ior( matb_lst(box2i),setbi )
                      else
-!$acc atomic capture
-                        locat = locat+1
-                        count = locat
-!$acc end atomic
                         !if (cell_len(tempcell).eq.0) cycle
-                        neigcell(count,ii) = tempcell
+!$acc atomic
+                        matb_lst(box2 ) = ior( matb_lst(box2 ),setb  )
                      end if
                   else if (.not.close2Zbox.and..not.far2Zbox) then !Outside box
                      !if (cell_len(imageCell).eq.0) cycle !Might be useful with MPI
@@ -1048,13 +1065,15 @@ c
                      ! Max Distance between imageCell and cell i
                      distImage2Cell = max(abs(temp_x-i),
      &                                max(abs(temp_y-j),abs(temp_z-k)))
+
+                     ! Find (imageCell,ii) location in matb_lst
+                     box2i = box1 + ishft(imageCell-1,-bit_sh) + 1
+                     setbi = ishft( 1, iand(imageCell-1,bit_si-1) )
+
                      if (cell_len(imageCell).eq.0.or.
      &                   distImage2Cell<ncell2buffb+1) cycle
-!$acc atomic capture
-                     locat = locat+1
-                     count = locat
-!$acc end atomic
-                     neigcell(count,ii) = imageCell
+!$acc atomic
+                     matb_lst(box2i) = ior( matb_lst(box2i),setbi )
                   else           ! Absurd
                      print*,':build_cell_listgpu'
                      print*,tempcell,ii,close2Zbox,far2Zbox
@@ -1070,9 +1089,26 @@ c
             print*,'build_cell_listgpu: max neighbor cell reached'
             call fatal_acc
          end if
-         numneigcell(ii) = locat
+         !numneigcell(ii) = locat
       end do
-
+c
+c     From Adjacency matrix to neighbor cells list
+c
+!$acc parallel loop gang vector collapse(2) async(rec_queue)
+!$acc&         present(matb_lst,neigcell,numneigcell) private(locat)
+      do i = 1, ncell_tot
+         do j = 0, ncell_tot-1
+            box2 = ishft( j,-bit_sh ) + 1
+            setb = iand ( j,bit_si-1 )
+            if (btest( matb_lst((i-1)*szMatb+box2),setb )) then
+!$acc atomic capture
+               numneigcell(i) = numneigcell(i) + 1
+               count = numneigcell(i)
+!$acc end atomic
+               neigcell(count,i) = j+1
+            end if
+         end do
+      end do
 c     print*, 'num neighbor box',nx_cell,ny_cell,nz_cell,
 c    &        num_neigcell
 c     do i = 1,ncell_tot
@@ -1627,7 +1663,7 @@ c     xend = xendproc(rank+1)
       lenz_cell = abs(zmax-zmin)/nz_cell
       nxy_cell  = nx_cell*ny_cell
 
-      nblock  = ((nlocnl-1)/BLOCK_SIZE) + 1
+      nblock    = ((nlocnl-1)/BLOCK_SIZE) + 1
 
       call prmem_request (matb_lst,szMatb*nbMatb,async=.true.)
       call prmem_request (cell_lenr,nblock,async=.true.)
@@ -2003,7 +2039,7 @@ c
             end if
          end do
       end do
-      ! Non working reduction with pgi-20
+      ! Non blocking reduction with pgi-20
 
 !$acc parallel loop async(rec_queue) present(cell_len)
       do it1 = 1,nbMatb

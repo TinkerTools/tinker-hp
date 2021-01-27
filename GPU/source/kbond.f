@@ -37,15 +37,16 @@ c
       integer size,next
       integer minat,iring
       integer d_size
-      real(t_p) fc,bd,ierr
+      integer ierr
+      real(r_p) fc,bd
       logical header,done
       logical use_ring
       character*4 pa,pb
       character*6 label
       character*8 blank,pt
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
 c
 c     process keywords containing bond stretch parameters
 c
@@ -67,7 +68,7 @@ c
             ib = 0
             fc = 0.0_ti_p
             bd = 0.0_ti_p
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=10,end=10)  ia,ib,fc,bd
    10       continue
             if (.not. silent) then
@@ -356,14 +357,14 @@ c
       integer ia,ib,ic,id
       integer ita,itb,itc,itd
       integer size,next
-      real(t_p) dl,factor
+      real(r_p) dl,factor
       logical header
       character*4 pa,pb,pc,pd
       character*12 blank
       character*12 pt,pt1,pt2
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
 c
 c
 c     process keywords containing electronegativity parameters
@@ -380,7 +381,7 @@ c
             ib = 0
             ic = 0
             dl = 0.0
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=10,end=10)  ia,ib,ic,dl
    10       continue
             if (.not. silent) then
@@ -552,8 +553,8 @@ c
       real(t_p) rad0a,rad0b
       logical header,done
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
 c
 c
 c     get single bonds that could be double (MMFF bond type=1)
@@ -568,7 +569,7 @@ c
             do j = 1, 20
                list(j) = 0
             end do
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=10,end=10)  (list(j),j=1,20)
    10       continue
             do j = 1, 20, 2

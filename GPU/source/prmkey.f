@@ -40,9 +40,9 @@ c
       integer next
       character*4 value
       character*25 keyword
-      character*120 text
-      character*120 record
-      character*120 string
+      character*240 text
+      character*240 record
+      character*240 string
 c
 c
 c     parse the line to extract any possible keyword
@@ -51,7 +51,7 @@ c
       next = 1
       call upcase (record)
       call gettext (record,keyword,next)
-      string = record(next:120)
+      string = record(next:240)
 c
 c     select the individual force field potential terms
 c

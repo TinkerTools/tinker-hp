@@ -60,20 +60,24 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-#ifdef _OPENACC
-         print*, 'Long range vaw der Waals correction is unavailable'
-         call fatal
-#endif
+!$acc data create(elrc) async
          call evcorr (elrc)
+!$acc serial async present(ev,elrc)
          ev = ev + elrc
-         aelrc = elrc / real(n,r_p)
-         do i = 1, nbloc
-            aev(i) = aev(i) + aelrc
-         end do
-         if (verbose .and. elrc.ne.0.0_ti_p) then
-            write (iout,10)  elrc
-   10       format (/,' Long Range vdw Correction :',9x,f12.4)
+!$acc end serial
+c        aelrc = elrc / real(n,r_p)
+c        do i = 1, nbloc
+c           aev(i) = aev(i) + aelrc
+c        end do
+         if (rank.eq.0.and.verbose) then
+!$acc update host(elrc) async
+!$acc wait
+            if (elrc.ne.0.0_ti_p) then
+               write (iout,10)  elrc
+   10          format (/,' Long Range vdw Correction :',9x,f12.4)
+            end if
          end if
+!$acc end data
       end if
       end
 c
@@ -128,7 +132,7 @@ cold  use analyz    ,only: aev
       integer in12,ai12(maxvalue)
       real(t_p)  xi,yi,zi,redi,e,de
       real(t_p)  rdn,rdn1,redk
-      real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
+      real(t_p)  rik2,rinv
       real(t_p)  dedx,dedy,dedz
       real(r_p)  devx,devy,devz,devt
       real(t_p)  invrho,rv7orho
@@ -180,11 +184,13 @@ c     set the coefficients for the switching function
 c
       mode = 'VDW'
       call switch (mode)
+      rinv = 1.0/(cut-off)
 c
 c     find van der Waals energy and derivatives via neighbor list
 c
 !$acc parallel loop gang vector_length(32)
-!$acc&         private(ai12) async(def_queue)
+!$acc&         private(ai12) reduction(+:nev_,ev)
+!$acc&         async(def_queue)
       MAINLOOP:
      &do ii = 1, nvdwlocnl
          iivdw = vdwglobnl(ii)
@@ -209,7 +215,7 @@ c
             end do
          end if
 
-!$acc loop vector 
+!$acc loop vector reduction(+:nev_,ev) 
          do k = 1, nnvlst
             kglob  = vlst(k,ii)
             kbis   = loc (kglob)
@@ -246,7 +252,7 @@ c
             eps2 = epsilon (kt,it)
 
             call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,1.0_ti_p
-     &                       ,cut2,cut,off,ghal,dhal
+     &                       ,cut2,rinv,off,ghal,dhal
      &                       ,scexp,vlambda,scalpha,mutik
      &                       ,e,dedx,dedy,dedz)
 
@@ -261,7 +267,7 @@ c
       call ehal3c_correct_scaling(xred,yred,zred)
 
 !$acc serial async(def_queue)
-      nev = int(nev_)
+      nev = nev + int(nev_)
 !$acc end serial
 
 !$acc end data
@@ -308,7 +314,7 @@ cold  use analyz    ,only: aev
       real(t_p)  vdwshortcut2
       real(t_p)  xi,yi,zi,redi,e,de
       real(t_p)  rdn,rdn1,redk
-      real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
+      real(t_p)  rik2,rinv
       real(t_p)  dedx,dedy,dedz
       real(r_p)  devx,devy,devz,devt
       real(t_p)  invrho,rv7orho
@@ -508,6 +514,7 @@ c
       integer ierrSync,lst_start
       real(t_p)  xbeg,xend,ybeg,yend,zbeg,zend
       real(t_p)  rdn,rdn1
+      real(t_p)  rinv
       character*10 mode
 
       call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
@@ -585,7 +592,7 @@ c
       !print*, nvdwlocnlb_pair
       mode = 'VDW'
       call switch (mode)
-
+      rinv = 1.0/(cut-off)
 c
 c     Call Vdw kernel in CUDA using C2 nblist
 c
@@ -601,7 +608,7 @@ c
      &             ,ered_buff,nred_buff
      &             ,nvdwlocnlb2_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &             ,nvdwclass
-     &             ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
+     &             ,c0,c1,c2,c3,c4,c5,cut2,rinv,off2,off,ghal,dhal
      &             ,scexp,vlambda,scalpha,mut
      &             ,xbeg,xend,ybeg,yend,zbeg,zend
      &             )
@@ -809,7 +816,7 @@ c
 
       subroutine ehal3c_correct_scaling(xred,yred,zred)
 
-      use action    ,only: nev
+      use action    ,only: nev,nev_
       use atmlst    ,only: vdwglobnl
       use domdec    ,only: loc,rank
       use ehal3gpu_inl
@@ -832,7 +839,7 @@ c
       integer interac
       real(t_p)  xi,yi,zi,redi,e,de
       real(t_p)  rdn,rdn1,redk
-      real(t_p)  invrik,rik,rik2,rik3,rik4,rik5,rik6,rik7
+      real(t_p)  rik2,rinv
       real(t_p)  dedx,dedy,dedz
       real(r_p)  devx,devy,devz,devt
       real(t_p)  invrho,rv7orho
@@ -853,12 +860,14 @@ c
       if (deb_Path)
      &   write(*,'(2x,a)') "ehal0c_correct_scaling"
 
+      rinv = 1.0/(cut-off)
+
 !$acc parallel loop async(def_queue)
 !$acc&     gang vector
 !$acc&     present(xred,yred,zred)
 !$acc&     present(loc,ired,kred,ivdw,loc,jvdw,radmin,
 !$acc&  radmin4,epsilon,epsilon4,vcorrect_ik,vcorrect_scale)
-!$acc&     present(ev)
+!$acc&     present(ev,nev)
       do ii = 1,n_vscale
          iglob  = vcorrect_ik(ii,1)
          kglob  = vcorrect_ik(ii,2)
@@ -909,12 +918,13 @@ c
          end if
 
          call ehal1_couple(xpos,ypos,zpos,rik2,rv2,eps2,vscale
-     &                    ,cut2,cut,off,ghal,dhal
+     &                    ,cut2,rinv,off,ghal,dhal
      &                    ,scexp,vlambda,scalpha,mutik
      &                    ,e,dedx,dedy,dedz)
 
          if (.not.do_scale4) then
          e    = -e
+         if (vscale.eq.1) nev=nev-1
          end if
 
          ev           =   ev + tp2enr(e)

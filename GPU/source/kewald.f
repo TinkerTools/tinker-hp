@@ -42,8 +42,8 @@ c
       real(r_p) delta,dens
       real(t_p) rmax
       character*20 keyword
-      character*120 record
-      character*120 string
+      character*240 record
+      character*240 string
  100  format('2d parallel FFT grid : ','Ngrid1 = ',I5,2x,'Ngrid2 = ',I5)
 
       parameter(!PME grid size must be even with factors of only 2, 3 and 5
@@ -105,7 +105,7 @@ c
          next = 1
          call upcase (record)
          call gettext (record,keyword,next)
-         string = record(next:120)
+         string = record(next:240)
          if (keyword(1:12) .eq. 'EWALD-ALPHA ') then
             read (string,*,err=20)  aewald
          else if (keyword(1:15) .eq. 'EWALD-BOUNDARY ') then

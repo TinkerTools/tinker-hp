@@ -495,12 +495,16 @@ c    &                 + dett (j,i) + deg  (j,i)
 !$acc wait
 !$acc update host(des,etot)
       iunit = freeunit()
-#ifdef SINGLE
+#if TINKER_SINGLE_PREC
       Ffile = trim(arg(1))//"_fs.txt"
-#elif defined(MIXED)
+#elif TINKER_MIXED_PREC
+#  ifdef USE_DETERMINISTIC_REDUCTION
+      Ffile = trim(arg(1))//"_ff.txt"
+#  else
       Ffile = trim(arg(1))//"_fm.txt"
+#  endif
 #else
-      Ffile = trim(arg(1))//"_f.txt"
+      Ffile = trim(arg(1))//"_fd.txt"
 #endif
       call version(Ffile,'new')
       open( unit=iunit,file=Ffile,status='new' )

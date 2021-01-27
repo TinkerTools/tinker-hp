@@ -24,14 +24,17 @@ c
       use sizes
       use bound
       use boxes
+      use domdec   ,only:rank
       use math
       use shunt
+      use inform   ,only:deb_path
       use tinheader,only:ti_p
       use vdw
       use vdwpot
       implicit none
       integer i,j,k,it,kt
       integer nstep,ndelta
+      integer vdwtyp_i
       real(t_p) zero,one,two
       real(r_p) elrc,etot
       real(t_p) range,rdelta
@@ -39,67 +42,81 @@ c
       real(t_p) e,eps
       real(t_p) offset,taper
       real(t_p) rv,rv2,rv6,rv7
-      real(t_p) r,r2,r3,r4
+      real(t_p) r,r2,r3,r4,rc
       real(t_p) r5,r6,r7
       real(t_p) p,p6,p12
+      real(t_p) t1,t2,ri
       real(t_p) rho,tau,tau7
       character*10 mode
+      enum,bind(C)
+      enumerator LENNARD_JONES,BUFFERED_14_7
+      end enum
       parameter(zero=0.0_ti_p,  one=1.0_ti_p,
      &           two=2.0_ti_p)
 c
 c
 c     zero out the long range van der Waals correction
 c
+!$acc serial async present(elrc)
       elrc = 0
+!$acc end serial
 c
 c     only applicable if periodic boundaries are in use
+c     second test prevent over-compute
 c
-      if (.not. use_bounds)  return
+      if (.not.use_bounds.or.rank.ne.0)  return
+      if (deb_path) write(*,12) nvt
+ 12   format(3x,'evcorr',3x,'(nvt:',I8,')')
 c
 c     set the coefficients for the switching function
 c
       mode = 'VDW'
       call switch (mode)
+      if (vdwtyp.eq.'LENNARD-JONES') then
+         vdwtyp_i=LENNARD_JONES
+      else if (vdwtyp.eq.'BUFFERED-14-7') then
+         vdwtyp_i=BUFFERED_14_7
+      else
+         return
+      end if
 c
 c     set number of steps and range for numerical integration
 c
-      nstep = 2
-      range = 100.0_ti_p
+      nstep  = 2
+      range  = 100.0_ti_p
       ndelta = int(real(nstep,t_p)*(range-cut))
       rdelta = (range-cut) / real(ndelta,t_p)
       offset = cut - 0.5_ti_p*rdelta
+      rc     = 1.0/(cut-off)
 c
 c     find the van der Waals energy via double loop search
 c
-      elrc = zero
+!$acc parallel loop collapse(2) async
+!$acc&         present(ivt,jvt,radmin,epsilon,elrc)
       do i = 1, nvt
-         it = ivt(i)
-         termi = two * pi * real(jvt(i),t_p)
          do k = 1, nvt
-            kt = ivt(k)
+            it     = ivt(i)
+            termi  = two * pi * real(jvt(i),t_p)
+            kt     = ivt(k)
             termik = termi * real(jvt(k),t_p)
-            rv = radmin(kt,it)
-            eps = epsilon(kt,it)
-            rv2 = rv * rv
-            rv6 = rv2 * rv2 * rv2
-            rv7 = rv6 * rv
-            etot = zero
+            rv     = radmin (kt,it)
+            eps    = epsilon(kt,it)
+            rv2    = rv * rv
+            rv6    = rv2 * rv2 * rv2
+            rv7    = rv6 * rv
+            etot   = zero
+!$acc loop seq
             do j = 1, ndelta
-               r = offset + real(j,t_p)*rdelta
-               r2 = r * r
-               r3 = r2 * r
-               r6 = r3 * r3
-               r7 = r6 * r
-               e = zero
-               if (vdwtyp .eq. 'LENNARD-JONES') then
-                  p6 = rv6 / r6
-                  p12 = p6 * p6
-                  e = eps * (p12 - two*p6)
-               else if (vdwtyp .eq. 'BUFFERED-14-7') then
-               rho = r7 + ghal*rv7
-               tau = (dhal+one) / (r+dhal*rv)
-               tau7 = tau**7
-               e = eps * rv7 * tau7 * ((ghal+one)*rv7/rho-two)
+               r  = offset + real(j,t_p)*rdelta
+               e  = zero
+               if (vdwtyp_i .eq. LENNARD_JONES) then
+                  p6  = (rv / r)**6
+                  e   = eps * (p6 - two)*p6
+               else if (vdwtyp_i .eq. BUFFERED_14_7) then
+               rho  = r/rv
+               t1   = ((1.0_ti_p+dhal) / (rho+dhal))**7
+               t2   =  (1.0_ti_p+ghal) * ((rho**7+ghal)**(-1))
+               e    = eps * t1 * (t2-2.0_ti_p)
 c               else if (vdwtyp.eq.'BUCKINGHAM' .or.
 c     &                  vdwtyp.eq.'MM3-HBOND') then
 c                  p = sqrt(rv2/r2)
@@ -108,18 +125,19 @@ c                  expterm = abuck * exp(-bbuck/p)
 c                  e = eps * (expterm - cbuck*p6)
                end if
                if (r .lt. off) then
-                  r4 = r2 * r2
-                  r5 = r2 * r3
-                  taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
-                  e = e * (one-taper)
+                  ri    = (r-off)*rc
+                  r2    = ri*ri
+                  taper = r2*ri*(6*r2 - 15*ri + 10)
+                  e     = e * (one - taper)
                end if
-               etot = etot + e*rdelta*r2
+               etot = etot + e*rdelta*r*r
             end do
             elrc = elrc + termik*etot
          end do
       end do
+!$acc serial async present(elrc)
       elrc = elrc / volbox
-      return
+!$acc end serial
       end
 c
 c
@@ -143,6 +161,8 @@ c
       use sizes
       use bound
       use boxes
+      use domdec   ,only:rank
+      use inform   ,only:deb_path
       use math
       use shunt
       use tinheader ,only: ti_p
@@ -178,7 +198,7 @@ c
 c
 c     only applicable if periodic boundaries are in use
 c
-      if (.not. use_bounds)  return
+      if (.not. use_bounds.or.rank.ne.0)  return
 c
 c     set the coefficients for the switching function
 c
@@ -209,18 +229,18 @@ c
             etot = zero
             vtot = zero
             do j = 1, ndelta
-               r = offset + real(j,t_p)*rdelta
+               r  = offset + real(j,t_p)*rdelta
                r2 = r * r
                r3 = r2 * r
                r6 = r3 * r3
                r7 = r6 * r
-               e = zero
+               e  = zero
                de = zero
                if (vdwtyp .eq. 'LENNARD-JONES') then
-                  p6 = rv6 / r6
+                  p6  = rv6 / r6
                   p12 = p6 * p6
-                  e = eps * (p12 - two*p6)
-                  de = eps * (p12-p6) * (-12.0_ti_p/r)
+                  e   = eps * (p12 - two*p6)
+                  de  = eps * (p12-p6) * (-12.0_ti_p/r)
                else if (vdwtyp .eq. 'BUFFERED-14-7') then
               rho = r7 + ghal*rv7
               tau = (dhal+one) / (r+dhal*rv)
@@ -243,9 +263,9 @@ c                  de = eps * (rvterm*expterm+6.0_ti_p*cbuck*p6/r)
                   r5 = r2 * r3
                   taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
                   dtaper = 5.0_ti_p*c5*r4 + 4.0_ti_p*c4*r3
-     &                        + 3.0_ti_p*c3*r2 + two*c2*r + c1
+     &                   + 3.0_ti_p*c3*r2 + two*c2*r + c1
                   de = de*(one-taper) - e*dtaper
-                  e = e*(one-taper)
+                  e  = e*(one-taper)
                end if
                etot = etot + e*rdelta*r2
                vtot = vtot + de*rdelta*r3
@@ -259,12 +279,14 @@ c                  de = eps * (rvterm*expterm+6.0_ti_p*cbuck*p6/r)
       return
       end
 c
-c
+c     Device version of evcorr1
 c
       subroutine evcorr1gpu (elrc,vlrc)
       use sizes
       use bound
       use boxes
+      use domdec    ,only:rank
+      use inform    ,only:deb_path
       use math
       use shunt
       use tinheader ,only: ti_p
@@ -282,30 +304,36 @@ c
       real(t_p) termi,termik
       real(t_p) e,de,eps
       real(t_p) offset
+      real(t_p) t1,t2,s1,s2
+      real(t_p) dt1drho,dt2drho
       real(t_p) taper,dtaper
       real(t_p) rv,rv2,rv6,rv7
+      real(t_p) rinv,ri,ri2,ri3
       real(t_p) r,r2,r3,r4
       real(t_p) r5,r6,r7
       real(t_p) p,p6,p12
-      real(t_p) rho,tau,tau7
+      real(t_p) rho,rho6,tau,tau7
       real(t_p) dtau,gtau
       real(t_p) rvterm,expterm
       character*10 mode
+      enum,bind(C)
+      enumerator LENNARD_JONES,BUFFERED_14_7
+      end enum
       parameter(zero=0.0_ti_p,  one=1.0_ti_p,
      &           two=2.0_ti_p)
-
-c
-c     only applicable if periodic boundaries are in use
-c
-      if (.not. use_bounds)  return
+ 12   format(2x,'evcorr1')
 c
 c     zero out the long range van der Waals corrections
 c
-!$acc data present(elrc,vlrc) async(def_queue)
-!$acc kernels async(def_queue)
+!$acc serial present(elrc,vlrc) async(def_queue)
       elrc = zero
       vlrc = zero
-!$acc end kernels
+!$acc end serial
+c
+c     only applicable if periodic boundaries are in use
+c
+      if (.not.use_bounds.or.rank.ne.0) return
+      if (deb_Path) write(*,12)
 c
 c     set the coefficients for the switching function
 c
@@ -315,22 +343,23 @@ c
 c     set number of steps and range for numerical integration
 c
       if (vdwtyp .eq. 'LENNARD-JONES') then
-         vdwtyp_i=0
+         vdwtyp_i=LENNARD_JONES
       else if (vdwtyp .eq. 'BUFFERED-14-7') then
-         vdwtyp_i=1
+         vdwtyp_i=BUFFERED_14_7
       end if
 
-      nstep = 2
-      range = 100.0_ti_p
+      nstep  = 2
+      range  = 100.0_ti_p
       ndelta = int(real(nstep,t_p)*(range-cut))
-      rdelta = (range-cut) / real(ndelta,t_p)
+      rdelta = (range-cut)/real(ndelta,t_p)
       offset = cut - 0.5_ti_p*rdelta
+      rinv   = 1.0/(cut - off)
 c
 c     find the van der Waals energy via double loop search
 c
-!$acc parallel present(elrc,vlrc,radmin,epsilon,ivt,jvt) 
-!$acc&         async(def_queue)
-!$acc loop collapse(3) reduction(+:elrc,vlrc)
+!$acc parallel loop collapse(3) async(def_queue)
+!$acc&         reduction(+:elrc,vlrc)
+!$acc&         present(elrc,vlrc,radmin,epsilon,ivt,jvt) 
       do i = 1, nvt
          do k = 1, nvt
             do j = 1, ndelta
@@ -340,47 +369,44 @@ c
                termik  = termi * real(jvt(k),t_p)
                rv      = radmin(kt,it)
                eps     = epsilon(kt,it)
-               rv2     = rv * rv
-               rv6     = rv2 * rv2 * rv2
-               rv7     = rv6 * rv
                r       = offset + real(j,t_p)*rdelta
-               r2      = r * r
-               r3      = r2 * r
-               r6      = r3 * r3
-               r7      = r6 * r
-               e       = zero
-               de      = zero
-               if (vdwtyp_i .eq. 0) then
-                  p6   = rv6 / r6
-                  p12  = p6 * p6
-                  e    = eps * (p12 - two*p6)
-                  de   = eps * (p12-p6) * (-12.0_ti_p/r)
-               else if (vdwtyp_i .eq. 1) then
-                  rho  = r7 + ghal*rv7
-                  tau  = (dhal+one) / (r+dhal*rv)
-                  tau7 = tau**7
-                  dtau = tau / (dhal+one)
-                  gtau = eps*tau7*r6*(ghal+one)*(rv7/rho)**2
-                  e    = eps * rv7 * tau7 * ((ghal+one)*rv7/rho-two)
-                  de   = -7.0_ti_p * (dtau*e+gtau)
+c              e       = zero
+c              de      = zero
+               if (vdwtyp_i .eq. LENNARD_JONES) then
+                  p6   = (rv / r)**6
+                  e    = eps * (p6 - two)*p6
+                  de   = eps * (p6 - one)*p6 * (-12.0_ti_p/r)
+               else if (vdwtyp_i .eq. BUFFERED_14_7) then
+                  rho  = r / rv
+                  rho6 = rho**6
+                  s1   = ((rho + dhal)**7)**(-1)
+                  s2   = (rho6*rho + ghal)**(-1)
+                  t1   = (1.0_ti_p + dhal)**7 *s1
+                  t2   = (1.0_ti_p + ghal)*s2
+                  dt1drho = -7.0_ti_p*(rho+dhal)**6 *t1*s1
+                  dt2drho = -7.0_ti_p*rho6*t2*s2
+                  e    = eps*t1*(t2 - 2.0_ti_p)
+                  de   = eps*(dt1drho*(t2-2.0_ti_p)+t1*dt2drho) / rv
                end if
                if (r .lt. off) then
-                  r4   = r2 * r2
-                  r5   = r2 * r3
-                  taper  = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
-                  dtaper = 5.0_ti_p*c5*r4 + 4.0_ti_p*c4*r3
-     &                   + 3.0_ti_p*c3*r2 + two*c2*r + c1
-                  de   = de*(one-taper) - e*dtaper
-                  e    = e*(one-taper)
-               end if 
-               elrc    = elrc + termik*(e*rdelta*r2)
-               vlrc    = vlrc + termik*(de*rdelta*r3)
+                  ri     = (r - off) * rinv
+                  ri2    = ri * ri
+                  ri3    = ri2 * ri
+                  taper  = ri3 * (6*ri2 - 15*ri + 10)
+                  dtaper = 30* (ri*(1.0-ri))*(ri*(1.0-ri)) *rinv;
+
+                  de     = de*(one-taper) - e*dtaper
+                  e      =  e*(one-taper)
+               end if
+               elrc    = elrc + termik*( e*rdelta*r*r)
+               vlrc    = vlrc + termik*(de*rdelta*r*r*r)
             end do
          end do
       end do
+
+!$acc serial async(def_queue) present(elrc,vlrc)
       elrc = elrc / volbox
       vlrc = vlrc / (3.0_re_p*volbox)
-!$acc end parallel
-!$acc end data
-      return
+!$acc end serial
+
       end
