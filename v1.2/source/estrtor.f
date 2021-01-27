@@ -26,8 +26,10 @@ c
       implicit none
       integer i,k,istrtor,iistrtor
       integer ia,ib,ic,id
-      real*8 e,rcb,dr
+      real*8 e,dr
       real*8 rt2,ru2,rtru
+      real*8 rba,rcb,rdc
+      real*8 e1,e2,e3
       real*8 xt,yt,zt
       real*8 xu,yu,zu
       real*8 xtu,ytu,ztu
@@ -45,6 +47,7 @@ c
       real*8 xba,yba,zba
       real*8 xcb,ycb,zcb
       real*8 xdc,ydc,zdc
+      real*8 fgrp
       logical proceed
 c
 c
@@ -64,8 +67,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
@@ -97,58 +99,75 @@ c
                call image (xcb,ycb,zcb)
                call image (xdc,ydc,zdc)
             end if
-            xt = yba*zcb - ycb*zba
-            yt = zba*xcb - zcb*xba
-            zt = xba*ycb - xcb*yba
-            xu = ycb*zdc - ydc*zcb
-            yu = zcb*xdc - zdc*xcb
-            zu = xcb*ydc - xdc*ycb
-            xtu = yt*zu - yu*zt
-            ytu = zt*xu - zu*xt
-            ztu = xt*yu - xu*yt
-            rt2 = xt*xt + yt*yt + zt*zt
-            ru2 = xu*xu + yu*yu + zu*zu
-            rtru = sqrt(rt2 * ru2)
-            if (rtru .ne. 0.0d0) then
-               rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
-               cosine = (xt*xu + yt*yu + zt*zu) / rtru
-               sine = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
+            rba = sqrt(xba*xba + yba*yba + zba*zba)
+            rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+            rdc = sqrt(xdc*xdc + ydc*ydc + zdc*zdc)
+            if (min(rba,rcb,rdc) .ne. 0.0d0) then
+              xt = yba*zcb - ycb*zba
+              yt = zba*xcb - zcb*xba
+              zt = xba*ycb - xcb*yba
+              xu = ycb*zdc - ydc*zcb
+              yu = zcb*xdc - zdc*xcb
+              zu = xcb*ydc - xdc*ycb
+              xtu = yt*zu - yu*zt
+              ytu = zt*xu - zu*xt
+              ztu = xt*yu - xu*yt
+              rt2 = xt*xt + yt*yt + zt*zt
+              rt2 = max(rt2,0.000001d0)
+              ru2 = xu*xu + yu*yu + zu*zu
+              ru2 = max(ru2,0.000001d0)
+              rtru = sqrt(rt2 * ru2)
+              rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+              cosine = (xt*xu + yt*yu + zt*zu) / rtru
+              sine = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
 c
-c     set the stretch-torsional parameters for this angle
+c     compute multiple angle trigonometry and phase terms
 c
-               v1 = kst(1,iistrtor)
-               c1 = tors1(3,i)
-               s1 = tors1(4,i)
-               v2 = kst(2,iistrtor)
-               c2 = tors2(3,i)
-               s2 = tors2(4,i)
-               v3 = kst(3,iistrtor)
-               c3 = tors3(3,i)
-               s3 = tors3(4,i)
+              c1 = tors1(3,i)
+              s1 = tors1(4,i)
+              c2 = tors2(3,i)
+              s2 = tors2(4,i)
+              c3 = tors3(3,i)
+              s3 = tors3(4,i)
+              cosine2 = cosine*cosine - sine*sine
+              sine2 = 2.0d0 * cosine * sine
+              cosine3 = cosine*cosine2 - sine*sine2
+              sine3 = cosine*sine2 + sine*cosine2
+              phi1 = 1.0d0 + (cosine*c1 + sine*s1)
+              phi2 = 1.0d0 + (cosine2*c2 + sine2*s2)
+              phi3 = 1.0d0 + (cosine3*c3 + sine3*s3)
 c
-c     compute the multiple angle trigonometry and the phase terms
+c     get the stretch-torsion values for the first bond
 c
-               cosine2 = cosine*cosine - sine*sine
-               sine2 = 2.0d0 * cosine * sine
-               cosine3 = cosine*cosine2 - sine*sine2
-               sine3 = cosine*sine2 + sine*cosine2
-               phi1 = 1.0d0 + (cosine*c1 + sine*s1)
-               phi2 = 1.0d0 + (cosine2*c2 + sine2*s2)
-               phi3 = 1.0d0 + (cosine3*c3 + sine3*s3)
+              v1 = kst(1,iistrtor)
+              v2 = kst(2,iistrtor)
+              v3 = kst(3,iistrtor)
+              k = ist(2,iistrtor)
+              dr = rba - bl(k)
+              e1 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
 c
-c     calculate the bond-stretch for the central bond
+c     get the stretch-torsion values for the second bond
 c
-               k = ist(2,iistrtor)
-               rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
-               dr = rcb - bl(k)
+              v1 = kst(4,iistrtor)
+              v2 = kst(5,iistrtor)
+              v3 = kst(6,iistrtor)
+              k = ist(3,iistrtor)
+              dr = rcb - bl(k)
+              e2 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
 c
-c     compute the stretch-torsion energy for this angle
+c     get the stretch-torsion values for the third bond
 c
-               e = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
+              v1 = kst(7,iistrtor)
+              v2 = kst(8,iistrtor)
+              v3 = kst(9,iistrtor)
+              k = ist(4,iistrtor)
+              dr = rdc - bl(k)
+              e3 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
 c
 c     increment the total stretch-torsion energy
 c
-               ebt = ebt + e
+              e = e1 + e2 + e3
+              ebt = ebt + e
             end if
          end if
       end do

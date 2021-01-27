@@ -61,6 +61,8 @@ c
       real*8 ba1,ba2
       real*8 aa1,aa2,aa3
       real*8 bt1,bt2,bt3
+      real*8 bt4,bt5,bt6
+      real*8 bt7,bt8,bt9
       real*8 an,pr,ds,dk
       real*8 vd,cg
       real*8 fc,bd,dl
@@ -77,9 +79,7 @@ c
       real*8 tf(maxtgrd2)
 
 
-
-
-      logical header
+      logical header,swap
       character*1 da1
       character*4 pa,pb,pc
       character*4 pd,pe
@@ -849,8 +849,15 @@ c
             bt1 = 0.0d0
             bt2 = 0.0d0
             bt3 = 0.0d0
+            bt4 = 0.0d0
+            bt5 = 0.0d0
+            bt6 = 0.0d0
+            bt7 = 0.0d0
+            bt8 = 0.0d0
+            bt9 = 0.0d0
             string = record(next:240)
-            read (string,*,err=320,end=320)  ia,ib,ic,id,bt1,bt2,bt3
+            read (string,*,err=320,end=320)  ia,ib,ic,id,bt1,bt2,bt3,
+     &                                       bt4,bt5,bt6,bt7,bt8,bt9
   320       continue
             call numeral (ia,pa,size)
             call numeral (ib,pb,size)
@@ -859,16 +866,35 @@ c
             nbt = nbt + 1
             if (ib .lt. ic) then
                kbt(nbt) = pa//pb//pc//pd
+               swap = .false.
             else if (ic .lt. ib) then
                kbt(nbt) = pd//pc//pb//pa
+               swap = .true.
             else if (ia .le. id) then
                kbt(nbt) = pa//pb//pc//pd
+               swap = .false.
             else if (id .lt. ia) then
                kbt(nbt) = pd//pc//pb//pa
+               swap = .true.
             end if
-            btcon(1,nbt) = bt1
-            btcon(2,nbt) = bt2
-            btcon(3,nbt) = bt3
+            btcon(4,nbt) = bt4
+            btcon(5,nbt) = bt5
+            btcon(6,nbt) = bt6
+            if (swap) then
+               btcon(1,nbt) = bt7
+               btcon(2,nbt) = bt8
+               btcon(3,nbt) = bt9
+               btcon(7,nbt) = bt1
+               btcon(8,nbt) = bt2
+               btcon(9,nbt) = bt3
+            else
+               btcon(1,nbt) = bt1
+               btcon(2,nbt) = bt2
+               btcon(3,nbt) = bt3
+               btcon(7,nbt) = bt7
+               btcon(8,nbt) = bt8
+               btcon(9,nbt) = bt9
+            end if
 c
 c     torsion-torsion parameters
 c

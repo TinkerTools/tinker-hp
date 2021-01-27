@@ -601,9 +601,9 @@ c
 c
 c     ist
 c
-      arrayshape2=(/2,ntors/)
+      arrayshape2=(/4,ntors/)
       if (hostrank == 0) then
-        windowsize = int(2*ntors,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+        windowsize = int(4*ntors,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       else
         windowsize = 0_MPI_ADDRESS_KIND
       end if
@@ -624,9 +624,9 @@ c
 c
 c     kst
 c
-      arrayshape2=(/3,ntors/)
+      arrayshape2=(/9,ntors/)
       if (hostrank == 0) then
-        windowsize = int(3*ntors,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+        windowsize = int(9*ntors,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
       else
         windowsize = 0_MPI_ADDRESS_KIND
       end if

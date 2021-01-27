@@ -20,7 +20,7 @@ c
       implicit none
       integer maxnbt
       parameter (maxnbt=500)
-      real*8 btcon(3,maxnbt)
+      real*8 btcon(9,maxnbt)
       character*16 kbt(maxnbt)
       save
       end
