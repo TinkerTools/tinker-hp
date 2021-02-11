@@ -40,6 +40,10 @@ c
       use uprior
       use usage
       use virial
+#ifdef PLUMED
+      use plumed
+      use mpi
+#endif
       implicit none
       integer i,j,k,idyn,iglob
       integer next
@@ -159,6 +163,50 @@ c
             read (string,*,err=10,end=10) gammapiston
          else if (keyword(1:12) .eq. 'MASSPISTON ') then
             read (string,*,err=10,end=10) masspiston
+#ifdef PLUMED
+c
+c initialise PLUMED
+c
+         else if (keyword(1:7) .eq. 'PLUMED ') then
+            lplumed = .true.
+            allocate(pl_force(3,n))
+            allocate(pl_pos  (3,n))
+            allocate(pl_mass (  n))
+            allocate(pl_glob (  n))
+            call getword (record,pl_input,next)
+            call getword (record,pl_output,next)
+c            if (rank.eq.0) then
+c              write(0,*)"  CREATING PLUMED FROM THE PROGRAM"
+c            endif
+c
+c conversion factors to go from TINKER's units to PLUMED
+c
+c kcal/mol -> kJ/mol
+            energyUnits = 4.184d0
+c angstrom -> nm
+            lengthUnits = 0.1d0
+c fs -> ps
+            timeUnits = 0.001d0
+
+            call plumed_f_gcreate()
+            call plumed_f_gcmd("setRealPrecision"//char(0),8)
+            call plumed_f_gcmd("setMPIFComm"//char(0),COMM_TINKER)
+            call plumed_f_gcmd("setMDEnergyUnits"//char(0),energyUnits)
+            call plumed_f_gcmd("setMDLengthUnits"//char(0),lengthUnits)
+            call plumed_f_gcmd("setMDTimeUnits"//char(0),timeUnits)
+            call plumed_f_gcmd("setPlumedDat"//char(0),trim(pl_input)//
+     $          char(0))
+            call plumed_f_gcmd("setLogFile"//char(0),trim(pl_output)//
+     $          char(0))
+            call plumed_f_gcmd("setLogFile"//char(0),pl_output)
+            call plumed_f_gcmd("setNatoms"//char(0),n)
+            call plumed_f_gcmd("setMDEngine"//char(0),"TinkerHP");
+            call plumed_f_gcmd("setTimestep"//char(0),dt);
+            call plumed_f_gcmd("init"//char(0),0);
+c
+c end PLUMED initialisation
+c
+#endif
          end if
    10    continue
       end do

@@ -37,6 +37,8 @@
 \def\prefix{\texttt{--prefix=<DIR>}}
 \def\enasky{\texttt{--enable-slylake}}
 \def\enaknl{\texttt{--enable-knl}}
+\def\plumed{\textsc{Plumed}}
+\def\enaplumed{\texttt{--enable-plumed}}
 \def\enafftgen{\texttt{--enable-fft-generic}}
 \def\enafftmkl{\texttt{--enable-fft-mkl\hskip5em}}
 \def\enafftw{\texttt{--enable-fft-fftw3}}
@@ -132,7 +134,7 @@ Optional Features:
   --enable-fft-mkl              Enable MKL   FFT mode [default is no]
   --enable-fft-fftw3            Enable fftw3 FFT mode [default is no]
   --enable-fft-fftw3_f03        Enable fftw3_f03 FFT mode [default is no]
-
+  --enable-plumed               Enable plumed interface [default is no]
 Optional Packages:
   --with-blaslib=<BLAS LIB>     Specify BLAS library [mkl, lapack or 
                                 /absolute/path/to/BLAS_library]
@@ -171,7 +173,12 @@ Tinker-HP also needs some functions that resides in a working  \blas\ library. S
     \item[] \withblaslib
 \end{itemize}
 
-Finally, as there might be some execution problems, or compilation problems for the users who develop code, Tinker-HP as an \texttt{--enable-debug} option.
+Tinker-HP is now able to be interfaced with \plumed. So, there is an option for that :
+\begin{itemize}
+    \item [] \enaplumed
+\end{itemize}
+
+Finally, as there might be some execution problems, or compilation problems for the users who develop code, Tinker-HP has an \texttt{--enable-debug} option.
 
 \vskip5mm
 \config\ tries to find its path to reach a valid \mpi\ compiler and  a valid Fortran compiler by unsetting the environment variables \texttt{\$FC} and \texttt{\$F77}, and reading the environment variable \PATH. It also tries to find  valid \fft\  and  \blas\ libraries by reading \FFTW\ and \MKLROOT\ or \LAPACK\  respectively. Most of the time, these environment variables are defined through the \texttt{module} framework. As a try, do a 
@@ -281,42 +288,68 @@ Here is the result of a successful run of the \config\ command~:
 
 \begin{verbatim}
 FFTW=/usr/local/fftw-3.3.7/Intel/2018/impi/
-./configure --enable-debug --enable-fft-fftw3 --with-fftlib=fftw3 --with-blas=lapack
+./configure --enable-debug --enable-fft-fftw3 --enable-plumed --with-fftlib=fftw3
+--with-blaslib=lapack
 \end{verbatim}
 
-where we give the absolute path of the \fftwt\  library in the \texttt{\$FFTW} variable, ask for the DEBUG mode, enable the fftw3 interface, use the \fftwt\ library and want the lapack library for  \blas, assuming that the  \LAPACK\  variable is already set.
+where we give the absolute path of the \fftwt\  library in the \texttt{\$FFTW} variable, ask for the DEBUG mode, enable the fftw3 interface, ask for the \plumed\ interface, use the \fftwt\ library and want the lapack library for  \blas, assuming that the  \LAPACK\  variable is already set.
 
 \begin{verbatim}
-configure: 
+configure:
 configure: **********************************************************************
 configure: **
-configure: ** Running Mode         : DEBUG (binaries'extension is .debug)   
-configure: ** MPI Fortran Wrapper  : mpiifort                    
-configure: ** Fortran Compiler     : ifort              
-configure: ** Fortran flags        : -O0 -g -u -warn all -check bounds -no-ipo 
-                                     -no-prec-div -inline -heap-arrays -traceback -xHost                  
-configure: ** 2decomp Library      : -L ../2decomp_fft/src/ -l2decomp_fft           
+configure: ** Running Mode         : PLUMED DEBUG (binaries'extension is '.debug')
+configure: ** MPI Fortran Wrapper  : mpiifort
+configure: ** Fortran Compiler     : ifort
+configure: ** Fortran flags        : -fpp -DPLUMED -O0 -g -u -warn all -check bounds  
+configure: **                      : -no-ipo -no-prec-div -inline -heap-arrays 
+configure: **                      : -traceback
+configure: ** 2decomp Library      : -L ../2decomp_fft/src/ -l2decomp_fft
+configure: ** PLUMED  Library      : -L ../plumed/Intel/lib/ -lplumed -lplumedKernel
+configure: ** PLUMED  Includes     : -I ../plumed/Intel/include
 configure: ** FFTW3 Interface      : fftw3 of the FFTW3 library
-configure: ** FFTW3 Path           : /usr/local/fftw-3.3.7/Intel/2018/impi//lib     
-configure: ** FFTW3 Includes       : -I /usr/local/fftw-3.3.7/Intel/2018/impi//include 
-configure: ** FFTW3 Library        : -lfftw3                  
-configure: ** BLAS Type            : LAPACK                 
+configure: ** FFTW3 Path           : /usr/local/fftw-3.3.7/Intel/2018/impi//lib
+configure: ** FFTW3 Includes       : -I /usr/local/fftw-3.3.7/Intel/2018/impi//include
+configure: ** FFTW3 Library        : -lfftw3
+configure: ** BLAS Type            : LAPACK
 configure: ** BLAS Path            : /usr/local/Libraries/lapack-3.8.0/Intel/2018
 configure: ** Prefix installation  : /home/lhj/neutron/Tinker/REL/PME/v1.2
-configure: ** Binaries location    : /home/lhj/neutron/Tinker/REL/PME/v1.2/bin 
+configure: ** Binaries location    : /home/lhj/neutron/Tinker/REL/PME/v1.2/bin
 configure: **
 configure: **********************************************************************
-configure: 
+configure:
+
 \end{verbatim}
 
-This log confirms that we are in DEBUG mode and that we use the Intel compiler \texttt{ifort} and the \texttt{mpiifort} wrapper from Intel\mpi. The installation directory where all binaries (with \texttt{.debug} extension) will be installed is shown as well.
+This log confirms that we are in DEBUG mode and that we use the Intel compiler \texttt{ifort} and the \texttt{mpiifort} wrapper from Intel\mpi. As The \plumed\ interface has been selected, the configure script shows the \plumed\ settings. The installation directory where all binaries (with \texttt{.debug} extension) will be installed is shown as well.
+
+In the case of the \plumed\ interface, the \config\ command will configure the plumed library as well.
+
 \subsection{Making binaries}
 
 \hskip\parindent Once you are happy with the option you selected, it's time to run the \texttt{make} command, or even the \texttt{make install} command, which will compile and install all at once.
 
 As the compilation process takes care of the dependencies between subroutines and modules, you can safely use the \texttt{-j} flag of the \texttt{make} command to do parallel compilation. This would dramatically speedup the compilation process. 
 
-Anyway, on modern machines, the compilation is not very long, except for 2 or 3 subroutines that can take up to 5(!) minutes to compile, depending on the compiler you use and even on the fastest machines. Everything should compile and link gracefully. Using \texttt{make install} will copy the binaries into the directory you selected with the \prefix\ option. Don't forget to install the binaries you created, or you will not be able to run the examples.
+Anyway, on modern machines, the compilation is not very long, except for 2 or 3 subroutines that can take up to 5(!) minutes to compile, depending on the compiler you use and even on the fastest machines. Everything should compile and link gracefully.
+
+Using \texttt{make install} will copy the binaries into the directory you selected with the \prefix\ option. The binaries produced will have the following extension :
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Mode & Extension \\
+\hline
+\hline
+\texttt{NORMAL} & .prod \\
+\texttt{PLUMED NORMAL} & \_plumed.prod \\
+\texttt{DEBUG}  & .debug \\
+\texttt{PLUMED DEBUG} & \_plumed.debug \\
+\hline
+\end{tabular}
+\end{center}
+
+the \texttt{make install} command will also create 5 shell scripts, named after the binaries, to setup the proper running environment.  Don't forget to install the binaries you created, or you will not be able to run the examples.
 
 \section{Note for developers}
 \subsection{Writing new sources}
@@ -337,7 +370,7 @@ The order we use to declare variables is:
     \item \texttt{character} (single string or array)
 \end{enumerate}
 
-We always try not to mix different types of variables in the same declaration line. This is not just because it is easier to read. That is also because it is more memory efficient, particularly for vectorization, where alignment in memory is crucial. \texttt{character} should be put at the very end, since they can have arbitrary lengths and almost never align to a memory boundary. We also try to choose significant names for the variables.
+We always try not to mix different types of variables in the same declaration line. This is not just because it is easier to read. That is also because it is more memory efficient, particularly for vectorization, where alignment in memory is crucial. \texttt{character} variables should be put at the very end, since they can have arbitrary lengths and almost never align to a memory boundary. We also try to choose significant names for the variables.
 
 \paragraph{Comments} We always begin a comment line by the \texttt{c} character. The \texttt{!} character should only appear in the middle of a line.
 This is because the \texttt{!} character at the beginning is reserved to introduce compiler directives.
@@ -374,6 +407,12 @@ There are 3 different cases\footnote{Of course, you can match all three at the s
     \hskip1.5cm \texttt{yourmain\_DEPENDENCIES = libtinkermod.a libtinkercalc.a }
     
     after the similar lines concerning \testgrad.
+    
+    In the \texttt{Makefile.am} file of the \texttt{scripts} directory, you should also add the line :
+    
+   \hskip1.5cm \texttt{-(cd \${bindir} ; \$(LN\_S) -f \$(LINK\_TO) yourmain )}
+        
+    in the \texttt{install-exec-hook:} section, and add \texttt{yourmain} at the end of the \texttt{uninstall-binSCRIPTS:} section.
     \item You created new module(s). Add lines 
     
     \hskip1.5cm \texttt{libtinkermod\_a\_SOURCES += MOD\_xxxxx.f}
@@ -399,7 +438,7 @@ The \analyze\ executable allows potential energy analysis. Compared to the Tinke
 
 For example the command line: 
 \begin{itemize}
-\item[] \mpirun\texttt{ 16 ./analyze dhfr2 e} \\
+\item[] \mpirun\texttt{ 16 ../bin/analyze dhfr2 e} \\
 will give you as an output the potential energy terms of the geometry given by a dhfr2.xyz file and with the simulation setup given by the dhfr2.key file. Furthermore, this computation will run on 16 \mpi\  processes.
 \end{itemize}
 \subsection{\dynamic\ }
@@ -407,7 +446,7 @@ The \dynamic\ executable allows to run molecular dynamics simulation. As for Tin
 
 For example the command lines:
 \begin{itemize}
-    \item[] \mpirun\texttt{  16 ./dynamic dhfr2 1000 1 1 1} \\
+    \item[] \mpirun\texttt{  16 ../bin/dynamic dhfr2 1000 1 1 1} \\
     will give you as an output 1000 MD steps in NVE for the dhfr2 system, with a 1  {\em fs} time step and a 1 {\em ps} frequency output.
     \item[] \mpirun\texttt{  16 ./dynamic dhfr2 1000 1 1 2 300} \\
     will give you as an output 1000 MD steps in NVT at 300K for the dhfr2 system, with a 1  {\em fs} time step and a 1  {\em ps} frequency output.
@@ -419,7 +458,7 @@ The \testgrad\ program is absolutely equivalent to the one of the Tinker-8.4 rel
 
 For example, the command line:
 \begin{itemize}
-\item []\mpirun\texttt{  16 ./testgrad dhfr2 Y Y 0.0001 Y} \\
+\item []\mpirun\texttt{  16 ../bin/testgrad dhfr2 Y Y 0.0001 Y} \\
 will give you as an output all the analytical and numerical gradients (computed with an increment of 0.0001 Angstroms for the positions of the atoms) of all the energy terms of the dhfr2 system.
 \end{itemize}
 \subsection{\minimize}
@@ -427,7 +466,7 @@ The \minimize\ program computes energy minimization starting from a given struct
 
 For example, the command line:
 \begin{itemize}
-\item []\mpirun\texttt{  16 ./minimize dhfr2 0.1} \\
+\item []\mpirun\texttt{  16 ../bin/minimize dhfr2 0.1} \\
 will compute energy minimization on the dhfr2 structure until the RMS on the gradient is inferior to 0.1. The new geometry will be written at each iteration of the algorithm in the file dhfr2.xyz\_2.
 \end{itemize}
 \section{Keywords}
@@ -538,6 +577,12 @@ As explained in the beginning of the document, Tinker-HP distributes the data on
 \vskip5mm
 Note that the user does not have to specify that he wants neighbor-lists to be used as it is the only available option in Tinker-HP.
 
+\vskip5mm
+Tinker-HP is now compatible with the \textbf{PLUMED} library that provides enhanced sampling algorithms, free-energy methods and, more generally, tools to analyze data coming from MD simulations. The user only has to add the line: 
+\begin{itemize}
+\item[]\textbf{plumed input.dat}
+\end{itemize}
+to the Tinker-HP *.key file in order to run an MD coupled to \textbf{PLUMED} with the file \textbf{input.dat} as a \textbf{PLUMED} input. See \url{https://www.plumed.org/doc} for a detailed description of the \textbf{PLUMED} capabilities. Input files to compute the PMF associated to the distance between a Na+ and a Cl- ion with the amber99 force field and metadynamics are given: \textbf{nacl\_amber.xyz}, \textbf{nacl\_amber.key} and \textbf{plumed.dat}.
 \section{Examples}
 4 examples of systems with associated *.key files are given in the distribution: ubiquitin2, dhfr2, puddle and pond. The sizes of these systems are respectively: 9737, 23558, 96000 and 288000 atoms, making them good various benchmarks for the program. 
 
@@ -551,6 +596,8 @@ Note that the user does not have to specify that he wants neighbor-lists to be u
 \end{tabular}
 
 A fifth example is reserved for debug purposes. It's exactly the same as the first one. \texttt{./ubiquitin2.debug.run} runs the \dynamic.\texttt{debug} binary. 
+
+
 \section{Tutorials}
 Three tutorials can be found in the directory \textbf{tutorials} of the release:
 

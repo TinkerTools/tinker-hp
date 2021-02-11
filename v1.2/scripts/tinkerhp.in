@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+export LD_LIBRARY_PATH=@LIBPLUMED_LIBPATH@:$LD_LIBRARY_PATH
+PROG=$(basename $0)
+@PREFIX@/bin/${PROG}@EXEEXT@ $*

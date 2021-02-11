@@ -59,7 +59,7 @@ Three-levels \textbf{Respa1}-like integrators have been introduced where the pot
 \item the long range non-bonded terms: long range van der Waals, long range     + reciprocal space electrostatics, total polarization-short range (real     space) polarization for polarizable force fields
 \end{itemize}
 
-\textbf{KEYWORDS:} These splittings can be used with a \textbf{BAOAB} inner loop for NVT simulations (keyword \textbf{baoabrespa1}) or with a velocity-verlet inner loop (keyword \textbf{respa1}), it has been showed that the BAOAB based respa1 integrators are always more stable than the Velocity-verlet based respa1 integrators.
+\textbf{KEYWORDS:} These splittings can be used with a \textbf{BAOAB} inner loop for NVT simulations (keyword \textbf{baoabrespa1}) or with a velocity-verlet inner loop (keyword \textbf{respa1}), it has been shown that the BAOAB based respa1 integrators are always more stable than the Velocity-verlet based respa1 integrators.
 
  The timesteps used for the three levels can be controlled in the key-file as well as the solver used for short-range polarization for polarizable force fields as described in the README of Tinker-HP. When used in conjunction with Hydrogen-Mass-Repartitioning (keyword \textbf{heavy-hydrogen}) and the use of a simple TCG1 short range polarization solver, AMOEBA computation can be made up to 7 times faster than with a standard 1fs Velocity Verlet integrator as described in the reference above.
  
@@ -120,14 +120,14 @@ Optional Features:
   --enable-fft-mkl              Enable MKL   FFT mode [default is no]
   --enable-fft-fftw3            Enable fftw3 FFT mode [default is no]
   --enable-fft-fftw3_f03        Enable fftw3_f03 FFT mode [default is no]
-
+  --enable-plumed               Enable plumed interface [default is no]
 Optional Packages:
   --with-blaslib=<BLAS LIB>     Specify BLAS library [mkl, lapack or 
                                 /absolute/path/to/BLAS_library]
   --with-fftlib=<FFT LIB>       Specify a library for FFT called by 2decomp [mkl or
                                 fftw3 or /absolute/path/to/FFTW_library]
-
 \end{verbatim}
+
 
 Users should now be able to have Tinker-HP running by doing~:
 \begin{verbatim}

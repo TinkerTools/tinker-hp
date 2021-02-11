@@ -26,10 +26,17 @@ c
       use vdwpot
       use virial
       use mpi
+#ifdef PLUMED
+      use atoms
+      use atmtyp
+      use boxes
+      use plumed
+#endif
       implicit none
       real*8 energy
       real*8 derivs(3,nbloc)
       real*8 time0,time1,time2
+      integer iloc,iglob
       logical isnan
 c
 c
@@ -82,6 +89,7 @@ c
 c     zero out the virial and the intermolecular energy
 c
       vir = 0d0
+      virsave = 0d0
       einter = 0.0d0
 c
 c     call the local geometry energy and gradient routines
@@ -149,5 +157,62 @@ c
      &              ' Potential Energy')
          call fatal
       end if
+
+#ifdef PLUMED
+      if (lplumed) then
+        pl_force = 0.0d0
+        pl_virial = 0.d0 ! replace with actual virial
+        pl_epot = energy
+
+        ncount = ncount + 1
+        do iloc = 1, nloc
+          iglob = glob(iloc)
+          pl_glob(iloc) = glob(iloc) - 1
+          pl_pos(1,iloc) = x(iglob)
+          pl_pos(2,iloc) = y(iglob)
+          pl_pos(3,iloc) = z(iglob)
+          pl_mass( iloc) = mass(iglob)
+        enddo
+c
+c local number of atoms and their global indices
+        call plumed_f_gcmd("setAtomsNlocal"//char(0),nloc)
+        call plumed_f_gcmd("setAtomsGatindex"//char(0),pl_glob)
+c
+c local counter of the step (could be replaces)
+        call plumed_f_gcmd("setStep"//char(0),ncount)
+c
+c local masses, positions and forces
+        call plumed_f_gcmd("setMasses"//char(0),pl_mass)
+        call plumed_f_gcmd("setPositions"//char(0),pl_pos)
+        call plumed_f_gcmd("setForces"//char(0),pl_force)
+c
+c cell vectors
+c check for non orthorhombic systems whether it's by rows or by columns)
+        call plumed_f_gcmd("setBox"//char(0),lvec)
+c
+c virial should be both input and out
+c unclear if the PLUMED virial is correct
+        call plumed_f_gcmd("setVirial"//char(0),pl_virial)
+c
+c potential energy as collective variable
+        call plumed_f_gcmd("setEnergy"//char(0),pl_epot)
+c
+c actual calculation
+        call plumed_f_gcmd("calc"//char(0),0)
+        vir(1,1) = vir(1,1) + pl_virial(1,1)
+        vir(2,1) = vir(2,1) + pl_virial(1,2)
+        vir(3,1) = vir(3,1) + pl_virial(1,3)
+        vir(1,2) = vir(1,2) + pl_virial(2,1)
+        vir(2,2) = vir(2,2) + pl_virial(2,2)
+        vir(3,2) = vir(3,2) + pl_virial(2,3)
+        vir(1,3) = vir(1,3) + pl_virial(3,1)
+        vir(2,3) = vir(2,3) + pl_virial(3,2)
+        vir(3,3) = vir(3,3) + pl_virial(3,3)
+c
+c unpdate local derivatives
+c pl_force is in kcal/mol/A; no conversion should be needed
+        derivs(:,1:nloc) = derivs(:,1:nloc) - pl_force(:,1:nloc)
+      endif
+#endif
       return
       end

@@ -70,7 +70,7 @@ LDADD  = libtinkercalc.a libtinkermod.a
 # These libraries are external and defined by configure
 #
 
-LDADD += $(LIB2DECOMP_LIB) $(FFTW_LIBS) $(BLAS)
+LDADD += $(LIBPLUMED_LIB) $(LIB2DECOMP_LIB) $(FFTW_LIBS) $(BLAS)
 
 #
 # Declare the Tinker libraries needed by the programs
@@ -88,15 +88,36 @@ noinst_LIBRARIES = libtinkermod.a libtinkercalc.a
 libtinkercalc_a_DEPENDENCIES = libtinkermod.a
 
 #
-# Declare the sources for the modules. They are compiled in this order
-# That's why MOD_sizes.f in the first
+# Declare that depend.mk and plumedlibs should be generated before everything else
 #
 
-BUILT_SOURCES=depend.mk
+BUILT_SOURCES  = depend.mk
+BUILT_SOURCES += plumed
 
+#
+#depend.mk is ghenerated by a python script
 depend.mk: 
 	-$(PYTHON) ./Tinker_deps.py *.f > $@
+#
+# plumedlibs is generated, either by plumed.mk or noplumed.mk
+plumed.mk:
+	-echo "plumed:" > $@
+	-echo "		-(cd ../plumed2 ; make -j 32 install VERBOSE=1)" >> $@
+	-echo "install:" > ../plumed2/install.mk
+	-echo "		\$(MAKE) -j 32 -C src install" >> ../plumed2/install.mk
+	-echo "all:" >> ../plumed2/install.mk
+	-echo "		\$(MAKE) -j 32 -C src all" >> ../plumed2/install.mk
+noplumed.mk:
+	-echo "plumed:" > $@
+	-echo "		-touch plumed" >> $@
+	-echo "install:" > ../plumed2/install.mk
+	-echo "		-touch noplumed" >> ../plumed2/install.mk
+	-echo "all:" >> ../plumed2/install.mk
+	-echo "		-touch noplumed" >> ../plumed2/install.mk
 
+#
+# Declare the sources for the modules. They are compiled in the order determined by depend.mk
+#
 libtinkermod_a_SOURCES = 
 libtinkermod_a_SOURCES += MOD_sizes.f
 libtinkermod_a_SOURCES += MOD_action.f
@@ -176,6 +197,7 @@ libtinkermod_a_SOURCES += MOD_opdist.f
 libtinkermod_a_SOURCES += MOD_output.f
 libtinkermod_a_SOURCES += MOD_params.f
 libtinkermod_a_SOURCES += MOD_pitors.f
+libtinkermod_a_SOURCES += MOD_plumed.f
 libtinkermod_a_SOURCES += MOD_pme.f
 libtinkermod_a_SOURCES += MOD_polar.f
 libtinkermod_a_SOURCES += MOD_polgrp.f
@@ -436,7 +458,7 @@ libtinkercalc_a_SOURCES += version.f
 # So, this include flag is used only for *.f90 sources
 # For *.f sources, that would have been AM_FFLAGS
 #
-AM_FCFLAGS=$(LIB2DECOMP_INC)
+AM_FCFLAGS=$(LIB2DECOMP_INC) $(PLUMEDFLAG) $(LIBPLUMED_INC)
  
 #
 # local cleaning of *.mod files
@@ -444,7 +466,7 @@ AM_FCFLAGS=$(LIB2DECOMP_INC)
 
 
 clean-local :
-	-rm -f *.mod depend.mk *_genmod.f90 *.debug
+	-rm -f *.mod depend.mk plumed.mk noplumed.mk plumed *_genmod.f90 *.debug
 
 #
 # include dependencies (Key substituted by configure)
@@ -452,6 +474,11 @@ clean-local :
 # because depend.mk is created AFTER automake has done its job
 #
 @INCLUDE_DEPEND_MK@
+#
+# include plumed generation (Key substitutued by configure)
+# So, it's either plumed.mk or noplumed.mk
+#
+@INCLUDE_PLUMED_MK@
 #
 # End of Makefile.am
 #

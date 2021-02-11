@@ -1134,7 +1134,7 @@ c
 c
 c     find the matrix to convert fractional to Cartesian
 c
-      call frac_to_cart (ftc)
+      call frac_to_cart
 c
 c     apply the transformation to get the Cartesian potential
 c

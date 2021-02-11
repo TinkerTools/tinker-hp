@@ -93,6 +93,7 @@ AS_IF([test $python = ok],
 # Find suitable MPI compiler for .f90 and .f sources
 #
 
+AC_PROG_LN_S                                       # Check if ln is available
 AC_PROG_FC([mpiifort mpif90 ])
 AC_PROG_F77([mpiifort mpif90 ])
 AC_MSG_NOTICE(["$YEL$FC$GRN wrapper will be used to compile Tinker-HP${CLR}"])
@@ -159,6 +160,7 @@ MKLGF_LIBS="-lmkl_gf_lp64    -lmkl_sequential -lmkl_core -ldl"
 #
 
 ARCHIF="-xHost"
+ARCHIF=""
 ARCHPF=""
 ARCHGF=""
 
@@ -171,6 +173,8 @@ ARCHGF=""
 MKL_MOD=""
 MKL_MOD_SOURCE=""
 
+# default extension for binary files
+EXEEXT=".prod"                                                    # Default is no extension (Automake variable)
 #
 # Enable debug mode
 #
@@ -192,8 +196,7 @@ MKL_MOD_SOURCE=""
                 FCFLAGS="$FCFLAGS $WARNFLAG"                                       # Modify FCFLAGS
                 DEBUG_MODE="DEBUG"
                ],
-               [EXEEXT=""                                                         # Default is no extension (Automake variable)
-                FCFLAGS="-O3"                                                     # and maximal optimization
+               [FCFLAGS="-O0"                                                     # and maximal optimization
                 DEBUG_MODE="NORMAL"
                ]
           )
@@ -248,6 +251,21 @@ AC_ARG_ENABLE([fft-fftw3_f03],
               [FFTW_TYPE=fftw3_f03],
               [:]
              )
+#
+# Enable plumed interface. PLUMED will contain the value chosen by the user
+#
+PLUMED=
+PLUMEDFLAG=
+LIBPLUMED_PATH=
+LIBPLUMED_LIB=
+LIBPLUMED_INC=
+
+AC_ARG_ENABLE([plumed],
+              [AS_HELP_STRING([--enable-plumed], [Enable plumed interface @<:@default is no@:>@])],
+              [PLUMED="PLUMED"],
+              [:]
+             )
+
 
 #
 # BLAS checking. BLAS will be MKL or LAPACK 
@@ -369,8 +387,8 @@ if test -z $FFTW_LIB; then FFTW_LIB="none";fi                  # No FFTW_LIB giv
 FFTUNKMSG="${RED}Unknown FFT LIB ${YEL}$FFTW_LIB${RED} : must be${GRN} mkl${RED} or${GRN} fftw3${RED} ${RED}.${CLR}"
 case "$FFTW_LIB" in
     none )                                                     # none case
-      AS_IF([test "x$FFTW_TYPE" = "xgeneric"],                 # This is legal, as long ase we use the generic implementation in 2decomp 
-            [FFTW_INCLUDES=""; FFTW_LIB=""],
+      AS_IF([test "x$FFTW_TYPE" = "xgeneric"],                 # This is legal, as long as we use the generic implementation in 2decomp 
+            [FFTW_INCLUDES="-I ."; FFTW_LIB=""],
             [AC_MSG_FAILURE(["$NO_FFT_FAILMSG"])]              # If not, we absolutely need a fftw3 library
            )
        ;;
@@ -439,12 +457,13 @@ case "$FFTW_LIB" in
 # Define the right link flags depending on the compiler
 # These flags wiil be used by the AC_CHECK_LIB Macro
 #
+# Define also the right preprocessor flags depending on the compiler
+#
        case "x$REALFC" in
           xifort    ) FFTWLIB="$FFTWIF";;
           xpgfortran) FFTWLIB="$FFTWPF";;
           xgfortran ) FFTWLIB="$FFTWGF";;
        esac
-
 #
 # Test the specific fftw3 function
 #
@@ -459,18 +478,55 @@ case "$FFTW_LIB" in
     *)  AC_MSG_FAILURE( [$FFTUNKMSG]) ;;
 esac
 
+PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED : must be ${GRN} ifort ${RED}.${CLR}"
+# setup plumed 
+       AS_IF([test $PLUMED = PLUMED],
+             [ PLUMEDFLAG="-DPLUMED"
+#              AS_IF([test x$REALFC = xifort],
+#                    [COMP="Intel"],
+#                    [AC_MSG_FAILURE([$PLUMBADCOMPILMSG])]
+#                   )
+               case "x$REALFC" in
+                  xifort    ) COMP="Intel";;
+                  xpgfortran) COMP="Portland";;
+                  xgfortran ) COMP="Gnu";;
+               esac
+               LIBPLUMED_PATH="../plumed/$COMP"
+               LIBPLUMED_LIBPATH="$LIBPLUMED_PATH/lib/"
+               LIBPLUMED_LIB="-L $LIBPLUMED_LIBPATH -lplumed -lplumedKernel"
+               LIBPLUMED_INC="-I $LIBPLUMED_PATH/include"
+               PLUEXT="_plumed"
+               #
+               # States that this Makefiles.conf should be generated
+               #
+               MAKEPLUMED="(cd plumed2 ; ./configure MPICXX=$CC --prefix=$PREFIX  --enable-mpi)"
+               INITPLUMED="PREFIX=$(pwd)/plumed/$COMP/"
+               AC_CONFIG_FILES(plumed2/Makefile.conf, [(cd plumed2 ; ./configure MPICXX=$CC --prefix=$PREFIX  --enable-mpi)],[PREFIX=$(pwd)/plumed/$COMP/ ] )
+               PLUMEDINCLUDE="plumed.mk"
+             ],
+             [ PLUMEDFLAG=""
+               LIBPLUMED_PATH=""
+               LIBPLUMED_LIB=""
+               LIBPLUMED_INC="" 
+               PLUEXT=""
+               MAKEPLUMED="touch noplumed"
+               INITPLUMED=""
+ #             AC_CONFIG_FILES(plumed2/Makefile.conf, [ touch noplumed ] )
+               PLUMEDINCLUDE="noplumed.mk"
+	     ]
+            )
 #
 # Final setting of the Compiler flags
 #
        case "x$REALFC" in
-          xifort    ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSIF $ARCHIF";;
-          xpgfortran) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSPF $ARCHPF";;
-          xgfortran ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSGF $ARCHGF";;
+          xifort    ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSIF $ARCHIF";PREPROFLAG="-fpp";;
+          xpgfortran) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSPF $ARCHPF";PREPROFLAG="-Mpreprocess";;
+          xgfortran ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSGF $ARCHGF";PREPROFLAG="-cpp";;
        esac
 #
 # Flags for .f sources are the same as those for .f90 sources
 # Fortran compiler is the wrapper
-FCFLAGS="$FCFLAGS $FORT_FLAGS"
+FCFLAGS="$PREPROFLAG $PLUMEDFLAG $FCFLAGS $FORT_FLAGS"
 FFLAGS=$FCFLAGS
 FC=$MPIFC
 
@@ -504,10 +560,10 @@ LDFLAGS=
 #
 
 AS_IF([test "x$DEBUG_MODE" = xDEBUG ],
-      [RUNMO_MSG="** Running Mode         : ${YEL}$DEBUG_MODE$GRN (binaries'extension is $YEL"'.debug'"$GRN)"],
-      [RUNMO_MSG="** Running Mode         : ${YEL}$DEBUG_MODE$GRN (No extension for binaries)"]
+      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $DEBUG_MODE$GRN (binaries'extension is $YEL'$EXEEXT'$GRN)"],
+      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $DEBUG_MODE$GRN (No extension for binaries)"]
      )
-
+EXEEXT="$PLUEXT$EXEEXT"
 #
 # Build the messages for NOTICE
 #
@@ -521,6 +577,8 @@ FORCO_MSG="** Fortran Compiler     : ${GRN}$REALFC"
 FOFL1_MSG="** Fortran flags        : ${GRN}${FCFLAGS:0:73}"
 FOFL2_MSG="**                      : ${GRN}${FCFLAGS:73:146}"
 DECLI_MSG="** 2decomp Library      : ${GRN}$LIB2DECOMP_LIB"
+PLULI_MSG="** PLUMED  Library      : ${GRN}$LIBPLUMED_LIB"
+PLUIN_MSG="** PLUMED  Includes     : ${GRN}$LIBPLUMED_INC"
 FFTTY_MSG="** FFTW3 Interface      : ${GRN}$FFTW_TYPE of the $FFTWTYPE library"
 FFTPA_MSG="** FFTW3 Path           : ${GRN}$FFTW_LIB_PATH"
 FFTIN_MSG="** FFTW3 Includes       : ${GRN}$FFTW_INCLUDES"
@@ -536,6 +594,8 @@ FORCO_MSG="$CLR$FORCO_MSG${PADD:0:$((120 - ${#FORCO_MSG}))}$CLR"
 FOFL1_MSG="$CLR$FOFL1_MSG${PADD:0:$((120 - ${#FOFL1_MSG}))}$CLR"
 FOFL2_MSG="$CLR$FOFL2_MSG${PADD:0:$((120 - ${#FOFL2_MSG}))}$CLR"
 DECLI_MSG="$CLR$DECLI_MSG${PADD:0:$((120 - ${#DECLI_MSG}))}$CLR"
+PLULI_MSG="$CLR$PLULI_MSG${PADD:0:$((120 - ${#PLULI_MSG}))}$CLR"
+PLUIN_MSG="$CLR$PLUIN_MSG${PADD:0:$((120 - ${#PLUIN_MSG}))}$CLR"
 FFTTY_MSG="$CLR$FFTTY_MSG${PADD:0:$((120 - ${#FFTTY_MSG}))}$CLR"
 FFTPA_MSG="$CLR$FFTPA_MSG${PADD:0:$((120 - ${#FFTPA_MSG}))}$CLR"
 FFTIN_MSG="$CLR$FFTIN_MSG${PADD:0:$((120 - ${#FFTIN_MSG}))}$CLR"
@@ -555,6 +615,10 @@ AC_SUBST([MKL_MOD_BIN])
 AC_SUBST([MKL_MOD_SOURCE])
 AC_SUBST([LIB2DECOMP_INC])
 AC_SUBST([LIB2DECOMP_LIB])
+AC_SUBST([PLUMED])
+AC_SUBST([LIBPLUMED_INC])
+AC_SUBST([LIBPLUMED_LIB])
+AC_SUBST([LIBPLUMED_LIBPATH])
 AC_SUBST([FFTW_TYPE])
 AC_SUBST([FFTW_LIB_PATH])
 AC_SUBST([FFTW_INCLUDES])
@@ -563,13 +627,15 @@ AC_SUBST([FFTW_MKL_INCLUDES_PATH])
 AC_SUBST([FFTW_LIBS])
 AC_SUBST([BLAS])
 AC_SUBST([PYTHON])
-AC_SUBST([INCLUDE_DEPEND_MK],["include depend.mk"])
+AC_SUBST([PREFIX])
+AC_SUBST([INCLUDE_PLUMED_MK],["include depend.mk"])
+AC_SUBST([INCLUDE_DEPEND_MK],["include "$PLUMEDINCLUDE])
 
 #
 # States that these Makefiles should be generated
 #
 
-AC_CONFIG_FILES([Makefile
+AC_CONFIG_FILES( Makefile
                  2decomp_fft/src/Makefile
                  example/Makefile
                  params/Makefile
@@ -578,7 +644,9 @@ AC_CONFIG_FILES([Makefile
                  tutorials/SMD/Makefile
                  tutorials/SMD/CFSMD/Makefile
                  tutorials/SMD/CVSMD/Makefile
-               ])
+                 scripts/Makefile
+		 scripts/tinkerhp
+               )
 
 #
 # Produces  Makefiles.in and Makefiles.
@@ -598,6 +666,8 @@ AC_MSG_NOTICE([$FORCO_MSG])
 AC_MSG_NOTICE([$FOFL1_MSG])
 AC_MSG_NOTICE([$FOFL2_MSG])
 AC_MSG_NOTICE([$DECLI_MSG])
+AC_MSG_NOTICE([$PLULI_MSG])
+AC_MSG_NOTICE([$PLUIN_MSG])
 AC_MSG_NOTICE([$FFTTY_MSG])
 AC_MSG_NOTICE([$FFTPA_MSG])
 AC_MSG_NOTICE([$FFTIN_MSG])
