@@ -118,7 +118,12 @@ Tinker-HP also requires a recent enough \mpi\ library supporting \mpi\  3.x stan
 
 \section{Installation}
 
-As Tinker-HP is shipped in source form, you need to compile it. This was not always an easy task in the previous releases. Tinker-HP now uses a \config\ script built with autotools packages from \textsc{Gnu} to ease the compilation and installation process. Apart from the usual options available with all \config\ scripts, there are specific options for Tinker-HP.
+As Tinker-HP is shipped in source form, you need to compile it. This was not always an easy task in the previous releases. Tinker-HP now uses a \config\ script built with autotools packages from \textsc{Gnu} to ease the compilation and installation process. 
+The first thing you should do is to type :
+
+\texttt{autoconf ; automake }
+
+in the main directory. This will generate the \config\ file. Apart from the usual options available with all \config\ scripts, there are specific options for Tinker-HP.
 \begin{verbatim}
 Usage: ./configure [OPTION]... [VAR=VALUE]...
 
