@@ -964,7 +964,7 @@ c
 c       on the "z" boundary
 c
         if (((x1.le.x3).and.(x2.ge.x3)).and.((y1.le.y3).and.(y2.ge.y3))
-     $   .and.((x1.eq.x3).or.(x2.eq.x3))) then
+     $   .and.((z1.eq.z3).or.(z2.eq.z3))) then
           dist = 0d0
           return
         end if

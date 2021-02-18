@@ -1614,7 +1614,7 @@ c
           end do
         end do
         domlentemp = domlen
-        call orderbuffer(.true.)
+        call orderbuffer(.false.)
         call orderbufferrec
 c
         deallocate (precdirrecep)

@@ -65,9 +65,9 @@ c
       if (ibloc.le.0) return
 
       ia = zaxis(i)
-      if (ia.le.0) ia = ib
+      if (ia.le.0) return
       ialoc = loc(ia)
-      if (ialoc.le.0) ialoc = ibloc
+      if (ialoc.le.0) return
       ic = xaxis(i)
       if (ic.le.0) ic = ib
       icloc = loc(ic)
@@ -447,9 +447,9 @@ c
       if (ibloc.le.0) return
 
       ia = zaxis(i)
-      if (ia.le.0) ia = ib
+      if (ia.le.0) return
       ialoc = locrec1(ia)
-      if (ialoc.le.0) ialoc = ibloc
+      if (ialoc.le.0) return
 
       ic = xaxis(i)
       if (ic.le.0) ic = ib

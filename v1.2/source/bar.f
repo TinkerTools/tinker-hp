@@ -825,7 +825,7 @@ c
       do k = 1, nbst
          sum = 0.0d0
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max(int(frma*random()),1)
             sum = sum + vola(j)
          end do
          vavea = sum / frma
@@ -833,7 +833,7 @@ c
          vasum2 = vasum2 + vavea*vavea
          sum = 0.0d0
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max(int(frmb*random()),1)
             sum = sum + volb(j)
          end do
          vaveb = sum / frmb
@@ -868,7 +868,7 @@ c
       do k = 1, nbst
          sum = 0.0d0
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max(int(frma*random()),1)
             sum = sum + exp((ua0(j)-ua1(j)+vloga(j))/rta)
          end do
          cfore = -rta * log(sum/frma)
@@ -876,7 +876,7 @@ c
          cfsum2 = cfsum2 + cfore*cfore
          sum = 0.0d0
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max(int(frmb*random()),1)
             sum = sum + exp((ub1(j)-ub0(j)+vlogb(j))/rtb)
          end do
          cback = rtb * log(sum/frmb)
@@ -987,14 +987,14 @@ c
          cold = 0.0d0
          top = 0.0d0
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max(int(frmb*random()),1)
             bstb(i) = j
             top = top + 1.0d0/(1.0d0+exp((ub0(j)-ub1(j)
      &                                   +vlogb(i)+cold)/rtb))
          end do
          bot = 0.0d0
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max(int(frma*random()),1)
             bsta(i) = j
             bot = bot + 1.0d0/(1.0d0+exp((ua1(j)-ua0(j)
      &                                   +vloga(i)-cold)/rta))
@@ -1054,11 +1054,11 @@ c
          uave0 = 0.0d0
          uave1 = 0.0d0
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max(int(frma*random()),1)
             uave0 = uave0 + ua0(j)
          end do
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max(int(frmb*random()),1)
             uave1 = uave1 + ub1(j)
          end do
          uave0 = uave0 / frma
@@ -1104,7 +1104,7 @@ c
          top = 0.0d0
          bot = 0.0d0
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max(int(frma*random()),1)
             term = exp((ua0(j)-ua1(j)+vloga(j))/rta)
             top = top + ua1(j)*term
             bot = bot + term
@@ -1115,7 +1115,7 @@ c
          top = 0.0d0
          bot = 0.0d0
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max(int(frmb*random()),1)
             term = exp((ub1(j)-ub0(j)+vlogb(j))/rtb)
             top = top + ub0(j)*term
             bot = bot + term
@@ -1160,7 +1160,7 @@ c
          vsum = 0.0d0
          fbsum0 = 0.0d0
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max(int(frma*random()),1)
             fore = 1.0d0/(1.0d0+exp((ua1(j)-ua0(j)+vloga(j)-cnew)/rta))
             back = 1.0d0/(1.0d0+exp((ua0(j)-ua1(j)+vloga(j)+cnew)/rta))
             fsum = fsum + fore
@@ -1176,7 +1176,7 @@ c
          vsum = 0.0d0
          fbsum1 = 0.0d0
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max(int(frmb*random()),1)
             fore = 1.0d0/(1.0d0+exp((ub1(j)-ub0(j)+vlogb(j)-cnew)/rtb))
             back = 1.0d0/(1.0d0+exp((ub0(j)-ub1(j)+vlogb(j)+cnew)/rtb))
             bsum = bsum + back

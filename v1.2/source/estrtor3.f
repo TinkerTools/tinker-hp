@@ -182,6 +182,7 @@ c
                v3 = kst(9,iistrtor)
                k = ist(4,iistrtor)
                dr = rdc - bl(k)
+               e3 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
 c
 c     increment the total stretch-torsion energy
 c
