@@ -22,6 +22,7 @@ c     bitorsglob local - global bitorsion correspondance
 c     strbndglob local - global strech bending correspondance 
 c     ureyglob  local - global urey bradley correspondance 
 c     angangglob local - global angle correspondance 
+c     angtorglob local - global angle-torsion correspondance 
 c     opbendglob local - global out of plane bending correspondance 
 c     opdistglob local - global out of plane distance correspondance 
 c     impropglob local - global improper dihedral correspondance 
@@ -58,7 +59,7 @@ c
       integer, allocatable :: opbendglob(:),opdistglob(:)
       integer, allocatable :: impropglob(:),imptorglob(:)
       integer, allocatable :: pitorsglob(:),strtorglob(:)
-      integer, allocatable :: tortorglob(:)
+      integer, allocatable :: angtorglob(:),tortorglob(:)
       integer, allocatable :: vdwglob(:),poleglob(:),polerecglob(:)
       integer, allocatable :: chgglob(:),chgrecglob(:)
       integer, allocatable :: molculeglob(:)

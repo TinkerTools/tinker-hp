@@ -31,7 +31,7 @@ c
       integer iloc
       real*8 etot,f,f0,eps,eps0,old,energy
       real*8 eb0,ea0,eba0,eub0,eaa0,eopb0
-      real*8 eopd0,eid0,eit0,et0,ept0,ebt0
+      real*8 eopd0,eid0,eit0,et0,ept0,eat0,ebt0
       real*8 ett0,ev0,ec0,em0,ep0
       real*8 eg0,ex0
       real*8 totnorm,ntotnorm,rms,nrms
@@ -50,6 +50,7 @@ c
       real*8, allocatable :: ndeit(:,:)
       real*8, allocatable :: ndet(:,:)
       real*8, allocatable :: ndept(:,:)
+      real*8, allocatable :: ndeat(:,:)
       real*8, allocatable :: ndebt(:,:)
       real*8, allocatable :: ndett(:,:)
       real*8, allocatable :: ndev(:,:)
@@ -231,10 +232,12 @@ c         else
      &                 12x,'EID',11x,'EC',
      &              /,15x,'EIT',13x,'ET',14x,'EPT',13x,'EBT',
      &              11x,'EREP',/,15x,'ETT',13x,'EV',14x,'EM',14x,'EP',
-     &               12x,'EXDISP')
+     &               12x,'EXDISP',
+     &               /,15x,'EAT')
             write (iout,190)  eb,ea,eba,eub,ex,eaa,eopb,eopd,eid,ec,
-     &                        eit,et,ept,ebt,0d0,ett,ev,em,ep,0d0
-  190       format (/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4)
+     &                        eit,et,ept,ebt,0d0,ett,ev,em,ep,0d0,eat
+  190       format (/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4,
+     &              /,6x,f15.4)
 c         end if
       end if
 c
@@ -253,7 +256,7 @@ c
      &              /,2x,'Type',9x,'d EIT',10x,'d ET',11x,'d EPT',
      &                 10x,'d EBT',8x,'d EREP',
      &              /,15x,'d ETT',10x,'d EV',11x,'d EM',11x,'d EP',9x,
-     &               'd EXDISP')
+     &               'd EXDISP',/,15x,'d EAT')
          else if (digits .ge. 6) then
             write (iout,220)
   220       format (/,2x,'Atom',9x,'d EB',11x,'d EA',11x,'d EBA',
@@ -263,7 +266,7 @@ c
      &              /,2x,'Type',9x,'d EIT',10x,'d ET',11x,'d EPT',
      &                 10x,'d EBT',8x,'d EREP'
      &              /,15x,'d ETT',10x,'d EV',11x,'d EM',11x,'d EP',9x,
-     &                'd EXDISP')
+     &                'd EXDISP',/,15x,'d EAT')
          else
             write (iout,230)
   230       format (/,2x,'Atom',9x,'d EB',11x,'d EA',11x,'d EBA',
@@ -273,7 +276,7 @@ c
      &              /,2x,'Type',9x,'d EIT',10x,'d ET',11x,'d EPT',
      &                 10x,'d EBT',8x,'d EREP',
      &              /,15x,'d ETT',10x,'d EV',11x,'d EM',11x,'d EP',9x,
-     &               'd EXDISP')
+     &               'd EXDISP',/,15x,'d EAT')
          end if
       end if
 c
@@ -291,6 +294,7 @@ c
       allocate (ndeit(3,nloc))
       allocate (ndet(3,nloc))
       allocate (ndept(3,nloc))
+      allocate (ndeat(3,nloc))
       allocate (ndebt(3,nloc))
       allocate (ndett(3,nloc))
       allocate (ndev(3,nloc))
@@ -310,6 +314,7 @@ c
       ndeid = 0d0
       ndet = 0d0
       ndept = 0d0
+      ndeat = 0d0
       ndebt = 0d0
       ndett = 0d0
       ndev = 0d0
@@ -349,6 +354,7 @@ c
                eit0 = eit
                et0 = et
                ept0 = ept
+               eat0 = eat
                ebt0 = ebt
                ett0 = ett
                ev0 = ev
@@ -390,6 +396,7 @@ c
                  ndeit(j,iloc) = (eit - eit0) / eps
                  ndet(j,iloc) = (et - et0) / eps
                  ndept(j,iloc) = (ept - ept0) / eps
+                 ndeat(j,iloc) = (eat - eat0) / eps
                  ndebt(j,iloc) = (ebt - ebt0) / eps
                  ndett(j,iloc) = (ett - ett0) / eps
                  ndev(j,iloc) = (ev - ev0) / eps
@@ -435,9 +442,9 @@ c                  else
      &                        det(j,iloc),
      &                        dept(j,iloc),debt(j,iloc),0d0,
      &                        dett(j,iloc),dev(j,iloc),dem(j,iloc),
-     &                        dep(j,iloc),0d0
+     &                        dep(j,iloc),0d0,deat(j,iloc)
   260                format (/,i6,5f15.4,/,5x,a1,5f15.4,/,' Anlyt',
-     &                          5f15.4,/,6x,5f15.4)
+     &                          5f15.4,/,6x,5f15.4,/,6x,f15.4)
 c                  end if
                end if
 c
@@ -477,10 +484,10 @@ c                  else
      &                           ndept(j,iloc),ndebt(j,iloc),
      &                           0d0,ndett(j,iloc),
      &                           ndev(j,iloc),ndem(j,iloc),ndep(j,iloc),
-     &                           0d0
+     &                           0d0,deat(j,iloc)
 
   290                format (/,i6,5f15.4,/,5x,a1,5f15.4,/,' Numer',
-     &                          5f15.4,/,6x,5f15.4)
+     &                          5f15.4,/,6x,5f15.4,/,6x,f15.4)
 c                  end if
                end if
             end do
@@ -501,6 +508,7 @@ c
       deallocate (ndeit)
       deallocate (ndet)
       deallocate (ndept)
+      deallocate (ndeat)
       deallocate (ndebt)
       deallocate (ndett)
       deallocate (ndev)

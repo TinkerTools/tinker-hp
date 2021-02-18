@@ -113,6 +113,7 @@ c     parameter arrays
 c
       subroutine alloc_shared_torsions
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use angtor
       use domdec
       use improp
       use imptor
@@ -121,9 +122,9 @@ c
       use tors
       use mpi
       implicit none
-
+      integer :: win,win2
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
 c
@@ -206,6 +207,21 @@ c
         CALL MPI_Win_shared_query(winnbstrtor, 0, windowsize, disp_unit,
      $  baseptr, ierr)
         CALL MPI_Win_free(winnbstrtor,ierr)
+      end if
+      if (associated(iat)) then
+        CALL MPI_Win_shared_query(winiat, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winiat,ierr)
+      end if
+      if (associated(kant)) then
+        CALL MPI_Win_shared_query(winkant, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winkant,ierr)
+      end if
+      if (associated(nbangtor)) then
+        CALL MPI_Win_shared_query(winnbangtor, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winnbangtor,ierr)
       end if
 c
 c     itors
@@ -667,5 +683,74 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,nbstrtor,arrayshape)
+c
+c     iat
+c
+      arrayshape2=(/3,ntors/)
+      if (hostrank == 0) then
+        windowsize = int(3*ntors,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winiat, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winiat, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,iat,arrayshape2)
+c
+c     kant
+c
+      arrayshape2=(/6,ntors/)
+      if (hostrank == 0) then
+        windowsize = int(6*ntors,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winkant, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winkant, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,kant,arrayshape2)
+c
+c     nbangtor
+c
+      arrayshape=(/ntors/)
+      if (hostrank == 0) then
+        windowsize = int(ntors,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winnbangtor, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winnbangtor, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,nbangtor,arrayshape)
       return
       end

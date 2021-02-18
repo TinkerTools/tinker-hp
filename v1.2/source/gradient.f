@@ -53,6 +53,7 @@ c
       eit = 0.0d0
       et = 0.0d0
       ept = 0.0d0
+      eat = 0.0d0
       ebt = 0.0d0
       ett = 0.0d0
       ev = 0.0d0
@@ -76,6 +77,7 @@ c
       deit = 0d0
       det = 0d0
       dept = 0d0
+      deat = 0d0
       debt = 0d0
       dett = 0d0
       dev = 0d0
@@ -106,6 +108,7 @@ c
       if (use_tors)  call etors1
       if (use_pitors)  call epitors1
       if (use_strtor)  call estrtor1
+      if (use_angtor)  call eangtor1
       if (use_tortor)  call etortor1
       if (use_angle)  call eangle1
       time1 = mpi_wtime()
@@ -136,15 +139,16 @@ c
 c     sum up to get the total energy and first derivatives
 c
       esum = eit + eopd + eopb + eaa + eub + eba + ea + eb + em + ep
-     $       + ec + ev + et + ept + ebt + ett + eg + ex + eid + ensmd
+     $       + ec + ev + et + ept + eat + ebt + ett + eg + ex + eid 
+     $       + ensmd
       energy = esum
 c
       desum = deaa + deba + dea + deb + dec + dem + deopb + deopd + deid
-     $ + dep + dev + deub + deit + det + dept + debt + dett + deg + dex
-     $ + desmd
+     $ + dep + dev + deub + deit + det + dept + deat + debt + dett 
+     $ + deg + dex+ desmd
 c
       debond = deaa + deba + dea + deb + deopb + deopd + deid 
-     $ + deub + deit + det + dept + debt + dett + deg
+     $ + deub + deit + det + dept + deat + debt + dett + deg
 
 c
       derivs(:,1:nloc) = derivs(:,1:nloc) + desum(:,1:nloc)

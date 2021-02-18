@@ -22,6 +22,7 @@ c     aeid    improper dihedral energy partitioned over atoms
 c     aeit    improper torsion energy partitioned over atoms
 c     aet     torsional energy partitioned over atoms
 c     aept    pi-orbital torsion energy partitioned over atoms
+c     aeat    angle-torsion energy partitioned over atoms
 c     aebt    stretch-torsion energy partitioned over atoms
 c     aett    torsion-torsion energy partitioned over atoms
 c     aev     van der Waals energy partitioned over atoms
@@ -37,6 +38,6 @@ c
       real*8, allocatable ::  aesum(:),aem(:),aep(:),aev(:),
      $  aeb(:),aea(:),aeba(:),aub(:),aeaa(:),aeopb(:),aeopd(:),aeid(:),
      $  aeit(:),aet(:),aept(:),aebt(:),aett(:),aeg(:),aex(:),
-     $  aec(:)
+     $  aec(:),aeat(:)
       save
       end

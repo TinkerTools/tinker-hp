@@ -287,6 +287,10 @@ c
          fstr = '('' Stretch-Torsion'',12x,'//form1//')'
          write (iout,fstr)  ebt,nebt
       end if
+      if (neat.ne.0) then
+         fstr = '('' Angle-Torsion'',14x,'//form1//')'
+         write (iout,fstr)  eat,neat
+      end if
       if (nett.ne.0) then
          fstr = '('' Torsion-Torsion'',12x,'//form1//')'
          write (iout,fstr)  ett,nett

@@ -1387,7 +1387,7 @@ c
       implicit none
       integer ierr,commloc
       real*8 epot
-      real*8 buffer1(6),buffer2(16)
+      real*8 buffer1(6),buffer2(17)
 c
       if (use_pmecore) then
         commloc = comm_dir
@@ -1439,12 +1439,13 @@ c
       buffer2(14) = ett
       buffer2(15) = eg
       buffer2(16) = ex
+      buffer2(17) = eat
 c
       if (rank.eq.0) then
-        call MPI_REDUCE(MPI_IN_PLACE,buffer2,16,MPI_REAL8,MPI_SUM,0,
+        call MPI_REDUCE(MPI_IN_PLACE,buffer2,17,MPI_REAL8,MPI_SUM,0,
      $     commloc,ierr)
       else
-        call MPI_REDUCE(buffer2,buffer2,16,MPI_REAL8,MPI_SUM,0,
+        call MPI_REDUCE(buffer2,buffer2,17,MPI_REAL8,MPI_SUM,0,
      $     commloc,ierr)
       end if
 c
@@ -1464,6 +1465,7 @@ c
       ett  = buffer2(14)
       eg   = buffer2(15)
       ex   = buffer2(16)
+      eat  = buffer2(17)
 c
       return
       end
@@ -2508,6 +2510,46 @@ c
 c
 c     MPI : move in buffer
 c
+      buffers(:,(nloc+1):nbloc) = deat(:,(nloc+1):nbloc)
+c
+      do i = 1, nbig_recep
+        tag = nproc*pbig_recep(i) + rank + 1
+        call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),
+     $   3*domlen(pbig_recep(i)+1),
+     $   MPI_REAL8,pbig_recep(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nbig_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+      do i = 1, nbig_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, nbig_send
+        do j = 1, nloc
+          deat(1,j) = deat(1,j) + buffer(1,j,i)
+          deat(2,j) = deat(2,j) + buffer(2,j,i)
+          deat(3,j) = deat(3,j) + buffer(3,j,i)
+          detot(1,j) = detot(1,j) + buffer(1,j,i)
+          detot(2,j) = detot(2,j) + buffer(2,j,i)
+          detot(3,j) = detot(3,j) + buffer(3,j,i)
+        end do
+      end do
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nbig_send
+        tag = nproc*rank + pbig_send(i) + 1
+        call MPI_IRECV(buffer(1,1,i),3*nloc,
+     $   MPI_REAL8,pbig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
       buffers(:,(nloc+1):nbloc) = dett(:,(nloc+1):nbloc)
 c
       do i = 1, nbig_recep
@@ -2827,6 +2869,8 @@ c
        call MPI_ALLREDUCE(MPI_IN_PLACE,ept,1,MPI_REAL8,MPI_SUM,
      $    COMM_TINKER,ierr)
        call MPI_ALLREDUCE(MPI_IN_PLACE,ebt,1,MPI_REAL8,MPI_SUM,
+     $    COMM_TINKER,ierr)
+       call MPI_ALLREDUCE(MPI_IN_PLACE,eat,1,MPI_REAL8,MPI_SUM,
      $    COMM_TINKER,ierr)
        call MPI_ALLREDUCE(MPI_IN_PLACE,ett,1,MPI_REAL8,MPI_SUM,
      $    COMM_TINKER,ierr)

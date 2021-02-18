@@ -23,6 +23,7 @@ c     deit    improper torsion Cartesian coordinate derivatives
 c     det     torsional Cartesian coordinate derivatives
 c     dept    pi-orbital torsion Cartesian coordinate derivatives
 c     debt    stretch-torsion Cartesian coordinate derivatives
+c     deat    angle-torsion Cartesian coordinate derivatives
 c     dett    torsion-torsion Cartesian coordinate derivatives
 c     dev     van der Waals Cartesian coordinate derivatives
 c     dec     charge-charge Cartesian coordinate derivatives
@@ -45,6 +46,7 @@ c
       real*8, allocatable :: desum(:,:),deb(:,:),dea(:,:),deba(:,:)
       real*8, allocatable :: deub(:,:),deaa(:,:),deopb(:,:),deopd(:,:)
       real*8, allocatable :: deid(:,:),det(:,:),dept(:,:),deit(:,:)
+      real*8, allocatable :: deat(:,:)
       real*8, allocatable :: debt(:,:),dett(:,:),dev(:,:),dec(:,:)
       real*8, allocatable :: dem(:,:),dep(:,:)
       real*8, allocatable :: deg(:,:),dex(:,:)

@@ -257,6 +257,8 @@ c
          read (string,*,err=10,end=10)  ptorunit
       else if (keyword(1:11) .eq. 'STRTORUNIT ') then
          read (string,*,err=10,end=10)  storunit
+      else if (keyword(1:11) .eq. 'ANGTORUNIT ') then
+         read (string,*,err=10,end=10)  atorunit
       else if (keyword(1:11) .eq. 'TORTORUNIT ') then
          read (string,*,err=10,end=10)  ttorunit
 c

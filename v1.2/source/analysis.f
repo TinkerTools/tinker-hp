@@ -62,6 +62,8 @@ c
       allocate (aet(nbloc))
       if (allocated(aept)) deallocate (aept)
       allocate (aept(nbloc))
+      if (allocated(aeat)) deallocate (aeat)
+      allocate (aeat(nbloc))
       if (allocated(aebt)) deallocate (aebt)
       allocate (aebt(nbloc))
       if (allocated(aett)) deallocate (aett)
@@ -91,6 +93,7 @@ c
       et = 0.0d0
       ept = 0.0d0
       ebt = 0.0d0
+      eat = 0.0d0
       ett = 0.0d0
       eg = 0.0d0
 c
@@ -112,6 +115,7 @@ c
       aet = 0.0d0
       aept = 0.0d0
       aebt = 0.0d0
+      aeat = 0.0d0
       aett = 0.0d0
       aeg = 0.0d0
 c
@@ -133,6 +137,7 @@ c
       if (use_tors)  call etors3
       if (use_pitors)  call epitors3
       if (use_strtor)  call estrtor3
+      if (use_angtor)  call eangtor3
       if (use_tortor)  call etortor3
 c
 c     call the van der Waals energy component routines
@@ -220,6 +225,10 @@ c
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nebt,1,MPI_INT,MPI_SUM,0,
      $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,eat,1,MPI_REAL8,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,neat,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,ett,1,MPI_REAL8,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nett,1,MPI_INT,MPI_SUM,0,
@@ -299,6 +308,10 @@ c
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(nebt,nebt,1,MPI_INT,MPI_SUM,0,
      $     COMM_TINKER,ierr)
+        call MPI_REDUCE(eat,eat,1,MPI_REAL8,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(neat,neat,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(ett,ett,1,MPI_REAL8,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(nett,nett,1,MPI_INT,MPI_SUM,0,
@@ -318,15 +331,15 @@ c
 c     sum up to give the total potential energy
 c
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
-     &          + et + ept + ebt + ett + ev + em
+     &          + et + ept + eat + ebt + ett + ev + em
      &          + ec + ep +  eg + ex
       energy = esum
 c
 c     sum up to give the total potential energy per atom
 c
       aesum = aem + aec + aep + aev + aeb + aea + aeba + aub + aeaa +
-     $ aeopb + aeopd + aeid + aeit + aet + aept + aebt + aett + aeg
-     $ + aex
+     $ aeopb + aeopd + aeid + aeit + aet + aept + aebt + aeat + aett 
+     $ + aeg + aex
 c
 c     check for an illegal value for the total energy
 c
