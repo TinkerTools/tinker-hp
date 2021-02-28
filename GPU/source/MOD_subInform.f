@@ -132,6 +132,7 @@ c
       integer i
       real(8) val
       mi=0;ma=0;on=0
+!$acc wait
 !$acc parallel loop async present(vector(1:sz))
       do i = 1, sz
          val = (vector(i))
@@ -140,8 +141,8 @@ c
          on  = on + abs( val )
       end do
 !$acc wait
-12    format(A6,3F16.6)
-      write(*,12) name,mi,ma,on
+12    format(A6,3F16.6,I5)
+      write(*,12) name,mi,ma,on,rank
       end subroutine
 
 #if TINKER_MIXED_PREC
@@ -264,6 +265,47 @@ c
          print 32,"min max_v ",minmax(04),minmax(09),minmax(11)
          print 32,"min max_a ",minmax(05),minmax(10),minmax(12)
       end if
+      end subroutine
+
+      module subroutine check_loc(queue)
+      use atmlst ,only: poleglob
+      use domdec  ,only: xbegproc,ybegproc,zbegproc
+     &            ,nproc,rank,xendproc,yendproc,zendproc
+     &            ,nbloc,loc
+      use mpole   ,only: npolebloc,ipole,rpole,poleloc,npolelocnl
+     &            , npolelocnlb_pair,npolelocnlb,npolelocnlb2_pair
+     &            , nspnlb2=>nshortpolelocnlb2_pair,poleloc
+      use neigh   , only : ipole_s=>celle_glob,pglob_s=>celle_pole
+     &            , ploc_s=>celle_ploc, ieblst_s=>ieblst
+     &            , iseblst_s=>ishorteblst, seblst_s=>shorteblst
+     &            , eblst_s=>eblst, x_s=>celle_x, y_s=>celle_y
+     &            , z_s=>celle_z
+      implicit none
+      integer queue
+      integer iipole,iglob,iploc,i
+      integer ato,ato1
+      !print*, 'check loc'
+      ato=0
+
+!$acc parallel loop default(present) async(queue) copyin(ato)
+!$acc&   private(ato1)
+      do i = 1,npolelocnl
+         iipole= pglob_s(i)
+         iglob = ipole(iipole)
+         iploc = loc(iglob)
+         if (iploc.eq.0.or.iploc.gt.nbloc.and.ato1.le.200) then
+            print*,'out loc',iploc,iglob,i,rank
+         end if
+         iploc = ploc_s(i)
+!$acc atomic read
+         ato1= ato
+!$acc end atomic
+         if (iploc.eq.0.or.iploc.gt.nbloc.and.ato1.le.200) then
+            print*,iploc,iglob,i,'o pl',rank
+!$acc atomic
+            ato = ato +1
+         end if
+      end do
       end subroutine
 
       end submodule

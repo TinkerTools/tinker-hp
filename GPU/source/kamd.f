@@ -24,6 +24,7 @@ c     "kamd" checks the aMD activation and assign the necessary
 c     parameters enters in the key file
 c
 c
+#include "tinker_precision.h"
       subroutine kamd(init)
       use atoms
       use deriv
@@ -43,7 +44,7 @@ c
       character(len=3)::cpt
       integer i,j,k,cpt1
       integer ii, jj
-      real*8 eps,dalt,dalt2
+      real(r_p) eps,dalt,dalt2
       integer nalt,nalt2
       integer next
       logical init, quit, warning
@@ -55,61 +56,69 @@ c
 c
 c     Initialisation parameters
 c
-      use_amd_dih = .false.
-      use_amd_ene = .false.
+      use_amd_dih  = .false.
+      use_amd_ene  = .false.
       use_amd_wat1 = .false.
-      use_gamd = .false.
-      amd_dih_ene = 0.0d0
-      amd_dih_alpha = 1.0
-      amd_ep_ene = 0.0d0
+      use_gamd     = .false.
+      amd_dih_ene  = 0.0d0
+      amd_dih_alpha      = 1.0
+      amd_ep_ene   = 0.0d0
       amd_ep_alpha = 1.0
-      amd_factor_dih = 1.0
-      amd_factor_tot = 1.0
-      amdoutputfreq = 1
+      amd_factor_dih    = 1.0
+      amd_factor_tot    = 1.0
+      amdoutputfreq     = 1
       amdoutputfreq_dih = 1
-      amdboostavg = 0.0d0
-      amdboostavg_dih = 0.0d0
-      aMDdt = 0.001
-      aMDdt_dih = 0.001
-      tamd = 0
-      amdtpass = 0
+      amdboostavg       = 0.0d0
+      amdboostavg_dih   = 0.0d0
+      aMDdt        = 0.001
+      aMDdt_dih    = 0.001
+      tamd         = 0
+      amdtpass     = 0
       amdtpass_dih = 0
-      nalt = 1
-      nalt2 = 1
-      gamd_ie = 1
+#if TINKER_SINGLE_PREC
+      eps          = 1e-6
+#else
+      eps          = 1d-8
+#endif
+      dalt         = 0
+      dalt2        = 0
+      nalt         = 1
+      nalt2        = 1
+      gamd_ie      = 1
       gamd_cmdprepsteps = 200000
-      gamd_cmdsteps = 1000000
-      gamd_eqprepsteps = 200000
-      gamd_eqsteps = 1000000
-      gamd_sigma0P = 6.0
-      gamd_sigma0D = 6.0
-      use_gamd_restart = .false.
-      gamd_restartfile = "GaMD_restart.dat"
-      VavgD = 0.0d0
-      VavgP = 0.0d0
-      VavgW1 = 0.0d0
-      M2D = 0.0d0
-      M2P = 0.0d0
-      M2W1 = 0.0d0
-      sigmaVD = 0.0d0
-      sigmaVP = 0.0d0
-      sigmaVW1 = 0.0d0
-      cptgamdD = 1
-      cptgamdP = 1
-      cptgamdW1 = 1
-      gamdED = 0.0d0
-      gamdEP = 0.0d0
-      gamdEW1 = 0.0d0
-      gamdkD = 0.0d0
-      gamdkP = 0.0d0
-      gamdkW1 = 0.0d0
-      gamd_factor_dih = 1.0
-      gamd_factor_tot = 1.0
-      gamd_factor_wat1 = 1.0
+      gamd_cmdsteps     = 1000000
+      gamd_eqprepsteps  = 200000
+      gamd_eqsteps      = 1000000
+      gamd_sigma0P      = 6.0
+      gamd_sigma0D      = 6.0
+      use_gamd_restart  = .false.
+      gamd_restartfile  = "GaMD_restart.dat"
+      VavgD             = 0.0d0
+      VavgP             = 0.0d0
+      VavgW1            = 0.0d0
+      M2D               = 0.0d0
+      M2P               = 0.0d0
+      M2W1              = 0.0d0
+      sigmaVD           = 0.0d0
+      sigmaVP           = 0.0d0
+      sigmaVW1          = 0.0d0
+      cptgamdD          = 1
+      cptgamdP          = 1
+      cptgamdW1         = 1
+      gamdED            = 0.0d0
+      gamdEP            = 0.0d0
+      gamdEW1           = 0.0d0
+      gamdkD            = 0.0d0
+      gamdkP            = 0.0d0
+      gamdkW1           = 0.0d0
+      gamd_factor_dih   = 1.0
+      gamd_factor_tot   = 1.0
+      gamd_factor_wat1  = 1.0
       aMDwattype(1) = 349
       aMDwattype(2) = 350
-      quit = .true.
+      quit    = .true.
       warning = .false.
+
 !$acc update device(aMDwattype)
 c
 c######################################################################
@@ -135,16 +144,14 @@ c
                 open (iamdout,file='aMD_output.dat',action="write")
                 call promoamd(1)
             end if
-         end if
-         if (keyword(1:10) .eq. 'AMDENERGY ') then
+         else if (keyword(1:10) .eq. 'AMDENERGY ') then
             use_amd_ene = .true.
             iamdout = 500
             if (.not. use_amd_dih .and. rank.eq.0) then
                 open (iamdout,file='aMD_output.dat',action="write")
                 call promoamd(1)
             end if
-         end if
-         if (keyword(1:8) .eq. 'AMDDUAL ') then
+         else if (keyword(1:8) .eq. 'AMDDUAL ') then
             use_amd_dih = .true.
             use_amd_ene = .true.
             iamdout = 500
@@ -152,16 +159,14 @@ c
                 open (iamdout,file='aMD_output.dat',action="write")
                 call promoamd(1)
             end if
-         end if
-         if (keyword(1:10) .eq. 'AMDWATER1 ') then
+         else if (keyword(1:10) .eq. 'AMDWATER1 ') then
             use_amd_wat1 = .true.
             iamdout = 500
             if (.not. use_amd_dih .and. rank.eq.0) then
                 open (iamdout,file='aMD_output.dat',action="write")
                 call promoamd(1)
             end if
-         end if
-         if (keyword(1:5) .eq. 'GAMD ') then
+         else if (keyword(1:5) .eq. 'GAMD ') then
             use_gamd = .true.
             iamdout = 500
             igamdrestart = 501
@@ -173,134 +178,58 @@ c
 c     Assign the desired parameters for the aMD (LOOP2)
 c
       if (use_amd_dih .or. use_amd_ene .or. use_amd_wat1) then
-c
-c     Energetic threshold asignment for aMDdihE (aMD on dihedrals)
-c
          do i = 1, nkey
              next = 1
              record = keyline(i)
              call gettext (record,keyword,next)
              call upcase (keyword)
              string = record(next:240)
+      !Energetic threshold asignment for aMDdihE (aMD on dihedrals)
              if (keyword(1:8) .eq. 'AMDDIHE ') then
                 read (string,*,err=10) amd_dih_ene
-             endif
-         end do
-c
-c     Energetic threshold asignment for aMDePE (aMD on potential energy)
-c
-         do i = 1, nkey
-             next = 1
-             record = keyline(i)
-             call gettext (record,keyword,next)
-             call upcase (keyword)
-             string = record(next:240)
-             if (keyword(1:7) .eq. 'AMDEPE ') then
+      !Energetic threshold asignment for aMDePE (aMD on potential energy)
+             else if (keyword(1:7) .eq. 'AMDEPE ') then
                 read (string,*,err=10) amd_ep_ene
-             endif
-         end do
-c
-c     alpha acceleration factor aMDdihalpha (aMD on dihedrals)
-c
-         do i = 1, nkey
-             next = 1
-             record = keyline(i)
-             call gettext (record,keyword,next)
-             call upcase (keyword)
-             string = record(next:240)
-             if (keyword(1:12) .eq. 'AMDDIHALPHA ') then
+      !alpha acceleration factor aMDdihalpha (aMD on dihedrals)
+             else if (keyword(1:12) .eq. 'AMDDIHALPHA ') then
                 read (string,*,err=10) amd_dih_alpha
-             endif
-         end do
-c     
-c     alpha acceleration factor aMDePalpha (aMD on potential energy)
-c 
-         do i = 1, nkey
-             next = 1
-             record = keyline(i)
-             call gettext (record,keyword,next)
-             call upcase (keyword)
-             string = record(next:240)
-             if (keyword(1:11) .eq. 'AMDEPALPHA ') then
+      !alpha acceleration factor aMDePalpha (aMD on potential energy)
+             else if (keyword(1:11) .eq. 'AMDEPALPHA ') then
                 read (string,*,err=10) amd_ep_alpha
-             endif
-         end do
-c     
-c     aMD outputFreq
-c     
-         do i = 1, nkey
-             next = 1
-             record = keyline(i)
-             call gettext (record,keyword,next)
-             call upcase (keyword)
-             string = record(next:240)
-             if (keyword(1:14) .eq. 'AMDOUTPUTFREQ ') then
+      !aMD outputFreq
+             else if (keyword(1:14) .eq. 'AMDOUTPUTFREQ ') then
                 read (string,*,err=10) amdoutputFreq
+      !Reading of the timestep
+             else if (keyword(1:6) .eq. 'AMDDT ') then
+                read (string,*,err=10) aMDdt
+      ! Fetch Integrator data
+            else if (keyword(1:11) .eq. 'INTEGRATOR ') then
+               call getword (record,integrate,next)
+               call upcase (integrate)
+            else if (keyword(1:7) .eq. 'DINTER ') then
+               read (string,*,err=10) dalt
+            else if (keyword(1:7) .eq. 'DSHORT ') then
+               read (string,*,err=10) dalt2
              end if
          end do
          if (use_amd_dih) amdoutputFreq_dih = amdoutputFreq
-         if (use_amd_wat1) amdoutputFreq_dih = amdoutputFreq
-c
-c     Reading of the timestep
-c
-         do i = 1, nkey
-             next = 1
-             record = keyline(i)
-             call gettext (record,keyword,next)
-             call upcase (keyword)
-             string = record(next:240)
-             if (keyword(1:6) .eq. 'AMDDT ') then
-                read (string,*,err=10) aMDdt
-             end if
-         end do
          if (use_amd_dih) aMDdt_dih = aMDdt
+         if (use_amd_wat1) amdoutputFreq_dih = amdoutputFreq
+
 c
 c     Rescaling of the aMDoutputFreq_dih for dihedrals
 c
-         do j = 1, nkey
-            next = 1
-            record = keyline(j)
-            call gettext (record,keyword,next)
-            call upcase (keyword)
-            string = record(next:240)
-            if (keyword(1:11) .eq. 'INTEGRATOR ') then
-               call getword (record,integrate,next)
-               call upcase (integrate)
-            end if
-         end do
          if ((integrate .eq. 'RESPA') .or. (integrate .eq.
      $   'BAOABRESPA')) then
-            eps =  0.00000001d0
-            dalt = 0.00025
+            if(dalt.eq.0) dalt = 0.001
             nalt = int(abs(aMDdt)/(dalt+eps)) + 1
             aMDdt = aMDdt/nalt
          end if
          if ((integrate .eq. 'RESPA1') .or. (integrate .eq.
      $   'BAOABRESPA1')) then
-            eps =  0.00000001d0
-            dalt = 0.002
-            dalt2 = 0.00025
-            do j = 1, nkey
-               next = 1
-               record = keyline(j)
-               call gettext (record,keyword,next)
-               call upcase (keyword)
-               string = record(next:240)
-               if (keyword(1:7) .eq. 'DINTER ') then
-                  read (string,*,err=10) dalt
-               end if
-            end do
-            do j = 1, nkey
-               next = 1
-               record = keyline(j)
-               call gettext (record,keyword,next)
-               call upcase (keyword)
-               string = record(next:240)
-               if (keyword(1:7) .eq. 'DSHORT ') then
-                  read (string,*,err=10) dalt2
-               end if
-            end do
-            nalt = int(abs(aMDdt)/(dalt+eps)) + 1
+            if(dalt .eq.0) dalt  = 0.002
+            if(dalt2.eq.0) dalt2 = 0.00025
+            nalt  = int(abs(aMDdt)/(dalt+eps)) + 1
             nalt2 = int(dalt/(dalt2+eps)) + 1
             aMDdt = aMDdt/(nalt*nalt2)
          end if

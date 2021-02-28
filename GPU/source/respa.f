@@ -251,13 +251,6 @@ c     MPI : get total energy
 c
       call reduceen(epot)
 c
-c     make half-step temperature and pressure corrections
-c
-      if (barostat .eq. 'MONTECARLO') then
-         call temper2 (temp)
-         call pressure2 (epot,temp)
-      end if
-c
 c     use Newton's second law to get the slow accelerations;
 c     find full-step velocities using velocity Verlet recursion
 c
@@ -303,6 +296,7 @@ c     make full-step temperature and pressure corrections
 c
       call temper (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
+      call pressure2 (epot,temp)
 c
 c     total energy is sum of kinetic and potential energies
 c

@@ -38,7 +38,7 @@ c
 c
 c     loop over multipole sites testing for chirality inversion
 c
-!$acc parallel loop present(poleglob,ipole,xaxis,yaxis,zaxis,pole)
+!$acc parallel loop present(poleglobnl,ipole,xaxis,yaxis,zaxis,pole)
 !$acc&         async(rec_queue)
       do ii = 1, npolelocnl
          iipole = poleglobnl(ii)
@@ -81,6 +81,5 @@ c
             end if
          end if
       end do
-      return
       end
 

@@ -1792,7 +1792,7 @@ c
       call set_pme_texture
       psize =  size(kstart1)
       if (first_in) then
-      if (nproc.eq.1) then
+      if (nproc.eq.1.or.nrec.eq.1) then
          call cudamaxgridSize("fphi_uind_sitecu2_core_1p",gS)
          gS = gS - 2*nSMP
       else

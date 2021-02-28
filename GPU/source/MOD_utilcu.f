@@ -41,6 +41,7 @@ c
         logical  ,constant   :: use_virial
         logical  ,constant   :: skipvdw12
         logical  ,constant   :: vcouple
+        logical  ,constant   :: balanced_comput
 
         contains
 
@@ -98,6 +99,12 @@ c
            vcouple  = .false.
            vcouple_ = 0
         end if
+        end subroutine
+
+        subroutine cu_update_balanced_comput(commdir_)
+        implicit none
+        logical,intent(in)::commdir_
+        balanced_comput=commdir_
         end subroutine
 
         subroutine check_launch_kernel(msg)

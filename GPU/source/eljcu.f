@@ -19,8 +19,9 @@ c
         use cudafor
         use tinheader,only: ti_p
         use tintypes ,only: real3
-        use sizes    ,only: maxclass
+        use sizes    ,only: maxclass,maxvalue
         use utilcu   ,only: ndir,VDW_BLOCK_DIM,ALL_LANES,use_virial
+     &               ,skipvdw12
         use utilgpu  ,only: BLOCK_SIZE,RED_BUFF_SIZE
 
         contains
@@ -33,7 +34,7 @@ c
         attributes(global)
      &  subroutine elj1_cu
      &            (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
-     &           ,ivblst,vblst,jvdw,epsilon,radmin
+     &           ,ivblst,vblst,jvdw,i12,epsilon,radmin
      &           ,ired,kred,dev,ev_buff,vir_buff
      &           ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &           ,nvdwclass
@@ -56,7 +57,7 @@ c
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
      &           ,vblst(nvdwlocnlb_pair*(BLOCK_SIZE))
-     &           ,cellv_loc(nvdwlocnlb)
+     &           ,cellv_loc(nvdwlocnlb),i12(maxvalue,n)
         integer  ,device,intent(in)::ired(n),jvdw(nvdwlocnlb)
         real(t_p),device,intent(in)::radmin(nvdwclass,nvdwclass)
      &           ,epsilon(nvdwclass,nvdwclass),kred(n)
@@ -69,10 +70,11 @@ c
 #endif
 
         integer ithread,iwarp,nwarp,ilane,srclane,klane
-        integer dstlane,iblock
+        integer dstlane,iblock,k
         integer idx,kdx,kdx_,ii,j,i,iglob,it,ivloc
         integer kbis,kt_,kvloc,ist
         integer,shared,dimension(VDW_BLOCK_DIM)::kglob,kt
+        integer ai12(maxvalue)
         real(t_p) e,istat
         ener_rtyp ev_
         real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
@@ -82,7 +84,7 @@ c
         mdyn_rtyp gxi,gyi,gzi
         mdyn_rtyp,shared,dimension(VDW_BLOCK_DIM):: gxk,gyk,gzk
         real(t_p) vxx_,vxy_,vxz_,vyy_,vyz_,vzz_
-        logical do_pair,same_block,accept_mid
+        logical do_pair,same_block,accept_mid,ik12
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -126,6 +128,11 @@ c
            xi     = xred  (idx)
            yi     = yred  (idx)
            zi     = zred  (idx)
+           if (skipvdw12) then
+             do k = 1,maxvalue
+                ai12(k) = i12(k,iglob)
+             end do
+           end if
 
            same_block = (idx.ne.kdx)
            call syncwarp(ALL_LANES)
@@ -138,6 +145,13 @@ c
               kdx_    = __shfl(kdx  ,srclane)
 #endif
               kt_     = kt(klane)
+
+              if (skipvdw12) then
+                 ik12    = .false.
+                 do k = 1,maxvalue
+                    if (ai12(k).eq.kglob(klane)) ik12=.true.
+                 end do
+              end if
 
               if (ndir.gt.1) then
                  xk_   = xk(klane)
@@ -165,6 +179,7 @@ c
 
               rik2  = xpos**2 + ypos**2 + zpos**2
 
+              if (ik12.and.skipvdw12) goto 10
               do_pair = merge(.true.,iglob.lt.kglob(klane)
      &                       ,same_block)
               if (do_pair.and.rik2<=off2
@@ -208,6 +223,7 @@ c
 
               end if
 
+  10          continue
            end do
 
            kt_   = iand(ithread-1,RED_BUFF_SIZE-1) + 1
@@ -244,7 +260,7 @@ c
         attributes(global)
      &  subroutine elj3_cu
      &            (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
-     &           ,ivblst,vblst,jvdw,epsilon,radmin
+     &           ,ivblst,vblst,jvdw,i12,epsilon,radmin
      &           ,ired,kred,ev_buff,nev_buff
      &           ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &           ,nvdwclass
@@ -266,7 +282,7 @@ c
         integer  ,device,intent(in)::cellv_glob(nvdwlocnlb)
      &           ,loc_ired(nvdwlocnlb),ivblst(nvdwlocnlb_pair)
      &           ,vblst(nvdwlocnlb_pair*(BLOCK_SIZE))
-     &           ,cellv_loc(nvdwlocnlb)
+     &           ,cellv_loc(nvdwlocnlb),i12(maxvalue,n)
         integer  ,device,intent(in)::ired(n),jvdw(nvdwlocnlb)
         real(t_p),device,intent(in)::radmin(nvdwclass,nvdwclass)
      &           ,epsilon(nvdwclass,nvdwclass),kred(n)
@@ -278,13 +294,14 @@ c
         integer ithread,iwarp,nwarp,ilane,srclane
         integer dstlane,iblock
         integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it,ivloc
-        integer kglob,kbis,kt,kt_,kvloc,ist
+        integer kglob,kbis,kt,kt_,kvloc,ist,k
         integer nev_, istat
+        integer ai12(maxvalue)
         real(t_p) e,rstat
         ener_rtyp ev_
         real(t_p) xi,yi,zi,xk,yk,zk,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p) rik2,rv2,eps2,redi,redk,redk_
-        logical do_pair,same_block,accept_mid
+        logical do_pair,same_block,accept_mid,ik12
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -322,15 +339,27 @@ c
            zk     = zred  (kdx)
            same_block = (idx.ne.kdx)
            redk   = merge (1.0_ti_p,kred(kglob),(kbis.eq.kvloc))
+           if (skipvdw12) then
+             do k = 1,maxvalue
+                ai12(k) = i12(k,iglob)
+             end do
+           end if
 
            ! Interact block i with block k
            do j = 0,warpsize-1
               srclane = iand( ilane+j-1,warpsize-1 ) + 1
+              kglob_  = __shfl(kglob,srclane)
 #ifdef TINKER_DEBUG
               kdx_    = __shfl(kdx  ,srclane)
-              kglob_  = __shfl(kglob,srclane)
 #endif
               kt_     = __shfl(kt   ,srclane)
+
+              if (skipvdw12) then
+                 ik12    = .false.
+                 do k = 1,maxvalue
+                    if (ai12(k).eq.kglob_) ik12=.true.
+                 end do
+              end if
 
               if (ndir.gt.1) then
                  xk_   = __shfl(xk,srclane)
@@ -356,8 +385,8 @@ c
 
               rik2  = xpos**2 + ypos**2 + zpos**2
 
-              do_pair = merge(.true.,iglob.lt.__shfl(kglob,srclane)
-     &                       ,same_block)
+              if (ik12.and.skipvdw12) goto 10
+              do_pair = merge(.true.,iglob.lt.kglob_,same_block)
 
               if (do_pair.and.rik2<=off2.and.accept_mid) then
 
@@ -378,6 +407,7 @@ c                   ist = Atomicadd(inter(kglob_),1)
 c                end if
 #endif
 
+ 10              continue
               end if
 
               !dstlane = iand( ilane-1+warpsize-j, warpsize-1 ) + 1

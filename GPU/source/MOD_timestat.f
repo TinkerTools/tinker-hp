@@ -28,7 +28,8 @@ c     tinkertime     logical flag to enable timers verbosity
         enum,bind(C)
           enumerator sumy_time
           enumerator path_time
-          enumerator all_time=4
+          enumerator sync_time
+          enumerator all_time=8
         end enum
         ! Timers ids used in code
         enum, bind(C)
@@ -61,35 +62,35 @@ c     tinkertime     logical flag to enable timers verbosity
      &           timer_param,timer_other,timer_clear,
      &           timer_debug,timer_scalfactor,
      &           timer_ulspred,timer_fmanage,timer_tinker,
-     &           timer_io,timer_prog,
+     &           timer_io,timer_prog,timer_plumed,timer_reduceen,
      &           timer_b1,timer_b2,timer_b3,
      &           last_timer
         end enum
         ! number Timers
         integer, parameter:: max_timer_count=last_timer
 
-        integer :: stat_timers(27) =
+        integer :: stat_timers(29) =
      &          [timer_param,timer_nl,
      &           timer_bonded,timer_vdw,
      &           timer_real,timer_realdip,timer_rec,timer_recdip,
      &           timer_grid1,timer_grid2,timer_scalar,timer_ffts,
-     &           timer_ulspred,timer_fmanage,timer_nonbonded,
-     &           timer_torque,timer_other,timer_clear,
+     &           timer_ulspred,timer_fmanage,timer_plumed,
+     &           timer_nonbonded,timer_torque,timer_other,timer_clear,
      &           timer_fcomm,timer_dirbondfcomm,timer_dirreccomm,
      &           timer_recreccomm,timer_commstep,timer_polsolvcomm,
-     &           timer_polfieldcomm,timer_eneig,
+     &           timer_polfieldcomm,timer_eneig,timer_reduceen,
      &           timer_timestep
      &          ]
-        integer :: comm_timers(7) =
+        integer :: comm_timers(8) =
      &          [timer_param,timer_fcomm,timer_recreccomm,
      &           timer_polsolvcomm,timer_polfieldcomm,
-     &           timer_eneig,timer_commstep
+     &           timer_eneig,timer_commstep,timer_reduceen
      &          ]
-        integer :: comp_timers(13) =
+        integer :: comp_timers(14) =
      &          [timer_fmanage,timer_bonded,timer_vdw,timer_nl,
      &           timer_real,timer_realdip,timer_grid1,timer_grid2,
      &           timer_scalar,timer_ffts,timer_clear,
-     &           timer_other,timer_ulspred
+     &           timer_other,timer_ulspred,timer_plumed
      &          ]
 
         ! Cumulated times on regions
@@ -109,11 +110,12 @@ c     tinkertime     logical flag to enable timers verbosity
         real*8, protected:: timer_starttime(max_timer_count)
         real*8, protected:: timer_savetime (max_timer_count,numslots)
         real*8, protected:: timer_lasttime (max_timer_count)
+
         ! Timer subroutines
-c       public :: initiate_timers,
-c    &      timer_enter, timer_exit, timer_save,
-c    &      timer_get_total, timer_get_last, timer_get_save,
-c    &      disp_timestat
+        public :: initiate_timers,
+     &      timer_enter, timer_exit, timer_save,
+     &      timer_get_total, timer_get_last, timer_get_save,
+     &      display_timers
       contains
 
       ! Init module timestat
@@ -211,6 +213,8 @@ c    &      disp_timestat
         call timer_init( "tinker"          , timer_tinker)
         call timer_init( "io"              , timer_io)
         call timer_init( "program"         , timer_prog)
+        call timer_init( "reduceen"        , timer_reduceen)
+        call timer_init( "plumed"          , timer_plumed)
         call timer_init( "buff1"           , timer_b1)
         call timer_init( "buff2"           , timer_b2)
         call timer_init( "buff3"           , timer_b3)
@@ -255,6 +259,9 @@ c    &      disp_timestat
      &    print *, "WARNING : timer started but not stopped : ",
      &             timer_name(id), id
         call nvtxStartRange( timer_name(id) )
+        if (btest(tinkertime,sync_time)) then
+!$acc wait
+        end if
         timer_starttime(id) = MPI_Wtime()
       end subroutine
 
@@ -274,6 +281,9 @@ c    &      disp_timestat
      &     print *, "WARNING : timer stopped but not started : ",
      &              timer_name(id), id
         call nvtxEndRange()
+        if (btest(tinkertime,sync_time)) then
+!$acc wait
+        end if
         time_diff = MPI_Wtime() - timer_starttime(id)
         timer_starttime(id) = -1 ! for timer started but not stopped verification
         timer_lasttime(id) = time_diff

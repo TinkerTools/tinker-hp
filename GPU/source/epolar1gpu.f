@@ -1137,7 +1137,7 @@ c
      &            ,ered_buff=>ered_buf1,vred_buff
      &            ,reduce_energy_virial
      &            ,RED_BUFF_SIZE,zero_evir_red_buffer
-     &            ,BLOCK_SIZE
+     &            ,maxBlock,BLOCK_SIZE
 #ifdef  _OPENACC
      &            ,dir_stream,def_stream,rec_stream,nSMP
 #endif
@@ -1194,7 +1194,7 @@ c
 
       if (use_polarshortreal) then
 
-      if (dyn_gS) gS = nspnlb2/12
+      if (dyn_gS) gS = min( nspnlb2/8,maxBlock )
       call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,iseblst_s,seblst_s(lst_beg)
@@ -1206,8 +1206,8 @@ c
 
       else
 
-      if (dyn_gS) gS = npolelocnlb2_pair/12
       sized = npolelocnlb2_pair/ndec
+      if (dyn_gS) gS = min( sized/8,maxBlock )
 
       ! Split electrostatic kernel to ease recovering process in MPI
       do i = 1,ndec
@@ -1296,7 +1296,7 @@ c     call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
      &            ,ered_buff=>ered_buf1,vred_buff
      &            ,reduce_energy_virial
      &            ,RED_BUFF_SIZE,zero_evir_red_buffer
-     &            ,BLOCK_SIZE
+     &            ,maxBlock,BLOCK_SIZE
 #ifdef  _OPENACC
      &            ,dir_stream,def_stream,rec_stream,nSMP
 #endif
@@ -1367,7 +1367,7 @@ c
 
       if (use_polarshortreal.or.use_mpoleshortreal) then
 
-      if (dyn_gS) gS = nspnlb2/12
+      if (dyn_gS) gS = min(nspnlb2/8,maxBlock)
       call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,iseblst_s,seblst_s(lst_beg)
@@ -1396,8 +1396,8 @@ c
 
       else
 
-      if (dyn_gS) gS = npolelocnlb2_pair/12
       sized = npolelocnlb2_pair/ndec
+      if (dyn_gS) gS = min(sized/8,maxBlock)
 
       ! Split electrostatic kernel to ease recovering process in MPI
       do i = 1,ndec

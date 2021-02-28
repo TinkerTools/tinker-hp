@@ -189,6 +189,7 @@ c
       use sizes
       use units
       use utils
+      use utilcomm   ,only: no_commdir
       use utilgpu
       use mpi
       implicit none
@@ -205,6 +206,7 @@ c
       procedure(tmatxb_pmegpu) :: matvec
 
       integer i, it, j, k
+      integer npoleloc_e
       real(t_p) ggold(2), alphacg(2)
       real(r_p) gnorm(2), ggnew(2), ene(2), gg(2)
       real(t_p),save:: ggold1,ggold2
@@ -251,19 +253,20 @@ c
       else
          commloc = COMM_TINKER
       end if
+      npoleloc_e = merge(npolebloc,npoleloc,(no_commdir))
 
 c
 c     allocate some memory and setup the preconditioner:
 c
-      call prmem_request(zr,3,nrhs,max(npoleloc,1),
+      call prmem_request(zr,3,nrhs,max(npoleloc_e,1),
      &     async=.true.)
-      call prmem_request(res,3,nrhs,max(npoleloc,1),
+      call prmem_request(res,3,nrhs,max(npoleloc_e,1),
      &     async=.true.)
       call prmem_request(h ,3,nrhs,max(npolebloc,1),
      &     async=.true.)
       call prmem_request(pp ,3,nrhs,max(npolebloc,1),
      &     async=.true.)
-      call prmem_request(diag,npoleloc,async=.true.)
+      call prmem_request(diag,npoleloc_e,async=.true.)
 
       if (first_in) then
 !$acc enter data create(gg1,gg2)
@@ -275,21 +278,21 @@ c
 
       if (precnd) then
 !$acc parallel loop async(def_queue)
-         do i = 1, npoleloc
+         do i = 1, npoleloc_e
             iipole  = poleglob(i)
             diag(i) = polarity(iipole)
          end do
          if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else
 !$acc parallel loop async(dir_queue)
-         do i = 1, npoleloc
+         do i = 1, npoleloc_e
             diag(i) = one
          end do
       end if
 c
 c     initialize
 c
-      call set_to_zero2(res,zr,3*nrhs* npoleloc,def_queue)
+      call set_to_zero2(res,zr,3*nrhs*npoleloc_e,def_queue)
       call set_to_zero2( pp, h,3*nrhs*npolebloc,def_queue)
 c
 c     now, compute the initial direction
@@ -324,6 +327,18 @@ c
             end do
          end do
       end do
+
+      if (no_commdir) then
+!$acc parallel loop collapse(3) async(def_queue)
+      do k = npoleloc+1,npolebloc
+         do j = 1,nrhs
+            do i = 1,3
+               pp(i,j,k) = (ef(i,j,k) - h(i,j,k)) * diag(k)
+            end do
+         end do
+      end do
+      end if
+
 !$acc wait(def_queue)
 
       ggold(1) = ggold1
@@ -412,6 +427,24 @@ c
                end do
             end do
          end do
+         if (no_commdir) then
+!$acc parallel loop collapse(3) async(def_queue)
+         do k=npoleloc+1,npoleloc_e
+            do j=1,nrhs
+               do i=1,3
+                  if (btest(j,0)) then
+                     mu (i,j,k) = mu (i,j,k) + ggdev1*pp(i,j,k)
+                     res(i,j,k) = res(i,j,k) - ggdev1*h (i,j,k)
+                     zr (i,j,k) = diag(k)* res(i,j,k)
+                   else
+                     mu (i,j,k) = mu (i,j,k) + ggdev2*pp(i,j,k)
+                     res(i,j,k) = res(i,j,k) - ggdev2*h (i,j,k)
+                     zr (i,j,k) = diag(k)* res(i,j,k)
+                  end if
+               end do
+            end do
+         end do
+         end if
 c Implicit wait seems to be removed with PGI-20
 !$acc wait(def_queue)
          ene2 = -pt5*ene2; ene1 = -pt5*ene1
@@ -437,7 +470,7 @@ c Implicit wait seems to be removed with PGI-20
 
         ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
 !$acc parallel loop collapse(3) async(def_queue)
-        do k = 1,npoleloc
+        do k = 1,npoleloc_e
            do j = 1,nrhs
               do i = 1, 3
                if (btest(j,0)) then
@@ -471,16 +504,12 @@ c
         end if
       end do
  10   continue
-c
-c     MPI : begin reception
-c
+
+      !MPI : begin reception
       call commdirdirshort(nrhs,0,mu,reqendrec,reqendsend)
-c
-c     MPI : begin sending
-c
+      !MPI : send data
       call commdirdirshort(nrhs,1,mu,reqendrec,reqendsend)
-c
-c
+      !MPI : Wait
       call commdirdirshort(nrhs,2,mu,reqendrec,reqendsend)
 c
 c     finalize and debug printing:

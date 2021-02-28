@@ -414,6 +414,8 @@ c
      $    'Ny = ',I5,2x,'Nz = ',I5,2x)
  12   format('User defined 3D decomposition not compatible with number',
      $    ' of cores ','Nx*Ny*Nz = ',I5,2x,'number of procs = ',I5,2x)
+ 14   format('User privileged 1D decompostion ','Nx = ',I5,2x,
+     $    'Ny = ',I5,2x,'Nz = ',I5,2x)
  13   format('The program will impose the 3D decomposition')
 c
 c
@@ -439,8 +441,25 @@ c
                write(iout,13) 
              end if
            end if
+         else if (keyword(1:9).eq.'DECOMP1D ' .and. ndir.ne.1) then
+           nxdd = 1
+           nydd = 1
+           nzdd = ndir
+           if (rank.eq.0.and.istep.eq.0.and.verbose)
+     &        write(iout,14)  nxdd,nydd,nzdd
+           return
          end if
       end do
+c
+      ! Force 1Decomp for 2 process
+      if (ndir.eq.2) then
+         nxdd = 1
+         nydd = 1
+         nzdd = 2
+         if (rank.eq.0) write(iout,*) '3D Domain Decomposition'
+         if (rank.eq.0) write(iout,10) nxdd,nydd,nzdd
+         return
+      end if
 c
       allocate (d(num))
       d = 0
@@ -1060,7 +1079,7 @@ c
 c       on the "z" boundary
 c
         if (((x1.le.x3).and.(x2.ge.x3)).and.((y1.le.y3).and.(y2.ge.y3))
-     $     .and.((x1.eq.x3).or.(x2.eq.x3))) then
+     $     .and.((z1.eq.z3).or.(z2.eq.z3))) then
            dist = 0.0_ti_p
            return
         end if
@@ -1293,7 +1312,7 @@ c
 c       on the "z" boundary
 c
         if (((x1.le.x3).and.(x2.ge.x3)).and.((y1.le.y3).and.(y2.ge.y3))
-     $   .and.((x1.eq.x3).or.(x2.eq.x3))) then
+     $   .and.((z1.eq.z3).or.(z2.eq.z3))) then
           dist = 0.0_ti_p
           return
         end if
@@ -1701,7 +1720,7 @@ c
         end do
       end do
 
-      if (rank.eq.0.and.tinkerdebug.gt.0) then
+      if (rank.eq.0.and.nproc.gt.1.and.tinkerdebug.gt.0) then
          print*,'---  ddpme3d'
  14      format(A9)
  15      format(F9.3)
@@ -2079,15 +2098,33 @@ c
           end do
         end if
       end do
-      if ( rank.eq.0.and.tinkerdebug.gt.0 ) then
-          write(*,*) 'nbigshort_recep    = ',nbigshort_recep
-          write(*,*) 'nbig_recep         = ',nbig_recep
-          write(*,*) 'n_recepshort1      = ',n_recepshort1
-          write(*,*) 'n_recep1           = ',n_recep1
-          write(*,*) 'n_recepshort2      = ',n_recepshort2
-          write(*,*) 'n_recep2           = ',n_recep2
-          write(*,*) 'ntorqueshort_recep = ',ntorqueshort_recep
-          write(*,*) 'ntorque_recep      = ',ntorque_recep
+      if ( rank.eq.0.and.tinkerdebug.gt.0.and.nproc.gt.1 ) then
+ 46       format(a21,I3,';',$)
+ 47       format(I3,$)
+          write(*,46) 'nbigshort_recep    = ',nbigshort_recep
+          write(*,47) ( pbigshort_recep(i),i=1,nbigshort_recep)
+          write(*,*)
+          write(*,46) 'nbig_recep         = ',nbig_recep
+          write(*,47) (pbig_recep(i),i=1,nbig_recep)
+          write(*,*)
+          write(*,46) 'n_recepshort1      = ',n_recepshort1
+          write(*,47) (p_recepshort1(i),i=1,n_recepshort1)
+          write(*,*)
+          write(*,46) 'n_recep1           = ',n_recep1
+          write(*,47) (p_recep1(i),i=1,n_recep1)
+          write(*,*)
+          write(*,46) 'n_recepshort2      = ',n_recepshort2
+          write(*,47) (p_recepshort2(i),i=1,n_recepshort2)
+          write(*,*)
+          write(*,46) 'n_recep2           = ',n_recep2
+          write(*,47) (p_recep2(i),i=1,n_recep2)
+          write(*,*)
+          write(*,46) 'ntorqueshort_recep = ',ntorqueshort_recep
+          write(*,47) (ptorqueshort_recep(i),i=1,ntorqueshort_recep)
+          write(*,*)
+          write(*,46) 'ntorque_recep      = ',ntorque_recep
+          write(*,47) (ptorque_recep(i),  i=1,ntorque_recep)
+          write(*,*)
       end if
 c
  80   call orderbuffer(.true.)

@@ -258,6 +258,8 @@ c
            if (deb_Path) then
               call mem_get(m1,m2)
            end if
+           lalt   = maxualt+1
+           lshalt = maxualt+1
 #ifdef USE_NVSHMEM_CUDA
            call shmem_request(buffer3d,winalt,[maxualt,3,n],
      &                c_udalt,d_udalt,config=mnvshonly)
@@ -269,8 +271,8 @@ c
            d_upalt  => d_upalt
            d_altbuf => d_altbuf
 #else
-           call prmem_request(udalt,maxualt,3,n)
-           call prmem_request(upalt,maxualt,3,n)
+           call prmem_request(udalt,3,n,maxualt)
+           call prmem_request(upalt,3,n,maxualt)
 #endif
            if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1')
      &        .and.(.not.use_pmecore.or.use_pmecore.and.rank.lt.ndir))
@@ -283,8 +285,8 @@ c
               d_udshortalt => d_udshortalt
               d_upshortalt => d_upshortalt
 #else
-              call prmem_request(udshortalt,maxualt,3,n)
-              call prmem_request(upshortalt,maxualt,3,n)
+              call prmem_request(udshortalt,3,n,maxualt)
+              call prmem_request(upshortalt,3,n,maxualt)
 #endif
            end if
            if (deb_Path) then
@@ -328,11 +330,11 @@ c
            end do
 #else
 !$acc parallel loop collapse(3) default(present)
-           do i = 1, npole
-              do j = 1, 3
-                 do k = 1, maxualt
-                    udalt(k,j,i) = 0.0_ti_p
-                    upalt(k,j,i) = 0.0_ti_p
+           do k = 1, maxualt
+              do i = 1, npole
+                 do j = 1, 3
+                    udalt(j,i,k) = 0.0_ti_p
+                    upalt(j,i,k) = 0.0_ti_p
                  end do
               end do
            end do
@@ -353,11 +355,11 @@ c
               end do
 #else
 !$acc parallel loop collapse(3) default(present)
-              do i = 1, npole
+              do k = 1, maxualt
                  do j = 1, 3
-                    do k = 1, maxualt
-                       upshortalt(k,j,i) = 0.0_ti_p
-                       udshortalt(k,j,i) = 0.0_ti_p
+                    do i = 1, npole
+                       upshortalt(j,i,k) = 0.0_ti_p
+                       udshortalt(j,i,k) = 0.0_ti_p
                     end do
                  end do
               end do
@@ -389,7 +391,7 @@ c
       use polar
       use potent
       use mpi
-      use utilcomm,only:do_not_commpole
+      use utilcomm,only:do_not_commpole,no_commdir
 #ifdef _OPENACC
       use thrust
 #endif
@@ -399,7 +401,7 @@ c
       integer i,j,iipole,iglob,iproc
       integer polecount,npole_cap,modnl
       integer ipr,ibufbeg
-      real(t_p) d
+      real(t_p) d,distcut2
 !$acc routine(distprocpart1)
 
 !$acc data present(glob,pollist,poleglob,poleloc,nbpole,bufbegpole,
@@ -440,40 +442,27 @@ c
         ipr = p_recep1(iproc)+1
         ibufbeg = bufbeg(ipr)
         if (domlen(ipr).ne.0) then
-!$acc serial async
           bufbegpole(ipr) = npolebloc + 1
-!$acc end serial
         else
-!$acc serial async
           bufbegpole(ipr) = 1
-!$acc end serial
         end if
-!$acc serial loop async
         do i = 1, domlen(ipr)
           iglob  = glob(ibufbeg+i-1)
           iipole = pollist(iglob)
-c
-c   skip atom if it is not in the multipole list
-c
+          !skip atom if it is not in the multipole list
           if (iipole.eq.0) cycle
           polecount = nbpole(iglob)
           if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0) then
-!$acc atomic capture
             npolebloc = npolebloc + 1
             npole_cap = npolebloc
-!$acc end atomic
             poleglob(npole_cap) = polecount + 1
             poleloc(polecount+1) = npole_cap
           end if
         end do
         if (domlen(ipr).ne.0) then
-!$acc serial async
           domlenpole(ipr) = npolebloc-bufbegpole(ipr)+1
-!$acc end serial
         else
-!$acc serial async
           domlenpole(ipr) = 0
-!$acc end serial
         end if
       end do
 #else
@@ -514,11 +503,9 @@ c
 !$acc& polerecglob) async
 !$acc end data
 c
-      call update_gang_rec(npolerecloc)
-c
-      npolelocloop = merge( npoleloc,
-     &                    (int(npoleloc/16)+1)*16,
-     &                    (mod(npoleloc,16).eq.0))
+c     npolelocloop = merge( npoleloc,
+c    &                    (int(npoleloc/16)+1)*16,
+c    &                    (mod(npoleloc,16).eq.0))
 c
 #ifdef _OPENACC
 !$acc wait
@@ -551,6 +538,12 @@ c
 !$acc serial async(rec_queue) present(npolelocnl)
       npolelocnl = 0
 !$acc end serial
+      if (no_commdir) then
+         distcut2 = mbuf2
+      else
+         distcut2 = mbuf2/4
+      end if
+
 !$acc parallel loop async(rec_queue)
 !$acc&         present(npolelocnl,nbpole,ineignl,pollist,
 !$acc&  polsiz,repart,poleglobnl,polelocnl,x,y,z)
@@ -565,7 +558,7 @@ c
         if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0) then
           call distprocpart1(iglob,rank,d,.true.,x,y,z)
           if (repart(iglob).eq.rank) d = 0
-          if (d*d.le.(mbuf2/4)) then
+          if (d*d.le.distcut2) then
 !$acc atomic capture
             npolelocnl = npolelocnl + 1
             npole_cap  = npolelocnl
@@ -586,7 +579,6 @@ c
          polelocnl(poleglobnl(i)) = i
       end do
 #endif
-
 c
 c     npolelocnlloop is npolelocnl if npolelocnl is a multiple of 16
 c                    or the first one greater
@@ -623,7 +615,6 @@ c    &                    (mod(npolebloc,16).eq.0))
 
       do_not_commpole = .true.
       npoleloc = 0
-!$acc data present(poleglob,poleloc,polerecglob,polerecloc)
 
       do i = 1, nloc
          iglob = glob(i)
@@ -698,8 +689,6 @@ c
      &                    (int(npoleloc/16)+1)*16,
      &                    (mod(npoleloc,16).eq.0))
 c
-!$acc end data
-c
 c     comput nZ_Onlyloc if necessary
 c
       if (nZ_Onlyglob.ne.0 .and.nproc.ne.1) then
@@ -710,10 +699,6 @@ c
       if (modnl.ne.0.and.istep.ge.0) return
 c
       call prmem_request(poleglobnl,nlocnl,async=.true.)
-c     if (allocated(poleglobnl)) deallocate(poleglobnl)
-c     allocate (poleglobnl(nlocnl))
-
-!$acc data present(poleglobnl,polelocnl)
 c
       npolelocnl = 0
       do i = 1, nlocnl
@@ -735,7 +720,6 @@ c
         end if
       end do
 !$acc update device(poleglobnl,polelocnl) async
-!$acc end data
 c
 c     npolelocnlloop is npolelocnl if npolelocnl is a multiple of 16
 c                    or the first one greater
@@ -796,7 +780,8 @@ c    &                    (mod(npolebloc,16).eq.0))
      &            , quiet_timers
       use utilcomm,only : reqs_poleglob,reqr_poleglob
      &            , do_not_commpole
-      use utilgpu ,only : rec_queue
+      use utilgpu ,only : rec_queue,dir_queue
+      use sizes   ,only : tinkerdebug
       use mpi
       implicit none
       integer ierr,i,j,iproc,ipr,ibufbeg,idomlen
@@ -896,7 +881,9 @@ c
 !$acc end data
 
       !print*,rank,domlenpole,bufbegpole
-      if (deb_Path) write(*,'(3X,A)') '<<  orderPole'
+      if (btest(tinkerdebug,0)) call MPI_BARRIER(commloc,ierr)
+      if (deb_Path)  write(*,'(3X,A)') '<<  orderPole'
+
       call timer_exit ( timer_eneig,quiet_timers )
       end subroutine
 c

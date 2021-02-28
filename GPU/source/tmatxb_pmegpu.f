@@ -8,6 +8,8 @@ c
         use utilgpu ,only: real3,real6
         integer:: icall=1,ndec=1
         include "erfcore_data.f.inc"
+        real(t_p),allocatable::mu3(:,:),mu4(:,:)
+        real(t_p),allocatable::efi3(:,:),efi4(:,:)
         contains
 #include "image.f.inc"
 #if defined(SINGLE) | defined(MIXED)
@@ -979,8 +981,9 @@ c
       use shunt   , only : cut2
       use tinheader ,only: ti_p
       use tmatxb_inl_subroutines ,only : ndec,icall
+      use utilcomm, only : no_commdir
       use utilgpu , only : def_queue, dir_queue,real3,real6
-     &            , BLOCK_SIZE
+     &            , maxBlock, BLOCK_SIZE
 #ifdef _OPENACC
       use cudafor
       use interfaces, only : cu_tmatxb_pme
@@ -991,7 +994,7 @@ c
       implicit none
       integer i
       integer start,start1,sized
-      real(t_p) ,intent(in)   :: mu(:,:,:)
+      real(t_p) ,intent(in)   ::  mu(:,:,:)
       real(t_p) ,intent(inout):: efi(:,:,:)
       integer ierrSync, begin
       integer,save :: gS
@@ -1023,7 +1026,7 @@ c
 
       if (use_polarshortreal) then
 
-      if (dyn_gS) gS = nspnlb2/4
+      if (dyn_gS) gS = min(nspnlb2/4,maxBlock)
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
 !$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
 
@@ -1031,12 +1034,156 @@ c     call cu_tmatxb_pme    !Find his interface inside MOD_inteface
 c    &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)
 c    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
 c    &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc
+c    &     ,.not.no_commdir
 c    &     ,cut2,alsq2,alsq2n,aewald
 c    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
 c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)
      &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
+     &     ,npolelocnlb,nspnlb2,npolebloc,n
+     &     ,cut2,alsq2,alsq2n,aewald
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+      call check_launch_kernel(" tmatxb_pme_core_cu")
+
+!$acc end host_data
+
+      else
+
+      ! Split matvec kernel to ease recovering process in MPI
+      sized  = npolelocnlb2_pair/ndec
+      start  = (icall-1)*sized + 1
+      start1 = begin+(start-1)*BLOCK_SIZE
+      if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
+      if (dyn_gS) gS = min(sized/4,maxBlock)
+
+!$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
+!$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
+
+c     call cu_tmatxb_pme    !Find his interface inside MOD_inteface
+c    &     (ipole_s,pglob_s,ploc_s
+c    &     ,ieblst_s(start),eblst_s(start1)
+c    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
+c    &     ,npolelocnlb,sized,npolebloc,n,nproc
+c    &     ,.not.no_commdir
+c    &     ,cut2,alsq2,alsq2n,aewald
+c    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
+c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
+      call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,ploc_s
+     &     ,ieblst_s(start),eblst_s(start1)
+     &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
+     &     ,npolelocnlb,sized,npolebloc,n
+     &     ,cut2,alsq2,alsq2n,aewald
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+      call check_launch_kernel(" tmatxb_pme_core_cu")
+
+!$acc end host_data
+
+      end if
+#else
+      print 100
+ 100  format('tmatxb_pme_core3 is a specific device routine',/,
+     &       'you are not supposed to get inside with your compile',
+     &        'type.')
+      call fatal
+#endif
+c
+      call tmatxb_correct_interactions(mu,efi)
+
+      end
+
+      subroutine tmatxb_pme_core_v4(mu,efi)
+      use atoms   , only : n
+      use atmlst  , only : poleglobnl
+      use cell
+      use domdec  , only : xbegproc,ybegproc,zbegproc,rank,loc
+     &            , nproc,rank,xendproc,yendproc,zendproc
+      !use erf_mod
+      use ewald   , only : aewald
+      use inform  , only : deb_Path
+      use math    , only : sqrtpi
+      use mpole   , only : ipole,poleloc,npolelocnl,npolebloc
+     &            , npolelocnlb,npolelocnlb_pair,npolelocnlb2_pair
+     &            , nspnlb2=>nshortpolelocnlb2_pair
+      use neigh   , only : ipole_s=>celle_glob,pglob_s=>celle_pole
+     &            , ploc_s=>celle_ploc, ieblst_s=>ieblst
+     &            , iseblst_s=>ishorteblst, seblst_s=>shorteblst
+     &            , eblst_s=>eblst, x_s=>celle_x, y_s=>celle_y
+     &            , z_s=>celle_z
+      use interfaces,only: tmatxb_correct_interactions
+      use polar   , only : polarity, thole, pdamp
+      use potent  , only : use_polarshortreal
+      use shunt   , only : cut2
+      use tinheader ,only: ti_p
+      use tinMemory ,only: prmem_request
+      use tmatxb_inl_subroutines ,only : ndec,icall,mu3,mu4,efi3,efi4
+      use utilcomm, only : no_commdir
+      use utilgpu , only : def_queue, dir_queue,real3,real6
+     &            , BLOCK_SIZE
+#ifdef _OPENACC
+      use cudafor
+      use interfaces, only : cu_tmatxb_pme
+      use utilcu    , only : BLOCK_DIM,check_launch_kernel
+      use utilgpu   , only : def_stream,rec_stream, nSMP
+      use tmatxb_pmecu,only: tmatxb_pme_core_v4_cu
+#endif
+      implicit none
+      integer i
+      integer start,start1,sized
+      real(t_p) ,intent(in)   ::  mu(:,:,:)
+      real(t_p) ,intent(inout):: efi(:,:,:)
+      integer ierrSync, begin
+      integer,save :: gS
+      logical,save :: first_in=.true.,dyn_gS=.true.
+      real(t_p) alsq2,alsq2n
+      real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+
+      if(deb_Path) write(*,'(4x,a)') 'tmatxb_pme_core_v4'
+      p_xbeg = xbegproc(rank+1)
+      p_xend = xendproc(rank+1)
+      p_ybeg = ybegproc(rank+1)
+      p_yend = yendproc(rank+1)
+      p_zbeg = zbegproc(rank+1)
+      p_zend = zendproc(rank+1)
+      begin  = 2*npolelocnlb_pair+1
+
+      alsq2  = 2 * aewald**2
+      alsq2n = 0
+      if (aewald > 0) alsq2n = 1 / (sqrtpi*aewald)
+#ifdef _CUDA
+      if (first_in) then
+         ! Compute though occupancy the right gridSize to launch the kernel with
+         first_in = .false.
+         call cudaMaxGridSize("tmatxb_pme_core_cu",gS)
+         if ( gS.eq.0 ) dyn_gS = .true.
+         !gS = gS-nSMP
+         if (deb_Path) print*, 'tmatxb blockSize ',gS
+      end if
+
+      call prmem_request(mu3 ,3,npolebloc)
+      call prmem_request(mu4 ,3,npolebloc)
+      call prmem_request(efi3,3,npolebloc)
+      call prmem_request(efi4,3,npolebloc)
+
+      if (use_polarshortreal) then
+
+      if (dyn_gS) gS = nspnlb2/4
+!$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
+!$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,mu3,mu4,efi,efi3,efi4)
+
+c     call cu_tmatxb_pme    !Find his interface inside MOD_inteface
+c    &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)
+c    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
+c    &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc
+c    &     ,.not.no_commdir
+c    &     ,cut2,alsq2,alsq2n,aewald
+c    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
+c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
+      call tmatxb_pme_core_v4_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)
+     &     ,x_s,y_s,z_s,pdamp,thole,polarity
+     &     ,mu,mu3,mu4,efi,efi3,efi4
      &     ,npolelocnlb,nspnlb2,npolebloc,n
      &     ,cut2,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
@@ -1054,20 +1201,22 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
 
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
-!$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
+!$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,mu3,mu4,efi,efi3,efi4)
 
 c     call cu_tmatxb_pme    !Find his interface inside MOD_inteface
 c    &     (ipole_s,pglob_s,ploc_s
 c    &     ,ieblst_s(start),eblst_s(start1)
 c    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
 c    &     ,npolelocnlb,sized,npolebloc,n,nproc
+c    &     ,.not.no_commdir
 c    &     ,cut2,alsq2,alsq2n,aewald
 c    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
 c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
-      call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+      call tmatxb_pme_core_v4_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,ploc_s
      &     ,ieblst_s(start),eblst_s(start1)
-     &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
+     &     ,x_s,y_s,z_s,pdamp,thole,polarity
+     &     ,mu,mu3,mu4,efi,efi3,efi4
      &     ,npolelocnlb,sized,npolebloc,n
      &     ,cut2,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
@@ -1212,10 +1361,11 @@ c======================================================================
       !use erf_mod
       use ewald   , only : aewald
       use math    , only : sqrtpi
-      use mpole   , only : ipole,poleloc,npolelocnl
+      use mpole   , only : ipole,poleloc,npolelocnl,npolebloc
       use polar   , only : polarity, thole, pdamp
       use shunt   , only : cut2
       use utilgpu , only : def_queue, dir_queue,real3,real6
+      use utilcomm, only : no_commdir
       use domdec  , only : loc
       use polpot  , only : n_uscale,ucorrect_ik,ucorrect_scale
       use tmatxb_inl_subroutines
@@ -1258,8 +1408,8 @@ c======================================================================
          !skip atom if it is not polarizable
          !FIXME do we need to test on polarity
          if (polarity(iipole) == 0) cycle
-         if (loc(iglob) == 0) cycle
-         if (kpoleloc.eq.0) cycle
+         if (iploc.eq.0.or.iploc.gt.npolebloc) cycle
+         if (kpoleloc.eq.0.or.kpoleloc.gt.npolebloc) cycle
 
          dpui%x   = mu(1,1,iploc)
          dpui%y   = mu(2,1,iploc)

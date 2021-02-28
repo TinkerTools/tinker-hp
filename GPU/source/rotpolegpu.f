@@ -55,8 +55,10 @@ c
       integer ii,iipole,iglob
       integer ix,iy,iz
       integer i,j,k,m
-      integer kk,ksave
+      integer ksave
       integer axetyp
+      integer,save::kk
+      logical,save::f_in=.true.
       real(t_p) r,dot,invr
       real(t_p) xi,yi,zi
       real(t_p) dx,dy,dz
@@ -70,23 +72,28 @@ c
 c
 c     get coordinates and frame definition for the multipole site
 c
-      kk = 0
+      if (f_in) then
+!$acc enter data create(kk)
+         f_in=.false.
+      end if
+      if (nZ_Onlyloc.gt.0) then
+!$acc serial present(kk) async(def_queue)
+         kk = 0
+!$acc end serial
 #ifdef _OPENACC
-!$acc data present(samplevec)
-      if (host_rand_platform) then
-         do ii = 1, 3*nZ_Onlyloc
-            samplevec(ii) = random ()
-         end do
-!$acc update device(samplevec(1:3*nZ_Onlyloc)) async(def_queue)
-      else
-         if (nZ_Onlyloc.gt.0) then
+         if (host_rand_platform) then
+            do ii = 1, 3*nZ_Onlyloc
+               samplevec(ii) = random ()
+            end do
+!$acc    update device(samplevec(1:3*nZ_Onlyloc)) async(def_queue)
+         else
+            ! This call goes into main asynchronous stream
             call randomgpu(samplevec(1),3*nZ_Onlyloc)
          end if
-      end if
-!$acc end data
 #endif
+      end if
 
-!$acc parallel loop private(a,m2,r2) copyin(kk)
+!$acc parallel loop private(a,m2,r2) present(kk)
 !$acc&         present(poleglobvec,ipole,ipolaxe,x,y,z,rpole,
 !$acc&   pole,xaxis,yaxis,zaxis)
 !$acc&         async(def_queue)

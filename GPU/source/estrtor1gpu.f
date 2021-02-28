@@ -22,7 +22,7 @@ c
 
       subroutine estrtor1gpu
       use atmlst
-      use atoms
+      use atomsMirror
       use bond
       use bound
       use deriv
@@ -47,30 +47,31 @@ c
       integer ipe,ind
 #endif
       real(r_p) e
-      real(r_p) rcb,dr
-      real(r_p) ddr,dedphi
+      real(r_p) dr,ddr,dedphi
       real(r_p) rt2,ru2,rtru
-      real(r_p) ddrdx,ddrdy,ddrdz
-      real(r_p) xt,yt,zt
-      real(r_p) xu,yu,zu
-      real(r_p) xtu,ytu,ztu
-      real(r_p) v1,v2,v3
-      real(r_p) c1,c2,c3
-      real(r_p) s1,s2,s3
+      real(r_p) rba,rcb,rdc
+      real(r_p) e1,e2,e3
+      real(t_p) xt,yt,zt
+      real(t_p) xu,yu,zu
+      real(t_p) xtu,ytu,ztu
+      real(t_p) v1,v2,v3
+      real(t_p) c1,c2,c3
+      real(t_p) s1,s2,s3
       real(r_p) sine,cosine
       real(r_p) sine2,cosine2
       real(r_p) sine3,cosine3
       real(r_p) phi1,phi2,phi3
       real(r_p) dphi1,dphi2,dphi3
-      real(t_p) xia,yia,zia
-      real(t_p) xib,yib,zib
-      real(t_p) xic,yic,zic
-      real(t_p) xid,yid,zid
+      real(r_p) xia,yia,zia
+      real(r_p) xib,yib,zib
+      real(r_p) xic,yic,zic
+      real(r_p) xid,yid,zid
       real(t_p) xba,yba,zba
       real(t_p) xcb,ycb,zcb
       real(t_p) xdc,ydc,zdc
       real(t_p) xca,yca,zca
       real(t_p) xdb,ydb,zdb
+      real(r_p) ddrdx,ddrdy,ddrdz
       real(r_p) dedxt,dedyt,dedzt
       real(r_p) dedxu,dedyu,dedzu
       real(r_p) dedxia,dedyia,dedzia
@@ -78,6 +79,7 @@ c
       real(r_p) dedxic,dedyic,dedzic
       real(r_p) dedxid,dedyid,dedzid
       real(r_p) dedi(3)
+      real(t_p),parameter::rtiny=0.000001_ti_p
       logical proceed
 c
 c     calculate the stretch-torsion interaction energy term
@@ -112,9 +114,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                            use(ic) .or. use(id))
+         proceed = (use(ia) .or. use(ib) .or.
+     &                           use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
 c
@@ -145,28 +146,37 @@ c
                call image_inl (xcb,ycb,zcb)
                call image_inl (xdc,ydc,zdc)
             end if
-            xt  = yba*zcb - ycb*zba
-            yt  = zba*xcb - zcb*xba
-            zt  = xba*ycb - xcb*yba
-            xu  = ycb*zdc - ydc*zcb
-            yu  = zcb*xdc - zdc*xcb
-            zu  = xcb*ydc - xdc*ycb
-            xtu = yt*zu - yu*zt
-            ytu = zt*xu - zu*xt
-            ztu = xt*yu - xu*yt
-            rt2 = xt*xt + yt*yt + zt*zt
-            ru2 = xu*xu + yu*yu + zu*zu
-            rtru = sqrt(rt2 * ru2)
-            if (rtru .ne. 0.0_re_p) then
-               rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
-               cosine = (xt*xu + yt*yu + zt*zu) / rtru
-               sine = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
+            rba = sqrt(xba*xba + yba*yba + zba*zba)
+            rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+            rdc = sqrt(xdc*xdc + ydc*ydc + zdc*zdc)
+            if (min(rba,rcb,rdc) .ne. 0.0_ti_p) then
+               xt  = yba*zcb - ycb*zba
+               yt  = zba*xcb - zcb*xba
+               zt  = xba*ycb - xcb*yba
+               xu  = ycb*zdc - ydc*zcb
+               yu  = zcb*xdc - zdc*xcb
+               zu  = xcb*ydc - xdc*ycb
+               xtu = yt*zu - yu*zt
+               ytu = zt*xu - zu*xt
+               ztu = xt*yu - xu*yt
+               rt2 = max( xt*xt + yt*yt + zt*zt,rtiny )
+               ru2 = max( xu*xu + yu*yu + zu*zu,rtiny )
+               rtru   = sqrt(rt2 * ru2)
+               rt2    = 1.0_re_p/(rt2*rcb)
+               ru2    = 1.0_re_p/(ru2*rcb)
 c
-c     set the stretch-torsional parameters for this angle
+c     chain rule terms for first derivative components
 c
-               v1 = kst(1,iistrtor)
-               v2 = kst(2,iistrtor)
-               v3 = kst(3,iistrtor)
+               xca = xic - xia
+               yca = yic - yia
+               zca = zic - zia
+               xdb = xid - xib
+               ydb = yid - yib
+               zdb = zid - zib
+               if (use_polymer) then
+                  call image_inl (xca,yca,zca)
+                  call image_inl (xdb,ydb,zdb)
+               end if
 #ifdef USE_NVSHMEM_CUDA
                c1 = d_tors1(ipe)%pel(3,ind)
                s1 = d_tors1(ipe)%pel(4,ind)
@@ -185,6 +195,8 @@ c
 c
 c     compute the multiple angle trigonometry and the phase terms
 c
+               cosine  = (xt*xu + yt*yu + zt*zu) / rtru
+               sine    = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
                cosine2 = cosine*cosine - sine*sine
                sine2   = 2.0_re_p * cosine * sine
                cosine3 = cosine*cosine2 - sine*sine2
@@ -195,16 +207,25 @@ c
                dphi1   = (cosine*s1 - sine*c1)
                dphi2   = 2.0_re_p * (cosine2*s2 - sine2*c2)
                dphi3   = 3.0_re_p * (cosine3*s3 - sine3*c3)
+               !zeros
+               e1=0;e2=0;e3=0
+               dedxia=0;dedyia=0;dedzia=0
+               dedxib=0;dedyib=0;dedzib=0
+               dedxic=0;dedyic=0;dedzic=0
+               dedxid=0;dedyid=0;dedzid=0
 c
-c     calculate the bond-stretch for the central bond
+c     calculate the bond-stretch for the first bond
 c
                k  = ist(2,iistrtor)
+               v1 = kst(1,iistrtor)
+               v2 = kst(2,iistrtor)
+               v3 = kst(3,iistrtor)
 #ifdef USE_NVSHMEM_CUDA
                ipe = (k-1)/nbond_pe
                ind = mod((k-1),nbond_pe) +1
-               dr  = rcb - d_bl(ipe)%pel(ind)
+               dr  = rba - d_bl(ipe)%pel(ind)
 #else
-               dr = rcb - real(bl(k),r_p)
+               dr = rba - real(bl(k),r_p)
 #endif
                !!!  ---  Warning  --- !!!
                ! In single mode , distance between two strech-torsions atoms 
@@ -213,63 +234,96 @@ c
                ! nill and and force between  c<-->b stretch undefined
                ! To make the following test (NaN) work on pgi you need to compile with "-Kieee" flag
                ! if (ddr-ddr.ne.0.0) print*,ddr,dr,e,rcb,bl(k)
-               if (abs(dr)<precm_eps) cycle
-c
-c     calculate stretch-torsion energy and chain rule terms
-c
-               e = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
+               if (abs(dr)>precm_eps) then
+               e1     = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
                dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
-               ddr = e / (dr * rcb)
+               ddr    = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rba
 c
-c     first derivative components for the bond stretch
+c     compute derivative components for this interaction
+c
+               ddrdx = xba * ddr
+               ddrdy = yba * ddr
+               ddrdz = zba * ddr
+               dedxt =  dedphi * (yt*zcb - ycb*zt) * (rt2)
+               dedyt =  dedphi * (zt*xcb - zcb*xt) * (rt2)
+               dedzt =  dedphi * (xt*ycb - xcb*yt) * (rt2)
+               dedxu = -dedphi * (yu*zcb - ycb*zu) * (ru2)
+               dedyu = -dedphi * (zu*xcb - zcb*xu) * (ru2)
+               dedzu = -dedphi * (xu*ycb - xcb*yu) * (ru2)
+c
+c     determine chain rule components for the first bond
+c
+               dedxia = zcb*dedyt - ycb*dedzt - ddrdx
+               dedyia = xcb*dedzt - zcb*dedxt - ddrdy
+               dedzia = ycb*dedxt - xcb*dedyt - ddrdz
+               dedxib = yca*dedzt - zca*dedyt + zdc*dedyu
+     &                     - ydc*dedzu + ddrdx
+               dedyib = zca*dedxt - xca*dedzt + xdc*dedzu
+     &                     - zdc*dedxu + ddrdy
+               dedzib = xca*dedyt - yca*dedxt + ydc*dedxu
+     &                     - xdc*dedyu + ddrdz
+               dedxic = zba*dedyt - yba*dedzt + ydb*dedzu
+     &                     - zdb*dedyu
+               dedyic = xba*dedzt - zba*dedxt + zdb*dedxu
+     &                     - xdb*dedzu
+               dedzic = yba*dedxt - xba*dedyt + xdb*dedyu
+     &                     - ydb*dedxu
+               dedxid = zcb*dedyu - ycb*dedzu
+               dedyid = xcb*dedzu - zcb*dedxu
+               dedzid = ycb*dedxu - xcb*dedyu
+               endif
+c
+c     get the stretch-torsion values for the second bond
+c
+               k  = ist(3,iistrtor)
+               v1 = kst(4,iistrtor)
+               v2 = kst(5,iistrtor)
+               v3 = kst(6,iistrtor)
+#ifdef USE_NVSHMEM_CUDA
+               ipe = (k-1)/nbond_pe
+               ind = mod((k-1),nbond_pe) +1
+               dr  = rcb - d_bl(ipe)%pel(ind)
+#else
+               dr = rcb - real(bl(k),r_p)
+#endif
+               if (abs(dr)>precm_eps) then
+               e2     = storunit * dr * (v1* phi1 + v2* phi2 + v3* phi3)
+               dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
+               ddr    = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rcb
+c
+c     compute derivative components for this interaction
 c
                ddrdx = xcb * ddr
                ddrdy = ycb * ddr
                ddrdz = zcb * ddr
-
+               dedxt =  dedphi * (yt*zcb - ycb*zt) * (rt2)
+               dedyt =  dedphi * (zt*xcb - zcb*xt) * (rt2)
+               dedzt =  dedphi * (xt*ycb - xcb*yt) * (rt2)
+               dedxu = -dedphi * (yu*zcb - ycb*zu) * (ru2)
+               dedyu = -dedphi * (zu*xcb - zcb*xu) * (ru2)
+               dedzu = -dedphi * (xu*ycb - xcb*yu) * (ru2)
 c
-c     chain rule terms for first derivative components
+c     increment chain rule components for the second bond
 c
-               xca = xic - xia
-               yca = yic - yia
-               zca = zic - zia
-               xdb = xid - xib
-               ydb = yid - yib
-               zdb = zid - zib
-               if (use_polymer) then
-                  call image_inl (xca,yca,zca)
-                  call image_inl (xdb,ydb,zdb)
-               end if
-               dedxt =  dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
-               dedyt =  dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
-               dedzt =  dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
-               dedxu = -dedphi * (yu*zcb - ycb*zu) / (ru2*rcb)
-               dedyu = -dedphi * (zu*xcb - zcb*xu) / (ru2*rcb)
-               dedzu = -dedphi * (xu*ycb - xcb*yu) / (ru2*rcb)
-c
-c     compute derivative components for this interaction
-c
-               dedxia = zcb*dedyt - ycb*dedzt
-               dedyia = xcb*dedzt - zcb*dedxt
-               dedzia = ycb*dedxt - xcb*dedyt
-               dedxib = yca*dedzt - zca*dedyt + zdc*dedyu
+               dedxia = dedxia + zcb*dedyt - ycb*dedzt
+               dedyia = dedyia + xcb*dedzt - zcb*dedxt
+               dedzia = dedzia + ycb*dedxt - xcb*dedyt
+               dedxib = dedxib + yca*dedzt - zca*dedyt + zdc*dedyu
      &                     - ydc*dedzu - ddrdx
-               dedyib = zca*dedxt - xca*dedzt + xdc*dedzu
+               dedyib = dedyib + zca*dedxt - xca*dedzt + xdc*dedzu
      &                     - zdc*dedxu - ddrdy
-               dedzib = xca*dedyt - yca*dedxt + ydc*dedxu
+               dedzib = dedzib + xca*dedyt - yca*dedxt + ydc*dedxu
      &                     - xdc*dedyu - ddrdz
-               dedxic = zba*dedyt - yba*dedzt + ydb*dedzu
+               dedxic = dedxic + zba*dedyt - yba*dedzt + ydb*dedzu
      &                     - zdb*dedyu + ddrdx
-               dedyic = xba*dedzt - zba*dedxt + zdb*dedxu
+               dedyic = dedyic + xba*dedzt - zba*dedxt + zdb*dedxu
      &                     - xdb*dedzu + ddrdy
-               dedzic = yba*dedxt - xba*dedyt + xdb*dedyu
+               dedzic = dedzic + yba*dedxt - xba*dedyt + xdb*dedyu
      &                     - ydb*dedxu + ddrdz
-               dedxid = zcb*dedyu - ycb*dedzu
-               dedyid = xcb*dedzu - zcb*dedxu
-               dedzid = ycb*dedxu - xcb*dedyu
-
-               !increment the stretch-torsion energy and gradient
-               ebt = ebt + e
+               dedxid = dedxid + zcb*dedyu - ycb*dedzu
+               dedyid = dedyid + xcb*dedzu - zcb*dedxu
+               dedzid = dedzid + ycb*dedxu - xcb*dedyu
+               endif
 
 c             if(dedxia-dedxia.ne.0.0)
 c    &           print*,'xa',zcb,dedyt , ycb,dedzt
@@ -295,47 +349,90 @@ c             if(dedyid-dedyid.ne.0.0)
 c    &           print*,'yd',xcb,dedzu , zcb,dedxu
 c             if(dedzid-dedzid.ne.0.0)
 c    &           print*,'zd',ycb,dedxu , xcb,dedyu
+c
+c     get the stretch-torsion values for the third bond
+c
+               k  = ist(4,iistrtor)
+               v1 = kst(7,iistrtor)
+               v2 = kst(8,iistrtor)
+               v3 = kst(9,iistrtor)
+#ifdef USE_NVSHMEM_CUDA
+               ipe = (k-1)/nbond_pe
+               ind = mod((k-1),nbond_pe) +1
+               dr  = rdc - d_bl(ipe)%pel(ind)
+#else
+               dr = rdc - real(bl(k),r_p)
+#endif
+               if (abs(dr)>precm_eps) then
+               e3     = storunit * dr * (v1* phi1 + v2* phi2 + v3* phi3)
+               dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
+               ddr    = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rdc
+c
+c     compute derivative components for this interaction
+c
+               ddrdx = xdc * ddr
+               ddrdy = ydc * ddr
+               ddrdz = zdc * ddr
+               dedxt =  dedphi * (yt*zcb - ycb*zt) * (rt2)
+               dedyt =  dedphi * (zt*xcb - zcb*xt) * (rt2)
+               dedzt =  dedphi * (xt*ycb - xcb*yt) * (rt2)
+               dedxu = -dedphi * (yu*zcb - ycb*zu) * (ru2)
+               dedyu = -dedphi * (zu*xcb - zcb*xu) * (ru2)
+               dedzu = -dedphi * (xu*ycb - xcb*yu) * (ru2)
+c
+c     increment chain rule components for the third bond
+c
+               dedxia = dedxia + zcb*dedyt - ycb*dedzt
+               dedyia = dedyia + xcb*dedzt - zcb*dedxt
+               dedzia = dedzia + ycb*dedxt - xcb*dedyt
+               dedxib = dedxib + yca*dedzt - zca*dedyt + zdc*dedyu
+     &                     - ydc*dedzu
+               dedyib = dedyib + zca*dedxt - xca*dedzt + xdc*dedzu
+     &                     - zdc*dedxu
+               dedzib = dedzib + xca*dedyt - yca*dedxt + ydc*dedxu
+     &                     - xdc*dedyu
+               dedxic = dedxic + zba*dedyt - yba*dedzt + ydb*dedzu
+     &                     - zdb*dedyu - ddrdx
+               dedyic = dedyic + xba*dedzt - zba*dedxt + zdb*dedxu
+     &                     - xdb*dedzu - ddrdy
+               dedzic = dedzic + yba*dedxt - xba*dedyt + xdb*dedyu
+     &                     - ydb*dedxu - ddrdz
+               dedxid = dedxid + zcb*dedyu - ycb*dedzu + ddrdx
+               dedyid = dedyid + xcb*dedzu - zcb*dedxu + ddrdy
+               dedzid = dedzid + ycb*dedxu - xcb*dedyu + ddrdz
+               endif
 
-               dedi(1) = dedxia
-               dedi(2) = dedyia
-               dedi(3) = dedzia
+               !increment the stretch-torsion energy and gradient
+               ebt = ebt + e1+ e2 + e3
+
 !$acc atomic
-               debt(1,ialoc) = debt(1,ialoc) + dedi(1)
+               debt(1,ialoc) = debt(1,ialoc) + dedxia
 !$acc atomic
-               debt(2,ialoc) = debt(2,ialoc) + dedi(2)
+               debt(2,ialoc) = debt(2,ialoc) + dedyia
 !$acc atomic
-               debt(3,ialoc) = debt(3,ialoc) + dedi(3)
+               debt(3,ialoc) = debt(3,ialoc) + dedzia
 c
-               dedi(1) = dedxid
-               dedi(2) = dedyid
-               dedi(3) = dedzid
 !$acc atomic
-               debt(1,idloc) = debt(1,idloc) + dedi(1)
+               debt(1,idloc) = debt(1,idloc) + dedxid
 !$acc atomic
-               debt(2,idloc) = debt(2,idloc) + dedi(2)
+               debt(2,idloc) = debt(2,idloc) + dedyid
 !$acc atomic
-               debt(3,idloc) = debt(3,idloc) + dedi(3)
+               debt(3,idloc) = debt(3,idloc) + dedzid
 
 c
-               dedi(1) = dedxib
-               dedi(2) = dedyib
-               dedi(3) = dedzib
 !$acc atomic
-               debt(1,ibloc) = debt(1,ibloc) + dedi(1)
+               debt(1,ibloc) = debt(1,ibloc) + dedxib
 !$acc atomic
-               debt(2,ibloc) = debt(2,ibloc) + dedi(2)
+               debt(2,ibloc) = debt(2,ibloc) + dedyib
 !$acc atomic
-               debt(3,ibloc) = debt(3,ibloc) + dedi(3)
+               debt(3,ibloc) = debt(3,ibloc) + dedzib
 c
-               dedi(1) = dedxic
-               dedi(2) = dedyic
-               dedi(3) = dedzic
 !$acc atomic
-               debt(1,icloc) = debt(1,icloc) + dedi(1)
+               debt(1,icloc) = debt(1,icloc) + dedxic
 !$acc atomic
-               debt(2,icloc) = debt(2,icloc) + dedi(2)
+               debt(2,icloc) = debt(2,icloc) + dedyic
 !$acc atomic
-               debt(3,icloc) = debt(3,icloc) + dedi(3)
+               debt(3,icloc) = debt(3,icloc) + dedzic
 c
 c     increment the internal virial tensor components
 c

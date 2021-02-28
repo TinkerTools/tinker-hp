@@ -25,7 +25,7 @@ c
       use analyz
       use atmlst
       use atmtyp
-      use atoms
+      use atomsMirror
       use bond
       use bound
       use domdec
@@ -43,13 +43,15 @@ c
       use usage
       implicit none
       integer i,k,istrtor,iistrtor
-      integer ia,ib,ic,id,ibloc,icloc
+      integer ia,ib,ic,id,ialoc,ibloc,icloc,idloc
 #ifdef USE_NVSHMEM_CUDA
       integer ipe,ind
 #endif
-      real(t_p) e,rcb,dr
+      real(t_p) e,dr
       real(t_p) angle
       real(t_p) rt2,ru2,rtru
+      real(t_p) rba,rcb,rdc
+      real(r_p) e1,e2,e3
       real(t_p) xt,yt,zt
       real(t_p) xu,yu,zu
       real(t_p) xtu,ytu,ztu
@@ -67,20 +69,18 @@ c
       real(t_p) xba,yba,zba
       real(t_p) xcb,ycb,zcb
       real(t_p) xdc,ydc,zdc
+      real(t_p),parameter::rtiny=0.000001_ti_p
       logical proceed
       logical header,huge
 c
 c
 c     zero out the stretch-torsion energy and partitioning terms
 c
-      nebt = 0
-      ebt = 0.0_ti_p
-      aebt = 0.0_ti_p
-      if (rank.eq.0) then
-         header = .true.
-      else
-         header=.false.
-      end if
+      if (deb_Path) print*, 'estrtor3',nstrtorloc
+      nebt   = 0
+      ebt    = 0.0_re_p
+      aebt   = 0.0_ti_p
+      header = merge(.true.,.false.,(rank.eq.0))
 c
 c     calculate the stretch-torsion interaction energy term
 c
@@ -101,14 +101,15 @@ c
          ic    = itors(3,i)
          id    = itors(4,i)
 #endif
+         ialoc = loc(ia)
          ibloc = loc(ib)
          icloc = loc(ic)
+         idloc = loc(id)
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                            use(ic) .or. use(id))
+         proceed = (use(ia) .or. use(ib) .or.
+     &                              use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
 c
@@ -139,31 +140,27 @@ c
                call image_inl (xcb,ycb,zcb)
                call image_inl (xdc,ydc,zdc)
             end if
-            xt = yba*zcb - ycb*zba
-            yt = zba*xcb - zcb*xba
-            zt = xba*ycb - xcb*yba
-            xu = ycb*zdc - ydc*zcb
-            yu = zcb*xdc - zdc*xcb
-            zu = xcb*ydc - xdc*ycb
-            xtu = yt*zu - yu*zt
-            ytu = zt*xu - zu*xt
-            ztu = xt*yu - xu*yt
-            rt2 = xt*xt + yt*yt + zt*zt
-            ru2 = xu*xu + yu*yu + zu*zu
-            rtru = sqrt(rt2 * ru2)
-            if (rtru .ne. 0.0_ti_p) then
-               rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+            rba = sqrt(xba*xba + yba*yba + zba*zba)
+            rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+            rdc = sqrt(xdc*xdc + ydc*ydc + zdc*zdc)
+            if (min(rba,rcb,rdc) .ne. 0.0d0) then
+               xt   = yba*zcb - ycb*zba
+               yt   = zba*xcb - zcb*xba
+               zt   = xba*ycb - xcb*yba
+               xu   = ycb*zdc - ydc*zcb
+               yu   = zcb*xdc - zdc*xcb
+               zu   = xcb*ydc - xdc*ycb
+               xtu  = yt*zu - yu*zt
+               ytu  = zt*xu - zu*xt
+               ztu  = xt*yu - xu*yt
+               rt2  = max(xt*xt + yt*yt + zt*zt,rtiny)
+               ru2  = max(xu*xu + yu*yu + zu*zu,rtiny)
+               rtru = sqrt(rt2*ru2)
                cosine = (xt*xu + yt*yu + zt*zu) / rtru
-               sine = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
+               sine   = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
                cosine = min(1.0_ti_p,max(-1.0_ti_p,cosine))
-               angle = radian * acos(cosine)
+               angle  = radian * acos(cosine)
                if (sine .lt. 0.0_ti_p)  angle = -angle
-c
-c     set the stretch-torsional parameters for this angle
-c
-               v1 = kst(1,iistrtor)
-               v2 = kst(2,iistrtor)
-               v3 = kst(3,iistrtor)
 #ifdef USE_NVSHMEM_CUDA
                c1 = d_tors1(ipe)%pel(3,ind)
                s1 = d_tors1(ipe)%pel(4,ind)
@@ -179,41 +176,68 @@ c
                c3 = tors3(3,i)
                s3 = tors3(4,i)
 #endif
-               k  = ist(2,iistrtor)
 c
 c     compute the multiple angle trigonometry and the phase terms
 c
                cosine2 = cosine*cosine - sine*sine
-               sine2 = 2.0_ti_p * cosine * sine
+               sine2   = 2.0_ti_p * cosine * sine
                cosine3 = cosine*cosine2 - sine*sine2
-               sine3 = cosine*sine2 + sine*cosine2
-               phi1 = 1.0_ti_p + (cosine*c1 + sine*s1)
-               phi2 = 1.0_ti_p + (cosine2*c2 + sine2*s2)
-               phi3 = 1.0_ti_p + (cosine3*c3 + sine3*s3)
+               sine3   = cosine*sine2 + sine*cosine2
+               phi1    = 1.0_ti_p + (cosine*c1 + sine*s1)
+               phi2    = 1.0_ti_p + (cosine2*c2 + sine2*s2)
+               phi3    = 1.0_ti_p + (cosine3*c3 + sine3*s3)
 c
-c     calculate the bond-stretch for the central bond
+c     get the stretch-torsion values for the first bond
 c
-               rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+               v1 = kst(1,iistrtor)
+               v2 = kst(2,iistrtor)
+               v3 = kst(3,iistrtor)
+               k  = ist(2,iistrtor)
 #ifdef USE_NVSHMEM_CUDA
                ipe = (k-1)/nbond_pe
                ind = mod((k-1),nbond_pe) +1
-               dr  = rcb - d_bl(ipe)%pel(ind)
+               dr = rba - d_bl(ipe)%pel(ind)
+#else
+               dr = rba - bl(k)
+#endif
+               e1 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
+c
+c     get the stretch-torsion values for the second bond
+c
+               v1 = kst(4,iistrtor)
+               v2 = kst(5,iistrtor)
+               v3 = kst(6,iistrtor)
+               k  = ist(3,iistrtor)
+#ifdef USE_NVSHMEM_CUDA
+               ipe = (k-1)/nbond_pe
+               ind = mod((k-1),nbond_pe) +1
+               dr = rcb - d_bl(ipe)%pel(ind)
 #else
                dr = rcb - bl(k)
 #endif
+               e2 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
 c
-c     compute the stretch-torsion energy for this angle
+c     get the stretch-torsion values for the third bond
 c
-               e = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
+               v1 = kst(7,iistrtor)
+               v2 = kst(8,iistrtor)
+               v3 = kst(9,iistrtor)
+               k  = ist(4,iistrtor)
+               dr = rdc - bl(k)
+               e3 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
 c
 c     increment the total stretch-torsion energy
 c
                nebt = nebt + 1
-               ebt = ebt + e
+               ebt  = ebt + e1 + e2 + e3
 !$acc atomic
-               aebt(ibloc) = aebt(ibloc) + 0.5_ti_p*e
+               aebt(ialoc) = aebt(ialoc) + 0.5_ti_p*e1
 !$acc atomic
-               aebt(icloc) = aebt(icloc) + 0.5_ti_p*e
+               aebt(ibloc) = aebt(ibloc) + 0.5_ti_p*(e1+e2)
+!$acc atomic
+               aebt(icloc) = aebt(icloc) + 0.5_ti_p*(e3+e3)
+!$acc atomic
+               aebt(idloc) = aebt(idloc) + 0.5_ti_p*e1
 #ifndef _OPENACC
 c
 c     print a message if the energy of this interaction is large

@@ -326,6 +326,7 @@ c
 c
       call temper   (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
+      call pressure2 (epot,temp)
 c
 c     total energy is sum of kinetic and potential energies
 c

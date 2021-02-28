@@ -116,6 +116,7 @@ c
       subroutine makebar
       use atoms
       use boxes
+      use dcdmod
       use domdec
       use files
       use energi ,only: info_energy
@@ -150,6 +151,7 @@ c
       character*240 titlea
       character*240 titleb
       character*240 arcfile
+      character*240 dcdfile
       character*240 barfile
       character*240, allocatable :: keys0(:)
       character*240, allocatable :: keys1(:)
@@ -166,10 +168,10 @@ c
 c     setup for MPI
 c
       call drivermpi
-      call reinitnl(0)
+c     call reinitnl(0)
 
-      call mechanic
-      call nblist(0)
+c     call mechanic
+c     call nblist(0)
 c
 c     find the original temperature value for trajectory A
 c
@@ -206,10 +208,10 @@ c     get trajectory B archive and setup mechanics calculation
 c
       call getxyz
       !call ddpme3d
-      call AllDirAssign
-      call reassignpme(.true.)
-      call reinitnl(0)
-      call mechanic
+c     call AllDirAssign
+c     call reassignpme(.true.)
+c     call reinitnl(0)
+c     call mechanic
       silent = .true.
 c
 c     find the original temperature value for trajectory B
@@ -252,18 +254,28 @@ c     reopen trajectory A using the parameters for state 0
 c
       iarc    = freeunit ()
       arcfile = fnamea
-      call suffix (arcfile,'arc','old')
-      open (unit=iarc,file=arcfile,status ='old')
-      rewind (unit=iarc)
-      call readxyz (iarc)
+      if (dcdio) then
+        dcdfile = fnamea(1:lenga)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+      else
+        call suffix (arcfile,'arc','old')
+        open (unit=iarc,file=arcfile,status ='old')
+        rewind (unit=iarc)
+        call readxyz (iarc)
+      end if
       nkey = nkey0
       do i = 1, nkey
          keyline(i) = keys0(i)
       end do
       !call ddpme3d
+c
+c     the box shape can change between frames
+c
       call lattice
       call AllDirAssign
-      call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
       call nblist(0)
@@ -287,17 +299,24 @@ c
 c     MPI : get total energy
 c
          call reduceen(epot)
+         if (deb_Energy) call info_energy(rank)
          ua0(i)  = epot
          vola(i) = volbox
-         call readxyz (iarc)
+         if (dcdio) then
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+           if (abort) cycle
+         else
+           call readxyz (iarc)
+         end if
          if (n.eq.0) cycle
-         !call ddpme3d
 c
 c        the box shape can change between frames
 c
          call lattice
+         !call ddpme3d
          call AllDirAssign
-         call reassignpme(.true.)
+         call AllRecAssign
          call reinitnl(0)
          call mechanicstep(0)
          call nblist(0)
@@ -311,16 +330,27 @@ c
 c
 c     reset trajectory A using the parameters for state 1
 c
-      rewind (unit=iarc)
-      call readxyz (iarc)
+      if (dcdio) then
+        call dcdfile_close
+        dcdfile = fnamea(1:lenga)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+        abort = .false.
+      else
+        rewind (unit=iarc)
+        call readxyz (iarc)
+      end if
       nkey = nkey1
       do i = 1, nkey
          keyline(i) = keys1(i)
       end do
-      !call ddpme3d
+c
+c     the box shape can change between frames
+c
       call lattice
       call AllDirAssign
-      call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
       call nblist(0)
@@ -348,48 +378,67 @@ c
      $           ua1(i)-ua0(i)
   130       format (i11,2x,3f16.4)
          end if
-         call readxyz (iarc)
+         if (dcdio) then
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+           if (abort) cycle
+         else
+           call readxyz (iarc)
+         end if
          if (n.eq.0) cycle
-         !call ddpme3d
 c
 c        the box shape can change between frames
 c
          call lattice
+         !call ddpme3d
          call AllDirAssign
-         call reassignpme(.true.)
+         call AllRecAssign
          call reinitnl(0)
          call mechanicstep(0)
          call nblist(0)
          if (i .ge. maxframe)  abort = .true.
       end do
       nfrma = i
-      close (unit=iarc)
+      if (dcdio) then
+        call dcdfile_close
+      else
+        close (unit=iarc)
+      end if
 c
 c     reopen trajectory B using the parameters for state 0
 c
       iarc = freeunit ()
       arcfile = fnameb
-      call suffix (arcfile,'arc','old')
-      open (unit=iarc,file=arcfile,status ='old')
-      rewind (unit=iarc)
-      call readxyz (iarc)
-      nkey = nkey0
-      do i = 1, nkey
-         keyline(i) = keys0(i)
-      end do
-      !call ddpme3d
-      call lattice
-      call AllDirAssign
-      call reassignpme(.true.)
-      call reinitnl(0)
-      call mechanic
-      call nblist(0)
+      if (dcdio) then
+        dcdfile = fnameb(1:lengb)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+        abort = .false.
+      else
+        call suffix (arcfile,'arc','old')
+        open (unit=iarc,file=arcfile,status ='old')
+        rewind (unit=iarc)
+        call readxyz (iarc)
+      end if
       if (abort) then
          if (rank.eq.0) write (iout,140)
   140    format (/,' BAR  --  No Coordinate Frames Available',
      &              ' from Second Input File')
          call fatal
       end if
+
+      ! Reset State 0 parameters
+      nkey = nkey0
+      do i = 1, nkey
+         keyline(i) = keys0(i)
+      end do
+      call lattice
+      call AllDirAssign
+      call reinitnl(0)
+      call mechanic
+      call nblist(0)
 c
 c     find potential energies for trajectory B in state 0
 c
@@ -406,15 +455,20 @@ c
          if (deb_Energy) call info_energy(rank)
          ub0 (i) = epot
          volb(i) = volbox
-         call readxyz (iarc)
+         if (dcdio) then
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+           if (abort) cycle
+         else
+           call readxyz (iarc)
+         end if
          if (n.eq.0) cycle
-         !call ddpme3d
 c
-c        the box shape can change between frames
+c     the box shape can change between frames
 c
          call lattice
          call AllDirAssign
-         call reassignpme(.true.)
+         call AllRecAssign
          call reinitnl(0)
          call mechanicstep(0)
          call nblist(0)
@@ -426,18 +480,30 @@ c
          end if
       end do
 c
-c     reset trajectory B using the parameters for state 1
+c     reset trajectory B
 c
-      rewind (unit=iarc)
-      call readxyz (iarc)
+      if (dcdio) then
+        call dcdfile_close
+        dcdfile = fnameb(1:lengb)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+        abort = .false.
+      else
+        rewind (unit=iarc)
+        call readxyz (iarc)
+      end if
+c
+c     Reset State 1 parameters
+c
       nkey = nkey1
       do i = 1, nkey
          keyline(i) = keys1(i)
       end do
-      !call ddpme3d
+      call cutoffs
       call lattice
       call AllDirAssign
-      call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
       call nblist(0)
@@ -452,35 +518,44 @@ c
       i = 0
       do while (.not. abort)
          i = i + 1
-         call cutoffs
+
          epot = energy()
-c
-c     MPI : get total energy
-c
+         !MPI : get total energy
          call reduceen(epot)
          if (deb_Energy) call info_energy(rank)
          ub1(i) = epot 
+
          if (verbose) then
             if (rank.eq.0) write (iout,180)  i,ub0(i),ub1(i),
      $       ub0(i)-ub1(i)
   180       format (i11,2x,3f16.4)
          end if
-         call readxyz (iarc)
+
+         if (dcdio) then
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+           if (abort) cycle
+         else
+           call readxyz (iarc)
+         end if
          if (n.eq.0) cycle
-         !call ddpme3d
-c
-c        the box shape can change between frames
-c
+
+         !The box shape can change between frames
          call lattice
          call AllDirAssign
-         call reassignpme(.true.)
+         call AllRecAssign
          call reinitnl(0)
          call mechanicstep(0)
          call nblist(0)
+
          if (i .ge. maxframe)  abort = .true.
       end do
       nfrmb = i
-      close (unit=iarc)
+      if (dcdio) then
+        call dcdfile_close
+      else
+        close (unit=iarc)
+      end if
 c
 c     perform deallocation of some local arrays
 c
@@ -839,7 +914,7 @@ c
       do k = 1, nbst
          sum = En_p(0.0)
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max( int(frma*random()),1 )
             sum = sum + vola(j)
          end do
          vavea = sum / frma
@@ -847,7 +922,7 @@ c
          vasum2 = vasum2 + vavea*vavea
          sum = En_p(0.0)
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max( int(frmb*random()),1 )
             sum = sum + volb(j)
          end do
          vaveb = sum / frmb
@@ -882,19 +957,19 @@ c
       do k = 1, nbst
          sum = En_p(0.0)
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j   = max( int(frma*random()),1 )
             sum = sum + exp((ua0(j)-ua1(j)+vloga(j))/rta)
          end do
-         cfore = -rta * log(sum/frma)
-         cfsum = cfsum + cfore
+         cfore  = -rta * log(sum/frma)
+         cfsum  = cfsum + cfore
          cfsum2 = cfsum2 + cfore*cfore
          sum = En_p(0.0)
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j   = max( int(frmb*random()),1 )
             sum = sum + exp((ub1(j)-ub0(j)+vlogb(j))/rtb)
          end do
-         cback = rtb * log(sum/frmb)
-         cbsum = cbsum + cback
+         cback  = rtb * log(sum/frmb)
+         cbsum  = cbsum + cback
          cbsum2 = cbsum2 + cback*cback
       end do
       cfore = cfsum / bst
@@ -1001,14 +1076,14 @@ c
          cold = En_p(0.0)
          top  = En_p(0.0)
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max( int(frmb*random()),1 )
             bstb(i) = j
             top = top + 1.0d0/(1.0d0+exp((ub0(j)-ub1(j)
      &                                   +vlogb(i)+cold)/rtb))
          end do
          bot  = 0.0d0
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max( int(frma*random()),1 )
             bsta(i) = j
             bot = bot + 1.0d0/(1.0d0+exp((ua1(j)-ua0(j)
      &                                   +vloga(i)-cold)/rta))
@@ -1068,11 +1143,11 @@ c
          uave0 = En_p(0.0)
          uave1 = En_p(0.0)
          do i = 1, nfrma
-            j = int(frma*random()) + 1
+            j = max( int(frma*random()),1 )
             uave0 = uave0 + ua0(j)
          end do
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max( int(frmb*random()),1 )
             uave1 = uave1 + ub1(j)
          end do
          uave0  = uave0 / frma
@@ -1118,7 +1193,7 @@ c
          top = En_p(0.0)
          bot = En_p(0.0)
          do i = 1, nfrma
-            j    = int(frma*random()) + 1
+            j    = max( int(frma*random()),1 )
             term = exp((ua0(j)-ua1(j)+vloga(j))/rta)
             top  = top + ua1(j)*term
             bot  = bot + term
@@ -1129,7 +1204,7 @@ c
          top    = En_p(0.0)
          bot    = En_p(0.0)
          do i = 1, nfrmb
-            j    = int(frmb*random()) + 1
+            j    = max( int(frmb*random()),1 )
             term = exp((ub1(j)-ub0(j)+vlogb(j))/rtb)
             top  = top + ub0(j)*term
             bot  = bot + term
@@ -1174,7 +1249,7 @@ c
          vsum   = En_p(0.0)
          fbsum0 = En_p(0.0)
          do i = 1, nfrma
-            j     = int(frma*random()) + 1
+            j     = max( int(frma*random()),1 )
             fore  = 1.0d0/(1.0d0+exp((ua1(j)-ua0(j)+vloga(j)-cnew)/rta))
             back  = 1.0d0/(1.0d0+exp((ua0(j)-ua1(j)+vloga(j)+cnew)/rta))
             fsum  = fsum + fore
@@ -1190,7 +1265,7 @@ c
          vsum   = En_p(0.0)
          fbsum1 = En_p(0.0)
          do i = 1, nfrmb
-            j = int(frmb*random()) + 1
+            j = max( int(frmb*random()),1 )
             fore  = 1.0d0/(1.0d0+exp((ub1(j)-ub0(j)+vlogb(j)-cnew)/rtb))
             back  = 1.0d0/(1.0d0+exp((ub0(j)-ub1(j)+vlogb(j)+cnew)/rtb))
             bsum  = bsum + back
@@ -1226,5 +1301,4 @@ c
       deallocate (volb)
       deallocate (vloga)
       deallocate (vlogb)
-      return
       end

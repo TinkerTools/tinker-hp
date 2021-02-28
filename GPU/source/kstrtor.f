@@ -51,14 +51,17 @@ c
       integer ita,itb,itc,itd
       integer iitors,strtorcount,nstrtorloc1
       integer nstrtorloc_cap
-      integer size,next,zero
+      integer next,zero
+      !integer size
 #ifdef USE_NVSHMEM_CUDA
       integer ipe,ind
 #endif
       integer :: isys=0
       integer*8 pt,pt0
       real(t_p) bt1,bt2,bt3
-      logical header
+      real(t_p) bt4,bt5,bt6
+      real(t_p) bt7,bt8,bt9
+      logical header,swap
       character*4 pa,pb,pc,pd
       character*4 zeros
       character*16 blank
@@ -66,7 +69,7 @@ c
       character*240 record
       character*240 string
       parameter(zero=0)
-      logical init
+      logical,intent(in):: init
 c
       blank = '                '
       zeros = '0000'
@@ -74,7 +77,7 @@ c
 c
 c     process keywords containing stretch-torsion parameters
 c
-        if (rank.eq.0.and.tinkerdebug) print*,'kstrtor init'
+        if (deb_Path) print*,'kstrtor init'
         header = .true.
         do i = 1, nkey
            next = 1
@@ -89,19 +92,29 @@ c
               bt1 = 0.0_ti_p
               bt2 = 0.0_ti_p
               bt3 = 0.0_ti_p
+              bt4 = 0.0_ti_p
+              bt5 = 0.0_ti_p
+              bt6 = 0.0_ti_p
+              bt7 = 0.0_ti_p
+              bt8 = 0.0_ti_p
+              bt9 = 0.0_ti_p
               string = record(next:240)
-              read (string,*,err=10,end=10)  ia,ib,ic,id,bt1,bt2,bt3
+              read (string,*,err=10,end=10)  ia,ib,ic,id,bt1,bt2,bt3,
+     &                                     bt4,bt5,bt6,bt7,bt8,bt9
    10         continue
               if (.not. silent) then
                  if (header) then
                     header = .false.
                     if (rank.eq.0) write (iout,20)
-   20               format (/,'Additional Stretch-Torsion Parameters :',
-     &                      //,5x,'Atom Classes',7x,'1-Fold',6x,
-     &                         '2-Fold',6x,'3-Fold',/)
+   20              format (/,' Additional Stretch-Torsion Parameters :',
+     &                    //,5x,'Atom Classes',10x,'Stretch',
+     &                       9x,'1-Fold',6x,'2-Fold',6x,'3-Fold',/)
                  end if
-                 if (rank.eq.0) write (iout,30)  ia,ib,ic,id,bt1,bt2,bt3
-   30            format (1x,4i4,1x,3f12.3)
+                 if (rank.eq.0) write (iout,30) ia,ib,ic,id,bt1,bt2,bt3,
+     &                          bt4,bt5,bt6,bt7,bt8,bt9
+   30            format (2x,4i4,8x,'1st Bond',3x,3f12.3,
+     &                 /,26x,'2nd Bond',3x,3f12.3,
+     &                 /,26x,'3rd Bond',3x,3f12.3)
               end if
 c             size = 4
 c             call numeral (ita,pa,size)
@@ -124,9 +137,24 @@ c                pt = pd//pc//pb//pa
               do j = 1, maxnbt
                  if (kbt(j).eq.-1 .or. kbt(j).eq.pt) then
                     kbt(j) = pt
-                    btcon(1,j) = bt1
-                    btcon(2,j) = bt2
-                    btcon(3,j) = bt3
+                    btcon(4,j) = bt4
+                    btcon(5,j) = bt5
+                    btcon(6,j) = bt6
+                    if (swap) then
+                       btcon(1,j) = bt7
+                       btcon(2,j) = bt8
+                       btcon(3,j) = bt9
+                       btcon(7,j) = bt1
+                       btcon(8,j) = bt2
+                       btcon(9,j) = bt3
+                    else
+                       btcon(1,j) = bt1
+                       btcon(2,j) = bt2
+                       btcon(3,j) = bt3
+                       btcon(7,j) = bt7
+                       btcon(8,j) = bt8
+                       btcon(9,j) = bt9
+                    end if
                     goto 50
                  end if
               end do
@@ -168,35 +196,68 @@ c             call numeral (itd,pd,size)
 c                pt = pa//pb//pc//pd
                  call fron_conv_base_inl(zero,ita,itb,itc,itd,pt)
                  call fron_conv_base_inl(zero,zero,itb,itc,zero,pt0)
+                 swap = .false.
               else if (itc .lt. itb) then
 c                pt = pd//pc//pb//pa
                  call fron_conv_base_inl(zero,itd,itc,itb,ita,pt)
                  call fron_conv_base_inl(zero,zero,itc,itb,zero,pt0)
+                 swap = .true.
               else if (ita .le. itd) then
 c                pt = pa//pb//pc//pd
                  call fron_conv_base_inl(zero,ita,itb,itc,itd,pt)
                  call fron_conv_base_inl(zero,zero,itb,itc,zero,pt0)
+                 swap = .false.
               else if (itd .lt. ita) then
 c                pt = pd//pc//pb//pa
                  call fron_conv_base_inl(zero,itd,itc,itb,ita,pt)
                  call fron_conv_base_inl(zero,zero,itc,itb,zero,pt0)
+                 swap = .true.
               end if
               do j = 1, nbt
                  if (kbt(j) .eq. pt) then
                     nstrtor = nstrtor + 1
-                    kst(1,nstrtor) = btcon(1,j)
-                    kst(2,nstrtor) = btcon(2,j)
-                    kst(3,nstrtor) = btcon(3,j)
-                    ist(1,nstrtor) = i
+                    kst(4,nstrtor) = btcon(4,j)
+                    kst(5,nstrtor) = btcon(5,j)
+                    kst(6,nstrtor) = btcon(6,j)
+                    if (swap) then
+                       kst(1,nstrtor) = btcon(7,j)
+                       kst(2,nstrtor) = btcon(8,j)
+                       kst(3,nstrtor) = btcon(9,j)
+                       kst(7,nstrtor) = btcon(1,j)
+                       kst(8,nstrtor) = btcon(2,j)
+                       kst(9,nstrtor) = btcon(3,j)
+                    else
+                       kst(1,nstrtor) = btcon(1,j)
+                       kst(2,nstrtor) = btcon(2,j)
+                       kst(3,nstrtor) = btcon(3,j)
+                       kst(7,nstrtor) = btcon(7,j)
+                       kst(8,nstrtor) = btcon(8,j)
+                       kst(9,nstrtor) = btcon(9,j)
+                    end if
                     ! construct the system class parameter
                     if (.not.is_find8(kbt_sys(1),isys,kbt(j))) then
                        isys = isys +1
                        kbt_sys(isys) = kbt(j)
                     end if
+                    ist(1,nstrtor) = i
+                    do k = 1, n12(ia)
+                       if (i12(k,ia) .eq. ib) then
+                          ist(2,nstrtor) = bndlist(k,ia)
+                          goto 60
+                       endif
+                    end do
+   60               continue
                     do k = 1, n12(ib)
                        if (i12(k,ib) .eq. ic) then
-                          ist(2,nstrtor) = bndlist(k,ib)
-                          goto 60
+                          ist(3,nstrtor) = bndlist(k,ib)
+                          goto 70
+                       end if
+                    end do
+   70               continue
+                    do k = 1, n12(ic)
+                       if (i12(k,ic) .eq. id) then
+                          ist(4,nstrtor) = bndlist(k,ic)
+                          goto 100
                        end if
                     end do
                  end if
@@ -204,34 +265,64 @@ c                pt = pd//pc//pb//pa
               do j = 1, nbt
                  if (kbt(j) .eq. pt0) then
                     nstrtor = nstrtor + 1
-                    kst(1,nstrtor) = btcon(1,j)
-                    kst(2,nstrtor) = btcon(2,j)
-                    kst(3,nstrtor) = btcon(3,j)
-                    ist(1,nstrtor) = i
+                    kst(4,nstrtor) = btcon(4,j)
+                    kst(5,nstrtor) = btcon(5,j)
+                    kst(6,nstrtor) = btcon(6,j)
+                    if (swap) then
+                       kst(1,nstrtor) = btcon(7,j)
+                       kst(2,nstrtor) = btcon(8,j)
+                       kst(3,nstrtor) = btcon(9,j)
+                       kst(7,nstrtor) = btcon(1,j)
+                       kst(8,nstrtor) = btcon(2,j)
+                       kst(9,nstrtor) = btcon(3,j)
+                    else
+                       kst(1,nstrtor) = btcon(1,j)
+                       kst(2,nstrtor) = btcon(2,j)
+                       kst(3,nstrtor) = btcon(3,j)
+                       kst(7,nstrtor) = btcon(7,j)
+                       kst(8,nstrtor) = btcon(8,j)
+                       kst(9,nstrtor) = btcon(9,j)
+                    end if
                     ! construct the system class parameter
                     if (.not.is_find8(kbt_sys(1),isys,kbt(j))) then
                        isys = isys +1
                        kbt_sys(isys) = kbt(j)
                     end if
+                    ist(1,nstrtor) = i
+                    do k = 1, n12(ia)
+                       if (i12(k,ia) .eq. ib) then
+                          ist(2,nstrtor) = bndlist(k,ia)
+                          goto 80
+                       endif
+                    end do
+   80               continue
                     do k = 1, n12(ib)
                        if (i12(k,ib) .eq. ic) then
-                          ist(2,nstrtor) = bndlist(k,ib)
-                          goto 60
+                          ist(3,nstrtor) = bndlist(k,ib)
+                          goto 90
+                       end if
+                    end do
+   90               continue
+                    do k = 1, n12(ic)
+                       if (i12(k,ic) .eq. id) then
+                          ist(4,nstrtor) = bndlist(k,ic)
+                          goto 100
                        end if
                     end do
                  end if
               end do
-   60         continue
+  100         continue
            end do
            kbt_sys(0) = isys
         end if
 c
 c       turn off the stretch-torsion potential if it is not used
 c
-        if (nstrtor .eq. 0) use_strtor = .false.
+        if (nstrtor .eq. 0)  use_strtor = .false.
 c
 c     Upload data Stretch Bend data on Device
 c
+        if (deb_Path) print*, 'nbt',nbt,int(kbt_sys(0),4)
         if (use_strtor) then
            !print*,nstrtor,isys
            call upload_device_kstrtor
@@ -304,7 +395,7 @@ c              pt = pd//pc//pb//pa
                call fron_conv_base_inl(zero,zero,itc,itb,zero,pt0)
             end if
             do j = 1, nbt
-               if (kbt_sys(j) .eq. pt) then
+               if (kbt_sys(j) .eq. pt .or. kbt_sys(j).eq. pt0) then
 !$acc atomic capture
                   nstrtorloc = nstrtorloc + 1
                   nstrtorloc_cap = nstrtorloc
@@ -314,15 +405,8 @@ c              pt = pd//pc//pb//pa
                   exit
                end if
             end do
-            do j = 1, nbt
-               if (kbt_sys(j) .eq. pt0) then
-!$acc atomic update
-                  nstrtor = nstrtor + 1
-                  exit
-               end if
-            end do
          end do
-!$acc update host(nstrtorloc,nstrtor) async
+!$acc update host(nstrtorloc) async
       end if
 
 #ifdef _OPENACC

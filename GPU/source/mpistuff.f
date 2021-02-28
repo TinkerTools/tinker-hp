@@ -618,11 +618,17 @@ c
 !$acc wait
       end
 
+c
+c     Assign all atoms to their real space domain
+c
       subroutine AllDirAssign
       use atoms
       use cell
       use domdec
+      use inform
       use potent
+      use timestat ,only: timer_eneig,quiet_timers,timer_enter
+     &             ,timer_exit
       implicit none
       integer i,iproc
       integer nprocloc,rankloc
@@ -630,6 +636,8 @@ c
 !$acc routine(image_acc)
 
       if (nproc.eq.1.or.use_pmecore.and.ndir.eq.1) return
+      if (deb_Path) print*, 'AllDirAssign'
+      call timer_enter(timer_eneig)
 
       if (use_pmecore) then
         nprocloc = ndir
@@ -646,7 +654,7 @@ c
          loc(i)    = 0
       end do
 
-      domlen = 0
+      domlen(:) = 0
 
 !$acc parallel loop async default(present) copy(domlen)
       do i = 1, n
@@ -679,7 +687,68 @@ c
       end if
 
       call orderbuffer_gpu(.true.)
+      call timer_exit(timer_eneig,quiet_timers)
+      end subroutine
 
+c
+c     Reciproqual space domain assignment of all atoms
+c
+      subroutine AllRecAssign
+        use atoms  ,only: x,y,z,n
+        use boxes  ,only: recip
+        use chunks ,only: grdoff
+        use domdec ,only: rank,rank_bis,ndir,nrec,nproc
+     &             ,repartrec
+        use fft    ,only: kstart1,kend1,jstart1,jend1
+        use inform ,only: deb_Path
+        use pme      ,only: pme_eps,nfft1,nfft2,nfft3,bsorder
+        use potent   ,only: use_pmecore
+        use tinheader,only: ti_p
+        use timestat ,only: timer_eneig,quiet_timers,timer_enter
+     &               ,timer_exit
+        implicit none
+        integer i,j,k,ifr,iproc,nprocloc,rankloc
+        real(t_p) xi,yi,zi,w,fr
+
+        if (use_pmecore) then
+          nprocloc = ndir
+          rankloc  = rank_bis
+          if (nrec.eq.1) return
+        else
+          nprocloc = nproc
+          rankloc  = rank
+          if (nproc.eq.1) return
+        end if
+        if (deb_Path) print*, 'AllRecAssign'
+        call timer_enter(timer_eneig)
+
+!$acc parallel loop async default(present)
+        do i = 1, n
+          xi  = x(i)
+          yi  = y(i)
+          zi  = z(i)
+          w   = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
+          fr  = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
+          ifr = int(fr-pme_eps)
+          !if (ifr-fr.eq.0.0.and.ifr>0) ifr=ifr-1
+          k   = ifr- bsorder + grdoff
+          if (k .lt. 1)  k = k + nfft3
+          w   = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
+          fr  = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
+          ifr = int(fr-pme_eps)
+          !if (ifr-fr.eq.0.0.and.ifr>0) ifr=ifr-1
+          j   = ifr- bsorder + grdoff
+          if (j.lt.1) j = j + nfft2
+!$acc loop seq
+          do iproc = 0, nprocloc-1
+            if (((k.ge.kstart1(iproc+1)).and.(k.le.kend1(iproc+1))).and.
+     $       ((j.ge.jstart1(iproc+1)).and.(j.le.jend1(iproc+1)))) then
+              repartrec(i) = iproc
+            end if
+          end do
+        end do
+        call orderbufferrec_gpu
+        call timer_exit(timer_eneig,quiet_timers)
       end subroutine
 
       subroutine reassignrespa(ialt,nalt)
@@ -1944,22 +2013,23 @@ c
       use potent
       use virial
       use mpi
+      use timestat
       implicit none
       integer ierr,commloc
       real(r_p) epot
       real(r_p) buffer1(6),buffer2(16)
       real(r_p) vir_copy(3,3)
 c
-      if (nproc.eq.1) return
+      if (ndir.eq.1) return
 
+      call timer_enter(timer_reduceen)
       if (use_pmecore) then
         commloc = comm_dir
       else
         commloc = COMM_TINKER
       end if
-
 !$acc data create(buffer1,buffer2,vir_copy)
-!$acc&     present(epot)
+!$acc&     present_or_copy(epot)
 !$acc&     present(eb,eba,eub,eopb,et,ept,ett,ebt,ea
 !$acc&           ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex
 !$acc&           ,esum)
@@ -1977,10 +2047,10 @@ c
 !$acc wait
       if (rank.eq.0) then
         call MPI_REDUCE(MPI_IN_PLACE,buffer1,6,MPI_RPREC,MPI_SUM,0,
-     $     COMM_TINKER,ierr)
+     $       COMM_TINKER,ierr)
       else
         call MPI_REDUCE(buffer1,buffer1,6,MPI_RPREC,MPI_SUM,0,
-     $     COMM_TINKER,ierr)
+     $       COMM_TINKER,ierr)
       end if
 !$acc end host_data
 c
@@ -2062,6 +2132,7 @@ c
 
   10  continue
 !$acc end data
+      call timer_exit(timer_reduceen,quiet_timers)
       end
 c
 c     subroutine commforcesbonded : deal with communications of some
@@ -3811,14 +3882,15 @@ c
       use inform , only : deb_Path
       use potent
       implicit none
-      integer, allocatable :: counttemp(:),ind1temp(:)
+      integer counttemp(nproc)
+      integer,allocatable::ind1temp(:)
       integer count,rankloc
       integer i,iproc
-      integer iloc,iglob,iproc1
+      integer iloc,iglob
+      integer iprec,ind1
 c
       if (deb_Path) write(*,*) '   >> orderbufferrec'
-      allocate (counttemp(nproc))
-      allocate (ind1temp(n))
+c     allocate (ind1temp(n))
 c
       if (use_pmecore) then
         rankloc = rank_bis
@@ -3832,22 +3904,20 @@ c      ind1temp = 0
 !$acc wait
 c
       if ((.not.(use_pmecore)).or.((use_pmecore).and.(rank.gt.ndir-1)))
-     $ then
+     $  then
         do iproc = 1, nrecdir_recep
           do i = 1, domlen(precdir_recep(iproc)+1)
-            iloc = bufbeg(precdir_recep(iproc)+1)+i-1
+            iloc  = bufbeg(precdir_recep(iproc)+1)+i-1
             iglob = glob(iloc)
+            domlenrec(repartrec(iglob)+1) =
+     $          domlenrec(repartrec(iglob)+1) + 1
+            ind1  = domlenrec(repartrec(iglob)+1)
 c
 c       check if atom is in the domain or in one of the neighboring domains
 c
-            counttemp(repartrec(iglob)+1) =
-     $        counttemp(repartrec(iglob)+1) + 1
-            ind1temp(iglob) = counttemp(repartrec(iglob)+1)
-            domlenrec(repartrec(iglob)+1)=
-     $       domlenrec(repartrec(iglob)+1) + 1
             if (repartrec(iglob).eq.rankloc) then
-              globrec(ind1temp(iglob)) = iglob
-              locrec(iglob) = ind1temp(iglob)
+              globrec(ind1) = iglob
+              locrec(iglob) = ind1
             end if
           end do
         end do
@@ -3884,8 +3954,7 @@ c
       end do
 !$acc update device(locrec1)
 c
-      deallocate (ind1temp)
-      deallocate (counttemp)
+c     deallocate (ind1temp)
 
       if (deb_Path) write(*,*) '   << orderbufferrec'
       end
@@ -3896,31 +3965,26 @@ c
       use inform , only : deb_Path
       use potent
       implicit none
-      integer, allocatable :: counttemp(:),ind1temp(:)
+c     integer, allocatable :: counttemp(:),ind1temp(:)
       integer count,rankloc
       integer i,iproc
-      integer idomlen,ibeg,ibeg1,iprec
-      integer iloc,iglob,iproc1
+      integer idomlen,ibeg,ibeg1,iprec,irep,ind1
+      integer iloc,iglob
 c
       if (deb_Path) write(*,*) '   >> orderbufferrec_gpu'
-      allocate (counttemp(nproc))
-      allocate (ind1temp(n))
 c
       if (use_pmecore) then
         rankloc = rank_bis
       else
         rankloc = rank
       end if
-      !TODO Remove _ind1temp_
-!$acc enter data create(ind1temp,counttemp) async
 c
 !$acc data present(domlenrec,globrec,globrec1
-!$acc&  ,repartrec,locrec,locrec1,glob)
-c
-!$acc parallel loop present(counttemp) async
+!$acc&         ,repartrec,locrec,locrec1,glob)
+
+!$acc parallel loop async
       do i = 1,nproc
-         counttemp(i) = 0
-         domlenrec(i) = 0
+         domlenrec(i)=0
       end do
 c
       if ((.not.(use_pmecore)).or.((use_pmecore).and.(rank.gt.ndir-1)))
@@ -3929,36 +3993,26 @@ c
           iprec   = precdir_recep(iproc)
           idomlen = domlen(iprec+1)
           ibeg    = bufbeg(iprec+1)
-!$acc parallel loop present(ind1temp,counttemp) async
+!$acc parallel loop async
           do i = 1, idomlen
             iloc  = ibeg+i-1
             iglob = glob(iloc)
+            irep  = repartrec(iglob)+1
+!$acc atomic capture
+            domlenrec(irep) = domlenrec(irep) + 1
+            ind1            = domlenrec(irep)
+!$acc end atomic
 c
 c       check if atom is in the domain or in one of the neighboring domains
 c
-!$acc atomic capture
-            counttemp(repartrec(iglob)+1) =
-     $        counttemp(repartrec(iglob)+1) + 1
-            ind1temp(iglob) = counttemp(repartrec(iglob)+1)
-!$acc end atomic
-!$acc atomic
-            domlenrec(repartrec(iglob)+1)=
-     $       domlenrec(repartrec(iglob)+1) + 1
-            if (repartrec(iglob).eq.rankloc) then
-              globrec(ind1temp(iglob)) = iglob
-              locrec(iglob) = ind1temp(iglob)
+            if (irep.eq.rankloc+1) then
+              globrec(ind1) = iglob
+              locrec(iglob) = ind1
             end if
           end do
         end do
       end if
 !$acc update host(domlenrec) async
-!$acc wait
-c
-      if (use_pmecore) then
-        nlocrec = domlenrec(rank_bis+1)
-      else
-        nlocrec = domlenrec(rank+1)
-      end if
 c
       count = 0
       bufbegrec(precdir_recep(1)+1) = 1
@@ -3974,24 +4028,27 @@ c
         count = count + domlen(precdir_recep(iproc)+1)
       end do
       nblocrec = count
-
-      do iproc = 1, nrecdir_recep
-        iprec = precdir_recep(iproc)
+c
+      do iproc  = 1, nrecdir_recep
+        iprec   = precdir_recep(iproc)
         idomlen = domlen(iprec+1)
-        ibeg  = bufbegrec(iprec+1)
-        ibeg1 = bufbeg(iprec+1)
+        ibeg    = bufbegrec(iprec+1)
+        ibeg1   = bufbeg(iprec+1)
 !$acc parallel loop async
         do i = 1, idomlen
           globrec1(ibeg+i-1) = glob(ibeg1+i-1)
           locrec1(globrec1(ibeg+i-1)) = ibeg+i-1
         end do
       end do
-
-c
 !$acc end data
-!$acc exit data delete(ind1temp,counttemp) async
-      deallocate (ind1temp)
-      deallocate (counttemp)
+c
+!$acc wait
+      ! Update nlocrec
+      if (use_pmecore) then
+        nlocrec = domlenrec(rank_bis+1)
+      else
+        nlocrec = domlenrec(rank+1)
+      end if
 
       if (deb_Path) write(*,*) '   << orderbufferrec_gpu'
       end
@@ -4012,21 +4069,23 @@ c
       use utilgpu ,only:rec_queue
       use sizes   ,only:tinkerdebug
       use utilcomm,only:reqsend=>reqs_dirdir,reqrec=>reqr_dirdir
+     &            ,no_commdir
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
       implicit none
       integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,tag0,i
+      logical lexit
       integer idomlen,ibufbeg,ipr
       integer :: reqrec1(nproc),reqsend1(nproc)
 c     real(t_p) ef(3,nrhs,npolebloc)
       real(t_p) mu(3,nrhs,npolebloc)
-      parameter(tag0=0)
+      parameter(tag0=0,lexit=.false.)
  1000 format(' illegal rule in commdirdirgpu.')
  41   format(7x,'>> ',A20,   3x,'recv')
  42   format(7x,   3x,A20,' >>','send')
  43   format(7x,'<< ',A20,   3x,'wait')
 
-      if (n_recep1.eq.0.and.n_send1.eq.0) return
+      if ((n_recep1.eq.0.and.n_send1.eq.0).or.lexit) return
 
       call timer_enter( timer_polsolvcomm )
       if (rule.eq.0) then
@@ -4087,6 +4146,7 @@ c
       use mpole
       use mpi
       use sizes   ,only: tinkerdebug
+      use utilcomm,only: no_commdir
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
       implicit none
@@ -4096,6 +4156,8 @@ c     real(t_p) ef(3,nrhs,npolebloc)
       real(t_p) mu(3,nrhs,npolebloc)
  1000 format(' illegal rule in commdirdir.')
 c
+      if (no_commdir) return
+
       call timer_enter( timer_polsolvcomm )
       if (rule.eq.0) then
 c
@@ -4146,6 +4208,7 @@ c
       use mpi
       use utilgpu ,only:def_queue
       use utilcomm,only:reqsend=>reqs_dirdir,reqrec=>reqr_dirdir
+     &            ,no_commdir
       use sizes
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
@@ -4159,7 +4222,9 @@ c
  42   format(7x,   3x,A20,' >>','send')
  43   format(7x,'<< ',A20,   3x,'wait')
 c
-      if (n_recepshort1.eq.0.and.n_sendshort1.eq.0) return
+      if ((n_recepshort1.eq.0.and.n_sendshort1.eq.0)
+     &   .or.no_commdir) return
+
       call timer_enter( timer_polsolvcomm )
       if (rule.eq.0) then
          if (deb_Path) write(0,41) 'commdirdirshort     '
@@ -4309,7 +4374,6 @@ c
       real(t_p) ef(10,max(1,npoleloc))
       real(t_p) buffermpi1(10,max(npoleloc,1))
       real(t_p) buffermpi2(10,max(1,npolerecloc))
-!$acc routine(amove) seq
  1000 format(' illegal rule in commrecdirfieldsgpu.')
  41   format(7x,'>> ',A20,   3x,'recv')
  42   format(7x,   3x,A20,' >>','send')
@@ -4489,7 +4553,6 @@ c
       real(t_p) dipfieldbis(3,nrhs,max(1,npolerecloc))
       real(t_p) buffermpi1(3,nrhs,max(npoleloc,1))
       real(t_p) buffermpi2(3,nrhs,max(1,npolerecloc))
-!$acc routine(amove) seq
  1000 format(' illegal rule in commrecdirsolvgpu.')
  41   format(7x,'>> ',A20,   3x,'recv')
  42   format(7x,   3x,A20,' >>','send')
@@ -4682,7 +4745,6 @@ c      real(t_p) buffermpimu1(3,nrhs,max(npoleloc,1))
 c      real(t_p) buffermpimu2(3,nrhs,max(1,npolerecloc))
       real(t_p) buffermpimu1(3,nrhs,*)
       real(t_p) buffermpimu2(3,nrhs,*)
-!$acc routine(amove) seq
  1000 format(' illegal rule in commrecdirdipgpu.')
  41   format(7x,'>> ',A20,   3x,'recv')
  42   format(7x,   3x,A20,' >>','send')
@@ -4848,7 +4910,7 @@ c
       use sizes   ,only: tinkerdebug
       use timestat,only:timer_enter,timer_exit,timer_polfieldcomm
      &            ,quiet_timers
-      use utilcomm,only:buff_field
+      use utilcomm,only:buff_field,no_commdir
       use utilgpu ,only:dir_queue,prmem_request
       implicit none
       integer  ,intent(in)    :: nrhs
@@ -4862,6 +4924,8 @@ c
  41   format(7x,'>> ',A20,   3x)
  42   format(7x,   3x,A20,' >>')
  43   format(7x,'<< ',A20,   3x)
+
+      if ( no_commdir ) return
       if (n_send1.gt.0.or.n_recep1.gt.0) then
       call timer_enter( timer_polfieldcomm )
       if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
@@ -4937,7 +5001,7 @@ c
       use sizes   ,only: tinkerdebug
       use timestat,only:timer_enter,timer_exit,timer_polfieldcomm
      &            ,quiet_timers
-      use utilcomm ,only: buffer=>buff_field
+      use utilcomm ,only: buffer=>buff_field,no_commdir
       use utilgpu  ,only: prmem_request,def_queue
       implicit none
       integer nrhs,i,j,k,l,tag,status(mpi_status_size)
@@ -4945,6 +5009,7 @@ c
       integer, allocatable :: reqrec(:), reqsend(:)
       real(t_p) ef(3,nrhs,*)
 c
+      if (no_commdir) return
       if (n_sendshort1.eq.0.and.n_recepshort1.eq.0) return
  41   format(7x,'>> ',A20,   3x)
  42   format(7x,   3x,A20,' >>')

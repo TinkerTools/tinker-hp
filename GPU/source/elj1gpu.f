@@ -99,7 +99,7 @@ c
       integer i,j,iglob,kglob,kbis,iivdw
       integer ii,iv,it,ivloc,kvloc
       integer kk,kv,kt
-      integer, allocatable :: iv14(:)
+      integer in12,ai12(maxvalue)
       real(t_p) e,de,p6,p12,eps
       real(t_p) rv,rdn
       real(t_p) xi,yi,zi
@@ -112,7 +112,7 @@ c
       real(t_p) taper,dtaper
       type(real3) ded
 
-      logical usei
+      logical usei,ik12
       character*10 mode
 c
  1000 format(' Warning, system moved too much since last neighbor list'
@@ -153,6 +153,7 @@ c
 c     find van der Waals energy and derivatives via neighbor list
 c
 !$acc parallel loop gang vector_length(32) async(dir_queue)
+!$acc&         private(ai12)
       do ii = 1, nvdwlocnl
          iivdw = vdwglobnl(ii)
          iglob = ivdw(iivdw)
@@ -163,6 +164,13 @@ c
          yi    = yred(i)
          zi    = zred(i)
 c        usei  = (use(iglob) .or. use(iv))
+         if (skipvdw12) then
+            in12 = n12(iglob)
+!$acc loop vector
+            do j = 1,in12
+               ai12(j) = i12(j,iglob)
+            end do
+         end if
 c
 c     decide whether to compute the current interaction
 c
@@ -172,6 +180,15 @@ c
             kbis  = loc(kglob)
             !kv    = ired(kglob)
             kt    = jvdw(kglob)
+
+            if (skipvdw12) then
+               ik12 = .false.
+!$acc loop seq
+               do j = 1, in12
+                  if (ai12(j).eq.kglob) ik12=.true.
+               end do
+               if (ik12) cycle
+            end if
             xr    = xi - xred(kbis)
             yr    = yi - yred(kbis)
             zr    = zi - zred(kbis)
@@ -235,6 +252,7 @@ c=============================================================
       subroutine elj1c_cu
       use atmlst    ,only: vdwglobnl,vdwglob
       use atoms     ,only: x,y,z,n
+      use couple    ,only: i12
       use deriv     ,only: dev=>debond
       use domdec    ,only: loc,rank,nbloc,nproc
      &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
@@ -244,7 +262,7 @@ c=============================================================
       use elj1gpu_inl,only: enr2en
 #endif
       use energi    ,only: ev=>ev_r
-      use inform    ,only: deb_Path
+      use inform    ,only: deb_Path,minmaxone
       use interfaces,only: elj1_scaling
       use neigh     ,only: cellv_glob,cellv_loc,cellv_jvdw
      &              ,vblst,ivblst
@@ -362,7 +380,7 @@ c
 c     Call Lennard-Jones kernel in CUDA using C2 nblist
 c
 !$acc host_data use_device(xred,yred,zred,cellv_glob,cellv_loc
-!$acc&    ,loc_ired,ivblst,vblst,cellv_jvdw,epsilon_c
+!$acc&    ,loc_ired,i12,ivblst,vblst,cellv_jvdw,epsilon_c
 !$acc&    ,radmin_c,ired,kred,dev,ered_buff,vred_buff
 #ifdef TINKER_DEBUG
 !$acc&    ,inter
@@ -371,7 +389,7 @@ c
 
       call elj1_cu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
      &             (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
-     &             ,ivblst,vblst(lst_start),cellv_jvdw
+     &             ,ivblst,vblst(lst_start),cellv_jvdw,i12
      &             ,epsilon_c,radmin_c,ired,kred,dev
      &             ,ered_buff,vred_buff
      &             ,nvdwlocnlb2_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
@@ -452,6 +470,8 @@ c
       integer ii,iv,it,ivloc,kvloc
       integer kk,kv,kt
       integer range_cfg
+      integer in12,ai12(maxvalue)
+      logical ik12
       integer,pointer,save:: lst(:,:),nlst(:)
 
       real(t_p) e,de,p6,p12,eps,coff
@@ -531,7 +551,14 @@ c
          xi    = xred(i)
          yi    = yred(i)
          zi    = zred(i)
-         usei  = (use(iglob) .or. use(iv))
+         !usei  = (use(iglob) .or. use(iv))
+         if (skipvdw12) then
+            in12 = n12(iglob)
+!$acc loop vector
+            do j = 1,in12
+               ai12(j) = i12(j,iglob)
+            end do
+         end if
 c
 c     decide whether to compute the current interaction
 c
@@ -544,6 +571,14 @@ c
 c
 c     compute the energy contribution for this interaction
 c
+            if (skipvdw12) then
+               ik12 = .false.
+!$acc loop seq
+               do j = 1, in12
+                  if (ai12(j).eq.kglob) ik12=.true.
+               end do
+               if (ik12) cycle
+            end if
             kt    = jvdw(kglob)
             xr    = xi - xred(kbis)
             yr    = yi - yred(kbis)

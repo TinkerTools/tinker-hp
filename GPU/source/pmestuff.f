@@ -1527,8 +1527,10 @@ c
       use domdec
       use fft
       use iso_c_binding
+      use inform    ,only: deb_Path
       use math
       use pme
+      use pme1
       use potent
       use mpi
       use timestat  ,only: timer_enter,timer_exit,timer_eneig
@@ -1574,6 +1576,7 @@ c
 c     get geometrical correspondance between processes
 c
       if (init) then
+        if (deb_Path) print*, 'reassignpme init'
         call timer_enter( timer_eneig )
         if (use_pmecore) then
           nprocloc = ndir
@@ -1753,6 +1756,7 @@ c
             end do
           end do
         end if
+
 c
 c      get the list of the additional processes to rotate reciprocal multipoles
 c
@@ -1765,21 +1769,22 @@ c
               if (precdirrecep(j,iproc+1).eq.iproc1) goto 10
             end do
 c
-            do j = 1, nrecdirrecep(iproc+1)
-              call distproc(iproc1,precdirrecep(j,iproc+1),dist,.true.)
+c           do j = 1, nrecdirrecep(iproc+1)
+c             call distproc(iproc1,precdirrecep(j,iproc+1),dist,.true.)
+              call distproc(iproc1,iproc,dist,.true.)
               if (dist.le.2.0_ti_p) then
                 nrecdirreceptemp(iproc+1) = nrecdirreceptemp(iproc+1)+1
                 precdirrecep(nrecdirreceptemp(iproc+1),iproc+1) = iproc1
-                goto 10
+c               goto 10
               end if
-            end do
+c           end do
  10         continue
           end do
         end do
         if (use_pmecore) then
           if (rank.gt.ndir-1) then
             nrecdir_recep = nrecdirreceptemp(rankloc+1-ndir)
-            nrecdirrecep = nrecdirreceptemp
+            nrecdirrecep  = nrecdirreceptemp
             precdir_recep = precdirrecep(:,rankloc+1-ndir)
           end if
         else
@@ -1881,13 +1886,27 @@ c
             end do
           end do
 
-          if ( rank.eq.0.and.tinkerdebug.gt.0 ) then
-              write(*,*) 'nrec_send      = ',nrec_send
-              write(*,*) 'nrec_recep     = ',nrec_recep
-              write(*,*) 'nrecdir_send   = ',nrecdir_send
-              write(*,*) 'nrecdir_send1  = ',nrecdir_send1
-              write(*,*) 'nrecdir_recep  = ',nrec_recep
-              write(*,*) 'nrecdir_recep1 = ',nrecdir_recep1
+          if ( rank.eq.0.and.nproc.gt.1.and.tinkerdebug.gt.0 ) then
+  46         format(A20,I3,';',1x,$)
+  47         format(I3,$)
+              write(*,46)'nrec_send      = ',nrec_send
+              write(*,47) (prec_send(i),i=1,nrec_send)
+              write(*,*)
+              write(*,46) 'nrec_recep     = ',nrec_recep
+              write(*,47) (prec_recep(i),i=1,nrec_recep)
+              write(*,*)
+              write(*,46) 'nrecdir_send   = ',nrecdir_send
+              write(*,47) (precdir_send(i),i=1,nrecdir_send)
+              write(*,*)
+              write(*,46) 'nrecdir_send1  = ',nrecdir_send1
+              write(*,47) (precdir_send1(i),i=1,nrecdir_send1)
+              write(*,*)
+              write(*,46) 'nrecdir_recep  = ',nrecdir_recep
+              write(*,47) (precdir_recep(i),i=1,nrecdir_recep)
+              write(*,*)
+              write(*,46) 'nrecdir_recep1 = ',nrecdir_recep1
+              write(*,47) (precdir_recep1(i),i=1,nrecdir_recep1)
+              write(*,*)
           end if
 !$acc update device(prec_send,prec_recep) async
 !$acc update device(nrec_send) async
@@ -1937,9 +1956,26 @@ c
           ! Attach CUDA grid device pointers
           call attach_pmecu_pointer(0)
 #endif
+
+          ! Allocate mpi grid
+          if (nrec_recep.gt.0) then
+             if (allocated(qgridmpi)) then
+!$acc exit data delete(qgridmpi)
+                deallocate(qgridmpi)
+                s_prmem = s_prmem - size(qgridmpi)*szoTp
+#ifdef _OPENACC
+               sd_prmem =sd_prmem - size(qgridmpi)*szoTp
+#endif
+             end if
+             allocate(qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,nrec_recep))
+!$acc enter data create(qgridmpi)
+             s_prmem = s_prmem + size(qgridmpi)*szoTp
+#ifdef _OPENACC
+            sd_prmem =sd_prmem + size(qgridmpi)*szoTp
+#endif
+          end if
 !!$acc enter data create(qgridin_2d,qgrid2in_2d,
 !!$acc&    qgridout_2d,qgrid2out_2d) async
-
         end if
 c
         domlenrec = 0
@@ -1961,13 +1997,15 @@ c
           if (j .lt. 1)  j = j + nfft2
           do iproc = 0, nprocloc-1
             if (((k.ge.kstart1(iproc+1)).and.(k.le.kend1(iproc+1))).and.
-     $       ((j.ge.jstart1(iproc+1)).and.(j.le.jend1(iproc+1)))) then
+     $         ((j.ge.jstart1(iproc+1)).and.(j.le.jend1(iproc+1)))) then
               repartrec(i) = iproc
             end if
           end do
         end do
+!$acc update device(repartrec)
+
         domlentemp = domlen
-        call orderbuffer(.true.)
+        if(nproc.gt.1) call orderbuffer_gpu(.false.)
         call orderbufferrec
 c
         deallocate (precdirrecep)
@@ -1975,9 +2013,6 @@ c
         deallocate (nrecdirreceptemp)
         deallocate (precrecep)
         deallocate (nrecrecep)
-!$acc data present(repartrec)
-!$acc update device(repartrec)
-!$acc end data
          call timer_exit( timer_eneig,quiet_timers )
       end if
 c
@@ -1992,11 +2027,13 @@ c
         nprocloc = nproc
         rankloc  = rank
       end if
+      if (deb_Path.and..not.init) print*,'reassignpme'
 c
       nlocrecold = nlocrec
-!$acc data create (repartrec)
-!$acc&     present(glob,x,y,z,repartrec,recip
+!$acc data present(glob,x,y,z,repartrec,recip
 !$acc&            ,kstart1,kend1,jstart1,jend1)
+!$acc&     create(repartrectemp)
+
 !$acc parallel loop async
       do i = 1, nloc
         iglob = glob(i)
@@ -2036,10 +2073,10 @@ c
         end if
       end do
 c
+!$acc wait
       do i = 1, nrecdir_send
         if (precdir_send(i).ne.rank) then
           tag = nproc*precdir_send(i) + rank + 1
-!$acc wait
           call MPI_ISEND(repartrec,
      $    nloc,MPI_INT,precdir_send(i),tag,COMM_TINKER,
      $    req(tag),ierr)
@@ -2084,11 +2121,10 @@ c
         end if
       end do
 
-!$acc end data
-
       call orderbufferrec_gpu
 c
-!$acc wait
+!$acc end data
+
       call timer_exit( timer_eneig,quiet_timers )
       deallocate (domlentemp)
       deallocate (counttemp)

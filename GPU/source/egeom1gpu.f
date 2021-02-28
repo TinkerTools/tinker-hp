@@ -176,13 +176,12 @@ c
 !$acc parallel loop async(def_queue)
 !$acc&         default(present)
       do indfix = 1, ndfixloc
-         i = ndfixglob(indfix)
-         ia = idfix(1,i)
+         i     = ndfixglob(indfix)
+         ia    = idfix(1,i)
+         ib    = idfix(2,i)
          ialoc = loc(ia)
-         ib = idfix(2,i)
          ibloc = loc(ib)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
          if (proceed) then
             xr = x(ia) - x(ib)
             yr = y(ia) - y(ib)

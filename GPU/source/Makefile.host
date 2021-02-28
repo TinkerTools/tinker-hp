@@ -2,6 +2,14 @@
 #   Makefile for Tinker-HP with Intel Compiler
 #
 
+# top-level directory
+makefile_path__ := $(abspath $(lastword $(MAKEFILE_LIST)))
+makefile_dir__  := $(dir $(makefile_path__))
+# `make' will not complain if file `top_dir.mk' does not exist
+-include top_dir.mk
+ifeq (,$(top_dir__))
+   top_dir__ := $(realpath $(makefile_dir__)/..)
+endif
 
 ##  Compiler type
 ##   (gnu/intel)
@@ -27,6 +35,14 @@ else
    RunF77 = mpif90
 endif
 
+# Plumed Feature
+PLUMED_SUPPORT ?= 0
+PLUMED_HOME   ?= ../plumed/Portland
+
+INC_PLUMED     = $(PLUMED_HOME)/include
+LIB_PLUMED     = $(PLUMED_HOME)/lib -lplumed -lplumedKernel
+plumed_config_file = Makefile.conf.nvhpc
+
 ##  Linking libraries (MKL,FFT,2DECOMP)
 #
 #MKLDIR = /opt/intel/mkl/
@@ -42,10 +58,23 @@ FFTDECOMP    = -I$(FFTDECOMPDIR)/include
 #LDLIBS   = -lm -I$(MKLDIR)/include  -L$(MKLDIR)/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -L$(FFTDECOMPDIR)/lib -l2decomp_fft $(LIB_FFT)
 LDLIBS   = -lm -I$(MKLDIR)/include -L$(MKLDIR)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -L$(FFTDECOMPDIR)/lib -l2decomp_fft -L$(LIB_FFT)
 
+LIBS   = libtinker.a
+depend_targets :=
+
+ifeq ($(PLUMED_SUPPORT),1)
+   LDLIBS += -L$(LIB_PLUMED)
+   depend_targets += plumed
+endif
+
+OPTIONS  :=
+ifeq ($(PLUMED_SUPPORT),1)
+   OPTIONS   += -DPLUMED
+endif
+
 #
 #  Compile flags
 #
-CPPFLAGS  = -cpp#-DMIXED
+CPPFLAGS  = -cpp $(OPTIONS)
 
 ifeq ($(compiler), intel)
    ifeq ($(opt), release)
@@ -74,15 +103,13 @@ else
    FFLAGS2 =
 endif
 
-LIBS   = libtinker.a
-
 MODSAM = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o\
    MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
    MOD_angpot.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
    MOD_atoms.o MOD_atmtyp.o MOD_bath.o MOD_bitor.o\
    MOD_bndpot.o MOD_bond.o MOD_bound.o MOD_boxes.o\
    MOD_cell.o MOD_charge.o MOD_chgpot.o MOD_chunks.o\
-   MOD_couple.o MOD_cutoff.o MOD_deriv.o MOD_divcon.o\
+   MOD_couple.o MOD_cutoff.o MOD_dcdio.o MOD_deriv.o MOD_divcon.o\
    MOD_domdec.o MOD_energi.o MOD_ewald.o MOD_fft.o\
    MOD_fields.o MOD_files.o MOD_freeze.o MOD_group.o\
    MOD_improp.o MOD_imptor.o MOD_inform.o MOD_inter.o MOD_interfaces.o\
@@ -96,7 +123,7 @@ MODSAM = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o\
 MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
    MOD_minima.o MOD_molcul.o MOD_moldyn.o MOD_mplpot.o\
    MOD_mutant.o MOD_neigh.o MOD_opbend.o MOD_opdist.o\
-   MOD_output.o MOD_params.o MOD_pitors.o MOD_pme.o\
+   MOD_output.o MOD_params.o MOD_pitors.o MOD_pme.o MOD_pme.o\
    MOD_polar.o MOD_polgrp.o MOD_polpot.o MOD_erf.o\
    MOD_potent.o MOD_precis.o MOD_ptable.o MOD_random.o MOD_resdue.o\
    MOD_ring.o MOD_scales.o MOD_shunt.o MOD_strbnd.o\
@@ -115,7 +142,7 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    bitors.o bonds.o bounds.o calendar.o\
    chkpole.o chkpolegpu.o chkring.o chkxyz.o cholesky.o cluster.o\
    command.o control.o cspline.o\
-   cutoffs.o diis.o domdecstuff.o dynamic.o\
+   cutoffs.o dcdio.o diis.o domdecstuff.o dynamic.o\
    dcinduce_pme.o dcinduce_pmegpu.o dcinduce_pme2.o dcinduce_pme2gpu.o dcinduce_shortreal.o dcinduce_shortrealgpu.o\
    eamd1.o eangang.o eangang1.o eangang3.o\
    eangle.o eangle1.o eangle1gpu.o eangle3.o eangle3gpu.o\
@@ -161,7 +188,7 @@ OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o new
    newinduce_pme2.o newinduce_pme2vec.o newinduce_pme2gpu.o\
    newinduce_shortreal.o newinduce_shortrealgpu.o\
    nextarg.o nexttext.o nspline.o number.o\
-   numeral.o openend.o optsave.o pmestuff.o pmestuffgpu.o\
+   numeral.o openend.o optsave.o plumed.o pmestuff.o pmestuffgpu.o\
    precise.o pressure.o prime.o promo.o promoamd.o promosmd.o prmkey.o\
    prtdyn.o prtxyz.o readdyn.o\
    readprm.o readxyz.o respa.o respa1.o\
@@ -278,6 +305,14 @@ promo%.o: promo%.f
 clean:
 	rm -fr $(MODS) $(OBJS) *.exe *.mod
 	rm -f libtinker.a 
+
+#
+#  Plumed Package
+#
+.PHONY: plumed
+plumed:
+	@(cd ../plumed2 && ln -sf $(plumed_config_file) Makefile.conf && \
+	  $(MAKE) install VERBOSE=1)
 
 #
 # 2decomp_fft library rules

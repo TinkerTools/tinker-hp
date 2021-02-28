@@ -97,13 +97,6 @@ c
       if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
       def_queue = dir_queue
 
-#ifdef _OPENACC
-      if (dir_queue.ne.rec_queue) then
-!!$acc wait(rec_queue) async(rec_queue)
-         call stream_wait_async(rec_stream,dir_stream,rec_event)
-      end if
-#endif
-
 !$acc parallel loop gang vector_length(32)
 !$acc&         present(ef)
 !$acc&         present(poleglobnl,ipole,loc,pdamp,thole,x,y,z,
@@ -381,13 +374,6 @@ c
       alsq2n = 0.0_ti_p
       if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
 
-#ifdef _OPENACC
-      if (dir_queue.ne.rec_queue) then
-!!$acc wait(rec_queue) async(rec_queue)
-         call stream_wait_async(rec_stream,dir_stream,rec_event)
-      end if
-#endif
-
 !$acc parallel loop gang vector_length(32)
 !$acc&         present(ef)
 !$acc&         present(poleglobnl,ipole,loc,pdamp,
@@ -516,6 +502,7 @@ c
       !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
       use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
       use shunt   ,only: cut2
+      use utilcomm,only: no_commdir
       use utilgpu ,only: dir_queue,rec_queue,def_queue
 #ifdef _OPENACC
      &                  ,dir_stream,def_stream,stream_wait_async,
@@ -534,6 +521,10 @@ c
       real(t_p) alsq2, alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
       character*10 mode
+c
+      if (deb_Path)
+     &   write(*,'(3x,a)') 'efld0_directgpu3'
+      call timer_enter( timer_efld0_direct )
 
       if (use_polarshortreal) then
          mode = 'SHORTEWALD'
@@ -541,10 +532,6 @@ c
          mode = 'EWALD'
       end if
       call switch (mode)
-c
-      if (deb_Path)
-     &   write(*,'(3x,a)') 'efld0_directgpu3'
-      call timer_enter( timer_efld0_direct )
 
       p_xbeg = xbegproc(rank+1)
       p_xend = xendproc(rank+1)
@@ -559,14 +546,6 @@ c
       if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
       def_queue = dir_queue
 
-#ifdef _OPENACC
-      def_stream = dir_stream
-      if (dir_queue.ne.rec_queue) then
-!!$acc wait(rec_queue) async(rec_queue)
-         call stream_wait_async(rec_stream,dir_stream,rec_event)
-      end if
-#endif
-
 #ifdef _CUDA
       if (use_polarshortreal) then
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
@@ -576,6 +555,7 @@ c
      &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(start_lst)
      &     ,x_s,y_s,z_s,pdamp,thole,polarity,rpole,ef
      &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc
+     &     ,.not.no_commdir
      &     ,cut2,alsq2,alsq2n,aewald
      &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
@@ -589,6 +569,7 @@ c
      &     (ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(start_lst)
      &     ,x_s,y_s,z_s,pdamp,thole,polarity,rpole,ef
      &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n,nproc
+     &     ,.not.no_commdir
      &     ,cut2,alsq2,alsq2n,aewald
      &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
@@ -899,6 +880,7 @@ c
       use potent  , only : use_polarshortreal
       !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
       use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
+      use utilcomm,only: no_commdir
       use shunt   ,only: cut2
       use utilgpu ,only: dir_queue,rec_queue,def_queue
 #ifdef _OPENACC
@@ -1087,6 +1069,9 @@ c
 
          kbis   = poleloc(kpole)
          kglob  = ipole  (kpole)
+
+         if (iploc.lt.1.or.iploc.gt.npolebloc.or.
+     &        kbis.lt.1.or. kbis.gt.npolebloc) cycle
 
          pdi    = pdamp(iipole)
          pti    = thole(iipole)

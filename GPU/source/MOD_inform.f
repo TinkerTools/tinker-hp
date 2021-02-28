@@ -89,6 +89,9 @@ c     dint1 dint2 dibuff  useful for storing purpose
 !DIR$ ignore_tkr (r) vector
          end subroutine
 #endif
+         module subroutine check_loc(queue)
+         integer queue
+         end subroutine
       end interface
 
       end

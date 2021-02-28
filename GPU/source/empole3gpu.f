@@ -1097,6 +1097,7 @@ c
       use math
       use mpole
       use pme
+      use pme1
       use potent
       use utilgpu ,only:dir_queue,rec_queue
      &            ,prmem_request
@@ -1122,8 +1123,6 @@ c
       real(t_p) struc2
       integer  reqsend(nproc), reqrec(nproc)
       integer req2send(nproc),req2rec(nproc)
-      real(t_p) qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,
-     &                   nrec_recep)
 c
       if (deb_Path)
      &   write(*,'(2x,a)') 'emrecipgpu'
@@ -1153,10 +1152,10 @@ c
       call prmem_request(fmp    ,10,j,async=.true.)
 !$acc enter data create(e) async(rec_queue)
 
-!$acc data present(polerecglob,ipole,rpole,kstart2,kend2,
-!$acc&  jstart2,jend2,istart2,iend2,bsmod1,bsmod2,bsmod3,
+!$acc data present(polerecglob,rpole,kstart2,jstart2,istart2,
+!$acc&  bsmod1,bsmod2,bsmod3,
 !$acc&  repart,qgridin_2d,qgridout_2d,use_bounds,qfac_2d,
-!$acc&  octahedron,thetai1,thetai2,thetai3,igrid,fmp,cmp,
+!$acc&  octahedron,fmp,cmp,
 !$acc&  fphirec,cphirec)
 c
 c     zero out the PME grid
@@ -1383,5 +1382,5 @@ c
 
 !$acc end data
 c
-!$acc exit data delete(qgridmpi,e) async(rec_queue)
+!$acc exit data delete(e) async(rec_queue)
       end
