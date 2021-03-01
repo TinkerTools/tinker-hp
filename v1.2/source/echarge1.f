@@ -842,7 +842,7 @@ c
                call switch_respa(r,off,shortheal,s,ds)
                
                de = -fik * ((erfterm+scaleterm)/rb2
-     &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/r)
+     &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/rb)
 c
 c     form the chain rule terms for derivative expressions
 c
@@ -1044,7 +1044,7 @@ c     use energy switching if close the cutoff distance (at short range)
 c
                call switch_respa(r,chgshortcut,shortheal,s,ds)
                de = -fik * ((erfterm+scaleterm)/rb2
-     &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/r)
+     &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/rb)
                de = -e*ds+(1-s)*de
 
 c
