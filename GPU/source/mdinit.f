@@ -37,6 +37,7 @@ c
       use moldyn
       use mpole
       use neigh
+      use plumed
       use polpot
       use potent
       use polar
@@ -199,6 +200,10 @@ c
             read (string,*,err=10,end=10) masspiston
          else if (keyword(1:12) .eq. 'VIRIALTERM ') then
             use_virial=.true.
+         else if (keyword(1:7) .eq. 'PLUMED ') then
+            lplumed = .true.
+            call getword(record,pl_input ,next)
+            call getword(record,pl_output,next)
          end if
    10    continue
       end do
@@ -286,7 +291,10 @@ c
             call fatal
          end if
       end if
-
+c
+c     Plumed feature initialisation
+c
+      if (lplumed) call plumed_init(dt)
 c
 c     nblist initialization for respa-n integrators
 c

@@ -17,6 +17,7 @@ c     reallocation
 
 c     do_not_commpole  switch to decide whether or not we should
 c                      communicate __poleglob__
+c      no_commdir      switch to disable some real space communications
 
 #include "tinker_precision.h"
 #include "tinker_types.h"
@@ -24,6 +25,7 @@ c                      communicate __poleglob__
       module utilcomm
 
       logical::do_not_commpole=.false.
+      logical::no_commdir=.false.
 
       ! Requests arrays for async communication
       integer   ,allocatable,target::

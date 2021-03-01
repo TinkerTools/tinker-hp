@@ -175,14 +175,6 @@ c
 c
 c     perform dynamic allocation of some pointer arrays
 c
-      if (allocated(thetai1))  deallocate (thetai1)
-      if (allocated(thetai2))  deallocate (thetai2)
-      if (allocated(thetai3))  deallocate (thetai3)
-c
-      if (allocated(qgridin_2d))  deallocate (qgridin_2d)
-      if (allocated(qgrid2in_2d))  deallocate (qgrid2in_2d)
-      if (allocated(qgridout_2d))  deallocate (qgridout_2d)
-      if (allocated(qgrid2out_2d))  deallocate (qgrid2out_2d)
       if (allocated(istart1)) deallocate (istart1)
       if (allocated(iend1)) deallocate (iend1)
       if (allocated(isize1)) deallocate (isize1)
@@ -434,6 +426,12 @@ c
       end if
 c
       call reassignpme(.true.)
+
+      !get the fractional to Cartesian transformation matrix
+      call frac_to_cartgpu
+
+      !find the matrix to convert Cartesian to fractional
+      call cart_to_fracgpu
 c
 c     print a message listing some of the Ewald parameters
 c

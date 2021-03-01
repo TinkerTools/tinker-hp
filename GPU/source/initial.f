@@ -77,7 +77,7 @@ c     CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
 c
 c     Display copyright notice and license number
 c
-c     if (ranktot.eq.0) call promo
+      if (ranktot.eq.0) call promo
 
 c
 c     values of machine precision constants

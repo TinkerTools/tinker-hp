@@ -5,7 +5,7 @@
         const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict ieblst, const int*restrict eblst   \
         , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict thole, const real*restrict polarity   \
         , const real (*restrict mu)[6] , real (*restrict efi)[6]                                               \
-        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc \
+        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc, const int balanced \
         , const real cut2, const real alsq2, const real alsq2n, const real aewald
 #define TMATXB_PARAMS                                               \
         TMATXB_PARAMS_GEN , MIDPOINTIMAGE_PARAMS
@@ -16,7 +16,7 @@
         const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict ieblst, const int*restrict eblst   \
         , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict thole, const real*restrict polarity, const real (*restrict rpole)[13]  \
         , real (*restrict efi)[6]                                               \
-        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc \
+        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc, const int balanced \
         , const real cut2, const real alsq2, const real alsq2n, const real aewald
 #define OTFDC_EFLD0_PARAMS_GEN                                              \
         const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict grplst, const int*restrict atmofst, const int*restrict npergrp, const int*restrict kofst, const int*restrict ieblst, const int*restrict eblst   \
@@ -37,14 +37,14 @@
 #define TMATXB_ARGS                                                 \
           ipole,pglob,ploc,ieblst,eblst,x,y,z,pdamp,thole,polarity  \
         , mu,efi                                                    \
-        , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc            \
+        , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc,balanced   \
         , cut2,alsq2,alsq2n,aewald                                  \
         , MIDPOINTIMAGE_ARGS
 
 #define EFLD0_ARGS                                                       \
           ipole,pglob,ploc,ieblst,eblst,x,y,z,pdamp,thole,polarity,rpole \
         , efi                                                            \
-        , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc                 \
+        , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc,balanced        \
         , cut2,alsq2,alsq2n,aewald                                       \
         , MIDPOINTIMAGE_ARGS
 #define OTFDC_EFLD0_ARGS                                                 \
@@ -236,6 +236,16 @@ void efld0_couple(const real d2,const real3& pos, const rpole_elt& ip, const rpo
 
 }
 
+__global__ void check_loc( const int*restrict pglob, const int*restrict ipole, const int*restrict ploc, const int npolelocnlb, const int nbloc, const int rank ){
+   for ( int ii=threadIdx.x + blockIdx.x*blockDim.x;ii<npolelocnlb;ii+=blockDim.x*gridDim.x ){
+       const int iipole = pglob[ii];
+       const int iploc  = ploc [ii];
+       if (iploc==0 || iploc>nbloc ) printf("check_ploc(%d) pole(%d) glob(%d) Idx(%d) rank(%d)\n",iploc,ipole[ii],iipole,ii+1,rank);
+       //iploc = ploc_s(iipole)
+       //if (iploc==0 || iploc.gt.nbloc) printf("out ploc %d %d %d %d",iploc,iipole,i,rank);
+   }
+}
+
 __global__
 void cu_efld0_direct_core (EFLD0_PARAMS1){
 
@@ -257,6 +267,7 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
    real3 fid,fip;
    __shared__ real3 posk[BLOCK_DIM],fkd[BLOCK_DIM],fkp[BLOCK_DIM];
    __shared__ rpole_elt kp[BLOCK_DIM];
+   //__shared__ int ncalc[4];
    //__shared__ int cont;
 
    //if (ithread==0) printf( " %i %i %i %i %i %i %i " r_Format r_Format r_Format "\n", nwarp,nproc,npolelocnlb,npolebloc,n,npolelocnlb_pair,cut2,alsq2,aewald);
@@ -305,6 +316,7 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
       kp[threadIdx.x].qyy  = rpole[kpole][8];
       kp[threadIdx.x].qyz  = rpole[kpole][9];
       kp[threadIdx.x].qzz  = rpole[kpole][12];
+      //if (ilane==1) ncalc[threadIdx.x/WARP_SIZE]=0;
 
       /* set compute Data to]0 */
       fid.x   = 0;
@@ -331,7 +343,7 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
          pgm      =      __shfl_sync(ALL_LANES,kpgm  ,srclane);
          if (ipgm<pgm) pgm = ipgm;
 
-         if (nproc>1) {
+         if (nproc>1 && balanced ) {
             xk_   = posk[klane].x;
             yk_   = posk[klane].y;
             zk_   = posk[klane].z;
@@ -355,6 +367,7 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
             /* Compute one interaction
                Since the interaction is not symetrical we need to switch comput when necessary */
             real d,sc3,sc5,bn1,bn2;
+            //if (iblock<500) atomicAdd( &ncalc[threadIdx.x/WARP_SIZE],1 );
             if (iglob<kglob_)
                efld0_couple(d2,pos,ip,kp[klane],alsq2,alsq2n,aewald,pdp,pgm,1.0,1.0,
                             fid,fip,fkd[klane],fkp[klane],d,sc3,sc5,bn1,bn2,0);
@@ -380,6 +393,8 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
       atomicAdd( &efi[kploc][3],fkp[threadIdx.x].x );
       atomicAdd( &efi[kploc][4],fkp[threadIdx.x].y );
       atomicAdd( &efi[kploc][5],fkp[threadIdx.x].z );
+      __syncwarp(ALL_LANES);
+      //if (ilane==1 && iblock<500) printf("ii %8d %8d    %8d \n",ii+1,iblock,ncalc[threadIdx.x/WARP_SIZE]);
    }
 }
 
@@ -756,23 +771,34 @@ void C_get_cell( real xcell_, real ycell_, real zcell_, real eps_cell_, int octa
 int dynamic_gS        = 1;
 int first_call_efld0  = 1;
 int gS_efld    = 160;
+int gS_loc     = 160;
+const int maxBlock = 1<<16;
+
 
 void cu_efld0_direct(EFLD0_PARAMS,cudaStream_t st){
    const int sh = 0;
+   cudaError_t ierrSync;
 
    if (first_call_efld0){
       first_call_efld0=0;
       cudaKernelMaxGridSize(gS_efld,cu_efld0_direct_core,BLOCK_DIM,0)  /* This a Macro Function */
-      if(rank==0 && tinkerdebug&1) printf (" gridSize efld0     %d \n", gS_efld);
+      if(rank==0 && tinkerdebug&1) {
+         printf (" gridSize efld0     %d \n", gS_efld);
+         printf (" balanced computation     %d \n ", balanced);
+      }
+      if (nproc>1) {
+         cudaKernelMaxGridSize(gS_loc,check_loc,BLOCK_DIM,0)  /* This a Macro Function */
+         check_loc<<<gS_loc,BLOCK_DIM,sh,st>>>(pglob,ipole,ploc,npolelocnlb,npolebloc,rank);
+         ierrSync = tinkerdebug ? cudaDeviceSynchronize() : cudaGetLastError();
+         if (ierrSync != cudaSuccess) printf("check_loc kernel error: %d ( %s )\n",ierrSync,cudaGetErrorString(ierrSync));
+      }
    }
-   if (dynamic_gS) gS_efld= npolelocnlb_pair/4;
 
+   if (dynamic_gS) gS_efld= (npolelocnlb_pair>>2 < maxBlock) ? npolelocnlb_pair>>2 : maxBlock ;
    cu_efld0_direct_core<<<gS_efld,BLOCK_DIM,sh,st>>> (EFLD0_ARGS);
-   cudaError_t ierrSync;
-   if(tinkerdebug) ierrSync = cudaDeviceSynchronize();
-   else            ierrSync = cudaGetLastError();
-   if (ierrSync != cudaSuccess)
-      if(tinkerdebug) printf("efld0_direct_core C kernel error: %d \n  %s",ierrSync,cudaGetErrorString(ierrSync));
+   ierrSync = tinkerdebug ? cudaDeviceSynchronize() : cudaGetLastError();
+   if (ierrSync != cudaSuccess) printf("efld0_direct_core C kernel error: %d ( %s )\n",ierrSync,cudaGetErrorString(ierrSync));
+
    return;
 }
 
@@ -785,7 +811,9 @@ void cu_otfdc_efld0_direct(OTFDC_EFLD0_PARAMS,cudaStream_t st){
    if (first_call_otfdc_efld0){
       first_call_otfdc_efld0=0;
       cudaKernelMaxGridSize(gS_otfdc_efld,cu_otfdc_efld0_direct_core,BLOCK_DIM,0)  /* This a Macro Function */
-      if(tinkerdebug&1) printf (" gridSize oftdc_efld0     %d \n", gS_efld);
+      if (rank==0 && tinkerdebug&1) {
+         printf (" gridSize oftdc_efld0     %d \n", gS_efld);
+      }
    }
    if (dynamic_gS) gS_otfdc_efld= npolelocnlb_pair/4;
 
@@ -805,7 +833,7 @@ void cu_tmatxb_pme(TMATXB_PARAMS,cudaStream_t st){
    if (first_call_tmatxb){
       first_call_tmatxb = 0;
       cudaKernelMaxGridSize(gS_tmat,cu_tmatxb_pme_core,BLOCK_DIM,0)  /* This a Macro Function */
-      if(rank==0 && tinkerdebug&1) printf (" gridSize tmatxb_cu %d \n", gS_tmat);
+      if (rank==0 && tinkerdebug&1) printf (" gridSize tmatxb_cu %d \n", gS_tmat);
    }
    if (dynamic_gS) gS_tmat= npolelocnlb_pair/8;
 

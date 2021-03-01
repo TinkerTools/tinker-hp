@@ -17,6 +17,7 @@ c
 #include "tinker_precision.h"
       subroutine getkey
       use argue
+      use dcdmod
       use domdec
       use files
       use keys
@@ -162,6 +163,20 @@ c
  1000         format(/, I10,' Separate MPI processes for PME')
               write(iout,1000) nrec
             end if
+         end if
+      end do
+c
+c     write/read trajectory in the dcd format
+c
+      dcdio = .false.
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call upcase (record)
+         call gettext (record,keyword,next)
+         string = record(next:240)
+         if (keyword(1:6) .eq. 'DCDIO ') then
+            dcdio = .true.
          end if
       end do
 c

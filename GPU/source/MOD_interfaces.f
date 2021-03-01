@@ -52,6 +52,7 @@ c
          enumerator conf_tmatxb_pre
          enumerator conf_tmatxb_c2
          enumerator conf_tmatxb_c3
+         enumerator conf_tmatxb_v4
       end enum
       enum, bind(C) !:: proc_epreal1c
          enumerator conf_epreal1c_1
@@ -107,17 +108,6 @@ c
 !                Neighbor list routines Interfaces
 !
 !  #############################################################################
-
-      interface
-        subroutine build_cell_list2(ineignl,cell_order,
-     &              nlocnl,buf,bx_cell,by_cell,bz_cell)
-          integer,intent(in):: nlocnl
-          integer,intent(in):: ineignl(:)
-          integer,intent(inout)::cell_order(:)
-          integer,intent(inout)::bx_cell,by_cell,bz_cell
-          real(t_p),intent(in)::buf
-        end subroutine
-      end interface
 
       interface
          subroutine reorder_nblist(nblist,nneig,nneig_cut,nloc,cutoff2,
@@ -628,6 +618,7 @@ c
      &            (ipole,pglob,ploc,ieblst,eblst,x,y,z
      &            ,pdamp,thole,polarity,mu,efi
      &            ,npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc
+     &            ,balanced
      &            ,cut2,alsq2,alsq2n,aewald
      &            , xcell, ycell, zcell,xcell2,ycell2,zcell2
      &            ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
@@ -636,6 +627,7 @@ c
         import cuda_stream_kind
         integer,value,intent(in)::npolelocnlb,npolebloc,n,nproc
      &         ,npolelocnlb_pair
+        logical,value,intent(in)::balanced
         integer(cuda_stream_kind),value::stream
         real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend,xcell,xcell2,ycell,ycell2,zcell,zcell2
@@ -652,6 +644,7 @@ c
      &            (ipole,pglob,ploc,ieblst,eblst,x,y,z
      &            ,pdamp,thole,polarity,rpole,efi
      &            ,npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc
+     &            ,balanced
      &            ,cut2,alsq2,alsq2n,aewald
      &            , xcell, ycell, zcell,xcell2,ycell2,zcell2
      &            ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
@@ -660,6 +653,7 @@ c
         import cuda_stream_kind
         integer,value,intent(in)::npolelocnlb,npolebloc,n,nproc
      &         ,npolelocnlb_pair
+        logical,value,intent(in)::balanced
         integer(cuda_stream_kind),value::stream
         real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend,xcell,xcell2,ycell,ycell2,zcell,zcell2

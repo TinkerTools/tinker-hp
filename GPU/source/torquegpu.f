@@ -122,9 +122,52 @@ c
       real(t_p),intent(out):: frcx(:,:),frcy(:,:),frcz(:,:)
       real(md_p),intent(inout):: de(:,:)
       logical*1,intent(in):: extract !for trqvec depending on his size
+!$acc routine(distprocpart1)
 c
       if (deb_Path) write(*,'(3x,a)') 'torquedgpu'
       call timer_enter( timer_torque )
+
+      if (tinkerdebug.gt.0) then
+
+!$acc parallel loop gang vector_length(128) async(dir_queue)
+!$acc&         present(ipolaxe,loc,ipole,
+!$acc&  xaxis,yaxis,zaxis,poleglobnl)
+      do i =1, npolelocnl
+        iipole = poleglobnl(i)
+        axetyp = ipolaxe(iipole)
+
+        if (axetyp .eq. Ax_None) cycle
+
+        ia    = zaxis(iipole)
+        ib    = ipole(iipole)  !iglob
+        ic    = xaxis(iipole)
+        id    = yaxis(iipole)
+        ibloc = loc(ib) !iloc
+        ialoc = -1; idloc=-1; icloc=-1;
+        if (ia.gt.0) then; ialoc = loc(ia); else; ialoc=ibloc; endif
+        if (ic.gt.0) then; icloc = loc(ic); else; icloc=ibloc; endif
+        if (id.gt.0) then; idloc = loc(id); else; idloc=ibloc; endif
+
+        if (ibloc.eq.0.or.ibloc.gt.nbloc) then
+           print*,'WARNING!!! torquedgpu Outside loc'
+           print*,'b ',iipole,ib,ibloc,rank
+        end if
+        if (ialoc.eq.0.or.ialoc.gt.nbloc) then
+           print*,'WARNING!!! torquedgpu Outside loc'
+           call distprocpart1(ib,rank,uz,.true.,x,y,z)
+           print*,'a ',iipole,ia,ialoc,ib,ibloc,nbloc,uz,rank
+        end if
+        if (icloc.eq.0.or.icloc.gt.nbloc) then
+           call distprocpart1(ib,rank,ux,.true.,x,y,z)
+           print*,'c ',iipole,ic,icloc,ib,ibloc,nbloc,uz,rank
+        end if
+        if (idloc.eq.0.or.idloc.gt.nbloc) then
+           call distprocpart1(id,rank,uy,.true.,x,y,z)
+           print*,'d ',iipole,id,idloc,ib,ibloc,nbloc,uz,rank
+        end if
+      end do
+
+      end if
 c
 c     zero out force components on local frame-defining atoms
 c
@@ -150,20 +193,20 @@ c
         axetyp = ipolaxe(iipole)
 
         if (axetyp .eq. Ax_None) cycle
-        ia = zaxis(iipole)
-        if (ia.gt.0) ialoc = loc(ia)
-        ib = ipole(iipole)  !iglob
+
+        ia    = zaxis(iipole)
+        ib    = ipole(iipole)  !iglob
+        ic    = xaxis(iipole)
         ibloc = loc(ib) !iloc
-        ic = xaxis(iipole)
-        if (ic.gt.0) icloc = loc(ic)
-        id = yaxis(iipole)
-        if (id.gt.0) idloc = loc(id)
+        if (ia.gt.0) then; ialoc=loc(ia); else; cycle; endif
+        if (ic.gt.0) then; icloc=loc(ic); else; cycle; endif
         ! trqvec can be either npolelocnl or nbloc size
-        if (extract) then
-           iloc = ibloc
-        else
-           iloc = i
-        end if
+        if (extract) then; iloc=ibloc; else; iloc=i; endif
+
+        ! Chech axis local Id
+        if (ialoc.eq.0.or.ialoc.gt.nbloc) cycle
+        if (icloc.eq.0.or.icloc.gt.nbloc) cycle
+
         trq(1) = trqvec(1,iloc)
         trq(2) = trqvec(2,iloc)
         trq(3) = trqvec(3,iloc)
@@ -192,6 +235,9 @@ c
            end if
         end if
         if (axetyp.eq.Ax_Z_Bisect .or. axetyp.eq.Ax_3_Fold) then
+           id    = yaxis(iipole)
+           if (id.gt.0) then; idloc=loc(id); else; cycle; endif
+           if (idloc.eq.0.or.idloc.gt.nbloc) cycle
            wx = x(id) - x(ib)
            wy = y(id) - y(ib)
            wz = z(id) - z(ib)
@@ -676,21 +722,19 @@ c
         iipole = poleglobnl(i)
         axetyp = ipolaxe(iipole)
 
-        if (axetyp .eq. Ax_None) cycle
-        ia = zaxis(iipole)
-        if (ia.gt.0) ialoc = loc(ia)
-        ib = ipole(iipole)  !iglob
+        ia    = zaxis(iipole)
+        ib    = ipole(iipole)  !iglob
+        ic    = xaxis(iipole)
         ibloc = loc(ib) !iloc
-        ic = xaxis(iipole)
-        if (ic.gt.0) icloc = loc(ic)
-        id = yaxis(iipole)
-        if (id.gt.0) idloc = loc(id)
         ! trqvec can be either npolelocnl or nbloc size
-        if (extract) then
-           iloc = ibloc
-        else
-           iloc = i
-        end if
+        if (ia.gt.0) then; ialoc=loc(ia); else; cycle; endif
+        if (ic.gt.0) then; icloc=loc(ic); else; cycle; endif
+        if (extract) then; iloc = ibloc; else; iloc = i; end if
+
+        ! Chech axis local Id
+        if (ialoc.eq.0.or.ialoc.gt.nbloc) cycle
+        if (icloc.eq.0.or.icloc.gt.nbloc) cycle
+
         trq(1) = trqvec(1,iloc)
         trq(2) = trqvec(2,iloc)
         trq(3) = trqvec(3,iloc)
@@ -719,6 +763,9 @@ c
            end if
         end if
         if (axetyp.eq.Ax_Z_Bisect .or. axetyp.eq.Ax_3_Fold) then
+           id    = yaxis(iipole)
+           if (id.gt.0) then; idloc=loc(id); else; cycle; endif
+           if (idloc.eq.0.or.idloc.gt.nbloc) cycle
            wx = x(id) - x(ib)
            wy = y(id) - y(ib)
            wz = z(id) - z(ib)
@@ -1139,7 +1186,7 @@ c
       integer i,iipole,j
       integer ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
-      integer axetyp
+      integer axetyp,shade2
       real(t_p) du,dv,dw,dt
       real(t_p) usiz,vsiz,wsiz
       real(t_p) psiz,rsiz,ssiz
@@ -1177,9 +1224,7 @@ c
 c
       if (deb_Path) write(*,'(3x,a)') 'torquerfgpu'
       call timer_enter( timer_torque )
-c
-c     zero out force components on local frame-defining atoms
-c
+      shade2 = size(de,2)
 c
 c     get the local frame type and the frame-defining atoms
 c
@@ -1193,14 +1238,19 @@ c
         axetyp = ipolaxe(iipole)
 
         if (axetyp .eq. Ax_None) cycle
-        ia = zaxis(iipole)
-        if (ia.gt.0) ialoc = ilocvec(ia)
-        ib = ipole(iipole)  !iglob
+
+        ia    = zaxis(iipole)
+        ib    = ipole(iipole)  !iglob
+        ic    = xaxis(iipole)
+        id    = yaxis(iipole)
         ibloc = ilocvec(ib)  !iloc
-        ic = xaxis(iipole)
-        if (ic.gt.0) icloc = ilocvec(ic)
-        id = yaxis(iipole)
-        if (id.gt.0) idloc = ilocvec(id)
+        if (ia.gt.0) ialoc=ilocvec(ia)
+        if (ic.gt.0) icloc=ilocvec(ic)
+
+        ! Chech axis local Id
+        if (ialoc.eq.0.or.ialoc.gt.shade2) cycle
+        if (icloc.eq.0.or.icloc.gt.shade2) cycle
+
         trq(1) = trqvec(1,i)
         trq(2) = trqvec(2,i)
         trq(3) = trqvec(3,i)
@@ -1229,6 +1279,8 @@ c
            end if
         end if
         if (axetyp.eq.Ax_Z_Bisect .or. axetyp.eq.Ax_3_Fold) then
+           if (id.gt.0) then; idloc=ilocvec(id); else; cycle; endif
+           if (idloc.eq.0.or.idloc.gt.shade2) cycle
            wx = x(id) - x(ib)
            wy = y(id) - y(ib)
            wz = z(id) - z(ib)
@@ -1614,6 +1666,7 @@ c
       integer i,iipole,j
       integer ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
+      integer shade2
       integer,intent(in):: natom
       integer,intent(in):: polevec(:),ilocvec(:)
       integer,intent(in):: queue
@@ -1657,9 +1710,7 @@ c
 c
       if (deb_Path) write(*,'(3x,a)') 'torquergpu'
       call timer_enter( timer_torque )
-c
-c     zero out force components on local frame-defining atoms
-c
+      shade2 = size(de,dim=2)
 
 c
 c     get the local frame type and the frame-defining atoms
@@ -1674,14 +1725,16 @@ c
         axetyp = ipolaxe(iipole)
 
         if (axetyp .eq. Ax_None) cycle
-        ia = zaxis(iipole)
-        if (ia.gt.0) ialoc = ilocvec(ia)
-        ib = ipole(iipole)  !iglob
-        ibloc = ilocvec(ib)  !iloc
-        ic = xaxis(iipole)
-        if (ic.gt.0) icloc = ilocvec(ic)
-        id = yaxis(iipole)
-        if (id.gt.0) idloc = ilocvec(id)
+        ia    = zaxis(iipole)
+        ib    = ipole(iipole)  !iglob
+        ic    = xaxis(iipole)
+        id    = yaxis(iipole)
+        ibloc = ilocvec(ib)    !iloc
+        if (ia.gt.0) then; ialoc=ilocvec(ia); else; cycle; endif
+        if (ic.gt.0) then; icloc=ilocvec(ic); else; cycle; endif
+        ! Chech axis local Id
+        if (ialoc.eq.0.or.ialoc.gt.shade2) cycle;
+        if (icloc.eq.0.or.icloc.gt.shade2) cycle;
         trq(1) = trqvec(1,i)
         trq(2) = trqvec(2,i)
         trq(3) = trqvec(3,i)
@@ -1710,6 +1763,8 @@ c
            end if
         end if
         if (axetyp.eq.Ax_Z_Bisect .or. axetyp.eq.Ax_3_Fold) then
+           if (id.gt.0) then; idloc=ilocvec(id); else; cycle; endif
+           if (idloc.eq.0.or.idloc.gt.shade2) cycle
            wx = x(id) - x(ib)
            wy = y(id) - y(ib)
            wz = z(id) - z(ib)

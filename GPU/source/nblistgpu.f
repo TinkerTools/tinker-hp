@@ -1212,17 +1212,16 @@ c     subroutine build_cell_list2 : build the cells small enough in order to bui
 c     the non bonded neighbor lists with the cell-list method
 c
       subroutine build_cell_list2(ineignl,cell_order,
-     &           nlocnl,buf,bx_cell,by_cell,bz_cell)
+     &           nlocnl,buf,bP)
       use atoms ,only: x,y,z,n
       use bound ,only: use_bounds
-      use boxes ,only: orthogonal,octahedron
+      use boxes ,only: orthogonal,octahedron,xbox,ybox,zbox
       use cell  ,only: xcell2,ycell2,zcell2,eps_cell
       use domdec,only: nproc,rank,COMM_TINKER,comm_dir,comm_rec,ndir
       use inform,only: deb_Path,tindPath
       use nblistgpu_inl
-      use neigh ,only: repartcell,cell_scan,cell_len,
-     &                 cell_len1,
-     &                 nx_cell,ny_cell,nz_cell,ncell_tot,max_cell_len
+      use neigh ,only: repartcell,cell_scan,cell_len,cell_len1,boxPart
+     &          ,nx_cell,ny_cell,nz_cell,ncell_tot,max_cell_len
       use mpi
       use potent,only: use_pmecore
 #ifdef _OPENACC
@@ -1242,25 +1241,27 @@ c
       integer  ,intent(in)   :: nlocnl
       integer  ,intent(in)   :: ineignl(:)
       integer  ,intent(inout):: cell_order(:)
-      integer  ,intent(inout):: bx_cell,by_cell,bz_cell
       real(t_p),intent(in)   :: buf
+      type(boxPart),intent(inout)::bP
 
       integer i,j,k,proc,icell,istep,iglob
+      integer bx_cell,by_cell,bz_cell
       integer ierr
-      integer xw,yw,zw
+      integer xw,yw,zw,miter
       integer icell_len
       integer commloc
       integer levelUp
       integer,save:: iter
       integer min_cell_len
       real(t_p) xmin,xmax,ymin,ymax,zmin,zmax
-      real(t_p) lenx,leny,lenz
+      real(t_p) lenx,leny,lenz,xl
       real(t_p) mbuf,vbuf
       real(t_p) lenx_cell,leny_cell,lenz_cell
       real(t_p) eps_x,eps_y,eps_z
       real(t_p) xr,yr,zr
+      logical xb,yb,zb
       logical first_loop
-      logical:: first_in=.true.
+      integer,save:: first_in=0
 
       if (use_pmecore) then  !Deal with pme_core
          if (rank.lt.ndir) then
@@ -1273,8 +1274,17 @@ c
       end if
 
       if (deb_Path) write(*,'(2x,a)') 'build_cell_listgpu2'
+      first_in=first_in+1
 
-      iter  = 0
+      ! Fetch Partition information
+      iter    = bp%ipart
+      bx_cell = bp%bx_c
+      by_cell = bp%by_c
+      bz_cell = bp%bz_c
+      nx_cell = bp%nx_c
+      ny_cell = bp%ny_c
+      nz_cell = bp%nz_c
+
       first_loop   = .true.
       max_cell_len = BLOCK_SIZE+1
       min_cell_len = huge(min_cell_len)
@@ -1287,18 +1297,21 @@ c
       lenx  = abs(xmax-xmin)
       leny  = abs(ymax-ymin)
       lenz  = abs(zmax-zmin)
+      xb = .true.
+      yb = .true.
+      zb = .true.
 
-      if (octahedron) then
-         levelUp = 2
-      else
-         levelUp = 1
-      end if
+      levelUp = 1
 
-      if (first_in) then
-         nx_cell = max(1,int(floor(lenx/7)))
-         ny_cell = max(1,int(floor(leny/7)))
-         nz_cell = max(1,int(floor(lenz/7)))
-         first_in=.false.
+      if (first_in.eq.1) then
+         xl = real((((xbox*ybox*zbox)*BLOCK_SIZE)/n)**(1.0d0/3),t_p)
+         if(deb_Path)print'(A,2F10.6)','box axe 3diag ',xl,xl*sqrt(3.0)
+         nx_cell = max(1,int(lenx/xl))
+         ny_cell = max(1,int(leny/xl)+1)
+         nz_cell = max(1,int(lenz/xl)+1)
+c        nx_cell = max(1,int(floor(lenx/7)))
+c        ny_cell = max(1,int(floor(leny/7)))
+c        nz_cell = max(1,int(floor(lenz/7)))
       end if
 
       call prmem_request(repartcell,n)
@@ -1309,26 +1322,46 @@ c     Put Atoms into small boxes
 c
       do while (max_cell_len .gt. BLOCK_SIZE)
          if (.not.first_loop) then
-            if (mod(iter,3).eq.0) then
-               bz_cell = bz_cell + 1
-               !nz_cell = nz_cell + levelUp
-               !ny_cell = ny_cell + levelUp
-            else if (mod(iter,3).eq.1) then
+            miter = mod(iter,3)
+            if (0.ne.miter.and.first_in.le.3) then
                bx_cell = bx_cell + 1
-               !nx_cell = nx_cell + levelUp
-            else
+               xb = .true.
+            else if (miter.eq.0.and.first_in.le.3) then
+               bz_cell = bz_cell + 1
                by_cell = by_cell + 1
-               !nx_cell = nx_cell + levelUp
+               yb = .true.
+               zb = .true.
+            else if (miter.gt.0) then
+               if (levelUp.eq.1) then; levelUp=2; else; levelUp=1; endif
+               nx_cell = nx_cell + levelUp
+               xb = .false.
+            else if (miter.eq.0) then
+               nz_cell = nz_cell + 1
+               ny_cell = ny_cell + 1
+               yb = .false.
+               zb = .false.
             end if
+c           nx_cell = nx_cell + 1
          end if
+
          iter       = iter + 1
          first_loop = .false.
-         nx_cell    = max(1,int(bx_cell*lenx/buf))
-         ny_cell    = max(1,int(by_cell*leny/buf))
-         nz_cell    = max(1,int(bz_cell*lenz/buf))
-         !bx_cell    = ceiling(buf*nx_cell/lenx)
-         !by_cell    = ceiling(buf*ny_cell/leny)
-         !bz_cell    = ceiling(buf*nz_cell/lenz)
+
+         if (xb) then
+            nx_cell = max(1,int(bx_cell*lenx/buf))
+         else
+            bx_cell = ceiling(buf*nx_cell/lenx)
+         endif
+         if (yb) then
+            ny_cell = max(1,int(by_cell*leny/buf))
+         else
+            by_cell = ceiling(buf*ny_cell/leny)
+         endif
+         if (zb) then
+            nz_cell = max(1,int(bz_cell*lenz/buf))
+         else
+            bz_cell = ceiling(buf*nz_cell/lenz)
+         endif
 
          if (octahedron) then
             ! Force even cell number along 3 dimensions
@@ -1347,7 +1380,7 @@ c
          max_cell_len = 0
          min_cell_len = huge(min_cell_len)
 
-         call prmem_request(cell_len,ncell_tot,async=.false.)
+         call prmem_request(cell_len ,ncell_tot,async=.false.)
          call prmem_request(cell_len1,ncell_tot,async=.false.)
          call prmem_request(cell_scan,ncell_tot,async=.false.)
 
@@ -1406,6 +1439,15 @@ c
      &                       ,min_cell_len,ncell_tot,nlocnl/ncell_tot
       end do
 
+      ! Save box partition info
+      bp%ipart = iter-1
+      bp%bx_c  = bx_cell
+      bp%by_c  = by_cell
+      bp%bz_c  = bz_cell
+      bp%nx_c  = nx_cell
+      bp%ny_c  = ny_cell
+      bp%nz_c  = nz_cell
+
 #ifdef _OPENACC
 !$acc parallel loop async present(cell_order)
       do i = 1,nlocnl
@@ -1446,7 +1488,7 @@ c
       use mpole
       implicit none
       logical,intent(in):: rebuild_nl
-      integer i,iglob,iipole
+      integer i,iglob,iipole,iploc
 
       if (rebuild_nl) then
 
@@ -1475,7 +1517,7 @@ c
             else
                celle_pole(i) = n
                celle_glob(i) = n
-               celle_plocnl(i)= npolebloc
+               celle_plocnl(i)= npolelocnl
                celle_x   (i) = inf
                celle_y   (i) = inf
                celle_z   (i) = inf
@@ -1484,7 +1526,7 @@ c
 
       else
 
-!$acc parallel loop async(def_queue)
+!$acc parallel loop async(rec_queue)
 !$acc&         present(celle_glob,celle_pole,celle_key,
 !$acc&   celle_loc,celle_ploc,celle_x,celle_y,celle_z,x,y,z,
 !$acc&   loc,poleloc)
@@ -1546,7 +1588,7 @@ c
             else
                celle_chg(i)  = n
                celle_glob(i) = n
-               celle_plocnl(i)= nionbloc
+               celle_plocnl(i)= nionlocnl
                celle_x   (i) = inf
                celle_y   (i) = inf
                celle_z   (i) = inf
@@ -1610,7 +1652,7 @@ c              celle_ploc(i)= nionbloc
       end subroutine
 
       subroutine build_adjacency_matrix
-     &           (nlocnl,bx_cell,by_cell,bz_cell)
+     &           (nlocnl,bP)
       use domdec  ,only: xbegproc,ybegproc,zbegproc,
      &                   xendproc,yendproc,zendproc,
      &                   rank,nproc
@@ -1618,18 +1660,20 @@ c              celle_ploc(i)= nionbloc
      &                   use_shortvlist
       use cell    ,only: xcell2,ycell2,zcell2
       use inform  ,only: deb_Path
-      use neigh   ,only: matb_lst,cell_scan,cell_len1,cell_len2,
-     &                   offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb,
-     &                   ncell_tot,nx_cell,ny_cell,nz_cell,
-     &                   bit_si,bit_sh,cell_lenr,cell_len2r
+      use neigh   ,only: matb_lst,cell_scan,cell_len1,cell_len2,boxPart
+     &            , offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb
+     &            , ncell_tot,nx_cell,ny_cell,nz_cell
+     &            , bit_si,bit_sh,cell_lenr,cell_len2r
       use nblistgpu_inl ,only: midpointimage_inl
       use utils   ,only: set_to_zero1_int1,set_to_zero1_int8
       use utilgpu ,only: prmem_request,rec_queue,BLOCK_SIZE
       implicit none
-      integer,intent(in) :: nlocnl,bx_cell,by_cell,bz_cell
+      integer      ,intent(in):: nlocnl
+      type(boxPart),intent(in):: bP
 
       integer i,iblock,inblock,icell
       integer k,kblock,knblock,kcell
+      integer bx_cell,by_cell,bz_cell
       integer it1,it2,block1,block2,nblock,bit2
       integer nx,ny,nz
       integer icell_x,icell_y,icell_z
@@ -1650,6 +1694,11 @@ c              celle_ploc(i)= nionbloc
       zmin = -zcell2
       zmax =  zcell2
       if (deb_Path) write(*,'(2x,a)') "build_adjacency_matrix"
+
+      ! Get box partition info
+      bx_cell = bP%bx_c
+      by_cell = bP%by_c
+      bz_cell = bP%bz_c
 
 c     zbeg = zbegproc(rank+1)
 c     zend = zendproc(rank+1)
@@ -1780,7 +1829,7 @@ c    &             .and.(xbk.ge.xbeg).and.(xbk.lt.xend)) then
       end
 
       subroutine build_adjacency_matrix_octahedron
-     &           (nlocnl,bx_cell,by_cell,bz_cell)
+     &           (nlocnl,bP)
       use boxes   ,only: box34
       use domdec  ,only: xbegproc,ybegproc,zbegproc,
      &                   xendproc,yendproc,zendproc,
@@ -1788,16 +1837,19 @@ c    &             .and.(xbk.ge.xbeg).and.(xbk.lt.xend)) then
       use cutoff  ,only: use_shortclist,use_shortmlist,
      &                   use_shortvlist
       use cell    ,only: xcell2,ycell2,zcell2
-      use neigh   ,only: matb_lst,cell_scan,cell_len1,cell_len2,
-     &                   offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb,
-     &                   ncell_tot,nx_cell,ny_cell,nz_cell,
-     &                   bit_si,bit_sh,cell_lenr,cell_len2r
+      use inform  ,only: deb_Path
+      use neigh   ,only: matb_lst,cell_scan,cell_len1,cell_len2,boxPart
+     &            , offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb
+     &            , ncell_tot,nx_cell,ny_cell,nz_cell
+     &            , bit_si,bit_sh,cell_lenr,cell_len2r
       use nblistgpu_inl
       use utils   ,only: set_to_zero1_int1,set_to_zero1_int8
       use utilgpu ,only: prmem_request,rec_queue,BLOCK_SIZE
       implicit none
-      integer,intent(in) :: nlocnl,bx_cell,by_cell,bz_cell
+      integer      ,intent(in):: nlocnl
+      type(boxPart),intent(in):: bP
 
+      integer bx_cell,by_cell,bz_cell
       integer i,iblock,inblock,icell,ilcell,nlcell
       integer k,kblock,knblock,kcell
       integer it1,it2,block1,block2,nblock,bit2
@@ -1825,6 +1877,13 @@ c    &             .and.(xbk.ge.xbeg).and.(xbk.lt.xend)) then
       ymax =  ycell2
       zmin = -zcell2
       zmax =  zcell2
+
+      if(deb_Path) write(*,'(2x,a)')"build_adjacency_matrix_octahedron"
+
+      ! Get box partition info
+      bx_cell = bP%bx_c
+      by_cell = bP%by_c
+      bz_cell = bP%bz_c
 
 c     zbeg = zbegproc(rank+1)
 c     zend = zendproc(rank+1)
@@ -2236,20 +2295,17 @@ c Implicit wait removed with PGI-20.4
       use cell    ,only: xcell2,ycell2,zcell2,xcell,ycell,zcell
       use domdec  ,only: rank,nproc
       use neigh   ,only: cell_scan,cell_len,cell_lenr,cell_len2
-     &            ,cell_len2r,matb_lst,bvx_cell,bvy_cell,bvz_cell
+     &            ,cell_len2r,matb_lst
      &            ,nbMatb,niterMatb,buffMatb,offsetlMb,offsetrMb,szMatb
      &            ,vbuf2,vshortbuf2,cellv_key,vblst
      &            ,ivblst,shortvblst,ishortvblst
      &            ,bit_si,bit_sh,cellv_glob,vshortbuf2
-     &            ,lbuffer
+     &            ,lbuffer,build_cell_list2,v_bP
       use utils   ,only: set_to_zero1_int1,set_to_zero1_int
       use inform  ,only: deb_Path
-      use interfaces ,only: build_cell_list2
+      use interfaces ,only: pre_process_adjacency_matrix
 #ifdef _OPENACC
      &               ,cu_filter_lst_sparse
-#endif
-     &               ,pre_process_adjacency_matrix
-#ifdef _OPENACC
       use thrust  ,only: thrust_exclusive_scan
       use nblistcu,only: filter_lst_sparse
       use utilcu  ,only: check_launch_kernel
@@ -2302,14 +2358,14 @@ c Implicit wait removed with PGI-20.4
 
       if (nvdw.eq.n) then
          call build_cell_list2(vdwglobnl,cellv_key,nvdwlocnl,
-     &           sqrt(vbuf2),bvx_cell,bvy_cell,bvz_cell)
+     &           sqrt(vbuf2),v_bP)
       else
 !$acc parallel loop async(rec_queue) default(present)
          do i = 1, nvdwlocnl
             cellv_glob(i)=ivdw(vdwglobnl(i))
          end do
          call build_cell_list2(cellv_glob,cellv_key,nvdwlocnl,
-     &           sqrt(vbuf2),bvx_cell,bvy_cell,bvz_cell)
+     &           sqrt(vbuf2),v_bP)
       end if
 
       call set_VdwData_CellOrder
@@ -2324,11 +2380,9 @@ c
         if (iter.eq.niterMatb-1) nbMatb=nblock-offsetlMb
 
         if (octahedron) then
-           call build_adjacency_matrix_octahedron
-     &          (nvdwlocnl,bvx_cell,bvy_cell,bvz_cell)
+           call build_adjacency_matrix_octahedron(nvdwlocnl,v_bP)
         else
-           call build_adjacency_matrix
-     &          (nvdwlocnl,bvx_cell,bvy_cell,bvz_cell)
+           call build_adjacency_matrix(nvdwlocnl,v_bP)
         end if
 
         call pre_process_adjacency_matrix (nblock,nb_pair)
@@ -2461,9 +2515,8 @@ c     call check_launch_kernel(" filter_lst_sparse")
       use domdec,only: nproc,rank,nrec,ndir
       use mpole ,only: npolelocnl,ipole,npoleloc,npolerecloc,npole
       use inform,only: deb_Path
-      use interfaces,only: build_cell_list2
 #ifdef _OPENACC
-     &              ,grid_uind_site_p,grid_uind_sitecu
+      use interfaces,only:grid_uind_site_p,grid_uind_sitecu
      &              ,grid_pchg_site_p,grid_pchg_sitecu
 #endif
       use neigh
@@ -2533,7 +2586,7 @@ c     call check_launch_kernel(" filter_lst_sparse")
          poleArray => celle_glob
          end if
          call build_cell_list2(poleArray,celle_key,num,
-     &              sqrt(mbuf2),bex_cell,bey_cell,bez_cell)
+     &              sqrt(mbuf2),e_bP)
          call prmem_request(celle_pole,num,async=.true.)
 !$acc    parallel loop default(present) async
          do i = 1, npolerecloc
@@ -2552,7 +2605,7 @@ c     call check_launch_kernel(" filter_lst_sparse")
          poleArray => celle_glob
          end if
          call build_cell_list2(poleArray,celle_key,num,
-     &              sqrt(cbuf2),bcx_cell,bcy_cell,bcz_cell)
+     &              sqrt(cbuf2),c_bP)
          call prmem_request(celle_chg,nionrecloc,async=.true.)
 !$acc    parallel loop default(present) async
          do i = 1, nionrecloc
@@ -2575,20 +2628,17 @@ c     call check_launch_kernel(" filter_lst_sparse")
      &            ,npolelocnlb_pair,npolelocnlb2_pair
      &            ,nshortpolelocnlb2_pair,ipole,npole
       use neigh   ,only: cell_scan,cell_len,matb_lst,celle_glob,eblst
-     &            ,bex_cell,bey_cell,bez_cell,mbuf2,mshortbuf2
+     &            ,mbuf2,mshortbuf2
      &            ,nbMatb,niterMatb,buffMatb,offsetlMb,offsetrMb,szMatb
      &            ,celle_key,celle_x,celle_y,celle_z,cell_lenr
      &            ,ieblst,shorteblst,ishorteblst,bit_si,bit_sh
-     &            ,cell_len2,cell_len2r
+     &            ,cell_len2,cell_len2r,build_cell_list2,e_bP
       use utils   ,only: set_to_zero1_int1,set_to_zero1_int
       use inform  ,only: deb_Path
-      use interfaces ,only: build_cell_list2
-#ifdef _OPENACC
-     &               ,cu_filter_lst_sparse
-#endif
-     &               ,pre_process_adjacency_matrix
+      use interfaces,only:pre_process_adjacency_matrix
      &               ,set_ElecData_CellOrder
 #ifdef _OPENACC
+     &               ,cu_filter_lst_sparse
       use thrust  ,only: thrust_exclusive_scan
       use nblistcu,only: filter_lst_sparse
       use utilcu  ,only: check_launch_kernel
@@ -2630,7 +2680,7 @@ c     call check_launch_kernel(" filter_lst_sparse")
 
       if (npole.eq.n) then
          call build_cell_list2(poleglobnl,celle_key,npolelocnl,
-     &               sqrt(mbuf2),bex_cell,bey_cell,bez_cell)
+     &               sqrt(mbuf2),e_bP)
       else
          call prmem_request(celle_glob,npolelocnlb,async=.true.)
 !$acc parallel loop async default(present)
@@ -2638,7 +2688,7 @@ c     call check_launch_kernel(" filter_lst_sparse")
             celle_glob(i) = ipole(poleglobnl(i))
          end do
          call build_cell_list2(celle_glob,celle_key,npolelocnl,
-     &               sqrt(mbuf2),bex_cell,bey_cell,bez_cell)
+     &               sqrt(mbuf2),e_bP)
       end if
 
 c
@@ -2651,11 +2701,9 @@ c
         if (iter.eq.niterMatb-1) nbMatb=nblock-offsetlMb
 
         if (octahedron) then
-           call build_adjacency_matrix_octahedron
-     &          (npolelocnl,bex_cell,bey_cell,bez_cell)
+           call build_adjacency_matrix_octahedron(npolelocnl,e_bP)
         else
-           call build_adjacency_matrix
-     &          (npolelocnl,bex_cell,bey_cell,bez_cell)
+           call build_adjacency_matrix(npolelocnl,e_bP)
         end if
 
         call pre_process_adjacency_matrix (nblock,nb_pair)
@@ -2772,20 +2820,17 @@ c
       use cutoff  ,only: use_shortclist
       use domdec  ,only: rank,nproc
       use neigh   ,only: cell_scan,cell_len,matb_lst,celle_glob,eblst
-     &            ,bcx_cell,bcy_cell,bcz_cell,cbuf2,cshortbuf2
+     &            ,cbuf2,cshortbuf2
      &            ,nbMatb,niterMatb,buffMatb,offsetlMb,offsetrMb,szMatb
      &            ,celle_key,celle_x,celle_y,celle_z,cell_lenr
      &            ,ieblst,shorteblst,ishorteblst,bit_si,bit_sh
-     &            ,cell_len2,cell_len2r
+     &            ,cell_len2,cell_len2r,build_cell_list2,c_bP
       use utils   ,only: set_to_zero1_int1,set_to_zero1_int
       use inform  ,only: deb_Path
-      use interfaces ,only: build_cell_list2
+      use interfaces,only: pre_process_adjacency_matrix
+     &              ,set_ElecData_CellOrder
 #ifdef _OPENACC
-     &               ,cu_filter_lst_sparse
-#endif
-     &               ,pre_process_adjacency_matrix
-     &               ,set_ElecData_CellOrder
-#ifdef _OPENACC
+     &              ,cu_filter_lst_sparse
       use thrust  ,only: thrust_exclusive_scan
       use nblistcu,only: filter_lst_sparse
       use utilcu  ,only: check_launch_kernel
@@ -2827,7 +2872,7 @@ c
 
       if (nion.eq.n) then
          call build_cell_list2(chgglobnl,celle_key,nionlocnl,
-     &               sqrt(cbuf2),bcx_cell,bcy_cell,bcz_cell)
+     &               sqrt(cbuf2),c_bP)
       else
          call prmem_request(celle_glob,nionlocnlb,async=.true.)
 !$acc    parallel loop async(rec_queue) default(present)
@@ -2835,7 +2880,7 @@ c
             celle_glob(i) = iion(chgglobnl(i))
          end do
          call build_cell_list2(celle_glob,celle_key,nionlocnl,
-     &               sqrt(cbuf2),bcx_cell,bcy_cell,bcz_cell)
+     &               sqrt(cbuf2),c_bP)
       end if
 
 c
@@ -2848,11 +2893,9 @@ c
         if (iter.eq.niterMatb-1) nbMatb=nblock-offsetlMb
 
         if (octahedron) then
-           call build_adjacency_matrix_octahedron
-     &          (nionlocnl,bcx_cell,bcy_cell,bcz_cell)
+           call build_adjacency_matrix_octahedron(nionlocnl,c_bP)
         else
-           call build_adjacency_matrix
-     &          (nionlocnl,bcx_cell,bcy_cell,bcz_cell)
+           call build_adjacency_matrix(nionlocnl,c_bP)
         end if
 
         call pre_process_adjacency_matrix (nblock,nb_pair)

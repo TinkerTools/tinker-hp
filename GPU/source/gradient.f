@@ -36,8 +36,9 @@ c
       use inform    ,only:abort
       use ktrtor
       use mpi
-      use potent
       use pitors
+      use plumed
+      use potent
       use strbnd
       use tinheader ,only:ti_p,re_p
       use timestat
@@ -226,6 +227,9 @@ c
       energy = esum
 !$acc end serial
       call timer_exit ( timer_fmanage,quiet_timers )
+
+      ! Apply plumed bias
+      if (lplumed) call eplumed(energy,derivs)
 
 !$acc end data
 c

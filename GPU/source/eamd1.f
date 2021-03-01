@@ -373,6 +373,8 @@ c
 c
 c     aMD output data
 c
+          tamd_dih = tamd_dih + aMDdt_dih
+          amdtpass_dih = amdtpass_dih + 1
           c = modulo(amdtpass_dih,amdoutputFreq_dih)
           if (rank.eq.0) then
           if (c == 0 .and. .not. use_amd_ene) then
@@ -386,8 +388,8 @@ c
           end if
           end if
 c
-          tamd_dih = tamd_dih + aMDdt_dih
-          amdtpass_dih = amdtpass_dih + 1
+c          tamd_dih = tamd_dih + aMDdt_dih
+c          amdtpass_dih = amdtpass_dih + 1
 c
       end if            ! END LOOP1
 c
@@ -418,6 +420,8 @@ c
 c
 c     aMD output data
 c
+         tamd = tamd + aMDdt
+         amdtpass = amdtpass + 1
          c = modulo(amdtpass,amdoutputFreq)
          if (rank.eq.0) then
             if (c == 0) then
@@ -431,8 +435,8 @@ c
             end if
          end if
 c
-         tamd = tamd + aMDdt
-         amdtpass = amdtpass + 1
+c         tamd = tamd + aMDdt
+c         amdtpass = amdtpass + 1
 c
       end if            ! END LOOP2
 c
@@ -461,6 +465,8 @@ c
 c
 c     aMD output data
 c
+         tamd = tamd + aMDdt
+         amdtpass = amdtpass + 1
          c = modulo(amdtpass,amdoutputFreq)
          if (rank.eq.0) then
             if (c == 0) then
@@ -473,8 +479,8 @@ c
             end if
          end if
 c
-         tamd = tamd + aMDdt
-         amdtpass = amdtpass + 1
+c         tamd = tamd + aMDdt
+c         amdtpass = amdtpass + 1
 c
       end if            ! END LOOP3
 c
@@ -485,6 +491,12 @@ c     #### FOURTH CASE: Use of the GaMD procedure ###
 c     ###############################################
 c
       if (use_gamd) then        ! LOOP1
+c
+      if (tamd .ne. 0) then
+      tamd = tamd + aMDdt
+      amdtpass_dih = amdtpass_dih + 1
+      amdtpass = amdtpass + 1
+      end if
 c
 c##################################################################
 c     STEP 1: Preparation for the cMD part
@@ -585,9 +597,11 @@ c
 c
       end if
 c
+      if (tamd .eq. 0) then
       tamd = tamd + aMDdt
       amdtpass_dih = amdtpass_dih + 1
       amdtpass = amdtpass + 1
+      end if
 c
       end if                    ! END LOOP 1
 c

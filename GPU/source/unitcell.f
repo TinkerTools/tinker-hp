@@ -122,7 +122,7 @@ c
          if (xbox.eq.ybox .and. xbox.eq.zbox .and. orthogonal) then
             orthogonal = .false.
             monoclinic = .false.
-            triclinic = .false.
+            triclinic  = .false.
          else
             write (iout,20)
    20       format (/,' UNITCELL  --  Truncated Octahedron',

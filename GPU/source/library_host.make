@@ -35,6 +35,7 @@ MOD_chgpot.o \
 MOD_chunks.o \
 MOD_couple.o \
 MOD_cutoff.o \
+MOD_dcdio.o \
 MOD_deriv.o \
 MOD_divcon.o \
 MOD_domdec.o \
@@ -95,6 +96,7 @@ MOD_opdist.o \
 MOD_output.o \
 MOD_params.o \
 MOD_pitors.o \
+MOD_plumed.o \
 MOD_pme.o \
 MOD_polar.o \
 MOD_polgrp.o \
@@ -166,6 +168,7 @@ cspline.o \
 cutoffs.o \
 diis.o \
 domdecstuff.o \
+dcdio.o \
 dcinduce_pme.o \
 dcinduce_pmegpu.o \
 dcinduce_pme2.o \
@@ -354,6 +357,7 @@ number.o \
 numeral.o \
 openend.o \
 optsave.o \
+plumed.o \
 pmestuff.o \
 pmestuffgpu.o \
 precise.o \

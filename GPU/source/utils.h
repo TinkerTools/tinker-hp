@@ -49,7 +49,7 @@
 
 #define restrict __restrict__
 #define WARP_SIZE  32
-#define BLOCK_DIM 128
+#define BLOCK_DIM  4*WARP_SIZE
 
 #define One 1
 #define Onef 1.0

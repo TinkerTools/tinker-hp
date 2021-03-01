@@ -36,10 +36,10 @@ c
       integer i,k,istrtor,iistrtor
       integer ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
-      real(t_p) e,rcb,dr
-      real(t_p) ddr,dedphi
+      real(t_p) e,dr
       real(t_p) rt2,ru2,rtru
-      real(t_p) ddrdx,ddrdy,ddrdz
+      real(t_p) rba,rcb,rdc
+      real(t_p) e1,e2,e3
       real(t_p) xt,yt,zt
       real(t_p) xu,yu,zu
       real(t_p) xtu,ytu,ztu
@@ -60,6 +60,8 @@ c
       real(t_p) xdc,ydc,zdc
       real(t_p) xca,yca,zca
       real(t_p) xdb,ydb,zdb
+      real(t_p) ddr,dedphi
+      real(t_p) ddrdx,ddrdy,ddrdz
       real(t_p) dedxt,dedyt,dedzt
       real(t_p) dedxu,dedyu,dedzu
       real(t_p) dedxia,dedyia,dedzia
@@ -68,6 +70,7 @@ c
       real(t_p) dedxid,dedyid,dedzid
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
+      real(t_p),parameter::rtiny=0.000001_ti_p
       logical proceed
 c
 !$acc wait
@@ -93,8 +96,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
@@ -126,37 +128,45 @@ c
                call image (xcb,ycb,zcb)
                call image (xdc,ydc,zdc)
             end if
-            xt = yba*zcb - ycb*zba
-            yt = zba*xcb - zcb*xba
-            zt = xba*ycb - xcb*yba
-            xu = ycb*zdc - ydc*zcb
-            yu = zcb*xdc - zdc*xcb
-            zu = xcb*ydc - xdc*ycb
-            xtu = yt*zu - yu*zt
-            ytu = zt*xu - zu*xt
-            ztu = xt*yu - xu*yt
-            rt2 = xt*xt + yt*yt + zt*zt
-            ru2 = xu*xu + yu*yu + zu*zu
-            rtru = sqrt(rt2 * ru2)
-            if (rtru .ne. 0.0_ti_p) then
-               rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+            rba = sqrt(xba*xba + yba*yba + zba*zba)
+            rcb = sqrt(xcb*xcb + ycb*ycb + zcb*zcb)
+            rdc = sqrt(xdc*xdc + ydc*ydc + zdc*zdc)
+            if (min(rba,rcb,rdc) .ne. 0.0_ti_p) then
+               xt = yba*zcb - ycb*zba
+               yt = zba*xcb - zcb*xba
+               zt = xba*ycb - xcb*yba
+               xu = ycb*zdc - ydc*zcb
+               yu = zcb*xdc - zdc*xcb
+               zu = xcb*ydc - xdc*ycb
+               xtu = yt*zu - yu*zt
+               ytu = zt*xu - zu*xt
+               ztu = xt*yu - xu*yt
+               rt2 = xt*xt + yt*yt + zt*zt
+               rt2 = max(rt2,rtiny)
+               ru2 = max(xu*xu + yu*yu + zu*zu,rtiny)
+
+               rtru = sqrt(rt2 * ru2)
+               xca = xic - xia
+               yca = yic - yia
+               zca = zic - zia
+               xdb = xid - xib
+               ydb = yid - yib
+               zdb = zid - zib
+               if (use_polymer) then
+                  call image (xca,yca,zca)
+                  call image (xdb,ydb,zdb)
+               end if
                cosine = (xt*xu + yt*yu + zt*zu) / rtru
                sine = (xcb*xtu + ycb*ytu + zcb*ztu) / (rcb*rtru)
 c
-c     set the stretch-torsional parameters for this angle
+c     compute multiple angle trigonometry and phase terms
 c
-               v1 = kst(1,iistrtor)
                c1 = tors1(3,i)
                s1 = tors1(4,i)
-               v2 = kst(2,iistrtor)
                c2 = tors2(3,i)
                s2 = tors2(4,i)
-               v3 = kst(3,iistrtor)
                c3 = tors3(3,i)
                s3 = tors3(4,i)
-c
-c     compute the multiple angle trigonometry and the phase terms
-c
                cosine2 = cosine*cosine - sine*sine
                sine2 = 2.0_ti_p * cosine * sine
                cosine3 = cosine*cosine2 - sine*sine2
@@ -168,35 +178,22 @@ c
                dphi2 = 2.0_ti_p * (cosine2*s2 - sine2*c2)
                dphi3 = 3.0_ti_p * (cosine3*s3 - sine3*c3)
 c
-c     calculate the bond-stretch for the central bond
+c     get the stretch-torsion values for the first bond
 c
+               v1 = kst(1,iistrtor)
+               v2 = kst(2,iistrtor)
+               v3 = kst(3,iistrtor)
                k = ist(2,iistrtor)
-               dr = rcb - bl(k)
-c
-c     calculate stretch-torsion energy and chain rule terms
-c
-               e = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
+               dr = rba - bl(k)
+               e1 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
                dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
-               ddr = e / (dr * rcb)
+               ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rba
 c
-c     first derivative components for the bond stretch
+c     compute derivative components for this interaction
 c
-               ddrdx = xcb * ddr
-               ddrdy = ycb * ddr
-               ddrdz = zcb * ddr
-c
-c     chain rule terms for first derivative components
-c
-               xca = xic - xia
-               yca = yic - yia
-               zca = zic - zia
-               xdb = xid - xib
-               ydb = yid - yib
-               zdb = zid - zib
-               if (use_polymer) then
-                  call image (xca,yca,zca)
-                  call image (xdb,ydb,zdb)
-               end if
+               ddrdx = xba * ddr
+               ddrdy = yba * ddr
+               ddrdz = zba * ddr
                dedxt = dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
                dedyt = dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
                dedzt = dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
@@ -204,29 +201,118 @@ c
                dedyu = -dedphi * (zu*xcb - zcb*xu) / (ru2*rcb)
                dedzu = -dedphi * (xu*ycb - xcb*yu) / (ru2*rcb)
 c
-c     compute derivative components for this interaction
+c     determine chain rule components for the first bond
 c
-               dedxia = zcb*dedyt - ycb*dedzt
-               dedyia = xcb*dedzt - zcb*dedxt
-               dedzia = ycb*dedxt - xcb*dedyt
+               dedxia = zcb*dedyt - ycb*dedzt - ddrdx
+               dedyia = xcb*dedzt - zcb*dedxt - ddrdy
+               dedzia = ycb*dedxt - xcb*dedyt - ddrdz
                dedxib = yca*dedzt - zca*dedyt + zdc*dedyu
-     &                     - ydc*dedzu - ddrdx
+     &                     - ydc*dedzu + ddrdx
                dedyib = zca*dedxt - xca*dedzt + xdc*dedzu
-     &                     - zdc*dedxu - ddrdy
+     &                     - zdc*dedxu + ddrdy
                dedzib = xca*dedyt - yca*dedxt + ydc*dedxu
-     &                     - xdc*dedyu - ddrdz
+     &                     - xdc*dedyu + ddrdz
                dedxic = zba*dedyt - yba*dedzt + ydb*dedzu
-     &                     - zdb*dedyu + ddrdx
+     &                     - zdb*dedyu
                dedyic = xba*dedzt - zba*dedxt + zdb*dedxu
-     &                     - xdb*dedzu + ddrdy
+     &                     - xdb*dedzu
                dedzic = yba*dedxt - xba*dedyt + xdb*dedyu
-     &                     - ydb*dedxu + ddrdz
+     &                     - ydb*dedxu
                dedxid = zcb*dedyu - ycb*dedzu
                dedyid = xcb*dedzu - zcb*dedxu
                dedzid = ycb*dedxu - xcb*dedyu
 c
+c     get the stretch-torsion values for the second bond
+c
+               v1 = kst(4,iistrtor)
+               v2 = kst(5,iistrtor)
+               v3 = kst(6,iistrtor)
+               k = ist(3,iistrtor)
+               dr = rcb - bl(k)
+               e2 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
+               dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
+               ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rcb
+c
+c     compute derivative components for this interaction
+c
+               ddrdx = xcb * ddr
+               ddrdy = ycb * ddr
+               ddrdz = zcb * ddr
+               dedxt = dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
+               dedyt = dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
+               dedzt = dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
+               dedxu = -dedphi * (yu*zcb - ycb*zu) / (ru2*rcb)
+               dedyu = -dedphi * (zu*xcb - zcb*xu) / (ru2*rcb)
+               dedzu = -dedphi * (xu*ycb - xcb*yu) / (ru2*rcb)
+c
+c     increment chain rule components for the second bond
+c
+               dedxia = dedxia + zcb*dedyt - ycb*dedzt
+               dedyia = dedyia + xcb*dedzt - zcb*dedxt
+               dedzia = dedzia + ycb*dedxt - xcb*dedyt
+               dedxib = dedxib + yca*dedzt - zca*dedyt + zdc*dedyu
+     &                     - ydc*dedzu - ddrdx
+               dedyib = dedyib + zca*dedxt - xca*dedzt + xdc*dedzu
+     &                     - zdc*dedxu - ddrdy
+               dedzib = dedzib + xca*dedyt - yca*dedxt + ydc*dedxu
+     &                     - xdc*dedyu - ddrdz
+               dedxic = dedxic + zba*dedyt - yba*dedzt + ydb*dedzu
+     &                     - zdb*dedyu + ddrdx
+               dedyic = dedyic + xba*dedzt - zba*dedxt + zdb*dedxu
+     &                     - xdb*dedzu + ddrdy
+               dedzic = dedzic + yba*dedxt - xba*dedyt + xdb*dedyu
+     &                     - ydb*dedxu + ddrdz
+               dedxid = dedxid + zcb*dedyu - ycb*dedzu
+               dedyid = dedyid + xcb*dedzu - zcb*dedxu
+               dedzid = dedzid + ycb*dedxu - xcb*dedyu
+c
+c     get the stretch-torsion values for the third bond
+c
+               v1 = kst(7,iistrtor)
+               v2 = kst(8,iistrtor)
+               v3 = kst(9,iistrtor)
+               k  = ist(4,iistrtor)
+               dr = rdc - bl(k)
+               e3 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
+               dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
+               ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rdc
+c
+c     compute derivative components for this interaction
+c
+               ddrdx = xdc * ddr
+               ddrdy = ydc * ddr
+               ddrdz = zdc * ddr
+               dedxt = dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
+               dedyt = dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
+               dedzt = dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
+               dedxu = -dedphi * (yu*zcb - ycb*zu) / (ru2*rcb)
+               dedyu = -dedphi * (zu*xcb - zcb*xu) / (ru2*rcb)
+               dedzu = -dedphi * (xu*ycb - xcb*yu) / (ru2*rcb)
+c
+c     increment chain rule components for the third bond
+c
+               dedxia = dedxia + zcb*dedyt - ycb*dedzt
+               dedyia = dedyia + xcb*dedzt - zcb*dedxt
+               dedzia = dedzia + ycb*dedxt - xcb*dedyt
+               dedxib = dedxib + yca*dedzt - zca*dedyt + zdc*dedyu
+     &                     - ydc*dedzu
+               dedyib = dedyib + zca*dedxt - xca*dedzt + xdc*dedzu
+     &                     - zdc*dedxu
+               dedzib = dedzib + xca*dedyt - yca*dedxt + ydc*dedxu
+     &                     - xdc*dedyu
+               dedxic = dedxic + zba*dedyt - yba*dedzt + ydb*dedzu
+     &                     - zdb*dedyu - ddrdx
+               dedyic = dedyic + xba*dedzt - zba*dedxt + zdb*dedxu
+     &                     - xdb*dedzu - ddrdy
+               dedzic = dedzic + yba*dedxt - xba*dedyt + xdb*dedyu
+     &                     - ydb*dedxu - ddrdz
+               dedxid = dedxid + zcb*dedyu - ycb*dedzu + ddrdx
+               dedyid = dedyid + xcb*dedzu - zcb*dedxu + ddrdy
+               dedzid = dedzid + ycb*dedxu - xcb*dedyu + ddrdz
+c
 c     increment the stretch-torsion energy and gradient
 c
+               e = e1 + e2 + e3
                ebt = ebt + e
                debt(1,ibloc) = debt(1,ibloc) + dedxib
                debt(2,ibloc) = debt(2,ibloc) + dedyib

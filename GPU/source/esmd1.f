@@ -67,15 +67,11 @@ c
 c
 c     SMD storage: initialization
 c
-      stock_dedx = 0.0_re_p
-      stock_dedy = 0.0_re_p
-      stock_dedz = 0.0_re_p
+      stock_dedx  = 0.0_re_p
+      stock_dedy  = 0.0_re_p
+      stock_dedz  = 0.0_re_p
       stock_ensmd = 0.0_re_p
-      if (use_pmecore.and.ndir.gt.1.or.nproc.gt.1) then
-         IsParallel=.true.
-      else
-         IsParallel=.false.
-      end if
+      IsParallel  = merge(.true.,.false.,(ndir.ge.1))
 c
 c###########################################
 c###########################################
@@ -163,7 +159,7 @@ c
 !$acc parallel loop async default(present)
 !$acc&         present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
           do a = 1, nsmdloc     ! LOOP2 CVSMDK2
-              b = nsmdglob(a)
+              b  = nsmdglob(a)
               ib = loc(b)
 c
               ded_x = (mass(b)/curmtotcom)*com_dedx
@@ -287,7 +283,7 @@ c
 !$acc parallel loop async default(present)
 !$acc&         present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
           do a = 1, nsmdloc     ! LOOP2 CVSMDK2
-              b = nsmdglob(a)
+              b  = nsmdglob(a)
               ib = loc(b)
 c
               ded_x = (mass(b)/curmtotcom)*com_dedx

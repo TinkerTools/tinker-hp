@@ -31,6 +31,7 @@ c
       use energi
       use egeom_inl
       use group
+      use inform    ,only:deb_Path
       use kgeoms
       use math
       use molcul
@@ -77,17 +78,19 @@ c
       real(t_p) xi,yi,zi,ri
       real(t_p) a,b,buffer,term
       logical proceed,intermol
+
+      if (deb_Path) write(*,'(1X,A)') 'egeom'
 c
 c     zero out the geometric restraint energy terms
 c
       eg = 0.0_ti_p
-!$acc parallel present(x,y,z,mass,xpfix,ypfix,zpfix,kpfix,
-!$acc&  use,npfixglob,ndfixglob,nafixglob,ntfixglob,ngfixglob,
-!$acc&  nchirglob) present(eg) async
+!$acc data present(mass,x,y,z,use,eg)
+      if (npfix.ne.0) then
 c
 c     compute the energy for position restraint terms
 c
-!$acc loop
+!$acc parallel loop async
+!$acc&         default(present)
       do inpfix = 1, npfixloc
          i = npfixglob(inpfix)
          ia = ipfix(i)
@@ -109,10 +112,14 @@ c
             eg = eg + e
          end if
       end do
+
+      end if
+      if (ndfixloc.ne.0) then
 c
 c     compute the energy for distance restraint terms
 c
-!$acc loop
+!$acc parallel loop async
+!$acc&         default(present)
       do indfix = 1, ndfixloc
          i = ndfixglob(indfix)
          ia = idfix(1,i)
@@ -139,10 +146,14 @@ c            if (use_bounds)  call image_inl (xr,yr,zr)
             eg = eg + e
          end if
       end do
+
+      end if
+      if (nafixloc.ne.0) then
 c
 c     compute the energy for angle restraint terms
 c
-!$acc loop
+!$acc parallel loop async
+!$acc&         default(present) reduction(+:eg)
       do inafix = 1, nafixloc
          i = nafixglob(inafix)
          ia = iafix(1,i)
@@ -186,10 +197,14 @@ c
             end if
          end if
       end do
+
+      end if
+      if (ntfix.ne.0) then
 c
 c     compute the energy for torsional restraint terms
 c
-!$acc loop
+!$acc parallel loop gang vector async
+!$acc&         default(present) reduction(+:eg)
       do intfix = 1, ntfixloc
          i = ntfixglob(intfix)
          ia = itfix(1,i)
@@ -280,10 +295,14 @@ c
             end if
          end if
       end do
+
+      end if
+      if (ngfix) then
 c
 c     compute the energy for group distance restraint terms
 c
-!$acc loop
+!$acc parallel loop vector_length(32) async
+!$acc&         default(present)
       do ingfix = 1, ngfixloc
          i = ngfixglob(ingfix)
          ia = igfix(1,i)
@@ -291,6 +310,7 @@ c
          xcm = 0.0_ti_p
          ycm = 0.0_ti_p
          zcm = 0.0_ti_p
+!$acc loop vector
          do j = igrp(1,ia), igrp(2,ia)
            k = kgrp(j)
            weigh = mass(k)
@@ -305,6 +325,7 @@ c
          xcm = 0.0_ti_p
          ycm = 0.0_ti_p
          zcm = 0.0_ti_p
+!$acc loop vector
          do j = igrp(1,ib), igrp(2,ib)
            k = kgrp(j)
            weigh = mass(k)
@@ -332,10 +353,14 @@ c         if (use_bounds)  call image_inl (xr,yr,zr)
          e   = force * dt2
          eg  = eg + e
       end do
+
+      end if
+      if (nchir.ne.0) then
 c
 c     compute the energy for chirality restraint terms
 c
-!$acc loop
+!$acc parallel loop async gang vector
+!$acc&         default(present) reduction(+:eg)
       do inchir = 1, nchirloc
          i = nchirglob(inchir)
          ia = ichir(1,i)
@@ -371,12 +396,13 @@ c
             eg  = eg + e
          end if
       end do
-!$acc end parallel
+
+      end if
 c
 c     compute the energy for a Gaussian basin restraint
 c
       if (use_basin) then
-!$acc parallel loop default(present) present(eg) async
+!$acc parallel loop present(glob) async
          do i = 1, nbloc
             iglob = glob(i)
             xi = x(iglob)
@@ -389,7 +415,7 @@ c
                yk = y(kglob)
                zk = z(kglob)
                proceed = .true.
-               if (proceed)  proceed = (use(iglob) .or. use(kglob))
+               if (proceed) proceed = (use(iglob).or.use(kglob))
                if (proceed) then
                   xr = xi - xk
                   yr = yi - yk
@@ -414,7 +440,7 @@ c
          buffer = 2.5_ti_p
          a = 2048.0_ti_p
          b = 64.0_ti_p
-!$acc parallel loop default(present) present(eg) async
+!$acc parallel loop present(glob) async
          do i = 1, nloc
             iglob = glob(i)
             proceed = .true.
@@ -433,4 +459,5 @@ c
             end if
          end do
       end if
+!$acc end data
       end

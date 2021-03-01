@@ -52,7 +52,7 @@ c
       integer na,na5,na4,na3,nap,naf
       integer nsb,nu,nopb,nopd
       integer ndi,nti,nt,nt5,nt4
-      integer npt,nbt,ntt,nd,nd5
+      integer npt,nbt,nat,ntt,nd,nd5
       integer nd4,nd3,nvp,nhb,nmp
       integer npi,npi5,npi4
       integer cls,atn,lig
@@ -65,9 +65,13 @@ c
       real(t_p) ba1,ba2
       real(t_p) aa1,aa2,aa3
       real(t_p) bt1,bt2,bt3
+      real(t_p) bt4,bt5,bt6
+      real(t_p) bt7,bt8,bt9
+      real(t_p) at1,at2,at3
+      real(t_p) at4,at5,at6
       real(t_p) an,pr,ds,dk
       real(t_p) vd,cg
-      real(r_p) fc,bd,dl
+      real(t_p) fc,bd,dl
       real(t_p) pt,pol,thl
 
       real(t_p) abc,cba
@@ -80,10 +84,7 @@ c
       real(t_p) ty(maxtgrd2)
       real(t_p) tf(maxtgrd2)
 
-
-
-
-      logical header
+      logical header,swap
       character*1 da1
       character*4 pa,pb,pc
       character*4 pd,pe
@@ -119,6 +120,7 @@ c
       nt4 = 0
       npt = 0
       nbt = 0
+      nat = 0
       ntt = 0
       nd = 0
       nd5 = 0
@@ -862,8 +864,15 @@ c
             bt1 = 0.0_ti_p
             bt2 = 0.0_ti_p
             bt3 = 0.0_ti_p
+            bt4 = 0.0_ti_p
+            bt5 = 0.0_ti_p
+            bt6 = 0.0_ti_p
+            bt7 = 0.0_ti_p
+            bt8 = 0.0_ti_p
+            bt9 = 0.0_ti_p
             string = record(next:240)
-            read (string,*,err=320,end=320)  ia,ib,ic,id,bt1,bt2,bt3
+            read (string,*,err=320,end=320)  ia,ib,ic,id,bt1,bt2,bt3,
+     &                                       bt4,bt5,bt6,bt7,bt8,bt9
   320       continue
 c           call numeral (ia,pa,size)
 c           call numeral (ib,pb,size)
@@ -872,20 +881,38 @@ c           call numeral (id,pd,size)
             nbt = nbt + 1
             if (ib .lt. ic) then
                call front_convert_base(0,ia,ib,ic,id,kbt(nbt))
-c              kbt(nbt) = pa//pb//pc//pd
+               swap = .false.
             else if (ic .lt. ib) then
                call front_convert_base(0,id,ic,ib,ia,kbt(nbt))
 c              kbt(nbt) = pd//pc//pb//pa
+               swap = .true.
             else if (ia .le. id) then
                call front_convert_base(0,ia,ib,ic,id,kbt(nbt))
 c              kbt(nbt) = pa//pb//pc//pd
+               swap = .false.
             else if (id .lt. ia) then
                call front_convert_base(0,id,ic,ib,ia,kbt(nbt))
 c              kbt(nbt) = pd//pc//pb//pa
+               swap = .true.
             end if
-            btcon(1,nbt) = bt1
-            btcon(2,nbt) = bt2
-            btcon(3,nbt) = bt3
+            btcon(4,nbt) = bt4
+            btcon(5,nbt) = bt5
+            btcon(6,nbt) = bt6
+            if (swap) then
+               btcon(1,nbt) = bt7
+               btcon(2,nbt) = bt8
+               btcon(3,nbt) = bt9
+               btcon(7,nbt) = bt1
+               btcon(8,nbt) = bt2
+               btcon(9,nbt) = bt3
+            else
+               btcon(1,nbt) = bt1
+               btcon(2,nbt) = bt2
+               btcon(3,nbt) = bt3
+               btcon(7,nbt) = bt7
+               btcon(8,nbt) = bt8
+               btcon(9,nbt) = bt9
+            end if
 c
 c     torsion-torsion parameters
 c

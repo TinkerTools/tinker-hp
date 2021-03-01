@@ -133,6 +133,10 @@ c     aMD parametrization
 c
       call kamd(.true.)
 c
+c     associate pointers routine
+c
+      call configure_routine
+c
 c     Set Potential
 c
       call ConfigPotential
@@ -140,10 +144,6 @@ c
 c     construct scaling factors
 c
       call build_scaling_factor(0)
-c
-c     associate pointers routine
-c
-      call configure_routine
 #ifdef _OPENACC
 c
 c     init cuda rand engine
@@ -455,7 +455,7 @@ c
       call timer_enter( timer_param )
       ! Handle fusion between empole & polar routine
       if (rule.eq.1.and.use_polar) then
-         if (stepint.eq.1) then
+         if (stepint.eq.1.and.nalt.ne.1) then
             call attach_mpolar_pointer
          else if (stepint.eq.nalt) then
             call detach_mpolar_pointer
@@ -529,6 +529,7 @@ c
         enumerator dev_default
       end enum
       character(256) devname
+      real(t_p) buff_t
 
       if (sub_config.eq.-1) then
          sub_config = itrf_legacy
@@ -552,9 +553,11 @@ c
      &             lbuffer.eq.defaultlbuffer) then
                    if (integrate.eq.'RESPA1'.or.
      &                 integrate.eq.'BAOABRESPA1') then
-                      call update_lbuffer(1.0_ti_p)
+                      buff_t = merge( 0.5,1.0,(n.gt.95000) )
+                      call update_lbuffer(buff_t)
                    else
-                      call update_lbuffer(0.5_ti_p)
+                      buff_t = merge( 0.7,0.4,(n.gt.95000) )
+                      call update_lbuffer(buff_t)
                    end if
                end if
 #endif
@@ -575,16 +578,16 @@ c
             sub_config = itrf_adapted
          end if
 #endif
-      end if
-      if (tinkerdebug.gt.0.and.rank.eq.0) then
- 12      format( /,'  --- run mode :  LEGACY  ',/ )
- 13      format( /,'  --- run mode :  ADAPTED ',/ )
-         if      (sub_config.eq.itrf_legacy) then
-            write(*,'(5x,a)') trim(devname)
-            write(*,12)
-         else if (sub_config.eq.itrf_adapted) then
-            write(*,'(5x,a)') trim(devname)
-            write(*,13)
+         if (tinkerdebug.gt.0.and.rank.eq.0) then
+ 12         format( /,'  --- run mode :  LEGACY  ',/ )
+ 13         format( /,'  --- run mode :  ADAPTED ',/ )
+            if      (sub_config.eq.itrf_legacy) then
+               write(*,'(5x,a)') trim(devname)
+               write(*,12)
+            else if (sub_config.eq.itrf_adapted) then
+               write(*,'(5x,a)') trim(devname)
+               write(*,13)
+            end if
          end if
       end if
       end subroutine
@@ -605,6 +608,9 @@ c
       implicit none
       integer configure,shft
       integer,parameter:: hexa_len=16,sh_len=4
+#if _OPENACC
+      procedure(tmatxb_pme_core1):: tmatxb_pme_core_v4
+#endif
 
       call init_sub_config
       call init_routine_pointers
@@ -811,6 +817,10 @@ c
               tmatxb_pme_core_p => tmatxb_pme_core3
        otf_dc_tmatxb_pme_core_p => otf_dc_tmatxb_pme_core3
             mlst2_enable = .true.
+         else if (configure.eq.conf_tmatxb_v4) then
+              tmatxb_pme_core_p => tmatxb_pme_core_v4
+       otf_dc_tmatxb_pme_core_p => otf_dc_tmatxb_pme_core3
+            mlst2_enable = .true.
 #endif
          else
             tmatxb_pme_core_p => tmatxb_pme_core2
@@ -897,6 +907,7 @@ c     print '(/,A21,Z16,I30)', 'routine config number ',
 c    &      sub_config,sub_config
 
       call config_cover_routines
+      call disable_commreal_study
       end
 
 c
@@ -917,8 +928,8 @@ c
 
          if (use_pmecore) then
             if (verbose.and.rank.eq.0) then
- 13            format('--- Disabling Async Comput ---',/,
-     &         'Not Suited with pme-proc option')
+ 13            format(5x,'--- Disabling Async Comput ---',/,
+     &         5x,'Not Suited with pme-proc option')
                print 13
             end if
 #ifdef _OPENACC
@@ -928,8 +939,8 @@ c
          end if
 
          if (nproc.eq.1.and.OK) then
- 14         format('--- Disabling Async Comput ---',/,
-     &             '  Affect performances during sequential run')
+ 14         format(5x,'--- Disabling Async Comput ---',/,
+     &             2x,'Affect performances during sequential run')
             print 14
 #ifdef _OPENACC
             call finalize_async_recover
@@ -997,5 +1008,36 @@ c
          emreal1c_p      => emreal1cgpu
          emrealshort1c_p => emrealshort1cgpu
       end if
+#endif
+      end subroutine
+
+      subroutine disable_commreal_study
+      use domdec  ,only: nproc,rank
+      use interfaces
+      use inform  ,only: verbose
+      use potent  ,only: use_mpole,use_polar
+      use utilcomm,only: no_commdir
+#ifdef _OPENACC
+      use utilcu  ,only: cu_update_balanced_comput
+#endif
+      implicit none
+      logical,parameter::accept=.false.
+
+      if (nproc.gt.6.and.accept.and.
+     &   (associated(efld0_directgpu_p,efld0_directgpu3).or.
+     &    associated(efld0_direct_cp,efld0_directgpu3)).and.
+     &    associated(tmatxb_pme_core_p,tmatxb_pme_core3))
+     &   then
+         no_commdir=.true.
+ 12      format(/,
+     &   ' *****  Bypassing most of real space communications *****')
+         if (rank.eq.0.and.verbose) write(*,12)
+
+         ! Reset poleglobnl for each process
+         if (use_mpole)  call kmpole (.false.,0)
+         if (use_polar)  call kpolar (.false.,0)
+      end if
+#ifdef _OPENACC
+      call cu_update_balanced_comput(.not.no_commdir)
 #endif
       end subroutine

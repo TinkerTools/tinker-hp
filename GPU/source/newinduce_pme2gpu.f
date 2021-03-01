@@ -20,7 +20,7 @@ c
       use domdec
       use ewald
       use iounit
-      use inform    ,only: deb_Path
+      use inform    ,only: deb_Path,minmaxone
       use interfaces,only:inducepcg_pme2gpu,tmatxb_p,
      &                    tmatxb_pmevec,efld0_directgpu2,
      &                    efld0_directgpu_p
@@ -62,21 +62,17 @@ c
       real(8) wtime0, wtime1, wtime2
       real(t_p) term, xx(1), comp
 c
-c     real(t_p), allocatable ::buffermpi1(:,:),buffermpi2(:,:),
-c    &                buffermpimu1(:,:,:),buffermpimu2(:,:,:)
-c
-      if (deb_Path) 
-     &   write(*,'(2x,a)') 'newinduce_pme2gpu'
       if (.not.use_polar) return
 c
  1000 format(' illegal polalg in newinduce.')
  1010 format(' time for the ',a,F14.5)
  1020 format(' total elapsed time in newinduce: ',F14.5)
  
+      call timer_enter( timer_other )
+      if (deb_Path) write(*,'(2x,a)') 'newinduce_pme2gpu'
 c
 c     allocate some memory and clear the arrays:
 c
-      call timer_enter( timer_other )
 c     allocate (mu   (3,nrhs,max(1,npolebloc)))
 c     allocate (murec(3,nrhs,max(1,npolerecloc)))
 c     allocate (ef   (3,nrhs,max(1,npolebloc)))
@@ -139,10 +135,6 @@ c
 c     compute the electric fields:
 c
       wtime0 = mpi_wtime()
-#ifdef _OPENACC
-      if (dir_queue.ne.rec_queue)
-     &   call stream_wait_async(rec_stream,dir_stream,rec_event)
-#endif
 c
 c     compute the direct space contribution (fields)
 c
@@ -170,11 +162,6 @@ c     add direct and reciprocal fields
 c
       term = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
       def_queue = rec_queue
-#ifdef _OPENACC
-      if (dir_queue.ne.rec_queue) then
-         call stream_wait_async(dir_stream,rec_stream,dir_event)
-      end if
-#endif
 
 !$acc parallel loop collapse(3) async(def_queue)
       do i = 1,npoleloc
@@ -320,7 +307,8 @@ c     deallocate (cphirec)
       implicit none
       integer,parameter:: nrhs=2,d3=3
       real(t_p),intent(inout)::mu(d3,nrhs,npolebloc)
-      integer i,j,k,iipole,ierr
+      integer i,j,k,k1,iipole,ierr
+      integer calt
 #ifdef USE_NVSHMEM_CUDA
       integer ipe,ind
 #endif
@@ -382,22 +370,27 @@ c     deallocate (cphirec)
       if (use_polarshortreal) then
          udalt_p0 => udshortalt
          upalt_p0 => upshortalt
+         calt = lshalt-1
       else
          udalt_p0 => udalt
          upalt_p0 => upalt
+         calt = lalt-1
       end if
+c     write(*,'(I3,$)') (mod(calt+i-1,maxualt)+1,i=1,nualt-1)
+c     write(*,*)
 
-!$acc parallel loop gang vector async(def_queue)
+!$acc parallel loop collapse(2) async(def_queue)
 !$acc&         present(poleglob,bpred,udalt_p0,upalt_p0,mu)
       do i = 1, npoleloc
-         iipole = poleglob(i)
-!$acc loop seq
          do j = 1, 3
-            udsum = 0.0_ti_p
-            upsum = 0.0_ti_p
-            do k = 1, nualt - 1
-              udsum = udsum + bpred(k)*udalt_p0(k,j,iipole)
-              upsum = upsum + bpred(k)*upalt_p0(k,j,iipole)
+            iipole = poleglob(i)
+            udsum  = 0.0_ti_p
+            upsum  = 0.0_ti_p
+!$acc loop seq
+            do k = 1, nualt-1
+                k1   = mod(calt+k-1,maxualt) + 1
+               udsum = udsum + bpred(k)*udalt_p0(j,iipole,k1)
+               upsum = upsum + bpred(k)*upalt_p0(j,iipole,k1)
             end do
             mu(j,1,i) = udsum
             mu(j,2,i) = upsum
@@ -411,7 +404,7 @@ c     deallocate (cphirec)
 
       subroutine pred_SetAlt
       use atmlst ,only: poleglob
-      use atoms  ,only: n_pe
+      use atoms  ,only: n_pe,n
       use domdec ,only: nproc,rank,ndir
       use inform ,only: deb_Path
       use mpole
@@ -424,6 +417,7 @@ c     deallocate (cphirec)
       use utilgpu   ,only: def_queue
       implicit none
       integer i,j,k,iipole,ierr
+      integer calt
 #ifdef USE_NVSHMEM_CUDA
       integer ipe,ind
 #endif
@@ -502,23 +496,24 @@ c     deallocate (cphirec)
       if (use_polarshortreal) then
          udalt_p0 => udshortalt
          upalt_p0 => upshortalt
+         lshalt = lshalt - 1
+         if (lshalt.eq.0) lshalt=maxualt
+         calt   = lshalt
       else
          udalt_p0 => udalt
          upalt_p0 => upalt
+         lalt   = lalt - 1
+         if (lalt.eq.0) lalt=maxualt
+         calt   = lalt
       end if
 
 !$acc parallel loop collapse(2) async(def_queue)
 !$acc&     present(poleglob,uind,uinp,upalt_p0,udalt_p0)
-      do i = 1, npolebloc
+      do i = 1, n
          do j = 1, 3
-            iipole = poleglob(i)
-!$acc loop seq
-            do k = nualt, 2, -1
-               udalt_p0(k,j,iipole) = udalt_p0(k-1,j,iipole)
-               upalt_p0(k,j,iipole) = upalt_p0(k-1,j,iipole)
-            end do
-            udalt_p0(1,j,iipole) = uind(j,iipole)
-            upalt_p0(1,j,iipole) = uinp(j,iipole)
+            !iipole = poleglob(i)
+            udalt_p0(j,i,calt) = uind(j,i)
+            upalt_p0(j,i,calt) = uinp(j,i)
           end do
       end do
 
@@ -1310,9 +1305,7 @@ c
 
       if (deb_Path) write(*,'(4x,a)') 'ulspredgpu'
 c
-!$acc data create(b,bp,a,ap,c,cp,rc,rcp,array)
-!$acc&     present(gear,aspc,bpred,bpredp,bpreds,bpredps)
-!$acc&     async(def_queue)
+!$acc data present(gear,aspc,bpred,bpredp,bpreds,bpredps)
 c
 c     set the Gear predictor binomial coefficients
 c
@@ -1344,7 +1337,7 @@ c
          if (npole.gt.cores_SMP) nblock=cores_SMP
          allocate( rc(nblock,maxualt,maxualt))
          allocate(rcp(nblock,maxualt,maxualt))
-!$acc data create(rc,rcp) async(def_queue)
+!$acc data create(b,bp,a,ap,c,cp,rc,rcp,array) async(def_queue)
 c
 !$acc parallel loop collapse(2)
 !$acc&         vector_length(32) 

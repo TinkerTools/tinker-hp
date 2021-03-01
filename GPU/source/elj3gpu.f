@@ -105,6 +105,7 @@ c
       integer nevt
       integer nnvlst,nnvlst1,nvloop8,nvloop16
       integer kt,countsel
+      integer in12,ai12(maxvalue)
 
       real(t_p) e,etemp,p6
       real(t_p) xr,yr,zr,xi,yi,zi
@@ -113,7 +114,7 @@ c
       real(t_p) taper
       real(t_p) rik,rik2_1,rik3,rik4,rik5,rik2
       real(t_p) rdn,rdn1,redk,redi,rv,eps
-      logical   usei
+      logical   usei,ik12
       parameter( half=0.5_ti_p,three=3.0_ti_p )
 
       character*10 mode
@@ -157,6 +158,7 @@ c
 c     find the van der Waals energy via neighbor list search
 c
 !$acc parallel loop gang vector_length(32) async(dir_queue)
+!$acc&         private(ai12)
       do ii = 1, nvdwlocnl
          iivdw = vdwglobnl(ii)
          iglob = ivdw(iivdw)
@@ -168,6 +170,13 @@ c
          xi    = xred(i)
          yi    = yred(i)
          zi    = zred(i)
+         if (skipvdw12) then
+            in12 = n12(iglob)
+!$acc loop vector
+            do j = 1,in12
+               ai12(j) = i12(j,iglob)
+            end do
+         end if
 c        usei  = (use(iglob) .or. use(iv))
 c
 c     decide whether to compute the current interaction
@@ -179,6 +188,14 @@ c
             kv    = ired(kglob)
             kvloc = loc(kv)
             kt    = jvdw(kglob)
+            if (skipvdw12) then
+               ik12 = .false.
+!$acc loop seq
+               do j = 1, in12
+                  if (ai12(j).eq.kglob) ik12=.true.
+               end do
+               if (ik12) cycle
+            end if
             xr    = xi - xred(kbis)
             yr    = yi - yred(kbis)
             zr    = zi - zred(kbis)
@@ -222,6 +239,7 @@ c               aev(i) = aev(i) + 0.5_ti_p * e
       use action    ,only: nev,nev_
       use atmlst    ,only: vdwglobnl,vdwglob
       use atoms     ,only: x,y,z,n
+      use couple    ,only: i12
       use domdec    ,only: loc,rank,nbloc,nproc
      &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
      &              ,zendproc,glob
@@ -349,7 +367,7 @@ c
 c     Call Vdw kernel in CUDA using C2 nblist
 c
 !$acc host_data use_device(xred,yred,zred,cellv_glob,cellv_loc
-!$acc&    ,loc_ired,ivblst,vblst,cellv_jvdw,epsilon_c
+!$acc&    ,loc_ired,ivblst,vblst,cellv_jvdw,epsilon_c,i12
 !$acc&    ,radmin_c,ired,kred,ered_buff,nred_buff
 #ifdef TINKER_DEBUG
 #endif
@@ -357,7 +375,7 @@ c
 
       call elj3_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &             (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
-     &             ,ivblst,vblst(lst_start),cellv_jvdw
+     &             ,ivblst,vblst(lst_start),cellv_jvdw,i12
      &             ,epsilon_c,radmin_c,ired,kred
      &             ,ered_buff,nred_buff
      &             ,nvdwlocnlb2_pair,n,nbloc,nvdwlocnl,nvdwlocnlb

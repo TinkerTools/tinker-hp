@@ -73,7 +73,6 @@ c                timestep t
 c     stock_ensmd storage of the SMD energy contribution on the SMD COM
 c                 at timestep t
 c ### Lines added for the MPI SMD ####
-c     ismd    temporary SMD atom number during the processors distrubution
 c     nsmdloc number of allocated SMD atoms per processors
 c     nsmdglob 1D table corresponded to the number of each SMD atoms
 c     smdprocprint Decide which proc has to send the information to the master
@@ -83,26 +82,26 @@ c
       module msmd
       implicit none
       logical use_smdk2, use_atfol 
-      real(t_p) SMDk, SMDk2
-      real(t_p) SMDvel, SMDfor
+      real(r_p) SMDk, SMDk2
+      real(r_p) SMDvel, SMDfor
       integer SMDoutputFreq
       integer ismdout, ismdsave
-      real(t_p) xdir, ydir, zdir
+      real(r_p) xdir, ydir, zdir
       integer ncsmd
       integer, pointer :: tcsmd(:)
-      real(t_p) :: xcom, ycom, zcom
-      real(t_p) :: cur_xcom, cur_ycom, cur_zcom
-      real(t_p) mtotcom, curmtotcom
+      real(r_p) :: xcom, ycom, zcom
+      real(r_p) :: cur_xcom, cur_ycom, cur_zcom
+      real(r_p) mtotcom, curmtotcom
       integer atfol
       integer, pointer :: tabatfol(:)
       real(r_p) tsmd
-      real(t_p) SMDdt
+      real(r_p) SMDdt
       integer tpass
       real(r_p), pointer :: dedx(:),dedy(:),dedz(:)
       real(r_p) :: com_dedx, com_dedy, com_dedz
       real(r_p) :: stock_dedx, stock_dedy, stock_dedz
       real(r_p) :: stock_ensmd
-      integer ismd, nsmdloc
+      integer  nsmdloc
       integer, pointer :: nsmdglob(:)
       integer smdprocprint
       integer naltsmd

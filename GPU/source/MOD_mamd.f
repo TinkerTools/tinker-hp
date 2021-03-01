@@ -79,8 +79,8 @@ c
       integer amdoutputfreq, amdoutputfreq_dih
       integer iamdout, igamdrestart
       integer amdtpass, amdtpass_dih
-      real(t_p) aMDdt_dih
-      real(t_p) aMDdt
+      real(r_p) aMDdt_dih
+      real(r_p) aMDdt
       real(8) etamd, tamd, tamd_dih
       character (len=3) amdstate
       real(t_p) amdboost, amdboostavg, amdboostavg_dih

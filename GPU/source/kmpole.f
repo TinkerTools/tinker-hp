@@ -592,20 +592,20 @@ c
            npole = 0
            do i = 1, n
               if (polsiz(i) .ne. 0) then
-                 nbpole(i) = npole
-                 npole = npole + 1
-                 ipole(npole) = i
-                 pollist(i) = npole
-                 zaxis(npole) = zaxis(i)
-                 xaxis(npole) = xaxis(i)
-                 yaxis(npole) = yaxis(i)
+                 nbpole(i)     = npole
+                 npole         = npole + 1
+                 ipole(npole)  = i
+                 pollist(i)    = npole
+                 zaxis(npole)  = zaxis(i)
+                 xaxis(npole)  = xaxis(i)
+                 yaxis(npole)  = yaxis(i)
                  polaxe(npole) = polaxe(i)
                  do j = 1, maxpole
                     pole(j,npole) = pole(j,i)
                  end do
                  if (use_emtp) then
                    alphapen(npole) = alphapen(i)
-                   betapen(npole) = betapen(i)
+                   betapen(npole)  = betapen(i)
                    gammapen(npole) = gammapen(i)
                  end if
               end if

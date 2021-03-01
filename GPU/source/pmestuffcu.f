@@ -960,8 +960,8 @@ c
      &                  ((i.ge.istat).and.(i.le.ied))) then
 c                 tq_1 = qgrid2in_p(ind)
 c                 tq_2 = qgrid2in_p(ind+1)
-                    tq_1 = qgrid2in_t(1,i-istat+1,j-jstat+1,k-kstat+1,1)
-                    tq_2 = qgrid2in_t(2,i-istat+1,j-jstat+1,k-kstat+1,1)
+                    tq_1 = qgrid_in(1,i-istat+1,j-jstat+1,k-kstat+1,1)
+                    tq_2 = qgrid_in(2,i-istat+1,j-jstat+1,k-kstat+1,1)
                     else 
                       iproc = 1
                       notfind  = .true.
@@ -976,9 +976,9 @@ c                 tq_2 = qgrid2in_p(ind+1)
                       if (((k.ge.kstart).and.(k.le.kend)).and.
      &                    ((j.ge.jstart).and.(j.le.jend)).and.
      &                    ((i.ge.istart).and.(i.le.iend))) then
-                  tq_1 = qgrid2in_t(1,i-istart+1,j-jstart+1,k-kstart+1,
+                  tq_1 = qgrid_in(1,i-istart+1,j-jstart+1,k-kstart+1,
      &                       iproc+1)
-                  tq_2 = qgrid2in_t(2,i-istart+1,j-jstart+1,k-kstart+1,
+                  tq_2 = qgrid_in(2,i-istart+1,j-jstart+1,k-kstart+1,
      &                       iproc+1)
                   notfind = .false.
                       end if

@@ -83,8 +83,8 @@ c
       integer :: winpole,winalphapen,winbetapen,wingammapen
       real(r_p) vmxx,vmyy,vmzz
       real(r_p) vmxy,vmxz,vmyz
-      integer,     pointer ::  ipolaxe(:)
-      character*8, pointer ::  polaxe(:)
+      integer,     pointer :: ipolaxe(:)
+      character*8, pointer :: polaxe(:)
       integer :: winpolaxe,winipolaxe
 
       ! Axetyp enumeration

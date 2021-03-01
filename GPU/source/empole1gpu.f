@@ -164,7 +164,6 @@ c              end do
       end if
       call timer_exit ( timer_other,quiet_timers )
 
-!!$acc update host(rpole,pole) async(rec_queue)
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) then
          call end_dir_stream_cover

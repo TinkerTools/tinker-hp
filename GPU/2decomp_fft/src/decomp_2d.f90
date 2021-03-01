@@ -509,17 +509,16 @@ contains
   subroutine decomp_2d_finalize
 
     implicit none
-    
+
     call decomp_info_finalize(decomp_main)
 
     decomp_buf_size = 0
-    deallocate(work1_r, work2_r, work1_c, work2_c)
+    cufft_worksize  = 0
     if (nproc.ne.1) then
-       cufft_worksize = cufft_worksize - 2*sizeof(work1_c)
-!$acc exit data delete(work1_c,work2_c)
+    !$acc exit data delete(work1_c,work2_c)
     end if
-    
-    return
+    deallocate(work1_r, work2_r, work1_c, work2_c)
+
   end subroutine decomp_2d_finalize
 
 

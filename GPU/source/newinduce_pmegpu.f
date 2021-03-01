@@ -1263,7 +1263,7 @@ c
       qgridout_size= 2*ksize2(rankloc+1)*jsize2(rankloc+1)
      &                *isize2(rankloc+1)
 
-!$acc serial async(rec_queue)
+!$acc serial async(rec_queue) present(qfac_2d)
       if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
      &   (kstart2(rankloc+1).eq.1)) then
            qfac_2d(1,1,1) = 0.0_ti_p

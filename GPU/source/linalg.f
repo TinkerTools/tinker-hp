@@ -88,7 +88,6 @@ c
       end
 c
       subroutine amove(n,a,b)
-!$acc routine
       implicit real(t_p) (a-h,o-z)
       dimension a(*),b(*)
       do j = 1, n

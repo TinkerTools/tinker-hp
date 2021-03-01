@@ -25,24 +25,25 @@ c
 c
 #include "tinker_precision.h"
       subroutine ksmd(init)
+      use angle
+      use atomsMirror
+      use atmtyp
+      use bitor
+      use bond
+      use deriv
+      use domdec
+      use energi
+      use keys
+      use iounit
+      use improp
+      use inform ,only:deb_path
+      use mdstuf
+      use msmd
+      use mpi
       use potent
       use sizes
-      use keys
-      use msmd
-      use deriv
-      use energi
-      use atoms
-      use atmtyp
-      use iounit
-      use mdstuf
-      use bond
-      use angle
-      use tors
-      use improp
-      use bitor
-      use domdec
       use tinheader
-      use mpi
+      use tors
       implicit none
 
 
@@ -58,6 +59,7 @@ c
       integer ii, jj
       integer next
       integer nsmdcap
+      integer ismd !temporary SMD atom number during the processors distrubution
       integer, allocatable :: reqrec(:)
       logical, allocatable :: smdproc(:)
       integer :: reqsend,ierr,status(MPI_STATUS_SIZE),tagmpi
@@ -82,23 +84,23 @@ c
       use_smd_forconst = .false.
       use_smdk2 = .false.
       use_atfol = .false.
-      calccom = .true.
+      calccom   = .true.
       manualcom = .false.
-      warning = .false.
+      warning   = .false.
       smdprocprint = -1
-      quit = .true.
-      SMDk = 0.0_ti_p
-      SMDk2 = 0.0_ti_p
-      SMDVel = 0.0_ti_p
-      SMDFor = 0.0_ti_p
+      quit      = .true.
+      SMDk      = 0.0_ti_p
+      SMDk2     = 0.0_ti_p
+      SMDVel    = 0.0_ti_p
+      SMDFor    = 0.0_ti_p
       SMDoutputFreq = 1
-      stock_dedx = 0.0_ti_p
-      stock_dedy = 0.0_ti_p
-      stock_dedz = 0.0_ti_p
-      stock_ensmd = 0.0_ti_p
-      nalt = 1
-      nalt2 = 1
-      atfol = 0
+      stock_dedx    = 0.0_ti_p
+      stock_dedy    = 0.0_ti_p
+      stock_dedz    = 0.0_ti_p
+      stock_ensmd   = 0.0_ti_p
+      nalt    = 1
+      nalt2   = 1
+      atfol   = 0
          xcom = 0.0_ti_p
          ycom = 0.0_ti_p
          zcom = 0.0_ti_p
@@ -106,12 +108,12 @@ c
          ydir = 0.0_ti_p
          zdir = 0.0_ti_p
       mtotcom = 0.0_ti_p
-      ensmd = 0.0_ti_p
-      tsmd = 0.0_ti_p
-      SMDdt = 0.001
-      tpass = 0
+      ensmd   = 0.0_ti_p
+      tsmd    = 0.0_ti_p
+      SMDdt   = 0.001
+      tpass   = 0
 
-      if (rank.eq.0.and.tinkerdebug) print*,'ksmd'
+      if (deb_path) print*,'ksmd'
 c
 c######################################################################
 c
@@ -775,9 +777,9 @@ c
 c      Initialization of the tables
 c
             do i = 1, n
-                  dedx(i) = 0.0_ti_p
-                  dedy(i) = 0.0_ti_p
-                  dedz(i) = 0.0_ti_p
+                  dedx(i) = 0.0_re_p
+                  dedy(i) = 0.0_re_p
+                  dedz(i) = 0.0_re_p
             end do
         end if ! LOOP2
       end if ! LOOP1
@@ -854,6 +856,7 @@ c
           cur_zcom = 0.0_ti_p
           curmtotcom = 0.0_ti_p
 !$acc parallel loop default(present) async
+!$acc&    reduction(+:cur_xcom,cur_ycom,cur_zcom,curmtotcom)
           do i = 1, ncsmd
              j = tcsmd(i)
              cur_xcom   = cur_xcom + x(j)*mass(j)
@@ -861,6 +864,7 @@ c
              cur_zcom   = cur_zcom + z(j)*mass(j)
              curmtotcom = curmtotcom + mass(j)
           end do
+!$acc wait
           cur_xcom = cur_xcom/curmtotcom
           cur_ycom = cur_ycom/curmtotcom
           cur_zcom = cur_zcom/curmtotcom
@@ -969,11 +973,12 @@ c### Current COM calculation for the SMD procedure ###
 c#####################################################
 c
       if (use_smd_velconst .or. use_smd_forconst) then ! LOOP1
-          cur_xcom = 0.0_ti_p
-          cur_ycom = 0.0_ti_p
-          cur_zcom = 0.0_ti_p
-          curmtotcom = 0.0_ti_p
+          cur_xcom   = 0.0_re_p
+          cur_ycom   = 0.0_re_p
+          cur_zcom   = 0.0_re_p
+          curmtotcom = 0.0_re_p
 !$acc parallel loop default(present) async
+!$acc&    reduction(+:cur_xcom,cur_ycom,cur_zcom,curmtotcom)
           do i = 1, ncsmd
              j = tcsmd(i)
              cur_xcom   = cur_xcom + x(j)*mass(j)
@@ -981,6 +986,7 @@ c
              cur_zcom   = cur_zcom + z(j)*mass(j)
              curmtotcom = curmtotcom + mass(j)
           end do
+!$acc wait
           cur_xcom = cur_xcom/curmtotcom
           cur_ycom = cur_ycom/curmtotcom
           cur_zcom = cur_zcom/curmtotcom

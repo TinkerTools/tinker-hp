@@ -191,14 +191,15 @@ c
                if (name(i) .ne. '   ')  goto 60
                read (record,*,err=60,end=60)  xlen,ylen,zlen,
      &                                        aang,bang,gang
-               size = 0
-               xbox = xlen
-               ybox = ylen
-               zbox = zlen
+               size  = 0
+               xbox  = xlen
+               ybox  = ylen
+               zbox  = zlen
                alpha = aang
-               beta = bang
+               beta  = bang
                gamma = gang
                use_bounds = .true.
+!$acc update device(xbox,ybox,zbox,alpha,beta,gamma)
 c               call lattice
    60       continue
             end if

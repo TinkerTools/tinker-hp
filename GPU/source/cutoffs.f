@@ -17,6 +17,7 @@ c
 c
 #include "tinker_precision.h"
       subroutine cutoffs
+      use atoms ,only: n
       use bound
       use cutoff
       use domdec
@@ -83,6 +84,16 @@ c
 c      set default for neighbor list update, reference = 20 for a 2fs time step
 c
       ineigup = 20
+c
+c     set default buffer for nblist
+c
+#if TINKER_SINGLE_PREC+TINKER_MIXED_PREC
+      defaultlbuffer  = merge( 0.4,0.7,(n.gt.95000) )
+      defaultlbuffer1 = merge( 0.5,1.0,(n.gt.95000) )
+#else
+      defaultlbuffer  = 2.0
+      defaultlbuffer1 = 2.0
+#endif
 c
 c     search the keywords for various cutoff parameters
 c
@@ -216,20 +227,28 @@ c
       end
 
       subroutine update_lbuffer(list_buff)
+      use argue
       use cutoff
       use neigh
       use tinheader
       implicit none
       real(t_p),intent(in):: list_buff
+      real(r_p) dt
 c
 c     set buffer region limits for pairwise neighbor lists
 c
-      lbuffer = list_buff
-      lbuf2   = (0.5_ti_p*lbuffer)**2
-      vbuf2   = (vdwcut+lbuffer)**2
-      cbuf2   = (chgcut+lbuffer)**2
-      mbuf2   = (mpolecut+lbuffer)**2
+      lbuffer    = list_buff
+      lbuf2      = (0.5_ti_p*lbuffer)**2
+      vbuf2      = (vdwcut+lbuffer)**2
+      cbuf2      = (chgcut+lbuffer)**2
+      mbuf2      = (mpolecut+lbuffer)**2
       vshortbuf2 = (vdwshortcut+lbuffer)**2
       cshortbuf2 = (chgshortcut+lbuffer)**2
       mshortbuf2 = (mpoleshortcut+lbuffer)**2
+
+      ! Update ineigup
+      read(arg(3),*,err=30,end=30) dt           ! Fetch timestep among arguments
+      dt         = dt*0.001_re_p  ! Convert to picoseconds
+      ineigup    = max( 1,int(((real(lbuffer,r_p)*0.02_re_p)/dt)+1d-3) )
+ 30   continue
       end subroutine

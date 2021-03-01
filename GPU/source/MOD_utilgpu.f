@@ -74,7 +74,8 @@ c
 
 c     parameter(rec_queue=0)
       integer,parameter:: maxscaling=64
-      integer,parameter::maxscaling1=128
+      integer,parameter:: maxscaling1=128
+      integer,parameter:: maxBlock=ishft(1,16)
       integer,parameter:: BLOCK_SIZE=32
       integer,parameter::  WARP_SIZE=32
       integer,parameter::RED_BUFF_SIZE=ishft(1,15)
@@ -757,8 +758,8 @@ c
 c     Display device number and MPI process
 c
       status = hostnm(name)
-      if (nproc.gt.8) return
-      write(*,'(a,i2,a,i2,a,i8,a,a)')
+      if (nproc.gt.12.or.nproc.eq.1) return
+      write(0,'(a,i2,a,i2,a,i8,a,a)')
      &     "rank ", hostrank,
      &     " attach to device ", devicenum, 
      &     " pid : ",getpid(), 
@@ -846,7 +847,8 @@ c12      format('CUDA Error destroying rec/direct streams',I10)
 c        if (cuda_success.ne.0) then
 c           print 12, cuda_success
 c        end if
- 13     format(' ***** Asynchronous Computation Overlapping disable')
+ 13     format(/,1x,'***** ',
+     &        'Asynchronous Computation Overlapping disabled *****')
          if (rank.eq.0) write(*,13)
          dir_stream = rec_stream
          def_stream = rec_stream

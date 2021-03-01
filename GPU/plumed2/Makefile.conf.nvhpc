@@ -1,0 +1,54 @@
+# top-level directory
+makefile_path__ := $(abspath $(lastword $(MAKEFILE_LIST)))
+makefile_dir__  := $(dir $(makefile_path__))
+# `make' will not complain if file `top_dir.mk' does not exist
+#-include top_dir.mk
+ifeq (,$(top_dir__))
+   top_dir__ := $(realpath $(makefile_dir__)/..)
+endif
+
+#Config
+CC=mpicc
+FC=mpif90
+LDF90=mpif90
+CFLAGS=-g -O2 -fPIC
+CXX=mpic++
+CXXFLAGS=-O3 -fPIC -Wall -pedantic -std=c++11 -fopenmp
+CXXFLAGS_NOOPENMP=-O3 -fPIC -Wall -pedantic -std=c++11
+CPPFLAGS= -DPACKAGE_NAME=\"PLUMED\" -DPACKAGE_TARNAME=\"plumed\" -DPACKAGE_VERSION=\"2\" -DPACKAGE_STRING=\"PLUMED\ 2\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -D__PLUMED_LIBCXX11=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -D__PLUMED_HAS_EXTERNAL_BLAS=1 -D__PLUMED_HAS_MOLFILE_PLUGINS=1 -D__PLUMED_HAS_CREGEX=1 -D__PLUMED_HAS_DLOPEN=1 -D__PLUMED_HAS_RTLD_DEFAULT=1 -D__PLUMED_HAS_CHDIR=1 -D__PLUMED_HAS_SUBPROCESS=1 -D__PLUMED_HAS_GETCWD=1 -D__PLUMED_HAS_EXECINFO=1 -D__PLUMED_HAS_ZLIB=1 -D__PLUMED_HAS_GSL=1 -D__PLUMED_HAS_MPI=1 -DNDEBUG=1 -D_REENTRANT=1
+LDFLAGS=
+DYNAMIC_LIBS=-lstdc++ -lgsl -lz -ldl -lblas -rdynamic -Wl,-Bsymbolic -fopenmp
+LIBS=-ldl 
+SOEXT=so
+# LD is used only to link the plumed executable, so should be equivalent to the C++ compiler
+LD=mpic++ -O3 -fPIC -Wall -pedantic -std=c++11
+LDSHARED=mpic++ -shared
+GCCDEP=mpic++
+disable_dependency_tracking=yes
+prefix=${top_dir__}/plumed/Portland
+# use this variable to double check that prefix is not changed after configure
+# (new in v2.5)
+prefix_double_check=${top_dir__}/plumed/Portland
+program_name=plumed
+program_transform_name=s,x,x,
+program_can_run_mpi=
+program_can_run=yes
+make_pdfdoc=no
+make_doc=no
+PACKAGE_TARNAME=plumed
+LD_RO=ld -r -o
+AR_CR=ar cr
+exec_prefix=${prefix}
+bindir=${exec_prefix}/bin
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+datarootdir=${prefix}/share
+datadir=${datarootdir}
+docdir=${datarootdir}/doc/${PACKAGE_TARNAME}
+htmldir=${docdir}
+python_bin=
+mpiexec=
+make_static_archive=yes
+use_absolute_soname=no
+use_loader_path=no
+BASH_COMPLETION_DIR=

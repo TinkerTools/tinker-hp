@@ -771,10 +771,11 @@ c
       subroutine reinitnl(istep)
       use atoms
       use domdec
-      use cell    ,only:xcell,ycell,zcell
-      use inform  ,only:deb_Path,tindPath,abort
+      use cell    ,only: xcell,ycell,zcell
+      use inform  ,only: deb_Path,tindPath,abort
       use neigh
-      use utilgpu ,only:rec_queue
+      use utilgpu ,only: rec_queue
+      use utilcomm,only: no_commdir
       use tinMemory
       use timestat,only: timer_enter,timer_exit,timer_nl
      &            ,quiet_timers
@@ -785,6 +786,7 @@ c
       integer iloc,istep,idomlen,nloc_cap
       integer ibufbeg
       integer:: s_nlocnl=0
+      real(t_p) distcut
 !$acc routine(distprocpart1)
 c
       !if (istep.ne.0) call check_nl_rebuild
@@ -802,8 +804,14 @@ c
       nlocnl    = nloc
 c
       if (.not.allocated(ineignl)) then
+         call init_boxPart
          call prmem_request(ineignl,n)
 !$acc wait
+      end if
+      if (no_commdir) then
+         distcut = bigbuf
+      else
+         distcut = bigbuf/2
       end if
 c
 !$acc data copy(nlocnl,abort)
@@ -827,7 +835,7 @@ c
           iloc  = ibufbeg+i-1
           iglob = glob(iloc)
           call distprocpart1(iglob,rank,d,.true.,x,y,z)
-          if (d.le.(bigbuf/2)) then
+          if (d.le.(distcut)) then
 !$acc atomic capture
             nlocnl = nlocnl + 1
             nloc_cap = nlocnl

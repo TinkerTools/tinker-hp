@@ -26,6 +26,7 @@ c      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
       end
 c
       subroutine analyze_bis
+      use dcdmod
       use domdec
       use files
       use inform
@@ -42,6 +43,7 @@ c
       character*1 letter
       character*240 string
       character*240 xyzfile
+      character*240 dcdfile
 c
 c
 c     set up the structure and mechanics calculation
@@ -60,7 +62,7 @@ c
 c
       call mechanic
 c
-      call nblist(0)
+c     call nblist(0)
 c
 c     get the desired types of analysis to be performed
 c
@@ -81,7 +83,7 @@ c
 c
 c     set option control flags based desired analysis types
 c
-      doenergy = .false.
+      doenergy   = .false.
       dodipoltot = .false.
       dodipolmol = .false.
       call upcase (string)
@@ -95,12 +97,20 @@ c
 c     reopen the coordinates file and read the first structure
 c
       frame = 0
-      ixyz = freeunit ()
-      xyzfile = filename
-      call suffix (xyzfile,'xyz','old')
-      open (unit=ixyz,file=xyzfile,status ='old')
-      rewind (unit=ixyz)
-      call readxyz (ixyz)
+      if (dcdio) then
+        dcdfile = filename(1:leng)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+      else
+        ixyz = freeunit ()
+        xyzfile = filename
+        call suffix (xyzfile,'xyz','old')
+        open (unit=ixyz,file=xyzfile,status ='old')
+        rewind (unit=ixyz)
+        call readxyz (ixyz)
+      end if
 c
 c     perform analysis for each successive coordinate structure
 c
@@ -111,14 +121,11 @@ c
    90         format (/,' Analysis for Archive Structure :',8x,i8)
            end if
 c
-c        the box shape can change between frames
-c
-         call lattice
-c
 c       setup for MPI
 c
-         call ddpme3d
-         call reassignpme(.true.)
+         call lattice
+         call AllDirAssign
+         call AllRecAssign
          call reinitnl(0)
          call mechanicstep(0)
          call nblist(0)
@@ -146,12 +153,21 @@ c
 c
 c     attempt to read next structure from the coordinate file
 c
-         call readxyz (ixyz)
+         if (.not.dcdio) then
+           call readxyz (ixyz)
+         else 
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+         end if
       end do
 c
 c     perform any final tasks before program exit
 c
-      close (unit=ixyz)
+      if (dcdio) then
+        call dcdfile_close
+      else
+        close (unit=ixyz)
+      end if
       call final
       end
 c

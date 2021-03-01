@@ -44,7 +44,8 @@ c
       real(r_p) xbox2,ybox2,zbox2
       real(t_p) box34
       real(r_p) volbox
-      real(t_p),target:: lvec(3,3),recip(3,3)
+      real(r_p),target:: lvec(3,3)
+      real(t_p),target:: recip(3,3)
       real(t_p) beta_sin,beta_cos
       real(t_p) gamma_sin,gamma_cos
       real(t_p) beta_term,gamma_term

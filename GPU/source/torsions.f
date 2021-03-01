@@ -247,7 +247,7 @@ c
       call shmem_request(ipit,winipit,[6,ntors],config=mhostacc)
 
       ! kstrtor parameters data
-      call shmem_request(ist,     winist,    [2,ntors],config=mhostacc)
-      call shmem_request(kst,     winkst,    [3,ntors],config=mhostacc)
+      call shmem_request(ist,     winist,    [4,ntors],config=mhostacc)
+      call shmem_request(kst,     winkst,    [9,ntors],config=mhostacc)
       call shmem_request(nbstrtor,winnbstrtor, [ntors],config=mhostacc)
       end

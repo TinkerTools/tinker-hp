@@ -46,15 +46,6 @@ c
 c     nx_cell     number of boxes in x dimension
 c     ny_cell     number of boxes in y dimension
 c     nz_cell     number of boxes in z dimension
-c     bvx_cell     number of boxes in x dimension to reach vdw_cutoff+buffer edge
-c     bvy_cell     number of boxes in y dimension to reach vdw_cutoff+buffer edge
-c     bvz_cell     number of boxes in z dimension to reach vdw_cutoff+buffer edge
-c     bex_cell     number of boxes in x dimension to reach elec_cutoff+buffer edge
-c     bey_cell     number of boxes in y dimension to reach elec_cutoff+buffer edge
-c     bez_cell     number of boxes in z dimension to reach elec_cutoff+buffer edge
-c     bcx_cell     number of boxes in x dimension to reach chg_cutoff+buffer edge
-c     bcy_cell     number of boxes in y dimension to reach chg_cutoff+buffer edge
-c     bcz_cell     number of boxes in z dimension to reach chg_cutoff+buffer edge
 c     lbuffer     width of the neighbor list buffer region
 c     lbuf2       square of half the neighbor list buffer width
 c     vbuf2       square of vdw cutoff plus neighbor list buffer
@@ -89,11 +80,11 @@ c
 #include "tinker_precision.h"
       module neigh
       implicit none
+      type boxPart
+         integer ipart,bx_c,by_c,bz_c,nx_c,ny_c,nz_c
+      end type
       integer ineigup
       integer ncell_tot,max_cell_len,max_numneigcell
-      integer::bvx_cell=1,bvy_cell=1,bvz_cell=1
-      integer::bex_cell=1,bey_cell=1,bez_cell=1
-      integer::bcx_cell=1,bcy_cell=1,bcz_cell=1
       integer nx_cell,ny_cell,nz_cell
       real(t_p) defaultlbuffer,defaultlbuffer1,lbuffer,lbuf2
       real(t_p) vbuf2,cbuf2,mbuf2,torquebuf2
@@ -102,6 +93,7 @@ c
       logical vlst_enable,mlst_enable,clst_enable
       logical vlst2_enable,mlst2_enable,clst2_enable
       integer bit_si,bit_sh
+      type(boxPart) e_bP,v_bP,c_bP
 
 !DIR$ ATTRIBUTES ALIGN:64 :: nvlst
       integer, allocatable,target:: nvlst(:),nshortvlst(:)
@@ -151,17 +143,37 @@ c
       integer,target,allocatable :: celle_chg(:)
       real(t_p),target,allocatable:: celle_x(:),celle_y(:),celle_z(:)
 
-      parameter( bit_si=8*sizeof(bvx_cell) )
+      parameter( bit_si=8*sizeof(ineigup) )
       parameter( bit_sh=5 )
-      parameter(
-#if (defined(SINGLE) || defined(MIXED))
-     &  defaultlbuffer  = 0.7
-     & ,defaultlbuffer1 = 1.0
-#else
-     &  defaultlbuffer  = 2.0
-     & ,defaultlbuffer1 = 2.0
-#endif
-     & )
+
+      interface
+        subroutine build_cell_list2(ineignl,cell_order,
+     &             nlocnl,buf,bP)
+        import boxPart
+        integer  ,intent(in)   :: nlocnl
+        integer  ,intent(in)   :: ineignl(:)
+        integer  ,intent(inout):: cell_order(:)
+        real(t_p),intent(in)   :: buf
+        type(boxPart),intent(inout)::bP
+        end subroutine
+      end interface
 
 !$acc declare create(nvlst,nelst,nelstc)
+      contains
+
+      subroutine init_boxPart
+      implicit none
+      e_bP%ipart=0
+      e_bP%bx_c=1
+      e_bP%by_c=1
+      e_bP%bz_c=1
+      v_bP%ipart=0
+      v_bP%bx_c=1
+      v_bP%by_c=1
+      v_bP%bz_c=1
+      c_bP%ipart=0
+      c_bP%bx_c=1
+      c_bP%by_c=1
+      c_bP%bz_c=1
+      end subroutine
       end

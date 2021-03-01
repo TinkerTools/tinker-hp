@@ -28,6 +28,8 @@ c     upalt_p0   Pointer to upalt or upshortalt
 c     udalt_p0   Pointer to udalt or udshortalt
 c     use_pred  flag to control use of induced dipole prediction
 c     polpred   type of predictor polynomial (Gear, ASPC or LSQR)
+c     lalt      save location index of electrical field
+c     lshalt    save location index of short range electrical field
 c
 c
 #include "tinker_precision.h"
@@ -39,6 +41,7 @@ c
       integer maxualt
       parameter (maxualt=7)
       integer nualt
+      integer lalt,lshalt
       !TODO Should be used with short range solver
       ! integer shortnualt
       real(t_p) gear(maxualt),aspc(maxualt)

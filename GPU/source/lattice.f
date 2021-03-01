@@ -27,11 +27,10 @@ c
       use tinheader
       implicit none
       integer   octa
-      real(t_p) alpha_cos
-      real(t_p) ar1,ar2,ar3
-      real(t_p) br1,br2,br3
-      real(t_p) cr1,cr2,cr3
-c
+      real(r_p) alpha_cos
+      real(r_p) ar1,ar2,ar3
+      real(r_p) br1,br2,br3
+      real(r_p) cr1,cr2,cr3
 c
 c     compute and store the half box length values
 c

@@ -676,11 +676,11 @@ c!$acc update host(glob)
      &call minmaxone1(mmx(20),mmx(nf+20),mmx(2*nf+20),dep
      &     ,sze,'dep');
 
-      if (abort.and.vlst_enable) then
-         dint1 = minval(inte); dint2=maxval(inte)
-         call searchpair(nshortvlst,shortvlst,maxvlst
-     &        ,dint1,dint2)
-      end if
+c     if (abort.and.vlst_enable) then
+c        dint1 = minval(inte); dint2=maxval(inte)
+c        call searchpair(nshortvlst,shortvlst,maxvlst
+c    &        ,dint1,dint2)
+c     end if
 
       else if (btest(rule,commNonBonded)) then
 
@@ -706,11 +706,11 @@ c!$acc update host(glob)
      &     ,sze,'depsum');
       end if
 
-      if (abort.and.vlst_enable) then
-         dint1 = minval(inte); dint2=maxval(inte)
-         call searchpair(nshortvlst,shortvlst,maxvlst,
-     &        dint1,dint2)
-      end if
+c     if (abort.and.vlst_enable) then
+c        dint1 = minval(inte); dint2=maxval(inte)
+c        call searchpair(nshortvlst,shortvlst,maxvlst,
+c    &        dint1,dint2)
+c     end if
 
       end if
 
@@ -841,7 +841,7 @@ c     end if
       if (present(name)) then
          cap = 1
          gli = 0
-         if (name.eq.'dev') then
+         if (name.eq.'devi') then
 !$acc parallel loop default(present) copy(abort,cap,gli)
             do i = 1, sz/3
                cap2  = 0

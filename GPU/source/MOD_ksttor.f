@@ -21,7 +21,7 @@ c
       implicit none
       integer maxnbt
       parameter (maxnbt=500)
-      real(t_p) btcon(3,maxnbt)
+      real(t_p) btcon(9,maxnbt)
       integer(8) kbt(maxnbt)
       integer(8) kbt_sys(0:maxnbt)
       save
