@@ -26,7 +26,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Accelerate Molecular Dynamics : aMD and GaMD Simulations
    - Steered Molecular Dynamics (SMD)
    - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process for now)
-   - Plumed support (to appear : 12/2020)
+   - Plumed support available(updated : 03/2021)
    - More to come
    
    <B>If you use the code please cite :</B>
