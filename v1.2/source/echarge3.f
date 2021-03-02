@@ -324,7 +324,7 @@ c
       use mpi
       implicit none
       integer i,j,k,iglob,iichg
-      integer ii,kkk,inl,kglob,kkchg
+      integer ii,kkk,kglob,kkchg
 
       real*8 e,efull
       real*8 f,fi,fik
@@ -363,7 +363,6 @@ c
          iichg = chgglobnl(ii)
          iglob = iion(iichg)
          i = loc(iglob)
-         inl = chglocnl(iichg)
          xi = x(iglob)
          yi = y(iglob)
          zi = z(iglob)
@@ -383,8 +382,8 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = c5scale
          end do
-         do kkk = 1, nshortelst(inl)
-            kkchg = shortelst(kkk,inl)
+         do kkk = 1, nshortelst(ii)
+            kkchg = shortelst(kkk,ii)
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
             k = loc(kglob)
@@ -476,7 +475,7 @@ c
       use mpi
       implicit none
       integer i,j,k,iglob,iichg
-      integer ii,kkk,inl,kglob,kkchg
+      integer ii,kkk,kglob,kkchg
 
       real*8 e,efull
       real*8 f,fi,fik
@@ -516,7 +515,6 @@ c
          iichg = chgglobnl(ii)
          iglob = iion(iichg)
          i = loc(iglob)
-         inl = chglocnl(iichg)
          xi = x(iglob)
          yi = y(iglob)
          zi = z(iglob)
@@ -536,8 +534,8 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = c5scale
          end do
-         do kkk = 1, nelst(inl)
-            kkchg = elst(kkk,inl)
+         do kkk = 1, nelst(ii)
+            kkchg = elst(kkk,ii)
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
             k = loc(kglob)
