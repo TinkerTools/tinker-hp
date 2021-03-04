@@ -196,7 +196,7 @@ EXEEXT=".prod"                                                    # Default is n
                 FCFLAGS="$FCFLAGS $WARNFLAG"                                       # Modify FCFLAGS
                 DEBUG_MODE="DEBUG"
                ],
-               [FCFLAGS="-O0"                                                     # and maximal optimization
+               [FCFLAGS="-O3"                                                     # and maximal optimization
                 DEBUG_MODE="NORMAL"
                ]
           )
