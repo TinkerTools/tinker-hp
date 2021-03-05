@@ -156,7 +156,7 @@ c
             do j = 1, 3
                a(j,iglob) = -convert * derivs(j,i)/mass(iglob)
                v(j,iglob) = (v(j,iglob) +
-     $          +dt_2*a(j,iglob) + a2*Rn(j,i)/sqrt(mass(iglob)))/
+     $          dt_2*a(j,iglob) + a2*Rn(j,i)/sqrt(mass(iglob)))/
      $          (1+dt*gamma/2)
             end do
          end if
