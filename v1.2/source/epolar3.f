@@ -627,8 +627,8 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         do kkk = 1, nelst(ii)
-            kkpole = elst(kkk,ii)
+         do kkk = 1, nshortelst(ii)
+            kkpole = shortelst(kkk,ii)
             kglob = ipole(kkpole)
             k = loc(kglob)
             xr = x(kglob) - xi
@@ -747,8 +747,7 @@ c
 c     compute the energy contribution for this interaction
 c
                e = term1*psr3 + term2*psr5 + term3*psr7
-               call switch_respa(r,off,shortheal,s,ds)
-               ep = ep + e*s
+               ep = ep + e
 c
 c     print message if the energy of this interaction is large
 c

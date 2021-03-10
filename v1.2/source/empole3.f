@@ -571,8 +571,8 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         do kkk = 1, nelst(ii)
-            kkpole = elst(kkk,ii)
+         do kkk = 1, nshortelst(ii)
+            kkpole = shortelst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
             xr = x(kglob) - xi

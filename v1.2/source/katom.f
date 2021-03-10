@@ -134,6 +134,7 @@ c
             heavy = .true.
          end if
       end do
+      call MPI_BARRIER(hostcomm,ierr)
       if (heavy) then
          if (hostrank.ne.0) goto 11
          hmax = 4.0d0
