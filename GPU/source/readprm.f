@@ -60,7 +60,8 @@ c
       integer bt,at,sbt,tt
       integer(8) res
       integer ft(6),pg(maxvalue)
-      real(t_p) wght,rd,ep,rdn
+      real(r_p) wght
+      real(t_p) rd,ep,rdn
       real(t_p) an1,an2,an3
       real(t_p) ba1,ba2
       real(t_p) aa1,aa2,aa3

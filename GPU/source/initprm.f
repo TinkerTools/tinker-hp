@@ -178,7 +178,7 @@ c
          symbol(i) = blank3
          atmcls(i) = 0
          atmnum(i) = 0
-         weight(i) = 0.0_ti_p
+         weight(i) = 0.0_re_p
          ligand(i) = 0
          describe(i) = blank24
          rad(i)    = 0.0_ti_p

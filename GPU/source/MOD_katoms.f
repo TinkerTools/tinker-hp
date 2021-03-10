@@ -24,7 +24,7 @@ c
       implicit none
       integer atmcls(maxtyp),atmnum(maxtyp)
       integer ligand(maxtyp)
-      real(t_p) weight(maxtyp)
+      real(r_p) weight(maxtyp)
       character*3 symbol(maxtyp)
       character*24 describe(maxtyp)
       save
