@@ -106,6 +106,7 @@ c
 #include "tinker_precision.h"
       module domdec
       implicit none
+      logical Bdecomp1d,Bdecomp2d,Bdecomp3d
       integer,parameter:: MasterRank=0
       integer nxdd,nydd,nzdd
       integer nproctot,ranktot,COMM_TINKER
