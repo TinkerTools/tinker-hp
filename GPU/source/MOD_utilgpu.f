@@ -102,6 +102,15 @@ c     parameter(rec_queue=0)
       end interface
 
       interface
+      function acc_get_cuda_stream_c( async ) result(queue)
+     &     bind(C,name='acc_get_cuda_stream')
+      import c_int
+      integer(c_int),value:: async
+      integer(c_int),intent(out):: queue
+      end function
+      end interface
+
+      interface
         subroutine acc_free_bc(ptr) bind(C,name='acc_free')
         import C_PTR
         type(C_PTR),value ::ptr
@@ -721,11 +730,12 @@ c
       subroutine selectDevice
       implicit none
       integer ::i,cuda_success=0
-      character*64 value,value1
+      character*64 value,value1,value2
       character*22 name
-      integer ::length,length1,status,status1,device_type
-      integer ::hostnm,getpid
-      integer ::device_start
+      integer length,length1,length2,status,status1,status2
+      integer device_type
+      integer hostnm,getpid
+      integer device_start
 
 c
 c     Query number of device 
@@ -735,15 +745,20 @@ c
       if (devicenum==-1) then
          device_type = acc_get_device_type()
          device_start= 0
-         call get_environment_variable('PGI_ACC_DEVICE_NUM',value,
+         call get_environment_variable('ACC_DEVICE_NUM',value,
      &                                  length,status)
-         call get_environment_variable('PGI_ACC_DEVICE_START',value1,
+         call get_environment_variable('PGI_ACC_DEVICE_NUM',value1,
      &                                  length1,status1)
+         call get_environment_variable('PGI_ACC_DEVICE_START',value2,
+     &                                  length2,status2)
          if (status.eq.0) then
             ngpus = 1
             read (value,'(i)') devicenum
+         else if (status1.eq.0) then
+            ngpus = 1
+            read (value1,'(i)') devicenum
          else
-            if (status1.eq.0) read(value1,*) device_start
+            if (status2.eq.0) read(value2,*) device_start
             ngpus     = acc_get_num_devices(device_type)
             devicenum = device_start + mod(hostrank,ngpus)
          end if
@@ -789,6 +804,14 @@ c
       if (status.eq.0) then
          read(value,*) int_val
          if (int_val.gt.0) then
+            if (rec_stream.eq.0) then
+ 16            format(/,
+     &'| WARNING !! cannot recover CUDA stream from OpenACC async',
+     &' queue',/,
+     &'             Skiping multi queues feature activation')
+               if (rank.eq.0) write(*,16)
+               return
+            end if
             dir_queue = acc_async_noval + 1
  13      format(' ***** Asynchronous Computation Overlapping enable'
      &          ,I5,/)
@@ -836,6 +859,35 @@ c
      &   print*,'error creating cuda Events  >', cuda_success
 
       end
+
+      subroutine syncWithStream(stream)
+      integer,optional::stream
+      integer stream_,istat
+
+      if (present(stream)) then
+         stream_= stream
+      else
+         stream_= rec_stream
+      end if
+      istat  = cudaStreamSynchronize(stream_)
+      if (istat.ne.0) print '(A,I5,A,I14)',' WARNING ! Error',istat,
+     &   ' synchronizing with stream ',stream_
+      end subroutine
+
+      subroutine comparetonoval(queue)
+      implicit none
+      integer queue
+      integer(CUDA_STREAM_KIND)::stream
+
+      stream = acc_get_cuda_stream(queue)
+      if (rec_stream.ne.stream) then
+  12  format(A,3I14,2I5)
+         print 12,'stream are differents'
+     &   ,rec_stream,dir_stream,stream,queue,rank
+      else
+         print*, 'equal stream',rec_stream
+      end if
+      end subroutine
 
       subroutine Finalize_async_recover
       implicit none

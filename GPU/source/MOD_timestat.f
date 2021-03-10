@@ -69,7 +69,7 @@ c     tinkertime     logical flag to enable timers verbosity
         ! number Timers
         integer, parameter:: max_timer_count=last_timer
 
-        integer :: stat_timers(29) =
+        integer :: stat_timers(30) =
      &          [timer_param,timer_nl,
      &           timer_bonded,timer_vdw,
      &           timer_real,timer_realdip,timer_rec,timer_recdip,
@@ -79,7 +79,7 @@ c     tinkertime     logical flag to enable timers verbosity
      &           timer_fcomm,timer_dirbondfcomm,timer_dirreccomm,
      &           timer_recreccomm,timer_commstep,timer_polsolvcomm,
      &           timer_polfieldcomm,timer_eneig,timer_reduceen,
-     &           timer_timestep
+     &           timer_timestep,timer_b1
      &          ]
         integer :: comm_timers(8) =
      &          [timer_param,timer_fcomm,timer_recreccomm,

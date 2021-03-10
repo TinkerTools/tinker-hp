@@ -26,6 +26,7 @@ c      no_commdir      switch to disable some real space communications
 
       logical::do_not_commpole=.false.
       logical::no_commdir=.false.
+      logical,parameter:: skpPcomm=.false.
 
       ! Requests arrays for async communication
       integer   ,allocatable,target::

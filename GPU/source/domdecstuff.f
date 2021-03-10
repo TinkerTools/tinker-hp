@@ -1620,6 +1620,21 @@ c
 c     get the number of subdivision along each axis for dd
 c
       call ddnumber(nprocloc,0)
+
+      ! Get decomposition dimension
+      if (nxdd.eq.1.and.nydd.eq.1) then
+         Bdecomp1d=.true.
+         Bdecomp2d=.false.
+         Bdecomp3d=.false.
+      else if (nxdd.eq.1) then
+         Bdecomp1d=.false.
+         Bdecomp2d=.true.
+         Bdecomp3d=.false.
+      else
+         Bdecomp1d=.false.
+         Bdecomp2d=.false.
+         Bdecomp3d=.true.
+      end if
 c
       nx_box = xbox/nxdd
       ny_box = ybox/nydd

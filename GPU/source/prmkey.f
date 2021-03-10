@@ -35,6 +35,7 @@ c
       use urypot
       use USampling ,only: US_enable
       use utilgpu
+      use uprior
       use vdwpot
       implicit none
       integer next
@@ -488,9 +489,11 @@ c
          read (string,*,err=10,end=10)  u4scale
          if (u4scale .gt. 1.0_ti_p)  u4scale = 1.0_ti_p / u4scale
 !$acc update device(u4scale)
-c
-c     GPU Tools
-c
+      else if (keyword(1:14) .eq. 'POLAR-PREDICT ') then
+         call getword (record,polpred,next)
+         call upcase (polpred)
+         if (polpred .eq. 'NONE') use_pred = .false.
+      !GPU Tools
       else if (keyword(1:10) .eq. 'GPU-GANGS ')       then
          read (string,*,err=10,end=10)   gpu_gangs
 !$acc update device(gpu_gangs)

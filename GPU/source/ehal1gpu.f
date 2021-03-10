@@ -107,8 +107,6 @@ c
       use virial
       use vdw
       use vdwpot
-      use vec
-      use vec_vdw
       use utilgpu
 
       implicit none

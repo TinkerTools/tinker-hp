@@ -22,7 +22,7 @@ c
       use iounit
       use inform    ,only: deb_Path,minmaxone
       use interfaces,only:inducepcg_pme2gpu,tmatxb_p,
-     &                    tmatxb_pmevec,efld0_directgpu2,
+     &                    efld0_directgpu2,
      &                    efld0_directgpu_p
       use math
       use mpole
@@ -222,7 +222,7 @@ c
          call inducepcg_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
       else if (polalg.eq.2) then ! FIXME a porter
 !$acc update host(ef,mu,murec)
-         call inducejac_pme2gpu(tmatxb_pmevec,nrhs,.true.,ef,mu,murec)
+         call inducejac_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
 !$acc update device(ef,mu,murec)
       else
          if (rank.eq.0) write(iout,1000)
@@ -303,11 +303,13 @@ c     deallocate (cphirec)
       use tinheader,only: ti_p
       use timestat
       use uprior
+      use utilcomm ,only: skpPcomm
       use utilgpu  ,only: def_queue
       implicit none
       integer,parameter:: nrhs=2,d3=3
       real(t_p),intent(inout)::mu(d3,nrhs,npolebloc)
       integer i,j,k,k1,iipole,ierr
+      integer npoleloc_e
       integer calt
 #ifdef USE_NVSHMEM_CUDA
       integer ipe,ind
@@ -371,17 +373,20 @@ c     deallocate (cphirec)
          udalt_p0 => udshortalt
          upalt_p0 => upshortalt
          calt = lshalt-1
+         !npoleloc_e= merge(npolebloc,npoleloc,(skpPcomm))
+         npoleloc_e= npoleloc
       else
          udalt_p0 => udalt
          upalt_p0 => upalt
          calt = lalt-1
+         npoleloc_e= npoleloc
       end if
 c     write(*,'(I3,$)') (mod(calt+i-1,maxualt)+1,i=1,nualt-1)
 c     write(*,*)
 
 !$acc parallel loop collapse(2) async(def_queue)
 !$acc&         present(poleglob,bpred,udalt_p0,upalt_p0,mu)
-      do i = 1, npoleloc
+      do i = 1, npoleloc_e
          do j = 1, 3
             iipole = poleglob(i)
             udsum  = 0.0_ti_p

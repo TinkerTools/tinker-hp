@@ -18,6 +18,7 @@ c
       subroutine field
       use keys
       use potent
+      use uprior ,only: use_pred
       implicit none
       integer i
       character*240 record
@@ -65,6 +66,10 @@ c
       use_dispersion = .false.
       use_repulsion  = .false.
 c
+c     Flag for predictor-Corrector
+c
+      use_pred       = .true.
+c
 c     Set default values of Force field potential
 c
       PotentialAll         = .true.
@@ -85,5 +90,4 @@ c
          call prmkey (record)
       end do
 !$acc update device(use_mpole,use_polar)
-      return
       end

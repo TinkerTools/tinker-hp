@@ -21,7 +21,7 @@ c
       use ewald
       use iounit
       use interfaces,only:inducepcg_shortrealgpu,tmatxb_p1,
-     &                    tmatxb_pmevec,efld0_directgpu2,
+     &                    efld0_directgpu2,
      &                    efld0_directgpu_p1
       use math
       use mpole
@@ -46,6 +46,7 @@ c
       integer iipole
       integer, dimension(nproc):: reqsend,reqrec
      &       , req2send,req2rec
+      integer npoleloc_e
 c
       parameter (nrhs=2)
       real(t_p)  udsum, upsum
@@ -163,10 +164,7 @@ c
       if (use_pred) call pred_SetAlt
 
 #ifdef USE_NVSHMEM_CUDA
-      if (use_pmecore.and.rank.ge.ndir) then
-         deallocate(mu)
-         return
-      end if
+      if (use_pmecore.and.rank.ge.ndir) return
 #endif
 
       end
@@ -175,7 +173,7 @@ c
       use atmlst
       use domdec
       use ewald
-      use inform     ,only: deb_Path,abort
+      use inform     ,only: deb_Path,abort,minmaxone
       use interfaces ,only: tmatxb_pmegpu
       use iounit
       use math
@@ -189,7 +187,7 @@ c
       use sizes
       use units
       use utils
-      use utilcomm   ,only: no_commdir
+      use utilcomm   ,only: skpPcomm
       use utilgpu
       use mpi
       implicit none
@@ -208,7 +206,9 @@ c
       integer i, it, j, k
       integer npoleloc_e
       real(t_p) ggold(2), alphacg(2)
-      real(r_p) gnorm(2), ggnew(2), ene(2), gg(2)
+      real(r_p) gnorm(2), gg(2)
+      real(r_p),target :: mbuf(4)
+      real(r_p),pointer:: ggnew(:),ene(:)
       real(t_p),save:: ggold1,ggold2
       real(r_p),save:: ggnew1,ggnew2
       real(t_p),save:: ggdev1,ggdev2
@@ -216,6 +216,7 @@ c
       real(r_p),save:: gg1,gg2
       real(r_p),save:: ene1,ene2
       real(t_p),save:: alphacg1,alphacg2
+      real(t_p) reg1,reg2,reg3
       real(t_p) zero, one
       real(r_p) zerom, pt5
       real(r_p) resnrm
@@ -253,7 +254,9 @@ c
       else
          commloc = COMM_TINKER
       end if
-      npoleloc_e = merge(npolebloc,npoleloc,(no_commdir))
+      npoleloc_e = merge(npolebloc,npoleloc,(skpPcomm))
+      ggnew(1:2) => mbuf(1:2)
+      ene(1:2)   => mbuf(3:4)
 
 c
 c     allocate some memory and setup the preconditioner:
@@ -293,7 +296,7 @@ c
 c     initialize
 c
       call set_to_zero2(res,zr,3*nrhs*npoleloc_e,def_queue)
-      call set_to_zero2( pp, h,3*nrhs*npolebloc,def_queue)
+      call set_to_zero2( pp, h,3*nrhs*npolebloc ,def_queue)
 c
 c     now, compute the initial direction
 c
@@ -328,12 +331,16 @@ c
          end do
       end do
 
-      if (no_commdir) then
+      if (skpPcomm) then
 !$acc parallel loop collapse(3) async(def_queue)
       do k = npoleloc+1,npolebloc
          do j = 1,nrhs
             do i = 1,3
-               pp(i,j,k) = (ef(i,j,k) - h(i,j,k)) * diag(k)
+               reg1  = ef(i,j,k) - h(i,j,k)
+               reg2  = reg1*diag(k)
+               res(i,j,k) = reg1
+                zr(i,j,k) = reg2
+                pp(i,j,k) = reg2
             end do
          end do
       end do
@@ -352,9 +359,11 @@ c
 c
 c     MPI : begin sending
 c
+         if (.not.skpPcomm) then
          call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
          call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
          call commdirdirshort(nrhs,2,pp,reqrec,reqsend)
+         end if
          call MPI_WAIT(req1,status,ierr)
          ggold1 = ggold(1)
          ggold2 = ggold(2)
@@ -427,7 +436,7 @@ c
                end do
             end do
          end do
-         if (no_commdir) then
+         if (skpPcomm) then
 !$acc parallel loop collapse(3) async(def_queue)
          do k=npoleloc+1,npoleloc_e
             do j=1,nrhs
@@ -452,12 +461,9 @@ c Implicit wait seems to be removed with PGI-20
            ene(1)=  ene1;   ene(2)=  ene2
 
         if (nproc.ne.1) then
-           call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_RPREC,
+           call MPI_IALLREDUCE(MPI_IN_PLACE,mbuf(1),2*nrhs,MPI_RPREC,
      $          MPI_SUM,commloc,req3,ierr)
-           call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_RPREC,
-     $          MPI_SUM,commloc,req4,ierr)
            call MPI_WAIT(req3,status,ierr)
-           call MPI_WAIT(req4,status,ierr)
            ggnew1 = ggnew(1); ggnew2=ggnew(2)
         end if
         resnrm = zero
@@ -467,8 +473,26 @@ c Implicit wait seems to be removed with PGI-20
         end do
         if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
      $    it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
-
+c
         ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
+        ggold(1:2) = ggnew(1:2)
+        ggold1 = ggold(1); ggold2 = ggold(2)
+
+        if ((it.eq.politer.and.resnrm.gt.poleps)
+     &     .or.tinker_isnan_m(gnorm(1))) then
+           ! Not converged Abort
+           write(0,1050) it,max(gnorm(1),gnorm(2))
+           abort = .true.
+        end if
+        if (resnrm.lt.poleps) then
+          if (polprt.ge.1.and.rank.eq.0) write(iout,1000) it,
+     $      (ene(k)*coulomb, k = 1, nrhs), (gnorm(k), k = 1, nrhs)
+          call timer_exit( timer_other,quiet_timers )
+          !Exit Loop
+          goto 10
+        end if
+c
+        ! Compute Next direction
 !$acc parallel loop collapse(3) async(def_queue)
         do k = 1,npoleloc_e
            do j = 1,nrhs
@@ -482,26 +506,12 @@ c Implicit wait seems to be removed with PGI-20
            end do
         end do
         call timer_exit( timer_other,quiet_timers )
-        ! MPI : begin reception
-        call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
-        ! MPI : send data
-        call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
-        ! MPI : wait
-        call commdirdirshort(nrhs,2,pp,reqrec,reqsend)
+        if (.not.skpPcomm) then
+        call commdirdirshort(nrhs,0,pp,reqrec,reqsend) !recep
+        call commdirdirshort(nrhs,1,pp,reqrec,reqsend) !send
+        call commdirdirshort(nrhs,2,pp,reqrec,reqsend) !wait
+        end if
 c
-        ggold  = ggnew
-        ggold1 = ggold(1); ggold2 = ggold(2)
-        if ((it.eq.politer.and.resnrm.gt.poleps)
-     &     .or.tinker_isnan_m(gnorm(1))) then
-           ! Not converged Exit
-           write(0,1050) it,max(gnorm(1),gnorm(2))
-           abort = .true.
-        end if
-        if (resnrm.lt.poleps) then
-          if (polprt.ge.1.and.rank.eq.0) write(iout,1000) it,
-     $      (ene(k)*coulomb, k = 1, nrhs), (gnorm(k), k = 1, nrhs)
-          goto 10
-        end if
       end do
  10   continue
 

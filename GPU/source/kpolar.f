@@ -254,7 +254,7 @@ c
 c
 c  allocate predictor arrays
 c
-        if (use_polar) then
+        if (use_polar.and.use_pred) then
            if (deb_Path) then
               call mem_get(m1,m2)
            end if

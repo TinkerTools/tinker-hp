@@ -55,7 +55,7 @@ c
       integer i,j,k,idyn,iglob
       integer next
       integer lext,freeunit
-      integer ierr
+      integer ierr,correc
       real(r_p) e
       real(r_p) speed
       real(t_p) vec(3)
@@ -93,7 +93,6 @@ c
       velsave   = .false.
       frcsave   = .false.
       uindsave  = .false.
-      use_pred  = .true.
       polpred   = 'ASPC'
 #if (defined(SINGLE) || defined(MIXED))
       iprint = 1000
@@ -159,11 +158,6 @@ c
             frcsave = .true.
          else if (keyword(1:13) .eq. 'SAVE-INDUCED ') then
             uindsave = .true.
-         else if (keyword(1:14) .eq. 'POLAR-PREDICT ') then
-            use_pred = .true.
-            call getword (record,polpred,next)
-            call upcase (polpred)
-            if (polpred .eq. 'NONE') use_pred = .false.
          else if (keyword(1:11) .eq. 'THERMOSTAT ') then
             call getword (record,thermostat,next)
             call upcase (thermostat)
@@ -264,8 +258,10 @@ c
 c
 c     make sure all atoms or groups have a nonzero mass
 c
+      correc=0
       do i = 1, n
          if (use(i) .and. mass(i).le.0.0_re_p) then
+            correc = correc+1
             mass(i) = 1.0_re_p
             totmass = totmass + 1.0_re_p
             write (iout,30)  i
@@ -273,7 +269,9 @@ c
      &                 ' Set to 1.0 for Dynamics')
          end if
       end do
+      if (correc.gt.0) then
 !$acc update device(mass)
+      end if
 c
 c     enforce use of velocity Verlet with Andersen thermostat
 c

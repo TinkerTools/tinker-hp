@@ -38,6 +38,11 @@ c
       use sizes
       implicit none
       integer maxorder
+#ifdef _OPENACC
+      logical,parameter::GridDecomp1d=.true.
+#else
+      logical,parameter::GridDecomp1d=.false.
+#endif
       parameter (maxorder=20)
       integer nfft1,nfft2,nfft3
       integer bsorder
@@ -83,7 +88,17 @@ c
 
       end
 
+c     Is_MPI_GRID1D  keeps track of MPI_GRID1D allocation
+c     Is_MPI_GRID2D  keeps track of MPI_GRID2D allocation
+c     MPI_GRID1D     MPI vector Type for 1d fftGrid
+c     MPI_GRID2D     MPI vector Type for 2d fftGrid
       module pme1
       implicit none
-      real(t_p), allocatable,target :: qgridmpi(:,:,:,:,:)
+      real(t_p),allocatable,target:: qgridmpi(:,:,:,:,:)
+      logical :: Is_MPI_GRID1D=.false.,Is_MPI_GRID2D=.false.
+      integer MPI_GRID1D,MPI_GRID2D
+      integer nfloor,stride
+      enum,bind(C)
+         enumerator r_comm,r_wait
+      end enum
       end module

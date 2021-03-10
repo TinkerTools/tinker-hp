@@ -2010,6 +2010,7 @@ c
       use domdec
       use energi
       use inter
+      use inform ,only: deb_Energy
       use potent
       use virial
       use mpi
@@ -2040,7 +2041,7 @@ c
       buffer1(3) = ep
       buffer1(4) = epot
       buffer1(5) = esum
-      buffer1(6) = einter
+      buffer1(6) = ev
 !$acc end serial
 c
 !$acc host_data use_device(buffer1)
@@ -2060,11 +2061,12 @@ c
       ep     = buffer1(3)
       epot   = buffer1(4)
       esum   = buffer1(5)
-      einter = buffer1(6)
+      ev     = buffer1(6)
 !$acc end serial
 c
 c   MPI: get virial
 c
+      if (use_virial) then
 !$acc kernels async
       vir_copy(:,:) = vir(:,:)
 !$acc end kernels
@@ -2078,14 +2080,16 @@ c
 !$acc kernels async
       vir(:,:) = vir_copy(:,:)
 !$acc end kernels
+      end if
 c
       if ((use_pmecore).and.(rank.gt.(ndir-1))) goto 10
+      if (.not.deb_Energy) goto 10
 c
 !$acc serial async
       buffer2(1)  = eba
       buffer2(2)  = ea
       buffer2(3)  = eb
-      buffer2(4)  = ev
+      buffer2(4)  = einter
       buffer2(5)  = eub
       buffer2(6)  = eaa
       buffer2(7)  = eopb
@@ -2115,7 +2119,7 @@ c
       eba  = buffer2(1)
       ea   = buffer2(2)
       eb   = buffer2(3)
-      ev   = buffer2(4)
+      einter= buffer2(4)
       eub  = buffer2(5)
       eaa  = buffer2(6)
       eopb = buffer2(7)
@@ -4069,27 +4073,25 @@ c
       use utilgpu ,only:rec_queue
       use sizes   ,only:tinkerdebug
       use utilcomm,only:reqsend=>reqs_dirdir,reqrec=>reqr_dirdir
-     &            ,no_commdir
+     &            ,skpPcomm
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
       implicit none
       integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,tag0,i
-      logical lexit
       integer idomlen,ibufbeg,ipr
       integer :: reqrec1(nproc),reqsend1(nproc)
-c     real(t_p) ef(3,nrhs,npolebloc)
       real(t_p) mu(3,nrhs,npolebloc)
-      parameter(tag0=0,lexit=.false.)
+      parameter(tag0=0)
  1000 format(' illegal rule in commdirdirgpu.')
  41   format(7x,'>> ',A20,   3x,'recv')
  42   format(7x,   3x,A20,' >>','send')
  43   format(7x,'<< ',A20,   3x,'wait')
 
-      if ((n_recep1.eq.0.and.n_send1.eq.0).or.lexit) return
+      if ((n_recep1.eq.0.and.n_send1.eq.0)) return
 
       call timer_enter( timer_polsolvcomm )
       if (rule.eq.0) then
-         if (deb_Path) write(0,41) 'commdirdirgpu       '
+         if (deb_Path) write(*,41) 'commdirdirgpu       '
 c        if (btest(tinkerdebug,0).and.nproc.eq.4) then
 c22         format('___',A6,I5,3x,9I5)
 c           write(0,22)
@@ -4146,7 +4148,6 @@ c
       use mpole
       use mpi
       use sizes   ,only: tinkerdebug
-      use utilcomm,only: no_commdir
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
       implicit none
@@ -4156,8 +4157,6 @@ c     real(t_p) ef(3,nrhs,npolebloc)
       real(t_p) mu(3,nrhs,npolebloc)
  1000 format(' illegal rule in commdirdir.')
 c
-      if (no_commdir) return
-
       call timer_enter( timer_polsolvcomm )
       if (rule.eq.0) then
 c
@@ -4208,7 +4207,7 @@ c
       use mpi
       use utilgpu ,only:def_queue
       use utilcomm,only:reqsend=>reqs_dirdir,reqrec=>reqr_dirdir
-     &            ,no_commdir
+     &            ,skpPcomm
       use sizes
       use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
@@ -4222,12 +4221,11 @@ c
  42   format(7x,   3x,A20,' >>','send')
  43   format(7x,'<< ',A20,   3x,'wait')
 c
-      if ((n_recepshort1.eq.0.and.n_sendshort1.eq.0)
-     &   .or.no_commdir) return
+      if ((n_recepshort1.eq.0.and.n_sendshort1.eq.0)) return
 
       call timer_enter( timer_polsolvcomm )
       if (rule.eq.0) then
-         if (deb_Path) write(0,41) 'commdirdirshort     '
+         if (deb_Path) write(*,41) 'commdirdirshort     '
 c        if (btest(tinkerdebug,0).and.nproc.eq.4) then
 c22         format('___',A6,I5,3x,10I7)
 c           write(0,22)
@@ -4825,7 +4823,7 @@ c
         end do
 !$acc wait
         if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
-        if (deb_Path) write(*,42) 'commrecdirdipgpu    '
+        if (deb_Path) write(*,43) 'commrecdirdipgpu    '
       else
         if (rank.eq.0) write(iout,1000)
         call fatal
@@ -4929,7 +4927,7 @@ c
       if (n_send1.gt.0.or.n_recep1.gt.0) then
       call timer_enter( timer_polfieldcomm )
       if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
-      if (deb_Path) write(0,41) 'commfieldgpu        '
+      if (deb_Path) write(*,41) 'commfieldgpu        '
 c        if (btest(tinkerdebug,0).and.nproc.eq.4) then
 c22         format('_domlenpole ',I5,I7,3x,5I7,' _')
 c           write(0,22) rank,npoleloc,domlenpole(1:4)
@@ -5017,7 +5015,7 @@ c
 
       call timer_enter( timer_polfieldcomm )
       if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
-      if (deb_Path) write(0,41) 'commfieldshort      '
+      if (deb_Path) write(*,41) 'commfieldshort      '
 c        if (btest(tinkerdebug,0).and.nproc.eq.4) then
 c22         format('_',A6,I5,3x,5I7,'_ ')
 c           write(0,22) 'npoleloc',rank,npoleloc
@@ -5081,3 +5079,202 @@ c
       if (deb_Path) write(*,43) 'commfieldshort      '
       call timer_exit( timer_polfieldcomm,quiet_timers )
       end
+c
+c     Subroutine commGridFront: Exchange FFtgrid between reciprocal process
+c                 before call to fft_frontmpi
+c
+      subroutine commGridFront( qgrid,rule )
+      use domdec  ,only: nrec_recep,nrec_send,rank,prec_send,prec_recep
+     &            ,COMM_TINKER,comm_rec
+      use mpi
+      use inform
+      use pme     ,only: GridDecomp1d
+      use pme1
+      use potent  ,only: use_pmecore
+      use fft
+      use utilcomm,only: reqs=>reqs_poleglob,reqr=>reqr_poleglob
+     &            ,      recs=>reqs_dirdir  ,recr=>reqr_dirdir
+      use utilgpu ,only: rec_queue
+      use timestat,only: timer_enter,timer_exit,timer_recreccomm
+     &            ,quiet_timers
+      implicit none
+      integer,intent(in)::rule
+      real(t_p),qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
+
+      integer i,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_sz,MSG_szr
+      integer mpi_status1(MPI_STATUS_SIZE)
+      integer n_recv
+      logical decomp1d
+      parameter(tag0=0,tag1=1)
+c     character*3 ich
+
+      if (nrec_send.eq.0) return
+      call timer_enter(timer_recreccomm)
+      if (use_pmecore) then
+        commloc  = comm_rec
+      else
+        commloc  = COMM_TINKER
+      end if
+      decomp1d = .false.
+
+      if (rule.eq.r_comm) then
+         if (decomp1d) then
+            MPI_TYPE = MPI_TPREC
+            MSG_sz   = 2*n1mpimax*n2mpimax*nfloor
+            MSG_szr  = MSG_sz
+         else
+            MPI_TYPE = MPI_TPREC
+            MSG_sz   = 2*n1mpimax*n2mpimax*n3mpimax
+            MSG_szr  = MSG_sz
+         end if
+
+c        if (nrec_send.ge.1) then
+c        do i = 1,n3mpimax
+c           if (i.gt.3.and.i.le.n3mpimax-3) cycle
+c           write(ich,'(I3)') i
+c           call minmaxone(qgrid(1,1,1,i,2)
+c    &          ,2*n1mpimax*n2mpimax,'qg'//ich)
+c        end do
+c        end if
+
+         !MPI : Begin reception
+!$acc host_data use_device(qgridmpi)
+         do i = 1, nrec_recep
+            call MPI_IRECV(qgridmpi(1,1,1,1,i),MSG_sz,MPI_TYPE
+     &           ,prec_recep(i),tag0,commloc,reqr(i),ierr)
+            if (decomp1d)
+     &      call MPI_IRECV(qgridmpi(stride,1,1,1,i),MSG_sz,MPI_TYPE
+     &           ,prec_recep(i),tag1,commloc,recr(i),ierr)
+         end do
+!$acc end host_data
+
+!$acc wait(rec_queue)
+!$acc host_data use_device(qgrid)
+         !MPI : begin sending
+         do i = 1, nrec_send
+           !proc = prec_send(i)
+           call MPI_ISEND(qgrid(1,1,1,1,i+1),MSG_sz,MPI_TYPE
+     &          ,prec_send(i),tag0,commloc,reqs(i),ierr)
+           if (decomp1d)
+     &     call MPI_ISEND(qgrid(stride,1,1,1,i+1),MSG_sz,MPI_TYPE
+     &          ,prec_send(i),tag1,commloc,recs(i),ierr)
+         end do
+!$acc end host_data
+
+      else if (rule.eq.r_wait) then
+         MSG_sz   = 2*n1mpimax*n2mpimax*n3mpimax
+         call MPI_Waitall(nrec_recep,reqr,MPI_STATUSES_IGNORE,ierr)
+         if (decomp1d)
+     &   call MPI_Waitall(nrec_recep,recr,MPI_STATUSES_IGNORE,ierr)
+         !Reduction
+         do i = 1, nrec_recep
+            call aaddgpuAsync(MSG_sz
+     &               ,qgrid(1,1,1,1,1),qgridmpi(1,1,1,1,i)
+     &               ,qgrid(1,1,1,1,1))
+         end do
+         call MPI_Waitall(nrec_send ,reqs,MPI_STATUSES_IGNORE,ierr)
+         if (decomp1d)
+     &   call MPI_Waitall(nrec_send ,recs,MPI_STATUSES_IGNORE,ierr)
+      else
+ 12      format("commGridFront !! Unknown configuration",I4)
+         if (rank.Eq.0) then
+            write(0,12) rule
+            call fatal
+         end if
+      end if
+      call timer_exit(timer_recreccomm,quiet_timers)
+      end subroutine
+c
+c     Subroutine commGridBack: Exchange FFtgrid between reciprocal process
+c                 after call to fft_frontmpi
+c
+      subroutine commGridBack( qgrid,rule )
+      use domdec  ,only: nrec_recep,nrec_send,rank,prec_send,prec_recep
+     &            ,COMM_TINKER,comm_rec
+      use mpi
+      use pme     ,only: GridDecomp1d
+      use pme1
+      use potent  ,only: use_pmecore
+      use fft
+      use utilcomm,only: reqs=>reqs_poleglob,reqr=>reqr_poleglob
+     &            ,      recs=>reqs_dirdir  ,recr=>reqr_dirdir
+      use utilgpu ,only: rec_queue
+      use timestat,only: timer_enter,timer_exit,timer_recreccomm
+     &            ,quiet_timers
+      implicit none
+      integer,intent(in)::rule
+      real(t_p),qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
+
+      integer i,j,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_szs,MSG_szr
+      integer off,off1
+      logical decomp1d
+      parameter(tag0=0,tag1=1)
+
+      if (nrec_send.eq.0) return
+      call timer_enter(timer_recreccomm)
+      if (use_pmecore) then
+        commloc  = comm_rec
+      else
+        commloc  = COMM_TINKER
+      end if
+      decomp1d = .false.
+
+      if (rule.eq.r_comm) then
+         if (decomp1d) then
+            MPI_TYPE = MPI_TPREC
+            MSG_szs  = 2*n1mpimax*n2mpimax*(nfloor)
+            MSG_szr  = 2*n1mpimax*n2mpimax*(nfloor)
+         else
+            MPI_TYPE = MPI_TPREC
+            MSG_szs  = 2*n1mpimax*n2mpimax*n3mpimax
+            MSG_szr  = MSG_szs
+         end if
+
+         !MPI : Begin reception
+!$acc    host_data use_device(qgrid)
+         do i = 1, nrec_send
+            call MPI_IRECV(qgrid(1,1,1,1,i+1),MSG_szs,MPI_TYPE,
+     $                     prec_send(i),tag0,commloc,reqr(i),ierr)
+            if (decomp1d)
+     $      call MPI_IRECV(qgrid(stride,1,1,1,i+1),MSG_szs,MPI_TYPE,
+     $                     prec_send(i),tag1,commloc,recr(i),ierr)
+         end do
+!$acc    end host_data
+
+!$acc wait(rec_queue)
+!$acc host_data use_device(qgrid)
+         do i = 1, nrec_recep
+            call MPI_ISEND(qgrid(1,1,1,1,1),MSG_szs,MPI_TYPE,
+     $                     prec_recep(i),tag0,commloc,reqs(i),ierr)
+            if (decomp1d)
+     $      call MPI_ISEND(qgrid(stride,1,1,1,1),MSG_szs,MPI_TYPE,
+     $                     prec_recep(i),tag1,commloc,recs(i),ierr)
+         end do
+!$acc end host_data
+      else if (rule.eq.r_wait) then
+         call MPI_Waitall(nrec_recep,reqr,MPI_STATUSES_IGNORE,ierr)
+         if (decomp1d) then
+         call MPI_Waitall(nrec_recep,recr,MPI_STATUSES_IGNORE,ierr)
+         call MPI_Waitall(nrec_send ,reqs,MPI_STATUSES_IGNORE,ierr)
+         end if
+         if (.false..and.decomp1d) then
+            off = 2*n1mpimax*n2mpimax*nfloor
+            off1= stride
+            ! Adjust data in gridin in case of strided/non-stride comms
+!$acc parallel loop collapse(2) async(rec_queue) present(qgrid)
+            do i = 1,nrec_recep
+               do j = 1,ishft(MSG_szr,-1)
+                  qgrid(off1+j,1,1,1,i+1) = qgrid(off+j,1,1,1,i+1)
+               end do
+            end do
+         end if
+         call MPI_Waitall(nrec_send ,recs,MPI_STATUSES_IGNORE,ierr)
+      else
+ 12      format("commGridBack !! Unknown configuration",I4)
+         if (rank.Eq.0) then
+            write(0,12) rule
+            call fatal
+         end if
+      end if
+      call timer_exit(timer_recreccomm,quiet_timers)
+      end subroutine

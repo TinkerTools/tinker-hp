@@ -86,9 +86,6 @@ c
       use usage
       use utilgpu
       use utilvec
-      use vec
-      use vec_elec
-      use vec_charge
 
       implicit none
       integer i,k,ii,kk,ksave
@@ -106,12 +103,6 @@ c
       real(t_p) term,term1,term2
       real(t_p) one,half
       real(t_p) time0,time1
-!DIR$ ATTRIBUTES ALIGN:64::iichgvec,iglobvec
-      integer iichgvec(nionlocloop),iglobvec(nionlocloop)
-!DIR$ ATTRIBUTES ALIGN:64::ivec
-      integer ivec(nionlocloop)
-!DIR$ ATTRIBUTES ALIGN:64::pchgvec
-      real(t_p) pchgvec(nionlocloop)
       character*10 mode
       parameter(half=0.5_ti_p)
       parameter(one=1.0_ti_p)

@@ -154,17 +154,17 @@ CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
 #  __________________
 ifeq ($(opt), release)
    COMMON       = -Mdalign -fast -g
-   CCOMMON      = -std=c++14 -O3 -g
+   CCOMMON      = -std=c++11 -O3 -g
 else ifeq ($(opt), debug+)
    COMMON       = -traceback -O0 -g -C
-   CCOMMON      = -std=c++14 -O0 -g
+   CCOMMON      = -std=c++11 -O0 -g
    ifeq ($(arch),$(filter $(arch),device gpu))
      OPTIONS += -DTINKER_DEBUG
    CUOPTIONS += -DTINKER_DEBUG
    endif
 else
    COMMON       = -O0 -g#-rc=${HOME}/localrc
-   CCOMMON      = -std=c++14 -O0 -g
+   CCOMMON      = -std=c++11 -O0 -g
 endif
 
 #   Compile flags for target architecture, extracting, inlining, modules, host and device
@@ -302,8 +302,6 @@ MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
    MOD_urey.o MOD_urypot.o MOD_usage.o MOD_vec.o MOD_vdwpot.o MOD_virial.o\
    MOD_vdw.o MOD_utils.o MOD_utilcomm.o MOD_utilvec.o MOD_utilgpu.o\
 	MOD_subDeriv.o MOD_subMemory.o MOD_subInform.o MOD_subAtoms.o\
-   MOD_vec_elec.o MOD_vec_vdw.o\
-   MOD_vec_list.o MOD_vec_mpole.o MOD_vec_polar.o MOD_vec_charge.o\
    MOD_precompute_polegpu.o MOD_USampling.o
 # Cuda Fortran module files
 MODCU = MOD_utilcu.o echargecu.o eljcu.o ehal1cu.o nblistcu.o tmatxb_pmecu.o epolar1cu.o empole1cu.o pmestuffcu.o
@@ -319,21 +317,21 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    eamd1.o eangang.o eangang1.o eangang3.o\
    eangle.o eangle1.o eangle1gpu.o eangle3.o eangle3gpu.o\
    ebond.o ebond1.o ebond1gpu.o ebond3.o ebond3gpu.o\
-   echarge.o echarge1.o echarge1vec.o echarge1gpu.o echarge3.o echarge3vec.o echarge3gpu.o\
-   efld0_direct.o efld0_directvec.o efld0_directgpu.o\
+   echarge.o echarge1.o  echarge1gpu.o echarge3.o  echarge3gpu.o\
+   efld0_direct.o  efld0_directgpu.o\
    egeom.o egeom1.o egeom1gpu.o egeom3.o egeom3gpu.o\
-   ehal.o ehal1.o ehal1vec.o ehal1gpu.o ehal3.o ehal3vec.o ehal3gpu.o\
+   ehal.o ehal1.o  ehal1gpu.o ehal3.o  ehal3gpu.o\
    eimprop.o eimprop1.o eimprop1gpu.o eimprop3.o\
    eimptor.o eimptor1.o eimptor1gpu.o eimptor3.o\
-   elj.o elj1.o elj1vec.o elj1gpu.o elj3.o elj3vec.o elj3gpu.o\
-   empole.o empole0.o empole1.o empole1vec.o empole1gpu.o\
-   empole3.o  empole3vec.o empole3gpu.o\
+   elj.o elj1.o  elj1gpu.o elj3.o  elj3gpu.o\
+   empole.o empole0.o empole1.o  empole1gpu.o\
+   empole3.o   empole3gpu.o\
    energy.o eopbend.o eopbend1.o eopbend1gpu.o eopbend3.o eopbend3gpu.o\
    eopdist.o eopdist1.o eopdist3.o\
    epitors.o epitors1.o epitors1gpu.o epitors3.o\
-   epolar.o epolarvec.o epolar1.o epolar1vec.o epolar1gpu.o\
-   epolar3.o epolar3vec.o epolar3gpu.o\
-   eprecip1vec.o esmd1.o\
+   epolar.o  epolar1.o  epolar1gpu.o\
+   epolar3.o  epolar3gpu.o\
+    esmd1.o\
    estrbnd.o estrbnd1.o estrbnd1gpu.o estrbnd3.o\
    estrtor.o estrtor1.o estrtor1gpu.o estrtor3.o\
    etors.o etors1.o etors1gpu.o etors3.o\
@@ -364,8 +362,8 @@ else ifeq ($(findstring NVSHMEM, $(OPTIONS)),NVSHMEM)
    OBJCU += cu_nvshmem_wrap.o
 endif
 
-OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o newinduce_pmegpu.o\
-   newinduce_pme2.o newinduce_pme2vec.o newinduce_pme2gpu.o\
+OBJSNZ = nblist.o  nblistgpu.o newinduce_pme.o  newinduce_pmegpu.o\
+   newinduce_pme2.o  newinduce_pme2gpu.o\
    newinduce_shortreal.o newinduce_shortrealgpu.o\
    nextarg.o nexttext.o nspline.o number.o\
    numeral.o openend.o optsave.o plumed.o pmestuff.o pmestuffgpu.o\
@@ -374,8 +372,8 @@ OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o new
    readprm.o readxyz.o respa.o respa1.o\
    rings.o rotpole.o rotpolegpu.o search.o sort.o\
    rattle.o shakeup.o\
-   suffix.o switch.o temper.o testgrad.o tmatxb_pme.o tmatxb_pmevec.o tmatxb_pmegpu.o\
-   torphase.o torque.o torquegpu.o torquevec2.o torsions.o trimtext.o\
+   suffix.o switch.o temper.o testgrad.o tmatxb_pme.o  tmatxb_pmegpu.o\
+   torphase.o torque.o torquegpu.o  torsions.o trimtext.o\
    unitcell.o verlet.o version.o
 
 # Objects that need to be reprocessed when using multi-platform compilation
@@ -577,19 +575,31 @@ epolar1gpu.o: epolar1cu.o
 epolar3gpu.o: epolar1cu.o
 kvdw.o: ehal1cu.o
 lattice.o: pmestuffcu.o MOD_utilcu.o
-lattice.o: lattice.f
-	$(RunF77) $(GPUFLAGS) -c $<
 nblistgpu.o: nblistcu.o
 efld0_directgpu.o: tmatxb_pmecu.o
-tmatxb_pmegpu.o: tmatxb_pmecu.o
+tmatxb_pmegpu.o: MOD_utilcomm.o tmatxb_pmecu.o
 pmestuffgpu.o: pmestuffcu.o
 endif
 MOD_subAtoms.o: MOD_atoms.o
 MOD_subMemory.o: MOD_memory.o
 MOD_subDeriv.o: MOD_deriv.o
 MOD_subInform.o: MOD_inform.o
-kamd.o:MOD_mamd.o
-eamd1.o:MOD_mamd.o
+eamd1.o: MOD_mamd.o
+echarge1gpu.o: MOD_pme.o
+echarge3gpu.o: MOD_pme.o
+empole1gpu.o: MOD_pme.o
+empole3gpu.o: MOD_pme.o
+epolar1gpu.o: MOD_pme.o
+kamd.o: MOD_mamd.o
+kewald.o: MOD_pme.o
+lattice.o: MOD_pme.o
+mpistuff.o: MOD_pme.o
+mpistuff.o: MOD_utilcomm.o
+newinduce_pmegpu.o: MOD_pme.o
+newinduce_pme2gpu.o: MOD_pme.o
+newinduce_shortrealgpu.o: MOD_utilcomm.o
+pmestuff.o: MOD_pme.o
+pmestuffgpu.o: MOD_pme.o
 
 #
 #  Generics rules
@@ -614,6 +624,8 @@ bitors.o: bitors.f
 cluster.o: cluster.f
 	$(RunF77) $(GPUFLAGS) -c $<
 domdecstuff.o: domdecstuff.f
+	$(RunF77) $(GPUFLAGS) -c $<
+lattice.o: lattice.f
 	$(RunF77) $(GPUFLAGS) -c $<
 torsions.o: torsions.f
 	$(RunF77) $(GPUFLAGS) -c $<

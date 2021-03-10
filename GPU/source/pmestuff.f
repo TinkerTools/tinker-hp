@@ -1537,6 +1537,8 @@ c
      &              ,quiet_timers
       use tinheader ,only:ti_p,re_p
       use tinMemory
+      use utils     ,only: set_to_zero1
+      use utilgpu   ,only: rec_queue
       implicit none
       real(t_p) disttemp
       real(t_p) jtemp(4),ktemp(4),jtempbis(4),ktempbis(4)
@@ -1951,14 +1953,17 @@ c
           call c_f_pointer(grid_ptr,qgrid2out_p,(/gridout_size/))
 c
 !$acc enter data attach(qgridin_p,qgrid2in_p,
-!$acc&      qgridout_p,qgrid2out_p) async
+!$acc&      qgridout_p,qgrid2out_p)
+!!$acc enter data create(qgridin_2d,qgrid2in_2d,
+!!$acc&    qgridout_2d,qgrid2out_2d)
+
 #ifdef _OPENACC
           ! Attach CUDA grid device pointers
           call attach_pmecu_pointer(0)
 #endif
 
-          ! Allocate mpi grid
           if (nrec_recep.gt.0) then
+             ! Allocate mpi grid
              if (allocated(qgridmpi)) then
 !$acc exit data delete(qgridmpi)
                 deallocate(qgridmpi)
@@ -1973,9 +1978,12 @@ c
 #ifdef _OPENACC
             sd_prmem =sd_prmem + size(qgridmpi)*szoTp
 #endif
+            call set_to_zero1(qgridmpi,size(qgridmpi),rec_queue)
+c
+             if (GridDecomp1d) then
+                call set_MPI_GRID1D_type(bsorder/2)
+             end if
           end if
-!!$acc enter data create(qgridin_2d,qgrid2in_2d,
-!!$acc&    qgridout_2d,qgrid2out_2d) async
         end if
 c
         domlenrec = 0
@@ -2132,9 +2140,56 @@ c
       deallocate (req)
       end
 c
+c     Set MPI type for fftGrid
+c
+      subroutine set_MPI_GRID1D_type(nfloor)
+      use domdec,only: rank
+      use fft
+      use mpi
+      use pme1 , pm_nfloor=>nfloor
+      implicit none
+      integer,intent(in)::nfloor
+      integer i,ierr
+      integer ncount,block,gridin_size
+
+      if (Is_MPI_GRID1D) then
+         call MPI_Type_free(MPI_GRID1D,ierr)
+         Is_MPI_GRID1D=.false.
+      end if
+      pm_nfloor   = nfloor
+      MPI_GRID1D  = 0
+      gridin_size = 2*n1mpimax*n2mpimax*n3mpimax
+
+      ! Check limits of 1d subdivision
+      if (2*nfloor.ge.n3mpimax) then
+         ncount = 1
+         block  = 2*n1mpimax*n2mpimax*n3mpimax 
+         stride = 1
+         call MPI_type_contiguous(block,MPI_TPREC,MPI_GRID1D,ierr)
+      else
+         ncount = 2
+         block  = 2*n1mpimax*n2mpimax*nfloor
+         stride = 2*n1mpimax*n2mpimax*(n3mpimax-nfloor)
+         ! Set MPI type for 1D fftGrid
+         call MPI_Type_vector(ncount,block,stride,MPI_TPREC
+     &                       ,MPI_GRID1D,ierr)
+         if (ierr.ne.MPI_SUCCESS)
+     &      write(0,*) 'MPI_Type_vector Issue !!!',ierr,rank
+      end if
+
+      call MPI_Type_commit(MPI_GRID1D,ierr)
+      Is_MPI_GRID1D=.true.
+      if (ierr.ne.MPI_SUCCESS)
+     &   write(0,*) 'MPI_Type_commit Issue !!!',ierr,rank
+
+c 43  format( "I rank",I2," nc(",I2,") bl(",I7,") stri("
+c    &      ,I8,") GrSize (",I9,") MPI_TYPE:",I3)
+c     write(*,43) rank,ncount,block,stride,gridin_size
+c    &           ,MPI_GRID1D
+      end subroutine
+c
 c     "grid_pchg_site" places the i-th fractional atomic charge onto
 c     the particle mesh Ewald grid
-c
 c
       subroutine grid_pchg_site(isite,impi,q)
 !$acc routine

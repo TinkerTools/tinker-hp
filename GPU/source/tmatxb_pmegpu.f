@@ -41,6 +41,7 @@ c===============================================================================
         use timestat, only : timer_tmatxb_pmegpu, timer_enter,timer_exit
         use tmatxb_inl_subroutines , only : ndec, icall
         use utils   , only : set_to_zero1
+        use utilcomm, only : skpPcomm
         use potent  , only : use_polarshortreal
         use precompute_pole
         implicit none
@@ -49,6 +50,7 @@ c===============================================================================
         real(t_p) , intent(in) :: mu(:,:,:)
         real(t_p) , intent(out):: efi(:,:,:)
         integer   i,iipole,irhs,j
+        integer npoleloc_e
         real(t_p) ipolar
         real(t_p) tmp
 
@@ -77,11 +79,13 @@ c===============================================================================
 
         if (icall.eq.ndec) then
            if (dodiag) then
+           npoleloc_e = merge(npolebloc,npoleloc,
+     &             (use_polarshortreal.and.skpPcomm))
         ! if dodiag is true, also compute the "self-induced" field,
         ! i.e., the diagonal portion of the matrix/vector product.
 !$acc  parallel loop collapse(3) async(def_queue)
 !$acc&          present(polarity,poleglob,mu,efi)
-           do i = 1, npoleloc
+           do i = 1, npoleloc_e
               do irhs = 1, nrhs
                  do j = 1, 3
                     ipolar = polarity(poleglob(i))

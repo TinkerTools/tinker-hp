@@ -2415,7 +2415,7 @@ c
         rankloc  = rank_bis
       else
         nprocloc = nproc
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
         rankloc  = rank
       end if
 c
@@ -2500,32 +2500,10 @@ c     the 3-D FFT forward transformation
 c
       call grid_mpole_site_p(fmp)
       call timer_exit( timer_grid1,quiet_timers )
-c
-c     MPI : Begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_recep
-         tag = nprocloc*rankloc + prec_recep(i) + 1
-!$acc host_data use_device(qgridmpi)
-         call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*
-     $        n3mpimax,MPI_TPREC,prec_recep(i),tag,
-     $        commloc,reqrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_send
-!$acc wait(rec_queue)
-        proc = prec_send(i)
-        tag = nprocloc*prec_send(i) + rankloc + 1
-!$acc host_data use_device(qgridin_2d)
-        call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
-     $   2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,proc,tag,
-     $   commloc,reqsend(i),ierr)
-!$acc end host_data
-      end do
-c
+
+      !Exchange Grid Between reciprocal process
+      call commGridFront( qgridin_2d,r_comm )
+
 #ifdef _OPENACC
       ! Recover MPI communication with real space computations
       if (dir_queue.ne.rec_queue) then
@@ -2537,21 +2515,9 @@ c
          end if
       end if
 #endif
-      do i = 1, nrec_recep
-         call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nrec_send
-         call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-c
-c     do the reduction 'by hand'
-c
-      do i = 1, nrec_recep
-         call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
-     $        qgridin_2d(1,1,1,1,1),qgridmpi(1,1,1,1,i),
-     $        qgridin_2d(1,1,1,1,1))
-      end do
-      call timer_exit( timer_recreccomm,quiet_timers )
+
+      ! Wait for Grid communication
+      call commGridFront( qgridin_2d,r_wait )
 
 c     call MPI_ALLREDUCE(MPI_in_place,time0,1,MPI_TPREC,MPI_MAX,
 c    &     MPI_COMM_WORLD,i)
@@ -2699,39 +2665,12 @@ c
       call   fft2d_backmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $                     n3mpimax)
 #endif
-c
-c     MPI : Begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_send
-         proc = prec_send(i)
-         tag  = nprocloc*rankloc + prec_send(i) + 1
-!$acc host_data use_device(qgridin_2d)
-         call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),
-     $                  2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     $                  prec_send(i),tag,commloc,req2rec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_recep
-!$acc wait(rec_queue)
-         tag = nprocloc*prec_recep(i) + rankloc + 1
-!$acc host_data use_device(qgridin_2d)
-         call MPI_ISEND(qgridin_2d,
-     $                  2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     $                  prec_recep(i),tag,commloc,req2send(i),ierr)
-!$acc end host_data
-      end do
-c
-      do i = 1, nrec_send
-         call MPI_WAIT(req2rec(i),status,ierr)
-      end do
-      do i = 1, nrec_recep
-         call MPI_WAIT(req2send(i),status,ierr)
-      end do
-      call timer_exit( timer_recreccomm,quiet_timers )
+
+      !Exchange Grid Between reciprocal process
+      call commGridBack( qgridin_2d,r_comm )
+
+      ! Wait for Grid communication
+      call commGridBack( qgridin_2d,r_wait )
 
 #ifdef _OPENACC
       ! sync streams
@@ -2752,7 +2691,7 @@ c
 c     increment the permanent multipole energy and gradient
 c
       call timer_enter( timer_fmanage )
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(rec_queue) reduction(+:e)
       do i = 1, npolerecloc
          f1 = zero
          f2 = zero
@@ -2782,7 +2721,7 @@ c     distribute torques into the permanent multipole gradient
 c
 !$acc parallel loop async(rec_queue)
       do i = 1, npolerecloc
-         iipole = polerecglob(i)
+         !iipole = polerecglob(i)
          trqrec(1,i) = cmp(4,i)*cphirec(3,i) - cmp(3,i)*cphirec(4,i)
      &               + two*(cmp(7,i)-cmp(6,i))*cphirec(10,i)
      &               + cmp(9,i)*cphirec(8,i) + cmp(10,i)*cphirec(6,i)
@@ -2795,9 +2734,14 @@ c
      &               + two*(cmp(6,i)-cmp(5,i))*cphirec(8,i)
      &               + cmp(8,i)*cphirec(5,i) + cmp(10,i)*cphirec(9,i)
      &               - cmp(8,i)*cphirec(6,i) - cmp(9,i)*cphirec(10,i)
+      end do
+
+      if (use_virial) then   ! COMPUTE virial ?
 c
 c     permanent multipole contribution to the internal virial
 c
+!$acc parallel loop async(rec_queue)
+      do i = 1, npolerecloc
          vxx =vxx - cmp(2,i)*cphirec(2,i) - two*cmp(5,i)*cphirec(5,i)
      &            - cmp(8,i)*cphirec(8,i) - cmp(9,i)*cphirec(9,i)
          vxy =vxy - half*(cmp(3,i)*cphirec(2,i)+cmp(2,i)*cphirec(3,i))
@@ -2817,23 +2761,9 @@ c
          vzz =vzz - cmp(4,i)*cphirec(4,i) - two*cmp(7,i)*cphirec(7,i)
      &            - cmp(9,i)*cphirec(9,i) - cmp(10,i)*cphirec(10,i)
       end do
-
-      call torquegpu(npolerecloc,polerecglob,locrec1,
-     &                trqrec,demrec,rec_queue)
-
-      call timer_exit(timer_fmanage,quiet_timers )
 c
 c     increment the internal virial tensor components
 c
-c
-c     Proceed to atomic update to avoid collision with direct queue
-c     even if it's highly unlikely
-c
-c#ifdef _OPENACC
-c      if (dir_queue.ne.rec_queue) then
-c         call stream_wait_async(rec_stream,dir_stream,rec_event)
-c      end if
-c#endif
 !$acc serial async(rec_queue)
       emrec    = emrec + half*e
       vir(1,1) = vir(1,1) + vxx
@@ -2846,6 +2776,18 @@ c#endif
       vir(2,3) = vir(2,3) + vyz
       vir(3,3) = vir(3,3) + vzz
 !$acc end serial
+      
+      else
+!$acc serial async(rec_queue)
+         emrec    = emrec + half*e
+!$acc end serial
+
+      end if      ! COMPUTE virial ?
+
+      call torquegpu(npolerecloc,polerecglob,locrec1,
+     &                trqrec,demrec,rec_queue)
+
+      call timer_exit(timer_fmanage,quiet_timers )
 
 !$acc end data
 c

@@ -663,7 +663,7 @@ c
   55        format ("#GaMD Restart file for Tinker-HP DIHEDRAL CASE: ",/
      &      ,f12.3, 10x, "#tamd", /, f12.3, 10x, "Vmin", /, f12.3, 10x, 
      &      "Vmax", /, f12.3, 10x, "Vavg", /, f12.3, 10x, "sigmaV", /,
-     &      e14.5, 10x, "M2", /, f14.8, 10x, "E", /, f8.6, 10x, "k0", /,
+     &      e14.5, 10x, "M2", /, f20.3, 10x, "E", /, f8.6, 10x, "k0", /,
      &      f8.6, 10x, "k", /, i14, 10x, "amdtpass", /, f14.2, 10x,
      &      "cptgamdD")
          end if
@@ -712,21 +712,22 @@ c
      &      CASE: ",/
      &      ,f12.3, 10x, "#tamd", /, f12.3, 10x, "Vmin", /, f12.3, 10x,
      &      "Vmax", /, f12.3, 10x, "Vavg", /, f12.3, 10x, "sigmaV", /,
-     &      e14.5, 10x, "M2", /, f14.8, 10x, "E", /, f8.6, 10x, "k0", /,
+     &      f20.5, 10x, "M2", /, f20.3, 10x, "E", /, f8.6, 10x, "k0", /,
      &      f8.6, 10x, "k", /, i14, 10x, "amdtpass", /, f14.2, 10x,
      &      "cptgamdP")
             else
             open(igamdrestart,file='GaMD_restart.dat',position='append',
      &      action="write",status='old')
             write (igamdrestart,57) tamd, VminP, VmaxP, VavgP,
-     &      sigmaVP, M2P, gamdEP, gamdk0P, gamdkP, amdtpass
+     &      sigmaVP, M2P, gamdEP, gamdk0P, gamdkP, amdtpass, cptgamdP
             close(igamdrestart)
   57        format ("#GaMD Restart file for Tinker-HP POTENTIAL ENERGY 
      &      CASE: ",/
      &      ,f12.3, 10x, "#tamd", /, f12.3, 10x, "Vmin", /, f12.3, 10x,
      &      "Vmax", /, f12.3, 10x, "Vavg", /, f12.3, 10x, "sigmaV", /,
-     &      e14.5, 10x, "M2", /, f14.8, 10x, "E", /, f8.6, 10x, "k0", /,
-     &      f8.6, 10x, "k", /, i14, 10x, "amdtpass")
+     &      f20.5, 10x, "M2", /, f20.3, 10x, "E", /, f8.6, 10x, "k0", /,
+     &      f8.6, 10x, "k", /, i14, 10x, "amdtpass", /, f14.2, 10x,
+     &      "cptgamdP")
             end if
          end if
          c = modulo(amdtpass,amdoutputFreq)
@@ -781,7 +782,7 @@ c
      &      CASE: ",/
      &      ,f12.3, 10x, "#tamd", /, f12.3, 10x, "#Vmin", /, f12.3, 10x,
      &      "#Vmax", /, f12.3, 10x,"#Vavg", /, f12.3, 10x, "#sigmaV", /,
-     &      e14.5, 10x, "#M2",/, f14.8, 10x,"#E", /,f8.6, 10x, "#k0", /,
+     &      f20.5, 10x, "#M2",/, f20.3, 10x,"#E", /,f8.6, 10x, "#k0", /,
      &      f8.6, 10x, "#k", /, i14, 10x, "#amdtpass", /, f14.2, 10x,
      &      "cptgamdW1")
          end if

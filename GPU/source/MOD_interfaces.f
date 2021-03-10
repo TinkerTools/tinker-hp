@@ -242,12 +242,14 @@ c
 !
 !  #############################################################################
       interface
+#if 0
         subroutine tmatxb_pmevec(nrhs,dodiag,mu,ef)
            integer  ,intent(in) :: nrhs
            logical  ,intent(in) :: dodiag
            real(t_p)            :: mu(3,2,*)
            real(t_p)            :: ef(3,2,*)
         end subroutine
+#endif
         subroutine tmatxb_pmegpu(nrhs,dodiag,mu,ef)
            integer  ,intent(in) :: nrhs
            logical  ,intent(in) :: dodiag

@@ -424,7 +424,6 @@ c
       use virial
       use mpi
       use tinMemory
-      use vec_elec
       use utils
       use utilgpu
       use timestat
@@ -1867,31 +1866,10 @@ c
 
       call grid_uind_site_p(fuind,fuinp,qgrid2in_2d)
       call timer_exit( timer_grid1,quiet_timers )
-c
-c     MPI : begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_recep
-         tag = nprocloc*rankloc + prec_recep(i) + 1
-!$acc host_data use_device(qgridmpi)
-         call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*n3mpimax
-     &                 ,MPI_TPREC,prec_recep(i),tag,commloc,
-     &                  reqrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_send
-!$acc wait(rec_queue)
-         tag = nprocloc*prec_send(i) + rankloc + 1
-!$acc host_data use_device(qgrid2in_2d)
-         call MPI_ISEND(qgrid2in_2d(1,1,1,1,i+1),
-     &                  2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &                  prec_send(i),tag,commloc,reqsend(i),ierr)
-!$acc end host_data
-      end do
-c
+
+      !Exchange Grid Between reciprocal process
+      call commGridFront( qgrid2in_2d,r_comm )
+
 #ifdef _OPENACC
       ! Recover MPI communication with real space computations
       if (dir_queue.ne.rec_queue) then
@@ -1900,21 +1878,8 @@ c
       end if
 #endif
 
-      do i = 1, nrec_recep
-         call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nrec_send
-         call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-c
-c     do the reduction 'by hand'
-c
-      do i = 1, nrec_recep
-         call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
-     &        qgrid2in_2d(1,1,1,1,1),qgridmpi(1,1,1,1,i),
-     &        qgrid2in_2d(1,1,1,1,1))
-      end do
-      call timer_exit( timer_recreccomm,quiet_timers )
+      !Exchange Grid Between reciprocal process
+      call commGridFront( qgrid2in_2d,r_wait )
 c
 #ifdef _OPENACC
       call cufft2d_frontmpi(qgrid2in_2d,qgrid2out_2d,n1mpimax,n2mpimax,
@@ -1972,39 +1937,12 @@ c
       call   fft2d_backmpi(qgrid2in_2d,qgrid2out_2d,n1mpimax,n2mpimax,
      &                     n3mpimax)
 #endif
-c
-c     MPI : Begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_send
-         tag = nprocloc*rankloc + prec_send(i) + 1
-!$acc host_data use_device(qgrid2in_2d)
-         call MPI_IRECV(qgrid2in_2d(1,1,1,1,i+1),
-     &                  2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &                  prec_recep(i),tag,commloc,req2rec(i),ierr)
 
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_recep
-!$acc wait(rec_queue)
-         tag = nprocloc*prec_recep(i) + rankloc + 1
-!$acc host_data use_device(qgrid2in_2d)
-         call MPI_ISEND(qgrid2in_2d(1,1,1,1,1),
-     &                  2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &                  prec_send(i),tag,commloc,req2send(i),ierr)
-!$acc end host_data
-      end do
-c
-      do i = 1, nrec_send
-         call MPI_WAIT(req2rec(i),status,ierr)
-      end do
-      do i = 1, nrec_recep
-         call MPI_WAIT(req2send(i),status,ierr)
-      end do
-      call timer_exit( timer_recreccomm,quiet_timers )
+      !Exchange Grid Between reciprocal process
+      call commGridBack( qgrid2in_2d,r_comm )
+
+      ! Wait for Grid communication
+      call commGridBack( qgrid2in_2d,r_wait )
 
 #ifdef _OPENACC
       ! sync streams
@@ -2207,46 +2145,11 @@ c
       call grid_mpole_site_p(fmp)
       call timer_exit( timer_grid1,quiet_timers )
 c
-c     MPI : Begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_recep
-         tag = nprocloc*rankloc + prec_recep(i) + 1
-!$acc host_data use_device(qgridmpi)
-         call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*
-     &                  n3mpimax,MPI_TPREC,prec_recep(i),tag,
-     &                  commloc,reqrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_send
-!$acc wait(rec_queue)
-         tag = nprocloc*prec_send(i) + rankloc + 1
-!$acc host_data use_device(qgridin_2d)
-         call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
-     &                  2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &                  prec_send(i),tag,commloc,reqsend(i),ierr)
+      !Exchange Grid Between reciprocal process
+      call commGridFront ( qgridin_2d,r_comm )
 
-!$acc end host_data
-      end do
-c
-      do i = 1, nrec_recep
-         call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nrec_send
-         call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-c
-c     do the reduction 'by hand'
-c
-      do i = 1, nrec_recep
-         call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
-     &        qgridin_2d(1,1,1,1,1),qgridmpi(1,1,1,1,i),
-     &        qgridin_2d(1,1,1,1,1))
-      end do
-      call timer_exit( timer_recreccomm,quiet_timers )
+      ! Wait for Grid communication
+      call commGridFront ( qgridin_2d,r_wait )
 c
 #ifdef _OPENACC
       call cufft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
@@ -2280,45 +2183,11 @@ c
       call grid_mpole_site_p(fmp)
       call timer_exit( timer_grid1,quiet_timers )
 c
-c     MPI : Begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_recep
-         tag = nprocloc*rankloc + prec_recep(i) + 1
-!$acc host_data use_device(qgridmpi)
-         call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*
-     &                  n3mpimax,MPI_TPREC,prec_recep(i),tag,
-     &                  commloc,reqrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_send
-!$acc wait(rec_queue)
-         tag = nprocloc*prec_send(i) + rankloc + 1
-!$acc host_data use_device(qgridin_2d)
-         call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
-     &                  2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &                  prec_send(i),tag,commloc,reqsend(i),ierr)
-!$acc end host_data
-      end do
-c
-      do i = 1, nrec_recep
-         call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nrec_send
-         call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-c
-c     do the reduction 'by hand'
-c
-      do i = 1, nrec_recep
-         call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
-     &        qgridin_2d(1,1,1,1,1),qgridmpi(1,1,1,1,i),
-     &        qgridin_2d(1,1,1,1,1))
-      end do
-      call timer_exit( timer_recreccomm,quiet_timers )
+      !Exchange Grid Between reciprocal process
+      call commGridFront ( qgridin_2d,r_comm )
+
+      ! Wait for Grid communication
+      call commGridFront ( qgridin_2d,r_wait )
 c
 #ifdef _OPENACC
       call cufft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,

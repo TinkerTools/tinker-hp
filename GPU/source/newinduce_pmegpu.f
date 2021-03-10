@@ -22,7 +22,7 @@ c
       use inform ,only: deb_Path
       use iounit
       use interfaces,only:inducepcg_pmegpu,tmatxb_p,
-     &    tmatxb_pmevec,efld0_directgpu_p,
+     &    efld0_directgpu_p,
      &    inducejac_pmegpu
       use math
       use mpole
@@ -1194,30 +1194,8 @@ c
       call grid_mpole_site_p(fmp)
       call timer_exit ( timer_grid1,quiet_timers )
 c
-c     MPI : Begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_recep
-         tag = nprocloc*rankloc + prec_recep(i) + 1
-!$acc host_data use_device(qgridmpi)
-         call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*
-     &        n3mpimax,MPI_TPREC,prec_recep(i),tag,
-     &        commloc,reqrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      time0 = mpi_wtime()
-      do i = 1, nrec_send
-         tag = nprocloc*prec_send(i) + rankloc + 1
-!$acc host_data use_device(qgridin_2d)
-!$acc wait(rec_queue)
-         call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
-     &        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &        prec_send(i),tag,commloc,reqsend(i),ierr)
-!$acc end host_data
-      end do
+      !Exchange Grid Between reciprocal process
+      call commGridFront( qgridin_2d,r_comm )
 c
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) then
@@ -1225,21 +1203,9 @@ c
          call efld0_direct_cp(nrhs,ef)
       end if
 #endif
-
-      do i = 1, nrec_recep
-         call MPI_WAIT(reqrec(i),status,ierr)
 c
-c     do the reduction 'by hand'
-c
-         call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
-     &   qgridin_2d(1,1,1,1,1),qgridmpi(1,1,1,1,i),
-     &   qgridin_2d(1,1,1,1,1))
-      end do
-c
-      do i = 1, nrec_send
-        call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-      call timer_exit ( timer_recreccomm,quiet_timers )
+      ! Wait for Grid communication
+      call commGridFront( qgridin_2d,r_wait )
 c
 c     Perform 3-D FFT forward transform
 c
@@ -1334,37 +1300,9 @@ c
      &     n3mpimax)
 #endif
 c
-c     MPI : Begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_send
-         tag = nprocloc*rankloc + prec_send(i) + 1
-!$acc host_data use_device(qgridin_2d)
-         call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),
-     &        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &        prec_send(i),tag,commloc,reqbcastrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_recep
-!$acc wait(rec_queue)
-         tag = nprocloc*prec_recep(i) + rankloc + 1
-!$acc host_data use_device(qgridin_2d)
-         call MPI_ISEND(qgridin_2d(1,1,1,1,1),
-     &        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &        prec_recep(i),tag,commloc,reqbcastsend(i),ierr)
-!$acc end host_data
-      end do
-c
-      do i = 1, nrec_send
-         call MPI_WAIT(reqbcastrec(i),status,ierr)
-      end do
-      do i = 1, nrec_recep
-         call MPI_WAIT(reqbcastsend(i),status,ierr)
-      end do
-      call timer_exit ( timer_recreccomm,quiet_timers )
+      call commGridBack( qgridin_2d,r_comm )
+      ! Wait
+      call commGridBack( qgridin_2d,r_wait )
 
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) call end_dir_stream_cover
@@ -1545,30 +1483,9 @@ c
       call grid_uind_site_p(fuind,fuinp,qgrid2in_2d)
       call timer_exit ( timer_grid1,quiet_timers )
 c
-c     MPI : Begin reception
+      !Exchange Grid Between reciprocal process
+      call commGridFront( qgrid2in_2d,r_comm )
 c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_recep
-         tag = nprocloc*rankloc + prec_recep(i) + 1
-!$acc host_data use_device(qgridmpi)
-         call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*
-     &        n3mpimax,MPI_TPREC,prec_recep(i),tag,
-     &        commloc,reqrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_send
-         tag = nprocloc*prec_send(i) + rankloc + 1
-!$acc host_data use_device(qgrid2in_2d)
-!$acc wait(rec_queue)
-         call MPI_ISEND(qgrid2in_2d(1,1,1,1,i+1),
-     &        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &        prec_send(i),tag,commloc,reqsend(i),ierr)
-!$acc end host_data
-      end do
-
       ! Call to matvec to cover MPI communication
       ! Only enabled in parallel
 #ifdef _OPENACC
@@ -1579,16 +1496,9 @@ c
       end if
 #endif
 c
-c     do the reduction 'by hand'
+      !Wait for commGrid and add accumulate result
+      call commGridFront( qgrid2in_2d,r_wait )
 c
-      do i = 1, nrec_recep
-         call MPI_WAIT(reqrec(i),status,ierr)
-         call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
-     &        qgrid2in_2d(1,1,1,1,1),qgridmpi(1,1,1,1,i),
-     &        qgrid2in_2d(1,1,1,1,1))
-         call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-      call timer_exit( timer_recreccomm,quiet_timers )
 #ifdef _OPENACC
       ! set an event to sync with rec_stream
       if (dir_queue.ne.rec_queue) call end_dir_stream_cover
@@ -1624,29 +1534,8 @@ c
      &     n3mpimax)
 #endif
 c
-c     MPI : Begin reception
-c
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_send
-         tag = nprocloc*rankloc + prec_send(i) + 1
-!$acc host_data use_device(qgrid2in_2d)
-         call MPI_IRECV(qgrid2in_2d(1,1,1,1,i+1),
-     &        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &        prec_send(i),tag,commloc,reqbcastrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_recep
-         tag = nprocloc*prec_recep(i) + rankloc + 1
-!$acc host_data use_device(qgrid2in_2d)
-!$acc wait(rec_queue)
-         call MPI_ISEND(qgrid2in_2d,
-     &        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     &        prec_recep(i),tag,commloc,reqbcastsend(i),ierr)
-!$acc end host_data
-      end do
+      ! Exchange Grid Between reciprocal process
+      call commGridBack( qgrid2in_2d,r_comm )
 c
       ! Compute second half of matvec
 #ifdef _OPENACC
@@ -1656,13 +1545,10 @@ c
          call resetMatvecStep
       end if
 #endif
-      do i = 1, nrec_send
-         call MPI_WAIT(reqbcastrec(i),status,ierr)
-      end do
-      do i = 1, nrec_recep
-         call MPI_WAIT(reqbcastsend(i),status,ierr)
-      end do
-      call timer_exit ( timer_recreccomm,quiet_timers )
+c
+      ! Wait for Backward Grid communication
+      call commGridBack( qgrid2in_2d,r_wait )
+
 #ifdef _OPENACC
       ! set an event to sync with rec_stream
       if (dir_queue.ne.rec_queue) call end_dir_stream_cover
