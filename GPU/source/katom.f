@@ -36,7 +36,7 @@ c
       integer i,j,k,next,ierr
       integer nh
       integer cls,atn,lig
-      real(t_p) wght
+      real(r_p) wght
       real(r_p) hmax,hmass
       real(r_p) sum,dmin,dmass
       logical header,heavy
@@ -65,7 +65,7 @@ c
             symb = ' '
             notice = ' '
             atn = 0
-            wght = 0.0_ti_p
+            wght = 0.0_re_p
             lig = 0
             call getnumb (record,k,next)
             call getnumb (record,cls,next)
@@ -136,9 +136,9 @@ c
             heavy = .true.
          end if
       end do
-      if (heavy) then
-         if (hostrank.ne.0) goto 11
-         hmax = 4.0d0
+      call MPI_BARRIER(hostcomm,ierr)
+      if (heavy.and.hostrank.eq.0) then
+         hmax = 4.0_re_p
          do i = 1, n
             nh = 0
             sum = mass(i)
@@ -149,7 +149,7 @@ c
                   sum = sum + mass(k)
                end if
             end do
-            hmass = min(hmax,sum/dble(nh+1))
+            hmass = min(hmax,sum/real(nh+1,r_p))
             do j = 1, n12(i)
                k = i12(j,i)
                if (atomic(k) .eq. 1) then
@@ -182,8 +182,8 @@ c
    50          continue
             end if
          end do
- 11      call MPI_BARRIER(hostcomm,ierr)
       end if
+      call MPI_BARRIER(hostcomm,ierr)
 c
 c     process keywords containing atom types for specific atoms
 c
@@ -198,7 +198,7 @@ c
             symb = ' '
             notice = ' '
             atn = 0
-            wght = 0.0_ti_p
+            wght = 0.0_re_p
             lig = 0
             call getnumb (record,k,next)
             call getnumb (record,cls,next)
@@ -252,8 +252,6 @@ c
   100       format (' Atom',12x,i5,10x,i5,10x,i5)
          end if
       end do
-      call mpi_barrier(hostcomm,ierr)
-      call update_device_katom
 c
 c     check the number of atoms attached to each atom
 c
@@ -275,6 +273,9 @@ c
   120       format (' Valence',7x,i5,'-',a3,8x,i5,10x,i5,5x,i5)
          end if
       end do
+      call MPI_BARRIER(hostcomm,ierr)
+      ! Update data on device
+      call update_device_katom
       return
       end
 
