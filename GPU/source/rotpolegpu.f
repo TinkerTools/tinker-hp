@@ -7,14 +7,17 @@ c
 #include "tinker_precision.h"
       subroutine rotpolegpu
       use atmlst
+      use domdec ,only: Bdecomp1d
       use mpole
       use potent ,only: use_pmecore
+      use pme    ,only: GridDecomp1d
       use utilgpu,only: dir_queue,rec_queue,def_queue
       implicit none
       integer i,iipole,iglob
       real(t_p) a(3,3)
       interface
-       subroutine rot_mat_site(nk,poleglobvec)
+       subroutine rot_mat_site(recBuild,nk,poleglobvec)
+         logical,intent(in)::recBuild
          integer,intent(in)::nk
          integer,intent(in)::poleglobvec(:)
        end subroutine
@@ -31,9 +34,12 @@ c
       ! lost at runtime
 
       def_queue=rec_queue
-      call rot_mat_site(npolebloc,poleglob)
-      if (npolebloc.ne.npole.or.use_pmecore)
-     &   call rot_mat_site(npolerecloc,polerecglob)
+      call rot_mat_site(.false.,npolelocnl,poleglobnl)
+      if (use_pmecore) then
+         call rot_mat_site(.false.,npolerecloc,polerecglob)
+      else if (.not.(Bdecomp1d.and.GridDecomp1d)) then
+         call rot_mat_site(.true.,npolerecloc,polerecglob)
+      end if
       def_queue=dir_queue
 
       end
@@ -44,12 +50,14 @@ c
 c     "rotsite" computes the atomic multipoles at a specified site
 c     in the global coordinate frame by applying a rotation matrix
 c
-      subroutine rot_mat_site(nk,poleglobvec)
+      subroutine rot_mat_site(recBuild,nk,poleglobvec)
       use atoms
+      use domdec ,only: repart,rank
       use mpole
       use random_mod
       use utilgpu
       implicit none
+      logical,intent(in):: recBuild
       integer,intent(in):: nk
       integer,intent(in):: poleglobvec(:)
       integer ii,iipole,iglob
@@ -100,7 +108,8 @@ c
       do ii = 1, nk
          iipole = poleglobvec(ii)
          iglob  = ipole(iipole)
-         axetyp = ipolaxe(iglob) 
+         axetyp = ipolaxe(iglob)
+         if (recBuild.and.repart(iglob).eq.rank) cycle
          xi     = x(iglob)
          yi     = y(iglob)
          zi     = z(iglob)
