@@ -100,9 +100,11 @@ c     zbegproc : z coordinate of the beginning of each domain
 c     xendproc : x coordinate of the ending of each domain
 c     yendproc : y coordinate of the ending of each domain
 c     zendproc : z coordinate of the ending of each domain
+c     nxdd,nydd,nzdd : number of divisions along the axes, for domain decomposition
 c
       module domdec
       implicit none
+      integer nxdd,nydd,nzdd
       integer nproctot,ranktot,COMM_TINKER
       integer nproc,rank,rank_bis,nthread,nrec,ndir,comm_rec,comm_dir
       integer hostrank,hostcomm
