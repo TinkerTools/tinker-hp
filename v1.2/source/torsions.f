@@ -546,29 +546,6 @@ c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,iitors,arrayshape2)
 c
-c     iiprop
-c
-      arrayshape2=(/4,ntors/)
-      if (hostrank == 0) then
-        windowsize = int(4*ntors,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
-      else
-        windowsize = 0_MPI_ADDRESS_KIND
-      end if
-      disp_unit = 1
-c
-c    allocation
-c
-      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
-     $  hostcomm, baseptr, winiiprop, ierr)
-      if (hostrank /= 0) then
-        CALL MPI_Win_shared_query(winiiprop, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-      end if
-c
-c    association with fortran pointer
-c
-      CALL C_F_POINTER(baseptr,iiprop,arrayshape2)
-c
 c     kpit
 c
       arrayshape=(/ntors/)

@@ -23,6 +23,7 @@ c
       use atmlst
       use atoms
       use bound
+      use domdec
       use energi
       use group
       use inform
@@ -205,10 +206,10 @@ c
                neat = neat + 1
                e = e1 + e2
                eat = eat + e
-               aeat(ia) = aeat(ia) + e1/3.0d0
-               aeat(ib) = aeat(ib) + e/3.0d0
-               aeat(ic) = aeat(ic) + e/3.0d0
-               aeat(id) = aeat(id) + e2/3.0d0
+               aeat(ialoc) = aeat(ialoc) + e1/3.0d0
+               aeat(ibloc) = aeat(ibloc) + e/3.0d0
+               aeat(icloc) = aeat(icloc) + e/3.0d0
+               aeat(idloc) = aeat(idloc) + e2/3.0d0
 c
 c     print a message if the energy of this interaction is large
 c

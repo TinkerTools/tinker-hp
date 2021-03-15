@@ -142,6 +142,9 @@ c
       do i = 1, maxnbt
          kbt(i) = blank16
       end do
+      do i = 1, maxnat
+         kat(i) = blank16
+      end do
       do i = 1, maxntt
          ktt(i) = blank20
       end do
