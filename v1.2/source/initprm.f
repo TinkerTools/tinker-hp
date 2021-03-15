@@ -24,6 +24,7 @@ c
       use fields
       use kanang
       use kangs
+      use kantor
       use katoms
       use kbonds
       use kchrge
