@@ -322,6 +322,22 @@ c
          end if
       end do
       domlenpolerec(rank+1) = npolerecloc
+
+      do i = nlocrec+1, nlocrec2
+         iglob = globrec(i)
+         iipole = pollist(iglob)
+c
+c   skip atom if it is not in the multipole list
+c
+         if (iipole.eq.0) cycle
+         polecount = nbpole(iglob)
+         if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
+            npolerecloc = npolerecloc + 1
+            polerecglob(npolerecloc) = polecount + 1
+            polerecloc(polecount+1) = npolerecloc
+         end if
+      end do
+      npolerecloc = domlenpolerec(rank+1)
 c
       if ((polalg.eq.3).and.(tcgpeek).and.(tcgomegafit)) then
         if (mod((istep-1), omegafitfreq).eq.0) then

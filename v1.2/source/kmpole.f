@@ -635,7 +635,7 @@ c
       if (allocated(poleglob)) deallocate(poleglob)
       allocate (poleglob(nbloc))
       if (allocated(polerecglob)) deallocate(polerecglob)
-      allocate (polerecglob(nlocrec))
+      allocate (polerecglob(nlocrec2))
 c
 c       remove any zero or undefined atomic multipoles
 c
@@ -701,6 +701,22 @@ c
            end if
         end do
         domlenpolerec(rank+1) = npolerecloc
+c
+        do i = nlocrec+1, nlocrec2
+           iglob = globrec(i)
+           iipole = pollist(iglob)
+c
+c   skip atom if it is not in the multipole list
+c
+           if (iipole.eq.0) cycle
+           polecount = nbpole(iglob)
+           if (polsiz(iglob) .ne. 0 ) then
+              npolerecloc = npolerecloc + 1
+              polerecglob(npolerecloc) = polecount + 1
+              polerecloc(polecount+1) = npolerecloc
+           end if
+        end do
+        npolerecloc = domlenpolerec(rank+1)
 c
         modnl = mod(istep,ineigup)
         if (istep.eq.-1) return

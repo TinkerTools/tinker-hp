@@ -1077,57 +1077,12 @@ c
       return
       end
 c
-cc
-cc     ################################################################
-cc     ##                                                            ##
-cc     ##  subroutine fphi_to_cphi  --  transformation of potential  ##
-cc     ##                                                            ##
-cc     ################################################################
-cc
-cc
-cc     "fphi_to_cphi" transforms the reciprocal space potential from
-cc     fractional to Cartesian coordinates
-cc
-cc
-c      subroutine fphi_to_cphi (fphi,cphi)
-c      use mpole
-c      implicit none
-c      integer i,j,k
-c      real*8 ftc(10,10)
-c      real*8 cphi(10,*)
-c      real*8 fphi(20,*)
-cc
-cc
-cc     find the matrix to convert fractional to Cartesian
-cc
-c      call frac_to_cart (ftc)
-cc
-cc     apply the transformation to get the Cartesian potential
-cc
-c      do i = 1, npole
-c         cphi(1,i) = ftc(1,1) * fphi(1,i)
-c         do j = 2, 4
-c            cphi(j,i) = 0.0d0
-c            do k = 2, 4
-c               cphi(j,i) = cphi(j,i) + ftc(j,k)*fphi(k,i)
-c            end do
-c         end do
-c         do j = 5, 10
-c            cphi(j,i) = 0.0d0
-c            do k = 5, 10
-c               cphi(j,i) = cphi(j,i) + ftc(j,k)*fphi(k,i)
-c            end do
-c         end do
-c      end do
-c      return
-c      end
-cc
+c
       subroutine fphi_to_cphi_site(fphi,cphi)
       use boxes
       use sizes
       implicit none
       integer j,k
-c      real*8 ftc(10,10)
       real*8 cphi(10)
       real*8 fphi(20)
 c
@@ -1252,6 +1207,7 @@ c
       integer ierr,iglob,j
       integer i,k
       integer iproc,iproc1,temp
+      integer proc1,proc2
       integer nprocloc,rankloc,nprocloc1
       integer, allocatable :: req(:)
       integer, allocatable :: counttemp(:),repartrectemp(:)
@@ -1449,29 +1405,6 @@ c
             end do
           end do
         end if
-c
-c      get the list of the additional processes to rotate reciprocal multipoles
-c
-        do iproc = 0, nprocloc1-1 
-          do iproc1 =  0, nprocloc-1
-c
-c     Check if already in list
-c
-            do j = 1, nrecdirreceptemp(iproc+1)
-              if (precdirrecep(j,iproc+1).eq.iproc1) goto 10
-            end do
-c
-            do j = 1, nrecdirrecep(iproc+1)
-              call distproc(iproc1,precdirrecep(j,iproc+1),dist,.true.)
-              if (dist.le.2.0d0) then
-                nrecdirreceptemp(iproc+1) = nrecdirreceptemp(iproc+1)+1
-                precdirrecep(nrecdirreceptemp(iproc+1),iproc+1) = iproc1
-                goto 10
-              end if
-            end do
- 10         continue
-          end do
-        end do
         if (use_pmecore) then
           if (rank.gt.ndir-1) then
             nrecdir_recep = nrecdirreceptemp(rankloc+1-ndir)
@@ -1508,6 +1441,62 @@ c
             end do
           end do
         end if
+c
+c      Remove procs already in real space neighbor list and put them in another list
+c
+        nrecdir_recep2 = 0
+        precdir_recep2 = 0
+        do i = 1, nrecdir_recep
+          proc1 = precdir_recep(i)
+          do j = 1, nbig_recep
+            proc2 = pbig_recep(j)
+            if (proc1.eq.proc2) goto 20
+          end do
+          nrecdir_recep2 = nrecdir_recep2 + 1
+          precdir_recep2(nrecdir_recep2) = proc1
+ 20     continue
+        end do
+cc
+        nrecdir_send2 = 0
+        precdir_send2 = 0
+        do i = 1, nrecdir_send
+          proc1 = precdir_send(i)
+          do j = 1, nbig_send
+            proc2 = pbig_send(j)
+            if (proc1.eq.proc2) goto 30
+          end do
+          nrecdir_send2 = nrecdir_send2 + 1
+          precdir_send2(nrecdir_send2) = proc1
+ 30     continue
+        end do
+c
+c      Remove procs already in recdir space neighbor list and put them in another list
+c
+        nrecdir_recep3 = 0
+        precdir_recep3 = 0
+        do i = 1, nrecdir_recep
+          proc1 = precdir_recep(i)
+          do j = 1, nrecdir_recep2
+            proc2 = precdir_recep2(j)
+            if (proc1.eq.proc2) goto 40
+          end do
+          nrecdir_recep3 = nrecdir_recep3 + 1
+          precdir_recep3(nrecdir_recep3) = proc1
+ 40     continue
+        end do
+cc
+        nrecdir_send3 = 0
+        precdir_send3 = 0
+        do i = 1, nrecdir_send
+          proc1 = precdir_send(i)
+          do j = 1, nrecdir_send3
+            proc2 = precdir_send3(j)
+            if (proc1.eq.proc2) goto 50
+          end do
+          nrecdir_send3 = nrecdir_send3 + 1
+          precdir_send3(nrecdir_send3) = proc1
+ 50     continue
+        end do
 c
         if (use_pmecore) then
           nprocloc = nrec
@@ -1634,6 +1623,7 @@ c
       end if
 c
       nlocrecold = nlocrec
+      repartrec = -1
       do i = 1, nloc
         iglob = glob(i)
         xi = x(iglob)
@@ -1659,33 +1649,33 @@ c
 c
 c     send and receive repartrec
 c
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
-          tag = nproc*rank + precdir_recep(i) + 1
-          call MPI_IRECV(repartrec(bufbeg(precdir_recep(i)+1)),
-     $     domlen(precdir_recep(i)+1),MPI_INT,precdir_recep(i),tag,
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+          tag = nproc*rank + precdir_recep1(i) + 1
+          call MPI_IRECV(repartrec(bufbeg(precdir_recep1(i)+1)),
+     $     domlen(precdir_recep1(i)+1),MPI_INT,precdir_recep1(i),tag,
      $     COMM_TINKER,req(tag),ierr)
         end if
       end do
 c
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
-          tag = nproc*precdir_send(i) + rank + 1
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
+          tag = nproc*precdir_send1(i) + rank + 1
           call MPI_ISEND(repartrec,
-     $    nloc,MPI_INT,precdir_send(i),tag,COMM_TINKER,
+     $    nloc,MPI_INT,precdir_send1(i),tag,COMM_TINKER,
      $    req(tag),ierr)
         end if
       end do
 c
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
-          tag = nproc*rank + precdir_recep(i) + 1
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+          tag = nproc*rank + precdir_recep1(i) + 1
           call MPI_WAIT(req(tag),status,ierr)
         end if
       end do
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
-          tag = nproc*precdir_send(i) + rank + 1
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
+          tag = nproc*precdir_send1(i) + rank + 1
           call MPI_WAIT(req(tag),status,ierr)
         end if
       end do
@@ -1697,12 +1687,12 @@ c
         iglob = glob(i)
         repartrec(iglob) =  repartrectemp(i)
       end do
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-          do i = 1, domlen(precdir_recep(iproc)+1)
-            iglob = glob(bufbeg(precdir_recep(iproc)+1)+i-1)
+      do iproc = 1, nrecdir_recep1
+        if (precdir_recep1(iproc).ne.rank) then
+          do i = 1, domlen(precdir_recep1(iproc)+1)
+            iglob = glob(bufbeg(precdir_recep1(iproc)+1)+i-1)
             repartrec(iglob) =
-     $        repartrectemp(bufbeg(precdir_recep(iproc)+1)+i-1)
+     $        repartrectemp(bufbeg(precdir_recep1(iproc)+1)+i-1)
           end do
         end if
       end do

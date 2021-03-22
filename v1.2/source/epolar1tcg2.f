@@ -32,7 +32,7 @@ c
 
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,ilocrec,kglob,kkpole,
+     $           ierr,iglob,kglob,kkpole,
      $           kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -103,8 +103,8 @@ c
      $         fphiarrdtt2r0(20,npolerecloc))
       allocate(cphi(10, npoleloc))
       allocate(grad_ene(3,npolebloc), torq_mu(3,nbloc),
-     $         torq_t(3,nbloc),  torq_mubis(3,nblocrec),
-     $         torq_tbis(3,nblocrec),denedmu(3,npolebloc),
+     $         torq_t(3,nbloc),  torq_mubis(3,nlocrec2),
+     $         torq_tbis(3,nlocrec2),denedmu(3,npolebloc),
      $         denedr(3,npolebloc),   arr_ded(3,npolebloc),
      $         denedrbis(3,nlocrec),denedmubis(3,nlocrec),
      $         arr_dedbis(3,npolerecloc),arr_depbis(3,npolerecloc),
@@ -487,11 +487,8 @@ c         write(*,*) 'time scalderreal = ',time1-time0
       deprec = 0d0
 
       do kk = 1, npolerecloc
-         iipole = polerecglob(kk)
-         iglob = ipole(iipole)
-         ilocrec = locrec1(iglob)
          do betac = 1, 3
-            deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
+            deprec(betac,kk) =  -.5d0*f*denedrbis(betac,kk)
          end do
       end do
       deprec(:,:) = deprec(:,:)-0.5d0*f*(torq_mubis(:,:)+torq_tbis(:,:))
@@ -519,7 +516,7 @@ c         write(*,*) 'time scalderreal = ',time1-time0
       logical :: precond
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,ilocrec,nrhs,kglob,
+     $           ierr,iglob,nrhs,kglob,
      $           kkpole,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -611,7 +608,7 @@ c         write(*,*) 'time scalderreal = ',time1-time0
      $         fphiaTA(20,npolerecloc)) 
       allocate(cphi(10, npoleloc))
       allocate(grad_ene(3,npolebloc), torq_mu(3,nbloc),
-     $         torq_tbis(3,nblocrec),torq_mubis(3,nblocrec),
+     $         torq_tbis(3,nlocrec2),torq_mubis(3,nlocrec2),
      $         torq_t(3,nbloc), denedmu(3,npolebloc),
      $         denedmubis(3,npolerecloc),denedrbis(3,npolerecloc),
      $         denedr(3,npolebloc), arr_ded(3,npolebloc),
@@ -1120,11 +1117,8 @@ c         write(*,*) 'time scalderreal = ',time1-time0
       deprec = 0d0
 
       do kk = 1, npolerecloc
-         iipole = polerecglob(kk)
-         iglob = ipole(iipole)
-         ilocrec = locrec1(iglob)
          do betac = 1, 3
-            deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
+            deprec(betac,kk) =  -.5d0*f*denedrbis(betac,kk)
          end do
       end do
       deprec(:,:) = deprec(:,:)-0.5d0*f*(torq_mubis(:,:)+torq_tbis(:,:))
@@ -1152,7 +1146,7 @@ c         write(*,*) 'time scalderreal = ',time1-time0
       logical :: precond
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,ilocrec,nrhs,kglob,
+     $           ierr,iglob,nrhs,kglob,
      $           kkpole,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -1259,8 +1253,8 @@ c         write(*,*) 'time scalderreal = ',time1-time0
      $         fphiarrdtt2r0(20,npolerecloc))
       allocate(cphi(10, npoleloc))
       allocate(grad_ene(3,npolebloc), torq_mu(3,nbloc),
-     $         torq_mubis(3,nblocrec),
-     $         torq_t(3,nbloc),torq_tbis(3,nblocrec),
+     $         torq_mubis(3,nlocrec2),
+     $         torq_t(3,nbloc),torq_tbis(3,nlocrec2),
      $         denedmu(3,npolebloc),
      $         denedr(3,npolebloc), arr_ded(3,npolebloc),
      $         arr_dep(3,npolebloc), adebis(3,npolerecloc),
@@ -1977,11 +1971,8 @@ c
       deprec = 0d0
 
       do kk = 1, npolerecloc
-         iipole = polerecglob(kk)
-         iglob = ipole(iipole)
-         ilocrec = locrec1(iglob)
          do betac = 1, 3
-            deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
+            deprec(betac,kk) =  -.5d0*f*denedrbis(betac,kk)
          end do
       end do
       deprec(:,:) = deprec(:,:)-0.5d0*f*(torq_mubis(:,:)+torq_tbis(:,:))
@@ -2011,7 +2002,7 @@ c
       logical :: precond
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,ilocrec,nrhs,kglob,
+     $           ierr,iglob,nrhs,kglob,
      $           kkpole,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -2135,7 +2126,7 @@ c
      $         tmpfphi2(20,npolerecloc))
       allocate(cphi(10, npoleloc))
       allocate(grad_ene(3,npolebloc), torq_mu(3,nbloc),
-     $         torq_tbis(3,nblocrec),torq_mubis(3,nblocrec),
+     $         torq_tbis(3,nlocrec2),torq_mubis(3,nlocrec2),
      $         torq_t(3,nbloc), denedmu(3,npolebloc),
      $         denedmubis(3,npolerecloc),denedrbis(3,npolerecloc),
      $         denedr(3,npolebloc),arr_ded(3,npolebloc),
@@ -2790,11 +2781,8 @@ c
       deprec = 0d0
 
       do kk = 1, npolerecloc
-         iipole = polerecglob(kk)
-         iglob = ipole(iipole)
-         ilocrec = locrec1(iglob)
          do betac = 1, 3
-            deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
+            deprec(betac,kk) =  -.5d0*f*denedrbis(betac,kk)
          end do
       end do
       deprec(:,:) = deprec(:,:)-0.5d0*f*(torq_mubis(:,:)+torq_tbis(:,:))
@@ -2821,7 +2809,7 @@ c
       logical :: precond, isguess, peek
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,ilocrec,nrhs,kglob,
+     $           ierr,iglob,nrhs,kglob,
      $           kkpole,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -2944,7 +2932,7 @@ c
      $         fphioldt2r0(20,2,npolerecloc))
       allocate(cphi(10, npoleloc))
       allocate(grad_ene(3,npolebloc), torq_mu(3,nbloc),
-     $         torq_tbis(3,nblocrec),torq_mubis(3,nblocrec),
+     $         torq_tbis(3,nlocrec2),torq_mubis(3,nlocrec2),
      $         torq_t(3,nbloc), denedmu(3,npolebloc),
      $         denedmubis(3,npolerecloc),denedrbis(3,npolerecloc),
      $         denedr(3,npolebloc),arr_ded(3,npolebloc),
@@ -3637,11 +3625,8 @@ c      write(*,*) 'a10 = ',a10
 
 
       do kk = 1, npolerecloc
-         iipole = polerecglob(kk)
-         iglob = ipole(iipole)
-         ilocrec = locrec1(iglob)
          do betac = 1, 3
-            deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
+            deprec(betac,kk) =  -.5d0*f*denedrbis(betac,kk)
          end do
       end do
       deprec(:,:) = deprec(:,:)-0.5d0*f*(torq_mubis(:,:)+torq_tbis(:,:))

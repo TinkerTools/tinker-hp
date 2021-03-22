@@ -96,7 +96,7 @@ c
      $ efibis(3,nrhs,npolerecloc),Tr0bis(3,nrhs,npolerecloc),
      $ T2r0bis(3,nrhs,npolerecloc),T3r0bis(3,nrhs,npolerecloc),
      $ mu_tcg2bis(3,nrhs,npolerecloc),adebis(3,nlocrec),
-     $ admebis(3,nlocrec),torq_mubis(3,nblocrec),torq_tbis(3,nblocrec),
+     $ admebis(3,nlocrec),torq_mubis(3,nlocrec2),torq_tbis(3,nlocrec2),
      $ denedrbis(3,nlocrec),denedmubis(3,nlocrec),
      $ arr_dedbis(3,npolerecloc),arr_depbis(3,npolerecloc),
      $ adtbbis(3,nlocrec),arr_dtr0bis(3,npolerecloc),
@@ -502,7 +502,7 @@ c
         do kk = 1, npolerecloc
            iipole = polerecglob(kk)
            iglob = ipole(iipole)
-           ilocrec = locrec1(iglob)
+           ilocrec = locrec(iglob)
            do betac = 1, 3
               deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
            end do
@@ -614,7 +614,7 @@ c
      $ T3r0recbis(3,nrhs,npolerecloc),Tefibis(3,nrhs,npolerecloc),
      $ admebis(3,nlocrec),oldefibis(3,nrhs,npolerecloc),
      $ Tmu0recbis(3,nrhs,npolerecloc),tmpbig2recbis(3,nrhs,npolerecloc),
-     $ torq_tbis(3,nblocrec),torq_mubis(3,nblocrec),
+     $ torq_tbis(3,nlocrec2),torq_mubis(3,nlocrec2),
      $ denedmubis(3,npolerecloc),denedrbis(3,npolerecloc),
      $ arr_dedbis(3,npolerecloc),arr_depbis(3,npolerecloc),
      $ adebis(3,nlocrec),adtbbis(3,npolerecloc),
@@ -1172,7 +1172,7 @@ c
         do kk = 1, npolerecloc
            iipole = polerecglob(kk)
            iglob = ipole(iipole)
-           ilocrec = locrec1(iglob)
+           ilocrec = locrec(iglob)
            do betac = 1, 3
               deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
            end do
@@ -1304,7 +1304,7 @@ c
      $ fphiatE(20,nrhs,npolerecloc),fphiat2E(20,nrhs,npolerecloc),
      $ fphiarrdtr0(20,npolerecloc),fphiarrdttr0(20,npolerecloc),
      $ fphiarrdtt2r0(20,npolerecloc))
-        allocate(torq_mubis(3,nblocrec),torq_tbis(3,nblocrec),
+        allocate(torq_mubis(3,nlocrec2),torq_tbis(3,nlocrec2),
      $ adebis(3,npolerecloc),adtbbis(3,npolerecloc),
      $ admebis(3,npolerecloc),arr_dedbis(3,npolerecloc),
      $ arr_depbis(3,npolerecloc),denedmubis(3,npolerecloc),
@@ -1956,7 +1956,7 @@ c
         do kk = 1, npolerecloc
            iipole = polerecglob(kk)
            iglob = ipole(iipole)
-           ilocrec = locrec1(iglob)
+           ilocrec = locrec(iglob)
            do betac = 1, 3
               deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
            end do
@@ -2104,7 +2104,7 @@ c
      $ fphiar0(20,2,npolerecloc),fphiaTr0(20,2,npolerecloc),
      $ fphiaT2r0(20,2,npolerecloc),fphimu0(20,2,npolerecloc),
      $ tmpfphi2(20,npolerecloc))
-        allocate(torq_tbis(3,nblocrec),torq_mubis(3,nblocrec),
+        allocate(torq_tbis(3,nlocrec2),torq_mubis(3,nlocrec2),
      $denedmubis(3,npolerecloc),denedrbis(3,npolerecloc),
      $arr_dedbis(3,npolerecloc),arr_depbis(3,npolerecloc),
      $adtbbis(3,npolerecloc),tmpsmallbis(3,npolerecloc))
@@ -2758,7 +2758,7 @@ c
         do kk = 1, npolerecloc
            iipole = polerecglob(kk)
            iglob = ipole(iipole)
-           ilocrec = locrec1(iglob)
+           ilocrec = locrec(iglob)
            do betac = 1, 3
               deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
            end do
@@ -2901,7 +2901,7 @@ c
      $ fphimu0(20,2,npolerecloc),tmpfphi2(20,2,npolerecloc),
      $ fphioldefi(20,2,npolerecloc),fphioldr0(20,2,npolerecloc),
      $ fphioldtr0(20,2,npolerecloc),fphioldt2r0(20,2,npolerecloc))
-        allocate(torq_tbis(3,nblocrec),torq_mubis(3,nblocrec),
+        allocate(torq_tbis(3,nlocrec2),torq_mubis(3,nlocrec2),
      $ denedmubis(3,npolerecloc),denedrbis(3,npolerecloc),
      $ arr_dedbis(3,npolerecloc),arr_depbis(3,npolerecloc),
      $ adtbbis(3,npolerecloc),tmpsmallbis(3,npolerecloc))
@@ -3560,7 +3560,7 @@ c
         do kk = 1, npolerecloc
            iipole = polerecglob(kk)
            iglob = ipole(iipole)
-           ilocrec = locrec1(iglob)
+           ilocrec = locrec(iglob)
            do betac = 1, 3
               deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
            end do

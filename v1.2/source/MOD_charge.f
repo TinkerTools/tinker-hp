@@ -38,12 +38,12 @@ c
       module charge
       implicit none
       integer nion,nionloc,nionbloc,nionlocnl,nionrecloc
+      integer, allocatable :: chgloc(:),chglocnl(:)
+      integer, allocatable :: chgrecloc(:)
+      integer, pointer :: chglist(:)
       integer, pointer :: iion(:)
       integer, pointer :: jion(:),kion(:)
-      integer, pointer :: chglist(:)
       integer, pointer :: nbchg(:)
-      integer, pointer :: chgloc(:),chglocnl(:)
-      integer, pointer :: chgrecloc(:)
       integer :: winiion,winjion,winkion,winchglist,winnbchg
       integer :: winchgloc,winchglocnl,winchgrecloc
       real*8, pointer ::  pchg(:)

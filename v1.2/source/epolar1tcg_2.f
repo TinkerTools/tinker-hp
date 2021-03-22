@@ -33,7 +33,7 @@ c
       integer  :: nrhs
       logical :: isguess, peek, precond
       integer :: kk, betac, irhs,
-     $            i, iipole, j, ierr,iglob,ilocrec,
+     $            i, iipole, j, ierr,iglob,
      $            kkpole,kglob,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -129,14 +129,14 @@ c
         allocate(cphirec(10,npolerecloc))
         allocate(arr_dedbis(3,npolerecloc),arr_depbis(3,npolerecloc),
      $ adtbbis(3,nlocrec),adebis(3,nlocrec),admebis(3,nlocrec),
-     $ torq_mubis(3,nblocrec),torq_tbis(3,nblocrec))
+     $ torq_mubis(3,nlocrec2),torq_tbis(3,nlocrec2))
         allocate (arrAbis(3,npolerecloc),arrTAbis(3,npolerecloc),
      $           arraTAbis(3,npolerecloc))
         allocate(denedrbis(3,nlocrec),denedmubis(3,nlocrec),
      $         denedtbis(3,3,nlocrec))
         allocate (buffermpi(10,max(npolerecloc,1)))
         allocate (buffermpimu(3,nrhs,max(npolerecloc,1)))
-        allocate(adtebis(3,3,nblocrec),efibis(3,nrhs,npolerecloc))
+        allocate(adtebis(3,3,nlocrec2),efibis(3,nrhs,npolerecloc))
       end if
       allocate (reqrec(nproc))
       allocate (reqsend(nproc))
@@ -1161,11 +1161,8 @@ c
         deprec = 0d0
 
         do kk = 1, npolerecloc
-           iipole = polerecglob(kk)
-           iglob = ipole(iipole)
-           ilocrec = locrec1(iglob)
            do betac = 1, 3
-              deprec(betac,ilocrec) =  -.5d0*f*denedrbis(betac,kk)
+              deprec(betac,kk) =  -.5d0*f*denedrbis(betac,kk)
            end do
         end do
         deprec(:,:) = deprec(:,:)-0.5d0*f*(torq_mubis(:,:)+

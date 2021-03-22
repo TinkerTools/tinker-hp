@@ -58,15 +58,18 @@ c
       if (allocated(precdir_recep)) deallocate(precdir_recep) 
       if (allocated(precdir_send)) deallocate(precdir_send)
       if (allocated(precdir_recep1)) deallocate(precdir_recep1)
+      if (allocated(precdir_recep2)) deallocate(precdir_recep2)
+      if (allocated(precdir_recep3)) deallocate(precdir_recep3)
       if (allocated(precdir_send1)) deallocate(precdir_send1)
+      if (allocated(precdir_send2)) deallocate(precdir_send2)
+      if (allocated(precdir_send3)) deallocate(precdir_send3)
+      if (allocated(ptorque_recep)) deallocate(ptorque_recep)
       if (allocated(ptorque_recep)) deallocate(ptorque_recep)
       if (allocated(ptorqueshort_recep)) deallocate(ptorqueshort_recep)
       if (allocated(ptorque_send)) deallocate(ptorque_send)
       if (allocated(ptorqueshort_send)) deallocate(ptorqueshort_send) 
       if (allocated(globrec)) deallocate(globrec)
       if (allocated(locrec)) deallocate(locrec)
-      if (allocated(globrec1)) deallocate(globrec1)
-      if (allocated(locrec1)) deallocate(locrec1)
       if (allocated(bufbegrec)) deallocate(bufbegrec)
       if (allocated(bufbegpole)) deallocate(bufbegpole)
       if (allocated(bufbeg)) deallocate(bufbeg)
@@ -88,8 +91,6 @@ c
         allocate (loc(n))
         allocate (globrec(n))
         allocate (locrec(n))
-        allocate (globrec1(n))
-        allocate (locrec1(n))
         allocate (repart(n))
         allocate (domlen(nproc))
         allocate (domlenpole(nproc))
@@ -114,6 +115,10 @@ c
         allocate(precdir_send(nproc))
         allocate(precdir_recep1(nproc))
         allocate(precdir_send1(nproc))
+        allocate(precdir_recep2(nproc))
+        allocate(precdir_send2(nproc))
+        allocate(precdir_recep3(nproc))
+        allocate(precdir_send3(nproc))
         allocate(bufbegpole(nproc))
         allocate(bufbeg(nproc))
         allocate(bufbegrec(nproc))
@@ -182,14 +187,16 @@ c
         allocate(precdir_send(nproc))
         allocate(precdir_recep1(nproc))
         allocate(precdir_send1(nproc))
+        allocate(precdir_recep2(nproc))
+        allocate(precdir_send2(nproc))
+        allocate(precdir_recep3(nproc))
+        allocate(precdir_send3(nproc))
         allocate(ptorque_recep(nproc))
         allocate(ptorqueshort_recep(nproc))
         allocate(ptorque_send(nproc))
         allocate(ptorqueshort_send(nproc))
         allocate (globrec(n))
         allocate (locrec(n))
-        allocate (globrec1(n))
-        allocate (locrec1(n))
         allocate (bufbegrec(nproc))
         allocate (bufbegpole(nproc))
         allocate (bufbeg(nproc))
@@ -210,13 +217,13 @@ c
       allocate (desum(3,nbloc))
       desum = 0d0
       if (allocated(decrec)) deallocate (decrec)
-      allocate (decrec(3,nblocrec))
+      allocate (decrec(3,nlocrec2))
       decrec = 0d0
       if (allocated(demrec)) deallocate (demrec)
-      allocate (demrec(3,nblocrec))
+      allocate (demrec(3,nlocrec2))
       demrec = 0d0
       if (allocated(deprec)) deallocate (deprec)
-      allocate (deprec(3,nblocrec))
+      allocate (deprec(3,nlocrec2))
       deprec = 0d0
 c
       if (allocated(deb)) deallocate (deb)
@@ -307,11 +314,11 @@ c
       if (allocated(dett)) deallocate (dett)
       allocate (dett(3,nbloc))
       if (allocated(decrec)) deallocate (decrec)
-      allocate (decrec(3,nblocrec))
+      allocate (decrec(3,nlocrec2))
       if (allocated(demrec)) deallocate (demrec)
-      allocate (demrec(3,nblocrec))
+      allocate (demrec(3,nlocrec2))
       if (allocated(deprec)) deallocate (deprec)
-      allocate (deprec(3,nblocrec))
+      allocate (deprec(3,nlocrec2))
       if (allocated(debond)) deallocate (debond)
       allocate (debond(3,nbloc))
 c
@@ -1195,7 +1202,7 @@ c
       use potent
       use mpi
       implicit none
-      integer nx, ny, nz, i,j,k
+      integer i,j,k
       integer nprocloc,rankloc,iproc,iproc1
       real*8 xr,yr,zr
       real*8 dist
@@ -1320,16 +1327,16 @@ c
       ny_box = ybox/nydd
       nz_box = zbox/nzdd
       do i = 0, nxdd-1
-        xbegproctemp(i+1) = -xcell2 + i*nx_box
-        xendproctemp(i+1) = -xcell2 + (i+1)*nx_box
+        xbegproctemp(i+1) = -xbox2 + i*nx_box
+        xendproctemp(i+1) = -xbox2 + (i+1)*nx_box
       end do
       do i = 0, nydd-1
-        ybegproctemp(i+1) = -ycell2 + i*ny_box
-        yendproctemp(i+1) = -ycell2 + (i+1)*ny_box
+        ybegproctemp(i+1) = -ybox2 + i*ny_box
+        yendproctemp(i+1) = -ybox2 + (i+1)*ny_box
       end do
       do i = 0, nzdd-1
-        zbegproctemp(i+1) = -zcell2 + i*nz_box
-        zendproctemp(i+1) = -zcell2 + (i+1)*nz_box
+        zbegproctemp(i+1) = -zbox2 + i*nz_box
+        zendproctemp(i+1) = -zbox2 + (i+1)*nz_box
       end do
 c
 c     assign processes
@@ -1356,9 +1363,9 @@ c
         yr = y(i)
         zr = z(i)
         call image(xr,yr,zr)
-        if (abs(xr-xcell2).lt.eps1) xr = xr-eps2
-        if (abs(yr-ycell2).lt.eps1) yr = yr-eps2
-        if (abs(zr-zcell2).lt.eps1) zr = zr-eps2
+        if (abs(xr-xbox2).lt.eps1) xr = xr-eps2
+        if (abs(yr-ybox2).lt.eps1) yr = yr-eps2
+        if (abs(zr-zbox2).lt.eps1) zr = zr-eps2
         do iproc = 0, nprocloc-1
           if ((zr.ge.zbegproc(iproc+1)).and.
      $      (zr.lt.zendproc(iproc+1)).and.(yr.ge.ybegproc(iproc+1))

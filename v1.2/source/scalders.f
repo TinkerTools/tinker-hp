@@ -2493,13 +2493,13 @@ c
      $          cdervecb(20,npolerecloc))
       allocate(frc(3,npolerecloc,2), grc(3,npolerecloc))
       allocate(a_frac(3,npolerecloc), b_frac(3,npolerecloc),
-     $         adtb_temp(3,nblocrec),
+     $         adtb_temp(3,nlocrec2),
      $         d1_frac(3,npolerecloc), e1_frac(3,npolerecloc))
       allocate(frcdm(3,npolerecloc,2))
       allocate(frcdt(3,3,npolerecloc,2))
-      allocate(admerec_temp(3,nblocrec), 
-     $         adErec_temp(3,nblocrec),
-     $         adtErec_temp(3,3,nblocrec))
+      allocate(admerec_temp(3,nlocrec2), 
+     $         adErec_temp(3,nlocrec2),
+     $         adtErec_temp(3,3,nlocrec2))
 
       cmp = 0d0
       fmp = 0d0

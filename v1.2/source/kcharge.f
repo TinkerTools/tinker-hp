@@ -48,11 +48,11 @@ c
 c
 c       allocate global arrays
 c
-        if (associated(chglocnl)) deallocate(chglocnl)
+        if (allocated(chglocnl)) deallocate(chglocnl)
         allocate (chglocnl(n))
-        if (associated(chgloc)) deallocate(chgloc)
+        if (allocated(chgloc)) deallocate(chgloc)
         allocate (chgloc(n))
-        if (associated(chgrecloc)) deallocate(chgrecloc)
+        if (allocated(chgrecloc)) deallocate(chgrecloc)
         allocate (chgrecloc(n))
 c
         call alloc_shared_chg

@@ -1503,7 +1503,7 @@ c
          h3 = recip(3,1)*f1 + recip(3,2)*f2 + recip(3,3)*f3
          iipole = polerecglob(i)
          iglob = ipole(iipole)
-         ii = locrec1(iglob)
+         ii = locrec(iglob)
          deprec(1,ii) = deprec(1,ii) + h1
          deprec(2,ii) = deprec(2,ii) + h2
          deprec(3,ii) = deprec(3,ii) + h3

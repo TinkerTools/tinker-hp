@@ -9,32 +9,52 @@ c
       subroutine commposrec
       use atoms
       use domdec
+      use potent
       use mpi
       implicit none
       integer i,iproc
       integer iglob,iloc
       integer, allocatable :: reqsend(:),reqrec(:)
-      real*8, allocatable :: buffer(:,:)
-      real*8, allocatable :: buffers(:,:)
+      real*8, allocatable :: buffer(:,:),buffer2(:,:)
+      real*8, allocatable :: buffers(:,:),buffers2(:,:)
       integer status(MPI_STATUS_SIZE)
       integer tag,ierr
+      integer rankloc,commloc,nprocloc
 c
+      if (use_pmecore) then
+        nprocloc = nrec
+        commloc  = comm_rec
+        rankloc  = rank_bis
+      else
+        nprocloc = nproc
+        commloc  = COMM_TINKER
+        rankloc  = rank
+      end if
 c
 c     allocate some arrays
 c
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
       allocate (buffer(3,nblocrecdir))
+      buffer = 0d0
+      allocate (buffer2(3,nlocrec2))
+      buffer2 = 0d0
       allocate (buffers(3,nloc))
+      buffers = 0d0
+      allocate (buffers2(3,nlocrec))
+      buffers2 = 0d0
+c
+c     first do dir rec communications
 c
 c     MPI : begin reception in buffer
 c
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
-         tag = nproc*rank + precdir_recep(i) + 1
-         call MPI_IRECV(buffer(1,bufbeg(precdir_recep(i)+1)),
-     $    3*domlen(precdir_recep(i)+1),
-     $    MPI_REAL8,precdir_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+
+      do i = 1, nrecdir_recep2
+        if (precdir_recep2(i).ne.rank) then
+         tag = nproc*rank + precdir_recep2(i) + 1
+         call MPI_IRECV(buffer(1,bufbeg(precdir_recep2(i)+1)),
+     $    3*domlen(precdir_recep2(i)+1),
+     $    MPI_REAL8,precdir_recep2(i),tag,COMM_TINKER,reqrec(i),ierr)
         end if
       end do
 c
@@ -49,32 +69,32 @@ c
 c
 c     MPI : begin sending
 c
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
-         tag = nproc*precdir_send(i) + rank + 1
+      do i = 1, nrecdir_send2
+        if (precdir_send2(i).ne.rank) then
+         tag = nproc*precdir_send2(i) + rank + 1
          call MPI_ISEND(buffers,3*nloc,
-     $    MPI_REAL8,precdir_send(i),tag,COMM_TINKER,
+     $    MPI_REAL8,precdir_send2(i),tag,COMM_TINKER,
      $    reqsend(i),ierr)
         end if
       end do
 c
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
+      do i = 1, nrecdir_recep2
+        if (precdir_recep2(i).ne.rank) then
          call MPI_WAIT(reqrec(i),status,ierr)
         end if
       end do
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
+      do i = 1, nrecdir_send2
+        if (precdir_send2(i).ne.rank) then
          call MPI_WAIT(reqsend(i),status,ierr)
         end if
       end do
 c
 c     MPI : move in global arrays
 c
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-         do i = 1, domlen(precdir_recep(iproc)+1)
-           iloc = bufbeg(precdir_recep(iproc)+1)+i-1
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+         do i = 1, domlen(precdir_recep2(iproc)+1)
+           iloc = bufbeg(precdir_recep2(iproc)+1)+i-1
            iglob = glob(iloc)
            x(iglob) = buffer(1,iloc)
            y(iglob) = buffer(2,iloc)
@@ -83,10 +103,61 @@ c
         end if
       end do
 c
+c     then do rec rec communications
+c
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nrec_recep
+        tag = nprocloc*rankloc + prec_recep(i) + 1
+        call MPI_IRECV(buffer2(1,bufbegrec(prec_recep(i)+1)),
+     $   3*domlenrec(prec_recep(i)+1),
+     $   MPI_REAL8,prec_recep(i),tag,commloc,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
+      do i = 1, nlocrec
+        iglob = globrec(i)
+        buffers2(1,i) = x(iglob)
+        buffers2(2,i) = y(iglob)
+        buffers2(3,i) = z(iglob)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, nrec_send
+        tag = nprocloc*prec_send(i) + rankloc + 1
+        call MPI_ISEND(buffers2,3*nlocrec,
+     $   MPI_REAL8,prec_send(i),tag,commloc,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nrec_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nrec_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do iproc = 1, nrec_recep
+        do i = 1, domlenrec(prec_recep(iproc)+1)
+          iloc = bufbegrec(prec_recep(iproc)+1)+i-1
+          iglob = globrec(iloc)
+          x(iglob) = buffer2(1,iloc)
+          y(iglob) = buffer2(2,iloc)
+          z(iglob) = buffer2(3,iloc)
+        end do
+      end do
+c
       deallocate (reqsend)
       deallocate (reqrec)
       deallocate (buffer)
       deallocate (buffers)
+      deallocate (buffer2)
+      deallocate (buffers2)
       return
       end
 c
@@ -685,7 +756,6 @@ c
 c
 c     subroutine reassignrespa: deal with particles changing of domain between two time steps
 c
-c     subroutine reassignrespa(fast,ialt,naltloc)
       subroutine reassignrespa(ialt,naltloc)
       use atoms
       use bound
@@ -1707,82 +1777,153 @@ c
       use sizes
       use deriv
       use domdec
+      use potent
       use mpi
       implicit none
-      integer i,j,tag,ierr,iproc,iglob,ilocrec
+      integer i,j,tag,ierr,iproc,iglob,ilocrec,iloc
+      integer jloc,jglob,jlocrec
+      integer rankloc,commloc,nprocloc
       integer, allocatable :: reqsend(:),reqrec(:)
-      real*8, allocatable :: buffer(:,:,:)
-      real*8, allocatable :: buffers(:,:)
+      real*8, allocatable :: buffer(:,:,:),buffer2(:,:,:)
+      real*8, allocatable :: buffers(:,:),buffers2(:,:)
+      real*8, allocatable :: temprec(:,:)
       real*8 derivs(3,*)
       integer status(MPI_STATUS_SIZE)
+
+      if (use_pmecore) then
+        nprocloc = nrec
+        commloc  = comm_rec
+        rankloc  = rank_bis
+      else
+        nprocloc = nproc
+        commloc  = COMM_TINKER
+        rankloc  = rank
+      end if
 c
 c     allocate some arrays
 c
-c      allocate (req(nproc*nproc))
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
-      allocate (buffer(3,max(1,nloc),nrecdir_send))
-c      buffer = 0d0
-      allocate (buffers(3,max(1,nblocrec)))
-c      buffers = 0d0
+      allocate (buffer(3,max(1,nloc),nrecdir_send1))
+      allocate (buffers(3,max(1,nblocrecdir)))
+      allocate (buffer2(3,nlocrec2,nrec_send))
+      allocate (buffers2(3,max(1,nlocrec2)))
+      allocate (temprec(3,nlocrec2))
 c
-c     communicate forces
+c     first do rec rec communications
+c
 c
 c     MPI : begin reception in buffer
 c
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
-        tag = nproc*rank + precdir_send(i) + 1
-        call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $   MPI_REAL8,precdir_send(i),tag,COMM_TINKER,reqrec(i),ierr)
-        end if
+      do i = 1, nrec_send
+        tag = nprocloc*rankloc + prec_send(i) + 1
+        call MPI_IRECV(buffer2(1,1,i),3*nlocrec,
+     $   MPI_REAL8,prec_send(i),tag,commloc,reqrec(i),ierr)
       end do
 c
 c     MPI : move in buffer
 c
-      buffers(:,(1):nblocrec)= demrec(:,(1):nblocrec) + 
-     $  deprec(:,(1):nblocrec)+decrec(:,(1):nblocrec)
+      buffers2(:,(nlocrec+1):nlocrec2)= demrec(:,(nlocrec+1):nlocrec2)+
+     $  deprec(:,(nlocrec+1):nlocrec2)+ decrec(:,(nlocrec+1):nlocrec2)
 c
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
-        tag = nproc*precdir_recep(i) + rank + 1
-        call MPI_ISEND(buffers(1,bufbegrec(precdir_recep(i)+1)),
-     $   3*domlen(precdir_recep(i)+1),
-     $   MPI_REAL8,precdir_recep(i),tag,COMM_TINKER,
+      do i = 1, nrec_recep
+        tag = nprocloc*prec_recep(i) + rankloc + 1
+        call MPI_ISEND(buffers2(1,bufbegrec(prec_recep(i)+1)),
+     $   3*domlenrec(prec_recep(i)+1),
+     $   MPI_REAL8,prec_recep(i),tag,commloc,
      $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nrec_send
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nrec_recep
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      temprec = demrec + deprec + decrec 
+      do i = 1, nrec_send
+        do j = 1, nlocrec
+          temprec(1,j) = temprec(1,j) + buffer2(1,j,i)
+          temprec(2,j) = temprec(2,j) + buffer2(2,j,i)
+          temprec(3,j) = temprec(3,j) + buffer2(3,j,i)
+        end do
+      end do
+
+c
+c     then do rec dir communications
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
+        tag = nproc*rank + precdir_send1(i) + 1
+        call MPI_IRECV(buffer(1,1,i),3*nloc,
+     $   MPI_REAL8,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
         end if
       end do
 c
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
+c     Move in array
+c
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+          do j = 1, domlen(precdir_recep1(i)+1)
+            jloc = bufbeg(precdir_recep1(i)+1)+j-1
+            jglob = glob(jloc)
+            if (repartrec(jglob).eq.rankloc) then
+              jlocrec = locrec(jglob)
+              buffers(1,jloc) = temprec(1,jlocrec)
+              buffers(2,jloc) = temprec(2,jlocrec)
+              buffers(3,jloc) = temprec(3,jlocrec)
+            else
+              buffers(1,jloc) = 0d0
+              buffers(2,jloc) = 0d0
+              buffers(3,jloc) = 0d0
+            end if
+          end do
+        end if
+      end do
+c
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+        tag = nproc*precdir_recep1(i) + rank + 1
+        call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1)),
+     $   3*domlen(precdir_recep1(i)+1),
+     $   MPI_REAL8,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+        end if
+      end do
+c
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
         call MPI_WAIT(reqrec(i),status,ierr)
         end if
       end do
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
         call MPI_WAIT(reqsend(i),status,ierr)
         end if
       end do
 c
 c     MPI : move in global arrays
 c
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
           do j = 1, nloc
             derivs(1,j) = derivs(1,j) + buffer(1,j,i)
             derivs(2,j) = derivs(2,j) + buffer(2,j,i)
             derivs(3,j) = derivs(3,j) + buffer(3,j,i)
           end do
         else
-          do j = 1, nloc
-            iglob = glob(j)
-            ilocrec = locrec1(iglob)
-            derivs(1,j) =  derivs(1,j)       + demrec(1,ilocrec)
-     $                   + deprec(1,ilocrec) + decrec(1,ilocrec)
-            derivs(2,j) =  derivs(2,j)       + demrec(2,ilocrec)
-     $                   + deprec(2,ilocrec) + decrec(2,ilocrec)
-            derivs(3,j) =  derivs(3,j)       + demrec(3,ilocrec)
-     $                   + deprec(3,ilocrec) + decrec(3,ilocrec)
+          do j = 1, nlocrec
+            iglob = globrec(j)
+            iloc = loc(iglob)
+            if (repart(iglob).eq.rank) then
+              derivs(1,iloc) = derivs(1,iloc) + temprec(1,j)
+              derivs(2,iloc) = derivs(2,iloc) + temprec(2,j)
+              derivs(3,iloc) = derivs(3,iloc) + temprec(3,j)
+            end if
           end do
         end if
       end do
@@ -1792,54 +1933,103 @@ c    being used
 c
       if (dotstgrad) then
 c
+c     first do rec rec communications
+c
 c     MPI : begin reception in buffer
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            tag = nproc*rank + precdir_send(i) + 1
+        do i = 1, nrec_send
+          tag = nprocloc*rankloc + prec_send(i) + 1
+          call MPI_IRECV(buffer2(1,1,i),3*nlocrec,
+     $     MPI_REAL8,prec_send(i),tag,commloc,reqrec(i),ierr)
+        end do
+c
+c     MPI : move in buffer
+c
+        buffers2(:,(nlocrec+1):nlocrec2)=demrec(:,(nlocrec+1):nlocrec2)
+c
+        do i = 1, nrec_recep
+          tag = nprocloc*prec_recep(i) + rankloc + 1
+          call MPI_ISEND(buffers2(1,bufbegrec(prec_recep(i)+1)),
+     $     3*domlenrec(prec_recep(i)+1),
+     $     MPI_REAL8,prec_recep(i),tag,commloc,
+     $     reqsend(i),ierr)
+        end do
+c
+        do i = 1, nrec_send
+          call MPI_WAIT(reqrec(i),status,ierr)
+        end do
+        do i = 1, nrec_recep
+          call MPI_WAIT(reqsend(i),status,ierr)
+        end do
+c
+c     MPI : move in global arrays
+c
+        temprec = demrec
+
+        do i = 1, nrec_send
+          do j = 1, nlocrec
+            temprec(1,j) = temprec(1,j) + buffer2(1,j,i)
+            temprec(2,j) = temprec(2,j) + buffer2(2,j,i)
+            temprec(3,j) = temprec(3,j) + buffer2(3,j,i)
+          end do
+        end do
+c
+c     MPI : begin reception in buffer
+c
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
+            tag = nproc*rank + precdir_send1(i) + 1
             call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $      MPI_REAL8,precdir_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+     $      MPI_REAL8,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
           end if
         end do
 c
 c       MPI : move in buffer
 c
-        do iproc = 1, nrecdir_recep
-          if (precdir_recep(iproc).ne.rank) then
-            do i = 1, domlen(precdir_recep(iproc)+1)
-              ilocrec = bufbegrec(precdir_recep(iproc)+1)+i-1
-              buffers(1,ilocrec) =demrec(1,ilocrec)
-              buffers(2,ilocrec) =demrec(2,ilocrec)
-              buffers(3,ilocrec) =demrec(3,ilocrec)
+        do iproc = 1, nrecdir_recep1
+          if (precdir_recep1(iproc).ne.rank) then
+            do i = 1, domlen(precdir_recep1(iproc)+1)
+              jloc = bufbeg(precdir_recep1(iproc)+1)+i-1
+              jglob = glob(jloc)
+              if (repartrec(jglob).eq.rankloc) then
+                jlocrec = locrec(jglob)
+                buffers(1,jloc) = temprec(1,jlocrec)
+                buffers(2,jloc) = temprec(2,jlocrec)
+                buffers(3,jloc) = temprec(3,jlocrec)
+              else
+                buffers(1,jloc) = 0d0
+                buffers(2,jloc) = 0d0
+                buffers(3,jloc) = 0d0
+              end if
             end do
           end if
         end do
 c
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            tag = nproc*precdir_recep(i) + rank + 1
-            call MPI_ISEND(buffers(1,bufbegrec(precdir_recep(i)+1)),
-     $       3*domlen(precdir_recep(i)+1),
-     $       MPI_REAL8,precdir_recep(i),tag,COMM_TINKER,
+        do i = 1, nrecdir_recep1
+          if (precdir_recep1(i).ne.rank) then
+            tag = nproc*precdir_recep1(i) + rank + 1
+            call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1)),
+     $       3*domlen(precdir_recep1(i)+1),
+     $       MPI_REAL8,precdir_recep1(i),tag,COMM_TINKER,
      $       reqsend(i),ierr)
           end if
         end do
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
             call MPI_WAIT(reqrec(i),status,ierr)
           end if
         end do
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
+        do i = 1, nrecdir_recep1
+          if (precdir_recep1(i).ne.rank) then
             call MPI_WAIT(reqsend(i),status,ierr)
           end if
         end do
 c
 c       MPI : move in global arrays
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
             do j = 1, nloc
               iglob = glob(j)
               dem(1,j) = dem(1,j) + buffer(1,j,i)
@@ -1847,62 +2037,116 @@ c
               dem(3,j) = dem(3,j) + buffer(3,j,i)
             end do
           else
-            do j = 1, nloc
-              iglob = glob(j)
-              ilocrec = locrec1(iglob)
-              dem(1,j) = dem(1,j)+demrec(1,ilocrec)
-              dem(2,j) = dem(2,j)+demrec(2,ilocrec)
-              dem(3,j) = dem(3,j)+demrec(3,ilocrec)
+            do j = 1, nlocrec
+              iglob = globrec(j)
+              iloc = loc(iglob)
+              if (repart(iglob).eq.rank) then
+                dem(1,j) = dem(1,j)+temprec(1,j)
+                dem(2,j) = dem(2,j)+temprec(2,j)
+                dem(3,j) = dem(3,j)+temprec(3,j)
+              end if
             end do
           end if
         end do
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            tag = nproc*rank + precdir_send(i) + 1
+c
+c     first do rec rec communications
+c
+c     MPI : begin reception in buffer
+c
+        do i = 1, nrec_send
+          tag = nprocloc*rankloc + prec_send(i) + 1
+          call MPI_IRECV(buffer2(1,1,i),3*nlocrec,
+     $     MPI_REAL8,prec_send(i),tag,commloc,reqrec(i),ierr)
+        end do
+c
+c     MPI : move in buffer
+c
+        buffers2(:,(nlocrec+1):nlocrec2)=deprec(:,(nlocrec+1):nlocrec2)
+c
+        do i = 1, nrec_recep
+          tag = nprocloc*prec_recep(i) + rankloc + 1
+          call MPI_ISEND(buffers2(1,bufbegrec(prec_recep(i)+1)),
+     $     3*domlenrec(prec_recep(i)+1),
+     $     MPI_REAL8,prec_recep(i),tag,commloc,
+     $     reqsend(i),ierr)
+        end do
+c
+        do i = 1, nrec_send
+          call MPI_WAIT(reqrec(i),status,ierr)
+        end do
+        do i = 1, nrec_recep
+          call MPI_WAIT(reqsend(i),status,ierr)
+        end do
+c
+c     MPI : move in global arrays
+c
+        temprec = deprec
+
+        do i = 1, nrec_send
+          do j = 1, nlocrec
+            temprec(1,j) = temprec(1,j) + buffer2(1,j,i)
+            temprec(2,j) = temprec(2,j) + buffer2(2,j,i)
+            temprec(3,j) = temprec(3,j) + buffer2(3,j,i)
+          end do
+        end do
+c
+c     MPI : begin reception in buffer
+c
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
+            tag = nproc*rank + precdir_send1(i) + 1
             call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $      MPI_REAL8,precdir_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+     $      MPI_REAL8,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
           end if
         end do
 c
 c       MPI : move in buffer
 c
-        do iproc = 1, nrecdir_recep
-          if (precdir_recep(iproc).ne.rank) then
-            do i = 1, domlen(precdir_recep(iproc)+1)
-              ilocrec = bufbegrec(precdir_recep(iproc)+1)+i-1
-              buffers(1,ilocrec)=deprec(1,ilocrec)
-              buffers(2,ilocrec)=deprec(2,ilocrec)
-              buffers(3,ilocrec)=deprec(3,ilocrec)
+        do iproc = 1, nrecdir_recep1
+          if (precdir_recep1(iproc).ne.rank) then
+            do i = 1, domlen(precdir_recep1(iproc)+1)
+              jloc = bufbeg(precdir_recep1(iproc)+1)+i-1
+              jglob = glob(jloc)
+              if (repartrec(jglob).eq.rankloc) then
+                jlocrec = locrec(jglob)
+                buffers(1,jloc) = temprec(1,jlocrec)
+                buffers(2,jloc) = temprec(2,jlocrec)
+                buffers(3,jloc) = temprec(3,jlocrec)
+              else
+                buffers(1,jloc) = 0d0
+                buffers(2,jloc) = 0d0
+                buffers(3,jloc) = 0d0
+              end if
             end do
           end if
         end do
 c
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            tag = nproc*precdir_recep(i) + rank + 1
-            call MPI_ISEND(buffers(1,bufbegrec(precdir_recep(i)+1)),
-     $       3*domlen(precdir_recep(i)+1),
-     $       MPI_REAL8,precdir_recep(i),tag,COMM_TINKER,
+        do i = 1, nrecdir_recep1
+          if (precdir_recep1(i).ne.rank) then
+            tag = nproc*precdir_recep1(i) + rank + 1
+            call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1)),
+     $       3*domlen(precdir_recep1(i)+1),
+     $       MPI_REAL8,precdir_recep1(i),tag,COMM_TINKER,
      $       reqsend(i),ierr)
           end if
         end do
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
             call MPI_WAIT(reqrec(i),status,ierr)
           end if
         end do
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
+        do i = 1, nrecdir_recep1
+          if (precdir_recep1(i).ne.rank) then
             call MPI_WAIT(reqsend(i),status,ierr)
           end if
         end do
 c
 c       MPI : move in global arrays
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
             do j = 1, nloc
               iglob = glob(j)
               dep(1,j) = dep(1,j) + buffer(1,j,i)
@@ -1910,62 +2154,114 @@ c
               dep(3,j) = dep(3,j) + buffer(3,j,i)
             end do
           else
-            do j = 1, nloc
-              iglob = glob(j)
-              ilocrec = locrec1(iglob)
-              dep(1,j) =dep(1,j)+deprec(1,ilocrec)
-              dep(2,j) =dep(2,j)+deprec(2,ilocrec)
-              dep(3,j) =dep(3,j)+deprec(3,ilocrec)
+            do j = 1, nlocrec
+              iglob = globrec(j)
+              iloc = loc(iglob)
+              if (repart(iglob).eq.rank) then
+                dep(1,j) = dep(1,j)+temprec(1,j)
+                dep(2,j) = dep(2,j)+temprec(2,j)
+                dep(3,j) = dep(3,j)+temprec(3,j)
+              end if
             end do
           end if
         end do
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            tag = nproc*rank + precdir_send(i) + 1
+c     first do rec rec communications
+c
+c     MPI : begin reception in buffer
+c
+        do i = 1, nrec_send
+          tag = nprocloc*rankloc + prec_send(i) + 1
+          call MPI_IRECV(buffer2(1,1,i),3*nlocrec,
+     $     MPI_REAL8,prec_send(i),tag,commloc,reqrec(i),ierr)
+        end do
+c
+c     MPI : move in buffer
+c
+        buffers2(:,(nlocrec+1):nlocrec2)=decrec(:,(nlocrec+1):nlocrec2)
+c
+        do i = 1, nrec_recep
+          tag = nprocloc*prec_recep(i) + rankloc + 1
+          call MPI_ISEND(buffers2(1,bufbegrec(prec_recep(i)+1)),
+     $     3*domlenrec(prec_recep(i)+1),
+     $     MPI_REAL8,prec_recep(i),tag,commloc,
+     $     reqsend(i),ierr)
+        end do
+c
+        do i = 1, nrec_send
+          call MPI_WAIT(reqrec(i),status,ierr)
+        end do
+        do i = 1, nrec_recep
+          call MPI_WAIT(reqsend(i),status,ierr)
+        end do
+c
+c     MPI : move in global arrays
+c
+        do i = 1, nrec_send
+          do j = 1, nlocrec
+            temprec(1,j) = temprec(1,j) + buffer2(1,j,i)
+            temprec(2,j) = temprec(2,j) + buffer2(2,j,i)
+            temprec(3,j) = temprec(3,j) + buffer2(3,j,i)
+          end do
+        end do
+        temprec = decrec
+c
+c     MPI : begin reception in buffer
+c
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
+            tag = nproc*rank + precdir_send1(i) + 1
             call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $      MPI_REAL8,precdir_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+     $      MPI_REAL8,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
           end if
         end do
 c
 c       MPI : move in buffer
 c
-        do iproc = 1, nrecdir_recep
-          if (precdir_recep(iproc).ne.rank) then
-            do i = 1, domlen(precdir_recep(iproc)+1)
-              ilocrec = bufbegrec(precdir_recep(iproc)+1)+i-1
-              buffers(1,ilocrec) = decrec(1,ilocrec)
-              buffers(2,ilocrec) = decrec(2,ilocrec)
-              buffers(3,ilocrec) = decrec(3,ilocrec)
+        do iproc = 1, nrecdir_recep1
+          if (precdir_recep1(iproc).ne.rank) then
+            do i = 1, domlen(precdir_recep1(iproc)+1)
+              jloc = bufbeg(precdir_recep1(iproc)+1)+i-1
+              jglob = glob(jloc)
+              if (repartrec(jglob).eq.rankloc) then
+                jlocrec = locrec(jglob)
+                buffers(1,jloc) = temprec(1,jlocrec)
+                buffers(2,jloc) = temprec(2,jlocrec)
+                buffers(3,jloc) = temprec(3,jlocrec)
+              else
+                buffers(1,jloc) = 0d0
+                buffers(2,jloc) = 0d0
+                buffers(3,jloc) = 0d0
+              end if
             end do
           end if
         end do
 c
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            tag = nproc*precdir_recep(i) + rank + 1
-            call MPI_ISEND(buffers(1,bufbegrec(precdir_recep(i)+1)),
-     $       3*domlen(precdir_recep(i)+1),
-     $       MPI_REAL8,precdir_recep(i),tag,COMM_TINKER,
+        do i = 1, nrecdir_recep1
+          if (precdir_recep1(i).ne.rank) then
+            tag = nproc*precdir_recep1(i) + rank + 1
+            call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1)),
+     $       3*domlen(precdir_recep1(i)+1),
+     $       MPI_REAL8,precdir_recep1(i),tag,COMM_TINKER,
      $       reqsend(i),ierr)
           end if
         end do
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
             call MPI_WAIT(reqrec(i),status,ierr)
           end if
         end do
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
+        do i = 1, nrecdir_recep1
+          if (precdir_recep1(i).ne.rank) then
             call MPI_WAIT(reqsend(i),status,ierr)
           end if
         end do
 c
 c       MPI : move in global arrays
 c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
             do j = 1, nloc
               iglob = glob(j)
               dec(1,j) = dec(1,j) + buffer(1,j,i)
@@ -1973,20 +2269,26 @@ c
               dec(3,j) = dec(3,j) + buffer(3,j,i)
             end do
           else
-            do j = 1, nloc
-              iglob = glob(j)
-              ilocrec = locrec1(iglob)
-              dec(1,j) = dec(1,j) + decrec(1,ilocrec)
-              dec(2,j) = dec(2,j) + decrec(2,ilocrec)
-              dec(3,j) = dec(3,j) + decrec(3,ilocrec)
+            do j = 1, nlocrec
+              iglob = globrec(j)
+              iloc = loc(iglob)
+              if (repart(iglob).eq.rank) then
+                dec(1,j) = dec(1,j)+temprec(1,j)
+                dec(2,j) = dec(2,j)+temprec(2,j)
+                dec(3,j) = dec(3,j)+temprec(3,j)
+              end if
             end do
           end if
         end do
       end  if
+
+      deallocate (temprec)
       deallocate (reqsend)
       deallocate (reqrec)
       deallocate (buffer)
       deallocate (buffers)
+      deallocate (buffer2)
+      deallocate (buffers2)
       return
       end
 c
@@ -2914,33 +3216,6 @@ c      ind1temp = 0
 c
 c     get the domlen values of the coupled real space processes
 c
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-        tag = nproc*rank + precdir_recep(iproc) + 1
-        call MPI_IRECV(domlen(precdir_recep(iproc)+1),1,MPI_INT,
-     $   precdir_recep(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
-        end if
-      end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
-        tag = nproc*precdir_send(iproc) + rank + 1
-        call MPI_ISEND(domlen(rank+1),1,MPI_INT,precdir_send(iproc),
-     $   tag,COMM_TINKER,reqsend(iproc),ierr)
-        end if
-      end do
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-        call MPI_WAIT(reqrec(iproc),status,ierr)
-        end if
-      end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
-        call MPI_WAIT(reqsend(iproc),status,ierr)
-        end if
-      end do
-c
-c     get the domlen values of the coupled real space processes
-c
       do iproc = 1, nbig_recep
         tag = nproc*rank + pbig_recep(iproc) + 1
         call MPI_IRECV(domlen(pbig_recep(iproc)+1),1,MPI_INT,
@@ -2956,6 +3231,33 @@ c
       end do
       do iproc = 1, nbig_send
         call MPI_WAIT(reqsend(iproc),status,ierr)
+      end do
+c
+c     get the domlen values of the coupled real space processes (dir-recip neighbors but not present in the previous list)
+c
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+        tag = nproc*rank + precdir_recep2(iproc) + 1
+        call MPI_IRECV(domlen(precdir_recep2(iproc)+1),1,MPI_INT,
+     $   precdir_recep2(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+        end if
+      end do
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
+        tag = nproc*precdir_send2(iproc) + rank + 1
+        call MPI_ISEND(domlen(rank+1),1,MPI_INT,precdir_send2(iproc),
+     $   tag,COMM_TINKER,reqsend(iproc),ierr)
+        end if
+      end do
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+        call MPI_WAIT(reqrec(iproc),status,ierr)
+        end if
+      end do
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
+        call MPI_WAIT(reqsend(iproc),status,ierr)
+        end if
       end do
 c
       if (init) then
@@ -2984,17 +3286,17 @@ c
       end do
       nbloc = count
       nblocrecdir = count
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).eq.rank) goto 10
+      do iproc = 1, nrecdir_recep1
+        if (precdir_recep1(iproc).eq.rank) goto 10
         do iproc1 = 1, nbig_recep
-          if (pbig_recep(iproc1).eq.precdir_recep(iproc)) goto 10
+          if (pbig_recep(iproc1).eq.precdir_recep1(iproc)) goto 10
         end do
-        if (domlen(precdir_recep(iproc)+1).ne.0) then
-          bufbeg(precdir_recep(iproc)+1) = count + 1
+        if (domlen(precdir_recep1(iproc)+1).ne.0) then
+          bufbeg(precdir_recep1(iproc)+1) = count + 1
         else
-          bufbeg(precdir_recep(iproc)+1) = 1
+          bufbeg(precdir_recep1(iproc)+1) = 1
         end if
-        count = count + domlen(precdir_recep(iproc)+1)
+        count = count + domlen(precdir_recep1(iproc)+1)
   10    continue
       end do
       nblocrecdir = count
@@ -3030,39 +3332,39 @@ c
 c
 c     also get the indexes of recdir neighboring processes
 c
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-          tag = nproc*rank + precdir_recep(iproc) + 1
-          call MPI_IRECV(glob(bufbeg(precdir_recep(iproc)+1)),
-     $     domlen(precdir_recep(iproc)+1),MPI_INT,
-     $     precdir_recep(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+          tag = nproc*rank + precdir_recep2(iproc) + 1
+          call MPI_IRECV(glob(bufbeg(precdir_recep2(iproc)+1)),
+     $     domlen(precdir_recep2(iproc)+1),MPI_INT,
+     $     precdir_recep2(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
         end if
       end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
-          tag = nproc*precdir_send(iproc) + rank + 1
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
+          tag = nproc*precdir_send2(iproc) + rank + 1
           call MPI_ISEND(glob,domlen(rank+1),MPI_INT,
-     $     precdir_send(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
+     $     precdir_send2(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
         end if
       end do
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
           call MPI_WAIT(reqrec(iproc),status,ierr)
         end if
       end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
           call MPI_WAIT(reqsend(iproc),status,ierr)
         end if
       end do
 c
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-          do i = 1, domlen(precdir_recep(iproc)+1)
-            loc(glob(bufbeg(precdir_recep(iproc)+1)+i-1)) =
-     $        bufbeg(precdir_recep(iproc)+1)+i-1
-            repart(glob(bufbeg(precdir_recep(iproc)+1)+i-1)) = 
-     $       precdir_recep(iproc)
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+          do i = 1, domlen(precdir_recep2(iproc)+1)
+            loc(glob(bufbeg(precdir_recep2(iproc)+1)+i-1)) =
+     $        bufbeg(precdir_recep2(iproc)+1)+i-1
+            repart(glob(bufbeg(precdir_recep2(iproc)+1)+i-1)) = 
+     $       precdir_recep2(iproc)
           end do
         end if
       end do
@@ -3081,19 +3383,27 @@ c
       use atoms
       use domdec
       use potent
+      use mpi
       implicit none
       integer, allocatable :: counttemp(:),ind1temp(:)
-      integer count,rankloc
+      integer count,rankloc,nprocloc,commloc
       integer i,iproc
-      integer iloc,iglob
+      integer iloc,iglob,ierr,tag,status(MPI_STATUS_SIZE)
+      integer, allocatable :: reqsend(:),reqrec(:)
 c
       allocate (counttemp(nproc))
       allocate (ind1temp(n))
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
 c
       if (use_pmecore) then
+        nprocloc = nrec
         rankloc = rank_bis
+        commloc = comm_rec
       else
+        nprocloc = nproc
         rankloc = rank
+        commloc = COMM_TINKER
       end if
 c
 c      ind1temp = 0 
@@ -3102,9 +3412,9 @@ c      ind1temp = 0
 c
       if ((.not.(use_pmecore)).or.((use_pmecore).and.(rank.gt.ndir-1)))
      $ then
-        do iproc = 1, nrecdir_recep
-          do i = 1, domlen(precdir_recep(iproc)+1)
-            iloc = bufbeg(precdir_recep(iproc)+1)+i-1
+        do iproc = 1, nrecdir_recep1
+          do i = 1, domlen(precdir_recep1(iproc)+1)
+            iloc = bufbeg(precdir_recep1(iproc)+1)+i-1
             iglob = glob(iloc)
 c
 c       check if atom is in the domain or in one of the neighboring domains
@@ -3128,32 +3438,77 @@ c
         nlocrec = domlenrec(rank+1)
       end if
 c
-      count = 0
-      bufbegrec(precdir_recep(1)+1) = 1
-      if (nrecdir_recep.gt.0) then
-        count = domlen(precdir_recep(1)+1)
-      end if
-      do iproc = 2, nrecdir_recep
-        if (domlen(precdir_recep(iproc)+1).ne.0) then
-          bufbegrec(precdir_recep(iproc)+1) = count + 1
-        else
-          bufbegrec(precdir_recep(iproc)+1) = 1
-        end if
-        count = count + domlen(precdir_recep(iproc)+1)
-      end do
-      nblocrec = count
+c     get the domlen values of the coupled reciprocal space processes
 c
-      do iproc = 1, nrecdir_recep
-        do i = 1, domlen(precdir_recep(iproc)+1)
-          globrec1(bufbegrec(precdir_recep(iproc)+1)+i-1) =
-     $       glob(bufbeg(precdir_recep(iproc)+1)+i-1)
-          locrec1(globrec1(bufbegrec(precdir_recep(iproc)+1)+i-1)) =
-     $      bufbegrec(precdir_recep(iproc)+1)+i-1
+      do iproc = 1, nrec_recep
+        tag = nprocloc*rankloc + prec_recep(iproc) + 1
+        call MPI_IRECV(domlenrec(prec_recep(iproc)+1),1,MPI_INT,
+     $   prec_recep(iproc),tag,commloc,reqrec(iproc),ierr)
+      end do
+      do iproc = 1, nrec_send
+        tag = nprocloc*prec_send(iproc) + rankloc + 1
+        call MPI_ISEND(nlocrec,1,MPI_INT,prec_send(iproc),tag,
+     $   commloc,reqsend(iproc),ierr)
+      end do
+      do iproc = 1, nrec_recep
+        call MPI_WAIT(reqrec(iproc),status,ierr)
+      end do
+      do iproc = 1, nrec_send
+        call MPI_WAIT(reqsend(iproc),status,ierr)
+      end do
+c
+      bufbegrec(rankloc+1) = 1
+      count = nlocrec
+
+      nlocrec2 = count
+      count = nlocrec2
+
+      do iproc = 1, nrec_recep
+        if (domlenrec(prec_recep(iproc)+1).ne.0) then
+          bufbegrec(prec_recep(iproc)+1) = count + 1
+        else
+          bufbegrec(prec_recep(iproc)+1) = 1
+        end if
+        count = count + domlenrec(prec_recep(iproc)+1)
+ 10     continue
+      end do
+      nlocrec2 = count
+c
+c     send and receive the indexes of the neighboring reciprocal processes
+c
+
+      do iproc = 1, nrec_recep
+        tag = nprocloc*rankloc + prec_recep(iproc) + 1
+        call MPI_IRECV(globrec(bufbegrec(prec_recep(iproc)+1)),
+     $   domlenrec(prec_recep(iproc)+1),MPI_INT,prec_recep(iproc),tag,
+     $   commloc,reqrec(iproc),ierr)
+      end do
+      do iproc = 1, nrec_send
+        tag = nprocloc*prec_send(iproc) + rankloc + 1
+        call MPI_ISEND(globrec,domlenrec(rankloc+1),MPI_INT,
+     $   prec_send(iproc),
+     $   tag,commloc,reqsend(iproc),ierr)
+      end do
+      do iproc = 1, nrec_recep
+        call MPI_WAIT(reqrec(iproc),status,ierr)
+      end do
+      do iproc = 1, nrec_send
+        call MPI_WAIT(reqsend(iproc),status,ierr)
+      end do
+c
+      do iproc = 1, nrec_recep
+        do i = 1, domlenrec(prec_recep(iproc)+1)
+          locrec(globrec(bufbegrec(prec_recep(iproc)+1)+i-1)) =
+     $      bufbegrec(prec_recep(iproc)+1)+i-1
+          repartrec(globrec(bufbegrec(prec_recep(iproc)+1)+i-1)) = 
+     $     prec_recep(iproc)
         end do
       end do
-c
+
       deallocate (ind1temp)
       deallocate (counttemp)
+      deallocate (reqsend)
+      deallocate (reqrec)
       return
       end
 c

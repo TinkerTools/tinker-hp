@@ -443,23 +443,27 @@ c     get the local frame type and the frame-defining atoms
 c
       ib = i!ipole(i)
       if (ib.le.0) return
-      ibloc = locrec1(ib)
+      ibloc = locrec(ib)
       if (ibloc.le.0) return
+      if (ibloc.gt.nlocrec2) return
 
       ia = zaxis(i)
       if (ia.le.0) return
-      ialoc = locrec1(ia)
+      ialoc = locrec(ia)
       if (ialoc.le.0) return
+      if (ialoc.gt.nlocrec2) return
 
       ic = xaxis(i)
       if (ic.le.0) ic = ib
-      icloc = locrec1(ic)
+      icloc = locrec(ic)
       if (icloc.le.0) icloc = ibloc
+      if (icloc.gt.nlocrec2) icloc = ibloc
 
       id = yaxis(i)
       if (id.le.0) id = ib
-      idloc = locrec1(id)
+      idloc = locrec(id)
       if (idloc.le.0) idloc = ibloc
+      if (idloc.gt.nlocrec2) idloc = ibloc
 
       axetyp = polaxe(i)
       if (axetyp .eq. 'None')  return

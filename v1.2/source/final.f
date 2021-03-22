@@ -74,8 +74,6 @@ c
       if (allocated(vlst)) deallocate (vlst)
       if (allocated(globrec)) deallocate (globrec)
       if (allocated(locrec)) deallocate (locrec)
-      if (allocated(globrec1)) deallocate (globrec1)
-      if (allocated(locrec1)) deallocate (locrec1)
       if (allocated(v)) deallocate (v)
       if (allocated(a)) deallocate (a)
       if (allocated(aalt)) deallocate (aalt)

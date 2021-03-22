@@ -630,7 +630,7 @@ c
       do isite = 1, nionrecloc
         iichg = chgrecglob(isite)
         iglob = iion(iichg)
-        iloc = locrec1(iglob)
+        iloc = locrec(iglob)
         iatm = iglob
         igrd0 = igrid(1,iatm)
         jgrd0 = igrid(2,iatm)
