@@ -2,7 +2,7 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------
 A phase advance update (GPUs) has been pushed to GitHub (28/10/2020) to support COVID-19 research: the Tinker-HP (multi)-GPUs plateform is now available: https://github.com/TinkerTools/tinker-hp/tree/master/GPU 
 
-!!! Check out the JCTC paper (Open Access) about the native GPUs version of Tinker-HP (03/23/2021) : https://pubs.acs.org/doi/10.1021/acs.jctc.0c01164 !!!
+!!! Check out the JCTC paper (Open Access) about the native GPUs version of Tinker-HP (03/23/2021) : https://doi.org/10.1021/acs.jctc.0c01164 !!!
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
 
