@@ -55,6 +55,16 @@ c      if (cudaStreamDestroy(rec_stream).ne.0)
 c     &   print*, 'error destroying stream'
 c#endif
 c
+c     Free MPI shared memory segments
+c
+      if (use_vdw   ) call delete_data_vdw
+      if (use_charge) call delete_data_kcharge
+      if (use_mpole ) call delete_data_mpole
+      if (use_polar ) call delete_data_polar
+      if (use_angle ) call delete_data_kangle
+      if (use_opbend) call delete_data_kopbend
+      if (use_tors.or.use_tortor) call delete_data_ktors
+c
 c     perform deallocation of associated pointers arrays
 c
 !!$acc exit data delete(nvlst,nelst,elst,vlst)
