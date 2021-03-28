@@ -59,7 +59,7 @@ Tinker-HP is part of the Tinker distribution and uses the same tools as Tinker. 
 if you use the Tinkertools please cite :
 
 Tinker 8: Software Tools for Molecular Design.
-J. A. Rackers, Z. Wang, C. Lu, M. L. Maury, L. Lagardère, M. J. Schnieders, J.-P. Piquemal, P. Ren, J. W. Ponder,  J. Chem. Theory. Comput., 2018, 14 (10), 5273–5289 DOI: http://dx.doi.org/10.1021/acs.jctc.8b00529 PMC free text : https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6335969/
+J. A. Rackers, Z. Wang, C. Lu, M. L. Maury, L. Lagardère, M. J. Schnieders, J.-P. Piquemal, P. Ren, J. W. Ponder,  J. Chem. Theory. Comput., 2018, 14 (10), 5273–5289 DOI: http://dx.doi.org/10.1021/acs.jctc.8b00529 ; PMC free text : https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6335969/
 
 iii) <B>Support:</B>
 
