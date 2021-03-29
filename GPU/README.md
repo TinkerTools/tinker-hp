@@ -28,6 +28,9 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Orthogonal and Octahedron PBC Box Shapes (the latest to be used only on a single MPI process for now)
    - Plumed support available (updated : 03/2021)
    - More to come
+
+   For more detailed informations on how to use the application, see section V to VIII of the readme of the CPU 1.2 version: https://github.com/TinkerTools/tinker-hp/blob/master/v1.2/Readme_v1.2.pdf
+   Beware that not all the features available on CPU are available on GPU (see above, for example the TCG solver is only available on CPU as is the Langevin Piston barostat).
    
    <B>If you use the code please cite :</B>
    
