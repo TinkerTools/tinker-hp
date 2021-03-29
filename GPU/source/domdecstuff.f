@@ -184,6 +184,7 @@ c
       if(pa.or.use_tors  ) call prmem_requestm(det  ,3,nbloc)
       if(pa.or.use_pitors) call prmem_requestm(dept ,3,nbloc)
       if(pa.or.use_strtor) call prmem_requestm(debt ,3,nbloc)
+      if(pa.or.use_angtor) call prmem_requestm(deat ,3,nbloc)
       if(pa.or.use_tortor) call prmem_requestm(dett ,3,nbloc)
 
       if(pa.or.use_smd_velconst.or.use_smd_forconst)
@@ -310,6 +311,7 @@ c
       if(pa.or.use_tors  ) call prmem_requestm(det  ,3,nbloc)
       if(pa.or.use_pitors) call prmem_requestm(dept ,3,nbloc)
       if(pa.or.use_strtor) call prmem_requestm(debt ,3,nbloc)
+      if(pa.or.use_angtor) call prmem_requestm(deat ,3,nbloc)
       if(pa.or.use_tortor) call prmem_requestm(dett ,3,nbloc)
       if(pa.or.use_smd_velconst.or.use_smd_forconst)
      &   call prmem_requestm(desmd  ,3,nbloc)

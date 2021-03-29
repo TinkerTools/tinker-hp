@@ -105,7 +105,7 @@ endif
 
 MODSAM = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o\
    MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
-   MOD_angpot.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
+   MOD_angpot.o MOD_angtor.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
    MOD_atoms.o MOD_atmtyp.o MOD_bath.o MOD_bitor.o\
    MOD_bndpot.o MOD_bond.o MOD_bound.o MOD_boxes.o\
    MOD_cell.o MOD_charge.o MOD_chgpot.o MOD_chunks.o\
@@ -146,6 +146,7 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    dcinduce_pme.o dcinduce_pmegpu.o dcinduce_pme2.o dcinduce_pme2gpu.o dcinduce_shortreal.o dcinduce_shortrealgpu.o\
    eamd1.o eangang.o eangang1.o eangang3.o\
    eangle.o eangle1.o eangle1gpu.o eangle3.o eangle3gpu.o\
+	eangtor.o eangtor1.o eangtor3.o\
    ebond.o ebond1.o ebond1gpu.o ebond3.o ebond3gpu.o\
    echarge.o echarge1.o echarge1vec.o echarge1gpu.o echarge3.o echarge3vec.o echarge3gpu.o\
    efld0_direct.o efld0_directvec.o efld0_directgpu.o\
@@ -172,10 +173,10 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    final.o freeunit.o geometry.o getkey.o\
    getnumb.o getprm.o getstring.o gettext.o\
    getword.o getxyz.o gradient.o\
-   hybrid.o image.o \
+   hybrid.o image.o\
    initatom.o initial.o initprm.o initres.o\
    invert.o kangang.o kangle.o\
-   kamd.o katom.o kbond.o kcharge.o kewald.o kgeom.o\
+   kamd.o katom.o kangtor.o kbond.o kcharge.o kewald.o kgeom.o\
    kimprop.o kimptor.o kinetic.o kmpole.o\
    kopbend.o kopdist.o kpitors.o kpolar.o\
    kstrbnd.o kstrtor.o kscalfactor.o ksmd.o ktors.o ktortor.o\

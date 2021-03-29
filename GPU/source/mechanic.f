@@ -102,6 +102,7 @@ c
       if (use_tors .or. use_strtor .or. use_tortor)  call ktors
       if (use_pitors)  call kpitors(.true.)
       if (use_strtor)  call kstrtor(.true.)
+      if (use_angtor)  call kangtor(.true.)
       if (use_tortor)  call ktortor(.true.)
 c
 c     assign van der Waals and electrostatic potential parameters
@@ -177,6 +178,7 @@ c
       use atoms ,only:n
       use angle ,only:nangle
       use angang,only:nangang
+      use angtor,only:nangtor
       use bond  ,only:nbond
       use bitor ,only:nbitor
       use charge,only:nion
@@ -218,6 +220,7 @@ c
       if(nbitor.ne.0) write(*,12) 'BITORS',nbitor
       if (use_pitors) write(*,12) 'PITORS',npitors
       if (use_strtor) write(*,12) 'STRTOR',nstrtor
+      if (use_angtor) write(*,12) 'ANGTOR',nangtor
       if (use_tortor) write(*,12) 'TORTOR',ntortor
       if (use_charge) write(*,12) 'CHARGE',nion
       if (use_vdw   ) write(*,12) 'VDW'   ,nvdw
@@ -258,7 +261,7 @@ c
       logical,save:: save_opdist,save_improp
       logical,save:: save_imptor,save_tors
       logical,save:: save_pitors,save_strtor
-      logical,save:: save_tortor,save_geom
+      logical,save:: save_angtor,save_tortor,save_geom
       logical,save:: save_metal,save_extra
       logical,save:: save_vdw,save_charge
       logical,save:: save_dipole
@@ -289,6 +292,7 @@ c
       save_tors   = use_tors
       save_pitors = use_pitors
       save_strtor = use_strtor
+      save_angtor = use_angtor
       save_tortor = use_tortor
       save_geom   = use_geom
       save_extra  = use_extra
@@ -363,6 +367,7 @@ c     call molecule(.false.)
       if (use_imptor)  call kimptor(.false.)
       if (use_pitors)  call kpitors(.false.)
       if (use_strtor)  call kstrtor(.false.)
+      if (use_angtor)  call kangtor(.false.)
       if (use_tortor)  call ktortor(.false.)
       if (use_geom)    call kgeom  (.false.)
       if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
@@ -411,10 +416,11 @@ c        print*,use_strtor,use_tortor,use_geom
          if (use_angang) call kangang(.false.)  ! no ACC
          if (use_opbend) call kopbend(.false.)  ! Alloc(nangleloc) angleglob(:nangleloc) -> opbendglob(:nopbendloc)
          if (use_opdist) call kopdist(.false.)  ! no ACC
-         if (use_improp) call kimprop(.false.)  ! no ACC
-         if (use_imptor) call kimptor(.false.)  ! no ACC
+         if (use_improp) call kimprop(.false.)
+         if (use_imptor) call kimptor(.false.)
          if (use_pitors) call kpitors(.false.)  ! Alloc(ntorsloc/!\) bndglob(:nbondloc) -> pitorsglob(npitorsloc)
          if (use_strtor) call kstrtor(.false.)  ! Alloc(ntorsloc) torsglob(:ntorsloc) -> strtorglob(:nstrtorloc) + nstrtor
+         if (use_angtor) call kangtor(.false.)
          if (use_tortor) call ktortor(.false.)  ! Alloc(nbitorloc) bitorsglob(:nbitorloc) -> tortorglob(:ntortorloc)
          if (use_geom)   call kgeom  (.false.)  ! no ACC
          if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
@@ -485,6 +491,7 @@ c      call molecule(.false.)
         if (use_imptor) call kimptor(.false.)
         if (use_pitors) call kpitors(.false.)
         if (use_strtor) call kstrtor(.false.)
+        if (use_angtor) call kangtor(.false.)
         if (use_tortor) call ktortor(.false.)
         if (use_geom)   call kgeom  (.false.)
         if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
@@ -1023,7 +1030,7 @@ c
       implicit none
       logical,parameter::accept=.false.
 
-      if (nproc.gt.6.and.accept.and.
+      if (nproc.gt.8.and.accept.and.
      &   (associated(efld0_directgpu_p,efld0_directgpu3).or.
      &    associated(efld0_direct_cp,efld0_directgpu3)).and.
      &    associated(tmatxb_pme_core_p,tmatxb_pme_core3))

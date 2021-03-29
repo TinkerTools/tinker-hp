@@ -22,6 +22,7 @@ c     aeid    improper dihedral energy partitioned over atoms
 c     aeit    improper torsion energy partitioned over atoms
 c     aet     torsional energy partitioned over atoms
 c     aept    pi-orbital torsion energy partitioned over atoms
+c     aeat    angle-torsion energy partitioned over atoms
 c     aebt    stretch-torsion energy partitioned over atoms
 c     aett    torsion-torsion energy partitioned over atoms
 c     aev     van der Waals energy partitioned over atoms
@@ -35,14 +36,8 @@ c
 #include "tinker_precision.h"
       module analyz
       implicit none
-!DIR$ ATTRIBUTES ALIGN:64 :: aesum,aem ,aep ,aev
       real(t_p), allocatable :: aesum(:),aem (:),aep (:),aev (:)
-!DIR$ ATTRIBUTES ALIGN:64 :: aea  ,aeba,aub ,aeaa
-      real(t_p), allocatable :: aea  (:),aeba(:),aub (:),aeaa(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: aeopd,aeid,aeit,aet
-      real(t_p), allocatable :: aeopd(:),aeid(:),aeit(:),aet (:)
-!DIR$ ATTRIBUTES ALIGN:64 :: aebt ,aett,aeg ,aex
-      real(t_p), allocatable :: aebt (:),aett(:),aeg (:),aex (:)
-!DIR& ATTRIBUTES ALIGN:64 :: aeb, aeopb, aept, aec
-      real(t_p), allocatable :: aeb  (:),aeopb(:),aept(:),aec(:)
+     &         , aea(:), aeba(:), aub(:), aeaa(:), aeopd(:), aeid(:)
+     &         , aeit(:), aet(:), aebt(:), aett(:), aeg(:), aex(:)
+     &         , aeb(:), aeopb(:), aept(:), aec(:), aeat(:)
       end

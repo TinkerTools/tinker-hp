@@ -73,6 +73,8 @@ c
       allocate (aet(nbloc))
       if (allocated(aept)) deallocate (aept)
       allocate (aept(nbloc))
+      if (allocated(aeat)) deallocate (aeat)
+      allocate (aeat(nbloc))
       if (allocated(aebt)) deallocate (aebt)
       allocate (aebt(nbloc))
       if (allocated(aett)) deallocate (aett)
@@ -84,14 +86,15 @@ c
       if (allocated(aesum)) deallocate (aesum)
       allocate (aesum(nbloc))
 !$acc enter data create(aec,aea,aeb,aub,aeopb,aeg,aeba,
-!$acc&      aet,aept,aebt,aett) async
+!$acc&      aet,aept,aebt,aett,aeat) async
+
       call create_action_data_ondevice
 
  20   format(a,f12.9)
 c
 c     zero out each of the potential energy components
 c
-!$acc data present(eb,eba,eub,eopb,et,ept,ett,ebt,ea
+!$acc data present(eb,eba,eub,eopb,et,ept,ett,ebt,eat,ea
 !$acc&      ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
 !$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&      ,emrec,eprec,nev,nec,nem,nep,nem_,nep_,nev_)
@@ -118,6 +121,7 @@ c
       et    = 0.0_re_p
       ept   = 0.0_re_p
       ebt   = 0.0_re_p
+      eat   = 0.0_re_p
       ett   = 0.0_re_p
       eg    = 0.0_re_p
       ev_r  = 0
@@ -146,6 +150,7 @@ c
       aebt  = 0.0_ti_p
       aett  = 0.0_ti_p
       aeg   = 0.0_ti_p
+      aeat  = 0.0_ti_p
 !$acc end kernels
       aeaa  = 0.0_ti_p
       aeopd = 0.0_ti_p
@@ -176,6 +181,7 @@ c     if (use_opbend)  call eopbend3
       if (use_imptor)  call eimptor3
       if (use_tors)    call etors3
       if (use_pitors)  call epitors3
+      if (use_angtor)  call eangtor3
       if (use_strtor)  call estrtor3
       if (use_tortor)  call etortor3
 c
@@ -212,7 +218,7 @@ c
 c     Update data on host
 c
 !$acc wait
-!$acc update host(eb,eba,eub,eopb,et,ept,ett,ebt,ea
+!$acc update host(eb,eba,eub,eopb,et,ept,ett,ebt,eat,ea
 !$acc&     ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
 !$acc&     ,eb_r,ev_r,ev_r,em_r,ep_r
 !$acc&     ,nec,nev,nep,nem)
@@ -225,176 +231,184 @@ c     MPI : get total energy
 c
       if (rank.eq.0) then
         call MPI_REDUCE(MPI_IN_PLACE,ec,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nec,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,em,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nem,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,ep,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nep,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,ev,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nev,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eb,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neb,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,ea,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nea,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eba,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neba,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eub,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neub,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eaa,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neaa,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eopb,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neopb,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eopd,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neopd,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eid,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neid,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eit,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neit,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,et,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,net,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,ept,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nept,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,ebt,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nebt,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,eat,1,MPI_RPREC,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,neat,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,ett,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nett,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eg,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,neg,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,ex,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nex,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,einter,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
       else
         call MPI_REDUCE(ec,ec,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nec,nec,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(em,em,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nem,nem,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(ep,ep,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nep,nep,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(ev,ev,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nev,nev,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eb,eb,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neb,neb,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(ea,ea,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nea,nea,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eba,eba,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neba,neba,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eub,eub,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neub,neub,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eaa,eaa,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neaa,neaa,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eopb,eopb,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neopb,neopb,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eopd,eopd,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neopd,neopd,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eid,eid,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neid,neid,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eit,eit,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neit,neit,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(et,et,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(net,net,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(ept,ept,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nept,nept,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(ebt,ebt,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nebt,nebt,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(eat,eat,1,MPI_RPREC,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(neat,neat,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(ett,ett,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nett,nett,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eg,eg,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(neg,neg,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(ex,ex,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(nex,nex,1,MPI_INT,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(einter,einter,1,MPI_RPREC,MPI_SUM,0,
-     $     MPI_COMM_WORLD,ierr)
+     $     COMM_TINKER,ierr)
       end if
 c
 c     sum up to give the total potential energy
 c
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
-     &          + et + ept + ebt + ett + ev + em
+     &          + et + ept + eat + ebt + ett + ev + em
      &          + ec + ep +  eg + ex
       energy = esum
 c
 c     sum up to give the total potential energy per atom
 c
-      aesum = aem + aec + aep + aev + aeb + aea + aeba + aub + aeaa +
-     $ aeopb + aeopd + aeid + aeit + aet + aept + aebt + aett + aeg
-     $ + aex
+      aesum = aem + aec + aep + aev + aeb + aea + aeba + aub + aeaa
+     $  + aeopb + aeopd + aeid + aeit + aet + aept + aebt + aeat + aett
+     $  + aeg + aex
 
 !$acc end data
 c

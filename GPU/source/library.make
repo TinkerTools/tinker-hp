@@ -18,6 +18,7 @@ MOD_analyz.o \
 MOD_angang.o \
 MOD_angle.o \
 MOD_angpot.o \
+MOD_angtor.o \
 MOD_argue.o \
 MOD_ascii.o \
 MOD_atmlst.o \
@@ -55,6 +56,7 @@ MOD_interfaces.o \
 MOD_iounit.o \
 MOD_kanang.o \
 MOD_kangs.o \
+MOD_kantor.o \
 MOD_katoms.o \
 MOD_kbonds.o \
 MOD_kchrge.o \
@@ -190,6 +192,9 @@ eangle1.o \
 eangle1gpu.o \
 eangle3.o \
 eangle3gpu.o  \
+eangtor.o \
+eangtor1.o \
+eangtor3.o \
 ebond.o \
 ebond1.o \
 ebond1gpu.o \
@@ -299,6 +304,7 @@ invert.o \
 kamd.o \
 kangang.o \
 kangle.o \
+kangtor.o \
 katom.o \
 kbond.o \
 kcharge.o \

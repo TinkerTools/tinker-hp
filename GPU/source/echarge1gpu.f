@@ -936,10 +936,8 @@ c
       real(t_p) h1,h2,h3
       real(t_p) r1,r2,r3
       real(t_p),save:: vxx,vxy,vxz,vyy,vyz,vzz
-      integer  , allocatable :: req(:),reqbcast(:)
-c     real(t_p), allocatable :: qgridmpi(:,:,:,:,:)
-      real(8) time0,time1
-      logical,save::f_in=.true.
+      logical  ,save::f_in=.true.
+      integer  ,allocatable:: req(:),reqbcast(:)
 c
 c     return if the Ewald coefficient is zero
 c
@@ -990,49 +988,10 @@ c
 
       call grid_pchg_site_p
       call timer_exit ( timer_grid1,quiet_timers )
-c
-c     MPI : Begin reception
-c
-      if (nrec_send.gt.0) then
-!$acc wait(rec_queue)
-      end if
-      call timer_enter( timer_recreccomm )
-!$acc host_data use_device(qgridmpi,qgridin_2d)
-      do i = 1, nrec_recep
-        tag = nprocloc*rankloc + prec_recep(i) + 1
-        call MPI_IRECV(qgridmpi(1,1,1,1,i),
-     $       2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     $       prec_recep(i),tag,commloc,req(tag),ierr)
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_send
-        proc = prec_send(i)
-        tag  = nprocloc*prec_send(i) + rankloc + 1
-        call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
-     $       2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     $       proc,tag,commloc,req(tag),ierr)
-      end do
-!$acc end host_data
 
-      do i = 1, nrec_recep
-        tag = nprocloc*rankloc + prec_recep(i) + 1
-        call MPI_WAIT(req(tag),status,ierr)
-      end do
-      do i = 1, nrec_send
-        tag = nprocloc*prec_send(i) + rankloc + 1
-        call MPI_WAIT(req(tag),status,ierr)
-      end do
-c
-c     do the reduction 'by hand'
-c
-      do i = 1, nrec_recep
-         call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
-     $        qgridin_2d(1,1,1,1,1),qgridmpi(1,1,1,1,i),
-     $        qgridin_2d(1,1,1,1,1))
-      end do
-      call timer_exit ( timer_recreccomm,quiet_timers )
+      ! FFtGridin communication
+      call commGridFront( qgridin_2d,r_comm )
+      call commGridFront( qgridin_2d,r_wait )
 c
 c     perform the 3-D FFT forward transformation
 c
@@ -1158,44 +1117,11 @@ c
       call   fft2d_backmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $                     n3mpimax)
 #endif
-c
-c     MPI : Begin reception
-c
-      if (nrec_recep.gt.0) then
-!$acc wait(rec_queue)
-      end if
-      call timer_enter( timer_recreccomm )
-!$acc host_data use_device(qgridin_2d)
-      do i = 1, nrec_send
-         proc = prec_send(i)
-         tag  = nprocloc*rankloc + prec_send(i) + 1
-         call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),
-     $        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,
-     $        prec_send(i),tag,commloc,reqbcast(tag),ierr)
-      end do
-c
-c     MPI : begin sending
-c
-      do i = 1, nrec_recep
-         tag = nprocloc*prec_recep(i) + rankloc + 1
-         call MPI_ISEND(qgridin_2d,2*n1mpimax*n2mpimax*n3mpimax,
-     $        MPI_TPREC,prec_recep(i),tag,commloc,reqbcast(tag),
-     $        ierr)
-      end do
-!$acc end host_data
-c
-      do i = 1, nrec_send
-         tag = nprocloc*rankloc + prec_send(i) + 1
-         call MPI_WAIT(reqbcast(tag),status,ierr)
-      end do
-c
-      do i = 1, nrec_recep
-         tag = nprocloc*prec_recep(i) + rankloc + 1
-         call MPI_WAIT(reqbcast(tag),status,ierr)
-      end do
-      call timer_exit ( timer_recreccomm,quiet_timers )
 
-#ifdef TINKER_DEBUG
+      call commGridBack( qgridin_2d,r_comm )
+      call commGridBack( qgridin_2d,r_wait )
+
+#if 0
       if (rankloc.eq.0) then
 !$acc update host(qgridin_2d,qgridout_2d)
       print*,'grido norm2',comput_norm(qgridout_2d,size(qgridout_2d),2)
@@ -1210,7 +1136,6 @@ c
       call timer_exit ( timer_grid2,quiet_timers )
 
 !$acc end data
-c     deallocate (qgridmpi)
       deallocate (req)
       deallocate (reqbcast)
       end

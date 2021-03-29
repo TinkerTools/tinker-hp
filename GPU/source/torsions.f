@@ -123,9 +123,11 @@ c
         ic  = ibnd(2,ibond)
 #endif
         ntorsloc1  = 0
+!$acc loop seq
         do j = 1, n12(ib)
            ia = i12(j,ib)
            if (ia .ne. ic) then
+!$acc loop seq
               do k = 1, n12(ic)
                  id = i12(k,ic)
                  if (id.ne.ib .and. id.ne.ia) then
@@ -186,6 +188,7 @@ c     parameter arrays
 c
       subroutine alloc_shared_torsions
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use angtor
       use domdec
       use improp
       use imptor
@@ -250,4 +253,9 @@ c
       call shmem_request(ist,     winist,    [4,ntors],config=mhostacc)
       call shmem_request(kst,     winkst,    [9,ntors],config=mhostacc)
       call shmem_request(nbstrtor,winnbstrtor, [ntors],config=mhostacc)
+
+      ! angtor parameters data
+      call shmem_request( iat,       winiat, [4,ntors],config=mhostacc)
+      call shmem_request(kant,      winkant, [6,ntors],config=mhostacc)
+      call shmem_request(nbangtor,winnbangtor, [ntors],config=mhostacc)
       end

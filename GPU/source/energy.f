@@ -47,7 +47,7 @@ c
 c
 c     zero out each of the potential energy components
 c
-!$acc data present(eb,eba,eub,eopb,et,ept,ett,ebt,ea
+!$acc data present(eb,eba,eub,eopb,et,ept,eat,ett,ebt,ea
 !$acc&      ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
 !$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&      ,nev,nec,nem,nep,nev_,nec_,nem_,nep_)
@@ -66,6 +66,7 @@ c
       et   = 0.0_re_p
       ept  = 0.0_re_p
       ebt  = 0.0_re_p
+      eat  = 0.0_re_p
       ett  = 0.0_re_p
       ev   = 0.0_re_p
       ev_r = 0
@@ -101,6 +102,7 @@ c
       if (use_tors)    call etors
       if (use_pitors)  call epitors
       if (use_strtor)  call estrtor
+      if (use_angtor)  call eangtor
       if (use_tortor)  call etortor
 c
 c     call the van der Waals energy component routines
@@ -127,7 +129,7 @@ c
       if (ev_r.ne.0) ev = ev + enr2en(ev_r)
       if (eb_r.ne.0) eb = eb + enr2en(eb_r)
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
-     &          + et + ept + ebt + ett + ev + ec + em
+     &          + et + ept + ebt + eat + ett  + ev   + ec  + em
      &          + ep + eg + ex + eg
 !$acc end serial
 !$acc update host(esum) async

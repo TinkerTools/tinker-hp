@@ -112,12 +112,13 @@ c===============================================================================
 
       subroutine resetMatvecStep
       use tmatxb_inl_subroutines,only:icall,ndec
+      implicit none
       if (icall.ne.ndec) then
 13       format( ' Error Made spliting Matrix-Vector product '
      &        ,/,' Either incomplete of over calculated '
      &        ,/,' ndec  ', I4
      &        ,/,' icall ', I4 )
-         write(*, 13) ndec, ncall
+         write(*, 13) ndec, icall
          call fatal
       end if
       icall = 1

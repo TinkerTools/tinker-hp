@@ -38,6 +38,7 @@ c
       use_tors       = .true.
       use_pitors     = .true.
       use_strtor     = .true.
+      use_angtor     = .true.
       use_tortor     = .true.
       use_vdw        = .true.
       use_vdwshort   = .false.

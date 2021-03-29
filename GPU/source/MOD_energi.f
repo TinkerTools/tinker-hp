@@ -22,6 +22,7 @@ c     eid    improper dihedral potential energy of the system
 c     eit    improper torsion potential energy of the system
 c     et     torsional potential energy of the system
 c     ept    pi-orbital torsion potential energy of the system
+c     eat    angle-torsion potential energy of the system
 c     ebt    stretch-torsion potential energy of the system
 c     ett    torsion-torsion potential energy of the system
 c     ev     van der Waals potential energy of the system
@@ -48,13 +49,12 @@ c
       real(r_p) esum,eb,ea,eba
       real(r_p) eub,eaa,eopb,eopd
       real(r_p) eid,eit,et,ept
-      real(r_p) ebt,ett,ev,ec,ecrec
-      real(r_p) em,emrec,ep,eprec
+      real(r_p) eat,ebt,ett
+      real(r_p) ev,ec,ecrec,em,emrec,ep,eprec
       real(r_p) eg,ex
       real(r_p) esave
       real(r_p) ensmd
-      real(r_p) eDaMD,ePaMD
-      real(r_p) eW1aMD,eW2aMD
+      real(r_p) eDaMD,ePaMD,eW1aMD,eW2aMD
       ener_rtyp ev_r,ec_r,em_r,ep_r,eb_r
 
       interface
@@ -77,7 +77,7 @@ c
       module subroutine create_energi_on_device()
       implicit none
 !$acc enter data create(esum,eb,ea,eba,eub,eaa,eopb,eopd,
-!$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,
+!$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,eat,
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
 !$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
 !$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
@@ -85,7 +85,7 @@ c
       module subroutine delete_energi_on_device()
       implicit none
 !$acc exit data delete(esum,eb,ea,eba,eub,eaa,eopb,eopd,
-!$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,
+!$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,eat,
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
 !$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
 !$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
@@ -101,7 +101,7 @@ c
          print 20
  30   format (1x,A,F18.6)
 !$acc update host(esum,eb,ea,eba,eub,eaa,eopb,eopd,
-!$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,
+!$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,eat,
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
 !$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
 !$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
@@ -117,6 +117,7 @@ c
          if (ept  /=real(0,r_p)) print 30, 'ept  = ',ept
          if (ebt  /=real(0,r_p)) print 30, 'ebt  = ',ebt
          if (ett  /=real(0,r_p)) print 30, 'ett  = ',ett
+         if (eat  /=real(0,r_p)) print 30, 'eat  = ',ett
          if (eopb /=real(0,r_p)) print 30, 'eopb = ',eopb
          if (eopd /=real(0,r_p)) print 30, 'eopd = ',eopd
          if (eg   /=real(0,r_p)) print 30, 'eg   = ',eg

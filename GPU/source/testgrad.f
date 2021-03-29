@@ -31,34 +31,36 @@ c
       implicit none
       integer i,j,next,iglob,ierr,nthreadsupport
       integer iloc
-      real(t_p) etot,f,f0,eps,eps0,old,energy
-      real(t_p) eb0,ea0,eba0,eub0,eaa0,eopb0
-      real(t_p) eopd0,eid0,eit0,et0,ept0,ebt0
+      real(r_p) etot,f,f0,eps,eps0,old,energy
+      real(r_p) eb0,ea0,eba0,eub0,eaa0,eopb0
+      real(r_p) eopd0,eid0,eit0,et0,ept0,eat0,ebt0
       real(r_p) ett0,ev0,ec0,em0,ep0
-      real(t_p) er0,es0,elf0,eg0,ex0
-      real(t_p) totnorm,ntotnorm,rms,nrms
-      real(t_p), allocatable :: denorm(:)
-      real(t_p), allocatable :: ndenorm(:)
-      real(t_p), allocatable :: detot(:,:)
-      real(t_p), allocatable :: ndetot(:,:)
-      real(t_p), allocatable :: ndeb(:,:)
-      real(t_p), allocatable :: ndea(:,:)
-      real(t_p), allocatable :: ndeba(:,:)
-      real(t_p), allocatable :: ndeub(:,:)
-      real(t_p), allocatable :: ndeaa(:,:)
-      real(t_p), allocatable :: ndeopb(:,:)
-      real(t_p), allocatable :: ndeopd(:,:)
-      real(t_p), allocatable :: ndeid(:,:)
-      real(t_p), allocatable :: ndeit(:,:)
-      real(t_p), allocatable :: ndet(:,:)
-      real(t_p), allocatable :: ndept(:,:)
-      real(t_p), allocatable :: ndebt(:,:)
-      real(t_p), allocatable :: ndett(:,:)
-      real(t_p), allocatable :: ndev(:,:)
-      real(t_p), allocatable :: ndem(:,:)
-      real(t_p), allocatable :: ndep(:,:)
-      real(t_p), allocatable :: ndeg(:,:)
-      real(t_p), allocatable :: ndex(:,:)
+      real(r_p) er0,es0,elf0,eg0,ex0
+      real(r_p) totnorm,ntotnorm,rms,nrms
+      real(r_p), allocatable :: denorm(:)
+      real(r_p), allocatable :: ndenorm(:)
+      real(r_p), allocatable :: detot(:,:)
+      real(r_p), allocatable :: ndetot(:,:)
+      real(r_p), allocatable :: ndeb(:,:)
+      real(r_p), allocatable :: ndea(:,:)
+      real(r_p), allocatable :: ndeba(:,:)
+      real(r_p), allocatable :: ndeub(:,:)
+      real(r_p), allocatable :: ndeaa(:,:)
+      real(r_p), allocatable :: ndeopb(:,:)
+      real(r_p), allocatable :: ndeopd(:,:)
+      real(r_p), allocatable :: ndeid(:,:)
+      real(r_p), allocatable :: ndeit(:,:)
+      real(r_p), allocatable :: ndet(:,:)
+      real(r_p), allocatable :: ndept(:,:)
+      real(r_p), allocatable :: ndeat(:,:)
+      real(r_p), allocatable :: ndebt(:,:)
+      real(r_p), allocatable :: ndett(:,:)
+      real(r_p), allocatable :: ndev(:,:)
+      real(r_p), allocatable :: ndem(:,:)
+      real(r_p), allocatable :: ndec(:,:)
+      real(r_p), allocatable :: ndep(:,:)
+      real(r_p), allocatable :: ndeg(:,:)
+      real(r_p), allocatable :: ndex(:,:)
       logical exist,query
       logical doanalyt,donumer,dofull
       character*1 answer
@@ -130,7 +132,7 @@ c
    50    continue
          if (query) then
             write (iout,60)  eps0
-   60       format (/,' Enter a Numerical Stepsize [',d7.1,
+   60       format (/,' Enter a Numerical Stepsize [',d8.1,
      &                 ' Ang] :  ',$)
             read (input,70,err=50)  eps
    70       format (f20.0)
@@ -161,9 +163,9 @@ c     perform dynamic allocation of some local arrays
 c
       allocate (detot(3,nbloc))
       detot = 0_ti_p
-      call drivermpi
-      call reinitnl(0)
+      call AllDirAssign
       call reassignpme(.false.)
+      call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
 c
@@ -228,13 +230,15 @@ c         else
   180       format (/,'  Energy',7x,'EB',14x,'EA',14x,'EBA',13x,'EUB',
      &              11x,'EX',
      &              /,'  Terms',8x,'EAA',13x,'EOPB',12x,'EOPD',
-     &                 12x,'EID',11x,'ECT',
+     &                 12x,'EID',11x,'EC',
      &              /,15x,'EIT',13x,'ET',14x,'EPT',13x,'EBT',
      &              11x,'EREP',/,15x,'ETT',13x,'EV',14x,'EM',14x,'EP',
-     &               12x,'EXDISP')
-            write (iout,190)  eb,ea,eba,eub,ex,eaa,eopb,eopd,eid,0_ti_p,
-     &                        eit,et,ept,ebt,0_ti_p,ett,ev,em,ep,0_ti_p
-  190       format (/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4)
+     &               12x,'EXDISP',
+     &               /,15x,'EAT')
+            write (iout,190)  eb,ea,eba,eub,ex,eaa,eopb,eopd,eid,ec,
+     &                 eit,et,ept,ebt,0_ti_p,ett,ev,em,ep,0_ti_p,eat
+  190       format (/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4,/,6x,5f15.4,
+     &              /,6x,f15.4)
 c         end if
       end if
 c
@@ -249,31 +253,31 @@ c
   210       format (/,2x,'Atom',9x,'d EB',11x,'d EA',11x,'d EBA',
      &                 10x,'d EUB',8x,'d EX',
      &              /,2x,'Axis',9x,'d EAA',9x,'d EOPB',10x,'d EOPD',
-     &                 9x,'d EID',8x,'d ECT',
+     &                 9x,'d EID',8x,'d EC',
      &              /,2x,'Type',9x,'d EIT',10x,'d ET',11x,'d EPT',
      &                 10x,'d EBT',8x,'d EREP',
      &              /,15x,'d ETT',10x,'d EV',11x,'d EM',11x,'d EP',9x,
-     &               'd EXDISP')
+     &               'd EXDISP',/,15x,'d EAT')
          else if (digits .ge. 6) then
             write (iout,220)
   220       format (/,2x,'Atom',9x,'d EB',11x,'d EA',11x,'d EBA',
      &                 10x,'d EUB',8x,' d EX',
      &              /,2x,'Axis',9x,'d EAA',9x,'d EOPB',10x,'d EOPD',
-     &                 9x,'d EID',8x,'d ECT',
+     &                 9x,'d EID',8x,'d EC',
      &              /,2x,'Type',9x,'d EIT',10x,'d ET',11x,'d EPT',
      &                 10x,'d EBT',8x,'d EREP'
      &              /,15x,'d ETT',10x,'d EV',11x,'d EM',11x,'d EP',9x,
-     &                'd EXDISP')
+     &                'd EXDISP',/,15x,'d EAT')
          else
             write (iout,230)
   230       format (/,2x,'Atom',9x,'d EB',11x,'d EA',11x,'d EBA',
      &                 10x,'d EUB',8x,'d EX',
      &              /,2x,'Axis',9x,'d EAA',10x,'d EOPB',9x,'d EOPD',
-     &                 9x,'d EID',8x,'d ECT',
+     &                 9x,'d EID',8x,'d EC',
      &              /,2x,'Type',9x,'d EIT',10x,'d ET',11x,'d EPT',
      &                 10x,'d EBT',8x,'d EREP',
      &              /,15x,'d ETT',10x,'d EV',11x,'d EM',11x,'d EP',9x,
-     &               'd EXDISP')
+     &               'd EXDISP',/,15x,'d EAT')
          end if
       end if
 c
@@ -291,10 +295,12 @@ c
       allocate (ndeit(3,nloc))
       allocate (ndet(3,nloc))
       allocate (ndept(3,nloc))
+      allocate (ndeat(3,nloc))
       allocate (ndebt(3,nloc))
       allocate (ndett(3,nloc))
       allocate (ndev(3,nloc))
       allocate (ndem(3,nloc))
+      allocate (ndec(3,nloc))
       allocate (ndep(3,nloc))
       allocate (ndeg(3,nloc))
       allocate (ndex(3,nloc))
@@ -316,12 +322,14 @@ c
       ndep = 0_ti_p
       ndeg = 0_ti_p
       ndex = 0_ti_p
+      ndeg = 0_ti_p
+      ndex = 0_ti_p
 c
 c     get the Cartesian component two-sided numerical gradients
 c
       do i = 1, n
          if (repart(i).eq.rank) iloc = loc(i)
-         call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+         call MPI_BARRIER(COMM_TINKER,ierr)
          if (donumer .and. use(i)) then
             do j = 1, 3
                if (j .eq. 1) then
@@ -347,6 +355,7 @@ c
                eit0 = eit
                et0 = et
                ept0 = ept
+               eat0 = eat
                ebt0 = ebt
                ett0 = ett
                ev0 = ev
@@ -388,10 +397,12 @@ c
                  ndeit(j,iloc) = (eit - eit0) / eps
                  ndet(j,iloc) = (et - et0) / eps
                  ndept(j,iloc) = (ept - ept0) / eps
+                 ndeat(j,iloc) = (eat - eat0) / eps
                  ndebt(j,iloc) = (ebt - ebt0) / eps
                  ndett(j,iloc) = (ett - ett0) / eps
                  ndev(j,iloc) = (ev - ev0) / eps
                  ndem(j,iloc) = (em - em0) / eps
+                 ndec(j,iloc) = (ec - ec0) / eps
                  ndep(j,iloc) = (ep - ep0) / eps
                  ndeg(j,iloc) = (eg - eg0) / eps
                  ndex(j,iloc) = (ex - ex0) / eps
@@ -428,13 +439,13 @@ c                  else
      &                        deba(j,iloc),deub(j,iloc),dex(j,iloc),
      &                        axis(j),
      &                        deaa(j,iloc),deopb(j,iloc),deopd(j,iloc),
-     &                        deid(j,iloc),0_ti_p,deit(j,iloc),
+     &                        deid(j,iloc),dec(j,iloc),deit(j,iloc),
      &                        det(j,iloc),
      &                        dept(j,iloc),debt(j,iloc),0_ti_p,
      &                        dett(j,iloc),dev(j,iloc),dem(j,iloc),
-     &                        dep(j,iloc),0_ti_p
+     &                        dep(j,iloc),0_ti_p,deat(j,iloc)
   260                format (/,i6,5f15.4,/,5x,a1,5f15.4,/,' Anlyt',
-     &                          5f15.4,/,6x,5f15.4)
+     &                          5f15.4,/,6x,5f15.4,/,6x,f15.4)
 c                  end if
                end if
 c
@@ -469,22 +480,21 @@ c                  else
      &                           ndex(j,iloc),axis(j),
      &                           ndeaa(j,iloc),ndeopb(j,iloc),
      &                           ndeopd(j,iloc),ndeid(j,iloc),
-     &                           0_ti_p,ndeit(j,iloc),
+     &                           ndec(j,iloc),ndeit(j,iloc),
      &                           ndet(j,iloc),
      &                           ndept(j,iloc),ndebt(j,iloc),
      &                           0_ti_p,ndett(j,iloc),
      &                           ndev(j,iloc),ndem(j,iloc),ndep(j,iloc),
-     &                           0_ti_p
+     &                           0d0,deat(j,iloc)
 
   290                format (/,i6,5f15.4,/,5x,a1,5f15.4,/,' Numer',
-     &                          5f15.4,/,6x,5f15.4)
+     &                          5f15.4,/,6x,5f15.4,/,6x,f15.4)
 c                  end if
                end if
             end do
          end if
       end do
-!$acc update device(x(:),y(:),z(:))
-      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      call MPI_BARRIER(COMM_TINKER,ierr)
 c
 c     perform deallocation of some local arrays
 c
@@ -499,10 +509,12 @@ c
       deallocate (ndeit)
       deallocate (ndet)
       deallocate (ndept)
+      deallocate (ndeat)
       deallocate (ndebt)
       deallocate (ndett)
       deallocate (ndev)
       deallocate (ndem)
+      deallocate (ndec)
       deallocate (ndep)
       deallocate (ndeg)
       deallocate (ndex)
@@ -515,7 +527,7 @@ c
       denorm = 0_ti_p
       ndenorm = 0_ti_p
 c
-      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      call MPI_BARRIER(COMM_TINKER,ierr)
 c
 c     print the total gradient components for each atom
 c
@@ -573,20 +585,20 @@ c            else
 c            end if
          end if
       end do
-      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      call MPI_BARRIER(COMM_TINKER,ierr)
       if (rank.eq.0) then
        call MPI_REDUCE(MPI_IN_PLACE,totnorm,1,MPI_TPREC,MPI_SUM,0,
-     $    MPI_COMM_WORLD,ierr)
+     $    COMM_TINKER,ierr)
       else
        call MPI_REDUCE(totnorm,totnorm,1,MPI_TPREC,MPI_SUM,0,
-     $    MPI_COMM_WORLD,ierr)
+     $    COMM_TINKER,ierr)
       end if
       if (rank.eq.0) then
        call MPI_REDUCE(MPI_IN_PLACE,ntotnorm,1,MPI_TPREC,MPI_SUM,
-     $    0,MPI_COMM_WORLD,ierr)
+     $    0,COMM_TINKER,ierr)
       else
        call MPI_REDUCE(ntotnorm,ntotnorm,1,MPI_TPREC,MPI_SUM,0,
-     $    MPI_COMM_WORLD,ierr)
+     $    COMM_TINKER,ierr)
       end if
 c
 c     perform deallocation of some local arrays

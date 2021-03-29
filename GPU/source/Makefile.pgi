@@ -34,6 +34,8 @@ opt         := release
 # Precision of floating point numbers and options (double|[m]ixed|[s]ingle)
 prec        := double
 
+main_prec   := d
+
 #
 #  OPTIONS
 # ________
@@ -110,9 +112,11 @@ f_preprocess_flag__ := -cpp
 add_options         :=
 
 ifeq ($(prec),$(filter $(prec),single s))
+   main_prec := s
    OPTIONS   := -DSINGLE
    CUOPTIONS := $(OPTIONS) -DUSE_ERFC_HASTINGS
 else ifeq ($(prec),$(filter $(prec),mixed m))
+   main_prec := s
    OPTIONS   := -DMIXED
    CUOPTIONS := $(OPTIONS) -DUSE_ERFC_HASTINGS
 endif
@@ -268,14 +272,18 @@ ifeq ($(arch),$(filter $(arch),device gpu))
 endif
 
 depend_targets += thrust
-depend_targets += 2decomp_fft
+ifeq ($(prec),$(filter $(prec),mixed m single s))
+	depend_targets += 2decomp_fft
+else
+	depend_targets += 2decomp_fft_single
+endif
  
 
 # Object Files
 # ____________
 MODSHA = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o
 MODSAM = MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
-   MOD_angpot.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
+   MOD_angpot.o MOD_angtor.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
    MOD_atoms.o MOD_atmtyp.o MOD_bath.o MOD_bitor.o\
    MOD_bndpot.o MOD_bond.o MOD_bound.o MOD_boxes.o\
    MOD_cell.o MOD_charge.o MOD_chgpot.o MOD_chunks.o\
@@ -283,7 +291,7 @@ MODSAM = MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
    MOD_domdec.o MOD_energi.o MOD_ewald.o MOD_fft.o\
    MOD_fields.o MOD_files.o MOD_freeze.o MOD_group.o\
    MOD_improp.o MOD_imptor.o MOD_inform.o MOD_inter.o MOD_interfaces.o\
-   MOD_iounit.o MOD_kanang.o MOD_kangs.o MOD_katoms.o\
+   MOD_iounit.o MOD_kanang.o MOD_kangs.o MOD_kantor.o MOD_katoms.o\
    MOD_kbonds.o MOD_kchrge.o MOD_keys.o MOD_khbond.o\
    MOD_kiprop.o MOD_kgeoms.o MOD_kitors.o MOD_kmulti.o\
    MOD_kopbnd.o MOD_kopdst.o MOD_kpitor.o MOD_kpolr.o\
@@ -316,6 +324,7 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    dcinduce_pme.o dcinduce_pmegpu.o dcinduce_pme2.o dcinduce_pme2gpu.o dcinduce_shortreal.o dcinduce_shortrealgpu.o\
    eamd1.o eangang.o eangang1.o eangang3.o\
    eangle.o eangle1.o eangle1gpu.o eangle3.o eangle3gpu.o\
+	eangtor.o eangtor1.o eangtor3.o\
    ebond.o ebond1.o ebond1gpu.o ebond3.o ebond3gpu.o\
    echarge.o echarge1.o  echarge1gpu.o echarge3.o  echarge3gpu.o\
    efld0_direct.o  efld0_directgpu.o\
@@ -331,7 +340,7 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    epitors.o epitors1.o epitors1gpu.o epitors3.o\
    epolar.o  epolar1.o  epolar1gpu.o\
    epolar3.o  epolar3gpu.o\
-    esmd1.o\
+   esmd1.o\
    estrbnd.o estrbnd1.o estrbnd1gpu.o estrbnd3.o\
    estrtor.o estrtor1.o estrtor1gpu.o estrtor3.o\
    etors.o etors1.o etors1gpu.o etors3.o\
@@ -342,10 +351,10 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    final.o freeunit.o geometry.o getkey.o\
    getnumb.o getprm.o getstring.o gettext.o\
    getword.o getxyz.o gradient.o\
-   hybrid.o image.o \
+   hybrid.o image.o\
    initatom.o initial.o initprm.o initres.o\
    invert.o kangang.o kangle.o\
-   kamd.o katom.o kbond.o kcharge.o kewald.o kgeom.o\
+   kamd.o katom.o kangtor.o kbond.o kcharge.o kewald.o kgeom.o\
    kimprop.o kimptor.o kinetic.o kmpole.o\
    kopbend.o kopdist.o kpitors.o kpolar.o\
    kstrbnd.o kstrtor.o kscalfactor.o ksmd.o ktors.o ktortor.o\
@@ -537,7 +546,9 @@ bar.cpu:
 	@$(MAKE) arch=host prog_suffix=.cpu bar
 
 .PHONY: libtinker
-libtinker: $(depend_targets) build_mod $(OBJS)
+libtinker: $(depend_targets)
+	@ $(MAKE) build_mod
+	@ $(MAKE) build_obj
 	@./$(library) $(ADD_OBJECTS)
 
 #
@@ -584,6 +595,8 @@ MOD_subAtoms.o: MOD_atoms.o
 MOD_subMemory.o: MOD_memory.o
 MOD_subDeriv.o: MOD_deriv.o
 MOD_subInform.o: MOD_inform.o
+MOD_precompute_polegpu.o: MOD_atoms.o MOD_atmlst.o MOD_couple.o MOD_chgpot.o MOD_domdec.o MOD_inform.o\
+                          MOD_mpole.o MOD_mplpot.o MOD_neigh.o MOD_polar.o MOD_utilgpu.o MOD_sizes.o
 eamd1.o: MOD_mamd.o
 echarge1gpu.o: MOD_pme.o
 echarge3gpu.o: MOD_pme.o
@@ -694,11 +707,19 @@ clean:
 # 2decomp_fft library rules
 #
 2decomp_fft:
+ifeq ($(main_prec),s)
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
+else
 	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(COMMON) $(TARGET)"
+endif
 2decomp_fft_single:
 	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
 2decomp_fft_rebuild:
+ifeq ($(main_prec),s)
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
+else
 	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(COMMON) $(TARGET)"
+endif
 2decomp_fft_rebuild_single:
 	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
 2decomp_fft_clean:

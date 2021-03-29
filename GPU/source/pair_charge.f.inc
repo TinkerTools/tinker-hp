@@ -41,7 +41,7 @@
            erfterm = f_erfc (rew)
            e   = WRITE_C(e + tp2enr) ((fik/rb)*(erfterm))
            de  = -fik * ((erfterm)/rb2
-     &                + (2.0*aewald/sqrtpi)*exp2a/r)
+     &                + (2.0*aewald/sqrtpi)*exp2a/rb)
         else if (config.eq.correct_scaling) then
            e   = WRITE_C(e + tp2enr) ((fik/rb)*(cscale))
            de  = -fik     * (cscale)/rb2
@@ -96,7 +96,7 @@ c
            erfterm = f_erfc (rew)
            e   = WRITE_C(e + tp2enr) ((fik/rb) * (erfterm))
            de  = -fik * ((erfterm)/rb2
-     &                + (2.0*aewald/sqrtpi)*exp2a/r)
+     &                + (2.0*aewald/sqrtpi)*exp2a/rb)
         else if (config.eq.correct_scaling) then
            e   = WRITE_C(e + tp2enr) ((fik/rb) * (cscale))
            de  = -fik     * (cscale)/rb2
@@ -143,7 +143,7 @@ c
            erfterm = f_erfc (rew)
            e   = (fik/rb) * (erfterm)
            de  = -fik * ((erfterm)/rb2
-     &                + (2.0*aewald/sqrtpi)*exp2a/r)
+     &                + (2.0*aewald/sqrtpi)*exp2a/rb)
         else if (config.eq.correct_scaling) then
            e   = (fik/rb) * (cscale)
            de  = -fik     * (cscale)/rb2

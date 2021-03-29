@@ -49,6 +49,51 @@ c
         ded%z = de * zr
       end
 
+      M_subroutine
+     &            elj1_couple1(rik2,xr,yr,zr,rv,eps,cut2
+     &                  ,cut,off,e,dedx,dedy,dedz)
+!$acc routine
+        use tinheader ,only: ti_p,re_p
+        use tintypes  ,only: real3
+#if defined(TINKER_CUF) && (defined(SINGLE)||defined(MIXED))
+        use utilcu    ,only: f_sqrt
+#endif
+        implicit none
+        real(t_p),intent(in ):: rik2,xr,yr,zr,rv,eps,cut2
+     &           ,cut,off
+        real(t_p),intent(out):: e
+        real(t_p),intent(out):: dedx,dedy,dedz
+        real(t_p) p6,rik,taper,dtaper,de
+        real(t_p) r,r2,r3,rinv
+
+        rik = f_sqrt(rik2)
+        r   = rv*rv/rik2
+        p6  = r*r*r
+        e   = eps * (p6-2.0_ti_p)*p6
+        de  = eps * (p6-1.0_ti_p)*p6 * (-12.0_ti_p/rik)
+c
+c     use energy switching if near the cutoff distance
+c
+        if (rik2 .gt. cut2) then
+           rinv   = 1.0_ti_p/(cut - off)
+           r      = (rik - off) * rinv
+           r2     = r * r
+           r3     = r2 * r
+           taper  = r3 * (6*r2 - 15*r + 10)
+           dtaper = 30* (r*(1.0-r))*(r*(1.0-r)) *rinv;
+
+           de     = e*dtaper + de*taper
+           e      = e * taper
+        end if
+c
+c     find the chain rule terms for derivative components
+c
+        de   = de / rik
+        dedx = de * xr
+        dedy = de * yr
+        dedz = de * zr
+      end
+
       M_subroutine 
      &            elj3_couple(rik2,xr,yr,zr,rv,eps,cut2
      &                  ,cut,off,e)

@@ -12,6 +12,7 @@ c
 c
 c     use_bond       logical flag governing use of bond stretch potential
 c     use_angle      logical flag governing use of angle bend potential
+c     use_angtor     logical flag governing use of angle-torsion potential
 c     use_strbnd     logical flag governing use of stretch-bend potential
 c     use_urey       logical flag governing use of Urey-Bradley potential
 c     use_angang     logical flag governing use of angle-angle cross term
@@ -72,7 +73,7 @@ c
       logical use_bond,use_angle,use_strbnd
       logical use_urey,use_angang,use_opbend
       logical use_opdist,use_improp,use_imptor
-      logical use_tors,use_pitors,use_strtor
+      logical use_tors,use_pitors,use_strtor,use_angtor
       logical use_tortor
       logical use_geom,use_extra
       end module
@@ -106,6 +107,7 @@ c
 
       logical PotentialAll
       logical PotentialAmoeba,PotentialAmoeba18
+      logical PotentialAmoeba181,PotentialAmoeba182
       logical PotentialWaterAmoeba,PotentialWaterCharmm
       logical PotentialCharmm
 !$acc declare create(use_pmecore)

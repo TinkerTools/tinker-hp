@@ -62,7 +62,7 @@ c
 
 !     Energy scalars used in gradient kernels
 !$acc data present(derivs,energy)
-!$acc&     present(eb,eba,eub,eopb,et,ept,ett,ebt,ea
+!$acc&     present(eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
 !$acc&           ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
 !$acc&           ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
 !$acc&           ,ev_r,ec_r,em_r,ep_r,eb_r
@@ -78,6 +78,7 @@ c
       et       = 0.0_re_p  ! etors
       ept      = 0.0_re_p  ! epitors
       ett      = 0.0_re_p  ! etortor 
+      eat      = 0.0_re_p  ! eangtor
       ebt      = 0.0_re_p  ! estrtor
       ea       = 0.0_re_p  ! eangle
       ev       = 0.0_re_p  ! ehal1
@@ -147,6 +148,7 @@ c
       if (use_pitors)   call epitors1gpu
       if (use_strtor)   call estrtor1gpu
       if (use_tortor)   call etortor1gpu
+      if (use_angtor)   call eangtor1
       if (use_angle)    call eangle1gpu
       ! miscellaneous energy
       if (use_geom)     call egeom1gpu
@@ -223,7 +225,8 @@ c
       if (ev_r.ne.0) ev = ev + enr2en(ev_r)
       if (eb_r.ne.0) eb = eb + enr2en(eb_r)
       esum = eit + eopd + eopb + eaa + eub + eba + ea + eb + em  + ep
-     &      + ec + ev   + et   + ept + ebt + ett + eg + ex + eid + ensmd
+     &      + ec + ev   + et   + ept + ebt + eat +ett + eg + ex + eid
+     &      + ensmd
       energy = esum
 !$acc end serial
       call timer_exit ( timer_fmanage,quiet_timers )
@@ -231,11 +234,11 @@ c
       ! Apply plumed bias
       if (lplumed) call eplumed(energy,derivs)
 
+!$acc update host(esum) async
 !$acc end data
 c
 c     check for an illegal value for the total energy
 c
-!$acc update host(esum) async
       if (tinkerdebug.gt.0) then
 !$acc wait
          if (tinker_isnan_m(esum).or.esum.eq.inf_r) then

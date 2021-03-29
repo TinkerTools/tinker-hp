@@ -530,12 +530,12 @@ c
       integer,dimension(nproc*proc)::req(:),reqbcast(:)
       logical,save:: f_in=.true.
 c
-      if (rank.eq.0.and.tinkerdebug)
-     &   write(*,'(2x,a)') 'ecrecipgpu'
-c
 c     return if the Ewald coefficient is zero
 c
       if (aewald .lt. 1.0d-6)  return
+c
+      if (rank.eq.0.and.tinkerdebug)
+     &   write(*,'(2x,a)') 'ecrecipgpu'
 
       if (use_pmecore) then
         nprocloc = nrec
@@ -575,43 +575,13 @@ c
 c
       call grid_pchg_site_p
       call timer_exit ( timer_grid1,quiet_timers )
-c
-c     MPI : begin sending
-c
-      if (nrec_send.gt.0) then
-!$acc wait
-      end if
-      call timer_enter( timer_recreccomm )
-      do i = 1, nrec_send
-         proc = prec_send(i)
-         tag = nprocloc*prec_send(i) + rankloc + 1
-!$acc host_data use_device(qgridin_2d)
-         call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
-     $        2*n1mpimax*n2mpimax*n3mpimax,MPI_TPREC,proc,tag,
-     $        commloc,req(tag),ierr)
-!$acc end host_data
-      end do
-      do i = 1, nrec_recep
-         tag = nprocloc*rankloc + prec_recep(i) + 1
-         call MPI_WAIT(req(tag),status,ierr)
-      end do
-      do i = 1, nrec_send
-         tag = nprocloc*prec_send(i) + rankloc + 1
-         call MPI_WAIT(req(tag),status,ierr)
-      end do
-c
-c     do the reduction 'by hand'
-c
-      do i = 1, nrec_recep
-         call aaddgpuAsync(2*n1mpimax*n2mpimax*n3mpimax,
-     $        qgridin_2d(1,1,1,1,1),
-     $        qgridmpi(1,1,1,1,i),qgridin_2d(1,1,1,1,1))
-      end do
-      call timer_exit ( timer_recreccomm,quiet_timers )
-c
-c     perform the 3-D FFT forward transformation
-c
+
+      ! FFt Grid Communication
+      call commGridFront( qgridin_2d,r_comm )
+      call commGridFront( qgridin_2d,r_wait )
+
 #ifdef _OPENACC
+      ! perform the 3-D FFT forward transformation
       call cufft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $     n3mpimax)
 #else

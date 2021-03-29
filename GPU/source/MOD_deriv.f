@@ -23,6 +23,7 @@ c     deit    improper torsion Cartesian coordinate derivatives
 c     det     torsional Cartesian coordinate derivatives
 c     dept    pi-orbital torsion Cartesian coordinate derivatives
 c     debt    stretch-torsion Cartesian coordinate derivatives
+c     deat    angle-torsion Cartesian coordinate derivatives
 c     dett    torsion-torsion Cartesian coordinate derivatives
 c     dev     van der Waals Cartesian coordinate derivatives
 c     dec     charge-charge Cartesian coordinate derivatives
@@ -60,34 +61,31 @@ c
       real(r_p),allocatable :: deb(:,:),dea(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deba,deit,dec
       real(r_p),allocatable :: deba(:,:),deit(:,:)
-      mdyn_rtyp,allocatable :: dec(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deub,deaa,deopb
       real(r_p),allocatable :: deub(:,:),deaa(:,:),deopb(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deid,det,dept
       real(r_p),allocatable :: deid(:,:),det(:,:),dept(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: debt,dett,dev
-      real(r_p),allocatable :: debt(:,:),dett(:,:)
-      real(r_p),allocatable :: dev(:,:)
-      !DIR$ ATTRIBUTES ALIGN:64:: dem,dep,deopd
-      mdyn_rtyp,allocatable :: dem(:,:)
-      mdyn_rtyp,allocatable :: dep(:,:)
+      real(r_p),allocatable :: debt(:,:),dett(:,:),deat(:,:)
       real(r_p),allocatable :: deopd(:,:)
+      !DIR$ ATTRIBUTES ALIGN:64:: dem,dep,deopd
+      real(r_p),allocatable :: dev(:,:)
+      mdyn_rtyp,allocatable :: dem(:,:),dep(:,:)
+      mdyn_rtyp,allocatable :: dec(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deg,dex
       real(r_p),allocatable :: deg(:,:),dex(:,:)
-      !DIR$ ATTRIBUTES ALIGN:64:: decrec,demrec
-      real(r_p),allocatable :: decrec(:,:),demrec(:,:)
-      !DIR$ ATTRIBUTES ALIGN:64:: deprec
-      real(r_p),allocatable :: deprec(:,:)
+      !DIR$ ATTRIBUTES ALIGN:64:: decrec,demrec,deprec
+      real(r_p),allocatable :: decrec(:,:),demrec(:,:),deprec(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: debond
       mdyn_rtyp,allocatable :: debond(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: desave
       real(r_p),allocatable :: desave(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: desmd
       real(r_p),allocatable :: desmd(:,:)
-      !DIR$ ATTRIBUTES ALIGN:64:: deamdD,deamdP
-      real(r_p),allocatable :: deamdD(:,:),deamdP(:,:)
-      !DIR$ ATTRIBUTES ALIGN:64:: deW1aMD,deW2aMD
-      real(r_p),allocatable :: deW1aMD(:,:),deW2aMD(:,:)      
+      !DIR$ ATTRIBUTES ALIGN:64:: deamdD,deamdP,deW1aMD,deW2aMD
+      real(r_p),allocatable :: deamdD(:,:),deamdP(:,:), deW1aMD(:,:)
+     &         ,deW2aMD(:,:)
+
       logical dotstgrad
       integer cBond,cNBond,cSNBond,cDef
       parameter( cBond=1,cNBond=4,cSNBond=2,cDef=5 )
@@ -105,6 +103,10 @@ c
       end subroutine
       module subroutine resetForcesAmoeba18
       end subroutine
+      module subroutine resetForcesAmoeba181
+      end subroutine
+      module subroutine resetForcesAmoeba182
+      end subroutine
       module subroutine resetForcesWaterAm
       end subroutine
       module subroutine resetForcesCharmm
@@ -121,6 +123,10 @@ c
       module subroutine addForcesAmoeba
       end subroutine
       module subroutine addForcesAmoeba18
+      end subroutine
+      module subroutine addForcesAmoeba181
+      end subroutine
+      module subroutine addForcesAmoeba182
       end subroutine
       module subroutine addForcesCharmm
       end subroutine

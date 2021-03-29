@@ -38,32 +38,51 @@ c
      &      .and.use_urey.and..not.use_angang.and.use_opbend
      &      .and..not.use_opdist.and..not.use_improp.and..not.use_imptor
      &      .and.use_tors.and.use_pitors.and..not.use_strtor
-     &      .and.use_tortor.and.use_vdw.and..not.use_charge
-     &      .and.use_mpole.and.use_polar.and..not.use_extra
+     &      .and.use_tortor.and..not.use_angtor.and.use_vdw
+     &      .and..not.use_charge.and.use_mpole.and.use_polar
+     &      .and..not.use_extra
       PotentialAmoeba18 = use_bond.and.use_angle.and.use_strbnd
      &      .and.use_urey.and..not.use_angang.and.use_opbend
      &      .and..not.use_opdist.and..not.use_improp.and..not.use_imptor
      &      .and.use_tors.and.use_pitors.and.use_strtor
-     &      .and.use_tortor.and.use_vdw.and..not.use_charge
-     &      .and.use_mpole.and.use_polar.and..not.use_extra
+     &      .and..not.use_angtor.and.use_tortor.and.use_vdw
+     &      .and..not.use_charge.and.use_mpole.and.use_polar
+     &      .and..not.use_extra
+      PotentialAmoeba181= use_bond.and.use_angle.and.use_strbnd
+     &      .and.use_urey.and..not.use_angang.and.use_opbend
+     &      .and..not.use_opdist.and..not.use_improp.and..not.use_imptor
+     &      .and.use_tors.and.use_pitors.and.use_strtor
+     &      .and.use_angtor.and..not.use_tortor.and.use_vdw
+     &      .and..not.use_charge.and.use_mpole.and.use_polar
+     &      .and..not.use_extra
+      PotentialAmoeba182= use_bond.and.use_angle.and.use_strbnd
+     &      .and.use_urey.and..not.use_angang.and.use_opbend
+     &      .and..not.use_opdist.and..not.use_improp.and..not.use_imptor
+     &      .and.use_tors.and.use_pitors.and.use_strtor
+     &      .and.use_angtor.and.use_tortor.and.use_vdw
+     &      .and..not.use_charge.and.use_mpole.and.use_polar
+     &      .and..not.use_extra
       PotentialWaterAmoeba = use_bond.and.use_angle.and..not.use_strbnd
      &      .and.use_urey.and..not.use_angang.and..not.use_opbend
      &      .and..not.use_opdist.and..not.use_improp.and..not.use_imptor
      &      .and..not.use_tors.and..not.use_pitors.and..not.use_strtor
-     &      .and..not.use_tortor.and.use_vdw.and..not.use_charge
-     &      .and.use_mpole.and.use_polar.and..not.use_extra
+     &      .and..not.use_tortor.and..not.use_angtor.and.use_vdw
+     &      .and.use_mpole.and.use_polar.and..not.use_charge
+     &      .and..not.use_extra
       PotentialWaterCharmm = use_bond.and.use_angle.and..not.use_strbnd
      &      .and.use_urey.and..not.use_angang.and..not.use_opbend
      &      .and..not.use_opdist.and..not.use_improp.and..not.use_imptor
      &      .and..not.use_tors.and..not.use_pitors.and..not.use_strtor
-     &      .and..not.use_tortor.and.use_vdw.and.use_charge
-     &      .and..not.use_mpole.and..not.use_polar.and..not.use_extra
+     &      .and..not.use_tortor.and..not.use_angtor.and.use_vdw
+     &      .and..not.use_mpole.and..not.use_polar.and.use_charge
+     &      .and..not.use_extra
       PotentialCharmm = use_bond.and.use_angle.and..not.use_strbnd
      &      .and.use_urey.and..not.use_angang.and..not.use_opbend
      &      .and..not.use_opdist.and.use_improp.and..not.use_imptor
      &      .and.use_tors.and..not.use_pitors.and..not.use_strtor
-     &      .and..not.use_tortor.and.use_vdw.and.use_charge
-     &      .and..not.use_mpole.and..not.use_polar.and..not.use_extra
+     &      .and..not.use_tortor.and..not.use_angtor.and.use_vdw
+     &      .and..not.use_mpole.and..not.use_polar.and.use_charge
+     &      .and..not.use_extra
 
       if (PotentialAmoeba) then
          if (deb_Path) print*,'Using Amoeba Potential'
@@ -78,6 +97,20 @@ c
          watchPot = watchPot + 1
          resetForces_p => resetForcesAmoeba18
          addForces_p   =>   addForcesAmoeba18
+      end if
+      if (PotentialAmoeba181) then
+         if (deb_Path) print*,'Using Amoeba18 (1) Potential'
+         PotentialAll=.false.
+         watchPot = watchPot + 1
+         resetForces_p => resetForcesAmoeba181
+         addForces_p   =>   addForcesAmoeba181
+      end if
+      if (PotentialAmoeba182) then
+         if (deb_Path) print*,'Using Amoeba18 (2) Potential'
+         PotentialAll=.false.
+         watchPot = watchPot + 1
+         resetForces_p => resetForcesAmoeba182
+         addForces_p   =>   addForcesAmoeba182
       end if
       if (PotentialWaterAmoeba) then
          if (deb_Path) print*,'Using Water Amoeba Potential'
@@ -131,7 +164,7 @@ c
 
       if (PotentialAll) then
 !$acc update host(dea,deb,deba,deub,deaa,deopb,deopd,
-!$acc&       deg,deid,deit,det,dept,debt,dett,dex,
+!$acc&       deg,deid,deit,det,dept,debt,dett,dex,deat,
 !$acc&       deamdD,dev,
 !$acc&       dem,demrec,dep,deprec,dec,decrec,desum)
       else if (PotentialAmoeba) then
@@ -240,6 +273,91 @@ c    &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
 c          debond(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
 c    &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
 c    &                 + debt (j,i)
+         end do
+      end do
+      if (use_geom) call addForcesRestrain
+      if (use_smd_velconst .or. use_smd_forconst) call addForcesSMD
+      end subroutine
+
+      module subroutine resetForcesAmoeba181
+      implicit none
+      integer i,j
+      if (deb_Path) print*, 'resetForcesAmoeba181'
+!$acc parallel loop collapse(2) default(present) async
+      do i = 1, nbloc
+         do j = 1, 3
+            deb  (j,i) = 0.0_re_p ! ebond
+            dea  (j,i) = 0.0_re_p ! eangle
+            deba (j,i) = 0.0_re_p ! estrbnd
+            deub (j,i) = 0.0_re_p ! eurey
+            deopb(j,i) = 0.0_re_p ! eopbend
+            det  (j,i) = 0.0_re_p ! etors
+            dept (j,i) = 0.0_re_p ! epitors
+            debt (j,i) = 0.0_re_p ! estrtor
+            deat (j,i) = 0.0_re_p ! eangtor
+            dev  (j,i) = 0.0_re_p ! ehal1
+            dem  (j,i) = 0        ! empole
+            dep  (j,i) = 0        ! epolar
+         end do
+      end do
+      if (use_geom) call resetForcesRestrain
+      if (use_smd_velconst .or. use_smd_forconst) call resetForcesSMD
+      end subroutine
+      module subroutine addForcesAmoeba181
+      implicit none
+      integer i,j
+
+      if (deb_Path) print*, 'addForcesAmoeba181'
+!$acc parallel loop collapse(2) default(present) async
+      do i = 1, nbloc
+         do j = 1, 3
+            desum(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
+     &                 + deopb(j,i) + det(j,i) + dept(j,i) + deat(j,i)
+     &                 + debt (j,i)
+     &                 + dev  (j,i) + mdr2md(dem(j,i) + dep (j,i))
+         end do
+      end do
+      if (use_geom) call addForcesRestrain
+      if (use_smd_velconst .or. use_smd_forconst) call addForcesSMD
+      end subroutine
+
+      module subroutine resetForcesAmoeba182
+      implicit none
+      integer i,j
+      if (deb_Path) print*, 'resetForcesAmoeba182'
+!$acc parallel loop collapse(2) default(present) async
+      do i = 1, nbloc
+         do j = 1, 3
+            deb  (j,i) = 0.0_re_p ! ebond
+            dea  (j,i) = 0.0_re_p ! eangle
+            deba (j,i) = 0.0_re_p ! estrbnd
+            deub (j,i) = 0.0_re_p ! eurey
+            deopb(j,i) = 0.0_re_p ! eopbend
+            det  (j,i) = 0.0_re_p ! etors
+            dept (j,i) = 0.0_re_p ! epitors
+            debt (j,i) = 0.0_re_p ! estrtor
+            dett (j,i) = 0.0_re_p ! etortor
+            deat (j,i) = 0.0_re_p ! eangtor
+            dev  (j,i) = 0.0_re_p ! ehal1
+            dem  (j,i) = 0        ! empole
+            dep  (j,i) = 0        ! epolar
+         end do
+      end do
+      if (use_geom) call resetForcesRestrain
+      if (use_smd_velconst .or. use_smd_forconst) call resetForcesSMD
+      end subroutine
+      module subroutine addForcesAmoeba182
+      implicit none
+      integer i,j
+
+      if (deb_Path) print*, 'addForcesAmoeba182'
+!$acc parallel loop collapse(2) default(present) async
+      do i = 1, nbloc
+         do j = 1, 3
+            desum(j,i) = deb  (j,i) + dea(j,i) + deba(j,i) + deub(j,i)
+     &                 + deopb(j,i) + det(j,i) + dept(j,i) + dett(j,i)
+     &                 + deat (j,i) +debt(j,i)
+     &                 + dev  (j,i) + mdr2md(dem(j,i) + dep (j,i))
          end do
       end do
       if (use_geom) call addForcesRestrain
@@ -388,6 +506,7 @@ c           debond(j,i) = debond(j,i) + deg(j,i)
             deba (j,i) = 0.0_re_p ! estrbnd
             deub (j,i) = 0.0_re_p ! eurey
             deaa (j,i) = 0.0_re_p ! eangang
+            deat (j,i) = 0.0_re_p ! eangtor
             deopb(j,i) = 0.0_re_p ! eopbend
             deopd(j,i) = 0.0_re_p ! eopdist
             deid (j,i) = 0.0_re_p ! eimprop
@@ -420,11 +539,12 @@ c           debond(j,i) = debond(j,i) + deg(j,i)
      &                 + deid(j,i) + dev (j,i) + deub (j,i) + deopd(j,i)
      &                 + deit(j,i) + det (j,i) + dept (j,i) + debt (j,i)
      &                 + dett(j,i) + deg (j,i) + dex  (j,i) + desmd(j,i)
+     &                 + deat(j,i)
 
 c          debond(j,i) = deaa (j,i) + deba (j,i) + dea (j,i) + deb (j,i)
 c    &                 + deopb(j,i) + deopd(j,i) + deid(j,i) + deub(j,i)
 c    &                 + deit (j,i) + det  (j,i) + dept(j,i) + debt(j,i)
-c    &                 + dett (j,i) + deg  (j,i)
+c    &                 + dett (j,i) + deg  (j,i) + deat(j,i)
          end do
       end do
       end subroutine
@@ -527,7 +647,7 @@ c    &                 + dett (j,i) + deg  (j,i)
       !use atoms
       implicit none
       integer,intent(in) :: rule
-      integer,parameter:: nf=24  !number of forces
+      integer,parameter:: nf=25  !number of forces
       integer i,j,sze
       real(r_p),dimension(3,nloc)::demsum,depsum,decsum
       real(8) mmx(3*nf),smm(nf)
@@ -556,6 +676,7 @@ c    &                 + dett (j,i) + deg  (j,i)
       if(use_strbnd) call commforce_one(deba ,commBonded)
       if(use_urey)   call commforce_one(deub ,commBonded)
       if(use_angang) call commforce_one(deaa ,commBonded)
+      if(use_angtor) call commforce_one(deat ,commBonded)
       if(use_improp) call commforce_one(deid ,commBonded)
       if(use_imptor) call commforce_one(deit ,commBonded)
       if(use_tors)   call commforce_one(det  ,commBonded)
@@ -646,6 +767,9 @@ c!$acc update host(glob)
       if(use_tortor)
      &call minmaxone(mmx(11),mmx(nf+11),mmx(2*nf+11),dett
      &     ,sze,'dett');
+      if(use_angtor)
+     &call minmaxone(mmx(25),mmx(nf+25),mmx(2*nf+25),deat
+     &     ,sze,'deat');
       if(use_opbend)
      &call minmaxone(mmx(12),mmx(nf+12),mmx(2*nf+12),deopb
      &     ,sze,'deopb');
@@ -770,6 +894,8 @@ c     end if
      &      mmx(10),mmx(10+nf),mmx(10+nf*2)
          if(mmx(2*nf+11)/=0.0) print 30,'dett   =>',
      &      mmx(11),mmx(11+nf),mmx(11+nf*2)
+         if(mmx(2*nf+11)/=0.0) print 30,'deat   =>',
+     &      mmx(25),mmx(25+nf),mmx(25+nf*2)
          if(mmx(2*nf+12)/=0.0) print 30,'deopb  =>',
      &      mmx(12),mmx(12+nf),mmx(12+nf*2)
          if(mmx(2*nf+13)/=0.0) print 30,'deopd  =>',

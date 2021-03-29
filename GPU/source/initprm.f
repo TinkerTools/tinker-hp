@@ -25,6 +25,7 @@ c
       use fields
       use kanang
       use kangs
+      use kantor
       use katoms
       use kbonds
       use kchrge
@@ -55,6 +56,7 @@ c
       use vdwpot
       implicit none
       integer i,j,k
+      integer(8) initi
       character*3 blank3
       character*8 blank8
       character*12 blank12
@@ -65,12 +67,15 @@ c
 c
 c     define blank character strings of various lengths
 c
-      blank3 = '   '
-      blank8 = '        '
-      blank12 = '            '
-      blank16 = '                '
-      blank20 = '                    '
-      blank24 = '                        '
+      parameter(
+     &    blank3  = '   '
+     &   ,blank8  = '        '
+     &   ,blank12 = '            '
+     &   ,blank16 = '                '
+     &   ,blank20 = '                    '
+     &   ,blank24 = '                        '
+     &   ,initi   = -1
+     &)
 c
 c     initialize strings of parameter atom types and classes
 c
@@ -111,22 +116,22 @@ c
          kaf(i) = blank12
       end do
       do i = 1, maxnsb
-         ksb(i) = -1
+         ksb(i) = initi
       end do
       do i = 1, maxnu
-         ku(i)  = -1
+         ku(i)  = initi
       end do
       do i = 1, maxnopb
-         kopb(i) = -1
+         kopb(i) = initi
       end do
       do i = 1, maxnopd
          kopd(i) = blank16
       end do
       do i = 1, maxndi
-         kdi(i) = -1
+         kdi(i) = initi
       end do
       do i = 1, maxnti
-         kti(i) = -1
+         kti(i) = initi
       end do
       do i = 1, maxnt
          kt(i) = blank16
@@ -138,13 +143,16 @@ c
          kt4(i) = blank16
       end do
       do i = 1, maxnpt
-         kpt(i) = -1
+         kpt(i) = initi
       end do
       do i = 1, maxnbt
-         kbt(i) = -1
+         kbt(i) = initi
+      end do
+      do i = 1, maxnat
+         kat(i) = initi
       end do
       do i = 1, maxntt
-         ktt(i) = -1
+         ktt(i) = initi
       end do
 c      do i = 1, maxnd
 c         kd(i) = blank8
@@ -342,27 +350,28 @@ c
       torsunit = 1.0_ti_p
       ptorunit = 1.0_ti_p
       storunit = 1.0_ti_p
+      atorunit = 1.0_ti_p
       ttorunit = 1.0_ti_p
 c
 c     set default control parameters for van der Waals terms
 c
       vdwindex = 'CLASS'
-      vdwtyp = 'LENNARD-JONES'
-      radrule = 'ARITHMETIC'
-      radtyp = 'R-MIN'
-      radsiz = 'RADIUS'
-      epsrule = 'GEOMETRIC'
+      vdwtyp   = 'LENNARD-JONES'
+      radrule  = 'ARITHMETIC'
+      radtyp   = 'R-MIN'
+      radsiz   = 'RADIUS'
+      epsrule  = 'GEOMETRIC'
       gausstyp = 'NONE'
-      ngauss = 0
-      abuck = 0.0_ti_p
-      bbuck = 0.0_ti_p
-      cbuck = 0.0_ti_p
-      ghal = 0.12_ti_p
-      dhal = 0.07_ti_p
-      v2scale = 0.0_ti_p
-      v3scale = 0.0_ti_p
-      v4scale = 1.0_ti_p
-      v5scale = 1.0_ti_p
+      ngauss   = 0
+      abuck    = 0.0_ti_p
+      bbuck    = 0.0_ti_p
+      cbuck    = 0.0_ti_p
+      ghal     = 0.12_ti_p
+      dhal     = 0.07_ti_p
+      v2scale  = 0.0_ti_p
+      v3scale  = 0.0_ti_p
+      v4scale  = 1.0_ti_p
+      v5scale  = 1.0_ti_p
       use_vcorr = .false.
 !$acc update device(ghal,dhal)
 !$acc update device(v2scale,v3scale,v4scale,v5scale)
@@ -381,39 +390,39 @@ c
 c
 c     set default control parameters for polarizable multipoles
 c
-      m2scale = 0.0_ti_p
-      m3scale = 0.0_ti_p
-      m4scale = 1.0_ti_p
-      m5scale = 1.0_ti_p
-      p2scale = 0.0_ti_p
-      p3scale = 0.0_ti_p
-      p4scale = 1.0_ti_p
-      p5scale = 1.0_ti_p
+      m2scale  = 0.0_ti_p
+      m3scale  = 0.0_ti_p
+      m4scale  = 1.0_ti_p
+      m5scale  = 1.0_ti_p
+      p2scale  = 0.0_ti_p
+      p3scale  = 0.0_ti_p
+      p4scale  = 1.0_ti_p
+      p5scale  = 1.0_ti_p
       p41scale = 0.5_ti_p
 !$acc update device(m2scale,m3scale,m4scale,m5scale,p2scale,
 !$acc& p3scale,p4scale,p41scale,p5scale)
 c
 c     set default control parameters for induced dipoles
 c
-      poltyp = 'MUTUAL'
+      poltyp  = 'MUTUAL'
       politer = 500
-      polprt = 0
-      polalg = 1   !TODO 1.2 Set this to 5 when finished
+      polprt  = 0
+      polalg  = 1   !TODO 1.2 Set this to 5 when finished
       polalgshort = 5
-      polgsf = 0
-      polff  = 0
-      tcgprec = .true.
+      polgsf   = 0
+      polff    = 0
+      tcgprec  = .true.
       tcgguess = .false.
-      tcgpeek = .true.
-      tcgprecshort = .true.
+      tcgpeek  = .true.
+      tcgprecshort  = .true.
       tcgguessshort = .false.
-      tcgpeekshort = .false.
-      tcgorder = 2
+      tcgpeekshort  = .false.
+      tcgorder      = 2
       tcgordershort = 1
-      tcgomega = 1.0d0
-      tcgomegafit = .false.
-      omegafitfreq = 1000
-      poleps = 0.00001_re_p
+      tcgomega      = 1.0d0
+      tcgomegafit   = .false.
+      omegafitfreq  = 1000
+      poleps  = 0.00001_re_p
       d1scale = 0.0_ti_p
       d2scale = 1.0_ti_p
       d3scale = 1.0_ti_p
@@ -427,9 +436,8 @@ c
 c
 c     set default divide and conquer ji/diis parameters
 c
-      clsttype = 2
-      precomp = 0
+      clsttype  = 2
+      precomp   = 0
       nocomdiis = 0
-      natprblk = 60
-      return
+      natprblk  = 60
       end

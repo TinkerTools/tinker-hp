@@ -21,6 +21,7 @@ c     neid    number of improper dihedral energy terms computed
 c     neit    number of improper torsion energy terms computed
 c     net     number of torsional energy terms computed
 c     nept    number of pi-orbital torsion energy terms computed
+c     neat    number of angle-torsion energy terms computed
 c     nebt    number of stretch-torsion energy terms computed
 c     nett    number of torsion-torsion energy terms computed
 c     nev     number of van der Waals energy terms computed
@@ -37,7 +38,7 @@ c
       integer neb,nea,neba,neub
       integer neaa,neopb,neopd
       integer neid,neit,net,nept
-      integer nebt,nett,nev,nec
+      integer neat,nebt,nett,nev,nec
       integer nem,nep
       integer neg,nex
       real*8 nem_,nep_,nev_,nec_

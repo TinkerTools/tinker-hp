@@ -126,6 +126,7 @@ c
          xi = x(iglob)
          yi = y(iglob)
          zi = z(iglob)
+!$acc loop seq
          do j = 1, n12(iglob)
             k = i12(j,iglob)
             xk = x(k)

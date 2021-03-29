@@ -690,18 +690,18 @@ c
       integer nnvlst,nnvlst2
       integer nn12,nn13,nn14,ntot
       integer interac
-      real(t_p)  xi,yi,zi,redi,e,de
-      real(t_p)  half,one
-      real(t_p)  rdn,rdn1,redk
-      real(t_p)  rik2
-      type(real3) ded
-      mdyn_rtyp  devx,devy,devz
-      real(t_p)  invrho,rv7orho
-      real(t_p)  dtau,gtau,tau,tau7,rv7
-      real(t_p)  rv2,eps2
-      real(t_p)  xpos,ypos,zpos
-      real(t_p)  vscale,vscale4
-      logical    do_scale4
+      real(t_p) xi,yi,zi,redi,e,de
+      real(t_p) half,one
+      real(t_p) rdn,rdn1,redk
+      real(t_p) rik2
+      real(t_p) dedx,dedy,dedz
+      mdyn_rtyp devx,devy,devz
+      real(t_p) invrho,rv7orho
+      real(t_p) dtau,gtau,tau,tau7,rv7
+      real(t_p) rv2,eps2
+      real(t_p) xpos,ypos,zpos
+      real(t_p) vscale,vscale4
+      logical   do_scale4
       character*10 mode
 
       real(t_p),intent(in):: xred(:)
@@ -717,10 +717,9 @@ c
       ! Scaling factor correction loop
 !$acc parallel loop async(dir_queue)
 !$acc&     gang vector
-!$acc&     present(xred,yred,zred,vxx,vxy,vxz,vyy,vyz,vzz)
-!$acc&     present(loc,ired,kred,ivdw,loc,jvdw,vir,radmin,
+!$acc&     present(dev,ev,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc&     present(loc,ired,xred,yred,zred,loc,jvdw,vir,radmin,
 !$acc&  radmin4,epsilon,epsilon4,vcorrect_ik,vcorrect_scale)
-!$acc&     present(dev,ev)
       do ii = 1,n_vscale
          iglob  = vcorrect_ik(ii,1)
          kglob  = vcorrect_ik(ii,2)
@@ -763,26 +762,26 @@ c
             eps2 = epsilon (kt,it)
          end if
 
-         call elj1_couple(rik2,xpos,ypos,zpos,rv2,eps2*vscale
-     &                    ,cut2,cut,off,e,ded)
+         call elj1_couple1(rik2,xpos,ypos,zpos,rv2,eps2*vscale
+     &                    ,cut2,cut,off,e,dedx,dedy,dedz)
 
          if (.not.do_scale4) then
          e    = -e
-         ded%x = -ded%x; ded%y = -ded%y; ded%z = -ded%z;
+         dedx = -dedx; dedy = -dedy; dedz = -dedz;
          end if
 
          ev   =   ev + tp2enr(e)
          !if(rank.eq.0.and.mod(ii,1).eq.0) print*,iglob,kglob,vscale,e
 
-         devx = tp2mdr(ded%x)
-         devy = tp2mdr(ded%y)
-         devz = tp2mdr(ded%z)
+         devx = tp2mdr(dedx)
+         devy = tp2mdr(dedy)
+         devz = tp2mdr(dedz)
 !$acc atomic update
-         dev(1,kbis)  = dev(1,kbis)  - devx
+         dev(1,kbis) = dev(1,kbis) - devx
 !$acc atomic update
-         dev(2,kbis)  = dev(2,kbis)  - devy
+         dev(2,kbis) = dev(2,kbis) - devy
 !$acc atomic update
-         dev(3,kbis)  = dev(3,kbis)  - devz
+         dev(3,kbis) = dev(3,kbis) - devz
 
 !$acc atomic update
          dev(1,i) = dev(1,i) + devx
@@ -793,12 +792,12 @@ c
 c
 c     increment the total van der Waals energy 
 c
-         vxx = vxx + xpos * ded%x
-         vxy = vxy + ypos * ded%x
-         vxz = vxz + zpos * ded%x
-         vyy = vyy + ypos * ded%y
-         vyz = vyz + zpos * ded%y
-         vzz = vzz + zpos * ded%z
+         vxx = vxx + xpos * dedx
+         vxy = vxy + ypos * dedx
+         vxz = vxz + zpos * dedx
+         vyy = vyy + ypos * dedy
+         vyz = vyz + zpos * dedy
+         vzz = vzz + zpos * dedz
 
          ! deal with 1-4 Interactions
          if (vscale4.gt.0) then

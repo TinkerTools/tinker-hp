@@ -106,7 +106,7 @@ c
       real(8) mi,ma,on
       integer i
       real(md_p) val
-      mi=0;ma=0;on=0
+      mi=huge(mi);ma=tiny(ma);on=0
 !$acc parallel loop async present(vector(1:sz))
       do i = 1, sz
          val = mdr2md(vector(i))
@@ -131,7 +131,7 @@ c
       real(8) mi,ma,on
       integer i
       real(8) val
-      mi=0;ma=0;on=0
+      mi=huge(mi);ma=tiny(ma);on=0
 !$acc wait
 !$acc parallel loop async present(vector(1:sz))
       do i = 1, sz
@@ -154,7 +154,7 @@ c
       real(8) mi,ma,on
       integer i
       real(r_p) val
-      mi=0;ma=0;on=0
+      mi=huge(mi);ma=tiny(ma);on=0
 !$acc wait
 !$acc parallel loop async present(vector(1:sz))
       do i = 1, sz

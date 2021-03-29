@@ -121,9 +121,11 @@ c
          id = iang(3,iangle)
 #endif
          nbitorloc1 = 0
+!$acc loop seq
          do j = 1, n12(ib)
             ia = i12(j,ib)
             if (ia.ne.ic .and. ia.ne.id) then
+!$acc loop seq
                do k = 1, n12(id)
                   ie = i12(k,id)
                   if (ie.ne.ic .and. ie.ne.ib .and. ie.ne.ia) then

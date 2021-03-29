@@ -20,6 +20,7 @@ c
       use iounit
       use kanang
       use kangs
+      use kantor
       use katoms
       use kbonds
       use kchrge
@@ -915,6 +916,61 @@ c              kbt(nbt) = pd//pc//pb//pa
                btcon(9,nbt) = bt9
             end if
 c
+c     angle-torsion parameters
+c
+         else if (keyword(1:8) .eq. 'ANGTORS ') then
+            ia = 0
+            ib = 0
+            ic = 0
+            id = 0
+            at1 = 0.0d0
+            at2 = 0.0d0
+            at3 = 0.0d0
+            at4 = 0.0d0
+            at5 = 0.0d0
+            at6 = 0.0d0
+            string = record(next:240)
+            read (string,*,err=330,end=330)  ia,ib,ic,id,at1,at2,
+     &                                       at3,at4,at5,at6
+  330       continue
+c           call numeral (ia,pa,size)
+c           call numeral (ib,pb,size)
+c           call numeral (ic,pc,size)
+c           call numeral (id,pd,size)
+            nat = nat + 1
+            if (ib .lt. ic) then
+               call front_convert_base(0,ia,ib,ic,id,kat(nat))
+               !kat(nat) = pa//pb//pc//pd
+               swap = .false.
+            else if (ic .lt. ib) then
+               call front_convert_base(0,id,ic,ib,ia,kat(nat))
+               !kat(nat) = pd//pc//pb//pa
+               swap = .true.
+            else if (ia .le. id) then
+               call front_convert_base(0,ia,ib,ic,id,kat(nat))
+               !kat(nat) = pa//pb//pc//pd
+               swap = .false.
+            else if (id .lt. ia) then
+               call front_convert_base(0,id,ic,ib,ia,kat(nat))
+               !kat(nat) = pd//pc//pb//pa
+               swap = .true.
+            end if
+            if (swap) then
+               atcon(1,nat) = at4
+               atcon(2,nat) = at5
+               atcon(3,nat) = at6
+               atcon(4,nat) = at1
+               atcon(5,nat) = at2
+               atcon(6,nat) = at3
+            else
+               atcon(1,nat) = at1
+               atcon(2,nat) = at2
+               atcon(3,nat) = at3
+               atcon(4,nat) = at4
+               atcon(5,nat) = at5
+               atcon(6,nat) = at6
+            end if
+c
 c     torsion-torsion parameters
 c
          else if (keyword(1:8) .eq. 'TORTORS ') then
@@ -932,14 +988,14 @@ c
                tf(i) = 0.0_ti_p
             end do
             string = record(next:240)
-            read (string,*,err=330,end=330)  ia,ib,ic,id,ie,nx,ny
+            read (string,*,err=340,end=340)  ia,ib,ic,id,ie,nx,ny
             nxy = nx * ny
             do i = 1, nxy
                iprm = iprm + 1
                record = prmline(iprm)
-               read (record,*,err=330,end=330)  tx(i),ty(i),tf(i)
+               read (record,*,err=340,end=340)  tx(i),ty(i),tf(i)
             end do
-  330       continue
+  340       continue
 c           call numeral (ia,pa,size)
 c           call numeral (ib,pb,size)
 c           call numeral (ic,pc,size)
@@ -970,8 +1026,8 @@ c
             ia = 0
             cg = 0.0_ti_p
             string = record(next:240)
-            read (string,*,err=340,end=340)  ia,cg
-  340       continue
+            read (string,*,err=350,end=350)  ia,cg
+  350       continue
             if (ia .ne. 0)  chg(ia) = cg
 cc
 cc     bond dipole moment parameters
@@ -982,8 +1038,8 @@ c            ib = 0
 c            dp = 0.0_ti_p
 c            ps = 0.5_ti_p
 c            string = record(next:240)
-c            read (string,*,err=350,end=350)  ia,ib,dp,ps
-c  350       continue
+c            read (string,*,err=360,end=360)  ia,ib,dp,ps
+c  360       continue
 c            call numeral (ia,pa,size)
 c            call numeral (ib,pb,size)
 c            nd = nd + 1

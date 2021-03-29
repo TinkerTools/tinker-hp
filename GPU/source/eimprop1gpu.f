@@ -60,7 +60,7 @@ c
       real(t_p) xdc,ydc,zdc
       real(t_p) xca,yca,zca
       real(t_p) xdb,ydb,zdb
-      type(real3_red) ded
+      real(r_p) dedx,dedy,dedz
       real(t_p) dedxt,dedyt,dedzt
       real(t_p) dedxu,dedyu,dedzu
       real(t_p) dedxia,dedyia,dedzia
@@ -83,7 +83,6 @@ c
 !$acc&         present(impropglob,iiprop,kprop,vprop,
 !$acc&   loc,use,x,y,z,deid)
 !$acc&         present(eid,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-!$acc&         private(ded)
       do iimprop = 1, niproploc
          i     = impropglob(iimprop)
          ia    = iiprop(1,i)
@@ -208,45 +207,45 @@ c     calculate improper dihedral energy and derivatives
 c
                eid   = eid + e
 
-               ded%x = dedxia
-               ded%y = dedyia
-               ded%z = dedzia
+               dedx = dedxia
+               dedy = dedyia
+               dedz = dedzia
 !$acc atomic
-               deid(1,ialoc) = deid(1,ialoc) + ded%x
+               deid(1,ialoc) = deid(1,ialoc) + dedx
 !$acc atomic
-               deid(2,ialoc) = deid(2,ialoc) + ded%y
+               deid(2,ialoc) = deid(2,ialoc) + dedy
 !$acc atomic
-               deid(3,ialoc) = deid(3,ialoc) + ded%z
+               deid(3,ialoc) = deid(3,ialoc) + dedz
 c
-               ded%x = dedxib
-               ded%y = dedyib
-               ded%z = dedzib
+               dedx = dedxib
+               dedy = dedyib
+               dedz = dedzib
 !$acc atomic
-               deid(1,ibloc) = deid(1,ibloc) + ded%x
+               deid(1,ibloc) = deid(1,ibloc) + dedx
 !$acc atomic
-               deid(2,ibloc) = deid(2,ibloc) + ded%y
+               deid(2,ibloc) = deid(2,ibloc) + dedy
 !$acc atomic
-               deid(3,ibloc) = deid(3,ibloc) + ded%z
+               deid(3,ibloc) = deid(3,ibloc) + dedz
 c
-               ded%x = dedxic
-               ded%y = dedyic
-               ded%z = dedzic
+               dedx = dedxic
+               dedy = dedyic
+               dedz = dedzic
 !$acc atomic
-               deid(1,icloc) = deid(1,icloc) + ded%x
+               deid(1,icloc) = deid(1,icloc) + dedx
 !$acc atomic
-               deid(2,icloc) = deid(2,icloc) + ded%y
+               deid(2,icloc) = deid(2,icloc) + dedy
 !$acc atomic
-               deid(3,icloc) = deid(3,icloc) + ded%z
+               deid(3,icloc) = deid(3,icloc) + dedz
 c
-               ded%x = dedxid
-               ded%y = dedyid
-               ded%z = dedzid
+               dedx = dedxid
+               dedy = dedyid
+               dedz = dedzid
 !$acc atomic
-               deid(1,idloc) = deid(1,idloc) + ded%x
+               deid(1,idloc) = deid(1,idloc) + dedx
 !$acc atomic
-               deid(2,idloc) = deid(2,idloc) + ded%y
+               deid(2,idloc) = deid(2,idloc) + dedy
 !$acc atomic
-               deid(3,idloc) = deid(3,idloc) + ded%z
+               deid(3,idloc) = deid(3,idloc) + dedz
 c
 c     increment the internal virial tensor components
 c

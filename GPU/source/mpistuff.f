@@ -2018,7 +2018,7 @@ c
       implicit none
       integer ierr,commloc
       real(r_p) epot
-      real(r_p) buffer1(6),buffer2(16)
+      real(r_p) buffer1(6),buffer2(17)
       real(r_p) vir_copy(3,3)
 c
       if (ndir.eq.1) return
@@ -2102,15 +2102,16 @@ c
       buffer2(14) = ett
       buffer2(15) = eg
       buffer2(16) = ex
+      buffer2(17) = eat
 !$acc end serial
 c
 !$acc host_data use_device(buffer2)
 !$acc wait
       if (rank.eq.0) then
-        call MPI_REDUCE(MPI_IN_PLACE,buffer2,16,MPI_RPREC,MPI_SUM,0,
+        call MPI_REDUCE(MPI_IN_PLACE,buffer2,17,MPI_RPREC,MPI_SUM,0,
      $       commloc,ierr)
       else
-        call MPI_REDUCE(buffer2,buffer2,16,MPI_RPREC,MPI_SUM,0,
+        call MPI_REDUCE(buffer2,buffer2,17,MPI_RPREC,MPI_SUM,0,
      $       commloc,ierr)
       end if
 !$acc end host_data
@@ -2132,6 +2133,7 @@ c
       ett  = buffer2(14)
       eg   = buffer2(15)
       ex   = buffer2(16)
+      eat  = buffer2(17)
 !$acc end serial
 
   10  continue
@@ -3417,6 +3419,8 @@ c
      &                                    reqrec,reqsend)
       call Icommforceststgrad(detot,debt ,buffer,buffers,
      &                                    reqrec,reqsend)
+      call Icommforceststgrad(detot,deat ,buffer,buffers,
+     &                                    reqrec,reqsend)
       call Icommforceststgrad(detot,dett ,buffer,buffers,
      &                                    reqrec,reqsend)
       call Icommforceststgrad(detot,dev  ,buffer,buffers,
@@ -3432,14 +3436,12 @@ c
       call Icommforceststgrad(detot,dex  ,buffer,buffers,
      &                                    reqrec,reqsend)
 
-!$acc update host(buffer,buffers)
 !$acc update host(detot(1:3,1:nbloc))
 !$acc end data
       deallocate (reqrec)
       deallocate (reqsend)
       deallocate (buffer)
       deallocate (buffers)
-      return
       end
 c
 c     subroutine allreduceen : make the necessary allreductions over the processes to get the
@@ -3458,7 +3460,7 @@ c
       if (nproc.eq.1.or.use_pmecore.and.ndir.eq.1) return
 
 !$acc host_data use_device(eba,ea,eb,ec,em,ep,ev,eub,eaa,eopb,eopd,
-!$acc&          eid,eit,et,ept,ebt,ett,esum,epot,eg,ex,einter)
+!$acc&          eid,eit,et,ept,ebt,eat,ett,esum,epot,eg,ex,einter)
        call MPI_ALLREDUCE(MPI_IN_PLACE,eba,1,MPI_RPREC,MPI_SUM,
      $    COMM_TINKER,ierr)
        call MPI_ALLREDUCE(MPI_IN_PLACE,ea,1,MPI_RPREC,MPI_SUM,
@@ -3490,6 +3492,8 @@ c
        call MPI_ALLREDUCE(MPI_IN_PLACE,ept,1,MPI_RPREC,MPI_SUM,
      $    COMM_TINKER,ierr)
        call MPI_ALLREDUCE(MPI_IN_PLACE,ebt,1,MPI_RPREC,MPI_SUM,
+     $    COMM_TINKER,ierr)
+       call MPI_ALLREDUCE(MPI_IN_PLACE,eat,1,MPI_RPREC,MPI_SUM,
      $    COMM_TINKER,ierr)
        call MPI_ALLREDUCE(MPI_IN_PLACE,ett,1,MPI_RPREC,MPI_SUM,
      $    COMM_TINKER,ierr)
@@ -5115,6 +5119,7 @@ c     character*3 ich
       else
         commloc  = COMM_TINKER
       end if
+c     decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
       decomp1d = .false.
 
       if (rule.eq.r_comm) then
@@ -5217,6 +5222,7 @@ c
       else
         commloc  = COMM_TINKER
       end if
+c     decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
       decomp1d = .false.
 
       if (rule.eq.r_comm) then

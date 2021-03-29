@@ -302,7 +302,7 @@ c
       logical save_opdist,save_improp
       logical save_imptor,save_tors
       logical save_pitors,save_strtor
-      logical save_tortor,save_geom
+      logical save_angtor,save_tortor,save_geom
       logical save_extra
       logical save_mrec
       logical save_prec,save_crec
@@ -325,6 +325,7 @@ c
       save_tors   = use_tors
       save_pitors = use_pitors
       save_strtor = use_strtor
+      save_angtor = use_angtor
       save_tortor = use_tortor
       save_geom   = use_geom
       save_extra  = use_extra
@@ -354,6 +355,7 @@ c
       use_tors    = .false.
       use_pitors  = .false.
       use_strtor  = .false.
+      use_angtor  = .false.
       use_tortor  = .false.
       use_geom    = .false.
       use_extra   = .false.
@@ -393,6 +395,7 @@ c
       use_tors    = save_tors
       use_pitors  = save_pitors
       use_strtor  = save_strtor
+      use_angtor  = save_angtor
       use_tortor  = save_tortor
       use_geom    = save_geom
       use_extra   = save_extra
@@ -458,7 +461,7 @@ c
       logical save_opdist,save_improp
       logical save_imptor,save_tors
       logical save_pitors,save_strtor
-      logical save_tortor,save_geom
+      logical save_angtor,save_tortor,save_geom
       logical save_extra
 
 
@@ -478,6 +481,7 @@ c
       save_tors   = use_tors
       save_pitors = use_pitors
       save_strtor = use_strtor
+      save_angtor = use_angtor
       save_tortor = use_tortor
       save_geom   = use_geom
       save_extra  = use_extra
@@ -496,6 +500,7 @@ c
       use_tors    = .false.
       use_pitors  = .false.
       use_strtor  = .false.
+      use_angtor  = .false.
       use_tortor  = .false.
       use_geom    = .false.
       use_extra   = .false.
@@ -521,6 +526,7 @@ c
       use_imptor = save_imptor
       use_tors   = save_tors
       use_pitors = save_pitors
+      use_angtor = save_angtor
       use_strtor = save_strtor
       use_tortor = save_tortor
       use_geom   = save_geom

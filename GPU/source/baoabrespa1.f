@@ -310,6 +310,7 @@ c
       logical save_opdist,save_improp
       logical save_imptor,save_tors
       logical save_pitors,save_strtor
+      logical save_angtor
       logical save_tortor,save_geom
       logical save_extra
       logical save_mrec
@@ -320,68 +321,70 @@ c
 c
 c     save the original state of fast-evolving potentials
 c
-      save_bond = use_bond
-      save_angle = use_angle
+      save_bond   = use_bond
+      save_angle  = use_angle
       save_strbnd = use_strbnd
-      save_urey = use_urey
+      save_urey   = use_urey
       save_angang = use_angang
       save_opbend = use_opbend
       save_opdist = use_opdist
       save_improp = use_improp
       save_imptor = use_imptor
-      save_tors = use_tors
+      save_tors   = use_tors
       save_pitors = use_pitors
       save_strtor = use_strtor
+      save_angtor = use_angtor
       save_tortor = use_tortor
-      save_geom = use_geom
-      save_extra = use_extra
-      save_crec = use_crec
-      save_mrec = use_mrec
-      save_prec = use_prec
+      save_geom   = use_geom
+      save_extra  = use_extra
+      save_crec   = use_crec
+      save_mrec   = use_mrec
+      save_prec   = use_prec
       save_polalg = polalg
       save_tcgorder = tcgorder
-      save_tcgprec = tcgprec
+      save_tcgprec  = tcgprec
       save_tcgguess = tcgguess
-      save_tcgpeek = tcgpeek
+      save_tcgpeek  = tcgpeek
       save_tcgomega = tcgomega
       save_smdvel = use_smd_velconst
       save_smdfor = use_smd_forconst
 c
 c     turn off fast-evolving valence potential energy terms
 c
-      use_bond = .false.
-      use_angle = .false.
+      use_bond   = .false.
+      use_angle  = .false.
       use_strbnd = .false.
-      use_urey = .false.
+      use_urey   = .false.
       use_angang = .false.
       use_opbend = .false.
       use_opdist = .false.
       use_improp = .false.
       use_imptor = .false.
-      use_tors = .false.
+      use_tors   = .false.
       use_pitors = .false.
       use_strtor = .false.
+      use_angtor = .false.
       use_tortor = .false.
-      use_geom = .false.
-      use_extra = .false.
-      use_crec = .false.
-      use_mrec = .false.
-      use_prec = .false.
-      use_cself = .false.
-      use_mself = .false.
-      use_pself = .false.
-      use_cshortreal = .true.
+      use_geom   = .false.
+      use_extra  = .false.
+      use_crec   = .false.
+      use_mrec   = .false.
+      use_prec   = .false.
+      use_cself  = .false.
+      use_mself  = .false.
+      use_pself  = .false.
+      use_cshortreal     = .true.
       use_mpoleshortreal = .true.
-      use_vdwshort = .true.
+      use_vdwshort       = .true.
       use_polarshortreal = .true.
-      polalg = polalgshort
-      tcgorder = tcgordershort
-      tcgprec = tcgprecshort
-      tcgguess = tcgguessshort
-      tcgpeek = tcgpeekshort
-      tcgomega = tcgomegashort
-      use_smd_velconst = .false.
-      use_smd_forconst = .false.
+      polalg     = polalgshort
+      tcgorder   = tcgordershort
+      tcgprec    = tcgprecshort
+      tcgguess   = tcgguessshort
+      tcgpeek    = tcgpeekshort
+      tcgomega   = tcgomegashort
+      use_smd_velconst   = .false.
+      use_smd_forconst   = .false.
 c
 c     get energy and gradient for slow-evolving potential terms
 c
@@ -389,36 +392,37 @@ c
 c
 c     restore the original state of fast-evolving potentials
 c
-      use_bond = save_bond
-      use_angle = save_angle
+      use_bond   = save_bond
+      use_angle  = save_angle
       use_strbnd = save_strbnd
-      use_urey = save_urey
+      use_urey   = save_urey
       use_angang = save_angang
       use_opbend = save_opbend
       use_opdist = save_opdist
       use_improp = save_improp
       use_imptor = save_imptor
-      use_tors = save_tors
+      use_tors   = save_tors
       use_pitors = save_pitors
       use_strtor = save_strtor
+      use_angtor = save_angtor
       use_tortor = save_tortor
-      use_geom = save_geom
-      use_extra = save_extra
-      use_crec = save_crec
-      use_mrec = save_mrec
-      use_prec = save_prec
-      use_cself = .true.
-      use_mself = .true.
-      use_pself = .true.
-      use_cshortreal = .false.
+      use_geom   = save_geom
+      use_extra  = save_extra
+      use_crec   = save_crec
+      use_mrec   = save_mrec
+      use_prec   = save_prec
+      use_cself  = .true.
+      use_mself  = .true.
+      use_pself  = .true.
+      use_cshortreal     = .false.
       use_mpoleshortreal = .false.
-      use_vdwshort = .false.
+      use_vdwshort       = .false.
       use_polarshortreal = .false.
-      polalg = save_polalg
-      tcgorder = save_tcgorder
-      tcgprec = save_tcgprec
-      tcgguess = save_tcgguess
-      tcgpeek = save_tcgpeek
+      polalg     = save_polalg
+      tcgorder   = save_tcgorder
+      tcgprec    = save_tcgprec
+      tcgguess   = save_tcgguess
+      tcgpeek    = save_tcgpeek
       use_smd_velconst = save_smdvel
       use_smd_forconst = save_smdfor
 c
@@ -467,6 +471,7 @@ c
       logical save_opdist,save_improp
       logical save_imptor,save_tors
       logical save_pitors,save_strtor
+      logical save_angtor
       logical save_tortor,save_geom
       logical save_extra
 c
@@ -484,6 +489,7 @@ c
       save_tors     = use_tors
       save_pitors   = use_pitors
       save_strtor   = use_strtor
+      save_angtor   = use_angtor
       save_tortor   = use_tortor
       save_geom     = use_geom
       save_extra    = use_extra
@@ -502,6 +508,7 @@ c
       use_tors      = .false.
       use_pitors    = .false.
       use_strtor    = .false.
+      use_angtor    = .false.
       use_tortor    = .false.
       use_geom      = .false.
       use_extra     = .false.
@@ -528,6 +535,7 @@ c
       use_tors      = save_tors
       use_pitors    = save_pitors
       use_strtor    = save_strtor
+      use_angtor    = save_angtor
       use_tortor    = save_tortor
       use_geom      = save_geom
       use_extra     = save_extra

@@ -377,6 +377,8 @@ c       if no holonomic constraints are present, turn off their use
 c
         if (nrat.eq.0 .and. nratx.eq.0)  use_rattle = .false.
       end if
+
+      if (nrat.eq.0) return
 c
 c     get local constraints
 c

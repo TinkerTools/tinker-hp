@@ -37,7 +37,7 @@ c
       integer ita,itb,itc,itd,ite
       integer size,next,ntt
       integer nx,ny,nxy
-      integer:: isys=0
+      integer isys
       integer iibitor,tortorcount,ntortorloc1
       integer*8 pt,pt1,pt2
       real(t_p) eps
@@ -63,13 +63,14 @@ c
       logical init
       integer ntortorloc_capture
 c
-      blank = '                    '
       if (init) then
 c
 c     process keywords containing torsion-torsion parameters
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'ktortor init'
+        if (deb_Path) print*,'ktortor init'
+        blank = '                    '
         header = .true.
+        isys   = 0
         do i = 1, nkey
            next = 1
            record = keyline(i)
