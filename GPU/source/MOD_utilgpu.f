@@ -698,32 +698,77 @@ c
       subroutine bind_gpu
       character(len=6) :: local_rank_env
       integer          :: local_rank_env_status, local_rank
+      integer device_type
 
       !Initialisation OpenAcc
-
-      ! Récupération du rang local du processus via la variable d'environnement
-      ! positionnée par Slurm, l'utilisation de MPI_Comm_rank n'étant pas encore
-      ! possible puisque cette routine est utilisée AVANT l'initialisation de MPI
-      call get_environment_variable(name="SLURM_LOCALID", 
+      call get_environment_variable(name="PGI_ACC_DEVICE_NUM",
      &     value=local_rank_env, status=local_rank_env_status)
-     
+      if (local_rank_env_status == 0) return
+
+      call get_environment_variable(name="ACC_DEVICE_NUM",
+     &     value=local_rank_env, status=local_rank_env_status)
+      if (local_rank_env_status == 0) return
+
+      call get_environment_variable(name="ACC_DEVICE_HOST_RANK",
+     &     value=local_rank_env, status=local_rank_env_status)
+      if (local_rank_env_status == 0) return
+
+      ! Look for CUDA environment
+      call get_environment_variable(name="CUDA_VISIBLE_DEVICE",
+     &     value=local_rank_env, status=local_rank_env_status)
       if (local_rank_env_status == 0) then
          read(local_rank_env, *) local_rank
-         call get_environment_variable(name="PGI_ACC_DEVICE_NUM",
-     &        value=local_rank_env, status=local_rank_env_status)
-         if (local_rank_env_status == 0)
-     &      read(local_rank_env, *) local_rank
-
-         ! Definition du GPU a utiliser via OpenACC
-         call acc_set_device_num(local_rank, acc_get_device_type())
-         devicenum=local_rank
-      else
- 34      format ( "Warning : Could not bind GPU device before MPI_Init",
-     &            "(SLURM_LOCALID not set).",/,
-     &            "          Will not work with PSM2!" )
-         write(0,34)
+         goto 100
       end if
-      end subroutine bind_gpu     
+
+      ! Recuperation du rang local du processus via la variable d'environnement
+      ! positionnee par Slurm, l'utilisation de MPI_Comm_rank n'etant pas encore
+      ! possible puisque cette routine est utilisee avant l'initialisation de MPI
+      call get_environment_variable(name="SLURM_LOCALID",
+     &     value=local_rank_env, status=local_rank_env_status)
+      if (local_rank_env_status == 0) then
+         read(local_rank_env, *) local_rank
+         !if (local_rank.eq.0) print*,'SLURM detected'
+         goto 100
+      end if
+
+      ! OpenMPI
+      call get_environment_variable(name="OMPI_COMM_WORLD_LOCAL_RANK",
+     &     value=local_rank_env, status=local_rank_env_status)
+      if (local_rank_env_status == 0) then
+         read(local_rank_env, *) local_rank
+         !if (local_rank.eq.0) print*,'OpenMPI detected'
+         goto 100
+      end if
+
+      ! Intel MPI
+      call get_environment_variable(name="MPI_LOCALRANKID",
+     &     value=local_rank_env, status=local_rank_env_status)
+      if (local_rank_env_status == 0) then
+         read(local_rank_env, *) local_rank
+         !if (local_rank.eq.0) print*,'Intel MPI detected'
+         goto 100
+      end if
+
+ 34   format( "Warning : Could not bind GPU device before MPI_Init",
+     &    ,/, "          Switched to default binding procedure")
+      write(0,34)
+      return
+
+ 100  continue
+      ! Look for device ID to bind with using OpenACC
+
+      device_type = acc_get_device_type()
+      ngpus = acc_get_num_devices(device_type)
+
+      ! Circle on total number of device present on the host
+      ! to prevent errors from `acc_set_device_num`
+      if (local_rank.ge.ngpus) local_rank = mod(local_rank,ngpus)
+
+      ! Bind to device ID local_rank
+      call acc_set_device_num( local_rank,device_type )
+      devicenum=local_rank
+      end subroutine bind_gpu
 c
 c     Initiate device parameters
 c
@@ -749,18 +794,18 @@ c
      &                                  length,status)
          call get_environment_variable('PGI_ACC_DEVICE_NUM',value1,
      &                                  length1,status1)
-         call get_environment_variable('PGI_ACC_DEVICE_START',value2,
+         call get_environment_variable('ACC_DEVICE_HOST_RANK',value2,
      &                                  length2,status2)
-         if (status.eq.0) then
-            ngpus = 1
-            read (value,'(i)') devicenum
-         else if (status1.eq.0) then
+         if (status1.eq.0) then
             ngpus = 1
             read (value1,'(i)') devicenum
+         else if (status.eq.0) then
+            ngpus = 1
+            read (value,'(i)') devicenum
          else
             if (status2.eq.0) read(value2,*) device_start
             ngpus     = acc_get_num_devices(device_type)
-            devicenum = device_start + mod(hostrank,ngpus)
+            devicenum = mod( device_start+hostrank,ngpus )
          end if
 
          call acc_set_device_num(devicenum, device_type)
