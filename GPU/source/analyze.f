@@ -100,7 +100,7 @@ c
       if (dcdio) then
         dcdfile = filename(1:leng)//'.dcd'
         call dcdfile_open(dcdfile)
-        call dcdfile_read_header
+        call dcdfile_read_header(.false.)
         call dcdfile_read_next
         call dcdfile_skip_next(0)
       else

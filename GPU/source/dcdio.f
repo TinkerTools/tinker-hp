@@ -23,7 +23,7 @@ c
       real(kind=4), allocatable :: posw(:)
       real(kind=8) :: box(6)
       real*8 :: dt
-      logical init
+      logical init,exist
       character*240 dcdfile
       character (len=79) :: info1,info2
       character (len=8) :: date
@@ -37,82 +37,100 @@ c
       init       = (istep.eq.iwrite)
 c
       if (init) then
+        idcd = freeunit ()
+c
+c     check if dcd trajectory file exists
+c
+        inquire (file=trim(dcdfile),exist=exist)
+        if (exist) then
+          open (unit=idcd,file=trim(dcdfile),access="stream",
+     $      status='old',position='append')
+c
+c     check header
+c
+          call dcdfile_read_header(.true.)
+c
+c       nevery: frequency output in timesteps
+c
+          nevery = iwrite 
+c  
+        else
 c
 c     open dcd trajectory file
 c
-      idcd = freeunit ()
-      open(newunit=idcd, file=trim(dcdfile), form="unformatted",
+          open(newunit=idcd, file=trim(dcdfile), form="unformatted",
      $     access="stream", status="replace")
 c  
 c     create the header
 c
-        do i = 1, 79
-          info1(i:i) = ' '
-          info2(i:i) = ' '
-        end do
-        info1 = "Created by Tinker-HP development version"
-        call date_and_time(date=date,time=time)
-        info2 = "Created on "//date//" "//time
+          do i = 1, 79
+            info1(i:i) = ' '
+            info2(i:i) = ' '
+          end do
+          info1 = "Created by Tinker-HP development version"
+          call date_and_time(date=date,time=time)
+          info2 = "Created on "//date//" "//time
 
-        nframes = 0
+          nframes = 0
 c
 c       istart: first timestep
 c
-        istart = iwrite
-        iend = istart
+          istart = iwrite
+          iend = istart
 c
 c       nevery: frequency output in timesteps
 c
-        nevery = iwrite 
+          nevery = iwrite 
 
-        write(idcd) 84
-        write(idcd) "CORD"
+          write(idcd) 84
+          write(idcd) "CORD"
 
-        inquire(unit=idcd, pos=nframes_pos)
+          inquire(unit=idcd, pos=nframes_pos)
 
 ! Number of snapshots in file
-        write(idcd) nframes
+          write(idcd) nframes
 c
 ! Timestep of first snapshot
-        write(idcd) istart
+          write(idcd) istart
 c
 ! Save snapshots every this many steps
-        write(idcd) nevery
+          write(idcd) nevery
 c
-        inquire(unit=idcd, pos=iend_pos)
+          inquire(unit=idcd, pos=iend_pos)
 ! Timestep ! of ! last ! snapshot
-         write(idcd) iend
+          write(idcd) iend
 
-         do i = 1, 5
-           write(idcd) 0
-         end do
+          do i = 1, 5
+            write(idcd) 0
+          end do
 
 ! Simulation timestep
-         write(idcd) timestep
+          write(idcd) timestep
 
 ! Has unit cell
-        write(idcd) 1
+          write(idcd) 1
 
-        do i = 1, 8
-          write(idcd) 0
-        end do
+          do i = 1, 8
+            write(idcd) 0
+          end do
          ! Pretend to be CHARMM version 24
-        write(idcd) 24
-        write(idcd) 84
-        write(idcd) 164
+          write(idcd) 24
+          write(idcd) 84
+          write(idcd) 164
          
-        write(idcd) 2
-        write(idcd) info1//C_NULL_CHAR
-        write(idcd) info2//C_NULL_CHAR
+          write(idcd) 2
+          write(idcd) info1//C_NULL_CHAR
+          write(idcd) info2//C_NULL_CHAR
 
-        write(idcd) 164
-        write(idcd) 4
+          write(idcd) 164
+          write(idcd) 4
 
-        ! Number of atoms in each snapshot
-        write(idcd) natoms
-        write(idcd) 4
+          ! Number of atoms in each snapshot
+          write(idcd) natoms
+          write(idcd) 4
 
-        flush(idcd)
+          flush(idcd)
+        end if
       end if
 
       allocate (posw(natoms))
@@ -165,8 +183,8 @@ c
       iend = iend + nevery
 
       ! Go back and update header
-      write(idcd, pos=nframes_pos) nframes
-      write(idcd, pos=iend_pos) iend
+      write(idcd, pos=9) nframes
+      write(idcd, pos=21) iend
       write(idcd, pos=curr_pos)
 
       flush(idcd)
@@ -246,7 +264,7 @@ c
 c
 c     read header of the dcd file
 c
-      subroutine dcdfile_read_header
+      subroutine dcdfile_read_header(dowrite)
       use atoms,only :n
       use dcdmod
       use domdec
@@ -254,8 +272,9 @@ c
       use iso_c_binding, only: C_NULL_CHAR
       implicit none
       integer(kind=4) :: i, ntitle, m, dummy, pos
-      integer(kind=8) :: nframes2
+      integer(kind=8) :: nframes2,newpos
       character(len=80) :: title_string
+      logical :: dowrite
 
       read(idcd, pos=9) nframes, istart, nevery, iend
 
@@ -310,6 +329,15 @@ c
       ! Additionally there are 32 bytes of file information in each frame
       framesize = natoms*12 + 80
       ! Header is typically 276 bytes, but inquire gives us exact size
+      ! Only check size if we are reading and not if we are appending a
+      ! file 
+      if (dowrite) then
+      ! Where are we?
+        inquire(unit=idcd, pos=pos)
+        newpos = pos + framesize*nframes - 4
+        read(idcd, pos=newpos) dummy
+        return
+      end if
       nframes2 = (filesize-pos)/framesize
       if ( nframes2 .ne. nframes) then
           write(iout,'(a,i0,a,i0,a)') "WARNING:

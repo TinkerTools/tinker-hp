@@ -257,7 +257,7 @@ c
       if (dcdio) then
         dcdfile = fnamea(1:lenga)//'.dcd'
         call dcdfile_open(dcdfile)
-        call dcdfile_read_header
+        call dcdfile_read_header(.false.)
         call dcdfile_read_next
         call dcdfile_skip_next(0)
       else
@@ -334,7 +334,7 @@ c
         call dcdfile_close
         dcdfile = fnamea(1:lenga)//'.dcd'
         call dcdfile_open(dcdfile)
-        call dcdfile_read_header
+        call dcdfile_read_header(.false.)
         call dcdfile_read_next
         call dcdfile_skip_next(0)
         abort = .false.
@@ -412,7 +412,7 @@ c
       if (dcdio) then
         dcdfile = fnameb(1:lengb)//'.dcd'
         call dcdfile_open(dcdfile)
-        call dcdfile_read_header
+        call dcdfile_read_header(.false.)
         call dcdfile_read_next
         call dcdfile_skip_next(0)
         abort = .false.
@@ -486,7 +486,7 @@ c
         call dcdfile_close
         dcdfile = fnameb(1:lengb)//'.dcd'
         call dcdfile_open(dcdfile)
-        call dcdfile_read_header
+        call dcdfile_read_header(.false.)
         call dcdfile_read_next
         call dcdfile_skip_next(0)
         abort = .false.
