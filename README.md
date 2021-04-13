@@ -6,7 +6,7 @@ A phase advance update (GPUs) has been pushed to GitHub (28/10/2020) to support 
 Tinker-HP : Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using GPUs and Multi-GPUs systems. O. Adjoua, L. Lagardère, L.-H. Jolly, Arnaud Durocher, Z. Wang, T. Very, I. Dupays, T. Jaffrelot Inizan, F. Célerse, P. Ren, J. Ponder, J-P. Piquemal, J. Chem. Theory. Comput., 2021, 17 (4), 2034–2053 (Open Access) https://doi.org/10.1021/acs.jctc.0c01164 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 <H2><B>Versions</B></H2>
-
+<B>Update 03/02/2021 : In addition to GitHub, a GPUs container (quick install!) is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp </B>
 <B>Update 03/02/2021 : PLUMED Support for GPUs !</B>
 
 <B>Update 02/11/2021 : PLUMED Support for version 1.2 (CPUs) !</B>
