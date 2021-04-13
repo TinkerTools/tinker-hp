@@ -5,7 +5,7 @@ Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
 <b>This phase-advance GPU version (1.2 ++) is not (yet) an official release of Tinker-HP but is made freely available in link with the COVID-19 HPC community effort.</b>
 
 This work will be part of a larger 2021 Tinker-HP 1.3 official release.
-Aside the sources on GitHub, a GPUs container is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp
+Aside GitHub, a GPUs container is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp
 
 # Getting started with Tinker-HP
    - Installation Guide
