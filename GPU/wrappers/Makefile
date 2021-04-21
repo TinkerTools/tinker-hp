@@ -9,7 +9,7 @@ FC       = pgf90
 
 # Flags
 FCFLAGS   = -O3 -Mcuda=cc60,cc70#-rc=rc4.0
-CUFLAGS   = -std=c++14 -O3 -gencode arch=compute_60,code=sm_60 \
+CUFLAGS   = -std=c++11 -O3 -gencode arch=compute_60,code=sm_60 \
                 -gencode arch=compute_70,code=sm_70 \
 
 # Directories
@@ -20,19 +20,23 @@ TINKER_SOURCE =../source
 # Objects
 OBJ = thrust_cache.o csort.o thrust_module.o
 
-#
 # Targets
-#
+# -------
+
 all: libwrapper.a
 
 libwrapper.a: $(OBJ)
-	ar qc $@ $(OBJ)
+	@echo '****** Making libwrapper.a ******'
+	$(AT)ar -crs $@ $(OBJ)
 
-#
+# dependencies
+# ------------
+
+thrust_cache.o: thrust_cache.h
+
 # Generic Rules
-#
-thrust_cache.o: thrust_cache.cu thrust_cache.h
-	$(CUDACC) $(CUFLAGS) -c $< $(INCLUDE)
+# -------------
+
 %.o: %.cu
 	$(CUDACC) $(CUFLAGS) -c $< $(INCLUDE)
 
