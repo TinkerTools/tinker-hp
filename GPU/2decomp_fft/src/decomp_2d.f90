@@ -149,13 +149,36 @@ module decomp_2d
 
   integer(int_ptr_kind()),public:: cufft_worksize=0 !Total workspace of cufft library at runtime
 
+  ! These are data attributes for Decomp2d_mpi_alltoallv
+  integer,allocatable,private:: reqsendall(:),reqrecvall(:)    &
+         ,alltoall_recv_pattern(:),alltoall_send_pattern(:)
+  logical,private:: decomp_allToall_fin=.true.
+
   ! These are the buffers used by MPI_ALLTOALL(V) calls
   integer, save :: decomp_buf_size = 0
   real(mytype),    allocatable, dimension(:),public :: work1_r, work2_r
-  complex(mytype), allocatable, dimension(:),public :: work1_c, work2_c
+  complex(mytype), pointer, dimension(:),public :: work1_c, work2_c
 
+  ! Debug info
+  integer dndebug
+
+  abstract interface
+  subroutine tmatxb_pmegpu(nrhs,dodiag,mu,ef)
+     import mytype
+     integer  ,intent(in) :: nrhs
+     logical  ,intent(in) :: dodiag
+     real(mytype),intent(in) :: mu(:,:,:)
+     real(mytype),intent(out):: ef(:,:,:)
+  end subroutine
+  end interface
+  logical,parameter:: decomp1d_grid=.true.
   procedure(decomp_void),pointer,public:: decomp2d_WhileWait
-  integer,public:: decomp2d_isubwait
+  procedure(tmatxb_pmegpu),pointer,public:: decomp2d_WhileWait1
+  integer,public:: tin_nrhs
+  logical,public:: tin_dodiag
+  real(mytype),pointer,public:: mu(:,:,:)
+  real(mytype),pointer,public:: ef(:,:,:)
+  integer,public:: decomp2d_mpi_fcall
 
   ! public user routines
   public :: decomp_2d_init, decomp_2d_finalize, &
@@ -180,7 +203,7 @@ module decomp_2d
        alloc_x, alloc_y, alloc_z,    &
        update_halo, decomp_2d_abort, &
        get_decomp_info,  &
-       decomp2d_resetIsubwait
+       decomp2d_mpi_resetcount
 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -432,8 +455,9 @@ contains
     ! Init waiting routine pointer
     ! We may attach this one to any routine in order to
     ! recover communications in Decomp2d_mpi_alltoallv
-    nullify(decomp2d_WhileWait)
-    decomp2d_isubwait=1  ! Init recovering counter 
+    nullify(decomp2d_WhileWait )
+    nullify(decomp2d_WhileWait1)
+    decomp2d_mpi_fcall=1  ! Init recovering counter 
 
 #ifdef SHM_DEBUG
     ! print out shared-memory information
@@ -512,12 +536,24 @@ contains
 
     call decomp_info_finalize(decomp_main)
 
+    ! free buffers for Decomp2d_mpi_alltoallv
+    if (allocated(reqsendall)) then
+       deallocate(reqsendall(nproc))
+       deallocate(reqrecvall(nproc))
+       deallocate(alltoall_recv_pattern(nproc))
+       deallocate(alltoall_send_pattern(nproc))
+    end if
+
     decomp_buf_size = 0
     cufft_worksize  = 0
     if (nproc.ne.1) then
     !$acc exit data delete(work1_c,work2_c)
     end if
-    deallocate(work1_r, work2_r, work1_c, work2_c)
+    deallocate(work1_r, work2_r)
+    call free_c_pinned(work1_c)
+    call free_c_pinned(work2_c)
+    !deallocate(work1_c, work2_c)
+    !nullify(work1_c,work2_c)
 
   end subroutine decomp_2d_finalize
 
@@ -574,6 +610,8 @@ contains
     TYPE(DECOMP_INFO), intent(INOUT) :: decomp
 
     integer :: buf_size, status, errorcode
+    integer :: length
+    character*32 :: dvalue
 
     ! verify the global size can actually be distributed as pencils
 !    write(*,*) 'dims = ',nx,ny,nz,'rank = ',nrank
@@ -612,6 +650,22 @@ contains
          decomp%y2disp(0:dims(2)-1),decomp%z2disp(0:dims(2)-1))
     call prepare_buffer(decomp)
 
+
+    ! prepare buffer for Decomp2d_mpi_alltoallv
+    if (.not.allocated(reqsendall)) then
+       allocate(reqsendall(nproc))
+       allocate(reqrecvall(nproc))
+       allocate(alltoall_recv_pattern(nproc))
+       allocate(alltoall_send_pattern(nproc))
+    else
+       deallocate(reqsendall,reqrecvall)
+       deallocate(alltoall_recv_pattern)
+       deallocate(alltoall_send_pattern)
+       allocate(reqsendall(nproc),reqrecvall(nproc))
+       allocate(alltoall_recv_pattern(nproc))
+       allocate(alltoall_send_pattern(nproc))
+    end if
+
 #ifdef SHM
     ! prepare shared-memory information if required
     call decomp_info_init_shm(decomp)
@@ -635,34 +689,48 @@ contains
        decomp_buf_size = buf_size
        if (allocated(work1_r)) deallocate(work1_r)
        if (allocated(work2_r)) deallocate(work2_r)
-       if (allocated(work1_c)) then
+       if (associated(work1_c)) then
           if (nproc.ne.1) then
           cufft_worksize = cufft_worksize - sizeof(work1_c) 
           !$acc exit data delete(work1_c)
           end if
-          deallocate(work1_c)
+          call free_c_pinned(work1_c)
+          !deallocate(work1_c)
+          !nullify(work1_c)
        end if
-       if (allocated(work2_c)) then
+       if (associated(work2_c)) then
           if (nproc.ne.1) then
-          cufft_worksize = cufft_worksize - sizeof(work1_c) 
+          cufft_worksize = cufft_worksize - sizeof(work2_c) 
           !$acc exit data delete(work2_c)
           end if
+          !call free_c_pinned(work2_c)
           deallocate(work2_c)
+          nullify(work2_c)
        end if
        allocate(work1_r(buf_size), STAT=status)
        allocate(work2_r(buf_size), STAT=status)
-       allocate(work1_c(buf_size), STAT=status)
-       allocate(work2_c(buf_size), STAT=status)
+       call malloc_c_pinned(work1_c,buf_size)
+       call malloc_c_pinned(work2_c,buf_size)
+       !allocate(work1_c(buf_size))
+       !allocate(work2_c(buf_size))
        if (nproc.ne.1) then
        !$acc enter data create(work1_c,work2_c)
        cufft_worksize = cufft_worksize+ 2*buf_size*sizeof(work1_c(1))
        end if
+       !print*,'allocate mpi alltoall buffer',buf_size,size(work1_c)
        if (status /= 0) then
           errorcode = 2
           call decomp_2d_abort(errorcode, &
                'Out of memory when allocating 2DECOMP workspace')
        end if
     end if
+
+    dndebug = 0  ! init debug value
+
+    ! Fetch if possible TINKER_DEBUG From environment
+    call get_environment_variable("TINKER_DEBUG",dvalue,length, &
+             status=errorcode)
+    if (errorcode.eq.0) read(dvalue,*) dndebug 
 
     return
   end subroutine decomp_info_init
@@ -1449,42 +1517,78 @@ contains
     integer,intent(in)::comm
     integer,intent(out)::ierr
     integer status(MPI_STATUS_SIZE),tag
-    integer reqsend(nproc),reqrecv(nproc)
-    integer alltoall_send_pattern(nproc)
-    integer i,n,nsend,sloc,rloc,irank,send_rank,recv_rank
+    integer i,ii,n,nsend,sloc,rloc,irank,send_rank,recv_rank
+    integer icomm,isave
+    integer,parameter::pivot=7
+    integer,parameter::salvo=3
+    complex(mytype) icplx
+    real(8),parameter:: Mio=(sizeof(icplx)*1.0d0)/(1024*1024)
 
     n = size(sendcounts)
     call MPI_COMM_RANK(comm,irank,ierr)
     !irank = nrank
-    !Order process to send first in communicator
-    do i = 0,n-1
-       alltoall_send_pattern(i+1) = i
-    end do
+    i = 1
 
-    !$acc data present(sendbuf,recvbuf)
+    if (decomp_allToall_fin) then
+       decomp_allToall_fin = .false.
+       !Order process to send first in communicator
+       do i = 1,n-1
+          alltoall_recv_pattern(i) = mod(irank+i,n)
+          alltoall_send_pattern(i) = mod(n+irank-i,n)
+       end do
+
+       if (irank.eq.1.and.dndebug.gt.0) then
+!13    format(3I,$)
+!14    format(A,$)
+!      write(0,14) "send pattern"
+!      write(0,13) (alltoall_send_pattern(i),i=1,n-1)
+!      write(0,*)
+!      write(0,14) "recv pattern"
+!      write(0,13) (alltoall_recv_pattern(i),i=1,n-1)
+!      write(0,*)
+ 15    format(F8.4,$)
+ 16    format(A,I5,F8.4)
+       write(0,*) 'Decomp2d_mpi_alltoallv_complex (transposition size Mo)'
+       write(0,16) ' --- Send/recv --- ',irank,sum(sendcounts)*Mio
+       write(0,15) ( sendcounts(i)*Mio, i=1,n ); write(0,*)
+       write(0,15) ( recvcounts(i)*Mio, i=1,n ); write(0,*)
+
+       end if
+
+    end if
+
+#if 0
+    !$acc wait(rec_queue)
+    !$acc host_data use_device(sendbuf,recvbuf)
+    call mpi_ialltoallv( sendbuf,sendcounts,sdispls,sendtype, &
+                         recvbuf,recvcounts,rdispls,recvtype, &
+                         comm,reqsendall(1),ierr )
+    !$acc end host_data
+    goto 30
+#endif
+
     !$acc host_data use_device(sendbuf,recvbuf)
 
-    !Begin reception
-    do i = 1,n
-       recv_rank = i-1
-       if (recv_rank.ne.irank) then
-          tag = recv_rank
-          call MPI_IRECV(recvbuf(rdispls(i)+1),recvcounts(i),recvtype,recv_rank,tag,comm,reqrecv(i),ierr)
-       end if
-    end do
-
     !$acc wait(rec_queue)
-    !Begin send
-    do i = 1,n
+    !Init send
+    do i = 1,n-1
        send_rank = alltoall_send_pattern(i)
        if (send_rank.ne.irank) then
           tag = irank
           call MPI_ISEND(sendbuf(sdispls(send_rank+1)+1),sendcounts(send_rank+1),&
-                         sendtype,send_rank,tag,comm,reqsend(send_rank+1),ierr)
+                         sendtype,send_rank,tag,comm,reqsendall(send_rank+1),ierr)
        end if
     end do
 
-    !$acc end host_data
+    !Init reception of first wave
+    do i = 1,min(pivot,n-1)
+       recv_rank = alltoall_recv_pattern(i)
+       if (recv_rank.ne.irank) then
+          tag = recv_rank
+          call MPI_IRECV(recvbuf(rdispls(recv_rank+1)+1),recvcounts(recv_rank+1),&
+                         recvtype,recv_rank,tag,comm,reqrecvall(recv_rank+1),ierr)
+       end if
+    end do
 
     !Copy to irank before waiting
     nsend = sendcounts(irank+1)
@@ -1492,33 +1596,92 @@ contains
     rloc  = rdispls(irank+1)+1
 
     if (nsend.gt.0) then
-       !$acc parallel loop async(rec_queue)
+       !$acc parallel loop async(rec_queue) deviceptr(recvbuf,sendbuf)
        do i = 0,nsend-1
           recvbuf(rloc+i) = sendbuf(sloc+i)
        end do
     end if
 
-    ! Call any routine to recover communication
-    if ( associated(decomp2d_WhileWait).and.decomp2d_isubwait.eq.1 ) then
-       call decomp2d_WhileWait
-       decomp2d_isubwait=2
-    end if
+    !$acc end host_data
 
-    !Wait For communication to finish
-    do i = 1,n
-       send_rank = alltoall_send_pattern(i)
-       recv_rank = i-1
-       if (send_rank.ne.irank) call MPI_WAIT(reqsend(send_rank+1),status,ierr)
-       if (recv_rank.ne.irank) call MPI_WAIT(reqrecv(i),status,ierr)
+#if 0
+30  continue
+#endif
+    ! Call any routine to recover communication
+    if ( associated(decomp2d_WhileWait).and.decomp2d_mpi_fcall.eq.1 ) then
+       call decomp2d_WhileWait
+       decomp2d_mpi_fcall=2
+    end if
+    if ( associated(decomp2d_WhileWait1).and.decomp2d_mpi_fcall.eq.1 ) then
+       call decomp2d_WhileWait1(tin_nrhs,tin_dodiag,mu,ef)
+       decomp2d_mpi_fcall=2
+    end if
+#if 0
+    call MPI_WAIT(reqsendall(1),status,ierr)
+    return
+#endif
+
+    i=1
+    ! Start and wait for Second Wave of communications
+    !$acc host_data use_device(recvbuf)
+    do while(i.lt.n)
+
+       !if (recv_rank.ne.irank) then
+          if (i.le.pivot) then
+
+             recv_rank = alltoall_recv_pattern(i)
+             send_rank = alltoall_send_pattern(i)
+             !Wait first wave to be received
+             call MPI_WAIT(reqrecvall(recv_rank+1),status,ierr)
+             call MPI_WAIT(reqsendall(send_rank+1),status,ierr)
+             i=i+1
+
+          else
+
+          icomm=0
+          do while(i.lt.n.and.icomm.lt.salvo)
+             recv_rank = alltoall_recv_pattern(i)
+             send_rank = alltoall_send_pattern(i)
+             tag = recv_rank
+             call MPI_IRECV(recvbuf(rdispls(recv_rank+1)+1),recvcounts(recv_rank+1),&
+                            recvtype,recv_rank,tag,comm,reqrecvall(recv_rank+1),ierr)
+             icomm=icomm+1
+             i=i+1
+          end do
+
+          do ii=0,icomm-1
+             recv_rank = alltoall_recv_pattern(i-icomm+ii)
+             send_rank = alltoall_send_pattern(i-icomm+ii)
+             call MPI_WAIT(reqrecvall(recv_rank+1),status,ierr)
+             call MPI_WAIT(reqsendall(send_rank+1),status,ierr)
+          end do
+
+          end if
+       !end if
+
+    end do
+    !$acc end host_data
+
+    ! Wait for second wave to be received
+    do i = pivot+1,n-1
+       recv_rank = alltoall_recv_pattern(i)
+       if (recv_rank.ne.irank) then
+       end if
     end do
 
-    !$acc end data
+    do i = 1,n-1
+       send_rank = alltoall_send_pattern(i)
+       !if (send_rank.ne.irank) call MPI_WAIT(reqsendall(send_rank+1),status,ierr)
+    end do
+
+    !nsend = sum(recvcounts(1:n))
+    !!$acc update host(recvbuf)
 
   end subroutine
 
-  subroutine decomp2d_resetIsubwait
+  subroutine decomp2d_mpi_resetcount
   implicit none
-  decomp2d_isubwait=1
+  decomp2d_mpi_fcall=1
   end subroutine
 
 #include "factor.f90"
@@ -1555,6 +1718,49 @@ contains
   ! Utility routines to help allocate 3D arrays
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #include "alloc.f90"
+
+  subroutine malloc_c_pinned(array,n)
+  use iso_c_binding
+  use cudafor
+  complex(mytype),pointer::array(:)
+  integer n
+  complex(mytype) cplx0
+  type(c_ptr)     cptr0
+  integer ierr
+
+  call free_c_pinned(array)
+#ifdef _OPENACC
+  ierr = cudamallochost(cptr0,n*sizeof(cplx0))
+  if (ierr.ne.cudasuccess) then
+     write(0,*) 'malloc_c_pinned:: Issue with allocation',ierr
+     call decomp_2d_abort(ierr,cudaGetErrorString(ierr))
+  end if
+  call c_f_pointer(cptr0,array,[n])
+#else
+  allocate(array(n),status=ierr)
+#endif
+  end subroutine
     
+  subroutine free_c_pinned(array)
+  use iso_c_binding
+  use cudafor
+  complex(mytype),pointer::array(:)
+  type(c_ptr)     cptr0
+  integer ierr
+
+  if (associated(array)) then
+#ifdef _OPENACC
+     ierr = cudafreehost(c_loc(array))
+     if (ierr.ne.cudasuccess) then
+        write(0,*) 'free_c_pinned:: Issue with allocation',ierr
+        call decomp_2d_abort(ierr,cudaGetErrorString(ierr))
+     end if
+#else
+     deallocate(array)
+#endif
+     nullify(array)
+  end if
+
+  end subroutine
   
 end module decomp_2d

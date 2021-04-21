@@ -61,9 +61,22 @@ CPPFLAGS=-cpp
 #CRAYPTR=-fcray-pointer
 # optimisation or debugging flags
 OPTIM=-g -fast -Mdalign -Minline -ta=tesla:cc60,cc70,cuda10.1
+ifeq ($(findstring tesla, $(OPTIM)),ouroboros)
+   ADD_OPTIM+= -ta=tesla:pinned
+endif
 
 
-F90FLAGS=$(CPPFLAGS) $(OPTIM) $(CRAYPTR) $(INC)
+F90FLAGS=$(CPPFLAGS) $(OPTIM)
+ifneq ($(ADD_OPTIM),)
+   F90FLAGS+=$(ADD_OPTIM)
+endif
+ifneq ($(CRAYPTR),)
+   F90FLAGS+= $(ADD_OPTIM)
+endif
+ifneq ($(INC),)
+   F90FLAGS+= $(INC)
+endif
+
 LDFLAGS=$(OPTIM)
 
 #--------------------------C Compiler---------------------------------

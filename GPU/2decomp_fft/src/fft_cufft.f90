@@ -268,6 +268,7 @@ contains
     else
       call decomp_2d_abort(CUFFT_ERROR, "Invalid argument : isign should be DECOMP_2D_FFT_FORWARD/BACKWARD" )
     end if
+    decomp2d_mpi_fcall=1
   end subroutine
 
   ! get direct and reciproqual queue from tinker

@@ -25,21 +25,26 @@ endif
 
 all: lib examples
 
-lib: includes lib2decomp_fft.a
-	mv lib2decomp_fft.a ../lib
+lib: lib2decomp_fft.a
 
-includes: lib2decomp_fft.a
-	mkdir -p ../include
-	-mv *.mod ../include
+includes: $(MKL_MOD) $(OBJS)
+	@mkdir -p ../include
+	@[ -e decomp_2d.mod ] && mv *.mod ../include || :
 
 lib2decomp_fft.a: $(MKL_MOD) $(OBJS)
-	ar qc $@ $(OBJS)
+	@mkdir -p ../include
+	@ar -csr $@ $(OBJS)
+	@echo '******  Installing 2decomp modules and library  ******'
+	@[ -e decomp_2d.mod ] && cp *.mod ../include || :
+	@cp lib2decomp_fft.a ../lib
 
 alloc_shm.o: alloc_shm.c
 	$(CC) $(CFLAGS) -c $<
 
 FreeIPC_c.o: FreeIPC_c.c
 	$(CC) $(CFLAGS) -c $<
+
+include depend.mk
 
 .PHONY: mkl_mod
 mkl_mod:

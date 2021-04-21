@@ -6,10 +6,10 @@
 all: lib
 
 lib:
-	cd lib; $(MAKE) $@
+	@cd lib; $(MAKE) $@
 
 examples:
-	cd $@ ; $(MAKE) $@
+	@cd $@ ; $(MAKE) $@
 
 #basic_test: examples
 #	@echo "Basic Test target is examples"

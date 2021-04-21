@@ -302,12 +302,12 @@
     ! rearrange source array as send buffer
 #ifdef SHM
     work1_p = decomp%ROW_INFO%SND_P_c
-    call cumem_split_zy_complex(src, s1, s2, s3, work1, dims(2), &
+    call cumem_split_zy_complex(src, s1, s2, s3, work1, size(work1), dims(2), &
          decomp%z2dist, decomp)
 #else
 #ifdef EVEN
     if (.not. decomp%even) then
-       call cumem_split_zy_complex(src, s1, s2, s3, work1_c, dims(2), &
+       call cumem_split_zy_complex(src, s1, s2, s3, work1_c, size(work1_c), dims(2), &
             decomp%z2dist, decomp)
     end if
 #else
@@ -371,10 +371,10 @@
     ! rearrange receive buffer
 #ifdef SHM
     call MPI_BARRIER(decomp%ROW_INFO%CORE_COMM, ierror)
-    call cumem_merge_zy_complex(work2, d1, d2, d3, dst, dims(2), &
+    call cumem_merge_zy_complex(work2, size(work2), d1, d2, d3, dst, dims(2), &
          decomp%y2dist, decomp)
 #else
-    call cumem_merge_zy_complex(work2_c, d1, d2, d3, dst, dims(2), &
+    call cumem_merge_zy_complex(work2_c, size(work2_c), d1, d2, d3, dst, dims(2), &
          decomp%y2dist, decomp)
 #endif
 
@@ -547,19 +547,19 @@
     return
   end subroutine mem_split_zy_complex
   ! subroutine never call
-  subroutine cumem_split_zy_complex(in,n1,n2,n3,out,iproc,dist,decomp)
+  subroutine cumem_split_zy_complex(in,n1,n2,n3,out,no,iproc,dist,decomp)
 
     implicit none
 
-    integer, intent(IN) :: n1,n2,n3
+    integer, intent(IN) :: n1,n2,n3,no
     complex(mytype), dimension(n1,n2,n3), intent(IN) :: in
-    complex(mytype), dimension(*), intent(OUT) :: out
+    complex(mytype), dimension(no), intent(OUT) :: out
     integer, intent(IN) :: iproc
     integer, dimension(0:iproc-1), intent(IN) :: dist
     TYPE(DECOMP_INFO), intent(IN) :: decomp
     
     integer :: i,j,k, m,i1,i2,pos
-    !print*,'cumem_split_zy_complex'
+    !print*,'cumem_split_zy_complex',no
 
 !$acc data present(in,out)
     do m=0,iproc-1
@@ -684,19 +684,19 @@
     return
   end subroutine mem_merge_zy_complex
 
-  subroutine cumem_merge_zy_complex(in,n1,n2,n3,out,iproc,dist,decomp)
+  subroutine cumem_merge_zy_complex(in,no,n1,n2,n3,out,iproc,dist,decomp)
     
     implicit none
     
-    integer, intent(IN) :: n1,n2,n3
-    complex(mytype), dimension(*), intent(IN) :: in
+    integer, intent(IN) :: n1,n2,n3,no
+    complex(mytype), dimension(no), intent(IN) :: in
     complex(mytype), dimension(n1,n2,n3), intent(OUT) :: out
     integer, intent(IN) :: iproc
     integer, dimension(0:iproc-1), intent(IN) :: dist
     TYPE(DECOMP_INFO), intent(IN) :: decomp
     
     integer :: i,j,k, m,i1,i2, pos
-    !print*,'cumem_merge_zy'
+    !print*,'cumem_merge_zy',n1,n2,n3
 
 !$acc data present(in,out)
     do m=0,iproc-1
