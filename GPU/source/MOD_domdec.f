@@ -11,6 +11,9 @@ c     ##########################################################################
 c
 c     nproctot  total number of MPI process (within MPI_COMM_WORLD)
 c     ranktot  total rank of the MPI process within MPI_COMM_WORLD 
+c     nxdd = number of subdivisions along the x axis
+c     nydd = number of subdivisions along the y axis
+c     nzdd = number of subdivisions along the z axis
 c
 c     COMM_TINKER local MPI communicator in which a dynamic, analyze, testgrad or minimize run
 c      will take place
@@ -47,6 +50,10 @@ c     nrecdir_recep  number of MPI process to receive positions from to compute 
 c     (recip-direct communications)
 c     nrecdir_send  number of MPI process to send positions to to compute reciprocal interactions
 c     (recip-direct communications)
+c     nrecdir_recep2  number of MPI process to receive positions from to compute reciprocal interactions, without proc already in precdir_recep1
+c     (recip-direct communications)
+c     nrecdir_send2  number of MPI process to send positions to to compute reciprocal interactions, without proc already in precdir_send1
+c     (recip-direct communications)
 c
 c
 c     ntorque_recep  number of MPI process to receive positions from to compute electrostatic interactions + associated torques
@@ -66,7 +73,7 @@ c
 c     nloc  local number of atoms
 c     nbloc local + neighbors number of atoms
 c     nlocrec  local reciprocal number of atoms
-c     nblocrec local + neighbors reciprocal number of atoms
+c     nlocrec2  local + reciprocal neighbors number of atoms
 c     nlocnl local nl number of atoms
 c     nlocnlb     first multiple of BLOCK_SIZE after nlocnl
 c     nblocrecdir local + neighbors direct+reciprocal number of atoms
@@ -80,8 +87,6 @@ c     glob local-global correspondance
 c     loc global-local correspondance
 c     globrec local-global reciprocal correspondance
 c     locrec global-local reciprocal correspondance
-c     globrec1 local-global direct-reciprocal correspondance
-c     locrec1 global-local direct-reciprocal correspondance
 c     repart global index-domain correspondance
 c     repartrec global index-domain reciprocal correspondance
 c
@@ -114,6 +119,8 @@ c
       integer hostrank,hostcomm
       integer n_recep1, n_send1, nrec_recep,nrec_send
       integer n_recep2, n_send2, nrecdir_recep,nrecdir_send
+      integer nrecdir_recep2,nrecdir_send2
+      integer nrecdir_recep3,nrecdir_send3
       integer n_recepshort1,n_sendshort1,n_recepshort2,n_sendshort2
       integer ntorque_recep,ntorque_send
       integer ntorqueshort_recep,ntorqueshort_send
@@ -121,7 +128,7 @@ c
       integer nrecdir_recep1,nrecdir_send1
       integer nbig_recep,nbig_send
       integer nbigshort_recep,nbigshort_send
-      integer nbloc,nloc,nlocrec,nblocrec
+      integer nbloc,nloc,nlocrec,nlocrec2
       integer nlocnl,nblocrecdir
       integer nlocnlb
       integer nblocloop
@@ -141,6 +148,7 @@ c
       integer, allocatable :: precdir_recep(:), precdir_send(:)
 !DIR$ ATTRIBUTES ALIGN:64 :: precdir_recep1, precdir_send1
       integer, allocatable :: precdir_recep1(:), precdir_send1(:)
+      integer, allocatable :: precdir_recep2(:), precdir_send2(:)
 !DIR$ ATTRIBUTES ALIGN:64 :: ptorque_recep, ptorque_send
       integer, allocatable :: ptorque_recep(:), ptorque_send(:)
       integer, allocatable :: ptorqueshort_recep(:),ptorqueshort_send(:)

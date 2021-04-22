@@ -686,27 +686,31 @@ c     call prmem_request(thetai2,4,bsorder,nlocrec,async=.true.)
 c     call prmem_request(thetai3,4,bsorder,nlocrec,async=.true.)
 
       if (.not.allocated(thetai1)) then
-         allocate (thetai1(4,bsorder,nlocrec))
-         allocate (thetai2(4,bsorder,nlocrec))
-         allocate (thetai3(4,bsorder,nlocrec))
-         s_prmem =  s_prmem + 12*bsorder*nlocrec*szoTp
-        sd_prmem = sd_prmem + 12*bsorder*nlocrec*szoTp
+         sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
+     &                ,extra_alloc)
+         allocate (thetai1(4,bsorder,sbuf1))
+         allocate (thetai2(4,bsorder,sbuf1))
+         allocate (thetai3(4,bsorder,sbuf1))
+         s_prmem =  s_prmem + 12*bsorder*sbuf1*szoTp
+        sd_prmem = sd_prmem + 12*bsorder*sbuf1*szoTp
          call AssociateThetai_p
 #ifdef _OPENACC
          call attach_pmecu_pointer(1)
 #endif
       else if (nlocrec>size(thetai1,dim=3)) then
+         sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
+     &                ,extra_alloc)
          tag = size(thetai1,dim=3)
          s_prmem =  s_prmem - 12*bsorder*tag*szoTp
         sd_prmem = sd_prmem - 12*bsorder*tag*szoTp
          deallocate (thetai1)
          deallocate (thetai2)
          deallocate (thetai3)
-         allocate (thetai1(4,bsorder,nlocrec))
-         allocate (thetai2(4,bsorder,nlocrec))
-         allocate (thetai3(4,bsorder,nlocrec))
-         s_prmem =  s_prmem + 12*bsorder*nlocrec*szoTp
-        sd_prmem = sd_prmem + 12*bsorder*nlocrec*szoTp
+         allocate (thetai1(4,bsorder,sbuf1))
+         allocate (thetai2(4,bsorder,sbuf1))
+         allocate (thetai3(4,bsorder,sbuf1))
+         s_prmem =  s_prmem + 12*bsorder*sbuf1*szoTp
+        sd_prmem = sd_prmem + 12*bsorder*sbuf1*szoTp
          call AssociateThetai_p
 #ifdef _OPENACC
          call attach_pmecu_pointer(1)
@@ -1251,7 +1255,7 @@ c
       integer icell_len
       integer commloc
       integer levelUp
-      integer,save:: iter
+      integer,save:: iter,save_ncell
       integer min_cell_len
       real(t_p) xmin,xmax,ymin,ymax,zmin,zmax
       real(t_p) lenx,leny,lenz,xl
@@ -1309,6 +1313,7 @@ c
          nx_cell = max(1,int(lenx/xl))
          ny_cell = max(1,int(leny/xl)+1)
          nz_cell = max(1,int(lenz/xl)+1)
+         save_ncell = 0
 c        nx_cell = max(1,int(floor(lenx/7)))
 c        ny_cell = max(1,int(floor(leny/7)))
 c        nz_cell = max(1,int(floor(lenz/7)))
@@ -1377,14 +1382,15 @@ c           nx_cell = nx_cell + 1
          leny_cell  = leny/ny_cell
          lenz_cell  = lenz/nz_cell
          ncell_tot  = nx_cell*ny_cell*nz_cell
+         save_ncell = max(ncell_tot,save_ncell)
          max_cell_len = 0
          min_cell_len = huge(min_cell_len)
 
-         call prmem_request(cell_len ,ncell_tot,async=.false.)
-         call prmem_request(cell_len1,ncell_tot,async=.false.)
-         call prmem_request(cell_scan,ncell_tot,async=.false.)
+         call prmem_request(cell_len ,save_ncell,async=.false.)
+         call prmem_request(cell_len1,save_ncell,async=.false.)
+         call prmem_request(cell_scan,save_ncell,async=.false.)
 
-         call set_to_zero1_int(cell_len,ncell_tot,rec_queue)
+         call set_to_zero1_int(cell_len,save_ncell,rec_queue)
 !$acc parallel loop async(rec_queue)
 !$acc&         present(repartcell,cell_len)
          do i = 1,nlocnl

@@ -183,6 +183,7 @@ c
       use domdec
       use inform
       use mpi
+      use tinMemory,only: extra_alloc
       implicit none
       integer ierr,iproc,rank_beadloc
 
@@ -212,6 +213,8 @@ c
       call initDebugEnv
 
       call initDevice
+
+      if (nproc.gt.1) extra_alloc=.true.
 
       deallocate (bead_rank)
       end

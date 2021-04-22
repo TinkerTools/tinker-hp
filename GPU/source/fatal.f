@@ -47,3 +47,15 @@ c
          stop
       end if
       end
+c
+c
+c
+      subroutine fatal_device(msg)
+      implicit none
+      character(*),intent(in):: msg
+
+ 14   format(2X,'FATAL ERROR -- ',A,/,
+     &       4x,'Unavailable feature for device platform')
+      write(0,14)
+      call fatal
+      end subroutine

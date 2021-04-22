@@ -978,7 +978,11 @@ c
             bloc = bmat
             cex = 0.0_ti_p
             cex(1) = one
-            call dgesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+#ifdef _OPENACC
+            call fatal_device("inducejac_pmegpu")
+#else
+            call M_gesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+#endif
             munew = 0.0_ti_p
             call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
           end if
@@ -1390,6 +1394,15 @@ c     real(t_p),dimension(10,npolerecloc)::fdip_phi1,fdip_phi2
       integer, allocatable :: reqrec(:),reqsend(:)
       integer nprocloc,commloc,rankloc,proc
       logical,save::f_in=.true.
+
+      interface
+      subroutine fftTrC_tmat_alloc(nrhs,npolebloc
+     &                      ,dodiag,argmu,argef)
+      integer,intent(in)::nrhs,npolebloc
+      logical,intent(in)::dodiag
+      real(t_p),dimension(3,nrhs,npolebloc),target::argmu,argef
+      end subroutine
+      end interface
 c
       if (deb_Path)
      &   write(*,'(4x,a)') 'tmatxbrecipgpu'
@@ -1424,7 +1437,7 @@ c
 !$acc enter data create(a)
       end if
 
-!$acc data present(mu,murec,dipfield,dipfieldbis)
+!$acc data present(mu,murec)
 !$acc&     present(fuind,fuinp,fdip_phi1,fdip_phi2
 !$acc&    ,polerecglob,ipole,poleloc,repart
 !$acc&    ,recip,a,ksize2,jsize2,isize2)
@@ -1490,9 +1503,10 @@ c
       ! Only enabled in parallel
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) then
-         call start_dir_stream_cover
-         call tmatxb_cp(nrhs,.true.,mu,h)
-         call incMatvecStep
+         call fftTrC_tmat_alloc(nrhs,npolebloc,.true.,mu,h)
+c        call start_dir_stream_cover
+c        call tmatxb_cp(nrhs,.true.,mu,h)
+c        call incMatvecStep
       end if
 #endif
 c
@@ -1501,7 +1515,7 @@ c
 c
 #ifdef _OPENACC
       ! set an event to sync with rec_stream
-      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+      !if (dir_queue.ne.rec_queue) call end_dir_stream_cover
 #endif
 c
 c     Perform 3-D FFT forward transform
@@ -1516,6 +1530,10 @@ c
 
       qgrid2_size = 2*isize2(rankloc+1)*jsize2(rankloc+1)
      &               *ksize2(rankloc+1)
+#ifdef _OPENACC
+      ! Increment Matrix-Vector product counter
+      if (dir_queue.ne.rec_queue) call incMatvecStep
+#endif
 c
 c     complete the transformation of the charge grid
 c
@@ -1539,11 +1557,11 @@ c
 c
       ! Compute second half of matvec
 #ifdef _OPENACC
-      if (dir_queue.ne.rec_queue) then
-         call start_dir_stream_cover
-         call tmatxb_cp(nrhs,.true.,mu,h)
-         call resetMatvecStep
-      end if
+c     if (dir_queue.ne.rec_queue) then
+c        call start_dir_stream_cover
+c        call tmatxb_cp(nrhs,.true.,mu,h)
+c        call resetMatvecStep
+c     end if
 #endif
 c
       ! Wait for Backward Grid communication
@@ -1551,7 +1569,11 @@ c
 
 #ifdef _OPENACC
       ! set an event to sync with rec_stream
-      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+c     if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+      if (dir_queue.ne.rec_queue) then
+         call resetMatvecStep
+         call fftTrC_tmat_free
+      end if
 #endif
 
 c

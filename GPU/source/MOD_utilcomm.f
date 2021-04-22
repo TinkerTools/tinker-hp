@@ -15,9 +15,12 @@ c     Arrays to be used with MPI to exchange data and tracks requests
 c     Some of them serve mainly as a memory pool to minimise
 c     reallocation
 
+c
 c     do_not_commpole  switch to decide whether or not we should
 c                      communicate __poleglob__
-c      no_commdir      switch to disable some real space communications
+c     no_commdir       switch to avoid commfield communications
+c     skpPcomm         switch to avoid commdirdir communication routine
+c
 
 #include "tinker_precision.h"
 #include "tinker_types.h"
@@ -42,7 +45,9 @@ c      no_commdir      switch to disable some real space communications
      &          , buffermpi3d (:,:,:),buffermpi3d1(:,:,:)
 
       ! Pool
+      integer   ,allocatable,target:: buffMpi_i1(:),buffMpi_i2(:)
       real(r_p) ,allocatable,target:: buffMpi_p1(:),buffMpi_p2(:)
+     &          ,buffMpi_p3(:)
       mdyn_rtyp ,allocatable,target:: buffMpi_fr(:)
 
       end module

@@ -414,7 +414,7 @@ c
 c
       call delete_action_data_ondevice
 !$acc exit data delete(aec,aea,aeb,aub,aeopb,aeg,aeba,
-!$acc&      aet,aept,aebt,aett) async
+!$acc&     aet,aept,aebt,aett,aeat) async
 c
 c     check for an illegal value for the total energy
 c

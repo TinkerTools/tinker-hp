@@ -33,7 +33,7 @@ c
       use gradient_inl
       use inter
       use iounit
-      use inform    ,only:abort
+      use inform    ,only:abort,minmaxone
       use ktrtor
       use mpi
       use pitors
@@ -234,12 +234,11 @@ c
       ! Apply plumed bias
       if (lplumed) call eplumed(energy,derivs)
 
-!$acc update host(esum) async
-!$acc end data
 c
 c     check for an illegal value for the total energy
 c
       if (tinkerdebug.gt.0) then
+!$acc update host(esum) async
 !$acc wait
          if (tinker_isnan_m(esum).or.esum.eq.inf_r) then
             write  (0,10) esum
@@ -249,4 +248,5 @@ c
             call info_energy(0)
          end if
       end if
+!$acc end data
       end

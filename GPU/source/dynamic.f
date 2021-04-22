@@ -61,6 +61,8 @@ c
 c
  1000 Format(' Time for ',I4,' Steps :',f12.4)
  1010 Format(' ns per day',10x,':',f12.4)
+      ! Sign running program
+      app_id = dynamic_a
 c
 c     set up the structure and molecular mechanics calculation
 c

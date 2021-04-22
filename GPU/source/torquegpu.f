@@ -80,7 +80,7 @@ c
       subroutine torquedgpu (trqvec,frcx,frcy,frcz,de,extract)
       use torquegpu_inl
       implicit none
-      integer i,iipole,iglob,iloc,j
+      integer i,iipole,iglob,iloc,j,ca
       integer ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
       integer axetyp
@@ -128,10 +128,11 @@ c
       call timer_enter( timer_torque )
 
       if (tinkerdebug.gt.0) then
+         j=0
 
 !$acc parallel loop gang vector_length(128) async(dir_queue)
 !$acc&         present(ipolaxe,loc,ipole,
-!$acc&  xaxis,yaxis,zaxis,poleglobnl)
+!$acc&  xaxis,yaxis,zaxis,poleglobnl) copyin(j)
       do i =1, npolelocnl
         iipole = poleglobnl(i)
         axetyp = ipolaxe(iipole)
@@ -149,21 +150,29 @@ c
         if (id.gt.0) then; idloc = loc(id); else; idloc=ibloc; endif
 
         if (ibloc.eq.0.or.ibloc.gt.nbloc) then
-           print*,'WARNING!!! torquedgpu Outside loc'
+!$acc atomic capture
+           j = j+1
+           ca = j
+!$acc end atomic
+           if(ca.le.10) print*,'WARNING!!! torquedgpu Outside loc'
            print*,'b ',iipole,ib,ibloc,rank
         end if
         if (ialoc.eq.0.or.ialoc.gt.nbloc) then
-           print*,'WARNING!!! torquedgpu Outside loc'
+!$acc atomic capture
+           j = j+1
+           ca = j
+!$acc end atomic
+           if(ca.le.10) print*,'WARNING!!! torquedgpu Outside loc'
            call distprocpart1(ib,rank,uz,.true.,x,y,z)
            print*,'a ',iipole,ia,ialoc,ib,ibloc,nbloc,uz,rank
         end if
         if (icloc.eq.0.or.icloc.gt.nbloc) then
            call distprocpart1(ib,rank,ux,.true.,x,y,z)
-           print*,'c ',iipole,ic,icloc,ib,ibloc,nbloc,uz,rank
+           print*,'c ',iipole,ic,icloc,ib,ibloc,nbloc,ux,rank
         end if
         if (idloc.eq.0.or.idloc.gt.nbloc) then
            call distprocpart1(id,rank,uy,.true.,x,y,z)
-           print*,'d ',iipole,id,idloc,ib,ibloc,nbloc,uz,rank
+           print*,'d ',iipole,id,idloc,ib,ibloc,nbloc,uy,rank
         end if
       end do
 
@@ -1173,11 +1182,11 @@ c
       call timer_exit( timer_torque )
       end
 
-      subroutine torquerfgpu (natom,polevec,ilocvec,
+      subroutine torquerfgpu (natom,natombloc,polevec,ilocvec,
      &                       trqvec,de,queue)
       use torquegpu_inl
       implicit none
-      integer,intent(in):: natom
+      integer,intent(in):: natom,natombloc
       integer,intent(in):: polevec(:),ilocvec(:)
       integer,intent(in):: queue
       real(t_p),intent(in)   ::trqvec(:,:)
@@ -1224,7 +1233,7 @@ c
 c
       if (deb_Path) write(*,'(3x,a)') 'torquerfgpu'
       call timer_enter( timer_torque )
-      shade2 = size(de,2)
+      shade2 = natombloc
 c
 c     get the local frame type and the frame-defining atoms
 c
@@ -1659,7 +1668,7 @@ c
 c
 c     This routine is different form the first one only by his output
 c
-      subroutine torquergpu (natom,polevec,ilocvec,
+      subroutine torquergpu (natom,natombloc,polevec,ilocvec,
      &                       trqvec,de,queue)
       use torquegpu_inl
       implicit none
@@ -1667,7 +1676,7 @@ c
       integer ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
       integer shade2
-      integer,intent(in):: natom
+      integer,intent(in):: natom,natombloc
       integer,intent(in):: polevec(:),ilocvec(:)
       integer,intent(in):: queue
       real(t_p) du,dv,dw,dt
@@ -1710,7 +1719,7 @@ c
 c
       if (deb_Path) write(*,'(3x,a)') 'torquergpu'
       call timer_enter( timer_torque )
-      shade2 = size(de,dim=2)
+      shade2 = natombloc
 
 c
 c     get the local frame type and the frame-defining atoms

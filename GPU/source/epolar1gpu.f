@@ -80,6 +80,7 @@ c
       use iounit
       use math
       use mpole
+      use elec_wspace   ,only: trq=>r2Work4
       use pme
       use polar
       use polpot
@@ -110,7 +111,6 @@ c
       real(t_p) zufield
       real(t_p) time0,time1,time2
       real(t_p) fix(3),fiy(3),fiz(3)
-      real(t_p) trq(3,npoleloc)
       logical,save:: f_in=.true.
 c
       if (npole .eq. 0)  return
@@ -138,14 +138,25 @@ c
       call timer_enter( timer_polarsolve )
       if (use_polarshortreal) then
         if (polalg.eq.5) then
-           !FIXME
-          !call dcinduce_shortrealgpu
+#ifdef _OPENACC
+          ! FIXME
+          write(0,*) 'short dcinduce solver unavalaible on device'
+          call fatal
+#else
+          call dcinduce_shortrealgpu
+#endif
         else
           call newinduce_shortrealgpu
         end if
       else if (use_pmecore) then
         if (polalg.eq.5) then
+#ifdef _OPENACC
+          ! FIXME
+          write(0,*) 'dcinduce solver (pme-core) unavalaible on device'
+          call fatal
+#else
           call dcinduce_pme
+#endif
         else
           call newinduce_pmegpu
         end if
@@ -183,10 +194,12 @@ c
 
          if (use_pself) then
             def_queue = dir_queue
+#ifdef _OPENACC
+           if (dir_queue.ne.rec_queue) call start_dir_stream_cover
+#endif
+           call prmem_request(trq,3,npoleloc,queue=def_queue)
 c
 c     compute the Ewald self-energy term over all the atoms
-c
-!$acc enter data create(trq) async(def_queue)
 c
 !$acc data present(poleglob,rpole,ipole,loc,dep,vir,uind,uinp)
 c
@@ -215,7 +228,7 @@ c
               trq(3,ii) = term1 * (dix*uiy - diy*uix)
            end do
 
-           call torquegpu(npoleloc,poleglob,loc,trq,dep,def_queue)
+           call torquegpu(npoleloc,nbloc,poleglob,loc,trq,dep,def_queue)
 c
 c     compute the cell dipole boundary correction term
 c
@@ -290,7 +303,8 @@ c
                  trq(3,i) =  rpole(2,iipole)*yufield
      &                     - rpole(3,iipole)*xufield
               end do
-              call torquegpu(npoleloc,poleglob,loc,trq,dep,def_queue)
+              call torquegpu(npoleloc,nbloc
+     &                      ,poleglob,loc,trq,dep,def_queue)
 c
 c     boundary correction to virial due to overall cell dipole
 c
@@ -344,14 +358,15 @@ c
 c
 !$acc exit data delete(xd,yd,zd,xu,yu,zu,xup,yup,zup,xufield,
 !$acc&   yufield,zufield) async(def_queue)
-           end if
+           end if  !( boundary .eq. VACUUM )
 c
 !$acc end data
-c
-!$acc exit data delete(trq) async(def_queue)
-         end if
+#ifdef _OPENACC
+           if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
+         end if  !( use_pself )
          call timer_exit( timer_real,quiet_timers )
-      end if
+      end if  !( use_pmecore direct test )
 c
 c     compute the reciprocal space part of the Ewald summation
 c
@@ -365,8 +380,8 @@ c
       end if
 c
 #ifdef _OPENACC
+      !End async compute overlapping if necessary
       if (dir_queue.ne.rec_queue) then
-         !End async compute overlapping if necessary
          call end_dir_stream_cover
       end if
 #endif
@@ -404,13 +419,14 @@ c
       use deriv
       use domdec
       use energi
+      use elec_wspace,only: fix=>r2Work1,fiy=>r2Work2,fiz=>r2Work3
+     &               ,trqvec=>r2Work4
       !use erf_mod
       use epolar1gpu_inl
       use ewald
-      use inform ,only: deb_Path
+      use inform     ,only: deb_Path
       use inter
-      use interfaces,only:epreal1c_core_p
-     &              ,torquegpu
+      use interfaces ,only: epreal1c_core_p,torquegpu
       use iounit
       use math
       use molcul
@@ -438,10 +454,6 @@ c
       real(t_p) xix,xiy,xiz
       real(t_p) yix,yiy,yiz
       real(t_p) zix,ziy,ziz
-      real(t_p)  trqvec(3,npolelocnl)
-      real(t_p)  fix(3,npolelocnl)
-      real(t_p)  fiy(3,npolelocnl)
-      real(t_p)  fiz(3,npolelocnl)
       logical*1,parameter::extract=.false.
       logical,save:: f_in=.true.
       character*10 mode
@@ -467,11 +479,16 @@ c
          vzz = 0.0_re_p
 !$acc enter data copyin(vxx,vxy,vxz,vyy,vyz,vzz)
       end if
+
+      call prmem_request(fix,3,npolelocnl)
+      call prmem_request(fiy,3,npolelocnl)
+      call prmem_request(fiz,3,npolelocnl)
+      call prmem_request(trqvec,3,npolelocnl)
 c
 c     set arrays to store fields
 c
-!$acc data create(trqvec,fix,fiy,fiz)
-!$acc&     present(vxx,vxy,vxz,vyy,vyz,vzz)
+
+!$acc data present(vxx,vxy,vxz,vyy,vyz,vzz)
 !$acc&     present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
 !$acc&     async(def_queue)
 
@@ -497,9 +514,11 @@ c     torque is induced field and gradient cross permanent moments
 c
       call torquegpu(trqvec,fix,fiy,fiz,dep,extract)
 
+      if (use_virial) then
+
 !$acc parallel loop async(def_queue)
 !$acc&         present(poleglobnl,ipole,x,y,z,
-!$acc&  xaxis,yaxis,zaxis,vir,ep)
+!$acc&  xaxis,yaxis,zaxis,vir,ep,fix,fiy,fiz)
       do k = 1, npolelocnl
          iipole = poleglobnl(k)
          iglob  = ipole(iipole)
@@ -583,7 +602,9 @@ c
          vyz = 0.0_re_p
          vzz = 0.0_re_p
 !$acc end serial
-      end if
+      end if !( use_polarshortreal )
+
+      end if !( use_virial )
 
 !$acc end data
 c
@@ -1432,7 +1453,7 @@ c    &        , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
      &        ( mcorrect_ik,mcorrect_scale,ipole,loc,polelocnl
      &        , x,y,z,rpole
      &        , dep,trqvec,ered_buff,vred_buff
-     &        , n,nbloc,n_mscale,m_short,.true.
+     &        , n,nbloc,n_mscale,size(mcorrect_ik,1),m_short,.true.
      &        , r_cut,sh_cut2,off2
      &        , shortheal,fem,aewald,alsq2,alsq2n )
          call check_launch_kernel(" emrealShLg_scaling_cu")
@@ -1441,7 +1462,7 @@ c    &        , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
      &        ( mcorrect_ik,mcorrect_scale,ipole,loc,polelocnl
      &        , x,y,z,rpole
      &        , dep,trqvec,ered_buff,vred_buff
-     &        , n,nbloc,n_mscale,.true.
+     &        , n,nbloc,n_mscale,size(mcorrect_ik,1),.true.
      &        , off2,fem,aewald,alsq2,alsq2n )
          call check_launch_kernel(" emreal_scaling_cu")
          end if
@@ -1978,7 +1999,7 @@ c
       do i = 1, npolerecloc
          iipole  = polerecglob(i)
          iglob   = ipole(iipole)
-         ii      = locrec1(iglob)
+         ii      = locrec(iglob)
          f1      = 0.0_ti_p
          f2      = 0.0_ti_p
          f3      = 0.0_ti_p
@@ -2049,8 +2070,8 @@ c
      &               - cmp(8,i)*cphirec(6,i) - cmp(9,i)*cphirec(10,i)
       end do
 
-      call torquegpu(npolerecloc,polerecglob,locrec1,
-     &                trqrec,deprec,rec_queue)
+      call torquegpu(npolerecloc,nlocrec2,polerecglob,locrec
+     &              ,trqrec,deprec,rec_queue)
 
       call timer_exit ( timer_fmanage,quiet_timers )
 
@@ -2289,7 +2310,7 @@ c         if (rank.eq.i) then
 c         print*,comput_norm( uind,3*n,2),
 c     &          comput_norm( uinp,3*n,2),
 c     &          comput_norm(fuind,3*npolerecloc,2)
-c         print*,comput_normr(deprec,3*nblocrec,2)
+c         print*,comput_normr(deprec,3*nlocrec2,2)
 c     &         ,sum(abs(a))
 c     &         ,comput_norm(fuinp,3*npolerecloc,2)
 c          print*,vxx,vxy,eprec,ep

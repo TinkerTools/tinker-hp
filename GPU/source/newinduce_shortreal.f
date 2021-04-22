@@ -544,7 +544,11 @@ c
           bloc = bmat
           cex = 0_ti_p
           cex(1) = one
-          call dgesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+#ifdef _OPENACC
+          call fatal_device("inducejac_shortreal")
+#else
+          call M_gesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+#endif
           munew = 0_ti_p
           call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
         end if

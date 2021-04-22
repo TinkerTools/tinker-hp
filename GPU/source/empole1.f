@@ -1055,7 +1055,7 @@ c
          h3 = recip(3,1)*f1 + recip(3,2)*f2 + recip(3,3)*f3
          iipole = polerecglob(i)
          iglob = ipole(iipole)
-         ii = locrec1(iglob)
+         ii = locrec(iglob)
          demrec(1,ii) = demrec(1,ii) + h1
          demrec(2,ii) = demrec(2,ii) + h2
          demrec(3,ii) = demrec(3,ii) + h3

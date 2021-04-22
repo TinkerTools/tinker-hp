@@ -1990,7 +1990,7 @@ c
       integer jj,jjj,jjpole,jglob
       integer jx,jy,jz,alphac,betac,jxloc,jyloc,jzloc
       logical doi,doix,doiy,doiz
-      real*8 :: torq_mu(3,nblocrec),torq_t(3,nblocrec)
+      real*8 :: torq_mu(3,nlocrec2),torq_t(3,nlocrec2)
       real*8 :: denedmu(3,nlocrec),denedt(3,3,nlocrec)
       real*8, allocatable :: dtorquemu(:,:,:,:),dtorquetheta(:,:,:,:,:)
       real*8 sprod
@@ -2061,13 +2061,13 @@ c
       do jj = 1, npolerecloc
          jjpole  = polerecglob(jj)
          jglob = ipole(jjpole)
-         jjj = locrec1(jglob)
+         jjj = locrec(jglob)
          jx = xaxis(jjpole)
-         if (jx.gt.0) jxloc = locrec1(jx)
+         if (jx.gt.0) jxloc = locrec(jx)
          jy = yaxis(jjpole)
-         if (jy.gt.0) jyloc = locrec1(jy)
+         if (jy.gt.0) jyloc = locrec(jy)
          jz = zaxis(jjpole)
-         if (jz.gt.0) jzloc = locrec1(jz)
+         if (jz.gt.0) jzloc = locrec(jz)
          do betac = 1,3
             torq_mu(betac,jjj) = torq_mu(betac,jjj)
      $      + sprod(3,dEnedmu(:,jj),dtorquemu(betac,1,:,jj))

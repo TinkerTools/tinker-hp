@@ -649,7 +649,7 @@ c    &                 + dett (j,i) + deg  (j,i) + deat(j,i)
       integer,intent(in) :: rule
       integer,parameter:: nf=25  !number of forces
       integer i,j,sze
-      real(r_p),dimension(3,nloc)::demsum,depsum,decsum
+      real(r_p),dimension(3,nbloc)::demsum,depsum,decsum
       real(8) mmx(3*nf),smm(nf)
       logical tinker_isnan_m
       real(t_p) dat,dat1
@@ -704,7 +704,7 @@ c    &                 + dett (j,i) + deg  (j,i) + deat(j,i)
 !$acc enter data create(depsum,decsum,demsum)
 
 !$acc parallel loop default(present)
-      do i = 1, nloc
+      do i = 1, nbloc
          do j = 1, 3
             demsum(j,i) = real(0.0,r_p)
             depsum(j,i) = real(0.0,r_p)
@@ -736,19 +736,19 @@ c!$acc update host(glob)
 
       if(use_bond)
      &call minmaxone(mmx(01),mmx(nf+01),mmx(2*nf+01),deb
-     &     ,3*nloc,'deb');
+     &     ,sze,'deb');
       if(use_angle)
      &call minmaxone(mmx(02),mmx(nf+02),mmx(2*nf+02),dea
-     &     ,3*nloc,'dea');
+     &     ,sze,'dea');
       if(use_strbnd)
      &call minmaxone(mmx(03),mmx(nf+03),mmx(2*nf+03),deba
-     &     ,3*nloc,'deba');
+     &     ,sze,'deba');
       if(use_urey)
      &call minmaxone(mmx(04),mmx(nf+04),mmx(2*nf+04),deub
-     &     ,3*nloc,'deub');
+     &     ,sze,'deub');
       if(use_angang)
      &call minmaxone(mmx(05),mmx(nf+05),mmx(2*nf+05),deaa
-     &     ,3*nloc,'deaa');
+     &     ,sze,'deaa');
       if(use_improp)
      &call minmaxone(mmx(06),mmx(nf+06),mmx(2*nf+06),deid
      &     ,sze,'deid');
@@ -894,7 +894,7 @@ c     end if
      &      mmx(10),mmx(10+nf),mmx(10+nf*2)
          if(mmx(2*nf+11)/=0.0) print 30,'dett   =>',
      &      mmx(11),mmx(11+nf),mmx(11+nf*2)
-         if(mmx(2*nf+11)/=0.0) print 30,'deat   =>',
+         if(mmx(2*nf+25)/=0.0) print 30,'deat   =>',
      &      mmx(25),mmx(25+nf),mmx(25+nf*2)
          if(mmx(2*nf+12)/=0.0) print 30,'deopb  =>',
      &      mmx(12),mmx(12+nf),mmx(12+nf*2)

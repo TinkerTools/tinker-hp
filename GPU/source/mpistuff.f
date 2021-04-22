@@ -4,6 +4,18 @@ c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
 #include "tinker_precision.h"
+      module mpistuff_inl
+        ! ReassignRespa Exchange space
+        type t_elt
+          real(r_p) :: x,y,z,vx,vy,vz,ax,ay,az
+        end type
+        integer:: max_atoms_send=0
+        integer:: max_atoms_recv=0
+        type(t_elt),allocatable,target :: data_send(:,:), data_recv(:,:) ! Data (x,y,...) to exchange
+
+      contains
+#include "image.f.inc"
+      end module
 c
 c     subroutine commposrec: communicate positions for reciprocal space
 c
@@ -12,43 +24,59 @@ c
       use domdec
       use inform   ,only: deb_Path
       use mpi
+      use potent   ,only: use_pmecore
+      use pme      ,only: GridDecomp1d
       use timestat ,only: timer_enter,timer_exit,timer_commstep
      &             ,quiet_timers
       use tinMemory,only: prmem_requestm
       use utilcomm ,only: buffMpi_p1,buffMpi_p2
+     &             ,reqsend=>reqs_recdir,reqrec=>reqr_recdir
       implicit none
-      integer i,iproc
+      integer i,iproc,iprec
       integer iglob,iloc
-      integer  ,allocatable:: reqsend(:),reqrec(:)
-      real(r_p),pointer    :: buffer(:,:),buffers(:,:)
-      integer status(MPI_STATUS_SIZE)
       integer tag,ierr,ibufbeg
+      integer rankloc,commloc,nprocloc
+      integer status(MPI_STATUS_SIZE)
+      real(r_p),pointer :: buffer(:,:),buffers(:,:)
 c
       if (nproc.eq.1) return
+      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) return
+
       call timer_enter( timer_commstep )
       if (deb_Path) write(*,*) '   >> commposrec'
 c
+      if (use_pmecore) then
+        nprocloc = nrec
+        commloc  = comm_rec
+        rankloc  = rank_bis
+      else
+        nprocloc = nproc
+        commloc  = COMM_TINKER
+        rankloc  = rank
+      end if
+c
 c     allocate some arrays
 c
-      allocate (reqsend(nproc))
-      allocate (reqrec(nproc))
-      call prmem_requestm(buffMpi_p1,3*nblocrecdir,async=.false.)
-      call prmem_requestm(buffMpi_p2,3*nloc,async=.false.)
+      call prmem_requestm(buffMpi_p1,3*max(nblocrecdir,nlocrec2))
+      call prmem_requestm(buffMpi_p2,3*max(nloc,nlocrec))
       buffer (1:3,1:nblocrecdir)=>buffMpi_p1(1:3*nblocrecdir)
       buffers(1:3,1:nloc)       =>buffMpi_p2(1:3*nloc)
 c
+c     first do dir rec communications
+c
+c
 c     MPI : begin reception in buffer
 c
+!$acc data present(x,y,z,glob,globrec)
 !$acc data present(buffer,buffers)
-!$acc&     present(x,y,z,glob)
 
 !$acc host_data use_device(buffer,buffers)
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
-          tag = nproc*rank + precdir_recep(i) + 1
-          call MPI_IRECV(buffer(1,bufbeg(precdir_recep(i)+1)),
-     $         3*domlen(precdir_recep(i)+1),MPI_RPREC,
-     $         precdir_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+      do i = 1, nrecdir_recep2
+        if (precdir_recep2(i).ne.rank) then
+          tag = nproc*rank + precdir_recep2(i) + 1
+          call MPI_IRECV(buffer(1,bufbeg(precdir_recep2(i)+1)),
+     $         3*domlen(precdir_recep2(i)+1),MPI_RPREC,
+     $         precdir_recep2(i),tag,COMM_TINKER,reqrec(i),ierr)
         end if
       end do
 c
@@ -65,48 +93,101 @@ c
 c     MPI : begin sending
 c
 !$acc wait
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
-          tag = nproc*precdir_send(i) + rank + 1
-          call MPI_ISEND(buffers,3*nloc,MPI_RPREC,precdir_send(i),
+      do i = 1, nrecdir_send2
+        if (precdir_send2(i).ne.rank) then
+          tag = nproc*precdir_send2(i) + rank + 1
+          call MPI_ISEND(buffers,3*nloc,MPI_RPREC,precdir_send2(i),
      &         tag,COMM_TINKER,reqsend(i),ierr)
         end if
       end do
 !$acc end host_data
 c
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
-         call MPI_WAIT(reqrec(i),status,ierr)
-        end if
-      end do
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
-         call MPI_WAIT(reqsend(i),status,ierr)
-        end if
-      end do
-c
 c     MPI : move in global arrays
 c
-      do iproc = 1, nrecdir_recep
-        ibufbeg = bufbeg(precdir_recep(iproc)+1)
-        if (precdir_recep(iproc).ne.rank) then
+      do iproc = 1, nrecdir_recep2
+         if (precdir_recep2(iproc).ne.rank) then
+           call MPI_WAIT(reqrec(iproc),status,ierr)
+           ibufbeg = bufbeg(precdir_recep2(iproc)+1)
 !$acc parallel loop async
-         do i = 1, domlen(precdir_recep(iproc)+1)
-           iloc     = ibufbeg+i-1
-           iglob    = glob(iloc)
-           x(iglob) = buffer(1,iloc)
-           y(iglob) = buffer(2,iloc)
-           z(iglob) = buffer(3,iloc)
-         end do
-        end if
+           do i = 1, domlen(precdir_recep2(iproc)+1)
+             iloc     = ibufbeg+i-1
+             iglob    = glob(iloc)
+             x(iglob) = buffer(1,iloc)
+             y(iglob) = buffer(2,iloc)
+             z(iglob) = buffer(3,iloc)
+           end do
+         end if
+      end do
+c
+      do i = 1, nrecdir_send2
+         if (precdir_send2(i).ne.rank) then
+            call MPI_WAIT(reqsend(i),status,ierr)
+         end if
       end do
 c
 !$acc end data
 !$acc wait
       nullify(buffer)
       nullify(buffers)
-      deallocate (reqsend)
-      deallocate (reqrec)
+c
+c     then do rec rec communications
+c
+      buffer (1:3,1:nlocrec2) =>buffMpi_p1(1:3*nlocrec2)
+      buffers(1:3,1:nlocrec)  =>buffMpi_p2(1:3*nlocrec)
+!$acc data present(buffer,buffers)
+c
+c     MPI : begin reception in buffer
+c
+!$acc host_data use_device(buffer,buffers)
+      do i = 1, nrec_recep
+        tag = nprocloc*rankloc + prec_recep(i) + 1
+        call MPI_IRECV(buffer(1,bufbegrec(prec_recep(i)+1))
+     $      ,3*domlenrec(prec_recep(i)+1),MPI_RPREC
+     $      ,prec_recep(i),tag,commloc,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
+!$acc parallel loop
+      do i = 1, nlocrec
+        iglob        = globrec(i)
+        buffers(1,i) = x(iglob)
+        buffers(2,i) = y(iglob)
+        buffers(3,i) = z(iglob)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, nrec_send
+         tag = nprocloc*prec_send(i) + rankloc+1
+         call MPI_ISEND(buffers,3*nlocrec,MPI_RPREC,prec_send(i)
+     $       ,tag,commloc,reqsend(i),ierr)
+      end do
+!$acc end host_data
+c
+c     MPI : move in global arrays
+c
+      do iproc = 1, nrec_recep
+         call MPI_WAIT(reqrec(iproc),status,ierr)
+         ibufbeg = bufbegrec(prec_recep(iproc)+1)-1
+!$acc parallel loop async
+         do i = 1, domlenrec(prec_recep(iproc)+1)
+            iloc     = ibufbeg+i
+            iglob    = globrec(iloc)
+            x(iglob) = buffer(1,iloc)
+            y(iglob) = buffer(2,iloc)
+            z(iglob) = buffer(3,iloc)
+         end do
+      end do
+      ! Wait for sending requests
+      do i = 1, nrec_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+
+!$acc end data
+!$acc end data
+      nullify(buffer)
+      nullify(buffers)
 
       if (deb_Path) write(*,*) '   << commposrec'
       call timer_exit( timer_commstep,quiet_timers )
@@ -135,13 +216,18 @@ c
       if (nproc.eq.1.or.(use_pmecore).and.(rank.gt.ndir-1)) return
       call timer_enter( timer_commstep )
       if (deb_Path) write(*,*) '   >> commpos'
+#ifdef _OPENACC
+       write(0,*) " commpos is not offloaded on device "
+       write(0,*) " A Fix will be applied in next version "
+       call fatal
+#endif
 c
 c     allocate some arrays
 c
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
-      call prmem_requestm(buffMpi_p1,3*nbloc,async=.false.)
-      call prmem_requestm(buffMpi_p2,3*nloc,async=.false.)
+      call prmem_requestm(buffMpi_p1,3*nbloc)
+      call prmem_requestm(buffMpi_p2,3*nloc )
       buffer (1:3,1:nbloc)=>buffMpi_p1(1:3*nbloc)
       buffers(1:3,1:nloc) =>buffMpi_p2(1:3*nloc)
 !$acc enter data attach(buffer,buffers)
@@ -229,6 +315,11 @@ c
 c
       if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
 
+#ifdef _OPENACC
+      write(0,*) "commposshort is not offloaded on device "
+      write(0,*) " A Fix will be applied in next version "
+       call fatal
+#endif
       call timer_enter( timer_commstep )
       if (deb_Path) write(*,*) '   >> commposshort'
 c
@@ -763,32 +854,35 @@ c
      &                    pneig_recep, pneig_send
         use inform,only : deb_Path,tindPath
         use moldyn,only : a,v
+        use mpistuff_inl
         use potent,only : use_pmecore
         use timestat ,only: timer_enter,timer_exit,timer_eneig
      &               ,quiet_timers
         use tinheader,only: ti_eps
+        use tinMemory,only: prmem_request,debMem,mem_inc,extra_alloc
+        use utilcomm ,only: buffMpi_i1,buffMpi_i2
         use mpi
         use sizes    ,only: tinkerdebug
         implicit none
         integer, intent(in) :: ialt, nalt
-        integer :: nprocloc, commloc, rankloc ! local (pme) mpi info
-        real(t_p) :: xr, yr, zr ! adjusted position
-        integer :: local_neighbor(nloc) ! Local domain for iloc. 0 is local rank
-        type t_elt
-          real(r_p) :: x,y,z,vx,vy,vz,ax,ay,az
-        end type
+
+        integer,pointer :: iglob_send(:,:) ! Global index to send to each proc
+        integer,pointer :: iglob_recv(:,:) ! Global index to recieve from procs
+        real(t_p) xr, yr, zr ! adjusted position
         type(t_elt),pointer :: d
-        integer :: iglob_send(nloc,0:nneig_send) ! Global index to send to each proc
-        integer, allocatable :: iglob_recv(:,:) ! Global index to recieve from procs
-        type(t_elt),allocatable,target :: data_send(:,:), data_recv(:,:) ! Data (x,y,...) to exchange
-        integer  n_data_send(0:nneig_send), n_data_recv(nneig_recep)
+
+        integer  n_data_send(0:nneig_send),   n_data_recv(nneig_recep)
         integer req_iglob_send(nneig_send),req_iglob_recv(nneig_recep)
         integer  req_data_send(nneig_send), req_data_recv(nneig_recep)
         integer  mpi_status1(MPI_STATUS_SIZE)
+
+        integer nprocloc, commloc, rankloc ! local (pme) mpi info
         integer i, ierr, iglob, iloc, iproc, ineighbor
         integer nloc_save, n_data_send_capture,max_data_recv
         integer nloc_capture
+        integer s_bufi
         integer :: max_data_recv_save=0
+        real(t_p) ixbeg,ixend,iybeg,iyend,izbeg,izend
 #if  (defined(SINGLE)||defined(MIXED))
         real(t_p), parameter:: eps1= 10*ti_eps, eps2= 1d2*ti_eps
 #else
@@ -819,65 +913,87 @@ c
         if (deb_Path) write(*,'(A,2I4)') '  -- reassignrespa ',ialt,nalt
         call timer_enter( timer_eneig )
 
+        s_bufi = nloc*(nneig_send+1)
+        call prmem_request( buffMpi_i1,max(s_bufi,size(buffMpi_i1)) )
+        !Associate iglob_send pointer to buffer
+        iglob_send(1:nloc,0:nneig_send) => buffMpi_i1(1:s_bufi)
+
 !$acc wait
 !$acc data copyin(pneig_recep, pneig_send) async
-!$acc& present(repart,loc,glob,x,y,z,a,v)
+!$acc&     create(n_data_send)
+!$acc&   present(xbegproc,xendproc,ybegproc,yendproc,zbegproc,zendproc)
+!$acc&     present(repart,loc,glob,x,y,z,a,v,iglob_send)
 
-!$acc enter data create(local_neighbor) async
+        ! Gather process domain of rank
+        ixbeg = xbegproc(rank+1)
+        ixend = xendproc(rank+1)
+        iybeg = ybegproc(rank+1)
+        iyend = yendproc(rank+1)
+        izbeg = zbegproc(rank+1)
+        izend = zendproc(rank+1)
 
-        ! Compute domain owning each particle (local_neighbor(:))
-!$acc kernels default(present) async
-        local_neighbor(:) = 0
+!$acc kernels async
+        n_data_send(:) = 0
 !$acc end kernels
-!$acc parallel loop default(present) async
+
+        ! Get process domain of each atoms
+!$acc   parallel loop async
         do i = 1, nloc
           iglob = glob(i)
           xr = x(iglob)
           yr = y(iglob)
           zr = z(iglob)
-          if (use_bounds) call image_acc(xr,yr,zr)
+          if (use_bounds) call image_inl(xr,yr,zr)
           if (abs(xr-xcell2).lt.eps_cell) xr = xr-eps2
           if (abs(yr-ycell2).lt.eps_cell) yr = yr-eps2
           if (abs(zr-zcell2).lt.eps_cell) zr = zr-eps2
-!$acc loop seq
-          do ineighbor = 1, nneig_send
-            iproc = pneig_send(ineighbor)+1
-            if( (iproc /= rank+1)
-     &    .and. (xr>=xbegproc(iproc)) .and. (xr<xendproc(iproc))
-     &    .and. (yr>=ybegproc(iproc)) .and. (yr<yendproc(iproc))
-     &    .and. (zr>=zbegproc(iproc)) .and. (zr<zendproc(iproc)) ) then
-              local_neighbor(i) = ineighbor
-              exit
-            endif
-          end do
-        end do
-        ! Filter global indexes to send in iglob_send
-!$acc enter data create(n_data_send, iglob_send) async
-!$acc kernels default(present) async
-        n_data_send(:) = 0
-!$acc end kernels
-!$acc parallel loop default(present) async
-        do i = 1, nloc
-          ineighbor = local_neighbor(i)
+          if  ( (xr>=ixbeg) .and. (xr<ixend)
+     &    .and. (yr>=iybeg) .and. (yr<iyend)
+     &    .and. (zr>=izbeg) .and. (zr<izend) ) then  ! (Rank domain)
 !$acc atomic capture
-          n_data_send(ineighbor) = n_data_send(ineighbor) + 1
-          n_data_send_capture = n_data_send(ineighbor)
+              n_data_send(0) = n_data_send(0) + 1
+              n_data_send_capture = n_data_send(0)
 !$acc end atomic
-          iglob_send(n_data_send_capture,ineighbor) = glob(i)
+              iglob_send(n_data_send_capture,0) = glob(i)
+          else  ! (not in rank domain)
+!$acc loop seq
+            do ineighbor = 1, nneig_send   ! Look among neighbour
+              iproc = pneig_send(ineighbor)+1
+              if( (iproc /= rank+1)
+     &      .and. (xr>=xbegproc(iproc)) .and. (xr<xendproc(iproc))
+     &      .and. (yr>=ybegproc(iproc)) .and. (yr<yendproc(iproc))
+     &      .and. (zr>=zbegproc(iproc)) .and. (zr<zendproc(iproc)) )then
+!$acc atomic capture
+                n_data_send(ineighbor) = n_data_send(ineighbor) + 1
+                n_data_send_capture = n_data_send(ineighbor)
+!$acc end atomic
+                iglob_send(n_data_send_capture,ineighbor) = glob(i)
+                exit ! if found
+              endif
+            end do
+          end if ! (Find atom domain)
         end do
-
-!$acc exit data delete(local_neighbor) async
-
 !$acc update host(n_data_send) async
 !Wait for n_data_send
 !$acc wait
-        ! Allocate and fill data to send
-        allocate( data_send( maxval(n_data_send(1:nneig_send)),
-     &                       nneig_send))
+
+        ! Allocate and fill data to send (Optimzed reallocation)
+        s_bufi = maxval(n_data_send(1:nneig_send))
+        if (s_bufi.gt.max_atoms_send) then
+           max_atoms_send =
+     &             merge( int(s_bufi*(1+mem_inc)),s_bufi,extra_alloc )
+           if (debMem) print*,'reassign::realloc s',s_bufi,rank
+           if (allocated(data_send)) then
+!$acc exit data delete(data_send) async
+              deallocate(data_send)
+           end if
+           allocate( data_send( max_atoms_send,nneig_send ) )
 !$acc enter data create(data_send) async
-!$acc parallel loop default(present) async
-!$acc& present( iglob_send )
-        do ineighbor = 1, nneig_send
+        end if
+
+!$acc parallel loop present(iglob_send) async
+!$acc&         vector_length(512)
+        do ineighbor = 1, nneig_send  ! Gather Data for each neighbor domain
 !$acc loop vector
           do i = 1, n_data_send(ineighbor)
             iglob = iglob_send(i,ineighbor)
@@ -896,7 +1012,7 @@ c
 
         ! Initiate send data
         req_iglob_send(:) = MPI_REQUEST_NULL
-        req_data_send(:) = MPI_REQUEST_NULL
+        req_data_send (:) = MPI_REQUEST_NULL
 !Wait for iglob_send and data_send
 !$acc wait
 !$acc host_data use_device(iglob_send, data_send)
@@ -916,13 +1032,25 @@ c
      &                        n_data_recv(ineighbor), ierr )
         end do
 
-        ! Allocate and recv data
+        ! Allocate and recv data depending on message size
         max_data_recv = maxval(n_data_recv)
-        allocate( iglob_recv( max_data_recv, nneig_recep) )
-        allocate( data_recv( max_data_recv, nneig_recep) )
-!$acc enter data create(iglob_recv,data_recv) async
+        s_bufi        = max_data_recv*nneig_recep
+        call prmem_request( buffMpi_i2,max(s_bufi,size(buffMpi_i2)) )
+        iglob_recv(1:max_data_recv,1:nneig_recep)=>buffMpi_i2(1:s_bufi)
+        if ( max_data_recv.gt.max_atoms_recv ) then
+           max_atoms_recv = merge(int(max_data_recv*(1+mem_inc))
+     &                           ,max_data_recv,extra_alloc)
+           if (debMem) print*,'reassign::realloc r',max_data_recv,rank
+           if (allocated(data_recv)) then
+!$acc exit data delete(data_recv)
+              deallocate(data_recv)
+           end if
+           allocate( data_recv( max_atoms_recv, nneig_recep) )
+!$acc enter data create(data_recv) async
+        end if
+
         req_iglob_recv(:) = MPI_REQUEST_NULL
-        req_data_recv(:) = MPI_REQUEST_NULL
+        req_data_recv(:)  = MPI_REQUEST_NULL
 !Wait for iglob_recv and data_recv
 !$acc wait
 !$acc host_data use_device(iglob_recv,data_recv,data_send)
@@ -950,20 +1078,10 @@ c
         end do
 !$acc end host_data
 
-        ! Wait all communications
-        call MPI_Waitall(nneig_recep,req_data_recv ,MPI_STATUSES_IGNORE,
-     &                   ierr)
-        call MPI_Waitall(nneig_send ,req_data_send ,MPI_STATUSES_IGNORE,
-     &                   ierr)
-!$acc exit data delete(data_send) async
-
         ! Rebuild glob(:) with old local atoms
-
         nloc = n_data_send(0)
-!$acc enter data copyin(nloc) async
 
-!$acc parallel loop default(present) async
-!$acc&         present(iglob_send)
+!$acc parallel loop present(iglob_send) async
         do i = 1, n
            if (i.lt.nloc+1)
      &        glob(i) = iglob_send(i, 0)
@@ -971,12 +1089,15 @@ c
            repart(i) = 0
         end do
 
-!$acc exit data delete(iglob_send,n_data_send) async
-
+        ! Wait all communications
+        call MPI_Waitall(nneig_recep,req_data_recv ,MPI_STATUSES_IGNORE,
+     &                   ierr)
+        call MPI_Waitall(nneig_send ,req_data_send ,MPI_STATUSES_IGNORE,
+     &                   ierr)
 
         ! Add new atoms to glob(:) and add data
-!$acc parallel loop vector_length(512) async
-!$acc& default(present) present(nloc) copyin(n_data_recv)
+!$acc parallel loop vector_length(512)
+!$acc&         present(iglob_recv,nloc) copyin(n_data_recv) copy(nloc)
         do ineighbor = 1, nneig_recep
 !$acc loop vector
           do i = 1, n_data_recv(ineighbor)
@@ -998,9 +1119,6 @@ c
             a(3,iglob) = d%az
           end do
         end do
-!$acc exit data copyout(nloc) async
-!Wait for nloc (is needed with pgi 19.4 because nloc is the loop bound in next kernel)
-!$acc wait
 
         nloc_save = nloc
         if (btest(tinkerdebug,tindPath).and.
@@ -1015,22 +1133,41 @@ c
            call AtomDebRepart
         end if
 
-!$acc parallel loop default(present)
-        do i = 1, nloc
+!$acc parallel loop
+        do i = 1,nloc
           iglob         = glob(i)
           loc(iglob)    = i
           repart(iglob) = rank
         end do
 
-!$acc exit data delete(iglob_recv,data_recv) async
         domlen(rank+1) = nloc
 
 !$acc end data
 !copyin(pneig_recep, pneig_send)
 
 20      call orderbuffer_gpu(.false.)
-!!$acc update host(loc,glob) async
         call timer_exit( timer_eneig,quiet_timers )
+      end subroutine
+
+      subroutine check_loc
+      use atoms
+      use domdec
+      implicit none
+      integer i
+      integer(8) suloc,nb8
+
+      suloc = 0
+      nb8   = nbloc
+!$acc wait
+!$acc parallel loop default(present)
+      do i = 1,nbloc
+         suloc = suloc + loc(glob(i))
+      end do
+
+      nb8   = nb8*(nbloc+1)/2
+ 21   format(A,I4,I8,2I14)
+      if (suloc.ne.nb8) print 21,'check_loc :error',rank,nbloc,suloc,nb8
+
       end subroutine
 
 c
@@ -1389,6 +1526,7 @@ c
       use timestat ,only: timer_enter,timer_exit,timer_commstep
      &             ,quiet_timers
       use tinMemory,only: prmem_requestm
+      use sizes    ,only: tinkerdebug
       use utilcomm ,only: buffMpi_p1,buffMpi_p2
       implicit none
       integer i,tag,ierr,iproc
@@ -1402,7 +1540,9 @@ c
 c
       if (ndir.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
 
-      if (deb_Path) write(*,*) '   >> commposrespa',fast
+      if (deb_Path) then
+         write(*,*) '   >> commposrespa',fast
+      end if
       call timer_enter( timer_commstep )
 c
       if (fast) then
@@ -1419,8 +1559,8 @@ c
 c
 c     Reallocate some buffers if necessary
 c
-      call prmem_requestm(buffMpi_p1,3*nbloc,async=.false.)
-      call prmem_requestm(buffMpi_p2,3*nloc,async=.false.)
+      call prmem_requestm(buffMpi_p1,3*nbloc)
+      call prmem_requestm(buffMpi_p2,3*nloc)
       buffer (1:3,1:nbloc)=>buffMpi_p1(1:3*nbloc)
       buffers(1:3,1:nloc) =>buffMpi_p2(1:3*nloc)
 
@@ -1487,7 +1627,11 @@ c
       nullify(buffer)
       nullify(buffers)
 
-      if (deb_Path) write(*,*) '   << commposrespa'
+      if (.not.use_pmecore.and.tinkerdebug.gt.0) 
+     &   call MPI_BARRIER(hostcomm,ierr)
+      if (deb_Path) then
+         write(*,*) '   << commposrespa'
+      end if
       call timer_exit( timer_commstep,quiet_timers )
       end
 c
@@ -2687,15 +2831,11 @@ c
       use domdec
       use mpi
       use tinMemory ,only: prmem_requestm
-      use utilcomm  ,only: buffMpi_p1
       implicit none
-      integer i,j,k,tag,ierr,iproc,iglob,ilocrec,ibufbeg
-      integer sz
-      integer reqsend(nproc),reqrec(nproc)
-      real(r_p), pointer :: buffer(:,:,:)
-      real(r_p) dir(3,nbloc),rec(3,nblocrec)
-      real(r_p) fsum(3,nloc)
-      integer status(MPI_STATUS_SIZE)
+      integer i,j,k
+      !integer status(MPI_STATUS_SIZE)
+      real(r_p) dir(3,nbloc),fsum(3,nbloc)
+     &         ,rec(3,nlocrec2)
 
       !case sequential
       if (nproc.eq.1) then
@@ -2707,92 +2847,13 @@ c
          end do
          return
       end if
-c
-c     allocate some arrays
-c
-      sz = 3*max(1,nloc)*nrecdir_send
-      call prmem_requestm(buffMpi_p1,sz,async=.false.)
-      buffer(1:3,1:max(1,nloc),1:nrecdir_send) => buffMpi_p1(1:sz)
-!$acc enter data attach(buffer)
 
-c     allocate (buffers(3,max(1,nblocrec)))
-c
-c
-c     buffer  = 0_re_p
-c     buffers = 0_re_p
-c
-c     communicate forces
-c
-c     MPI : begin reception in buffer
-c
-      do i = 1, nrecdir_send
-         if (precdir_send(i).ne.rank) then
-            tag = nproc*rank + precdir_send(i) + 1
-!$acc host_data use_device(buffer)
-            call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $           MPI_RPREC,precdir_send(i),tag,
-     $           COMM_TINKER,reqrec(i),ierr)
-!$acc end host_data
-         end if
+!$acc parallel loop async present(fsum,dir)
+      do i = 1,3*nbloc
+         fsum(i,1) = dir(i,1)
       end do
-c
-c     MPI : move in buffer
-c
-!$acc wait
-      do i = 1, nrecdir_recep
-         if (precdir_recep(i).ne.rank) then
-            tag = nproc*precdir_recep(i) + rank + 1
-!$acc host_data use_device(rec)
-            call MPI_ISEND(rec(1,bufbegrec(precdir_recep(i)+1)),
-     $           3*domlen(precdir_recep(i)+1),MPI_RPREC,
-     $           precdir_recep(i),tag,COMM_TINKER,reqsend(i),ierr)
-!$acc end host_data
-         end if
-      end do
-c
-      ! save direct forces to fsum
-!$acc parallel loop collapse(2) present(fsum,dir) async
-      do i = 1,nloc
-         do j = 1, 3
-            fsum(j,i) = dir(j,i)
-         end do
-      end do
+      call commforcesrec1(fsum,rec)
 
-      do i = 1, nrecdir_send
-         if (precdir_send(i).ne.rank) then
-            call MPI_WAIT(reqrec(i),status,ierr)
-         end if
-      end do
-      do i = 1, nrecdir_recep
-         if (precdir_recep(i).ne.rank) then
-            call MPI_WAIT(reqsend(i),status,ierr)
-         end if
-      end do
-c
-c     MPI : move in global arrays
-c
-!$acc data present(buffer,rec,fsum,locrec1,glob)
-      do i = 1, nrecdir_send
-         if (precdir_send(i).ne.rank) then
-!$acc parallel loop collapse(2) async
-            do j = 1, nloc
-               do k = 1, 3
-                  fsum(k,j) = fsum(k,j) + buffer(k,j,i)
-               end do
-            end do
-         else
-!$acc parallel loop collapse(2) async
-            do j = 1, nloc
-               do k = 1, 3
-                  ilocrec   = locrec1(glob(j))
-                  fsum(k,j) = fsum(k,j) + rec(k,ilocrec)
-               end do
-            end do
-         end if
-      end do
-!$acc end data
-c
-!$acc exit data detach(buffer) async
       end subroutine
 
       subroutine commforcesrec(derivs)
@@ -2800,20 +2861,23 @@ c
       use domdec
       use mpi
       use potent ,pa=>PotentialAll
+      use pme    ,only: GridDecomp1d
       use inform ,only: deb_Path
       use sizes
       use timestat ,only: timer_enter,timer_exit,quiet_timers
      &             ,timer_dirreccomm,timer_fmanage
       use tinMemory,only: prmem_requestm
-      use utilcomm ,only: buffMpi_p1,buffMpi_p2
+      use utilcomm ,only: buffMpi_p1,buffMpi_p2,buffMpi_p3
       implicit none
-      integer i,j,k,tag,ierr,iproc,iglob,ilocrec
-      integer sz1,sz2
+      integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg
+      integer jloc,jglob,jlocrec
+      integer sz1,sz2,sz3
+      integer rankloc,commloc,nprocloc
       integer reqsend(nproc),reqrec(nproc)
+      integer status(MPI_STATUS_SIZE)
       real(r_p) derivs(3,nbloc)
       real(r_p),pointer:: buffer(:,:,:)
-      real(r_p),pointer:: buffers(:,:)
-      integer status(MPI_STATUS_SIZE)
+      real(r_p),pointer:: buffers(:,:),temprec(:,:)
 
       !case sequential
       if (nproc.eq.1) then
@@ -2827,7 +2891,7 @@ c
      $                       deprec(j,i) + decrec(j,i)
             end do
          end do
-         else 
+         else
             if (use_polar) then
 !$acc parallel loop collapse(2)
 !$acc&         default(present) async
@@ -2862,167 +2926,220 @@ c
          goto 100
       end if
 
+      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
+         call commforcesrec_1d(derivs)
+         return
+      end if
+
       if (deb_Path) write(*,*) '   >> commforcesrec'
       call timer_enter( timer_dirreccomm )
 c
+      if (use_pmecore) then
+        nprocloc = nrec
+        commloc  = comm_rec
+        rankloc  = rank_bis
+      else
+        nprocloc = nproc
+        commloc  = COMM_TINKER
+        rankloc  = rank
+      end if
+c
 c     allocate some arrays
 c
-      sz1 = 3*max(1,nloc)*nrecdir_send
-      sz2 = 3*max(1,nblocrec)
-      call prmem_requestm(buffMpi_p1,sz1,async=.false.)
-      call prmem_requestm(buffMpi_p2,sz2,async=.false.)
-      buffer(1:3,1:max(1,nloc),1:nrecdir_send) => buffMpi_p1(1:sz1)
-      buffers(1:3,1:max(1,nblocrec))           => buffMpi_p2(1:sz2)
-!$acc enter data attach(buffer,buffers)
+      sz1 = 3*max(max(1,nloc)*nrecdir_send1,nlocrec*nrec_send)
+      sz2 = 3*max(1,nblocrecdir)
+      sz3 = 3*max(1,nlocrec2)
+      call prmem_requestm(buffMpi_p1,max(size(buffMpi_p1),sz1))
+      call prmem_requestm(buffMpi_p2,max(size(buffMpi_p2),sz2))
+      call prmem_requestm(buffMpi_p3,max(size(buffMpi_p3),sz3))
 
+      sz1 = 3*max(1,nlocrec)*nrec_send
+      buffer(1:3,1:max(1,nlocrec),1:nrec_send) => buffMpi_p1(1:sz1)
+      buffers(1:3,1:max(1,nblocrecdir))        => buffMpi_p2(1:sz2)
+      temprec(1:3,1:max(1,nlocrec2))           => buffMpi_p3(1:sz3)
+!$acc enter data attach(buffer,buffers,temprec)
 c
-c     buffer  = 0_re_p
-c     buffers = 0_re_p
+c     first do rec rec communications
 c
-c     communicate forces
 c
 c     MPI : begin reception in buffer
 c
-      do i = 1, nrecdir_send
-         if (precdir_send(i).ne.rank) then
-            tag = nproc*rank + precdir_send(i) + 1
 !$acc host_data use_device(buffer)
-            call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $           MPI_RPREC,precdir_send(i),tag,
-     $           COMM_TINKER,reqrec(i),ierr)
-!$acc end host_data
-         end if
+      do i = 1, nrec_send
+        tag = nprocloc*rankloc + prec_send(i) + 1
+        call MPI_IRECV(buffer(1,1,i),3*nlocrec,MPI_RPREC
+     $      ,prec_send(i),tag,commloc,reqrec(i),ierr)
       end do
+!$acc end host_data
 c
 c     MPI : move in buffer
 c
-!$acc data present(buffer,buffers)
+!$acc data present(temprec,buffers,derivs)
 c
       if (pa) then
 !$acc parallel loop collapse(2) async
-!$acc&       present(demrec,deprec,decrec)
-         do i = 1, nblocrec
+!$acc&   present(demrec,deprec,decrec)
+         do i = 1, nlocrec2
             do j = 1, 3
-               buffers(j,i)= demrec(j,i) + deprec(j,i) + decrec(j,i)
+               temprec(j,i)= demrec(j,i) + deprec(j,i) + decrec(j,i)
             end do
          end do
       else
          if (use_polar) then
 !$acc parallel loop collapse(2) async
-!$acc&       present(demrec,deprec)
-            do i = 1, nblocrec
+!$acc&      present(demrec,deprec)
+            do i = 1, nlocrec2
                do j = 1, 3
-                  buffers(j,i)= demrec(j,i) + deprec(j,i)
+                  temprec(j,i)= demrec(j,i) + deprec(j,i)
                end do
             end do
          else if (use_mpole) then
 !$acc parallel loop collapse(2) async
-!$acc&       present(demrec)
-            do i = 1, nblocrec
+!$acc&      present(demrec)
+            do i = 1, nlocrec2
                do j = 1, 3
-                  buffers(j,i)= demrec(j,i)
+                  temprec(j,i)= demrec(j,i)
                end do
             end do
          end if
          if (use_charge) then
 !$acc parallel loop collapse(2) async
-!$acc&       present(decrec)
-            do i = 1, nblocrec
+!$acc&      present(decrec)
+            do i = 1, nlocrec2
                do j = 1, 3
-                  buffers(j,i)=  decrec(j,i)
+                  temprec(j,i)=  decrec(j,i)
                end do
             end do
          end if
       end if
 c
 !$acc wait
-      do i = 1, nrecdir_recep
-         if (precdir_recep(i).ne.rank) then
-            tag = nproc*precdir_recep(i) + rank + 1
-            sz1 = 3*domlen(precdir_recep(i)+1)
-!$acc host_data use_device(buffers)
-            call MPI_ISEND(buffers(1,bufbegrec(precdir_recep(i)+1)),
-     $           sz1,MPI_RPREC,
-     $           precdir_recep(i),tag,COMM_TINKER,reqsend(i),ierr)
+!$acc host_data use_device(temprec)
+      do i = 1, nrec_recep
+        tag = nprocloc*prec_recep(i) + rankloc + 1
+        call MPI_ISEND(temprec(1,bufbegrec(prec_recep(i)+1))
+     $      ,3*domlenrec(prec_recep(i)+1),MPI_RPREC
+     $      ,prec_recep(i),tag,commloc,reqsend(i),ierr)
+      end do
 !$acc end host_data
-            !write(0,*) 'iRank',rank,'send',sz1,'to ',precdir_recep(i)
-         end if
+c
+      do i = 1, nrec_send
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nrec_recep
+        call MPI_WAIT(reqsend(i),status,ierr)
       end do
 c
+c     mpi : move in global arrays
+c
+!$acc parallel loop collapse(2) present(buffer)
+      do j = 1,nlocrec
+        do k = 1,3
+!$acc loop seq
+          do i = 1,nrec_send
+             temprec(k,j) = temprec(k,j) + buffer(k,j,i)
+          end do
+        end do
+      end do
 
-      do i = 1, nrecdir_send
-         if (precdir_send(i).ne.rank) then
-            call MPI_WAIT(reqrec(i),status,ierr)
+!$acc exit data detach(buffer)
+      sz1 = 3*max(1,nloc)*nrecdir_send1
+      nullify(buffer)
+      buffer(1:3,1:max(1,nloc),1:nrecdir_send1) => buffMpi_p1(1:sz1)
+!$acc enter data attach(buffer)
+c
+c     then do rec dir communications
+c
+c     MPI : begin reception in buffer
+c
+!$acc host_data use_device(buffer)
+      do i = 1, nrecdir_send1
+         if (precdir_send1(i).ne.rank) then
+           tag = nproc*rank + precdir_send1(i) + 1
+           call MPI_IRECV(buffer(1,1,i),3*nloc,MPI_RPREC
+     $         ,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
          end if
       end do
-      do i = 1, nrecdir_recep
-         if (precdir_recep(i).ne.rank) then
-            call MPI_WAIT(reqsend(i),status,ierr)
-         end if
+!$acc end host_data
+c
+c     Move in array
+c
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+          ibufbeg =bufbeg(precdir_recep1(i)+1)-1 
+!$acc parallel loop collapse(2)
+!$acc&    present(repartrec,locrec,glob)
+          do j = 1, domlen(precdir_recep1(i)+1)
+            do k = 1,3
+              jloc = ibufbeg+j
+              jglob = glob(jloc)
+              if (repartrec(jglob).eq.rankloc) then
+                jlocrec = locrec(jglob)
+                buffers(k,jloc) = temprec(k,jlocrec)
+              else
+                buffers(k,jloc) = 0
+              end if
+            end do
+          end do
+        end if
+      end do
+c
+!$acc host_data use_device(buffers)
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+          tag = nproc*precdir_recep1(i) + rank + 1
+          call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1))
+     $        ,3*domlen(precdir_recep1(i)+1),MPI_RPREC
+     $        ,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+        end if
+      end do
+!$acc end host_data
+c
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
+        call MPI_WAIT(reqrec(i),status,ierr)
+        end if
       end do
 c
 c     MPI : move in global arrays
 c
-      do i = 1, nrecdir_send
-         if (precdir_send(i).ne.rank) then
-!$acc parallel loop collapse(2) async
-!$acc&      present(derivs)
-            do j = 1, nloc
-               do k = 1, 3
-                  derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-               end do
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
+!$acc parallel loop collapse(2) async present(buffer)
+          do j = 1,nloc
+            do k = 1,3
+              derivs(k,j) = derivs(k,j) + buffer(k,j,i)
             end do
-         else
-            if (use_polar.and..not.use_charge) then
+          end do
+        else
 !$acc parallel loop collapse(2) async
-!$acc&      present(glob,locrec1,derivs,demrec,deprec)
-            do j = 1, nloc
-               do k = 1, 3
-                  iglob       = glob(j)
-                  ilocrec     = locrec1(iglob)
-                  derivs(k,j) =  derivs(k,j) + demrec(k,ilocrec) +
-     $                     deprec(k,ilocrec)
-               end do
+          do j = 1, nlocrec
+            do k = 1,3
+              iglob = globrec(j)
+              iloc  = loc(iglob)
+              if (repart(iglob).eq.rank) then
+                 derivs(k,iloc) = derivs(k,iloc) + temprec(k,j)
+              end if
             end do
-            else if (use_mpole.and..not.use_charge) then
-!$acc parallel loop collapse(2) async
-!$acc&      present(glob,locrec1,derivs,demrec)
-            do j = 1, nloc
-               do k = 1, 3
-                  iglob       = glob(j)
-                  ilocrec     = locrec1(iglob)
-                  derivs(k,j) =  derivs(k,j) + demrec(k,ilocrec)
-               end do
-            end do
-            else if (.not.use_polar.and..not.use_mpole.and.use_charge)
-     &         then
-!$acc parallel loop collapse(2) async
-!$acc&      present(glob,locrec1,derivs,decrec)
-            do j = 1, nloc
-               do k = 1, 3
-                  iglob       = glob(j)
-                  ilocrec     = locrec1(iglob)
-                  derivs(k,j) =  derivs(k,j) + decrec(k,ilocrec)
-               end do
-            end do
-            else
-!$acc parallel loop collapse(2) async
-!$acc&      present(glob,locrec1,derivs,demrec,deprec,decrec)
-            do j = 1, nloc
-               do k = 1, 3
-                  iglob       = glob(j)
-                  ilocrec     = locrec1(iglob)
-                  derivs(k,j) =  derivs(k,j) + demrec(k,ilocrec) +
-     $                     deprec(k,ilocrec) + decrec(k,ilocrec)
-               end do
-            end do
-            end if
-         end if
+          end do
+        end if
       end do
+
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+        call MPI_WAIT(reqsend(i),status,ierr)
+        end if
+      end do
+
+!$acc wait
 !$acc end data
+!$acc exit data detach(buffer,buffers,temprec)
+      nullify(buffer)
+      nullify(buffers)
+      nullify(temprec)
 
       call timer_exit( timer_dirreccomm,quiet_timers )
-c
+      if (deb_Path) write(*,*) '   << commforcesrec'
 c
 c    Communicate separately the direct and reciprocal torques if testgrad is
 c    being used
@@ -3031,215 +3148,340 @@ c
       if (dotstgrad) then
         ! case sequential
         if (nproc.eq.1) return
-        call timer_enter( timer_dirreccomm )
-c
-c     MPI : begin reception in buffer
 c
         if (use_mpole) then
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            tag = nproc*rank + precdir_send(i) + 1
-            call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $      MPI_RPREC,precdir_send(i),tag,COMM_TINKER,reqrec(i),ierr)
-          end if
-        end do
-c
-c       MPI : move in buffer
-c
-        do iproc = 1, nrecdir_recep
-          if (precdir_recep(iproc).ne.rank) then
-            do i = 1, domlen(precdir_recep(iproc)+1)
-              ilocrec = bufbegrec(precdir_recep(iproc)+1)+i-1
-              buffers(1,ilocrec) =demrec(1,ilocrec)
-              buffers(2,ilocrec) =demrec(2,ilocrec)
-              buffers(3,ilocrec) =demrec(3,ilocrec)
-            end do
-          end if
-        end do
-c
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            tag = nproc*precdir_recep(i) + rank + 1
-            call MPI_ISEND(buffers(1,bufbegrec(precdir_recep(i)+1)),
-     $       3*domlen(precdir_recep(i)+1),
-     $       MPI_RPREC,precdir_recep(i),tag,COMM_TINKER,
-     $       reqsend(i),ierr)
-          end if
-        end do
-c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            call MPI_WAIT(reqrec(i),status,ierr)
-          end if
-        end do
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            call MPI_WAIT(reqsend(i),status,ierr)
-          end if
-        end do
-c
-c       MPI : move in global arrays
-c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            do j = 1, nloc
-              iglob = glob(j)
-              dem(1,j) = dem(1,j) + buffer(1,j,i)
-              dem(2,j) = dem(2,j) + buffer(2,j,i)
-              dem(3,j) = dem(3,j) + buffer(3,j,i)
-            end do
-          else
-            do j = 1, nloc
-              iglob = glob(j)
-              ilocrec = locrec1(iglob)
-              dem(1,j) = dem(1,j)+demrec(1,ilocrec)
-              dem(2,j) = dem(2,j)+demrec(2,ilocrec)
-              dem(3,j) = dem(3,j)+demrec(3,ilocrec)
-            end do
-          end if
-        end do
-        
+           call commforcesrec1(dem,demrec)
         end if
 c
         if (use_polar) then
-
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            tag = nproc*rank + precdir_send(i) + 1
-            call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $      MPI_RPREC,precdir_send(i),tag,COMM_TINKER,reqrec(i),ierr)
-          end if
-        end do
-c
-c       MPI : move in buffer
-c
-        do iproc = 1, nrecdir_recep
-          if (precdir_recep(iproc).ne.rank) then
-            do i = 1, domlen(precdir_recep(iproc)+1)
-              ilocrec = bufbegrec(precdir_recep(iproc)+1)+i-1
-              buffers(1,ilocrec)=deprec(1,ilocrec)
-              buffers(2,ilocrec)=deprec(2,ilocrec)
-              buffers(3,ilocrec)=deprec(3,ilocrec)
-            end do
-          end if
-        end do
-c
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            tag = nproc*precdir_recep(i) + rank + 1
-            call MPI_ISEND(buffers(1,bufbegrec(precdir_recep(i)+1)),
-     $       3*domlen(precdir_recep(i)+1),
-     $       MPI_RPREC,precdir_recep(i),tag,COMM_TINKER,
-     $       reqsend(i),ierr)
-          end if
-        end do
-c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            call MPI_WAIT(reqrec(i),status,ierr)
-          end if
-        end do
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            call MPI_WAIT(reqsend(i),status,ierr)
-          end if
-        end do
-c
-c       MPI : move in global arrays
-c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            do j = 1, nloc
-              iglob = glob(j)
-              dep(1,j) = dep(1,j) + buffer(1,j,i)
-              dep(2,j) = dep(2,j) + buffer(2,j,i)
-              dep(3,j) = dep(3,j) + buffer(3,j,i)
-            end do
-          else
-            do j = 1, nloc
-              iglob = glob(j)
-              ilocrec = locrec1(iglob)
-              dep(1,j) =dep(1,j)+deprec(1,ilocrec)
-              dep(2,j) =dep(2,j)+deprec(2,ilocrec)
-              dep(3,j) =dep(3,j)+deprec(3,ilocrec)
-            end do
-          end if
-        end do
-
+           call commforcesrec1(dep,deprec)
         end if
 c
         if (use_charge) then
-
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            tag = nproc*rank + precdir_send(i) + 1
-            call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $      MPI_RPREC,precdir_send(i),tag,COMM_TINKER,reqrec(i),ierr)
-          end if
-        end do
-c
-c       MPI : move in buffer
-c
-        do iproc = 1, nrecdir_recep
-          if (precdir_recep(iproc).ne.rank) then
-            do i = 1, domlen(precdir_recep(iproc)+1)
-              ilocrec = bufbegrec(precdir_recep(iproc)+1)+i-1
-              buffers(1,ilocrec) = decrec(1,ilocrec)
-              buffers(2,ilocrec) = decrec(2,ilocrec)
-              buffers(3,ilocrec) = decrec(3,ilocrec)
-            end do
-          end if
-        end do
-c
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            tag = nproc*precdir_recep(i) + rank + 1
-            call MPI_ISEND(buffers(1,bufbegrec(precdir_recep(i)+1)),
-     $       3*domlen(precdir_recep(i)+1),
-     $       MPI_RPREC,precdir_recep(i),tag,COMM_TINKER,
-     $       reqsend(i),ierr)
-          end if
-        end do
-c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            call MPI_WAIT(reqrec(i),status,ierr)
-          end if
-        end do
-        do i = 1, nrecdir_recep
-          if (precdir_recep(i).ne.rank) then
-            call MPI_WAIT(reqsend(i),status,ierr)
-          end if
-        end do
-c
-c       MPI : move in global arrays
-c
-        do i = 1, nrecdir_send
-          if (precdir_send(i).ne.rank) then
-            do j = 1, nloc
-              iglob = glob(j)
-              dec(1,j) = dec(1,j) + buffer(1,j,i)
-              dec(2,j) = dec(2,j) + buffer(2,j,i)
-              dec(3,j) = dec(3,j) + buffer(3,j,i)
-            end do
-          else
-            do j = 1, nloc
-              iglob = glob(j)
-              ilocrec = locrec1(iglob)
-              dec(1,j) = dec(1,j) + decrec(1,ilocrec)
-              dec(2,j) = dec(2,j) + decrec(2,ilocrec)
-              dec(3,j) = dec(3,j) + decrec(3,ilocrec)
-            end do
-          end if
-        end do
-
+           call commforcesrec1(dec,decrec)
         end if
-        call timer_exit( timer_dirreccomm,quiet_timers )
       end if
-!$acc exit data detach(buffer,buffers)
 
-      if (deb_Path) write(*,*) '   << commforcesrec'
       end
+
+      subroutine commforcesrec_1d(derivs)
+      use deriv
+      use domdec
+      use mpi
+      use potent ,pa=>PotentialAll
+      use pme    ,only: GridDecomp1d
+      use inform ,only: deb_Path
+      use sizes
+      use timestat ,only: timer_enter,timer_exit,quiet_timers
+     &             ,timer_dirreccomm,timer_fmanage
+      use tinMemory,only: prmem_requestm
+      use utilcomm ,only: buffMpi_p1,buffMpi_p2,buffMpi_p3
+      implicit none
+      integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg
+      integer jloc,jglob,jlocrec,isz
+      integer sz1,sz2,sz3
+      integer rankloc,commloc,nprocloc
+      integer reqsend(nproc),reqrec(nproc)
+      integer sz_recv(nrecdir_recep1),sz_send(nrecdir_recep1)
+      integer status(MPI_STATUS_SIZE)
+      real(r_p) derivs(3,nbloc)
+      real(r_p),pointer:: buffer(:,:,:)
+      real(r_p),pointer:: buffers(:,:),temprec(:,:)
+
+      if (deb_Path) write(*,*) '   >> commforcesrec_1d'
+         call timer_enter( timer_fmanage )
+         if (pa) then
+!$acc parallel loop collapse(2)
+!$acc&         default(present) async
+         do i = 1, nbloc
+            do j = 1, 3
+               ilocrec = locrec(glob(i))
+               if (ilocrec.eq.0) cycle
+               if (i.le.nloc) then
+                 derivs(j,i) = derivs(j,i) + demrec(j,ilocrec) +
+     $                       deprec(j,ilocrec) + decrec(j,ilocrec)
+               else
+                  desum(j,i) = desum(j,i) + demrec(j,ilocrec) +
+     $                       deprec(j,ilocrec) + decrec(j,ilocrec)
+               end if
+            end do
+         end do
+         else
+            if (use_polar) then
+!$acc parallel loop collapse(2)
+!$acc&         default(present) async
+               do i = 1, nbloc
+                  do j = 1, 3
+                     ilocrec = locrec(glob(i))
+                     if (ilocrec.eq.0) cycle
+                     if (i.le.nloc) then
+                     derivs(j,i) = derivs(j,i) + demrec(j,ilocrec) +
+     $                             deprec(j,ilocrec)
+                     else
+                      desum(j,i) =  desum(j,i) + demrec(j,ilocrec) +
+     $                             deprec(j,ilocrec)
+                     end if
+                  end do
+               end do
+            else if (use_mpole) then
+!$acc parallel loop collapse(2)
+!$acc&         default(present) async
+               do i = 1, nbloc
+                  do j = 1, 3
+                     ilocrec = locrec(glob(i))
+                     if (ilocrec.eq.0) cycle
+                     if (i.le.nloc) then
+                     derivs(j,i) = derivs(j,i) + demrec(j,ilocrec)
+                     else
+                      desum(j,i) =  desum(j,i) + demrec(j,ilocrec)
+                     end if
+                  end do
+               end do
+            end if
+            if (use_charge) then
+!$acc parallel loop collapse(2)
+!$acc&         default(present) async
+               do i = 1, nbloc
+                  do j = 1, 3
+                     ilocrec = locrec(glob(i))
+                     if (ilocrec.eq.0) cycle
+                     if (i.le.nloc) then
+                     derivs(j,i) = derivs(j,i) + decrec(j,ilocrec)
+                     else
+                     desum(j,i)  =  desum(j,i) + decrec(j,ilocrec)
+                     end if
+                  end do
+               end do
+            end if
+         end if
+         call timer_exit ( timer_fmanage,quiet_timers )
+
+      end
+c
+c     Second version of commforcesrec
+c
+      subroutine commforcesrec1(derivs,derivrec)
+      use deriv
+      use domdec
+      use mpi
+      use potent ,pa=>PotentialAll
+      use pme    ,only: GridDecomp1d
+      use inform ,only: deb_Path
+      use sizes
+      use timestat ,only: timer_enter,timer_exit,quiet_timers
+     &             ,timer_dirreccomm,timer_fmanage
+      use tinMemory,only: prmem_requestm
+      use utilcomm ,only: buffMpi_p1,buffMpi_p2,buffMpi_p3
+      implicit none
+      integer i,j,k,tag,ierr,iproc,iglob,iloc,ibufbeg
+      integer jloc,jglob,jlocrec
+      integer sz1,sz2,sz3
+      integer rankloc,commloc,nprocloc
+      integer reqsend(nproc),reqrec(nproc)
+      integer status(MPI_STATUS_SIZE)
+      real(r_p) derivs(3,nbloc)
+      real(r_p) derivrec(3,nlocrec2)
+      real(r_p),pointer:: buffer(:,:,:)
+      real(r_p),pointer:: buffers(:,:),temprec(:,:)
+
+      !case sequential
+      if (nproc.eq.1) then
+         call timer_enter( timer_fmanage )
+!$acc parallel loop collapse(2)
+!$acc&         default(present) async
+         do i = 1, nloc
+            do j = 1, 3
+               derivs(j,i) = derivs(j,i) + derivrec(j,i)
+            end do
+         end do
+         call timer_exit ( timer_fmanage,quiet_timers )
+         return
+      end if
+
+      if (deb_Path) write(*,*) '   >> commforcesrec1'
+      call timer_enter( timer_dirreccomm )
+c
+      if (use_pmecore) then
+        nprocloc = nrec
+        commloc  = comm_rec
+        rankloc  = rank_bis
+      else
+        nprocloc = nproc
+        commloc  = COMM_TINKER
+        rankloc  = rank
+      end if
+c
+c     allocate some arrays
+c
+      sz1 = 3*max(max(1,nloc)*nrecdir_send1,nlocrec*nrec_send)
+      sz2 = 3*max(1,nblocrecdir)
+      sz3 = 3*max(1,nlocrec2)
+      call prmem_requestm(buffMpi_p1,sz1)
+      call prmem_requestm(buffMpi_p2,sz2)
+      call prmem_requestm(buffMpi_p3,sz3)
+
+      sz1 = 3*max(1,nlocrec)*nrec_send
+      buffer(1:3,1:max(1,nlocrec),1:nrec_send) => buffMpi_p1(1:sz1)
+      buffers(1:3,1:max(1,nblocrecdir))        => buffMpi_p2(1:sz2)
+      temprec(1:3,1:max(1,nlocrec2))           => buffMpi_p3(1:sz3)
+!$acc enter data attach(buffer,buffers,temprec)
+c
+c     buffer  = 0_re_p
+c     buffers = 0_re_p
+c
+c     communicate forces
+c
+c
+c     first do rec rec communications
+c
+c
+c     MPI : begin reception in buffer
+c
+!$acc host_data use_device(buffer)
+      do i = 1, nrec_send
+        tag = nprocloc*rankloc + prec_send(i) + 1
+        call MPI_IRECV(buffer(1,1,i),3*nlocrec,MPI_RPREC
+     $      ,prec_send(i),tag,commloc,reqrec(i),ierr)
+      end do
+!$acc end host_data
+c
+c     MPI : move in buffer
+c
+!$acc data present(temprec,buffers,derivs,derivrec)
+c
+!$acc parallel loop collapse(2) async
+      do i = 1, nlocrec2
+         do j = 1, 3
+            temprec(j,i)= derivrec(j,i)
+         end do
+      end do
+c
+!$acc wait
+!$acc host_data use_device(temprec)
+      do i = 1, nrec_recep
+        tag = nprocloc*prec_recep(i) + rankloc + 1
+        call MPI_ISEND(temprec(1,bufbegrec(prec_recep(i)+1))
+     $      ,3*domlenrec(prec_recep(i)+1),MPI_RPREC
+     $      ,prec_recep(i),tag,commloc,reqsend(i),ierr)
+      end do
+!$acc end host_data
+c
+      do i = 1, nrec_recep
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+      do i = 1, nrec_send
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+c
+c     mpi : move in global arrays
+c
+!$acc parallel loop collapse(2) present(buffer)
+      do j = 1,nlocrec
+        do k = 1,3
+!$acc loop seq
+          do i = 1,nrec_send
+             temprec(k,j) = temprec(k,j) + buffer(k,j,i)
+          end do
+        end do
+      end do
+
+!$acc exit data detach(buffer)
+      sz1 = 3*max(1,nloc)*nrecdir_send1
+      nullify(buffer)
+      buffer(1:3,1:max(1,nloc),1:nrecdir_send1) => buffMpi_p1(1:sz1)
+!$acc enter data attach(buffer)
+c
+c     then do rec dir communications
+c
+c     MPI : begin reception in buffer
+c
+!$acc host_data use_device(buffer)
+      do i = 1, nrecdir_send1
+         if (precdir_send1(i).ne.rank) then
+           tag = nproc*rank + precdir_send1(i) + 1
+           call MPI_IRECV(buffer(1,1,i),3*nloc,MPI_RPREC
+     $         ,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
+         end if
+      end do
+!$acc end host_data
+c
+c     Move in array
+c
+      do i = 1,nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+          ibufbeg = bufbeg(precdir_recep1(i)+1)-1 
+!$acc parallel loop collapse(2) async
+!$acc&    present(repartrec,locrec,glob)
+          do j = 1, domlen(precdir_recep1(i)+1)
+            do k = 1,3
+              jloc  = ibufbeg+j
+              jglob = glob(jloc)
+              if (repartrec(jglob).eq.rankloc) then
+                jlocrec = locrec(jglob)
+                buffers(k,jloc) = temprec(k,jlocrec)
+              else
+                buffers(k,jloc) = 0
+              end if
+            end do
+          end do
+        end if
+      end do
+c
+!$acc host_data use_device(buffers)
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+          tag = nproc*precdir_recep1(i) + rank + 1
+          call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1))
+     $        ,3*domlen(precdir_recep1(i)+1),MPI_REAL8
+     $        ,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+        end if
+      end do
+!$acc end host_data
+c
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
+           call MPI_WAIT(reqrec(i),status,ierr)
+        end if
+      end do
+c
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+           call MPI_WAIT(reqsend(i),status,ierr)
+        end if
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
+!$acc parallel loop collapse(2) async present(buffer)
+          do j = 1,nloc
+            do k = 1,3
+              derivs(k,j) = derivs(k,j) + buffer(k,j,i)
+            end do
+          end do
+        else
+!$acc parallel loop collapse(2) async
+          do j = 1, nlocrec
+            do k = 1,3
+              iglob = globrec(j)
+              iloc  = loc(iglob)
+              if (repart(iglob).eq.rank) then
+                 derivs(k,iloc) = derivs(k,iloc) + temprec(k,j)
+              end if
+            end do
+          end do
+        end if
+      end do
+
+!$acc wait
+!$acc end data
+!$acc exit data detach(buffer,buffers,temprec)
+
+      if (deb_Path) write(*,*) '   << commforcesrec1'
+      call timer_exit( timer_dirreccomm,quiet_timers )
+      end subroutine
+
 c
 c     subroutine Icommforceststgrad : deal with communications of
 c                                     one force (de) for testgrad
@@ -3523,7 +3765,7 @@ c
       integer, allocatable :: counttemp(:),ind1temp(:)
       integer count
       integer i,iproc,iproc1,tag,ierr
-      integer iloc,iglob
+
       integer, allocatable :: reqsend(:),reqrec(:)
       integer status(MPI_STATUS_SIZE)
       logical init
@@ -3536,33 +3778,6 @@ c
 c
 c      ind1temp = 0
       counttemp = 0
-c
-c     get the domlen values of the coupled real space processes
-c
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-        tag = nproc*rank + precdir_recep(iproc) + 1
-        call MPI_IRECV(domlen(precdir_recep(iproc)+1),1,MPI_INT,
-     $   precdir_recep(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
-        end if
-      end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
-        tag = nproc*precdir_send(iproc) + rank + 1
-        call MPI_ISEND(domlen(rank+1),1,MPI_INT,precdir_send(iproc),
-     $   tag,COMM_TINKER,reqsend(iproc),ierr)
-        end if
-      end do
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-        call MPI_WAIT(reqrec(iproc),status,ierr)
-        end if
-      end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
-        call MPI_WAIT(reqsend(iproc),status,ierr)
-        end if
-      end do
 c
 c     get the domlen values of the coupled real space processes
 c
@@ -3581,6 +3796,33 @@ c
       end do
       do iproc = 1, nbig_send
         call MPI_WAIT(reqsend(iproc),status,ierr)
+      end do
+c
+c     get the domlen values of the coupled real space processes (dir-recip neighbors but not present in the previous list)
+c
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+        tag = nproc*rank + precdir_recep2(iproc) + 1
+        call MPI_IRECV(domlen(precdir_recep2(iproc)+1),1,MPI_INT,
+     $   precdir_recep2(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+        end if
+      end do
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
+        tag = nproc*precdir_send2(iproc) + rank + 1
+        call MPI_ISEND(domlen(rank+1),1,MPI_INT,precdir_send2(iproc),
+     $   tag,COMM_TINKER,reqsend(iproc),ierr)
+        end if
+      end do
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+        call MPI_WAIT(reqrec(iproc),status,ierr)
+        end if
+      end do
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
+        call MPI_WAIT(reqsend(iproc),status,ierr)
+        end if
       end do
 c
       if (init) then
@@ -3615,17 +3857,17 @@ c     nvdwblocloop is nvdwbloc if nvdwbloc is a multiple of 16, or the first one
 
       nblocrecdir = count
 !!$acc update device(nbloc,nblocloop) async
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).eq.rank) goto 10
+      do iproc = 1, nrecdir_recep1
+        if (precdir_recep1(iproc).eq.rank) goto 10
         do iproc1 = 1, nbig_recep
-          if (pbig_recep(iproc1).eq.precdir_recep(iproc)) goto 10
+          if (pbig_recep(iproc1).eq.precdir_recep1(iproc)) goto 10
         end do
-        if (domlen(precdir_recep(iproc)+1).ne.0) then
-          bufbeg(precdir_recep(iproc)+1) = count + 1
+        if (domlen(precdir_recep1(iproc)+1).ne.0) then
+          bufbeg(precdir_recep1(iproc)+1) = count + 1
         else
-          bufbeg(precdir_recep(iproc)+1) = 1
+          bufbeg(precdir_recep1(iproc)+1) = 1
         end if
-        count = count + domlen(precdir_recep(iproc)+1)
+        count = count + domlen(precdir_recep1(iproc)+1)
   10    continue
       end do
       nblocrecdir = count
@@ -3661,39 +3903,39 @@ c
 c
 c     also get the indexes of recdir neighboring processes
 c
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-          tag = nproc*rank + precdir_recep(iproc) + 1
-          call MPI_IRECV(glob(bufbeg(precdir_recep(iproc)+1)),
-     $     domlen(precdir_recep(iproc)+1),MPI_INT,
-     $     precdir_recep(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+          tag = nproc*rank + precdir_recep2(iproc) + 1
+          call MPI_IRECV(glob(bufbeg(precdir_recep2(iproc)+1)),
+     $     domlen(precdir_recep2(iproc)+1),MPI_INT,
+     $     precdir_recep2(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
         end if
       end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
-          tag = nproc*precdir_send(iproc) + rank + 1
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
+          tag = nproc*precdir_send2(iproc) + rank + 1
           call MPI_ISEND(glob,domlen(rank+1),MPI_INT,
-     $     precdir_send(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
+     $     precdir_send2(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
         end if
       end do
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
           call MPI_WAIT(reqrec(iproc),status,ierr)
         end if
       end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
           call MPI_WAIT(reqsend(iproc),status,ierr)
         end if
       end do
 c
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-          do i = 1, domlen(precdir_recep(iproc)+1)
-            loc(glob(bufbeg(precdir_recep(iproc)+1)+i-1)) =
-     $        bufbeg(precdir_recep(iproc)+1)+i-1
-            repart(glob(bufbeg(precdir_recep(iproc)+1)+i-1)) =
-     $       precdir_recep(iproc)
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+          do i = 1, domlen(precdir_recep2(iproc)+1)
+            loc(glob(bufbeg(precdir_recep2(iproc)+1)+i-1)) =
+     $        bufbeg(precdir_recep2(iproc)+1)+i-1
+            repart(glob(bufbeg(precdir_recep2(iproc)+1)+i-1)) =
+     $       precdir_recep2(iproc)
           end do
         end if
       end do
@@ -3704,6 +3946,7 @@ c
       deallocate (ind1temp)
       deallocate (counttemp)
 
+      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
       if (deb_Path) write(*,*) '   << orderbuffer'
       end
 
@@ -3717,6 +3960,7 @@ c
       use domdec
       use inform , only : deb_Path
       use mpi
+      use sizes  , only : tinkerdebug
       use utilgpu, only : openacc_abort
       implicit none
       integer :: counttemp(nproc)
@@ -3735,9 +3979,10 @@ c
 
       if (deb_Path) write(*,*) '   >> orderbuffer_gpu',init
       ! Get domlen values of all processes
-      call MPI_Allgather( MPI_IN_PLACE, 1, MPI_DATATYPE_NULL,
-     &                    domlen      , 1, MPI_INT,
-     &                    COMM_TINKER, ierr )
+      call MPI_IAllgather( MPI_IN_PLACE, 1, MPI_DATATYPE_NULL,
+     &                     domlen      , 1, MPI_INT,
+     &                    COMM_TINKER,reqsend(1), ierr )
+      call MPI_WAIT(reqsend(1),status,ierr)
 
       if (init) then
         cpt = 0
@@ -3773,111 +4018,104 @@ c     nvdwblocloop is nvdwbloc if nvdwbloc is a multiple of 16, or the first one
 
       nblocrecdir = count
 
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).eq.rank) goto 10
+      do iproc = 1, nrecdir_recep1
+        if (precdir_recep1(iproc).eq.rank) goto 10
         do iproc1 = 1, nbig_recep
-          if (pbig_recep(iproc1).eq.precdir_recep(iproc)) goto 10
+          if (pbig_recep(iproc1).eq.precdir_recep1(iproc)) goto 10
         end do
-        if (domlen(precdir_recep(iproc)+1).ne.0) then
-          bufbeg(precdir_recep(iproc)+1) = count + 1
+        if (domlen(precdir_recep1(iproc)+1).ne.0) then
+          bufbeg(precdir_recep1(iproc)+1) = count + 1
         else
-          bufbeg(precdir_recep(iproc)+1) = 1
+          bufbeg(precdir_recep1(iproc)+1) = 1
         end if
-        count = count + domlen(precdir_recep(iproc)+1)
+        count = count + domlen(precdir_recep1(iproc)+1)
   10    continue
       end do
       nblocrecdir = count
 
       !send and receive the indexes of the neighboring processes
+!$acc host_data use_device(glob)
       do iproc = 1, nbig_recep
         tag = nproc*rank + pbig_recep(iproc) + 1
-!$acc host_data use_device(glob)
-        call MPI_IRECV(glob(bufbeg(pbig_recep(iproc)+1)),
-     $   domlen(pbig_recep(iproc)+1),MPI_INT,pbig_recep(iproc),tag,
-     $   COMM_TINKER,reqrec(iproc),ierr)
-!$acc end host_data
+        call MPI_IRECV(glob(bufbeg(pbig_recep(iproc)+1))
+     $      ,domlen(pbig_recep(iproc)+1),MPI_INT
+     $      ,pbig_recep(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
       end do
 !$acc wait
       do iproc = 1, nbig_send
         tag = nproc*pbig_send(iproc) + rank + 1
-!$acc host_data use_device(glob)
-        call MPI_ISEND(glob,domlen(rank+1),MPI_INT,pbig_send(iproc),
-     $   tag,COMM_TINKER,reqsend(iproc),ierr)
-!$acc end host_data
+        call MPI_ISEND(glob,domlen(rank+1),MPI_INT
+     $      ,pbig_send(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
       end do
+!$acc end host_data
       do iproc = 1, nbig_recep
         call MPI_WAIT(reqrec(iproc),status,ierr)
       end do
       do iproc = 1, nbig_send
         call MPI_WAIT(reqsend(iproc),status,ierr)
       end do
-
 c
 c     also get the indexes of recdir neighboring processes
 c
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-          tag = nproc*rank + precdir_recep(iproc) + 1
 !$acc host_data use_device(glob)
-          call MPI_IRECV(glob(bufbeg(precdir_recep(iproc)+1)),
-     $     domlen(precdir_recep(iproc)+1),MPI_INT,
-     $     precdir_recep(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
-!$acc end host_data
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+          tag = nproc*rank + precdir_recep2(iproc) + 1
+          call MPI_IRECV(glob(bufbeg(precdir_recep2(iproc)+1))
+     $        ,domlen(precdir_recep2(iproc)+1),MPI_INT
+     $        ,precdir_recep2(iproc),tag,COMM_TINKER,reqrec(iproc),ierr)
         end if
       end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
-          tag = nproc*precdir_send(iproc) + rank + 1
-!$acc host_data use_device(glob)
-          call MPI_ISEND(glob,domlen(rank+1),MPI_INT,
-     $     precdir_send(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
-!$acc end host_data
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
+          tag = nproc*precdir_send2(iproc) + rank + 1
+          call MPI_ISEND(glob,domlen(rank+1),MPI_INT
+     $        ,precdir_send2(iproc),tag,COMM_TINKER,reqsend(iproc),ierr)
         end if
       end do
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
+!$acc end host_data
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
           call MPI_WAIT(reqrec(iproc),status,ierr)
         end if
       end do
-      do iproc = 1, nrecdir_send
-        if (precdir_send(iproc).ne.rank) then
+      do iproc = 1, nrecdir_send2
+        if (precdir_send2(iproc).ne.rank) then
           call MPI_WAIT(reqsend(iproc),status,ierr)
         end if
       end do
 
       !Update loc & repart
-      idomlen = domlen(rank+1)+1
 
 !$acc data present(repart,glob,loc)
-
-!$acc parallel loop async
-      do i = idomlen, nblocrecdir
-        loc(glob(i)) = i
-      end do
-
       do iproc = 1, nbig_recep
         iprec   = pbig_recep(iproc)
         idomlen = domlen(iprec+1)
         ibeg    = bufbeg(iprec+1)
 !$acc parallel loop async
         do i = 1, idomlen
-           repart(glob(ibeg+i-1)) = iprec
+           iglob = glob(ibeg+i-1)
+           repart(iglob) = iprec
+           loc   (iglob) = ibeg+i-1
         end do
       end do
 
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-          iprec   = precdir_recep(iproc)
+      do iproc = 1, nrecdir_recep2
+        if (precdir_recep2(iproc).ne.rank) then
+          iprec   = precdir_recep2(iproc)
           idomlen = domlen(iprec+1)
           ibeg    = bufbeg(iprec+1)
 !$acc parallel loop async
           do i = 1, idomlen
-            repart(glob(ibeg+i-1)) = iprec
+            iglob = glob(ibeg+i-1)
+            repart(iglob) = iprec
+            loc   (iglob) = ibeg+i-1
           end do
         end if
       end do
 !$acc end data
 
+      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
       if (deb_Path) write(*,*) '   << orderbuffer_gpu'
       end
 c
@@ -3889,21 +4127,26 @@ c
       use domdec
       use inform , only : deb_Path
       use potent
+      use mpi
       implicit none
-      integer counttemp(nproc)
+      integer counttemp(nproc),reqsend(nproc),reqrec(nproc)
       integer,allocatable::ind1temp(:)
-      integer count,rankloc
+      integer count,rankloc,nprocloc,commloc
       integer i,iproc
-      integer iloc,iglob
+      integer iloc,iglob,ierr,tag,status(MPI_STATUS_SIZE)
       integer iprec,ind1
 c
       if (deb_Path) write(*,*) '   >> orderbufferrec'
 c     allocate (ind1temp(n))
 c
       if (use_pmecore) then
-        rankloc = rank_bis
+        nprocloc = nrec
+        rankloc  = rank_bis
+        commloc  = comm_rec
       else
-        rankloc = rank
+        nprocloc = nproc
+        rankloc  = rank
+        commloc  = COMM_TINKER
       end if
 c
 c      ind1temp = 0
@@ -3929,7 +4172,7 @@ c
             end if
           end do
         end do
-!$acc update device(globrec) async
+!$acc update device(globrec,locrec) async
       end if
 c
       if (use_pmecore) then
@@ -3938,29 +4181,93 @@ c
         nlocrec = domlenrec(rank+1)
       end if
 c
-      count = 0
-      bufbegrec(precdir_recep(1)+1) = 1
-      if (nrecdir_recep.gt.0) then
-        count = domlen(precdir_recep(1)+1)
-      end if
-      do iproc = 2, nrecdir_recep
-        if (domlen(precdir_recep(iproc)+1).ne.0) then
-          bufbegrec(precdir_recep(iproc)+1) = count + 1
-        else
-          bufbegrec(precdir_recep(iproc)+1) = 1
-        end if
-        count = count + domlen(precdir_recep(iproc)+1)
+c     get the domlen values of the coupled reciprocal space processes
+c
+      do iproc = 1, nrec_recep
+        tag = nprocloc*rankloc + prec_recep(iproc) + 1
+        call MPI_IRECV(domlenrec(prec_recep(iproc)+1),1,MPI_INT,
+     $   prec_recep(iproc),tag,commloc,reqrec(iproc),ierr)
       end do
-      nblocrec = count
-      do iproc = 1, nrecdir_recep
-        do i = 1, domlen(precdir_recep(iproc)+1)
-          globrec1(bufbegrec(precdir_recep(iproc)+1)+i-1) =
-     $       glob(bufbeg(precdir_recep(iproc)+1)+i-1)
-          locrec1(globrec1(bufbegrec(precdir_recep(iproc)+1)+i-1)) =
-     $      bufbegrec(precdir_recep(iproc)+1)+i-1
+      do iproc = 1, nrec_send
+        tag = nprocloc*prec_send(iproc) + rankloc + 1
+        call MPI_ISEND(nlocrec,1,MPI_INT,prec_send(iproc),tag,
+     $   commloc,reqsend(iproc),ierr)
+      end do
+      do iproc = 1, nrec_recep
+        call MPI_WAIT(reqrec(iproc),status,ierr)
+      end do
+      do iproc = 1, nrec_send
+        call MPI_WAIT(reqsend(iproc),status,ierr)
+      end do
+c
+      bufbegrec(rankloc+1) = 1
+      count = nlocrec
+
+      do iproc = 1, nrec_recep
+        if (domlenrec(prec_recep(iproc)+1).ne.0) then
+          bufbegrec(prec_recep(iproc)+1) = count + 1
+        else
+          bufbegrec(prec_recep(iproc)+1) = 1
+        end if
+        count = count + domlenrec(prec_recep(iproc)+1)
+ 10     continue
+      end do
+      nlocrec2 = count
+c
+c     send and receive the indexes of the neighboring reciprocal processes
+c
+      do iproc = 1, nrec_recep
+        tag = nprocloc*rankloc + prec_recep(iproc) + 1
+        call MPI_IRECV(globrec(bufbegrec(prec_recep(iproc)+1)),
+     $   domlenrec(prec_recep(iproc)+1),MPI_INT,prec_recep(iproc),tag,
+     $   commloc,reqrec(iproc),ierr)
+      end do
+      do iproc = 1, nrec_send
+        tag = nprocloc*prec_send(iproc) + rankloc + 1
+        call MPI_ISEND(globrec,domlenrec(rankloc+1),MPI_INT,
+     $   prec_send(iproc),
+     $   tag,commloc,reqsend(iproc),ierr)
+      end do
+      do iproc = 1, nrec_recep
+        call MPI_WAIT(reqrec(iproc),status,ierr)
+      end do
+      do iproc = 1, nrec_send
+        call MPI_WAIT(reqsend(iproc),status,ierr)
+      end do
+c
+      do iproc = 1, nrec_recep
+        do i = 1, domlenrec(prec_recep(iproc)+1)
+          locrec(globrec(bufbegrec(prec_recep(iproc)+1)+i-1)) =
+     $      bufbegrec(prec_recep(iproc)+1)+i-1
+          repartrec(globrec(bufbegrec(prec_recep(iproc)+1)+i-1)) = 
+     $     prec_recep(iproc)
         end do
       end do
-!$acc update device(locrec1)
+!$acc update device(repartrec)
+c
+c     count = 0
+c     bufbegrec(precdir_recep(1)+1) = 1
+c     if (nrecdir_recep.gt.0) then
+c       count = domlen(precdir_recep(1)+1)
+c     end if
+c     do iproc = 2, nrecdir_recep
+c       if (domlen(precdir_recep(iproc)+1).ne.0) then
+c         bufbegrec(precdir_recep(iproc)+1) = count + 1
+c       else
+c         bufbegrec(precdir_recep(iproc)+1) = 1
+c       end if
+c       count = count + domlen(precdir_recep(iproc)+1)
+c     end do
+c     nblocrec = count
+c     do iproc = 1, nrecdir_recep
+c       do i = 1, domlen(precdir_recep(iproc)+1)
+c         globrec1(bufbegrec(precdir_recep(iproc)+1)+i-1) =
+c    $       glob(bufbeg(precdir_recep(iproc)+1)+i-1)
+c         locrec1(globrec1(bufbegrec(precdir_recep(iproc)+1)+i-1)) =
+c    $      bufbegrec(precdir_recep(iproc)+1)+i-1
+c       end do
+c     end do
+!$acc update device(globrec,locrec)
 c
 c     deallocate (ind1temp)
 
@@ -3968,27 +4275,42 @@ c     deallocate (ind1temp)
       end
 
       subroutine orderbufferrec_gpu
-      use atoms  , only : n
+      use atoms    ,only : n
       use domdec
-      use inform , only : deb_Path
+      use inform   ,only : deb_Path
       use potent
+      use pme      ,only : GridDecomp1d
+      use mpi
+      use sizes    ,only : tinkerdebug
+      use utilcomm ,only : reqsend=>reqs_poleglob,reqrec=>reqr_poleglob
       implicit none
 c     integer, allocatable :: counttemp(:),ind1temp(:)
-      integer count,rankloc
+      integer count,rankloc,nprocloc,commloc
       integer i,iproc
       integer idomlen,ibeg,ibeg1,iprec,irep,ind1
       integer iloc,iglob
+      integer ierr,tag,status(MPI_STATUS_SIZE)
 c
       if (deb_Path) write(*,*) '   >> orderbufferrec_gpu'
 c
       if (use_pmecore) then
+        nprocloc = nrec
         rankloc = rank_bis
+        commloc = comm_rec
       else
+        nprocloc = nproc
         rankloc = rank
+        commloc = COMM_TINKER
       end if
 c
-!$acc data present(domlenrec,globrec,globrec1
-!$acc&         ,repartrec,locrec,locrec1,glob)
+
+      ! Debug check
+      if (tinkerdebug.gt.0) then
+!$acc parallel loop async
+         do i = 1,n
+            locrec(i) = 0
+         end do
+      end if
 
 !$acc parallel loop async
       do i = 1,nproc
@@ -3996,59 +4318,31 @@ c
       end do
 c
       if ((.not.(use_pmecore)).or.((use_pmecore).and.(rank.gt.ndir-1)))
-     $ then
-        do iproc = 1, nrecdir_recep
-          iprec   = precdir_recep(iproc)
-          idomlen = domlen(iprec+1)
-          ibeg    = bufbeg(iprec+1)
+     $   then
+         do iproc = 1, nrecdir_recep
+           iprec   = precdir_recep(iproc)
+           idomlen = domlen(iprec+1)
+           ibeg    = bufbeg(iprec+1)
 !$acc parallel loop async
-          do i = 1, idomlen
-            iloc  = ibeg+i-1
-            iglob = glob(iloc)
-            irep  = repartrec(iglob)+1
+           do i = 1, idomlen
+             iloc  = ibeg+i-1
+             iglob = glob(iloc)
+             irep  = repartrec(iglob)+1
 !$acc atomic capture
-            domlenrec(irep) = domlenrec(irep) + 1
-            ind1            = domlenrec(irep)
+             domlenrec(irep) = domlenrec(irep) + 1
+             ind1            = domlenrec(irep)
 !$acc end atomic
 c
 c       check if atom is in the domain or in one of the neighboring domains
 c
-            if (irep.eq.rankloc+1) then
-              globrec(ind1) = iglob
-              locrec(iglob) = ind1
-            end if
-          end do
-        end do
+             if (irep.eq.rankloc+1) then
+                globrec(ind1) = iglob
+                locrec(iglob) = ind1
+             end if
+           end do
+         end do
       end if
 !$acc update host(domlenrec) async
-c
-      count = 0
-      bufbegrec(precdir_recep(1)+1) = 1
-      if (nrecdir_recep.gt.0) then
-        count = domlen(precdir_recep(1)+1)
-      end if
-      do iproc = 2, nrecdir_recep
-        if (domlen(precdir_recep(iproc)+1).ne.0) then
-          bufbegrec(precdir_recep(iproc)+1) = count + 1
-        else
-          bufbegrec(precdir_recep(iproc)+1) = 1
-        end if
-        count = count + domlen(precdir_recep(iproc)+1)
-      end do
-      nblocrec = count
-c
-      do iproc  = 1, nrecdir_recep
-        iprec   = precdir_recep(iproc)
-        idomlen = domlen(iprec+1)
-        ibeg    = bufbegrec(iprec+1)
-        ibeg1   = bufbeg(iprec+1)
-!$acc parallel loop async
-        do i = 1, idomlen
-          globrec1(ibeg+i-1) = glob(ibeg1+i-1)
-          locrec1(globrec1(ibeg+i-1)) = ibeg+i-1
-        end do
-      end do
-!$acc end data
 c
 !$acc wait
       ! Update nlocrec
@@ -4057,7 +4351,108 @@ c
       else
         nlocrec = domlenrec(rank+1)
       end if
+c
+c     get the domlen values of the coupled reciprocal space processes
+c
+      do iproc = 1, nrec_recep
+        tag = nprocloc*rankloc + prec_recep(iproc) + 1
+        call MPI_IRECV(domlenrec(prec_recep(iproc)+1),1,MPI_INT
+     $      ,prec_recep(iproc),tag,commloc,reqrec(iproc),ierr)
+      end do
+      do iproc = 1, nrec_send
+        tag = nprocloc*prec_send(iproc) + rankloc + 1
+        call MPI_ISEND(nlocrec,1,MPI_INT,prec_send(iproc),tag
+     $      ,commloc,reqsend(iproc),ierr)
+      end do
+c
+      do iproc = 1, nrec_recep
+         call MPI_WAIT(reqrec(iproc),status,ierr)
+      end do
+!$acc update device(domlenrec) async
+      do iproc = 1, nrec_send
+         call MPI_WAIT(reqsend(iproc),status,ierr)
+      end do
+c
+      bufbegrec(rankloc+1) = 1
+      count = nlocrec
 
+      do iproc = 1, nrec_recep
+        if (domlenrec(prec_recep(iproc)+1).ne.0) then
+          bufbegrec(prec_recep(iproc)+1) = count + 1
+        else
+          bufbegrec(prec_recep(iproc)+1) = 1
+        end if
+        count = count + domlenrec(prec_recep(iproc)+1)
+ 10     continue
+      end do
+      nlocrec2 = count
+c
+c     send and receive the indexes of the neighboring reciprocal processes
+c
+!$acc host_data use_device(globrec)
+      do iproc = 1, nrec_recep
+         tag = nprocloc*rankloc + prec_recep(iproc) + 1
+         call MPI_IRECV(globrec(bufbegrec(prec_recep(iproc)+1))
+     $       ,domlenrec(prec_recep(iproc)+1),MPI_INT
+     $       ,prec_recep(iproc),tag,commloc,reqrec(iproc),ierr)
+      end do
+      do iproc = 1, nrec_send
+         tag = nprocloc*prec_send(iproc) + rankloc + 1
+         call MPI_ISEND(globrec,domlenrec(rankloc+1),MPI_INT
+     $       ,prec_send(iproc),tag,commloc,reqsend(iproc),ierr)
+      end do
+!$acc end host_data
+      do iproc = 1, nrec_recep
+         call MPI_WAIT(reqrec(iproc),status,ierr)
+      end do
+      do iproc = 1, nrec_send
+         call MPI_WAIT(reqsend(iproc),status,ierr)
+      end do
+c
+!$acc data present(globrec,locrec,repartrec)
+      do iproc = 1, nrec_recep
+         iprec  = prec_recep(iproc)
+         ibeg   = bufbegrec(iprec+1)-1
+         idomlen= domlenrec(iprec+1)
+!$acc parallel loop async
+         do i = 1, idomlen
+            iglob            = globrec(ibeg+i)
+            locrec(iglob)    = ibeg+i
+            repartrec(iglob) = iprec
+         end do
+      end do
+!$acc end data
+
+c     call MPI_BARRIER(hostcomm,ierr)
+c46   format(I3,'domlen',4I8,'bufbeg',2I8)
+c     print 46, rank,domlen,domlenrec,bufbegrec
+
+      !Debug Stuff
+      if (tinkerdebug.gt.0) then
+
+      call MPI_AllReduce(nlocrec,reqsend(1),1,MPI_INT
+     &                  ,MPI_SUM,commloc,ierr)
+      if (reqsend(1).ne.n.and.
+     &   ((use_pmecore.and.rank.eq.ndir).or.
+     &    (.not.use_pmecore.and.rank.eq.0)) ) then
+ 48   format('orderbufferrec_gpu::Error',/
+     &      ,' nlocrec reduction',I8,'.ne. natoms',I9)
+         print 48, reqsend(1),n
+      end if
+      call MPI_BARRIER(hostcomm,ierr)
+
+      count=0
+!$acc wait
+!$acc parallel loop present(globrec,locrec)
+      do i = 1,nlocrec2
+         iglob = globrec(i)
+         if (locrec(iglob).ne.i) then
+            print*,'error locrec',rank,i,iglob,locrec(iglob)
+            count = count + 1
+         end if
+      end do
+
+      end if
       if (deb_Path) write(*,*) '   << orderbufferrec_gpu'
       end
 c
@@ -5105,9 +5500,9 @@ c
       integer,intent(in)::rule
       real(t_p),qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
 
-      integer i,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_sz,MSG_szr
+      integer i,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_sz
       integer mpi_status1(MPI_STATUS_SIZE)
-      integer n_recv
+      integer qIdx3
       logical decomp1d
       parameter(tag0=0,tag1=1)
 c     character*3 ich
@@ -5126,11 +5521,10 @@ c     decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
          if (decomp1d) then
             MPI_TYPE = MPI_TPREC
             MSG_sz   = 2*n1mpimax*n2mpimax*nfloor
-            MSG_szr  = MSG_sz
+            qIdx3    = n3mpimax-nfloor+1
          else
             MPI_TYPE = MPI_TPREC
             MSG_sz   = 2*n1mpimax*n2mpimax*n3mpimax
-            MSG_szr  = MSG_sz
          end if
 
 c        if (nrec_send.ge.1) then
@@ -5143,25 +5537,23 @@ c        end do
 c        end if
 
          !MPI : Begin reception
-!$acc host_data use_device(qgridmpi)
+!$acc host_data use_device(qgridmpi,qgrid)
          do i = 1, nrec_recep
             call MPI_IRECV(qgridmpi(1,1,1,1,i),MSG_sz,MPI_TYPE
      &           ,prec_recep(i),tag0,commloc,reqr(i),ierr)
             if (decomp1d)
-     &      call MPI_IRECV(qgridmpi(stride,1,1,1,i),MSG_sz,MPI_TYPE
+     &      call MPI_IRECV(qgridmpi(1,1,1,qIdx3,i),MSG_sz,MPI_TYPE
      &           ,prec_recep(i),tag1,commloc,recr(i),ierr)
          end do
-!$acc end host_data
 
-!$acc wait(rec_queue)
-!$acc host_data use_device(qgrid)
          !MPI : begin sending
+!$acc wait(rec_queue)
          do i = 1, nrec_send
            !proc = prec_send(i)
            call MPI_ISEND(qgrid(1,1,1,1,i+1),MSG_sz,MPI_TYPE
      &          ,prec_send(i),tag0,commloc,reqs(i),ierr)
            if (decomp1d)
-     &     call MPI_ISEND(qgrid(stride,1,1,1,i+1),MSG_sz,MPI_TYPE
+     &     call MPI_ISEND(qgrid(1,1,1,qIdx3,i+1),MSG_sz,MPI_TYPE
      &          ,prec_send(i),tag1,commloc,recs(i),ierr)
          end do
 !$acc end host_data
@@ -5169,17 +5561,18 @@ c        end if
       else if (rule.eq.r_wait) then
          MSG_sz   = 2*n1mpimax*n2mpimax*n3mpimax
          call MPI_Waitall(nrec_recep,reqr,MPI_STATUSES_IGNORE,ierr)
-         if (decomp1d)
-     &   call MPI_Waitall(nrec_recep,recr,MPI_STATUSES_IGNORE,ierr)
+         if (decomp1d) then
+         call MPI_Waitall(nrec_recep,recr,MPI_STATUSES_IGNORE,ierr)
+         call MPI_Waitall(nrec_send ,recs,MPI_STATUSES_IGNORE,ierr)
+         end if
+         call MPI_Waitall(nrec_send ,reqs,MPI_STATUSES_IGNORE,ierr)
+
          !Reduction
          do i = 1, nrec_recep
             call aaddgpuAsync(MSG_sz
      &               ,qgrid(1,1,1,1,1),qgridmpi(1,1,1,1,i)
      &               ,qgrid(1,1,1,1,1))
          end do
-         call MPI_Waitall(nrec_send ,reqs,MPI_STATUSES_IGNORE,ierr)
-         if (decomp1d)
-     &   call MPI_Waitall(nrec_send ,recs,MPI_STATUSES_IGNORE,ierr)
       else
  12      format("commGridFront !! Unknown configuration",I4)
          if (rank.Eq.0) then
@@ -5211,7 +5604,7 @@ c
       real(t_p),qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
 
       integer i,j,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_szs,MSG_szr
-      integer off,off1
+      integer off,off1,qIdx3
       logical decomp1d
       parameter(tag0=0,tag1=1)
 
@@ -5229,7 +5622,8 @@ c     decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
          if (decomp1d) then
             MPI_TYPE = MPI_TPREC
             MSG_szs  = 2*n1mpimax*n2mpimax*(nfloor)
-            MSG_szr  = 2*n1mpimax*n2mpimax*(nfloor)
+            MSG_szr  = MSG_szs
+            qIdx3    = n3mpimax-nfloor+1
          else
             MPI_TYPE = MPI_TPREC
             MSG_szs  = 2*n1mpimax*n2mpimax*n3mpimax
@@ -5242,18 +5636,17 @@ c     decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
             call MPI_IRECV(qgrid(1,1,1,1,i+1),MSG_szs,MPI_TYPE,
      $                     prec_send(i),tag0,commloc,reqr(i),ierr)
             if (decomp1d)
-     $      call MPI_IRECV(qgrid(stride,1,1,1,i+1),MSG_szs,MPI_TYPE,
+     $      call MPI_IRECV(qgrid(1,1,1,qIdx3,i+1),MSG_szs,MPI_TYPE,
      $                     prec_send(i),tag1,commloc,recr(i),ierr)
          end do
-!$acc    end host_data
 
+         !MPI : begin sending
 !$acc wait(rec_queue)
-!$acc host_data use_device(qgrid)
          do i = 1, nrec_recep
-            call MPI_ISEND(qgrid(1,1,1,1,1),MSG_szs,MPI_TYPE,
+            call MPI_ISEND(qgrid(1,1,1,1,1),MSG_szr,MPI_TYPE,
      $                     prec_recep(i),tag0,commloc,reqs(i),ierr)
             if (decomp1d)
-     $      call MPI_ISEND(qgrid(stride,1,1,1,1),MSG_szs,MPI_TYPE,
+     $      call MPI_ISEND(qgrid(1,1,1,qIdx3,1),MSG_szr,MPI_TYPE,
      $                     prec_recep(i),tag1,commloc,recs(i),ierr)
          end do
 !$acc end host_data
@@ -5261,20 +5654,21 @@ c     decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
          call MPI_Waitall(nrec_recep,reqr,MPI_STATUSES_IGNORE,ierr)
          if (decomp1d) then
          call MPI_Waitall(nrec_recep,recr,MPI_STATUSES_IGNORE,ierr)
-         call MPI_Waitall(nrec_send ,reqs,MPI_STATUSES_IGNORE,ierr)
-         end if
-         if (.false..and.decomp1d) then
-            off = 2*n1mpimax*n2mpimax*nfloor
-            off1= stride
-            ! Adjust data in gridin in case of strided/non-stride comms
-!$acc parallel loop collapse(2) async(rec_queue) present(qgrid)
-            do i = 1,nrec_recep
-               do j = 1,ishft(MSG_szr,-1)
-                  qgrid(off1+j,1,1,1,i+1) = qgrid(off+j,1,1,1,i+1)
-               end do
-            end do
-         end if
          call MPI_Waitall(nrec_send ,recs,MPI_STATUSES_IGNORE,ierr)
+         end if
+         call MPI_Waitall(nrec_send ,reqs,MPI_STATUSES_IGNORE,ierr)
+
+c         if (.false..and.decomp1d) then
+c            off = 2*n1mpimax*n2mpimax*nfloor
+c            off1= stride
+c            ! Adjust data in gridin in case of strided/non-stride comms
+c!$acc parallel loop collapse(2) async(rec_queue) present(qgrid)
+c            do i = 1,nrec_recep
+c               do j = 1,ishft(MSG_szr,-1)
+c                  qgrid(off1+j,1,1,1,i+1) = qgrid(off+j,1,1,1,i+1)
+c               end do
+c            end do
+c         end if
       else
  12      format("commGridBack !! Unknown configuration",I4)
          if (rank.Eq.0) then

@@ -17,7 +17,8 @@
 #    define MPI_SHMRED_TYPE 4_MPI_ADDRESS_KIND
 #    define M_PPTRS SPPTRS
 #    define M_PPTRF SPPTRF
-#    define M_dgesv sgesv
+#    define M_gesv  sgesv
+#    define M_gesvm sgesv
 #  else
 #    ifdef MIXED
 #      undef  TINKER_MIXED_PREC
@@ -30,7 +31,8 @@
 #      define MPI_SHMRED_TYPE 8_MPI_ADDRESS_KIND
 #      define M_PPTRS SPPTRS
 #      define M_PPTRF SPPTRF
-#      define M_dgesv sgesv
+#      define M_gesv  sgesv
+#      define M_gesvm dgesv
 #    else
 #      undef  TINKER_DOUBLE_PREC
 #      define TINKER_DOUBLE_PREC 1
@@ -42,7 +44,8 @@
 #      define MPI_SHMRED_TYPE 8_MPI_ADDRESS_KIND
 #      define M_PPTRS DPPTRS
 #      define M_PPTRF DPPTRF
-#      define M_dgesv dgesv
+#      define M_gesv  dgesv
+#      define M_gesvm dgesv
 #    endif
 #  endif
 #endif

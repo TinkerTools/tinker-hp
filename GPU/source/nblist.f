@@ -38,7 +38,7 @@ c
       use potent
       use sizes ,only:tinkerdebug
       use timestat
-      use tinMemory,only:print_memory_usage
+      use tinMemory,only:print_memory_usage,extra_alloc,debMem
       use mpi
       use utilgpu,only:rec_queue
       implicit none
@@ -89,7 +89,11 @@ c     check number of steps between nl updates
 c
       modnl = mod(istep,ineigup)
       if (modnl.ne.0) return
-      if (btest(tinkerdebug,tindPath)) call print_memory_usage
+
+      if (debMem.and.
+     &      (istep.lt.100.or.mod(istep,20*ineigup).eq.0))
+     &       call print_memory_usage
+
       !call mHalte
 
       if (use_mpole.or.use_charge) call SpatialReorder
@@ -151,6 +155,12 @@ c
       end if
 
       !call save_atoms_nl
+
+      ! Disable Extra allocation
+c     if (extra_alloc.and.istep.gt.1.and.mod(istep,2*ineigup).eq.0) then
+c        if (debMem) print*, 'Disable extra allocation',rank
+c        extra_alloc=.false.
+c     end if
 
 !$acc wait
       call timer_exit( timer_nl )

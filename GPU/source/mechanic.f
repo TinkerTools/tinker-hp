@@ -925,7 +925,7 @@ c
       use interfaces
       use utilgpu
       use inform
-      use polpot ,only: polalg
+      use polpot
       use potent ,only: use_pmecore
       implicit none
       logical,parameter:: OK=.true.
@@ -963,7 +963,8 @@ c
          efld0_direct_cp   => efld0_directgpu_p
          efld0_directgpu_p => efld0_direct_void
 
-         if (polalg.eq.1) then
+         if (polalg.eq.pcg_SId.or.polalg.eq.step_pcg_SId
+     &   .or.polalg.eq.step_pcg_short_SId) then
             tmatxb_cp    => tmatxb_p
             tmatxb_p     => tmatxb_void
          end if
@@ -1030,15 +1031,21 @@ c
       implicit none
       logical,parameter::accept=.false.
 
-      if (nproc.gt.8.and.accept.and.
+      if (nproc.gt.7.and.accept.and.use_polar.and.
      &   (associated(efld0_directgpu_p,efld0_directgpu3).or.
      &    associated(efld0_direct_cp,efld0_directgpu3)).and.
      &    associated(tmatxb_pme_core_p,tmatxb_pme_core3))
      &   then
+
+         ! Enable ExtraComputation
          no_commdir=.true.
  12      format(/,
      &   ' *****  Bypassing most of real space communications *****')
          if (rank.eq.0.and.verbose) write(*,12)
+
+         ! Take into account neighbor extension
+         call ddpme3d
+         call reassignpme(.true.)
 
          ! Reset poleglobnl for each process
          if (use_mpole)  call kmpole (.false.,0)

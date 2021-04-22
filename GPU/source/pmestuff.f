@@ -1279,52 +1279,6 @@ c
 !$acc end kernels
       end
 c
-c
-c     ################################################################
-c     ##                                                            ##
-c     ##  subroutine fphi_to_cphi  --  transformation of potential  ##
-c     ##                                                            ##
-c     ################################################################
-c
-c
-c     "fphi_to_cphi" transforms the reciprocal space potential from
-c     fractional to Cartesian coordinates
-c
-c
-      subroutine fphi_to_cphi (fphi,cphi)
-      use mpole
-      use tinheader
-      implicit none
-      integer i,j,k
-      real(t_p) ftc(10,10)
-      real(t_p) cphi(10,*)
-      real(t_p) fphi(20,*)
-c
-c
-c     find the matrix to convert fractional to Cartesian
-c
-      call frac_to_cart (ftc)
-c
-c     apply the transformation to get the Cartesian potential
-c
-      do i = 1, npole
-         cphi(1,i) = ftc(1,1) * fphi(1,i)
-         do j = 2, 4
-            cphi(j,i) = 0.0_ti_p
-            do k = 2, 4
-               cphi(j,i) = cphi(j,i) + ftc(j,k)*fphi(k,i)
-            end do
-         end do
-         do j = 5, 10
-            cphi(j,i) = 0.0_ti_p
-            do k = 5, 10
-               cphi(j,i) = cphi(j,i) + ftc(j,k)*fphi(k,i)
-            end do
-         end do
-      end do
-      return
-      end
-c
       subroutine fphi_to_cphi_site(fphi,cphi)
 !$acc routine
       use sizes
@@ -1537,6 +1491,7 @@ c
      &              ,quiet_timers
       use tinheader ,only:ti_p,re_p
       use tinMemory
+      use utilcomm  ,only: repartrectemp=>buffMpi_i1
       use utils     ,only: set_to_zero1
       use utilgpu   ,only: rec_queue
       implicit none
@@ -1545,11 +1500,12 @@ c
       integer ierr,iglob,j
       integer i,k
       integer iproc,iproc1,temp
+      integer proc1,proc2
       integer iprec,idomlen,ibeg
       integer nprocloc,rankloc,nprocloc1
       integer gridin_size,gridout_size
       integer, allocatable :: req(:)
-      integer, allocatable :: counttemp(:),repartrectemp(:)
+      integer, allocatable :: counttemp(:)
       integer, allocatable :: domlentemp(:)
       integer, allocatable :: nrecdirrecep(:),precdirrecep(:,:)
       integer, allocatable :: nrecdirreceptemp(:)
@@ -1569,9 +1525,9 @@ c
 #else
       eps = 1.0d-8
 #endif
-      allocate (req(nproc*nproc))
+      allocate (req(2*nproc))
       allocate (counttemp(nproc))
-      allocate (repartrectemp(n))
+      call prmem_request(repartrectemp,n)
       allocate (domlentemp(nproc))
       counttemp = 0
 c
@@ -1758,31 +1714,6 @@ c
             end do
           end do
         end if
-
-c
-c      get the list of the additional processes to rotate reciprocal multipoles
-c
-        do iproc = 0, nprocloc1-1 
-          do iproc1 =  0, nprocloc-1
-c
-c     Check if already in list
-c
-            do j = 1, nrecdirreceptemp(iproc+1)
-              if (precdirrecep(j,iproc+1).eq.iproc1) goto 10
-            end do
-c
-c           do j = 1, nrecdirrecep(iproc+1)
-c             call distproc(iproc1,precdirrecep(j,iproc+1),dist,.true.)
-              call distproc(iproc1,iproc,dist,.true.)
-              if (dist.le.2.0_ti_p) then
-                nrecdirreceptemp(iproc+1) = nrecdirreceptemp(iproc+1)+1
-                precdirrecep(nrecdirreceptemp(iproc+1),iproc+1) = iproc1
-c               goto 10
-              end if
-c           end do
- 10         continue
-          end do
-        end do
         if (use_pmecore) then
           if (rank.gt.ndir-1) then
             nrecdir_recep = nrecdirreceptemp(rankloc+1-ndir)
@@ -1819,6 +1750,62 @@ c
             end do
           end do
         end if
+c
+c      Remove procs already in real space neighbor list and put them in another list
+c
+        nrecdir_recep2 = 0
+        precdir_recep2 = 0
+        do i = 1, nrecdir_recep
+          proc1 = precdir_recep(i)
+          do j = 1, nbig_recep
+            proc2 = pbig_recep(j)
+            if (proc1.eq.proc2) goto 20
+          end do
+          nrecdir_recep2 = nrecdir_recep2 + 1
+          precdir_recep2(nrecdir_recep2) = proc1
+ 20     continue
+        end do
+cc
+        nrecdir_send2 = 0
+        precdir_send2 = 0
+        do i = 1, nrecdir_send
+          proc1 = precdir_send(i)
+          do j = 1, nbig_send
+            proc2 = pbig_send(j)
+            if (proc1.eq.proc2) goto 30
+          end do
+          nrecdir_send2 = nrecdir_send2 + 1
+          precdir_send2(nrecdir_send2) = proc1
+ 30     continue
+        end do
+c
+c      Remove procs already in recdir space neighbor list and put them in another list
+c
+c       nrecdir_recep3 = 0
+c       precdir_recep3 = 0
+c       do i = 1, nrecdir_recep
+c         proc1 = precdir_recep(i)
+c         do j = 1, nrecdir_recep2
+c           proc2 = precdir_recep2(j)
+c           if (proc1.eq.proc2) goto 40
+c         end do
+c         nrecdir_recep3 = nrecdir_recep3 + 1
+c         precdir_recep3(nrecdir_recep3) = proc1
+c40     continue
+c       end do
+cc
+c       nrecdir_send3 = 0
+c       precdir_send3 = 0
+c       do i = 1, nrecdir_send
+c         proc1 = precdir_send(i)
+c         do j = 1, nrecdir_send3
+c           proc2 = precdir_send3(j)
+c           if (proc1.eq.proc2) goto 50
+c         end do
+c         nrecdir_send3 = nrecdir_send3 + 1
+c         precdir_send3(nrecdir_send3) = proc1
+c50     continue
+c       end do
 c
         if (use_pmecore) then
           nprocloc = nrec
@@ -1903,11 +1890,17 @@ c
               write(*,46) 'nrecdir_send1  = ',nrecdir_send1
               write(*,47) (precdir_send1(i),i=1,nrecdir_send1)
               write(*,*)
+              write(*,46) 'nrecdir_send2  = ',nrecdir_send2
+              write(*,47) (precdir_send2(i),i=1,nrecdir_send2)
+              write(*,*)
               write(*,46) 'nrecdir_recep  = ',nrecdir_recep
               write(*,47) (precdir_recep(i),i=1,nrecdir_recep)
               write(*,*)
               write(*,46) 'nrecdir_recep1 = ',nrecdir_recep1
               write(*,47) (precdir_recep1(i),i=1,nrecdir_recep1)
+              write(*,*)
+              write(*,46) 'nrecdir_recep2 = ',nrecdir_recep2
+              write(*,47) (precdir_recep2(i),i=1,nrecdir_recep2)
               write(*,*)
           end if
 !$acc update device(prec_send,prec_recep) async
@@ -2005,7 +1998,7 @@ c
           if (j .lt. 1)  j = j + nfft2
           do iproc = 0, nprocloc-1
             if (((k.ge.kstart1(iproc+1)).and.(k.le.kend1(iproc+1))).and.
-     $         ((j.ge.jstart1(iproc+1)).and.(j.le.jend1(iproc+1)))) then
+     $          ((j.ge.jstart1(iproc+1)).and.(j.le.jend1(iproc+1))))then
               repartrec(i) = iproc
             end if
           end do
@@ -2021,13 +2014,15 @@ c
         deallocate (nrecdirreceptemp)
         deallocate (precrecep)
         deallocate (nrecrecep)
-         call timer_exit( timer_eneig,quiet_timers )
+        call timer_exit( timer_eneig,quiet_timers )
       end if
 c
 c
       if (nproc.eq.1) return
 
       call timer_enter( timer_eneig )
+      if (deb_Path.and..not.init) print*,'reassignpme'
+
       if (use_pmecore) then
         nprocloc = nrec
         rankloc  = rank_bis
@@ -2035,12 +2030,10 @@ c
         nprocloc = nproc
         rankloc  = rank
       end if
-      if (deb_Path.and..not.init) print*,'reassignpme'
 c
       nlocrecold = nlocrec
-!$acc data present(glob,x,y,z,repartrec,recip
-!$acc&            ,kstart1,kend1,jstart1,jend1)
-!$acc&     create(repartrectemp)
+!$acc data present(glob,x,y,z,repartrec,repartrectemp
+!$acc&            ,recip,kstart1,kend1,jstart1,jend1)
 
 !$acc parallel loop async
       do i = 1, nloc
@@ -2064,67 +2057,58 @@ c
         do iproc = 0, nprocloc-1
           if (((k.ge.kstart1(iproc+1)).and.(k.le.kend1(iproc+1))).and.
      $        ((j.ge.jstart1(iproc+1)).and.(j.le.jend1(iproc+1)))) then
-             repartrec(i) = iproc
+             repartrectemp(i) = iproc
           end if
         end do
       end do
 c
-c     send and receive repartrec
+c     send and receive repartrectemp
 c
-!$acc host_data use_device(repartrec)
-      do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
-          tag = nproc*rank + precdir_recep(i) + 1
-          call MPI_IRECV(repartrec(bufbeg(precdir_recep(i)+1)),
-     $         domlen(precdir_recep(i)+1),MPI_INT,precdir_recep(i),tag,
-     $         COMM_TINKER,req(tag),ierr)
+!$acc host_data use_device(repartrectemp)
+      do i = 1, nrecdir_recep1
+        if (precdir_recep1(i).ne.rank) then
+          tag     = nproc*rank + precdir_recep(i) + 1
+          iprec   = precdir_recep1(i)
+          idomlen = domlen(iprec+1)
+          call MPI_IRECV(repartrectemp(bufbeg(iprec+1)),idomlen,MPI_INT
+     $        ,iprec,tag,COMM_TINKER,req(i),ierr)
         end if
       end do
 c
 !$acc wait
-      do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
-          tag = nproc*precdir_send(i) + rank + 1
-          call MPI_ISEND(repartrec,
-     $    nloc,MPI_INT,precdir_send(i),tag,COMM_TINKER,
-     $    req(tag),ierr)
+      do i = 1, nrecdir_send1
+        if (precdir_send1(i).ne.rank) then
+          tag = nproc*precdir_send1(i) + rank + 1
+          call MPI_ISEND(repartrectemp,nloc,MPI_INT
+     $        ,precdir_send1(i),tag,COMM_TINKER,req(nproc+i),ierr)
         end if
       end do
 !$acc end host_data
 c
       do i = 1, nrecdir_recep
-        if (precdir_recep(i).ne.rank) then
-          tag = nproc*rank + precdir_recep(i) + 1
-          call MPI_WAIT(req(tag),status,ierr)
-        end if
+        if (precdir_recep(i).ne.rank)
+     &    call MPI_WAIT(req(i),status,ierr)
       end do
       do i = 1, nrecdir_send
-        if (precdir_send(i).ne.rank) then
-          tag = nproc*precdir_send(i) + rank + 1
-          call MPI_WAIT(req(tag),status,ierr)
-        end if
+        if (precdir_send(i).ne.rank)
+     &    call MPI_WAIT(req(nproc+i),status,ierr)
       end do
 
-      !reorder repartrec
-      !call imove(nblocrecdir,repartrec,repartrectemp)
-!$acc kernels async
-      repartrectemp(:nblocrecdir) = repartrec(:nblocrecdir)
-!$acc end kernels
 !$acc parallel loop async
       do i = 1, nloc
          iglob = glob(i)
          repartrec(iglob) =  repartrectemp(i)
       end do
 
-      do iproc = 1, nrecdir_recep
-        if (precdir_recep(iproc).ne.rank) then
-           iprec   = precdir_recep(iproc)
+      do iproc = 1, nrecdir_recep1
+        if (precdir_recep1(iproc).ne.rank) then
+           iprec   = precdir_recep1(iproc)
            idomlen = domlen(iprec+1)
-           ibeg    = bufbeg(iprec+1)
+           ibeg    = bufbeg(iprec+1)-1
 !$acc parallel loop async
            do i = 1, idomlen
-             iglob            = glob(ibeg+i-1)
-             repartrec(iglob) = repartrectemp(ibeg+i-1)
+             iglob            = glob(ibeg+i)
+             repartrec(iglob) = repartrectemp(ibeg+i)
            end do
         end if
       end do
@@ -2133,11 +2117,10 @@ c
 c
 !$acc end data
 
-      call timer_exit( timer_eneig,quiet_timers )
       deallocate (domlentemp)
       deallocate (counttemp)
-      deallocate (repartrectemp)
       deallocate (req)
+      call timer_exit( timer_eneig,quiet_timers )
       end
 c
 c     Set MPI type for fftGrid

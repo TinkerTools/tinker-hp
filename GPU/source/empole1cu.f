@@ -812,16 +812,16 @@ c
         attributes(global) subroutine emreal_scaling_cu
      &            (mcorrect_ik,mcorrect_scale,ipole,loc,locp,x,y,z,rpole
      &            ,dem,tem,em_buff,vir_buff
-     &            ,n,nbloc,n_mscale,extract
+     &            ,n,nbloc,n_mscale,sizemc,extract
      &            ,off2,f,aewald,alsq2,alsq2n)
         implicit none
-        integer  ,value,intent(in):: n,nbloc,n_mscale
+        integer  ,value,intent(in):: n,nbloc,n_mscale,sizemc
         logical  ,value,intent(in):: extract
         real(t_p),value,intent(in):: f,aewald,alsq2n,alsq2,off2
-        integer  ,device,intent(in)::mcorrect_ik(n_mscale,2)
+        integer  ,device,intent(in)::mcorrect_ik(sizemc,2)
      &           ,loc(n),locp(n),ipole(n)
         real(t_p),device,intent(in):: x(n),y(n),z(n),rpole(13,n)
-     &           ,mcorrect_scale(n_mscale)
+     &           ,mcorrect_scale(sizemc)
         real(t_p),device,intent(inout)::tem(3,*)
      &           ,vir_buff(6*RED_BUFF_SIZE)
         ener_rtyp,device,intent(inout)::em_buff(RED_BUFF_SIZE)
@@ -920,17 +920,17 @@ c20        continue
         attributes(global) subroutine emrealShLg_scaling_cu
      &            (mcorrect_ik,mcorrect_scale,ipole,loc,locp,x,y,z,rpole
      &            ,dem,tem,em_buff,vir_buff
-     &            ,n,nbloc,n_mscale,mode,extract
+     &            ,n,nbloc,n_mscale,sizemc,mode,extract
      &            ,r_cut,sh_cut2,off2,shortheal,f,aewald,alsq2,alsq2n)
         implicit none
-        integer  ,value,intent(in):: n,nbloc,n_mscale,mode
+        integer  ,value,intent(in):: n,nbloc,n_mscale,mode,sizemc
         logical  ,value,intent(in):: extract
         real(t_p),value,intent(in):: f,aewald,alsq2n,alsq2,r_cut
      &           ,sh_cut2,off2,shortheal
-        integer  ,device,intent(in)::mcorrect_ik(n_mscale,2),ipole(n)
+        integer  ,device,intent(in)::mcorrect_ik(sizemc,2),ipole(n)
      &           ,loc(n),locp(n)
         real(t_p),device,intent(in):: x(n),y(n),z(n),rpole(13,n)
-     &           ,mcorrect_scale(n_mscale)
+     &           ,mcorrect_scale(sizemc)
         real(t_p),device,intent(inout)::tem(3,*)
      &           ,vir_buff(RED_BUFF_SIZE)
         ener_rtyp,device,intent(inout)::em_buff(RED_BUFF_SIZE)

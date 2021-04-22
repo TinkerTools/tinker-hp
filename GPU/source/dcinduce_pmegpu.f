@@ -480,12 +480,16 @@ C
             end do
 
             knd = kofst(k) + mdim*(mdim+1)/2 
+#ifdef _OPENACC
+            call fatal_device("inducedc_pmegpu")
+#else
             call DPPTRS("L",mdim,1,zmat(kofst(k)+1:knd),
      &    dcfield1(1:mdim),mdim,inf)
             if(inf .ne. 0) print*,"error with solving dipoles"
             call DPPTRS("L",mdim,1,zmat(kofst(k)+1:knd),
      &    dcfield2(1:mdim),mdim,inf)
             if(inf .ne. 0) print*,"error with solving dipoles"
+#endif
 
 C
 C  Update dipoles
@@ -540,7 +544,11 @@ c
             bloc = bmat
             cex = 0.0_ti_p
             cex(1) = one
+#ifdef _OPENACC
+            call fatal_device("inducedc_pmegpu")
+#else
             call dgesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+#endif
             munew = 0.0_ti_p
             call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
           end if

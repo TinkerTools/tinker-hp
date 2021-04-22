@@ -67,6 +67,17 @@ c
 #include "tinker_precision.h"
       module polpot
       implicit none
+
+      ! Polarisation Solvers present in Tinker-HP
+      enum,bind(C)
+      enumerator pcg_SId=1
+      enumerator jacobi_SId
+      enumerator tcg_SId
+      enumerator dc_diis_SId=5
+      enumerator step_pcg_SId=60
+      enumerator step_pcg_short_SId
+      end enum
+
       integer politer,polalg,polprt,polgsf,polff
       integer tcgorder,polalgshort
       logical tcgprec,tcgguess,tcgpeek

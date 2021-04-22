@@ -822,7 +822,7 @@ c
       integer i,iipole,iglob,ierr
       integer iichg
       real(t_p) q,xr,yr,zr
-      real(t_p) dipx,dipy,dipz
+      real(r_p) dipx,dipy,dipz
       real(t_p) mux,muy,muz,mudx,mudy,mudz,mupx,mupy,mupz
  1000 format(/'x dipolar moment : ',F14.5)
  1010 format(/'y dipolar moment : ',F14.5)
@@ -831,7 +831,9 @@ c
       dipx = 0.0_ti_p
       dipy = 0.0_ti_p
       dipz = 0.0_ti_p
+!$acc wait
       if (use_mpole) then
+!$acc parallel loop default(present)
         do i = 1, npoleloc
           iipole = poleglob(i)
           iglob = ipole(iipole)
@@ -853,6 +855,7 @@ c
           dipz = dipz + q*zr + muz + 0.5*(mudz+mupz)
         end do
       else if (use_charge) then
+!$acc parallel loop default(present)
         do i = 1, nionloc
           iichg = chgglob(i)
           iglob = iion(iichg)
@@ -871,18 +874,18 @@ c
       dipz = debye*dipz
 
       if (rank.eq.0) then
-        call MPI_REDUCE(MPI_IN_PLACE,dipx,1,MPI_TPREC,MPI_SUM,0,
+        call MPI_REDUCE(MPI_IN_PLACE,dipx,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
-        call MPI_REDUCE(MPI_IN_PLACE,dipy,1,MPI_TPREC,MPI_SUM,0,
+        call MPI_REDUCE(MPI_IN_PLACE,dipy,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
-        call MPI_REDUCE(MPI_IN_PLACE,dipz,1,MPI_TPREC,MPI_SUM,0,
+        call MPI_REDUCE(MPI_IN_PLACE,dipz,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
       else 
-        call MPI_REDUCE(dipx,dipx,1,MPI_TPREC,MPI_SUM,0,
+        call MPI_REDUCE(dipx,dipx,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
-        call MPI_REDUCE(dipy,dipy,1,MPI_TPREC,MPI_SUM,0,
+        call MPI_REDUCE(dipy,dipy,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
-        call MPI_REDUCE(dipz,dipz,1,MPI_TPREC,MPI_SUM,0,
+        call MPI_REDUCE(dipz,dipz,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
       end if
       if (rank.eq.0) write(iout,1000) dipx 

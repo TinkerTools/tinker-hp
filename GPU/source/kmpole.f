@@ -648,8 +648,8 @@ c
         end if
       end if
 c
-      call prmem_request(poleglob   ,  nbloc,async=.true.)
-      call prmem_request(polerecglob,nlocrec,async=.true.)
+      call prmem_request(poleglob   ,   nbloc,async=.true.)
+      call prmem_request(polerecglob,nlocrec2,async=.true.)
 c
 c       remove any zero or undefined atomic multipoles
 c

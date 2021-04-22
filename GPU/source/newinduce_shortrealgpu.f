@@ -20,16 +20,17 @@ c
       use domdec
       use ewald
       use iounit
-      use interfaces,only:inducepcg_shortrealgpu,tmatxb_p1,
-     &                    efld0_directgpu2,
-     &                    efld0_directgpu_p1
+      use interfaces,only:inducepcg_shortrealgpu
+     &              ,inducestepcg_pme2gpu
+     &              ,tmatxb_p1,efld0_directgpu2
+     &              ,efld0_directgpu_p1
       use math
       use mpole
       use pme
       use polar
       use polpot
       use potent
-      use polar_temp,only:mu,ef
+      use polar_temp,only:mu,ef,murec
       use timestat
       use tinMemory
       use units
@@ -135,10 +136,15 @@ c
 c
 c     now, call the proper solver.
 c
-      if (polalg.eq.1) then
+      if (polalg.eq.pcg_SId) then
          call inducepcg_shortrealgpu(tmatxb_p1,nrhs,.true.,ef,mu)
-      else if (polalg.eq.2) then
+      else if (polalg.eq.jacobi_SId) then
          call inducejac_shortrealgpu(tmatxb_p1,nrhs,.true.,ef,mu)
+#if 0
+      else if (polalg.eq.step_pcg_SId.or.polalg.eq.step_pcg_short_SId)
+     &   then
+         call inducestepcg_pme2gpu(tmatxb_p1,nrhs,.true.,ef,mu,murec)
+#endif
       else
          if (rank.eq.0) write(iout,1000) 
          call fatal
@@ -356,14 +362,6 @@ c
 !$acc wait
          call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,
      $        MPI_SUM,commloc,req1,ierr)
-c
-c     MPI : begin sending
-c
-         if (.not.skpPcomm) then
-         call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
-         call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
-         call commdirdirshort(nrhs,2,pp,reqrec,reqsend)
-         end if
          call MPI_WAIT(req1,status,ierr)
          ggold1 = ggold(1)
          ggold2 = ggold(2)
@@ -372,6 +370,13 @@ c
 c     now, start the main loop:
 c
       do it = 1, politer
+c
+        if (.not.skpPcomm) then
+        ! Direct space electrical field comm to neighbors
+        call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
+        call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
+        call commdirdirshort(nrhs,2,pp,reqrec,reqsend)
+        end if
 c
         call timer_enter( timer_realdip )
         call matvec(nrhs,.true.,pp,h)
@@ -506,21 +511,14 @@ c
            end do
         end do
         call timer_exit( timer_other,quiet_timers )
-        if (.not.skpPcomm) then
-        call commdirdirshort(nrhs,0,pp,reqrec,reqsend) !recep
-        call commdirdirshort(nrhs,1,pp,reqrec,reqsend) !send
-        call commdirdirshort(nrhs,2,pp,reqrec,reqsend) !wait
-        end if
 c
       end do
  10   continue
 
-      !MPI : begin reception
-      call commdirdirshort(nrhs,0,mu,reqendrec,reqendsend)
-      !MPI : send data
-      call commdirdirshort(nrhs,1,mu,reqendrec,reqendsend)
-      !MPI : Wait
-      call commdirdirshort(nrhs,2,mu,reqendrec,reqendsend)
+      ! Solution field comm to direct neighbors
+      call commdirdirshort(nrhs,0,mu,reqendrec,reqendsend) ! Reception chanels
+      call commdirdirshort(nrhs,1,mu,reqendrec,reqendsend) ! Send solution
+      call commdirdirshort(nrhs,2,mu,reqendrec,reqendsend) ! Wait comm
 c
 c     finalize and debug printing:
 c
@@ -678,7 +676,11 @@ c
           bloc = bmat
           cex = 0_ti_p
           cex(1) = one
-          call dgesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+#ifdef _OPENACC
+          call fatal_device("inducejac_shortrealgpu")
+#else
+          call M_gesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+#endif
           munew = 0_ti_p
           call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
         end if

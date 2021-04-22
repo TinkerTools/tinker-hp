@@ -145,6 +145,7 @@ end do
 !
 deallocate (in)
 deallocate (out)
+decomp2d_mpi_fcall=1
 call timer_exit( timer_ffts,quiet_timers )
 end
 !
@@ -247,6 +248,7 @@ end do
 !
 deallocate (in)
 deallocate (out)
+decomp2d_mpi_fcall=1
 call timer_exit( timer_ffts,quiet_timers )
 end
 !
@@ -277,9 +279,8 @@ subroutine cufft2d_backmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
      call r2c_grid(qgridout,zsize(1)*zsize(2)*zsize(3),out,rec_queue)
   !
   ! ===== 3D backward FFT =====
-  !time0 = mpi_wtime()
+  !
   call decomp_2d_cufft_3d(out, in, DECOMP_2D_FFT_BACKWARD)
-  !time1 = mpi_wtime()
   !
   ! fill qgridin array with in
   !
@@ -344,4 +345,53 @@ call finalize_cufft_engine
 #endif
 call decomp_2d_fft_finalize
 call decomp_2d_finalize
-end 
+end
+
+subroutine fftTrC_tmat_alloc(nrhs,npolebloc,dodiag,argmu,argef)
+  use domdec     ,only: rank
+  use decomp_2d
+  use interfaces ,only: tmatxb_pmegpu
+  implicit none
+  integer,intent(in)::nrhs,npolebloc
+  logical,intent(in)::dodiag
+  real(t_p),dimension(3,nrhs,npolebloc),target::argmu,argef
+  procedure(tmatxb_pmegpu) :: fftTrC_tmat
+  tin_nrhs   = nrhs
+  tin_dodiag = dodiag
+  mu => argmu
+  ef => argef
+  decomp2d_WhileWait1 => fftTrC_tmat
+end subroutine
+
+subroutine fftTrC_tmat(nrhs,dodiag,mu,ef)
+  use domdec
+  use interfaces ,only: tmatxb_cp
+  use mpole      ,only: npolebloc
+  use utilgpu
+  implicit none
+  integer,intent(in)::nrhs
+  logical,intent(in)::dodiag
+  real(t_p),intent(in ),dimension(:,:,:)::mu
+  real(t_p),intent(out),dimension(:,:,:)::ef
+  
+  if (dir_queue.ne.rec_queue) then
+#ifdef _OPENACC
+     call start_dir_stream_cover
+#endif
+     call tmatxb_cp(nrhs,.true.,mu,ef)
+#ifdef _OPENACC
+     call end_dir_stream_cover
+#endif
+  end if
+end subroutine
+
+subroutine fftTrC_tmat_free
+  use domdec,only:rank
+  use decomp_2d
+  implicit none
+  tin_nrhs   = 0
+  tin_dodiag = .false.
+  nullify(mu)
+  nullify(ef)
+  nullify(decomp2d_WhileWait1)
+end subroutine

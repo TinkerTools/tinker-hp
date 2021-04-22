@@ -401,13 +401,14 @@ c
       integer i,j,iipole,iglob,iproc
       integer polecount,npole_cap,modnl
       integer ipr,ibufbeg
+      integer npolerecloc2
       real(t_p) d,distcut2
 !$acc routine(distprocpart1)
 
 !$acc data present(glob,pollist,poleglob,poleloc,nbpole,bufbegpole,
-!$acc&  domlenpole,domlenpolerec,polerecglob,poleloc,
-!$acc&  polerecloc)
+!$acc&  domlenpole,domlenpolerec,polerecglob,poleloc,polerecloc)
 !$acc&     present(npoleloc,npolebloc,npolerecloc,npolerecloc_old)
+!$acc&     create(npolerecloc2)
 !$acc&     async(rec_queue)
 
       !TODO clean this routine
@@ -468,8 +469,6 @@ c
 #else
       do_not_commpole = .false.
 #endif
-c!$acc update host(poleglob(:),poleloc(:),npoleloc,npolebloc,
-c!$acc&  domlenpole,bufbegpole) async
 c
 !$acc serial async(rec_queue)
       npolerecloc_old = npolerecloc
@@ -479,9 +478,8 @@ c
       do i = 1, nlocrec
          iglob  = globrec(i)
          iipole = pollist(iglob)
-c
-c   skip atom if it is not in the multipole list
-c
+ 
+         !skip atom if it is not in the multipole list
          if (iipole.eq.0) cycle
          polecount = nbpole(iglob)
          if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0) then
@@ -498,9 +496,32 @@ c!$acc update device(polerecglob(:),polerecloc(:)) async
       domlenpolerec(rank+1) = npolerecloc
 !$acc end serial
 c
-!$acc update host(domlenpole,domlenpolerec,bufbegpole,
-!$acc& npoleloc,npolebloc,npolerecloc,
-!$acc& polerecglob) async
+!$acc parallel loop async(rec_queue)
+      do i = nlocrec+1, nlocrec2
+         iglob = globrec(i)
+         iipole = pollist(iglob)
+ 
+         !skip atom if it is not in the multipole list
+         if (iipole.eq.0) cycle
+         polecount = nbpole(iglob)
+         if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
+!$acc atomic capture
+            npolerecloc = npolerecloc + 1
+            npole_cap   = npolerecloc
+!$acc end atomic
+            polerecglob(npole_cap) = polecount + 1
+            polerecloc(polecount+1) = npole_cap
+         end if
+      end do
+c
+!$acc serial async(rec_queue)
+      npolerecloc2= npolerecloc
+      npolerecloc = domlenpolerec(rank+1)
+!$acc end serial
+c
+!$acc update host(domlenpole,domlenpolerec,bufbegpole
+!$acc&    ,npoleloc,npolebloc,npolerecloc,npolerecloc2
+!$acc&    ,polerecglob) async(rec_queue)
 !$acc end data
 c
 c     npolelocloop = merge( npoleloc,
@@ -519,7 +540,7 @@ c         poleloc(poleglob(i)) = i
 c      end do
 !$acc parallel loop present(polerecloc,polerecglob)
 !$acc&         async(rec_queue)
-      do i = 1,npolerecloc
+      do i = 1,npolerecloc2
          polerecloc(polerecglob(i)) = i
       end do
 #endif
@@ -681,6 +702,23 @@ c
          end if
       end do
       domlenpolerec(rank+1) = npolerecloc
+
+      do i = nlocrec+1, nlocrec2
+         iglob = globrec(i)
+         iipole = pollist(iglob)
+c
+c   skip atom if it is not in the multipole list
+c
+         if (iipole.eq.0) cycle
+         polecount = nbpole(iglob)
+         if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
+            npolerecloc = npolerecloc + 1
+            polerecglob(npolerecloc) = polecount + 1
+            polerecloc(polecount+1) = npolerecloc
+         end if
+      end do
+      npolerecloc = domlenpolerec(rank+1)
+c
 !$acc update device(polerecglob,polerecloc) async
 c
       call update_gang_rec(npolerecloc)
@@ -691,9 +729,7 @@ c
 c
 c     comput nZ_Onlyloc if necessary
 c
-      if (nZ_Onlyglob.ne.0 .and.nproc.ne.1) then
-         call compute_nZ_Onlyaxe
-      end if
+      if (nZ_Onlyglob.ne.0) call compute_nZ_Onlyaxe
 c
       modnl = mod(istep,ineigup)
       if (modnl.ne.0.and.istep.ge.0) return
@@ -735,32 +771,35 @@ c    &                    (mod(npolebloc,16).eq.0))
 
       subroutine compute_nZ_Onlyaxe
       use atmlst,only : poleglob,polerecglob
-      use mpole, only : nZ_Onlyloc,npoleloc,npolerecloc,ipolaxe
+      use mpole ,only : nZ_Onlyloc,npoleloc,npolerecloc,ipolaxe
+     &          ,Ax_Z_Only
       implicit none
       integer i,k
-      integer:: dire=0,reci=0
+      integer dire,reci
 
-!$acc data present(nZ_onlyloc,poleglob,polerecglob)
+!$acc data create(dire,reci) async
+!$acc&     present(nZ_onlyloc,poleglob,polerecglob)
+
+!$acc serial async
       dire = 0
       reci = 0
-!$acc enter data copyin(dire,reci) async
-!$acc parallel loop async present(dire)
+!$acc end serial
+!$acc parallel loop async
       do i = 1,npoleloc
          k = poleglob(i)
-         if (btest(ipolaxe(k),3)) dire = dire +1
+         if (ipolaxe(k).eq.Ax_Z_Only) dire = dire +1
       end do
-!$acc parallel loop async present(reci)
+!$acc parallel loop async
       do i = 1,npolerecloc
          k = polerecglob(i)
-         if (btest(ipolaxe(k),3)) reci = reci +1
+         if (ipolaxe(k).eq.Ax_Z_Only) reci = reci +1
       end do
 !$acc serial async
       nZ_Onlyloc = max(dire,reci)
 !$acc end serial
 !$acc update host(nZ_Onlyloc) async
-!$acc exit data delete(dire,reci) async
-!$acc end data
 
+!$acc end data
       end subroutine
 
       ! Communicate to neigbhor process poleglob configuration

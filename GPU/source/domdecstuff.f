@@ -43,8 +43,6 @@ c
       call prmem_request(loc,n)
       call prmem_request(globrec,n)
       call prmem_request(locrec,n)
-      call prmem_request(globrec1,n)
-      call prmem_request(locrec1,n)
       call prmem_request(repart,n)
       call prmem_request(domlen,nproc,config=mhostonly)
       call prmem_request(domlenpole,nproc,config=mhostonly)
@@ -61,6 +59,8 @@ c
       call prmem_request(precdir_send  ,nproc,config=mhostonly)
       call prmem_request(precdir_recep1,nproc,config=mhostonly)
       call prmem_request(precdir_send1 ,nproc,config=mhostonly)
+      call prmem_request(precdir_recep2,nproc,config=mhostonly)
+      call prmem_request(precdir_send2 ,nproc,config=mhostonly)
       call prmem_request(bufbegpole,nproc,config=mhostonly)
       call prmem_request(bufbeg    ,nproc,config=mhostonly)
       call prmem_request(bufbegrec ,nproc,config=mhostonly)
@@ -211,12 +211,12 @@ c
  10   continue
       if (allocated(deprec)) then
          size_rec = size(deprec)
-         if (3*nblocrec<=size_rec) goto 20
+         if (3*nlocrec2<=size_rec) goto 20
       end if
 
-      if(pa.or.use_charge) call prmem_requestm(decrec,3,nblocrec)
-      if(pa.or.use_mpole ) call prmem_requestm(demrec,3,nblocrec)
-      if(pa.or.use_polar ) call prmem_requestm(deprec,3,nblocrec)
+      if(pa.or.use_charge) call prmem_requestm(decrec,3,nlocrec2)
+      if(pa.or.use_mpole ) call prmem_requestm(demrec,3,nlocrec2)
+      if(pa.or.use_polar ) call prmem_requestm(deprec,3,nlocrec2)
 
       if (deb_Path) then
          call mem_get(m1,m3)
@@ -236,7 +236,7 @@ c
       end do
       if (pa.or.use_charge) then
 !$acc parallel loop collapse(2) default(present) async
-         do i = 1, nblocrec
+         do i = 1, nlocrec2
             do j = 1, 3
                decrec(j,i) = 0.0_re_p
             end do
@@ -244,7 +244,7 @@ c
       end if
       if (pa.or.use_polar) then
 !$acc parallel loop collapse(2) default(present) async
-         do i = 1, nblocrec
+         do i = 1, nlocrec2
             do j = 1, 3
                demrec(j,i) = 0.0_re_p
                deprec(j,i) = 0.0_re_p
@@ -255,7 +255,7 @@ c
       end if
       if (pa.or.use_mpole) then
 !$acc parallel loop collapse(2) default(present) async
-         do i = 1, nblocrec
+         do i = 1, nlocrec2
             do j = 1, 3
                demrec(j,i) = 0.0_re_p
             end do
@@ -334,17 +334,17 @@ c
 c     Optimise reallocation of reciproqual force array
 c
  10   continue
-      if (nbr.lt.nblocrec) then
-         nbr = nblocrec
-         if (deb_Path) print*, 'allocsteprespa rec',nblocrec
+      if (nbr.lt.nlocrec2) then
+         nbr = nlocrec2
+         if (deb_Path) print*, 'allocsteprespa rec',nlocrec2
 !$acc wait
       else
          goto 20
       end if
 
-      if(pa.or.use_charge) call prmem_requestm(decrec,3,nblocrec)
-      if(pa.or.use_mpole ) call prmem_requestm(demrec,3,nblocrec)
-      if(pa.or.use_polar ) call prmem_requestm(deprec,3,nblocrec)
+      if(pa.or.use_charge) call prmem_requestm(decrec,3,nlocrec2)
+      if(pa.or.use_mpole ) call prmem_requestm(demrec,3,nlocrec2)
+      if(pa.or.use_polar ) call prmem_requestm(deprec,3,nlocrec2)
 
       if (deb_Path) then
          call mem_get(m1,m3)
@@ -361,7 +361,7 @@ c
 #endif
         if (pa.or.use_charge) then
 !$acc parallel loop collapse(2) default(present) async
-           do i = 1, nblocrec
+           do i = 1, nlocrec2
               do j = 1, 3
                  decrec(j,i) = 0.0_re_p
               end do
@@ -369,7 +369,7 @@ c
         end if
         if (pa.or.use_polar) then
 !$acc parallel loop collapse(2) default(present) async
-           do i = 1, nblocrec
+           do i = 1, nlocrec2
               do j = 1, 3
                  demrec(j,i) = 0.0_re_p
                  deprec(j,i) = 0.0_re_p
@@ -380,7 +380,7 @@ c
         end if
         if (pa.or.use_mpole) then
 !$acc parallel loop collapse(2) default(present) async
-           do i = 1, nblocrec
+           do i = 1, nlocrec2
               do j = 1, 3
                  demrec(j,i) = 0.0_re_p
               end do
@@ -1503,11 +1503,12 @@ c
       use potent
       use mpi
       use tinheader
+      use utilcomm ,only: no_commdir
       implicit none
-      integer nx, ny, nz, i,j,k
+      integer i,j,k
       integer nprocloc,rankloc,iproc,iproc1
       real(t_p) xr,yr,zr
-      real(t_p) dist
+      real(t_p) dist,distRatio
       real(t_p) mbuf,vbuf,torquebuf,neigbuf,bigbuf
       real(t_p) mshortbuf,vshortbuf,torqueshortbuf,bigshortbuf
       real(t_p) eps1,eps2
@@ -1644,16 +1645,16 @@ c
       eps1   =  5*xcell2*prec_eps
       eps2   = 0.05*min(nx_box,ny_box)
       do i = 0, nxdd-1
-        xbegproctemp(i+1) = -xcell2 + i*nx_box
-        xendproctemp(i+1) = -xcell2 + (i+1)*nx_box
+        xbegproctemp(i+1) = -xbox2 + i*nx_box
+        xendproctemp(i+1) = -xbox2 + (i+1)*nx_box
       end do
       do i = 0, nydd-1
-        ybegproctemp(i+1) = -ycell2 + i*ny_box
-        yendproctemp(i+1) = -ycell2 + (i+1)*ny_box
+        ybegproctemp(i+1) = -ybox2 + i*ny_box
+        yendproctemp(i+1) = -ybox2 + (i+1)*ny_box
       end do
       do i = 0, nzdd-1
-        zbegproctemp(i+1) = -zcell2 + i*nz_box
-        zendproctemp(i+1) = -zcell2 + (i+1)*nz_box
+        zbegproctemp(i+1) = -zbox2 + i*nz_box
+        zendproctemp(i+1) = -zbox2 + (i+1)*nz_box
       end do
 c
 c     assign processes
@@ -1915,12 +1916,19 @@ c     get maximum cutoff value
 c
       bigbuf = max(torquebuf,vbuf,ddcut)
       bigshortbuf = max(torqueshortbuf,vshortbuf,ddcut)
+
+      ! Set the distannce ratio ragarding direct space neighbor process
+      if (no_commdir) then
+         distRatio = 1
+      else
+         distRatio = 0.5
+      end if
 c
       do iproc = 0, nprocloc-1
         do iproc1 = 0, nprocloc-1
           if (iproc.eq.iproc1) goto 70
           call distproc(iproc1,iproc,dist,.true.)
-          if (dist.le.(mbuf/2)) then
+          if (dist.le.(mbuf*distRatio)) then
             nrecep1(iproc1+1) = nrecep1(iproc1+1)+1
             precep1(nrecep1(iproc1+1),iproc1+1) = iproc
           end if
@@ -1928,18 +1936,18 @@ c
             nrecep2(iproc1+1) = nrecep2(iproc1+1)+1
             precep2(nrecep2(iproc1+1),iproc1+1) = iproc
           end if
-          if (dist.le.(torquebuf/2)) then
+          if (dist.le.(torquebuf*distRatio)) then
             ntorquerecep(iproc1+1) = ntorquerecep(iproc1+1)+1
             ptorquerecep(ntorquerecep(iproc1+1),iproc1+1) = iproc
           end if
-          if (dist.le.(bigbuf/2)) then
+          if (dist.le.(bigbuf*distRatio)) then
             nbigrecep(iproc1+1) = nbigrecep(iproc1+1)+1
             pbigrecep(nbigrecep(iproc1+1),iproc1+1) = iproc
           end if
 c
 c    also deal with short range non bonded interactions (respa-1 like integrators)
 c
-          if (dist.le.(mshortbuf/2)) then
+          if (dist.le.(mshortbuf*distRatio)) then
             nrecepshort1(iproc1+1) = nrecepshort1(iproc1+1)+1
             precepshort1(nrecepshort1(iproc1+1),iproc1+1) = iproc
           end if
@@ -1947,12 +1955,12 @@ c
             nrecepshort2(iproc1+1) = nrecepshort2(iproc1+1)+1
             precepshort2(nrecepshort2(iproc1+1),iproc1+1) = iproc
           end if
-          if (dist.le.(torquebuf/2)) then
+          if (dist.le.(torquebuf*distRatio)) then
             ntorqueshortrecep(iproc1+1) = ntorqueshortrecep(iproc1+1)+1
             ptorqueshortrecep(ntorqueshortrecep(iproc1+1),iproc1+1) = 
      $         iproc
           end if
-          if (dist.le.(bigshortbuf/2)) then
+          if (dist.le.(bigshortbuf*distRatio)) then
             nbigshortrecep(iproc1+1) = nbigshortrecep(iproc1+1)+1
             pbigshortrecep(nbigshortrecep(iproc1+1),iproc1+1) = iproc
           end if

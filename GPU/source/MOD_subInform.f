@@ -13,16 +13,16 @@ c
 #include "tinker_types.h"
 
       submodule(inform) subInform
-      use domdec ,only: rank,MasterRank,COMM_TINKER
-     &           ,glob,nloc
       use atomsMirror ,only: x,y,z,n
       use bath
       use cutoff
-      use domdec ,only: nbloc
+      use domdec ,only: rank,MasterRank,COMM_TINKER
+     &           ,glob,nloc,nlocnl,nbloc,nproc
       use moldyn ,only: v,a
       use mpi
       use neigh  ,only: ineigup, lbuffer
       use potent
+      use tinMemory,only: deb_Mem=>debMem
       use usage
       use vdw    ,only: skipvdw12
       use sizes  ,only: tinkerdebug
@@ -42,9 +42,10 @@ c
       deb_Force   = .false.
       deb_Energy  = .false.
       deb_Polar   = .false.
+      deb_Mem     = 0
       tinkerdebug = 0
 
-      ! Fetch is possible TINKER_DEBUG From environment
+      ! Fetch if possible TINKER_DEBUG From environment
       call get_environment_variable("TINKER_DEBUG",dvalue,length,
      &         status=ierr)
 
@@ -59,6 +60,7 @@ c
          if (btest(tinkerdebug,tindForce )) deb_Force  = .true.
          if (btest(tinkerdebug,tindEnergy)) deb_Energy = .true.
          if (btest(tinkerdebug,tindAtom  )) deb_Atom   = .true.
+         if (btest(tinkerdebug,tinMem    )) deb_Mem    = 1
          if (btest(tinkerdebug,tindPolar )) deb_Polar  = .true.
       end if
 
@@ -68,12 +70,14 @@ c
       implicit none
       integer i
 
- 13   format(A20,I10)
+ 13   format(A20,2I10)
  14   format(A20,F15.6)
  15   format(A20,A15)
  16   format(A20,5x,L4)
 
+      print 13, 'natoms', n
       if (n.ne.nbloc) print 13, 'nbloc', nbloc
+      print 13, 'natoms loc/nl', nloc,nlocnl
       print 13, 'nlupdate'     , ineigup
       print 14, 'list buffer'  , lbuffer
       if (use_vdw) then
@@ -94,6 +98,23 @@ c
       end if
       print 15, 'thermostat', thermostat
       print 15, 'barostat', barostat
+      end subroutine
+
+      subroutine lookfor(val,n,array,find,ind)
+      implicit none
+      integer val,ind,n
+      integer array(*)
+      logical find
+      integer i
+!$acc routine
+      find=.false.
+      ind=0
+      do i = 1,n
+         if(array(i).eq.val) then
+            ind=i; find=.true.
+            exit
+         end if
+      end do
       end subroutine
 
 #ifdef USE_DETERMINISTIC_REDUCTION
@@ -128,7 +149,7 @@ c
       integer sz
       real(t_p) vector(*)
       character(*),optional,intent(in)::name
-      real(8) mi,ma,on
+      real(8) mi,ma,on,on1
       integer i
       real(8) val
       mi=huge(mi);ma=tiny(ma);on=0
@@ -142,7 +163,16 @@ c
       end do
 !$acc wait
 12    format(A6,3F16.6,I5)
+13    format(A6,3F16.6,I5,3F16.6)
+      if (nproc.gt.1) then
+         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
+     &       ,MPI_SUM,COMM_TINKER,i)
+      end if
+      if (rank.eq.0.and.nproc.gt.1) then
+      write(*,13) name,mi,ma,on,rank,on1
+      else
       write(*,12) name,mi,ma,on,rank
+      end if
       end subroutine
 
 #if TINKER_MIXED_PREC
@@ -308,4 +338,39 @@ c
       end do
       end subroutine
 
+      module subroutine check_loc1
+      use domdec
+      use neigh
+      integer ibloc,iglob,i,j
+      logical find,find1
+      integer ind,ind1
+
+      if(rank.eq.5) then
+         print*,'check_loc1',nloc,nlocnl,nbloc
+
+!$acc parallel loop async default(present)
+      do i = 1,nbloc
+         ibloc = loc(glob(i))
+         if (ibloc.eq.0.or.ibloc.gt.nbloc) then
+            print*,'loc g',glob(i),ibloc,rank
+         end if
+      end do
+!$acc parallel loop async default(present)
+      do i = 1,nlocnl
+         iglob = ineignl(i)
+         ibloc = loc(iglob) 
+         if (ibloc.eq.0.or.ibloc.gt.nbloc) then
+           !find  = .false.
+           !ind   = 0
+           find1 = .false.
+           ind1  = 0
+            !call lookfor(iglob,nlocnl,ineignl,find,ind)
+            call lookfor(iglob,nbloc,glob,find1,ind1)
+            print*,'p',iglob
+     &            ,i,find1,ind1,rank
+         end if
+      end do
+!$acc wait
+      end if
+      end subroutine
       end submodule

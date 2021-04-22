@@ -62,6 +62,7 @@ c
       use chgpot
       use deriv
       use domdec
+      use elec_wspace,only: trq=>r2Work4
       use empole1gpu_inl
       use energi
       use ewald
@@ -76,6 +77,7 @@ c
       use potent
       use shunt
       use timestat
+      use tinMemory  ,only: prmem_request
       use utilgpu
       use virial
       implicit none
@@ -93,7 +95,6 @@ c
       real(t_p) qiyy,qiyz,qizz
       real(t_p) xdfield,ydfield
       real(t_p) zdfield
-      real(t_p) trq(3,npoleloc)
       real(t_p) time0,time1
       parameter(zero=0.0_ti_p,  one=1.0_ti_p,
      &           two=2.0_ti_p,three=3.0_ti_p,
@@ -109,7 +110,7 @@ c     zero out the atomic multipole energy and derivatives
 c
       if(deb_Path) write(*,*) 'empole1cgpu'
 
-!$acc data present(emdir,em,emrec,em_r,dem)
+!$acc data present(emdir,em,emrec,em_r)
 c
 !$acc serial async
       em     = zero
@@ -218,9 +219,11 @@ c
 c     compute the cell dipole boundary correction term
 c
          if (boundary .eq. 'VACUUM') then
-
-            write(0,*) 'ERROR VACUUM boundary unavailable'
+            write(0,*) 'FATAL ERROR VACUUM boundary unavailable !!!'
             call fatal
+
+            call prmem_request(trq,3,npoleloc,queue=def_queue)
+
 !$acc data create(trq,term,xd,yd,zd,xq,yq,zq,xdfield,
 !$acc&  ydfield,zdfield)
 !$acc&     async(def_queue)
@@ -272,7 +275,7 @@ c
             end do
             ! TODO Remove this comment 
             ! ---( Trouble in fixed precision )---
-            !call torquegpu(npoleloc,poleglob,loc,trq,dem,def_queue)
+            !call torquegpu(npoleloc,nbloc,poleglob,loc,trq,dem,def_queue)
 c
 c     boundary correction to virial due to overall cell dipole
 c
@@ -331,11 +334,13 @@ c
 
 !$acc end data
 c
-           end if
+           end if !( boundary .eq. "VACUUM" )
 !$acc end data
-         end if
+         end if !( use_mself )
          call timer_exit( timer_real,quiet_timers )
-      end if
+
+      end if !((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+
 c
 c     compute the reciprocal space part of the Ewald summation
 c
@@ -348,9 +353,8 @@ c
          end if
       end if
 c
-c     Finalize async overlapping
-c
 #ifdef _OPENACC
+      !Finalize async overlapping
       if (dir_queue.ne.rec_queue) call end_dir_stream_cover
 #endif
 c
@@ -376,25 +380,29 @@ c     via a neighbor list
 c
 c
       subroutine emreal1cgpu
-      use atmlst  ,only: poleglobnl
-      use atoms   ,only: x,y,z
-      use deriv   ,only: dem
-      use domdec  ,only: nbloc
+      use atmlst     ,only: poleglobnl
+      use atoms      ,only: x,y,z
+      use deriv      ,only: dem
+      use domdec     ,only: nbloc
       use empole1gpu_inl
-      use interfaces,only: emreal1c_core_p,torquegpu
-      use mpole   ,only: xaxis,yaxis,zaxis,npolelocnl,ipole
-      use potent  ,only: use_mpoleshortreal,use_mpolelong
-      use tinheader, only: ti_p
-      use utils   ,only: set_to_zero1
-      use utilgpu ,only: dir_queue,def_queue,rec_queue
+      use elec_wspace,only: fix=>r2Work1,fiy=>r2Work2,fiz=>r2Work3
+     &               ,tem=>r2Work4
+      use interfaces ,only: emreal1c_core_p,torquegpu
+      use mpole      ,only: xaxis,yaxis,zaxis,npolelocnl,ipole
+      use potent     ,only: use_mpoleshortreal,use_mpolelong
+      use tinheader  ,only: ti_p
+      use utils      ,only: set_to_zero1
+      use utilgpu    ,only: dir_queue,def_queue,rec_queue
 #ifdef _OPENACC
-     & ,rec_stream,dir_stream,def_stream,rec_event,stream_wait_async
+     &               ,rec_stream,dir_stream,def_stream,rec_event
+     &               ,stream_wait_async
 #endif
-      use virial  ,only: vxx=>g_vxx,vxy=>g_vxy,vxz=>g_vxz
-     &            ,vyy=>g_vyy,vyz=>g_vyz,vzz=>g_vzz
+      use virial     ,only: vxx=>g_vxx,vxy=>g_vxy,vxz=>g_vxz
+     &               ,vyy=>g_vyy,vyz=>g_vyz,vzz=>g_vzz,use_virial
       !use mpi
-      use timestat,only:timer_enter,timer_exit,timer_emreal
-     &            ,quiet_timers
+      use timestat   ,only: timer_enter,timer_exit,timer_emreal
+     &               ,quiet_timers
+      use tinMemory  ,only: prmem_request
       implicit none
       integer i,j,ii,iipole,iglob
       integer iax,iay,iaz
@@ -404,10 +412,6 @@ c
       real(t_p) xix,yix,zix
       real(t_p) xiy,yiy,ziy
       real(t_p) xiz,yiz,ziz
-      real(t_p) fix(3,npolelocnl)
-      real(t_p) fiy(3,npolelocnl)
-      real(t_p) fiz(3,npolelocnl)
-      real(t_p) tem(3,nbloc)
       character*10 mode
       real(8) e1,e2,e3
       logical*1,parameter::extract=.true.
@@ -417,7 +421,10 @@ c
       call timer_enter( timer_emreal )
       def_queue = dir_queue
 
-!$acc data create(tem,fix,fiy,fiz) async(def_queue)
+      call prmem_request(fix,3,npolelocnl)
+      call prmem_request(fiy,3,npolelocnl)
+      call prmem_request(fiz,3,npolelocnl)
+      call prmem_request(tem,3,nbloc)
 
       call set_to_zero1(tem,3*nbloc,def_queue)
 
@@ -437,9 +444,12 @@ c     resolve site torques then increment forces and virial
 c
       call torquegpu(tem,fix,fiy,fiz,dem,extract)
 
+      if (use_virial) then
+
 !$acc parallel loop vector_length(32) async(def_queue)
-!$acc&         present(poleglobnl,x,y,z,ipole,
-!$acc&  xaxis,yaxis,zaxis,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc&         present(poleglobnl,x,y,z,ipole
+!$acc&     ,xaxis,yaxis,zaxis,fix,fiy,fiz
+!$acc&     ,vxx,vxy,vxz,vyy,vyz,vzz)
       do ii = 1, npolelocnl
          iipole = poleglobnl(ii)
          iglob  = ipole(iipole)
@@ -465,8 +475,8 @@ c
          vyz    = vyz + zix*fix(2,ii) + ziy*fiy(2,ii) + ziz*fiz(2,ii)
          vzz    = vzz + zix*fix(3,ii) + ziy*fiy(3,ii) + ziz*fiz(3,ii)
       end do
-c
-!$acc end data
+
+      end if  !( use_virial )
 c
       call timer_exit( timer_emreal )
       end
@@ -489,6 +499,8 @@ c
       use atoms   ,only: x,y,z
       use deriv   ,only: dem
       use domdec  ,only: nbloc, rank
+      use elec_wspace,only: fix=>r2Work1,fiy=>r2Work2,fiz=>r2Work3
+     &               ,tem=>r2Work4
       use inform ,only: deb_Path
       use interfaces,only: emrealshortlong1c_core_p,torquegpu
       use mpole   ,only: xaxis,yaxis,zaxis,npolelocnl,ipole
@@ -500,9 +512,10 @@ c
      & ,rec_stream,dir_stream,def_stream,rec_event,stream_wait_async
 #endif
       use virial  ,only: vxx=>g_vxx,vxy=>g_vxy,vxz=>g_vxz
-     &            ,vyy=>g_vyy,vyz=>g_vyz,vzz=>g_vzz
+     &            ,vyy=>g_vyy,vyz=>g_vyz,vzz=>g_vzz,use_virial
       !use mpi
       use timestat,only:timer_enter,timer_exit,timer_emreal
+      use tinMemory,only: prmem_request
       implicit none
       integer i,ii,iipole,iglob
       integer iax,iay,iaz
@@ -512,10 +525,6 @@ c
       real(t_p) xix,yix,zix
       real(t_p) xiy,yiy,ziy
       real(t_p) xiz,yiz,ziz
-      real(t_p) fix(3,npolelocnl)
-      real(t_p) fiy(3,npolelocnl)
-      real(t_p) fiz(3,npolelocnl)
-      real(t_p) tem(3,nbloc)
       character*10 mode
       logical*1,parameter::extract=.true.
       parameter(zero=0.0_ti_p)
@@ -524,7 +533,10 @@ c
       call timer_enter( timer_emreal )
       def_queue = dir_queue
 
-!$acc data create(tem,fix,fiy,fiz) async(def_queue)
+      call prmem_request(fix,3,npolelocnl)
+      call prmem_request(fiy,3,npolelocnl)
+      call prmem_request(fiz,3,npolelocnl)
+      call prmem_request(tem,3,nbloc)
 
       call set_to_zero1(tem,3*nbloc,def_queue)
 
@@ -544,9 +556,11 @@ c     resolve site torques then increment forces and virial
 c
       call torquegpu(tem,fix,fiy,fiz,dem,extract)
 
+      if (use_virial) then
+
 !$acc parallel loop vector_length(32) async(def_queue)
 !$acc&         present(poleglobnl,x,y,z,ipole,
-!$acc&  xaxis,yaxis,zaxis,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc&  xaxis,yaxis,zaxis,fix,fiy,fiz,vxx,vxy,vxz,vyy,vyz,vzz)
       do ii = 1, npolelocnl
          iipole = poleglobnl(ii)
          iglob  = ipole(iipole)
@@ -572,8 +586,8 @@ c
          vyz    = vyz + zix*fix(2,ii) + ziy*fiy(2,ii) + ziz*fiz(2,ii)
          vzz    = vzz + zix*fix(3,ii) + ziy*fiy(3,ii) + ziz*fiz(3,ii)
       end do
-c
-!$acc end data
+
+      end if !(use_virial)
 c
       call timer_exit( timer_emreal )
       end
@@ -596,6 +610,8 @@ c
       use atoms   ,only: x,y,z
       use deriv   ,only: dem
       use domdec  ,only: nbloc,rank
+      use elec_wspace,only: fix=>r2Work1,fiy=>r2Work2,fiz=>r2Work3
+     &               ,tem=>r2Work4
       use inform  ,only: deb_Path
       use interfaces,only: emrealshortlong1c_core_p,torquegpu
       use mpole   ,only: xaxis,yaxis,zaxis,npolelocnl,ipole
@@ -607,9 +623,10 @@ c
      & ,rec_stream,dir_stream,def_stream,rec_event,stream_wait_async
 #endif
       use virial  ,only: vxx=>g_vxx,vxy=>g_vxy,vxz=>g_vxz
-     &            ,vyy=>g_vyy,vyz=>g_vyz,vzz=>g_vzz
+     &            ,vyy=>g_vyy,vyz=>g_vyz,vzz=>g_vzz,use_virial
       !use mpi
       use timestat,only:timer_enter,timer_exit,timer_emreal
+      use tinMemory,only: prmem_request
       implicit none
       integer i,ii,iipole,iglob
       integer iax,iay,iaz
@@ -619,10 +636,6 @@ c
       real(t_p) xix,yix,zix
       real(t_p) xiy,yiy,ziy
       real(t_p) xiz,yiz,ziz
-      real(t_p) fix(3,npolelocnl)
-      real(t_p) fiy(3,npolelocnl)
-      real(t_p) fiz(3,npolelocnl)
-      real(t_p) tem(3,nbloc)
       character*10 mode
       logical*1,parameter::extract=.true.
       parameter(zero=0.0_ti_p)
@@ -631,8 +644,10 @@ c
       call timer_enter( timer_emreal )
       def_queue = dir_queue
 
-!$acc data create(tem,fix,fiy,fiz)
-!$acc&     async(def_queue)
+      call prmem_request(fix,3,npolelocnl)
+      call prmem_request(fiy,3,npolelocnl)
+      call prmem_request(fiz,3,npolelocnl)
+      call prmem_request(tem,3,nbloc)
 
       call set_to_zero1(tem,3*nbloc,def_queue)
 
@@ -652,9 +667,11 @@ c     resolve site torques then increment forces and virial
 c
       call torquegpu(tem,fix,fiy,fiz,dem,extract)
 
+      if (use_virial) then
+
 !$acc parallel loop vector_length(32) async(def_queue)
 !$acc&         present(poleglobnl,x,y,z,ipole,
-!$acc&  xaxis,yaxis,zaxis,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc&  xaxis,yaxis,zaxis,fix,fiz,fiz,vxx,vxy,vxz,vyy,vyz,vzz)
       do ii = 1, npolelocnl
          iipole = poleglobnl(ii)
          iglob  = ipole(iipole)
@@ -680,8 +697,8 @@ c
          vyz    = vyz + zix*fix(2,ii) + ziy*fiy(2,ii) + ziz*fiz(2,ii)
          vzz    = vzz + zix*fix(3,ii) + ziy*fiy(3,ii) + ziz*fiz(3,ii)
       end do
-c
-!$acc end data
+
+      end if !(use_virial)
 c
       call timer_exit( timer_emreal )
       end
@@ -1501,7 +1518,7 @@ c
          call emreal_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
      &        ( mcorrect_ik,mcorrect_scale,ipole,loc,loc,x,y,z,rpole
      &        , dem,tem,ered_buff,vred_buff
-     &        , n,nbloc,n_mscale,.false.
+     &        , n,nbloc,n_mscale,size(mcorrect_ik,1),.false.
      &        , off2,f,aewald,alsq2,alsq2n )
          call check_launch_kernel(" emreal_scaling_cu")
       end if
@@ -1932,7 +1949,7 @@ c
          call emrealShLg_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
      &        ( mcorrect_ik,mcorrect_scale,ipole,loc,loc,x,y,z,rpole
      &        , dem,tem,ered_buff,vred_buff
-     &        , n,nbloc,n_mscale,mode,.false.
+     &        , n,nbloc,n_mscale,size(mcorrect_ik,1),mode,.false.
      &        , r_cut,mpoleshortcut2,off2
      &        , shortheal,f,aewald,alsq2,alsq2n)
          call check_launch_kernel(" emrealShLg_scaling_cu")
@@ -2347,7 +2364,7 @@ c
       use energi
       use ewald
       use fft
-      use inform    ,only: deb_Path
+      use inform    ,only: deb_Path,minmaxone
       use interfaces,only: torquegpu,fphi_mpole_site_p
      &              ,grid_mpole_site_p,bspline_fill_sitegpu
      &              ,emreal1c_cp,emreallong1c_cp
@@ -2711,7 +2728,7 @@ c
          h3 = recip(3,1)*f1 + recip(3,2)*f2 + recip(3,3)*f3
          iipole = polerecglob(i)
          iglob  = ipole(iipole)
-         ii     = locrec1(iglob)
+         ii     = locrec(iglob)
          demrec(1,ii) = demrec(1,ii) + h1
          demrec(2,ii) = demrec(2,ii) + h2
          demrec(3,ii) = demrec(3,ii) + h3
@@ -2784,8 +2801,8 @@ c
 
       end if      ! COMPUTE virial ?
 
-      call torquegpu(npolerecloc,polerecglob,locrec1,
-     &                trqrec,demrec,rec_queue)
+      call torquegpu(npolerecloc,nlocrec2,polerecglob,locrec
+     &              ,trqrec,demrec,rec_queue)
 
       call timer_exit(timer_fmanage,quiet_timers )
 
@@ -3224,7 +3241,7 @@ c         h2 = recip(2,1)*f1 + recip(2,2)*f2 + recip(2,3)*f3
 c         h3 = recip(3,1)*f1 + recip(3,2)*f2 + recip(3,3)*f3
 c         iipole = polerecglob(i)
 c         iglob  = ipole(iipole)
-c         ii     = locrec1(iglob)
+c         ii     = locrec(iglob)
 c         demrec(1,ii) = demrec(1,ii) + h1
 c         demrec(2,ii) = demrec(2,ii) + h2
 c         demrec(3,ii) = demrec(3,ii) + h3

@@ -10,6 +10,7 @@ c     ##                                                              ##
 c     ##################################################################
 c
 c
+c     app_id    holds the running program identity
 c     digits    decimal places output for energy and coordinates
 c     iprint    steps between status printing (0=no printing)
 c     iwrite    steps between coordinate dumps (0=no dumps)
@@ -37,10 +38,21 @@ c     dint1 dint2 dibuff  useful for storing purpose
       logical silent,verbose
       logical debug,holdup,abort
 
+      ! All program list
+      enum,bind(C)
+        enumerator analyze_a
+        enumerator bar_a
+        enumerator dynamic_a
+        enumerator minimize_a
+        enumerator testgrad_a
+        enumerator pimd_a
+      end enum
+      integer:: app_id=dynamic_a ! Only to be modifed inside a program
+
       ! Debug static counter
       enum,bind(C)
         enumerator tindPath,tindForce,tindEnergy,tindAtom
-        enumerator tindPolar,tindGdb
+        enumerator tinMem,tindGdb,tindPolar
       end enum
       logical deb_Path,deb_Force,deb_Energy,deb_Atom,deb_Polar
 
@@ -89,9 +101,15 @@ c     dint1 dint2 dibuff  useful for storing purpose
 !DIR$ ignore_tkr (r) vector
          end subroutine
 #endif
-         module subroutine check_loc(queue)
-         integer queue
-         end subroutine
+      end interface
+      interface
+      module subroutine check_loc(queue)
+      integer queue
+      end subroutine
+      end interface
+      interface
+      module subroutine check_loc1
+      end subroutine
       end interface
 
       end

@@ -499,8 +499,8 @@ c
 #endif
 
       ! Allocate memory to store v_scaling
-      call prmem_request(vcorrect_ik,n_vscale,2,async=.true.)
-      call prmem_request(vcorrect_scale,n_vscale,async=.true.)
+      call prmem_request(vcorrect_ik,n_vscale,2,cdim=.false.)
+      call prmem_request(vcorrect_scale,n_vscale)
 c
 c     Fill scaling the scaling_factor intercations along with their
 c     values
@@ -647,8 +647,8 @@ c
 
       !print*,n_vscale,nvdwlocnl
       ! Allocate memory to store v_scaling
-      call prmem_request(vcorrect_ik,n_vscale,2,async=.true.)
-      call prmem_request(vcorrect_scale,n_vscale,async=.true.)
+      call prmem_request(vcorrect_ik,n_vscale,2,cdim=.false.)
+      call prmem_request(vcorrect_scale,n_vscale)
 c
 c     Fill scaling the scaling_factor intercations along with their
 c     types and value
@@ -784,8 +784,8 @@ c
 c     print*,n_mscale,npolelocnl
 
       ! Allocate memory to store m_scaling
-      call prmem_request(mcorrect_ik,n_mscale,2,async=.true.)
-      call prmem_request(mcorrect_scale,n_mscale,async=.true.)
+      call prmem_request(mcorrect_ik,n_mscale,2,cdim=.false.)
+      call prmem_request(mcorrect_scale,n_mscale)
 c
 c     Fill scaling the scaling_factor intercations along with their
 c     types and value
@@ -1037,14 +1037,12 @@ c
      &         'polar_scaling',n_uscale,n_dpscale,n_dpuscale,rank
 
       ! Allocate memory to store u_scaling,dp_scaling & dpu_scaling
-      call prmem_request(  ucorrect_ik,2*n_uscale  ,async=.true.)
-      call prmem_request( dpcorrect_ik,2*n_dpscale ,async=.true.)
-      call prmem_request(dpucorrect_ik,2*n_dpuscale,async=.true.)
-      call prmem_request(  ucorrect_scale, n_uscale,async=.true.)
-      call prmem_request( dpcorrect_scale,2*n_dpscale,
-     &     async=.true.)
-      call prmem_request(dpucorrect_scale,3*n_dpuscale,
-     &     async=.true.)
+      call prmem_request(  ucorrect_ik,2*n_uscale  )
+      call prmem_request( dpcorrect_ik,2*n_dpscale )
+      call prmem_request(dpucorrect_ik,2*n_dpuscale)
+      call prmem_request(  ucorrect_scale, n_uscale)
+      call prmem_request( dpcorrect_scale,2*n_dpscale)
+      call prmem_request(dpucorrect_scale,3*n_dpuscale)
 c
 c     Fill scaling the scaling_factor intercations along with their
 c     types and value
@@ -1324,14 +1322,12 @@ c
      &   'polar_scaling1',n_uscale,n_dpscale,n_dpuscale,rank
 c
       ! Allocate memory to store u_scaling,dp_scaling & dpu_scaling
-      call prmem_request(  ucorrect_ik,2*n_uscale  ,async=.true.)
-      call prmem_request( dpcorrect_ik,2*n_dpscale ,async=.true.)
-      call prmem_request(dpucorrect_ik,2*n_dpuscale,async=.true.)
-      call prmem_request(  ucorrect_scale, n_uscale,async=.true.)
-      call prmem_request( dpcorrect_scale,2*n_dpscale,
-     &     async=.true.)
-      call prmem_request(dpucorrect_scale,3*n_dpuscale,
-     &     async=.true.)
+      call prmem_request(  ucorrect_ik,2*n_uscale  )
+      call prmem_request( dpcorrect_ik,2*n_dpscale )
+      call prmem_request(dpucorrect_ik,2*n_dpuscale)
+      call prmem_request(  ucorrect_scale, n_uscale)
+      call prmem_request( dpcorrect_scale,2*n_dpscale)
+      call prmem_request(dpucorrect_scale,3*n_dpuscale)
 
       call set_to_zero1(  ucorrect_scale,    n_uscale,rec_queue)
       call set_to_zero1( dpcorrect_scale,2* n_dpscale,rec_queue)
@@ -1650,11 +1646,10 @@ c
      &   'u_dp_scaling_extent',n_uscale,n_dpscale,rank
 c
       ! Allocate memory to store u_scaling,dp_scaling & dpu_scaling
-      call prmem_request(  ucorrect_ik,2*n_uscale  ,async=.true.)
-      call prmem_request( dpcorrect_ik,2*n_dpscale ,async=.true.)
-      call prmem_request(  ucorrect_scale, n_uscale,async=.true.)
-      call prmem_request( dpcorrect_scale,2*n_dpscale,
-     &     async=.true.)
+      call prmem_request(  ucorrect_ik,2*n_uscale  )
+      call prmem_request( dpcorrect_ik,2*n_dpscale )
+      call prmem_request(  ucorrect_scale, n_uscale)
+      call prmem_request( dpcorrect_scale,2*n_dpscale)
 
       ! Zero memory
       call set_to_zero1(  ucorrect_scale,    n_uscale,rec_queue)
@@ -1850,8 +1845,8 @@ c
 c     print*,n_cscale,nionlocnl
 
       ! Allocate memory to store m_scaling
-      call prmem_request(ccorrect_ik,n_cscale,2,async=.true.)
-      call prmem_request(ccorrect_scale,2*(n_cscale+1),async=.true.)
+      call prmem_request(ccorrect_ik,n_cscale,2,cdim=.false.)
+      call prmem_request(ccorrect_scale,2*(n_cscale+1))
 c
 c     Fill scaling the scaling_factor intercations along with their
 c     types and value

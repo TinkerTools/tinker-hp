@@ -15,6 +15,7 @@ c
 #include "tinker_precision.h"
 
       submodule(tinMemory) subMemory
+      use atoms  ,only: natoms=>n
       use domdec ,only: rank,hostrank,hostcomm,nproc
      &           ,nbloc,nrec_recep
       use fft    ,only: n1mpimax,n2mpimax,n3mpimax
@@ -27,6 +28,7 @@ c
       use openacc
 #endif
       use vdw    ,only: nvdwlocnl
+      integer,private:: mv_realloc_i=0
 
       contains
 
@@ -1493,12 +1495,13 @@ c
         implicit none
         integer i,ierr, hsize
         real(8) sm,pm,sdm,pdm,ddm,odm,wor,tdm,tm,adm
+        real(8),save:: diff=0
         integer:: cin=1
  13     format(
      &  "iRank"," |","Host--",2x,"Shr",7x,"Pvt",5x,"Total"," |",
      &  "Device--",2x,"Shr",7x,"Pvt",6x,"Libs",5x,"Total"," |",
-     &  1x,"WorkSpace",1x,"Memory (MiB)")
- 14     format(,I5," |",1x,3F10.3," |",3x,4F10.3," |",F10.3)
+     &  1x,"WorkSpace",6x,"diff",2x,"Memory (MiB)")
+ 14     format(,I5," |",1x,3F10.3," |",3x,4F10.3," |",2F10.3)
  15     format(
      &  " Rank",I4,4x,"On host",F12.3,4x,"On device",F12.3)
 
@@ -1518,16 +1521,27 @@ c
         odm = (s_curand+s_nvshmem+s_driver+s_cufft)/Mio
         tdm = ddm + pdm + wor + odm
         tm  = sm + pm + wor
+#ifdef _OPENACC
+        diff= tdm - diff
+#else
+        diff= tm - diff
+#endif
 
         if (rank.eq.0) write(0,13)
         call mpi_Comm_size(hostcomm,hsize,ierr)
         call mpi_barrier(hostcomm,ierr)
         do i = 0,hsize-1
            if (rank.eq.i)
-     &     write(0,14) rank,sm,pm,tm,sdm+ddm,pdm,odm,tdm,wor
+     &     write(0,14) rank,sm,pm,tm,sdm+ddm,pdm,odm,tdm,wor,diff
            call mpi_barrier(hostcomm,ierr)
         end do
         cin = cin+1
+
+#ifdef _OPENACC
+        diff= tdm
+#else
+        diff= tm
+#endif
       end subroutine
 
       subroutine WorkSpaceEstimation
@@ -1546,19 +1560,19 @@ c
       wec = 0
       wps = 0
 
-      if (use_mpole) then
-      wem = 3*npoleloc*szoTp + max(9*npolelocnl+3*nbloc,1)*szoTp
-      end if
-      if (use_polar) then
-      wps = 12*npolebloc*szoTp + 6*npolerecloc*szoTp + 6*nproc*szoi
+c     if (use_mpole) then
+c     wem = 3*npoleloc*szoTp + max(9*npolelocnl+3*nbloc,1)*szoTp
+c     end if
+c     if (use_polar) then
+c     wps = 12*npolebloc*szoTp + 6*npolerecloc*szoTp + 6*nproc*szoi
 c    &    + 10*npoleloc*szoTp
 c    &    + 18*npoleloc*szoTp + 12*npolebloc*szoTp
 c    &    + 6*npolerecloc*szoTp
 c    &    + 3*npoleloc*szoTp
-      wep = 3*npoleloc*szoTp
+c     wep = 3*npoleloc*szoTp
 c    &    + max (12*npolelocnl*szoTp, 40*npolerecloc*szoTp
 c    &      + 4*n1mpimax*n2mpimax*n3mpimax*nrec_recep*szoTp)
-      end if
+c     end if
 
       s_tinWork = maxval( [wsf,wem,wep,wps,wec,wev] )
       end subroutine
@@ -1687,6 +1701,8 @@ c
             async_queue = queue
         end if
 #endif
+ 13     format(A13,L3,1I10,I4)
+ 14     format(A13,L3,2I10,I4)
         if (present(config)) then
            cfg = config
         else
@@ -1694,26 +1710,38 @@ c
         end if
 
         if (.not. allocated(array)) then
-           allocate(array(n))
-           s_array = n*szoi
+           if (n.eq.0) return
+           s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &              ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc))
+           s_array = s_alloc*szoi
            s_prmem =  s_prmem + s_array
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           !print*,'alloc',n
+           if(debMem) print 13,'alloc i',n.ne.s_alloc,n,rank
         else if (btest(cfg,memfree).or.n.eq.0) then
            s_array = size(array)*szoi
            if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
            end if
-           !print*, 'deallocate array'
+           if(debMem) print*, 'dealloc i ',rank
            s_prmem = s_prmem - s_array
            deallocate(array)
         else
            if ( n > size(array) .or. n < 4*size(array)/5 ) then
-              !print*,'realloc',n,size(array),(5*size(array)/4)
+
+              ! Inc realloca counter
+              n_realloc_i = n_realloc_i + 1
+              call enable_extra_alloc(0)
+              ! Compute extra-reallocation if necessary
+              s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                    ,extra_alloc.and.n.ne.natoms)
+              if(debMem) print 14,'realloc i',n.ne.s_alloc
+     &                           ,n,size(array),rank
+
               s_array = size(array)*szoi
               s_prmem = s_prmem - s_array
               if (btest(cfg,memacc)) then
@@ -1721,8 +1749,8 @@ c
 !$acc exit data delete(array) async( async_queue )
               end if
               deallocate(array)
-              allocate(array(n))
-              s_array = n*szoi
+              allocate(array(s_alloc))
+              s_array = s_alloc*szoi
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
@@ -1731,6 +1759,22 @@ c
            end if
         end if
 
+        if (size(array).eq.0) print*,'tro prmem_int_req',n,rank
+
+      end subroutine
+
+      subroutine enable_extra_alloc(cfg)
+      implicit none
+      integer,intent(in)::cfg
+      if (cfg.eq.0.and.n_realloc_i.gt.20) then
+         if(debMem) print*, 'enable extra allocation i',rank
+         extra_alloc = .true.
+         n_realloc_i = 0
+      else if(cfg.eq.1.and.n_realloc_r.gt.20) then
+         if(debMem) print*, 'enable extra allocation r',rank
+         extra_alloc = .true.
+         n_realloc_r = 0
+      end if
       end subroutine
 
       module subroutine prmem_int8_req( array, n, async, queue, config )
@@ -1752,6 +1796,8 @@ c
             async_queue = queue
         end if
 #endif
+ 13     format(A13,L3,1I14,I4)
+ 14     format(A13,L3,2I14,I4)
         if (present(config)) then
            cfg = config
         else
@@ -1759,14 +1805,16 @@ c
         end if
 
         if (.not. allocated(array)) then
-           allocate(array(n))
-           s_array = n*szoi8
-           s_prmem =  s_prmem + s_array
+           s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                    ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc))
+           s_array = s_alloc*szoi8
+           s_prmem = s_prmem + s_array
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           !print*,'alloc',n
+           if(debMem) print 13,'alloc i8 ',n.ne.s_alloc,n,rank
         else if (btest(cfg,memfree).or.n.eq.0) then
            s_array = size(array)*szoi8
            if (btest(cfg,memacc)) then
@@ -1778,7 +1826,8 @@ c
            deallocate(array)
         else
            if ( n > size(array) .or. n < 4*size(array)/5 ) then
-              !print*,'realloc',n,size(array),(5*size(array)/4)
+              if(debMem) print 14,'realloc i8',n.ne.s_alloc
+     &                           ,n,size(array),rank
               s_array = size(array)*szoi8
               s_prmem = s_prmem - s_array
               if (btest(cfg,memacc)) then
@@ -1796,6 +1845,8 @@ c
            end if
         end if
 
+        !if (size(array).eq.0) print*,'trouble prmem_int8_req',n,rank
+
       end subroutine
 
       module subroutine prmem_int_req1( array, sz_array, n, 
@@ -1808,6 +1859,7 @@ c
         integer   , optional, intent(in) :: queue, config
 
         integer   cfg
+        integer(8) s_alloc8
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
         integer :: async_queue
@@ -1819,6 +1871,8 @@ c
             async_queue = queue
         end if
 #endif
+ 13     format(A13,L3,1I14,I4)
+ 14     format(A13,L3,2I14,I4)
         if (present(config)) then
            cfg = config
         else
@@ -1828,15 +1882,21 @@ c
         !TODO  Report to PGI
         !size(array,kind=8) !is not working with pgi
         if (.not. allocated(array)) then
-           allocate(array(n))
-          sz_array = n
+
+           s_alloc8 = merge(n+int(real(n,8)*mem_inc,8),n
+     &                     ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc8))
+          sz_array = s_alloc8
            s_array = sz_array*szoi
            s_prmem = s_prmem + s_array
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
+           if(debMem) print*,'alloc i o1',n.ne.s_alloc8,n,rank
+
         else if (btest(cfg,memfree).or.n.eq.0) then
+
            s_array = sz_array*szoi
            if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
@@ -1845,8 +1905,15 @@ c
            s_prmem = s_prmem - s_array
            deallocate(array)
           sz_array = 0
+
         else
+
            if ( n > sz_array .or. n < 4*sz_array/5 ) then
+              s_alloc8 = merge(n+int(real(n,8)*mem_inc,8),n
+     &                        ,extra_alloc.and.n.ne.natoms)
+              if(debMem) print 14,'realloc i o1',n.ne.s_alloc8
+     &                           ,n,sz_array,rank
+
               s_array = sz_array*szoi
               s_prmem = s_prmem - s_array
               if (btest(cfg,memacc)) then
@@ -1854,8 +1921,8 @@ c
 !$acc exit data delete(array) async( async_queue )
               end if
               deallocate(array)
-              allocate(array(n))
-             sz_array = n
+              allocate(array(s_alloc8))
+             sz_array = s_alloc8
               s_array = sz_array*szoi
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
@@ -1864,6 +1931,7 @@ c
               end if
            end if
         end if
+        !if(size(array).eq.0) print*,'trouble prmem_int_req1',n,rank
 
       end subroutine
 
@@ -1883,22 +1951,32 @@ c
            if( async ) async_queue = acc_async_noval
         end if
 #endif
-        if (present(config)) then
-           cfg = config
-        else
-           cfg = mhostacc
-        end if
+ 14     format(A13,L3,2I10,2x,I4)
+
+        cfg = mhostacc
+        if (present(config)) cfg = config
 
         if (.not. associated(array)) then
-           allocate(array(n))
-           s_array = n*szoi
+           s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                    ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc))
+           s_array = s_alloc*szoi
            s_prmem = s_prmem + s_array
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
            sd_prmem = sd_prmem + s_array
            end if
+           if(debMem) print*,'alloc pi ',n.ne.s_alloc,n,rank
         else
-           if ( n > size(array) .or. n < 4*size(array)/5 ) then
+           if ( n>size(array) .or. n<4*size(array)/5 ) then
+
+              n_realloc_i = n_realloc_i + 1
+              call enable_extra_alloc(0)
+              s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                       ,extra_alloc.and.n.ne.natoms)
+              if(debMem) print 14,'realloc pi ',n.ne.s_alloc
+     &                           ,n,size(array),rank
+
               s_array = size(array)*szoi
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
@@ -1907,8 +1985,8 @@ c
               s_prmem = s_prmem - s_array
               deallocate(array)
               nullify(array)
-              allocate(array(n))
-              s_array = n*szoi
+              allocate(array(s_alloc))
+              s_array = s_alloc*szoi
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
@@ -1916,6 +1994,7 @@ c
               end if
            end if
         end if
+        !if(size(array).eq.0) print*,'trouble prmem_pint_req',n,rank
 
       end subroutine
       module subroutine prmem_int1_req( array, n, async )
@@ -1934,40 +2013,48 @@ c
 #endif
 
         if (.not. allocated(array)) then
-           allocate(array(n))
-           s_array = n*szoi1
+           s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &              ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc))
+            s_array = s_alloc*szoi1
 !$acc enter data create(array) async( async_queue )
-           s_prmem = s_prmem + s_array
+            s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
+           if(debMem) print*,'alloc i1',n.ne.s_alloc,n,rank
         else
            if ( n > size(array) .or. n < 4*size(array)/5 ) then
-              s_array = size(array)*szoi1
-              s_prmem = s_prmem - s_array
+              if(debMem) print*,'realloc i1  ',n.ne.s_alloc
+     &                         ,n,size(array),rank
+               s_array = size(array)*szoi1
+               s_prmem =  s_prmem - s_array
               sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
               deallocate(array)
               allocate(array(n))
-              s_array = n*szoi1
+              s_array  = n*szoi1
 !$acc enter data create(array) async( async_queue )
-              s_prmem = s_prmem + s_array
+               s_prmem =  s_prmem + s_array
               sd_prmem = sd_prmem + s_array
            end if
         end if
+        !if(size(array).eq.0) print*,'trouble prmem_int1_req',n,rank
 
       end subroutine
       ! Request heap memory on 2d integer array
       module subroutine prmem_int_req2( array, nl, nc, async, queue,
-     &                  config, nlst, ncst )
+     &                  config, nlst, ncst, cdim )
         implicit none
         integer, allocatable, intent(inout) :: array(:,:)
         integer, intent(in) :: nc, nl
         logical, optional, intent(in) :: async
         integer, optional, intent(in) :: queue, config
         integer, optional, intent(in) :: nlst, ncst
+        logical, optional, intent(in) :: cdim
 
         integer ashape(2)
         integer cfg, nlstr, ncstr
         integer(int_ptr_kind()) s_array
+        logical f_col
 #ifdef _OPENACC
         integer :: async_queue
         async_queue = acc_async_sync
@@ -1978,22 +2065,41 @@ c
             async_queue = queue
         end if
 #endif
-        if (present(config)) then
-           cfg = config
-        else
-           cfg = mhostacc
-        end if
+ 13     format(A13,L3,2I10,2x,I4)
+ 14     format(A13,L3,3I10,2x,I4)
+ 18     format("ERROR: prmem_int_req2 nl different from array",/,
+     &         5x,"Cannot Procede to reallocation",/,
+     &         5x,"old shape",2I10,1x,"request shape",2I10)
 
-        nlstr = 1; ncstr = 1;
+        ! Optional parameters
+        cfg = mhostacc
+        nlstr = 1; ncstr = 1; f_col = .true.
+        if (present(config)) cfg = config
         if (present(nlst)) nlstr = nlst
         if (present(ncst)) ncstr = ncst
+        if (present(cdim)) f_col = cdim
 
         if (.not.allocated(array)) then
-           allocate(array(nlstr:nl,ncstr:nc))
-           s_array = (nl-nlstr+1)*(nc-ncstr+1)*szoi
-!$acc enter data create(array) async( async_queue )
+
+           if (f_col) then
+             s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &                      ,extra_alloc.and.nc.ne.natoms)
+             allocate(array(nlstr:nl,ncstr:s_alloc))
+             s_array = (nl-nlstr+1)*(s_alloc-ncstr+1)*szoi
+           else
+             s_alloc = merge(nl+int(real(nl,t_p)*mem_inc),nl
+     &                      ,extra_alloc.and.nl.ne.natoms)
+             allocate(array(nlstr:s_alloc,ncstr:nc))
+             s_array = (s_alloc-nlstr+1)*(nc-ncstr+1)*szoi
+           end if
+
            s_prmem = s_prmem + s_array
-          sd_prmem =sd_prmem + s_array
+           if (btest(cfg,memacc)) then
+!$acc enter data create(array) async( async_queue )
+              sd_prmem =sd_prmem + s_array
+           end if
+           if(debMem) print 13,'alloc i 2',extra_alloc,nl,nc,rank
+
         else if (btest(cfg,memfree).or.nc*nl.eq.0) then
            ashape = shape(array)
            s_array = ashape(1)*ashape(2)*szoi
@@ -2005,20 +2111,58 @@ c
            deallocate(array)
         else
            ashape = shape(array)
-           if ( nc>ashape(2) .or. nl.ne.ashape(1) ) then
+           if ( nc>ashape(2).and.f_col ) then
+              if (nl.ne.ashape(1)) then
+                 print 18, nl,nc,ashape
+                 call fatal
+              end if
+
+              n_realloc_i = n_realloc_i + 1
+              s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &                       ,extra_alloc.and.nc.ne.natoms)
+              if(debMem) print 14,'realloc i 2 ',nc.ne.s_alloc
+     &                           ,nc,ashape,rank
+
               s_array = ashape(1)*ashape(2)*szoi
               s_prmem = s_prmem - s_array
+              if (btest(cfg,memacc)) then
              sd_prmem =sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
+              end if
               deallocate(array)
-              allocate(array(nlstr:nl,ncstr:nc))
+              allocate(array(nlstr:nl,ncstr:s_alloc))
+              if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
-              s_array = (nl-nlstr+1)*(nc-ncstr+1)*szoi
+              end if
+              s_array = (nl-nlstr+1)*(s_alloc-ncstr+1)*szoi
               s_prmem = s_prmem + s_array
-             sd_prmem =sd_prmem + s_array
+              if (btest(cfg,memacc)) sd_prmem =sd_prmem + s_array
+           else if ( nl>ashape(1).and..not.f_col ) then
+
+              n_realloc_i = n_realloc_i + 1
+              s_alloc = merge(nl+int(real(nl,t_p)*mem_inc),nl
+     &                       ,extra_alloc.and.nl.ne.natoms)
+              if(debMem) print 14,'realloc i 2 ',nl.ne.s_alloc
+     &                           ,nl,ashape,rank
+
+              s_array = ashape(1)*ashape(2)*szoi
+              s_prmem = s_prmem - s_array
+              if (btest(cfg,memacc)) then
+             sd_prmem =sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+              end if
+              deallocate(array)
+              allocate(array(nlstr:s_alloc,ncstr:nc))
+              if (btest(cfg,memacc)) then
+!$acc enter data create(array) async( async_queue )
+              end if
+              s_array = (s_alloc-nlstr+1)*(nc-ncstr+1)*szoi
+              s_prmem = s_prmem + s_array
+              if (btest(cfg,memacc)) sd_prmem =sd_prmem + s_array
            end if
         end if
 
+c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
       end subroutine
       module subroutine prmem_int1_req2( array, nl, nc, async )
         implicit none
@@ -2035,15 +2179,18 @@ c
             if( async ) async_queue = acc_async_noval
         end if
 #endif
+  14    format (A13,L3,3I10,2x,I4)
   66    format ('error MOD_tinMemory:prmem_int1_req2 ',
      &          'improper array shape !! ', 2I4,' over ', 2I4,/,
      &          'cannot procede to reallocation ')
 
         if (.not.allocated(array)) then
-           allocate(array(nl,nc))
+           s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &                    ,extra_alloc.and.nc.ne.natoms)
+           allocate(array(nl,s_alloc))
 !$acc enter data create(array) async( async_queue )
-           s_prmem = s_prmem + int(nl,int_ptr_kind())*nc*sizeof(nc)
-          sd_prmem =sd_prmem + int(nl,int_ptr_kind())*nc*sizeof(nc)
+           s_prmem = s_prmem + nl*s_alloc*szoi1
+          sd_prmem =sd_prmem + nl*s_alloc*szoi1
         else
            ashape = shape(array)
            if ( nl.ne.ashape(1) ) then
@@ -2051,16 +2198,23 @@ c
               call fatal
            end if
            if ( nc > ashape(2) ) then
-              s_prmem = s_prmem - int(nl,int_ptr_kind())*nc*sizeof(nc)
-             sd_prmem =sd_prmem - int(nl,int_ptr_kind())*nc*sizeof(nc)
+
+              s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &                       ,extra_alloc.and.nc.ne.natoms)
+              if(debMem) print 14,'realloc i1 2',nc.ne.s_alloc
+     &                           ,nc,ashape,rank
+
+              s_prmem = s_prmem - ashape(1)*ashape(2)*szoi1
+             sd_prmem =sd_prmem - ashape(1)*ashape(2)*szoi1
 !$acc exit data delete(array) async( async_queue )
               deallocate(array)
-              allocate(array(nl,nc))
+              allocate(array(nl,s_alloc))
 !$acc enter data create(array) async( async_queue )
-              s_prmem = s_prmem + int(nl,int_ptr_kind())*nc*sizeof(nc)
-             sd_prmem =sd_prmem + int(nl,int_ptr_kind())*nc*sizeof(nc)
+              s_prmem = s_prmem + nl*s_alloc*szoi1
+             sd_prmem =sd_prmem + nl*s_alloc*szoi1
            end if
         end if
+        !if(size(array).eq.0) print*,'trouble prmem_int1_req2',nl,nc,rank
 
       end subroutine
 
@@ -2097,13 +2251,16 @@ c
         if (present(ncst)) ncstr = ncst
 
         if (.not.allocated(array)) then
-           allocate(array(nlstr:nl,ncstr:nc))
-           s_array = (nl-nlstr+1)*(nc-ncstr+1)*szoi8
+           s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &              ,extra_alloc.and.nc.ne.natoms)
+           allocate(array(nlstr:nl,ncstr:s_alloc))
+           s_array = (nl-nlstr+1)*(s_alloc-ncstr+1)*szoi8
 !$acc enter data create(array) async( async_queue )
            s_prmem = s_prmem + s_array
           sd_prmem =sd_prmem + s_array
+          !print*,'alloc i8 2',nl,nc,s_array
         else if (btest(cfg,memfree).or.nc*nl.eq.0) then
-           ashape = shape(array)
+            ashape = shape(array)
            s_array = ashape(1)*ashape(2)*szoi8
            if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
@@ -2114,6 +2271,7 @@ c
         else
            ashape = shape(array)
            if ( nc>ashape(2) .or. nl.ne.ashape(1) ) then
+              if(debMem) print*,'realloc i8 2',nc,nl,ashape
               s_array = ashape(1)*ashape(2)*szoi8
               s_prmem = s_prmem - s_array
              sd_prmem =sd_prmem - s_array
@@ -2126,6 +2284,7 @@ c
              sd_prmem =sd_prmem + s_array
            end if
         end if
+        !if(size(array).eq.0) print*,'trouble prmem_int8_req2',nl,nc,rank
 
       end subroutine
 
@@ -2155,12 +2314,15 @@ c
         end if
 
         if (.not. allocated(array)) then
-           allocate(array(n))
+           s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                    ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc))
            s_prmem =  s_prmem + sizeof(array)
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + sizeof(array)
            end if
+           if (debMem) print*,'alloc l  ',n.ne.s_alloc,n,rank
         else if (btest(cfg,memfree).or.n.eq.0) then
            if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - sizeof(array)
@@ -2170,6 +2332,8 @@ c
            deallocate(array)
         else
            if ( n > size(array) .or. n < 4*size(array)/5 ) then
+              if(debMem) print*,'realloc l  ',n.ne.s_alloc
+     &                         ,n,size(array),rank
               s_prmem = s_prmem - sizeof(array)
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - sizeof(array)
@@ -2184,6 +2348,7 @@ c
               end if
            end if
         end if
+        !if(size(array).eq.0) print*,'trouble prmem_logi_req',n,rank
 
       end subroutine
 
@@ -2209,6 +2374,9 @@ c
             async_queue = queue
         end if
 #endif
+ 13     format(A13,L3,1I10,I4)
+ 14     format(A13,L3,2I10,I4)
+
         if (present(config)) then
            cfg = config
         else
@@ -2218,24 +2386,35 @@ c
         if (present(nst)) nstr=nst
 
         if(.not. allocated(array)) then
-            allocate(array(nstr:n))
+            s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &              ,extra_alloc.and.n.ne.natoms)
+            allocate(array(nstr:s_alloc))
             if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
             end if
-            s_array = size(array)*szoTp
+            s_array = s_alloc*szoTp
             s_prmem = s_prmem + s_array
            sd_prmem =sd_prmem + s_array
+           if(debMem) print 13,'alloc r ',n.ne.s_alloc,n,rank
         else
             if( n-nstr+1 > size(array).or.nstr.ne.1 ) then
+
+              n_realloc_r = n_realloc_r + 1
+              call enable_extra_alloc(1)
+              s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                       ,extra_alloc.and.n.ne.natoms)
+              if(debMem) print 14,'realloc r ',n.ne.s_alloc
+     &                         ,n,size(array),rank
+
               s_array = size(array)*szoTp
               if (btest(cfg,memacc)) then
-             sd_prmem =sd_prmem - s_array
+                 sd_prmem =sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
               end if
               s_prmem = s_prmem - s_array
               deallocate(array)
-              allocate(array(nstr:n))
-              s_array = size(array)*szoTp
+              allocate(array(nstr:s_alloc))
+              s_array = s_alloc*szoTp
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
@@ -2243,6 +2422,7 @@ c
               end if
             endif
         endif
+        !if(size(array).eq.0) print*,'trouble prmem_real_req',n,rank
 
       end subroutine
 
@@ -2259,26 +2439,40 @@ c
             if( async ) async_queue = acc_async_noval
         end if
 #endif
+ 14     format(A13,L3,2I10,I4)
+
         if(.not. allocated(array)) then
-            allocate(array(n))
-            s_array = n*szoRp
+            s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                     ,extra_alloc.and.n.ne.natoms)
+            allocate(array(s_alloc))
+            s_array = s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
+           if(debMem) print*,'alloc rm ',n,s_alloc
         else
             if( n > size(array) ) then
+
+               n_realloc_r = n_realloc_r + 1
+               call enable_extra_alloc(1)
+               s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                        ,extra_alloc.and.n.ne.natoms)
+               if(debMem) print 14,'realloc rm ',n.ne.s_alloc
+     &                            ,n,size(array),rank
+
                 s_array = size(array)*szoRp
                 s_prmem =  s_prmem - s_array
                sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
                deallocate(array)
-               allocate(array(n))
-               s_array = n*szoRp
+               allocate(array(s_alloc))
+               s_array = s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
                 s_prmem =  s_prmem + s_array
                sd_prmem = sd_prmem + s_array
             endif
-        endif
+        end if
+        !if(size(array).eq.0) print*,'trouble prmem_realm_req',n,rank
 
       end subroutine
 
@@ -2295,26 +2489,40 @@ c
             if( async ) async_queue = acc_async_noval
         end if
 #endif
+ 13     format(A13,L3,1I10,I4)
+ 14     format(A13,L3,2I10,I4)
+
         if(.not. associated(array)) then
-            allocate(array(n))
-            s_array = n*szoRp
+            s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                     ,extra_alloc.and.n.ne.natoms)
+            allocate(array(s_alloc))
+            s_array = s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
+           if(debMem) print*,'alloc prm ',n,s_alloc
         else
             if( n > size(array) ) then
+
+               n_realloc_r = n_realloc_r + 1
+               s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                        ,extra_alloc.and.n.ne.natoms)
+               if(debMem) print 14,'realloc pm ',n.ne.s_alloc
+     &                            ,n,size(array),rank
+
                 s_array = size(array)*szoRp
                 s_prmem =  s_prmem - s_array
                sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
                deallocate(array)
-               allocate(array(n))
-               s_array = n*szoRp
+               allocate(array(s_alloc))
+               s_array = s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
                 s_prmem =  s_prmem + s_array
                sd_prmem = sd_prmem + s_array
             endif
         endif
+        !if(size(array).eq.0) print*,'trouble prmem_prealm_req',n,rank
 
       end subroutine
 
@@ -2330,24 +2538,38 @@ c
             if( async ) async_queue = acc_async_noval
         end if
 #endif
+ 13     format(A13,L3,1I10,I4)
+ 14     format(A13,L3,2I10,I4)
+
         if(.not. associated(array)) then
-            allocate(array(n))
+            s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                     ,extra_alloc.and.n.ne.natoms)
+            allocate(array(s_alloc))
 !$acc enter data create(array) async( async_queue )
-           s_prmem = s_prmem + sizeof(array)
+            s_prmem =  s_prmem + sizeof(array)
            sd_prmem = sd_prmem + sizeof(array)
+           if(debMem) print 13,'alloc pr ',n.ne.s_alloc,n,rank
         else
             if( n > size(array) ) then
-               s_prmem = s_prmem - sizeof(array)
+
+               n_realloc_r = n_realloc_r + 1
+               s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                        ,extra_alloc.and.n.ne.natoms)
+               if(debMem) print 14,'realloc pr ',n.ne.s_alloc
+     &                            ,n,size(array),rank
+
+                s_prmem = s_prmem - sizeof(array)
                sd_prmem = sd_prmem - sizeof(array)
 !$acc exit data delete(array) async( async_queue )
                deallocate(array)
                nullify(array)
-               allocate(array(n))
+               allocate(array(s_alloc))
 !$acc enter data create(array) async( async_queue )
-               s_prmem = s_prmem + sizeof(array)
-               sd_prmem = sd_prmem + sizeof(array)
+                s_prmem =  s_prmem + s_alloc*szoTp
+               sd_prmem = sd_prmem + s_alloc*szoTp
             endif
         endif
+        !if(size(array).eq.0) print*,'trouble prmem_preal_req',n,rank
 
       end subroutine
       ! Request heap memory on tinker 2D real data
@@ -2357,8 +2579,8 @@ c
         real(t_p), allocatable, intent(inout) :: array(:,:)
         integer  , intent(in) :: nc, nl
         logical  , optional, intent(in) :: async
-        integer, optional, intent(in) :: queue, config
-        integer, optional, intent(in) :: nlst, ncst
+        integer  , optional, intent(in) :: queue, config
+        integer  , optional, intent(in) :: nlst, ncst
 
         integer ashape(2)
         integer cfg, nlstr, ncstr
@@ -2388,13 +2610,16 @@ c
      &          'cannot procede to reallocation ')
 
         if (.not.allocated(array)) then
-           allocate(array(nlstr:nl,ncstr:nc))
-           s_array = (nl-nlstr+1)*(nc-ncstr+1)*szoTp
+           s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &              ,extra_alloc.and.nc.ne.natoms)
+           allocate(array(nlstr:nl,ncstr:s_alloc))
+           s_array = (nl-nlstr+1)*(s_alloc-ncstr+1)*szoTp
            s_prmem = s_prmem + s_array
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
            sd_prmem = sd_prmem + s_array
            end if
+           if(debMem) print*,'alloc r 2',nc.ne.s_alloc,nl,nc
         else
            ashape  = shape(array)
            s_array = ashape(1)*ashape(2)*szoTp
@@ -2403,14 +2628,22 @@ c
               call fatal
            end if
            if ( nc>ashape(2) .or. nl.ne.ashape(1) ) then
+ 12           format(A13,L3,3I10,2x,I5)
+              n_realloc_r = n_realloc_r + 1
+              call enable_extra_alloc(1)
+              s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &                 ,extra_alloc.and.nc.ne.natoms)
+              if(debMem) print 12,'realloc r 2',nc.ne.s_alloc
+     &                         ,nc,ashape,rank
+
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
               end if
               s_prmem = s_prmem - s_array
               deallocate(array)
-              allocate(array(nlstr:nl,ncstr:nc))
-              s_array = (nl-nlstr+1)*(nc-ncstr+1)*szoTp
+              allocate(array(nlstr:nl,ncstr:s_alloc))
+              s_array = (nl-nlstr+1)*(s_alloc-ncstr+1)*szoTp
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
@@ -2418,6 +2651,7 @@ c
               end if
            end if
         end if
+        !if(size(array).eq.0) print*,'trouble prmem_real_req2',nl,nc,rank
 
       end subroutine
       ! Request heap memory on tinker 2D real mixed precision data
@@ -2440,11 +2674,14 @@ c
      &          'cannot procede to reallocation ')
 
         if (.not.allocated(array)) then
-           allocate(array(nl,nc))
-           s_array = nl*nc*szoRp
+           s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &              ,extra_alloc.and.nc.ne.natoms)
+           allocate(array(nl,s_alloc))
+           s_array = nl*s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
+           if(debMem) print*,'alloc rm 2',nc.ne.s_alloc,nl,nc
         else
            ashape = shape(array)
            if (nl.ne.ashape(1)) then
@@ -2452,18 +2689,26 @@ c
               call fatal
            end if
            if ( nc > ashape(2) ) then
+ 12           format(A13,L3,3I10,2x,I5)
+              n_realloc_r = n_realloc_r + 1
+              s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &                       ,extra_alloc.and.nc.ne.natoms)
+              if(debMem) print 12,'realloc rm 2',nc.ne.s_alloc
+     &                         ,nc,ashape,rank
+
               s_array  = ashape(1)*ashape(2)*szoRp
                s_prmem =  s_prmem - s_array
               sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
               deallocate(array)
-              allocate  (array(nl,nc))
-              s_array  = nl*nc*szoRp
+              allocate  (array(nl,s_alloc))
+              s_array  = nl*s_alloc*szoRp
                s_prmem =  s_prmem + s_array
               sd_prmem = sd_prmem + s_array
 !$acc enter data create(array) async( async_queue )
            end if
         end if
+      !if(size(array).eq.0) print*,'trouble prmem_realm_req2',nl,nc,rank
 
       end subroutine
 
@@ -2497,13 +2742,16 @@ c
         end if
 
         if (.not.allocated(array)) then
-           allocate(array(nx,ny,nz))
-           s_array = nx*ny*nz*szoTp
+           s_alloc = merge(nz+int(real(nz,t_p)*mem_inc),nz
+     &              ,extra_alloc.and.nz.ne.natoms)
+           allocate(array(nx,ny,s_alloc))
+           s_array = nx*ny*s_alloc*szoTp
            s_prmem = s_prmem + s_array
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
            sd_prmem = sd_prmem + s_array
            end if
+           if(debMem) print*,'alloc r 3',nz.ne.s_alloc,nx,ny,nz
         else if (btest(cfg,memfree).or.nx*ny*nz.eq.0) then
            ashape = shape(array)
            s_array= ashape(1)*ashape(2)*ashape(3)*szoTp
@@ -2521,15 +2769,23 @@ c
               call fatal
            end if
            if ( btest(cfg,memrealloc).or.nz > ashape(3) ) then
-              s_array= ashape(1)*ashape(2)*ashape(3)*szoTp
+
+ 13           format(A13,L3,4I10,2x,I5)
+              n_realloc_r = n_realloc_r + 1
+              s_alloc = merge(nz+int(real(nz,t_p)*mem_inc),nz
+     &                       ,extra_alloc.and.nz.ne.natoms)
+              if(debMem) print 13,'realloc r 3',nz.ne.s_alloc
+     &                           ,nz,ashape,rank
+
+              s_array = ashape(1)*ashape(2)*ashape(3)*szoTp
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
               end if
               s_prmem = s_prmem - s_array
               deallocate(array)
-              allocate(array(nx,ny,nz))
-              s_array = nx*ny*nz*szoTp
+              allocate(array(nx,ny,s_alloc))
+              s_array = nx*ny*s_alloc*szoTp
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
@@ -2537,6 +2793,7 @@ c
               end if
            end if
         end if
+      !if(size(array).eq.0) print*,'trouble prmem_real_req3',ny,nz,rank
 
       end subroutine
 
@@ -2569,13 +2826,16 @@ c
         end if
 
         if (.not.allocated(array)) then
-           allocate(array(nx,ny,nz))
-           s_array = nx*ny*nz*szoTp
+           s_alloc = merge(nz+int(real(nz,t_p)*mem_inc),nz
+     &              ,extra_alloc.and.nz.ne.natoms)
+           allocate(array(nx,ny,s_alloc))
+           s_array = nx*ny*s_alloc*szoTp
            s_prmem = s_prmem + s_array
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
            sd_prmem = sd_prmem + s_array
            end if
+           if(debMem) print*,'alloc rm 3',nz.ne.s_alloc,nz,rank
         else if (btest(cfg,memfree).or.nx*ny*nz.eq.0) then
            ashape = shape(array)
            s_array= ashape(1)*ashape(2)*ashape(3)*szoTp
@@ -2595,6 +2855,10 @@ c          end if
            so_array= ashape(1)*ashape(2)*ashape(3)*szoTp
            s_array = nx*ny*nz*szoTp
            if ( btest(cfg,memrealloc).or.s_array > so_array ) then
+
+ 13           format(A13,3I10,3x,3I10,2x,I4)
+              if(debMem) print 13,'realloc rm 3',nx,ny,nz,ashape,rank
+
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - so_array
 !$acc exit data delete(array) async( async_queue )
@@ -2609,6 +2873,7 @@ c          end if
               end if
            end if
         end if
+      !if(size(array).eq.0) print*,'trouble prmem_realm_req3',ny,nz,rank
 
       end subroutine
 
@@ -2632,11 +2897,14 @@ c          end if
      &          'cannot procede to reallocation ')
 
         if (.not.allocated(array)) then
-           allocate(array(nx,ny,nz,nc))
+           s_alloc = merge(nz+int(real(nz,t_p)*mem_inc),nz
+     &                  ,extra_alloc.and.nz.ne.natoms)
+           allocate(array(nx,ny,s_alloc,nc))
 !$acc enter data create(array) async( async_queue )
-           s_array  = nx*ny*nz*nc*szoTp
+           s_array  = nx*ny*s_alloc*nc*szoTp
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
+           if(debMem) print*,'alloc r 4',nx,ny,nz,nc,rank
         else
            ashape = shape(array)
            if (nx.ne.ashape(1) .or. ny.ne.ashape(2) .or.
@@ -2644,14 +2912,26 @@ c          end if
               print 66, ashape, nx,ny,nz,nc
               call fatal
            end if
+           if (nz<ashape(3)) then
+        !TODO  Add warning when nz<size(array,3)
+        !      array should be pass as an assume shape arg to a routine
+           end if
            if ( nz > ashape(3) ) then
+
+ 13           format(A13,L3,I10,2x,2I4,I10,I4,2x,I5)
+              n_realloc_r = n_realloc_r + 1
+              s_alloc = merge(nz+int(real(nz,t_p)*mem_inc),nz
+     &                       ,extra_alloc.and.nz.ne.natoms)
+              if(debMem) print 13,'realloc r 4',nz.ne.s_alloc
+     &                           ,nz,ashape,rank
+
               s_array = ashape(1)*ashape(2)*ashape(3)*ashape(4)*szoTp
               s_prmem =  s_prmem - s_array
              sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
               deallocate(array)
-              allocate(array(nx,ny,nz,nc))
-              s_array = nx*ny*nz*nc*szoTp
+              allocate(array(nx,ny,s_alloc,nc))
+              s_array = nx*ny*s_alloc*nc*szoTp
               s_prmem =  s_prmem + s_array
              sd_prmem = sd_prmem + s_array
 !$acc enter data create(array) async( async_queue )
@@ -2701,14 +2981,16 @@ c
 #endif
 
         if (.not. allocated(array)) then
-           allocate(array(n))
-           s_array = n*szoi
+           s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                  ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc))
+           s_array = s_alloc*szoi
            s_prmem =  s_prmem + s_array
            if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           !print*,'alloc',n
+           if(debMem) print*,'mvalloc i',n.ne.s_alloc,n,s_array
         else if (btest(cfg,memfree).or.n.eq.0) then
            s_array = size(array)*szoi
            if (btest(cfg,memacc)) then
@@ -2720,7 +3002,22 @@ c
            deallocate(array)
         else
            if ( n > size(array) ) then
-              !print*,'realloc',n,size(array),(5*size(array)/4)
+
+ 16           format(A,L3,2I10,2x,2I5)
+ 17           format(A,L3,3I10,2x,I5)
+              n_realloc_i  = n_realloc_i + 1
+              mv_realloc_i = mv_realloc_i + 1
+              s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                  ,extra_alloc.and.n.ne.natoms)
+
+              ! prmem_int_mvreq special extra allocation
+              if (mv_realloc_i.gt.5) then
+                 s_alloc = n+int(real(n,t_p)*mem_inc)
+                 mv_realloc_i=0
+              end if
+              if(debMem) print 16,'mvrealloc i ',n.ne.s_alloc
+     &                           ,n,size(array),n_realloc_i,rank
+
               sz_array = size(array)
               allocate(buffer(sz_array))
 !$acc enter data create(buffer) async( async_queue )
@@ -2736,8 +3033,8 @@ c
 !$acc exit data delete(array) async( async_queue )
               end if
               deallocate(array)
-              allocate(array(n))
-              s_array = n*szoi
+              allocate(array(s_alloc))
+              s_array = s_alloc*szoi
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )

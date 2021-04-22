@@ -17,6 +17,7 @@ c
 #include "tinker_precision.h"
       subroutine field
       use keys
+      use inform ,only: app_id,dynamic_a,pimd_a
       use potent
       use uprior ,only: use_pred
       implicit none
@@ -69,7 +70,8 @@ c
 c
 c     Flag for predictor-Corrector
 c
-      use_pred       = .true.
+      use_pred       = merge(.true.,.false.,app_id.eq.dynamic_a.or.
+     &                       app_id.eq.pimd_a)
 c
 c     Set default values of Force field potential
 c

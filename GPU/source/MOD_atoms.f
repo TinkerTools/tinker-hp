@@ -61,4 +61,17 @@ c
         end subroutine
       end interface
 
+      contains
+
+      subroutine save_atoms_pos
+      implicit none
+      integer i
+!$acc parallel loop async default(present)
+      do i = 1,n
+         xold(i) = x(i)
+         yold(i) = y(i)
+         zold(i) = z(i)
+      end do
+      end subroutine
+
       end module

@@ -45,6 +45,8 @@ c
       character*240 xyzfile
       character*240 dcdfile
 c
+      ! Sign running program
+      app_id = analyze_a
 c
 c     set up the structure and mechanics calculation
 c
@@ -372,7 +374,7 @@ c
       integer i
       integer iichg,iimol,kkpole,k
       real(t_p) q,xr,yr,zr
-      real(t_p) dipx,dipy,dipz
+      real(r_p) dipx,dipy,dipz
 
       real(t_p) mux,muy,muz,mudx,mudy,mudz,mupx,mupy,mupz
  1000 format(/'x dipolar moment of molecule',I5,' : ',F14.5)
@@ -380,6 +382,8 @@ c
  1020 format(/'z dipolar moment of molecule',I5,' : ',F14.5)
  1030 format(/'Norm of the dipolar moment of molecule',I5,' : ',F14.5)
 c
+!$acc wait
+!$acc update host(molculeglob)
       if (use_mpole) then
         do i = 1, nmoleloc
           iimol = molculeglob(i)

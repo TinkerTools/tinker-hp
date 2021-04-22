@@ -143,10 +143,18 @@ c     s_tinWork Tinker-HP workSpace Estimation
         enumerator :: memsmartrealloc
       end enum
 
-      integer debMem
+      integer:: debMem=0
 
       integer mhostonly, mhostacc, mhostnvsh, mhostaccnvsh
      &      , mnvshonly, macconly, mfhostacc
+
+      ! Extra allocation for parallel run
+      logical   extra_alloc
+      integer  ,protected :: s_alloc
+      real(t_p),parameter :: mem_inc=0.10
+
+      integer,protected :: n_realloc_i
+      integer,protected :: n_realloc_r
 
       parameter(
      &   szoi         = sizeof(i4)                 ,
@@ -387,12 +395,13 @@ c     s_tinWork Tinker-HP workSpace Estimation
         logical   , optional, intent(in) :: async
       end subroutine
       module subroutine prmem_int_req2( array, nl, nc, async, queue,
-     &                  config, nlst, ncst )
+     &                  config, nlst, ncst, cdim )
         integer, allocatable, intent(inout) :: array(:,:)
         integer, intent(in) :: nc, nl
         logical, optional, intent(in) :: async
         integer, optional, intent(in) :: queue, config
         integer, optional, intent(in) :: nlst, ncst
+        logical, optional, intent(in) :: cdim
       end subroutine
       module subroutine prmem_int1_req2( array, nl, nc, async )
         integer(1), allocatable, intent(inout) :: array(:,:)
@@ -440,6 +449,8 @@ c     s_tinWork Tinker-HP workSpace Estimation
       end subroutine
       end interface
 
+      !Behave as same as --prmem_request-- but operates on
+      ! real(r_p) type 
       interface prmem_requestm
       module subroutine prmem_realm_req( array, n, async )
         real(r_p), allocatable, intent(inout) :: array(:)
@@ -584,6 +595,10 @@ c     end do
 #endif
         s_sfWork = 0
         s_tinWork= 0
+        n_realloc_i = 0
+        n_realloc_r = 0
+        extra_alloc = .false.
+        s_alloc  = 0
       end subroutine
 
       subroutine mem_get_int(hmem,dmem)

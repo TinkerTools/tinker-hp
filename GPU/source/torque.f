@@ -65,14 +65,23 @@ c
 c
 c     get the local frame type and the frame-defining atoms
 c
-      ia = zaxis(i)
-      if (ia.gt.0) ialoc = loc(ia)
-      ib = ipole(i)
+      ib = i!ipole(i)
+      if (ib.le.0) return
       ibloc = loc(ib)
+      if (ibloc.le.0) return
+
+      ia = zaxis(i)
+      if (ia.le.0) return
+      ialoc = loc(ia)
+      if (ialoc.le.0) return
       ic = xaxis(i)
-      if (ic.gt.0) icloc = loc(ic)
+      if (ic.le.0) ic = ib
+      icloc = loc(ic)
+      if (icloc.le.0) icloc = ibloc
       id = yaxis(i)
-      if (id.gt.0) idloc = loc(id)
+      if (id.le.0) id = ib
+      idloc = loc(id)
+      if (idloc.le.0) idloc = ibloc
       axetyp = polaxe(i)
       if (axetyp .eq. 'None')  return
 c
@@ -439,14 +448,30 @@ c
 c
 c     get the local frame type and the frame-defining atoms
 c
+      ib = i!ipole(i)
+      if (ib.le.0) return
+      ibloc = locrec(ib)
+      if (ibloc.le.0) return
+      if (ibloc.gt.nlocrec2) return
+
       ia = zaxis(i)
-      if (ia.gt.0) ialoc = locrec1(ia)
-      ib = ipole(i)
-      ibloc = locrec1(ib)
+      if (ia.le.0) return
+      ialoc = locrec(ia)
+      if (ialoc.le.0) return
+      if (ialoc.gt.nlocrec2) return
+
       ic = xaxis(i)
-      if (ic.gt.0) icloc = locrec1(ic)
+      if (ic.le.0) ic = ib
+      icloc = locrec(ic)
+      if (icloc.le.0) icloc = ibloc
+      if (icloc.gt.nlocrec2) icloc = ibloc
+
       id = yaxis(i)
-      if (id.gt.0) idloc = locrec1(id)
+      if (id.le.0) id = ib
+      idloc = locrec(id)
+      if (idloc.le.0) idloc = ibloc
+      if (idloc.gt.nlocrec2) idloc = ibloc
+
       axetyp = polaxe(i)
       if (axetyp .eq. 'None')  return
 c
@@ -654,7 +679,7 @@ c
 c
 c     force distribution for the 3-Fold local coordinate method
 c
-      else if (polaxe(i) .eq. '3-Fold') then
+      else if (axetyp .eq. '3-Fold') then
          p(1) = u(1) + v(1) + w(1)
          p(2) = u(2) + v(2) + w(2)
          p(3) = u(3) + v(3) + w(3)

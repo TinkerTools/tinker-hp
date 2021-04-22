@@ -110,6 +110,7 @@ c
 c     find fast-evolving velocities and positions via Verlet recursion
 c
       do stepfast = 1, nalt
+         if (use_rattle) call save_atoms_pos
 !$acc parallel loop async
          do i = 1, nloc
             iglob = glob(i)
@@ -118,9 +119,6 @@ c
                do j = 1, 3
                   v(j,iglob) = v(j,iglob) + aalt(j,iglob)*dta_2
                end do
-               xold(iglob) = x(iglob)
-               yold(iglob) = y(iglob)
-               zold(iglob) = z(iglob)
                x(iglob) = x(iglob) + v(1,iglob)*dta
                y(iglob) = y(iglob) + v(2,iglob)*dta
                z(iglob) = z(iglob) + v(3,iglob)*dta

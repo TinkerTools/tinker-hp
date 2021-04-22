@@ -21,9 +21,9 @@ c
       use ewald
       use iounit
       use inform    ,only: deb_Path,minmaxone
-      use interfaces,only:inducepcg_pme2gpu,tmatxb_p,
-     &                    efld0_directgpu2,
-     &                    efld0_directgpu_p
+      use interfaces,only: inducepcg_pme2gpu,tmatxb_p
+     &                   , inducestepcg_pme2gpu
+     &                   , efld0_directgpu2, efld0_directgpu_p
       use math
       use mpole
       use nvshmem
@@ -156,6 +156,10 @@ c
      &     reqrecdirrec,reqrecdirsend)
 c
       call commfieldgpu(nrhs,ef)
+#ifdef _OPENACC
+      ! Prevent overlap between commfield and guess construct
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
       call commdirdirgpu(nrhs,0,mu,reqrec,reqsend)
 c
 c     add direct and reciprocal fields
@@ -218,12 +222,20 @@ c
 c
 c     now, call the proper solver.
 c
-      if (polalg.eq.1) then
+      if (polalg.eq.pcg_SId) then
          call inducepcg_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
-      else if (polalg.eq.2) then ! FIXME a porter
-!$acc update host(ef,mu,murec)
+      else if (polalg.eq.jacobi_SId) then ! FIXME a porter
          call inducejac_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
-!$acc update device(ef,mu,murec)
+#if 0
+      else if (polalg.eq.step_pcg_SId) then
+         call inducestepcg_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
+      else if (polalg.eq.step_pcg_short_SId) then
+         if (use_mpolelong) then
+            call inducepcg_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
+         else
+            call inducestepcg_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
+         end if
+#endif
       else
          if (rank.eq.0) write(iout,1000)
          call fatal
@@ -650,10 +662,8 @@ c
 
       sizeloc  = 3*nrhs*npoleloc
       sizebloc = 3*nrhs*npolebloc
-      !TODO This wait might be useless
-!$acc wait
       if (first_in) then
-!$acc enter data create(gg1,gg2) async
+!$acc enter data create(gg1,gg2)
          first_in=.false.
       end if
 c
@@ -1183,12 +1193,10 @@ c
           bloc = bmat
           cex = zero
           cex(1) = one
-#ifdef SINGLE
-          call sgesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
-#elif defined(MIXED)
-          call sgesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+#ifdef _OPENACC
+          call fatal_device("inducejac_pme2gpu")
 #else
-          call dgesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+          call M_gesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
 #endif
           munew = zero
           call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
@@ -1261,6 +1269,837 @@ c
       end if
       return
       end
+#if 1
+      module step_cg
+#if TINKER_DOUBLE_PREC
+      integer,parameter:: cgstep_max=7
+#else
+      integer,parameter:: cgstep_max=5
+#endif
+      integer s
+      integer,private:: step_save=0
+      real(t_p),allocatable,target:: sb0(:),sb1(:)
+      real(t_p),allocatable,target:: stepMatV(:)
+      real(r_p),allocatable,target:: stepMatVr(:)
+      real(t_p),pointer:: MatBs(:,:,:),MatWs(:,:,:)
+     &         ,MatW_s(:,:,:),Vas(:,:)
+      real(r_p),pointer:: MatBs_r(:,:,:),MatWs_r(:,:,:)
+     &         ,MatW_sr(:,:,:),Vas_r(:,:)
+      real(t_p),pointer:: MRes_s(:,:,:,:),MQs(:,:,:,:)
+     &         ,MTs(:,:,:,:),MPs(:,:,:,:)
+      integer ipiv(cgstep_max)
+
+      contains
+
+      subroutine man_stepWorkSpace(nrhs)
+      implicit none
+      integer,intent(in)::nrhs
+      integer lsize,s2
+
+      if (step_save.ne.s) then
+        s2    = s*s
+        lsize = nrhs*s*(3*s+1)
+        step_save = s
+        if (associated(MatBs)) then
+!$acc exit data detach(MatBs,MatWs,MatW_s,Vas
+!$acc&         ,MatBs_r,MatWs_r,MatW_sr,Vas_r)
+        end if
+        MatBs (1:s,1:s,1:nrhs) => stepMatV(1:nrhs*s2)
+        MatWs (1:s,1:s,1:nrhs) => stepMatV(  nrhs*s2+1:2*nrhs*s2)
+        Vas   (1:s,1:nrhs)     => stepMatV(2*nrhs*s2+1:nrhs*s*(2*s+1))
+        MatW_s(1:s,1:s,1:nrhs) => stepMatV(nrhs*s*(2*s+1)+1:lsize)
+        MatBs_r (1:s,1:s,1:nrhs) => stepMatVr(1:nrhs*s2)
+        MatWs_r (1:s,1:s,1:nrhs) => stepMatVr(  nrhs*s2+1:2*nrhs*s2)
+        Vas_r   (1:s,1:nrhs)   => stepMatVr(2*nrhs*s2+1:nrhs*s*(2*s+1))
+        MatW_sr (1:s,1:s,1:nrhs) => stepMatVr(nrhs*s*(2*s+1)+1:lsize)
+!$acc enter data attach(MatBs,MatWs,MatW_s,Vas
+!$acc&          ,MatBs_r,MatWs_r,MatW_sr,Vas_r)
+      end if
+      end subroutine
+c     subroutine select_step(iter)
+c     implicit none
+c     integer,intent(in):: iter
+c     if (iter.eq.2) then
+c        s = 4
+c     else
+c        s = cgstep_max
+c     end if
+c     end subroutine
+
+      subroutine amove(n,a,b,queue)
+      implicit none
+      integer n,queue
+      real(t_p) a(*),b(*)
+      integer i
+!$acc parallel loop async(queue) present(a,b)
+      do i = 1,n
+         b(i) = a(i)
+      end do
+      end subroutine
+      subroutine amover(n,a,b,queue)
+      implicit none
+      integer n,queue
+      real(r_p) a(*),b(*)
+      integer i
+!$acc parallel loop async(queue) present(a,b)
+      do i = 1,n
+         b(i) = a(i)
+      end do
+      end subroutine
+      subroutine amovec(n,a,b,queue)
+      implicit none
+      integer n,queue
+      real(r_p) a(*)
+      real(t_p) b(*)
+      integer i
+!$acc parallel loop async(queue) present(a,b)
+      do i = 1,n
+         b(i) = a(i)
+      end do
+      end subroutine
+      subroutine prod_scal(n,a,b,res)
+      implicit none
+      integer n
+      real(t_p) a(*),b(*)
+      real(r_p) res
+      integer i
+!$acc routine vector
+!$acc loop vector reduction(res)
+      do i = 1,n
+         res = res + a(i)*b(i)
+      end do
+      end subroutine
+      subroutine prod_scal_n(n,a,b,res)
+      implicit none
+      integer n
+      real(t_p) a(*),b(*)
+      real(r_p) res
+      integer i
+!$acc routine vector
+!$acc loop vector reduction(res)
+      do i = 1,n
+         res = res - a(i)*b(i)
+      end do
+      end subroutine
+      end module
+
+      subroutine inducestepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
+      use atmlst
+      use domdec
+      use ewald
+      use iounit
+      use inform    ,only: deb_Path,abort,minmaxone
+      use interfaces,only: tmatxb_pmegpu
+#ifdef _OPENACC
+     &              ,initcuSolver,cuGESVm
+#endif
+      use math
+      use mpole
+      use polar
+      use polpot
+      use sizes
+      use step_cg
+      use timestat
+      use units
+      use utils
+      use utilcomm ,buffermpi1=>buffermpi3d,buffermpi2=>buffermpi3d1
+      use utilgpu
+      use polar_temp,only: res,h,pp,zr,diag
+     &              , dipfield,dipfieldbis
+      use potent
+      use mpi
+      implicit none
+c
+c     solves the polarizable dipoles linear equations by preconditioned
+c     conjugate gradient. A diagonal preconditioner is used when precnd
+c     is true, otherwise the standard conjugate gradient algorithm is
+c     recovered by setting the preconditioner to one.
+c
+      integer  ,intent(in)   :: nrhs
+      logical  ,intent(in)   :: precnd
+      real(t_p),intent(in)   :: ef   (:,:,:)
+      real(t_p),intent(inout):: mu   (:,:,:)
+      real(t_p),intent(inout):: murec(:,:,:)
+      procedure(tmatxb_pmegpu) :: matvec
+
+      integer i, it, j, k, l, ll, lc, its, it2
+      integer sdec,ndec,ndec1,stdec,ledec
+      real(r_p) gnorm(2), ggnew(2), ene(2), gg0(2)
+      real(r_p),save:: ggold1=0.0,ggold2=0.0
+      real(r_p),save:: ggnew1=0.0,ggnew2=0.0
+      real(r_p),save:: gnorm1=0.0,gnorm2=0.0
+      real(r_p),save:: ene1=0.0,ene2=0.0
+      real(t_p) zero, one
+      real(r_p) zerom
+      real(r_p) resnrm
+      real(r_p) tempo
+      real(t_p) term,prcdt
+      real(t_p) rest(cgstep_max),row(cgstep_max),rt
+      parameter( zero=0.0,zerom=0,one=1.0 )
+c
+c     MPI
+c
+      integer iglob, iipole, ierr, tag, proc, sizeloc, sizebloc
+      integer req1, req2, req3, req4, req5
+      integer status(MPI_STATUS_SIZE)
+      integer,dimension(nproc) :: reqrecdirrec,reqrecdirsend
+     &       ,reqrec,reqsend,req2rec,req2send
+     &       ,reqendrec,reqendsend,req2endrec,req2endsend
+      logical,save::first_in=.true.
+      logical tinker_isnan_m
+      integer info
+c
+ 1000 format(' stepcgiter converged after ',I3,' iterations.',/,
+     &       ' final residual norm = ',2D14.7)
+ 1010 format(' residual norm at iteration ',I3,':',2D12.2)
+ 1020 format(' Conjugate gradient solver: induced dipoles',/,
+     &  ' ipole       mux         muy         muz')
+ 1021 format(' Conjugate gradient solver: induced p-dipoles',/,
+     &  ' ipole       mux         muy         muz')
+ 1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
+ 1040 format(' Using a diagonal preconditioner.')
+ 1050 format(' Induce step PCG solver not converged after '
+     &      ,I6,' iterations',/,' Residual norm ', 2d10.5)
+
+      if (deb_Path) 
+     &   write(*,'(3x,a)') 'inducestepcg_pme2gpu'
+      call timer_enter ( timer_stepcg )
+
+c
+c     Allocate some memory
+c
+      if (nproc.gt.1) then
+      call prmem_request(buffermpi1,3,nrhs,max(npoleloc,1))
+      call prmem_request(buffermpimu1,3,nrhs,max(npoleloc,1))
+      call prmem_request(buffermpi2,3,nrhs,max(npolerecloc,1))
+      call prmem_request(buffermpimu2,3,nrhs,max(npolerecloc,1))
+      end if
+
+      call prmem_request(dipfield,3,nrhs,max(npoleloc,1))
+      call prmem_request(dipfieldbis,3,nrhs,max(npolerecloc,1))
+      call prmem_request(zr,3,nrhs,max(npoleloc,1))
+      call prmem_request(res,3,nrhs,max(npolebloc,1))
+      call prmem_request(h ,3,nrhs,max(npolebloc,1))
+c     call prmem_request(pp ,3,nrhs,max(npolebloc,1))
+      call prmem_request(diag,npoleloc)
+c
+      s        = cgstep_max
+      req1     = 3*npoleloc*nrhs*(s+1)
+      req2     = 3*npoleloc*nrhs*s
+      req3     = nrhs*s*(3*s+1)
+      sizeloc  = 3*nrhs*npoleloc
+      sizebloc = 3*nrhs*npolebloc
+      sdec     = 128
+      ndec1    = 3*npoleloc/sdec
+      ndec     = merge(ndec1+1,ndec1,mod(3*npoleloc,sdec).gt.0)
+c
+      call prmem_request(sb0,req1)
+      call prmem_request(sb1,req2)
+      call prmem_request(stepMatV ,req3)
+      call prmem_requestm(stepMatVr,req3)
+
+      ! WorkSpace buffer segmentation
+      MTs (1:3,1:npoleloc,1:nrhs,1:s+1) => sb0(1:req1)
+      MPs (1:3,1:npoleloc,1:nrhs,1:s  ) => sb1(1:req2)
+      MRes_s(1:3,1:npoleloc,1:nrhs,1:s) => sb0(1:req2)
+      MQs   (1:3,1:npoleloc,1:nrhs,1:s) => sb0(sizeloc+1:req1)
+!$acc enter data attach(MRes_s,MQs,MTs,MPs)
+
+      if (first_in) then
+#ifdef _OPENACC
+         call initcuSolver(rec_stream)
+#endif
+!$acc enter data create(ipiv)
+         first_in = .false.
+      end if
+
+      ! step WorkSpace buffer segmentation
+      s = merge(5,cgstep_max,use_polarshortreal)
+      call man_stepWorkSpace(nrhs)
+c
+
+!$acc data present(diag,zr,res,h,MRes_s,MQs,MPs,MTs
+!$acc&            ,ef,mu,dipfield)
+c
+c     setup the preconditioner
+c
+      if (precnd) then
+!$acc parallel loop present(poleglob,polarity) async(rec_queue)
+         do i = 1, npoleloc
+            iipole  = poleglob(i)
+            diag(i) = polarity(poleglob(i))
+         end do
+         if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
+      else
+!$acc parallel loop async(rec_queue)
+         do i = 1, npoleloc
+            diag(i) = one
+         end do
+      end if
+c
+c     initialize to zero
+c
+      if (nproc.eq.1) then
+      call set_to_zero3(res,zr,dipfield,3*nrhs*npoleloc,rec_queue)
+      call set_to_zero1(dipfieldbis,3*nrhs*npolerecloc,rec_queue)
+      !call set_to_zero1(pp,3*nrhs*npolebloc  ,rec_queue)
+      else
+      call set_to_zero5(buffermpi1,buffermpimu1,res,zr,dipfield,
+     &                     3*nrhs*npoleloc   ,rec_queue)
+      call set_to_zero3(buffermpimu2,buffermpi2,dipfieldbis,
+     &                     3*nrhs*npolerecloc,rec_queue)
+      !call set_to_zero1(pp,3*nrhs*npolebloc  ,rec_queue)
+      end if
+      call timer_exit( timer_stepcg,quiet_timers )
+c
+#ifdef _OPENACC
+      if (use_polarshortreal.and.(dir_queue.ne.rec_queue))
+     &   call start_dir_stream_cover
+#endif
+
+      ! compute the initial residu
+      call timer_enter( timer_realdip )
+      call matvec(nrhs,.true.,mu,h)
+      call timer_exit ( timer_realdip,quiet_timers )
+c
+      if (.not.use_polarshortreal) then
+      call timer_enter( timer_recdip )
+      call tmatxbrecipgpu(mu,murec,nrhs,dipfield,dipfieldbis)
+      call timer_exit ( timer_recdip,quiet_timers )
+      end if
+
+      if (use_polarshortreal) then
+         call commfieldshort(nrhs,h)
+      else
+         call commfieldgpu(nrhs,h)
+
+         call commrecdirsolvgpu(nrhs,0,dipfieldbis,dipfield,buffermpi1,
+     $        buffermpi2,reqrecdirrec,reqrecdirsend)
+         call commrecdirsolvgpu(nrhs,1,dipfieldbis,dipfield,buffermpi1,
+     $        buffermpi2,reqrecdirrec,reqrecdirsend)
+         call commrecdirsolvgpu(nrhs,2,dipfieldbis,dipfield,buffermpi1,
+     $        buffermpi2,reqrecdirrec,reqrecdirsend)
+      end if
+
+      call timer_enter( timer_stepcg )
+
+      term   = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
+      ggold1 = 0.0_re_p; ggold2 = 0.0_re_p
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
+c
+!$acc parallel loop collapse(3) async(rec_queue)
+      do k=1,npoleloc
+         do j=1,nrhs
+            do i=1,3
+               if (.not.use_polarshortreal)
+     &         h(i,j,k)   = h(i,j,k)  + dipfield(i,j,k) - term*mu(i,j,k)
+               res(i,j,k) = ef(i,j,k) - h(i,j,k)
+               rt         = (res(i,j,k)*diag(k))**2
+               !pp(i,j,k)  = zr(i,j,k)
+               if (btest(j,0)) then  ! test de 1
+                  ggold1  = ggold1 + rt
+               else
+                  ggold2  = ggold2 + rt
+               end if
+            end do
+         end do
+      end do
+!$acc wait(rec_queue)
+
+      gg0(1) = ggold1; gg0(2) = ggold2
+      if (nproc.gt.1) then
+         call MPI_IALLREDUCE(MPI_IN_PLACE,gg0(1),nrhs,MPI_RPREC
+     &                      ,MPI_SUM,COMM_TINKER,req1,ierr)
+      end if
+      call timer_exit ( timer_stepcg,quiet_timers )
+c
+c     now, start the main loop:
+c
+      do it = 1,politer
+c
+         ! Store first residu in tall matrix and apply preconditionner
+!$acc parallel loop collapse(3) async(rec_queue)
+         do j=1,nrhs
+            do k=1,npoleloc
+               do i=1,3
+                  rt = res(i,j,k)
+                  Mres_s(i,k,j,1) = rt
+                  res(i,j,k)      = rt*diag(k)
+               end do
+            end do
+         end do
+
+#ifdef _OPENACC
+         if (dir_queue.ne.rec_queue) call start_dir_stream_cover
+#endif
+         !------------------------
+         !  Matrix-Power Kernels |
+         !------------------------
+         do its = 1,s
+
+         ! get neighbor contribution of field
+         if (use_polarshortreal) then
+            if (.not.skpPcomm) then
+            call commdirdirshort(nrhs,1,res,reqrec,reqsend)
+            call commdirdirshort(nrhs,0,res,reqrec,reqsend)
+            call commdirdirshort(nrhs,2,res,reqrec,reqsend)
+            end if
+         else
+            call commdirdirgpu(nrhs,0,res,reqrec,reqsend)
+            call commdirdirgpu(nrhs,1,res,reqrec,reqsend)
+            call commdirdirgpu(nrhs,2,res,reqrec,reqsend)
+
+            call commrecdirdipgpu(nrhs,0,murec,res,buffermpimu1,
+     $           buffermpimu2,req2rec,req2send)
+            call commrecdirdipgpu(nrhs,1,murec,res,buffermpimu1,
+     &           buffermpimu2,req2rec,req2send)
+            call commrecdirdipgpu(nrhs,2,murec,res,buffermpimu1,
+     &           buffermpimu2,req2rec,req2send)
+         end if
+c
+
+         ! ------- Matrix vector --------
+         call timer_enter( timer_realdip )
+         call matvec(nrhs,.true.,res,h)
+         call timer_exit ( timer_realdip,quiet_timers )
+
+         if (.not.use_polarshortreal) then
+         call timer_enter( timer_recdip )
+         call tmatxbrecipgpu(res,murec,nrhs,dipfield,dipfieldbis)
+         call timer_exit ( timer_recdip,quiet_timers )
+         end if
+         ! ------------------------------
+
+         ! Add local missing interactions
+         if (use_polarshortreal) then
+            call commfieldshort(nrhs,h)
+         else
+            call commfieldgpu(nrhs,h)
+ 
+         !Communicate the reciprocal fields
+         call commrecdirsolvgpu(nrhs,0,dipfieldbis,dipfield,buffermpi1,
+     &        buffermpi2,reqrecdirrec,reqrecdirsend)
+         call commrecdirsolvgpu(nrhs,1,dipfieldbis,dipfield,buffermpi1,
+     &        buffermpi2,reqrecdirrec,reqrecdirsend)
+         call commrecdirsolvgpu(nrhs,2,dipfieldbis,dipfield,buffermpi1,
+     &        buffermpi2,reqrecdirrec,reqrecdirsend)
+         end if
+
+         call timer_enter( timer_stepcg )
+         term = (4.0_ti_p/3.0_ti_p)*aewald**3 / sqrtpi
+
+         ! Store result in tall matrix
+         if (use_polarshortreal) then
+!$acc parallel loop collapse(3) async(dir_queue)
+         do j=1,nrhs
+            do k=1,npoleloc
+               do i=1,3
+                  rt = h(i,j,k)
+                  MQs(i,k,j,its) = rt
+                  res(i,j,k) = rt*diag(k)
+               end do
+            end do
+         end do
+         else
+!$acc parallel loop collapse(3) async(rec_queue)
+         do j=1,nrhs
+            do k=1,npoleloc
+               do i=1,3
+                  rt    = (h(i,j,k) + dipfield(i,j,k) - term*res(i,j,k))
+                  prcdt = rt*diag(k)
+                  MQs(i,k,j,its) = rt
+                  res(i,j,k)     = prcdt
+               end do
+            end do
+         end do
+         end if
+         call timer_exit ( timer_stepcg,quiet_timers )
+         !call minmaxone(res,6*npoleloc,'res')
+
+         end do  ! Matrix Power loop
+#ifdef _OPENACC
+         if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
+
+         call timer_enter( timer_stepcg )
+         ! ReSet step Matrix & Vector
+!$acc parallel loop async(rec_queue) present(stepMatV,stepMatVr)
+         do i = 1,nrhs*s*(2*s+1)
+            stepMatV(i) = 0.0
+           stepMatVr(i) = 0.0
+         end do
+
+         if (it.eq.1) then
+            if (precnd) then
+!$acc parallel loop collapse(4) async(rec_queue)
+               do its = 1,s
+                  do j = 1,nrhs
+                     do k = 1,npoleloc
+                        do i = 1,3
+                           MPs(i,k,j,its)=MRes_s(i,k,j,its)*diag(k)
+                        end do
+                     end do
+                  end do
+               end do
+            else
+               call amove(3*nrhs*npoleloc*s,MRes_s,MPs,rec_queue)
+            end if
+         else
+            ! Block dot-products
+            ! Compute  C_i = -Q_i^T * P_{i-1} in MatBs
+!$acc parallel loop gang collapse(4) async(rec_queue) present(MatBs_r)
+            do j = 1,nrhs
+              do ll = 1,s
+                do lc = 1,s
+                  do i = 1,ndec
+                    tempo = 0
+                    stdec = (i-1)*sdec+1
+                    ledec = min(sdec,3*npoleloc-stdec+1)
+                    call prod_scal_n(ledec,MQs(stdec,1,j,ll)
+     &                              ,MPs(stdec,1,j,lc),tempo)
+!$acc loop vector
+                    do k = 1,32
+                       if (k.eq.1) then
+!$acc atomic
+                         MatBs_r(lc,ll,j) = MatBs_r(lc,ll,j) + tempo
+                       end if
+                    end do
+                  end do
+                end do
+              end do
+            end do
+            if (nproc.gt.1) then
+!$acc host_data use_device(stepMatVr)
+!$acc wait(rec_queue)
+               call MPI_ALLREDUCE(MPI_IN_PLACE,stepMatVr,nrhs*(s**2)
+     $                           ,MPI_RPREC,MPI_SUM,COMM_TINKER,ierr)
+!$acc end host_data
+            end if
+
+            ! Find scalars B
+            ! Resolve W*B = C_i
+            do j = 1, nrhs
+#ifdef _OPENACC
+!$acc host_data use_device(MatW_sr,ipiv,MatBs_r)
+              call cuGESVm(s,s,MatW_sr(1,1,j),s,ipiv,MatBs_r(1,1,j),s
+     &                    ,rec_stream)
+!$acc end host_data
+#else
+              call M_gesvm(s,s,MatW_sr(1,1,j),s,ipiv,MatBs_r(1,1,j)
+     &                     ,s,info)
+#endif
+            end do
+            call amovec(nrhs*s*s,stepMatVr,stepMatV,rec_queue)
+
+#if 0
+            if (rank.eq.0) then
+!$acc wait
+!$acc update host(matBs_r)
+            write(*,'(A)') 'matBs'
+ 16         format(D14.6,$)
+            do j=1,s
+            write(*,16) (matBs_r(j,i,1),i=1,s),(matBs_r(j,i,2),i=1,s)
+            write(*,*)
+            end do
+            end if
+#endif
+
+           !  Next s Block Direction
+           !  P_i = R + P_{i-1}*B
+!$acc parallel loop gang vector collapse(3) private(rest,row)
+!$acc&         async(rec_queue) present(MatBs)
+            do j = 1,nrhs
+               do k = 1,npoleloc
+                  do i = 1,3
+!$acc loop seq
+                     do its = 1,s
+                        row(its) = MPs(i,k,j,its)
+                       rest(its) = 0
+                     end do
+                     prcdt = diag(k)
+                     do its = 1,s
+                        do lc = 1,s
+                        rest(its) = rest(its)+ row(lc)*MatBs(lc,its,j)
+                        end do
+                        rest(its) = rest(its) + MRes_s(i,k,j,its)*prcdt
+                     end do
+!$acc loop seq
+                     do its = 1,s
+                        MPs(i,k,j,its) = rest(its)
+                     end do
+                  end do
+               end do
+            end do
+
+         end if
+
+         ! Second Block dot-Products
+         ! W_i = Q_i^T * P_i
+!$acc parallel loop gang collapse(4) async(rec_queue) present(MatWs_r)
+         do j = 1,nrhs
+           do ll = 1,s
+             do lc = 1,s
+               do i = 1,ndec
+                 tempo = 0
+                 stdec = (i-1)*sdec+1
+                 ledec = min(sdec,3*npoleloc-stdec+1)
+                 call prod_scal(ledec,MQs(stdec,1,j,ll)
+     &                           ,MPs(stdec,1,j,lc),tempo)
+!$acc loop vector
+                 do k = 1,32
+                    if (k.eq.1) then
+!$acc atomic
+                      MatWs_r(lc,ll,j) = MatWs_r(lc,ll,j) + tempo
+                    end if
+                 end do
+               end do
+             end do
+           end do
+         end do
+
+         ! Compute
+         ! g_i = P_i^T * res_i  (use container for vector a)
+!$acc parallel loop gang collapse(3) async(rec_queue) present(Vas_r)
+         do j = 1,nrhs
+            do ll = 1,s
+               do i = 1,ndec
+                 tempo = 0
+                 stdec = (i-1)*sdec+1
+                 ledec = min(sdec,3*npoleloc-stdec+1)
+                 call prod_scal(ledec,MPs(stdec,1,j,ll)
+     &                         ,MRes_s(stdec,1,j,1),tempo)
+!$acc loop vector
+                 do k = 1,32
+                    if (k.eq.1) then
+!$acc atomic
+                      Vas_r(ll,j) = Vas_r(ll,j) + tempo
+                    end if
+                 end do
+               end do
+            end do
+         end do
+
+         if (nproc.gt.1) then
+!$acc host_data use_device(stepMatVr)
+!$acc wait(rec_queue)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,stepMatVr(nrhs*s**2+1)
+     $       ,nrhs*s*(s+1),MPI_RPREC,MPI_SUM,COMM_TINKER,ierr)
+!$acc end host_data
+         end if
+
+         ! Save Old W_{i-1}
+!$acc parallel loop async(rec_queue) default(present)
+         do i = 1,nrhs*s**2
+            MatW_sr(i,1,1) = MatWs_r(i,1,1)
+         end do
+
+         ! Find alpha scalar
+         ! Solve W_i *(a_i) = g_i
+         do j = 1,nrhs
+#ifdef _OPENACC
+!$acc host_data use_device(MatWs_r,ipiv,Vas_r)
+           call cuGESVm(s,1,MatWs_r(1,1,j),s,ipiv,Vas_r(1,j)
+     &                 ,s,rec_stream)
+!$acc end host_data
+#else
+           call M_gesvm(s,1,MatWs_r(1,1,j),s,ipiv,Vas_r(1,j),s,info)
+#endif
+         end do
+         call amovec(size(stepMatVr),stepMatVr,stepMatV,rec_queue)
+
+#if 0
+         if (rank.Eq.0) then
+!$acc wait
+!$acc update host(stepMatVr)
+            if (s.eq.5) then
+               write(*,'(A,137X,A)') 'matWs','alpha'
+            else
+               write(*,'(A,193X,A)') 'matWs','alpha'
+            end if
+ 18         format(D14.6,$)
+            do j = 1,s
+            write(*,18) (matW_sr(j,i,1),i=1,s),(matW_sr(j,i,2),i=1,s)
+     &                 ,(Vas_r(j,i),i=1,nrhs)
+            write(*,*)
+            end do
+         end if
+#endif
+
+         ! mu = mu + P_i*a_i
+!$acc parallel loop gang vector collapse(3) private(row)
+!$acc&         async(rec_queue) present(Vas)
+         do k = 1,npoleloc
+            do j = 1,nrhs
+               do i = 1,3
+!$acc loop seq
+                  do its = 1,s
+                     row(its) = MPs(i,k,j,its)
+                  end do
+                  rt = 0
+                  do its = 1,s
+                     rt = rt + row(its)*Vas(its,j)
+                  end do
+                  mu(i,j,k) = mu(i,j,k) + rt
+               end do
+            end do
+         end do
+c
+         call timer_exit ( timer_stepcg,quiet_timers )
+
+         ! Update New residu
+         ! Compute Matrix Vector Product
+         ! -----------------------------
+
+         ! get neighbor contribution of field
+         if (use_polarshortreal) then
+#ifdef _OPENACC
+            if (dir_queue.ne.rec_queue) call start_dir_stream_cover
+#endif
+            if (.not.skpPcomm) then
+            call commdirdirshort(nrhs,0,mu,reqendrec,reqendsend)
+            call commdirdirshort(nrhs,1,mu,reqendrec,reqendsend)
+            call commdirdirshort(nrhs,2,mu,reqendrec,reqendsend)
+            end if
+         else
+            call commdirdirgpu(nrhs,0,mu,reqendrec,reqendsend)
+            call commdirdirgpu(nrhs,1,mu,reqendrec,reqendsend)
+            call commdirdirgpu(nrhs,2,mu,reqendrec,reqendsend)
+
+            ! Begin Communication of mu for PME
+            call commrecdirdipgpu(nrhs,0,murec,mu,buffermpimu1,
+     &           buffermpimu2,req2rec,req2send)
+            call commrecdirdipgpu(nrhs,1,murec,mu,buffermpimu1,
+     &           buffermpimu2,req2rec,req2send)
+            call commrecdirdipgpu(nrhs,2,murec,mu,buffermpimu1,
+     &           buffermpimu2,req2rec,req2send)
+         end if
+
+         ! Real space
+         call timer_enter( timer_realdip )
+         call matvec(nrhs,.true.,mu,h)
+         call timer_exit ( timer_realdip,quiet_timers )
+
+         ! Reciprocal space
+         if (.not.use_polarshortreal) then
+         call timer_enter( timer_recdip )
+         call tmatxbrecipgpu(mu,murec,nrhs,dipfield,dipfieldbis)
+         call timer_exit ( timer_recdip,quiet_timers )
+         end if
+
+         ! get missing real space contribution
+         if (use_polarshortreal) then
+            call commfieldshort(nrhs,h)
+#ifdef _OPENACC
+            if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+#endif
+         else
+            call commfieldgpu(nrhs,h)
+
+         ! get missing reciprocal space contribution
+         call commrecdirsolvgpu(nrhs,0,dipfieldbis,dipfield,buffermpi1,
+     $        buffermpi2,reqrecdirrec,reqrecdirsend)
+         call commrecdirsolvgpu(nrhs,1,dipfieldbis,dipfield,buffermpi1,
+     $        buffermpi2,reqrecdirrec,reqrecdirsend)
+         call commrecdirsolvgpu(nrhs,2,dipfieldbis,dipfield,buffermpi1,
+     $        buffermpi2,reqrecdirrec,reqrecdirsend)
+         end if
+
+         call timer_enter( timer_stepcg )
+         ggnew1 = 0; ggnew2 = 0;
+!$acc parallel loop collapse(3) async(rec_queue)
+!$acc&         default(present)
+         do k=1,npoleloc
+            do j=1,nrhs
+               do i=1,3
+                  if (.not.use_polarshortreal)
+     &            h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*mu(i,j,k)
+                  rt       = ef(i,j,k) - h(i,j,k)
+                  if (btest(j,0)) then
+                     ggnew1 = ggnew1 + (rt*diag(k))**2
+                  else
+                     ggnew2 = ggnew2 + (rt*diag(k))**2
+                  end if
+                  res(i,j,k) = rt
+               end do
+            end do
+         end do
+
+!$acc wait(rec_queue)
+         ggnew(1) = ggnew1; ggnew(2)=ggnew2
+
+         if (nproc.gt.1.and.it.eq.1) call MPI_WAIT(req1,status,ierr)
+
+         if (it.eq.1.and.polprt.lt.2) then
+            call timer_exit( timer_stepcg,quiet_timers )
+            cycle ! Avoid Convergence check at first iteration
+         end if
+
+         ! ----------  Compute norm & Convergence verification  ----------
+         if (nproc.gt.1) then
+            call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew,nrhs,MPI_RPREC
+     &          ,MPI_SUM,COMM_TINKER,req3,ierr)
+            call MPI_WAIT(req3,status,ierr)
+            ggnew1=ggnew(1); ggnew2=ggnew(2)
+         end if
+
+         resnrm = -0.0_re_p
+         do k = 1,nrhs
+            gnorm(k) = sqrt(ggnew(k)/gg0(k))
+            resnrm   = max(resnrm,gnorm(k))
+         end do
+
+         if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
+     &      it, (gnorm(k), k=1,nrhs)
+c
+         if ((it.eq.politer.and.resnrm.gt.poleps)
+     &          .or.tinker_isnan_m(gnorm(1))
+     &          .or.tinker_isnan_m(gnorm(2))) then
+            ! Not converged Exit
+            if (rank.eq.0) write(0,1050) it,gnorm(1),gnorm(2)
+            abort = .true.
+         end if
+c
+         if (resnrm.lt.poleps) then
+            if (polprt.ge.1.and.rank.eq.0) write(iout,1000) it,
+     &         (gnorm(k), k = 1, nrhs)
+            call timer_exit( timer_stepcg,quiet_timers )
+            goto 10
+         end if
+         ! ---------------------------------------------------------------
+c
+         call timer_exit( timer_stepcg,quiet_timers )
+      end do
+ 10   continue
+ 
+      ! Debug printing
+      ! <<<<<<<<<<<<<<
+      if (polprt.ge.3) then
+!$acc wait
+!$acc update host(mu)
+         write(iout,1020)
+         do i = 1, npoleloc
+            iipole = poleglob(i)
+            iglob = ipole(iipole)
+            write(iout,1030) iglob, (mu(j,1,i), j = 1, 3)
+         end do
+      end if
+      if (polprt.ge.4) then
+         write(iout,1021)
+         do i = 1, npoleloc
+            iipole = poleglob(i)
+            iglob = ipole(iipole)
+            write(iout,1030) iglob, (mu(j,2,i), j = 1, 3)
+         end do
+      end if
+      ! >>>>>>>>>>>>>>
+
+ 50   continue
+!$acc end data
+!$acc exit data detach(MRes_s,MQs,MTs,MPs) async(rec_queue)
+      end subroutine
+#endif
 c     ################################################################
 c     ##                                                            ##
 c     ##  subroutine ulspred  --  induced dipole prediction coeffs  ##

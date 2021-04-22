@@ -62,6 +62,7 @@ c
          crdmin = min(crdmin,x(i),y(i),z(i))
          crdmax = max(crdmax,x(i),y(i),z(i))
       end do
+!$acc wait
       crdsiz = 6
       if (crdmin .le. -1000.0_re_p)  crdsiz = 7
       if (crdmax .ge. 10000.0_re_p)  crdsiz = 7

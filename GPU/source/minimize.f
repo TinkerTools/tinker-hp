@@ -62,6 +62,8 @@ c
       external minimiz1
       external optsave
 c
+      ! Sign running program
+      app_id = minimize_a
 c
 c     set up the structure and mechanics calculation
 c
@@ -218,6 +220,7 @@ c      end if
             end if
          end do
       end do
+!$acc wait
       call MPI_ALLREDUCE(MPI_IN_PLACE,gnorm,1,MPI_RPREC,
      $     MPI_SUM,COMM_TINKER,ierr)
       gnorm = sqrt(gnorm)

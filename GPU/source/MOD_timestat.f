@@ -57,7 +57,7 @@ c     tinkertime     logical flag to enable timers verbosity
      &           timer_bonded,timer_nonbonded,
      &           timer_fcomm,timer_dirreccomm,timer_rectorcomm,
      &           timer_dirbondfcomm,timer_recreccomm,
-     &           timer_polsolvcomm,timer_polfieldcomm,
+     &           timer_polsolvcomm,timer_polfieldcomm,timer_stepcg,
      &           timer_timestep,timer_eneig,timer_commstep,
      &           timer_param,timer_other,timer_clear,
      &           timer_debug,timer_scalfactor,
@@ -69,12 +69,12 @@ c     tinkertime     logical flag to enable timers verbosity
         ! number Timers
         integer, parameter:: max_timer_count=last_timer
 
-        integer :: stat_timers(30) =
+        integer :: stat_timers(31) =
      &          [timer_param,timer_nl,
      &           timer_bonded,timer_vdw,
      &           timer_real,timer_realdip,timer_rec,timer_recdip,
      &           timer_grid1,timer_grid2,timer_scalar,timer_ffts,
-     &           timer_ulspred,timer_fmanage,timer_plumed,
+     &           timer_ulspred,timer_stepcg,timer_fmanage,timer_plumed,
      &           timer_nonbonded,timer_torque,timer_other,timer_clear,
      &           timer_fcomm,timer_dirbondfcomm,timer_dirreccomm,
      &           timer_recreccomm,timer_commstep,timer_polsolvcomm,
@@ -86,11 +86,11 @@ c     tinkertime     logical flag to enable timers verbosity
      &           timer_polsolvcomm,timer_polfieldcomm,
      &           timer_eneig,timer_commstep,timer_reduceen
      &          ]
-        integer :: comp_timers(14) =
+        integer :: comp_timers(15) =
      &          [timer_fmanage,timer_bonded,timer_vdw,timer_nl,
      &           timer_real,timer_realdip,timer_grid1,timer_grid2,
      &           timer_scalar,timer_ffts,timer_clear,
-     &           timer_other,timer_ulspred,timer_plumed
+     &           timer_other,timer_ulspred,timer_stepcg,timer_plumed
      &          ]
 
         ! Cumulated times on regions
@@ -149,7 +149,7 @@ c     tinkertime     logical flag to enable timers verbosity
            read(timeval,*) tinkertime
         else
            tinkertime = 0
-           if (nproctot.gt.1) tinkertime=1
+           !if (nproctot.gt.1) tinkertime=1
         end if
 
         call init_timestat()
@@ -177,6 +177,7 @@ c     tinkertime     logical flag to enable timers verbosity
         call timer_init( "mlistcell"       , timer_mlistcell)
         call timer_init( "nonbonded"       , timer_nonbonded)
         call timer_init( "polar"           , timer_polar)
+        call timer_init( "step-PCG"        , timer_stepcg)
         call timer_init( "efld0_direct"    , timer_efld0_direct)
         call timer_init( "efld0_recip"     , timer_efld0_recip)
         call timer_init( "tmatxb_pmevec"   , timer_tmatxb_pmevec)
@@ -387,7 +388,7 @@ c     tinkertime     logical flag to enable timers verbosity
          else if (cfg.eq.ave_disp) then
             buffer = buffer / iter
          end if
-         t_timestep = buffer(timer_timestep,1)
+         t_timestep = buffer(timer_timestep,3)
 
          if (rank.eq.0) write(*,30) ' Timers '
 
@@ -397,6 +398,7 @@ c     tinkertime     logical flag to enable timers verbosity
                t0 = buffer(i,1)
                t1 = buffer(i,2)
                if (cfg.eq.ave_disp) then
+                  t0 = buffer(i,3)
                   t1 = 100.0*t0/(t_timestep)
                end if
                if ( rank.eq.0) then
@@ -435,11 +437,12 @@ c           if (rank.eq.0)
 c    &      write(*,'(A20,2F14.4)') timer_name(comp_timers(i)),
 c    &            buffer(comp_timers(i),3),t_comp
          end do
-         call MPI_REDUCE(t_comp,tcomp2,1,MPI_REAL8,MPI_MAX,0
+         call MPI_REDUCE(t_comp,tcomp1,1,MPI_REAL8,MPI_MAX,0
      &                  ,COMM_TINKER,ierr)
-         call MPI_REDUCE(t_comp,tcomp1,1,MPI_REAL8,MPI_MIN,0
+         call MPI_REDUCE(t_comp,tcomp2,1,MPI_REAL8,MPI_MIN,0
      &                  ,COMM_TINKER,ierr)
 
+         t_timestep = buffer(timer_timestep,1)
          if (cfg.eq.ave_disp.and.rank.eq.0) then
             print*
             if (nproc.ne.1) then

@@ -407,8 +407,8 @@ c
       poltyp  = 'MUTUAL'
       politer = 500
       polprt  = 0
-      polalg  = 1   !TODO 1.2 Set this to 5 when finished
-      polalgshort = 5
+      polalg  = pcg_SId   !TODO 1.2 Set this to 5 when finished
+      polalgshort = pcg_SId
       polgsf   = 0
       polff    = 0
       tcgprec  = .true.

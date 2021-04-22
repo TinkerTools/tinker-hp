@@ -54,6 +54,9 @@ NO_MUTATION ?= 0
 FPA_SUPPORT ?= 0
 # Plumed Feature
 PLUMED_SUPPORT ?= 0
+# Verbosity
+VERBOSE     ?= 0
+
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
@@ -154,6 +157,10 @@ endif
 FOPTIONS   = $(f_preprocess_flag__) $(OPTIONS)
 CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
 
+ifeq ($(VERBOSE),0)
+   AT := @
+endif
+
 #  Optimisation flags
 #  __________________
 ifeq ($(opt), release)
@@ -238,12 +245,16 @@ FFLAGS2      = $(FFLAGS)
 
 #  Finalize library
 #  _______________
-LIBS         = libtinker.a
-depend_targets :=
+LIBS           = libtinker.a
+depend_targets = 2decomp_fft
 
-LDLIBS       = -lm -L$(LIB_MKL) -L$(LIB_FFTDECOMP) -L$(LIB_CPP)
-#CULIBS       = -Mcudalib=cufft,cublas,curand -lcuda -lcudafor -lcudafor2 -lcudafor91 -lcusparse -lcudaforwrapblas -lcudadevice
-CULIBS       = -Mcudalib=curand,cufft,cublas -Mcuda=$(acc_cc_flag__) -lcusolver
+LDLIBS         = -lm -L$(LIB_FFTDECOMP) -L$(LIB_CPP)
+ifeq ($(arch),$(filter $(arch),host cpu))
+   LDLIBS += -L$(LIB_MKL)
+endif
+
+#CULIBS         = -Mcudalib=cufft,cublas,curand -lcuda -lcudafor -lcudafor2 -lcudafor91 -lcusparse -lcudaforwrapblas -lcudadevice
+CULIBS         = -Mcudalib=curand,cufft,cublas -Mcuda=$(acc_cc_flag__) -lcusolver
 
 ifeq ($(findstring NVTX, $(OPTIONS)),NVTX)
    CULIBS += -lnvToolsExt
@@ -271,11 +282,8 @@ ifeq ($(arch),$(filter $(arch),device gpu))
    endif
 endif
 
-depend_targets += thrust
-ifeq ($(prec),$(filter $(prec),mixed m single s))
-	depend_targets += 2decomp_fft
-else
-	depend_targets += 2decomp_fft_single
+ifeq ($(arch),$(filter $(arch),device gpu))
+   depend_targets += thrust
 endif
  
 
@@ -545,7 +553,6 @@ bar.mixed:
 bar.cpu:
 	@$(MAKE) arch=host prog_suffix=.cpu bar
 
-.PHONY: libtinker
 libtinker: $(depend_targets)
 	@ $(MAKE) build_mod
 	@ $(MAKE) build_obj
@@ -731,13 +738,13 @@ endif
 .PHONY: thrust thrust_clean thrust_lib_rebuild
 #
 thrust:
-	@cd ../wrappers; $(MAKE) "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)"
+	@cd ../wrappers; $(MAKE) "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)" "AT=$(AT)"
 #
 thrust_clean:
-	@cd ../wrappers; $(MAKE) clean;
+	@cd ../wrappers; $(MAKE) clean
 #
 thrust_lib_rebuild:
-	@cd ../wrappers; $(MAKE) clean; $(MAKE) "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)"
+	@cd ../wrappers; $(MAKE) clean; $(MAKE) "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)" "AT=$(AT)"
 
 #
 tags: tags-mark

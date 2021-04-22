@@ -757,23 +757,25 @@ c
             end do
          end do
 c
-         if (use_rattle)  call rattle2 (dta_2)
+         if (use_rattle) then
+            call rattle2 (dta_2)
+            call save_atoms_pos
+         end if
 c
 !$acc parallel loop async
          do i = 1, nloc
             iglob = glob(i)
             if (use(iglob)) then
-               xold(iglob) = x(iglob)
-               yold(iglob) = y(iglob)
-               zold(iglob) = z(iglob)
                x(iglob) = x(iglob) + v(1,iglob)*dta_2
                y(iglob) = y(iglob) + v(2,iglob)*dta_2
                z(iglob) = z(iglob) + v(3,iglob)*dta_2
             end if
          end do
 c        
-         if (use_rattle) call rattle(dta_2)
-         if (use_rattle) call rattle2(dta_2)
+         if (use_rattle) then
+            call rattle(dta_2)
+            call rattle2(dta_2)
+         end if
 c
 c     compute random part
 c
@@ -802,15 +804,15 @@ c
             end do
          end do
 c        
-         if (use_rattle) call rattle2(dta)
+         if (use_rattle) then
+            call rattle2(dta)
+            call save_atoms_pos
+         end if
 c        
 !$acc parallel loop async
          do i = 1, nloc
             iglob = glob(i)
             if (use(iglob)) then
-               xold(iglob) = x(iglob)
-               yold(iglob) = y(iglob)
-               zold(iglob) = z(iglob)
                x(iglob) = x(iglob) + v(1,iglob)*dta_2
                y(iglob) = y(iglob) + v(2,iglob)*dta_2
                z(iglob) = z(iglob) + v(3,iglob)*dta_2

@@ -1,29 +1,58 @@
 #include "utils.h"
 
-#if (defined(SINGLE)||defined(MIXED))
+#ifdef SINGLE
 #   define cuPOTRF_buffSize cusolverDnSpotrf_bufferSize
 #   if (CUDART_VERSION>10010)
-#     define cuGESV_buffSize cusolverDnSSgesv_bufferSize
+#     define cuGESV_buffSize  cusolverDnSSgesv_bufferSize
 #     define cuGESV           cusolverDnSSgesv
+#     define cuGESVm_buffSize cusolverDnSSgesv_bufferSize
+#     define cuGESVm          cusolverDnSSgesv
 #   else
-#     define cuGETRF_buffsize cusolverDnSgetrf_bufferSize
-#     define cuGETRF          cusolverDnSgetrf
-#     define cuGETRS          cusolverDnSgetrs
+#     define cuGETRF_buffsize  cusolverDnSgetrf_bufferSize
+#     define cuGETRF           cusolverDnSgetrf
+#     define cuGETRS           cusolverDnSgetrs
+#     define cuGETRFm_buffsize cusolverDnSgetrf_bufferSize
+#     define cuGETRFm          cusolverDnSgetrf
+#     define cuGETRSm          cusolverDnSgetrs
 #   endif
+#   define cuPOTRF_buffSize cusolverDnSpotrf_bufferSize
 #   define cuPOTRF          cusolverDnSpotrf
 #   define cuPOTRS          cusolverDnSpotrs
+#elif defined(MIXED)
+#   if (CUDART_VERSION>10010)
+#     define cuGESV_buffSize  cusolverDnSSgesv_bufferSize
+#     define cuGESV           cusolverDnSSgesv
+#     define cuGESVm_buffSize cusolverDnDDgesv_bufferSize
+#     define cuGESVm          cusolverDnDDgesv
+#   else
+#     define cuGETRF_buffsize  cusolverDnSgetrf_bufferSize
+#     define cuGETRF           cusolverDnSgetrf
+#     define cuGETRS           cusolverDnSgetrs
+#     define cuGETRFm_buffsize cusolverDnDgetrf_bufferSize
+#     define cuGETRFm          cusolverDnDgetrf
+#     define cuGETRSm          cusolverDnDgetrs
+#   endif
+#   define cuPOTRF_buffSize    cusolverDnSpotrf_bufferSize
+#   define cuPOTRF             cusolverDnSpotrf
+#   define cuPOTRS             cusolverDnSpotrs
 #else
 #   define cuPOTRF_buffSize cusolverDnDpotrf_bufferSize
 #   if (CUDART_VERSION>10010)
 #     define cuGESV_buffSize  cusolverDnDDgesv_bufferSize
 #     define cuGESV           cusolverDnDDgesv
+#     define cuGESVm_buffSize cusolverDnDDgesv_bufferSize
+#     define cuGESVm          cusolverDnDDgesv
 #   else
-#     define cuGETRF_buffsize cusolverDnDgetrf_bufferSize
-#     define cuGETRF         cusolverDnDgetrf
-#     define cuGETRS         cusolverDnDgetrs
+#     define cuGETRF_buffsize  cusolverDnDgetrf_bufferSize
+#     define cuGETRF           cusolverDnDgetrf
+#     define cuGETRS           cusolverDnDgetrs
+#     define cuGETRFm_buffsize cusolverDnDgetrf_bufferSize
+#     define cuGETRFm          cusolverDnDgetrf
+#     define cuGETRSm          cusolverDnDgetrs
 #   endif
-#   define cuPOTRF          cusolverDnDpotrf
-#   define cuPOTRS          cusolverDnDpotrs
+#   define cuPOTRF_buffSize    cusolverDnDpotrf_bufferSize
+#   define cuPOTRF             cusolverDnDpotrf
+#   define cuPOTRS             cusolverDnDpotrs
 #endif
 
 extern const int rank;
@@ -36,9 +65,11 @@ extern const int tinkerdebug;
 cusolverDnHandle_t cuCholHandle = NULL;
 const cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
 real* d_workSpace=NULL;
+realm* dm_workSpace=NULL;
 real* d_inB=NULL;
-size_t s_workSpaceSize=0;
-size_t s_inB=0;
+realm* dm_inB=NULL;
+size_t s_workSpaceSize=0,sm_workSpaceSize=0;
+size_t s_inB=0,sm_inB=0;
 int info;
 int* d_info;
 
@@ -149,6 +180,34 @@ void cuGESV_Wrapper(const int n, const int nrhs, real* A, const int lda, int* Ip
 
    gpuErrchkSolver( cuGETRF(cuCholHandle, n, n, A, lda, d_workSpace, Ipiv, d_info) )
    gpuErrchkSolver( cuGETRS(cuCholHandle, CUBLAS_OP_N, n, nrhs, A, lda, Ipiv, B, ldb, d_info) )
+#endif
+   if (tinkerdebug) {
+      CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);
+      gpuErrchk( cudaGetLastError() )
+   }
+}
+
+void cuGESVm_Wrapper(const int n, const int nrhs, realm* A, const int lda, int* Ipiv, realm* B, const int ldb, cudaStream_t stream){
+#if (CUDART_VERSION>10010)
+   size_t lwork_bytes=0;
+   int iter=0;
+   size_t Bsize=nrhs*n*sizeof(realm);
+   gpuErrchkSolver( cuGESVm_buffSize(cuCholHandle, n, nrhs, A, lda, Ipiv, dm_inB, ldb, B, ldb, dm_workSpace, &lwork_bytes) )
+   device_reallocate((void**)&dm_workSpace, (size_t)lwork_bytes, sm_workSpaceSize);
+   device_reallocate((void**)&dm_inB, Bsize, sm_inB);
+
+   gpuErrchk( cudaMemcpyAsync( dm_inB,B,Bsize,cudaMemcpyDeviceToDevice,stream ) )
+   //printAB<<<1,1,0,stream>>>(A,B,nrhs,lwork_bytes,n);
+   gpuErrchkSolver( cuGESVm(cuCholHandle, n, nrhs, A, lda, Ipiv, dm_inB, ldb, B, ldb, dm_workSpace, lwork_bytes, &iter, d_info) )
+   //printS <<<1,1,0,stream>>>(A,B,nrhs,iter);
+#else
+   int Lwork=0;
+   gpuErrchkSolver( cuGETRFm_buffsize(cuCholHandle, n, n, A, lda, &Lwork) )
+   //printf(" LU solve n %d nrhs %d lda %d ldb %d Lwork %d\n",n,nrhs,lda,ldb, Lwork);
+   device_reallocate((void**)&dm_workSpace, (size_t)Lwork*sizeof(realm), sm_workSpaceSize);
+
+   gpuErrchkSolver( cuGETRFm(cuCholHandle, n, n, A, lda, dm_workSpace, Ipiv, d_info) )
+   gpuErrchkSolver( cuGETRSm(cuCholHandle, CUBLAS_OP_N, n, nrhs, A, lda, Ipiv, B, ldb, d_info) )
 #endif
    if (tinkerdebug) {
       CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);

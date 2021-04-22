@@ -99,3 +99,9 @@ c
       save
 !$acc declare create(vmxx,vmxy,vmxz,vmyy,vmyz,vmzz)
       end
+
+      module elec_wspace
+      real(t_p),allocatable,target:: rWork1(:),rWork2(:),rWork3(:)
+      real(t_p),allocatable,target:: r2Work1(:,:),r2Work2(:,:)
+     &         ,r2Work3(:,:),r2Work4(:,:)
+      end module

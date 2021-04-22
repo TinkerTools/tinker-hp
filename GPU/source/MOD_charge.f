@@ -28,11 +28,8 @@ c     winchglist    window object corresponding to chglist
 c     nbchg     number of charges before each index
 c     winnbchg    window object corresponding to nbchg
 c     chgloc    global-local charge correspondance
-c     winchgloc    window object corresponding to chgloc
 c     chglocnl  global-localnl charge correspondance
-c     winchglocnl    window object corresponding to chglocnl
 c     chgrecloc  global-local reciprocal charge correspondance
-c     winchgrecloc    window object corresponding to chgrecloc
 c     pchg      magnitude of the partial charges (e-)
 c     winpchg    window object corresponding to pchg
 c
@@ -48,14 +45,13 @@ c
       integer nionlocloop,nionlocnlloop
       integer nionlocnlb,nionlocnlb_pair,nionlocnlb2_pair
      &       ,nshortionlocnlb2_pair
+      integer, allocatable :: chgloc(:),chglocnl(:)
+      integer, allocatable :: chgrecloc(:)
       integer, pointer :: iion(:)
       integer, pointer :: jion(:),kion(:)
       integer, pointer :: chglist(:)
       integer, pointer :: nbchg(:)
-      integer, pointer :: chgloc(:),chglocnl(:)
-      integer, pointer :: chgrecloc(:)
       integer winiion,winjion,winkion,winchglist,winnbchg
      &       ,winpchg
-      integer winchgloc,winchglocnl,winchgrecloc
       real(t_p), pointer :: pchg(:)
       end

@@ -545,6 +545,7 @@ c
            procedure(tmatxb_pmegpu)::matvec
         end subroutine
       end interface
+      procedure(inducepcg_pme2gpu):: inducestepcg_pme2gpu
 
 !  #############################################################################
 !  SECTION
@@ -754,6 +755,14 @@ c
         real(t_p)     ,device:: A(*),B(*)
         integer(cuda_stream_kind),value:: stream
         end subroutine
+        subroutine cuGESVm(n, nrhs, A, lda, Ipiv, B, ldb, stream)
+     &             bind(C,name="cuGESVm_Wrapper")
+        import cuda_stream_kind,c_int
+        integer(c_int),value :: n,lda,ldb,nrhs
+        integer(c_int),device:: Ipiv(*)
+        real(r_p)     ,device:: A(*),B(*)
+        integer(cuda_stream_kind),value:: stream
+        end subroutine
         subroutine destroycuSolver()
      &             bind(C,name="destroycuSolverHandle")
         end subroutine
@@ -810,15 +819,15 @@ c
             real(t_p),intent(out  ),dimension(:,:)::frx,fry,frz
             logical*1,intent(in   )               ::extract
          end subroutine
-         subroutine torquerfgpu(n,pole,poleloc,trqvec,de,queue)
-            integer  ,intent(in   )::n,queue
+         subroutine torquerfgpu(n,nb,pole,poleloc,trqvec,de,queue)
+            integer  ,intent(in   )::n,nb,queue
             integer  ,intent(in   )::pole(:),poleloc(:)
             real(t_p),intent(in   )::trqvec(:,:)
             mdyn_rtyp,intent(inout)::de(:,:)
          end subroutine
 #endif
-         subroutine torquergpu(n,pole,poleloc,trqvec,de,queue)
-            integer  ,intent(in   )::n,queue
+         subroutine torquergpu(n,nb,pole,poleloc,trqvec,de,queue)
+            integer  ,intent(in   )::n,nb,queue
             integer  ,intent(in   )::pole(:),poleloc(:)
             real(t_p),intent(in   )::trqvec(:,:)
             real(r_p),intent(inout)::de(:,:)
