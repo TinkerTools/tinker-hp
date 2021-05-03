@@ -437,7 +437,11 @@ After having successfully compiled the code, five executable files should be pre
 
 All these executables must run in the same environment you had during the compilation phase. That means the same set of modules, or the correct \texttt{LIBRARY\_PATH}. They should be launched with the \mpirun\texttt{ x} prefix in order to run in parallel with \texttt{x} \mpi\  processes. 
 
-The only boundary conditions that are available in this release are periodic boundary conditions treated with Particle Mesh Ewald. Classical force fields such as AMBER, CHARMM and OPLS are available in Tinker-HP as well as polarizable force fields such as AMOEBA.
+\subsection{General remarks}
+The only boundary conditions that are available in this release are periodic boundary conditions treated with Particle Mesh Ewald. Furthermore, only orthorhombic unit cells can be used.
+
+
+Classical force fields such as AMBER, CHARMM and OPLS are available in Tinker-HP as well as polarizable force fields such as AMOEBA.
 \subsection{\analyze\ } 
 The \analyze\ executable allows potential energy analysis. Compared to the Tinker-8.4 software, the only option compatible with this binary is "e".
 
@@ -571,7 +575,12 @@ With the introduction of Steered Molecular Dynamics come two keywords:
 Unlike Tinker-8.4, the neighbor-lists for non bonded interactions are computed every x steps (x=20 being the default for a 2 {\em fs} time step) and not adjusted dynamically at each time step. This frequency of update can be modified by using the keywords \textbf{nlupdate x}, 1 corresponding to a neighbor-list update at each time step (which can be useful during equilibration for example).
 
 \vskip5mm
-Other keywords have been introduced to specify parallel options when running Tinker-HP. The current distributed release is only available with the PME algorithm which involves direct and reciprocal space computations in the electrostatic and polarization interactions. As the reciprocal space interactions are known to have a less efficient parallel scaling (because of FFTs) it is possible to specify a lower number of \mpi\  processes that will be dedicated to these computations for both the computation of electrostatic and polarization interactions. This can be done by using the keyword \textbf{pme-procs} \texttt{x}, corresponding to \texttt{x} \mpi\  processes dedicated to reciprocal space computations.
+Other keywords have been introduced to specify parallel options when running Tinker-HP.
+A 3D domain decomposition is used to divide the unit cell in as many subdomains as \mpi\ tasks ($nproc$). If the user does not define it, 3 integers \textbf{Nx}, \textbf{Ny} and \textbf{Nz} so that $Nx\times Ny\times Nz = nproc$ will be chosen to divide each axis of the simulation box and thus define the 3d domain decomposition. 
+It is possible to manually impose this choice by using the keyword : \textbf{DECOMP3D Nx Ny Nz} with \textbf{Nx, Ny and Nz} integers such that $Nx\times Ny\times Nz = nproc$.
+
+
+The current distributed release is only available with the PME algorithm which involves direct and reciprocal space computations in the electrostatic and polarization interactions. As the reciprocal space interactions are known to have a less efficient parallel scaling (because of FFTs) it is possible to specify a lower number of \mpi\  processes that will be dedicated to these computations for both the computation of electrostatic and polarization interactions. This can be done by using the keyword \textbf{pme-procs} \texttt{x}, corresponding to \texttt{x} \mpi\  processes dedicated to reciprocal space computations.
 
 \vskip5mm
 To find the ideal \texttt{x} value of \textbf{pme-procs}, a good starting point, when a large number of cores is used, is usually to dedicate about $\frac{1}{4}$ of the total cores to reciprocal space computations. But this parameter depends greatly on the machine used and on the setup of your simulation so it should be adjusted manually by comparing the timings obtained with different values for \textbf{pme-procs}. During a dynamic, detailed timings are written when the \textbf{verbose} keyword is in the *.key file. In the future, the parameter \textbf{pme-procs} will be adapted heuristically by the program as it is done in popular MD packages.
