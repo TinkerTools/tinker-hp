@@ -570,7 +570,9 @@ With the introduction of Steered Molecular Dynamics come two keywords:
 \end{itemize}
 
  The use of those two forms of steered molecular dynamics (SMD) is described in a dedicated tutorial which can be found in the \texttt{tutorials/SMD/} directory, along with two subdirectories (\texttt{CFSMD} and \texttt{CVSMD}) containing input files, running scripts and output files. The 2 Tinker Archives corresponding to \textbf{CVSMD} and \textbf{CFSMD} (178MB each) can be downloaded at \texttt{http://tinker-hp.ip2ct.upmc.fr/?Download-Process}.
- 
+\vskip5mm
+During equilibration of a solvated protein it can be useful to impose positional restrains on its alpha carbon, this is why we introduced the keyword: \textbf{restrain-backbone x} that puts such restrains with a spring constant of \textbf{x} in kcal/mol/\AA~ on all the atoms that have the tag 'CA' in the xyz file. If x is not defined, a default spring constant of 100 kcal/mol/\AA~ is used.
+
 \vskip5mm
 Unlike Tinker-8.4, the neighbor-lists for non bonded interactions are computed every x steps (x=20 being the default for a 2 {\em fs} time step) and not adjusted dynamically at each time step. This frequency of update can be modified by using the keywords \textbf{nlupdate x}, 1 corresponding to a neighbor-list update at each time step (which can be useful during equilibration for example).
 
