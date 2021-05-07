@@ -360,7 +360,6 @@ libtinkercalc_a_SOURCES += gettext.f
 libtinkercalc_a_SOURCES += getword.f
 libtinkercalc_a_SOURCES += getxyz.f
 libtinkercalc_a_SOURCES += gradient.f
-libtinkercalc_a_SOURCES += hybrid.f
 libtinkercalc_a_SOURCES += image.f
 libtinkercalc_a_SOURCES += initatom.f
 libtinkercalc_a_SOURCES += initial.f
