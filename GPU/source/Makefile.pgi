@@ -359,7 +359,7 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    final.o freeunit.o geometry.o getkey.o\
    getnumb.o getprm.o getstring.o gettext.o\
    getword.o getxyz.o gradient.o\
-   hybrid.o image.o\
+   image.o\
    initatom.o initial.o initprm.o initres.o\
    invert.o kangang.o kangle.o\
    kamd.o katom.o kangtor.o kbond.o kcharge.o kewald.o kgeom.o\

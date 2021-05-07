@@ -19,6 +19,7 @@ c
       use bound
       use boxes
       use cutoff
+      use domdec
       use keys
       use iounit
       use tinheader
@@ -145,6 +146,16 @@ c
 c         call lattice
 c         boundary = 'NONE'
 c         dens = 0.75_ti_p
+      end if
+c
+c     return error for non orthorombic unit cells
+c
+      if ((alpha.ne.90.0_ti_p).or.(beta.ne.90.0_ti_p).or.
+     &   (gamma.ne.90.0_ti_p)) then
+        if (rank.eq.0) then
+          write(iout,*) 'Only orthorombic unit cells are implemented'
+        end if
+        call fatal
       end if
 c
 !$acc enter data copyin(use_bounds)

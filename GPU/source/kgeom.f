@@ -105,12 +105,6 @@ c
 c       get atom restrained to a specified position range
 c
            if (keyword(1:18) .eq. 'RESTRAIN-POSITION ') then
-c              read (string,*,err=10,end=10)  (rpos(l),l=nrpos+1,n)
-c   10         continue
-c              do while (rpos(nrpos+1) .ne. 0)
-c                 nrpos = nrpos + 1
-c                 rpos(nrpos) = max(-n,min(n,rpos(nrpos)))
-c              end do
               p1 = 0.0_ti_p
               p2 = 0.0_ti_p
               p3 = 0.0_ti_p
@@ -171,6 +165,10 @@ c
 c       restrain backbone atoms at their initial position (equilibration phase)
 c
            else if (keyword(1:18) .eq. 'RESTRAIN-BACKBONE ') then
+             p1 = 0.0_ti_p
+             read (string,*,err=12,end=12)  p1
+   12        continue
+             if (p1.eq.0.0_ti_p) p1 = 100.0_ti_p
              do j = 1, n
                if (name(j).eq.'CA') then
                  npfix = npfix + 1
@@ -181,7 +179,7 @@ c
                  xpfix(npfix) = x(j) 
                  ypfix(npfix) = y(j) 
                  zpfix(npfix) = z(j) 
-                 pfix(1,npfix) = 100.0_ti_p
+                 pfix(1,npfix) = p1
                  pfix(2,npfix) = 0.0_ti_p
                end if
              end do
