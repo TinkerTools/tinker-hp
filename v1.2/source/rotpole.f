@@ -53,6 +53,7 @@ c
 c
       subroutine rotmat (iipole,iglob,a)
       use atoms
+      use bound
       use mpole
       implicit none
       integer iipole,iglob
@@ -95,6 +96,7 @@ c
          dx = x(iz) - xi
          dy = y(iz) - yi
          dz = z(iz) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          a(1,3) = dx / r
          a(2,3) = dy / r
@@ -117,6 +119,7 @@ c
          dx = x(iz) - xi
          dy = y(iz) - yi
          dz = z(iz) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          a(1,3) = dx / r
          a(2,3) = dy / r
@@ -124,6 +127,7 @@ c
          dx = x(ix) - xi
          dy = y(ix) - yi
          dz = z(ix) - zi
+         if (use_polymer) call image(dx,dy,dz)
          dot = dx*a(1,3) + dy*a(2,3) + dz*a(3,3)
          dx = dx - dot*a(1,3)
          dy = dy - dot*a(2,3)
@@ -139,6 +143,7 @@ c
          dx = x(iz) - xi
          dy = y(iz) - yi
          dz = z(iz) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          dx1 = dx / r
          dy1 = dy / r
@@ -146,6 +151,7 @@ c
          dx = x(ix) - xi
          dy = y(ix) - yi
          dz = z(ix) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          dx2 = dx / r
          dy2 = dy / r
@@ -172,6 +178,7 @@ c
          dx = x(iz) - xi
          dy = y(iz) - yi
          dz = z(iz) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          a(1,3) = dx / r
          a(2,3) = dy / r
@@ -179,6 +186,7 @@ c
          dx = x(ix) - xi
          dy = y(ix) - yi
          dz = z(ix) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          dx1 = dx / r
          dy1 = dy / r
@@ -186,6 +194,7 @@ c
          dx = x(iy) - xi
          dy = y(iy) - yi
          dz = z(iy) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          dx2 = dx / r
          dy2 = dy / r
@@ -212,6 +221,7 @@ c
          dx = x(iz) - xi
          dy = y(iz) - yi
          dz = z(iz) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          dx1 = dx / r
          dy1 = dy / r
@@ -219,6 +229,7 @@ c
          dx = x(ix) - xi
          dy = y(ix) - yi
          dz = z(ix) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          dx2 = dx / r
          dy2 = dy / r
@@ -226,6 +237,7 @@ c
          dx = x(iy) - xi
          dy = y(iy) - yi
          dz = z(iy) - zi
+         if (use_polymer) call image(dx,dy,dz)
          r = sqrt(dx*dx + dy*dy + dz*dz)
          dx3 = dx / r
          dy3 = dy / r

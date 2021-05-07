@@ -1105,6 +1105,7 @@ c
       use atmlst
       use atoms
       use boxes
+      use bound
       use cutoff
       use domdec
       use iounit
@@ -1120,6 +1121,7 @@ c
       integer ncell_loc
       integer, allocatable :: index(:),indcell_loc(:)
       real*8 xi,yi,zi,xk,yk,zk,r2,rdn
+      real*8 xr,yr,zr
       real*8, allocatable :: pos(:,:),r2vec(:)
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
@@ -1160,9 +1162,13 @@ c
          i = loc(iglob)
          iv = ired(iglob)
          rdn = kred(iglob)
-         xred(i) = rdn*(x(iglob)-x(iv)) + x(iv)
-         yred(i) = rdn*(y(iglob)-y(iv)) + y(iv)
-         zred(i) = rdn*(z(iglob)-z(iv)) + z(iv)
+         xr = x(iglob) - x(iv)
+         yr = y(iglob) - y(iv)
+         zr = z(iglob) - z(iv)
+         if (use_polymer) call image(xr,yr,zr)
+         xred(i) = rdn*xr + x(iv)
+         yred(i) = rdn*yr + y(iv)
+         zred(i) = rdn*zr + z(iv)
       end do
 c
 c     perform a complete list build
@@ -1258,6 +1264,7 @@ c
       use atmlst
       use atoms
       use boxes
+      use bound
       use cutoff
       use domdec
       use iounit
@@ -1273,6 +1280,7 @@ c
       integer ncell_loc
       integer, allocatable :: index(:),indcell_loc(:)
       real*8 xi,yi,zi,xk,yk,zk,r2,rdn
+      real*8 xr,yr,zr
       real*8 vbufbeg2,boxedge2
       real*8, allocatable :: pos(:,:),r2vec(:)
       real*8, allocatable :: xred(:)
@@ -1316,9 +1324,13 @@ c
          i = loc(iglob)
          iv = ired(iglob)
          rdn = kred(iglob)
-         xred(i) = rdn*(x(iglob)-x(iv)) + x(iv)
-         yred(i) = rdn*(y(iglob)-y(iv)) + y(iv)
-         zred(i) = rdn*(z(iglob)-z(iv)) + z(iv)
+         xr = x(iglob) - x(iv)
+         yr = y(iglob) - y(iv)
+         zr = z(iglob) - z(iv)
+         if (use_polymer) call image(xr,yr,zr)
+         xred(i) = rdn*xr + x(iv)
+         yred(i) = rdn*yr + y(iv)
+         zred(i) = rdn*zr + z(iv)
       end do
 c
 c     perform a complete list build

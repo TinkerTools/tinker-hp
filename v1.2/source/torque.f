@@ -5,6 +5,7 @@ c     University of Texas at Austin
 c
       subroutine torque (i,trq,frcx,frcy,frcz,de)
       use atoms
+      use bound
       use deriv
       use domdec
       use mpole
@@ -84,11 +85,13 @@ c
       u(1) = x(ia) - x(ib)
       u(2) = y(ia) - y(ib)
       u(3) = z(ia) - z(ib)
+      if (use_polymer) call image(u(1),u(2),u(3))
       usiz = sqrt(u(1)*u(1) + u(2)*u(2) + u(3)*u(3))
       if (axetyp .ne. 'Z-Only') then
          v(1) = x(ic) - x(ib)
          v(2) = y(ic) - y(ib)
          v(3) = z(ic) - z(ib)
+         if (use_polymer) call image(v(1),v(2),v(3))
          vsiz = sqrt(v(1)*v(1) + v(2)*v(2) + v(3)*v(3))
       else
          v(1) = 1.0d0
@@ -105,6 +108,7 @@ c
          w(1) = x(id) - x(ib)
          w(2) = y(id) - y(ib)
          w(3) = z(id) - z(ib)
+         if (use_polymer) call image(w(1),w(2),w(3))
       else
          w(1) = u(2)*v(3) - u(3)*v(2)
          w(2) = u(3)*v(1) - u(1)*v(3)
@@ -387,6 +391,7 @@ c
 c
       subroutine torque_rec (i,trq,frcx,frcy,frcz,de)
       use atoms
+      use bound
       use deriv
       use domdec
       use mpole
@@ -473,11 +478,13 @@ c
       u(1) = x(ia) - x(ib)
       u(2) = y(ia) - y(ib)
       u(3) = z(ia) - z(ib)
+      if (use_polymer) call image(u(1),u(2),u(3))
       usiz = sqrt(u(1)*u(1) + u(2)*u(2) + u(3)*u(3))
       if (axetyp .ne. 'Z-Only') then
          v(1) = x(ic) - x(ib)
          v(2) = y(ic) - y(ib)
          v(3) = z(ic) - z(ib)
+         if (use_polymer) call image(v(1),v(2),v(3))
          vsiz = sqrt(v(1)*v(1) + v(2)*v(2) + v(3)*v(3))
       else
          v(1) = 1.0d0
@@ -494,6 +501,7 @@ c
          w(1) = x(id) - x(ib)
          w(2) = y(id) - y(ib)
          w(3) = z(id) - z(ib)
+         if (use_polymer) call image(w(1),w(2),w(3))
       else
          w(1) = u(2)*v(3) - u(3)*v(2)
          w(2) = u(3)*v(1) - u(1)*v(3)

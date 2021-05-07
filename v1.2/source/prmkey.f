@@ -17,6 +17,7 @@ c
       subroutine prmkey (text)
       use angpot
       use bndpot
+      use bound
       use chgpot
       use cutoff
       use divcon
@@ -170,6 +171,8 @@ c
       else if (keyword(1:10) .eq. 'DISPERSION ') then
          use_dispersion = .true.
          if (value .eq. 'NONE')  use_dispersion = .false.
+      else if (keyword(1:8) .eq. 'POLYMER ') then
+         use_polymer = .true.
       end if
 c
 c     select the name of the force field parameter set

@@ -112,9 +112,13 @@ c
          i = loc(iglob)
          iv = ired(iglob)
          rdn = kred(iglob)
-         xred(i) = rdn*(x(iglob)-x(iv)) + x(iv)
-         yred(i) = rdn*(y(iglob)-y(iv)) + y(iv)
-         zred(i) = rdn*(z(iglob)-z(iv)) + z(iv)
+         xr = x(iglob) - x(iv)
+         yr = y(iglob) - y(iv)
+         zr = z(iglob) - z(iv)
+         if (use_polymer) call image(xr,yr,zr)
+         xred(i) = rdn*xr + x(iv)
+         yred(i) = rdn*yr + y(iv)
+         zred(i) = rdn*zr + z(iv)
       end do
 c
 c     find the van der Waals energy via neighbor list search
@@ -299,9 +303,13 @@ c
          i = loc(iglob)
          iv = ired(iglob)
          rdn = kred(iglob)
-         xred(i) = rdn*(x(iglob)-x(iv)) + x(iv)
-         yred(i) = rdn*(y(iglob)-y(iv)) + y(iv)
-         zred(i) = rdn*(z(iglob)-z(iv)) + z(iv)
+         xr = x(iglob) - x(iv)
+         yr = y(iglob) - y(iv)
+         zr = z(iglob) - z(iv)
+         if (use_polymer) call image(xr,yr,zr)
+         xred(i) = rdn*xr + x(iv)
+         yred(i) = rdn*yr + y(iv)
+         zred(i) = rdn*zr + z(iv)
       end do
 c
 c     find the van der Waals energy via neighbor list search
@@ -482,9 +490,13 @@ c
          i = loc(iglob)
          iv = ired(iglob)
          rdn = kred(iglob)
-         xred(i) = rdn*(x(iglob)-x(iv)) + x(iv)
-         yred(i) = rdn*(y(iglob)-y(iv)) + y(iv)
-         zred(i) = rdn*(z(iglob)-z(iv)) + z(iv)
+         xr = x(iglob) - x(iv)
+         yr = y(iglob) - y(iv)
+         zr = z(iglob) - z(iv)
+         if (use_polymer) call image(xr,yr,zr)
+         xred(i) = rdn*xr + x(iv)
+         yred(i) = rdn*yr + y(iv)
+         zred(i) = rdn*zr + z(iv)
       end do
 c
 c     find the van der Waals energy via neighbor list search
