@@ -31,8 +31,8 @@ c
       integer i,j,k
       integer ip,next
       integer ia,ib,ic,id
-
-      integer l,sizegroup
+      integer, allocatable :: rpos(:)
+      integer nrpos,l,sizegroup
       real*8 p1,p2,p3,p4,p5
       real*8 d1,d2,d3
       real*8 a1,a2,a3
@@ -75,14 +75,12 @@ c
         width = 0.0d0
         use_basin = .false.
         use_wall = .false.
-cc
-cc       allocate local arrays
-cc
-c        allocate (rpos(n))
-c        nrpos = 0
-c        do i = 1, n
-c           rpos(i) = 0
-c        end do
+c
+c       allocate local arrays
+c
+        allocate (rpos(n))
+        nrpos = 0
+        rpos  = 0d0
 c
 c       search the keywords for restraint parameters
 c
@@ -96,12 +94,6 @@ c
 c       get atom restrained to a specified position range
 c
            if (keyword(1:18) .eq. 'RESTRAIN-POSITION ') then
-c              read (string,*,err=10,end=10)  (rpos(l),l=nrpos+1,n)
-c   10         continue
-c              do while (rpos(nrpos+1) .ne. 0)
-c                 nrpos = nrpos + 1
-c                 rpos(nrpos) = max(-n,min(n,rpos(nrpos)))
-c              end do
               p1 = 0.0d0
               p2 = 0.0d0
               p3 = 0.0d0
@@ -148,6 +140,38 @@ c              end do
                  pfix(1,npfix) = p2
                  pfix(2,npfix) = p3
               end if
+c
+c       get list of atoms restrained at their initial position (equilibration phase)
+c
+           else if (keyword(1:14) .eq. 'RESTRAIN-LIST ') then
+              read (string,*,err=11,end=11)  (rpos(l),l=nrpos+1,n)
+   11         continue
+              do while (rpos(nrpos+1) .ne. 0)
+                 nrpos = nrpos + 1
+                 rpos(nrpos) = max(-n,min(n,rpos(nrpos)))
+              end do
+c
+c       restrain backbone atoms at their initial position (equilibration phase)
+c
+           else if (keyword(1:18) .eq. 'RESTRAIN-BACKBONE ') then
+              p1 = 0d0
+              read (string,*,err=12,end=12)  p1
+   12         continue
+             if (p1.eq.0d0) p1 = 100d0
+             do j = 1, n
+               if (name(j).eq.'CA') then
+                 npfix = npfix + 1
+                 ipfix(npfix) = j
+                 kpfix(1,npfix) = 1
+                 kpfix(2,npfix) = 1
+                 kpfix(3,npfix) = 1
+                 xpfix(npfix) = x(j) 
+                 ypfix(npfix) = y(j) 
+                 zpfix(npfix) = z(j) 
+                 pfix(1,npfix) = p1
+                 pfix(2,npfix) = 0.0d0
+               end if
+             end do
 c
 c       get atoms restrained to a specified distance range
 c
@@ -370,40 +394,40 @@ c
 c
 c     set restrained atoms 
 c
-c        i = 1
-c        do while (rpos(i) .ne. 0)
-c           if (i .eq. 1) then
-c              npfix = 0
-c           end if
-c           if (rpos(i) .gt. 0) then
-c              j = rpos(i)
-c              npfix = npfix + 1
-c              ipfix(npfix) = j
-c              kpfix(1,npfix) = 1
-c              kpfix(2,npfix) = 1
-c              kpfix(3,npfix) = 1
-c              xpfix(npfix) = x(j) 
-c              ypfix(npfix) = y(j) 
-c              zpfix(npfix) = z(j) 
-c              pfix(1,npfix) = 100.0d0
-c              pfix(2,npfix) = 0.0d0
-c              i = i + 1
-c           else
-c              do j = abs(rpos(i)), abs(rpos(i+1))
-c                  npfix = npfix + 1
-c                  ipfix(npfix) = j
-c                  kpfix(1,npfix) = 1
-c                  kpfix(2,npfix) = 1
-c                  kpfix(3,npfix) = 1
-c                  xpfix(npfix) = x(j) 
-c                  ypfix(npfix) = y(j) 
-c                  zpfix(npfix) = z(j) 
-c                  pfix(1,npfix) = 100.0d0
-c                  pfix(2,npfix) = 0.0d0
-c              end do
-c              i = i + 2
-c           end if
-c        end do
+        i = 1
+        do while (rpos(i) .ne. 0)
+           if (i .eq. 1) then
+              npfix = 0
+           end if
+           if (rpos(i) .gt. 0) then
+              j = rpos(i)
+              npfix = npfix + 1
+              ipfix(npfix) = j
+              kpfix(1,npfix) = 1
+              kpfix(2,npfix) = 1
+              kpfix(3,npfix) = 1
+              xpfix(npfix) = x(j) 
+              ypfix(npfix) = y(j) 
+              zpfix(npfix) = z(j) 
+              pfix(1,npfix) = 100.0d0
+              pfix(2,npfix) = 0.0d0
+              i = i + 1
+           else
+              do j = abs(rpos(i)), abs(rpos(i+1))
+                  npfix = npfix + 1
+                  ipfix(npfix) = j
+                  kpfix(1,npfix) = 1
+                  kpfix(2,npfix) = 1
+                  kpfix(3,npfix) = 1
+                  xpfix(npfix) = x(j) 
+                  ypfix(npfix) = y(j) 
+                  zpfix(npfix) = z(j) 
+                  pfix(1,npfix) = 100.0d0
+                  pfix(2,npfix) = 0.0d0
+              end do
+              i = i + 2
+           end if
+        end do
         use_geom = .false.
         if (npfix .ne. 0)  use_geom = .true.
         if (ndfix .ne. 0)  use_geom = .true.
