@@ -18,6 +18,7 @@ c
       use bound
       use boxes
       use cutoff
+      use domdec
       use keys
       use iounit
       implicit none
@@ -90,6 +91,15 @@ c
       boxmax = max(xbox,ybox,zbox)
       if (boxmax .ne. 0.0d0)  use_bounds = .true.
 c
+c     return error for truncated octahedron
+c
+      if (octahedron) then
+        if (rank.eq.0) then
+          write(iout,*) 'Truncated octahedron not implemented yet'
+        end if
+        call fatal
+      end if
+c
 c     set unspecified periodic boundary box lengths and angles
 c
       if (use_bounds) then
@@ -143,6 +153,15 @@ c
 c         call lattice
 c         boundary = 'NONE'
 c         dens = 0.75d0
+      end if
+c
+c     return error for non orthorombic unit cells
+c
+      if ((alpha.ne.90d0).or.(beta.ne.90d0).or.(gamma.ne.90d0)) then
+        if (rank.eq.0) then
+          write(iout,*) 'Only orthorombic unit cells are implemented'
+        end if
+        call fatal
       end if
 c
       return
