@@ -16,16 +16,19 @@ c
 c     literature reference:
 c
 c     M. P. Allen and D. J. Tildesley, "Computer Simulation of
-c     Liquids", Oxford University Press, 1987, Section 2.8
+c     Liquids, 2nd Ed.", Oxford University Press, 2017, Section 2.8
 c
 c
 #include "tinker_precision.h"
       subroutine evcorr (elrc)
-      use sizes
+      use atmtyp
+      use atoms
       use bound
       use boxes
       use domdec   ,only:rank
       use math
+      use mutant
+      use potent
       use shunt
       use inform   ,only:deb_path
       use tinheader,only:ti_p
@@ -35,18 +38,20 @@ c
       integer i,j,k,it,kt
       integer nstep,ndelta
       integer vdwtyp_i
+      integer, allocatable :: mvt(:)
       real(t_p) zero,one,two
-      real(r_p) elrc,etot
+      real(t_p) elrc,etot
       real(t_p) range,rdelta
-      real(t_p) termi,termik
-      real(t_p) e,eps
+      real(t_p) fi,fk,fim,fkm,fik
+      real(t_p) e,eps,vlam1
       real(t_p) offset,taper
       real(t_p) rv,rv2,rv6,rv7
       real(t_p) r,r2,r3,r4,rc
       real(t_p) r5,r6,r7
-      real(t_p) p,p6,p12
+      real(t_p) cik,p,p6,p12
       real(t_p) t1,t2,ri
       real(t_p) rho,tau,tau7
+      real(t_p) expterm
       character*10 mode
       enum,bind(C)
       enumerator LENNARD_JONES,BUFFERED_14_7
@@ -61,8 +66,7 @@ c
       elrc = 0
 !$acc end serial
 c
-c     only applicable if periodic boundaries are in use
-c     second test prevent over-compute
+c     only the master computes the vdw correction
 c
       if (.not.use_bounds.or.rank.ne.0)  return
       if (deb_path) write(*,12) nvt
@@ -82,41 +86,85 @@ c
 c
 c     set number of steps and range for numerical integration
 c
-      nstep  = 2
-      range  = 100.0_ti_p
+      nstep = 2
+      range = 100.0_ti_p
       ndelta = int(real(nstep,t_p)*(range-cut))
       rdelta = (range-cut) / real(ndelta,t_p)
       offset = cut - 0.5_ti_p*rdelta
+      vlam1 = 1.0_ti_p - vlambda
       rc     = 1.0/(cut-off)
 c
-c     find the van der Waals energy via double loop search
+c     perform dynamic allocation of some local arrays
+c
+      allocate (mvt(n))
+c
+c     count the number of types and their frequencies
+c
+      nvt = 0
+      do i = 1, n
+         if (use_vdw)  it = jvdw(i)
+         do k = 1, nvt
+            if (ivt(k) .eq. it) then
+               jvt(k) = jvt(k) + 1
+               if (mut(i))  mvt(k) = mvt(k) + 1
+               goto 10
+            end if
+         end do
+         nvt = nvt + 1
+         ivt(nvt) = it
+         jvt(nvt) = 1
+         mvt(nvt) = 0
+         if (mut(i))  mvt(nvt) = 1
+   10    continue
+      end do
+
+!$acc    enter data create(mvt) async 
+!$acc update device(mvt) async
+c
+c     find the correction energy via double loop search
 c
 !$acc parallel loop collapse(2) async
-!$acc&         present(ivt,jvt,radmin,epsilon,elrc)
+!$acc&         present(ivt,jvt,mvt,radmin,epsilon,elrc)
       do i = 1, nvt
          do k = 1, nvt
-            it     = ivt(i)
-            termi  = two * pi * real(jvt(i),t_p)
-            kt     = ivt(k)
-            termik = termi * real(jvt(k),t_p)
-            rv     = radmin (kt,it)
-            eps    = epsilon(kt,it)
-            rv2    = rv * rv
-            rv6    = rv2 * rv2 * rv2
-            rv7    = rv6 * rv
-            etot   = zero
+            if (k.lt.i) cycle
+            it = ivt(i)
+            fi = 4.0_ti_p * pi * real(jvt(i),t_p)
+            fim = 4.0_ti_p * pi * real(mvt(i),t_p)
+            kt = ivt(k)
+            fk = real(jvt(k),t_p)
+            fkm = real(mvt(k),t_p)
+c
+c     set decoupling or annihilation for intraligand interactions
+c
+            if (vcouple .eq. 0) then
+               fik = fi*fk - vlam1*(fim*(fk-fkm)+(fi-fim)*fkm)
+            else
+               fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
+            end if
+            if (k .eq. i)  fik = 0.5_ti_p * fik
+            rv = radmin(kt,it)
+            eps = epsilon(kt,it)
+            rv2 = rv * rv
+            rv6 = rv2 * rv2 * rv2
+            rv7 = rv6 * rv
+            etot = zero
 !$acc loop seq
             do j = 1, ndelta
-               r  = offset + real(j,t_p)*rdelta
-               e  = zero
+               r = offset + real(j,t_p)*rdelta
+               r2 = r * r
+               r3 = r2 * r
+               r6 = r3 * r3
+               r7 = r6 * r
+               e = zero
                if (vdwtyp_i .eq. LENNARD_JONES) then
                   p6  = (rv / r)**6
                   e   = eps * (p6 - two)*p6
                else if (vdwtyp_i .eq. BUFFERED_14_7) then
-               rho  = r/rv
-               t1   = ((1.0_ti_p+dhal) / (rho+dhal))**7
-               t2   =  (1.0_ti_p+ghal) * ((rho**7+ghal)**(-1))
-               e    = eps * t1 * (t2-2.0_ti_p)
+                 rho  = r/rv
+                 t1   = ((1.0_ti_p+dhal) / (rho+dhal))**7
+                 t2   =  (1.0_ti_p+ghal) * ((rho**7+ghal)**(-1))
+                 e    = eps * t1 * (t2-2.0_ti_p)
 c               else if (vdwtyp.eq.'BUCKINGHAM' .or.
 c     &                  vdwtyp.eq.'MM3-HBOND') then
 c                  p = sqrt(rv2/r2)
@@ -132,12 +180,17 @@ c                  e = eps * (expterm - cbuck*p6)
                end if
                etot = etot + e*rdelta*r*r
             end do
-            elrc = elrc + termik*etot
+            elrc = elrc + fik*etot
          end do
       end do
 !$acc serial async present(elrc)
       elrc = elrc / volbox
 !$acc end serial
+c
+c     perform deallocation of some local arrays
+!$acc exit data delete(mvt) async
+      deallocate (mvt)
+      return
       end
 c
 c
@@ -154,142 +207,21 @@ c
 c     literature reference:
 c
 c     M. P. Allen and D. J. Tildesley, "Computer Simulation of
-c     Liquids", Oxford University Press, 1987, Section 2.8
+c     Liquids, 2nd Ed.", Oxford University Press, 2017, Section 2.8
 c
 c
       subroutine evcorr1 (elrc,vlrc)
-      use sizes
+      use atmtyp
+      use atoms
       use bound
       use boxes
       use domdec   ,only:rank
       use inform   ,only:deb_path
       use math
+      use mutant
+      use potent
       use shunt
-      use tinheader ,only: ti_p
-      use vdw
-      use vdwpot
-      implicit none
-      integer i,j,k,it,kt
-      integer nstep,ndelta
-      real(t_p) zero,one,two
-      real(r_p) elrc,vlrc
-      real(t_p) etot,vtot
-      real(t_p) range,rdelta
-      real(t_p) termi,termik
-      real(t_p) e,de,eps
-      real(t_p) offset
-      real(t_p) taper,dtaper
-      real(t_p) rv,rv2,rv6,rv7
-      real(t_p) r,r2,r3,r4
-      real(t_p) r5,r6,r7
-      real(t_p) p,p6,p12
-      real(t_p) rho,tau,tau7
-      real(t_p) dtau,gtau
-      real(t_p) rvterm,expterm
-      character*10 mode
-      parameter(zero=0.0_ti_p,  one=1.0_ti_p,
-     &           two=2.0_ti_p)
-c
-c
-c     zero out the long range van der Waals corrections
-c
-      elrc = 0
-      vlrc = 0
-c
-c     only applicable if periodic boundaries are in use
-c
-      if (.not. use_bounds.or.rank.ne.0)  return
-c
-c     set the coefficients for the switching function
-c
-      mode = 'VDW'
-      call switch (mode)
-c
-c     set number of steps and range for numerical integration
-c
-      nstep = 2
-      range = 100.0_ti_p
-      ndelta = int(real(nstep,t_p)*(range-cut))
-      rdelta = (range-cut) / real(ndelta,t_p)
-      offset = cut - 0.5_ti_p*rdelta
-c
-c     find the van der Waals energy via double loop search
-c
-      do i = 1, nvt
-         it = ivt(i)
-         termi = two * pi * real(jvt(i),t_p)
-         do k = 1, nvt
-            kt = ivt(k)
-            termik = termi * real(jvt(k),t_p)
-            rv = radmin(kt,it)
-            eps = epsilon(kt,it)
-            rv2 = rv * rv
-            rv6 = rv2 * rv2 * rv2
-            rv7 = rv6 * rv
-            etot = zero
-            vtot = zero
-            do j = 1, ndelta
-               r  = offset + real(j,t_p)*rdelta
-               r2 = r * r
-               r3 = r2 * r
-               r6 = r3 * r3
-               r7 = r6 * r
-               e  = zero
-               de = zero
-               if (vdwtyp .eq. 'LENNARD-JONES') then
-                  p6  = rv6 / r6
-                  p12 = p6 * p6
-                  e   = eps * (p12 - two*p6)
-                  de  = eps * (p12-p6) * (-12.0_ti_p/r)
-               else if (vdwtyp .eq. 'BUFFERED-14-7') then
-              rho = r7 + ghal*rv7
-              tau = (dhal+one) / (r+dhal*rv)
-                  tau7 = tau**7
-                  dtau = tau / (dhal+one)
-                  gtau = eps*tau7*r6*(ghal+one)*(rv7/rho)**2
-              e = eps * rv7 * tau7 * ((ghal+one)*rv7/rho-two)
-               de = -7.0_ti_p * (dtau*e+gtau)
-c               else if (vdwtyp.eq.'BUCKINGHAM' .or.
-c     &                  vdwtyp.eq.'MM3-HBOND') then
-c                  p = sqrt(rv2/r2)
-c                  p6 = rv6 / r6
-c                  rvterm = -bbuck / rv
-c                  expterm = abuck * exp(-bbuck/p)
-c                  e = eps * (expterm - cbuck*p6)
-c                  de = eps * (rvterm*expterm+6.0_ti_p*cbuck*p6/r)
-               end if
-               if (r .lt. off) then
-                  r4 = r2 * r2
-                  r5 = r2 * r3
-                  taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
-                  dtaper = 5.0_ti_p*c5*r4 + 4.0_ti_p*c4*r3
-     &                   + 3.0_ti_p*c3*r2 + two*c2*r + c1
-                  de = de*(one-taper) - e*dtaper
-                  e  = e*(one-taper)
-               end if
-               etot = etot + e*rdelta*r2
-               vtot = vtot + de*rdelta*r3
-            end do
-            elrc = elrc + termik*etot
-            vlrc = vlrc + termik*vtot
-         end do
-      end do
-      elrc = elrc / volbox
-      vlrc = vlrc / (3.0_re_p*volbox)
-      return
-      end
-c
-c     Device version of evcorr1
-c
-      subroutine evcorr1gpu (elrc,vlrc)
-      use sizes
-      use bound
-      use boxes
-      use domdec    ,only:rank
-      use inform    ,only:deb_path
-      use math
-      use shunt
-      use tinheader ,only: ti_p
+      use tinheader ,only:ti_p,re_p
       use utilgpu   ,only: def_queue
       use vdw
       use vdwpot
@@ -297,22 +229,20 @@ c
       integer i,j,k,it,kt
       integer nstep,ndelta
       integer vdwtyp_i
+      integer, allocatable :: mvt(:)
       real(t_p) zero,one,two
-      real(r_p) elrc,vlrc
+      real(t_p) elrc,vlrc
       real(t_p) etot,vtot
       real(t_p) range,rdelta
-      real(t_p) termi,termik
+      real(t_p) fi,fk,fim,fkm,fik
       real(t_p) e,de,eps
-      real(t_p) offset
-      real(t_p) t1,t2,s1,s2
-      real(t_p) dt1drho,dt2drho
+      real(t_p) offset,vlam1
       real(t_p) taper,dtaper
       real(t_p) rv,rv2,rv6,rv7
-      real(t_p) rinv,ri,ri2,ri3
       real(t_p) r,r2,r3,r4
-      real(t_p) r5,r6,r7
-      real(t_p) p,p6,p12
-      real(t_p) rho,rho6,tau,tau7
+      real(t_p) r5,r6,r7,ri
+      real(t_p) cik,p,p6,p12
+      real(t_p) rho,tau,tau7
       real(t_p) dtau,gtau
       real(t_p) rvterm,expterm
       character*10 mode
@@ -323,17 +253,18 @@ c
      &           two=2.0_ti_p)
  12   format(2x,'evcorr1')
 c
+c
 c     zero out the long range van der Waals corrections
 c
 !$acc serial present(elrc,vlrc) async(def_queue)
-      elrc = zero
-      vlrc = zero
+      elrc = 0
+      vlrc = 0
 !$acc end serial
 c
-c     only applicable if periodic boundaries are in use
+c     only the master computes the vdw correction
 c
-      if (.not.use_bounds.or.rank.ne.0) return
-      if (deb_Path) write(*,12)
+      if (.not. use_bounds.or.rank.ne.0)  return
+      if (deb_path) write(*,12) 
 c
 c     set the coefficients for the switching function
 c
@@ -347,13 +278,219 @@ c
       else if (vdwtyp .eq. 'BUFFERED-14-7') then
          vdwtyp_i=BUFFERED_14_7
       end if
-
-      nstep  = 2
-      range  = 100.0_ti_p
+c
+c     set number of steps and range for numerical integration
+c
+      nstep = 2
+      range = 100.0_ti_p
       ndelta = int(real(nstep,t_p)*(range-cut))
-      rdelta = (range-cut)/real(ndelta,t_p)
+      rdelta = (range-cut) / real(ndelta,t_p)
       offset = cut - 0.5_ti_p*rdelta
-      rinv   = 1.0/(cut - off)
+      vlam1 = 1.0_ti_p - vlambda
+c
+c     perform dynamic allocation of some local arrays
+c
+      allocate (mvt(n))
+c
+c     count the number of vdw types and their frequencies
+c
+      nvt = 0
+      do i = 1, n
+         if (use_vdw)  it = jvdw(i)
+         do k = 1, nvt
+            if (ivt(k) .eq. it) then
+               jvt(k) = jvt(k) + 1
+               if (mut(i))  mvt(k) = mvt(k) + 1
+               goto 10
+            end if
+         end do
+         nvt = nvt + 1
+         ivt(nvt) = it
+         jvt(nvt) = 1
+         mvt(nvt) = 0
+         if (mut(i))  mvt(nvt) = 1
+   10    continue
+      end do
+c
+c     find the van der Waals energy via double loop search
+c
+      do i = 1, nvt
+         it = ivt(i)
+         fi = 4.0_ti_p * pi * real(jvt(i),t_p)
+         fim = 4.0_ti_p * pi * real(mvt(i),t_p)
+         do k = i, nvt
+            kt = ivt(k)
+            fk = real(jvt(k),t_p)
+            fkm = real(mvt(k),t_p)
+c
+c     set decoupling or annihilation for intraligand interactions
+c
+            if (vcouple .eq. 0) then
+               fik = fi*fk - vlam1*(fim*(fk-fkm)+(fi-fim)*fkm)
+            else
+               fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
+            end if
+            if (k .eq. i)  fik = 0.5_ti_p * fik
+            rv = radmin(kt,it)
+            eps = epsilon(kt,it)
+            rv2 = rv * rv
+            rv6 = rv2 * rv2 * rv2
+            rv7 = rv6 * rv
+            etot = 0.0_ti_p
+            vtot = 0.0_ti_p
+            do j = 1, ndelta
+               r = offset + real(j,t_p)*rdelta
+               r2 = r * r
+               r3 = r2 * r
+               r6 = r3 * r3
+               r7 = r6 * r
+               e = 0.0_ti_p
+               de = 0.0_ti_p
+               if (vdwtyp .eq. 'LENNARD-JONES') then
+                  p6 = rv6 / r6
+                  p12 = p6 * p6
+                  e = eps * (p12 - 2.0_ti_p*p6)
+                  de = eps * (p12-p6) * (-12.0_ti_p/r)
+               else if (vdwtyp .eq. 'BUFFERED-14-7') then
+                  rv7 = rv**7
+                  rho = r7 + ghal*rv7
+                  tau = (dhal+1.0_ti_p) / (r + dhal*rv)
+                  tau7 = tau**7
+                  dtau = tau / (dhal+1.0_ti_p)
+                  gtau = eps*tau7*r6*(ghal+1.0_ti_p)*(rv7/rho)**2
+                  e = eps*tau7*rv7*((ghal+1.0_ti_p)*rv7/rho-2.0_ti_p)
+                  de = -7.0_ti_p * (dtau*e+gtau)
+c               else if (vdwtyp.eq.'BUCKINGHAM' .or.
+c     &                  vdwtyp.eq.'MM3-HBOND') then
+c                  p = sqrt(rv2/r2)
+c                  p6 = rv6 / r6
+c                  rvterm = -bbuck / rv
+c                  expterm = abuck * exp(-bbuck/p)
+c                  e = eps * (expterm - cbuck*p6)
+c                  de = eps * (rvterm*expterm+6.0d0*cbuck*p6/r)
+               end if
+               if (r .lt. off) then
+                  r4 = r2 * r2
+                  r5 = r2 * r3
+                  taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
+                  dtaper = 5.0_ti_p*c5*r4 + 4.0_ti_p*c4*r3
+     &                        + 3.0_ti_p*c3*r2 + 2.0_ti_p*c2*r + c1
+                  de = de*(1.0_ti_p-taper) - e*dtaper
+                  e = e*(1.0_ti_p-taper)
+               end if
+               etot = etot + e*rdelta*r2
+               vtot = vtot + de*rdelta*r3
+            end do
+            elrc = elrc + fik*etot
+            vlrc = vlrc + fik*vtot
+         end do
+      end do
+      elrc = elrc / volbox
+      vlrc = vlrc / (3.0_re_p*volbox)
+c
+c     perform deallocation of some local arrays
+c
+      deallocate (mvt)
+      return
+      end
+c
+c     Device version of evcorr1
+c
+      subroutine evcorr1gpu (elrc,vlrc)
+      use atmtyp
+      use atoms
+      use bound
+      use boxes
+      use domdec   ,only:rank
+      use inform   ,only:deb_path
+      use math
+      use mutant
+      use potent
+      use shunt
+      use tinheader ,only:ti_p,re_p
+      use utilgpu   ,only: def_queue
+      use vdw
+      use vdwpot
+      implicit none
+      integer i,j,k,it,kt
+      integer nstep,ndelta
+      integer vdwtyp_i
+      integer, allocatable :: mvt(:)
+      real(t_p) zero,one,two
+      real(t_p) elrc,vlrc
+      real(t_p) etot,vtot
+      real(t_p) range,rdelta
+      real(t_p) fi,fk,fim,fkm,fik
+      real(t_p) e,de,eps
+      real(t_p) offset,vlam1
+      real(t_p) t1,t2,s1,s2
+      real(t_p) dt1drho,dt2drho
+      real(t_p) taper,dtaper
+      real(t_p) rv,rv2,rv6,rv7
+      real(t_p) r,r2,r3,r4,ri,ri2,ri3
+      real(t_p) r5,r6,r7,rinv
+      real(t_p) cik,p,p6,p12
+      real(t_p) rho,rho6,tau,tau7
+      real(t_p) dtau,gtau
+      real(t_p) rvterm,expterm
+      character*10 mode
+      enum,bind(C)
+      enumerator LENNARD_JONES,BUFFERED_14_7
+      end enum
+      parameter(zero=0.0_ti_p,  one=1.0_ti_p,
+     &           two=2.0_ti_p)
+c
+c
+c     zero out the long range van der Waals corrections
+c
+      elrc = 0
+      vlrc = 0
+c
+c     only the master computes the vdw correction
+c
+      if (.not. use_bounds.or.rank.ne.0)  return
+      if (deb_path) write(*,12) nvt
+ 12   format(3x,'evcorr1',3x,'(nvt:',I8,')')
+c
+c     set the coefficients for the switching function
+c
+      mode = 'VDW'
+      call switch (mode)
+c
+c     set number of steps and range for numerical integration
+c
+      nstep = 2
+      range = 100.0_ti_p
+      ndelta = int(real(nstep,t_p)*(range-cut))
+      rdelta = (range-cut) / real(ndelta,t_p)
+      offset = cut - 0.5_ti_p*rdelta
+      vlam1 = 1.0_ti_p - vlambda
+c
+c     perform dynamic allocation of some local arrays
+c
+      allocate (mvt(n))
+c
+c     count the number of vdw types and their frequencies
+c
+      nvt = 0
+      do i = 1, n
+         if (use_vdw)  it = jvdw(i)
+         do k = 1, nvt
+            if (ivt(k) .eq. it) then
+               jvt(k) = jvt(k) + 1
+               if (mut(i))  mvt(k) = mvt(k) + 1
+               goto 10
+            end if
+         end do
+         nvt = nvt + 1
+         ivt(nvt) = it
+         jvt(nvt) = 1
+         mvt(nvt) = 0
+         if (mut(i))  mvt(nvt) = 1
+   10    continue
+      end do
+!$acc    enter data create(mvt) async 
+!$acc update device(mvt) async
 c
 c     find the van der Waals energy via double loop search
 c
@@ -363,17 +500,38 @@ c
       do i = 1, nvt
          do k = 1, nvt
             do j = 1, ndelta
-               it      = ivt(i)
-               termi   = two * pi * real(jvt(i),t_p)
-               kt      = ivt(k)
-               termik  = termi * real(jvt(k),t_p)
-               rv      = radmin(kt,it)
-               eps     = epsilon(kt,it)
-               r       = offset + real(j,t_p)*rdelta
-c              e       = zero
-c              de      = zero
+              if (k.lt.i) cycle
+              it = ivt(i)
+              fi = 4.0_ti_p * pi * real(jvt(i),t_p)
+              fim = 4.0_ti_p * pi * real(mvt(i),t_p)
+              kt = ivt(k)
+              fk = real(jvt(k),t_p)
+              fkm = real(mvt(k),t_p)
+c
+c     set decoupling or annihilation for intraligand interactions
+c
+              if (vcouple .eq. 0) then
+                 fik = fi*fk - vlam1*(fim*(fk-fkm)+(fi-fim)*fkm)
+              else
+                 fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
+              end if
+              if (k .eq. i)  fik = 0.5_ti_p * fik
+              rv = radmin(kt,it)
+              eps = epsilon(kt,it)
+              rv2 = rv * rv
+              rv6 = rv2 * rv2 * rv2
+              rv7 = rv6 * rv
+              etot = 0.0_ti_p
+              vtot = 0.0_ti_p
+               r = offset + real(j,t_p)*rdelta
+               r2 = r * r
+               r3 = r2 * r
+               r6 = r3 * r3
+               r7 = r6 * r
+               e = zero
+               de = zero
                if (vdwtyp_i .eq. LENNARD_JONES) then
-                  p6   = (rv / r)**6
+                  p6  = (rv / r)**6
                   e    = eps * (p6 - two)*p6
                   de   = eps * (p6 - one)*p6 * (-12.0_ti_p/r)
                else if (vdwtyp_i .eq. BUFFERED_14_7) then
@@ -387,6 +545,14 @@ c              de      = zero
                   dt2drho = -7.0_ti_p*rho6*t2*s2
                   e    = eps*t1*(t2 - 2.0_ti_p)
                   de   = eps*(dt1drho*(t2-2.0_ti_p)+t1*dt2drho) / rv
+c               else if (vdwtyp.eq.'BUCKINGHAM' .or.
+c     &                  vdwtyp.eq.'MM3-HBOND') then
+c                  p = sqrt(rv2/r2)
+c                  p6 = rv6 / r6
+c                  rvterm = -bbuck / rv
+c                  expterm = abuck * exp(-bbuck/p)
+c                  e = eps * (expterm - cbuck*p6)
+c                  de = eps * (rvterm*expterm+6.0d0*cbuck*p6/r)
                end if
                if (r .lt. off) then
                   ri     = (r - off) * rinv
@@ -398,9 +564,11 @@ c              de      = zero
                   de     = de*(one-taper) - e*dtaper
                   e      =  e*(one-taper)
                end if
-               elrc    = elrc + termik*( e*rdelta*r*r)
-               vlrc    = vlrc + termik*(de*rdelta*r*r*r)
+               etot = etot + e*rdelta*r*r
+               vtot = vtot + de*rdelta*r*r*r
             end do
+            elrc = elrc + fik*etot
+            vlrc = vlrc + fik*vtot
          end do
       end do
 
@@ -408,5 +576,10 @@ c              de      = zero
       elrc = elrc / volbox
       vlrc = vlrc / (3.0_re_p*volbox)
 !$acc end serial
-
+c
+c     perform deallocation of some local arrays
+c
+!$acc exit data delete(mvt) async
+      deallocate (mvt)
+      return
       end
