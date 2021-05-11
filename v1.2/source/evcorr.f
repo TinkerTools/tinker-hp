@@ -16,31 +16,36 @@ c
 c     literature reference:
 c
 c     M. P. Allen and D. J. Tildesley, "Computer Simulation of
-c     Liquids", Oxford University Press, 1987, Section 2.8
+c     Liquids, 2nd Ed.", Oxford University Press, 2017, Section 2.8
 c
 c
       subroutine evcorr (elrc)
-      use sizes
+      use atmtyp
+      use atoms
       use bound
       use boxes
       use domdec
       use math
+      use mutant
+      use potent
       use shunt
       use vdw
       use vdwpot
       implicit none
       integer i,j,k,it,kt
       integer nstep,ndelta
+      integer, allocatable :: mvt(:)
       real*8 elrc,etot
       real*8 range,rdelta
-      real*8 termi,termik
-      real*8 e,eps
+      real*8 fi,fk,fim,fkm,fik
+      real*8 e,eps,vlam1
       real*8 offset,taper
       real*8 rv,rv2,rv6,rv7
       real*8 r,r2,r3,r4
       real*8 r5,r6,r7
-      real*8 p,p6,p12
+      real*8 cik,p,p6,p12
       real*8 rho,tau,tau7
+      real*8 expterm
       character*10 mode
 c
 c
@@ -68,16 +73,51 @@ c
       ndelta = int(dble(nstep)*(range-cut))
       rdelta = (range-cut) / dble(ndelta)
       offset = cut - 0.5d0*rdelta
+      vlam1 = 1.0d0 - vlambda
 c
-c     find the van der Waals energy via double loop search
+c     perform dynamic allocation of some local arrays
 c
-      elrc = 0.0d0
+      allocate (mvt(n))
+c
+c     count the number of types and their frequencies
+c
+      nvt = 0
+      do i = 1, n
+         if (use_vdw)  it = jvdw(i)
+         do k = 1, nvt
+            if (ivt(k) .eq. it) then
+               jvt(k) = jvt(k) + 1
+               if (mut(i))  mvt(k) = mvt(k) + 1
+               goto 10
+            end if
+         end do
+         nvt = nvt + 1
+         ivt(nvt) = it
+         jvt(nvt) = 1
+         mvt(nvt) = 0
+         if (mut(i))  mvt(nvt) = 1
+   10    continue
+      end do
+c
+c     find the correction energy via double loop search
+c
       do i = 1, nvt
          it = ivt(i)
-         termi = 2.0d0 * pi * dble(jvt(i))
-         do k = 1, nvt
+         fi = 4.0d0 * pi * dble(jvt(i))
+         fim = 4.0d0 * pi * dble(mvt(i))
+         do k = i, nvt
             kt = ivt(k)
-            termik = termi * dble(jvt(k))
+            fk = dble(jvt(k))
+            fkm = dble(mvt(k))
+c
+c     set decoupling or annihilation for intraligand interactions
+c
+            if (vcouple .eq. 0) then
+               fik = fi*fk - vlam1*(fim*(fk-fkm)+(fi-fim)*fkm)
+            else
+               fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
+            end if
+            if (k .eq. i)  fik = 0.5d0 * fik
             rv = radmin(kt,it)
             eps = epsilon(kt,it)
             rv2 = rv * rv
@@ -96,16 +136,17 @@ c
                   p12 = p6 * p6
                   e = eps * (p12 - 2.0d0*p6)
                else if (vdwtyp .eq. 'BUFFERED-14-7') then
-               rho = r7 + ghal*rv7
-               tau = (dhal+1.0d0) / (r+dhal*rv)
-               tau7 = tau**7
-               e = eps * rv7 * tau7 * ((ghal+1.0d0)*rv7/rho-2.0d0)
-c               else if (vdwtyp.eq.'BUCKINGHAM' .or.
-c     &                  vdwtyp.eq.'MM3-HBOND') then
-c                  p = sqrt(rv2/r2)
-c                  p6 = rv6 / r6
-c                  expterm = abuck * exp(-bbuck/p)
-c                  e = eps * (expterm - cbuck*p6)
+                  rho = r7 + ghal*rv7
+                  tau = (dhal+1.0d0) / (r+dhal*rv)
+                  tau7 = tau**7
+                  e = eps * rv7 * tau7
+     &                   * ((ghal+1.0d0)*rv7/rho-2.0d0)
+               else if (vdwtyp.eq.'BUCKINGHAM' .or.
+     &                  vdwtyp.eq.'MM3-HBOND') then
+                  p = sqrt(rv2/r2)
+                  p6 = rv6 / r6
+                  expterm = abuck * exp(-bbuck/p)
+                  e = eps * (expterm - cbuck*p6)
                end if
                if (r .lt. off) then
                   r4 = r2 * r2
@@ -115,10 +156,14 @@ c                  e = eps * (expterm - cbuck*p6)
                end if
                etot = etot + e*rdelta*r2
             end do
-            elrc = elrc + termik*etot
+            elrc = elrc + fik*etot
          end do
       end do
       elrc = elrc / volbox
+c
+c     perform deallocation of some local arrays
+c
+      deallocate (mvt)
       return
       end
 c
@@ -136,32 +181,36 @@ c
 c     literature reference:
 c
 c     M. P. Allen and D. J. Tildesley, "Computer Simulation of
-c     Liquids", Oxford University Press, 1987, Section 2.8
+c     Liquids, 2nd Ed.", Oxford University Press, 2017, Section 2.8
 c
 c
       subroutine evcorr1 (elrc,vlrc)
-      use sizes
+      use atmtyp
+      use atoms
       use bound
       use boxes
       use domdec
       use math
+      use mutant
+      use potent
       use shunt
       use vdw
       use vdwpot
       implicit none
       integer i,j,k,it,kt
       integer nstep,ndelta
+      integer, allocatable :: mvt(:)
       real*8 elrc,vlrc
       real*8 etot,vtot
       real*8 range,rdelta
-      real*8 termi,termik
+      real*8 fi,fk,fim,fkm,fik
       real*8 e,de,eps
-      real*8 offset
+      real*8 offset,vlam1
       real*8 taper,dtaper
       real*8 rv,rv2,rv6,rv7
       real*8 r,r2,r3,r4
       real*8 r5,r6,r7
-      real*8 p,p6,p12
+      real*8 cik,p,p6,p12
       real*8 rho,tau,tau7
       real*8 dtau,gtau
       real*8 rvterm,expterm
@@ -193,15 +242,51 @@ c
       ndelta = int(dble(nstep)*(range-cut))
       rdelta = (range-cut) / dble(ndelta)
       offset = cut - 0.5d0*rdelta
+      vlam1 = 1.0d0 - vlambda
+c
+c     perform dynamic allocation of some local arrays
+c
+      allocate (mvt(n))
+c
+c     count the number of vdw types and their frequencies
+c
+      nvt = 0
+      do i = 1, n
+         if (use_vdw)  it = jvdw(i)
+         do k = 1, nvt
+            if (ivt(k) .eq. it) then
+               jvt(k) = jvt(k) + 1
+               if (mut(i))  mvt(k) = mvt(k) + 1
+               goto 10
+            end if
+         end do
+         nvt = nvt + 1
+         ivt(nvt) = it
+         jvt(nvt) = 1
+         mvt(nvt) = 0
+         if (mut(i))  mvt(nvt) = 1
+   10    continue
+      end do
 c
 c     find the van der Waals energy via double loop search
 c
       do i = 1, nvt
          it = ivt(i)
-         termi = 2.0d0 * pi * dble(jvt(i))
-         do k = 1, nvt
+         fi = 4.0d0 * pi * dble(jvt(i))
+         fim = 4.0d0 * pi * dble(mvt(i))
+         do k = i, nvt
             kt = ivt(k)
-            termik = termi * dble(jvt(k))
+            fk = dble(jvt(k))
+            fkm = dble(mvt(k))
+c
+c     set decoupling or annihilation for intraligand interactions
+c
+            if (vcouple .eq. 0) then
+               fik = fi*fk - vlam1*(fim*(fk-fkm)+(fi-fim)*fkm)
+            else
+               fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
+            end if
+            if (k .eq. i)  fik = 0.5d0 * fik
             rv = radmin(kt,it)
             eps = epsilon(kt,it)
             rv2 = rv * rv
@@ -223,21 +308,21 @@ c
                   e = eps * (p12 - 2.0d0*p6)
                   de = eps * (p12-p6) * (-12.0d0/r)
                else if (vdwtyp .eq. 'BUFFERED-14-7') then
-              rho = r7 + ghal*rv7
-              tau = (dhal+1.0d0) / (r+dhal*rv)
+                  rho = r7 + ghal*rv7
+                  tau = (dhal+1.0d0) / (r+dhal*rv)
                   tau7 = tau**7
                   dtau = tau / (dhal+1.0d0)
                   gtau = eps*tau7*r6*(ghal+1.0d0)*(rv7/rho)**2
-              e = eps * rv7 * tau7 * ((ghal+1.0d0)*rv7/rho-2.0d0)
-               de = -7.0d0 * (dtau*e+gtau)
-c               else if (vdwtyp.eq.'BUCKINGHAM' .or.
-c     &                  vdwtyp.eq.'MM3-HBOND') then
-c                  p = sqrt(rv2/r2)
-c                  p6 = rv6 / r6
-c                  rvterm = -bbuck / rv
-c                  expterm = abuck * exp(-bbuck/p)
-c                  e = eps * (expterm - cbuck*p6)
-c                  de = eps * (rvterm*expterm+6.0d0*cbuck*p6/r)
+                  e = eps * rv7 * tau7 * ((ghal+1.0d0)*rv7/rho-2.0d0)
+                  de = -7.0d0 * (dtau*e+gtau)
+               else if (vdwtyp.eq.'BUCKINGHAM' .or.
+     &                  vdwtyp.eq.'MM3-HBOND') then
+                  p = sqrt(rv2/r2)
+                  p6 = rv6 / r6
+                  rvterm = -bbuck / rv
+                  expterm = abuck * exp(-bbuck/p)
+                  e = eps * (expterm - cbuck*p6)
+                  de = eps * (rvterm*expterm+6.0d0*cbuck*p6/r)
                end if
                if (r .lt. off) then
                   r4 = r2 * r2
@@ -251,11 +336,15 @@ c                  de = eps * (rvterm*expterm+6.0d0*cbuck*p6/r)
                etot = etot + e*rdelta*r2
                vtot = vtot + de*rdelta*r3
             end do
-            elrc = elrc + termik*etot
-            vlrc = vlrc + termik*vtot
+            elrc = elrc + fik*etot
+            vlrc = vlrc + fik*vtot
          end do
       end do
       elrc = elrc / volbox
       vlrc = vlrc / (3.0d0*volbox)
+c
+c     perform deallocation of some local arrays
+c
+      deallocate (mvt)
       return
       end
