@@ -1328,10 +1328,10 @@ c
       do while (max_cell_len .gt. BLOCK_SIZE)
          if (.not.first_loop) then
             miter = mod(iter,3)
-            if (0.ne.miter.and.first_in.le.3) then
+            if (0.ne.miter.and.iter.le.3) then
                bx_cell = bx_cell + 1
                xb = .true.
-            else if (miter.eq.0.and.first_in.le.3) then
+            else if (miter.eq.0.and.iter.le.3) then
                bz_cell = bz_cell + 1
                by_cell = by_cell + 1
                yb = .true.
@@ -1390,7 +1390,7 @@ c           nx_cell = nx_cell + 1
          call prmem_request(cell_len1,save_ncell,async=.false.)
          call prmem_request(cell_scan,save_ncell,async=.false.)
 
-         call set_to_zero1_int(cell_len,save_ncell,rec_queue)
+         call set_to_zero1_int(cell_len,size(cell_len),rec_queue)
 !$acc parallel loop async(rec_queue)
 !$acc&         present(repartcell,cell_len)
          do i = 1,nlocnl
@@ -1439,10 +1439,11 @@ c           nx_cell = nx_cell + 1
      &      call MPI_AllReduce(MPI_IN_PLACE,min_cell_len,1,MPI_INT,
      &           MPI_MIN,commloc,ierr)
          end if
- 20      format(a,6I5,4X,2I8)
+ 20      format(a,7I5,2X,I8,2x,3I3)
          if (deb_Path)
      &   print 20,'box iter ',iter,nx_cell,ny_cell,nz_cell,max_cell_len
-     &                       ,min_cell_len,ncell_tot,nlocnl/ncell_tot
+     &                       ,nlocnl/ncell_tot,min_cell_len,ncell_tot
+     &                       ,bx_cell,by_cell,bz_cell
       end do
 
       ! Save box partition info
@@ -1453,6 +1454,7 @@ c           nx_cell = nx_cell + 1
       bp%nx_c  = nx_cell
       bp%ny_c  = ny_cell
       bp%nz_c  = nz_cell
+
 
 #ifdef _OPENACC
 !$acc parallel loop async present(cell_order)
@@ -1482,6 +1484,82 @@ c           nx_cell = nx_cell + 1
 
 !$acc end data
 
+      end subroutine
+
+      ! Change Interface module if modify calling arguments
+      subroutine set_pairlist_Cellorder(atList,a_plist,buildnl)
+      use atoms  ,only: n,x,y,z
+      use domdec
+      use neigh
+      use utilgpu
+      use mpole
+      implicit none
+      integer atList(*)
+      type(pair_atlst),target:: a_plist
+      logical,intent(in):: buildnl
+
+      integer i,iglob,iipole,iploc
+      integer natmnlb,natmnl
+      integer  ,pointer::c_glob(:),c_key(:) 
+      real(t_p),pointer::cell_x(:),cell_y(:),cell_z(:)
+
+      ! Fetch a_plist attributes
+      natmnlb =  a_plist%natmnlb
+      natmnl  =  a_plist%natmnl 
+
+      if (buildnl) then
+
+         call prmem_request(a_plist%c_glob,natmnlb,async=.true.)
+         call prmem_request(a_plist%cell_x,natmnlb,async=.true.)
+         call prmem_request(a_plist%cell_y,natmnlb,async=.true.)
+         call prmem_request(a_plist%cell_z,natmnlb,async=.true.)
+         c_glob  => a_plist%c_glob
+         c_key   => a_plist%c_key
+         cell_x  => a_plist%cell_x
+         cell_y  => a_plist%cell_y
+         cell_z  => a_plist%cell_z
+
+!$acc parallel loop async(rec_queue)
+!$acc&         present(atList,x,y,z
+!$acc&   ,c_glob,c_key,cell_x,cell_y,cell_z)
+         do i = 1, natmnlb
+            if (i.le.natmnl) then
+               iglob     = atList(c_key(i))
+               c_glob(i) = iglob
+               cell_x(i) = x(iglob)
+               cell_y(i) = y(iglob)
+               cell_z(i) = z(iglob)
+            else
+               c_glob(i) = n+1
+               cell_x(i) = inf
+               cell_y(i) = inf
+               cell_z(i) = inf
+            end if
+         end do
+
+      else
+
+         c_glob  => a_plist%c_glob
+         cell_x  => a_plist%cell_x
+         cell_y  => a_plist%cell_y
+         cell_z  => a_plist%cell_z
+!$acc parallel loop async(rec_queue)
+!$acc&         present(c_glob
+!$acc&   ,celle_x,celle_y,celle_z,x,y,z)
+         do i = 1, natmnlb
+            if (i.le.natmnl) then
+               iglob     = c_glob(i)
+               cell_x(i) = x(iglob)
+               cell_y(i) = y(iglob)
+               cell_z(i) = z(iglob)
+            else
+               cell_x(i) = inf
+               cell_y(i) = inf
+               cell_z(i) = inf
+            end if
+         end do
+
+      end if
       end subroutine
 
       ! Change Interface module if modify calling arguments
@@ -2999,6 +3077,188 @@ c    &      eblst,cell_len)
      &        (nblock,nionlocnlb_pair,nionlocnlb
      &        ,nshortionlocnlb2_pair,ishorteblst,shorteblst
      &        ,cell_len2,cell_scan,cell_len2r)
+
+      end subroutine
+
+c
+c     "build_pairwise_list" constructs a pairwise atom nblist
+c          inside 'a_plist' structure
+c
+      subroutine build_pairwise_list(atList,natmnl,cut2,a_plist)
+      use atoms   ,only: x,y,z,n
+      use atmlst  ,only: poleglobnl
+      use boxes   ,only: octahedron
+      use cutoff  ,only: use_shortmlist
+      use cell    ,only: xcell2,ycell2,zcell2,xcell,ycell,zcell
+      use domdec  ,only: rank,nproc,xbegproc,xendproc
+     &            ,ybegproc,yendproc,zbegproc,zendproc
+      use neigh   ,only: pair_atlst,cell_scan,cell_len,matb_lst
+     &            ,nbMatb,niterMatb,buffMatb,offsetlMb,offsetrMb,szMatb
+     &            ,cell_lenr
+     &            ,ieblst,bit_si,bit_sh
+     &            ,cell_len2,cell_len2r,build_cell_list2
+      use utils   ,only: set_to_zero1_int1,set_to_zero1_int
+      use inform  ,only: deb_Path
+      use interfaces,only:pre_process_adjacency_matrix
+     &               ,set_ElecData_CellOrder
+#ifdef _OPENACC
+     &               ,cu_filter_lst_sparse
+      use thrust  ,only: thrust_exclusive_scan,thrust_remove
+      use nblistcu,only: filter_pairwise_atom_lst
+      use utilcu  ,only: check_launch_kernel
+      use utilgpu ,only: rec_stream
+      use cudafor
+#endif
+      use utilgpu ,only: rec_queue,BLOCK_SIZE,inf
+      use tinheader,only: ti_p
+      use tinMemory,only: prmem_request,prmem_mvrequest,mipk,szoi
+      implicit none
+      integer  ,intent(in)::natmnl
+      integer  ,intent(in)::atList(:)
+      real(t_p),intent(in):: cut2
+      type(pair_atlst),target:: a_plist
+
+      integer natmnlb,nbpairs,npairs
+      integer nb_pair,szlist,nblock
+      integer iglob,iv,ierrSync
+      integer i,j,iter
+      integer(1) icell_len,kcell_len
+      integer(mipk) szolst
+      real(t_p) lenx_cell,leny_cell,lenz_cell,rdn,rdn1
+      integer  ,pointer:: list(:),blist(:),c_glob(:)
+      real(t_p),pointer:: cell_x(:),cell_y(:),cell_z(:)
+      real(t_p) xbeg,xend,ybeg,yend,zbeg,zend
+
+      if (deb_Path) print*, 'build_pairwise_list'
+
+      nbpairs = 0
+      natmnlb = BLOCK_SIZE*((natmnl-1)/BLOCK_SIZE + 1)
+      ! Add margin to serve as out-of-bound exclusion interactions for C2 nblist
+      if (natmnlb == natmnl) natmnlb = natmnl + BLOCK_SIZE
+
+      nblock     = ((natmnl-1)/BLOCK_SIZE) + 1
+      szMatb     = ((nblock-1)/bit_si) + 1
+
+      nbMatb     = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
+      niterMatb  = (nblock-1)/nbMatb + 1
+      nbpairs = 0
+
+      call prmem_request(a_plist%c_key,n,async=.true.)
+
+      call build_cell_list2(atList,a_plist%c_key,natmnl,
+     &                      sqrt(cut2),a_plist%bPar)
+c
+c     Build Adjacency list piece by piece
+c
+      do iter = 0,niterMatb-1
+
+        offsetlMb = iter*nbMatb
+        offsetrMb = min((iter+1)*nbMatb,nblock)
+        if (iter.eq.niterMatb-1) nbMatb=nblock-offsetlMb
+
+        if (octahedron) then
+           call build_adjacency_matrix_octahedron(natmnl,a_plist%bPar)
+        else
+           call build_adjacency_matrix(natmnl,a_plist%bPar)
+        end if
+
+        call pre_process_adjacency_matrix (nblock,nb_pair)
+        nbpairs = nbpairs + nb_pair
+
+        call prmem_mvrequest (a_plist%blist,nbpairs*2
+     &                       ,async=.true.)
+        call fill_adjacency_list(nblock,nbpairs,a_plist%blist)
+
+      end do
+
+      szlist = 2*nbpairs*(BLOCK_SIZE**2)
+      call prmem_request(a_plist%list,szlist,async=.true.)
+      list  => a_plist%list
+      blist => a_plist%blist
+
+      ! zero list and ilist
+!$acc parallel loop async present(list)
+      do i = 1,nbpairs*2*(BLOCK_SIZE)**2
+         list(i) = -1
+      end do
+
+      ! Set pairwise list attributes
+      a_plist%nbpairs   = nbpairs
+      a_plist%natmnl    = natmnl
+      a_plist%natmnlb   = natmnlb
+      a_plist%cut_buff2 = cut2
+
+      call Init_blocklen(nblock)
+      call set_pairlist_Cellorder(atList,a_plist,.true.)
+c
+c     Debug print
+c
+      if (deb_Path) then
+ 13   format( I3," iteration(s) required to build Adj lst" )
+c14   format( I10," nblocks process at once over",I10 )
+c15   format(1x,'Size Adj Mat (Mo)',F12.3,';',4x,'buffer (Go)',F10.6)
+ 16   format(1x,'natmnl',I8,';',3x,'mlist mem space (Mo)',F12.3)
+         !nbMatb = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
+         szolst = nbpairs*(BLOCK_SIZE**2+2)*szoi
+         !if (use_shortmlist) szolst = 2*szolst
+         print 13, niterMatb
+         !print 14, nbMatb,nblock
+         !print 15, int(szMatb*4,8)*nbMatb/1d6, buffMatb
+         print 16, natmnl, szolst/1d6
+         print*, 'sz list',szlist,'; cutbuf2',cut2
+      end if
+
+c
+c     From Block-Block to Block-Atoms list
+c
+#ifdef _CUDA
+      c_glob=> a_plist%c_glob
+      cell_x=> a_plist%cell_x
+      cell_y=> a_plist%cell_y
+      cell_z=> a_plist%cell_z
+      xbeg  =  xbegproc(rank+1)
+      xend  =  xendproc(rank+1)
+      ybeg  =  ybegproc(rank+1)
+      yend  =  yendproc(rank+1)
+      zbeg  =  zbegproc(rank+1)
+      zend  =  zendproc(rank+1)
+
+!$acc host_data use_device(c_glob,cell_scan,
+!$acc&    cell_x,cell_y,cell_z,
+!$acc&    matb_lst,list,blist)
+
+      call filter_pairwise_atom_lst<<<*,128,0,rec_stream>>>
+     &     (c_glob,cell_scan,cell_x,cell_y,cell_z,matb_lst,
+     &      n,natmnlb,nblock,szMatb,nbpairs,cut2,
+     &      list,blist,xbeg,xend,ybeg,yend,zbeg,zend)
+      call check_launch_kernel(" filter_pairwise_atom_lst")
+
+!$acc end host_data
+#else
+      !TODO Add an OpenACC version of this kernel
+#endif
+
+!$acc wait(rec_queue)
+!$acc host_data use_device(list)
+      call thrust_remove(list,szlist,-1,nb_pair,rec_stream)
+!$acc end host_data
+
+      a_plist%npairs = nb_pair/2
+
+      if (deb_Path) then
+      print*, 'C1 v pair-atom numbers',a_plist%nbpairs,a_plist%npairs
+      end if
+
+c     call finalize_list_C2
+c    &     (nblock,nbpairs,natmnlb
+c    &     ,npolelocnlb2_pair,ieblst,eblst,cell_len,cell_scan
+c    &     ,cell_lenr)
+
+c     if (use_shortmlist) call finalize_list_C2
+c    &        (nblock,nbpairs,natmnlb
+c    &        ,nshortpolelocnlb2_pair,ishorteblst,shorteblst
+c    &        ,cell_len2,cell_scan,cell_len2r)
+
 
       end subroutine
 

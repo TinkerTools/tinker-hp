@@ -75,6 +75,9 @@ c     vlst2_enable logical flag to control vblst construct
 c     mlst_enable  logical flag to control elst  construct
 c     mlst2_enable logical flag to control eblst construct 
 c
+c     boxPart contains box partitionning information
+c     pair_atlst  a derived type that gather all attributes of a pairwise
+c                neighbor list stored in a list structure 
 c
 c
 #include "tinker_precision.h"
@@ -83,6 +86,19 @@ c
       type boxPart
          integer ipart,bx_c,by_c,bz_c,nx_c,ny_c,nz_c
       end type
+      type pair_atlst
+         integer   natmnl,natmnlb,nbpairs,npairs
+         ! Spatial reordering key and global atoms
+         integer  ,allocatable:: c_key(:),c_glob(:)
+         ! pairwise block-list and atom-list
+         integer  ,allocatable:: blist(:),list(:)
+         ! (cutoff+lbuffer)**2
+         real(t_p) cut_buff2
+         ! Spatial reordering of positions
+         real(t_p),allocatable:: cell_x(:),cell_y(:),cell_z(:)
+         type(boxPart) bPar
+      end type
+
       integer ineigup
       integer ncell_tot,max_cell_len,max_numneigcell
       integer nx_cell,ny_cell,nz_cell
@@ -95,6 +111,8 @@ c
       integer bit_si,bit_sh
       type(boxPart) e_bP,v_bP,c_bP
 
+      ! Structure list for ani feature
+      type(pair_atlst),target:: list_ani
 !DIR$ ATTRIBUTES ALIGN:64 :: nvlst
       integer, allocatable,target:: nvlst(:),nshortvlst(:)
 !DIR$ ATTRIBUTES ALIGN:64 :: vlst
@@ -158,6 +176,16 @@ c
         end subroutine
       end interface
 
+      interface
+        subroutine build_pairwise_list(atList,natmnl,cut2,a_plist)
+          import pair_atlst
+          integer  ,intent(in)::natmnl
+          integer  ,intent(in)::atList(:)
+          real(t_p),intent(in):: cut2
+          type(pair_atlst),target:: a_plist
+        end subroutine
+      end interface
+
 !$acc declare create(nvlst,nelst,nelstc)
       contains
 
@@ -175,5 +203,13 @@ c
       c_bP%bx_c=1
       c_bP%by_c=1
       c_bP%bz_c=1
+      end subroutine
+      subroutine init_aboxPart(a_bP)
+      implicit none
+      type(boxPart),intent(inout):: a_bP
+      a_bP%ipart=0
+      a_bP%bx_c=1
+      a_bP%by_c=1
+      a_bP%bz_c=1
       end subroutine
       end
