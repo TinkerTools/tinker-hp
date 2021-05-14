@@ -77,5 +77,12 @@ namespace THRUST_WRAPPER{
       thrust::device_ptr<int> dev_in(in);
       thrust::remove(thrust::cuda::par(thrust_cache).on(s),dev_in,dev_in+N,0);
    }
+   void remove_async_wrapper (int* in, int N, int value, int* new_last, cudaStream_t s)
+   {
+      thrust::device_ptr<int> dev_in(in);
+      thrust::device_ptr<int> dev_last(
+            thrust::remove(thrust::cuda::par(thrust_cache).on(s),dev_in,dev_in+N,value));
+      *new_last = dev_last - dev_in;
+   }
 }
 }

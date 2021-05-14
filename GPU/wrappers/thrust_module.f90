@@ -120,6 +120,20 @@
 
     end interface
 
+    interface thrust_remove
+
+       subroutine thrust_remove_async_wrapper (in, N, val, new_last, s) &
+                  bind(C,name="remove_async_wrapper")
+          import c_int,cuda_stream_kind
+          integer(c_int),device:: in(*)
+          integer(c_int),value :: N,val
+          integer(c_int)       :: new_last
+          integer(cuda_stream_kind),value :: s
+!DIR$ ignore_tkr (r) in
+       end subroutine
+
+    end interface
+
     interface
       subroutine thrust_cache_alloc ( ptr,n ) &
                  bind(C)
