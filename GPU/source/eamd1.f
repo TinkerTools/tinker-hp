@@ -783,7 +783,7 @@ c
      &      ,f12.3, 10x, "#tamd", /, f12.3, 10x, "#Vmin", /, f12.3, 10x,
      &      "#Vmax", /, f12.3, 10x,"#Vavg", /, f12.3, 10x, "#sigmaV", /,
      &      f20.5, 10x, "#M2",/, f20.3, 10x,"#E", /,f8.6, 10x, "#k0", /,
-     &      f8.6, 10x, "#k", /, i14, 10x, "#amdtpass", /, f14.2, 10x,
+     &      f12.10, 10x, "#k", /, i14, 10x, "#amdtpass", /, f14.2, 10x,
      &      "cptgamdW1")
          end if
          c = modulo(amdtpass,amdoutputFreq_dih)
@@ -793,7 +793,7 @@ c
             write (iamdout,68) tamd, gamdstep, amdboostW1,
      &      amdboostavgW1/real(amdoutputFreq_dih),VmaxW1,VminW1, VavgW1,
      &      sigmaVW1, gamdEW1, gamdk0W1, gamdkW1
-  68        format("GaMD-W ",f10.4,5x,i1,7f12.3,5x,f8.6,5x,f8.6)
+  68        format("GaMD-W ",f10.4,5x,i1,7f12.3,5x,f8.6,5x,f12.10)
             amdboostavgW1 = 0.0d0
             close(iamdout)
          end if

@@ -393,6 +393,7 @@ c
       use random_mod
       use units
       use usage
+      use sizes      ,only: tinkerdebug
       use mpi
       implicit none
       integer i,j,k,iglob,ierr
@@ -621,10 +622,9 @@ c
          end if
          call MPI_BCAST(valrand,1,MPI_TPREC,0,MPI_COMM_WORLD,ierr)
          if (valrand .gt. expterm) then
-            if (deb_Path) 
-     &     write(*,*) "*** abandon pmontecarlo trial",valrand,expterm
-c           write(*,15) 'abandon montecarlo',valrand
-c    &                 ,expterm,epot,eold,dpot,dkin
+            if (rank.eq.0.and.tinkerdebug.gt.0)
+     &      write(*,15) ' Reject montecarlo',valrand
+     &                 ,expterm,epot,eold,dpot,dkin
             epot = eold
             xbox = xboxold
             ybox = yboxold
@@ -646,10 +646,11 @@ c    &                 ,expterm,epot,eold,dpot,dkin
             call reCast_position
             goto 66
          else
-c           write(*,15) 'accept montecarlo',valrand
-c    &                 ,expterm,epot,eold,dpot,dkin
-            if (rank.eq.0.and.verbose)
-     &         write(*,*) 'Apply barostat montecarlo'
+            if (rank.eq.0.and.tinkerdebug.gt.0)
+     &      write(*,15) ' Accept montecarlo',valrand
+     &                 ,expterm,epot,eold,dpot,dkin
+            if (rank.eq.0.and.verbose.and.tinkerdebug.eq.0)
+     &         write(*,*) 'Applied montecarlo barostat'
          end if
 c
 c        rescale domain decomposition related stuff
