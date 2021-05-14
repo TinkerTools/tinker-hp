@@ -58,10 +58,10 @@ c
 c
 c     apply long range van der Waals correction if desired
 c
-      if (use_vcorr) then
+      if (use_vcorr.and..not.use_vdwlong) then
 !$acc data create(elrc,vlrc) async(def_queue)
          call evcorr1gpu (elrc,vlrc)
-!$acc serial present(ev,vir,elrc,vlrc) async(def_queue)
+!$acc serial present(ev,vir) async(def_queue)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
          vir(2,2) = vir(2,2) + vlrc

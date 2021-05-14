@@ -72,7 +72,7 @@ c        end do
          if (rank.eq.0.and.verbose) then
 !$acc update host(elrc) async
 !$acc wait
-            if (elrc.ne.0.0_ti_p) then
+            if (elrc.ne.0.0_ti_p.and.app_id.eq.analyze_a) then
                write (iout,10)  elrc
    10          format (/,' Long Range vdw Correction :',9x,f12.4)
             end if
