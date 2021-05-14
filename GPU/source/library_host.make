@@ -281,7 +281,6 @@ gettext.o \
 getword.o \
 getxyz.o \
 gradient.o \
-hybrid.o \
 image.o \
 initatom.o \
 initial.o \

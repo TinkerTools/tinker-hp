@@ -1033,7 +1033,7 @@ c
 !$acc update host(n_uscale,n_dpscale) async
       end if
 
-      if (btest(tinkerdebug,tindPath)) write(0,'(A,1X,5I10)')
+      if (btest(tinkerdebug,tindPath)) write(*,'(A,1X,5I10)')
      &         'polar_scaling',n_uscale,n_dpscale,n_dpuscale,rank
 
       ! Allocate memory to store u_scaling,dp_scaling & dpu_scaling
