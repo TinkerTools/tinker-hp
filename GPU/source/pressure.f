@@ -616,7 +616,7 @@ c
 c
 c     reject the step, and restore values prior to trial change
 c
- 15      format(A,6F24.10)
+ 15      format(A,F20.6,D24.12,4F20.6)
          if (rank.eq.0) then
            valrand = random()
          end if

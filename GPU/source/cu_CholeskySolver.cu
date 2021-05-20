@@ -112,6 +112,10 @@ void device_reallocate(void** array, const size_t bytesSize, size_t& PrevSize){
    }
 }
 
+void p_pointer(void* ptr){
+   printf(" %p \n", ptr);
+}
+
 void cuPOTRF_Wrapper(const int n, real* A, const int lda, cudaStream_t stream){
    int Lwork=0;
    cusolverStatus_t status1;

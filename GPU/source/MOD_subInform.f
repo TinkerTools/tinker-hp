@@ -23,7 +23,7 @@ c
       use neigh  ,only: ineigup, lbuffer
       use potent
       use tinMemory,only: deb_Mem=>debMem
-      use usage
+      use usage  ,only: muse=>use
       use vdw    ,only: skipvdw12
       use sizes  ,only: tinkerdebug
 
@@ -206,6 +206,7 @@ c
       integer i,iglob
       integer,parameter::nel=5
       real(r_p) minmax(3*nel)
+      real(r_p) tmp
       logical tinker_isnan
 
       minmax=0
@@ -213,58 +214,42 @@ c
  20   format (80('_'))
 !$acc data copy(minmax)
 
-!$acc parallel loop default(present)
+!$acc parallel loop present(x,y,z,v,a,glob)
       do i = 1, nloc
          iglob      = glob(i)
-         if (use(iglob)) then
+         if (muse(iglob)) then
 !$acc atomic update
          minmax(01) = min(minmax(01),x(iglob))
 !$acc atomic update
          minmax(02) = min(minmax(02),y(iglob))
 !$acc atomic update
          minmax(03) = min(minmax(03),z(iglob))
+         tmp = min(min(v(1,iglob),v(2,iglob)),v(3,iglob))
 !$acc atomic update
-         minmax(04) = min(minmax(04),v(1,iglob))
+         minmax(04) = min(minmax(04),tmp)
+         tmp = min(min(a(1,iglob),a(2,iglob)),a(3,iglob))
 !$acc atomic update
-         minmax(04) = min(minmax(04),v(2,iglob))
-!$acc atomic update
-         minmax(04) = min(minmax(04),v(3,iglob))
-!$acc atomic update
-         minmax(05) = min(minmax(05),a(1,iglob))
-!$acc atomic update
-         minmax(05) = min(minmax(05),a(2,iglob))
-!$acc atomic update
-         minmax(05) = min(minmax(05),a(3,iglob))
+         minmax(05) = min(minmax(05),tmp)
 !$acc atomic update
          minmax(06) = max(minmax(06),x(iglob))
 !$acc atomic update
          minmax(07) = max(minmax(07),y(iglob))
 !$acc atomic update
          minmax(08) = max(minmax(08),z(iglob))
+
+         tmp = max(max(v(1,iglob),v(2,iglob)),v(3,iglob))
 !$acc atomic update
          minmax(09) = max(minmax(09),v(1,iglob))
+         tmp = max(max(a(1,iglob),a(2,iglob)),a(3,iglob))
 !$acc atomic update
-         minmax(09) = max(minmax(09),v(2,iglob))
+         minmax(10) = max(minmax(10),tmp)
+
+         tmp = v(1,iglob)+v(2,iglob)+v(3,iglob)
 !$acc atomic update
-         minmax(09) = max(minmax(09),v(3,iglob))
+         minmax(11) = minmax(11)+tmp
+         tmp = a(1,iglob)+a(2,iglob)+a(3,iglob)
 !$acc atomic update
-         minmax(10) = max(minmax(10),a(1,iglob))
-!$acc atomic update
-         minmax(10) = max(minmax(10),a(2,iglob))
-!$acc atomic update
-         minmax(10) = max(minmax(10),a(3,iglob))
-!$acc atomic update
-         minmax(11) = minmax(11)+v(1,iglob)
-!$acc atomic update
-         minmax(11) = minmax(11)+v(2,iglob)
-!$acc atomic update
-         minmax(11) = minmax(11)+v(3,iglob)
-!$acc atomic update
-         minmax(12) = minmax(12)+a(1,iglob)
-!$acc atomic update
-         minmax(12) = minmax(12)+a(2,iglob)
-!$acc atomic update
-         minmax(12) = minmax(12)+a(3,iglob)
+         minmax(12) = minmax(12)+tmp
          end if
       end do
 

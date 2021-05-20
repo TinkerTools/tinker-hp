@@ -1512,10 +1512,10 @@ c
       real(t_p) mbuf,vbuf,torquebuf,neigbuf,bigbuf
       real(t_p) mshortbuf,vshortbuf,torqueshortbuf,bigshortbuf
       real(t_p) eps1,eps2
-      real(t_p), allocatable :: xbegproctemp(:),ybegproctemp(:)
-      real(t_p), allocatable :: zbegproctemp(:)
-      real(t_p), allocatable :: xendproctemp(:),yendproctemp(:)
-      real(t_p), allocatable :: zendproctemp(:)
+      real(r_p), allocatable :: xbegproctemp(:),ybegproctemp(:)
+      real(r_p), allocatable :: zbegproctemp(:)
+      real(r_p), allocatable :: xendproctemp(:),yendproctemp(:)
+      real(r_p), allocatable :: zendproctemp(:)
       integer p,q,r,numneig
       integer temp_x,temp_y,temp_z,tempproc
       integer, allocatable :: neigproc(:,:),numneigproc(:),filledproc(:)
@@ -1605,15 +1605,15 @@ c
       xbegproc     = 0_ti_p
       ybegproc     = 0_ti_p
       zbegproc     = 0_ti_p
-      xbegproctemp = 0_ti_p
-      ybegproctemp = 0_ti_p
-      zbegproctemp = 0_ti_p
+      xbegproctemp = 0_re_p
+      ybegproctemp = 0_re_p
+      zbegproctemp = 0_re_p
       xendproc     = 0_ti_p
       yendproc     = 0_ti_p
       zendproc     = 0_ti_p
-      xendproctemp = 0_ti_p
-      yendproctemp = 0_ti_p
-      zendproctemp = 0_ti_p
+      xendproctemp = 0_re_p
+      yendproctemp = 0_re_p
+      zendproctemp = 0_re_p
       repart       = 0
       domlen       = 0
       glob         = 0
@@ -1683,9 +1683,10 @@ c
         yr = y(i)
         zr = z(i)
         call image(xr,yr,zr)
-        if (abs(xr-xcell2).lt.eps1) xr = xr-0.05*nx_box
-        if (abs(yr-ycell2).lt.eps1) yr = yr-0.05*ny_box
-        if (abs(zr-zcell2).lt.eps1) zr = zr-0.05*nz_box
+        ! Avoid box limits
+        if ((xcell2-abs(xr)).lt.eps1) xr = xr-0.05*sign(nx_box,xr)
+        if ((ycell2-abs(yr)).lt.eps1) yr = yr-0.05*sign(ny_box,yr)
+        if ((zcell2-abs(zr)).lt.eps1) zr = zr-0.05*sign(nz_box,zr)
         do iproc = 0, nprocloc-1
           if ((zr.ge.zbegproc(iproc+1)).and.(zr.lt.zendproc(iproc+1))
      &   .and.(yr.ge.ybegproc(iproc+1)).and.(yr.lt.yendproc(iproc+1))
@@ -1822,9 +1823,9 @@ c          xr = x(i)
 c          yr = y(i)
 c          zr = z(i)
 c          call image(xr,yr,zr)
-c          if (abs(xr-xcell2).lt.eps1) xr = xr-eps2
-c          if (abs(yr-ycell2).lt.eps1) yr = yr-eps2
-c          if (abs(zr-zcell2).lt.eps1) zr = zr-eps2
+c          if ((xcell2-abs(xr)).lt.eps1) xr = xr-sign(eps2,xr)
+c          if ((ycell2-abs(yr)).lt.eps1) yr = yr-sign(eps2,yr)
+c          if ((zcell2-abs(zr)).lt.eps1) zr = zr-sign(eps2,zr)
 c          do iproc = 0, nprocloc-1
 c            if ((zr.ge.zbegproc(iproc+1)).and.
 c     $        (zr.lt.zendproc(iproc+1)).and.(yr.ge.ybegproc(iproc+1))
@@ -2183,7 +2184,7 @@ c
       return
       end
 
-      subroutine AtomDebRepart
+      subroutine AtomDebRepart(ierr)
       use atoms
       use domdec
       use mpi
@@ -2204,9 +2205,11 @@ c
       call MPI_AllReduce(nlocrec,nr,1,MPI_INT,MPI_SUM,comm_r,ierr)
 
  12   format("An issue has been detectected during reassign process "
-     &       ,/,A,' > nloc ',I10,' ntot ',I10)
+     &       ,/,A,' > nloc ',I10,' ntot ',3I10)
 
-      if (rank.eq.0.And.nd.ne.n) write(*,12) " direct space",nloc,n
+      if (nd.ne.n) then
+         write(*,12) " direct space",nloc,n,nd; ierr=1;
+      endif;
       if (rank.eq.0.And.nr.ne.n) write(*,12) " rec    space",nlocrec,n
       end subroutine
 
@@ -2262,15 +2265,18 @@ c
       yrmid = yk + yr/2
       zrmid = zk + zr/2
       call image(xrmid,yrmid,zrmid)
-      if (abs(xrmid-xcell2).lt.eps_cell) xrmid = xrmid-4*eps_cell
-      if (abs(yrmid-ycell2).lt.eps_cell) yrmid = yrmid-4*eps_cell
-      if (abs(zrmid-zcell2).lt.eps_cell) zrmid = zrmid-4*eps_cell
-      if ((zrmid.ge.zbegproc(rank+1)).and.
-     $  (zrmid.lt.zendproc(rank+1)).and.(yrmid.ge.ybegproc(rank+1))
-     $  .and.(yrmid.lt.yendproc(rank+1))
-     $  .and.(xrmid.ge.xbegproc(rank+1))
-     $  .and.(xrmid.lt.xendproc(rank+1))) then
-        docompute = .true.
+      if (xcell2-abs(xrmid).lt.eps_cell)
+     &   xrmid = xrmid-sign(4*eps_cell,xrmid)
+      if (ycell2-abs(yrmid).lt.eps_cell)
+     &   yrmid = yrmid-sign(4*eps_cell,yrmid)
+      if (zcell2-abs(zrmid).lt.eps_cell)
+     &   zrmid = zrmid-sign(4*eps_cell,zrmid)
+
+      if   ((zrmid.ge.zbegproc(rank+1)).and.(zrmid.lt.zendproc(rank+1))
+     $ .and.(yrmid.ge.ybegproc(rank+1)).and.(yrmid.lt.yendproc(rank+1))
+     $ .and.(xrmid.ge.xbegproc(rank+1)).and.(xrmid.lt.xendproc(rank+1)))
+     $   then
+         docompute = .true.
       end if
       return
       end
@@ -2306,14 +2312,14 @@ c
       yrmid = yk + yr/2
       zrmid = zk + zr/2
       call image(xrmid,yrmid,zrmid)
-      if (abs(xrmid-xcell2).lt.eps_cell)
+      if ((xcell2-abs(xrmid)).lt.eps_cell)
      &   xrmid = xrmid-sign(4*eps_cell,xrmid)
-      if (abs(yrmid-ycell2).lt.eps_cell)
+      if ((ycell2-abs(yrmid)).lt.eps_cell)
      &   yrmid = yrmid-sign(4*eps_cell,xrmid)
-      if (abs(zrmid-zcell2).lt.eps_cell)
+      if ((zcell2-abs(zrmid)).lt.eps_cell)
      &   zrmid = zrmid-sign(4*eps_cell,xrmid)
       if ((zrmid.ge.zbegproc(rank+1)).and.
-     &  (zrmid.lt.zendproc(rank+1)).and.(yrmid.ge.ybegproc(rank+1))
+     &    (zrmid.lt.zendproc(rank+1)).and.(yrmid.ge.ybegproc(rank+1))
      &  .and.(yrmid.lt.yendproc(rank+1))
      &  .and.(xrmid.ge.xbegproc(rank+1))
      &  .and.(xrmid.lt.xendproc(rank+1))) then

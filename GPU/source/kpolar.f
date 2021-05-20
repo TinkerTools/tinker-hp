@@ -545,12 +545,6 @@ c      end do
       end do
 #endif
 c
-c     comput nZ_Onlyloc if necessary
-c
-      if (nZ_Onlyglob.ne.0) then
-         call compute_nZ_Onlyaxe
-      end if
-c
       modnl = mod(istep,ineigup)
       if (modnl.ne.0.or.istep.lt.0) return
 c
@@ -771,33 +765,39 @@ c    &                    (mod(npolebloc,16).eq.0))
 
       subroutine compute_nZ_Onlyaxe
       use atmlst,only : poleglob,polerecglob
-      use mpole ,only : nZ_Onlyloc,npoleloc,npolerecloc,ipolaxe
-     &          ,Ax_Z_Only
+      use domdec,only : rank,Bdecomp1d
+      use mpole ,only : nZ_Onlyloc,npolebloc,npolerecloc,ipolaxe
+     &          ,ipole,Ax_Z_Only
+      use pme   ,only : GridDecomp1d
       implicit none
       integer i,k
-      integer dire,reci
+      integer looplen,reci
 
-!$acc data create(dire,reci) async
-!$acc&     present(nZ_onlyloc,poleglob,polerecglob)
+!$acc data create(reci) present(nZ_onlyloc) async
 
 !$acc serial async
-      dire = 0
-      reci = 0
+      nZ_Onlyloc = 0
+      reci       = 0
 !$acc end serial
-!$acc parallel loop async
-      do i = 1,npoleloc
+!$acc parallel loop async default(present)
+      do i = 1,npolebloc
          k = poleglob(i)
-         if (ipolaxe(k).eq.Ax_Z_Only) dire = dire +1
+         if (ipolaxe(k).eq.Ax_Z_Only) nZ_Onlyloc = nZ_Onlyloc + 1
       end do
-!$acc parallel loop async
-      do i = 1,npolerecloc
-         k = polerecglob(i)
-         if (ipolaxe(k).eq.Ax_Z_Only) reci = reci +1
-      end do
+      if (.not.(Bdecomp1d.and.GridDecomp1d)) then
+!$acc parallel loop async default(present)
+         do i = 1,npolerecloc
+            k = polerecglob(i)
+            if (ipolaxe(k).eq.Ax_Z_Only) reci = reci+1
+         end do
+      end if
 !$acc serial async
-      nZ_Onlyloc = max(dire,reci)
+      nZ_Onlyloc = max(reci,nZ_Onlyloc)
 !$acc end serial
 !$acc update host(nZ_Onlyloc) async
+!$acc wait
+! -- wait for download
+! -- to be used in ~rotpolegpu~ which is 2 calls away
 
 !$acc end data
       end subroutine
@@ -918,6 +918,13 @@ c
          call MPI_WAIT(reqs_poleglob(i),status,ierr)
       end do
 !$acc end data
+
+c
+c     comput nZ_Onlyloc if necessary
+c
+      if (nZ_Onlyglob.ne.0) then
+         call compute_nZ_Onlyaxe
+      end if
 
       !print*,rank,domlenpole,bufbegpole
       if (btest(tinkerdebug,0)) call MPI_BARRIER(commloc,ierr)

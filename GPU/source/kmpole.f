@@ -699,8 +699,8 @@ c
               case default      ; ipolaxe(i) = Ax_None
            endselect
         end do
-        if (nZ_Onlyglob.ne.0.and.rank.eq.0)
-     &     print*,'nZ_Only axe : ',nZ_Onlyglob
+c       if (nZ_Onlyglob.ne.0.and.rank.eq.0)
+c    &     print*,'nZ_Only axe : ',nZ_Onlyglob
 
         if (tinkerdebug.gt.0) then
            n3_f = 0

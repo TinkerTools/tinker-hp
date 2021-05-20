@@ -34,7 +34,7 @@ c
       implicit none
       integer i,iproc,iprec
       integer iglob,iloc
-      integer tag,ierr,ibufbeg
+      integer tag,ierr,ibufbeg,idomlen
       integer rankloc,commloc,nprocloc
       integer status(MPI_STATUS_SIZE)
       real(r_p),pointer :: buffer(:,:),buffers(:,:)
@@ -170,8 +170,9 @@ c
       do iproc = 1, nrec_recep
          call MPI_WAIT(reqrec(iproc),status,ierr)
          ibufbeg = bufbegrec(prec_recep(iproc)+1)-1
+         idomlen = domlenrec(prec_recep(iproc)+1)
 !$acc parallel loop async
-         do i = 1, domlenrec(prec_recep(iproc)+1)
+         do i = 1, idomlen
             iloc     = ibufbeg+i
             iglob    = globrec(iloc)
             x(iglob) = buffer(1,iloc)
@@ -460,13 +461,13 @@ c     get particules that changed of domain
 c
       do i = 1, nloc
         iglob = glob(i)
-        xr = x(iglob)
-        yr = y(iglob)
-        zr = z(iglob)
+        xr    = x(iglob)
+        yr    = y(iglob)
+        zr    = z(iglob)
         if (use_bounds) call image(xr,yr,zr)
-        if (abs(xr-xcell2).lt.eps1) xr = xr-eps2
-        if (abs(yr-ycell2).lt.eps1) yr = yr-eps2
-        if (abs(zr-zcell2).lt.eps1) zr = zr-eps2
+        if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+        if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+        if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
         do iproc = 0, nprocloc-1
           if (iproc.eq.rank) cycle
           if ((zr.ge.zbegproc(iproc+1)).and.(zr.lt.zendproc(iproc+1))
@@ -753,9 +754,10 @@ c
         yr = y(i)
         zr = z(i)
         call image_acc(xr,yr,zr)
-        if (abs(xr-xcell2).lt.eps_cell) xr = xr-5*eps_cell
-        if (abs(yr-ycell2).lt.eps_cell) yr = yr-5*eps_cell
-        if (abs(zr-zcell2).lt.eps_cell) zr = zr-5*eps_cell
+        ! Check box limits
+        if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+        if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+        if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
         do iproc = 0, nprocloc-1
           if ((zr.ge.zbegproc(iproc+1)).and.(zr.lt.zendproc(iproc+1))
      $   .and.(yr.ge.ybegproc(iproc+1)).and.(yr.lt.yendproc(iproc+1))
@@ -882,7 +884,8 @@ c
         integer nloc_capture
         integer s_bufi
         integer :: max_data_recv_save=0
-        real(t_p) ixbeg,ixend,iybeg,iyend,izbeg,izend
+        character(len=40) ::fmt
+        real(t_p) ixbeg,ixend,iybeg,iyend,izbeg,izend,xtemp
 #if  (defined(SINGLE)||defined(MIXED))
         real(t_p), parameter:: eps1= 10*ti_eps, eps2= 1d2*ti_eps
 #else
@@ -944,12 +947,14 @@ c
           yr = y(iglob)
           zr = z(iglob)
           if (use_bounds) call image_inl(xr,yr,zr)
-          if (abs(xr-xcell2).lt.eps_cell) xr = xr-eps2
-          if (abs(yr-ycell2).lt.eps_cell) yr = yr-eps2
-          if (abs(zr-zcell2).lt.eps_cell) zr = zr-eps2
-          if  ( (xr>=ixbeg) .and. (xr<ixend)
-     &    .and. (yr>=iybeg) .and. (yr<iyend)
-     &    .and. (zr>=izbeg) .and. (zr<izend) ) then  ! (Rank domain)
+          ! Check box limits (SP Issue)
+          xtemp = xr
+          if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+          if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+          if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
+          if  ( (xr>=ixbeg).and.(xr<ixend)
+     &    .and. (yr>=iybeg).and.(yr<iyend)
+     &    .and. (zr>=izbeg).and.(zr<izend) ) then  ! (Rank domain)
 !$acc atomic capture
               n_data_send(0) = n_data_send(0) + 1
               n_data_send_capture = n_data_send(0)
@@ -997,10 +1002,10 @@ c
 !$acc loop vector
           do i = 1, n_data_send(ineighbor)
             iglob = iglob_send(i,ineighbor)
-            d => data_send( i, ineighbor )
-            d%x = x(iglob)
-            d%y = y(iglob)
-            d%z = z(iglob)
+            d    => data_send( i, ineighbor )
+            d%x  = x(iglob)
+            d%y  = y(iglob)
+            d%z  = z(iglob)
             d%vx = v(1,iglob)
             d%vy = v(2,iglob)
             d%vz = v(3,iglob)
@@ -1078,6 +1083,7 @@ c
         end do
 !$acc end host_data
 
+        nloc_save = nloc
         ! Rebuild glob(:) with old local atoms
         nloc = n_data_send(0)
 
@@ -1120,7 +1126,6 @@ c
           end do
         end do
 
-        nloc_save = nloc
         if (btest(tinkerdebug,tindPath).and.
      &     max_data_recv.gt.max_data_recv_save) then
            max_data_recv_save = max_data_recv
@@ -1128,9 +1133,18 @@ c
            print 16,rank,max_data_recv_save,nloc
         end if
  17     format('reassign nloc ',I9,' max_data_recv',I9)
+ 18     format('(a,I3,a,',I0,'I6,a,',I0,'I6,a,I7,")")')
+ 19     format(I3,12F11.6)
         if (deb_Path) write(*,17) nloc,max_data_recv
         if (tinkerdebug.gt.0.and.nproc.gt.1) then
-           call AtomDebRepart
+           call AtomDebRepart(ierr)
+           if (ierr.ne.0) then
+              write(fmt,18) nneig_send+1,nneig_recep
+              write(*,19) rank,xbegproc,xendproc,ybegproc
+     &                   ,yendproc,zbegproc,zendproc
+              write(* ,fmt), 'r',rank, ' send(',n_data_send,
+     &           ') recv(',n_data_recv, ') nloc_s(',nloc_save
+           end if
         end if
 
 !$acc parallel loop
@@ -1249,9 +1263,9 @@ c
         yr = y(iglob)
         zr = z(iglob)
         if (use_bounds) call image_acc(xr,yr,zr)
-        if (abs(xr-xcell2).lt.eps_cell) xr = xr-eps2
-        if (abs(yr-ycell2).lt.eps_cell) yr = yr-eps2
-        if (abs(zr-zcell2).lt.eps_cell) zr = zr-eps2
+        if (abs(xr-xcell2).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+        if (abs(yr-ycell2).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+        if (abs(zr-zcell2).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
 !$acc loop seq
         do iproc = 0, nprocloc-1
           if (iproc.eq.rank) cycle

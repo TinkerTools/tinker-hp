@@ -797,7 +797,7 @@ c
           smdprocprint = -1
           nsmdloc = 0
 !$acc parallel loop async default(present)
-!$acc&         copy(smdprocprint,nsmdloc)
+!$acc&         copy(nsmdloc)
           do i = 1, ncsmd
              ismd = tcsmd(i)
              if (repart(ismd).eq.rank) then
@@ -806,12 +806,11 @@ c
                 nsmdcap = nsmdloc
 !$acc end atomic
                 nsmdglob(nsmdcap) = ismd
-                if (i==1) then
-!$acc atomic write
-                smdprocprint = rank
-                end if
              end if
           end do
+          if (ncsmd.gt.0) then
+             smdprocprint = rank
+          end if
 c
 c     the rank of the process that will compute the com data is sent to the master
 c
