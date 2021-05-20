@@ -209,7 +209,6 @@ c
                rik = sqrt(rik2)
                rv  = radmin(kt,it)
                eps = epsilon(kt,it)
-c               write(*,*) 'i = ',iglob,'k = ',kglob,it,kt,rv,eps
                if (iv14(kglob) .eq. iglob) then
                   rv = radmin4(kt,it)
                   eps = epsilon4(kt,it)

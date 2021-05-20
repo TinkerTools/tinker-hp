@@ -145,12 +145,11 @@ c
                do while (dt .lt. -180.0d0)
                   dt = dt + 360.0d0
                end do
-               dt = dt / radian
 c
 c     calculate improper energy and master chain rule term
 c
                e = idihunit * force * dt**2
-               dedphi = 2.0d0 * idihunit * force * dt
+               dedphi = 2.0d0 * radian * idihunit * force * dt
 c
 c     chain rule terms for first derivative components
 c
