@@ -647,3 +647,28 @@ c
       end subroutine
 
       end module
+
+
+c
+c     ###############################################################
+c     #                                                             #
+c     #  -- integrator workSpace module --                          #
+c     #  holds data structure to be used inside integrator routines #
+c     #                                                             #
+c     ###############################################################
+c
+
+c     derivs  stores forces computes by gradient routine
+c     etot    holds the system total energy at current timestep
+c     epot    holds the system potential energy at current timestep
+c     eksum   holds the system kinetic energy at current timestep
+c     temp    holds the system temperature at current timestep
+c     pres    holds the system pressure at current timestep
+
+      module integrate_ws
+      real(r_p),allocatable::derivs(:,:)
+      real(r_p) etot,epot,eksum
+      real(r_p) temp,pres
+      real(r_p) ekin(3,3)
+      real(r_p) stress(3,3)
+      end module

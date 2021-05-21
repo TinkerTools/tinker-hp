@@ -6,7 +6,7 @@
       ##############################
 
 
-forcefield              iAMOEBA-WATER
+forcefield              AMOEBA-WATER-2003
 
 bond-cubic              -2.55
 bond-quartic            3.793125
@@ -20,7 +20,8 @@ radiustype              R-MIN
 radiussize              DIAMETER
 epsilonrule             HHG
 dielectric              1.0
-polarization            DIRECT
+polarization            MUTUAL
+vdw-12-scale            0.0
 vdw-13-scale            0.0
 vdw-14-scale            1.0
 vdw-15-scale            1.0
@@ -50,9 +51,17 @@ mutual-14-scale         1.0
       #############################
 
 
-L.-P. Wang, T. Head-Gordon, J. W. Ponder, P. Ren, J. D. Chodera,
-P. K. Eastman, T. J. Martinez and V. S. Pande, "A Systematic Improvement
-on the Molecular Description of Water", to be submitted, March 2013
+P. Ren and J. W. Ponder, "A Polarizable Atomic Multipole Water Model
+for Molecular Mechanics Simulation", J. Phys. Chem. B, 107, 5933-5947
+(2003)
+
+Y. Kong, "Multipole Electrostatic Methods for Protein Modeling with
+Reaction Field Treatment", Ph.D. thesis, DBBS Program in Molecular
+Biophysics, Washington University, St. Louis, August, 1997  [available
+online from http://dasher.wustl.edu/ponder/]
+
+alternative valence parameters to match symmetric and antisymmetric
+bond stretches by David Semrouni, Ecole Polytechnique, Paris
 
 
       #############################
@@ -73,8 +82,8 @@ atom          2    2    H     "AMOEBA Water H"               1     1.008    1
       ################################
 
 
-vdw           1               3.6453     0.19682
-vdw           2               0.0000     0.00000
+vdw           1               3.4050     0.1100
+vdw           2               2.6550     0.0135      0.910
 
 
       ##################################
@@ -84,7 +93,8 @@ vdw           2               0.0000     0.00000
       ##################################
 
 
-bond          1    2          557.63     0.9584
+#bond         1    2          529.60     0.9572   !! original AMOEBA water
+bond          1    2          556.85     0.9572
 
 
       ################################
@@ -94,7 +104,8 @@ bond          1    2          557.63     0.9584
       ################################
 
 
-angle         2    1    2      49.90     106.48
+#angle        2    1    2      34.05     108.50   !! original AMOEBA water
+angle         2    1    2      48.70     108.50
 
 
       ###############################
@@ -104,7 +115,8 @@ angle         2    1    2      49.90     106.48
       ###############################
 
 
-ureybrad      2    1    2     -10.31     1.5357
+#ureybrad     2    1    2      38.25     1.5537   !! original AMOEBA water
+ureybrad      2    1    2      -7.60     1.5326
 
 
       ###################################
@@ -114,18 +126,18 @@ ureybrad      2    1    2     -10.31     1.5357
       ###################################
 
 
-multipole     1   -2   -2              -0.59402
-                                        0.00000    0.00000    0.08848
-                                        0.22618
-                                        0.00000   -0.32244
-                                        0.00000    0.00000    0.09626
-     
-multipole     2    1    2               0.29701
-                                       -0.09391    0.00000   -0.12560
-                                        0.18754
-                                        0.00000    0.02174
-                                       -0.03635    0.00000   -0.20928
-     
+multipole     1   -2   -2              -0.51966
+                                        0.00000    0.00000    0.14279
+                                        0.37928
+                                        0.00000   -0.41809
+                                        0.00000    0.00000    0.03881
+
+multipole     2    1    2               0.25983
+                                       -0.03859    0.00000   -0.05818
+                                       -0.03673
+                                        0.00000   -0.10739
+                                       -0.00203    0.00000    0.14412
+
 
       ########################################
       ##                                    ##
@@ -134,5 +146,5 @@ multipole     2    1    2               0.29701
       ########################################
 
 
-polarize      1           0.80636    0.23616     2
-polarize      2           0.50484    0.23616     1
+polarize      1           0.837      0.390       2
+polarize      2           0.496      0.390       1

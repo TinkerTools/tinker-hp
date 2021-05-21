@@ -6,7 +6,7 @@
       ##############################
 
 
-forcefield              AMOEBA-2009
+forcefield              SIBFA-2015
 
 bond-cubic              -2.55
 bond-quartic            3.793125
@@ -20,14 +20,13 @@ opbend-quartic          0.000056
 opbend-pentic           -0.0000007
 opbend-sextic           0.000000022
 torsionunit             0.5
-vdwtype                 BUFFERED-14-7
+vdwtype                 SIBFA 
 radiusrule              CUBIC-MEAN
 radiustype              R-MIN
 radiussize              DIAMETER
 epsilonrule             HHG
 dielectric              1.0
 polarization            MUTUAL
-vdw-12-scale            0.0
 vdw-13-scale            0.0
 vdw-14-scale            1.0
 vdw-15-scale            1.0
@@ -39,10 +38,7 @@ polar-12-scale          0.0
 polar-13-scale          0.0
 polar-14-scale          1.0
 polar-15-scale          1.0
-polar-12-intra          0.0
-polar-13-intra          0.0
 polar-14-intra          0.5
-polar-15-intra          1.0
 direct-11-scale         0.0
 direct-12-scale         1.0
 direct-13-scale         1.0
@@ -52,6 +48,34 @@ mutual-12-scale         1.0
 mutual-13-scale         1.0
 mutual-14-scale         1.0
 
+      #############################
+      ##                         ##
+      ##  Dispersion constants   ##
+      ##                         ##
+      #############################
+
+disp-admp6              1.23
+disp-admp8              1.28
+disp-admp10             1.36
+disp-abdmp              1.37
+disp-c8                 0.31
+disp-c10                0.18
+disp-xd                 408
+disp-axd                8.80
+disp-axdlp              9.40
+disp-sc                 -0.149
+
+
+      #############################
+      ##                         ##
+      ##  Repulsion constants    ##
+      ##                         ##
+      #############################
+
+rep-a              14
+rep-sc1            228.3342
+rep-sc2            456.684 
+rep-sc3            913.336
 
       #############################
       ##                         ##
@@ -73,10 +97,6 @@ P. Ren and J. W. Ponder, "A Consistent Treatment of Inter- and
 Intramolecular Polarization in Molecular Mechanics Calculations",
 J. Comput. Chem., 23, 1497-1506 (2002)
 
-Monovalent ion parameters taken from Zhi Wang, Ph.D. thesis, Department
-of Chemistry, Washington University in St. Louis, May 2018; available
-from https://dasher.wustl.edu/ponder/
-
 
       #############################
       ##                         ##
@@ -85,82 +105,82 @@ from https://dasher.wustl.edu/ponder/
       #############################
 
 
-atom          1    1    He    "Helium Atom He"               2     4.003    0
-atom          2    2    Ne    "Neon Atom Ne"                10    20.179    0
-atom          3    3    Ar    "Argon Atom Ar"               18    39.948    0
-atom          4    4    Kr    "Krypton Atom Kr"             36    83.800    0
-atom          5    5    Xe    "Xenon Atom Xe"               54   131.290    0
-atom          6    6    Li+   "Lithium Ion Li+"              3     6.941    0
-atom          7    7    Na+   "Sodium Ion Na+"              11    22.990    0
-atom          8    8    K+    "Potassium Ion K+"            19    39.098    0
-atom          9    9    Rb+   "Rubidium Ion Rb+"            37    85.468    0
-atom         10   10    Cs+   "Cesium Ion Cs+"              55   132.905    0
-atom         11   11    Mg+   "Magnesium Ion Mg+2"          12    24.305    0
-atom         12   12    Ca+   "Calcium Ion Ca+2"            20    40.078    0
-atom         13   13    Zn+   "Zinc Ion Zn+2"               30    65.390    0
-atom         14   14    F-    "Fluoride Ion F-"              9    18.998    0
-atom         15   15    Cl-   "Chloride Ion Cl-"            17    35.453    0
-atom         16   16    Br-   "Bromide Ion Br-"             35    79.904    0
-atom         17   17    I-    "Iodide Ion I-"               53   126.904    0
-atom         18   18    C     "Cyanide Ion C"                6    12.011    1
-atom         19   19    N     "Cyanide Ion N"                7    14.007    1
-atom         20   20    B     "Tetrafluoroborate B"          5    10.810    4
-atom         21   21    F     "Tetrafluoroborate F"          9    18.998    1
-atom         22   22    P     "Hexafluorophosphate P"       15    30.974    6
-atom         23   23    F     "Hexafluorophosphate F"        9    18.998    1
-atom         24   24    N     "Dinitrogen N2"                7    14.007    1
-atom         25   25    C     "Methane CH4"                  6    12.011    4
-atom         26   26    H     "Methane H4C"                  1     1.008    1
-atom         27   27    C     "Ethane CH3"                   6    12.011    4
-atom         28   28    H     "Ethane H3C"                   1     1.008    1
-atom         29   27    C     "Alkane CH3-"                  6    12.011    4
-atom         30   28    H     "Alkane H3C-"                  1     1.008    1
-atom         31   29    C     "Alkane -CH2-"                 6    12.011    4
-atom         32   30    H     "Alkane -H2C-"                 1     1.008    1
-atom         33   31    C     "Alkane >CH-"                  6    12.011    4
-atom         34   32    H     "Alkane -HC<"                  1     1.008    1
-atom         35   33    C     "Alkane >C<"                   6    12.011    4
-atom         36   34    O     "Water O"                      8    15.999    2
-atom         37   35    H     "Water H"                      1     1.008    1
-atom         38   36    O     "Methanol O"                   8    15.999    2
-atom         39   37    H     "Methanol HO"                  1     1.008    1
-atom         40   38    C     "Methanol CH3"                 6    12.011    4
-atom         41   39    H     "Methanol H3C"                 1     1.008    1
-atom         42   36    O     "Ethanol O"                    8    15.999    2
-atom         43   37    H     "Ethanol HO"                   1     1.008    1
-atom         44   40    C     "Ethanol CH2"                  6    12.011    4
-atom         45   39    H     "Ethanol H2C"                  1     1.008    1
-atom         46   40    C     "Ethanol CH3"                  6    12.011    4
-atom         47   41    H     "Ethanol H3C"                  1     1.008    1
-atom         48   40    C     "Propanol Me-CH2"              6    12.011    4
-atom         49   42    H     "Propanol Me-CH2"              1     1.008    1
-atom         50   40    C     "Propanol CH3"                 6    12.011    4
-atom         51   41    H     "Propanol H3C"                 1     1.008    1
-atom         52   36    O     "isoPropanol O"                8    15.999    2
-atom         53   37    H     "isoPropanol HO"               1     1.008    1
-atom         54   43    C     "isoPropanol >CH-"             6    12.011    4
-atom         55   39    H     "isoPropanol >CH-"             1     1.008    1
-atom         56   40    C     "isoPropanol CH3"              6    12.011    4
-atom         57   41    H     "isoPropanol H3C"              1     1.008    1
-atom         58   36    O     "Methyl Ether O"               8    15.999    2
-atom         59   40    C     "Methyl Ether CH3"             6    12.011    4
-atom         60   44    H     "Methyl Ether H3C"             1     1.008    1
-atom         61   45    N     "Ammonia N"                    7    14.007    3
-atom         62   46    H     "Ammonia H3N"                  1     1.008    1
-atom         63   47    N     "Ammonium Ion N+"              7    14.007    4
-atom         64   48    H     "Ammonium Ion H4N+"            1     1.008    1
-atom         65   49    N     "Methyl Amine N"               7    14.007    3
-atom         66   50    H     "Methyl Amine H2N"             1     1.008    1
-atom         67   40    C     "Methyl Amine CH3"             6    12.011    4
-atom         68   51    H     "Methyl Amine H3C"             1     1.008    1
-atom         69   49    N     "Ethyl Amine N"                7    14.007    3
-atom         70   50    H     "Ethyl Amine H2N"              1     1.008    1
-atom         71   40    C     "Ethyl Amine CH2"              6    12.011    4
-atom         72   51    H     "Ethyl Amine H2C"              1     1.008    1
-atom         73   40    C     "Ethyl Amine CH3"              6    12.011    4
-atom         74   41    H     "Ethyl Amine H3C"              1     1.008    1
-atom         75   40    C     "Propyl Amine CH3"             6    12.011    4
-atom         76   41    H     "Propyl Amine H3C"             1     1.008    1
+atom          1    1    He    "Helium Atom He"               2     4.003    0  1
+atom          2    2    Ne    "Neon Atom Ne"                10    20.179    0  1
+atom          3    3    Ar    "Argon Atom Ar"               18    39.948    0  1
+atom          4    4    Kr    "Krypton Atom Kr"             36    83.800    0  1
+atom          5    5    Xe    "Xenon Atom Xe"               54   131.290    0  1
+atom          6    6    Li+   "Lithium Ion Li+"              3     6.941    0  1
+atom          7    7    Na+   "Sodium Ion Na+"              11    22.990    0  1 
+atom          8    8    K+    "Potassium Ion K+"            19    39.098    0  1
+atom          9    9    Rb+   "Rubidium Ion Rb+"            37    85.468    0  1
+atom         10   10    Cs+   "Cesium Ion Cs+"              55   132.905    0  1
+atom         11   11    Mg+   "Magnesium Ion Mg+2"          12    24.305    0  1
+atom         12   12    Ca+   "Calcium Ion Ca+2"            20    40.078    0  1
+atom         13   13    Zn+   "Zinc Ion Zn+2"               30    65.390    0  1
+atom         14   14    F-    "Fluoride Ion F-"              9    18.998    0  1
+atom         15   15    Cl-   "Chloride Ion Cl-"            17    35.453    0  1
+atom         16   16    Br-   "Bromide Ion Br-"             35    79.904    0  1
+atom         17   17    I-    "Iodide Ion I-"               53   126.904    0  1
+atom         18   18    C     "Cyanide Ion C"                6    12.011    1  1
+atom         19   19    N     "Cyanide Ion N"                7    14.007    1  1
+atom         20   20    B     "Tetrafluoroborate B"          5    10.810    4  1
+atom         21   21    F     "Tetrafluoroborate F"          9    18.998    1  1
+atom         22   22    P     "Hexafluorophosphate P"       15    30.974    6  1
+atom         23   23    F     "Hexafluorophosphate F"        9    18.998    1  1
+atom         24   24    N     "Dinitrogen N2"                7    14.007    1  1
+atom         25   25    C     "Methane CH4"                  6    12.011    4  1
+atom         26   26    H     "Methane H4C"                  1     1.008    1  1
+atom         27   27    C     "Ethane CH3"                   6    12.011    4  1
+atom         28   28    H     "Ethane H3C"                   1     1.008    1  1 
+atom         29   27    C     "Alkane CH3-"                  6    12.011    4  1  
+atom         30   28    H     "Alkane H3C-"                  1     1.008    1  1
+atom         31   29    C     "Alkane -CH2-"                 6    12.011    4  1
+atom         32   30    H     "Alkane -H2C-"                 1     1.008    1  1
+atom         33   31    C     "Alkane >CH-"                  6    12.011    4  1 
+atom         34   32    H     "Alkane -HC<"                  1     1.008    1  1
+atom         35   33    C     "Alkane >C<"                   6    12.011    4  1 
+atom         36   34    O     "Water O"                      8    15.999    2  1.88
+atom         37   35    H     "Water H"                      1     1.008    1  1.443
+atom         38   36    O     "Methanol O"                   8    15.999    2  1.88
+atom         39   37    H     "Methanol HO"                  1     1.008    1  1.443
+atom         40   38    C     "Methanol CH3"                 6    12.011    4  1.9
+atom         41   39    H     "Methanol H3C"                 1     1.008    1  1.443
+atom         42   36    O     "Ethanol O"                    8    15.999    2  1.88
+atom         43   37    H     "Ethanol HO"                   1     1.008    1  1.443
+atom         44   40    C     "Ethanol CH2"                  6    12.011    4  1
+atom         45   39    H     "Ethanol H2C"                  1     1.008    1  1
+atom         46   40    C     "Ethanol CH3"                  6    12.011    4  1 
+atom         47   41    H     "Ethanol H3C"                  1     1.008    1  1
+atom         48   40    C     "Propanol Me-CH2"              6    12.011    4  1
+atom         49   42    H     "Propanol Me-CH2"              1     1.008    1  1
+atom         50   40    C     "Propanol CH3"                 6    12.011    4  1 
+atom         51   41    H     "Propanol H3C"                 1     1.008    1  1
+atom         52   36    O     "isoPropanol O"                8    15.999    2  1
+atom         53   37    H     "isoPropanol HO"               1     1.008    1  1
+atom         54   43    C     "isoPropanol >CH-"             6    12.011    4  1
+atom         55   39    H     "isoPropanol >CH-"             1     1.008    1  1
+atom         56   40    C     "isoPropanol CH3"              6    12.011    4  1
+atom         57   41    H     "isoPropanol H3C"              1     1.008    1  1
+atom         58   36    O     "Methyl Ether O"               8    15.999    2  1
+atom         59   40    C     "Methyl Ether CH3"             6    12.011    4  1
+atom         60   44    H     "Methyl Ether H3C"             1     1.008    1  1
+atom         61   45    N     "Ammonia N"                    7    14.007    3  1
+atom         62   46    H     "Ammonia H3N"                  1     1.008    1  1
+atom         63   47    N     "Ammonium Ion N+"              7    14.007    4  1
+atom         64   48    H     "Ammonium Ion H4N+"            1     1.008    1  1
+atom         65   49    N     "Methyl Amine N"               7    14.007    3  1.75
+atom         66   50    H     "Methyl Amine H2N"             1     1.008    1  1.443
+atom         67   40    C     "Methyl Amine CH3"             6    12.011    4  1.9
+atom         68   51    H     "Methyl Amine H3C"             1     1.008    1  1 .443
+atom         69   49    N     "Ethyl Amine N"                7    14.007    3  1.75
+atom         70   50    H     "Ethyl Amine H2N"              1     1.008    1  1.443
+atom         71   40    C     "Ethyl Amine CH2"              6    12.011    4  1.9
+atom         72   51    H     "Ethyl Amine H2C"              1     1.008    1  1.443
+atom         73   40    C     "Ethyl Amine CH3"              6    12.011    4  1.9
+atom         74   41    H     "Ethyl Amine H3C"              1     1.008    1  1.443
+atom         75   40    C     "Propyl Amine CH3"             6    12.011    4  1
+atom         76   41    H     "Propyl Amine H3C"             1     1.008    1  1
 atom         77   40    C     "Propyl Amine Me-CH2"          6    12.011    4
 atom         78   42    H     "Propyl Amine Me-CH2"          1     1.008    1
 atom         79   49    N     "Dimethyl Amine N"             7    14.007    3
@@ -314,7 +334,7 @@ atom        226   40    C     "Ethylbenzene CH2"             6    12.011    4
 atom        227   41    H     "Ethylbenzene H2C"             1     1.008    1
 atom        228   40    C     "Ethylbenzene CH3"             6    12.011    4
 atom        229   41    H     "Ethylbenzene H3C"             1     1.008    1
-atom        230   36    O     "Phenol OH"                    8    15.999    2
+atom        230   36    O     "Phenol HO"                    8    15.999    2
 atom        231   37    H     "Phenol HO"                    1     1.008    1
 atom        232   89    C     "Phenol C1-OH"                 6    12.011    3
 atom        233   89    C     "Phenol C2"                    6    12.011    3
@@ -449,18 +469,18 @@ vdw           2               3.1500     0.0730
 vdw           3               3.8200     0.2600
 vdw           4               4.0900     0.3590
 vdw           5               4.3700     0.4980
-vdw           6               2.2000     0.0660
-vdw           7               2.9550     0.2800
-vdw           8               3.6800     0.3500
-vdw           9               3.9000     0.3800
-vdw          10               4.1400     0.4200
+vdw           6               2.3800     0.0800
+vdw           7               3.0200     0.2600
+vdw           8               3.7100     0.3500
+vdw           9               4.1400     0.4400
+vdw          10               4.3700     0.5300
 vdw          11               2.9400     0.3000
 vdw          12               3.6300     0.3500
 vdw          13               2.6800     0.2220
-vdw          14               3.4300     0.2500
-vdw          15               4.1200     0.3400
-vdw          16               4.3200     0.4300
-vdw          17               4.6100     0.5200
+vdw          14               3.4000     0.2500
+vdw          15               4.1300     0.3400
+vdw          16               4.3800     0.4300
+vdw          17               4.6600     0.5200
 vdw          18               4.1200     0.1010
 vdw          19               3.7100     0.1100
 vdw          20               3.9000     0.1000
@@ -547,24 +567,6 @@ vdw         100               3.7100     0.1050
 vdw         101               2.7000     0.0200      0.910
 
 
-      #####################################
-      ##                                 ##
-      ##  Van der Waals Pair Parameters  ##
-      ##                                 ##
-      #####################################
-
-
-vdwpr         8   15          4.2360     0.1512
-vdwpr         8   16          4.3790     0.1664
-vdwpr         8   17          4.6360     0.1720
-vdwpr         9   15          4.3150     0.1859
-vdwpr         9   16          4.4480     0.2068
-vdwpr         9   17          4.6900     0.2145
-vdwpr        10   15          4.3450     0.2894
-vdwpr        10   16          4.4750     0.3307
-vdwpr        10   17          4.7110     0.3466
-
-
       ##################################
       ##                              ##
       ##  Bond Stretching Parameters  ##
@@ -585,7 +587,7 @@ bond         29   29          323.00     1.5247
 bond         29   30          341.00     1.1120
 bond         31   32          341.00     1.1120
 bond         33   89          453.20     1.4950
-bond         34   35          556.85     0.9572
+bond         34   35          529.60     0.9572
 bond         36   37          615.90     0.9670
 bond         36   38          500.10     1.4130
 bond         36   40          465.10     1.4130
@@ -649,8 +651,8 @@ bond         87   87          471.90     1.3820
 bond         87   88          370.50     1.0790
 bond         87  100          653.90     1.3550
 bond         88   94          370.50     1.1010
-bond         89   89          471.90     1.3820
-bond         89   90          370.50     1.0790
+bond         89   89          210.90     1.3650
+bond         89   90          409.50     1.0800
 bond         89   99          323.00     1.5250
 bond         91   92          653.90     1.3450
 bond         91   94          653.90     1.3550
@@ -689,7 +691,7 @@ angle        27   31   29      48.20     109.50     110.20     111.00
 angle        29   31   29      48.20     109.50     110.20     111.00
 angle        27   31   32      42.00     112.80
 angle        29   31   32      42.00     112.80
-angle        35   34   35      48.70     108.50
+angle        35   34   35      34.05     108.50
 angle        37   36   38      64.96     106.80
 angle        37   36   40      64.96     106.80
 angle        37   36   43      53.96     106.80
@@ -743,37 +745,37 @@ angle        48   47   48      43.52     109.47
 angle        40   49   40      51.80     107.20     108.20       0.00
 angle        40   49   50      43.16     108.10     110.90       0.00
 angle        50   49   50      34.50     106.40     107.10       0.00
-anglep       40   53   55      80.00     122.40
-anglep       40   53   56      70.00     113.40
-anglep       54   53   55      68.34     119.20
-anglep       54   53   56      31.65     109.30
-anglep       55   53   56      76.98     124.20
-anglep       63   53   94      33.38     116.10     117.30       0.00
-anglep       63   53   96      61.15     119.20     119.20       0.00
-anglep       94   53   96      61.15     123.50     123.50       0.00
-anglep       40   56   40      54.67     122.50
-anglep       40   56   53      50.00     122.00
-anglep       40   56   57      32.01     117.00
-anglep       53   56   57      50.00     121.00
-anglep       57   56   57      22.30     122.00
+angle        40   53   55      80.00     122.40
+angle        40   53   56      70.00     113.40
+angle        54   53   55      68.34     119.20
+angle        54   53   56      31.65     109.30
+angle        55   53   56      76.98     124.20
+angle        63   53   94      33.38     116.10     117.30       0.00
+angle        63   53   96      61.15     119.20     119.20       0.00
+angle        94   53   96      61.15     123.50     123.50       0.00
+angle        40   56   40      54.67     122.50
+angle        40   56   53      50.00     122.00
+angle        40   56   57      32.01     117.00
+angle        53   56   57      50.00     121.00
+angle        57   56   57      22.30     122.00
 angle        61   60   62      49.64     108.70
-anglep       40   62   55      61.15     123.50     123.50       0.00
-anglep       40   62   60     111.51     110.30
-anglep       40   62   63      33.38     116.10     117.30       0.00
-anglep       55   62   60     122.30     121.50     122.50       0.00
-anglep       55   62   63      61.15     119.20     119.20       0.00
-anglep       55   62   63      61.15     119.20     119.20       0.00
-anglep       55   62   63      61.15     119.20     119.20       0.00
-anglep       55   62   63      61.15     119.20     119.20       0.00
-anglep       60   62   63      39.57     107.00
-anglep       60   62   63      39.57     107.00
-anglep       60   62   63      39.57     107.00
-anglep       60   62   63      39.57     107.00
-anglep       63   62   63      46.76     115.50
-anglep       67   62   69      60.24     110.80     110.80     108.00
-anglep       67   62   70      53.24     108.00     109.50     110.10
-anglep       69   62   69      39.57     107.60     107.80     109.47
-anglep       69   62   70      42.44     109.80     109.31     110.70
+angle        40   62   55      61.15     123.50     123.50       0.00
+angle        40   62   60     111.51     110.30
+angle        40   62   63      33.38     116.10     117.30       0.00
+angle        55   62   60     122.30     121.50     122.50       0.00
+angle        55   62   63      61.15     119.20     119.20       0.00
+angle        55   62   63      61.15     119.20     119.20       0.00
+angle        55   62   63      61.15     119.20     119.20       0.00
+angle        55   62   63      61.15     119.20     119.20       0.00
+angle        60   62   63      39.57     107.00
+angle        60   62   63      39.57     107.00
+angle        60   62   63      39.57     107.00
+angle        60   62   63      39.57     107.00
+angle        63   62   63      46.76     115.50
+angle        67   62   69      60.24     110.80     110.80     108.00
+angle        67   62   70      53.24     108.00     109.50     110.10
+angle        69   62   69      39.57     107.60     107.80     109.47
+angle        69   62   70      42.44     109.80     109.31     110.70
 angle        66   65   66      52.52      92.90
 angle        62   67   62      60.43      95.90
 angle        62   67   68      46.76      96.00
@@ -790,16 +792,16 @@ angle        80   79   82      65.00     180.00
 angle        79   82   83      45.00     109.92
 angle        83   82   83      40.00     109.02
 angle        85   84   86      42.00     180.00
-anglep       84   86   84      65.00     120.00
-anglep       87   87   87      63.31     120.00
-anglep       87   87   88      35.25     120.00     120.50       0.00
-anglep       87   87  100      69.78     121.00
-anglep       88   87  100      38.13     119.00
-anglep       36   89   89      43.16     120.00
-anglep       40   89   89      33.81     122.30
-anglep       89   89   89      64.67     121.70
-anglep       89   89   90      35.25     120.00     120.50       0.00
-anglep       89   89   99      54.67     121.70
+angle        84   86   84      65.00     120.00
+angle        87   87   87      63.31     120.00
+angle        87   87   88      35.25     120.00     120.50       0.00
+angle        87   87  100      69.78     121.00
+angle        88   87  100      38.13     119.00
+angle        36   89   89      43.16     120.00
+angle        40   89   89      33.81     122.30
+angle        89   89   89      64.67     121.70
+angle        89   89   90      35.25     120.00     120.50       0.00
+angle        89   89   99      54.67     121.70
 angle        46   91   92      35.25     125.50
 angle        46   91   94      35.25     125.50
 angle        92   91   92      86.33     105.10     107.10       0.00
@@ -811,22 +813,22 @@ angle        91   92   91      28.78     112.10
 angle        91   92   92      47.48     107.00
 angle        91   92   93      38.13     122.50
 angle        92   92   93      35.25     128.00
-anglep       53   94   94      54.67     121.70
-anglep       88   94   91      38.13     122.50
-anglep       88   94   94      35.25     128.00
-anglep       91   94   94      47.48     109.00
-anglep       94   94   94      63.31     120.00
-anglep       94   94   95      61.87     127.00
+angle        53   94   94      54.67     121.70
+angle        88   94   91      38.13     122.50
+angle        88   94   94      35.25     128.00
+angle        91   94   94      47.48     109.00
+angle        94   94   94      63.31     120.00
+angle        94   94   95      61.87     127.00
 angle        41   95   41      39.57     107.60     107.80     109.47
 angle        41   95   94      61.15     109.80     109.31     110.70
 angle        41   95   95      42.44     109.80     109.31     110.70
 angle        94   95   95      48.20     109.50     110.20     111.00
-anglep       98   97   98      29.50     123.00
-anglep       98   97   99      41.70     120.50
-anglep       89   99   97      28.80     120.00
-anglep       97   99   97      28.80     120.00
-anglep       87  100   87      86.33     112.60
-anglep       87  100  101      35.25     123.70
+angle        98   97   98      29.50     123.00
+angle        98   97   99      41.70     120.50
+angle        89   99   97      28.80     120.00
+angle        97   99   97      28.80     120.00
+angle        87  100   87      86.33     112.60
+angle        87  100  101      35.25     123.70
 
 
       ################################
@@ -962,7 +964,7 @@ strbnd       94   94   95      18.70      18.70
       ################################
 
 
-ureybrad     35   34   35      -7.60     1.5337
+ureybrad     35   34   35      38.25     1.5537
 
 
       ####################################
@@ -1127,6 +1129,7 @@ torsion      36   89   89   90      0.000 0.0 1   4.470 180.0 2   0.000 0.0 3
 torsion      40   89   89   89     -0.610 0.0 1   4.212 180.0 2   0.000 0.0 3
 torsion      40   89   89   90      0.000 0.0 1   6.104 180.0 2   0.000 0.0 3
 torsion      89   89   89   89     -0.670 0.0 1   4.004 180.0 2   0.000 0.0 3
+torsion      89   89   89   90      0.550 0.0 1   4.534 180.0 2  -0.550 0.0 3
 torsion      89   89   89   90      0.550 0.0 1   4.534 180.0 2  -0.550 0.0 3
 torsion      89   89   89   99     -0.610 0.0 1   4.212 180.0 2   0.000 0.0 3
 torsion      90   89   89   90      0.000 0.0 1   4.072 180.0 2   0.000 0.0 3
@@ -1557,36 +1560,16 @@ multipole    60   59   58               0.01544
                                        -0.01587
                                         0.00000   -0.05904
                                         0.03668    0.00000    0.07491
-#multipole   61   62  -62  -62          -0.57960
+multipole    61   62  -62  -62         -0.57960
                                         0.15842    0.00000    0.06469
                                        -0.43288
                                         0.00000    0.27280
                                        -0.28801    0.00000    0.16008
-#multipole   62   61  -62  -62           0.19320
+multipole    62   61  -62  -62          0.19320
                                        -0.03286    0.00000   -0.08851
                                        -0.04741
                                         0.00000    0.04478
                                         0.01653    0.00000    0.00263
-#multipole    61  -62  -62  -62         -0.22011
-                                        0.00000    0.00000    0.29395
-                                        0.49102
-                                        0.00000    0.49102
-                                        0.00000    0.00000   -0.98204
-#multipole    62   61  -62  -62          0.07337
-                                       -0.01503    0.00000   -0.16505
-                                       -0.05100
-                                        0.00000    0.04892
-                                        0.02991    0.00000    0.00208
-multipole    61  -62  -62  -62         -0.22011
-                                        0.00000    0.00000    0.29395
-                                        0.35844
-                                        0.00000    0.35844
-                                        0.00000    0.00000   -0.71688
-multipole    62   61  -62  -62          0.07337
-                                       -0.01503    0.00000   -0.16505
-                                       -0.05100
-                                        0.00000    0.04892
-                                        0.02991    0.00000    0.00208
 multipole    63   64   64              -0.22892
                                         0.00000    0.00000    0.00000
                                         0.00000
@@ -2472,51 +2455,51 @@ multipole   238  235  234               0.03372
                                        -0.04259
                                         0.00000   -0.08852
                                        -0.00007    0.00000    0.13111
-multipole   239  241  240              -0.15936
-                                        0.00000    0.00000    0.17072
-                                       -0.16041
-                                        0.00000   -0.16041
-                                        0.00000    0.00000    0.32082
-multipole   240  239  241               0.07101
-                                        0.02604    0.00000   -0.07852
-                                        0.06399
-                                        0.00000   -0.00135
-                                        0.01071    0.00000   -0.06264
-multipole   241 -242 -242              -0.04642
-                                        0.00000    0.00000   -0.05822
-                                        0.16134
-                                        0.00000   -0.26055
-                                       -0.02115    0.00000    0.09921
-multipole   242 -241 -243               0.04308
-                                       -0.03476    0.00000    0.15673
-                                        0.00214
-                                        0.00000   -0.48756
-                                        0.06534    0.00000    0.48542
-multipole   243 -244 -242              -0.03035
-                                        0.02088    0.00000   -0.07104
-                                        0.32973
-                                        0.00000   -0.33538
-                                       -0.03788    0.00000    0.00565
-multipole   244 -243 -243              -0.03295
-                                        0.00000    0.00000   -0.04604
-                                        0.25750
-                                        0.00000   -0.32503
-                                        0.00000    0.00000    0.06753
-multipole   245  242  241              -0.00539
-                                        0.00087    0.00000   -0.13040
-                                        0.06646
-                                        0.00000   -0.01180
-                                        0.00651    0.00000   -0.05466
-multipole   246  243  242               0.00351
-                                        0.00395    0.00000   -0.12499
-                                        0.04823
-                                        0.00000   -0.03089
-                                        0.00000    0.00000   -0.01734
-multipole   247  244  243               0.00400
-                                        0.00000    0.00000   -0.11767
-                                        0.05367
-                                        0.00000   -0.04960
-                                        0.00000    0.00000   -0.00407
+multipole   239  241  240              -0.49677
+                                        0.00000    0.00000    0.31898
+                                       -0.26883
+                                        0.00000   -0.22920
+                                        0.00015    0.00000    0.49803
+multipole   240  239  241               0.17403
+                                        0.00723    0.00000   -0.03413
+                                       -0.00941
+                                        0.00000   -0.02941
+                                        0.00729    0.00000    0.03882
+multipole   241  239  242               0.02465
+                                        0.00000    0.00000    0.04007
+                                       -0.05857
+                                        0.00000   -0.20568
+                                       -0.00385    0.00000    0.26425
+multipole   242  241  243              -0.12235
+                                        0.19912    0.00000    0.11496
+                                        0.25886
+                                        0.00000   -0.17954
+                                        0.11596    0.00000   -0.07932
+multipole   243  242  244              -0.13385
+                                        0.08336    0.00000    0.05837
+                                       -0.04215
+                                        0.00000   -0.05338
+                                       -0.14887    0.00000    0.09553
+multipole   244  243  243              -0.13995
+                                        0.09447    0.00000    0.05454
+                                       -0.04711
+                                        0.00000   -0.07943
+                                       -0.15404    0.00000    0.12654
+multipole   245  242  241               0.11944
+                                       -0.00156    0.00000   -0.09561
+                                       -0.00213
+                                        0.00000   -0.00628
+                                        0.00207    0.00000    0.00841
+multipole   246  243  242               0.12046
+                                        0.00167    0.00000   -0.09679
+                                        0.00417
+                                        0.00000   -0.00611
+                                        0.00000    0.00000    0.00194
+multipole   247  244  243               0.12258
+                                        0.00000    0.00000   -0.09717
+                                        0.00373
+                                        0.00000   -0.00624
+                                        0.00000    0.00000    0.00251
 multipole   248  255  249              -0.61500
                                         0.20835    0.00000    0.36077
                                         0.06711
@@ -3193,7 +3176,7 @@ polarize    149          0.4960     0.3900    147
 polarize    150          0.8370     0.3900    151  152
 polarize    151          0.4960     0.3900    150
 polarize    152          1.3340     0.3900    150  153
-polarize    153          0.8370     0.3900    152
+polarize    153          0.4960     0.3900    152
 polarize    154          1.3340     0.3900    155
 polarize    155          0.4960     0.3900    154
 polarize    156          1.3340     0.3900    157  158
@@ -3391,3 +3374,57 @@ polarize    347          0.4960     0.3900    343
 polarize    348          0.6960     0.3900    344
 polarize    349          0.6960     0.3900    345
 polarize    350          0.6960     0.3900    346
+
+
+      ########################################
+      ##                                    ##
+      ##  Charge Penetration Parameters     ##
+      ##                                    ##
+      ########################################
+
+sibfacp    36            4.0000     4.9000    4.7000
+sibfacp    37            3.5000     2.9000    1.7000
+sibfacp    38            6.4000     4.5000    0.7000
+sibfacp    39            4.8000     2.9000    1.7000
+sibfacp    40            5.8000     4.9000    2.5000
+sibfacp    41            3.5000     2.6000    4.7000
+sibfacp    65            4.8000     4.8000    2.7000
+sibfacp    66            2.5000     2.9000    1.7000
+sibfacp    67            4.8000     5.4000    2.5000
+sibfacp    68            3.5000     2.7000    4.7000
+sibfacp    217           2.8000     2.5000    2.8000
+sibfacp    218           3.5000     2.3000    2.5000
+
+
+      ########################################
+      ##                                    ##
+      ##  Dispersion Parameters             ##
+      ##                                    ##
+      ########################################
+
+rdisp    36            1.2000
+rdisp    37            1.4880
+
+
+      ########################################
+      ##                                    ##
+      ##  Repulsion Parameters              ##
+      ##                                    ##
+      ########################################
+
+rrep    36            1.2000
+rrep    37            1.4500
+
+      ########################################
+      ##                                    ##
+      ##  Charge Transfer Parameters        ##
+      ##                                    ##
+      ########################################
+
+rct       1            1.0d0      1.0d0
+rct       2            1.0d0      1.0d0
+rct       3            1.0d0      1.0d0
+rct       4            1.0d0      1.0d0
+rct       13           2.509d0    2.509d0  
+rct       36           1.52d0     1.45d0
+rct       37           1.0d0      1.70d0

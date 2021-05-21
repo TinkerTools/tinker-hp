@@ -390,7 +390,12 @@ contains
 
     if (p_row==0 .and. p_col==0) then
        ! determine the best 2D processor grid
-       call best_2d_grid(nproc, row, col)
+       if (nproc.eq.1) then
+          row = 1
+          col = 1
+       else
+          call best_2d_grid(nproc, row, col)
+       end if
     else
        if (nproc /= p_row*p_col) then
           errorcode = 1
@@ -1412,7 +1417,7 @@ contains
 
 #ifdef _OPENACC
     ! TODO Add auto-tuning mode with cudaFFT
-    if (nrank.eq.0) print *, "OVERRIDE : Z decomposition is needed for cufft (for now)"
+    if (nrank.eq.0) print *, "OVERRIDE : Z decomposition is needed for cuFFT (for now)"
     best_p_row = 1
     best_p_col = iproc
     return  
@@ -1519,8 +1524,8 @@ contains
     integer status(MPI_STATUS_SIZE),tag
     integer i,ii,n,nsend,sloc,rloc,irank,send_rank,recv_rank
     integer icomm,isave
-    integer,parameter::pivot=7
-    integer,parameter::salvo=3
+    integer,parameter::pivot=3
+    integer,parameter::salvo=2
     complex(mytype) icplx
     real(8),parameter:: Mio=(sizeof(icplx)*1.0d0)/(1024*1024)
 

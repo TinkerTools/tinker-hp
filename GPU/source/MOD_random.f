@@ -273,10 +273,12 @@ c
       integer,   intent(in)::n
       integer,   intent(in),optional::stream_
       real(t_p), intent(in),optional::mean_,stddev_
-      real(t_p):: mean=0.0_ti_p,stddev=1.0_ti_p
-      integer :: istat,num
+      real(t_p) mean,stddev
+      integer istat,num
       istat=0
 
+      mean   = 0.0_ti_p
+      stddev = 1.0_ti_p
       if (present(mean_)) mean = mean_
       if (present(stddev_)) stddev = stddev_
       if (present(stream_))

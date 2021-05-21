@@ -14,7 +14,7 @@ radiustype              R-MIN
 radiussize              RADIUS
 epsilonrule             GEOMETRIC
 vdw-14-scale            1.0
-chg-14-scale            0.4
+chg-14-scale            1.0
 electric                332.0716
 dielectric              1.0
 
@@ -151,7 +151,6 @@ vdw          11               1.6000    -0.2384
 vdw          12               1.6000    -0.2384
 vdw          13               1.6000    -0.2384
 vdw          14               1.6000    -0.2384
-vdw          15               1.6000    -0.2384
 vdw          16               1.6000    -0.2384
 vdw          17               1.6000    -0.1591
 vdw          18               1.6000    -0.6469
@@ -160,6 +159,7 @@ vdw          20               1.6000    -0.1591
 vdw          21               1.6000    -0.1591
 vdw          22               1.8900    -0.0430
 vdw          23               1.8900    -0.0430
+vdw          15               1.6000    -0.2384
 vdw          24               0.6500     0.0000
 vdw          25               1.4000    -0.0200
 

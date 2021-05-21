@@ -34,7 +34,7 @@ c
       implicit none
       integer i,iproc,iprec
       integer iglob,iloc
-      integer tag,ierr,ibufbeg
+      integer tag,ierr,ibufbeg,idomlen
       integer rankloc,commloc,nprocloc
       integer status(MPI_STATUS_SIZE)
       real(r_p),pointer :: buffer(:,:),buffers(:,:)
@@ -170,8 +170,9 @@ c
       do iproc = 1, nrec_recep
          call MPI_WAIT(reqrec(iproc),status,ierr)
          ibufbeg = bufbegrec(prec_recep(iproc)+1)-1
+         idomlen = domlenrec(prec_recep(iproc)+1)
 !$acc parallel loop async
-         do i = 1, domlenrec(prec_recep(iproc)+1)
+         do i = 1, idomlen
             iloc     = ibufbeg+i
             iglob    = globrec(iloc)
             x(iglob) = buffer(1,iloc)
@@ -208,44 +209,40 @@ c
       use utilcomm ,only: buffMpi_p1,buffMpi_p2
       implicit none
       integer i,tag,ierr,iproc
-      integer iloc,iglob
+      integer iloc,iglob,idomlen,ibufbeg
       real(r_p),pointer:: buffer(:,:),buffers(:,:)
       integer, allocatable :: reqrec(:),reqsend(:)
       integer status(MPI_STATUS_SIZE)
 c
+c
+c     communicate positions
+c
       if (nproc.eq.1.or.(use_pmecore).and.(rank.gt.ndir-1)) return
       call timer_enter( timer_commstep )
       if (deb_Path) write(*,*) '   >> commpos'
-#ifdef _OPENACC
-       write(0,*) " commpos is not offloaded on device "
-       write(0,*) " A Fix will be applied in next version "
-       call fatal
-#endif
-c
-c     allocate some arrays
-c
+ 
+      !Fetch memory from pool
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
       call prmem_requestm(buffMpi_p1,3*nbloc)
       call prmem_requestm(buffMpi_p2,3*nloc )
       buffer (1:3,1:nbloc)=>buffMpi_p1(1:3*nbloc)
       buffers(1:3,1:nloc) =>buffMpi_p2(1:3*nloc)
-!$acc enter data attach(buffer,buffers)
-c
-c     communicate positions
-c
 c
 c     MPI : begin reception in buffer
 c
+!$acc host_data use_device(buffer)
       do i = 1, nbig_recep
         tag = nproc*rank + pbig_recep(i) + 1
         call MPI_IRECV(buffer(1,bufbeg(pbig_recep(i)+1)),
      $   3*domlen(pbig_recep(i)+1),
      $   MPI_RPREC,pbig_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
       end do
+!$acc end host_data
 c
 c     MPI : move in buffer
 c
+!$acc parallel loop async default(present)
       do i = 1, nloc
         iglob = glob(i)
         buffers(1,i) = x(iglob)
@@ -255,12 +252,15 @@ c
 c
 c     MPI : begin sending
 c
+!$acc wait
+!$acc host_data use_device(buffers)
       do i = 1, nbig_send
         tag = nproc*pbig_send(i) + rank + 1
-        call MPI_ISEND(buffers,3*nloc,
-     $   MPI_RPREC,pbig_send(i),tag,COMM_TINKER,
-     $   reqsend(i),ierr)
+        call MPI_ISEND(buffers,3*nloc,MPI_RPREC,
+     $       pbig_send(i),tag,COMM_TINKER,
+     $       reqsend(i),ierr)
       end do
+!$acc end host_data
 c
       do i = 1, nbig_recep
         call MPI_WAIT(reqrec(i),status,ierr)
@@ -272,22 +272,22 @@ c
 c     MPI : move in global arrays
 c
       do iproc = 1, nbig_recep
-        do i = 1, domlen(pbig_recep(iproc)+1)
-          iloc = bufbeg(pbig_recep(iproc)+1)+i-1
-          iglob = glob(iloc)
-          x(iglob) = buffer(1,iloc)
-          y(iglob) = buffer(2,iloc)
-          z(iglob) = buffer(3,iloc)
-        end do
+         idomlen = domlen(pbig_recep(iproc)+1)
+         ibufbeg = bufbeg(pbig_recep(iproc)+1)-1
+!$acc parallel loop async default(present)
+         do i = 1, idomlen
+           iloc   = ibufbeg+i
+           iglob  = glob(iloc)
+           x(iglob) = buffer(1,iloc)
+           y(iglob) = buffer(2,iloc)
+           z(iglob) = buffer(3,iloc)
+         end do
       end do
-!$acc update device(x(:),y(:),z(:)) async
 c
-!$acc exit data detach(buffer,buffers) async
       nullify(buffer)
       nullify(buffers)
       deallocate (reqsend)
       deallocate (reqrec)
-!$acc wait
 
       if (deb_Path) write(*,*) '   << commpos'
       call timer_exit( timer_commstep,quiet_timers )
@@ -315,11 +315,6 @@ c
 c
       if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
 
-#ifdef _OPENACC
-      write(0,*) "commposshort is not offloaded on device "
-      write(0,*) " A Fix will be applied in next version "
-       call fatal
-#endif
       call timer_enter( timer_commstep )
       if (deb_Path) write(*,*) '   >> commposshort'
 c
@@ -331,7 +326,6 @@ c
       call prmem_requestm(buffMpi_p2,3*nloc,async=.false.)
       buffer (1:3,1:nbloc)=>buffMpi_p1(1:3*nbloc)
       buffers(1:3,1:nloc) =>buffMpi_p2(1:3*nloc)
-!$acc enter data attach(buffer,buffers)
       !FIXME Offload this part on device
 c
 c     communicate positions
@@ -339,15 +333,18 @@ c
 c
 c     MPI : begin reception in buffer
 c
+!$acc host_data use_device(buffer)
       do i = 1, nbigshort_recep
         tag = nproc*rank + pbigshort_recep(i) + 1
         call MPI_IRECV(buffer(1,bufbeg(pbigshort_recep(i)+1)),
      $   3*domlen(pbigshort_recep(i)+1),
      $   MPI_RPREC,pbigshort_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
       end do
+!$acc end host_data
 c
 c     MPI : move in buffer
 c
+!$acc parallel loop async default(present)
       do i = 1, nloc
         iglob = glob(i)
         buffers(1,i) = x(iglob)
@@ -357,12 +354,15 @@ c
 c
 c     MPI : begin sending
 c
+!$acc wait
+!$acc host_data use_device(buffers)
       do i = 1, nbigshort_send
         tag = nproc*pbigshort_send(i) + rank + 1
         call MPI_ISEND(buffers,3*nloc,
      $   MPI_RPREC,pbigshort_send(i),tag,COMM_TINKER,
      $   reqsend(i),ierr)
       end do
+!$acc end host_data
 c
       do i = 1, nbigshort_recep
         call MPI_WAIT(reqrec(i),status,ierr)
@@ -374,8 +374,11 @@ c
 c     MPI : move in global arrays
 c
       do iproc = 1, nbigshort_recep
-        do i = 1, domlen(pbigshort_recep(iproc)+1)
-          iloc = bufbeg(pbigshort_recep(iproc)+1)+i-1
+        idomlen = domlen(pbigshort_recep(iproc)+1)
+        ibufbeg = bufbeg(pbigshort_recep(iproc)+1)-1
+!$acc parallel loop async default(present)
+        do i = 1, idomlen
+          iloc  = ibufbeg+i
           iglob = glob(iloc)
           x(iglob) = buffer(1,iloc)
           y(iglob) = buffer(2,iloc)
@@ -383,7 +386,6 @@ c
         end do
       end do
 c
-!$acc exit data detach(buffer,buffers)
       nullify(buffer)
       nullify(buffers)
       deallocate (reqsend)
@@ -395,6 +397,12 @@ c
 c
 c     subroutine reassign: deal with particles changing of domain between two time steps
 c
+#ifdef _OPENACC
+      subroutine reassign
+      implicit none
+      call reassignrespa(0,0)
+      end subroutine
+#else
       subroutine reassign
       use atomsMirror
       use bound
@@ -460,13 +468,13 @@ c     get particules that changed of domain
 c
       do i = 1, nloc
         iglob = glob(i)
-        xr = x(iglob)
-        yr = y(iglob)
-        zr = z(iglob)
+        xr    = x(iglob)
+        yr    = y(iglob)
+        zr    = z(iglob)
         if (use_bounds) call image(xr,yr,zr)
-        if (abs(xr-xcell2).lt.eps1) xr = xr-eps2
-        if (abs(yr-ycell2).lt.eps1) yr = yr-eps2
-        if (abs(zr-zcell2).lt.eps1) zr = zr-eps2
+        if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+        if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+        if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
         do iproc = 0, nprocloc-1
           if (iproc.eq.rank) cycle
           if ((zr.ge.zbegproc(iproc+1)).and.(zr.lt.zendproc(iproc+1))
@@ -647,9 +655,6 @@ c
             zold(iglob) = buffer1(4,bufbeg4(proc+1)+j)
           end do
         end do
-!$acc data present(xold,yold,zold)
-!$acc update device(xold,yold,zold) async
-!$acc end data
         deallocate (buffer1)
         deallocate (buffers1)
       end if
@@ -686,14 +691,12 @@ c
          loc(jglob)    = nloc1
          repart(jglob) = rank
       end do
-!$acc update device(loc(:),repart(:)) async
       deallocate (buffer)
       deallocate (buffers)
 c
       nloc = nloc1
       domlen(rank+1) = nloc
       glob = glob1
-!$acc update device(glob) async
 c
  20   call orderbuffer(.false.)
 c
@@ -706,8 +709,8 @@ c
       deallocate (bufbeg3)
       deallocate (reqsend)
       deallocate (reqrec)
-!$acc wait
       end
+#endif
 
 c
 c     Assign all atoms to their real space domain
@@ -753,9 +756,10 @@ c
         yr = y(i)
         zr = z(i)
         call image_acc(xr,yr,zr)
-        if (abs(xr-xcell2).lt.eps_cell) xr = xr-5*eps_cell
-        if (abs(yr-ycell2).lt.eps_cell) yr = yr-5*eps_cell
-        if (abs(zr-zcell2).lt.eps_cell) zr = zr-5*eps_cell
+        ! Check box limits
+        if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+        if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+        if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
         do iproc = 0, nprocloc-1
           if ((zr.ge.zbegproc(iproc+1)).and.(zr.lt.zendproc(iproc+1))
      $   .and.(yr.ge.ybegproc(iproc+1)).and.(yr.lt.yendproc(iproc+1))
@@ -843,7 +847,7 @@ c
       end subroutine
 
       subroutine reassignrespa(ialt,nalt)
-        use atomsMirror ,only : x,y,z,n
+        use atomsMirror ,only : x,y,z,xold,yold,zold,n
         use bound ,only : use_bounds
         use cell  ,only : xcell2, ycell2, zcell2, eps_cell
         use domdec,only : nloc,nproc,glob,comm_dir,rank,rank_bis,ndir,
@@ -852,12 +856,15 @@ c
      &                    repart, loc, domlen, COMM_TINKER,
      &                    nneig_send, nneig_recep,
      &                    pneig_recep, pneig_send
+        use freeze,only : use_rattle
         use inform,only : deb_Path,tindPath
+        use iso_c_binding
         use moldyn,only : a,v
         use mpistuff_inl
         use potent,only : use_pmecore
         use timestat ,only: timer_enter,timer_exit,timer_eneig
      &               ,quiet_timers
+        use tinTypes ,only: real3
         use tinheader,only: ti_eps
         use tinMemory,only: prmem_request,debMem,mem_inc,extra_alloc
         use utilcomm ,only: buffMpi_i1,buffMpi_i2
@@ -870,6 +877,9 @@ c
         integer,pointer :: iglob_recv(:,:) ! Global index to recieve from procs
         real(t_p) xr, yr, zr ! adjusted position
         type(t_elt),pointer :: d
+        type(real3),pointer :: b
+        type(real3),pointer :: old_send(:,:),old_recv(:,:)
+        type(c_ptr) void_p
 
         integer  n_data_send(0:nneig_send),   n_data_recv(nneig_recep)
         integer req_iglob_send(nneig_send),req_iglob_recv(nneig_recep)
@@ -882,7 +892,8 @@ c
         integer nloc_capture
         integer s_bufi
         integer :: max_data_recv_save=0
-        real(t_p) ixbeg,ixend,iybeg,iyend,izbeg,izend
+        character(len=40) ::fmt
+        real(t_p) ixbeg,ixend,iybeg,iyend,izbeg,izend,xtemp
 #if  (defined(SINGLE)||defined(MIXED))
         real(t_p), parameter:: eps1= 10*ti_eps, eps2= 1d2*ti_eps
 #else
@@ -944,12 +955,14 @@ c
           yr = y(iglob)
           zr = z(iglob)
           if (use_bounds) call image_inl(xr,yr,zr)
-          if (abs(xr-xcell2).lt.eps_cell) xr = xr-eps2
-          if (abs(yr-ycell2).lt.eps_cell) yr = yr-eps2
-          if (abs(zr-zcell2).lt.eps_cell) zr = zr-eps2
-          if  ( (xr>=ixbeg) .and. (xr<ixend)
-     &    .and. (yr>=iybeg) .and. (yr<iyend)
-     &    .and. (zr>=izbeg) .and. (zr<izend) ) then  ! (Rank domain)
+          ! Check box limits (SP Issue)
+          xtemp = xr
+          if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+          if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+          if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
+          if  ( (xr>=ixbeg).and.(xr<ixend)
+     &    .and. (yr>=iybeg).and.(yr<iyend)
+     &    .and. (zr>=izbeg).and.(zr<izend) ) then  ! (Rank domain)
 !$acc atomic capture
               n_data_send(0) = n_data_send(0) + 1
               n_data_send_capture = n_data_send(0)
@@ -997,10 +1010,10 @@ c
 !$acc loop vector
           do i = 1, n_data_send(ineighbor)
             iglob = iglob_send(i,ineighbor)
-            d => data_send( i, ineighbor )
-            d%x = x(iglob)
-            d%y = y(iglob)
-            d%z = z(iglob)
+            d    => data_send( i, ineighbor )
+            d%x  = x(iglob)
+            d%y  = y(iglob)
+            d%z  = z(iglob)
             d%vx = v(1,iglob)
             d%vy = v(2,iglob)
             d%vz = v(3,iglob)
@@ -1078,6 +1091,7 @@ c
         end do
 !$acc end host_data
 
+        nloc_save = nloc
         ! Rebuild glob(:) with old local atoms
         nloc = n_data_send(0)
 
@@ -1120,7 +1134,61 @@ c
           end do
         end do
 
-        nloc_save = nloc
+        if (use_rattle) then
+        ! Recast workspace
+        void_p = c_loc(data_send)
+        call c_f_pointer(void_p,old_send,[max_atoms_send,nneig_send])
+        void_p = c_loc(data_recv)
+        call c_f_pointer(void_p,old_recv,[max_atoms_recv,nneig_recep])
+
+!$acc parallel loop present(iglob_send,old_send,xold,yold,zold) async
+!$acc&         vector_length(512)
+        do ineighbor = 1, nneig_send  ! Gather Data for each neighbor domain
+!$acc loop vector
+          do i = 1, n_data_send(ineighbor)
+            iglob = iglob_send(i,ineighbor)
+            b    =>   old_send(i,ineighbor)
+            b%x  = xold(iglob)
+            b%y  = yold(iglob)
+            b%z  = zold(iglob)
+          end do
+        end do
+
+!$acc wait
+!$acc host_data use_device(old_send, old_recv)
+        do ineighbor = 1, nneig_send
+          call MPI_Isend(old_send(1,ineighbor),3*n_data_send(ineighbor)
+     &            ,MPI_TPREC, pneig_send(ineighbor), 0, COMM_TINKER,
+     &            req_data_send(ineighbor), ierr)
+        end do
+        do ineighbor = 1, nneig_recep
+          call MPI_Irecv(old_recv(1,ineighbor),3*n_data_recv(ineighbor)
+     &            ,MPI_TPREC, pneig_recep(ineighbor), 0, COMM_TINKER,
+     &            req_data_recv(ineighbor), ierr)
+        end do
+!$acc end host_data
+
+        ! Wait all communications
+        call MPI_Waitall(nneig_recep,req_data_recv ,MPI_STATUSES_IGNORE,
+     &                   ierr)
+        call MPI_Waitall(nneig_send ,req_data_send ,MPI_STATUSES_IGNORE,
+     &                   ierr)
+
+!$acc parallel loop vector_length(512)
+!$acc&         present(iglob_recv) copyin(n_data_recv) copy(nloc)
+        do ineighbor = 1, nneig_recep
+!$acc loop vector
+          do i = 1, n_data_recv(ineighbor)
+            iglob   = iglob_recv(i,ineighbor)
+            b       =>  old_recv(i,ineighbor)
+            xold(iglob) = b%x
+            yold(iglob) = b%y
+            zold(iglob) = b%z
+          end do
+        end do
+
+        end if
+
         if (btest(tinkerdebug,tindPath).and.
      &     max_data_recv.gt.max_data_recv_save) then
            max_data_recv_save = max_data_recv
@@ -1128,9 +1196,18 @@ c
            print 16,rank,max_data_recv_save,nloc
         end if
  17     format('reassign nloc ',I9,' max_data_recv',I9)
+ 18     format('(a,I3,a,',I0,'I6,a,',I0,'I6,a,I7,")")')
+ 19     format(I3,12F11.6)
         if (deb_Path) write(*,17) nloc,max_data_recv
         if (tinkerdebug.gt.0.and.nproc.gt.1) then
-           call AtomDebRepart
+           call AtomDebRepart(ierr)
+           if (ierr.ne.0) then
+              write(fmt,18) nneig_send+1,nneig_recep
+              write(*,19) rank,xbegproc,xendproc,ybegproc
+     &                   ,yendproc,zbegproc,zendproc
+              write(* ,fmt), 'r',rank, ' send(',n_data_send,
+     &           ') recv(',n_data_recv, ') nloc_s(',nloc_save
+           end if
         end if
 
 !$acc parallel loop
@@ -1178,7 +1255,8 @@ c
       use bound
       use cell
       use domdec
-      use moldyn, nalt2=>nalt
+      use freeze   ,only: use_rattle
+      use moldyn   , nalt2=>nalt
       use neigh
       use potent
       use mpi
@@ -1249,9 +1327,9 @@ c
         yr = y(iglob)
         zr = z(iglob)
         if (use_bounds) call image_acc(xr,yr,zr)
-        if (abs(xr-xcell2).lt.eps_cell) xr = xr-eps2
-        if (abs(yr-ycell2).lt.eps_cell) yr = yr-eps2
-        if (abs(zr-zcell2).lt.eps_cell) zr = zr-eps2
+        if (abs(xr-xcell2).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
+        if (abs(yr-ycell2).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
+        if (abs(zr-zcell2).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
 !$acc loop seq
         do iproc = 0, nprocloc-1
           if (iproc.eq.rank) cycle
@@ -1472,6 +1550,13 @@ c
         loc(jglob) = nloc1_capture
         repart(jglob) = rank
       end do
+
+      if (use_rattle) then
+ 11   format('reassignrespa_old does not support old positions
+     &        reassignation')
+         write(0,11)
+         call fatal
+      end if
 
 !$acc serial present(nloc1) copyout(nloc) async
       nloc = nloc1

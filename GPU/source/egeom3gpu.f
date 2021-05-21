@@ -276,6 +276,7 @@ c
                if (angle .lt. af1)  target = af1
                if (angle .gt. af2)  target = af2
                dt  = angle - target
+               dt = dt / radian
                dt2 = dt * dt
                e   = force * dt2
                neg = neg + 1
@@ -396,6 +397,7 @@ c
                else if (dt .lt. -180.0_ti_p) then
                   dt = dt + 360.0_ti_p
                end if
+               dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
                neg = neg + 1

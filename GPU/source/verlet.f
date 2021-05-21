@@ -15,9 +15,6 @@ c     via the velocity Verlet multistep recursion formula
 c
 c
 #include "tinker_precision.h"
-      module verlet_mod
-         real(r_p),allocatable::derivs(:,:)
-      end module
 
       subroutine verlet (istep,dt)
       use atmtyp
@@ -36,15 +33,11 @@ c
       use utilgpu,only:prmem_requestm,rec_queue
       use mpi
       use sizes
-      use verlet_mod
+      use integrate_ws
       implicit none
       integer i,j,istep
       integer iglob
       real(r_p) dt,dt_2
-      real(r_p),save:: etot,epot,eksum
-      real(r_p),save:: temp,pres
-      real(r_p),save:: ekin(3,3)
-      real(r_p),save:: stress(3,3)
       real(r_p) time0,time1
 c
 c     set some time values for the dynamics integration
@@ -61,6 +54,7 @@ c
 c     store the current atom positions, then find half-step
 c     velocities and full-step positions via Verlet recursion
 c
+      if (use_rattle) call save_atoms_pos
 !$acc parallel loop async default(present)
       do i = 1, nloc
          iglob = glob(i)
@@ -69,18 +63,11 @@ c
             do j = 1, 3
                v(j,iglob) = v(j,iglob) + a(j,iglob)*dt_2
             end do
-            xold(iglob) = x(iglob)
-            yold(iglob) = y(iglob)
-            zold(iglob) = z(iglob)
             x(iglob) = x(iglob) + v(1,iglob)*dt
             y(iglob) = y(iglob) + v(2,iglob)*dt
             z(iglob) = z(iglob) + v(3,iglob)*dt
          end if
       end do
-      if (nproc.gt.1) then
-!$acc update host(x,y,z,v) async
-!$acc wait
-      end if
 c
 c     Reassign the particules that have changed of domain
 c

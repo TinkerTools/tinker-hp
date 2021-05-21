@@ -386,13 +386,14 @@ c
       use atoms
       use bound
       use boxes
-      use domdec   ,only:rank
-      use inform   ,only:deb_path
+      use domdec    ,only: rank
+      use inform    ,only: deb_path
       use math
       use mutant
       use potent
       use shunt
-      use tinheader ,only:ti_p,re_p
+      use tinMemory ,only: prmem_request
+      use tinheader ,only: ti_p,re_p
       use utilgpu   ,only: def_queue
       use vdw
       use vdwpot
@@ -402,7 +403,8 @@ c
       integer i,j,k,it,kt
       integer nstep,ndelta
       integer vdwtyp_i
-      integer, allocatable :: mvt(:)
+      integer, save, allocatable :: mvt(:)
+      logical, save :: f_in=.true.
       real(t_p) zero,one,two
       real(r_p) etot,vtot
       real(t_p) range,rdelta
@@ -461,10 +463,10 @@ c
       offset = cut - 0.5_ti_p*rdelta
       rinv   = 1.0_ti_p/(cut-off)
       vlam1  = 1.0_ti_p - vlambda
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (mvt(n))
+
+      if (f_in) then
+      ! Request memory for mvt
+      call prmem_request(mvt,n)
 c
 c     count the number of vdw types and their frequencies
 c
@@ -485,12 +487,16 @@ c
          if (mut(i))  mvt(nvt) = 1
    10    continue
       end do
+!$acc update device(mvt)
+
+      f_in=.false.
+      end if
 c
 c     find the van der Waals energy via double loop search
 c
-!$acc parallel loop collapse(3) async(def_queue) copyin(mvt)
+!$acc parallel loop collapse(3) async(def_queue)
 !$acc&         reduction(+:elrc,vlrc)
-!$acc&         present(elrc,vlrc,radmin,epsilon,ivt,jvt)
+!$acc&         present(elrc,vlrc,radmin,epsilon,ivt,jvt,mvt)
       do i = 1, nvt
          do k = 1, nvt
             do j = 1, ndelta
@@ -568,8 +574,5 @@ c                 de = eps * (rvterm*expterm+6.0d0*cbuck*p6/r)
       elrc = elrc / volbox
       vlrc = vlrc / (3.0_re_p*volbox)
 !$acc end serial
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (mvt)
+
       end

@@ -6,7 +6,7 @@
       ##############################
 
 
-forcefield              iAMOEBA-WATER
+forcefield              AMOEBA-PLUS
 
 bond-cubic              -2.55
 bond-quartic            3.793125
@@ -18,9 +18,13 @@ vdwtype                 BUFFERED-14-7
 radiusrule              CUBIC-MEAN
 radiustype              R-MIN
 radiussize              DIAMETER
-epsilonrule             HHG
+epsilonrule             W-H 
 dielectric              1.0
-polarization            DIRECT
+penetration             GORDON2
+polarization            MUTUAL
+chargetransfer          COMBINED
+d-equals-p
+vdw-12-scale            0.0
 vdw-13-scale            0.0
 vdw-14-scale            1.0
 vdw-15-scale            1.0
@@ -32,7 +36,10 @@ polar-12-scale          0.0
 polar-13-scale          0.0
 polar-14-scale          1.0
 polar-15-scale          1.0
+polar-12-intra          0.0
+polar-13-intra          0.0
 polar-14-intra          0.5
+polar-15-intra          1.0
 direct-11-scale         0.0
 direct-12-scale         1.0
 direct-13-scale         1.0
@@ -50,9 +57,9 @@ mutual-14-scale         1.0
       #############################
 
 
-L.-P. Wang, T. Head-Gordon, J. W. Ponder, P. Ren, J. D. Chodera,
-P. K. Eastman, T. J. Martinez and V. S. Pande, "A Systematic Improvement
-on the Molecular Description of Water", to be submitted, March 2013
+C. Liu, J.-P. Piquemal and P. Ren, "AMOEBA+ Classical Potential for
+Modeling Molecular Interactions", J. Chem. Theory Comput., 15, 4122-4139
+(2019)
 
 
       #############################
@@ -73,8 +80,8 @@ atom          2    2    H     "AMOEBA Water H"               1     1.008    1
       ################################
 
 
-vdw           1               3.6453     0.19682
-vdw           2               0.0000     0.00000
+vdw           1               3.8089920  0.0613611
+vdw           2               3.3407811  0.0045714   0.983604
 
 
       ##################################
@@ -84,7 +91,7 @@ vdw           2               0.0000     0.00000
       ##################################
 
 
-bond          1    2          557.63     0.9584
+bond          1    2          556.85     0.9394053
 
 
       ################################
@@ -94,7 +101,7 @@ bond          1    2          557.63     0.9584
       ################################
 
 
-angle         2    1    2      49.90     106.48
+angle         2    1    2      48.70     108.81849
 
 
       ###############################
@@ -104,7 +111,7 @@ angle         2    1    2      49.90     106.48
       ###############################
 
 
-ureybrad      2    1    2     -10.31     1.5357
+ureybrad      2    1    2      -7.60     1.5278388
 
 
       ###################################
@@ -114,18 +121,17 @@ ureybrad      2    1    2     -10.31     1.5357
       ###################################
 
 
-multipole     1   -2   -2              -0.59402
-                                        0.00000    0.00000    0.08848
-                                        0.22618
-                                        0.00000   -0.32244
-                                        0.00000    0.00000    0.09626
-     
-multipole     2    1    2               0.29701
-                                       -0.09391    0.00000   -0.12560
-                                        0.18754
-                                        0.00000    0.02174
-                                       -0.03635    0.00000   -0.20928
-     
+multipole     1   -2   -2              -0.55824546
+                                        0.00000000    0.00000000   -0.14492290
+                                        0.45159872
+                                        0.00000000   -0.28010796
+                                        0.00000000    0.00000000   -0.17149076
+multipole     2    1    2               0.27912273
+                                        0.00000000    0.00000000   -0.23005970
+                                        0.21520709
+                                        0.00000000   -0.02976095
+                                        0.19110007    0.00000000   -0.18544614
+
 
       ########################################
       ##                                    ##
@@ -134,5 +140,34 @@ multipole     2    1    2               0.29701
       ########################################
 
 
-polarize      1           0.80636    0.23616     2
-polarize      2           0.50484    0.23616     1
+polarize      1          0.9479157  0.3900     0.7000      2
+polarize      2          0.4158204  0.3900     0.7000      1
+
+
+      ##################################
+      ##                              ##
+      ##  Charge Transfer Parameters  ##
+      ##                              ##
+      ##################################
+
+      #############################################################
+      ##                                                         ##
+      ##  charge prefactors multiplied by 1000/electric=3.01147  ##
+      ##  to match parameters determined by Pengyu Ren's group   ##
+      ##                                                         ##
+      #############################################################
+
+
+chgtrn             1          9.6375877  3.7187840
+chgtrn             2          8.8646070  4.7134680
+
+
+      #####################################
+      ##                                 ##
+      ##  Charge Penetration Parameters  ##
+      ##                                 ##
+      #####################################
+
+
+chgpen             1          8.0000     4.0482935
+chgpen             2          1.0000     3.2747884
