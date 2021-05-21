@@ -21,6 +21,7 @@ c
       use atoms
       use bound
       use boxes
+      use dcdmod
       use domdec
       use files
       use group
@@ -313,27 +314,31 @@ c     update the information needed to restart the trajectory
 c
       call prtdyn
 c
-c     save coordinates to an archive or numbered structure file
+c     save coordinates to an archived, numbered structure file, or dcd file
 c
-      ixyz = freeunit ()
-      if (archive) then
-         xyzfile = filename(1:leng)
-         call suffix (xyzfile,'arc','old')
-         inquire (file=xyzfile,exist=exist)
-         if (exist) then
-            call openend (ixyz,xyzfile)
-         else
-            open (unit=ixyz,file=xyzfile,status='new')
-         end if
+      if (dcdio) then
+        call dcdio_write(istep,dt)
       else
-         xyzfile = filename(1:leng)//'.'//ext(1:lext)
-         call version (xyzfile,'new')
-         open (unit=ixyz,file=xyzfile,status='new')
+        ixyz = freeunit ()
+        if (archive) then
+           xyzfile = filename(1:leng)
+           call suffix (xyzfile,'arc','old')
+           inquire (file=xyzfile,exist=exist)
+           if (exist) then
+              call openend (ixyz,xyzfile)
+           else
+              open (unit=ixyz,file=xyzfile,status='new')
+           end if
+        else
+           xyzfile = filename(1:leng)//'.'//ext(1:lext)
+           call version (xyzfile,'new')
+           open (unit=ixyz,file=xyzfile,status='new')
+        end if
+        call prtxyz (ixyz)
+        close (unit=ixyz)
+        write (iout,70)  xyzfile(1:trimtext(xyzfile))
+   70   format (' Coordinate File',12x,a)
       end if
-      call prtxyz (ixyz)
-      close (unit=ixyz)
-      write (iout,70)  xyzfile(1:trimtext(xyzfile))
-   70 format (' Coordinate File',12x,a)
 c      call netcdfamber(istep,dt)
 c
 c     save the velocity vector components at the current step

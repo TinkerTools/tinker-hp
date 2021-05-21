@@ -48,8 +48,7 @@ c
       use mpi
       implicit none
       integer ierr,nthreadsupport
-c      call MPI_INIT(ierr)
-      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
+      call MPI_INIT(ierr)
       call bar_bis
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       call MPI_FINALIZE(ierr)
@@ -113,6 +112,7 @@ c
       subroutine makebar
       use atoms
       use boxes
+      use dcdmod
       use domdec
       use files
       use inform
@@ -146,6 +146,7 @@ c
       character*240 titleb
       character*240 arcfile
       character*240 barfile
+      character*240 dcdfile
       character*240, allocatable :: keys0(:)
       character*240, allocatable :: keys1(:)
 c
@@ -248,10 +249,18 @@ c     reopen trajectory A using the parameters for state 0
 c
       iarc = freeunit ()
       arcfile = fnamea
-      call suffix (arcfile,'arc','old')
-      open (unit=iarc,file=arcfile,status ='old')
-      rewind (unit=iarc)
-      call readxyz (iarc)
+      if (dcdio) then
+        dcdfile = fnamea(1:lenga)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header(.false.)
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+      else
+        call suffix (arcfile,'arc','old')
+        open (unit=iarc,file=arcfile,status ='old')
+        rewind (unit=iarc)
+        call readxyz (iarc)
+      end if
       nkey = nkey0
       do i = 1, nkey
          keyline(i) = keys0(i)
@@ -284,7 +293,13 @@ c
          call reduceen(epot)
          ua0(i) = epot
          vola(i) = volbox
-         call readxyz (iarc)
+         if (dcdio) then
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+           if (abort) cycle
+         else
+           call readxyz (iarc)
+         end if
          if (n.eq.0) cycle
 c
 c        the box shape can change between frames
@@ -305,8 +320,17 @@ c
 c
 c     reset trajectory A using the parameters for state 1
 c
-      rewind (unit=iarc)
-      call readxyz (iarc)
+      if (dcdio) then
+        dcdfile = fnamea(1:lenga)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header(.false.)
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+        abort = .false.
+      else
+        rewind (unit=iarc)
+        call readxyz (iarc)
+      end if
       nkey = nkey1
       do i = 1, nkey
          keyline(i) = keys1(i)
@@ -340,7 +364,13 @@ c
      $           ua1(i)-ua0(i)
   130       format (i11,2x,3f16.4)
          end if
-         call readxyz (iarc)
+         if (dcdio) then
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+           if (abort) cycle
+         else
+           call readxyz (iarc)
+         end if
          if (n.eq.0) cycle
 c
 c        the box shape can change between frames
@@ -354,16 +384,29 @@ c
          if (i .ge. maxframe)  abort = .true.
       end do
       nfrma = i
-      close (unit=iarc)
+      if (dcdio) then
+        call dcdfile_close
+      else
+        close (unit=iarc)
+      end if
 c
 c     reopen trajectory B using the parameters for state 0
 c
       iarc = freeunit ()
       arcfile = fnameb
-      call suffix (arcfile,'arc','old')
-      open (unit=iarc,file=arcfile,status ='old')
-      rewind (unit=iarc)
-      call readxyz (iarc)
+      if (dcdio) then
+        dcdfile = fnameb(1:lengb)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header(.false.)
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+        abort = .false.
+      else
+        call suffix (arcfile,'arc','old')
+        open (unit=iarc,file=arcfile,status ='old')
+        rewind (unit=iarc)
+        call readxyz (iarc)
+      end if
       nkey = nkey0
       do i = 1, nkey
          keyline(i) = keys0(i)
@@ -396,7 +439,13 @@ c
          call reduceen(epot)
          ub0(i) = epot
          volb(i) = volbox
-         call readxyz (iarc)
+         if (dcdio) then
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+           if (abort) cycle
+         else
+           call readxyz (iarc)
+         end if
          if (n.eq.0) cycle
 c
 c        the box shape can change between frames
@@ -417,8 +466,17 @@ c
 c
 c     reset trajectory B using the parameters for state 1
 c
-      rewind (unit=iarc)
-      call readxyz (iarc)
+      if (dcdio) then
+        dcdfile = fnameb(1:lengb)//'.dcd'
+        call dcdfile_open(dcdfile)
+        call dcdfile_read_header(.false.)
+        call dcdfile_read_next
+        call dcdfile_skip_next(0)
+        abort = .false.
+      else
+        rewind (unit=iarc)
+        call readxyz (iarc)
+      end if
       nkey = nkey1
       do i = 1, nkey
          keyline(i) = keys1(i)
@@ -452,7 +510,13 @@ c
      $       ub0(i)-ub1(i)
   180       format (i11,2x,3f16.4)
          end if
-         call readxyz (iarc)
+         if (dcdio) then
+           call dcdfile_read_next
+           call dcdfile_skip_next(0)
+           if (abort) cycle
+         else
+           call readxyz (iarc)
+         end if
          if (n.eq.0) cycle
 c
 c        the box shape can change between frames
@@ -466,7 +530,11 @@ c
          if (i .ge. maxframe)  abort = .true.
       end do
       nfrmb = i
-      close (unit=iarc)
+      if (dcdio) then
+        call dcdfile_close
+      else
+        close (unit=iarc)
+      end if
 c
 c     perform deallocation of some local arrays
 c

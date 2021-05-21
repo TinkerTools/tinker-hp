@@ -67,7 +67,7 @@ c
       character*240 string
       data axis  / 'X','Y','Z' /
 c
-      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
+      call MPI_INIT(ierr)
 c
 c     set up the structure and mechanics calculation
 c

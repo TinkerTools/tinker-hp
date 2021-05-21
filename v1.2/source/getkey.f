@@ -16,6 +16,7 @@ c
 c
       subroutine getkey
       use argue
+      use dcdmod
       use domdec
       use files
       use keys
@@ -122,21 +123,21 @@ c
             end if
          end if
       end do
-c
-c     set number of threads for OpenMP parallelization
-c
-      do i = 1, nkey
-         next = 1
-         record = keyline(i)
-         call upcase (record)
-         call gettext (record,keyword,next)
-         string = record(next:240)
-c        if (keyword(1:15) .eq. 'OPENMP-THREADS ') then
-c           read (string,*,err=80,end=80)  nthread
-c           call omp_set_num_threads (nthread)
-c        end if
-   80    continue
-      end do
+cc
+cc     set number of threads for OpenMP parallelization
+cc
+c      do i = 1, nkey
+c         next = 1
+c         record = keyline(i)
+c         call upcase (record)
+c         call gettext (record,keyword,next)
+c         string = record(next:240)
+cc        if (keyword(1:15) .eq. 'OPENMP-THREADS ') then
+cc           read (string,*,err=80,end=80)  nthread
+cc           call omp_set_num_threads (nthread)
+cc        end if
+c   80    continue
+c      end do
 c
 c     separate group of MPI process for PME reciprocal space
 c     set number of MPI process for PME reciprocal space
@@ -158,9 +159,23 @@ c
               call fatal
             end if
             if (ranktot.eq.0) then
- 1000         format(/, I10,' Separate MPI processes for PME')
-              write(iout,1000) nrec
+  100         format(/, I10,' Separate MPI processes for PME')
+              write(iout,100) nrec
             end if
+         end if
+      end do
+c
+c     write/read trajectory in the dcd format
+c
+      dcdio = .false.
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call upcase (record)
+         call gettext (record,keyword,next)
+         string = record(next:240)
+         if (keyword(1:6) .eq. 'DCDIO ') then
+            dcdio = .true.
          end if
       end do
 c
