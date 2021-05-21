@@ -1726,7 +1726,9 @@ contains
 
   subroutine malloc_c_pinned(array,n)
   use iso_c_binding
+#ifdef _OPENACC
   use cudafor
+#endif
   complex(mytype),pointer::array(:)
   integer n
   complex(mytype) cplx0
@@ -1742,13 +1744,15 @@ contains
   end if
   call c_f_pointer(cptr0,array,[n])
 #else
-  allocate(array(n),status=ierr)
+  allocate(array(n),stat=ierr)
 #endif
   end subroutine
     
   subroutine free_c_pinned(array)
   use iso_c_binding
+#ifdef _OPENACC
   use cudafor
+#endif
   complex(mytype),pointer::array(:)
   type(c_ptr)     cptr0
   integer ierr

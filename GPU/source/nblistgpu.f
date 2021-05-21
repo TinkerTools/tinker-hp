@@ -3238,10 +3238,12 @@ c
       !TODO Add an OpenACC version of this kernel
 #endif
 
+#ifdef _OPENACC
 !$acc wait(rec_queue)
 !$acc host_data use_device(list)
       call thrust_remove(list,szlist,-1,nb_pair,rec_stream)
 !$acc end host_data
+#endif
 
       a_plist%npairs = nb_pair/2
 

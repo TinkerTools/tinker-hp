@@ -575,7 +575,7 @@ c
            call cuGESV(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,rec_stream)
 !$acc end host_data
 #else
-           call M_dgesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
+           call M_gesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
 #endif
            call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
 
