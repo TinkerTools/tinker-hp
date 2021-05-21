@@ -52,6 +52,12 @@ c
       logical, allocatable :: moved(:)
       logical, allocatable :: update(:)
 c
+#ifdef _OPENACC
+ 15   format(' Rattle Feature is for now unavailable !!!'
+     &    ,/,'   Please Target host build(CPU) to benefit from it')
+      write(0,15)
+      call fatal
+#endif
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -223,6 +229,12 @@ c
       logical, allocatable :: moved(:)
       logical, allocatable :: update(:)
 c
+#ifdef _OPENACC
+ 15   format(' Rattle Feature is for now unavailable !!!'
+     &    ,/,' > Please Target host(CPU) build to benefit from it')
+      write(0,15)
+      call fatal
+#endif
 c
 c     perform dynamic allocation of some local arrays
 c
