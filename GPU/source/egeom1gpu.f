@@ -302,9 +302,10 @@ c
                if (angle .lt. af1)  target = af1
                if (angle .gt. af2)  target = af2
                dt = angle - target
+               dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
-               deddt = 2.0_ti_p * force * dt * radian
+               deddt = 2.0_ti_p * force * dt
 c
 c     compute derivative components for this interaction
 c
@@ -458,9 +459,10 @@ c
                else if (dt .lt. -180.0_ti_p) then
                   dt = dt + 360.0_ti_p
                end if
+               dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
-               dedphi = 2.0_ti_p * radian * force * dt
+               dedphi = 2.0_ti_p * force * dt
 c
 c     chain rule terms for first derivative components
 c

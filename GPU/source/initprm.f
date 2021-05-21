@@ -345,12 +345,12 @@ c
       qopd = 0.0_ti_p
       popd = 0.0_ti_p
       sopd = 0.0_ti_p
-      idihunit = 1.0_ti_p
+      idihunit = 1.0d0 / radian**2
       itorunit = 1.0_ti_p
       torsunit = 1.0_ti_p
       ptorunit = 1.0_ti_p
       storunit = 1.0_ti_p
-      atorunit = 1.0_ti_p
+      atorunit = 1.0d0 / radian
       ttorunit = 1.0_ti_p
 c
 c     set default control parameters for van der Waals terms

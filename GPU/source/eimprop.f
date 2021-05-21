@@ -139,7 +139,6 @@ c
                do while (dt .lt. -180.0_ti_p)
                   dt = dt + 360.0_ti_p
                end do
-               dt = dt / radian
 c
 c     calculate the improper dihedral energy
 c
