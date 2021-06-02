@@ -385,7 +385,7 @@ c     Do the domain decomposition
 c
          call ddpme3d
          call reinitnl(0)
-         call reassignpme(.false.)
+         call reassignpme(.true.)
          call mechanicstep(0)
          call allocstep
          call nblist(0)
