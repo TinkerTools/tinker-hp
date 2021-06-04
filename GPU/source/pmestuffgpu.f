@@ -766,7 +766,7 @@ c
       use charge
       use chgpot
       use domdec ,only: rank,rank_bis,nproc,nrec,ndir,comm_rec
-     &           ,COMM_TINKER,nrec_send,locrec1,prec_send,nbloc
+     &           ,COMM_TINKER,nrec_send,locrec,prec_send,nbloc
       use deriv  ,only: decrec
       use fft
       use inform ,only: deb_Path
@@ -806,14 +806,14 @@ c
       dn2     = real(nfft2,t_p)
       dn3     = real(nfft3,t_p)
 
-!$acc parallel loop num_gangs(1) vector async(rec_queue) 
-!$acc&         present(chgrecglob,iion,locrec1,igrid,
+!$acc parallel loop gang vector async(rec_queue)
+!$acc&         present(chgrecglob,iion,locrec,igrid,
 !$acc&     pchg,thetai1_p,thetai2_p,thetai3_p,qgridin_2d,
 !$acc&     decrec)
       do isite = 1, nionrecloc
         iichg = chgrecglob(isite)
         iglob = iion(iichg)
-        iloc  = locrec1(iglob)
+        iloc  = locrec(iglob)
         iatm  = iglob
         igrd0 = igrid(1,iatm)
         jgrd0 = igrid(2,iatm)
@@ -1676,7 +1676,7 @@ c
       use charge
       use chgpot
       use domdec ,only: rank,rank_bis,nproc,nrec,ndir,comm_rec
-     &           ,COMM_TINKER,nrec_send,locrec1,prec_send,nbloc
+     &           ,COMM_TINKER,nrec_send,locrec,prec_send,nbloc
       use deriv  ,only: decrec
       use fft
       use inform ,only: deb_Path
@@ -1726,11 +1726,11 @@ c
       end if
       call set_pme_texture
 
-!$acc host_data use_device(chgrecglob,iion,locrec1,igrid,pchg
+!$acc host_data use_device(chgrecglob,iion,locrec,igrid,pchg
 !$acc&         ,thetai1_p,thetai2_p,thetai3_p,decrec)
       if (nproc.eq.1.or.nrec.eq.1) then
          call grid_pchg_force_core1<<<gS1,PME_BLOCK_DIM,0,rec_stream>>>
-     &        (chgrecglob,iion,locrec1,igrid,pchg
+     &        (chgrecglob,iion,locrec,igrid,pchg
      &        ,thetai1_p,thetai2_p,thetai3_p
      &        ,decrec
      &        ,kstat,ked,jstat,jed,istat,ied
@@ -1739,7 +1739,7 @@ c
          call check_launch_kernel(" grid_pchg_force_core1")
       else
          call grid_pchg_force_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
-     &        (chgrecglob,iion,locrec1,igrid,pchg
+     &        (chgrecglob,iion,locrec,igrid,pchg
      &        ,thetai1_p,thetai2_p,thetai3_p
      &        ,decrec
      &        ,kstat,ked,jstat,jed,istat,ied
