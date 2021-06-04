@@ -1640,7 +1640,7 @@ c
       end subroutine
 
       attributes(global) subroutine grid_pchg_force_core
-     &                 (chgrec,iion,locrec1,igrid
+     &                 (chgrec,iion,locrec,igrid
      &                 ,pchg,thetai1,thetai2,thetai3
      &                 ,decrec
      &                 ,kstat,ked,jstat,jed,istat,ied
@@ -1650,7 +1650,7 @@ c
       integer,value,intent(in)::kstat,ked,jstat,jed,istat,ied,nrec_send
      &       ,nfft1,nfft2,nfft3,nionrecloc,n
       real(t_p),value,intent(in):: dn1,dn2,dn3,f
-      integer,device,intent(in)::chgrec(nionrecloc),iion(n),locrec1(n)
+      integer,device,intent(in)::chgrec(nionrecloc),iion(n),locrec(n)
      &       ,igrid(3,n)
       real(t_p),device,intent(in):: pchg(n),thetai1(2,bsorder,*)
      &         ,thetai2(2,bsorder,*),thetai3(2,bsorder,*)
@@ -1672,7 +1672,7 @@ c
      &            blockDim%x*gridDim%x
         iichg = chgrec (isite)
         iglob = iion   (iichg)
-        iloc  = locrec1(iglob)
+        iloc  = locrec (iglob)
 #if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
@@ -1784,7 +1784,7 @@ c
       end subroutine
 
       attributes(global) subroutine grid_pchg_force_core1
-     &                 (chgrec,iion,locrec1,igrid
+     &                 (chgrec,iion,locrec,igrid
      &                 ,pchg,thetai1,thetai2,thetai3
      &                 ,decrec
      &                 ,kstat,ked,jstat,jed,istat,ied
@@ -1794,7 +1794,7 @@ c
       integer,value,intent(in)::kstat,ked,jstat,jed,istat,ied,nrec_send
      &       ,nfft1,nfft2,nfft3,nionrecloc,n
       real(t_p),value,intent(in):: f,dn1,dn2,dn3
-      integer,device,intent(in)::chgrec(nionrecloc),iion(n),locrec1(n)
+      integer,device,intent(in)::chgrec(nionrecloc),iion(n),locrec(n)
      &       ,igrid(3,n)
       real(t_p),device,intent(in):: pchg(n),thetai1(2,bsorder,*)
      &         ,thetai2(2,bsorder,*),thetai3(2,bsorder,*)
