@@ -183,10 +183,6 @@ c
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
 c
-c      if (associated(molcule)) deallocate(molcule)
-c      if (associated(kmol)) deallocate(kmol)
-c      if (associated(imol)) deallocate(imol)
-c      if (associated(molmass)) deallocate(molmass)
       if (associated(molcule)) then
         CALL MPI_Win_shared_query(winmolcule, 0, windowsize, disp_unit,
      $  baseptr, ierr)

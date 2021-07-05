@@ -46,13 +46,6 @@ c
       nring4 = 0
       nring5 = 0
       nring6 = 0
-cc
-cc     parse to find bonds, angles, torsions and bitorsions
-cc
-c      if (nbond .eq. 0)  call bonds(init)
-c      if (nangle .eq. 0)  call angles(init)
-c      if (ntors .eq. 0)  call torsions(init)
-c      if (nbitor .eq. 0)  call bitors(init)
 c
 c     search for and store all of the 3-membered rings
 c

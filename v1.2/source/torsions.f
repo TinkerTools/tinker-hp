@@ -122,9 +122,8 @@ c
       use tors
       use mpi
       implicit none
-      integer :: win,win2
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr,total
+      INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
 c

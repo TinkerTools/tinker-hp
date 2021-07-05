@@ -292,11 +292,6 @@ c
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1)
 c
-c      if (associated(class)) deallocate(class)
-c      if (associated(atomic)) deallocate(atomic)
-c      if (associated(valence)) deallocate(valence)
-c      if (associated(mass)) deallocate(mass)
-c      if (associated(story)) deallocate(story)
       if (associated(class)) then
         CALL MPI_Win_shared_query(winclass, 0, windowsize, disp_unit,
      $  baseptr, ierr)

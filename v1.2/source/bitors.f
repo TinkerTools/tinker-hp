@@ -127,9 +127,6 @@ c
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
 c
-c      if (associated(ibitor)) deallocate (ibitor)
-c      if (associated(itt)) deallocate (itt)
-c      if (associated(nbtortor)) deallocate (nbtortor)
       if (associated(ibitor)) then
         CALL MPI_Win_shared_query(winibitor, 0, windowsize, disp_unit,
      $  baseptr, ierr)

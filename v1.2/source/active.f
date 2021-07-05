@@ -235,8 +235,6 @@ c
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1)
 c
-c      if (associated(iuse)) deallocate(iuse)
-c      if (associated(use)) deallocate(use)
       if (associated(use)) then
         CALL MPI_Win_shared_query(winuse, 0, windowsize, disp_unit,
      $  baseptr, ierr)

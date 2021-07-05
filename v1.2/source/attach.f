@@ -146,12 +146,6 @@ c
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
 c
-c      if (associated(i13)) deallocate(i13)
-c      if (associated(n13)) deallocate(n13)
-c      if (associated(i14)) deallocate(i14)
-c      if (associated(n14)) deallocate(n14)
-c      if (associated(i15)) deallocate(i15)
-c      if (associated(n15)) deallocate(n15)
       if (associated(i13)) then
         CALL MPI_Win_shared_query(wini13, 0, windowsize, disp_unit,
      $  baseptr, ierr)
