@@ -34,11 +34,11 @@ c
       use potent
       use utilgpu,only: prmem_request
       implicit none
-      integer i,j,k,ncap
+      integer i,j,k,l,ncap
       integer ip,next
       integer ia,ib,ic,id
-      integer, allocatable :: rpos(:)
-      integer nrpos,l,sizegroup,n_capture
+      integer sizegroup
+      integer n_capture
       real(t_p) p1,p2,p3,p4,p5
       real(t_p) d1,d2,d3
       real(t_p) a1,a2,a3
@@ -85,14 +85,6 @@ c
         use_basin = .false.
         use_wall = .false.
 c
-c       allocate local arrays
-c
-        allocate (rpos(n))
-        nrpos = 0
-        do i = 1, n
-           rpos(i) = 0
-        end do
-c
 c       search the keywords for restraint parameters
 c
         do i = 1, nkey
@@ -105,19 +97,25 @@ c
 c       get atom restrained to a specified position range
 c
            if (keyword(1:18) .eq. 'RESTRAIN-POSITION ') then
-              p1 = 0.0_ti_p
-              p2 = 0.0_ti_p
-              p3 = 0.0_ti_p
-              p4 = 0.0_ti_p
-              p5 = 0.0_ti_p
+              ia = 0
+              ib = 0
+              p1 = 0.0d0
+              p2 = 0.0d0
+              p3 = 0.0d0
+              p4 = 0.0d0
+              p5 = 0.0d0
               next = 1
               call getword (string,letter,next)
-              if (letter .eq. ' ') then
-                 read (string,*,err=10,end=10)  ip,p1,p2,p3,p4,p5
+              if (ia.ge.1 .and. ia.le.n) then
+                 p1 = x(ia)
+                 p2 = y(ia)
+                 p3 = z(ia)
+                 string = string(next:240)
+                 read (string,*,err=10,end=10)  p1,p2,p3,p4,p5
    10            continue
-                 if (p4 .eq. 0.0_ti_p)  p4 = 100.0_ti_p
+                 if (p4 .eq. 0.0d0)  p4 = 100.0d0
                  npfix = npfix + 1
-                 ipfix(npfix) = ip
+                 ipfix(npfix) = ia
                  kpfix(1,npfix) = 1
                  kpfix(2,npfix) = 1
                  kpfix(3,npfix) = 1
@@ -126,48 +124,34 @@ c
                  zpfix(npfix) = p3
                  pfix(1,npfix) = p4
                  pfix(2,npfix) = p5
-              else
-                 call upcase (letter)
-                 read (string,*,err=20,end=20)  ip
+              else if (ia.ge.-n .and. ia.le.-1) then
+                 ia = abs(ia)
+                 call getnumb (string,ib,next)
+                 ib = min(abs(ib),n)
                  string = string(next:240)
-                 read (string,*,err=20,end=20)  p1,p2,p3
-   20            continue
-                 if (p2 .eq. 0.0_ti_p)  p2 = 100.0_ti_p
-                 npfix = npfix + 1
-                 ipfix(npfix) = ip
-                 kpfix(1,npfix) = 0
-                 kpfix(2,npfix) = 0
-                 kpfix(3,npfix) = 0
-                 if (letter .eq. 'X') then
+                 read (string,*,err=12,end=12)  p1,p2
+   12            continue
+                 if (p1 .eq. 0.0d0)  p1 = 100.0d0
+                 do j = ia, ib
+                    npfix = npfix + 1
+                    ipfix(npfix) = j
                     kpfix(1,npfix) = 1
-                    xpfix(npfix) = p1
-                 else if (letter .eq. 'Y') then
                     kpfix(2,npfix) = 1
-                    ypfix(npfix) = p1
-                 else if (letter .eq. 'Z') then
                     kpfix(3,npfix) = 1
-                    zpfix(npfix) = p1
-                 end if
-                 pfix(1,npfix) = p2
-                 pfix(2,npfix) = p3
+                    xpfix(npfix) = x(j)
+                    ypfix(npfix) = y(j)
+                    zpfix(npfix) = z(j)
+                    pfix(1,npfix) = p1
+                    pfix(2,npfix) = p2
+                 end do
               end if
-c
-c       get list of atoms restrained at their initial position (equilibration phase)
-c
-           else if (keyword(1:14) .eq. 'RESTRAIN-LIST ') then
-              read (string,*,err=11,end=11)  (rpos(l),l=nrpos+1,n)
-   11         continue
-              do while (rpos(nrpos+1) .ne. 0)
-                 nrpos = nrpos + 1
-                 rpos(nrpos) = max(-n,min(n,rpos(nrpos)))
-              end do
 c
 c       restrain backbone atoms at their initial position (equilibration phase)
 c
            else if (keyword(1:18) .eq. 'RESTRAIN-BACKBONE ') then
              p1 = 0.0_ti_p
-             read (string,*,err=12,end=12)  p1
-   12        continue
+             read (string,*,err=14,end=14)  p1
+   14        continue
              if (p1.eq.0.0_ti_p) p1 = 100.0_ti_p
              do j = 1, n
                if (name(j).eq.'CA') then
@@ -183,6 +167,37 @@ c
                  pfix(2,npfix) = 0.0_ti_p
                end if
              end do
+c
+c     get atom restrained to a specified position range
+c
+          else if (keyword(1:15) .eq. 'RESTRAIN-PLANE ') then
+             ia = 0
+             p1 = 0.0d0
+             p2 = 0.0d0
+             p3 = 0.0d0
+             call upcase (letter)
+             read (string,*,err=20,end=20)  ia
+             string = string(next:240)
+             read (string,*,err=20,end=20)  p1,p2,p3
+   20        continue
+             if (p2 .eq. 0.0d0)  p2 = 100.0d0
+             npfix = npfix + 1
+             ipfix(npfix) = ia
+             kpfix(1,npfix) = 0
+             kpfix(2,npfix) = 0
+             kpfix(3,npfix) = 0
+             if (letter .eq. 'X') then
+                kpfix(1,npfix) = 1
+                xpfix(npfix) = p1
+             else if (letter .eq. 'Y') then
+                kpfix(2,npfix) = 1
+                ypfix(npfix) = p1
+             else if (letter .eq. 'Z') then
+                kpfix(3,npfix) = 1
+                zpfix(npfix) = p1
+             end if
+             pfix(1,npfix) = p2
+             pfix(2,npfix) = p3
 c
 c       get atoms restrained to a specified distance range
 c
@@ -400,43 +415,6 @@ c
 c
 c       turn on the geometric restraint potential if it is used
 c
-c
-c     set restrained list of atoms at their starting position
-c
-        i = 1
-        do while (rpos(i) .ne. 0)
-           if (i .eq. 1) then
-              npfix = 0
-           end if
-           if (rpos(i) .gt. 0) then
-              j = rpos(i)
-              npfix = npfix + 1
-              ipfix(npfix) = j
-              kpfix(1,npfix) = 1
-              kpfix(2,npfix) = 1
-              kpfix(3,npfix) = 1
-              xpfix(npfix) = x(j) 
-              ypfix(npfix) = y(j) 
-              zpfix(npfix) = z(j) 
-              pfix(1,npfix) = 100.0_ti_p
-              pfix(2,npfix) = 0.0_ti_p
-              i = i + 1
-           else
-              do j = abs(rpos(i)), abs(rpos(i+1))
-                  npfix = npfix + 1
-                  ipfix(npfix) = j
-                  kpfix(1,npfix) = 1
-                  kpfix(2,npfix) = 1
-                  kpfix(3,npfix) = 1
-                  xpfix(npfix) = x(j) 
-                  ypfix(npfix) = y(j) 
-                  zpfix(npfix) = z(j) 
-                  pfix(1,npfix) = 100.0_ti_p
-                  pfix(2,npfix) = 0.0_ti_p
-              end do
-              i = i + 2
-           end if
-        end do
         use_geom = .false.
         if (npfix .ne. 0)  use_geom = .true.
         if (ndfix .ne. 0)  use_geom = .true.

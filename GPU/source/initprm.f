@@ -112,6 +112,9 @@ c
       do i = 1, maxna3
          ka3(i) = blank12
       end do
+      do i = 1, maxnap
+         kap(i) = blank12
+      end do
       do i = 1, maxnaf
          kaf(i) = blank12
       end do
