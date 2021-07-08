@@ -106,44 +106,71 @@ c
               p5 = 0.0d0
               next = 1
               call getword (string,letter,next)
-              if (ia.ge.1 .and. ia.le.n) then
-                 p1 = x(ia)
-                 p2 = y(ia)
-                 p3 = z(ia)
-                 string = string(next:240)
-                 read (string,*,err=10,end=10)  p1,p2,p3,p4,p5
-   10            continue
-                 if (p4 .eq. 0.0d0)  p4 = 100.0d0
-                 npfix = npfix + 1
-                 ipfix(npfix) = ia
-                 kpfix(1,npfix) = 1
-                 kpfix(2,npfix) = 1
-                 kpfix(3,npfix) = 1
-                 xpfix(npfix) = p1
-                 ypfix(npfix) = p2
-                 zpfix(npfix) = p3
-                 pfix(1,npfix) = p4
-                 pfix(2,npfix) = p5
-              else if (ia.ge.-n .and. ia.le.-1) then
-                 ia = abs(ia)
-                 call getnumb (string,ib,next)
-                 ib = min(abs(ib),n)
-                 string = string(next:240)
-                 read (string,*,err=12,end=12)  p1,p2
-   12            continue
-                 if (p1 .eq. 0.0d0)  p1 = 100.0d0
-                 do j = ia, ib
+              if (letter .eq. ' ') then
+                 call getnumb (string,ia,next)
+                 if (ia.ge.1 .and. ia.le.n) then
+                    p1 = x(ia)
+                    p2 = y(ia)
+                    p3 = z(ia)
+                    string = string(next:240)
+                    read (string,*,err=10,end=10)  p1,p2,p3,p4,p5
+   10               continue
+                    if (p4 .eq. 0.0d0)  p4 = 100.0d0
                     npfix = npfix + 1
-                    ipfix(npfix) = j
+                    ipfix(npfix) = ia
                     kpfix(1,npfix) = 1
                     kpfix(2,npfix) = 1
                     kpfix(3,npfix) = 1
-                    xpfix(npfix) = x(j)
-                    ypfix(npfix) = y(j)
-                    zpfix(npfix) = z(j)
-                    pfix(1,npfix) = p1
-                    pfix(2,npfix) = p2
-                 end do
+                    xpfix(npfix) = p1
+                    ypfix(npfix) = p2
+                    zpfix(npfix) = p3
+                    pfix(1,npfix) = p4
+                    pfix(2,npfix) = p5
+                 else if (ia.ge.-n .and. ia.le.-1) then
+                    ia = abs(ia)
+                    call getnumb (string,ib,next)
+                    ib = min(abs(ib),n)
+                    string = string(next:240)
+                    read (string,*,err=11,end=11)  p1,p2
+   11               continue
+                    if (p1 .eq. 0.0d0)  p1 = 100.0d0
+                    do j = ia, ib
+                       npfix = npfix + 1
+                       ipfix(npfix) = j
+                       kpfix(1,npfix) = 1
+                       kpfix(2,npfix) = 1
+                       kpfix(3,npfix) = 1
+                       xpfix(npfix) = x(j)
+                       ypfix(npfix) = y(j)
+                       zpfix(npfix) = z(j)
+                       pfix(1,npfix) = p1
+                       pfix(2,npfix) = p2
+                    end do
+                 end if
+              else
+                 call upcase (letter)
+                 read (string,*,err=12,end=12)  ia
+                 string = string(next:240)
+                 read (string,*,err=12,end=12)  p1,p2,p3
+   12            continue
+                 if (p2 .eq. 0.0d0)  p2 = 100.0d0
+                 npfix = npfix + 1
+                 ipfix(npfix) = ia
+                 kpfix(1,npfix) = 0
+                 kpfix(2,npfix) = 0
+                 kpfix(3,npfix) = 0
+                 if (letter .eq. 'X') then
+                    kpfix(1,npfix) = 1
+                    xpfix(npfix) = p1
+                 else if (letter .eq. 'Y') then
+                    kpfix(2,npfix) = 1
+                    ypfix(npfix) = p1
+                 else if (letter .eq. 'Z') then
+                    kpfix(3,npfix) = 1
+                    zpfix(npfix) = p1
+                 end if
+                 pfix(1,npfix) = p2
+                 pfix(2,npfix) = p3
               end if
 c
 c       restrain backbone atoms at their initial position (equilibration phase)
