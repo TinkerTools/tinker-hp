@@ -503,8 +503,8 @@ c
         puiy = mu(2,2,ipoleloc)
         puiz = mu(3,2,ipoleloc)
 c
-        do kkk = 1,nelst(ii)
-          kglob = elst(kkk,ii)
+        do kkk = 1,nshortelst(ii)
+          kglob = shortelst(kkk,ii)
 c
 c     only build induced field for interactons outside of a block
 c     check if the atoms are in the same block
@@ -671,8 +671,8 @@ c
            dscale(ip14(j,iglob)) = u4scale
         end do
 c
-        do kkk = 1,nelst(ii)
-          kglob = elst(kkk,ii)
+        do kkk = 1,nshortelst(ii)
+          kglob = shortelst(kkk,ii)
 c
 c     only build induced field for interactons outside of a block
 c     check if the atoms are in the same block
