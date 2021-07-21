@@ -507,27 +507,20 @@ c
 c     use energy switching if near the cutoff distance
 c
                   call switch_respa(rik,off,shortheal,s,ds)
-                  e = e * s
 c
 c     increment the overall van der Waals energy components
 c
                if (e .ne. 0.0d0) then
                   nev = nev + 1
-                  ev = ev + e
-                  aev(i) = aev(i) + 0.5d0*e
-                  aev(kbis) = aev(kbis) + 0.5d0*e
+                  ev = ev + e*s
+                  aev(i) = aev(i) + 0.5d0*e*s
+                  aev(kbis) = aev(kbis) + 0.5d0*e*s
                end if
-c
-c     increment the overall van der Waals energy components
-c
-                  if (e .ne. 0.0d0) then
-                     ev = ev + e
-                  end if
 c
 c     increment the total intermolecular energy
 c
                   if (molcule(iglob) .ne. molcule(kglob)) then
-                     einter = einter + e
+                     einter = einter + e*s
                   end if
 c
                end if
@@ -751,7 +744,6 @@ c
 c     use energy switching if close the cutoff distance (at short range)
 c
                call switch_respa(rik,vdwshortcut,shortheal,s,ds)
-               e = (1-s)*e
 c
 c     use energy switching if near the cutoff distance
 c
@@ -768,15 +760,15 @@ c     increment the overall van der Waals energy components
 c
                if (e .ne. 0.0d0) then
                   nev = nev + 1
-                  ev = ev + e
-                  aev(i) = aev(i) + 0.5d0*e
-                  aev(kbis) = aev(kbis) + 0.5d0*e
+                  ev = ev + e*(1-s)
+                  aev(i) = aev(i) + 0.5d0*e*(1-s)
+                  aev(kbis) = aev(kbis) + 0.5d0*e*(1-s)
                end if
 c
 c     increment the total intermolecular energy
 c
                if (molcule(iglob) .ne. molcule(kglob)) then
-                  einter = einter + e
+                  einter = einter + e*(1-s)
                end if
 c
 c     print a message if the energy of this interaction is large

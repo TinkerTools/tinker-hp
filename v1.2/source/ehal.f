@@ -458,21 +458,18 @@ c
 c
 c     use energy switching if near the cutoff distance
 c
-                  if (rik2 .gt. (off-shortheal)*(off-shortheal)) then
-                     call switch_respa(rik,off,shortheal,s,ds)
-                     e = e * s
-                  end if
+                  call switch_respa(rik,off,shortheal,s,ds)
 c
 c     increment the overall van der Waals energy components
 c
                   if (e .ne. 0.0d0) then
-                     ev = ev + e
+                     ev = ev + e*s
                   end if
 c
 c     increment the total intermolecular energy
 c
                   if (molcule(iglob) .ne. molcule(kglob)) then
-                     einter = einter + e
+                     einter = einter + e*s
                   end if
 c
                end if
@@ -691,25 +688,17 @@ c
 c     use energy switching if close the cutoff distance (at short range)
 c
                   call switch_respa(rik,vdwshortcut,shortheal,s,ds)
-                  e = (1-s)*e
-c
-c     use energy switching if near the cutoff distance
-c
-                  if (rik2 .gt. (off-shortheal)*(off-shortheal)) then
-                     call switch_respa(rik,off,shortheal,s,ds)
-                     e = e * s
-                  end if
 c
 c     increment the overall van der Waals energy components
 c
                   if (e .ne. 0.0d0) then
-                     ev = ev + e
+                     ev = ev + e*(1-s)
                   end if
 c
 c     increment the total intermolecular energy
 c
                   if (molcule(iglob) .ne. molcule(kglob)) then
-                     einter = einter + e
+                     einter = einter + e*(1-s)
                   end if
 c
                end if

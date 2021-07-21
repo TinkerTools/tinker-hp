@@ -376,14 +376,11 @@ c
 c
 c     use energy switching if near the cutoff distance
 c
-                  if (rik2 .gt. (off-shortheal)*(off-shortheal)) then
-                     call switch_respa(rik,off,shortheal,s,ds)
-                     e = e * s
-                  end if
+                  call switch_respa(rik,off,shortheal,s,ds)
 c
 c     increment the overall van der Waals energy components
 c
-                  ev = ev + e
+                  ev = ev + e*s
                end if
             end if
          end do
@@ -576,11 +573,8 @@ c
 c     use energy switching if close the cutoff distance (at short range)
 c
                   call switch_respa(rik,vdwshortcut,shortheal,s,ds)
-                  e = (1-s)*e
+                  ev = ev + (1-s)*e
 c
-c     increment the overall van der Waals energy components
-c
-                  ev = ev + e
                end if
             end if
          end do

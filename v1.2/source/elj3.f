@@ -90,9 +90,8 @@ c
       integer i,j,iglob,iivdw,kglob,kbis
       integer ii,iv,it
       integer kk,kv,kt
-      integer nevt
       integer, allocatable :: iv14(:)
-      real*8 e,evt,eintert
+      real*8 e
       real*8 p6,p12,eps
       real*8 rv,rdn
       real*8 xi,yi,zi
@@ -103,7 +102,6 @@ c
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
-      real*8, allocatable :: aevt(:)
       logical proceed,usei
       logical header,huge
       character*10 mode
@@ -123,7 +121,6 @@ c
       allocate (yred(nbloc))
       allocate (zred(nbloc))
       allocate (vscale(n))
-      allocate (aevt(nbloc))
 c
 c     set arrays needed to scale connected atom interactions
 c
@@ -151,13 +148,6 @@ c
          yred(i) = rdn*yr + y(iv)
          zred(i) = rdn*zr + z(iv)
       end do
-c
-c     transfer global to local copies for OpenMP calculation
-c
-      evt = ev
-      eintert = einter
-      nevt = nev
-      aevt = aev
 c
 c     find the van der Waals energy via neighbor list search
 c
@@ -236,16 +226,16 @@ c
 c     increment the overall van der Waals energy components
 c
                   if (e .ne. 0.0d0) then
-                     nevt = nevt + 1
-                     evt = evt + e
-                     aevt(i) = aevt(i) + 0.5d0*e
-                     aevt(kbis) = aevt(kbis) + 0.5d0*e
+                     nev = nev + 1
+                     ev = ev + e
+                     aev(i) = aev(i) + 0.5d0*e
+                     aev(kbis) = aev(kbis) + 0.5d0*e
                   end if
 c
 c     increment the total intermolecular energy
 c
                   if (molcule(iglob) .ne. molcule(kglob)) then
-                     eintert = eintert + e
+                     einter = einter + e
                   end if
 c
 c     print a message if the energy of this interaction is large
@@ -287,13 +277,6 @@ c
          end do
       end do
 c
-c     transfer local to global copies for OpenMP calculation
-c
-      ev = evt
-      einter = eintert
-      nev = nevt
-      aev = aevt
-c
 c     perform deallocation of some local arrays
 c
       deallocate (iv14)
@@ -301,7 +284,6 @@ c
       deallocate (yred)
       deallocate (zred)
       deallocate (vscale)
-      deallocate (aevt)
       return
       end
 c
@@ -343,7 +325,7 @@ c
       integer kk,kv,kt
       integer nevt
       integer, allocatable :: iv14(:)
-      real*8 e,evt,eintert
+      real*8 e
       real*8 p6,p12,eps
       real*8 rv,rdn
       real*8 xi,yi,zi
@@ -355,7 +337,6 @@ c
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
-      real*8, allocatable :: aevt(:)
       logical proceed,usei
       logical header,huge
       character*10 mode
@@ -375,7 +356,6 @@ c
       allocate (yred(nbloc))
       allocate (zred(nbloc))
       allocate (vscale(n))
-      allocate (aevt(nbloc))
 c
 c     set arrays needed to scale connected atom interactions
 c
@@ -403,13 +383,6 @@ c
          yred(i) = rdn*yr + y(iv)
          zred(i) = rdn*zr + z(iv)
       end do
-c
-c     transfer global to local copies for OpenMP calculation
-c
-      evt = ev
-      eintert = einter
-      nevt = nev
-      aevt = aev
 c
 c     find the van der Waals energy via neighbor list search
 c
@@ -477,21 +450,20 @@ c     use energy switching if near the cutoff distance
 c
                   rik = sqrt(rik2)
                   call switch_respa(rik,off,shortheal,s,ds)
-                  e = e * s
 c
 c     increment the overall van der Waals energy components
 c
                   if (e .ne. 0.0d0) then
-                     nevt = nevt + 1
-                     evt = evt + e
-                     aevt(i) = aevt(i) + 0.5d0*e
-                     aevt(kbis) = aevt(kbis) + 0.5d0*e
+                     nev = nev + 1
+                     ev = ev + e*s
+                     aev(i) = aev(i) + 0.5d0*e*s
+                     aev(kbis) = aev(kbis) + 0.5d0*e*s
                   end if
 c
 c     increment the total intermolecular energy
 c
                   if (molcule(iglob) .ne. molcule(kglob)) then
-                     eintert = eintert + e
+                     einter = einter + e
                   end if
 c
 c     print a message if the energy of this interaction is large
@@ -533,13 +505,6 @@ c
          end do
       end do
 c
-c     transfer local to global copies for OpenMP calculation
-c
-      ev = evt
-      einter = eintert
-      nev = nevt
-      aev = aevt
-c
 c     perform deallocation of some local arrays
 c
       deallocate (iv14)
@@ -547,7 +512,6 @@ c
       deallocate (yred)
       deallocate (zred)
       deallocate (vscale)
-      deallocate (aevt)
       return
       end
 c
@@ -587,9 +551,8 @@ c
       integer i,j,iglob,iivdw,kglob,kbis
       integer ii,iv,it
       integer kk,kv,kt
-      integer nevt
       integer, allocatable :: iv14(:)
-      real*8 e,evt,eintert
+      real*8 e
       real*8 p6,p12,eps
       real*8 rv,rdn
       real*8 xi,yi,zi
@@ -600,7 +563,6 @@ c
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
-      real*8, allocatable :: aevt(:)
       real*8 s,ds,vdwshortcut2
       logical proceed,usei
       logical header,huge
@@ -621,7 +583,6 @@ c
       allocate (yred(nbloc))
       allocate (zred(nbloc))
       allocate (vscale(n))
-      allocate (aevt(nbloc))
 c
 c     set arrays needed to scale connected atom interactions
 c
@@ -650,13 +611,6 @@ c
          yred(i) = rdn*yr + y(iv)
          zred(i) = rdn*zr + z(iv)
       end do
-c
-c     transfer global to local copies for OpenMP calculation
-c
-      evt = ev
-      eintert = einter
-      nevt = nev
-      aevt = aev
 c
 c     find the van der Waals energy via neighbor list search
 c
@@ -724,7 +678,6 @@ c     use energy switching if close the cutoff distance (at short range)
 c
                  rik = sqrt(rik2)
                  call switch_respa(rik,vdwshortcut,shortheal,s,ds)
-                 e = (1-s)*e
 c
 c     use energy switching if near the cutoff distance
 c
@@ -741,16 +694,16 @@ c
 c     increment the overall van der Waals energy components
 c
                   if (e .ne. 0.0d0) then
-                     nevt = nevt + 1
-                     evt = evt + e
-                     aevt(i) = aevt(i) + 0.5d0*e
-                     aevt(kbis) = aevt(kbis) + 0.5d0*e
+                     nev = nev + 1
+                     ev = ev + e*(1-s)
+                     aev(i) = aev(i) + 0.5d0*e*(1-s)
+                     aev(kbis) = aev(kbis) + 0.5d0*e*(1-s)
                   end if
 c
 c     increment the total intermolecular energy
 c
                   if (molcule(iglob) .ne. molcule(kglob)) then
-                     eintert = eintert + e
+                     einter = einter + e
                   end if
 c
 c     print a message if the energy of this interaction is large
@@ -792,13 +745,6 @@ c
          end do
       end do
 c
-c     transfer local to global copies for OpenMP calculation
-c
-      ev = evt
-      einter = eintert
-      nev = nevt
-      aev = aevt
-c
 c     perform deallocation of some local arrays
 c
       deallocate (iv14)
@@ -806,7 +752,6 @@ c
       deallocate (yred)
       deallocate (zred)
       deallocate (vscale)
-      deallocate (aevt)
       return
       end
 c
