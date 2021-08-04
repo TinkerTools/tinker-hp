@@ -585,7 +585,7 @@ c
 c     use energy switching if near the cutoff distance
 c
                   call switch_respa(rik,off,shortheal,s,ds)
-                  e = e * s
+                  ev = ev + e*s
                   de = e*ds + de*s
 c
 c     find the chain rule terms for derivative components
@@ -597,7 +597,6 @@ c
 c
 c     increment the total van der Waals energy and derivatives
 c
-                  ev = ev + e
                   if (iglob .eq. iv) then
                     dev(1,i) = dev(1,i) + dedx
                     dev(2,i) = dev(2,i) + dedy
@@ -895,8 +894,8 @@ c
 c     use energy switching if close the cutoff distance (at short range)
 c
                   call switch_respa(rik,vdwshortcut,shortheal,s,ds)
-                  e = (1-s)*e
-                  de = -e*ds-s*de
+                  ev = ev + (1-s)*e
+                  de = (1-s)*de - e*ds
 c
 c     use energy switching if near the cutoff distance
 c
@@ -921,7 +920,6 @@ c
 c
 c     increment the total van der Waals energy and derivatives
 c
-                  ev = ev + e
                   if (iglob .eq. iv) then
                     dev(1,i) = dev(1,i) + dedx
                     dev(2,i) = dev(2,i) + dedy

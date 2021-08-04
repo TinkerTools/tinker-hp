@@ -183,8 +183,8 @@ c          use energy switching if near the cutoff distance
 c
            call switch_respa_inl(rik,shortcut,shortheal,s,ds)
 
-           e     =   e* s
            de    = ( e*ds + de*s ) / rik
+           e     =   e* s
 
            dedx  =  de * xpos
            dedy  =  de * ypos
@@ -258,8 +258,8 @@ c
 #endif
 
            call switch_respa_inl(rik,shortcut,shortheal,s,ds)
+           de      = - e*ds + (1-s)*de
            e       = (1-s)*e
-           de      = - e*ds - s*de
 c
 c          use energy switching if near the cutoff distance
 c

@@ -156,8 +156,6 @@ c     use energy switching if near the cutoff distance
 c
         call switch_respa_inl(rik,off,shortheal,s,ds)
         if (mode.eq.m_long) then
-           e  = (1-s)*e
-           de = -e*ds-s*de
 c
 c     use energy switching if near the cutoff distance
 c
@@ -172,9 +170,11 @@ c
               de    = e*dtaper + de*taper
               e     = e * taper
            end if
+           de = -e*ds + (1-s)*de
+           e  = (1-s)*e
         else
-           e   = e * s
            de  = e*ds + de*s
+           e   = e * s
         end if
 c
 c     find the chain rule terms for derivative components
