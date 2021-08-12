@@ -13,7 +13,7 @@ Nothing special is needed for the CPU code.
    - MPI Fortran wrapper on the selected compiler and compiled to be CUDA-Aware for device communications during multi-GPUs execution.
    - Linux or Windows 10 (Windows Subsystem for Linux) are preferred  
      __Note :__ PGI compiler does not support the GPU code on macOS.
-   - [Nvidia HPC Package](https://developer.nvidia.com/nvidia-hpc-sdk-releases) Any version under 21.2 ! 
+   - [Nvidia HPC Package](https://developer.nvidia.com/nvidia-hpc-sdk-releases) Any version under __21.2 !__ 
      An issue involving "atomic operations" has been discovered with higher versions of the package (21.[3-7]). Luckily it is possible to bypass it by adding a compiler flag during the build step. Look for `add_options` variable configuration in `ci/install.sh` to be revert to the old behavior and fix the problem. However be aware that this is just a temporary fix. 
      This package contains everything you need to build Tinker-HP (GPU part). Previously listed items are already available within it. However we need to make sure the installation has been correctly done and the environment variables (PATH; CPATH & NVHPC) are correctly set and updated. Follow instructions described in `$PREFIX/modulefiles` with `$PREFIX` the installation directory if not.
 
