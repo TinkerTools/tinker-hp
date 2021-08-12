@@ -1,20 +1,50 @@
 #!/bin/bash
 
-# This script install proceed to insatallation of Tinker-HP
+# Tinker-HP [GPU] Quick Installation script
 # Some help on makefile's target can be found inside build.md in the root directory
 
-# Make sure you have MKLROOT and GNUROOT variables in your environnement path before running
+# --------------------
+# Function Definitions
+# --------------------
+in_notif(){
+   printf "\n <<<<<  %-50s  >>>>> \n\n" "$1" && sleep 1
+}
+error1st(){
+   cat << END
 
-if [[ -z ${MKLROOT+x} ]]; then
+             ------ WARNING ------
+   Something went wrong during compilation procedure "
+   Please Fix the issue and run ci/install.sh again"
+             ---------------------
+
+END
+   cd ..
+}
+error2nd(){
+   cat << END
+
+             ------ WARNING ------
+   Something went wrong during mixed precision compilation !!
+   Please Fix the issue and enter following commands to resume
+$> cd source
+$> make $current_config_m -j$par
+             ---------------------
+
+END
+   cd ../
+}
+error_mkl(){
    cat << EOP
-   Installation ERROR !
-   MKLROOT is unset in your environment !!!
-   Please export That variable to MKL libraty Root and rerun this script
+
+   !!! ci/install.sh  ERROR !!!
+   >   MKLROOT is unset in your environment 
+   --  Please export That variable to MKL library's Root and rerun this script
 
 EOP
-   exit
-fi
+}
 
+
+# Check for GNUROOT variable in your environnement path before running
 if [[ -z ${GNUROOT+x} ]]; then
    GNUROOT=`which g++ | sed 's_/bin/g++__'`
    export GNUROOT
@@ -44,97 +74,63 @@ else
 #set -x
 tinkerdir=$(dirname `dirname $0`)
 
-# Carefully Add 'var=value' in common_config to customize your build
-# Make sure those params do not conflict with 'common_config_[dm]'
-c_c=60,70
-cuda_ver=10.1
-build_plumed=0
+# -------------
+# Configuration
+# -------------
+#
+# Carefully Add or Change 'var=value' in current_config to configure your installation
+# Make sure those params do not conflict with 'current_config_[dm]'
+#
 
-common_config="compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed"
-common_config_d="$common_config prog_suffix=.gpu"
-common_config_m="$common_config prec=m prog_suffix=.mixed"
+c_c=60,70                   #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
+cuda_ver=11.0               #   Cuda Version to be used by OpenACC compiler  (not the CUDA C/C++ compiler)
+build_plumed=0              #   [0]|1      0: disable 1: enable
+target_arch='gpu'           #   [gpu]|cpu
+#add_options='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package strictly above 21.3 version
 
-[ $# -ge 1 ]&& par=$1 || par=6
+current_config="compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed arch=$target_arch"
+[ -n "$add_options" ] && current_config="$current_config add_options=$add_options"
+current_config_d="$current_config prog_suffix=.gpu"
+current_config_m="$current_config prec=m prog_suffix=.mixed"
 
+[ $# -ge 1 ] && par=$1 || par=6
+
+# Check for MKLROOT variable in your environnement
+[[ -z ${MKLROOT+x} ]] && [[ ${target_arch} = 'cpu' ]] && error_mkl && exit
+
+# --------
+# Initiate
+# --------
 cd $tinkerdir && \
 mkdir -p bin && \
 ln -sf Makefile.pgi source/Makefile  && \
 cd source
 
-cat << END
-
------- Compiling 2decomp_fft library ------
-
-END
-make $common_config_d 2decomp_fft
-
-cat << END
-
------- Compiling thrust wrapper      ------
-
-END
-make $common_config thrust
-
+# -----
+# Build
+# -----
 if [ $build_plumed -eq 1 ]; then
-   cat << END
-
------- Building PLUMED ------
-
-END
-   make plumed -j$par
+   in_notif "Building PLUMED" && make plumed -j$par
 fi
 
-cat << END
+in_notif "Compiling TINKER-HP" && \
+make $current_config_d -j$par  && \
+[ "$?" != "0" ] && error1st && exit # Compiling test
 
-====== Compiling TINKER-HP           ======
+in_notif 'Cleaning objects files and modules' && \
+make clean >/dev/null
 
-END
-make $common_config_d -j$par
-if [ "$?" != "0" ]; then
-   cat << END
+in_notif "Recompiling TINKER-HP in mixed precision" && \
+make $current_config_m 2decomp_fft_rebuild_single   && \
+make $current_config_m -j$par
+[ "$?" != "0" ] && error2nd  && exit # Mixed Compiling test
 
-   CAUTION! Something went wrong during compilation !!"
-            Please Fix the issue and run ci/install.sh again"
-
-END
-   cd ../
-   exit
-fi # Compiling test
-
-echo '***  Cleaning objects files and modules ***'
-make clean >/dev/null && \
-cat << END
-
------- Compiling 2decomp_fft library in single precision ------
-
-END
-make $common_config_m 2decomp_fft_rebuild_single
-
-cat << END
-
-===== Recompiling TINKER-HP in mixed precision =====
-
-END
-make $common_config_m -j$par
-if [ "$?" != "0" ]; then
-   cat << END
-             ------ WARNING ------
-   Something went wrong during mixed precision compilation !!
-   Please Fix the issue and enter following commands to resume
-$> cd source
-$> make $common_config_m -j$par
-             ---------------------
-END
-   cd ../
-   exit
-fi # Mixed Compiling test
-
+# --------
 # Finalize
-make clean >/dev/null && \
-cat << END
+# --------
+in_notif 'Cleaning object files and modules'         && \
+make clean 2decomp_fft_clean thrust_clean >/dev/null && \
 
-  *****  TINKER-HP GPU installation is successfully completed  *****
-
-END
+in_notif 'TINKER-HP GPU installation completes successfully'
 
 fi # Source test
