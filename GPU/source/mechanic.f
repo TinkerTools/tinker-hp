@@ -204,7 +204,8 @@ c
  12   format(1x,A15,2x,I8)
  13   format(5x,11("-"),2x,8("+"))
  14   format(1x,A15,2x,I8,3x,I8)
- 15   format(1x,A15,2x,6I5)
+ 15   format(1x,A15,2x,I7,5I5)
+ 16   format(1x,15x,2x,A7,5A5)
 
       if (rank.eq.0) then
       if (use_bond  ) write(*,12) 'BOND'  ,nbond
@@ -228,6 +229,7 @@ c
       if (use_polar ) write(*,12) 'POLAR' ,npolar
       if (nmut.ne.0 ) write(*,12) 'MUTATION',nmut
       if (use_geom  ) then
+         write(*,16) 'pos','dist','angl','tors','grpd','chir'
          write(*,15) 'GEOM RESTRAINS',
      &               npfix,ndfix,nafix,ntfix,ngfix,nchir
          write(*,*)  '     USE_BASIN ',use_basin
@@ -1029,7 +1031,7 @@ c
       use utilcu  ,only: cu_update_balanced_comput
 #endif
       implicit none
-      logical,parameter::accept=.false.
+      logical,parameter::accept=.true.
 
       if (nproc.gt.7.and.accept.and.use_polar.and.
      &   (associated(efld0_directgpu_p,efld0_directgpu3).or.

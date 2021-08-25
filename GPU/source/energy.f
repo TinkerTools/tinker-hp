@@ -130,7 +130,7 @@ c
       if (eb_r.ne.0) eb = eb + enr2en(eb_r)
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
      &          + et + ept + ebt + eat + ett  + ev   + ec  + em
-     &          + ep + eg + ex + eg
+     &          + ep +  ex + eg
 !$acc end serial
 !$acc update host(esum) async
 !$acc wait

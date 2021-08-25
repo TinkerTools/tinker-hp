@@ -426,7 +426,7 @@ c
      $   (integrate.eq.'BAOABRESPA')) then
 
  33   format (/," Tinker-HP find No Restart file for ",A," system",/,
-     $       6x,"--- Initiate dynamic from begining ---",/)
+     $       6x,"--- Initiate dynamic from beginning ---",/)
          if (verbose.and.rank.eq.0) write(*,33) filename(1:leng)
 c
 c     Do the domain decomposition
