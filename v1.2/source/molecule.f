@@ -32,7 +32,11 @@ c
 c
       if (init) then
 c
-c     allocate global arrays
+c     deallocate global pointers if necessary
+c
+        call dealloc_shared_mol
+c
+c     allocate global pointers
 c
         call alloc_shared_mol
 c
@@ -119,8 +123,7 @@ c       sort the list of atoms in each molecule by atom number
 c
         do i = 1, nmol
            k = imol(2,i) - imol(1,i) + 1
-c          call sort (k,kmol(imol(1,i)))
-           call sort (k,kmol(imol(1,i):imol(2,i)))
+           call sort (k,kmol(imol(1,i)))
         end do
 c
 c       if all atomic masses are zero, set them all to unity
@@ -166,22 +169,17 @@ c
       return
       end
 c
-c     subroutine alloc_shared_mol : allocate shared memory pointers for molecule
+c     subroutine dealloc_shared_mol : deallocate shared memory pointers for molecule
 c     parameter arrays
 c
-      subroutine alloc_shared_mol
+      subroutine dealloc_shared_mol
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
-      use sizes
-      use atoms
-      use domdec
       use molcul
       use mpi
       implicit none
-
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
 c
       if (associated(molcule)) then
         CALL MPI_Win_shared_query(winmolcule, 0, windowsize, disp_unit,
@@ -203,6 +201,24 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winmolmass,ierr)
       end if
+      return
+      end
+c
+c     subroutine alloc_shared_mol : allocate shared memory pointers for molecule
+c     parameter arrays
+c
+      subroutine alloc_shared_mol
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use sizes
+      use atoms
+      use domdec
+      use molcul
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     molcule
 c

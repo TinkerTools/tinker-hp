@@ -41,7 +41,6 @@ c
       integer, allocatable :: req2rec(:),req2send(:)
       real*8 :: f, sprod, sp0, sp1, term, omega, spp1, ap1a0, ap11a,
      $            ap11, ap12, ap2a0, ap21, e
-      real*8 :: time0
       real*8, dimension(2) :: n0, t4, t1, a10, a11, a12, a21
 
 
@@ -144,7 +143,6 @@ c
       allocate (req2send(nproc))
       allocate (reqrecdirrec(nproc))
       allocate (reqrecdirsend(nproc))
-      time0 = mpi_wtime()
 
       f = electric/dielec
 

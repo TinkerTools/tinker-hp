@@ -32,6 +32,7 @@ c
       digits = 4
       abort = .false.
       verbose = .false.
+      verbosepmetime = .false.
       debug = .false.
       holdup = .false.
       archive = .false.
@@ -65,6 +66,10 @@ c
             read (string,*,err=10)  digits
          else if (keyword(1:8) .eq. 'VERBOSE ') then
             verbose = .true.
+         else if (keyword(1:15) .eq. 'VERBOSEPMETIME ') then
+            verbosepmetime = .true.
+         else if (keyword(1:18) .eq. 'VERBOSEFORCESTIME ') then
+            verboseforcestime = .true.
          else if (keyword(1:6) .eq. 'DEBUG ') then
             debug = .true.
             verbose = .true.

@@ -27,6 +27,7 @@ c
       use kmulti
       use mpole
       use neigh
+      use pme
       use polar
       use polgrp
       use potent
@@ -77,12 +78,22 @@ c
         allocate (poleloc(n))
         if (allocated(polerecloc)) deallocate(polerecloc)
         allocate (polerecloc(n))
+        if (allocated(poleglob)) deallocate(poleglob)
+        allocate (poleglob(n))
+        if (allocated(polerecglob)) deallocate(polerecglob)
+        allocate (polerecglob(n))
         if (allocated(uind)) deallocate (uind)
         if (allocated(uinp)) deallocate (uinp)
         allocate (uind(3,n))
         allocate (uinp(3,n))
         uind = 0d0
         uinp = 0d0
+c
+c       deallocate global pointers if necessary
+c
+        call dealloc_shared_mpole
+c
+c       allocate global pointers
 c
         call alloc_shared_mpole
 c
@@ -565,6 +576,7 @@ c 230    call MPI_BARRIER(hostcomm,ierr)
 c
 c       get the order of the multipole expansion at each site
 c
+        npole = n
         do i = 1, n
            size = 0
            do k = 1, maxpole
@@ -606,18 +618,16 @@ c
 c
 c       test multipoles at chiral sites and invert if necessary
 c
-           call chkpole(.true.)
+        if (use_mpole .and. .not. use_polar) call chkpole(.true.)
 c
-c        end if
  230    call MPI_BARRIER(hostcomm,ierr)
         call MPI_BCAST(npole,1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(xaxis,n,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(yaxis,n,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(zaxis,n,MPI_INT,0,hostcomm,ierr)
 c
-        if ((npole .eq.0).and.(use_polar.eqv..false.))  then
+        if (npole .eq.0)  then
           use_mpole = .false.
-          use_mlist = .false.
         end if
 c
 c       if polarization not used, zero out induced dipoles
@@ -632,10 +642,6 @@ c
         end if
       end if
 c
-      if (allocated(poleglob)) deallocate(poleglob)
-      allocate (poleglob(nbloc))
-      if (allocated(polerecglob)) deallocate(polerecglob)
-      allocate (polerecglob(nlocrec2))
 c
 c       remove any zero or undefined atomic multipoles
 c
@@ -718,6 +724,15 @@ c
         end do
         npolerecloc = domlenpolerec(rank+1)
 c
+c  deallocate/reallocate B-spline arrays
+c
+        if (allocated(thetai1)) deallocate (thetai1)
+        if (allocated(thetai2)) deallocate (thetai2)
+        if (allocated(thetai3)) deallocate (thetai3)
+        allocate (thetai1(4,bsorder,nlocrec))
+        allocate (thetai2(4,bsorder,nlocrec))
+        allocate (thetai3(4,bsorder,nlocrec))
+c
         modnl = mod(istep,ineigup)
         if (istep.eq.-1) return
         if (modnl.ne.0) return
@@ -748,24 +763,18 @@ c
       return
       end
 c
-c     subroutine alloc_shared_mpole : allocate shared memory pointers for mpole
+c     subroutine dealloc_shared_mpole : deallocate shared memory pointers for mpole
 c     parameter arrays
 c
-      subroutine alloc_shared_mpole
+      subroutine dealloc_shared_mpole
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
-      use sizes
-      use atoms
-      use domdec
       use mpole
       use polgrp
-      use potent
       use mpi
       implicit none
-
-      integer(KIND=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
 c
       if (associated(polsiz)) then
         CALL MPI_Win_shared_query(winpolsiz, 0, windowsize, disp_unit,
@@ -797,23 +806,66 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winnbpole,ierr)
       end if
-      if (use_emtp) then
-        if (associated(alphapen)) then
-          CALL MPI_Win_shared_query(winalphapen,0,windowsize, disp_unit,
-     $    baseptr, ierr)
-          CALL MPI_Win_free(winalphapen,ierr)
-        end if
-        if (associated(betapen)) then
-          CALL MPI_Win_shared_query(winbetapen,0,windowsize, disp_unit,
-     $    baseptr, ierr)
-          CALL MPI_Win_free(winbetapen,ierr)
-        end if
-        if (associated(gammapen)) then
-          CALL MPI_Win_shared_query(wingammapen,0,windowsize, disp_unit,
-     $    baseptr, ierr)
-          CALL MPI_Win_free(wingammapen,ierr)
-        end if
+      if (associated(ip11)) then
+        CALL MPI_Win_shared_query(winip11, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winip11,ierr)
       end if
+      if (associated(np11)) then
+        CALL MPI_Win_shared_query(winnp11, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winnp11,ierr)
+      end if
+      if (associated(ip12)) then
+        CALL MPI_Win_shared_query(winip12, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winip12,ierr)
+      end if
+      if (associated(np12)) then
+        CALL MPI_Win_shared_query(winnp12, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winnp12,ierr)
+      end if
+      if (associated(ip13)) then
+        CALL MPI_Win_shared_query(winip13, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winip13,ierr)
+      end if
+      if (associated(np13)) then
+        CALL MPI_Win_shared_query(winnp13, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winnp13,ierr)
+      end if
+      if (associated(ip14)) then
+        CALL MPI_Win_shared_query(winip14, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winip14,ierr)
+      end if
+      if (associated(np14)) then
+        CALL MPI_Win_shared_query(winnp14, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winnp14,ierr)
+      end if
+      return
+      end
+c
+c     subroutine alloc_shared_mpole : allocate shared memory pointers for mpole
+c     parameter arrays
+c
+      subroutine alloc_shared_mpole
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use sizes
+      use atoms
+      use domdec
+      use mpole
+      use polgrp
+      use potent
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     polsiz
 c
@@ -952,126 +1004,6 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,nbpole,arrayshape)
-      if (use_emtp) then
-c
-c     alphapen
-c
-        arrayshape=(/n/)
-        if (hostrank == 0) then
-          windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
-        else
-          windowsize = 0_MPI_ADDRESS_KIND
-        end if
-        disp_unit = 1
-c
-c    allocation
-c
-        CALL MPI_Win_allocate_shared(windowsize, disp_unit,
-     $    MPI_INFO_NULL,hostcomm, baseptr, winalphapen, ierr)
-        if (hostrank /= 0) then
-          CALL MPI_Win_shared_query(winalphapen,0,windowsize, disp_unit,
-     $    baseptr, ierr)
-        end if
-c
-c    association with fortran pointer
-c
-        CALL C_F_POINTER(baseptr,alphapen,arrayshape)
-c
-c     betapen
-c
-        arrayshape=(/n/)
-        if (hostrank == 0) then
-          windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
-        else
-          windowsize = 0_MPI_ADDRESS_KIND
-        end if
-        disp_unit = 1
-c
-c    allocation
-c
-        CALL MPI_Win_allocate_shared(windowsize, disp_unit,
-     $    MPI_INFO_NULL,hostcomm, baseptr, winbetapen, ierr)
-        if (hostrank /= 0) then
-          CALL MPI_Win_shared_query(winbetapen,0,windowsize, disp_unit,
-     $    baseptr, ierr)
-        end if
-c
-c    association with fortran pointer
-c
-        CALL C_F_POINTER(baseptr,betapen,arrayshape)
-c
-c     gammapen
-c
-        arrayshape=(/n/)
-        if (hostrank == 0) then
-          windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
-        else
-          windowsize = 0_MPI_ADDRESS_KIND
-        end if
-        disp_unit = 1
-c
-c    allocation
-c
-        CALL MPI_Win_allocate_shared(windowsize, disp_unit,
-     $    MPI_INFO_NULL,hostcomm, baseptr, wingammapen, ierr)
-        if (hostrank /= 0) then
-          CALL MPI_Win_shared_query(wingammapen,0,windowsize, disp_unit,
-     $    baseptr, ierr)
-        end if
-c
-c    association with fortran pointer
-c
-        CALL C_F_POINTER(baseptr,gammapen,arrayshape)
-      end if
-c
-c      if (associated(ip11)) deallocate(ip11)
-c      if (associated(np11)) deallocate (np11)
-c      if (associated(ip12)) deallocate (ip12)
-c      if (associated(np12)) deallocate (np12)
-c      if (associated(ip13)) deallocate (ip13)
-c      if (associated(np13)) deallocate (np13)
-c      if (associated(ip14)) deallocate (ip14)
-c      if (associated(np14)) deallocate (np14)
-      if (associated(ip11)) then
-        CALL MPI_Win_shared_query(winip11, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winip11,ierr)
-      end if
-      if (associated(np11)) then
-        CALL MPI_Win_shared_query(winnp11, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winnp11,ierr)
-      end if
-      if (associated(ip12)) then
-        CALL MPI_Win_shared_query(winip12, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winip12,ierr)
-      end if
-      if (associated(np12)) then
-        CALL MPI_Win_shared_query(winnp12, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winnp12,ierr)
-      end if
-      if (associated(ip13)) then
-        CALL MPI_Win_shared_query(winip13, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winip13,ierr)
-      end if
-      if (associated(np13)) then
-        CALL MPI_Win_shared_query(winnp13, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winnp13,ierr)
-      end if
-      if (associated(ip14)) then
-        CALL MPI_Win_shared_query(winip14, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winip14,ierr)
-      end if
-      if (associated(np14)) then
-        CALL MPI_Win_shared_query(winnp14, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winnp14,ierr)
-      end if
 c
 c     ip11
 c

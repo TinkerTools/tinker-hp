@@ -14,6 +14,7 @@ c     maxp11   maximum number of atoms in a polarization group
 c     maxp12   maximum number of atoms in groups 1-2 to an atom
 c     maxp13   maximum number of atoms in groups 1-3 to an atom
 c     maxp14   maximum number of atoms in groups 1-4 to an atom
+c     maxscalp maximum number of atoms in scaled polar interaction per atom
 c
 c     np11     number of atoms in polarization group of each atom
 c     winnp11    window object corresponding to np11
@@ -38,10 +39,12 @@ c
       implicit none
       integer maxp11,maxp12
       integer maxp13,maxp14
-      parameter (maxp11=120)
-      parameter (maxp12=120)
-      parameter (maxp13=120)
-      parameter (maxp14=120)
+      integer maxscalp
+      parameter (maxp11=200)
+      parameter (maxp12=200)
+      parameter (maxp13=200)
+      parameter (maxp14=200)
+      parameter (maxscalp=480)
       integer, pointer :: np11(:),ip11(:,:),np12(:),ip12(:,:)
       integer winnp11,winip11,winnp12,winip12
       integer, pointer :: np13(:),ip13(:,:),np14(:),ip14(:,:)

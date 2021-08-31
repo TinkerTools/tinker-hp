@@ -422,10 +422,7 @@ c
         call commrecdirdip(nrhs,0,murec,pp,buffermpimu,
      $   buffermpimu,req2rec,req2send)
 c
-        time0 = mpi_wtime()
         call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-        time1 = mpi_wtime()
-        timerecdip = timerecdip + time1-time0
         call commrecdirsolv(nrhs,1,dipfieldbis,dipfield,buffermpi1,
      $      buffermpi2,reqrecdirrec,reqrecdirsend)
         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
@@ -433,10 +430,7 @@ c
       end if
       if (rank.le.ndir-1) then
 c
-        time0 = mpi_wtime()
         call matvec(nrhs,.true.,mu,h)
-        time1 = mpi_wtime()
-        timerealdip = timerealdip + time1-time0
         call commfield(nrhs,h)
 c
         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
@@ -787,10 +781,7 @@ c     The PME processes compute the reciprocal matrix vector product
 c
 c        else
         else 
-          time0 = mpi_wtime()
           call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-          time1 = mpi_wtime()
-          if (it.eq.1) timerecdip = timerecdip + time1-time0
           call commrecdirsolv(nrhs,1,dipfieldbis,dipfield,buffermpi1,
      $      buffermpi2,reqrecdirrec,reqrecdirsend)
           call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
@@ -805,10 +796,7 @@ c    The real space processes extract the recip fields, compute the real fields
 c    and add them
 c
          term = (4.0d0/3.0d0) * aewald**3 / sqrtpi
-         time0 = mpi_wtime()
          call matvec(nrhs,.false.,mu,h)
-         time1 = mpi_wtime()
-         if (it.eq.1) timerealdip = timerealdip + time1-time0
          call commfield(nrhs,h)
 c
           call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
@@ -870,13 +858,11 @@ c
             munew = 0.0d0
             call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
           end if
-        time2 = mpi_wtime()
 c
           call commdirdir(nrhs,1,munew,reqrec,reqsend)
           call commrecdirdip(nrhs,1,murec,munew,buffermpimu,
      $    buffermpimu,req2rec,req2send)
 c
-          time0 = mpi_wtime()
           call commdirdir(nrhs,2,mu,reqrec,reqsend)
           call commrecdirdip(nrhs,2,murec,munew,buffermpimu,
      $    buffermpimu,req2rec,req2send)
@@ -1524,7 +1510,6 @@ c     zero out the PME charge grid
 c
 c     fill the pme grid, loop over the multipoles sites
 c
-      time0 = mpi_wtime()
       do i = 1, npolerecloc
          iipole = polerecglob(i)
          iglob = ipole(iipole)
@@ -1551,12 +1536,9 @@ c     assign PME grid
 c
         call grid_mpole_site(iglob,i,fmp)
       end do
-      time1 = mpi_wtime()
-      timegrid1 = timegrid1 + time1-time0
 c
 c     MPI : begin sending
 c
-      time0 = mpi_wtime()
       do i = 1, nrec_send
         tag = nprocloc*prec_send(i) + rankloc + 1
         call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
@@ -1578,20 +1560,14 @@ c
      $   qgridin_2d(1,1,1,1,1),
      $   qgridmpi(1,1,1,1,i),qgridin_2d(1,1,1,1,1))
       end do
-      time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1 - time0
 c
 c     Perform 3-D FFT forward transform
 c
-      time0 = mpi_wtime()
       call fft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
-      time1 = mpi_wtime()
-      timeffts = timeffts + time1-time0
 c
 c     make the scalar summation over reciprocal lattice
 c
-      time0 = mpi_wtime()
       if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
      $   (kstart2(rankloc+1).eq.1)) then
            qfac_2d(1,1,1) = 0.0d0
@@ -1657,20 +1633,14 @@ c
            end do
          end do
       end do
-      time1 = mpi_wtime()
-      timescalar = timescalar + time1-time0
 c
 c     perform 3-D FFT backward transform
 c
-      time0 = mpi_wtime()
       call fft2d_backmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
-      time1 = mpi_wtime()
-      timeffts = timeffts + time1-time0
 c
 c     MPI : Begin reception
 c
-      time0 = mpi_wtime()
       do i = 1, nrec_send
         tag = nprocloc*rankloc + prec_send(i) + 1
         call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),
@@ -1693,12 +1663,9 @@ c
       do i = 1, nrec_recep
         call MPI_WAIT(reqbcastsend(i),status,ierr)
       end do
-      time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1-time0
 c
 c     get field
 c
-      time0 = mpi_wtime()
       do i = 1, npolerecloc
         iipole = polerecglob(i)
         iglob = ipole(iipole)
@@ -1709,8 +1676,6 @@ c
           call amove(10,cphirec(1,i),cphi(1,iloc))
         end if
       end do
-      time1 = mpi_wtime()
-      timegrid2 = timegrid2 + time1-time0
 c
       deallocate (qgridmpi)
       deallocate (reqbcastrec)

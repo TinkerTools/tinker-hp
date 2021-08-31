@@ -373,13 +373,8 @@ c
           rnorm(k) = zero
         end do
 c
-        time0 = mpi_wtime()
         call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-        time1 = mpi_wtime()
-        if (it.eq.1) timerecdip = timerecdip + time1-time0
         call matvec(nrhs,.false.,mu,h)
-        time2 = mpi_wtime()
-        if (it.eq.1) timerealdip = timerealdip + time2-time1
         call commfield(nrhs,h)
 
         call commrecdirsolv(nrhs,0,dipfieldbis,dipfield,buffermpi1,
@@ -396,7 +391,6 @@ c     jacobi step:
 c
         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
      $    buffermpi2,reqrecdirrec,reqrecdirsend)
-        time2 = mpi_wtime()
         term = (4.0d0/3.0d0) * aewald**3 / sqrtpi
 
           do k = 1,km
@@ -484,7 +478,6 @@ c
           munew = 0d0
           call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
         end if
-        time2 = mpi_wtime()
 c
         call commdirdir(nrhs,1,munew,reqrec,reqsend)
         call commrecdirdip(nrhs,1,murec,munew,buffermpimu1,

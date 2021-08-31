@@ -13,14 +13,10 @@ c
       use potent
       use mpi
       implicit none
-      real*8 time0, time1
 c
 c     choose the method for summing over multipole interactions
 c
-      time0 = mpi_wtime()
       call empole1c
-      time1 = mpi_wtime()
-c      write(*,*) 'time empole1 = ',time1-time0
 c
 c     zero out energy and derivative terms which are not in use
 c
@@ -98,7 +94,6 @@ c
      $   then
         if (use_mrec) then 
           time0 = mpi_wtime()
-c          write(*,*) 'gogo rec'
           call emrecip1
           time1 = mpi_wtime()
           timerec = timerec + time1 - time0
@@ -112,13 +107,10 @@ c
         if (use_mreal) then
           time0 = mpi_wtime()
           if (use_mpoleshortreal) then
-c            write(*,*) 'gogo shortreal'
             call emrealshort1c
           else if (use_mpolelong) then
-c            write(*,*) 'gogo longreal'
             call emreallong1c
           else
-c          write(*,*) 'gogo real'
             call emreal1c
           end if
           time1 = mpi_wtime()
@@ -126,7 +118,6 @@ c          write(*,*) 'gogo real'
         end if
 c
         if (use_mself) then
-c          write(*,*) 'gogo emself'
 c
 c     compute the Ewald self-energy term over all the atoms
 c
@@ -745,6 +736,7 @@ c
       integer, allocatable :: req2send(:),req2rec(:)
       integer nprocloc,commloc,rankloc,proc
       real*8 time0,time1
+      time0 = mpi_wtime()
 c
       if (use_pmecore) then
         nprocloc = nrec
@@ -822,14 +814,13 @@ c
 c     assign permanent multipoles to PME grid and perform
 c     the 3-D FFT forward transformation
 c
-      time0 = mpi_wtime()
       do i = 1, npolerecloc
         iipole = polerecglob(i)
         iglob = ipole(iipole)
         call grid_mpole_site(iglob,i,fmp(1,i))
       end do
       time1 = mpi_wtime()
-      timegrid1 = timegrid1 + time1-time0
+      timegrid = timegrid + time1-time0
 c
 c     MPI : Begin reception
 c
@@ -873,10 +864,11 @@ c
       call fft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
       time1 = mpi_wtime()
-      timeffts = timeffts + time1-time0
+      timefft = timefft + time1-time0
 c
 c     initialize variables required for the scalar summation
 c
+      time0 = mpi_wtime()
       pterm = (pi/aewald)**2
       volterm = pi * volbox
       nff = nfft1 * nfft2
@@ -884,7 +876,6 @@ c
       nf2 = (nfft2+1) / 2
       nf3 = (nfft3+1) / 2
 c
-      time0 = mpi_wtime()
       if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
      $   (kstart2(rankloc+1).eq.1)) then
            qfac_2d(1,1,1) = 0.0d0
@@ -981,7 +972,7 @@ c
       call fft2d_backmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
       time1 = mpi_wtime()
-      timeffts = timeffts + time1-time0
+      timefft = timefft + time1-time0
 c
 c     MPI : Begin reception
 c
@@ -1019,8 +1010,6 @@ c
         iglob = ipole(iipole)
         call fphi_mpole_site(iglob,i)
       end do
-      time1 = mpi_wtime()
-      timegrid2 = timegrid2 + time1-time0
       do i = 1, npolerecloc
          do j = 1, 20
             fphirec(j,i) = electric * fphirec(j,i)
@@ -1115,6 +1104,8 @@ c
       deallocate (reqrec)
       deallocate (req2send)
       deallocate (req2rec)
+      time1 = mpi_wtime()
+      timegrid2 = timegrid2 + time1-time0
       return
       end
 c

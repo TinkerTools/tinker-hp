@@ -20,7 +20,6 @@ c     Efficiency of Large Time-Scale Molecular Dynamics Simulations
 c     of Hydrogen-Rich Systems", Journal of Computational Chemistry,
 c     8, 786-798 (1999)  [heavy hydrogen reweighting]
 c
-c
       subroutine katom
       use atmtyp
       use atoms
@@ -45,7 +44,11 @@ c
       character*240 record
       character*240 string
 c
-c     allocate global arrays
+c     deallocate global pointers if necessary
+c
+      call dealloc_shared_katom
+c
+c     allocate global pointers
 c
       call alloc_shared_katom
 c
@@ -134,7 +137,6 @@ c
             heavy = .true.
          end if
       end do
-      call MPI_BARRIER(hostcomm,ierr)
       if (heavy) then
          if (hostrank.ne.0) goto 11
          hmax = 4.0d0
@@ -275,22 +277,18 @@ c
       return
       end
 c
-c     subroutine alloc_shared_katom : allocate shared memory pointers for katom
+c     subroutine dealloc_shared_katom : deallocate shared memory pointers for katom
 c     parameter arrays
 c
-      subroutine alloc_shared_katom
+      subroutine dealloc_shared_katom
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
-      use sizes
       use atmtyp
       use atoms
-      use domdec
       use mpi
       implicit none
-
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1)
 c
       if (associated(class)) then
         CALL MPI_Win_shared_query(winclass, 0, windowsize, disp_unit,
@@ -317,6 +315,24 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winstory,ierr)
       end if
+      return
+      end
+c
+c     subroutine alloc_shared_katom : allocate shared memory pointers for katom
+c     parameter arrays
+c
+      subroutine alloc_shared_katom
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use sizes
+      use atmtyp
+      use atoms
+      use domdec
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     class
 c

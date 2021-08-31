@@ -36,7 +36,11 @@ c
       character*240 record
       character*240 string
 c
-c     allocate arrays
+c     deallocate global pointers if necessary
+c
+      call dealloc_shared_mutate
+c
+c     allocate global pointers
 c
       call alloc_shared_mutate
 c
@@ -292,21 +296,17 @@ c
       return
       end
 c
-c     subroutine alloc_shared_mutate : allocate shared memory pointers for mutate
+c     subroutine dealloc_shared_mutate : deallocate shared memory pointers for mutate
 c     parameter arrays
 c
-      subroutine alloc_shared_mutate
+      subroutine dealloc_shared_mutate
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
-      use atoms
-      use domdec
       use mutant
       use mpi
       implicit none
-      integer :: win,win2
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
       INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
 c
       if (associated(imut)) then
         CALL MPI_Win_shared_query(winimut, 0, windowsize, disp_unit,
@@ -338,6 +338,23 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winclass1,ierr)
       end if
+      return
+      end
+c
+c     subroutine alloc_shared_mutate : allocate shared memory pointers for mutate
+c     parameter arrays
+c
+      subroutine alloc_shared_mutate
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use atoms
+      use domdec
+      use mutant
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     imut
 c

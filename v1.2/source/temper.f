@@ -41,11 +41,9 @@ c
       integer i,j,iglob,ierr
       integer k,m
       real*8 dt
-
       real*8 eksum
       real*8 temp
       real*8 scale,speed
-
       real*8 ekin(3,3)
       real*8 c,d,r,s,si
       real*8 random,normal
@@ -184,17 +182,8 @@ c
       use units
       use usage
       implicit none
-
-
-
-
       real*8 eksum
-
-
-
-
       real*8 temp
-
       real*8 ekin(3,3)
 c
 c

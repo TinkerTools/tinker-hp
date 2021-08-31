@@ -39,9 +39,10 @@ c
       parameter (maxn13=3*maxvalue)
       parameter (maxn14=3*maxvalue)
       parameter (maxn15=3*maxvalue)
-      integer, pointer :: n12(:),i12(:,:),n13(:),i13(:,:)
+      integer, allocatable :: n12(:),i12(:,:)
+      integer, pointer :: n13(:),i13(:,:)
       integer, pointer ::  n14(:),i14(:,:),n15(:),i15(:,:)
-      integer :: winn12,wini12,winn13,wini13
+      integer :: winn13,wini13
       integer :: winn14,wini14,winn15,wini15
       save
       end

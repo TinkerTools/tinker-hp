@@ -32,9 +32,9 @@ c
       use potent
       use mpi
       implicit none
-      integer i,iglob,ionloc
+      integer i,j,k,m,iglob,ionloc
       integer ia,next,ierr,istep,iproc
-      integer modnl
+      integer modnl,ioncount
       integer, allocatable :: list(:)
       integer, allocatable :: nc12(:)
       real*8 cg,d
@@ -46,14 +46,11 @@ c
 c
       if (init) then
 c
-c       allocate global arrays
+c       deallocate global pointers if necessary
 c
-        if (allocated(chglocnl)) deallocate(chglocnl)
-        allocate (chglocnl(n))
-        if (allocated(chgloc)) deallocate(chgloc)
-        allocate (chgloc(n))
-        if (allocated(chgrecloc)) deallocate(chgrecloc)
-        allocate (chgrecloc(n))
+        call dealloc_shared_chg
+c
+c       allocate global pointers
 c
         call alloc_shared_chg
         if (hostrank.ne.0) goto 1000
@@ -158,30 +155,6 @@ c
               list(i) = nion
            end if
         end do
-cc
-cc       optionally use neutral groups for neighbors and cutoffs
-cc
-c        if (neutnbr .or. neutcut) then
-c           do i = 1, n
-c              nc12(i) = 0
-c              do j = 1, n12(i)
-c                 k = list(i12(j,i))
-c                 if (k .ne. 0)  nc12(i) = nc12(i) + 1
-c              end do
-c           end do
-c           do i = 1, nion
-c              k = iion(i)
-c              if (n12(k) .eq. 1) then
-c                 do j = 1, n12(k)
-c                    m = i12(j,k)
-c                    if (nc12(m) .gt. 1) then
-c                       if (neutnbr)  jion(i) = m
-c                       if (neutcut)  kion(i) = m
-c                    end if
-c                 end do
-c              end if
-c           end do
-c        end if
 c
 c       perform deallocation of some local arrays
 c
@@ -197,12 +170,19 @@ c
            use_charge = .false.
            use_clist = .false.
         end if
+        if (.not.(use_charge)) return
+        if (allocated(chglocnl)) deallocate(chglocnl)
+        allocate (chglocnl(n))
+        if (allocated(chgloc)) deallocate(chgloc)
+        allocate (chgloc(n))
+        if (allocated(chgrecloc)) deallocate(chgrecloc)
+        allocate (chgrecloc(n))
       end if
 c
       if (allocated(chgglob)) deallocate(chgglob)
       allocate (chgglob(nbloc))
       if (allocated(chgrecglob)) deallocate(chgrecglob)
-      allocate (chgrecglob(nlocrec))
+      allocate (chgrecglob(nlocrec2))
 c
 c       remove zero partial charges from the list of local charges
 c
@@ -211,9 +191,10 @@ c
          iglob = glob(i)
          ionloc = chglist(iglob)
          if (ionloc.eq.0) cycle
+          ioncount = nbchg(iglob)
           nionloc = nionloc + 1
-          chgglob(nionloc) = ionloc
-          chgloc(ionloc) = nionloc
+          chgglob(nionloc) = ioncount + 1
+          chgloc(ioncount+1) = nionloc
       end do
       domlenpole(rank+1) = nionloc
       nionbloc = nionloc
@@ -227,9 +208,10 @@ c
           iglob = glob(bufbeg(p_recep1(iproc)+1)+i-1)
           ionloc = chglist(iglob)
           if (ionloc.eq.0) cycle
+          ioncount = nbchg(iglob)
           nionbloc = nionbloc + 1
-          chgglob(nionbloc) = ionloc
-          chgloc(ionloc) = nionbloc
+          chgglob(nionbloc) = ioncount + 1
+          chgloc(ioncount+1) = nionbloc
         end do
         if (domlen(p_recep1(iproc)+1).ne.0) then
           domlenpole(p_recep1(iproc)+1) = 
@@ -244,11 +226,22 @@ c
          iglob = globrec(i)
          ionloc = chglist(iglob)
          if (ionloc.eq.0) cycle
+         ioncount = nbchg(iglob)
          nionrecloc = nionrecloc + 1
-         chgrecglob(nionrecloc) = ionloc
-         chgrecloc(ionloc) = nionrecloc
+         chgrecglob(nionrecloc) = ioncount + 1
+         chgrecloc(ioncount+1) = nionrecloc
       end do
       domlenpolerec(rank+1) = nionrecloc
+      do i = nlocrec+1, nlocrec2
+         iglob = globrec(i)
+         ionloc = chglist(iglob)
+         if (ionloc.eq.0) cycle
+         ioncount = nbchg(iglob)
+         nionrecloc = nionrecloc + 1
+         chgrecglob(nionrecloc) = ioncount + 1
+         chgrecloc(ioncount+1) = nionrecloc
+      end do
+      nionrecloc = domlenpolerec(rank+1)
 c
       modnl = mod(istep,ineigup)
       if (istep.eq.-1) return
@@ -261,12 +254,13 @@ c
         iglob = ineignl(i)
         ionloc = chglist(iglob)
         if (ionloc.eq.0) cycle
+        ioncount = nbchg(iglob)
         call distprocpart(iglob,rank,d,.true.)
         if (repart(iglob).eq.rank) d = 0.0d0
         if (d*d.le.(cbuf2/4)) then
           nionlocnl = nionlocnl + 1
-          chgglobnl(nionlocnl) = ionloc
-          chglocnl(ionloc) = nionlocnl
+          chgglobnl(nionlocnl) = ioncount + 1
+          chglocnl(ioncount + 1) = nionlocnl
         end if
       end do
 c
@@ -453,29 +447,18 @@ c
       return
       end
 c
-c     subroutine alloc_shared_chg : allocate shared memory pointers for chg 
+c     subroutine dealloc_shared_chg : deallocate shared memory pointers for chg 
 c     parameter arrays
 c
-      subroutine alloc_shared_chg
+      subroutine dealloc_shared_chg
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
-      use sizes
-      use atoms
       use charge
-      use domdec
       use mpi
       implicit none
-
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1)
 c
-c      if (associated(iion))  deallocate (iion)
-c      if (associated(jion))  deallocate (jion)
-c      if (associated(kion))  deallocate (kion)
-c      if (associated(pchg))  deallocate (pchg)
-c      if (associated(nbchg)) deallocate (nbchg)
-c      if (associated(chglist)) deallocate (chglist)
       if (associated(iion)) then
         CALL MPI_Win_shared_query(winiion, 0, windowsize, disp_unit,
      $  baseptr, ierr)
@@ -506,7 +489,24 @@ c      if (associated(chglist)) deallocate (chglist)
      $  baseptr, ierr)
         CALL MPI_Win_free(winchglist,ierr)
       end if
+      return
+      end
 c
+c     subroutine alloc_shared_chg : allocate shared memory pointers for chg 
+c     parameter arrays
+c
+      subroutine alloc_shared_chg
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use sizes
+      use atoms
+      use charge
+      use domdec
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     iion 
 c

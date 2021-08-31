@@ -40,12 +40,12 @@ c
       use virial
       use mpi
       implicit none
-      integer i,j,iglob
+      integer i,j,k,iglob
       integer istep
       real*8 dt,dt_2
       real*8 dta,dta_2
       real*8 epot,etot
-      real*8 eksum
+      real*8 eksum,eps
       real*8 temp,pres
       real*8 ealt
       real*8 ekin(3,3)
@@ -53,17 +53,13 @@ c
       real*8 viralt(3,3)
       real*8 time0,time1
       real*8, allocatable :: derivs(:,:)
-c
+      time0 = mpi_wtime()
 c
 c     set some time values for the dynamics integration
 c
       dt_2 = 0.5d0 * dt
       dta = dt / dshort
       dta_2 = 0.5d0 * dta
-cc
-cc     make half-step temperature and pressure corrections
-cc
-c      call temper (dt)
 c
 c     store the current atom positions, then find half-step
 c     velocities via velocity Verlet recursion
@@ -76,6 +72,8 @@ c
             end do
          end if
       end do
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0 
 c
 c     find fast-evolving velocities and positions via velocity Verlet recursion
 c
@@ -86,8 +84,6 @@ c
 c     -> real space
 c
       time0 = mpi_wtime()
-c
-c     call reassignrespa(.false.,nalt,nalt)
       call reassignrespa(nalt,nalt)
 c
 c     -> reciprocal space
@@ -102,10 +98,12 @@ c
       call commposrespa(.false.)
       call commposrec
       time1 = mpi_wtime()
-      timecommstep = timecommstep + time1 - time0
+      timecommpos = timecommpos + time1 - time0
 c
-c
+      time0 = mpi_wtime()
       call reinitnl(istep)
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0
 c
       time0 = mpi_wtime()
       call mechanicsteprespa(istep,.false.)
@@ -115,35 +113,54 @@ c
       time0 = mpi_wtime()
       call allocsteprespa(.false.)
       time1 = mpi_wtime()
-      timeclear = timeclear + time1 - time0
+      timeinte = timeinte + time1-time0
 c
 c     rebuild the neighbor lists
 c
+      time0 = mpi_wtime()
       if (use_list) call nblist(istep)
+      time1 = mpi_wtime()
+      timenl = timenl + time1 - time0
 c
+      time0 = mpi_wtime()
       allocate (derivs(3,nbloc))
       derivs = 0d0
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1 - time0
 c
 c     get the slow-evolving potential energy and atomic forces
 c
+      time0 = mpi_wtime()
       call gradslow (epot,derivs)
+      time1 = mpi_wtime()
+      timegrad = timegrad + time1 - time0
 c
 c     if necessary, communicate some forces
 c
+      time0 = mpi_wtime()
       call commforcesrespa(derivs,.false.)
+      time1 = mpi_wtime()
+      timecommforces = timecommforces + time1-time0
 c
 c     MPI : get total energy
 c
+      time0 = mpi_wtime()
       call reduceen(epot)
+      time1 = mpi_wtime()
+      timered = timered + time1 - time0
 c
 c     make half-step temperature and pressure corrections
 c
+      time0 = mpi_wtime()
       call temper2 (temp)
       call pressure2 (epot,temp)
+      time1 = mpi_wtime()
+      timetp = timetp + time1-time0
 c
 c     use Newton's second law to get the slow accelerations;
 c     find full-step velocities using velocity Verlet recursion
 c
+      time0 = mpi_wtime()
       do i = 1, nloc
          iglob = glob(i)
          if (use(iglob)) then
@@ -170,14 +187,20 @@ c
             vir(j,i) = vir(j,i) + viralt(j,i)
          end do
       end do
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0
 c
 c     make full-step temperature and pressure corrections
 c
+      time0 = mpi_wtime()
       call temper (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
+      time1 = mpi_wtime()
+      timetp = timetp + time1-time0
 c
 c     total energy is sum of kinetic and potential energies
 c
+      time0 = mpi_wtime()
       etot = eksum + epot
 c
 c     compute statistics and save trajectory for this step
@@ -185,6 +208,8 @@ c
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
       call mdsave (istep,dt,epot)
       call mdrest (istep)
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0
       return
       end
 c
@@ -208,7 +233,7 @@ c
       real*8 energy
       real*8 derivs(3,*)
       logical save_vdw,save_charge
-
+      logical save_dipole
       logical save_mpole,save_polar
       logical save_list
 c
@@ -267,7 +292,7 @@ c
       logical save_pitors,save_strtor
       logical save_angtor
       logical save_tortor,save_geom
-      logical save_extra
+      logical save_metal,save_extra
 c
 c
 c     save the original state of fast-evolving potentials
@@ -356,6 +381,7 @@ c
       real*8 time0,time1
       real*8, allocatable :: derivs(:,:)
       real*8 viralt(3,3)
+      time0 = mpi_wtime()
 
       dta_2 = 0.5d0 * dta
 c
@@ -366,23 +392,28 @@ c
             viralt(j,i) = 0.0d0
          end do
       end do
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0 
 
       do k = 1, nalt
-         do i = 1, nloc
-            iglob = glob(i)
-            if (use(iglob)) then
-               do j = 1, 3
-                  v(j,iglob) = v(j,iglob) + aalt(j,iglob)*dta_2
-               end do
-               xold(iglob) = x(iglob)
-               yold(iglob) = y(iglob)
-               zold(iglob) = z(iglob)
-               x(iglob) = x(iglob) + v(1,iglob)*dta
-               y(iglob) = y(iglob) + v(2,iglob)*dta
-               z(iglob) = z(iglob) + v(3,iglob)*dta
-            end if
-         end do
-         if (use_rattle)  call rattle (dta)
+        time0 = mpi_wtime()
+        do i = 1, nloc
+           iglob = glob(i)
+           if (use(iglob)) then
+              do j = 1, 3
+                 v(j,iglob) = v(j,iglob) + aalt(j,iglob)*dta_2
+              end do
+              xold(iglob) = x(iglob)
+              yold(iglob) = y(iglob)
+              zold(iglob) = z(iglob)
+              x(iglob) = x(iglob) + v(1,iglob)*dta
+              y(iglob) = y(iglob) + v(2,iglob)*dta
+              z(iglob) = z(iglob) + v(3,iglob)*dta
+           end if
+        end do
+        if (use_rattle)  call rattle (dta)
+        time1 = mpi_wtime()
+        timeinte = timeinte + time1-time0 
 c
 c       Reassign the particules that have changed of domain
 c
@@ -390,47 +421,55 @@ c       -> real space
 c
         time0 = mpi_wtime()
 c
-c       call reassignrespa(.true.,k,nalt)
         call reassignrespa(k,nalt)
-c
         time1 = mpi_wtime()
         timereneig = timereneig + time1 - time0
+c
 c
 c       communicate positions
 c
         time0 = mpi_wtime()
-c        call commposrespa(k.ne.nalt)
-        call commposrespa(.true.)
+        call commposrespa(k.ne.nalt)
         time1 = mpi_wtime()
-        timecommstep = timecommstep + time1 - time0
+        timecommpos = timecommpos + time1 - time0
 c
+        time0 = mpi_wtime()
         allocate (derivs(3,nbloc))
         derivs = 0d0
+        time1 = mpi_wtime()
+        timeinte = timeinte + time1-time0
 c
         time0 = mpi_wtime()
         call mechanicsteprespa(istep,.true.)
-        time1 = mpi_wtime()
-        timeparam = timeparam + time1 - time0
-        time0 = mpi_wtime()
         call allocsteprespa(.true.)
         time1 = mpi_wtime()
-        timeclear = timeclear + time1 - time0
+        timeparam = timeparam + time1 - time0
 c
 c     get the fast-evolving potential energy and atomic forces
 c
+        time0 = mpi_wtime()
         call gradfast (ealt,derivs)
+        time1 = mpi_wtime()
+        timegrad = timegrad + time1 - time0
 c
 c       communicate forces
 c
+        time0 = mpi_wtime()
         call commforcesrespa(derivs,.true.)
+        time1 = mpi_wtime()
+        timecommforces = timecommforces + time1-time0
 c
 c       MPI : get total energy
 c
+        time0 = mpi_wtime()
         call reduceen(ealt)
+        time1 = mpi_wtime()
+        timered = timered + time1 - time0
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion
 c
+         time0 = mpi_wtime()
           do i = 1, nloc
              iglob = glob(i)
              if (use(iglob)) then
@@ -451,6 +490,8 @@ c
               viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
            end do
         end do
+        time1 = mpi_wtime()
+        timeinte = timeinte + time1-time0
       end do
       return
       end

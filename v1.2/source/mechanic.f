@@ -25,7 +25,6 @@ c
 c
 c     set the bonded connectivity lists and active atoms
 c
-      call kewald
       call attach
       call active
 c
@@ -35,14 +34,11 @@ c
       call angles(.true.)
       call torsions(.true.)
       call bitors(.true.)
-c     call rings(.true.)
-      call rings
+      call rings(.true.)
 c
 c     get the base force field from parameter file and keyfile
 c
       call field
-c
-c      call polymer
 c
 c     assign atom types, classes and other atomic information
 c
@@ -57,44 +53,45 @@ c     find any pisystem atoms, bonds and torsional angles
 c
 c      call orbital
 c
+c     assign electrostatic and dispersion Ewald sum parameters
+c
+      call kewald
+c
 c     assign bond, angle and cross term potential parameters
 c
-      if (use_bond .or. use_strbnd .or. use_strtor
-     $    .or. (use_vdw .and. vdwtyp.eq.'MM3-HBOND'))
-     $    call kbond
-      if (use_angle .or. use_strbnd .or. use_angang) call kangle
-      if (use_strbnd)  call kstrbnd(.true.)
-      if (use_urey)  call kurey(.true.)
-      if (use_angang)  call kangang(.true.)
+      call kbond
+      call kangle
+      call kstrbnd(.true.)
+      call kurey(.true.)
+      call kangang(.true.)
 c
 c     assign out-of-plane deformation potential parameters
 c
-      if (use_angle .or. use_opbend)  call kopbend(.true.)
-      if (use_angle .or. use_opdist)  call kopdist(.true.)
-      if (use_improp)  call kimprop(.true.)
-      if (use_imptor)  call kimptor(.true.)
+      call kopbend(.true.)
+      call kopdist(.true.)
+      call kimprop(.true.)
+      call kimptor(.true.)
 c
 c     assign torsion and torsion cross term potential parameters
 c
-      if (use_tors .or. use_strtor .or. use_tortor)  call ktors
-      if (use_pitors)  call kpitors(.true.)
-      if (use_strtor)  call kstrtor(.true.)
-      if (use_angtor)  call kangtor(.true.)
-      if (use_tortor)  call ktortor(.true.)
+      call ktors
+      call kpitors(.true.)
+      call kstrtor(.true.)
+      call kangtor(.true.)
+      call ktortor(.true.)
 c
 c     assign van der Waals and electrostatic potential parameters
 c
-      if (use_charge) call kcharge(.true.,0)
-      if (use_vdw)  call kvdw(.true.,0)
-      if (use_mpole .or. use_polar .or.
-     &    use_solv)  call kmpole(.true.,0)
-      if (use_polar .or. use_mpole)  call kpolar(.true.,0)
+      call kcharge(.true.,0)
+      call kvdw(.true.,0)
+      call kmpole(.true.,0)
+      call kpolar(.true.,0)
 c
-      call initmpipme
+      if (use_polar) call initmpipme
 c
 c     assign restraint parameters
 c
-      if (use_geom)  call kgeom(.true.)
+      call kgeom(.true.)
 c
 c     set hybrid parameter values for free energy perturbation
 c
@@ -126,8 +123,6 @@ c
       implicit none
       integer istep
 c
-c      call molecule(.false.)
-
       call bonds(.false.)
       call angles(.false.)
       call torsions(.false.)
@@ -140,8 +135,8 @@ c      call molecule(.false.)
       if (use_strbnd) call kstrbnd(.false.)
       if (use_urey) call kurey(.false.)
       if (use_angang) call kangang(.false.)
-      if (use_angle .or. use_opbend)  call kopbend(.false.)
-      if (use_angle .or. use_opdist)  call kopdist(.false.)
+      if (use_opbend)  call kopbend(.false.)
+      if (use_opdist)  call kopdist(.false.)
       if (use_improp)  call kimprop(.false.)
       if (use_imptor)  call kimptor(.false.)
       if (use_pitors)  call kpitors(.false.)
@@ -150,9 +145,7 @@ c      call molecule(.false.)
       if (use_tortor)  call ktortor(.false.)
       if (use_geom)  call kgeom(.false.)
       if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
-
-
-      call initmpipme
+      if (use_polar) call initmpipme
 
 c     set holonomic constrains
 c
@@ -178,8 +171,8 @@ c      call molecule(.false.)
         if (use_strbnd) call kstrbnd(.false.)
         if (use_urey) call kurey(.false.)
         if (use_angang) call kangang(.false.)
-        if (use_angle .or. use_opbend)  call kopbend(.false.)
-        if (use_angle .or. use_opdist)  call kopdist(.false.)
+        if (use_opbend)  call kopbend(.false.)
+        if (use_opdist)  call kopdist(.false.)
         if (use_improp)  call kimprop(.false.)
         if (use_imptor)  call kimptor(.false.)
         if (use_pitors)  call kpitors(.false.)
@@ -193,7 +186,7 @@ c      call molecule(.false.)
         if (use_mpole) call kmpole(.false.,istep)
         if (use_polar) call kpolar(.false.,istep)
         if (use_vdw) call kvdw(.false.,istep)
-        if (istep.ne.-1) call initmpipme
+        if ((istep.ne.-1).and.use_polar) call initmpipme
 c
 c     set holonomic constrains
 c
@@ -225,8 +218,8 @@ c      call molecule(.false.)
         if (use_strbnd) call kstrbnd(.false.)
         if (use_urey) call kurey(.false.)
         if (use_angang) call kangang(.false.)
-        if (use_angle .or. use_opbend)  call kopbend(.false.)
-        if (use_angle .or. use_opdist)  call kopdist(.false.)
+        if (use_opbend)  call kopbend(.false.)
+        if (use_opdist)  call kopdist(.false.)
         if (use_improp)  call kimprop(.false.)
         if (use_imptor)  call kimptor(.false.)
         if (use_pitors)  call kpitors(.false.)
@@ -245,9 +238,7 @@ c      call molecule(.false.)
         if (use_mpole) call kmpole(.false.,istep)
         if (use_polar) call kpolar(.false.,istep)
         if (use_vdw) call kvdw(.false.,istep)
-        if (istep.ne.-1) call initmpipme
-        call initmpipme
-c        call updategrid
+        if ((istep.ne.-1).and.use_polar) call initmpipme
 c
 c     set holonomic constrains
 c

@@ -55,7 +55,11 @@ c
            end do
         end do
 c
-c       allocate arrays
+c       deallocate global pointers if necessary
+c
+        call dealloc_shared_torsions
+c
+c       allocate global pointers
 c
         call alloc_shared_torsions
 c
@@ -107,14 +111,12 @@ c
       return
       end
 c
-c
-c     subroutine alloc_shared_bond : allocate shared memory pointers for torsions
+c     subroutine dealloc_shared_torsions : deallocate shared memory pointers for torsions
 c     parameter arrays
 c
-      subroutine alloc_shared_torsions
+      subroutine dealloc_shared_torsions
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
       use angtor
-      use domdec
       use improp
       use imptor
       use pitors
@@ -123,9 +125,8 @@ c
       use mpi
       implicit none
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
 c
       if (associated(itors)) then
         CALL MPI_Win_shared_query(winitors, 0, windowsize, disp_unit,
@@ -172,15 +173,30 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winvprop,ierr)
       end if
-      if (associated(iitors)) then
-        CALL MPI_Win_shared_query(winiitors, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winiitors,ierr)
-      end if
       if (associated(iiprop)) then
         CALL MPI_Win_shared_query(winiiprop, 0, windowsize, disp_unit,
      $  baseptr, ierr)
         CALL MPI_Win_free(winiiprop,ierr)
+      end if
+      if (associated(itors1)) then
+        CALL MPI_Win_shared_query(winitors1, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winitors1,ierr)
+      end if
+      if (associated(itors2)) then
+        CALL MPI_Win_shared_query(winitors2, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winitors2,ierr)
+      end if
+      if (associated(itors3)) then
+        CALL MPI_Win_shared_query(winitors3, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winitors3,ierr)
+      end if
+      if (associated(iitors)) then
+        CALL MPI_Win_shared_query(winiitors, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winiitors,ierr)
       end if
       if (associated(kpit)) then
         CALL MPI_Win_shared_query(winkpit, 0, windowsize, disp_unit,
@@ -222,6 +238,28 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winnbangtor,ierr)
       end if
+      return
+      end
+c
+c
+c     subroutine alloc_shared_torsions : allocate shared memory pointers for torsions
+c     parameter arrays
+c
+      subroutine alloc_shared_torsions
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use angtor
+      use domdec
+      use improp
+      use imptor
+      use pitors
+      use strtor
+      use tors
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     itors
 c

@@ -105,13 +105,13 @@ c
            end do
         end do
 c
-c       allocate global arrays
+c       deallocate global pointers if necessary
+c
+        call dealloc_shared_angang
+c
+c       allocate global pointers
 c
         call alloc_shared_angang
-c        if (associated(iaa)) deallocate (iaa)
-c        allocate (iaa(2,nangang))
-c        if (associated(kaa)) deallocate (kaa)
-c        allocate (kaa(nangang))
 c
         nangangloc = 0
         do i = 1, n
@@ -184,6 +184,31 @@ c
       return
       end
 c
+c     subroutine dealloc_shared_angang : deallocate shared memory pointers for angang
+c     parameter arrays
+c
+      subroutine dealloc_shared_angang
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use angang
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+c
+      if (associated(iaa)) then
+        CALL MPI_Win_shared_query(winiaa, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winiaa,ierr)
+      end if
+      if (associated(kaa)) then
+        CALL MPI_Win_shared_query(winkaa, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winkaa,ierr)
+      end if
+      return
+      end
+c
 c     subroutine alloc_shared_angang : allocate shared memory pointers for angang
 c     parameter arrays
 c
@@ -194,19 +219,10 @@ c
       use domdec
       use mpi
       implicit none
-
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
-c
-c      if (associated(iaa)) deallocate(iaa)
-c      if (associated(kaa)) deallocate(kaa)
-      if (associated(iaa)) then
-        CALL MPI_Win_shared_query(winiaa, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winiaa,ierr)
-      end if
 c
 c     iaa
 c

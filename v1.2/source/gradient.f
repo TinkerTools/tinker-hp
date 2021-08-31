@@ -35,9 +35,10 @@ c
       implicit none
       real*8 energy
       real*8 derivs(3,nbloc)
-      real*8 time0,time1,time2
+      real*8 time0,time1
       integer iloc,iglob
       logical isnan
+      time0 = mpi_wtime()
 c
 c
 c     zero out each of the potential energy components
@@ -93,6 +94,8 @@ c
       vir = 0d0
       virsave = 0d0
       einter = 0.0d0
+      time1 = mpi_wtime()
+      timecleargrad = timecleargrad + time1-time0
 c
 c     call the local geometry energy and gradient routines
 c
@@ -116,28 +119,36 @@ c
 c
 c     call the van der Waals energy and gradient routines
 c
+      time0 = mpi_wtime()
       if (use_vdw) then
          if (vdwtyp .eq. 'LENNARD-JONES')  call elj1
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal1
       end if
+      time1 = mpi_wtime()
+      timevdw = timevdw + time1-time0
 c
 c     call the electrostatic energy and gradient routines
 c
+      time0 = mpi_wtime()
       if (use_charge) call echarge1
       if (use_mpole)  call empole1
+      time1 = mpi_wtime()
+      timeelec = timeelec + time1-time0
+      time0 = mpi_wtime()
       if (use_polar)  call epolar1
+      time1 = mpi_wtime()
+      timepolar = timepolar + time1-time0
 c
 c     call any miscellaneous energy and gradient routines
 c
       if (use_geom)  call egeom1
       if (use_extra)  call extra1
-      time2 = mpi_wtime()
-      timenonbonded = timenonbonded + time2-time1
 c
       if (use_smd_velconst .or. use_smd_forconst) call esmd1
 c
 c     sum up to get the total energy and first derivatives
 c
+      time0 = mpi_wtime()
       esum = eit + eopd + eopb + eaa + eub + eba + ea + eb + em + ep
      $       + ec + ev + et + ept + eat + ebt + ett + eg + ex + eid 
      $       + ensmd
@@ -218,5 +229,7 @@ c pl_force is in kcal/mol/A; no conversion should be needed
         derivs(:,1:nloc) = derivs(:,1:nloc) - pl_force(:,1:nloc)
       endif
 #endif
+      time1 = mpi_wtime()
+      timecleargrad = timecleargrad + time1-time0
       return
       end

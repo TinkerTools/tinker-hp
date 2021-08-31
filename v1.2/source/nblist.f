@@ -20,11 +20,9 @@ c
       use cutoff
       use neigh
       use potent
-      use timestat
       use mpi
       implicit none
       integer istep,modnl
-      real*8  time0,time1
 c
 c
 c     check number of steps between nl updates
@@ -66,13 +64,11 @@ c
       end if
       if ((use_pmecore).and.(rank.gt.ndir-1)) return
 c
-      time0 = mpi_wtime()
 c
 c     build the cells at the beginning and assign the particules to them
 c
       call build_cell_list
 c
-      time0 = mpi_wtime()
       if (use_shortclist) then
         call clistcell2
       else if (use_clist) then
@@ -88,8 +84,6 @@ c
       else if (use_mlist) then
         call mlistcell
       end if
-      time1 = mpi_wtime()
-      timenl = timenl + time1 - time0
 c
       return
       end
@@ -515,12 +509,6 @@ c
         end if
       end do
 c
-      if (allocated(thetai1)) deallocate (thetai1)
-      if (allocated(thetai2)) deallocate (thetai2)
-      if (allocated(thetai3)) deallocate (thetai3)
-      allocate (thetai1(4,bsorder,nlocrec))
-      allocate (thetai2(4,bsorder,nlocrec))
-      allocate (thetai3(4,bsorder,nlocrec))
       deallocate (req)
       deallocate (req2)
       deallocate (count)

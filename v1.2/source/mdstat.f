@@ -56,7 +56,6 @@ c
       real*8 pres_ave,pres2_ave
       real*8 dens_sum,dens2_sum
       real*8 dens_ave,dens2_ave
-      real*8 buffer(18)
       save etot_sum,etot2_sum
       save eint_sum,eint2_sum
       save epot_sum,epot2_sum
@@ -88,116 +87,15 @@ c
          dens_sum = 0.0d0
          dens2_sum = 0.0d0
       end if
-c
-c     print energy, temperature and pressure for current step
-c
-      if (modstep.eq.0) then
-c
-c     sum the timing values to get average over the cores
-c
-        buffer(1) = timereneig
-        buffer(2) = timecommstep
-        buffer(3) = timeparam
-        buffer(4) = timeforcescomm
-        buffer(5) = timedirreccomm
-        buffer(6) = timebondedvdw
-        buffer(7) = timebonded
-        buffer(8) = timenonbonded
-        buffer(9) = timereal
-        buffer(10) = timerealdip
-        buffer(11) = timegrid1
-        buffer(12) = timeffts
-        buffer(13) = timescalar
-        buffer(14) = timegrid2
-        buffer(15) = timerecreccomm
-        buffer(16) = timerec
-        buffer(17) = timerecdip
-c
-        if (rank.eq.0) then
-          call MPI_REDUCE(MPI_IN_PLACE,buffer,17,MPI_REAL8,MPI_SUM,0,
-     $       COMM_TINKER,ierr)
-        else
-          call MPI_REDUCE(buffer,buffer,17,MPI_REAL8,MPI_SUM,0,
-     $       COMM_TINKER,ierr)
-        end if
-c
-        if (use_pmecore) then
-          if (rank.eq.0) then
-            do i = 1, 5
-              buffer(i) = buffer(i)/ndir
-            end do
-            do i = 6, 8
-              buffer(i) = buffer(i)/nproc
-            end do
-            do i = 9, 10
-              buffer(i) = buffer(i)/ndir
-            end do
-            do i = 11, 17
-              buffer(i) = buffer(i)/nrec
-            end do
-            timereneig = buffer(1)
-            timecommstep = buffer(2)
-            timeparam = buffer(3)
-            timeforcescomm = buffer(4)
-            timedirreccomm = buffer(5)
-            timebondedvdw = buffer(6)
-            timebonded = buffer(7)
-            timenonbonded = buffer(8)
-            timereal = buffer(9)
-            timerealdip = buffer(10)
-            timegrid1 = buffer(11)
-            timeffts = buffer(12)
-            timescalar = buffer(13) 
-            timegrid2 = buffer(14) 
-            timerecreccomm = buffer(15)
-            timerec = buffer(16)
-            timerecdip = buffer(17)
-          end if
-        else
-          if (rank.eq.0) then
-            do i = 1, 17
-              buffer(i) = buffer(i)/nproc
-            end do
-            timereneig = buffer(1)
-            timecommstep = buffer(2)
-            timeparam = buffer(3)
-            timeforcescomm = buffer(4)
-            timedirreccomm = buffer(5)
-            timebondedvdw = buffer(6)
-            timebonded = buffer(7)
-            timenonbonded = buffer(8)
-            timereal = buffer(9)
-            timerealdip = buffer(10)
-            timegrid1 = buffer(11)
-            timeffts = buffer(12)
-            timescalar = buffer(13) 
-            timegrid2 = buffer(14) 
-            timerecreccomm = buffer(15)
-            timerec = buffer(16)
-            timerecdip = buffer(17)
-          end if
-        end if
-      end if
       if (rank.eq.0) then
         if (verbose) then
            if (modstep .eq. 1) then
-              if (use_bounds .and. integrate.ne.'STOCHASTIC') then
-                 write (iout,10)
-   10            format (/,4x,'MD Step',6x,'E Total',3x,'E Potential',
-     &                      5x,'E Kinetic',7x,'Temp',7x,'Pres',/)
-              else
-                 write (iout,20)
-   20            format (/,4x,'MD Step',6x,'E Total',3x,'E Potential',
-     &                      5x,'E Kinetic',7x,'Temp',/)
-              end if
+               write (iout,10)
+   10          format (/,4x,'MD Step',6x,'E Total',3x,'E Potential',
+     &                    5x,'E Kinetic',7x,'Temp',7x,'Pres',/)
            end if
-           if (use_bounds .and. integrate.ne.'STOCHASTIC') then
-              write (iout,30)  istep,etot,epot,ekin,temp,pres
-   30         format (i10,3f14.4,2f11.2)
-           else
-              write (iout,40)  istep,etot,epot,ekin,temp
-   40         format (i10,3f14.4,f11.2)
-           end if
+           write (iout,30)  istep,etot,epot,ekin,temp,pres
+   30      format (i10,3f14.4,2f11.2)
         end if
 c
 c       print header for the averages over a group of recent steps
@@ -341,78 +239,204 @@ c
      &                   '(+/-',f9.4,')')
            end if
         end if
-cc
-cc       note deformation value for potential energy smoothing
-cc
-c        if (use_smooth) then
-c           if (modstep .eq. 0) then
-c              write (iout,140)  deform
-c  140         format (' Deformation',9x,f15.3,' Sqr Angs')
-c           end if
-c        end if
+      end if
+      return
+      end
+c
+c     subroutine mdstattime: compute averages of various timings and
+c      output them if necessary
+c
+      subroutine mdstattime(istep,dt)
+      use domdec
+      use inform
+      use iounit
+      use timestat
+      use mpi
+      use potent
+      implicit none
+      integer istep,modstep,ierr,i
+      real*8 dt
+      real*8 buffer(24)
+c
+c     set number of steps for block averages of properties
+c
+      modstep = mod(istep,iprint)
+c
+c     sum the timing values to get average over the cores
+c
+      if (modstep.eq.0) then
+        buffer(1) = timeinte
+        buffer(2) = timereneig
+        buffer(3) = timecommpos
+        buffer(4) = timeparam
+        buffer(5) = timenl
+        buffer(6) = timegrad
+        buffer(7) = timered
+        buffer(8) = timetp
+        buffer(9) = timecommforces
+        buffer(10) = timestep
+        buffer(11) = timebonded
+        buffer(12) = timevdw
+        buffer(13) = timeelec
+        buffer(14) = timepolar
+        buffer(15) = timecleargrad
+        buffer(16) = timereal
+        buffer(17) = timerec
+        buffer(18) = timecommforcesrec
+        buffer(19) = timecommforcesreal
+        buffer(20) = timegrid
+        buffer(21) = timefft
+        buffer(22) = timescalar
+        buffer(23) = timegrid2
+        buffer(24) = timerecreccomm
+c
+        if (rank.eq.0) then
+          call MPI_REDUCE(MPI_IN_PLACE,buffer,24,MPI_REAL8,MPI_SUM,0,
+     $       COMM_TINKER,ierr)
+        else
+          call MPI_REDUCE(buffer,buffer,24,MPI_REAL8,MPI_SUM,0,
+     $       COMM_TINKER,ierr)
+        end if
+c
+        if (rank.eq.0) then
+          do i = 1, 24
+            buffer(i) = buffer(i)/nproc
+          end do
+          timeinte = buffer(1)
+          timereneig = buffer(2)
+          timecommpos = buffer(3)
+          timeparam = buffer(4)
+          timenl = buffer(5)
+          timegrad = buffer(6)
+          timered = buffer(7)
+          timetp = buffer(8)
+          timecommforces = buffer(9)
+          timestep = buffer(10)
+          timebonded = buffer(11)
+          timevdw = buffer(12)
+          timeelec = buffer(13)
+          timepolar = buffer(14)
+          timecleargrad = buffer(15)
+          timereal = buffer(16)
+          timerec = buffer(17)
+          timecommforcesrec = buffer(18)
+          timecommforcesreal = buffer(19)
+          timegrid = buffer(20)
+          timefft = buffer(21)
+          timescalar = buffer(22)
+          timegrid2 = buffer(23)
+          timerecreccomm = buffer(24)
+        end if
       end if
 c
 c     display the different times of the computation
 c
       if ((rank.eq.0).and.(verbose)) then
         if (modstep.eq.0) then
-c          write(iout,150) timeclear/dble(iprint)
-c 150      format('Ave time for aclear comms            =  ',F24.15)
-c          timeclear = 0.0d0
-          write(iout,160) timereneig/dble(iprint)
- 160      format('Ave time for reneig                  =  ',F24.15)
-          timereneig = 0.0d0
-          write(iout,170) timecommstep/dble(iprint)
- 170      format('Ave time for positions comm          =  ',F24.15)
-          timecommstep = 0.0d0
-          write(iout,180) timeparam/dble(iprint)
- 180      format('Ave time for param                   =  ',F24.15)
-          timeparam = 0.0d0
-          write(iout,190) timeforcescomm/dble(iprint)
- 190      format('Ave time for forces comm             =  ',F24.15)
-          timeforcescomm = 0.0d0
-          write(iout,210) timedirreccomm/dble(iprint)
- 210      format('Ave time for reciprocal forces comm  =  ',F24.15)
-          timedirreccomm = 0.0d0
-          write(iout,220) timebondedvdw/dble(iprint)
- 220      format('Ave time for real space forces comm  =  ',F24.15)
-          timebondedvdw = 0.0d0
-          write(iout,230) timebonded/dble(iprint)
- 230      format('Ave time for bonded forces           =  ',F24.15)
-          timebonded = 0.0d0
-          write(iout,240) timenonbonded/dble(iprint)
- 240      format('Ave time for non bonded forces       =  ',F24.15)
-          timenonbonded = 0.0d0
-          write(iout,250) timenl/dble(iprint)
- 250      format('Ave time for neighbor lists          =  ',F24.15)
-          timenl = 0.0d0
-          write(iout,260) timereal/dble(iprint)
- 260      format('Ave time for real space (permanent)  =  ',F24.15)
-          timereal = 0.0d0
-          write(iout,270) timerealdip/dble(iprint)
- 270      format('Ave time for real space (polar)      =  ',F24.15)
-          timerealdip = 0.0d0
-          write(iout,280) timegrid1/dble(iprint)
- 280      format('Ave time for fill grid (permanent)   =  ',F24.15)
-          timegrid1 = 0.0d0
-          write(iout,290) timeffts/dble(iprint)
- 290      format('Ave time for ffts (permanent)        =  ',F24.15)
-          timeffts = 0.0d0
-          write(iout,300) timescalar/dble(iprint)
- 300      format('Ave time for scalar prod (permanent) =  ',F24.15)
-          timescalar = 0.0d0
-          write(iout,310) timegrid2/dble(iprint)
- 310      format('Ave time for extract grid (permanent)=  ',F24.15)
-          timegrid2 = 0.0d0
-          write(iout,320) timerecreccomm/dble(iprint)
- 320      format('Ave time for rec-rec comm (permanent)=  ',F24.15)
-          timerecreccomm = 0.0d0
+          write(iout,*) '=================================='
+          write(iout,160) timeinte/dble(iprint),timeinte*100/timestep
+ 160      format('Ave time for pos./vel. update     =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,170) timereneig/dble(iprint),
+     $      timereneig*100/timestep
+ 170      format('Ave time for reneigh              =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,180) timecommpos/dble(iprint),
+     $     timecommpos*100/timestep
+ 180      format('Ave time for pos. comms.          =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,190) timeparam/dble(iprint),
+     $     timeparam*100/timestep
+ 190      format('Ave time for param regeneration   =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,200) timegrad/dble(iprint),
+     $     timegrad*100/timestep
+ 200      format('Ave time in gradient routines     =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,210) timenl/dble(iprint),
+     $     timenl*100/timestep
+ 210      format('Ave time for neighbor lists       =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,220) timered/dble(iprint),
+     $     timered*100/timestep
+ 220      format('Ave time for energy reduction     =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,230) timetp/dble(iprint),
+     $     timetp*100/timestep
+ 230      format('Ave time for Temp/Press control   =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,240) timecommforces/dble(iprint),
+     $     timecommforces*100/timestep
+ 240      format('Ave time for forces comms.        =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,250) timestep/dble(iprint),
+     $    timestep*100/timestep
+ 250      format('Ave time per step                 =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,260) 86400*dt*dble(iprint)/(1000*timestep)
+ 260      format(' ns per day: ',f15.4)
+          write(iout,*) '=================================='
+        end if
+      end if
+
+      if ((rank.eq.0).and.(verboseforcestime)) then
+        if (modstep.eq.0) then
+          write(iout,*) '=================================='
+          write(iout,270) timebonded/dble(iprint),
+     $     timebonded*100/timegrad
+ 270      format('Ave time for bonded forces        =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,280) timevdw/dble(iprint),
+     $     timevdw*100/timegrad
+ 280      format('Ave time for vdw forces           =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,290) timeelec/dble(iprint),
+     $     timeelec*100/timegrad
+ 290      format('Ave time for electrostatic forces =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,300) timepolar/dble(iprint),
+     $     timepolar*100/timegrad
+ 300      format('Ave time for polarization forces  =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,310) timecleargrad/dble(iprint),
+     $     timecleargrad*100/timegrad
+ 310      format('Ave time for zero./sum. forces    =  ',F14.6,
+     $      ' seconds',2x,F14.3,'%')
+          write(iout,*) '=================================='
+        end if
+      end if
+
+      if ((rank.eq.0).and.(verbosepmetime)) then
+        if (modstep.eq.0) then
+          write(iout,*) '=================================='
+          write(iout,320) timereal/dble(iprint)
+ 320      format('Ave time for real space forces (permanent)        =  '
+     $      ,F14.6,' seconds')
           write(iout,330) timerec/dble(iprint)
- 330      format('Ave time for recip space (permanent) =  ',F24.15)
-          timerec = 0.0d0
-          write(iout,340) timerecdip/dble(iprint)
- 340      format('Ave time for recip space (polar)     =  ',F24.15)
-          timerecdip = 0.0d0
+ 330      format('Ave time for rec. space forces (permanent)        =  '
+     $      ,F14.6,' seconds')
+          write(iout,340) timecommforcesreal/dble(iprint)
+ 340      format('Ave time for real space forces comms. (permanent) =  '
+     $      ,F14.6,' seconds')
+          write(iout,350) timecommforcesrec/dble(iprint)
+ 350      format('Ave time for rec. space forces comms. (permanent) =  '
+     $      ,F14.6,' seconds')
+          write(iout,360) timegrid/dble(iprint)
+ 360      format('Ave time fill pme grid (permanent)                =  '
+     $      ,F14.6,' seconds')
+          write(iout,370) timefft/dble(iprint)
+ 370      format('Ave time to do ffts (permanent)                   =  '
+     $      ,F14.6,' seconds')
+          write(iout,380) timescalar/dble(iprint)
+ 380      format('Ave time to do pme scalar prod. (permanent)       =  '
+     $      ,F14.6,' seconds')
+          write(iout,390) timegrid2/dble(iprint)
+ 390      format('Ave time to get rec. potential (permanent)        =  '
+     $      ,F14.6,' seconds')
+          write(iout,400) timerecreccomm/dble(iprint)
+ 400      format('Ave time for rec. rec. comms. (permanent)         =  '
+     $      ,F14.6,' seconds')
+          write(iout,*) '=================================='
         end if
       end if
 c
@@ -420,24 +444,31 @@ c
 c
 c     put timing variables to zero
 c
-        timeclear = 0.0d0
+        timeinte  = 0d0
         timereneig = 0.0d0
-        timecommstep = 0.0d0
+        timecommpos = 0.0d0
         timeparam = 0.0d0
-        timeforcescomm = 0.0d0
-        timedirreccomm = 0.0d0
-        timebondedvdw = 0.0d0
-        timebonded = 0.0d0
-        timenonbonded = 0.0d0
-        timereal = 0.0d0
-        timerealdip = 0.0d0
-        timegrid1 = 0.0d0
-        timeffts = 0.0d0
-        timescalar = 0.0d0
-        timegrid2 = 0.0d0
-        timerecreccomm = 0.0d0
-        timerec = 0.0d0
-        timerecdip = 0.0d0
+        timenl = 0d0
+        timegrad = 0.0d0
+        timered = 0.0d0
+        timetp = 0.0d0
+        timecommforces = 0.0d0
+        timestep = 0d0
+        timebonded = 0d0
+        timevdw = 0d0
+        timeelec = 0d0
+        timepolar = 0d0
+        timecleargrad = 0d0
+        timereal = 0d0
+        timerec = 0d0
+        timecommforcesrec = 0d0
+        timecommforcesreal = 0d0
+        timegrid = 0d0
+        timefft = 0d0
+        timescalar = 0d0
+        timegrid2 = 0d0
+        timerecreccomm = 0d0
       end if
       return
       end
+

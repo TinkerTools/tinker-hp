@@ -19,11 +19,9 @@ c
       use potent
       use mpi
       implicit none
-      real*8 time0, time1
 c
 c     choose the method for summing over polarization interactions
 c
-      time0 = mpi_wtime()
       if (use_polarshortreal) then
         if (polalgshort.eq.3) then
           call epolar1tcg
@@ -37,7 +35,6 @@ c
           call epolar1c
         end if
       end if
-      time1 = mpi_wtime()
       return
       end
 c
@@ -84,7 +81,6 @@ c
       real*8 zufield
       real*8 fix(3),fiy(3),fiz(3)
       real*8 trq(3)
-      real*8 time0,time1
 c
 c
 c     zero out the polarization energy and derivatives
@@ -100,7 +96,6 @@ c
 c
 c     compute the induced dipoles at each polarizable atom
 c
-      time0 = mpi_wtime()
       if (use_polarshortreal) then
         if (polalg.eq.5) then
           call dcinduce_shortreal
@@ -120,20 +115,15 @@ c
           call newinduce_pme2
         end if
       end if
-      time1 = mpi_wtime()
-c      write(*,*) 'time solver= ',time1-time0
 c
 c     compute the reciprocal space part of the Ewald summation
 c
-      time0 = mpi_wtime()
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
      $   then
         if (use_prec) then
           call eprecip1
         end if
       end if
-      time1 = mpi_wtime()
-c        write(*,*) 'time eprec= ',time1-time0
 c
 c     compute the real space part of the Ewald summation
 c
@@ -143,11 +133,8 @@ c
           if (use_polarshortreal) then
             call eprealshort1c
           else
-            time0 = mpi_wtime()
             call epreal1c
-            time1 = mpi_wtime()
           end if
-cc        write(*,*) 'time epreal = ',time1-time0
         end if
 
         if (use_pself) then
@@ -1097,7 +1084,6 @@ c
       use polar
       use polpot
       use potent
-      use timestat
       use virial
       use mpi
       implicit none
@@ -1137,7 +1123,6 @@ c
       integer, allocatable :: reqsend(:),reqrec(:)
       integer, allocatable :: req2send(:),req2rec(:)
       integer nprocloc,commloc,rankloc
-      real*8 time0,time1
 c
       if (use_pmecore) then
         nprocloc = nrec
@@ -1323,7 +1308,6 @@ c
          a(2,i) = dble(nfft2) * recip(i,2)
          a(3,i) = dble(nfft3) * recip(i,3)
       end do
-      time0 = mpi_wtime()
       do ii = 1, npolerecloc
          iipole = polerecglob(ii)
          iglob = ipole(iipole)
@@ -1336,8 +1320,6 @@ c
          call grid_uind_site(iglob,ii,fuind(1,ii),fuinp(1,ii),
      $    qgrid2in_2d)
       end do
-      time1 = mpi_wtime()
-      timegrid1 = timegrid1 + time1 - time0
 c
 c     MPI : begin reception
 c
@@ -1350,7 +1332,6 @@ c
 c
 c     MPI : begin sending
 c
-      time0 = mpi_wtime()
       do i = 1, nrec_send
         tag = nprocloc*prec_send(i) + rankloc + 1
         call MPI_ISEND(qgrid2in_2d(1,1,1,1,i+1),
@@ -1371,14 +1352,9 @@ c
         qgrid2in_2d(:,:,:,:,1) = qgrid2in_2d(:,:,:,:,1)+
      $   qgridmpi(:,:,:,:,i)
       end do
-      time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1 - time0
 c
-      time0 = mpi_wtime()
       call fft2d_frontmpi(qgrid2in_2d,qgrid2out_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
-      time1 = mpi_wtime()
-      timeffts = timeffts + time1 - time0
 c
 c     account for zeroth grid point for nonperiodic system
 c
@@ -1401,7 +1377,6 @@ c
 c
 c     complete the transformation of the PME grid
 c
-      time0 = mpi_wtime()
       do k = 1, ksize2(rankloc+1)
          do j = 1, jsize2(rankloc+1)
            do i = 1, isize2(rankloc+1)
@@ -1411,20 +1386,14 @@ c
            end do
          end do
       end do
-      time1 = mpi_wtime()
-      timescalar = timescalar + time1 - time0
 c
 c     perform 3-D FFT backward transform and get potential
 c
-      time0 = mpi_wtime()
       call fft2d_backmpi(qgrid2in_2d,qgrid2out_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
-      time1 = mpi_wtime()
-      timeffts = timeffts + time1 - time0
 c
 c     MPI : Begin reception
 c
-      time0 = mpi_wtime()
       do i = 1, nrec_send
         tag = nprocloc*rankloc + prec_send(i) + 1
         call MPI_IRECV(qgrid2in_2d(1,1,1,1,i+1),
@@ -1441,16 +1410,12 @@ c
      $   prec_send(i),tag,commloc,req2send(i),ierr)
       end do
 c
-      time0 = mpi_wtime()
       do i = 1, nrec_send
         call MPI_WAIT(req2rec(i),status,ierr)
       end do
       do i = 1, nrec_recep
         call MPI_WAIT(req2send(i),status,ierr)
       end do
-      time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1 - time0
-       time0 = mpi_wtime()
        do ii = 1, npolerecloc
          iipole = polerecglob(ii)
          iglob = ipole(iipole)
@@ -1642,7 +1607,6 @@ c
 c
 c     MPI : begin sending
 c
-      time0 = mpi_wtime()
       do i = 1, nrec_send
         tag = nprocloc*prec_send(i) + rankloc + 1
         call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
@@ -1663,10 +1627,7 @@ c
         qgridin_2d(:,:,:,:,1) = qgridin_2d(:,:,:,:,1)+
      $   qgridmpi(:,:,:,:,i)
       end do
-      time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1 - time0
 c
-      time0 = mpi_wtime()
       call fft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
       do k = 1, ksize2(rankloc+1)
@@ -1690,8 +1651,6 @@ c
          call cmp_to_fmp_site(cmp(1,i),fmp(1,i))
          call grid_mpole_site(iglob,i,fmp(1,i))
       end do
-      time1 = mpi_wtime()
-      timegrid1 = timegrid1 + time1 - time0
 c
 c     MPI : Begin reception
 c
@@ -1704,7 +1663,6 @@ c
 c
 c     MPI : begin sending
 c
-      time0 = mpi_wtime()
       do i = 1, nrec_send
         tag = nprocloc*prec_send(i) + rankloc + 1
         call MPI_ISEND(qgridin_2d(1,1,1,1,i+1),
@@ -1725,14 +1683,9 @@ c
         qgridin_2d(:,:,:,:,1) = qgridin_2d(:,:,:,:,1)+
      $   qgridmpi(:,:,:,:,i)
       end do
-      time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1 - time0
 c
-      time0 = mpi_wtime()
       call fft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
-      time1 = mpi_wtime()
-      timeffts = timeffts + time1 - time0
 c
 c     make the scalar summation over reciprocal lattice
 c

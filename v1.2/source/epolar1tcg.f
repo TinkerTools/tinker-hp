@@ -132,7 +132,6 @@ c
       integer, allocatable :: req2rec(:),req2send(:)
       real*8 :: f, sprod, sp0, sp1, term, omega, spp1, ap1a0, ap11a,
      $            ap11, ap12, ap2a0, ap21, e
-      real*8 :: time0,time1
       real*8, dimension(2) :: n0, t4, t1, a10, a11, a12, a21
 
 
@@ -252,7 +251,6 @@ c
       allocate (req2send(nproc))
       allocate (reqrecdirrec(nproc))
       allocate (reqrecdirsend(nproc))
-      time0 = mpi_wtime()
 
       f = electric/dielec
 
@@ -275,10 +273,8 @@ c
      $ reqrecdirrec,reqrecdirsend)
       call commrecdirfields(2,cphirec,cphi,buffermpi1,buffermpi2,
      $ reqrecdirrec,reqrecdirsend)
-      time0 = mpi_wtime()
       call efld0_direct(nrhs, efi)
       call commfield(nrhs, efi)
-      time1 = mpi_wtime()
 
       term = (4.0d0/3.0d0) * aewald**3 / sqrtpi
       do i = 1, npoleloc
@@ -310,10 +306,8 @@ c
                r0 = efi
                r0bis = efibis
                oldr0 = r0
-               time0 = mpi_wtime()
                call tmatxb_pme(nrhs, .true., r0, Tr0)
                call commfield(nrhs,Tr0)
-               time1 = mpi_wtime()
 
                call tmatxbrecipsave(r0,r0bis,nrhs,Tr0rec,Tr0recbis,
      $            fphir0)
@@ -342,9 +336,7 @@ c
 
                oldtr0 = Tr0
                fphie = fphir0
-               time0 = mpi_wtime()
                call fftthatplz2(Tr0, Tr0bis, fphiTr0)
-               time1 = mpi_wtime()
             else if (peek) then  !--P
                r0 = efi
                oldr0 = r0
@@ -950,8 +942,6 @@ c
      $            + a12(1)*fphitr0(:,1,:)
       fphiarrdep = a11(2)*fphir0(:,1,:)
       fphiarrdtr0 = a21(1)*fphir0(:,1,:)
-      time1 = mpi_wtime()
-c      write(*,*) 'time build array = ',time1-time0
 
       if (peek .and. .not. precond) then
          spp1 = sprod(3*npoleloc, oldaefi(:,2,:), Tr0(:,1,:))
@@ -1039,12 +1029,9 @@ c      write(*,*) 'time build array = ',time1-time0
 
       end if
 
-      time0 = mpi_wtime()
       denedr = 0d0
       denedmu = 0d0
       denedt = 0d0
-      time1 = mpi_wtime()
-c      write(*,*) 'time clear array  = ',time1-time0
 
       if (isguess) then
          arrA = arr_ded
@@ -1099,18 +1086,15 @@ c
          arr_depbis = arr_depbis + mu0bis(:,1,:)
          fphiarrdep= fphiarrdep+ fphimu0(:,1,:)
 
-         time0 = mpi_wtime()
          call scalderfieldzmat3( arr_ded, arr_dep, 
      $                           arr_dtr0, r0(:,1,:),
      $                          -arrA, oldaefi(:,1,:),
      $                           ade, adme, adte, adtb)
 
-         time1 = mpi_wtime()
          denedr =  ade(:,1,:)    + ade(:,2,:)    + adtb
          denedmu=  adme(:,1,:)   + adme(:,2,:)    
          denedt =  adte(:,:,1,:) + adte(:,:,2,:)
 
-         time0 = mpi_wtime()
          call scalderfieldzmatrec3(
      &                             arr_ded,arr_dedbis, fphiarrded,
      &                             arr_dep,arr_depbis,fphiarrdep,
@@ -1121,14 +1105,11 @@ c
      &                             fphimu0(:,1,:),adebis, admebis,
      &                             adtebis, adtbbis
      &                            )
-         time1 = mpi_wtime()
-c         write(*,*) 'time scalderrrec= ',time1-time0
          denedrbis = adebis + adtbbis
          denedmubis = admebis
          denedtbis = adtebis
       else if (.not. isguess) then
 
-         time0 = mpi_wtime()
          call scalderfieldzmat1(
      &                          arr_ded, arr_dep, arr_dtr0,r0(:,1,:),
      &                          ade,adme,adte,adtb
@@ -1137,10 +1118,7 @@ c         write(*,*) 'time scalderrrec= ',time1-time0
          denedr =   ade(:,1,:)  + ade(:,2,:)  + adtb    
          denedmu=  adme(:,1,:)   + adme(:,2,:)    
          denedt =  adte(:,:,1,:) + adte(:,:,2,:)
-         time1 = mpi_wtime()
-c         write(*,*) 'time scalderreal = ',time1-time0
 
-         time0 = mpi_wtime()
          call scalderfieldzmatrec1(
      &                             arr_ded,arr_dedbis, fphiarrded,
      &                             arr_dep,arr_depbis,fphiarrdep,
@@ -1152,14 +1130,11 @@ c         write(*,*) 'time scalderreal = ',time1-time0
           denedrbis =  adebis + adtbbis      
           denedmubis=  admebis     
           denedtbis =  adtebis
-         time1 = mpi_wtime()
-c         write(*,*) 'time scalderrrec= ',time1-time0
       end if
 
       !N. Compute dEne/dmu and dEne/dtheta (given E=.5*mu.field)
 
       ! Do the contraction dEne/dmuP * dmuP/dr
-      time0 = mpi_wtime()
       call torquetcg_dir(torq_mu,torq_t,denedmu,denedt)
 
       dep = 0d0
@@ -1173,9 +1148,6 @@ c         write(*,*) 'time scalderrrec= ',time1-time0
          end do
       end do
       dep(:,:) = dep(:,:)-0.5d0*f*(torq_mu(:,:)+torq_t(:,:))
-      time1 = mpi_wtime()
-c      write(*,*) 'contrac dir = ',time1 - time0
-      time0 = mpi_wtime()
 
       ! Do the contraction dEne/dmuP * dmuP/dr
       call torquetcg_rec(torq_mubis,torq_tbis,denedmubis,denedtbis)
@@ -1188,7 +1160,6 @@ c      write(*,*) 'contrac dir = ',time1 - time0
          end do
       end do
       deprec(:,:) = deprec(:,:)-0.5d0*f*(torq_mubis(:,:)+torq_tbis(:,:))
-      time1 = mpi_wtime()
 
 c
       return

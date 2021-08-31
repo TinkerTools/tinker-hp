@@ -26,6 +26,7 @@ c
       implicit none
       integer i,j,k,m,iglob
       logical init
+      real*8 pos(3,4)
 c
       if (init) then
 c
@@ -46,7 +47,11 @@ c
            end do
         end do
 c
-c       allocate arrays
+c       deallocate global pointers if necessary
+c
+        call dealloc_shared_angles
+c
+c       allocate global pointers
 c
         call alloc_shared_angles
 c
@@ -79,30 +84,6 @@ c
       if (allocated(angleglob)) deallocate(angleglob)
       allocate (angleglob(4*nbloc))
       nangleloc = 0
-c      do i = 1, nbloc
-c        m = 0
-c        iglob = glob(i)
-c        pos(1,1) = x(iglob)
-c        pos(2,1) = y(iglob)
-c        pos(3,1) = z(iglob)
-c        do j = 1, n12(iglob)-1
-c          jglob = i12(j,iglob)
-c          pos(1,2) = x(jglob)
-c          pos(2,2) = y(jglob)
-c          pos(3,2) = z(jglob)
-c          do k = j+1, n12(iglob)
-c            m = m + 1
-c            kglob = i12(k,iglob)
-c            pos(1,3) = x(kglob)
-c            pos(2,3) = y(kglob)
-c            pos(3,3) = z(kglob)
-c            call midpointgroup(pos,3,docompute)
-c            if (.not.(docompute)) cycle
-c            nangleloc = nangleloc + 1
-c            angleglob(nangleloc) = anglist(m,iglob)
-c          end do
-c        end do
-c      end do
       do i = 1, nloc
         m = 0
         iglob = glob(i)
@@ -119,10 +100,10 @@ c      end do
       end
 c
 c
-c     subroutine alloc_shared_angles : allocate shared memory pointers for angles
+c     subroutine dealloc_shared_angles : deallocate shared memory pointers for angles
 c     parameter arrays
 c
-      subroutine alloc_shared_angles
+      subroutine dealloc_shared_angles
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
       use angang
       use angle
@@ -142,28 +123,7 @@ c
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
       INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
 c
-c      if (associated(anglist)) deallocate(anglist)
-c      if (associated(iang)) deallocate (iang)
-c      if (associated(ak)) deallocate (ak)
-c      if (associated(anat)) deallocate (anat)
-c      if (associated(afld)) deallocate (afld)
-c      if (associated(angtyp)) deallocate (angtyp)
-c      if (associated(isb)) deallocate (isb)
-c      if (associated(sbk)) deallocate (sbk)
-c      if (associated(uk)) deallocate (uk)
-c      if (associated(ul)) deallocate (ul)
-c      if (associated(iury)) deallocate (iury)
-c      if (associated(nbbitors)) deallocate (nbbitors)
-c      if (associated(nbstrbnd)) deallocate (nbstrbnd)
-c      if (associated(nburey)) deallocate (nburey)
-c      if (associated(nbangang)) deallocate (nbangang)
-c      if (associated(nbopbend)) deallocate (nbopbend)
-c      if (associated(nbopdist)) deallocate (nbopdist)
-c      if (associated(nbimprop)) deallocate (nbimprop)
-c      if (associated(nbimptor)) deallocate (nbimptor)
-
       if (associated(anglist)) then
         CALL MPI_Win_shared_query(winanglist, 0, windowsize, disp_unit,
      $  baseptr, ierr)
@@ -259,6 +219,33 @@ c      if (associated(nbimptor)) deallocate (nbimptor)
      $  baseptr, ierr)
         CALL MPI_Win_free(winnbimptor,ierr)
       end if
+      return
+      end
+c
+c     subroutine alloc_shared_angles : allocate shared memory pointers for angles
+c     parameter arrays
+c
+      subroutine alloc_shared_angles
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use angang
+      use angle
+      use angpot
+      use atmlst
+      use atoms
+      use bitor
+      use domdec
+      use improp
+      use imptor
+      use opbend
+      use opdist
+      use strbnd
+      use urey
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     anglist
 c

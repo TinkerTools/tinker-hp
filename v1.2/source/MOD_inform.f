@@ -16,6 +16,8 @@ c     iwrite    steps between coordinate dumps (0=no dumps)
 c     isend     steps between socket communication (0=no sockets)
 c     silent    logical flag to turn off all information printing
 c     verbose   logical flag to turn on extra information printing
+c     verbosepmetime   logical flag to turn on extra timings of PME printing
+c     verboseforcestime   logical flag to turn on extra timings of forces
 c     debug     logical flag to turn on full debug printing
 c     holdup    logical flag to wait for carriage return on exit
 c     abort     logical flag to stop execution at next chance
@@ -26,6 +28,7 @@ c
       integer digits,iprint
       integer iwrite,isend
       logical silent,verbose
+      logical verbosepmetime,verboseforcestime
       logical debug,holdup,abort
       save
       end

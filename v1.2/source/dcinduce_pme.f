@@ -346,7 +346,6 @@ c
       integer ipiv(ndismx+1)
       real*8  zero, one, rnorm(2), rr, xx(1)
       real*8 term
-      real*8 time0,time1,time2,time3
 
       save    zero, one, xx
       external matvec
@@ -429,7 +428,6 @@ c
 c     main loop:
 c
       do it = 1, politer
-C        ctime = 0.0d0
         rnorm = 0.0d0
 c
 c     MPI : begin reception
@@ -448,10 +446,7 @@ c
      $     buffermpi2,reqrecdirrec,reqrecdirsend)
 c
         else
-          time0 = mpi_wtime()
           call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-          time1 = mpi_wtime()
-          if (it.eq.1) timerecdip = timerecdip + time1-time0
           call commrecdirsolv(nrhs,1,dipfieldbis,dipfield,buffermpi1,
      $      buffermpi2,reqrecdirrec,reqrecdirsend)
           call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
@@ -466,10 +461,7 @@ c    The real space processes extract the recip fields, compute the real fields
 c    and add them
 c
          term = (4.0d0/3.0d0) * aewald**3 / sqrtpi
-         time0 = mpi_wtime()
          call matvec(nrhs,.false.,mu,h)
-         time1 = mpi_wtime()
-         if (it.eq.1) timerealdip = timerealdip + time1-time0
          call commfield(nrhs,h)
 c
          call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
@@ -559,18 +551,14 @@ c
             munew = 0.0d0
             call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
           end if
-          time2 = mpi_wtime()
           call commdirdir(nrhs,1,munew,reqrec,reqsend)
           call commrecdirdip(nrhs,1,murec,munew,buffermpimu,
      $    buffermpimu,req2rec,req2send)
 c
-          time0 = mpi_wtime()
           call commdirdir(nrhs,2,mu,reqrec,reqsend)
           call commrecdirdip(nrhs,2,murec,munew,buffermpimu,
      $    buffermpimu,req2rec,req2send)
           mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
-          time1 = mpi_wtime()
-          time3 = mpi_wtime()
           mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 
         else

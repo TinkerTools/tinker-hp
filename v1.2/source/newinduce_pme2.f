@@ -372,13 +372,8 @@ c     now, compute the initial direction
 c
       ggold = 0d0
 c
-      time0 = mpi_wtime()
       call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-      time1 = mpi_wtime()
-      timerecdip = timerecdip + time1-time0
       call matvec(nrhs,.true.,mu,h)
-      time2 = mpi_wtime()
-      timerealdip = timerealdip + time2-time1
       call commfield(nrhs,h)
 c
       call commrecdirsolv(nrhs,0,dipfieldbis,dipfield,buffermpi1,
@@ -711,13 +706,8 @@ c
         h = 0d0
         rnorm = 0d0
 c
-        time0 = mpi_wtime()
         call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-        time1 = mpi_wtime()
-        if (it.eq.1) timerecdip = timerecdip + time1-time0
         call matvec(nrhs,.false.,mu,h)
-        time2 = mpi_wtime()
-        if (it.eq.1) timerealdip = timerealdip + time2-time1
         call commfield(nrhs,h)
 c
         call commrecdirsolv(nrhs,0,dipfieldbis,dipfield,buffermpi1,
@@ -735,7 +725,6 @@ c
         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
      $    buffermpi2,reqrecdirrec,reqrecdirsend)
 c        
-        time2 = mpi_wtime()
         term = (4.0d0/3.0d0) * aewald**3 / sqrtpi
         do i = 1, npoleloc
           do k = 1, nrhs
@@ -792,7 +781,6 @@ c
           munew = 0d0
           call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
         end if
-        time2 = mpi_wtime()
 c
         call commdirdir(nrhs,1,munew,reqrec,reqsend)
         call commrecdirdip(nrhs,1,murec,munew,buffermpimu1,

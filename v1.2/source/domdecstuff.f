@@ -59,15 +59,8 @@ c
       if (allocated(precdir_send)) deallocate(precdir_send)
       if (allocated(precdir_recep1)) deallocate(precdir_recep1)
       if (allocated(precdir_recep2)) deallocate(precdir_recep2)
-      if (allocated(precdir_recep3)) deallocate(precdir_recep3)
       if (allocated(precdir_send1)) deallocate(precdir_send1)
       if (allocated(precdir_send2)) deallocate(precdir_send2)
-      if (allocated(precdir_send3)) deallocate(precdir_send3)
-      if (allocated(ptorque_recep)) deallocate(ptorque_recep)
-      if (allocated(ptorque_recep)) deallocate(ptorque_recep)
-      if (allocated(ptorqueshort_recep)) deallocate(ptorqueshort_recep)
-      if (allocated(ptorque_send)) deallocate(ptorque_send)
-      if (allocated(ptorqueshort_send)) deallocate(ptorqueshort_send) 
       if (allocated(globrec)) deallocate(globrec)
       if (allocated(locrec)) deallocate(locrec)
       if (allocated(bufbegrec)) deallocate(bufbegrec)
@@ -117,15 +110,9 @@ c
         allocate(precdir_send1(nproc))
         allocate(precdir_recep2(nproc))
         allocate(precdir_send2(nproc))
-        allocate(precdir_recep3(nproc))
-        allocate(precdir_send3(nproc))
         allocate(bufbegpole(nproc))
         allocate(bufbeg(nproc))
         allocate(bufbegrec(nproc))
-        allocate(ptorque_recep(nproc))
-        allocate(ptorqueshort_recep(nproc))
-        allocate(ptorque_send(nproc))
-        allocate(ptorqueshort_send(nproc))
         allocate(pbig_recep(nproc))
         allocate(pbigshort_recep(nproc))
         allocate(pbig_send(nproc))
@@ -189,12 +176,6 @@ c
         allocate(precdir_send1(nproc))
         allocate(precdir_recep2(nproc))
         allocate(precdir_send2(nproc))
-        allocate(precdir_recep3(nproc))
-        allocate(precdir_send3(nproc))
-        allocate(ptorque_recep(nproc))
-        allocate(ptorqueshort_recep(nproc))
-        allocate(ptorque_send(nproc))
-        allocate(ptorqueshort_send(nproc))
         allocate (globrec(n))
         allocate (locrec(n))
         allocate (bufbegrec(nproc))
@@ -1206,8 +1187,8 @@ c
       integer nprocloc,rankloc,iproc,iproc1
       real*8 xr,yr,zr
       real*8 dist
-      real*8 mbuf,vbuf,torquebuf,neigbuf,bigbuf
-      real*8 mshortbuf,vshortbuf,torqueshortbuf,bigshortbuf
+      real*8 mbuf,vbuf,neigbuf,bigbuf
+      real*8 mshortbuf,vshortbuf,bigshortbuf
       real*8 eps1,eps2
       real*8, allocatable :: xbegproctemp(:),ybegproctemp(:)
       real*8, allocatable :: zbegproctemp(:)
@@ -1219,13 +1200,10 @@ c
 c
       integer, allocatable :: nrecep1(:),precep1(:,:)
       integer, allocatable :: nrecep2(:),precep2(:,:)
-      integer, allocatable :: ntorquerecep(:),ptorquerecep(:,:)
       integer, allocatable :: nbigrecep(:),pbigrecep(:,:)
 c
       integer, allocatable :: nrecepshort1(:),precepshort1(:,:)
       integer, allocatable :: nrecepshort2(:),precepshort2(:,:)
-      integer, allocatable :: ntorqueshortrecep(:),
-     $ ptorqueshortrecep(:,:)
       integer, allocatable :: nbigshortrecep(:),pbigshortrecep(:,:)
 c
       integer, allocatable :: nneigrecep(:),pneigrecep(:,:)
@@ -1251,8 +1229,6 @@ c
       allocate (precep1(nproc,nproc))
       allocate (nrecep2(nproc))
       allocate (precep2(nproc,nproc))
-      allocate (ntorquerecep(nproc))
-      allocate (ptorquerecep(nproc,nproc))
       allocate (nbigrecep(nproc))
       allocate (pbigrecep(nproc,nproc))
 c
@@ -1262,8 +1238,6 @@ c
       allocate (precepshort1(nproc,nproc))
       allocate (nrecepshort2(nproc))
       allocate (precepshort2(nproc,nproc))
-      allocate (ntorqueshortrecep(nproc))
-      allocate (ptorqueshortrecep(nproc,nproc))
       allocate (nbigshortrecep(nproc))
       allocate (pbigshortrecep(nproc,nproc))
 c
@@ -1271,21 +1245,17 @@ c
       allocate (pneigrecep(nproc,nproc))
       nrecep1 = 0
       nrecep2 = 0
-      ntorquerecep = 0
       nbigrecep = 0
       nneigrecep = 0
       precep1 = 0
       precep2 = 0
-      ptorquerecep = 0
       pbigrecep = 0
 c
       nrecepshort1 = 0
       nrecepshort2 = 0
-      ntorqueshortrecep = 0
       nbigshortrecep = 0
       precepshort1 = 0
       precepshort2 = 0
-      ptorqueshortrecep = 0
       pbigshortrecep = 0
 c
       pneigrecep = 0
@@ -1443,13 +1413,10 @@ c
       p_recep1 = 0
       p_send2 = 0
       p_recep2 = 0
-      ptorque_send = 0
-      ptorque_recep = 0
       pbig_send = 0
       pbig_recep = 0
       n_recep1 = 0
       n_recep2 = 0
-      ntorque_recep = 0
       nneig_recep = 0
       nbig_recep = 0
 c
@@ -1457,13 +1424,10 @@ c
       p_recepshort1 = 0
       p_sendshort2 = 0
       p_recepshort2 = 0
-      ptorqueshort_send = 0
-      ptorqueshort_recep = 0
       pbigshort_send = 0
       pbigshort_recep = 0
       n_recepshort1 = 0
       n_recepshort2 = 0
-      ntorqueshort_recep = 0
       nbigshort_recep = 0
 c
       if ((use_pmecore).and.(rank.gt.ndir-1)) then
@@ -1472,7 +1436,7 @@ c
 c
 c     choose cutoff depending on electrostatic interaction
 c
-      if (use_mpole) then
+      if ((use_mpole).or.(use_polar)) then
         mbuf = sqrt(mbuf2)
         mshortbuf = sqrt(mshortbuf2)
       else if (use_charge) then
@@ -1485,16 +1449,12 @@ c
 c
       vbuf = sqrt(vbuf2)+2.0d0
       vshortbuf = sqrt(vshortbuf2)+2.0d0
-      torquebuf = mbuf + lbuffer
-      torqueshortbuf = mshortbuf + lbuffer
-      torquebuf2 = torquebuf*torquebuf 
-      torqueshortbuf2 = torqueshortbuf*torqueshortbuf 
       neigbuf = lbuffer
 c
 c     get maximum cutoff value
 c
-      bigbuf = max(torquebuf,vbuf,ddcut)
-      bigshortbuf = max(torqueshortbuf,vshortbuf,ddcut)
+      bigbuf = max(mbuf,vbuf,ddcut)
+      bigshortbuf = max(mshortbuf,vshortbuf,ddcut)
 c
       do iproc = 0, nprocloc-1
         do iproc1 = 0, nprocloc-1
@@ -1507,10 +1467,6 @@ c
           if (dist.le.(vbuf/2)) then
             nrecep2(iproc1+1) = nrecep2(iproc1+1)+1
             precep2(nrecep2(iproc1+1),iproc1+1) = iproc
-          end if
-          if (dist.le.(torquebuf/2)) then
-            ntorquerecep(iproc1+1) = ntorquerecep(iproc1+1)+1
-            ptorquerecep(ntorquerecep(iproc1+1),iproc1+1) = iproc
           end if
           if (dist.le.(bigbuf/2)) then
             nbigrecep(iproc1+1) = nbigrecep(iproc1+1)+1
@@ -1526,11 +1482,6 @@ c
           if (dist.le.(vshortbuf/2)) then
             nrecepshort2(iproc1+1) = nrecepshort2(iproc1+1)+1
             precepshort2(nrecepshort2(iproc1+1),iproc1+1) = iproc
-          end if
-          if (dist.le.(torquebuf/2)) then
-            ntorqueshortrecep(iproc1+1) = ntorqueshortrecep(iproc1+1)+1
-            ptorqueshortrecep(ntorqueshortrecep(iproc1+1),iproc1+1) = 
-     $         iproc
           end if
           if (dist.le.(bigshortbuf/2)) then
             nbigshortrecep(iproc1+1) = nbigshortrecep(iproc1+1)+1
@@ -1549,8 +1500,6 @@ c
       p_recep1 = precep1(:,rankloc+1)
       n_recep2 = nrecep2(rankloc+1)
       p_recep2 = precep2(:,rankloc+1)
-      ntorque_recep = ntorquerecep(rankloc+1)
-      ptorque_recep = ptorquerecep(:,rankloc+1)
       nbig_recep = nbigrecep(rankloc+1)
       pbig_recep = pbigrecep(:,rankloc+1)
 c
@@ -1558,8 +1507,6 @@ c
       p_recepshort1 = precepshort1(:,rankloc+1)
       n_recepshort2 = nrecepshort2(rankloc+1)
       p_recepshort2 = precepshort2(:,rankloc+1)
-      ntorqueshort_recep = ntorqueshortrecep(rankloc+1)
-      ptorqueshort_recep = ptorqueshortrecep(:,rankloc+1)
       nbigshort_recep = nbigshortrecep(rankloc+1)
       pbigshort_recep = pbigshortrecep(:,rankloc+1)
 c      write(*,*) 'nbigshort_recep = ',nbigshort_recep
@@ -1568,8 +1515,6 @@ c      write(*,*) 'n_recepshort1 = ',n_recepshort1
 c      write(*,*) 'n_recep1 = ',n_recep1
 c      write(*,*) 'n_recepshort2 = ',n_recepshort2
 c      write(*,*) 'n_recep2 = ',n_recep2
-c      write(*,*) 'ntorqueshort_recep = ',ntorqueshort_recep
-c      write(*,*) 'ntorque_recep = ',ntorque_recep
 c
       nneig_recep = nneigrecep(rankloc+1)
       pneig_recep = pneigrecep(:,rankloc+1)
@@ -1582,21 +1527,6 @@ c
             if (precep1(i,iproc+1).eq.rankloc) then
               n_send1 = n_send1 + 1
               p_send1(n_send1) = iproc
-            end if
-          end do
-        end if
-      end do
-c
-c     get the processes to send data to
-c
-      ntorque_send = 0
-c
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          do i = 1, ntorquerecep(iproc+1)
-            if (ptorquerecep(i,iproc+1).eq.rankloc) then
-              ntorque_send = ntorque_send + 1
-              ptorque_send(ntorque_send) = iproc
             end if
           end do
         end if
@@ -1640,21 +1570,6 @@ c
             if (precepshort1(i,iproc+1).eq.rankloc) then
               n_sendshort1 = n_sendshort1 + 1
               p_sendshort1(n_sendshort1) = iproc
-            end if
-          end do
-        end if
-      end do
-c
-c     get the processes to send data to
-c
-      ntorqueshort_send = 0
-c
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          do i = 1, ntorqueshortrecep(iproc+1)
-            if (ptorqueshortrecep(i,iproc+1).eq.rankloc) then
-              ntorqueshort_send = ntorqueshort_send + 1
-              ptorqueshort_send(ntorqueshort_send) = iproc
             end if
           end do
         end if
@@ -1719,16 +1634,12 @@ c
       deallocate (precep2)
       deallocate (nbigrecep)
       deallocate (pbigrecep)
-      deallocate (ntorquerecep)
-      deallocate (ptorquerecep)
       deallocate (nrecepshort1)
       deallocate (precepshort1)
       deallocate (nrecepshort2)
       deallocate (precepshort2)
       deallocate (nbigshortrecep)
       deallocate (pbigshortrecep)
-      deallocate (ntorqueshortrecep)
-      deallocate (ptorqueshortrecep)
       deallocate (nneigrecep)
       deallocate (pneigrecep)
       return
@@ -1830,8 +1741,6 @@ c
 c
       docompute = .false.
 c
-c      call image(xi,yi,zi)
-c      call image(xk,yk,zk)
       xr = xi - xk
       yr = yi - yk
       zr = zi - zk
@@ -1919,8 +1828,8 @@ c
       integer nprocloc,rankloc,commloc,iproc
       integer i,status(MPI_STATUS_SIZE),tag,ierr
       integer istep,modnl
-      real*8 mbuf,vbuf,torquebuf,neigbuf,bigbuf
-      real*8 mshortbuf,vshortbuf,torqueshortbuf,bigshortbuf
+      real*8 mbuf,vbuf,neigbuf,bigbuf
+      real*8 mshortbuf,vshortbuf,bigshortbuf
       real*8 dist, scale
       integer, allocatable :: bufcount(:),buffer(:,:)
       integer, allocatable :: reqsend(:),reqrec(:)
@@ -1952,19 +1861,16 @@ c
       allocate (bufcount(nprocloc))
       allocate (buffer(nprocloc,nprocloc))
 c
-c     get the processes to receive data from : for commstep and for commtorque
+c     get the processes to receive data from
 c
       p_send1 = 0
       p_recep1 = 0
       p_send2 = 0
       p_recep2 = 0
-      ptorque_send = 0
-      ptorque_recep = 0
       pbig_send = 0
       pbig_recep = 0
       n_recep1 = 0
       n_recep2 = 0
-      ntorque_recep = 0
       nneig_recep = 0
       nbig_recep = 0
 c
@@ -1972,13 +1878,10 @@ c
       p_recepshort1 = 0
       p_sendshort2 = 0
       p_recepshort2 = 0
-      ptorqueshort_send = 0
-      ptorqueshort_recep = 0
       pbigshort_send = 0
       pbigshort_recep = 0
       n_recepshort1 = 0
       n_recepshort2 = 0
-      ntorqueshort_recep = 0
       nbigshort_recep = 0
 
       if ((use_pmecore).and.(rank.gt.ndir-1)) then
@@ -1987,7 +1890,7 @@ c
 c
 c     choose cutoff depending on electrostatic interaction
 c
-      if (use_mpole) then
+      if ((use_mpole).or.(use_polar)) then
         mbuf = sqrt(mbuf2)
         mshortbuf = sqrt(mshortbuf2)
       else if (use_charge) then
@@ -2000,16 +1903,12 @@ c
 c
       vbuf = sqrt(vbuf2)+2.0d0
       vshortbuf = sqrt(vshortbuf2)+2.0d0
-      torquebuf = mbuf + lbuffer
-      torqueshortbuf = mshortbuf + lbuffer
-      torquebuf2 = torquebuf*torquebuf
-      torqueshortbuf2 = torqueshortbuf*torqueshortbuf
       neigbuf = lbuffer
 c
 c     get maximum cutoff value
 c
-      bigbuf = max(torquebuf,vbuf,ddcut)
-      bigshortbuf = max(torqueshortbuf,vshortbuf,ddcut)
+      bigbuf = max(mbuf+2d0,vbuf,ddcut)
+      bigshortbuf = max(mshortbuf+2d0,vshortbuf,ddcut)
 c
       do iproc = 0, nprocloc-1
           if (iproc.eq.rank) goto 70
@@ -2021,10 +1920,6 @@ c
           if (dist.le.(vbuf/2)) then
             n_recep2 = n_recep2+1
             p_recep2(n_recep2) = iproc
-          end if
-          if (dist.le.(torquebuf/2)) then
-            ntorque_recep = ntorque_recep+1
-            ptorque_recep(ntorque_recep) = iproc
           end if
           if (dist.le.(bigbuf/2)) then
             nbig_recep = nbig_recep+1
@@ -2040,10 +1935,6 @@ c
           if (dist.le.(vshortbuf/2)) then
             n_recepshort2 = n_recepshort2+1
             p_recepshort2(n_recepshort2) = iproc
-          end if
-          if (dist.le.(torquebuf/2)) then
-            ntorqueshort_recep = ntorqueshort_recep+1
-            ptorqueshort_recep(ntorqueshort_recep) = iproc
           end if
           if (dist.le.(bigshortbuf/2)) then
             nbigshort_recep = nbigshort_recep+1
@@ -2099,55 +1990,6 @@ c
             if (buffer(i,iproc+1).eq.rankloc) then
               n_send1 = n_send1 + 1
               p_send1(n_send1) = iproc
-            end if
-          end do
-        end if
-      end do
-c
-c     get the processes to send data to
-c
-      ntorque_send = 0
-c
-c     send and receive sizes of the buffers
-c
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          tag = nprocloc*rankloc + iproc + 1
-          call MPI_IRECV(bufcount(iproc+1),1,MPI_INT,
-     $     iproc,tag,commloc,reqrec(iproc+1),ierr)
-          tag = nprocloc*iproc + rankloc + 1
-          call MPI_ISEND(ntorque_recep,1,MPI_INT,iproc,tag,
-     $     commloc,reqsend(iproc+1),ierr)
-        end if
-      end do
-c
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          call MPI_WAIT(reqsend(iproc+1),status,ierr)
-          call MPI_WAIT(reqrec(iproc+1),status,ierr)
-        end if
-      end do
-c
-c     receive the buffers and get the information to send
-c
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          tag = nprocloc*rankloc + iproc + 1
-          call MPI_IRECV(buffer(1,iproc+1),bufcount(iproc+1),MPI_INT,
-     $     iproc,tag,commloc,reqrec(iproc+1),ierr)
-          tag = nprocloc*iproc + rankloc + 1
-          call MPI_ISEND(ptorque_recep,ntorque_recep,MPI_INT,iproc,tag,
-     $     commloc,reqsend(iproc+1),ierr)
-        end if
-      end do
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          call MPI_WAIT(reqsend(iproc+1),status,ierr)
-          call MPI_WAIT(reqrec(iproc+1),status,ierr)
-          do i = 1, bufcount(iproc+1)
-            if (buffer(i,iproc+1).eq.rankloc) then
-              ntorque_send = ntorque_send + 1
-              ptorque_send(ntorque_send) = iproc
             end if
           end do
         end if
@@ -2347,55 +2189,6 @@ c
 c
 c     get the processes to send data to
 c
-      ntorqueshort_send = 0
-c
-c     send and receive sizes of the buffers
-c
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          tag = nprocloc*rankloc + iproc + 1
-          call MPI_IRECV(bufcount(iproc+1),1,MPI_INT,
-     $     iproc,tag,commloc,reqrec(iproc+1),ierr)
-          tag = nprocloc*iproc + rankloc + 1
-          call MPI_ISEND(ntorqueshort_recep,1,MPI_INT,iproc,tag,
-     $     commloc,reqsend(iproc+1),ierr)
-        end if
-      end do
-c
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          call MPI_WAIT(reqsend(iproc+1),status,ierr)
-          call MPI_WAIT(reqrec(iproc+1),status,ierr)
-        end if
-      end do
-c
-c     receive the buffers and get the information to send
-c
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          tag = nprocloc*rankloc + iproc + 1
-          call MPI_IRECV(buffer(1,iproc+1),bufcount(iproc+1),MPI_INT,
-     $     iproc,tag,commloc,reqrec(iproc+1),ierr)
-          tag = nprocloc*iproc + rankloc + 1
-          call MPI_ISEND(ptorqueshort_recep,ntorqueshort_recep,MPI_INT,
-     $     iproc,tag,commloc,reqsend(iproc+1),ierr)
-        end if
-      end do
-      do iproc = 0, nprocloc-1
-        if (iproc.ne.rankloc) then
-          call MPI_WAIT(reqsend(iproc+1),status,ierr)
-          call MPI_WAIT(reqrec(iproc+1),status,ierr)
-          do i = 1, bufcount(iproc+1)
-            if (buffer(i,iproc+1).eq.rankloc) then
-              ntorqueshort_send = ntorqueshort_send + 1
-              ptorqueshort_send(ntorqueshort_send) = iproc
-            end if
-          end do
-        end if
-      end do
-c
-c     get the processes to send data to
-c
       n_sendshort2 = 0
 c
 c     send and receive sizes of the buffers
@@ -2489,17 +2282,6 @@ c
           end do
         end if
       end do
-c      if (bigbuf.eq.torquebuf) then
-c        nbig_recep = ntorque_recep
-c        pbig_recep = ptorque_recep
-c        nbig_send = ntorque_send
-c        pbig_send = ptorque_send
-c      else
-c        nbig_recep = n_recep2
-c        pbig_recep = p_recep2
-c        nbig_send = n_send2
-c        pbig_send = p_send2
-c      end if
 cc
 c
  80   call orderbuffer(.false.)

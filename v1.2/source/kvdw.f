@@ -57,11 +57,6 @@ c
 c
       blank = '        '
       if (init) then
-cc
-cc     allocate global arrays
-cc
-c        call alloc_shared_vdw
-c        if (hostrank.ne.0) goto 1000
 c
 c       process keywords containing van der Waals parameters
 c
@@ -275,7 +270,11 @@ c
            end if
         end do
 c
-c     allocate global arrays
+c     deallocate global pointers if necessary
+c
+        call dealloc_shared_vdw
+c
+c     allocate global pointers
 c
         call alloc_shared_vdw
         if (hostrank.ne.0) goto 1000
@@ -372,13 +371,6 @@ c
               radmin(k,i) = rd
            end do
         end do
-c        do i = 1, n
-c          do k = 1, n
-c            write(*,*) 'i = ',i,'k = ',k,'radmin = ',
-c     $         radmin(jvdw(i),jvdw(k))
-c          end do
-c        end do
-
 c
 c       use combination rules to set pairwise well depths
 c
@@ -607,6 +599,7 @@ c
           use_vdw = .false.
           use_vlist = .false.
         end if
+        if (.not.(use_vdw)) return
         if (allocated(vdwlocnl)) deallocate(vdwlocnl)
         allocate (vdwlocnl(nvdw))
       end if
@@ -662,36 +655,18 @@ c
       return
       end
 c
-c     subroutine alloc_shared_vdw : allocate shared memory pointers for vdw
+c     subroutine dealloc_shared_vdw : deallocate shared memory pointers for vdw
 c     parameter arrays
 c
-      subroutine alloc_shared_vdw
+      subroutine dealloc_shared_vdw
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
-      use sizes
-      use atoms
-      use domdec
       use vdw
       use mpi
       implicit none
-
-      integer(KIND=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
 c
-c      if (associated(jvdw)) deallocate (jvdw)
-c      if (associated(ivdw)) deallocate (ivdw)
-c      if (associated(ired)) deallocate (ired)
-c      if (associated(kred)) deallocate (kred)
-c      if (associated(ivt)) deallocate (ivt)
-c      if (associated(jvt)) deallocate (jvt)
-c      if (associated(radmin)) deallocate (radmin)
-c      if (associated(epsilon)) deallocate (epsilon)
-c      if (associated(radmin4)) deallocate (radmin4)
-c      if (associated(epsilon4)) deallocate (epsilon4)
-c      if (associated(radhbnd)) deallocate (radhbnd)
-c      if (associated(epshbnd)) deallocate (epshbnd)
-c      if (associated(nbvdw)) deallocate (nbvdw)
       if (associated(jvdw)) then
         CALL MPI_Win_shared_query(winjvdw, 0, windowsize, disp_unit,
      $  baseptr, ierr)
@@ -757,6 +732,24 @@ c      if (associated(nbvdw)) deallocate (nbvdw)
      $  baseptr, ierr)
         CALL MPI_Win_free(winnbvdw,ierr)
       end if
+      return
+      end
+c
+c     subroutine alloc_shared_vdw : allocate shared memory pointers for vdw
+c     parameter arrays
+c
+      subroutine alloc_shared_vdw
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use sizes
+      use atoms
+      use domdec
+      use vdw
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     jvdw
 c

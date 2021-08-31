@@ -36,10 +36,11 @@ c
       use mdstuf
       use moldyn
       use mpi
+      use timestat
       implicit none
       integer i,istep,nstep,ierr
       integer mode,next
-      real*8 dt,dtdump,time0,time1,timestep
+      real*8 dt,dtdump,time0,time1
       logical exist,query
       character*20 keyword
       character*240 record
@@ -300,8 +301,8 @@ c
 c
 c     integrate equations of motion to take a time step
 c
-      time0 = mpi_wtime()
       do istep = 1, nstep
+         time0 = mpi_wtime()
          if (integrate .eq. 'VERLET') then
             call verlet (istep,dt)
          else if (integrate .eq. 'RESPA') then
@@ -320,23 +321,10 @@ c
            call respa1(istep,dt)
          else
             call beeman (istep,dt)
-         end if
-         if (mod(istep,iprint).eq.0) then
-           time1 = mpi_wtime()
-           timestep = time1-time0
-           if (rank.eq.0) then
-             call MPI_REDUCE(MPI_IN_PLACE,timestep,1,MPI_REAL8,MPI_SUM,
-     $          0,MPI_COMM_WORLD,ierr)
-           else
-             call MPI_REDUCE(timestep,timestep,1,MPI_REAL8,MPI_SUM,0,
-     $          MPI_COMM_WORLD,ierr)
-           end if
-           if (rank.eq.0) then
-            write(6,1000) (timestep)/nproc,(timestep)/dble(nproc*iprint)
-            write(6,1010) 86400*dt*dble(iprint*nproc)/(1000*timestep)
-           end if
-           time0 = time1
-         end if
+        end if
+         time1 = mpi_wtime()
+         timestep = timestep + time1-time0
+         call mdstattime(istep,dt)
       end do
 c
 c     perform any final tasks before program exit

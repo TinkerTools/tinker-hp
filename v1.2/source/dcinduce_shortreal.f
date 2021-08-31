@@ -277,10 +277,7 @@ c
           rnorm(k) = zero
         end do
 c
-        time1 = mpi_wtime()
         call matvec(nrhs,.false.,mu,h)
-        time2 = mpi_wtime()
-        if (it.eq.1) timerealdip = timerealdip + time2-time1
         call commfieldshort(nrhs,h)
 
 c
@@ -288,7 +285,6 @@ c
 c
 c     jacobi step:
 c
-        time2 = mpi_wtime()
         term = (4.0d0/3.0d0) * aewald**3 / sqrtpi
 
           do k = 1,km
@@ -374,7 +370,6 @@ c
           munew = 0d0
           call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
         end if
-        time2 = mpi_wtime()
 c
         call commdirdirshort(nrhs,1,munew,reqrec,reqsend)
         call commdirdirshort(nrhs,2,mu,reqrec,reqsend)

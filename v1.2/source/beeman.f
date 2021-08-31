@@ -47,6 +47,7 @@ c
       real*8 stress(3,3)
       real*8 time0,time1
       real*8, allocatable :: derivs(:,:)
+      time0 = mpi_wtime()
 c
 c     set time values and coefficients for Beeman integration
 c
@@ -73,24 +74,28 @@ c
             z(iglob) = z(iglob) + v(3,iglob)*dt
             end if
       end do
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0 
 c
 c     Reassign the particules that have changed of domain
 c
 c     -> real space
 c
-      time0 = mpi_wtime()
-c
       call reassign
 c
 c     -> reciprocal space
 c
+      time0 = mpi_wtime()
       call reassignpme(.false.)
       time1 = mpi_wtime()
       timereneig = timereneig + time1 - time0
 c
 c     get constraint-corrected positions and half-step velocities
 c
+      time0 = mpi_wtime()
       if (use_rattle)  call rattle (dt)
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0 
 c
 c     communicate positions
 c
@@ -98,48 +103,66 @@ c
       call commpos
       call commposrec
       time1 = mpi_wtime()
-      timecommstep = timecommstep + time1 - time0
+      timecommpos = timecommpos + time1 - time0
 c
+      time0 = mpi_wtime()
       allocate (derivs(3,nbloc))
       derivs = 0d0
 c
       call reinitnl(istep)
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0
 c
       time0 = mpi_wtime()
       call mechanicstep(istep)
       time1 = mpi_wtime()
-c
       timeparam = timeparam + time1 - time0
 c
       time0 = mpi_wtime()
       call allocstep
       time1 = mpi_wtime()
-      timeclear = timeclear  + time1 - time0
+      timeinte = timeinte + time1 - time0
 c
 c     rebuild the neighbor lists
 c
+      time0 = mpi_wtime()
       if (use_list) call nblist(istep)
+      time1 = mpi_wtime()
+      timenl = timenl + time1 - time0
 c
 c     get the potential energy and atomic forces
 c
+      time0 = mpi_wtime()
       call gradient (epot,derivs)
+      time1 = mpi_wtime()
+      timegrad = timegrad + time1 - time0
 c
 c     MPI : get total energy
 c
+      time0 = mpi_wtime()
       call reduceen(epot)
+      time1 = mpi_wtime()
+      timered = timered + time1 - time0
 c
 c     make half-step temperature and pressure corrections
 c
+      time0 = mpi_wtime()
       call temper2 (temp)
       call pressure2 (epot,temp)
+      time1 = mpi_wtime()
+      timetp = timetp + time1-time0
 c
 c     communicate forces
 c
+      time0 = mpi_wtime()
       call commforces(derivs)
+      time1 = mpi_wtime()
+      timecommforces = timecommforces + time1-time0
 c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the Beeman recursion
 c
+      time0 = mpi_wtime()
       do i = 1, nloc
          iglob = glob(i)
          if (use(iglob)) then
@@ -159,14 +182,20 @@ c
 c     find the constraint-corrected full-step velocities
 c
       if (use_rattle)  call rattle2 (dt)
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0
 c
 c     make full-step temperature and pressure corrections
 c
+      time0 = mpi_wtime()
       call temper (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
+      time1 = mpi_wtime()
+      timetp = timetp + time1-time0
 c
 c     total energy is sum of kinetic and potential energies
 c
+      time0 = mpi_wtime()
       etot = eksum + esum
 c
 c     compute statistics and save trajectory for this step
@@ -174,5 +203,7 @@ c
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
       call mdsave (istep,dt,epot)
       call mdrest (istep)
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0
       return
       end

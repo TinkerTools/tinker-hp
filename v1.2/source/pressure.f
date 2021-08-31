@@ -73,13 +73,8 @@ c
       use units
       use virial
       implicit none
-
       real*8 epot
       real*8 temp
-
-
-
-c
 c
 c     only necessary if periodic boundaries are in use
 c

@@ -139,24 +139,30 @@ c
 c
 c     initialize timer values
 c
-      timeclear = 0.0d0
+      timestep = 0d0
+      timeinte = 0.0d0
       timereneig = 0.0d0
-      timecommstep = 0.0d0
+      timecommpos = 0.0d0
       timeparam = 0.0d0
-      timeforcescomm = 0.0d0
-      timedirreccomm = 0.0d0
-      timebondedvdw = 0.0d0
-      timebonded = 0.0d0
-      timenonbonded = 0.0d0
-      timereal = 0.0d0
-      timerealdip = 0.0d0
-      timegrid1 = 0.0d0
-      timeffts = 0.0d0
-      timescalar = 0.0d0
-      timegrid2 = 0.0d0
-      timerecreccomm = 0.0d0
-      timerec = 0.0d0
-      timerecdip = 0.0d0
+      timenl = 0d0
+      timegrad = 0.0d0
+      timered = 0.0d0
+      timetp = 0.0d0
+      timecommforces = 0.0d0
+      timebonded = 0d0
+      timevdw = 0d0
+      timeelec = 0d0
+      timepolar = 0d0
+      timecleargrad = 0d0
+      timereal = 0d0
+      timerec = 0d0
+      timecommforcesrec = 0d0
+      timecommforcesreal = 0d0
+      timegrid = 0d0
+      timefft = 0d0
+      timescalar = 0d0
+      timegrid2 = 0d0
+      timerecreccomm = 0d0
       dotstgrad = .false.
       return
       end

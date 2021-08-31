@@ -264,10 +264,7 @@ c     now, compute the initial direction
 c
       ggold = 0d0
 c
-      time1 = mpi_wtime()
       call matvec(nrhs,.true.,mu,h)
-      time2 = mpi_wtime()
-      timerealdip = timerealdip + time2-time1
       call commfieldshort(nrhs,h)
 c
       call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
@@ -437,7 +434,6 @@ c
       integer ipiv(ndismx+1)
       real*8  zero, one, rnorm(2), rr, xx(1)
 
-      real*8 time1,time2
       save    zero, one, xx
       external matvec
 c
@@ -489,17 +485,13 @@ c
         h = 0d0
         rnorm = 0d0
 c
-        time1 = mpi_wtime()
         call matvec(nrhs,.false.,mu,h)
-        time2 = mpi_wtime()
-        if (it.eq.1) timerealdip = timerealdip + time2-time1
         call commfieldshort(nrhs,h)
 c
         call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
 c
 c     jacobi step:
 c
-        time2 = mpi_wtime()
 c
         do i = 1, npoleloc
           iipole = poleglob(i)
@@ -544,7 +536,6 @@ c
           munew = 0d0
           call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
         end if
-        time2 = mpi_wtime()
 c
         call commdirdirshort(nrhs,1,munew,reqrec,reqsend)
         call commdirdirshort(nrhs,2,mu,reqrec,reqsend)

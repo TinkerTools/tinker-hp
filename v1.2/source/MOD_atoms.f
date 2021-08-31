@@ -24,8 +24,7 @@ c
       module atoms
       implicit none
       integer n
-      integer, pointer :: type(:)
-      integer :: wintype
+      integer, allocatable :: type(:)
       real*8, allocatable ::  x(:),y(:),z(:)
       real*8, allocatable ::  xold(:),yold(:),zold(:)
       save

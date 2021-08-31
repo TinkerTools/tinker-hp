@@ -28,12 +28,13 @@ c
 c
       module atmtyp
       implicit none
-      integer, pointer :: tag(:),class(:)
+      integer, allocatable :: tag(:)
+      integer, pointer :: class(:)
       integer, pointer :: atomic(:),valence(:)
-      integer :: wintag,winclass,winatomic,winvalence
+      integer :: winclass,winatomic,winvalence
       real*8, pointer :: mass(:)
-      character*3, pointer :: name(:)
+      character*3, allocatable :: name(:)
       character*24, pointer :: story(:)
-      integer :: winmass,winname,winstory
+      integer :: winmass,winstory
       save
       end

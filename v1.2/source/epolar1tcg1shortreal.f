@@ -31,7 +31,6 @@ c
       integer, allocatable :: reqrec(:),reqsend(:)
       real*8 :: f, sprod, sp0, sp1, omega, spp1, ap1a0, ap11a,
      $            ap11, ap12, ap2a0, ap21, e
-      real*8 :: time0,time1
       real*8, dimension(2) :: n0, t4, t1, a10, a11, a12, a21
       real*8, allocatable, dimension(:,:,:,:) :: adte
       real*8, allocatable, dimension(:,:,:) :: dEnedt,efi,r0,
@@ -80,7 +79,6 @@ c
 
       allocate (reqrec(nproc))
       allocate (reqsend(nproc))
-      time0 = mpi_wtime()
 
       f = electric/dielec
 
@@ -96,10 +94,8 @@ c
       mupeek = 0d0
 
       !1. Prepare electric field
-      time0 = mpi_wtime()
       call efld0_shortreal(nrhs, efi)
       call commfieldshort(nrhs, efi)
-      time1 = mpi_wtime()
 
       call commdirdirshort(nrhs,0,efi,reqrec,reqsend)
       call commdirdirshort(nrhs,1,efi,reqrec,reqsend)
@@ -112,10 +108,8 @@ c
             if (.not. peek) then !---
                r0 = efi
                oldr0 = r0
-               time0 = mpi_wtime()
                call tmatxb_shortreal(nrhs, .true., r0, Tr0)
                call commfieldshort(nrhs,Tr0)
-               time1 = mpi_wtime()
 
                call commdirdirshort(nrhs,0,Tr0,reqrec,reqsend)
                call commdirdirshort(nrhs,1,Tr0,reqrec,reqsend)
@@ -313,13 +307,11 @@ c
       ep =  -.5d0*e*electric
 
 
-      time1 = mpi_wtime()
 
       ! Separated the fastgrad paper's terms a1i depending on the 
       ! which fields scale they are taken again.
       ! Ex : < a11(1)*r0, Ed' > 
       !  vs. < a11(2)*r0, Ep' >
-      time0 = mpi_wtime()
       a10(1) = t4(1)
       a10(2) = 0d0
       a11(1) = 2d0*sp0/t1(1)
@@ -336,8 +328,6 @@ c
       arr_dEp = a11(2)*r0(:,1,:)
       arr_dTr0 = a21(1)*r0(:,1,:)
 
-      time1 = mpi_wtime()
-c      write(*,*) 'time build array = ',time1-time0
 
       if (peek .and. .not. precond) then
          spp1 = sprod(3*npoleloc, oldaefi(:,2,:), Tr0(:,1,:))
@@ -382,12 +372,9 @@ c      write(*,*) 'time build array = ',time1-time0
      $             + ap2a0*efi(:,2,:)
       end if
 
-      time0 = mpi_wtime()
       denedr = 0d0
       denedmu = 0d0
       denedt = 0d0
-      time1 = mpi_wtime()
-c      write(*,*) 'time clear array  = ',time1-time0
 
       if (isguess) then
          arrA = arr_ded
@@ -410,20 +397,17 @@ c
 
          arr_dep = arr_dep + mu0(:,1,:)
 
-         time0 = mpi_wtime()
          call scalderfieldzmat3( arr_ded, arr_dep, 
      $                           arr_dtr0, r0(:,1,:),
      $                          -arrA, oldaefi(:,1,:),
      $                           ade, adme, adte, adtb)
 
-         time1 = mpi_wtime()
          denedr =  ade(:,1,:)    + ade(:,2,:)    + adtb
          denedmu=  adme(:,1,:)   + adme(:,2,:)    
          denedt =  adte(:,:,1,:) + adte(:,:,2,:)
 
       else if (.not. isguess) then
 
-         time0 = mpi_wtime()
          call scalderfieldzmat1(
      &                          arr_ded, arr_dep, arr_dtr0,
      &                          r0(1:3,1,1:max(1,npolebloc)),
@@ -433,14 +417,11 @@ c
          denedr =   ade(:,1,:)  + ade(:,2,:)  + adtb    
          denedmu=  adme(:,1,:)   + adme(:,2,:)    
          denedt =  adte(:,:,1,:) + adte(:,:,2,:)
-         time1 = mpi_wtime()
-c         write(*,*) 'time scalderreal = ',time1-time0
       end if
 
       !N. Compute dEne/dmu and dEne/dtheta (given E=.5*mu.field)
 
       ! Do the contraction dEne/dmuP * dmuP/dr
-      time0 = mpi_wtime()
       call torquetcg_dir(torq_mu,torq_t,denedmu,denedt)
 
       dep = 0d0
@@ -454,7 +435,5 @@ c         write(*,*) 'time scalderreal = ',time1-time0
          end do
       end do
       dep(:,:) = dep(:,:)-0.5d0*f*(torq_mu(:,:)+torq_t(:,:))
-      time1 = mpi_wtime()
-c      write(*,*) 'contrac dir = ',time1 - time0
       return
       end

@@ -44,13 +44,13 @@ c
       real*8 dt,dt_2
       real*8 etot,eksum,epot
       real*8 temp,pres
-
       real*8 a1,a2,normal
       real*8 a1piston,a2piston,R
       real*8 ekin(3,3)
       real*8 stress(3,3)
       real*8 time0,time1
       real*8, allocatable :: derivs(:,:)
+      time0 = mpi_wtime()
 c
 c     set time values and coefficients for BAOAB integration
 c
@@ -141,8 +141,8 @@ c
       extvolold = extvol
       extvol = extvol + vextvol*dt_2
       call rescale(istep)
-c
-c
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0 
 c
 c     Reassign the particules that have changed of domain
 c
@@ -164,43 +164,58 @@ c
       call commpos
       call commposrec
       time1 = mpi_wtime()
-      timecommstep = timecommstep + time1 - time0
+      timecommpos = timecommpos + time1 - time0
 c
+      time0 = mpi_wtime()
       allocate (derivs(3,nbloc))
       derivs = 0d0
 c
       call reinitnl(istep)
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0
 c
       time0 = mpi_wtime()
       call mechanicstep(istep)
       time1 = mpi_wtime()
-c
       timeparam = timeparam + time1 - time0
 c
       time0 = mpi_wtime()
       call allocstep
       time1 = mpi_wtime()
-      timeclear = timeclear  + time1 - time0
+      timeinte = timeinte + time1 - time0
 c
 c     rebuild the neighbor lists
 c
+      time0 = mpi_wtime()
       if (use_list) call nblist(istep)
+      time1 = mpi_wtime()
+      timenl = timenl + time1 - time0
 c
 c     get the potential energy and atomic forces
 c
+      time0 = mpi_wtime()
       call gradient (epot,derivs)
+      time1 = mpi_wtime()
+      timegrad = timegrad + time1 - time0
 c
 c     MPI : get total energy
 c
+      time0 = mpi_wtime()
       call reduceen(epot)
+      time1 = mpi_wtime()
+      timered = timered + time1 - time0
 c
 c     communicate forces
 c
+      time0 = mpi_wtime()
       call commforces(derivs)
+      time1 = mpi_wtime()
+      timecommforces = timecommforces + time1-time0
 c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the BAOAB recursion
 c
+      time0 = mpi_wtime()
       do i = 1, nloc
          iglob = glob(i)
          if (use(iglob)) then
@@ -210,12 +225,15 @@ c
             end do
          end if
       end do
+      time0 = mpi_wtime()
 
+      time0 = mpi_wtime()
       call temper (dt,eksum,ekin,temp)
-c      call pressure2 (epot,temp)
-
       call pressure (dt,ekin,pres,stress,istep)
+      time1 = mpi_wtime()
+      timetp = timetp + time1-time0
 c
+      time0 = mpi_wtime()
       aextvol = convert*(pres-atmsph)/(prescon*masspiston)
       vextvol = vextvol + dt_2*aextvol
 c
@@ -236,5 +254,7 @@ c
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
       call mdsave (istep,dt,epot)
       call mdrest (istep)
+      time1 = mpi_wtime()
+      timeinte = timeinte + time1-time0
       return
       end

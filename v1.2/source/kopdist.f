@@ -50,7 +50,11 @@ c
       zeros = '000000000000'
       if (init) then
 c
-c     allocate some arrays
+c     deallocate some global pointers if necessary
+c
+        call dealloc_shared_opdist
+c
+c     allocate some global pointers
 c
         call alloc_shared_opdist
 c
@@ -274,6 +278,31 @@ c
       return
       end
 c
+c     subroutine dealloc_shared_opdist : deallocate shared memory pointers for opdist
+c     parameter arrays
+c
+      subroutine dealloc_shared_opdist
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use opdist
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+c
+      if (associated(opdk)) then
+        CALL MPI_Win_shared_query(winopdk, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winopdk,ierr)
+      end if
+      if (associated(iopd)) then
+        CALL MPI_Win_shared_query(winiopd, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winiopd,ierr)
+      end if
+      return
+      end
+c
 c     subroutine alloc_shared_opdist : allocate shared memory pointers for opdist
 c     parameter arrays
 c
@@ -285,24 +314,10 @@ c
       use opdist
       use mpi
       implicit none
-
-      integer(KIND=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
-c
-c      if (associated(opdk)) deallocate(opdk)
-c      if (associated(iopd)) deallocate(iopd)
-      if (associated(opdk)) then
-        CALL MPI_Win_shared_query(winopdk, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winopdk,ierr)
-      end if
-      if (associated(iopd)) then
-        CALL MPI_Win_shared_query(winiopd, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winiopd,ierr)
-      end if
 c
 c     opdk
 c

@@ -39,7 +39,6 @@ c
       integer next,number
       real*8 fopb
       logical header,done
-c      logical, allocatable :: jopb(:)
       character*4 pa,pb,pc,pd
       character*4 zero4
       character*8 zero8
@@ -141,13 +140,13 @@ c
         end do
    60   continue
 c
-c       allocate arrays
+c       deallocate global pointers if necessary
+c
+        call dealloc_shared_opbend
+c
+c       allocate global pointers
 c
         call alloc_shared_opbend
-c        if (associated(opbk)) deallocate (opbk)
-c        allocate (opbk(nangle))
-c        if (associated(iopb)) deallocate (iopb)
-c        allocate (iopb(nangle))
 c
 c       assign out-of-plane bending parameters for each angle
 c
@@ -227,10 +226,6 @@ c
               end if
            end do
         end if
-cc
-cc       perform deallocation of some local arrays
-cc
-c        deallocate (jopb)
 c
 c       turn off the out-of-plane bending term if it is not used
 c
@@ -241,16 +236,6 @@ c
       do i = maxnopb, 1, -1
          if (kopb(i) .eq. blank)  nopb = i - 1
       end do
-c      allocate (jopb(maxclass))
-c      do i = 1, maxclass
-c         jopb(i) = .false.
-c      end do
-c      do i = 1, maxnopb
-c         if (kopb(i) .eq. blank)  goto 110
-c         it = number(kopb(i)(5:8))
-c         jopb(it) = .true.
-c      end do
-c  110 continue
 c
       if (allocated(opbendglob)) deallocate (opbendglob)
       allocate (opbendglob(nangleloc))
@@ -310,7 +295,6 @@ c
            iang(4,iangle) = ib
          end if
       end do
-c      deallocate (jopb)
       return
       end
 c
@@ -333,6 +317,7 @@ c
       use kopbnd
       use merck
       use opbend
+      use potent
       implicit none
       integer i,j,m
       integer nopb,size
@@ -450,7 +435,32 @@ c
 c
 c     turn off the out-of-plane bending term if it is not used
 c
-c      if (nopbend .eq. 0)  use_opbend = .false.
+      if (nopbend .eq. 0)  use_opbend = .false.
+      return
+      end
+c
+c     subroutine dealloc_shared_opbend : deallocate shared memory pointers for opbend
+c     parameter arrays
+c
+      subroutine dealloc_shared_opbend
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use opbend
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+c
+      if (associated(opbk)) then
+        CALL MPI_Win_shared_query(winopbk, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winopbk,ierr)
+      end if
+      if (associated(iopb)) then
+        CALL MPI_Win_shared_query(winiopb, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winiopb,ierr)
+      end if
       return
       end
 c
@@ -465,24 +475,10 @@ c
       use opbend
       use mpi
       implicit none
-
-      integer(KIND=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1)
-c
-c      if (associated(opbk)) deallocate(opbk)
-c      if (associated(iopb)) deallocate(iopb)
-      if (associated(opbk)) then
-        CALL MPI_Win_shared_query(winopbk, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winopbk,ierr)
-      end if
-      if (associated(iopb)) then
-        CALL MPI_Win_shared_query(winiopb, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winiopb,ierr)
-      end if
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     opbk
 c

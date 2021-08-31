@@ -37,12 +37,10 @@ c
       integer ia,ib,ic
       integer ja,jb,jc
       integer ilist,next
-
       integer nprocloc,start,stop,im
       real*8 weigh,xmid,ymid,zmid
       real*8 rab,rbc,rac
       real*8 cosine
-
       logical done,init,docompute
       character*9 rattyp
       character*20 keyword
@@ -518,6 +516,46 @@ c
       return
       end
 c
+c     subroutine dealloc_shared_shake : deallocate shared memory pointers for rattle
+c     parameter arrays
+c
+      subroutine dealloc_shared_shake
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use freeze
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr
+      TYPE(C_PTR) :: baseptr
+c
+      if (associated(iratx)) then
+        CALL MPI_Win_shared_query(winiratx, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winiratx,ierr)
+      end if
+      if (associated(kratx)) then
+        CALL MPI_Win_shared_query(winkratx, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winkratx,ierr)
+      end if
+      if (associated(irat)) then
+        CALL MPI_Win_shared_query(winirat, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winirat,ierr)
+      end if
+      if (associated(krat)) then
+        CALL MPI_Win_shared_query(winkrat, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winkrat,ierr)
+      end if
+      if (associated(ratimage)) then
+        CALL MPI_Win_shared_query(winratimage, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winratimage,ierr)
+      end if
+      return
+      end
+c
 c     subroutine alloc_shared_shake : allocate shared memory pointers for rattle
 c     parameter arrays
 c
@@ -528,17 +566,11 @@ c
       use freeze
       use mpi
       implicit none
-
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
       INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
 c
-c      if (associated(iratx)) deallocate (iratx)
-c      if (associated(kratx)) deallocate (kratx)
-c      if (associated(irat)) deallocate (irat)
-c      if (associated(krat)) deallocate (krat)
-c      if (associated(ratimage)) deallocate (ratimage)
       if (associated(iratx)) then
         CALL MPI_Win_shared_query(winiratx, 0, windowsize, disp_unit,
      $  baseptr, ierr)

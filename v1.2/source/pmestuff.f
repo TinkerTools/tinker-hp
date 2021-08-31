@@ -1472,32 +1472,6 @@ cc
 c
 c      Remove procs already in recdir space neighbor list and put them in another list
 c
-        nrecdir_recep3 = 0
-        precdir_recep3 = 0
-        do i = 1, nrecdir_recep
-          proc1 = precdir_recep(i)
-          do j = 1, nrecdir_recep2
-            proc2 = precdir_recep2(j)
-            if (proc1.eq.proc2) goto 40
-          end do
-          nrecdir_recep3 = nrecdir_recep3 + 1
-          precdir_recep3(nrecdir_recep3) = proc1
- 40     continue
-        end do
-cc
-        nrecdir_send3 = 0
-        precdir_send3 = 0
-        do i = 1, nrecdir_send
-          proc1 = precdir_send(i)
-          do j = 1, nrecdir_send3
-            proc2 = precdir_send3(j)
-            if (proc1.eq.proc2) goto 50
-          end do
-          nrecdir_send3 = nrecdir_send3 + 1
-          precdir_send3(nrecdir_send3) = proc1
- 50     continue
-        end do
-c
         if (use_pmecore) then
           nprocloc = nrec
           rankloc  = rank_bis

@@ -1360,16 +1360,16 @@ c
       use mpi
       implicit none
       real*8 derivs(3,*)
-      real*8 time0,time1,time2
+      real*8 time0,time1
 c
       time0 = mpi_wtime()
       call commforcesrec(derivs)
       time1 = mpi_wtime()
-      timedirreccomm = timedirreccomm + time1-time0
+      timecommforcesrec = timecommforcesrec + time1-time0
+      time0 = mpi_wtime()
       call commforcesbloc(derivs)
-      time2 = mpi_wtime()
-      timebondedvdw = timebondedvdw + time2-time1
-      timeforcescomm = timeforcescomm + time2-time0
+      time1 = mpi_wtime()
+      timecommforcesreal = timecommforcesreal + time1-time0
       return
       end
 c
@@ -1380,24 +1380,24 @@ c
       use timestat
       use mpi
       implicit none
-
       real*8 derivs(3,*)
-      real*8 time0,time1,time2
+      real*8 time0,time1
       logical fast
 c
       if (fast) then
         time0 = mpi_wtime()
         call commforcesbonded(derivs)
         time1 = mpi_wtime()
-        timeforcescomm = timeforcescomm + time1-time0
+        timecommforcesreal = timecommforcesreal + time1-time0
       else
         time0 = mpi_wtime()
         call commforcesrec(derivs)
         time1 = mpi_wtime()
-        timedirreccomm = timedirreccomm + time1-time0
+        timecommforcesrec = timecommforcesrec + time1-time0
+        time0 = mpi_wtime()
         call commforcesbloc(derivs)
-        time2 = mpi_wtime()
-        timeforcescomm = timeforcescomm + time2-time0
+        time1 = mpi_wtime()
+        timecommforcesreal = timecommforcesreal + time1-time0
       end if
       return
       end
@@ -1413,7 +1413,7 @@ c
       implicit none
       integer rule
       real*8 derivs(3,*)
-      real*8 time0,time1,time2
+      real*8 time0,time1
  1000 format(' illegal rule in commforcesrespa1.')
 c
 c     rule = 0: fast part of the forces
@@ -1424,20 +1424,21 @@ c
         time0 = mpi_wtime()
         call commforcesbonded(derivs)
         time1 = mpi_wtime()
-        timeforcescomm = timeforcescomm + time1-time0
+        timecommforcesreal = timecommforcesreal + time1-time0
       else if (rule.eq.1) then
         time0 = mpi_wtime()
         call commforcesshortbloc(derivs)
         time1 = mpi_wtime()
-        timeforcescomm = timeforcescomm + time1-time0
+        timecommforcesreal = timecommforcesreal + time1-time0
       else if (rule.eq.2) then
         time0 = mpi_wtime()
         call commforcesrec(derivs)
         time1 = mpi_wtime()
-        timedirreccomm = timedirreccomm + time1-time0
+        timecommforcesrec = timecommforcesrec + time1-time0
+        time0 = mpi_wtime()
         call commforcesbloc(derivs)
-        time2 = mpi_wtime()
-        timeforcescomm = timeforcescomm + time2-time0
+        time1 = mpi_wtime()
+        timecommforcesreal = timecommforcesreal + time1-time0
       else 
          if (rank.eq.0) write(iout,1000) 
       end if

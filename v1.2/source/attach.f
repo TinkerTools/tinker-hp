@@ -25,7 +25,11 @@ c
       integer i,j,k,m
       integer jj,kk
 c
-c     allocate global arrays
+c     deallocate global pointers if necessary
+c
+      call dealloc_shared_attach
+c
+c     allocate global pointers
 c
       call alloc_shared_attach
 c
@@ -40,7 +44,7 @@ c
       i15 = 0
 c
 c     loop over all atoms finding all the 1-3 relationships;
-c     note "n12" and "i12" have already been setup elsewhere
+c     note "n12" and "i12" have already been setup elsewhere 
 c
       do i = 1, n
          n13(i) = 0
@@ -63,7 +67,7 @@ c
      &                 ' Attached to Atom',i6)
             call fatal
          end if
-         call sort (n13(i),i13(:,i))
+         call sort (n13(i),i13(1,i))
       end do
 c
 c
@@ -93,7 +97,7 @@ c
      &                 ' Attached to Atom',i6)
             call fatal
          end if
-         call sort (n14(i),i14(:,i))
+         call sort (n14(i),i14(1,i))
       end do
 c
 c     loop over all atoms finding all the 1-5 relationships
@@ -125,18 +129,16 @@ c
      &                 ' Attached to Atom',i6)
             call fatal
          end if
-         call sort (n15(i),i15(:,i))
+         call sort (n15(i),i15(1,i))
       end do
       return
       end
 c
-c     subroutine alloc_shared_attach : allocate shared memory pointers for attach
+c     subroutine dealloc_shared_attach : deallocate shared memory pointers for attach
 c     parameter arrays
 c
-      subroutine alloc_shared_attach
+      subroutine dealloc_shared_attach
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
-      use sizes
-      use atoms
       use couple
       use domdec
       use mpi
@@ -144,8 +146,6 @@ c
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
       INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
-c
       if (associated(i13)) then
         CALL MPI_Win_shared_query(wini13, 0, windowsize, disp_unit,
      $  baseptr, ierr)
@@ -176,6 +176,24 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winn15,ierr)
       end if
+      return 
+      end
+c
+c     subroutine alloc_shared_attach : allocate shared memory pointers for attach
+c     parameter arrays
+c
+      subroutine alloc_shared_attach
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use sizes
+      use atoms
+      use couple
+      use domdec
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c    i13
 c
@@ -292,7 +310,7 @@ c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,i15,arrayshape2)
 c
-c    n14
+c    n15
 c
       arrayshape=(/n/)
       if (hostrank == 0) then

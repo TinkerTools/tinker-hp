@@ -66,7 +66,6 @@ c
      $            fphiarrdttr0, fphiarrdtt2r0,adebis,admebis
       real*8, allocatable, dimension(:,:,:) :: buffermpimu
       real*8, allocatable, dimension(:,:) :: buffermpi
-      real*8:: time0
       real*8 :: xx(1)
       parameter (nrhs=2)
 
@@ -125,7 +124,6 @@ c
       allocate (reqrecdirrec(nproc))
       allocate (reqrecdirsend(nproc))
 
-      time0 = mpi_wtime()
       precond = tcgprec
       
       f = electric/dielec

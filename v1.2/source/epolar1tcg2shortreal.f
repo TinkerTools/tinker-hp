@@ -50,7 +50,6 @@ c
       real*8, allocatable, dimension(:,:) :: torq_t, torq_mu, grad_ene,
      $            denedmu,denedr, arr_ded, arr_dep,adtb, arr_dtr0, 
      $            arr_dTTr0, arr_dTT2r0
-      real*8:: time0,time1
       parameter (nrhs=2)
 
       allocate(adte(3,3,nrhs, npolebloc))
@@ -75,7 +74,6 @@ c
       allocate (reqrec(nproc))
       allocate (reqsend(nproc))
 
-      time0 = mpi_wtime()
       precond = tcgprec
       
       f = electric/dielec
@@ -225,22 +223,17 @@ c
       
       ep = sprod(3*npoleloc, mu_tcg2(:,1,:), oldefi(:,2,:))
       ep = -.5d0*f*ep 
-      time1 = mpi_wtime()
-c      write(*,*) 'time solver = ',time1-time0
 
       denedr = 0d0
       denedmu = 0d0
       denedt = 0d0
 
-      time0 = mpi_wtime()
       call scalderfieldzmat6(
      &                       arr_ded, arr_dep, arr_dtr0, r0(:,1,:),
      &                       arr_dTTr0,  Tr0(:,1,:), arr_dTT2r0,
      &                       T2r0(:,1,:), ade, adme, adte, adtb
      &                      )
 
-      time1 = mpi_wtime()
-c         write(*,*) 'time scalderreal = ',time1-time0
       denedr =  ade(:,1,:)    + ade(:,2,:)    + adtb
       denedmu=   adme(:,1,:)   + adme(:,2,:)    
       denedt =  adte(:,:,1,:) + adte(:,:,2,:)
@@ -248,7 +241,6 @@ c         write(*,*) 'time scalderreal = ',time1-time0
       !N. Compute dEne/dmu and dEne/dtheta (given E=.5*mu.field)
 
       ! Do the contraction dEne/dmuP * dmuP/dr
-      time0 = mpi_wtime()
       call torquetcg_dir(torq_mu,torq_t,denedmu,denedt)
 c
       dep = 0d0

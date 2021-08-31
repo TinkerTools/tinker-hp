@@ -411,6 +411,7 @@ c
       integer, allocatable :: req(:),reqbcast(:)
       real*8, allocatable :: qgridmpi(:,:,:,:,:)
       real*8 time0,time1
+      time0 = mpi_wtime()
 c
       if (use_pmecore) then
         nprocloc = nrec
@@ -448,14 +449,13 @@ c
      $   n3mpimax,MPI_REAL8,prec_recep(i),tag,commloc,req(tag),
      $   ierr)
       end do
-      time0 = mpi_wtime()
       do i = 1, nionrecloc
         iichg = chgrecglob(i)
         iglob = iion(iichg)
         call grid_pchg_site(iglob,i,pchg(iichg))
       end do
       time1 = mpi_wtime()
-      timegrid1 = timegrid1 + time1-time0
+      timegrid = timegrid + time1-time0
 c
 c     MPI : begin sending
 c
@@ -483,7 +483,7 @@ c
      $    qgridmpi(:,:,:,:,i) 
       end do
       time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1-time0
+      timerecreccomm = timerecreccomm + time1 - time0
 c
 c     perform the 3-D FFT forward transformation
 c
@@ -491,7 +491,7 @@ c
       call fft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
       time1 = mpi_wtime()
-      timeffts = timeffts + time1-time0
+      timefft = timefft + time1-time0
 c
 c     use scalar sum to get reciprocal space energy and virial
 c
@@ -586,11 +586,11 @@ c
       call fft2d_backmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
       time1 = mpi_wtime()
-      timeffts = timeffts + time1-time0
+      timefft = timefft + time1-time0
 c
-      time0 = mpi_wtime()
 c     MPI : Begin reception
 c
+      time0 = mpi_wtime()
       do i = 1, nrec_send
         proc = prec_send(i)
         tag = nprocloc*rankloc + prec_send(i) + 1
@@ -703,11 +703,11 @@ c
         decrec(3,iloc) =decrec(3,iloc)+fi*(recip(3,1)*de1+recip(3,2)*de2
      &                                     +recip(3,3)*de3)
       end do
-      time1 = mpi_wtime()
-      timegrid2 = timegrid2 + time1-time0
       deallocate (qgridmpi)
       deallocate (req)
       deallocate (reqbcast)
+      time1 = mpi_wtime()
+      timegrid2 = timegrid2 + time1-time0
       return
       end
 c

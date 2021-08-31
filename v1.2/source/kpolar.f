@@ -25,6 +25,7 @@ c
       use kpolr
       use mpole
       use neigh
+      use pme
       use polar
       use polpot
       use potent
@@ -32,7 +33,7 @@ c
       use uprior
       implicit none
       integer istep,modnl,ierr
-      integer i,j,k
+      integer i,j,k,it
       integer iproc,iglob,polecount,iipole
       integer npg,next
       integer pg(maxvalue)
@@ -47,11 +48,14 @@ c
 c
       if (init) then
 c
-c     allocate global arrays
+c     deallocate global pointers if necessary
+c
+        call dealloc_shared_polar
+c
+c     allocate global pointers
 c
         call alloc_shared_polar
 c
-        if (.not.(use_polar)) return
         if (hostrank.ne.0) goto 90
 c
 c       process keywords containing polarizability parameters
@@ -110,9 +114,18 @@ c
 c
 c       find and store the atomic dipole polarizability parameters
 c
+        sixth = 1.0d0 / 6.0d0
+        npolar = n
         do i = 1, n
-           polarity(i) = polr(type(i))
-           thole(i) = athl(type(i))
+           polarity(i) = 0.0d0
+           thole(i) = 0.0d0
+           pdamp(i) = 0.0d0
+           it = type(i)
+           if (it .ne. 0) then
+              polarity(i) = polr(it)
+              thole(i) = athl(it)
+              pdamp(i) = polarity(i)**sixth
+           end if
         end do
 c
 c       process keywords containing atom specific polarizabilities
@@ -156,42 +169,34 @@ c
 c
 c       remove zero and undefined polarizable sites from the list
 c
-        npole = 0
-        npolar = 0
-        do i = 1, n
-           if (polsiz(i).ne.0 .or. polarity(i).ne.0.0d0) then
-              nbpole(i) = npole
-              npole = npole + 1
-              ipole(npole) = i
-              pollist(i) = npole
-              zaxis(npole) = zaxis(i)
-              xaxis(npole) = xaxis(i)
-              yaxis(npole) = yaxis(i)
-              polaxe(npole) = polaxe(i)
-              do k = 1, maxpole
-                 pole(k,npole) = pole(k,i)
-              end do
-              if (polarity(i) .ne. 0.0d0)  npolar = npolar + 1
-              polarity(npole) = polarity(i)
-              thole(npole) = thole(i)
-              if (use_emtp) then
-                alphapen(npole) = alphapen(i)
-                betapen(npole) = betapen(i)
-                gammapen(npole) = gammapen(i)
-              end if
-           end if
-        end do
-c
-c       set the values used in the scaling of the polarizability
-c
-        sixth = 1.0d0 / 6.0d0
-        do i = 1, npole
-           if (thole(i) .eq. 0.0d0) then
-              pdamp(i) = 0.0d0
-           else
-              pdamp(i) = polarity(i)**sixth
-           end if
-        end do
+        if (use_polar) then
+          npole = 0
+          npolar = 0
+          ipole = 0
+          do i = 1, n
+             if (polsiz(i).ne.0 .or. polarity(i).ne.0.0d0) then
+                nbpole(i) = npole
+                npole = npole + 1
+                ipole(npole) = i
+                pollist(i) = npole
+                zaxis(npole) = zaxis(i)
+                xaxis(npole) = xaxis(i)
+                yaxis(npole) = yaxis(i)
+                polaxe(npole) = polaxe(i)
+                do k = 1, maxpole
+                   pole(k,npole) = pole(k,i)
+                end do
+                if (polarity(i) .ne. 0.0d0)  npolar = npolar + 1
+                polarity(npole) = polarity(i)
+                thole(npole) = thole(i)
+                if (use_emtp) then
+                  alphapen(npole) = alphapen(i)
+                  betapen(npole) = betapen(i)
+                  gammapen(npole) = gammapen(i)
+                end if
+             end if
+          end do
+        end if
  90     call MPI_BARRIER(hostcomm,ierr)
         call MPI_BCAST(npole,1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(npolar,1,MPI_INT,0,hostcomm,ierr)
@@ -201,7 +206,7 @@ c
 c
 c       test multipoles at chiral sites and invert if necessary
 c
-        call chkpole(.true.)
+        if (use_polar) call chkpole(.true.)
 c
 c       initialization for TCG and omega fit
 c
@@ -214,7 +219,6 @@ c
         if (npolar .eq. 0)  use_polar = .false.
         if (npole .eq. 0)  then
           use_mpole = .false.
-          use_mlist = .false.
         end if
 c
 c  allocate predictor arrays
@@ -344,6 +348,15 @@ c
           omegafitstep = .true.
         end if
       end if
+c
+c  deallocate/reallocate B-spline arrays
+c
+      if (allocated(thetai1)) deallocate (thetai1)
+      if (allocated(thetai2)) deallocate (thetai2)
+      if (allocated(thetai3)) deallocate (thetai3)
+      allocate (thetai1(4,bsorder,nlocrec))
+      allocate (thetai2(4,bsorder,nlocrec))
+      allocate (thetai3(4,bsorder,nlocrec))
 c
       modnl = mod(istep,ineigup)
       if (istep.eq.-1) return
@@ -634,22 +647,18 @@ c
       return
       end
 c
-c     subroutine alloc_shared_polar : allocate shared memory pointers for polar
+c     subroutine dealloc_shared_polar : deallocate shared memory pointers for polar
 c     parameter arrays
 c
-      subroutine alloc_shared_polar
+      subroutine dealloc_shared_polar
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
-      use sizes
-      use atoms
-      use domdec
       use polar
       use mpi
       implicit none
-
-      integer(KIND=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer :: win,win2
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1)
 c
       if (associated(polarity)) then
         CALL MPI_Win_shared_query(winpolarity, 0, windowsize, disp_unit,
@@ -666,6 +675,25 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winpdamp,ierr)
       end if
+      return
+      end
+c
+c     subroutine alloc_shared_polar : allocate shared memory pointers for polar
+c     parameter arrays
+c
+      subroutine alloc_shared_polar
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use sizes
+      use atoms
+      use domdec
+      use polar
+      use mpi
+      implicit none
+      integer :: win,win2
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr,total
+      TYPE(C_PTR) :: baseptr
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     polarity
 c
@@ -763,8 +791,8 @@ c
 
       real*8, allocatable, dimension(:,:,:) :: 
      $       musave
-      real*8 :: omega_min, omega_max,
-     $           o1, o2, cvg_crit,f, ep1, ep2, sprod,
+      real*8 :: omega_min, omega_max, o_min, o_max, epmin, epmax,
+     $           o1, o2, cvg_crit,f, ep1, ep2, omegafinal, sprod, eptcg,
      $           cnp, cr, efinal, epnp, epsave
       real*8 :: rms1,rms2
       logical :: cvged, dofit

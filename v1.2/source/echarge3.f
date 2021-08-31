@@ -562,7 +562,7 @@ c
 c
 c     use energy switching if close the cutoff distance (at short range)
 c
-               call switch_respa(r,mpoleshortcut,shortheal,s,ds)
+               call switch_respa(r,chgshortcut,shortheal,s,ds)
                ec = ec + (1-s)*e
 c
 c     increment the overall charge-charge energy component

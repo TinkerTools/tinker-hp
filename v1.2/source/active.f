@@ -34,8 +34,11 @@ c
       character*240 record
       character*240 string
 c
+c     deallocate global pointers if necessary
 c
-c     perform dynamic allocation of some pointer arrays
+      call dealloc_shared_active
+c
+c     allocate global pointers
 c
       call alloc_shared_active
 c
@@ -220,6 +223,31 @@ c
       return
       end
 c
+c     subroutine dealloc_shared_active : deallocate shared memory pointers for active
+c     parameter arrays
+c
+      subroutine dealloc_shared_active
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use usage
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr
+      TYPE(C_PTR) :: baseptr
+      if (associated(use)) then
+        CALL MPI_Win_shared_query(winuse, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winuse,ierr)
+      end if
+      if (associated(iuse)) then
+        CALL MPI_Win_shared_query(winiuse, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winiuse,ierr)
+      end if
+      return
+      end
+c
+c
 c     subroutine alloc_shared_active : allocate shared memory pointers for active
 c     parameter arrays
 c
@@ -231,20 +259,9 @@ c
       use mpi
       implicit none
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr
+      INTEGER :: disp_unit,ierr,total
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1)
-c
-      if (associated(use)) then
-        CALL MPI_Win_shared_query(winuse, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winuse,ierr)
-      end if
-      if (associated(iuse)) then
-        CALL MPI_Win_shared_query(winiuse, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winiuse,ierr)
-      end if
+      integer :: arrayshape(1),arrayshape2(2)
 c
 c     use
 c

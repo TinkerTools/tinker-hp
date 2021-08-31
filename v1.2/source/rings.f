@@ -18,10 +18,11 @@ c     note by default reducible rings are not removed since they
 c     are needed for force field parameter assignment
 c
 c
-      subroutine rings
+      subroutine rings(init)
       use angle
       use atoms
       use bitor
+      use bond
       use couple
       use domdec
       use inform
@@ -36,7 +37,7 @@ c
       integer list3,list4
       integer, allocatable :: list(:)
       logical reduce
-c     logical init
+      logical init
 c
 c
 c     zero out the number of small rings in the structure
@@ -46,6 +47,13 @@ c
       nring4 = 0
       nring5 = 0
       nring6 = 0
+c
+c     parse to find bonds, angles, torsions and bitorsions
+c
+      if (nbond .eq. 0)  call bonds(init)
+      if (nangle .eq. 0)  call angles(init)
+      if (ntors .eq. 0)  call torsions(init)
+      if (nbitor .eq. 0)  call bitors(init)
 c
 c     search for and store all of the 3-membered rings
 c

@@ -48,7 +48,11 @@ c
            end do
         end do
 c
-c       allocate arrays
+c       deallocate global pointers if necessary
+c
+        call dealloc_shared_bond
+c
+c       allocate global pointers
 c
         call alloc_shared_bond
 c
@@ -95,6 +99,54 @@ c
       return
       end
 c
+c     subroutine dealloc_shared_bond : deallocate shared memory pointers for bond
+c     parameter arrays
+c
+      subroutine dealloc_shared_bond
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use atmlst
+      use bond
+      use pitors
+      use tors
+      use mpi
+      implicit none
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
+      INTEGER :: disp_unit,ierr
+      TYPE(C_PTR) :: baseptr
+      if (associated(bndlist)) then
+        CALL MPI_Win_shared_query(winbndlist, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winbndlist,ierr)
+      end if
+      if (associated(bk)) then
+        CALL MPI_Win_shared_query(winbk, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winbk,ierr)
+      end if
+      if (associated(bl)) then
+        CALL MPI_Win_shared_query(winbl, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winbl,ierr)
+      end if
+      if (associated(ibnd)) then
+        CALL MPI_Win_shared_query(winibnd, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winibnd,ierr)
+      end if
+      if (associated(nbtors)) then
+        CALL MPI_Win_shared_query(winnbtors, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winnbtors,ierr)
+      end if
+      if (associated(nbpitors)) then
+        CALL MPI_Win_shared_query(winnbpitors, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winnbpitors,ierr)
+      end if
+      return
+      end
+c
+c
 c     subroutine alloc_shared_bond : allocate shared memory pointers for bond
 c     parameter arrays
 c
@@ -113,37 +165,6 @@ c
       INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
-c
-c      if (associated(bndlist)) deallocate(bndlist)
-c      if (associated(bk)) deallocate(bk)
-c      if (associated(ibnd)) deallocate(ibnd)
-c      if (associated(nbtors)) deallocate(nbtors)
-c      if (associated(nbpitors)) deallocate(nbpitors)
-      if (associated(bndlist)) then
-        CALL MPI_Win_shared_query(winbndlist, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winbndlist,ierr)
-      end if
-      if (associated(bk)) then
-        CALL MPI_Win_shared_query(winbk, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winbk,ierr)
-      end if
-      if (associated(ibnd)) then
-        CALL MPI_Win_shared_query(winibnd, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winibnd,ierr)
-      end if
-      if (associated(nbtors)) then
-        CALL MPI_Win_shared_query(winnbtors, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winnbtors,ierr)
-      end if
-      if (associated(nbpitors)) then
-        CALL MPI_Win_shared_query(winnbpitors, 0, windowsize, disp_unit,
-     $  baseptr, ierr)
-        CALL MPI_Win_free(winnbpitors,ierr)
-      end if
 c
 c     bk
 c
