@@ -1191,8 +1191,8 @@ c
            dscale(ip14(j,iglob)) = u4scale
         end do
 c
-        do kkk = 1,nelst(ii)
-          kkpole = elst(kkk,ii)
+        do kkk = 1,nshortelst(ii)
+          kkpole = shortelst(kkk,ii)
           kkpoleloc = poleloc(kkpole)
           kglob = ipole(kkpole)
           if (kkpoleloc.eq.0) cycle
