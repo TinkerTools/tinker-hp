@@ -124,7 +124,11 @@ c
            if (it .ne. 0) then
               polarity(i) = polr(it)
               thole(i) = athl(it)
-              pdamp(i) = polarity(i)**sixth
+              if (thole(i) .eq. 0.0d0) then
+                pdamp(i) = 0.0d0
+              else
+                pdamp(i) = polarity(i)**sixth
+              end if
            end if
         end do
 c

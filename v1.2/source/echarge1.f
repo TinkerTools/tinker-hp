@@ -847,9 +847,9 @@ c
 c     form the chain rule terms for derivative expressions
 c
                de = de / r
-               dedx = de * xr *s -ds*xr*e/r
-               dedy = de * yr *s -ds*yr*e/r
-               dedz = de * zr *s -ds*zr*e/r
+               dedx = de * xr *s +ds*xr*e/r
+               dedy = de * yr *s +ds*yr*e/r
+               dedz = de * zr *s +ds*zr*e/r
 c
 c     increment the overall energy and derivative expressions
 c
