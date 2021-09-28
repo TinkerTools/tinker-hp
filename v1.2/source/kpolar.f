@@ -112,26 +112,6 @@ c
            end if
         end do
 c
-c       find and store the atomic dipole polarizability parameters
-c
-        sixth = 1.0d0 / 6.0d0
-        npolar = n
-        do i = 1, n
-           polarity(i) = 0.0d0
-           thole(i) = 0.0d0
-           pdamp(i) = 0.0d0
-           it = type(i)
-           if (it .ne. 0) then
-              polarity(i) = polr(it)
-              thole(i) = athl(it)
-              if (thole(i) .eq. 0.0d0) then
-                pdamp(i) = 0.0d0
-              else
-                pdamp(i) = polarity(i)**sixth
-              end if
-           end if
-        end do
-c
 c       process keywords containing atom specific polarizabilities
 c
         header = .true.
@@ -167,6 +147,26 @@ c
            end if
         end do
 c
+c       find and store the atomic dipole polarizability parameters
+c
+        sixth = 1.0d0 / 6.0d0
+        npolar = n
+        do i = 1, n
+           polarity(i) = 0.0d0
+           thole(i) = 0.0d0
+           pdamp(i) = 0.0d0
+           it = type(i)
+           if (it .ne. 0) then
+              polarity(i) = polr(it)
+              thole(i) = athl(it)
+              if (thole(i) .eq. 0.0d0) then
+                pdamp(i) = 0.0d0
+              else
+                pdamp(i) = polarity(i)**sixth
+              end if
+           end if
+        end do
+c
 c         assign polarization group connectivity of each atom
 c
         call polargrp
@@ -193,6 +193,7 @@ c
                 if (polarity(i) .ne. 0.0d0)  npolar = npolar + 1
                 polarity(npole) = polarity(i)
                 thole(npole) = thole(i)
+                pdamp(npole) = pdamp(i)
                 if (use_emtp) then
                   alphapen(npole) = alphapen(i)
                   betapen(npole) = betapen(i)
