@@ -77,7 +77,7 @@ c     wrap coordinates in unit cell
 c
       !call molecule(.false.)   ! No need to be called
       if (use_bounds) call bounds
-!$acc update host(v,a,x,y,z,aalt,epot) async
+!$acc update host(glob,v,a,x,y,z,aalt,epot) async
 c
 c     Send positions,velocities and accelerations to the master
 c

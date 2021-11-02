@@ -80,11 +80,7 @@ c
 !DIR$ ATTRIBUTES ALIGN:64:: igrid  
       integer, allocatable,target :: igrid(:,:)
 
-!$acc declare create(thetai1,thetai2,thetai3)
 !$acc declare create(bsmod1,bsmod2,bsmod3)
-!$acc declare create(qgridin_2d,qgridout_2d,qgrid2in_2d,
-!$acc&   qgrid2out_2d)
-!$acc declare create(igrid)
 
       end
 

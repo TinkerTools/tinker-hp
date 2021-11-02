@@ -957,8 +957,8 @@ c
       use polgrp
       implicit none
       integer maxlist,maxkeep
-      parameter (maxkeep=100)
-      parameter (maxlist=1000)
+      parameter (maxkeep=maxp11*maxvalue)
+      parameter (maxlist=max(maxp12*maxp12,maxp12*maxp13))
       integer i,j,k
       integer it,jt
       integer jj,kk,ierr
@@ -968,6 +968,8 @@ c
       integer list(maxlist)
       integer, allocatable :: mask(:)
       logical done
+      integer max11,max12,max13,max14
+      integer min11,min12,min13,min14
 c
 c
 c     find the directly connected group members for each atom
@@ -1188,6 +1190,30 @@ c
          end if
       end do
   110 continue
+
+      if (tinkerdebug.gt.0) then
+         max11=0;max12=0;max13=0;max14=0
+         min11=0;min12=0;min13=0;min14=0
+         do i = 1,n
+            max11 = max(max11,np11(i))
+            min11 = min(min11,np11(i))
+            max12 = max(max12,np12(i))
+            min12 = min(min12,np12(i))
+            max13 = max(max13,np13(i))
+            min13 = min(min13,np13(i))
+            max14 = max(max14,np14(i))
+            min14 = min(min14,np14(i))
+         end do
+         if (rank.eq.0) then
+ 71   format(10x,'min',8x,'max')
+ 72   format(A9,I4,7X,I4)
+            print 71
+            print 72, 'np11',min11,max11
+            print 72, 'np12',min12,max12
+            print 72, 'np13',min13,max13
+            print 72, 'np14',min14,max14
+         end if
+      end if
 c
 c     perform deallocation of some local arrays
 c

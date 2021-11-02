@@ -217,6 +217,13 @@ c
 c
 c
 c
+      module mdrest_inl
+      real(r_p) etrans,erot,totmass
+      real(r_p) vtot(3),vtot_deb(3)
+      real(r_p) vtot1,vtot2,vtot3
+      logical:: mdrest_l=.true.
+      end module
+
       subroutine mdrestgpu (istep)
       use atmtyp
       use atoms
@@ -226,20 +233,20 @@ c
       use inform
       use iounit
       use mdstuf
+      use mdrest_inl
       use moldyn
       use units
       use mpi
       use timestat
       implicit none
       integer i,j,k,istep,iglob,ierr
-      real(t_p) etrans,erot
-      real(t_p) weigh,totmass,eps
+      real(r_p) weigh
+      real(t_p) eps
       real(t_p) xx,yy,zz,xy,xz,yz
       real(t_p) xtot,ytot,ztot
       real(t_p) xdel,ydel,zdel
       real(t_p) mang(3),vang(3)
-      real(t_p) vtot(3),vtot_deb(3),tensor(3,3)
-      real(t_p) vtot1,vtot2,vtot3
+      real(t_p) tensor(3,3)
       real(t_p) mang1,mang2,mang3
       real(t_p) vang1,vang2,vang3
       real(t_p), allocatable :: xcm(:)
@@ -253,20 +260,23 @@ c
       if (mod(istep,irest) .ne. 0)  return
       if (deb_Path) write(*,*) ' mdrestgpu'
       call timer_enter(timer_other)
+
+      if (mdrest_l) then
+!$acc enter data create(vtot1,vtot2,vtot3,vtot,etrans,totmass)
+         mdrest_l=.false.
+      end if
 c
 c     zero out the total mass and overall linear velocity
 c
-!$acc data create(vtot1,vtot2,vtot3,vtot
-!$acc&   ,etrans,totmass,mang,vang,tensor)
+!$acc data present(vtot1,vtot2,vtot3,vtot,etrans,totmass)
 !$acc&     present(glob,mass,v)
-!$acc&     async
 
 !$acc serial async
-      totmass = 0.0_ti_p
-      vtot1   = 0.0_ti_p
-      vtot2   = 0.0_ti_p
-      vtot3   = 0.0_ti_p
-      etrans  = 0.0_ti_p
+      totmass = 0.0_re_p
+      vtot1   = 0.0_re_p
+      vtot2   = 0.0_re_p
+      vtot3   = 0.0_re_p
+      etrans  = 0.0_re_p
 !$acc end serial
 c
 c     compute linear velocity of the system center of mass
@@ -296,9 +306,9 @@ c
       if (nproc.gt.1) then
 !$acc host_data use_device(vtot,totmass)
 !$acc wait
-         call MPI_ALLREDUCE(MPI_IN_PLACE,vtot,3,MPI_TPREC,MPI_SUM,
+         call MPI_ALLREDUCE(MPI_IN_PLACE,vtot,3,MPI_RPREC,MPI_SUM,
      $        COMM_TINKER,ierr)
-         call MPI_ALLREDUCE(MPI_IN_PLACE,totmass,1,MPI_TPREC,MPI_SUM,
+         call MPI_ALLREDUCE(MPI_IN_PLACE,totmass,1,MPI_RPREC,MPI_SUM,
      $        COMM_TINKER,ierr)
 !$acc end host_data
       end if
@@ -310,7 +320,7 @@ c
          vtot(j) = vtot(j) / totmass
          etrans  = etrans + vtot(j)**2
       end do
-      etrans = 0.5_ti_p * etrans * totmass / convert
+      etrans = 0.5_re_p * etrans * totmass / convert
 !$acc end serial
 c
 c     find the center of mass coordinates of the overall system
@@ -416,7 +426,7 @@ c
 c
 c     compute angular velocity and rotational kinetic energy
 c
-         erot = 0.0_ti_p
+         erot = 0.0_re_p
          do i = 1, 3
             vang(i) = 0.0_ti_p
             do j = 1, 3
@@ -424,7 +434,7 @@ c
             end do
             erot = erot + vang(i)*mang(i)
          end do
-         erot = 0.5_ti_p * erot / convert
+         erot = 0.5_re_p * erot / convert
       end if
 c
 c     eliminate any translation of the overall system

@@ -57,7 +57,7 @@ c
       parameter (maxkey   =  5000)
       parameter (maxvlst  =  2560)
       parameter (maxelst  =  1280)
-      parameter (maxfft   =   450)
+      parameter (maxfft   =   864)
       parameter (maxring  = 10000)
       parameter (maxbio   = 10000)
       parameter (maxres   = 10000)

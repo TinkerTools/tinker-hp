@@ -569,15 +569,15 @@ c          kglob = cell_glob(kdx)
            jth   = warpsize
            nbits = 0
 
-           if (idx.eq.kdx) then
-              do j = 1,warpsize
-                 kdx_ = kdx - ilane + j
-                 if (kdx_.gt.idx.and.kdx_.lt.n+1) then
-                    lst(       iscan+(j-1)*warpsize+ilane) = idx-1
-                    lst(pair_a+iscan+(j-1)*warpsize+ilane) = kdx_-1
-                 end if
-              end do
-           else
+           !if (idx.eq.kdx) then
+           !   do j = 1,warpsize
+           !      kdx_ = kdx - ilane + j
+           !      if (kdx_.gt.idx.and.kdx_.lt.n+1) then
+           !         lst(       iscan+(j-1)*warpsize+ilane) = idx-1
+           !         lst(pair_a+iscan+(j-1)*warpsize+ilane) = kdx_-1
+           !      end if
+           !   end do
+           !else
               do j = 1, warpsize
                  srclane = j
                  kdx_    = kdx - ilane + j
@@ -594,6 +594,9 @@ c          kglob = cell_glob(kdx)
                     accept_mid = .false.
                  else
                     accept_mid = .true.
+                 end if
+                 if (idx.eq.kdx) then ! Remove half
+                    accept_mid = accept_mid.and.(kdx_.gt.idx)
                  end if
                  if ((xpos**2+ypos**2+zpos**2.lt.cutbuff2)
      &               .and.accept_mid.and.kdx_.lt.n+1) then
@@ -618,7 +621,7 @@ c             oldnb = __shfl(oldnb,1)
 
 c             if (ilane.lt.nbits+1) lst(iscan+oldnb+ilane) = kdx_
 
-           end if
+           !end if
         end do
         end subroutine
 

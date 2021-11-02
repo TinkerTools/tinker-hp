@@ -792,7 +792,7 @@ c!$acc update host(glob)
      &     ,sze,'dec');
       if(use_vdw)
      &call minmaxone(mmx(17),mmx(nf+17),mmx(2*nf+17),dev
-     &     ,sze,'dev');
+     &     ,sze,'devi');
       if(use_mpole)
      &call minmaxone1(mmx(18),mmx(nf+18),mmx(2*nf+18),dem
      &     ,sze,'dem');
@@ -800,11 +800,11 @@ c!$acc update host(glob)
      &call minmaxone1(mmx(20),mmx(nf+20),mmx(2*nf+20),dep
      &     ,sze,'dep');
 
-c     if (abort.and.vlst_enable) then
-c        dint1 = minval(inte); dint2=maxval(inte)
-c        call searchpair(nshortvlst,shortvlst,maxvlst
-c    &        ,dint1,dint2)
-c     end if
+      if (abort) then
+         dint1 = minval(inte); dint2=maxval(inte)
+         call searchpair(nshortvlst,shortvlst,maxvlst
+     &        ,dint1,dint2)
+      end if
 
       else if (btest(rule,commNonBonded)) then
 
@@ -956,11 +956,12 @@ c     end if
       subroutine minmaxone( mi,ma,on,vector,sz,name )
       implicit none
       integer sz
+      integer,parameter::lgli=10
       real(8) mi,ma,on
       real(r_p) vector(*)
       character(*),optional,intent(in)::name
       integer i,j,i1,i2,iglob,cap,cap1,cap2
-      integer gli(2,nproc)
+      integer gli(lgli,nproc)
       real(8) val
 
       abortall = .false.
@@ -975,8 +976,9 @@ c     end if
 !$acc loop seq
                do j  = 1,3
                val   = vector((i-1)*3+j)
-               if (abs(val).gt.300.0_re_p) then
-                  print*,i,iglob,rank,x(iglob),y(iglob),z(iglob),val
+               if (abs(val).gt.90.0_re_p) then
+                  print*,j,iglob,rank,real(x(iglob),4),real(y(iglob),4)
+     &                  ,real(z(iglob),4),real(val,4)
 !$acc atomic write
                   abort=.true.
                   cap2 = cap2 + 1
@@ -987,7 +989,7 @@ c     end if
                cap1 = cap
                cap  = cap + 1
 !$acc end atomic
-               if (cap1.le.2) gli(cap1,rank+1) = iglob
+               if (cap1.le.lgli) gli(cap1,rank+1) = iglob
                end if
             end do
             do i = 1, nproc
@@ -995,8 +997,8 @@ c     end if
                call MPI_BCAST(abortall,1,MPI_LOGICAL,i-1,COMM_TINKER,i1)
                if (abortall) then
                   abort = .true.
-                  call MPI_AllGather(MPI_IN_PLACE,2,MPI_DATATYPE_NULL
-     $                              ,gli,2,MPI_INT,COMM_TINKER,i1)
+                  call MPI_AllGather(MPI_IN_PLACE,lgli,MPI_DATATYPE_NULL
+     $                              ,gli,lgli,MPI_INT,COMM_TINKER,i1)
                   exit
                end if
             end do
@@ -1005,20 +1007,32 @@ c     end if
             
             cap  = 0
             cap1 = 0
-            do i1 = 1, nproc
-               do i2 = 1,2
-                  if ( gli(i2,i1).ne.0 ) then
+            do i1 = 1, nproc; do i2 = 1,lgli
+               if ( gli(i2,i1).ne.0 ) then
+                  if (cap.eq.0) then
+                     cap = 1
+                     inte(cap) = gli(i2,i1)
+                  else if (cap.gt.0.and.abs(gli(i2,i1)-inte(1)).lt.5)
+     &                 then
                      cap = cap + 1
-                     if (cap.lt.3) inte(cap) = gli(i2,i1)
+                     inte(2) = gli(i2,i1)
                   else
-                     cap1 = cap1 + 1
+                     cap = cap + 1
                   end if
-               end do
-            end do
+               end if
+            end do; end do
             
-            if (cap.ne.2) print*,' more than one interactions find '
-     &                   ,rank,cap1
+            if (cap.ne.2.and.rank.eq.0) then
+               print*,' more than one interactions found '
+     &               ,rank,cap
+            do i = 1,nproc
+               do j = 1,lgli
+                  if (gli(j,i).ne.0) write(*,'(I10,$)') gli(j,i)
+               end do
+               print*
+            end do
             !print*, 'interaction', inte,rank
+            end if
             
             end if
          end if

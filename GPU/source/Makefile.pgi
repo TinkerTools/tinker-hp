@@ -112,7 +112,6 @@ plumed_config_file = Makefile.conf.nvhpc
 #  Preprocessor options
 #  ____________________
 f_preprocess_flag__ := -cpp
-add_options         :=
 
 ifeq ($(prec),$(filter $(prec),single s))
    main_prec := s
@@ -156,6 +155,16 @@ ifneq ($(add_options),$(empty__))
 endif
 FOPTIONS   = $(f_preprocess_flag__) $(OPTIONS)
 CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
+CUCOPTIONS = $(CUOPTIONS)
+ifneq ($(add_options_f),$(empty__))
+   FOPTIONS += $(add_options_f)
+endif
+ifneq ($(add_options_cuf),$(empty__))
+   CUFOPTIONS += $(add_options_cuf)
+endif
+ifneq ($(add_options_cu),$(empty__))
+   CUCOPTIONS += $(add_options_cu)
+endif
 
 ifeq ($(VERBOSE),0)
    AT := @
@@ -208,7 +217,7 @@ endif
 
 #  Fill flags containers
 #  _____________________
-CUCFLAGS     = $(CUOPTIONS) $(cuda_c_compiler) $(CCOMMON) $(cuda_cc_flag__)
+CUCFLAGS     = $(CUCOPTIONS) $(cuda_c_compiler) $(CCOMMON) $(cuda_cc_flag__)
 OPTFLAGS     = -Minline
 
 ifeq ($(prec),$(filter $(prec),mixed m single s))
@@ -249,9 +258,9 @@ LIBS           = libtinker.a
 depend_targets = 2decomp_fft
 
 LDLIBS         = -lm -L$(LIB_FFTDECOMP) -L$(LIB_CPP)
-ifeq ($(arch),$(filter $(arch),host cpu))
+#ifeq ($(arch),$(filter $(arch),host cpu))
    LDLIBS += -L$(LIB_MKL)
-endif
+#endif
 
 #CULIBS         = -Mcudalib=cufft,cublas,curand -lcuda -lcudafor -lcudafor2 -lcudafor91 -lcusparse -lcudaforwrapblas -lcudadevice
 CULIBS         = -Mcudalib=curand,cufft,cublas -Mcuda=$(acc_cc_flag__) -lcusolver
@@ -309,7 +318,7 @@ MODSAM = MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
 MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
    MOD_minima.o MOD_molcul.o MOD_moldyn.o MOD_mplpot.o\
    MOD_mutant.o MOD_neigh.o MOD_opbend.o MOD_opdist.o\
-   MOD_output.o MOD_params.o MOD_pitors.o MOD_plumed.o MOD_pme.o\
+   MOD_output.o MOD_orthogonalize.o MOD_params.o MOD_pitors.o MOD_plumed.o MOD_pme.o\
    MOD_polar.o MOD_polgrp.o MOD_polpot.o MOD_erf.o\
    MOD_potent.o MOD_precis.o MOD_ptable.o MOD_random.o MOD_resdue.o\
    MOD_ring.o MOD_scales.o MOD_shunt.o MOD_strbnd.o\
@@ -383,7 +392,7 @@ OBJSNZ = nblist.o  nblistgpu.o newinduce_pme.o  newinduce_pmegpu.o\
    newinduce_pme2.o  newinduce_pme2gpu.o\
    newinduce_shortreal.o newinduce_shortrealgpu.o\
    nextarg.o nexttext.o nspline.o number.o\
-   numeral.o openend.o optsave.o plumed.o pmestuff.o pmestuffgpu.o\
+   numeral.o orthogonalize.o openend.o optsave.o plumed.o pmestuff.o pmestuffgpu.o\
    precise.o pressure.o prime.o promo.o promoamd.o promosmd.o prmkey.o\
    prtdyn.o prtxyz.o readdyn.o\
    readprm.o readxyz.o respa.o respa1.o\
@@ -618,6 +627,7 @@ mpistuff.o: MOD_utilcomm.o
 newinduce_pmegpu.o: MOD_pme.o
 newinduce_pme2gpu.o: MOD_pme.o
 newinduce_shortrealgpu.o: MOD_utilcomm.o
+orthogonalize.o: MOD_orthogonalize.o
 pmestuff.o: MOD_pme.o
 pmestuffgpu.o: MOD_pme.o
 

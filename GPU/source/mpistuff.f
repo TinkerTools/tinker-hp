@@ -662,7 +662,8 @@ c
 c
 c     reorder indexes accordingly and build local repart array
 c
-      repart = 0
+      repart = -1
+      repartrec = -1
 c
 c     remove atoms that left the domain
 c
@@ -744,7 +745,8 @@ c
 !$acc parallel loop async default(present)
       do i = 1,n
          glob(i)   = 0
-         repart(i) = 0
+         repart(i) = -1
+         repartrec(i) = -1
          loc(i)    = 0
       end do
 
@@ -853,9 +855,9 @@ c
         use domdec,only : nloc,nproc,glob,comm_dir,rank,rank_bis,ndir,
      &                    xbegproc,ybegproc,zbegproc,
      &                    xendproc,yendproc,zendproc,
-     &                    repart, loc, domlen, COMM_TINKER,
-     &                    nneig_send, nneig_recep,
-     &                    pneig_recep, pneig_send
+     &                    repart,repartrec,loc,locrec,domlen,
+     &                    COMM_TINKER,
+     &                    nneig_send,nneig_recep,pneig_recep,pneig_send
         use freeze,only : use_rattle
         use inform,only : deb_Path,tindPath
         use iso_c_binding
@@ -1099,8 +1101,10 @@ c
         do i = 1, n
            if (i.lt.nloc+1)
      &        glob(i) = iglob_send(i, 0)
-           loc(i)    = 0
-           repart(i) = 0
+           loc(i)     = 0
+           repart(i)  = -1
+           locrec(i)    = 0
+           repartrec(i) = -1
         end do
 
         ! Wait all communications
@@ -1511,7 +1515,8 @@ c
 !$acc kernels async
       nloc1 = 0
       glob1(:) = 0
-      repart(:) = 0
+      repart(:) = -1
+      repartrec(:) = -1
 !$acc end kernels
 
       jglob_max = bufbeg3(nproc)+buflen3(nproc)-1
@@ -2557,8 +2562,8 @@ c
       integer status(MPI_STATUS_SIZE)
 c
       if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
-      if (deb_Path) write(*,*) '   >> commforcesbloc'
       call timer_enter( timer_dirbondfcomm )
+      if (deb_Path) write(*,*) '   >> commforcesbloc'
 c
 c     allocate some arrays
 c
@@ -3273,9 +3278,10 @@ c
       real(r_p),pointer:: buffer(:,:,:)
       real(r_p),pointer:: buffers(:,:),temprec(:,:)
 
+      call timer_enter( timer_fmanage )
       if (deb_Path) write(*,*) '   >> commforcesrec_1d'
-         call timer_enter( timer_fmanage )
-         if (pa) then
+
+      if (pa) then
 !$acc parallel loop collapse(2)
 !$acc&         default(present) async
          do i = 1, nbloc
@@ -3291,56 +3297,58 @@ c
                end if
             end do
          end do
-         else
-            if (use_polar) then
+      else
+         if (use_polar) then
+!$acc wait
+!$acc parallel loop collapse(2)
+!$acc&      default(present)
+            do i = 1, nbloc
+               do j = 1, 3
+                  ilocrec = locrec(glob(i))
+                  if (ilocrec.eq.0) cycle
+                  if (i.le.nloc) then
+                  derivs(j,i) = derivs(j,i) + demrec(j,ilocrec) +
+     $                          deprec(j,ilocrec)
+                  else
+                   desum(j,i) =  desum(j,i) + demrec(j,ilocrec) +
+     $                          deprec(j,ilocrec)
+                  end if
+               end do
+            end do
+         else if (use_mpole) then
 !$acc parallel loop collapse(2)
 !$acc&         default(present) async
-               do i = 1, nbloc
-                  do j = 1, 3
-                     ilocrec = locrec(glob(i))
-                     if (ilocrec.eq.0) cycle
-                     if (i.le.nloc) then
-                     derivs(j,i) = derivs(j,i) + demrec(j,ilocrec) +
-     $                             deprec(j,ilocrec)
-                     else
-                      desum(j,i) =  desum(j,i) + demrec(j,ilocrec) +
-     $                             deprec(j,ilocrec)
-                     end if
-                  end do
+            do i = 1, nbloc
+               do j = 1, 3
+                  ilocrec = locrec(glob(i))
+                  if (ilocrec.eq.0) cycle
+                  if (i.le.nloc) then
+                  derivs(j,i) = derivs(j,i) + demrec(j,ilocrec)
+                  else
+                   desum(j,i) =  desum(j,i) + demrec(j,ilocrec)
+                  end if
                end do
-            else if (use_mpole) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-               do i = 1, nbloc
-                  do j = 1, 3
-                     ilocrec = locrec(glob(i))
-                     if (ilocrec.eq.0) cycle
-                     if (i.le.nloc) then
-                     derivs(j,i) = derivs(j,i) + demrec(j,ilocrec)
-                     else
-                      desum(j,i) =  desum(j,i) + demrec(j,ilocrec)
-                     end if
-                  end do
-               end do
-            end if
-            if (use_charge) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-               do i = 1, nbloc
-                  do j = 1, 3
-                     ilocrec = locrec(glob(i))
-                     if (ilocrec.eq.0) cycle
-                     if (i.le.nloc) then
-                     derivs(j,i) = derivs(j,i) + decrec(j,ilocrec)
-                     else
-                     desum(j,i)  =  desum(j,i) + decrec(j,ilocrec)
-                     end if
-                  end do
-               end do
-            end if
+            end do
          end if
-         call timer_exit ( timer_fmanage,quiet_timers )
+         if (use_charge) then
+!$acc parallel loop collapse(2)
+!$acc&         default(present) async
+            do i = 1, nbloc
+               do j = 1, 3
+                  ilocrec = locrec(glob(i))
+                  if (ilocrec.eq.0) cycle
+                  if (i.le.nloc) then
+                  derivs(j,i) = derivs(j,i) + decrec(j,ilocrec)
+                  else
+                  desum(j,i)  =  desum(j,i) + decrec(j,ilocrec)
+                  end if
+               end do
+            end do
+         end if
+      end if
 
+      if (deb_Path) write(*,*) '   << commforcesrec_1d'
+      call timer_exit ( timer_fmanage,quiet_timers )
       end
 c
 c     Second version of commforcesrec
@@ -4390,12 +4398,12 @@ c
 c
 
       ! Debug check
-      if (tinkerdebug.gt.0) then
+      !if (tinkerdebug.gt.0) then
 !$acc parallel loop async
          do i = 1,n
             locrec(i) = 0
          end do
-      end if
+      !end if
 
 !$acc parallel loop async
       do i = 1,nproc
@@ -5336,7 +5344,7 @@ c
       if (use_pmecore) then
         commloc = comm_dir
       else
-        commloc = MPI_COMM_WORLD
+        commloc = COMM_TINKER
       end if
 c
       allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
@@ -5420,7 +5428,7 @@ c        end if
          if (use_pmecore) then
             commloc = comm_dir
          else
-            commloc = MPI_COMM_WORLD
+            commloc = COMM_TINKER
          end if
 
          call prmem_request(buff_field,3,nrhs,

@@ -82,19 +82,19 @@ c
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(1,i) = ifr - bsorder
-         call bsplgen (w,k,thetai1(1,1,1))
+         call bsplgen (w,k,thetai1(1,1,k))
          w    = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
          fr   = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(2,i) = ifr - bsorder
-         call bsplgen (w,k,thetai2(1,1,1))
+         call bsplgen (w,k,thetai2(1,1,k))
          w    = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
          fr   = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(3,i) = ifr - bsorder
-         call bsplgen (w,k,thetai3(1,1,1))
+         call bsplgen (w,k,thetai3(1,1,k))
       end do
 
       else if (cfg.eq.c_charge) then
@@ -806,7 +806,7 @@ c
       dn2     = real(nfft2,t_p)
       dn3     = real(nfft3,t_p)
 
-!$acc parallel loop gang vector async(rec_queue)
+!$acc parallel loop gang vector async(rec_queue) 
 !$acc&         present(chgrecglob,iion,locrec,igrid,
 !$acc&     pchg,thetai1_p,thetai2_p,thetai3_p,qgridin_2d,
 !$acc&     decrec)

@@ -531,11 +531,13 @@ c
       use utilgpu
       use sizes
       implicit none
-      integer devtyp
+      integer devtyp,devtyp1
       enum,bind(C)
-        enumerator dev_quadro,dev_tesla
-        enumerator dev_geforce
-        enumerator dev_default
+        enumerator dev_quadro,dev_tesla,dev_geforce
+        enumerator dev_other
+      end enum
+      enum,bind(C)
+        enumerator dev_fp32,dev_fp64
       end enum
       character(256) devname
       real(t_p) buff_t
@@ -552,9 +554,16 @@ c
          else if (index(devname,'TESLA').gt.0) then
             devtyp = dev_tesla
          else
-            devtyp = dev_default
+            devtyp = dev_other
          end if
-         if (devtyp.eq.dev_quadro.or.devtyp.eq.dev_tesla) then
+         if (index(devname,'100').gt.0 .or. 
+     &       index(devname,'TITAN V').gt.0 ) then
+            devtyp1 = dev_fp64
+         else
+            devtyp1 = dev_fp32
+         end if
+
+         if (devtyp1.eq.dev_fp64) then
             if ( n.gt.10000 ) then
                sub_config = itrf_adapted
 #if TINKER_DOUBLE_PREC
@@ -577,7 +586,7 @@ c
                sub_config = itrf_adapted
 #endif
             end if
-         else if (devtyp.eq.dev_geforce) then
+         else if (devtyp1.eq.dev_fp32) then
 #if TINKER_DOUBLE_PREC
             sub_config = itrf_legacy
 #else
@@ -1031,7 +1040,7 @@ c
       use utilcu  ,only: cu_update_balanced_comput
 #endif
       implicit none
-      logical,parameter::accept=.true.
+      logical,parameter::accept=.false.
 
       if (nproc.gt.7.and.accept.and.use_polar.and.
      &   (associated(efld0_directgpu_p,efld0_directgpu3).or.

@@ -747,6 +747,22 @@ c
         real(t_p)     ,device:: A(*),B(*)
         integer(cuda_stream_kind),value:: stream
         end subroutine
+        subroutine cuPOTRI(n, A, lda, stream)
+     &             bind(C,name="cuPOTRI_Wrapper")
+        import cuda_stream_kind,c_int
+        integer(c_int),value :: n,lda
+        real(t_p)     ,device:: A(*)
+        integer(cuda_stream_kind),value:: stream
+        end subroutine
+#if TINKER_MIXED_PREC
+        subroutine cuPOTRIm(n, A, lda, stream)
+     &             bind(C,name="cuPOTRI_Wrapper")
+        import cuda_stream_kind,c_int
+        integer(c_int),value :: n,lda
+        real(r_p)     ,device:: A(*)
+        integer(cuda_stream_kind),value:: stream
+        end subroutine
+#endif
         subroutine cuGESV(n, nrhs, A, lda, Ipiv, B, ldb, stream)
      &             bind(C,name="cuGESV_Wrapper")
         import cuda_stream_kind,c_int

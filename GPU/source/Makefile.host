@@ -123,7 +123,7 @@ MODSAM = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o\
 MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
    MOD_minima.o MOD_molcul.o MOD_moldyn.o MOD_mplpot.o\
    MOD_mutant.o MOD_neigh.o MOD_opbend.o MOD_opdist.o\
-   MOD_output.o MOD_params.o MOD_pitors.o MOD_pme.o MOD_pme.o\
+   MOD_output.o MOD_orthogonalize.o MOD_params.o MOD_pitors.o MOD_pme.o MOD_pme.o\
    MOD_polar.o MOD_polgrp.o MOD_polpot.o MOD_erf.o\
    MOD_potent.o MOD_precis.o MOD_ptable.o MOD_random.o MOD_resdue.o\
    MOD_ring.o MOD_scales.o MOD_shunt.o MOD_strbnd.o\
@@ -189,7 +189,7 @@ OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o new
    newinduce_pme2.o newinduce_pme2vec.o newinduce_pme2gpu.o\
    newinduce_shortreal.o newinduce_shortrealgpu.o\
    nextarg.o nexttext.o nspline.o number.o\
-   numeral.o openend.o optsave.o plumed.o pmestuff.o pmestuffgpu.o\
+   numeral.o orthogonalize.o openend.o optsave.o plumed.o pmestuff.o pmestuffgpu.o\
    precise.o pressure.o prime.o promo.o promoamd.o promosmd.o prmkey.o\
    prtdyn.o prtxyz.o readdyn.o\
    readprm.o readxyz.o respa.o respa1.o\

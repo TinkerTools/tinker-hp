@@ -40,19 +40,19 @@ c
       ifr = int(fr-eps)
       w = fr - real(ifr,t_p)
       igrid(1,i) = ifr - bsorder
-      call bsplgen (w,impi,thetai1(1,1,1))
+      call bsplgen (w,impi,thetai1(1,1,impi))
       w = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
       fr = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
       ifr = int(fr-eps)
       w = fr - real(ifr,t_p)
       igrid(2,i) = ifr - bsorder
-      call bsplgen (w,impi,thetai2(1,1,1))
+      call bsplgen (w,impi,thetai2(1,1,impi))
       w = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
       fr = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
       ifr = int(fr-eps)
       w = fr - real(ifr,t_p)
       igrid(3,i) = ifr - bsorder
-      call bsplgen (w,impi,thetai3(1,1,1))
+      call bsplgen (w,impi,thetai3(1,1,impi))
       return
       end
 
@@ -98,7 +98,7 @@ c
       integer isite
       integer level
       real(t_p) w,denom
-      real(t_p) thetai(4,bsorder,*)
+      real(t_p) thetai(4,bsorder)
       real(t_p) temp(maxorder,maxorder)
 c
 c     set B-spline depth for partial charges or multipoles
@@ -182,9 +182,9 @@ c
 !$acc loop seq
       do i = 1, bsorder
 !$acc loop seq
-         do j = 1, level
-            thetai(j,i,isite) = temp(bsorder-j+1,i)
-         end do
+          do j = 1, level
+            thetai(j,i) = temp(bsorder-j+1,i)
+          end do
       end do
       return
       end
@@ -266,7 +266,6 @@ c       the particle mesh Ewald grid
 c
 c
       subroutine grid_mpole_site(isite,impi,fmp)
-!$acc routine
       use chunks
       use domdec
       use fft
@@ -288,7 +287,6 @@ c
       real(t_p) v2,u2,t2
       real(t_p) term,term0,term1,term2
       real(t_p) fmp(10)
-!$acc routine(adjust) seq
 c
       if (use_pmecore) then
         rankloc  = rank_bis
@@ -391,7 +389,6 @@ c       particle mesh Ewald grid
 c
 c
       subroutine grid_uind_site(isite,impi,fuind,fuinp,qgrid2loc)
-!$acc routine
       use chunks
       use domdec
       use fft
@@ -416,7 +413,6 @@ c
       real(t_p) fuinp(3)
       real(t_p) qgrid2loc(2,n1mpimax,n2mpimax,n3mpimax,
      &                      nrec_send+1)
-!$acc routine(adjust) seq
 c
 c       put the induced dipole moments onto the grid
 c
@@ -765,7 +761,6 @@ c
 c
       subroutine fphi_uind_site(isite,impi,fdip_phi1,fdip_phi2,
      $  fdip_sum_phi)
-!$acc routine
       use domdec
       use fft
       use pme
@@ -1914,6 +1909,7 @@ c
           s_prmem = s_prmem -2*sizeof(qgridin_2d) -2*sizeof(qgridout_2d)
 #ifdef _OPENACC
          sd_prmem =sd_prmem -2*sizeof(qgridin_2d) -2*sizeof(qgridout_2d)
+!$acc exit data delete(qgridin_2d,qgrid2in_2d,qgridout_2d,qgrid2out_2d)
 #endif
           end if
           ! Removed declare directive before using tinker allocator
@@ -1932,6 +1928,7 @@ c
           s_prmem = s_prmem +2*sizeof(qgridin_2d) +2*sizeof(qgridout_2d)
 #ifdef _OPENACC
          sd_prmem =sd_prmem +2*sizeof(qgridin_2d) +2*sizeof(qgridout_2d)
+!$acc enter data create(qgridin_2d,qgrid2in_2d,qgridout_2d,qgrid2out_2d)
 #endif
 c
 c     Associate 1D grid pointer with his 5D grid target
@@ -2175,7 +2172,6 @@ c     "grid_pchg_site" places the i-th fractional atomic charge onto
 c     the particle mesh Ewald grid
 c
       subroutine grid_pchg_site(isite,impi,q)
-!$acc routine
       use chunks
       use domdec
       use fft
@@ -2194,7 +2190,6 @@ c
       real(t_p) q
       real(t_p) v0,u0,t0
       real(t_p) term,uterm
-!$acc routine(adjust)
 c
       if (use_pmecore) then
         rankloc  = rank_bis

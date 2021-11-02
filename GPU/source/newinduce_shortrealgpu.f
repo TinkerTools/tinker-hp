@@ -210,6 +210,7 @@ c
       procedure(tmatxb_pmegpu) :: matvec
 
       integer i, it, j, k
+      integer precnd1
       integer npoleloc_e
       real(t_p) ggold(2), alphacg(2)
       real(r_p) gnorm(2), gg(2)
@@ -238,6 +239,7 @@ c
       integer,dimension(nproc) ::reqrec,reqsend,req2rec,req2send
      &       , reqendrec,reqendsend,req2endrec,req2endsend
       logical tinker_isnan_m
+      parameter(precnd1=0)
 c
  1000 format(' cgiter shortreal converged after ',I3,' iterations.',/,
      $       ' final energy        = ',2D14.7,/,
@@ -255,6 +257,7 @@ c
       if (deb_Path) 
      &   write(*,'(3x,a)') 'inducepcg_shortrealgpu'
 
+      !call Tinker_shellEnv("PRECND",precnd1,0)
       if (use_pmecore) then
          commloc = comm_dir
       else
@@ -263,6 +266,8 @@ c
       npoleloc_e = merge(npolebloc,npoleloc,(skpPcomm))
       ggnew(1:2) => mbuf(1:2)
       ene(1:2)   => mbuf(3:4)
+
+      if (precnd1) call polarEingenVal
 
 c
 c     allocate some memory and setup the preconditioner:
@@ -309,6 +314,11 @@ c
       ggold  = zero
       ggold1 = zero
       ggold2 = zero
+
+      if (precnd1) then
+         call projectorOpe(mu,mu,0)
+         call invertDefaultQmat(ef,mu,1.0_ti_p)
+      end if
 c
       call timer_enter( timer_realdip )
       call matvec(nrhs,.true.,mu,h)
@@ -351,6 +361,7 @@ c
          end do
       end do
       end if
+      if (precnd1) call projectorOpe(pp,pp,0)
 
 !$acc wait(def_queue)
 
@@ -511,6 +522,7 @@ c
            end do
         end do
         call timer_exit( timer_other,quiet_timers )
+        if (precnd1) call projectorOpe(pp,pp,0)
 c
       end do
  10   continue

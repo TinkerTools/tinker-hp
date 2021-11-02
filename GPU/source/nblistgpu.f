@@ -681,36 +681,36 @@ c
 !$acc end data
 
       !TODO Remove declare directive on thetai
-c     call prmem_request(thetai1,4,bsorder,nlocrec,async=.true.)
-c     call prmem_request(thetai2,4,bsorder,nlocrec,async=.true.)
-c     call prmem_request(thetai3,4,bsorder,nlocrec,async=.true.)
+      call prmem_request(thetai1,4,bsorder,nlocrec,async=.false.)
+      call prmem_request(thetai2,4,bsorder,nlocrec,async=.false.)
+      call prmem_request(thetai3,4,bsorder,nlocrec,async=.false.)
 
       if (.not.allocated(thetai1)) then
-         sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
-     &                ,extra_alloc)
-         allocate (thetai1(4,bsorder,sbuf1))
-         allocate (thetai2(4,bsorder,sbuf1))
-         allocate (thetai3(4,bsorder,sbuf1))
-         s_prmem =  s_prmem + 12*bsorder*sbuf1*szoTp
-        sd_prmem = sd_prmem + 12*bsorder*sbuf1*szoTp
+c        sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
+c    &                ,extra_alloc)
+c        allocate (thetai1(4,bsorder,sbuf1))
+c        allocate (thetai2(4,bsorder,sbuf1))
+c        allocate (thetai3(4,bsorder,sbuf1))
+c        s_prmem =  s_prmem + 12*bsorder*sbuf1*szoTp
+c       sd_prmem = sd_prmem + 12*bsorder*sbuf1*szoTp
          call AssociateThetai_p
 #ifdef _OPENACC
          call attach_pmecu_pointer(1)
 #endif
       else if (nlocrec>size(thetai1,dim=3)) then
-         sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
-     &                ,extra_alloc)
-         tag = size(thetai1,dim=3)
-         s_prmem =  s_prmem - 12*bsorder*tag*szoTp
-        sd_prmem = sd_prmem - 12*bsorder*tag*szoTp
-         deallocate (thetai1)
-         deallocate (thetai2)
-         deallocate (thetai3)
-         allocate (thetai1(4,bsorder,sbuf1))
-         allocate (thetai2(4,bsorder,sbuf1))
-         allocate (thetai3(4,bsorder,sbuf1))
-         s_prmem =  s_prmem + 12*bsorder*sbuf1*szoTp
-        sd_prmem = sd_prmem + 12*bsorder*sbuf1*szoTp
+c        sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
+c    &                ,extra_alloc)
+c        tag = size(thetai1,dim=3)
+c        s_prmem =  s_prmem - 12*bsorder*tag*szoTp
+c       sd_prmem = sd_prmem - 12*bsorder*tag*szoTp
+c        deallocate (thetai1)
+c        deallocate (thetai2)
+c        deallocate (thetai3)
+c        allocate (thetai1(4,bsorder,sbuf1))
+c        allocate (thetai2(4,bsorder,sbuf1))
+c        allocate (thetai3(4,bsorder,sbuf1))
+c        s_prmem =  s_prmem + 12*bsorder*sbuf1*szoTp
+c       sd_prmem = sd_prmem + 12*bsorder*sbuf1*szoTp
          call AssociateThetai_p
 #ifdef _OPENACC
          call attach_pmecu_pointer(1)

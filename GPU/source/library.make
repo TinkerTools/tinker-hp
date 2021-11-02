@@ -96,6 +96,7 @@ MOD_nvtx.o \
 MOD_opbend.o \
 MOD_opdist.o \
 MOD_output.o \
+MOD_orthogonalize.o \
 MOD_params.o \
 MOD_pitors.o \
 MOD_plumed.o \
@@ -352,6 +353,7 @@ number.o \
 numeral.o \
 openend.o \
 optsave.o \
+orthogonalize.o \
 plumed.o \
 pmestuff.o \
 pmestuffgpu.o \

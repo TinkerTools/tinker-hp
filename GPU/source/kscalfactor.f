@@ -528,13 +528,14 @@ c
       use atoms  ,only: x,y,z
       use atmlst ,only: vdwglobnl
       use couple
-      use domdec ,only: rank,nlocnl,
+      use domdec ,only: rank,nlocnl,COMM_TINKER,
      &                  xbegproc,ybegproc,zbegproc,
      &                  xendproc,yendproc,zendproc
 #ifdef _OPENACC
       use utilcu ,only: cu_update_skipvdw12
 #endif
       use inform ,only: deb_Path,tindPath
+      use mpi
       use kscalfactor_inl
       use tinheader
       use tinMemory ,only: prmem_request
@@ -549,6 +550,7 @@ c
       integer*1:: iscal
       integer iscalbeg,iglob,kglob,iscan
       integer nn12,nn13,nn14,nn15,ntot
+      integer,save:: n_vscale1,n_vscalei,f_call=0
       real(t_p) pos1,pos2,pos3
       real(t_p) xi,yi,zi,xk,yk,zk
       real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
@@ -643,7 +645,26 @@ c
          scan_factorn(ii) = n_factorn(ii-1) + scan_factorn(ii-1)
       end do
 #endif
-      if (btest(tinkerdebug,tindPath)) print*, 'n_vscale',n_vscale,rank
+      if (tinkerdebug.gt.0) then
+
+      if (f_call.eq.0) then
+         call MPI_AllReduce(n_vscale,n_vscale1,1,MPI_INT,MPI_SUM
+     &                  ,COMM_TINKER,ii)
+ 11      format(' n_vscale (',I0,') sum_vscale ('I0,')',I4)
+         if(rank.lt.3) print 11, n_vscale,n_vscale1,rank
+      else
+         call MPI_AllReduce(n_vscale,n_vscalei,1,MPI_INT,MPI_SUM
+     &                  ,COMM_TINKER,ii)
+         if (n_vscalei.ne.n_vscale1) then
+ 12         format(' MPI',I9,' vscale pair found against',2I9,I3)
+            print 12,n_vscalei,n_vscale1,n_vscale,rank
+         else
+            if(rank.lt.3) print*, 'n_vscale',n_vscale,rank
+         end if
+      end if
+
+      end if
+
 
       !print*,n_vscale,nvdwlocnl
       ! Allocate memory to store v_scaling
@@ -668,6 +689,7 @@ c
 
 !$acc end data
 
+      f_call = f_call +1
       end
 
 c
@@ -1116,7 +1138,7 @@ c
       use thrust
 #endif
       use utils  ,only: set_to_zero1
-      use utilgpu,only: rec_queue
+      use utilgpu,only: rec_queue,nSMP
 #ifdef _OPENACC
      &           , rec_stream
 #endif
@@ -1127,7 +1149,7 @@ c
       integer iscalbeg,iscalbegp,iglob,kglob,kglob_s
       integer iscan,iscandp,iscandpu
       integer ntot,nnp14
-      integer ib,ic
+      integer ib,ic,ngang
       !integer n_dscale,n_pscale,kd,kp
       integer  :: buff(max_factorp)
       integer  :: buffp(max_factorp)
@@ -1157,6 +1179,7 @@ c
       zend = zendproc(rank+1)
       pscale41 = 1.0_ti_p-p4scale*p41scale
       kglob_s=0
+      ngang = min(nSMP*8,npolelocnl/128)
 c
 c     Construct induced dipoles scalar product scaling interactions
 c
@@ -1177,7 +1200,7 @@ c
 c
 c     Analyze polar scaling interactions
 c
-!$acc parallel loop gang vector
+!$acc parallel loop num_gangs(ngang) vector_length(128)
 !$acc&         private(buff,buffp,buffdp,cpt,i)
 !$acc&         present(n_factorn,n_factorp,n_factordp)
 !$acc&         async
@@ -1333,7 +1356,8 @@ c
       call set_to_zero1( dpcorrect_scale,2* n_dpscale,rec_queue)
       call set_to_zero1(dpucorrect_scale,3*n_dpuscale,rec_queue)
 
-!$acc parallel loop gang vector private(buff,cpt,i,i1) async
+!$acc parallel loop num_gangs(ngang) vector_length(128)
+!$acc&         private(buff,cpt,i,i1) async
 !$acc&         present(ucorrect_ik,ucorrect_scale,dpcorrect_ik,
 !$acc&  dpcorrect_scale,dpucorrect_ik,dpucorrect_scale,
 !$acc&  scan_factorp,scan_factorn,scan_factordp)

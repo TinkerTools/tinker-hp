@@ -7,7 +7,7 @@
 # Function Definitions
 # --------------------
 in_notif(){
-   printf "\n <<<<<  %-50s  >>>>> \n\n" "$1" && sleep 1
+   printf "\n <<<<<  %-60s  >>>>> \n\n" "$1" && sleep 1
 }
 error1st(){
    cat << END
@@ -27,7 +27,7 @@ error2nd(){
    Something went wrong during mixed precision compilation !!
    Please Fix the issue and enter following commands to resume
 $> cd source
-$> make $current_config_m -j$par
+$> make $current_config_m -j$ntask
              ---------------------
 
 END
@@ -82,18 +82,19 @@ tinkerdir=$(dirname `dirname $0`)
 # Make sure those params do not conflict with 'current_config_[dm]'
 #
 
-c_c=60,70                   #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
-cuda_ver=11.0               #   Cuda Version to be used by OpenACC compiler  (not the CUDA C/C++ compiler)
-build_plumed=0              #   [0]|1      0: disable 1: enable
-target_arch='gpu'           #   [gpu]|cpu
-#add_options='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package strictly above 21.3 version
+c_c=60,70,80                  #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
+cuda_ver=11.0                 #   Cuda Version to be used by OpenACC compiler  (not the CUDA C/C++ compiler)
+build_plumed=0                #   [0]|1      0: disable 1: enable
+target_arch='gpu'             #   [gpu]|cpu
+FPA=1                         #   Enable Fixed Precision Arithmetic (Useful for non HPC-Accelerators)
+#add_options_f='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package strictly above 21.3 version
 
 current_config="compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed arch=$target_arch"
 [ -n "$add_options" ] && current_config="$current_config add_options=$add_options"
 current_config_d="$current_config prog_suffix=.gpu"
-current_config_m="$current_config prec=m prog_suffix=.mixed"
+current_config_m="$current_config FPA_SUPPORT=$FPA prec=m prog_suffix=.mixed"
 
-[ $# -ge 1 ] && par=$1 || par=6
+[ $# -ge 1 ] && ntask=$1 || ntask=12
 
 # Check for MKLROOT variable in your environnement
 [[ -z ${MKLROOT+x} ]] && [[ ${target_arch} = 'cpu' ]] && error_mkl && exit
@@ -110,19 +111,20 @@ cd source
 # Build
 # -----
 if [ $build_plumed -eq 1 ]; then
-   in_notif "Building PLUMED" && make plumed -j$par
+   in_notif "Building PLUMED" && make plumed -j$ntask
 fi
 
 in_notif "Compiling TINKER-HP" && \
-make $current_config_d -j$par  && \
+make $current_config_d -j$ntask
 [ "$?" != "0" ] && error1st && exit # Compiling test
 
 in_notif 'Cleaning objects files and modules' && \
 make clean >/dev/null
 
-in_notif "Recompiling TINKER-HP in mixed precision" && \
+[ ${FPA} -eq 1 ] && in_notif "Recompiling TINKER-HP in mixed precision + FPA support"
+[ ${FPA} -eq 0 ] && in_notif "Recompiling TINKER-HP in mixed precision"
 make $current_config_m 2decomp_fft_rebuild_single   && \
-make $current_config_m -j$par
+make $current_config_m -j$ntask
 [ "$?" != "0" ] && error2nd  && exit # Mixed Compiling test
 
 # --------

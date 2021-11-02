@@ -189,6 +189,14 @@ c
 !$acc declare create(nvlst,nelst,nelstc)
       contains
 
+      subroutine init_aboxPart(a_bP)
+      implicit none
+      type(boxPart),intent(inout):: a_bP
+      a_bP%ipart=0
+      a_bP%bx_c=1
+      a_bP%by_c=1
+      a_bP%bz_c=1
+      end subroutine
       subroutine init_boxPart
       implicit none
       e_bP%ipart=0
@@ -203,13 +211,6 @@ c
       c_bP%bx_c=1
       c_bP%by_c=1
       c_bP%bz_c=1
-      end subroutine
-      subroutine init_aboxPart(a_bP)
-      implicit none
-      type(boxPart),intent(inout):: a_bP
-      a_bP%ipart=0
-      a_bP%bx_c=1
-      a_bP%by_c=1
-      a_bP%bz_c=1
+      call init_aboxPart(list_ani%bPar)
       end subroutine
       end

@@ -184,6 +184,8 @@ c
       integer(c_size_t) sh_size
 #endif
 
+ 13   format('shmem_int_req2::deallocate array',I4)
+ 14   format('shmem_int_req2::allocate array',2I8,I10,I4)
       if (present(config)) then
          configure = config
       else
@@ -193,6 +195,7 @@ c
 c     Deallocation
 c
       if (associated(shArray)) then
+         if (debMem.and.hostrank.eq.0) print 13, configure
          if (btest(configure,memacc)) then
             sd_ddmem = sd_ddmem - (size(shArray,1)*szoi)*size(shArray,2)
 !$acc exit data delete(shArray)
@@ -241,6 +244,8 @@ c
 c
 c     allocation
 c
+      if (debMem.and.hostrank.eq.0) print 14,request_shape
+     &                              ,request_size,rank
       if (btest(configure,memhost)) then
         CALL MPI_Win_allocate_shared(windowsize, disp_unit,
      $       MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
@@ -3020,8 +3025,9 @@ c
 
               sz_array = size(array)
               allocate(buffer(sz_array))
-!$acc enter data create(buffer) async( async_queue )
-!$acc parallel loop async( async_queue ) present(buffer,array)
+!$acc data create(buffer) async( async_queue )
+
+!$acc parallel loop async( async_queue ) present(array)
               do i = 1,sz_array  ! Save array to buffer
                  buffer(i) = array(i)
               end do
@@ -3041,11 +3047,12 @@ c
               sd_prmem = sd_prmem + s_array
               end if
 
-!$acc parallel loop async( async_queue ) present(buffer,array)
+!$acc parallel loop async( async_queue ) present(array)
               do i = 1,sz_array
                  array(i) = buffer(i)
               end do
-!$acc exit data delete(buffer) async( async_queue )
+
+!$acc end data
               deallocate(buffer)
            end if
         end if

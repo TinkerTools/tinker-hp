@@ -26,6 +26,8 @@ c
       implicit none
       integer i,j,k,m,ierr
       integer jj,kk
+      integer max11,max12,max13,max14
+      integer min11,min12,min13,min14
 c
 c     allocate global arrays
 c
@@ -129,6 +131,31 @@ c
          call sort (n15(i),i15(1,i))
       end do
    70 continue
+
+      if (tinkerdebug.gt.0) then
+         max11=0;max12=0;max13=0;max14=0
+         min11=0;min12=0;min13=0;min14=0
+         do i = 1,n
+            max12 = max(max12,n12(i))
+            min12 = min(min12,n12(i))
+            max13 = max(max13,n13(i))
+            min13 = min(min13,n13(i))
+            max14 = max(max14,n14(i))
+            min14 = min(min14,n14(i))
+            max11 = max(max11,n15(i))
+            min11 = min(min11,n15(i))
+         end do
+         if (rank.eq.0) then
+ 71   format(10x,'min',8x,'max')
+ 72   format(A9,I4,7X,I4)
+            print 71
+            print 72, 'n12',min12,max12
+            print 72, 'n13',min13,max13
+            print 72, 'n14',min14,max14
+            print 72, 'n15',min11,max11
+         end if
+      end if
+
       call MPI_BARRIER(hostcomm,ierr)
 c!$acc enter data copyin(n13(:),i13(:,:),n14(:),i14(:,:),
 c!$acc&                  n15(:),i15(:,:))

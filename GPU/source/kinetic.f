@@ -73,7 +73,7 @@ c
 !$acc wait
 !$acc host_data use_device(ekin)
          call MPI_ALLREDUCE(MPI_IN_PLACE,ekin,9,MPI_RPREC,MPI_SUM,
-     $                      MPI_COMM_WORLD,ierr)
+     $                      COMM_TINKER,ierr)
 !$acc end host_data
       end if
 !$acc kernels async
@@ -189,7 +189,7 @@ c
 !$acc wait
 !$acc host_data use_device(ekin)
          call MPI_ALLREDUCE(MPI_IN_PLACE,ekin,9,MPI_RPREC,MPI_SUM,
-     &                      MPI_COMM_WORLD,ierr)
+     &                      COMM_TINKER,ierr)
 !$acc end host_data
       end if
 c

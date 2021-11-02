@@ -90,6 +90,7 @@ c
       subroutine amove(n,a,b)
       implicit real(t_p) (a-h,o-z)
       dimension a(*),b(*)
+!$acc parallel loop async default(present)
       do j = 1, n
         b(j) = a(j)
       enddo
@@ -99,6 +100,7 @@ c
       subroutine imove(n,a,b)
       implicit integer (a-z)
       dimension a(*),b(*)
+!$acc parallel loop async default(present)
       do j = 1, n
         b(j) = a(j)
       enddo
@@ -108,6 +110,7 @@ c
       subroutine aneg(n,a,b)
       implicit real(t_p) (a-h,o-z)
       dimension a(*),b(*)
+!$acc parallel loop async default(present)
       do j = 1, n
         b(j) = -a(j)
       enddo
@@ -117,6 +120,7 @@ c
       subroutine aset2(n,s,a)
       implicit real(t_p) (a-h,o-z)
       dimension a(*)
+!$acc parallel loop async default(present)
       do j = 1, n
         a(j) = s
       enddo
@@ -126,6 +130,7 @@ c
       subroutine asasbc(n,a,b,c,s1,s2)
       implicit real(t_p) (a-h,o-z)
       dimension a(*), b(*), c(*)
+!$acc parallel loop async default(present)
       do j = 1, n
         c(j) = s1*a(j) + s2*b(j)
       enddo
@@ -135,6 +140,17 @@ c
       subroutine ascale(n,s,a,b)
       implicit real(t_p) (a-h,o-z)
       dimension a(*), b(*)
+!$acc parallel loop async default(present)
+      do j = 1, n
+        b(j) = s*a(j)
+      enddo
+      return
+      end
+c
+      subroutine ascale_mp(n,s,a,b)
+      implicit real(r_p) (a-h,o-z)
+      dimension a(*), b(*)
+!$acc parallel loop async default(present)
       do j = 1, n
         b(j) = s*a(j)
       enddo
@@ -144,6 +160,7 @@ c
       subroutine iscale(n,s,a,b)
       implicit integer (a-z)
       dimension a(*), b(*)
+!$acc parallel loop async default(present)
       do j = 1, n
         b(j) = s*a(j)
       enddo

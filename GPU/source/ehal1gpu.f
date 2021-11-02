@@ -1312,9 +1312,9 @@ c
      &             ,nvdwclass
      &             ,c0,c1,c2,c3,c4,c5,cut2,rinv,off2,off,ghal,dhal
      &             ,scexp,vlambda,scalpha,mut
-     &             ,xbeg,xend,ybeg,yend,zbeg,zend
+     &             ,xbeg,xend,ybeg,yend,zbeg,zend,rank
 #ifdef TINKER_DEBUG
-     &             ,inter,rank
+     &             ,inter
 #endif
      &             )
       call check_launch_kernel(" ehal1_cu2 ")
@@ -1947,30 +1947,59 @@ c
       end do
       end
 
+      subroutine dist(idx1,idx2)
+      use atoms
+      use domdec
+      use ehal1gpu_inl
+      integer idx1,idx2
+      integer i,j
+      real(t_p) xr,yr,zr
+
+!$acc serial async default(present)
+      if (loc(idx1).lt.nbloc.and.loc(idx2).lt.nbloc) then
+         xr = x(idx1) - x(idx2)
+         yr = y(idx1) - y(idx2)
+         zr = z(idx1) - z(idx2)
+         call image_inl(xr,yr,zr)
+         d = sqrt(xr**2+yr**2+zr**2)
+         print*, 'dist',idx1,idx2,d,rank
+      end if
+!$acc end serial
+
+      end subroutine
 
       subroutine searchpair(nlst,lst,maxlst,int1,int2)
       use atmlst    ,only: vdwglobnl,vdwglob
       use atoms
-      use deriv     ,only: dev=>debond
+      use cutoff    ,only: vdwshortcut,shortheal
       use cell
+      use deriv     ,only: dev=>debond
       use domdec
       use ehal1gpu_inl
-      use energi    ,only: ev
+#if defined(_OPENACC) && 1
+      use ehal1cu   ,only: VDW_BLOCK_DIM,ehal1short_cu_deb
+      use utilcu    ,only: check_launch_kernel
+#endif
+      use energi    ,only: ev=>ev_r
       use inform    ,only: deb_Path,dibuff
       use interfaces,only: ehal1c_correct_scaling
       use mutant    ,only: scalpha,scexp,vlambda,vcouple,mut=>mutInt
       use neigh 
+      use potent
       use tinheader ,only: ti_p,re_p
       use tinMemory ,only: prmem_request
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
-      use vdw       ,only: ired,kred,jvdw,ivdw,radmin,
-     &                     epsilon,nvdwbloc,nvdwlocnl,
-     &                     nvdwclass
+      use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin_c
+     &              ,epsilon_c,epsilon,nvdwbloc,nvdwlocnl
+     &              ,nvdwclass,nvdwlocnlb,nvdwlocnlb_pair
+     &              ,nvdwlocnlb2_pair,nshortvdwlocnlb2_pair
       use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
       use vdw_locArray
       use utilgpu   ,only: def_queue,dir_queue,rec_queue
+     &              ,ered_buff=>ered_buf1,vred_buff,reduce_energy_virial
+     &              ,zero_evir_red_buffer,prmem_request,inf
 #ifdef _OPENACC
-     &                    ,dir_stream
+     &                    ,dir_stream,def_stream
      &                    ,rec_stream,rec_event,stream_wait_async
 #endif
       use virial
@@ -1981,7 +2010,7 @@ c
 
       integer i,j,k,kk,ksave
       integer kt,kglob,kbis,kvloc,kv,ki
-      integer iglob,iivdw
+      integer iglob,iivdw,hal_gs,lst_start
       integer ii,iv,it,ivloc
       integer,save:: ncall=0
       integer nnvlst,nnvlst2
@@ -2006,8 +2035,11 @@ c
       real(t_p) lenx,leny,lenz
       real(t_p) lenx_cell,leny_cell,lenz_cell
       real(t_p) xmin,xmax,ymin,ymax,zmin,zmax
+      real(t_p)  vdwshortcut2
+      real(t_p)  xbeg,xend,ybeg,yend,zbeg,zend
       logical   do_scale4
       character*10 mode
+!$acc routine(distprocpart1)
 c
       write (*,*) 'searchpair',int1,int2
       ncall = ncall + 1
@@ -2037,6 +2069,7 @@ c
       mode = 'SHORTVDW'
       call switch (mode)
       rinv = 1.0/(cut-off)
+      vdwshortcut2 = (vdwshortcut-shortheal)**2
 c
 c     apply any reduction factor to the atomic coordinates
 c
@@ -2055,6 +2088,14 @@ c
 
       call resetForces_buff(def_queue)
 
+!$acc parallel loop default(present)
+        do i = 1, nbloc
+           iglob = glob(i)
+           call distprocpart1(iglob,rank,rv2,.true.,x,y,z)
+       if (iglob.eq.int1) print*, "found glob",int1,ii,real(rv2,4),rank
+       if (iglob.eq.int2) print*, "found glob",int2,ii,real(rv2,4),rank
+        end do
+
 !$acc parallel loop
       do ii = 1,nvdwlocnl
          iivdw = vdwglobnl(ii)
@@ -2064,12 +2105,13 @@ c
       end do
 
       ncell2buffb = ncell2buff
-      xmin = xbegproc(rank+1)
-      xmax = xendproc(rank+1)
-      ymin = ybegproc(rank+1)
-      ymax = yendproc(rank+1)
-      zmin = zbegproc(rank+1)
-      zmax = zendproc(rank+1)
+      xmin  = xbegproc(rank+1)
+      xmax  = xendproc(rank+1)
+      ymin  = ybegproc(rank+1)
+      ymax  = yendproc(rank+1)
+      zmin  = zbegproc(rank+1)
+      zmax  = zendproc(rank+1)
+
       do i = 1, nbig_recep
         proc = pbig_recep(i)
         if (xbegproc(proc+1).le.xmin) xmin = xbegproc(proc+1)
@@ -2104,12 +2146,13 @@ c      do i = 1,n
 c         indcelltemp(i) = 0
 c      end do
        if (rank.eq.0) then
-          print*,'nx',nx_cell,ny_cell,nz_cell
-          print*,'lx',lenx,leny,lenz,bigbuf
-       end if
-!$acc serial async present(xcell2,ycell2) copyin(zcell2)
-       print*,'cell',xcell2,ycell2,zcell2
+c         print*,'nx',nx_cell,ny_cell,nz_cell
+c         print*,'lx',lenx,leny,lenz,bigbuf
+          print*,'cell h',xcell2,ycell2,zcell2
+!$acc serial async present(xcell2,ycell2,zcell2)
+          print*,'cell d',xcell2,ycell2,zcell2
 !$acc end serial
+       end if
 
 !$acc parallel loop async
       do i = 1,nlocnl
@@ -2140,6 +2183,7 @@ c!$acc end atomic
 c
 c     find van der Waals energy and derivatives via neighbor list
 c
+#if 0
 !$acc parallel loop num_gangs(2) vector_length(32)
 !$acc&         async(def_queue)
       MAINLOOP:
@@ -2194,7 +2238,105 @@ c
 
          end do
       end do MAINLOOP
+#else
+      xmin = xbegproc(rank+1)
+      xmax = xendproc(rank+1)
+      ymin = ybegproc(rank+1)
+      ymax = yendproc(rank+1)
+      zmin = zbegproc(rank+1)
+      zmax = zendproc(rank+1)
+      lst_start = 2*nvdwlocnlb_pair+1
+c
+c     apply any reduction factor to the atomic coordinates
+c
+!$acc parallel loop default(present) async(def_queue)
+      do k = 1,nvdwlocnlb
+         if (k.le.nvdwlocnl) then
+            iglob    = cellv_glob(k)
+            iv       = ired (iglob)
+            rdn      = kred (iglob)
+            rdn1     = 1.0_ti_p - rdn
+            cellv_loc(k) = loc(iglob)
+            loc_ired(k)  = loc(iv)
+            if (iglob.eq.iv) then
+               loc_kred(k) = rdn
+            else
+               loc_kred(k) = 1.0_ti_p
+            end if
+            xred(k)  = rdn * x(iglob) + rdn1 * x(iv)
+            yred(k)  = rdn * y(iglob) + rdn1 * y(iv)
+            zred(k)  = rdn * z(iglob) + rdn1 * z(iv)
+         else
+            ! Exclusion buffer to prevent interaction compute
+            cellv_loc(k) = nbloc
+            loc_ired(k)  = nbloc
+            xred(k) = inf
+            yred(k) = inf
+            zred(k) = inf
+         end if
+      end do
 
+      call zero_evir_red_buffer(def_queue)
+c
+c     Call Vdw kernel in CUDA using C2 nblist
+c
+!$acc host_data use_device(xred,yred,zred,cellv_glob,cellv_loc
+!$acc&    ,loc_ired,ivblst,vblst,cellv_jvdw
+!$acc&    ,epsilon_c,radmin_c,mut,ired,kred,dev,ered_buff,vred_buff
+#ifdef TINKER_DEBUG
+!$acc&    ,inter
+#endif
+!$acc&    )
+
+      if (.true.) then
+
+      hal_Gs = nshortvdwlocnlb2_pair/4
+      hal_Gs = 1
+      call ehal1short_cu_deb <<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
+     &           (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
+     &           ,ivblst,vblst(lst_start),cellv_jvdw
+     &           ,epsilon_c,radmin_c
+     &           ,ired,kred,dev,ered_buff,vred_buff
+     &           ,nvdwlocnlb2_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
+     &           ,nvdwclass,rinv
+     &           ,c0,c1,c2,c3,c4,c5,cut2,off2,off
+     &           ,scexp,vlambda,scalpha,mut
+     &           ,shortheal,ghal,dhal,use_vdwshort
+     &           ,xmin,xmax,ymin,ymax,zmin,zmax
+     &           ,int1,int2,rank
+#ifdef TINKER_DEBUG
+     &           ,inter
+#endif
+     &           )
+      call check_launch_kernel(" ehal1short_cu ")
+
+      else if (use_vdwlong) then
+
+      hal_Gs = nvdwlocnlb2_pair/4
+      call ehal1long_cu <<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
+     &           (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
+     &           ,ivblst,vblst(lst_start),cellv_jvdw,epsilon_c,radmin_c
+     &           ,ired,kred,dev,ered_buff,vred_buff
+     &           ,nvdwlocnlb2_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
+     &           ,nvdwclass
+     &           ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,vdwshortcut2
+     &           ,scexp,vlambda,scalpha,mut
+     &           ,vdwshortcut,shortheal,ghal,dhal,use_vdwshort
+     &           ,xmin,xmax,ymin,ymax,zmin,zmax
+#ifdef TINKER_DEBUG
+     &           ,inter,rank
+#endif
+     &           )
+      call check_launch_kernel(" ehal1long_cu ")
+      end if
+
+!$acc end host_data
+
+      call reduce_energy_virial(ev,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &                         ,ered_buff,def_queue)
+#endif
+
+#if 0
       ! Save positions before removing comments on this kernel
 c!$acc parallel loop async
 c!$acc&         present(dibuff,xold_nl,yold_nl,zold_nl)
@@ -2281,6 +2423,20 @@ c
          end if
          end do
       end do
+#endif
+
+!$acc parallel loop default(present)
+!$acc&         async(def_queue)
+      do k = 1,nvdwbloc
+         iglob   = ivdw (vdwglob (k))
+         i       = loc  (iglob)
+         iv      = ired (iglob)
+         rdn     = kred (iglob)
+         rdn1    = 1.0_ti_p - rdn
+         xred(i) = rdn * x(iglob) + rdn1 * x(iv)
+         yred(i) = rdn * y(iglob) + rdn1 * y(iv)
+         zred(i) = rdn * z(iglob) + rdn1 * z(iv)
+      end do
 
       call searchVdwScaled(xred,yred,zred,
      &     g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,int1,int2)
@@ -2296,6 +2452,7 @@ c      call vdw_gradient_reduce
       use atmlst    ,only: vdwglobnl
       use deriv     ,only: dev=>debond
       use domdec    ,only: loc,rank,nbloc
+      use cutoff    ,only: shortheal
       use ehal1gpu_inl
       use energi    ,only: ev
       use inform    ,only: deb_Path
@@ -2338,7 +2495,7 @@ c      call vdw_gradient_reduce
       real(r_p)  vyy,vyz,vzz
 
       ! Scaling factor correction loop
-      write(*,*) "searchVdwScaled",n_vscale
+      if(deb_Path) write(*,*) "searchVdwScaled",n_vscale
       rinv = 1.0/(cut-off)
 
 !$acc parallel loop async(def_queue)
@@ -2379,10 +2536,6 @@ c
          rik2   = xpos**2 + ypos**2 + zpos**2
          if (rik2>off2) cycle
 
-         if ((iglob.eq.int1.and.kglob.eq.int2).or.
-     &       (kglob.eq.int1.and.iglob.eq.int2)) then
-             print*,"corr",rank,xpos,ypos,zpos,e
-         end if
          ! Annihilate
          if (vcouple.eq.1.and.mutik.eq.two1) mutik=one1
 c
@@ -2401,15 +2554,21 @@ c
      &                    ,cut2,rinv,off,ghal,dhal
      &                    ,scexp,vlambda,scalpha,mutik
      &                    ,e,dedx,dedy,dedz)
+c        call ehal1_couple_short(xpos,ypos,zpos,rik2,rv2,eps2,vscale
+c    &                    ,cut2,off
+c    &                    ,scexp,vlambda,scalpha,mutik
+c    &                    ,shortheal,ghal,dhal,e,dedx,dedy,dedz)
 
          if (.not.do_scale4) then
          e    = -e
          dedx = -dedx; dedy = -dedy; dedz = -dedz;
          end if
 
-         if ((iglob.eq.int1.and.kglob.eq.int2).or.
-     &       (kglob.eq.int1.and.iglob.eq.int2)) then
-             print*,"corr",rank,iglob,kglob,rik2,dedx,dedy,dedz
+         if (iglob.eq.int1.or.kglob.eq.int1) then
+             print*,iglob,kglob,rik2,dedx,dedy,dedz,"cor1",rank
+         end if
+         if (kglob.eq.int2.or.iglob.eq.int2) then
+             print*,iglob,kglob,rik2,dedx,dedy,dedz,"cor2",rank
          end if
 
          ! deal with 1-4 Interactions
@@ -2421,4 +2580,3 @@ c
          end if
       end do
       end
-

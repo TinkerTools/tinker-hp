@@ -34,7 +34,7 @@ c
       use tinMemory
       implicit none
       integer maxpower
-      parameter (maxpower=54)
+      parameter (maxpower=63)
       integer i,k,next
       integer ifft1,ifft2,ifft3
       integer multi(maxpower)
@@ -52,15 +52,16 @@ c
      &            64,  72,  80,  90,  96, 100, 108, 120, 128,
      &           144, 150, 160, 162, 180, 192, 200, 216, 240,
      &           250, 256, 270, 288, 300, 320, 324, 360, 384,
-     &           400, 432, 450, 480, 486, 500, 512, 540, 576 /))
+     &           400, 432, 450, 480, 486, 500, 512, 540, 576,
+     &           600, 640, 648, 720, 750, 768, 800, 810, 864 /))
 c
 c     allocate global arrays
 c
-      if (.not.allocated(igrid)) then
-         allocate (igrid(3,n))
-      end if
+      !if (.not.allocated(igrid)) then
+      !   allocate (igrid(3,n))
+      !end if
       ! Removed declare on igrid
-      !call prmem_request(igrid,3,n)
+      call prmem_request(igrid,3,n)
 c
 c
 c     default boundary treatment, B-spline order and grid density
@@ -168,9 +169,10 @@ c
          call fatal
       else if (nfft1.lt.ifft1 .or. nfft2.lt.ifft2
      &             .or. nfft3.lt.ifft3) then
-         if (rank.eq.0) write (iout,50)
+         if (rank.eq.0) write (iout,50) ifft1,ifft2,ifft3
    50    format (/,' KEWALD  --  Warning, Small Charge Grid',
-     &              ' may give Poor Accuracy')
+     &             ' may give Poor Accuracy',/,
+     &             '   advocated grid size (',3I6,')')
       end if
 c
 c     perform dynamic allocation of some pointer arrays

@@ -16,8 +16,10 @@ c
 #include "tinker_precision.h"
       subroutine newinduce_pme2gpu
       use atoms     ,only: n,n_pe
+      use atomsmirror
       use atmlst
       use domdec
+      use deriv
       use ewald
       use iounit
       use inform    ,only: deb_Path,minmaxone
@@ -64,7 +66,7 @@ c
 c
       if (.not.use_polar) return
 c
- 1000 format(' illegal polalg in newinduce.')
+ 1000 format(' illegal polalg(',I3,') in newinduce.')
  1010 format(' time for the ',a,F14.5)
  1020 format(' total elapsed time in newinduce: ',F14.5)
  
@@ -237,7 +239,7 @@ c
          end if
 #endif
       else
-         if (rank.eq.0) write(iout,1000)
+         if (rank.eq.0) write(iout,1000) polalg
          call fatal
       end if
       wtime2 = mpi_wtime()
@@ -331,7 +333,7 @@ c     deallocate (cphirec)
 #ifndef USE_NVSHMEM_CUDA
       if (use_pmecore.and.rank.ge.ndir) return
 #endif
-      if(deb_Path) print '(3x,A)',"pred_InitField"
+      if(deb_Path) print '(3x,A,2I0)',"pred_InitField",lshalt,lalt
       call timer_enter( timer_ulspred )
       call ulspredgpu
 
@@ -546,7 +548,7 @@ c
       use domdec
       use ewald
       use iounit
-      use inform    ,only: deb_Path,abort
+      use inform    ,only: deb_Path,abort,minmaxone
       use interfaces,only: tmatxb_pmegpu
       use math
       use mpole
@@ -576,6 +578,7 @@ c
       procedure(tmatxb_pmegpu) :: matvec
 
       integer i, it, j, k
+      integer,save:: precnd1
       real(t_p) ggold(2), alphacg(2), gg(2)
       real(r_p) gnorm(2), ggnew(2), ene(2)
       real(t_p),save:: ggold1=0.0,ggold2=0.0
@@ -603,6 +606,7 @@ c
       integer,allocatable :: req2endrec(:),req2endsend(:)
       logical,save::first_in=.true.
       logical tinker_isnan_m
+      integer,save::icall=0
 c
  1000 format(' cgiter converged after ',I3,' iterations.',/,
      &       ' final energy        = ',2D14.7,/,
@@ -665,6 +669,8 @@ c
       if (first_in) then
 !$acc enter data create(gg1,gg2)
          first_in=.false.
+         call Tinker_shellEnv("PRECND",precnd1,0)
+         if (precnd1) call polarEingenVal
       end if
 c
 c     setup the preconditioner
@@ -707,6 +713,12 @@ c
       if (dir_queue.ne.rec_queue)
      &   call start_dir_stream_cover
 #endif
+      if (precnd1) then
+         !call projectorOpe(mu,mu,0)
+         !call invertDefaultQmat(ef,mu,1.0_ti_p)
+         call ProjectorPTransGeneric(mu,mu)
+         call ApplyQxV(ef,mu,1.0_ti_p)
+      end if
 c
       call timer_enter( timer_realdip )
       call matvec(nrhs,.true.,mu,h)
@@ -731,23 +743,35 @@ c
 
       call timer_enter( timer_other )
 
+      if (precnd1) then
 !$acc parallel loop collapse(3) present(ef) async(rec_queue)
-      do k=1,npoleloc
-         do j=1,nrhs
-            do i=1,3
-               h(i,j,k)   = h(i,j,k)  + dipfield(i,j,k) - term*mu(i,j,k)
-               res(i,j,k) = ef(i,j,k) - h(i,j,k)
-               zr(i,j,k)  = res(i,j,k)*diag(k)
-               pp(i,j,k)  = zr(i,j,k)
-               if (btest(j,0)) then  ! test de 1
-                  ggold1  = ggold1 + res(i,j,k)*zr(i,j,k)
-               else
-                  ggold2  = ggold2 + res(i,j,k)*zr(i,j,k)
-               end if
-            end do
-         end do
-      end do
+      do k=1,npoleloc; do j=1,nrhs; do i=1,3
+         h(i,j,k)   = h(i,j,k)  + dipfield(i,j,k) - term*mu(i,j,k)
+         res(i,j,k) = ef(i,j,k) - h(i,j,k)
+      end do; end do; end do
+      call adaptedDeflat2(res,pp,diag)
+!$acc parallel loop collapse(3) present(ef) async(rec_queue)
+      do k=1,npoleloc; do j=1,nrhs; do i=1,3
+         if (btest(j,0)) then; ggold1= ggold1 + res(i,j,k)*pp(i,j,k)
+         else;                 ggold2= ggold2 + res(i,j,k)*pp(i,j,k)
+         end if
+      end do; end do; end do
+      else
+!$acc parallel loop collapse(3) present(ef) async(rec_queue)
+      do k=1,npoleloc; do j=1,nrhs; do i=1,3
+         h(i,j,k)   = h(i,j,k)  + dipfield(i,j,k) - term*mu(i,j,k)
+         res(i,j,k) = ef(i,j,k) - h(i,j,k)
+         zr(i,j,k)  = res(i,j,k)*diag(k)
+         pp(i,j,k)  = zr(i,j,k)
+         if (btest(j,0)) then  ! test de 1
+            ggold1  = ggold1 + res(i,j,k)*zr(i,j,k)
+         else
+            ggold2  = ggold2 + res(i,j,k)*zr(i,j,k)
+         end if
+      end do; end do; end do
+      end if
 !$acc wait(rec_queue)
+      !if (precnd1) call projectorOpe(pp,pp,0)
 
       ggold(1) = ggold1
       ggold(2) = ggold2
@@ -816,18 +840,18 @@ c
          end if
 !$acc parallel loop collapse(3) present(gg1,gg2) async(rec_queue)
 !$acc&         default(present)
-         do k=1,npoleloc
-            do j=1,nrhs
-               do i=1,3
-                  h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*pp(i,j,k)
-                  if (btest(j,0)) then
-                     gg1 = gg1 + pp(i,j,k)*h(i,j,k)
-                  else
-                     gg2 = gg2 + pp(i,j,k)*h(i,j,k)
-                  end if
-               end do
-            end do
-         end do
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*pp(i,j,k)
+         end do; end do; end do
+!$acc parallel loop collapse(3) present(gg1,gg2) async(rec_queue)
+!$acc&         default(present)
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            if (btest(j,0)) then
+               gg1 = gg1 + pp(i,j,k)*h(i,j,k)
+            else
+               gg2 = gg2 + pp(i,j,k)*h(i,j,k)
+            end if
+         end do; end do; end do
 
          if (nproc.gt.1) then
 !$acc host_data use_device(gg1,gg2)
@@ -860,26 +884,49 @@ c
          ggnew1 = zerom; ggnew2 = zerom
          ene1 = zerom; ene2 = zerom
 
+         if (precnd1) then
+
 !$acc parallel loop collapse(3) async(rec_queue) present(gg1,gg2,mu,ef)
-         do k=1,npoleloc
-            do j=1,nrhs
-               do i=1,3
-                  if (btest(j,0)) then
-                     mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
-                     res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
-                     zr (i,j,k) = diag(k)* res(i,j,k)
-                     ggnew1     = ggnew1 + res(i,j,k)*zr(i,j,k)
-                     ene1    = ene1 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
-                   else
-                     mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
-                     res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
-                     zr (i,j,k) = diag(k)* res(i,j,k)
-                     ggnew2     = ggnew2 + res(i,j,k)*zr(i,j,k)
-                     ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
-                  end if
-               end do
-            end do
-         end do
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            if (btest(j,0)) then
+               mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
+               res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
+               ene1    = ene1 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
+            else
+               mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
+               res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
+               ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
+            end if
+         end do; end do; end do
+
+         call adaptedDeflat2(res,zr,diag)
+
+!$acc parallel loop collapse(3) async(rec_queue) present(gg1,gg2,mu,ef)
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            if (btest(j,0)) then; ggnew1= ggnew1 + res(i,j,k)*zr(i,j,k)
+            else; ggnew2 = ggnew2 + res(i,j,k)*zr(i,j,k); end if
+         end do; end do; end do
+
+         else
+
+!$acc parallel loop collapse(3) async(rec_queue) present(gg1,gg2,mu,ef)
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            if (btest(j,0)) then
+               mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
+               res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
+               zr (i,j,k) = diag(k)* res(i,j,k)
+               ggnew1     = ggnew1 + res(i,j,k)*zr(i,j,k)
+               ene1    = ene1 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
+            else
+               mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
+               res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
+               zr (i,j,k) = diag(k)* res(i,j,k)
+               ggnew2     = ggnew2 + res(i,j,k)*zr(i,j,k)
+               ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
+            end if
+         end do; end do; end do
+
+         end if
 c Implicit wait seems to be removed with PGI-20
 !$acc wait
          ene2 = -pt5*ene2; ene1 = -pt5*ene1
@@ -894,24 +941,19 @@ c Implicit wait seems to be removed with PGI-20
          call MPI_WAIT(req4,status,ierr)
          resnrm = 0.0_re_p
 
-c        do k = 1, nrhs
-c           pp(:,k,1:npoleloc) = zr(:,k,1:npoleloc)+ggnew(k)/ggold(k)*
-c    &                         pp(:,k,1:npoleloc)
-c        end do
+         !if (precnd1) then
+         !   call projectorOpe(zr,zr,0)
+         !end if
 
          ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
 !$acc parallel loop collapse(3) async(rec_queue)
-         do k=1,npoleloc
-            do j=1,nrhs
-               do i=1,3
-                  if (btest(j,0)) then
-                     pp(i,j,k) = zr(i,j,k)+ ggdev1*pp(i,j,k)
-                  else
-                     pp(i,j,k) = zr(i,j,k)+ ggdev2*pp(i,j,k)
-                  end if
-               end do
-            end do
-         end do
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            if (btest(j,0)) then
+               pp(i,j,k) = zr(i,j,k)+ ggdev1*pp(i,j,k)
+            else
+               pp(i,j,k) = zr(i,j,k)+ ggdev2*pp(i,j,k)
+            end if
+         end do; end do; end do
 
          call timer_exit( timer_other )
 c
@@ -994,6 +1036,7 @@ c
          end do
       end if
  50   continue
+      icall = icall+1
 
 !!$acc end data
 !!$acc exit data delete(res,pp,dipfield,dipfieldbis) async
@@ -1272,22 +1315,35 @@ c
 #if 1
       module step_cg
 #if TINKER_DOUBLE_PREC
-      integer,parameter:: cgstep_max=7
+      integer,parameter:: cgstep_max=20
 #else
-      integer,parameter:: cgstep_max=5
+      integer,parameter:: cgstep_max=15
 #endif
-      integer s
+      integer s,sshort,slong
       integer,private:: step_save=0
-      real(t_p),allocatable,target:: sb0(:),sb1(:)
+      real(t_p),allocatable,target:: sb0(:)
+      real(r_p),allocatable,target:: sb1(:)
       real(t_p),allocatable,target:: stepMatV(:)
       real(r_p),allocatable,target:: stepMatVr(:)
       real(t_p),pointer:: MatBs(:,:,:),MatWs(:,:,:)
      &         ,MatW_s(:,:,:),Vas(:,:)
       real(r_p),pointer:: MatBs_r(:,:,:),MatWs_r(:,:,:)
      &         ,MatW_sr(:,:,:),Vas_r(:,:)
-      real(t_p),pointer:: MRes_s(:,:,:,:),MQs(:,:,:,:)
-     &         ,MTs(:,:,:,:),MPs(:,:,:,:)
+      real(t_p),pointer:: MRes_s(:,:,:,:),MRes_s0(:,:,:)
+     &         ,MQs(:,:,:,:),MTs(:,:,:,:)
+      real(r_p),pointer:: MPs(:,:,:,:)
       integer ipiv(cgstep_max)
+
+      ! One macro-iteration optimisation data set
+      integer MaxIt1InARow,short_m,normal_m
+      integer indStepCall(2),OneItInARow(2),MoreInARow(2)
+      logical optOneIt(2)
+      parameter(MaxIt1InARow=20,short_m=2,normal_m=1)
+
+      ! Shift attributes
+      logical ::shift_enabled=.true.
+      real(t_p),dimension(0:cgstep_max):: sh_the
+     &         ,sh_sig,sh_gam
 
       contains
 
@@ -1326,6 +1382,194 @@ c        s = cgstep_max
 c     end if
 c     end subroutine
 
+      ! Shift methods
+      subroutine init_shift_attr
+      implicit none
+      sh_the = 0
+      sh_gam = 1
+      sh_sig = 0
+      end subroutine
+
+      subroutine shift_field(elecf,vec_1,vec_2,sz,s)
+      implicit none
+      integer,intent(in):: s,sz
+      real(t_p),intent(in):: vec_1(*),vec_2(*)
+      real(t_p),intent(inout):: elecf(*)
+
+      integer i, offset,start,quo
+      real(t_p) theta0_gam,inv_gamma0,theta,sig_gam
+
+      start = sz/2
+      if (s.eq.1) then
+         theta0_gam = sh_the(0)/sh_gam(0)
+         inv_gamma0 = 1.0/sh_gam(0)
+!$acc parallel loop async default(present)
+         do i = 1,sz
+            quo = (i-1)/3
+            if (btest(quo,0)) then
+               offset = start
+               quo    = (((quo-1)/2)*3) + mod(i-1,3) + 1
+            else
+               offset = 0
+               quo    = (( quo   /2)*3) + mod(i-1,3) + 1
+            end if
+           elecf(i) = inv_gamma0*elecf(i) - theta0_gam*vec_1(offset+quo)
+         end do
+      else
+         inv_gamma0 = 1.0/sh_gam(s-1)
+         theta      =  sh_the(s-1)/sh_gam(s-1)
+         sig_gam    = -sh_sig(s-2)/sh_gam(s-1) 
+!$acc parallel loop async default(present)
+         do i = 1,sz
+            quo = (i-1)/3
+            if (btest(quo,0)) then
+               offset = start
+               quo    = (((quo-1)/2)*3) + mod(i-1,3) + 1
+            else
+               offset = 0
+               quo    = (( quo   /2)*3) + mod(i-1,3) + 1
+            end if
+            elecf(i) = inv_gamma0*elecf(i) -   theta*vec_1(offset+quo)
+     &                                     + sig_gam*vec_2(offset+quo)
+         end do
+      end if
+
+      end subroutine
+
+      subroutine norm_field(elecf,sz,s,normd,normp)
+      implicit none
+      integer,intent(in):: s,sz
+      real(r_p) normd,normp
+      real(t_p),intent(inout):: elecf(*)
+      integer i,offset,start,quo
+
+      normd=0; normp=0;
+      start = sz/2
+!$acc parallel loop async default(present)
+      do i = 1,sz
+         quo = (i-1)/3
+         if (btest(quo,0)) then
+            offset = start
+            quo    = (((quo-1)/2)*3) + mod(i-1,3) + 1
+            normd  = normd + elecf(i)*elecf(i)
+         else
+            offset = 0
+            quo    = ((quo/2)*3) + mod(i-1,3) + 1
+            normp  = normp + elecf(i)*elecf(i)
+         end if
+      end do
+!$acc wait
+      normp=sqrt(normp); normd=sqrt(normd)
+!$acc parallel loop async default(present)
+      do i = 1,sz
+         quo = (i-1)/3
+         if (btest(quo,0)) then
+            offset = start
+            quo    = (((quo-1)/2)*3) + mod(i-1,3) + 1
+            elecf(i) = elecf(i)/normd
+         else
+            offset = 0
+            quo    = ((quo/2)*3) + mod(i-1,3) + 1
+            elecf(i) = elecf(i)/normp
+         end if
+      end do
+      end subroutine
+
+      subroutine orth_field(elecf,vec_1,vec_2,sz,s)
+      implicit none
+      integer  ,intent(in)   :: s,sz
+      real(t_p),intent(in)   :: vec_1(*),vec_2(*)
+      real(t_p),intent(inout):: elecf(*)
+
+      integer i, offset,start,quo
+      real(t_p) theta0_gam,inv_gamma0,theta,sig_gam
+      real(r_p),save:: scl0,scl1,l2nrm0,l2nrm1
+      real(t_p)     :: scald,scalp,l2normd,l2normp
+
+      start = sz/2
+      ! Scalar Product
+      scl0=0; scl1=0
+!$acc parallel loop async default(present)
+      do i = 1,sz
+         quo = (i-1)/3
+         if (btest(quo,0)) then
+            offset = start
+            quo    = (((quo-1)/2)*3) + mod(i-1,3) + 1
+            scl0   = scl0 + elecf(i)*vec_1(offset+quo)
+         else
+            offset = 0
+            quo    = ((quo/2)*3) + mod(i-1,3) + 1
+            scl1   = scl1 + elecf(i)*vec_1(offset+quo)
+         end if
+      end do
+!$acc wait
+      ! Orthogonalization (GS)
+      scald=scl0; scalp=scl1;
+      if (s.eq.1) l2nrm0=0
+      if (s.eq.1) l2nrm1=0
+      l2normd = l2nrm0
+      l2normp = l2nrm1
+!$acc parallel loop async default(present)
+      do i = 1,sz
+         quo = (i-1)/3
+         if (btest(quo,0)) then
+            offset = start
+            quo    = (((quo-1)/2)*3) + mod(i-1,3) + 1
+            elecf(i) = elecf(i) - scald*vec_1(offset+quo)
+     &                        - l2normd*vec_2(offset+quo)
+         else
+            offset = 0
+            quo    = ((quo/2)*3) + mod(i-1,3) + 1
+            elecf(i) = elecf(i) - scalp*vec_1(offset+quo)
+     &                        - l2normp*vec_2(offset+quo)
+         end if
+      end do
+      call norm_field(elecf,sz,s,l2nrm0,l2nrm1)
+      if (s.eq.1) then
+         ! Scalar Product
+         scl0=0; scl1=0
+!$acc parallel loop async default(present)
+         do i = 1,sz
+            quo = (i-1)/3
+            if (btest(quo,0)) then
+               offset = start
+               quo    = (((quo-1)/2)*3) + mod(i-1,3) + 1
+               scl0   = scl0 + elecf(i)*vec_1(offset+quo)
+            else
+               offset = 0
+               quo    = ((quo/2)*3) + mod(i-1,3) + 1
+               scl1   = scl1 + elecf(i)*vec_1(offset+quo)
+            end if
+         end do
+!$acc wait
+         if (abs(scl0).gt.1d-6.or.abs(scl1).gt.1d-6) then
+            print*, s,'ortho check',scl0,scl1
+         end if
+      else
+         ! Scalar Product
+         scl0=0; scl1=0
+!$acc parallel loop async default(present)
+         do i = 1,sz
+            quo = (i-1)/3
+            if (btest(quo,0)) then
+               offset = start
+               quo    = (((quo-1)/2)*3) + mod(i-1,3) + 1
+               scl0   = scl0 + elecf(i)*vec_2(offset+quo)
+            else
+               offset = 0
+               quo    = ((quo/2)*3) + mod(i-1,3) + 1
+               scl1   = scl1 + elecf(i)*vec_2(offset+quo)
+            end if
+         end do
+!$acc wait
+         if (abs(scl0).gt.1d-6.or.abs(scl1).gt.1d-6) then
+            print*, s,'ortho check',scl0,scl1
+         end if
+      end if
+
+      end subroutine
+
+      ! Utility methods
       subroutine amove(n,a,b,queue)
       implicit none
       integer n,queue
@@ -1357,10 +1601,47 @@ c     end subroutine
          b(i) = a(i)
       end do
       end subroutine
+      subroutine amovec1(n,a,b,queue)
+      implicit none
+      integer n,queue
+      real(t_p) a(*)
+      real(r_p) b(*)
+      integer i
+!$acc parallel loop async(queue) present(a,b)
+      do i = 1,n
+         b(i) = a(i)
+      end do
+      end subroutine
       subroutine prod_scal(n,a,b,res)
       implicit none
       integer n
       real(t_p) a(*),b(*)
+      real(r_p) res
+      integer i
+!$acc routine vector
+!$acc loop vector reduction(res)
+      do i = 1,n
+         res = res + a(i)*b(i)
+      end do
+      end subroutine
+      subroutine prod_scal1(n,a,b,res)
+      implicit none
+      integer n
+      real(t_p) a(*)
+      real(r_p) b(*)
+      real(r_p) res
+      integer i
+!$acc routine vector
+!$acc loop vector reduction(res)
+      do i = 1,n
+         res = res + a(i)*b(i)
+      end do
+      end subroutine
+      subroutine prod_scal2(n,a,b,res)
+      implicit none
+      integer n
+      real(r_p) a(*)
+      real(t_p) b(*)
       real(r_p) res
       integer i
 !$acc routine vector
@@ -1381,7 +1662,51 @@ c     end subroutine
          res = res - a(i)*b(i)
       end do
       end subroutine
+      subroutine prod_scal_n1(n,a,b,res)
+      implicit none
+      integer n
+      real(t_p) a(*)
+      real(r_p) b(*)
+      real(r_p) res
+      integer i
+!$acc routine vector
+!$acc loop vector reduction(res)
+      do i = 1,n
+         res = res - a(i)*b(i)
+      end do
+      end subroutine
       end module
+
+      subroutine load_shift_attr(theta,sigma,k)
+      use domdec ,only: rank,nproc,COMM_TINKER
+      use step_cg
+      use sizes  ,only: tinkerdebug
+      use mpi
+      implicit none
+      integer,intent(in)::k
+      real(r_p) theta(k),sigma(k)
+      integer i
+
+      do i = 0,cgstep_max
+         sh_the(i) = theta(i+1)
+c        sh_sig(i) = sigma(i+1)
+      end do
+
+c     sh_the(1) = theta(1)
+
+      if (tinkerdebug.gt.0) then
+         if(rank.eq.0) 
+     &      print*, ' ***** Step PCG base Shift Enabled ***** '
+
+         do i = 1,nproc
+            write(0,'(A,I0,$)')'theta ',rank
+            write(0,'(F8.4,$)')(sh_the(i),i=0,cgstep_max)
+            write(0,*) ''
+            call MPI_BARRIER(COMM_TINKER,i)
+         end do
+      end if
+      !print*,'sigma',(real(sh_sig(i),4),i=0,cgstep_max)
+      end subroutine
 
       subroutine inducestepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
       use atmlst
@@ -1422,7 +1747,7 @@ c
       real(t_p),intent(inout):: murec(:,:,:)
       procedure(tmatxb_pmegpu) :: matvec
 
-      integer i, it, j, k, l, ll, lc, its, it2
+      integer i, it, j, k, l, ll, lc, its, it2, mode
       integer sdec,ndec,ndec1,stdec,ledec
       real(r_p) gnorm(2), ggnew(2), ene(2), gg0(2)
       real(r_p),save:: ggold1=0.0,ggold2=0.0
@@ -1433,8 +1758,8 @@ c
       real(r_p) zerom
       real(r_p) resnrm
       real(r_p) tempo
-      real(t_p) term,prcdt
-      real(t_p) rest(cgstep_max),row(cgstep_max),rt
+      real(t_p) term,prcdt,rt
+      real(r_p) rest(cgstep_max),row(cgstep_max),rtr
       parameter( zero=0.0,zerom=0,one=1.0 )
 c
 c     MPI
@@ -1447,11 +1772,12 @@ c
      &       ,reqendrec,reqendsend,req2endrec,req2endsend
       logical,save::first_in=.true.
       logical tinker_isnan_m
-      integer info
+      integer info 
+      logical d_MQR !(dinstinct space between MRes_s & MQ)
 c
  1000 format(' stepcgiter converged after ',I3,' iterations.',/,
      &       ' final residual norm = ',2D14.7)
- 1010 format(' residual norm at iteration ',I3,':',2D12.2)
+ 1010 format(' residual norm at iteration ',I3,':',2D12.3,1x,2D12.3)
  1020 format(' Conjugate gradient solver: induced dipoles',/,
      &  ' ipole       mux         muy         muz')
  1021 format(' Conjugate gradient solver: induced p-dipoles',/,
@@ -1464,7 +1790,6 @@ c
       if (deb_Path) 
      &   write(*,'(3x,a)') 'inducestepcg_pme2gpu'
       call timer_enter ( timer_stepcg )
-
 c
 c     Allocate some memory
 c
@@ -1483,8 +1808,38 @@ c
 c     call prmem_request(pp ,3,nrhs,max(npolebloc,1))
       call prmem_request(diag,npoleloc)
 c
-      s        = cgstep_max
-      req1     = 3*npoleloc*nrhs*(s+1)
+      if (first_in) then
+#ifdef _OPENACC
+         call initcuSolver(rec_stream)
+#endif
+!$acc enter data create(ipiv)
+         call Tinker_shellEnv('SSDIM',sshort,5)
+         call Tinker_shellEnv('SDIM',slong,7)
+         sshort = min(sshort,cgstep_max)
+         slong  = min(slong ,cgstep_max)
+c
+         if (shift_enabled) then
+            call init_shift_attr
+            call polarEingenVal
+         end if
+
+         indStepCall(:) = 0
+         OneItInARow(:) = 0
+         MoreInARow(:)  = 0
+         optOneIt(:)    = .false.
+
+         first_in = .false.
+      end if
+c
+      mode     = merge(short_m,normal_m,use_polarshortreal)
+      indStepCall(mode) = indStepCall(mode) + 1
+
+      d_MQR    = merge(.true.,.false.,precnd.or.shift_enabled)
+      ! step WorkSpace buffer segmentation
+      s        = merge( sshort,slong,use_polarshortreal )
+c
+      req1     = merge(3*npoleloc*nrhs*(2*s+1),3*npoleloc*nrhs*(s+1)
+     &                ,d_MQR)
       req2     = 3*npoleloc*nrhs*s
       req3     = nrhs*s*(3*s+1)
       sizeloc  = 3*nrhs*npoleloc
@@ -1494,27 +1849,27 @@ c
       ndec     = merge(ndec1+1,ndec1,mod(3*npoleloc,sdec).gt.0)
 c
       call prmem_request(sb0,req1)
-      call prmem_request(sb1,req2)
+      call prmem_requestm(sb1,req2)
       call prmem_request(stepMatV ,req3)
       call prmem_requestm(stepMatVr,req3)
 
       ! WorkSpace buffer segmentation
+      if (d_MQR) then
+      req4 = req2+sizeloc
+      MTs (1:3,1:npoleloc,1:nrhs,1:2*s+1) => sb0(1:req1)
+      MRes_s(1:3,1:npoleloc,1:nrhs,1:s) => sb0(sizeloc+1:req4)
+      MQs   (1:3,1:npoleloc,1:nrhs,1:s) => sb0(req4+1:req1)
+      d_MQR=.true.
+      else
       MTs (1:3,1:npoleloc,1:nrhs,1:s+1) => sb0(1:req1)
-      MPs (1:3,1:npoleloc,1:nrhs,1:s  ) => sb1(1:req2)
       MRes_s(1:3,1:npoleloc,1:nrhs,1:s) => sb0(1:req2)
       MQs   (1:3,1:npoleloc,1:nrhs,1:s) => sb0(sizeloc+1:req1)
-!$acc enter data attach(MRes_s,MQs,MTs,MPs)
-
-      if (first_in) then
-#ifdef _OPENACC
-         call initcuSolver(rec_stream)
-#endif
-!$acc enter data create(ipiv)
-         first_in = .false.
+      d_MQR=.false.
       end if
+      MRes_s0(1:3,1:npoleloc,1:nrhs   ) => sb0(1:sizeloc)
+      MPs   (1:3,1:npoleloc,1:nrhs,1:s) => sb1(1:req2)
+!$acc enter data attach(MRes_s,Mres_s0,MQs,MTs,MPs)
 
-      ! step WorkSpace buffer segmentation
-      s = merge(5,cgstep_max,use_polarshortreal)
       call man_stepWorkSpace(nrhs)
 c
 
@@ -1590,46 +1945,46 @@ c
 #endif
 c
 !$acc parallel loop collapse(3) async(rec_queue)
-      do k=1,npoleloc
-         do j=1,nrhs
-            do i=1,3
-               if (.not.use_polarshortreal)
-     &         h(i,j,k)   = h(i,j,k)  + dipfield(i,j,k) - term*mu(i,j,k)
-               res(i,j,k) = ef(i,j,k) - h(i,j,k)
-               rt         = (res(i,j,k)*diag(k))**2
-               !pp(i,j,k)  = zr(i,j,k)
-               if (btest(j,0)) then  ! test de 1
-                  ggold1  = ggold1 + rt
-               else
-                  ggold2  = ggold2 + rt
-               end if
-            end do
-         end do
-      end do
-!$acc wait(rec_queue)
+      do k=1,npoleloc; do j=1,nrhs; do i=1,3
+         if (.not.use_polarshortreal)
+     &   h(i,j,k) = h(i,j,k)  + dipfield(i,j,k) - term*mu(i,j,k)
+         rt       = (ef(i,j,k) - h(i,j,k))
+         !pp(i,j,k)  = zr(i,j,k)
+         !if (btest(j,0)) then  ! test de 1
+         !   ggold1  = ggold1 + diag(k)*rt**2
+         !else
+         !   ggold2  = ggold2 + diag(k)*rt**2
+         !end if
+         res(i,j,k) = rt
+      end do; end do; end do
+!!$acc wait(rec_queue)
 
-      gg0(1) = ggold1; gg0(2) = ggold2
-      if (nproc.gt.1) then
-         call MPI_IALLREDUCE(MPI_IN_PLACE,gg0(1),nrhs,MPI_RPREC
-     &                      ,MPI_SUM,COMM_TINKER,req1,ierr)
-      end if
+c     gg0(1) = ggold1; gg0(2) = ggold2
+c     if (nproc.gt.1) then
+c        call MPI_IALLREDUCE(MPI_IN_PLACE,gg0(1),nrhs,MPI_RPREC
+c    &                      ,MPI_SUM,COMM_TINKER,req1,ierr)
+c     end if
       call timer_exit ( timer_stepcg,quiet_timers )
 c
 c     now, start the main loop:
 c
       do it = 1,politer
+         if(d_MQR) then
+!$acc parallel loop collapse(3) async(rec_queue)
+            do j=1,nrhs; do k=1,npoleloc; do i=1,3
+               rt  = res(i,j,k)
+               Mres_s0(i,k,j) = rt
+               res(i,j,k)     = rt*diag(k)
+            end do; end do; end do
+         end if
+c        call norm_field(res,6*npoleloc,its,ene1,ene2)
 c
          ! Store first residu in tall matrix and apply preconditionner
 !$acc parallel loop collapse(3) async(rec_queue)
-         do j=1,nrhs
-            do k=1,npoleloc
-               do i=1,3
-                  rt = res(i,j,k)
-                  Mres_s(i,k,j,1) = rt
-                  res(i,j,k)      = rt*diag(k)
-               end do
-            end do
-         end do
+         do j=1,nrhs; do k=1,npoleloc; do i=1,3
+            Mres_s(i,k,j,1) = res(i,j,k)
+         end do; end do; end do
+c        call minmaxone(Mres_s(1,1,1,1),6*npoleloc,'res0')
 
 #ifdef _OPENACC
          if (dir_queue.ne.rec_queue) call start_dir_stream_cover
@@ -1652,14 +2007,13 @@ c
             call commdirdirgpu(nrhs,2,res,reqrec,reqsend)
 
             call commrecdirdipgpu(nrhs,0,murec,res,buffermpimu1,
-     $           buffermpimu2,req2rec,req2send)
+     &           buffermpimu2,req2rec,req2send)
             call commrecdirdipgpu(nrhs,1,murec,res,buffermpimu1,
      &           buffermpimu2,req2rec,req2send)
             call commrecdirdipgpu(nrhs,2,murec,res,buffermpimu1,
      &           buffermpimu2,req2rec,req2send)
          end if
 c
-
          ! ------- Matrix vector --------
          call timer_enter( timer_realdip )
          call matvec(nrhs,.true.,res,h)
@@ -1693,30 +2047,47 @@ c
          ! Store result in tall matrix
          if (use_polarshortreal) then
 !$acc parallel loop collapse(3) async(dir_queue)
-         do j=1,nrhs
-            do k=1,npoleloc
-               do i=1,3
-                  rt = h(i,j,k)
-                  MQs(i,k,j,its) = rt
-                  res(i,j,k) = rt*diag(k)
-               end do
-            end do
-         end do
+            do j=1,nrhs; do k=1,npoleloc; do i=1,3
+               rt        = h(i,j,k)
+               h(i,j,k)  =  rt*diag(k)
+               MQs(i,k,j,its) = rt
+            end do; end do; end do
+
+            if (its.ne.s) then  !Unecessary on last
+            if (shift_enabled) then
+               call shift_field(h,Mres_s(1,1,1,its),MRes_s(1,1,1,its-1)
+     &                        ,3*nrhs*npoleloc,its)
+            end if
+!$acc parallel loop collapse(3) async(dir_queue)
+            do j=1,nrhs; do k=1,npoleloc; do i=1,3
+               rt          = h(i,j,k)
+               res(i,j,k)  = rt
+               if (d_MQR) MRes_s(i,k,j,its+1)=rt
+            end do; end do; end do
+            end if
          else
 !$acc parallel loop collapse(3) async(rec_queue)
-         do j=1,nrhs
-            do k=1,npoleloc
-               do i=1,3
-                  rt    = (h(i,j,k) + dipfield(i,j,k) - term*res(i,j,k))
-                  prcdt = rt*diag(k)
-                  MQs(i,k,j,its) = rt
-                  res(i,j,k)     = prcdt
-               end do
-            end do
-         end do
+            do j=1,nrhs; do k=1,npoleloc; do i=1,3
+               rt = h(i,j,k) + dipfield(i,j,k) - term*res(i,j,k)
+               h(i,j,k)       = rt*diag(k)
+               MQs(i,k,j,its) = rt
+            end do; end do; end do
+            if (its.ne.s) then
+            if (shift_enabled) then
+               call shift_field(h,MRes_s(1,1,1,its),MRes_s(1,1,1,its-1)
+     &                         ,3*nrhs*npoleloc,its)
+            end if
+!$acc parallel loop collapse(3) async(rec_queue)
+            do j=1,nrhs; do k=1,npoleloc; do i=1,3
+               rt             = h(i,j,k)
+               res(i,j,k)     = rt
+               if (d_MQR) MRes_s(i,k,j,its+1) = rt
+            end do; end do; end do
+            end if
          end if
          call timer_exit ( timer_stepcg,quiet_timers )
-         !call minmaxone(res,6*npoleloc,'res')
+c        if (its.ne.s)
+c    &   call minmaxone(Mres_s(1,1,1,its+1),6*npoleloc,'res')
 
          end do  ! Matrix Power loop
 #ifdef _OPENACC
@@ -1732,44 +2103,26 @@ c
          end do
 
          if (it.eq.1) then
-            if (precnd) then
-!$acc parallel loop collapse(4) async(rec_queue)
-               do its = 1,s
-                  do j = 1,nrhs
-                     do k = 1,npoleloc
-                        do i = 1,3
-                           MPs(i,k,j,its)=MRes_s(i,k,j,its)*diag(k)
-                        end do
-                     end do
-                  end do
-               end do
-            else
-               call amove(3*nrhs*npoleloc*s,MRes_s,MPs,rec_queue)
-            end if
+            call amovec1(3*nrhs*npoleloc*s,MRes_s,MPs,rec_queue)
+            !call minmaxone(MPs(1,1,1,1),6*npoleloc*s,'MPs')
          else
             ! Block dot-products
             ! Compute  C_i = -Q_i^T * P_{i-1} in MatBs
 !$acc parallel loop gang collapse(4) async(rec_queue) present(MatBs_r)
-            do j = 1,nrhs
-              do ll = 1,s
-                do lc = 1,s
-                  do i = 1,ndec
-                    tempo = 0
-                    stdec = (i-1)*sdec+1
-                    ledec = min(sdec,3*npoleloc-stdec+1)
-                    call prod_scal_n(ledec,MQs(stdec,1,j,ll)
-     &                              ,MPs(stdec,1,j,lc),tempo)
+            do j = 1,nrhs; do ll = 1,s; do lc = 1,s; do i = 1,ndec;
+               tempo = 0
+               stdec = (i-1)*sdec+1
+               ledec = min(sdec,3*npoleloc-stdec+1)
+               call prod_scal_n1(ledec,MQs(stdec,1,j,ll)
+     &                         ,MPs(stdec,1,j,lc),tempo)
 !$acc loop vector
-                    do k = 1,32
-                       if (k.eq.1) then
+               do k = 1,32
+                  if (k.eq.1) then
 !$acc atomic
-                         MatBs_r(lc,ll,j) = MatBs_r(lc,ll,j) + tempo
-                       end if
-                    end do
-                  end do
-                end do
-              end do
-            end do
+                    MatBs_r(lc,ll,j) = MatBs_r(lc,ll,j) + tempo
+                  end if
+               end do
+            end do; end do; end do; end do;
             if (nproc.gt.1) then
 !$acc host_data use_device(stepMatVr)
 !$acc wait(rec_queue)
@@ -1783,11 +2136,11 @@ c
             do j = 1, nrhs
 #ifdef _OPENACC
 !$acc host_data use_device(MatW_sr,ipiv,MatBs_r)
-              call cuGESVm(s,s,MatW_sr(1,1,j),s,ipiv,MatBs_r(1,1,j),s
-     &                    ,rec_stream)
+               call cuGESVm(s,s,MatW_sr(1,1,j),s,ipiv,MatBs_r(1,1,j),s
+     &                     ,rec_stream)
 !$acc end host_data
 #else
-              call M_gesvm(s,s,MatW_sr(1,1,j),s,ipiv,MatBs_r(1,1,j)
+               call M_gesvm(s,s,MatW_sr(1,1,j),s,ipiv,MatBs_r(1,1,j)
      &                     ,s,info)
 #endif
             end do
@@ -1810,82 +2163,69 @@ c
            !  P_i = R + P_{i-1}*B
 !$acc parallel loop gang vector collapse(3) private(rest,row)
 !$acc&         async(rec_queue) present(MatBs)
-            do j = 1,nrhs
-               do k = 1,npoleloc
-                  do i = 1,3
+            do j = 1,nrhs; do k = 1,npoleloc; do i = 1,3
 !$acc loop seq
-                     do its = 1,s
-                        row(its) = MPs(i,k,j,its)
-                       rest(its) = 0
-                     end do
-                     prcdt = diag(k)
-                     do its = 1,s
-                        do lc = 1,s
-                        rest(its) = rest(its)+ row(lc)*MatBs(lc,its,j)
-                        end do
-                        rest(its) = rest(its) + MRes_s(i,k,j,its)*prcdt
-                     end do
-!$acc loop seq
-                     do its = 1,s
-                        MPs(i,k,j,its) = rest(its)
-                     end do
-                  end do
+               do its = 1,s
+                  row(its) = MPs(i,k,j,its)
+                 rest(its) = 0
                end do
-            end do
+               do its = 1,s
+                  do lc = 1,s
+                  rest(its) = rest(its)+ row(lc)*MatBs_r(lc,its,j)
+                  end do
+                  rest(its) = rest(its) + MRes_s(i,k,j,its)
+               end do
+!$acc loop seq
+               do its = 1,s
+                  MPs(i,k,j,its) = rest(its)
+               end do
+            end do; end do; end do
+            !call minmaxone(MPs(1,1,1,1),6*npoleloc*s,'MPs')
+            !call minmaxone(MRes_s(1,1,1,1),6*npoleloc*s,'MRes_s')
 
          end if
 
          ! Second Block dot-Products
          ! W_i = Q_i^T * P_i
 !$acc parallel loop gang collapse(4) async(rec_queue) present(MatWs_r)
-         do j = 1,nrhs
-           do ll = 1,s
-             do lc = 1,s
-               do i = 1,ndec
-                 tempo = 0
-                 stdec = (i-1)*sdec+1
-                 ledec = min(sdec,3*npoleloc-stdec+1)
-                 call prod_scal(ledec,MQs(stdec,1,j,ll)
-     &                           ,MPs(stdec,1,j,lc),tempo)
+         do j = 1,nrhs; do ll = 1,s; do lc = 1,s; do i = 1,ndec
+            tempo = 0
+            stdec = (i-1)*sdec+1
+            ledec = min(sdec,3*npoleloc-stdec+1)
+            call prod_scal1(ledec,MQs(stdec,1,j,ll)
+     &                    ,MPs(stdec,1,j,lc),tempo)
 !$acc loop vector
-                 do k = 1,32
-                    if (k.eq.1) then
+            do k = 1,32
+               if (k.eq.1) then
 !$acc atomic
-                      MatWs_r(lc,ll,j) = MatWs_r(lc,ll,j) + tempo
-                    end if
-                 end do
-               end do
-             end do
-           end do
-         end do
+                  MatWs_r(lc,ll,j) = MatWs_r(lc,ll,j) + tempo
+               end if
+            end do
+         end do; end do; end do; end do
 
          ! Compute
          ! g_i = P_i^T * res_i  (use container for vector a)
 !$acc parallel loop gang collapse(3) async(rec_queue) present(Vas_r)
-         do j = 1,nrhs
-            do ll = 1,s
-               do i = 1,ndec
-                 tempo = 0
-                 stdec = (i-1)*sdec+1
-                 ledec = min(sdec,3*npoleloc-stdec+1)
-                 call prod_scal(ledec,MPs(stdec,1,j,ll)
-     &                         ,MRes_s(stdec,1,j,1),tempo)
+         do j = 1,nrhs; do ll = 1,s; do i = 1,ndec
+            tempo = 0
+            stdec = (i-1)*sdec+1
+            ledec = min(sdec,3*npoleloc-stdec+1)
+            call prod_scal2(ledec,MPs(stdec,1,j,ll)
+     &                    ,MRes_s0(stdec,1,j),tempo)
 !$acc loop vector
-                 do k = 1,32
-                    if (k.eq.1) then
+            do k = 1,32
+               if (k.eq.1) then
 !$acc atomic
-                      Vas_r(ll,j) = Vas_r(ll,j) + tempo
-                    end if
-                 end do
-               end do
+                  Vas_r(ll,j) = Vas_r(ll,j) + tempo
+               end if
             end do
-         end do
+         end do; end do; end do
 
          if (nproc.gt.1) then
 !$acc host_data use_device(stepMatVr)
 !$acc wait(rec_queue)
-         call MPI_ALLREDUCE(MPI_IN_PLACE,stepMatVr(nrhs*s**2+1)
-     $       ,nrhs*s*(s+1),MPI_RPREC,MPI_SUM,COMM_TINKER,ierr)
+            call MPI_ALLREDUCE(MPI_IN_PLACE,stepMatVr(nrhs*s**2+1)
+     $          ,nrhs*s*(s+1),MPI_RPREC,MPI_SUM,COMM_TINKER,ierr)
 !$acc end host_data
          end if
 
@@ -1929,22 +2269,18 @@ c
 
          ! mu = mu + P_i*a_i
 !$acc parallel loop gang vector collapse(3) private(row)
-!$acc&         async(rec_queue) present(Vas)
-         do k = 1,npoleloc
-            do j = 1,nrhs
-               do i = 1,3
+!$acc&         async(rec_queue) present(Vas_r)
+         do k = 1,npoleloc; do j = 1,nrhs; do i = 1,3
 !$acc loop seq
-                  do its = 1,s
-                     row(its) = MPs(i,k,j,its)
-                  end do
-                  rt = 0
-                  do its = 1,s
-                     rt = rt + row(its)*Vas(its,j)
-                  end do
-                  mu(i,j,k) = mu(i,j,k) + rt
-               end do
+            do its = 1,s
+               row(its) = MPs(i,k,j,its)
             end do
-         end do
+            rtr = 0
+            do its = 1,s
+               rtr = rtr + row(its)*Vas_r(its,j)
+            end do
+            mu(i,j,k) = mu(i,j,k) + rtr
+         end do; end do; end do
 c
          call timer_exit ( timer_stepcg,quiet_timers )
 
@@ -1975,6 +2311,9 @@ c
             call commrecdirdipgpu(nrhs,2,murec,mu,buffermpimu1,
      &           buffermpimu2,req2rec,req2send)
          end if
+
+         ! Check one iteration optimisation and exit solver
+         if (optOneIt(mode)) goto 10
 
          ! Real space
          call timer_enter( timer_realdip )
@@ -2010,31 +2349,27 @@ c
          ggnew1 = 0; ggnew2 = 0;
 !$acc parallel loop collapse(3) async(rec_queue)
 !$acc&         default(present)
-         do k=1,npoleloc
-            do j=1,nrhs
-               do i=1,3
-                  if (.not.use_polarshortreal)
-     &            h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*mu(i,j,k)
-                  rt       = ef(i,j,k) - h(i,j,k)
-                  if (btest(j,0)) then
-                     ggnew1 = ggnew1 + (rt*diag(k))**2
-                  else
-                     ggnew2 = ggnew2 + (rt*diag(k))**2
-                  end if
-                  res(i,j,k) = rt
-               end do
-            end do
-         end do
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            if (.not.use_polarshortreal)
+     &      h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*mu(i,j,k)
+            rt       = (ef(i,j,k) - h(i,j,k))
+            if (btest(j,0)) then
+               ggnew1 = ggnew1 + diag(k)*rt**2
+            else
+               ggnew2 = ggnew2 + diag(k)*rt**2
+            end if
+            res(i,j,k) = rt
+         end do; end do; end do
 
 !$acc wait(rec_queue)
          ggnew(1) = ggnew1; ggnew(2)=ggnew2
 
-         if (nproc.gt.1.and.it.eq.1) call MPI_WAIT(req1,status,ierr)
+c        if (nproc.gt.1.and.it.eq.1) call MPI_WAIT(req1,status,ierr)
 
-         if (it.eq.1.and.polprt.lt.2) then
-            call timer_exit( timer_stepcg,quiet_timers )
-            cycle ! Avoid Convergence check at first iteration
-         end if
+c        if (it.eq.1.and.polprt.lt.2) then
+c           call timer_exit( timer_stepcg,quiet_timers )
+c           cycle ! Avoid Convergence check at first iteration
+c        end if
 
          ! ----------  Compute norm & Convergence verification  ----------
          if (nproc.gt.1) then
@@ -2046,17 +2381,18 @@ c
 
          resnrm = -0.0_re_p
          do k = 1,nrhs
-            gnorm(k) = sqrt(ggnew(k)/gg0(k))
+            gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
             resnrm   = max(resnrm,gnorm(k))
          end do
 
          if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
-     &      it, (gnorm(k), k=1,nrhs)
+     &      it, (gnorm(k), k=1,nrhs), (ggnew(k), k=1,nrhs)
 c
          if ((it.eq.politer.and.resnrm.gt.poleps)
      &          .or.tinker_isnan_m(gnorm(1))
      &          .or.tinker_isnan_m(gnorm(2))) then
             ! Not converged Exit
+!$acc wait
             if (rank.eq.0) write(0,1050) it,gnorm(1),gnorm(2)
             abort = .true.
          end if
@@ -2070,8 +2406,37 @@ c
          ! ---------------------------------------------------------------
 c
          call timer_exit( timer_stepcg,quiet_timers )
+
       end do
  10   continue
+
+      if (it.eq.1) then
+         OneItInARow(mode) = OneItInARow(mode) + 1
+         MoreInARow(mode)  = 0
+      else
+         OneItInARow(mode) = 0
+         MoreInARow(mode)  = MoreInARow(mode) + 1
+         optOneIt(mode)    = .false.
+      end if
+
+      if (MoreInARow(mode).eq.20) then
+         MoreInARow(mode)  = 0
+         if (use_polarshortreal) then
+            sshort= min(cgstep_max,sshort+1)
+         else
+            slong = min(cgstep_max, slong+1)
+         end if
+         if (rank.eq.0.and.tinkerdebug.gt.0)
+     &      print*,"Increase krylov subspace dimension",sshort,slong 
+      end if
+
+      if (OneItInARow(mode).eq.MaxIt1InARow-1) then
+         optOneIt(mode)=.false.
+      else if (OneItInARow(mode).eq.MaxIt1InARow) then
+         optOneIt(mode)= .true.
+         OneItInARow(mode) = 0
+      end if
+
  
       ! Debug printing
       ! <<<<<<<<<<<<<<

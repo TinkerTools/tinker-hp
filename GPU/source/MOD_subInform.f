@@ -159,15 +159,17 @@ c
          val = (vector(i))
          mi  = min( mi,val )
          ma  = max( ma,val )
-         on  = on + abs( val )
+         on  = on + val*val
       end do
 !$acc wait
-12    format(A6,3F16.6,I5)
-13    format(A6,3F16.6,I5,3F16.6)
+12    format(A6,2F16.8,1x,D17.8,I5)
+13    format(A6,2F16.8,1x,D17.8,I5,D17.8)
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
      &       ,MPI_SUM,COMM_TINKER,i)
       end if
+      on1 = sqrt(on1)
+      on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
       write(*,13) name,mi,ma,on,rank,on1
       else
@@ -181,7 +183,7 @@ c
       integer sz
       real(r_p) vector(*)
       character(*),optional,intent(in)::name
-      real(8) mi,ma,on
+      real(8) mi,ma,on,on1
       integer i
       real(r_p) val
       mi=huge(mi);ma=tiny(ma);on=0
@@ -191,13 +193,78 @@ c
          val = vector(i)
          mi  = min( mi,val )
          ma  = max( ma,val )
-         on  = on + abs( val )
+         on  = on + abs( val*val )
       end do
 !$acc wait
-12    format(A6,3F16.6,I5)
+12    format(A6,2F16.8,1x,D17.8,I5)
+13    format(A6,2F16.8,1x,D17.8,I5,D17.8)
+      if (nproc.gt.1) then
+         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
+     &       ,MPI_SUM,COMM_TINKER,i)
+      end if
+      on1 = sqrt(on1)
+      on  = sqrt(on )
+      if (rank.eq.0.and.nproc.gt.1) then
+      write(*,13) name,mi,ma,on,rank,on1
+      else
       write(*,12) name,mi,ma,on,rank
+      end if
       end subroutine
 #endif
+
+      subroutine endiam(array,n)
+      implicit none
+      real(t_p) array(*)
+      integer n
+      integer i
+      real(8),save:: are,mi
+      logical,save:: f_in=.true.
+
+      if (f_in) then
+!$acc enter data create(are,mi)
+          f_in=.false.
+      end if
+
+!$acc serial async present(are,mi)
+      are = 0
+      mi  = 0
+!$acc end serial
+!$acc parallel loop async present(array,are,mi)
+      do i = 1,n
+         are = are +     array(i)
+         mi  =  mi + abs(array(i))
+      end do
+!$acc serial async present(are,mi)
+      print*, are,mi
+!$acc end serial
+      end subroutine
+
+      subroutine endiam1(array,n)
+      implicit none
+      real(r_p) array(*)
+      integer n
+      integer i
+      real(8),save:: are,mi
+      logical,save:: f_in=.true.
+
+      if (f_in) then
+!$acc enter data create(are,mi)
+          f_in=.false.
+      end if
+
+!$acc serial async present(are,mi)
+      are = 0; mi = 0
+!$acc end serial
+!$acc parallel loop async present(array,are,mi)
+      do i = 1,n
+         are = max(are , abs(array(i)))
+         mi  = mi + abs(array(i))
+      end do
+!$acc serial async present(are,mi)
+      print*, are,mi
+!$acc end serial
+      end subroutine
+
 c
 c     Print information on position, velocities and aceleration
 c

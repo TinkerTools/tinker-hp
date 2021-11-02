@@ -680,16 +680,16 @@ c
 !$acc end data 
 
       !TODO Remove declare directive on thetai
-c     call prmem_request(thetai1,4,bsorder,nlocrec,async=.true.)
-c     call prmem_request(thetai2,4,bsorder,nlocrec,async=.true.)
-c     call prmem_request(thetai3,4,bsorder,nlocrec,async=.true.)
+      call prmem_request(thetai1,4,bsorder,nlocrec,async=.true.)
+      call prmem_request(thetai2,4,bsorder,nlocrec,async=.true.)
+      call prmem_request(thetai3,4,bsorder,nlocrec,async=.true.)
 
-      if (allocated(thetai1)) deallocate (thetai1)
-      if (allocated(thetai2)) deallocate (thetai2)
-      if (allocated(thetai3)) deallocate (thetai3)
-      allocate (thetai1(4,bsorder,nlocrec))
-      allocate (thetai2(4,bsorder,nlocrec))
-      allocate (thetai3(4,bsorder,nlocrec))
+c     if (allocated(thetai1)) deallocate (thetai1)
+c     if (allocated(thetai2)) deallocate (thetai2)
+c     if (allocated(thetai3)) deallocate (thetai3)
+c     allocate (thetai1(4,bsorder,nlocrec))
+c     allocate (thetai2(4,bsorder,nlocrec))
+c     allocate (thetai3(4,bsorder,nlocrec))
 
       deallocate (req)
       deallocate (req2)
@@ -800,7 +800,8 @@ c
 !$acc routine(distprocpart1)
 c
       !if (istep.ne.0) call check_nl_rebuild
-      if (mod(istep,ineigup).ne.0) return
+      if (mod(istep,ineigup).ne.0) return    ! ? Rebuild nblist step
+      if (nproc.eq.1.and.istep.gt.2) return  ! ? Sequential case
       if (abort) call fatal
 c
       if (deb_Path) write(*,*) ' reinitnl - istep(',istep,')'

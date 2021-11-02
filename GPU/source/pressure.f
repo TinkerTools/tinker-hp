@@ -438,7 +438,7 @@ c
       if (rank.eq.0) then
         valrand = random()
       end if
-      call MPI_BCAST(valrand,1,MPI_TPREC,0,MPI_COMM_WORLD,ierr)
+      call MPI_BCAST(valrand,1,MPI_TPREC,0,COMM_TINKER,ierr)
 c
       if (valrand .lt. 1.0_ti_p/real(voltrial,t_p)) dotrial=.true.
 c
@@ -463,7 +463,7 @@ c
          !Broadcast potential
 !$acc update host(epot,temp) async
 !$acc wait
-         call MPI_BCAST(epot,1,MPI_RPREC,0,MPI_COMM_WORLD,ierr)
+         call MPI_BCAST(epot,1,MPI_RPREC,0,COMM_TINKER,ierr)
 
          kt = gasconst * temp
          if (isothermal)  kt = gasconst * kelvin
@@ -620,7 +620,7 @@ c
          if (rank.eq.0) then
            valrand = random()
          end if
-         call MPI_BCAST(valrand,1,MPI_TPREC,0,MPI_COMM_WORLD,ierr)
+         call MPI_BCAST(valrand,1,MPI_TPREC,0,COMM_TINKER,ierr)
          if (valrand .gt. expterm) then
             if (rank.eq.0.and.tinkerdebug.gt.0)
      &      write(*,15) ' Reject montecarlo',valrand

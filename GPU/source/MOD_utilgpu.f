@@ -118,6 +118,12 @@ c     parameter(rec_queue=0)
       end interface
 #endif
 
+      interface Tinker_shellEnv
+        module procedure Tinker_shellEnv_i
+        module procedure Tinker_shellEnv_f4
+        module procedure Tinker_shellEnv_f8
+      end interface
+
       interface reduce_energy_virial
         module procedure reduce_energy_virial0
         module procedure reduce_energy_virial1
@@ -597,6 +603,47 @@ c     give scalinf factors to selected atoms
 
       end subroutine
 
+      subroutine Tinker_shellEnv_i(envName,envValue,defVal)
+      implicit none
+      character(*),intent(in):: envName
+      integer,intent(in) :: defVal
+      integer,intent(out):: envValue
+      character*64 value
+      integer length,status
+
+      call get_environment_variable('TINKER_'//envName,value,
+     &                               length,status)
+      envValue = defVal
+      if (status.eq.0) read(value,*) envValue
+      end subroutine
+
+      subroutine Tinker_shellEnv_f8(envName,envValue,defVal)
+      implicit none
+      character(*),intent(in):: envName
+      real(8),intent(in) :: defVal
+      real(8),intent(out):: envValue
+      character*64 value
+      integer length,status
+
+      call get_environment_variable('TINKER_'//envName,value,
+     &                               length,status)
+      envValue = defVal
+      if (status.eq.0) read(value,*) envValue
+      end subroutine
+
+      subroutine Tinker_shellEnv_f4(envName,envValue,defVal)
+      implicit none
+      character(*),intent(in):: envName
+      real(4),intent(in) :: defVal
+      real(4),intent(out):: envValue
+      character*64 value
+      integer length,status
+
+      call get_environment_variable('TINKER_'//envName,value,
+     &                               length,status)
+      envValue = defVal
+      if (status.eq.0) read(value,*) envValue
+      end subroutine
 c
 c     updating the number of gangs to launch on the gpu if authorized
 c
