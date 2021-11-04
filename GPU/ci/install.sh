@@ -89,10 +89,12 @@ target_arch='gpu'             #   [gpu]|cpu
 FPA=1                         #   Enable Fixed Precision Arithmetic (Useful for non HPC-Accelerators)
 #add_options_f='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package strictly above 21.3 version
 
+[ $FPA -eq 1 ] && p_suffix=fpa || p_suffix=mixed       # Config binary suffix following FPA feature
 current_config="compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed arch=$target_arch"
-[ -n "$add_options" ] && current_config="$current_config add_options=$add_options"
+[ -n "$add_options_f" ] && current_config="$current_config add_options=$add_options"
+
 current_config_d="$current_config prog_suffix=.gpu"
-current_config_m="$current_config FPA_SUPPORT=$FPA prec=m prog_suffix=.mixed"
+current_config_m="$current_config FPA_SUPPORT=$FPA prec=m prog_suffix=.$p_suffix"
 
 [ $# -ge 1 ] && ntask=$1 || ntask=12
 
