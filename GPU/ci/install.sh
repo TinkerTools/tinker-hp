@@ -91,7 +91,7 @@ FPA=1                         #   Enable Fixed Precision Arithmetic (Useful for 
 
 [ $FPA -eq 1 ] && p_suffix=fpa || p_suffix=mixed       # Config binary suffix following FPA feature
 current_config="compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed arch=$target_arch"
-[ -n "$add_options_f" ] && current_config="$current_config add_options=$add_options_f"
+[ -n "$add_options_f" ] && current_config="$current_config add_options_f=$add_options_f"
 
 current_config_d="$current_config prog_suffix=.gpu"
 current_config_m="$current_config FPA_SUPPORT=$FPA prec=m prog_suffix=.$p_suffix"
