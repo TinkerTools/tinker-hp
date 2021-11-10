@@ -2042,9 +2042,9 @@ c
               iglob = globrec(j)
               iloc = loc(iglob)
               if (repart(iglob).eq.rank) then
-                dem(1,j) = dem(1,j)+temprec(1,j)
-                dem(2,j) = dem(2,j)+temprec(2,j)
-                dem(3,j) = dem(3,j)+temprec(3,j)
+                dem(1,iloc) = dem(1,iloc)+temprec(1,j)
+                dem(2,iloc) = dem(2,iloc)+temprec(2,j)
+                dem(3,iloc) = dem(3,iloc)+temprec(3,j)
               end if
             end do
           end if
@@ -2159,9 +2159,9 @@ c
               iglob = globrec(j)
               iloc = loc(iglob)
               if (repart(iglob).eq.rank) then
-                dep(1,j) = dep(1,j)+temprec(1,j)
-                dep(2,j) = dep(2,j)+temprec(2,j)
-                dep(3,j) = dep(3,j)+temprec(3,j)
+                dep(1,iloc) = dep(1,iloc)+temprec(1,j)
+                dep(2,iloc) = dep(2,iloc)+temprec(2,j)
+                dep(3,iloc) = dep(3,iloc)+temprec(3,j)
               end if
             end do
           end if
@@ -2274,9 +2274,9 @@ c
               iglob = globrec(j)
               iloc = loc(iglob)
               if (repart(iglob).eq.rank) then
-                dec(1,j) = dec(1,j)+temprec(1,j)
-                dec(2,j) = dec(2,j)+temprec(2,j)
-                dec(3,j) = dec(3,j)+temprec(3,j)
+                dec(1,iloc) = dec(1,iloc)+temprec(1,j)
+                dec(2,iloc) = dec(2,iloc)+temprec(2,j)
+                dec(3,iloc) = dec(3,iloc)+temprec(3,j)
               end if
             end do
           end if

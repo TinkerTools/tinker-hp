@@ -182,7 +182,8 @@ c
      $          COMM_TINKER,ierr)
              if (rank.eq.0) then
                term = (2.0d0/3.0d0) * f * (pi/volbox)
-               ep = ep + term*(xd*xu+yd*yu+zd*zu)
+               e = term*(xd*xu+yd*yu+zd*zu)
+               ep = ep + e
                nep = nep + 1
              end if
              do ii = 1, npoleloc
