@@ -24,6 +24,7 @@ c
       use bound
       use domdec
       use energi
+      use group
       use inform
       use iounit
       use math
@@ -84,6 +85,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
@@ -184,11 +186,20 @@ c
                dr = rdc - bl(k)
                e3 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e1 = e1 * fgrp
+                  e2 = e2 * fgrp
+                  e3 = e3 * fgrp
+               end if
+c
 c     increment the total stretch-torsion energy
 c
                nebt = nebt + 1
                e = e1 + e2 + e3
                ebt = ebt + e
+               write(*,*) 'e = ',e
                aebt(ialoc) = aebt(ialoc) + 0.5d0*e1
                aebt(ibloc) = aebt(ibloc) + 0.5d0*(e1+e2)
                aebt(icloc) = aebt(icloc) + 0.5d0*(e3+e3)
@@ -213,5 +224,6 @@ c
             end if
          end if
       end do
+      write(*,*) 'ebt = ',ebt
       return
       end

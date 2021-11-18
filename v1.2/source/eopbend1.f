@@ -24,6 +24,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use math
       use opbend
       use usage
@@ -60,6 +61,7 @@ c
       real*8 dedxid,dedyid,dedzid
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       logical proceed
 c
 c
@@ -84,8 +86,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     get the coordinates of the atoms at trigonal center
@@ -166,6 +168,13 @@ c
      &                    * (2.0d0 + 3.0d0*copb*dt + 4.0d0*qopb*dt2
      &                        + 5.0d0*popb*dt3 + 6.0d0*sopb*dt4)
                dedcos = -deddt * sign(1.0d0,ee) / sqrt(cc*bkk2)
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedcos = dedcos * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c

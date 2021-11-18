@@ -207,6 +207,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -246,6 +247,7 @@ c
       real*8 term1,term2,term3
       real*8 term4,term5
       real*8 bn(0:4)
+      real*8 fgrp,scale
       real*8, allocatable :: mscale(:)
       logical header,huge
       character*10 mode
@@ -305,6 +307,7 @@ c
             kkpole = elst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi
@@ -378,9 +381,12 @@ c
 c
 c     compute the full undamped energy for this interaction
 c
+               scale = mscale(kglob)
+               if (use_group)  scale = scale * fgrp
+
                efull = term1*rr1 + term2*rr3 + term3*rr5
      &                    + term4*rr7 + term5*rr9
-               efull = mscale(kglob) * efull
+               efull = scale * efull
                if (efull .ne. 0.0d0) then
                   nem = nem + 1
                   aem(i) = aem(i) + efull
@@ -390,7 +396,7 @@ c
 c
 c     modify error function terms to account for scaling
 c
-               scalekk = 1.0d0 - mscale(kglob)
+               scalekk = 1.0d0 - scale
                rr1 = bn(0) - scalekk*rr1
                rr3 = bn(1) - scalekk*rr3
                rr5 = bn(2) - scalekk*rr5
@@ -476,6 +482,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -516,6 +523,7 @@ c
       real*8 term4,term5
       real*8 bn(0:4)
       real*8 s,ds
+      real*8 fgrp,scale
       real*8, allocatable :: mscale(:)
       logical header,huge
       character*10 mode
@@ -575,6 +583,7 @@ c
             kkpole = shortelst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi
@@ -648,9 +657,12 @@ c
 c
 c     compute the full undamped energy for this interaction
 c
+               scale = mscale(kglob)
+               if (use_group)  scale = scale * fgrp
+
                efull = term1*rr1 + term2*rr3 + term3*rr5
      &                    + term4*rr7 + term5*rr9
-               efull = mscale(kglob) * efull
+               efull = scale * efull
                if (efull .ne. 0.0d0) then
                   nem = nem + 1
                   aem(i) = aem(i) + efull
@@ -660,7 +672,7 @@ c
 c
 c     modify error function terms to account for scaling
 c
-               scalekk = 1.0d0 - mscale(kglob)
+               scalekk = 1.0d0 - scale
                rr1 = bn(0) - scalekk*rr1
                rr3 = bn(1) - scalekk*rr3
                rr5 = bn(2) - scalekk*rr5
@@ -747,6 +759,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -787,6 +800,7 @@ c
       real*8 term4,term5
       real*8 bn(0:4)
       real*8 s,ds,mpoleshortcut2
+      real*8 fgrp,scale
       real*8, allocatable :: mscale(:)
       logical header,huge
       character*10 mode
@@ -847,6 +861,7 @@ c
             kkpole = elst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi
@@ -920,9 +935,12 @@ c
 c
 c     compute the full undamped energy for this interaction
 c
+               scale = mscale(kglob)
+               if (use_group)  scale = scale * fgrp
+
                efull = term1*rr1 + term2*rr3 + term3*rr5
      &                    + term4*rr7 + term5*rr9
-               efull = mscale(kglob) * efull
+               efull = scale * efull
                if (efull .ne. 0.0d0) then
                   nem = nem + 1
                   aem(i) = aem(i) + efull
@@ -932,7 +950,7 @@ c
 c
 c     modify error function terms to account for scaling
 c
-               scalekk = 1.0d0 - mscale(kglob)
+               scalekk = 1.0d0 - scale
                rr1 = bn(0) - scalekk*rr1
                rr3 = bn(1) - scalekk*rr3
                rr5 = bn(2) - scalekk*rr5

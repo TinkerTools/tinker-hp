@@ -23,6 +23,7 @@ c
       use atoms
       use bound
       use energi
+      use group
       use inform
       use iounit
       use math
@@ -43,6 +44,7 @@ c
       real*8 xeb,yeb,zeb
       real*8 rab2,rcb2
       real*8 rdb2,reb2
+      real*8 fgrp
       logical proceed
       logical header,huge
 c
@@ -65,7 +67,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,0)
          proceed = (use(ia) .or. use(ib) .or. use(ic)
      &                               .or. use(id) .or. use(ie))
 c
@@ -127,6 +129,10 @@ c
 c     get the angle-angle interaction energy
 c
                e = aaunit * kaa(iangang) * dt1 * dt2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total angle-angle energy
 c

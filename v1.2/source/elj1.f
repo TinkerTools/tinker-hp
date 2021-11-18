@@ -64,6 +64,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use inter
       use iounit
       use molcul
@@ -79,7 +80,7 @@ c
       integer kk,kv,kt
       integer, allocatable :: iv14(:)
       real*8 e,de,p6,p12,eps
-      real*8 rv,rdn
+      real*8 rv,rdn,fgrp
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 redi,rediv
@@ -190,6 +191,7 @@ c
               write(iout,1000)
               cycle
             end if
+            if (use_group)  call groups(iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -229,6 +231,13 @@ c
                    de = e*dtaper + de*taper
                    e = e * taper
                 end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     de = de * fgrp
+                  end if
 c
 c     find the chain rule terms for derivative components
 c
@@ -339,6 +348,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use inter
       use iounit
       use molcul
@@ -354,19 +364,15 @@ c
       integer kk,kv,kt
       integer, allocatable :: iv14(:)
       real*8 e,de,p6,p12,eps
-      real*8 rv,rdn
+      real*8 rv,rdn,fgrp
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 redi,rediv
       real*8 redk,redkv
       real*8 dedx,dedy,dedz
       real*8 rik,rik2
-
-
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
-
-
       real*8 s,ds
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
@@ -466,6 +472,7 @@ c
               write(iout,1000)
               cycle
             end if
+            if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -491,6 +498,13 @@ c
                p12 = p6 * p6
                e = eps * (p12-2.0d0*p6)
                de = eps * (p12-p6) * (-12.0d0/rik)
+c
+c     scale the interaction based on its group membership
+c
+                if (use_group) then
+                   e = e * fgrp
+                   de = de * fgrp
+                end if
 c
 c     use energy switching if near the cutoff distance
 c
@@ -606,6 +620,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use inter
       use iounit
       use molcul
@@ -621,7 +636,7 @@ c
       integer kk,kv,kt
       integer, allocatable :: iv14(:)
       real*8 e,de,p6,p12,eps
-      real*8 rv,rdn
+      real*8 rv,rdn,fgrp
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 redi,rediv
@@ -632,8 +647,6 @@ c
       real*8 taper,dtaper
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
-
-
       real*8 s,ds,vdwshortcut2
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
@@ -734,6 +747,7 @@ c
               write(iout,1000)
               cycle
             end if
+            if (use_group)  call groups(iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -772,6 +786,13 @@ c
      &                         + 3.0d0*c3*rik2 + 2.0d0*c2*rik + c1
                    de = e*dtaper + de*taper
                    e = e * taper
+                end if
+c
+c     scale the interaction based on its group membership
+c
+                if (use_group) then
+                   e = e * fgrp
+                   de = de * fgrp
                 end if
 c
 c     use energy switching if close the cutoff distance (at short range)

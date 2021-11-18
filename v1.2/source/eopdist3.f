@@ -25,6 +25,7 @@ c
       use bound
       use domdec
       use energi
+      use group
       use inform
       use iounit
       use opdist
@@ -42,6 +43,7 @@ c
       real*8 xbd,ybd,zbd
       real*8 xcd,ycd,zcd
       real*8 xt,yt,zt,rt2
+      real*8 fgrp
       logical proceed
       logical header,huge
 c
@@ -66,8 +68,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     get the coordinates of the central and peripheral atoms
@@ -115,6 +117,10 @@ c     find the out-of-plane distance energy
 c
             e = opdunit * force * dt2
      &             * (1.0d0+copd*dt+qopd*dt2+popd*dt3+sopd*dt4)
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group)  e = e * fgrp
 c
 c     increment the total out-of-plane distance energy
 c

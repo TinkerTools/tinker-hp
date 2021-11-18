@@ -21,6 +21,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use urey
       use urypot
       use usage
@@ -34,6 +35,7 @@ c
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
       real*8 xac,yac,zac,rac
+      real*8 fgrp
       logical proceed
 c
 c
@@ -54,8 +56,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ic))
+         if (use_group)  call groups (fgrp,ia,ic,0,0,0,0)
+         proceed = (use(ia) .or. use(ic))
 c
 c     compute the value of the 1-3 distance deviation
 c
@@ -70,6 +72,13 @@ c
             e = ureyunit * force * dt2 * (1.0d0+cury*dt+qury*dt2)
             deddt = 2.0d0 * ureyunit * force * dt
      &                 * (1.0d0+1.5d0*cury*dt+2.0d0*qury*dt2)
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               deddt = deddt * fgrp
+            end if
 c
 c     compute chain rule terms needed for derivatives
 c

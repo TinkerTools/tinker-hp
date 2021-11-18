@@ -21,6 +21,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use pitors
       use torpot
       use usage
@@ -69,6 +70,7 @@ c
       real*8 vxterm,vyterm,vzterm
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       logical proceed
 c
 c
@@ -95,8 +97,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,ig)
+         proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
      &                              use(id) .or. use(ie) .or. use(ig))
 c
 c     compute the value of the pi-orbital torsion angle
@@ -192,6 +194,13 @@ c     calculate pi-orbital torsion energy and master chain rule term
 c
                e = ptorunit * v2 * phi2
                dedphi = ptorunit * v2 * dphi2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c

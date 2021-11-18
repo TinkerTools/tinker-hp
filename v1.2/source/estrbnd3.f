@@ -46,6 +46,7 @@ c
       real*8 xcb,ycb,zcb
       real*8 rab,rab2
       real*8 rcb,rcb2
+      real*8 fgrp
       logical proceed
       logical header,huge
 c
@@ -71,8 +72,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if (use_group)  call groups (fgrp,ia,ib,ic,0,0,0)
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
 c
 c     get the coordinates of the atoms in the angle
 c
@@ -117,6 +118,10 @@ c
                dr1 = rab - bl(j)
                dr2 = rcb - bl(k)
                e = stbnunit * (force1*dr1+force2*dr2) * dt
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total stretch-bend energy
 c

@@ -259,6 +259,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inter
       use iounit
       use math
@@ -272,7 +273,6 @@ c
       implicit none
       integer i,j,iglob,kglob,kbis
       integer ii,kkk,iipole,kkpole
-
       integer iax,iay,iaz
       real*8 e,efull,de,f
       real*8 bfac,erfc
@@ -320,6 +320,7 @@ c
       real*8 ttmi(3),ttmk(3)
       real*8 fix(3),fiy(3),fiz(3)
       real*8 bn(0:5)
+      real*8 fgrp,scale
       real*8, allocatable :: mscale(:)
       real*8, allocatable :: tem(:,:)
       character*10 mode
@@ -386,6 +387,7 @@ c
             kkpole = elst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             if (kbis.eq.0) then
               write(iout,1000)
               cycle
@@ -515,15 +517,18 @@ c
 c
 c     compute the full energy without any Ewald scaling
 c
+               scale = mscale(kglob)
+               if (use_group)  scale = scale * fgrp
+
                efull = term1*rr1 + term2*rr3 + term3*rr5
      &                    + term4*rr7 + term5*rr9
-               efull = efull * mscale(kglob)
+               efull = efull * scale
                if (molcule(iglob) .ne. molcule(kglob))
      &            einter = einter + efull
 c
 c     modify distances to account for Ewald and exclusions
 c
-               scalekk = 1.0d0 - mscale(kglob)
+               scalekk = 1.0d0 - scale
                rr1 = bn(0) - scalekk*rr1
                rr3 = bn(1) - scalekk*rr3
                rr5 = bn(2) - scalekk*rr5
@@ -1132,6 +1137,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inter
       use iounit
       use math
@@ -1145,7 +1151,6 @@ c
       implicit none
       integer i,j,iglob,kglob,kbis
       integer ii,kkk,iipole,kkpole
-
       integer iax,iay,iaz
       real*8 e,efull,de,f
       real*8 bfac,erfc
@@ -1194,6 +1199,7 @@ c
       real*8 fix(3),fiy(3),fiz(3)
       real*8 bn(0:5)
       real*8 s,ds
+      real*8 fgrp,scale
       real*8, allocatable :: mscale(:)
       real*8, allocatable :: tem(:,:)
       character*10 mode
@@ -1260,6 +1266,7 @@ c
             kkpole = shortelst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             if (kbis.eq.0) then
               write(iout,1000)
               cycle
@@ -1389,15 +1396,18 @@ c
 c
 c     compute the full energy without any Ewald scaling
 c
+               scale = mscale(kglob)
+               if (use_group)  scale = scale * fgrp
+
                efull = term1*rr1 + term2*rr3 + term3*rr5
      &                    + term4*rr7 + term5*rr9
-               efull = efull * mscale(kglob)
+               efull = efull * scale
                if (molcule(iglob) .ne. molcule(kglob))
      &            einter = einter + efull
 c
 c     modify distances to account for Ewald and exclusions
 c
-               scalekk = 1.0d0 - mscale(kglob)
+               scalekk = 1.0d0 - scale
                rr1 = bn(0) - scalekk*rr1
                rr3 = bn(1) - scalekk*rr3
                rr5 = bn(2) - scalekk*rr5
@@ -1411,8 +1421,6 @@ c
      &                + term4*rr7 + term5*rr9
 
                call switch_respa(r,off,shortheal,s,ds)
-c               call switch_respa(r,off,4d0,s,ds)
-c               write(*,*) 's = ',s,'ds = ',ds
 
                em = em + e*s
 c
@@ -1591,6 +1599,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inter
       use iounit
       use math
@@ -1604,7 +1613,6 @@ c
       implicit none
       integer i,j,iglob,kglob,kbis
       integer ii,kkk,iipole,kkpole
-
       integer iax,iay,iaz
       real*8 e,efull,de,f
       real*8 bfac,erfc
@@ -1653,6 +1661,7 @@ c
       real*8 fix(3),fiy(3),fiz(3)
       real*8 bn(0:5)
       real*8 s,ds,mpoleshortcut2
+      real*8 fgrp,scale
       real*8, allocatable :: mscale(:)
       real*8, allocatable :: tem(:,:)
       character*10 mode
@@ -1720,6 +1729,7 @@ c
             kkpole = elst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             if (kbis.eq.0) then
               write(iout,1000)
               cycle
@@ -1849,15 +1859,18 @@ c
 c
 c     compute the full energy without any Ewald scaling
 c
+               scale = mscale(kglob)
+               if (use_group)  scale = scale * fgrp
+
                efull = term1*rr1 + term2*rr3 + term3*rr5
      &                    + term4*rr7 + term5*rr9
-               efull = efull * mscale(kglob)
+               efull = efull * scale
                if (molcule(iglob) .ne. molcule(kglob))
      &            einter = einter + efull
 c
 c     modify distances to account for Ewald and exclusions
 c
-               scalekk = 1.0d0 - mscale(kglob)
+               scalekk = 1.0d0 - scale
                rr1 = bn(0) - scalekk*rr1
                rr3 = bn(1) - scalekk*rr3
                rr5 = bn(2) - scalekk*rr5

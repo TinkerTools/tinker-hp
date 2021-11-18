@@ -97,7 +97,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-c         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
@@ -193,13 +193,13 @@ c
                angle1 = radian * acos(cosang)
                dt = angle1 - anat(k)
                e2 = atorunit * dt * (v1*phi1 + v2*phi2 + v3*phi3)
-cc
-cc     scale the interaction based on its group membership
-cc
-c               if (use_group) then
-c                  e1 = e1 * fgrp
-c                  e2 = e2 * fgrp
-c               end if
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e1 = e1 * fgrp
+                  e2 = e2 * fgrp
+               end if
 c
 c     increment the total angle-torsion energy
 c

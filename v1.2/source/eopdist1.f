@@ -23,6 +23,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use opdist
       use usage
       use virial
@@ -48,6 +49,7 @@ c
       real*8 dedxid,dedyid,dedzid
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       logical proceed
 c
 c
@@ -71,8 +73,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     get the coordinates of the defining atoms
@@ -125,6 +127,13 @@ c
             deddt = opdunit * force * drt2
      &                 * (2.0d0 + 3.0d0*copd*dt + 4.0d0*qopd*dt2
      &                     + 5.0d0*popd*dt3 + 6.0d0*sopd*dt4)
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               deddt = deddt * fgrp
+            end if
 c
 c     chain rule terms for first derivative components
 c

@@ -42,6 +42,7 @@ c
       use bound
       use domdec
       use energi
+      use group
       use inform
       use iounit
       use math
@@ -72,6 +73,7 @@ c
       real*8 xba,yba,zba
       real*8 xdc,ydc,zdc
       real*8 xcb,ycb,zcb
+      real*8 fgrp
       logical proceed
       logical header,huge
 c
@@ -96,8 +98,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
@@ -193,6 +195,10 @@ c     calculate the torsional energy for this angle
 c
                e = torsunit * (v1*phi1 + v2*phi2 + v3*phi3
      &                            + v4*phi4 + v5*phi5 + v6*phi6)
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total torsional angle energy
 c

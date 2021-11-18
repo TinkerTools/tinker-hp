@@ -61,18 +61,11 @@ c
       implicit none
       integer i,iglob,iichg
       integer ii
-
       real*8 e
       real*8 f
       real*8 fs
-
-
-
       real*8 xd,yd,zd
-
-
       external erfc
-c
 c
 c     zero out the Ewald summation energy and partitioning
 c
@@ -156,6 +149,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -169,19 +163,15 @@ c
       implicit none
       integer i,j,k,iglob,iichg
       integer ii,kkk,inl,kglob,kkchg
-
       real*8 e,efull
       real*8 f,fi,fik
-
       real*8 r,r2,rb,rew
       real*8 xi,yi,zi
       real*8 xr,yr,zr
-
       real*8 erfc,erfterm
       real*8 scale,scaleterm
+      real*8 fgrp
       real*8, allocatable :: cscale(:)
-
-
       character*10 mode
       external erfc
 c
@@ -231,6 +221,7 @@ c
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
             k = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -249,8 +240,11 @@ c
                rew = aewald * r
                erfterm = erfc (rew)
                scale = cscale(kglob)
+               if (use_group)  scale = scale * fgrp
                scaleterm = scale - 1.0d0
                e = (fik/rb) * (erfterm+scaleterm)
+c
+c
                ec = ec + e
 c
 c     increment the overall charge-charge energy component
@@ -301,6 +295,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -314,16 +309,14 @@ c
       implicit none
       integer i,j,k,iglob,iichg
       integer ii,kkk,inl,kglob,kkchg
-
       real*8 e,efull
       real*8 f,fi,fik
-
       real*8 r,r2,rb,rew
       real*8 xi,yi,zi
       real*8 xr,yr,zr
-
       real*8 erfc,erfterm
       real*8 scale,scaleterm
+      real*8 fgrp
       real*8, allocatable :: cscale(:)
       real*8 s,ds
 
@@ -377,6 +370,7 @@ c
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
             k = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -395,8 +389,10 @@ c
                rew = aewald * r
                erfterm = erfc (rew)
                scale = cscale(kglob)
+               if (use_group)  scale = scale * fgrp
                scaleterm = scale - 1.0d0
                e = (fik/rb) * (erfterm+scaleterm)
+c
                call switch_respa(r,off,shortheal,s,ds)
                ec = ec + e*s
 c
@@ -448,6 +444,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -461,20 +458,16 @@ c
       implicit none
       integer i,j,k,iglob,iichg
       integer ii,kkk,inl,kglob,kkchg
-
       real*8 e,efull
       real*8 f,fi,fik
-
       real*8 r,r2,rb,rew
       real*8 xi,yi,zi
       real*8 xr,yr,zr
-
+      real*8 fgrp
       real*8 erfc,erfterm
       real*8 scale,scaleterm
       real*8, allocatable :: cscale(:)
       real*8 s,ds,cshortcut2
-
-
       character*10 mode
       external erfc
 c
@@ -525,6 +518,7 @@ c
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
             k = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -543,8 +537,11 @@ c
                rew = aewald * r
                erfterm = erfc (rew)
                scale = cscale(kglob)
+               if (use_group)  scale = scale * fgrp
                scaleterm = scale - 1.0d0
                e = (fik/rb) * (erfterm+scaleterm)
+c
+c
                call switch_respa(r,mpoleshortcut,shortheal,s,ds)
                ec = ec + (1-s)*e
 c

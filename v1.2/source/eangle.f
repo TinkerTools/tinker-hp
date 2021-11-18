@@ -22,6 +22,7 @@ c
       use atoms
       use bound
       use energi
+      use group
       use math
       use usage
       implicit none
@@ -47,6 +48,7 @@ c
       real*8 rap2,rcp2
       real*8 xt,yt,zt
       real*8 rt2,delta
+      real*8 fgrp
       logical proceed
 c
 c
@@ -67,12 +69,13 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
          if (angtyp(i) .eq. 'IN-PLANE') then
-            if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+            if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+            proceed = (use(ia) .or. use(ib) .or.
      &                                 use(ic) .or. use(id))
          else
-            if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+            if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+            proceed = (use(ia) .or. use(ib) .or. use(ic))
          end if
 c
 c     get the coordinates of the atoms in the angle
@@ -124,6 +127,10 @@ c
                      cosine = cos((fold*angle1-ideal)/radian)
                      e = factor * force * (1.0d0+cosine)
                   end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     increment the total bond angle bending energy
 c
@@ -181,6 +188,10 @@ c
                   dt4 = dt2 * dt2
                   e = angunit * force * dt2
      &                   * (1.0d0+cang*dt+qang*dt2+pang*dt3+sang*dt4)
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     increment the total bond angle bending energy
 c

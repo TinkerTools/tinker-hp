@@ -81,6 +81,7 @@ c
       use couple
       use domdec
       use energi
+      use group
       use inform
       use inter
       use iounit
@@ -96,7 +97,7 @@ c
       integer ii,iv,it,iivdw
       integer kk,kv,kt
       integer, allocatable :: iv14(:)
-      real*8 e,eps,rdn
+      real*8 e,eps,rdn,fgrp
       real*8 rv,rv7
       real*8 xi,yi,zi
       real*8 xr,yr,zr
@@ -193,6 +194,7 @@ c
             kbis = loc(kglob)
             kv = ired(kglob)
             mutk = mut(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -254,6 +256,10 @@ c
      &                       + c2*rik2 + c1*rik + c0
                   e = e * taper
                end if
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the overall van der Waals energy components
 c
@@ -342,6 +348,7 @@ c
       use cutoff
       use domdec
       use energi
+      use group
       use inter
       use molcul
       use mutant
@@ -355,7 +362,7 @@ c
       integer ii,iv,it,iivdw
       integer kk,kv,kt
       integer, allocatable :: iv14(:)
-      real*8 e,eps,rdn
+      real*8 e,eps,rdn,fgrp
       real*8 rv,rv7
       real*8 xi,yi,zi
       real*8 xr,yr,zr
@@ -450,8 +457,8 @@ c
             kbis = loc(kglob)
             kv = ired(kglob)
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+            proceed = (usei .or. use(kglob) .or. use(kv))
 c
 c     compute the energy contribution for this interaction
 c
@@ -503,6 +510,10 @@ c
                      e = eps * rv7 * tau**7
      &                      * ((ghal+1.0d0)*rv7/rho-2.0d0)
                   end if
+c
+c     scale the interaction based on its group membership
+c
+                 if (use_group)  e = e * fgrp
 c
 c     use energy switching if near the cutoff distance
 c
@@ -576,6 +587,7 @@ c
       use cutoff
       use domdec
       use energi
+      use group
       use inform
       use inter
       use iounit
@@ -591,7 +603,7 @@ c
       integer ii,iv,it,iivdw
       integer kk,kv,kt
       integer, allocatable :: iv14(:)
-      real*8 e,eps,rdn
+      real*8 e,eps,rdn,fgrp
       real*8 rv,rv7
       real*8 xi,yi,zi
       real*8 xr,yr,zr
@@ -690,6 +702,7 @@ c
             kbis = loc(kglob)
             kv = ired(kglob)
             mutk = mut(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -740,6 +753,10 @@ c
                   e = eps * rv7 * tau**7
      &                   * ((ghal+1.0d0)*rv7/rho-2.0d0)
                end if
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     use energy switching if close the cutoff distance (at short range)
 c

@@ -77,6 +77,7 @@ c
       use couple
       use domdec
       use energi
+      use group
       use inter
       use inform
       use iounit
@@ -93,7 +94,7 @@ c
       integer, allocatable :: iv14(:)
       real*8 e
       real*8 p6,p12,eps
-      real*8 rv,rdn
+      real*8 rv,rdn,fgrp
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 rik,rik2,rik3
@@ -184,8 +185,8 @@ c
             kglob = vlst(kk,ii)
             kbis = loc(kglob)
             kv = ired(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -222,6 +223,10 @@ c
      &                          + c2*rik2 + c1*rik + c0
                      e = e * taper
                   end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     increment the overall van der Waals energy components
 c
@@ -310,6 +315,7 @@ c
       use cutoff
       use domdec
       use energi
+      use group
       use inter
       use inform
       use iounit
@@ -327,11 +333,10 @@ c
       integer, allocatable :: iv14(:)
       real*8 e
       real*8 p6,p12,eps
-      real*8 rv,rdn
+      real*8 rv,rdn,fgrp
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 rik,rik2
-
       real*8 s,ds
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
@@ -419,8 +424,8 @@ c
             kglob = shortvlst(kk,ii)
             kbis = loc(kglob)
             kv = ired(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
+            proceed = (usei .or. use(kglob) .or. use(kv))
 c
 c     compute the energy contribution for this interaction
 c
@@ -445,6 +450,10 @@ c
                   p6 = rv**6 / rik2**3
                   p12 = p6 * p6
                   e = eps * (p12 - 2.0d0*p6)
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     use energy switching if near the cutoff distance
 c
@@ -538,6 +547,7 @@ c
       use cutoff
       use domdec
       use energi
+      use group
       use inter
       use inform
       use iounit
@@ -554,7 +564,7 @@ c
       integer, allocatable :: iv14(:)
       real*8 e
       real*8 p6,p12,eps
-      real*8 rv,rdn
+      real*8 rv,rdn,fgrp
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 rik,rik2,rik3
@@ -647,8 +657,8 @@ c
             kglob = vlst(kk,ii)
             kbis = loc(kglob)
             kv = ired(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
+            proceed = (usei .or. use(kglob) .or. use(kv))
 c
 c     compute the energy contribution for this interaction
 c
@@ -690,6 +700,10 @@ c
      &                          + c2*rik2 + c1*rik + c0
                      e = e * taper
                   end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     increment the overall van der Waals energy components
 c

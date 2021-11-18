@@ -74,6 +74,7 @@ c
       real*8 xi,yi,zi,ri
       real*8 xk,yk,zk
       real*8 a,b,buffer,term
+      real*8 fgrp
       logical proceed,intermol
       logical header,huge
 c
@@ -91,8 +92,8 @@ c
          i = npfixglob(inpfix)
          ia = ipfix(i)
          ialoc = loc(ia)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia))
+         proceed = (use(ia))
+         if (use_group)  call groups (fgrp,ia,0,0,0,0,0)
          if (proceed) then
             xr = 0.0d0
             yr = 0.0d0
@@ -150,8 +151,8 @@ c
          ialoc = loc(ia)
          ib = idfix(2,i)
          ibloc = loc(ib)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group)  call groups (fgrp,ia,ib,0,0,0,0)
          if (proceed) then
             xr = x(ia) - x(ib)
             yr = y(ia) - y(ib)
@@ -204,8 +205,8 @@ c
          ibloc = loc(ib)
          ic = iafix(3,i)
          icloc = loc(ic)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if (use_group)  call groups (fgrp,ia,ib,ic,0,0,0)
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -273,8 +274,8 @@ c
          ic = itfix(3,i)
          icloc = loc(ic)
          id = itfix(4,i)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
          if (proceed) then
             xia = x(ia)
@@ -472,8 +473,8 @@ c
          icloc = loc(ic)
          id = ichir(4,i)
          idloc = loc(id)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
          if (proceed) then
             xad = x(ia) - x(id)
@@ -533,8 +534,8 @@ c
                xk = x(kglob)
                yk = y(kglob)
                zk = z(kglob)
-               proceed = .true.
-               if (proceed)  proceed = (use(iglob) .or. use(kglob))
+               if (use_group)  call groups (fgrp,i,k,0,0,0,0)
+               proceed = (use(iglob) .or. use(kglob))
                if (proceed) then
                   xr = xi - xk
                   yr = yi - yk
@@ -583,8 +584,8 @@ c
          b = 64.0d0
          do i = 1, nloc
             iglob = glob(i)
-            proceed = .true.
-            if (proceed)  proceed = (use(iglob))
+            if (use_group)  call groups (fgrp,i,0,0,0,0,0)
+            proceed = (use(iglob))
             if (proceed) then
                xi = x(iglob)
                yi = y(iglob)

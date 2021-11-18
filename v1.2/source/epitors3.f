@@ -23,6 +23,7 @@ c
       use bound
       use domdec
       use energi
+      use group
       use inform
       use iounit
       use math
@@ -56,6 +57,7 @@ c
       real*8 xcp,ycp,zcp
       real*8 xdc,ydc,zdc
       real*8 xqd,yqd,zqd
+      real*8 fgrp
       logical proceed
       logical header,huge
 c
@@ -82,8 +84,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,ig)
+         proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
      &                              use(id) .or. use(ie) .or. use(ig))
 c
 c     compute the value of the pi-orbital torsion angle
@@ -182,6 +184,10 @@ c
 c     calculate the pi-orbital torsion energy for this angle
 c
                e = ptorunit * v2 * phi2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total pi-orbital torsion angle energy
 c

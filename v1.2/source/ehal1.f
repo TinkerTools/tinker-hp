@@ -67,6 +67,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use inter
       use iounit
       use molcul
@@ -82,7 +83,7 @@ c
       integer ii,iv,it,ivloc
       integer kk,kv,kt,kvloc
       integer, allocatable :: iv14(:)
-      real*8 e,de,eps,rdn
+      real*8 e,de,eps,rdn,fgrp
       real*8 rv,rv7
       real*8 xi,yi,zi
       real*8 xr,yr,zr
@@ -204,8 +205,8 @@ c
             redk = kred(kglob)
             redkv = 1.0d0 - redk
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+            proceed = (usei .or. use(kglob) .or. use(kv))
 c
 c     compute the energy contribution for this interaction
 c
@@ -281,6 +282,13 @@ c
      &                           + 3.0d0*c3*rik2 + 2.0d0*c2*rik + c1
                      de = e*dtaper + de*taper
                      e = e * taper
+                  end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     de = de * fgrp
                   end if
 c
 c     find the chain rule terms for derivative components
@@ -395,6 +403,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use inter
       use iounit
       use molcul
@@ -410,7 +419,7 @@ c
       integer ii,iv,it,ivloc
       integer kk,kv,kt,kvloc
       integer, allocatable :: iv14(:)
-      real*8 e,de,eps,rdn
+      real*8 e,de,eps,rdn,fgrp
       real*8 rv,rv7
       real*8 xi,yi,zi
       real*8 xr,yr,zr
@@ -531,8 +540,8 @@ c
             redk = kred(kglob)
             redkv = 1.0d0 - redk
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+            proceed = (usei .or. use(kglob) .or. use(kv))
 c
 c     compute the energy contribution for this interaction
 c
@@ -594,6 +603,13 @@ c
                      gtau = eps*tau7*rik6*(ghal+1.0d0)*(rv7/rho)**2
                      e = eps*tau7*rv7*((ghal+1.0d0)*rv7/rho-2.0d0)
                      de = -7.0d0 * (dtau*e+gtau)
+                  end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     de = de * fgrp
                   end if
 c
 c     use energy switching if near the cutoff distance
@@ -711,6 +727,7 @@ c
       use cutoff
       use deriv
       use domdec
+      use group
       use energi
       use inter
       use iounit
@@ -727,7 +744,7 @@ c
       integer ii,iv,it,ivloc
       integer kk,kv,kt,kvloc
       integer, allocatable :: iv14(:)
-      real*8 e,de,eps,rdn
+      real*8 e,de,eps,rdn,fgrp
       real*8 rv,rv7
       real*8 xi,yi,zi
       real*8 xr,yr,zr
@@ -851,8 +868,8 @@ c
             redk = kred(kglob)
             redkv = 1.0d0 - redk
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+            proceed = (usei .or. use(kglob) .or. use(kv))
 c
 c     compute the energy contribution for this interaction
 c
@@ -928,6 +945,13 @@ c
      &                           + 3.0d0*c3*rik2 + 2.0d0*c2*rik + c1
                      de = e*dtaper + de*taper
                      e = e * taper
+                  end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     de = de * fgrp
                   end if
 c
 c     use energy switching if close the cutoff distance (at short range)

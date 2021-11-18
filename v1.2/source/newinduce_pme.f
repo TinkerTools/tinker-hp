@@ -943,6 +943,7 @@ c
       use couple
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -970,6 +971,7 @@ c
       real*8 bn(0:3), fim(3), fid(3), fip(3)
       real*8 fkd(3), fkp(3), fkm(3)
       real*8 erfc, cutoff2
+      real*8 fgrp,scaled,scalep
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
       save   zero, pt6, one, f50
@@ -1044,6 +1046,7 @@ c
           kkpole = elst(kkk,ii)
           kbis = poleloc(kkpole)
           kglob = ipole(kkpole)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if ((kbis.eq.0).or.(kbis.gt.npolebloc)) then
             write(iout,1000)
             cycle
@@ -1098,12 +1101,18 @@ c
      &                      *(one-damp + pt6*damp**2)
               end if
             end if
-            dsc3 = scale3 * dscale(kglob)
-            dsc5 = scale5 * dscale(kglob)
-            dsc7 = scale7 * dscale(kglob)
-            psc3 = scale3 * pscale(kglob)
-            psc5 = scale5 * pscale(kglob)
-            psc7 = scale7 * pscale(kglob)
+            scaled = dscale(kglob)
+            scalep = pscale(kglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+            end if
+            dsc3 = scale3 * scaled
+            dsc5 = scale5 * scaled
+            dsc7 = scale7 * scaled
+            psc3 = scale3 * scalep
+            psc5 = scale5 * scalep
+            psc7 = scale7 * scalep
             drr3 = (1.0d0-dsc3) / (d*d2)
             drr5 = 3.0d0 * (1.0d0-dsc5) / (d*d2*d2)
             drr7 = 15.0d0 * (1.0d0-dsc7) / (d*d2*d2*d2)
@@ -1242,6 +1251,7 @@ c
       real*8  zero, one, f50
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
+      real*8  fgrp,scale
       save    zero, one, f50
       data    zero/0.d0/, one/1.d0/, f50/50.d0/
       character*10 mode
@@ -1298,6 +1308,7 @@ c
           kkpole = elst(kkk,ii)
           kglob = ipole(kkpole)
           kkpoleloc = poleloc(kkpole)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if (kkpoleloc.eq.0) cycle
           dx = x(kglob) - x(iglob)
           dy = y(kglob) - y(iglob)
@@ -1329,9 +1340,11 @@ c
               alsq2n = alsq2 * alsq2n
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
+            scale = dscale(kglob)
+            if (use_group)  scale = scale * fgrp
 c
-            scale3 = dscale(kglob)
-            scale5 = dscale(kglob)
+            scale3 = scale
+            scale5 = scale
             damp = pdi*pdamp(kkpole)
             if (damp.ne.zero) then
               pgamma = min(pti,thole(kkpole))

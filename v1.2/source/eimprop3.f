@@ -23,6 +23,7 @@ c
       use bound
       use domdec
       use energi
+      use group
       use improp
       use inform
       use iounit
@@ -47,6 +48,7 @@ c
       real*8 xba,yba,zba
       real*8 xcb,ycb,zcb
       real*8 xdc,ydc,zdc
+      real*8 fgrp
       logical proceed
       logical header,huge
 c
@@ -71,8 +73,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the improper dihedral angle
@@ -141,6 +143,10 @@ c
 c     calculate the improper dihedral energy
 c
                e = idihunit * force * dt**2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total improper dihedral energy
 c

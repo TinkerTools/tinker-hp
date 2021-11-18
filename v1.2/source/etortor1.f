@@ -23,6 +23,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use ktrtor
       use math
       use torpot
@@ -79,6 +80,7 @@ c
       real*8 vyx2,vzx2,vzy2
       real*8 ftt(4),ft12(4)
       real*8 ft1(4),ft2(4)
+      real*8 fgrp
       logical proceed
 c
 c
@@ -113,8 +115,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic)
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,0)
+         proceed = (use(ia) .or. use(ib) .or. use(ic)
      &                               .or. use(id) .or. use(ie))
 c
 c     compute the values of the torsional angles
@@ -238,6 +240,14 @@ c
                e = ttorunit * e
                dedang1 = sign * ttorunit * radian * dedang1
                dedang2 = sign * ttorunit * radian * dedang2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedang1 = dedang1 * fgrp
+                  dedang2 = dedang2 * fgrp
+               end if
 c
 c     chain rule terms for first angle derivative components
 c

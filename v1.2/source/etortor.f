@@ -19,6 +19,7 @@ c
       use bitor
       use bound
       use energi
+      use group
       use ktrtor
       use math
       use torpot
@@ -52,6 +53,7 @@ c
       real*8 xed,yed,zed
       real*8 ftt(4),ft12(4)
       real*8 ft1(4),ft2(4)
+      real*8 fgrp
       logical proceed
 c
 c
@@ -81,8 +83,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic)
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,0)
+         proceed = (use(ia) .or. use(ib) .or. use(ic)
      &                               .or. use(id) .or. use(ie))
 c
 c     compute the values of the torsional angles
@@ -202,6 +204,10 @@ c
                call bcuint (ftt,ft1,ft2,ft12,x1l,x1u,
      &                      y1l,y1u,value1,value2,e)
                e = ttorunit * e
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total torsion-torsion energy
 c

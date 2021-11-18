@@ -23,6 +23,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use usage
       use virial
       implicit none
@@ -35,6 +36,7 @@ c
       real*8 xab,yab,zab,rab
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       logical proceed
 c
 c
@@ -55,8 +57,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group) call groups(fgrp,ia,ib,0,0,0,0)
 c
 c     compute the value of the bond length deviation
 c
@@ -86,6 +88,13 @@ c
                bde = 0.25d0 * bndunit * force
                e = bde * (1.0d0-expterm)**2
                deddt = 4.0d0 * bde * (1.0d0-expterm) * expterm
+            end if
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               deddt = deddt * fgrp
             end if
 c
 c     compute chain rule terms needed for derivatives

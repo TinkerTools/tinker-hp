@@ -318,6 +318,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inter
       use iounit
       use math
@@ -396,6 +397,7 @@ c
       real*8 trq(3),fix(3)
       real*8 fiy(3),fiz(3)
       real*8 bn(0:4)
+      real*8 fgrp,scaled,scalep,scaleu
       real*8, allocatable :: pscale(:)
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: uscale(:)
@@ -500,6 +502,7 @@ c
             kkpole = elst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             if (kbis.eq.0) then
               write(iout,1000)
               cycle
@@ -617,9 +620,17 @@ c
 c
 c     intermediates involving Thole damping and scale factors
 c
-               psr3 = rr3 * sc3 * pscale(kglob)
-               psr5 = rr5 * sc5 * pscale(kglob)
-               psr7 = rr7 * sc7 * pscale(kglob)
+               scaled = dscale(kglob)
+               scalep = pscale(kglob)
+               scaleu = uscale(kglob)
+               if (use_group) then
+                 scaled = scaled * fgrp
+                 scalep = scalep * fgrp
+                 scaleu = scaleu * fgrp
+               end if
+               psr3 = rr3 * sc3 * scalep
+               psr5 = rr5 * sc5 * scalep
+               psr7 = rr7 * sc7 * scalep
 c
 c     compute the full undamped energy for this interaction
 c
@@ -629,14 +640,14 @@ c
 c
 c     intermediates involving Thole damping and scale factors
 c
-               psc3 = 1.0d0 - sc3*pscale(kglob)
-               psc5 = 1.0d0 - sc5*pscale(kglob)
-               psc7 = 1.0d0 - sc7*pscale(kglob)
-               dsc3 = 1.0d0 - sc3*dscale(kglob)
-               dsc5 = 1.0d0 - sc5*dscale(kglob)
-               dsc7 = 1.0d0 - sc7*dscale(kglob)
-               usc3 = 1.0d0 - sc3*uscale(kglob)
-               usc5 = 1.0d0 - sc5*uscale(kglob)
+               psc3 = 1.0d0 - sc3*scalep
+               psc5 = 1.0d0 - sc5*scalep
+               psc7 = 1.0d0 - sc7*scalep
+               dsc3 = 1.0d0 - sc3*scaled
+               dsc5 = 1.0d0 - sc5*scaled
+               dsc7 = 1.0d0 - sc7*scaled
+               usc3 = 1.0d0 - sc3*scaleu
+               usc5 = 1.0d0 - sc5*scaleu
                psr3 = bn(1) - psc3*rr3
                psr5 = bn(2) - psc5*rr5
                psr7 = bn(3) - psc7*rr7
@@ -646,14 +657,14 @@ c
                usr3 = bn(1) - usc3*rr3
                usr5 = bn(2) - usc5*rr5
                do j = 1, 3
-                  prc3(j) = rc3(j) * pscale(kglob)
-                  prc5(j) = rc5(j) * pscale(kglob)
-                  prc7(j) = rc7(j) * pscale(kglob)
-                  drc3(j) = rc3(j) * dscale(kglob)
-                  drc5(j) = rc5(j) * dscale(kglob)
-                  drc7(j) = rc7(j) * dscale(kglob)
-                  urc3(j) = rc3(j) * uscale(kglob)
-                  urc5(j) = rc5(j) * uscale(kglob)
+                  prc3(j) = rc3(j) * scalep
+                  prc5(j) = rc5(j) * scalep
+                  prc7(j) = rc7(j) * scalep
+                  drc3(j) = rc3(j) * scaled
+                  drc5(j) = rc5(j) * scaled
+                  drc7(j) = rc7(j) * scaled
+                  urc3(j) = rc3(j) * scaleu
+                  urc5(j) = rc5(j) * scaleu
                end do
 c
 c     compute the energy contribution for this interaction
@@ -828,7 +839,7 @@ c
                term1 = bn(2) - usc3*rr5
                term2 = bn(3) - usc5*rr7
                term3 = usr5 + term1
-               term4 = rr3 * uscale(kglob)
+               term4 = rr3 * scaleu
                term5 = -xr*term3 + rc3(1)*term4
                term6 = -usr5 + xr*xr*term2 - rr5*xr*urc5(1)
                txxi = uix*term5 + uri*term6
@@ -1799,6 +1810,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inter
       use iounit
       use math
@@ -1855,7 +1867,6 @@ c
       real*8 txyk,txzk,tyzk
       real*8 uri,urip,turi
       real*8 urk,urkp,turk
-
       real*8 txi3,tyi3,tzi3
       real*8 txi5,tyi5,tzi5
       real*8 txk3,tyk3,tzk3
@@ -1876,8 +1887,8 @@ c
       real*8 urc3(3),urc5(3)
       real*8 trq(3),fix(3)
       real*8 fiy(3),fiz(3)
+      real*8 fgrp,scaled,scalep,scaleu
       real*8 bn(0:4)
-
       real*8, allocatable :: pscale(:)
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: uscale(:)
@@ -1983,6 +1994,7 @@ c
             kkpole = shortelst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             if (kbis.eq.0) then
               write(iout,1000)
               cycle
@@ -2100,9 +2112,17 @@ c
 c
 c     intermediates involving Thole damping and scale factors
 c
-               psr3 = rr3 * sc3 * pscale(kglob)
-               psr5 = rr5 * sc5 * pscale(kglob)
-               psr7 = rr7 * sc7 * pscale(kglob)
+               scaled = dscale(kglob)
+               scalep = pscale(kglob)
+               scaleu = uscale(kglob)
+               if (use_group) then
+                 scaled = scaled * fgrp
+                 scalep = scalep * fgrp
+                 scaleu = scaleu * fgrp
+               end if
+               psr3 = rr3 * sc3 * scalep
+               psr5 = rr5 * sc5 * scalep
+               psr7 = rr7 * sc7 * scalep
 c
 c     compute the full undamped energy for this interaction
 c
@@ -2112,14 +2132,14 @@ c
 c
 c     intermediates involving Thole damping and scale factors
 c
-               psc3 = 1.0d0 - sc3*pscale(kglob)
-               psc5 = 1.0d0 - sc5*pscale(kglob)
-               psc7 = 1.0d0 - sc7*pscale(kglob)
-               dsc3 = 1.0d0 - sc3*dscale(kglob)
-               dsc5 = 1.0d0 - sc5*dscale(kglob)
-               dsc7 = 1.0d0 - sc7*dscale(kglob)
-               usc3 = 1.0d0 - sc3*uscale(kglob)
-               usc5 = 1.0d0 - sc5*uscale(kglob)
+               psc3 = 1.0d0 - sc3*scalep
+               psc5 = 1.0d0 - sc5*scalep
+               psc7 = 1.0d0 - sc7*scalep
+               dsc3 = 1.0d0 - sc3*scaled
+               dsc5 = 1.0d0 - sc5*scaled
+               dsc7 = 1.0d0 - sc7*scaled
+               usc3 = 1.0d0 - sc3*scaleu
+               usc5 = 1.0d0 - sc5*scaleu
                psr3 = bn(1) - psc3*rr3
                psr5 = bn(2) - psc5*rr5
                psr7 = bn(3) - psc7*rr7
@@ -2129,14 +2149,14 @@ c
                usr3 = bn(1) - usc3*rr3
                usr5 = bn(2) - usc5*rr5
                do j = 1, 3
-                  prc3(j) = rc3(j) * pscale(kglob)
-                  prc5(j) = rc5(j) * pscale(kglob)
-                  prc7(j) = rc7(j) * pscale(kglob)
-                  drc3(j) = rc3(j) * dscale(kglob)
-                  drc5(j) = rc5(j) * dscale(kglob)
-                  drc7(j) = rc7(j) * dscale(kglob)
-                  urc3(j) = rc3(j) * uscale(kglob)
-                  urc5(j) = rc5(j) * uscale(kglob)
+                  prc3(j) = rc3(j) * scalep
+                  prc5(j) = rc5(j) * scalep
+                  prc7(j) = rc7(j) * scalep
+                  drc3(j) = rc3(j) * scaled
+                  drc5(j) = rc5(j) * scaled
+                  drc7(j) = rc7(j) * scaled
+                  urc3(j) = rc3(j) * scaleu
+                  urc5(j) = rc5(j) * scaleu
                end do
 c
 c     compute the energy contribution for this interaction
@@ -2312,7 +2332,7 @@ c
                term1 = bn(2) - usc3*rr5
                term2 = bn(3) - usc5*rr7
                term3 = usr5 + term1
-               term4 = rr3 * uscale(kglob)
+               term4 = rr3 * scaleu
                term5 = -xr*term3 + rc3(1)*term4
                term6 = -usr5 + xr*xr*term2 - rr5*xr*urc5(1)
                txxi = uix*term5 + uri*term6

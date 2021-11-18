@@ -165,6 +165,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use iounit
       use inter
       use math
@@ -179,23 +180,19 @@ c
       implicit none
       integer i,j,k,iichg,iglob,kglob,kkchg
       integer ii,kkk
-
       real*8 e,de,efull
       real*8 f,fi,fik
       real*8 r,r2,rew
       real*8 rb,rb2
-
       real*8 xi,yi,zi
       real*8 xr,yr,zr
-
       real*8 erfc,erfterm
       real*8 scale,scaleterm
       real*8 dedx,dedy,dedz
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       real*8, allocatable :: cscale(:)
-
-
       character*10 mode
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
@@ -253,6 +250,7 @@ c
               write(iout,1000)
               cycle
             end if
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -272,6 +270,7 @@ c
                rew = aewald * r
                erfterm = erfc (rew)
                scale = cscale(kglob)
+               if (use_group)  scale = scale * fgrp
                scaleterm = scale - 1.0d0
                e = (fik/rb) * (erfterm+scaleterm)
                de = -fik * ((erfterm+scaleterm)/rb2
@@ -727,6 +726,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use iounit
       use inter
       use math
@@ -741,24 +741,20 @@ c
       implicit none
       integer i,j,k,iichg,iglob,kglob,kkchg
       integer ii,kkk
-
       real*8 e,de,efull
       real*8 f,fi,fik
       real*8 r,r2,rew
       real*8 rb,rb2
-
       real*8 xi,yi,zi
       real*8 xr,yr,zr
-
       real*8 erfc,erfterm
       real*8 scale,scaleterm
       real*8 dedx,dedy,dedz
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       real*8, allocatable :: cscale(:)
-
       real*8 s,ds
-
       character*10 mode
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
@@ -817,6 +813,7 @@ c
               write(iout,1000)
               cycle
             end if
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -836,6 +833,7 @@ c
                rew = aewald * r
                erfterm = erfc (rew)
                scale = cscale(kglob)
+               if (use_group)  scale = scale * fgrp
                scaleterm = scale - 1.0d0
                e = (fik/rb) * (erfterm+scaleterm)
 
@@ -927,6 +925,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use iounit
       use inter
       use math
@@ -941,24 +940,20 @@ c
       implicit none
       integer i,j,k,iichg,iglob,kglob,kkchg
       integer ii,kkk
-
       real*8 e,de,efull
       real*8 f,fi,fik
       real*8 r,r2,rew
       real*8 rb,rb2
-
       real*8 xi,yi,zi
       real*8 xr,yr,zr
-
       real*8 erfc,erfterm
       real*8 scale,scaleterm
       real*8 dedx,dedy,dedz
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       real*8, allocatable :: cscale(:)
-
       real*8 s,ds,cshortcut2
-
       character*10 mode
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
@@ -1018,6 +1013,7 @@ c
               write(iout,1000)
               cycle
             end if
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -1037,6 +1033,7 @@ c
                rew = aewald * r
                erfterm = erfc (rew)
                scale = cscale(kglob)
+               if (use_group)  scale = scale * fgrp
                scaleterm = scale - 1.0d0
                e = (fik/rb) * (erfterm+scaleterm)
 c

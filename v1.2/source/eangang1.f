@@ -24,6 +24,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use math
       use usage
       use virial
@@ -57,6 +58,7 @@ c
       real*8 dedxie,dedyie,dedzie
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       logical proceed
 c
 c
@@ -83,7 +85,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,0)
          proceed = (use(ia) .or. use(ib) .or. use(ic)
      &                               .or. use(id) .or. use(ie))
 c
@@ -155,6 +157,14 @@ c
                e = aaunit * kaa(iangang) * dt1 * dt2
                deddt1 = radian * e / dt1
                deddt2 = radian * e / dt2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  deddt1 = deddt1 * fgrp
+                  deddt2 = deddt2 * fgrp
+               end if
 c
 c     find chain rule terms for the first bond angle deviation
 c

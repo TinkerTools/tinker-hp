@@ -19,6 +19,7 @@ c
       use bond
       use bound
       use energi
+      use group
       use strtor
       use torpot
       use tors
@@ -67,6 +68,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
@@ -163,6 +165,14 @@ c
               k = ist(4,iistrtor)
               dr = rdc - bl(k)
               e3 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
+c
+c     scale the interaction based on its group membership
+c
+              if (use_group) then
+                 e1 = e1 * fgrp
+                 e2 = e2 * fgrp
+                 e3 = e3 * fgrp
+              end if
 c
 c     increment the total stretch-torsion energy
 c

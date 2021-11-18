@@ -19,6 +19,7 @@ c
       use atoms
       use bound
       use energi
+      use group
       use imptor
       use torpot
       use usage
@@ -44,6 +45,7 @@ c
       real*8 xba,yba,zba
       real*8 xcb,ycb,zcb
       real*8 xdc,ydc,zdc
+      real*8 fgrp
       logical proceed
 c
 c
@@ -62,8 +64,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
@@ -137,6 +139,10 @@ c
 c     calculate the improper torsional energy for this angle
 c
                e = itorunit * (v1*phi1 + v2*phi2 + v3*phi3)
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total torsional angle energy
 c

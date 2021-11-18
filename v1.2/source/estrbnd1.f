@@ -56,6 +56,7 @@ c
       real*8 dedxic,dedyic,dedzic
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       logical proceed
 c
 c
@@ -79,8 +80,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if (use_group)  call groups (fgrp,ia,ib,ic,0,0,0)
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
 c
 c     get the coordinates of the atoms in the angle
 c
@@ -156,6 +157,14 @@ c
                termr = term1*dr1 + term2*dr2
                term1t = term1 * dt
                term2t = term2 * dt
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  termr = termr * fgrp
+                  term1t = term1t * fgrp
+                  term2t = term2t * fgrp
+               end if
 c
 c     get the energy and master chain rule terms for derivatives
 c

@@ -9,6 +9,7 @@
       use couple
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -19,24 +20,16 @@
       use potent
       use shunt
       implicit none
-
-
       real*8, dimension(3,npolebloc), intent(in) :: a1, a2
       real*8, dimension(3,npolebloc), intent(in) :: e1, e2, e3, d1, d2,
      $                                               d3
       real*8, dimension(3,npolebloc), intent(out) :: adtb
       real*8, dimension(3,2,npolebloc), intent(out) :: adme, ade
       real*8, dimension(3,3,2,npolebloc), intent(out) :: adte
-      
       real*8, allocatable, dimension(:,:,:) ::adE_cor,admE_cor,admE_self
       real*8, allocatable, dimension(:,:,:,:) ::adtE_cor
-
-
-
-
       integer :: ii, iipole, iglob, i, jjpole, jglob,
      $           jjj, jbis, k, j
-
       real*8 :: pti, pdi, rrij3, rrij5, rrij7, rrij9,
      $         urr5, urr7, 
      $scale3, scale5, 
@@ -46,15 +39,13 @@
      $          ci, cj, bfac, invrij2, alsq2n, cutoff2, exp2a, ralpha,
      $          d, rij2, damp, expdamp, pgamma, alsq2, term
 
+      real*8 fgrp,scaled,scalep,scaleu
       real*8                :: bn(0:4) 
       real*8, dimension(2)  :: srr3, srr5, srr7, srr9
       real*8, dimension(3)  :: rij, thetajr, thetair, di, dj
       real*8, dimension(3,3):: qi, qj
-
       real*8, allocatable, dimension(:) :: dscale, pscale, uscale
       real*8, allocatable, dimension(:,:) :: adtbcor
-      
-
       real*8:: a1xi,a1yi,a1zi,a1xj,a1yj,a1zj
       real*8:: a2xi,a2yi,a2zi,a2xj,a2yj,a2zj
       real*8,dimension(2):: term1,term2,term3,term4,term5,term6,term7
@@ -189,6 +180,7 @@
             jjpole = elst(jjj,ii)
             jglob = ipole(jjpole)
             jbis = poleloc(jjpole)
+            if (use_group)  call groups (fgrp,iglob,jglob,0,0,0,0)
             if (jbis.eq.0) then
                write(iout,1000)
                cycle
@@ -287,17 +279,25 @@
      $                     9d0*damp**3)/35d0)
                end if
             end if
-            dsc3 = scale3*dscale(jglob)
-            dsc5 = scale5*dscale(jglob)
-            dsc7 = scale7*dscale(jglob)
-            dsc9 = scale9*dscale(jglob)
-            psc3 = scale3*pscale(jglob)
-            psc5 = scale5*pscale(jglob)
-            psc7 = scale7*pscale(jglob)
-            psc9 = scale9*pscale(jglob)
+            scaled = dscale(jglob)
+            scalep = pscale(jglob)
+            scaleu = uscale(jglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+              scaleu = scaleu * fgrp
+            end if
+            dsc3 = scale3*scaled
+            dsc5 = scale5*scaled
+            dsc7 = scale7*scaled
+            dsc9 = scale9*scaled
+            psc3 = scale3*scalep
+            psc5 = scale5*scalep
+            psc7 = scale7*scalep
+            psc9 = scale9*scalep
             !mat
-            usc5 = scale5*uscale(jglob)
-            usc7 = scale7*uscale(jglob)
+            usc5 = scale5*scaleu
+            usc7 = scale7*scaleu
             srr3(1) = (1d0 - dsc3)*rrij3 - bn(1)
             srr3(2) = (1d0 - psc3)*rrij3 - bn(1)
             srr5(1) = (1d0 - dsc5)*rrij5 - bn(2)
@@ -812,6 +812,7 @@ c
       use couple
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -823,20 +824,13 @@ c
       use shunt
       use virial
       implicit none
-
-
       real*8, dimension(3,npolebloc), intent(in) :: a1, a2
       real*8, dimension(3,npolebloc), intent(in) :: e1, e2, d1, d2
       real*8, dimension(3,npolebloc), intent(out) :: adtb
       real*8, dimension(3,2,npolebloc), intent(out) :: adme, ade
       real*8, dimension(3,3,2,npolebloc), intent(out) :: adte
-      
       real*8, allocatable, dimension(:,:,:) ::adE_cor,admE_cor,admE_self
       real*8, allocatable, dimension(:,:,:,:) ::adtE_cor
-
-
-
-
       integer :: ii, iipole, iglob,  i, jjpole, jglob,
      $           jjj, jbis, k, j
 
@@ -850,14 +844,14 @@ c
      $          d, rij2, damp, expdamp, pgamma, alsq2, term
 
       real*8                :: bn(0:4) 
+      real*8 fgrp,scaled,scalep,scaleu
+
       real*8, dimension(2)  :: srr3, srr5, srr7, srr9
       real*8, dimension(3)  :: rij, thetajr, thetair, di, dj
       real*8, dimension(3,3):: qi, qj
 
       real*8, allocatable, dimension(:) :: dscale, pscale, uscale
       real*8, allocatable, dimension(:,:) :: adtbcor
-      
-
       real*8:: a1xi,a1yi,a1zi,a1xj,a1yj,a1zj
       real*8:: a2xi,a2yi,a2zi,a2xj,a2yj,a2zj
       real*8,dimension(2):: term1,term2,term3,term4,term5,term6,term7
@@ -888,17 +882,6 @@ c
       real*8::temp2ixx7,temp2ixy7,temp2ixz7,temp2iyy7,temp2iyz7,
      $     temp2izz7
       real*8::temp2ixx,temp2ixy,temp2ixz,temp2iyy,temp2iyz,temp2izz
-
-
-
-
-
-
-
-
-
-
-
 
       real*8 :: f
 
@@ -995,6 +978,7 @@ c
             jjpole = elst(jjj,ii)
             jglob = ipole(jjpole)
             jbis = poleloc(jjpole)
+            if (use_group)  call groups (fgrp,iglob,jglob,0,0,0,0)
             if (jbis.eq.0) then
                write(iout,1000)
                cycle
@@ -1091,17 +1075,25 @@ c
      $                     9d0*damp**3)/35d0)
                end if
             end if
-            dsc3 = scale3*dscale(jglob)
-            dsc5 = scale5*dscale(jglob)
-            dsc7 = scale7*dscale(jglob)
-            dsc9 = scale9*dscale(jglob)
-            psc3 = scale3*pscale(jglob)
-            psc5 = scale5*pscale(jglob)
-            psc7 = scale7*pscale(jglob)
-            psc9 = scale9*pscale(jglob)
+            scaled = dscale(jglob)
+            scalep = pscale(jglob)
+            scaleu = uscale(jglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+              scaleu = scaleu * fgrp
+            end if
+            dsc3 = scale3*scaled
+            dsc5 = scale5*scaled
+            dsc7 = scale7*scaled
+            dsc9 = scale9*scaled
+            psc3 = scale3*scalep
+            psc5 = scale5*scalep
+            psc7 = scale7*scalep
+            psc9 = scale9*scalep
             !mat
-            usc5 = scale5*uscale(jglob)
-            usc7 = scale7*uscale(jglob)
+            usc5 = scale5*scaleu
+            usc7 = scale7*scaleu
             srr3(1) = (1d0 - dsc3)*rrij3 - bn(1)
             srr3(2) = (1d0 - psc3)*rrij3 - bn(1)
             srr5(1) = (1d0 - dsc5)*rrij5 - bn(2)
@@ -1271,24 +1263,6 @@ c deydzj (alpha=2 beta=3)
             ade_cor(1,2,i) = ade_cor(1,2,i) + depx
             ade_cor(2,2,i) = ade_cor(2,2,i) + depy
             ade_cor(3,2,i) = ade_cor(3,2,i) + depz
-cc
-cc    increment virial
-cc
-c            vxx = rij(1) * 0.5*f*depx
-c            vxy = rij(2) * 0.5*f*depx
-c            vxz = rij(3) * 0.5*f*depx
-c            vyy = rij(2) * 0.5*f*depy
-c            vyz = rij(3) * 0.5*f*depy
-c            vzz = rij(3) * 0.5*f*depz
-c            vir(1,1) = vir(1,1) + vxx
-c            vir(2,1) = vir(2,1) + vxy
-c            vir(3,1) = vir(3,1) + vxz
-c            vir(1,2) = vir(1,2) + vxy
-c            vir(2,2) = vir(2,2) + vyy
-c            vir(3,2) = vir(3,2) + vyz
-c            vir(1,3) = vir(1,3) + vxz
-c            vir(2,3) = vir(2,3) + vyz
-c            vir(3,3) = vir(3,3) + vzz
 
             ade_cor(1,2,jbis) = ade_cor(1,2,jbis) - depx
             ade_cor(2,2,jbis) = ade_cor(2,2,jbis) - depy
@@ -1527,24 +1501,6 @@ c
      $      + d2(3,i)*temp2izz
             adTbcor(3,i) = adTbcor(3,i) + depz 
             adTbcor(3,jbis) = adTbcor(3,jbis) - depz 
-cc
-cc          increment virial          
-cc
-c            vxx = rij(1) * 0.5*f*depx
-c            vxy = rij(2) * 0.5*f*depx
-c            vxz = rij(3) * 0.5*f*depx
-c            vyy = rij(2) * 0.5*f*depy
-c            vyz = rij(3) * 0.5*f*depy
-c            vzz = rij(3) * 0.5*f*depz
-c            vir(1,1) = vir(1,1) + vxx
-c            vir(2,1) = vir(2,1) + vxy
-c            vir(3,1) = vir(3,1) + vxz
-c            vir(1,2) = vir(1,2) + vxy
-c            vir(2,2) = vir(2,2) + vyy
-c            vir(3,2) = vir(3,2) + vyz
-c            vir(1,3) = vir(1,3) + vxz
-c            vir(2,3) = vir(2,3) + vyz
-c            vir(3,3) = vir(3,3) + vzz
  
 
          end do !jj
@@ -2546,38 +2502,7 @@ c
            call cart_to_frac_vec(d1(:,iloc), d1_frac(:,i))
            call cart_to_frac_vec(e1(:,iloc), e1_frac(:,i))
          end if
-c         vxx = vxx - fphirec(2,i)*(a_frac(1,i)+b_frac(1,i))
-c         vxy = vxy - 0.5d0*(fphirec(2,i)*(a_frac(2,i)+b_frac(2,i))+
-c     $    fphirec(3,i)*(a_frac(1,i)+b_frac(1,i)))
-c         vxz = vxz - 0.5d0*(fphirec(2,i)*(a_frac(3,i)+b_frac(3,i))+
-c     $    fphirec(4,i)*(a_frac(1,i)+b_frac(1,i)))
-c         vyy = vyy - fphirec(3,i)*(a_frac(2,i)+b_frac(2,i))
-c         vyz = vyz - 0.5d0*(fphirec(3,i)*(a_frac(3,i)+b_frac(3,i))+
-c     $    fphirec(4,i)*(a_frac(2,i)+b_frac(2,i)))
-c         vzz = vzz - fphirec(4,i)*(a_frac(3,i)+b_frac(3,i))
-c         !mat
-c         vxx = vxx - fphid1(2,i)*e1_frac(1,i)
-c         vxy = vxy - 0.5d0*(fphid1(2,i)*e1_frac(2,i)+
-c     $    fphid1(3,i)*e1_frac(1,i))
-c         vxz = vxz - 0.5d0*(fphid1(2,i)*e1_frac(3,i)+
-c     $    fphid1(4,i)*e1_frac(1,i))
-c         vyy = vyy - fphid1(3,i)*e1_frac(2,i)
-c         vyz = vyz - 0.5d0*(fphid1(3,i)*e1_frac(3,i)+
-c     $    fphid1(4,i)*e1_frac(2,i))
-c         vzz = vzz - fphid1(4,i)*e1_frac(3,i)
       end do
-cc
-cc    increment virial
-cc
-c      vir(1,1) = vir(1,1) -0.5*f*vxx
-c      vir(2,1) = vir(2,1) -0.5*f*vxy
-c      vir(3,1) = vir(3,1) -0.5*f*vxz
-c      vir(1,2) = vir(1,2) -0.5*f*vxy
-c      vir(2,2) = vir(2,2) -0.5*f*vyy
-c      vir(3,2) = vir(3,2) -0.5*f*vyz
-c      vir(1,3) = vir(1,3) -0.5*f*vxz
-c      vir(2,3) = vir(2,3) -0.5*f*vyz
-c      vir(3,3) = vir(3,3) -0.5*f*vzz
 
 
       do i = 1, npolerecloc
@@ -2698,6 +2623,7 @@ c      vir(3,3) = vir(3,3) -0.5*f*vzz
       use couple
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -2708,19 +2634,13 @@ c      vir(3,3) = vir(3,3) -0.5*f*vzz
       use potent
       use shunt
       implicit none
-
-
       real*8, dimension(3,npolebloc), intent(in) :: a1, a2
       real*8, dimension(3,npolebloc), intent(in) :: e1, d1
       real*8, dimension(3,npolebloc), intent(out) :: adtb
       real*8, dimension(3,2,npolebloc), intent(out) :: adme, ade
       real*8, dimension(3,3,2,npolebloc), intent(out) :: adte
-      
       real*8, allocatable, dimension(:,:,:) ::adE_cor,admE_cor,admE_self
       real*8, allocatable, dimension(:,:,:,:) ::adtE_cor
-
-
-
 
       integer :: ii, iipole, iglob, i, jjpole, jglob,
      $           jjj, jbis, k, j
@@ -2735,6 +2655,7 @@ c      vir(3,3) = vir(3,3) -0.5*f*vzz
      $          d, rij2, damp, expdamp, pgamma, alsq2, term
 
       real*8                :: bn(0:4) 
+      real*8 fgrp,scaled,scalep,scaleu
       real*8, dimension(2)  :: srr3, srr5, srr7, srr9
       real*8, dimension(3)  :: rij, thetajr, thetair, di, dj
       real*8, dimension(3,3):: qi, qj
@@ -2855,6 +2776,7 @@ c      vir(3,3) = vir(3,3) -0.5*f*vzz
          do jjj = 1, nelst(ii)
             jjpole = elst(jjj,ii)
             jglob = ipole(jjpole)
+            if (use_group)  call groups (fgrp,iglob,jglob,0,0,0,0)
             jbis = poleloc(jjpole)
             if (jbis.eq.0) then
                write(iout,1000)
@@ -2950,17 +2872,25 @@ c      vir(3,3) = vir(3,3) -0.5*f*vzz
      $                     9d0*damp**3)/35d0)
                end if
             end if
-            dsc3 = scale3*dscale(jglob)
-            dsc5 = scale5*dscale(jglob)
-            dsc7 = scale7*dscale(jglob)
-            dsc9 = scale9*dscale(jglob)
-            psc3 = scale3*pscale(jglob)
-            psc5 = scale5*pscale(jglob)
-            psc7 = scale7*pscale(jglob)
-            psc9 = scale9*pscale(jglob)
+            scaled = dscale(jglob)
+            scalep = pscale(jglob)
+            scaleu = uscale(jglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+              scaleu = scaleu * fgrp
+            end if
+            dsc3 = scale3*scaled
+            dsc5 = scale5*scaled
+            dsc7 = scale7*scaled
+            dsc9 = scale9*scaled
+            psc3 = scale3*scalep
+            psc5 = scale5*scalep
+            psc7 = scale7*scalep
+            psc9 = scale9*scalep
             !mat
-            usc5 = scale5*uscale(jglob)
-            usc7 = scale7*uscale(jglob)
+            usc5 = scale5*scaleu
+            usc7 = scale7*scaleu
             srr3(1) = (1d0 - dsc3)*rrij3 - bn(1)
             srr3(2) = (1d0 - psc3)*rrij3 - bn(1)
             srr5(1) = (1d0 - dsc5)*rrij5 - bn(2)
@@ -3371,6 +3301,7 @@ c
       use couple
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -3381,21 +3312,14 @@ c
       use potent
       use shunt
       implicit none
-
-
       real*8, dimension(3,npolebloc), intent(in) :: a1, a2
       real*8, dimension(3,npolebloc), intent(in) :: e1, e2, e3,e4, d1,
      $                                               d2,d3,d4
       real*8, dimension(3,npolebloc), intent(out) :: adtb
       real*8, dimension(3,2,npolebloc), intent(out) :: adme, ade
       real*8, dimension(3,3,2,npolebloc), intent(out) :: adte
-      
       real*8, allocatable, dimension(:,:,:) ::adE_cor,admE_cor,admE_self
       real*8, allocatable, dimension(:,:,:,:) ::adtE_cor
-
-
-
-
       integer :: ii, iipole, iglob, i, jjpole, jglob,
      $           jjj, jbis, k, j
 
@@ -3409,6 +3333,7 @@ c
      $          d, rij2, damp, expdamp, pgamma, alsq2, term
 
       real*8                :: bn(0:4) 
+      real*8 fgrp,scaled,scalep,scaleu
       real*8, dimension(2)  :: srr3, srr5, srr7, srr9
       real*8, dimension(3)  :: rij, thetajr, thetair, di, dj
       real*8, dimension(3,3):: qi, qj
@@ -3563,6 +3488,7 @@ c
             jjpole = elst(jjj,ii)
             jglob = ipole(jjpole)
             jbis = poleloc(jjpole)
+            if (use_group)  call groups (fgrp,iglob,jglob,0,0,0,0)
             if (jbis.eq.0) then
                write(iout,1000)
                cycle
@@ -3663,17 +3589,25 @@ c
      $                     9d0*damp**3)/35d0)
                end if
             end if
-            dsc3 = scale3*dscale(jglob)
-            dsc5 = scale5*dscale(jglob)
-            dsc7 = scale7*dscale(jglob)
-            dsc9 = scale9*dscale(jglob)
-            psc3 = scale3*pscale(jglob)
-            psc5 = scale5*pscale(jglob)
-            psc7 = scale7*pscale(jglob)
-            psc9 = scale9*pscale(jglob)
+            scaled = dscale(jglob)
+            scalep = pscale(jglob)
+            scaleu = uscale(jglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+              scaleu = scaleu * fgrp
+            end if
+            dsc3 = scale3*scaled
+            dsc5 = scale5*scaled
+            dsc7 = scale7*scaled
+            dsc9 = scale9*scaled
+            psc3 = scale3*scalep
+            psc5 = scale5*scalep
+            psc7 = scale7*scalep
+            psc9 = scale9*scalep
             !mat
-            usc5 = scale5*uscale(jglob)
-            usc7 = scale7*uscale(jglob)
+            usc5 = scale5*scaleu
+            usc7 = scale7*scaleu
             srr3(1) = (1d0 - dsc3)*rrij3 - bn(1)
             srr3(2) = (1d0 - psc3)*rrij3 - bn(1)
             srr5(1) = (1d0 - dsc5)*rrij5 - bn(2)

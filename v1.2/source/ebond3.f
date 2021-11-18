@@ -25,6 +25,7 @@ c
       use bound
       use domdec
       use energi
+      use group
       use inform
       use iounit
       use usage
@@ -34,6 +35,7 @@ c
       real*8 expterm,bde
       real*8 dt,dt2
       real*8 xab,yab,zab,rab
+      real*8 fgrp
       logical proceed
       logical header,huge
 c
@@ -58,8 +60,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group)  call groups (fgrp,ia,ib,0,0,0,0)
 c
 c     compute the value of the bond length deviation
 c
@@ -87,6 +89,10 @@ c
                bde = 0.25d0 * bndunit * force
                e = bde * (1.0d0-expterm)**2
             end if
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group)  e = e * fgrp
 c
 c     increment the total bond energy and partition between atoms
 c

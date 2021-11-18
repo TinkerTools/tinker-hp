@@ -223,6 +223,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -267,6 +268,7 @@ c
       real*8 qrri,qrrk
       real*8 duik,quik
       real*8 term1,term2,term3
+      real*8 fgrp,scale
       real*8 bn(0:3)
       real*8, allocatable :: pscale(:)
       logical header,huge
@@ -333,6 +335,7 @@ c
          do kkk = 1, nelst(ii)
             kkpole = elst(kkk,ii)
             kglob = ipole(kkpole)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             k = loc(kglob)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
@@ -424,9 +427,11 @@ c
 c
 c     intermediates involving Thole damping and scale factors
 c
-               psr3 = rr3 * sc3 * pscale(kglob)
-               psr5 = rr5 * sc5 * pscale(kglob)
-               psr7 = rr7 * sc7 * pscale(kglob)
+               scale = pscale(kglob)
+               if (use_group)  scale = scale * fgrp
+               psr3 = rr3 * sc3 * scale
+               psr5 = rr5 * sc5 * scale
+               psr7 = rr7 * sc7 * scale
 c
 c     compute the full undamped energy for this interaction
 c
@@ -440,9 +445,9 @@ c
 c
 c     modify error function terms to account for scaling
 c
-               psc3 = 1.0d0 - sc3*pscale(kglob)
-               psc5 = 1.0d0 - sc5*pscale(kglob)
-               psc7 = 1.0d0 - sc7*pscale(kglob)
+               psc3 = 1.0d0 - sc3*scale
+               psc5 = 1.0d0 - sc5*scale
+               psc7 = 1.0d0 - sc7*scale
                psr3 = bn(1) - psc3*rr3
                psr5 = bn(2) - psc5*rr5
                psr7 = bn(3) - psc7*rr7
@@ -519,6 +524,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -565,6 +571,7 @@ c
       real*8 term1,term2,term3
       real*8 bn(0:3)
       real*8 s,ds
+      real*8 fgrp,scale
       real*8, allocatable :: pscale(:)
       logical header,huge
       character*10 mode
@@ -631,6 +638,7 @@ c
          do kkk = 1, nshortelst(ii)
             kkpole = shortelst(kkk,ii)
             kglob = ipole(kkpole)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             k = loc(kglob)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
@@ -722,9 +730,11 @@ c
 c
 c     intermediates involving Thole damping and scale factors
 c
-               psr3 = rr3 * sc3 * pscale(kglob)
-               psr5 = rr5 * sc5 * pscale(kglob)
-               psr7 = rr7 * sc7 * pscale(kglob)
+               scale = pscale(kglob)
+               if (use_group)  scale = scale * fgrp
+               psr3 = rr3 * sc3 * scale
+               psr5 = rr5 * sc5 * scale
+               psr7 = rr7 * sc7 * scale
 c
 c     compute the full undamped energy for this interaction
 c
@@ -738,9 +748,9 @@ c
 c
 c     modify error function terms to account for scaling
 c
-               psc3 = 1.0d0 - sc3*pscale(kglob)
-               psc5 = 1.0d0 - sc5*pscale(kglob)
-               psc7 = 1.0d0 - sc7*pscale(kglob)
+               psc3 = 1.0d0 - sc3*scale
+               psc5 = 1.0d0 - sc5*scale
+               psc7 = 1.0d0 - sc7*scale
                psr3 = bn(1) - psc3*rr3
                psr5 = bn(2) - psc5*rr5
                psr7 = bn(3) - psc7*rr7

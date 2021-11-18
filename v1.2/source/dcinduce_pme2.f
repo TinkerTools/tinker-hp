@@ -733,6 +733,7 @@ c
       real*8  zero, one, f50
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
+      real*8 fgrp,scale
       save    zero, one, f50
       data    zero/0.d0/, one/1.d0/, f50/50.d0/
       character*10 mode
@@ -797,6 +798,7 @@ c
           kbis = loc(kglob)
           kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           dx = x(kglob) - x(iglob)
           dy = y(kglob) - y(iglob)
           dz = z(kglob) - z(iglob)
@@ -828,8 +830,10 @@ c
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
 c
-            scale3 = dscale(kglob)
-            scale5 = dscale(kglob)
+            scale = dscale(kglob)
+            if (use_group)  scale = scale*fgrp
+            scale3 = scale
+            scale5 = scale
             damp = pdi*pdamp(kkpole)
             if (damp.ne.zero) then
               pgamma = min(pti,thole(kbis))

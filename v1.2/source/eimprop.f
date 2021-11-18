@@ -19,6 +19,7 @@ c
       use atoms
       use bound
       use energi
+      use group
       use improp
       use math
       use torpot
@@ -41,6 +42,7 @@ c
       real*8 xba,yba,zba
       real*8 xcb,ycb,zcb
       real*8 xdc,ydc,zdc
+      real*8 fgrp
       logical proceed
 c
 c
@@ -59,8 +61,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the improper dihedral angle
@@ -129,6 +130,10 @@ c
 c     calculate the improper dihedral energy
 c
                e = idihunit * force * dt**2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total improper dihedral energy
 c

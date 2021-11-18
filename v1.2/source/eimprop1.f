@@ -22,6 +22,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use improp
       use math
       use torpot
@@ -57,6 +58,7 @@ c
       real*8 dedxid,dedyid,dedzid
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       logical proceed
 c
 c
@@ -79,8 +81,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the improper dihedral angle
@@ -150,6 +152,13 @@ c     calculate improper energy and master chain rule term
 c
                e = idihunit * force * dt**2
                dedphi = 2.0d0 * radian * idihunit * force * dt
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c

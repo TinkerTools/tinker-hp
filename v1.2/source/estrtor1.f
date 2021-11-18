@@ -22,6 +22,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use strtor
       use torpot
       use tors
@@ -89,6 +90,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
@@ -182,6 +184,14 @@ c
                dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
                ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rba
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e1 = e1 * fgrp
+                  dedphi = dedphi * fgrp
+                  ddr = ddr * fgrp
+               end if
+c
 c     compute derivative components for this interaction
 c
                ddrdx = xba * ddr
@@ -226,6 +236,14 @@ c
                dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
                ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rcb
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e2 = e2 * fgrp
+                  dedphi = dedphi * fgrp
+                  ddr = ddr * fgrp
+               end if
+c
 c     compute derivative components for this interaction
 c
                ddrdx = xcb * ddr
@@ -269,6 +287,14 @@ c
                e3 = storunit * dr * (v1*phi1 + v2*phi2 + v3*phi3)
                dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
                ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rdc
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e3 = e3 * fgrp
+                  dedphi = dedphi * fgrp
+                  ddr = ddr * fgrp
+               end if
 c
 c     compute derivative components for this interaction
 c

@@ -200,6 +200,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use math
       use mpole
       use polar
@@ -240,6 +241,7 @@ c
       real*8 qrri,qrrk
       real*8 duik,quik
       real*8 term1,term2,term3
+      real*8 fgrp,scale
       real*8 bn(0:3)
       real*8, allocatable :: pscale(:)
       character*10 mode
@@ -307,6 +309,7 @@ c
             kkpole = elst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi
@@ -372,9 +375,11 @@ c
 c
 c     intermediates involving Thole damping and scale factors
 c
-               psc3 = 1.0d0 - sc3*pscale(kglob)
-               psc5 = 1.0d0 - sc5*pscale(kglob)
-               psc7 = 1.0d0 - sc7*pscale(kglob)
+               scale = pscale(kglob)
+               if (use_group)  scale = scale * fgrp
+               psc3 = 1.0d0 - sc3*scale
+               psc5 = 1.0d0 - sc5*scale
+               psc7 = 1.0d0 - sc7*scale
                psr3 = bn(1) - psc3*rr3
                psr5 = bn(2) - psc5*rr5
                psr7 = bn(3) - psc7*rr7
@@ -459,6 +464,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use math
       use mpole
       use polar
@@ -499,8 +505,8 @@ c
       real*8 qrri,qrrk
       real*8 duik,quik
       real*8 term1,term2,term3
+      real*8 fgrp,scale
       real*8 bn(0:3)
-
       real*8, allocatable :: pscale(:)
       character*10 mode
       external erfc
@@ -567,6 +573,7 @@ c
             kkpole = elst(kkk,ii)
             kglob = ipole(kkpole)
             kbis = loc(kglob)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi
@@ -632,9 +639,11 @@ c
 c
 c     intermediates involving Thole damping and scale factors
 c
-               psc3 = 1.0d0 - sc3*pscale(kglob)
-               psc5 = 1.0d0 - sc5*pscale(kglob)
-               psc7 = 1.0d0 - sc7*pscale(kglob)
+               scale = pscale(kglob)
+               if (use_group)  scale = scale * fgrp
+               psc3 = 1.0d0 - sc3*scale
+               psc5 = 1.0d0 - sc5*scale
+               psc7 = 1.0d0 - sc7*scale
                psr3 = bn(1) - psc3*rr3
                psr5 = bn(2) - psc5*rr5
                psr7 = bn(3) - psc7*rr7

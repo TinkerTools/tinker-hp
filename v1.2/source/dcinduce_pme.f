@@ -641,6 +641,7 @@ c
       use divcon
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -671,6 +672,7 @@ c
       real*8 fkd(3), fkp(3), fkm(3)
       real*8 bcn(2),invpol
       real*8 erfc, cutoff2
+      real*8 fgrp,scaled,scalep,scaleu
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
       real*8, allocatable :: uscale(:)
@@ -786,6 +788,7 @@ c
           kglob = elst(kkk,ii)
           kkpole = pollist(kglob)
           kbis = poleloc(kglob)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if (kbis.eq.0) then
             write(iout,1000)
             cycle
@@ -840,12 +843,20 @@ c
      &                      *(one-damp + pt6*damp**2)
               end if
             end if
-            dsc3 = scale3 * dscale(kglob)
-            dsc5 = scale5 * dscale(kglob)
-            dsc7 = scale7 * dscale(kglob)
-            psc3 = scale3 * pscale(kglob)
-            psc5 = scale5 * pscale(kglob)
-            psc7 = scale7 * pscale(kglob)
+            scaled = dscale(kglob)
+            scalep = pscale(kglob)
+            scaleu = uscale(kglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+              scaleu = scaleu * fgrp
+            end if
+            dsc3 = scale3 * scaled
+            dsc5 = scale5 * scaled
+            dsc7 = scale7 * scaled
+            psc3 = scale3 * scalep
+            psc5 = scale5 * scalep
+            psc7 = scale7 * scalep
             drr3 = (1.0d0-dsc3) / (d*d2)
             drr5 = 3.0d0 * (1.0d0-dsc5) / (d*d2*d2)
             drr7 = 15.0d0 * (1.0d0-dsc7) / (d*d2*d2*d2)
@@ -917,9 +928,9 @@ c
             ef(3,2,kbis) = ef(3,2,kbis) + fkm(3) - fkp(3)
 
             bcn(1) = bn(1) - 
-     & (1.0d0 - scale3*uscale(kglob))/ (d*d2)
+     & (1.0d0 - scale3*scaleu)/ (d*d2)
             bcn(2) = bn(2) - 
-     & 3.0d0*(1.0d0 - scale5*uscale(kglob))/ (d*d2*d2)
+     & 3.0d0*(1.0d0 - scale5*scaleu)/ (d*d2*d2)
 
             if(l .eq. grplst(kglob) .and. l .ne. -1 ) then
               atii = (atmofst(iglob) - 1)*3
@@ -1025,6 +1036,7 @@ c
       use divcon
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -1055,6 +1067,7 @@ c
       real*8 fkd(3), fkp(3), fkm(3)
       real*8 bcn(2),invpol
       real*8 erfc, cutoff2
+      real*8 fgrp,scaled,scalep,scaleu
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
       real*8, allocatable :: uscale(:)
@@ -1170,6 +1183,7 @@ c
           kglob = elst(kkk,ii)
           kkpole = pollist(kglob)
           kbis = poleloc(kglob)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if (kbis.eq.0) then
             write(iout,1000)
             cycle
@@ -1224,12 +1238,20 @@ c
      &                      *(one-damp + pt6*damp**2)
               end if
             end if
-            dsc3 = scale3 * dscale(kglob)
-            dsc5 = scale5 * dscale(kglob)
-            dsc7 = scale7 * dscale(kglob)
-            psc3 = scale3 * pscale(kglob)
-            psc5 = scale5 * pscale(kglob)
-            psc7 = scale7 * pscale(kglob)
+            scaled = dscale(kglob)
+            scalep = pscale(kglob)
+            scaleu = uscale(kglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+              scaleu = scaleu * fgrp
+            end if
+            dsc3 = scale3 * scaled
+            dsc5 = scale5 * scaled
+            dsc7 = scale7 * scaled
+            psc3 = scale3 * scalep
+            psc5 = scale5 * scalep
+            psc7 = scale7 * scalep
             drr3 = (1.0d0-dsc3) / (d*d2)
             drr5 = 3.0d0 * (1.0d0-dsc5) / (d*d2*d2)
             drr7 = 15.0d0 * (1.0d0-dsc7) / (d*d2*d2*d2)
@@ -1301,9 +1323,9 @@ c
             ef(3,2,kbis) = ef(3,2,kbis) + fkm(3) - fkp(3)
 
             bcn(1) = bn(1) - 
-     & (1.0d0 - scale3*uscale(kglob))/ (d*d2)
+     & (1.0d0 - scale3*scaleu)/ (d*d2)
             bcn(2) = bn(2) - 
-     & 3.0d0*(1.0d0 - scale5*uscale(kglob))/ (d*d2*d2)
+     & 3.0d0*(1.0d0 - scale5*scaleu)/ (d*d2*d2)
 
             if(l .eq. grplst(kglob) .and. l .ne. -1 ) then
               atii = (atmofst(iglob) - 1)*3
@@ -1433,7 +1455,6 @@ c
       use divcon
       use domdec
       use ewald
-      use group
       use math
       use mpole
       use neigh
@@ -1607,6 +1628,7 @@ c
       real*8  zero, one, f50
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
+      real*8  fgrp,scale
       save    zero, one, f50
       data    zero/0.d0/, one/1.d0/, f50/50.d0/
       character*10 mode
@@ -1663,6 +1685,7 @@ c
 c
         do kkk = 1,nelst(ii)
           kglob = elst(kkk,ii)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     only build induced field for interactons outside of a block
 c     check if the atoms are in the same block
@@ -1703,8 +1726,11 @@ c
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
 c
-            scale3 = dscale(kglob)
-            scale5 = dscale(kglob)
+            scale = dscale(kglob)
+            if (use_group)  scale = scale * fgrp
+
+            scale3 = scale
+            scale5 = scale
             damp = pdi*pdamp(kkpole)
             if (damp.ne.zero) then
               pgamma = min(pti,thole(kbis))
@@ -1818,6 +1844,7 @@ c
       use divcon
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -1848,6 +1875,7 @@ c
       real*8 fkd(3), fkp(3), fkm(3)
       real*8 bcn(2),invpol
       real*8 erfc, cutoff2
+      real*8  fgrp,scaled,scalep
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
       save   zero, pt6, one, f50
@@ -1944,6 +1972,7 @@ c
           kglob = elst(kkk,ii)
           kkpole = pollist(kglob)
           kbis = poleloc(kglob)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if (kbis.eq.0) then
             write(iout,1000)
             cycle
@@ -1998,12 +2027,18 @@ c
      &                      *(one-damp + pt6*damp**2)
               end if
             end if
-            dsc3 = scale3 * dscale(kglob)
-            dsc5 = scale5 * dscale(kglob)
-            dsc7 = scale7 * dscale(kglob)
-            psc3 = scale3 * pscale(kglob)
-            psc5 = scale5 * pscale(kglob)
-            psc7 = scale7 * pscale(kglob)
+            scaled = dscale(kglob)
+            scalep = pscale(kglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+            end if
+            dsc3 = scale3 * scaled
+            dsc5 = scale5 * scaled
+            dsc7 = scale7 * scaled
+            psc3 = scale3 * scalep
+            psc5 = scale5 * scalep
+            psc7 = scale7 * scalep
             drr3 = (1.0d0-dsc3) / (d*d2)
             drr5 = 3.0d0 * (1.0d0-dsc5) / (d*d2*d2)
             drr7 = 15.0d0 * (1.0d0-dsc7) / (d*d2*d2*d2)
@@ -2076,6 +2111,10 @@ c
 
             if(l .eq. grplst(kglob) .and. l .ne. -1 ) then
 
+              if (use_group) then
+                scale3 = scale3*fgrp
+                scale5 = scale5*fgrp
+              end if
               bcn(1) = bn(1) - (1.0d0 - scale3)/ (d*d2)
               bcn(2) = bn(2) - 3.0d0*(1.0d0 - scale5)/ (d*d2*d2)
               atii = (atmofst(iglob) - 1)*3
@@ -2155,6 +2194,7 @@ c
       use divcon
       use domdec
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -2185,6 +2225,7 @@ c
       real*8 fkd(3), fkp(3), fkm(3)
       real*8 bcn(2),invpol
       real*8 erfc, cutoff2
+      real*8  fgrp,scaled,scalep
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
       save   zero, pt6, one, f50
@@ -2281,6 +2322,7 @@ c
           kglob = elst(kkk,ii)
           kkpole = pollist(kglob)
           kbis = poleloc(kglob)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if (kbis.eq.0) then
             write(iout,1000)
             cycle
@@ -2335,12 +2377,18 @@ c
      &                      *(one-damp + pt6*damp**2)
               end if
             end if
-            dsc3 = scale3 * dscale(kglob)
-            dsc5 = scale5 * dscale(kglob)
-            dsc7 = scale7 * dscale(kglob)
-            psc3 = scale3 * pscale(kglob)
-            psc5 = scale5 * pscale(kglob)
-            psc7 = scale7 * pscale(kglob)
+            scaled = dscale(kglob)
+            scalep = pscale(kglob)
+            if (use_group)  then
+              scaled = scaled * fgrp
+              scalep = scalep * fgrp
+            end if
+            dsc3 = scale3 * scaled
+            dsc5 = scale5 * scaled
+            dsc7 = scale7 * scaled
+            psc3 = scale3 * scalep
+            psc5 = scale5 * scalep
+            psc7 = scale7 * scalep
             drr3 = (1.0d0-dsc3) / (d*d2)
             drr5 = 3.0d0 * (1.0d0-dsc5) / (d*d2*d2)
             drr7 = 15.0d0 * (1.0d0-dsc7) / (d*d2*d2*d2)
@@ -2412,7 +2460,10 @@ c
             ef(3,2,kbis) = ef(3,2,kbis) + fkm(3) - fkp(3)
 
             if(l .eq. grplst(kglob) .and. l .ne. -1 ) then
-
+              if (use_group) then
+                scale3 = scale3*fgrp
+                scale5 = scale5*fgrp
+              end if
               bcn(1) = bn(1) - (1.0d0 - scale3)/ (d*d2)
               bcn(2) = bn(2) - 3.0d0*(1.0d0 - scale5)/ (d*d2*d2)
               atii = (atmofst(iglob) - 1)*3
@@ -2504,8 +2555,6 @@ c
 c
       allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
       allocate (req(nproc*nproc))
-c      write(*,*) 'n_recep1=',n_recep1,'p_recep1=',p_recep1
-c      write(*,*) 'n_send1=',n_send1,'p_send1=',p_send1
 c
       do i = 1, n_send1
         tag = nproc*rank + p_send1(i) + 1
@@ -2570,9 +2619,6 @@ c
 c
       allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
       allocate (req(nproc*nproc))
-c      write(*,*) 'n_recep1=',n_recep1,'p_recep1=',p_recep1
-c      write(*,*) 'n_send1=',n_send1,'p_send1=',p_send1
-c
       do i = 1, n_sendshort1
         tag = nproc*rank + p_sendshort1(i) + 1
         call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_REAL8,

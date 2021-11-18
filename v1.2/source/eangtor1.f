@@ -94,7 +94,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-c         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
@@ -191,14 +191,14 @@ c
                e1 = atorunit * dt * (v1*phi1 + v2*phi2 + v3*phi3)
                dedphi = atorunit * dt * (v1*dphi1 + v2*dphi2 + v3*dphi3)
                ddt = atorunit * radian * (v1*phi1 + v2*phi2 + v3*phi3)
-cc
-cc     scale the interaction based on its group membership
-cc
-c               if (use_group) then
-c                  e1 = e1 * fgrp
-c                  dedphi = dedphi * fgrp
-c                  ddt = ddt * fgrp
-c               end if
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e1 = e1 * fgrp
+                  dedphi = dedphi * fgrp
+                  ddt = ddt * fgrp
+               end if
 c
 c     compute derivative components for this interaction
 c
@@ -248,14 +248,14 @@ c
                e2 = atorunit * dt * (v1*phi1 + v2*phi2 + v3*phi3)
                dedphi = atorunit * dt * (v1*dphi1 + v2*dphi2 + v3*dphi3)
                ddt = atorunit * radian * (v1*phi1 + v2*phi2 + v3*phi3)
-cc
-cc     scale the interaction based on its group membership
-cc
-c               if (use_group) then
-c                  e2 = e2 * fgrp
-c                  dedphi = dedphi * fgrp
-c                  ddt = ddt * fgrp
-c               end if
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e2 = e2 * fgrp
+                  dedphi = dedphi * fgrp
+                  ddt = ddt * fgrp
+               end if
 c
 c     compute derivative components for this interaction
 c

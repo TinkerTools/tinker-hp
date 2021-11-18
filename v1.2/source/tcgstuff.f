@@ -295,6 +295,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use group
       use math
       use mpole
       use neigh
@@ -323,6 +324,7 @@ c
       real*8 bn(0:3), fid(3,2), fip(3,2), fimd(3,2), fimp(3,2)
       real*8 fkd(3,2), fkp(3,2), fkmd(3,2), fkmp(3,2)
       real*8  zero, one, f50
+      real*8  fgrp,scale
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
       save    zero, one, f50
@@ -390,6 +392,7 @@ c
           kkpole = elst(kkk,inl)
           kkpoleloc = poleloc(kkpole)
           kglob = ipole(kkpole)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if (kkpoleloc.eq.0) cycle
           dx = x(kglob) - x(iglob)
           dy = y(kglob) - y(iglob)
@@ -427,9 +430,11 @@ c
               alsq2n = alsq2 * alsq2n
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
+            scale = dscale(kglob)
+            if (use_group)  scale = scale * fgrp
 c
-            scale3 = dscale(kglob)
-            scale5 = dscale(kglob)
+            scale3 = scale
+            scale5 = scale
             damp = pdi*pdamp(kkpole)
             if (damp.ne.zero) then
               pgamma = min(pti,thole(kkpole))

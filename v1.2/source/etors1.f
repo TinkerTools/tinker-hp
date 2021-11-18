@@ -40,6 +40,7 @@ c
       use deriv
       use domdec
       use energi
+      use group
       use torpot
       use tors
       use usage
@@ -81,6 +82,7 @@ c
       real*8 dedxid,dedyid,dedzid
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
+      real*8 fgrp
       logical proceed
 c
 c
@@ -103,8 +105,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
@@ -205,6 +207,13 @@ c
      &                            + v4*phi4 + v5*phi5 + v6*phi6)
                dedphi = torsunit * (v1*dphi1 + v2*dphi2 + v3*dphi3
      &                                 + v4*dphi4 + v5*dphi5 + v6*dphi6)
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c

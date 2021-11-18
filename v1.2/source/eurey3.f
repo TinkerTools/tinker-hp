@@ -23,6 +23,7 @@ c
       use bound
       use domdec
       use energi
+      use group
       use inform
       use iounit
       use urey
@@ -34,6 +35,7 @@ c
       real*8 e,ideal,force
       real*8 dt,dt2
       real*8 xac,yac,zac,rac
+      real*8 fgrp
       logical proceed
       logical header,huge
 c
@@ -59,8 +61,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ic))
+         if (use_group)  call groups (fgrp,ia,ic,0,0,0,0)
+         proceed = (use(ia) .or. use(ic))
 c
 c     compute the value of the 1-3 distance deviation
 c
@@ -76,6 +78,10 @@ c
 c     calculate the Urey-Bradley energy for this interaction
 c
             e = ureyunit * force * dt2 * (1.0d0+cury*dt+qury*dt2)
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group)  e = e * fgrp
 c
 c     increment the total Urey-Bradley energy
 c
