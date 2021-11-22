@@ -48,6 +48,8 @@ c
       real*8, allocatable :: vtemp(:,:),postemp(:,:),atemp(:,:)
       real*8, allocatable :: aalttemp(:,:)
       integer, allocatable :: bufbegsave(:),globsave(:)
+      real*8, allocatable :: uindtemp(:,:)
+      integer, allocatable :: bufbegpolesave(:),globpolesave(:)
       integer req(nproc*nproc)
       integer iproc,ierr
       integer tagmpi,iglob,status(MPI_STATUS_SIZE)
@@ -81,6 +83,10 @@ c
         atemp = 0d0
         allocate (aalttemp(3,nloc))
         aalttemp = 0d0
+        if (uindsave .and. use_polar) then
+          allocate (uindtemp(3,nloc))
+          uindtemp = 0d0
+        end if
       else
         allocate (postemp(3,n))
         postemp = 0d0
@@ -90,6 +96,14 @@ c
         atemp = 0d0
         allocate (aalttemp(3,n))
         aalttemp = 0d0
+        if (uindsave .and. use_polar) then
+          allocate (uindtemp(3,n))
+          uindtemp = 0d0
+          allocate (bufbegpolesave(nproc))
+          bufbegpolesave = 0
+          allocate (globpolesave(n))
+          globpolesave = 0
+        end if
         allocate (bufbegsave(nproc))
         bufbegsave = 0
         allocate (globsave(n))
@@ -114,6 +128,14 @@ c
           aalttemp(2,i) = aalt(2,iglob)
           aalttemp(3,i) = aalt(3,iglob)
         end do
+        if (uindsave .and. use_polar) then
+          do i = 1, npoleloc
+            iglob = poleglob(i)
+            uindtemp(1,i) = uind(1,iglob)
+            uindtemp(2,i) = uind(2,iglob)
+            uindtemp(3,i) = uind(3,iglob)
+          end do
+        end if
       end if
 c
 c    master get size of all domains
@@ -133,6 +155,25 @@ c
         call MPI_ISEND(domlen(rank+1),1,MPI_INT,0,tagmpi,
      $   COMM_TINKER,req(tagmpi),ierr)
         call MPI_WAIT(req(tagmpi),status,ierr)
+      end if
+
+      if (uindsave .and. use_polar) then
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(domlenpole(iproc+1),1,MPI_INT,iproc,tagmpi,
+     $       COMM_TINKER,req(tagmpi),ierr)
+          end do
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(domlenpole(rank+1),1,MPI_INT,0,tagmpi,
+     $     COMM_TINKER,req(tagmpi),ierr)
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
       end if
 c
 c     master get all the indexes
@@ -162,6 +203,36 @@ c
         call MPI_ISEND(glob,domlen(rank+1),MPI_INT,0,
      $   tagmpi,COMM_TINKER,req(tagmpi),ierr)
         call MPI_WAIT(req(tagmpi),status,ierr)
+      end if
+
+      if (uindsave .and. use_polar) then
+        if (rank.eq.0) then
+          count = domlenpole(rank+1)
+          do iproc = 1, nproc-1
+            if (domlenpole(iproc+1).ne.0) then
+              bufbegpolesave(iproc+1) = count + 1
+              count = count + domlenpole(iproc+1)
+            else
+              bufbegpolesave(iproc+1) = 1
+            end if
+          end do
+c
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(globpolesave(bufbegpolesave(iproc+1)),
+     $       domlenpole(iproc+1),MPI_INT,iproc,tagmpi,COMM_TINKER,
+     $       req(tagmpi),ierr)
+          end do
+          do iproc = 1, nproc-1
+            tagmpi = nproc*rank + iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(poleglob,domlenpole(rank+1),MPI_INT,0,
+     $     tagmpi,COMM_TINKER,req(tagmpi),ierr)
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
       end if
 c
 c    send them to the master
@@ -248,6 +319,30 @@ c
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
+
+      if (uindsave .and. use_polar) then
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(uindtemp(1,bufbegpolesave(iproc+1)),
+     $       3*domlenpole(iproc+1),
+     $       MPI_REAL8,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(uindtemp,3*npoleloc,MPI_REAL8,0,tagmpi,
+     $    COMM_TINKER,req(tagmpi),ierr)
+        end if
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
+      end if
 c
 c     put the array in global order to be written
 c
@@ -276,6 +371,17 @@ c
               aalt(3,iglob) = aalttemp(3,iloc)
             end if
           end do
+          if (uindsave .and. use_polar) then
+            do i = 1, domlenpole(iproc+1)
+              if (domlenpole(iproc+1).ne.0) then
+                iloc = bufbegpolesave(iproc+1)+i-1
+                iglob = globpolesave(iloc)
+                uind(1,iglob) = uindtemp(1,iloc)
+                uind(2,iglob) = uindtemp(2,iloc)
+                uind(3,iglob) = uindtemp(3,iloc)
+              end if
+            end do
+          end if
         end do
       end if
       deallocate (postemp)
@@ -283,6 +389,7 @@ c
       deallocate (vtemp)
       deallocate (atemp)
       deallocate (aalttemp)
+      if (uindsave .and. use_polar) deallocate (uindtemp)
       if (rank.ne.0) return
 c
 c     get the sequence number of the current trajectory frame
@@ -339,7 +446,6 @@ c
         write (iout,70)  xyzfile(1:trimtext(xyzfile))
    70   format (' Coordinate File',12x,a)
       end if
-c      call netcdfamber(istep,dt)
 c
 c     save the velocity vector components at the current step
 c
@@ -383,13 +489,16 @@ c
             else
                open (unit=ifrc,file=frcfile,status='new')
             end if
+         else
+            frcfile = filename(1:leng)//'.'//ext(1:lext)//'f'
+            call version (frcfile,'new')
+            open (unit=ifrc,file=frcfile,status='new')
          end if
          write (ifrc,140)  n,title(1:ltitle)
   140    format (i6,2x,a)
-         do i = 1, nloc
-            iglob = glob(i)
-            wt = mass(iglob) / convert
-            write (ifrc,150)  iglob,name(iglob),(wt*a(j,iglob),j=1,3)
+         do i = 1, n
+            wt = mass(i) / convert
+            write (ifrc,150)  i,name(i),(wt*a(j,i),j=1,3)
   150       format (i6,2x,a3,3x,d13.6,3x,d13.6,3x,d13.6)
          end do
          close (unit=ifrc)
@@ -417,11 +526,10 @@ c
          end if
          write (iind,170)  n,title(1:ltitle)
   170    format (i6,2x,a)
-         do i = 1, npoleloc
-            iipole = poleglob(i)
-            if (polarity(iipole) .ne. 0.0d0) then
-               k = ipole(iipole)
-               write (iind,180)  k,name(k),(debye*uind(j,iipole),j=1,3)
+         do i = 1, npole
+            if (polarity(i) .ne. 0.0d0) then
+               k = ipole(i)
+               write (iind,180)  k,name(k),(debye*uind(j,i),j=1,3)
   180          format (i6,2x,a3,3f12.6)
             end if
          end do
