@@ -111,11 +111,7 @@ c
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
      $   then
         if (use_preal) then
-          if (use_polarshortreal) then
-            call eprealshort0c
-          else
-            call epreal0c
-          end if
+          call epreal0c
         end if
 
         if (use_pself) then
@@ -190,270 +186,9 @@ c     "epreal0c" calculates the induced dipole polarization energy
 c     using particle mesh Ewald summation and a neighbor list
 c
 c
+c     if shortrange, calculates just the short range part
+c
       subroutine epreal0c
-      use sizes
-      use atmlst
-      use atoms
-      use bound
-      use chgpot
-      use couple
-      use domdec
-      use energi
-      use ewald
-      use group
-      use math
-      use mpole
-      use polar
-      use polgrp
-      use polpot
-      use neigh
-      use potent
-      use shunt
-      use mpi
-      implicit none
-      integer i,j,k
-      integer ii,kkk,iipole,kkpole
-      integer iglob,kglob,kbis
-      real*8 e,f
-      real*8 damp,expdamp
-      real*8 erfc,bfac
-      real*8 alsq2,alsq2n
-      real*8 exp2a,ralpha
-      real*8 pdi,pti,pgamma
-      real*8 sc3,sc5,sc7
-      real*8 psc3,psc5,psc7
-      real*8 psr3,psr5,psr7
-      real*8 xi,yi,zi
-      real*8 xr,yr,zr
-      real*8 r,r2,rr1
-      real*8 rr3,rr5,rr7
-      real*8 ci,dix,diy,diz
-      real*8 qixx,qixy,qixz
-      real*8 qiyy,qiyz,qizz
-      real*8 uix,uiy,uiz
-      real*8 ck,dkx,dky,dkz
-      real*8 qkxx,qkxy,qkxz
-      real*8 qkyy,qkyz,qkzz
-      real*8 ukx,uky,ukz
-      real*8 dri,drk,uri,urk
-      real*8 qrix,qriy,qriz
-      real*8 qrkx,qrky,qrkz
-      real*8 qrri,qrrk
-      real*8 duik,quik
-      real*8 term1,term2,term3
-      real*8 fgrp,scale
-      real*8 bn(0:3)
-      real*8, allocatable :: pscale(:)
-      character*10 mode
-      external erfc
-c
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (pscale(n))
-c
-c     initialize connected atom exclusion coefficients
-c
-      pscale = 1.0d0
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = 0.5d0 * electric / dielec
-      mode = 'MPOLE'
-      call switch (mode)
-c
-c     compute the dipole polarization energy component
-c
-      do ii = 1, npolelocnl
-         iipole = poleglobnl(ii)
-         iglob = ipole(iipole)
-         i = loc(iglob)
-         pdi = pdamp(iipole)
-         pti = thole(iipole)
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         ci = rpole(1,iipole)
-         dix = rpole(2,iipole)
-         diy = rpole(3,iipole)
-         diz = rpole(4,iipole)
-         qixx = rpole(5,iipole)
-         qixy = rpole(6,iipole)
-         qixz = rpole(7,iipole)
-         qiyy = rpole(9,iipole)
-         qiyz = rpole(10,iipole)
-         qizz = rpole(13,iipole)
-         uix = uind(1,iipole)
-         uiy = uind(2,iipole)
-         uiz = uind(3,iipole)
-         do j = 1, n12(iglob)
-            pscale(i12(j,iglob)) = p2scale
-         end do
-         do j = 1, n13(iglob)
-            pscale(i13(j,iglob)) = p3scale
-         end do
-         do j = 1, n14(iglob)
-            pscale(i14(j,iglob)) = p4scale
-            do k = 1, np11(iglob)
-                if (i14(j,iglob) .eq. ip11(k,iglob))
-     &            pscale(i14(j,iglob)) = p4scale * p41scale
-            end do
-         end do
-         do j = 1, n15(iglob)
-            pscale(i15(j,iglob)) = p5scale
-         end do
-c
-c     evaluate all sites within the cutoff distance
-c
-         do kkk = 1, nelst(ii)
-            kkpole = elst(kkk,ii)
-            kglob = ipole(kkpole)
-            kbis = loc(kglob)
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
-            xr = x(kglob) - xi
-            yr = y(kglob) - yi
-            zr = z(kglob) - zi
-            if (use_bounds)  call image (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
-               r = sqrt(r2)
-               ck = rpole(1,kkpole)
-               dkx = rpole(2,kkpole)
-               dky = rpole(3,kkpole)
-               dkz = rpole(4,kkpole)
-               qkxx = rpole(5,kkpole)
-               qkxy = rpole(6,kkpole)
-               qkxz = rpole(7,kkpole)
-               qkyy = rpole(9,kkpole)
-               qkyz = rpole(10,kkpole)
-               qkzz = rpole(13,kkpole)
-               ukx = uind(1,kkpole)
-               uky = uind(2,kkpole)
-               ukz = uind(3,kkpole)
-c
-c     get reciprocal distance terms for this interaction
-c
-               rr1 = f / r
-               rr3 = rr1 / r2
-               rr5 = 3.0d0 * rr3 / r2
-               rr7 = 5.0d0 * rr5 / r2
-c
-c     calculate the real space Ewald error function terms
-c
-               ralpha = aewald * r
-               bn(0) = erfc(ralpha) / r
-               alsq2 = 2.0d0 * aewald**2
-               alsq2n = 0.0d0
-               if (aewald .gt. 0.0d0)  alsq2n = 1.0d0 / (sqrtpi*aewald)
-               exp2a = exp(-ralpha**2)
-               do j = 1, 3
-                  bfac = dble(j+j-1)
-                  alsq2n = alsq2 * alsq2n
-                  bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / r2
-               end do
-               do j = 0, 3
-                  bn(j) = f * bn(j)
-               end do
-c
-c     apply Thole polarization damping to scale factors
-c
-               sc3 = 1.0d0
-               sc5 = 1.0d0
-               sc7 = 1.0d0
-               damp = pdi * pdamp(kkpole)
-               if (damp .ne. 0.0d0) then
-                  pgamma = min(pti,thole(kkpole))
-                  damp = -pgamma * (r/damp)**3
-                  if (damp .gt. -50.0d0) then
-                     expdamp = exp(damp)
-                     sc3 = 1.0d0 - expdamp
-                     sc5 = 1.0d0 - (1.0d0-damp)*expdamp
-                     sc7 = 1.0d0 - (1.0d0-damp+0.6d0*damp**2)
-     &                                    *expdamp
-                  end if
-               end if
-c
-c     intermediates involving Thole damping and scale factors
-c
-               scale = pscale(kglob)
-               if (use_group)  scale = scale * fgrp
-               psc3 = 1.0d0 - sc3*scale
-               psc5 = 1.0d0 - sc5*scale
-               psc7 = 1.0d0 - sc7*scale
-               psr3 = bn(1) - psc3*rr3
-               psr5 = bn(2) - psc5*rr5
-               psr7 = bn(3) - psc7*rr7
-c
-c     intermediates involving moments and distance separation
-c
-               dri = dix*xr + diy*yr + diz*zr
-               drk = dkx*xr + dky*yr + dkz*zr
-               qrix = qixx*xr + qixy*yr + qixz*zr
-               qriy = qixy*xr + qiyy*yr + qiyz*zr
-               qriz = qixz*xr + qiyz*yr + qizz*zr
-               qrkx = qkxx*xr + qkxy*yr + qkxz*zr
-               qrky = qkxy*xr + qkyy*yr + qkyz*zr
-               qrkz = qkxz*xr + qkyz*yr + qkzz*zr
-               qrri = qrix*xr + qriy*yr + qriz*zr
-               qrrk = qrkx*xr + qrky*yr + qrkz*zr
-               uri = uix*xr + uiy*yr + uiz*zr
-               urk = ukx*xr + uky*yr + ukz*zr
-               duik = dix*ukx + diy*uky + diz*ukz
-     &                   + dkx*uix + dky*uiy + dkz*uiz
-               quik = qrix*ukx + qriy*uky + qriz*ukz
-     &                   - qrkx*uix - qrky*uiy - qrkz*uiz
-c
-c     calculate intermediate terms for polarization interaction
-c
-               term1 = ck*uri - ci*urk + duik
-               term2 = 2.0d0*quik - uri*drk - dri*urk
-               term3 = uri*qrrk - urk*qrri
-c
-c     compute the energy contribution for this interaction
-c
-               e = term1*psr3 + term2*psr5 + term3*psr7
-c
-c     increment the overall polarization energy components
-c
-               ep = ep + e
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            pscale(i12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n13(iglob)
-            pscale(i13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n14(iglob)
-            pscale(i14(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n15(iglob)
-            pscale(i15(j,iglob)) = 1.0d0
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (pscale)
-      return
-      end
-c
-c
-c     ##################################################################################
-c     ##                                                                              ##
-c     ##  subroutine eprealshort0c  --  short range real space polar energy via list  ##
-c     ##                                                                              ##
-c     ##################################################################################
-c
-c
-c     "epreal0c" calculates the short range real space induced dipole polarization energy
-c     using particle mesh Ewald summation and a neighbor list
-c
-c
-      subroutine eprealshort0c
       use sizes
       use atmlst
       use atoms
@@ -467,30 +202,29 @@ c
       use group
       use math
       use mpole
+      use neigh
       use polar
       use polgrp
       use polpot
-      use neigh
       use potent
       use shunt
       use mpi
       implicit none
-      integer i,j,k
+      integer i,j,k,iglob,kglob,kbis,nnelst
       integer ii,kkk,iipole,kkpole
-      integer iglob,kglob,kbis
       real*8 e,f
-      real*8 damp,expdamp
       real*8 erfc,bfac
       real*8 alsq2,alsq2n
       real*8 exp2a,ralpha
+      real*8 damp,expdamp
       real*8 pdi,pti,pgamma
       real*8 sc3,sc5,sc7
       real*8 psc3,psc5,psc7
       real*8 psr3,psr5,psr7
       real*8 xi,yi,zi
       real*8 xr,yr,zr
-      real*8 r,r2,rr1
-      real*8 rr3,rr5,rr7
+      real*8 r,r2,rr1,rr3
+      real*8 rr5,rr7
       real*8 ci,dix,diy,diz
       real*8 qixx,qixy,qixz
       real*8 qiyy,qiyz,qizz
@@ -505,11 +239,33 @@ c
       real*8 qrri,qrrk
       real*8 duik,quik
       real*8 term1,term2,term3
-      real*8 fgrp,scale
       real*8 bn(0:3)
+      real*8 fgrp,scale
+      logical testcut,shortrange,longrange,fullrange
       real*8, allocatable :: pscale(:)
       character*10 mode
+      character*80 :: RoutineName
       external erfc
+
+
+
+c     compute the short, or full real space part of the summation
+      shortrange = use_polarshortreal
+      longrange  = .false.
+      fullrange  = .not.(shortrange.or.longrange)
+
+      if (shortrange) then 
+         RoutineName = 'eprealshort0c'
+         mode        = 'SHORTEWALD'
+      else if (longrange) then
+         RoutineName = 'epreallong0c'
+         mode        = 'EWALD'
+      else
+         RoutineName = 'epreal0c'
+         mode        = 'MPOLE'
+      endif
+
+
 c
 c
 c     perform dynamic allocation of some local arrays
@@ -523,7 +279,7 @@ c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = 0.5d0 * electric / dielec
-      mode = 'SHORTEWALD'
+c     mode = 'MPOLE'
       call switch (mode)
 c
 c     compute the dipole polarization energy component
@@ -569,11 +325,18 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         do kkk = 1, nelst(ii)
-            kkpole = elst(kkk,ii)
+         nnelst = merge(nshortelst(ii),
+     &                  nelst     (ii),
+     &                  shortrange
+     &                 )
+         do kkk = 1, nnelst
+            kkpole = merge(shortelst(kkk,ii),
+     &                     elst     (kkk,ii),
+     &                     shortrange
+     &                   )
             kglob = ipole(kkpole)
-            kbis = loc(kglob)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+            kbis = loc(kglob)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi
@@ -637,17 +400,6 @@ c
                   end if
                end if
 c
-c     intermediates involving Thole damping and scale factors
-c
-               scale = pscale(kglob)
-               if (use_group)  scale = scale * fgrp
-               psc3 = 1.0d0 - sc3*scale
-               psc5 = 1.0d0 - sc5*scale
-               psc7 = 1.0d0 - sc7*scale
-               psr3 = bn(1) - psc3*rr3
-               psr5 = bn(2) - psc5*rr5
-               psr7 = bn(3) - psc7*rr7
-c
 c     intermediates involving moments and distance separation
 c
                dri = dix*xr + diy*yr + diz*zr
@@ -672,6 +424,17 @@ c
                term1 = ck*uri - ci*urk + duik
                term2 = 2.0d0*quik - uri*drk - dri*urk
                term3 = uri*qrrk - urk*qrri
+c
+c     intermediates involving Thole damping and scale factors
+c
+               scale = pscale(kglob)
+               if (use_group)  scale = scale * fgrp
+               psc3 = 1.0d0 - sc3*scale
+               psc5 = 1.0d0 - sc5*scale
+               psc7 = 1.0d0 - sc7*scale
+               psr3 = bn(1) - psc3*rr3
+               psr5 = bn(2) - psc5*rr5
+               psr7 = bn(3) - psc7*rr7
 c
 c     compute the energy contribution for this interaction
 c
@@ -704,6 +467,9 @@ c
       deallocate (pscale)
       return
       end
+c
+c
+c
 c
 c     ###################################################################
 c     ##                                                               ##

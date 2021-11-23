@@ -130,11 +130,7 @@ c
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
      $   then
         if (use_preal) then
-          if (use_polarshortreal) then
-            call eprealshort1c
-          else
-            call epreal1c
-          end if
+          call epreal1c
         end if
 
         if (use_pself) then
@@ -292,766 +288,6 @@ c
            end if
         end if
       end if
-      return
-      end
-c
-c
-c     #################################################################
-c     ##                                                             ##
-c     ##  subroutine epreal1c  --  Ewald real space derivs via list  ##
-c     ##                                                             ##
-c     #################################################################
-c
-c
-c     "epreal1d" evaluates the real space portion of the Ewald
-c     summation energy and gradient due to dipole polarization
-c     via a neighbor list
-c
-c
-      subroutine epreal1c
-      use atmlst
-      use atoms
-      use bound
-      use chgpot
-      use couple
-      use deriv
-      use domdec
-      use energi
-      use ewald
-      use group
-      use inter
-      use iounit
-      use math
-      use molcul
-      use mpole
-      use neigh
-      use polar
-      use polgrp
-      use polpot
-      use potent
-      use shunt
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iglob,kglob,kbis
-      integer ii,kkk,iipole,kkpole
-      integer iax,iay,iaz
-      real*8 e,efull,f
-      real*8 erfc,bfac
-      real*8 alsq2,alsq2n
-      real*8 exp2a,ralpha
-      real*8 damp,expdamp
-      real*8 pdi,pti,pgamma
-      real*8 temp3,temp5,temp7
-      real*8 sc3,sc5,sc7
-      real*8 psc3,psc5,psc7
-      real*8 dsc3,dsc5,dsc7
-      real*8 usc3,usc5
-      real*8 psr3,psr5,psr7
-      real*8 dsr3,dsr5,dsr7
-      real*8 usr3,usr5
-      real*8 xi,yi,zi
-      real*8 xr,yr,zr
-      real*8 r,r2,rr1,rr3
-      real*8 rr5,rr7,rr9
-      real*8 ci,dix,diy,diz
-      real*8 qixx,qixy,qixz
-      real*8 qiyy,qiyz,qizz
-      real*8 uix,uiy,uiz
-      real*8 uixp,uiyp,uizp
-      real*8 ck,dkx,dky,dkz
-      real*8 qkxx,qkxy,qkxz
-      real*8 qkyy,qkyz,qkzz
-      real*8 ukx,uky,ukz
-      real*8 ukxp,ukyp,ukzp
-      real*8 dri,drk
-      real*8 qrix,qriy,qriz
-      real*8 qrkx,qrky,qrkz
-      real*8 qrri,qrrk
-      real*8 duik,quik
-      real*8 txxi,tyyi,tzzi
-      real*8 txyi,txzi,tyzi
-      real*8 txxk,tyyk,tzzk
-      real*8 txyk,txzk,tyzk
-      real*8 uri,urip,turi
-      real*8 urk,urkp,turk
-
-      real*8 txi3,tyi3,tzi3
-      real*8 txi5,tyi5,tzi5
-      real*8 txk3,tyk3,tzk3
-      real*8 txk5,tyk5,tzk5
-      real*8 term1,term2,term3
-      real*8 term4,term5
-      real*8 term6,term7
-      real*8 depx,depy,depz
-      real*8 frcx,frcy,frcz
-      real*8 xix,yix,zix
-      real*8 xiy,yiy,ziy
-      real*8 xiz,yiz,ziz
-      real*8 vxx,vyy,vzz
-      real*8 vxy,vxz,vyz
-      real*8 rc3(3),rc5(3),rc7(3)
-      real*8 prc3(3),prc5(3),prc7(3)
-      real*8 drc3(3),drc5(3),drc7(3)
-      real*8 urc3(3),urc5(3)
-      real*8 trq(3),fix(3)
-      real*8 fiy(3),fiz(3)
-      real*8 bn(0:4)
-      real*8 fgrp,scaled,scalep,scaleu
-      real*8, allocatable :: pscale(:)
-      real*8, allocatable :: dscale(:)
-      real*8, allocatable :: uscale(:)
-      real*8, allocatable :: ufld(:,:)
-      real*8, allocatable :: dufld(:,:)
-      character*10 mode
-      external erfc
- 1000 format(' Warning, system moved too much since last neighbor list'
-     $   ' update, try lowering nlupdate')
-c
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (pscale(n))
-      allocate (dscale(n))
-      allocate (uscale(n))
-      allocate (ufld(3,nbloc))
-      allocate (dufld(6,nbloc))
-c
-c     set exclusion coefficients and arrays to store fields
-c
-      pscale = 1.0d0
-      dscale = 1.0d0
-      uscale = 1.0d0
-      ufld = 0.0d0
-      dufld = 0.0d0
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = 0.5d0 * electric / dielec
-      mode = 'EWALD'
-      call switch (mode)
-c
-c
-c     compute the dipole polarization gradient components
-c
-      do ii = 1, npolelocnl
-         iipole = poleglobnl(ii)
-         iglob = ipole(iipole)
-         i = loc(iglob)
-         if ((i.eq.0).or.(i.gt.nbloc)) then
-           write(iout,1000)
-           cycle
-         end if
-         pdi = pdamp(iipole)
-         pti = thole(iipole)
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         ci = rpole(1,iipole)
-         dix = rpole(2,iipole)
-         diy = rpole(3,iipole)
-         diz = rpole(4,iipole)
-         qixx = rpole(5,iipole)
-         qixy = rpole(6,iipole)
-         qixz = rpole(7,iipole)
-         qiyy = rpole(9,iipole)
-         qiyz = rpole(10,iipole)
-         qizz = rpole(13,iipole)
-         uix = uind(1,iipole)
-         uiy = uind(2,iipole)
-         uiz = uind(3,iipole)
-         uixp = uinp(1,iipole)
-         uiyp = uinp(2,iipole)
-         uizp = uinp(3,iipole)
-         do j = 1, n12(iglob)
-            pscale(i12(j,iglob)) = p2scale
-         end do
-         do j = 1, n13(iglob)
-            pscale(i13(j,iglob)) = p3scale
-         end do
-         do j = 1, n14(iglob)
-            pscale(i14(j,iglob)) = p4scale
-            do k = 1, np11(iglob)
-                if (i14(j,iglob) .eq. ip11(k,iglob))
-     &            pscale(i14(j,iglob)) = p4scale * p41scale
-            end do
-         end do
-         do j = 1, n15(iglob)
-            pscale(i15(j,iglob)) = p5scale
-         end do
-         do j = 1, np11(iglob)
-            dscale(ip11(j,iglob)) = d1scale
-            uscale(ip11(j,iglob)) = u1scale
-         end do
-         do j = 1, np12(iglob)
-            dscale(ip12(j,iglob)) = d2scale
-            uscale(ip12(j,iglob)) = u2scale
-         end do
-         do j = 1, np13(iglob)
-            dscale(ip13(j,iglob)) = d3scale
-            uscale(ip13(j,iglob)) = u3scale
-         end do
-         do j = 1, np14(iglob)
-            dscale(ip14(j,iglob)) = d4scale
-            uscale(ip14(j,iglob)) = u4scale
-         end do
-c
-c     evaluate all sites within the cutoff distance
-c
-         do kkk = 1, nelst(ii)
-            kkpole = elst(kkk,ii)
-            kglob = ipole(kkpole)
-            kbis = loc(kglob)
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
-            if (kbis.eq.0) then
-              write(iout,1000)
-              cycle
-            end if
-            xr = x(kglob) - xi
-            yr = y(kglob) - yi
-            zr = z(kglob) - zi
-            if (use_bounds)  call image (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
-               r = sqrt(r2)
-               ck = rpole(1,kkpole)
-               dkx = rpole(2,kkpole)
-               dky = rpole(3,kkpole)
-               dkz = rpole(4,kkpole)
-               qkxx = rpole(5,kkpole)
-               qkxy = rpole(6,kkpole)
-               qkxz = rpole(7,kkpole)
-               qkyy = rpole(9,kkpole)
-               qkyz = rpole(10,kkpole)
-               qkzz = rpole(13,kkpole)
-               ukx = uind(1,kkpole)
-               uky = uind(2,kkpole)
-               ukz = uind(3,kkpole)
-               ukxp = uinp(1,kkpole)
-               ukyp = uinp(2,kkpole)
-               ukzp = uinp(3,kkpole)
-c
-c     get reciprocal distance terms for this interaction
-c
-               rr1 = f / r
-               rr3 = rr1 / r2
-               rr5 = 3.0d0 * rr3 / r2
-               rr7 = 5.0d0 * rr5 / r2
-               rr9 = 7.0d0 * rr7 / r2
-c
-c     calculate the real space Ewald error function terms
-c
-               ralpha = aewald * r
-               bn(0) = erfc(ralpha) / r
-               alsq2 = 2.0d0 * aewald**2
-               alsq2n = 0.0d0
-               if (aewald .gt. 0.0d0)  alsq2n = 1.0d0 / (sqrtpi*aewald)
-               exp2a = exp(-ralpha**2)
-               do j = 1, 4
-                  bfac = dble(j+j-1)
-                  alsq2n = alsq2 * alsq2n
-                  bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / r2
-               end do
-               do j = 0, 4
-                  bn(j) = f * bn(j)
-               end do
-c
-c     apply Thole polarization damping to scale factors
-c
-               sc3 = 1.0d0
-               sc5 = 1.0d0
-               sc7 = 1.0d0
-               do j = 1, 3
-                  rc3(j) = 0.0d0
-                  rc5(j) = 0.0d0
-                  rc7(j) = 0.0d0
-               end do
-               damp = pdi * pdamp(kkpole)
-               if (damp .ne. 0.0d0) then
-                  pgamma = min(pti,thole(kkpole))
-                  damp = -pgamma * (r/damp)**3
-                  if (damp .gt. -50.0d0) then
-                     expdamp = exp(damp)
-                     sc3 = 1.0d0 - expdamp
-                     sc5 = 1.0d0 - (1.0d0-damp)*expdamp
-                     sc7 = 1.0d0 - (1.0d0-damp+0.6d0*damp**2)
-     &                                    *expdamp
-                     temp3 = -3.0d0 * damp * expdamp / r2
-                     temp5 = -damp
-                     temp7 = -0.2d0 - 0.6d0*damp
-                     rc3(1) = xr * temp3
-                     rc3(2) = yr * temp3
-                     rc3(3) = zr * temp3
-                     rc5(1) = rc3(1) * temp5
-                     rc5(2) = rc3(2) * temp5
-                     rc5(3) = rc3(3) * temp5
-                     rc7(1) = rc5(1) * temp7
-                     rc7(2) = rc5(2) * temp7
-                     rc7(3) = rc5(3) * temp7
-                  end if
-               end if
-c
-c     intermediates involving moments and distance separation
-c
-               dri = dix*xr + diy*yr + diz*zr
-               drk = dkx*xr + dky*yr + dkz*zr
-               qrix = qixx*xr + qixy*yr + qixz*zr
-               qriy = qixy*xr + qiyy*yr + qiyz*zr
-               qriz = qixz*xr + qiyz*yr + qizz*zr
-               qrkx = qkxx*xr + qkxy*yr + qkxz*zr
-               qrky = qkxy*xr + qkyy*yr + qkyz*zr
-               qrkz = qkxz*xr + qkyz*yr + qkzz*zr
-               qrri = qrix*xr + qriy*yr + qriz*zr
-               qrrk = qrkx*xr + qrky*yr + qrkz*zr
-               uri = uix*xr + uiy*yr + uiz*zr
-               urk = ukx*xr + uky*yr + ukz*zr
-               urip = uixp*xr + uiyp*yr + uizp*zr
-               urkp = ukxp*xr + ukyp*yr + ukzp*zr
-               duik = dix*ukx + diy*uky + diz*ukz
-     &                   + dkx*uix + dky*uiy + dkz*uiz
-               quik = qrix*ukx + qriy*uky + qriz*ukz
-     &                   - qrkx*uix - qrky*uiy - qrkz*uiz
-c
-c     calculate intermediate terms for polarization interaction
-c
-               term1 = ck*uri - ci*urk + duik
-               term2 = 2.0d0*quik - uri*drk - dri*urk
-               term3 = uri*qrrk - urk*qrri
-c
-c     intermediates involving Thole damping and scale factors
-c
-               scaled = dscale(kglob)
-               scalep = pscale(kglob)
-               scaleu = uscale(kglob)
-               if (use_group) then
-                 scaled = scaled * fgrp
-                 scalep = scalep * fgrp
-                 scaleu = scaleu * fgrp
-               end if
-               psr3 = rr3 * sc3 * scalep
-               psr5 = rr5 * sc5 * scalep
-               psr7 = rr7 * sc7 * scalep
-c
-c     compute the full undamped energy for this interaction
-c
-               efull = term1*psr3 + term2*psr5 + term3*psr7
-               if (molcule(iglob) .ne. molcule(kglob))
-     &            einter = einter + efull
-c
-c     intermediates involving Thole damping and scale factors
-c
-               psc3 = 1.0d0 - sc3*scalep
-               psc5 = 1.0d0 - sc5*scalep
-               psc7 = 1.0d0 - sc7*scalep
-               dsc3 = 1.0d0 - sc3*scaled
-               dsc5 = 1.0d0 - sc5*scaled
-               dsc7 = 1.0d0 - sc7*scaled
-               usc3 = 1.0d0 - sc3*scaleu
-               usc5 = 1.0d0 - sc5*scaleu
-               psr3 = bn(1) - psc3*rr3
-               psr5 = bn(2) - psc5*rr5
-               psr7 = bn(3) - psc7*rr7
-               dsr3 = bn(1) - dsc3*rr3
-               dsr5 = bn(2) - dsc5*rr5
-               dsr7 = bn(3) - dsc7*rr7
-               usr3 = bn(1) - usc3*rr3
-               usr5 = bn(2) - usc5*rr5
-               do j = 1, 3
-                  prc3(j) = rc3(j) * scalep
-                  prc5(j) = rc5(j) * scalep
-                  prc7(j) = rc7(j) * scalep
-                  drc3(j) = rc3(j) * scaled
-                  drc5(j) = rc5(j) * scaled
-                  drc7(j) = rc7(j) * scaled
-                  urc3(j) = rc3(j) * scaleu
-                  urc5(j) = rc5(j) * scaleu
-               end do
-c
-c     compute the energy contribution for this interaction
-c
-               e = term1*psr3 + term2*psr5 + term3*psr7
-               ep = ep + e
-c
-c     get the dEd/dR terms used for direct polarization force
-c
-               term1 = bn(2) - dsc3*rr5
-               term2 = bn(3) - dsc5*rr7
-               term3 = -dsr3 + term1*xr*xr - rr3*xr*drc3(1)
-               term4 = rr3*drc3(1) - term1*xr - dsr5*xr
-               term5 = term2*xr*xr - dsr5 - rr5*xr*drc5(1)
-               term6 = (bn(4)-dsc7*rr9)*xr*xr - bn(3) - rr7*xr*drc7(1)
-               term7 = rr5*drc5(1) - 2.0d0*bn(3)*xr
-     &                    + (dsc5+1.5d0*dsc7)*rr7*xr
-               txxi = ci*term3 + dix*term4 + dri*term5
-     &                   + 2.0d0*dsr5*qixx + (qriy*yr+qriz*zr)*dsc7*rr7
-     &                   + 2.0d0*qrix*term7 + qrri*term6
-               txxk = ck*term3 - dkx*term4 - drk*term5
-     &                   + 2.0d0*dsr5*qkxx + (qrky*yr+qrkz*zr)*dsc7*rr7
-     &                   + 2.0d0*qrkx*term7 + qrrk*term6
-               term3 = -dsr3 + term1*yr*yr - rr3*yr*drc3(2)
-               term4 = rr3*drc3(2) - term1*yr - dsr5*yr
-               term5 = term2*yr*yr - dsr5 - rr5*yr*drc5(2)
-               term6 = (bn(4)-dsc7*rr9)*yr*yr - bn(3) - rr7*yr*drc7(2)
-               term7 = rr5*drc5(2) - 2.0d0*bn(3)*yr
-     &                    + (dsc5+1.5d0*dsc7)*rr7*yr
-               tyyi = ci*term3 + diy*term4 + dri*term5
-     &                   + 2.0d0*dsr5*qiyy + (qrix*xr+qriz*zr)*dsc7*rr7
-     &                   + 2.0d0*qriy*term7 + qrri*term6
-               tyyk = ck*term3 - dky*term4 - drk*term5
-     &                   + 2.0d0*dsr5*qkyy + (qrkx*xr+qrkz*zr)*dsc7*rr7
-     &                   + 2.0d0*qrky*term7 + qrrk*term6
-               term3 = -dsr3 + term1*zr*zr - rr3*zr*drc3(3)
-               term4 = rr3*drc3(3) - term1*zr - dsr5*zr
-               term5 = term2*zr*zr - dsr5 - rr5*zr*drc5(3)
-               term6 = (bn(4)-dsc7*rr9)*zr*zr - bn(3) - rr7*zr*drc7(3)
-               term7 = rr5*drc5(3) - 2.0d0*bn(3)*zr
-     &                    + (dsc5+1.5d0*dsc7)*rr7*zr
-               tzzi = ci*term3 + diz*term4 + dri*term5
-     &                   + 2.0d0*dsr5*qizz + (qrix*xr+qriy*yr)*dsc7*rr7
-     &                   + 2.0d0*qriz*term7 + qrri*term6
-               tzzk = ck*term3 - dkz*term4 - drk*term5
-     &                   + 2.0d0*dsr5*qkzz + (qrkx*xr+qrky*yr)*dsc7*rr7
-     &                   + 2.0d0*qrkz*term7 + qrrk*term6
-               term3 = term1*xr*yr - rr3*yr*drc3(1)
-               term4 = rr3*drc3(1) - term1*xr
-               term5 = term2*xr*yr - rr5*yr*drc5(1)
-               term6 = (bn(4)-dsc7*rr9)*xr*yr - rr7*yr*drc7(1)
-               term7 = rr5*drc5(1) - term2*xr
-               txyi = ci*term3 - dsr5*dix*yr + diy*term4 + dri*term5
-     &                   + 2.0d0*dsr5*qixy - 2.0d0*dsr7*yr*qrix
-     &                   + 2.0d0*qriy*term7 + qrri*term6
-               txyk = ck*term3 + dsr5*dkx*yr - dky*term4 - drk*term5
-     &                   + 2.0d0*dsr5*qkxy - 2.0d0*dsr7*yr*qrkx
-     &                   + 2.0d0*qrky*term7 + qrrk*term6
-               term3 = term1*xr*zr - rr3*zr*drc3(1)
-               term5 = term2*xr*zr - rr5*zr*drc5(1)
-               term6 = (bn(4)-dsc7*rr9)*xr*zr - rr7*zr*drc7(1)
-               txzi = ci*term3 - dsr5*dix*zr + diz*term4 + dri*term5
-     &                   + 2.0d0*dsr5*qixz - 2.0d0*dsr7*zr*qrix
-     &                   + 2.0d0*qriz*term7 + qrri*term6
-               txzk = ck*term3 + dsr5*dkx*zr - dkz*term4 - drk*term5
-     &                   + 2.0d0*dsr5*qkxz - 2.0d0*dsr7*zr*qrkx
-     &                   + 2.0d0*qrkz*term7 + qrrk*term6
-               term3 = term1*yr*zr - rr3*zr*drc3(2)
-               term4 = rr3*drc3(2) - term1*yr
-               term5 = term2*yr*zr - rr5*zr*drc5(2)
-               term6 = (bn(4)-dsc7*rr9)*yr*zr - rr7*zr*drc7(2)
-               term7 = rr5*drc5(2) - term2*yr
-               tyzi = ci*term3 - dsr5*diy*zr + diz*term4 + dri*term5
-     &                   + 2.0d0*dsr5*qiyz - 2.0d0*dsr7*zr*qriy
-     &                   + 2.0d0*qriz*term7 + qrri*term6
-               tyzk = ck*term3 + dsr5*dky*zr - dkz*term4 - drk*term5
-     &                   + 2.0d0*dsr5*qkyz - 2.0d0*dsr7*zr*qrky
-     &                   + 2.0d0*qrkz*term7 + qrrk*term6
-               depx = txxi*ukxp + txyi*ukyp + txzi*ukzp
-     &                   - txxk*uixp - txyk*uiyp - txzk*uizp
-               depy = txyi*ukxp + tyyi*ukyp + tyzi*ukzp
-     &                   - txyk*uixp - tyyk*uiyp - tyzk*uizp
-               depz = txzi*ukxp + tyzi*ukyp + tzzi*ukzp
-     &                   - txzk*uixp - tyzk*uiyp - tzzk*uizp
-               frcx = depx
-               frcy = depy
-               frcz = depz
-c
-c     get the dEp/dR terms used for direct polarization force
-c
-               term1 = bn(2) - psc3*rr5
-               term2 = bn(3) - psc5*rr7
-               term3 = -psr3 + term1*xr*xr - rr3*xr*prc3(1)
-               term4 = rr3*prc3(1) - term1*xr - psr5*xr
-               term5 = term2*xr*xr - psr5 - rr5*xr*prc5(1)
-               term6 = (bn(4)-psc7*rr9)*xr*xr - bn(3) - rr7*xr*prc7(1)
-               term7 = rr5*prc5(1) - 2.0d0*bn(3)*xr
-     &                    + (psc5+1.5d0*psc7)*rr7*xr
-               txxi = ci*term3 + dix*term4 + dri*term5
-     &                   + 2.0d0*psr5*qixx + (qriy*yr+qriz*zr)*psc7*rr7
-     &                   + 2.0d0*qrix*term7 + qrri*term6
-               txxk = ck*term3 - dkx*term4 - drk*term5
-     &                   + 2.0d0*psr5*qkxx + (qrky*yr+qrkz*zr)*psc7*rr7
-     &                   + 2.0d0*qrkx*term7 + qrrk*term6
-               term3 = -psr3 + term1*yr*yr - rr3*yr*prc3(2)
-               term4 = rr3*prc3(2) - term1*yr - psr5*yr
-               term5 = term2*yr*yr - psr5 - rr5*yr*prc5(2)
-               term6 = (bn(4)-psc7*rr9)*yr*yr - bn(3) - rr7*yr*prc7(2)
-               term7 = rr5*prc5(2) - 2.0d0*bn(3)*yr
-     &                    + (psc5+1.5d0*psc7)*rr7*yr
-               tyyi = ci*term3 + diy*term4 + dri*term5
-     &                   + 2.0d0*psr5*qiyy + (qrix*xr+qriz*zr)*psc7*rr7
-     &                   + 2.0d0*qriy*term7 + qrri*term6
-               tyyk = ck*term3 - dky*term4 - drk*term5
-     &                   + 2.0d0*psr5*qkyy + (qrkx*xr+qrkz*zr)*psc7*rr7
-     &                   + 2.0d0*qrky*term7 + qrrk*term6
-               term3 = -psr3 + term1*zr*zr - rr3*zr*prc3(3)
-               term4 = rr3*prc3(3) - term1*zr - psr5*zr
-               term5 = term2*zr*zr - psr5 - rr5*zr*prc5(3)
-               term6 = (bn(4)-psc7*rr9)*zr*zr - bn(3) - rr7*zr*prc7(3)
-               term7 = rr5*prc5(3) - 2.0d0*bn(3)*zr
-     &                    + (psc5+1.5d0*psc7)*rr7*zr
-               tzzi = ci*term3 + diz*term4 + dri*term5
-     &                   + 2.0d0*psr5*qizz + (qrix*xr+qriy*yr)*psc7*rr7
-     &                   + 2.0d0*qriz*term7 + qrri*term6
-               tzzk = ck*term3 - dkz*term4 - drk*term5
-     &                   + 2.0d0*psr5*qkzz + (qrkx*xr+qrky*yr)*psc7*rr7
-     &                   + 2.0d0*qrkz*term7 + qrrk*term6
-               term3 = term1*xr*yr - rr3*yr*prc3(1)
-               term4 = rr3*prc3(1) - term1*xr
-               term5 = term2*xr*yr - rr5*yr*prc5(1)
-               term6 = (bn(4)-psc7*rr9)*xr*yr - rr7*yr*prc7(1)
-               term7 = rr5*prc5(1) - term2*xr
-               txyi = ci*term3 - psr5*dix*yr + diy*term4 + dri*term5
-     &                   + 2.0d0*psr5*qixy - 2.0d0*psr7*yr*qrix
-     &                   + 2.0d0*qriy*term7 + qrri*term6
-               txyk = ck*term3 + psr5*dkx*yr - dky*term4 - drk*term5
-     &                   + 2.0d0*psr5*qkxy - 2.0d0*psr7*yr*qrkx
-     &                   + 2.0d0*qrky*term7 + qrrk*term6
-               term3 = term1*xr*zr - rr3*zr*prc3(1)
-               term5 = term2*xr*zr - rr5*zr*prc5(1)
-               term6 = (bn(4)-psc7*rr9)*xr*zr - rr7*zr*prc7(1)
-               txzi = ci*term3 - psr5*dix*zr + diz*term4 + dri*term5
-     &                   + 2.0d0*psr5*qixz - 2.0d0*psr7*zr*qrix
-     &                   + 2.0d0*qriz*term7 + qrri*term6
-               txzk = ck*term3 + psr5*dkx*zr - dkz*term4 - drk*term5
-     &                   + 2.0d0*psr5*qkxz - 2.0d0*psr7*zr*qrkx
-     &                   + 2.0d0*qrkz*term7 + qrrk*term6
-               term3 = term1*yr*zr - rr3*zr*prc3(2)
-               term4 = rr3*prc3(2) - term1*yr
-               term5 = term2*yr*zr - rr5*zr*prc5(2)
-               term6 = (bn(4)-psc7*rr9)*yr*zr - rr7*zr*prc7(2)
-               term7 = rr5*prc5(2) - term2*yr
-               tyzi = ci*term3 - psr5*diy*zr + diz*term4 + dri*term5
-     &                   + 2.0d0*psr5*qiyz - 2.0d0*psr7*zr*qriy
-     &                   + 2.0d0*qriz*term7 + qrri*term6
-               tyzk = ck*term3 + psr5*dky*zr - dkz*term4 - drk*term5
-     &                   + 2.0d0*psr5*qkyz - 2.0d0*psr7*zr*qrky
-     &                   + 2.0d0*qrkz*term7 + qrrk*term6
-               depx = txxi*ukx + txyi*uky + txzi*ukz
-     &                   - txxk*uix - txyk*uiy - txzk*uiz
-               depy = txyi*ukx + tyyi*uky + tyzi*ukz
-     &                   - txyk*uix - tyyk*uiy - tyzk*uiz
-               depz = txzi*ukx + tyzi*uky + tzzi*ukz
-     &                   - txzk*uix - tyzk*uiy - tzzk*uiz
-               frcx = frcx + depx
-               frcy = frcy + depy
-               frcz = frcz + depz
-c
-c     get the dtau/dr terms used for mutual polarization force
-c
-               term1 = bn(2) - usc3*rr5
-               term2 = bn(3) - usc5*rr7
-               term3 = usr5 + term1
-               term4 = rr3 * scaleu
-               term5 = -xr*term3 + rc3(1)*term4
-               term6 = -usr5 + xr*xr*term2 - rr5*xr*urc5(1)
-               txxi = uix*term5 + uri*term6
-               txxk = ukx*term5 + urk*term6
-               term5 = -yr*term3 + rc3(2)*term4
-               term6 = -usr5 + yr*yr*term2 - rr5*yr*urc5(2)
-               tyyi = uiy*term5 + uri*term6
-               tyyk = uky*term5 + urk*term6
-               term5 = -zr*term3 + rc3(3)*term4
-               term6 = -usr5 + zr*zr*term2 - rr5*zr*urc5(3)
-               tzzi = uiz*term5 + uri*term6
-               tzzk = ukz*term5 + urk*term6
-               term4 = -usr5 * yr
-               term5 = -xr*term1 + rr3*urc3(1)
-               term6 = xr*yr*term2 - rr5*yr*urc5(1)
-               txyi = uix*term4 + uiy*term5 + uri*term6
-               txyk = ukx*term4 + uky*term5 + urk*term6
-               term4 = -usr5 * zr
-               term6 = xr*zr*term2 - rr5*zr*urc5(1)
-               txzi = uix*term4 + uiz*term5 + uri*term6
-               txzk = ukx*term4 + ukz*term5 + urk*term6
-               term5 = -yr*term1 + rr3*urc3(2)
-               term6 = yr*zr*term2 - rr5*zr*urc5(2)
-               tyzi = uiy*term4 + uiz*term5 + uri*term6
-               tyzk = uky*term4 + ukz*term5 + urk*term6
-               depx = txxi*ukxp + txyi*ukyp + txzi*ukzp
-     &                   + txxk*uixp + txyk*uiyp + txzk*uizp
-               depy = txyi*ukxp + tyyi*ukyp + tyzi*ukzp
-     &                   + txyk*uixp + tyyk*uiyp + tyzk*uizp
-               depz = txzi*ukxp + tyzi*ukyp + tzzi*ukzp
-     &                   + txzk*uixp + tyzk*uiyp + tzzk*uizp
-               frcx = frcx + depx
-               frcy = frcy + depy
-               frcz = frcz + depz
-c
-c     increment gradient and virial due to Cartesian forces
-c
-               dep(1,i) = dep(1,i) - frcx
-               dep(2,i) = dep(2,i) - frcy
-               dep(3,i) = dep(3,i) - frcz
-               dep(1,kbis) = dep(1,kbis) + frcx
-               dep(2,kbis) = dep(2,kbis) + frcy
-               dep(3,kbis) = dep(3,kbis) + frcz
-               vxx = xr * frcx
-               vxy = yr * frcx
-               vxz = zr * frcx
-               vyy = yr * frcy
-               vyz = zr * frcy
-               vzz = zr * frcz
-               vir(1,1) = vir(1,1) + vxx
-               vir(2,1) = vir(2,1) + vxy
-               vir(3,1) = vir(3,1) + vxz
-               vir(1,2) = vir(1,2) + vxy
-               vir(2,2) = vir(2,2) + vyy
-               vir(3,2) = vir(3,2) + vyz
-               vir(1,3) = vir(1,3) + vxz
-               vir(2,3) = vir(2,3) + vyz
-               vir(3,3) = vir(3,3) + vzz
-c
-c     get the induced dipole field used for dipole torques
-c
-               txi3 = psr3*ukx + dsr3*ukxp
-               tyi3 = psr3*uky + dsr3*ukyp
-               tzi3 = psr3*ukz + dsr3*ukzp
-               txk3 = psr3*uix + dsr3*uixp
-               tyk3 = psr3*uiy + dsr3*uiyp
-               tzk3 = psr3*uiz + dsr3*uizp
-               turi = -psr5*urk - dsr5*urkp
-               turk = -psr5*uri - dsr5*urip
-               ufld(1,i) = ufld(1,i) + txi3 + xr*turi
-               ufld(2,i) = ufld(2,i) + tyi3 + yr*turi
-               ufld(3,i) = ufld(3,i) + tzi3 + zr*turi
-               ufld(1,kbis) = ufld(1,kbis) + txk3 + xr*turk
-               ufld(2,kbis) = ufld(2,kbis) + tyk3 + yr*turk
-               ufld(3,kbis) = ufld(3,kbis) + tzk3 + zr*turk
-c
-c     get induced dipole field gradient used for quadrupole torques
-c
-               txi5 = 2.0d0 * (psr5*ukx+dsr5*ukxp)
-               tyi5 = 2.0d0 * (psr5*uky+dsr5*ukyp)
-               tzi5 = 2.0d0 * (psr5*ukz+dsr5*ukzp)
-               txk5 = 2.0d0 * (psr5*uix+dsr5*uixp)
-               tyk5 = 2.0d0 * (psr5*uiy+dsr5*uiyp)
-               tzk5 = 2.0d0 * (psr5*uiz+dsr5*uizp)
-               turi = -psr7*urk - dsr7*urkp
-               turk = -psr7*uri - dsr7*urip
-               dufld(1,i) = dufld(1,i) + xr*txi5 + xr*xr*turi
-               dufld(2,i) = dufld(2,i) + xr*tyi5 + yr*txi5
-     &                         + 2.0d0*xr*yr*turi
-               dufld(3,i) = dufld(3,i) + yr*tyi5 + yr*yr*turi
-               dufld(4,i) = dufld(4,i) + xr*tzi5 + zr*txi5
-     &                         + 2.0d0*xr*zr*turi
-               dufld(5,i) = dufld(5,i) + yr*tzi5 + zr*tyi5
-     &                         + 2.0d0*yr*zr*turi
-               dufld(6,i) = dufld(6,i) + zr*tzi5 + zr*zr*turi
-               dufld(1,kbis) = dufld(1,kbis) - xr*txk5 - xr*xr*turk
-               dufld(2,kbis) = dufld(2,kbis) - xr*tyk5 - yr*txk5
-     &                         - 2.0d0*xr*yr*turk
-               dufld(3,kbis) = dufld(3,kbis) - yr*tyk5 - yr*yr*turk
-               dufld(4,kbis) = dufld(4,kbis) - xr*tzk5 - zr*txk5
-     &                         - 2.0d0*xr*zr*turk
-               dufld(5,kbis) = dufld(5,kbis) - yr*tzk5 - zr*tyk5
-     &                         - 2.0d0*yr*zr*turk
-               dufld(6,kbis) = dufld(6,kbis) - zr*tzk5 - zr*zr*turk
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            pscale(i12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n13(iglob)
-            pscale(i13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n14(iglob)
-            pscale(i14(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n15(iglob)
-            pscale(i15(j,iglob)) = 1.0d0
-         end do
-         do j = 1, np11(iglob)
-            dscale(ip11(j,iglob)) = 1.0d0
-            uscale(ip11(j,iglob)) = 1.0d0
-         end do
-         do j = 1, np12(iglob)
-            dscale(ip12(j,iglob)) = 1.0d0
-            uscale(ip12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, np13(iglob)
-            dscale(ip13(j,iglob)) = 1.0d0
-            uscale(ip13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, np14(iglob)
-            dscale(ip14(j,iglob)) = 1.0d0
-            uscale(ip14(j,iglob)) = 1.0d0
-         end do
-      end do
-c
-c     OpenMP directives for the major loop structure
-c
-c
-c     torque is induced field and gradient cross permanent moments
-c
-      do ii = 1, npolelocnl
-         iipole = poleglobnl(ii)
-         iglob = ipole(iipole)
-         i = loc(iglob)
-         dix = rpole(2,iipole)
-         diy = rpole(3,iipole)
-         diz = rpole(4,iipole)
-         qixx = rpole(5,iipole)
-         qixy = rpole(6,iipole)
-         qixz = rpole(7,iipole)
-         qiyy = rpole(9,iipole)
-         qiyz = rpole(10,iipole)
-         qizz = rpole(13,iipole)
-         trq(1) = diz*ufld(2,i) - diy*ufld(3,i)
-     &               + qixz*dufld(2,i) - qixy*dufld(4,i)
-     &               + 2.0d0*qiyz*(dufld(3,i)-dufld(6,i))
-     &               + (qizz-qiyy)*dufld(5,i)
-         trq(2) = dix*ufld(3,i) - diz*ufld(1,i)
-     &               - qiyz*dufld(2,i) + qixy*dufld(5,i)
-     &               + 2.0d0*qixz*(dufld(6,i)-dufld(1,i))
-     &               + (qixx-qizz)*dufld(4,i)
-         trq(3) = diy*ufld(1,i) - dix*ufld(2,i)
-     &               + qiyz*dufld(4,i) - qixz*dufld(5,i)
-     &               + 2.0d0*qixy*(dufld(1,i)-dufld(3,i))
-     &               + (qiyy-qixx)*dufld(2,i)
-         call torque (iipole,trq,fix,fiy,fiz,dep)
-         iaz = zaxis(iipole)
-         iax = xaxis(iipole)
-         iay = yaxis(iipole)
-         if (iaz .le. 0)  iaz = iglob
-         if (iax .le. 0)  iax = iglob
-         if (iay .le. 0)  iay = iglob
-         xiz = x(iaz) - x(iglob)
-         yiz = y(iaz) - y(iglob)
-         ziz = z(iaz) - z(iglob)
-         xix = x(iax) - x(iglob)
-         yix = y(iax) - y(iglob)
-         zix = z(iax) - z(iglob)
-         xiy = x(iay) - x(iglob)
-         yiy = y(iay) - y(iglob)
-         ziy = z(iay) - z(iglob)
-         vxx = xix*fix(1) + xiy*fiy(1) + xiz*fiz(1)
-         vxy = yix*fix(1) + yiy*fiy(1) + yiz*fiz(1)
-         vxz = zix*fix(1) + ziy*fiy(1) + ziz*fiz(1)
-         vyy = yix*fix(2) + yiy*fiy(2) + yiz*fiz(2)
-         vyz = zix*fix(2) + ziy*fiy(2) + ziz*fiz(2)
-         vzz = zix*fix(3) + ziy*fiy(3) + ziz*fiz(3)
-         vir(1,1) = vir(1,1) + vxx
-         vir(2,1) = vir(2,1) + vxy
-         vir(3,1) = vir(3,1) + vxz
-         vir(1,2) = vir(1,2) + vxy
-         vir(2,2) = vir(2,2) + vyy
-         vir(3,2) = vir(3,2) + vyz
-         vir(1,3) = vir(1,3) + vxz
-         vir(2,3) = vir(2,3) + vyz
-         vir(3,3) = vir(3,3) + vzz
-      end do
-c
-c     OpenMP directives for the major loop structure
-c
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (pscale)
-      deallocate (dscale)
-      deallocate (uscale)
-      deallocate (ufld)
-      deallocate (dufld)
       return
       end
 c
@@ -1787,19 +1023,21 @@ c      deallocate (fphidp)
       return
       end
 c
-c     ##################################################################################
-c     ##                                                                              ##
-c     ##  subroutine epreal1shortc  --  Ewald short range real space derivs via list  ##
-c     ##                                                                              ##
-c     ##################################################################################
+c
+c     #################################################################
+c     ##                                                             ##
+c     ##  subroutine epreal1c  --  Ewald real space derivs via list  ##
+c     ##                                                             ##
+c     #################################################################
 c
 c
-c     "epreal1d" evaluates the short range real space portion of the Ewald
+c     "epreal1c" evaluates the real space portion of the Ewald
 c     summation energy and gradient due to dipole polarization
 c     via a neighbor list
 c
+c     if shortrange, calculates just the short range part
 c
-      subroutine eprealshort1c
+      subroutine epreal1c
       use atmlst
       use atoms
       use bound
@@ -1825,7 +1063,7 @@ c
       use virial
       use mpi
       implicit none
-      integer i,j,k,iglob,kglob,kbis
+      integer i,j,k,iglob,kglob,kbis,nnelst
       integer ii,kkk,iipole,kkpole
       integer iax,iay,iaz
       real*8 e,efull,f
@@ -1867,6 +1105,7 @@ c
       real*8 txyk,txzk,tyzk
       real*8 uri,urip,turi
       real*8 urk,urkp,turk
+
       real*8 txi3,tyi3,tzi3
       real*8 txi5,tyi5,tzi5
       real*8 txk3,tyk3,tzk3
@@ -1887,17 +1126,39 @@ c
       real*8 urc3(3),urc5(3)
       real*8 trq(3),fix(3)
       real*8 fiy(3),fiz(3)
-      real*8 fgrp,scaled,scalep,scaleu
       real*8 bn(0:4)
+      real*8 fgrp,scaled,scalep,scaleu
+      logical testcut,shortrange,longrange,fullrange
+
       real*8, allocatable :: pscale(:)
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: uscale(:)
       real*8, allocatable :: ufld(:,:)
       real*8, allocatable :: dufld(:,:)
       character*10 mode
+      character*80 :: RoutineName
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
      $   ' update, try lowering nlupdate')
+
+c     compute the short, or full real space part of the summation
+      shortrange = use_polarshortreal
+      longrange  = .false.
+      fullrange  = .not.(shortrange.or.longrange)
+
+      if (shortrange) then 
+         RoutineName = 'eprealshort1c'
+         mode        = 'SHORTEWALD'
+      else if (longrange) then
+         RoutineName = 'epreallong1c'
+         mode        = 'EWALD'
+      else
+         RoutineName = 'epreal1c'
+         mode        = 'EWALD'
+      endif
+
+ 
+
 c
 c
 c     perform dynamic allocation of some local arrays
@@ -1915,14 +1176,14 @@ c
       uscale = 1.0d0
       ufld = 0.0d0
       dufld = 0.0d0
+
 c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = 0.5d0 * electric / dielec
-      mode = 'SHORTEWALD'
+c     mode = 'EWALD'
       call switch (mode)
 c
-c     OpenMP directives for the major loop structure
 c
 c     compute the dipole polarization gradient components
 c
@@ -1990,11 +1251,18 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         do kkk = 1, nshortelst(ii)
-            kkpole = shortelst(kkk,ii)
+         nnelst = merge(nshortelst(ii),
+     &                  nelst     (ii),
+     &                  shortrange
+     &                 )
+         do kkk = 1, nnelst
+            kkpole = merge(shortelst(kkk,ii),
+     &                     elst     (kkk,ii),
+     &                     shortrange
+     &                   )
             kglob = ipole(kkpole)
-            kbis = loc(kglob)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+            kbis = loc(kglob)
             if (kbis.eq.0) then
               write(iout,1000)
               cycle
@@ -2391,15 +1659,17 @@ c
                vir(1,3) = vir(1,3) + vxz
                vir(2,3) = vir(2,3) + vyz
                vir(3,3) = vir(3,3) + vzz
-               virsave(1,1) = virsave(1,1) + vxx
-               virsave(2,1) = virsave(2,1) + vxy
-               virsave(3,1) = virsave(3,1) + vxz
-               virsave(1,2) = virsave(1,2) + vxy
-               virsave(2,2) = virsave(2,2) + vyy
-               virsave(3,2) = virsave(3,2) + vyz
-               virsave(1,3) = virsave(1,3) + vxz
-               virsave(2,3) = virsave(2,3) + vyz
-               virsave(3,3) = virsave(3,3) + vzz
+               if(shortrange) then
+                  virsave(1,1) = virsave(1,1) + vxx
+                  virsave(2,1) = virsave(2,1) + vxy
+                  virsave(3,1) = virsave(3,1) + vxz
+                  virsave(1,2) = virsave(1,2) + vxy
+                  virsave(2,2) = virsave(2,2) + vyy
+                  virsave(3,2) = virsave(3,2) + vyz
+                  virsave(1,3) = virsave(1,3) + vxz
+                  virsave(2,3) = virsave(2,3) + vyz
+                  virsave(3,3) = virsave(3,3) + vzz
+               endif
 c
 c     get the induced dipole field used for dipole torques
 c
@@ -2411,12 +1681,12 @@ c
                tzk3 = psr3*uiz + dsr3*uizp
                turi = -psr5*urk - dsr5*urkp
                turk = -psr5*uri - dsr5*urip
-               ufld(1,i) = ufld(1,i) + (txi3 + xr*turi)
-               ufld(2,i) = ufld(2,i) + (tyi3 + yr*turi)
-               ufld(3,i) = ufld(3,i) + (tzi3 + zr*turi)
-               ufld(1,kbis) = ufld(1,kbis) + (txk3 + xr*turk)
-               ufld(2,kbis) = ufld(2,kbis) + (tyk3 + yr*turk)
-               ufld(3,kbis) = ufld(3,kbis) + (tzk3 + zr*turk)
+               ufld(1,i) = ufld(1,i) + txi3 + xr*turi
+               ufld(2,i) = ufld(2,i) + tyi3 + yr*turi
+               ufld(3,i) = ufld(3,i) + tzi3 + zr*turi
+               ufld(1,kbis) = ufld(1,kbis) + txk3 + xr*turk
+               ufld(2,kbis) = ufld(2,kbis) + tyk3 + yr*turk
+               ufld(3,kbis) = ufld(3,kbis) + tzk3 + zr*turk
 c
 c     get induced dipole field gradient used for quadrupole torques
 c
@@ -2428,24 +1698,24 @@ c
                tzk5 = 2.0d0 * (psr5*uiz+dsr5*uizp)
                turi = -psr7*urk - dsr7*urkp
                turk = -psr7*uri - dsr7*urip
-               dufld(1,i) = dufld(1,i) + (xr*txi5 + xr*xr*turi)
-               dufld(2,i) = dufld(2,i) + (xr*tyi5 + yr*txi5
-     &                         + 2.0d0*xr*yr*turi)
-               dufld(3,i) = dufld(3,i) + (yr*tyi5 + yr*yr*turi)
-               dufld(4,i) = dufld(4,i) + (xr*tzi5 + zr*txi5
-     &                         + 2.0d0*xr*zr*turi)
-               dufld(5,i) = dufld(5,i) + (yr*tzi5 + zr*tyi5
-     &                         + 2.0d0*yr*zr*turi)
-               dufld(6,i) = dufld(6,i) + (zr*tzi5 + zr*zr*turi)
-               dufld(1,kbis) = dufld(1,kbis) - (xr*txk5 + xr*xr*turk)
-               dufld(2,kbis) = dufld(2,kbis) - (xr*tyk5 + yr*txk5
-     &                         + 2.0d0*xr*yr*turk)
-               dufld(3,kbis) = dufld(3,kbis) - (yr*tyk5 + yr*yr*turk)
-               dufld(4,kbis) = dufld(4,kbis) - (xr*tzk5 + zr*txk5
-     &                         + 2.0d0*xr*zr*turk)
-               dufld(5,kbis) = dufld(5,kbis) - (yr*tzk5 + zr*tyk5
-     &                         + 2.0d0*yr*zr*turk)
-               dufld(6,kbis) = dufld(6,kbis) - (zr*tzk5 + zr*zr*turk)
+               dufld(1,i) = dufld(1,i) + xr*txi5 + xr*xr*turi
+               dufld(2,i) = dufld(2,i) + xr*tyi5 + yr*txi5
+     &                         + 2.0d0*xr*yr*turi
+               dufld(3,i) = dufld(3,i) + yr*tyi5 + yr*yr*turi
+               dufld(4,i) = dufld(4,i) + xr*tzi5 + zr*txi5
+     &                         + 2.0d0*xr*zr*turi
+               dufld(5,i) = dufld(5,i) + yr*tzi5 + zr*tyi5
+     &                         + 2.0d0*yr*zr*turi
+               dufld(6,i) = dufld(6,i) + zr*tzi5 + zr*zr*turi
+               dufld(1,kbis) = dufld(1,kbis) - xr*txk5 - xr*xr*turk
+               dufld(2,kbis) = dufld(2,kbis) - xr*tyk5 - yr*txk5
+     &                         - 2.0d0*xr*yr*turk
+               dufld(3,kbis) = dufld(3,kbis) - yr*tyk5 - yr*yr*turk
+               dufld(4,kbis) = dufld(4,kbis) - xr*tzk5 - zr*txk5
+     &                         - 2.0d0*xr*zr*turk
+               dufld(5,kbis) = dufld(5,kbis) - yr*tzk5 - zr*tyk5
+     &                         - 2.0d0*yr*zr*turk
+               dufld(6,kbis) = dufld(6,kbis) - zr*tzk5 - zr*zr*turk
             end if
          end do
 c
@@ -2542,15 +1812,17 @@ c
          vir(1,3) = vir(1,3) + vxz
          vir(2,3) = vir(2,3) + vyz
          vir(3,3) = vir(3,3) + vzz
-         virsave(1,1) = virsave(1,1) + vxx
-         virsave(2,1) = virsave(2,1) + vxy
-         virsave(3,1) = virsave(3,1) + vxz
-         virsave(1,2) = virsave(1,2) + vxy
-         virsave(2,2) = virsave(2,2) + vyy
-         virsave(3,2) = virsave(3,2) + vyz
-         virsave(1,3) = virsave(1,3) + vxz
-         virsave(2,3) = virsave(2,3) + vyz
-         virsave(3,3) = virsave(3,3) + vzz
+               if(shortrange) then
+                  virsave(1,1) = virsave(1,1) + vxx
+                  virsave(2,1) = virsave(2,1) + vxy
+                  virsave(3,1) = virsave(3,1) + vxz
+                  virsave(1,2) = virsave(1,2) + vxy
+                  virsave(2,2) = virsave(2,2) + vyy
+                  virsave(3,2) = virsave(3,2) + vyz
+                  virsave(1,3) = virsave(1,3) + vxz
+                  virsave(2,3) = virsave(2,3) + vyz
+                  virsave(3,3) = virsave(3,3) + vzz
+               endif
       end do
 c
 c     perform deallocation of some local arrays
@@ -2562,4 +1834,3 @@ c
       deallocate (dufld)
       return
       end
-c

@@ -932,7 +932,8 @@ c
       return
       end
 c
-      subroutine efld0_direct(nrhs,ef)
+c
+      subroutine efld0_direct(nrhs,ef,short)
 c
 c     Compute the direct space contribution to the permanent electric field.
 c      Also compute the "p" field, which is used to
@@ -941,6 +942,7 @@ c
       use atmlst
       use atoms
       use couple
+      use cutoff
       use domdec
       use ewald
       use group
@@ -951,9 +953,11 @@ c
       use polar
       use polgrp
       use polpot
+      use potent
       use shunt
+      use mpi
       implicit none
-      integer i,iglob,kglob,nrhs,ipoleloc
+      integer i,iglob,kglob,nrhs,ipoleloc,nnelst
       real*8  ef(3,nrhs,npolebloc)
       integer ii, j, k, kkk, iipole, kkpole,kbis
       real*8  dx, dy, dz, d, d2, d3, d5, pdi, pti, ck,
@@ -976,12 +980,26 @@ c
       real*8, allocatable :: pscale(:)
       save   zero, pt6, one, f50
       data   zero/0.d0/, pt6/0.6d0/, one/1.d0/,f50/50.d0/
+      logical short
+      logical shortrange
       character*10 mode
+      character*80 :: RoutineName
 c
  1000 format(' Warning, system moved too much since last neighbor list
      $  update, try lowering nlupdate')
 c
-      mode = 'EWALD'
+      shortrange = use_polarshortreal
+!     write(*,*) 'short,shortrange',short,shortrange
+      if (shortrange) then 
+!     if (short) then 
+         RoutineName='efld0_shortreal'
+         mode = 'SHORTEWALD'
+      else
+         RoutineName='efld0_direct'
+         mode = 'EWALD'
+      endif
+c
+!     mode = 'EWALD'
       call switch (mode)
       cutoff2 = cut2
 c
@@ -991,19 +1009,21 @@ c
          dscale(i) = 1.0d0
          pscale(i) = 1.0d0
       end do
+
 c
       do ii = 1, npolelocnl
         iipole = poleglobnl(ii)
         iglob = ipole(iipole)
         i = loc(iglob)
         ipoleloc = poleloc(iipole)
+
         if ((i.eq.0).or.(i.gt.nbloc)) then
           write(iout,1000)
           cycle
         end if
         pdi = pdamp(iipole)
         pti = thole(iipole)
-        ci = rpole(1,iipole)
+        ci  = rpole(1,iipole)
         dix = rpole(2,iipole)
         diy = rpole(3,iipole)
         diz = rpole(4,iipole)
@@ -1042,8 +1062,13 @@ c
            dscale(ip14(j,iglob)) = d4scale
         end do
 c
-        do kkk = 1, nelst(ii)
-          kkpole = elst(kkk,ii)
+        nnelst=merge(nshortelst(ii),
+     &               nelst(ii),
+     &               shortrange)
+        do kkk = 1, nnelst
+          kkpole = merge(shortelst(kkk,ii),
+     &                   elst(kkk,ii),
+     &                 shortrange)
           kbis = poleloc(kkpole)
           kglob = ipole(kkpole)
           if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
@@ -1184,6 +1209,9 @@ c
             ef(3,2,kbis) = ef(3,2,kbis) + fkm(3) - fkp(3)
           end if
         end do
+c
+c     reset interaction scaling coefficients for connected atoms
+c
         do j = 1, n12(iglob)
            pscale(i12(j,iglob)) = 1.0d0
         end do
@@ -1212,18 +1240,21 @@ c
 c
       deallocate (dscale)
       deallocate (pscale)
-c
+
       return
       end
+c
 c
       subroutine tmatxb_pme(nrhs,dodiag,mu,efi)
 c
 c     Compute the direct space contribution to the electric field due to the current value
 c     of the induced dipoles
 c
+c     if shortrange, makes short range evaluation
+c
       use sizes
-      use atoms
       use atmlst
+      use atoms
       use domdec
       use ewald
       use group
@@ -1233,29 +1264,48 @@ c
       use polar
       use polgrp
       use polpot
+      use potent
       use shunt
+      use mpi
       implicit none
-      integer i,nrhs,iglob,kglob,iipole,kkpole,kkpoleloc
+      integer i,nrhs,iglob,kglob,iipole,kkpole,kkpoleloc,nnelst
       integer ipoleloc
       real*8  mu(3,nrhs,*), efi(3,nrhs,npolebloc)
       logical dodiag
+      logical shortrange
       integer j, ii, kkk, irhs
-      real*8  dx, dy, dz, d, d2, damp, expdamp, pgamma,
-     $  scale3, scale5, pdi, pti 
-      real*8 ralpha, alsq2, alsq2n, bfac, exp2a
-      real*8 rr3, rr5, dukx, duky, dukz, pukx, puky, pukz, puir, pukr,
-     $  duir, dukr
+      real*8  dx, dy, dz, d, d2, damp, expdamp, pgamma
+      real*8  scale3, scale5, pdi, pti, pol
+      real*8  ralpha, alsq2, alsq2n, bfac, exp2a
+      real*8  rr3, rr5
+      real*8  dukx, duky, dukz, pukx, puky, pukz
+      real*8  puir, pukr,duir, dukr
       real*8 duix, duiy, duiz, puix, puiy, puiz
-      real*8 bn(0:3), fid(3), fip(3), fimd(3), fimp(3)
+      real*8 bn(0:3)
+      real*8 fid(3), fip(3), fimd(3), fimp(3)
       real*8 fkd(3), fkp(3), fkmd(3), fkmp(3)
       real*8  zero, one, f50
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
       real*8  fgrp,scale
       save    zero, one, f50
-      data    zero/0.d0/, one/1.d0/, f50/50.d0/
       character*10 mode
+      character*80 :: RoutineName
+
       external erfc
+
+      zero = 0.0d0
+      one  = 1.0d0
+      f50  = 50.d0
+
+      shortrange = use_polarshortreal
+      if (shortrange) then 
+         RoutineName='tmatxb_shortreal'
+         mode = 'SHORTEWALD'
+      else
+         RoutineName='tmatxb_pme'
+         mode = 'EWALD'
+      endif
 c
 c     initialize the result vector
 c
@@ -1273,14 +1323,14 @@ c
 c
 c     gather some parameters, then set up the damping factors.
 c
-      mode = 'EWALD'
       call switch (mode)
+
       cutoff2 = cut2
 c
       do ii = 1, npolelocnl
-        iipole = poleglobnl(ii)
-        iglob = ipole(iipole)
-        i = loc(iglob)
+        iipole   = poleglobnl(ii)
+        iglob    = ipole     (iipole)
+        i        = loc       (iglob)
         ipoleloc = poleloc(iipole)
         if (i.eq.0) cycle
         pdi = pdamp(iipole)
@@ -1304,11 +1354,16 @@ c
            dscale(ip14(j,iglob)) = u4scale
         end do
 c
-        do kkk = 1,nelst(ii)
-          kkpole = elst(kkk,ii)
+        nnelst = merge(nshortelst(ii),
+     &                 nelst(ii),
+     &                 shortrange)
+        do kkk = 1, nnelst
+          kkpole = merge(shortelst(kkk,ii),
+     &                   elst(kkk,ii),
+     &                   shortrange)
           kglob = ipole(kkpole)
-          kkpoleloc = poleloc(kkpole)
           if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+          kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle
           dx = x(kglob) - x(iglob)
           dy = y(kglob) - y(iglob)
@@ -1364,6 +1419,7 @@ c
             dukr = dx*dukx + dy*duky + dz*dukz
             puir = dx*puix + dy*puiy + dz*puiz
             pukr = dx*pukx + dy*puky + dz*pukz
+
             fimd(1) = -bn(1)*dukx + bn(2)*dukr*dx
             fimd(2) = -bn(1)*duky + bn(2)*dukr*dy
             fimd(3) = -bn(1)*dukz + bn(2)*dukr*dz
@@ -1388,18 +1444,19 @@ c
             fkp(1) = -rr3*puix + rr5*puir*dx
             fkp(2) = -rr3*puiy + rr5*puir*dy
             fkp(3) = -rr3*puiz + rr5*puir*dz
-            efi(1,1,ipoleloc) = efi(1,1,ipoleloc) - fimd(1) + fid(1)
-            efi(2,1,ipoleloc) = efi(2,1,ipoleloc) - fimd(2) + fid(2)
-            efi(3,1,ipoleloc) = efi(3,1,ipoleloc) - fimd(3) + fid(3)
-            efi(1,2,ipoleloc) = efi(1,2,ipoleloc) - fimp(1) + fip(1)
-            efi(2,2,ipoleloc) = efi(2,2,ipoleloc) - fimp(2) + fip(2)
-            efi(3,2,ipoleloc) = efi(3,2,ipoleloc) - fimp(3) + fip(3)
+
+            efi(1,1,ipoleloc)  = efi(1,1,ipoleloc) - fimd(1) + fid(1)
+            efi(1,2,ipoleloc)  = efi(1,2,ipoleloc) - fimp(1) + fip(1)
+            efi(2,1,ipoleloc)  = efi(2,1,ipoleloc) - fimd(2) + fid(2)
+            efi(2,2,ipoleloc)  = efi(2,2,ipoleloc) - fimp(2) + fip(2)
+            efi(3,1,ipoleloc)  = efi(3,1,ipoleloc) - fimd(3) + fid(3)
+            efi(3,2,ipoleloc)  = efi(3,2,ipoleloc) - fimp(3) + fip(3)
 c
             efi(1,1,kkpoleloc) = efi(1,1,kkpoleloc) - fkmd(1) + fkd(1)
-            efi(2,1,kkpoleloc) = efi(2,1,kkpoleloc) - fkmd(2) + fkd(2)
-            efi(3,1,kkpoleloc) = efi(3,1,kkpoleloc) - fkmd(3) + fkd(3)
             efi(1,2,kkpoleloc) = efi(1,2,kkpoleloc) - fkmp(1) + fkp(1)
+            efi(2,1,kkpoleloc) = efi(2,1,kkpoleloc) - fkmd(2) + fkd(2)
             efi(2,2,kkpoleloc) = efi(2,2,kkpoleloc) - fkmp(2) + fkp(2)
+            efi(3,1,kkpoleloc) = efi(3,1,kkpoleloc) - fkmd(3) + fkd(3)
             efi(3,2,kkpoleloc) = efi(3,2,kkpoleloc) - fkmp(3) + fkp(3)
           end if
         end do
@@ -1429,21 +1486,17 @@ c
 c
 c     if no polarisability, take a negligeable value to allow convergence
 c
-          if (polarity(iipole) .eq. 0d0) then
-             do irhs = 1, nrhs
-               do j = 1, 3
-                 efi(j,irhs,i) = efi(j,irhs,i) +
-     $              mu(j,irhs,i)*100000
-               end do
-             end do
-          else 
-             do irhs = 1, nrhs
-               do j = 1, 3
-                 efi(j,irhs,i) = efi(j,irhs,i) +
-     $              mu(j,irhs,i)/polarity(iipole)
-               end do
-             end do
-          end if
+          if (polarity(iipole).eq.0.0d0) then
+             pol = tinypol ** -1
+          else
+             pol  = polarity(iipole) ** -1
+          endif
+          do irhs = 1, nrhs
+            do j = 1, 3
+              efi(j,irhs,i) = efi(j,irhs,i) +
+     $           mu(j,irhs,i)*pol
+            end do
+          end do
         end do
       end if
 c
@@ -1452,7 +1505,6 @@ c
       deallocate (dscale)
       return
       end
-c
       subroutine efld0_recip(cphi)
 c
 c     Compute the reciprocal space contribution to the electric field due to the permanent 

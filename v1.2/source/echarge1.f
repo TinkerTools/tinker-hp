@@ -24,19 +24,6 @@ c
       return
       end
 c
-c
-c     ##############################################################
-c     ##                                                          ##
-c     ##  subroutine echarge1c  --  Ewald charge derivs via list  ##
-c     ##                                                          ##
-c     ##############################################################
-c
-c
-c     "echarge1c" calculates the charge-charge interaction energy
-c     and first derivatives with respect to Cartesian coordinates
-c     using a particle mesh Ewald summation and a neighbor list
-c
-c
       subroutine echarge1c
       use atmlst
       use atoms
@@ -56,6 +43,7 @@ c
       use usage
       use virial
       use mpi
+      use sizes
       implicit none
       integer ii,i,iglob,iichg
       real*8 e,de,term
@@ -134,24 +122,21 @@ c
      $   then
         if (use_creal) then
           time0 = mpi_wtime()
-          if (use_cshortreal) then
-            call ecrealshort1d
-          else if (use_clong) then
-            call ecreallong1d
-          else
-            call ecreal1d
-          end if
+          call ecreal1d
           time1 = mpi_wtime()
           timereal = timereal + time1 - time0
         end if
       end if
       return
       end
-
-
+c
 c
 c     "ecreal1d" evaluates the real space portion of the Ewald sum
-c     energy and forces due to atomic charge interactions, using a neighbor list
+c     energy and first derivative due to atomic charge interactions
+c     using a pairwise neighbor list
+c
+c     if longrange, calculates just the long range part
+c     if shortrange, calculates just the short range part
 c
       subroutine ecreal1d
       use atmlst
@@ -161,13 +146,14 @@ c
       use charge
       use chgpot
       use couple
+      use cutoff
       use deriv
       use domdec
       use energi
       use ewald
       use group
-      use iounit
       use inter
+      use iounit
       use math
       use molcul
       use neigh
@@ -178,7 +164,7 @@ c
       use virial
       use mpi
       implicit none
-      integer i,j,k,iichg,iglob,kglob,kkchg
+      integer i,j,k,iichg,iglob,kglob,kkchg,nnchg
       integer ii,kkk
       real*8 e,de,efull
       real*8 f,fi,fik
@@ -188,33 +174,55 @@ c
       real*8 xr,yr,zr
       real*8 erfc,erfterm
       real*8 scale,scaleterm
+      real*8 fgrp
       real*8 dedx,dedy,dedz
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
-      real*8 fgrp
       real*8, allocatable :: cscale(:)
+      real*8 s,ds,cshortcut2,facts,factds
+      logical testcut,shortrange,longrange,fullrange
       character*10 mode
+      character*80 :: RoutineName
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
      $ ' update, try lowering nlupdate')
+
+c     compute the short, long, or full real space part of the Ewald summation
+      shortrange = use_cshortreal
+      longrange  = use_clong
+      fullrange  = .not.(shortrange.or.longrange)
+
+      if (shortrange) then 
+         RoutineName = 'ecrealshort1d'
+         mode        = 'SHORTEWALD'
+      else if (longrange) then
+         RoutineName = 'ecreallong1d'
+         mode        = 'EWALD'
+      else
+         RoutineName = 'ecreal1d'
+         mode        = 'EWALD'
+      endif
+
 c
 c     perform dynamic allocation of some local arrays
 c
       allocate (cscale(n))
 c
-c     initialize connected atom scaling 
+c     initialize connected atom scaling
 c
       cscale = 1.0d0
 c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = electric / dielec
-      mode = 'EWALD'
       call switch (mode)
+      cshortcut2 = (chgshortcut-shortheal)**2
+
 c
 c     compute the real space Ewald energy and first derivatives
 c
-      do ii = 1, nionlocnl
+      MAINLOOP:
+     &do ii = 1, nionlocnl
          iichg = chgglobnl(ii)
          iglob = iion(iichg)
          i = loc(iglob)
@@ -241,16 +249,23 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = c5scale
          end do
-         do kkk = 1, nelst(ii)
-            kkchg = elst(kkk,ii)
+         nnchg = merge(nshortelst(ii),
+     &                  nelst     (ii),
+     &                  shortrange
+     &                 )
+         do kkk = 1, nnchg
+            kkchg = merge(shortelst(kkk,ii),
+     &                    elst     (kkk,ii),
+     &                    shortrange
+     &                   )
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             k = loc(kglob)
             if (k.eq.0) then
               write(iout,1000)
               cycle
             end if
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -262,7 +277,11 @@ c     find energy for interactions within real space cutoff
 c
             call image (xr,yr,zr)
             r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
+            testcut = merge(r2 .le. off2.and.r2.ge.cshortcut2,
+     &                      r2 .le. off2,
+     &                      longrange
+     &                     )
+            if (testcut) then
                r = sqrt(r2)
                rb = r + ebuffer
                rb2 = rb * rb
@@ -276,6 +295,25 @@ c
                de = -fik * ((erfterm+scaleterm)/rb2
      &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/rb)
 c
+c     use energy switching if near the cutoff distance
+c     at short or long range
+c
+               if(shortrange .or. longrange)
+     &            call switch_respa(r,chgshortcut,shortheal,s,ds)
+
+               if(shortrange) then
+                  facts  =         s
+                  factds =      + ds
+               else if(longrange) then
+                  facts  = 1.0d0 - s
+                  factds =      - ds
+               else
+                  facts  = 1.0d0
+                  factds = 0.0d0
+               endif
+
+               de = de * facts + e * factds
+               e  =  e * facts
 c     form the chain rule terms for derivative expressions
 c
                de = de / r
@@ -286,6 +324,7 @@ c
 c     increment the overall energy and derivative expressions
 c
                ec = ec + e
+
                dec(1,i) = dec(1,i) + dedx
                dec(2,i) = dec(2,i) + dedy
                dec(3,i) = dec(3,i) + dedz
@@ -334,14 +373,13 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = 1.0d0
          end do
-      end do
+      end do MAINLOOP
 c
 c     perform deallocation of some local arrays
 c
       deallocate (cscale)
       return
       end
-c
 c
 c     #################################################################
 c     ##                                                             ##
@@ -707,406 +745,5 @@ c
       deallocate (reqbcast)
       time1 = mpi_wtime()
       timegrid2 = timegrid2 + time1-time0
-      return
-      end
-c
-c     "ecrealshort1d" evaluates the short range real space portion of the Ewald sum
-c     energy and forces due to atomic charge interactions, using a neighbor list
-c
-      subroutine ecrealshort1d
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use cutoff
-      use deriv
-      use domdec
-      use energi
-      use ewald
-      use group
-      use iounit
-      use inter
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use usage
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iichg,iglob,kglob,kkchg
-      integer ii,kkk
-      real*8 e,de,efull
-      real*8 f,fi,fik
-      real*8 r,r2,rew
-      real*8 rb,rb2
-      real*8 xi,yi,zi
-      real*8 xr,yr,zr
-      real*8 erfc,erfterm
-      real*8 scale,scaleterm
-      real*8 dedx,dedy,dedz
-      real*8 vxx,vyy,vzz
-      real*8 vyx,vzx,vzy
-      real*8 fgrp
-      real*8, allocatable :: cscale(:)
-      real*8 s,ds
-      character*10 mode
-      external erfc
- 1000 format(' Warning, system moved too much since last neighbor list'
-     $ ' update, try lowering nlupdate')
-c
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (cscale(n))
-c
-c     initialize connected atom scaling 
-c
-      cscale = 1.0d0
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      mode = 'SHORTEWALD'
-      call switch (mode)
-c
-c     compute the real space Ewald energy and first derivatives
-c
-      do ii = 1, nionlocnl
-         iichg = chgglobnl(ii)
-         iglob = iion(iichg)
-         i = loc(iglob)
-         if (i.eq.0) then
-           write(iout,1000)
-           cycle
-         end if
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         fi = f * pchg(iichg)
-c
-c     set exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = c2scale
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = c3scale
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = c4scale
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = c5scale
-         end do
-         do kkk = 1, nshortelst(ii)
-            kkchg = shortelst(kkk,ii)
-            if (kkchg.eq.0) cycle
-            kglob = iion(kkchg)
-            k = loc(kglob)
-            if (k.eq.0) then
-              write(iout,1000)
-              cycle
-            end if
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
-c
-c     compute the energy contribution for this interaction
-c
-            xr = xi - x(kglob)
-            yr = yi - y(kglob)
-            zr = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-            call image (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
-               r = sqrt(r2)
-               rb = r + ebuffer
-               rb2 = rb * rb
-               fik = fi * pchg(kkchg)
-               rew = aewald * r
-               erfterm = erfc (rew)
-               scale = cscale(kglob)
-               if (use_group)  scale = scale * fgrp
-               scaleterm = scale - 1.0d0
-               e = (fik/rb) * (erfterm+scaleterm)
-
-               call switch_respa(r,off,shortheal,s,ds)
-               
-               de = -fik * ((erfterm+scaleterm)/rb2
-     &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/rb)
-c
-c     form the chain rule terms for derivative expressions
-c
-               de = de / r
-               dedx = de * xr *s +ds*xr*e/r
-               dedy = de * yr *s +ds*yr*e/r
-               dedz = de * zr *s +ds*zr*e/r
-c
-c     increment the overall energy and derivative expressions
-c
-               ec = ec + e*s
-
-               dec(1,i) = dec(1,i) + dedx
-               dec(2,i) = dec(2,i) + dedy
-               dec(3,i) = dec(3,i) + dedz
-               dec(1,k) = dec(1,k) - dedx
-               dec(2,k) = dec(2,k) - dedy
-               dec(3,k) = dec(3,k) - dedz
-c
-c     increment the internal virial tensor components
-c
-               vxx = xr * dedx
-               vyx = yr * dedx
-               vzx = zr * dedx
-               vyy = yr * dedy
-               vzy = zr * dedy
-               vzz = zr * dedz
-               vir(1,1) = vir(1,1) + vxx
-               vir(2,1) = vir(2,1) + vyx
-               vir(3,1) = vir(3,1) + vzx
-               vir(1,2) = vir(1,2) + vyx
-               vir(2,2) = vir(2,2) + vyy
-               vir(3,2) = vir(3,2) + vzy
-               vir(1,3) = vir(1,3) + vzx
-               vir(2,3) = vir(2,3) + vzy
-               vir(3,3) = vir(3,3) + vzz
-c
-c     increment the total intramolecular energy
-c
-               if (molcule(iglob) .ne. molcule(kglob)) then
-                  efull = (fik/rb) * scale*s
-                  einter = einter + efull
-               end if
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = 1.0d0
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (cscale)
-      return
-      end
-c
-c     "ecreallong1d" evaluates the long range real space portion of the Ewald sum
-c     energy and forces due to atomic charge interactions, using a neighbor list
-c
-      subroutine ecreallong1d
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use cutoff
-      use deriv
-      use domdec
-      use energi
-      use ewald
-      use group
-      use iounit
-      use inter
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use usage
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iichg,iglob,kglob,kkchg
-      integer ii,kkk
-      real*8 e,de,efull
-      real*8 f,fi,fik
-      real*8 r,r2,rew
-      real*8 rb,rb2
-      real*8 xi,yi,zi
-      real*8 xr,yr,zr
-      real*8 erfc,erfterm
-      real*8 scale,scaleterm
-      real*8 dedx,dedy,dedz
-      real*8 vxx,vyy,vzz
-      real*8 vyx,vzx,vzy
-      real*8 fgrp
-      real*8, allocatable :: cscale(:)
-      real*8 s,ds,cshortcut2
-      character*10 mode
-      external erfc
- 1000 format(' Warning, system moved too much since last neighbor list'
-     $ ' update, try lowering nlupdate')
-c
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (cscale(n))
-c
-c     initialize connected atom scaling 
-c
-      cscale = 1.0d0
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      mode = 'EWALD'
-      call switch (mode)
-      cshortcut2 = (chgshortcut-shortheal)**2
-c
-c     compute the real space Ewald energy and first derivatives
-c
-      do ii = 1, nionlocnl
-         iichg = chgglobnl(ii)
-         iglob = iion(iichg)
-         i = loc(iglob)
-         if (i.eq.0) then
-           write(iout,1000)
-           cycle
-         end if
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         fi = f * pchg(iichg)
-c
-c     set exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = c2scale
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = c3scale
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = c4scale
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = c5scale
-         end do
-         do kkk = 1, nelst(ii)
-            kkchg = elst(kkk,ii)
-            if (kkchg.eq.0) cycle
-            kglob = iion(kkchg)
-            k = loc(kglob)
-            if (k.eq.0) then
-              write(iout,1000)
-              cycle
-            end if
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
-c
-c     compute the energy contribution for this interaction
-c
-            xr = xi - x(kglob)
-            yr = yi - y(kglob)
-            zr = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-            call image (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if ((r2 .le. off2).and.(r2.ge.cshortcut2)) then
-               r = sqrt(r2)
-               rb = r + ebuffer
-               rb2 = rb * rb
-               fik = fi * pchg(kkchg)
-               rew = aewald * r
-               erfterm = erfc (rew)
-               scale = cscale(kglob)
-               if (use_group)  scale = scale * fgrp
-               scaleterm = scale - 1.0d0
-               e = (fik/rb) * (erfterm+scaleterm)
-c
-c     use energy switching if close the cutoff distance (at short range)
-c
-               call switch_respa(r,chgshortcut,shortheal,s,ds)
-               de = -fik * ((erfterm+scaleterm)/rb2
-     &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/rb)
-               de = -e*ds+(1-s)*de
-
-c
-c     form the chain rule terms for derivative expressions
-c
-               de = de / r
-               dedx = de * xr
-               dedy = de * yr
-               dedz = de * zr
-c
-c     increment the overall energy and derivative expressions
-c
-               ec = ec + (1-s)*e
-               dec(1,i) = dec(1,i) + dedx
-               dec(2,i) = dec(2,i) + dedy
-               dec(3,i) = dec(3,i) + dedz
-               dec(1,k) = dec(1,k) - dedx
-               dec(2,k) = dec(2,k) - dedy
-               dec(3,k) = dec(3,k) - dedz
-c
-c     increment the internal virial tensor components
-c
-               vxx = xr * dedx
-               vyx = yr * dedx
-               vzx = zr * dedx
-               vyy = yr * dedy
-               vzy = zr * dedy
-               vzz = zr * dedz
-               vir(1,1) = vir(1,1) + vxx
-               vir(2,1) = vir(2,1) + vyx
-               vir(3,1) = vir(3,1) + vzx
-               vir(1,2) = vir(1,2) + vyx
-               vir(2,2) = vir(2,2) + vyy
-               vir(3,2) = vir(3,2) + vzy
-               vir(1,3) = vir(1,3) + vzx
-               vir(2,3) = vir(2,3) + vzy
-               vir(3,3) = vir(3,3) + vzz
-c
-c     increment the total intramolecular energy
-c
-               if (molcule(iglob) .ne. molcule(kglob)) then
-                  efull = (fik/rb) * scale
-                  einter = einter + efull
-               end if
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = 1.0d0
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (cscale)
       return
       end

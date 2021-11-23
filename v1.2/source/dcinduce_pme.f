@@ -629,7 +629,7 @@ c
       end
 
 
-      subroutine pc_dc_efld0_direct(nrhs,ef)
+      subroutine pc_dc_efld0_direct(nrhs,ef,short)
 c
 c     Compute the direct space contribution to the permanent electric field.
 c      Also compute the "p" field, which is used to
@@ -649,9 +649,11 @@ c
       use polar
       use polgrp
       use polpot
+      use potent
       use shunt
+      use mpi
       implicit none
-      integer i,iglob,kglob,kbis,nrhs,ipoleloc
+      integer i,iglob,kglob,kbis,nrhs,ipoleloc,nnelst
       integer atii,atkk,l,cofst1,cofst2,cofst3,rofst
       integer maxrow,tpos
       real*8  ef(3,nrhs,npolebloc)
@@ -678,12 +680,25 @@ c
       real*8, allocatable :: uscale(:)
       save   zero, pt6, one, f50
       data   zero/0.d0/, pt6/0.6d0/, one/1.d0/,f50/50.d0/
+      logical short
+      logical shortrange
       character*10 mode
+      character*80 :: RoutineName
 c
  1000 format(' Warning, system moved too much since last neighbor list'
      $  ' update, try lowering nlupdate')
 c
-      mode = 'EWALD'
+      shortrange = use_polarshortreal
+!     write(*,*) 'short,shortrange',short,shortrange
+      if (shortrange) then 
+!     if (short) then 
+         RoutineName='pc_dc_efld0_shortreal'
+         mode = 'SHORTEWALD'
+      else
+         RoutineName='pc_dc_efld0_direct'
+         mode = 'EWALD'
+      endif
+c
       call switch (mode)
       cutoff2 = cut2
 c
@@ -701,15 +716,16 @@ c
       tpos = 1
 c
       do ii = 1, npolelocnl
-        iipole = poleglobnl(ii)
-        iglob = ipole(iipole)
-        i = loc(iglob)
-        ipoleloc = poleloc(iipole)
-        l = grplst(iglob)
+        iipole   = poleglobnl(ii)
+        iglob    = ipole     (iipole)
+        i        = loc       (iglob)
+        ipoleloc = poleloc   (iipole)
+        l        = grplst    (iglob)
+
 c diagonal of Z mat.
         if(l .gt. 0) then
           rofst = (atmofst(iglob) - 1)*3
-          if (polarity(iipole).ne.0d0)  then
+          if (polarity(iipole).ne.0d0) then
             invpol = 1.0d0/polarity(iipole)
           else
             invpol = 1000.0d0
@@ -720,7 +736,7 @@ c diagonal of Z mat.
           cofst3 = rofst + 3
           cofst1 = (cofst1-1)*(2*maxrow-cofst1)/2
           cofst2 = (cofst2-1)*(2*maxrow-cofst2)/2
-          cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2 
+          cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2
           zmat(rofst+1+cofst1+kofst(l)) = invpol
           zmat(rofst+2+cofst2+kofst(l)) = invpol
           zmat(rofst+3+cofst3+kofst(l)) = invpol
@@ -728,11 +744,11 @@ c diagonal of Z mat.
 
         if (i.eq.0) then
           write(iout,1000)
-          goto 20
+          cycle
         end if
         pdi = pdamp(iipole)
         pti = thole(iipole)
-        ci = rpole(1,iipole)
+        ci  = rpole(1,iipole)
         dix = rpole(2,iipole)
         diy = rpole(3,iipole)
         diz = rpole(4,iipole)
@@ -784,11 +800,16 @@ c diagonal of Z mat.
            uscale(ip14(j,iglob)) = u4scale
         end do
 c
-        do kkk = 1, nelst(ii)
-          kglob = elst(kkk,ii)
+        nnelst=merge(nshortelst(ii),
+     &               nelst(ii),
+     &               shortrange)
+        do kkk = 1, nnelst
+          kglob = merge(shortelst(kkk,ii),
+     &                  elst(kkk,ii),
+     &                 shortrange)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           kkpole = pollist(kglob)
           kbis = poleloc(kglob)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if (kbis.eq.0) then
             write(iout,1000)
             cycle
@@ -927,12 +948,12 @@ c
             ef(2,2,kbis) = ef(2,2,kbis) + fkm(2) - fkp(2)
             ef(3,2,kbis) = ef(3,2,kbis) + fkm(3) - fkp(3)
 
-            bcn(1) = bn(1) - 
-     & (1.0d0 - scale3*scaleu)/ (d*d2)
-            bcn(2) = bn(2) - 
+            bcn(1) = bn(1) - (1.0d0 - scale3*scaleu)/ (d*d2)
+            bcn(2) = bn(2) -
      & 3.0d0*(1.0d0 - scale5*scaleu)/ (d*d2*d2)
 
             if(l .eq. grplst(kglob) .and. l .ne. -1 ) then
+
               atii = (atmofst(iglob) - 1)*3
               atkk = (atmofst(kglob) - 1)*3
               maxrow=npergrp(l)*3
@@ -950,7 +971,7 @@ c
 
               cofst1 = (cofst1-1)*(2*maxrow-cofst1)/2
               cofst2 = (cofst2-1)*(2*maxrow-cofst2)/2
-              cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2 
+              cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2
               zmat(rofst+1+cofst1+kofst(l)) = bcn(1) - bcn(2)*dx*dx
               zmat(rofst+2+cofst1+kofst(l)) = -bcn(2)*dx*dy
               zmat(rofst+3+cofst1+kofst(l)) = -bcn(2)*dx*dz
@@ -959,7 +980,7 @@ c
               zmat(rofst+3+cofst2+kofst(l)) = -bcn(2)*dy*dz
               zmat(rofst+1+cofst3+kofst(l)) = -bcn(2)*dx*dz
               zmat(rofst+2+cofst3+kofst(l)) = -bcn(2)*dy*dz
-              zmat(rofst+3+cofst3+kofst(l)) = bcn(1) - bcn(2)*dz*dz    
+              zmat(rofst+3+cofst3+kofst(l)) = bcn(1) - bcn(2)*dz*dz
               else
               ytab(tpos) = bcn(1) - bcn(2)*dx*dx
               tpos = tpos + 1
@@ -971,13 +992,13 @@ c
               tpos = tpos + 1
               ytab(tpos) = -bcn(2)*dy*dz
               tpos = tpos + 1
-              ytab(tpos) = bcn(1) - bcn(2)*dz*dz 
-              tpos = tpos + 1          
+              ytab(tpos) = bcn(1) - bcn(2)*dz*dz
+              tpos = tpos + 1
             end if
 
           end if
         end do
-        do j = 1, n12(iglob)
+        do j = 1,   n12(iglob)
            pscale(i12(j,iglob)) = 1.0d0
         end do
         do j = 1, n13(iglob)
@@ -1013,409 +1034,11 @@ c
         do j = 1, np14(iglob)
            uscale(ip14(j,iglob)) = 1.0d0
         end do
- 20     continue
       end do
-
-
 c
       deallocate (dscale)
       deallocate (pscale)
-c
-      return
-      end
 
-      subroutine pc_dc_efld0_shortreal(nrhs,ef)
-c
-c     Compute the short range direct space contribution to the permanent electric field.
-c      Also compute the "p" field, which is used to
-c     compute the energy according to the AMOEBA force field.
-c
-      use atmlst
-      use atoms
-      use couple
-      use divcon
-      use domdec
-      use ewald
-      use group
-      use iounit
-      use math
-      use mpole
-      use neigh
-      use polar
-      use polgrp
-      use polpot
-      use shunt
-      implicit none
-      integer i,iglob,kglob,kbis,nrhs,ipoleloc
-      integer atii,atkk,l,cofst1,cofst2,cofst3,rofst
-      integer maxrow,tpos
-      real*8  ef(3,nrhs,npolebloc)
-      integer ii, j, k, kkk, iipole, kkpole
-      real*8  dx, dy, dz, d, d2, d3, d5, pdi, pti, ck,
-     $  dkx, dky, dkz, dkr, qkxx, qkyy, qkzz, qkxy, qkxz, qkyz,
-     $  qkx, qky, qkz, qkr
-      real*8 dix, diy, diz, dir, qixx, qiyy, qizz, qixy, qixz, qiyz,
-     $  qix, qiy, qiz, qir, ci
-      real*8 damp, pgamma, expdamp, scale3, scale5, scale7
-      real*8 drr3,drr5,drr7
-      real*8 prr3,prr5,prr7
-      real*8 dsc3,dsc5,dsc7
-      real*8 psc3,psc5,psc7
-      real*8 zero, pt6, one, f50
-      real*8 ralpha, alsq2, alsq2n, bfac, exp2a
-      real*8 bn(0:3), fim(3), fid(3), fip(3)
-      real*8 fkd(3), fkp(3), fkm(3)
-      real*8 bcn(2),invpol
-      real*8 erfc, cutoff2
-      real*8 fgrp,scaled,scalep,scaleu
-      real*8, allocatable :: dscale(:)
-      real*8, allocatable :: pscale(:)
-      real*8, allocatable :: uscale(:)
-      save   zero, pt6, one, f50
-      data   zero/0.d0/, pt6/0.6d0/, one/1.d0/,f50/50.d0/
-      character*10 mode
-c
- 1000 format(' Warning, system moved too much since last neighbor list'
-     $  ' update, try lowering nlupdate')
-c
-      mode = 'SHORTEWALD'
-      call switch (mode)
-      cutoff2 = cut2
-c
-      allocate (dscale(n))
-      allocate (pscale(n))
-      allocate (uscale(n))
-      do i = 1, n
-         dscale(i) = 1.0d0
-         pscale(i) = 1.0d0
-         uscale(i) = 1.0d0
-      end do
-
-      if(allocated(ytab)) deallocate(ytab)
-      allocate(ytab(npolelocnl*maxelst*6))
-      tpos = 1
-c
-      do ii = 1, npolelocnl
-        iipole = poleglobnl(ii)
-        iglob = ipole(iipole)
-        i = loc(iglob)
-        ipoleloc = poleloc(iipole)
-        l = grplst(iglob)
-c diagonal of Z mat.
-        if(l .gt. 0) then
-          rofst = (atmofst(iglob) - 1)*3
-          if (polarity(iipole).ne.0d0)  then
-            invpol = 1.0d0/polarity(iipole)
-          else
-            invpol = 1000.0d0
-          end if
-          maxrow=npergrp(l)*3
-          cofst1 = rofst + 1
-          cofst2 = rofst + 2
-          cofst3 = rofst + 3
-          cofst1 = (cofst1-1)*(2*maxrow-cofst1)/2
-          cofst2 = (cofst2-1)*(2*maxrow-cofst2)/2
-          cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2 
-          zmat(rofst+1+cofst1+kofst(l)) = invpol
-          zmat(rofst+2+cofst2+kofst(l)) = invpol
-          zmat(rofst+3+cofst3+kofst(l)) = invpol
-        end if
-
-        if (i.eq.0) then
-          write(iout,1000)
-          goto 20
-        end if
-        pdi = pdamp(iipole)
-        pti = thole(iipole)
-        ci = rpole(1,iipole)
-        dix = rpole(2,iipole)
-        diy = rpole(3,iipole)
-        diz = rpole(4,iipole)
-        qixx = rpole(5,iipole)
-        qixy = rpole(6,iipole)
-        qixz = rpole(7,iipole)
-        qiyy = rpole(9,iipole)
-        qiyz = rpole(10,iipole)
-        qizz = rpole(13,iipole)
-        do j = 1, n12(iglob)
-           pscale(i12(j,iglob)) = p2scale
-        end do
-        do j = 1, n13(iglob)
-           pscale(i13(j,iglob)) = p3scale
-        end do
-        do j = 1, n14(iglob)
-           pscale(i14(j,iglob)) = p4scale
-           do k = 1, np11(iglob)
-              if (i14(j,iglob) .eq. ip11(k,iglob))
-     &           pscale(i14(j,iglob)) = p4scale * p41scale
-           end do
-        end do
-        do j = 1, n15(iglob)
-           pscale(i15(j,iglob)) = p5scale
-        end do
-        do j = 1, np11(iglob)
-           dscale(ip11(j,iglob)) = d1scale
-        end do
-        do j = 1, np12(iglob)
-           dscale(ip12(j,iglob)) = d2scale
-        end do
-        do j = 1, np13(iglob)
-           dscale(ip13(j,iglob)) = d3scale
-        end do
-        do j = 1, np14(iglob)
-           dscale(ip14(j,iglob)) = d4scale
-        end do
-
-        do j = 1, np11(iglob)
-           uscale(ip11(j,iglob)) = u1scale
-        end do
-        do j = 1, np12(iglob)
-           uscale(ip12(j,iglob)) = u2scale
-        end do
-        do j = 1, np13(iglob)
-           uscale(ip13(j,iglob)) = u3scale
-        end do
-        do j = 1, np14(iglob)
-           uscale(ip14(j,iglob)) = u4scale
-        end do
-c
-        do kkk = 1, nelst(ii)
-          kglob = elst(kkk,ii)
-          kkpole = pollist(kglob)
-          kbis = poleloc(kglob)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
-          if (kbis.eq.0) then
-            write(iout,1000)
-            cycle
-          end if
-          dx = x(kglob) - x(iglob)
-          dy = y(kglob) - y(iglob)
-          dz = z(kglob) - z(iglob)
-          call image(dx,dy,dz)
-          d2 = dx*dx + dy*dy + dz*dz
-          if (d2.le.cutoff2) then
-            d  = sqrt(d2)
-c
-c     calculate the error function damping terms
-c
-            ralpha = aewald * d
-            bn(0) = erfc(ralpha) / d
-            alsq2 = 2.0d0 * aewald**2
-            alsq2n = 0.0d0
-            if (aewald .gt. 0.0d0)
-     &        alsq2n = 1.0d0 / (sqrtpi*aewald)
-            exp2a = exp(-ralpha**2)
-            do j = 1, 3
-              bfac = dble(j+j-1)
-              alsq2n = alsq2 * alsq2n
-              bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
-            end do
-c
-            d3   = d*d2
-            d5   = d3*d2
-            ck   = rpole(1,kkpole)
-            dkx  = rpole(2,kkpole)
-            dky  = rpole(3,kkpole)
-            dkz  = rpole(4,kkpole)
-            qkxx = rpole(5,kkpole)
-            qkxy = rpole(6,kkpole)
-            qkxz = rpole(7,kkpole)
-            qkyy = rpole(9,kkpole)
-            qkyz = rpole(10,kkpole)
-            qkzz = rpole(13,kkpole)
-            damp = pdi*pdamp(kkpole)
-            scale3 = one
-            scale5 = one
-            scale7 = one
-            if (damp.ne.zero) then
-              pgamma = min(pti,thole(kkpole))
-              damp = -pgamma*(d/damp)**3
-              if (damp.gt.-F50) then
-                expdamp = exp(damp)
-                scale3 = one - expdamp
-                scale5 = one - expdamp*(one-damp)
-                scale7 = one - expdamp
-     &                      *(one-damp + pt6*damp**2)
-              end if
-            end if
-            scaled = dscale(kglob)
-            scalep = pscale(kglob)
-            scaleu = uscale(kglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-              scaleu = scaleu * fgrp
-            end if
-            dsc3 = scale3 * scaled
-            dsc5 = scale5 * scaled
-            dsc7 = scale7 * scaled
-            psc3 = scale3 * scalep
-            psc5 = scale5 * scalep
-            psc7 = scale7 * scalep
-            drr3 = (1.0d0-dsc3) / (d*d2)
-            drr5 = 3.0d0 * (1.0d0-dsc5) / (d*d2*d2)
-            drr7 = 15.0d0 * (1.0d0-dsc7) / (d*d2*d2*d2)
-            prr3 = (1.0d0-psc3) / (d*d2)
-            prr5 = 3.0d0 * (1.0d0-psc5) / (d*d2*d2)
-            prr7 = 15.0d0 * (1.0d0-psc7) / (d*d2*d2*d2)
-c
-c     compute some intermediate quantities
-c
-            dir = dix*dx + diy*dy + diz*dz
-            qix = qixx*dx + qixy*dy + qixz*dz
-            qiy = qixy*dx + qiyy*dy + qiyz*dz
-            qiz = qixz*dx + qiyz*dy + qizz*dz
-            qir = qix*dx + qiy*dy + qiz*dz
-            dkr = dkx*dx + dky*dy + dkz*dz
-            qkx = qkxx*dx + qkxy*dy + qkxz*dz
-            qky = qkxy*dx + qkyy*dy + qkyz*dz
-            qkz = qkxz*dx + qkyz*dy + qkzz*dz
-            qkr = qkx*dx + qky*dy + qkz*dz
-c
-            fim(1) = -dx*(bn(1)*ck-bn(2)*dkr+bn(3)*qkr)
-     &                   - bn(1)*dkx + 2.0d0*bn(2)*qkx
-            fim(2) = -dy*(bn(1)*ck-bn(2)*dkr+bn(3)*qkr)
-     &                   - bn(1)*dky + 2.0d0*bn(2)*qky
-            fim(3) = -dz*(bn(1)*ck-bn(2)*dkr+bn(3)*qkr)
-     &                   - bn(1)*dkz + 2.0d0*bn(2)*qkz
-            fkm(1) = dx*(bn(1)*ci+bn(2)*dir+bn(3)*qir)
-     &                  - bn(1)*dix - 2.0d0*bn(2)*qix
-            fkm(2) = dy*(bn(1)*ci+bn(2)*dir+bn(3)*qir)
-     &                  - bn(1)*diy - 2.0d0*bn(2)*qiy
-            fkm(3) = dz*(bn(1)*ci+bn(2)*dir+bn(3)*qir)
-     &                  - bn(1)*diz - 2.0d0*bn(2)*qiz
-            fid(1) = -dx*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                   - drr3*dkx + 2.0d0*drr5*qkx
-            fid(2) = -dy*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                  - drr3*dky + 2.0d0*drr5*qky
-            fid(3) = -dz*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                   - drr3*dkz + 2.0d0*drr5*qkz
-            fkd(1) = dx*(drr3*ci+drr5*dir+drr7*qir)
-     &                  - drr3*dix - 2.0d0*drr5*qix
-            fkd(2) = dy*(drr3*ci+drr5*dir+drr7*qir)
-     &                  - drr3*diy - 2.0d0*drr5*qiy
-            fkd(3) = dz*(drr3*ci+drr5*dir+drr7*qir)
-     &                     - drr3*diz - 2.0d0*drr5*qiz
-            fip(1) = -dx*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                   - prr3*dkx + 2.0d0*prr5*qkx
-            fip(2) = -dy*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                   - prr3*dky + 2.0d0*prr5*qky
-            fip(3) = -dz*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                   - prr3*dkz + 2.0d0*prr5*qkz
-            fkp(1) = dx*(prr3*ci+prr5*dir+prr7*qir)
-     &                  - prr3*dix - 2.0d0*prr5*qix
-            fkp(2) = dy*(prr3*ci+prr5*dir+prr7*qir)
-     &                  - prr3*diy - 2.0d0*prr5*qiy
-            fkp(3) = dz*(prr3*ci+prr5*dir+prr7*qir)
-     &                  - prr3*diz - 2.0d0*prr5*qiz
-            ef(1,1,ipoleloc) = ef(1,1,ipoleloc) + fim(1) - fid(1)
-            ef(2,1,ipoleloc) = ef(2,1,ipoleloc) + fim(2) - fid(2)
-            ef(3,1,ipoleloc) = ef(3,1,ipoleloc) + fim(3) - fid(3)
-            ef(1,2,ipoleloc) = ef(1,2,ipoleloc) + fim(1) - fip(1)
-            ef(2,2,ipoleloc) = ef(2,2,ipoleloc) + fim(2) - fip(2)
-            ef(3,2,ipoleloc) = ef(3,2,ipoleloc) + fim(3) - fip(3)
-c
-            ef(1,1,kbis) = ef(1,1,kbis) + fkm(1) - fkd(1)
-            ef(2,1,kbis) = ef(2,1,kbis) + fkm(2) - fkd(2)
-            ef(3,1,kbis) = ef(3,1,kbis) + fkm(3) - fkd(3)
-            ef(1,2,kbis) = ef(1,2,kbis) + fkm(1) - fkp(1)
-            ef(2,2,kbis) = ef(2,2,kbis) + fkm(2) - fkp(2)
-            ef(3,2,kbis) = ef(3,2,kbis) + fkm(3) - fkp(3)
-
-            bcn(1) = bn(1) - 
-     & (1.0d0 - scale3*scaleu)/ (d*d2)
-            bcn(2) = bn(2) - 
-     & 3.0d0*(1.0d0 - scale5*scaleu)/ (d*d2*d2)
-
-            if(l .eq. grplst(kglob) .and. l .ne. -1 ) then
-              atii = (atmofst(iglob) - 1)*3
-              atkk = (atmofst(kglob) - 1)*3
-              maxrow=npergrp(l)*3
-              if(atii .lt. atkk) then
-                cofst1 = atii + 1
-                cofst2 = atii + 2
-                cofst3 = atii + 3
-                rofst = atkk
-              else
-                cofst1 = atkk + 1
-                cofst2 = atkk + 2
-                cofst3 = atkk + 3
-                rofst = atii
-              end if
-
-              cofst1 = (cofst1-1)*(2*maxrow-cofst1)/2
-              cofst2 = (cofst2-1)*(2*maxrow-cofst2)/2
-              cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2 
-              zmat(rofst+1+cofst1+kofst(l)) = bcn(1) - bcn(2)*dx*dx
-              zmat(rofst+2+cofst1+kofst(l)) = -bcn(2)*dx*dy
-              zmat(rofst+3+cofst1+kofst(l)) = -bcn(2)*dx*dz
-              zmat(rofst+1+cofst2+kofst(l)) = -bcn(2)*dx*dy
-              zmat(rofst+2+cofst2+kofst(l)) = bcn(1) - bcn(2)*dy*dy
-              zmat(rofst+3+cofst2+kofst(l)) = -bcn(2)*dy*dz
-              zmat(rofst+1+cofst3+kofst(l)) = -bcn(2)*dx*dz
-              zmat(rofst+2+cofst3+kofst(l)) = -bcn(2)*dy*dz
-              zmat(rofst+3+cofst3+kofst(l)) = bcn(1) - bcn(2)*dz*dz    
-              else
-              ytab(tpos) = bcn(1) - bcn(2)*dx*dx
-              tpos = tpos + 1
-              ytab(tpos) = -bcn(2)*dx*dy
-              tpos = tpos + 1
-              ytab(tpos) = -bcn(2)*dx*dz
-              tpos = tpos + 1
-              ytab(tpos) = bcn(1) - bcn(2)*dy*dy
-              tpos = tpos + 1
-              ytab(tpos) = -bcn(2)*dy*dz
-              tpos = tpos + 1
-              ytab(tpos) = bcn(1) - bcn(2)*dz*dz 
-              tpos = tpos + 1          
-            end if
-
-          end if
-        end do
-        do j = 1, n12(iglob)
-           pscale(i12(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n13(iglob)
-           pscale(i13(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n14(iglob)
-           pscale(i14(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n15(iglob)
-           pscale(i15(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np11(iglob)
-           dscale(ip11(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np12(iglob)
-           dscale(ip12(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np13(iglob)
-           dscale(ip13(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np14(iglob)
-           dscale(ip14(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np11(iglob)
-           uscale(ip11(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np12(iglob)
-           uscale(ip12(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np13(iglob)
-           uscale(ip13(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np14(iglob)
-           uscale(ip14(j,iglob)) = 1.0d0
-        end do
- 20     continue
-      end do
-
-
-c
-      deallocate (dscale)
-      deallocate (pscale)
-c
       return
       end
 
@@ -1445,13 +1068,15 @@ c     loop over the k blocks and perform a cholesky factorization
       return
       end
 
+c      
       subroutine pc_dc_tmatxb_pme(nrhs,dodiag,mu,efi)
 c
 c     Compute the direct space contribution to the electric field due to the current value
 c     of the induced dipoles
 c
-      use atmlst
+      use sizes
       use atoms
+      use atmlst
       use divcon
       use domdec
       use ewald
@@ -1461,9 +1086,11 @@ c
       use polar
       use polgrp
       use polpot
+      use potent
       use shunt
+      use mpi
       implicit none
-      integer i,nrhs,iglob,kglob,kbis,iipole,kkpole,kkpoleloc
+      integer i,nrhs,iglob,kglob,kbis,iipole,kkpole,kkpoleloc,nnelst
       integer ipoleloc,l
       real*8  mu(3,nrhs,*), efi(3,nrhs,npolebloc)
       logical dodiag
@@ -1474,12 +1101,25 @@ c
       real*8  zero, one, f50
       real*8  cutoff2
       save    zero, one, f50
+
+      logical shortrange
       character*10 mode
+      character*80 :: RoutineName
+
+
 
       zero = 0.0d0
       one  = 1.0d0
       f50  = 50.d0
-c
+
+      shortrange = use_polarshortreal
+      if (shortrange) then 
+         RoutineName='pc_dc_tmatxb_shortreal'
+         mode = 'SHORTEWALD'
+      else
+         RoutineName='pc_dc_tmatxb_pme'
+         mode = 'EWALD'
+      endif
 c     initialize the result vector
 c
       do i = 1, npolebloc
@@ -1493,16 +1133,16 @@ c
 c
 c     gather some parameters, then set up the damping factors.
 c
-      mode = 'EWALD'
       call switch (mode)
+
       cutoff2 = cut2
       tpos = 1
 c
       do ii = 1, npolelocnl
-        iipole = poleglobnl(ii)
-        iglob = ipole(iipole)
-        l = grplst(iglob)
-        i = loc(iglob)
+        iipole   = poleglobnl(ii)
+        iglob    = ipole  (iipole)
+        i        = loc    (iglob)
+        l        = grplst (iglob)
         ipoleloc = poleloc(iipole)
         if (i.eq.0) cycle
         duix = mu(1,1,ipoleloc)
@@ -1512,8 +1152,13 @@ c
         puiy = mu(2,2,ipoleloc)
         puiz = mu(3,2,ipoleloc)
 c
-        do kkk = 1,nelst(ii)
-          kglob = elst(kkk,ii)
+        nnelst = merge(nshortelst(ii),
+     &                 nelst(ii),
+     &                 shortrange)
+        do kkk = 1, nnelst
+          kglob = merge(shortelst(kkk,ii),
+     &                  elst(kkk,ii),
+     &                   shortrange)
 c
 c     only build induced field for interactons outside of a block
 c     check if the atoms are in the same block
@@ -1552,7 +1197,7 @@ c
 c
             efi(1,1,kkpoleloc) = efi(1,1,kkpoleloc)
      $  + ytab(tpos)*duix + ytab(tpos+1)*duiy + ytab(tpos+2)*duiz
-            efi(2,1,kkpoleloc) = efi(2,1,kkpoleloc) 
+            efi(2,1,kkpoleloc) = efi(2,1,kkpoleloc)
      $  + ytab(tpos+1)*duix + ytab(tpos+3)*duiy + ytab(tpos+4)*duiz
             efi(3,1,kkpoleloc) = efi(3,1,kkpoleloc)
      $  + ytab(tpos+2)*duix + ytab(tpos+4)*duiy + ytab(tpos+5)*duiz
@@ -1593,11 +1238,13 @@ c
       end
 
 c
+c      
       subroutine otf_dc_tmatxb_pme(nrhs,dodiag,mu,efi)
 c
 c     Compute the direct space contribution to the electric field due to the current value
 c     of the induced dipoles
 c
+      use sizes
       use atmlst
       use atoms
       use divcon
@@ -1610,15 +1257,17 @@ c
       use polar
       use polgrp
       use polpot
+      use potent
       use shunt
+      use mpi
       implicit none
-      integer i,nrhs,iglob,kglob,kbis,iipole,kkpole,kkpoleloc
+      integer i,nrhs,iglob,kglob,kbis,iipole,kkpole,kkpoleloc,nnelst
       integer ipoleloc,l
       real*8  mu(3,nrhs,*), efi(3,nrhs,npolebloc)
       logical dodiag
-      integer j, ii, kkk, irhs, inl
+      integer j, ii, kkk, irhs
       real*8  dx, dy, dz, d, d2, damp, expdamp, pgamma,
-     $  scale3, scale5, pdi, pti 
+     $  scale3, scale5, pdi, pti
       real*8 ralpha, alsq2, alsq2n, bfac, exp2a
       real*8 rr3, rr5, dukx, duky, dukz, pukx, puky, pukz, puir, pukr,
      $  duir, dukr
@@ -1630,10 +1279,24 @@ c
       real*8  erfc, cutoff2
       real*8  fgrp,scale
       save    zero, one, f50
-      data    zero/0.d0/, one/1.d0/, f50/50.d0/
+      logical shortrange
       character*10 mode
+      character*80 :: RoutineName
+
       external erfc
-c
+
+      zero = 0.0d0
+      one  = 1.0d0
+      f50  = 50.d0
+
+      shortrange = use_polarshortreal
+      if (shortrange) then 
+         RoutineName='otf_dc_tmatxb_shortreal'
+         mode = 'SHORTEWALD'
+      else
+         RoutineName='otf_dc_tmatxb_pme'
+         mode = 'EWALD'
+      endif
 c     initialize the result vector
 c
       do i = 1, npolebloc
@@ -1650,17 +1313,16 @@ c
 c
 c     gather some parameters, then set up the damping factors.
 c
-      mode = 'EWALD'
       call switch (mode)
+
       cutoff2 = cut2
 c
       do ii = 1, npolelocnl
-        iipole = poleglobnl(ii)
-        iglob = ipole(iipole)
-        l = grplst(iglob)
-        i = loc(iglob)
+        iipole   = poleglobnl(ii)
+        iglob    = ipole  (iipole)
+        i        = loc    (iglob)
+        l        = grplst (iglob)
         ipoleloc = poleloc(iipole)
-        inl = polelocnl(iipole)
         if (i.eq.0) cycle
         pdi = pdamp(iipole)
         pti = thole(iipole)
@@ -1683,13 +1345,19 @@ c
            dscale(ip14(j,iglob)) = u4scale
         end do
 c
-        do kkk = 1,nelst(ii)
-          kglob = elst(kkk,ii)
+        nnelst = merge(nshortelst(ii),
+     &                 nelst(ii),
+     &                 shortrange)
+        do kkk = 1, nnelst
+          kglob = merge(shortelst(kkk,ii),
+     &                  elst(kkk,ii),
+     &                  shortrange)
           if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
-c     only build induced field for interactons outside of a block
+c     only build induced field for interactions outside of a block
 c     check if the atoms are in the same block
 c
+
           if(l .ne. grplst(kglob) .or. l .lt. 0)then
           kkpole = pollist(kglob)
           kbis = loc(kglob)
@@ -1725,10 +1393,10 @@ c
               alsq2n = alsq2 * alsq2n
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
-c
             scale = dscale(kglob)
             if (use_group)  scale = scale * fgrp
 
+c
             scale3 = scale
             scale5 = scale
             damp = pdi*pdamp(kkpole)
@@ -1814,7 +1482,7 @@ c
         do i = 1, npoleloc
           iipole = poleglob(i)
           if (polarity(iipole) .eq. 0d0) then
-            cycle
+             cycle
           else
             do irhs = 1, nrhs
               do j = 1, 3
@@ -1831,7 +1499,7 @@ c
       deallocate (dscale)
       return
       end
-
+c      
       subroutine otf_dc_efld0_direct(nrhs,ef)
 c
 c     Compute the direct space contribution to the permanent electric field.
@@ -1852,9 +1520,11 @@ c
       use polar
       use polgrp
       use polpot
+      use potent
       use shunt
+      use mpi
       implicit none
-      integer i,iglob,kglob,kbis,nrhs,ipoleloc
+      integer i,iglob,kglob,kbis,nrhs,ipoleloc,nnelst
       integer atii,atkk,l,cofst1,cofst2,cofst3,rofst
       integer maxrow
       real*8  ef(3,nrhs,npolebloc)
@@ -1880,12 +1550,23 @@ c
       real*8, allocatable :: pscale(:)
       save   zero, pt6, one, f50
       data   zero/0.d0/, pt6/0.6d0/, one/1.d0/,f50/50.d0/
+      logical shortrange
       character*10 mode
+      character*80 :: RoutineName
 c
- 1000 format(' Warning, system moved too much since last neighbor list'
-     $  ' update, try lowering nlupdate')
+ 1000 format(' Warning, system moved too much since last neighbor list
+     $  update, try lowering nlupdate')
 c
-      mode = 'EWALD'
+      shortrange = use_polarshortreal
+!     write(*,*) 'short,shortrange',short,shortrange
+      if (shortrange) then 
+         RoutineName='otf_dc_efld0_shortreal'
+         mode = 'SHORTEWALD'
+      else
+         RoutineName='otf_dc_efld0_direct'
+         mode = 'EWALD'
+      endif
+c
       call switch (mode)
       cutoff2 = cut2
 c
@@ -1898,11 +1579,11 @@ c
 
 c
       do ii = 1, npolelocnl
-        iipole = poleglobnl(ii)
-        iglob = ipole(iipole)
-        i = loc(iglob)
-        ipoleloc = poleloc(iipole)
-        l = grplst(iglob)
+        iipole   = poleglobnl(ii)
+        iglob    = ipole     (iipole)
+        i        = loc       (iglob)
+        ipoleloc = poleloc   (iipole)
+        l        = grplst    (iglob)
 c diagonal of Z mat.
         if(l .gt. 0) then
           rofst = (atmofst(iglob) - 1)*3
@@ -1917,7 +1598,7 @@ c diagonal of Z mat.
           cofst3 = rofst + 3
           cofst1 = (cofst1-1)*(2*maxrow-cofst1)/2
           cofst2 = (cofst2-1)*(2*maxrow-cofst2)/2
-          cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2 
+          cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2
           zmat(rofst+1+cofst1+kofst(l)) = invpol
           zmat(rofst+2+cofst2+kofst(l)) = invpol
           zmat(rofst+3+cofst3+kofst(l)) = invpol
@@ -1925,11 +1606,11 @@ c diagonal of Z mat.
 
         if (i.eq.0) then
           write(iout,1000)
-          goto 20
+          cycle
         end if
         pdi = pdamp(iipole)
         pti = thole(iipole)
-        ci = rpole(1,iipole)
+        ci  = rpole(1,iipole)
         dix = rpole(2,iipole)
         diy = rpole(3,iipole)
         diz = rpole(4,iipole)
@@ -1968,11 +1649,16 @@ c diagonal of Z mat.
            dscale(ip14(j,iglob)) = d4scale
         end do
 c
-        do kkk = 1, nelst(ii)
-          kglob = elst(kkk,ii)
+        nnelst=merge(nshortelst(ii),
+     &               nelst(ii),
+     &               shortrange)
+        do kkk = 1, nnelst
+          kglob = merge(shortelst(kkk,ii),
+     &                  elst(kkk,ii),
+     &                 shortrange)
+          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           kkpole = pollist(kglob)
           kbis = poleloc(kglob)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if (kbis.eq.0) then
             write(iout,1000)
             cycle
@@ -2111,10 +1797,6 @@ c
 
             if(l .eq. grplst(kglob) .and. l .ne. -1 ) then
 
-              if (use_group) then
-                scale3 = scale3*fgrp
-                scale5 = scale5*fgrp
-              end if
               bcn(1) = bn(1) - (1.0d0 - scale3)/ (d*d2)
               bcn(2) = bn(2) - 3.0d0*(1.0d0 - scale5)/ (d*d2*d2)
               atii = (atmofst(iglob) - 1)*3
@@ -2134,7 +1816,7 @@ c
 
               cofst1 = (cofst1-1)*(2*maxrow-cofst1)/2
               cofst2 = (cofst2-1)*(2*maxrow-cofst2)/2
-              cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2 
+              cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2
               zmat(rofst+1+cofst1+kofst(l)) = bcn(1) - bcn(2)*dx*dx
               zmat(rofst+2+cofst1+kofst(l)) = -bcn(2)*dx*dy
               zmat(rofst+3+cofst1+kofst(l)) = -bcn(2)*dx*dz
@@ -2143,7 +1825,7 @@ c
               zmat(rofst+3+cofst2+kofst(l)) = -bcn(2)*dy*dz
               zmat(rofst+1+cofst3+kofst(l)) = -bcn(2)*dx*dz
               zmat(rofst+2+cofst3+kofst(l)) = -bcn(2)*dy*dz
-              zmat(rofst+3+cofst3+kofst(l)) = bcn(1) - bcn(2)*dz*dz              
+              zmat(rofst+3+cofst3+kofst(l)) = bcn(1) - bcn(2)*dz*dz
             end if
 
           end if
@@ -2172,362 +1854,11 @@ c
         do j = 1, np14(iglob)
            dscale(ip14(j,iglob)) = 1.0d0
         end do
- 20     continue
       end do
-
 c
       deallocate (dscale)
       deallocate (pscale)
-c
-      return
-      end
 
-      subroutine otf_dc_efld0_shortreal(nrhs,ef)
-c
-c     Compute the direct space contribution to the permanent electric field.
-c      Also compute the "p" field, which is used to
-c     compute the energy according to the AMOEBA force field.
-c
-      use atmlst
-      use atoms
-      use couple
-      use divcon
-      use domdec
-      use ewald
-      use group
-      use iounit
-      use math
-      use mpole
-      use neigh
-      use polar
-      use polgrp
-      use polpot
-      use shunt
-      implicit none
-      integer i,iglob,kglob,kbis,nrhs,ipoleloc
-      integer atii,atkk,l,cofst1,cofst2,cofst3,rofst
-      integer maxrow
-      real*8  ef(3,nrhs,npolebloc)
-      integer ii, j, k, kkk, iipole, kkpole
-      real*8  dx, dy, dz, d, d2, d3, d5, pdi, pti, ck,
-     $  dkx, dky, dkz, dkr, qkxx, qkyy, qkzz, qkxy, qkxz, qkyz,
-     $  qkx, qky, qkz, qkr
-      real*8 dix, diy, diz, dir, qixx, qiyy, qizz, qixy, qixz, qiyz,
-     $  qix, qiy, qiz, qir, ci
-      real*8 damp, pgamma, expdamp, scale3, scale5, scale7
-      real*8 drr3,drr5,drr7
-      real*8 prr3,prr5,prr7
-      real*8 dsc3,dsc5,dsc7
-      real*8 psc3,psc5,psc7
-      real*8 zero, pt6, one, f50
-      real*8 ralpha, alsq2, alsq2n, bfac, exp2a
-      real*8 bn(0:3), fim(3), fid(3), fip(3)
-      real*8 fkd(3), fkp(3), fkm(3)
-      real*8 bcn(2),invpol
-      real*8 erfc, cutoff2
-      real*8  fgrp,scaled,scalep
-      real*8, allocatable :: dscale(:)
-      real*8, allocatable :: pscale(:)
-      save   zero, pt6, one, f50
-      data   zero/0.d0/, pt6/0.6d0/, one/1.d0/,f50/50.d0/
-      character*10 mode
-c
- 1000 format(' Warning, system moved too much since last neighbor list'
-     $  ' update, try lowering nlupdate')
-c
-      mode = 'SHORTEWALD'
-      call switch (mode)
-      cutoff2 = cut2
-c
-      allocate (dscale(n))
-      allocate (pscale(n))
-      do i = 1, n
-         dscale(i) = 1.0d0
-         pscale(i) = 1.0d0
-      end do
-
-c
-      do ii = 1, npolelocnl
-        iipole = poleglobnl(ii)
-        iglob = ipole(iipole)
-        i = loc(iglob)
-        ipoleloc = poleloc(iipole)
-        l = grplst(iglob)
-c diagonal of Z mat.
-        if(l .gt. 0) then
-          rofst = (atmofst(iglob) - 1)*3
-          if (polarity(iipole).ne.0d0) then
-            invpol = 1.0d0/polarity(iipole)
-          else
-            invpol = 1000.0d0
-          end if
-          maxrow=npergrp(l)*3
-          cofst1 = rofst + 1
-          cofst2 = rofst + 2
-          cofst3 = rofst + 3
-          cofst1 = (cofst1-1)*(2*maxrow-cofst1)/2
-          cofst2 = (cofst2-1)*(2*maxrow-cofst2)/2
-          cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2 
-          zmat(rofst+1+cofst1+kofst(l)) = invpol
-          zmat(rofst+2+cofst2+kofst(l)) = invpol
-          zmat(rofst+3+cofst3+kofst(l)) = invpol
-        end if
-
-        if (i.eq.0) then
-          write(iout,1000)
-          goto 20
-        end if
-        pdi = pdamp(iipole)
-        pti = thole(iipole)
-        ci = rpole(1,iipole)
-        dix = rpole(2,iipole)
-        diy = rpole(3,iipole)
-        diz = rpole(4,iipole)
-        qixx = rpole(5,iipole)
-        qixy = rpole(6,iipole)
-        qixz = rpole(7,iipole)
-        qiyy = rpole(9,iipole)
-        qiyz = rpole(10,iipole)
-        qizz = rpole(13,iipole)
-        do j = 1, n12(iglob)
-           pscale(i12(j,iglob)) = p2scale
-        end do
-        do j = 1, n13(iglob)
-           pscale(i13(j,iglob)) = p3scale
-        end do
-        do j = 1, n14(iglob)
-           pscale(i14(j,iglob)) = p4scale
-           do k = 1, np11(iglob)
-              if (i14(j,iglob) .eq. ip11(k,iglob))
-     &           pscale(i14(j,iglob)) = p4scale * p41scale
-           end do
-        end do
-        do j = 1, n15(iglob)
-           pscale(i15(j,iglob)) = p5scale
-        end do
-        do j = 1, np11(iglob)
-           dscale(ip11(j,iglob)) = d1scale
-        end do
-        do j = 1, np12(iglob)
-           dscale(ip12(j,iglob)) = d2scale
-        end do
-        do j = 1, np13(iglob)
-           dscale(ip13(j,iglob)) = d3scale
-        end do
-        do j = 1, np14(iglob)
-           dscale(ip14(j,iglob)) = d4scale
-        end do
-c
-        do kkk = 1, nelst(ii)
-          kglob = elst(kkk,ii)
-          kkpole = pollist(kglob)
-          kbis = poleloc(kglob)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
-          if (kbis.eq.0) then
-            write(iout,1000)
-            cycle
-          end if
-          dx = x(kglob) - x(iglob)
-          dy = y(kglob) - y(iglob)
-          dz = z(kglob) - z(iglob)
-          call image(dx,dy,dz)
-          d2 = dx*dx + dy*dy + dz*dz
-          if (d2.le.cutoff2) then
-            d  = sqrt(d2)
-c
-c     calculate the error function damping terms
-c
-            ralpha = aewald * d
-            bn(0) = erfc(ralpha) / d
-            alsq2 = 2.0d0 * aewald**2
-            alsq2n = 0.0d0
-            if (aewald .gt. 0.0d0)
-     &        alsq2n = 1.0d0 / (sqrtpi*aewald)
-            exp2a = exp(-ralpha**2)
-            do j = 1, 3
-              bfac = dble(j+j-1)
-              alsq2n = alsq2 * alsq2n
-              bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
-            end do
-c
-            d3   = d*d2
-            d5   = d3*d2
-            ck   = rpole(1,kkpole)
-            dkx  = rpole(2,kkpole)
-            dky  = rpole(3,kkpole)
-            dkz  = rpole(4,kkpole)
-            qkxx = rpole(5,kkpole)
-            qkxy = rpole(6,kkpole)
-            qkxz = rpole(7,kkpole)
-            qkyy = rpole(9,kkpole)
-            qkyz = rpole(10,kkpole)
-            qkzz = rpole(13,kkpole)
-            damp = pdi*pdamp(kkpole)
-            scale3 = one
-            scale5 = one
-            scale7 = one
-            if (damp.ne.zero) then
-              pgamma = min(pti,thole(kkpole))
-              damp = -pgamma*(d/damp)**3
-              if (damp.gt.-F50) then
-                expdamp = exp(damp)
-                scale3 = one - expdamp
-                scale5 = one - expdamp*(one-damp)
-                scale7 = one - expdamp
-     &                      *(one-damp + pt6*damp**2)
-              end if
-            end if
-            scaled = dscale(kglob)
-            scalep = pscale(kglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-            end if
-            dsc3 = scale3 * scaled
-            dsc5 = scale5 * scaled
-            dsc7 = scale7 * scaled
-            psc3 = scale3 * scalep
-            psc5 = scale5 * scalep
-            psc7 = scale7 * scalep
-            drr3 = (1.0d0-dsc3) / (d*d2)
-            drr5 = 3.0d0 * (1.0d0-dsc5) / (d*d2*d2)
-            drr7 = 15.0d0 * (1.0d0-dsc7) / (d*d2*d2*d2)
-            prr3 = (1.0d0-psc3) / (d*d2)
-            prr5 = 3.0d0 * (1.0d0-psc5) / (d*d2*d2)
-            prr7 = 15.0d0 * (1.0d0-psc7) / (d*d2*d2*d2)
-c
-c     compute some intermediate quantities
-c
-            dir = dix*dx + diy*dy + diz*dz
-            qix = qixx*dx + qixy*dy + qixz*dz
-            qiy = qixy*dx + qiyy*dy + qiyz*dz
-            qiz = qixz*dx + qiyz*dy + qizz*dz
-            qir = qix*dx + qiy*dy + qiz*dz
-            dkr = dkx*dx + dky*dy + dkz*dz
-            qkx = qkxx*dx + qkxy*dy + qkxz*dz
-            qky = qkxy*dx + qkyy*dy + qkyz*dz
-            qkz = qkxz*dx + qkyz*dy + qkzz*dz
-            qkr = qkx*dx + qky*dy + qkz*dz
-c
-            fim(1) = -dx*(bn(1)*ck-bn(2)*dkr+bn(3)*qkr)
-     &                   - bn(1)*dkx + 2.0d0*bn(2)*qkx
-            fim(2) = -dy*(bn(1)*ck-bn(2)*dkr+bn(3)*qkr)
-     &                   - bn(1)*dky + 2.0d0*bn(2)*qky
-            fim(3) = -dz*(bn(1)*ck-bn(2)*dkr+bn(3)*qkr)
-     &                   - bn(1)*dkz + 2.0d0*bn(2)*qkz
-            fkm(1) = dx*(bn(1)*ci+bn(2)*dir+bn(3)*qir)
-     &                  - bn(1)*dix - 2.0d0*bn(2)*qix
-            fkm(2) = dy*(bn(1)*ci+bn(2)*dir+bn(3)*qir)
-     &                  - bn(1)*diy - 2.0d0*bn(2)*qiy
-            fkm(3) = dz*(bn(1)*ci+bn(2)*dir+bn(3)*qir)
-     &                  - bn(1)*diz - 2.0d0*bn(2)*qiz
-            fid(1) = -dx*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                   - drr3*dkx + 2.0d0*drr5*qkx
-            fid(2) = -dy*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                  - drr3*dky + 2.0d0*drr5*qky
-            fid(3) = -dz*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                   - drr3*dkz + 2.0d0*drr5*qkz
-            fkd(1) = dx*(drr3*ci+drr5*dir+drr7*qir)
-     &                  - drr3*dix - 2.0d0*drr5*qix
-            fkd(2) = dy*(drr3*ci+drr5*dir+drr7*qir)
-     &                  - drr3*diy - 2.0d0*drr5*qiy
-            fkd(3) = dz*(drr3*ci+drr5*dir+drr7*qir)
-     &                     - drr3*diz - 2.0d0*drr5*qiz
-            fip(1) = -dx*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                   - prr3*dkx + 2.0d0*prr5*qkx
-            fip(2) = -dy*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                   - prr3*dky + 2.0d0*prr5*qky
-            fip(3) = -dz*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                   - prr3*dkz + 2.0d0*prr5*qkz
-            fkp(1) = dx*(prr3*ci+prr5*dir+prr7*qir)
-     &                  - prr3*dix - 2.0d0*prr5*qix
-            fkp(2) = dy*(prr3*ci+prr5*dir+prr7*qir)
-     &                  - prr3*diy - 2.0d0*prr5*qiy
-            fkp(3) = dz*(prr3*ci+prr5*dir+prr7*qir)
-     &                  - prr3*diz - 2.0d0*prr5*qiz
-            ef(1,1,ipoleloc) = ef(1,1,ipoleloc) + fim(1) - fid(1)
-            ef(2,1,ipoleloc) = ef(2,1,ipoleloc) + fim(2) - fid(2)
-            ef(3,1,ipoleloc) = ef(3,1,ipoleloc) + fim(3) - fid(3)
-            ef(1,2,ipoleloc) = ef(1,2,ipoleloc) + fim(1) - fip(1)
-            ef(2,2,ipoleloc) = ef(2,2,ipoleloc) + fim(2) - fip(2)
-            ef(3,2,ipoleloc) = ef(3,2,ipoleloc) + fim(3) - fip(3)
-c
-            ef(1,1,kbis) = ef(1,1,kbis) + fkm(1) - fkd(1)
-            ef(2,1,kbis) = ef(2,1,kbis) + fkm(2) - fkd(2)
-            ef(3,1,kbis) = ef(3,1,kbis) + fkm(3) - fkd(3)
-            ef(1,2,kbis) = ef(1,2,kbis) + fkm(1) - fkp(1)
-            ef(2,2,kbis) = ef(2,2,kbis) + fkm(2) - fkp(2)
-            ef(3,2,kbis) = ef(3,2,kbis) + fkm(3) - fkp(3)
-
-            if(l .eq. grplst(kglob) .and. l .ne. -1 ) then
-              if (use_group) then
-                scale3 = scale3*fgrp
-                scale5 = scale5*fgrp
-              end if
-              bcn(1) = bn(1) - (1.0d0 - scale3)/ (d*d2)
-              bcn(2) = bn(2) - 3.0d0*(1.0d0 - scale5)/ (d*d2*d2)
-              atii = (atmofst(iglob) - 1)*3
-              atkk = (atmofst(kglob) - 1)*3
-              maxrow=npergrp(l)*3
-              if(atii .lt. atkk) then
-                cofst1 = atii + 1
-                cofst2 = atii + 2
-                cofst3 = atii + 3
-                rofst = atkk
-              else
-                cofst1 = atkk + 1
-                cofst2 = atkk + 2
-                cofst3 = atkk + 3
-                rofst = atii
-              end if
-
-              cofst1 = (cofst1-1)*(2*maxrow-cofst1)/2
-              cofst2 = (cofst2-1)*(2*maxrow-cofst2)/2
-              cofst3 = (cofst3-1)*(2*maxrow-cofst3)/2 
-              zmat(rofst+1+cofst1+kofst(l)) = bcn(1) - bcn(2)*dx*dx
-              zmat(rofst+2+cofst1+kofst(l)) = -bcn(2)*dx*dy
-              zmat(rofst+3+cofst1+kofst(l)) = -bcn(2)*dx*dz
-              zmat(rofst+1+cofst2+kofst(l)) = -bcn(2)*dx*dy
-              zmat(rofst+2+cofst2+kofst(l)) = bcn(1) - bcn(2)*dy*dy
-              zmat(rofst+3+cofst2+kofst(l)) = -bcn(2)*dy*dz
-              zmat(rofst+1+cofst3+kofst(l)) = -bcn(2)*dx*dz
-              zmat(rofst+2+cofst3+kofst(l)) = -bcn(2)*dy*dz
-              zmat(rofst+3+cofst3+kofst(l)) = bcn(1) - bcn(2)*dz*dz              
-            end if
-
-          end if
-        end do
-        do j = 1, n12(iglob)
-           pscale(i12(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n13(iglob)
-           pscale(i13(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n14(iglob)
-           pscale(i14(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n15(iglob)
-           pscale(i15(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np11(iglob)
-           dscale(ip11(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np12(iglob)
-           dscale(ip12(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np13(iglob)
-           dscale(ip13(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np14(iglob)
-           dscale(ip14(j,iglob)) = 1.0d0
-        end do
- 20     continue
-      end do
-
-c
-      deallocate (dscale)
-      deallocate (pscale)
-c
       return
       end
 

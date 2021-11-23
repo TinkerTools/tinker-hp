@@ -132,22 +132,25 @@ c
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
      $   then
         if (use_creal) then
-          if (use_cshortreal) then
-            call ecrealshort3d
-          else if (use_clong) then
-            call ecreallong3d
-          else
-            call ecreal3d
-          end if
+          call ecreal3d
         end if
       end if
       return
       end
 c
+c     ################################################################
+c     ##                                                            ##
+c     ##  subroutine ecreal3d  --  Ewald charge analysis via list   ##
+c     ##                                                            ##
+c     ################################################################
+c
 c
 c     "ecreal3d" evaluates the real space portion of the Ewald sum
 c     energy due to atomic charge interactions, and partitions
 c     the energy among the atoms using a pairwise neighbor list
+c
+c     if longrange, calculates just the long range part
+c     if shortrange, calculates just the short range part
 c
       subroutine ecreal3d
       use action
@@ -159,6 +162,7 @@ c
       use charge
       use chgpot
       use couple
+      use cutoff
       use domdec
       use energi
       use ewald
@@ -174,7 +178,7 @@ c
       use usage
       use mpi
       implicit none
-      integer i,j,k,iglob,iichg
+      integer i,j,k,iglob,iichg,nnelst
       integer ii,kkk,kglob,kkchg
       real*8 e,efull
       real*8 f,fi,fik
@@ -185,8 +189,28 @@ c
       real*8 scale,scaleterm
       real*8 fgrp
       real*8, allocatable :: cscale(:)
+      real*8 s,ds,cshortcut2,facts
+      logical testcut,shortrange,longrange,fullrange
       character*10 mode
+      character*80 :: RoutineName
       external erfc
+
+c     compute the short, long, or full real space part of the Ewald summation
+      shortrange = use_cshortreal
+      longrange  = use_clong
+      fullrange  = .not.(shortrange.or.longrange)
+
+      if (shortrange) then 
+         RoutineName = 'ecrealshort3d'
+         mode        = 'SHORTEWALD'
+      else if (longrange) then
+         RoutineName = 'ecreallong3d'
+         mode        = 'EWALD'
+      else
+         RoutineName = 'ecreal3d'
+         mode        = 'EWALD'
+      endif
+
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -199,13 +223,14 @@ c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = electric / dielec
-      mode = 'EWALD'
       call switch (mode)
+      cshortcut2 = (chgshortcut - shortheal) ** 2
 
 c
 c     compute the real space portion of the Ewald summation
 c
-      do ii = 1, nionlocnl
+      MAINLOOP:
+     &do ii = 1, nionlocnl
          iichg = chgglobnl(ii)
          iglob = iion(iichg)
          i = loc(iglob)
@@ -228,12 +253,19 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = c5scale
          end do
-         do kkk = 1, nelst(ii)
-            kkchg = elst(kkk,ii)
+         nnelst = merge(nshortelst(ii),
+     &                  nelst     (ii),
+     &                  shortrange
+     &                 )
+         do kkk = 1, nnelst
+            kkchg = merge(shortelst(kkk,ii),
+     &                    elst     (kkk,ii),
+     &                    shortrange
+     &                   )
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
-            k = loc(kglob)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+            k = loc(kglob)
 c
 c     compute the energy contribution for this interaction
 c
@@ -245,7 +277,12 @@ c     find energy for interactions within real space cutoff
 c
             call image (xr,yr,zr)
             r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
+            testcut = merge(r2 .le. off2.and.r2.ge.cshortcut2,
+     &                      r2 .le. off2,
+     &                      longrange
+     &                     )
+c           if (r2 .le. off2) then
+            if (testcut) then
                r = sqrt(r2)
                rb = r + ebuffer
                fik = fi * pchg(kkchg)
@@ -255,11 +292,26 @@ c
                if (use_group)  scale = scale * fgrp
                scaleterm = scale - 1.0d0
                e = (fik/rb) * (erfterm+scaleterm)
+c
+c     use energy switching if near the cutoff distance
+c     at short or long range
+c
+               if(shortrange .or. longrange)
+     &            call switch_respa(r,chgshortcut,shortheal,s,ds)
+
+               if(shortrange) then
+                  facts  =         s
+               else if(longrange) then
+                  facts  = 1.0d0 - s
+               else
+                  facts  = 1.0d0
+               endif
+
+               e  =  e * facts
+c
+c     increment the overall charge-charge energy component
 c
                ec = ec + e
-c
-c     increment the overall charge-charge energy component
-c
                efull = (fik/rb) * scale
                if (efull .ne. 0.0d0) then
                   nec = nec + 1
@@ -285,320 +337,13 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = 1.0d0
          end do
-      end do
+      end do MAINLOOP
 c
 c     perform deallocation of some local arrays
 c
       deallocate (cscale)
       return
       end
-c
-c     "ecrealshort3d" evaluates the short range real space portion of the Ewald sum
-c     energy due to atomic charge interactions, and partitions
-c     the energy among the atoms using a pairwise neighbor list
-c
-      subroutine ecrealshort3d
-      use action
-      use analyz
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use cutoff
-      use domdec
-      use energi
-      use ewald
-      use group
-      use inform
-      use inter
-      use iounit
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use usage
-      use mpi
-      implicit none
-      integer i,j,k,iglob,iichg
-      integer ii,kkk,kglob,kkchg
-      real*8 e,efull
-      real*8 f,fi,fik
-      real*8 r,r2,rb,rew
-      real*8 xi,yi,zi
-      real*8 xr,yr,zr
-      real*8 erfc,erfterm
-      real*8 scale,scaleterm
-      real*8 fgrp
-      real*8, allocatable :: cscale(:)
-      real*8 s,ds
-      character*10 mode
-      external erfc
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (cscale(n))
-c
-c     initialize connected atom exclusion coefficients
-c
-      cscale = 1.0d0
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      mode = 'SHORTEWALD'
-      call switch (mode)
-
-c
-c     compute the real space portion of the Ewald summation
-c
-      do ii = 1, nionlocnl
-         iichg = chgglobnl(ii)
-         iglob = iion(iichg)
-         i = loc(iglob)
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         fi = f * pchg(iichg)
-c
-c     set exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = c2scale
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = c3scale
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = c4scale
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = c5scale
-         end do
-         do kkk = 1, nshortelst(ii)
-            kkchg = shortelst(kkk,ii)
-            if (kkchg.eq.0) cycle
-            kglob = iion(kkchg)
-            k = loc(kglob)
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
-c
-c     compute the energy contribution for this interaction
-c
-            xr = xi - x(kglob)
-            yr = yi - y(kglob)
-            zr = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-            call image (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
-               r = sqrt(r2)
-               rb = r + ebuffer
-               fik = fi * pchg(kkchg)
-               rew = aewald * r
-               erfterm = erfc (rew)
-               scale = cscale(kglob)
-               if (use_group)  scale = scale * fgrp
-               scaleterm = scale - 1.0d0
-               e = (fik/rb) * (erfterm+scaleterm)
-c
-               call switch_respa(r,off,shortheal,s,ds)
-               ec = ec + e*s
-c
-c     increment the overall charge-charge energy component
-c
-               efull = (fik/rb) * scale
-               if (efull .ne. 0.0d0) then
-                  nec = nec + 1
-                  aec(i) = aec(i) + 0.5d0*efull
-                  aec(k) = aec(k) + 0.5d0*efull
-                  if (molcule(iglob) .ne. molcule(kglob))
-     &               einter = einter + efull
-               end if
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = 1.0d0
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (cscale)
-      return
-      end
-c
-c     "ecreallong3d" evaluates the long range real space portion of the Ewald sum
-c     energy due to atomic charge interactions, and partitions
-c     the energy among the atoms using a pairwise neighbor list
-c
-      subroutine ecreallong3d
-      use action
-      use analyz
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use cutoff
-      use domdec
-      use energi
-      use ewald
-      use group
-      use inform
-      use inter
-      use iounit
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use usage
-      use mpi
-      implicit none
-      integer i,j,k,iglob,iichg
-      integer ii,kkk,kglob,kkchg
-      real*8 e,efull
-      real*8 f,fi,fik
-      real*8 r,r2,rb,rew
-      real*8 xi,yi,zi
-      real*8 xr,yr,zr
-      real*8 fgrp
-      real*8 erfc,erfterm
-      real*8 scale,scaleterm
-      real*8, allocatable :: cscale(:)
-      real*8 s,ds,cshortcut2
-      character*10 mode
-      external erfc
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (cscale(n))
-c
-c     initialize connected atom exclusion coefficients
-c
-      cscale = 1.0d0
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      mode = 'EWALD'
-      cshortcut2 = (chgshortcut-shortheal)**2
-      call switch (mode)
-
-c
-c     compute the real space portion of the Ewald summation
-c
-      do ii = 1, nionlocnl
-         iichg = chgglobnl(ii)
-         iglob = iion(iichg)
-         i = loc(iglob)
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         fi = f * pchg(iichg)
-c
-c     set exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = c2scale
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = c3scale
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = c4scale
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = c5scale
-         end do
-         do kkk = 1, nelst(ii)
-            kkchg = elst(kkk,ii)
-            if (kkchg.eq.0) cycle
-            kglob = iion(kkchg)
-            k = loc(kglob)
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
-c
-c     compute the energy contribution for this interaction
-c
-            xr = xi - x(kglob)
-            yr = yi - y(kglob)
-            zr = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-            call image (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if ((r2 .le. off2).and.(r2.ge.cshortcut2)) then
-               r = sqrt(r2)
-               rb = r + ebuffer
-               fik = fi * pchg(kkchg)
-               rew = aewald * r
-               erfterm = erfc (rew)
-               scale = cscale(kglob)
-               if (use_group)  scale = scale * fgrp
-               scaleterm = scale - 1.0d0
-               e = (fik/rb) * (erfterm+scaleterm)
-c
-c
-c     use energy switching if close the cutoff distance (at short range)
-c
-               call switch_respa(r,chgshortcut,shortheal,s,ds)
-               ec = ec + (1-s)*e
-c
-c     increment the overall charge-charge energy component
-c
-               efull = (fik/rb) * scale
-               if (efull .ne. 0.0d0) then
-                  nec = nec + 1
-                  aec(i) = aec(i) + 0.5d0*efull
-                  aec(k) = aec(k) + 0.5d0*efull
-                  if (molcule(iglob) .ne. molcule(kglob))
-     &               einter = einter + efull
-               end if
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = 1.0d0
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (cscale)
-      return
-      end
-c
 c
 c     ##################################################################
 c     ##                                                              ##

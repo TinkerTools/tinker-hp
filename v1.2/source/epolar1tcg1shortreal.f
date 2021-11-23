@@ -94,7 +94,7 @@ c
       mupeek = 0d0
 
       !1. Prepare electric field
-      call efld0_shortreal(nrhs, efi)
+      call efld0_direct(nrhs, efi)
       call commfieldshort(nrhs, efi)
 
       call commdirdirshort(nrhs,0,efi,reqrec,reqsend)
@@ -108,7 +108,7 @@ c
             if (.not. peek) then !---
                r0 = efi
                oldr0 = r0
-               call tmatxb_shortreal(nrhs, .true., r0, Tr0)
+               call tmatxb_pme(nrhs, .true., r0, Tr0)
                call commfieldshort(nrhs,Tr0)
 
                call commdirdirshort(nrhs,0,Tr0,reqrec,reqsend)
@@ -121,7 +121,7 @@ c
                oldr0 = r0
                call diagvec(nrhs, efi, aefi)
                oldaefi = aefi
-               call dbletmatxb_shortreal(nrhs,.true.,r0, aefi, Tr0, 
+               call dbletmatxb_pme(nrhs,.true.,r0, aefi, Tr0, 
      $         Taefi)
                call commfieldshort(nrhs,Tr0)
                call commfieldshort(nrhs,Taefi)
@@ -142,7 +142,7 @@ c
                call diagvec(nrhs, efi, mu0)
                aefi = mu0
                oldaefi = mu0
-               call tmatxb_shortreal(nrhs, .true., mu0, Taefi)
+               call tmatxb_pme(nrhs, .true., mu0, Taefi)
                call commfieldshort(nrhs,Taefi)
 
                call commdirdirshort(nrhs,0,Taefi,reqrec,reqsend)
@@ -152,7 +152,7 @@ c
                r0 = efi - Taefi 
                oldr0 = r0
 
-               call tmatxb_shortreal(nrhs, .true., r0, Tr0)
+               call tmatxb_pme(nrhs, .true., r0, Tr0)
                call commfieldshort(nrhs,Tr0)
 
                call commdirdirshort(nrhs,0,Tr0,reqrec,reqsend)
@@ -164,7 +164,7 @@ c
                mu0 = aefi
                oldaefi = aefi
 
-               call tmatxb_shortreal(nrhs, .true., aefi, Taefi)
+               call tmatxb_pme(nrhs, .true., aefi, Taefi)
                call commfieldshort(nrhs,Taefi)
                
                call commdirdirshort(nrhs,0,Taefi,reqrec,reqsend)
@@ -174,7 +174,7 @@ c
                r0 = efi - Taefi
                oldr0 = r0
                
-               call tmatxb_shortreal(nrhs, .true., r0, Tr0)
+               call tmatxb_pme(nrhs, .true., r0, Tr0)
                call commfieldshort(nrhs,Tr0)
 
                call commdirdirshort(nrhs,0,Tr0,reqrec,reqsend)
@@ -191,7 +191,7 @@ c
                call diagvec(nrhs, efi, efi)
                r0 = efi
                oldr0 = oldefi
-               call tmatxb_shortreal(nrhs, .true., r0, Tr0)
+               call tmatxb_pme(nrhs, .true., r0, Tr0)
                call commfieldshort(nrhs,Tr0)
 
                call commdirdirshort(nrhs,0,Tr0,reqrec,reqsend)
@@ -205,7 +205,7 @@ c
                call diagvec(nrhs, efi, efi)
                r0 = efi
 
-               call tmatxb_shortreal(nrhs, .true., r0, Tr0)
+               call tmatxb_pme(nrhs, .true., r0, Tr0)
                call commfieldshort(nrhs,Tr0)
 
                call commdirdirshort(nrhs,0,Tr0,reqrec,reqsend)
@@ -223,7 +223,7 @@ c
                aefi = mu0
                oldaefi = mu0
 
-               call tmatxb_shortreal(nrhs, .true., mu0, Tmu0)
+               call tmatxb_pme(nrhs, .true., mu0, Tmu0)
                call commfieldshort(nrhs,Tmu0)
 
                call commdirdirshort(nrhs,0,Tmu0,reqrec,reqsend)
@@ -234,7 +234,7 @@ c
                oldr0 = r0 
                call diagvec(nrhs, r0, r0)
 
-               call tmatxb_shortreal(nrhs, .true., r0, Tr0)
+               call tmatxb_pme(nrhs, .true., r0, Tr0)
                call commfieldshort(nrhs,Tr0)
 
                call commdirdirshort(nrhs,0,Tr0,reqrec,reqsend)
@@ -249,7 +249,7 @@ c
                aefi = mu0
                oldaefi = mu0
 
-               call tmatxb_shortreal(nrhs, .true., mu0, Tmu0)
+               call tmatxb_pme(nrhs, .true., mu0, Tmu0)
                call commfieldshort(nrhs,Tmu0)
 
                call commdirdirshort(nrhs,0,Tmu0,reqrec,reqsend)
@@ -260,7 +260,7 @@ c
                Tefi = Tmu0
                call diagvec2(nrhs, oldr0, Tefi, r0, Tefi)
 
-               call tmatxb_shortreal(nrhs, .true., r0, Tr0)
+               call tmatxb_pme(nrhs, .true., r0, Tr0)
                call commfieldshort(nrhs,Tr0)
 
                call commdirdirshort(nrhs,0,Tr0,reqrec,reqsend)
@@ -384,7 +384,7 @@ c
          call commdirdirshort(nrhs,1,tmpbig,reqrec,reqsend)
          call commdirdirshort(nrhs,2,tmpbig,reqrec,reqsend)
 
-         call tmatxb_shortreal(nrhs, .true., tmpbig, tmpbig2)
+         call tmatxb_pme(nrhs, .true., tmpbig, tmpbig2)
          call commfieldshort(nrhs, tmpbig2)
 
          call commdirdirshort(1,0,arrTA,reqrec,reqsend)

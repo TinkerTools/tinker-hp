@@ -430,7 +430,7 @@ c     story
 c
       arrayshape=(/n/)
       if (hostrank == 0) then
-        windowsize = int(n,MPI_ADDRESS_KIND)*24_MPI_ADDRESS_KIND
+        windowsize = int(n,MPI_ADDRESS_KIND)*192_MPI_ADDRESS_KIND
       else
         windowsize = 0_MPI_ADDRESS_KIND
       end if
