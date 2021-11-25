@@ -118,6 +118,13 @@ c
             if (r .eq. 0.0d0)  r = 1.0d0
             de = 2.0d0 * force * dt / r
 c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               de = de * fgrp
+            end if
+c
 c     compute chain rule terms needed for derivatives
 c
             dedx = de * xr
@@ -180,6 +187,13 @@ c            if (use_bounds)  call image (xr,yr,zr)
             e = force * dt2
             if (r .eq. 0.0d0)  r = 1.0d0
             de = 2.0d0 * force * dt / r
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               de = de * fgrp
+            end if
 c
 c     compute chain rule terms needed for derivatives
 c
@@ -275,6 +289,13 @@ c
                dt2 = dt * dt
                e = force * dt2
                deddt = 2.0d0 * force * dt 
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  deddt = deddt * fgrp
+               end if
 c
 c     compute derivative components for this interaction
 c
@@ -426,6 +447,13 @@ c
                dt2 = dt * dt
                e = force * dt2
                dedphi = 2.0d0 * force * dt
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c
@@ -649,6 +677,13 @@ c
             e = force * dt2
             deddt = 2.0d0 * force * dt
 c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               deddt = deddt * fgrp
+            end if
+c
 c     compute derivative components for this interaction
 c
             dedxia = deddt * (ybd*zcd - zbd*ycd)
@@ -740,6 +775,13 @@ c
                   de = -2.0d0 * width * e
                   e = e - depth
 c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     de = de * fgrp
+                  end if
+c
 c     compute chain rule terms needed for derivatives
 c
                   dedx = de * xr
@@ -801,6 +843,13 @@ c
                e = a/r12 - b/r6
                if (ri .eq. 0.0d0)  ri = 1.0d0
                de = (12.0d0*a/r12 - 6.0d0*b/r6) / (r*ri)
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  de = de * fgrp
+               end if
 c
 c     compute chain rule terms needed for derivatives
 c

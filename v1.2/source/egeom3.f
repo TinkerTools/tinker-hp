@@ -107,6 +107,7 @@ c
             dt = max(0.0d0,r-pfix(2,i))
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             neg = neg + 1
             eg = eg + e
             aeg(ialoc) = aeg(ialoc) + e
@@ -170,6 +171,7 @@ c            if (use_bounds)  call image (xr,yr,zr)
             dt = r - target
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             neg = neg + 1
             eg = eg + e
             aeg(ialoc) = aeg(ialoc) + 0.5d0*e
@@ -240,6 +242,7 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group)  e = e * fgrp
                neg = neg + 1
                eg = eg + e
                aeg(ibloc) = aeg(ibloc) + e
@@ -355,6 +358,7 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group)  e = e * fgrp
                neg = neg + 1
                eg = eg + e
                aeg(ibloc) = aeg(ibloc) + 0.5d0*e
@@ -430,6 +434,7 @@ c         if (use_bounds)  call image (xr,yr,zr)
          dt = r - target
          dt2 = dt * dt
          e = force * dt2
+         if (use_group)  e = e * fgrp
          neg = neg + 1
          eg = eg + e
          size = dble(igrp(2,ia) - igrp(1,ia) + 1)
@@ -499,6 +504,7 @@ c
             dt = vol - target
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             neg = neg + 1
             eg = eg + e
             aeg(ialoc) = aeg(ialoc) + 0.25d0*e
@@ -550,6 +556,7 @@ c
                   e = 0.0d0
                   if (term .gt. -50.0d0)  e = depth * exp(term)
                   e = e - depth
+                  if (use_group)  e = e * fgrp
                   neg = neg + 1
                   eg = eg + e
                   aeg(i) = aeg(i) + 0.5d0*e
@@ -596,6 +603,7 @@ c
                r6 = r2 * r2 * r2
                r12 = r6 * r6
                e = a/r12 - b/r6
+               if (use_group)  e = e * fgrp
                neg = neg + 1
                eg = eg + e
                aeg(i) = aeg(i) + e

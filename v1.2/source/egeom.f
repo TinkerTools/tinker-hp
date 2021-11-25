@@ -95,6 +95,7 @@ c
             dt = max(0.0d0,r-pfix(2,i))
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             eg = eg + e
          end if
       end do
@@ -124,6 +125,7 @@ c            if (use_bounds)  call image (xr,yr,zr)
             dt = r - target
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             eg = eg + e
          end if
       end do
@@ -170,6 +172,7 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group)  e = e * fgrp
                eg = eg + e
             end if
          end if
@@ -264,6 +267,7 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group)  e = e * fgrp
                eg = eg + e
             end if
          end if
@@ -317,6 +321,7 @@ c         if (use_bounds)  call image (xr,yr,zr)
          dt = r - target
          dt2 = dt * dt
          e = force * dt2
+         if (use_group)  e = e * fgrp
          eg = eg + e
       end do
 c
@@ -354,6 +359,7 @@ c
             dt = vol - target
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             eg = eg + e
          end if
       end do
@@ -385,6 +391,7 @@ c
                   e = 0.0d0
                   if (term .gt. -50.0d0)  e = depth * exp(term)
                   e = e - depth
+                  if (use_group)  e = e * fgrp
                   eg = eg + e
                end if
             end do
@@ -411,6 +418,7 @@ c
                r6 = r2 * r2 * r2
                r12 = r6 * r6
                e = a/r12 - b/r6
+               if (use_group)  e = e * fgrp
                eg = eg + e
             end if
          end do

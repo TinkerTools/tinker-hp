@@ -63,6 +63,7 @@ c     decide whether to compute the current interaction
 c
          proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
 c
 c     compute the value of the improper dihedral angle
 c
