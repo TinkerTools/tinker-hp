@@ -636,9 +636,11 @@ c
       use_intra = .false.
       use_inter = .false.
       ngrp = 0
-      kgrp = 0
-      grplist = 0
-      do i = 1, maxgrp
+      do i = 1, n
+         kgrp(i) = 0
+         grplist(i) = 0
+      end do
+      do i = 0, maxgrp
          igrp(1,i) = 1
          igrp(2,i) = 0
       end do

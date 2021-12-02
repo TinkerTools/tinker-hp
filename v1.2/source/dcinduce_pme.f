@@ -629,7 +629,7 @@ c
       end
 
 
-      subroutine pc_dc_efld0_direct(nrhs,ef,short)
+      subroutine pc_dc_efld0_direct(nrhs,ef)
 c
 c     Compute the direct space contribution to the permanent electric field.
 c      Also compute the "p" field, which is used to
@@ -680,7 +680,6 @@ c
       real*8, allocatable :: uscale(:)
       save   zero, pt6, one, f50
       data   zero/0.d0/, pt6/0.6d0/, one/1.d0/,f50/50.d0/
-      logical short
       logical shortrange
       character*10 mode
       character*80 :: RoutineName
@@ -689,9 +688,7 @@ c
      $  ' update, try lowering nlupdate')
 c
       shortrange = use_polarshortreal
-!     write(*,*) 'short,shortrange',short,shortrange
       if (shortrange) then 
-!     if (short) then 
          RoutineName='pc_dc_efld0_shortreal'
          mode = 'SHORTEWALD'
       else
