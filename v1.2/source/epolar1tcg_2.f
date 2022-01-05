@@ -33,7 +33,7 @@ c
       integer  :: nrhs
       logical :: isguess, peek, precond
       integer :: kk, betac, irhs,
-     $            i, iipole, j, ierr,iglob,
+     $            i, iipole, j, ierr,
      $            kkpole,kglob,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)

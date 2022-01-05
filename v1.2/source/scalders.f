@@ -9,7 +9,6 @@
       use couple
       use domdec
       use ewald
-      use group
       use iounit
       use math
       use mpole
@@ -39,7 +38,7 @@
      $          ci, cj, bfac, invrij2, alsq2n, cutoff2, exp2a, ralpha,
      $          d, rij2, damp, expdamp, pgamma, alsq2, term
 
-      real*8 fgrp,scaled,scalep,scaleu
+      real*8 scaled,scalep,scaleu
       real*8                :: bn(0:4) 
       real*8, dimension(2)  :: srr3, srr5, srr7, srr9
       real*8, dimension(3)  :: rij, thetajr, thetair, di, dj
@@ -180,7 +179,6 @@
             jjpole = elst(jjj,ii)
             jglob = ipole(jjpole)
             jbis = poleloc(jjpole)
-            if (use_group)  call groups (fgrp,iglob,jglob,0,0,0,0)
             if (jbis.eq.0) then
                write(iout,1000)
                cycle
@@ -282,11 +280,6 @@
             scaled = dscale(jglob)
             scalep = pscale(jglob)
             scaleu = uscale(jglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-              scaleu = scaleu * fgrp
-            end if
             dsc3 = scale3*scaled
             dsc5 = scale5*scaled
             dsc7 = scale7*scaled
@@ -812,7 +805,6 @@ c
       use couple
       use domdec
       use ewald
-      use group
       use iounit
       use math
       use mpole
@@ -844,7 +836,7 @@ c
      $          d, rij2, damp, expdamp, pgamma, alsq2, term
 
       real*8                :: bn(0:4) 
-      real*8 fgrp,scaled,scalep,scaleu
+      real*8 scaled,scalep,scaleu
 
       real*8, dimension(2)  :: srr3, srr5, srr7, srr9
       real*8, dimension(3)  :: rij, thetajr, thetair, di, dj
@@ -978,7 +970,6 @@ c
             jjpole = elst(jjj,ii)
             jglob = ipole(jjpole)
             jbis = poleloc(jjpole)
-            if (use_group)  call groups (fgrp,iglob,jglob,0,0,0,0)
             if (jbis.eq.0) then
                write(iout,1000)
                cycle
@@ -1078,11 +1069,6 @@ c
             scaled = dscale(jglob)
             scalep = pscale(jglob)
             scaleu = uscale(jglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-              scaleu = scaleu * fgrp
-            end if
             dsc3 = scale3*scaled
             dsc5 = scale5*scaled
             dsc7 = scale7*scaled
@@ -2623,7 +2609,6 @@ c
       use couple
       use domdec
       use ewald
-      use group
       use iounit
       use math
       use mpole
@@ -2655,7 +2640,7 @@ c
      $          d, rij2, damp, expdamp, pgamma, alsq2, term
 
       real*8                :: bn(0:4) 
-      real*8 fgrp,scaled,scalep,scaleu
+      real*8 scaled,scalep,scaleu
       real*8, dimension(2)  :: srr3, srr5, srr7, srr9
       real*8, dimension(3)  :: rij, thetajr, thetair, di, dj
       real*8, dimension(3,3):: qi, qj
@@ -2776,7 +2761,6 @@ c
          do jjj = 1, nelst(ii)
             jjpole = elst(jjj,ii)
             jglob = ipole(jjpole)
-            if (use_group)  call groups (fgrp,iglob,jglob,0,0,0,0)
             jbis = poleloc(jjpole)
             if (jbis.eq.0) then
                write(iout,1000)
@@ -2875,11 +2859,6 @@ c
             scaled = dscale(jglob)
             scalep = pscale(jglob)
             scaleu = uscale(jglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-              scaleu = scaleu * fgrp
-            end if
             dsc3 = scale3*scaled
             dsc5 = scale5*scaled
             dsc7 = scale7*scaled
@@ -3301,7 +3280,6 @@ c
       use couple
       use domdec
       use ewald
-      use group
       use iounit
       use math
       use mpole
@@ -3333,7 +3311,7 @@ c
      $          d, rij2, damp, expdamp, pgamma, alsq2, term
 
       real*8                :: bn(0:4) 
-      real*8 fgrp,scaled,scalep,scaleu
+      real*8 scaled,scalep,scaleu
       real*8, dimension(2)  :: srr3, srr5, srr7, srr9
       real*8, dimension(3)  :: rij, thetajr, thetair, di, dj
       real*8, dimension(3,3):: qi, qj
@@ -3488,7 +3466,6 @@ c
             jjpole = elst(jjj,ii)
             jglob = ipole(jjpole)
             jbis = poleloc(jjpole)
-            if (use_group)  call groups (fgrp,iglob,jglob,0,0,0,0)
             if (jbis.eq.0) then
                write(iout,1000)
                cycle
@@ -3592,11 +3569,6 @@ c
             scaled = dscale(jglob)
             scalep = pscale(jglob)
             scaleu = uscale(jglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-              scaleu = scaleu * fgrp
-            end if
             dsc3 = scale3*scaled
             dsc5 = scale5*scaled
             dsc7 = scale7*scaled

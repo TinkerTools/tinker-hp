@@ -50,6 +50,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use math
       use mpole
       use polar
@@ -85,6 +86,7 @@ c
 c     rotate the multipole components into the global frame
 c
       if (.not. use_mpole)  call rotpole
+c
 c
 c     compute the induced dipoles at each polarizable atom
 c
@@ -190,6 +192,10 @@ c
           end if
         end if
       end if
+c
+c     get group polarization if necessary
+c
+      if (use_group) call switch_group_ene
 
 c
       return
@@ -222,7 +228,6 @@ c
       use domdec
       use energi
       use ewald
-      use group
       use inform
       use inter
       use iounit
@@ -267,8 +272,8 @@ c
       real*8 duik,quik
       real*8 term1,term2,term3
       real*8 bn(0:3)
-      real*8 fgrp,scale
-      logical testcut,shortrange,longrange,fullrange
+      real*8 scale
+      logical shortrange,longrange,fullrange
       real*8, allocatable :: pscale(:)
       logical header,huge
       character*10 mode
@@ -363,7 +368,6 @@ c
      &                     shortrange
      &                   )
             kglob = ipole(kkpole)
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
@@ -456,7 +460,6 @@ c
 c     intermediates involving Thole damping and scale factors
 c
                scale = pscale(kglob)
-               if (use_group)  scale = scale * fgrp
                psr3 = rr3 * sc3 * scale
                psr5 = rr5 * sc5 * scale
                psr7 = rr7 * sc7 * scale

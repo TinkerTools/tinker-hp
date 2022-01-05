@@ -1781,7 +1781,7 @@ c
       use potent
       use mpi
       implicit none
-      integer i,j,tag,ierr,iproc,iglob,ilocrec,iloc
+      integer i,j,tag,ierr,iproc,iglob,iloc
       integer jloc,jglob,jlocrec
       integer rankloc,commloc,nprocloc
       integer, allocatable :: reqsend(:),reqrec(:)

@@ -100,7 +100,7 @@ c
       real*8 scal,t1,t2
       real*8 rik,rik2,rik3
       real*8 rik4,rik5,rik7
-      real*8 s,ds,vdwshortcut2,facts,factds
+      real*8 s,ds,vdwshortcut2,facts
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)

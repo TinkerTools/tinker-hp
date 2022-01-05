@@ -37,10 +37,9 @@ c
       use mpi
       implicit none
       integer i,j,istep,iglob
-      real*8 dt,dt_2,factor
+      real*8 dt,dt_2
       real*8 etot,eksum,epot
       real*8 temp,pres
-      real*8 part1,part2
       real*8 a1,a2,normal
       real*8 ekin(3,3)
       real*8 stress(3,3)

@@ -101,12 +101,11 @@ c
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
-      real*8 s,ds,vdwshortcut2,facts,factds
+      real*8 s,ds,vdwshortcut2,facts
       logical header,huge
       logical testcut,shortrange,longrange,fullrange
       character*10 mode
       character*80 :: RoutineName
-      character*10 vdwrange
 c
 
 c     choose the method for summing over pairwise interactions

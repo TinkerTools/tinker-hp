@@ -43,7 +43,7 @@ c
       real*8 rv,rv2,rv6,rv7
       real*8 r,r2,r3,r4
       real*8 r5,r6,r7
-      real*8 cik,p,p6,p12
+      real*8 p,p6,p12
       real*8 rho,tau,tau7
       real*8 expterm
       character*10 mode
@@ -210,7 +210,7 @@ c
       real*8 rv,rv2,rv6,rv7
       real*8 r,r2,r3,r4
       real*8 r5,r6,r7
-      real*8 cik,p,p6,p12
+      real*8 p,p6,p12
       real*8 rho,tau,tau7
       real*8 dtau,gtau
       real*8 rvterm,expterm

@@ -47,6 +47,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use math
       use mpole
       use polar
@@ -66,6 +67,107 @@ c     zero out the polarization energy and derivatives
 c
       ep = 0.0d0
       if (npole .eq. 0)  return
+cc
+cc     get info about group 1
+cc
+c      natgroup = igrp(2,1) - igrp(1,1) + 1
+c      write(*,*) 'natgroup = ',natgroup
+c      if (allocated(globglobgroup)) deallocate (globglobgroup)
+c      allocate (globglobgroup(natgroup))
+c      if (allocated(loclocgroup)) deallocate (loclocgroup)
+c      allocate (loclocgroup(n))
+c      if (allocated(globgroup)) deallocate (globgroup)
+c      allocate (globgroup(natgroup))
+c      if (allocated(locgroup)) deallocate (locgroup)
+c      allocate (locgroup(natgroup))
+c      if (allocated(domlengroup)) deallocate (domlengroup)
+c      allocate (domlengroup(nproc))
+c      if (allocated(bufbeggroup)) deallocate (bufbeggroup)
+c      allocate (bufbeggroup(nproc))
+c      if (allocated(domlenpolegroup)) deallocate (domlenpolegroup)
+c      allocate (domlenpolegroup(nproc))
+c      if (allocated(bufbegpolegroup)) deallocate (bufbegpolegroup)
+c      allocate (bufbegpolegroup(nproc))
+c      if (allocated(poleglobgroup)) deallocate (poleglobgroup)
+c      allocate (poleglobgroup(natgroup))
+c      if (allocated(polelocgroup)) deallocate (polelocgroup)
+c      allocate (polelocgroup(natgroup))
+c      if (allocated(ipolegroup)) deallocate (ipolegroup)
+c      allocate (ipolegroup(natgroup))
+c      if (allocated(pollistgroup)) deallocate (pollistgroup)
+c      allocate (pollistgroup(n))
+c      do i = 1, natgroup
+c        iglob = kgrp(igrp(1,1)+i-1)
+c        globglobgroup(i) = iglob
+c        loclocgroup(iglob) = i
+c      end do
+c
+c      npolegroup = 0
+c      do i = 1, natgroup
+c        iglob = globglobgroup(i)
+c        iipole = pollist(iglob)
+c        if (iipole.eq.0) cycle
+c        npolegroup = npolegroup + 1
+c        pollistgroup(iglob) = npolegroup
+c        ipolegroup(npolegroup) = iglob
+c      end do 
+c      write(*,*) 'npolegroup = ',npolegroup
+c
+c
+c      nlocatgroup = 0
+c      do i = 1, natgroup
+c        iglob = globglobgroup(i)
+c        if (repart(iglob).eq.rank) then
+c          nlocatgroup = nlocatgroup + 1
+c          globgroup(nlocatgroup) = i
+c          locgroup(i) = nlocatgroup
+c        end if
+c      end do
+c      write(*,*) 'nlocatgroup = ',nlocatgroup
+c
+c      npolelocgroup = 0
+c      do i = 1, npolegroup
+c        iglob = ipolegroup(i)
+c        if (repart(iglob).eq.rank) then
+c          npolelocgroup = npolelocgroup + 1
+c          poleglobgroup(npolelocgroup) = i
+c          polelocgroup(i) = npolelocgroup
+c        end if
+c      end do
+cc
+cc     TEST NEWINDUCE_GROUP
+cc
+c      natgroup = n
+c      nlocatgroup = nloc
+c      npolegroup = npole
+c      npolelocgroup =  npoleloc
+c      allocate (globglobgroup(natgroup))
+c      allocate (loclocgroup(n))
+c      if (allocated(globgroup)) deallocate (globgroup)
+c      allocate (globgroup(natgroup))
+c      if (allocated(locgroup)) deallocate (locgroup)
+c      allocate (locgroup(n))
+c      allocate (poleglobgroup(npolegroup))
+c      allocate (polelocgroup(npolegroup))
+c      allocate (domlengroup(nproc))
+c      allocate (bufbeggroup(nproc))
+c      if (allocated(domlenpolegroup)) deallocate (domlenpolegroup)
+c      allocate (domlenpolegroup(nproc))
+c      if (allocated(bufbegpolegroup)) deallocate (bufbegpolegroup)
+c      allocate (bufbegpolegroup(nproc))
+c      allocate (ipolegroup(npolegroup))
+c      domlengroup(rank+1) = domlenpole(rank+1)
+c      do i = 1, n
+c        globglobgroup(i) = i
+c        loclocgroup(i) = i
+c      end do
+c      globgroup(1:npoleloc) = glob(1:npoleloc)
+c      locgroup(1:npole) = loc(1:npole)
+c      poleglobgroup(1:npoleloc) = poleglob(1:npoleloc)
+c      polelocgroup(1:npole) = poleloc(1:npole)
+c      ipolegroup(1:npole) = ipole(1:npole)
+c      call epolar3_group
+c      return
 c
 c     set the energy unit conversion factor
 c
@@ -171,6 +273,10 @@ c
           end if
         end if
       end if
+c
+c     get group polarization if necessary
+c
+      if (use_group) call switch_group_ene
       return
       end
 c
@@ -199,7 +305,6 @@ c
       use domdec
       use energi
       use ewald
-      use group
       use math
       use mpole
       use neigh
@@ -240,8 +345,8 @@ c
       real*8 duik,quik
       real*8 term1,term2,term3
       real*8 bn(0:3)
-      real*8 fgrp,scale
-      logical testcut,shortrange,longrange,fullrange
+      real*8 scale
+      logical shortrange,longrange,fullrange
       real*8, allocatable :: pscale(:)
       character*10 mode
       character*80 :: RoutineName
@@ -335,7 +440,6 @@ c
      &                     shortrange
      &                   )
             kglob = ipole(kkpole)
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
@@ -428,7 +532,6 @@ c
 c     intermediates involving Thole damping and scale factors
 c
                scale = pscale(kglob)
-               if (use_group)  scale = scale * fgrp
                psc3 = 1.0d0 - sc3*scale
                psc5 = 1.0d0 - sc5*scale
                psc7 = 1.0d0 - sc7*scale

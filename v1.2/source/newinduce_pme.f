@@ -230,7 +230,7 @@ c
         write(iout,1020) wtime2 - wtime0
       end if
 c
-c     move the computed dipoles in the common block.
+c     move the computed dipoles in the module.
 c
       if (rank.le.ndir-1) then
         do i = 1, npolebloc
@@ -318,7 +318,6 @@ c
       external matvec
       real*8, allocatable :: dipfield(:,:,:),dipfieldbis(:,:,:)
       real*8 term
-      real*8 time0,time1
 c
 c     MPI
 c
@@ -691,7 +690,6 @@ c
       integer ipiv(ndismx+1)
       real*8  zero, one, rnorm(2), rr, xx(1)
       real*8 term
-      real*8 time0,time1,time2
       save    zero, one, xx
       external matvec
       real*8, allocatable :: dipfield(:,:,:),dipfieldbis(:,:,:)
@@ -933,7 +931,7 @@ c
       end
 c
 c
-      subroutine efld0_direct(nrhs,ef,short)
+      subroutine efld0_direct(nrhs,ef)
 c
 c     Compute the direct space contribution to the permanent electric field.
 c      Also compute the "p" field, which is used to
@@ -945,7 +943,6 @@ c
       use cutoff
       use domdec
       use ewald
-      use group
       use iounit
       use math
       use mpole
@@ -975,12 +972,11 @@ c
       real*8 bn(0:3), fim(3), fid(3), fip(3)
       real*8 fkd(3), fkp(3), fkm(3)
       real*8 erfc, cutoff2
-      real*8 fgrp,scaled,scalep
+      real*8 scaled,scalep
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
       save   zero, pt6, one, f50
       data   zero/0.d0/, pt6/0.6d0/, one/1.d0/,f50/50.d0/
-      logical short
       logical shortrange
       character*10 mode
       character*80 :: RoutineName
@@ -989,9 +985,7 @@ c
      $  update, try lowering nlupdate')
 c
       shortrange = use_polarshortreal
-!     write(*,*) 'short,shortrange',short,shortrange
       if (shortrange) then 
-!     if (short) then 
          RoutineName='efld0_shortreal'
          mode = 'SHORTEWALD'
       else
@@ -1071,7 +1065,6 @@ c
      &                 shortrange)
           kbis = poleloc(kkpole)
           kglob = ipole(kkpole)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           if ((kbis.eq.0).or.(kbis.gt.npolebloc)) then
             write(iout,1000)
             cycle
@@ -1128,10 +1121,6 @@ c
             end if
             scaled = dscale(kglob)
             scalep = pscale(kglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-            end if
             dsc3 = scale3 * scaled
             dsc5 = scale5 * scaled
             dsc7 = scale7 * scaled
@@ -1257,7 +1246,6 @@ c
       use atoms
       use domdec
       use ewald
-      use group
       use math
       use mpole
       use neigh
@@ -1287,7 +1275,7 @@ c
       real*8  zero, one, f50
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
-      real*8  fgrp,scale
+      real*8  scale
       save    zero, one, f50
       character*10 mode
       character*80 :: RoutineName
@@ -1362,7 +1350,6 @@ c
      &                   elst(kkk,ii),
      &                   shortrange)
           kglob = ipole(kkpole)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle
           dx = x(kglob) - x(iglob)
@@ -1396,7 +1383,6 @@ c
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
             scale = dscale(kglob)
-            if (use_group)  scale = scale * fgrp
 c
             scale3 = scale
             scale5 = scale
@@ -1539,7 +1525,6 @@ c
       integer, allocatable :: reqrec(:),reqsend(:)
       integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
       integer nprocloc,commloc,rankloc
-      real*8 time0,time1
 c
       if (use_pmecore) then
         nprocloc = nrec

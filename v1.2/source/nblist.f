@@ -1269,7 +1269,7 @@ c
       integer, allocatable :: index(:),indcell_loc(:)
       real*8 xi,yi,zi,xk,yk,zk,r2,rdn
       real*8 xr,yr,zr
-      real*8 vbufbeg2,boxedge2
+      real*8 boxedge2
       real*8, allocatable :: pos(:,:),r2vec(:)
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)

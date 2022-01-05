@@ -17,8 +17,8 @@ c
       program minimize
       use mpi
       implicit none
-      integer ierr,nthreadsupport
-      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
+      integer ierr
+      call MPI_INIT(ierr)
       call minimize_bis
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       call MPI_FINALIZE(ierr)
@@ -36,7 +36,7 @@ c
       use mpi
       implicit none
       integer i,j,imin,ierr
-      integer next,freeunit,nthreadsupport
+      integer next,freeunit
       integer iglob
       real*8 minimum,minimiz1
       real*8 grdmin,gnorm,grms

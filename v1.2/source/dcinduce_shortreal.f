@@ -220,7 +220,6 @@ c
       integer ipiv(ndismx+1)
       real*8  zero, one, rnorm(2), rr, xx(1)
       real*8 term
-      real*8 time1,time2
       save    zero, one, xx
       external matvec
       real*8, allocatable :: dcfield1(:),dcfield2(:)

@@ -36,7 +36,6 @@ c
       real*8 energy
       real*8 derivs(3,nbloc)
       real*8 time0,time1
-      integer iloc,iglob
       logical isnan
       time0 = mpi_wtime()
 c

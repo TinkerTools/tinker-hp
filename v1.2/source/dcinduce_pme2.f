@@ -560,7 +560,6 @@ c
       use divcon
       use domdec
       use ewald
-      use group
       use math
       use mpole
       use neigh
@@ -708,7 +707,6 @@ c
       use divcon
       use domdec
       use ewald
-      use group
       use math
       use mpole
       use neigh
@@ -733,7 +731,7 @@ c
       real*8  zero, one, f50
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
-      real*8 fgrp,scale
+      real*8 scale
       save    zero, one, f50
       data    zero/0.d0/, one/1.d0/, f50/50.d0/
       character*10 mode
@@ -798,7 +796,6 @@ c
           kbis = loc(kglob)
           kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           dx = x(kglob) - x(iglob)
           dy = y(kglob) - y(iglob)
           dz = z(kglob) - z(iglob)
@@ -831,7 +828,6 @@ c
             end do
 c
             scale = dscale(kglob)
-            if (use_group)  scale = scale*fgrp
             scale3 = scale
             scale5 = scale
             damp = pdi*pdamp(kkpole)

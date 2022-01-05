@@ -54,7 +54,7 @@ c
       use virial
       use mpi
       implicit none
-      integer i,j,k,iglob
+      integer i,j,iglob
       integer istep
       real*8 dt,dt_2
       real*8 dta,dta_2,dta2
@@ -246,7 +246,6 @@ c
       real*8 energy
       real*8 derivs(3,*)
       logical save_vdw,save_charge
-      logical save_dipole
       logical save_mpole,save_polar
       logical save_list
 c
@@ -310,8 +309,8 @@ c
       logical save_pitors,save_strtor
       logical save_angtor
       logical save_tortor,save_geom
-      logical save_metal,save_extra
-      logical save_vdw,save_mrec
+      logical save_extra
+      logical save_mrec
       logical save_prec,save_crec
       integer save_polalg,save_tcgorder
       logical save_tcgprec,save_tcgguess,save_tcgpeek
@@ -456,10 +455,7 @@ c
       logical save_pitors,save_strtor
       logical save_angtor
       logical save_tortor,save_geom
-      logical save_extra,save_mreal
-      logical save_mself,save_vdw
-      logical save_pself,save_preal
-      logical save_mpole,save_polar
+      logical save_extra
 c
 c     save the original state of fast-evolving potentials
 c

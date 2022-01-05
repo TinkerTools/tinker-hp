@@ -37,7 +37,7 @@ c
       use units
       use mpi
       implicit none
-      integer i,j,k,istep,iloc,iipole
+      integer i,j,k,istep,iloc
       integer nprocloc,count
       integer ixyz,iind
       integer ivel,ifrc
@@ -424,7 +424,7 @@ c
 c     save coordinates to an archived, numbered structure file, or dcd file
 c
       if (dcdio) then
-        call dcdio_write(istep,dt)
+        call dcdio_write(istep)
       else
         ixyz = freeunit ()
         if (archive) then

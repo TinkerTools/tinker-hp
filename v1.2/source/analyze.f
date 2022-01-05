@@ -16,7 +16,7 @@ c
       program analyze
       use mpi
       implicit none
-      integer ierr,nthreadsupport
+      integer ierr
       call MPI_INIT(ierr)
       call analyze_bis
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)

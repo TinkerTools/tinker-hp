@@ -660,9 +660,8 @@ c
       use polar
       use mpi
       implicit none
-      integer :: win,win2
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr,total
+      INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
 c
       if (associated(polarity)) then
@@ -694,11 +693,10 @@ c
       use polar
       use mpi
       implicit none
-      integer :: win,win2
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr,total
+      INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
+      integer :: arrayshape(1)
 c
 c     polarity
 c
@@ -796,8 +794,8 @@ c
 
       real*8, allocatable, dimension(:,:,:) :: 
      $       musave
-      real*8 :: omega_min, omega_max, o_min, o_max, epmin, epmax,
-     $           o1, o2, cvg_crit,f, ep1, ep2, omegafinal, sprod, eptcg,
+      real*8 :: omega_min, omega_max, epmin, epmax,
+     $           o1, o2, cvg_crit,f, ep1, ep2, sprod,
      $           cnp, cr, efinal, epnp, epsave
       real*8 :: rms1,rms2
       logical :: cvged, dofit

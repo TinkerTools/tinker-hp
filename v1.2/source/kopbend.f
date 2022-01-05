@@ -448,7 +448,7 @@ c
       use mpi
       implicit none
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr,total
+      INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
 c
       if (associated(opbk)) then
@@ -476,9 +476,9 @@ c
       use mpi
       implicit none
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr,total
+      INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
-      integer :: arrayshape(1),arrayshape2(2)
+      integer :: arrayshape(1)
 c
 c     opbk
 c

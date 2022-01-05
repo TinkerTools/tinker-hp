@@ -27,7 +27,7 @@ c
       use usage
       use mpi
       implicit none
-      integer i,j,next,iglob,ierr,nthreadsupport
+      integer i,j,next,iglob,ierr
       integer iloc
       real*8 etot,f,f0,eps,eps0,old,energy
       real*8 eb0,ea0,eba0,eub0,eaa0,eopb0

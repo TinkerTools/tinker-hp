@@ -18,7 +18,7 @@ c
       program dynamic
       use mpi
       implicit none
-      integer ierr,nthreadsupport
+      integer ierr
       call MPI_INIT(ierr)
       call dynamic_bis
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)

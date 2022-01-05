@@ -59,6 +59,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use iounit
       use math
       use mpole
@@ -227,9 +228,6 @@ c
              xufield = -term * (xu+xup)
              yufield = -term * (yu+yup)
              zufield = -term * (zu+zup)
-             write(*,*) 'xufield = ',xufield
-             write(*,*) 'yufield = ',yufield
-             write(*,*) 'zufield = ',zufield
              do i = 1, npoleloc
                 iipole = poleglob(i)
               trq(1) = rpole(3,iipole)*zufield - rpole(4,iipole)*yufield
@@ -288,6 +286,11 @@ c
            end if
         end if
       end if
+c
+c     get group polarization if necessary
+c
+      if (use_group) call switch_group_grad
+
       return
       end
 c
@@ -1048,7 +1051,6 @@ c
       use domdec
       use energi
       use ewald
-      use group
       use inter
       use iounit
       use math
@@ -1127,8 +1129,8 @@ c
       real*8 trq(3),fix(3)
       real*8 fiy(3),fiz(3)
       real*8 bn(0:4)
-      real*8 fgrp,scaled,scalep,scaleu
-      logical testcut,shortrange,longrange,fullrange
+      real*8 scaled,scalep,scaleu
+      logical shortrange,longrange,fullrange
 
       real*8, allocatable :: pscale(:)
       real*8, allocatable :: dscale(:)
@@ -1261,7 +1263,6 @@ c
      &                     shortrange
      &                   )
             kglob = ipole(kkpole)
-            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
             if (kbis.eq.0) then
               write(iout,1000)
@@ -1383,11 +1384,6 @@ c
                scaled = dscale(kglob)
                scalep = pscale(kglob)
                scaleu = uscale(kglob)
-               if (use_group) then
-                 scaled = scaled * fgrp
-                 scalep = scalep * fgrp
-                 scaleu = scaleu * fgrp
-               end if
                psr3 = rr3 * sc3 * scalep
                psr5 = rr5 * sc5 * scalep
                psr7 = rr7 * sc7 * scalep

@@ -40,12 +40,12 @@ c
       use virial
       use mpi
       implicit none
-      integer i,j,k,iglob
+      integer i,j,iglob
       integer istep
       real*8 dt,dt_2
       real*8 dta,dta_2
       real*8 epot,etot
-      real*8 eksum,eps
+      real*8 eksum
       real*8 temp,pres
       real*8 ealt
       real*8 ekin(3,3)
@@ -233,7 +233,6 @@ c
       real*8 energy
       real*8 derivs(3,*)
       logical save_vdw,save_charge
-      logical save_dipole
       logical save_mpole,save_polar
       logical save_list
 c
@@ -292,7 +291,7 @@ c
       logical save_pitors,save_strtor
       logical save_angtor
       logical save_tortor,save_geom
-      logical save_metal,save_extra
+      logical save_extra
 c
 c
 c     save the original state of fast-evolving potentials

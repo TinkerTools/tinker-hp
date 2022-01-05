@@ -7,7 +7,7 @@ c     "dcdio_write" writes out a set of Cartesian coordinates
 c     to an external disk file in the dcd format
 c     based on libdcdfort: https://github.com/wesbarnett/dcdfort
 c
-      subroutine dcdio_write(istep,dt)
+      subroutine dcdio_write(istep)
       use atoms
       use atmtyp
       use boxes
@@ -16,12 +16,11 @@ c
       use inform
       use, intrinsic :: iso_c_binding
       implicit none
-      integer i,j,k,istep
+      integer i,istep
       integer freeunit
       integer(kind=4) :: coord_size
       real(kind=4), allocatable :: posw(:,:)
       real(kind=8) :: box(6)
-      real*8 :: dt
       logical init,exist
       character*240 dcdfile
       character (len=79) :: info1,info2
@@ -454,17 +453,17 @@ c
       implicit none
       integer(kind=4) :: dummy
       integer(kind=8) :: pos, newpos
-      integer(kind=4), intent(in), optional :: n
+      integer(kind=4), intent(in) :: n
    
       ! Where are we?
       inquire(unit=idcd, pos=pos)
 
       ! We subtract 4 bytes so that the next read of the 4-byte integer will line things up properly for the next read
-      if (.not. present(n)) then
-          newpos = pos + framesize - 4
-      else
+c      if (.not. present(n)) then
+c          newpos = pos + framesize - 4
+c      else
           newpos = pos + framesize*n - 4
-      end if
+c      end if
 
       read(idcd, pos=newpos) dummy
       end subroutine dcdfile_skip_next

@@ -291,7 +291,6 @@ c
       data    zero/0.0d0/, pt5/0.50d0/, one/1.0d0/
       external matvec
       real*8, allocatable :: dipfield(:,:,:),dipfieldbis(:,:,:)
-      real*8 time0,time1,time2
 c
 c     MPI
 c
@@ -635,7 +634,6 @@ c
       integer ipiv(ndismx+1)
       real*8  zero, one, rnorm(2), rr, xx(1)
       real*8 term
-      real*8 time0,time1,time2
       save    zero, one, xx
       external matvec
       real*8, allocatable :: dipfield(:,:,:),dipfieldbis(:,:,:)

@@ -641,7 +641,6 @@ c
       use divcon
       use domdec
       use ewald
-      use group
       use iounit
       use math
       use mpole
@@ -674,7 +673,7 @@ c
       real*8 fkd(3), fkp(3), fkm(3)
       real*8 bcn(2),invpol
       real*8 erfc, cutoff2
-      real*8 fgrp,scaled,scalep,scaleu
+      real*8 scaled,scalep,scaleu
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
       real*8, allocatable :: uscale(:)
@@ -804,7 +803,6 @@ c
           kglob = merge(shortelst(kkk,ii),
      &                  elst(kkk,ii),
      &                 shortrange)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           kkpole = pollist(kglob)
           kbis = poleloc(kglob)
           if (kbis.eq.0) then
@@ -864,11 +862,6 @@ c
             scaled = dscale(kglob)
             scalep = pscale(kglob)
             scaleu = uscale(kglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-              scaleu = scaleu * fgrp
-            end if
             dsc3 = scale3 * scaled
             dsc5 = scale5 * scaled
             dsc7 = scale7 * scaled
@@ -1247,7 +1240,6 @@ c
       use divcon
       use domdec
       use ewald
-      use group
       use math
       use mpole
       use neigh
@@ -1274,7 +1266,7 @@ c
       real*8  zero, one, f50
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
-      real*8  fgrp,scale
+      real*8  scale
       save    zero, one, f50
       logical shortrange
       character*10 mode
@@ -1349,7 +1341,6 @@ c
           kglob = merge(shortelst(kkk,ii),
      &                  elst(kkk,ii),
      &                  shortrange)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     only build induced field for interactions outside of a block
 c     check if the atoms are in the same block
@@ -1391,7 +1382,6 @@ c
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
             scale = dscale(kglob)
-            if (use_group)  scale = scale * fgrp
 
 c
             scale3 = scale
@@ -1509,7 +1499,6 @@ c
       use divcon
       use domdec
       use ewald
-      use group
       use iounit
       use math
       use mpole
@@ -1542,7 +1531,7 @@ c
       real*8 fkd(3), fkp(3), fkm(3)
       real*8 bcn(2),invpol
       real*8 erfc, cutoff2
-      real*8  fgrp,scaled,scalep
+      real*8  scaled,scalep
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
       save   zero, pt6, one, f50
@@ -1653,7 +1642,6 @@ c
           kglob = merge(shortelst(kkk,ii),
      &                  elst(kkk,ii),
      &                 shortrange)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           kkpole = pollist(kglob)
           kbis = poleloc(kglob)
           if (kbis.eq.0) then
@@ -1712,10 +1700,6 @@ c
             end if
             scaled = dscale(kglob)
             scalep = pscale(kglob)
-            if (use_group)  then
-              scaled = scaled * fgrp
-              scalep = scalep * fgrp
-            end if
             dsc3 = scale3 * scaled
             dsc5 = scale5 * scaled
             dsc7 = scale7 * scaled

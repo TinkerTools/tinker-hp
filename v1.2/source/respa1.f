@@ -296,8 +296,8 @@ c
       logical save_pitors,save_strtor
       logical save_angtor
       logical save_tortor,save_geom
-      logical save_metal,save_extra
-      logical save_vdw,save_mrec
+      logical save_extra
+      logical save_mrec
       logical save_prec,save_crec
 c
 c
@@ -419,10 +419,7 @@ c
       logical save_pitors,save_strtor
       logical save_angtor
       logical save_tortor,save_geom
-      logical save_extra,save_mreal
-      logical save_mself,save_vdw
-      logical save_pself,save_preal
-      logical save_mpole,save_polar
+      logical save_extra
 c
 c     save the original state of fast-evolving potentials
 c

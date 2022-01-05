@@ -202,7 +202,6 @@ c
       save    zero, pt5, one
       data    zero/0.0d0/, pt5/0.50d0/, one/1.0d0/
       external matvec
-      real*8 time1,time2
 c
 c     MPI
 c
@@ -607,7 +606,6 @@ c
       use atoms
       use domdec
       use ewald
-      use group
       use math
       use mpole
       use neigh
@@ -641,7 +639,7 @@ c
       real*8  zero, one, f50
       real*8, allocatable :: dscale(:)
       real*8  erfc, cutoff2
-      real*8  fgrp,scale
+      real*8  scale
       save    zero, one, f50
       character*10 mode
       character*80 :: RoutineName
@@ -724,7 +722,6 @@ c
      &                   elst(kkk,ii),
      &                   shortrange)
           kglob = ipole(kkpole)
-          if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
           kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle
           dx = x(kglob) - x(iglob)
@@ -764,7 +761,6 @@ c
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
             scale = dscale(kglob)
-            if (use_group)  scale = scale * fgrp
 c
             scale3 = scale
             scale5 = scale

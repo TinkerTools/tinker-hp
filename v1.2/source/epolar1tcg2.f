@@ -32,7 +32,7 @@ c
 
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,kglob,kkpole,
+     $           ierr,kglob,kkpole,
      $           kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -508,7 +508,7 @@ c
       logical :: precond
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,nrhs,kglob,
+     $           ierr,nrhs,kglob,
      $           kkpole,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -1138,7 +1138,7 @@ c
       logical :: precond
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,nrhs,kglob,
+     $           ierr,nrhs,kglob,
      $           kkpole,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -1994,7 +1994,7 @@ c
       logical :: precond
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,nrhs,kglob,
+     $           ierr,nrhs,kglob,
      $           kkpole,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -2801,7 +2801,7 @@ c
       logical :: precond, isguess, peek
       integer :: betac, kk, i,
      $           j, iipole, irhs, k,
-     $           ierr,iglob,nrhs,kglob,
+     $           ierr,nrhs,kglob,
      $           kkpole,kloc
 
       integer, allocatable :: reqrec(:),reqsend(:)

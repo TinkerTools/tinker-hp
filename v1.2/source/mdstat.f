@@ -32,7 +32,7 @@ c
       use units
       use mpi
       implicit none
-      integer istep,modstep,ierr,i
+      integer istep,modstep
       real*8 dt,temp,pres
       real*8 etot,epot,ekin
       real*8 pico,dens

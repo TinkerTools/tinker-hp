@@ -124,7 +124,7 @@ c
       integer  :: nrhs
       logical :: isguess, peek, precond
       integer ::  kk, irhs,
-     $            i, iipole,j, ierr,iglob,
+     $            i, iipole,j, ierr,
      $            kkpole,kglob,kloc,betac
 
       integer, allocatable :: reqrec(:),reqsend(:)

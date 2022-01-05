@@ -45,10 +45,9 @@ c
       use mpi
 #endif
       implicit none
-      integer i,j,k,idyn,iglob
+      integer i,j,idyn,iglob
       integer next
       integer lext,freeunit
-      integer ierr
       real*8 e
       real*8 maxwell,speed
       real*8 normal
