@@ -15,13 +15,14 @@ c     auxiliary files with velocity, force or induced dipole data;
 c     also checks for user requested termination of a simulation
 c
 c
-      subroutine mdsave (istep,dt,epot)
+      subroutine mdsave (istep,dt,epot,derivs)
       use atmtyp
       use atmlst
       use atoms
       use bound
       use boxes
       use dcdmod
+      use deriv
       use domdec
       use files
       use group
@@ -46,9 +47,11 @@ c
       integer moddump
       real*8 dt,epot,pico,wt
       real*8, allocatable :: vtemp(:,:),postemp(:,:),atemp(:,:)
-      real*8, allocatable :: aalttemp(:,:)
-      integer, allocatable :: bufbegsave(:),globsave(:)
+      real*8, allocatable :: aalttemp(:,:),derivstemp(:,:)
+      real*8, allocatable :: derivstemp2(:,:)
       real*8, allocatable :: uindtemp(:,:)
+      real*8 :: derivs(3,*)
+      integer, allocatable :: bufbegsave(:),globsave(:)
       integer, allocatable :: bufbegpolesave(:),globpolesave(:)
       integer req(nproc*nproc)
       integer iproc,ierr
@@ -104,6 +107,12 @@ c
           allocate (globpolesave(n))
           globpolesave = 0
         end if
+        if (frcsave) then
+          allocate (derivstemp(3,n))
+          derivstemp = 0d0
+          allocate (derivstemp2(3,n))
+          derivstemp2 = 0d0
+        end if
         allocate (bufbegsave(nproc))
         bufbegsave = 0
         allocate (globsave(n))
@@ -136,6 +145,16 @@ c
             uindtemp(3,i) = uind(3,iglob)
           end do
         end if
+      else if (frcsave) then
+        do i = 1, nloc
+          iglob = glob(i)
+c          derivstemp(1,i) = derivs(1,i)
+c          derivstemp(2,i) = derivs(2,i)
+c          derivstemp(3,i) = derivs(3,i)
+          derivstemp2(1,iglob) = derivs(1,i)
+          derivstemp2(2,iglob) = derivs(2,i)
+          derivstemp2(3,iglob) = derivs(3,i)
+        end do
       end if
 c
 c    master get size of all domains
@@ -237,6 +256,9 @@ c
 c
 c    send them to the master
 c
+c
+c     positions
+c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
           tagmpi = iproc + 1
@@ -258,6 +280,9 @@ c
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
+c
+c     velocities
+c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
           tagmpi = iproc + 1
@@ -278,6 +303,9 @@ c
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
+c
+c     accelerations
+c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
           tagmpi = iproc + 1
@@ -298,6 +326,9 @@ c
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
+c
+c     alternate accelerations
+c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
           tagmpi = iproc + 1
@@ -319,7 +350,35 @@ c
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
-
+c
+c     forces
+c
+      if (frcsave) then
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(derivstemp(1,bufbegsave(iproc+1)),
+     $       3*domlen(iproc+1)
+     $       ,MPI_REAL8,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(derivs,3*nloc,MPI_REAL8,0,tagmpi,
+     $     COMM_TINKER,req(tagmpi),ierr)
+        end if
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
+      end if
+c
+c     induced dipoles
+c 
       if (uindsave .and. use_polar) then
         if (rank.eq.0) then
           do iproc = 1, nproc-1
@@ -382,6 +441,17 @@ c
               end if
             end do
           end if
+          if (frcsave) then
+            do i = 1, domlen(iproc+1)
+              if (domlen(iproc+1).ne.0) then
+                iloc = bufbegsave(iproc+1)+i-1
+                iglob = globsave(iloc)
+                derivstemp2(1,iglob) = derivstemp(1,iloc)
+                derivstemp2(2,iglob) = derivstemp(2,iloc)
+                derivstemp2(3,iglob) = derivstemp(3,iloc)
+              end if
+            end do
+          end if
         end do
       end if
       deallocate (postemp)
@@ -390,6 +460,9 @@ c
       deallocate (atemp)
       deallocate (aalttemp)
       if (uindsave .and. use_polar) deallocate (uindtemp)
+      if (rank.eq.0 .and. frcsave) then
+        deallocate (derivstemp)
+      end if
       if (rank.ne.0) return
 c
 c     get the sequence number of the current trajectory frame
@@ -477,8 +550,11 @@ c
       end if
 c
 c     save the force vector components for the current step
+c     only correct for single time step Cartesian integrators
 c
-      if (frcsave) then
+      if (frcsave .and. integrate.ne.'RESPA' .and. 
+     $ integrate.ne.'RESPA1' .and. integrate.ne.'BAOABRESPA'
+     $ .and. integrate.ne.'BAOABRESPA1') then
          ifrc = freeunit ()
          if (archive) then
             frcfile = filename(1:leng)
@@ -497,8 +573,9 @@ c
          write (ifrc,140)  n,title(1:ltitle)
   140    format (i6,2x,a)
          do i = 1, n
-            wt = mass(i) / convert
-            write (ifrc,150)  i,name(i),(wt*a(j,i),j=1,3)
+c            wt = mass(i) / convert
+c            write (ifrc,150)  i,name(i),(wt*a(j,i),j=1,3)
+            write (ifrc,150)  i,name(i),(-derivstemp2(j,i),j=1,3)
   150       format (i6,2x,a3,3x,d13.6,3x,d13.6,3x,d13.6)
          end do
          close (unit=ifrc)

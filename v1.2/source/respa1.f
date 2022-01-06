@@ -172,10 +172,6 @@ c
          end if
       end do
 c
-c     perform deallocation of some local arrays
-c
-      deallocate (derivs)
-c
 c     find the constraint-corrected full-step velocities
 c
       if (use_rattle)  call rattle2 (dt)
@@ -207,10 +203,14 @@ c
 c     compute statistics and save trajectory for this step
 c
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
-      call mdsave (istep,dt,epot)
+      call mdsave (istep,dt,epot,derivs)
       call mdrest (istep)
       time1 = mpi_wtime()
       timeinte = timeinte + time1-time0
+c
+c     perform deallocation of some local arrays
+c
+      deallocate (derivs)
       return
       end
 c
