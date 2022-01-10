@@ -1,0 +1,222 @@
+
+      ##############################
+      ##                          ##
+      ##  Force Field Definition  ##
+      ##                          ##
+      ##############################
+
+
+forcefield              AMOEBA-WATER
+
+bond-cubic              -2.55
+bond-quartic            3.793125
+angle-cubic             -0.014
+angle-quartic           0.000056
+angle-pentic            -0.0000007
+angle-sextic            0.000000022
+vdwtype                 BUFFERED-14-7
+radiusrule              CUBIC-MEAN
+radiustype              R-MIN
+radiussize              DIAMETER
+epsilonrule             HHG
+dielectric              1.0
+polarization            MUTUAL
+polar-sor               0.75
+
+
+      #############################
+      ##                         ##
+      ##  Literature References  ##
+      ##                         ##
+      #############################
+
+
+P. Ren and J. W. Ponder, "A Polarizable Atomic Multipole Water Model
+for Molecular Mechanics Simulation", J. Phys. Chem. B, 107, 5933-5947
+(2003)
+
+Y. Kong, "Multipole Electrostatic Methods for Protein Modeling with
+Reaction Field Treatment", Ph.D. thesis, DBBS Program in Molecular
+Biophysics, Washington University, St. Louis, August, 1997  [available
+online from http://dasher.wustl.edu/ponder/]
+
+alternative valence parameters to match symmetric and antisymmetric
+bond stretches by David Semrouni, Ecole Polytechnique, Paris
+
+
+      #############################
+      ##                         ##
+      ##  Atom Type Definitions  ##
+      ##                         ##
+      #############################
+
+
+atom          1    1    O     "AMOEBA Water O"               8    15.995    2
+atom          2    2    H     "AMOEBA Water H"               1     1.008    1
+
+
+      ################################
+      ##                            ##
+      ##  Van der Waals Parameters  ##
+      ##                            ##
+      ################################
+
+
+vdw           1               3.4050     0.1100
+#vdw           1               0.0  0.0 
+vdw           2               2.6550     0.0135      0.910
+
+
+      ##################################
+      ##                              ##
+      ##  Bond Stretching Parameters  ##
+      ##                              ##
+      ##################################
+
+
+#bond         1    2          529.60     0.9572   !! original AMOEBA water
+bond          1    2          556.85     0.9572
+
+
+      ################################
+      ##                            ##
+      ##  Angle Bending Parameters  ##
+      ##                            ##
+      ################################
+
+
+#angle        2    1    2      34.05     108.50   !! original AMOEBA water
+angle         2    1    2      48.70     108.50
+
+
+      ###############################
+      ##                           ##
+      ##  Urey-Bradley Parameters  ##
+      ##                           ##
+      ###############################
+
+
+#ureybrad     2    1    2      38.25     1.5537   !! original AMOEBA water
+ureybrad      2    1    2      -7.60     1.5326
+
+
+      ###################################
+      ##                               ##
+      ##  Atomic Multipole Parameters  ##
+      ##                               ##
+      ###################################
+
+
+multipole     1   -2   -2              -0.83587
+                                        0.00006   -0.00013   -0.15895
+                                        0.37963
+                                       -0.00039   -0.36802
+                                        0.00012   -0.00003   -0.01161
+multipole     2    1    2               0.41784
+                                       -0.02428    0.00019   -0.01510
+                                        0.00623
+                                       -0.00008   -0.03192
+                                        0.01317    0.00025    0.02569
+
+
+      ########################################
+      ##                                    ##
+      ##  Dipole Polarizability Parameters  ##
+      ##                                    ##
+      ########################################
+
+
+polarize      1           0.837      0.280       2
+polarize      2           0.496      0.280       1
+
+
+      ########################################
+      ##                                    ##
+      ##  Charge Penetration Parameters     ##
+      ##                                    ##
+      ########################################
+
+sibfacp    1            4.0000     4.9000    4.7000
+sibfacp    2            3.5000     2.9000    1.7000
+#                       charge-charge charge-charge  charge-dipole charge-quad
+sibfacporig             5.1749      4.2960    2.8433      2.1293
+vdwcp      1            1.258
+vdwcp      2            1.2803
+
+
+      ################################################
+      ##                                            ##
+      ##  Charge Transfer Van der Waals Parameters  ##
+      ##                                            ##
+      ################################################
+
+#                        donor     acceptor
+vdwct       1            1.4345d0   1.5077d0 
+vdwct       2            1.0d0      1.7513d0 
+
+
+      #######################################################
+      ##                                                   ##
+      ## SIBFA Hybridation Cs and Cp parameters            ##
+      ##                                                   ##
+      #######################################################
+
+hybrid          1            0.5d0    0.866d0
+hybrid          2            1.0d0    0.0d0
+
+
+      ############################################
+      ##                                        ##
+      ##        ionisation potential            ##
+      ##                                        ##
+      ############################################
+
+ah        1             12.78d0
+
+      ############################################
+      ##                                        ##
+      ##        electronic affinity             ##
+      ##                                        ##
+      ############################################
+
+ae        1             0.75d0
+ae        2             0.75d0
+
+
+      ############################################
+      ##                                        ##
+      ##        repulsion vdw parameter         ##
+      ##                                        ##
+      ############################################
+
+vdwrep   1    1.4755d0
+vdwrep   2    1.3469d0
+
+
+      ############################################
+      ##                                        ##
+      ##        repulsion orbital parameter     ##
+      ##                                        ##
+      ############################################
+
+gorb     1    1.36d0
+gorb     2    1.0d0
+#         cvrep11 cvrep12 41049.37629/192.7 41894.8999/192.7
+coeffrep  213.022 217.4099
+#         alpha alpha2
+exprep     9.42905     15.918111    
+
+      ############################################
+      ##                                        ##
+      ##        dispersion     parameter        ##
+      ##                                        ##
+      ############################################
+
+# 0.99-0.03576
+vdwdisp   1    1.2594d0 0.90424 0.90424
+vdwdisp   2    1.1767d0 1.0 1.0
+
+##           C6disp C8disp C10disp scdp  facdispij discof colpa colp bdmp
+coeffdisp   0.1166   0.0400 0.003 -1.0 1.0  1.03  3.1961  6.0467     1.37   
+#          admp6 admp8 admp10 cxd   axd  cxdla    axdla  cxdlp  axdlp
+expdisp    1.23  1.28 1.36 120.00 8.66398  120.006  7.455 120.00  8.88136     

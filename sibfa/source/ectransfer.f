@@ -1,0 +1,328 @@
+c
+c     Sorbonne University
+c     Washington University in Saint Louis
+c     University of Texas at Austin
+c
+c     #####################################################################
+c     ##                                                                 ##
+c     ##  subroutine ectransfer  --  charge transfer energy              ##
+c     ##                                                                 ##
+c     #####################################################################
+c
+c
+c     "ectransfer" calculates the charge transfer energy
+c
+      subroutine ectransfer
+      implicit none
+c
+      call ectransfer0b
+      return
+      end
+c
+c
+c     #############################################################
+c     ##                                                         ##
+c     ##  subroutine ectransfer0b  --  charge transfer analysis  ##
+c     ##                                                         ##
+c     #############################################################
+c
+c
+c     "ectransfer3b" calculates the charge transfer energy
+c     using neighbor lists
+c
+c
+      subroutine ectransfer0b
+      use analyz
+      use atmtyp
+      use atmlst
+      use atoms
+      use bound
+      use cell
+      use charge
+      use chargetransfer
+      use cutoff
+      use domdec
+      use energi
+      use group
+      use inform
+      use inter
+      use iounit
+      use kct
+      use molcul
+      use mpole
+      use neigh
+      use potent
+      use usage
+      implicit none
+      integer i,ii,kk,k1,k2,kpole,ilp,iacc,kaccept
+      integer ilpnl,jj,knl,iacc1
+      real*8 xlp,ylp,zlp,clp
+      real*8 xa,ya,za
+      real*8 xralp,yralp,zralp,ralp2,ralp
+      real*8 xk1,yk1,zk1
+      real*8 xk2,yk2,zk2
+      real*8 xrk1k2,yrk1k2,zrk1k2,rk1k22,rk1k2
+      real*8 xrak1,yrak1,zrak1,rak12,rak1
+      real*8 xrak2,yrak2,zrak2,rak22,rak2
+      real*8 rhoak1,rhoak2
+      real*8 Vk2k1,rk1k23,rk1K25
+      real*8 Vk1k2,ksih
+      real*8 V,Vbis,Vbis1,Vbis2,rak13,rak23,rak15,rak25
+      real*8 Vtemp,Vconv
+      real*8 rvdwi,rvdwk1,rvdwk2
+      real*8 cos1,cos2
+      real*8 task2,mak2,tapk2,task1,mak1,tapk1
+      real*8 e1,e2,e,deltae
+      real*8 Cs,Cp
+      real*8 conv,prop
+      real*8 dkr,qkx,qky,qkr,scd,scq,fc,fd1,fd2,fq1,fq2
+      real*8 vdwinc,ef0(3)
+      real*8 ectloc
+      real*8, allocatable :: Vtot1(:),Vtot2(:,:)
+c
+      allocate (Vtot1(nlp)) 
+      allocate (Vtot2(2,nacceptbloc)) 
+      Vtot1 = 0d0
+      Vtot2 = 0d0
+c
+c     zero out the charge transfer interaction energy and partitioning
+c
+      V = 0.0d0
+      Vtot1 = 0d0
+      Vtot2 = 0d0
+      ect = 0.0d0
+      e = 0.0d0
+      if (nlp .eq. 0)  return
+      call rotlp
+c
+c     compute the potential of the whole system on the acceptors (except the local molecule)
+c
+      if (use_ctpot) then
+        do iacc = 1, nacceptlocnl
+          i = acceptglobnl(iacc)
+          k1 = acceptor(1,i)
+          k2 = acceptor(2,i)
+          iacc1 = acceptloc(i)
+          call potmole3a(k1,molcule(k1),0,Vtot2(1,iacc1),0,
+     $      accpotlst(1,1,iacc),naccpotlst(1,iacc))
+          call potmole3a(k2,molcule(k2),0,Vtot2(2,iacc1),0,
+     $      accpotlst(1,2,iacc),naccpotlst(2,iacc))
+        end do
+c
+c     send and receive potentials to/from the neighboring processes
+c
+        call commpotacc(Vtot2)
+c
+c     compute the potential of the whole system on the lp carriers (except the local molecule)
+c
+        do ii = 1, nlplocnl
+          ilp = lpglobnl(ii)
+          i = lpatom(ilp) 
+          call potmole3a(i,molcule(i),0,Vtot1(ilp),0,lppotlst(1,ii),
+     $      nlppotlst(ii))
+        end do
+c
+c     send and receive potentials to/from the neighboring processes
+c
+        call commpotlp(Vtot1)
+      end if
+c
+c     compute and partition the charge transfer interaction energy
+c
+c     Loop over the lone pairs
+c
+      do ii = 1, nlplocnl
+         ilp = lpglobnl(ii)
+         ectloc = 0.0d0
+         i = lpatom(ilp)
+         clp = lpcharge(ilp)
+c
+c     Get geometrical data about the LP and its carrier         
+c
+         xlp = rlonepair(1,ilp)
+         ylp = rlonepair(2,ilp)
+         zlp = rlonepair(3,ilp)
+         xa = x(i)
+         ya = y(i)
+         za = z(i)
+         xralp = xlp - xa
+         yralp = ylp - ya
+         zralp = zlp - za
+c         if (use_bounds)  call image (xralp,yralp,zralp)
+         ralp2 = xralp*xralp + yralp*yralp + zralp*zralp
+         ralp  = sqrt(ralp2)
+         V = Vtot1(ilp)
+c
+c     Loop over the acceptors
+c
+         do jj = 1, nlpacclst(ii)
+            kk = lpacclst(jj,ii)
+            kaccept = acceptloc(kk) 
+            k1 = acceptor(1,kk)
+            k2 = acceptor(2,kk)
+            if (molcule(k1).ne.molcule(i)) then
+c
+c     Get geometrical data about the accepting(s) atom(s) 
+c
+              xk1 = x(k1)
+              yk1 = y(k1)
+              zk1 = z(k1)
+              if (acceptor(2,kk).ne.0) then
+                xk2 = x(k2)
+                yk2 = y(k2)
+                zk2 = z(k2)
+                xrk1k2 = xk2 - xk1
+                yrk1k2 = yk2 - yk1
+                zrk1k2 = zk2 - zk1
+                if (use_bounds)  call image (xrk1k2,yrk1k2,zrk1k2)
+                rk1k22 = xrk1k2*xrk1k2 + yrk1k2*yrk1k2 + zrk1k2*zrk1k2
+                rk1k2 = sqrt(rk1k22)
+              end if
+c
+c     Get the interatomic distances rak1 and rak2
+c
+              xrak1 = xk1 - xa
+              yrak1 = yk1 - ya
+              zrak1 = zk1 - za
+              if (use_bounds)  call image (xrak1,yrak1,zrak1)
+              rak12 = xrak1*xrak1 + yrak1*yrak1 + zrak1*zrak1
+c
+              if (rak12.gt.ctransfercut*ctransfercut) cycle
+c
+c               
+              rak1 = sqrt(rak12)
+              if (acceptor(2,kk).ne.0) then
+                xrak2 = xk2 - xa
+                yrak2 = yk2 - ya
+                zrak2 = zk2 - za
+                if (use_bounds)  call image (xrak2,yrak2,zrak2)
+                rak22 = xrak2*xrak2+ yrak2*yrak2 + zrak2*zrak2
+                rak2 = sqrt(rak22)
+              end if
+c              
+c    vdw radius is vdw of the carrier plus increment of the lp
+c
+              rvdwi = rvdwct1(i) + dincr_lpect(ilp)
+c
+c     Compute the interaction between acceptor molecule and the ii (lone pair) orbital on i
+c
+c
+              cos1=(xralp*xrak1 + yralp*yrak1 + zralp*zrak1)/(ralp*rak1)
+c
+c
+c     Compute the exponent term of the interaction
+c
+              if (acceptor(2,kk).ne.0) then
+                rvdwk2 = rvdwct2(k2)
+                rhoak2 = rak2/(4*sqrt(rvdwi*rvdwk2))
+c
+c     Compute the potential of the acceptor molecule on k2 (H) virtual orbital
+c      (Approximation using Slater exponent ksih)
+c
+                ksih = 1.20d0
+                kpole = ipole(k2)
+                Vk2k1 = 0.375 * ksih + 0.625 * ksih * rpole(1,kpole)
+                Vk2k1 = 1.88976*331.93359*Vk2k1
+c
+c     Potential of the whole system but the lp molecule on k2
+c
+                Vtemp = 0.0d0
+                Vbis1 = Vtot2(2,kaccept)
+                if (use_ctpot) call potmole3aloc(k2,molcule(i),Vtemp)
+                Vbis1 = Vbis1 - Vtemp
+                Vk2k1 = Vk2k1 + Vbis1
+              end if
+c
+c     Compute the potential of the acceptor molecule on k1 (B) virtual orbital
+c
+              Vk1k2 = 0.0d0
+              Vtemp = 0.0d0
+              Vbis2 = Vtot2(1,kaccept)
+              if (acceptor(1,kk).ne.0) then
+                call potmoleint3a(k1,Vk1k2)
+                if (use_ctpot) call potmole3aloc(k1,molcule(i),Vtemp)
+                Vbis2 = Vbis2 - Vtemp
+                Vk1k2 = Vk1k2 + Vbis2
+              else
+c
+c     empiric values for cations, Zn
+c                 
+                Vk1k2 = 1497.102d0
+                if (use_ctpot) call potmole3aloc(k1,molcule(i),Vtemp)
+                Vbis2 = Vbis2 - Vtemp
+              end if
+              rvdwk1 = rvdwct2(k1)
+              rhoak1 = rak1/(4*sqrt(rvdwi*rvdwk1))
+c
+c     Final assembling of all the terms of the numerator
+c
+c    condition à verifier pour identifier le couple accepteur
+c
+              task1 = tas(atomic(k1),atomic(i))
+              tapk1 = tap(atomic(k1),atomic(i))
+              mak1 = ma(atomic(k1),atomic(i))
+              if (acceptor(2,kk).ne.0) then
+                cos2=(xralp*xrak2 + yralp*yrak2+zralp*zrak2)/(ralp*rak2)
+                task2 = tas(atomic(k2),atomic(i))
+                tapk2 = tap(atomic(k2),atomic(i))
+                mak2 = ma(atomic(k2),atomic(i))
+              end if
+c
+              Cs = hybrid_lp(1,ilp)
+              Cp = hybrid_lp(2,ilp)
+c
+              e1 = 0.0d0
+              e2 = exp(-etaect*rhoak2)*(D2*Vk2k1-V)*(Cs*task2+
+     $              Cp*mak2*tapk2*cos2)
+c
+c     Compute the denominator 
+c
+              Vbis1 = 0.0d0
+              Vbis2 = 0.0d0
+              if (acceptor(2,kk).eq.0) then
+                Vbis1 = Vtot2(1,kaccept)
+              else if (acceptor(2,kk).ne.0) then
+                e1 = exp(-etaect*rhoak1)*(D1*Vk1k2-V)*(Cs*task1+
+     $             Cp*mak1*tapk1*cos1)       
+                Vbis1 = Vtot2(1,kaccept)
+                Vbis2 = Vtot2(2,kaccept)
+              end if
+c
+              Vbis1 = Vbis1/23.06
+              Vbis2 = Vbis2/23.06
+              Vconv = V/23.06
+c
+              if (acceptor(2,kk).ne.0) then
+                deltae = ahct(i) + Vconv  - (aelct(k1) + Vbis2) 
+              else
+c
+c  for the zinc
+c
+                deltae = ahct(k1) + Vconv - (17.99d0 + Vbis2) 
+              end if
+              e = -clp*(e1-e2)**2/deltae
+c
+              conv = 27.2/627.5442
+              e  = e*conv
+c
+c     Facteur empirique, si cation : different
+c
+              if (acceptor(2,kk).ne.0) then
+c                prop = 0.7712d0 
+                prop = 0.6364d0 
+              else
+                prop = 0.61d0
+              end if
+              e = prop*e
+              ect = ect + e
+c            
+c     increment the total intermolecular energy
+c
+              if (molcule(i) .ne. molcule(k1)) then
+                einter = einter + e
+              end if
+            end if     
+         end do
+       end do
+       return
+       end

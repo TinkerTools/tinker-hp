@@ -1,0 +1,173 @@
+#
+#   Makefile for Tinker-HP
+#
+RunF77 = mpiifort
+MKLDIR = $(MKLROOT)
+FFTDIR = $(FFTW)
+FFTDECOMPDIR = $(HOME)/LOUIS/tinkerhp_pimd/2decomp_fft
+FFTDECOMP = -I$(FFTDECOMPDIR)/include -L$(FFTDECOMPDIR)/lib -l2decomp_fft $(LIB_FFTW)
+BLAS   = -I$(MKLDIR)/include  -L$(MKLDIR)/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+#FFLAGS =  -qopenmp -no-ipo -no-prec-div -assume cc_omp -check uninit -check pointers -check bounds -traceback -inline -g -mcmodel=medium -shared-intel 
+FFLAGS = -xHost -qopenmp -no-ipo -no-prec-div -inline -heap-arrays #-vec-report=5#-align array64byte
+LIBS   = libtinker.a 
+MODSAM = sizes.o\
+   action.o analyz.o angang.o angle.o\
+   angpot.o argue.o ascii.o atmlst.o\
+   atoms.o atmtyp.o bath.o bitor.o\
+   bndpot.o bond.o bound.o boxes.o\
+   cell.o charge.o chargetransfer.o chgpot.o chunks.o\
+   couple.o cutoff.o deriv.o divcon.o\
+   dispersion.o\
+   domdec.o energi.o ewald.o fft.o\
+   fields.o files.o freeze.o group.o\
+   improp.o imptor.o inform.o inter.o\
+   iounit.o kanang.o kangs.o katoms.o\
+   kbonds.o kchrge.o kct.o keys.o khbond.o\
+   kiprop.o kgeoms.o kitors.o kmulti.o\
+   kopbnd.o kopdst.o kpitor.o kpolr.o\
+   kstbnd.o ksttor.o ktorsn.o ktrtor.o\
+   kurybr.o kvdwpr.o kvdws.o langevin.o\
+   linmin.o
+MODSNZ = math.o merck.o mpole.o mdstuf.o\
+   minima.o molcul.o moldyn.o mplpot.o\
+   mutant.o neigh.o opbend.o opdist.o\
+   output.o params.o pitors.o pme.o\
+   pme.o polar.o polgrp.o polpot.o\
+   potent.o precis.o ptable.o qtb.o adqtb.o resdue.o\
+   repulsion.o ring.o scales.o shunt.o strbnd.o\
+   strtor.o stat.o timestat.o titles.o torpot.o\
+   tors.o tortor.o units.o uprior.o\
+   urey.o urypot.o usage.o virial.o\
+   vdw.o vdwpot.o\
+   beads.o\
+
+OBJSAM = active.o analysis.o analyze.o angles.o\
+   attach.o basefile.o beeman.o beeman4site.o bicubic.o\
+   baoab.o baoabpi.o baoabpi4site.o baoabqtb.o  baoabrespa.o bbk.o\
+   baoab4site.o baoab4siteqtb.o baoab4sitepistonqtb.o baoabpistonqtb.o\
+   bitors.o bonds.o bounds.o calendar.o\
+   chkpole.o chkring.o chkxyz.o cholesky.o cluster.o\
+   command.o commstuff.o control.o convolseg.o cspline.o\
+   cutoffs.o diis.o drivermpi.o dynamic.o\
+   dcinduce_pme.o dcinduce_pme2.o\
+   eangang.o eangang1.o eangang3.o\
+   eangle.o eangle1.o eangle3.o\
+   ebond.o ebond1.o ebond3.o\
+   echarge.o echarge1.o echarge3.o\
+   ectransfer.o ectransfer1.o ectransfer3.o\
+   edispersion.o edispersion1.o edispersion3.o\
+   egeom.o egeom1.o egeom3.o\
+   ehal.o ehal1.o ehal3.o\
+   eimprop.o eimprop1.o eimprop3.o\
+   eimptor.o eimptor1.o eimptor3.o\
+   elj.o elj1.o elj3.o\
+   empole.o empole0.o empole1.o empole3.o\
+   energy.o eopbend.o eopbend1.o eopbend3.o\
+   eopdist.o eopdist1.o eopdist3.o\
+   epitors.o epitors1.o epitors3.o\
+   epolar.o epolar1.o epolar3.o\
+   erepulsion.o erepulsion1.o erepulsion3.o\
+   erf.o estrbnd.o estrbnd1.o estrbnd3.o\
+   estrtor.o estrtor1.o estrtor3.o\
+   etors.o etors1.o etors3.o\
+   etortor.o etortor1.o etortor3.o\
+   eurey.o eurey1.o eurey3.o\
+   evcorr.o extra.o extra1.o extra3.o\
+   fatal.o fft_mpi.o field.o\
+   final.o freeunit.o geometry.o getkey.o\
+   getnumb.o getprm.o getstring.o gettext.o\
+   getword.o getxyz.o gradient.o\
+   hybrid.o image.o\
+   initatom.o initial.o initprm.o initres.o\
+   invert.o kangang.o kangle.o\
+	 irspectra.o irspectra_pimd.o\
+   katom.o kbond.o kcharge.o\
+   kctransfer.o kdispersion.o kewald.o kgeom.o\
+   kimprop.o kimptor.o kinetic.o kmpole.o\
+   kopbend.o kopdist.o kpitors.o kpolar.o\
+   krepulsion.o\
+   kstrbnd.o kstrtor.o ktors.o ktortor.o\
+   kurey.o kvdw.o lattice.o lbfgs.o\
+   linalg.o maxwell.o mdinit.o mdrest.o mdinitbead.o\
+   mdsave.o mdsavebeads.o mdstat.o mdstatpi.o mechanic.o\
+   minimize.o molecule.o mutate.o\
+
+OBJSNZ = nblist.o newinduce_pme.o newinduce_pme2.o\
+   nextarg.o nexttext.o nspline.o number.o\
+   numeral.o openend.o optsave.o pmestuff.o\
+   pimd.o \
+   precise.o pressure.o prime.o prmkey.o\
+   prtdyn.o prtdynbeads.o prtxyz.o  qtbinit.o\
+   qtbrandom.o adHnoise.o\
+   replica.o\
+   fftw.o random.o readdyn.o\
+   readprm.o readxyz.o respa.o\
+   rings.o rotpole.o search.o sort.o\
+   rattle.o shakeup.o\
+   suffix.o switch.o temper.o testgrad.o\
+   torphase.o torque.o torsions.o trimtext.o\
+   unitcell.o verlet.o version.o
+
+MODS   = $(MODSAM) $(MODSNZ)
+OBJS   = $(OBJSAM) $(OBJSNZ)
+
+all: libtinker analyze dynamic testgrad minimize pimd
+
+everything: libtinker analyze dynamic testgrad pimd
+
+analyze: $(MODS) $(OBJS)
+	./library.make
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o analyze.x analyze.o $(LIBS) $(BLAS) $(FFTDECOMP)
+	strip analyze.x
+	mv analyze.x ../bin/analyze
+#
+dynamic: $(MODS) $(OBJS)
+	./library.make
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o dynamic.x dynamic.o $(LIBS) $(BLAS) $(FFTDECOMP)
+	strip dynamic.x
+	mv dynamic.x ../bin/dynamic
+#
+pimd: $(MODS) $(OBJS)
+	./library.make
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o pimd.x pimd.o $(LIBS) $(BLAS) $(FFTDECOMP)
+	strip pimd.x
+	mv pimd.x ../bin/pimd
+#
+testgrad: $(MODS) $(OBJS)
+	./library.make
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o testgrad.x testgrad.o $(LIBS) $(BLAS) $(FFTDECOMP)
+	strip testgrad.x
+	mv testgrad.x ../bin/testgrad
+#
+minimize: $(MODS) $(OBJS)
+	./library.make
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o minimize.x minimize.o $(LIBS) $(BLAS) $(FFTDECOMP)
+	strip minimize.x
+	mv minimize.x ../bin/minimize
+#
+libtinker: $(MODS) $(OBJS)
+	./library.make
+#
+%.o: %.f
+	$(RunF77) $(FFLAGS) -c $*.f 
+%.o: %.F
+	$(RunF77) $(FFLAGS) -c $*.F
+%.o: %.f90
+	$(RunF77) $(FFLAGS) -c $*.f90 $(FFTDECOMP)
+#
+clean:
+	rm -fr $(MODS) $(OBJS) *.exe *.mod
+	rm -f libtinker.a 
+#
+tags: tags-mark
+	-'rm' -f tags
+	ctags *.f
+	-'rm' -f tags-mark
+
+tags-mark:
+	touch tags-mark
+
+debug:
+	cat *.f > xxx.f
+	ftnchek xxx.f
+	rm xxx.f
