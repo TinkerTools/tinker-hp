@@ -4,7 +4,7 @@
 RunF77 = mpiifort
 MKLDIR = $(MKLROOT)
 FFTDIR = $(FFTW)
-FFTDECOMPDIR = $(HOME)/LOUIS/tinkerhp_pimd/2decomp_fft
+FFTDECOMPDIR = 
 FFTDECOMP = -I$(FFTDECOMPDIR)/include -L$(FFTDECOMPDIR)/lib -l2decomp_fft $(LIB_FFTW)
 BLAS   = -I$(MKLDIR)/include  -L$(MKLDIR)/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
 #FFLAGS =  -qopenmp -no-ipo -no-prec-div -assume cc_omp -check uninit -check pointers -check bounds -traceback -inline -g -mcmodel=medium -shared-intel 
