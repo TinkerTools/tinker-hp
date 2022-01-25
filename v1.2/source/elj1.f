@@ -22,6 +22,7 @@ c
       use vdwpot
       implicit none
       real*8 elrc,vlrc
+      character*11 mode
 c
 c     evaluate pairwise interactions
 c
@@ -31,7 +32,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr1 (elrc,vlrc)
+         mode = 'VDW'
+         call evcorr1 (mode,elrc,vlrc)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
          vir(2,2) = vir(2,2) + vlrc
@@ -98,7 +100,7 @@ c
       real*8, allocatable :: vscale(:)
       logical usei
       logical testcut,shortrange,longrange,fullrange
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
 c
  1000 format(' Warning, system moved too much since last neighbor list'
@@ -210,7 +212,7 @@ c
      &                    vlst     (kk,ii),
      &                    shortrange
      &                   )
-            if (use_group)  call groups(iglob,kglob,0,0,0,0)
+            if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
             kv = ired(kglob)
             kvloc = loc(kv)

@@ -71,6 +71,7 @@ c
       em = 0.0d0
       aem = 0d0
       if (npole .eq. 0)  return
+      aewald = aeewald
 c
 c     set the energy unit conversion factor
 c
@@ -200,6 +201,7 @@ c     if shortrange, calculates just the short range part
       use atoms
       use bound
       use chgpot
+      use chgpen
       use couple
       use cutoff
       use domdec
@@ -221,36 +223,43 @@ c     if shortrange, calculates just the short range part
       integer i,j,iglob,kglob,kbis,nnelst
       integer ii,kkk,iipole,kkpole
       real*8 e,efull,f
-      real*8 bfac,erfc
-      real*8 alsq2,alsq2n
-      real*8 exp2a,ralpha
-      real*8 scalekk
+      real*8 scalek
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 r,r2,rr1,rr3
       real*8 rr5,rr7,rr9
+      real*8 rr1i,rr3i,rr5i
+      real*8 rr1k,rr3k,rr5k
+      real*8 rr1ik,rr3ik,rr5ik
+      real*8 rr7ik,rr9ik
       real*8 ci,dix,diy,diz
       real*8 qixx,qixy,qixz
       real*8 qiyy,qiyz,qizz
       real*8 ck,dkx,dky,dkz
       real*8 qkxx,qkxy,qkxz
       real*8 qkyy,qkyz,qkzz
-      real*8 qrix,qriy,qriz
-      real*8 qrkx,qrky,qrkz
-      real*8 dri,drk,dik
-      real*8 qrri,qrrk
-      real*8 qrrik,qik
-      real*8 diqrk,dkqri
+      real*8 dir,dkr,dik,qik
+      real*8 qix,qiy,qiz,qir
+      real*8 qkx,qky,qkz,qkr
+      real*8 diqk,dkqi,qiqk
+      real*8 corei,corek
+      real*8 vali,valk
+      real*8 alphai,alphak
       real*8 term1,term2,term3
       real*8 term4,term5
-      real*8 bn(0:4)
-      real*8 fgrp,scale
+      real*8 term1i,term2i,term3i
+      real*8 term1k,term2k,term3k
+      real*8 term1ik,term2ik,term3ik
+      real*8 term4ik,term5ik
+      real*8 dmpi(9),dmpk(9)
+      real*8 dmpik(9),dmpe(9)
+      real*8 fgrp
       real*8 s,ds,mpoleshortcut2
       real*8 facts
       logical testcut,shortrange,longrange,fullrange
       real*8, allocatable :: mscale(:)
       logical header,huge
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
       external erfc
 
@@ -283,7 +292,6 @@ c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = electric / dielec
-!     mode = 'EWALD'
       call switch (mode)
 c
 c     compute the real space portion of the Ewald summation
@@ -305,6 +313,11 @@ c
          qiyy = rpole(9,iipole)
          qiyz = rpole(10,iipole)
          qizz = rpole(13,iipole)
+         if (use_chgpen) then
+            corei = pcore(iipole)
+            vali = pval(iipole)
+            alphai = palpha(iipole)
+         end if
          do j = 1, n12(iglob)
             mscale(i12(j,iglob)) = m2scale
          end do
@@ -324,9 +337,7 @@ c
      &                  nelst     (ii),
      &                  shortrange
      &                 )
-c        do kkk = 1, nelst(ii)
          do kkk = 1, nnelst
-c           kkpole = elst(kkk,ii)
             kkpole = merge(shortelst(kkk,ii),
      &                     elst     (kkk,ii),
      &                     shortrange
@@ -343,7 +354,6 @@ c           kkpole = elst(kkk,ii)
      &                      r2 .le. off2,
      &                      longrange
      &                     )
-c           if (r2 .le. off2) then
             if (testcut) then
                r = sqrt(r2)
                ck = rpole(1,kkpole)
@@ -357,6 +367,25 @@ c           if (r2 .le. off2) then
                qkyz = rpole(10,kkpole)
                qkzz = rpole(13,kkpole)
 c
+c     intermediates involving moments and separation distance
+c
+               dir = dix*xr + diy*yr + diz*zr
+               qix = qixx*xr + qixy*yr + qixz*zr
+               qiy = qixy*xr + qiyy*yr + qiyz*zr
+               qiz = qixz*xr + qiyz*yr + qizz*zr
+               qir = qix*xr + qiy*yr + qiz*zr
+               dkr = dkx*xr + dky*yr + dkz*zr
+               qkx = qkxx*xr + qkxy*yr + qkxz*zr
+               qky = qkxy*xr + qkyy*yr + qkyz*zr
+               qkz = qkxz*xr + qkyz*yr + qkzz*zr
+               qkr = qkx*xr + qky*yr + qkz*zr
+               dik = dix*dkx + diy*dky + diz*dkz
+               qik = qix*qkx + qiy*qky + qiz*qkz
+               diqk = dix*qkx + diy*qky + diz*qkz
+               dkqi = dkx*qix + dky*qiy + dkz*qiz
+               qiqk = 2.0d0*(qixy*qkxy+qixz*qkxz+qiyz*qkyz)
+     &                   + qixx*qkxx + qiyy*qkyy + qizz*qkzz
+c
 c     get reciprocal distance terms for this interaction
 c
                rr1 = f / r
@@ -365,79 +394,108 @@ c
                rr7 = 5.0d0 * rr5 / r2
                rr9 = 7.0d0 * rr7 / r2
 c
-c     calculate the real space Ewald error function terms
+c     calculate real space Ewald error function damping
 c
-               ralpha = aewald * r
-               bn(0) = erfc(ralpha) / r
-               alsq2 = 2.0d0 * aewald**2
-               alsq2n = 0.0d0
-               if (aewald .gt. 0.0d0)  alsq2n = 1.0d0 / (sqrtpi*aewald)
-               exp2a = exp(-ralpha**2)
-               do j = 1, 4
-                  bfac = dble(j+j-1)
-                  alsq2n = alsq2 * alsq2n
-                  bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / r2
-               end do
-               do j = 0, 4
-                  bn(j) = f * bn(j)
-               end do
+               call dampewald (9,r,r2,f,dmpe)
 c
-c     intermediates involving moments and distance separation
+c     find damped multipole intermediates and energy value
 c
-               dri = dix*xr + diy*yr + diz*zr
-               drk = dkx*xr + dky*yr + dkz*zr
-               dik = dix*dkx + diy*dky + diz*dkz
-               qrix = qixx*xr + qixy*yr + qixz*zr
-               qriy = qixy*xr + qiyy*yr + qiyz*zr
-               qriz = qixz*xr + qiyz*yr + qizz*zr
-               qrkx = qkxx*xr + qkxy*yr + qkxz*zr
-               qrky = qkxy*xr + qkyy*yr + qkyz*zr
-               qrkz = qkxz*xr + qkyz*yr + qkzz*zr
-               qrri = qrix*xr + qriy*yr + qriz*zr
-               qrrk = qrkx*xr + qrky*yr + qrkz*zr
-               qrrik = qrix*qrkx + qriy*qrky + qriz*qrkz
-               qik = 2.0d0*(qixy*qkxy+qixz*qkxz+qiyz*qkyz)
-     &                  + qixx*qkxx + qiyy*qkyy + qizz*qkzz
-               diqrk = dix*qrkx + diy*qrky + diz*qrkz
-               dkqri = dkx*qrix + dky*qriy + dkz*qriz
+               if (use_chgpen) then
+                  corek = pcore(kkpole)
+                  valk = pval(kkpole)
+                  alphak = palpha(kkpole)
+                  term1 = corei*corek
+                  term1i = corek*vali
+                  term2i = corek*dir
+                  term3i = corek*qir
+                  term1k = corei*valk
+                  term2k = -corei*dkr
+                  term3k = corei*qkr
+                  term1ik = vali*valk
+                  term2ik = valk*dir - vali*dkr + dik
+                  term3ik = vali*qkr + valk*qir - dir*dkr
+     &                         + 2.0d0*(dkqi-diqk+qiqk)
+                  term4ik = dir*qkr - dkr*qir - 4.0d0*qik
+                  term5ik = qir*qkr
+                  call damppole (r,9,alphai,alphak,
+     &                            dmpi,dmpk,dmpik)
+                  rr1i = dmpi(1)*rr1
+                  rr3i = dmpi(3)*rr3
+                  rr5i = dmpi(5)*rr5
+                  rr1k = dmpk(1)*rr1
+                  rr3k = dmpk(3)*rr3
+                  rr5k = dmpk(5)*rr5
+                  rr1ik = dmpik(1)*rr1
+                  rr3ik = dmpik(3)*rr3
+                  rr5ik = dmpik(5)*rr5
+                  rr7ik = dmpik(7)*rr7
+                  rr9ik = dmpik(9)*rr9
+                  e = term1*rr1 + term4ik*rr7ik + term5ik*rr9ik
+     &                   + term1i*rr1i + term1k*rr1k + term1ik*rr1ik
+     &                   + term2i*rr3i + term2k*rr3k + term2ik*rr3ik
+     &                   + term3i*rr5i + term3k*rr5k + term3ik*rr5ik
 c
-c     calculate intermediate terms for multipole interaction
+c     find standard multipole intermediates and energy value
 c
-               term1 = ci*ck
-               term2 = ck*dri - ci*drk + dik
-               term3 = ci*qrrk + ck*qrri - dri*drk
-     &                    + 2.0d0*(dkqri-diqrk+qik)
-               term4 = dri*qrrk - drk*qrri - 4.0d0*qrrik
-               term5 = qrri*qrrk
+               else
+                  term1 = ci*ck
+                  term2 = ck*dir - ci*dkr + dik
+                  term3 = ci*qkr + ck*qir - dir*dkr
+     &                       + 2.0d0*(dkqi-diqk+qiqk)
+                  term4 = dir*qkr - dkr*qir - 4.0d0*qik
+                  term5 = qir*qkr
+                  e = term1*rr1 + term2*rr3 + term3*rr5
+     &                   + term4*rr7 + term5*rr9
+               end if
 c
 c     compute the full undamped energy for this interaction
 c
-               scale = mscale(kglob)
-               if (use_group)  scale = scale * fgrp
-
-               efull = term1*rr1 + term2*rr3 + term3*rr5
-     &                    + term4*rr7 + term5*rr9
-               efull = scale * efull
+               efull = mscale(kglob) * e
                if (efull .ne. 0.0d0) then
                   nem = nem + 1
-                  aem(i) = aem(i) + efull
-                  if (molcule(iglob) .ne. molcule(kglob))
-     &               einter = einter + efull
+                  aem(i) = aem(i) + 0.5d0*efull
+                  aem(kbis) = aem(kbis) + 0.5d0*efull
+                  if (molcule(iglob) .ne. molcule(kglob)) then
+                     einter = einter + efull
+                  end if
                end if
-c
-c     modify error function terms to account for scaling
-c
-               scalekk = 1.0d0 - scale
-               rr1 = bn(0) - scalekk*rr1
-               rr3 = bn(1) - scalekk*rr3
-               rr5 = bn(2) - scalekk*rr5
-               rr7 = bn(3) - scalekk*rr7
-               rr9 = bn(4) - scalekk*rr9
 c
 c     compute the energy contribution for this interaction
 c
-               e = term1*rr1 + term2*rr3 + term3*rr5
-     &                + term4*rr7 + term5*rr9
+               if (use_chgpen) then
+                  scalek = mscale(kglob)
+                  if (use_group)  scalek = scalek * fgrp
+                  rr1i = dmpe(1) - (1.0d0-scalek*dmpi(1))*rr1
+                  rr3i = dmpe(3) - (1.0d0-scalek*dmpi(3))*rr3
+                  rr5i = dmpe(5) - (1.0d0-scalek*dmpi(5))*rr5
+                  rr1k = dmpe(1) - (1.0d0-scalek*dmpk(1))*rr1
+                  rr3k = dmpe(3) - (1.0d0-scalek*dmpk(3))*rr3
+                  rr5k = dmpe(5) - (1.0d0-scalek*dmpk(5))*rr5
+                  rr1ik = dmpe(1) - (1.0d0-scalek*dmpik(1))*rr1
+                  rr3ik = dmpe(3) - (1.0d0-scalek*dmpik(3))*rr3
+                  rr5ik = dmpe(5) - (1.0d0-scalek*dmpik(5))*rr5
+                  rr7ik = dmpe(7) - (1.0d0-scalek*dmpik(7))*rr7
+                  rr9ik = dmpe(9) - (1.0d0-scalek*dmpik(9))*rr9
+                  rr1 = dmpe(1) - (1.0d0-scalek)*rr1
+                  e = term1*rr1 + term4ik*rr7ik + term5ik*rr9ik
+     &                   + term1i*rr1i + term1k*rr1k + term1ik*rr1ik
+     &                   + term2i*rr3i + term2k*rr3k + term2ik*rr3ik
+     &                   + term3i*rr5i + term3k*rr5k + term3ik*rr5ik
+               else
+                  scalek = 1.0d0 - mscale(kglob)
+                  if (use_group)  then
+                    scalek = 1.0d0 - mscale(kglob)*fgrp
+                  end if
+                  rr1 = dmpe(1) - scalek*rr1
+                  rr3 = dmpe(3) - scalek*rr3
+                  rr5 = dmpe(5) - scalek*rr5
+                  rr7 = dmpe(7) - scalek*rr7
+                  rr9 = dmpe(9) - scalek*rr9
+                  e = term1*rr1 + term2*rr3 + term3*rr5
+     &                   + term4*rr7 + term5*rr9
+               end if
+
+
                if(shortrange .or. longrange)
      &            call switch_respa(r,mpoleshortcut,shortheal,s,ds)
 c

@@ -1458,7 +1458,7 @@ c
       implicit none
       integer ierr,commloc
       real*8 epot
-      real*8 buffer1(6),buffer2(17)
+      real*8 buffer1(7),buffer2(20)
 c
       if (use_pmecore) then
         commloc = comm_dir
@@ -1472,12 +1472,17 @@ c
       buffer1(4) = epot
       buffer1(5) = esum
       buffer1(6) = einter 
+      if (use_dewald) then
+        buffer1(7) = edsp
+      else
+        buffer1(7) = 0d0
+      end if
 c
       if (rank.eq.0) then
-        call MPI_REDUCE(MPI_IN_PLACE,buffer1,6,MPI_REAL8,MPI_SUM,0,
+        call MPI_REDUCE(MPI_IN_PLACE,buffer1,7,MPI_REAL8,MPI_SUM,0,
      $     COMM_TINKER,ierr)
       else
-        call MPI_REDUCE(buffer1,buffer1,6,MPI_REAL8,MPI_SUM,0,
+        call MPI_REDUCE(buffer1,buffer1,7,MPI_REAL8,MPI_SUM,0,
      $     COMM_TINKER,ierr)
       end if
       ec = buffer1(1)
@@ -1486,6 +1491,7 @@ c
       epot = buffer1(4)
       esum = buffer1(5)
       einter = buffer1(6)
+      if (use_dewald) edsp = buffer1(7)
 c
 c   MPI: get virial
 c
@@ -1510,13 +1516,20 @@ c
       buffer2(14) = ett
       buffer2(15) = eg
       buffer2(16) = ex
-      buffer2(17) = eat
+      buffer2(17) = er
+      buffer2(18) = ect
+      buffer2(19) = eat
+      if (.not.use_dewald) then
+        buffer2(20) = edsp
+      else
+        buffer2(20) = 0d0
+      end if
 c
       if (rank.eq.0) then
-        call MPI_REDUCE(MPI_IN_PLACE,buffer2,17,MPI_REAL8,MPI_SUM,0,
+        call MPI_REDUCE(MPI_IN_PLACE,buffer2,20,MPI_REAL8,MPI_SUM,0,
      $     commloc,ierr)
       else
-        call MPI_REDUCE(buffer2,buffer2,17,MPI_REAL8,MPI_SUM,0,
+        call MPI_REDUCE(buffer2,buffer2,20,MPI_REAL8,MPI_SUM,0,
      $     commloc,ierr)
       end if
 c
@@ -1536,10 +1549,109 @@ c
       ett  = buffer2(14)
       eg   = buffer2(15)
       ex   = buffer2(16)
-      eat  = buffer2(17)
+      er   = buffer2(17)
+      ect  = buffer2(18)
+      eat  = buffer2(19)
+      if (.not.use_dewald) edsp = buffer2(20)
 c
       return
       end
+cc
+cc     subroutine reduceen : make the necessary reductions over the processes to get the
+cc     total values of the energies
+cc
+c      subroutine reduceen(epot)
+c      use domdec
+c      use energi
+c      use inter
+c      use potent
+c      use virial
+c      use mpi
+c      implicit none
+c      integer ierr,commloc
+c      real*8 epot
+c      real*8 buffer1(6),buffer2(17)
+cc
+c      if (use_pmecore) then
+c        commloc = comm_dir
+c      else
+c        commloc = COMM_TINKER
+c      end if
+cc
+c      buffer1(1) = ec
+c      buffer1(2) = em
+c      buffer1(3) = ep
+c      buffer1(4) = epot
+c      buffer1(5) = esum
+c      buffer1(6) = einter 
+cc
+c      if (rank.eq.0) then
+c        call MPI_REDUCE(MPI_IN_PLACE,buffer1,6,MPI_REAL8,MPI_SUM,0,
+c     $     COMM_TINKER,ierr)
+c      else
+c        call MPI_REDUCE(buffer1,buffer1,6,MPI_REAL8,MPI_SUM,0,
+c     $     COMM_TINKER,ierr)
+c      end if
+c      ec = buffer1(1)
+c      em = buffer1(2)
+c      ep = buffer1(3)
+c      epot = buffer1(4)
+c      esum = buffer1(5)
+c      einter = buffer1(6)
+cc
+cc   MPI: get virial
+cc
+c      call MPI_ALLREDUCE(MPI_IN_PLACE,vir,9,MPI_REAL8,MPI_SUM,
+c     $   COMM_TINKER,ierr)
+cc
+c      if ((use_pmecore).and.(rank.gt.(ndir-1))) return
+cc
+c      buffer2(1) = eba
+c      buffer2(2) = ea
+c      buffer2(3) = eb
+c      buffer2(4) = ev
+c      buffer2(5) = eub
+c      buffer2(6) = eaa
+c      buffer2(7) = eopb
+c      buffer2(8) = eopd
+c      buffer2(9) = eid
+c      buffer2(10) = eit
+c      buffer2(11) = et
+c      buffer2(12) = ept
+c      buffer2(13) = ebt
+c      buffer2(14) = ett
+c      buffer2(15) = eg
+c      buffer2(16) = ex
+c      buffer2(17) = eat
+cc
+c      if (rank.eq.0) then
+c        call MPI_REDUCE(MPI_IN_PLACE,buffer2,17,MPI_REAL8,MPI_SUM,0,
+c     $     commloc,ierr)
+c      else
+c        call MPI_REDUCE(buffer2,buffer2,17,MPI_REAL8,MPI_SUM,0,
+c     $     commloc,ierr)
+c      end if
+cc
+c      eba  = buffer2(1) 
+c      ea   = buffer2(2) 
+c      eb   = buffer2(3) 
+c      ev   = buffer2(4) 
+c      eub  = buffer2(5) 
+c      eaa  = buffer2(6) 
+c      eopb = buffer2(7) 
+c      eopd = buffer2(8) 
+c      eid  = buffer2(9) 
+c      eit  = buffer2(10)
+c      et   = buffer2(11)
+c      ept  = buffer2(12)
+c      ebt  = buffer2(13)
+c      ett  = buffer2(14)
+c      eg   = buffer2(15)
+c      ex   = buffer2(16)
+c      eat  = buffer2(17)
+cc
+c      return
+c      end
 c
 c     subroutine commforcesbonded : deal with communications of some
 c     bonded forces modifier avec nlocnl ?
@@ -1825,7 +1937,8 @@ c
 c     MPI : move in buffer
 c
       buffers2(:,(nlocrec+1):nlocrec2)= demrec(:,(nlocrec+1):nlocrec2)+
-     $  deprec(:,(nlocrec+1):nlocrec2)+ decrec(:,(nlocrec+1):nlocrec2)
+     $  deprec(:,(nlocrec+1):nlocrec2)+ decrec(:,(nlocrec+1):nlocrec2)+
+     $  dedsprec(:,(nlocrec+1):nlocrec2)
 c
       do i = 1, nrec_recep
         tag = nprocloc*prec_recep(i) + rankloc + 1
@@ -1844,7 +1957,7 @@ c
 c
 c     MPI : move in global arrays
 c
-      temprec = demrec + deprec + decrec 
+      temprec = demrec + deprec + decrec + dedsprec 
       do i = 1, nrec_send
         do j = 1, nlocrec
           temprec(1,j) = temprec(1,j) + buffer2(1,j,i)
@@ -2281,6 +2394,123 @@ c
             end do
           end if
         end do
+c
+c     first do rec rec communications
+c
+c     MPI : begin reception in buffer
+c
+        do i = 1, nrec_send
+          tag = nprocloc*rankloc + prec_send(i) + 1
+          call MPI_IRECV(buffer2(1,1,i),3*nlocrec,
+     $     MPI_REAL8,prec_send(i),tag,commloc,reqrec(i),ierr)
+        end do
+c
+c     MPI : move in buffer
+c
+        buffers2(:,(nlocrec+1):nlocrec2)=dedsprec(:,(nlocrec+1):
+     $     nlocrec2)
+c
+        do i = 1, nrec_recep
+          tag = nprocloc*prec_recep(i) + rankloc + 1
+          call MPI_ISEND(buffers2(1,bufbegrec(prec_recep(i)+1)),
+     $     3*domlenrec(prec_recep(i)+1),
+     $     MPI_REAL8,prec_recep(i),tag,commloc,
+     $     reqsend(i),ierr)
+        end do
+c
+        do i = 1, nrec_send
+          call MPI_WAIT(reqrec(i),status,ierr)
+        end do
+        do i = 1, nrec_recep
+          call MPI_WAIT(reqsend(i),status,ierr)
+        end do
+c
+c     MPI : move in global arrays
+c
+        temprec = dedsprec
+
+        do i = 1, nrec_send
+          do j = 1, nlocrec
+            temprec(1,j) = temprec(1,j) + buffer2(1,j,i)
+            temprec(2,j) = temprec(2,j) + buffer2(2,j,i)
+            temprec(3,j) = temprec(3,j) + buffer2(3,j,i)
+          end do
+        end do
+c
+c     MPI : begin reception in buffer
+c
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
+            tag = nproc*rank + precdir_send1(i) + 1
+            call MPI_IRECV(buffer(1,1,i),3*nloc,
+     $      MPI_REAL8,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
+          end if
+        end do
+c
+c       MPI : move in buffer
+c
+        do iproc = 1, nrecdir_recep1
+          if (precdir_recep1(iproc).ne.rank) then
+            do i = 1, domlen(precdir_recep1(iproc)+1)
+              jloc = bufbeg(precdir_recep1(iproc)+1)+i-1
+              jglob = glob(jloc)
+              if (repartrec(jglob).eq.rankloc) then
+                jlocrec = locrec(jglob)
+                buffers(1,jloc) = temprec(1,jlocrec)
+                buffers(2,jloc) = temprec(2,jlocrec)
+                buffers(3,jloc) = temprec(3,jlocrec)
+              else
+                buffers(1,jloc) = 0d0
+                buffers(2,jloc) = 0d0
+                buffers(3,jloc) = 0d0
+              end if
+            end do
+          end if
+        end do
+c
+        do i = 1, nrecdir_recep1
+          if (precdir_recep1(i).ne.rank) then
+            tag = nproc*precdir_recep1(i) + rank + 1
+            call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1)),
+     $       3*domlen(precdir_recep1(i)+1),
+     $       MPI_REAL8,precdir_recep1(i),tag,COMM_TINKER,
+     $       reqsend(i),ierr)
+          end if
+        end do
+c
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
+            call MPI_WAIT(reqrec(i),status,ierr)
+          end if
+        end do
+        do i = 1, nrecdir_recep1
+          if (precdir_recep1(i).ne.rank) then
+            call MPI_WAIT(reqsend(i),status,ierr)
+          end if
+        end do
+c
+c       MPI : move in global arrays
+c
+        do i = 1, nrecdir_send1
+          if (precdir_send1(i).ne.rank) then
+            do j = 1, nloc
+              iglob = glob(j)
+              dedsp(1,j) = dedsp(1,j) + buffer(1,j,i)
+              dedsp(2,j) = dedsp(2,j) + buffer(2,j,i)
+              dedsp(3,j) = dedsp(3,j) + buffer(3,j,i)
+            end do
+          else
+            do j = 1, nlocrec
+              iglob = globrec(j)
+              iloc = loc(iglob)
+              if (repart(iglob).eq.rank) then
+                dedsp(1,j) = dedsp(1,j)+temprec(1,j)
+                dedsp(2,j) = dedsp(2,j)+temprec(2,j)
+                dedsp(3,j) = dedsp(3,j)+temprec(3,j)
+              end if
+            end do
+          end if
+        end do
       end  if
 
       deallocate (temprec)
@@ -2311,7 +2541,6 @@ c
 c
 c     allocate some arrays
 c
-c      allocate (req(nproc*nproc))
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
 c
@@ -2933,6 +3162,126 @@ c
 c
 c     MPI : move in buffer
 c
+      buffers(:,(nloc+1):nbloc) = der(:,(nloc+1):nbloc)
+c
+      do i = 1, nbig_recep
+        tag = nproc*pbig_recep(i) + rank + 1
+        call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),
+     $   3*domlen(pbig_recep(i)+1),
+     $   MPI_REAL8,pbig_recep(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nbig_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+      do i = 1, nbig_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, nbig_send
+        do j = 1, nloc
+          der(1,j) = der(1,j) + buffer(1,j,i)
+          der(2,j) = der(2,j) + buffer(2,j,i)
+          der(3,j) = der(3,j) + buffer(3,j,i)
+          detot(1,j) = detot(1,j) + buffer(1,j,i)
+          detot(2,j) = detot(2,j) + buffer(2,j,i)
+          detot(3,j) = detot(3,j) + buffer(3,j,i)
+        end do
+      end do
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nbig_send
+        tag = nproc*rank + pbig_send(i) + 1
+        call MPI_IRECV(buffer(1,1,i),3*nloc,
+     $   MPI_REAL8,pbig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
+      buffers(:,(nloc+1):nbloc) = dedsp(:,(nloc+1):nbloc)
+c
+      do i = 1, nbig_recep
+        tag = nproc*pbig_recep(i) + rank + 1
+        call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),
+     $   3*domlen(pbig_recep(i)+1),
+     $   MPI_REAL8,pbig_recep(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nbig_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+      do i = 1, nbig_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, nbig_send
+        do j = 1, nloc
+          dedsp(1,j) = dedsp(1,j) + buffer(1,j,i)
+          dedsp(2,j) = dedsp(2,j) + buffer(2,j,i)
+          dedsp(3,j) = dedsp(3,j) + buffer(3,j,i)
+          detot(1,j) = detot(1,j) + buffer(1,j,i)
+          detot(2,j) = detot(2,j) + buffer(2,j,i)
+          detot(3,j) = detot(3,j) + buffer(3,j,i)
+        end do
+      end do
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nbig_send
+        tag = nproc*rank + pbig_send(i) + 1
+        call MPI_IRECV(buffer(1,1,i),3*nloc,
+     $   MPI_REAL8,pbig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
+      buffers(:,(nloc+1):nbloc) = dect(:,(nloc+1):nbloc)
+c
+      do i = 1, nbig_recep
+        tag = nproc*pbig_recep(i) + rank + 1
+        call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),
+     $   3*domlen(pbig_recep(i)+1),
+     $   MPI_REAL8,pbig_recep(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nbig_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+      do i = 1, nbig_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, nbig_send
+        do j = 1, nloc
+          dect(1,j) = dect(1,j) + buffer(1,j,i)
+          dect(2,j) = dect(2,j) + buffer(2,j,i)
+          dect(3,j) = dect(3,j) + buffer(3,j,i)
+          detot(1,j) = detot(1,j) + buffer(1,j,i)
+          detot(2,j) = detot(2,j) + buffer(2,j,i)
+          detot(3,j) = detot(3,j) + buffer(3,j,i)
+        end do
+      end do
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nbig_send
+        tag = nproc*rank + pbig_send(i) + 1
+        call MPI_IRECV(buffer(1,1,i),3*nloc,
+     $   MPI_REAL8,pbig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
       buffers(:,(nloc+1):nbloc) = deg(:,(nloc+1):nbloc)
 c
       do i = 1, nbig_recep
@@ -3154,6 +3503,12 @@ c
        call MPI_ALLREDUCE(MPI_IN_PLACE,ep,1,MPI_REAL8,MPI_SUM,
      $    COMM_TINKER,ierr)
        call MPI_ALLREDUCE(MPI_IN_PLACE,ev,1,MPI_REAL8,MPI_SUM,
+     $    COMM_TINKER,ierr)
+       call MPI_ALLREDUCE(MPI_IN_PLACE,er,1,MPI_REAL8,MPI_SUM,
+     $    COMM_TINKER,ierr)
+       call MPI_ALLREDUCE(MPI_IN_PLACE,edsp,1,MPI_REAL8,MPI_SUM,
+     $    COMM_TINKER,ierr)
+       call MPI_ALLREDUCE(MPI_IN_PLACE,ect,1,MPI_REAL8,MPI_SUM,
      $    COMM_TINKER,ierr)
        call MPI_ALLREDUCE(MPI_IN_PLACE,eub,1,MPI_REAL8,MPI_SUM,
      $    COMM_TINKER,ierr)
@@ -3976,5 +4331,349 @@ c
       deallocate (buffer)
       deallocate (reqrec)
       deallocate (reqsend)
+      return
+      end
+c
+c     subroutine commchgflx : communicate increment to modify charges to neighboring processes  
+c
+      subroutine commchgflx(pdelta)
+      use atmlst
+      use atoms
+      use charge
+      use domdec
+      use mpole
+      use mpi
+      use potent
+      implicit none
+      integer i,tag,ierr,iproc
+      integer iloc,iglob,j
+      integer, allocatable :: reqrec(:),reqsend(:)
+      real*8, allocatable :: buffer(:,:)
+      real*8, allocatable :: buffers(:)
+      real*8 pdelta(*)
+      integer status(MPI_STATUS_SIZE)
+c
+c     allocate some arrays
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+      allocate (buffer(max(1,nloc),nbig_send))
+      allocate (buffers(max(1,nbloc)))
+c
+      do i = 1, nbig_recep
+        do j = 1, domlen(pbig_recep(i)+1)
+          iloc = bufbeg(pbig_recep(i)+1)+j-1
+          iglob = glob(iloc)
+          buffers(iloc) = pdelta(iglob)
+        end do
+      end do
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nbig_send
+        tag = nproc*rank + pbig_send(i) + 1
+        call MPI_IRECV(buffer(1,i),nloc,MPI_REAL8,pbig_send(i),
+     $   tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, nbig_recep
+        tag = nproc*pbig_recep(i) + rank + 1
+        call MPI_ISEND(buffers(bufbeg(pbig_recep(i)+1)),
+     $   domlen(pbig_recep(i)+1),
+     $   MPI_REAL8,pbig_recep(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nbig_send
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nbig_recep
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do iproc = 1, nbig_send
+        do i = 1, nloc
+          iglob = glob(i)
+          pdelta(iglob) = pdelta(iglob) + buffer(i,iproc)
+        end do
+      end do
+c
+      deallocate (reqsend)
+      deallocate (reqrec)
+      deallocate (buffer)
+      deallocate (buffers)
+      return
+      end
+c
+c     subroutine commpot : communicate potential to neighboring processes (chgflux)
+c
+c     rule = 0: communicate to pbig_* list of processes
+c     rule = 1: communicate to pneig_* list of processes
+c
+c
+      subroutine commpot(pot,rule)
+      use atmlst
+      use atoms
+      use charge
+      use domdec
+      use iounit
+      use mpole
+      use mpi
+      implicit none
+      integer i,tag,ierr,iproc
+      integer iloc
+      integer rule
+      integer, allocatable :: reqrec(:),reqsend(:)
+      integer :: n_recep, n_send
+      integer, allocatable :: p_send(:),p_recep(:)
+      real*8, allocatable :: buffer(:)
+      real*8, allocatable :: buffers(:)
+      real*8 pot(*)
+      integer status(MPI_STATUS_SIZE)
+ 1000 format(' illegal rule in commpot.')
+c
+      allocate (p_send(nproc))
+      allocate (p_recep(nproc))
+c
+      if (rule.eq.0) then
+        n_recep = nbig_recep
+        n_send  = nbig_send
+        p_send  = pbig_send
+        p_recep = pbig_recep
+      else if (rule.eq.1) then
+        n_recep = nneig_recep
+        n_send  = nneig_send
+        p_send  = pneig_send
+        p_recep = pneig_recep
+      else
+        if (rank.eq.0) write(iout,1000)
+      end if
+
+c
+c     allocate some arrays
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+      allocate (buffer(max(1,nbloc)))
+      allocate (buffers(max(1,nloc)))
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, n_recep
+        tag = nproc*rank + p_recep(i) + 1
+        call MPI_IRECV(buffer(bufbeg(p_recep(i)+1)),
+     $   domlen(p_recep(i)+1),
+     $   MPI_REAL8,p_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
+      do i = 1, nloc
+        buffers(i) = pot(i)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, n_send
+        tag = nproc*p_send(i) + rank + 1
+        call MPI_ISEND(buffers,nloc,
+     $   MPI_REAL8,p_send(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, n_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, n_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do iproc = 1, n_recep
+        do i = 1, domlen(p_recep(iproc)+1)
+          iloc = bufbeg(p_recep(iproc)+1)+i-1
+          pot(iloc) = buffer(iloc)
+        end do
+      end do
+c
+      deallocate (p_send)
+      deallocate (p_recep)
+      deallocate (reqsend)
+      deallocate (reqrec)
+      deallocate (buffer)
+      deallocate (buffers)
+      return
+      end
+c
+c     subroutine commpotsum : communicate and sum potential to neighboring processes (chgflux)
+c
+c     rule = 0: communicate to pbig_* list of processes
+c     rule = 1: communicate to pneig_* list of processes
+c
+c
+      subroutine commpotsum(pot,rule)
+      use atmlst
+      use atoms
+      use charge
+      use domdec
+      use iounit
+      use mpole
+      use mpi
+      implicit none
+      integer i,tag,ierr
+      integer rule
+      integer, allocatable :: reqrec(:),reqsend(:)
+      integer :: n_recep, n_send
+      integer, allocatable :: p_send(:),p_recep(:)
+      real*8, allocatable :: buffer(:,:)
+      real*8, allocatable :: buffers(:)
+      real*8 pot(*)
+      integer status(MPI_STATUS_SIZE)
+ 1000 format(' illegal rule in commpot.')
+c
+      allocate (p_send(nproc))
+      allocate (p_recep(nproc))
+c
+      if (rule.eq.0) then
+        n_recep = nbig_recep
+        n_send  = nbig_send
+        p_send  = pbig_send
+        p_recep = pbig_recep
+      else if (rule.eq.1) then
+        n_recep = nneig_recep
+        n_send  = nneig_send
+        p_send  = pneig_send
+        p_recep = pneig_recep
+      else
+        if (rank.eq.0) write(iout,1000)
+      end if
+
+c
+c     allocate some arrays
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+      allocate (buffer(max(1,nloc),n_send))
+      allocate (buffers(max(1,nbloc)))
+c
+c     MPI : move in buffer
+c
+      buffers((nloc+1):nbloc) = pot((nloc+1):nbloc)
+c
+      do i = 1, n_send
+        tag = nproc*rank + p_send(i) + 1
+        call MPI_IRECV(buffer(1,i),nloc,MPI_REAL8,p_send(i),
+     $   tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, n_recep
+        tag = nproc*p_recep(i) + rank + 1
+        call MPI_ISEND(buffers(bufbeg(p_recep(i)+1)),
+     $   domlen(p_recep(i)+1),
+     $   MPI_REAL8,p_recep(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, n_send
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, n_recep
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, n_send
+        pot(1:nloc) = pot(1:nloc) + buffer(1:nloc,i)
+      end do
+c
+c
+      deallocate (p_send)
+      deallocate (p_recep)
+      deallocate (reqsend)
+      deallocate (reqrec)
+      deallocate (buffer)
+      deallocate (buffers)
+      return
+      end
+c
+c     subroutine commpotrec : communicate reciprocal pot to local
+c
+      subroutine commpotrec(pot,potrec)
+      use sizes
+      use deriv
+      use domdec
+      use potent
+      use mpi
+      implicit none
+      integer i,j,tag,ierr
+      integer jloc,jglob,jlocrec
+      integer, allocatable :: reqsend(:),reqrec(:)
+      real*8, allocatable :: buffer(:,:)
+      real*8, allocatable :: buffers(:)
+      real*8 pot(*),potrec(*)
+      integer status(MPI_STATUS_SIZE)
+c
+c     allocate some arrays
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+      allocate (buffer(max(1,nloc),nrecdir_send1))
+      buffer = 0d0
+      allocate (buffers(max(1,nblocrecdir)))
+      buffers = 0d0
+c
+c     do rec dir communications
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nrecdir_send1
+        tag = nproc*rank + precdir_send1(i) + 1
+        call MPI_IRECV(buffer(1,i),nloc,
+     $   MPI_REAL8,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     Move in array
+c
+      do i = 1, nrecdir_recep1
+        do j = 1, domlen(precdir_recep1(i)+1)
+          jloc = bufbeg(precdir_recep1(i)+1)+j-1
+          jglob = glob(jloc)
+          if (repartrec(jglob).eq.rank) then
+            jlocrec = locrec(jglob)
+            buffers(jloc) = potrec(jlocrec)
+          end if
+        end do
+      end do
+c
+      do i = 1, nrecdir_recep1
+        tag = nproc*precdir_recep1(i) + rank + 1
+        call MPI_ISEND(buffers(bufbeg(precdir_recep1(i)+1)),
+     $   domlen(precdir_recep1(i)+1),
+     $   MPI_REAL8,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+      end do
+c
+      do i = 1, nrecdir_send1
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nrecdir_recep1
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, nrecdir_send1
+        do j = 1, nloc
+          pot(j) = pot(j) + buffer(j,i)
+        end do
+      end do
+
       return
       end

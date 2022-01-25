@@ -41,7 +41,6 @@ c     use_pmecore logical flag governing use of separate cores for pme
 c     use_emtp    logical flag governing use of emtp formula for electrostatics
 c     use_ctransfer logical flag governing use of ect potential
 c     use_dispersion logical flag governing use of dispersion potential
-c     use_repulsion logical flag governing use of repulsion potential
 c     use_mreal   logical flag governing use of real space multipolar potential
 c     use_mrec    logical flag governing use of reciprocal space multipolar potential
 c     use_mself   logical flag governing use of self multipolar potential
@@ -51,8 +50,25 @@ c     use_cself   logical flag governing use of self charge potential
 c     use_preal   logical flag governing use of real space polarization potential
 c     use_prec    logical flag governing use of reciprocal space polarization potential
 c     use_pself   logical flag governing use of self polarization potential
+c     use_dispreal   logical flag governing use of real space polarization potential
+c     use_disprec    logical flag governing use of reciprocal space polarization potential
+c     use_dispself   logical flag governing use of self polarization potential
 c     use_smd_velconst logical flag governing use of CVSMD
 c     use_smd_forconst logical flag governing use of CFSMD
+c     use_repuls  logical flag governing use of Pauli repulsion term
+c     use_repulsshort   logical flag governing use of short range vdw potential
+c     use_repulslong   logical flag governing use of long range vdw potential
+c     use_disp    logical flag governing use of dispersion potential
+c     use_dispshort    logical flag governing use of short range dispersion potential
+c     use_dispshortreal    logical flag governing use of short range real space dispersion potential
+c     use_dispslong    logical flag governing use of long range dispersion potential
+c     use_disp    logical flag governing use of dispersion potential
+c     use_chgtrnshort  logical flag governing use of short range charge transfer term
+c     use_chgtrnlong  logical flag governing use of long range charge transfer term
+c     use_chgtrn  logical flag governing use of charge transfer term
+c     use_chgflx  logical flag governing use of charge flux term
+c     use_dewald  logical flag governing use of PME for dispersion
+c     use_chgpen  logical flag governing use of charge penetration
 c
 c
       module potent
@@ -67,7 +83,6 @@ c
       logical use_geom,use_extra
       logical use_born,use_pmecore
       logical use_emtp,use_ctransfer,use_dispersion
-      logical use_repulsion
       logical use_mreal,use_mrec,use_preal,use_prec
       logical use_creal,use_crec,use_cself
       logical use_polarshortreal
@@ -75,5 +90,11 @@ c
       logical use_cshortreal,use_clong
       logical use_vdwshort,use_vdwlong,use_mpolelong
       logical use_smd_velconst, use_smd_forconst
+      logical use_repuls,use_disp,use_chgtrn,use_chgflx
+      logical use_dispreal,use_dispself,use_disprec
+      logical use_repulsshort,use_dispshort,use_dispshortreal
+      logical use_chgtrnshort
+      logical use_repulslong,use_displong,use_chgtrnlong
+      logical use_dewald,use_chgpen
       save
       end

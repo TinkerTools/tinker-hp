@@ -23,7 +23,7 @@ c
       real*8 off6,off7
       real*8 cut3,cut4,cut5
       real*8 cut6,cut7
-      character*10 mode
+      character*11 mode
 c
 c
 c     get the switching window for the current potential type
@@ -33,9 +33,24 @@ c
          cut = vdwtaper
       elseif (mode(1:8) .eq. 'SHORTVDW') then
          off = vdwshortcut
+      else if (mode(1:6) .eq. 'REPULS') then
+         off = repcut
+         cut = reptaper
+      elseif (mode(1:11) .eq. 'SHORTREPULS') then
+         off = repshortcut
+      else if (mode(1:4) .eq. 'DISP') then
+         off = dispcut
+         cut = disptaper
+      elseif (mode(1:10) .eq. 'SHORTDISP') then
+         off = dispshortcut
       else if (mode(1:6) .eq. 'CHARGE') then
          off = chgcut
          cut = chgtaper
+      else if (mode(1:6) .eq. 'CHGTRN') then
+         off = ctrncut
+         cut = ctrntaper
+      elseif (mode(1:11) .eq. 'SHORTCHGTRN') then
+         off = ctrnshortcut
       else if (mode(1:5) .eq. 'MPOLE') then
          off = mpolecut
          cut = mpoletaper
@@ -43,6 +58,12 @@ c
          off = ewaldcut
          cut = ewaldcut
       else if (mode(1:10) .eq. 'SHORTEWALD') then
+         off = ewaldshortcut
+         cut = ewaldshortcut
+      else if (mode(1:5) .eq. 'DEWALD') then
+         off = ewaldcut
+         cut = ewaldcut
+      else if (mode(1:10) .eq. 'SHORTDEWALD') then
          off = ewaldshortcut
          cut = ewaldshortcut
       else

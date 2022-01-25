@@ -116,7 +116,7 @@ c
       implicit none
       integer i,j,k,iglob,kglob
       integer ii,kk,kkk,iipole,kkpole
-      integer iglobgroup,kglobgroup
+      integer iipolegroup,iglobgroup,kglobgroup
       integer ilocgroup,klocgroup
       integer ix,iy,iz
       real*8 e,f
@@ -205,7 +205,8 @@ c
 c     compute the dipole polarization gradient components
 c
       do ii = 1, npolelocgroup
-         iglobgroup = ipolegroup(poleglobgroup(ii))
+         iipolegroup = poleglobgroup(ii)
+         iglobgroup = ipolegroup(iipolegroup)
          iglob = globglobgroup(iglobgroup)
          iipole = pollist(iglob)
          ilocgroup = locgroup(iglobgroup)
@@ -224,12 +225,12 @@ c
          qiyy = rpole(9,iipole)
          qiyz = rpole(10,iipole)
          qizz = rpole(13,iipole)
-         uix = uindgroup(1,iglobgroup)
-         uiy = uindgroup(2,iglobgroup)
-         uiz = uindgroup(3,iglobgroup)
-         uixp = uinpgroup(1,iglobgroup)
-         uiyp = uinpgroup(2,iglobgroup)
-         uizp = uinpgroup(3,iglobgroup)
+         uix = uindgroup(1,iipolegroup)
+         uiy = uindgroup(2,iipolegroup)
+         uiz = uindgroup(3,iipolegroup)
+         uixp = uinpgroup(1,iipolegroup)
+         uiyp = uinpgroup(2,iipolegroup)
+         uizp = uinpgroup(3,iipolegroup)
          do j = 1, n12(iglob)
             pscale(i12(j,iglob)) = p2scale
          end do
@@ -263,7 +264,7 @@ c
             uscale(ip14(j,iglob)) = u4scale
          end do
 c
-         do kkk = iglobgroup+1, npolegroup
+         do kkk = iipolegroup+1, npolegroup
             kglobgroup = ipolegroup(kkk)
             kglob = globglobgroup(kglobgroup)
             kkpole = pollist(kglob)
@@ -710,3 +711,4 @@ c
       deallocate (dufld)
       return
       end
+

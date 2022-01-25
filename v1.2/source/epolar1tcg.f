@@ -20,6 +20,12 @@ c
       use potent
       implicit none
  1000 format(' illegal tcg order')
+ 1010 format(' charge penetration not compatible with tcg')
+
+      if (use_chgpen) then
+        if (rank.eq.0) write(iout,1010) 
+        call fatal
+      end if
 c
 c     recompute the optimal value for omega (TCG-PEEK) if needed
 c

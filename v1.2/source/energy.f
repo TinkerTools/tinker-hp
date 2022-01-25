@@ -42,11 +42,18 @@ c
       ebt = 0.0d0
       ett = 0.0d0
       ev = 0.0d0
+      er = 0.0d0
+      edsp = 0.0d0
+      ect = 0.0d0
       ec = 0.0d0
       em = 0.0d0
       ep = 0.0d0
       eg = 0.0d0
       ex = 0.0d0
+c
+c     alter partial charges and multipoles for charge flux
+c
+      if (use_chgflx)  call alterchg
 c
 c     call the local geometry energy component routines
 c
@@ -71,12 +78,16 @@ c
          if (vdwtyp .eq. 'LENNARD-JONES')  call elj
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal
       end if
+      if (use_repuls)  call erepel
+      if (use_disp)  call edisp
 c
 c     call the electrostatic energy component routines
 c
       if (use_charge) call echarge
       if (use_mpole)  call empole0
       if (use_polar)  call epolar
+
+      if (use_chgtrn)  call echgtrn
 c
 c
 c     call any miscellaneous energy component routines
@@ -87,8 +98,8 @@ c
 c     sum up to give the total potential energy
 c
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
-     &          + et + ept + eat + ebt + ett + ev + ec + em
-     &          + ep + eg + ex 
+     &          + et + ept + eat + ebt + ett + ev + er + edsp + ec
+     &          + em + ect + ep + eg + ex 
       energy = esum
 c
 c     check for an illegal value for the total energy

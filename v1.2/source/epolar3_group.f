@@ -77,17 +77,23 @@ c     "epreal3_group" evaluates the
 c     polarization energy due to dipole polarization
 c     of a subset of atoms
 c
-c
+
       subroutine epreal3_group
+      use action
+      use analyz
       use atmlst
+      use atmtyp
       use atoms
       use bound
       use chgpot
+      use chgpen
       use couple
       use cutoff
       use domdec
       use energi
+      use ewald
       use group
+      use inform
       use inter
       use iounit
       use math
@@ -99,77 +105,59 @@ c
       use polpot
       use potent
       use shunt
-      use virial
       use mpi
       implicit none
-      integer j,k,iglob,kglob
+      integer i,j,k,iglob,kglob,kbis
       integer ii,kk,kkk,iipole,kkpole
-      integer iglobgroup,kglobgroup
+      integer iipolegroup,iglobgroup,kglobgroup
       real*8 e,f
-      real*8 damp,expdamp
-      real*8 pdi,pti,pgamma
-      real*8 temp3,temp5,temp7
-      real*8 sc3,sc5,sc7
-      real*8 psr3,psr5,psr7
-      real*8 dsr3,dsr5,dsr7
-      real*8 usr3,usr5
       real*8 xi,yi,zi
       real*8 xr,yr,zr
-      real*8 r,r2,rr1,rr3
-      real*8 rr5,rr7,rr9
+      real*8 r,r2,rr3
+      real*8 sr3,sr5,sr7
+      real*8 rr5,rr7
+      real*8 rr3i,rr5i,rr7i
+      real*8 rr3k,rr5k,rr7k
       real*8 ci,dix,diy,diz
       real*8 qixx,qixy,qixz
       real*8 qiyy,qiyz,qizz
       real*8 uix,uiy,uiz
-      real*8 uixp,uiyp,uizp
       real*8 ck,dkx,dky,dkz
       real*8 qkxx,qkxy,qkxz
       real*8 qkyy,qkyz,qkzz
       real*8 ukx,uky,ukz
-      real*8 ukxp,ukyp,ukzp
-      real*8 dri,drk
-      real*8 qrix,qriy,qriz
-      real*8 qrkx,qrky,qrkz
-      real*8 qrri,qrrk
-      real*8 duik,quik
-      real*8 uri,urip
-      real*8 urk,urkp
-
+      real*8 dir,diu,qiu,uir
+      real*8 dkr,dku,qku,ukr
+      real*8 qix,qiy,qiz,qir
+      real*8 qkx,qky,qkz,qkr
+      real*8 corei,corek
+      real*8 vali,valk
+      real*8 alphai,alphak
       real*8 term1,term2,term3
-      real*8 scaled,scalep,scaleu
-      real*8 rc3(3),rc5(3),rc7(3)
-
+      real*8 dmpi(7),dmpk(7)
+      real*8 dmpik(7),dmpe(7)
+      real*8 scalek
       real*8, allocatable :: pscale(:)
-      real*8, allocatable :: dscale(:)
-      real*8, allocatable :: uscale(:)
-
 c
 c     perform dynamic allocation of some local arrays
 c
       allocate (pscale(n))
-      allocate (dscale(n))
-      allocate (uscale(n))
 c
-c     set exclusion coefficients and arrays to store fields
+c     initialize connected atom exclusion coefficients
 c
       pscale = 1.0d0
-      dscale = 1.0d0
-      uscale = 1.0d0
-
 c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = 0.5d0 * electric / dielec
 c
-c
-c     compute the dipole polarization gradient components
+c     compute the dipole polarization energy component
 c
       do ii = 1, npolelocgroup
-         iglobgroup = ipolegroup(poleglobgroup(ii))
+         iipolegroup = poleglobgroup(ii)
+         iglobgroup = ipolegroup(iipolegroup)
          iglob = globglobgroup(iglobgroup)
          iipole = pollist(iglob)
-         pdi = pdamp(iipole)
-         pti = thole(iipole)
          xi = x(iglob)
          yi = y(iglob)
          zi = z(iglob)
@@ -183,45 +171,45 @@ c
          qiyy = rpole(9,iipole)
          qiyz = rpole(10,iipole)
          qizz = rpole(13,iipole)
-         uix = uindgroup(1,iglobgroup)
-         uiy = uindgroup(2,iglobgroup)
-         uiz = uindgroup(3,iglobgroup)
-         uixp = uinpgroup(1,iglobgroup)
-         uiyp = uinpgroup(2,iglobgroup)
-         uizp = uinpgroup(3,iglobgroup)
+         uix = uindgroup(1,iipolegroup)
+         uiy = uindgroup(2,iipolegroup)
+         uiz = uindgroup(3,iipolegroup)
+         if (use_chgpen) then
+            corei = pcore(iipole)
+            vali = pval(iipole)
+            alphai = palpha(iipole)
+         end if
+c
+c     set exclusion coefficients for connected atoms
+c
          do j = 1, n12(iglob)
             pscale(i12(j,iglob)) = p2scale
+            do k = 1, np11(iglob)
+               if (i12(j,iglob) .eq. ip11(k,iglob))
+     &            pscale(i12(j,iglob)) = p2iscale
+            end do
          end do
          do j = 1, n13(iglob)
             pscale(i13(j,iglob)) = p3scale
+            do k = 1, np11(iglob)
+               if (i13(j,iglob) .eq. ip11(k,iglob))
+     &            pscale(i13(j,iglob)) = p3iscale
+            end do
          end do
          do j = 1, n14(iglob)
             pscale(i14(j,iglob)) = p4scale
             do k = 1, np11(iglob)
-                if (i14(j,iglob) .eq. ip11(k,iglob))
-     &            pscale(i14(j,iglob)) = p4scale * p41scale
+               if (i14(j,iglob) .eq. ip11(k,iglob))
+     &            pscale(i14(j,iglob)) = p4iscale
             end do
          end do
          do j = 1, n15(iglob)
             pscale(i15(j,iglob)) = p5scale
+            do k = 1, np11(iglob)
+               if (i15(j,iglob) .eq. ip11(k,iglob))
+     &            pscale(i15(j,iglob)) = p5iscale
+            end do
          end do
-         do j = 1, np11(iglob)
-            dscale(ip11(j,iglob)) = d1scale
-            uscale(ip11(j,iglob)) = u1scale
-         end do
-         do j = 1, np12(iglob)
-            dscale(ip12(j,iglob)) = d2scale
-            uscale(ip12(j,iglob)) = u2scale
-         end do
-         do j = 1, np13(iglob)
-            dscale(ip13(j,iglob)) = d3scale
-            uscale(ip13(j,iglob)) = u3scale
-         end do
-         do j = 1, np14(iglob)
-            dscale(ip14(j,iglob)) = d4scale
-            uscale(ip14(j,iglob)) = u4scale
-         end do
-c
          do kkk = iglobgroup+1, npolegroup
             kglobgroup = ipolegroup(kkk)
             kglob = globglobgroup(kglobgroup)
@@ -245,113 +233,74 @@ c
             ukx = uindgroup(1,kkk)
             uky = uindgroup(2,kkk)
             ukz = uindgroup(3,kkk)
-            ukxp = uinpgroup(1,kkk)
-            ukyp = uinpgroup(2,kkk)
-            ukzp = uinpgroup(3,kkk)
 c
-c     get reciprocal distance terms for this interaction
+c     intermediates involving moments and separation distance
 c
-            rr1 = f / r
-            rr3 = rr1 / r2
-            rr5 = 3.0d0 * rr3 / r2
-            rr7 = 5.0d0 * rr5 / r2
-            rr9 = 7.0d0 * rr7 / r2
+            dir = dix*xr + diy*yr + diz*zr
+            qix = qixx*xr + qixy*yr + qixz*zr
+            qiy = qixy*xr + qiyy*yr + qiyz*zr
+            qiz = qixz*xr + qiyz*yr + qizz*zr
+            qir = qix*xr + qiy*yr + qiz*zr
+            dkr = dkx*xr + dky*yr + dkz*zr
+            qkx = qkxx*xr + qkxy*yr + qkxz*zr
+            qky = qkxy*xr + qkyy*yr + qkyz*zr
+            qkz = qkxz*xr + qkyz*yr + qkzz*zr
+            qkr = qkx*xr + qky*yr + qkz*zr
+            diu = dix*ukx + diy*uky + diz*ukz
+            qiu = qix*ukx + qiy*uky + qiz*ukz
+            uir = uix*xr + uiy*yr + uiz*zr
+            dku = dkx*uix + dky*uiy + dkz*uiz
+            qku = qkx*uix + qky*uiy + qkz*uiz
+            ukr = ukx*xr + uky*yr + ukz*zr
 c
-c     apply Thole polarization damping to scale factors
+c     find the energy value for Thole polarization damping
 c
-            sc3 = 1.0d0
-            sc5 = 1.0d0
-            sc7 = 1.0d0
-            do j = 1, 3
-               rc3(j) = 0.0d0
-               rc5(j) = 0.0d0
-               rc7(j) = 0.0d0
-            end do
-            damp = pdi * pdamp(kkpole)
-            if (damp .ne. 0.0d0) then
-              pgamma = min(pti,thole(kk))
-              if (pgamma .eq. 0.0d0) then
-                 pgamma = max(pti,thole(kk))
-              end if
-              if (damp.ne.0.0d0 .and. pgamma.ne.0.0d0) then
-                 damp = pgamma * (r/damp)**3
-                 if (damp .lt. 50.0d0) then
-                    expdamp = exp(-damp)
-                    sc3 = 1.0d0 - expdamp
-                    sc5 = 1.0d0 - expdamp*(1.0d0+damp)
-                    sc7 = 1.0d0 - expdamp*(1.0d0+damp
-     &                               +0.6d0*damp**2)
-                    temp3 = damp * expdamp * rr5
-                    temp5 = 3.0d0 * damp / r2
-                    temp7 = (-1.0d0+3.0d0*damp) / r2
-                    rc3(1) = xr * temp3
-                    rc3(2) = yr * temp3
-                    rc3(3) = zr * temp3
-                    rc5(1) = rc3(1) * temp5
-                    rc5(2) = rc3(2) * temp5
-                    rc5(3) = rc3(3) * temp5
-                    rc7(1) = rc5(1) * temp7
-                    rc7(2) = rc5(2) * temp7
-                    rc7(3) = rc5(3) * temp7
-                 end if
-              end if
+            if (use_thole) then
+               call dampthole (iipole,kkpole,7,r,dmpik)
+               scalek = pscale(kglob)
+               rr3 = f / (r*r2)
+               rr5 = 3.0d0 * rr3 / r2
+               rr7 = 5.0d0 * rr5 / r2
+               sr3 = scalek * dmpik(3) * rr3
+               sr5 = scalek * dmpik(5) * rr5
+               sr7 = scalek * dmpik(7) * rr7
+               term1 = ck*uir - ci*ukr + diu + dku
+               term2 = 2.0d0*(qiu-qku) - uir*dkr - dir*ukr
+               term3 = uir*qkr - ukr*qir
+               e = term1*sr3 + term2*sr5 + term3*sr7
+c
+c     find the energy value for charge penetration damping
+c
+            else if (use_chgpen) then
+               corek = pcore(kkpole)
+               valk = pval(kkpole)
+               alphak = palpha(kkpole)
+               call dampdir (r,alphai,alphak,dmpi,dmpk)
+               scalek = pscale(kglob)
+               rr3 = f * scalek / (r*r2)
+               rr5 = 3.0d0 * rr3 / r2
+               rr7 = 5.0d0 * rr5 / r2
+               rr3i = dmpi(3) * rr3
+               rr5i = dmpi(5) * rr5
+               rr7i = dmpi(7) * rr7
+               rr3k = dmpk(3) * rr3
+               rr5k = dmpk(5) * rr5
+               rr7k = dmpk(7) * rr7
+               rr3 = f / (r*r2)
+               rr5 = 3.0d0 * rr3 / r2
+               rr7 = 5.0d0 * rr5 / r2
+               rr3 = scalek*rr3
+               e = uir*(corek*rr3+valk*rr3k)
+     &                - ukr*(corei*rr3+vali*rr3i)
+     &                + diu*rr3i + dku*rr3k
+     &                + 2.0d0*(qiu*rr5i-qku*rr5k)
+     &                - dkr*uir*rr5k - dir*ukr*rr5i
+     &                + qkr*uir*rr7k - qir*ukr*rr7i
             end if
-cc
-c     intermediates involving moments and distance separation
-c
-            dri = dix*xr + diy*yr + diz*zr
-            drk = dkx*xr + dky*yr + dkz*zr
-            qrix = qixx*xr + qixy*yr + qixz*zr
-            qriy = qixy*xr + qiyy*yr + qiyz*zr
-            qriz = qixz*xr + qiyz*yr + qizz*zr
-            qrkx = qkxx*xr + qkxy*yr + qkxz*zr
-            qrky = qkxy*xr + qkyy*yr + qkyz*zr
-            qrkz = qkxz*xr + qkyz*yr + qkzz*zr
-            qrri = qrix*xr + qriy*yr + qriz*zr
-            qrrk = qrkx*xr + qrky*yr + qrkz*zr
-            uri = uix*xr + uiy*yr + uiz*zr
-            urk = ukx*xr + uky*yr + ukz*zr
-            urip = uixp*xr + uiyp*yr + uizp*zr
-            urkp = ukxp*xr + ukyp*yr + ukzp*zr
-            duik = dix*ukx + diy*uky + diz*ukz
-     &                + dkx*uix + dky*uiy + dkz*uiz
-            quik = qrix*ukx + qriy*uky + qriz*ukz
-     &                - qrkx*uix - qrky*uiy - qrkz*uiz
-c
-c     calculate intermediate terms for polarization interaction
-c
-            term1 = ck*uri - ci*urk + duik
-            term2 = 2.0d0*quik - uri*drk - dri*urk
-            term3 = uri*qrrk - urk*qrri
-c
-c     intermediates involving Thole damping and scale factors
-c
-            scaled = dscale(kglob)
-            scalep = pscale(kglob)
-            scaleu = uscale(kglob)
-c
-c     compute the full undamped energy for this interaction
-c
-            if (molcule(iglob) .ne. molcule(kglob))
-     &         einter = einter + e
-c
-c     intermediates involving Thole damping and scale factors
-c
-            psr3 =  scalep* sc3*rr3
-            psr5 =  scalep* sc5*rr5
-            psr7 =  scalep* sc7*rr7
-            dsr3 =  scaled* sc3*rr3
-            dsr5 =  scaled* sc5*rr5
-            dsr7 =  scaled* sc7*rr7
-            usr3 =  scaleu* sc3*rr3
-            usr5 =  scaleu* sc5*rr5
 c
 c     compute the energy contribution for this interaction
 c
-            e = term1*psr3 + term2*psr5 + term3*psr7
-
             epgroup = epgroup + e
-
          end do
 c
 c     reset exclusion coefficients for connected atoms
@@ -368,28 +317,10 @@ c
          do j = 1, n15(iglob)
             pscale(i15(j,iglob)) = 1.0d0
          end do
-         do j = 1, np11(iglob)
-            dscale(ip11(j,iglob)) = 1.0d0
-            uscale(ip11(j,iglob)) = 1.0d0
-         end do
-         do j = 1, np12(iglob)
-            dscale(ip12(j,iglob)) = 1.0d0
-            uscale(ip12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, np13(iglob)
-            dscale(ip13(j,iglob)) = 1.0d0
-            uscale(ip13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, np14(iglob)
-            dscale(ip14(j,iglob)) = 1.0d0
-            uscale(ip14(j,iglob)) = 1.0d0
-         end do
       end do
 c
 c     perform deallocation of some local arrays
 c
       deallocate (pscale)
-      deallocate (dscale)
-      deallocate (uscale)
       return
       end

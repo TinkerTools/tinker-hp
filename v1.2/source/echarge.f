@@ -171,7 +171,7 @@ c
       real*8, allocatable :: cscale(:)
       real*8 s,ds,cshortcut2,facts
       logical testcut,shortrange,longrange,fullrange
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
       external erfc
 
@@ -203,7 +203,6 @@ c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = electric / dielec
-c     mode = 'EWALD'
       call switch (mode)
       cshortcut2 = (chgshortcut - shortheal) ** 2
 

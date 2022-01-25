@@ -206,6 +206,9 @@ c
       if (allocated(deprec)) deallocate (deprec)
       allocate (deprec(3,nlocrec2))
       deprec = 0d0
+      if (allocated(dedsprec)) deallocate (dedsprec)
+      allocate (dedsprec(3,nlocrec2))
+      dedsprec = 0d0
 c
       if (allocated(deb)) deallocate (deb)
       allocate (deb(3,nbloc))
@@ -237,6 +240,13 @@ c
       allocate (dett(3,nbloc))
       if (allocated(dev)) deallocate (dev)
       allocate (dev(3,nbloc))
+      if (allocated(der)) deallocate (der)
+      allocate (der(3,nbloc))
+      if (allocated(dedsp)) deallocate (dedsp)
+      allocate (dedsp(3,nbloc))
+      if (allocated(dect)) deallocate (dect)
+      allocate (dect(3,nbloc))
+      if (allocated(dec)) deallocate (dec)
       if (allocated(dec)) deallocate (dec)
       allocate (dec(3,nbloc))
       if (allocated(dem)) deallocate (dem)
@@ -300,6 +310,8 @@ c
       allocate (demrec(3,nlocrec2))
       if (allocated(deprec)) deallocate (deprec)
       allocate (deprec(3,nlocrec2))
+      if (allocated(dedsprec)) deallocate (dedsprec)
+      allocate (dedsprec(3,nlocrec2))
       if (allocated(debond)) deallocate (debond)
       allocate (debond(3,nbloc))
 c
@@ -307,10 +319,17 @@ c
         decrec = 0d0
         demrec = 0d0
         deprec = 0d0
+        dedsprec = 0d0
       end if
 c
       if (allocated(dev)) deallocate (dev)
       allocate (dev(3,nbloc))
+      if (allocated(der)) deallocate (der)
+      allocate (der(3,nbloc))
+      if (allocated(dedsp)) deallocate (dedsp)
+      allocate (dedsp(3,nbloc))
+      if (allocated(dect)) deallocate (dect)
+      allocate (dect(3,nbloc))
       if (allocated(dec)) deallocate (dec)
       allocate (dec(3,nbloc))
       if (allocated(dem)) deallocate (dem)

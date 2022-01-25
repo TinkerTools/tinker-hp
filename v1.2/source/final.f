@@ -25,6 +25,7 @@ c
       use couple
       use dcdmod
       use deriv
+      use disp
       use divcon
       use domdec
       use fft
@@ -70,6 +71,9 @@ c
       if (allocated(aex)) deallocate (aex)
       if (allocated(aec)) deallocate (aec)
       if (allocated(aeat)) deallocate (aeat)
+      if (allocated(aer)) deallocate (aer)
+      if (allocated(aedsp)) deallocate (aedsp)
+      if (allocated(aect)) deallocate (aect)
 c
 c     module "angle"
 c
@@ -95,6 +99,8 @@ c
       if (allocated(vdwglob)) deallocate (vdwglob)
       if (allocated(poleglob)) deallocate (poleglob)
       if (allocated(polerecglob)) deallocate (polerecglob)
+      if (allocated(dispglob)) deallocate (dispglob)
+      if (allocated(disprecglob)) deallocate (disprecglob)
       if (allocated(chgglob)) deallocate (chgglob)
       if (allocated(chgrecglob)) deallocate (chgrecglob)
       if (allocated(molculeglob)) deallocate (molculeglob)
@@ -108,6 +114,7 @@ c
       if (allocated(chgglobnl)) deallocate (chgglobnl)
       if (allocated(vdwglobnl)) deallocate (vdwglobnl)
       if (allocated(poleglobnl)) deallocate (poleglobnl)
+      if (allocated(dispglobnl)) deallocate (dispglobnl)
 c
 c     module "atmtyp"
 c
@@ -161,12 +168,21 @@ c
       if (allocated(dem)) deallocate (dem)
       if (allocated(dep)) deallocate (dep)
       if (allocated(deg)) deallocate (deg)
+      if (allocated(der)) deallocate (der)
+      if (allocated(dect)) deallocate (dect)
+      if (allocated(dedsp)) deallocate (dedsp)
+      if (allocated(dedsprec)) deallocate (dedsprec)
       if (allocated(decrec)) deallocate (decrec)
       if (allocated(demrec)) deallocate (demrec)
       if (allocated(deprec)) deallocate (deprec)
       if (allocated(debond)) deallocate (debond)
       if (allocated(desave)) deallocate (desave)
       if (allocated(desmd)) deallocate (desmd)
+c
+c     module "disp"
+c
+      if (allocated(displocnl)) deallocate (displocnl)
+      if (allocated(disprecloc)) deallocate (disprecloc)
 c
 c     module "divcon"
 c
@@ -415,6 +431,22 @@ c
 c     "kpolar" related arrays
 c
       call dealloc_shared_polar
+c
+c     "kchgflx" related arrays
+c
+      call dealloc_shared_chgflx
+c
+c     "krepel" related arrays
+c
+      call dealloc_shared_rep
+c
+c     "kchgtrn" related arrays
+c
+      call dealloc_shared_chgct
+c
+c     "kdisp" related arrays
+c
+      call dealloc_shared_disp
 c
 c     "kgeom" related arrays
 c

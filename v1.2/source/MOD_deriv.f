@@ -26,6 +26,10 @@ c     debt    stretch-torsion Cartesian coordinate derivatives
 c     deat    angle-torsion Cartesian coordinate derivatives
 c     dett    torsion-torsion Cartesian coordinate derivatives
 c     dev     van der Waals Cartesian coordinate derivatives
+c     der     repulsion Cartesian coordinate derivatives
+c     dedsp   dispersion Cartesian coordinate derivatives
+c     dedsprec   reciprocal dispersion Cartesian coordinate derivatives
+c     dect    charge transfer Cartesian coordinate derivatives
 c     dec     charge-charge Cartesian coordinate derivatives
 c     decrec  reciprocal charge-charge Cartesian coordinate derivatives
 c     dem     multipole Cartesian coordinate derivatives
@@ -48,6 +52,8 @@ c
       real*8, allocatable :: deid(:,:),det(:,:),dept(:,:),deit(:,:)
       real*8, allocatable :: deat(:,:)
       real*8, allocatable :: debt(:,:),dett(:,:),dev(:,:),dec(:,:)
+      real*8, allocatable :: der(:,:),dedsp(:,:),dect(:,:)
+      real*8, allocatable :: dedsprec(:,:)
       real*8, allocatable :: dem(:,:),dep(:,:)
       real*8, allocatable :: deg(:,:),dex(:,:)
       real*8, allocatable :: decrec(:,:),demrec(:,:),deprec(:,:)

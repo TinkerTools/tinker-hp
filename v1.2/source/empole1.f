@@ -53,10 +53,11 @@ c
       use mpi
       implicit none
       integer i,ii
-      integer iipole,iglob,ierr
+      integer iipole,iglob,iloc,ierr
       real*8 e,f
       real*8 term,fterm
       real*8 cii,dii,qii
+      real*8 xi,yi,zi
       real*8 xd,yd,zd
       real*8 xq,yq,zq
       real*8 xv,yv,zv,vterm
@@ -65,9 +66,16 @@ c
       real*8 qiyy,qiyz,qizz
       real*8 xdfield,ydfield
       real*8 zdfield
+      real*8 fx,fy,fz
+      real*8 vxx,vyy,vzz
+      real*8 vxy,vxz,vyz
       real*8 trq(3),frcx(3)
       real*8 frcy(3),frcz(3)
       real*8 time0,time1
+      real*8, allocatable :: pot(:)
+      real*8, allocatable :: decfx(:)
+      real*8, allocatable :: decfy(:)
+      real*8, allocatable :: decfz(:)
 c
 c
 c     zero out the atomic multipole energy and derivatives
@@ -75,6 +83,7 @@ c
       em = 0.0d0
       dem = 0d0
       if (npole .eq. 0)  return
+      aewald = aeewald
 c
 c     set the energy unit conversion factor
 c
@@ -115,10 +124,20 @@ c
 c
 c     compute the Ewald self-energy term over all the atoms
 c
+c
+c     perform dynamic allocation of some local arrays
+c
+          allocate (pot(nbloc))
+          allocate (decfx(nbloc))
+          allocate (decfy(nbloc))
+          allocate (decfz(nbloc))
+          pot = 0d0
           term = 2.0d0 * aewald * aewald
           fterm = -f * aewald / sqrtpi
           do i = 1, npoleloc
              iipole = poleglob(i)
+             iglob = ipole(iipole)
+             iloc = loc(iglob)
              ci = rpole(1,iipole)
              dix = rpole(2,iipole)
              diy = rpole(3,iipole)
@@ -135,7 +154,51 @@ c
      &                + qixx*qixx + qiyy*qiyy + qizz*qizz
              e = fterm * (cii + term*(dii/3.0d0+2.0d0*term*qii/5.0d0))
              em = em + e
+             pot(iloc) = 2.0d0 * fterm * ci
           end do
+c
+c     modify gradient and virial for charge flux self-energy
+c
+          if (use_chgflx) then
+             call commpot(pot,1)
+             call dcflux (pot,decfx,decfy,decfz)
+             do i = 1, npolebloc
+                iipole = poleglob(i)
+                iglob = ipole(iipole)
+                iloc = loc(iglob)
+                xi = x(iglob)
+                yi = y(iglob)
+                zi = z(iglob)
+                fx = decfx(iloc)
+                fy = decfy(iloc)
+                fz = decfz(iloc)
+                dem(1,iloc) = dem(1,iloc) + fx
+                dem(2,iloc) = dem(2,iloc) + fy
+                dem(3,iloc) = dem(3,iloc) + fz
+                vxx = xi * fx
+                vxy = yi * fx
+                vxz = zi * fx
+                vyy = yi * fy
+                vyz = zi * fy
+                vzz = zi * fz
+                vir(1,1) = vir(1,1) + vxx
+                vir(2,1) = vir(2,1) + vxy
+                vir(3,1) = vir(3,1) + vxz
+                vir(1,2) = vir(1,2) + vxy
+                vir(2,2) = vir(2,2) + vyy
+                vir(3,2) = vir(3,2) + vyz
+                vir(1,3) = vir(1,3) + vxz
+                vir(2,3) = vir(2,3) + vyz
+                vir(3,3) = vir(3,3) + vzz
+             end do
+          end if
+c
+c     perform deallocation of some local arrays
+c
+          deallocate (pot)
+          deallocate (decfx)
+          deallocate (decfy)
+          deallocate (decfz)
 c
 c       compute the cell dipole boundary correction term
 c
@@ -262,7 +325,7 @@ c
       use mpi
       implicit none
       integer status(MPI_STATUS_SIZE),tag,ierr
-      integer i,j,k,ii,iipole,iglob
+      integer i,j,k,ii,iipole,iglob,iloc,ilocrec
       integer k1,k2,k3
       integer m1,m2,m3
       integer nff
@@ -280,10 +343,15 @@ c
       real*8 hsq,expterm
       real*8 term,pterm
       real*8 vterm,struc2
+      real*8 xi,yi,zi,frcx,frcy,frcz
       real*8 trq(3),fix(3)
       real*8 fiy(3),fiz(3)
       real*8, allocatable :: cmp(:,:),fmp(:,:)
       real*8, allocatable :: qgridmpi(:,:,:,:,:)
+      real*8, allocatable :: pot(:),potrec(:)
+      real*8, allocatable :: decfx(:)
+      real*8, allocatable :: decfy(:)
+      real*8, allocatable :: decfz(:)
       integer, allocatable :: reqsend(:),reqrec(:)
       integer, allocatable :: req2send(:),req2rec(:)
       integer nprocloc,commloc,rankloc,proc
@@ -299,6 +367,11 @@ c
         commloc  = COMM_TINKER
         rankloc  = rank
       end if
+c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+
       allocate (qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,nrec_recep))
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
@@ -640,6 +713,61 @@ c
      &            - cmp(9,i)*cphirec(9,i) - cmp(10,i)*cphirec(10,i)
       end do
 c
+c     perform dynamic allocation of some local arrays
+c
+      if (use_chgflx) then
+         allocate (pot(nbloc))
+         allocate (potrec(nlocrec))
+         allocate (decfx(nbloc))
+         allocate (decfy(nbloc))
+         allocate (decfz(nbloc))
+c
+c     modify the gradient and virial for charge flux
+c
+         pot = 0d0
+         do i = 1, npolerecloc
+           iipole = polerecglob(i)
+           iglob = ipole(iipole)
+           ilocrec = locrec(iglob)
+           potrec(ilocrec) = cphirec(1,i)
+         end do
+c
+c     communicate reciprocal potential to get local values
+c
+         call commpotrec(pot,potrec)
+         call commpot(pot,1)
+c
+         call dcflux (pot,decfx,decfy,decfz)
+         do i = 1, npolebloc
+            iipole = poleglob(i)
+            ii = ipole(iipole)
+            iloc = loc(ii)
+            xi = x(ii)
+            yi = y(ii)
+            zi = z(ii)
+            frcx = decfx(iloc)
+            frcy = decfy(iloc)
+            frcz = decfz(iloc)
+            dem(1,iloc) = dem(1,iloc) + frcx
+            dem(2,iloc) = dem(2,iloc) + frcy
+            dem(3,iloc) = dem(3,iloc) + frcz
+            vxx = vxx + xi*frcx
+            vxy = vxy + yi*frcx
+            vxz = vxz + zi*frcx
+            vyy = vyy + yi*frcy
+            vyz = vyz + zi*frcy
+            vzz = vzz + zi*frcz
+         end do
+c
+c     perform deallocation of some local arrays
+c
+         deallocate (potrec)
+         deallocate (pot)
+         deallocate (decfx)
+         deallocate (decfy)
+         deallocate (decfz)
+      end if
+c
 c     increment the internal virial tensor components
 c
       vir(1,1) = vir(1,1) + vxx
@@ -678,34 +806,28 @@ c     if shortrange, calculates just the short range part
       use atmlst
       use atoms
       use bound
+      use chgpen
       use chgpot
       use couple
       use cutoff
       use deriv
       use domdec
       use energi
-      use ewald
       use group
-      use inter
       use iounit
       use math
-      use molcul
       use mplpot
       use mpole
       use neigh
       use potent
       use shunt
       use virial
-      use mpi
       implicit none
       integer i,j,iglob,kglob,kbis,nnelst
       integer ii,kkk,iipole,kkpole
-      integer iax,iay,iaz
-      real*8 e,efull,de,f
-      real*8 bfac,erfc
-      real*8 alsq2,alsq2n
-      real*8 exp2a,ralpha
-      real*8 scalekk
+      integer ix,iy,iz
+      real*8 e,de,f
+      real*8 scalek
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 xix,yix,zix
@@ -713,47 +835,63 @@ c     if shortrange, calculates just the short range part
       real*8 xiz,yiz,ziz
       real*8 r,r2,rr1,rr3
       real*8 rr5,rr7,rr9,rr11
+      real*8 rr1i,rr3i,rr5i,rr7i
+      real*8 rr1k,rr3k,rr5k,rr7k
+      real*8 rr1ik,rr3ik,rr5ik
+      real*8 rr7ik,rr9ik,rr11ik
       real*8 ci,dix,diy,diz
       real*8 qixx,qixy,qixz
       real*8 qiyy,qiyz,qizz
       real*8 ck,dkx,dky,dkz
       real*8 qkxx,qkxy,qkxz
       real*8 qkyy,qkyz,qkzz
-      real*8 dikx,diky,dikz
+      real*8 dir,dkr,dik,qik
+      real*8 qix,qiy,qiz,qir
+      real*8 qkx,qky,qkz,qkr
+      real*8 diqk,dkqi,qiqk
       real*8 dirx,diry,dirz
       real*8 dkrx,dkry,dkrz
-      real*8 qrix,qriy,qriz
-      real*8 qrkx,qrky,qrkz
-      real*8 qrixr,qriyr,qrizr
-      real*8 qrkxr,qrkyr,qrkzr
-      real*8 qrrx,qrry,qrrz
+      real*8 dikx,diky,dikz
+      real*8 qirx,qiry,qirz
+      real*8 qkrx,qkry,qkrz
+      real*8 qikx,qiky,qikz
+      real*8 qixk,qiyk,qizk
+      real*8 qkxi,qkyi,qkzi
       real*8 qikrx,qikry,qikrz
       real*8 qkirx,qkiry,qkirz
-      real*8 qikrxr,qikryr,qikrzr
-      real*8 qkirxr,qkiryr,qkirzr
       real*8 diqkx,diqky,diqkz
       real*8 dkqix,dkqiy,dkqiz
-      real*8 diqkxr,diqkyr,diqkzr
-      real*8 dkqixr,dkqiyr,dkqizr
-      real*8 dqiqkx,dqiqky,dqiqkz
-      real*8 dri,drk,qrri,qrrk
-      real*8 diqrk,dkqri
-      real*8 dik,qik,qrrik
+      real*8 diqkrx,diqkry,diqkrz
+      real*8 dkqirx,dkqiry,dkqirz
+      real*8 dqikx,dqiky,dqikz
+      real*8 corei,corek
+      real*8 vali,valk
+      real*8 alphai,alphak
       real*8 term1,term2,term3
       real*8 term4,term5,term6
+      real*8 term1i,term2i,term3i
+      real*8 term1k,term2k,term3k
+      real*8 term1ik,term2ik,term3ik
+      real*8 term4ik,term5ik
+      real*8 poti,potk
       real*8 frcx,frcy,frcz
       real*8 vxx,vyy,vzz
       real*8 vxy,vxz,vyz
       real*8 ttmi(3),ttmk(3)
       real*8 fix(3),fiy(3),fiz(3)
-      real*8 bn(0:5)
-      real*8 fgrp,scale
+      real*8 dmpi(9),dmpk(9)
+      real*8 dmpik(11),dmpe(11)
+      real*8 fgrp
       real*8 s,ds,mpoleshortcut2
       real*8 facts,factds
       logical testcut,shortrange,longrange,fullrange
       real*8, allocatable :: mscale(:)
       real*8, allocatable :: tem(:,:)
-      character*10 mode
+      real*8, allocatable :: pot(:)
+      real*8, allocatable :: decfx(:)
+      real*8, allocatable :: decfy(:)
+      real*8, allocatable :: decfz(:)
+      character*11 mode
       character*80 :: RoutineName
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
@@ -772,24 +910,26 @@ c     compute the short, long, or full real space part of the summation
          RoutineName = 'emreal1c'
          mode        = 'EWALD'
       endif
-
- 
 c
 c
 c     perform dynamic allocation of some local arrays
 c
       allocate (mscale(n))
       allocate (tem(3,nbloc))
+      allocate (pot(nbloc))
+      allocate (decfx(nbloc))
+      allocate (decfy(nbloc))
+      allocate (decfz(nbloc))
 c
 c     initialize connected atom scaling and torque arrays
 c
       mscale = 1.0d0
       tem = 0.0d0
+      pot = 0d0
 c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = electric / dielec
-c     mode = 'EWALD'
       call switch (mode)
       mpoleshortcut2 = (mpoleshortcut-shortheal)**2
 c
@@ -816,6 +956,11 @@ c
          qiyy = rpole(9,iipole)
          qiyz = rpole(10,iipole)
          qizz = rpole(13,iipole)
+         if (use_chgpen) then
+            corei = pcore(iipole)
+            vali = pval(iipole)
+            alphai = palpha(iipole)
+         end if
          do j = 1, n12(iglob)
             mscale(i12(j,iglob)) = m2scale
          end do
@@ -856,7 +1001,6 @@ c
      &                      r2 .le. off2,
      &                      longrange
      &                     )
-c           if (r2 .le. off2) then
             if (testcut) then
                r = sqrt(r2)
                ck = rpole(1,kkpole)
@@ -870,6 +1014,79 @@ c           if (r2 .le. off2) then
                qkyz = rpole(10,kkpole)
                qkzz = rpole(13,kkpole)
 c
+c     intermediates involving moments and separation distance
+c
+               dir = dix*xr + diy*yr + diz*zr
+               qix = qixx*xr + qixy*yr + qixz*zr
+               qiy = qixy*xr + qiyy*yr + qiyz*zr
+               qiz = qixz*xr + qiyz*yr + qizz*zr
+               qir = qix*xr + qiy*yr + qiz*zr
+               dkr = dkx*xr + dky*yr + dkz*zr
+               qkx = qkxx*xr + qkxy*yr + qkxz*zr
+               qky = qkxy*xr + qkyy*yr + qkyz*zr
+               qkz = qkxz*xr + qkyz*yr + qkzz*zr
+               qkr = qkx*xr + qky*yr + qkz*zr
+               dik = dix*dkx + diy*dky + diz*dkz
+               qik = qix*qkx + qiy*qky + qiz*qkz
+               diqk = dix*qkx + diy*qky + diz*qkz
+               dkqi = dkx*qix + dky*qiy + dkz*qiz
+               qiqk = 2.0d0*(qixy*qkxy+qixz*qkxz+qiyz*qkyz)
+     &                   + qixx*qkxx + qiyy*qkyy + qizz*qkzz
+c
+c     additional intermediates involving moments and distance
+c
+               dirx = diy*zr - diz*yr
+               diry = diz*xr - dix*zr
+               dirz = dix*yr - diy*xr
+               dkrx = dky*zr - dkz*yr
+               dkry = dkz*xr - dkx*zr
+               dkrz = dkx*yr - dky*xr
+               dikx = diy*dkz - diz*dky
+               diky = diz*dkx - dix*dkz
+               dikz = dix*dky - diy*dkx
+               qirx = qiz*yr - qiy*zr
+               qiry = qix*zr - qiz*xr
+               qirz = qiy*xr - qix*yr
+               qkrx = qkz*yr - qky*zr
+               qkry = qkx*zr - qkz*xr
+               qkrz = qky*xr - qkx*yr
+               qikx = qky*qiz - qkz*qiy
+               qiky = qkz*qix - qkx*qiz
+               qikz = qkx*qiy - qky*qix
+               qixk = qixx*qkx + qixy*qky + qixz*qkz
+               qiyk = qixy*qkx + qiyy*qky + qiyz*qkz
+               qizk = qixz*qkx + qiyz*qky + qizz*qkz
+               qkxi = qkxx*qix + qkxy*qiy + qkxz*qiz
+               qkyi = qkxy*qix + qkyy*qiy + qkyz*qiz
+               qkzi = qkxz*qix + qkyz*qiy + qkzz*qiz
+               qikrx = qizk*yr - qiyk*zr
+               qikry = qixk*zr - qizk*xr
+               qikrz = qiyk*xr - qixk*yr
+               qkirx = qkzi*yr - qkyi*zr
+               qkiry = qkxi*zr - qkzi*xr
+               qkirz = qkyi*xr - qkxi*yr
+               diqkx = dix*qkxx + diy*qkxy + diz*qkxz
+               diqky = dix*qkxy + diy*qkyy + diz*qkyz
+               diqkz = dix*qkxz + diy*qkyz + diz*qkzz
+               dkqix = dkx*qixx + dky*qixy + dkz*qixz
+               dkqiy = dkx*qixy + dky*qiyy + dkz*qiyz
+               dkqiz = dkx*qixz + dky*qiyz + dkz*qizz
+               diqkrx = diqkz*yr - diqky*zr
+               diqkry = diqkx*zr - diqkz*xr
+               diqkrz = diqky*xr - diqkx*yr
+               dkqirx = dkqiz*yr - dkqiy*zr
+               dkqiry = dkqix*zr - dkqiz*xr
+               dkqirz = dkqiy*xr - dkqix*yr
+               dqikx = diy*qkz - diz*qky + dky*qiz - dkz*qiy
+     &                 - 2.0d0*(qixy*qkxz+qiyy*qkyz+qiyz*qkzz
+     &                         -qixz*qkxy-qiyz*qkyy-qizz*qkyz)
+               dqiky = diz*qkx - dix*qkz + dkz*qix - dkx*qiz
+     &                 - 2.0d0*(qixz*qkxx+qiyz*qkxy+qizz*qkxz
+     &                         -qixx*qkxz-qixy*qkyz-qixz*qkzz)
+               dqikz = dix*qky - diy*qkx + dkx*qiy - dky*qix
+     &                 - 2.0d0*(qixx*qkxy+qixy*qkyy+qixz*qkyz
+     &                         -qixy*qkxx-qiyy*qkxy-qiyz*qkxz)
+c
 c     get reciprocal distance terms for this interaction
 c
                rr1 = f / r
@@ -879,127 +1096,127 @@ c
                rr9 = 7.0d0 * rr7 / r2
                rr11 = 9.0d0 * rr9 / r2
 c
-c     calculate the real space Ewald error function terms
+c     calculate real space Ewald error function damping
 c
-               ralpha = aewald * r
-               bn(0) = erfc(ralpha) / r
-               alsq2 = 2.0d0 * aewald**2
-               alsq2n = 0.0d0
-               if (aewald .gt. 0.0d0)  alsq2n = 1.0d0 / (sqrtpi*aewald)
-               exp2a = exp(-ralpha**2)
-               do j = 1, 5
-                  bfac = dble(j+j-1)
-                  alsq2n = alsq2 * alsq2n
-                  bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / r2
-               end do
-               do j = 0, 5
-                  bn(j) = f * bn(j)
-               end do
+               call dampewald (11,r,r2,f,dmpe)
 c
-c     intermediates involving moments and distance separation
+c     find damped multipole intermediates and energy value
 c
-               dikx = diy*dkz - diz*dky
-               diky = diz*dkx - dix*dkz
-               dikz = dix*dky - diy*dkx
-               dirx = diy*zr - diz*yr
-               diry = diz*xr - dix*zr
-               dirz = dix*yr - diy*xr
-               dkrx = dky*zr - dkz*yr
-               dkry = dkz*xr - dkx*zr
-               dkrz = dkx*yr - dky*xr
-               dri = dix*xr + diy*yr + diz*zr
-               drk = dkx*xr + dky*yr + dkz*zr
-               dik = dix*dkx + diy*dky + diz*dkz
-               qrix = qixx*xr + qixy*yr + qixz*zr
-               qriy = qixy*xr + qiyy*yr + qiyz*zr
-               qriz = qixz*xr + qiyz*yr + qizz*zr
-               qrkx = qkxx*xr + qkxy*yr + qkxz*zr
-               qrky = qkxy*xr + qkyy*yr + qkyz*zr
-               qrkz = qkxz*xr + qkyz*yr + qkzz*zr
-               qrri = qrix*xr + qriy*yr + qriz*zr
-               qrrk = qrkx*xr + qrky*yr + qrkz*zr
-               qrrik = qrix*qrkx + qriy*qrky + qriz*qrkz
-               qik = 2.0d0*(qixy*qkxy+qixz*qkxz+qiyz*qkyz)
-     &                  + qixx*qkxx + qiyy*qkyy + qizz*qkzz
-               qrixr = qriz*yr - qriy*zr
-               qriyr = qrix*zr - qriz*xr
-               qrizr = qriy*xr - qrix*yr
-               qrkxr = qrkz*yr - qrky*zr
-               qrkyr = qrkx*zr - qrkz*xr
-               qrkzr = qrky*xr - qrkx*yr
-               qrrx = qrky*qriz - qrkz*qriy
-               qrry = qrkz*qrix - qrkx*qriz
-               qrrz = qrkx*qriy - qrky*qrix
-               qikrx = qixx*qrkx + qixy*qrky + qixz*qrkz
-               qikry = qixy*qrkx + qiyy*qrky + qiyz*qrkz
-               qikrz = qixz*qrkx + qiyz*qrky + qizz*qrkz
-               qkirx = qkxx*qrix + qkxy*qriy + qkxz*qriz
-               qkiry = qkxy*qrix + qkyy*qriy + qkyz*qriz
-               qkirz = qkxz*qrix + qkyz*qriy + qkzz*qriz
-               qikrxr = qikrz*yr - qikry*zr
-               qikryr = qikrx*zr - qikrz*xr
-               qikrzr = qikry*xr - qikrx*yr
-               qkirxr = qkirz*yr - qkiry*zr
-               qkiryr = qkirx*zr - qkirz*xr
-               qkirzr = qkiry*xr - qkirx*yr
-               diqkx = dix*qkxx + diy*qkxy + diz*qkxz
-               diqky = dix*qkxy + diy*qkyy + diz*qkyz
-               diqkz = dix*qkxz + diy*qkyz + diz*qkzz
-               dkqix = dkx*qixx + dky*qixy + dkz*qixz
-               dkqiy = dkx*qixy + dky*qiyy + dkz*qiyz
-               dkqiz = dkx*qixz + dky*qiyz + dkz*qizz
-               diqrk = dix*qrkx + diy*qrky + diz*qrkz
-               dkqri = dkx*qrix + dky*qriy + dkz*qriz
-               diqkxr = diqkz*yr - diqky*zr
-               diqkyr = diqkx*zr - diqkz*xr
-               diqkzr = diqky*xr - diqkx*yr
-               dkqixr = dkqiz*yr - dkqiy*zr
-               dkqiyr = dkqix*zr - dkqiz*xr
-               dkqizr = dkqiy*xr - dkqix*yr
-               dqiqkx = diy*qrkz - diz*qrky + dky*qriz - dkz*qriy
-     &                     - 2.0d0*(qixy*qkxz+qiyy*qkyz+qiyz*qkzz
-     &                             -qixz*qkxy-qiyz*qkyy-qizz*qkyz)
-               dqiqky = diz*qrkx - dix*qrkz + dkz*qrix - dkx*qriz
-     &                     - 2.0d0*(qixz*qkxx+qiyz*qkxy+qizz*qkxz
-     &                             -qixx*qkxz-qixy*qkyz-qixz*qkzz)
-               dqiqkz = dix*qrky - diy*qrkx + dkx*qriy - dky*qrix
-     &                     - 2.0d0*(qixx*qkxy+qixy*qkyy+qixz*qkyz
-     &                             -qixy*qkxx-qiyy*qkxy-qiyz*qkxz)
+               if (use_chgpen) then
+                  corek = pcore(kkpole)
+                  valk = pval(kkpole)
+                  alphak = palpha(kkpole)
+                  term1 = corei*corek
+                  term1i = corek*vali
+                  term2i = corek*dir
+                  term3i = corek*qir
+                  term1k = corei*valk
+                  term2k = -corei*dkr
+                  term3k = corei*qkr
+                  term1ik = vali*valk
+                  term2ik = valk*dir - vali*dkr + dik
+                  term3ik = vali*qkr + valk*qir - dir*dkr
+     &                         + 2.0d0*(dkqi-diqk+qiqk)
+                  term4ik = dir*qkr - dkr*qir - 4.0d0*qik
+                  term5ik = qir*qkr
+                  call damppole (r,11,alphai,alphak,
+     &                            dmpi,dmpk,dmpik)
+                  scalek = mscale(kglob)
+                  if (use_group)  scalek = scalek * fgrp
+                  rr1i = dmpe(1) - (1.0d0-scalek*dmpi(1))*rr1
+                  rr3i = dmpe(3) - (1.0d0-scalek*dmpi(3))*rr3
+                  rr5i = dmpe(5) - (1.0d0-scalek*dmpi(5))*rr5
+                  rr7i = dmpe(7) - (1.0d0-scalek*dmpi(7))*rr7
+                  rr1k = dmpe(1) - (1.0d0-scalek*dmpk(1))*rr1
+                  rr3k = dmpe(3) - (1.0d0-scalek*dmpk(3))*rr3
+                  rr5k = dmpe(5) - (1.0d0-scalek*dmpk(5))*rr5
+                  rr7k = dmpe(7) - (1.0d0-scalek*dmpk(7))*rr7
+                  rr1ik = dmpe(1) - (1.0d0-scalek*dmpik(1))*rr1
+                  rr3ik = dmpe(3) - (1.0d0-scalek*dmpik(3))*rr3
+                  rr5ik = dmpe(5) - (1.0d0-scalek*dmpik(5))*rr5
+                  rr7ik = dmpe(7) - (1.0d0-scalek*dmpik(7))*rr7
+                  rr9ik = dmpe(9) - (1.0d0-scalek*dmpik(9))*rr9
+                  rr11ik = dmpe(11) - (1.0d0-scalek*dmpik(11))*rr11
+                  rr1 = dmpe(1) - (1.0d0-scalek)*rr1
+                  rr3 = dmpe(3) - (1.0d0-scalek)*rr3
+                  e = term1*rr1 + term4ik*rr7ik + term5ik*rr9ik
+     &                   + term1i*rr1i + term1k*rr1k + term1ik*rr1ik
+     &                   + term2i*rr3i + term2k*rr3k + term2ik*rr3ik
+     &                   + term3i*rr5i + term3k*rr5k + term3ik*rr5ik
 c
-c     calculate intermediate terms for multipole energy
+c     find damped multipole intermediates for force and torque
 c
-               term1 = ci*ck
-               term2 = ck*dri - ci*drk + dik
-               term3 = ci*qrrk + ck*qrri - dri*drk
-     &                    + 2.0d0*(dkqri-diqrk+qik)
-               term4 = dri*qrrk - drk*qrri - 4.0d0*qrrik
-               term5 = qrri*qrrk
+                  de = term1*rr3 + term4ik*rr9ik + term5ik*rr11ik
+     &                    + term1i*rr3i + term1k*rr3k + term1ik*rr3ik
+     &                    + term2i*rr5i + term2k*rr5k + term2ik*rr5ik
+     &                    + term3i*rr7i + term3k*rr7k + term3ik*rr7ik
+                  term1 = -corek*rr3i - valk*rr3ik
+     &                       + dkr*rr5ik - qkr*rr7ik
+                  term2 = corei*rr3k + vali*rr3ik
+     &                       + dir*rr5ik + qir*rr7ik
+                  term3 = 2.0d0 * rr5ik
+                  term4 = -2.0d0 * (corek*rr5i+valk*rr5ik
+     &                                -dkr*rr7ik+qkr*rr9ik)
+                  term5 = -2.0d0 * (corei*rr5k+vali*rr5ik
+     &                                +dir*rr7ik+qir*rr9ik)
+                  term6 = 4.0d0 * rr7ik
 c
-c     compute the full energy without any Ewald scaling
+c     find standard multipole intermediates and energy value
 c
-               scale = mscale(kglob)
-               if (use_group)  scale = scale * fgrp
-
-               efull = term1*rr1 + term2*rr3 + term3*rr5
-     &                    + term4*rr7 + term5*rr9
-               efull = efull * scale
-               if (molcule(iglob) .ne. molcule(kglob))
-     &            einter = einter + efull
+               else
+                  term1 = ci*ck
+                  term2 = ck*dir - ci*dkr + dik
+                  term3 = ci*qkr + ck*qir - dir*dkr
+     &                       + 2.0d0*(dkqi-diqk+qiqk)
+                  term4 = dir*qkr - dkr*qir - 4.0d0*qik
+                  term5 = qir*qkr
+                  scalek = 1.0d0 - mscale(kglob)
+                  if (use_group)  then
+                    scalek = 1.0d0 - mscale(kglob) * fgrp
+                  end if
+                  rr1 = dmpe(1) - scalek*rr1
+                  rr3 = dmpe(3) - scalek*rr3
+                  rr5 = dmpe(5) - scalek*rr5
+                  rr7 = dmpe(7) - scalek*rr7
+                  rr9 = dmpe(9) - scalek*rr9
+                  rr11 = dmpe(11) - scalek*rr11
+                  e = term1*rr1 + term2*rr3 + term3*rr5
+     &                   + term4*rr7 + term5*rr9
 c
-c     modify distances to account for Ewald and exclusions
+c     find standard multipole intermediates for force and torque
 c
-               scalekk = 1.0d0 - scale
-               rr1 = bn(0) - scalekk*rr1
-               rr3 = bn(1) - scalekk*rr3
-               rr5 = bn(2) - scalekk*rr5
-               rr7 = bn(3) - scalekk*rr7
-               rr9 = bn(4) - scalekk*rr9
-               rr11 = bn(5) - scalekk*rr11
+                  de = term1*rr3 + term2*rr5 + term3*rr7
+     &                    + term4*rr9 + term5*rr11
+                  term1 = -ck*rr3 + dkr*rr5 - qkr*rr7
+                  term2 = ci*rr3 + dir*rr5 + qir*rr7
+                  term3 = 2.0d0 * rr5
+                  term4 = -2.0d0 * (ck*rr5-dkr*rr7+qkr*rr9)
+                  term5 = -2.0d0 * (ci*rr5+dir*rr7+qir*rr9)
+                  term6 = 4.0d0 * rr7
+               end if
+c
+c     store the potential at each site for use in charge flux
+c
+               if (use_chgflx) then
+                  if (use_chgpen) then
+                     term1i = corek*rr1i + valk*rr1ik
+                     term1k = corei*rr1k + vali*rr1ik
+                     term2i = -dkr * rr3ik
+                     term2k = dir * rr3ik
+                     term3i = qkr * rr5ik
+                     term3k = qir * rr5ik
+                     poti = term1i + term2i + term3i
+                     potk = term1k + term2k + term3k
+                  else
+                     poti = ck*rr1 - dkr*rr3 + qkr*rr5
+                     potk = ci*rr1 + dir*rr3 + qir*rr5
+                  end if
+                  pot(i) = pot(i) + poti
+                  pot(kbis) = pot(kbis) + potk
+               end if 
 c
 c     compute the energy contributions for this interaction
 c
-               e = term1*rr1 + term2*rr3 + term3*rr5
-     &                + term4*rr7 + term5*rr9
                if(shortrange .or. longrange)
      &            call switch_respa(r,mpoleshortcut,shortheal,s,ds)
 
@@ -1019,54 +1236,42 @@ c
 
                em = em + facts * e
 c
-c     calculate intermediate terms for force and torque
-c
-               de = term1*rr3 + term2*rr5 + term3*rr7
-     &                 + term4*rr9 + term5*rr11
-
-               term1 = -ck*rr3 + drk*rr5 - qrrk*rr7
-               term2 = ci*rr3 + dri*rr5 + qrri*rr7
-               term3 = 2.0d0 * rr5
-               term4 = 2.0d0 * (-ck*rr5+drk*rr7-qrrk*rr9)
-               term5 = 2.0d0 * (-ci*rr5-dri*rr7-qrri*rr9)
-               term6 = 4.0d0 * rr7
-
-c
 c     compute the force components for this interaction
 c
-               frcx = facts * (de*xr + term1*dix + term2*dkx
-     &                   + term3*(diqkx-dkqix) + term4*qrix
-     &                   + term5*qrkx + term6*(qikrx+qkirx))
+               frcx = facts*(de*xr + term1*dix + term2*dkx
+     &                   + term3*(diqkx-dkqix) + term4*qix
+     &                   + term5*qkx + term6*(qixk+qkxi))
      &              + factds*xr*e/r
-               frcy = facts * (de*yr + term1*diy + term2*dky
-     &                   + term3*(diqky-dkqiy) + term4*qriy
-     &                   + term5*qrky + term6*(qikry+qkiry))
+               frcy = facts*(de*yr + term1*diy + term2*dky
+     &                   + term3*(diqky-dkqiy) + term4*qiy
+     &                   + term5*qky + term6*(qiyk+qkyi))
      &                + factds*yr*e/r
-               frcz = facts * (de*zr + term1*diz + term2*dkz
-     &                   + term3*(diqkz-dkqiz) + term4*qriz
-     &                   + term5*qrkz + term6*(qikrz+qkirz))
+               frcz = facts*(de*zr + term1*diz + term2*dkz
+     &                   + term3*(diqkz-dkqiz) + term4*qiz
+     &                   + term5*qkz + term6*(qizk+qkzi))
      &                + factds*zr*e/r
 c
 c     compute the torque components for this interaction
 c
-               ttmi(1) = facts *(-rr3*dikx + term1*dirx
-     &                      + term3*(dqiqkx+dkqixr)
-     &                      - term4*qrixr - term6*(qikrxr+qrrx))
-               ttmi(2) = facts *(-rr3*diky + term1*diry
-     &                      + term3*(dqiqky+dkqiyr)
-     &                      - term4*qriyr - term6*(qikryr+qrry))
-               ttmi(3) = facts *(-rr3*dikz + term1*dirz
-     &                      + term3*(dqiqkz+dkqizr)
-     &                      - term4*qrizr - term6*(qikrzr+qrrz))
-               ttmk(1) = facts *(rr3*dikx + term2*dkrx
-     &                      - term3*(dqiqkx+diqkxr)
-     &                      - term5*qrkxr - term6*(qkirxr-qrrx))
-               ttmk(2) = facts *(rr3*diky + term2*dkry
-     &                      - term3*(dqiqky+diqkyr)
-     &                      - term5*qrkyr - term6*(qkiryr-qrry))
-               ttmk(3) = facts *(rr3*dikz + term2*dkrz
-     &                      - term3*(dqiqkz+diqkzr)
-     &                      - term5*qrkzr - term6*(qkirzr-qrrz))
+               if (use_chgpen)  rr3 = rr3ik
+               ttmi(1) = facts*(-rr3*dikx + term1*dirx
+     &                      + term3*(dqikx+dkqirx)
+     &                      - term4*qirx - term6*(qikrx+qikx))
+               ttmi(2) = facts*(-rr3*diky + term1*diry
+     &                      + term3*(dqiky+dkqiry)
+     &                      - term4*qiry - term6*(qikry+qiky))
+               ttmi(3) = facts*(-rr3*dikz + term1*dirz
+     &                      + term3*(dqikz+dkqirz)
+     &                      - term4*qirz - term6*(qikrz+qikz))
+               ttmk(1) = facts*(rr3*dikx + term2*dkrx
+     &                      - term3*(dqikx+diqkrx)
+     &                      - term5*qkrx - term6*(qkirx-qikx))
+               ttmk(2) = facts*(rr3*diky + term2*dkry
+     &                      - term3*(dqiky+diqkry)
+     &                      - term5*qkry - term6*(qkiry-qiky))
+               ttmk(3) = facts*(rr3*dikz + term2*dkrz
+     &                      - term3*(dqikz+diqkrz)
+     &                      - term5*qkrz - term6*(qkirz-qikz))
 c
 c     increment force-based gradient and torque on first site
 c
@@ -1089,10 +1294,10 @@ c
 c     increment the virial due to pairwise Cartesian forces
 c
                vxx = -xr * frcx
-               vxy = -yr * frcx
-               vxz = -zr * frcx
+               vxy = -0.5d0 * (yr*frcx+xr*frcy)
+               vxz = -0.5d0 * (zr*frcx+xr*frcz)
                vyy = -yr * frcy
-               vyz = -zr * frcy
+               vyz = -0.5d0 * (zr*frcy+yr*frcz)
                vzz = -zr * frcz
                vir(1,1) = vir(1,1) + vxx
                vir(2,1) = vir(2,1) + vxy
@@ -1122,7 +1327,6 @@ c
          end do
       end do
 c
-c
 c     resolve site torques then increment forces and virial
 c
       do ii = 1, npolelocnl
@@ -1130,26 +1334,29 @@ c
          iglob = ipole(iipole)
          i = loc(iglob)
          call torque (iipole,tem(1,i),fix,fiy,fiz,dem)
-         iaz = zaxis(iipole)
-         iax = xaxis(iipole)
-         iay = yaxis(iipole)
-         if (iaz .le. 0)  iaz = iglob
-         if (iax .le. 0)  iax = iglob
-         if (iay .le. 0)  iay = iglob
-         xiz = x(iaz) - x(iglob)
-         yiz = y(iaz) - y(iglob)
-         ziz = z(iaz) - z(iglob)
-         xix = x(iax) - x(iglob)
-         yix = y(iax) - y(iglob)
-         zix = z(iax) - z(iglob)
-         xiy = x(iay) - x(iglob)
-         yiy = y(iay) - y(iglob)
-         ziy = z(iay) - z(iglob)
+         iz = zaxis(iipole)
+         ix = xaxis(iipole)
+         iy = abs(yaxis(iipole))
+         if (iz .eq. 0)  iz = iglob
+         if (ix .eq. 0)  ix = iglob
+         if (iy .eq. 0)  iy = iglob
+         xiz = x(iz) - x(iglob)
+         yiz = y(iz) - y(iglob)
+         ziz = z(iz) - z(iglob)
+         xix = x(ix) - x(iglob)
+         yix = y(ix) - y(iglob)
+         zix = z(ix) - z(iglob)
+         xiy = x(iy) - x(iglob)
+         yiy = y(iy) - y(iglob)
+         ziy = z(iy) - z(iglob)
          vxx = xix*fix(1) + xiy*fiy(1) + xiz*fiz(1)
-         vxy = yix*fix(1) + yiy*fiy(1) + yiz*fiz(1)
-         vxz = zix*fix(1) + ziy*fiy(1) + ziz*fiz(1)
+         vxy = 0.5d0 * (yix*fix(1) + yiy*fiy(1) + yiz*fiz(1)
+     &                    + xix*fix(2) + xiy*fiy(2) + xiz*fiz(2))
+         vxz = 0.5d0 * (zix*fix(1) + ziy*fiy(1) + ziz*fiz(1)
+     &                    + xix*fix(3) + xiy*fiy(3) + xiz*fiz(3)) 
          vyy = yix*fix(2) + yiy*fiy(2) + yiz*fiz(2)
-         vyz = zix*fix(2) + ziy*fiy(2) + ziz*fiz(2)
+         vyz = 0.5d0 * (zix*fix(2) + ziy*fiy(2) + ziz*fiz(2)
+     &                    + yix*fix(3) + yiy*fiy(3) + yiz*fiz(3))
          vzz = zix*fix(3) + ziy*fiy(3) + ziz*fiz(3)
          vir(1,1) = vir(1,1) + vxx
          vir(2,1) = vir(2,1) + vxy
@@ -1162,9 +1369,54 @@ c
          vir(3,3) = vir(3,3) + vzz
       end do
 c
+c     modify the gradient and virial for charge flux
+c
+      if (use_chgflx) then
+c
+c      first communicate potential
+c
+         call commpotsum(pot,0)        
+         call commpot(pot,1)        
+c
+         call dcflux (pot,decfx,decfy,decfz)
+         do ii = 1, npolebloc
+            iipole = poleglob(ii)
+            iglob = ipole(iipole)
+            i = loc(iglob)
+            xi = x(iglob)
+            yi = y(iglob)
+            zi = z(iglob)
+            frcx = decfx(i)
+            frcy = decfy(i)
+            frcz = decfz(i)
+            dem(1,i) = dem(1,i) + frcx
+            dem(2,i) = dem(2,i) + frcy
+            dem(3,i) = dem(3,i) + frcz
+            vxx = xi * frcx
+            vxy = yi * frcx
+            vxz = zi * frcx
+            vyy = yi * frcy
+            vyz = zi * frcy
+            vzz = zi * frcz
+            vir(1,1) = vir(1,1) + vxx
+            vir(2,1) = vir(2,1) + vxy
+            vir(3,1) = vir(3,1) + vxz
+            vir(1,2) = vir(1,2) + vxy
+            vir(2,2) = vir(2,2) + vyy
+            vir(3,2) = vir(3,2) + vyz
+            vir(1,3) = vir(1,3) + vxz
+            vir(2,3) = vir(2,3) + vyz
+            vir(3,3) = vir(3,3) + vzz
+         end do
+      end if
+c
 c     perform deallocation of some local arrays
 c
       deallocate (mscale)
       deallocate (tem)
+      deallocate (pot)
+      deallocate (decfx)
+      deallocate (decfy)
+      deallocate (decfz)
       return
       end

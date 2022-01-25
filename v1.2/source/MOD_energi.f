@@ -26,9 +26,12 @@ c     eat    angle-torsion potential energy of the system
 c     ebt    stretch-torsion potential energy of the system
 c     ett    torsion-torsion potential energy of the system
 c     ev     van der Waals potential energy of the system
+c     er     Pauli repulsion potential energy of the system
+c     edsp   dispersion potential energy of the system
 c     ec     charge-charge potential energy of the system
 c     em     atomic multipole potential energy of the system
 c     ep     polarization potential energy of the system
+c     ect    charge transfer potential energy of the system
 c     eg     geometric restraint potential energy of the system
 c     ex     extra term potential energy of the system
 c     esave  stored potential energy of the system
@@ -42,6 +45,7 @@ c
       real*8 eid,eit,et,ept
       real*8 eat,ebt,ett,ev,ec
       real*8 em,ep
+      real*8 er,edsp,ect
       real*8 eg,ex
       real*8 esave
       real*8 ensmd

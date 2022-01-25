@@ -28,12 +28,14 @@ c     xendcell, yendcell, zendcell   x,y,z coordinates of the ending of  the cel
 c
 c     lbuffer     width of the neighbor list buffer region
 c     lbuf2       square of half the neighbor list buffer width
+c     cbuf2       square of short range charge cutoff plus neighbor list buffer
 c     vbuf2       square of vdw cutoff plus neighbor list buffer
 c     mbuf2       square of multipole cutoff plus neighbor list buffer
+c     dbuf2       square of dispersion cutoff plus neighbor list buffer
 c     cshortbuf2       square of charge cutoff plus neighbor list buffer
 c     vshortbuf2       square of short range vdw cutoff plus neighbor list buffer
 c     mshortbuf2       square of short range multipole cutoff plus neighbor list buffer
-c     cbuf2       square of short range charge cutoff plus neighbor list buffer
+c     dshortbuf2       square of short range dispersion cutoff plus neighbor list buffer
 c     torquebuf2  square of torque cutoff plus neighbor list buffer
 c     torqueshortbuf2  square of short range torque cutoff plus neighbor list buffer
 c
@@ -54,8 +56,9 @@ c
       integer, allocatable :: neigcell(:,:),numneigcell(:),repartcell(:)
       integer, allocatable :: cell_len(:),indcell(:),bufbegcell(:)
       real*8 lbuffer,lbuf2
-      real*8 vbuf2,cbuf2,mbuf2,torquebuf2
+      real*8 vbuf2,cbuf2,mbuf2,torquebuf2,dbuf2
       real*8 vshortbuf2,cshortbuf2,mshortbuf2,torqueshortbuf2
+      real*8 dshortbuf2
       real*8, allocatable :: xbegcell(:),ybegcell(:),zbegcell(:)
       real*8, allocatable :: xendcell(:),yendcell(:),zendcell(:)
       save

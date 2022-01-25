@@ -641,7 +641,7 @@ c
       real*8  erfc, cutoff2
       real*8  scale
       save    zero, one, f50
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
 
       external erfc

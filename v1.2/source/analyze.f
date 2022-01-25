@@ -321,6 +321,18 @@ c
          end if
          write (iout,fstr)  ev,nev
       end if
+      if (ner.ne.0.or.er.ne.0.0d0) then
+         if (abs(er) .lt. 1.0d10) then
+            fstr = '('' Repulsion'',18x,'//form1//')'
+         else
+            fstr = '('' Repulsion'',18x,'//form2//')'
+         end if
+         write (iout,fstr)  er,ner
+      end if
+      if (nedsp.ne.0.or.edsp.ne.0.0d0) then
+         fstr = '('' Dispersion'',17x,'//form1//')'
+         write (iout,fstr)  edsp,nedsp
+      end if
       if (nec.ne.0) then
          if (abs(ec) .lt. 1.0d10) then
             fstr = '('' Charge-Charge'',14x,'//form1//')'
@@ -328,6 +340,14 @@ c
             fstr = '('' Charge-Charge'',14x,'//form2//')'
          end if
          write (iout,fstr)  ec,nec
+      end if
+      if (nect.ne.0.or.ect.ne.0.0d0) then
+         if (abs(ect) .lt. 1.0d10) then
+            fstr = '('' Charge Transfer'',12x,'//form1//')'
+         else
+            fstr = '('' Charge Transfer'',12x,'//form2//')'
+         end if
+         write (iout,fstr)  ect,nect
       end if
       if (nem.ne.0) then
          if (abs(em) .lt. 1.0d10) then

@@ -22,6 +22,7 @@ c
       use vdwpot
       implicit none
       real*8 elrc,vlrc
+      character*11 mode
 c
 c     evaluate pairwise interactions
 c
@@ -31,7 +32,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr1 (elrc,vlrc)
+         mode = 'VDW'
+         call evcorr1 (mode,elrc,vlrc)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
          vir(2,2) = vir(2,2) + vlrc
@@ -106,8 +108,7 @@ c
       logical proceed,usei
       logical testcut,shortrange,longrange,fullrange
       logical muti,mutk,mutik
-
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
 c
  1000 format(' Warning, system moved too much since last neighbor list'
@@ -149,7 +150,6 @@ c
 c
 c     set the coefficients for the switching function
 c
-!     mode = 'VDW'
       call switch (mode)
       vdwshortcut2 = (vdwshortcut-shortheal)**2
 c
@@ -209,7 +209,6 @@ c
 c
 c     decide whether to compute the current interaction
 c
-
          nnvlst = merge(nshortvlst(ii),
      &                  nvlst     (ii),
      &                  shortrange
@@ -251,7 +250,6 @@ c
      &                         rik2 .le. off2,
      &                         longrange
      &                        )
-c              if (rik2 .le. off2) then
                if (testcut) then
                   rik = sqrt(rik2)
                   rv = radmin(kt,it)

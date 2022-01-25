@@ -234,6 +234,7 @@ c
       real*8 derivs(3,*)
       logical save_vdw,save_charge
       logical save_mpole,save_polar
+      logical save_repuls,save_disp,save_chgtrn
       logical save_list
 c
 c
@@ -243,6 +244,9 @@ c
       save_charge = use_charge
       save_mpole = use_mpole
       save_polar = use_polar
+      save_repuls = use_repuls
+      save_disp = use_disp
+      save_chgtrn = use_chgtrn
       save_list = use_list
 c
 c     turn off slow-evolving nonbonded potential energy terms
@@ -251,6 +255,9 @@ c
       use_charge = .false.
       use_mpole = .false.
       use_polar = .false.
+      use_repuls = .false.
+      use_disp = .false.
+      use_chgtrn = .false.
       use_list = .false.
 c
 c     get energy and gradient for fast-evolving potential terms
@@ -263,6 +270,9 @@ c
       use_charge = save_charge
       use_mpole = save_mpole
       use_polar = save_polar
+      use_repuls = save_repuls
+      use_disp = save_disp
+      use_chgtrn = save_chgtrn
       use_list = save_list
       return
       end

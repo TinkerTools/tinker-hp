@@ -302,6 +302,7 @@ c
         use_shortmlist = use_mlist
         use_shortclist = use_clist
         use_shortvlist = use_vlist
+        use_shortdlist = use_dlist
       end if
 
 c    

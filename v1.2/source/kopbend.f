@@ -109,13 +109,6 @@ c
            end if
         end do
 c
-c       use special out-of-plane bend parameter assignment for MMFF
-c
-        if (forcefield .eq. 'MMFF94') then
-           call kopbendm
-           return
-        end if
-c
 c     determine the total number of forcefield parameters
 c
         nopb = maxnopb
@@ -147,6 +140,13 @@ c
 c       allocate global pointers
 c
         call alloc_shared_opbend
+c
+c       use special out-of-plane bend parameter assignment for MMFF
+c
+        if (forcefield .eq. 'MMFF94') then
+           call kopbendm
+           return
+        end if
 c
 c       assign out-of-plane bending parameters for each angle
 c
@@ -346,89 +346,89 @@ c
             ib = iang(2,i)
             ic = iang(3,i)
             id = iang(4,i)
-            itta = type(ia)
-            ittb = type(ib)
-            ittc = type(ic)
-            ittd = type(id)
-            m = 0
-   10       continue
-            m = m + 1
-            if (m .eq. 1) then
-               ita = eqclass(itta,1)
-               itb = eqclass(ittb,1)
-               itc = eqclass(ittc,1)
-               itd = eqclass(ittd,1)
-            else if (m .eq. 2) then
-               ita = eqclass(itta,2)
-               itb = eqclass(ittb,2)
-               itc = eqclass(ittc,2)
-               itd = eqclass(ittd,2)
-            else if (m .eq. 3) then
-               ita = eqclass(itta,3)
-               itb = eqclass(ittb,2)
-               itc = eqclass(ittc,3)
-               itd = eqclass(ittd,3)
-            else if (m .eq. 4) then
-               ita = eqclass(itta,4)
-               itb = eqclass(ittb,2)
-               itc = eqclass(ittc,4)
-               itd = eqclass(ittd,4)
-            else if (m .eq. 5) then
-               ita = eqclass(itta,5)
-               itb = eqclass(ittb,2)
-               itc = eqclass(ittc,5)
-               itd = eqclass(ittd,5)
-            end if
-            if (ia.ne.0 .and. ib.ne.0 .and. ic.ne.0 .and. id.ne.0) then
-               if (m .gt. 5) then
-                  nopbend = nopbend + 1
-                  iopb(nopbend) = i
-                  opbk(nopbend) = 0.0d0
-               else
-                  size = 4
-                  call numeral (ita,pa,size)
-                  call numeral (itb,pb,size)
-                  call numeral (itc,pc,size)
-                  call numeral (itd,pd,size)
-                  if (itd.le.ita .and. itd.le.itc) then
-                     if (ita .le. itc) then
-                        pt = pd//pb//pa//pc
-                     else
-                        pt = pd//pb//pc//pa
-                     end if
-                  else if (ita.le.itc .and. ita.le.itd) then
-                     if (itd .le. itc) then
-                        pt = pa//pb//pd//pc
-                     else
-                        pt = pa//pb//pc//pd
-                     end if
-                  else if (itc.le.ita .and. itc.le.itd) then
-                     if (ita .le. itd) then
-                        pt = pc//pb//pa//pd
-                     else
-                        pt = pc//pb//pd//pa
-                     end if
-                  end if
-                  do j = 1, nopb
-                     if (kopb(j) .eq. pt) then
-                        nopbend = nopbend + 1
-                        iopb(nopbend) = i
-                        opbk(nopbend) = opbn(j)
-                        goto 20
-                     end if
-                  end do
-                  if (class(ib).eq.8 .or. class(ib).eq.17 .or.
-     &                class(ib).eq.26 .or. class(ib).eq.43 .or.
-     &                class(ib).eq.49 .or. class(ib).eq.73 .or.
-     &                class(ib).eq.82) then
-                     nopbend = nopbend + 1
-                     iopb(nopbend) = i
-                     opbk(nopbend) = 0.0d0
-                     goto 20
-                  end if
-                  goto 10
-   20             continue
-               end if
+            if (min(ia,ib,ic,id) .gt. 0) then
+              itta = type(ia)
+              ittb = type(ib)
+              ittc = type(ic)
+              ittd = type(id)
+              m = 0
+   10         continue
+              m = m + 1
+              if (m .eq. 1) then
+                 ita = eqclass(itta,1)
+                 itb = eqclass(ittb,1)
+                 itc = eqclass(ittc,1)
+                 itd = eqclass(ittd,1)
+              else if (m .eq. 2) then
+                 ita = eqclass(itta,2)
+                 itb = eqclass(ittb,2)
+                 itc = eqclass(ittc,2)
+                 itd = eqclass(ittd,2)
+              else if (m .eq. 3) then
+                 ita = eqclass(itta,3)
+                 itb = eqclass(ittb,2)
+                 itc = eqclass(ittc,3)
+                 itd = eqclass(ittd,3)
+              else if (m .eq. 4) then
+                 ita = eqclass(itta,4)
+                 itb = eqclass(ittb,2)
+                 itc = eqclass(ittc,4)
+                 itd = eqclass(ittd,4)
+              else if (m .eq. 5) then
+                 ita = eqclass(itta,5)
+                 itb = eqclass(ittb,2)
+                 itc = eqclass(ittc,5)
+                 itd = eqclass(ittd,5)
+              end if
+              if (m .gt. 5) then
+                 nopbend = nopbend + 1
+                 iopb(nopbend) = i
+                 opbk(nopbend) = 0.0d0
+              else
+                 size = 4
+                 call numeral (ita,pa,size)
+                 call numeral (itb,pb,size)
+                 call numeral (itc,pc,size)
+                 call numeral (itd,pd,size)
+                 if (itd.le.ita .and. itd.le.itc) then
+                    if (ita .le. itc) then
+                       pt = pd//pb//pa//pc
+                    else
+                       pt = pd//pb//pc//pa
+                    end if
+                 else if (ita.le.itc .and. ita.le.itd) then
+                    if (itd .le. itc) then
+                       pt = pa//pb//pd//pc
+                    else
+                       pt = pa//pb//pc//pd
+                    end if
+                 else if (itc.le.ita .and. itc.le.itd) then
+                    if (ita .le. itd) then
+                       pt = pc//pb//pa//pd
+                    else
+                       pt = pc//pb//pd//pa
+                    end if
+                 end if
+                 do j = 1, nopb
+                    if (kopb(j) .eq. pt) then
+                       nopbend = nopbend + 1
+                       iopb(nopbend) = i
+                       opbk(nopbend) = opbn(j)
+                       goto 20
+                    end if
+                 end do
+                 if (class(ib).eq.8 .or. class(ib).eq.17 .or.
+     &               class(ib).eq.26 .or. class(ib).eq.43 .or.
+     &               class(ib).eq.49 .or. class(ib).eq.73 .or.
+     &               class(ib).eq.82) then
+                    nopbend = nopbend + 1
+                    iopb(nopbend) = i
+                    opbk(nopbend) = 0.0d0
+                    goto 20
+                 end if
+                 goto 10
+   20            continue
+              end if
             end if
          end do
       end if

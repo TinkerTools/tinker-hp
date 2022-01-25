@@ -87,7 +87,7 @@
      $     temp3izz7
       real*8::temp3ixx,temp3ixy,temp3ixz,temp3iyy,temp3iyz,temp3izz
 
-      character(10) :: mode
+      character(11) :: mode
 
  1000 format(' Warning, system moved too much since last neighbor list
      $   update, try lowering nlupdate')
@@ -877,7 +877,7 @@ c
 
       real*8 :: f
 
-      character(10) :: mode
+      character(11) :: mode
 
  1000 format(' Warning, system moved too much since last neighbor list
      $   update, try lowering nlupdate')
@@ -2669,7 +2669,7 @@ c
      $     temp1izz7
       real*8::temp1ixx,temp1ixy,temp1ixz,temp1iyy,temp1iyz,temp1izz
 
-      character(10) :: mode
+      character(11) :: mode
 
  1000 format(' Warning, system moved too much since last neighbor list
      $   update, try lowering nlupdate')
@@ -3374,7 +3374,7 @@ c
      $     temp4izz7
       real*8::temp4ixx,temp4ixy,temp4ixz,temp4iyy,temp4iyz,temp4izz
 
-      character(10) :: mode
+      character(11) :: mode
 
  1000 format(' Warning, system moved too much since last neighbor list
      $   update, try lowering nlupdate')

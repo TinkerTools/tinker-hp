@@ -42,6 +42,7 @@ c
       use_vdwshort = .false.
       use_vdwlong = .false.
       use_charge = .true.
+      use_cshortreal = .false.
       use_clong = .false.
       use_creal = .true.
       use_crec = .true.
@@ -60,9 +61,17 @@ c
       use_geom = .true.
       use_extra = .true.
       use_emtp = .false.
-      use_ctransfer = .false.
-      use_dispersion = .false.
-      use_repulsion = .false.
+      use_repulsshort = .false.
+      use_repulslong = .false.
+      use_repuls = .true.
+      use_disp = .true.
+      use_dispshortreal = .false.
+      use_displong = .false.
+      use_dispreal = .true.
+      use_disprec = .true.
+      use_dispself = .true.
+      use_chgtrn = .true.
+      use_chgflx = .true.
 c
 c     read the potential energy force field parameter file
 c

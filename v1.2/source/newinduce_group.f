@@ -540,7 +540,6 @@ c
       return
       end
 c
-c
       subroutine efld0_group(nrhs,ef)
 c
 c     Compute the direct space contribution to the permanent electric field.
@@ -549,9 +548,12 @@ c     compute the energy according to the AMOEBA force field.
 c
       use atmlst
       use atoms
+      use bound
+      use chgpen
       use couple
       use cutoff
       use domdec
+      use ewald
       use group
       use iounit
       use math
@@ -564,46 +566,47 @@ c
       use shunt
       use mpi
       implicit none
-      integer i,iglob,kglob,nrhs
+      integer i,iglob,kglob,nrhs,ipoleloc
       integer iglobgroup,kglobgroup
       real*8  ef(3,nrhs,npolegroup)
-      integer ii, j, k, kk, kkk, iipole, kkpole
-      real*8  dx, dy, dz, d, d2, d3, d5, pdi, pti, ck,
-     $  dkx, dky, dkz, dkr, qkxx, qkyy, qkzz, qkxy, qkxz, qkyz,
-     $  qkx, qky, qkz, qkr
-      real*8 dix, diy, diz, dir, qixx, qiyy, qizz, qixy, qixz, qiyz,
-     $  qix, qiy, qiz, qir, ci
-      real*8 damp, pgamma, expdamp, scale3, scale5, scale7
-      real*8 drr3,drr5,drr7
-      real*8 prr3,prr5,prr7
-      real*8 dsc3,dsc5,dsc7
-      real*8 psc3,psc5,psc7
-      real*8 zero, pt6, one, f50
+      integer ii, j, k,kk, kkk, iipole, kkpole,kbis
+      real*8 xr,yr,zr
+      real*8 r,r2,rr1,rr2
+      real*8 rr3,rr5,rr7
+      real*8 rr3i,rr5i,rr7i
+      real*8 rr3k,rr5k,rr7k
+      real*8 ci,dix,diy,diz
+      real*8 qixx,qiyy,qizz
+      real*8 qixy,qixz,qiyz
+      real*8 ck,dkx,dky,dkz
+      real*8 qkxx,qkyy,qkzz
+      real*8 qkxy,qkxz,qkyz
+      real*8 dir,dkr
+      real*8 qix,qiy,qiz,qir
+      real*8 qkx,qky,qkz,qkr
       real*8 fid(3), fip(3)
       real*8 fkd(3), fkp(3)
-      real*8 scaled,scalep
+      real*8 cutoff2
+      real*8 corei,corek
+      real*8 vali,valk
+      real*8 alphai,alphak
+      real*8 dmp3,dmp5,dmp7
+      real*8 dmpi(7),dmpk(7)
+      real*8 dmpik(7),dmpe(7)
+      real*8 scalek
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
-      save   zero, pt6, one, f50
-      data   zero/0.d0/, pt6/0.6d0/, one/1.d0/,f50/50.d0/
-c
- 1000 format(' Warning, system moved too much since last neighbor list
-     $  update, try lowering nlupdate')
-c
 c
       allocate (dscale(n))
       allocate (pscale(n))
-      do i = 1, n
-         dscale(i) = 1.0d0
-         pscale(i) = 1.0d0
-      end do
+      dscale = 1.0d0
+      pscale = 1.0d0
+
 c
       do ii = 1, npolelocgroup
         iglobgroup = ipolegroup(poleglobgroup(ii))
         iglob = globglobgroup(iglobgroup)
         iipole = pollist(iglob)
-        pdi = pdamp(iipole)
-        pti = thole(iipole)
         ci  = rpole(1,iipole)
         dix = rpole(2,iipole)
         diy = rpole(3,iipole)
@@ -614,48 +617,105 @@ c
         qiyy = rpole(9,iipole)
         qiyz = rpole(10,iipole)
         qizz = rpole(13,iipole)
-        do j = 1, n12(iglob)
-           pscale(i12(j,iglob)) = p2scale
-        end do
-        do j = 1, n13(iglob)
-           pscale(i13(j,iglob)) = p3scale
-        end do
-        do j = 1, n14(iglob)
-           pscale(i14(j,iglob)) = p4scale
-           do k = 1, np11(iglob)
-              if (i14(j,iglob) .eq. ip11(k,iglob))
-     &           pscale(i14(j,iglob)) = p4scale * p41scale
+        if (use_chgpen) then
+           corei = pcore(iipole)
+           vali = pval(iipole)
+           alphai = palpha(iipole)
+        end if
+c
+c     set exclusion coefficients for connected atoms
+c
+        if (dpequal) then
+           do j = 1, n12(iglob)
+              pscale(i12(j,iglob)) = p2scale
+              do k = 1, np11(iglob)
+                 if (i12(j,iglob) .eq. ip11(k,iglob))
+     &              pscale(i12(j,iglob)) = p2iscale
+              end do
+              dscale(i12(j,iglob)) = pscale(i12(j,iglob))
            end do
-        end do
-        do j = 1, n15(iglob)
-           pscale(i15(j,iglob)) = p5scale
-        end do
-        do j = 1, np11(iglob)
-           dscale(ip11(j,iglob)) = d1scale
-        end do
-        do j = 1, np12(iglob)
-           dscale(ip12(j,iglob)) = d2scale
-        end do
-        do j = 1, np13(iglob)
-           dscale(ip13(j,iglob)) = d3scale
-        end do
-        do j = 1, np14(iglob)
-           dscale(ip14(j,iglob)) = d4scale
-        end do
+           do j = 1, n13(iglob)
+              pscale(i13(j,iglob)) = p3scale
+              do k = 1, np11(iglob)
+                 if (i13(j,iglob) .eq. ip11(k,iglob))
+     &              pscale(i13(j,iglob)) = p3iscale
+              end do
+              dscale(i13(j,iglob)) = pscale(i13(j,iglob))
+           end do
+           do j = 1, n14(iglob)
+              pscale(i14(j,iglob)) = p4scale
+              do k = 1, np11(iglob)
+                  if (i14(j,iglob) .eq. ip11(k,iglob))
+     &              pscale(i14(j,iglob)) = p4iscale
+              end do
+              dscale(i14(j,iglob)) = pscale(i14(j,iglob))
+           end do
+           do j = 1, n15(iglob)
+              pscale(i15(j,iglob)) = p5scale
+              do k = 1, np11(iglob)
+                 if (i15(j,iglob) .eq. ip11(k,iglob))
+     &              pscale(i15(j,iglob)) = p5iscale
+              end do
+              dscale(i15(j,iglob)) = pscale(i15(j,iglob))
+           end do
+        else
+           do j = 1, n12(iglob)
+              pscale(i12(j,iglob)) = p2scale
+              do k = 1, np11(iglob)
+                 if (i12(j,iglob) .eq. ip11(k,iglob))
+     &              pscale(i12(j,iglob)) = p2iscale
+              end do
+           end do
+           do j = 1, n13(iglob)
+              pscale(i13(j,iglob)) = p3scale
+              do k = 1, np11(iglob)
+                 if (i13(j,iglob) .eq. ip11(k,iglob))
+     &              pscale(i13(j,iglob)) = p3iscale
+              end do
+           end do
+           do j = 1, n14(iglob)
+              pscale(i14(j,iglob)) = p4scale
+              do k = 1, np11(iglob)
+                  if (i14(j,iglob) .eq. ip11(k,iglob))
+     &              pscale(i14(j,iglob)) = p4iscale
+              end do
+           end do
+           do j = 1, n15(iglob)
+              pscale(i15(j,iglob)) = p5scale
+              do k = 1, np11(iglob)
+                 if (i15(j,iglob) .eq. ip11(k,iglob))
+     &              pscale(i15(j,iglob)) = p5iscale
+              end do
+           end do
+           do j = 1, np11(iglob)
+              dscale(ip11(j,iglob)) = d1scale
+           end do
+           do j = 1, np12(iglob)
+              dscale(ip12(j,iglob)) = d2scale
+           end do
+           do j = 1, np13(iglob)
+              dscale(ip13(j,iglob)) = d3scale
+           end do
+           do j = 1, np14(iglob)
+              dscale(ip14(j,iglob)) = d4scale
+           end do
+        end if
 c
         do kkk = iglobgroup+1, npolegroup
           kglobgroup = ipolegroup(kkk)
           kglob = globglobgroup(kglobgroup)
           kkpole = pollist(kglob)
           kk = polelocgroup(kkk)
-          dx = x(kglob) - x(iglob)
-          dy = y(kglob) - y(iglob)
-          dz = z(kglob) - z(iglob)
-          d2 = dx*dx + dy*dy + dz*dz
-          d  = sqrt(d2)
-c
-          d3   = d*d2
-          d5   = d3*d2
+          xr = x(kglob) - x(iglob)
+          yr = y(kglob) - y(iglob)
+          zr = z(kglob) - z(iglob)
+          r2 = xr*xr + yr* yr + zr*zr
+          r = sqrt(r2)
+          rr1 = 1.0d0 / r
+          rr2 = rr1 * rr1
+          rr3 = rr2 * rr1
+          rr5 = 3.0d0 * rr2 * rr3
+          rr7 = 5.0d0 * rr2 * rr5
           ck   = rpole(1,kkpole)
           dkx  = rpole(2,kkpole)
           dky  = rpole(3,kkpole)
@@ -666,134 +726,197 @@ c
           qkyy = rpole(9,kkpole)
           qkyz = rpole(10,kkpole)
           qkzz = rpole(13,kkpole)
-          damp = pdi*pdamp(kkpole)
-          scale3 = one
-          scale5 = one
-          scale7 = one
-          if (damp.ne.zero) then
-            pgamma = min(pti,thole(kkpole))
-            damp = -pgamma*(d/damp)**3
-            if (damp.gt.-F50) then
-              expdamp = exp(damp)
-              scale3 = one - expdamp
-              scale5 = one - expdamp*(one-damp)
-              scale7 = one - expdamp
-     &                    *(one-damp + pt6*damp**2)
-            end if
+c
+c     intermediates involving moments and separation distance
+c
+          dir = dix*xr + diy*yr + diz*zr
+          qix = qixx*xr + qixy*yr + qixz*zr
+          qiy = qixy*xr + qiyy*yr + qiyz*zr
+          qiz = qixz*xr + qiyz*yr + qizz*zr
+          qir = qix*xr + qiy*yr + qiz*zr
+          dkr = dkx*xr + dky*yr + dkz*zr
+          qkx = qkxx*xr + qkxy*yr + qkxz*zr
+          qky = qkxy*xr + qkyy*yr + qkyz*zr
+          qkz = qkxz*xr + qkyz*yr + qkzz*zr
+          qkr = qkx*xr + qky*yr + qkz*zr
+c
+c     calculate real space Ewald error function damping
+c
+          call dampewald (7,r,r2,1.0d0,dmpe)
+c
+c     find the field components for Thole polarization damping
+c
+          if (use_thole) then
+             call dampthole (iipole,kkpole,7,r,dmpik)
+             scalek = dscale(kglob)
+             dmp3 = scalek*dmpik(3)*rr3
+             dmp5 = scalek*dmpik(5)*rr5
+             dmp7 = scalek*dmpik(7)*rr7
+             fid(1) = -xr*(dmp3*ck-dmp5*dkr+dmp7*qkr)
+     &                   - dmp3*dkx + 2.0d0*dmp5*qkx
+             fid(2) = -yr*(dmp3*ck-dmp5*dkr+dmp7*qkr)
+     &                   - dmp3*dky + 2.0d0*dmp5*qky
+             fid(3) = -zr*(dmp3*ck-dmp5*dkr+dmp7*qkr)
+     &                   - dmp3*dkz + 2.0d0*dmp5*qkz
+             fkd(1) = xr*(dmp3*ci+dmp5*dir+dmp7*qir)
+     &                   - dmp3*dix - 2.0d0*dmp5*qix
+             fkd(2) = yr*(dmp3*ci+dmp5*dir+dmp7*qir)
+     &                   - dmp3*diy - 2.0d0*dmp5*qiy
+             fkd(3) = zr*(dmp3*ci+dmp5*dir+dmp7*qir)
+     &                   - dmp3*diz - 2.0d0*dmp5*qiz
+             scalek = pscale(kglob)
+             dmp3 = scalek*dmpik(3)*rr3
+             dmp5 = scalek*dmpik(5)*rr5
+             dmp7 = scalek*dmpik(7)*rr7
+             fip(1) = -xr*(dmp3*ck-dmp5*dkr+dmp7*qkr)
+     &                   - dmp3*dkx + 2.0d0*dmp5*qkx
+             fip(2) = -yr*(dmp3*ck-dmp5*dkr+dmp7*qkr)
+     &                   - dmp3*dky + 2.0d0*dmp5*qky
+             fip(3) = -zr*(dmp3*ck-dmp5*dkr+dmp7*qkr)
+     &                   - dmp3*dkz + 2.0d0*dmp5*qkz
+             fkp(1) = xr*(dmp3*ci+dmp5*dir+dmp7*qir)
+     &                   - dmp3*dix - 2.0d0*dmp5*qix
+             fkp(2) = yr*(dmp3*ci+dmp5*dir+dmp7*qir)
+     &                   - dmp3*diy - 2.0d0*dmp5*qiy
+             fkp(3) = zr*(dmp3*ci+dmp5*dir+dmp7*qir)
+     &                   - dmp3*diz - 2.0d0*dmp5*qiz
+c
+c     find the field components for charge penetration damping
+c
+          else if (use_chgpen) then
+             corek = pcore(kkpole)
+             valk = pval(kkpole)
+             alphak = palpha(kkpole)
+             call dampdir (r,alphai,alphak,dmpi,dmpk)
+             scalek = dscale(kglob)
+             rr3i = scalek*dmpi(3)*rr3
+             rr5i = scalek*dmpi(5)*rr5
+             rr7i = scalek*dmpi(7)*rr7
+             rr3k = scalek*dmpk(3)*rr3
+             rr5k = scalek*dmpk(5)*rr5
+             rr7k = scalek*dmpk(7)*rr7
+             rr3 = scalek*rr3
+             fid(1) = -xr*(rr3*corek + rr3k*valk
+     &                   - rr5k*dkr + rr7k*qkr)
+     &                   - rr3k*dkx + 2.0d0*rr5k*qkx
+             fid(2) = -yr*(rr3*corek + rr3k*valk
+     &                   - rr5k*dkr + rr7k*qkr)
+     &                   - rr3k*dky + 2.0d0*rr5k*qky
+             fid(3) = -zr*(rr3*corek + rr3k*valk
+     &                   - rr5k*dkr + rr7k*qkr)
+     &                   - rr3k*dkz + 2.0d0*rr5k*qkz
+             fkd(1) = xr*(rr3*corei + rr3i*vali
+     &                   + rr5i*dir + rr7i*qir)
+     &                   - rr3i*dix - 2.0d0*rr5i*qix
+             fkd(2) = yr*(rr3*corei + rr3i*vali
+     &                   + rr5i*dir + rr7i*qir)
+     &                   - rr3i*diy - 2.0d0*rr5i*qiy
+             fkd(3) = zr*(rr3*corei + rr3i*vali
+     &                   + rr5i*dir + rr7i*qir)
+     &                   - rr3i*diz - 2.0d0*rr5i*qiz
+             scalek = pscale(kglob)
+             rr3 = rr2 * rr1
+             rr3i = scalek*dmpi(3)*rr3
+             rr5i = scalek*dmpi(5)*rr5
+             rr7i = scalek*dmpi(7)*rr7
+             rr3k = scalek*dmpk(3)*rr3
+             rr5k = scalek*dmpk(5)*rr5
+             rr7k = scalek*dmpk(7)*rr7
+             rr3 = scalek*rr3
+             fip(1) = -xr*(rr3*corek + rr3k*valk
+     &                   - rr5k*dkr + rr7k*qkr)
+     &                   - rr3k*dkx + 2.0d0*rr5k*qkx
+             fip(2) = -yr*(rr3*corek + rr3k*valk
+     &                   - rr5k*dkr + rr7k*qkr)
+     &                   - rr3k*dky + 2.0d0*rr5k*qky
+             fip(3) = -zr*(rr3*corek + rr3k*valk
+     &                   - rr5k*dkr + rr7k*qkr)
+     &                   - rr3k*dkz + 2.0d0*rr5k*qkz
+             fkp(1) = xr*(rr3*corei + rr3i*vali
+     &                   + rr5i*dir + rr7i*qir)
+     &                   - rr3i*dix - 2.0d0*rr5i*qix
+             fkp(2) = yr*(rr3*corei + rr3i*vali
+     &                   + rr5i*dir + rr7i*qir)
+     &                   - rr3i*diy - 2.0d0*rr5i*qiy
+             fkp(3) = zr*(rr3*corei + rr3i*vali
+     &                   + rr5i*dir + rr7i*qir)
+     &                   - rr3i*diz - 2.0d0*rr5i*qiz
           end if
-          scaled = dscale(kglob)
-          scalep = pscale(kglob)
-          dsc3 = scale3 * scaled
-          dsc5 = scale5 * scaled
-          dsc7 = scale7 * scaled
-          psc3 = scale3 * scalep
-          psc5 = scale5 * scalep
-          psc7 = scale7 * scalep
-          drr3 = dsc3 / (d*d2)
-          drr5 = 3.0d0 * dsc5 / (d*d2*d2)
-          drr7 = 15.0d0 * dsc7 / (d*d2*d2*d2)
-          prr3 = psc3 / (d*d2)
-          prr5 = 3.0d0 * psc5 / (d*d2*d2)
-          prr7 = 15.0d0 * psc7 / (d*d2*d2*d2)
 c
-c     compute some intermediate quantities
+c     increment the field at each site due to this interaction
 c
-          dir = dix*dx + diy*dy + diz*dz
-          qix = qixx*dx + qixy*dy + qixz*dz
-          qiy = qixy*dx + qiyy*dy + qiyz*dz
-          qiz = qixz*dx + qiyz*dy + qizz*dz
-          qir = qix*dx + qiy*dy + qiz*dz
-          dkr = dkx*dx + dky*dy + dkz*dz
-          qkx = qkxx*dx + qkxy*dy + qkxz*dz
-          qky = qkxy*dx + qkyy*dy + qkyz*dz
-          qkz = qkxz*dx + qkyz*dy + qkzz*dz
-          qkr = qkx*dx + qky*dy + qkz*dz
-
-c
-          fid(1) = -dx*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                 - drr3*dkx + 2.0d0*drr5*qkx
-          fid(2) = -dy*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                - drr3*dky + 2.0d0*drr5*qky
-          fid(3) = -dz*(drr3*ck-drr5*dkr+drr7*qkr)
-     &                 - drr3*dkz + 2.0d0*drr5*qkz
-          fkd(1) = dx*(drr3*ci+drr5*dir+drr7*qir)
-     &                - drr3*dix - 2.0d0*drr5*qix
-          fkd(2) = dy*(drr3*ci+drr5*dir+drr7*qir)
-     &                - drr3*diy - 2.0d0*drr5*qiy
-          fkd(3) = dz*(drr3*ci+drr5*dir+drr7*qir)
-     &                   - drr3*diz - 2.0d0*drr5*qiz
-          fip(1) = -dx*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                 - prr3*dkx + 2.0d0*prr5*qkx
-          fip(2) = -dy*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                 - prr3*dky + 2.0d0*prr5*qky
-          fip(3) = -dz*(prr3*ck-prr5*dkr+prr7*qkr)
-     &                 - prr3*dkz + 2.0d0*prr5*qkz
-          fkp(1) = dx*(prr3*ci+prr5*dir+prr7*qir)
-     &                - prr3*dix - 2.0d0*prr5*qix
-          fkp(2) = dy*(prr3*ci+prr5*dir+prr7*qir)
-     &                - prr3*diy - 2.0d0*prr5*qiy
-          fkp(3) = dz*(prr3*ci+prr5*dir+prr7*qir)
-     &                - prr3*diz - 2.0d0*prr5*qiz
-
-          ef(1,1,ii) = ef(1,1,ii) + fid(1)
-          ef(2,1,ii) = ef(2,1,ii) + fid(2)
-          ef(3,1,ii) = ef(3,1,ii) + fid(3)
-          ef(1,2,ii) = ef(1,2,ii) + fip(1)
-          ef(2,2,ii) = ef(2,2,ii) + fip(2)
-          ef(3,2,ii) = ef(3,2,ii) + fip(3)
-c
-          ef(1,1,kk) = ef(1,1,kk) + fkd(1)
-          ef(2,1,kk) = ef(2,1,kk) + fkd(2)
-          ef(3,1,kk) = ef(3,1,kk) + fkd(3)
-          ef(1,2,kk) = ef(1,2,kk) + fkp(1)
-          ef(2,2,kk) = ef(2,2,kk) + fkp(2)
-          ef(3,2,kk) = ef(3,2,kk) + fkp(3)
-
+          do j = 1, 3
+             ef(j,1,ii) = ef(j,1,ii) + fid(j)
+             ef(j,1,kk) = ef(j,1,kk) + fkd(j)
+             ef(j,2,ii) = ef(j,2,ii) + fip(j)
+             ef(j,2,kk) = ef(j,2,kk) + fkp(j)
+          end do
         end do
 c
-c     reset interaction scaling coefficients for connected atoms
+c     reset exclusion coefficients for connected atoms
 c
-        do j = 1, n12(iglob)
-           pscale(i12(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n13(iglob)
-           pscale(i13(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n14(iglob)
-           pscale(i14(j,iglob)) = 1.0d0
-        end do
-        do j = 1, n15(iglob)
-           pscale(i15(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np11(iglob)
-           dscale(ip11(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np12(iglob)
-           dscale(ip12(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np13(iglob)
-           dscale(ip13(j,iglob)) = 1.0d0
-        end do
-        do j = 1, np14(iglob)
-           dscale(ip14(j,iglob)) = 1.0d0
-        end do
+         if (dpequal) then
+            do j = 1, n12(iglob)
+               pscale(i12(j,iglob)) = 1.0d0
+               dscale(i12(j,iglob)) = 1.0d0
+            end do
+            do j = 1, n13(iglob)
+               pscale(i13(j,iglob)) = 1.0d0
+               dscale(i13(j,iglob)) = 1.0d0
+            end do
+            do j = 1, n14(iglob)
+               pscale(i14(j,iglob)) = 1.0d0
+               dscale(i14(j,iglob)) = 1.0d0
+            end do
+            do j = 1, n15(iglob)
+               pscale(i15(j,iglob)) = 1.0d0
+               dscale(i15(j,iglob)) = 1.0d0
+            end do
+         else
+            do j = 1, n12(iglob)
+               pscale(i12(j,iglob)) = 1.0d0
+            end do
+            do j = 1, n13(iglob)
+               pscale(i13(j,iglob)) = 1.0d0
+            end do
+            do j = 1, n14(iglob)
+               pscale(i14(j,iglob)) = 1.0d0
+            end do
+            do j = 1, n15(iglob)
+               pscale(i15(j,iglob)) = 1.0d0
+            end do
+            do j = 1, np11(iglob)
+               dscale(ip11(j,iglob)) = 1.0d0
+            end do
+            do j = 1, np12(iglob)
+               dscale(ip12(j,iglob)) = 1.0d0
+            end do
+            do j = 1, np13(iglob)
+               dscale(ip13(j,iglob)) = 1.0d0
+            end do
+            do j = 1, np14(iglob)
+               dscale(ip14(j,iglob)) = 1.0d0
+            end do
+         end if
       end do
 c
       deallocate (dscale)
       deallocate (pscale)
-
       return
       end
-c
+
       subroutine tmatxb_group(nrhs,dodiag,mu,efi)
 c
 c     Compute the direct space contribution to the electric field due to the current value
 c     of the induced dipoles
 c
-      use sizes
       use atmlst
       use atoms
+      use bound
+      use chgpen
+      use couple
       use domdec
+      use ewald
       use group
       use math
       use mpole
@@ -805,157 +928,192 @@ c
       use shunt
       use mpi
       implicit none
-      integer i,nrhs,iglob,kglob,iipole,kkpole
-      integer iglobgroup,kglobgroup
+      integer i,nrhs,iglob,kglob,iipole,kkpole,kkpoleloc
+      integer kk,iglobgroup,kglobgroup
       real*8  mu(3,nrhs,npolegroup), efi(3,nrhs,npolegroup)
+      real*8 xr,yr,zr
+      real*8 r,r2,rr1,rr2
+      real*8 rr3,rr5
+      real*8 rr3ik,rr5ik
+      real*8 scalek
+      real*8 dmp3,dmp5
+      real*8 fid(3),fkd(3)
+      real*8 fip(3),fkp(3)
+      real*8 dmpik(7),dmpe(7)
+      real*8 dlocal(6)
+      real*8 duix,duiy,duiz
+      real*8 puix,puiy,puiz
+      real*8 dukx,duky,dukz
+      real*8 pukx,puky,pukz
+      real*8 alphai,alphak
+      real*8 pol
+      real*8, allocatable :: uscale(:)
+      real*8, allocatable :: wscale(:)
       logical dodiag
-      integer j, ii, kk, kkk, irhs
-      real*8  dx, dy, dz, d, d2, damp, expdamp, pgamma
-      real*8  scale3, scale5, pdi, pti, pol
-      real*8  rr3, rr5
-      real*8  dukx, duky, dukz, pukx, puky, pukz
-      real*8  puir, pukr,duir, dukr
-      real*8 duix, duiy, duiz, puix, puiy, puiz
-      real*8 fid(3), fip(3)
-      real*8 fkd(3), fkp(3)
-      real*8  zero, one, f50
-      real*8, allocatable :: dscale(:)
-      real*8  scale
-      save    zero, one, f50
-
-      zero = 0.0d0
-      one  = 1.0d0
-      f50  = 50.d0
-
+      logical shortrange
+      integer j, ii, kkk, irhs
 c
 c     initialize the result vector
 c
-      do i = 1, npolegroup
-        do irhs = 1, nrhs
-          do j = 1, 3
-            efi(j,irhs,i) = zero
-          end do
-        end do
-      end do
-      allocate (dscale(n))
-      do i = 1, n
-         dscale(i) = 1.0d0
-      end do
+      efi = 0d0
 c
-c     gather some parameters, then set up the damping factors.
+c     perform dynamic allocation of some local arrays
 c
+      allocate (uscale(n))
+      allocate (wscale(n))
+c
+c     set arrays needed to scale connected atom interactions
+c
+      uscale = 1.0d0
+      wscale = 1.0d0
 c
       do ii = 1, npolelocgroup
         iglobgroup = ipolegroup(poleglobgroup(ii))
         iglob = globglobgroup(iglobgroup)
         iipole = pollist(iglob)
-        pdi = pdamp(iipole)
-        pti = thole(iipole)
         duix = mu(1,1,ii)
         duiy = mu(2,1,ii)
         duiz = mu(3,1,ii)
         puix = mu(1,2,ii)
         puiy = mu(2,2,ii)
         puiz = mu(3,2,ii)
+        if (use_chgpen) then
+           alphai = palpha(iipole)
+        end if
+c
+c
+c     set exclusion coefficients for connected atoms
+c
+        do j = 1, n12(iglob)
+           wscale(i12(j,iglob)) = w2scale
+        end do
+        do j = 1, n13(iglob)
+           wscale(i13(j,iglob)) = w3scale
+        end do
+        do j = 1, n14(iglob)
+           wscale(i14(j,iglob)) = w4scale
+        end do
+        do j = 1, n15(iglob)
+           wscale(i15(j,iglob)) = w5scale
+        end do
         do j = 1, np11(iglob)
-           dscale(ip11(j,iglob)) = u1scale
+           uscale(ip11(j,iglob)) = u1scale
         end do
         do j = 1, np12(iglob)
-           dscale(ip12(j,iglob)) = u2scale
+           uscale(ip12(j,iglob)) = u2scale
         end do
         do j = 1, np13(iglob)
-           dscale(ip13(j,iglob)) = u3scale
+           uscale(ip13(j,iglob)) = u3scale
         end do
         do j = 1, np14(iglob)
-           dscale(ip14(j,iglob)) = u4scale
+           uscale(ip14(j,iglob)) = u4scale
         end do
-c
         do kkk = iglobgroup+1, npolegroup
           kglobgroup = ipolegroup(kkk)
           kglob = globglobgroup(kglobgroup)
           kkpole = pollist(kglob)
           kk = polelocgroup(kkk)
-          dx = x(kglob) - x(iglob)
-          dy = y(kglob) - y(iglob)
-          dz = z(kglob) - z(iglob)
-          d2 = dx*dx + dy*dy + dz*dz
+          xr = x(kglob) - x(iglob)
+          yr = y(kglob) - y(iglob)
+          zr = z(kglob) - z(iglob)
+          r2 = xr*xr + yr* yr + zr*zr
 c
 c     compute the distances and the scaling factors according to
 c     Thole's model.
 c
-          d  = sqrt(d2)
+          r = sqrt(r2)
+          rr1 = 1.0d0 / r
+          rr2 = rr1 * rr1
+          rr3 = rr2 * rr1
+          rr5 = 3.0d0 * rr2 * rr3
           dukx = mu(1,1,kk)
           duky = mu(2,1,kk)
           dukz = mu(3,1,kk)
           pukx = mu(1,2,kk)
           puky = mu(2,2,kk)
           pukz = mu(3,2,kk)
-c
-          scale = dscale(kglob)
-c
-          scale3 = scale
-          scale5 = scale
-          damp = pdi*pdamp(kkpole)
-          if (damp.ne.zero) then
-            pgamma = min(pti,thole(kkpole))
-            damp = -pgamma*(d/damp)**3
-            if (damp .gt. -f50) then
-              expdamp = exp(damp)
-              scale3 = scale3 * (one - expdamp)
-              scale5 = scale5 * (one - expdamp*(one - damp))
-            end if
+          if (use_chgpen) then
+             alphak = palpha(kkpole)
           end if
 c
-c     compute the field.
+c     calculate real space Ewald error function damping
 c
-          rr3 = -scale3 / (d*d2)
-          rr5 = -3.0d0 * scale5 / (d*d2*d2)
-          duir = dx*duix + dy*duiy + dz*duiz
-          dukr = dx*dukx + dy*duky + dz*dukz
-          puir = dx*puix + dy*puiy + dz*puiz
-          pukr = dx*pukx + dy*puky + dz*pukz
-
-          fid(1) = -rr3*dukx + rr5*dukr*dx
-          fid(2) = -rr3*duky + rr5*dukr*dy
-          fid(3) = -rr3*dukz + rr5*dukr*dz
-          fkd(1) = -rr3*duix + rr5*duir*dx
-          fkd(2) = -rr3*duiy + rr5*duir*dy
-          fkd(3) = -rr3*duiz + rr5*duir*dz
-          fip(1) = -rr3*pukx + rr5*pukr*dx
-          fip(2) = -rr3*puky + rr5*pukr*dy
-          fip(3) = -rr3*pukz + rr5*pukr*dz
-          fkp(1) = -rr3*puix + rr5*puir*dx
-          fkp(2) = -rr3*puiy + rr5*puir*dy
-          fkp(3) = -rr3*puiz + rr5*puir*dz
-
-          efi(1,1,ii)  = efi(1,1,ii)  + fid(1)
-          efi(1,2,ii)  = efi(1,2,ii)  + fip(1)
-          efi(2,1,ii)  = efi(2,1,ii)  + fid(2)
-          efi(2,2,ii)  = efi(2,2,ii)  + fip(2)
-          efi(3,1,ii)  = efi(3,1,ii)  + fid(3)
-          efi(3,2,ii)  = efi(3,2,ii)  + fip(3)
+          call dampewald (7,r,r2,1.0d0,dmpe)
 c
-          efi(1,1,kk) = efi(1,1,kk)  + fkd(1)
-          efi(1,2,kk) = efi(1,2,kk)  + fkp(1)
-          efi(2,1,kk) = efi(2,1,kk)  + fkd(2)
-          efi(2,2,kk) = efi(2,2,kk)  + fkp(2)
-          efi(3,1,kk) = efi(3,1,kk)  + fkd(3)
-          efi(3,2,kk) = efi(3,2,kk)  + fkp(3)
+c     find the field components for Thole polarization damping
+c
+          if (use_thole) then
+             call dampthole2 (iipole,kkpole,5,r,dmpik)
+             scalek = uscale(kglob)
+             dmp3 = -scalek*dmpik(3)*rr3
+             dmp5 = -scalek*dmpik(5)*rr5
+             dlocal(1) = -dmp3 + dmp5*xr*xr
+             dlocal(2) = dmp5*xr*yr
+             dlocal(3) = dmp5*xr*zr
+             dlocal(4) = -dmp3 + dmp5*yr*yr
+             dlocal(5) = dmp5*yr*zr
+             dlocal(6) = -dmp3 + dmp5*zr*zr
+c
+c     find the field components for charge penetration damping
+c
+          else if (use_chgpen) then
+             call dampmut (r,alphai,alphak,dmpik)
+             scalek = wscale(kglob)
+             rr3ik = -scalek*dmpik(3)*rr3
+             rr5ik = -scalek*dmpik(5)*rr5
+             dlocal(1) = -rr3ik + rr5ik*xr*xr
+             dlocal(2) = rr5ik*xr*yr
+             dlocal(3) = rr5ik*xr*zr
+             dlocal(4) = -rr3ik + rr5ik*yr*yr
+             dlocal(5) = rr5ik*yr*zr
+             dlocal(6) = -rr3ik + rr5ik*zr*zr
+          end if
+          fid(1) = dlocal(1)*dukx+dlocal(2)*duky+dlocal(3)*dukz
+          fid(2) = dlocal(2)*dukx+dlocal(4)*duky+dlocal(5)*dukz
+          fid(3) = dlocal(3)*dukx+dlocal(5)*duky+dlocal(6)*dukz
+          fkd(1) = dlocal(1)*duix+dlocal(2)*duiy+dlocal(3)*duiz
+          fkd(2) = dlocal(2)*duix+dlocal(4)*duiy+dlocal(5)*duiz
+          fkd(3) = dlocal(3)*duix+dlocal(5)*duiy+dlocal(6)*duiz
+
+          fip(1) = dlocal(1)*pukx+dlocal(2)*puky+dlocal(3)*pukz
+          fip(2) = dlocal(2)*pukx+dlocal(4)*puky+dlocal(5)*pukz
+          fip(3) = dlocal(3)*pukx+dlocal(5)*puky+dlocal(6)*pukz
+          fkp(1) = dlocal(1)*puix+dlocal(2)*puiy+dlocal(3)*puiz
+          fkp(2) = dlocal(2)*puix+dlocal(4)*puiy+dlocal(5)*puiz
+          fkp(3) = dlocal(3)*puix+dlocal(5)*puiy+dlocal(6)*puiz
+          do j = 1, 3
+             efi(j,1,ii) = efi(j,1,ii) + fid(j)
+             efi(j,1,kk) = efi(j,1,kk) + fkd(j)
+             efi(j,2,ii) = efi(j,2,ii) + fip(j)
+             efi(j,2,kk) = efi(j,2,kk) + fkp(j)
+          end do
         end do
 c
 c     reset interaction scaling coefficients for connected atoms
 c
+        do j = 1, n12(iglob)
+           wscale(i12(j,iglob)) = 1.0d0
+        end do
+        do j = 1, n13(iglob)
+           wscale(i13(j,iglob)) = 1.0d0
+        end do
+        do j = 1, n14(iglob)
+           wscale(i14(j,iglob)) = 1.0d0
+        end do
+        do j = 1, n15(iglob)
+           wscale(i15(j,iglob)) = 1.0d0
+        end do
         do j = 1, np11(iglob)
-           dscale(ip11(j,iglob)) = 1.0d0
+           uscale(ip11(j,iglob)) = 1.0d0
         end do
         do j = 1, np12(iglob)
-           dscale(ip12(j,iglob)) = 1.0d0
+           uscale(ip12(j,iglob)) = 1.0d0
         end do
         do j = 1, np13(iglob)
-           dscale(ip13(j,iglob)) = 1.0d0
+           uscale(ip13(j,iglob)) = 1.0d0
         end do
         do j = 1, np14(iglob)
-           dscale(ip14(j,iglob)) = 1.0d0
+           uscale(ip14(j,iglob)) = 1.0d0
         end do
       end do
       if(dodiag) then
@@ -986,7 +1144,8 @@ c
 c
 c     perform deallocation of some local arrays
 c
-      deallocate (dscale)
+      deallocate (uscale)
+      deallocate (wscale)
       return
       end
 

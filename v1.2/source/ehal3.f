@@ -24,10 +24,10 @@ c
       use potent
       use vdwpot
       use mpi
-
       implicit none
       integer i
       real*8 elrc,aelrc
+      character*11 mode
 c
 c     evaluate pairwise interactions
 c
@@ -36,7 +36,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr (elrc)
+         mode = 'VDW'
+         call evcorr (mode,elrc)
          ev = ev + elrc
          aelrc = elrc / dble(n)
          do i = 1, nbloc
@@ -108,7 +109,7 @@ c
       logical muti,mutk,mutik
       logical header,huge
       logical testcut,shortrange,longrange,fullrange
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
 c
 

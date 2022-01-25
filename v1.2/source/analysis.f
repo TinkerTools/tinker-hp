@@ -40,6 +40,12 @@ c
       allocate (aep(nbloc))
       if (allocated(aev)) deallocate (aev)
       allocate (aev(nbloc))
+      if (allocated(aer)) deallocate (aer)
+      allocate (aer(nbloc))
+      if (allocated(aedsp)) deallocate (aedsp)
+      allocate (aedsp(nbloc))
+      if (allocated(aect)) deallocate (aect)
+      allocate (aect(nbloc))
       if (allocated(aeb)) deallocate (aeb)
       allocate (aeb(nbloc))
       if (allocated(aea)) deallocate (aea)
@@ -82,6 +88,9 @@ c
       ep = 0.0d0
       eb = 0.0d0
       ev = 0.0d0
+      er = 0.0d0
+      edsp = 0.0d0
+      ect = 0.0d0
       ea = 0.0d0
       eba = 0.0d0
       eub = 0.0d0
@@ -103,6 +112,9 @@ c
       aem = 0.0d0
       aep = 0.0d0
       aev = 0.0d0
+      aer = 0.0d0
+      aedsp = 0.0d0
+      aect = 0.0d0
       aea = 0.0d0
       aeb = 0.0d0
       aub = 0.0d0
@@ -122,6 +134,10 @@ c
 c     zero out the total intermolecular energy
 c
       einter = 0.0d0
+c
+c     alter partial charges and multipoles for charge flux
+c
+      if (use_chgflx)  call alterchg
 c
 c     call the local geometry energy component routines
 c
@@ -146,12 +162,16 @@ c
          if (vdwtyp .eq. 'LENNARD-JONES')  call elj3
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3
       end if
+      if (use_repuls)  call erepel3
+      if (use_disp)  call edisp3
 c
 c     call the electrostatic energy component routines
 c
       if (use_charge) call echarge3
       if (use_mpole)  call empole3
       if (use_polar)  call epolar3
+
+      if (use_chgtrn)  call echgtrn3
 c
 c     call any miscellaneous energy component routines
 c
@@ -176,6 +196,18 @@ c
         call MPI_REDUCE(MPI_IN_PLACE,ev,1,MPI_REAL8,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nev,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,er,1,MPI_REAL8,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,ner,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,edsp,1,MPI_REAL8,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,nedsp,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,ect,1,MPI_REAL8,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,nect,1,MPI_INT,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eb,1,MPI_REAL8,MPI_SUM,0,
      $     COMM_TINKER,ierr)
@@ -260,6 +292,18 @@ c
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(nev,nev,1,MPI_INT,MPI_SUM,0,
      $     COMM_TINKER,ierr)
+        call MPI_REDUCE(er,er,1,MPI_REAL8,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(ner,ner,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(edsp,edsp,1,MPI_REAL8,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(nedsp,nedsp,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(ect,ect,1,MPI_REAL8,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(nect,nect,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
         call MPI_REDUCE(eb,eb,1,MPI_REAL8,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(neb,neb,1,MPI_INT,MPI_SUM,0,
@@ -331,15 +375,15 @@ c
 c     sum up to give the total potential energy
 c
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
-     &          + et + ept + eat + ebt + ett + ev + em
+     &          + et + ept + eat + ebt + ett + ev + er + edsp + ect+ em
      &          + ec + ep +  eg + ex
       energy = esum
 c
 c     sum up to give the total potential energy per atom
 c
-      aesum = aem + aec + aep + aev + aeb + aea + aeba + aub + aeaa +
-     $ aeopb + aeopd + aeid + aeit + aet + aept + aebt + aeat + aett 
-     $ + aeg + aex
+      aesum = aem + aec + aep + aev + aer + aedsp + aect + aeb + aea 
+     $ + aeba + aub + aeaa + aeopb + aeopd + aeid + aeit + aet + aept 
+     $ + aeat +  aebt + aett + aeg + aex
 c
 c     check for an illegal value for the total energy
 c

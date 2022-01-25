@@ -70,6 +70,10 @@ c
         commloc = COMM_TINKER
       end if
 c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
 c     dynamic allocation of global arrays
 c
       if (allocated(fphirec)) deallocate(fphirec)

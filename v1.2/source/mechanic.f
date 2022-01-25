@@ -19,7 +19,6 @@ c
       use inform
       use iounit
       use potent
-      use vdwpot
       use mpi
       implicit none
 c
@@ -86,8 +85,16 @@ c
       call kvdw(.true.,0)
       call kmpole(.true.,0)
       call kpolar(.true.,0)
+
+      call kchgtrn(.true.,0)
+      call kchgflx
 c
       if (use_polar) call initmpipme
+c
+c     assign repulsion and dispersion parameters
+c
+      call krepel 
+      call kdisp(.true.,0) 
 c
 c     assign restraint parameters
 c
@@ -131,7 +138,9 @@ c
       if (use_charge) call kcharge(.false.,istep)
       if (use_mpole) call kmpole(.false.,istep)
       if (use_polar) call kpolar(.false.,istep)
+      if (use_chgtrn) call kchgtrn(.false.,istep)
       if (use_vdw) call kvdw(.false.,istep)
+      if (use_disp) call kdisp(.false.,istep)
       if (use_strbnd) call kstrbnd(.false.)
       if (use_urey) call kurey(.false.)
       if (use_angang) call kangang(.false.)
@@ -186,6 +195,8 @@ c      call molecule(.false.)
         if (use_mpole) call kmpole(.false.,istep)
         if (use_polar) call kpolar(.false.,istep)
         if (use_vdw) call kvdw(.false.,istep)
+        if (use_disp) call kdisp(.false.,istep)
+        if (use_chgtrn) call kchgtrn(.false.,istep)
         if ((istep.ne.-1).and.use_polar) call initmpipme
 c
 c     set holonomic constrains
@@ -233,11 +244,14 @@ c      call molecule(.false.)
         if (use_mpole) call kmpole(.false.,istep)
         if (use_polar) call kpolar(.false.,istep)
         if (use_vdw) call kvdw(.false.,istep)
+        if (use_chgtrn) call kchgtrn(.false.,istep)
       else if (rule.eq.2) then
         if (use_charge) call kcharge(.false.,istep)
         if (use_mpole) call kmpole(.false.,istep)
         if (use_polar) call kpolar(.false.,istep)
         if (use_vdw) call kvdw(.false.,istep)
+        if (use_disp) call kdisp(.false.,istep)
+        if (use_chgtrn) call kchgtrn(.false.,istep)
         if ((istep.ne.-1).and.use_polar) call initmpipme
 c
 c     set holonomic constrains

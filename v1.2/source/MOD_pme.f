@@ -26,9 +26,14 @@ c     qfac_2d       prefactors for particle mesh Ewald charge grid
 c     nfft1      number of grid points along the a-axis direction
 c     nfft2      number of grid points along the b-axis direction
 c     nfft3      number of grid points along the c-axis direction
-c     bsorder    order of the PME B-spline approximation
+c     bsorder    order of the PME B-spline approximation 
+c     bseorder   order of the electrostatic PME B-spline values
+c     bsporder   order of the polarization PME B-spline values
+c     bsdorder   order of the dispersion PME B-spline values
 c     cphirec    permanent electric fields, cartesian coordinates
-c     cphirec    permanent electric fields, fractional coordinates
+c     fphirec    permanent electric fields, fractional coordinates
+c     cphidprec    dipolar electric fields, cartesian coordinates
+c     fphidprec    dipolar electric fields, fractional coordinates
 c     igrid      initial Ewald charge grid values for B-spline
 c
 c
@@ -38,7 +43,10 @@ c
       integer maxorder
       parameter (maxorder=20)
       integer nfft1,nfft2,nfft3
-      integer bsorder
+      integer nefft1,nefft2,nefft3
+      integer ndfft1,ndfft2,ndfft3
+      integer bsorder,bseorder
+      integer bsporder,bsdorder
       real*8 bsmod1(maxfft),bsmod2(maxfft),bsmod3(maxfft)
       real*8, allocatable :: thetai1(:,:,:)
       real*8, allocatable :: thetai2(:,:,:)
@@ -49,6 +57,7 @@ c
       real*8, allocatable :: qgrid2out_2d(:,:,:,:)
       real*8, allocatable :: qfac_2d(:,:,:)
       real*8, allocatable :: cphirec(:,:),fphirec(:,:)
+      real*8, allocatable :: cphidprec(:,:),fphidprec(:,:)
       integer, allocatable :: igrid(:,:)
       save
       end

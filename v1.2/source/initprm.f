@@ -20,6 +20,7 @@ c
       use bndpot
       use atoms
       use chgpot
+      use ctrpot
       use divcon
       use fields
       use kanang
@@ -28,6 +29,9 @@ c
       use katoms
       use kbonds
       use kchrge
+      use kcpen
+      use kctrn
+      use kdsp
       use khbond
       use kiprop
       use kitors
@@ -38,6 +42,7 @@ c
       use kmulti
       use kpitor
       use kpolr
+      use krepl
       use kstbnd
       use ksttor
       use ktorsn
@@ -49,6 +54,8 @@ c
       use merck
       use mplpot
       use polpot
+      use potent
+      use reppot
       use torpot
       use units
       use urypot
@@ -152,30 +159,9 @@ c
       do i = 1, maxntt
          ktt(i) = blank20
       end do
-c      do i = 1, maxnd
-c         kd(i) = blank8
-c      end do
-c      do i = 1, maxnd5
-c         kd5(i) = blank8
-c      end do
-c      do i = 1, maxnd4
-c         kd4(i) = blank8
-c      end do
-c      do i = 1, maxnd3
-c         kd3(i) = blank8
-c      end do
       do i = 1, maxnmp
          kmp(i) = blank12
       end do
-c      do i = 1, maxnpi
-c         kpi(i) = blank8
-c      end do
-c      do i = 1, maxnpi5
-c         kpi5(i) = blank8
-c      end do
-c      do i = 1, maxnpi4
-c         kpi4(i) = blank8
-c      end do
 c
 c     initialize values of some force field parameters
 c
@@ -195,6 +181,7 @@ c
          chg(i) = 0.0d0
          polr(i) = 0.0d0
          athl(i) = 0.0d0
+         ddir(i) = 0.0d0
          do j = 1, maxvalue
             pgrp(j,i) = 0
          end do
@@ -209,9 +196,15 @@ c
          do j = 1, 3
             anan(j,i) = 0.0d0
          end do
-c         electron(i) = 0.0d0
-c         ionize(i) = 0.0d0
-c         repulse(i) = 0.0d0
+         prsiz(i) = 0.0d0
+         prdmp(i) = 0.0d0
+         prele(i) = 0.0d0
+         dspsix(i) = 0.0d0
+         dspdmp(i) = 0.0d0
+         cpele(i) = 0.0d0
+         cpalp(i) = 0.0d0
+         ctchg(i) = 0.0d0
+         ctdmp(i) = 0.0d0
       end do
       do i = 1, maxbio
          biotyp(i) = 0
@@ -372,6 +365,13 @@ c
       v5scale = 1.0d0
       use_vcorr = .false.
 c
+c     set default control parameters for repulsion terms
+c
+      r2scale = 0.0d0
+      r3scale = 0.0d0
+      r4scale = 1.0d0
+      r5scale = 1.0d0
+c
 c     set default control parameters for charge-charge terms
 c
       electric = coulomb
@@ -383,6 +383,22 @@ c
       c5scale = 1.0d0
       neutnbr = .false.
       neutcut = .false.
+c
+c     set default control parameters for polarizable multipoles
+c
+      pentyp = 'GORDON1'
+      m2scale = 0.0d0
+      m3scale = 0.0d0
+      m4scale = 1.0d0
+      m5scale = 1.0d0
+      p2scale = 0.0d0
+      p3scale = 0.0d0
+      p4scale = 1.0d0
+      p5scale = 1.0d0
+      p2iscale = 0.0d0
+      p3iscale = 0.0d0
+      p4iscale = 0.5d0
+      p5iscale = 1.0d0
 c
 c     set default control parameters for polarizable multipoles
 c
@@ -425,6 +441,14 @@ c
       u2scale = 1.0d0
       u3scale = 1.0d0
       u4scale = 1.0d0
+      w2scale = 1.0d0
+      w3scale = 1.0d0
+      w4scale = 1.0d0
+      w5scale = 1.0d0
+      use_chgpen = .false.
+      use_thole = .true.
+      use_dirdamp = .false.
+      dpequal = .false.
 c
 c     set default divide and conquer ji/diis parameters
 c
@@ -432,5 +456,9 @@ c
       precomp = 0
       nocomdiis = 0
       natprblk = 60
+c
+c     set default control parameters for charge transfer terms
+c
+      ctrntyp = 'SEPARATE'
       return
       end

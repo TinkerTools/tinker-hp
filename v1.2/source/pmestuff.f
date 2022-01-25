@@ -1781,3 +1781,118 @@ c
       end do
       return
       end
+c
+c     #######################################################################
+c     ##                                                                   ##
+c     ##  subroutine grid_disp_site  --  put dispersion sites on PME grid  ##
+c     ##                                                                   ##
+c     #######################################################################
+c
+c
+c     "grid_disp_site" places the i-th damped dispersion coefficients onto
+c     the particle mesh Ewald grid
+c
+c
+      subroutine grid_disp_site(isite,impi)
+      use atoms
+      use disp
+      use domdec
+      use chunks
+      use fft
+      use pme
+      use potent
+      implicit none
+      integer istart,iend,jstart,jend,kstart,kend
+      integer istart3,iend3,jstart3,jend3,kstart3,kend3
+      integer i,j,k,m,impi,rankloc
+      integer ii,jj,kk
+      integer iproc,proc
+      integer ichk,isite,iatm
+      integer offsetx,offsety
+      integer offsetz
+      integer cid(3)
+      integer nearpt(3)
+      integer abound(6)
+      integer cbound(6)
+      real*8 v0,u0,t0
+      real*8 term
+
+      if (use_pmecore) then
+        rankloc  = rank_bis
+      else
+        rankloc  = rank
+      end if
+      kstart = kstart1(rankloc+1)
+      kend = kend1(rankloc+1)
+      jstart = jstart1(rankloc+1)
+      jend = jend1(rankloc+1)
+      istart = istart1(rankloc+1)
+      iend = iend1(rankloc+1)
+c
+      iatm = isite
+      nearpt(1) = igrid(1,iatm) + grdoff
+      nearpt(2) = igrid(2,iatm) + grdoff
+      nearpt(3) = igrid(3,iatm) + grdoff
+      abound(1) = nearpt(1) - nlpts
+      abound(2) = nearpt(1) + nrpts
+      abound(3) = nearpt(2) - nlpts
+      abound(4) = nearpt(2) + nrpts
+      abound(5) = nearpt(3) - nlpts
+      abound(6) = nearpt(3) + nrpts
+      call adjust (offsetx,nfft1,1,abound(1),
+     &               abound(2),cbound(1),cbound(2))
+      call adjust (offsety,nfft2,1,abound(3),
+     &               abound(4),cbound(3),cbound(4))
+      call adjust (offsetz,nfft3,1,abound(5),
+     &               abound(6),cbound(5),cbound(6))
+      do kk = abound(5), abound(6)
+         k = kk
+         m = k + offsetz
+         if (k .lt. 1)  k = k + nfft3
+         v0 = thetai3(1,m,impi) * csix(isite)
+         do jj = abound(3), abound(4)
+            j = jj
+            m = j + offsety
+            if (j .lt. 1)  j = j + nfft2
+            u0 = thetai2(1,m,impi)
+            term = v0 * u0
+            do ii = abound(1), abound(2)
+               i = ii
+               m = i + offsetx
+               if (i .lt. 1)  i = i + nfft1
+               t0 = thetai1(1,m,impi)
+c
+               if (((k.ge.kstart).and.(k.le.kend)).and.
+     $           ((j.ge.jstart).and.(j.le.jend)).and.
+     $           ((i.ge.istart).and.(i.le.iend))) then
+                 qgridin_2d(1,i-istart+1,j-jstart+1,k-kstart+1,1) =
+     $             qgridin_2d(1,i-istart+1,j-jstart+1,k-kstart+1,1)
+     $             + term*t0 
+                 goto 10
+               end if
+
+               do iproc = 1, nrec_send
+                 proc = prec_send(iproc)
+                 kstart3 = kstart1(proc+1)
+                 kend3 = kend1(proc+1)
+                 jstart3 = jstart1(proc+1)
+                 jend3 = jend1(proc+1)
+                 istart3 = istart1(proc+1)
+                 iend3 = iend1(proc+1)
+                 if (((k.ge.kstart3).and.(k.le.kend3)).and.
+     $             ((j.ge.jstart3).and.(j.le.jend3)).and.
+     $             ((i.ge.istart3).and.(i.le.iend3))) then
+                   qgridin_2d(1,i-istart3+1,j-jstart3+1,k-kstart3+1,
+     $               iproc+1) = qgridin_2d(1,i-istart3+1,j-jstart3+1,
+     $               k-kstart3+1,iproc+1) + term*t0
+                   goto 10
+                 end if
+               end do
+ 10            continue
+
+            end do
+         end do
+      end do
+c
+      return
+      end

@@ -17,12 +17,15 @@ c
       subroutine kmpole(init,istep)
       use sizes
       use atmlst
+      use atmtyp
       use atoms
+      use chgpen
       use couple
       use cutoff
       use domdec
       use inform
       use iounit
+      use kcpen
       use keys
       use kmulti
       use mpole
@@ -39,7 +42,7 @@ c
       integer iproc,iglob,polecount
       integer ji,ki,li
       integer it,jt,kt,lt
-      integer imp,nmp
+      integer ic,imp,nmp
       integer size,next
       integer number
       integer kz,kx,ky
@@ -48,8 +51,8 @@ c
       integer, allocatable :: mpz(:)
       integer, allocatable :: mpx(:)
       integer, allocatable :: mpy(:)
+      real*8 pel,pal
       real*8 mpl(13)
-      real*8 emtp1,emtp2,emtp3
       real*8 d
       logical header,path
       character*4 pa,pb,pc,pd
@@ -88,6 +91,13 @@ c
         allocate (uinp(3,n))
         uind = 0d0
         uinp = 0d0
+
+        vmxx = 0d0
+        vmxy = 0d0
+        vmxz = 0d0
+        vmyy = 0d0
+        vmyz = 0d0
+        vmzz = 0d0
 c
 c       deallocate global pointers if necessary
 c
@@ -251,29 +261,6 @@ c
            end if
         end do
 c
-c    find and count new sibfacp parameters in the keyfile
-c
-        do i = 1, nkey
-          next = 1
-          record = keyline(i)
-          call gettext (record,keyword,next)
-          call upcase (keyword)
-          if (keyword(1:8) .eq. 'SIBFACP ') then
-            ia = 0
-            emtp1 = 0.0d0
-            emtp2 = 0.0d0
-            emtp3 = 0.0d0
-            string = record(next:240)
-            read (string,*,err=220,end=220) ia,emtp1,emtp2,emtp3
-            if (ia.ne.0) then
-              sibfacp(1,ia) = emtp1
-              sibfacp(2,ia) = emtp2
-              sibfacp(3,ia) = emtp3
-            end if
-  220       continue
-          end if
-        end do
-c
 c       zero out local axes, multipoles and polarization attachments
 c
         npole = 0
@@ -290,27 +277,7 @@ c
            np12(i) = 0
            np13(i) = 0
            np14(i) = 0
-           if (use_emtp) then
-             alphapen(i) = 0.0d0
-             betapen(i)  = 0.0d0
-             gammapen(i) = 0.0d0
-           end if
         end do
-c
-c     assign sibfacp parameters
-c
-        if (use_emtp) then
-          do i = 1, n
-            it = type(i)
-            do k = 1, maxtyp
-              if (it.eq.k) then
-                alphapen(i) = sibfacp(1,k)
-                betapen(i)  = sibfacp(2,k)
-                gammapen(i) = sibfacp(3,k)
-              end if
-            end do
-          end do
-        end if
 c
 c       perform dynamic allocation of some local arrays
 c
@@ -590,10 +557,93 @@ c
            polsiz(i) = size
         end do
 c
+c     find new charge penetration parameters in the keyfile
+c
+        header = .true.
+        do i = 1, nkey
+           next = 1
+           record = keyline(i)
+           call gettext (record,keyword,next)
+           call upcase (keyword)
+           if (keyword(1:7) .eq. 'CHGPEN ') then
+              k = 0
+              pel = 0.0d0
+              pal = 0.0d0
+              string = record(next:240)
+              read (string,*,err=340,end=340)  k,pel,pal
+              cpele(k) = abs(pel)
+              cpalp(k) = pal
+              if (header .and. .not.silent) then
+                 header = .false.
+                 write (iout,320)
+  320            format (/,' Additional Charge Penetration Parameters :',
+     &                   //,5x,'Atom Class',11x,'Core Chg',11x,'Damp',/)
+              end if
+              if (.not. silent) then
+                 write (iout,330)  k,pel,pal
+  330            format (6x,i6,7x,f15.3,f15.4)
+              end if
+  340         continue
+           end if
+        end do
+c
+c     assign the charge penetration charge and alpha parameters 
+c     
+        ncp = 0
+        do i = 1, n
+           pcore(i) = 0.0d0
+           pval(i) = pole(1,i)
+           pval0(i) = pval(i)
+           palpha(i) = 0.0d0
+           ic = class(i)
+           if (ic .ne. 0) then
+              pcore(i) = cpele(ic)
+              pval(i) = pole(1,i) - cpele(ic)
+              pval0(i) = pval(i)
+              palpha(i) = cpalp(ic)
+           end if
+        end do
+c
+c     process keywords with charge penetration for specific atoms
+c
+        header = .true.
+        do i = 1, nkey
+           next = 1
+           record = keyline(i)
+           call gettext (record,keyword,next)
+           call upcase (keyword)
+           if (keyword(1:7) .eq. 'CHGPEN ') then
+              k = 0
+              pel = 0.0d0
+              pal = 0.0d0
+              string = record(next:240)
+              read (string,*,err=370,end=370)  k,pel,pal
+              if (k.lt.0 .and. k.ge.-n) then
+                 k = -k
+                 pcore(k) = abs(pel)
+                 pval(k) = pole(1,k) - abs(pel)
+                 palpha(k) = pal
+                 if (header .and. .not.silent) then
+                    header = .false.
+                    write (iout,350)
+  350               format (/,' Additional Charge Penetration',
+     &                         ' for Specific Atoms :',
+     &                      //,5x,'Atom',17x,'Core Chg',11x,'Damp',/)
+                 end if
+                 if (.not. silent) then
+                    write (iout,360)  k,pel,pal
+  360               format (6x,i6,7x,f15.3,f15.4)
+                 end if
+              end if
+  370         continue
+           end if
+        end do
+c
 c       remove any zero or undefined atomic multipoles
 c
-        if (.not.use_polar) then
+        if ((.not.use_polar).and.(.not.use_chgtrn)) then
            npole = 0
+           ncp = 0
            do i = 1, n
               if (polsiz(i) .ne. 0) then
                  nbpole(i) = npole
@@ -607,21 +657,24 @@ c
                  do j = 1, maxpole
                     pole(j,npole) = pole(j,i)
                  end do
-                 if (use_emtp) then
-                   alphapen(npole) = alphapen(i)
-                   betapen(npole) = betapen(i)
-                   gammapen(npole) = gammapen(i)
-                 end if
+                 mono0(npole) = pole(1,i)
+                 if (palpha(i) .ne. 0.0d0)  ncp = ncp + 1
+                 pcore(npole) = pcore(i)
+                 pval(npole) = pval(i)
+                 pval0(npole) = pval(i)
+                 palpha(npole) = palpha(i)
               end if
            end do
          end if
 c
 c       test multipoles at chiral sites and invert if necessary
 c
-        if (use_mpole .and. .not. use_polar) call chkpole(.true.)
+        if (use_mpole .and. .not.use_polar .and. .not.use_chgtrn)
+     &   call chkpole(.true.)
 c
  230    call MPI_BARRIER(hostcomm,ierr)
         call MPI_BCAST(npole,1,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(ncp,1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(xaxis,n,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(yaxis,n,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(zaxis,n,MPI_INT,0,hostcomm,ierr)
@@ -629,6 +682,7 @@ c
         if (npole .eq.0)  then
           use_mpole = .false.
         end if
+        if (ncp .ne. 0)  use_chgpen = .true.
 c
 c       if polarization not used, zero out induced dipoles
 c
@@ -768,6 +822,7 @@ c     parameter arrays
 c
       subroutine dealloc_shared_mpole
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use chgpen
       use mpole
       use polgrp
       use mpi
@@ -785,6 +840,11 @@ c
         CALL MPI_Win_shared_query(winpole, 0, windowsize, disp_unit,
      $  baseptr, ierr)
         CALL MPI_Win_free(winpole,ierr)
+      end if
+      if (associated(mono0)) then
+        CALL MPI_Win_shared_query(winmono0, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winmono0,ierr)
       end if
       if (associated(polaxe)) then
         CALL MPI_Win_shared_query(winpolaxe, 0, windowsize, disp_unit,
@@ -805,6 +865,26 @@ c
         CALL MPI_Win_shared_query(winnbpole, 0, windowsize, disp_unit,
      $  baseptr, ierr)
         CALL MPI_Win_free(winnbpole,ierr)
+      end if
+      if (associated(pcore)) then
+        CALL MPI_Win_shared_query(winpcore, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winpcore,ierr)
+      end if
+      if (associated(pval)) then
+        CALL MPI_Win_shared_query(winpval, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winpval,ierr)
+      end if
+      if (associated(pval0)) then
+        CALL MPI_Win_shared_query(winpval0, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winpval0,ierr)
+      end if
+      if (associated(palpha)) then
+        CALL MPI_Win_shared_query(winpalpha, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winpalpha,ierr)
       end if
       if (associated(ip11)) then
         CALL MPI_Win_shared_query(winip11, 0, windowsize, disp_unit,
@@ -856,6 +936,7 @@ c
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
       use sizes
       use atoms
+      use chgpen
       use domdec
       use mpole
       use polgrp
@@ -912,6 +993,29 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,pole,arrayshape2)
+c
+c     mono0
+c
+      arrayshape=(/n/)
+      if (hostrank == 0) then
+        windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winmono0, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winmono0, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,mono0,arrayshape)
 c
 c     polaxe
 c
@@ -1004,6 +1108,98 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,nbpole,arrayshape)
+c
+c     pcore
+c
+      arrayshape=(/n/)
+      if (hostrank == 0) then
+        windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winpcore, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winpcore, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,pcore,arrayshape)
+c
+c     pval
+c
+      arrayshape=(/n/)
+      if (hostrank == 0) then
+        windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winpval, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winpval, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,pval,arrayshape)
+c
+c     pval0
+c
+      arrayshape=(/n/)
+      if (hostrank == 0) then
+        windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winpval0, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winpval0, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,pval0,arrayshape)
+c
+c     palpha
+c
+      arrayshape=(/n/)
+      if (hostrank == 0) then
+        windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winpalpha, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winpalpha, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,palpha,arrayshape)
 c
 c     ip11
 c

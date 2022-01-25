@@ -15,6 +15,8 @@ c
 c     pole      multipole values for each site in the local frame
 c     winpole    window object corresponding to pole
 c     rpole     multipoles rotated to the global coordinate system
+c     mono0     original atomic monopole values for charge flux
+c     winmono0    window object corresponding to mono0
 c
 c     npole     total number of multipole sites in the system
 c     npoleloc  local number of multipole sites in the system
@@ -59,6 +61,8 @@ c
       integer, allocatable :: zaxis(:),xaxis(:),yaxis(:)
       integer :: winnbpole
       real*8, allocatable :: rpole(:,:)
+      real*8, pointer :: mono0(:)
+      integer :: winmono0
       real*8, pointer :: pole(:,:)
       real*8, pointer :: alphapen(:),betapen(:),gammapen(:)
       integer :: winpole,winalphapen,winbetapen,wingammapen

@@ -19,12 +19,13 @@ c     M. P. Allen and D. J. Tildesley, "Computer Simulation of
 c     Liquids, 2nd Ed.", Oxford University Press, 2017, Section 2.8
 c
 c
-      subroutine evcorr (elrc)
+      subroutine evcorr (mode,elrc)
       use atmtyp
       use atoms
       use bound
       use boxes
       use domdec
+      use kdsp
       use math
       use mutant
       use potent
@@ -43,10 +44,10 @@ c
       real*8 rv,rv2,rv6,rv7
       real*8 r,r2,r3,r4
       real*8 r5,r6,r7
-      real*8 p,p6,p12
+      real*8 cik,p,p6,p12
       real*8 rho,tau,tau7
       real*8 expterm
-      character*10 mode
+      character*11 mode
 c
 c
 c     zero out the long range van der Waals correction
@@ -63,7 +64,6 @@ c
 c
 c     set the coefficients for the switching function
 c
-      mode = 'VDW'
       call switch (mode)
 c
 c     set number of steps and range for numerical integration
@@ -118,11 +118,15 @@ c
                fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
             end if
             if (k .eq. i)  fik = 0.5d0 * fik
-            rv = radmin(kt,it)
-            eps = epsilon(kt,it)
-            rv2 = rv * rv
-            rv6 = rv2 * rv2 * rv2
-            rv7 = rv6 * rv
+            if (use_disp) then
+               cik = dspsix(it) * dspsix(kt)
+            else
+              rv = radmin(kt,it)
+              eps = epsilon(kt,it)
+              rv2 = rv * rv
+              rv6 = rv2 * rv2 * rv2
+              rv7 = rv6 * rv
+            end if
             etot = 0.0d0
             do j = 1, ndelta
                r = offset + dble(j)*rdelta
@@ -131,7 +135,9 @@ c
                r6 = r3 * r3
                r7 = r6 * r
                e = 0.0d0
-               if (vdwtyp .eq. 'LENNARD-JONES') then
+               if (use_disp) then
+                  e = -cik / r6
+               else if (vdwtyp .eq. 'LENNARD-JONES') then
                   p6 = rv6 / r6
                   p12 = p6 * p6
                   e = eps * (p12 - 2.0d0*p6)
@@ -184,12 +190,13 @@ c     M. P. Allen and D. J. Tildesley, "Computer Simulation of
 c     Liquids, 2nd Ed.", Oxford University Press, 2017, Section 2.8
 c
 c
-      subroutine evcorr1 (elrc,vlrc)
+      subroutine evcorr1 (mode,elrc,vlrc)
       use atmtyp
       use atoms
       use bound
       use boxes
       use domdec
+      use kdsp
       use math
       use mutant
       use potent
@@ -210,11 +217,11 @@ c
       real*8 rv,rv2,rv6,rv7
       real*8 r,r2,r3,r4
       real*8 r5,r6,r7
-      real*8 p,p6,p12
+      real*8 cik,p,p6,p12
       real*8 rho,tau,tau7
       real*8 dtau,gtau
       real*8 rvterm,expterm
-      character*10 mode
+      character*11 mode
 c
 c
 c     zero out the long range van der Waals corrections
@@ -232,7 +239,6 @@ c
 c
 c     set the coefficients for the switching function
 c
-      mode = 'VDW'
       call switch (mode)
 c
 c     set number of steps and range for numerical integration
@@ -287,11 +293,15 @@ c
                fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
             end if
             if (k .eq. i)  fik = 0.5d0 * fik
-            rv = radmin(kt,it)
-            eps = epsilon(kt,it)
-            rv2 = rv * rv
-            rv6 = rv2 * rv2 * rv2
-            rv7 = rv6 * rv
+            if (use_disp) then
+               cik = dspsix(it) * dspsix(kt)
+            else
+               rv = radmin(kt,it)
+               eps = epsilon(kt,it)
+               rv2 = rv * rv
+               rv6 = rv2 * rv2 * rv2
+               rv7 = rv6 * rv
+            end if
             etot = 0.0d0
             vtot = 0.0d0
             do j = 1, ndelta
@@ -302,7 +312,10 @@ c
                r7 = r6 * r
                e = 0.0d0
                de = 0.0d0
-               if (vdwtyp .eq. 'LENNARD-JONES') then
+               if (use_disp) then
+                  e = -cik / r6
+                  de = 6.0d0 * cik / r7
+               else if (vdwtyp .eq. 'LENNARD-JONES') then
                   p6 = rv6 / r6
                   p12 = p6 * p6
                   e = eps * (p12 - 2.0d0*p6)

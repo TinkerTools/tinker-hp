@@ -23,10 +23,10 @@ c
       use iounit
       use potent
       use vdwpot
-
       implicit none
       integer i
       real*8 elrc,aelrc
+      character*11 mode
 c
 c     evaluate pairwise interactions
 c
@@ -35,7 +35,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr (elrc)
+         mode = 'VDW'
+         call evcorr (mode,elrc)
          ev = ev + elrc
          aelrc = elrc / dble(n)
          do i = 1, nbloc
@@ -104,7 +105,7 @@ c
       real*8 s,ds,vdwshortcut2,facts
       logical header,huge
       logical testcut,shortrange,longrange,fullrange
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
 c
 
@@ -147,7 +148,6 @@ c
 c
 c     set the coefficients for the switching function
 c
-c     mode = 'VDW'
       call switch (mode)
       vdwshortcut2 = (vdwshortcut-shortheal)**2
 c

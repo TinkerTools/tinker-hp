@@ -17,6 +17,7 @@ c
       subroutine kpolar(init,istep)
       use atmlst
       use atoms
+      use chgpen
       use cutoff
       use domdec
       use inform
@@ -154,11 +155,13 @@ c
         do i = 1, n
            polarity(i) = 0.0d0
            thole(i) = 0.0d0
+           dirdamp(i) = 0.0d0
            pdamp(i) = 0.0d0
            it = type(i)
            if (it .ne. 0) then
               polarity(i) = polr(it)
               thole(i) = athl(it)
+              dirdamp(i) = ddir(it)
               if (thole(i) .eq. 0.0d0) then
                 pdamp(i) = 0.0d0
               else
@@ -173,9 +176,10 @@ c
 c
 c       remove zero and undefined polarizable sites from the list
 c
-        if (use_polar) then
+        if ((use_polar .or. use_repuls) .and. .not.use_chgtrn) then
           npole = 0
           npolar = 0
+          ncp = 0
           ipole = 0
           do i = 1, n
              if (polsiz(i).ne.0 .or. polarity(i).ne.0.0d0) then
@@ -190,28 +194,33 @@ c
                 do k = 1, maxpole
                    pole(k,npole) = pole(k,i)
                 end do
+                mono0(npole) = pole(1,i)
                 if (polarity(i) .ne. 0.0d0)  npolar = npolar + 1
+                if (dirdamp(i) .ne. 0.0d0)  use_dirdamp = .true.
                 polarity(npole) = polarity(i)
                 thole(npole) = thole(i)
+                dirdamp(npole) = dirdamp(i)
                 pdamp(npole) = pdamp(i)
-                if (use_emtp) then
-                  alphapen(npole) = alphapen(i)
-                  betapen(npole) = betapen(i)
-                  gammapen(npole) = gammapen(i)
-                end if
+                if (palpha(i) .ne. 0.0d0)  ncp = ncp + 1
+                pcore(npole) = pcore(i)
+                pval(npole) = pval(i)
+                pval0(npole) = pval(i)
+                palpha(npole) = palpha(i)
              end if
           end do
         end if
  90     call MPI_BARRIER(hostcomm,ierr)
         call MPI_BCAST(npole,1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(npolar,1,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(ncp,1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(xaxis,n,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(yaxis,n,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(zaxis,n,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(use_dirdamp,1,MPI_LOGICAL,0,hostcomm,ierr)
 c
 c       test multipoles at chiral sites and invert if necessary
 c
-        if (use_polar) call chkpole(.true.)
+        if (use_polar .and. .not.use_chgtrn)  call chkpole(.true.)
 c
 c       initialization for TCG and omega fit
 c
@@ -221,10 +230,13 @@ c
 c
 c       turn off polarizable multipole potential if it is not used
 c
-        if (npolar .eq. 0)  use_polar = .false.
         if (npole .eq. 0)  then
           use_mpole = .false.
         end if
+        if (npolar .eq. 0)  use_polar = .false.
+        if (ncp .ne. 0)  use_chgpen = .true.
+        if (ncp .ne. 0)  use_thole = .false.
+        if (use_dirdamp)  use_thole = .true.
 c
 c  allocate predictor arrays
 c
@@ -266,34 +278,113 @@ c
 c
       end if
 
-      if (.not.use_polar) return
+      if ((use_polar .or. use_repuls) .and. .not.use_chgtrn) then
 
-      npoleloc = 0
-      do i = 1, nloc
-         iglob = glob(i)
-         iipole = pollist(iglob)
+        npoleloc = 0
+        do i = 1, nloc
+           iglob = glob(i)
+           iipole = pollist(iglob)
 c
 c   skip atom if it is not in the multipole list
 c
-         if (iipole.eq.0) cycle
-         polecount = nbpole(iglob)
-         if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
-            npoleloc = npoleloc + 1
-            poleglob(npoleloc) = polecount + 1
-            poleloc(polecount+1) = npoleloc
-         end if
-      end do
-      bufbegpole(rank+1) = 1
-      domlenpole(rank+1) = npoleloc
-      npolebloc = npoleloc
-      do iproc = 1, n_recep1
-        if (domlen(p_recep1(iproc)+1).ne.0) then
-          bufbegpole(p_recep1(iproc)+1) = npolebloc + 1
-        else
-          bufbegpole(p_recep1(iproc)+1) = 1
+           if (iipole.eq.0) cycle
+           polecount = nbpole(iglob)
+           if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
+              npoleloc = npoleloc + 1
+              poleglob(npoleloc) = polecount + 1
+              poleloc(polecount+1) = npoleloc
+           end if
+        end do
+        bufbegpole(rank+1) = 1
+        domlenpole(rank+1) = npoleloc
+        npolebloc = npoleloc
+        do iproc = 1, n_recep1
+          if (domlen(p_recep1(iproc)+1).ne.0) then
+            bufbegpole(p_recep1(iproc)+1) = npolebloc + 1
+          else
+            bufbegpole(p_recep1(iproc)+1) = 1
+          end if
+          do i = 1, domlen(p_recep1(iproc)+1)
+            iglob = glob(bufbeg(p_recep1(iproc)+1)+i-1)
+            iipole = pollist(iglob)
+c
+c   skip atom if it is not in the multipole list
+c
+            if (iipole.eq.0) cycle
+            polecount = nbpole(iglob)
+            if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0)
+     $        then
+              npolebloc = npolebloc + 1
+              poleglob(npolebloc) = polecount + 1
+              poleloc(polecount+1) = npolebloc
+            end if
+          end do
+          if (domlen(p_recep1(iproc)+1).ne.0) then
+            domlenpole(p_recep1(iproc)+1) = 
+     $        npolebloc-bufbegpole(p_recep1(iproc)+1)+1
+          else
+            domlenpole(p_recep1(iproc)+1) = 0
+          end if
+        end do
+c
+c
+        npolerecloc = 0
+        do i = 1, nlocrec
+           iglob = globrec(i)
+           iipole = pollist(iglob)
+c
+c   skip atom if it is not in the multipole list
+c
+           if (iipole.eq.0) cycle
+           polecount = nbpole(iglob)
+           if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
+              npolerecloc = npolerecloc + 1
+              polerecglob(npolerecloc) = polecount + 1
+              polerecloc(polecount+1) = npolerecloc
+           end if
+        end do
+        domlenpolerec(rank+1) = npolerecloc
+
+        do i = nlocrec+1, nlocrec2
+           iglob = globrec(i)
+           iipole = pollist(iglob)
+c
+c   skip atom if it is not in the multipole list
+c
+           if (iipole.eq.0) cycle
+           polecount = nbpole(iglob)
+           if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
+              npolerecloc = npolerecloc + 1
+              polerecglob(npolerecloc) = polecount + 1
+              polerecloc(polecount+1) = npolerecloc
+           end if
+        end do
+        npolerecloc = domlenpolerec(rank+1)
+c
+        if ((polalg.eq.3).and.(tcgpeek).and.(tcgomegafit)) then
+          if (mod((istep-1), omegafitfreq).eq.0) then
+            omegafitstep = .true.
+          end if
         end if
-        do i = 1, domlen(p_recep1(iproc)+1)
-          iglob = glob(bufbeg(p_recep1(iproc)+1)+i-1)
+c
+c  deallocate/reallocate B-spline arrays
+c
+        if (allocated(thetai1)) deallocate (thetai1)
+        if (allocated(thetai2)) deallocate (thetai2)
+        if (allocated(thetai3)) deallocate (thetai3)
+        allocate (thetai1(4,bsorder,nlocrec))
+        allocate (thetai2(4,bsorder,nlocrec))
+        allocate (thetai3(4,bsorder,nlocrec))
+c
+        modnl = mod(istep,ineigup)
+        if (istep.eq.-1) return
+        if (modnl.ne.0) return
+        if (allocated(poleglobnl)) deallocate(poleglobnl)
+        allocate (poleglobnl(nlocnl))
+c
+        npolelocnl = 0
+        do i = 1, nlocnl
+          iglob = ineignl(i)
           iipole = pollist(iglob)
 c
 c   skip atom if it is not in the multipole list
@@ -301,93 +392,16 @@ c
           if (iipole.eq.0) cycle
           polecount = nbpole(iglob)
           if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
-            npolebloc = npolebloc + 1
-            poleglob(npolebloc) = polecount + 1
-            poleloc(polecount+1) = npolebloc
+            call distprocpart(iglob,rank,d,.true.)
+            if (repart(iglob).eq.rank) d = 0.0d0
+            if (d*d.le.(mbuf2/4)) then
+              npolelocnl = npolelocnl + 1
+              poleglobnl(npolelocnl) = polecount + 1
+              polelocnl(polecount+1) = npolelocnl
+            end if
           end if
         end do
-        if (domlen(p_recep1(iproc)+1).ne.0) then
-          domlenpole(p_recep1(iproc)+1) = 
-     $      npolebloc-bufbegpole(p_recep1(iproc)+1)+1
-        else
-          domlenpole(p_recep1(iproc)+1) = 0
-        end if
-      end do
-c
-c
-      npolerecloc = 0
-      do i = 1, nlocrec
-         iglob = globrec(i)
-         iipole = pollist(iglob)
-c
-c   skip atom if it is not in the multipole list
-c
-         if (iipole.eq.0) cycle
-         polecount = nbpole(iglob)
-         if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
-            npolerecloc = npolerecloc + 1
-            polerecglob(npolerecloc) = polecount + 1
-            polerecloc(polecount+1) = npolerecloc
-         end if
-      end do
-      domlenpolerec(rank+1) = npolerecloc
-
-      do i = nlocrec+1, nlocrec2
-         iglob = globrec(i)
-         iipole = pollist(iglob)
-c
-c   skip atom if it is not in the multipole list
-c
-         if (iipole.eq.0) cycle
-         polecount = nbpole(iglob)
-         if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
-            npolerecloc = npolerecloc + 1
-            polerecglob(npolerecloc) = polecount + 1
-            polerecloc(polecount+1) = npolerecloc
-         end if
-      end do
-      npolerecloc = domlenpolerec(rank+1)
-c
-      if ((polalg.eq.3).and.(tcgpeek).and.(tcgomegafit)) then
-        if (mod((istep-1), omegafitfreq).eq.0) then
-          omegafitstep = .true.
-        end if
       end if
-c
-c  deallocate/reallocate B-spline arrays
-c
-      if (allocated(thetai1)) deallocate (thetai1)
-      if (allocated(thetai2)) deallocate (thetai2)
-      if (allocated(thetai3)) deallocate (thetai3)
-      allocate (thetai1(4,bsorder,nlocrec))
-      allocate (thetai2(4,bsorder,nlocrec))
-      allocate (thetai3(4,bsorder,nlocrec))
-c
-      modnl = mod(istep,ineigup)
-      if (istep.eq.-1) return
-      if (modnl.ne.0) return
-      if (allocated(poleglobnl)) deallocate(poleglobnl)
-      allocate (poleglobnl(nlocnl))
-c
-      npolelocnl = 0
-      do i = 1, nlocnl
-        iglob = ineignl(i)
-        iipole = pollist(iglob)
-c
-c   skip atom if it is not in the multipole list
-c
-        if (iipole.eq.0) cycle
-        polecount = nbpole(iglob)
-        if (polsiz(iglob) .ne. 0 .or. polarity(iipole).ne.0.0d0) then
-          call distprocpart(iglob,rank,d,.true.)
-          if (repart(iglob).eq.rank) d = 0.0d0
-          if (d*d.le.(mbuf2/4)) then
-            npolelocnl = npolelocnl + 1
-            poleglobnl(npolelocnl) = polecount + 1
-            polelocnl(polecount+1) = npolelocnl
-          end if
-        end if
-      end do
       return
       end
 c
@@ -679,6 +693,11 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winpdamp,ierr)
       end if
+      if (associated(dirdamp)) then
+        CALL MPI_Win_shared_query(windirdamp, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(windirdamp,ierr)
+      end if
       return
       end
 c
@@ -766,6 +785,29 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,pdamp,arrayshape)
+c
+c     dirdamp
+c
+      arrayshape=(/n/)
+      if (hostrank == 0) then
+        windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, windirdamp, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(windirdamp, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,dirdamp,arrayshape)
       return
       end
 !===================================================
@@ -794,7 +836,7 @@ c
 
       real*8, allocatable, dimension(:,:,:) :: 
      $       musave
-      real*8 :: omega_min, omega_max, epmin, epmax,
+      real*8 :: omega_min, omega_max,
      $           o1, o2, cvg_crit,f, ep1, ep2, sprod,
      $           cnp, cr, efinal, epnp, epsave
       real*8 :: rms1,rms2

@@ -22,9 +22,14 @@ c
       use potent
       implicit none
  1000 format(' illegal tcg order')
+ 1010 format(' charge penetration not compatible with tcg')
 c
 c     choose the method for summing over polarization interactions
 c
+      if (use_chgpen) then
+        if (rank.eq.0) write(iout,1010) 
+        call fatal
+      end if
       if (tcgorder.eq.1) then
         if (use_pmecore) then
           call epolar3tcg1_2

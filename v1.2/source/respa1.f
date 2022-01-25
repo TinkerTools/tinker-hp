@@ -45,7 +45,7 @@ c
       use virial
       use mpi
       implicit none
-      integer i,j,k,iglob
+      integer i,j,iglob
       integer istep
       real*8 dt,dt_2
       real*8 dta,dta_2,dta2
@@ -234,8 +234,8 @@ c
       real*8 energy
       real*8 derivs(3,*)
       logical save_vdw,save_charge
-      logical save_dipole
       logical save_mpole,save_polar
+      logical save_repuls,save_disp,save_chgtrn
       logical save_list
 c
 c
@@ -245,6 +245,9 @@ c
       save_charge = use_charge
       save_mpole = use_mpole
       save_polar = use_polar
+      save_repuls = use_repuls
+      save_disp = use_disp
+      save_chgtrn = use_chgtrn
       save_list = use_list
 c
 c     turn off slow-evolving nonbonded potential energy terms
@@ -253,6 +256,9 @@ c
       use_charge = .false.
       use_mpole = .false.
       use_polar = .false.
+      use_repuls = .false.
+      use_disp = .false.
+      use_chgtrn = .false.
       use_list = .false.
 c
 c     get energy and gradient for fast-evolving potential terms
@@ -265,6 +271,9 @@ c
       use_charge = save_charge
       use_mpole = save_mpole
       use_polar = save_polar
+      use_repuls = save_repuls
+      use_disp = save_disp
+      use_chgtrn = save_chgtrn
       use_list = save_list
       return
       end
@@ -284,10 +293,12 @@ c
       use cutoff
       use deriv
       use energi
+      use polpot
       use potent
       implicit none
       real*8 energy
       real*8 derivs(3,*)
+      real*8 save_tcgomega
       logical save_bond,save_angle
       logical save_strbnd,save_urey
       logical save_angang,save_opbend
@@ -297,8 +308,10 @@ c
       logical save_angtor
       logical save_tortor,save_geom
       logical save_extra
-      logical save_mrec
+      logical save_mrec,save_disprec
       logical save_prec,save_crec
+      integer save_polalg,save_tcgorder
+      logical save_tcgprec,save_tcgguess,save_tcgpeek
 c
 c
 c     save the original state of fast-evolving potentials
@@ -322,6 +335,13 @@ c
       save_crec = use_crec
       save_mrec = use_mrec
       save_prec = use_prec
+      save_disprec = use_disprec
+      save_polalg = polalg
+      save_tcgorder = tcgorder
+      save_tcgprec = tcgprec
+      save_tcgguess = tcgguess
+      save_tcgpeek = tcgpeek
+      save_tcgomega = tcgomega
 c
 c     turn off fast-evolving valence potential energy terms
 c
@@ -341,14 +361,28 @@ c
       use_tortor = .false.
       use_geom = .false.
       use_extra = .false.
+      use_crec = .false.
       use_mrec = .false.
       use_prec = .false.
+      use_disprec = .false.
+      use_cself = .false.
       use_mself = .false.
       use_pself = .false.
+      use_dispself = .false.
       use_cshortreal = .true.
       use_mpoleshortreal = .true.
       use_vdwshort = .true.
       use_polarshortreal = .true.
+      use_repulsshort = .true.
+      use_dispshort = .true.
+      use_dispshortreal = .true.
+      use_chgtrnshort = .true.
+      polalg = polalgshort
+      tcgorder = tcgordershort
+      tcgprec = tcgprecshort
+      tcgguess = tcgguessshort
+      tcgpeek = tcgpeekshort
+      tcgomega = tcgomegashort
 c
 c     get energy and gradient for slow-evolving potential terms
 c
@@ -372,14 +406,28 @@ c
       use_tortor = save_tortor
       use_geom = save_geom
       use_extra = save_extra
+      use_crec = save_crec
       use_mrec = save_mrec
       use_prec = save_prec
+      use_disprec = save_disprec
+      use_cself = .true.
       use_mself = .true.
       use_pself = .true.
+      use_dispself = .true.
       use_cshortreal = .false.
       use_mpoleshortreal = .false.
       use_vdwshort = .false.
       use_polarshortreal = .false.
+      use_repulsshort = .false.
+      use_dispshort = .false.
+      use_dispshortreal = .false.
+      use_chgtrnshort = .false.
+      polalg = save_polalg
+      tcgorder = save_tcgorder
+      tcgprec = save_tcgprec
+      tcgguess = save_tcgguess
+      tcgpeek = save_tcgpeek
+c
 c
 c     also save the values of the short range real space forces
 c
@@ -461,6 +509,9 @@ c
       use_vdwlong = .true.
       use_clong = .true.
       use_mpolelong = .true.
+      use_repulslong = .true.
+      use_displong = .true.
+      use_chgtrnlong = .true.
 
 c
 c     get energy and gradient for slow-evolving potential terms
@@ -488,6 +539,9 @@ c
       use_vdwlong = .false.
       use_clong = .false.
       use_mpolelong = .false.
+      use_repulslong = .false.
+      use_displong = .false.
+      use_chgtrnlong = .false.
 c
 c     substract the previously stored short range energy and forces
 c

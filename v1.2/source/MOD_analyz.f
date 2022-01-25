@@ -26,9 +26,12 @@ c     aeat    angle-torsion energy partitioned over atoms
 c     aebt    stretch-torsion energy partitioned over atoms
 c     aett    torsion-torsion energy partitioned over atoms
 c     aev     van der Waals energy partitioned over atoms
+c     aer     Pauli repulsion energy partitioned over atoms
+c     aedsp   damped dispersion energy partitioned over atoms
 c     aec     charge-charge energy partitioned over atoms
 c     aem     multipole energy partitioned over atoms
 c     aep     polarization energy partitioned over atoms
+c     aect    charge transfer energy partitioned over atoms
 c     aeg     geometric restraint energy partitioned over atoms
 c     aex     extra energy term partitioned over atoms
 c
@@ -38,6 +41,6 @@ c
       real*8, allocatable ::  aesum(:),aem(:),aep(:),aev(:),
      $  aeb(:),aea(:),aeba(:),aub(:),aeaa(:),aeopb(:),aeopd(:),aeid(:),
      $  aeit(:),aet(:),aept(:),aebt(:),aett(:),aeg(:),aex(:),
-     $  aec(:),aeat(:)
+     $  aec(:),aer(:),aedsp(:),aect(:),aeat(:)
       save
       end

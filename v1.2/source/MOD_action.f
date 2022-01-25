@@ -25,8 +25,11 @@ c     neat    number of angle-torsion energy terms computed
 c     nebt    number of stretch-torsion energy terms computed
 c     nett    number of torsion-torsion energy terms computed
 c     nev     number of van der Waals energy terms computed
+c     ner     number of Pauli repulsion energy terms computed
+c     nedsp   number of dispersion energy terms computed
 c     nec     number of charge-charge energy terms computed
 c     nem     number of multipole energy terms computed
+c     nect    number of charge transfer energy terms computed
 c     nep     number of polarization energy terms computed
 c     neg     number of geometric restraint energy terms computed
 c     nex     number of extra energy terms computed
@@ -38,6 +41,7 @@ c
       integer neaa,neopb,neopd
       integer neid,neit,net,nept
       integer neat,nebt,nett,nev,nec
+      integer ner,nedsp,nect
       integer nem,nep
       integer neg,nex
       save

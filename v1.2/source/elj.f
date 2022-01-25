@@ -19,6 +19,7 @@ c
       use vdwpot
       implicit none
       real*8 elrc
+      character*11 mode
 c
 c     Sum over pairwise interactions
 c
@@ -27,7 +28,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr (elrc)
+         mode = 'VDW'
+         call evcorr (mode,elrc)
          ev = ev + elrc
       end if
       return
@@ -83,7 +85,7 @@ c
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
       logical testcut,shortrange,longrange,fullrange
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
 c
 c     choose the method for summing over pairwise interactions
@@ -121,7 +123,6 @@ c
 c
 c     set the coefficients for the switching function
 c
-c     mode = 'VDW'
       call switch (mode)
       vdwshortcut2 = (vdwshortcut-shortheal)**2
 c

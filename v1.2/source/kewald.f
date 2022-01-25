@@ -33,13 +33,26 @@ c
       integer maxpower
       parameter (maxpower=63)
       integer i,k,next
-      integer ifft1,ifft2,ifft3
+      integer nbig,minfft
+      integer iefft1,idfft1
+      integer iefft2,idfft2
+      integer iefft3,idfft3
       integer multi(maxpower)
-      integer iproc,ierr
-      real*8 delta,rmax,dens
+      integer iproc,ierr,nprocloc
+      real*8 delta,rmax
+      real*8 edens,ddens
+      real*8 size,slope
+      real*8 fft1,fft2,fft3
       character*20 keyword
       character*240 record
       character*240 string
+ 120  format('2d parallel FFT grid : ','Ngrid1 = ',I5,2x,'Ngrid2 = ',I5)
+c
+      if (use_pmecore) then
+        nprocloc = nrec
+      else
+        nprocloc = nproc
+      end if
 c
 c     allocate global arrays
 c
@@ -60,12 +73,40 @@ c
 c     default boundary treatment, B-spline order and grid density
 c
       boundary = 'TINFOIL'
-      bsorder = 5
-      dens = 1.2d0
+      bseorder = 5
+      bsporder = 5
+      bsdorder = 4
+      edens = 1.2d0
+      ddens = 0.8d0
+      aeewald = 0.4d0
+      apewald = 0.4d0
+      adewald = 0.4d0
+      minfft = 16
+      nlpts = (bsorder-1) /2
+      nrpts = bsorder - nlpts - 1
+      grdoff = (bsorder+1)/2 +1
 c
 c     estimate an optimal value for the Ewald coefficient
 c
-      call ewaldcof (aewald,ewaldcut)
+      call ewaldcof (aeewald,ewaldcut)
+      if (use_dewald)  call ewaldcof (adewald,dewaldcut)
+c
+c     modify Ewald coefficient for small unitcell dimensions
+c
+      if (use_polar) then
+         apewald = aeewald
+         size = min(xbox,ybox,zbox)
+         if (size .lt. 6.0d0) then
+            slope = (1.0d0-apewald) / 2.0d0
+            apewald = apewald + slope*(6.0d0-size)
+            minfft = 64
+            if (verbose) then
+               write (iout,10)
+   10          format (/,' KEWALD  --  Warning, PME Grid Expanded',
+     &                    ' due to Small Cell Size')
+            end if
+         end if
+      end if
 c
 c     set the system extent for nonperiodic Ewald summation
 c
@@ -80,17 +121,39 @@ c
          orthogonal = .true.
          call lattice
          boundary = 'NONE'
-         dens = 0.75d0
+         edens = 0.7d0
+         ddens = 0.7d0
+         call drivermpi
       end if
+c
+c     set defaults for electrostatic and dispersion grid sizes
+c
+      nefft1 = 0
+      nefft2 = 0
+      nefft3 = 0
+      ndfft1 = 0
+      ndfft2 = 0
+      ndfft3 = 0
 c
 c     get default grid size from periodic system dimensions
 c
       delta = 1.0d-8
-      ifft1 = int(xbox*dens-delta) + 1
-      ifft2 = int(ybox*dens-delta) + 1
-      ifft3 = int(zbox*dens-delta) + 1
+      iefft1 = int(xbox*edens-delta) + 1
+      iefft2 = int(ybox*edens-delta) + 1
+      iefft3 = int(zbox*edens-delta) + 1
+      idfft1 = int(xbox*ddens-delta) + 1
+      idfft2 = int(ybox*ddens-delta) + 1
+      idfft3 = int(zbox*ddens-delta) + 1
       ngrid1 = 0
       ngrid2 = 0
+cc
+cc     by default, try adapting the 2d grid to the 3d real space domain decomposition
+cc
+c      if (mod(nprocloc,nydd).eq.0) then
+c        ngrid1 = nydd
+c        ngrid2 = int(nprocloc/nydd)
+c      end if
+
 c
 c     search keywords for Ewald summation commands
 c
@@ -101,62 +164,128 @@ c
          call gettext (record,keyword,next)
          string = record(next:240)
          if (keyword(1:12) .eq. 'EWALD-ALPHA ') then
-            read (string,*,err=20)  aewald
+            read (string,*,err=40)  aeewald
+         else if (keyword(1:13) .eq. 'PEWALD-ALPHA ') then
+            read (string,*,err=40,end=40)  apewald
+         else if (keyword(1:13) .eq. 'DEWALD-ALPHA ') then
+            read (string,*,err=40,end=40)  adewald
          else if (keyword(1:15) .eq. 'EWALD-BOUNDARY ') then
             boundary = 'VACUUM'
          else if (keyword(1:9) .eq. 'PME-GRID ') then
-            ifft1 = 0
-            ifft2 = 0
-            ifft3 = 0
-            read (string,*,err=10,end=10)  ifft1,ifft2,ifft3
-   10       continue
-            if (ifft2 .eq. 0)  ifft2 = ifft1
-            if (ifft3 .eq. 0)  ifft3 = ifft1
+            fft1 = 0
+            fft2 = 0
+            fft3 = 0
+            read (string,*,err=20,end=20)  fft1,fft2,fft3
+   20       continue
+            iefft1 = nint(fft1)
+            iefft2 = nint(fft2)
+            iefft3 = nint(fft3)
+            if (iefft2 .eq. 0)  iefft2 = iefft1
+            if (iefft3 .eq. 0)  iefft3 = iefft1
+         else if (keyword(1:10) .eq. 'DPME-GRID ') then
+            fft1 = 0.0d0
+            fft2 = 0.0d0
+            fft3 = 0.0d0
+            read (string,*,err=30,end=30)  fft1,fft2,fft3
+   30       continue
+            idfft1 = nint(fft1)
+            idfft2 = nint(fft2)
+            idfft3 = nint(fft3)
+            if (idfft2 .eq. 0)  idfft2 = idfft1
+            if (idfft3 .eq. 0)  idfft3 = idfft1
          else if (keyword(1:10) .eq. 'PME-ORDER ') then
-            read (string,*,err=20)  bsorder
+            read (string,*,err=40,end=40)  bseorder
+         else if (keyword(1:11) .eq. 'DPME-ORDER ') then
+            read (string,*,err=40,end=40)  bsdorder
+         else if (keyword(1:11) .eq. 'PPME-ORDER ') then
+            read (string,*,err=40,end=40)  bsporder
          else if (keyword(1:15) .eq. 'DECOMPFFT-GRID ') then
-            read (string,*,err=20) ngrid1,ngrid2
+            read (string,*,err=40) ngrid1,ngrid2
+         else if (keyword(1:15) .eq. 'DECOMPFFT-OPTIM ') then
+c
+c        keyword to let the 2decomp library optimize the 2d processor grid for parallel fft
+c
+           ngrid1 = 0
+           ngrid2 = 0
          end if
-   20    continue
+   40    continue
       end do
+
+c
+c     grid size must be even, with prime factors of 2, 3 and 5
+c
+      nefft1 = maxfft
+      nefft2 = maxfft
+      nefft3 = maxfft
+      do i = maxpower, 1, -1
+         k = multi(i)
+         if (k .le. maxfft) then
+            if (k .ge. iefft1)  nefft1 = k
+            if (k .ge. iefft2)  nefft2 = k
+            if (k .ge. iefft3)  nefft3 = k
+         end if
+         if (nefft1 .lt. minfft)  nefft1 = minfft
+         if (nefft2 .lt. minfft)  nefft2 = minfft
+         if (nefft3 .lt. minfft)  nefft3 = minfft
+      end do
+c
+c     determine dispersion grid size from allowed values
+c
+      if (use_dewald) then
+         ndfft1 = maxfft
+         ndfft2 = maxfft
+         ndfft3 = maxfft
+         do i = maxpower, 1, -1
+            k = multi(i)
+            if (k .le. maxfft) then
+               if (k .ge. idfft1)  ndfft1 = k
+               if (k .ge. idfft2)  ndfft2 = k
+               if (k .ge. idfft3)  ndfft3 = k
+            end if
+         end do
+         if (ndfft1 .lt. minfft)  ndfft1 = minfft
+         if (ndfft2 .lt. minfft)  ndfft2 = minfft
+         if (ndfft3 .lt. minfft)  ndfft3 = minfft
+      end if
+c
+c     check the particle mesh Ewald grid dimensions
+c
+      nbig = max(nefft1,nefft2,nefft3,ndfft1,ndfft2,ndfft3)
+      if (nbig .gt. maxfft) then
+         write (iout,50)
+   50    format (/,' KEWALD  --  PME Grid Size Too Large;',
+     &              ' Increase MAXFFT')
+         call fatal
+      end if
+      if (nefft1.lt.iefft1.or.
+     &       nefft2.lt.iefft2.or.nefft3.lt.iefft3) then
+         write (iout,60)
+   60    format (/,' KEWALD  --  Warning, Small Electrostatic',
+     &              'PME Grid Size')
+      end if
+      if (use_dewald .and. (ndfft1.lt.idfft1.or.
+     &       ndfft2.lt.idfft2.or.ndfft3.lt.idfft3)) then
+         write (iout,70)
+   70    format (/,' KEWALD  --  Warning, Small Dispersion',
+     &              'PME Grid Size')
+      end if
+c
+c     set maximum sizes for PME grid and B-spline order
+c
+c
+c     enforce use of max pme grid in all PME-based computations
+c
+      nfft1 = max(nefft1,ndfft1)
+      nfft2 = max(nefft2,ndfft2)
+      nfft3 = max(nefft3,ndfft3)
+c
+c     enforce use of max spline order in all PME-based computations
+c
+      bsorder = max(bseorder,bsporder,bsdorder)
 
       nlpts = (bsorder-1) /2
       nrpts = bsorder - nlpts - 1
       grdoff = (bsorder+1)/2 +1
-c
-c     grid size must be even, with prime factors of 2, 3 and 5
-c
-      nfft1 = maxfft
-      nfft2 = maxfft
-      nfft3 = maxfft
-      do i = maxpower, 1, -1
-         k = multi(i)
-         if (k .le. maxfft) then
-            if (k .ge. ifft1)  nfft1 = k
-            if (k .ge. ifft2)  nfft2 = k
-            if (k .ge. ifft3)  nfft3 = k
-         end if
-      end do
-c
-c     check the B-spline order and charge grid dimension
-c
-      if (bsorder .gt. maxorder) then
-         if (rank.eq.0) write (iout,30)
-   30    format (/,' KEWALD  --  B-Spline Order Too Large;',
-     &              ' Increase MAXORDER')
-         call fatal
-      end if
-      if (max(nfft1,nfft2,nfft3) .gt. maxfft) then
-         write (iout,40)
-   40    format (/,' KEWALD  --  FFT Charge Grid Too Large;',
-     &              ' Increase MAXFFT')
-         call fatal
-      else if (nfft1.lt.ifft1 .or. nfft2.lt.ifft2
-     &             .or. nfft3.lt.ifft3) then
-         if (rank.eq.0) write (iout,50)
-   50    format (/,' KEWALD  --  Warning, Small Charge Grid',
-     &              ' may give Poor Accuracy')
-      end if
 c
 c     perform dynamic allocation of some pointer arrays
 c
@@ -187,9 +316,6 @@ c
       if (allocated(jsize2)) deallocate (jsize2)
       if (allocated(kstart2)) deallocate (kstart2)
       if (allocated(kend2)) deallocate (kend2)
-c
-c     also deallocate 2decomp stuff
-c
       if (allocated(ksize2)) deallocate (ksize2)
 c
       if (use_pmecore) then
@@ -370,17 +496,33 @@ c
 c
         allocate (qfac_2d(isize2(rank+1),jsize2(rank+1),ksize2(rank+1)))
       end if
+      if (ngrid1.ne.0 .and. ngrid2.ne.0) then
+        if ((use_pmecore).and.(rank.eq.ndir)) then
+          write(iout,120) ngrid1,ngrid2
+        else if (.not.(use_pmecore).and.(rank.eq.0)) then
+          write(iout,120) ngrid1,ngrid2
+        end if
+      end if
 c
        call reassignpme(.true.)
 c
 c     print a message listing some of the Ewald parameters
 c
       if (verbose.and.(rank.eq.0)) then
-         write (iout,60)  aewald,nfft1,nfft2,nfft3,bsorder
-   60    format (/,' Smooth Particle Mesh Ewald Parameters :',
-     &           //,4x,'Ewald Coefficient',6x,'Charge Grid',
-     &              ' Dimensions',6x,'B-Spline Order',
-     &           //,8x,f8.4,11x,3i6,12x,i6)
+         write (iout,80)
+   80    format (/,' Particle Mesh Ewald Parameters :',
+     &           //,5x,'Type',16x,'Ewald Alpha',4x,'Grid',
+     &              ' Dimensions',4x,'Spline Order',/)
+         write (iout,90)  aeewald,nfft1,nfft2,nfft3,bsorder
+   90    format (3x,'Electrostatics',9x,f8.4,5x,3i5,7x,i5)
+         if (use_polar) then
+            write (iout,100)  apewald,nfft1,nfft2,nfft3,bsorder
+  100       format (3x,'Polarization',11x,f8.4,5x,3i5,7x,i5)
+         end if
+         if (use_dewald) then
+            write (iout,110)  adewald,nfft1,nfft2,nfft3,bsorder
+  110       format (3x,'Dispersion',13x,f8.4,5x,3i5,7x,i5)
+         end if
       end if
       return
       end

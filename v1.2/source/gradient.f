@@ -57,6 +57,9 @@ c
       ebt = 0.0d0
       ett = 0.0d0
       ev = 0.0d0
+      er = 0d0
+      edsp = 0d0
+      ect = 0d0
       ec = 0.0d0
       em = 0.0d0
       ep = 0.0d0
@@ -81,6 +84,9 @@ c
       debt = 0d0
       dett = 0d0
       dev = 0d0
+      der = 0d0
+      dedsp = 0d0
+      dect = 0d0
       dec = 0.0d0
       dem = 0d0
       dep = 0d0
@@ -95,6 +101,10 @@ c
       einter = 0.0d0
       time1 = mpi_wtime()
       timecleargrad = timecleargrad + time1-time0
+c
+c     alter partial charges and multipoles for charge flux
+c
+      if (use_chgflx)  call alterchg
 c
 c     call the local geometry energy and gradient routines
 c
@@ -123,6 +133,8 @@ c
          if (vdwtyp .eq. 'LENNARD-JONES')  call elj1
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal1
       end if
+      if (use_repuls)  call erepel1
+      if (use_disp)  call edisp1
       time1 = mpi_wtime()
       timevdw = timevdw + time1-time0
 c
@@ -137,6 +149,8 @@ c
       if (use_polar)  call epolar1
       time1 = mpi_wtime()
       timepolar = timepolar + time1-time0
+
+      if (use_chgtrn)  call echgtrn1
 c
 c     call any miscellaneous energy and gradient routines
 c
@@ -149,13 +163,13 @@ c     sum up to get the total energy and first derivatives
 c
       time0 = mpi_wtime()
       esum = eit + eopd + eopb + eaa + eub + eba + ea + eb + em + ep
-     $       + ec + ev + et + ept + eat + ebt + ett + eg + ex + eid 
-     $       + ensmd
+     $       + ec + ev + er + edsp + ect +et + ept + eat + ebt + ett 
+     $       + eg + ex + eid + ensmd
       energy = esum
 c
       desum = deaa + deba + dea + deb + dec + dem + deopb + deopd + deid
-     $ + dep + dev + deub + deit + det + dept + deat + debt + dett 
-     $ + deg + dex+ desmd
+     $ + dep + dev + der + dedsp + dect +deub + deit + det + dept + deat
+     $ + debt + dett + deg + dex + desmd
 c
       debond = deaa + deba + dea + deb + deopb + deopd + deid 
      $ + deub + deit + det + dept + deat + debt + dett + deg

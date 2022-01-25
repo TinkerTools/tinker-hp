@@ -25,8 +25,8 @@ c
       use iounit
       implicit none
       integer i,j,k,m,iglob
+      integer ia,ib,ic
       logical init
-      real*8 pos(3,4)
 c
       if (init) then
 c
@@ -78,6 +78,18 @@ c
               iang(4,nangleloc-2) = i12(3,i)
            end if
         end do
+c
+c       store the numbers of the bonds comprising each bond angle
+c
+        do i = 1, nangle
+           ia = iang(1,i)
+           ib = iang(2,i)
+           ic = iang(3,i)
+           do k = 1, n12(ib)
+              if (i12(k,ib) .eq. ia)  balist(1,i) = bndlist(k,ib)
+              if (i12(k,ib) .eq. ic)  balist(2,i) = bndlist(k,ib)
+           end do
+        end do
         if (allocated(angleloc)) deallocate(angleloc)
         allocate (angleloc(nangle))
       end if
@@ -128,6 +140,11 @@ c
         CALL MPI_Win_shared_query(winanglist, 0, windowsize, disp_unit,
      $  baseptr, ierr)
         CALL MPI_Win_free(winanglist,ierr)
+      end if
+      if (associated(balist)) then
+        CALL MPI_Win_shared_query(winbalist, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winbalist,ierr)
       end if
       if (associated(iang)) then
         CALL MPI_Win_shared_query(winiang, 0, windowsize, disp_unit,
@@ -269,6 +286,29 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,anglist,arrayshape2)
+c
+c     balist
+c
+      arrayshape2=(/2,6*n/)
+      if (hostrank == 0) then
+        windowsize = int(12*n,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winbalist, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winbalist, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,balist,arrayshape2)
 c
 c     iang
 c

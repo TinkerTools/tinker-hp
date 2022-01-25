@@ -22,7 +22,11 @@ c
       use kantor
       use katoms
       use kbonds
+      use kcflux
       use kchrge
+      use kcpen
+      use kctrn
+      use kdsp
       use kiprop
       use kitors
       use khbond
@@ -31,6 +35,7 @@ c
       use kopdst
       use kpitor
       use kpolr
+      use krepl
       use kstbnd
       use ksttor
       use ktorsn
@@ -56,6 +61,7 @@ c
       integer cls,atn,lig
       integer nx,ny,nxy
       integer bt,at,sbt,tt
+      integer ncfa,ncfb
       integer ft(6),pg(maxvalue)
       real*8 wght,rd,ep,rdn
       real*8 an1,an2,an3
@@ -70,7 +76,6 @@ c
       real*8 vd,cg
       real*8 fc,bd,dl
       real*8 pt,pol,thl
-
       real*8 abc,cba
       real*8 gi,alphi
       real*8 nni,factor
@@ -80,14 +85,19 @@ c
       real*8 tx(maxtgrd2)
       real*8 ty(maxtgrd2)
       real*8 tf(maxtgrd2)
-
-
+      real*8 spr,apr,epr
+      real*8 ctrn,atrn
+      real*8 cfb,cfb1,cfb2
+      real*8 cfa1,cfa2
+      real*8 cdp,adp,ddp
+      real*8 pal,pel
       logical header,swap
       character*1 da1
       character*4 pa,pb,pc
       character*4 pd,pe
       character*8 axt
       character*20 keyword
+      character*20 text
       character*240 record
       character*240 string
 c
@@ -125,6 +135,8 @@ c
       nd4 = 0
       nd3 = 0
       nmp = 0
+      ncfb = 0
+      ncfa = 0
       npi = 0
       npi5 = 0
       npi4 = 0
@@ -1183,102 +1195,42 @@ c
             ia = 0
             pol = 0.0d0
             thl = 0.0d0
+            ddp = 0.0d0
             do i = 1, maxvalue
                pg(i) = 0
             end do
-            string = record(next:240)
-            read (string,*,err=440,end=440)  ia,pol,thl,
-     &                                       (pg(i),i=1,maxvalue)
+            string = record(1:240)
+            call getnumb (string,ia,next)
+            call gettext (string,text,next)
+            read (text,*,err=440,end=440)  pol
+            call gettext (string,text,next)
+            i = 1
+            call getnumb (text,pg(1),i)
+            if (pg(1) .eq. 0) then
+               read (text,*,err=440,end=440)  thl
+               call gettext (string,text,next)
+               i = 1
+               call getnumb (text,pg(1),i)
+               string = string(next:240)
+               if (pg(1) .eq. 0) then
+                  read (text,*,err=440,end=440)  ddp
+                  read (string,*,err=440,end=440)  (pg(i),i=1,maxvalue)
+               else
+                  read (string,*,err=440,end=440)  (pg(i),i=2,maxvalue)
+               end if
+            else
+               string = string(next:240)
+               read (string,*,err=440,end=440)  (pg(i),i=2,maxvalue)
+            end if
   440       continue
             if (ia .ne. 0) then
                polr(ia) = pol
                athl(ia) = thl
+               ddir(ia) = ddp
                do i = 1, maxvalue
                   pgrp(i,ia) = pg(i)
                end do
             end if
-cc
-cc     conjugated pisystem atom parameters
-cc
-c         else if (keyword(1:7) .eq. 'PIATOM ') then
-c            ia = 0
-c            el = 0.0d0
-c            iz = 0.0d0
-c            rp = 0.0d0
-c            string = record(next:240)
-c            read (string,*,err=450,end=450)  ia,el,iz,rp
-c  450       continue
-c            if (ia .ne. 0) then
-c               electron(ia) = el
-c               ionize(ia) = iz
-c               repulse(ia) = rp
-c            end if
-cc
-cc     conjugated pisystem bond parameters
-cc
-c         else if (keyword(1:7) .eq. 'PIBOND ') then
-c            ia = 0
-c            ib = 0
-c            ss = 0.0d0
-c            ts = 0.0d0
-c            string = record(next:240)
-c            read (string,*,err=460,end=460)  ia,ib,ss,ts
-c  460       continue
-c            call numeral (ia,pa,size)
-c            call numeral (ib,pb,size)
-c            npi = npi + 1
-c            if (ia .le. ib) then
-c               kpi(npi) = pa//pb
-c            else
-c               kpi(npi) = pb//pa
-c            end if
-c            sslope(npi) = ss
-c            tslope(npi) = ts
-cc
-cc     conjugated pisystem bond parameters for 5-membered rings
-cc
-c         else if (keyword(1:8) .eq. 'PIBOND5 ') then
-c            ia = 0
-c            ib = 0
-c            ss = 0.0d0
-c            ts = 0.0d0
-c            string = record(next:240)
-c            read (string,*,err=470,end=470)  ia,ib,ss,ts
-c  470       continue
-c            call numeral (ia,pa,size)
-c            call numeral (ib,pb,size)
-c            npi5 = npi5 + 1
-c            if (ia .le. ib) then
-c               kpi5(npi5) = pa//pb
-c            else
-c               kpi5(npi5) = pb//pa
-c            end if
-c            sslope5(npi5) = ss
-cc            tslope5(npi5) = ts
-ccc
-cc     conjugated pisystem bond parameters for 4-membered rings
-cc
-c         else if (keyword(1:8) .eq. 'PIBOND4 ') then
-c            ia = 0
-c            ib = 0
-c            ss = 0.0d0
-c            ts = 0.0d0
-c            string = record(next:240)
-c            read (string,*,err=480,end=480)  ia,ib,ss,ts
-c  480       continue
-c            call numeral (ia,pa,size)
-c            call numeral (ib,pb,size)
-c            npi4 = npi4 + 1
-c            if (ia .le. ib) then
-c               kpi4(npi4) = pa//pb
-c            else
-c               kpi4(npi4) = pb//pa
-c            end if
-c            sslope4(npi4) = ss
-c            tslope4(npi4) = ts
-c
-c     metal ligand field splitting parameters
-c
          else if (keyword(1:6) .eq. 'METAL ') then
             string = record(next:240)
             read (string,*,err=490,end=490)  ia
@@ -1764,6 +1716,115 @@ c
                mmffaromc(ia,if) = ic
             else if (ie .eq. 1) then
                mmffaroma(ia,if) = ic
+            end if
+c
+c     Pauli repulsion parameters
+c
+         else if (keyword(1:10) .eq. 'REPULSION ') then
+            ia = 0
+            spr = 0.0d0
+            apr = 0.0d0
+            epr = 0.0d0
+            string = record(next:240)
+            read (string,*,err=660,end=660)  ia,spr,apr,epr
+  660       continue
+            if (ia .ne. 0) then
+               prsiz(ia) = spr
+               prdmp(ia) = apr
+               prele(ia) = -abs(epr)
+            end if
+c
+c     charge transfer parameters
+c
+         else if (keyword(1:7) .eq. 'CHGTRN ') then
+            ia = 0
+            ctrn = 0.0d0
+            atrn = 0.0d0
+            string = record(next:240)
+            read (string,*,err=670,end=670)  ia,ctrn,atrn
+  670       continue
+            if (ia .ne. 0) then
+               ctchg(ia) = ctrn
+               ctdmp(ia) = atrn
+            end if
+c
+c     bond charge flux parameters
+c
+         else if (keyword(1:9) .eq. 'BNDCFLUX ') then
+            ia = 0
+            ib = 0
+            cfb = 0.0d0
+            string = record(next:240)
+            read (string,*,err=680,end=680)  ia,ib,cfb
+  680       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            ncfb = ncfb + 1
+            if (ia .lt. ib) then
+               kcfb(ncfb) = pa//pb
+               cflb(ncfb) = cfb
+            else if (ib .lt. ia) then
+               kcfb(ncfb) = pb//pa
+               cflb(ncfb) = -cfb
+            else
+               kcfb(ncfb) = pa//pb
+               cflb(ncfb) = 0.0d0
+            end if
+c
+c     angle charge flux parameters
+c
+         else if (keyword(1:9) .eq. 'ANGCFLUX ') then
+            ia = 0
+            ib = 0
+            ic = 0
+            cfa1 = 0.0d0
+            cfa2 = 0.0d0
+            cfb1 = 0.0d0
+            cfb2 = 0.0d0
+            string = record(next:240)
+            read (string,*,err=690,end=690)  ia,ib,ic,cfa1,cfa2,
+     &                                       cfb1,cfb2
+  690       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
+            ncfa = ncfa + 1
+            if (ia .le. ic) then
+               kcfa(ncfa) = pa//pb//pc
+            else
+               kcfa(ncfa) = pc//pb//pa
+            end if
+            cfla(1,ncfa) = cfa1
+            cfla(2,ncfa) = cfa2
+            cflab(1,ncfa) = cfb1
+            cflab(2,ncfa) = cfb2
+c
+c     charge penetration parameters
+c
+         else if (keyword(1:7) .eq. 'CHGPEN ') then
+            ia = 0
+            pel = 0.0d0
+            pal = 0.0d0
+            string = record(next:240)
+            read (string,*,err=700,end=700)  ia,pel,pal
+  700       continue
+            if (ia .ne. 0) then
+               cpele(ia) = abs(pel)
+               cpalp(ia) = pal
+            end if
+c
+c     damped dispersion parameters
+c
+         else if (keyword(1:11) .eq. 'DISPERSION ') then
+            ia = 0
+            cdp = 0.0d0
+            adp = 0.0d0
+            string = record(next:240)
+            read (string,*,err=710,end=710)  ia,cdp,adp
+  710       continue
+            if (ia .ne. 0) then
+               dspsix(ia) = cdp
+               dspdmp(ia) = adp
             end if
       end if
       end do

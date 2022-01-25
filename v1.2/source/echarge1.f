@@ -181,7 +181,7 @@ c
       real*8, allocatable :: cscale(:)
       real*8 s,ds,cshortcut2,facts,factds
       logical testcut,shortrange,longrange,fullrange
-      character*10 mode
+      character*11 mode
       character*80 :: RoutineName
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'

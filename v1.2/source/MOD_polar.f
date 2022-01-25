@@ -19,6 +19,8 @@ c     winpdamp    window object corresponding to pdamp
 c     uind      induced dipole components at each multipole site
 c     uinp      induced dipoles in field used for energy interactions
 c     npolar    total number of polarizable sites in the system
+c     dirdamp   direct polarization damping value for each site
+c     windirdamp window object corresponding to dirdamp
 c     tinypol   negligeable polarisability to allow convergence
 c
 c
@@ -29,5 +31,7 @@ c
       real*8, pointer :: polarity(:),thole(:),pdamp(:)
       integer :: winpolarity,winthole,winpdamp
       real*8, allocatable :: uind(:,:),uinp(:,:)
+      real*8, pointer :: dirdamp(:)
+      integer :: windirdamp
       save
       end
