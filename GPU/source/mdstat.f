@@ -76,6 +76,7 @@ c
 #if (defined(SINGLE) | defined(MIXED))
       freq    = 100
       period  = max(1,iprint/freq)
+      if (iprint.eq.1) freq=1
 #else
       freq    = iprint
       period  = 1
