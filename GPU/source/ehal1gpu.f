@@ -20,9 +20,11 @@ c
       module ehal1gpu_inl
         integer(1) one1,two1
         integer onei
-        real(t_p)  half,one
+        real(t_p) half,one
+        real(r_p) elrc,vlrc
         parameter( half=0.5, one=1.0, one1=1, two1=2,
      &             onei=1 )
+!$acc declare create(elrc,vlrc)
         contains
 #include "convert.f.inc"
 #include "image.f.inc"
@@ -32,6 +34,7 @@ c
       subroutine ehal1gpu
 
       use domdec     ,only: ndir,rank
+      use ehal1gpu_inl,only: elrc,vlrc
       use energi     ,only: ev
       use interfaces ,only: ehal1c_p,ehalshort1c_p
      &               ,ehallong1c_p
@@ -40,7 +43,6 @@ c
       use virial     ,only: vir
       use vdwpot     ,only: use_vcorr
       implicit none
-      real(r_p) elrc,vlrc
 c
       ! PME-Core case
       if (use_pmecore.and.rank.ge.ndir) return
@@ -59,15 +61,13 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr.and..not.use_vdwlong) then
-!$acc data create(elrc,vlrc) async(def_queue)
          call evcorr1gpu (elrc,vlrc)
-!$acc serial present(ev,vir) async(def_queue)
+!$acc serial present(ev,vir,elrc,vlrc) async(def_queue)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
          vir(2,2) = vir(2,2) + vlrc
          vir(3,3) = vir(3,3) + vlrc
 !$acc end serial
-!$acc end data
       end if
 
       end
