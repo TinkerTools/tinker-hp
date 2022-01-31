@@ -570,9 +570,11 @@ c
       use atmtyp
       use atoms
       use bond
+      use domdec
       use merck
       use potent
       use ring
+      use mpi
       implicit none
       integer i,j,k,l,m
       integer ia,ib,ic
@@ -582,6 +584,7 @@ c
       integer bnd_ab,bnd_bc
       integer at,minat
       integer mclass
+      integer ierr
       real*8 d,beta
       real*8 z2(100),c(100)
       logical done
@@ -590,6 +593,7 @@ c
 c
 c     set empirical rule parameters for some common elements
 c
+      if (hostrank.ne.0) goto 30
       do i = 1, 100
          z2(i) = 1000.0d0
          c(i) = 1000.0d0
@@ -844,6 +848,7 @@ c
          angtyp(i) = 'HARMONIC'
          if (anat(i) .eq. 180.0d0)  angtyp(i) = 'LINEAR'
       end do
+ 30   call MPI_BARRIER(hostcomm,ierr)
 c
 c     turn off the angle bending potential if it is not used
 c

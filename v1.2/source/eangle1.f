@@ -87,7 +87,7 @@ c
          ialoc = loc(ia)
          ibloc = loc(ib)
          icloc = loc(ic)
-         idloc = loc(id)
+         if (id.ne.0) idloc = loc(id)
          ideal = anat(i)
          force = ak(i)
 c

@@ -73,6 +73,10 @@ c
 c
       if (nion .eq. 0)  return
 c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
 c     compute the reciprocal space part of the Ewald summation
 c
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
@@ -181,13 +185,13 @@ c     compute the short, long, or full real space part of the Ewald summation
       fullrange  = .not.(shortrange.or.longrange)
 
       if (shortrange) then 
-         RoutineName = 'ecrealshort3d'
+         RoutineName = 'ecrealshort0d'
          mode        = 'SHORTEWALD'
       else if (longrange) then
-         RoutineName = 'ecreallong3d'
+         RoutineName = 'ecreallong0d'
          mode        = 'EWALD'
       else
-         RoutineName = 'ecreal3d'
+         RoutineName = 'ecreal0d'
          mode        = 'EWALD'
       endif
 
@@ -261,7 +265,6 @@ c
      &                      r2 .le. off2,
      &                      longrange
      &                     )
-c           if (r2 .le. off2) then
             if (testcut) then
                r = sqrt(r2)
                rb = r + ebuffer
@@ -283,6 +286,8 @@ c
                   facts =         s
                else if(longrange) then
                   facts = 1.0d0 - s
+               else
+                  facts  = 1.0d0
                endif
                ec = ec + e * facts
 c

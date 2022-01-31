@@ -109,13 +109,6 @@ c
            if (ksb(i) .eq. blank)  nsb = i - 1
         end do
 c
-c       use special stretch-bend parameter assignment method for MMFF
-c
-        if (forcefield .eq. 'MMFF94') then
-           call kstrbndm
-           return
-        end if
-c
 c     assign the stretch-bend parameters for each angle
 c
         nstrbnd = 0
@@ -161,9 +154,26 @@ c
            end do
         end if
 c
+c       use special stretch-bend parameter assignment method for MMFF
+c
+        if (forcefield .eq. 'MMFF94') then
+           call kstrbndm(init)
+           return
+        end if
+c
 c       turn off the stretch-bend potential if it is not used
 c
         if (nstrbnd .eq. 0)  use_strbnd = .false.
+      end if
+c
+c       use special stretch-bend parameter assignment method for MMFF
+c
+c
+c       use special stretch-bend parameter assignment method for MMFF
+c
+      if (forcefield .eq. 'MMFF94') then
+         call kstrbndm(.false.)
+         return
       end if
 c
       nsb = maxnsb
@@ -245,7 +255,7 @@ c     and Empirical Rules", Journal of Computational Chemistry, 17,
 c     616-641 (1995)
 c
 c
-      subroutine kstrbndm
+      subroutine kstrbndm(init)
       use sizes
       use angle
       use atmlst
@@ -263,16 +273,417 @@ c
       integer ira,irb,irc
       integer nb1,nb2
       integer stbnt,ab,bc
+      integer iangle,strbndcount
       logical ring3,ring4
+      logical init
 c
 c
 c     assign stretch-bend parameters for each angle
 c
-      nstrbnd = 0
-      do i = 1, nangle
-         ia = iang(1,i)
-         ib = iang(2,i)
-         ic = iang(3,i)
+      if (init) then
+        nstrbnd = 0
+        do i = 1, nangle
+           ia = iang(1,i)
+           ib = iang(2,i)
+           ic = iang(3,i)
+           nbstrbnd(i) = nstrbnd
+c
+c       stretch-bend interactions are omitted for linear angles
+c
+           if (lin(class(ib)) .eq. 0) then
+              ita = class (ia)
+              itb = class (ib)
+              itc = class (ic)
+              ina = atomic(ia)
+              inb = atomic(ib)
+              inc = atomic(ic)
+              sbk(1,nstrbnd+1) = 0.0d0
+              sbk(2,nstrbnd+1) = 0.0d0
+              do k = 1, n12(ib)
+                 if (i12(k,ib) .eq. ia)  nb1 = bndlist(k,ib)
+                 if (i12(k,ib) .eq. ic)  nb2 = bndlist(k,ib)
+              end do
+              stbnt = 0
+              ab = 0
+              bc = 0
+c
+c       check if the atoms belong to a single 3- or 4-membered ring
+c
+              ring3 = .false.
+              ring4 = .false.
+              do j = 1, nring3
+                 do k = 1, 3
+                    if (ia .eq. iring3(k,j)) then
+                       do l = 1, 3
+                          if (ib .eq. iring3(l,j)) then
+                             do m = 1, 3
+                                if (ic .eq. iring3(m,j))
+     &                             ring3 = .true.
+                             end do
+                          end if
+                       end do
+                    end if
+                 end do
+              end do
+              if (.not. ring3) then
+                 do j = 1, nring4
+                    do k = 1, 4
+                       if (ia .eq. iring4(k,j)) then
+                          do l = 1, 4
+                             if (ib .eq. iring4(l,j)) then
+                                do m = 1, 4
+                                   if (ic .eq. iring4(m,j))
+     &                                ring4 = .true.
+                                end do
+                             end if
+                          end do
+                       end if
+                    end do
+                 end do
+              end if
+c
+c       determine the MMFF stretch-bend type for the current angle
+c
+              if (ita .lt. itc) then
+                 do j = 1, nlignes
+                    if (((ia.eq.bt_1(j,1).and.ib.eq.bt_1(j,2)) .or.
+     &                   (ib.eq.bt_1(j,1).and.ia.eq.bt_1(j,2)))) then
+                       ab = 1
+                    end if
+                    if (((ic.eq.bt_1(j,1).and.ib.eq.bt_1(j,2)) .or.
+     &                   (ib.eq.bt_1(j,1).and.ic.eq.bt_1(j,2)))) then
+                       bc = 1
+                    end if
+                 end do
+                 if (ab.eq.1 .and. bc.eq.0)  stbnt = 1
+                 if (ab.eq.0 .and. bc.eq.1)  stbnt = 2
+                 if (ab.eq.1 .and. bc.eq.1)  stbnt = 3
+                 if (stbnt.eq.0 .AND. ring3) then
+                    stbnt = 5
+                 else if (stbnt.eq.1 .and. ring3) then
+                    stbnt = 6
+                 else if (stbnt.eq.2 .and. ring3) then
+                    stbnt = 7
+                 else if (stbnt.eq.3 .and. ring3) then
+                    stbnt = 8
+                 else if (stbnt.eq.0 .and. ring4) then
+                    stbnt = 4
+                 else if (stbnt.eq.1 .and. ring4) then
+                    stbnt = 9
+                 else if (stbnt.eq.2 .and. ring4) then
+                    stbnt = 10
+                 else if (stbnt.eq.3 .and. ring4) then
+                    stbnt = 11
+                 end if
+              else if (ita .gt. itc) then
+                 do j = 1, nlignes
+                    if (((ia.eq.bt_1(j,1).and.ib.eq.bt_1(j,2)) .or.
+     &                   (ib.eq.bt_1(j,1).and.ia.eq.bt_1(j,2)))) then
+                       ab = 1
+                    end if
+                    if (((ic.eq.bt_1(j,1).and.ib.eq.bt_1(j,2)) .or.
+     &                   (ib.eq.bt_1(j,1).and.ic.eq.bt_1(j,2)))) then
+                       bc = 1
+                    end if
+                 end do
+                 if (ab.eq.1 .and. bc.eq.0)  stbnt = 2
+                 if (ab.eq.0 .and. bc.eq.1)  stbnt = 1
+                 if (ab.eq.1 .and. bc.eq.1)  stbnt = 3
+                 if (stbnt.eq.0 .and. ring3) then
+                    stbnt = 5
+                 else if (stbnt.eq.1 .and. ring3) then
+                    stbnt = 6
+                 else if (stbnt.eq.2 .and. ring3) then
+                    stbnt = 7
+                 else if (stbnt.eq.3 .and. ring3) then
+                    stbnt = 8
+                 else if (stbnt.eq.0 .and. ring4) then
+                    stbnt = 4
+                 else if (stbnt.eq.1 .and. ring4) then
+                    stbnt = 9
+                 else if (stbnt.eq.2 .and. ring4) then
+                    stbnt = 10
+                 else if (stbnt.eq.3 .and. ring4) then
+                    stbnt = 11
+                 end if
+              else if (ita .eq. itc) then
+                 do j = 1, nlignes
+                    if (((ic.eq.bt_1(j,1).and.ib.eq.bt_1(j,2)) .or.
+     &                   (ib.eq.bt_1(j,1).and.ic.eq.bt_1(j,2)))) then
+                       bc = 1
+                    end if
+                    if (((ia.eq.bt_1(j,1).and.ib.eq.bt_1(j,2)) .or.
+     &                   (ib.eq.bt_1(j,1).and.ia.eq.bt_1(j,2)))) then
+                       ab = 1
+                    end if
+                 end do
+                 if (ab.eq.1 .and. bc.eq.0)  stbnt = 1
+                 if (ab.eq.0 .and. bc.eq.1)  stbnt = 2
+                 if (ab.eq.1 .and. bc.eq.1)  stbnt = 3
+                 if (stbnt.eq.0 .and. ring3) then
+                    stbnt = 5
+                 else if (stbnt.eq.1 .and. ring3) then
+                    stbnt = 6
+                 else if (stbnt.eq.2 .and. ring3) then
+                    stbnt = 7
+                 else if (stbnt.eq.3 .and. ring3) then
+                    stbnt = 8
+                 else if (stbnt.eq.0 .and. ring4) then
+                    stbnt = 4
+                 else if (stbnt.eq.1 .and. ring4) then
+                    stbnt = 9
+                 else if (stbnt.eq.2 .and. ring4) then
+                    stbnt = 10
+                 else if (stbnt.eq.3 .and. ring4) then
+                    stbnt = 11
+                 end if
+              end if
+c
+c       find the periodic table row for the atoms in the angle
+c
+              if (ina .eq. 1)  ira = 0
+              if (ina.ge.3 .and. ina.le.10)  ira = 1
+              if (ina.ge.11 .and. ina.le.18)  ira = 2
+              if (ina.ge.19 .and. ina.le.36)  ira = 3
+              if (ina.ge.37 .and. ina.le.54)  ira = 4
+              if (inb .eq. 1)  irb = 0
+              if (inb.ge.3 .and. inb.le.10)  irb = 1
+              if (inb.ge.11 .and. inb.le.18)  irb = 2
+              if (inb.ge.19 .and. inb.le.36)  irb = 3
+              if (inb.ge.37 .and. inb.le.54)  irb = 4
+              if (inc .eq. 1)  irc = 0
+              if (inc.ge.3 .and. inc.le.10)  irc = 1
+              if (inc.ge.11 .and. inc.le.18)  irc = 2
+              if (inc.ge.19 .and. inc.le.36)  irc = 3
+              if (inc.ge.37 .and. inc.le.54)  irc = 4
+c
+c       assign parameters via explicit values or empirical rules
+c
+              if (stbnt .eq. 11) then
+                 if ((stbn_abc11(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba11(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc11(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba11(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 10) then
+                 if ((stbn_abc10(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba10(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc10(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba10(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 9) then
+                 if ((stbn_abc9(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba9(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc9(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba9(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 8) then
+                 if ((stbn_abc8(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc8(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba8(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 7) then
+                 if ((stbn_abc7(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba7(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc7(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba7(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 6) then
+                 if ((stbn_abc6(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc6(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba6(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 5) then
+                 if (((stbn_abc5(ita,itb,itc).ne.1000.0d0) .and.
+     &                (stbn_cba3(ita,itb,itc).ne.1000.0d0))
+     &              .or. (ita.eq.22.and.itb.eq.22.and.itc.eq.22)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc5(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba5(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 4) then
+                 if ((stbn_abc4(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba4(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc4(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba4(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 3) then
+                 if ((stbn_abc3(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc3(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba3(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 2) then
+                if ((stbn_abc2(ita,itb,itc).ne.1000.0d0) .and.
+     &              (stbn_cba2(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc2(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba2(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 1) then
+                 if ((stbn_abc1(ita,itb,itc).ne.1000.0d0) .and.
+     &               (stbn_cba1(ita,itb,itc).ne.1000.0d0)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc1(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba1(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              else if (stbnt .eq. 0) then
+                 if (((stbn_abc(ita,itb,itc) .ne. 1000.0d0) .and.
+     &                (stbn_cba(ita,itb,itc) .ne. 1000.0d0))
+     &              .or. (ita.eq.12.AND.itb.eq.20.AND.itc.eq.20)
+     &              .or. (ita.eq.20.AND.itb.eq.20.AND.itc.eq.12)) then
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = stbn_abc(ita,itb,itc)
+                    sbk(2,nstrbnd) = stbn_cba(ita,itb,itc)
+                 else
+                    nstrbnd = nstrbnd + 1
+                    isb(1,nstrbnd) = i
+                    isb(2,nstrbnd) = nb1
+                    isb(3,nstrbnd) = nb2
+                    sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+                    sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                 end if
+              end if
+           end if
+        end do
+c
+c     turn off the stretch-bend potential if it is not used
+c
+        if (nstrbnd .eq. 0)  use_strbnd = .false.
+      end if
+
+      if (allocated(strbndglob)) deallocate(strbndglob)
+      allocate (strbndglob(nangleloc))
+      nstrbndloc = 0
+      do i = 1, nangleloc
+         iangle = angleglob(i)
+         strbndcount = nbstrbnd(iangle)
+         ia = iang(1,iangle)
+         ib = iang(2,iangle)
+         ic = iang(3,iangle)
 c
 c     stretch-bend interactions are omitted for linear angles
 c
@@ -283,12 +694,6 @@ c
             ina = atomic(ia)
             inb = atomic(ib)
             inc = atomic(ic)
-            sbk(1,nstrbnd+1) = 0.0d0
-            sbk(2,nstrbnd+1) = 0.0d0
-            do k = 1, n12(ib)
-               if (i12(k,ib) .eq. ia)  nb1 = bndlist(k,ib)
-               if (i12(k,ib) .eq. ic)  nb2 = bndlist(k,ib)
-            end do
             stbnt = 0
             ab = 0
             bc = 0
@@ -424,240 +829,140 @@ c
                   stbnt = 11
                end if
             end if
-c
-c     find the periodic table row for the atoms in the angle
-c
-            if (ina .eq. 1)  ira = 0
-            if (ina.ge.3 .and. ina.le.10)  ira = 1
-            if (ina.ge.11 .and. ina.le.18)  ira = 2
-            if (ina.ge.19 .and. ina.le.36)  ira = 3
-            if (ina.ge.37 .and. ina.le.54)  ira = 4
-            if (inb .eq. 1)  irb = 0
-            if (inb.ge.3 .and. inb.le.10)  irb = 1
-            if (inb.ge.11 .and. inb.le.18)  irb = 2
-            if (inb.ge.19 .and. inb.le.36)  irb = 3
-            if (inb.ge.37 .and. inb.le.54)  irb = 4
-            if (inc .eq. 1)  irc = 0
-            if (inc.ge.3 .and. inc.le.10)  irc = 1
-            if (inc.ge.11 .and. inc.le.18)  irc = 2
-            if (inc.ge.19 .and. inc.le.36)  irc = 3
-            if (inc.ge.37 .and. inc.le.54)  irc = 4
+cc
+cc     find the periodic table row for the atoms in the angle
+cc
+c            if (ina .eq. 1)  ira = 0
+c            if (ina.ge.3 .and. ina.le.10)  ira = 1
+c            if (ina.ge.11 .and. ina.le.18)  ira = 2
+c            if (ina.ge.19 .and. ina.le.36)  ira = 3
+c            if (ina.ge.37 .and. ina.le.54)  ira = 4
+c            if (inb .eq. 1)  irb = 0
+c            if (inb.ge.3 .and. inb.le.10)  irb = 1
+c            if (inb.ge.11 .and. inb.le.18)  irb = 2
+c            if (inb.ge.19 .and. inb.le.36)  irb = 3
+c            if (inb.ge.37 .and. inb.le.54)  irb = 4
+c            if (inc .eq. 1)  irc = 0
+c            if (inc.ge.3 .and. inc.le.10)  irc = 1
+c            if (inc.ge.11 .and. inc.le.18)  irc = 2
+c            if (inc.ge.19 .and. inc.le.36)  irc = 3
+c            if (inc.ge.37 .and. inc.le.54)  irc = 4
 c
 c     assign parameters via explicit values or empirical rules
 c
             if (stbnt .eq. 11) then
                if ((stbn_abc11(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba11(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc11(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba11(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 10) then
                if ((stbn_abc10(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba10(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc10(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba10(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 9) then
                if ((stbn_abc9(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba9(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc9(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba9(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 8) then
                if ((stbn_abc8(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc8(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba8(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 7) then
                if ((stbn_abc7(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba7(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc7(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba7(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 6) then
                if ((stbn_abc6(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc6(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba6(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 5) then
                if (((stbn_abc5(ita,itb,itc).ne.1000.0d0) .and.
      &              (stbn_cba3(ita,itb,itc).ne.1000.0d0))
      &            .or. (ita.eq.22.and.itb.eq.22.and.itc.eq.22)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc5(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba5(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 4) then
                if ((stbn_abc4(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba4(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc4(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba4(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 3) then
                if ((stbn_abc3(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc3(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba3(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 2) then
               if ((stbn_abc2(ita,itb,itc).ne.1000.0d0) .and.
      &            (stbn_cba2(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc2(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba2(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 1) then
                if ((stbn_abc1(ita,itb,itc).ne.1000.0d0) .and.
      &             (stbn_cba1(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc1(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba1(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             else if (stbnt .eq. 0) then
                if (((stbn_abc(ita,itb,itc) .ne. 1000.0d0) .and.
      &              (stbn_cba(ita,itb,itc) .ne. 1000.0d0))
      &            .or. (ita.eq.12.AND.itb.eq.20.AND.itc.eq.20)
      &            .or. (ita.eq.20.AND.itb.eq.20.AND.itc.eq.12)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba(ita,itb,itc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+                  nstrbndloc = nstrbndloc + 1
+                  strbndglob(nstrbndloc) = strbndcount + 1
                end if
             end if
          end if
       end do
-c
-c     turn off the stretch-bend potential if it is not used
-c
-      if (nstrbnd .eq. 0)  use_strbnd = .false.
       return
       end

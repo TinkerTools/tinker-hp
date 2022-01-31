@@ -59,6 +59,10 @@ c
       dec = 0.0d0
       if (nion .eq. 0)  return
 c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
 c     compute the reciprocal space part of the Ewald summation
 c
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))

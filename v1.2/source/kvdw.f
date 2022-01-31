@@ -310,7 +310,6 @@ c
            jvt(nvt) = 1
   220      continue
         end do
- 1000   call MPI_BARRIER(hostcomm,ierr)
 c
 c       perform dynamic allocation of some local arrays
 c
@@ -491,6 +490,7 @@ c
               end do
            end do
         end if
+ 1000   call MPI_BARRIER(hostcomm,ierr)
 c
 c       vdw reduction factor information for each individual atom
 c
