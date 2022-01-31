@@ -780,13 +780,15 @@ c
       allocate (repartcell(n))
       allocate (indcelltemp(n))
       cell_len = 0
+      indcelltemp = 0
 c
       do i = 1, nlocnl
         iglob = ineignl(i)
         xr = x(iglob)
         yr = y(iglob)
         zr = z(iglob)
-        if (use_bounds) call image(xr,yr,zr)
+c        if (use_bounds) call image(xr,yr,zr)
+        call image(xr,yr,zr)
         if (abs(xr-xmax).lt.eps1) xr = xr-eps2
         if (abs(yr-ymax).lt.eps1) yr = yr-eps2
         if (abs(zr-zmax).lt.eps1) zr = zr-eps2
