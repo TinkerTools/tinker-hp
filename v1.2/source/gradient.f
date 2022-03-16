@@ -33,6 +33,9 @@ c
       use plumed
 #endif
       implicit none
+#ifdef PLUMED
+      integer iglob,iloc
+#endif
       real*8 energy
       real*8 derivs(3,nbloc)
       real*8 time0,time1
