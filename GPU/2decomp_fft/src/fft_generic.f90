@@ -36,11 +36,13 @@ module decomp_2d_fft
 
     integer :: cbuf_size
 
-    if (nrank==0) then
+#ifndef _OPENACC
+    if (nrank==0.and.dcp_verbose) then
        write(*,*) ' '
        write(*,*) '***** Using the generic FFT engine *****'
        write(*,*) ' '
     end if
+#endif
 
     cbuf_size = max(ph%xsz(1), ph%ysz(2))
     cbuf_size = max(cbuf_size, ph%zsz(3))

@@ -41,11 +41,13 @@ module decomp_2d_fft
 
     implicit none
 
-    if (nrank==0) then
+#ifndef _OPENACC
+    if (nrank==0.and.dcp_verbose) then
        write(*,*) ' '
        write(*,*) '***** Using the MKL engine *****'
        write(*,*) ' '
     end if
+#endif
 
     ! For C2C transforms
     call c2c_1m_x_plan(c2c_x, ph)

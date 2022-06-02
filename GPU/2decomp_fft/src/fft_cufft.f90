@@ -42,7 +42,7 @@ module decomp_2d_cufft
   integer :: cuplan_z   ! Plan for 1D z FFT
   integer :: cuplan_xyz ! Plan for 3D xyz FFT
   integer(4) :: ierr
-  integer, parameter :: CUFFT_ERROR = 43, CUFFT_NOT_IMPLEMENTED = 44
+  integer, parameter :: CUFFT_ERROR = 43, DECOMP_CUFFT_NOT_IMPLEMENTED = 44
 
   ! Declare generic interfaces to handle different inputs
   ! (~ interface from lib2decomp)
@@ -144,14 +144,14 @@ contains
     implicit none
     integer :: ierr
 
-    if (nrank==0) then
+    if (nrank==0.and.dcp_verbose) then
       write(*,*) ' '
       write(*,*) '***** Using the CUFFT engine *****'
       write(*,*) ' '
     end if
 
     if (format /= PHYSICAL_IN_X) &
-      call decomp_2d_abort(CUFFT_NOT_IMPLEMENTED, "format /= PHYSICAL_IN_X unsupported with cufft")
+      call decomp_2d_abort(DECOMP_CUFFT_NOT_IMPLEMENTED, "format /= PHYSICAL_IN_X unsupported with cufft")
 
     ierr = 0
 
@@ -236,9 +236,9 @@ contains
     integer, intent(IN) :: isign
 
     if(format/=PHYSICAL_IN_X) &
-      call decomp_2d_abort(CUFFT_NOT_IMPLEMENTED, "format /= PHYSICAL_IN_X unsupported with cufft")
+      call decomp_2d_abort(DECOMP_CUFFT_NOT_IMPLEMENTED, "format /= PHYSICAL_IN_X unsupported with cufft")
     if (dims(1)>1) &
-      call decomp_2d_abort(CUFFT_NOT_IMPLEMENTED, "Unsupported : xy not contiguous")
+      call decomp_2d_abort(DECOMP_CUFFT_NOT_IMPLEMENTED, "Unsupported : xy not contiguous")
 
     ! Serial Mode
     if (nproc.eq.1) then

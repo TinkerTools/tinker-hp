@@ -160,6 +160,7 @@ module decomp_2d
   complex(mytype), pointer, dimension(:),public :: work1_c, work2_c
 
   ! Debug info
+  logical, save, public :: dcp_verbose
   integer dndebug
 
   abstract interface
@@ -1413,11 +1414,12 @@ contains
 
     TYPE(DECOMP_INFO) :: decomp
 
-    if (nrank==0) write(*,*) 'In auto-tuning mode......'
-
+#ifndef _OPENACC
+    if (nrank==0.and.dcp_verbose) write(*,*) 'In auto-tuning mode......'
+#endif
 #ifdef _OPENACC
     ! TODO Add auto-tuning mode with cudaFFT
-    if (nrank.eq.0) print *, "OVERRIDE : Z decomposition is needed for cuFFT (for now)"
+    if (nrank.eq.0.and.dcp_verbose) print *, "OVERRIDE : Z decomposition is needed for cuFFT (for now)"
     best_p_row = 1
     best_p_col = iproc
     return  
@@ -1496,7 +1498,7 @@ contains
     deallocate(factors)
 
     if (best_p_row/=-1) then
-       if (nrank==0) then
+       if (nrank==0.and.dcp_verbose) then
           write(*,*) 'the best processor grid is probably ', &
                best_p_row, ' by ', best_p_col
        end if

@@ -263,11 +263,13 @@ module decomp_2d_fft
 
     implicit none
 
-    if (nrank==0) then
+#ifndef _OPENACC
+    if (nrank==0.and.dcp_verbose) then
        write(*,*) ' '
        write(*,*) '***** Using the FFTW (version 3.x) engine *****'
        write(*,*) ' '
     end if
+#endif
 
     if (format == PHYSICAL_IN_X) then
 
