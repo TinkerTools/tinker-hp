@@ -43,22 +43,6 @@ error_mkl(){
 EOP
 }
 
-
-# Check for GNUROOT variable in your environnement path before running
-if [[ -z ${GNUROOT+x} ]]; then
-   GNUROOT=`which g++ | sed 's_/bin/g++__'`
-   export GNUROOT
-   cat << EOP
-   !!! WARNING GNUROOT variable not find in environment !!!
-   setting it to "$GNUROOT" according to g++ compiler location
-
-   *** You might later need to export this variable for development purposes ***
-
-   Installation will resume shortly
-EOP
-   sleep 5
-fi
-
 #test if sourced or not
 (return 0 2>/dev/null) && sourced=1 || sourced=0
 if [ $sourced -eq 1 ]; then
@@ -82,23 +66,50 @@ tinkerdir=$(dirname `dirname $0`)
 # Make sure those params do not conflict with 'current_config_[dm]'
 #
 
-c_c=60,70,80                  #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
+c_c=60,70,75,80               #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
 cuda_ver=11.0                 #   Cuda Version to be used by OpenACC compiler  (not the CUDA C/C++ compiler)
 build_plumed=0                #   [0]|1      0: disable 1: enable
+build_colvars=0               #   [0]|1      0: disable 1: enable
 target_arch='gpu'             #   [gpu]|cpu
 FPA=1                         #   Enable Fixed Precision Arithmetic (Useful for non HPC-Accelerators)
-#add_options_f='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package strictly above 21.3 version
+#add_options_f='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package version 21.[3-7]
 
-[ $FPA -eq 1 ] && p_suffix=fpa || p_suffix=mixed       # Config binary suffix following FPA feature
-current_config="compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed arch=$target_arch"
+pre_suffix=''
+[ $build_plumed  -eq 1 ] && pre_suffix=${pre_suffix}_plumed
+[ $build_colvars -eq 1 ] && pre_suffix=${pre_suffix}_colvars
+
+[ $FPA -eq 1 ] && p_suffix=${pre_suffix}.fpa || p_suffix=${pre_suffix}.mixed       # Config binary suffix following FPA feature
+current_config="arch=$target_arch compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed COLVARS_SUPPORT=$build_colvars"
 [ -n "$add_options_f" ] && current_config="$current_config add_options_f=$add_options_f"
 
-current_config_d="$current_config prog_suffix=.gpu"
-current_config_m="$current_config FPA_SUPPORT=$FPA prec=m prog_suffix=.$p_suffix"
+current_config_d="$current_config prog_suffix=${pre_suffix}.gpu"
+current_config_m="$current_config FPA_SUPPORT=$FPA prec=m prog_suffix=$p_suffix"
 
-[ $# -ge 1 ] && ntask=$1 || ntask=12
+# ------------------------------------
+# Clean Project and exit if instructed
+# ------------------------------------
+[ $# -ge 1 ] && [ $1 = "clean" ] && make $current_config distclean && exit
 
+[ $# -ge 1 ] && ntask=$1 || ntask=16
+
+# Check for GNUROOT variable in your environnement path before running
+if [[ -z ${GNUROOT+x} ]]; then
+   GNUROOT=`which g++ | sed 's_/bin/g++__'`
+   export GNUROOT
+   cat << EOP
+   !!! WARNING GNUROOT variable not find in environment !!!
+   setting it to "$GNUROOT" according to g++ compiler location
+
+   *** You might later need to export this variable for development purposes ***
+
+   Installation will resume shortly
+EOP
+   sleep 4
+fi
+
+# ------------------------------------------------
 # Check for MKLROOT variable in your environnement
+# ------------------------------------------------
 [[ -z ${MKLROOT+x} ]] && [[ ${target_arch} = 'cpu' ]] && error_mkl && exit
 
 # --------
