@@ -48,18 +48,19 @@ c
 !      module procedure set_to_zero5
 !      end interface
 
+      interface associate_ptr
+      module procedure associate_p_i41
+      module procedure associate_p_i81
+      module procedure associate_p_r41
+      module procedure associate_p_r81
+      end interface
+
       interface set_value
       module procedure setr
       module procedure seti
       module procedure set_dip
       end interface
       
-      interface atomic_Add
-      module procedure atomic_Adds
-      module procedure atomic_Adds2
-      module procedure atomic_Addv
-      end interface
-
       parameter(
      &  rpole_ind_extract =(/1,2,3,4,5,9,13,6,7,10/),
 c          each index correspond to
@@ -588,47 +589,6 @@ c
 
       end subroutine
 c
-      subroutine atomic_Adds(loc,value,array)
-!$acc routine
-      implicit none
-      integer  ,intent(in )::loc
-      real(t_p),intent(in )::value
-      real(t_p),intent(inout)::array(*)
-
-!$acc atomic update
-      array(loc) = array(loc) + value
-
-      end subroutine
-c
-      subroutine atomic_Adds2(loc,value1,value2,array)
-!$acc routine
-      implicit none
-      integer  ,intent(in )::loc
-      real(t_p),intent(in )::value1,value2
-      real(t_p),intent(inout)::array(*)
-
-!$acc atomic update
-      array(loc)   = array(loc) + value1
-!$acc atomic update
-      array(loc+1) = array(loc+1) + value2
-
-      end subroutine
-c
-      subroutine atomic_Addv(loc,value,n,array)
-!$acc routine
-      implicit none
-      integer  ,intent(in )::loc,n
-      real(t_p),intent(in )::value(n)
-      real(t_p),intent(inout)::array(*)
-      integer i
-
-      do i= 0, n-1
-!$acc atomic update
-         array(loc+i) = array(loc+i) + value(i+1)
-      end do
-
-      end subroutine
-c
       subroutine atomic_Add_field(loc,value,array)
 !$acc routine
       implicit none
@@ -645,30 +605,34 @@ c
       end do
 
       end subroutine
-
-      end module
-
-
 c
-c     ###############################################################
-c     #                                                             #
-c     #  -- integrator workSpace module --                          #
-c     #  holds data structure to be used inside integrator routines #
-c     #                                                             #
-c     ###############################################################
+      subroutine associate_p_i41(src_t,dst_p,siz1)
+      implicit none
+      integer(int_ptr_kind()),intent(in):: siz1
+      integer,target,intent(in) :: src_t(siz1)
+      integer,pointer   :: dst_p(:)
+      dst_p(1:siz1) => src_t(1:siz1)
+      end subroutine
+      subroutine associate_p_i81(src_t,dst_p,siz1)
+      implicit none
+      integer(int_ptr_kind()),intent(in):: siz1
+      integer(8),target,intent(in) :: src_t(siz1)
+      integer(8),pointer   :: dst_p(:)
+      dst_p(1:siz1) => src_t(1:siz1)
+      end subroutine
+      subroutine associate_p_r41(src_t,dst_p,siz1)
+      implicit none
+      integer(int_ptr_kind()),intent(in):: siz1
+      real(4),target,intent(in) :: src_t(siz1)
+      real(4),pointer   :: dst_p(:)
+      dst_p(1:siz1) => src_t(1:siz1)
+      end subroutine
+      subroutine associate_p_r81(src_t,dst_p,siz1)
+      implicit none
+      integer(int_ptr_kind()),intent(in):: siz1
+      real(8),target,intent(in) :: src_t(siz1)
+      real(8),pointer   :: dst_p(:)
+      dst_p(1:siz1) => src_t(1:siz1)
+      end subroutine
 c
-
-c     derivs  stores forces computes by gradient routine
-c     etot    holds the system total energy at current timestep
-c     epot    holds the system potential energy at current timestep
-c     eksum   holds the system kinetic energy at current timestep
-c     temp    holds the system temperature at current timestep
-c     pres    holds the system pressure at current timestep
-
-      module integrate_ws
-      real(r_p),allocatable::derivs(:,:)
-      real(r_p) etot,epot,eksum
-      real(r_p) temp,pres
-      real(r_p) ekin(3,3)
-      real(r_p) stress(3,3)
       end module

@@ -289,7 +289,7 @@ c
  12   format(2x,'upload_device_kopdist')
       if(rank.eq.0.and.tinkerdebug) print 12
 #endif
-!$acc update device(angtyp)
+!$acc update device(angtypI)
       end subroutine
 
       subroutine delete_data_kopdist

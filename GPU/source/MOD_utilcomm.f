@@ -48,7 +48,7 @@ c
       integer   ,allocatable,target:: buffMpi_i1(:),buffMpi_i2(:)
       real(r_p) ,allocatable,target:: buffMpi_p1(:),buffMpi_p2(:)
      &          ,buffMpi_p3(:)
-      mdyn_rtyp ,allocatable,target:: buffMpi_fr(:)
+      mdyn_rtyp ,allocatable,target:: buffMpi_f0(:),buffMpi_f1(:)
 
       end module
 

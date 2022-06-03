@@ -28,19 +28,32 @@ c     qopd       quartic coefficient in out-of-plane distance potential
 c     popd       quintic coefficient in out-of-plane distance potential
 c     sopd       sextic coefficient in out-of-plane distance potential
 c     angtyp     type of angle bending function for each bond angle
+c     angtypI    Integer type of angle bending function for each bond angle
 c     winangtyp  window object corresponding to angtyp
+c     winangtypI window object corresponding to angtypI
 c     opbtyp     type of out-of-plane bend potential energy function
+c     opbtypI    Integer type of out-of-plane bend potential energy function
 c
 c
 #include "tinker_precision.h"
       module angpot
       implicit none
+      enum, bind(C)
+      enumerator OPB_W_D_C
+      enumerator OPB_ALLINGER
+      end enum
+      enum,bind(C)
+      enumerator ANG_HARMONIC, ANG_IN_PLANE
+      enumerator ANG_FOURIER,  ANG_LINEAR
+      end enum
       real(t_p) angunit,stbnunit,aaunit
       real(t_p) opbunit,opdunit
       real(t_p) cang,qang,pang,sang
       real(t_p) copb,qopb,popb,sopb
       real(t_p) copd,qopd,popd,sopd
+      integer     opbtypInt
       character*8 opbtyp
       character*8, pointer :: angtyp(:)
-      integer :: winangtyp
+      integer    , pointer :: angtypI(:)
+      integer :: winangtyp, winangtypI
       end

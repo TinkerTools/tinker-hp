@@ -20,6 +20,7 @@ c
         use utilgpu , only: real3,real3_red,rpole_elt
         implicit none
         include "erfcore_data.f.inc"
+#include "atomicOp.h.f"
         contains
 #include "convert.f.inc"
 #include "image.f.inc"
@@ -28,16 +29,23 @@ c
 #else
         include "erfcdcore.f.inc"
 #endif
+#include "atomicOp.inc.f"
 #include "switch_respa.f.inc"
+#include "groups.inc.f"
 #include "pair_charge.f.inc"
       end module
 
       subroutine echarge1gpu
+      use potent ,only: use_lambdadyn
       implicit none
 c
 c     choose the method for summing over pairwise interactions
 c
-      call echarge1cgpu
+      if (use_lambdadyn) then
+        call elambdacharge1cgpu
+      else
+        call echarge1cgpu
+      end if
 c
       end
 c
@@ -68,9 +76,10 @@ c
       use domdec
       use iounit
       use inform
-      use interfaces,only: ecreal1d_p,ecrealshortlong1d_p
+      use interfaces,only: ecreal1d_p
       use inter
       use math
+      use neigh     ,only: clst2_enable
       use potent
       use timestat
       use tinheader
@@ -85,7 +94,6 @@ c
       real(t_p) f,fs
       real(t_p) xd,yd,zd
       real(t_p) dedx,dedy,dedz
-      real(8) time0,time1
 
       if (nion.eq.0) return
 
@@ -94,31 +102,38 @@ c
 c
 c     zero out the Ewald summation energy and derivatives
 c
-!$acc data create(e) async(rec_queue)
-!$acc serial async(dir_queue)
+      if (calc_e) then
+!$acc enter data create(e) async(rec_queue)
+!$acc serial async(rec_queue) present(e)
       e     = 0.0
 !$acc end serial
+      end if
 c
 c     compute the Ewald self-energy term over all the atoms
 c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
       if (use_cself) then
         call timer_enter(timer_other)
         f  = electric / dielec
         fs = -f * aewald / sqrtpi
-!$acc parallel loop async(dir_queue)
-!$acc&         present(chgglob,pchg)
-        do ii = 1, nionloc
-           iichg = chgglob(ii)
-           e = e + fs * pchg(iichg)**2
-        end do
+        if (calc_e) then
+!$acc parallel loop async(rec_queue)
+!$acc&         present(chgglob,pchg,e)
+           do ii = 1, nionloc
+              iichg = chgglob(ii)
+              e = e + fs * pchg(iichg)**2
+           end do
+        end if
 c
 c     compute the cell dipole boundary correction term
 c
         if (boundary .eq. 'VACUUM') then
+!$acc wait
            xd = 0.0
            yd = 0.0
            zd = 0.0
-!$acc parallel loop async(dir_queue) default(present)
+!$acc parallel loop default(present)
            do ii = 1, nionloc
              iichg = chgglob(ii)
              iglob = iion(iichg)
@@ -128,10 +143,12 @@ c
              zd = zd + pchg(iichg)*z(iglob)
            end do
            term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
-!$acc serial async(dir_queue)
+           if (calc_e) then
+!$acc serial present(e)
            e = e + term * (xd*xd+yd*yd+zd*zd)
 !$acc end serial
-!$acc parallel loop async(dir_queue) default(present)
+           end if
+!$acc parallel loop default(present)
            do ii = 1, nionloc
               iichg = chgglob(ii)
               iglob = iion(iichg)
@@ -147,6 +164,9 @@ c
         end if
         call timer_exit( timer_other,quiet_timers )
       end if
+      end if
+
+      if (clst2_enable) call set_ChgData_CellOrder(.false.)
 c
 c     compute the real space part of the Ewald summation
 c
@@ -154,11 +174,7 @@ c
      $   then
          if (use_creal) then
             call timer_enter(timer_real)
-            if (use_cshortreal.or.use_clong) then
-               call ecrealshortlong1d_p
-            else
-               call ecreal1d_p
-            end if
+            call ecreal1d_p
             call timer_exit( timer_real )
          end if
       end if
@@ -174,17 +190,240 @@ c
          end if
       end if
 c
-#ifdef _OPENACC
-      if (dir_queue.ne.rec_queue)
-     &   call stream_wait_async(dir_stream,rec_stream)
-#endif
-!$acc serial present(ecrec,ec,ec_r) async(rec_queue)
-      ec = ec + e + ecrec + enr2en( ec_r )
+      if (calc_e) then
+!$acc serial present(ecrec,e,ec,ec_r) async(rec_queue)
+         ec = ec + e + ecrec + enr2en( ec_r )
 !$acc end serial
+!$acc exit data delete(e) async(rec_queue)
+      end if
 
-!$acc end data
       call timer_exit(timer_echarge)
       end
+c
+c     subroutine elambdacharge1c : charge electrostatic interactions during lambda dynamics
+c
+      subroutine elambdacharge1cgpu
+      use atmlst
+      use atoms
+      use bound
+      use boxes
+      use charge
+      use chgpot
+      use deriv
+      use echarge1gpu_inl
+      use energi
+      use ewald
+      use domdec
+      use iounit
+      use interfaces
+      use inter
+      use inform
+      use math
+      use mutant
+      use neigh     ,only: clst2_enable
+      use potent
+      use timestat
+      use tinMemory
+      use usage
+      use utilgpu
+      use virial
+      use mpi
+      use potent
+      use sizes
+      implicit none
+      integer ii,i,j,iglob,iichg,ierr,altopt
+      integer(mipk) siz8
+      real(r_p) e,de
+      real(t_p) f,fs,term
+      real(r_p) xd,yd,zd
+      real(r_p) xdtemp,ydtemp,zdtemp
+      real(r_p) dedx,dedy,dedz,zero_m
+      real(t_p) elambdatemp
+      real(r_p), allocatable :: delambdarec0(:,:),delambdarec1(:,:)
+      real(r_p) :: elambdarec0,elambdarec1,qtemp
+      parameter( zero_m=0.0 
+#ifdef _OPENACC
+     &         , altopt=0 
+#else
+     &         , altopt=1
+#endif
+     &         )
+c
+      if (nion .eq. 0)  return
+c
+      if (deb_Path)  write(*,'(1x,a)') 'elambdacharge1cgpu'
+      call timer_enter(timer_echarge)
+c
+      allocate (delambdarec0(3,nlocrec2))
+      allocate (delambdarec1(3,nlocrec2))
+!$acc enter data create(delambdarec0,delambdarec1
+!$acc&     ,elambdarec0,elambdarec1) async
+      elambdatemp = elambda  
+c
+c     zero out the Ewald summation energy and derivatives
+c
+c!$acc serial async present(delambdae)
+c      delambdae = 0.0
+c!$acc end serial
+c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
+c     compute the Ewald self-energy term over all the atoms
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
+      if (use_cself) then
+         f  = electric / dielec
+         fs = -f * aewald / sqrtpi
+!$acc parallel loop default(present) present(delambdae,ec) async
+!$acc&         reduction(+:delambdae,ec)
+         do ii = 1, nionloc
+           iichg = chgglob(ii)
+           iglob = iion(iichg)
+           ec    = ec + fs * pchg(iichg)**2
+           if (mut(iglob)) then
+             qtemp     =  pchg_orig(iichg)
+             delambdae = delambdae + fs*2.0*elambda*qtemp**2
+           end if
+         end do
+c
+c     compute the cell dipole boundary correction term
+c
+        if (boundary .eq. 'VACUUM') then
+#ifdef _OPENACC
+           __TINKER_FATAL__
+#endif
+           xd = 0.0
+           yd = 0.0
+           zd = 0.0
+           xdtemp = 0.0
+           ydtemp = 0.0
+           zdtemp = 0.0
+           do ii = 1, nionloc
+             iichg = chgglob(ii)
+             iglob = iion(iichg)
+             i = loc(iglob)
+             xd = xd + pchg(iichg)*x(iglob)
+             yd = yd + pchg(iichg)*y(iglob)
+             zd = zd + pchg(iichg)*z(iglob)
+             if (mut(iglob)) then
+               qtemp = pchg_orig(iichg)
+               xdtemp = xdtemp + qtemp*x(iglob)
+               ydtemp = ydtemp + qtemp*y(iglob)
+               zdtemp = zdtemp + qtemp*z(iglob)
+             end if
+           end do
+           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_RPREC,MPI_SUM,
+     $                        comm_dir,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_RPREC,MPI_SUM,
+     $                        comm_dir,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_RPREC,MPI_SUM,
+     $                        comm_dir,ierr)
+           term = (2.0/3.0) * f * (pi/volbox)
+           if (rank.eq.0) then
+              ec = ec + term * (xd*xd+yd*yd+zd*zd)
+           end if
+           delambdae = delambdae + term*(xdtemp**2+ydtemp**2+zdtemp**2)
+           do ii = 1, nionloc
+              iichg = chgglob(ii)
+              iglob = iion(iichg)
+              i     = loc(iglob)
+              de    = 2.0 * term * pchg(iichg)
+              dedx  = de * xd
+              dedy  = de * yd
+              dedz  = de * zd
+              dec(1,i) = dec(1,i) + dedx
+              dec(2,i) = dec(2,i) + dedy
+              dec(3,i) = dec(3,i) + dedz
+           end do
+        end if
+      end if
+      end if
+      if (clst2_enable) call set_ChgData_CellOrder(.false.)
+c
+c     compute the real space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
+        if (use_creal) then
+           call ecreal1d_p
+        end if
+      end if
+c
+c     compute the reciprocal space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
+     $  then
+        call timer_enter(timer_rec)
+        if (use_crec) then
+c
+c         the reciprocal part is interpolated between 0 and 1
+c
+          siz8 = 3*nlocrec2
+!$acc serial async present(ecrec)
+          ecrec = 0.0
+!$acc end serial
+          call mem_set(decrec,zero_m,siz8,rec_stream)
+
+          elambda = 0.0
+          call altelec(altopt)
+          if (elambda.lt.1.0) then
+            call ecrecip1gpu
+          end if
+!$acc serial async present(elambdarec0,ecrec)
+          elambdarec0  = ecrec
+          ecrec = 0.0
+!$acc end serial
+          call mem_move(delambdarec0,decrec,siz8,rec_stream)
+          call mem_set(decrec,zero_m,siz8,rec_stream)
+
+          elambda = 1.0
+          call altelec(altopt)
+          if (elambda.gt.0.0) then
+            call ecrecip1gpu
+          end if
+!$acc serial async present(elambdarec1,ecrec)
+          elambdarec1  = ecrec
+!$acc end serial
+          call mem_move(delambdarec1,decrec,siz8,rec_stream)
+
+          elambda   = elambdatemp
+!$acc serial async present(elambdarec0,elambdarec1,ecrec,delambdae)
+          ecrec     = (1.0-elambda)*elambdarec0 + elambda*elambdarec1
+          delambdae = delambdae + elambdarec1-elambdarec0
+!$acc end serial
+!$acc parallel loop async collapse(2) default(present)
+          do i = 1,nlocrec2; do j = 1,3
+             decrec(j,i) = (1-elambda)*delambdarec0(j,i)
+     &                    +   elambda *delambdarec1(j,i)
+          end do; end do
+c
+c         reset lambda to initial value
+c
+          call altelec(altopt)
+        end if
+        call timer_exit(timer_rec )
+      end if
+c
+      if (calc_e) then
+!$acc serial present(ecrec,ec,ec_r,delambdae) async(rec_queue)
+c!$acc& present(elambdarec0,elambdarec1)
+c         print*, ec,ec_r,ecrec,elambdarec1,elambdarec0,elambda
+         ec = ec + ecrec + enr2en( ec_r )
+!$acc end serial
+      end if
+c
+!$acc update host(delambdae) async
+c
+!$acc exit data delete(delambdarec0,delambdarec1
+!$acc&    ,elambdarec0,elambdarec1) async
+      deallocate(delambdarec0,delambdarec1)
+
+      call timer_exit(timer_echarge)
+      end
+
 c
 c     "ecreal1dgpu" evaluates the real space portion of the Ewald sum
 c     energy and forces due to atomic charge interactions, using a neighbor list
@@ -197,16 +436,19 @@ c
       use charge
       use chgpot
       use couple
+      use cutoff
       use deriv
       use domdec
       use echarge1gpu_inl
       use energi ,only: ec=>ec_r
       use ewald
+      use group
       use iounit
       use inform
       use inter
       use math
       use molcul
+      use mutant
       use neigh
       use potent
       use shunt
@@ -217,265 +459,186 @@ c
       use virial
       use mpi
       implicit none
-      integer i,j,k,iichg,iglob
-      integer ii,kkk,kglob,kkchg
-#ifdef TINKER_DEBUG
-      integer ninte(n)
-#endif
-      real(t_p) e
-      real(t_p) f,fi,fik,pchgk
-      real(t_p) r,r2,rew
-      real(t_p) rb,rb2
+      integer    i,j,k,iichg,iglob,ii,kkk,kglob,kkchg,ver,ver1,fea
+      integer   ,pointer:: lst(:,:),nlst(:)
+      integer(1) mutik,muti,zero1
+      real(t_p)  e,delambdae_,scale
+      real(t_p)  f,fi,fi_,fik_,fik,pchgk,r,r2,rew,rb,rb2
+      real(t_p)  xi,yi,zi,xr,yr,zr
+      real(t_p)  loff2,scut,fgrp
+      type(real3)   ded
+      character*11  mode
 
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-
-      real(t_p),parameter:: scale_f=1.0
-      type(real3) ded
-      type(mdyn3_r) dedc
-
-      character*10 mode
+      parameter( ver  = __use_grd__+__use_ene__+__use_vir__
+     &         , ver1 = ver        +__use_sca__
+     &         , zero1 = 0
+     &         )
 
       if (deb_Path) write(*,'(2x,a)') 'ecreal1dgpu'
-#ifdef TINKER_DEBUG
-      ninte = 0
-!$acc enter data copyin(ninte)
-#endif
-c
-c     set conversion factor, cutoff and switching coefficients
-c
+
+      fea = __use_mpi__
+      if (use_lambdadyn) fea = fea + __use_lambdadyn__
+      if (use_group)     fea = fea + __use_groups__
+
+      !set conversion factor, cutoff and switching coefficients
       f    = electric / dielec
-      mode = 'EWALD'
-      call switch (mode)
+      if (use_cshortreal) then
+         mode  = 'SHORTEWALD'
+         call switch (mode)
+         loff2 = 0
+         scut  = off
+         lst   => shortelst
+         nlst  => nshortelst
+         fea   = fea + __use_shortRange__
+      else if (use_clong) then
+         mode  = 'EWALD'
+         call switch (mode)
+         loff2 = (chgshortcut-shortheal)**2
+         scut  = chgshortcut
+         lst   => elst
+         nlst  => nelst
+         fea   = fea + __use_longRange__
+      else
+         mode  = 'EWALD'
+         call switch (mode)
+         loff2 = 0
+         scut  = chgshortcut
+         lst   => elst
+         nlst  => nelst
+      end if
 c
-c     compute the real space Ewald energy and first derivatives
+c     Scaling interaction correction subroutines
 c
-!$acc parallel loop vector_length(32) async(dir_queue)
-!$acc&         present(chgglobnl,iion,loc,x,y,z,pchg,nelst,elst,
-!$acc&    dec,ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-!$acc&         private(ded,dedc)
-#ifdef TINKER_DEBUG
-!$acc&    present(ninte)
-#endif
-      do ii = 1, nionlocnl
-         iichg = chgglobnl(ii)
-         iglob = iion(iichg)
-         i     = loc(iglob)
+!$acc parallel loop gang vector async(dir_queue)
+!$acc&         present(ccorrect_ik,ccorrect_scale,loc,x,y,z,wgrp
+!$acc&   ,grplist,mutInt,dec,ec,delambdae,chglist,pchg,pchg_orig
+!$acc&   ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&         private(ded)
+!$acc&   reduction(+:ec,delambdae,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+      do ii = 1, n_cscale
+         iglob = ccorrect_ik(ii,1)
+         kglob = ccorrect_ik(ii,2)
+         scale = ccorrect_scale(2*ii+1)
+         if (use_lambdadyn) then
+         fi    = pchg(chglist(iglob))
+         fik   = f*fi*pchg(chglist(kglob))
+         fi    = pchg_orig(chglist(iglob))
+         fik_  = f*fi*pchg_orig(chglist(kglob))
+         mutik = mutInt(iglob)+mutInt(kglob)
+         else
+         fik   = f*ccorrect_scale(2*ii+2)
+         end if
          xi    = x(iglob)
          yi    = y(iglob)
          zi    = z(iglob)
-         fi    = f * pchg(iichg)
-!$acc loop vector
-         do kkk = 1, nelst(ii)
-            kkchg = elst(kkk,ii)
-            if (kkchg.eq.0) cycle
-            kglob = iion(kkchg)
+         if (use_group) then
+            call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+            scale = scale *fgrp
+         end if
 c
 c     compute the energy contribution for this interaction
 c
-            xr = xi - x(kglob)
-            yr = yi - y(kglob)
-            zr = zi - z(kglob)
+         xr    = xi - x(kglob)
+         yr    = yi - y(kglob)
+         zr    = zi - z(kglob)
 c
 c     find energy for interactions within real space cutoff
 c
-            call image_inl (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
-#ifdef TINKER_DEBUG
-!$acc atomic
-               ninte(iglob) = ninte(iglob) + 1
-               if (iglob.eq.1) print*,kglob
-#endif
-               fik   = fi*pchg(kkchg)
-               k     = loc(kglob)
-               call charge_couple(r2,xr,yr,zr,ebuffer
-     &                           ,fik,aewald,scale_f
-     &                           ,e,ded,dedc,0)
-c
-c     increment the overall energy and derivative expressions
-c
-               ec       = ec + tp2enr(e)
-!$acc atomic
-               dec(1,i) = dec(1,i) + dedc%x
-!$acc atomic
-               dec(2,i) = dec(2,i) + dedc%y
-!$acc atomic
-               dec(3,i) = dec(3,i) + dedc%z
-!$acc atomic
-               dec(1,k) = dec(1,k) - dedc%x
-!$acc atomic
-               dec(2,k) = dec(2,k) - dedc%y
-!$acc atomic
-               dec(3,k) = dec(3,k) - dedc%z
-c
-c     increment the internal virial tensor components
-c
-               g_vxx = g_vxx + xr * ded%x
-               g_vxy = g_vxy + yr * ded%x
-               g_vxz = g_vxz + zr * ded%x
-               g_vyy = g_vyy + yr * ded%y
-               g_vyz = g_vyz + zr * ded%y
-               g_vzz = g_vzz + zr * ded%z
-            end if
-         end do
+         call image_inl (xr,yr,zr)
+         r2 = xr*xr + yr*yr + zr*zr
+         if (r2.gt.loff2 .and. r2.le.off2) then
+            i  = loc(iglob)
+            k  = loc(kglob)
+            call charge_couple(r2,xr,yr,zr,ebuffer,fik_,fik,aewald
+     &                        ,scale,mutik,use_lambdadyn,shortheal
+     &                        ,scut,elambda,delambdae_,e,ded,ver1,fea)
+ 
+            if (use_lambdadyn) delambdae = delambdae+delambdae_
+           !increment the overall energy and derivative expressions
+            ec = ec + tp2enr(e)
+            call atomic_add( dec(1,i),ded%x )
+            call atomic_add( dec(2,i),ded%y )
+            call atomic_add( dec(3,i),ded%z )
+            call atomic_sub( dec(1,k),ded%x )
+            call atomic_sub( dec(2,k),ded%y )
+            call atomic_sub( dec(3,k),ded%z )
+           !increment the internal virial tensor components
+            g_vxx = g_vxx + xr * ded%x
+            g_vxy = g_vxy + yr * ded%x
+            g_vxz = g_vxz + zr * ded%x
+            g_vyy = g_vyy + yr * ded%y
+            g_vyz = g_vyz + zr * ded%y
+            g_vzz = g_vzz + zr * ded%z
+         end if
       end do
-
-      call ecreal_scaling
-#ifdef TINKER_DEBUG
-!$acc wait
-!$acc exit data copyout(ninte)
-c     do i = 1,100
-c        print*,i,ninte(i)
-c     end do
-      print*, 'charge interactions', sum(ninte)
-#endif
-      end
-c
-c     "ecrealshortlong1dgpu" evaluates either short or long range real space portion of the Ewald sum
-c     energy and forces due to atomic charge interactions, using a neighbor list
-c
-      subroutine ecrealshortlong1dgpu
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use cutoff
-      use deriv
-      use domdec
-      use echarge1gpu_inl
-      use energi
-      use ewald
-      use iounit
-      use inform
-      use inter
-      use interfaces
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use tinTypes
-      use usage
-      use utilgpu
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iichg,iglob,kglob,kkchg
-      integer ii,kkk,range_cfg
-      integer ninte
-      integer,pointer,save::lst(:,:),nlst(:)
-
-      real(t_p) e
-      real(t_p) f,fi,fik
-      real(t_p) r,r2,rew
-
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-
-      real(t_p),parameter:: scale_f=1.0
-      type(real3) ded
-      type(mdyn3_r) dedc
-
-      real(t_p) cshortcut2,coff
-      character*10 mode
-c
-      if (deb_Path) write(*,'(2x,A)') 'ecrealshortlong1dgpu'
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-#ifdef TINKER_DEBUG
-      ninte = 0
-#endif
-      f = electric / dielec
-      if (use_cshortreal) then
-         mode       = 'SHORTEWALD'
-         call switch (mode)
-         range_cfg  = m_short
-         cshortcut2 = 0
-         coff       = off
-         lst        => shortelst
-         nlst       => nshortelst
-      else if (use_clong) then
-         mode       = 'EWALD'
-         call switch (mode)
-         range_cfg  = m_long
-         cshortcut2 = (chgshortcut-shortheal)**2
-         coff       = chgshortcut
-         lst        => elst
-         nlst       => nelst
-      else
- 12      format( "Unknown config for ecrealshortlong1dgpu" )
-         print 12
-         call fatal
-      end if
 c
 c     compute the real space Ewald energy and first derivatives
 c
-!$acc parallel loop vector_length(32) async(dir_queue)
-!$acc&         present(chgglobnl,iion,loc,x,y,z,pchg,nlst,lst,
-!$acc&    dec,ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-!$acc&         private(ded,dedc)
-#ifdef TINKER_DEBUG
-!$acc&    reduction(+:ninte)
-#endif
+!$acc parallel loop gang vector_length(32) async(dir_queue)
+!$acc&         present(chgglobnl,iion,loc,x,y,z,pchg,pchg_orig
+!$acc&        ,nlst,lst,grplist,wgrp,mutInt
+!$acc&        ,dec,ec,delambdae,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&   reduction(+:ec,delambdae,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do ii = 1, nionlocnl
          iichg = chgglobnl(ii)
          iglob = iion(iichg)
          i     = loc(iglob)
+         if (use_lambdadyn) then
+            muti = mutInt(iglob)
+            fi_  = f*pchg_orig(iichg)
+         end if
          xi    = x(iglob)
          yi    = y(iglob)
          zi    = z(iglob)
-         fi    = f * pchg(iichg)
-!$acc loop vector
+         fi    = pchg(iichg)
+!$acc loop vector private(ded)
+!$acc&   reduction(+:ec,delambdae,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          do kkk = 1, nlst(ii)
             kkchg = lst(kkk,ii)
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
+            if (use_lambdadyn) then
+               mutik = muti+mutInt(kglob)
+            end if
 c
 c     compute the energy contribution for this interaction
 c
             xr = xi - x(kglob)
             yr = yi - y(kglob)
             zr = zi - z(kglob)
+            call image_inl (xr,yr,zr)
+            r2 = xr*xr + yr*yr + zr*zr
 c
 c     find energy for interactions within real space cutoff
 c
-            call image_inl (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if (r2.ge.cshortcut2 .and. r2.le.off2) then
-#ifdef TINKER_DEBUG
-               ninte = ninte + 1
-#endif
-               fik   = fi*pchg(kkchg)
-               k     = loc(kglob)
-               call charge_couple_shortlong
-     &                     (r2,xr,yr,zr,ebuffer
-     &                     ,fik,aewald,scale_f,coff,shortheal
-     &                     ,e,ded,dedc,0,range_cfg)
-c
-c     increment the overall energy and derivative expressions
-c
-               ec       = ec + tp2enr(e)
-!$acc atomic
-               dec(1,i) = dec(1,i) + dedc%x
-!$acc atomic
-               dec(2,i) = dec(2,i) + dedc%y
-!$acc atomic
-               dec(3,i) = dec(3,i) + dedc%z
-!$acc atomic
-               dec(1,k) = dec(1,k) - dedc%x
-!$acc atomic
-               dec(2,k) = dec(2,k) - dedc%y
-!$acc atomic
-               dec(3,k) = dec(3,k) - dedc%z
-c
-c     increment the internal virial tensor components
-c
+            if (r2.gt.loff2 .and. r2.le.off2) then
+               fik  = fi_*pchg(kkchg)
+               k    = loc(kglob)
+               if (use_lambdadyn.and.mutik.ne.zero1)
+     &            fik_  = fi_*pchg_orig(kkchg)
+
+               ! Apply pair group scaling
+               if (use_group) then
+                  call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+               else
+                  fgrp = 1.0
+               end if
+
+               ! Compute charge pairwise interaction
+               call charge_couple(r2,xr,yr,zr,ebuffer,fik_,fik,aewald
+     &                           ,fgrp,mutik,use_lambdadyn,shortheal
+     &                           ,scut,elambda,delambdae_,e,ded,ver,fea)
+ 
+               if (use_lambdadyn) delambdae = delambdae+delambdae_
+              !increment the overall energy and derivative expressions
+               ec   = ec + tp2enr(e)
+               call atomic_add( dec(1,i),ded%x )
+               call atomic_add( dec(2,i),ded%y )
+               call atomic_add( dec(3,i),ded%z )
+               call atomic_sub( dec(1,k),ded%x )
+               call atomic_sub( dec(2,k),ded%y )
+               call atomic_sub( dec(3,k),ded%z )
+              !increment the internal virial tensor components
                g_vxx = g_vxx + xr * ded%x
                g_vxy = g_vxy + yr * ded%x
                g_vxz = g_vxz + zr * ded%x
@@ -485,12 +648,6 @@ c
             end if
          end do
       end do
-
-      call ecrealshortlong_scaling
-#ifdef TINKER_DEBUG
-!$acc wait
-      print*, 'charge interactions', ninte
-#endif
       end
 
 #ifdef _CUDA
@@ -502,17 +659,20 @@ c
       use charge
       use chgpot
       use couple
+      use cutoff
       use deriv
       use domdec
       use echargecu
-      use energi , only: ec=>ec_r
+      use energi , only: ec=>ec_r,calc_e
       use ewald
+      use group
       use iounit
       use inform
       use inter
       use math
       use molcul
       use mpi
+      use mutant
       use neigh  , iion_s=>celle_glob,chg_s=>celle_chg
      &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
      &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
@@ -520,43 +680,31 @@ c
       use shunt
       use timestat
       use usage
-      use utilcu
-      use utilgpu ,only: def_queue,dir_queue,vred_buff
-     &            , reduce_energy_virial,zero_evir_red_buffer
-     &            , ered_buff=>ered_buf1,dir_stream,def_stream
+      use utilcu  ,only: BLOCK_DIM,check_launch_kernel 
+      use utilgpu ,only: def_queue,dir_queue,dir_stream,def_stream
+     &            , vred_buff,lam_buff,ered_buff=>ered_buf1,nred_buff
+     &            , reduce_energy_virial, reduce_energy_action
+     &            , reduce_buffer, RED_BUFF_SIZE
       use virial
       implicit none
-      integer i,gs1
-#ifdef TINKER_DEBUG
-      integer inter(n)
-#endif
+      integer i,szcik
       real(t_p) f
+      real(t_p) loff2,scut
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
       logical,save:: first_in=.true.
       integer,save:: gS
-      character*10 mode
+      character*11 mode
       logical,parameter::dyn_gS=.true.
 
       if (deb_Path) write(*,'(2X,A)') 'ecreal1d_cu'
-#ifdef TINKER_DEBUG
-!$acc enter data create(inter) async(dir_queue)
-!$acc parallel loop async(dir_queue) present(inter)
-      do i = 1,n
-         inter(i) = 0
-      end do
-#endif
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f    = electric / dielec
-      mode = 'EWALD'
-      call switch (mode)
 
       if (first_in) then
-         call cudaMaxGridSize("ecreal1d_core_cu",gS)
+         call cudaMaxGridSize("ecreal1_kcu",gS)
          first_in=.false.
       end if
-      if(dyn_gS) gs = nionlocnlb2_pair/8
+      if (dyn_gS) 
+     &   gs = merge(nionlocnlb2_pair,min(nionlocnlb2_pair/8,2**14)
+     &             ,nionlocnlb2_pair.lt.257)
 
       p_xbeg = xbegproc(rank+1)
       p_xend = xendproc(rank+1)
@@ -565,62 +713,62 @@ c
       p_zbeg = zbegproc(rank+1)
       p_zend = zendproc(rank+1)
 
+      !set conversion factor, cutoff and switching coefficients
+      f    = electric / dielec
+      if (use_cshortreal) then
+         mode  = 'SHORTEWALD'
+         call switch (mode)
+         loff2 = 0
+         scut  = off
+      else if (use_clong) then
+         mode  = 'EWALD'
+         call switch (mode)
+         loff2 = (chgshortcut-shortheal)**2
+         scut  = chgshortcut
+      else
+         mode  = 'EWALD'
+         call switch (mode)
+         loff2 = 0
+         scut  = chgshortcut
+      end if
+
       def_stream = dir_stream
       def_queue  = dir_queue
-      call zero_evir_red_buffer(def_queue)
-      call set_ChgData_CellOrder(.false.)
+      szcik      = size(ccorrect_ik,1)
 
-!$acc host_data use_device(iion_s,chg_s,loc_s,ieblst_s,eblst_s,
-!$acc&   x_s,y_s,z_s,pchg,dec,ered_buff,vred_buff,
-!$acc&   ccorrect_ik,ccorrect_scale,loc,x,y,z
-#ifdef TINKER_DEBUG
-!$acc&    ,inter
-#endif
+!$acc host_data use_device(iion_s,chg_s,loc_s,ieblst_s,eblst_s
+!$acc&    ,x_s,y_s,z_s,pchg,pchg_orig,mutInt,grplist,wgrp
+!$acc&    ,dec,ered_buff,vred_buff,lam_buff,nred_buff
+!$acc&    ,ccorrect_ik,ccorrect_scale,chglist,loc,x,y,z
 !$acc&    )
 
-      call ecreal1d_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+      call ecreal1_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     ( iion_s,chg_s,loc_s,ieblst_s
      &     , eblst_s(2*nionlocnlb_pair+1)
      &     , nionlocnlb,nionlocnlb2_pair,nionbloc,n
-     &     , x_s,y_s,z_s,pchg
-     &     , off2,f,aewald, ebuffer
-     &     , dec, ered_buff, vred_buff
+     &     , x_s,y_s,z_s,pchg,pchg_orig,mutInt
+     &     , off2,loff2,scut,shortheal,f,aewald,ebuffer
+     &     , elambda,use_lambdadyn
+     &     , dec,ered_buff,vred_buff,lam_buff,nred_buff
+     &     , use_group, grplist, wgrp
+     &     , ccorrect_ik,ccorrect_scale,chglist,x,y,z,loc,n_cscale,szcik
      &     , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-#ifdef TINKER_DEBUG
-     &     , inter
-#endif
      &     )
       call check_launch_kernel(" ecreal1d_core_cu")
 
-      gs1 = n_cscale/(BLOCK_DIM)
-      call ecreal_scaling_cu<<<gs1,BLOCK_DIM,0,def_stream>>>
-     &            ( ccorrect_ik,ccorrect_scale,loc,x,y,z
-     &            , dec,ered_buff,vred_buff,n,nbloc,n_cscale
-     &            , f,aewald,ebuffer,off2 )
-      call check_launch_kernel(" ecreal_scaling_cu")
-
 !$acc end host_data
 
+      if (calc_e.or.use_virial) then
       call reduce_energy_virial(ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
      &                         ,ered_buff,def_queue)
+      end if
 
-#ifdef TINKER_DEBUG
- 34   format(2I10,3F12.4)
- 35   format(A30,2I16)
-!$acc wait
-!$acc exit data copyout(inter)
-c     do i =1,100
-c        print 34,i,inter(i)
-c     end do
-      print 35,'total charge interactions ', sum(inter)
-#endif
+      if (use_lambdadyn)
+     &   call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdae,def_queue)
 
       end subroutine
-#endif
-c
-c     Scaling interaction correction subroutines
-c
-      subroutine ecreal_scaling
+
+      subroutine ecreal_lj1_cu
       use atmlst
       use atoms
       use bound
@@ -628,241 +776,151 @@ c
       use charge
       use chgpot
       use couple
+      use cudafor, only: dim3
+      use cutoff , only: ewaldcut,shortheal
       use deriv
       use domdec
-      use echarge1gpu_inl
-      use energi  ,only: ec=>ec_r
+      use eChgLjcu
+      use energi , only: ec=>ec_r,calc_e
       use ewald
+      use group
       use iounit
       use inform
       use inter
+      use kvdws     ,only: radv,epsv
+      use kvdwpr    ,only: vdwpr_l
       use math
       use molcul
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use tinTypes
-      use usage
-      use utilgpu
-      use virial
       use mpi
+      use neigh  , iion_s=>celle_glob,chg_s=>celle_chg
+     &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
+     &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
+      use potent
+      use shunt   ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
+      use timestat
+      use usage
+      use utilcu  ,only: BLOCK_DIM,check_launch_kernel 
+     &            , TRP_BLOCK_DIM,transpose_z3fl
+      use utilgpu ,only: def_queue,dir_queue,vred_buff
+     &            , reduce_energy_virial
+     &            , ered_buff=>ered_buf1,dir_stream,def_stream
+     &            , transpose_az3,get_GridDim
+      use vdw     ,only: ired,kred,jvdw,ivdw,radmin_c
+     &            , epsilon_c,radmin,radmin4,epsilon,epsilon4
+     &            , nvdwbloc,nvdwlocnl
+     &            , nvdwlocnlb,nvdwclass
+     &            , nvdwlocnlb_pair,nvdwlocnlb2_pair
+      use vdwpot  ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
+     &            , radrule_i,epsrule_i,radepsOpt_l
+      use vdw_locArray
+      use virial
       implicit none
-      integer i,j,k,iichg,iglob
-      integer ii,kkk,kglob,kkchg
-
-      real(t_p) e
-      real(t_p) f,fi,fik
-      real(t_p) r,r2,rew
-      real(t_p) rb,rb2
-
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-
-      real(t_p) scale_f
-      type(real3) ded
-      type(mdyn3_r) dedc
-
+      integer i,gs1,szcik
+      real(t_p) f,coff2,rinv,aewaldop
+      real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+      logical,save:: first_in=.true.
+      integer,save:: gS
       character*10 mode
+      logical,parameter::dyn_gS=.true.
+      logical v0,v1
 
-      if (deb_Path) write(*,'(3x,A)') 'ecreal_scaling'
+      if (deb_Path) write(*,'(2X,A)') 'ecreal_lj1_cu'
 c
 c     set conversion factor, cutoff and switching coefficients
 c
       f    = electric / dielec
-      mode = 'EWALD'
+      mode = 'VDW'
       call switch (mode)
-c
-c     compute the real space Ewald energy and first derivatives
-c
-!$acc parallel loop vector_length(32) async(dir_queue)
-!$acc&         present(ccorrect_ik,ccorrect_scale,loc,x,y,z,
-!$acc&    dec,ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-!$acc&         private(ded,dedc)
-      do ii = 1, n_cscale
-         iglob = ccorrect_ik(ii,1)
-         kglob = ccorrect_ik(ii,2)
-         scale_f =   ccorrect_scale(2*ii+1)
-         fik     = f*ccorrect_scale(2*ii+2)
-         xi    = x(iglob)
-         yi    = y(iglob)
-         zi    = z(iglob)
-c
-c     compute the energy contribution for this interaction
-c
-         xr    = xi - x(kglob)
-         yr    = yi - y(kglob)
-         zr    = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-         call image_inl (xr,yr,zr)
-         r2 = xr*xr + yr*yr + zr*zr
-         if (r2 .le. off2) then
-            i     = loc(iglob)
-            k     = loc(kglob)
-            call charge_couple(r2,xr,yr,zr,ebuffer
-     &                        ,fik,aewald,scale_f
-     &                        ,e,ded,dedc,1)
-c
-c     increment the overall energy and derivative expressions
-c
-            ec       = ec + tp2enr(e)
-!$acc atomic
-            dec(1,i) = dec(1,i) + dedc%x
-!$acc atomic
-            dec(2,i) = dec(2,i) + dedc%y
-!$acc atomic
-            dec(3,i) = dec(3,i) + dedc%z
-!$acc atomic
-            dec(1,k) = dec(1,k) - dedc%x
-!$acc atomic
-            dec(2,k) = dec(2,k) - dedc%y
-!$acc atomic
-            dec(3,k) = dec(3,k) - dedc%z
-c
-c     increment the internal virial tensor components
-c
-            g_vxx = g_vxx + xr * ded%x
-            g_vxy = g_vxy + yr * ded%x
-            g_vxz = g_vxz + zr * ded%x
-            g_vyy = g_vyy + yr * ded%y
-            g_vyz = g_vyz + zr * ded%y
-            g_vzz = g_vzz + zr * ded%z
-         end if
-      end do
+      rinv = 1.0/(cut-off)
 
-      end
-
-      subroutine ecrealshortlong_scaling
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use cutoff
-      use deriv
-      use domdec
-      use echarge1gpu_inl
-      use energi
-      use ewald
-      use iounit
-      use inform
-      use inter
-      use interfaces
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use tinTypes
-      use usage
-      use utilgpu
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iichg,iglob
-      integer ii,kkk,kglob,kkchg
-      integer range_cfg
-
-      real(t_p) e
-      real(t_p) f,fi,fik
-      real(t_p) r,r2,rew
-      real(t_p) rb,rb2
-
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-
-      real(t_p) scale_f
-      type(real3) ded
-      type(mdyn3_r) dedc
-
-      real(t_p) cshortcut2,coff
-      character*10 mode
-
-      if (deb_Path) write(*,'(3x,A)') 'ecrealshortlond_scaling'
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      if (use_cshortreal) then
-         range_cfg  = m_short
-         cshortcut2 = 0
-         coff       = off
-      else if (use_clong) then
-         range_cfg  = m_long
-         cshortcut2 = (chgshortcut-shortheal)**2
-         coff       = chgshortcut
-      else
- 12      format( "Unknown config for ecrealshortlong1dgpu" )
-         print 12
-         call fatal
+      if (first_in) then
+         call cudaMaxGridSize("echg_lj1_kcu_v0",gS)
+         first_in=.false.
       end if
-c
-c     compute the real space Ewald energy and first derivatives
-c
-!$acc parallel loop vector_length(32) async(dir_queue)
-!$acc&         present(ccorrect_ik,ccorrect_scale,loc,x,y,z,
-!$acc&    dec,ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-!$acc&         private(ded,dedc)
-      do ii = 1, n_cscale
-         iglob = ccorrect_ik(ii,1)
-         kglob = ccorrect_ik(ii,2)
-         scale_f =   ccorrect_scale(2*ii+1)
-         fik     = f*ccorrect_scale(2*ii+2)
-         xi    = x(iglob)
-         yi    = y(iglob)
-         zi    = z(iglob)
-c
-c     compute the energy contribution for this interaction
-c
-         xr    = xi - x(kglob)
-         yr    = yi - y(kglob)
-         zr    = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-         call image_inl (xr,yr,zr)
-         r2 = xr*xr + yr*yr + zr*zr
-         if (r2.ge.cshortcut2 .and. r2.le.off2) then
-            i     = loc(iglob)
-            k     = loc(kglob)
-            call charge_couple_shortlong
-     &                 (r2,xr,yr,zr,ebuffer
-     &                 ,fik,aewald,scale_f,coff,shortheal
-     &                 ,e,ded,dedc,1,range_cfg)
-c
-c     increment the overall energy and derivative expressions
-c
-            ec       = ec + e
-!$acc atomic
-            dec(1,i) = dec(1,i) + dedc%x
-!$acc atomic
-            dec(2,i) = dec(2,i) + dedc%y
-!$acc atomic
-            dec(3,i) = dec(3,i) + dedc%z
-!$acc atomic
-            dec(1,k) = dec(1,k) - dedc%x
-!$acc atomic
-            dec(2,k) = dec(2,k) - dedc%y
-!$acc atomic
-            dec(3,k) = dec(3,k) - dedc%z
-c
-c     increment the internal virial tensor components
-c
-            g_vxx = g_vxx + xr * ded%x
-            g_vxy = g_vxy + yr * ded%x
-            g_vxz = g_vxz + zr * ded%x
-            g_vyy = g_vyy + yr * ded%y
-            g_vyz = g_vyz + zr * ded%y
-            g_vzz = g_vzz + zr * ded%z
-         end if
-      end do
-      
-      end
+      if(dyn_gS) gs = get_GridDim(nionlocnlb2_pair,BLOCK_DIM)
+
+      p_xbeg = xbegproc(rank+1)
+      p_xend = xendproc(rank+1)
+      p_ybeg = ybegproc(rank+1)
+      p_yend = yendproc(rank+1)
+      p_zbeg = zbegproc(rank+1)
+      p_zend = zendproc(rank+1)
+      szcik  = size(ccorrect_ik,1)
+      coff2  = ewaldcut**2
+      aewaldop = 2d0*aewald/sqrtpi
+
+      def_stream = dir_stream
+      def_queue  = dir_queue
+
+      v0 = .not.calc_e.and..not.use_virial.and.ndir.eq.1
+     &     .and.radepsOpt_l
+
+!$acc host_data use_device(iion_s,chg_s,loc_s,ieblst_s,eblst_s,
+!$acc&   x_s,y_s,z_s,pchg,dec,d_x,d_y,d_z,ered_buff,vred_buff,
+!$acc&   cellv_jvdw,jvdw,i12,epsilon_c,radmin_c,radv,epsv,
+!$acc&   radmin,epsilon,radmin4,epsilon4,vcorrect_scale,
+!$acc&   ccorrect_ik,ccorrect_scale,loc,x,y,z
+!$acc&   )
+
+      if (v0) then
+      call echg_lj1_kcu_v0<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     ( x_s,y_s,z_s,iion_s,loc_s,chg_s
+     &     , ieblst_s, eblst_s(2*nionlocnlb_pair+1)
+     &     , cellv_jvdw,i12,epsilon_c,radmin_c,radv,epsv
+     &     , d_x,d_y,d_z,ered_buff,vred_buff
+     &     , nionlocnlb2_pair,n,nionbloc,nionlocnl,nionlocnlb
+     &     , nvdwclass,radrule_i,epsrule_i
+     &     , cut2,cut,off2,off,rinv,shortheal
+     &     , coff2,f,aewald,aewaldop,ebuffer,pchg
+     &     , x,y,z,ccorrect_ik,vcorrect_scale,ccorrect_scale,szcik
+     &     , n_cscale,loc,jvdw
+     &     , radmin,epsilon,radmin4,epsilon4,dec
+     &     , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     )
+      call check_launch_kernel(" echg_lj1_kcu_v0")
+      else
+      call echg_lj1_kcu_v1<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     ( x_s,y_s,z_s,iion_s,loc_s,chg_s
+     &     , ieblst_s, eblst_s(2*nionlocnlb_pair+1)
+     &     , cellv_jvdw,i12,epsilon_c,radmin_c,radv,epsv
+     &     , d_x,d_y,d_z,ered_buff,vred_buff
+     &     , nionlocnlb2_pair,n,nionbloc,nionlocnl,nionlocnlb
+     &     , nvdwclass,radrule_i,epsrule_i
+     &     , cut2,cut,off2,off,rinv,shortheal
+     &     , coff2,f,aewald,aewaldop,ebuffer,pchg
+     &     , x,y,z,ccorrect_ik,vcorrect_scale,ccorrect_scale,szcik
+     &     , n_cscale,loc,jvdw
+     &     , radmin,epsilon,radmin4,epsilon4,dec
+     &     , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     )
+      call check_launch_kernel(" echg_lj1_kcu_v1")
+      end if
+
+!$acc end host_data
+
+      if (calc_e.or.use_virial) then
+      call reduce_energy_virial(ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &                         ,ered_buff,def_queue)
+      end if
+
+      call transpose_az3(d_x,decx,loc_s,nionlocnl,dr_stride,def_queue)
+c      block
+c      integer    sdx
+c      type(dim3) gridS,blockS
+c      sdx    = size(d_x)
+c      gridS  = dim3((sdx-1)/TRP_BLOCK_DIM+1,1,1)
+c      blockS = dim3(TRP_BLOCK_DIM,3,1)
+c!$acc host_data use_device(d_x,dec,loc_s)
+c      call transpose_z3fl<<<gridS,blockS,0,def_stream>>>
+c     &                ( d_x,dec,sdx,nionlocnl,loc_s )
+c      call check_launch_kernel(" transpose_z3fl ")
+c!$acc end host_data
+c      end block
+
+      !call minmaxone(dec,3*nbloc,'dec')
+
+      end subroutine
+#endif
 c
 c
 c     ####################################################################
@@ -899,6 +957,10 @@ c
       use fft
       use inform
       use interfaces ,only: grid_pchg_site_p,grid_pchg_force_p
+     &               , ecreal1d_cp, pme_conv_p
+#ifdef _OPENACC
+     &               , grid_pchg_sitecu
+#endif
       use math
       use pme
       use pme1
@@ -935,8 +997,6 @@ c
       real(t_p) dt1,dt2,dt3
       real(t_p) h1,h2,h3
       real(t_p) r1,r2,r3
-      real(t_p),save:: vxx,vxy,vxz,vyy,vyz,vzz
-      logical  ,save::f_in=.true.
       integer  ,allocatable:: req(:),reqbcast(:)
 c
 c     return if the Ewald coefficient is zero
@@ -954,35 +1014,18 @@ c
         commloc  = COMM_TINKER
         rankloc  = rank
       end if
-
-      if (f_in) then
-!$acc enter data create(vxx,vxy,vxz,vyy,vyz,vzz)
-         f_in = .false.
-      end if
 c
 c     dynamic allocation of local arrays
 c
       call mallocMpiGrid
-      allocate (req(nprocloc*nprocloc))
-      allocate (reqbcast(nprocloc*nprocloc))
-
-!$acc data present(vxx,vxy,vxz,vyy,vyz,vzz)
-!$acc&     present(qgridin_2d,qgridout_2d,recip,ecrec,
-!$acc&        g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,vir,
-!$acc&        bsmod1,bsmod2,bsmod3)
-c
-!$acc serial async(rec_queue)
-      vxx = 0
-      vxy = 0
-      vxz = 0
-      vyy = 0
-      vyz = 0
-      vzz = 0
-!$acc end serial
-
 c
       call timer_enter( timer_grid1 )
+#if _OPENACC
+      if (.not.associated(grid_pchg_site_p,grid_pchg_sitecu))
+     &   call bspline_fill_sitegpu(1)
+#else
       call bspline_fill_sitegpu(1)
+#endif
       call set_to_zero1(qgridin_2d(1,1,1,1,1),
      &     2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),rec_queue)
 
@@ -992,6 +1035,11 @@ c
       ! FFtGridin communication
       call commGridFront( qgridin_2d,r_comm )
       call commGridFront( qgridin_2d,r_wait )
+
+      if (rec_queue.ne.dir_queue) then
+         call start_dir_stream_cover
+         call ecreal1d_cp
+      end if
 c
 c     perform the 3-D FFT forward transformation
 c
@@ -1002,7 +1050,7 @@ c
       call   fft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $                      n3mpimax)
 #endif
-#ifdef TINKER_DEBUG
+#if 0
       if (rankloc.eq.0) then
 !$acc update host(qgridin_2d,qgridout_2d)
       print*,'gridi norm2',comput_norm(qgridin_2d,size(qgridin_2d),2)
@@ -1012,101 +1060,7 @@ c
 c
 c     use scalar sum to get reciprocal space energy and virial
 c
-      call timer_enter( timer_scalar )
-      ist2 = istart2(rankloc+1)
-      jst2 = jstart2(rankloc+1)
-      kst2 = kstart2(rankloc+1)
-      ien2 =   iend2(rankloc+1)
-      jen2 =   jend2(rankloc+1)
-      ken2 =   kend2(rankloc+1)
-c     if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
-c    $    (kstart2(rankloc+1).eq.1)) then
-c          qfac_2d(1,1,1) = 0.0d0
-c     end if
-      f       = 0.5d0 * electric / dielec
-      pterm   = (pi/aewald)**2
-      volterm = pi * volbox
-      nff     = nfft1 * nfft2
-      nf1     = (nfft1+1) / 2
-      nf2     = (nfft2+1) / 2
-      nf3     = (nfft3+1) / 2
-!$acc parallel loop collapse(3) async(rec_queue)
-      do k3 = kst2,ken2
-        do k2 = jst2,jen2
-          do k1 = ist2,ien2
-            m1 = k1 - 1
-            m2 = k2 - 1
-            m3 = k3 - 1
-            if (k1 .gt. nf1)  m1 = m1 - nfft1
-            if (k2 .gt. nf2)  m2 = m2 - nfft2
-            if (k3 .gt. nf3)  m3 = m3 - nfft3
-            if ((m1.eq.0).and.(m2.eq.0).and.(m3.eq.0)) goto 10
-            r1 = real(m1,t_p)
-            r2 = real(m2,t_p)
-            r3 = real(m3,t_p)
-            h1 = recip(1,1)*r1 + recip(1,2)*r2 + recip(1,3)*r3
-            h2 = recip(2,1)*r1 + recip(2,2)*r2 + recip(2,3)*r3
-            h3 = recip(3,1)*r1 + recip(3,2)*r2 + recip(3,3)*r3
-            hsq = h1*h1 + h2*h2 + h3*h3
-            term = -pterm * hsq
-            expterm = 0.0_ti_p
-            if (term .gt. -50.0_ti_p) then
-               denom = volterm*hsq*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
-               expterm = exp(term) / denom
-               if (.not. use_bounds) then
-                  expterm = expterm * (1.0_ti_p-cos(pi*xbox*sqrt(hsq)))
-               else if (octahedron) then
-                  if (mod(m1+m2+m3,2).ne.0)  expterm = 0.0_ti_p
-               end if
-               struc2 = qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1)**2
-     $                + qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1)**2
-                e = f * expterm * struc2
-               ecrec = ecrec + e
-               vterm = (2.0_ti_p/hsq) * (1.0_ti_p-term) * e
-               vxx   = vxx + h1*h1*vterm - e
-               vxy   = vxy + h1*h2*vterm
-               vxz   = vxz + h1*h3*vterm
-               vyy   = vyy + h2*h2*vterm - e
-               vyz   = vyz + h3*h2*vterm
-               vzz   = vzz + h3*h3*vterm - e
-            end if
-            qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1) = expterm *
-     $      qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1)
-
-            qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1) = expterm *
-     $      qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1)
- 10         continue
-          end do
-        end do
-      end do
-c
-c     account for zeroth grid point for nonperiodic system
-c
-      if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
-     $   (kstart2(rankloc+1).eq.1)) then
-        if (.not. use_bounds) then
-           expterm = 0.5_ti_p * pi / xbox
-!$acc serial async(rec_queue)
-           struc2 = qgridout_2d(1,1,1,1)**2 + qgridout_2d(2,1,1,1)**2
-               e = f * expterm * struc2
-           ecrec = ecrec + e
-           qgridout_2d(1,1,1,1) = expterm * qgridout_2d(1,1,1,1)
-           qgridout_2d(2,1,1,1) = expterm * qgridout_2d(2,1,1,1)
-!$acc end serial
-        end if
-      end if
-!$acc serial async(rec_queue)
-      vir(1,1) = vir(1,1) + vxx
-      vir(2,1) = vir(2,1) + vxy
-      vir(3,1) = vir(3,1) + vxz
-      vir(1,2) = vir(1,2) + vxy
-      vir(2,2) = vir(2,2) + vyy
-      vir(3,2) = vir(3,2) + vxz
-      vir(1,3) = vir(1,3) + vxz
-      vir(2,3) = vir(2,3) + vyz
-      vir(3,3) = vir(3,3) + vzz
-!$acc end serial
-      call timer_exit ( timer_scalar,quiet_timers )
+      call pme_conv_p(ecrec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
 c
 c     perform the 3-D FFT backward transformation
 c
@@ -1134,8 +1088,8 @@ c
       call timer_enter( timer_grid2 )
       call grid_pchg_force_p
       call timer_exit ( timer_grid2,quiet_timers )
+      if (rec_queue.ne.dir_queue) then
+         call end_dir_stream_cover
+      end if
 
-!$acc end data
-      deallocate (req)
-      deallocate (reqbcast)
       end

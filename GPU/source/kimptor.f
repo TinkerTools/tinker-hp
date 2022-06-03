@@ -43,7 +43,7 @@ c
       real(t_p) angle,symm
       real(t_p) vt(3),st(3)
       logical header,done
-      character*4 pa,pb,pc,pd
+c     character*4 pa,pb,pc,pd
       integer,parameter:: zero=0
       integer(8) pt0,pt1,pti
       integer(8) pt2,pt3
@@ -165,13 +165,13 @@ c                pt(6) = pd//pb//pc//pa
                  call front_convert_base(0,zero,zero,itc,ita,pt1)
                  call front_convert_base(0,zero,zero,itc,zero,pt0)
                  symm = 1.0_ti_p
-                 if (pa.eq.pb .or. pa.eq.pd .or. pb.eq.pd)
+                 if (ita.eq.itb .or. ita.eq.itd .or. itb.eq.itd)
      &              symm = 2.0_ti_p
-                 if (pa.eq.pb .and. pa.eq.pd .and. pb.eq.pd)
+                 if (ita.eq.itb .and. ita.eq.itd .and. itb.eq.itd)
      &              symm = 6.0_ti_p
                  done = .false.
                  do j = 1, nti
-                    call back_convert_base(bta,btb,btc,btd,bte,kti(j))
+                    call back_convert_base(bte,bta,btb,btc,btd,kti(j))
                     if ( btc .eq. itc) then
                        do k = 1, 6
                           if (kti(j) .eq. pt(k)) then
@@ -431,7 +431,7 @@ c              call numeral (itd,pd,isize)
                symm = 1.0_ti_p
                done = .false.
                do j = 1, ntis
-                  call back_convert_base(bta,btb,btc,btd,bte,kti_sys(j))
+                  call back_convert_base(bte,bta,btb,btc,btd,kti_sys(j))
                   if (btc .eq. itc) then
                      do k = 1, 6
                         if (kti_sys(j) .eq. pt(k)) then

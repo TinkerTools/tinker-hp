@@ -26,6 +26,7 @@ c
       use couple
       use dcdmod
       use deriv
+      use disp
       use divcon
       use domdec
       use fft
@@ -36,6 +37,7 @@ c
       use iounit
       use kopbnd
       use langevin
+      use mdstuf1
       use moldyn
       use molcul
       use mpi
@@ -76,13 +78,18 @@ c#endif
 c
 c     Free MPI shared memory segments
 c
-      if (use_vdw   ) call delete_data_vdw
-      if (use_charge) call delete_data_kcharge
-      if (use_mpole ) call delete_data_mpole
-      if (use_polar ) call delete_data_polar
+      if (use_vdw   ) call dealloc_shared_vdw
+      if (use_charge) call dealloc_shared_chg
+      if (use_mpole ) call dealloc_shared_mpole
+      if (use_polar ) call dealloc_shared_polar
       if (use_angle ) call delete_data_kangle
       if (use_opbend) call delete_data_kopbend
       if (use_tors.or.use_tortor) call delete_data_ktors
+      if (use_chgflx) call dealloc_shared_chgflx
+      if (use_repuls) call dealloc_shared_rep
+      if (use_chgtrn) call dealloc_shared_chgct
+      if (use_disp)   call dealloc_shared_disp
+      call dealloc_shared_mutate
 c
 c     module "analyz"
 c 
@@ -107,6 +114,9 @@ c
       if (allocated(aex))   deallocate (aex)
       if (allocated(aec))   deallocate (aec)
       if (allocated(aeat))  deallocate (aeat)
+      if (allocated(aer)) deallocate (aer)
+      if (allocated(aedsp)) deallocate (aedsp)
+      if (allocated(aect)) deallocate (aect)
 c
 c     module "angle"
 c
@@ -132,6 +142,8 @@ c
       if (allocated(vdwglob))    deallocate (vdwglob)
       if (allocated(poleglob))   deallocate (poleglob)
       if (allocated(polerecglob))deallocate (polerecglob)
+      if (allocated(dispglob))   deallocate (dispglob)
+      if (allocated(disprecglob))deallocate (disprecglob)
       if (allocated(chgglob))    deallocate (chgglob)
       if (allocated(chgrecglob)) deallocate (chgrecglob)
       if (allocated(molculeglob))deallocate (molculeglob)
@@ -145,6 +157,7 @@ c
       if (allocated(chgglobnl))  deallocate (chgglobnl)
       if (allocated(vdwglobnl))  deallocate (vdwglobnl)
       if (allocated(poleglobnl)) deallocate (poleglobnl)
+      if (allocated(dispglobnl)) deallocate (dispglobnl)
 c
 c     module "atmtyp"
 c
@@ -176,32 +189,12 @@ c
 c
 c     module "deriv"
 c
-      if (allocated(desum))  deallocate (desum)
-      if (allocated(deb))    deallocate (deb)
-      if (allocated(dea))    deallocate (dea)
-      if (allocated(deba))   deallocate (deba)
-      if (allocated(deub))   deallocate (deub)
-      if (allocated(deaa))   deallocate (deaa)
-      if (allocated(deopb))  deallocate (deopb)
-      if (allocated(deopd))  deallocate (deopd)
-      if (allocated(deid))   deallocate (deid)
-      if (allocated(det))    deallocate (det)
-      if (allocated(dept))   deallocate (dept)
-      if (allocated(deit))   deallocate (deit)
-      if (allocated(deat))   deallocate (deat)
-      if (allocated(debt))   deallocate (debt)
-      if (allocated(dett))   deallocate (dett)
-      if (allocated(dev))    deallocate (dev)
-      if (allocated(dec))    deallocate (dec)
-      if (allocated(dem))    deallocate (dem)
-      if (allocated(dep))    deallocate (dep)
-      if (allocated(deg))    deallocate (deg)
-      if (allocated(decrec)) deallocate (decrec)
-      if (allocated(demrec)) deallocate (demrec)
-      if (allocated(deprec)) deallocate (deprec)
-      if (allocated(debond)) deallocate (debond)
-      if (allocated(desave)) deallocate (desave)
-      if (allocated(desmd))  deallocate (desmd)
+      call mem_free_deriv
+c
+c     module "disp"
+c
+      if (allocated(displocnl)) deallocate(displocnl)
+      if (allocated(disprecloc))deallocate(disprecloc)
 c
 c     module "divcon"
 c
@@ -353,7 +346,10 @@ c
       if (allocated(yaxis))      deallocate (yaxis)
       if (allocated(xaxis))      deallocate (xaxis)
       if (allocated(rpole))      deallocate (rpole)
-
+c
+c     module mdstuf1
+c
+      call gpuFreeMdstuf1Data
 c
 c     module "pme"
 c

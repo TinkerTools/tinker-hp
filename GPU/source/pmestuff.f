@@ -76,191 +76,6 @@ c
       end subroutine
 c
 c
-c
-c     #################################################################
-c     ##                                                             ##
-c     ##  subroutine bsplgen  --  B-spline coefficients for an atom  ##
-c     ##                                                             ##
-c     #################################################################
-c
-c
-c     "bsplgen" gets B-spline coefficients and derivatives for
-c     a single PME atomic site along a particular direction
-c
-c
-      subroutine bsplgen (w,isite,thetai)
-!$acc routine
-      use tinheader
-      use pme,only:bsorder,maxorder
-      use potent,only:use_mpole,use_polar
-      implicit none
-      integer i,j,k
-      integer isite
-      integer level
-      real(t_p) w,denom
-      real(t_p) thetai(4,bsorder)
-      real(t_p) temp(maxorder,maxorder)
-c
-c     set B-spline depth for partial charges or multipoles
-c
-      level = 2
-      if (use_mpole .or. use_polar)  level = 4
-c
-c     initialization to get to 2nd order recursion
-c
-      temp(2,2) = w
-      temp(2,1) = 1.0_ti_p - w
-c
-c     perform one pass to get to 3rd order recursion
-c
-      temp(3,3) = 0.5_ti_p * w * temp(2,2)
-      temp(3,2) = 0.5_ti_p * ((1.0_ti_p+w)*temp(2,1)+
-     &                        (2.0_ti_p-w)*temp(2,2))
-      temp(3,1) = 0.5_ti_p * (1.0_ti_p-w) * temp(2,1)
-c
-c     compute standard B-spline recursion to desired order
-c
-!$acc loop seq
-      do i = 4, bsorder
-         k = i - 1
-         denom = 1.0_ti_p / real(k,t_p)
-         temp(i,i) = denom * w * temp(k,k)
-         do j = 1, i-2
-            temp(i,i-j) = denom * ((w+real(j,t_p))*temp(k,i-j-1)
-     &                           +(real(i-j,t_p)-w)*temp(k,i-j))
-         end do
-         temp(i,1) = denom * (1.0_ti_p-w) * temp(k,1)
-      end do
-c
-c     get coefficients for the B-spline first derivative
-c
-      k = bsorder - 1
-      temp(k,bsorder) = temp(k,bsorder-1)
-!$acc loop seq
-      do i = bsorder-1, 2, -1
-         temp(k,i) = temp(k,i-1) - temp(k,i)
-      end do
-      temp(k,1) = -temp(k,1)
-c
-c     get coefficients for the B-spline second derivative
-c
-      if (level .eq. 4) then
-         k = bsorder - 2
-         temp(k,bsorder-1) = temp(k,bsorder-2)
-         do i = bsorder-2, 2, -1
-            temp(k,i) = temp(k,i-1) - temp(k,i)
-         end do
-         temp(k,1) = -temp(k,1)
-         temp(k,bsorder) = temp(k,bsorder-1)
-         do i = bsorder-1, 2, -1
-            temp(k,i) = temp(k,i-1) - temp(k,i)
-         end do
-         temp(k,1) = -temp(k,1)
-c
-c     get coefficients for the B-spline third derivative
-c
-         k = bsorder - 3
-         temp(k,bsorder-2) = temp(k,bsorder-3)
-         do i = bsorder-3, 2, -1
-            temp(k,i) = temp(k,i-1) - temp(k,i)
-         end do
-         temp(k,1) = -temp(k,1)
-         temp(k,bsorder-1) = temp(k,bsorder-2)
-         do i = bsorder-2, 2, -1
-            temp(k,i) = temp(k,i-1) - temp(k,i)
-         end do
-         temp(k,1) = -temp(k,1)
-         temp(k,bsorder) = temp(k,bsorder-1)
-         do i = bsorder-1, 2, -1
-            temp(k,i) = temp(k,i-1) - temp(k,i)
-         end do
-         temp(k,1) = -temp(k,1)
-      end if
-c
-c     copy coefficients from temporary to permanent storage
-c
-!$acc loop seq
-      do i = 1, bsorder
-!$acc loop seq
-          do j = 1, level
-            thetai(j,i) = temp(bsorder-j+1,i)
-          end do
-      end do
-      return
-      end
-
-      ! bslgen special version 
-      ! To be used only with point charge forcefield (use_charge)
-      subroutine bsplgen_chg (w,isite,thetai)
-!$acc routine
-      use tinheader,only: ti_p
-      use pme      ,only: bsorder,maxorder
-      use potent   ,only: use_charge
-      implicit none
-      integer i,j,k
-      integer isite
-      integer,parameter:: level=2
-      real(t_p) w,denom
-      real(t_p) thetai(level,bsorder,*)
-      real(t_p) temp(maxorder,maxorder)
-
-#ifdef TINKER_DEBUG
-!$acc routine(fatal_acc)
-      if (.not.use_charge) then
-         print*,"FATAL ERROR !! bsplgen routine is specific to point",
-     &   "charge"
-         call fatal_acc
-      end if
-#endif
-c
-c     initialization to get to 2nd order recursion
-c
-      temp(2,2) = w
-      temp(2,1) = 1.0_ti_p - w
-c
-c     perform one pass to get to 3rd order recursion
-c
-      temp(3,3) = 0.5_ti_p * w * temp(2,2)
-      temp(3,2) = 0.5_ti_p * ((1.0_ti_p+w)*temp(2,1)+
-     &                        (2.0_ti_p-w)*temp(2,2))
-      temp(3,1) = 0.5_ti_p * (1.0_ti_p-w) * temp(2,1)
-c
-c     compute standard B-spline recursion to desired order
-c
-!$acc loop seq
-      do i = 4, bsorder
-         k = i - 1
-         denom = 1.0_ti_p / real(k,t_p)
-         temp(i,i) = denom * w * temp(k,k)
-         do j = 1, i-2
-            temp(i,i-j) = denom * ((w+real(j,t_p))*temp(k,i-j-1)
-     &                           +(real(i-j,t_p)-w)*temp(k,i-j))
-         end do
-         temp(i,1) = denom * (1.0_ti_p-w) * temp(k,1)
-      end do
-c
-c     get coefficients for the B-spline first derivative
-c
-      k = bsorder - 1
-      temp(k,bsorder) = temp(k,bsorder-1)
-!$acc loop seq
-      do i = bsorder-1, 2, -1
-         temp(k,i) = temp(k,i-1) - temp(k,i)
-      end do
-      temp(k,1) = -temp(k,1)
-c
-c     copy coefficients from temporary to permanent storage
-c
-!$acc loop seq
-      do i = 1, bsorder
-!$acc loop seq
-         do j = 1, level
-            thetai(j,i,isite) = temp(bsorder-j+1,i)
-         end do
-      end do
-      end
-c
-c
 c       "grid_mpole_site" places the i-th fractional atomic multipole onto
 c       the particle mesh Ewald grid
 c
@@ -2273,4 +2088,117 @@ c
          end do
       end do
       return
+      end
+c
+c     #######################################################################
+c     ##                                                                   ##
+c     ##  subroutine grid_disp_site  --  put dispersion sites on PME grid  ##
+c     ##                                                                   ##
+c     #######################################################################
+c
+c
+c     "grid_disp_site" places the i-th damped dispersion coefficients onto
+c     the particle mesh Ewald grid
+c
+c
+      subroutine grid_disp_site(isite,impi)
+      use atoms
+      use disp
+      use domdec
+      use chunks
+      use fft
+      use pme
+      use potent
+      implicit none
+      integer istart,iend,jstart,jend,kstart,kend
+      integer istart3,iend3,jstart3,jend3,kstart3,kend3
+      integer i,j,k,m,impi,rankloc
+      integer ii,jj,kk
+      integer iproc,proc
+      integer ichk,isite,iatm
+      integer offsetx,offsety
+      integer offsetz
+      integer cid(3)
+      integer nearpt(3)
+      integer abound(6)
+      integer cbound(6)
+      real(t_p) v0,u0,t0
+      real(t_p) term
+
+      if (use_pmecore) then
+        rankloc  = rank_bis
+      else
+        rankloc  = rank
+      end if
+      kstart = kstart1(rankloc+1)
+      kend = kend1(rankloc+1)
+      jstart = jstart1(rankloc+1)
+      jend = jend1(rankloc+1)
+      istart = istart1(rankloc+1)
+      iend = iend1(rankloc+1)
+c
+      iatm = isite
+      nearpt(1) = igrid(1,iatm) + grdoff
+      nearpt(2) = igrid(2,iatm) + grdoff
+      nearpt(3) = igrid(3,iatm) + grdoff
+      abound(1) = nearpt(1) - nlpts
+      abound(2) = nearpt(1) + nrpts
+      abound(3) = nearpt(2) - nlpts
+      abound(4) = nearpt(2) + nrpts
+      abound(5) = nearpt(3) - nlpts
+      abound(6) = nearpt(3) + nrpts
+      call adjust (offsetx,nfft1,1,abound(1),
+     &               abound(2),cbound(1),cbound(2))
+      call adjust (offsety,nfft2,1,abound(3),
+     &               abound(4),cbound(3),cbound(4))
+      call adjust (offsetz,nfft3,1,abound(5),
+     &               abound(6),cbound(5),cbound(6))
+      do kk = abound(5), abound(6)
+         k = kk
+         m = k + offsetz
+         if (k .lt. 1)  k = k + nfft3
+         v0 = thetai3(1,m,impi) * csix(isite)
+         do jj = abound(3), abound(4)
+            j = jj
+            m = j + offsety
+            if (j .lt. 1)  j = j + nfft2
+            u0 = thetai2(1,m,impi)
+            term = v0 * u0
+            do ii = abound(1), abound(2)
+               i = ii
+               m = i + offsetx
+               if (i .lt. 1)  i = i + nfft1
+               t0 = thetai1(1,m,impi)
+c
+               if (((k.ge.kstart).and.(k.le.kend)).and.
+     $           ((j.ge.jstart).and.(j.le.jend)).and.
+     $           ((i.ge.istart).and.(i.le.iend))) then
+                 qgridin_2d(1,i-istart+1,j-jstart+1,k-kstart+1,1) =
+     $             qgridin_2d(1,i-istart+1,j-jstart+1,k-kstart+1,1)
+     $             + term*t0 
+                 goto 10
+               end if
+
+               do iproc = 1, nrec_send
+                 proc = prec_send(iproc)
+                 kstart3 = kstart1(proc+1)
+                 kend3 = kend1(proc+1)
+                 jstart3 = jstart1(proc+1)
+                 jend3 = jend1(proc+1)
+                 istart3 = istart1(proc+1)
+                 iend3 = iend1(proc+1)
+                 if (((k.ge.kstart3).and.(k.le.kend3)).and.
+     $             ((j.ge.jstart3).and.(j.le.jend3)).and.
+     $             ((i.ge.istart3).and.(i.le.iend3))) then
+                   qgridin_2d(1,i-istart3+1,j-jstart3+1,k-kstart3+1,
+     $               iproc+1) = qgridin_2d(1,i-istart3+1,j-jstart3+1,
+     $               k-kstart3+1,iproc+1) + term*t0
+                   goto 10
+                 end if
+               end do
+ 10            continue
+
+            end do
+         end do
+      end do
       end

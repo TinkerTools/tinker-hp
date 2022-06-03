@@ -1526,8 +1526,8 @@ contains
     integer status(MPI_STATUS_SIZE),tag
     integer i,ii,n,nsend,sloc,rloc,irank,send_rank,recv_rank
     integer icomm,isave
-    integer,parameter::pivot=3
-    integer,parameter::salvo=2
+    integer,parameter::pivot=7
+    integer,parameter::salvo=3
     complex(mytype) icplx
     real(8),parameter:: Mio=(sizeof(icplx)*1.0d0)/(1024*1024)
 

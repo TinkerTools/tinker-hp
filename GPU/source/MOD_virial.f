@@ -20,16 +20,22 @@ c
 #include "tinker_precision.h"
       module virial
       implicit none
-      real(r_p) vir(3,3)
-      real(r_p) g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
-      real(r_p) virsave(3,3)
-      real(r_p) g_svxx,g_svxy,g_svxz,g_svyy,g_svyz,g_svzz
-      real(r_p) viramdD(3,3)
+      logical:: use_virial=.false.
 
-      logical :: use_virial=.false.
+      real(r_p) vir(3,3),virsave(3,3)
+     &         ,viramdD(3,3)
+      real(r_p) g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &         ,g_svxx,g_svxy,g_svxz,g_svyy,g_svyz,g_svzz
 
 !$acc declare create(vir)
       contains
+
+      subroutine zero_virial(viri)
+      real(r_p) viri(*)
+      integer i
+!$acc parallel loop async present(viri)
+      do i = 1,9; viri(i)=0; end do
+      end subroutine
 
       subroutine info_virial(rank)
       implicit none
@@ -43,6 +49,22 @@ c
          print*,'virial ', vir(1,:)
          print*,'       ', vir(2,:)
          print*,'       ', vir(3,:)
+      end if
+      end subroutine
+
+      subroutine info_virial1(rank)
+      implicit none
+      integer,intent(in):: rank
+!$acc update host(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) async
+!$acc wait
+
+      if (rank.eq.0) then
+ 20   format( 80('~'))
+ 21   format( A,3F17.7 )
+         print 20
+         print 21,'virial ', g_vxx,g_vxy,g_vxz
+         print 21,'       ', g_vyy,g_vyz
+         print 21,'       ', g_vzz
       end if
       end subroutine
 

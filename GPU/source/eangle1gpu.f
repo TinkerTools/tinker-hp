@@ -115,7 +115,7 @@ c
 #else
 !$acc&     present(x,y,z,loc,use,iang,angleglob,anat,
 #endif
-!$acc&     ak,afld,angtyp,dea,vir,ea,eW1aMD)
+!$acc&     ak,afld,angtypI,dea,vir,ea,eW1aMD)
 !$acc&     present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
 !$acc&  reduction(+:ea,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do iangle = 1, nangleloc
@@ -142,7 +142,7 @@ c
 c     decide whether to compute the current interaction
 c
          proceed = .true.
-         if (angtyp(i) .eq. 'IN-PLANE') then
+         if (angtypI(i) .eq. ANG_IN_PLANE) then
             idloc = loc(id)
             if (proceed)  proceed = (use(ia) .or. use(ib) .or.
      &                               use(ic) .or. use(id))
@@ -165,7 +165,7 @@ c
 c
 c     compute the bond angle bending energy and gradient
 c
-            if (angtyp(i) .ne. 'IN-PLANE') then
+            if (angtypI(i) .ne. ANG_IN_PLANE) then
                xab = xia - xib
                yab = yia - yib
                zab = zia - zib
@@ -191,7 +191,7 @@ c
 c
 c     get the energy and master chain rule term for derivatives
 c
-                  if (angtyp(i) .eq. 'HARMONIC') then
+                  if (angtypI(i) .eq. ANG_HARMONIC) then
                      dt = angle1 - ideal
                      dt2 = dt * dt
                      dt3 = dt2 * dt
@@ -201,12 +201,12 @@ c
                      deddt = angunit * force * dt * radian
      &                * (2.0_ti_p + 3.0_ti_p*cang*dt + 4.0_ti_p*qang*dt2
      &                          + 5.0_ti_p*pang*dt3 + 6.0_ti_p*sang*dt4)
-                  else if (angtyp(i) .eq. 'LINEAR') then
+                  else if (angtypI(i) .eq. ANG_LINEAR) then
                      factor = 2.0_ti_p * angunit * radian**2
                      sine = sqrt(1.0_ti_p-cosine*cosine)
                      e = factor * force * (1.0_ti_p+cosine)
                      deddt = -factor * force * sine
-                  else if (angtyp(i) .eq. 'FOURIER') then
+                  else if (angtypI(i) .eq. ANG_FOURIER) then
                      fold = afld(i)
                      factor = 2.0_ti_p * angunit * (radian/fold)**2
                      cosine = cos((fold*angle1-ideal)/radian)

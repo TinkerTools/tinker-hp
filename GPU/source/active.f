@@ -40,6 +40,7 @@ c     perform dynamic allocation of some pointer arrays
 c
       call alloc_shared_active
 c
+      if (rank.eq.0.and.tinkerdebug) print*, 'active init'
       if (hostrank.ne.0) goto 90
 c
 c     perform dynamic allocation of some local arrays
@@ -201,6 +202,7 @@ c
             iuse(j) = i
          end if
       end do
+      useAll = merge(.true.,.false.,j.eq.n)
 c
 c     output the final list of the active atoms
 c
@@ -211,6 +213,11 @@ c
          write (iout,80)  (iuse(i),i=1,nuse)
    80    format (3x,10i7)
       end if
+
+      ! Map iuse on use
+      do i = 1,n
+         iuse(i) = merge(1,0,use(i))
+      end do
 c
 c     perform deallocation of some local arrays
 c
@@ -219,7 +226,7 @@ c
    90 continue
       call MPI_BCAST(nuse,1,MPI_INT,0,hostcomm,ierr)
       call MPI_BARRIER(hostcomm,ierr)
-!$acc update device(use(0:n))
+!$acc update device(use(0:n),iuse)
       end
 c
 c     subroutine alloc_shared_active : allocate shared memory pointers for active
@@ -242,5 +249,5 @@ c
 
       !TODO Make use an logical1 if possible
       call shmem_request( use,  winuse, [n+1], config=mhostacc, start=0)
-      call shmem_request(iuse, winiuse,   [n], config=mhostonly)
+      call shmem_request(iuse, winiuse,   [n], config=mhostacc)
       end

@@ -145,25 +145,26 @@ c           write(*,12) 'bissG',it,ii,Nrac,r,s,norm
       use domdec
       use ewald
       use iounit
-      use inform    ,only: deb_Path,abort
+      use inform    ,only: deb_Path,abort,minmaxone
       use interfaces,only: tmatxb_pmegpu,tmatxb_p
       use math
       use mpole
+      use orthogonalize,only: MdiagITmat,lz_AQ,lz_AQ1,l_idx
+     &                 ,EigenVec_l,saveResAmat_l
       use polar
-      use polar_temp,only: murec
-     &              , dipfield,dipfieldbis
+      use polar_temp,only: murec,dipfield,dipfieldbis,diag
       use polpot
       use potent    ,only: use_polarshortreal
       use sizes
       use timestat
       use units
       use utils
-      use utilcomm ,buffermpi1=>buffermpi3d,buffermpi2=>buffermpi3d1
+      use utilcomm  ,buffermpi1=>buffermpi3d,buffermpi2=>buffermpi3d1
       use utilgpu
       implicit none
+      integer i,j,k,nrhs
       real(t_p),contiguous:: Rin(:,:,:),Rout(:,:,:)
-      integer   i,j,k,nrhs
-      integer,dimension(nproc):: reqsend,reqrec,req2send,req2rec
+      integer  ,dimension(nproc):: reqsend,reqrec,req2send,req2rec
       real(t_p) term
       parameter(nrhs=2)
 
@@ -220,10 +221,160 @@ c
      &                  - term*Rin(i,j,k)
          end do; end do; end do
       end if
-!!$acc parallel loop collapse(3) default(present) async(rec_queue)
-!      do k=1,npoleloc; do j=1,nrhs; do i=1,3
-!         Rout(i,j,k) = polarity(poleglob(k))*Rout(i,j,k)
-!      end do; end do; end do
+
+      if (EigenVec_l.and.saveResAmat_l) then
+!$acc parallel loop collapse(3) default(present) async(rec_queue)
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            if (btest(j,0)) then; lz_AQ(i,k,l_idx) = Rout(i,j,k)
+            else;                lz_AQ1(i,k,l_idx) = Rout(i,j,k)
+            end if
+         end do; end do; end do
+      end if
+
+      ! Apply diag preconditionner
+      if (MdiagITmat) then
+!$acc parallel loop collapse(3) default(present) async(rec_queue)
+         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+            Rout(i,j,k) = diag(k)*Rout(i,j,k)
+         end do; end do; end do
+      end if
+
+      end subroutine
+
+      subroutine InnerProd( veca, vecb, sza, Ip )
+      use domdec
+      use mpi
+      implicit none
+      integer  ,intent(in) :: sza
+      real(t_p),intent(in) :: veca(*),vecb(*)
+      real(r_p),intent(out):: Ip
+      integer i,j,k
+
+      Ip = 0
+!$acc parallel loop async default(present)
+      do i = 1,sza
+         Ip = Ip + veca(i)*vecb(i)
+      end do
+
+      if (nproc.gt.1) then
+!$acc wait
+         call MPI_ALLREDUCE(MPI_IN_PLACE,Ip,1,MPI_RPREC,MPI_SUM
+     &                     ,COMM_TINKER,i)
+      end if
+      end subroutine
+
+      subroutine InnerProdInl( veca, vecb, sza, Ip )
+      use domdec
+      use mpi
+      implicit none
+      integer  ,intent(in) :: sza
+      real(t_p),intent(in) :: veca(*),vecb(*)
+      real(r_p),intent(out):: Ip
+      integer i
+!$acc routine vector
+
+      Ip = 0
+!$acc loop vector
+      do i = 1,sza
+         Ip = Ip + veca(i)*vecb(i)
+      end do
+
+      end subroutine
+
+      subroutine InnerMProdInl( veca, vecb, diag, sza, Ip )
+      use domdec
+      use mpi
+      implicit none
+      integer  ,intent(in) :: sza
+      real(t_p),intent(in) :: veca(*),vecb(*),diag(*)
+      real(r_p),intent(out):: Ip
+      integer i
+!$acc routine vector
+
+      Ip = 0
+!$acc loop vector
+      do i = 1,sza
+         Ip = Ip + veca(i)*vecb(i)/diag((i-1)/3+1)
+      end do
+
+      end subroutine
+
+      subroutine InnerProdEf( veca, vecb, sza, Ip1, Ip2 )
+      use domdec
+      use mpi
+      use orthogonalize,only: debg
+      use utilgpu ,only: rec_queue
+      implicit none
+      integer  dim3,nrhs
+      parameter(dim3=3,nrhs=2)
+      integer  ,intent(in) :: sza
+      real(t_p),intent(in) :: veca(dim3,nrhs,*),vecb(dim3,nrhs,*)
+      real(r_p),intent(out):: Ip1,Ip2
+      real(r_p) Ip(nrhs)
+      integer i,j,k
+
+      Ip1= 0; Ip2= 0
+!$acc parallel loop async(rec_queue) collapse(3) default(present)
+      do k=1,sza; do j=1,nrhs; do i=1,dim3
+         if (btest(j,0)) then
+            Ip1 = Ip1 + veca(i,j,k)*vecb(i,j,k)
+         else
+            Ip2 = Ip2 + veca(i,j,k)*vecb(i,j,k)
+         end if
+      end do; end do; end do
+
+      if (nproc.gt.1) then
+!$acc wait
+         Ip(1)=Ip1; Ip(2)=Ip2
+         call MPI_ALLREDUCE(MPI_IN_PLACE,Ip,2,MPI_RPREC,MPI_SUM
+     &                     ,COMM_TINKER,i)
+         Ip1=Ip(1); Ip2=Ip(2)
+      end if
+
+      end subroutine
+
+      subroutine InnerMProdEf( veca, vecb, sza, Ip1, Ip2 )
+      use domdec
+      use mpi
+      use mpole      ,only: npoleloc
+      use orthogonalize,only: debg
+      use polar_temp ,only: diag
+      use polar      ,only: tinypol
+      use sizes      ,only: tinkerdebug
+      implicit none
+      integer  dim3,nrhs
+      parameter(dim3=3,nrhs=2)
+      integer  ,intent(in) :: sza
+      real(t_p),intent(in) :: veca(dim3,nrhs,*),vecb(dim3,nrhs,*)
+      real(r_p),intent(out):: Ip1,Ip2
+      real(t_p) tmp,hugepole
+      real(r_p) Ip(nrhs)
+      integer i,j,k
+      parameter(hugepole=1d5)
+
+      if (tinkerdebug.gt.0.and.sza.gt.npoleloc) then
+         print*, 'InnerMProdEf Issue  !! ',
+     &           'size > npoleloc ', npoleloc,sza
+      end if
+
+      Ip1= 0; Ip2= 0
+!$acc parallel loop async collapse(3) default(present)
+      do k=1,sza; do j=1,nrhs; do i=1,dim3
+         if (btest(j,0)) then
+            Ip1 = Ip1 + veca(i,j,k)*vecb(i,j,k)/diag(k)
+         else
+            Ip2 = Ip2 + veca(i,j,k)*vecb(i,j,k)/diag(k)
+         end if
+      end do; end do; end do
+
+      if (nproc.gt.1) then
+!$acc wait
+         Ip(1)=Ip1; Ip(2)=Ip2
+         call MPI_ALLREDUCE(MPI_IN_PLACE,Ip,2,MPI_RPREC,MPI_SUM
+     &                     ,COMM_TINKER,i)
+         Ip1=Ip(1); Ip2=Ip(2)
+      end if
+
       end subroutine
 
       subroutine lanzcos_init(k0,compEv,mu)
@@ -231,55 +382,100 @@ c
       use orthogonalize
       use mpole
       use mpi
+#ifdef _OPENACC
       use interfaces ,only: initcuSolver
+#endif
+      use inform     ,only: minmaxone
       use polar_temp
       use tinMemory
       use utilgpu
       use utilcomm ,buffermpi1=>buffermpi3d,buffermpi2=>buffermpi3d1
       implicit none
+      integer  ,parameter :: nrhs=2
       integer  ,intent(in):: k0,compEv
-      real(t_p),intent(in):: mu(3,2,*)
+      real(t_p),intent(in):: mu(3,nrhs,*)
       real(r_p) l2_norm,l2_norm1
       real(t_p) temp
-      integer i,j,k,ierr
+      integer i,j,k,ierr,sz
+      integer(8) sz_
       logical EigV
 
-      krylovdim = k0
+      maxKD     = k0
+      krylovDim = k0
       nEigenV   = compEv
       EigenVec_l= merge(.true.,.false.,nEigenV.gt.0)
 
-      i = 3*(k0+betw) + nEigenV**2
-
-      call prmem_requestm(lz_StoreSpace_rp,i)
-      call prmem_request (lz_WorkSpace,12*npolebloc+2*krylovdim)
-      call prmem_request (res,3,2,npoleloc)
-      call prmem_request (dipfield,3,2,max(npoleloc,1))
-      call prmem_request (dipfieldbis,3,2,max(npolerecloc,1))
-
-      if (nproc.gt.1) then
-         call prmem_request(buffermpi1  ,3,2,max(npoleloc,1))
-         call prmem_request(buffermpimu1,3,2,max(npoleloc,1))
-         call prmem_request(buffermpi2  ,3,2,max(npolerecloc,1))
-         call prmem_request(buffermpimu2,3,2,max(npolerecloc,1))
+      if (nEigenV.gt.krylovDim) then
+ 61      format(' ERROR ! --- Krylov Space dimension is lower than the
+     & Eigen vector number ---',/,2I4, ) 
+         write(0,61) krylovDim, nEigenV
       end if
 
-      ! lz_StoreSpace     [ Vp  | lz_Q | MatE_ ]
-      !                         | TVp
-      ! lz_StoreSpace_rp  [ lz_T  | Eigval | MatE ]
+      i = 3*k0 + nEigenV**2
+      call prmem_requestm(lz_SS_,nrhs*i)
+      call prmem_request (lz_WorkSpace,12*npolebloc+2*maxKD)
+      call prmem_request (res,3,nrhs,npoleloc)
+      call prmem_request (dipfield,3,nrhs,max(npoleloc,1))
+      call prmem_request (dipfieldbis,3,nrhs,max(npolerecloc,1))
+
+      if (nproc.gt.1) then
+         call prmem_request(buffermpi1  ,3,nrhs,max(npoleloc,1))
+         call prmem_request(buffermpimu1,3,nrhs,max(npoleloc,1))
+         call prmem_request(buffermpi2  ,3,nrhs,max(npolerecloc,1))
+         call prmem_request(buffermpimu2,3,nrhs,max(npolerecloc,1))
+      end if
+
+      call Tinker_shellEnv("ORTH",OrthBase,0)
+      call Tinker_shellEnv("MINV_TMAT",MdiagITmat,0)
+
+      if(debg.and.rank.eq.0) then
+         if (OrthBase) print*, ' < ----  Enable Base Orthoginalisation
+     & ---> '
+         if (MdiagITmat) print*, ' < ---- Enable M^{-1} * A ----  > '
+      end if
+
+      ! lz_SS   [ Vp  | Vp1 |  lz_Q  |  lz_Q1  | lz_AQ | lz_AQ1 | lz_Z | lz_Z1 | MatE_ | MatE1_ ]
+      !                     | TVp | TVp1 |
+
+      ! lz_SS_  [ lz_T | lz_T1 | Eigval | EigVal1 |  MatE | MatE1 ]
 
       if (nEigenV.gt.0) then
-         i = 3*npoleloc*(krylovdim+compEv)
+         i = 3*npoleloc*maxKD
          j = 3*npoleloc*compEv
-         call prmem_request(lz_StoreSpace,i+nEigenV**2)
-         call prmem_request(Evec_,nEigenV,2)
+         sz = nrhs*(2*    i   +2*j+maxKD**2+nEigenV**2)
+        sz_ = nrhs*(2*int(i,8)+2*j+maxKD**2+nEigenV**2)
+         if (sz_.gt.int(ishft(1,30),8)) then
+ 32         format(__FILE__,I4,A,I0,/,A)
+            write(0,*) __LINE__,' maximum memory size reached!! '
+     &      ,sz_,'  Update your allocator' 
+            call fatal
+         end if
+
+         call prmem_request(lz_SS,sz)
+         call prmem_request(Evec_,nEigenV,nrhs)
          call prmem_request(MIdk,nEigenV,nEigenV)
-         call prmem_requestm(Evec,nEigenV,2)
-           Vp(1:3,1:npoleloc,1:compEv)=>lz_StoreSpace(1:j)
-          TVp(1:3,1:npoleloc,1:compEv)=>lz_StoreSpace(1+j:2*j)
-         lz_Q(1:3,1:npoleloc,1:krylovdim)=>lz_StoreSpace(j+1:i)
-         k = 3*k0+betw
-         MatE (1:nEigenV,1:nEigenV)=> lz_StoreSpace_rp(k+1:k+nEigenV**2)
-         MatE_(1:nEigenV,1:nEigenV)=> lz_StoreSpace   (i+1:i+nEigenV**2)
+         call prmem_request(Ipivot,maxKD)
+         call prmem_requestm(Evec,nEigenV,nrhs)
+
+           Vp(1:3,1:npoleloc,1:compEv)=>lz_SS(  1:  j); k=j
+          Vp1(1:3,1:npoleloc,1:compEv)=>lz_SS(k+1:k+j); k=2*j
+          TVp(1:3,1:npoleloc,1:compEv)=>lz_SS(k+1:k+j); k=3*j
+         TVp1(1:3,1:npoleloc,1:compEv)=>lz_SS(k+1:k+j); k=4*j
+         lz_Q(1:3,1:npoleloc,1:maxKD) =>lz_SS(k+1:k+i); k=k+i
+        lz_Q1(1:3,1:npoleloc,1:maxKD) =>lz_SS(k+1:k+i); k=k+i
+        lz_AQ(1:3,1:npoleloc,1:maxKD) =>lz_SS(k+1:k+i); k=k+i
+       lz_AQ1(1:3,1:npoleloc,1:maxKD) =>lz_SS(k+1:k+i); k=k+i
+      lz_Z(1:maxKD,1:maxKD)=>lz_SS(k+1:k+maxKD**2);  k=k+maxKD**2
+      lz_Z1(1:maxKD,1:maxKD)=>lz_SS(k+1:k+maxKD**2); k=k+maxKD**2
+        MatE_(1:nEigenV,1:nEigenV)=>lz_SS(k+1:k+nEigenV**2)
+         k=k+nEigenV**2
+       MatE1_(1:nEigenV,1:nEigenV)=>lz_SS(k+1:k+nEigenV**2)
+
+
+         k = nrhs*3*k0
+         MatE (1:nEigenV,1:nEigenV)=> lz_SS_(k+1:k+nEigenV**2)
+         k = k + nEigenV**2
+         MatE1(1:nEigenV,1:nEigenV)=> lz_SS_(k+1:k+nEigenV**2)
 #ifdef _OPENACC
          call init_cublas_handle
          call initcuSolver(rec_stream)
@@ -287,46 +483,65 @@ c
       end if
 
       lz_V(1:3,1:2,1:npolebloc,1:2) => lz_WorkSpace(1:12*npolebloc)
-      lz_T(1:2*k0) => lz_StoreSpace_rp(1:2*k0)
-      EigVal(1:k0) => lz_StoreSpace_rp(2*k0+1+betw:3*k0+betw)
+       lz_T(1:2*k0) => lz_SS_(1:2*k0);     k =     2*k0
+      lz_T1(1:2*k0) => lz_SS_(k+1:k+2*k0); k = k + 2*k0
+       EigVal(1:k0) => lz_SS_(k+1:k+k0);   k = k +   k0
+      EigVal1(1:k0) => lz_SS_(k+1:k+k0)
 
       do i = 1,2*k0
-         lz_T(i) = 0
+         lz_T (i) = 0
+         lz_T1(i) = 0
       end do
 
-      l2_norm = 0; l2_norm1=0
+      if (polgsf.ne.0) then
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
-      do k=1,npoleloc; do j=1,2; do i=1,3;
-         if (btest(j,0)) then
-            l2_norm = l2_norm + mu(i,j,k)**2
-         else
-            l2_norm1 = l2_norm1 + mu(i,j,k)**2
-         end if
-      end do; end do; end do;
-!$acc wait
-      if (nproc.gt.1) then
-      call MPI_ALLREDUCE(MPI_IN_PLACE,l2_norm,1,MPI_RPREC,MPI_SUM,
-     &                   COMM_TINKER,ierr)
-      call MPI_ALLREDUCE(MPI_IN_PLACE,l2_norm1,1,MPI_RPREC,MPI_SUM,
-     &                   COMM_TINKER,ierr)
+         do k = 1,npoleloc; do j=1,2; do i=1,3
+            if (btest(j,0)) then
+               lz_V(i,j,k,1) = mu(i,j,k)*diag(k)
+            else
+               lz_V(i,j,k,1) = mu(i,j,k)*diag(k)
+            end if
+         end do; end do; end do
+      else
+!$acc parallel loop collapse(3) default(present) async(rec_queue)
+         do k = 1,npoleloc; do j=1,2; do i=1,3
+            if (btest(j,0)) then
+               lz_V(i,j,k,1) = mu(i,j,k)
+            else
+               lz_V(i,j,k,1) = mu(i,j,k)
+            end if
+         end do; end do; end do
       end if
-      l2_norm=sqrt(l2_norm); l2_norm1=sqrt(l2_norm1);
+
+      if (MdiagITmat) then
+         call InnerMProdEf(lz_V,lz_V,npoleloc,l2_norm,l2_norm1)
+      else
+         call InnerProdEf(lz_V,lz_V,npoleloc,l2_norm,l2_norm1)
+      end if
+!$acc wait
+      l2_norm  = real(1,r_p)/sqrt(l2_norm);
+      l2_norm1 = real(1,r_p)/sqrt(l2_norm1);
 
       ! Normalisation
       if (EigenVec_l) then
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
       do k = 1,npoleloc; do j=1,2; do i=1,3
-         temp          = mu(i,1,k)/l2_norm 
+         if (btest(j,0)) then
+         temp         = lz_V(i,j,k,1)*real(l2_norm,t_p)
+         lz_Q (i,k,1) = temp
+         else
+         temp         = lz_V(i,j,k,1)*real(l2_norm1,t_p)
+         lz_Q1(i,k,1) = temp
+         end if
          lz_V(i,j,k,1) = temp
-         if (j.eq.1) lz_Q(i,k,1) = temp
       end do; end do; end do
       else
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
       do k = 1,npoleloc; do j=1,2; do i=1,3
          if (btest(j,0)) then
-            lz_V(i,j,k,1) = mu(i,1,k)/l2_norm
+            lz_V(i,j,k,1) = lz_V(i,j,k,1)*real(l2_norm,t_p)
          else
-            lz_V(i,j,k,1) = mu(i,1,k)/l2_norm
+            lz_V(i,j,k,1) = lz_V(i,j,k,1)*real(l2_norm1,t_p)
          end if
       end do; end do; end do
       end if
@@ -339,24 +554,27 @@ c
       use mpi
       use mpole
       use orthogonalize
-      use polar_temp   ,only: res
+      use polar_temp   ,only: res,diag
       use utilgpu ,only: rec_queue,Tinker_shellEnv
       use sizes   ,only: tinkerdebug
       implicit none
       integer  i,j,k,kk,it,ierr
-      integer lossOrthIt,makeOrth,notho
-      real(t_p) temp,nrmb,alphaa
-      real(r_p) alpha,alpha1,beta,beta1,beta_s,beta1_s,nrm_b,l2_norm
+      integer lossOrthIt,notho
+      real(t_p) temp
+     &         ,nrmbi,nrmbi1,alphaa,alphaa1,betaa,betaa1
+      real(r_p) alpha,alpha1,beta,beta1,beta_s,beta1_s
+     &         ,nrm_b,nrm_b1,db_scal,db_scal1
       real(r_p) alpha_v(2),beta_v(2)
       real(r_p),parameter:: tol=1d-12
+
 #if TINKER_DOUBLE_PREC
-      real(t_p),parameter:: eps=1d-1
+      real(t_p),parameter:: eps=1d-6
 #else
-      real(t_p),parameter:: eps=1e-1
+      real(t_p),parameter:: eps=1e-4
 #endif
       real(t_p),pointer:: scalV(:)
       character*8 cfg
-      parameter(lossOrthIt=200)
+      parameter(lossOrthIt=100)
 
       interface
       subroutine MatxVec(Rin,Rout)
@@ -365,72 +583,98 @@ c
       end interface
 
       if (deb_path) write(*,*) 'lanzcos_iteration'
-      call Tinker_shellEnv("ORTH",makeOrth,0)
-      scalV(1:krylovdim)=>
-     &         lz_WorkSpace(12*npolebloc+1:12*npolebloc+krylovdim)
+      scalV(1:krylovDim)=>
+     &         lz_WorkSpace(12*npolebloc+1:12*npolebloc+krylovDim)
       notho = 0
+      beta  = 0; beta1  = 0
+      l_idx = 1
+      saveResAmat_l = .true.
 
       call MatxVec(lz_V(:,:,:,1),res)
-      alpha = 0; alpha1 = 0
-      beta  = 0; beta1  = 0
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
-      do k=1,npoleloc; do j=1,2; do i=1,3
-         if (btest(j,0)) then
-         alpha = alpha + res(i,j,k)*lz_V(i,j,k,1)
-c        else
-c        alpha1 = alpha1 + res(i,j,k)*lz_V(i,j,k,1)
-         end if
-      end do; end do; end do
-!$acc wait
 
-      if (nproc.gt.1) then
-         alpha_v(1) = alpha; alpha_v(2) = alpha1;
-         call MPI_ALLREDUCE(MPI_IN_PLACE,alpha_v,2,MPI_RPREC,MPI_SUM,
-     &        COMM_TINKER,ierr)
-         alpha = alpha_v(1); alpha1 = alpha_v(2)
+      if (MdiagITmat) then
+         call InnerMProdEf(lz_V,res,npoleloc,alpha,alpha1)
+      else
+         call InnerProdEf (lz_V,res,npoleloc,alpha,alpha1)
       end if
-
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
-      do k=1,npoleloc; do j = 1,2; do i = 1,3
-         if (btest(j,0)) then
-            temp = res(i,j,k) - alpha*lz_V(i,j,k,1)
-            res(i,j,k) = temp
-            beta  = beta + temp**2
-c        else
-c           temp = res(i,j,k) - alpha1*lz_V(i,j,k,1)
-c           res(i,j,k) = temp
-c           beta1  = beta1 + temp**2
-         end if
-      end do; end do; end do
 !$acc wait
+      alphaa = alpha; alphaa1=alpha1;
 
+      if (MdiagITmat) then
+!$acc    parallel loop collapse(3) default(present) async(rec_queue)
+         do k=1,npoleloc; do j = 1,2; do i = 1,3
+            if (btest(j,0)) then
+               temp  = res(i,j,k) - alphaa*lz_V(i,j,k,1)
+               res(i,j,k) = temp
+               beta  = beta + temp**2/diag(k)
+            else
+               temp  = res(i,j,k) - alphaa1*lz_V(i,j,k,1)
+               res(i,j,k) = temp
+               beta1 = beta1 + temp**2/diag(k)
+            end if
+         end do; end do; end do
+      else
+!$acc    parallel loop collapse(3) default(present) async(rec_queue)
+         do k=1,npoleloc; do j = 1,2; do i = 1,3
+            if (btest(j,0)) then
+               temp  = res(i,j,k) - alphaa*lz_V(i,j,k,1)
+               res(i,j,k) = temp
+               beta  = beta + temp**2
+            else
+               temp  = res(i,j,k) - alphaa1*lz_V(i,j,k,1)
+               res(i,j,k) = temp
+               beta1 = beta1 + temp**2
+            end if
+         end do; end do; end do
+      end if
+!$acc wait
       if (nproc.gt.1) then
          beta_v(1)=beta; beta_v(2)=beta1
          call MPI_ALLREDUCE(MPI_IN_PLACE,beta_v,2,MPI_RPREC,MPI_SUM,
      &        COMM_TINKER,ierr)
          beta=beta_v(1); beta1=beta_v(2)
       end if
-      beta = sqrt(beta); beta1=sqrt(beta1)
-      nrmb = beta
-      lz_T(1) = alpha
+
+      beta  = sqrt(beta); beta1=sqrt(beta1)
+      nrmbi = real(1,r_p)/beta
+      nrmbi1= real(1,r_p)/beta1
+
+      if (tinkerdebug.gt.0) then
+         if(MdiagITmat) then
+            call InnerMProdEf(lz_V,res,npoleloc,db_scal,db_scal1)
+         else
+            call InnerProdEf(lz_V,res,npoleloc,db_scal,db_scal1)
+         end if
+!$acc wait
+         if (rank.eq.0) then
+ 14      format(A,I5,2F12.7,2D16.7)
+         print 14, 'it lanzcos',1,alpha,alpha1,db_scal,beta
+         end if
+      end if
+
+      lz_T (1) = alpha
+      lz_T1(1) = alpha1
 
       do kk = 2, krylovDim
 
          if (beta.lt.tol) exit
-         lz_T(krylovDim+kk-1) = beta
+         lz_T(maxKD+kk-1) = beta
+        lz_T1(maxKD+kk-1) = beta1
+         l_idx = kk
 
          if (EigenVec_l) then
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
          do k=1,npoleloc; do j=1,2; do i=1,3
             if (btest(j,0)) then
                lz_V(i,j,k,2) = lz_V(i,j,k,1)
-               temp          = res(i,j,k)/nrmb
+               temp          = res(i,j,k)*nrmbi
                lz_V(i,j,k,1) = temp
                 lz_Q(i,k,kk) = temp
-c           else
-c              lz_V(i,j,k,2) = lz_V(i,j,k,1)
-c              temp          = res(i,j,k)/nrmb
-c              lz_V(i,j,k,1) = temp
+            else
+               lz_V(i,j,k,2) = lz_V(i,j,k,1)
+               temp          = res(i,j,k)*nrmbi1
+               lz_V(i,j,k,1) = temp
+               lz_Q1(i,k,kk) = temp
             end if
          end do; end do; end do
          else
@@ -438,82 +682,91 @@ c              lz_V(i,j,k,1) = temp
          do k=1,npoleloc; do j=1,2; do i=1,3
             if (btest(j,0)) then
                lz_V(i,j,k,2) = lz_V(i,j,k,1)
-               lz_V(i,j,k,1) = res(i,j,k)/nrmb
-c           else
-c              lz_V(i,j,k,2) = lz_V(i,j,k,1)
-c              lz_V(i,j,k,1) = res(i,j,k)/nrmb
+               lz_V(i,j,k,1) = res(i,j,k)*nrmbi
+            else
+               lz_V(i,j,k,2) = lz_V(i,j,k,1)
+               lz_V(i,j,k,1) = res(i,j,k)*nrmbi1
             end if
          end do; end do; end do
          end if
 
          if (tinkerdebug.gt.0) then  ! (DEBUG INFO)
-         l2_norm=0
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
-         do k=1,npoleloc; do j=1,1; do i=1,3
-            l2_norm = l2_norm + lz_V(i,1,k,2)*lz_V(i,1,k,1)
-         end do; end do; end do
-!$acc wait
-         if (nproc.gt.1) then
-            call MPI_ALLREDUCE(MPI_IN_PLACE,l2_norm,1,MPI_RPREC,MPI_SUM,
-     &           COMM_TINKER,ierr)
+
+         if(MdiagITmat) then
+         call InnerMProdEf(lz_V(1,1,1,2),lz_V,npoleloc,db_scal,db_scal1)
+         else
+         call InnerProdEf(lz_V(1,1,1,2),lz_V,npoleloc,db_scal,db_scal1)
          end if
 
-c        if (tinkerdebug.gt.0.and.EigenVec_l.and.kk.gt.100) then
+c        if (EigenVec_l.and.kk.gt.lossOrthIt) then
 c           !cfg=merge('verb    ','lz_Q    ',kk.gt.286.and.kk.lt.291)
 c           cfg='lz_Q'
 c           call chkOrthogonality(lz_Q(1,1,1),3*npoleloc,kk
-c    &                           ,3*npoleloc,cfg)
+c    &                           ,3*npoleloc,cfg,'lz_Q    ')
 c        end if
          end if  ! (DEBUG INFO)
 
          call MatxVec(lz_V(:,:,:,1),res)
-         alpha = 0; alpha1 = 0
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
-         do k=1,npoleloc; do j=1,2; do i=1,3
-            if (btest(j,0)) then
-               alpha = alpha + res(i,j,k)*lz_V(i,j,k,1)
-c           else
-c              alpha1 = alpha1 + res(i,j,k)*lz_V(i,j,k,1)
-            end if
-         end do; end do; end do
-!$acc wait
-         if (nproc.gt.1) then
-            alpha_v(1) = alpha; alpha_v(2) = alpha1;
-            call MPI_ALLREDUCE(MPI_IN_PLACE,alpha_v,2,MPI_RPREC,MPI_SUM,
-     &           COMM_TINKER,ierr)
-            alpha = alpha_v(1); alpha1 = alpha_v(2)
-         end if
-         lz_T(kk) = alpha
-         alpha1   = alpha
-         beta_s=beta; beta1_s=beta1
-         beta  = 0; beta1  = 0
 
-         alphaa = alpha
+         if (MdiagITmat) then
+            call InnerMProdEf(lz_V,res,npoleloc,alpha,alpha1)
+         else
+            call InnerProdEf (lz_V,res,npoleloc,alpha,alpha1)
+         end if
+!$acc wait
+
+         lz_T(kk) = alpha
+         lz_T1(kk) = alpha1
+         !beta_s=beta; beta1_s=beta1
+         betaa =beta; betaa1 =beta1
+         beta  = 0;   beta1  = 0
+
+         alphaa= alpha; alphaa1= alpha1
+
+         if (MdiagITmat) then
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
-         do k=1,npoleloc; do j=1,2; do i=1,3
-            if (btest(j,0)) then
-            temp = res(i,j,k) - alphaa*lz_V(i,j,k,1)
-     &                        - beta_s*lz_V(i,j,k,2)
-            res(i,j,k) = temp
-            beta  = beta + temp**2
-c           else
-c           temp  = res(i,j,k) - alpha1*lz_V(i,j,k,1)
-c    &                        - beta1_s*lz_V(i,j,k,2)
-c           res(i,j,k) = temp
-c           beta1 = beta1 + temp**2
-            end if
-         end do; end do; end do
+            do k=1,npoleloc; do j=1,2; do i=1,3
+               if (btest(j,0)) then
+               temp = res(i,j,k) - alphaa*lz_V(i,j,k,1)
+     &                           - betaa *lz_V(i,j,k,2)
+               res(i,j,k) = temp
+               beta  = beta + temp**2/diag(k)
+               else
+               temp  = res(i,j,k) - alphaa1*lz_V(i,j,k,1)
+     &                            - betaa1 *lz_V(i,j,k,2)
+               res(i,j,k) = temp
+               beta1 = beta1 + temp**2/diag(k)
+               end if
+            end do; end do; end do
+         else
+!$acc parallel loop collapse(3) default(present) async(rec_queue)
+            do k=1,npoleloc; do j=1,2; do i=1,3
+               if (btest(j,0)) then
+               temp = res(i,j,k) - alphaa*lz_V(i,j,k,1)
+     &                           - betaa *lz_V(i,j,k,2)
+               res(i,j,k) = temp
+               beta  = beta + temp**2
+               else
+               temp  = res(i,j,k) - alphaa1*lz_V(i,j,k,1)
+     &                            - betaa1 *lz_V(i,j,k,2)
+               res(i,j,k) = temp
+               beta1 = beta1 + temp**2
+               end if
+            end do; end do; end do
+         end if
+
 !$acc wait
          if (nproc.gt.1) then
             beta_v(1)=beta; beta_v(2)=beta1
-            call MPI_ALLREDUCE(MPI_IN_PLACE,beta_v,2,MPI_RPREC,MPI_SUM,
-     &           COMM_TINKER,ierr)
+            call MPI_ALLREDUCE(MPI_IN_PLACE,beta_v,2,MPI_RPREC
+     &          ,MPI_SUM,COMM_TINKER,ierr)
             beta=beta_v(1); beta1=beta_v(2)
          end if
-         beta = sqrt(beta); beta1=sqrt(beta1)
-         nrmb = beta
+         beta  = sqrt(beta); beta1=sqrt(beta1)
+         nrmbi = real(real(1,r_p)/beta,t_p)
+         nrmbi1= real(real(1,r_p)/beta1,t_p)
 
-         if (makeOrth.and.EigenVec_l.and.kk.gt.lossOrthIt) then  ! FULL ORTHOGONALISATION
+         if (OrthBase.and.EigenVec_l.and.kk.gt.lossOrthIt) then  ! FULL ORTHOGONALISATION
 !$acc parallel loop gang vector_length(256) default(present) async
             do it = 1,kk-02
                alpha1 = 0
@@ -555,7 +808,7 @@ c           beta1 = beta1 + temp**2
      &                        ,MPI_SUM,COMM_TINKER,ierr)
             end if
             nrm_b = sqrt(nrm_b)
-            nrmb  = nrm_b
+            nrmbi = nrm_b
             beta  = nrm_b
 
             if (tinkerdebug.gt.0) then
@@ -574,48 +827,49 @@ c               call printVec("scalV",scalV,kk-40,precd=12,prec=15)
             end if
          end if   ! (ORTHOGONALISATION PROCESS)
 
-!$acc parallel loop async collapse(2) default(present)
-         do k = 1,npoleloc; do i=1,3
-            res(i,2,k) = res(i,1,k)
-         end do; end do
-
          if (tinkerdebug.gt.0.and.rank.eq.0) then
- 13      format(A,I8,2F14.7,D15.7,2x,'northo(',I0,')')
-         print 13, 'it lanzcos',kk,alpha,beta,l2_norm,notho
+ 13      format(A,I5,4F12.7,2D16.7,2x,'northo(',I0,')')
+         print 13, 'it lanzcos',kk,alpha,alpha1,betaa,betaa1
+     &           ,db_scal,db_scal1,notho
          end if
 
       end do
 
-c     if (krylovDim.gt.120.and.makeOrth.and.EigenVec_l) then
+c     if (krylovDim.gt.120.and.OrthBase.and.EigenVec_l) then
 c        call OrthogonalizeBase1(lz_Q,3*npoleloc,3*npoleloc
 c    &       ,krylovDim,120)
 c     end if
       if (tinkerdebug.gt.0) then
- 14   format(A,2I4)
-      if (kk.ne.krylovDim+1) write(*,14) 'early termination of',
+ 15   format(A,I4,A,I4,A)
+      if (kk.ne.krylovDim+1) write(*,15) 'early termination of',
      &   'lanzcos ',kk,'k0(',krylovDim,')'
          if (EigenVec_l) then
+            if( MdiagITmat) then
+            call chkMOrthogonality_(lz_Q,3*npoleloc,krylovDim
+     &          ,3*npoleloc,'verb    ')
+            call chkMOrthogonality_(lz_Q1,3*npoleloc,krylovDim
+     &          ,3*npoleloc,'verb    ')
+            else
             call chkOrthogonality(lz_Q,3*npoleloc,krylovDim
-     &          ,3*npoleloc,'lz_Q')
+     &          ,3*npoleloc,'lz_Q    ')
+            call chkOrthogonality(lz_Q1,3*npoleloc,krylovDim
+     &          ,3*npoleloc,'lz_Q1   ')
+            end if
          end if
       end if
 
       end subroutine
 
-      subroutine chkOrthogonality_(Mat,nl,nc,ldM,name)
+      subroutine chkOrthogonality_r4(Mat,nl,nc,ldM,name)
       use domdec ,only: nproc
       implicit none
-      integer,intent(in):: nc,nl,ldM
-      real(t_p),intent(in):: Mat(ldM,*)
-      character(8) name
+      integer  ,intent(in):: nc,nl,ldM
+      real(4)  ,intent(in):: Mat(ldM,*)
+      character(8),intent(in) :: name
       integer i,j,k,ii,vl,num
       real(r_p) scal,scal_max,scal_min,scal_zer,eps,sol
       logical disp
-#if TINKER_DOUBLE_PREC
-      parameter(vl=512,eps=1d-8)
-#else
-      parameter(vl=512,eps=1d-7)
-#endif
+      parameter(vl=512,eps=1d-5)
       !TODO Add parallel version
       if (nproc.gt.1) return
 
@@ -646,31 +900,88 @@ c     end if
             end if
          end if; end do
       end do; end do;
-!$acc serial async
+!$acc serial async copyin(name)
       if (num.gt.0) then
-         print*,"IssueOrth ",num,real(scal_min,4),real(scal_max,4)
+         print*,"IssueOrth ",name,num,real(scal_min,4),real(scal_max,4)
      &         ,real(scal_zer,4)
       end if
 !$acc end serial
 !$acc end data
       end subroutine
 
-      subroutine chkOrthogonality_r(Mat,nl,nc,ldM)
+      subroutine chkMOrthogonality_(Mat,nl,nc,ldM,name)
+      use domdec ,only: nproc
+      use polar_temp,only: diag
+      implicit none
+      integer  ,intent(in):: nc,nl,ldM
+      real(t_p),intent(in):: Mat(ldM,*)
+      character(8),intent(in) :: name
+      integer i,j,k,ii,vl,num
+      real(r_p) scal,scal_max,scal_min,scal_zer,eps,sol
+      logical disp
+#if TINKER_DOUBLE_PREC
+      parameter(vl=512,eps=1d-8)
+#else
+      parameter(vl=512,eps=1d-7)
+#endif
+      !TODO Add parallel version
+      if (nproc.gt.1) return
+
+      num =0
+      disp=merge(.true.,.false.,name.eq.'verb    ')
+      scal_max=-huge(scal_max)
+      scal_min= huge(scal_min)
+      scal_zer= huge(scal_zer)
+!$acc data copyin(num,scal_max,scal_min,scal_zer) async
+!$acc parallel loop gang vector_length(vl) collapse(2)
+!$acc&         default(present) async
+      do i = 1,nc; do j = 1,nc
+         if (i.gt.j) cycle
+         scal = 0
+!$acc loop vector
+         do k = 1,nl
+            scal = scal + Mat(k,i)*Mat(k,j)/diag((k-1)/3+1)
+         end do
+!$acc loop vector
+         do k = 1,vl; if (k.eq.1) then
+            sol = merge(1.0,0.0,i.eq.j)
+            if (abs(scal-sol).gt.eps) then
+               num= num + 1
+               scal_min= min(scal_min,scal)
+               scal_max= max(scal_max,scal)
+               scal_zer= min(scal_zer,abs(scal))
+               if (disp) print*,'orthM',i,j,scal
+            end if
+         end if; end do
+      end do; end do;
+!$acc serial async copyin(name)
+      if (num.gt.0) then
+         print*,"IssueOrthm ",name,num,real(scal_min,4),real(scal_max,4)
+     &         ,real(scal_zer,4)
+      end if
+!$acc end serial
+!$acc end data
+      end subroutine
+
+      subroutine chkOrthogonality_r8(Mat,nl,nc,ldM,name)
       use domdec ,only: nproc
       implicit none
       integer,intent(in):: nc,nl,ldM
-      real(r_p),intent(in):: Mat(ldM,*)
+      real(8),intent(in):: Mat(ldM,*)
+      character(8),intent(in) :: name
       integer i,j,k,ii,vl,num
       real(r_p) scal,scal_max,scal_zer,scal_min,eps,sol
+      logical disp
       parameter(vl=512,eps=1d-8)
 
       !TODO Add parallel version
       if (nproc.gt.1) return
 
-      num=0
+      num =0
+      disp=merge(.true.,.false.,name.eq.'verb    ')
       scal_max=-huge(scal_max)
       scal_min= huge(scal_min)
-      scal_zer= 1d6
+      scal_zer= huge(scal_zer)
 !$acc data copyin(num,scal_max,scal_min,scal_zer) async
 !$acc parallel loop gang vector_length(vl) collapse(2)
 !$acc&         default(present) async
@@ -689,12 +1000,14 @@ c     end if
                scal_min= min(scal_min,scal)
                scal_max= max(scal_max,scal)
                scal_zer= min(scal_zer,abs(scal))
+               if (disp) print*,'orth ',i,j,scal
             end if
          end if; end do
       end do; end do;
-!$acc serial async
+!$acc serial async copyin(name)
       if (num.gt.0) then
-         print*,"Issue in chkOrth",num,scal_min,scal_zer,scal_max
+         print*,"IssueOrth  ",name,num,real(scal_min,4),real(scal_max,4)
+     &         ,real(scal_zer,4)
       end if
 !$acc end serial
 !$acc end data
@@ -760,7 +1073,7 @@ c     end if
       end do
 !$acc end host_data
       call OrthogonalizeBase(Base(1,start0),ldb,nl,nv-start0+1)
-       
+
       end subroutine
 
       subroutine OrthogonalizeBase(Base,ldb,nl,nv)
@@ -836,8 +1149,63 @@ c     end if
 !$acc&         deviceptr(Base)
          do j = 1,nl; Base(j,i1)= Base(j,i1)/aNrm; end do ! Normalize
       end do
+
 !$acc end host_data
-       
+
+      end subroutine
+
+      subroutine OrthogonalizeLastVec1(Base,ldb,nl,nv)
+      use domdec
+      use orthogonalize
+      use mpi
+      use sizes     ,only: tinkerdebug
+      use tinheader ,only: re_p
+      implicit none
+      integer  ,intent(in)   :: nl,nv,ldb
+      real(t_p),intent(inout):: Base(ldb,*)
+      integer i,j,k,i1,j1,vl,ierr,str
+      real(r_p) a_scal, a_nrm
+      real(t_p) aScal, aNrm
+      real(t_p),pointer:: v_scal(:)
+      real(t_p),parameter::eps=real(1d-8,t_p)
+      parameter(vl=256)
+
+      v_scal(1:nv) => lz_WorkSpace(1:nv)
+
+!$acc host_data use_device(v_scal,Base)
+!$acc parallel loop gang vector_length(vl) async
+!$acc&         deviceptr(v_scal,Base)
+      do j = 1,nv  ! Inner product <[1..start0] | i>
+         a_scal=0
+!$acc loop vector
+         do k = 1,nl; a_scal= a_scal+ Base(k,j)*Base(k,nv); end do
+!$acc loop vector
+         do k = 1,vl; if (k.eq.1) then;
+            v_scal(j)=real(a_scal,t_p)
+         end if; end do;
+      end do
+      if (nproc.gt.1) then
+!$acc wait
+         call MPI_ALLREDUCE(MPI_IN_PLACE,v_scal,nv ! Parallel Inner Product
+     &                     ,MPI_TPREC,MPI_SUM,COMM_TINKER,ierr)
+      end if
+!$acc parallel loop gang vector_length(vl) async
+!$acc&         deviceptr(v_scal,Base)
+      do j = 1,nv-1  ! Inner product <[1..start0] | i>
+         aScal=v_scal(j)/v_scal(nv)
+!$acc loop vector
+         do k = 1,nl;
+!$acc atomic
+            Base(k,nv)= Base(k,nv)- aScal*Base(k,j);
+         end do
+      end do
+!$acc end host_data
+
+      call InnerProd(Base(1,nv),Base(1,nv),nl,a_nrm)
+!$acc wait
+      aNrm = real(1.0_re_p/sqrt(a_nrm),t_p)
+      call ascale(nl,aNrm,Base(1,nv),Base(1,nv))
+
       end subroutine
 
       subroutine lejaOrdering(array,n)
@@ -909,43 +1277,60 @@ c     end if
       integer kd,ldAB,i,info,j,lda,i1,i2
       real(t_p) alpha,beta
       parameter( kd=1, ldAB=kd+1, alpha=1, beta=0 )
-      real(r_p) W(krylovDim), work(3*krylovDim)
-      real(r_p) AB(ldAB,krylovDim), Z(krylovDim,krylovDim)
-      real(t_p),pointer:: Z_(:,:)
+      real(r_p)  work(3*krylovDim)
+      real(r_p) AB(ldAB,krylovDim),Z(krylovDim,krylovDim)
       real(r_p) nrm,nrm1,scal,scal1,scal2
 
       if (deb_path) print*, ' getEigenVec'
 
-      call prmem_request (lz_WorkSpace,krylovDim**2)
-      Z_(1:krylovDim,1:krylovDim) => lz_WorkSpace(1:krylovDim**2)
+#if 0
+      call prmem_requestm (lz_WS_,2*maxKD**2)
+      i = maxKD**2
+       lz_MT(1:maxKD,1:maxKD) =>lz_WS_(1:i)
+      lz_MT1(1:maxKD,1:maxKD) =>lz_WS_(i+1:2*i)
+#endif
+
       do i = 1,krylovDim
          AB(1,i) = lz_T(i)
-         AB(2,i) = lz_T(krylovDim+i)
+         AB(2,i) = lz_T(maxKD+i)
       end do
-
+#if 0
       call M_sbev('V','L',krylovDim,kd,AB,ldAB
-     &           ,EigVal,Z,krylovDim,work,info)
-      Z_(:,:) = Z(:,:)
-
+     &           ,EigVal,Z,maxKD,work,info)
+      lz_Z(1:krylovDim,1:krylovDim) = Z(:,:)
       if (info.ne.0) then
          print*, ' M_sbev fails with error',info 
       end if
+
+
+      do i = 1,krylovDim
+         AB(1,i) = lz_T1(i)
+         AB(2,i) = lz_T1(maxKD+i)
+      end do
+
+      call M_sbev('V','L',krylovDim,kd,AB,ldAB
+     &           ,EigVal1,Z,maxKD,work,info)
+      lz_Z1(1:krylovDim,1:krylovDim) = Z(:,:)
+#endif
 
       if (.not.EigenVec_l) return
 
  12   format('eig val',50F10.6,/)
  13   format('EigV',I4,' nrm2(',2F9.5,') scal(',2F11.7,')',2I3,F11.7)
 
-      !if(rank.eq.0) write(*,12) W(1:50)
-!$acc update device(EigVal,Z_) async
+!$acc update device(EigVal,lz_Z,lz_Z1) async
 
 #ifdef _OPENACC
       lda = 3*npoleloc
-!$acc host_data use_device(lz_Q,Z_,Vp)
+!$acc host_data use_device(lz_Q,lz_Q1,lz_Z,lz_Z1,Vp,Vp1)
       info= M_cublasGemm(cBhandle,CUBLAS_OP_N,CUBLAS_OP_N
      &                  ,lda,nEigenV,krylovDim
-     &                  ,alpha,lz_Q,lda,Z_,krylovDim
+     &                  ,alpha,lz_Q,lda,lz_Z,maxKD
      &                  ,beta ,  Vp,lda)
+      info= info+ M_cublasGemm(cBhandle,CUBLAS_OP_N,CUBLAS_OP_N
+     &                  ,lda,nEigenV,krylovDim
+     &                  ,alpha,lz_Q1,lda,lz_Z1,maxKD
+     &                  ,beta ,  Vp1,lda)
 !$acc end host_data
       if (info.ne.CUBLAS_STATUS_SUCCESS) then
          print '(A,A,I4,A,I0)'
@@ -953,21 +1338,44 @@ c     end if
      &        ,' fails with error ',info
       end if
 
-      if (nproc.eq.1) then
+      if (tinkerdebug.gt.0) then
+      call chkOrthogonality(lz_Z,krylovDim,krylovDim
+     &     ,maxKD,"lz_Z    ")
+      call chkOrthogonality(lz_Z1,krylovDim,krylovDim
+     &     ,maxKD,"lz_Z1   ")
+         if (MdiagITmat) then
+      call chkMOrthogonality_(Vp(1,1,1),3*npoleloc,nEigenV
+     &     ,3*npoleloc,"Vp_prev ")
+      call chkMOrthogonality_(Vp1(1,1,1),3*npoleloc,nEigenV
+     &     ,3*npoleloc,"Vp1_prev ")
+         else
       call chkOrthogonality(Vp(1,1,1),3*npoleloc,nEigenV
-     &     ,3*npoleloc,'Vp')
+     &     ,3*npoleloc,"Vp_prev ")
+      call chkOrthogonality(Vp1(1,1,1),3*npoleloc,nEigenV
+     &     ,3*npoleloc,"Vp1_prev ")
+         end if
       end if
 
-      if (krylovdim.gt.100) then
+      if (krylovDim.gt.100.or.MdiagITmat.and.OrthBase) then
          call OrthogonalizeBase(Vp(1,1,1),3*npoleloc,3*npoleloc,nEigenV)
       end if
 
       call calcEigenVectorImage
+      call BuildEMat
 
       if (tinkerdebug.gt.0) then
          if (nproc.eq.1) then
+         if (MdiagITmat) then
+         call chkMOrthogonality_(Vp(1,1,1),3*npoleloc,nEigenV
+     &        ,3*npoleloc,"Vp  orth")
+         call chkMOrthogonality_(Vp1(1,1,1),3*npoleloc,nEigenV
+     &        ,3*npoleloc,"Vp1 orth")
+         else
          call chkOrthogonality(Vp(1,1,1),3*npoleloc,nEigenV
-     &        ,3*npoleloc,'Vp')
+     &        ,3*npoleloc,"Vp  orth ")
+         call chkOrthogonality(Vp1(1,1,1),3*npoleloc,nEigenV
+     &        ,3*npoleloc,"Vp1 orth ")
+         end if
 !$acc wait
          else
 !!$acc update host(Vp,lz_Q) async
@@ -1002,23 +1410,23 @@ c     end if
       subroutine calcEigenVectorImage
       use domdec
       use inform     ,only: deb_path
+#if TINKER_MIXED_PREC && defined(_OPENACC)
       use interfaces ,only: cuPOTRI,cuPOTRF,cuGESV
-#if TINKER_MIXED_PREC
      &                ,cuPOTRIm
 #endif
       use mpi
       use mpole      ,only: npoleloc,npolebloc
       use orthogonalize
+#ifdef _OPENACC
       use utilgpu    ,only: rec_stream
+#endif
       use sizes      ,only: tinkerdebug
       implicit none
       integer i,j,k,it,it1
+      integer lda
       real(t_p),pointer:: work(:,:,:,:)
-      real(t_p) eps
-      integer sd,sdec,ndec,ndec1,stdec,ledec,dim1
-      real(r_p) tot1,tot2,tmp
-      real(t_p) tot
-      parameter(sdec=256)
+      !real(t_p) eps
+      logical MdiagITmat_s
       interface
       subroutine MatxVec(Rin,Rout)
       real(t_p),contiguous:: Rin(:,:,:),Rout(:,:,:)
@@ -1028,21 +1436,76 @@ c     end if
       if (deb_path) print*,'  calcEigenVectorImage'
       lz_V(1:3,1:2,1:npolebloc,1:2) => lz_WorkSpace(1:12*npolebloc)
 
-      do it = 1,nEigenV
-         eps = -huge(eps)
-!$acc parallel loop async default(present)
-         do k = 1,npoleloc; do j = 1,2; do i = 1,3
-            lz_V(i,j,k,1) = Vp(i,k,it)
-         end do; end do; end do
-         call Matxvec(lz_V(:,:,:,1),lz_V(:,:,:,2))
-!$acc parallel loop async default(present)
-         do k = 1,npoleloc; do i = 1,3
-            TVp(i,k,it) = lz_V(i,1,k,2)
-            !eps  = max(eps,abs(lz_V(i,1,k,1)-lz_V(i,2,k,2)))
-         end do; end do
-c!$acc wait
-c         print*, 'diff Tmat vec',it,eps
-      end do
+      MdiagITmat_s  = MdiagITmat
+      MdiagITmat    = .false.
+      saveResAmat_l = .false.
+
+c      do it = 1,nEigenV
+c         !eps = -huge(eps)
+c!$acc parallel loop async collapse(3) default(present)
+c         do k = 1,npoleloc; do j = 1,2; do i = 1,3
+c            if (btest(j,0)) then; lz_V(i,j,k,1) = Vp (i,k,it)
+c            else;                 lz_V(i,j,k,1) = Vp1(i,k,it); end if
+c         end do; end do; end do
+c         call Matxvec(lz_V(:,:,:,1),lz_V(:,:,:,2))
+c!$acc parallel loop async collapse(3) default(present)
+c         do k = 1,npoleloc; do j=1,2; do i = 1,3
+c            if (btest(j,0)) then; TVp (i,k,it) = lz_V(i,j,k,2)
+c            else;                 TVp1(i,k,it) = lz_V(i,j,k,2); end if
+c            !eps  = max(eps,abs(lz_V(i,1,k,1)-lz_V(i,2,k,2)))
+c         end do; end do; end do
+cc!$acc wait
+cc         print*, 'diff Tmat vec',it,eps
+c      end do
+
+      MdiagITmat=MdiagITmat_s
+
+#if _OPENACC
+!$acc host_data use_device(lz_AQ,lz_AQ1,lz_Z,lz_Z1,TVp,TVp1)
+      lda = 3*npoleloc
+      it = M_cublasGemm(cBhandle,CUBLAS_OP_N,CUBLAS_OP_N
+     &                 ,lda,nEigenV,krylovDim
+     &                 ,1.0_ti_p,lz_AQ,lda,lz_Z,maxKD
+     &                 ,0.0_ti_p,TVp,lda)
+      it = it+ M_cublasGemm(cBhandle,CUBLAS_OP_N,CUBLAS_OP_N
+     &                 ,lda,nEigenV,krylovDim
+     &                 ,1.0_ti_p,lz_AQ1,lda,lz_Z1,maxKD
+     &                 ,0.0_ti_p,  TVp1,lda)
+!$acc end host_data
+      if (it.ne.CUBLAS_STATUS_SUCCESS) then
+         print '(A,A,I4,A,I0)'
+     &         ,' M_cublasGemm ',__FILE__,__LINE__
+     &         ,' fails with error ',it
+      end if
+#endif
+
+      end subroutine
+
+      subroutine BuildEMat
+      use domdec
+      use inform     ,only: deb_path
+#if defined(_OPENACC)
+      use interfaces ,only: cuPOTRI,cuPOTRF,cuGESV
+#if TINKER_MIXED_PREC
+     &               ,cuPOTRIm
+#endif
+#endif
+      use mpi
+      use mpole      ,only: npoleloc,npolebloc
+      use orthogonalize
+#ifdef _OPENACC
+      use utilgpu    ,only: rec_stream
+#endif
+      use sizes      ,only: tinkerdebug
+      implicit none
+      integer i,j,k,it,it1
+      real(t_p),pointer:: work(:,:,:,:)
+      real(t_p) eps
+      integer sd,sdec,ndec,ndec1,stdec,ledec,dim1
+      logical MdiagITmat_s
+      real(r_p) tot1,tot2,tmp
+      real(t_p) tot
+      parameter(sdec=256)
 
       call setMIdk
 
@@ -1058,75 +1521,101 @@ c
 
          if (it1.lt.it) cycle
          tot1  = 0
+         tot2  = 0
          !stdec = (sd-1)*sdec+1
          !ledec = min(sd*sdec,dim1)
 !$acc loop vector
          do k = 1,dim1
-            tot1 = tot1 + Vp(k,1,it1)*TVp(k,1,it)
+            tot1 = tot1 + Vp (k,1,it1)*TVp (k,1,it)
+            tot2 = tot2 + Vp1(k,1,it1)*TVp1(k,1,it)
          end do
 
 !$acc loop vector
          do k = 1,sdec; if (k.eq.1) then
 !!$acc atomic
             MatE(it1,it) = MatE(it1,it) + tot1
-            MatE(it,it1) = MatE(it,it1) + tot1
+            MatE1(it1,it) = MatE1(it1,it) + tot2
+            if(it.ne.it1) MatE (it,it1) = MatE (it,it1) + tot1
+            if(it.ne.it1) MatE1(it,it1) = MatE1(it,it1) + tot2
          end if; end do;
 
       end do; end do
 
       if (nproc.gt.1) then
 !$acc wait
-      call MPI_ALLREDUCE(MPI_IN_PLACE,MatE,nEigenV**2,MPI_RPREC
+      call MPI_ALLREDUCE(MPI_IN_PLACE,MatE,2*nEigenV**2,MPI_RPREC
      &                  ,MPI_SUM,COMM_TINKER,it)
       end if
 
-      ! Casting operation
+      ! Casting operation in both MatE and MatE1
 !$acc parallel loop async default(present)
-      do i=1,nEigenV**2
+      do i=1,2*nEigenV**2
          MatE_(i,1) = MatE(i,1)
+         !MatE1_(i,1) = MatE(i,1)
       end do
 
       ! MatE Cholesky Inversion
 #ifdef _OPENACC
       ! Cholesky Factorisation & Inversion
-!$acc host_data use_device(MatE_)
+!$acc host_data use_device(MatE_,MatE1_)
       call cuPOTRF(nEigenV,MatE_,nEigenV,rec_stream)
       call cuPOTRI(nEigenV,MatE_,nEigenV,rec_stream)
+      call cuPOTRF(nEigenV,MatE1_,nEigenV,rec_stream)
+      call cuPOTRI(nEigenV,MatE1_,nEigenV,rec_stream)
 !$acc end host_data
 
        ! LU Decomposition & Inversion
-c!$acc host_data use_device(MatE_,Ipivot,MIdk)
+c!$acc host_data use_device(MatE_,MatE1_,Ipivot,MIdk)
 c      call cuGESV(nEigenV,nEigenV,MatE_,nEigenV,Ipivot,MIdk,nEigenV
 c     &           ,rec_stream)
-c!$acc parallel loop async deviceptr(MatE_,MIdk)
+c!$acc parallel loop async collapse(2) deviceptr(MatE_,MIdk)
 c      do i = 1,nEigenV**2
-c         MatE_(i,1) = MIdk(i,1)
+c         do j= 1,nEigenV
+c            MatE_(j,i) = MIdk(j,i)
+c            Midk (j,i) = merge(1,0,(i.eq.j))
+c         end do
+c      end do
+c      call cuGESV(nEigenV,nEigenV,MatE1_,nEigenV,Ipivot,MIdk,nEigenV
+c     &           ,rec_stream)
+c!$acc parallel loop async collapse(2) deviceptr(MatE_,MIdk)
+c      do i = 1,nEigenV**2
+c         do j= 1,nEigenV
+c            MatE1_(j,i) = MIdk(j,i)
+c            Midk (j,i) = merge(1,0,(i.eq.j))
+c         end do
 c      end do
 c!$acc end host_data
-#endif
 
 #if TINKER_DOUBLE_PREC
       if (tinkerdebug.gt.0) then
       tot1=1.0; tot2=0.0
-!$acc host_data use_device(MatE,MatE_,MIdk)
+!$acc host_data use_device(MatE,MatE_,MatE1,MatE1_,MIdk)
       it = M_cublasGemm(cBhandle,CUBLAS_OP_N,CUBLAS_OP_N
-     &                  ,nEigenV,nEigenV,nEigenV
-     &                  ,tot1,MatE,nEigenV,MatE_,nEigenV
-     &                  ,tot2,MIdk,nEigenV)
+     &                 ,nEigenV,nEigenV,nEigenV
+     &                 ,tot1,MatE,nEigenV,MatE_,nEigenV
+     &                 ,tot2,MIdk,nEigenV)
 !$acc end host_data
       if (it.ne.CUBLAS_STATUS_SUCCESS) then
          print '(A,A,I4,A,I0)'
      &         ,' M_cublasGemm ',__FILE__,__LINE__
      &         ,' fails with error ',it
       end if
+      tot1 = 1000
 !$acc wait
-!$acc update host(MatE_,MatE,MIdk)
-c     call printVec(" MatE  ",MatE ,nEigenV**2, prec=12, precd=8,
-c    &      period=min(nEigenV,20))
+!$acc update host(MatE_,MatE,MatE1_,MatE1,MIdk)
+      do i = 1,nEigenV; tot1=min(tot1,MatE(i,i)); end do;
+      if (.true.) then
+         call printVec(" MatE   ", MatE, nEigenV**2, prec=12, precd=8
+     &        ,period=min(nEigenV,20))
+         call printVec(" MatE1  ", MatE1, nEigenV**2, prec=12, precd=8
+     &        ,period=min(nEigenV,20))
+      end if
 c     call printVec(" MatE_ ",MatE_,nEigenV**2, prec=12, precd=8,
 c    &      period=min(nEigenV,20))
-      call chkOrthogonality(MIdk,nEigenV,nEigenV,nEigenV,'nEigenV')
+      call chkOrthogonality(MIdk,nEigenV,nEigenV,nEigenV,'E inv   ')
+      print*, 'min E diag', tot1
       end if
+#endif
 #endif
 
       end subroutine
@@ -1134,8 +1623,10 @@ c
 c     Compute projection of Vin in the deflated subspace
 c
       subroutine projectorOpe(Vin,Vout,invert)
+      use domdec
       use orthogonalize
       use mpole
+      use mpi
       use inform
       implicit none
       real(t_p),intent(in)   :: Vin (3,2,*)
@@ -1145,7 +1636,7 @@ c
       integer ii,i,j,k,dim1
       integer sd,sdec,ndec,ndec1,stdec,ledec
       real(r_p) tot1,tot2,tmp
-      real(t_p) tot
+      real(t_p) tot,tot_
       parameter(sdec=64)
 
       dim1  = npoleloc
@@ -1166,8 +1657,8 @@ c
          ledec = min(sd*sdec,dim1)
 !$acc loop vector collapse(2)
          do k = stdec,ledec; do i = 1,3
-            tot1 = tot1 + Vp(i,k,ii)*Vin(i,1,k)
-            tot2 = tot2 + Vp(i,k,ii)*Vin(i,2,k)
+            tot1 = tot1 + Vp (i,k,ii)*Vin(i,1,k)
+            tot2 = tot2 + Vp1(i,k,ii)*Vin(i,2,k)
          end do; end do
 
 !$acc loop vector
@@ -1180,28 +1671,36 @@ c
 
       end do; end do
 
-      if (invert.eq.0) then
+      if (nproc.gt.1) then
+!$acc wait
+!$acc host_data use_device(Evec)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,Evec,nEigenV*2,MPI_RPREC 
+     &       ,MPI_SUM,COMM_TINKER,i)
+!$acc end host_data
+      end if
+
 !$acc kernels async default(present)
       Evec_(1:2*nEigenV,1) = Evec(1:2*nEigenV,1)
 !$acc end kernels
-      else
-!$acc parallel loop collapse(2) present(Evec_,Evec,EigVal) async
-      do j = 1,2; do i = 1,nEigenV
-         Evec_(i,j) = Evec(i,j)/EigVal(i)
-      end do; end do
-      end if
 
 !$acc parallel loop collapse(3) default(present) async
       do k = 1,npoleloc; do j = 1,2; do i = 1,3;
-         tot = 0
+         tot = 0;
+         if(btest(j,0)) then;
 !$acc loop seq
-         do ii = 1,nEigenV
-            tot = tot + Vp(i,k,ii)*Evec_(ii,j)
-         end do
+            do ii = 1,nEigenV
+              tot = tot + Vp (i,k,ii)*Evec_(ii,j)
+            end do
+         else
+!$acc loop seq
+            do ii = 1,nEigenV
+              tot = tot + Vp1(i,k,ii)*Evec_(ii,j)
+            end do
+         end if
          Vout(i,j,k) = Vin(i,j,k) - tot
       end do; end do; end do;
 
-      !call minmaxone(Vin,6*npoleloc,'Vout')
+      call minmaxone(Vout,6*npoleloc,'Vout')
 
       end subroutine
 
@@ -1219,14 +1718,14 @@ c
       integer ii,i,j,k,ierr
       integer sd,sdec,ndec,ndec1,stdec,ledec,dim1
       real(r_p) tot1,tot2,tmp
-      real(t_p) tot
-      real(t_p),pointer::work(:,:,:)
+      real(t_p) tot,tot_
       parameter(sdec=64)
 
       dim1  = npoleloc
       ndec1 = dim1/sdec
       ndec  = merge(ndec1+1,ndec1,mod(dim1,sdec).gt.0)
-      work(1:3,1:2,1:npoleloc)=>lz_WorkSpace(1:6*npoleloc)
+
+      print*, 'ProjectorPGeneric not updated yet !!!'
 
 !$acc kernels async present(Evec)
       Evec(1:2*nEigenV,1) = 0
@@ -1268,12 +1767,14 @@ c
       Evec_(1:2*nEigenV,1) = Evec(1:2*nEigenV,1)
 !$acc end kernels
 
+#ifdef _OPENACC
 !$acc host_data use_device(MatE_,Evec_,MIdk)
       ierr = M_cublasGemm(cBhandle,CUBLAS_OP_N,CUBLAS_OP_N
      &                   ,nEigenV,2,nEigenV
      &                   ,1.0_ti_p,MatE_,nEigenV,Evec_,nEigenV
      &                   ,0.0_ti_p,MIdk,nEigenV)
 !$acc end host_data
+#endif
 
 !$acc parallel loop collapse(3) default(present) async
       do k = 1,npoleloc; do j = 1,2; do i = 1,3;
@@ -1301,14 +1802,12 @@ c
       integer ii,i,j,k,ierr
       integer sd,sdec,ndec,ndec1,stdec,ledec,dim1
       real(r_p) tot1,tot2,tmp
-      real(t_p) tot
-      real(t_p),pointer::work(:,:,:)
+      real(t_p) tot,tot_
       parameter(sdec=64)
 
       dim1  = npoleloc
       ndec1 = dim1/sdec
       ndec  = merge(ndec1+1,ndec1,mod(dim1,sdec).gt.0)
-      work(1:3,1:2,1:npoleloc)=>lz_WorkSpace(1:6*npoleloc)
 
 !$acc kernels async present(Evec)
       Evec(1:2*nEigenV,1) = 0
@@ -1318,14 +1817,14 @@ c
 !$acc&         default(present) private(tot1,tot2) async
       do ii = 1,nEigenV; do sd = 1,ndec
 
-            tot1  = 0
-            tot2  = 0
+            tot1 = 0
+            tot2 = 0
          stdec = (sd-1)*sdec+1
          ledec = min(sd*sdec,dim1)
 !$acc loop vector collapse(2)
          do k = stdec,ledec; do i = 1,3
-            tot1 = tot1 + TVp(i,k,ii)*Vin(i,1,k)
-            tot2 = tot2 + TVp(i,k,ii)*Vin(i,2,k)
+            tot1 = tot1 + TVp (i,k,ii)*Vin(i,1,k)
+            tot2 = tot2 + TVp1(i,k,ii)*Vin(i,2,k)
          end do; end do
 
 !$acc loop vector
@@ -1346,95 +1845,52 @@ c
 !$acc end host_data
       end if
 
+      if (.false.) then
+!$acc parallel loop collapse(2) present(Evec_,Evec,EigVal) async
+      do j = 1,2; do i = 1,nEigenV
+         if (btest(j,0)) then; MIdk(i,j) = Evec(i,j)/EigVal (i)
+         else;                 MIdk(i,j) = Evec(i,j)/EigVal1(i); end if
+      end do; end do
+      else
 !$acc kernels async default(present)
       Evec_(1:2*nEigenV,1) = Evec(1:2*nEigenV,1)
 !$acc end kernels
 
-!$acc host_data use_device(MatE_,Evec_,MIdk)
+#ifdef _OPENACC
+!$acc host_data use_device(MatE_,MatE1_,Evec_,MIdk)
       ierr = M_cublasGemm(cBhandle,CUBLAS_OP_T,CUBLAS_OP_N
      &                   ,nEigenV,2,nEigenV
      &                   ,1.0_ti_p,MatE_,nEigenV,Evec_,nEigenV
      &                   ,0.0_ti_p,MIdk,nEigenV)
+      ierr = M_cublasGemm(cBhandle,CUBLAS_OP_T,CUBLAS_OP_N
+     &                   ,nEigenV,2,nEigenV
+     &                   ,1.0_ti_p,MatE1_,nEigenV,Evec_(1,2),nEigenV
+     &                   ,0.0_ti_p,MIdk(1,2),nEigenV)
 !$acc end host_data
+#endif
+      end if
 
 !$acc parallel loop collapse(3) default(present) async
       do k = 1,npoleloc; do j = 1,2; do i = 1,3;
-         tot = 0
+         tot = 0;
+         if (btest(j,0)) then
 !$acc loop seq
-         do ii = 1,nEigenV
-            tot = tot + Vp(i,k,ii)*MIdk(ii,j)
-         end do
+            do ii = 1,nEigenV
+               tot = tot + Vp(i,k,ii)*MIdk(ii,j)
+            end do
+         else
+!$acc loop seq
+            do ii = 1,nEigenV
+               tot = tot + Vp1(i,k,ii)*MIdk(ii,j)
+            end do
+         end if
          Vout(i,j,k) = Vin(i,j,k) - tot
       end do; end do; end do;
-      !call minmaxone(work,6*npoleloc,'work')
 
       end subroutine
 c
 c     Compute Vout = alpha*Vout + Vp*EigVal^{-1}*Vp^{T}
 c
-      subroutine invertDefaultQmat (Vin,Vout,alpha)
-      use inform  ,only: minmaxone
-      use orthogonalize
-      use mpole
-      implicit none
-      real(t_p),intent(in)   :: Vin (3,2,*)
-      real(t_p),intent(inout):: Vout(3,2,*)
-      real(t_p),intent(in)   :: alpha
-      integer ii,i,j,k,dim1
-      integer sd,sdec,ndec,ndec1,stdec,ledec
-      real(r_p) tot1,tot2,tmp
-      real(t_p) tot
-      parameter(sdec=64)
-
-      dim1  = npoleloc
-      ndec1 = dim1/sdec
-      ndec  = merge(ndec1+1,ndec1,mod(dim1,sdec).gt.0)
-
-!$acc kernels present(Evec) async
-      Evec(1:2*nEigenV,1) = 0
-!$acc end kernels
-
-!$acc parallel loop gang vector_length(sdec) collapse(2)
-!$acc&         default(present) private(tot1,tot2) async
-      do ii = 1,nEigenV; do sd = 1,ndec
-
-            tot1  = 0
-            tot2  = 0
-         stdec = (sd-1)*sdec+1
-         ledec = min(sd*sdec,dim1)
-!$acc loop vector collapse(2)
-         do k = stdec,ledec; do i = 1,3
-            tot1 = tot1 + Vp(i,k,ii)*Vin(i,1,k)
-            tot2 = tot2 + Vp(i,k,ii)*Vin(i,2,k)
-         end do; end do
-
-!$acc loop vector
-         do k = 1,sdec; if (k.eq.1) then
-!$acc atomic
-            Evec(ii,1) = Evec(ii,1) + tot1
-!$acc atomic
-            Evec(ii,2) = Evec(ii,2) + tot2
-         end if; end do
-
-      end do; end do
-
-!$acc parallel loop collapse(2) present(Evec_,Evec,EigVal) async
-      do j = 1,2; do i = 1,nEigenV
-         Evec_(i,j) = Evec(i,j)/EigVal(i)
-      end do; end do
-
-!$acc parallel loop collapse(3) default(present) async
-      do k = 1,npoleloc; do j = 1,2; do i = 1,3;
-         tot = 0
-!$acc loop seq
-         do ii = 1,nEigenV
-            tot = tot + Vp(i,k,ii)*Evec_(ii,j) 
-         end do
-         Vout(i,j,k) = alpha*Vout(i,j,k) + tot
-      end do; end do; end do;
-
-      end subroutine
-
       subroutine ApplyQxV (Vin,Vout,alpha)
       use domdec  ,only: COMM_TINKER,rank,nproc
       use inform  ,only: minmaxone
@@ -1449,7 +1905,7 @@ c
       integer ii,i,j,k,ierr
       integer sd,sdec,ndec,ndec1,stdec,ledec,dim1
       real(r_p) tot1,tot2,tmp
-      real(t_p) tot
+      real(t_p) tot,tot_
       parameter(sdec=64)
 
       dim1  = npoleloc
@@ -1464,14 +1920,14 @@ c
 !$acc&         default(present) private(tot1,tot2) async
       do ii = 1,nEigenV; do sd = 1,ndec
 
-            tot1  = 0
-            tot2  = 0
+         tot1  = 0
+         tot2  = 0
          stdec = (sd-1)*sdec+1
          ledec = min(sd*sdec,dim1)
 !$acc loop vector collapse(2)
          do k = stdec,ledec; do i = 1,3
-            tot1 = tot1 + Vp(i,k,ii)*Vin(i,1,k)
-            tot2 = tot2 + Vp(i,k,ii)*Vin(i,2,k)
+            tot1 = tot1 + Vp (i,k,ii)*Vin(i,1,k)
+            tot2 = tot2 + Vp1(i,k,ii)*Vin(i,2,k)
          end do; end do
 
 !$acc loop vector
@@ -1492,40 +1948,66 @@ c
 !$acc end host_data
       end if
 
+      if (.false.) then
+!$acc parallel loop collapse(2) present(Evec_,Evec,EigVal) async
+      do j = 1,2; do i = 1,nEigenV
+         if (btest(j,0)) then; Evec_(i,j) = Evec(i,j)/EigVal (i)
+         else;                 Evec_(i,j) = Evec(i,j)/EigVal1(i); end if
+      end do; end do
+      else
+
 !$acc kernels async default(present)
       Evec_(1:2*nEigenV,1) = Evec(1:2*nEigenV,1)
 !$acc end kernels
-
-!$acc host_data use_device(MatE_,Evec_,MIdk)
+#ifdef _OPENACC
+!$acc host_data use_device(MatE_,MatE1_,Evec_,MIdk)
       ierr = M_cublasGemm(cBhandle,CUBLAS_OP_N,CUBLAS_OP_N
-     &                   ,nEigenV,2,nEigenV
+     &                   ,nEigenV,1,nEigenV
      &                   ,1.0_ti_p,MatE_,nEigenV,Evec_,nEigenV
      &                   ,0.0_ti_p,MIdk,nEigenV)
+      ierr = M_cublasGemm(cBhandle,CUBLAS_OP_N,CUBLAS_OP_N
+     &                   ,nEigenV,1,nEigenV
+     &                   ,1.0_ti_p,MatE1_,nEigenV,Evec_(1,2),nEigenV
+     &                   ,0.0_ti_p,MIdk(1,2),nEigenV)
 !$acc end host_data
+#endif
+
+!$acc kernels async default(present)
+      Evec_(1:2*nEigenV,1) = MIdk(1:2*nEigenV,1)
+!$acc end kernels
+
+      end if
 
 !$acc parallel loop collapse(3) default(present) async
       do k = 1,npoleloc; do j = 1,2; do i = 1,3;
-         tot = 0
+         tot = 0;
+         if(btest(j,0)) then
 !$acc loop seq
-         do ii = 1,nEigenV
-            tot = tot + Vp(i,k,ii)*MIdk(ii,j) 
-         end do
+            do ii = 1,nEigenV
+               tot =tot  +Vp (i,k,ii)*Evec_(ii,j)
+            end do
+         else
+!$acc loop seq
+            do ii = 1,nEigenV
+               tot =tot  +Vp1(i,k,ii)*Evec_(ii,j)
+            end do
+         end if
          Vout(i,j,k) = alpha*Vout(i,j,k) + tot
       end do; end do; end do;
 
       end subroutine
 
-      subroutine diagPrecnd(Vin,Vout,Minv)
+      subroutine diagPrecnd(Vin,Vout)
       use mpole
+      use polar_temp ,only: diag
       implicit none
-      real(t_p),intent(in)   :: Vin (3,2,*)
-      real(t_p),intent(inout):: Vout(3,2,*)
-      real(t_p),intent(in)   :: Minv(npoleloc)
+      real(t_p),intent(in)   :: Vin (3,2,npoleloc)
+      real(t_p),intent(inout):: Vout(3,2,npoleloc)
       integer i,j,k
 
 !$acc parallel loop collapse(3) async default(present)
       do k=1,npoleloc; do j=1,2; do i=1,3
-         Vout(i,j,k) = Minv(k)*Vin(i,j,k)
+         Vout(i,j,k) = diag(k)*Vin(i,j,k)
       end do; end do; end do
 
       end subroutine
@@ -1536,26 +2018,154 @@ c
       use mpole
       use tinheader
       implicit none
-      real(t_p),intent(in)   :: Vin (3,2,*)
-      real(t_p),intent(inout):: Vout(3,2,*)
+      real(t_p),intent(in)   :: Vin (3,2,npoleloc)
+      real(t_p),intent(inout):: Vout(3,2,npoleloc)
       real(t_p),intent(in)   :: Minv(npoleloc)
       integer i
       real(t_p),pointer:: work(:,:,:)
       work(1:3,1:2,1:npoleloc)=> lz_WorkSpace(6*npoleloc+1:12*npoleloc)
 
-      print*, 'adaptedDeflat2'
+      if(debg) print*, 'adaptedDeflat2'
       call diagPrecnd(Vin,work,Minv)
-      call minmaxone(work,6*npoleloc,'work')
-      call ProjectorPTransGeneric(work,work)
-      call minmaxone(work,6*npoleloc,'work')
+      if(debg) call minmaxone(work,6*npoleloc,'work')
+      if (.false.) then
+         call projectorOpe(work,work,0)
+      else
+         call ProjectorPTransGeneric(work,work)
+      end if
+      if(debg) call minmaxone(work,6*npoleloc,'work')
       call ApplyQxV(Vin,work,1.0_ti_p)
-      call minmaxone(work,6*npoleloc,'work')
-      print*, '------------------------------------------------'
+      if(debg) call minmaxone(work,6*npoleloc,'work')
+      if(debg) print*, '-----------------------------------------------'
 
 !$acc parallel loop async default(present)
       do i=1,6*npoleloc
          Vout(i,1,1) = work(i,1,1)
       end do
+
+      end subroutine
+
+      subroutine restartDeflat
+      use orthogonalize
+      implicit none
+      !call calcEigenVectorImage
+      wKD = 1
+      end subroutine
+
+      subroutine loadKrylovBase(mu,Amu,beta_,beta1_)
+      use orthogonalize
+      use mpole
+      use utilgpu  ,only: rec_queue
+      implicit none
+      real(t_p) mu(3,2,*)
+      real(t_p) Amu(3,2,*)
+      real(r_p) beta_,beta1_
+      integer i,j,k
+      real(t_p) beta,beta1
+
+      ! Check out if maximum capacity has been reached
+      if (wKD.gt.maxKD) return
+      if (.true.) print*, 'loadKrylovBase',wKD
+
+      if (wKD.eq.1) then
+!$acc parallel loop collapse(3) async(rec_queue)
+         do k=1,npoleloc; do j=1,2; do i=1,3
+            if (btest(j,0)) then
+            lz_Q (i,k,wKD) =  mu(i,j,k)
+            lz_AQ(i,k,wKD) = Amu(i,j,k)
+            else
+            lz_Q1 (i,k,wKD) =  mu(i,j,k)
+            lz_AQ1(i,k,wKD) = Amu(i,j,k)
+            end if
+         end do; end do; end do
+      else
+         beta = real(beta_ ,t_p)
+         beta1= real(beta1_,t_p)
+!$acc parallel loop collapse(3) async(rec_queue)
+         do k=1,npoleloc; do j=1,2; do i=1,3
+            if (btest(j,0)) then
+            lz_Q  (i,k,wKD) =  mu(i,j,k)
+            lz_AQ (i,k,wKD) = Amu(i,j,k) - beta*lz_AQ(i,k,wKD-1)
+            else
+            lz_Q1 (i,k,wKD) =  mu(i,j,k)
+            lz_AQ1(i,k,wKD) = Amu(i,j,k) - beta1*lz_AQ1(i,k,wKD-1)
+            end if
+         end do; end do; end do
+      end if
+
+      wKD = wKD +1
+      end subroutine
+
+      subroutine FinalizeKrylovBase
+      use orthogonalize
+      use domdec
+      use inform        ,only: deb_path
+      use mpole
+      use mpi
+      use sizes         ,only: tinkerdebug
+      implicit none
+      integer ii,i,j,k,ierr
+      integer sd,sdec,ndec,ndec1,stdec,ledec,dim1
+      real(r_p) tot1,tot2,tmp
+      real(t_p) tot,tot_
+      parameter(sdec=64)
+
+      if (wKD.lt.4) return
+
+      if (deb_path) print*,'   FinalizeKrylovBase'
+      krylovDim = wKD - 1
+
+      if (tinkerdebug.gt.0.and.EigenVec_l) then
+         call chkOrthogonality(lz_Q,3*npoleloc,krylovDim
+     &       ,3*npoleloc,'lz_Q    ')
+         call chkMOrthogonality_(lz_Q,3*npoleloc,krylovDim
+     &       ,3*npoleloc,'lz_Q    ')
+      end if
+
+      dim1  = npoleloc
+      ndec1 = dim1/sdec
+      ndec  = merge(ndec1+1,ndec1,mod(dim1,sdec).gt.0)
+
+!$acc kernels present(MIdk) async
+      MIdk(1:nEigenV**2,1) = 0
+!$acc end kernels
+
+!$acc parallel loop gang vector_length(sdec) collapse(3)
+!$acc&         default(present) private(tot1,tot2) async
+      do ii = 1,krylovDim; do j=1,krylovDim; do sd = 1,ndec
+
+         tot1  = 0
+         tot2  = 0
+         stdec = (sd-1)*sdec+1
+         ledec = min(sd*sdec,dim1)
+!$acc loop vector collapse(2)
+         do k = stdec,ledec; do i = 1,3
+            tot1 = tot1 + lz_Q(i,k,ii)*lz_Q(i,k,j)
+            !tot2 = tot2 + lz_Q(i,k,ii)*lz_Q(i,k,j)
+         end do; end do
+
+!$acc loop vector
+         do k = 1,sdec; if (k.eq.1) then
+!$acc atomic
+            MIdk(ii,j) = MIdk(ii,j) + real(tot1,t_p)
+c!$acc atomic
+c            Evec(ii,2) = Evec(ii,2) + tot2
+         end if; end do
+
+      end do; end do; end do
+
+      if (nproc.gt.1) then
+!$acc wait
+!$acc host_data use_device(MIdk)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,MIdk,nEigenV**2,MPI_TPREC 
+     &       ,MPI_SUM,COMM_TINKER,ierr)
+!$acc end host_data
+      end if
+
+!$acc wait
+!$acc update host(MIdk)
+      call printVec('MIdk ch0',MIdk,nEigenV**2
+     &             ,prec=13,precd=8,period=nEigenV)
 
       end subroutine
 

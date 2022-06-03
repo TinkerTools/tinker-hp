@@ -55,10 +55,10 @@ c
      &   zk  = zk - f_sign(zcell,zk)
      &             *f_floor((f_abs(zk)-zcell2)*i_zcell+1.0_ti_p)
       if (octahedron) then
-         if (f_abs(xr)+f_abs(yr)+f_abs(zr).gt.box34) then
-            xr = xr - f_sign(xcell2,xr)
-            yr = yr - f_sign(ycell2,yr)
-            zr = zr - f_sign(zcell2,zr)
+         if (f_abs(xk)+f_abs(yk)+f_abs(zk).gt.box34) then
+            xk = xk - f_sign(xcell2,xk)
+            yk = yk - f_sign(ycell2,yk)
+            zk = zk - f_sign(zcell2,zk)
          end if
       end if
 c
@@ -68,6 +68,36 @@ c
       if ((ycell2-f_abs(yk)).lt.eps_cell) yk= yk- f_sign(5*eps_cell,yk)
       if ((zcell2-f_abs(zk)).lt.eps_cell) zk= zk- f_sign(5*eps_cell,zk)
 
+      end subroutine
+
+      M_subroutine
+     &           midpointimage1_inl(xk,yk,zk,xr,yr,zr)
+!$acc routine
+      use tinheader,only : ti_p,ti_eps,prec_eps
+#ifdef TINKER_CUF
+      use utilcu,only:xcell,xcell2,ycell,ycell2,zcell,zcell2
+     &          ,i_xcell,i_ycell,i_zcell,eps_cell,octahedron
+     &          ,box34,f_abs,f_floor,f_sign
+#else
+      use boxes  ,only: box34,octahedron
+      use cell
+#endif
+      implicit none
+      real(ti_p) xk,yk,zk
+      real(ti_p) xr,yr,zr
+!$acc routine(image_acc)
+c
+c     definition of the middle point between i and k atoms
+c
+      xk = xk + 0.5*xr
+      yk = yk + 0.5*yr
+      zk = zk + 0.5*zr
+c
+c     Adjust mid point position if necessary
+c
+      if ((xcell2-f_abs(xk)).lt.eps_cell) xk= xk- f_sign(5*eps_cell,xk)
+      if ((ycell2-f_abs(yk)).lt.eps_cell) yk= yk- f_sign(5*eps_cell,yk)
+      if ((zcell2-f_abs(zk)).lt.eps_cell) zk= zk- f_sign(5*eps_cell,zk)
       end subroutine
 
 #ifndef TINKER_CUF

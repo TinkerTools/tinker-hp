@@ -44,7 +44,7 @@ c
       integer modnl,nion_s,n0ion
       integer, allocatable :: list(:)
       integer, allocatable :: nc12(:)
-      real(t_p) cg,d
+      real(t_p) cg,d,dcut2
       logical header
       character*20 keyword
       character*240 record
@@ -54,7 +54,12 @@ c
 c
       if (init) then
 c
+c       deallocate global pointers if necessary
+c
         if (rank.eq.0.and.tinkerdebug) print*,'kcharge'
+c
+c       allocate global pointers
+c
         call alloc_shared_chg
         if (hostrank.ne.0) goto 1000
 c
@@ -99,7 +104,8 @@ c
 c       find and store all the atomic partial charges
 c
         do i = 1, n
-           pchg(i) = chg(type(i))
+           pchg(i) = merge(chg(type(i)),0.0_ti_p,type(i).ne.0)
+           pchg0(i) = 0.0_ti_p
         end do
 c
 c       use special charge parameter assignment method for MMFF
@@ -149,13 +155,14 @@ c
         n0ion= 0
         do i = 1, n
            list(i) = 0
-           if (pchg(i) .ne. 0.0_ti_p) then
+           if (pchg(i).ne.0.0_ti_p.or.fuse_chglj) then
               nbchg(i) = nion
               nion = nion + 1
               iion(nion) = i
               jion(nion) = i
               kion(nion) = i
               pchg(nion) = pchg(i)
+             pchg0(nion) = pchg(i)
               list(i) = nion
            else
               iion(n-n0ion) = i
@@ -168,31 +175,14 @@ c
         end do
         do i = nion+1,n
            pchg(i) = 0.0_ti_p
+          pchg0(i) = 0.0_ti_p
         end do
-cc
-cc       optionally use neutral groups for neighbors and cutoffs
-cc
-c        if (neutnbr .or. neutcut) then
-c           do i = 1, n
-c              nc12(i) = 0
-c              do j = 1, n12(i)
-c                 k = list(i12(j,i))
-c                 if (k .ne. 0)  nc12(i) = nc12(i) + 1
-c              end do
-c           end do
-c           do i = 1, nion
-c              k = iion(i)
-c              if (n12(k) .eq. 1) then
-c                 do j = 1, n12(k)
-c                    m = i12(j,k)
-c                    if (nc12(m) .gt. 1) then
-c                       if (neutnbr)  jion(i) = m
-c                       if (neutcut)  kion(i) = m
-c                    end if
-c                 end do
-c              end if
-c           end do
-c        end if
+c
+c       copy original charge values that won't change during mutation
+c
+        if (use_lambdadyn) then
+           pchg_orig(:) = pchg(:)
+        end if
 c
 c       perform deallocation of some local arrays
 c
@@ -217,7 +207,7 @@ c
            call prmem_request(chgloc   ,n)
            call prmem_request(chgrecloc,n)
         else
-           call delete_data_kcharge
+           call dealloc_shared_chg
            return
         end if
       end if
@@ -249,13 +239,6 @@ c     nionlocloop is nionloc if nionloc is a multiple of 16, or the first one gr
       nionlocloop = merge( nionloc,
      &                     (int(nionloc/16)+1)*16,
      &                     (mod(nionloc,16).eq.0))
-#ifdef _OPENACC
-      if (nproc.eq.1.or.ndir.eq.1) then
-!$acc host_data use_device(chgglob)
-      call thrust_sort(chgglob,nionloc)
-!$acc end host_data
-      end if
-#endif
 
       do iproc = 1, n_recep1
         if (domlen(p_recep1(iproc)+1).ne.0) then
@@ -281,11 +264,6 @@ c         chgloc(ionloc) = icap
         end do
         idomlen = nionbloc - nion_s + 1
         domlenpole(p_recep1(iproc)+1) = idomlen 
-#ifdef _OPENACC
-c!$acc host_data use_device(chgglob)
-c        call thrust_sort(chgglob(nion_s),idomlen)
-c!$acc end host_data
-#endif
       end do
 c
       nionrecloc = 0
@@ -302,13 +280,6 @@ c
 c        chgrecloc(ionloc) = icap
       end do
       domlenpolerec(rank+1) = nionrecloc
-#ifdef _OPENACC
-      if (nproc.eq.1.or.nrec.eq.1) then
-!$acc host_data use_device(chgrecglob)
-      call thrust_sort(chgrecglob,nionrecloc)
-!$acc end host_data
-      end if
-#endif
 c
 !$acc end data
       modnl = mod(istep,ineigup)
@@ -316,6 +287,7 @@ c
 
       call prmem_request(chgglobnl,nlocnl,async=.true.)
 c
+      dcut2 = merge(max(vbuf2,cbuf2),cbuf2,fuse_chglj)
       nionlocnl = 0
 !$acc parallel loop copy(nionlocnl)
 !$acc&         present(ineignl,chglist,repart,chgglobnl,chglocnl)
@@ -326,7 +298,7 @@ c
         if (ionloc.eq.0) cycle
         call distprocpart1(iglob,rank,d,.true.,x,y,z)
         if (repart(iglob).eq.rank) d = 0.0_ti_p
-        if (d*d.le.(cbuf2/4)) then
+        if (d*d.le.(dcut2/4)) then
 !$acc atomic capture
           nionlocnl = nionlocnl + 1
           icap      = nionlocnl
@@ -337,11 +309,6 @@ c
 
       end do
 
-#ifdef _OPENACC
-!$acc host_data use_device(chgglobnl)
-      call thrust_sort(chgglobnl,nionlocnl)
-!$acc end host_data
-#endif
 c     nionlocnlloop is nionlocnl if nionlocnl is a multiple of 16, or the first one greater
       nionlocnlloop = merge( nionlocnl,
      &                     (int(nionlocnl/16)+1)*16,
@@ -358,6 +325,7 @@ c
       use domdec,only: rank,hostcomm
       use mpi   ,only: MPI_BARRIER
       use sizes
+      use potent,only: use_lambdadyn
       use tinMemory
       implicit none
       integer ierr
@@ -367,26 +335,11 @@ c
       call MPI_BARRIER(hostcomm,ierr)
 #endif
 !$acc update device(iion,pchg,chglist,nbchg)
+      if (use_lambdadyn) then
+!$acc update device(pchg_orig)
+      end if
       end subroutine
 
-      subroutine delete_data_kcharge
-      use atoms
-      use charge
-      use domdec
-      use sizes
-      use tinMemory
-      implicit none
- 
- 12   format(2x,'delete_data_kcharge')
-      if(rank.eq.0.and.tinkerdebug) print 12
-      call shmem_request(iion,   winiion,   [0], config=mhostacc)
-      call shmem_request(jion,   winjion,   [0])
-      call shmem_request(kion,   winkion,   [0])
-      call shmem_request(pchg,   winpchg,   [0], config=mhostacc)
-      call shmem_request(nbchg,  winnbchg,  [0], config=mhostacc)
-      call shmem_request(chglist,winchglist,[0], config=mhostacc)
-
-      end subroutine
 c
 c
 c     ##############################################################
@@ -412,7 +365,7 @@ c
       integer i,j,k,m
       integer it,kt,bt
       integer ic,kc
-      real(t_p), allocatable :: pchg0(:)
+      real(t_p), allocatable :: pbase(:)
       logical emprule
 c
 c
@@ -484,25 +437,25 @@ c
 c
 c     perform dynamic allocation of some local arrays
 c
-      allocate (pchg0(n))
+      allocate (pbase(n))
 c
 c     modify MMFF base charges using a bond increment scheme
 c
       do i = 1, n
-         pchg0(i) = pchg(i)
+         pbase(i) = pchg(i)
       end do
       do i = 1, n
          it = type(i)
          ic = class(i)
-         if (pchg0(i).lt.0.0_ti_p .or. it.eq.162) then
-            pchg(i) = (1.0_ti_p-crd(ic)*fcadj(ic)) * pchg0(i)
+         if (pbase(i).lt.0.0_ti_p .or. it.eq.162) then
+            pchg(i) = (1.0_ti_p-crd(ic)*fcadj(ic)) * pbase(i)
          end if
          do j = 1, n12(i)
             k = i12(j,i)
             kt = type(k)
             kc = class(k)
-            if (pchg0(k).lt.0.0_ti_p .or. kt.eq.162) then
-               pchg(i) = pchg(i) + fcadj(kc)*pchg0(k)
+            if (pbase(k).lt.0.0_ti_p .or. kt.eq.162) then
+               pchg(i) = pchg(i) + fcadj(kc)*pbase(k)
             end if
             bt = 0
             do m = 1, nlignes
@@ -528,11 +481,11 @@ c
          end do
    10    continue
          if (emprule) then
-            pchg(i) = (1.0_ti_p-crd(ic)*fcadj(ic)) * pchg0(i)
+            pchg(i) = (1.0_ti_p-crd(ic)*fcadj(ic)) * pbase(i)
             do j = 1, n12(i)
                k = i12(j,i)
                kc = class(k)
-               pchg(i) = pchg(i) + fcadj(kc)*pchg0(i12(j,i))
+               pchg(i) = pchg(i) + fcadj(kc)*pbase(i12(j,i))
             end do
             do j = 1, n12(i)
                k = i12(j,i)
@@ -565,9 +518,36 @@ c
 c
 c     perform deallocation of some local arrays
 c
-      deallocate (pchg0)
+      deallocate (pbase)
       return
       end
+c
+c     subroutine dealloc_shared_chg : deallocate shared memory pointers for chg 
+c     parameter arrays
+c
+      subroutine dealloc_shared_chg
+      use atoms
+      use charge
+      use domdec
+      use potent,only: use_lambdadyn
+      use sizes
+      use tinMemory
+      implicit none
+ 
+ 12   format(2x,'dealloc_shared_chg')
+      if(rank.eq.0.and.tinkerdebug) print 12
+      call shmem_request(iion,   winiion,   [0], config=mhostacc)
+      call shmem_request(jion,   winjion,   [0])
+      call shmem_request(kion,   winkion,   [0])
+      call shmem_request(pchg,   winpchg,   [0], config=mhostacc)
+      if (use_lambdadyn) then
+         call shmem_request(pchg_orig,winpchg_orig,[0],config=mhostacc)
+      end if
+      call shmem_request(pchg0, winpchg0,   [0], config=mhostacc)
+      call shmem_request(nbchg, winnbchg,   [0], config=mhostacc)
+      call shmem_request(chglist,winchglist,[0], config=mhostacc)
+
+      end subroutine
 c
 c     subroutine alloc_shared_chg : allocate shared memory pointers for chg 
 c     parameter arrays
@@ -577,6 +557,7 @@ c
       use atoms
       use charge
       use domdec
+      use potent,only: use_lambdadyn
       use tinMemory
       implicit none
 c
@@ -586,6 +567,10 @@ c
       call shmem_request(jion,   winjion,   [n])
       call shmem_request(kion,   winkion,   [n])
       call shmem_request(pchg,   winpchg,   [n], config=mhostacc)
+      if (use_lambdadyn) then
+         call shmem_request(pchg_orig,winpchg_orig,[n],config=mhostacc)
+      end if
+      call shmem_request(pchg0, winpchg0,   [n], config=mhostacc)
       call shmem_request(nbchg,  winnbchg,  [n], config=mhostacc)
       call shmem_request(chglist,winchglist,[n], config=mhostacc)
 

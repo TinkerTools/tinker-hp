@@ -794,7 +794,7 @@ void cu_efld0_direct(EFLD0_PARAMS,cudaStream_t st){
       }
    }
 
-   if (dynamic_gS) gS_efld= (npolelocnlb_pair>>2 < maxBlock) ? npolelocnlb_pair>>2 : maxBlock ;
+   if (dynamic_gS) gS_efld= npolelocnlb_pair<=BLOCK_DIM/WARP_SIZE ? 1 : ((npolelocnlb_pair>>2 < maxBlock) ? npolelocnlb_pair>>2 : maxBlock) ;
    cu_efld0_direct_core<<<gS_efld,BLOCK_DIM,sh,st>>> (EFLD0_ARGS);
    ierrSync = tinkerdebug ? cudaDeviceSynchronize() : cudaGetLastError();
    if (ierrSync != cudaSuccess) printf("efld0_direct_core C kernel error: %d ( %s )\n",ierrSync,cudaGetErrorString(ierrSync));
@@ -815,7 +815,7 @@ void cu_otfdc_efld0_direct(OTFDC_EFLD0_PARAMS,cudaStream_t st){
          printf (" gridSize oftdc_efld0     %d \n", gS_efld);
       }
    }
-   if (dynamic_gS) gS_otfdc_efld= npolelocnlb_pair/4;
+   if (dynamic_gS) gS_otfdc_efld= (npolelocnlb_pair<=BLOCK_DIM/WARP_SIZE) ? 1 : npolelocnlb_pair/4;
 
    cu_otfdc_efld0_direct_core<<<gS_otfdc_efld,BLOCK_DIM,sh,st>>> (OTFDC_EFLD0_ARGS);
    if  (tinkerdebug) gpuErrchk( cudaDeviceSynchronize() )
@@ -835,7 +835,7 @@ void cu_tmatxb_pme(TMATXB_PARAMS,cudaStream_t st){
       cudaKernelMaxGridSize(gS_tmat,cu_tmatxb_pme_core,BLOCK_DIM,0)  /* This a Macro Function */
       if (rank==0 && tinkerdebug&1) printf (" gridSize tmatxb_cu %d \n", gS_tmat);
    }
-   if (dynamic_gS) gS_tmat= npolelocnlb_pair/8;
+   if (dynamic_gS) gS_tmat= (npolelocnlb_pair<=BLOCK_DIM/WARP_SIZE) ? 1 : npolelocnlb_pair>>3;
 
    cu_tmatxb_pme_core<<<gS_tmat,BLOCK_DIM,sh,st>>> (TMATXB_ARGS);
    cudaError_t ierrSync;

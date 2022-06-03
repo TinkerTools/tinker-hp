@@ -23,7 +23,11 @@ c
       use kantor
       use katoms
       use kbonds
+      use kcflux
       use kchrge
+      use kcpen
+      use kctrn
+      use kdsp
       use kiprop
       use kitors
       use khbond
@@ -32,6 +36,7 @@ c
       use kopdst
       use kpitor
       use kpolr
+      use krepl
       use kstbnd
       use ksttor
       use ktorsn
@@ -59,6 +64,7 @@ c
       integer cls,atn,lig
       integer nx,ny,nxy
       integer bt,at,sbt,tt
+      integer ncfa,ncfb
       integer(8) res
       integer ft(6),pg(maxvalue)
       real(r_p) wght
@@ -75,7 +81,6 @@ c
       real(t_p) vd,cg
       real(t_p) fc,bd,dl
       real(t_p) pt,pol,thl
-
       real(t_p) abc,cba
       real(t_p) gi,alphi
       real(t_p) nni,factor
@@ -85,6 +90,12 @@ c
       real(t_p) tx(maxtgrd2)
       real(t_p) ty(maxtgrd2)
       real(t_p) tf(maxtgrd2)
+      real(t_p) spr,apr,epr
+      real(t_p) ctrn,atrn
+      real(t_p) cfb,cfb1,cfb2
+      real(t_p) cfa1,cfa2
+      real(t_p) cdp,adp,ddp
+      real(t_p) pal,pel
 
       logical header,swap
       character*1 da1
@@ -92,6 +103,7 @@ c
       character*4 pd,pe
       character*8 axt
       character*20 keyword
+      character*20 text
       character*240 record
       character*240 string
 c
@@ -129,6 +141,8 @@ c
       nd4 = 0
       nd3 = 0
       nmp = 0
+      ncfb = 0
+      ncfa = 0
       npi = 0
       npi5 = 0
       npi4 = 0
@@ -1204,16 +1218,39 @@ c
             ia = 0
             pol = 0.0_ti_p
             thl = 0.0_ti_p
+            ddp = 0.0_ti_p
             do i = 1, maxvalue
                pg(i) = 0
             end do
             string = record(next:240)
-            read (string,*,err=440,end=440)  ia,pol,thl,
-     &                                       (pg(i),i=1,maxvalue)
+            next   = 1
+            call getnumb (string,ia,next)
+            call gettext (string,text,next)
+            read (text,*,err=440,end=440)  pol
+            call gettext (string,text,next)
+            i = 1
+            call getnumb (text,pg(1),i)
+            if (pg(1) .eq. 0) then
+               read (text,*,err=440,end=440)  thl
+               call gettext (string,text,next)
+               i = 1
+               call getnumb (text,pg(1),i)
+               string = string(next:240)
+               if (pg(1) .eq. 0) then
+                  read (text,*,err=440,end=440)  ddp
+                  read (string,*,err=440,end=440)  (pg(i),i=1,maxvalue)
+               else
+                  read (string,*,err=440,end=440)  (pg(i),i=2,maxvalue)
+               end if
+            else
+               string = string(next:240)
+               read (string,*,err=440,end=440)  (pg(i),i=2,maxvalue)
+            end if
   440       continue
             if (ia .ne. 0) then
                polr(ia) = pol
                athl(ia) = thl
+               ddir(ia) = ddp
                do i = 1, maxvalue
                   pgrp(i,ia) = pg(i)
                end do
@@ -1319,8 +1356,8 @@ c
   500       continue
             if (ia .ge. maxbio) then
                write (iout,40)
-  510          format (/,' READPRM  --  Too many Biopolymer Types;',
-     &                    ' Increase MAXBIO')
+c 510          format (/,' READPRM  --  Too many Biopolymer Types;',
+c    &                    ' Increase MAXBIO')
                call fatal
             end if
             if (ia .ne. 0)  biotyp(ia) = ib
@@ -1788,9 +1825,117 @@ c
             else if (ie .eq. 1) then
                mmffaroma(ia,if) = ic
             end if
+c
+c     Pauli repulsion parameters
+c
+         else if (keyword(1:10) .eq. 'REPULSION ') then
+            ia = 0
+            spr = 0.0_ti_p
+            apr = 0.0_ti_p
+            epr = 0.0_ti_p
+            string = record(next:240)
+            read (string,*,err=660,end=660)  ia,spr,apr,epr
+  660       continue
+            if (ia .ne. 0) then
+               prsiz(ia) = spr
+               prdmp(ia) = apr
+               prele(ia) = -abs(epr)
+            end if
+c
+c     charge transfer parameters
+c
+         else if (keyword(1:7) .eq. 'CHGTRN ') then
+            ia = 0
+            ctrn = 0.0_ti_p
+            atrn = 0.0_ti_p
+            string = record(next:240)
+            read (string,*,err=670,end=670)  ia,ctrn,atrn
+  670       continue
+            if (ia .ne. 0) then
+               ctchg(ia) = ctrn
+               ctdmp(ia) = atrn
+            end if
+c
+c     bond charge flux parameters
+c
+         else if (keyword(1:9) .eq. 'BNDCFLUX ') then
+            ia = 0
+            ib = 0
+            cfb = 0.0_ti_p
+            string = record(next:240)
+            read (string,*,err=680,end=680)  ia,ib,cfb
+  680       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            ncfb = ncfb + 1
+            if (ia .lt. ib) then
+               kcfb(ncfb) = pa//pb
+               cflb(ncfb) = cfb
+            else if (ib .lt. ia) then
+               kcfb(ncfb) = pb//pa
+               cflb(ncfb) = -cfb
+            else
+               kcfb(ncfb) = pa//pb
+               cflb(ncfb) = 0.0d0
+            end if
+c
+c     angle charge flux parameters
+c
+         else if (keyword(1:9) .eq. 'ANGCFLUX ') then
+            ia = 0
+            ib = 0
+            ic = 0
+            cfa1 = 0.0_ti_p
+            cfa2 = 0.0_ti_p
+            cfb1 = 0.0_ti_p
+            cfb2 = 0.0_ti_p
+            string = record(next:240)
+            read (string,*,err=690,end=690)  ia,ib,ic,cfa1,cfa2,
+     &                                       cfb1,cfb2
+  690       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
+            ncfa = ncfa + 1
+            if (ia .le. ic) then
+               kcfa(ncfa) = pa//pb//pc
+            else
+               kcfa(ncfa) = pc//pb//pa
+            end if
+            cfla(1,ncfa) = cfa1
+            cfla(2,ncfa) = cfa2
+            cflab(1,ncfa) = cfb1
+            cflab(2,ncfa) = cfb2
+c
+c     charge penetration parameters
+c
+         else if (keyword(1:7) .eq. 'CHGPEN ') then
+            ia = 0
+            pel = 0.0d0
+            pal = 0.0d0
+            string = record(next:240)
+            read (string,*,err=700,end=700)  ia,pel,pal
+  700       continue
+            if (ia .ne. 0) then
+               cpele(ia) = abs(pel)
+               cpalp(ia) = pal
+            end if
+c
+c     damped dispersion parameters
+c
+         else if (keyword(1:11) .eq. 'DISPERSION ') then
+            ia = 0
+            cdp = 0.0d0
+            adp = 0.0d0
+            string = record(next:240)
+            read (string,*,err=710,end=710)  ia,cdp,adp
+  710       continue
+            if (ia .ne. 0) then
+               dspsix(ia) = cdp
+               dspdmp(ia) = adp
+            end if
          end if
       end do
-!$acc update device(tbf)
 c     call sleep(1)
       return
       end

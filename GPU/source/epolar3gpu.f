@@ -498,7 +498,7 @@ c
          if (deb_Path) print*,'epreal3_cu blockSize',gS
          first_in = .false.
       end if
-      if (dyn_gS) gS = npolelocnlb2_pair/8
+      if (dyn_gS) gS = max(npolelocnlb2_pair/8,1)
 
       call zero_en_red_buffer(def_queue)
 

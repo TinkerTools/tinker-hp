@@ -14,6 +14,7 @@ c     m2scale   scale factor for 1-2 multipole energy interactions
 c     m3scale   scale factor for 1-3 multipole energy interactions
 c     m4scale   scale factor for 1-4 multipole energy interactions
 c     m5scale   scale factor for 1-5 multipole energy interactions
+c     pentyp       type of penetration damping (NONE, GORDON1, GORDON2)
 c     mcorrect_ik      pair mscale interactions container
 c     mcorrect_scale   mscale value of mcorrect_ik interaction
 c     n_mscale         number of mscale interactions
@@ -24,6 +25,7 @@ c
       implicit none
       real(t_p) m2scale,m3scale
       real(t_p) m4scale,m5scale
+      character*7 pentyp
       integer n_mscale
       integer  ,allocatable:: mcorrect_ik(:,:)
       real(t_p),allocatable:: mcorrect_scale(:)

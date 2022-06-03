@@ -140,7 +140,7 @@ c
       ! C2 list (Atom-Blocks)
       if (use_vlist.or.use_shortvlist) then
          call timer_enter( timer_vlistcell )
-         if (vlst2_en) call vlist_block
+         if (vlst2_en) call vdw_nblist_build1
          call timer_exit ( timer_vlistcell )
       end if
       if (use_mlist.or.use_shortmlist) then
@@ -163,6 +163,8 @@ c        extra_alloc=.false.
 c     end if
 
 !$acc wait
+      if (vlst2_en.and.use_vlist) call get_vdw_nblst_sizes
+
       call timer_exit( timer_nl )
       end
 
@@ -814,8 +816,8 @@ c
 c
       nlocnl    = nloc
 c
+      if (istep.eq.0) call init_boxPart
       if (.not.allocated(ineignl)) then
-         call init_boxPart
          call prmem_request(ineignl,n)
 !$acc wait
       end if

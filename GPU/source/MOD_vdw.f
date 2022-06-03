@@ -52,6 +52,8 @@ c     nvdwlocnlb_pair  total number of vdw pair blocks interaction
 c     nvdwlocnlb2_pair  total number of vdw pair blocks interaction in C2 nblist
 c     nshortvdwlocnlb2_pair  total number of vdw pair blocks interaction in short range interaction list
 c     skipvdw12  switch to skip vdw 1-2 Interactions computation
+c     vdw_lcut2  defines a lower bound under which any vdwinteraction is neglected
+c     vdweAbsurd  defines an energy limit above which any vdwinteraction is skiped
 c
 c
 #include "tinker_precision.h"
@@ -60,7 +62,7 @@ c
       integer nvdw,nvt,nvdwloc,nvdwbloc,nvdwlocnl
       integer nvdwblocloop
       integer nvdwlocnlb
-      integer nvdwlocnlb_pair,nvdwlocnlb2_pair
+      integer nvdwlocnlb_pair,nvdwlocnlb_pair1,nvdwlocnlb2_pair
       integer nshortvdwlocnlb2_pair
       integer nvdwclass
       integer, allocatable :: vdwlocnl(:)
@@ -81,6 +83,8 @@ c
       integer winepsilon_c,winepsilon4_c
       integer winkred,winradhbnd,winepshbnd
       logical skipvdw12
+      real(t_p),parameter:: vdw_lcut2=0.5**2
+      real(t_p),parameter:: vdweAbsurd=2d2
       end
 
       module vdw_locArray

@@ -10,6 +10,192 @@ c     for PME i-th atomic sites along the fractional coordinate axes
 c
 c
 #include "tinker_precision.h"
+c
+c
+c     #################################################################
+c     ##                                                             ##
+c     ##  subroutine bsplgen  --  B-spline coefficients for an atom  ##
+c     ##                                                             ##
+c     #################################################################
+c
+c
+c     "bsplgen" gets B-spline coefficients and derivatives for
+c     a single PME atomic site along a particular direction
+c
+c
+      subroutine bsplgen (w,isite,thetai)
+!$acc routine
+      use tinheader
+      use pme,only:bsorder,maxorder
+      use potent,only:use_mpole,use_polar
+      implicit none
+      integer i,j,k
+      integer isite
+      integer level
+      real(t_p) w,denom
+      real(t_p) thetai(4,bsorder)
+      real(t_p) temp(maxorder,maxorder)
+c
+c     set B-spline depth for partial charges or multipoles
+c
+      level = 2
+      if (use_mpole .or. use_polar)  level = 4
+c
+c     initialization to get to 2nd order recursion
+c
+      temp(2,2) = w
+      temp(2,1) = 1.0_ti_p - w
+c
+c     perform one pass to get to 3rd order recursion
+c
+      temp(3,3) = 0.5_ti_p * w * temp(2,2)
+      temp(3,2) = 0.5_ti_p * ((1.0_ti_p+w)*temp(2,1)+
+     &                        (2.0_ti_p-w)*temp(2,2))
+      temp(3,1) = 0.5_ti_p * (1.0_ti_p-w) * temp(2,1)
+c
+c     compute standard B-spline recursion to desired order
+c
+!$acc loop seq
+      do i = 4, bsorder
+         k = i - 1
+         denom = 1.0_ti_p / real(k,t_p)
+         temp(i,i) = denom * w * temp(k,k)
+         do j = 1, i-2
+            temp(i,i-j) = denom * ((w+real(j,t_p))*temp(k,i-j-1)
+     &                           +(real(i-j,t_p)-w)*temp(k,i-j))
+         end do
+         temp(i,1) = denom * (1.0_ti_p-w) * temp(k,1)
+      end do
+c
+c     get coefficients for the B-spline first derivative
+c
+      k = bsorder - 1
+      temp(k,bsorder) = temp(k,bsorder-1)
+!$acc loop seq
+      do i = bsorder-1, 2, -1
+         temp(k,i) = temp(k,i-1) - temp(k,i)
+      end do
+      temp(k,1) = -temp(k,1)
+c
+c     get coefficients for the B-spline second derivative
+c
+      if (level .eq. 4) then
+         k = bsorder - 2
+         temp(k,bsorder-1) = temp(k,bsorder-2)
+         do i = bsorder-2, 2, -1
+            temp(k,i) = temp(k,i-1) - temp(k,i)
+         end do
+         temp(k,1) = -temp(k,1)
+         temp(k,bsorder) = temp(k,bsorder-1)
+         do i = bsorder-1, 2, -1
+            temp(k,i) = temp(k,i-1) - temp(k,i)
+         end do
+         temp(k,1) = -temp(k,1)
+c
+c     get coefficients for the B-spline third derivative
+c
+         k = bsorder - 3
+         temp(k,bsorder-2) = temp(k,bsorder-3)
+         do i = bsorder-3, 2, -1
+            temp(k,i) = temp(k,i-1) - temp(k,i)
+         end do
+         temp(k,1) = -temp(k,1)
+         temp(k,bsorder-1) = temp(k,bsorder-2)
+         do i = bsorder-2, 2, -1
+            temp(k,i) = temp(k,i-1) - temp(k,i)
+         end do
+         temp(k,1) = -temp(k,1)
+         temp(k,bsorder) = temp(k,bsorder-1)
+         do i = bsorder-1, 2, -1
+            temp(k,i) = temp(k,i-1) - temp(k,i)
+         end do
+         temp(k,1) = -temp(k,1)
+      end if
+c
+c     copy coefficients from temporary to permanent storage
+c
+!$acc loop seq
+      do i = 1, bsorder
+!$acc loop seq
+          do j = 1, level
+            thetai(j,i) = temp(bsorder-j+1,i)
+          end do
+      end do
+      return
+      end
+
+      ! bslgen special version 
+      ! To be used only with point charge forcefield (use_charge)
+      subroutine bsplgen_chg (w,isite,thetai)
+!$acc routine
+      use tinheader,only: ti_p
+      use pme      ,only: bsorder,maxorder
+      use potent   ,only: use_charge
+      implicit none
+      integer i,j,k
+      integer isite
+      integer,parameter:: level=2
+      real(t_p) w,denom
+      real(t_p) thetai(level,bsorder,*)
+      real(t_p) temp(maxorder,maxorder)
+
+#ifdef TINKER_DEBUG
+!$acc routine(fatal_acc)
+      if (.not.use_charge) then
+         print*,"FATAL ERROR !! bsplgen routine is specific to point",
+     &   "charge"
+         call fatal_acc
+      end if
+#endif
+c
+c     initialization to get to 2nd order recursion
+c
+      temp(2,2) = w
+      temp(2,1) = 1.0_ti_p - w
+c
+c     perform one pass to get to 3rd order recursion
+c
+      temp(3,3) = 0.5_ti_p * w * temp(2,2)
+      temp(3,2) = 0.5_ti_p * ((1.0_ti_p+w)*temp(2,1)+
+     &                        (2.0_ti_p-w)*temp(2,2))
+      temp(3,1) = 0.5_ti_p * (1.0_ti_p-w) * temp(2,1)
+c
+c     compute standard B-spline recursion to desired order
+c
+!$acc loop seq
+      do i = 4, bsorder
+         k = i - 1
+         denom = 1.0_ti_p / real(k,t_p)
+         temp(i,i) = denom * w * temp(k,k)
+         do j = 1, i-2
+            temp(i,i-j) = denom * ((w+real(j,t_p))*temp(k,i-j-1)
+     &                           +(real(i-j,t_p)-w)*temp(k,i-j))
+         end do
+         temp(i,1) = denom * (1.0_ti_p-w) * temp(k,1)
+      end do
+c
+c     get coefficients for the B-spline first derivative
+c
+      k = bsorder - 1
+      temp(k,bsorder) = temp(k,bsorder-1)
+!$acc loop seq
+      do i = bsorder-1, 2, -1
+         temp(k,i) = temp(k,i-1) - temp(k,i)
+      end do
+      temp(k,1) = -temp(k,1)
+c
+c     copy coefficients from temporary to permanent storage
+c
+!$acc loop seq
+      do i = 1, bsorder
+!$acc loop seq
+         do j = 1, level
+            thetai(j,i,isite) = temp(bsorder-j+1,i)
+         end do
+      end do
+      end
+
+
       subroutine bspline_fill_sitegpu(config)
       use atmlst
       use atoms
@@ -23,16 +209,16 @@ c
       use neigh    ,only:celle_pole,celle_chg
       use pme
       use tinheader,only:ti_p,prec1_eps
-      use utilgpu  ,only:rec_queue,ngangs_rec
+      use utilgpu  ,only:rec_queue,nSMP
       use potent
       implicit none
       integer,intent(in),optional::config
-      integer c_mpole,c_charge,c_n
+      integer c_mpole,c_charge,c_disp,c_n
       integer i,ifr,k,cfg,iipole,iichg
       integer,pointer,save:: glob_p(:),type_p(:)
       real(t_p) xi,yi,zi
       real(t_p) w,fr
-      parameter(c_mpole=0,c_charge=1)
+      parameter(c_mpole=0,c_charge=1,c_disp=2)
 !$acc routine(bsplgen) seq
 !$acc routine(bsplgen_chg) seq
 
@@ -64,7 +250,7 @@ c
 
       if (cfg.eq.c_mpole) then
 
-!$acc parallel loop num_gangs(4*ngangs_rec)
+!$acc parallel loop num_gangs(4*nSMP)
 !$acc&         present(x,y,z,recip,igrid,thetai1,thetai2,
 !$acc&  thetai3,type_p,glob_p)
 !$acc&         async(rec_queue)
@@ -99,9 +285,9 @@ c
 
       else if (cfg.eq.c_charge) then
 
-!$acc parallel loop num_gangs(4*ngangs_rec)
-!$acc&         present(x,y,z,recip,igrid,thetai1,thetai2,
-!$acc&  thetai3,type_p,glob_p)
+!$acc parallel loop num_gangs(4*nSMP)
+!$acc&         present(x,y,z,recip,igrid,thetai1_p
+!$acc&                ,thetai2_p,thetai3_p,type_p,glob_p)
 !$acc&         async(rec_queue)
       do k=1,c_n
          iichg  = type_p(k)
@@ -117,19 +303,19 @@ c
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(1,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai1(1,1,1))
+         call bsplgen_chg (w,k,thetai1_p(1,1,1))
          w    = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
          fr   = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(2,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai2(1,1,1))
+         call bsplgen_chg (w,k,thetai2_p(1,1,1))
          w    = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
          fr   = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(3,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai3(1,1,1))
+         call bsplgen_chg (w,k,thetai3_p(1,1,1))
       end do
 
       end if
@@ -1421,6 +1607,135 @@ c        call set_dip(impi,tuv2,fdip_phi2(1,1))
       end do
       end
 
+      subroutine pme_conv_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
+      use atmlst
+      use atoms
+      use bound
+      use boxes
+      use charge
+      use chgpot
+      use deriv
+      use domdec
+      use energi
+      use ewald
+      use fft
+      use inform
+      use math
+      use pme
+      use pme1
+      use potent
+      use utils
+      use utilgpu
+      use timestat
+      implicit none
+      real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
+      integer k1,k2,k3,m1,m2,m3,rankloc
+      integer nf1,nf2,nf3,nff
+      integer ist2,jst2,kst2,ien2,jen2,ken2
+      integer kd
+      real(t_p) e0,term,expterm
+      real(t_p) vterm,pterm
+      real(t_p) volterm
+      real(t_p) f,denom
+      real(t_p) hsq,struc2
+      real(t_p) h1,h2,h3
+      real(t_p) r1,r2,r3
+c
+c     use scalar sum to get reciprocal space energy and virial
+c
+      call timer_enter( timer_scalar )
+      if(deb_Path) write(*,'(4x,A)') 'pme_conv_gpu'
+
+      rankloc = merge(rank_bis,rank,use_pmecore)
+      ist2    = istart2(rankloc+1)
+      jst2    = jstart2(rankloc+1)
+      kst2    = kstart2(rankloc+1)
+      ien2    =   iend2(rankloc+1)
+      jen2    =   jend2(rankloc+1)
+      ken2    =   kend2(rankloc+1)
+      f       = 0.5d0 * electric / dielec
+      pterm   = (pi/aewald)**2
+      volterm = pi * volbox
+      nff     = nfft1 * nfft2
+      nf1     = (nfft1+1) / 2
+      nf2     = (nfft2+1) / 2
+      nf3     = (nfft3+1) / 2
+
+!$acc host_data use_device(
+!$acc&          qgridout_2d,e,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc parallel loop collapse(3) async(rec_queue)
+!$acc&         deviceptr(
+!$acc&         qgridout_2d,e,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc&         reduction(+:e,vxx,vxy,vxz,vyy,vyz,vzz)
+      do k3 = kst2,ken2
+        do k2 = jst2,jen2
+          do k1 = ist2,ien2
+            m1 = k1 - 1
+            m2 = k2 - 1
+            m3 = k3 - 1
+            if (k1 .gt. nf1)  m1 = m1 - nfft1
+            if (k2 .gt. nf2)  m2 = m2 - nfft2
+            if (k3 .gt. nf3)  m3 = m3 - nfft3
+            if ((m1.eq.0).and.(m2.eq.0).and.(m3.eq.0)) goto 10
+            r1 = real(m1,t_p)
+            r2 = real(m2,t_p)
+            r3 = real(m3,t_p)
+            h1 = recip(1,1)*r1 + recip(1,2)*r2 + recip(1,3)*r3
+            h2 = recip(2,1)*r1 + recip(2,2)*r2 + recip(2,3)*r3
+            h3 = recip(3,1)*r1 + recip(3,2)*r2 + recip(3,3)*r3
+            hsq = h1*h1 + h2*h2 + h3*h3
+            term = -pterm * hsq
+            expterm = 0.0_ti_p
+            kd = (k1-ist2) + (k2-jst2)*(ien2-ist2+1)
+            if (term .gt. -50.0_ti_p) then
+               denom = volterm*hsq*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
+               expterm = exp(term) / denom
+               if (.not. use_bounds) then
+                  expterm = expterm * (1.0_ti_p-cos(pi*xbox*sqrt(hsq)))
+               else if (octahedron) then
+                  if (mod(m1+m2+m3,2).ne.0)  expterm = 0.0_ti_p
+               end if
+               struc2 = qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1)**2
+     $                + qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1)**2
+                e0 = f * expterm * struc2
+                 e = e + e0
+               vterm = (2.0_ti_p/hsq) * (1.0_ti_p-term) * e0
+               vxx   = vxx + h1*h1*vterm - e0
+               vxy   = vxy + h1*h2*vterm
+               vxz   = vxz + h1*h3*vterm
+               vyy   = vyy + h2*h2*vterm - e0
+               vyz   = vyz + h3*h2*vterm
+               vzz   = vzz + h3*h3*vterm - e0
+            end if
+            qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1) = expterm *
+     $      qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1)
+
+            qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1) = expterm *
+     $      qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1)
+ 10         continue
+          end do
+        end do
+      end do
+!$acc end host_data
+c
+c     account for zeroth grid point for nonperiodic system
+c
+      if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
+     $   (kstart2(rankloc+1).eq.1)) then
+        if (.not. use_bounds) then
+           expterm = 0.5_ti_p * pi / xbox
+!$acc serial async(rec_queue) present(ecrec,qgridout_2d)
+           struc2 = qgridout_2d(1,1,1,1)**2 + qgridout_2d(2,1,1,1)**2
+                e = f * expterm * struc2
+            ecrec = ecrec + e
+           qgridout_2d(1,1,1,1) = expterm * qgridout_2d(1,1,1,1)
+           qgridout_2d(2,1,1,1) = expterm * qgridout_2d(2,1,1,1)
+!$acc end serial
+        end if
+      end if
+      call timer_exit ( timer_scalar,quiet_timers )
+      end subroutine
+
 #ifdef _CUDA
       subroutine grid_mpole_sitecu(fmpvec)
       use atmlst    ,only:polerecglob
@@ -1481,6 +1796,7 @@ c
 !$acc end host_data
       if (first_in) first_in=.false.
       end subroutine
+
 c
 c     "grid_pchg_sitecu" places the i-th fractional atomic charge onto
 c     the particle mesh Ewald grid (CUDA Routine)
@@ -1499,7 +1815,7 @@ c
       use potent
       use sizes
       use utils
-      use utilcu  ,only:PME_BLOCK_DIM1,check_launch_kernel
+      use utilcu  ,only:PME_GRID_BDIM,check_launch_kernel
       use utilgpu ,only:rec_queue,rec_stream,ngangs_rec
       implicit none
       integer istart,iend,jstart,jend,kstart,kend
@@ -1545,10 +1861,12 @@ c
 c     put the permanent multipole moments onto the grid
 c
       if (nproc.eq.1.or.nrec.eq.1) then
-!$acc host_data use_device(chg_s,glob_s,igrid,pchg,thetai1,thetai2,
-!$acc&    thetai3,qgridin_2d)
-      call grid_pchg_sitecu_core_1p<<<gS,PME_BLOCK_DIM1,0,rec_stream>>>
-     &     (chg_s,glob_s,igrid,pchg,thetai1,thetai2,thetai3
+!$acc host_data use_device(chg_s,glob_s,igrid,pchg
+!$acc&         ,thetai1_p,thetai2_p,thetai3_p,qgridin_2d
+!$acc&         ,celle_x,celle_y,celle_z)
+      call grid_pchg_sitecu_core_1p<<<gS,PME_GRID_BDIM,0,rec_stream>>>
+     &     (chg_s,glob_s,igrid,pchg,thetai1_p,thetai2_p,thetai3_p
+     &     ,celle_x,celle_y,celle_z
      &     ,kstat,ked,jstat,jed,istat,ied
      &     ,nfft1,nfft2,nfft3,nionrecloc
      &     ,nlpts,twonlpts_1,twonlpts_12,nlptsit,grdoff
@@ -1890,12 +2208,91 @@ c
 
       end subroutine
 
+c
+c     "pme_conv_cu" apply convolution on cuda device
+c     use scalar sum to get reciprocal space energy and virial
+c
+      subroutine pme_conv_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
+      use bound     ,only: use_bounds
+      use boxes     ,only: xbox,volbox
+      use chgpot    ,only: dielec,electric
+      use domdec    ,only: rank_bis,rank
+      use energi    ,only: calc_e
+      use ewald     ,only: aewald
+      use fft       ,only: istart2,jstart2,kstart2,isize2,jsize2,ksize2
+      use inform    ,only: deb_Path
+      use math      ,only: pi
+      use pme       ,only: bsmod1,bsmod2,bsmod3,qgridout_2d
+     &              ,nfft1,nfft2,nfft3
+      use pmestuffcu,only: pme_conv_kcu
+      use potent    ,only: use_pmecore
+      use timestat
+      use tinheader ,only: ti_p
+      use utilcu    ,only: check_launch_kernel
+      use utilgpu   ,only: reduce_energy_virial,ered_buff,vred_buf1
+     &              ,rec_queue,rec_stream
+      use virial    ,only: use_virial
+      implicit none
+      real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
+      integer rankloc
+      integer nf1,nf2,nf3,nff
+      integer ist2,jst2,kst2,qsz1,qsz2,qsz12,qsz
+      integer gDim,bDim,mgDim
+      real(t_p) e0,term,expterm
+      real(t_p) vterm,pterm
+      real(t_p) volterm
+      real(t_p) f,denom
+      real(t_p) hsq,struc2
+      real(t_p) h1,h2,h3
+      real(t_p) r1,r2,r3
+      real(t_p) xbox_
+      parameter(bDim=128,mgDim=2**16)
+
+      call timer_enter( timer_scalar )
+      if(deb_Path) write(*,'(4x,A)') 'pme_conv_cu'
+
+      rankloc = merge(rank_bis,rank,use_pmecore)
+      ist2    = istart2(rankloc+1)
+      jst2    = jstart2(rankloc+1)
+      kst2    = kstart2(rankloc+1)
+      qsz1    = isize2(rankloc+1)
+      qsz2    = jsize2(rankloc+1)
+      qsz12   = qsz1*qsz2
+      qsz     = qsz12*ksize2(rankloc+1)
+      f       = 0.5_ti_p * electric / dielec
+      pterm   = (pi/aewald)**2
+      volterm = pi * volbox
+      nff     = nfft1 * nfft2
+      nf1     = (nfft1+1)/2
+      nf2     = (nfft2+1)/2
+      nf3     = (nfft3+1)/2
+      xbox_   = real(xbox,t_p)
+      gDim    = min(qsz/(2*bDim),mgDim)
+
+!$acc host_data use_device(bsmod1,bsmod2,bsmod3,qgridout_2d
+!$acc&         ,ered_buff,vred_buf1)
+      call pme_conv_kcu<<<gDim,bDim,0,rec_stream>>>
+     &    (bsmod1,bsmod2,bsmod3
+     &    ,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
+     &    ,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3
+     &    ,f,pterm,volterm,xbox_,calc_e,use_bounds
+     &    ,qgridout_2d,ered_buff,vred_buf1)
+      call check_launch_kernel(" pme_conv_cu")
+!$acc end host_data
+
+      if (calc_e.or.use_virial) then
+      call reduce_energy_virial(e,vxx,vyz,vyz,vyy,vyz,vzz,
+     &             ered_buff,vred_buf1,rec_queue)
+      end if
+
+      call timer_exit ( timer_scalar,quiet_timers )
+      end subroutine
+
       subroutine cudaMaxGridSize(kernelname,gS)
       use cudafor
-      use echargecu  ,only: ecreal1d_core_cu
-      use empole1cu  ,only: emreal1c_core_cu
-     &               ,emreal3_cu,emrealshortlong3_cu
-     &               ,emrealshortlong1c_core_cu
+      use echargecu  ,only: ecreal1_kcu,ecreal3_kcu
+      use eChgLjcu
+      use empole1cu  ,only: emreal1shr_kcu,emreal3_kcu
       use epolar1cu  ,only: epreal1c_core_cu
      &               ,epreal3_cu,mpreal1c_core_cu
       use pmestuffcu
@@ -1969,39 +2366,33 @@ c
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."ecreal1d_core_cu") then
+      else if (kernelname.eq."ecreal1_kcu") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,ecreal1d_core_cu,BLOCK_DIM,0)
+     &          (gS,ecreal1_kcu,BLOCK_DIM,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."ecreal3d_core_cu") then
+      else if (kernelname.eq."ecreal3_kcu") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,ecreal1d_core_cu,BLOCK_DIM,0)
+     &          (gS,ecreal3_kcu,BLOCK_DIM,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."emreal1c_core_cu") then
+      else if (kernelname.eq."echg_lj1_kcu_v0") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,emreal1c_core_cu,BLOCK_DIM,0)
+     &          (gS,echg_lj1_kcu_v0,BLOCK_DIM,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."emrealshortlong1c_core_cu") then
+      else if (kernelname.eq."emreal1shr_kcu") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,emrealshortlong1c_core_cu,BLOCK_DIM,0)
+     &          (gS,emreal1shr_kcu,BLOCK_DIM,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."emreal3_cu") then
+      else if (kernelname.eq."emreal3_kcu") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,emreal3_cu,BLOCK_DIM,0)
-         if (ierr.ne.cudaSuccess)
-     &      print 200, ierr,cudageterrorstring(ierr)
-         gS   = gS*nSMP
-      else if (kernelname.eq."emrealshortlong3_cu") then
-         ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,emrealshortlong3_cu,BLOCK_DIM,0)
+     &          (gS,emreal3_kcu,BLOCK_DIM,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP

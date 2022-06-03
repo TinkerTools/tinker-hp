@@ -15,16 +15,17 @@ c     via the velocity Verlet multistep recursion formula
 c
 c
 #include "tinker_precision.h"
-
+#include "tinker_types.h"
       subroutine verlet (istep,dt)
       use atmtyp
       use atomsMirror
       use cutoff
       use domdec
-      use deriv  ,only: info_forces,prtEForces,cDef
-      use energi ,only: info_energy
+      use deriv  ,only: info_forces,prtEForces,cDef,ftot_l,comm_forces
+      use energi ,only: info_energy,calc_e,chk_energy_fluct
       use freeze
       use inform
+      use mdstuf1
       use moldyn
       use timestat
       use units
@@ -33,7 +34,6 @@ c
       use utilgpu,only:prmem_requestm,rec_queue
       use mpi
       use sizes
-      use integrate_ws
       implicit none
       integer i,j,istep
       integer iglob
@@ -43,37 +43,18 @@ c
 c     set some time values for the dynamics integration
 c
       dt_2 = 0.5_re_p * dt
-
-      if (istep.eq.1) then
-!$acc enter data create(etot,epot,eksum,temp,pres,ekin,stress)
-      end if
-
-!$acc data present(etot,epot,eksum,temp,pres,ekin,stress)
-!$acc&     present(x,y,z,xold,yold,zold,v,a,mass,glob,use)
 c
 c     store the current atom positions, then find half-step
 c     velocities and full-step positions via Verlet recursion
 c
       if (use_rattle) call save_atoms_pos
-!$acc parallel loop async default(present)
-      do i = 1, nloc
-         iglob = glob(i)
-         if (use(iglob)) then
-!$acc loop seq
-            do j = 1, 3
-               v(j,iglob) = v(j,iglob) + a(j,iglob)*dt_2
-            end do
-            x(iglob) = x(iglob) + v(1,iglob)*dt
-            y(iglob) = y(iglob) + v(2,iglob)*dt
-            z(iglob) = z(iglob) + v(3,iglob)*dt
-         end if
-      end do
+      call integrate_vel( a,dt_2 )
+      call integrate_pos( dt )
 c
 c     Reassign the particules that have changed of domain
 c
 c     -> real space
       call reassign
-c
 c     -> reciprocal space
       call reassignpme(.false.)
 c
@@ -81,10 +62,11 @@ c     communicate positions
 c
       call commpos
       call commposrec
-      call reCast_position
 c
-      call prmem_requestm(derivs,3,nbloc,async=.true.)
-      call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      if (.not.ftot_l) then
+         call prmem_requestm(derivs,3,nbloc,async=.true.)
+         call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      end if
 c
       call reinitnl(istep)
 c
@@ -115,7 +97,7 @@ c
 c
 c     communicate forces
 c
-      call commforces(derivs)
+      call comm_forces( derivs )
 c
 c     aMD/GaMD contributions
 c
@@ -126,20 +108,13 @@ c
       if (deb_Energy) call info_energy(rank)
       if (deb_Force)  call info_forces(cDef)
       if (deb_Atom)   call info_minmax_pva
+      if (abort)      call emergency_save
+      if (abort)      __TINKER_FATAL__
 c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the Verlet recursion
 c
-!$acc parallel loop async collapse(2) present(derivs)
-      do i = 1, nloc
-         do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               a(j,iglob) = -convert * derivs(j,i) / mass(iglob)
-               v(j,iglob) = v(j,iglob) + a(j,iglob)*dt_2
-            end if
-         end do
-      end do
+      call integrate_vel(derivs,a,dt_2)
 c
 c     find the constraint-corrected full-step velocities
 c
@@ -152,15 +127,19 @@ c
 c
 c     total energy is sum of kinetic and potential energies
 c
-!$acc serial async
-      etot = eksum + epot
+      if (calc_e) then
+!$acc serial present(etot,eksum,epot) async
+         etot = eksum + epot
 !$acc end serial
+         call chk_energy_fluct(epot,eksum,abort)
+      end if
+      if (nproc.eq.1.and.tinkerdebug.eq.64) call prtEForces(derivs,epot)
 c
 c     compute statistics and save trajectory for this step
 c
-      if (nproc.eq.1.and.tinkerdebug.eq.64) call prtEForces(derivs,epot)
+      if (abort)      call emergency_save
+      if (abort)      __TINKER_FATAL__
       call mdsave (istep,dt,epot)
       call mdrestgpu (istep)
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
-!$acc end data
       end

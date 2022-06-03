@@ -30,12 +30,18 @@ c     Journal of Chemical Theory and Computation 15 (6), 3694-3709
 c
 c
 #include "tinker_precision.h"
+      module esmd1_inl
+      contains
+#include "convert.f.inc"
+      end module
+
       subroutine esmd1
       use atmtyp
       use atoms
       use deriv
       use domdec
       use energi
+      use esmd1_inl
       use mpi
       use msmd
       use potent
@@ -168,9 +174,9 @@ c
 c
 c     Incrementation of the derivative terms
 c
-              desmd(1,ib) = desmd(1,ib) - ded_x
-              desmd(2,ib) = desmd(2,ib) - ded_y
-              desmd(3,ib) = desmd(3,ib) - ded_z
+              desmd(1,ib) = desmd(1,ib) - rp2mdr(ded_x)
+              desmd(2,ib) = desmd(2,ib) - rp2mdr(ded_y)
+              desmd(3,ib) = desmd(3,ib) - rp2mdr(ded_z)
 c
 c     Increment the internal virial tensor components
 c
@@ -292,9 +298,9 @@ c
 c
 c     Incrementation of the derivative terms
 c
-              desmd(1,ib) = desmd(1,ib) - ded_x
-              desmd(2,ib) = desmd(2,ib) - ded_y
-              desmd(3,ib) = desmd(3,ib) - ded_z
+              desmd(1,ib) = desmd(1,ib) - rp2mdr(ded_x)
+              desmd(2,ib) = desmd(2,ib) - rp2mdr(ded_y)
+              desmd(3,ib) = desmd(3,ib) - rp2mdr(ded_z)
 c
 c     Increment the internal virial tensor components
 c
@@ -362,9 +368,9 @@ c
 c
 c     Incrementation of the derivative terms
 c
-              desmd(1,ib) = desmd(1,ib) - ded_x
-              desmd(2,ib) = desmd(2,ib) - ded_y
-              desmd(3,ib) = desmd(3,ib) - ded_z
+              desmd(1,ib) = desmd(1,ib) - rp2mdr(ded_x)
+              desmd(2,ib) = desmd(2,ib) - rp2mdr(ded_y)
+              desmd(3,ib) = desmd(3,ib) - rp2mdr(ded_z)
 c
 c     Incrementation of the Virial
 c

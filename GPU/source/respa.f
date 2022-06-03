@@ -28,59 +28,39 @@ c     115, 4019-4029 (2001)
 c
 c
 #include "tinker_precision.h"
-      module respa_mod
-         real(r_p),allocatable::derivs(:,:)
-      end module
-
       subroutine respa(istep,dt)
       use atmtyp
       use atomsMirror
-      use bath   ,only: barostat
+      use bath     ,only: barostat
       use cutoff
       use domdec
-      use deriv  ,only: info_forces,cNBond,cBond
-      use energi ,only: info_energy
+      use deriv    ,only: info_forces,cNBond,cBond,ftot_l,comm_forces
+      use energi   ,only: info_energy,calc_e,chk_energy_fluct
       use freeze
       use inform
+      use mdstuf1
       use moldyn
-      use respa_mod
       use timestat
+      use tinMemory,only: prmem_requestm
+      use tors
       use units
       use usage
       use utils
-      use utilgpu,only:prmem_requestm
-     &           ,openacc_abort
+      use utilgpu  ,only: rec_queue,openacc_abort
       use virial
+      use improp
       use mpi
       implicit none
       integer i,j,k,iglob
       integer istep
-      real(r_p) dt,dt_2
+      real(r_p) dt,dt_2,dt_in
       real(r_p) dta,dta_2
-      real(r_p),save:: epot,etot
-      real(r_p),save:: eksum
-      real(r_p),save:: temp,pres
-      real(r_p),save:: ealt
-      real(r_p),save:: ekin(3,3)
-      real(r_p),save:: stress(3,3)
-      real(r_p),save:: viralt(3,3)
-      logical  ,save:: f_in=.true.
 c
 c     set some time values for the dynamics integration
 c
       dt_2  = 0.5_re_p * dt
       dta   = dt / dshort
       dta_2 = 0.5_re_p * dta
-
-      if (f_in) then
-!$acc enter data create(ekin,ealt,stress,viralt)
-!$acc&           create(etot,epot,eksum,temp,pres)
-         f_in = .false.
-      end if
-
-!$acc data present(ekin,ealt,stress,viralt,etot,epot,
-!$acc&  eksum,temp,pres,x,y,z,v,a,glob,use,aalt,mass,
-!$acc&  xold,yold,zold,vir)
 c
 c     make half-step temperature and pressure corrections
 c
@@ -89,41 +69,18 @@ c
 c     store the current atom positions, then find half-step
 c     velocities via velocity Verlet recursion
 c
-!$acc parallel loop collapse(2) async
-      do i = 1, nloc
-         do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob))
-     &         v(j,iglob) = v(j,iglob) + a(j,iglob)*dt_2
-         end do
-      end do
+      call integrate_vel(a,dt_2,aalt,dta_2)
 c
 c     initialize virial from fast-evolving potential energy terms
 c
-!$acc parallel loop collapse(2) async
-      do i = 1, 3
-         do j = 1, 3
-            viralt(j,i) = 0.0_re_p
-         end do
-      end do
+      if (use_virial) call zero_virial(viralt)
 c
 c     find fast-evolving velocities and positions via Verlet recursion
 c
       do stepfast = 1, nalt
          if (use_rattle) call save_atoms_pos
-!$acc parallel loop async
-         do i = 1, nloc
-            iglob = glob(i)
-            if (use(iglob)) then
-!$acc loop seq
-               do j = 1, 3
-                  v(j,iglob) = v(j,iglob) + aalt(j,iglob)*dta_2
-               end do
-               x(iglob) = x(iglob) + v(1,iglob)*dta
-               y(iglob) = y(iglob) + v(2,iglob)*dta
-               z(iglob) = z(iglob) + v(3,iglob)*dta
-            end if
-         end do
+         call integrate_pos(dta)
+
          if (use_rattle) then
             call openacc_abort("Rattle not tested with openacc")
             call rattle (dta)
@@ -137,16 +94,11 @@ c
 c        communicate positions
 c
          call commposrespa(stepfast.ne.nalt)
-         call reCast_position
 c
-         call prmem_requestm(derivs,3,nbloc,async=.true.)
-c
-!$acc parallel loop collapse(2) present(derivs) async
-         do i = 1, nbloc
-            do j = 1, 3
-               derivs(j,i) = 0.0_re_p
-            end do
-         end do
+         if ( .not.ftot_l ) then
+            call prmem_requestm(derivs,3,nbloc,async=.true.)
+            call set_to_zero1m( derivs,3*nbloc,rec_queue)
+         end if
 c
          call mechanicsteprespa(istep,.true.)
          call allocsteprespa(.true.)
@@ -157,7 +109,7 @@ c
 c
 c        communicate forces
 c
-         call commforcesrespa(derivs,.true.)
+         call comm_forces( derivs,cBond )
 c
 c        aMD/GaMD contributions
 c
@@ -171,34 +123,31 @@ c        Debug information
 c
          if(deb_Energy) call info_energy(rank)
          if(deb_Force)  call info_forces(cBond)
-         if(deb_Atom)   call info_minmax_pva
+         if(abort)      call emergency_save
+         if(abort)      call fatal
+
+         dt_in = merge(dta_2,dta,use_rattle)  ! level 1
+         dt_in = merge(dt_in,dta_2,stepfast.ne.nalt) ! level 0
+         call integrate_vel(derivs,aalt,dt_in)
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion
 c
-!$acc parallel loop collapse(2) present(derivs) async
-         do i = 1, nloc
-            do j = 1, 3
-               iglob = glob(i)
-               if (use(iglob)) then
-                  aalt(j,iglob) = -convert * derivs(j,i) / mass(iglob)
-                  v(j,iglob)    = v(j,iglob) + aalt(j,iglob)*dta_2
-               end if
-            end do
-         end do
          if (use_rattle) then
             call openacc_abort("Rattle2 not tested with openacc")
             call rattle2 (dta)
+            call integrate_vel(aalt,dta_2)
          end if
+         if(deb_Atom)   call info_minmax_pva(1)
 c
 c     increment average virial from fast-evolving potential terms
 c
-!$acc parallel loop collapse(2) async
-         do i = 1, 3
-            do j = 1, 3
+         if (use_virial) then
+!$acc parallel loop collapse(2) async default(present)
+            do i = 1, 3; do j = 1, 3
                viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
-            end do
-         end do
+            end do; end do
+         end if
       end do
 c
 c     Reassign the particules that have changed of domain
@@ -215,7 +164,6 @@ c     communicate positions
 c
       call commposrespa(.false.)
       call commposrec
-      call reCast_position
 c
 c
       call reinitnl(istep)
@@ -228,14 +176,10 @@ c     rebuild the neighbor lists
 c
       if (use_list) call nblist(istep)
 c
-      call prmem_requestm(derivs,3,nbloc,async=.true.)
-c
-!$acc parallel loop collapse(2) present(derivs) async
-      do i = 1,nbloc
-         do j = 1,3
-            derivs(j,i) = 0.0_re_p
-         end do
-      end do
+      if (.not.ftot_l) then
+         call prmem_requestm(derivs,3,nbloc,async=.true.)
+         call set_to_zero1m( derivs,3*nbloc,rec_queue)
+      end if
 c
 c     get the slow-evolving potential energy and atomic forces
 c
@@ -243,7 +187,7 @@ c
 c
 c     if necessary, communicate some forces
 c
-      call commforcesrespa(derivs,.false.)
+      call comm_forces( derivs )
 c
 c     MPI : get total energy
 c
@@ -252,23 +196,13 @@ c
 c     use Newton's second law to get the slow accelerations;
 c     find full-step velocities using velocity Verlet recursion
 c
-!$acc parallel loop collapse(2) present(derivs) async
-      do i = 1, nloc
-         do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               a(j,iglob) = -convert * derivs(j,i) / mass(iglob)
-               v(j,iglob) = v(j,iglob) + a(j,iglob)*dt_2
-            end if
-         end do
-      end do
+      call integrate_vel(derivs,a,dt_2)
 c
 c     Debug print information
 c
       if(deb_Energy) call info_energy(rank)
       if(deb_Force)  call info_forces(cNBond)
       if(deb_Atom)   call info_minmax_pva
-      if(abort)      call fatal
 c
 c     find the constraint-corrected full-step velocities
 c
@@ -279,16 +213,19 @@ c
 c
 c     total potential and virial from sum of fast and slow parts
 c
-!$acc serial async
-      epot = epot + ealt
+      if (calc_e) then
+!$acc serial async present(epot,ealt)
+         epot = epot + ealt
 !$acc end serial
+         call chk_energy_fluct(epot,ealt,abort)
+      end if
 c
-!$acc parallel loop collapse(2) async
-      do i = 1, 3
-         do j = 1, 3
+      if (use_virial) then
+!$acc parallel loop collapse(2) async default(present)
+         do i = 1, 3; do j = 1, 3
             vir(j,i) = vir(j,i) + viralt(j,i)
-         end do
-      end do
+         end do; end do
+      end if
 c
 c     make full-step temperature and pressure corrections
 c
@@ -298,16 +235,21 @@ c
 c
 c     total energy is sum of kinetic and potential energies
 c
-!$acc serial async
-      etot = eksum + epot
+      if (calc_e) then
+!$acc serial async present(etot,eksum,epot)
+         etot = eksum + epot
 !$acc end serial
+      end if
+
+      ! Fatal Instructions
+      if(abort)      call emergency_save
+      if(abort)      call fatal
 c
 c     compute statistics and save trajectory for this step
 c
       call mdsave     (istep,dt,epot)
       call mdrestgpu  (istep)
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
-!$acc end data
       end
 c
 c
@@ -358,6 +300,7 @@ c
       use_list   = .false.
       use_smd_velconst = .false.
       use_smd_forconst = .false.
+      nonbonded_l      = .false.
 c
 c     get energy and gradient for fast-evolving potential terms
 c
@@ -373,6 +316,7 @@ c
       use_list   = save_list
       use_smd_velconst = save_smdvel
       use_smd_forconst = save_smdfor
+      nonbonded_l      = .true.
       return
       end
 c
@@ -389,10 +333,17 @@ c     for the slow-evolving nonbonded potential energy terms
 c
 c
       subroutine gradslow (energy,derivs)
+      use deriv  ,only: remove_desave
+      use domdec
+      use energi ,only: esum,esave,calc_e
+      use mdstuf
+      use moldyn ,only: dinter
       use potent
+      use virial
       implicit none
+      integer i,j
       real(r_p) energy
-      real(r_p) derivs(3,*)
+      real(r_p) derivs(3,nbloc)
       logical save_bond,save_angle
       logical save_strbnd,save_urey
       logical save_angang,save_opbend
@@ -401,7 +352,9 @@ c
       logical save_pitors,save_angtor,save_strtor
       logical save_tortor,save_geom
       logical save_metal,save_extra
+      logical respa1_l
 c
+      respa1_l = (index(integrate,'RESPA1').gt.0)
 c
 c     save the original state of fast-evolving potentials
 c
@@ -440,6 +393,12 @@ c
       use_tortor = .false.
       use_geom   = .false.
       use_extra  = .false.
+      bonded_l   = .false.
+      if (respa1_l) then
+         use_vdwlong   = .true.
+         use_clong     = .true.
+         use_mpolelong = .true.
+      end if
 c
 c     get energy and gradient for slow-evolving potential terms
 c
@@ -463,4 +422,25 @@ c
       use_tortor = save_tortor
       use_geom   = save_geom
       use_extra  = save_extra
+      bonded_l   = .true.
+      if (respa1_l) then
+         use_vdwlong   = .false.
+         use_clong     = .false.
+         use_mpolelong = .false.
+c
+c        substract the previously stored short range energy and forces
+c
+         call remove_desave(derivs)
+
+         if (calc_e.or.use_virial) then
+!$acc serial present(esum,energy,esave,vir,virsave) async
+            esum   = esum - esave
+            energy = energy - esave
+            do i = 1,3; do j = 1,3
+               vir    (j,i) = vir(j,i) - virsave(j,i)/dinter
+               virsave(j,i) = 0.0
+            end do; end do
+!$acc end serial
+         end if
+      end if
       end

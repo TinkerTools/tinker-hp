@@ -31,6 +31,7 @@ c
       use utilgpu
       implicit none
       integer i,j,k,m,iglob
+      integer ia,ib,ic
       integer ipe,ind,ianglst
       logical init
       integer nangleloc_capture
@@ -82,6 +83,19 @@ c
               iang(4,nangleloc-2) = i12(3,i)
            end if
         end do
+c
+c       store the numbers of the bonds comprising each bond angle
+c
+        do i = 1, nangle
+           ia = iang(1,i)
+           ib = iang(2,i)
+           ic = iang(3,i)
+           do k = 1, n12(ib)
+              if (i12(k,ib) .eq. ia)  balist(1,i) = bndlist(k,ib)
+              if (i12(k,ib) .eq. ic)  balist(2,i) = bndlist(k,ib)
+           end do
+        end do
+
         call MPI_BARRIER(hostcomm,i)
         nangle_pe=value_pe(nangle)
         call upload_device_angles
@@ -127,19 +141,6 @@ c
       end do
 !$acc update host(nangleloc) async
 !$acc end data
-
-#ifdef _OPENACC
-      if (ndir.eq.1) then
-!$acc wait
-!$acc host_data use_device(angleglob)
-         call thrust_sort(angleglob,nangleloc,rec_stream)
-!$acc end host_data
-!$acc parallel loop present(angleglob,angleloc) async
-         do i = 1,nangleloc
-            angleloc(angleglob(i)) = i
-         end do
-      end if
-#endif
 
    20 continue
       end
@@ -217,10 +218,12 @@ c    &   .and.16*n.eq.size(anglist)) return ! Exit condition
       call shmem_request(anglist, winanglist,[16,n],   config=mhostacc)
       call shmem_request(iang,    winiang, [4,nangle], config=mhostacc)
 #endif
+      call shmem_request(balist,  winbalist, [2,6*n],  config=mhostonly)
       call shmem_request(ak,      winak,     [nangle], config=mhostacc)
       call shmem_request(anat,    winanat,   [nangle], config=mhostacc)
       call shmem_request(afld,    winafld,   [nangle], config=mhostacc)
-      call shmem_request(angtyp,  winangtyp, [nangle], config=mhostacc)
+      call shmem_request(angtyp,  winangtyp, [nangle], config=mhostonly)
+      call shmem_request(angtypI, winangtypI,[nangle], config=mhostacc)
 
       call shmem_request(isb,     winisb,  [3,nangle], config=mhostacc)
       call shmem_request(sbk,     winsbk,  [2,nangle], config=mhostacc)
@@ -237,4 +240,67 @@ c    &   .and.16*n.eq.size(anglist)) return ! Exit condition
       call shmem_request(nbopdist,winnbopdist,     [n],config=mhostonly)
       call shmem_request(nbimprop,winnbimprop,     [n],config=mhostacc)
       call shmem_request(nbimptor,winnbimptor,     [n],config=mhostacc)
+      end
+c
+c
+c     subroutine dealloc_shared_angles : deallocate shared memory pointers for angles
+c     parameter arrays
+c
+      subroutine dealloc_shared_angles
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
+      use angang
+      use angle
+      use angpot
+      use atmlst
+      use atoms
+      use bitor
+      use domdec
+      use improp
+      use imptor
+      use opbend
+      use opdist
+      use strbnd
+      use tinMemory
+      use urey
+      use mpi
+      implicit none
+c
+c     if (associated(ak).and.size(ak).eq.nangle
+c    &   .and.16*n.eq.size(anglist)) return ! Exit condition
+
+#ifdef USE_NVSHMEM_CUDA
+      call shmem_request(anglist, winanglist, [0,0],
+     &     c_anglist, d_anglist, config=mhostnvsh)
+      call shmem_request(iang,    winiang,    [0,0],
+     &     c_iang, d_iang, config=mhostnvsh)
+
+      ! self association (OpenAcc visibility)
+      d_anglist => d_anglist
+      d_iang    => d_iang
+#else
+      call shmem_request(anglist, winanglist,[0,0],   config=mhostacc)
+      call shmem_request(iang,    winiang, [0,0], config=mhostacc)
+#endif
+      call shmem_request(balist,  winbalist, [0,0*n],  config=mhostonly)
+      call shmem_request(ak,      winak,     [0], config=mhostacc)
+      call shmem_request(anat,    winanat,   [0], config=mhostacc)
+      call shmem_request(afld,    winafld,   [0], config=mhostacc)
+      call shmem_request(angtyp,  winangtyp, [0], config=mhostonly)
+      call shmem_request(angtypI, winangtypI,[0], config=mhostacc)
+
+      call shmem_request(isb,     winisb,  [0,0], config=mhostacc)
+      call shmem_request(sbk,     winsbk,  [0,0], config=mhostacc)
+      call shmem_request(nbstrbnd,winnbstrbnd,[0],config=mhostacc)
+
+      call shmem_request(uk,      winuk,     [0], config=mhostacc)
+      call shmem_request(ul,      winul,     [0], config=mhostacc)
+      call shmem_request(iury,    winiury, [0,0], config=mhostacc)
+      call shmem_request(nburey,  winnburey, [0], config=mhostacc)
+
+      call shmem_request(nbbitors,winnbbitors,[0],config=mhostacc)
+      call shmem_request(nbangang,winnbangang,[0],config=mhostonly)
+      call shmem_request(nbopbend,winnbopbend,[0],config=mhostacc)
+      call shmem_request(nbopdist,winnbopdist,[0],config=mhostonly)
+      call shmem_request(nbimprop,winnbimprop,[0],config=mhostacc)
+      call shmem_request(nbimptor,winnbimptor,[0],config=mhostacc)
       end

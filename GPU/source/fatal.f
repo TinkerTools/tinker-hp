@@ -25,10 +25,12 @@ c
 c
 c     print a final warning message, then quit
 c
-      if (rank.eq.0) write (iout,10)
+      if (rank.eq.0) write (0,10)
    10 format (/,' TINKER is Unable to Continue; Terminating',
      &          ' the Current Calculation',/)
-      call sleep(2)
+      flush(iout)
+!$acc wait
+      call sleep(1)
       call MPI_ABORT(MPI_COMM_WORLD,errorcode,ierr)
       stop
       end
@@ -50,12 +52,24 @@ c
 c
 c
 c
+      subroutine fatal1(msg,index)
+      implicit none
+      character(*),intent(in):: msg
+      integer     ,intent(in):: index
+
+ 14   format(2X,/,'FATAL ERROR Detected in ',A,":l",I0,/)
+      write(0,14) msg,index
+      call fatal
+      end subroutine
+c
+c
+c
       subroutine fatal_device(msg)
       implicit none
       character(*),intent(in):: msg
 
  14   format(2X,'FATAL ERROR -- ',A,/,
      &       4x,'Unavailable feature for device platform')
-      write(0,14)
+      write(0,14) msg
       call fatal
-      end subroutine
+      end

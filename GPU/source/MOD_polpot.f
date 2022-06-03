@@ -16,6 +16,10 @@ c     p3scale   scale factor for 1-3 polarization energy interactions
 c     p4scale   scale factor for 1-4 polarization energy interactions
 c     p5scale   scale factor for 1-5 polarization energy interactions
 c     p41scale  additional factor for 1-4 intragroup polarization
+c     p2iscale  scale factor for 1-2 intragroup polarization energy
+c     p3iscale  scale factor for 1-3 intragroup polarization energy
+c     p4iscale  scale factor for 1-4 intragroup polarization energy
+c     p5iscale  scale factor for 1-5 intragroup polarization energy
 c     d1scale   scale factor for intra-group direct induction
 c     d2scale   scale factor for 1-2 group direct induction
 c     d3scale   scale factor for 1-3 group direct induction
@@ -24,6 +28,10 @@ c     u1scale   scale factor for intra-group mutual induction
 c     u2scale   scale factor for 1-2 group mutual induction
 c     u3scale   scale factor for 1-3 group mutual induction
 c     u4scale   scale factor for 1-4 group mutual induction
+c     w2scale   scale factor for 1-2 induced dipole interactions
+c     w3scale   scale factor for 1-3 induced dipole interactions
+c     w4scale   scale factor for 1-4 induced dipole interactions
+c     w5scale   scale factor for 1-5 induced dipole interactions
 c     politer   maximum number of induced dipole SCF iterations
 c     poltyp    type of polarization potential (direct or mutual)
 c     polalg    algorithm to be used to solve the induced dipoles
@@ -88,16 +96,21 @@ c
       real(t_p) p2scale
       real(t_p) p3scale,p4scale
       real(t_p) p5scale,p41scale
+      real(t_p) p2iscale,p3iscale
+      real(t_p) p4iscale,p5iscale
       real(t_p) d1scale,d2scale
       real(t_p) d3scale,d4scale
       real(t_p) u1scale,u2scale
       real(t_p) u3scale,u4scale
+      real(t_p) w2scale,w3scale
+      real(t_p) w4scale,w5scale
       real(t_p) tcgomega,tcgomegashort
       character*6 poltyp
       logical :: omegafitstep,tcgomegafit
       integer :: omegafitfreq
       real(t_p), allocatable :: residue(:,:), munp(:,:), efres(:,:)
       real(t_p):: epCG
+      logical use_thole,use_dirdamp,dpequal
 
       integer  ,allocatable:: ucorrect_ik(:),dpcorrect_ik(:),
      &                        dpucorrect_ik(:)

@@ -388,12 +388,13 @@ c
       end subroutine
 
       M_subroutine
-     &             mpole1_couple_shortlong(r2,xr,yr,zr,ip,kp,c_mscale
-     &                         ,r_cut,shortheal,aewald,f,alsq2n,alsq2
-     &                         ,e,frc,frc_r,ttmi,ttmk,do_correct,mode)
+     &             duo_mpole(r2,xr,yr,zr,ip,kp,c_mscale
+     &                      ,r_cut,shortheal,aewald,f,alsq2n,alsq2
+     &                      ,ugrp,fgrp,ulamdyn,mutik,elambda
+     &                      ,delambdae,e,frc,ttmi,ttmk,ver,fea)
 !$acc routine
       use interfaces,only: m_long
-      use tinheader ,only: ti_p
+      use tinheader ,only: ti_p,zero1,one1,two1,twor
       use utilgpu   ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
       use utilcu ,only: f_erfc
@@ -402,54 +403,65 @@ c
 #  endif
 #endif
          implicit none
-         real(t_p)      ,intent(in ):: r2,xr,yr,zr,f,alsq2n,alsq2
-         real(t_p)      ,intent(in ):: c_mscale,aewald,shortheal,r_cut
+         integer(1)     ,intent(in ):: mutik
+         integer        ,intent(in ):: ver,fea
+         logical        ,intent(in ):: ulamdyn,ugrp
+         real(t_p)      ,intent(in ):: r2,xr,yr,zr,f,alsq2n,alsq2,fgrp
+     &                  ,c_mscale,aewald,shortheal,r_cut,elambda
          type(rpole_elt),intent(in ):: ip,kp
-         logical        ,intent(in ):: do_correct
-         integer        ,intent(in ):: mode
 #ifdef TINKER_CUF
          ener_rtyp      ,intent(out):: e
 #else
          real(t_p)      ,intent(out):: e
 #endif
+         real(t_p)      ,intent(out):: delambdae
          type(real3)    ,intent(out):: frc,ttmi,ttmk
-         type(mdyn3_r)  ,intent(out):: frc_r
-         real(t_p) two
+
+         integer   ene,grd,sca,grp,lbd,shr,lgr
          real(t_p) e_,de,s,ds
          real(t_p) r,invr,invr2
-         real(t_p) rr1,rr2,rr3,rr5,rr7,rr9,rr11
-         real(t_p) bn0,bn1,bn2,bn3,bn4,bn5
-         real(t_p) alsqt,ralpha,exp2a
-         real(t_p) dikx,diky,dikz
-         real(t_p) dirx,diry,dirz
-         real(t_p) dkrx,dkry,dkrz
-         real(t_p) qrix,qriy,qriz
-         real(t_p) qrkx,qrky,qrkz
-         real(t_p) qrixr,qriyr,qrizr
-         real(t_p) qrkxr,qrkyr,qrkzr
-         real(t_p) qrrx,qrry,qrrz
-         real(t_p) qikrx,qikry,qikrz
+     &            ,rr1,rr2,rr3,rr5,rr7,rr9,rr11
+     &            ,bn0,bn1,bn2,bn3,bn4,bn5
+     &            ,alsqt,ralpha,exp2a
+         real(t_p) dikx,diky,dikz,dirx,diry,dirz
+     &            ,dkrx,dkry,dkrz,qrix,qriy,qriz
+     &            ,qrkx,qrky,qrkz
+     &            ,qrixr,qriyr,qrizr,qrkxr,qrkyr,qrkzr
+     &            ,qrrx,qrry,qrrz,qikrx,qikry,qikrz
          real(t_p) qkirx,qkiry,qkirz
-         real(t_p) qikrxr,qikryr,qikrzr
-         real(t_p) qkirxr,qkiryr,qkirzr
-         real(t_p) diqkx,diqky,diqkz
-         real(t_p) dkqix,dkqiy,dkqiz
-         real(t_p) diqkxr,diqkyr,diqkzr
-         real(t_p) dkqixr,dkqiyr,dkqizr
-         real(t_p) dqiqkx,dqiqky,dqiqkz
-         real(t_p) dri,drk,qrri,qrrk
-         real(t_p) diqrk,dkqri
-         real(t_p) dik,qik,qrrik
-         real(t_p) term1,term2,term3
-         real(t_p) term4,term5,term6
-         parameter(two=2.0)
+     &            ,qikrxr,qikryr,qikrzr,qkirxr,qkiryr,qkirzr
+     &            ,diqkx,diqky,diqkz,dkqix,dkqiy,dkqiz
+     &            ,diqkxr,diqkyr,diqkzr,dkqixr,dkqiyr,dkqizr
+     &            ,dqiqkx,dqiqky,dqiqkz
+     &            ,dri,drk,qrri,qrrk,diqrk,dkqri,dik,qik,qrrik
+     &            ,term1,term2,term3,term4,term5,term6
+         parameter (ene=__use_ene__
+     &             ,grd=__use_grd__
+     &             ,sca=__use_sca__
+     &             ,lbd=__use_lambdadyn__
+     &             ,grp=__use_groups__
+     &             ,shr=__use_shortRange__
+     &             ,lgr=__use_longRange__
+     &             )
 c
 c        get reciprocal distance terms for this interaction
 c
          invr2  = 1.0/r2
          r      = f_sqrt(r2)
          invr   = f_sqrt(invr2)
-         rr1    = c_mscale*f * invr
+         IF (iand(ver,sca).ne.0) THEN
+            IF (iand(fea,grp).ne.0.and.ugrp) THEN
+               rr1    = (1.0-(1-c_mscale)*fgrp)*f * invr
+            ELSE
+               rr1    = c_mscale*f * invr
+            END IF
+         ELSE
+            IF (iand(fea,grp).ne.0.and.ugrp) THEN
+               rr1    = 1.0 - fgrp*f * invr
+            ELSE
+               rr1    = c_mscale*f * invr
+            END IF
+         END IF
          rr3    =       rr1 * invr2
          rr5    = 3.0 * rr3 * invr2
          rr7    = 5.0 * rr5 * invr2
@@ -458,14 +470,14 @@ c
 c
 c        calculate the real space Ewald error function terms
 c
-         if (do_correct) then
+         IF (iand(ver,sca).ne.0) THEN
             bn0 = 0.0
             bn1 = 0.0
             bn2 = 0.0
             bn3 = 0.0
             bn4 = 0.0
             bn5 = 0.0
-         else
+         ELSE
             ralpha = aewald * r
             exp2a  = f_exp(-ralpha**2)
             !call erfcore_inl(ralpha,bn0,1)
@@ -489,7 +501,7 @@ c
             bn3    = f * bn3
             bn4    = f * bn4
             bn5    = f * bn5
-         end if
+         END IF
 c
 c        modify distances to account for Ewald and exclusions
 c
@@ -568,13 +580,13 @@ c
          dkqizr = dkqiy*xr  - dkqix*yr
 
          dqiqkx = ip%dy*qrkz - ip%dz*qrky +  kp%dy*qriz - kp%dz*qriy
-     &     - two* (ip%qxy*kp%qxz + ip%qyy*kp%qyz + ip%qyz*kp%qzz
+     &     - twor* (ip%qxy*kp%qxz + ip%qyy*kp%qyz + ip%qyz*kp%qzz
      &           - ip%qxz*kp%qxy - ip%qyz*kp%qyy - ip%qzz*kp%qyz)
          dqiqky = ip%dz*qrkx - ip%dx*qrkz + kp%dz*qrix - kp%dx*qriz
-     &     - two*(ip%qxz*kp%qxx + ip%qyz*kp%qxy + ip%qzz*kp%qxz
+     &     - twor*(ip%qxz*kp%qxx + ip%qyz*kp%qxy + ip%qzz*kp%qxz
      &          - ip%qxx*kp%qxz - ip%qxy*kp%qyz - ip%qxz*kp%qzz)
          dqiqkz = ip%dx*qrky - ip%dy*qrkx + kp%dx*qriy - kp%dy*qrix
-     &     - two*(ip%qxx*kp%qxy + ip%qxy*kp%qyy + ip%qxz*kp%qyz
+     &     - twor*(ip%qxx*kp%qxy + ip%qxy*kp%qyy + ip%qxz*kp%qyz
      &          - ip%qxy*kp%qxx - ip%qyy*kp%qxy - ip%qyz*kp%qxz)
 c
 c        calculate intermediate terms for multipole energy
@@ -582,29 +594,52 @@ c
          term1  = ip%c*kp%c
          term2  = kp%c*dri   - ip%c*drk   + dik
          term3  = ip%c*qrrk  + kp%c*qrri  - dri*drk
-     &          + two*(dkqri - diqrk + qik)
+     &          + twor*(dkqri - diqrk + qik)
          term4  = dri*qrrk - drk*qrri - 4.0*qrrik
          term5  = qrri*qrrk
 c
 c        compute the energy contributions for this interaction
 c
-         call switch_respa_inl(r,r_cut,shortheal,s,ds)
-         if (mode.eq.m_long) s = 1.0-s
+         IF (iand(fea,shr+lgr).ne.0)
+     &      call switch_respa_inl(r,r_cut,shortheal,s,ds)
+
+         IF (iand(fea,lgr).ne.0) THEN 
+            s = 1.0-s
+         ELSE IF (iand(fea,lgr+shr).eq.0) THEN
+            s = 1.0
+         END IF
+
+         IF (iand(ver,ene).ne.0.or.iand(fea,shr+lgr).ne.0) THEN
 
          e_     = term1*rr1 + term2*rr3 + term3*rr5
      &                      + term4*rr7 + term5*rr9
 
          e      = WRITE_C(e + tp2enr) ( + s*e_ )
+
+         END IF
+
+         IF (iand(ver,grd).ne.0) THEN
+
          de     = term1*rr3 + term2*rr5 + term3*rr7
      &          + term4*rr9 + term5*rr11
+
+         IF (iand(fea,lbd).ne.0.and.ulamdyn) THEN
+            if      (mutik.eq.zero1.or.elambda.eq.0.0)  then
+               delambdae = 0.0
+            else if (mutik.eq.one1)  then
+               delambdae = e_/elambda 
+            else if (mutik.eq.two1)  then
+               delambdae = 2.0*e_/elambda 
+            end if
+         END IF
 c
 c        calculate intermediate terms for force and torque
 c
          term1  = -kp%c*rr3 + drk*rr5 - qrrk*rr7
          term2  =  ip%c*rr3 + dri*rr5 + qrri*rr7
-         term3  = two * rr5
-         term4  = two * (-kp%c*rr5+drk*rr7-qrrk*rr9)
-         term5  = two * (-ip%c*rr5-dri*rr7-qrri*rr9)
+         term3  = twor* rr5
+         term4  = twor* (-kp%c*rr5+drk*rr7-qrrk*rr9)
+         term5  = twor* (-ip%c*rr5-dri*rr7-qrri*rr9)
          term6  = 4.0 * rr7
 c
 c        compute the force components for this interaction
@@ -624,15 +659,15 @@ c
      &          + term3*(diqkz-dkqiz) + term4*qriz
      &          + term5*qrkz          + term6*(qikrz+qkirz))
      &          
-         if (mode.eq.m_long) then
+         IF      (iand(fea,lgr).ne.0) THEN
             frc%x  = frc%x + ds*xr*e_*invr
             frc%y  = frc%y + ds*yr*e_*invr
             frc%z  = frc%z + ds*zr*e_*invr
-         else
+         ELSE IF (iand(fea,shr).ne.0) THEN
             frc%x  = frc%x - ds*xr*e_*invr
             frc%y  = frc%y - ds*yr*e_*invr
             frc%z  = frc%z - ds*zr*e_*invr
-         end if
+         END IF
 c
 c        compute the torque components for this interaction
 c
@@ -654,10 +689,7 @@ c
          ttmk%z = WRITE_C(ttmk%z +) s*( + rr3*dikz
      &                            + term2*dkrz  - term3*(dqiqkz+diqkzr)
      &                            - term5*qrkzr - term6*(qkirzr-qrrz))
-         !store in large container for mixed precision
-         frc_r%x  = WRITE_C( frc_r%x - ) tp2mdr( frc%x )
-         frc_r%y  = WRITE_C( frc_r%y - ) tp2mdr( frc%y )
-         frc_r%z  = WRITE_C( frc_r%z - ) tp2mdr( frc%z )
+         END IF
       end subroutine
 
       M_subroutine

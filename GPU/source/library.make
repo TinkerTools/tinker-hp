@@ -139,13 +139,15 @@ MOD_virial.o \
 MOD_vdw.o \
 MOD_vdwpot.o \
 nblistcu.o \
-eljcu.o \
-ehal1cu.o \
+echgljcu.o \
 echargecu.o \
+ehal1cu.o \
+eljcu.o \
 empole1cu.o \
 tmatxb_pmecu.o \
 epolar1cu.o \
 pmestuffcu.o \
+eliaison1cu.o \
 cu_nblist.o \
 cu_tmatxb_pme.o \
 cu_mpole1.o \
@@ -176,7 +178,6 @@ control.o \
 cspline.o \
 cutoffs.o \
 diis.o \
-domdecstuff.o \
 dcdio.o \
 dcinduce_pme.o \
 dcinduce_pmegpu.o \
@@ -184,6 +185,7 @@ dcinduce_pme2.o \
 dcinduce_pme2gpu.o \
 dcinduce_shortreal.o \
 dcinduce_shortrealgpu.o \
+domdecstuff.o \
 eamd1.o \
 eangang.o \
 eangang1.o \
@@ -201,6 +203,7 @@ ebond1.o \
 ebond1gpu.o \
 ebond3.o \
 ebond3gpu.o \
+eliaison1gpu.o \
 echarge.o \
 echarge1.o \
 echarge1gpu.o \

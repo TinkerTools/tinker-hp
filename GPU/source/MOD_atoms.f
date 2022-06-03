@@ -61,6 +61,32 @@ c
         end subroutine
       end interface
 
+      interface integrate_vel
+        module subroutine integrate_vel0(a,dt)
+        real(r_p),intent(in):: a(:,:)
+        real(r_p),intent(in):: dt
+        end subroutine
+        module subroutine integrate_vel1(aalt,dta,a,dt)
+        real(r_p),intent(in):: a(:,:),aalt(:,:)
+        real(r_p),intent(in):: dt,dta
+        end subroutine
+        module subroutine integrate_acc_vel0(derivs,a,dt)
+        real(r_p),intent( in):: derivs(:,:)
+        real(r_p),intent(out):: a(:,:)
+        real(r_p),intent( in):: dt
+        end subroutine
+        module subroutine integrate_acc_vel1(aalt,dta,derivs,a,dt)
+        real(r_p),intent( in):: derivs(:,:),aalt(:,:)
+        real(r_p),intent(out):: a(:,:)
+        real(r_p),intent( in):: dt,dta
+        end subroutine
+      end interface
+      interface
+        module subroutine integrate_pos(dt)
+        real(r_p),intent(in):: dt
+        end subroutine
+      end interface
+
       contains
 
       subroutine save_atoms_pos

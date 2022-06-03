@@ -76,7 +76,7 @@ c
 #else
 !$acc&         present(x,y,z,use,iang,angleglob
 #endif
-!$acc&    ,anat,ak,afld,angtyp) present(ea) async
+!$acc&    ,anat,ak,afld,angtypI) present(ea) async
 !$acc&         reduction(+:ea)
       do iangle = 1, nangleloc
          i     = angleglob(iangle)
@@ -97,7 +97,7 @@ c
 c     decide whether to compute the current interaction
 c
          proceed = .true.
-         if (angtyp(i) .eq. 'IN-PLANE') then
+         if (angtypI(i) .eq. ANG_IN_PLANE) then
             id = iang(4,i)
             if (proceed)  proceed = (use(ia) .or. use(ib) .or.
      &                                 use(ic) .or. use(id))
@@ -120,7 +120,7 @@ c
 c
 c     compute the bond angle bending energy
 c
-            if (angtyp(i) .ne. 'IN-PLANE') then
+            if (angtypI(i) .ne. ANG_IN_PLANE) then
                xab = xia - xib
                yab = yia - yib
                zab = zia - zib
@@ -138,17 +138,17 @@ c
                   cosine = dot / sqrt(rab2*rcb2)
                   cosine = min(1.0_ti_p,max(-1.0_ti_p,cosine))
                   angle1 = radian * acos(cosine)
-                  if (angtyp(i) .eq. 'HARMONIC') then
+                  if (angtypI(i) .eq. ANG_HARMONIC) then
                      dt = angle1 - ideal
                      dt2 = dt * dt
                      dt3 = dt2 * dt
                      dt4 = dt2 * dt2
                      e = angunit * force * dt2
      &                   * (1.0_ti_p+cang*dt+qang*dt2+pang*dt3+sang*dt4)
-                  else if (angtyp(i) .eq. 'LINEAR') then
+                  else if (angtypI(i) .eq. ANG_LINEAR) then
                      factor = 2.0_ti_p * angunit * radian**2
                      e = factor * force * (1.0_ti_p+cosine)
-                  else if (angtyp(i) .eq. 'FOURIER') then
+                  else if (angtypI(i) .eq. ANG_FOURIER) then
                      fold = afld(i)
                      factor = 2.0_ti_p * angunit * (radian/fold)**2
                      cosine = cos((fold*angle1-ideal)/radian)

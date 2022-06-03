@@ -107,4 +107,6 @@ c
       end do
       call reCast_position
 
+      call nblst_alter_bstat
+
       end

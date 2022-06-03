@@ -24,18 +24,32 @@ c     prec1_eps  smallest value depending on the precision such that (1+prec_esp
       implicit none
       integer ti_p,re_p
       integer i_init
+      integer(1) zero1,one1,two1,three1
+      integer(4) zeroi4,onei4,twoi4
+      integer(8) zero8,one8
       !integer MPI_TYPE,MPI_RTYPE
       real(t_p) ti_eps,prec_eps,prec1_eps
       real(r_p) precm_eps
       real(t_p) a_init
+      real(t_p)  zeror,oner,twor,halfr
+      real(r_p)  zerom,onem,twom,halfm
+      mdyn_rtyp  zeromd,onemd,twomd
 
-      parameter(ti_p=t_p)
-      parameter(re_p=r_p)
-      parameter(i_init=-1)
-      parameter(a_init=-1.0)
-      parameter(prec_eps =2*epsilon(ti_eps))
-      parameter(prec1_eps=  epsilon(ti_eps))
-      parameter(precm_eps=2*epsilon(precm_eps))
+      parameter (
+     &           zero1=0,one1=1,two1=2,three1=3
+     &          ,zeroi4=0,onei4=1,twoi4=2
+     &          ,zero8=0,one8=1
+     &          ,zeror=0,oner=1.0,twor=2.0,halfr=0.5
+     &          ,zerom=0,onem=1.0,twom=2.0,halfm=0.5
+     &          ,zeromd=0,onemd=1.0,twomd=2.0
+     &          ,ti_p=t_p
+     &          ,re_p=r_p
+     &          ,i_init=-1
+     &          ,a_init=-1.0
+     &          ,prec_eps =2*epsilon(ti_eps)
+     &          ,prec1_eps=  epsilon(ti_eps)
+     &          ,precm_eps=2*epsilon(precm_eps)
+     &          )
       !parameter(MPI_TYPE=MPI_TPREC)
       !parameter(MPI_RTYPE=MPI_RPREC)
 
@@ -64,6 +78,10 @@ c
          real(t_p) x,y,z
          real(t_p) xx,yy,zz
       end type real6
+      type real7
+       real(t_p) x,y,z
+       real(t_p) xx,yy,zz,pa
+      end type
       type real6_red
          real(t_p) x,y,z
          real(t_p) xx,yy,zz

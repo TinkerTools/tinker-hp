@@ -27,6 +27,7 @@ c     vdwtyp      type of van der Waals potential energy function
 c     radtyp      type of parameter (sigma or R-min) for atomic size
 c     radsiz      atomic size provided as radius or diameter
 c     radrule     combining rule for atomic size parameters
+c     radrule_i   combining rule for atomic size parameters
 c     epsrule     combining rule for vdw well depth parameters
 c     gausstyp    type of Gaussian fit to van der Waals potential
 c     vcorrect_ik      pair mscale interactions container
@@ -37,6 +38,10 @@ c
 #include "tinker_precision.h"
       module vdwpot
       implicit none
+      enum, bind(C)
+      enumerator ARITHMETIC_RL, GEOMETRIC_RL, CUBIC_MEAN_RL, MMFF94_RL
+      enumerator   HARMONIC_RL,       HHG_RL,        W_H_RL,DEFAULT_RL
+      end enum
       integer maxgauss
       parameter (maxgauss=10)
       integer ngauss
@@ -49,12 +54,39 @@ c
       integer  ,allocatable:: vcorrect_ik(:,:)
       integer  ,allocatable:: vcorrect_type(:)
       real(t_p),allocatable:: vcorrect_scale(:)
-      logical  use_vcorr
+      logical  use_vcorr, radepsOpt_l
+      integer radrule_i, epsrule_i
       character*5 vdwindex
       character*5 radtyp
       character*8 radsiz,gausstyp
       character*10 radrule,epsrule
       character*13 vdwtyp
-!$acc declare create(dhal,ghal)
 !$acc declare create (v2scale,v3scale,v4scale,v5scale)
+
+      contains
+
+      subroutine set_vdwradepsrule( arule,irule )
+      implicit none
+      character*10,intent(in) :: arule
+      integer     ,intent(out):: irule
+
+      if (arule(1:6).eq.'MMFF94') then
+         irule = MMFF94_RL
+      else if (arule(1:10).eq.'ARITHMETIC') then
+         irule = ARITHMETIC_RL
+      else if (arule(1:9).eq.'GEOMETRIC') then
+         irule = GEOMETRIC_RL
+      else if (arule(1:9).eq.'HARMONIC') then
+         irule = HARMONIC_RL
+      else if (arule(1:10).eq.'CUBIC-MEAN') then
+         irule = CUBIC_MEAN_RL
+      else if (arule(1:3).eq.'HHG') then
+         irule = HHG_RL
+      else if (arule(1:3).eq.'W-H') then
+         irule = W_H_RL
+      else
+         irule = DEFAULT_RL
+      end if
+      end subroutine
+
       end

@@ -14,15 +14,22 @@ c
 #include "tinker_precision.h"
 #include "tinker_cudart.h"
       module pmestuffcu
+        use math   ,only: pi
+        use pme    ,only: maxorder
         use tinheader
-        use pme    ,only:maxorder
-        use utilcu ,only: PME_BLOCK_DIM
+        use utilcu ,only: PME_BLOCK_DIM,PME_GRID_BDIM,PME_FPHI_DIM1
+     &             , octahedron,use_virial
+        use utilgpu,only: RED_BUFF_SIZE
 
         integer,parameter ::  level=4
         integer,parameter ::  level1=2
-#if BSORDER_VALUE>5
+#if defined(BSORDER_VALUE) && BSORDER_VALUE>5
         integer,parameter :: bsorder=BSORDER_VALUE
 #else
+#   if BSORDER_VALUE<5
+#      undef BSORDER_VALUE
+#      define BSORDER_VALUE 5
+#   endif
         integer,parameter :: bsorder=5
 #endif
         ! PME texture variable
@@ -76,6 +83,20 @@ c
         print*,recip_c(1,3),recip_c(2,3),recip_c(3,3)
         end
 
+c
+c
+c
+c     #################################################################
+c     ##                                                             ##
+c     ##  subroutine bsplgen  --  B-spline coefficients for an atom  ##
+c     ##                                                             ##
+c     #################################################################
+c
+c
+c     "bsplgen" gets B-spline depth 4 coefficients and derivatives for
+c     a single PME atomic site along a particular direction
+c
+c
         attributes(device) subroutine ibsplgen (w,thetai,temp)
         implicit none
         integer i,j,k
@@ -123,6 +144,7 @@ c
      &                           - temp(k+bsorder*(i-1))
         end do
         temp(k+bsorder*0) = -temp(k+bsorder*0)
+        ! if (level.eq.4) then
 c
 c       get coefficients for the B-spline second derivative
 c
@@ -161,6 +183,7 @@ c
      &                           - temp(k+bsorder*(i-1))
         end do
         temp(k+bsorder*0) = -temp(k+bsorder*0)
+        ! end if
 c
 c       copy coefficients from temporary to permanent storage
 c
@@ -171,12 +194,15 @@ c
         end do
         end
 
-        attributes(device) subroutine ibsplgen1 (w,thetai,temp)
+c       "bsplgen" gets B-spline depth 2 coefficients and derivatives for
+c       a single PME atomic site along a particular direction
+c        ( Optimized for partial charge )
+        attributes(device) subroutine ibsplgen_2 (w,thetai,temp)
         implicit none
         integer i,j,k
         integer isite
         real(t_p) w,denom
-        real(t_p) thetai(level1,bsorder)
+        real(t_p) thetai(level1*bsorder)
         real(t_p) temp(bsorder*bsorder)
 c
 c       set B-spline depth for partial charges or multipoles
@@ -221,11 +247,93 @@ c
 c
 c       copy coefficients from temporary to permanent storage
 c
-        do i = 1, bsorder
-           do j = 1, level1
-              thetai(j,i) = temp(bsorder-j+1+bsorder*(i-1))
+        do i = 1, bsorder; do j = 1, level1
+           thetai(j+(i-1)*level1) = temp(bsorder-j+1+bsorder*(i-1))
+        end do; end do
+        end
+
+c       "bsplgen" gets B-spline depth 2 coefficients and derivatives for
+c       a single PME atomic site along a particular direction
+c        ( Optimized for partial charge grid interpolation on the fly )
+        attributes(device) subroutine ibsplgen_21 (w,thetai,temp)
+        implicit none
+        real(t_p),intent(in):: w
+        real(t_p),intent(out):: thetai(bsorder)
+        real(t_p),intent(out):: temp(bsorder*bsorder)
+c
+c       initialization to get to 2nd order recursion
+c
+        temp(2+bsorder*1) = w
+        temp(2+bsorder*0) = 1.0_ti_p - w
+c
+c       perform one pass to get to 3rd order recursion
+c
+        temp(3+bsorder*2) = 0.5_ti_p * w * temp(2+bsorder*1)
+        temp(3+bsorder*1) = 0.5_ti_p * ((1.0_ti_p+w)*temp(2+bsorder*0)+
+     &                                  (2.0_ti_p-w)*temp(2+bsorder*1))
+        temp(3+bsorder*0) = 0.5_ti_p * (1.0_ti_p-w) * temp(2+bsorder*0)
+c
+c       compute standard B-spline recursion to desired order
+c
+        block
+        integer i,j,k
+        real(t_p) denom
+        do i = 4, bsorder
+           k = i - 1
+           denom = 1.0_ti_p / real(k,t_p)
+           temp(i+bsorder*(i-1)) = denom * w * temp(k+bsorder*(k-1))
+           do j = 1, i-2
+              temp(i+bsorder*(i-j-1)) = denom * 
+     &                      ((w+real(j,t_p))*temp(k+bsorder*(i-j-1-1))
+     &                    +(real(i-j,t_p)-w)*temp(k+bsorder*(i-j-1)))
            end do
+           temp(i+bsorder*0) = denom * (1.0_ti_p-w) * temp(k+bsorder*0)
         end do
+        end block
+c
+c       get coefficients for the B-spline first derivative
+c
+        block; integer k,i
+        k = bsorder - 1
+        temp(k+bsorder*(bsorder-1)) = temp(k+bsorder*(bsorder-1-1))
+        do i = bsorder-1, 2, -1
+           temp(k+bsorder*(i-1)) = temp(k+bsorder*(i-1-1)) 
+     &                           - temp(k+bsorder*(i-1))
+        end do
+        temp(k+bsorder*0) = -temp(k+bsorder*0)
+        end block
+        end
+
+        attributes(device) subroutine get_thetai_21(thetai,temp)
+        implicit none
+        real(t_p),intent(out):: thetai(bsorder)
+        real(t_p),intent(out):: temp(bsorder*bsorder)
+c
+c       copy coefficients from temporary to permanent storage
+c
+        block; integer i
+        do i = 1, bsorder
+           thetai(i) = temp(bsorder+bsorder*(i-1))
+        end do
+        !thetai(1) = temp(bsorder+bsorder*(1-1))
+        !thetai(2) = temp(bsorder+bsorder*(2-1))
+        !thetai(3) = temp(bsorder+bsorder*(3-1))
+        !thetai(4) = temp(bsorder+bsorder*(4-1))
+        !thetai(5) = temp(bsorder+bsorder*(5-1))
+c#if BSORDER_VALUE == 6
+c        thetai(6) = temp(bsorder+bsorder*(6-1))
+c#endif
+c#if BSORDER_VALUE == 7
+c        thetai(7) = temp(bsorder+bsorder*(7-1))
+c#endif
+c#if BSORDER_VALUE == 8
+c        thetai(8) = temp(bsorder+bsorder*(8-1))
+c#endif
+c#if BSORDER_VALUE > 8
+c#   warning(" bsorder value is not take under consideration")
+c#endif
+
+        end block
         end
 c
 c
@@ -339,8 +447,9 @@ c       CUDA Fortran written kernel
 c       Work Only in Sequential
 c
 c
-        attributes(global) subroutine grid_pchg_sitecu_core_1p
+        attributes(global) subroutine grid_pchg_sitecu_core_1p_o
      &            (chgrecglob,iion,igrid,pchg,thetai1,thetai2,thetai3
+     &            ,x_sp,y_sp,z_sp
      &            ,kstat,ked,jstat,jed,istat,ied
      &            ,nfft1,nfft2,nfft3,nionrecloc
      &            ,nlpts,twonlpts_1,twonlpts_12,nlptsit,grdoff
@@ -356,33 +465,21 @@ c
      &           ,iion(*)
         real(t_p),device,intent(in):: pchg(*),thetai1(2*order,*)
      &           ,thetai2(2*order,*),thetai3(2*order,*)
+     &           ,x_sp(*),y_sp(*),z_sp(*)
         real(t_p),device:: qgrid2loc(2,n1mpimax,n2mpimax,n3mpimax,
      &                      nrec_send+1)
+
         real(t_p),shared::theta1(level1*bsorder),theta2(level1*bsorder)
      &           ,theta3(level1*bsorder)
-
-        integer istart,iend,jstart,jend,kstart,kend
-        integer i,j,k,impi
-        integer mk,mj,mi
-        integer ii,jj,kk
-        integer iichg,iglob,isite,iatm
-        integer igrid1,igrid2,igrid3
-        integer offsetx,offsety,offsetz
-        real(t_p) term
-        real(t_p) v0,u0,t0,q
-        real(t_p) rstat
+        integer   impi,kk,i,isite,igrid1,igrid2,igrid3
+     &           ,offsetx,offsety,offsetz
+        real(t_p) q
 
         do impi = blockIdx%x, nionrecloc, gridDim%x
-           iichg     = (chgrecglob(impi))
-           isite     = iion(impi)
-           igrid1    = igrid(1,isite)
-           igrid2    = igrid(2,isite)
-           igrid3    = igrid(3,isite)
-           q         = pchg(iichg)
-           offsetx   = 1 - ( igrid1 + grdoff - nlpts )
-           offsety   = 1 - ( igrid2 + grdoff - nlpts )
-           offsetz   = 1 - ( igrid3 + grdoff - nlpts )
-
+           isite  = iion(impi)
+           igrid1 = igrid(1,isite)
+           igrid2 = igrid(2,isite)
+           igrid3 = igrid(3,isite)
            ! Load data into shared memory
            do i=threadIdx%x,2*order,blockDim%x
               theta1(i) = thetai1(i,impi)
@@ -390,10 +487,16 @@ c
               theta3(i) = thetai3(i,impi)
            end do
            if (blockDim%x>warpsize) call syncthreads
+           q         = pchg(chgrecglob(impi))
+           offsetx   = 1 - ( igrid1 + grdoff - nlpts )
+           offsety   = 1 - ( igrid2 + grdoff - nlpts )
+           offsetz   = 1 - ( igrid3 + grdoff - nlpts )
 c
 c       Three dimensional loop on the grid collapse by hand
 c
-           do kk = threadIdx%x-1, nlptsit, blockDim%x
+           do kk = threadIdx%x-1, nlptsit, blockDim%x; block
+           integer k,j,i,mk,mj,mi
+           real(t_p) term,rstat
 
               k  = igrid3 + grdoff + kk/twonlpts_12 - nlpts
               j  = igrid2 + grdoff
@@ -407,16 +510,115 @@ c
               mi     = (i + offsetx -1)*2
               if (i .lt. 1) i = i + nfft1
 
-              v0    = theta3(1+mk)
-              u0    = theta2(1+mj)
-              t0    = theta1(1+mi)
-              term  = q*u0*v0*t0
+              term  = q*theta2(1+mj)*theta1(1+mi)*theta3(1+mk)
 
               rstat = AtomicAdd(
-     &        qgrid2loc(1,i-istat+1,j-jstat+1,k-kstat+1,1)
-     &        , term)
+     &        qgrid2loc(1,i-istat+1,j-jstat+1,k-kstat+1,1),term )
 
-           end do
+           end block; end do
+        end do
+        end
+
+        attributes(global) subroutine grid_pchg_sitecu_core_1p
+     &            (chgrecglob,iion,igrid,pchg,thetai1,thetai2,thetai3
+     &            ,x_sp,y_sp,z_sp
+     &            ,kstat,ked,jstat,jed,istat,ied
+     &            ,nfft1,nfft2,nfft3,nionrecloc
+     &            ,nlpts,twonlpts_1,twonlpts_12,nlptsit,grdoff
+     &            ,order,n1mpimax,n2mpimax,n3mpimax,nrec_send
+     &            ,qgrid2loc,fir)
+        implicit none
+        integer  ,intent(in),value:: order,nlpts,grdoff,twonlpts_1
+     &           ,twonlpts_12,nlptsit,kstat,ked,jstat,jed,istat,ied
+     &           ,n1mpimax,n2mpimax,n3mpimax,nrec_send
+     &           ,nfft1,nfft2,nfft3,nionrecloc
+        logical  ,value,intent(in):: fir
+        integer  ,device,intent(in):: chgrecglob(*),igrid(3,*)
+     &           ,iion(*)
+        real(t_p),device,intent(in):: pchg(*),thetai1(2*order,*)
+     &           ,thetai2(2*order,*),thetai3(2*order,*)
+     &           ,x_sp(*),y_sp(*),z_sp(*)
+        real(t_p),device:: qgrid2loc(2,n1mpimax,n2mpimax,n3mpimax,
+     &                      nrec_send+1)
+
+        real(t_p),shared::temp(bsorder*bsorder*PME_GRID_BDIM)
+        real(t_p)::theta1(bsorder),theta2(bsorder)
+     &            ,theta3(bsorder)
+
+        integer   impi,kk,i,isite,igrid1,igrid2,igrid3
+     &           ,offsetx,offsety,offsetz,offset
+        real(t_p) q
+
+        offset    = (threadIdx%x-1)*bsorder**2+1
+
+        do impi = (blockIdx%x-1)*blockDim%x + threadIdx%x, nionrecloc
+     &          , blockDim%x*gridDim%x
+           q         = pchg(chgrecglob(impi))
+c
+c          get the b-spline coefficients for the i-th atomic site
+c          it faster to recompute theta*
+c
+           block
+           integer ifr
+           real(t_p) xi,yi,zi,w,fr
+           xi     = x_sp(impi)
+           yi     = y_sp(impi)
+           zi     = z_sp(impi)
+
+           w      = xi*recip_c(1,1) + yi*recip_c(2,1) + zi*recip_c(3,1)
+           fr     = nfft1 * (w-anint(w)+0.5_ti_p)
+           ifr    = int(fr-pme_eps)
+           igrid1 = ifr - bsorder
+           w      = fr - real(ifr,t_p)
+           call ibsplgen_21(w,theta1,temp(offset))
+           ! Why is this call using so much registers
+           call get_thetai_21(theta1,temp(offset))
+
+           w      = xi*recip_c(1,2) + yi*recip_c(2,2) + zi*recip_c(3,2)
+           fr     = nfft2 * (w-anint(w)+0.5_ti_p)
+           ifr    = int(fr-pme_eps)
+           igrid2 = ifr - bsorder
+           w      = fr - real(ifr,t_p)
+           call ibsplgen_21(w,theta2,temp(offset))
+           call get_thetai_21(theta2,temp(offset))
+
+           w      = xi*recip_c(1,3) + yi*recip_c(2,3) + zi*recip_c(3,3)
+           fr     = nfft3 * (w-anint(w)+0.5_ti_p)
+           ifr    = int(fr-pme_eps)
+           igrid3 = ifr - bsorder
+           w      = fr - real(ifr,t_p)
+           call ibsplgen_21(w,theta3,temp(offset))
+           call get_thetai_21(theta3,temp(offset))
+           end block
+
+           offsetx = 1 - ( igrid1 + grdoff - nlpts )
+           offsety = 1 - ( igrid2 + grdoff - nlpts )
+           offsetz = 1 - ( igrid3 + grdoff - nlpts )
+c
+c          Three dimensional loop on the grid collapse by hand
+c
+           block; integer k1,k
+           do k1 = 0, bsorder-1;
+              k  =  1 - offsetz + k1
+              if (k.lt.1) k = k + nfft3
+
+              block; integer j1,j
+              do j1 = 0, bsorder-1
+                 j  =  1 - offsety + j1
+                 if (j.lt.1) j = j + nfft2
+
+                 block; integer i1,i
+                 real(t_p) term,rstat
+                 do i1 = 0, bsorder-1
+                    i  =  1 - offsetx + i1 
+                    if (i.lt.1) i = i + nfft1
+
+                 term  = q*theta2(1+j1)*theta1(1+i1)*theta3(1+k1)
+                    rstat = AtomicAdd(
+     &              qgrid2loc(1,i-istat+1,j-jstat+1,k-kstat+1,1),term)
+                 end do; end block
+              end do; end block
+           end do; end block 
         end do
         end
 c
@@ -1664,7 +1866,7 @@ c
 #if 1
       integer ifr
       real(t_p),xi,yi,zi,w,fr
-      real(t_p),dimension(2,bsorder):: theta1,theta2,theta3
+      real(t_p),dimension(2*bsorder):: theta1,theta2,theta3
       real(t_p),shared::temp(bsorder*bsorder*PME_BLOCK_DIM)
 #endif
 
@@ -1686,19 +1888,19 @@ c
         ifr    = int(fr-pme_eps)
         w      = fr - real(ifr,t_p)
         igrd0  = ifr - bsorder
-        call ibsplgen1 (w,theta1,temp((threadIdx%x-1)*bsorder**2+1))
+        call ibsplgen_2 (w,theta1,temp((threadIdx%x-1)*bsorder**2+1))
         w      = xi*recip_c(1,2) + yi*recip_c(2,2) + zi*recip_c(3,2)
         fr     = nfft2 * (w-anint(w)+0.5_ti_p)
         ifr    = int(fr-pme_eps)
         w      = fr - real(ifr,t_p)
         jgrd0  = ifr - bsorder
-        call ibsplgen1 (w,theta2,temp((threadIdx%x-1)*bsorder**2+1))
+        call ibsplgen_2 (w,theta2,temp((threadIdx%x-1)*bsorder**2+1))
         w      = xi*recip_c(1,3) + yi*recip_c(2,3) + zi*recip_c(3,3)
         fr     = nfft3 * (w-anint(w)+0.5_ti_p)
         ifr    = int(fr-pme_eps)
         w      = fr - real(ifr,t_p)
         kgrd0  = ifr - bsorder
-        call ibsplgen1 (w,theta3,temp((threadIdx%x-1)*bsorder**2+1))
+        call ibsplgen_2 (w,theta3,temp((threadIdx%x-1)*bsorder**2+1))
 #else
         igrd0  = igrid(1,iglob)
         jgrd0  = igrid(2,iglob)
@@ -1713,8 +1915,8 @@ c
            k0  = k0 + 1
            k   = k0 + 1 + (nfft3-sign(nfft3,k0))/2
 #if 1
-           t3  =       theta3(1,it3)
-           dt3 = dn3 * theta3(2,it3)
+           t3  =       theta3(1+(it3-1)*level1)
+           dt3 = dn3 * theta3(2+(it3-1)*level1)
 #else
            t3  =       thetai3(1,it3,iglob)
            dt3 = dn3 * thetai3(2,it3,iglob)
@@ -1724,8 +1926,8 @@ c
               j0  = j0 + 1
               j   = j0 + 1 + (nfft2-sign(nfft2,j0))/2
 #if 1
-              t2  =       theta2(1,it2)
-              dt2 = dn2 * theta2(2,it2)
+              t2  =       theta2(1+(it2-1)*level1)
+              dt2 = dn2 * theta2(2+(it2-1)*level1)
 #else
               t2  =       thetai2(1,it2,iglob)
               dt2 = dn2 * thetai2(2,it2,iglob)
@@ -1735,8 +1937,8 @@ c
                  i0  = i0 + 1
                  i   = i0 + 1 + (nfft1-sign(nfft1,i0))/2
 #if 1
-                 t1  =       theta1(1,it1)
-                 dt1 = dn1 * theta1(2,it1)
+                 t1  =       theta1(1+(it1-1)*level1)
+                 dt1 = dn1 * theta1(2+(it1-1)*level1)
 #else
                  t1  =       thetai1(1,it1,iglob)
                  dt1 = dn1 * thetai1(2,it1,iglob)
@@ -1808,7 +2010,7 @@ c
 #if 1
       integer ifr
       real(t_p),xi,yi,zi,w,fr
-      real(t_p),dimension(2,bsorder):: theta1,theta2,theta3
+      real(t_p),dimension(2*bsorder):: theta1,theta2,theta3
       real(t_p),shared::temp(bsorder*bsorder*PME_BLOCK_DIM)
 #endif
 
@@ -1829,19 +2031,19 @@ c
         ifr    = int(fr-pme_eps)
         w      = fr - real(ifr,t_p)
         igrd0  = ifr - bsorder
-        call ibsplgen1 (w,theta1,temp((threadIdx%x-1)*bsorder**2+1))
+        call ibsplgen_2 (w,theta1,temp((threadIdx%x-1)*bsorder**2+1))
         w      = xi*recip_c(1,2) + yi*recip_c(2,2) + zi*recip_c(3,2)
         fr     = nfft2 * (w-anint(w)+0.5_ti_p)
         ifr    = int(fr-pme_eps)
         w      = fr - real(ifr,t_p)
         jgrd0  = ifr - bsorder
-        call ibsplgen1 (w,theta2,temp((threadIdx%x-1)*bsorder**2+1))
+        call ibsplgen_2 (w,theta2,temp((threadIdx%x-1)*bsorder**2+1))
         w      = xi*recip_c(1,3) + yi*recip_c(2,3) + zi*recip_c(3,3)
         fr     = nfft3 * (w-anint(w)+0.5_ti_p)
         ifr    = int(fr-pme_eps)
         w      = fr - real(ifr,t_p)
         kgrd0  = ifr - bsorder
-        call ibsplgen1 (w,theta3,temp((threadIdx%x-1)*bsorder**2+1))
+        call ibsplgen_2 (w,theta3,temp((threadIdx%x-1)*bsorder**2+1))
 #else
         igrd0  = igrid(1,iglob)
         jgrd0  = igrid(2,iglob)
@@ -1856,8 +2058,8 @@ c
            k0  = k0 + 1
            k   = k0 + 1 + (nfft3-sign(nfft3,k0))/2
 #if 1
-           t3  =       theta3(1,it3)
-           dt3 = dn3 * theta3(2,it3)
+           t3  =       theta3(1+(it3-1)*level1)
+           dt3 = dn3 * theta3(2+(it3-1)*level1)
 #else
            t3  =       thetai3(1,it3,isite)
            dt3 = dn3 * thetai3(2,it3,isite)
@@ -1867,8 +2069,8 @@ c
               j0  = j0 + 1
               j   = j0 + 1 + (nfft2-sign(nfft2,j0))/2
 #if 1
-              t2  =       theta2(1,it2)
-              dt2 = dn2 * theta2(2,it2)
+              t2  =       theta2(1+(it2-1)*level1)
+              dt2 = dn2 * theta2(2+(it2-1)*level1)
 #else
               t2  =       thetai2(1,it2,isite)
               dt2 = dn2 * thetai2(2,it2,isite)
@@ -1878,8 +2080,8 @@ c
                  i0  = i0 + 1
                  i   = i0 + 1 + (nfft1-sign(nfft1,i0))/2
 #if 1
-                 t1  =       theta1(1,it1)
-                 dt1 = dn1 * theta1(2,it1)
+                 t1  =       theta1(1+(it1-1)*level1)
+                 dt1 = dn1 * theta1(2+(it1-1)*level1)
 #else
                  t1  =       thetai1(1,it1,isite)
                  dt1 = dn1 * thetai1(2,it1,isite)
@@ -1900,6 +2102,96 @@ c
         decrec(3,iglob)=decrec(3,iglob)+fi*(recip_c(3,1)*de1
      &                    +recip_c(3,2)*de2+recip_c(3,3)*de3)
       end do
+      end subroutine
+
+
+      attributes(global) subroutine pme_conv_kcu
+     &                   (bsmod1,bsmod2,bsmod3
+     &                   ,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
+     &                   ,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3
+     &                   ,f,pterm,volterm,xbox,calc_e,use_bounds
+     &                   ,qgrid,e_buff,v_buff)
+      implicit none
+      integer  ,value:: nf1,nf2,nf3,nff,nfft1,nfft2,nfft3
+     &         ,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
+      logical  ,value:: calc_e,use_bounds
+      real(t_p),value:: pterm,f,xbox,volterm
+      real(t_p),device:: bsmod1(*),bsmod2(*),bsmod3(*)
+     &         ,qgrid(2*qsz)
+      real(r_p),device:: e_buff(  RED_BUFF_SIZE)
+      real(t_p),device:: v_buff(6*RED_BUFF_SIZE)
+
+      integer   ithread,nthread,it
+     &         ,k,k1,k2,k3,m1,m2,m3
+      real(t_p) vterm,term,e0,stat
+     &         ,expterm
+     &         ,denom,hsq,struc2
+     &         ,h1,h2,h3,r1,r2,r3
+      
+      ithread = (blockIdx%x-1)*blockDim%x + threadIdx%x
+           it = iand(ithread-1,RED_BUFF_SIZE-1) + 1
+c
+c     use scalar sum to get reciprocal space energy and virial
+c
+      do k  = ithread-1,qsz-1, blockDim%x*gridDim%x
+         k1 = mod(k,qsz1)      + ist2
+         k2 = mod(k/qsz1,qsz2) + jst2
+         k3 = k/qsz12          + kst2
+         m1 = k1 - 1 - merge(nfft1,0,(k1.gt.nf1))
+         m2 = k2 - 1 - merge(nfft2,0,(k2.gt.nf2))
+         m3 = k3 - 1 - merge(nfft3,0,(k3.gt.nf3))
+         if ((m1.eq.0).and.(m2.eq.0).and.(m3.eq.0)) goto 10
+         r1 = real(m1,t_p)
+         r2 = real(m2,t_p)
+         r3 = real(m3,t_p)
+         h1 = recip_c(1,1)*r1 + recip_c(1,2)*r2 + recip_c(1,3)*r3
+         h2 = recip_c(2,1)*r1 + recip_c(2,2)*r2 + recip_c(2,3)*r3
+         h3 = recip_c(3,1)*r1 + recip_c(3,2)*r2 + recip_c(3,3)*r3
+         hsq     = h1*h1 + h2*h2 + h3*h3
+         term    = -pterm * hsq
+         expterm = 0.0_ti_p
+         if (term.gt.-50.0_ti_p) then
+            denom   = volterm*hsq*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
+            expterm = exp(term) / denom
+            if (.not. use_bounds) then
+               expterm = expterm * (1.0_ti_p-cos(pi*xbox*sqrt(hsq)))
+            else if (octahedron) then
+               if (mod(m1+m2+m3,2).ne.0)  expterm = 0.0_ti_p
+            end if
+            struc2 = qgrid(1+2*k)**2 + qgrid(2+2*k)**2
+            if (calc_e.or.use_virial) then; block;
+            real(r_p) rstat
+              e0   = f * expterm * struc2
+            vterm  = (2.0_ti_p/hsq) * (1.0_ti_p-term) * e0
+            rstat= atomicAdd( e_buff(it),real(e0,r_p))
+            stat = atomicAdd( v_buff(0*RED_BUFF_SIZE+it), h1*h1*vterm
+     &                      - e0 )
+            stat = atomicAdd( v_buff(1*RED_BUFF_SIZE+it), h1*h2*vterm )
+            stat = atomicAdd( v_buff(2*RED_BUFF_SIZE+it), h1*h3*vterm )
+            stat = atomicAdd( v_buff(3*RED_BUFF_SIZE+it), h2*h2*vterm
+     &                      - e0 )
+            stat = atomicAdd( v_buff(4*RED_BUFF_SIZE+it), h3*h2*vterm )
+            stat = atomicAdd( v_buff(5*RED_BUFF_SIZE+it), h3*h3*vterm
+     &                      - e0 )
+            end block; end if
+         end if
+         qgrid(1+2*k) = expterm * qgrid(1+2*k)
+         qgrid(2+2*k) = expterm * qgrid(2+2*k)
+ 10      continue
+      end do
+
+      !account for zeroth grid point for nonperiodic system
+      if (.not.use_bounds .and. ithread.eq.1
+     &    .and.ist2.eq.1.and.jst2.eq.1.and.kst2.eq.1) then
+         expterm  = 0.5_ti_p * pi / xbox
+         struc2   = qgrid(1)**2 + qgrid(2)**2
+          if (calc_e) then
+             e0   = f*expterm*struc2
+           stat   = atomicAdd( e_buff(it),real(e0,r_p) )
+          end if
+         qgrid(1) = expterm*qgrid(1)
+         qgrid(2) = expterm*qgrid(2)
+      end if
       end subroutine
 
       end module

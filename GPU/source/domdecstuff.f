@@ -145,121 +145,24 @@ c     subroutine allocstep: deallocate arrays and reallocate them with proper si
 c     (memory distribution)
 c
       subroutine allocstep
-      use deriv
-      use domdec
-      use inform ,only: deb_Path
-      use potent ,pa=>PotentialAll
+      use deriv    ,only: mem_alloc_deriv
+      use inform   ,only: deb_Path
       use timestat
-      use tinheader
-      use tinMemory
+      use tinMemory,only: mem_get
       implicit none
-      logical,save :: first=.true.
-      integer i,j
-      integer size_dir,size_rec
       real(8) m1,m2,m3
-
 c
-c     Optimise reallocation of direct force array
-c
-      if (deb_Path)
-     &   call mem_get(m1,m2)
       call timer_enter( timer_clear )
+      if (deb_Path) call mem_get(m1,m2)
 
-      if (allocated(dep)) then
-         size_dir = size(dep,dim=2)
-         if (nbloc<=size_dir) goto 10
-      end if
-
-      if(pa.or.use_geom  ) call prmem_requestm(deg  ,3,nbloc)
-      if(pa.or.use_extra ) call prmem_requestm(dex  ,3,nbloc)
-      if(pa.or.use_bond  ) call prmem_requestm(deb  ,3,nbloc)
-      if(pa.or.use_angle ) call prmem_requestm(dea  ,3,nbloc)
-      if(pa.or.use_strbnd) call prmem_requestm(deba ,3,nbloc)
-      if(pa.or.use_urey  ) call prmem_requestm(deub ,3,nbloc)
-      if(pa.or.use_angang) call prmem_requestm(deaa ,3,nbloc)
-      if(pa.or.use_opbend) call prmem_requestm(deopb,3,nbloc)
-      if(pa.or.use_opdist) call prmem_requestm(deopd,3,nbloc)
-      if(pa.or.use_improp) call prmem_requestm(deid ,3,nbloc)
-      if(pa.or.use_imptor) call prmem_requestm(deit ,3,nbloc)
-      if(pa.or.use_tors  ) call prmem_requestm(det  ,3,nbloc)
-      if(pa.or.use_pitors) call prmem_requestm(dept ,3,nbloc)
-      if(pa.or.use_strtor) call prmem_requestm(debt ,3,nbloc)
-      if(pa.or.use_angtor) call prmem_requestm(deat ,3,nbloc)
-      if(pa.or.use_tortor) call prmem_requestm(dett ,3,nbloc)
-
-      if(pa.or.use_smd_velconst.or.use_smd_forconst)
-     &   call prmem_requestm(desmd  ,3,nbloc)
-
-      if(pa.or.use_gamd.or.use_amd_ene.or.use_amd_dih.or.use_amd_wat1)
-     &   then
-         call prmem_requestm(deamdD ,3,nbloc)
-         call prmem_requestm(deamdP ,3,nbloc)
-         call prmem_requestm(deW1aMD,3,nbloc)
-         call prmem_requestm(deW2aMD,3,nbloc)
-      end if
-
-      call prmem_requestm(debond ,3,nbloc)
-      call prmem_requestm(desum,3,nbloc)
-
-      if(pa.or.use_vdw   ) call prmem_requestm(dev  ,3,nbloc)
-      if(pa.or.use_charge) call prmem_requestm(dec  ,3,nbloc)
-      if(pa.or.use_mpole ) call prmem_requestm(dem  ,3,nbloc)
-      if(pa.or.use_polar ) call prmem_requestm(dep  ,3,nbloc)
+      call mem_alloc_deriv
 c
-c     Optimise reallocation of reciproqual force array
-c
- 10   continue
-      if (allocated(deprec)) then
-         size_rec = size(deprec)
-         if (3*nlocrec2<=size_rec) goto 20
-      end if
-
-      if(pa.or.use_charge) call prmem_requestm(decrec,3,nlocrec2)
-      if(pa.or.use_mpole ) call prmem_requestm(demrec,3,nlocrec2)
-      if(pa.or.use_polar ) call prmem_requestm(deprec,3,nlocrec2)
-
       if (deb_Path) then
          call mem_get(m1,m3)
          if ( m3-m2.ne.0.0 ) then
  12   format(" Rank ",I3,"; Forces memory diff",F9.3," Mio")
             print 12, rank, m3-m2
          end if
-      end if
-
-!$acc wait
- 20   continue
-!$acc parallel loop collapse(2) default(present) async
-      do i = 1, nbloc
-         do j = 1, 3
-            desum (j,i) = 0.0_re_p
-         end do
-      end do
-      if (pa.or.use_charge) then
-!$acc parallel loop collapse(2) default(present) async
-         do i = 1, nlocrec2
-            do j = 1, 3
-               decrec(j,i) = 0.0_re_p
-            end do
-         end do
-      end if
-      if (pa.or.use_polar) then
-!$acc parallel loop collapse(2) default(present) async
-         do i = 1, nlocrec2
-            do j = 1, 3
-               demrec(j,i) = 0.0_re_p
-               deprec(j,i) = 0.0_re_p
-            end do
-         end do
-         call timer_exit( timer_clear,quiet_timers )
-         return
-      end if
-      if (pa.or.use_mpole) then
-!$acc parallel loop collapse(2) default(present) async
-         do i = 1, nlocrec2
-            do j = 1, 3
-               demrec(j,i) = 0.0_re_p
-            end do
-         end do
       end if
 c
       call timer_exit( timer_clear,quiet_timers )
@@ -284,67 +187,14 @@ c
 c
 c     Optimise reallocation of direct force array
 c
-      if (deb_Path)
-     &   call mem_get(m1,m2)
+      if (deb_Path) call mem_get(m1,m2)
       call timer_enter( timer_clear )
 
-      if (nb.lt.nbloc) then
-         nb = nbloc
-         if (deb_Path) print*, 'allocsteprespa',nbloc
-!$acc wait
+      if (fast) then
+         call mem_alloc_deriv(cBond)
       else
-         goto 10
+         call mem_alloc_deriv(cNBond)
       end if
-
-      ! bonded force array
-      if(pa.or.use_geom  ) call prmem_requestm(deg  ,3,nbloc)
-      if(pa.or.use_extra ) call prmem_requestm(dex  ,3,nbloc)
-      if(pa.or.use_bond  ) call prmem_requestm(deb  ,3,nbloc)
-      if(pa.or.use_angle ) call prmem_requestm(dea  ,3,nbloc)
-      if(pa.or.use_strbnd) call prmem_requestm(deba ,3,nbloc)
-      if(pa.or.use_urey  ) call prmem_requestm(deub ,3,nbloc)
-      if(pa.or.use_angang) call prmem_requestm(deaa ,3,nbloc)
-      if(pa.or.use_opbend) call prmem_requestm(deopb,3,nbloc)
-      if(pa.or.use_opdist) call prmem_requestm(deopd,3,nbloc)
-      if(pa.or.use_improp) call prmem_requestm(deid ,3,nbloc)
-      if(pa.or.use_imptor) call prmem_requestm(deit ,3,nbloc)
-      if(pa.or.use_tors  ) call prmem_requestm(det  ,3,nbloc)
-      if(pa.or.use_pitors) call prmem_requestm(dept ,3,nbloc)
-      if(pa.or.use_strtor) call prmem_requestm(debt ,3,nbloc)
-      if(pa.or.use_angtor) call prmem_requestm(deat ,3,nbloc)
-      if(pa.or.use_tortor) call prmem_requestm(dett ,3,nbloc)
-      if(pa.or.use_smd_velconst.or.use_smd_forconst)
-     &   call prmem_requestm(desmd  ,3,nbloc)
-      if(pa.or.use_gamd.or.use_amd_ene.or.use_amd_dih.or.use_amd_wat1)
-     &   then
-         call prmem_requestm(deamdD ,3,nbloc)
-         call prmem_requestm(deamdP ,3,nbloc)
-         call prmem_requestm(deW1aMD,3,nbloc)
-         call prmem_requestm(deW2aMD,3,nbloc)
-      end if
-      call prmem_requestm(debond ,3,nbloc)
-      call prmem_requestm(desum,3,nbloc)
-c
-      ! Non bonded force array
-      if(pa.or.use_vdw   ) call prmem_requestm(dev ,3,nbloc)
-      if(pa.or.use_charge) call prmem_requestm(dec ,3,nbloc)
-      if(pa.or.use_mpole ) call prmem_requestm(dem ,3,nbloc)
-      if(pa.or.use_polar ) call prmem_requestm(dep ,3,nbloc)
-c
-c     Optimise reallocation of reciproqual force array
-c
- 10   continue
-      if (nbr.lt.nlocrec2) then
-         nbr = nlocrec2
-         if (deb_Path) print*, 'allocsteprespa rec',nlocrec2
-!$acc wait
-      else
-         goto 20
-      end if
-
-      if(pa.or.use_charge) call prmem_requestm(decrec,3,nlocrec2)
-      if(pa.or.use_mpole ) call prmem_requestm(demrec,3,nlocrec2)
-      if(pa.or.use_polar ) call prmem_requestm(deprec,3,nlocrec2)
 
       if (deb_Path) then
          call mem_get(m1,m3)
@@ -354,41 +204,6 @@ c
             print 12, rank,nbloc, m3-m2
          end if
       end if
-
- 20   continue
-#ifndef TINKER_DEBUG
-      if (.not.(fast)) then
-#endif
-        if (pa.or.use_charge) then
-!$acc parallel loop collapse(2) default(present) async
-           do i = 1, nlocrec2
-              do j = 1, 3
-                 decrec(j,i) = 0.0_re_p
-              end do
-           end do
-        end if
-        if (pa.or.use_polar) then
-!$acc parallel loop collapse(2) default(present) async
-           do i = 1, nlocrec2
-              do j = 1, 3
-                 demrec(j,i) = 0.0_re_p
-                 deprec(j,i) = 0.0_re_p
-              end do
-           end do
-           call timer_exit( timer_clear,quiet_timers )
-           return
-        end if
-        if (pa.or.use_mpole) then
-!$acc parallel loop collapse(2) default(present) async
-           do i = 1, nlocrec2
-              do j = 1, 3
-                 demrec(j,i) = 0.0_re_p
-              end do
-           end do
-        end if
-#ifndef TINKER_DEBUG
-      end if
-#endif
 c
       call timer_exit( timer_clear,quiet_timers )
       end
@@ -434,11 +249,11 @@ c
  20        continue
            if (nxdd*nydd*nzdd.eq.nproc) then
              if (istep.eq.0.and.verbose) then
-               if (rank.eq.0) write(iout,11) nxdd,nydd,nzdd
+               if (ranktot.eq.0) write(iout,11) nxdd,nydd,nzdd
              end if
              return
            else
-             if (rank.eq.0) then
+             if (ranktot.eq.0) then
                write(iout,12) nxdd*nydd*nzdd,nproc
                write(iout,13) 
              end if
@@ -447,7 +262,7 @@ c
            nxdd = 1
            nydd = 1
            nzdd = ndir
-           if (rank.eq.0.and.istep.eq.0.and.verbose)
+           if (ranktot.eq.0.and.istep.eq.0.and.verbose)
      &        write(iout,14)  nxdd,nydd,nzdd
            return
          end if
@@ -458,8 +273,10 @@ c
          nxdd = 1
          nydd = 1
          nzdd = 2
-         if (rank.eq.0) write(iout,*) '3D Domain Decomposition'
-         if (rank.eq.0) write(iout,10) nxdd,nydd,nzdd
+         if (ranktot.eq.0.and.verbose) then
+            write(iout,*) '3D Domain Decomposition'
+            write(iout,10) nxdd,nydd,nzdd
+         end if
          return
       end if
 c
@@ -603,12 +420,11 @@ c
           end if
         end if
       end if
-      if (istep.eq.0.and.verbose) then
-        if (rank.eq.0) write(iout,*) '3D Domain Decomposition'
-        if (rank.eq.0) write(iout,10) nxdd,nydd,nzdd
+      if (istep.eq.0.and.verbose.and.ndir.gt.1) then
+        if (ranktot.eq.0) write(iout,*) '3D Domain Decomposition'
+        if (ranktot.eq.0) write(iout,10) nxdd,nydd,nzdd
       end if
       deallocate (d)
-      return
       end
 c
 c     subroutine distproc : get the minimum distance between two 3d domains

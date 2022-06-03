@@ -268,10 +268,10 @@ c
 c
 c     zero out the total mass and overall linear velocity
 c
-!$acc data present(vtot1,vtot2,vtot3,vtot,etrans,totmass)
-!$acc&     present(glob,mass,v)
+!$acc host_data use_device(vtot1,vtot2,vtot3,vtot,etrans,totmass
+!$acc&         ,glob,mass,v)
 
-!$acc serial async
+!$acc serial async deviceptr(totmass,vtot1,vtot2,vtot3,etrans)
       totmass = 0.0_re_p
       vtot1   = 0.0_re_p
       vtot2   = 0.0_re_p
@@ -282,6 +282,7 @@ c
 c     compute linear velocity of the system center of mass
 c
 !$acc parallel loop gang vector collapse(2) async
+!$acc&         deviceptr(vtot1,vtot2,vtot3,totmass,glob,mass,v)
 !$acc&         reduction(vtot1,vtot2,vtot3,totmass)
       do i = 1, nloc
          do j = 1, 3
@@ -297,31 +298,38 @@ c
             end if
          end do
       end do
-!$acc serial async
-      vtot(1) = vtot1
-      vtot(2) = vtot2
-      vtot(3) = vtot3
-!$acc end serial
 c
-      if (nproc.gt.1) then
-!$acc host_data use_device(vtot,totmass)
+      if (nproc.eq.1) then
+!$acc serial async deviceptr(vtot,vtot1,vtot2,vtot3,totmass,etrans)
+         !compute translational kinetic energy of overall system
+         vtot(1) = vtot1 / totmass
+         vtot(2) = vtot2 / totmass
+         vtot(3) = vtot3 / totmass
+         etrans  = etrans + vtot(1)**2 + vtot(2)**2 + vtot(3)**2
+         etrans  = 0.5_re_p * etrans * totmass / convert
+!$acc end serial
+      else
+         !compute translational kinetic energy of overall system
+!$acc serial async deviceptr(vtot,vtot1,vtot2,vtot3)
+         vtot(1) = vtot1
+         vtot(2) = vtot2
+         vtot(3) = vtot3
+!$acc end serial
 !$acc wait
          call MPI_ALLREDUCE(MPI_IN_PLACE,vtot,3,MPI_RPREC,MPI_SUM,
      $        COMM_TINKER,ierr)
          call MPI_ALLREDUCE(MPI_IN_PLACE,totmass,1,MPI_RPREC,MPI_SUM,
      $        COMM_TINKER,ierr)
-!$acc end host_data
-      end if
-c
-c     compute translational kinetic energy of overall system
-c
-!$acc serial async
-      do j = 1, 3
-         vtot(j) = vtot(j) / totmass
-         etrans  = etrans + vtot(j)**2
-      end do
-      etrans = 0.5_re_p * etrans * totmass / convert
+ 
+ 
+!$acc serial async deviceptr(vtot,vtot1,vtot2,vtot3,totmass,etrans)
+         vtot(1) = vtot(1) / totmass
+         vtot(2) = vtot(2) / totmass
+         vtot(3) = vtot(3) / totmass
+         etrans  = etrans + vtot(1)**2 + vtot(2)**2 + vtot(3)**2
+         etrans  = 0.5_re_p * etrans * totmass / convert
 !$acc end serial
+      end if
 c
 c     find the center of mass coordinates of the overall system
 c
@@ -439,13 +447,14 @@ c
 c
 c     eliminate any translation of the overall system
 c
-!$acc parallel loop collapse(2) async
+!$acc parallel loop collapse(2) async deviceptr(glob,v,vtot)
       do i = 1, nloc
          do j = 1, 3
             iglob = glob(i)
             v(j,iglob) = v(j,iglob) - vtot(j)
          end do
       end do
+!$acc end host_data
 c
 c     print the translational velocity of the overall system
 c
@@ -459,6 +468,5 @@ c
      &              ' Kcal/mole')
       end if
 c
-!$acc end data
       call timer_exit(timer_other)
       end

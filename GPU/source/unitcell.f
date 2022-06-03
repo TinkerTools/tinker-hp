@@ -36,15 +36,15 @@ c     set the default values for periodic boundary conditions
 c
       use_bounds = .false.
 c      use_replica = .false.
-c
-c     set the default values for the unitcell variables
-c
-      xbox = 0.0_re_p
-      ybox = 0.0_re_p
-      zbox = 0.0_re_p
-      alpha = 0.0_ti_p
-      beta = 0.0_ti_p
-      gamma = 0.0_ti_p
+cc
+cc     set the default values for the unitcell variables
+cc
+c      xbox = 0.0_re_p
+c      ybox = 0.0_re_p
+c      zbox = 0.0_re_p
+c      alpha = 0.0_ti_p
+c      beta = 0.0_ti_p
+c      gamma = 0.0_ti_p
       orthogonal = .false.
       monoclinic = .false.
       triclinic = .false.

@@ -26,12 +26,14 @@ c     Molecular Physics, 87, 1117-1157 (1996)
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       subroutine temper (dt,eksum,ekin,temp)
       use atoms
       use atmlst
       use atmtyp
       use bath
       use domdec
+      use energi  ,only: calc_e
       use group
       use mdstuf
       use molcul
@@ -40,6 +42,7 @@ c
       use random_mod
       use units
       use usage
+      use virial  ,only: use_virial
       use timestat
       implicit none
       integer i,j,nc,ns,iglob
@@ -52,7 +55,7 @@ c
       real(r_p) expterm,speed
       real(r_p) w(3)
       real(r_p) ekin(3,3)
-      real(r_p),save:: c,d,r
+      real(r_p),save:: c,d
       real(t_p) s,si
       real(r_p) kt,rate,trial
       logical,save::f_in=.true.
@@ -61,12 +64,12 @@ c
       if (.not. isothermal)  goto 10
       if (f_in) then
          f_in=.false.
-!$acc enter data create(pick1,c,d,pick,scale)
+         pick1=0
+!$acc enter data copyin(pick1,c,d,pick,scale)
       end if
 c
       if (thermostat .eq. 'BERENDSEN' .or.
-     &    thermostat .eq. 'BUSSI'     .or.
-     &    thermostat .eq. 'ANDERSEN' ) then
+     &    thermostat .eq. 'BUSSI'    ) then
          call kineticgpu (eksum,ekin,temp)
       end if
 c
@@ -78,33 +81,22 @@ c
          if (temp .ne. 0.0_re_p)
      &      scale = sqrt(1.0_re_p + (dt/tautemp)*(kelvin/temp-1.0_re_p))
 !$acc end serial
-!$acc parallel loop collapse(2) present(scale,glob,use,v)
-!$acc&         async
-            do i = 1, nloc
-               do j = 1, 3
-                  iglob = glob(i)
-                  if (use(iglob)) then
-                     v(j,iglob) = scale * v(j,iglob)
-                  end if
-               end do
-            end do
+!$acc parallel loop collapse(2) async present(scale,glob,use,v)
+            do i = 1, nloc; do j = 1, 3
+               iglob = glob(i)
+               if (use(iglob)) then
+                  v(j,iglob) = scale * v(j,iglob)
+               end if
+            end do; end do
 c
 c     couple to external temperature bath via Bussi scaling
 c
       else if (thermostat .eq. 'BUSSI') then
-!$acc data present(pick1,c,d,pick,scale,temp)
-!$acc&     present(v,samplevec,use,glob,eta)
-!$acc serial async
-         if (temp .eq. 0.0_re_p)  temp = 0.1_re_p
-         c = exp(-dt/tautemp)
-         d = (1.0_re_p-c) * (kelvin/temp) / real(nfree,r_p)
-         pick1 = 0.0_re_p
-!$acc end serial
 c
 #ifdef _OPENACC
          if (.not.host_rand_platform) then
             call normalgpu(samplevec(1),nfree)
-!$acc parallel loop async
+!$acc parallel loop async present(pick1,samplevec)
             do i = 2, nfree
                pick1 = pick1 + real(samplevec(i)**2,r_p)
             end do
@@ -120,13 +112,17 @@ c
 !$acc update device(pick1,pick) async
          end if
 c
-!$acc serial async
+!$acc serial async present(pick,pick1,c,d,samplevec,temp,scale,eta)
 #ifdef _OPENACC
          if (.not.host_rand_platform) pick = samplevec(1)
 #endif
+         if (temp .eq. 0.0_re_p)  temp = 0.1_re_p
+         c = exp(-dt/tautemp)
+         d = (1.0_re_p-c) * (kelvin/temp) / real(nfree,r_p)
          scale = c + (pick1+pick*pick)*d + 2.0_re_p*pick*sqrt(c*d)
          scale = sqrt(scale)
          if (pick+sqrt(c/d) .lt. 0.0_re_p)  scale = -scale
+         pick1 = 0.0_re_p
 !$acc end serial
          if (nproc.ne.1) then
 !$acc wait
@@ -134,29 +130,30 @@ c
             call MPI_BCAST(scale,1,MPI_RPREC,0,COMM_TINKER,ierr)
 !$acc end host_data
          end if
-!$acc serial async
+c        if(rank.eq.0) print*,scale,pick
+         if (barostat.eq.'BUSSI') then
+!$acc serial async present(eta,scale)
          eta = eta * scale
 !$acc end serial
-c        if(rank.eq.0) print*,scale,pick
+         end if
 c
 !$acc parallel loop collapse(2) async
-         do i = 1, nloc
-            do j = 1, 3
-               iglob = glob(i)
-               if (use(iglob)) then
-                  v(j,iglob) = scale * v(j,iglob)
-               end if
-            end do
-         end do
-!$acc end data
+!$acc&         present(glob,use,v,scale)
+         do i = 1, nloc; do j = 1, 3
+            iglob = glob(i)
+            if (use(iglob)) then
+               v(j,iglob) = scale * v(j,iglob)
+            end if
+         end do; end do
 c
 c     select random velocities via Andersen stochastic collisions
 c
       else if (thermostat .eq. 'ANDERSEN') then
 #ifdef _OPENACC
-         print*, 'ANDERSEN Thermostat is unavailable on device platform'
-         print*, 'Use host application to benefit from it'
-         call fatal
+ 34      format('ANDERSEN Thermostat is unavailable on device platform'
+     &       ,/,3x,'Use host application to benefit from it')
+         write(0,34)
+         __TINKER_FATAL__
 #endif
          kt = boltzmann * kelvin
          rate = 1000.0_re_p * dt * collide
@@ -197,7 +194,7 @@ c
 c     recompute kinetic energy and instantaneous temperature
 c
   10  continue
-      call kineticgpu ( eksum,ekin,temp )
+      if (calc_e.or.use_virial) call kineticgpu ( eksum,ekin,temp )
       call timer_exit ( timer_other,quiet_timers )
 
       end

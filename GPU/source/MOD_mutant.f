@@ -15,8 +15,18 @@ c     lambda     generic weighting between initial and final states
 c     vlambda    state weighting value for electrostatic potentials
 c     elambda    state weighting value for van der Waals potentials
 c     tlambda    state weighting value for torsional potential
-c     scexp
-c     scalpha
+c     bvlambda   intervall bound for state weighting value vlambda
+c     belambda   intervall bound for state weighting value elambda
+c     bplambda   value of elambda from which pol is activated
+c     flambdabias scalar bias to be applied to flambda (osrw)     
+c     scexp  softcore vdw parameter for vdw Halgren potential
+c     scalpha softcore vdw parameter for vdw Halgren and LJ potential
+c     softcore parameters for vdw LJ potential:
+c     scvdw = rv*(scalpha*2**(-sck/6)*(1-lambda)**scs+rho**sck)**(1/sck)
+c     V_sc = lamda**sct*(V_vdw(scvdw))
+c     sck       softcore main exponent
+c     sct       softcore external lambda exponent
+c     scs       softcore internal lambda exponent
 c     nmut       number of atoms mutated from initial to final state
 c     imut       atomic sites differing in initial and final state
 c     winimut    window object corresponding to imut
@@ -48,5 +58,8 @@ c
       real(t_p) lambda
       real(t_p) vlambda,elambda,tlambda
       real(t_p) scexp,scalpha
-      save
+      real(t_p) sck,sct,scs
+      real(t_p) bvlambda, belambda
+      real(t_p) bplambda
+      real(t_p) flambdabias
       end

@@ -11,6 +11,7 @@ c
       use mpole
       use potent ,only: use_pmecore
       use pme    ,only: GridDecomp1d
+      use random_mod
       use utilgpu,only: dir_queue,rec_queue,def_queue
       implicit none
       integer i,iipole,iglob
@@ -39,6 +40,10 @@ c
          call rot_mat_site(.false.,npolerecloc,polerecglob)
       else if (.not.(Bdecomp1d.and.GridDecomp1d)) then
          call rot_mat_site(.true.,npolerecloc,polerecglob)
+      else if (host_rand_platform.and.nZ_Onlyloc.gt.0) then ! Follow Tinker-HP calls to random
+         do i = 1,3*nZ_Onlyloc
+            samplevec(i)=random()
+         end do
       end if
       def_queue=dir_queue
 

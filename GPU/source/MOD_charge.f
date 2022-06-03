@@ -32,6 +32,10 @@ c     chglocnl  global-localnl charge correspondance
 c     chgrecloc  global-local reciprocal charge correspondance
 c     pchg      magnitude of the partial charges (e-)
 c     winpchg    window object corresponding to pchg
+c     pchg_orig   original magnitude of the partial charges (e-) (lambda dyn)
+c     winpchg_orig    window object corresponding to pchg_orig
+c     pchg0     original partial charge values for charge flux
+c     winpchg0    window object corresponding to pchg0
 c
 c     nionlocnlb First multiple of BLOCK_SIZE after nionlocnl
 c     nionlocnlb_pair  total number of charge pair blocks interaction
@@ -52,6 +56,6 @@ c
       integer, pointer :: chglist(:)
       integer, pointer :: nbchg(:)
       integer winiion,winjion,winkion,winchglist,winnbchg
-     &       ,winpchg
-      real(t_p), pointer :: pchg(:)
+     &       ,winpchg,winpchg0,winpchg_orig
+      real(t_p), pointer :: pchg(:),pchg_orig(:),pchg0(:)
       end

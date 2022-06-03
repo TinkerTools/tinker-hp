@@ -6,7 +6,7 @@ c
 #include "tinker_precision.h"
       module efld0_directgpu_inl
         use tinheader, only: ti_p
-        use utilgpu  , only: real3, rpole_elt
+        use tintypes , only: real3, rpole_elt, real7
         implicit none
         include "erfcore_data.f.inc"
         contains
@@ -351,6 +351,10 @@ c
 
       parameter(one =1.0_ti_p)
 
+      if (deb_Path)
+     &   write(*,'(3x,a,L3)') 'efld0_directgpu2',use_polarshortreal
+      call timer_enter( timer_efld0_direct )
+
       if (use_polarshortreal) then
           lst =>  shortelst
          nlst => nshortelst
@@ -363,10 +367,6 @@ c
 !$acc enter data attach(lst,nlst) async(def_queue)
       call switch (mode)
 c
-      if (deb_Path)
-     &   write(*,'(3x,a)') 'efld0_directgpu2'
-      call timer_enter( timer_efld0_direct )
-
       def_queue = dir_queue
       pscale = 1.0
       dscale = 1.0
@@ -465,7 +465,6 @@ c
          end do NEIGHBORS LOOP
 
       end do MAINLOOP
-
 !$acc exit data detach(nlst,lst) async(def_queue)
 
       call efld0_direct_correct_scaling(ef)
@@ -474,6 +473,7 @@ c
       end subroutine
 
       subroutine efld0_directgpu3(nrhs,ef)
+#ifdef _OPENACC
       use atmlst  ,only: poleglobnl
       use atoms   ,only: x,y,z,n
       use cell
@@ -484,9 +484,7 @@ c
       use efld0_directgpu_inl
       use inform  ,only: deb_Path
       use interfaces ,only: efld0_direct_correct_scaling
-#ifdef _CUDA
      &               , cu_efld0_direct
-#endif
       use math    ,only: sqrtpi
       use mpole   ,only: npolebloc,ipole,rpole,poleloc,npolelocnl
      &            , npolelocnlb_pair,npolelocnlb,npolelocnlb2_pair
@@ -504,12 +502,10 @@ c
       use shunt   ,only: cut2
       use utilcomm,only: no_commdir
       use utilgpu ,only: dir_queue,rec_queue,def_queue
-#ifdef _OPENACC
      &                  ,dir_stream,def_stream,stream_wait_async,
      &                   rec_stream,rec_event
       use tmatxb_pmecu ,only: efld0_direct_scaling_cu
       use utilcu     ,only: check_launch_kernel,BLOCK_DIM
-#endif
       use timestat   ,only: timer_enter,timer_exit,timer_efld0_direct
       implicit none
 
@@ -520,10 +516,10 @@ c
       integer i,iglob,iploc,kk,start_lst,gS
       real(t_p) alsq2, alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-      character*10 mode
+      character*11 mode
 c
       if (deb_Path)
-     &   write(*,'(3x,a)') 'efld0_directgpu3'
+     &   write(*,'(3x,a,L3)') 'efld0_directgpu3',use_polarshortreal
       call timer_enter( timer_efld0_direct )
 
       if (use_polarshortreal) then
@@ -545,8 +541,8 @@ c
       alsq2n = 0.0_ti_p
       if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
       def_queue = dir_queue
+      def_stream= dir_stream
 
-#ifdef _CUDA
       if (use_polarshortreal) then
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
 !$acc&    ,x_s,y_s,z_s,pdamp,rpole,thole,polarity,ef)
@@ -588,17 +584,15 @@ c
 !$acc end host_data
          call check_launch_kernel( 'efld0_direct_scaling_cu' )
       end if
+
+      call timer_exit( timer_efld0_direct )
 #else
       print 100
  100  format('eld0_directgpu3 is a specific device routine',/,
      &       'you are not supposed to get inside with your compile',
      &       'type.')
-      call fatal
+      __TINKER_FATAL__
 #endif
-
-c     call efld0_direct_correct_scaling(ef)
-
-      call timer_exit( timer_efld0_direct )
       end subroutine
 
 c====================================================================
@@ -925,6 +919,7 @@ c
 
 #ifdef _OPENACC
       def_stream = dir_stream
+      def_queue  = dir_queue
       if (dir_queue.ne.rec_queue) then
 !!$acc wait(rec_queue) async(rec_queue)
          call stream_wait_async(rec_stream,dir_stream,rec_event)

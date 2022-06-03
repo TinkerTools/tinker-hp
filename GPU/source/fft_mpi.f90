@@ -14,8 +14,10 @@ jend2,jsize2,kstart2,kend2,ksize2,nx,ny,nz,comm_loc,ngrid1,ngrid2)
 
 use decomp_2d
 use decomp_2d_fft
+use domdec   ,only: ranktot
 use fft      ,only: in, out, is_fftInit
 use mpi
+use inform   ,only: verbose
 use tinMemory,only: s_cufft
 use sizes    ,only: tinkerdebug
 #ifdef _OPENACC
@@ -39,6 +41,7 @@ real(t_p) time0,time1
 
 p_row = ngrid1 
 p_col = ngrid2
+dcp_verbose = merge(verbose,.false.,ranktot.eq.0.and..not.is_fftInit)
 
 ! Finalize fft library if necessary
 if (is_fftInit) then

@@ -15,6 +15,7 @@ c
 
       contains
 #include "image.f.inc"
+#include "convert.f.inc"
       end module
 c
 c     subroutine commposrec: communicate positions for reciprocal space
@@ -108,8 +109,9 @@ c
          if (precdir_recep2(iproc).ne.rank) then
            call MPI_WAIT(reqrec(iproc),status,ierr)
            ibufbeg = bufbeg(precdir_recep2(iproc)+1)
+           idomlen = domlen(precdir_recep2(iproc)+1)
 !$acc parallel loop async
-           do i = 1, domlen(precdir_recep2(iproc)+1)
+           do i = 1, idomlen
              iloc     = ibufbeg+i-1
              iglob    = glob(iloc)
              x(iglob) = buffer(1,iloc)
@@ -180,6 +182,8 @@ c
             z(iglob) = buffer(3,iloc)
          end do
       end do
+      call reCast_position
+
       ! Wait for sending requests
       do i = 1, nrec_send
         call MPI_WAIT(reqsend(i),status,ierr)
@@ -283,6 +287,7 @@ c
            z(iglob) = buffer(3,iloc)
          end do
       end do
+      call reCast_position
 c
       nullify(buffer)
       nullify(buffers)
@@ -385,6 +390,7 @@ c
           z(iglob) = buffer(3,iloc)
         end do
       end do
+      call reCast_position
 c
       nullify(buffer)
       nullify(buffers)
@@ -1711,6 +1717,7 @@ c
           z(iglob) = buffer(3,iloc)
         end do
       end do
+      call reCast_position
 c
 !$acc end data
 !$acc wait
@@ -2193,7 +2200,6 @@ c
       logical fast
 c
       call timer_enter( timer_fcomm )
-      if (deb_Path) write(*,*) ' -- commforcesrespa'
       if (fast) then
         call commforcesbonded(derivs)
       else
@@ -2223,7 +2229,6 @@ c     rule = 1: intermediate part of the forces
 c     rule = 2: slow part of the forces
 c
       call timer_enter( timer_fcomm )
-      if (deb_Path) write(*,*) ' -- commforcesrespa1'
       if (rule.eq.0) then
         call commforcesbonded(derivs)
       else if (rule.eq.1) then
@@ -2380,7 +2385,6 @@ c     bonded forces modifier avec nlocnl ?
 c
       subroutine commforcesbonded(derivs)
       use sizes
-      use deriv     ,only: debond=>desum
       use domdec
       use inform    ,only: deb_Path
       use potent
@@ -2428,86 +2432,6 @@ c
 !$acc wait
       do i = 1, nneig_recep
         tag = nproc*pneig_recep(i) + rank + 1
-!$acc host_data use_device(debond)
-        call MPI_ISEND(debond(1,bufbeg(pneig_recep(i)+1)),
-     $       3*domlen(pneig_recep(i)+1),MPI_RPREC,pneig_recep(i),
-     $       tag,COMM_TINKER,reqsend(i),ierr)
-!$acc end host_data
-      end do
-c
-      do i = 1, nneig_send
-        call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nneig_recep
-        call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-
-c
-c     MPI : move in global arrays
-c
-!$acc parallel loop gang vector collapse(2) async
-!$acc&         present(derivs,buffer)
-      do j = 1, nloc
-         do k = 1, 3
-            do i = 1, nneig_send
-               derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-            end do
-         end do
-      end do
-!$acc exit data detach(buffer) async
-
-      if (deb_Path) write(*,*) '   << commforcesbonded'
-      call timer_exit( timer_dirbondfcomm,quiet_timers )
-      end
-
-      ! In place version of commforcesbonded
-      subroutine commforcesbonded1(derivs)
-      use sizes
-      use domdec
-      use inform    ,only: deb_Path
-      use potent
-      use mpi
-      use timestat
-      use tinMemory ,only: prmem_requestm
-      use utilcomm  ,only: buffMpi_p1
-      implicit none
-      integer i,j,k,tag,ierr,iproc
-      integer iloc,iloc_beg,idomlen
-      integer sz
-      integer reqsend(nproc),reqrec(nproc)
-      real(r_p), pointer :: buffer(:,:,:)
-      real(r_p) derivs(3,nbloc)
-      integer status(MPI_STATUS_SIZE)
-c
-      if ((nproc.eq.1).or.(use_pmecore.and.rank.gt.ndir-1)) return
-      !if (deb_Path) write(*,*) '   >> commforcesbonded1'
-      call timer_enter ( timer_dirbondfcomm )
-c
-c     allocate some arrays
-c
-      sz = 3*max(1,nloc)*nneig_send
-      call prmem_requestm(buffMpi_p1,sz,async=.false.)
-      buffer(1:3,1:max(1,nloc),1:nneig_send) => buffMpi_p1(1:sz)
-!$acc enter data attach(buffer)
-c
-c     communicate forces
-c
-c     MPI : begin reception in buffer
-c
-      do i = 1, nneig_send
-         tag = nproc*rank + pneig_send(i) + 1
-!$acc host_data use_device(buffer)
-         call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $        MPI_RPREC,pneig_send(i),tag,
-     $        COMM_TINKER,reqrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-!$acc wait
-      do i = 1, nneig_recep
-        tag = nproc*pneig_recep(i) + rank + 1
 !$acc host_data use_device(derivs)
         call MPI_ISEND(derivs(1,bufbeg(pneig_recep(i)+1)),
      $       3*domlen(pneig_recep(i)+1),MPI_RPREC,pneig_recep(i),
@@ -2527,16 +2451,12 @@ c     MPI : move in global arrays
 c
 !$acc parallel loop gang vector collapse(2) async
 !$acc&         present(derivs,buffer)
-      do j = 1, nloc
-         do k = 1, 3
-            do i = 1, nneig_send
-               derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-            end do
-         end do
-      end do
-
+      do j = 1, nloc; do k = 1, 3; do i = 1, nneig_send;
+         derivs(k,j) = derivs(k,j) + buffer(k,j,i)
+      end do; end do; end do
 !$acc exit data detach(buffer) async
-      !if (deb_Path) write(*,*) '   << commforcesbonded1'
+
+      if (deb_Path) write(*,*) '   << commforcesbonded'
       call timer_exit( timer_dirbondfcomm,quiet_timers )
       end
 c
@@ -2564,85 +2484,6 @@ c
       if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
       call timer_enter( timer_dirbondfcomm )
       if (deb_Path) write(*,*) '   >> commforcesbloc'
-c
-c     allocate some arrays
-c
-      sz = 3*max(1,nloc)*nbig_send
-      call prmem_requestm(buffMpi_p1,sz,async=.false.)
-      buffer(1:3,1:max(1,nloc),1:nbig_send) => buffMpi_p1(1:sz)
-!$acc enter data attach(buffer)
-c
-c     communicate forces
-c
-c     MPI : begin reception in buffer
-c
-      do i = 1, nbig_send
-         tag = nproc*rank + pbig_send(i) + 1
-!$acc host_data use_device(buffer)
-         call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $        MPI_RPREC,pbig_send(i),tag,
-     $        COMM_TINKER,reqrec(i),ierr)
-!$acc end host_data
-      end do
-c
-c     MPI : begin sending
-c
-!$acc wait
-      do i = 1, nbig_recep
-         tag = nproc*pbig_recep(i) + rank + 1
-!$acc host_data use_device(desum)
-         call MPI_ISEND(desum(1,bufbeg(pbig_recep(i)+1)),
-     $        3*domlen(pbig_recep(i)+1),MPI_RPREC,pbig_recep(i),tag,
-     $        COMM_TINKER,reqsend(i),ierr)
-!$acc end host_data
-      end do
-c
-      do i = 1, nbig_send
-        call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nbig_recep
-        call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-c
-c     MPI : move in global arrays
-c
-!$acc parallel loop gang vector collapse(2) async
-!$acc&         present(derivs,buffer)
-      do j = 1, nloc
-         do k = 1, 3
-            do i = 1, nbig_send
-              derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-            end do
-         end do
-      end do
-c
-!$acc exit data detach(buffer) async
-      nullify(buffer)
-
-      if (deb_Path) write(*,*) '   << commforcesbloc'
-      call timer_exit( timer_dirbondfcomm,quiet_timers )
-      end
-      ! In place version of commforcesbloc
-      subroutine commforcesbloc1(derivs)
-      use deriv
-      use domdec
-      use inform,only: deb_Path
-      use mpi
-      use potent
-      use sizes
-      use timestat
-      use tinMemory ,only: prmem_requestm
-      use utilcomm  ,only: buffMpi_p1
-      implicit none
-      integer i,j,k,tag,ierr,sz
-      integer reqsend(nproc),reqrec(nproc)
-      real(r_p), pointer :: buffer(:,:,:)
-      real(r_p) derivs(3,nbloc)
-      integer status(MPI_STATUS_SIZE)
-c
-      if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
-      !if (deb_Path) write(*,*) '   >> commforcesbloc1'
-      call timer_enter( timer_dirbondfcomm )
 c
 c     allocate some arrays
 c
@@ -2698,7 +2539,7 @@ c
 !$acc exit data detach(buffer) async
       nullify(buffer)
 
-      !if (deb_Path) write(*,*) '   << commforcesbloc1'
+      if (deb_Path) write(*,*) '   << commforcesbloc'
       call timer_exit( timer_dirbondfcomm,quiet_timers )
       end
 c
@@ -2726,94 +2567,6 @@ c     real(r_p), allocatable :: buffers(:,:)
 c
       if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
       if (deb_Path) write(*,*) '   >> commforcesshortbloc'
-      call timer_enter( timer_dirbondfcomm )
-c
-c     allocate some arrays
-c
-      sz = 3*max(1,nloc)*nbigshort_send
-      allocate (reqsend(nproc))
-      allocate (reqrec(nproc))
-      call prmem_requestm(buffMpi_p1,sz,async=.false.)
-      buffer(1:3,1:max(1,nloc),1:nbigshort_send) => buffMpi_p1(1:sz)
-!$acc enter data attach(buffer)
-
-c
-c     communicate forces
-c
-c     MPI : begin reception in buffer
-c
-
-!$acc host_data use_device(buffer)
-      do i = 1, nbigshort_send
-        tag = nproc*rank + pbigshort_send(i) + 1
-        call MPI_IRECV(buffer(1,1,i),3*nloc,
-     $       MPI_RPREC,pbigshort_send(i),tag,
-     $       COMM_TINKER,reqrec(i),ierr)
-      end do
-!$acc end host_data
-c
-c     MPI : begin sending
-c
-!$acc wait(rec_queue)
-!$acc host_data use_device(desum)
-      do i = 1, nbigshort_recep
-        tag = nproc*pbigshort_recep(i) + rank + 1
-        call MPI_ISEND(desum(1,bufbeg(pbigshort_recep(i)+1)),
-     $       3*domlen(pbigshort_recep(i)+1),
-     $       MPI_RPREC,pbigshort_recep(i),tag,
-     $       COMM_TINKER,reqsend(i),ierr)
-      end do
-!$acc end host_data
-c
-      do i = 1, nbigshort_send
-        call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nbigshort_recep
-        call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-c
-c     MPI : move in global arrays
-c
-
-!$acc parallel loop gang vector collapse(2) async(rec_queue)
-!$acc&         present(buffer,derivs)
-      do j = 1,nloc
-         do k = 1,3
-            do i = 1, nbigshort_send
-              derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-            end do
-         end do
-      end do
-c
-!$acc exit data detach(buffer) async(rec_queue)
-      deallocate (reqsend)
-      deallocate (reqrec)
-
-      if (deb_Path) write(*,*) '   << commforcesshortbloc'
-      call timer_exit( timer_dirbondfcomm,quiet_timers )
-      end
-      ! In-place version of commforcesshortbloc
-      subroutine commforcesshortbloc1(derivs)
-      use deriv
-      use domdec
-      use inform,only: deb_Path
-      use mpi
-      use potent
-      use sizes
-      use timestat
-      use utilgpu,only: rec_queue
-      use tinMemory ,only: prmem_requestm
-      use utilcomm  ,only: buffMpi_p1
-      implicit none
-      integer i,j,k,tag,ierr,sz
-      integer, allocatable :: reqsend(:),reqrec(:)
-      real(r_p), pointer :: buffer(:,:,:)
-c     real(r_p), allocatable :: buffers(:,:)
-      real(r_p) derivs(3,nbloc)
-      integer status(MPI_STATUS_SIZE)
-c
-      if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
-      !if (deb_Path) write(*,*) '   >> commforcesshortbloc1'
       call timer_enter( timer_dirbondfcomm )
 c
 c     allocate some arrays
@@ -2877,7 +2630,7 @@ c
       deallocate (reqsend)
       deallocate (reqrec)
 
-      !if (deb_Path) write(*,*) '   << commforcesshortbloc1'
+      if (deb_Path) write(*,*) '   << commforcesshortbloc'
       call timer_exit( timer_dirbondfcomm,quiet_timers )
       end
 c
@@ -2902,14 +2655,14 @@ c
 c     allocate some arrays
 c
       if      (rule.eq.0) then
-         call commforcesbonded1(force)
+         call commforcesbonded(force)
       else if (rule.eq.1) then
-         call commforcesshortbloc1(force)
+         call commforcesshortbloc(force)
       else if (rule.eq.2) then
-         call commforcesbloc1(force)
+         call commforcesbloc(force)
       else
  12     format('   WARNING  !!!'
-     &       ,/,'--- Unknown config for commforce_one routine ---')
+     &      ,/,'--- Unknown config for commforce_one routine ---')
          print 12
       end if
       end
@@ -2920,21 +2673,20 @@ c
       use sizes
       use domdec
       use mpi
+      use mpistuff_inl
       use tinMemory ,only: prmem_requestm
       implicit none
       integer i,j,k
       !integer status(MPI_STATUS_SIZE)
-      real(r_p) dir(3,nbloc),fsum(3,nbloc)
-     &         ,rec(3,nlocrec2)
+      mdyn_rtyp dir(3,nbloc),fsum(3,nbloc)
+      real(r_p) rec(3,nlocrec2)
 
       !case sequential
       if (nproc.eq.1) then
 !$acc parallel loop async present(fsum,dir,rec)
-         do i = 1,nloc
-            do j = 1,3
-               fsum(j,i) = dir(j,i)+rec(j,i)
-            end do
-         end do
+         do i = 1,nloc; do j = 1,3
+            fsum(j,i) = dir(j,i)+ rp2mdr(rec(j,i))
+         end do; end do
          return
       end if
 
@@ -2956,10 +2708,11 @@ c
       use sizes
       use timestat ,only: timer_enter,timer_exit,quiet_timers
      &             ,timer_dirreccomm,timer_fmanage
-      use tinMemory,only: prmem_requestm
+      use tinMemory,only: prmem_requestm,mipk
       use utilcomm ,only: buffMpi_p1,buffMpi_p2,buffMpi_p3
+      use utilgpu  ,only: mem_set,rec_stream
       implicit none
-      integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg
+      integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg,dlen
       integer jloc,jglob,jlocrec
       integer sz1,sz2,sz3
       integer rankloc,commloc,nprocloc
@@ -2972,383 +2725,67 @@ c
       !case sequential
       if (nproc.eq.1) then
          call timer_enter( timer_fmanage )
-         if (pa) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-         do i = 1, nloc
-            do j = 1, 3
-               derivs(j,i) = derivs(j,i) + demrec(j,i) +
-     $                       deprec(j,i) + decrec(j,i)
-            end do
-         end do
+         if (ftot_l) then
+            call add_forces_rec( de_tot )
          else
-            if (use_polar) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-               do i = 1, nloc
-                  do j = 1, 3
-                     derivs(j,i) = derivs(j,i) + demrec(j,i) +
-     $                             deprec(j,i)
-                  end do
-               end do
-            else if (use_mpole) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-               do i = 1, nloc
-                  do j = 1, 3
-                     derivs(j,i) = derivs(j,i) + demrec(j,i)
-                  end do
-               end do
-            end if
-            if (use_charge) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-               do i = 1, nloc
-                  do j = 1, 3
-                     derivs(j,i) = derivs(j,i) + decrec(j,i)
-                  end do
-               end do
-            end if
+            call add_forces_rec1( derivs )
          end if
          call timer_exit ( timer_fmanage,quiet_timers )
-
          if (.not.dotstgrad) return
          goto 100
       end if
 
       if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
-         call commforcesrec_1d(derivs)
+         call timer_enter( timer_dirreccomm )
+         if (ftot_l) then
+            call add_forces_rec_1d( de_tot )
+         else
+            call add_forces_rec1_1d( derivs )
+         end if
+         call timer_exit( timer_dirreccomm,quiet_timers )
          return
       end if
 
-      if (deb_Path) write(*,*) '   >> commforcesrec'
       call timer_enter( timer_dirreccomm )
-c
-      if (use_pmecore) then
-        nprocloc = nrec
-        commloc  = comm_rec
-        rankloc  = rank_bis
-      else
-        nprocloc = nproc
-        commloc  = COMM_TINKER
-        rankloc  = rank
-      end if
-c
-c     allocate some arrays
-c
-      sz1 = 3*max(max(1,nloc)*nrecdir_send1,nlocrec*nrec_send)
-      sz2 = 3*max(1,nblocrecdir)
+
+      !allocate temporary buffer
       sz3 = 3*max(1,nlocrec2)
-      call prmem_requestm(buffMpi_p1,max(size(buffMpi_p1),sz1))
-      call prmem_requestm(buffMpi_p2,max(size(buffMpi_p2),sz2))
       call prmem_requestm(buffMpi_p3,max(size(buffMpi_p3),sz3))
-
-      sz1 = 3*max(1,nlocrec)*nrec_send
-      buffer(1:3,1:max(1,nlocrec),1:nrec_send) => buffMpi_p1(1:sz1)
-      buffers(1:3,1:max(1,nblocrecdir))        => buffMpi_p2(1:sz2)
       temprec(1:3,1:max(1,nlocrec2))           => buffMpi_p3(1:sz3)
-!$acc enter data attach(buffer,buffers,temprec)
-c
-c     first do rec rec communications
-c
-c
-c     MPI : begin reception in buffer
-c
-!$acc host_data use_device(buffer)
-      do i = 1, nrec_send
-        tag = nprocloc*rankloc + prec_send(i) + 1
-        call MPI_IRECV(buffer(1,1,i),3*nlocrec,MPI_RPREC
-     $      ,prec_send(i),tag,commloc,reqrec(i),ierr)
-      end do
-!$acc end host_data
-c
-c     MPI : move in buffer
-c
-!$acc data present(temprec,buffers,derivs)
-c
-      if (pa) then
-!$acc parallel loop collapse(2) async
-!$acc&   present(demrec,deprec,decrec)
-         do i = 1, nlocrec2
-            do j = 1, 3
-               temprec(j,i)= demrec(j,i) + deprec(j,i) + decrec(j,i)
-            end do
-         end do
+
+      call sum_forces_rec1( temprec )
+      call timer_exit( timer_dirreccomm,quiet_timers )
+
+      call comm_forces_rec( temprec )
+
+      if (ftot_l) then
+         call comm_forces_recdir( de_tot,temprec )
       else
-         if (use_polar) then
-!$acc parallel loop collapse(2) async
-!$acc&      present(demrec,deprec)
-            do i = 1, nlocrec2
-               do j = 1, 3
-                  temprec(j,i)= demrec(j,i) + deprec(j,i)
-               end do
-            end do
-         else if (use_mpole) then
-!$acc parallel loop collapse(2) async
-!$acc&      present(demrec)
-            do i = 1, nlocrec2
-               do j = 1, 3
-                  temprec(j,i)= demrec(j,i)
-               end do
-            end do
-         end if
-         if (use_charge) then
-!$acc parallel loop collapse(2) async
-!$acc&      present(decrec)
-            do i = 1, nlocrec2
-               do j = 1, 3
-                  temprec(j,i)=  decrec(j,i)
-               end do
-            end do
-         end if
+         call comm_forces_recdir1( derivs,temprec )
       end if
-c
-!$acc wait
-!$acc host_data use_device(temprec)
-      do i = 1, nrec_recep
-        tag = nprocloc*prec_recep(i) + rankloc + 1
-        call MPI_ISEND(temprec(1,bufbegrec(prec_recep(i)+1))
-     $      ,3*domlenrec(prec_recep(i)+1),MPI_RPREC
-     $      ,prec_recep(i),tag,commloc,reqsend(i),ierr)
-      end do
-!$acc end host_data
-c
-      do i = 1, nrec_send
-        call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nrec_recep
-        call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-c
-c     mpi : move in global arrays
-c
-!$acc parallel loop collapse(2) present(buffer)
-      do j = 1,nlocrec
-        do k = 1,3
-!$acc loop seq
-          do i = 1,nrec_send
-             temprec(k,j) = temprec(k,j) + buffer(k,j,i)
-          end do
-        end do
-      end do
 
-!$acc exit data detach(buffer)
-      sz1 = 3*max(1,nloc)*nrecdir_send1
-      nullify(buffer)
-      buffer(1:3,1:max(1,nloc),1:nrecdir_send1) => buffMpi_p1(1:sz1)
-!$acc enter data attach(buffer)
-c
-c     then do rec dir communications
-c
-c     MPI : begin reception in buffer
-c
-!$acc host_data use_device(buffer)
-      do i = 1, nrecdir_send1
-         if (precdir_send1(i).ne.rank) then
-           tag = nproc*rank + precdir_send1(i) + 1
-           call MPI_IRECV(buffer(1,1,i),3*nloc,MPI_RPREC
-     $         ,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
-         end if
-      end do
-!$acc end host_data
-c
-c     Move in array
-c
-      do i = 1, nrecdir_recep1
-        if (precdir_recep1(i).ne.rank) then
-          ibufbeg =bufbeg(precdir_recep1(i)+1)-1 
-!$acc parallel loop collapse(2)
-!$acc&    present(repartrec,locrec,glob)
-          do j = 1, domlen(precdir_recep1(i)+1)
-            do k = 1,3
-              jloc = ibufbeg+j
-              jglob = glob(jloc)
-              if (repartrec(jglob).eq.rankloc) then
-                jlocrec = locrec(jglob)
-                buffers(k,jloc) = temprec(k,jlocrec)
-              else
-                buffers(k,jloc) = 0
-              end if
-            end do
-          end do
-        end if
-      end do
-c
-!$acc host_data use_device(buffers)
-      do i = 1, nrecdir_recep1
-        if (precdir_recep1(i).ne.rank) then
-          tag = nproc*precdir_recep1(i) + rank + 1
-          call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1))
-     $        ,3*domlen(precdir_recep1(i)+1),MPI_RPREC
-     $        ,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
-        end if
-      end do
-!$acc end host_data
-c
-      do i = 1, nrecdir_send1
-        if (precdir_send1(i).ne.rank) then
-        call MPI_WAIT(reqrec(i),status,ierr)
-        end if
-      end do
-c
-c     MPI : move in global arrays
-c
-      do i = 1, nrecdir_send1
-        if (precdir_send1(i).ne.rank) then
-!$acc parallel loop collapse(2) async present(buffer)
-          do j = 1,nloc
-            do k = 1,3
-              derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-            end do
-          end do
-        else
-!$acc parallel loop collapse(2) async
-          do j = 1, nlocrec
-            do k = 1,3
-              iglob = globrec(j)
-              iloc  = loc(iglob)
-              if (repart(iglob).eq.rank) then
-                 derivs(k,iloc) = derivs(k,iloc) + temprec(k,j)
-              end if
-            end do
-          end do
-        end if
-      end do
-
-      do i = 1, nrecdir_recep1
-        if (precdir_recep1(i).ne.rank) then
-        call MPI_WAIT(reqsend(i),status,ierr)
-        end if
-      end do
-
-!$acc wait
-!$acc end data
-!$acc exit data detach(buffer,buffers,temprec)
-      nullify(buffer)
-      nullify(buffers)
       nullify(temprec)
 
-      call timer_exit( timer_dirreccomm,quiet_timers )
-      if (deb_Path) write(*,*) '   << commforcesrec'
-c
-c    Communicate separately the direct and reciprocal torques if testgrad is
-c    being used
-c
  100  continue
+c
+c     Communicate separately the direct and reciprocal torques if testgrad is
+c     being used
+c
       if (dotstgrad) then
-        ! case sequential
-        if (nproc.eq.1) return
+        if (nproc.eq.1) return ! case sequential
 c
-        if (use_mpole) then
-           call commforcesrec1(dem,demrec)
-        end if
-c
-        if (use_polar) then
-           call commforcesrec1(dep,deprec)
-        end if
-c
-        if (use_charge) then
-           call commforcesrec1(dec,decrec)
-        end if
+        if (use_mpole ) call commforcesrec1(dem,demrec)
+        if (use_polar ) call commforcesrec1(dep,deprec)
+        if (use_charge) call commforcesrec1(dec,decrec)
       end if
 
-      end
+      block  ! Zero reciprocal forces buffer
+      integer(mipk) lenr,offr
+      real(r_p),parameter::zer=0
+      lenr = dr_nbnbr*dr_strider3; offr=dr_obnbr
+      call mem_set(de_buffr,zer,lenr,rec_stream,offr)
+      end block
 
-      subroutine commforcesrec_1d(derivs)
-      use deriv
-      use domdec
-      use mpi
-      use potent ,pa=>PotentialAll
-      use pme    ,only: GridDecomp1d
-      use inform ,only: deb_Path
-      use sizes
-      use timestat ,only: timer_enter,timer_exit,quiet_timers
-     &             ,timer_dirreccomm,timer_fmanage
-      use tinMemory,only: prmem_requestm
-      use utilcomm ,only: buffMpi_p1,buffMpi_p2,buffMpi_p3
-      implicit none
-      integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg
-      integer jloc,jglob,jlocrec,isz
-      integer sz1,sz2,sz3
-      integer rankloc,commloc,nprocloc
-      integer reqsend(nproc),reqrec(nproc)
-      integer sz_recv(nrecdir_recep1),sz_send(nrecdir_recep1)
-      integer status(MPI_STATUS_SIZE)
-      real(r_p) derivs(3,nbloc)
-      real(r_p),pointer:: buffer(:,:,:)
-      real(r_p),pointer:: buffers(:,:),temprec(:,:)
-
-      call timer_enter( timer_fmanage )
-      if (deb_Path) write(*,*) '   >> commforcesrec_1d'
-
-      if (pa) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-         do i = 1, nbloc
-            do j = 1, 3
-               ilocrec = locrec(glob(i))
-               if (ilocrec.eq.0) cycle
-               if (i.le.nloc) then
-                 derivs(j,i) = derivs(j,i) + demrec(j,ilocrec) +
-     $                       deprec(j,ilocrec) + decrec(j,ilocrec)
-               else
-                  desum(j,i) = desum(j,i) + demrec(j,ilocrec) +
-     $                       deprec(j,ilocrec) + decrec(j,ilocrec)
-               end if
-            end do
-         end do
-      else
-         if (use_polar) then
-!$acc wait
-!$acc parallel loop collapse(2)
-!$acc&      default(present)
-            do i = 1, nbloc
-               do j = 1, 3
-                  ilocrec = locrec(glob(i))
-                  if (ilocrec.eq.0) cycle
-                  if (i.le.nloc) then
-                  derivs(j,i) = derivs(j,i) + demrec(j,ilocrec) +
-     $                          deprec(j,ilocrec)
-                  else
-                   desum(j,i) =  desum(j,i) + demrec(j,ilocrec) +
-     $                          deprec(j,ilocrec)
-                  end if
-               end do
-            end do
-         else if (use_mpole) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-            do i = 1, nbloc
-               do j = 1, 3
-                  ilocrec = locrec(glob(i))
-                  if (ilocrec.eq.0) cycle
-                  if (i.le.nloc) then
-                  derivs(j,i) = derivs(j,i) + demrec(j,ilocrec)
-                  else
-                   desum(j,i) =  desum(j,i) + demrec(j,ilocrec)
-                  end if
-               end do
-            end do
-         end if
-         if (use_charge) then
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-            do i = 1, nbloc
-               do j = 1, 3
-                  ilocrec = locrec(glob(i))
-                  if (ilocrec.eq.0) cycle
-                  if (i.le.nloc) then
-                  derivs(j,i) = derivs(j,i) + decrec(j,ilocrec)
-                  else
-                  desum(j,i)  =  desum(j,i) + decrec(j,ilocrec)
-                  end if
-               end do
-            end do
-         end if
-      end if
-
-      if (deb_Path) write(*,*) '   << commforcesrec_1d'
-      call timer_exit ( timer_fmanage,quiet_timers )
       end
 c
 c     Second version of commforcesrec
@@ -3357,6 +2794,7 @@ c
       use deriv
       use domdec
       use mpi
+      use mpistuff_inl
       use potent ,pa=>PotentialAll
       use pme    ,only: GridDecomp1d
       use inform ,only: deb_Path
@@ -3366,13 +2804,13 @@ c
       use tinMemory,only: prmem_requestm
       use utilcomm ,only: buffMpi_p1,buffMpi_p2,buffMpi_p3
       implicit none
-      integer i,j,k,tag,ierr,iproc,iglob,iloc,ibufbeg
+      integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg
       integer jloc,jglob,jlocrec
       integer sz1,sz2,sz3
       integer rankloc,commloc,nprocloc
       integer reqsend(nproc),reqrec(nproc)
       integer status(MPI_STATUS_SIZE)
-      real(r_p) derivs(3,nbloc)
+      mdyn_rtyp derivs(3,nbloc)
       real(r_p) derivrec(3,nlocrec2)
       real(r_p),pointer:: buffer(:,:,:)
       real(r_p),pointer:: buffers(:,:),temprec(:,:)
@@ -3380,201 +2818,30 @@ c
       !case sequential
       if (nproc.eq.1) then
          call timer_enter( timer_fmanage )
-!$acc parallel loop collapse(2)
-!$acc&         default(present) async
-         do i = 1, nloc
-            do j = 1, 3
-               derivs(j,i) = derivs(j,i) + derivrec(j,i)
-            end do
-         end do
+!$acc parallel loop collapse(2) default(present) async
+         do i = 1,nloc; do j = 1,3
+            derivs(j,i) = derivs(j,i) + rp2mdr(derivrec(j,i))
+         end do; end do
          call timer_exit ( timer_fmanage,quiet_timers )
          return
       end if
-
-      if (deb_Path) write(*,*) '   >> commforcesrec1'
-      call timer_enter( timer_dirreccomm )
 c
-      if (use_pmecore) then
-        nprocloc = nrec
-        commloc  = comm_rec
-        rankloc  = rank_bis
-      else
-        nprocloc = nproc
-        commloc  = COMM_TINKER
-        rankloc  = rank
+      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
+         call timer_enter( timer_dirreccomm )
+!$acc parallel loop collapse(2) default(present) async
+         do i = 1,nbloc; do j = 1,3
+            ilocrec = locrec(glob(i))
+            if (ilocrec.eq.0) cycle
+            derivs(j,i) = derivs(j,i) + rp2mdr(derivrec(j,ilocrec))
+         end do; end do
+         call timer_exit( timer_dirreccomm,quiet_timers )
+         return
       end if
-c
-c     allocate some arrays
-c
-      sz1 = 3*max(max(1,nloc)*nrecdir_send1,nlocrec*nrec_send)
-      sz2 = 3*max(1,nblocrecdir)
-      sz3 = 3*max(1,nlocrec2)
-      call prmem_requestm(buffMpi_p1,sz1)
-      call prmem_requestm(buffMpi_p2,sz2)
-      call prmem_requestm(buffMpi_p3,sz3)
 
-      sz1 = 3*max(1,nlocrec)*nrec_send
-      buffer(1:3,1:max(1,nlocrec),1:nrec_send) => buffMpi_p1(1:sz1)
-      buffers(1:3,1:max(1,nblocrecdir))        => buffMpi_p2(1:sz2)
-      temprec(1:3,1:max(1,nlocrec2))           => buffMpi_p3(1:sz3)
-!$acc enter data attach(buffer,buffers,temprec)
-c
-c     buffer  = 0_re_p
-c     buffers = 0_re_p
-c
-c     communicate forces
-c
-c
-c     first do rec rec communications
-c
-c
-c     MPI : begin reception in buffer
-c
-!$acc host_data use_device(buffer)
-      do i = 1, nrec_send
-        tag = nprocloc*rankloc + prec_send(i) + 1
-        call MPI_IRECV(buffer(1,1,i),3*nlocrec,MPI_RPREC
-     $      ,prec_send(i),tag,commloc,reqrec(i),ierr)
-      end do
-!$acc end host_data
-c
-c     MPI : move in buffer
-c
-!$acc data present(temprec,buffers,derivs,derivrec)
-c
-!$acc parallel loop collapse(2) async
-      do i = 1, nlocrec2
-         do j = 1, 3
-            temprec(j,i)= derivrec(j,i)
-         end do
-      end do
-c
-!$acc wait
-!$acc host_data use_device(temprec)
-      do i = 1, nrec_recep
-        tag = nprocloc*prec_recep(i) + rankloc + 1
-        call MPI_ISEND(temprec(1,bufbegrec(prec_recep(i)+1))
-     $      ,3*domlenrec(prec_recep(i)+1),MPI_RPREC
-     $      ,prec_recep(i),tag,commloc,reqsend(i),ierr)
-      end do
-!$acc end host_data
-c
-      do i = 1, nrec_recep
-        call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-      do i = 1, nrec_send
-        call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-c
-c     mpi : move in global arrays
-c
-!$acc parallel loop collapse(2) present(buffer)
-      do j = 1,nlocrec
-        do k = 1,3
-!$acc loop seq
-          do i = 1,nrec_send
-             temprec(k,j) = temprec(k,j) + buffer(k,j,i)
-          end do
-        end do
-      end do
+      call comm_forces_rec ( derivrec )
+      call comm_forces_recdir ( derivs,derivrec )
 
-!$acc exit data detach(buffer)
-      sz1 = 3*max(1,nloc)*nrecdir_send1
-      nullify(buffer)
-      buffer(1:3,1:max(1,nloc),1:nrecdir_send1) => buffMpi_p1(1:sz1)
-!$acc enter data attach(buffer)
-c
-c     then do rec dir communications
-c
-c     MPI : begin reception in buffer
-c
-!$acc host_data use_device(buffer)
-      do i = 1, nrecdir_send1
-         if (precdir_send1(i).ne.rank) then
-           tag = nproc*rank + precdir_send1(i) + 1
-           call MPI_IRECV(buffer(1,1,i),3*nloc,MPI_RPREC
-     $         ,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
-         end if
-      end do
-!$acc end host_data
-c
-c     Move in array
-c
-      do i = 1,nrecdir_recep1
-        if (precdir_recep1(i).ne.rank) then
-          ibufbeg = bufbeg(precdir_recep1(i)+1)-1 
-!$acc parallel loop collapse(2) async
-!$acc&    present(repartrec,locrec,glob)
-          do j = 1, domlen(precdir_recep1(i)+1)
-            do k = 1,3
-              jloc  = ibufbeg+j
-              jglob = glob(jloc)
-              if (repartrec(jglob).eq.rankloc) then
-                jlocrec = locrec(jglob)
-                buffers(k,jloc) = temprec(k,jlocrec)
-              else
-                buffers(k,jloc) = 0
-              end if
-            end do
-          end do
-        end if
-      end do
-c
-!$acc host_data use_device(buffers)
-      do i = 1, nrecdir_recep1
-        if (precdir_recep1(i).ne.rank) then
-          tag = nproc*precdir_recep1(i) + rank + 1
-          call MPI_ISEND(buffers(1,bufbeg(precdir_recep1(i)+1))
-     $        ,3*domlen(precdir_recep1(i)+1),MPI_REAL8
-     $        ,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
-        end if
-      end do
-!$acc end host_data
-c
-      do i = 1, nrecdir_send1
-        if (precdir_send1(i).ne.rank) then
-           call MPI_WAIT(reqrec(i),status,ierr)
-        end if
-      end do
-c
-      do i = 1, nrecdir_recep1
-        if (precdir_recep1(i).ne.rank) then
-           call MPI_WAIT(reqsend(i),status,ierr)
-        end if
-      end do
-c
-c     MPI : move in global arrays
-c
-      do i = 1, nrecdir_send1
-        if (precdir_send1(i).ne.rank) then
-!$acc parallel loop collapse(2) async present(buffer)
-          do j = 1,nloc
-            do k = 1,3
-              derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-            end do
-          end do
-        else
-!$acc parallel loop collapse(2) async
-          do j = 1, nlocrec
-            do k = 1,3
-              iglob = globrec(j)
-              iloc  = loc(iglob)
-              if (repart(iglob).eq.rank) then
-                 derivs(k,iloc) = derivs(k,iloc) + temprec(k,j)
-              end if
-            end do
-          end do
-        end if
-      end do
-
-!$acc wait
-!$acc end data
-!$acc exit data detach(buffer,buffers,temprec)
-
-      if (deb_Path) write(*,*) '   << commforcesrec1'
-      call timer_exit( timer_dirreccomm,quiet_timers )
       end subroutine
-
 c
 c     subroutine Icommforceststgrad : deal with communications of
 c                                     one force (de) for testgrad
@@ -3644,7 +2911,6 @@ c
       end do
 !$acc end data
       end subroutine
-
 c
 c     subroutine commforceststgrad : deal with communications of forces one by one
 c     for testgrad
@@ -5607,8 +4873,7 @@ c     character*3 ich
       else
         commloc  = COMM_TINKER
       end if
-c     decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
-      decomp1d = .false.
+      decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
 
       if (rule.eq.r_comm) then
          if (decomp1d) then
@@ -5708,8 +4973,7 @@ c
       else
         commloc  = COMM_TINKER
       end if
-c     decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
-      decomp1d = .false.
+      decomp1d = GridDecomp1d.and.(2*nfloor.lt.n3mpimax)
 
       if (rule.eq.r_comm) then
          if (decomp1d) then
@@ -5771,3 +5035,394 @@ c         end if
       end if
       call timer_exit(timer_recreccomm,quiet_timers)
       end subroutine
+c
+c     subroutine commchgflx : communicate increment to modify charges to neighboring processes  
+c
+      subroutine commchgflx(pdelta)
+      use atmlst
+      use atoms
+      use charge
+      use domdec
+      use mpole
+      use mpi
+      use potent
+      implicit none
+      integer i,tag,ierr,iproc
+      integer iloc,iglob,j
+      integer, allocatable :: reqrec(:),reqsend(:)
+      real*8, allocatable :: buffer(:,:),buffer2(:)
+      real*8, allocatable :: buffers(:)
+      real*8 pdelta(*)
+      integer status(MPI_STATUS_SIZE)
+c
+c     allocate some arrays
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+      allocate (buffer(max(1,nloc),nbig_send))
+      allocate (buffers(max(1,nbloc)))
+c
+      do i = 1, nbig_recep
+        do j = 1, domlen(pbig_recep(i)+1)
+          iloc = bufbeg(pbig_recep(i)+1)+j-1
+          iglob = glob(iloc)
+          buffers(iloc) = pdelta(iglob)
+        end do
+      end do
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nbig_send
+        tag = nproc*rank + pbig_send(i) + 1
+        call MPI_IRECV(buffer(1,i),nloc,MPI_REAL8,pbig_send(i),
+     $   tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, nbig_recep
+        tag = nproc*pbig_recep(i) + rank + 1
+        call MPI_ISEND(buffers(bufbeg(pbig_recep(i)+1)),
+     $   domlen(pbig_recep(i)+1),
+     $   MPI_REAL8,pbig_recep(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nbig_send
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nbig_recep
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do iproc = 1, nbig_send
+        do i = 1, nloc
+          iglob = glob(i)
+          pdelta(iglob) = pdelta(iglob) + buffer(i,iproc)
+        end do
+      end do
+c
+c     then send accumulated values to neighbors
+c
+      deallocate (buffer)
+      allocate (buffer2(max(1,nbloc)))
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nbig_recep
+        tag = nproc*rank + pbig_recep(i) + 1
+        call MPI_IRECV(buffer2(bufbeg(pbig_recep(i)+1)),
+     $   domlen(pbig_recep(i)+1),
+     $   MPI_REAL8,pbig_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
+      do i = 1, nloc
+        iglob = glob(i)
+        buffers(i) = pdelta(iglob)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, nbig_send
+        tag = nproc*pbig_send(i) + rank + 1
+        call MPI_ISEND(buffers,nloc,
+     $   MPI_REAL8,pbig_send(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nbig_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nbig_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do iproc = 1, nbig_recep
+        do i = 1, domlen(pbig_recep(iproc)+1)
+          iloc = bufbeg(pbig_recep(iproc)+1)+i-1
+          iglob = glob(iloc)
+          pdelta(iglob) = buffer2(iloc)
+        end do
+      end do
+c
+      deallocate (reqsend)
+      deallocate (reqrec)
+      deallocate (buffer2)
+      deallocate (buffers)
+      return
+      end
+c
+c     subroutine commpot : communicate potential to neighboring processes (chgflux)
+c
+c     rule = 0: communicate to pbig_* list of processes
+c     rule = 1: communicate to pneig_* list of processes
+c
+c
+      subroutine commpot(pot,rule)
+      use atmlst
+      use atoms
+      use charge
+      use domdec
+      use iounit
+      use mpole
+      use mpi
+      implicit none
+      integer i,tag,ierr,iproc
+      integer iloc
+      integer rule
+      integer, allocatable :: reqrec(:),reqsend(:)
+      integer :: n_recep, n_send
+      integer, allocatable :: p_send(:),p_recep(:)
+      real*8, allocatable :: buffer(:)
+      real*8, allocatable :: buffers(:)
+      real*8 pot(*)
+      integer status(MPI_STATUS_SIZE)
+ 1000 format(' illegal rule in commpot.')
+c
+      allocate (p_send(nproc))
+      allocate (p_recep(nproc))
+c
+      if (rule.eq.0) then
+        n_recep = nbig_recep
+        n_send  = nbig_send
+        p_send  = pbig_send
+        p_recep = pbig_recep
+      else if (rule.eq.1) then
+        n_recep = nneig_recep
+        n_send  = nneig_send
+        p_send  = pneig_send
+        p_recep = pneig_recep
+      else
+        if (rank.eq.0) write(iout,1000)
+      end if
+
+c
+c     allocate some arrays
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+      allocate (buffer(max(1,nbloc)))
+      allocate (buffers(max(1,nloc)))
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, n_recep
+        tag = nproc*rank + p_recep(i) + 1
+        call MPI_IRECV(buffer(bufbeg(p_recep(i)+1)),
+     $   domlen(p_recep(i)+1),
+     $   MPI_REAL8,p_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
+      do i = 1, nloc
+        buffers(i) = pot(i)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, n_send
+        tag = nproc*p_send(i) + rank + 1
+        call MPI_ISEND(buffers,nloc,
+     $   MPI_REAL8,p_send(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, n_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, n_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do iproc = 1, n_recep
+        do i = 1, domlen(p_recep(iproc)+1)
+          iloc = bufbeg(p_recep(iproc)+1)+i-1
+          pot(iloc) = buffer(iloc)
+        end do
+      end do
+c
+      deallocate (p_send)
+      deallocate (p_recep)
+      deallocate (reqsend)
+      deallocate (reqrec)
+      deallocate (buffer)
+      deallocate (buffers)
+      return
+      end
+c
+c     subroutine commpotsum : communicate and sum potential to neighboring processes (chgflux)
+c
+c     rule = 0: communicate to pbig_* list of processes
+c     rule = 1: communicate to pneig_* list of processes
+c
+c
+      subroutine commpotsum(pot,rule)
+      use atmlst
+      use atoms
+      use charge
+      use domdec
+      use iounit
+      use mpole
+      use mpi
+      implicit none
+      integer i,tag,ierr
+      integer rule
+      integer, allocatable :: reqrec(:),reqsend(:)
+      integer :: n_recep, n_send
+      integer, allocatable :: p_send(:),p_recep(:)
+      real*8, allocatable :: buffer(:,:)
+      real*8, allocatable :: buffers(:)
+      real*8 pot(*)
+      integer status(MPI_STATUS_SIZE)
+ 1000 format(' illegal rule in commpot.')
+c
+      allocate (p_send(nproc))
+      allocate (p_recep(nproc))
+c
+      if (rule.eq.0) then
+        n_recep = nbig_recep
+        n_send  = nbig_send
+        p_send  = pbig_send
+        p_recep = pbig_recep
+      else if (rule.eq.1) then
+        n_recep = nneig_recep
+        n_send  = nneig_send
+        p_send  = pneig_send
+        p_recep = pneig_recep
+      else
+        if (rank.eq.0) write(iout,1000)
+      end if
+
+c
+c     allocate some arrays
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+      allocate (buffer(max(1,nloc),n_send))
+      allocate (buffers(max(1,nbloc)))
+c
+c     MPI : move in buffer
+c
+      buffers((nloc+1):nbloc) = pot((nloc+1):nbloc)
+c
+      do i = 1, n_send
+        tag = nproc*rank + p_send(i) + 1
+        call MPI_IRECV(buffer(1,i),nloc,MPI_REAL8,p_send(i),
+     $   tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, n_recep
+        tag = nproc*p_recep(i) + rank + 1
+        call MPI_ISEND(buffers(bufbeg(p_recep(i)+1)),
+     $   domlen(p_recep(i)+1),
+     $   MPI_REAL8,p_recep(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, n_send
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, n_recep
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, n_send
+        pot(1:nloc) = pot(1:nloc) + buffer(1:nloc,i)
+      end do
+c
+c
+      deallocate (p_send)
+      deallocate (p_recep)
+      deallocate (reqsend)
+      deallocate (reqrec)
+      deallocate (buffer)
+      deallocate (buffers)
+      return
+      end
+c
+c     subroutine commpotrec : communicate reciprocal pot to local
+c
+      subroutine commpotrec(pot,potrec)
+      use sizes
+      use deriv
+      use domdec
+      use potent
+      use mpi
+      implicit none
+      integer i,j,tag,ierr
+      integer jloc,jglob,jlocrec
+      integer, allocatable :: reqsend(:),reqrec(:)
+      real*8, allocatable :: buffer(:,:)
+      real*8, allocatable :: buffers(:)
+      real*8 pot(*),potrec(*)
+      integer status(MPI_STATUS_SIZE)
+c
+c     allocate some arrays
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+      allocate (buffer(max(1,nloc),nrecdir_send1))
+      buffer = 0d0
+      allocate (buffers(max(1,nblocrecdir)))
+      buffers = 0d0
+c
+c     do rec dir communications
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nrecdir_send1
+        tag = nproc*rank + precdir_send1(i) + 1
+        call MPI_IRECV(buffer(1,i),nloc,
+     $   MPI_REAL8,precdir_send1(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     Move in array
+c
+      do i = 1, nrecdir_recep1
+        do j = 1, domlen(precdir_recep1(i)+1)
+          jloc = bufbeg(precdir_recep1(i)+1)+j-1
+          jglob = glob(jloc)
+          if (repartrec(jglob).eq.rank) then
+            jlocrec = locrec(jglob)
+            buffers(jloc) = potrec(jlocrec)
+          end if
+        end do
+      end do
+c
+      do i = 1, nrecdir_recep1
+        tag = nproc*precdir_recep1(i) + rank + 1
+        call MPI_ISEND(buffers(bufbeg(precdir_recep1(i)+1)),
+     $   domlen(precdir_recep1(i)+1),
+     $   MPI_REAL8,precdir_recep1(i),tag,COMM_TINKER,reqsend(i),ierr)
+      end do
+c
+      do i = 1, nrecdir_send1
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nrecdir_recep1
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do i = 1, nrecdir_send1
+        do j = 1, nloc
+          pot(j) = pot(j) + buffer(j,i)
+        end do
+      end do
+
+      return
+      end

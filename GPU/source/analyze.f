@@ -383,7 +383,7 @@ c
  1030 format(/'Norm of the dipolar moment of molecule',I5,' : ',F14.5)
 c
 !$acc wait
-!$acc update host(molculeglob)
+!$acc update host(molculeglob,rpole,uind,uinp)
       if (use_mpole) then
         do i = 1, nmoleloc
           iimol = molculeglob(i)

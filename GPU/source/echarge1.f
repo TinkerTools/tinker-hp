@@ -16,11 +16,16 @@ c
 c
 #include "tinker_precision.h"
       subroutine echarge1
+      use potent
       implicit none
 c
 c     choose the method for summing over pairwise interactions
 c
-      call echarge1c
+      if (use_lambdadyn) then
+         call elambdacharge1c
+      else
+         call echarge1c
+      end if
 c
       end
 c
@@ -59,7 +64,7 @@ c
       use virial
       use mpi
       implicit none
-      integer ii,i,iglob,iichg
+      integer ii,i,iglob,iichg,ierr
       real(t_p) e,de,term
       real(t_p) f,fs
       real(t_p) xd,yd,zd
@@ -113,7 +118,13 @@ c
              yd = yd + pchg(iichg)*y(iglob)
              zd = zd + pchg(iichg)*z(iglob)
            end do
-           term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           term = (2.0/3.0) * f * (pi/volbox)
            e = term * (xd*xd+yd*yd+zd*zd)
            ec = ec + e
            do ii = 1, nionloc
@@ -137,17 +148,187 @@ c
      $   then
         if (use_creal) then
           time0 = mpi_wtime()
-          if (use_cshortreal) then
-            call ecrealshort1d
-          else if (use_clong) then
-            call ecreallong1d
-          else
-            call ecreal1d
-          end if
+          call ecreal1d
           time1 = mpi_wtime()
           timereal = timereal + time1 - time0
         end if
       end if
+      return
+      end
+c
+c     subroutine elambdacharge1c : charge electrostatic interactions during lambda dynamics
+c
+      subroutine elambdacharge1c
+      use atmlst
+      use atoms
+      use bound
+      use boxes
+      use charge
+      use chgpot
+      use deriv
+      use energi
+      use ewald
+      use domdec
+      use iounit
+      use inter
+      use math
+      use mutant
+      use potent
+      use timestat
+      use usage
+      use virial
+      use mpi
+      use potent
+      use sizes
+      implicit none
+      integer ii,i,iglob,iichg,ierr
+      real*8 e,de,term
+      real*8 f,fs
+      real*8 xd,yd,zd
+      real*8 xdtemp,ydtemp,zdtemp
+      real*8 dedx,dedy,dedz
+      real*8 time0,time1
+      real*8 elambdatemp
+      real*8, allocatable :: delambdarec0(:,:),delambdarec1(:,:)
+      real*8 :: elambdarec0,elambdarec1,qtemp
+c
+      allocate (delambdarec0(3,nlocrec2))
+      allocate (delambdarec1(3,nlocrec2))
+      elambdatemp = elambda  
+c
+c     zero out the Ewald summation energy and derivatives
+c
+      ec = 0.0d0
+      dec = 0.0d0
+      if (nion .eq. 0)  return
+      delambdae = 0d0
+c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
+c     compute the reciprocal space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
+     $  then
+        time0 = mpi_wtime()
+        if (use_crec) then
+c
+c         the reciprocal part is interpolated between 0 and 1
+c
+          elambda = 0d0
+          call altelec(1)
+          ec = 0d0
+          decrec = 0d0
+          if (elambda.lt.1d0) then
+            call ecrecip1
+          end if
+          elambdarec0  = ec
+          delambdarec0 = decrec
+
+          elambda = 1d0
+          call altelec(1)
+          ec = 0d0
+          decrec = 0d0
+          if (elambda.gt.0d0) then
+            call ecrecip1
+          end if
+          elambdarec1  = ec
+          delambdarec1 = decrec
+
+          elambda = elambdatemp 
+          ec = (1-elambda)*elambdarec0 + elambda*elambdarec1
+          decrec = (1-elambda)*delambdarec0+elambda*delambdarec1
+          delambdae = delambdae + elambdarec1-elambdarec0
+c     
+c         reset lambda to initial value
+c
+          call altelec(1)
+        end if
+        time1 = mpi_wtime()
+        timerec = timerec + time1 - time0
+        if (use_pmecore) return
+      end if
+c
+      if (use_cself) then
+c
+c     compute the Ewald self-energy term over all the atoms
+c
+         f = electric / dielec
+         fs = -f * aewald / sqrtpi
+         do ii = 1, nionloc
+           iichg = chgglob(ii)
+           iglob = iion(iichg)
+           e = fs * pchg(iichg)**2
+           ec = ec + e
+           if (mut(iglob)) then
+             qtemp =  pchg_orig(iichg)
+             delambdae = delambdae + fs*2d0*elambda*qtemp**2
+           end if
+         end do
+c
+c     compute the cell dipole boundary correction term
+c
+        if (boundary .eq. 'VACUUM') then
+           xd = 0.0d0
+           yd = 0.0d0
+           zd = 0.0d0
+           xdtemp = 0.0d0
+           ydtemp = 0.0d0
+           zdtemp = 0.0d0
+           do ii = 1, nionloc
+             iichg = chgglob(ii)
+             iglob = iion(iichg)
+             i = loc(iglob)
+             xd = xd + pchg(iichg)*x(iglob)
+             yd = yd + pchg(iichg)*y(iglob)
+             zd = zd + pchg(iichg)*z(iglob)
+             if (mut(iglob)) then
+               qtemp = pchg_orig(iichg)
+               xdtemp = xdtemp + qtemp*x(iglob)
+               ydtemp = ydtemp + qtemp*y(iglob)
+               zdtemp = zdtemp + qtemp*z(iglob)
+             end if
+           end do
+           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           term = (2.0d0/3.0d0) * f * (pi/volbox)
+           e = term * (xd*xd+yd*yd+zd*zd)
+           if (rank.eq.0) then
+             ec = ec + e
+           end if
+           delambdae = delambdae + term*(xdtemp**2+ydtemp**2+zdtemp**2)
+           do ii = 1, nionloc
+              iichg = chgglob(ii)
+              iglob = iion(iichg)
+              i = loc(iglob)
+              de = 2.0d0 * term * pchg(iichg)
+              dedx = de * xd
+              dedy = de * yd
+              dedz = de * zd
+              dec(1,i) = dec(1,i) + dedx
+              dec(2,i) = dec(2,i) + dedy
+              dec(3,i) = dec(3,i) + dedz
+           end do
+        end if
+      end if
+c
+c     compute the real space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
+        if (use_creal) then
+          time0 = mpi_wtime()
+          call ecreal1d
+          time1 = mpi_wtime()
+          timereal = timereal + time1 - time0
+        end if
+      end if
+      deallocate(delambdarec0,delambdarec1)
       return
       end
 
@@ -155,6 +336,11 @@ c
 c
 c     "ecreal1d" evaluates the real space portion of the Ewald sum
 c     energy and forces due to atomic charge interactions, using a neighbor list
+c     energy and first derivative due to atomic charge interactions
+c     using a pairwise neighbor list
+c
+c     if longrange, calculates just the long range part
+c     if shortrange, calculates just the short range part
 c
       subroutine ecreal1d
       use atmlst
@@ -164,6 +350,7 @@ c
       use charge
       use chgpot
       use couple
+      use cutoff
       use deriv
       use domdec
       use energi
@@ -173,6 +360,7 @@ c
       use inter
       use math
       use molcul
+      use mutant
       use neigh
       use potent
       use shunt
@@ -188,6 +376,7 @@ c
       real(t_p) f,fi,fik
       real(t_p) r,r2,rew
       real(t_p) rb,rb2
+      real(t_p) qitemp,qktemp
 
       real(t_p) xi,yi,zi
       real(t_p) xr,yr,zr
@@ -198,13 +387,37 @@ c
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
       real(t_p), allocatable :: cscale(:)
+      real(t_p) s,ds,cshortcut2,scut2,facts,factds
+      logical testcut,shortrange,longrange,fullrange
+      integer,pointer:: lst(:,:),nlst(:)
+      character*11 mode
+      character*80 :: RoutineName
 
-
-      character*10 mode
  1000 format(' Warning, system moved too much since last neighbor list'
      $ ' update, try lowering nlupdate')
 
       if (deb_Path) write(*,'(2x,A)') 'ecreal1d'
+
+      shortrange = use_cshortreal
+      longrange  = use_clong
+      fullrange  = .not.(shortrange.or.longrange)
+
+      if (shortrange) then 
+         RoutineName = 'ecrealshort1d'
+         mode        = 'SHORTEWALD'
+         nlst => nshortelst
+          lst =>  shortelst
+      else if (longrange) then
+         RoutineName = 'ecreallong1d'
+         mode        = 'EWALD'
+         nlst => nelst
+          lst =>  elst
+      else
+         RoutineName = 'ecreal1d'
+         mode        = 'EWALD'
+         nlst => nelst
+          lst =>  elst
+      endif
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -219,6 +432,7 @@ c
       f = electric / dielec
       mode = 'EWALD'
       call switch (mode)
+      scut2 = merge((chgshortcut-shortheal)**2,0.0,use_clong)
 c
 c     compute the real space Ewald energy and first derivatives
 c
@@ -249,8 +463,8 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = c5scale
          end do
-         do kkk = 1, nelst(ii)
-            kkchg = elst(kkk,ii)
+         do kkk = 1, nlst(ii)
+            kkchg = lst(kkk,ii)
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
             k = loc(kglob)
@@ -269,7 +483,7 @@ c     find energy for interactions within real space cutoff
 c
             call image (xr,yr,zr)
             r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
+            if (r2.gt.scut2.and.r2.le.off2) then
                r = sqrt(r2)
                rb = r + ebuffer
                rb2 = rb * rb
@@ -282,6 +496,39 @@ c
                de = -fik * ((erfterm+scaleterm)/rb2
      &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/rb)
 c
+c
+               if(shortrange .or. longrange)
+     &            call switch_respa(r,chgshortcut,shortheal,s,ds)
+
+               if(shortrange) then
+                  facts  =         s
+                  factds =      + ds
+               else if(longrange) then
+                  facts  = 1.0d0 - s
+                  factds =      - ds
+               else
+                  facts  = 1.0d0
+                  factds = 0.0d0
+               endif
+
+               de = de * facts + e * factds
+               e  =  e * facts
+c
+c              when two interacting atoms are mutated
+c
+               if ((use_lambdadyn)) then
+                  if (mut(iglob).and.mut(kglob)) then
+                     qitemp = pchg_orig(iichg)
+                     qktemp = pchg_orig(kkchg)
+                     delambdae = delambdae +
+     $    2d0*elambda*(f*qitemp*qktemp/rb)*(erfterm+scaleterm)*facts
+                  else if ((mut(iglob).and..not.mut(kglob)).or.
+     $                    (mut(kglob).and..not.mut(iglob))) then
+                      fik = f*pchg_orig(iichg) * pchg_orig(kkchg)
+                      delambdae = delambdae + (fik/rb) * 
+     $                   (erfterm+scaleterm)
+                  end if
+               end if
 c     form the chain rule terms for derivative expressions
 c
                de = de / r
@@ -716,410 +963,5 @@ c
       deallocate (qgridmpi)
       deallocate (req)
       deallocate (reqbcast)
-      return
-      end
-c
-c     "ecrealshort1d" evaluates the short range real space portion of the Ewald sum
-c     energy and forces due to atomic charge interactions, using a neighbor list
-c
-      subroutine ecrealshort1d
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use cutoff
-      use deriv
-      use domdec
-      use energi
-      use ewald
-      use iounit
-      use inform
-      use inter
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use usage
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iichg,iglob,kglob,kkchg
-      integer ii,kkk
-
-      real(t_p) e,de,efull
-      real(t_p) f,fi,fik
-      real(t_p) r,r2,rew
-      real(t_p) rb,rb2
-
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-
-      real(t_p) erfterm
-      real(t_p) scale,scaleterm
-      real(t_p) dedx,dedy,dedz
-      real(t_p) vxx,vyy,vzz
-      real(t_p) vyx,vzx,vzy
-      real(t_p), allocatable :: cscale(:)
-
-      real(t_p) s,ds
-
-      character*10 mode
- 1000 format(' Warning, system moved too much since last neighbor list'
-     $ ' update, try lowering nlupdate')
-c
-      if (deb_Path) write(*,'(2x,A)') 'ecrealshort1d'
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (cscale(n))
-c
-c     initialize connected atom scaling 
-c
-      cscale = 1.0d0
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      mode = 'SHORTEWALD'
-      call switch (mode)
-c
-c     compute the real space Ewald energy and first derivatives
-c
-      do ii = 1, nionlocnl
-         iichg = chgglobnl(ii)
-         iglob = iion(iichg)
-         i = loc(iglob)
-         if (i.eq.0) then
-           write(iout,1000)
-           cycle
-         end if
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         fi = f * pchg(iichg)
-c
-c     set exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = c2scale
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = c3scale
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = c4scale
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = c5scale
-         end do
-         do kkk = 1, nshortelst(ii)
-            kkchg = shortelst(kkk,ii)
-            if (kkchg.eq.0) cycle
-            kglob = iion(kkchg)
-            k = loc(kglob)
-            if (k.eq.0) then
-              write(iout,1000)
-              cycle
-            end if
-c
-c     compute the energy contribution for this interaction
-c
-            xr = xi - x(kglob)
-            yr = yi - y(kglob)
-            zr = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-            call image (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
-               r = sqrt(r2)
-               rb = r + ebuffer
-               rb2 = rb * rb
-               fik = fi * pchg(kkchg)
-               rew = aewald * r
-               erfterm = erfc (rew)
-               scale = cscale(kglob)
-               scaleterm = scale - 1.0
-               e = (fik/rb) * (erfterm+scaleterm)
-
-               call switch_respa(r,off,shortheal,s,ds)
-               
-               de = -fik * ((erfterm+scaleterm)/rb2
-     &                 + (2.0*aewald/sqrtpi)*exp(-rew**2)/rb)
-c
-c     form the chain rule terms for derivative expressions
-c
-               de = de / r
-               dedx = de * xr *s -ds*xr*e/r
-               dedy = de * yr *s -ds*yr*e/r
-               dedz = de * zr *s -ds*zr*e/r
-c
-c     increment the overall energy and derivative expressions
-c
-               ec = ec + e*s
-
-               dec(1,i) = dec(1,i) + dedx
-               dec(2,i) = dec(2,i) + dedy
-               dec(3,i) = dec(3,i) + dedz
-               dec(1,k) = dec(1,k) - dedx
-               dec(2,k) = dec(2,k) - dedy
-               dec(3,k) = dec(3,k) - dedz
-c
-c     increment the internal virial tensor components
-c
-               vxx = xr * dedx
-               vyx = yr * dedx
-               vzx = zr * dedx
-               vyy = yr * dedy
-               vzy = zr * dedy
-               vzz = zr * dedz
-               vir(1,1) = vir(1,1) + vxx
-               vir(2,1) = vir(2,1) + vyx
-               vir(3,1) = vir(3,1) + vzx
-               vir(1,2) = vir(1,2) + vyx
-               vir(2,2) = vir(2,2) + vyy
-               vir(3,2) = vir(3,2) + vzy
-               vir(1,3) = vir(1,3) + vzx
-               vir(2,3) = vir(2,3) + vzy
-               vir(3,3) = vir(3,3) + vzz
-c
-c     increment the total intramolecular energy
-c
-               if (molcule(iglob) .ne. molcule(kglob)) then
-                  efull = (fik/rb) * scale*s
-                  einter = einter + efull
-               end if
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = 1.0d0
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = 1.0d0
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (cscale)
-      return
-      end
-c
-c     "ecreallong1d" evaluates the long range real space portion of the Ewald sum
-c     energy and forces due to atomic charge interactions, using a neighbor list
-c
-      subroutine ecreallong1d
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use cutoff
-      use deriv
-      use domdec
-      use energi
-      use ewald
-      use iounit
-      use inform
-      use inter
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use usage
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iichg,iglob,kglob,kkchg
-      integer ii,kkk
-
-      real(t_p) e,de,efull
-      real(t_p) f,fi,fik
-      real(t_p) r,r2,rew
-      real(t_p) rb,rb2
-
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-
-      real(t_p) erfterm
-      real(t_p) scale,scaleterm
-      real(t_p) dedx,dedy,dedz
-      real(t_p) vxx,vyy,vzz
-      real(t_p) vyx,vzx,vzy
-      real(t_p), allocatable :: cscale(:)
-
-      real(t_p) s,ds,cshortcut2
-
-      character*10 mode
- 1000 format(' Warning, system moved too much since last neighbor list'
-     $ ' update, try lowering nlupdate')
-c
-      if (deb_Path) write(*,'(2x,A)') 'ecreallong1d'
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (cscale(n))
-c
-c     initialize connected atom scaling 
-c
-      cscale = 1.0
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      mode = 'EWALD'
-      call switch (mode)
-      cshortcut2 = (chgshortcut-shortheal)**2
-c
-c     compute the real space Ewald energy and first derivatives
-c
-      do ii = 1, nionlocnl
-         iichg = chgglobnl(ii)
-         iglob = iion(iichg)
-         i = loc(iglob)
-         if (i.eq.0) then
-           write(iout,1000)
-           cycle
-         end if
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         fi = f * pchg(iichg)
-c
-c     set exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = c2scale
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = c3scale
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = c4scale
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = c5scale
-         end do
-         do kkk = 1, nelst(ii)
-            kkchg = elst(kkk,ii)
-            if (kkchg.eq.0) cycle
-            kglob = iion(kkchg)
-            k = loc(kglob)
-            if (k.eq.0) then
-              write(iout,1000)
-              cycle
-            end if
-c
-c     compute the energy contribution for this interaction
-c
-            xr = xi - x(kglob)
-            yr = yi - y(kglob)
-            zr = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-            call image (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if ((r2 .le. off2).and.(r2.ge.cshortcut2)) then
-               r = sqrt(r2)
-               rb = r + ebuffer
-               rb2 = rb * rb
-               fik = fi * pchg(kkchg)
-               rew = aewald * r
-               erfterm = erfc (rew)
-               scale = cscale(kglob)
-               scaleterm = scale - 1.0
-               e = (fik/rb) * (erfterm+scaleterm)
-c
-c     use energy switching if close the cutoff distance (at short range)
-c
-               call switch_respa(r,chgshortcut,shortheal,s,ds)
-               de = -fik * ((erfterm+scaleterm)/rb2
-     &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/rb)
-               de = -e*ds+(1-s)*de
-
-c
-c     form the chain rule terms for derivative expressions
-c
-               de = de / r
-               dedx = de * xr
-               dedy = de * yr
-               dedz = de * zr
-c
-c     increment the overall energy and derivative expressions
-c
-               ec = ec + (1-s)*e
-               dec(1,i) = dec(1,i) + dedx
-               dec(2,i) = dec(2,i) + dedy
-               dec(3,i) = dec(3,i) + dedz
-               dec(1,k) = dec(1,k) - dedx
-               dec(2,k) = dec(2,k) - dedy
-               dec(3,k) = dec(3,k) - dedz
-c
-c     increment the internal virial tensor components
-c
-               vxx = xr * dedx
-               vyx = yr * dedx
-               vzx = zr * dedx
-               vyy = yr * dedy
-               vzy = zr * dedy
-               vzz = zr * dedz
-               vir(1,1) = vir(1,1) + vxx
-               vir(2,1) = vir(2,1) + vyx
-               vir(3,1) = vir(3,1) + vzx
-               vir(1,2) = vir(1,2) + vyx
-               vir(2,2) = vir(2,2) + vyy
-               vir(3,2) = vir(3,2) + vzy
-               vir(1,3) = vir(1,3) + vzx
-               vir(2,3) = vir(2,3) + vzy
-               vir(3,3) = vir(3,3) + vzz
-c
-c     increment the total intramolecular energy
-c
-               if (molcule(iglob) .ne. molcule(kglob)) then
-                  efull = (fik/rb) * scale
-                  einter = einter + efull
-               end if
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            cscale(i12(j,iglob)) = 1.0
-         end do
-         do j = 1, n13(iglob)
-            cscale(i13(j,iglob)) = 1.0
-         end do
-         do j = 1, n14(iglob)
-            cscale(i14(j,iglob)) = 1.0
-         end do
-         do j = 1, n15(iglob)
-            cscale(i15(j,iglob)) = 1.0
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (cscale)
       return
       end

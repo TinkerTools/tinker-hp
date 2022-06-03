@@ -97,6 +97,16 @@ c
       return
       end
 c
+      subroutine amove1(n,a,b)
+      implicit real(r_p) (a-h,o-z)
+      dimension a(*),b(*)
+!$acc parallel loop async default(present)
+      do j = 1, n
+        b(j) = a(j)
+      enddo
+      return
+      end
+c
       subroutine imove(n,a,b)
       implicit integer (a-z)
       dimension a(*),b(*)

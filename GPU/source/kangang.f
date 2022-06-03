@@ -146,6 +146,12 @@ c
 c       turn off the angle-angle potential if it is not used
 c
         if (nangang .eq. 0)  use_angang = .false.
+
+        if (.not.use_angang) then
+           call dealloc_shared_angang  ! Clean angang memory space
+           return
+        end if
+
       end if
       call prmem_request(angangglob,ntorsloc,config=mhostonly)
       nangangloc = 0
@@ -181,6 +187,20 @@ c
       end do
 c
       return
+      end
+c
+c     subroutine dealloc_shared_angang : deallocate shared memory pointers for angang
+c     parameter arrays
+c
+      subroutine dealloc_shared_angang
+      use sizes
+      use angang
+      use domdec
+      use tinMemory
+      implicit none
+c
+      call shmem_request(iaa,winiaa,[2,0])
+      call shmem_request(kaa,winkaa,  [0])
       end
 c
 c     subroutine alloc_shared_angang : allocate shared memory pointers for angang

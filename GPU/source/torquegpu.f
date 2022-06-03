@@ -35,45 +35,12 @@ c
       use utilgpu
       use timestat
 
-      interface atomic_add
-        module procedure atomic_add_tp
-#if TINKER_MIXED_PREC
-        module procedure atomic_add_rp
-#endif
-#ifdef USE_DETERMINISTIC_REDUCTION
-        module procedure atomic_add_fp
-#endif
-      end interface
+      implicit none
+#include "atomicOp.h.f"
 
       contains
 #include "convert.f.inc"
-
-      subroutine atomic_add_tp( dat,val )
-!$acc routine
-      implicit none
-      real(t_p) dat
-      real(t_p),intent(in)::val
-!$acc atomic
-      dat = dat + val
-      end subroutine
-      subroutine atomic_add_rp( dat,val )
-!$acc routine
-      implicit none
-      real(md_p) dat
-      real(md_p),intent(in)::val
-!$acc atomic
-      dat = dat + val
-      end subroutine
-      subroutine atomic_add_fp( dat,val )
-!$acc routine
-      implicit none
-      mdyn_rtyp dat
-      real(t_p),intent(in)::val
-      mdyn_rtyp val1
-      val1 = tp2mdr(val)
-!$acc atomic
-      dat = dat + val1
-      end subroutine
+#include "atomicOp.inc.f"
 
       end module
 
@@ -192,7 +159,7 @@ c
 c
 c     get the local frame type and the frame-defining atoms
 c
-!$acc parallel loop gang vector_length(32) async(dir_queue)
+!$acc parallel loop gang vector_length(64) async(dir_queue)
 !$acc&         private(trq,del,eps)
 !$acc&         present(trqvec,frcx,frcy,frcz,de)
 !$acc&         present(x,y,z,ipolaxe,loc,ipole,
@@ -207,12 +174,11 @@ c
         ib    = ipole(iipole)  !iglob
         ic    = xaxis(iipole)
         ibloc = loc(ib) !iloc
-        if (ia.gt.0) then; ialoc=loc(ia); else; cycle; endif
-        if (ic.gt.0) then; icloc=loc(ic); else; cycle; endif
+        ialoc = merge(loc(ia),nbloc,ia.gt.0)
+        icloc = merge(loc(ic),nbloc,ic.gt.0)
         ! trqvec can be either npolelocnl or nbloc size
-        if (extract) then; iloc=ibloc; else; iloc=i; endif
-
-        ! Chech axis local Id
+        iloc  = merge(ibloc,i,extract)
+        ! Check axis local Id
         if (ialoc.eq.0.or.ialoc.gt.nbloc) cycle
         if (icloc.eq.0.or.icloc.gt.nbloc) cycle
 
@@ -243,10 +209,13 @@ c
               vy = 1.0_ti_p
            end if
         end if
+
         if (axetyp.eq.Ax_Z_Bisect .or. axetyp.eq.Ax_3_Fold) then
            id    = yaxis(iipole)
-           if (id.gt.0) then; idloc=loc(id); else; cycle; endif
+           idloc = merge(loc(id),nbloc,id.gt.0)
+           ! Check axis local Id
            if (idloc.eq.0.or.idloc.gt.nbloc) cycle
+
            wx = x(id) - x(ib)
            wy = y(id) - y(ib)
            wz = z(id) - z(ib)
@@ -722,7 +691,7 @@ c
 c
 c     get the local frame type and the frame-defining atoms
 c
-!$acc parallel loop gang vector_length(32) async(dir_queue)
+!$acc parallel loop gang vector_length(64) async(dir_queue)
 !$acc&         private(trq,del,eps)
 !$acc&         present(trqvec,frcx,frcy,frcz,de)
 !$acc&         present(x,y,z,ipolaxe,loc,ipole,
@@ -735,12 +704,11 @@ c
         ib    = ipole(iipole)  !iglob
         ic    = xaxis(iipole)
         ibloc = loc(ib) !iloc
+        ialoc = merge(loc(ia),nbloc,ia.gt.0)
+        icloc = merge(loc(ic),nbloc,ic.gt.0)
         ! trqvec can be either npolelocnl or nbloc size
-        if (ia.gt.0) then; ialoc=loc(ia); else; cycle; endif
-        if (ic.gt.0) then; icloc=loc(ic); else; cycle; endif
-        if (extract) then; iloc = ibloc; else; iloc = i; end if
-
-        ! Chech axis local Id
+        iloc  = merge(ibloc,i,extract)
+        ! Check atom local Id
         if (ialoc.eq.0.or.ialoc.gt.nbloc) cycle
         if (icloc.eq.0.or.icloc.gt.nbloc) cycle
 
@@ -773,8 +741,9 @@ c
         end if
         if (axetyp.eq.Ax_Z_Bisect .or. axetyp.eq.Ax_3_Fold) then
            id    = yaxis(iipole)
-           if (id.gt.0) then; idloc=loc(id); else; cycle; endif
+           idloc = merge(loc(id),nbloc,id.gt.0)
            if (idloc.eq.0.or.idloc.gt.nbloc) cycle
+
            wx = x(id) - x(ib)
            wy = y(id) - y(ib)
            wz = z(id) - z(ib)
@@ -1237,7 +1206,7 @@ c
 c
 c     get the local frame type and the frame-defining atoms
 c
-!$acc parallel loop gang vector_length(32) async(queue)
+!$acc parallel loop gang vector_length(64) async(queue)
 !$acc&         private(trq,del,eps)
 !$acc&         present(polevec,ilocvec,trqvec,de)
 !$acc&         present(x,y,z,ipolaxe,ipole,
@@ -1253,9 +1222,8 @@ c
         ic    = xaxis(iipole)
         id    = yaxis(iipole)
         ibloc = ilocvec(ib)  !iloc
-        if (ia.gt.0) ialoc=ilocvec(ia)
-        if (ic.gt.0) icloc=ilocvec(ic)
-
+        ialoc =merge(ilocvec(ia),shade2,ia.gt.0)
+        icloc =merge(ilocvec(ic),shade2,ic.gt.0)
         ! Chech axis local Id
         if (ialoc.eq.0.or.ialoc.gt.shade2) cycle
         if (icloc.eq.0.or.icloc.gt.shade2) cycle
@@ -1288,8 +1256,9 @@ c
            end if
         end if
         if (axetyp.eq.Ax_Z_Bisect .or. axetyp.eq.Ax_3_Fold) then
-           if (id.gt.0) then; idloc=ilocvec(id); else; cycle; endif
+           idloc = merge(ilocvec(id),shade2,id.gt.0)
            if (idloc.eq.0.or.idloc.gt.shade2) cycle
+
            wx = x(id) - x(ib)
            wy = y(id) - y(ib)
            wz = z(id) - z(ib)
@@ -1724,7 +1693,7 @@ c
 c
 c     get the local frame type and the frame-defining atoms
 c
-!$acc parallel loop gang vector_length(32) async(queue)
+!$acc parallel loop gang vector_length(64) async(queue)
 !$acc&         private(trq,del,eps)
 !$acc&         present(polevec,ilocvec,trqvec,de)
 !$acc&         present(x,y,z,ipolaxe,ipole,
@@ -1739,11 +1708,12 @@ c
         ic    = xaxis(iipole)
         id    = yaxis(iipole)
         ibloc = ilocvec(ib)    !iloc
-        if (ia.gt.0) then; ialoc=ilocvec(ia); else; cycle; endif
-        if (ic.gt.0) then; icloc=ilocvec(ic); else; cycle; endif
+        ialoc = merge(ilocvec(ia),shade2,ia.gt.0)
+        icloc = merge(ilocvec(ic),shade2,ic.gt.0)
         ! Chech axis local Id
         if (ialoc.eq.0.or.ialoc.gt.shade2) cycle;
         if (icloc.eq.0.or.icloc.gt.shade2) cycle;
+
         trq(1) = trqvec(1,i)
         trq(2) = trqvec(2,i)
         trq(3) = trqvec(3,i)
@@ -1772,8 +1742,9 @@ c
            end if
         end if
         if (axetyp.eq.Ax_Z_Bisect .or. axetyp.eq.Ax_3_Fold) then
-           if (id.gt.0) then; idloc=ilocvec(id); else; cycle; endif
+           idloc = merge(ilocvec(id),shade2,id.gt.0)
            if (idloc.eq.0.or.idloc.gt.shade2) cycle
+
            wx = x(id) - x(ib)
            wy = y(id) - y(ib)
            wz = z(id) - z(ib)

@@ -49,6 +49,8 @@ c
 #ifdef _OPENACC
       use openacc
       use cudafor
+#else
+#define cuda_stream_kind int_prt_kind()
 #endif
       implicit none
       integer ngpus
@@ -61,10 +63,15 @@ c
       integer def_queue
 #ifdef _OPENACC
       type(cudaDeviceProp) devProp
-      integer(CUDA_STREAM_KIND) dir_stream,rec_stream
-      integer(CUDA_STREAM_KIND) def_stream
+      integer(cuda_stream_kind) dir_stream,rec_stream
+      integer(cuda_stream_kind) def_stream
       type(cudaEvent) dir_event,rec_event,def_event
       integer,parameter :: zero_flag=0
+#else
+      integer dir_stream,rec_stream,def_stream,dir_event
+     &       ,rec_event,def_event
+      parameter(dir_stream=0,rec_stream=0,def_stream=0
+     &         ,dir_event=0,rec_event=0,def_event=0)
 #endif
       integer nSMP,nSPcores,cores_SMP
       integer Ndir_block,Ndir_async_block
@@ -74,10 +81,11 @@ c
 
 c     parameter(rec_queue=0)
       integer,parameter:: maxscaling=64
-      integer,parameter:: maxscaling1=128
+      integer,parameter:: maxscaling1=256
       integer,parameter:: maxBlock=ishft(1,16)
       integer,parameter:: BLOCK_SIZE=32
       integer,parameter::  WARP_SIZE=32
+      integer,parameter::  WARP_SHFT=5
       integer,parameter::RED_BUFF_SIZE=ishft(1,15)
 
       integer,parameter,dimension(6)::qi1=(/ 1, 2, 3, 1, 1, 2 /)
@@ -85,9 +93,16 @@ c     parameter(rec_queue=0)
 
       integer   nred_buff(  RED_BUFF_SIZE)
       real(t_p) vred_buff(6*RED_BUFF_SIZE)
+      real(t_p) vred_buf1(6*RED_BUFF_SIZE)
       real(r_p) ered_buff(  RED_BUFF_SIZE)
+      real(r_p)  lam_buff(  RED_BUFF_SIZE)
       ener_rtyp ered_buf1(  RED_BUFF_SIZE)
       real(t_p),dimension(10,10)::ftc,ctf
+
+      ! WorkSpace buffer for module utilgpu
+      integer  ,allocatable:: ug_workS_i(:)
+      real(t_p),allocatable:: ug_workS_r(:)
+      ! -----------------------------------
 
       character*128 warning,sugest_vdw
 
@@ -116,6 +131,10 @@ c     parameter(rec_queue=0)
         type(C_PTR),value ::ptr
         end subroutine
       end interface
+
+      interface dev_sort
+        module procedure dev_sort_i4
+      end interface
 #endif
 
       interface Tinker_shellEnv
@@ -124,14 +143,39 @@ c     parameter(rec_queue=0)
         module procedure Tinker_shellEnv_f8
       end interface
 
+      interface mem_move
+         module procedure mem_move_i4
+         module procedure mem_move_i8
+         module procedure mem_move_r4
+         module procedure mem_move_r8
+      end interface
+
+      interface mem_set
+         module procedure mem_set_i4
+         module procedure mem_set_i8
+         module procedure mem_set_r4
+         module procedure mem_set_r8
+      end interface
+
+      interface reduce_buffer
+        module procedure reduce_buffer_m
+      end interface
+
       interface reduce_energy_virial
         module procedure reduce_energy_virial0
         module procedure reduce_energy_virial1
+        module procedure reduce_energy_virial2
       end interface
 
       interface reduce_energy_action
          module procedure reduce_energy_action0
          module procedure reduce_energy_action1
+      end interface
+
+      interface transpose_az3
+         module procedure transpose_az_l3
+         module procedure transpose_az_f3
+         module procedure transpose_az_d3
       end interface
 c
 !$acc declare create(gpu_gangs,gpu_workers,gpu_vector,devicenum,
@@ -725,19 +769,14 @@ c
       implicit none
       integer,intent(in)::n
       logical,save:: f_in=.true.
-      integer factor
+      integer siz
 
-      if (n.lt.12000) then
-         factor=10
-      else
-         factor=7
-      end if
-
-      call thrust_alloc_cache_memory(factor*n)
       if (f_in) then
-      sd_prmem = sd_prmem + factor*n*sizeof(n)
-      f_in = .false.
+         siz   = max(250000,n*7)
+         call thrust_alloc_cache_memory(siz)
+         sd_prmem = sd_prmem + siz*sizeof(n)
       end if
+      f_in = .false.
       end
 c
 c     Bind device to MPI Thread
@@ -745,7 +784,7 @@ c
       subroutine bind_gpu
       character(len=6) :: local_rank_env
       integer          :: local_rank_env_status, local_rank
-      integer device_type
+      integer device_type, device_start
 
       !Initialisation OpenAcc
       call get_environment_variable(name="PGI_ACC_DEVICE_NUM",
@@ -820,6 +859,7 @@ c
 c     Initiate device parameters
 c
       subroutine selectDevice
+      use mpi
       implicit none
       integer ::i,cuda_success=0
       character*64 value,value1,value2
@@ -827,13 +867,14 @@ c
       integer length,length1,length2,status,status1,status2
       integer device_type
       integer hostnm,getpid
-      integer device_start
+      integer device_start,host_comm,host_rank,ierr
 
 c
 c     Query number of device 
 c     Link a device to a MPI process
 c     If not bind by slurm local ID
 c
+      host_rank = hostrank
       if (devicenum==-1) then
          device_type = acc_get_device_type()
          device_start= 0
@@ -852,7 +893,11 @@ c
          else
             if (status2.eq.0) read(value2,*) device_start
             ngpus     = acc_get_num_devices(device_type)
-            devicenum = mod( device_start+hostrank,ngpus )
+            call MPI_Comm_split_type(MPI_COMM_WORLD,
+     $           MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, host_comm,ierr)
+            call MPI_Comm_rank(host_comm,host_rank,ierr)
+            call MPI_Comm_free(host_comm,ierr)
+            devicenum = mod( device_start+host_rank,ngpus )
          end if
 
          call acc_set_device_num(devicenum, device_type)
@@ -865,9 +910,9 @@ c
 c     Display device number and MPI process
 c
       status = hostnm(name)
-      if (nproc.gt.12.or.nproc.eq.1) return
+      if (nproc.gt.16.or.nproc.eq.1) return
       write(0,'(a,i2,a,i2,a,i8,a,a)')
-     &     "rank ", hostrank,
+     &     "rank ", host_rank,
      &     " attach to device ", devicenum, 
      &     " pid : ",getpid(), 
      &     " on ", name
@@ -889,31 +934,24 @@ c
       rec_stream = acc_get_cuda_stream(acc_async_noval)
       dir_stream = rec_stream
       def_stream = rec_stream
-      if (nproc.eq.1) return
-      call get_environment_variable('TINKER_ASYNC_COVER',value,
-     &                               length,status)
 
-      if (status.eq.0) then
-         read(value,*) int_val
-         if (int_val.gt.0) then
-            if (rec_stream.eq.0) then
- 16            format(/,
+      call Tinker_shellEnv_i("ASYNC_COVER",int_val,0)
+
+      if (int_val.eq.0.or.(nproc.eq.1.and.int_val.eq.1)) return
+
+      if (rec_stream.eq.0) then
+ 16      format(/,
      &'| WARNING !! cannot recover CUDA stream from OpenACC async',
      &' queue',/,
      &'             Skiping multi queues feature activation')
-               if (rank.eq.0) write(*,16)
-               return
-            end if
-            dir_queue = acc_async_noval + 1
- 13      format(' ***** Asynchronous Computation Overlapping enable'
-     &          ,I5,/)
-            if (rank.eq.0) write(*,13) acc_async_noval
-         else
-            return
-         end if
-      else
+         if (rank.eq.0) write(*,16)
          return
       end if
+
+      dir_queue = acc_async_noval + 1
+ 13   format(' ***** Asynchronous Computation Overlapping enable'
+     &      ,I5,/)
+      if (rank.eq.0) write(*,13) acc_async_noval
 c
 c     Create stream(s) and attach them to Acc queue
 c
@@ -969,7 +1007,7 @@ c
       subroutine comparetonoval(queue)
       implicit none
       integer queue
-      integer(CUDA_STREAM_KIND)::stream
+      integer(cuda_stream_kind)::stream
 
       stream = acc_get_cuda_stream(queue)
       if (rec_stream.ne.stream) then
@@ -1097,7 +1135,271 @@ c
       nSPcores = cores_SMP*nSMP
 
       end subroutine
+
+      integer function get_GridDim(n,bDim,opt) result(GDim)
+      integer,intent(in):: bDim,n
+      integer,optional :: opt
+      integer,parameter:: maxB=2**14
+      if (present(opt)) then
+         GDim = min(((n-1)/bDim)+1,maxB)
+      else
+         GDim = min(((n-1)*WARP_SIZE/bDim)+1,maxB)
+      end if
+      end function
+
+      subroutine dev_sort_i4(n,array,stream)
+      use thrust, only: thrust_sort
+      implicit none
+      integer,intent(in   ):: n
+      integer,intent(inout):: array(n)
+      integer(cuda_stream_kind),intent(in) :: stream
+      integer ierr
+
+      !ierr = cudaStreamSynchronize(stream)
+!$acc host_data use_device(array)
+      call thrust_sort(array,n,stream)
+!$acc end host_data
+      end subroutine
 #endif
+      !---------------------------------------
+      ! memory Set routines
+      !---------------------------------------
+      subroutine mem_set_i4(dst,val,n,stream,offset)
+      integer(4) dst(*)
+      integer(4),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+ 14   format(A,I4,A,/,4X,A)
+
+      offset_ = 0
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.0) then
+         ierr = cudaMemset(dst(offset_+1),val,n)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_i4'
+     &              ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i) = val
+      end do
+#endif
+      end subroutine
+      subroutine mem_set_i8(dst,val,n,stream,offset)
+      integer(8) dst(*)
+      integer(8),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+ 14   format(A,I4,A,/,4X,A)
+
+      offset_ = 0
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.0) then
+         ierr = cudaMemset(dst(offset_+1),val,n)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_i8'
+     &              ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i) = val
+      end do
+#endif
+      end subroutine
+      subroutine mem_set_r4(dst,val,n,stream,offset)
+      real(4) dst(*)
+      real(4),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+ 14   format(A,I4,A,/,4X,A)
+
+      offset_ = 0
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.0) then
+         ierr = cudaMemset(dst(offset_+1),val,n)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_r4'
+     &              ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i) = val
+      end do
+#endif
+      end subroutine
+      subroutine mem_set_r8(dst,val,n,stream,offset)
+      real(8) dst(*)
+      real(8),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+ 14   format(A,I4,A,/,4X,A)
+
+      offset_ = 0
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.0) then
+         ierr = cudaMemset(dst(offset_+1),val,n)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_r8'
+     &              ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i) = val
+      end do
+#endif
+      end subroutine
+
+      !---------------------------------------
+      ! memory Copy routines
+      !---------------------------------------
+      subroutine mem_move_i4(dst,src,n,stream)
+      integer(4) src(*),dst(*)
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+      integer(mipk) i
+
+#ifdef _OPENACC
+!$acc host_data use_device(dst,src)
+      ierr = cudaMemCpyAsync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in utilgpu_mem_move_i4'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      do i = 1,n
+         dst(i) = src(i)
+      end do
+#endif
+      end subroutine
+
+      subroutine mem_move_i8(dst,src,n,stream)
+      integer(8) src(*),dst(*)
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+      integer(mipk) i
+
+#ifdef _OPENACC
+!$acc host_data use_device(dst,src)
+      ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in utilgpu_mem_move_i8'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      do i = 1,n
+         dst(i) = src(i)
+      end do
+#endif
+      end subroutine
+
+      subroutine mem_move_r4(dst,src,n,stream)
+      real(4) src(*),dst(*)
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+      integer(mipk) i
+
+#ifdef _OPENACC
+!$acc host_data use_device(dst,src)
+      ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in utilgpu_mem_move_r4'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      do i = 1,n
+         dst(i) = src(i)
+      end do
+#endif
+      end subroutine
+
+      subroutine mem_move_r8(dst,src,n,stream)
+      real(8) src(*),dst(*)
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+      integer(mipk) i
+
+#ifdef _OPENACC
+!$acc host_data use_device(dst,src)
+      ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in utilgpu_mem_move_r8'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      do i = 1,n
+         dst(i) = src(i)
+      end do
+#endif
+      end subroutine
+
+      subroutine get_atom_glob_id(a_kind,a_id,glob,ntyp,natom)
+      implicit none
+      integer,intent(in):: natom,ntyp
+      integer,intent(in):: a_kind(ntyp),a_id(natom)
+      integer,intent(inout):: glob(ntyp)
+      integer i
+!$acc parallel loop async default(present)
+      do i = 1,ntyp
+         glob(i) = a_id(a_kind(i))
+      end do
+      end subroutine
+
+      subroutine reduce_buffer_m(r_buff,sz_buff,redVal,queue)
+      implicit none
+      integer  ,intent(in ):: sz_buff, queue
+      real(r_p)            :: r_buff(*)
+      real(r_p),intent(out):: redVal
+      integer i
+!$acc parallel loop present(redVal,r_buff) async(queue)
+      do i = 1,sz_buff
+         redVal    = redVal + r_buff(i)
+         r_buff(i) = 0
+      end do
+      end subroutine
 
       subroutine reduce_energy_virial0(energy,vxx,vxy,vxz,vyy,vyz,vzz
      &           ,queue)
@@ -1118,6 +1420,14 @@ c
          vyy    = vyy + real(vred_buff(3*RED_BUFF_SIZE+i),r_p)
          vyz    = vyz + real(vred_buff(4*RED_BUFF_SIZE+i),r_p)
          vzz    = vzz + real(vred_buff(5*RED_BUFF_SIZE+i),r_p)
+
+         ered_buff(i)                 = 0
+         vred_buff(i)                 = 0
+         vred_buff(  RED_BUFF_SIZE+i) = 0
+         vred_buff(2*RED_BUFF_SIZE+i) = 0
+         vred_buff(3*RED_BUFF_SIZE+i) = 0
+         vred_buff(4*RED_BUFF_SIZE+i) = 0
+         vred_buff(5*RED_BUFF_SIZE+i) = 0
       end do
       end subroutine
 
@@ -1125,22 +1435,62 @@ c
      &           ,ered_b,queue)
       implicit none
       integer,intent(in):: queue
-      ener_rtyp,intent(in):: ered_b(RED_BUFF_SIZE)
+      ener_rtyp,intent(inout):: ered_b(RED_BUFF_SIZE)
       ener_rtyp energy
       real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
       integer i
       !Make sure data are set zero before calling this routine
 
 !$acc parallel loop async(queue) present(energy,vxx,vxy,vxz,
-!$acc&    vyy,vyz,vzz,ered_buf1,vred_buff)
+!$acc&    vyy,vyz,vzz,ered_b,vred_buff)
       do i = 1,RED_BUFF_SIZE
          energy = energy + ered_b(i)
-         vxx    = vxx + real(vred_buff(i),r_p)
-         vxy    = vxy + real(vred_buff(  RED_BUFF_SIZE+i),r_p)
+         vxx    = vxx + real(vred_buff(0*RED_BUFF_SIZE+i),r_p)
+         vxy    = vxy + real(vred_buff(1*RED_BUFF_SIZE+i),r_p)
          vxz    = vxz + real(vred_buff(2*RED_BUFF_SIZE+i),r_p)
          vyy    = vyy + real(vred_buff(3*RED_BUFF_SIZE+i),r_p)
          vyz    = vyz + real(vred_buff(4*RED_BUFF_SIZE+i),r_p)
          vzz    = vzz + real(vred_buff(5*RED_BUFF_SIZE+i),r_p)
+
+         ered_b   (i)                 = 0
+         vred_buff(i)                 = 0
+         vred_buff(  RED_BUFF_SIZE+i) = 0
+         vred_buff(2*RED_BUFF_SIZE+i) = 0
+         vred_buff(3*RED_BUFF_SIZE+i) = 0
+         vred_buff(4*RED_BUFF_SIZE+i) = 0
+         vred_buff(5*RED_BUFF_SIZE+i) = 0
+      end do
+      end subroutine
+
+      subroutine reduce_energy_virial2(energy,vxx,vxy,vxz,vyy,vyz,vzz
+     &           ,ered_b,vred_b,queue)
+      implicit none
+      integer,intent(in):: queue
+      real(r_p),intent(inout):: ered_b(RED_BUFF_SIZE)
+      real(t_p),intent(inout):: vred_b(RED_BUFF_SIZE)
+      real(r_p) energy
+      real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
+      integer i
+      !Make sure data are set zero before calling this routine
+
+!$acc parallel loop async(queue) present(energy,vxx,vxy,vxz,
+!$acc&    vyy,vyz,vzz,ered_b,vred_buff)
+      do i = 1,RED_BUFF_SIZE
+         energy = energy + ered_b(i)
+         vxx    = vxx + real(vred_b(0*RED_BUFF_SIZE+i),r_p)
+         vxy    = vxy + real(vred_b(1*RED_BUFF_SIZE+i),r_p)
+         vxz    = vxz + real(vred_b(2*RED_BUFF_SIZE+i),r_p)
+         vyy    = vyy + real(vred_b(3*RED_BUFF_SIZE+i),r_p)
+         vyz    = vyz + real(vred_b(4*RED_BUFF_SIZE+i),r_p)
+         vzz    = vzz + real(vred_b(5*RED_BUFF_SIZE+i),r_p)
+
+         ered_b(i)                 = 0
+         vred_b(i)                 = 0
+         vred_b(  RED_BUFF_SIZE+i) = 0
+         vred_b(2*RED_BUFF_SIZE+i) = 0
+         vred_b(3*RED_BUFF_SIZE+i) = 0
+         vred_b(4*RED_BUFF_SIZE+i) = 0
+         vred_b(5*RED_BUFF_SIZE+i) = 0
       end do
       end subroutine
 
@@ -1157,6 +1507,8 @@ c
       do i = 1,RED_BUFF_SIZE
          energy = energy + ered_buff(i)
          n      = n + nred_buff(i)
+         ered_buff(i) = 0
+         nred_buff(i) = 0
       end do
       end subroutine
 
@@ -1174,6 +1526,29 @@ c
       do i = 1,RED_BUFF_SIZE
          energy = energy + ered_b(i)
          n      = n      + nred_buff(i)
+         ered_b (i)   = 0
+         nred_buff(i) = 0
+      end do
+      end subroutine
+
+      subroutine zero_mdred_buffers(queue_)
+      implicit none
+      integer,optional::queue_
+      integer i,queue
+
+      queue = dir_queue
+      if (present(queue_)) queue=queue_
+
+!$acc parallel loop async(queue)
+!$acc&         default(present)
+      do i = 1,6*RED_BUFF_SIZE
+         if (i<RED_BUFF_SIZE+1) then
+            ered_buff(i)=0
+            ered_buf1(i)=0
+            nred_buff(i)=0
+         end if
+         vred_buff(i)=0
+         vred_buf1(i)=0
       end do
       end subroutine
 
@@ -1200,15 +1575,10 @@ c
       implicit none
       integer,optional::queue_
       integer i,queue
-      logical,save:: first_in=.true.
 
-      queue = dir_queue
-      if (present(queue_)) queue=queue_
-
-      if (first_in) then
-!$acc enter data create(nred_buff) async(queue)
-         first_in=.false.
-      end if
+      if   (present(queue_)) then
+             queue = queue_
+      else;  queue = dir_queue; end if
 
 !$acc parallel loop async(queue)
 !$acc&         present(ered_buff,ered_buf1,nred_buff)
@@ -1219,6 +1589,77 @@ c
       end do
 
       end subroutine
-      
+
+      subroutine transposez_r6(src,dst,loc,sloc,siz,queue)
+      implicit none
+      integer  ,intent(in)   :: siz,queue,sloc,loc(sloc)
+      real(t_p),intent(inout):: src(siz*6)
+      real(t_p),intent(out)  :: dst(6*siz)
+      integer   i,j,idxd,idxs
+
+!$acc host_data use_device(src,dst,loc)
+!$acc parallel loop collapse(2) deviceptr(src,dst,loc) async(queue)
+      do i = 1,sloc; do j = 0,5
+         idxd = (loc(i)-1)*6+j+1
+         idxs = j*siz +i
+        dst( idxd ) = dst( idxd ) + src( idxs )
+        src( idxs ) = 0
+      end do; end do
+!$acc end host_data
+
+      end subroutine
+
+      subroutine transpose_az_l3(src,dst,loc,sloc,siz,queue)
+      implicit none
+      integer   ,parameter    :: n1=3
+      integer   ,intent(in)   :: siz,queue,sloc,loc(sloc)
+      integer(8),intent(inout):: src(siz*n1)
+      integer(8),intent(out)  :: dst(n1*siz)
+      integer   i,j,idxd,idxs
+!$acc host_data use_device(src,dst,loc)
+!$acc parallel loop collapse(2) deviceptr(src,dst,loc) async(queue)
+      do i = 1,sloc; do j = 0,n1-1
+         idxd = (loc(i)-1)*n1+j+1
+         idxs = j*siz +i
+        dst( idxd ) = dst( idxd ) + src( idxs )
+        src( idxs ) = 0
+      end do; end do
+!$acc end host_data
+      end subroutine
+      subroutine transpose_az_d3(src,dst,loc,sloc,siz,queue)
+      implicit none
+      integer  ,parameter    :: n1=3
+      integer  ,intent(in)   :: siz,queue,sloc,loc(sloc)
+      real(8)  ,intent(inout):: src(siz*n1)
+      real(8)  ,intent(out)  :: dst(n1*siz)
+      integer   i,j,idxd,idxs
+!$acc host_data use_device(src,dst,loc)
+!$acc parallel loop collapse(2) deviceptr(src,dst,loc) async(queue)
+      do i = 1,sloc; do j = 0,n1-1
+         idxd = (loc(i)-1)*n1+j+1
+         idxs = j*siz +i
+        dst( idxd ) = dst( idxd ) + src( idxs )
+        src( idxs ) = 0
+      end do; end do
+!$acc end host_data
+      end subroutine
+      subroutine transpose_az_f3(src,dst,loc,sloc,siz,queue)
+      implicit none
+      integer  ,parameter    :: n1=3
+      integer  ,intent(in)   :: siz,queue,sloc,loc(sloc)
+      real(4)  ,intent(inout):: src(siz*n1)
+      real(4)  ,intent(out)  :: dst(n1*siz)
+      integer   i,j,idxd,idxs
+!$acc host_data use_device(src,dst,loc)
+!$acc parallel loop collapse(2) deviceptr(src,dst,loc) async(queue)
+      do i = 1,sloc; do j = 0,n1-1
+         idxd = (loc(i)-1)*n1+j+1
+         idxs = j*siz +i
+        dst( idxd ) = dst( idxd ) + src( idxs )
+        src( idxs ) = 0
+      end do; end do
+!$acc end host_data
+      end subroutine
+
       end module utilgpu
 

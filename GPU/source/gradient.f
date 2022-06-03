@@ -26,6 +26,7 @@ c
       use atmlst
       use atmtyp
       use bitor
+      use colvars
       use couple
       use deriv
       use domdec
@@ -33,7 +34,7 @@ c
       use gradient_inl
       use inter
       use iounit
-      use inform    ,only:abort,minmaxone
+      use inform    ,only:abort,minmaxone,deb_Force
       use ktrtor
       use mpi
       use pitors
@@ -44,7 +45,7 @@ c
       use timestat
       use tors
       use tortor
-      use utilgpu   ,only:def_queue,inf_r
+      use utilgpu   ,only:rec_queue,inf_r,zero_mdred_buffers
       use sizes
       use vdwpot
       use virial
@@ -60,16 +61,21 @@ c
          first_in_gradient=.false.
       end if
 
-!     Energy scalars used in gradient kernels
-!$acc data present(derivs,energy)
-!$acc&     present(eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
-!$acc&           ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
-!$acc&           ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
-!$acc&           ,ev_r,ec_r,em_r,ep_r,eb_r
-!$acc&           ,ensmd,einter,ePaMD,eDaMD,eW1aMD,vir,desum)
 
       call timer_enter( timer_fmanage )
-!$acc serial async
+      if (calc_e.or.use_virial) then    ! Energy and virial computation
+!     Energy scalars used in gradient kernels
+!$acc host_data use_device(energy
+!$acc&          ,eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
+!$acc&          ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
+!$acc&          ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+!$acc&          ,ev_r,ec_r,em_r,ep_r,eb_r
+!$acc&          ,ensmd,einter,ePaMD,eDaMD,eW1aMD)
+!$acc serial deviceptr(eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
+!$acc&      ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
+!$acc&      ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+!$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
+!$acc&      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(rec_queue)
       eb       = 0.0_re_p  ! ebond
       eb_r     = 0
       eba      = 0.0_re_p  ! estrbnd
@@ -122,10 +128,20 @@ c
       vir(2,3) = 0.0_re_p
       vir(3,3) = 0.0_re_p
 !$acc end serial
-c
-c     zero out each of the first derivative components
-c
-      call resetForces_p
+!$acc end host_data
+      call zero_mdred_buffers(rec_queue)
+      end if  ! Energy and virial computation
+ 
+      !zero out each of the first derivative components
+      if (deb_Force) call zero_forces
+
+      if (use_lambdadyn.and.
+     &   (use_vdw.or.use_mpole.or.use_charge.or.use_polar)) then ! Zero Halmitonian derivative
+!$acc serial async present(delambdae,delambdav)
+         delambdae = 0.0
+         delambdav = 0.0
+!$acc end serial
+      end if
       call timer_exit ( timer_fmanage,quiet_timers )
 !
 !     ----------------------------------------
@@ -136,20 +152,28 @@ c
 c     call the local geometry energy and gradient routines
 c
       if (use_bond) call timer_enter( timer_bonded )
+#ifdef _OPENACC
+      if (use_bond.and.fuse_bonded) then
+         call eliaison1cu
+         goto 26
+      end if
+#endif
       if (use_bond)     call ebond1gpu
-      if (use_strbnd)   call estrbnd1gpu
       if (use_urey)     call eurey1gpu
-      if (use_angang)   call eangang1     !no acc
       if (use_opbend)   call eopbend1gpu
-      if (use_opdist)   call eopdist1     !no acc
-      if (use_improp)   call eimprop1gpu
-      if (use_imptor)   call eimptor1gpu
+      if (use_strbnd)   call estrbnd1gpu
+      if (use_angle)    call eangle1gpu
       if (use_tors)     call etors1gpu
       if (use_pitors)   call epitors1gpu
-      if (use_strtor)   call estrtor1gpu
       if (use_tortor)   call etortor1gpu
+      if (use_improp)   call eimprop1gpu
+      if (use_imptor)   call eimptor1gpu
       if (use_angtor)   call eangtor1
-      if (use_angle)    call eangle1gpu
+
+ 26   continue
+      if (use_angang)   call eangang1     !no acc
+      if (use_opdist)   call eopdist1     !no acc
+      if (use_strtor)   call estrtor1gpu
       ! miscellaneous energy
       if (use_geom)     call egeom1gpu
       if (use_extra)    call extra1
@@ -193,20 +217,31 @@ c
 
 
 !     ----------------------------------------
-!     ******   Compute Partial Forces   ******
+!     ******   Add Partial Forces   ******
 !     ----------------------------------------
 
       call timer_enter( timer_fmanage )
-      call addForces_p
+      if (ftot_l) then
+         call add_forces( de_tot )
+      else
+         call add_forces1( derivs )
+      end if
 
-!$acc parallel loop collapse(2) async
-      do i = 1, nloc
-         do j = 1, 3
-            derivs(j,i) = derivs(j,i) + desum(j,i)
-         end do
-      end do
+      ! Apply colvars
+      if (use_colvars) call colvars_run(derivs)
 
-!$acc serial async
+      if (calc_e.or.use_virial) then     ! Energy and virial computation
+!$acc host_data use_device(energy
+!$acc&         ,eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
+!$acc&         ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
+!$acc&         ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+!$acc&         ,ev_r,ec_r,em_r,ep_r,eb_r
+!$acc&         ,ensmd,einter,ePaMD,eDaMD,eW1aMD)
+!$acc serial deviceptr(energy,eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
+!$acc&      ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
+!$acc&      ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+!$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
+!$acc&      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(rec_queue)
 c
 c     sum up the virial component
 c
@@ -229,6 +264,8 @@ c
      &      + ensmd
       energy = esum
 !$acc end serial
+!$acc end host_data
+      end if        ! Energy and virial computation
       call timer_exit ( timer_fmanage,quiet_timers )
 
       ! Apply plumed bias
@@ -237,8 +274,8 @@ c
 c
 c     check for an illegal value for the total energy
 c
-      if (tinkerdebug.gt.0) then
-!$acc update host(esum) async
+      if (tinkerdebug.gt.0.and.calc_e) then
+!$acc update host(esum) async(rec_queue)
 !$acc wait
          if (tinker_isnan_m(esum).or.esum.eq.inf_r) then
             write  (0,10) esum
@@ -248,5 +285,4 @@ c
             call info_energy(0)
          end if
       end if
-!$acc end data
       end

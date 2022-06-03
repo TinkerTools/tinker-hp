@@ -27,8 +27,9 @@ c
 #ifdef _OPENACC
       use openacc
 #endif
+      use utilgpu,only: mem_set,rec_stream,rec_queue
       use vdw    ,only: nvdwlocnl
-      integer,private:: mv_realloc_i=0
+      integer(4),private:: mv_realloc_i=0
 
       contains
 
@@ -39,18 +40,18 @@ c
 #endif
      &                  config)
       implicit none
-      integer,pointer:: shArray(:)
-      integer request_shape(:)
-      integer winarray
+      integer(4),pointer:: shArray(:)
+      integer(4) request_shape(:)
+      integer(4) winarray
 #ifdef USE_NVSHMEM_CUDA
       type(iDPC),   allocatable,optional::   nshArray(:)
       type(iDPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer,optional::config
+      integer(4),optional::config
 
-      integer request_size,configure,i,istat
+      integer(4) request_size,configure,i,istat
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       type(c_ptr) :: baseptr
 #ifdef _CUDA
       type(c_devptr):: peptr,cuptr
@@ -164,20 +165,20 @@ c
 #endif
      &                  config)
       implicit none
-      integer,pointer:: shArray(:,:)
-      integer request_shape(:)
-      integer winarray
+      integer(4),pointer:: shArray(:,:)
+      integer(4) request_shape(:)
+      integer(4) winarray
 #ifdef USE_NVSHMEM_CUDA
       type(i2dDPC)   ,allocatable,optional::   nshArray(:)
       type(i2dDPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer,optional::config
+      integer(4),optional::config
 
       integer(mipk) request_size
-      integer configure,i,istat
-      integer stride,nelem
+      integer(4) configure,i,istat
+      integer(4) stride,nelem
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
 #ifdef _CUDA
       type(c_devptr):: peptr,cuptr
@@ -295,13 +296,13 @@ c
      &                 (shArray,winarray,request_shape,config)
       implicit none
       integer(1),pointer:: shArray(:)
-      integer request_shape(:)
-      integer winarray
-      integer,optional::config
+      integer(4) request_shape(:)
+      integer(4) winarray
+      integer(4),optional::config
 
-      integer request_size,configure,i,istat
+      integer(4) request_size,configure,i,istat
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer     :: disp_unit,ierr
+      integer(4)     :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
 #ifdef _CUDA
       type(c_devptr):: peptr,cuptr
@@ -373,17 +374,17 @@ c
      &                  config,start)
       implicit none
       logical,pointer:: shArray(:)
-      integer request_shape(:)
-      integer winarray
+      integer(4) request_shape(:)
+      integer(4) winarray
 #ifdef USE_NVSHMEM_CUDA
       type(lDPC)   ,allocatable,optional::   nshArray(:)
       type(lDPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer,optional::config,start
+      integer(4),optional::config,start
 
-      integer request_size,configure,i,istat,start_
+      integer(4) request_size,configure,i,istat,start_
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       type(c_ptr) :: baseptr
 #ifdef _CUDA
       type(c_devptr):: peptr,cuptr
@@ -499,17 +500,17 @@ c
      &                  config)
       implicit none
       logical(1),pointer:: shArray(:)
-      integer request_shape(:)
-      integer winarray
+      integer(4) request_shape(:)
+      integer(4) winarray
 #ifdef USE_NVSHMEM_CUDA
       type(l1DPC)   ,allocatable,optional::   nshArray(:)
       type(l1DPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer,optional::config
+      integer(4),optional::config
 
-      integer request_size,configure,i,istat
+      integer(4) request_size,configure,i,istat
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       type(c_ptr) :: baseptr
 #ifdef _CUDA
       type(c_devptr):: peptr,cuptr
@@ -621,17 +622,17 @@ c
      &                  config)
       implicit none
       character(8),pointer:: shArray(:)
-      integer request_shape(:)
-      integer winarray
+      integer(4) request_shape(:)
+      integer(4) winarray
 #if defined(_CUDA) && defined(USE_NVSHMEM)
       type(c8DPC),allocatable,optional:: nshArray(:)
       type(c8DPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer  ,optional::config
+      integer(4)  ,optional::config
 
-      integer request_size,configure,i,istat
+      integer(4) request_size,configure,i,istat
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       character(8) adata
       TYPE(C_PTR) :: baseptr
 #ifdef _CUDA
@@ -746,18 +747,18 @@ c
      &                  config)
       implicit none
       real(t_p),pointer:: shArray(:)
-      integer request_shape(:)
-      integer winarray
+      integer(4) request_shape(:)
+      integer(4) winarray
 #if defined(_CUDA) && defined(USE_NVSHMEM)
       type(rDPC),allocatable,optional:: nshArray(:)
       type(rDPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer  ,optional::config
+      integer(4)  ,optional::config
 
       integer(8) request_size
-      integer configure,i,istat
+      integer(4) configure,i,istat
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       real(t_p) adata
       TYPE(C_PTR) :: baseptr
 #ifdef _CUDA
@@ -875,18 +876,18 @@ c
      &                  config)
       implicit none
       real(r_p),pointer:: shArray(:)
-      integer request_shape(:)
-      integer winarray
+      integer(4) request_shape(:)
+      integer(4) winarray
 #if defined(_CUDA) && defined(USE_NVSHMEM)
       type(rDPC),allocatable,optional:: nshArray(:)
       type(rDPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer  ,optional::config
+      integer(4)  ,optional::config
 
       integer(8) request_size
-      integer configure,i,istat
+      integer(4) configure,i,istat
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       real(t_p) adata
       TYPE(C_PTR) :: baseptr
 #ifdef _CUDA
@@ -1004,19 +1005,19 @@ c
      &                  config)
       implicit none
       real(t_p),pointer:: shArray(:,:)
-      integer request_shape(:)
-      integer winarray
+      integer(4) request_shape(:)
+      integer(4) winarray
 #if defined(_CUDA) && defined(USE_NVSHMEM)
       type(r2dDPC),allocatable,optional:: nshArray(:)
       type(r2dDPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer  ,optional::config
+      integer(4)  ,optional::config
 
       integer(8) request_size
-      integer configure,i,istat
-      integer stride,nelem
+      integer(4) configure,i,istat
+      integer(4) stride,nelem
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       real(t_p) adata
       TYPE(C_PTR) :: baseptr
 #ifdef _CUDA
@@ -1140,19 +1141,19 @@ c
      &                  config)
       implicit none
       real(t_p),pointer:: shArray(:,:,:)
-      integer request_shape(:)
-      integer winarray
+      integer(4) request_shape(:)
+      integer(4) winarray
 #if defined(_CUDA) && defined(USE_NVSHMEM)
       type(r3dDPC),allocatable,optional:: nshArray(:)
       type(r3dDPC),device,pointer,optional:: d_nshArray(:)
 #endif
-      integer  ,optional::config
+      integer(4)  ,optional::config
 
       integer(8) request_size
-      integer configure,i,istat
-      integer stride,stride2,nelem
+      integer(4) configure,i,istat
+      integer(4) stride,stride2,nelem
       integer(kind=MPI_ADDRESS_KIND) :: windowsize
-      integer :: disp_unit,ierr
+      integer(4) :: disp_unit,ierr
       real(t_p) adata
       TYPE(C_PTR) :: baseptr
 #ifdef _CUDA
@@ -1279,18 +1280,18 @@ c
 #endif
      &           config)
       implicit none
-      integer ,intent(in):: n
-      integer ,intent(in):: src(*)
-      integer ,optional,intent(in):: async_q
+      integer(4) ,intent(in):: n
+      integer(4) ,intent(in):: src(*)
+      integer(4) ,optional,intent(in):: async_q
 #if defined(_CUDA) && defined(USE_NVSHMEM)
-      integer ,optional,intent(in):: nd
-      integer,device,optional:: dst(*)
+      integer(4) ,optional,intent(in):: nd
+      integer(4),device,optional:: dst(*)
 #endif
-      integer ,optional,intent(in):: config
+      integer(4) ,optional,intent(in):: config
 
-      integer configure,nd_
-      integer l_beg,l_end,istat
-      integer length
+      integer(4) configure,nd_
+      integer(4) l_beg,l_end,istat
+      integer(4) length
 
       if (present(config)) then
          configure = config
@@ -1332,18 +1333,18 @@ c
 #endif
      &           config)
       implicit none
-      integer ,intent(in):: n
+      integer(4) ,intent(in):: n
       real(t_p) ,intent(in):: src(*)
-      integer ,optional,intent(in):: async_q
+      integer(4) ,optional,intent(in):: async_q
 #if defined(_CUDA) && defined(USE_NVSHMEM)
-      integer ,optional,intent(in):: nd
+      integer(4) ,optional,intent(in):: nd
       real(t_p),device,optional:: dst(*)
 #endif
-      integer ,optional,intent(in):: config
+      integer(4) ,optional,intent(in):: config
 
-      integer configure,nd_
-      integer l_beg,l_end,istat
-      integer length
+      integer(4) configure,nd_
+      integer(4) l_beg,l_end,istat
+      integer(4) length
 
       if (present(config)) then
          configure = config
@@ -1382,11 +1383,11 @@ c
       ! Check for Error
       subroutine ERROR_CHECK(istat,filename,line,error_type)
       implicit none
-      integer ,intent(in) :: istat
+      integer(4) ,intent(in) :: istat
       character(*),intent(in)::filename
-      integer,intent(in)  :: line
+      integer(4),intent(in)  :: line
       character(*),intent(in):: error_type
-      integer ,parameter :: SUCCESS=0
+      integer(4) ,parameter :: SUCCESS=0
 
 65    format ("FORTRAN ASSERT: ",A,A,1x,6I,/,15x,A,1x,"line",5I)
 
@@ -1419,11 +1420,11 @@ c
       ! Check for CUDA Error
       subroutine CUDA_ERROR_CHECK(istat,filename,line,error_type)
       implicit none
-      integer ,intent(in) :: istat
+      integer(4) ,intent(in) :: istat
       character(*),intent(in)::filename
-      integer,intent(in)  :: line
+      integer(4),intent(in)  :: line
       character(*),intent(in):: error_type
-      integer ,parameter :: SUCCESS=0
+      integer(4) ,parameter :: SUCCESS=0
 
 65    format ("CUDA ASSERT: ",A,A,1x,6I,A," at",2x,"line",5I,/,15x,A)
 
@@ -1437,10 +1438,10 @@ c
 
       module subroutine nvshmem_get_HeapSize
       implicit none
-      integer ierr, i, length, istat
+      integer(4) ierr, i, length, istat
       character(64) hsize
       real(8) nv_size_f
-      integer,parameter::sucess=0
+      integer(4),parameter::sucess=0
 
       call get_environment_variable("NVSHMEM_SYMMETRIC_SIZE",
      &     hsize,length,status=ierr)
@@ -1487,18 +1488,19 @@ c
       end subroutine
 
       ! Return nvshmem array index location in data struct
-      module integer function shmem_index(iglob,asize,locpe) result(ind)
+      module integer(4) function shmem_index(iglob,asize,locpe)
+     &       result(ind)
       implicit none
-      integer,intent(in)::iglob
-      integer,intent(in)::asize
-      integer,intent(out)::locpe
+      integer(4),intent(in)::iglob
+      integer(4),intent(in)::asize
+      integer(4),intent(out)::locpe
       locpe = (iglob-1)/asize
       ind   = mod(iglob-1,asize) + 1
       end function shmem_index
 
       module subroutine print_memory_usage()
         implicit none
-        integer i,ierr, hsize
+        integer(4) i,ierr, hsize
         real(8) sm,pm,sdm,pdm,ddm,odm,wor,tdm,tm,adm
         real(8),save:: diff=0
         integer:: cin=1
@@ -1585,12 +1587,12 @@ c
 #ifdef USE_NVSHMEM_CUDA
       module subroutine nvshmem_int_check( sol, dat, n, npe, config )
       implicit none
-      integer sol(*)
-      integer,device::dat(*)
-      integer n,npe
-      integer,optional::config
+      integer(4) sol(*)
+      integer(4),device::dat(*)
+      integer(4) n,npe
+      integer(4),optional::config
 
-      integer i,j,st,en,cfg,diff,diff1
+      integer(4) i,j,st,en,cfg,diff,diff1
 
       if (present(config)) then
          cfg = config
@@ -1636,10 +1638,10 @@ c
       implicit none
       real(t_p) sol(*)
       real(t_p),device::dat(*)
-      integer n,npe
-      integer,optional::config
+      integer(4) n,npe
+      integer(4),optional::config
 
-      integer i,j,st,en,cfg,diff,diff1
+      integer(4) i,j,st,en,cfg,diff,diff1
       real(t_p) cap
 
       if (present(config)) then
@@ -1689,15 +1691,15 @@ c
       ! If async is true,
       module subroutine prmem_int_req( array, n, async, queue, config )
         implicit none
-        integer, allocatable, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        integer(4), allocatable, intent(inout) :: array(:)
+        integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer, optional, intent(in) :: queue, config
+        integer(4), optional, intent(in) :: queue, config
 
-        integer cfg
+        integer(4) cfg
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if ( present(async) ) then
            if( async ) async_queue = acc_async_noval
@@ -1770,7 +1772,7 @@ c
 
       subroutine enable_extra_alloc(cfg)
       implicit none
-      integer,intent(in)::cfg
+      integer(4),intent(in)::cfg
       if (cfg.eq.0.and.n_realloc_i.gt.20) then
          if(debMem) print*, 'enable extra allocation i',rank
          extra_alloc = .true.
@@ -1782,17 +1784,96 @@ c
       end if
       end subroutine
 
+      integer(4) module function get_prmem_alloc_size_i4(n) result(res)
+      implicit none
+      integer,intent(in):: n
+      res = merge(n+int(real(n,8)*mem_inc),n
+     &           ,extra_alloc.and.n.ne.natoms)
+      end function
+
       module subroutine prmem_int8_req( array, n, async, queue, config )
         implicit none
         integer(8), allocatable, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer, optional, intent(in) :: queue, config
+        integer(4), optional, intent(in) :: queue, config
 
-        integer cfg
+        integer(4) cfg
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
+        async_queue = acc_async_sync
+        if ( present(async) ) then
+           if( async ) async_queue = acc_async_noval
+        end if
+        if( present(queue) ) then
+            async_queue = queue
+        end if
+#endif
+ 13     format(A13,L3,1I14,I4)
+ 14     format(A13,L3,2I14,I4)
+        if (present(config)) then
+           cfg = config
+        else
+           cfg = mhostacc
+        end if
+
+        if (.not. allocated(array)) then
+           s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
+     &                    ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc))
+           s_array = s_alloc*szoi8
+           s_prmem = s_prmem + s_array
+           if (btest(cfg,memacc)) then
+!$acc enter data create(array) async( async_queue )
+              sd_prmem = sd_prmem + s_array
+           end if
+           if(debMem) print 13,'alloc i8 ',n.ne.s_alloc,n,rank
+        else if (btest(cfg,memfree).or.n.eq.0) then
+           s_array = size(array)*szoi8
+           if (btest(cfg,memacc)) then
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+           end if
+           !print*, 'deallocate array'
+           s_prmem = s_prmem - s_array
+           deallocate(array)
+        else
+           if ( n > size(array) .or. n < 4*size(array)/5 ) then
+              if(debMem) print 14,'realloc i8',n.ne.s_alloc
+     &                           ,n,size(array),rank
+              s_array = size(array)*szoi8
+              s_prmem = s_prmem - s_array
+              if (btest(cfg,memacc)) then
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+              end if
+              deallocate(array)
+              allocate(array(n))
+              s_array = n*szoi8
+              s_prmem = s_prmem + s_array
+              if (btest(cfg,memacc)) then
+!$acc enter data create(array) async( async_queue )
+              sd_prmem = sd_prmem + s_array
+              end if
+           end if
+        end if
+
+        !if (size(array).eq.0) print*,'trouble prmem_int8_req',n,rank
+
+      end subroutine
+
+      module subroutine prmem_int8_req1(array, n, async, queue, config)
+        implicit none
+        integer(8), allocatable, intent(inout) :: array(:)
+        integer(8), intent(in) :: n
+        logical, optional, intent(in) :: async
+        integer(4), optional, intent(in) :: queue, config
+
+        integer(4) cfg
+        integer(int_ptr_kind()) s_array
+#ifdef _OPENACC
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if ( present(async) ) then
            if( async ) async_queue = acc_async_noval
@@ -1857,17 +1938,17 @@ c
       module subroutine prmem_int_req1( array, sz_array, n, 
      &                  async, queue, config )
         implicit none
-        integer   , allocatable, intent(inout) :: array(:)
+        integer(4)   , allocatable, intent(inout) :: array(:)
         integer(8), intent(in)    :: n
         integer(8), intent(inout) :: sz_array
         logical   , optional, intent(in) :: async
-        integer   , optional, intent(in) :: queue, config
+        integer(4)   , optional, intent(in) :: queue, config
 
-        integer   cfg
+        integer(4)   cfg
         integer(8) s_alloc8
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if ( present(async) ) then
            if( async ) async_queue = acc_async_noval
@@ -1940,17 +2021,101 @@ c
 
       end subroutine
 
+      module subroutine prmem_4int1a_req( array, n,
+     &                  async, queue, config )
+        implicit none
+        integer(4)   , allocatable, intent(inout) :: array(:)
+        integer(8), intent(in)    :: n
+        logical   , optional, intent(in) :: async
+        integer(4)   , optional, intent(in) :: queue, config
+
+        integer(4)   cfg
+        integer(8) s_alloc8
+        integer(int_ptr_kind()) s_array,sz_array
+#ifdef _OPENACC
+        integer(4) :: async_queue
+        async_queue = acc_async_sync
+        if ( present(async) ) then
+           if( async ) async_queue = acc_async_noval
+        end if
+        if( present(queue) ) then
+            async_queue = queue
+        end if
+#endif
+ 13     format(A13,L3,1I14,I4)
+ 14     format(A13,L3,2I14,I4)
+        if (present(config)) then
+           cfg = config
+        else
+           cfg = mhostacc
+        end if
+
+        !TODO  Report to PGI
+        !size(array,kind=8) !is not working with pgi
+        if (.not. allocated(array)) then
+
+           s_alloc8 = merge(n+int(real(n,8)*mem_inc,8),n
+     &                     ,extra_alloc.and.n.ne.natoms)
+           allocate(array(s_alloc8))
+           s_array = s_alloc8*szoi
+           s_prmem = s_prmem + s_array
+           if (btest(cfg,memacc)) then
+!$acc enter data create(array) async( async_queue )
+              sd_prmem = sd_prmem + s_array
+           end if
+           if(debMem) print*,'alloc i o1',n.ne.s_alloc8,n,rank
+
+        else if (btest(cfg,memfree).or.n.eq.0) then
+
+           s_array = size(array)*szoi
+           if (btest(cfg,memacc)) then
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+           end if
+           s_prmem = s_prmem - s_array
+           deallocate(array)
+
+        else
+
+           sz_array = size(array)
+           if ( n > sz_array .or. n < 3*sz_array/5 ) then
+              s_alloc8 = merge(n+int(real(n,8)*mem_inc,8),n
+     &                        ,extra_alloc.and.n.ne.natoms)
+              if(debMem) print 14,'realloc i o1',n.ne.s_alloc8
+     &                           ,n,size(array),rank
+
+              s_array = sz_array*szoi
+              s_prmem = s_prmem - s_array
+              if (btest(cfg,memacc)) then
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+              end if
+              deallocate(array)
+              allocate(array(s_alloc8))
+             sz_array = s_alloc8
+              s_array = sz_array*szoi
+              s_prmem = s_prmem + s_array
+              if (btest(cfg,memacc)) then
+!$acc enter data create(array) async( async_queue )
+              sd_prmem = sd_prmem + s_array
+              end if
+           end if
+        end if
+        !if(size(array).eq.0) print*,'trouble prmem_int_req1',n,rank
+
+      end subroutine
+
       module subroutine prmem_pint_req( array, n, async, config )
         implicit none
-        integer, pointer, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        integer(4), pointer, intent(inout) :: array(:)
+        integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer, optional, intent(in) :: config
-        integer cfg
+        integer(4), optional, intent(in) :: config
+        integer(4) cfg
 
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if ( present(async) ) then
            if( async ) async_queue = acc_async_noval
@@ -2005,12 +2170,12 @@ c
       module subroutine prmem_int1_req( array, n, async )
         implicit none
         integer(1), allocatable, intent(inout) :: array(:)
-        integer   , intent(in) :: n
+        integer(4)   , intent(in) :: n
         logical   , optional, intent(in) :: async
 
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if ( present(async) ) then
            if( async ) async_queue = acc_async_noval
@@ -2045,23 +2210,23 @@ c
         !if(size(array).eq.0) print*,'trouble prmem_int1_req',n,rank
 
       end subroutine
-      ! Request heap memory on 2d integer array
+      ! Request heap memory on 2d integer(4) array
       module subroutine prmem_int_req2( array, nl, nc, async, queue,
      &                  config, nlst, ncst, cdim )
         implicit none
-        integer, allocatable, intent(inout) :: array(:,:)
-        integer, intent(in) :: nc, nl
+        integer(4), allocatable, intent(inout) :: array(:,:)
+        integer(4), intent(in) :: nc, nl
         logical, optional, intent(in) :: async
-        integer, optional, intent(in) :: queue, config
-        integer, optional, intent(in) :: nlst, ncst
+        integer(4), optional, intent(in) :: queue, config
+        integer(4), optional, intent(in) :: nlst, ncst
         logical, optional, intent(in) :: cdim
 
-        integer ashape(2)
-        integer cfg, nlstr, ncstr
+        integer(4) ashape(2)
+        integer(4) cfg, nlstr, ncstr
         integer(int_ptr_kind()) s_array
         logical f_col
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2172,13 +2337,13 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
       module subroutine prmem_int1_req2( array, nl, nc, async )
         implicit none
         integer(1), allocatable, intent(inout) :: array(:,:)
-        integer, intent(in) :: nc, nl
+        integer(4), intent(in) :: nc, nl
         logical, optional, intent(in) :: async
 
-        integer ashape(2)
+        integer(4) ashape(2)
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2227,16 +2392,16 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
      &                  config, nlst, ncst )
         implicit none
         integer(8), allocatable, intent(inout) :: array(:,:)
-        integer   , intent(in) :: nc, nl
+        integer(4)   , intent(in) :: nc, nl
         logical   , optional   , intent(in) :: async
-        integer   , optional   , intent(in) :: queue, config
-        integer   , optional   , intent(in) :: nlst, ncst
+        integer(4)   , optional   , intent(in) :: queue, config
+        integer(4)   , optional   , intent(in) :: nlst, ncst
 
-        integer ashape(2)
-        integer cfg, nlstr, ncstr
+        integer(4) ashape(2)
+        integer(4) cfg, nlstr, ncstr
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2293,17 +2458,87 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
       end subroutine
 
+      module subroutine prmem_8int2p_req( array, nl, nc, async, queue,
+     &                  config, nlst, ncst )
+        implicit none
+        integer(8), pointer, intent(inout) :: array(:,:)
+        integer(4)   , intent(in) :: nc, nl
+        logical   , optional   , intent(in) :: async
+        integer(4)   , optional   , intent(in) :: queue, config
+        integer(4)   , optional   , intent(in) :: nlst, ncst
+
+        integer(4) ashape(2)
+        integer(4) cfg, nlstr, ncstr
+        integer(int_ptr_kind()) s_array
+#ifdef _OPENACC
+        integer(4) :: async_queue
+        async_queue = acc_async_sync
+        if( present(async) ) then
+            if( async ) async_queue = acc_async_noval
+        end if
+        if( present(queue) ) then
+            async_queue = queue
+        end if
+#endif
+        if (present(config)) then
+           cfg = config
+        else
+           cfg = mhostacc
+        end if
+
+        nlstr = 1; ncstr = 1;
+        if (present(nlst)) nlstr = nlst
+        if (present(ncst)) ncstr = ncst
+
+        if (.not.associated(array)) then
+           s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &              ,extra_alloc.and.nc.ne.natoms)
+           allocate(array(nlstr:nl,ncstr:s_alloc))
+           s_array = (nl-nlstr+1)*(s_alloc-ncstr+1)*szoi8
+!$acc enter data create(array) async( async_queue )
+           s_prmem = s_prmem + s_array
+          sd_prmem =sd_prmem + s_array
+          !print*,'alloc i8 2',nl,nc,s_array
+        else if (btest(cfg,memfree).or.nc*nl.eq.0) then
+            ashape = shape(array)
+           s_array = ashape(1)*ashape(2)*szoi8
+           if (btest(cfg,memacc)) then
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+           end if
+           s_prmem = s_prmem - s_array
+           deallocate(array)
+        else
+           ashape = shape(array)
+           if ( nc>ashape(2) .or. nl.ne.ashape(1) ) then
+              if(debMem) print*,'realloc i8 2',nc,nl,ashape
+              s_array = ashape(1)*ashape(2)*szoi8
+              s_prmem = s_prmem - s_array
+             sd_prmem =sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+              deallocate(array)
+              allocate(array(nlstr:nl,ncstr:nc))
+!$acc enter data create(array) async( async_queue )
+              s_array = (nl-nlstr+1)*(nc-ncstr+1)*szoi8
+              s_prmem = s_prmem + s_array
+             sd_prmem =sd_prmem + s_array
+           end if
+        end if
+        !if(size(array).eq.0) print*,'trouble prmem_8int2p_req',nl,nc,rank
+
+      end subroutine
+
       module subroutine prmem_logi_req( array, n, async, queue, config )
         implicit none
         logical, allocatable, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer, optional, intent(in) :: queue, config
+        integer(4), optional, intent(in) :: queue, config
 
-        integer cfg
+        integer(4) cfg
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if ( present(async) ) then
            if( async ) async_queue = acc_async_noval
@@ -2362,15 +2597,15 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
      &                  nst )
         implicit none
         real(t_p), allocatable, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer, optional, intent(in) :: queue
-        integer, optional, intent(in) :: config, nst
+        integer(4), optional, intent(in) :: queue
+        integer(4), optional, intent(in) :: config, nst
 
-        integer nstr, cfg
+        integer(4) nstr, cfg
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2390,12 +2625,20 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         nstr = 1
         if (present(nst)) nstr=nst
 
-        if(.not. allocated(array)) then
+        if (.not. allocated(array)) then
             s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
      &              ,extra_alloc.and.n.ne.natoms)
+            if (s_alloc.eq.0) return
             allocate(array(nstr:s_alloc))
             if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
+               if ( async_queue.ne.acc_async_sync ) then
+               call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)
+     &                     ,rec_stream)
+               else
+               call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)
+     &                     ,int(0,mipk))
+               end if
             end if
             s_array = s_alloc*szoTp
             s_prmem = s_prmem + s_array
@@ -2418,11 +2661,19 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               end if
               s_prmem = s_prmem - s_array
               deallocate(array)
+              if (s_alloc.eq.0) return
               allocate(array(nstr:s_alloc))
               s_array = s_alloc*szoTp
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
+                if ( async_queue.ne.acc_async_sync ) then
+                call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)
+     &                      ,rec_stream)
+                else
+                call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)
+     &                      ,int(0,mipk))
+                end if
               sd_prmem =sd_prmem + s_array
               end if
             endif
@@ -2434,11 +2685,11 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
       module subroutine prmem_realm_req( array, n, async )
         implicit none
         real(r_p), allocatable, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2481,14 +2732,64 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
       end subroutine
 
-      module subroutine prmem_prealm_req( array, n, async )
+      module subroutine prmem_realm_req1( array, n, async )
         implicit none
-        real(r_p), pointer, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        real(r_p), allocatable, intent(inout) :: array(:)
+        integer(mipk), intent(in) :: n
         logical, optional, intent(in) :: async
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
+        async_queue = acc_async_sync
+        if( present(async) ) then
+            if( async ) async_queue = acc_async_noval
+        end if
+#endif
+ 14     format(A13,L3,2I10,I4)
+
+        if(.not. allocated(array)) then
+            s_alloc = merge(n+int(real(n,8)*mem_inc,mipk),n
+     &                     ,extra_alloc.and.n.ne.int(natoms,mipk))
+            allocate(array(s_alloc))
+            s_array = s_alloc*szoRp
+!$acc enter data create(array) async( async_queue )
+            s_prmem =  s_prmem + s_array
+           sd_prmem = sd_prmem + s_array
+           if(debMem) print*,'alloc rm ',n,s_alloc
+        else
+            if( n > size(array) ) then
+
+               n_realloc_r = n_realloc_r + 1
+               call enable_extra_alloc(1)
+               s_alloc = merge(n+int(real(n,8)*mem_inc,mipk),n
+     &                        ,extra_alloc.and.n.ne.natoms)
+               if(debMem) print 14,'realloc rm ',n.ne.s_alloc
+     &                            ,n,size(array),rank
+
+                s_array = size(array)*szoRp
+                s_prmem =  s_prmem - s_array
+               sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+               deallocate(array)
+               allocate(array(s_alloc))
+               s_array = s_alloc*szoRp
+!$acc enter data create(array) async( async_queue )
+                s_prmem =  s_prmem + s_array
+               sd_prmem = sd_prmem + s_array
+            endif
+        end if
+        !if(size(array).eq.0) print*,'trouble prmem_realm_req',n,rank
+
+      end subroutine
+
+      module subroutine prmem_prealm_req( array, n, async )
+        implicit none
+        real(r_p), pointer, intent(inout) :: array(:)
+        integer(4), intent(in) :: n
+        logical, optional, intent(in) :: async
+        integer(int_ptr_kind()) s_array
+#ifdef _OPENACC
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2534,10 +2835,10 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
       module subroutine prmem_preal_req( array, n, async )
         implicit none
         real(t_p), pointer, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2582,16 +2883,16 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
      &                  config, nlst, ncst )
         implicit none
         real(t_p), allocatable, intent(inout) :: array(:,:)
-        integer  , intent(in) :: nc, nl
+        integer(4)  , intent(in) :: nc, nl
         logical  , optional, intent(in) :: async
-        integer  , optional, intent(in) :: queue, config
-        integer  , optional, intent(in) :: nlst, ncst
+        integer(4)  , optional, intent(in) :: queue, config
+        integer(4)  , optional, intent(in) :: nlst, ncst
 
-        integer ashape(2)
-        integer cfg, nlstr, ncstr
+        integer(4) ashape(2)
+        integer(4) cfg, nlstr, ncstr
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2663,12 +2964,12 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
       module subroutine prmem_realm_req2( array, nl, nc, async )
         implicit none
         real(r_p), allocatable, intent(inout) :: array(:,:)
-        integer  , intent(in) :: nc, nl
+        integer(4)  , intent(in) :: nc, nl
         logical  , optional, intent(in) :: async
-        integer ashape(2)
+        integer(4) ashape(2)
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2716,20 +3017,77 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
       !if(size(array).eq.0) print*,'trouble prmem_realm_req2',nl,nc,rank
 
       end subroutine
+      ! Request heap memory on tinker 2D real pointer mixed precision data
+      module subroutine prmem_realpm_req2( array, nl, nc, async )
+        implicit none
+        real(r_p), pointer, intent(inout) :: array(:,:)
+        integer(4)  , intent(in) :: nc, nl
+        logical  , optional, intent(in) :: async
+        integer(4) ashape(2)
+        integer(int_ptr_kind()) s_array
+#ifdef _OPENACC
+        integer(4) :: async_queue
+        async_queue = acc_async_sync
+        if( present(async) ) then
+            if( async ) async_queue = acc_async_noval
+        end if
+#endif
+  66    format ('error MOD_subMemory.f:prmem_realm_req2 ',
+     &          'improper array shape !! ', 2I4,' over ', 2I4,/,
+     &          'cannot procede to reallocation ')
+
+        if (.not.associated(array)) then
+           s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &              ,extra_alloc.and.nc.ne.natoms)
+           allocate(array(nl,s_alloc))
+           s_array = nl*s_alloc*szoRp
+!$acc enter data create(array) async( async_queue )
+            s_prmem =  s_prmem + s_array
+           sd_prmem = sd_prmem + s_array
+           if(debMem) print*,'alloc rm 2',nc.ne.s_alloc,nl,nc
+        else
+           ashape = shape(array)
+           if (nl.ne.ashape(1)) then
+              print 66, ashape, nl,nc
+              call fatal
+           end if
+           if ( nc > ashape(2) ) then
+ 12           format(A13,L3,3I10,2x,I5)
+              n_realloc_r = n_realloc_r + 1
+              s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
+     &                       ,extra_alloc.and.nc.ne.natoms)
+              if(debMem) print 12,'realloc rm 2',nc.ne.s_alloc
+     &                         ,nc,ashape,rank
+
+              s_array  = ashape(1)*ashape(2)*szoRp
+               s_prmem =  s_prmem - s_array
+              sd_prmem = sd_prmem - s_array
+!$acc exit data delete(array) async( async_queue )
+              deallocate(array)
+              allocate  (array(nl,s_alloc))
+              s_array  = nl*s_alloc*szoRp
+               s_prmem =  s_prmem + s_array
+              sd_prmem = sd_prmem + s_array
+!$acc enter data create(array) async( async_queue )
+           end if
+        end if
+      !if(size(array).eq.0) print*,'trouble prmem_realm_req2',nl,nc,rank
+
+      end subroutine
 
       ! Request heap memory on tinker 3D real data
       module subroutine prmem_real_req3(array, nx,ny,nz, async, queue_,
      &                  config)
         implicit none
         real(t_p), allocatable, intent(inout) :: array(:,:,:)
-        integer  , intent(in) :: nx, ny, nz
+        integer(4)  , intent(in) :: nx, ny, nz
         logical  , optional, intent(in) :: async
-        integer  , optional, intent(in) :: queue_, config
-        integer ashape(3)
-        integer cfg
+        integer(4)  , optional, intent(in) :: queue_, config
+        integer(4) ashape(3)
+        integer(4) cfg
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
            if( async ) async_queue = acc_async_noval
@@ -2806,14 +3164,14 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
      &                  config)
         implicit none
         real(r_p), allocatable, intent(inout) :: array(:,:,:)
-        integer  , intent(in) :: nx, ny, nz
+        integer(4)  , intent(in) :: nx, ny, nz
         logical  , optional, intent(in) :: async
-        integer  , optional, intent(in) :: queue_, config
-        integer ashape(3)
-        integer cfg
+        integer(4)  , optional, intent(in) :: queue_, config
+        integer(4) ashape(3)
+        integer(4) cfg
         integer(int_ptr_kind()) s_array,so_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
            if( async ) async_queue = acc_async_noval
@@ -2886,12 +3244,12 @@ c          end if
       module subroutine prmem_real_req4(array, nx, ny, nz, nc, async)
         implicit none
         real(t_p), allocatable, intent(inout) :: array(:,:,:,:)
-        integer  , intent(in) :: nx, ny, nz, nc
+        integer(4)  , intent(in) :: nx, ny, nz, nc
         logical  , optional, intent(in) :: async
-        integer ashape(4)
+        integer(4) ashape(4)
         integer(int_ptr_kind()) s_array
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if( present(async) ) then
             if( async ) async_queue = acc_async_noval
@@ -2950,16 +3308,16 @@ c     Move allocation functions
 c
       module subroutine prmem_int_mvreq( array, n, async,queue,config )
         implicit none
-        integer, allocatable, intent(inout) :: array(:)
-        integer, intent(in) :: n
+        integer(4), allocatable, intent(inout) :: array(:)
+        integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer, optional, intent(in) :: queue, config
+        integer(4), optional, intent(in) :: queue, config
 
-        integer cfg,sz_array,i
+        integer(4) cfg,sz_array,i
         integer(int_ptr_kind()) s_array
-        integer,allocatable:: buffer(:)
+        integer(4),allocatable:: buffer(:)
 #ifdef _OPENACC
-        integer :: async_queue
+        integer(4) :: async_queue
         async_queue = acc_async_sync
         if ( present(async) ) then
            if( async ) async_queue = acc_async_noval

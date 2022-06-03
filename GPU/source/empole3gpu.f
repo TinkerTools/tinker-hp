@@ -20,6 +20,7 @@ c
       module empole3gpu_inl
         use tintypes , only: real3,rpole_elt
         include "erfcore_data.f.inc"
+#include "atomicOp.h.f"
         contains
 #include "image.f.inc"
 #if defined(SINGLE) | defined(MIXED)
@@ -28,6 +29,8 @@ c
         include "erfcdcore.f.inc"
 #endif
 #include "switch_respa.f.inc"
+#include "groups.inc.f"
+#include "atomicOp.inc.f"
 #include "pair_mpole1.f.inc"
       end module
 
@@ -70,8 +73,7 @@ c
       use energi
       use ewald
       use inform     ,only: deb_Path
-      use interfaces ,only: reorder_nblist
-     &               ,emrealshortlong3d_p,emreal3d_p
+      use interfaces ,only: reorder_nblist,emreal3d_p
       use math
       use mpole
       use mpi
@@ -156,13 +158,7 @@ c
      $   then
         call timer_enter (timer_real )
         if (use_mreal) then
-           if (use_mpoleshortreal) then
-              call emrealshortlong3d_p
-           else if (use_mpolelong) then
-              call emrealshortlong3d_p
-           else
-              call emreal3d_p
-           end if
+           call emreal3d_p
         end if
 c
 c     compute the self-energy part of the Ewald summation
@@ -276,83 +272,111 @@ c     W. Smith, "Point Multipoles in the Ewald Summation (Revisited)",
 c     CCP5 Newsletter, 46, 18-30, 1998  (see http://www.ccp5.org/)
 c
 c
-      subroutine emreal3dgpu
+      subroutine emreal3d_ac
       use action ,only:nem_
       use atmlst ,only:poleglobnl
       use atoms  ,only:x,y,z,n
+      use cutoff ,only:shortheal,ewaldshortcut
       use chgpot ,only:electric,dielec
       use domdec ,only:rank,nbloc,loc
-      use empole3gpu_inl ,only: image_inl,mpole3_couple
-#ifdef USE_DETERMINISTIC_REDUCTION
-     &                   ,tp2enr
-#endif
+      use empole3gpu_inl
       use energi ,only:em=>em_r
       use ewald  ,only:aewald
+      use group  ,only:use_group,grplist,wgrp
       use inform ,only:deb_Path
-      use interfaces,only: emreal3_correct_interactions
       use math   ,only:sqrtpi
+      use mutant ,only:elambda,mutInt
       !use mpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl,npole
-      use neigh  ,only:nelst,elst
-      use shunt  ,only:off2
-      use utilgpu,only:dir_queue,rec_queue,def_queue,warning
-     &                ,maxscaling
-      use tinTypes ,only:real3,rpole_elt
+      use neigh  ,only:nelst,elst,shortelst,nshortelst
+      use potent ,only:use_mpoleshortreal,use_mpolelong,use_lambdadyn
+      use shunt  ,only:off,off2
       use timestat
+      use tinheader ,only:ti_p,zeror,oner
+      use tinTypes
+      use utilgpu,only:dir_queue,rec_queue,def_queue,warning
       implicit none
 
-      integer i,j,k,iglob,kglob,kbis
-      integer ii,kk,iipole,kkpole
-      integer nnelst
-#ifdef TINKER_DEBUG
-#endif
-      real(t_p) zero
+      integer i,j,k,iglob,kglob,kbis,ver,ver1,fea
+      integer ii,kk,iipole,kkpole,nnelst
+      integer(1) mutik
+      integer,pointer::lst(:,:),nlst(:)
+      real(t_p) scut
       real(t_p) r2,f,e
       real(t_p) alsq2,alsq2n
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
+      real(t_p) xi,yi,zi,xr,yr,zr
+     &         ,fgrp,delambdae_
       type(rpole_elt) ip,kp
+      type(real3) frc,ttmi,ttmk
       real(t_p) mscale
-      parameter(zero=0.0)
-      character*10 mode
+      real(t_p) loff2
+      parameter(ver =__use_ene__+__use_act__
+     &         ,ver1=      ver  +__use_sca__
+     &         )
 
-      if (npole .eq. 0)  return
-      if(deb_Path) write(*,'(3x,a)') 'emreal3dgpu'
+      if (npole .eq. 0) return
+      if (deb_Path) write(*,'(2x,a,2L3)')
+     &   'emreal3d_ac',use_mpoleshortreal,use_mpolelong
+      call timer_enter( timer_emreal )
 
-#ifdef TINKER_DEBUG
-#endif
+      fea=__use_mpi__+__use_groups__
+      if     (use_mpoleshortreal) then
+         fea = fea + __use_shortRange__
+      else if(use_mpolelong) then
+         fea = fea + __use_longRange__
+      end if
 c
 c     set conversion factor, cutoff and switching coefficients
 c
-      call timer_enter( timer_emreal )
-      mode   = 'EWALD'
-      call switch (mode)
-
+      ! Configure data to be use in next loop
+      if (use_mpoleshortreal) then
+         call switch('SHORTEWALD')
+         loff2 = 0.0_ti_p
+          lst =>  shortelst
+         nlst => nshortelst
+      else if (use_mpolelong) then
+         call switch('EWALD     ')
+         loff2 = (scut-shortheal)**2
+          lst =>  elst
+         nlst => nelst
+      else
+         call switch('EWALD     ')
+         loff2 = 0.0_ti_p
+          lst =>  elst
+         nlst => nelst
+      end if
+      scut   = ewaldshortcut
       f      = electric / dielec
       alsq2  = 2 * aewald**2
-      alsq2n = zero
-      if (aewald .gt. zero)
+      alsq2n = zeror
+      if (aewald .gt. zeror)
      &   alsq2n = 1.0 / (sqrtpi*aewald)
 c
 c     compute the real space portion of the Ewald summation
+c     (Scaling interactions)
 c
-!$acc parallel loop gang vector_length(32)
-!$acc&         present(nem_,em,poleglobnl,ipole,loc,
-!$acc&  x,y,z,rpole,elst,nelst)
-!$acc&         private(ip)
-#ifdef TINKER_DEBUG
-#endif
+!$acc parallel loop present(em,nem_,ipole,loc,x,y,z,rpole,
+!$acc&  mcorrect_ik,mcorrect_scale,grplist,wgrp)
+!$acc&         private(ip,kp,frc,ttmi,ttmk)
+!$acc&         reduction(+:em,nem_)
 !$acc&         async(def_queue)
-      do ii = 1, npolelocnl
-         iipole = poleglobnl(ii)
+      do ii = 1, n_mscale
+         iipole = mcorrect_ik(ii,1)
+         kkpole = mcorrect_ik(ii,2)
+         mscale = mcorrect_scale(ii)
          iglob  = ipole(iipole)
+         kglob  = ipole(kkpole)
          i      = loc(iglob)
-         nnelst = nelst(ii)
-         if (nnelst.eq.0) cycle
-         xi     = x(iglob)
-         yi     = y(iglob)
-         zi     = z(iglob)
+         kbis   = loc(kglob)
+
+         xr     = x(kglob) - x(iglob)
+         yr     = y(kglob) - y(iglob)
+         zr     = z(kglob) - z(iglob)
+         call image_inl(xr,yr,zr)
+         r2     = xr*xr + yr*yr + zr*zr
+         if (r2.lt.loff2.or.r2.gt.off2) cycle  !apply cutoff
+
          ip%c   = rpole(01,iipole)
          ip%dx  = rpole(02,iipole)
          ip%dy  = rpole(03,iipole)
@@ -363,132 +387,43 @@ c
          ip%qyy = rpole(09,iipole)
          ip%qyz = rpole(10,iipole)
          ip%qzz = rpole(13,iipole)
-c
-c     evaluate all sites within the cutoff distance
-c
-!$acc loop vector private(kp)
-         do kk = 1, nnelst
-            kkpole = elst(kk,ii)
-            kglob  = ipole(kkpole)
-            kbis   = loc(kglob)
-            xr     = x(kglob) - xi
-            yr     = y(kglob) - yi
-            zr     = z(kglob) - zi
-            call image_inl(xr,yr,zr)
-            r2     = xr*xr + yr*yr + zr*zr
-            if (r2 .gt. off2) cycle       !apply cutoff
+         kp%c   = rpole(01,kkpole)
+         kp%dx  = rpole(02,kkpole)
+         kp%dy  = rpole(03,kkpole)
+         kp%dz  = rpole(04,kkpole)
+         kp%qxx = rpole(05,kkpole)
+         kp%qxy = rpole(06,kkpole)
+         kp%qxz = rpole(07,kkpole)
+         kp%qyy = rpole(09,kkpole)
+         kp%qyz = rpole(10,kkpole)
+         kp%qzz = rpole(13,kkpole)
 
-            kp%c   = rpole( 1,kkpole)
-            kp%dx  = rpole( 2,kkpole)
-            kp%dy  = rpole( 3,kkpole)
-            kp%dz  = rpole( 4,kkpole)
-            kp%qxx = rpole( 5,kkpole)
-            kp%qxy = rpole( 6,kkpole)
-            kp%qxz = rpole( 7,kkpole)
-            kp%qyy = rpole( 9,kkpole)
-            kp%qyz = rpole(10,kkpole)
-            kp%qzz = rpole(13,kkpole)
+c        if (use_lambdadyn) mutik=mutInt(iglob)+mutInt(kglob)
 
-            ! compute mpole one interaction
-            call mpole3_couple(r2,xr,yr,zr,ip,kp,zero,
-     &                         aewald,f,alsq2n,alsq2,e,.false.)
+         if (use_group)
+     &      call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
 
-            ! update energy
-            em    =  em + tp2enr(e)
-            nem_  = nem_+ 1
+         ! compute mpole one interaction
+         call duo_mpole(r2,xr,yr,zr,ip,kp,mscale
+     &                 ,scut,shortheal,aewald,f,alsq2n,alsq2
+     &                 ,use_group,fgrp,use_lambdadyn,mutik,elambda
+     &                 ,delambdae_,e,frc,ttmi,ttmk,ver1,fea)
 
-         end do
+         ! update energy
+         em     = em  + tp2enr(e)
+
+         if (mscale.eq.oner) nem_ = nem_ -1
+
+c        if (use_lambdadyn) delamdbae=delamdbae+delambdae_
       end do
-
-      call emreal3_correct_interactions
-      call timer_exit( timer_emreal )
-
-      end
-
-      subroutine emrealshortlong3d
-      use action ,only:nem_
-      use atmlst ,only:poleglobnl
-      use atoms  ,only:x,y,z,n
-      use cutoff ,only:mpoleshortcut,shortheal
-      use chgpot ,only:electric,dielec
-      use domdec ,only:rank,nbloc,loc
-      use empole3gpu_inl
-      use energi ,only:em=>em_r
-      use ewald  ,only:aewald
-      use inform ,only:deb_Path
-      use interfaces,only: emreal3_correct_interactions_shortlong
-     &              ,m_long,m_short
-      use math   ,only:sqrtpi
-      !use mpi
-      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
-      use mpole  ,only:rpole,ipole,polelocnl,npolelocnl,npole
-      use neigh  ,only:nelst,elst,shortelst,nshortelst
-      use potent ,only:use_mpoleshortreal,use_mpolelong
-      use shunt  ,only:off,off2
-      use timestat
-      use tinheader ,only:ti_p
-      use utilgpu,only:dir_queue,rec_queue,def_queue,warning
-     &           ,rpole_elt,maxscaling
-      implicit none
-
-      integer i,j,k,iglob,kglob,kbis
-      integer ii,kk,iipole,kkpole
-      integer nnelst,mode
-      integer,pointer::lst(:,:),nlst(:)
-#ifdef TINKER_DEBUG
-#endif
-      real(t_p) zero,r_cut
-      real(t_p) r2,f,e
-      real(t_p) alsq2,alsq2n
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-      type(rpole_elt) ip,kp
-      real(t_p) mscale
-      real(t_p) mpoleshortcut2
-      parameter(zero=0.0_ti_p)
-
-      if (npole .eq. 0) return
-      if (deb_Path)
-     &   write(*,'(3x,a)') 'emrealshortlong3d'
-
-#ifdef TINKER_DEBUG
-#endif
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f      = electric / dielec
-      alsq2  = 2 * aewald**2
-      alsq2n = zero
-      if (aewald .gt. zero)
-     &   alsq2n = 1.0 / (sqrtpi*aewald)
-      call timer_enter( timer_emreal )
-
-      ! Configure data to be use in next loop
-      if (use_mpoleshortreal) then
-         call switch('SHORTEWALD')
-         mode  = m_short
-         r_cut = off
-         mpoleshortcut2 = 0.0_ti_p
-          lst =>  shortelst
-         nlst => nshortelst
-      else
-         call switch('EWALD     ')
-         mode  = m_long
-         r_cut = mpoleshortcut
-         mpoleshortcut2 = (mpoleshortcut-shortheal)**2
-          lst =>  elst
-         nlst => nelst
-      end if
-!$acc enter data attach(nlst,lst) async(def_queue)
 c
 c     compute the real space portion of the Ewald summation
 c
 !$acc parallel loop gang vector_length(32)
 !$acc&         present(em,nem_,poleglobnl,ipole,loc,x,y,z,rpole,
-!$acc&  lst,nlst)
+!$acc&  lst,nlst,grplist,wgrp)
 !$acc&         private(ip)
-#ifdef TINKER_DEBUG
-#endif
+!$acc&         reduction(+:em,nem_)
 !$acc&         async(def_queue)
       do ii = 1, npolelocnl
          iipole = poleglobnl(ii)
@@ -512,7 +447,7 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-!$acc loop vector private(kp)
+!$acc loop vector private(kp,frc,ttmi,ttmk) reduction(+:em,nem_)
          do kk = 1, nnelst
             kkpole = lst(kk,ii)
             kglob  = ipole(kkpole)
@@ -522,7 +457,7 @@ c
             zr     = z(kglob) - zi
             call image_inl(xr,yr,zr)
             r2     = xr*xr + yr*yr + zr*zr
-            if (r2.lt.mpoleshortcut2.or.r2.gt.off2) cycle       !apply cutoff
+            if (r2.lt.loff2.or.r2.gt.off2) cycle       !apply cutoff
 
             kp%c   = rpole( 1,kkpole)
             kp%dx  = rpole( 2,kkpole)
@@ -535,82 +470,87 @@ c
             kp%qyz = rpole(10,kkpole)
             kp%qzz = rpole(13,kkpole)
 
+            if (use_group)
+     &         call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+            
             ! compute mpole one interaction
-            call mpole3_couple_shortlong(r2,xr,yr,zr,ip,kp,zero,
-     &                    r_cut,shortheal,aewald,f,alsq2n,alsq2,
-     &                    e,.false.,mode)
+            call duo_mpole(r2,xr,yr,zr,ip,kp,zeror
+     &                    ,scut,shortheal,aewald,f,alsq2n,alsq2
+     &                    ,use_group,fgrp,use_lambdadyn,mutik,elambda
+     &                    ,delambdae_,e,frc,ttmi,ttmk
+     &                    ,ver,fea)
 
             ! update energy
             em       = em   + tp2enr(e)
             nem_     = nem_ + 1
-
-#ifdef TINKER_DEBUG
-#endif
          end do
       end do
-!$acc exit data detach(nlst,lst) async(def_queue)
 
-      call emreal3_correct_interactions_shortlong
       call timer_exit( timer_emreal )
 
       end
 
+#ifdef _CUDA
       ! CUDA Fortran version of emreal1c using C2 nblist
       subroutine emreal3d_cu
       use action ,only:nem
       use atmlst ,only:poleglobnl
       use atoms  ,only:x,y,z,n
+      use cutoff ,only:mpoleshortcut,shortheal,ewaldshortcut
       use chgpot ,only:electric,dielec
       use cell
-      use domdec  ,only: xbegproc,ybegproc,zbegproc
-     &            ,nproc,rank,xendproc,yendproc,zendproc
-     &            ,nbloc,loc
-#ifdef _CUDA
-      use empole1cu ,only: emreal3_cu
-#endif
+      use deriv  ,only:dem,delambdae
+      use domdec ,only: xbegproc,ybegproc,zbegproc
+     &           ,nproc,rank,xendproc,yendproc,zendproc
+     &           ,nbloc,loc
+      use empole1cu ,only: emreal3_kcu
       use energi ,only:em=>em_r
       use ewald  ,only:aewald
-      use inform ,only:deb_Path
-      use interfaces,only: emreal_correct_interactions
+      use group  ,only:use_group,grplist,wgrp
+      use inform ,only: deb_Path,minmaxone
       use math   ,only:sqrtpi
+      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       !use mpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
-      use mpole  ,only:rpole,ipole,polelocnl,npolelocnl,npole
+      use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
      &           ,npolelocnlb,npolelocnlb_pair,npolebloc
-     &           ,npolelocnlb2_pair
+     &           ,npolelocnlb2_pair,nshortpolelocnlb2_pair,ipole
+      use mutant ,only:mutInt,elambda
       use neigh  ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
      &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
      &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
-      use shunt  ,only:off2
-#ifdef _CUDA
-      use utilcu ,only:BLOCK_DIM,check_launch_kernel
-#endif
-      use utilgpu,only:dir_queue,rec_queue,def_queue,warning
-     &           ,real3,rpole_elt,RED_BUFF_SIZE
-     &           ,ered_buff=>ered_buf1,nred_buff,reduce_energy_action
-     &           ,zero_en_red_buffer
-#ifdef  _OPENACC
-     &           ,dir_stream,def_stream
-#endif
+     &           , seblst_s=>shorteblst,iseblst_s=>ishorteblst
+      use potent ,only:use_mpoleshortreal,use_mpolelong,use_lambdadyn
+      use shunt  ,only:off,off2
       use timestat
+      use tinheader,only: ti_p
+      use utilcu ,only:BLOCK_DIM,check_launch_kernel
+      use utilgpu,only:dir_queue,rec_queue,def_queue,warning
+     &           ,RED_BUFF_SIZE,BLOCK_SIZE
+     &           ,ered_buff=>ered_buf1,vred_buff,lam_buff,nred_buff
+     &           ,reduce_energy_action
+     &           ,zero_en_red_buffer
+     &           ,dir_stream,def_stream
+      !use tinTypes
+      use virial
       implicit none
 
-      integer i
-#ifdef TINKER_DEBUG
-#endif
+      integer i,sizc,start1
       real(t_p) r2,f,e
       real(t_p) alsq2,alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+      real(t_p) loff2,lcut
+      real(t_p),allocatable :: tem(:,:)
       logical,save:: first_in=.true.
       integer,save:: gS
-      character*10 mode
+      character*11 mode
 
-      if (npole .eq. 0)  return
-      if(deb_Path) write(*,'(2x,a)') 'emreal3d_cu'
       call timer_enter( timer_emreal )
+      if (deb_Path) write(*,'(2x,a)') 'emreal3d_cu'
 
-#ifdef TINKER_DEBUG
-#endif
+      if (use_mpoleshortreal.or.use_mpolelong) then
+         __TINKER_FATAL__
+      end if
 c
 c     set conversion factor, cutoff and switching coefficients
 c
@@ -618,135 +558,8 @@ c
       call switch (mode)
 
       f      = electric / dielec
-      alsq2  = 2 * aewald**2
-      alsq2n = 0
-      if (aewald .gt. 0.0)
-     &   alsq2n = 1.0 / (sqrtpi*aewald)
-
-      p_xbeg = xbegproc(rank+1)
-      p_xend = xendproc(rank+1)
-      p_ybeg = ybegproc(rank+1)
-      p_yend = yendproc(rank+1)
-      p_zbeg = zbegproc(rank+1)
-      p_zend = zendproc(rank+1)
-
-      if (first_in) then
-#ifdef _CUDA
-         call cudaMaxGridSize("emreal3_cu",gS)
-#endif
-         first_in = .false.
-      end if
-
-#ifdef _CUDA
-      def_stream = dir_stream
-      call zero_en_red_buffer(def_queue)
-
-!$acc host_data use_device(ipole_s,pglob_s,loc_s,ieblst_s,eblst_s
-!$acc&    ,x_s,y_s,z_s,rpole,ered_buff,nred_buff
-#ifdef TINKER_DEBUG
-#endif
-!$acc&    )
-
-      !call CUDA kernel to compute the real space portion of the Ewald summation
-      call emreal3_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &        ( ipole_s, pglob_s, loc_s, ieblst_s
-     &        , eblst_s(2*npolelocnlb_pair+1)
-     &        , npolelocnlb, npolelocnlb2_pair, npolebloc, n
-     &        , x_s, y_s, z_s, rpole
-     &        , off2, f, alsq2, alsq2n, aewald
-     &        , ered_buff, nred_buff
-     &        , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-#ifdef TINKER_DEBUG
-#endif
-     &        )
-      call check_launch_kernel(" emreal3_cu")
-
-!$acc end host_data
-
-      call reduce_energy_action(em,nem,ered_buff,def_queue)
-#else
- 100  format('emreal3c_core2 is a specific device routine !!',/,
-     &       'you are not supposed to get inside with your compile ',
-     &       'mode.')
-      print 100
-      call fatal
-#endif
-
-#ifdef TINKER_DEBUG
-#endif
-      call emreal3_correct_interactions
-      call timer_exit( timer_emreal )
-
-      end
-
-      subroutine emrealshortlong3d_cu
-      use action ,only:nem
-      use atmlst ,only:poleglobnl
-      use atoms  ,only:x,y,z,n
-      use cutoff ,only:mpoleshortcut,shortheal
-      use chgpot ,only:electric,dielec
-      use cell
-      use domdec  ,only: xbegproc,ybegproc,zbegproc
-     &            ,nproc,rank,xendproc,yendproc,zendproc
-     &            ,nbloc,loc
-#ifdef _CUDA
-      use empole1cu ,only: emrealshortlong3_cu
-#endif
-      use energi ,only:em=>em_r
-      use ewald  ,only:aewald
-      use inform ,only:deb_Path
-      use interfaces,only: emreal_correct_interactions_shortlong
-     &              ,m_long,m_short
-      use math   ,only:sqrtpi
-      !use mpi
-      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
-      use mpole  ,only:rpole,ipole,polelocnl,npolelocnl,npole
-     &           ,npolelocnlb,npolelocnlb_pair,npolebloc
-     &           ,npolelocnlb2_pair,nshortpolelocnlb2_pair
-      use neigh  ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
-     &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
-     &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
-     &           , seblst_s=>shorteblst,iseblst_s=>ishorteblst
-      use potent ,only:use_mpoleshortreal,use_mpolelong
-      use shunt  ,only:off,off2
-      use timestat
-      use tinheader,only: ti_p
-#ifdef _CUDA
-      use utilcu ,only:BLOCK_DIM,check_launch_kernel
-#endif
-      use utilgpu,only:dir_queue,rec_queue,def_queue,warning
-     &           ,real3,rpole_elt,RED_BUFF_SIZE
-     &           ,ered_buff=>ered_buf1,nred_buff,reduce_energy_action
-     &           ,zero_en_red_buffer
-#ifdef  _OPENACC
-     &           ,dir_stream,def_stream
-#endif
-      implicit none
-
-      integer i,mode
-#ifdef TINKER_DEBUG
-#endif
-      real(t_p) r2,f,e
-      real(t_p) alsq2,alsq2n
-      real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-      real(t_p) mpoleshortcut2,r_cut
-      logical,save:: first_in=.true.
-      integer,save:: gS
-
-      if (npole .eq. 0)  return
-      if(deb_Path) 
-     &   write(*,'(3x,a)') 'emrealshortlong3d_cu'
-      call timer_enter( timer_emreal )
-
-#ifdef TINKER_DEBUG
-#endif
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-
-      f      = electric / dielec
-      alsq2  = 2 * aewald**2
-      alsq2n = 0
+      alsq2  = 2.0 * aewald**2
+      alsq2n = 0.0
       if (aewald .gt. 0.0)
      &   alsq2n = 1.0 / (sqrtpi*aewald)
 
@@ -758,303 +571,53 @@ c
       p_zend = zendproc(rank+1)
 
       if (use_mpoleshortreal) then
-         call switch('SHORTEWALD')
-         mode = m_short
-         mpoleshortcut2 = 0.0_ti_p
-         r_cut = off
+         loff2 = 0.0_ti_p
       else if (use_mpolelong) then
-         call switch('EWALD     ')
-         mode = m_long
-         mpoleshortcut2 = (mpoleshortcut-shortheal)**2
-         r_cut = mpoleshortcut
+         loff2 = (ewaldshortcut-shortheal)**2
+      else
+         loff2 = 0.0_ti_p
       end if
+      lcut  = ewaldshortcut
 
       if (first_in) then
-#ifdef _CUDA
-        call cudaMaxGridSize("emrealshortlong3_cu",gS)
-#endif
+         call cudaMaxGridSize("emreal3_kcu",gS)
          first_in = .false.
       end if
 
-#ifdef _CUDA
       def_stream = dir_stream
+      def_queue  = dir_queue
+      sizc       = size(mcorrect_ik,1)
+      start1     = 2*npolelocnlb_pair+1
       call zero_en_red_buffer(def_queue)
 
-
-      if (use_mpoleshortreal) then
-!$acc host_data use_device(ipole_s,pglob_s,loc_s,iseblst_s,seblst_s
-!$acc&    ,x_s,y_s,z_s,rpole,ered_buff,nred_buff
-#ifdef TINKER_DEBUG
-#endif
+!$acc host_data use_device(ipole_s,pglob_s,loc_s
+!$acc&    ,ieblst_s,eblst_s,iseblst_s,seblst_s
+!$acc&    ,x_s,y_s,z_s,rpole,dem,tem
+!$acc&    ,grplist,wgrp,mutInt
+!$acc&    ,ered_buff,vred_buff,lam_buff,nred_buff
+!$acc&    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z
 !$acc&    )
-      !call CUDA kernel to compute the real space portion of the Ewald summation
-      call emrealshortlong3_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &        ( ipole_s, pglob_s, loc_s, iseblst_s
-     &        , seblst_s(2*npolelocnlb_pair+1)
-     &        , npolelocnlb, nshortpolelocnlb2_pair, npolebloc, n
-     &        , x_s, y_s, z_s, rpole
-     &        , shortheal, r_cut, mpoleshortcut2, off2, f
-     &        , alsq2, alsq2n, aewald, mode
-     &        , ered_buff, nred_buff
-     &        , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-#ifdef TINKER_DEBUG
-#endif
-     &        )
-!$acc end host_data
 
-      else
-!$acc host_data use_device(ipole_s,pglob_s,loc_s,ieblst_s,eblst_s
-!$acc&    ,x_s,y_s,z_s,rpole,ered_buff,nred_buff
-#ifdef TINKER_DEBUG
-#endif
-!$acc&    )
-      !call CUDA kernel to compute the real space portion of the Ewald summation
-      call emrealshortlong3_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &        ( ipole_s, pglob_s, loc_s, ieblst_s
-     &        , eblst_s(2*npolelocnlb_pair+1)
-     &        , npolelocnlb, npolelocnlb2_pair, npolebloc, n
-     &        , x_s, y_s, z_s, rpole
-     &        , shortheal, r_cut, mpoleshortcut2, off2, f
-     &        , alsq2, alsq2n, aewald, mode
-     &        , ered_buff, nred_buff
-     &        , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-#ifdef TINKER_DEBUG
-#endif
-     &        )
+      call emreal3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &    (ipole_s,pglob_s,loc_s
+     &    ,ieblst_s,eblst_s(start1)
+     &    ,npolelocnlb,npolelocnlb2_pair,npolebloc,n
+     &    ,x_s,y_s,z_s,rpole
+     &    ,shortheal,lcut,loff2,off2,f,alsq2,alsq2n,aewald
+     &    ,use_group,grplist,wgrp,use_lambdadyn,elambda,mutInt
+     &    ,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff
+     &    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale,sizc
+     &    )
+      call check_launch_kernel("emreal3_kcu")
+
 !$acc end host_data
-      end if
-      call check_launch_kernel(" emrealshortlong3_cu")
 
       call reduce_energy_action(em,nem,ered_buff,def_queue)
-#else
- 100  format('emrealshortlong3d_cu is a specific device routine !!',
-     &       /,'you are not supposed to get inside with your compile ',
-     &       'mode.')
-      print 100
-      call fatal
-#endif
-
-#ifdef TINKER_DEBUG
-#endif
-
-      call emreal3_correct_interactions_shortlong
       call timer_exit( timer_emreal )
-      end
-
-
-      ! Procede to corrections of scaling interactions
-      subroutine
-     &   emreal3_correct_interactions
-      use action ,only:nem
-      use atoms  ,only:x,y,z
-      use chgpot ,only:electric,dielec
-      use domdec ,only:rank,nbloc,loc
-      use empole3gpu_inl
-      use energi ,only:em=>em_r
-      use ewald  ,only:aewald
-      use inform ,only:deb_Path
-      use math   ,only:sqrtpi
-      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
-      use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
-      use shunt  ,only:off2
-      use tinheader,only: ti_p
-      use utilgpu  ,only:def_queue
-      implicit none
-
-      integer   i,j,k,iglob,kglob,kbis
-      integer   ii,kk,iipole,kkpole
-      real(t_p) zero
-      real(t_p) r2,f,e
-      real(t_p) alsq2,alsq2n
-      real(t_p) xr,yr,zr
-      type(rpole_elt) ip,kp
-      real(t_p) mscale
-      logical   corre
-      parameter(zero=0.0)
-
-      if (deb_Path)
-     &   write(*,'(2x,a)') 'emreal3_correct_interactions'
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f      = electric / dielec
-      alsq2  = 2 * aewald**2
-      alsq2n = zero
-      if (aewald .gt. zero)
-     &   alsq2n = 1.0 / (sqrtpi*aewald)
-c
-c     Apply correction to scaling factor interactions
-c
-!$acc parallel loop vector_length(32)
-!$acc&         present(em,nem,ipole,loc,x,y,z,rpole
-!$acc&     ,mcorrect_ik,mcorrect_scale)
-!$acc&         private(ip,kp)
-!$acc&         reduction(+:nem)
-!$acc&         async(def_queue)
-      do ii = 1, n_mscale
-         iipole = mcorrect_ik(ii,1)
-         kkpole = mcorrect_ik(ii,2)
-         mscale = mcorrect_scale(ii)
-         iglob  = ipole(iipole)
-         kglob  = ipole(kkpole)
-         i      = loc(iglob)
-         kbis   = loc(kglob)
-
-         xr     = x(kglob) - x(iglob)
-         yr     = y(kglob) - y(iglob)
-         zr     = z(kglob) - z(iglob)
-         call image_inl(xr,yr,zr)
-         r2     = xr*xr + yr*yr + zr*zr
-         if (r2 .gt. off2) cycle       !apply cutoff
-
-         ip%c   = rpole(01,iipole)
-         ip%dx  = rpole(02,iipole)
-         ip%dy  = rpole(03,iipole)
-         ip%dz  = rpole(04,iipole)
-         ip%qxx = rpole(05,iipole)
-         ip%qxy = rpole(06,iipole)
-         ip%qxz = rpole(07,iipole)
-         ip%qyy = rpole(09,iipole)
-         ip%qyz = rpole(10,iipole)
-         ip%qzz = rpole(13,iipole)
-         kp%c   = rpole(01,kkpole)
-         kp%dx  = rpole(02,kkpole)
-         kp%dy  = rpole(03,kkpole)
-         kp%dz  = rpole(04,kkpole)
-         kp%qxx = rpole(05,kkpole)
-         kp%qxy = rpole(06,kkpole)
-         kp%qxz = rpole(07,kkpole)
-         kp%qyy = rpole(09,kkpole)
-         kp%qyz = rpole(10,kkpole)
-         kp%qzz = rpole(13,kkpole)
-
-         call mpole3_couple(r2,xr,yr,zr,ip,kp,mscale,
-     &                      aewald,f,alsq2n,alsq2,e,.true.)
-
-         ! update energy
-         em     = em  + tp2enr(e)
-         if (mscale.eq.1.0_ti_p) nem = nem - 1
-      end do
 
       end
-
-      ! Procede to corrections of scaling interactions
-      subroutine
-     &   emreal3_correct_interactions_shortlong
-      use action ,only:nem
-      use atoms  ,only:x,y,z
-      use cutoff ,only:mpoleshortcut,shortheal
-      use chgpot ,only:electric,dielec
-      use domdec ,only:rank,nbloc,loc
-      use empole3gpu_inl
-      use energi ,only:em=>em_r
-      use ewald  ,only:aewald
-      use inform ,only: deb_Path
-      use interfaces ,only:m_long,m_short
-      use math   ,only:sqrtpi
-      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
-      use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
-      use potent ,only:use_mpoleshortreal,use_mpolelong
-      use shunt  ,only:off2,off
-      use tinheader,only: ti_p
-      use utilgpu,only:def_queue
-      implicit none
-
-      integer   i,j,k,iglob,kglob,kbis
-      integer   ii,kk,iipole,kkpole
-      integer   mode
-      real(t_p) zero
-      real(t_p) r2,f,e
-      real(t_p) alsq2,alsq2n
-      real(t_p) xr,yr,zr
-      type(rpole_elt) ip,kp
-      real(t_p) mpoleshortcut2,r_cut
-      real(t_p) mscale
-      logical   corre
-      parameter(zero=0.0)
-
-      if (deb_Path)
-     &   write(*,'(2x,a)') 'emreal3_correct_interactions_shortlong'
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f      = electric / dielec
-      alsq2  = 2 * aewald**2
-      alsq2n = zero
-      if (aewald .gt. zero)
-     &   alsq2n = 1.0 / (sqrtpi*aewald)
-
-      if (use_mpoleshortreal) then
-         mpoleshortcut2 = 0.0_ti_p
-         mode  = m_short
-         r_cut = off
-      else if (use_mpolelong) then
-         mpoleshortcut2 = (mpoleshortcut-shortheal)**2
-         mode  = m_long
-         r_cut = mpoleshortcut
-      else
-         write(*,*) 'unknown mode for '
-     &            ,'emreal3_correct_interactions_shortlong'
-         call fatal
-      end if
-
-c
-c     Apply correction to scaling factor interactions
-c
-!$acc parallel loop present(em,nem,ipole,loc,x,y,z,rpole,
-!$acc&  mcorrect_ik,mcorrect_scale)
-!$acc&         private(ip,kp)
-!$acc&         reduction(+:nem)
-!$acc&         async(def_queue)
-      do ii = 1, n_mscale
-         iipole = mcorrect_ik(ii,1)
-         kkpole = mcorrect_ik(ii,2)
-         mscale = mcorrect_scale(ii)
-         iglob  = ipole(iipole)
-         kglob  = ipole(kkpole)
-         i      = loc(iglob)
-         kbis   = loc(kglob)
-
-         xr     = x(kglob) - x(iglob)
-         yr     = y(kglob) - y(iglob)
-         zr     = z(kglob) - z(iglob)
-         call image_inl(xr,yr,zr)
-         r2     = xr*xr + yr*yr + zr*zr
-         if (r2.lt.mpoleshortcut2.or.r2.gt.off2) cycle  !apply cutoff
-
-         ip%c   = rpole(01,iipole)
-         ip%dx  = rpole(02,iipole)
-         ip%dy  = rpole(03,iipole)
-         ip%dz  = rpole(04,iipole)
-         ip%qxx = rpole(05,iipole)
-         ip%qxy = rpole(06,iipole)
-         ip%qxz = rpole(07,iipole)
-         ip%qyy = rpole(09,iipole)
-         ip%qyz = rpole(10,iipole)
-         ip%qzz = rpole(13,iipole)
-         kp%c   = rpole(01,kkpole)
-         kp%dx  = rpole(02,kkpole)
-         kp%dy  = rpole(03,kkpole)
-         kp%dz  = rpole(04,kkpole)
-         kp%qxx = rpole(05,kkpole)
-         kp%qxy = rpole(06,kkpole)
-         kp%qxz = rpole(07,kkpole)
-         kp%qyy = rpole(09,kkpole)
-         kp%qyz = rpole(10,kkpole)
-         kp%qzz = rpole(13,kkpole)
-
-         ! compute mpole one interaction
-         call mpole3_couple_shortlong(r2,xr,yr,zr,ip,kp,mscale,
-     &                   r_cut,shortheal,aewald,f,alsq2n,alsq2,
-     &                       e,.true.,mode)
-
-         ! update energy
-         em     = em  + tp2enr(e)
-         if (mscale.eq.1.0) nem = nem - 1
-      end do
-
-      end
-
+#endif
 c
 c
 c

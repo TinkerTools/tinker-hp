@@ -714,8 +714,10 @@ c
      &   call prmem_request(igrp,2,maxgrp,ncst=0)
       if (.not. allocated(grpmass)) 
      &   call prmem_request(grpmass,maxgrp,nst=0)
-      if (.not. allocated(wgrp))
-     &   allocate (wgrp(0:maxgrp,0:maxgrp))
+      if (.not. allocated(wgrp)) then
+         allocate (wgrp(0:maxgrp,0:maxgrp))
+!$acc enter data create(wgrp)
+      end if
       call prmem_request (   kgrp,n)
       call prmem_request (grplist,n)
 c
@@ -725,9 +727,11 @@ c
       use_intra = .false.
       use_inter = .false.
       ngrp = 0
-      kgrp = 0
-      grplist = 0
-      do i = 1, maxgrp
+      do i = 1, n
+         kgrp(i) = 0
+         grplist(i) = 0
+      end do
+      do i = 0, maxgrp
          igrp(1,i) = 1
          igrp(2,i) = 0
       end do
@@ -839,7 +843,6 @@ c
             ngrp = max(j,ngrp)
          end do
          igrp(2,j) = n
-
 c
 c     sort the list of atoms in each group by atom number
 c
@@ -901,12 +904,12 @@ c
             grpmass(i) = grpmass(i) + mass(kgrp(j))
          end do
       end do
-!$acc update device(grplist)
+!$acc update device(grplist,wgrp)
 !$acc update device(grpmass,kgrp,igrp)
 
 c     output the final list of atoms in each group
 c
-      if (debug .and. use_group) then
+      if (debug .and. use_group .and. rank.eq.0) then
          do i = 1, ngrp
             size = igrp(2,i) - igrp(1,i) + 1
             if (size .ne. 0) then
@@ -920,7 +923,7 @@ c
 c
 c     output the weights for intragroup and intergroup interactions
 c
-      if (debug .and. use_group) then
+      if (debug .and. use_group .and. rank.eq.0) then
          header = .true.
          do i = 0, ngrp
             do j = i, ngrp

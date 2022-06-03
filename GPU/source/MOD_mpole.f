@@ -14,7 +14,11 @@ c     maxpole   max components (monopole=1,dipole=4,quadrupole=13)
 c
 c     pole      multipole values for each site in the local frame
 c     winpole    window object corresponding to pole
+c     pole_orig  original multipole values for each site in the local frame (lambdadyn)
+c     winpole_orig    window object corresponding to pole_orig
 c     rpole     multipoles rotated to the global coordinate system
+c     mono0     original atomic monopole values for charge flux
+c     winmono0    window object corresponding to mono0
 c
 c     npole     total number of multipole sites in the system
 c     npoleloc  local number of multipole sites in the system
@@ -67,25 +71,25 @@ c
       integer npole,npoleloc,npolebloc,npolerecloc,npolelocnl
       integer npolelocnlb,npolelocnlb_pair,npolelocnlb2_pair
       integer nshortpolelocnlb2_pair
-      integer :: winipole,winpolsiz,winpollist
       integer npolerecloc_old
       integer npolelocloop, npolelocnlloop,npoleblocloop,npolereclocloop
       integer :: nZ_Onlyloc=0,nZ_Onlyglob
-      integer, pointer :: ipole(:), polsiz(:), pollist(:), iglobpole(:)
-      integer, allocatable,target::poleloc(:),polelocnl(:),polerecloc(:)
-      integer, pointer :: nbpole(:)
-      integer, pointer :: zaxis(:),xaxis(:),yaxis(:)
-      !TODO [xyz]axis has been turned into an allocatable Investiguate
-      integer :: winnbpole,winzaxis,winxaxis,winyaxis
-      real(t_p),  allocatable :: rpole(:,:)
-      real(t_p),  pointer :: pole(:,:)
-      real(t_p),  pointer :: alphapen(:),betapen(:),gammapen(:)
-      integer :: winpole,winalphapen,winbetapen,wingammapen
       real(r_p) vmxx,vmyy,vmzz
       real(r_p) vmxy,vmxz,vmyz
-      integer,     pointer :: ipolaxe(:)
-      character*8, pointer :: polaxe(:)
-      integer :: winpolaxe,winipolaxe
+      integer  ,pointer :: ipole(:), polsiz(:), pollist(:), iglobpole(:)
+      integer  ,allocatable,target::poleloc(:),polelocnl(:)
+     &         ,polerecloc(:)
+      integer  ,pointer :: nbpole(:)
+      !TODO [xyz]axis has been turned into an allocatable Investiguate
+      integer  ,pointer :: zaxis(:),xaxis(:),yaxis(:)
+      real(t_p),allocatable :: rpole(:,:)
+      real(t_p),pointer :: pole(:,:), pole_orig(:,:), mono0(:)
+      real(t_p),pointer :: alphapen(:),betapen(:),gammapen(:)
+      integer  ,pointer :: ipolaxe(:)
+      character*8,pointer :: polaxe(:)
+      integer   winipole,winpolsiz,winpollist,winpole,winpole_orig
+     &         ,winzaxis,winxaxis,winyaxis,winpolaxe,winipolaxe,winmono0
+     &         ,winnbpole,winalphapen,winbetapen,wingammapen
 
       ! Axetyp enumeration
       enum,bind(C)
@@ -96,7 +100,6 @@ c
       enumerator Ax_Z_Only=8
       enumerator Ax_Z_Then_X=16
       end enum
-      save
 !$acc declare create(vmxx,vmxy,vmxz,vmyy,vmyz,vmzz)
       end
 

@@ -20,6 +20,7 @@ c     uindsave    logical flag to save induced atomic dipoles
 c     integrate   type of molecular dynamics integration algorithm
 c
 c
+#include "tinker_precision.h"
       module mdstuf
       implicit none
       integer nfree,irest
@@ -31,3 +32,42 @@ c
       character*11 integrate
       save
       end
+c
+c     ###############################################################
+c     #                                                             #
+c     #  -- integrator workSpace module --                          #
+c     #  holds data structure to be used inside integrator routines #
+c     #                                                             #
+c     ###############################################################
+c
+c     derivs  stores forces computes by gradient routine
+c     etot    holds the system total energy at current timestep
+c     epot    holds the system potential energy at current timestep
+c     eksum   holds the system kinetic energy at current timestep
+c     temp    holds the system temperature at current timestep
+c     pres    holds the system pressure at current timestep
+c
+      module mdstuf1
+      implicit none
+      integer,private:: isDataAlloc=.false.
+      real(r_p),allocatable::derivs(:,:)
+      real(r_p) etot,epot,eksum,ealt,ealt2
+      real(r_p) temp,pres
+      real(r_p) ekin(3,3),stress(3,3),viralt(3,3),viralt2(3,3)
+
+      contains
+      subroutine gpuAllocMdstuf1Data
+      if (.not.isDataAlloc) then
+!$acc enter data create(etot,epot,eksum,ealt,ealt2,temp,pres,ekin
+!$acc&                 ,stress,viralt,viralt2)
+         isDataAlloc=.true.
+      end if
+      end subroutine
+      subroutine gpuFreeMdstuf1Data
+      if (isDataAlloc) then
+!$acc exit data delete(etot,epot,eksum,ealt,ealt2,temp,pres,ekin
+!$acc&                ,stress,viralt,viralt2)
+         isDataAlloc=.false.
+      end if
+      end subroutine
+      end module

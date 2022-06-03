@@ -26,6 +26,22 @@ c
         temp=var1;var1=var2;var2=temp;
         end subroutine
 
+        function spbox2cmap(a,b,c,nx,ny,nxy) result(id)
+        integer,intent(in )::a,b,c,nx,ny,nxy
+        integer,intent(out):: id
+        id = a + b*nx + c*nxy
+        end function
+
+        function spbox2smap(a,b,c,nx,ny,nxy) result(id)
+        integer,intent(in )::a,b,c,nx,ny,nxy
+        integer,intent(out):: id
+        if (btest(c,0)) then
+           id = merge(0,a + b*nx + c*nxy,btest(b,0))
+        else
+           id = merge(0,a + b*nx + c*nxy,btest(b,0))
+        end if
+        end function
+
         function ixyz2box(xr,yr,zr,xw,yw,zw
      &                   ,lenx_cell,leny_cell,lenz_cell
      &                   ,nx_cell,ny_cell,nz_cell,xmin,ymin,zmin)
@@ -80,250 +96,6 @@ c
         boxid = (bx + nx_cell*by + nx_cell*ny_cell*bz) + 1
         end function
       end module
-
-      subroutine mlistcellgpu
-      use sizes
-      use atmlst
-      use atoms
-      use cell
-      use domdec
-      use inform ,only: deb_Path
-      use iounit
-      use mpole
-      use nblistgpu_inl
-      use neigh
-      use mpi
-      use utilgpu
-      implicit none
-      integer iglob
-      integer i,ii,j,jj,k,icell,nneigloc
-      integer ineig,iipole,kkpole
-      integer kcell,kloc,kglob
-      integer ncell_loc
-      integer ibufbeg,kbufbeg,kcell_len
-      integer inumneig
-      real(t_p) pos1,pos2,pos3
-      real(t_p) xi,yi,zi,xk,yk,zk,r2
-      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
-      logical docompute
-!$acc routine(fatal_acc)
-
-      if(deb_Path) write(*,*) 'mlistcellgpu'
-!$acc data present(poleglobnl,ipole,repartcell,cell_len,bufbegcell,
-!$acc&  numneigcell,neigcell,indcell,elst,nelst,pollist,x,y,z)
-
-      xbeg = xbegproc(rank+1)
-      xend = xendproc(rank+1)
-      ybeg = ybegproc(rank+1)
-      yend = yendproc(rank+1)
-      zbeg = zbegproc(rank+1)
-      zend = zendproc(rank+1)
-c
-c     perform a complete list build
-c
-c     print*,'mean cell_len ',sum(cell_len)/size(cell_len)
-!$acc parallel loop vector_length(32) private(j) async(rec_queue)
-      do i = 1, npolelocnl
-         iipole    = poleglobnl(i)
-         iglob     = ipole(iipole)
-         icell     = repartcell(iglob)
-         inumneig  = numneigcell(icell)
-         j         = 0
-         xi        = x(iglob)
-         yi        = y(iglob)
-         zi        = z(iglob)
-c
-c        align data of the local cell and the neighboring ones
-c
-         do ineig = 0,inumneig
-            if (ineig.ne.0) then
-               kcell  = neigcell(ineig,icell)
-            else
-               kcell  = icell
-            end if
-            kcell_len = cell_len(kcell)
-c           if (ii.gt.cell_len(kcell)) cycle
-            ibufbeg   = bufbegcell(kcell)
-c
-c     do the neighbor search
-c 
-!$acc loop vector
-            do ii=1,kcell_len
-               kglob  = indcell(ibufbeg+ii-1)
-               kkpole = pollist(kglob)
-c
-c     skip atom if it is not in the multipole list
-c
-               if (kkpole.eq.0.or.kglob.le.iglob) cycle
-               xk     =  x(kglob)
-               yk     =  y(kglob)
-               zk     =  z(kglob)
-               pos1   =  xi - xk
-               pos2   =  yi - yk
-               pos3   =  zi - zk
-               call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
-               if ((zk.lt.zbeg).or.(zk.ge.zend)
-     &         .or.(yk.lt.ybeg).or.(yk.ge.yend)
-     &         .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
-c
-c     compute the distances and build the list accordingly
-c
-               r2 = pos1**2 + pos2**2 + pos3**2
-               if (r2.le.mbuf2) then
-!$acc atomic capture
-                  j          = j + 1
-                  jj         = j
-!$acc end atomic
-c                 kkpole     = pollist(kglob)
-                  elst(jj,i) = kkpole
-               end if
-            end do
-         end do
-         nelst(i) = j
-c
-c     check to see if the neighbor list is too long
-c
-         if (j .ge. maxelst) then
-            if (rank.eq.0) then
-              print*,' MBUILD  --  Too many Neighbors;',
-     &                   ' Increase MAXELST'
-              call fatal_acc
-            end if
-         end if
-      end do
-
-!$acc end data
-      return
-      end
-c
-c    "mlistcell2gpu" performs a complete rebuild of the
-c     short range and regular electrostatic neighbor lists for 
-c     multipoles using linked cells method
-c
-      subroutine mlistcell2gpu
-      use sizes
-      use atmlst
-      use atoms
-      use cell
-      use domdec
-      use inform ,only: deb_Path
-      use iounit
-      use mpole
-      use nblistgpu_inl
-      use neigh
-      use mpi
-      use utilgpu
-      implicit none
-      integer iglob
-      integer i,ii,j,cap,k,kk,icell,nneigloc
-      integer ineig,iipole,kkpole
-      integer kcell,kloc,kglob
-      integer ncell_loc
-      integer ibufbeg,kbufbeg,kcell_len
-      integer inumneig
-      real(t_p) pos1,pos2,pos3
-      real(t_p) xi,yi,zi,xk,yk,zk,r2
-      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
-      real(t_p) mbufbeg2
-      logical docompute
-!$acc routine(fatal_acc)
-
-      if(deb_Path) write(*,*) 'mlistcell2gpu'
-!$acc data present(poleglobnl,ipole,repartcell,cell_len,bufbegcell,
-!$acc&  numneigcell,neigcell,indcell,elst,nelst,pollist,x,y,z,
-!$acc&  nshortelst,shortelst)
-
-      xbeg = xbegproc(rank+1)
-      xend = xendproc(rank+1)
-      ybeg = ybegproc(rank+1)
-      yend = yendproc(rank+1)
-      zbeg = zbegproc(rank+1)
-      zend = zendproc(rank+1)
-c
-c     perform a complete list build
-c
-c     print*,'mean cell_len ',sum(cell_len)/size(cell_len)
-!$acc parallel loop vector_length(32) private(j,k) async(rec_queue)
-      do i = 1, npolelocnl
-         iipole    = poleglobnl(i)
-         iglob     = ipole(iipole)
-         icell     = repartcell(iglob)
-         inumneig  = numneigcell(icell)
-         j         = 0
-         k         = 0
-         xi        = x(iglob)
-         yi        = y(iglob)
-         zi        = z(iglob)
-c
-c        align data of the local cell and the neighboring ones
-c
-         do ineig = 0,inumneig
-            if (ineig.ne.0) then
-               kcell  = neigcell(ineig,icell)
-            else
-               kcell  = icell
-            end if
-            kcell_len = cell_len(kcell)
-c           if (ii.gt.cell_len(kcell)) cycle
-            ibufbeg   = bufbegcell(kcell)
-c
-c     do the neighbor search
-c 
-!$acc loop vector
-            do ii=1,kcell_len
-               kglob  = indcell(ibufbeg+ii-1)
-               kkpole = pollist(kglob)
-c
-c     skip atom if it is not in the multipole list
-c
-               if (kkpole.eq.0.or.kglob.le.iglob) cycle
-               xk     =  x(kglob)
-               yk     =  y(kglob)
-               zk     =  z(kglob)
-               pos1   =  xi - xk
-               pos2   =  yi - yk
-               pos3   =  zi - zk
-               call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
-               if ((zk.lt.zbeg).or.(zk.ge.zend)
-     &         .or.(yk.lt.ybeg).or.(yk.ge.yend)
-     &         .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
-c
-c     compute the distances and build the list accordingly
-c
-               r2 = pos1**2 + pos2**2 + pos3**2
-               if (r2.le.mshortbuf2) then
-!$acc atomic capture
-                  k          = k + 1
-                  cap        = k
-!$acc end atomic
-                  shortelst(cap,i) = kkpole
-               end if
-               if (r2.le.mbuf2) then
-!$acc atomic capture
-                  j          = j + 1
-                  cap        = j
-!$acc end atomic
-c                 kkpole     = pollist(kglob)
-                  elst(cap,i)= kkpole
-               end if
-            end do
-         end do
-         nelst(i)      = j
-         nshortelst(i) = k
-c
-c     check to see if the neighbor list is too long
-c
-         if (j .ge. maxelst) then
-            if (rank.eq.0) then
-              print*,' MBUILD  --  Too many Neighbors;',
-     &                   ' Increase MAXELST'
-              call fatal_acc
-            end if
-         end if
-      end do
-
-!$acc end data
-      end
 c
 c     Subroutine : Reorder the neigbhor list to obtain atoms under cutoff
 c     At the begining of the column
@@ -507,8 +279,8 @@ c
 #endif
       end subroutine
 c
-c    subroutine initmpipme : build the arrays to communicate direct and reciprocal fields
-c    during the calculation of the induced dipoles
+c     subroutine initmpipme : build the arrays to communicate direct and reciprocal fields
+c     during the calculation of the induced dipoles
 c
       subroutine initmpipmegpu
       use atmlst
@@ -685,7 +457,7 @@ c
       call prmem_request(thetai2,4,bsorder,nlocrec,async=.false.)
       call prmem_request(thetai3,4,bsorder,nlocrec,async=.false.)
 
-      if (.not.allocated(thetai1)) then
+      if (.not.associated(thetai1_p)) then
 c        sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
 c    &                ,extra_alloc)
 c        allocate (thetai1(4,bsorder,sbuf1))
@@ -697,6 +469,12 @@ c       sd_prmem = sd_prmem + 12*bsorder*sbuf1*szoTp
 #ifdef _OPENACC
          call attach_pmecu_pointer(1)
 #endif
+!$acc parallel loop async default(present)
+         do i =1,size(thetai1)
+            thetai1(i,1,1) =0
+            thetai2(i,1,1) =0
+            thetai3(i,1,1) =0
+         end do
       else if (nlocrec>size(thetai1,dim=3)) then
 c        sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
 c    &                ,extra_alloc)
@@ -1254,8 +1032,8 @@ c
       integer xw,yw,zw,miter
       integer icell_len
       integer commloc
-      integer levelUp
-      integer,save:: iter,save_ncell
+      integer levelUp,incr,iter
+      integer,save:: save_ncell
       integer min_cell_len
       real(t_p) xmin,xmax,ymin,ymax,zmin,zmax
       real(t_p) lenx,leny,lenz,xl
@@ -1288,8 +1066,12 @@ c
       nx_cell = bp%nx_c
       ny_cell = bp%ny_c
       nz_cell = bp%nz_c
+      xb      = bp%nx_l
+      yb      = bp%ny_l
+      zb      = bp%nz_l
 
       first_loop   = .true.
+      incr  = merge(2,1,octahedron)
       max_cell_len = BLOCK_SIZE+1
       min_cell_len = huge(min_cell_len)
       xmin  = -xcell2
@@ -1301,18 +1083,15 @@ c
       lenx  = abs(xmax-xmin)
       leny  = abs(ymax-ymin)
       lenz  = abs(zmax-zmin)
-      xb = .true.
-      yb = .true.
-      zb = .true.
 
       levelUp = 1
 
       if (first_in.eq.1) then
          xl = real((((xbox*ybox*zbox)*BLOCK_SIZE)/n)**(1.0d0/3),t_p)
          if(deb_Path)print'(A,2F10.6)','box axe 3diag ',xl,xl*sqrt(3.0)
-         nx_cell = max(1,int(lenx/xl))
-         ny_cell = max(1,int(leny/xl)+1)
-         nz_cell = max(1,int(lenz/xl)+1)
+c        nx_cell = max(1,int(lenx/xl))
+c        ny_cell = max(1,int(leny/xl)+1)
+c        nz_cell = max(1,int(lenz/xl)+1)
          save_ncell = 0
 c        nx_cell = max(1,int(floor(lenx/7)))
 c        ny_cell = max(1,int(floor(leny/7)))
@@ -1321,28 +1100,35 @@ c        nz_cell = max(1,int(floor(lenz/7)))
 
       call prmem_request(repartcell,n)
 
-!$acc data present(ineignl,cell_order)
 c
 c     Put Atoms into small boxes
 c
       do while (max_cell_len .gt. BLOCK_SIZE)
          if (.not.first_loop) then
-            miter = mod(iter,3)
-            if (0.ne.miter.and.iter.le.3) then
+            miter = mod(iter,4)
+            if (abs(max_cell_len-BLOCK_SIZE).lt.4) then
+               nx_cell = nx_cell + incr
+               xb = .false.
+            else if (iter.le.2) then
                bx_cell = bx_cell + 1
                xb = .true.
-            else if (miter.eq.0.and.iter.le.3) then
+            else if (iter.le.5) then
+               nz_cell = nz_cell + incr
+               ny_cell = ny_cell + incr
+               yb = .false.
+               zb = .false.
+            else if (miter.eq.0.and.iter.eq.6.and.bx_cell.eq.1) then
                bz_cell = bz_cell + 1
                by_cell = by_cell + 1
                yb = .true.
                zb = .true.
             else if (miter.gt.0) then
-               if (levelUp.eq.1) then; levelUp=2; else; levelUp=1; endif
+               i = merge(2,incr,levelUp.eq.1); levelUp=i;
                nx_cell = nx_cell + levelUp
                xb = .false.
             else if (miter.eq.0) then
-               nz_cell = nz_cell + 1
-               ny_cell = ny_cell + 1
+               nz_cell = nz_cell + incr
+               ny_cell = ny_cell + incr
                yb = .false.
                zb = .false.
             end if
@@ -1392,7 +1178,7 @@ c           nx_cell = nx_cell + 1
 
          call set_to_zero1_int(cell_len,size(cell_len),rec_queue)
 !$acc parallel loop async(rec_queue)
-!$acc&         present(repartcell,cell_len)
+!$acc&         default(present)
          do i = 1,nlocnl
             iglob = ineignl(i)
             xr    = x(iglob)
@@ -1454,6 +1240,9 @@ c           nx_cell = nx_cell + 1
       bp%nx_c  = nx_cell
       bp%ny_c  = ny_cell
       bp%nz_c  = nz_cell
+      bp%nx_l  = xb
+      bp%ny_l  = yb
+      bp%nz_l  = zb
 
 
 #ifdef _OPENACC
@@ -1481,8 +1270,6 @@ c           nx_cell = nx_cell + 1
          !cell_len1(i) = int(cell_len(i),1)  !unsupported by pgi
          cell_len1(i) = cell_len(i)
       end do
-
-!$acc end data
 
       end subroutine
 
@@ -1639,8 +1426,11 @@ c           nx_cell = nx_cell + 1
       use atmlst ,only: chgglobnl
       use charge
       use domdec
+      use kvdws  ,only: rad,eps,radv,epsv
       use neigh
+      use potent ,only: fuse_chglj
       use utilgpu
+      use vdw
       implicit none
       logical,intent(in):: rebuild_nl
       integer i,iglob,iichg
@@ -1655,7 +1445,44 @@ c           nx_cell = nx_cell + 1
          call prmem_request(celle_x   ,nionlocnlb,async=.true.)
          call prmem_request(celle_y   ,nionlocnlb,async=.true.)
          call prmem_request(celle_z   ,nionlocnlb,async=.true.)
+         if (fuse_chglj) then
+            call prmem_request(cellv_jvdw,nionlocnlb,async=.true.)
+            call prmem_request(radv   ,nionlocnlb,async=.true.)
+            call prmem_request(epsv   ,nionlocnlb,async=.true.)
+            nvdwlocnlb = nionlocnlb
+         end if
 
+         if (fuse_chglj) then
+!$acc parallel loop async(rec_queue)
+!$acc&         present(celle_glob,celle_chg,celle_key,
+!$acc&   chgglobnl,celle_x,celle_y,celle_z,celle_plocnl,chglocnl)
+         do i = 1, nionlocnlb
+            if (i.le.nionlocnl) then
+               iichg         = chgglobnl(celle_key(i))
+               iglob         = iion(iichg)
+               celle_chg(i)  = iichg
+               !celle_plocnl(i) = chglocnl(iichg)
+               celle_glob(i) = iglob
+               celle_x   (i) = x(iglob)
+               celle_y   (i) = y(iglob)
+               celle_z   (i) = z(iglob)
+               cellv_jvdw(i) = jvdw_c(iglob)
+               radv(i)       = rad(jvdw(iglob))
+               epsv(i)       = eps(jvdw(iglob))
+            else
+               celle_chg(i)  = n
+               celle_glob(i) = n
+               celle_plocnl(i)= nionlocnl
+               celle_x   (i) = inf
+               celle_y   (i) = inf
+               celle_z   (i) = inf
+               cellv_jvdw(i) = 1
+               radv(i)       = inf
+               epsv(i)       = inf
+            end if
+         end do
+
+         else
 !$acc parallel loop async(rec_queue)
 !$acc&         present(celle_glob,celle_chg,celle_key,
 !$acc&   chgglobnl,celle_x,celle_y,celle_z,celle_plocnl,chglocnl)
@@ -1679,9 +1506,11 @@ c           nx_cell = nx_cell + 1
             end if
          end do
 
+         end if ! fuse_chglj
+
       else
 
-!$acc parallel loop async(def_queue)
+!$acc parallel loop async(rec_queue)
 !$acc&         present(celle_glob,celle_chg,celle_key,
 !$acc&   celle_loc,celle_ploc,celle_x,celle_y,celle_z,x,y,z,
 !$acc&   loc)
@@ -1703,36 +1532,6 @@ c              celle_ploc(i)= nionbloc
          end do
 
       end if
-      end subroutine
-
-      subroutine set_VdwData_CellOrder
-      use atoms  ,only: n
-      use atmlst ,only: vdwglobnl
-      use domdec
-      use neigh
-      use utilgpu
-      use vdw
-      implicit none
-      integer i,iglob
-
-      call prmem_request(cellv_glob,nvdwlocnlb,async=.true.)
-      call prmem_request(cellv_loc ,nvdwlocnlb,async=.true.)
-      call prmem_request(cellv_jvdw,nvdwlocnlb,async=.true.)
-
-!$acc parallel loop async(def_queue)
-!$acc&         present(cellv_glob,cellv_loc,cellv_jvdw,
-!$acc&   cellv_key,loc,jvdw_c,vdwglobnl)
-      do i = 1, nvdwlocnlb
-         if (i.le.nvdwlocnl) then
-            iglob         = ivdw(vdwglobnl(cellv_key(i)))
-            cellv_glob(i) = iglob
-            cellv_jvdw(i) = jvdw_c(iglob)
-         else
-            cellv_glob(i) = n
-            cellv_jvdw(i) = 1
-         end if
-      end do
-
       end subroutine
 
       subroutine build_adjacency_matrix
@@ -2215,6 +2014,45 @@ c  Implicit Wait seems to be removed with PGI-20
       end if
 
       end subroutine
+      subroutine pre_process_adjacency_matrix_
+     &           (nblock,nlocnlb_pair)
+      use cutoff  ,only: use_shortclist,use_shortmlist,
+     &                   use_shortvlist
+      use neigh   ,only: cell_len,cell_scan,matb_lst
+     &            ,offl=>offsetlMb,szMatb,nbMatb,cell_scan1
+     &            ,bit_si,bit_sh
+      use utils   ,only: set_to_zero1_int
+      use utilgpu ,only: rec_queue,prmem_request
+#ifdef _OPENACC
+      use thrust  ,only: thrust_exclusive_scan_int_async
+      use utilgpu ,only: rec_stream
+#endif
+      implicit none
+      integer,intent(in):: nblock
+      integer,intent(out):: nlocnlb_pair
+      integer it1,it2,pos2,bit2
+
+      !Re use cell_len & cell_scan1 for neighbor blocks
+      !call prmem_request(cell_scan1,nblock,async=.true.)
+      !call set_to_zero1_int(cell_len(offl+1),nbMatb,rec_queue)
+
+      nlocnlb_pair = 0
+
+!$acc parallel loop async(rec_queue) reduction(+:nlocnlb_pair)
+!$acc&         present(matb_lst)
+      do it1 = 0,nbMatb-1
+!$acc loop vector
+         do it2 = offl+it1,nblock-1
+            pos2 = ishft( it2,-bit_sh ) + 1
+            bit2 = iand ( it2,bit_si-1)
+            if (btest(matb_lst(it1*szMatb+pos2),bit2)) then
+               nlocnlb_pair=nlocnlb_pair+1
+            end if
+         end do
+      end do
+      ! Non blocking reduction with pgi-20
+!$acc wait(rec_queue)
+      end subroutine
 c
 c     Build nblist with optimal space according to matb_lst
 c     From full storage to adjacency list
@@ -2246,6 +2084,36 @@ c
 !$acc end atomic
                lst(2*(iblock+i)+1) = offl+it1+1
                lst(2*(iblock+i)+2) =      it2+1
+            end if
+         end do
+      end do
+      end subroutine
+      subroutine fill_adjacency_list_
+     &           (nblock,nlocnlb_pair,lst)
+      use neigh  ,only: cell_len,cell_lenr,cell_scan1,matb_lst
+     &           ,offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb
+     &           ,bit_si,bit_sh,cell_len2,cell_len2r
+      use utilgpu,only: BLOCK_SIZE,rec_queue
+      implicit none
+      integer,intent(in)   :: nblock,nlocnlb_pair
+      integer,intent(inout):: lst(2*nlocnlb_pair)
+      integer k,i,iblock,it1,it2,pos2,bit2
+
+      k = 0
+!$acc parallel loop async(rec_queue) copyin(k)
+!$acc&         present(cell_scan1,matb_lst,lst)
+      do it1 = 0,nbMatb-1
+!$acc loop vector
+         do it2 = offl+it1,nblock-1
+            pos2 = ishft( it2,-bit_sh ) + 1
+            bit2 = iand ( it2,bit_si-1)
+            if (btest(matb_lst(it1*szMatb+pos2),bit2)) then
+!$acc atomic capture
+               i = k
+               k = k + 1
+!$acc end atomic
+               lst(2*i+1) = offl+it1+1
+               lst(2*i+2) =      it2+1
             end if
          end do
       end do
@@ -2370,225 +2238,84 @@ c Implicit wait removed with PGI-20.4
      &      , nlocnlb2_pair
 
       end subroutine
-
-      subroutine vlist_block
-      use atoms   ,only: x,y,z,n
-      use atmlst  ,only: vdwglobnl
-      use boxes   ,only: octahedron
-      use cutoff  ,only: use_shortvlist,vdwshortcut,shortheal
-      use cell    ,only: xcell2,ycell2,zcell2,xcell,ycell,zcell
-      use domdec  ,only: rank,nproc
-      use neigh   ,only: cell_scan,cell_len,cell_lenr,cell_len2
-     &            ,cell_len2r,matb_lst
-     &            ,nbMatb,niterMatb,buffMatb,offsetlMb,offsetrMb,szMatb
-     &            ,vbuf2,vshortbuf2,cellv_key,vblst
-     &            ,ivblst,shortvblst,ishortvblst
-     &            ,bit_si,bit_sh,cellv_glob,vshortbuf2
-     &            ,lbuffer,build_cell_list2,v_bP
-      use utils   ,only: set_to_zero1_int1,set_to_zero1_int
-      use inform  ,only: deb_Path
-      use interfaces ,only: pre_process_adjacency_matrix
+      subroutine finalize_list2_C2 (nblock,nlocnlb_pair,nlocnlb
+     &           ,nlocnlb2_pair,ilst,lst,cell_len,cell_scan,cell_lenr)
+      use domdec ,only: rank
+      use inform ,only: deb_Path
+      use neigh  ,only: cell_scan1
+      use utilgpu,only: BLOCK_SIZE,rec_queue,prmem_request
 #ifdef _OPENACC
-     &               ,cu_filter_lst_sparse
-      use thrust  ,only: thrust_exclusive_scan
-      use nblistcu,only: filter_lst_sparse
-      use utilcu  ,only: check_launch_kernel
-      use utilgpu ,only: rec_stream
-      use cudafor
+     &           ,rec_stream
+      use thrust
 #endif
-      use tinheader,only: ti_p
-      use tinMemory,only: prmem_mvrequest,prmem_request,szoi,mipk
-      use utilgpu ,only: rec_queue,BLOCK_SIZE,inf
-      use vdw     ,only: nvdwlocnl,nvdwlocnlb,ired,kred
-     &            ,nvdwlocnlb_pair,nvdwlocnlb2_pair
-     &            ,nshortvdwlocnlb2_pair,nvdw,ivdw
-      use vdw_locArray,only: xred,yred,zred
       implicit none
-      integer i,iblock,inblock,icell
-      integer k,kblock,knblock,kcell
-      integer iglob,iv,ierrSync
-      integer it1,it2,block1,block2,temp,nblock,bit2,pos2
-      integer nx,ny,nz
-      integer nxy_cell,icell_scan,kcell_scan
-      integer posi
-      integer iter
-      integer nkblock,complete_b,nb_pair,nneig
-      integer(1) icell_len,kcell_len
-      integer(mipk) szolst
-      real(t_p) lenx_cell,leny_cell,lenz_cell,rdn,rdn1
-      real(t_p) vbufbeg2
+      integer,intent(in):: nblock,nlocnlb,nlocnlb_pair
+      integer,intent(out):: nlocnlb2_pair
+      integer,intent(inout):: ilst(nlocnlb_pair)
+     &       ,lst(nlocnlb_pair*BLOCK_SIZE)
+     &       ,cell_len(nblock),cell_scan(nblock)
+     &       ,cell_lenr(nblock)
+      integer i,k,nneig,nneigr,iv,ivr,nkblock,complete_b
+      integer kcell_scanr,kcell_scan
+      integer buff_i
 
-      if (deb_Path) print*, 'vdw_neiglist_block'
+      call prmem_request(cell_scan1,nblock,async=.true.)
 
-      nvdwlocnlb_pair = 0
-      nvdwlocnlb = BLOCK_SIZE*((nvdwlocnl-1)/BLOCK_SIZE + 1)
-      ! Add margin to serve as out-of-bound exclusion interactions for C2 nblist
-      if (nvdwlocnlb == nvdwlocnl)  nvdwlocnlb = nvdwlocnl + BLOCK_SIZE
-
-      nblock     = ((nvdwlocnl-1)/BLOCK_SIZE) + 1
-      szMatb     = ((nblock-1)/bit_si) + 1
-      vbufbeg2   = (vdwshortcut-lbuffer-shortheal)**2
-
-      nbMatb     = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
-      niterMatb  = (nblock-1)/nbMatb + 1
-      nvdwlocnlb_pair = 0
-
-      call prmem_request(xred,nvdwlocnlb,async=.true.)
-      call prmem_request(yred,nvdwlocnlb,async=.true.)
-      call prmem_request(zred,nvdwlocnlb,async=.true.)
-      call prmem_request(cellv_glob,nvdwlocnlb,async=.true.)
-
-      call prmem_request(cellv_key,n,async=.true.)
-
-      if (nvdw.eq.n) then
-         call build_cell_list2(vdwglobnl,cellv_key,nvdwlocnl,
-     &           sqrt(vbuf2),v_bP)
-      else
-!$acc parallel loop async(rec_queue) default(present)
-         do i = 1, nvdwlocnl
-            cellv_glob(i)=ivdw(vdwglobnl(i))
+      nlocnlb2_pair=0
+!$acc parallel loop async(rec_queue)
+!$acc&         present(ilst,cell_scan,lst,cell_len,cell_lenr)
+!$acc&         vector_length(BLOCK_SIZE)
+!!$acc&        private(buff)
+      do k = 1, nblock
+         nneig       = cell_len(k)
+         iv          = cell_scan(k)
+         nneigr      = cell_lenr(k)
+         ! Last block has only itself as a neigbhor
+         if (k.le.nblock) ivr = cell_scan(k+1)
+         nkblock     = ((nneig+nneigr-1)/BLOCK_SIZE) + 1
+         complete_b  = nkblock*BLOCK_SIZE - (nneig+nneigr)
+         kcell_scan  = BLOCK_SIZE*iv
+         kcell_scanr = BLOCK_SIZE*ivr
+         cell_len(k) = nkblock
+!$acc loop vector
+         do i = 1, complete_b
+          !buff_i = lst(kcell_scanr-complete_b+i)
+          !lst(kcell_scanr-complete_b+i) = nlocnlb
+            lst(kcell_scan+nneig+i) = nlocnlb
          end do
-         call build_cell_list2(cellv_glob,cellv_key,nvdwlocnl,
-     &           sqrt(vbuf2),v_bP)
-      end if
-
-      call set_VdwData_CellOrder
-
-c
-c     Build Adjacency list piece by piece
-c
-      do iter = 0,niterMatb-1
-
-        offsetlMb = iter*nbMatb
-        offsetrMb = min((iter+1)*nbMatb,nblock)
-        if (iter.eq.niterMatb-1) nbMatb=nblock-offsetlMb
-
-        if (octahedron) then
-           call build_adjacency_matrix_octahedron(nvdwlocnl,v_bP)
-        else
-           call build_adjacency_matrix(nvdwlocnl,v_bP)
-        end if
-
-        call pre_process_adjacency_matrix (nblock,nb_pair)
-        nvdwlocnlb_pair = nvdwlocnlb_pair + nb_pair
-        call prmem_mvrequest (vblst,nvdwlocnlb_pair*(BLOCK_SIZE+2),
-     &          async=.true.)
-
-        call fill_adjacency_list(nblock,nvdwlocnlb_pair,vblst)
-
+c!$acc loop vector
+c         do i = 1,nkblock
+c            ilst(iv+i) = k
+c         end do
+           nlocnlb2_pair = nlocnlb2_pair+nkblock
       end do
+c Wait for nlocnl_pair
+c Implicit wait removed with PGI-20.4
+!$acc wait(rec_queue)
 
-      call prmem_request (ivblst,nvdwlocnlb_pair,async=.true.)
-
-      ! zero list and ilist
-      call set_to_zero1_int(vblst(nvdwlocnlb_pair*2+1),
-     &            nvdwlocnlb_pair*BLOCK_SIZE,rec_queue)
-      call set_to_zero1_int(ivblst,nvdwlocnlb_pair,rec_queue)
-
-      if (use_shortvlist) then
-         call prmem_request (shortvblst,nvdwlocnlb_pair*
-     &               (BLOCK_SIZE+2),async=.true.)
-         call prmem_request (ishortvblst,nvdwlocnlb_pair,
-     &               async=.true.)
-         call set_to_zero1_int(shortvblst,nvdwlocnlb_pair*
-     &               (2+BLOCK_SIZE),rec_queue)
-         call set_to_zero1_int(ishortvblst,nvdwlocnlb_pair,
-     &               rec_queue)
-      end if
-
-      call Init_blocklen(nblock)
-c
-c     Debug info
-c
-      if (deb_Path) then
- 13   format( I3," iteration(s) required to build Adj lst" )
- 14   format( I10," nblocks process at once over",I10 )
- 15   format(1x,'Size Adj Mat (Mo)',F12.3,';',4x,'buffer (Go)',F10.6)
- 16   format(1x,'nvdwlocnl',I8,';',3x,'vlist mem space (Mo)',F12.3)
-         nbMatb = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
-         szolst = nvdwlocnlb_pair*(BLOCK_SIZE+3)*szoi
-         if (use_shortvlist) szolst = 2*szolst
-         print 13, niterMatb
-         print 14, nbMatb,nblock
-         print 15, int(szMatb*4,8)*nbMatb/1d6, buffMatb
-         print 16, nvdwlocnl,szolst/1d6
-      end if
-
-
-      ! Recover atoms positions in cell numbering
-!$acc parallel loop async default(present)
-      do k = 1,nvdwlocnlb
-         if (k.le.nvdwlocnl) then
-            iglob    = cellv_glob(k)
-            iv       = ired (iglob)
-            rdn      = kred (iglob)
-            rdn1     = 1.0_ti_p - rdn
-            xred(k)  = rdn * x(iglob) + rdn1 * x(iv)
-            yred(k)  = rdn * y(iglob) + rdn1 * y(iv)
-            zred(k)  = rdn * z(iglob) + rdn1 * z(iv)
-         else
-            xred(k) = inf
-            yred(k) = inf
-            zred(k) = inf
-         end if
-      end do
-
-c
-c     From Block-Block to Block-Atoms list
-c
-#ifdef _CUDA
-      if (use_shortvlist) then
-
-!$acc host_data use_device(cellv_glob,cell_scan,cell_len,
-!$acc&     xred,yred,zred,matb_lst,vblst,shortvblst,
-!$acc&     cell_lenr,cell_len2,cell_len2r)
-      call filter_shortlst_sparse1<<<*,128,0,rec_stream>>>
-     &     (cellv_glob,cell_scan,xred,yred,zred,matb_lst,
-     &      nvdwlocnlb,nblock,szMatb,nvdwlocnlb_pair,
-     &      vshortbuf2,0.0_ti_p,vbuf2,
-     &      vblst,cell_len,cell_lenr,shortvblst,cell_len2,cell_len2r)
-      call check_launch_kernel(" filter_shortlst_sparse1")
+#ifdef _OPENACC
+!$acc host_data use_device(cell_len,cell_scan1,lst)
+      call thrust_exclusive_scan(cell_len,nblock,cell_scan1,rec_stream)
+      call thrust_remove_zero_async_int(lst,nlocnlb_pair*(BLOCK_SIZE)
+     &                                 ,rec_stream)
 !$acc end host_data
-
-      else
-
-!$acc host_data use_device(cellv_glob,cell_scan,cell_len,
-!$acc&     xred,yred,zred,matb_lst,vblst,cell_lenr)
-
-c     call cu_filter_lst_sparse
-c    &     (cellv_glob,cell_scan,xred,yred,zred,matb_lst,
-c    &      nvdwlocnlb,nblock,szMatb,nvdwlocnlb_pair,vbuf2,
-c    &      vblst,cell_len,xcell,ycell,zcell,xcell2,ycell2,zcell2,
-c    &      rec_stream)
-c     call filter_lst_sparse<<<*,128,0,rec_stream>>>
-c    &     (cellv_glob,cell_scan,xred,yred,zred,matb_lst,
-c    &      nvdwlocnlb,nblock,szMatb,nvdwlocnlb_pair,vbuf2,
-c    &      vblst,cell_len)
-c     call check_launch_kernel(" filter_lst_sparse")
-      call filter_lst_sparse1<<<*,128,0,rec_stream>>>
-     &     (cellv_glob,cell_scan,xred,yred,zred,matb_lst,
-     &      nvdwlocnlb,nblock,szMatb,nvdwlocnlb_pair,vbuf2,
-     &      vblst,cell_len,cell_lenr)
-      call check_launch_kernel(" filter_lst_sparse1")
-
-!$acc end host_data
-
-      end if
-#else
-      !TODO Add an OpenACC version of this kernel
 #endif
 
-      call finalize_list_C2
-     &     (nblock,nvdwlocnlb_pair,nvdwlocnlb
-     &     ,nvdwlocnlb2_pair,ivblst,vblst,cell_len,cell_scan
-     &     ,cell_lenr)
+!$acc parallel loop async(rec_queue)
+!$acc&         present(cell_len,cell_scan1,ilst)
+      do i = 1, nblock
+         iv = cell_len(i)
+         kcell_scan = cell_scan1(i)
+!$acc loop vector
+         do k = 1,iv
+            ilst(kcell_scan+k)=i
+         end do
+      end do
 
-      if (use_shortvlist) call finalize_list_C2
-     &        (nblock,nvdwlocnlb_pair,nvdwlocnlb,nshortvdwlocnlb2_pair
-     &        ,ishortvblst,shortvblst,cell_len2,cell_scan
-     &        ,cell_len2r)
+      if (deb_Path)
+     &   print*,'C1 vs C2 nblist pairs blocks number ',nlocnlb_pair
+     &      , nlocnlb2_pair
 
-!$acc wait
       end subroutine
 
       subroutine SpatialReorder
@@ -2699,385 +2426,6 @@ c     call check_launch_kernel(" filter_lst_sparse")
             celle_glob(i) = iglob
          end do
       end if
-      end subroutine
-
-      subroutine mlist_block
-      use atoms   ,only: x,y,z,n
-      use atmlst  ,only: poleglobnl
-      use boxes   ,only: octahedron
-      use cutoff  ,only: use_shortmlist
-      use cell    ,only: xcell2,ycell2,zcell2,xcell,ycell,zcell
-      use domdec  ,only: rank,nproc
-      use mpole   ,only: npolelocnl,npolelocnlb
-     &            ,npolelocnlb_pair,npolelocnlb2_pair
-     &            ,nshortpolelocnlb2_pair,ipole,npole
-      use neigh   ,only: cell_scan,cell_len,matb_lst,celle_glob,eblst
-     &            ,mbuf2,mshortbuf2
-     &            ,nbMatb,niterMatb,buffMatb,offsetlMb,offsetrMb,szMatb
-     &            ,celle_key,celle_x,celle_y,celle_z,cell_lenr
-     &            ,ieblst,shorteblst,ishorteblst,bit_si,bit_sh
-     &            ,cell_len2,cell_len2r,build_cell_list2,e_bP
-      use utils   ,only: set_to_zero1_int1,set_to_zero1_int
-      use inform  ,only: deb_Path
-      use interfaces,only:pre_process_adjacency_matrix
-     &               ,set_ElecData_CellOrder
-#ifdef _OPENACC
-     &               ,cu_filter_lst_sparse
-      use thrust  ,only: thrust_exclusive_scan
-      use nblistcu,only: filter_lst_sparse
-      use utilcu  ,only: check_launch_kernel
-      use utilgpu ,only: rec_stream
-      use cudafor
-#endif
-      use utilgpu ,only: rec_queue,BLOCK_SIZE,inf
-      use tinheader,only: ti_p
-      use tinMemory,only: prmem_request,prmem_mvrequest,mipk,szoi
-      implicit none
-      integer i,iblock,inblock,icell
-      integer k,kblock,knblock,kcell
-      integer iglob,iv,ierrSync
-      integer it1,it2,block1,block2,temp,nblock,bit2,pos2
-      integer nx,ny,nz
-      integer nxy_cell,icell_scan,kcell_scan
-      integer posi
-      integer iter
-      integer nkblock,complete_b,nb_pair,nneig
-      integer(1) icell_len,kcell_len
-      integer(mipk) szolst
-      real(t_p) lenx_cell,leny_cell,lenz_cell,rdn,rdn1
-
-      if (deb_Path) print*, 'mlist_neiglist_block'
-      npolelocnlb_pair = 0
-      npolelocnlb = BLOCK_SIZE*((npolelocnl-1)/BLOCK_SIZE + 1)
-      ! Add margin to serve as out-of-bound exclusion interactions for C2 nblist
-      if (npolelocnlb == npolelocnl)
-     &   npolelocnlb = npolelocnl + BLOCK_SIZE
-
-      nblock     = ((npolelocnl-1)/BLOCK_SIZE) + 1
-      szMatb     = ((nblock-1)/bit_si) + 1
-
-      nbMatb     = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
-      niterMatb  = (nblock-1)/nbMatb + 1
-      npolelocnlb_pair = 0
-
-      call prmem_request(celle_key,n,async=.true.)
-
-      if (npole.eq.n) then
-         call build_cell_list2(poleglobnl,celle_key,npolelocnl,
-     &               sqrt(mbuf2),e_bP)
-      else
-         call prmem_request(celle_glob,npolelocnlb,async=.true.)
-!$acc parallel loop async default(present)
-         do i = 1,npolelocnl
-            celle_glob(i) = ipole(poleglobnl(i))
-         end do
-         call build_cell_list2(celle_glob,celle_key,npolelocnl,
-     &               sqrt(mbuf2),e_bP)
-      end if
-
-c
-c     Build Adjacency list piece by piece
-c
-      do iter = 0,niterMatb-1
-
-        offsetlMb = iter*nbMatb
-        offsetrMb = min((iter+1)*nbMatb,nblock)
-        if (iter.eq.niterMatb-1) nbMatb=nblock-offsetlMb
-
-        if (octahedron) then
-           call build_adjacency_matrix_octahedron(npolelocnl,e_bP)
-        else
-           call build_adjacency_matrix(npolelocnl,e_bP)
-        end if
-
-        call pre_process_adjacency_matrix (nblock,nb_pair)
-        npolelocnlb_pair = npolelocnlb_pair + nb_pair
-
-        call prmem_mvrequest (eblst,npolelocnlb_pair*(BLOCK_SIZE+2),
-     &          async=.true.)
-        call fill_adjacency_list(nblock,npolelocnlb_pair,eblst)
-
-      end do
-
-      call prmem_request (ieblst,npolelocnlb_pair,async=.true.)
-
-      ! zero list and ilist
-      call set_to_zero1_int(eblst(npolelocnlb_pair*2+1),
-     &          npolelocnlb_pair*(BLOCK_SIZE),rec_queue)
-      call set_to_zero1_int(ieblst,npolelocnlb_pair,rec_queue)
-
-      if (use_shortmlist) then
-         call prmem_request (shorteblst,npolelocnlb_pair*
-     &                         (BLOCK_SIZE+2),async=.true.)
-         call prmem_request (ishorteblst,npolelocnlb_pair,
-     &                         async=.true.)
-         call set_to_zero1_int(shorteblst,npolelocnlb_pair*
-     &                         (2+BLOCK_SIZE),rec_queue)
-         call set_to_zero1_int(ishorteblst,npolelocnlb_pair,
-     &                         rec_queue)
-      end if
-
-      call Init_blocklen(nblock)
-      call set_ElecData_CellOrder(.true.)
-
-c
-c     Debug print
-c
-      if (deb_Path) then
-c13   format( I3," iteration(s) required to build Adj lst" )
-c14   format( I10," nblocks process at once over",I10 )
-c15   format(1x,'Size Adj Mat (Mo)',F12.3,';',4x,'buffer (Go)',F10.6)
- 16   format(1x,'npolelocnl',I8,';',3x,'mlist mem space (Mo)',F12.3)
-         !nbMatb = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
-         szolst = npolelocnlb_pair*(BLOCK_SIZE+3)*szoi
-         if (use_shortmlist) szolst = 2*szolst
-         !print 13, niterMatb
-         !print 14, nbMatb,nblock
-         !print 15, int(szMatb*4,8)*nbMatb/1d6, buffMatb
-         print 16, npolelocnl, szolst/1d6
-      end if
-
-c
-c     From Block-Block to Block-Atoms list
-c
-#ifdef _CUDA
-      if (use_shortmlist) then
-!$acc host_data use_device(celle_glob,cell_scan,cell_len,cell_lenr,
-!$acc&    celle_x,celle_y,celle_z,matb_lst,eblst,shorteblst,
-!$acc&    cell_len2,cell_len2r)
-      call filter_shortlst_sparse1 <<<*,128,0,rec_stream>>>
-     &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
-     &      npolelocnlb,nblock,szMatb,npolelocnlb_pair,
-     &      mshortbuf2,0.0_ti_p,mbuf2,
-     &      eblst,cell_len,cell_lenr,shorteblst,cell_len2,cell_len2r)
-      call check_launch_kernel(" mlist:filter_shortlst_sparse1")
-!$acc end host_data
-      else
-!$acc host_data use_device(celle_glob,cell_scan,cell_len,cell_lenr,
-!$acc&    celle_x,celle_y,celle_z,matb_lst,eblst)
-
-c     call cu_filter_lst_sparse
-c    &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
-c    &      npolelocnlb,nblock,szMatb,npolelocnlb_pair,mbuf2,
-c    &      eblst,cell_len,xcell,ycell,zcell,xcell2,ycell2,zcell2,
-c    &      rec_stream)
-c     call filter_lst_sparse<<<*,128,0,rec_stream>>>
-c    &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
-c    &      npolelocnlb,nblock,szMatb,npolelocnlb_pair,mbuf2,
-c    &      eblst,cell_len)
-      call filter_lst_sparse1<<<*,128,0,rec_stream>>>
-     &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
-     &      npolelocnlb,nblock,szMatb,npolelocnlb_pair,mbuf2,
-     &      eblst,cell_len,cell_lenr)
-      call check_launch_kernel(" filter_lst_sparse1")
-
-!$acc end host_data
-      end if
-#else
-      !TODO Add an OpenACC version of this kernel
-#endif
-
-      call finalize_list_C2
-     &     (nblock,npolelocnlb_pair,npolelocnlb
-     &     ,npolelocnlb2_pair,ieblst,eblst,cell_len,cell_scan
-     &     ,cell_lenr)
-
-      if (use_shortmlist) call finalize_list_C2
-     &        (nblock,npolelocnlb_pair,npolelocnlb
-     &        ,nshortpolelocnlb2_pair,ishorteblst,shorteblst
-     &        ,cell_len2,cell_scan,cell_len2r)
-
-      end subroutine
-
-c
-c    "clist_block" performs a complete rebuild of the block
-c     electrostatic neighbor lists for charges using linked cells method
-c
-      subroutine clist_block
-      use atoms   ,only: x,y,z,n
-      use atmlst  ,only: chgglobnl
-      use boxes   ,only: octahedron
-      use charge  ,only: nionlocnl,nionlocnlb
-     &            ,nionlocnlb_pair,nionlocnlb2_pair
-     &            ,nshortionlocnlb2_pair,iion,nion
-      use cell    ,only: xcell2,ycell2,zcell2,xcell,ycell,zcell
-      use cutoff  ,only: use_shortclist
-      use domdec  ,only: rank,nproc
-      use neigh   ,only: cell_scan,cell_len,matb_lst,celle_glob,eblst
-     &            ,cbuf2,cshortbuf2
-     &            ,nbMatb,niterMatb,buffMatb,offsetlMb,offsetrMb,szMatb
-     &            ,celle_key,celle_x,celle_y,celle_z,cell_lenr
-     &            ,ieblst,shorteblst,ishorteblst,bit_si,bit_sh
-     &            ,cell_len2,cell_len2r,build_cell_list2,c_bP
-      use utils   ,only: set_to_zero1_int1,set_to_zero1_int
-      use inform  ,only: deb_Path
-      use interfaces,only: pre_process_adjacency_matrix
-     &              ,set_ElecData_CellOrder
-#ifdef _OPENACC
-     &              ,cu_filter_lst_sparse
-      use thrust  ,only: thrust_exclusive_scan
-      use nblistcu,only: filter_lst_sparse
-      use utilcu  ,only: check_launch_kernel
-      use utilgpu ,only: rec_stream
-      use cudafor
-#endif
-      use utilgpu ,only: rec_queue,BLOCK_SIZE,inf
-      use tinheader,only: ti_p
-      use tinMemory,only: prmem_request,prmem_mvrequest,mipk,szoi
-      implicit none
-      integer i,iblock,inblock,icell
-      integer k,kblock,knblock,kcell
-      integer iglob,iv,ierrSync
-      integer it1,it2,block1,block2,temp,nblock,bit2,pos2
-      integer nx,ny,nz
-      integer nxy_cell,icell_scan,kcell_scan
-      integer posi
-      integer iter
-      integer nkblock,complete_b,nb_pair,nneig
-      integer(1) icell_len,kcell_len
-      integer(mipk) szolst
-      real(t_p) lenx_cell,leny_cell,lenz_cell,rdn,rdn1
-c
-      if (deb_Path) print*, 'clist_neiglist_block'
-      nionlocnlb_pair = 0
-      nionlocnlb = BLOCK_SIZE*((nionlocnl-1)/BLOCK_SIZE + 1)
-      ! Add margin to serve as out-of-bound exclusion interactions for C2 nblist
-      if (nionlocnlb == nionlocnl)
-     &   nionlocnlb = nionlocnl + BLOCK_SIZE
-
-      nblock     = ((nionlocnl-1)/BLOCK_SIZE) + 1
-      szMatb     = ((nblock-1)/bit_si) + 1
-
-      nbMatb     = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
-      niterMatb  = (nblock-1)/nbMatb + 1
-      nionlocnlb_pair = 0
-
-      call prmem_request(celle_key,n,async=.true.)
-
-      if (nion.eq.n) then
-         call build_cell_list2(chgglobnl,celle_key,nionlocnl,
-     &               sqrt(cbuf2),c_bP)
-      else
-         call prmem_request(celle_glob,nionlocnlb,async=.true.)
-!$acc    parallel loop async(rec_queue) default(present)
-         do i = 1,nionlocnl
-            celle_glob(i) = iion(chgglobnl(i))
-         end do
-         call build_cell_list2(celle_glob,celle_key,nionlocnl,
-     &               sqrt(cbuf2),c_bP)
-      end if
-
-c
-c     Build Adjacency list piece by piece
-c
-      do iter = 0,niterMatb-1
-
-        offsetlMb = iter*nbMatb
-        offsetrMb = min((iter+1)*nbMatb,nblock)
-        if (iter.eq.niterMatb-1) nbMatb=nblock-offsetlMb
-
-        if (octahedron) then
-           call build_adjacency_matrix_octahedron(nionlocnl,c_bP)
-        else
-           call build_adjacency_matrix(nionlocnl,c_bP)
-        end if
-
-        call pre_process_adjacency_matrix (nblock,nb_pair)
-        nionlocnlb_pair = nionlocnlb_pair + nb_pair
-
-        call prmem_mvrequest (eblst,nionlocnlb_pair*(BLOCK_SIZE+2),
-     &          async=.true.)
-        call fill_adjacency_list(nblock,nionlocnlb_pair,eblst)
-
-      end do
-
-      call prmem_request (ieblst,nionlocnlb_pair,async=.true.)
-
-      ! zero list and ilist
-      call set_to_zero1_int(eblst(nionlocnlb_pair*2+1),
-     &          nionlocnlb_pair*(BLOCK_SIZE),rec_queue)
-      call set_to_zero1_int(ieblst,nionlocnlb_pair,rec_queue)
-
-      if (use_shortclist) then
-         call prmem_request (shorteblst,nionlocnlb_pair*
-     &                         (BLOCK_SIZE+2),async=.true.)
-         call prmem_request (ishorteblst,nionlocnlb_pair,
-     &                         async=.true.)
-         call set_to_zero1_int(shorteblst,nionlocnlb_pair*
-     &                         (2+BLOCK_SIZE),rec_queue)
-         call set_to_zero1_int(ishorteblst,nionlocnlb_pair,
-     &                         rec_queue)
-      end if
-
-      call Init_blocklen(nblock)
-      call set_ChgData_CellOrder(.true.)
-c
-c     Debug print
-c
-      if (deb_Path) then
-c13   format( I3," iteration(s) required to build Adj lst" )
-c14   format( I10," nblocks process at once over",I10 )
-c15   format(1x,'Size Adj Mat (Mo)',F12.3,';',4x,'buffer (Go)',F10.6)
- 16   format(1x,'nionlocnl',I8,';',3x,'clist mem space (Mo)',F12.3)
-         !nbMatb = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
-         szolst = nionlocnlb_pair*(BLOCK_SIZE+3)*szoi
-         if (use_shortclist) szolst = 2*szolst
-         !print 13, niterMatb
-         !print 14, nbMatb,nblock
-         !print 15, int(szMatb*4,8)*nbMatb/1d6, buffMatb
-         print 16, nionlocnl, szolst/1d6
-      end if
-
-c
-c     From Block-Block to Block-Atoms list
-c
-#ifdef _CUDA
-      if (use_shortclist) then
-!$acc host_data use_device(celle_glob,cell_scan,cell_len,cell_lenr,
-!$acc&    celle_x,celle_y,celle_z,matb_lst,eblst,shorteblst,
-!$acc&    cell_len2,cell_len2r)
-      call filter_shortlst_sparse1 <<<*,128,0,rec_stream>>>
-     &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
-     &      nionlocnlb,nblock,szMatb,nionlocnlb_pair,
-     &      cshortbuf2,0.0_ti_p,cbuf2,
-     &      eblst,cell_len,cell_lenr,shorteblst,cell_len2,cell_len2r)
-      call check_launch_kernel(" clist:filter_shortlst_sparse1")
-!$acc end host_data
-      else
-!$acc host_data use_device(celle_glob,cell_scan,cell_len,cell_lenr,
-!$acc&    celle_x,celle_y,celle_z,matb_lst,eblst)
-
-c     call cu_filter_lst_sparse
-c    &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
-c    &      nionlocnlb,nblock,szMatb,nionlocnlb_pair,cbuf2,
-c    &      eblst,cell_len,xcell,ycell,zcell,xcell2,ycell2,zcell2,
-c    &      rec_stream)
-c     call filter_lst_sparse<<<*,128,0,rec_stream>>>
-c    &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
-c    &      nionlocnlb,nblock,szMatb,nionlocnlb_pair,mbuf2,
-c    &      eblst,cell_len)
-      call filter_lst_sparse1<<<*,128,0,rec_stream>>>
-     &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
-     &      nionlocnlb,nblock,szMatb,nionlocnlb_pair,cbuf2,
-     &      eblst,cell_len,cell_lenr)
-      call check_launch_kernel(" clist:filter_lst_sparse1")
-
-!$acc end host_data
-      end if
-#else
-      !TODO Add an OpenACC version of this kernel
-#endif
-
-      call finalize_list_C2
-     &     (nblock,nionlocnlb_pair,nionlocnlb
-     &     ,nionlocnlb2_pair,ieblst,eblst,cell_len,cell_scan
-     &     ,cell_lenr)
-
-      if (use_shortclist) call finalize_list_C2
-     &        (nblock,nionlocnlb_pair,nionlocnlb
-     &        ,nshortionlocnlb2_pair,ishorteblst,shorteblst
-     &        ,cell_len2,cell_scan,cell_len2r)
-
       end subroutine
 
 c
@@ -3263,521 +2611,3 @@ c    &        ,cell_len2,cell_scan,cell_len2r)
 
 
       end subroutine
-
-c
-c    "clistcell" performs a complete rebuild of the
-c     electrostatic neighbor lists for charges using linked cells method
-c
-      subroutine clistcellgpu
-      use sizes
-      use atmlst
-      use atoms
-      use charge
-      use domdec
-      use inform ,only: deb_Path
-      use iounit
-      use nblistgpu_inl
-      use neigh
-      use utilgpu
-      use mpi
-      implicit none
-      integer iglob
-      integer i,ii,icell,j,k,nneigloc,cap
-      integer ineig,inumneig,ibufbeg,iichg,kkchg
-      integer kcell,kcell_len,kloc,kglob
-      integer ncell_loc
-      real(t_p) xr,yr,zr,xi,yi,zi,xk,yk,zk,r2
-      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
-      real(t_p) pos1,pos2,pos3
-      logical docompute
-!$acc routine(fatal_acc)
-c
-      if(deb_Path) write(*,*) 'clistcellgpu'
-
-      zbeg = zbegproc(rank+1)
-      zend = zendproc(rank+1)
-      ybeg = ybegproc(rank+1)
-      yend = yendproc(rank+1)
-      xbeg = xbegproc(rank+1)
-      xend = xendproc(rank+1)
-c
-c     perform a complete list build
-c
-!$acc parallel loop vector_length(32) private(j) async(rec_queue)
-!$acc&         present(chgglobnl,chglist,repartcell,cell_len
-!$acc&  ,bufbegcell,numneigcell,neigcell,indcell,elst,nelst,x,y,z)
-      do i = 1, nionlocnl
-         iichg  = chgglobnl(i)
-         iglob  = iion(iichg)
-         icell  = repartcell(iglob)
-         xi     = x(iglob)
-         yi     = y(iglob)
-         zi     = z(iglob)
-         j      = 0
-c
-c        align data of the local cell and the neighboring ones
-c
-         do ineig = 0, numneigcell(icell)
-            if (ineig.ne.0) then
-               kcell = neigcell(ineig,icell)
-            else
-               kcell = icell
-            end if
-            kcell_len = cell_len(kcell)
-            ibufbeg   = bufbegcell(kcell)
-c
-c     do the neighbor search
-c
-!$acc loop vector
-            do ii = 1,kcell_len
-               kglob = indcell(ibufbeg+ii-1)
-               kkchg = chglist(kglob)
-               if (kkchg.eq.0.or.kglob.le.iglob) cycle
-               xk    = x(kglob)
-               yk    = y(kglob)
-               zk    = z(kglob)
-               pos1  = xi - xk
-               pos2  = yi - yk
-               pos3  = zi - zk
-               call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
-
-               if  ((zk.lt.zbeg).or.(zk.ge.zend)
-     $          .or.(yk.lt.ybeg).or.(yk.ge.yend)
-     $          .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
-c                docompute = .false.
-c
-c        compute the distances and build the list accordingly
-c
-               r2  = pos1**2 + pos2**2 + pos3**2
-               if (r2 .gt. cbuf2) cycle
-!$acc atomic capture
-               j           = j + 1
-               cap         = j
-!$acc end atomic
-               elst(cap,i) = kkchg
-            end do
-         end do
-         nelst(i) = j
-c
-c     check to see if the neighbor list is too long
-c
-         if (j .ge. maxelst) then
-            if (rank.eq.0) then
-               print*,' CBUILD  --  Too many Neighbors;',
-     &                ' Increase MAXELST'
-               call fatal_acc
-            end if
-         end if
-      end do
-      end
-c
-c    "clistcell2gpu" performs a complete rebuild of the
-c     electrostatic short range and regular neighbor lists for charges 
-c     using linked cells method
-c
-      subroutine clistcell2gpu
-      use sizes
-      use atmlst
-      use atoms
-      use charge
-      use cutoff
-      use domdec
-      use inform ,only: deb_Path
-      use iounit
-      use nblistgpu_inl
-      use neigh
-      use utilgpu
-      use mpi
-      implicit none
-      integer iglob
-      integer i,ii,icell,j,k,nneigloc,cap
-      integer ineig,inumneig,ibufbeg,iichg,kkchg
-      integer kcell,kcell_len,kloc,kglob
-      integer ncell_loc
-      real(t_p) xr,yr,zr,xi,yi,zi,xk,yk,zk,r2
-      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
-      real(t_p) pos1,pos2,pos3
-      real(t_p) cbufbeg2
-      logical docompute
-!$acc routine(fatal_acc)
-c
-      if(deb_Path) write(*,*) 'clistcell2gpu'
-
-      zbeg = zbegproc(rank+1)
-      zend = zendproc(rank+1)
-      ybeg = ybegproc(rank+1)
-      yend = yendproc(rank+1)
-      xbeg = xbegproc(rank+1)
-      xend = xendproc(rank+1)
-c
-c     starting distances for long range real space interactions
-c
-      cbufbeg2 = (chgshortcut-lbuffer-shortheal)**2
-c
-c     perform a complete list build
-c
-!$acc parallel loop vector_length(32) private(j,k) async(rec_queue)
-!$acc&         present(chgglobnl,chglist,repartcell,cell_len,bufbegcell,
-!$acc&  numneigcell,neigcell,indcell,elst,nelst,nshortelst,
-!$acc&  shortelst,x,y,z)
-      do i = 1, nionlocnl
-         iichg  = chgglobnl(i)
-         iglob  = iion(iichg)
-         icell  = repartcell(iglob)
-         xi     = x(iglob)
-         yi     = y(iglob)
-         zi     = z(iglob)
-         k      = 0
-         j      = 0
-c
-c        align data of the local cell and the neighboring ones
-c
-         do ineig = 0, numneigcell(icell)
-            if (ineig.ne.0) then
-               kcell = neigcell(ineig,icell)
-            else
-               kcell = icell
-            end if
-            kcell_len = cell_len(kcell)
-            ibufbeg   = bufbegcell(kcell)
-c
-c     do the neighbor search
-c
-!$acc loop vector
-            do ii = 1,kcell_len
-               kglob = indcell(ibufbeg+ii-1)
-               kkchg = chglist(kglob)
-               if (kkchg.eq.0.or.kglob.le.iglob) cycle
-               xk    = x(kglob)
-               yk    = y(kglob)
-               zk    = z(kglob)
-               pos1  = xi - xk
-               pos2  = yi - yk
-               pos3  = zi - zk
-               call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
-
-               if  ((zk.lt.zbeg).or.(zk.ge.zend)
-     $          .or.(yk.lt.ybeg).or.(yk.ge.yend)
-     $          .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
-c                docompute = .false.
-c
-c        compute the distances and build the list accordingly
-c
-               r2  = pos1**2 + pos2**2 + pos3**2
-               if (r2 .le. cshortbuf2) then
-!$acc atomic capture
-                  k           = k + 1
-                  cap         = k
-!$acc end atomic
-                  shortelst(cap,i) = kkchg
-               end if
-               if (r2.le.cbuf2.and.r2.ge.cbufbeg2) then
-!$acc atomic capture
-                  j           = j + 1
-                  cap         = j
-!$acc end atomic
-                  elst(cap,i) = kkchg
-               end if
-            end do
-         end do
-         nshortelst(i) = k
-         nelst     (i) = j
-c
-c     check to see if the neighbor list is too long
-c
-         if (j .ge. maxelst) then
-            if (rank.eq.0) then
-               print*,' CBUILD  --  Too many Neighbors;',
-     &                    ' Increase MAXELST'
-               call fatal_acc
-            end if
-         end if
-      end do
-      end
-c
-c    "vlistcell" performs a complete rebuild of the
-c     vdw neighbor lists for charges using linked cells method
-c
-      subroutine vlistcellgpu
-      use atmlst
-      use atoms
-      use domdec
-      use inform ,only: deb_Path
-      use iounit
-      use kvdws
-      use nblistgpu_inl
-      use neigh
-      use vdw
-      use utilgpu
-      use mpi
-      implicit none
-      integer iglob,iloc
-      integer i,ii,icell,j,k,nneigloc
-      integer ineig,iivdw,iv
-      integer inumneig,ibufbeg,cap
-      integer kcell,kloc,kglob,kbis
-      integer ncell_loc,kcell_len
-      real(t_p) xr,yr,zr,xi,yi,zi,xk,yk,zk,r2,rdn
-      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
-      real(t_p) pos1,pos2,pos3
-      real(t_p) xred(nbloc)
-      real(t_p) yred(nbloc)
-      real(t_p) zred(nbloc)
-      logical docompute
-!$acc routine(fatal_acc)
-c
-      if(deb_Path) write(*,*) 'vlistcellgpu'
-c
-!$acc data create(xred,yred,zred)
-!$acc&     present(vdwglob,vdwglobnl,ivdw,jvdw,x,y,z,
-!$acc&  vlst,nvlst,ired,kred,loc,rad,indcell,neigcell,
-!$acc&  cell_len,bufbegcell,numneigcell,repartcell)
-!$acc&     async(rec_queue)
-
-      zbeg = zbegproc(rank+1)
-      zend = zendproc(rank+1)
-      ybeg = ybegproc(rank+1)
-      yend = yendproc(rank+1)
-      xbeg = xbegproc(rank+1)
-      xend = xendproc(rank+1)
-c
-c     apply reduction factors to find coordinates for each site
-c
-
-!$acc parallel loop async(rec_queue)
-      do ii = 1, nvdwbloc
-         iivdw   = vdwglob(ii)
-         iglob   = ivdw(iivdw)
-         i       = loc (iglob)
-         iv      = ired(iglob)
-         rdn     = kred(iglob)
-         xred(i) = rdn*(x(iglob)-x(iv)) + x(iv)
-         yred(i) = rdn*(y(iglob)-y(iv)) + y(iv)
-         zred(i) = rdn*(z(iglob)-z(iv)) + z(iv)
-      end do
-c
-c     perform a complete list build
-c
-!$acc parallel loop vector_length(32) private(j) async(rec_queue)
-      do i = 1, nvdwlocnl
-        iivdw    = vdwglobnl(i)
-        iglob    = ivdw(iivdw)
-        icell    = repartcell(iglob)
-        iloc     = loc(iglob)
-        inumneig = numneigcell(icell)
-        j        = 0
-        xi       = xred(iloc)
-        yi       = yred(iloc)
-        zi       = zred(iloc)
-c
-c     align data of the local cell and the neighboring ones
-c
-!$acc loop seq
-        do ineig = 0, inumneig
-           if (ineig.ne.0) then
-              kcell = neigcell(ineig,icell)
-           else
-              kcell = icell
-           end if
-           kcell_len = cell_len(kcell)
-c          if (ii.gt.cell_len(kcell)) cycle
-           ibufbeg   = bufbegcell(kcell)
-c
-c     do the neighbor search
-c
-!$acc loop vector
-           do ii = 1,kcell_len
-              kglob = indcell(ibufbeg+ii-1)
-              if (kglob.le.iglob) cycle
-              if (rad(jvdw(kglob)).eq.0) cycle
-              kbis  = loc(kglob)
-              xk    = xred(kbis)
-              yk    = yred(kbis)
-              zk    = zred(kbis)
-              pos1  = xi - xk
-              pos2  = yi - yk
-              pos3  = zi - zk
-              call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
-c             docompute = .true.
-              if    ((zk.lt.zbeg).or.(zk.ge.zend)
-     $           .or.(yk.lt.ybeg).or.(yk.ge.yend)
-     $           .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
-c
-c     compute the distances and build the list accordingly
-c
-              r2  = pos1**2 + pos2**2 + pos3**2
-              if (r2.gt.vbuf2) cycle
-!$acc atomic capture
-              j   = j + 1
-              cap = j
-!$acc end atomic
-              vlst(cap,i) = kglob
-           end do
-        end do
-        nvlst(i) = j
-c
-c     check to see if the neighbor list is too long
-c
-        if (j .ge. maxvlst) then
-           if (rank.eq.0) then
-             print*,' VBUILD  --  Too many Neighbors;',
-     &                  ' Increase MAXVLST'
-             call fatal_acc
-           end if
-        end if
-      end do
-
-!$acc end data
-      end
-c
-c    "vlistcell2gpu" performs a complete rebuild of the
-c     short range and regular vdw neighbor lists for charges 
-c      using linked cells method
-c
-      subroutine vlistcell2gpu
-      use atmlst
-      use atoms
-      use cutoff
-      use domdec
-      use inform ,only: deb_Path
-      use iounit
-      use kvdws
-      use nblistgpu_inl
-      use neigh
-      use vdw
-      use utilgpu
-      use mpi
-      implicit none
-      integer iglob,iloc
-      integer i,ii,icell,j,k,nneigloc
-      integer ineig,iivdw,iv
-      integer inumneig,ibufbeg,cap
-      integer kcell,kloc,kglob,kbis
-      integer ncell_loc,kcell_len
-      real(t_p) xr,yr,zr,xi,yi,zi,xk,yk,zk,r2,rdn
-      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
-      real(t_p) pos1,pos2,pos3
-      real(t_p) xred(nbloc)
-      real(t_p) yred(nbloc)
-      real(t_p) zred(nbloc)
-      real(t_p) vbufbeg2
-      logical docompute
-!$acc routine(fatal_acc)
-c
-      if(deb_Path) write(*,*) 'vlistcell2gpu'
-c
-!$acc data create(xred,yred,zred)
-!$acc&     present(vdwglob,vdwglobnl,ivdw,jvdw,x,y,z,
-!$acc&  vlst,nvlst,ired,kred,loc,rad,indcell,neigcell,
-!$acc&  cell_len,bufbegcell,numneigcell,repartcell,
-!$acc&  shortvlst,nshortvlst)
-!$acc&     async(rec_queue)
-
-      zbeg = zbegproc(rank+1)
-      zend = zendproc(rank+1)
-      ybeg = ybegproc(rank+1)
-      yend = yendproc(rank+1)
-      xbeg = xbegproc(rank+1)
-      xend = xendproc(rank+1)
-c
-c     starting distances for long range real space interactions
-c
-      vbufbeg2 = (vdwshortcut-lbuffer-shortheal)**2
-c
-c     apply reduction factors to find coordinates for each site
-c
-!$acc parallel loop async(rec_queue)
-      do ii = 1, nvdwbloc
-         iivdw   = vdwglob(ii)
-         iglob   = ivdw(iivdw)
-         i       = loc (iglob)
-         iv      = ired(iglob)
-         rdn     = kred(iglob)
-         xred(i) = rdn*(x(iglob)-x(iv)) + x(iv)
-         yred(i) = rdn*(y(iglob)-y(iv)) + y(iv)
-         zred(i) = rdn*(z(iglob)-z(iv)) + z(iv)
-      end do
-c
-c     perform a complete list build
-c
-!$acc parallel loop vector_length(32) private(j,k) async(rec_queue)
-      do i = 1, nvdwlocnl
-        iivdw    = vdwglobnl(i)
-        iglob    = ivdw(iivdw)
-        icell    = repartcell(iglob)
-        iloc     = loc(iglob)
-        inumneig = numneigcell(icell)
-        j        = 0
-        k        = 0
-        xi       = xred(iloc)
-        yi       = yred(iloc)
-        zi       = zred(iloc)
-c
-c     align data of the local cell and the neighboring ones
-c
-!$acc loop seq
-        do ineig = 0, inumneig
-           if (ineig.ne.0) then
-              kcell = neigcell(ineig,icell)
-           else
-              kcell = icell
-           end if
-           kcell_len = cell_len(kcell)
-c          if (ii.gt.cell_len(kcell)) cycle
-           ibufbeg   = bufbegcell(kcell)
-c
-c     do the neighbor search
-c
-!$acc loop vector
-           do ii = 1,kcell_len
-              kglob = indcell(ibufbeg+ii-1)
-              if (kglob.le.iglob) cycle
-              if (rad(jvdw(kglob)).eq.0) cycle
-              kbis  = loc(kglob)
-              xk    = xred(kbis)
-              yk    = yred(kbis)
-              zk    = zred(kbis)
-              pos1  = xi - xk
-              pos2  = yi - yk
-              pos3  = zi - zk
-              call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
-c             docompute = .true.
-              if    ((zk.lt.zbeg).or.(zk.ge.zend)
-     $           .or.(yk.lt.ybeg).or.(yk.ge.yend)
-     $           .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
-c
-c     compute the distances and build the list accordingly
-c
-              r2  = pos1**2 + pos2**2 + pos3**2
-              if (r2.le.vshortbuf2) then
-!$acc atomic capture
-                 k   = k + 1
-                 cap = k
-!$acc end atomic
-                 shortvlst(cap,i) = kglob
-              end if
-              if (r2.le.vbuf2) then
-!$acc atomic capture
-                 j   = j + 1
-                 cap = j
-!$acc end atomic
-                 vlst(cap,i) = kglob
-              end if
-           end do
-        end do
-        nshortvlst(i) = k
-        nvlst(i)      = j
-c
-c     check to see if the neighbor list is too long
-c
-        if (j .ge. maxvlst) then
-           if (rank.eq.0) then
-             print*,' VBUILD  --  Too many Neighbors;',
-     &                  ' Increase MAXVLST'
-             call fatal_acc
-           end if
-        end if
-      end do
-
-!$acc end data
-      end

@@ -18,12 +18,13 @@ c
       use cutoff
       use domdec ,only: rank,MasterRank,COMM_TINKER
      &           ,glob,nloc,nlocnl,nbloc,nproc
-      use moldyn ,only: v,a
+      use moldyn ,only: v,a,aalt,aalt2
       use mpi
       use neigh  ,only: ineigup, lbuffer
       use potent
       use tinMemory,only: deb_Mem=>debMem
       use usage  ,only: muse=>use
+      use utilgpu,only: Tinker_shellEnv
       use vdw    ,only: skipvdw12
       use sizes  ,only: tinkerdebug
 
@@ -63,6 +64,8 @@ c
          if (btest(tinkerdebug,tinMem    )) deb_Mem    = 1
          if (btest(tinkerdebug,tindPolar )) deb_Polar  = .true.
       end if
+
+      call Tinker_shellEnv("ESSAI",tinEssai,1)
 
       end subroutine
 
@@ -124,23 +127,31 @@ c
       mdyn_rtyp vector(*)
       character(*),optional,intent(in)::name
       real(8)     ,optional,intent(inout):: mi_,ma_,on_
-      real(8) mi,ma,on
+      real(8) mi,ma,on,on1
       integer i
       real(md_p) val
       mi=huge(mi);ma=tiny(ma);on=0
-!$acc parallel loop async present(vector(1:sz))
+!$acc wait
+!$acc parallel loop present(vector(1:sz))
       do i = 1, sz
          val = mdr2md(vector(i))
          mi  = min( mi,val )
          ma  = max( ma,val )
          on  = on + abs( val )
       end do
-!$acc wait
-12    format(A6,3F16.6)
-      write(*,12) name,mi,ma,on
-      if (present(mi_)) mi_=mi
-      if (present(ma_)) ma_=ma
-      if (present(on_)) on_=on
+12    format(A6,2F20.8,1x,F21.5,I5)
+13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
+      if (nproc.gt.1) then
+         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
+     &       ,MPI_SUM,COMM_TINKER,i)
+      end if
+      !on1 = sqrt(on1)
+      !on  = sqrt(on )
+      if (rank.eq.0.and.nproc.gt.1) then
+      write(*,13) name,mi,ma,on,rank,on1
+      else
+      write(*,12) name,mi,ma,on,rank
+      end if
       end subroutine
 #endif
 
@@ -159,17 +170,17 @@ c
          val = (vector(i))
          mi  = min( mi,val )
          ma  = max( ma,val )
-         on  = on + val*val
+         on  = on + abs(val)
       end do
 !$acc wait
-12    format(A6,2F16.8,1x,D17.8,I5)
-13    format(A6,2F16.8,1x,D17.8,I5,D17.8)
+12    format(A6,2F20.8,1x,F21.5,I5)
+13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
      &       ,MPI_SUM,COMM_TINKER,i)
       end if
-      on1 = sqrt(on1)
-      on  = sqrt(on )
+      !on1 = sqrt(on1)
+      !on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
       write(*,13) name,mi,ma,on,rank,on1
       else
@@ -196,8 +207,8 @@ c
          on  = on + abs( val*val )
       end do
 !$acc wait
-12    format(A6,2F16.8,1x,D17.8,I5)
-13    format(A6,2F16.8,1x,D17.8,I5,D17.8)
+12    format(A6,2F20.8,1x,F21.5,I5)
+13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
      &       ,MPI_SUM,COMM_TINKER,i)
@@ -268,14 +279,17 @@ c
 c
 c     Print information on position, velocities and aceleration
 c
-      module subroutine info_minmax_pva()
+      module subroutine info_minmax_pva(opt)
       implicit none
-      integer i,iglob
+      integer,optional:: opt
+      integer i,iglob,opt_
       integer,parameter::nel=5
       real(r_p) minmax(3*nel)
       real(r_p) tmp
       logical tinker_isnan
 
+      opt_ = 0
+      if (present(opt)) opt_=opt
       minmax=0
 !$acc wait
  20   format (80('_'))
@@ -294,7 +308,11 @@ c
          tmp = min(min(v(1,iglob),v(2,iglob)),v(3,iglob))
 !$acc atomic update
          minmax(04) = min(minmax(04),tmp)
-         tmp = min(min(a(1,iglob),a(2,iglob)),a(3,iglob))
+         if (opt_.eq.0) then
+            tmp = min(min(a(1,iglob),a(2,iglob)),a(3,iglob))
+         else if(opt_.eq.1) then
+            tmp = min(min(aalt(1,iglob),aalt(2,iglob)),aalt(3,iglob))
+         end if
 !$acc atomic update
          minmax(05) = min(minmax(05),tmp)
 !$acc atomic update
@@ -307,14 +325,22 @@ c
          tmp = max(max(v(1,iglob),v(2,iglob)),v(3,iglob))
 !$acc atomic update
          minmax(09) = max(minmax(09),v(1,iglob))
-         tmp = max(max(a(1,iglob),a(2,iglob)),a(3,iglob))
+         if (opt_.eq.0) then
+            tmp = max(max(a(1,iglob),a(2,iglob)),a(3,iglob))
+         else if(opt_.eq.1) then
+            tmp = max(max(aalt(1,iglob),aalt(2,iglob)),aalt(3,iglob))
+         end if
 !$acc atomic update
          minmax(10) = max(minmax(10),tmp)
 
          tmp = v(1,iglob)+v(2,iglob)+v(3,iglob)
 !$acc atomic update
          minmax(11) = minmax(11)+tmp
-         tmp = a(1,iglob)+a(2,iglob)+a(3,iglob)
+         if (opt_.eq.0) then
+            tmp = a(1,iglob)+a(2,iglob)+a(3,iglob)
+         else if(opt_.eq.1) then
+            tmp = aalt(1,iglob)+aalt(2,iglob)+aalt(3,iglob)
+         end if
 !$acc atomic update
          minmax(12) = minmax(12)+tmp
          end if
@@ -338,14 +364,20 @@ c
       end if
 
       if (rank.eq.0) then
-30    format(A10,2F18.10)
-32    format(A10,3F18.10)
+30    format(A10,2F18.8)
+32    format(A10,3F18.8)
          print 20
          print 30,"min max_x ",minmax(01),minmax(06)
          print 30,"min max_y ",minmax(02),minmax(07)
          print 30,"min max_z ",minmax(03),minmax(08)
          print 32,"min max_v ",minmax(04),minmax(09),minmax(11)
+         if (opt_.eq.0) then
          print 32,"min max_a ",minmax(05),minmax(10),minmax(12)
+         elseif (opt_.eq.1) then
+         print 32,"min max_a1",minmax(05),minmax(10),minmax(12)
+         elseif (opt_.eq.2) then
+         print 32,"min max_a2",minmax(05),minmax(10),minmax(12)
+         end if
       end if
       end subroutine
 
@@ -426,3 +458,12 @@ c
       end if
       end subroutine
       end submodule
+
+      subroutine write0_mpi(name,line)
+      use domdec
+      use mpi
+      character(*) name
+      integer i
+      call MPI_BARRIER(COMM_TINKER,i)
+      if(rank.eq.0) write(0,'(A,X,A,X,I0)') 'w0',name,line
+      end subroutine

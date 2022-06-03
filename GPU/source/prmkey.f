@@ -18,20 +18,22 @@ c
       subroutine prmkey (text)
       use angpot
       use bndpot
+      use bound
       use chgpot
+      use ctrpot
       use cutoff
       use divcon
       use fields
       use interfaces,only:sub_config,itrf_legacy
-     &              ,itrf_adapted
+     &              , itrf_adapted
       use mplpot
-      use neigh  ,only: buffMatb
+      use neigh     ,only: buffMatb
       use polpot
       use potent
+      use reppot
       use torpot
       use random_mod
-      use precompute_pole,only: precompute_solvpole,
-     &                          precompute_mpole
+      use precompute_pole,only: precompute_solvpole
       use urypot
       use USampling ,only: US_enable
       use utilgpu
@@ -130,6 +132,30 @@ c
            use_vdw = .false.
            use_vlist = .false.
          end if
+      else if (keyword(1:8) .eq. 'DISPTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_disp = .true.
+         use_dlist = .true.
+         if (value .eq. 'NONE')  then
+           use_disp = .false.
+           use_dlist = .false.
+         end if
+      else if (keyword(1:14) .eq. 'REPULSIONTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_repuls = .true.
+         if (value .eq. 'NONE')  use_repuls = .false.
+      else if (keyword(1:15) .eq. 'DISPERSIONTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_disp = .true.
+         if (value .eq. 'NONE')  use_disp = .false.
+      else if (keyword(1:11) .eq. 'CHGTRNTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_chgtrn = .true.
+         if (value .eq. 'NONE')  use_chgtrn = .false.
       else if (keyword(1:11) .eq. 'CHARGETERM ') then
          call getword (record,value,next)
          if (value .eq. 'ONLY')  call potoff
@@ -173,15 +199,8 @@ c
       else if (keyword(1:5) .eq. 'EMTP ') then
          use_emtp = .true.
          if (value .eq. 'NONE')  use_emtp = .false.
-      else if (keyword(1:14) .eq. 'CTRANSFERTERM ') then
-         use_ctransfer = .true.
-         if (value .eq. 'NONE')  use_ctransfer = .false.
-      else if (keyword(1:9) .eq. 'REPULSION ') then
-         use_repulsion = .true.
-         if (value .eq. 'NONE')  use_repulsion = .false.
-      else if (keyword(1:10) .eq. 'DISPERSION ') then
-         use_dispersion = .true.
-         if (value .eq. 'NONE')  use_dispersion = .false.
+      else if (keyword(1:8) .eq. 'POLYMER ') then
+         use_polymer = .true.
       end if
 c
 c     select the name of the force field parameter set
@@ -198,7 +217,8 @@ c
          else if (bndtyp.eq.'HARMONIC') then
             bndtyp_i = BND_HARMONIC
          else
-            print*, ' !!!  Unrecognize BONDTYPE in keyfile !!!'
+            print*, 'WARNING;:prmkey.f !!!'
+     &            , '  Unrecognize BONDTYPE in keyfile !!!', bndtyp
             bndtyp_i = BND_NO_TYPE
          end if
       else if (keyword(1:9) .eq. 'BONDUNIT ') then
@@ -239,6 +259,7 @@ c     set control parameters for out-of-plane bend potentials
 c
       else if (keyword(1:11) .eq. 'OPBENDTYPE ') then
          call getword (record,opbtyp,next)
+         if( opbtyp.eq.'ALLINGER') opbtypInt = OPB_ALLINGER
       else if (keyword(1:11) .eq. 'OPBENDUNIT ') then
          read (string,*,err=10,end=10)  opbunit
       else if (keyword(1:13) .eq. 'OPBEND-CUBIC ') then
@@ -294,8 +315,10 @@ c
          call getword (record,radsiz,next)
       else if (keyword(1:11) .eq. 'RADIUSRULE ') then
          call getword (record,radrule,next)
+         call set_vdwradepsrule(radrule,radrule_i)
       else if (keyword(1:12) .eq. 'EPSILONRULE ') then
          call getword (record,epsrule,next)
+         call set_vdwradepsrule(epsrule,epsrule_i)
       else if (keyword(1:14) .eq. 'GAUSSTYPE ') then
          call getword (record,gausstyp,next)
       else if (keyword(1:10) .eq. 'A-EXPTERM ') then
@@ -326,6 +349,21 @@ c
 !$acc update device(v5scale)
       else if (keyword(1:15) .eq. 'VDW-CORRECTION ') then
          use_vcorr = .true.
+c
+c     set control parameters for Pauli repulsion potential
+c
+      else if (keyword(1:13) .eq. 'REP-12-SCALE ') then
+         read (string,*,err=10,end=10)  r2scale
+         if (r2scale .gt. 1.0d0)  r2scale = 1.0_ti_p / r2scale
+      else if (keyword(1:13) .eq. 'REP-13-SCALE ') then
+         read (string,*,err=10,end=10)  r3scale
+         if (r3scale .gt. 1.0d0)  r3scale = 1.0_ti_p / r3scale
+      else if (keyword(1:13) .eq. 'REP-14-SCALE ') then
+         read (string,*,err=10,end=10)  r4scale
+         if (r4scale .gt. 1.0d0)  r4scale = 1.0_ti_p / r4scale
+      else if (keyword(1:13) .eq. 'REP-15-SCALE ') then
+         read (string,*,err=10,end=10)  r5scale
+         if (r5scale .gt. 1.0d0)  r5scale = 1.0_ti_p / r5scale
 c
 c     set control parameters for charge-charge potentials
 c
@@ -491,6 +529,29 @@ c
          read (string,*,err=10,end=10)  u4scale
          if (u4scale .gt. 1.0_ti_p)  u4scale = 1.0_ti_p / u4scale
 !$acc update device(u4scale)
+      else if (keyword(1:16) .eq. 'INDUCE-12-SCALE ') then
+         read (string,*,err=10,end=10)  w2scale
+         if (w2scale .gt. 1.0_ti_p)  w2scale = 1.0_ti_p / w2scale
+      else if (keyword(1:16) .eq. 'INDUCE-13-SCALE ') then
+         read (string,*,err=10,end=10)  w3scale
+         if (w3scale .gt. 1.0_ti_p)  w3scale = 1.0_ti_p / w3scale
+      else if (keyword(1:16) .eq. 'INDUCE-14-SCALE ') then
+         read (string,*,err=10,end=10)  w4scale
+         if (w4scale .gt. 1.0_ti_p)  w4scale = 1.0_ti_p / w4scale
+      else if (keyword(1:16) .eq. 'INDUCE-15-SCALE ') then
+         read (string,*,err=10,end=10)  w5scale
+         if (w5scale .gt. 1.0_ti_p)  w5scale = 1.0_ti_p / w5scale
+c
+c     set control parameters for charge transfer potentials
+c
+      else if (keyword(1:15) .eq. 'CHARGETRANSFER ') then
+         call getword (record,ctrntyp,next)
+      else if (keyword(1:10) .eq. 'LAMBDADYN ') then
+         use_lambdadyn = .true.
+      else if (keyword(1:5) .eq. 'OSRW ') then
+         use_lambdadyn = .true.
+         use_OSRW      = .true.
+
       else if (keyword(1:14) .eq. 'POLAR-PREDICT ') then
          call getword (record,polpred,next)
          call upcase (polpred)
@@ -522,8 +583,6 @@ c
 #endif
       else if (keyword(1:18) .eq. 'QUICK-POLAR-SOLVE ') then
          precompute_solvpole = .true.
-      else if (keyword(1:21) .eq. 'PRECOMPUTE-MULTIPOLE ') then
-         precompute_mpole = .true.
       else if (keyword(1:9) .eq. 'RUN-MODE ') then
          if      (index(string,'LEGACY').gt.0) then
             sub_config = itrf_legacy
@@ -584,9 +643,9 @@ c
       use_geom = .false.
       use_extra = .false.
       use_emtp = .false.
-      use_ctransfer = .false.
-      use_repulsion = .false.
-      use_dispersion = .false.
+      use_disp = .false.
+      use_repuls = .false.
+      use_chgtrn = .false.
 !$acc update device (use_mpole,use_polar)
       return
       end

@@ -374,7 +374,7 @@ c
       if (use_amd_dih) then
          deamdD(:,1:nloc) = deamdD(:,1:nloc) + dett(:,1:nloc)
          eDaMD = eDaMD + ett
-!$acc update device(deamdP,eDaMD)
+!$acc update device(deamdD,eDaMD)
       end if
       return
       end

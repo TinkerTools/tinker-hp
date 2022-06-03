@@ -16,6 +16,52 @@ c     and to periodically save the state of the trajectory
 c
 c
 #include "tinker_precision.h"
+
+      ! Determine wether or not to compute energy
+      subroutine inquire_calc_e(istep,period)
+      use bath   ,only: isobaric,barostat
+      use energi ,only: calc_e
+      use inform ,only: iprint,verbose,deb_Path,deb_Energy
+      use plumed ,only: lplumed
+      implicit none
+      integer,intent(in):: istep,period
+
+      ! Compute energy for next step ?
+      calc_e =   (mod(istep,iprint).eq.0)
+     &       .or.(mod(istep,period).eq.0.and.verbose)
+     &       .or.(isobaric.and.barostat.eq.'MONTECARLO')
+     &       .or.lplumed
+
+      if (deb_Path.or.(deb_Energy.and.calc_e))
+     &    print*, 'inquire compute energy',calc_e
+      end subroutine
+
+      subroutine emergency_save
+      use argue    ,only:arg
+      use dcdmod   ,only:dcdio
+      use inform   ,only:deb_Path,deb_Force,abort,n_fwriten
+      use moldyn   ,only:stepfast,stepint,nalt,step_c
+      use mdstuf1  ,only:epot
+      use output   ,only:archive,new_restart,f_mdsave
+      implicit none
+      logical save_dcdio,save_arc
+      real(r_p) dt
+      read(arg(3),*) dt
+      dt = 1d-3*dt
+      new_restart = .true.
+      f_mdsave    = .true.
+      save_dcdio  = dcdio
+      save_arc    = archive
+      dcdio       = .false.
+      archive     = .false.
+      n_fwriten   = - 1
+      call mdsave(step_c,dt,epot)
+      new_restart = .false.
+      f_mdsave    = .false.
+      dcdio       = save_dcdio
+      archive     = save_arc
+      end subroutine
+
       subroutine mdstat (istep,dt,etot,epot,ekin,temp,pres)
       use sizes
       use atoms
@@ -23,6 +69,7 @@ c
       use boxes
       use cutoff
       use domdec
+      use energi ,only: calc_e,epot_mean,epot_std10
       use inform
       use inter
       use iounit
@@ -34,8 +81,8 @@ c
       use mpi
       use virial ,only:use_virial
       implicit none
-      integer istep,modstep,ierr,i
       integer,parameter:: d_prec= kind(1.0d0)
+      integer istep,modstep
       integer period,freq
       real(r_p) dt,temp,pres
       real(r_p) etot,epot,ekin
@@ -84,6 +131,7 @@ c
 
       modstep = mod(istep,iprint)
       display = (mod(istep,period).eq.0.and.verbose)
+
 c
 c     zero out summation variables for new averaging period
 c
@@ -103,14 +151,21 @@ c
          dens_sum  = 0.0_d_prec
          dens2_sum = 0.0_d_prec
       end if
+
 c
 c     print energy, temperature and pressure for current step
 c
       if (rank.eq.0) then
         if (modstep.eq.0.or.display) then
-!$acc data present(etot,epot,ekin,temp,pres) async
 !$acc update host(etot,epot,ekin,temp,pres) async
-!$acc end data
+           if (.not.calc_e) then
+   09         format(
+     &        " -- ERROR -- mdstat ",/
+     &       ,"    Energy computation is disabled !!"
+     &       ," istep-",I0,1X,"period-",I0,2X,"verbose-",L1)
+              write(0,09) istep,period,verbose
+              call fatal
+           end if
         end if
         if (verbose) then
            if (modstep .eq. 1) then
@@ -222,6 +277,8 @@ c
            else
               potfluct = 0.0_ti_p
            end if
+           epot_mean  =    epot_ave
+           epot_std10 = 10*potfluct
            write (iout,80)  epot_ave,potfluct
    80      format (' Potential Energy',4x,f15.4,' Kcal/mole',3x,
      &                '(+/-',f10.4,')')
@@ -354,4 +411,7 @@ c
      &        iter=iprint )
          call timer_save( stat_timers,slot=1 )
       end if
+
+      call inquire_calc_e(istep+1,period)
+
       end

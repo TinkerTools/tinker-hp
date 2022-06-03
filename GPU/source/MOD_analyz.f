@@ -26,9 +26,12 @@ c     aeat    angle-torsion energy partitioned over atoms
 c     aebt    stretch-torsion energy partitioned over atoms
 c     aett    torsion-torsion energy partitioned over atoms
 c     aev     van der Waals energy partitioned over atoms
+c     aer     Pauli repulsion energy partitioned over atoms
+c     aedsp   damped dispersion energy partitioned over atoms
 c     aec     charge-charge energy partitioned over atoms
 c     aem     multipole energy partitioned over atoms
 c     aep     polarization energy partitioned over atoms
+c     aect    charge transfer energy partitioned over atoms
 c     aeg     geometric restraint energy partitioned over atoms
 c     aex     extra energy term partitioned over atoms
 c
@@ -39,5 +42,6 @@ c
       real(t_p), allocatable :: aesum(:),aem (:),aep (:),aev (:)
      &         , aea(:), aeba(:), aub(:), aeaa(:), aeopd(:), aeid(:)
      &         , aeit(:), aet(:), aebt(:), aett(:), aeg(:), aex(:)
-     &         , aeb(:), aeopb(:), aept(:), aec(:), aeat(:)
+     &         , aeb(:), aeopb(:), aept(:), aec(:), aer(:), aedsp(:)
+     &         , aect(:), aeat(:)
       end

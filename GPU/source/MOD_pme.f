@@ -27,8 +27,13 @@ c     nfft1      number of grid points along the a-axis direction
 c     nfft2      number of grid points along the b-axis direction
 c     nfft3      number of grid points along the c-axis direction
 c     bsorder    order of the PME B-spline approximation
+c     bseorder   order of the electrostatic PME B-spline values
+c     bsporder   order of the polarization PME B-spline values
+c     bsdorder   order of the dispersion PME B-spline values
 c     cphirec    permanent electric fields, cartesian coordinates
-c     cphirec    permanent electric fields, fractional coordinates
+c     fphirec    permanent electric fields, fractional coordinates
+c     cphidprec    dipolar electric fields, cartesian coordinates
+c     fphidprec    dipolar electric fields, fractional coordinates
 c     igrid      initial Ewald charge grid values for B-spline
 c     pme_eps offset used to shift sites off exact lattice bounds
 c
@@ -45,7 +50,9 @@ c
 #endif
       parameter (maxorder=20)
       integer nfft1,nfft2,nfft3
-      integer bsorder
+      integer nefft1,nefft2,nefft3
+      integer ndfft1,ndfft2,ndfft3
+      integer bsorder,bseorder,bsporder,bsdorder
 #if (defined(SINGLE)||defined(MIXED))
       real(t_p) pme_eps
 #else
@@ -77,6 +84,7 @@ c
       real(t_p), allocatable :: qfac_2d(:,:,:)
 !DIR$ ATTRIBUTES ALIGN:64:: cphirec,fphirec
       real(t_p), allocatable :: cphirec(:,:),fphirec(:,:)
+     &         , cphidprec(:,:),fphidprec(:,:)
 !DIR$ ATTRIBUTES ALIGN:64:: igrid  
       integer, allocatable,target :: igrid(:,:)
 

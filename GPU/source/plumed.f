@@ -15,6 +15,7 @@ c
       use atomsMirror
       use atmtyp
       use boxes
+      use deriv    ,only: ftot_l, de_tot
       use tinMemory
       use tinheader,only:ti_p,re_p
       use timestat
@@ -23,6 +24,7 @@ c
       use virial
       implicit none
       contains
+#include "convert.f.inc"
 
       module subroutine plumed_init(dt)
       implicit none
@@ -76,7 +78,7 @@ c fs -> ps
      &" Either Remove the keyword or rebuild Tinker-HP with ",/,
      &" PLUMED_SUPPORT=1 ",/,
      &" ----------------------------------------------------")
-      if (rank.eq.0) write(*,15)
+      if (rank.eq.0) write(0,15)
       call fatal
 #endif
       end subroutine
@@ -174,12 +176,17 @@ c
 c     update local derivatives
 c     !pl_force is in kcal/mol/A; no conversion should be needed
 c
+      if (ftot_l) then
 !$acc parallel loop collapse(2) async
-      do i = 1,nloc
-         do j = 1,3
+         do i = 1,nloc; do j = 1,3
+            de_tot(j,i) = de_tot(j,i) - md2mdr(pl_force(j,i))
+         end do; end do
+      else
+!$acc parallel loop collapse(2) async
+         do i = 1,nloc; do j = 1,3
             derivs(j,i) = derivs(j,i) - pl_force(j,i)
-         end do
-      end do
+         end do; end do
+      end if
 !$acc end data
 
       call timer_exit(timer_plumed,quiet_timers)

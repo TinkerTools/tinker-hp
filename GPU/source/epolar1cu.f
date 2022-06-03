@@ -63,7 +63,7 @@ c
         real(t_p) xk_,yk_,zk_,d2
         real(t_p) ep_
         real(t_p) ipdp,ipgm,pdp,pgm,rstat
-        type(real6) dpui,dpuk_
+        type(real6) dpui
         type(real3) posi,pos
         type(real3) frc
         type(mdyn3_r) frc_i
@@ -283,7 +283,7 @@ c
         real(t_p) xk_,yk_,zk_,d2
         real(t_p) ep_
         real(t_p) ipdp,ipgm,pdp,pgm,rstat
-        type(real6) dpui,dpuk_
+        type(real6) dpui
         type(real3) posi,pos
         type(real3) frc
         type(mdyn3_r) frc_i
@@ -295,7 +295,7 @@ c
         type(real6),shared:: dpuk(BLOCK_DIM)
         real(t_p) vir_(6)
         type(rpole_elt),shared:: kp(BLOCK_DIM)
-        type(rpole_elt) ip,kp_
+        type(rpole_elt) ip
         logical do_pair,same_block,accept_mid
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
@@ -387,16 +387,6 @@ c
            do j = 1,warpsize
               srclane  = iand( ilane+j-1,warpsize-1 ) + 1
               klane    = threadIdx%x-ilane + srclane
-              kp_%c    = kp(klane)%c
-              kp_%dx   = kp(klane)%dx
-              kp_%dy   = kp(klane)%dy
-              kp_%dz   = kp(klane)%dz
-              kp_%qxx  = kp(klane)%qxx
-              kp_%qxy  = kp(klane)%qxy
-              kp_%qxz  = kp(klane)%qxz
-              kp_%qyy  = kp(klane)%qyy
-              kp_%qyz  = kp(klane)%qyz
-              kp_%qzz  = kp(klane)%qzz
               pdp      = ipdp*kpdp(klane)
               pgm      = min(ipgm,kpgm(klane))
 
@@ -429,7 +419,7 @@ c
      &           then
                  ! compute one interaction
                  call mpolar1_couple_comp
-     &               (dpui,ip,dpuk(klane),kp_,d2,pos,
+     &               (dpui,ip,dpuk(klane),kp(klane),d2,pos,
      &                aewald,alsq2,alsq2n,pgm,pdp,f,r_cut,shortheal,
      &                          0.0_ti_p,1.0_ti_p,1.0_ti_p,1.0_ti_p,
      &                ep_,frc,frc_k(klane),trqi,trqk(klane),.false.,
@@ -507,7 +497,7 @@ c
         real(t_p) xk_,yk_,zk_,d2
         ener_rtyp ep_
         real(t_p) ipdp,ipgm,pdp,pgm,rstat
-        type(real6) dpui,dpuk_
+        type(real6) dpui
         type(real3) posi,pos
         type(real3),shared:: posk(BLOCK_DIM)
         real(t_p)  ,shared:: kpdp(BLOCK_DIM),kpgm(BLOCK_DIM)

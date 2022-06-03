@@ -10,6 +10,8 @@ c     ##                                                             ##
 c     #################################################################
 c
 c
+c     maxn12_  maximum number of atoms 1-2 connected to an atom at runTime
+c     maxd12_  maximum index difference between atoms 1-2 connected to an atom at runTime
 c     maxn13   maximum number of atoms 1-3 connected to an atom
 c     maxn14   maximum number of atoms 1-4 connected to an atom
 c     maxn15   maximum number of atoms 1-5 connected to an atom
@@ -52,7 +54,8 @@ c
       module couple
       use sizes
       implicit none
-      integer maxn13,maxn14,maxn15
+      integer maxn12_,maxn13,maxn14,maxn15
+      integer maxd12
       integer ninteract_scaling_n
       parameter (maxn13=4*maxvalue)
       parameter (maxn14=4*maxvalue)

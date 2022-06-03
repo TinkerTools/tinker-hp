@@ -4,9 +4,10 @@
 #include "convert.f.inc"
 #include "switch_respa.f.inc"
       M_subroutine
-     &             charge_couple(r2,xr,yr,zr,ebuffer
-     &                          ,fik,aewald,cscale
-     &                          ,e,ded,dedc,config)
+     &          charge_couple(r2,xr,yr,zr,ebuffer,fik_,fik,aewald
+     &                       ,cscale,mutik,use_lambdadyn
+     &                       ,shortheal,chgshortcut
+     &                       ,elambda,delambdae,e,ded,ver,fea)
 !$acc routine
         use tinheader ,only: ti_p
         use math      ,only: sqrtpi
@@ -18,158 +19,133 @@
 #  endif
 #endif
         implicit none
+        integer(1) ,intent(in ):: mutik
+        integer    ,intent(in ):: fea,ver
+        logical    ,intent(in ):: use_lambdadyn
         real(t_p)  ,intent(in ):: r2,xr,yr,zr,ebuffer
-     &             ,fik,aewald,cscale
-        integer    ,intent(in ):: config
+     &             ,fik,fik_,aewald,cscale,chgshortcut,shortheal
+     &             ,elambda
+        real(t_p)  ,intent(inout):: e,delambdae
+        type(real3),intent(out):: ded
+
+        integer(1)  onei1,twoi1
+        integer     ene,grd,shr,lgr,sca,lbd,ace
+        real(t_p)   r,rb,rb2,rew,de,erfterm,exp2a,s,ds
+        parameter  (ene=__use_ene__, onei1=1, twoi1=2
+     &             ,grd=__use_grd__
+     &             ,shr=__use_shortRange__
+     &             ,lgr=__use_longRange__
+     &             ,sca=__use_sca__
+     &             ,lbd=__use_lambdadyn__
+     &             ,ace=shr+lgr+lbd
+     &             )
+
+        r   = f_sqrt(r2)
+        rb  = r + ebuffer
+        rb2 = rb * rb
+
+        IF (iand(ver,sca).eq.0) THEN
+           rew     = aewald * r
+           exp2a   = f_exp(-rew**2)
+           erfterm = f_erfc (rew)
+           IF (iand(fea,ace).ne.0.or.iand(ver,ene).ne.0)
+     &        e = ((fik/rb)*(erfterm))
+           IF (iand(ver,grd).ne.0)de = -fik * ((erfterm)/rb2
+     &                + (2.0*aewald/sqrtpi)*exp2a/rb)
+        ELSE
+           IF (iand(fea,ace).ne.0.or.iand(ver,ene).ne.0)
+     &        e = ((fik/rb)*(cscale))
+           IF (iand(ver,grd).ne.0)de = -fik     * (cscale)/rb2
+        END IF
+
+        IF (iand(fea,shr+lgr).ne.0) THEN
+           call switch_respa_inl(r,chgshortcut,shortheal,s,ds)
+           IF (iand(fea,shr).ne.0) THEN
+              de = de*s + e*ds
+              IF (iand(fea,ace).ne.0) e = e*s
+           ELSE
+              de = de *(1.0-s) - e*ds
+              IF (iand(fea,ace).ne.0) e = e *(1.0-s)
+           END IF
+        END IF
+c
+c       lambdadyn
+c
+        IF (iand(fea,lbd).ne.0) then
+
+        if (use_lambdadyn) then
+           delambdae = 0.0
+           if      (mutik.eq.twoi1) then
+              IF (iand(ver,sca).ne.0) THEN
+                 delambdae = 2.0*elambda*(fik_/rb)*erfterm
+              ELSE
+                 delambdae = 2.0*elambda*(fik_/rb)*cscale
+              END IF
+              IF     (iand(fea,shr).ne.0) THEN
+                 delambdae = delambdae*s
+              ELSE IF(iand(fea,lgr).ne.0) THEN
+                 delambdae = delambdae*(1.0-s)
+              END IF
+           else if (mutik.eq.onei1) then
+              IF (iand(ver,sca).eq.0) THEN
+                 delambdae = (fik_/rb)*erfterm
+              ELSE
+                 delambdae = (fik_/rb)*cscale
+              END IF
+           end if
+        end if
+
+        END IF
+c
+c     form the chain rule terms for derivative expressions
+c
+        IF (iand(ver,grd).ne.0) THEN
+           de     = de / r
+           ded%x  = de * xr
+           ded%y  = de * yr
+           ded%z  = de * zr
+        END IF
+      end subroutine
+
+      M_subroutine
+     &            duo_chg1(r,ebuffer,fik,aewald,aewaldop,cscale
+     &                    ,e,de,ver,fea)
+!$acc routine
+        use tinheader ,only: ti_p
+        use math      ,only: sqrtpi
+        use tintypes  ,only: real3,mdyn3_r
 #ifdef TINKER_CUF
-        ener_rtyp  ,intent(inout):: e
-#else
+        use utilcu ,only: f_erfc,f_inv
+#  if defined(SINGLE)||defined(MIXED)
+        use utilcu ,only: f_sqrt,f_exp
+#  endif
+#endif
+        implicit none
+        real(t_p)  ,intent(in ):: ebuffer
+     &             ,fik,aewald,aewaldop,cscale
+        integer    ,intent(in ):: ver,fea
         real(t_p)  ,intent(inout):: e
-#endif
-        type(real3),intent(out):: ded
-        type(mdyn3_r),intent(out):: dedc
-        integer,parameter:: no_scaling=0,correct_scaling=1
-        real(t_p) r,rb,rb2,rew,de,erfterm,exp2a
+        real(t_p)  ,intent(out):: de
 
-        r   = f_sqrt(r2)
-        rb  = r + ebuffer
-        rb2 = rb * rb
+        integer     ene,grd,sca
+        real(t_p)   r,rb,rew,erfterm,exp2a
+        parameter( ene=__use_ene__
+     &           , grd=__use_grd__
+     &           , sca=__use_sca__
+     &           )
 
-        if (config.eq.no_scaling) then
-           rew = aewald * r
+        rb  = (r + ebuffer)**(-1)
+        if (iand(ver,sca).eq.0) then
+           rew     = aewald * r
            exp2a   = f_exp(-rew**2)
-           erfterm = f_erfc (rew)
-           e   = WRITE_C(e + tp2enr) ((fik/rb)*(erfterm))
-           de  = -fik * ((erfterm)/rb2
-     &                + (2.0*aewald/sqrtpi)*exp2a/rb)
-        else if (config.eq.correct_scaling) then
-           e   = WRITE_C(e + tp2enr) ((fik/rb)*(cscale))
-           de  = -fik     * (cscale)/rb2
-        end if
-c
-c     form the chain rule terms for derivative expressions
-c
-        de     = de / r
-        ded%x  = de * xr
-        ded%y  = de * yr
-        ded%z  = de * zr
-
-        ! Useful with mixed presicion
-        dedc%x = WRITE_C(dedc%x -) tp2mdr( ded%x )
-        dedc%y = WRITE_C(dedc%y -) tp2mdr( ded%y )
-        dedc%z = WRITE_C(dedc%z -) tp2mdr( ded%z )
-      end subroutine
-
-      M_subroutine
-     &            charge3_couple(r2,xr,yr,zr,ebuffer
-     &                          ,fik,aewald,cscale
-     &                          ,e,config)
-!$acc routine
-        use tinheader ,only: ti_p
-        use math      ,only: sqrtpi
-        use tintypes  ,only: real3,real3_red
-#ifdef TINKER_CUF
-        use utilcu ,only: f_erfc
-#  if defined(SINGLE)||defined(MIXED)
-        use utilcu ,only: f_sqrt,f_exp
-#  endif
-#endif
-        implicit none
-        real(t_p),intent(in ):: r2,xr,yr,zr,ebuffer
-     &           ,fik,aewald,cscale
-        integer  ,intent(in ):: config
-#ifdef TINKER_CUF
-        ener_rtyp,intent(inout):: e
-#else
-        real(t_p),intent(inout):: e
-#endif
-        integer  ,parameter:: no_scaling=0,correct_scaling=1
-        real(t_p) r,rb,rb2,rew,de,erfterm,exp2a
-
-        r   = f_sqrt(r2)
-        rb  = r + ebuffer
-        rb2 = rb * rb
-
-        if (config.eq.no_scaling) then
-           rew = aewald * r
-           exp2a   = f_exp(-rew**2)
-           erfterm = f_erfc (rew)
-           e   = WRITE_C(e + tp2enr) ((fik/rb) * (erfterm))
-           de  = -fik * ((erfterm)/rb2
-     &                + (2.0*aewald/sqrtpi)*exp2a/rb)
-        else if (config.eq.correct_scaling) then
-           e   = WRITE_C(e + tp2enr) ((fik/rb) * (cscale))
-           de  = -fik     * (cscale)/rb2
-        end if
-      end subroutine
-
-      M_subroutine
-     &             charge_couple_shortlong
-     &                          (r2,xr,yr,zr,ebuffer
-     &                          ,fik,aewald,cscale,off,shortheal
-     &                          ,en,ded,dedc,config,mode)
-!$acc routine
-        use tinheader ,only: ti_p
-        use interfaces,only: m_long
-        use math      ,only: sqrtpi
-        use tintypes  ,only: real3,mdyn3_r
-#ifdef TINKER_CUF
-        use utilcu ,only: f_erfc
-#  if defined(SINGLE)||defined(MIXED)
-        use utilcu ,only: f_sqrt,f_exp
-#  endif
-#endif
-        implicit none
-        real(t_p)  ,intent(in ):: r2,xr,yr,zr,ebuffer
-     &             ,fik,aewald,cscale,off,shortheal
-        integer    ,intent(in ):: config,mode
-#ifdef TINKER_CUF
-        ener_rtyp  ,intent(inout):: en
-#else
-        real(t_p)  ,intent(inout):: en
-#endif
-        type(real3),intent(out):: ded
-        type(mdyn3_r),intent(out):: dedc
-        integer,parameter:: no_scaling=0,correct_scaling=1
-        real(t_p) r,rb,rb2,rew,de,e,erfterm,s,ds,exp2a
-
-        r   = f_sqrt(r2)
-        rb  = r + ebuffer
-        rb2 = rb * rb
-
-        if (config.eq.no_scaling) then
-           rew = aewald * r
-           exp2a   = f_exp(-rew**2)
-           erfterm = f_erfc (rew)
-           e   = (fik/rb) * (erfterm)
-           de  = -fik * ((erfterm)/rb2
-     &                + (2.0*aewald/sqrtpi)*exp2a/rb)
-        else if (config.eq.correct_scaling) then
-           e   = (fik/rb) * (cscale)
-           de  = -fik     * (cscale)/rb2
-        end if
-
-        call switch_respa_inl(r,off,shortheal,s,ds)
-c
-c     form the chain rule terms for derivative expressions
-c
-        if (mode.eq.m_long) then
-           en    = WRITE_C(en + tp2enr) ((1-s)*e)
-           de    = (-e*ds+(1-s)*de) / r
-           ded%x = de * xr
-           ded%y = de * yr
-           ded%z = de * zr
+           erfterm = f_erfc(rew)
+           if(iand(ver,ene).ne.0)  e  = e + (fik*rb*erfterm)
+           if(iand(ver,grd).ne.0) de  = -fik*rb*(erfterm*rb
+     &                                + aewaldop*exp2a)
         else
-           en    = WRITE_C(en + tp2enr) (e*s)
-           de    = de / r
-           ded%x = de * xr*s - ds*xr*e/r
-           ded%y = de * yr*s - ds*yr*e/r
-           ded%z = de * zr*s - ds*zr*e/r
+           if(iand(ver,ene).ne.0)  e  = e + (fik*rb*cscale)
+           if(iand(ver,grd).ne.0) de  = -fik*cscale*rb*rb
         end if
-
-        ! Useful with mixed presicion
-        dedc%x = WRITE_C(dedc%x +) tp2mdr( ded%x )
-        dedc%y = WRITE_C(dedc%y +) tp2mdr( ded%y )
-        dedc%z = WRITE_C(dedc%z +) tp2mdr( ded%z )
       end subroutine
+
 #endif

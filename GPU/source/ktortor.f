@@ -145,7 +145,6 @@ c             pt = pa//pb//pc//pd//pe
    50         continue
            end if
         end do
-!$acc update device(tbf,ttx,tty,tnx,tny)
 c
 c       determine the total number of forcefield parameters
 c
@@ -252,7 +251,6 @@ c
               m = m + 1
            end do
         end do
-!$acc update device(tbxy,tbx,tby)
 c
 c       assign torsion-torsion parameters for each bitorsion
 c
@@ -369,15 +367,6 @@ c     find parameters for this torsion-torsion interaction
 !$acc update host(ntortorloc) async
 !$acc end data
 
-#ifdef _OPENACC
-      if (ndir.eq.1) then
-!$acc wait
-!$acc host_data use_device(tortorglob)
-         call thrust_sort(tortorglob,ntortorloc,rec_stream)
-!$acc end host_data
-      end if
-#endif
-
       end
 
       subroutine upload_device_ktortor
@@ -394,7 +383,9 @@ c     find parameters for this torsion-torsion interaction
  12   format(2x,'upload_device_kpitors')
       if(rank.eq.0.and.tinkerdebug) print 12
       call MPI_BARRIER(hostcomm,ierr)
+      call malloc_device_data
 #endif
+!$acc update device(tbxy,tbf,tbx,tby,ttx,tty,tnx,tny)
 !$acc update device(itt)
 !$acc update device(nbtortor)
 !$acc enter data copyin(ktt_sys)
@@ -413,6 +404,7 @@ c     find parameters for this torsion-torsion interaction
  12   format(2x,'delete_data_kpitors')
       if(rank.eq.0.and.tinkerdebug) print 12
 
+      call free_device_data
       call shmem_request(itt,     winitt,   [0,0],config=mhostacc)
       call shmem_request(nbtortor,winnbtortor,[0],config=mhostacc)
 !$acc exit data delete(ktt_sys)

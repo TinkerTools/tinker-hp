@@ -20,6 +20,5 @@ c
       module files
       implicit none
       integer nprior,ldir,leng
-      character*240 filename,outfile
-      save
+      character*240,target:: filename,outfile
       end

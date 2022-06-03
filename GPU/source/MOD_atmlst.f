@@ -14,6 +14,8 @@ c     bndlist   list of the bond numbers involving each atom
 c     winbndlist window object corresponding to bndlist 
 c     anglist   list of the angle numbers centered on each atom
 c     winanglist window object corresponding to anglist 
+c     balist   numbers of the bonds comprising each angle
+c     winbalist window object corresponding to balist
 c     
 c     bndglob   local - global bond  correspondance 
 c     angleglob local - global angle correspondance 
@@ -31,10 +33,12 @@ c     pitorsglob local - global pi torsion correspondance
 c     strtorglob local - global strech torsion correspondance 
 c     tortorglob local - global torsion torsion correspondance 
 c     vdwglob   local - global vdw correspondance 
+c     dispglob   local - global dispersion correspondance 
 c     poleglob  local - global direct multipole correspondance 
 c     polerecglob local - global reciprocal multipole correspondance 
 c     chgglob  local - global direct charge correspondance 
 c     chgrecglob local - global reciprocal charge correspondance 
+c     disprecglob local - global reciprocal dispersion correspondance 
 c
 c     molculeglob local - global molecule correspondance 
 c     npfixglob local - global position restrains correspondance 
@@ -47,6 +51,7 @@ c     ratglob local - global constrains correspondance
 c
 c     chgglobnl  localnl - global direct charge correspondance 
 c     vdwglobnl  localnl - global vdw correspondance 
+c     dispglobnl  localnl - global dispersion correspondance 
 c     poleglobbnl  localnl - global direct multipole correspondance 
 c
 #include "tinker_precision.h"
@@ -55,8 +60,8 @@ c
       use tinTypes,only: i2dDPC=>Int2dDevPointerContainer
 #endif
       implicit none
-      integer, pointer :: bndlist(:,:),anglist(:,:)
-      integer winbndlist,winanglist
+      integer, pointer :: bndlist(:,:),anglist(:,:),balist(:,:)
+      integer winbndlist,winanglist,winbalist
 !DIR$ ATTRIBUTES ALIGN:64:: bndglob,angleglob,torsglob
       integer, allocatable :: bndglob(:),angleglob(:),torsglob(:)
 !DIR$ ATTRIBUTES ALIGN:64:: bitorsglob,strbndglob
@@ -74,6 +79,7 @@ c
 !DIR$ ATTRIBUTES ALIGN:64:: vdwglob,poleglob,polerecglob
       integer, allocatable,target :: vdwglob(:),poleglob(:)
      &                    , polerecglob(:)
+     &                    , dispglob(:),disprecglob(:)
 !DIR$ ATTRIBUTES ALIGN:64:: chgglob,chgrecglob
       integer, allocatable,target :: chgglob(:),chgrecglob(:)
 !DIR$ ATTRIBUTES ALIGN:64:: molculeglob
@@ -86,6 +92,7 @@ c
       integer, allocatable :: ratglob(:)
 !DIR$ ATTRIBUTES ALIGN:64:: chgglobnl,vdwglobnl,poleglobnl
       integer, allocatable :: chgglobnl(:),vdwglobnl(:),poleglobnl(:)
+      integer, allocatable :: dispglobnl(:)
       integer, pointer :: AtomKind(:)
 
 #ifdef USE_NVSHMEM_CUDA

@@ -112,10 +112,11 @@ c
       module domdec
       implicit none
       logical Bdecomp1d,Bdecomp2d,Bdecomp3d
-      integer,parameter:: MasterRank=0
+      integer,parameter:: masterRank=0
       integer nxdd,nydd,nzdd
-      integer nproctot,ranktot,COMM_TINKER
-      integer nproc,rank,rank_bis,nthread,nrec,ndir,comm_rec,comm_dir
+      integer nproctot,ranktot
+      integer,target:: COMM_TINKER,nproc,rank
+      integer rank_bis,nthread,nrec,ndir,comm_rec,comm_dir
       integer hostrank,hostcomm
       integer n_recep1, n_send1, nrec_recep,nrec_send
       integer n_recep2, n_send2, nrecdir_recep,nrecdir_send
@@ -132,56 +133,33 @@ c
       integer nlocnl,nblocrecdir
       integer nlocnlb
       integer nblocloop
-!DIR$ ATTRIBUTES ALIGN:64 :: domlen, domlenrec
-      integer, allocatable :: domlen(:), domlenrec(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: domlenpole, domlenpolerec
-      integer, allocatable :: domlenpole(:), domlenpolerec(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: p_recep1, p_send1
-      integer, allocatable :: p_recep1(:), p_send1(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: p_recep2, p_send2
-      integer, allocatable :: p_recep2(:), p_send2(:)
-      integer, allocatable :: p_recepshort1(:), p_sendshort1(:)
-      integer, allocatable :: p_recepshort2(:), p_sendshort2(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: pneig_recep, pneig_send
-      integer, allocatable :: pneig_recep(:), pneig_send(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: precdir_recep, precdir_send
-      integer, allocatable :: precdir_recep(:), precdir_send(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: precdir_recep1, precdir_send1
-      integer, allocatable :: precdir_recep1(:), precdir_send1(:)
-      integer, allocatable :: precdir_recep2(:), precdir_send2(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: ptorque_recep, ptorque_send
-      integer, allocatable :: ptorque_recep(:), ptorque_send(:)
-      integer, allocatable :: ptorqueshort_recep(:),ptorqueshort_send(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: pbig_recep, pbig_send
-      integer, allocatable :: pbig_recep(:), pbig_send(:)
-      integer, allocatable :: pbigshort_recep(:), pbigshort_send(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: glob,loc
-      integer, allocatable, target :: glob(:),loc(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: globrec, locrec
-      integer, allocatable :: globrec(:), locrec(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: globrec1, locrec1
-      integer, allocatable, target :: globrec1(:), locrec1(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: prec_send, prec_recep
-      integer, allocatable, target :: prec_send(:), prec_recep(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: repartrec,repart
-      integer, allocatable :: repartrec(:),repart(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: bufbeg,bufbegpole
-      integer, allocatable :: bufbeg(:),bufbegpole(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: bufbegrec
-      integer, allocatable :: bufbegrec(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: buflen1,buflen2
-      integer, allocatable :: buflen1(:),buflen2(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: bufbeg1,bufbeg2
-      integer, allocatable :: bufbeg1(:),bufbeg2(:)
-!DIR$ ATTRIBUTES ALIGN:64 :: buf1,buf2
-      integer, allocatable :: buf1(:),buf2(:)
+
+      integer,allocatable,target:: domlen(:),domlenrec(:)
+     &       , domlenpole(:),domlenpolerec(:)
+      integer,allocatable,target:: p_recep1(:),p_send1(:)
+     &       , p_recep2(:),p_send2(:),p_recepshort1(:),p_sendshort1(:)
+     &       , p_recepshort2(:),p_sendshort2(:)
+      integer,allocatable,target:: pneig_recep(:), pneig_send(:)
+     &       , precdir_recep(:), precdir_send(:)
+     &       , precdir_recep1(:), precdir_send1(:)
+     &       , precdir_recep2(:), precdir_send2(:)
+      integer,allocatable,target:: ptorque_recep(:), ptorque_send(:)
+     &       , ptorqueshort_recep(:),ptorqueshort_send(:)
+      integer,allocatable,target:: pbig_recep(:), pbig_send(:)
+     &       , pbigshort_recep(:), pbigshort_send(:)
+     &       , prec_send(:), prec_recep(:)
+      integer,allocatable,target:: glob(:),loc(:),globrec(:),locrec(:)
+     &       , globrec1(:),locrec1(:),repartrec(:),repart(:)
+      integer,allocatable,target:: bufbeg(:),bufbegpole(:),bufbegrec(:)
+     &       , bufbeg1(:),bufbeg2(:)
+      integer,allocatable :: buf1(:),buf2(:)
+      integer,allocatable :: buflen1(:),buflen2(:)
+
       real(t_p) nx_box,ny_box,nz_box
-!DIR$ ATTRIBUTES ALIGN:64:: xbegproc,xendproc
-      real(t_p), allocatable :: xbegproc(:),xendproc(:)
-!DIR$ ATTRIBUTES ALIGN:64:: ybegproc,yendproc
-      real(t_p), allocatable :: ybegproc(:),yendproc(:)
+!DIR$ ATTRIBUTES ALIGN:64:: xbegproc,xendproc,ybegproc,yendproc
 !DIR$ ATTRIBUTES ALIGN:64:: zbegproc,zendproc
-      real(t_p), allocatable :: zbegproc(:),zendproc(:)
+      real(t_p), allocatable :: xbegproc(:),xendproc(:)
+     &         , ybegproc(:),yendproc(:),zbegproc(:),zendproc(:)
 
 !$acc declare create(rank,rank_bis)
 !$acc declare create(nrec_send)

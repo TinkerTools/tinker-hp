@@ -30,23 +30,19 @@ c     115, 4019-4029 (2001)
 c
 c
 #include "tinker_precision.h"
-      module baoabrespa_mod
-         real(r_p),allocatable::derivs(:,:)
-      end module
-
       subroutine baoabrespa (istep,dt)
       use atmtyp
       use atomsMirror
-      use baoabrespa_mod,only: derivs
       use bath
       use cutoff
       use domdec
-      use deriv,only:info_forces,cBond,cNBond
+      use deriv,only:info_forces,cBond,cNBond,ftot_l,comm_forces
       use energi
       use freeze
       use inform
       use langevin
       use mdstuf
+      use mdstuf1
       use moldyn
       use mpi
       use random_mod
@@ -63,20 +59,8 @@ c
       real(r_p) dta,dta_2,dt_2
       real(r_p) part1,part2
       real(r_p) a1,a2
-      real(r_p),save:: etot,eksum,epot
-      real(r_p),save:: ealt
-      real(r_p),save:: temp,pres
-      real(r_p),save:: ekin(3,3)
-      real(r_p),save:: stress(3,3)
-      real(r_p),save:: viralt(3,3)
       real(8) time0,time1
 
-      if (istep.eq.1) then
-!$acc enter data create(etot,eksum,epot,temp,pres,ealt
-!$acc&     ,ekin,stress,viralt)
-      end if
-!$acc data present(etot,eksum,epot,temp,pres,ealt,ekin,stress,viralt)
-!$acc&     present(v,a,x,y,z,aalt,use,glob,xold,yold,zold)
 c
 c     set some time values for the dynamics integration
 c
@@ -91,15 +75,7 @@ c
 c
 c     find quarter step velocities and half step positions via baoab recursion
 c
-!$acc parallel loop collapse(2) async
-      do i = 1, nloc
-         do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               v(j,iglob) = v(j,iglob) + 0.5*dt*a(j,iglob)
-            end if
-         end do
-      end do
+      call integrate_vel( a,dt_2 )
 c
       if (use_rattle) call rattle2(0.5*dt)
 c
@@ -107,40 +83,18 @@ c     respa inner loop
 c
 c     initialize virial from fast-evolving potential energy terms
 c
-!$acc parallel loop collapse(2) async
-      do i = 1, 3
-         do j = 1, 3
-            viralt(j,i) = 0.0_re_p
-         end do
-      end do
+      if (use_virial) call zero_virial(viralt)
 c
 c     find fast-evolving velocities and positions via BAOAB recursion
 c
       do stepfast = 1, nalt
-!$acc parallel loop collapse(2) async
-        do i = 1, nloc
-           do j = 1, 3
-              iglob = glob(i)
-              if (use(iglob)) then
-                 v(j,iglob) = v(j,iglob) + dta_2*aalt(j,iglob)
-              end if
-           end do
-        end do
 c
-        if (use_rattle)  call rattle2 (dta_2)
+        call integrate_vel( aalt,dta_2 )
 c
-!$acc parallel loop async
-        do i = 1, nloc
-          iglob = glob(i)
-          if (use(iglob)) then
-            xold(iglob) = x(iglob)
-            yold(iglob) = y(iglob)
-            zold(iglob) = z(iglob)
-            x(iglob) = x(iglob) + v(1,iglob)*dta_2
-            y(iglob) = y(iglob) + v(2,iglob)*dta_2
-            z(iglob) = z(iglob) + v(3,iglob)*dta_2
-          end if
-        end do
+        if (use_rattle) call save_atoms_pos
+        if (use_rattle) call rattle2 (dta_2)
+c
+        call integrate_pos( dta_2 )
 c
         if (use_rattle) call rattle(dta_2)
         if (use_rattle) call rattle2(dta_2)
@@ -152,38 +106,24 @@ c
         call normalgpu(Rn(1,1),3*nloc)
 #endif
         if (host_rand_platform) then
-          do i = 1, nloc
-            do j = 1, 3
-              Rn(j,i) = normal()
-            end do
-          end do
+          call normalvec(Rn,3*nloc)
 !$acc update device(Rn) async
         end if
 !$acc parallel loop collapse(2) async
-        do i = 1, nloc
-           do j = 1, 3
-              iglob = glob(i)
-              if (use(iglob)) then
-                 v(j,iglob) = a1*v(j,iglob) + 
-     $           a2*real(Rn(j,i),r_p)/sqrt(mass(iglob))
-              end if
-           end do
-        end do
+        do i = 1,nloc; do j = 1,3
+           iglob = glob(i)
+           if (use(iglob)) then
+              v(j,iglob) = a1*v(j,iglob) +
+     $        a2*real(Rn(j,i),r_p)/sqrt(mass(iglob))
+           end if
+        end do; end do
 c
-        if (use_rattle) call rattle2(dta)
+        if (use_rattle) then
+           call rattle2(dta)
+           call save_atoms_pos
+        end if
 c
-!$acc parallel loop async
-        do i = 1, nloc
-          iglob = glob(i)
-          if (use(iglob)) then
-            xold(iglob) = x(iglob)
-            yold(iglob) = y(iglob)
-            zold(iglob) = z(iglob)
-            x(iglob) = x(iglob) + v(1,iglob)*dta_2
-            y(iglob) = y(iglob) + v(2,iglob)*dta_2
-            z(iglob) = z(iglob) + v(3,iglob)*dta_2
-          end if
-        end do
+        call integrate_pos( dta_2 )
 c
         if (use_rattle) call rattle(dta_2)
         if (use_rattle) call rattle2(dta_2)
@@ -196,10 +136,11 @@ c
 c       communicate positions
 c
         call commposrespa(stepfast.ne.nalt)
-        call reCast_position
 c
-        call prmem_requestm(derivs,3,nbloc,async=.true.)
-        call set_to_zero1m(derivs,3*nbloc,rec_queue)
+        if (.not.ftot_l) then
+           call prmem_requestm(derivs,3,nbloc,async=.true.)
+           call set_to_zero1m(derivs,3*nbloc,rec_queue)
+        end if
 c
         call mechanicsteprespa(istep,.true.)
         call allocsteprespa(.true.)
@@ -210,7 +151,7 @@ c
 c
 c       communicate forces
 c
-        call commforcesrespa(derivs,.true.)
+        call comm_forces( derivs,cBond )
 c
 c       MPI : get total energy
 c
@@ -225,28 +166,16 @@ c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion
 c
-!$acc parallel loop collapse(2) present(derivs) async
-        do i = 1, nloc
-           do j = 1, 3
-             iglob = glob(i)
-             if (use(iglob)) then
-                aalt(j,iglob) = -convert *
-     $             derivs(j,i) / mass(iglob)
-                v(j,iglob) = v(j,iglob) + aalt(j,iglob)*dta_2
-             end if
-           end do
-        end do
+        call integrate_vel( derivs,aalt,dta_2 )
 c
         if (use_rattle)  call rattle2 (dta_2)
 c
 c     increment average virial from fast-evolving potential terms
 c
 !$acc parallel loop collapse(2) async
-        do i = 1, 3
-           do j = 1, 3
-              viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
-           end do
-        end do
+        do i = 1,3; do j = 1,3
+           viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
+        end do; end do
       end do
 c
 c     Reassign the particules that have changed of domain
@@ -261,8 +190,6 @@ c     communicate positions
 c
       call commposrespa(.false.)
       call commposrec
-      call reCast_position
-c
 c
       call reinitnl(istep)
 c
@@ -274,8 +201,10 @@ c     rebuild the neighbor lists
 c
       if (use_list) call nblist(istep)
 c
-      call prmem_requestm(derivs,3,nbloc,async=.true.)
-      call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      if (.not.ftot_l) then
+         call prmem_requestm(derivs,3,nbloc,async=.true.)
+         call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      end if
 c
 c     get the slow-evolving potential energy and atomic forces
 c
@@ -283,7 +212,7 @@ c
 c
 c     if necessary, communicate some forces
 c
-      call commforcesrespa(derivs,.false.)
+      call comm_forces( derivs,cNBond )
 c
 c     MPI : get total energy
 c
@@ -292,16 +221,7 @@ c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the BAOAB recursion
 c
-!$acc parallel loop collapse(2) present(derivs) async
-      do i = 1, nloc
-         do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               a(j,iglob) = -convert * derivs(j,i)/mass(iglob)
-               v(j,iglob) = v(j,iglob) + 0.5*dt*a(j,iglob)
-            end if
-         end do
-      end do
+      call integrate_vel( derivs,a,dt_2 )
 c
 c     Debug print information
 c
@@ -315,14 +235,14 @@ c
 c
 c     total potential and virial from sum of fast and slow parts
 c
+      if (calc_e.or.use_virial) then
 !$acc serial async
-      epot = epot + ealt
-      do i = 1, 3
-         do j = 1, 3
+         epot = epot + ealt
+         do i = 1,3; do j = 1,3
             vir(j,i) = vir(j,i) + viralt(j,i)
-         end do
-      end do
+         end do; end do
 !$acc end serial
+      end if
 c
       call temper   (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
@@ -330,14 +250,15 @@ c
 c
 c     total energy is sum of kinetic and potential energies
 c
+      if (calc_e) then
 !$acc serial async
-      etot = eksum + epot
+         etot = eksum + epot
 !$acc end serial
+      end if
 c
 c     compute statistics and save trajectory for this step
 c
       call mdsave (istep,dt,epot)
       call mdrestgpu (istep)
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
-!$acc end data
       end

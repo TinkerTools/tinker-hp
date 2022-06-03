@@ -201,7 +201,7 @@ c
      $          zr(:,:,:),diag(:)
       integer i, it, j, k
       real(t_p)  ggold(2), ggnew(2), gnorm(2), gg(2), alphacg(2),ene(2)
-      real(t_p)  zero, pt5, one, resnrm
+      real(t_p)  zero, pt5, one, resnrm, reg1
       save    zero, pt5, one
       data    zero/0.0_ti_p/, pt5/0.50_ti_p/, one/1.0_ti_p/
       external matvec
@@ -247,7 +247,8 @@ c
       if (precnd) then
         do i = 1, npoleloc
           iipole = poleglob(i)
-          diag(i) = polarity(iipole)
+          reg1   = polarity(iipole) 
+          diag(i)= merge(tinypol,reg1,reg1.eq.0.0)
         end do
         if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else

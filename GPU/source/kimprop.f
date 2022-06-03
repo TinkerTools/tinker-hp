@@ -27,6 +27,10 @@ c
       use keys
       use kiprop
       use potent
+#ifdef _OPENACC
+      use thrust
+      use utilgpu  ,only:rec_stream
+#endif
       use utils
       use tinheader ,only:ti_p,re_p
       use tinMemory

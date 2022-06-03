@@ -40,6 +40,20 @@ c
       real(t_p) tbxy(maxtgrd2,maxntt)
       integer(8) ktt(maxntt)
       integer(8) ktt_sys(0:maxntt)
-      save 
-!$acc declare create(tbxy,tbf,tbx,tby,ttx,tty,tnx,tny)
+      logical,private:: data_on_device=.false.
+      contains
+
+      subroutine malloc_device_data
+      if (.not.data_on_device) then
+!$acc enter data create(tbxy,tbf,tbx,tby,ttx,tty,tnx,tny)
+         data_on_device=.true.
+      end if
+      end subroutine
+      subroutine free_device_data
+      if (data_on_device) then
+!$acc exit data delete(tbxy,tbf,tbx,tby,ttx,tty,tnx,tny)
+         data_on_device=.false.
+      end if
+      end subroutine
+
       end

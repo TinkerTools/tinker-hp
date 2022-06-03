@@ -21,21 +21,24 @@ c
       use boxes
       use cell
       implicit none
-      real(t_p) xr,yr,zr
+      real(t_p) xr,yr,zr,cel
 c
 c
 c     for orthogonal lattice, find the desired image directly
 c
       if (orthogonal) then
-         do while (abs(xr) .gt. xcell2)
-            xr = xr - sign(xcell,xr)
-         end do
-         do while (abs(yr) .gt. ycell2)
-            yr = yr - sign(ycell,yr)
-         end do
-         do while (abs(zr) .gt. zcell2)
-            zr = zr - sign(zcell,zr)
-         end do
+         if (abs(xr) .gt. xcell2) then
+            cel = sign(xcell,xr)
+            xr  = xr - cel*floor((abs(xr)+xcell2)/xcell)
+         end if
+         if (abs(yr) .gt. ycell2) then
+            cel = sign(ycell,yr)
+            yr  = yr - cel*floor((abs(yr)+ycell2)/ycell)
+         end if
+         if (abs(zr) .gt. zcell2) then
+            cel = sign(zcell,zr)
+            zr  = zr - cel*floor((abs(zr)+zcell2)/zcell)
+         end if
 c
 c     for monoclinic lattice, convert "xr" and "zr" to
 c     fractional coordinates, find desired image and then

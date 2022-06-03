@@ -35,11 +35,10 @@ c
          enumerator conf_ecreal1d_cu
       end enum
       enum, bind(C) !:: proc_emreal1c
-         enumerator conf_emreal1c_1     !0
-         enumerator conf_emreal1c_2     !1
-         enumerator conf_emreal1c_pre   !2  ( Precompute Routine )
-         enumerator conf_emreal1c_4     !3  ( CUDA C )
-         enumerator conf_emreal1c_5     !4  ( CUDA Fortran )
+         enumerator conf_emreal1c_0     !0
+         enumerator conf_emreal1c_1     !1  ( OpenACC )
+         enumerator conf_emreal1c_2     !2  ( CUDA Fortran )
+         enumerator conf_emreal1c_3     !4  ( CUDA C )
       end enum
       enum, bind(C) !:: proc_elfd
          enumerator conf_efld0_directgpu1
@@ -48,10 +47,10 @@ c
       end enum
       enum, bind(C)
          enumerator conf_tmatxb_ref
+         enumerator conf_tmatxb_c3
+         enumerator conf_tmatxb_c2
          enumerator conf_tmatxb_c1
          enumerator conf_tmatxb_pre
-         enumerator conf_tmatxb_c2
-         enumerator conf_tmatxb_c3
          enumerator conf_tmatxb_v4
       end enum
       enum, bind(C) !:: proc_epreal1c
@@ -67,6 +66,10 @@ c
          enumerator conf_grid_acc
          enumerator conf_grid_cuda
       end enum
+      enum, bind(C)
+         enumerator conf_conv_acc
+         enumerator conf_conv_cuda
+      end enum
       enum, bind(C) !:: config
          enumerator conf_any         !0
          enumerator conf_vlist       !1
@@ -81,6 +84,7 @@ c
          enumerator conf_polar       !b
          enumerator conf_fphi        !c
          enumerator conf_grid        !d
+         enumerator conf_conv        !e
       end enum
 
       enum, bind(C)
@@ -92,8 +96,8 @@ c
 
       integer(8):: sub_config=-1
                                            !fedcba9876543210!
-      integer(8),parameter:: itrf_legacy =Z'0000131101110000'
-      integer(8),parameter:: itrf_adapted=Z'0011242402220000'
+      integer(8),parameter:: itrf_legacy =Z'0000111101110000'
+      integer(8),parameter:: itrf_adapted=Z'0111222202220000'
       ! parameter for long range interactions comput
       ! parameter for short range interactions comput
       enum,bind(C)
@@ -147,92 +151,19 @@ c
 !
 !  #############################################################################
       interface
-        subroutine ehal1c_correct_scaling(xred,yred,zred,
-     &             vxx,vxy,vxz,vyy,vyz,vzz)
-          real(t_p),intent(in):: xred(:)
-          real(t_p),intent(in):: yred(:)
-          real(t_p),intent(in):: zred(:)
-          real(r_p)  vxx,vxy,vxz,vyy,vyz,vzz
-        end subroutine
-        subroutine ehal1c_correct_scaling_shortlong(xred,yred,zred,
-     &             vxx,vxy,vxz,vyy,vyz,vzz,mode)
-          real(t_p),intent(in):: xred(:)
-          real(t_p),intent(in):: yred(:)
-          real(t_p),intent(in):: zred(:)
-          real(r_p)  vxx,vxy,vxz,vyy,vyz,vzz
-          character*10,intent(in):: mode
-        end subroutine
-        subroutine ehal3c_correct_scaling(xred,yred,zred)
-          real(t_p),intent(in):: xred(:)
-          real(t_p),intent(in):: yred(:)
-          real(t_p),intent(in):: zred(:)
-        end subroutine
-        subroutine ehalshortlong3c_correct_scaling(xred,yred,zred,mode)
-          real(t_p),intent(in):: xred(:)
-          real(t_p),intent(in):: yred(:)
-          real(t_p),intent(in):: zred(:)
-          character*10,intent(in):: mode
+        subroutine ehal1c_ac
         end subroutine
       end interface
-      interface
-        subroutine ehal3c_cu
-        end subroutine
-        subroutine ehalshortlong3c_cu
-        end subroutine
-      end interface
+      procedure(ehal1c_ac):: ehal1c,ehal3c,ehal3c_ac,ehal1c_cu,ehal3c_cu
+      procedure(ehal1c_ac),pointer:: ehal1c_p,ehal3c_p
 
       ! Lennard-Jones subroutines
-      interface 
-        subroutine elj1c
-        end subroutine
-        subroutine elj1cgpu
-        end subroutine
-        subroutine elj1c_cu
-        end subroutine
-        subroutine eljshortlong1cgpu
-        end subroutine
-        subroutine elj3c
-        end subroutine
-        subroutine elj3cgpu
-        end subroutine
-        subroutine elj3c_cu
-        end subroutine
-      end interface
       interface
-        subroutine elj1_scaling(xred,yred,zred,
-     &             vxx,vxy,vxz,vyy,vyz,vzz)
-        real(t_p),intent(in):: xred(:)
-        real(t_p),intent(in):: yred(:)
-        real(t_p),intent(in):: zred(:)
-        real(r_p)  vxx,vxy,vxz
-        real(r_p)  vyy,vyz,vzz
-        end subroutine
-        subroutine elj1shortlong_scaling(xred,yred,zred,
-     &             vxx,vxy,vxz,vyy,vyz,vzz)
-        real(t_p),intent(in):: xred(:)
-        real(t_p),intent(in):: yred(:)
-        real(t_p),intent(in):: zred(:)
-        real(r_p)  vxx,vxy,vxz
-        real(r_p)  vyy,vyz,vzz
-        end subroutine
-        subroutine elj3_scaling(xred,yred,zred)
-        real(t_p),intent(in):: xred(:)
-        real(t_p),intent(in):: yred(:)
-        real(t_p),intent(in):: zred(:)
+        subroutine elj1c_ac
         end subroutine
       end interface
-
-      procedure(tinker_void_sub):: ehal1cgpu1,ehal1cgpu2,ehal1c_cu
-     &                           , ehalshort1c,ehal1c,ehallong1c
-     &                           , ehalshort1cgpu,ehalshortlong1c_cu
-     &                           , ehallong1cgpu
-     &                           , ehal3c,ehal3cgpu,ehalshortlong3cgpu
-      procedure(tinker_void_sub) ,pointer:: ehal1c_p,ehalshort1c_p
-     &                           ,ehallong1c_p,ehal3c_p
-     &                           ,ehalshortlong3c_p
-      procedure(elj1cgpu)        ,pointer::elj1c_p
-      procedure(elj1cgpu)        ,pointer::eljsl1c_p
-      procedure(elj3cgpu)        ,pointer::elj3c_p
+      procedure(elj1c_ac):: elj1,elj3,elj1c_cu,elj3c_ac,elj3c_cu
+      procedure(elj1c_ac),pointer:: elj1c_p, elj3c_p
 
 
 
@@ -300,7 +231,7 @@ c
 
 !  #############################################################################
 !  SECTION
-!                FFt Grid routines Interfaces
+!                PME Grid & Conv routines Interfaces
 !
 !  #############################################################################
       interface fphi_uind_sitegpu
@@ -356,6 +287,15 @@ c
          integer,intent(in),optional::config
          end subroutine
       end interface
+      interface
+         subroutine pme_conv_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
+         real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
+         end subroutine
+         subroutine pme_conv_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
+         real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
+         end subroutine
+      end interface
+
       procedure(tinker_void_sub) :: fphi_mpole_sitegpu,fphi_mpole_sitecu
       procedure(fphi_uind_sitegpu2),pointer:: fphi_uind_site2_p
       procedure(fphi_uind_sitegpu1),pointer:: fphi_uind_site1_p
@@ -363,6 +303,7 @@ c
       procedure(grid_mpole_sitegpu),pointer:: grid_mpole_site_p
       procedure(grid_pchg_sitegpu) ,pointer:: grid_pchg_site_p
       procedure(grid_pchg_force)   ,pointer:: grid_pchg_force_p
+      procedure(pme_conv_gpu)      ,pointer:: pme_conv_p
       procedure(tinker_void_sub)   ,pointer:: fphi_mpole_site_p
 
 
@@ -378,6 +319,8 @@ c
         end subroutine
 #ifdef _CUDA
         subroutine ecreal1d_cu
+        end subroutine
+        subroutine ecreal_lj1_cu
         end subroutine
 #endif
         subroutine ecrealshortlong1dgpu
@@ -399,8 +342,7 @@ c
         end subroutine
       end interface
 
-      procedure(ecreal1dgpu),pointer:: ecreal1d_p
-     &                      ,ecrealshortlong1d_p
+      procedure(ecreal1dgpu),pointer:: ecreal1d_p,ecreal1d_cp
       procedure(ecreal3dgpu),pointer:: ecreal3d_p
 
 
@@ -409,63 +351,26 @@ c
 !                Empole routines Interfaces
 !
 !  #############################################################################
+
       interface
-        subroutine
-     &  emreal_correct_interactions(tem,vxx,vxy,vxz,vyy,vyz,vzz)
+        subroutine emreal1c_
+        end subroutine
+        subroutine emreal1ca_ac(tem,vxx,vxy,vxz,vyy,vyz,vzz)
            real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
            real(t_p),intent(inout):: tem(:,:)
         end subroutine
-        subroutine emreal_correct_interactions_shortlong
-     &                          (tem,vxx,vxy,vxz,vyy,vyz,vzz)
-           real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
-           real(t_p),intent(inout):: tem(:,:)
-        end subroutine
-        subroutine emreal3_correct_interactions
-        end subroutine
-        subroutine emreal3_correct_interactions_shortlong
-        end subroutine
       end interface
+      procedure(emreal1ca_ac):: emreal1ca_cu,emreal1c_core4
       interface
-        subroutine
-     &  emreal1c_core1(tem,vxx,vxy,vxz,vyy,vyz,vzz)
-           real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
-           real(t_p),intent(inout):: tem(3,*)
-        end subroutine
-      end interface
-      interface
-        subroutine emreal3d
-        end subroutine
-        subroutine emrealshort3d
-        end subroutine
-        subroutine emreallong3d
-        end subroutine
-        subroutine emreal3dgpu
+        subroutine emreal3d_ac
         end subroutine
         subroutine emreal3d_cu
         end subroutine
-        subroutine emrealshortlong3d
-        end subroutine
-        subroutine emrealshortlong3d_cu
-        end subroutine
-        subroutine emrealshort1cgpu
-        end subroutine
-        subroutine emreallong1cgpu
-        end subroutine
-        subroutine emreal1cgpu
-        end subroutine
       end interface
-      procedure(emreal1c_core1):: emreal1c_core2,emreal1c_core3
-     &                           ,emreal1c_core4,emreal1c_core5
-     &                           ,emrealshortlong1c_core
-     &                           ,emrealshortlong1c_core2
-      procedure(emreal1c_core1)  ,pointer:: emreal1c_core_p
-     &                           ,emrealshortlong1c_core_p
-      procedure(emreal3dgpu),pointer:: emreal3d_p
-     &                      ,emrealshortlong3d_p
-      procedure(emreal1cgpu),pointer:: emreal1c_p,emrealshort1c_p
-     &                      ,emreallong1c_p,emreal1c_cp,emreallong1c_cp
 
-
+      procedure(emreal1c_  ),pointer:: emreal1c_p,emreal1c_cp
+      procedure(emreal1ca_ac),pointer:: emreal1ca_p
+      procedure(emreal3d_ac),pointer:: emreal3d_p
 
 !  #############################################################################
 !  SECTION
@@ -919,11 +824,7 @@ c
 
       if (associated(ehal1c_p))      nullify(ehal1c_p)
       if (associated(ehal3c_p))      nullify(ehal3c_p)
-      if (associated(ehalshort1c_p)) nullify(ehalshort1c_p)
-      if (associated(ehallong1c_p))  nullify(ehallong1c_p)
-      if (associated(ehalshortlong3c_p)) nullify(ehalshortlong3c_p)
       if (associated(elj1c_p))       nullify(elj1c_p)
-      if (associated(eljsl1c_p))     nullify(eljsl1c_p)
       if (associated(elj3c_p))       nullify(elj3c_p)
       if (associated(tmatxb_p))      nullify(tmatxb_p)
       if (associated(tmatxb_p1))     nullify(tmatxb_p1)
@@ -932,7 +833,6 @@ c
      &       nullify(otf_dc_tmatxb_pme_core_p)
       if (associated(otf_dc_efld0_directgpu_p))
      &       nullify(otf_dc_efld0_directgpu_p)
-      if (associated(emreal1c_core_p))   nullify(emreal1c_core_p)
       if (associated(efld0_directgpu_p)) nullify(efld0_directgpu_p)
       if (associated(efld0_directgpu_p1)) nullify(efld0_directgpu_p1)
       if (associated(fphi_uind_site1_p)) nullify(fphi_uind_site1_p)
@@ -941,22 +841,18 @@ c
       if (associated(grid_uind_site_p))  nullify(grid_uind_site_p)
       if (associated(grid_pchg_site_p))  nullify(grid_pchg_site_p)
       if (associated(grid_mpole_site_p)) nullify(grid_mpole_site_p)
+      if (associated(pme_conv_p))        nullify(pme_conv_p)
       if (associated(ecreal1d_p))        nullify(ecreal1d_p)
-      if (associated(ecrealshortlong1d_p)) nullify(ecrealshortlong1d_p)
       if (associated(ecreal3d_p))          nullify(ecreal3d_p)
-      if (associated(emrealshortlong1c_core_p))
-     &       nullify(emrealshortlong1c_core_p)
       if (associated(emreal3d_p))     nullify(emreal3d_p)
       if (associated(emreal1c_p))     nullify(emreal1c_p)
-      if (associated(emrealshort1c_p))nullify(emrealshort1c_p)
-      if (associated(emreallong1c_p))      nullify(emreallong1c_p)
-      if (associated(emrealshortlong3d_p)) nullify(emrealshortlong3d_p)
+      if (associated(emreal1ca_p))    nullify(emreal1ca_p)
       if (associated(epreal1c_p))      nullify(epreal1c_p)
       if (associated(epreal1c_core_p)) nullify(epreal1c_core_p)
       if (associated(epreal3d_p))      nullify(epreal3d_p)
 
+      ecreal1d_cp     => tinker_void_sub
       emreal1c_cp     => tinker_void_sub
-      emreallong1c_cp => tinker_void_sub
       epreal1c_cp     => tinker_void_sub
       efld0_direct_cp => efld0_direct_void
       tmatxb_cp       => tmatxb_void

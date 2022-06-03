@@ -31,44 +31,42 @@ c
       real(r_p) pres
       real(r_p) factor
       real(r_p) stress(3,3)
-c
+      real(r_p) stres1,stres2,stres3
 c
 c     only necessary if periodic boundaries are in use
+c     and isobaric simulation
 c
-      if (.not. use_bounds)  return
+      if (.not.(use_bounds.and.use_virial))  return
 c
 c     calculate the stress tensor for anisotropic systems
 c
-!$acc data present(ekin,stress,pres,vir)
       factor = prescon / volbox
-!$acc parallel loop collapse(2) async
-      do i = 1, 3
-         do j = 1, 3
-            stress(j,i) = factor * (2*ekin(j,i)-vir(j,i))
-         end do
-      end do
+c!$acc parallel loop collapse(2) default(present) async
+c      do i = 1, 3
+c         do j = 1, 3
+c            stress(j,i) = factor * (2*ekin(j,i)-vir(j,i))
+c         end do
+c      end do
 c
 c     set isotropic pressure to the average of tensor diagonal
 c
-!$acc serial async
+!$acc host_data use_device(ekin,stress,pres)
+!$acc serial async deviceptr(ekin,stress,pres)
       !print*,'ek ',ekin(1,1),ekin(2,2),ekin(3,3)
       !print*,'vir', vir(1,1), vir(2,2), vir(3,3)
-      pres = (stress(1,1)+stress(2,2)+stress(3,3)) / 3.0_re_p
+      stres1 = factor * (2*ekin(1,1)-vir(1,1))
+      stres2 = factor * (2*ekin(2,2)-vir(2,2))
+      stres3 = factor * (2*ekin(3,3)-vir(3,3))
+      pres   = (stres1+stres2+stres3) / 3.0_re_p
 !$acc end serial
+!$acc end host_data
 c
-c     use either the Berendsen or Monte Carlo barostat method
+c     use the Berendsen barostat method
 c
-!$acc end data
       if (isobaric) then
-         if (barostat .eq. 'BERENDSEN') then
-            call pscale (dt,pres,stress,istep)
-c         else if (barostat .eq. 'MONTECARLO') then
-c            call pmonte(epot,temp)
-         end if
+         if (barostat.eq.'BERENDSEN') call pscale(dt,pres,stress,istep)
       end if
-      return
       end
-c
 c
 c     "pressure2" applies a box size and velocity correction at
 c     the half time step as needed for the Monte Carlo barostat
@@ -78,34 +76,19 @@ c
       use bound
       use boxes
       use domdec
-      use tinheader ,only:ti_p,re_p
       use units
-      use utilgpu,only: openacc_abort
       use virial
       implicit none
-      integer i,j,istep
-      real(r_p) dt
-      real(r_p) epot
-      real(r_p) temp,pres
-      real(r_p) factor
-      real(r_p) ekin(3,3)
-      real(r_p) stress(3,3)
+      real(r_p) epot,temp
 c
+c     only necessary if periodic boundaries are in use 
+c     and isobaric simulation
 c
-c     only necessary if periodic boundaries are in use
-c
-      if (.not. use_bounds)  return
-c
-c
-c     use either the Berendsen or Monte Carlo barostat method
-c
-      if (isobaric) then
-c         if (barostat .eq. 'BERENDSEN') then
-c            call pscale (dt,pres,stress,istep)
-         if (barostat .eq. 'MONTECARLO') then
-            call pmonte(epot,temp)
-         end if
-      end if
+      if (.not.(use_bounds.and.isobaric))  return
+
+      ! --- Monte Carlo barostat method --- !
+      if (barostat.eq.'MONTECARLO') call pmonte(epot,temp)
+
       end
 c
 c

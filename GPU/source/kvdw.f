@@ -399,6 +399,9 @@ c
                  ep = two * (eps(i)*eps(k)) / (eps(i)+eps(k))
               else if (epsrule(1:3) .eq. 'HHG') then
                  ep = four * (eps(i)*eps(k)) / (seps(i)+seps(k))**2
+              else if (epsrule(1:3) .eq. 'W-H') then
+                 ep = 2.0d0 * (seps(i)*seps(k)) * (rad(i)*rad(k))**3
+     &                   / (rad(i)**6+rad(k)**6)
               else
                  ep = seps(i) * seps(k)
               end if
@@ -459,6 +462,9 @@ c
                  ep = two * (eps4(i)*eps4(k)) / (eps4(i)+eps4(k))
               else if (epsrule(1:3) .eq. 'HHG') then
                  ep = four * (eps4(i)*eps4(k)) / (seps4(i)+seps4(k))**2
+              else if (epsrule(1:3) .eq. 'W-H') then
+                 ep = two * (seps4(i)*seps4(k)) * (rad4(i)*rad4(k))**3
+     &                   / (rad4(i)**6+rad4(k)**6)
               else
                  ep = seps4(i) * seps4(k)
               end if
@@ -507,8 +513,10 @@ c
 c
 c       radii and well depths for special atom class pairs
 c
+        vdwpr_l = .false.
         do i = 1, maxnvp
            if (kvpr(i) .eq. blank)  goto 230
+           if (i.eq.1) vdwpr_l=.true.
            ia = number(kvpr(i)(1:4))
            ib = number(kvpr(i)(5:8))
            if (rad(ia) .eq. zero)  rad(ia) = 0.001_ti_p
@@ -589,6 +597,14 @@ c
            end if
         end if
 c
+c     set radmin epsilon rule optimisation
+c
+      radepsOpt_l = (radrule_i.eq.ARITHMETIC_RL.or.
+     &               radrule_i.eq.GEOMETRIC_RL )
+     &         .and.(epsrule_i.eq.ARITHMETIC_RL.or.
+     &               epsrule_i.eq.GEOMETRIC_RL )
+     &         .and..not.vdwpr_l
+c
 c     remove zero-sized atoms from the list of local vdw sites
 c
         nvdw = 0
@@ -612,7 +628,7 @@ c
            call compress_vdwData
            call upload_device_kvdw
         else
-           call delete_data_vdw
+           call dealloc_shared_vdw
            return
         end if
 
@@ -776,13 +792,6 @@ c
         end do
       end do
 !$acc update host(nvdwloc,nvdwbloc) async(rec_queue)
-
-c#ifdef _OPENACC
-c!$acc wait(rec_queue)
-c!$acc host_data use_device(vdwglob)
-c      call thrust_sort(vdwglob,nvdwbloc)
-c!$acc end host_data
-c#endif
 c
 !$acc end data
       modnl = mod(istep,ineigup)
@@ -815,17 +824,6 @@ c
       end do
 !$acc update host(nvdwlocnl) async(rec_queue)
 
-#ifdef _OPENACC
-!$acc wait
-!$acc host_data use_device(vdwglobnl)
-      call thrust_sort(vdwglobnl,nvdwlocnl,rec_stream)
-!$acc end host_data
-!$acc parallel loop present(vdwglobnl,vdwlocnl) async(rec_queue)
-      do i =1, nvdwlocnl
-         nvdw_cap = vdwglobnl(i)
-         vdwlocnl(nvdw_cap) = i
-      end do
-#endif
       end
 c
 c     Reconfigure vdw glob on host and send them on device
@@ -941,7 +939,7 @@ c
 !$acc update device(ivt,jvt)
 !$acc update device(ivdw,nbvdw)
 !$acc enter data copyin(nvdwloc,nvdwbloc,nvdwlocnl)
-!$acc enter data copyin(rad)
+!$acc enter data copyin(rad,eps)
 
 #ifdef _OPENACC
 !$acc host_data use_device(i12,kred,radmin_c,epsilon_c)
@@ -950,7 +948,7 @@ c
 #endif
       end subroutine
 
-      subroutine delete_data_vdw
+      subroutine dealloc_shared_vdw
       use domdec,only: rank
       use inform,only: deb_Path
       use kvdws
@@ -958,11 +956,11 @@ c
       use vdw
       implicit none
  
- 12   format(2x,'delete_data_vdw')
+ 12   format(2x,'dealloc_shared_vdw')
       if(deb_Path) print 12
 
 !$acc exit data delete(nvdwloc,nvdwbloc,nvdwlocnl)
-!$acc exit data delete(rad)
+!$acc exit data delete(rad,eps)
 
       call shmem_request(jvdw, winjvdw, [0], config=mhostacc)
       call shmem_request(ivdw, winivdw, [0], config=mhostacc)

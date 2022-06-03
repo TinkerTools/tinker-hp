@@ -36,9 +36,12 @@ c
       use mpi
       implicit none
 c
-c     set the bonded connectivity lists and active atoms
+c     assign electrostatic and dispersion Ewald sum parameters
 c
       call kewald
+c
+c     set the bonded connectivity lists and active atoms
+c
       call attach
       call active
 c
@@ -77,17 +80,16 @@ c
 c
 c     find any pisystem atoms, bonds and torsional angles
 c
+c      call orbital
+      call clean_shared_space(0)
 c
 c     assign bond, angle and cross term potential parameters
 c
-      call clean_shared_space(0)
-c      call orbital
-      if (use_bond .or. use_strbnd .or. use_strtor
-     $    .or. (use_vdw .and. vdwtyp.eq.'MM3-HBOND'))
-     $                 call kbond
-      if (use_angle .or. use_strbnd .or. use_angang) call kangle
+      call kbond
+      if (use_angle .or. use_strbnd .or. use_angang)
+     &                 call kangle
       if (use_strbnd)  call kstrbnd(.true.)
-      if (use_urey)    call kurey(.true.)
+      if (use_urey  )  call kurey  (.true.)
       if (use_angang)  call kangang(.true.)
 c
 c     assign out-of-plane deformation potential parameters
@@ -99,7 +101,8 @@ c
 c
 c     assign torsion and torsion cross term potential parameters
 c
-      if (use_tors .or. use_strtor .or. use_tortor)  call ktors
+      if (use_tors .or. use_strtor .or. use_tortor)
+     &                 call ktors
       if (use_pitors)  call kpitors(.true.)
       if (use_strtor)  call kstrtor(.true.)
       if (use_angtor)  call kangtor(.true.)
@@ -107,15 +110,28 @@ c
 c
 c     assign van der Waals and electrostatic potential parameters
 c
-      if (use_charge)                call kcharge(.true.,0)
-      if (use_vdw)                   call kvdw   (.true.,0)
-      if (use_mpole .or. use_polar .or. use_solv) call kmpole(.true.,0)
-      if (use_polar .or. use_mpole)  call kpolar(.true.,0)
+      if (use_charge)  call kcharge(.true.,0)
+      if (use_vdw   )  call kvdw   (.true.,0)
+      if (use_mpole .or. use_polar .or. use_solv)
+     &                 call kmpole (.true.,0)
+      if (use_polar .or. use_mpole)
+     &                 call kpolar (.true.,0)
 
-      if (use_geom)    call kgeom(.true.) ! assign restraint parameters
+      if (use_chgtrn)  call kchgtrn(.true.,0)
+      if (use_chgflx)  call kchgflx
+c
+c     assign restraint parameters
+c
+      if (use_geom  )  call kgeom  (.true.)
+c
+c     assign repulsion and dispersion parameters
+c
+      if (use_repuls)  call krepel 
+      if (use_disp  )  call kdisp  (.true.,0) 
 c
 !$acc wait
       call clean_shared_space(1)
+      call dev_sort_global_buffers(0)
       call initmpipmegpu
 c
 c     set hybrid parameter values for free energy perturbation
@@ -181,6 +197,9 @@ c
       use angtor,only:nangtor
       use bond  ,only:nbond
       use bitor ,only:nbitor
+      use cflux ,only:naflx,nbflx
+      use chgtrn,only:nct
+      use disp  ,only:ndisp
       use charge,only:nion
       use domdec
       use improp,only:niprop
@@ -195,6 +214,7 @@ c
       use polar ,only:npolar
       use mpi
       use pitors,only:npitors
+      use repel ,only:nrep
       use strtor,only:nstrtor
       use tors  ,only:ntors
       use tortor,only:ntortor
@@ -204,10 +224,9 @@ c
  12   format(1x,A15,2x,I8)
  13   format(5x,11("-"),2x,8("+"))
  14   format(1x,A15,2x,I8,3x,I8)
- 15   format(1x,A15,2x,I7,5I5)
- 16   format(1x,15x,2x,A7,5A5)
 
       if (rank.eq.0) then
+
       if (use_bond  ) write(*,12) 'BOND'  ,nbond
       if (use_angle ) write(*,12) 'ANGLE' ,nangle
       if (use_strbnd) write(*,12) 'STRBND',nstrbnd
@@ -224,11 +243,17 @@ c
       if (use_angtor) write(*,12) 'ANGTOR',nangtor
       if (use_tortor) write(*,12) 'TORTOR',ntortor
       if (use_charge) write(*,12) 'CHARGE',nion
+      if (use_chgtrn) write(*,12) 'CHGTRN',nct
+      if (use_chgflx) write(*,14) 'CHGFLX',naflx,nbflx
       if (use_vdw   ) write(*,12) 'VDW'   ,nvdw
+      if (use_disp  ) write(*,12) 'DISP'  ,ndisp
+      if (use_repuls) write(*,12) 'REPULS',nrep
       if (use_mpole ) write(*,12) 'MPOLE' ,npole
       if (use_polar ) write(*,12) 'POLAR' ,npolar
       if (nmut.ne.0 ) write(*,12) 'MUTATION',nmut
       if (use_geom  ) then
+ 15      format(1x,A15,2x,I7,5I5)
+ 16      format(1x,15x,2x,A7,5A5)
          write(*,16) 'pos','dist','angl','tors','grpd','chir'
          write(*,15) 'GEOM RESTRAINS',
      &               npfix,ndfix,nafix,ntfix,ngfix,nchir
@@ -237,7 +262,7 @@ c
       end if
       if (use_extra ) write(*,12) 'EXTRA'
       if (use_smd_forconst.or.use_smd_velconst)
-     &   write(*,12) rank, 'SMD'
+     &   write(*,12) 'SMD'
       if (use_gamd)  write(*,12) 'GAMD'
 
       print 13
@@ -247,7 +272,59 @@ c
       if (PotentialCharmm)      write(*,12) 'CHARMM',n
       if (PotentialWaterAmoeba) write(*,12) 'WATERAMOEBA',n
       if (PotentialWaterCharmm) write(*,12) 'WATERCHARMM',n
+
       end if
+
+      end subroutine
+
+      subroutine zero_field
+      use atoms ,only:n
+      use angle ,only:nangle,nangleloc
+      use angang,only:nangang,nangangloc
+      use angtor,only:nangtor,nangtorloc
+      use bond  ,only:nbond,nbondloc
+      use bitor ,only:nbitor,nbitorloc
+      use charge,only:nion,nionloc
+      use domdec
+      use improp,only:niprop,niproploc
+      use imptor,only:nitors,nitorsloc
+      use kgeoms
+      use mpole ,only:npole,npoleloc
+      use mutant,only:nmut
+      use strbnd,only:nstrbnd,nstrbndloc
+      use opbend,only:nopbend,nopbendloc
+      use opdist,only:nopdist,nopdistloc
+      use potent
+      use polar ,only:npolar
+      use mpi
+      use pitors,only:npitors,npitorsloc
+      use strtor,only:nstrtor,nstrtorloc
+      use tors  ,only:ntors,ntorsloc
+      use tortor,only:ntortor,ntortorloc
+      use urey  ,only:nurey,nureyloc
+      use vdw   ,only:nvdw,nvdwloc
+      implicit none
+
+      nbond  =0;  nbondloc  =0;
+      nangle =0;  nangleloc =0;
+      nstrbnd=0;  nstrbndloc=0;
+      nurey  =0;  nureyloc  =0;
+      nangang=0;  nangangloc=0;
+      nopbend=0;  nopbendloc=0;
+      nopdist=0;  nopdistloc=0;
+      niprop =0;  niproploc =0;
+      nitors =0;  nitorsloc =0;
+      ntors  =0;  ntorsloc  =0;
+      nbitor =0;  nbitorloc =0;
+      npitors=0;  npitorsloc=0;
+      nstrtor=0;  nstrtorloc=0;
+      nangtor=0;  nangtorloc=0;
+      ntortor=0;  ntortorloc=0;
+      nion   =0;  nionloc   =0;
+      nvdw   =0;  nvdwloc   =0;
+      npole  =0;  npoleloc  =0;
+      npolar =0;
+      nmut   =0;
 
       end subroutine
 
@@ -316,11 +393,11 @@ c
       ! kmpole
       passed = save_solv.or.save_mpole.or.save_polar
       remove = .not.(use_mpole)
-      if (passed.and.remove) call delete_data_mpole
+      if (passed.and.remove) call dealloc_shared_mpole
       ! kpolar
       passed = save_polar.or.save_mpole
       remove = .not.(use_polar)
-      if (passed.and.remove) call delete_data_polar
+      if (passed.and.remove) call dealloc_shared_polar
 
       else
 
@@ -357,11 +434,13 @@ c     call molecule(.false.)
       call bitors  (.false.)
 !$acc wait
       if (use_charge)  call kcharge(.false.,istep)
-      if (use_mpole)   call kmpole (.false.,istep)
-      if (use_polar)   call kpolar (.false.,istep)
-      if (use_vdw)     call kvdw   (.false.,istep)
+      if (use_mpole )  call kmpole (.false.,istep)
+      if (use_polar )  call kpolar (.false.,istep)
+      if (use_chgtrn)  call kchgtrn(.false.,istep)
+      if (use_vdw   )  call kvdw   (.false.,istep)
+      if (use_disp  )  call kdisp  (.false.,istep)
       if (use_strbnd)  call kstrbnd(.false.)
-      if (use_urey)    call kurey  (.false.)
+      if (use_urey  )  call kurey  (.false.)
       if (use_angang)  call kangang(.false.)
       if (use_opbend)  call kopbend(.false.)
       if (use_opdist)  call kopdist(.false.)
@@ -371,9 +450,10 @@ c     call molecule(.false.)
       if (use_strtor)  call kstrtor(.false.)
       if (use_angtor)  call kangtor(.false.)
       if (use_tortor)  call ktortor(.false.)
-      if (use_geom)    call kgeom  (.false.)
+      if (use_geom  )  call kgeom  (.false.)
       if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
 !$acc wait
+      call dev_sort_global_buffers(istep)
       call initmpipmegpu
       call build_scaling_factor(istep)
 c
@@ -414,7 +494,7 @@ c        print*,use_angle,use_opbend,use_opdist
 c        print*,use_improp,use_imptor,use_pitors
 c        print*,use_strtor,use_tortor,use_geom
          if (use_strbnd) call kstrbnd(.false.)  ! Alloc(nangleloc) angleglob(:nangleloc) -> strbndglob(:nstrbndloc)
-         if (use_urey)   call kurey  (.false.)  ! Alloc(nangleloc) angleglob(:nangleloc) -> ureyglob(:nureyloc)
+         if (use_urey  ) call kurey  (.false.)  ! Alloc(nangleloc) angleglob(:nangleloc) -> ureyglob(:nureyloc)
          if (use_angang) call kangang(.false.)  ! no ACC
          if (use_opbend) call kopbend(.false.)  ! Alloc(nangleloc) angleglob(:nangleloc) -> opbendglob(:nopbendloc)
          if (use_opdist) call kopdist(.false.)  ! no ACC
@@ -424,16 +504,19 @@ c        print*,use_strtor,use_tortor,use_geom
          if (use_strtor) call kstrtor(.false.)  ! Alloc(ntorsloc) torsglob(:ntorsloc) -> strtorglob(:nstrtorloc) + nstrtor
          if (use_angtor) call kangtor(.false.)
          if (use_tortor) call ktortor(.false.)  ! Alloc(nbitorloc) bitorsglob(:nbitorloc) -> tortorglob(:ntortorloc)
-         if (use_geom)   call kgeom  (.false.)  ! no ACC
+         if (use_geom  ) call kgeom  (.false.)  ! no ACC
          if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
 !Wait for array lenghts nstrbndloc,nureyloc,nopbendloc,npitorsloc,nstrtorloc,ntortorloc
 !$acc wait
       else
          if (use_charge) call kcharge(.false.,istep)
-         if (use_mpole)  call kmpole (.false.,istep)
-         if (use_polar)  call kpolar (.false.,istep)
-         if (use_vdw)    call kvdw   (.false.,istep)
+         if (use_mpole ) call kmpole (.false.,istep)
+         if (use_polar ) call kpolar (.false.,istep)
+         if (use_vdw   ) call kvdw   (.false.,istep)
+         if (use_disp  ) call kdisp  (.false.,istep)
+         if (use_chgtrn) call kchgtrn(.false.,istep)
 !$acc wait
+         call dev_sort_global_buffers(istep)
          call initmpipmegpu
          call build_scaling_factor(istep)
 c
@@ -485,7 +568,7 @@ c      call molecule(.false.)
         call bitors  (.false.)
 !$acc wait
         if (use_strbnd) call kstrbnd(.false.)
-        if (use_urey)   call kurey  (.false.)
+        if (use_urey  ) call kurey  (.false.)
         if (use_angang) call kangang(.false.)
         if (use_opbend) call kopbend(.false.)
         if (use_opdist) call kopdist(.false.)
@@ -495,21 +578,25 @@ c      call molecule(.false.)
         if (use_strtor) call kstrtor(.false.)
         if (use_angtor) call kangtor(.false.)
         if (use_tortor) call ktortor(.false.)
-        if (use_geom)   call kgeom  (.false.)
+        if (use_geom  ) call kgeom  (.false.)
         if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
 !$acc wait
       else if (rule.eq.1) then
         if (use_charge) call kcharge(.false.,istep)
-        if (use_mpole)  call kmpole (.false.,istep)
-        if (use_polar)  call kpolar (.false.,istep)
-        if (use_vdw)    call kvdw   (.false.,istep)
+        if (use_mpole ) call kmpole (.false.,istep)
+        if (use_polar ) call kpolar (.false.,istep)
+        if (use_vdw   ) call kvdw   (.false.,istep)
+        if (use_chgtrn) call kchgtrn(.false.,istep)
 !$acc wait
       else if (rule.eq.2) then
         if (use_charge) call kcharge(.false.,istep)
-        if (use_mpole)  call kmpole (.false.,istep)
-        if (use_polar)  call kpolar (.false.,istep)
-        if (use_vdw)    call kvdw   (.false.,istep)
+        if (use_mpole ) call kmpole (.false.,istep)
+        if (use_polar ) call kpolar (.false.,istep)
+        if (use_vdw   ) call kvdw   (.false.,istep)
+        if (use_disp  ) call kdisp(.false.,istep)
+        if (use_chgtrn) call kchgtrn(.false.,istep)
 !$acc wait
+        call dev_sort_global_buffers(istep)
         call build_scaling_factor(istep)
         call initmpipmegpu
 c       call updategrid
@@ -611,18 +698,24 @@ c
       end subroutine
 
       subroutine configure_routine
+      use atoms  ,only: n
+      use couple ,only: maxn12_
       use interfaces
+      use charge ,only: nion
       use domdec ,only: nproc,nrec
+      use group  ,only: use_group
+      use inform ,only: tinEssai,deb_Path
       use precompute_pole,only: tmatxb_pme_compute,
-     &    precompute_solvpole,precompute_mpole
-      use potent, only: use_polar,use_mpole,use_vdw
-     &          , use_charge,use_pmecore
-      use polar , only: use_mpolar_ker
-      use neigh , only: vlst_enable,vlst2_enable
-     &          , mlst_enable,mlst2_enable
-     &          , clst_enable,clst2_enable
-      use sizes , only: tinkerdebug
-      use vdwpot, only: vdwtyp
+     &    precompute_solvpole
+      use potent ,only: use_polar,use_mpole,use_vdw
+     &           , use_charge,use_pmecore,use_lambdadyn,fuse_chglj
+      use polar  ,only: use_mpolar_ker
+      use neigh  ,only: vlst_enable,vlst2_enable
+     &           , mlst_enable,mlst2_enable
+     &           , clst_enable,clst2_enable
+      use sizes  ,only: tinkerdebug
+      use vdw    ,only: nvdw
+      use vdwpot ,only: vdwtyp
       implicit none
       integer configure,shft
       integer,parameter:: hexa_len=16,sh_len=4
@@ -660,22 +753,14 @@ c
 
          shft     = ishft(sub_config,-conf_elj*sh_len)
          configure=  iand(shft,hexa_len-1)
-         eljsl1c_p => eljshortlong1cgpu
-         elj1c_p    => elj1cgpu
-         elj3c_p    => elj3cgpu
+         elj1c_p    => elj1c_ac
+         elj3c_p    => elj3c_ac
          if      (configure.eq.conf_elj) then
-            eljsl1c_p  => eljshortlong1cgpu
-            elj1c_p    => elj1c
-            elj3c_p    => elj3c
             vlst_enable =.true.
          else if (configure.eq.conf_elj1gpu) then
-            eljsl1c_p  => eljshortlong1cgpu
-            elj1c_p    => elj1cgpu
-            elj3c_p    => elj3cgpu
             vlst_enable =.true.
 #ifdef _OPENACC
-         else if (configure.eq.conf_elj1cu) then
-            eljsl1c_p   => eljshortlong1cgpu
+         else if (configure.eq.conf_elj1cu.and.maxn12_.lt.5) then
             elj1c_p     => elj1c_cu
             elj3c_p     => elj3c_cu
             vlst2_enable =.true.
@@ -690,27 +775,19 @@ c
 
          shft     = ishft(sub_config,-conf_ehal*sh_len)
          configure=iand(shft,hexa_len-1)
-         ehalshort1c_p => ehalshort1cgpu
-         ehallong1c_p  => ehallong1cgpu
-         ehal3c_p  => ehal3cgpu
-         ehalshortlong3c_p => ehalshortlong3cgpu
+         ehal1c_p => ehal1c_ac
+         ehal3c_p => ehal3c_ac
          if      (configure.eq.conf_ehal1) then
-            ehal1c_p => ehal1cgpu1
             vlst_enable =.true.
          else if (configure.eq.conf_ehal2) then
-            ehal1c_p => ehal1cgpu2
             vlst_enable =.true.
 #ifdef _OPENACC
          else if (configure.eq.conf_ehalcu) then
             ehal1c_p => ehal1c_cu
-            ehalshort1c_p => ehalshortlong1c_cu
-            ehallong1c_p  => ehalshortlong1c_cu
             ehal3c_p  => ehal3c_cu
-            ehalshortlong3c_p => ehalshortlong3c_cu
             vlst2_enable =.true.
 #endif
          else
-            ehal1c_p => ehal1cgpu2
             vlst_enable =.true.
          end if
 
@@ -723,24 +800,31 @@ c
          configure=  iand(shft,hexa_len-1)
          if      (configure.eq.conf_ecreal1d)    then
             ecreal1d_p          => ecreal1d
-            ecrealshortlong1d_p => ecrealshortlong1dgpu
             ecreal3d_p          => ecreal3dgpu
             clst_enable = .true.
          else if (configure.eq.conf_ecreal1dgpu) then
             ecreal1d_p          => ecreal1dgpu
-            ecrealshortlong1d_p => ecrealshortlong1dgpu
             ecreal3d_p          => ecreal3dgpu
             clst_enable = .true.
 #ifdef _OPENACC
          else if (configure.eq.conf_ecreal1d_cu) then
             ecreal1d_p          => ecreal1d_cu
-            ecrealshortlong1d_p => ecrealshortlong1dgpu
             ecreal3d_p          => ecreal3d_cu
             clst2_enable = .true.
+
+            if (vdwtyp.eq.'LENNARD-JONES'.and.maxn12_.lt.5
+     &         .and.associated(elj1c_p,elj1c_cu).and..not.use_group
+     &         .and.n.eq.nvdw.and..not.use_lambdadyn
+     &         .and.btest(tinEssai,0)) then
+               fuse_chglj   = .true.
+               vlst2_enable = .false.
+               elj1c_p      => tinker_void_sub
+               ecreal1d_p   => ecreal_lj1_cu
+               call kcharge(.true.,0)
+            end if
 #endif
          else
             ecreal1d_p          => ecreal1dgpu
-            ecrealshortlong1d_p => ecrealshortlong1dgpu
             ecreal3d_p          => ecreal3dgpu
             clst_enable = .true.
          end if
@@ -749,41 +833,24 @@ c
       if (use_mpole) then
          shft = ishft(sub_config,-conf_mpole*sh_len)
          configure=iand(shft,hexa_len-1)
-         emreal1c_p     => emreal1cgpu
-         emrealshort1c_p=> emrealshort1cgpu
-         emreallong1c_p => emreallong1cgpu
-         emrealshortlong1c_core_p => emrealshortlong1c_core
-         emrealshortlong3d_p      => emrealshortlong3d
-         if      (configure.eq.conf_emreal1c_1) then
-            emreal1c_core_p => emreal1c_core1
-            emreal3d_p => emreal3dgpu
+         emreal1c_p     => emreal1c_
+         emreal1ca_p    => emreal1ca_ac
+         emreal3d_p     => emreal3d_ac
+         if      (configure.eq.conf_emreal1c_0) then
             mlst_enable = .true.
-         else if (configure.eq.conf_emreal1c_2) then
-            emreal1c_core_p => emreal1c_core2
-            emreal3d_p => emreal3dgpu
-            mlst_enable = .true.
-         else if (configure.eq.conf_emreal1c_pre.or.precompute_mpole)
-     &        then
-            emreal1c_core_p => emreal1c_core3
-            emreal3d_p => emreal3dgpu
+         else if (configure.eq.conf_emreal1c_1) then
             mlst_enable = .true.
 #ifdef _OPENACC
-         else if (configure.eq.conf_emreal1c_4) then
-            emreal1c_core_p => emreal1c_core4
-            emrealshortlong1c_core_p => emrealshortlong1c_core2
+         else if (configure.eq.conf_emreal1c_2) then
+            emreal1ca_p => emreal1ca_cu
             emreal3d_p => emreal3d_cu
-            emrealshortlong3d_p => emrealshortlong3d_cu
             mlst2_enable = .true.
-         else if (configure.eq.conf_emreal1c_5) then
-            emreal1c_core_p => emreal1c_core5
-            emrealshortlong1c_core_p => emrealshortlong1c_core2
+         else if (configure.eq.conf_emreal1c_3) then
+            emreal1ca_p => emreal1c_core4
             emreal3d_p => emreal3d_cu
-            emrealshortlong3d_p => emrealshortlong3d_cu
             mlst2_enable = .true.
 #endif
          else
-            emreal1c_core_p => emreal1c_core2
-            emreal3d_p => emreal3dgpu
             mlst_enable = .true.
          end if
       end if
@@ -827,11 +894,11 @@ c
          else if (configure.eq.conf_tmatxb_c1) then
             tmatxb_pme_core_p => tmatxb_pme_core1
             mlst_enable = .true.
-         else if (configure.eq.conf_tmatxb_c2) then
+         else if (configure.eq.conf_tmatxb_c3) then
             tmatxb_pme_core_p => tmatxb_pme_core2
             mlst_enable = .true.
 #ifdef _OPENACC
-         else if (configure.eq.conf_tmatxb_c3) then
+         else if (configure.eq.conf_tmatxb_c2) then
               tmatxb_pme_core_p => tmatxb_pme_core3
        otf_dc_tmatxb_pme_core_p => otf_dc_tmatxb_pme_core3
             mlst2_enable = .true.
@@ -862,7 +929,9 @@ c
             epreal1c_core_p => epreal1c_core3
             epreal3d_p      => epreal3d_cu
             mlst2_enable    = .true.
-            use_mpolar_ker  = .true.
+            use_mpolar_ker  =
+     &      merge(.true.,.false.,use_mpole.and.tinkerdebug.eq.0
+     &            .and..not.use_lambdadyn)
             call attach_mpolar_pointer
 #endif
          else
@@ -921,6 +990,16 @@ c
          grid_pchg_site_p  => grid_pchg_sitegpu
       end if
 
+      shft     = ishft(sub_config,-conf_conv*sh_len)
+      configure= iand (shft,hexa_len-1)
+      if      (configure.eq.conf_conv_acc) then
+         pme_conv_p => pme_conv_gpu
+#ifdef _OPENACC
+      else if (configure.eq.conf_conv_cuda) then
+         pme_conv_p => pme_conv_cu
+#endif
+      end if
+
 c     print '(/,A21,Z16,I30)', 'routine config number ', 
 c    &      sub_config,sub_config
 
@@ -939,7 +1018,7 @@ c
       use polpot
       use potent ,only: use_pmecore
       implicit none
-      logical,parameter:: OK=.true.
+      logical,parameter:: OK=.false.
 
       ! Association
       if (dir_queue.ne.rec_queue) then
@@ -966,10 +1045,11 @@ c
             return
          end if
 
+         ecreal1d_cp     => ecreal1d_p
+         ecreal1d_p      => tinker_void_sub
+
          emreal1c_cp     => emreal1c_p
-         emreallong1c_cp => emreallong1c_p
          emreal1c_p      => tinker_void_sub
-         emreallong1c_p  => tinker_void_sub
 
          efld0_direct_cp   => efld0_directgpu_p
          efld0_directgpu_p => efld0_direct_void
@@ -996,7 +1076,6 @@ c
       if (use_mpolar_ker) then
       epreal1c_core_p => mpreal1c_core
       emreal1c_p      => tinker_void_sub
-      emrealshort1c_p => tinker_void_sub
       end if
 #endif
 
@@ -1024,8 +1103,7 @@ c
          else
             epreal1c_core_p => epreal1c_core2
          end if
-         emreal1c_p      => emreal1cgpu
-         emrealshort1c_p => emrealshort1cgpu
+         emreal1c_p      => emreal1c_
       end if
 #endif
       end subroutine

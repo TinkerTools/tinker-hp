@@ -19,6 +19,7 @@ c
       use atmlst
       use atoms
       use cutoff
+      use chgpen
       use domdec
       use inform
       use iounit
@@ -38,7 +39,7 @@ c
       use tinMemory
       implicit none
       integer istep,modnl,ierr
-      integer i,j,k,ii,maxdr
+      integer i,j,k,ii,it,maxdr
       integer iproc,iglob,polecount,iipole
       integer ipr,npole_cap,ibufbeg
       integer,save:: nlocnl_save=0
@@ -124,13 +125,6 @@ c
            end if
         end do
 c
-c       find and store the atomic dipole polarizability parameters
-c
-        do i = 1, n
-           polarity(i) = polr(type(i))
-           thole(i) = athl(type(i))
-        end do
-c
 c       process keywords containing atom specific polarizabilities
 c
         header = .true.
@@ -166,6 +160,27 @@ c
            end if
         end do
 c
+c       find and store the atomic dipole polarizability parameters
+c
+        sixth = 1.0d0 / 6.0d0
+        do i = 1, n
+           polarity(i) = 0.0_ti_p
+           thole(i)    = 0.0_ti_p
+           dirdamp(i)  = 0.0_ti_p
+           pdamp(i)    = 0.0_ti_p
+           it = type(i)
+           if (it .ne. 0) then
+              polarity(i) = polr(it)
+              thole(i) = athl(it)
+              dirdamp(i) = ddir(it)
+              if (thole(i) .eq. 0.0_ti_p) then
+                pdamp(i) = 0.0_ti_p
+              else
+                pdamp(i) = polarity(i)**sixth
+              end if
+           end if
+        end do
+c
 c         assign polarization group connectivity of each atom
 c
   90    call polargrp
@@ -173,31 +188,39 @@ c
 c
 c       remove zero and undefined polarizable sites from the list
 c
-        npole  = 0
-        npolar = 0
-        do i = 1, n
-           if (polsiz(i).ne.0 .or. polarity(i).ne.zero) then
-              nbpole(i) = npole
-              npole = npole + 1
-              ipole(npole) = i
-              pollist(i) = npole
-              zaxis(npole) = zaxis(i)
-              xaxis(npole) = xaxis(i)
-              yaxis(npole) = yaxis(i)
-              polaxe(npole) = polaxe(i)
-              do k = 1, maxpole
-                 pole(k,npole) = pole(k,i)
-              end do
-              if (polarity(i) .ne. zero)  npolar = npolar + 1
-              polarity(npole) = polarity(i)
-              thole(npole) = thole(i)
-              if (use_emtp) then
-                alphapen(npole) = alphapen(i)
-                betapen(npole) = betapen(i)
-                gammapen(npole) = gammapen(i)
-              end if
-           end if
-        end do
+        if ((use_polar .or. use_repuls)) then
+          npole  = 0
+          npolar = 0
+          ncp    = 0
+          ipole  = 0
+          do i = 1, n
+             if (polsiz(i).ne.0 .or. polarity(i).ne.0.0_ti_p) then
+                nbpole(i) = npole
+                npole     = npole + 1
+                ipole(npole) = i
+                pollist(i)   = npole
+                zaxis (npole)= zaxis(i)
+                xaxis (npole)= xaxis(i)
+                yaxis (npole)= yaxis(i)
+                polaxe(npole)= polaxe(i)
+                do k = 1, maxpole
+                   pole(k,npole) = pole(k,i)
+                end do
+                mono0(npole) = pole(1,i)
+                if (polarity(i) .ne. 0.0_ti_p)  npolar = npolar + 1
+                if (dirdamp(i) .ne. 0.0_ti_p)  use_dirdamp = .true.
+                polarity(npole) = polarity(i)
+                thole   (npole) = thole(i)
+                dirdamp (npole) = dirdamp(i)
+                pdamp   (npole) = pdamp(i)
+                if (palpha(i) .ne. 0.0_ti_p)  ncp = ncp + 1
+                pcore (npole) = pcore(i)
+                pval  (npole) = pval(i)
+                pval0 (npole) = pval(i)
+                palpha(npole) = palpha(i)
+             end if
+          end do
+        end if
         call FromPolaxe2Ipolaxe ! Brodcast 'nZ_onlyglob' after this call
 c
 c       Display if some poles does not have polarity
@@ -206,26 +229,30 @@ c
         if (npolar.ne.npole) write(*,99) npole, npolar
  99        format("There are some poles without polarity :",/,
      &            3x,I12, "poles for ", I12, "polar atoms.")
-c
-c       set the values used in the scaling of the polarizability
-c
-        sixth = 1.0_ti_p / 6.0_ti_p
-        do i = 1, npole
-           if (thole(i) .eq. zero) then
-              pdamp(i) = zero
-           else
-              pdamp(i) = polarity(i)**sixth
-           end if
-        end do
+
  100    call MPI_BARRIER(hostcomm,ierr)
-        call MPI_BCAST(npole,1,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(npole, 1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(npolar,1,MPI_INT,0,hostcomm,ierr)
-        call MPI_BCAST(integrate,11,MPI_CHAR,0,hostcomm,ierr)
-        call MPI_BCAST(nZ_Onlyglob,1,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(ncp,   1,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(integrate,  11,   MPI_CHAR,0,hostcomm,ierr)
+        call MPI_BCAST(nZ_Onlyglob, 1,    MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(use_dirdamp, 1,MPI_LOGICAL,0,hostcomm,ierr)
 c
 c       test multipoles at chiral sites and invert if necessary
 c
-        call chkpole(.true.)
+        if (use_polar.and..not.use_chgtrn) call chkpole(.true.)
+c
+c       copy original polarizability values that won't change during mutation
+c
+        if (use_lambdadyn) then
+           polarity_orig(:) = polarity(:)
+        end if
+c
+c       initialization for TCG and omega fit
+c
+        if ((polalg.eq.3).and.tcgpeek) then 
+           poleps = 0.00000001
+        end if
 c
 c       turn off polarizable multipole potential if it is not used
 c
@@ -233,11 +260,14 @@ c
            use_mpole = .false.
            use_mlist = .false.
 !$acc update device(use_mpole)
-           endif
+        endif
         if (npolar .eq. 0) then
-        use_polar = .false.
+           use_polar = .false.
 !$acc update device(use_polar)
         end if
+        if (ncp .ne. 0)  use_chgpen = .true.
+        if (ncp .ne. 0)  use_thole  = .false.
+        if (use_dirdamp) use_thole  = .true.
 c
 c       initialization for TCG and omega fit
 c
@@ -245,6 +275,7 @@ c
            !TODO 1.2  Ask louis about this value for single prec
            poleps = 0.00000001
         end if
+!$acc enter data copyin(nZ_onlyloc)
 
         if (use_polar) then
            call upload_device_polar(1)
@@ -367,7 +398,6 @@ c
            end if
         end if
 c
-!$acc enter data copyin(nZ_onlyloc)
       end if
 
       if (nproc.eq.1) then
@@ -408,7 +438,6 @@ c
 !$acc data present(glob,pollist,poleglob,poleloc,nbpole,bufbegpole,
 !$acc&  domlenpole,domlenpolerec,polerecglob,poleloc,polerecloc)
 !$acc&     present(npoleloc,npolebloc,npolerecloc,npolerecloc_old)
-!$acc&     create(npolerecloc2)
 !$acc&     async(rec_queue)
 
       !TODO clean this routine
@@ -515,12 +544,12 @@ c
       end do
 c
 !$acc serial async(rec_queue)
-      npolerecloc2= npolerecloc
+      !npolerecloc2= npolerecloc
       npolerecloc = domlenpolerec(rank+1)
 !$acc end serial
 c
 !$acc update host(domlenpole,domlenpolerec,bufbegpole
-!$acc&    ,npoleloc,npolebloc,npolerecloc,npolerecloc2
+!$acc&    ,npoleloc,npolebloc,npolerecloc
 !$acc&    ,polerecglob) async(rec_queue)
 !$acc end data
 c
@@ -528,22 +557,6 @@ c     npolelocloop = merge( npoleloc,
 c    &                    (int(npoleloc/16)+1)*16,
 c    &                    (mod(npoleloc,16).eq.0))
 c
-#ifdef _OPENACC
-!$acc wait
-!$acc host_data use_device(poleglob,polerecglob)
-c     call thrust_sort(poleglob,npolebloc)
-      call thrust_sort(polerecglob,npolerecloc,rec_stream)
-!$acc end host_data
-c!$acc parallel loop async(rec_queue)
-c      do i = 1,npolebloc
-c         poleloc(poleglob(i)) = i
-c      end do
-!$acc parallel loop present(polerecloc,polerecglob)
-!$acc&         async(rec_queue)
-      do i = 1,npolerecloc2
-         polerecloc(polerecglob(i)) = i
-      end do
-#endif
 c
       modnl = mod(istep,ineigup)
       if (modnl.ne.0.or.istep.lt.0) return
@@ -584,26 +597,15 @@ c
         end if
       end do
 !$acc update host(npolelocnl) async(rec_queue)
-#ifdef _OPENACC
-!$acc wait(rec_queue)
-!$acc host_data use_device(poleglobnl)
-      call thrust_sort(poleglobnl,npolelocnl,rec_stream)
-!$acc end host_data
-!$acc parallel loop present(polelocnl,poleglobnl) async(rec_queue)
-      do i = 1,npolelocnl
-         polelocnl(poleglobnl(i)) = i
-      end do
-#endif
 c
 c     npolelocnlloop is npolelocnl if npolelocnl is a multiple of 16
 c                    or the first one greater
 c     npolelocnlloop = merge( npolelocnl,
 c    &                     (int(npolelocnl/16)+1)*16,
 c    &                     (mod(npolelocnl,16).eq.0))
-
-c     npoleblocloop = merge( npolebloc,
-c    &                    (int(npolebloc/16)+1)*16,
-c    &                    (mod(npolebloc,16).eq.0))
+c     npoleblocloop  = merge( npolebloc,
+c    &                     (int(npolebloc/16)+1)*16,
+c    &                     (mod(npolebloc,16).eq.0))
       end
 
       subroutine kpolar_reset1(istep)
@@ -760,7 +762,6 @@ c    &                     (mod(npolelocnl,16).eq.0))
 c     npoleblocloop = merge( npolebloc,
 c    &                    (int(npolebloc/16)+1)*16,
 c    &                    (mod(npolebloc,16).eq.0))
-
       end
 
       subroutine compute_nZ_Onlyaxe
@@ -1226,12 +1227,14 @@ c
 c     Update polar's data on device
 c
       subroutine upload_device_polar(config)
+      use chgpen
       use domdec
       use inform ,only: deb_Path
       use mpole
       use mpi    ,only: MPI_BARRIER
       use polar
       use polgrp
+      use potent ,only: use_lambdadyn
       use sizes
       use tinMemory
       implicit none
@@ -1248,31 +1251,40 @@ c
 c!$acc update device(ip11(:,:),np11(:),ip12(:,:),np12(:),
 c!$acc&              ip13(:,:),np13(:),ip14(:,:),np14(:))
       else
-!$acc update device(thole,pdamp,polarity)
+!$acc update device(thole,pdamp,dirdamp,polarity)
+      if (use_lambdadyn) then
+!$acc update device(polarity_orig)
+      end if
 
-!$acc update device(xaxis,yaxis,zaxis)
-!$acc update device(ipolaxe,pole,nbpole,ipole)
-!$acc update device(pollist)
+!$acc update device(xaxis,yaxis,zaxis
+!$acc&       ,ipolaxe,ipole,pole,pollist,nbpole
+!$acc&       ,mono0,pcore,pval,pval0,palpha)
       end if
 
       end subroutine
 
-      subroutine delete_data_polar
+      subroutine dealloc_shared_polar
       use domdec
       use inform ,only: deb_Path
       use mpole
       use polar
       use polgrp
+      use potent ,only: use_lambdadyn
       use sizes
       use tinMemory
       implicit none
 
- 12   format(2x,'delete_data_polar')
+ 12   format(2x,'dealloc_shared_polar')
       if (deb_Path) print 12
 
       call shmem_request(polarity,winpolarity,[0],config=mhostacc)
+      if (use_lambdadyn) then
+         call shmem_request(polarity_orig,winpolarity_orig,[0]
+     &                     ,config=mhostacc)
+      end if
       call shmem_request(thole,   winthole,   [0],config=mhostacc)
       call shmem_request(pdamp,   winpdamp,   [0],config=mhostacc)
+      call shmem_request(dirdamp, windirdamp, [0],config=mhostacc)
 
       end subroutine
 c
@@ -1284,6 +1296,7 @@ c
       use atoms
       use domdec
       use polar
+      use potent ,only: use_lambdadyn
       use mpi
       use tinMemory
       implicit none
@@ -1291,6 +1304,11 @@ c
       if (associated(thole).and.n.eq.size(thole)) return
 c
       call shmem_request(polarity,winpolarity,[n],config=mhostacc)
+      if (use_lambdadyn) then
+         call shmem_request(polarity_orig,winpolarity_orig,[n]
+     &                     ,config=mhostacc)
+      end if
       call shmem_request(thole,   winthole,   [n],config=mhostacc)
       call shmem_request(pdamp,   winpdamp,   [n],config=mhostacc)
+      call shmem_request(dirdamp, windirdamp, [n],config=mhostacc)
       end

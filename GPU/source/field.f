@@ -38,13 +38,14 @@ c
       use_imptor     = .true.
       use_tors       = .true.
       use_pitors     = .true.
-      use_strtor     = .true.
       use_angtor     = .true.
+      use_strtor     = .true.
       use_tortor     = .true.
       use_vdw        = .true.
       use_vdwshort   = .false.
       use_vdwlong    = .false.
       use_charge     = .true.
+      use_cshortreal = .false.
       use_clong      = .false.
       use_creal      = .true.
       use_crec       = .true.
@@ -64,9 +65,21 @@ c
       use_geom       = .true.
       use_extra      = .false.
       use_emtp       = .false.
-      use_ctransfer  = .false.
-      use_dispersion = .false.
-      use_repulsion  = .false.
+      use_repulsshort    = .false.
+      use_repulslong     = .false.
+      use_repuls         = .true.
+      use_disp           = .true.
+      use_dispshortreal  = .false.
+      use_displong   = .false.
+      use_dispreal   = .true.
+      use_disprec    = .true.
+      use_dispself   = .true.
+      use_chgtrn     = .true.
+      use_chgflx     = .true.
+      use_lambdadyn  = .false.
+      use_OSRW       = .false.
+      fuse_chglj     = .false.
+      fuse_bonded    = .false.
 c
 c     Flag for predictor-Corrector
 c
@@ -75,6 +88,9 @@ c
 c
 c     Set default values of Force field potential
 c
+      bonded_l             = .true.
+      shortnonbonded_l     = .false.
+      nonbonded_l          = .true.
       PotentialAll         = .true.
       PotentialAmoeba      = .false.
       PotentialAmoeba18    = .false.

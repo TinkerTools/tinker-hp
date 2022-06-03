@@ -107,10 +107,9 @@ c
       if (use_pmecore.and.rank.ge.ndir) goto 300
 #endif
 
-!$acc data present(poleglob,uind,uinp,ef,mu,polarity)
       if (.not.(use_pred.and.nualt.eq.maxualt)) then
       if (polgsf.eq.0) then
-!$acc parallel loop collapse(3) async(def_queue)
+!$acc parallel loop collapse(3) async(def_queue) default(present)
         do i = 1, npoleloc
           do k = 1, nrhs
             do j = 1, 3
@@ -120,7 +119,7 @@ c
           end do
         end do
       else
-!$acc parallel loop collapse(2) async(def_queue)
+!$acc parallel loop collapse(2) async(def_queue) default(present)
         do i = 1, npoleloc
           do j = 1, 3
             iipole = poleglob(i)
@@ -150,7 +149,7 @@ c
          call fatal
       end if
 c
-!$acc parallel loop collapse(2) async(def_queue)
+!$acc parallel loop collapse(2) async(def_queue) default(present)
       do i = 1, npolebloc
          do j = 1, 3
             iipole = poleglob(i)
@@ -158,7 +157,6 @@ c
             uinp(j,iipole) = mu(j,2,i)
          end do
       end do
-!$acc end data
 
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) call end_dir_stream_cover
@@ -175,11 +173,26 @@ c
 
       end
 c
+      module inducepcg_s_mod
+      logical   :: first_in=.true.
+      integer   :: precnd1, ips_call=0
+      integer   :: lastIter=0,sameIter
+      logical   :: exitlast=.false.
+      real(t_p) :: ggold1,ggold2
+      real(r_p) :: gg1,gg2,ggnew1,ggnew2,ene1,ene2
+      real(t_p),target :: gbuff(4)
+      real(r_p),target :: gbuff1(6)
+      real(r_p),pointer:: ggnew(:),ene(:),gnorm(:)
+      !real(t_p)    ggdev1,ggdev2
+      !real(t_p),save:: alphacg1,alphacg2
+      parameter(precnd1=0)
+      end module
       subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       use atmlst
       use domdec
       use ewald
-      use inform     ,only: deb_Path,abort,minmaxone
+      use inform     ,only: deb_Path,abort,minmaxone,app_id,dynamic_a
+      use inducepcg_s_mod
       use interfaces ,only: tmatxb_pmegpu
       use iounit
       use math
@@ -208,28 +221,11 @@ c
       real(t_p),intent(in)   :: ef (:,:,:)
       real(t_p),intent(inout):: mu (:,:,:)
       procedure(tmatxb_pmegpu) :: matvec
-
-      integer i, it, j, k
-      integer precnd1
-      integer npoleloc_e
-      real(t_p) ggold(2), alphacg(2)
-      real(r_p) gnorm(2), gg(2)
-      real(r_p),target :: mbuf(4)
-      real(r_p),pointer:: ggnew(:),ene(:)
-      real(t_p),save:: ggold1,ggold2
-      real(r_p),save:: ggnew1,ggnew2
-      real(t_p),save:: ggdev1,ggdev2
-      real(r_p),save:: gnorm1,gnorm2
-      real(r_p),save:: gg1,gg2
-      real(r_p),save:: ene1,ene2
-      real(t_p),save:: alphacg1,alphacg2
-      real(t_p) reg1,reg2,reg3
-      real(t_p) zero, one
-      real(r_p) zerom, pt5
-      real(r_p) resnrm
-      real(8) time1,time2
-      logical,save :: first_in=.true.
-      parameter (zero=0.0_ti_p,zerom=0, pt5=0.50_re_p, one=1.0_ti_p)
+c
+      integer   i, it, j, k, npoleloc_e
+      real(t_p) zero, one, reg1, reg2
+      real(r_p) zerom, pt5, resnrm
+      parameter(zero=0.0, zerom=0, pt5=0.5, one=1.0)
 c
 c     MPI
 c
@@ -238,8 +234,7 @@ c
       integer status(MPI_STATUS_SIZE)
       integer,dimension(nproc) ::reqrec,reqsend,req2rec,req2send
      &       , reqendrec,reqendsend,req2endrec,req2endsend
-      logical tinker_isnan_m
-      parameter(precnd1=0)
+      logical tinker_isnan_m,skip_chk
 c
  1000 format(' cgiter shortreal converged after ',I3,' iterations.',/,
      $       ' final energy        = ',2D14.7,/,
@@ -257,18 +252,22 @@ c
       if (deb_Path) 
      &   write(*,'(3x,a)') 'inducepcg_shortrealgpu'
 
-      !call Tinker_shellEnv("PRECND",precnd1,0)
-      if (use_pmecore) then
-         commloc = comm_dir
-      else
-         commloc = COMM_TINKER
-      end if
+      ips_call   = ips_call + 1
+      commloc    = merge(comm_dir,COMM_TINKER,use_pmecore)
       npoleloc_e = merge(npolebloc,npoleloc,(skpPcomm))
-      ggnew(1:2) => mbuf(1:2)
-      ene(1:2)   => mbuf(3:4)
+      gbuff1     =  0.0_re_p
+      def_queue  = dir_queue
+
+      if (ips_call.eq.1) then
+!$acc enter data create(ggold1,ggold2,gg1,gg2,ggnew1,ggnew2
+!$acc&                 ,ene1,ene2,gbuff,gbuff1)
+         !call Tinker_shellEnv("PRECND",precnd1,0)
+         ggnew(1:2) => gbuff1(1:2)
+         ene  (1:2) => gbuff1(3:4)
+         gnorm(1:2) => gbuff1(5:6)
+      end if
 
       if (precnd1) call polarEingenVal
-
 c
 c     allocate some memory and setup the preconditioner:
 c
@@ -282,23 +281,16 @@ c
      &     async=.true.)
       call prmem_request(diag,npoleloc_e,async=.true.)
 
-      if (first_in) then
-!$acc enter data create(gg1,gg2)
-         first_in=.false.
-      end if
-
-!$acc data present(res,h,pp,zr,diag,gg1,gg2)
-!$acc&     present(mu,ef,poleglob,polarity,ipole)
-
       if (precnd) then
-!$acc parallel loop async(def_queue)
+!$acc parallel loop async(def_queue) default(present)
          do i = 1, npoleloc_e
             iipole  = poleglob(i)
-            diag(i) = polarity(iipole)
+            reg1    = polarity(iipole)
+            diag(i) = merge(tinypol,reg1,reg1.eq.0.0_ti_p)
          end do
          if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else
-!$acc parallel loop async(dir_queue)
+!$acc parallel loop async(def_queue) default(present)
          do i = 1, npoleloc_e
             diag(i) = one
          end do
@@ -311,10 +303,11 @@ c
 c
 c     now, compute the initial direction
 c
-      ggold  = zero
+!$acc serial async(def_queue) present(ggold1,ggold2)
       ggold1 = zero
       ggold2 = zero
-
+!$acc end serial
+c
       if (precnd1) then
          call projectorOpe(mu,mu,0)
          call invertDefaultQmat(ef,mu,1.0_ti_p)
@@ -328,54 +321,48 @@ c
       !We do exit this sub-routine if (nproc.eq.1)
 c
       call timer_enter ( timer_other )
-      !FIXME This implicit reduction is undetected by PGI-20.4 Compiler
-      !  Why ? ( Probably a Bug ? )
-!$acc parallel loop collapse(3) async(def_queue)
-!$acc&         reduction(+:ggold1,ggold2)
-      do k=1,npoleloc
-         do j=1,nrhs
-            do i=1,3
-               res(i,j,k) = ef(i,j,k) - h(i,j,k)
-               zr(i,j,k)  = res(i,j,k)*diag(k)
-               pp(i,j,k)  = zr(i,j,k)
-               if (btest(j,0)) then
-                  ggold1  = ggold1 + res(i,j,k)*zr(i,j,k)
-               else
-                  ggold2  = ggold2 + res(i,j,k)*zr(i,j,k)
-               end if
-            end do
-         end do
-      end do
-
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+!$acc&         present(ggold1,ggold2) reduction(+:ggold1,ggold2)
+      do k=1,npoleloc; do j=1,nrhs; do i=1,3
+         res(i,j,k) = ef(i,j,k) - h(i,j,k)
+         zr(i,j,k)  = res(i,j,k)*diag(k)
+         pp(i,j,k)  = zr(i,j,k)
+         if (btest(j,0)) then
+            ggold1  = ggold1 + res(i,j,k)*zr(i,j,k)
+         else
+            ggold2  = ggold2 + res(i,j,k)*zr(i,j,k)
+         end if
+      end do; end do; end do
+c
       if (skpPcomm) then
-!$acc parallel loop collapse(3) async(def_queue)
-      do k = npoleloc+1,npolebloc
-         do j = 1,nrhs
-            do i = 1,3
-               reg1  = ef(i,j,k) - h(i,j,k)
-               reg2  = reg1*diag(k)
-               res(i,j,k) = reg1
-                zr(i,j,k) = reg2
-                pp(i,j,k) = reg2
-            end do
-         end do
-      end do
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+      do k = npoleloc+1,npolebloc; do j = 1,nrhs; do i = 1,3
+         reg1  = ef(i,j,k) - h(i,j,k)
+         reg2  = reg1*diag(k)
+         res(i,j,k) = reg1
+          zr(i,j,k) = reg2
+          pp(i,j,k) = reg2
+      end do; end do; end do
       end if
       if (precnd1) call projectorOpe(pp,pp,0)
 
-!$acc wait(def_queue)
-
-      ggold(1) = ggold1
-      ggold(2) = ggold2
-      call timer_exit ( timer_other,quiet_timers )
+      call timer_exit( timer_other,quiet_timers )
 
       if (nproc.ne.1) then
-!$acc wait
-         call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,
-     $        MPI_SUM,commloc,req1,ierr)
-         call MPI_WAIT(req1,status,ierr)
-         ggold1 = ggold(1)
-         ggold2 = ggold(2)
+!$acc serial async present(gbuff,ggold1,ggold2)
+         gbuff(1) = ggold1
+         gbuff(2) = ggold2
+!$acc end serial
+!$acc wait(def_queue)
+!$acc host_data use_device(gbuff)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff,nrhs,MPI_TPREC
+     $                     ,MPI_SUM,commloc,ierr)
+         !call MPI_WAIT(req1,status,ierr)
+!$acc end host_data
+!$acc serial async present(ggold1,ggold2,gbuff)
+         ggold1 = gbuff(1)
+         ggold2 = gbuff(2)
+!$acc end serial
       end if
 c
 c     now, start the main loop:
@@ -395,137 +382,166 @@ c
 
         call commfieldshort(nrhs,h)
 !$acc serial async(def_queue)
-        gg1=zerom; gg2=zerom
+!$acc&       present(gg1,gg2,ggnew1,ggnew2,ene1,ene2)
+        gg1    = zerom; gg2    = zerom;
+        ggnew1 = zerom; ggnew2 = zerom;
+        ene1   = zerom; ene2   = zerom;
 !$acc end serial
 
         call timer_enter( timer_other )
 !$acc parallel loop collapse(3) async(def_queue)
-        do i = 1,npoleloc
-           do j = 1,nrhs
-              do k = 1, 3
-                 if (btest(j,0)) then
-                    gg1 = gg1 + pp(k,j,i)*h(k,j,i)
-                 else
-                    gg2 = gg2 + pp(k,j,i)*h(k,j,i)
-                 end if
-              end do
-           end do
-        end do
-!$acc update host(gg1,gg2) async(def_queue)
-!$acc wait
-        gg(1)=gg1; gg(2)=gg2
+!$acc&         present(gg1,gg2)
+        do i = 1,npoleloc; do j = 1,nrhs; do k = 1, 3
+           if (btest(j,0)) then
+              gg1 = gg1 + pp(k,j,i)*h(k,j,i)
+           else
+              gg2 = gg2 + pp(k,j,i)*h(k,j,i)
+           end if
+        end do; end do; end do
 
         if (nproc.ne.1) then
-           call MPI_IALLREDUCE(MPI_IN_PLACE,gg(1),nrhs,MPI_RPREC,
-     $          MPI_SUM,commloc,req2,ierr)
-           call MPI_WAIT(req2,status,ierr)
-           gg1 = gg(1); gg2 = gg(2)
-!$acc update device(gg1,gg2) async(def_queue)
-        end if
-        do k = 1, nrhs
-          if (gg(k).eq.zero) goto 30
-        end do
-        alphacg  = ggold/gg
-        ggnew  = zerom
-        ene    = zerom
-        ggnew1 = zerom; ggnew2 = zerom;
-        ene1   = zerom; ene2   = zerom;
-        ggdev1 = ggold1/gg1; ggdev2 = ggold2/gg2
-
-!$acc parallel loop collapse(3) async(def_queue)
-         do k=1,npoleloc
-            do j=1,nrhs
-               do i=1,3
-                  if (btest(j,0)) then
-                     mu (i,j,k) = mu (i,j,k) + ggdev1*pp(i,j,k)
-                     res(i,j,k) = res(i,j,k) - ggdev1*h (i,j,k)
-                     zr (i,j,k) = diag(k)* res(i,j,k)
-                     ggnew1     = ggnew1 + res(i,j,k)*zr(i,j,k)
-                     ene1    = ene1 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
-                   else
-                     mu (i,j,k) = mu (i,j,k) + ggdev2*pp(i,j,k)
-                     res(i,j,k) = res(i,j,k) - ggdev2*h (i,j,k)
-                     zr (i,j,k) = diag(k)* res(i,j,k)
-                     ggnew2     = ggnew2 + res(i,j,k)*zr(i,j,k)
-                     ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
-                  end if
-               end do
-            end do
-         end do
-         if (skpPcomm) then
-!$acc parallel loop collapse(3) async(def_queue)
-         do k=npoleloc+1,npoleloc_e
-            do j=1,nrhs
-               do i=1,3
-                  if (btest(j,0)) then
-                     mu (i,j,k) = mu (i,j,k) + ggdev1*pp(i,j,k)
-                     res(i,j,k) = res(i,j,k) - ggdev1*h (i,j,k)
-                     zr (i,j,k) = diag(k)* res(i,j,k)
-                   else
-                     mu (i,j,k) = mu (i,j,k) + ggdev2*pp(i,j,k)
-                     res(i,j,k) = res(i,j,k) - ggdev2*h (i,j,k)
-                     zr (i,j,k) = diag(k)* res(i,j,k)
-                  end if
-               end do
-            end do
-         end do
-         end if
-c Implicit wait seems to be removed with PGI-20
 !$acc wait(def_queue)
-         ene2 = -pt5*ene2; ene1 = -pt5*ene1
-         ggnew(1)=ggnew1; ggnew(2)=ggnew2
-           ene(1)=  ene1;   ene(2)=  ene2
+!$acc host_data use_device(gg1,gg2)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_RPREC,
+     $          MPI_SUM,commloc,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_RPREC,
+     $          MPI_SUM,commloc,ierr)
+!$acc end host_data
+        end if
+
+        if (deb_Path) then
+!$acc wait(def_queue)
+!$acc update host(gg1,gg2)
+          if (gg1.eq.zero) goto 30
+          if (gg2.eq.zero) goto 30
+        end if
+
+!$acc parallel loop collapse(3) async(def_queue)
+!$acc&         default(present) 
+!$acc&         present(gg1,gg2,ggold1,ggold2,ggnew1,ggnew2,ene1,ene2)
+!$acc&         reduction(+:ggnew1,ggnew2,ene1,ene2)
+        do k=1,npoleloc; do j=1,nrhs; do i=1,3
+           if (btest(j,0)) then
+              mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
+              res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
+              zr (i,j,k) = diag(k)* res(i,j,k)
+              ggnew1     = ggnew1 + res(i,j,k)*zr(i,j,k)
+              ene1    = ene1 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
+            else
+              mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
+              res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
+              zr (i,j,k) = diag(k)* res(i,j,k)
+              ggnew2     = ggnew2 + res(i,j,k)*zr(i,j,k)
+              ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
+           end if
+        end do; end do; end do
+        if (skpPcomm) then
+!$acc parallel loop collapse(3) async(def_queue)
+!$acc&         default(present) present(gg1,gg2,ggold1,ggold2)
+        do k=npoleloc+1,npoleloc_e; do j=1,nrhs; do i=1,3
+           if (btest(j,0)) then
+              mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
+              res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
+              zr (i,j,k) = diag(k)* res(i,j,k)
+            else
+              mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
+              res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
+              zr (i,j,k) = diag(k)* res(i,j,k)
+           end if
+        end do; end do; end do
+        end if
 
         if (nproc.ne.1) then
-           call MPI_IALLREDUCE(MPI_IN_PLACE,mbuf(1),2*nrhs,MPI_RPREC,
-     $          MPI_SUM,commloc,req3,ierr)
-           call MPI_WAIT(req3,status,ierr)
-           ggnew1 = ggnew(1); ggnew2=ggnew(2)
+!$acc serial async(def_queue) present(ene1,ene2,ggnew1,ggnew2,gbuff1)
+           gbuff1(1)=ggnew1; gbuff1(2)=ggnew2
+           gbuff1(3)=  ene1; gbuff1(4)=  ene2
+!$acc end serial
+!$acc wait(def_queue)
+!$acc host_data use_device(gbuff1)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff1(1),2*nrhs,MPI_RPREC
+     $                       ,MPI_SUM,commloc,ierr)
+           !call MPI_WAIT(req3,status,ierr)
+!$acc end host_data
+!$acc serial async(def_queue) present(ggnew1,ggnew2,ene1,ene2,gbuff1)
+           ggnew1 = gbuff1(1); ggnew2= gbuff1(2)
+           ene1   = gbuff1(3); ene2  = gbuff1(4)
+!$acc end serial
         end if
-        resnrm = zero
-        do k = 1, nrhs
-          gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
-          resnrm   = max(resnrm,gnorm(k))
-        end do
+
+        !ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
+        ! Compute Next direction
+!$acc host_data use_device(pp,zr)
+!$acc parallel loop collapse(3) async(def_queue)
+!$acc&         present(ggold1,ggold2,ggnew1,ggnew2) deviceptr(pp,zr)
+        do k = 1,npoleloc_e; do j = 1,nrhs; do i = 1, 3
+           if (btest(j,0)) then
+             pp(i,j,k) = zr(i,j,k) + (ggnew1/ggold1)*pp(i,j,k)
+           else
+             pp(i,j,k) = zr(i,j,k) + (ggnew2/ggold2)*pp(i,j,k)
+           end if
+        end do; end do; end do
+!$acc end host_data
+        if (precnd1) call projectorOpe(pp,pp,0)
+
+!$acc serial async(def_queue)
+!$acc&       present(ggold1,ggold2,ggnew1,ggnew2,ene1,ene2,gbuff1)
+        ggold1 = ggnew1
+        ggold2 = ggnew2
+        if (nproc.eq.1) then
+           gbuff1(1)= ggnew1; gbuff1(2)= ggnew2
+           gbuff1(3)= ene1  ; gbuff1(4)= ene2  
+        end if
+!$acc end serial
+        call timer_exit( timer_other,quiet_timers )
+
+         ! Skip Iteration check
+         skip_chk = it.lt.2.or.(exitlast.and.(it.lt.lastIter))
+         ! Skip last Iteration check
+         if (exitlast.and.it.eq.lastIter.and.mod(sameIter,3).ne.0)
+     &      goto 10
+
+        if (skip_chk) then
+           resnrm = 2*poleps
+        else
+!$acc update host(gbuff1) async(def_queue)
+!$acc wait(def_queue)
+           do k = 1, nrhs
+             gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
+           end do
+           resnrm = max(gnorm(1),gnorm(2))
+        end if
+
+        ene = -pt5*ene
         if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
      $    it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
 c
-        ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
-        ggold(1:2) = ggnew(1:2)
-        ggold1 = ggold(1); ggold2 = ggold(2)
-
         if ((it.eq.politer.and.resnrm.gt.poleps)
      &     .or.tinker_isnan_m(gnorm(1))) then
+!$acc update host(gbuff)
            ! Not converged Abort
            write(0,1050) it,max(gnorm(1),gnorm(2))
+           write(0,'(6f12.7)') gbuff1(1:4),gbuff(1:2)
+           call minmaxone(ef,size(ef),'ef')
+           call minmaxone(mu,size(mu),'mu')
            abort = .true.
+           goto 10  !Exit Loop
         end if
         if (resnrm.lt.poleps) then
           if (polprt.ge.1.and.rank.eq.0) write(iout,1000) it,
      $      (ene(k)*coulomb, k = 1, nrhs), (gnorm(k), k = 1, nrhs)
-          call timer_exit( timer_other,quiet_timers )
-          !Exit Loop
-          goto 10
+          goto 10   !Exit Loop
         end if
-c
-        ! Compute Next direction
-!$acc parallel loop collapse(3) async(def_queue)
-        do k = 1,npoleloc_e
-           do j = 1,nrhs
-              do i = 1, 3
-               if (btest(j,0)) then
-                 pp(i,j,k) = zr(i,j,k) + ggdev1*pp(i,j,k)
-               else
-                 pp(i,j,k) = zr(i,j,k) + ggdev2*pp(i,j,k)
-               end if
-              end do
-           end do
-        end do
-        call timer_exit( timer_other,quiet_timers )
-        if (precnd1) call projectorOpe(pp,pp,0)
-c
       end do
  10   continue
+
+      ! Save and Check Convergence Iteration Index
+      if (app_id.eq.dynamic_a) then
+      sameIter = merge(0,sameIter+1,lastIter.ne.it)
+      lastIter = it
+      exitlast = polprt.eq.0.and.sameIter.gt.25
+     &           .and.mod(ips_call,100).ne.0
+      if (deb_Path) print*, 'pcg_conv iter',lastIter,sameIter,exitlast
+      end if
 
       ! Solution field comm to direct neighbors
       call commdirdirshort(nrhs,0,mu,reqendrec,reqendsend) ! Reception chanels
@@ -556,7 +572,6 @@ c
       end if
 
   30  continue
-!$acc end data
       end
 c
       subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)

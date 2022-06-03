@@ -16,11 +16,14 @@ c
 c
 #include "tinker_precision.h"
       module elj3gpu_inl
+        integer(1) one1,two1
+        parameter( one1=1, two1=2 )
         contains
 #include "convert.f.inc"
 #include "image.f.inc"
 #include "switch_respa.f.inc"
-#include "pair_elj.f.inc"
+#include "groups.inc.f"
+#include "pair_lj.inc.f"
       end module
 
       subroutine elj3gpu
@@ -63,400 +66,114 @@ c
 c
 c     #############################################################
 c     ##                                                         ##
-c     ## subroutine elj3cgpu -- Lennard-Jones analysis via list  ##
+c     ## subroutine elj3c_ac -- Lennard-Jones analysis via list  ##
 c     ##                                                         ##
 c     #############################################################
 c
 c
-c     "elj3cgpu" calculates the Lennard-Jones van der Waals energy
+c     "elj3c_ac" calculates the Lennard-Jones van der Waals energy
 c     and also partitions the energy among the atoms using a
 c     pairwise neighbor list
 c
 c
-      subroutine elj3cgpu
+      subroutine elj3c_ac
       use action
-      use analyz
       use atmlst
-      use atmtyp
       use atoms
       use bound
       use couple
+      use cutoff    ,only: vdwshortcut,shortheal
+      use deriv     ,only: dev,delambdav
       use domdec
-      use energi     ,only: ev=>ev_r
       use elj3gpu_inl
+      use energi    ,only: ev=>ev_r
       use group
-      use inter
       use inform
+      use inter
       use iounit
-      use interfaces ,only: elj3_scaling
       use molcul
+      use mutant
       use neigh
+      use potent    ,only: use_vdwshort,use_vdwlong,use_lambdadyn
       use shunt
+      use tinMemory
+      use tinTypes
       use usage
       use utilgpu
       use vdw
+      use vdw_locArray
       use vdwpot
-      use vdw_locArray
-
-      implicit none
-      integer i,j,k,iglob,kbis,iivdw,kk,kv,kvloc
-      integer ii,iv,it,ivloc,kglob
-      integer nn12,nn13,nn14,ntot
-      integer nevt
-      integer nnvlst,nnvlst1,nvloop8,nvloop16
-      integer kt,countsel
-      integer in12,ai12(maxvalue)
-
-      real(t_p) e,etemp,p6
-      real(t_p) xr,yr,zr,xi,yi,zi
-      real(t_p) half,three
-      real(t_p) time0,time1
-      real(t_p) taper
-      real(t_p) rik,rik2_1,rik3,rik4,rik5,rik2
-      real(t_p) rdn,rdn1,redk,redi,rv,eps
-      logical   usei,ik12
-      parameter( half=0.5_ti_p,three=3.0_ti_p )
-
-      character*10 mode
-c
-c     zero out the van der Waals energy and partitioning terms
-c
-      if(deb_Path) print*, 'elj3cgpu'
-
-      call prmem_request(xred,nbloc,queue=dir_queue)
-      call prmem_request(yred,nbloc,queue=dir_queue)
-      call prmem_request(zred,nbloc,queue=dir_queue)
-c
-c     set the coefficients for the switching function
-c     update the number of gangs required for gpu
-c
-      mode   = 'VDW'
-      call switch (mode)
-      call update_gang(nvdwbloc)
-c     nev_   = 0
-c     ev     = 0
-
-!$acc data present(vdwglob,vdwlocnl,vdwglobnl,ired,kred,loc,
-!$acc&   ivdw,jvdw,vlst,nvlst,epsilon,epsilon4,radmin,radmin4)
-!$acc&     present(xred,yred,zred)
-!$acc&     present(ev,nev_)
-
-c
-c     apply any reduction factor to the atomic coordinates
-c
-!$acc parallel loop async(dir_queue)
-      do k = 1 , nvdwbloc
-         iglob   = ivdw (vdwglob (k))
-         i       = loc  (iglob)
-         iv      = ired (iglob)
-         rdn     = kred (iglob)
-         xred(i) =  rdn * x(iglob)  + (1.0_ti_p-rdn) * x(iv)
-         yred(i) =  rdn * y(iglob)  + (1.0_ti_p-rdn) * y(iv)
-         zred(i) =  rdn * z(iglob)  + (1.0_ti_p-rdn) * z(iv)
-      enddo
-c
-c     find the van der Waals energy via neighbor list search
-c
-!$acc parallel loop gang vector_length(32) async(dir_queue)
-!$acc&         private(ai12)
-      do ii = 1, nvdwlocnl
-         iivdw = vdwglobnl(ii)
-         iglob = ivdw(iivdw)
-         i     = loc(iglob)
-         iv    = ired(iglob)
-         ivloc = loc(iv)
-         redi  = merge (kred(iglob),1.0_ti_p,(i.ne.ivloc))
-         it    = jvdw(iglob)
-         xi    = xred(i)
-         yi    = yred(i)
-         zi    = zred(i)
-         if (skipvdw12) then
-            in12 = n12(iglob)
-!$acc loop vector
-            do j = 1,in12
-               ai12(j) = i12(j,iglob)
-            end do
-         end if
-c        usei  = (use(iglob) .or. use(iv))
-c
-c     decide whether to compute the current interaction
-c
-!$acc loop vector
-         do kk = 1, nvlst(ii)
-            kglob = vlst(kk,ii)
-            kbis  = loc(kglob)
-            kv    = ired(kglob)
-            kvloc = loc(kv)
-            kt    = jvdw(kglob)
-            if (skipvdw12) then
-               ik12 = .false.
-!$acc loop seq
-               do j = 1, in12
-                  if (ai12(j).eq.kglob) ik12=.true.
-               end do
-               if (ik12) cycle
-            end if
-            xr    = xi - xred(kbis)
-            yr    = yi - yred(kbis)
-            zr    = zi - zred(kbis)
-            if (use_bounds) call image_inl (xr,yr,zr)
-            rik2  = xr*xr + yr*yr + zr*zr
-c
-c     check for an interaction distance less than the cutoff
-c
-            if (rik2.le.off2) then
-               redk = merge (kred(kglob),1.0_ti_p,(kbis.ne.kvloc))
-               rv   = radmin (kt,it)
-               eps  = epsilon(kt,it)
-
-               !compute the energy contribution for this interaction
-               call elj3_couple(rik2,xr,yr,zr,rv,eps,cut2
-     &                         ,cut,off,e)
-c
-c     increment the total van der Waals energy and derivatives
-c
-               ev   = ev   + tp2enr(e)
-               nev_ = nev_ + 1.0_ti_p
-c!$acc atomic update
-c               aev(i) = aev(i) + 0.5_ti_p * e
-
-            end if
-         end do
-      end do
-
-      call elj3_scaling(xred,yred,zred)
-
-!$acc serial async present(nev,nev_)
-      nev = int(nev_)
-!$acc end serial
-
-!$acc end data
-
-      end
-
-#ifdef _CUDA
-      subroutine elj3c_cu
-      use action    ,only: nev,nev_
-      use atmlst    ,only: vdwglobnl,vdwglob
-      use atoms     ,only: x,y,z,n
-      use couple    ,only: i12
-      use domdec    ,only: loc,rank,nbloc,nproc
-     &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
-     &              ,zendproc,glob
-      use eljcu
-      use energi    ,only: ev=>ev_r
-      use inform    ,only: deb_Path
-      use interfaces,only: elj3_scaling
-      use neigh     ,only: cellv_glob,cellv_loc,cellv_jvdw
-     &              ,vblst,ivblst
-      use tinheader ,only: ti_p
-      use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
-      use utilcu    ,only: check_launch_kernel
-     &              ,BLOCK_DIM
-      use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream
-     &              ,rec_stream,rec_event,stream_wait_async
-     &              ,warp_size,def_stream,inf
-     &              ,ered_buff=>ered_buf1,nred_buff,reduce_energy_action
-     &              ,zero_en_red_buffer,prmem_request
-      use vdw       ,only: ired,kred,jvdw,ivdw,radmin_c
-     &              ,epsilon_c,nvdwbloc,nvdwlocnl
-     &              ,nvdwlocnlb,nvdwclass
-     &              ,nvdwlocnlb_pair,nvdwlocnlb2_pair
-      use vdwpot    ,only: dhal,ghal
-      use vdw_locArray
-      implicit none
-      integer i,k
-      integer iglob,iivdw,iv,grid
-      integer ierrSync,lst_start
-#ifdef TINKER_DEBUG
-#endif
-      real(t_p)  xbeg,xend,ybeg,yend,zbeg,zend
-      real(t_p)  rdn,rdn1
-
-      logical,save:: first_in=.true.
-      logical,parameter:: dyn_gS=.true.
-      integer,save:: gS
-      character*10 mode
-
-      call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
-      call prmem_request(yred    ,nvdwlocnlb,queue=def_queue)
-      call prmem_request(zred    ,nvdwlocnlb,queue=def_queue)
-      call prmem_request(xredc   ,nbloc     ,queue=def_queue)
-      call prmem_request(yredc   ,nbloc     ,queue=def_queue)
-      call prmem_request(zredc   ,nbloc     ,queue=def_queue)
-      call prmem_request(loc_ired,nvdwlocnlb,queue=def_queue)
-      call prmem_request(loc_kred,nvdwlocnlb,queue=def_queue)
-
-c
-      if(deb_Path) write (*,*) 'elj3c_cu'
-      def_queue = dir_queue
-      def_stream = dir_stream
-      xbeg = xbegproc(rank+1)
-      xend = xendproc(rank+1)
-      ybeg = ybegproc(rank+1)
-      yend = yendproc(rank+1)
-      zbeg = zbegproc(rank+1)
-      zend = zendproc(rank+1)
-      lst_start = 2*nvdwlocnlb_pair+1
-
-      if (first_in) then
-         first_in = .false.
-      end if
-
-      if(dyn_gS) gS = nvdwlocnlb2_pair/8
-
-#ifdef _OPENACC
-      if (dir_queue.ne.rec_queue)
-     &   call stream_wait_async(rec_stream,dir_stream,rec_event)
-#endif
-
-#ifdef TINKER_DEBUG
-#endif
-
-c
-c     apply any reduction factor to the atomic coordinates
-c
-!$acc parallel loop default(present) async(def_queue)
-      do k = 1,nvdwlocnlb
-         if (k.le.nvdwlocnl) then
-            iglob    = cellv_glob(k)
-            iv       = ired (iglob)
-            rdn      = kred (iglob)
-            rdn1     = 1.0_ti_p - rdn
-            cellv_loc(k) = loc(iglob)
-            loc_ired(k)  = loc(iv)
-            if (iglob.eq.iv) then
-               loc_kred(k) = rdn
-            else
-               loc_kred(k) = 1.0_ti_p
-            end if
-            xred(k)  = rdn * x(iglob) + rdn1 * x(iv)
-            yred(k)  = rdn * y(iglob) + rdn1 * y(iv)
-            zred(k)  = rdn * z(iglob) + rdn1 * z(iv)
-         else
-            ! Exclusion buffer to prevent interaction compute
-            cellv_loc(k) = nbloc
-            loc_ired(k)  = nbloc
-            xred(k) = inf
-            yred(k) = inf
-            zred(k) = inf
-         end if
-      end do
-
-!$acc parallel loop default(present) async(def_queue)
-      do k = 1,nvdwbloc
-         iglob    = ivdw(vdwglob(k))
-         i        = loc  (iglob)
-         iv       = ired (iglob)
-         rdn      = kred (iglob)
-         rdn1     = 1.0_ti_p - rdn
-         xredc(i)  = rdn * x(iglob) + rdn1 * x(iv)
-         yredc(i)  = rdn * y(iglob) + rdn1 * y(iv)
-         zredc(i)  = rdn * z(iglob) + rdn1 * z(iv)
-      end do
-
-      call zero_en_red_buffer(def_queue)
-c
-c     set the coefficients for the switching function
-c
-      !print*, nvdwlocnlb_pair
-      mode = 'VDW'
-      call switch (mode)
-
-c
-c     Call Vdw kernel in CUDA using C2 nblist
-c
-!$acc host_data use_device(xred,yred,zred,cellv_glob,cellv_loc
-!$acc&    ,loc_ired,ivblst,vblst,cellv_jvdw,epsilon_c,i12
-!$acc&    ,radmin_c,ired,kred,ered_buff,nred_buff
-#ifdef TINKER_DEBUG
-#endif
-!$acc&    )
-
-      call elj3_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &             (xred,yred,zred,cellv_glob,cellv_loc,loc_ired
-     &             ,ivblst,vblst(lst_start),cellv_jvdw,i12
-     &             ,epsilon_c,radmin_c,ired,kred
-     &             ,ered_buff,nred_buff
-     &             ,nvdwlocnlb2_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
-     &             ,nvdwclass
-     &             ,c0,c1,c2,c3,c4,c5,cut2,cut,off2,off,ghal,dhal
-     &             ,xbeg,xend,ybeg,yend,zbeg,zend
-#ifdef TINKER_DEBUG
-#endif
-     &             )
-      call check_launch_kernel(" elj3_cu ")
-
-!$acc end host_data
-
-      call reduce_energy_action(ev,nev,ered_buff,def_queue)
-
-#ifdef TINKER_DEBUG
-#endif
-
-      call elj3_scaling(xredc,yredc,zredc)
-
-!$acc serial async present(nev,nev_)
-      nev = int(nev_) + nev
-!$acc end serial
-
-      end subroutine
-#endif
-c
-c     Scaling interaction correction subroutines for Lennard-Jones
-c
-      subroutine elj3_scaling(xred,yred,zred)
-
-      use action    ,only: nev_
-      use atmlst    ,only: vdwglobnl
-      use domdec    ,only: loc,rank
-      use elj3gpu_inl
-      use energi    ,only: ev=>ev_r
-      use inform    ,only: deb_Path
-      use tinheader ,only: ti_p
-      use tintypes  ,only: real3
-      use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
-      use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin4,
-     &                     epsilon,epsilon4
-      use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
-      use utilgpu   ,only: dir_queue
       use virial
       implicit none
-      integer i,j,k,kk,ksave
-      integer kt,kglob,kbis,kvloc,kv,ki
-      integer iglob,iivdw
-      integer ii,iv,it,ivloc
-      integer nnvlst,nnvlst2
-      integer nn12,nn13,nn14,ntot
-      integer interac
-      real(t_p)  xi,yi,zi,redi,e,de
-      real(t_p)  half,one
-      real(t_p)  rdn,rdn1,redk
-      real(t_p)  rik2
+      logical     usei,ik12,do_scale4
+      integer(1)  muti,mutk,mutik
+      integer     i,j,iglob,kglob,kbis,iivdw
+     &           ,ii,iv,it,ivloc,kvloc,kk,kv,kt
+     &           ,in12,ai12(maxvalue),ver,ver1,fea
+      real(t_p)   e,de,p6,p12,eps
+     &           ,rinv,rv,rdn,fgrp,loff2
+     &           ,xi,yi,zi,xr,yr,zr
+     &           ,rik,rik2,rik3,rik4,rik5
+     &           ,taper,dtaper
+     &           ,galpha,glamb,lambdavt,lambdavt1
+     &           ,delambdav_
+     &           ,rv2,eps2,vscale,vscale4
       type(real3) ded
-      real(r_p)  devx,devy,devz
-      real(t_p)  invrho,rv7orho
-      real(t_p)  dtau,gtau,tau,tau7,rv7
-      real(t_p)  rv2,eps2
-      real(t_p)  xpos,ypos,zpos
-      real(t_p)  vscale,vscale4
-      logical    do_scale4
-      character*10 mode
+      character*11 mode
+      integer    ,pointer:: lst(:,:),nlst(:)
 
-      real(t_p),intent(in):: xred(:)
-      real(t_p),intent(in):: yred(:)
-      real(t_p),intent(in):: zred(:)
-      parameter(half=0.5_ti_p,
-     &           one=1.0_ti_p)
+      parameter( ver=__use_ene__+__use_act__
+     &         ,ver1=        ver+__use_sca__)
+c
+ 1000 format(' Warning, system moved too much since last neighbor list'
+     $   ' update, try lowering nlupdate VDW')
+      if (deb_Path) write(*,*) 'elj3c_ac'
 
-      if (deb_Path) write(*,'(2x,a)') "elj3_scaling"
-
-      ! Scaling factor correction loop
+      ! set elj3c_ac Configuration
+      fea = __use_mpi__
+      if (nmut.ne.0)     fea = fea + __use_softcore__
+      if (use_group)     fea = fea + __use_groups__
+ 
+      if      (use_vdwshort) then
+         fea   = fea + __use_shortRange__
+         lst   => shortvlst
+         nlst  => nshortvlst
+         loff2 = 0.0
+         !set the coefficients for the switching function
+         mode  = 'SHORTVDW'
+         call  switch (mode)
+      else if (use_vdwlong ) then
+         fea   = fea + __use_longRange__
+         lst   => vlst
+         nlst  => nvlst
+         !set the coefficients for the switching function
+         mode  = 'VDW'
+         call  switch (mode)
+         loff2 = (vdwshortcut-shortheal)**2
+      else
+         lst   => vlst
+         nlst  => nvlst
+         loff2 = 0.0
+         !set the coefficients for the switching function
+         mode  = 'VDW'
+         call  switch (mode)
+      end if
+      rinv   = 1.0/(cut-off)
+      if (nmut.ne.0) then
+         galpha    = scalpha/(2d0**(sck/6d0))
+         glamb     = 1.0-vlambda
+         lambdavt  = vlambda ** sct
+         lambdavt1 = sct*(vlambda**(sct-1.0))
+      end if
+c
+c     Scaling interaction correction for Lennard-Jones
+c
 !$acc parallel loop async(dir_queue) gang vector
-!$acc&         present(xred,yred,zred)
-!$acc&         present(loc,ired,kred,ivdw,loc,jvdw,vir,radmin,
-!$acc&  radmin4,epsilon,epsilon4,vcorrect_ik,vcorrect_scale)
-!$acc&         present(ev,nev_)
+!$acc&         present(loc,ired,x,y,z,loc,jvdw,vir,radmin,mutInt,grplist
+!$acc&     ,wgrp,radmin4,epsilon,epsilon4,vcorrect_ik,vcorrect_scale
+!$acc&     ,nev_,ev)
+!$acc&         private(ded,e)
+!$acc&         reduction(+:nev_,ev)
       do ii = 1,n_vscale
          iglob  = vcorrect_ik(ii,1)
          kglob  = vcorrect_ik(ii,2)
@@ -464,13 +181,8 @@ c
          i      = loc(iglob)
          kbis   = loc(kglob)
 
-         ivloc  = loc (ired(iglob))
-         kvloc  = loc (ired(kglob))
          it     = jvdw(iglob)
          kt     = jvdw(kglob)
-
-         redi   = merge (kred(iglob),1.0_ti_p,(i.ne.ivloc))
-         redk   = merge (kred(kglob),1.0_ti_p,(kbis.ne.kvloc))
 
          do_scale4 = .false.
          vscale4   = 0
@@ -482,16 +194,21 @@ c
 c
 c     compute the energy contribution for this interaction
 c
-         xpos   = xred(i) - xred(kbis)
-         ypos   = yred(i) - yred(kbis)
-         zpos   = zred(i) - zred(kbis)
-         call image_inl(xpos,ypos,zpos)
+         xr   = x(iglob) - x(kglob)
+         yr   = y(iglob) - y(kglob)
+         zr   = z(iglob) - z(kglob)
+         call image_inl(xr,yr,zr)
 c
 c     decide whether to compute the current interaction
 c     and check for an interaction distance less than the cutoff
 c
-         rik2   = xpos**2 + ypos**2 + zpos**2
-         if (rik2>off2) cycle
+         rik2   = xr**2 + yr**2 + zr**2
+         if (rik2.lt.loff2.or.rik2.gt.off2) cycle
+
+         mutik  = mutInt(iglob) + mutInt(kglob)
+         if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
+
+         if (use_group) call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
 c
 c     replace 1-4 interactions
 c
@@ -504,17 +221,19 @@ c
             eps2 = epsilon (kt,it)
          end if
 
-         call elj3_couple(rik2,xpos,ypos,zpos,rv2,eps2*vscale
-     &                    ,cut2,cut,off,e)
+         call duo_lj(rik2,xr,yr,zr,rv2,eps2*vscale,cut2
+     &              ,rinv,off,shortheal,use_group,fgrp,mutik
+     &              ,sck,sct,scs,scalpha,galpha,use_lambdadyn
+     &              ,lambda,vlambda,glamb,lambdavt,lambdavt1
+     &              ,delambdav_,e,ded,ver1,fea)
 
          if (.not.do_scale4) then
-         e    = -e
+         e     = -e
          end if
 
-         ev   =   ev + tp2enr(e)
-         !if(rank.eq.0.and.mod(ii,1).eq.0) print*,iglob,kglob,vscale,e
-         if (vscale.eq.1.0_ti_p) nev_=nev_-1
-         if (vscale4.lt.0)       nev_=nev_+1
+         ev = ev + tp2enr(e)
+
+         if (vscale.eq.1.0) nev_ = nev_ - 1
 
          ! deal with 1-4 Interactions
          if (vscale4.gt.0) then
@@ -524,5 +243,204 @@ c
             goto 20
          end if
       end do
+c
+c     find van der Waals energy and derivatives via neighbor list
+c
+!$acc parallel loop gang vector_length(32) async(dir_queue)
+!$acc&         present(vdwglobnl,ivdw,grplist,wgrp
+!$acc&   ,loc,ired,kred,x,y,z,jvdw,lst,nlst,mutInt,radmin,epsilon
+!$acc&   ,ev,nev_)
+!$acc&         private(ai12) reduction(+:nev_,ev)
+      do ii = 1, nvdwlocnl
+         iivdw = vdwglobnl(ii)
+         iglob = ivdw(iivdw)
+         i     = loc(iglob)
+         !iv    = ired(iglob)
+         it    = jvdw(iglob)
+         xi    = x(i)
+         yi    = y(i)
+         zi    = z(i)
+         muti  = mutInt(iglob)
+c        usei  = (use(iglob) .or. use(iv))
+         if (skipvdw12) then
+            in12 = n12(iglob)
+!$acc loop vector
+            do j = 1,in12
+               ai12(j) = i12(j,iglob)
+            end do
+         end if
+c
+c     decide whether to compute the current interaction
+c
+!$acc loop vector private(ded) reduction(+:nev_,ev)
+         do kk = 1, nlst(ii)
+            kglob = lst(kk,ii)
+            kbis  = loc(kglob)
+            !kv    = ired(kglob)
+            kt    = jvdw(kglob)
+
+            if (skipvdw12) then
+               ik12 = .false.
+!$acc loop seq
+               do j = 1, in12
+                  if (ai12(j).eq.kglob) ik12=.true.
+               end do
+               if (ik12) cycle
+            end if
+            xr    = xi - x(kbis)
+            yr    = yi - y(kbis)
+            zr    = zi - z(kbis)
+            if (use_bounds) call image_inl (xr,yr,zr)
+            rik2  = xr*xr + yr*yr + zr*zr
+c
+c     check for an interaction distance less than the cutoff
+c
+            if (loff2.le.rik2.and.rik2.le.off2) then
+               rv   = radmin (kt,it)
+               eps  = epsilon(kt,it)
+               mutik= muti + mutInt( kglob )
+               if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
+
+               if (use_group)
+     &            call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+
+               !compute the energy contribution for this interaction
+               call duo_lj(rik2,xr,yr,zr,rv,eps,cut2
+     &                    ,rinv,off,shortheal,use_group,fgrp,mutik
+     &                    ,sck,sct,scs,scalpha,galpha,use_lambdadyn
+     &                    ,lambda,vlambda,glamb,lambdavt,lambdavt1
+     &                    ,delambdav_,e,ded,ver,fea)
+c
+c     increment the total van der Waals energy and derivatives
+c
+               ev  = ev  + tp2enr(e)
+               nev_= nev_ + 1.0
+            end if
+         end do
+      end do
+!$acc serial async present(nev,nev_)
+      nev = int(nev_)
+!$acc end serial
+      end
+
+#ifdef _CUDA
+      subroutine elj3c_cu
+      use action    ,only: nev,nev_
+      use atmlst    ,only: vdwglobnl,vdwglob
+      use atoms     ,only: x,y,z,n
+      use couple    ,only: i12
+      use cudafor   ,only: dim3
+      use cutoff    ,only: shortheal,vdwshortcut
+      use deriv     ,only: dev,devx,de_ws2,d_x,d_y,d_z,dr_stride
+      use domdec    ,only: loc,rank,nbloc,nproc
+     &              ,xbegproc,xendproc,ybegproc,yendproc,zbegproc
+     &              ,zendproc,glob
+      use eljcu     ,only: lj3_kcu
+#ifdef USE_DETERMINISTIC_REDUCTION
+      use elj1gpu_inl,only: enr2en,mdr2md
+#endif
+      use energi    ,only: ev=>ev_r,calc_e
+      use group     ,only: use_group,grplist,wgrp
+      use inform    ,only: deb_Path,minmaxone
+      use kvdws     ,only: radv,epsv
+      use kvdwpr    ,only: vdwpr_l
+      use mutant    ,only: mutInt,lambda,vlambda,bvlambda
+     &              ,scexp,scalpha,sck,sct,scs,nmut
+      use neigh
+      use potent    ,only: use_lambdadyn,use_vdwshort,use_vdwlong
+      use tinheader ,only: ti_p
+      use tinMemory ,only: prmem_request
+      use timestat  ,only: timer_enter,timer_exit,timer_elj3
+      use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
+      use utilcu    ,only: check_launch_kernel,VDW_BLOCK_DIM
+     &              ,TRP_BLOCK_DIM,transpose_z3fl
+      use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream
+     &              ,rec_stream,def_stream,WARP_SIZE,RED_BUFF_SIZE,inf
+     &              ,ered_buff=>ered_buf1,vred_buff,nred_buff,lam_buff
+     &              ,reduce_buffer,reduce_energy_action
+      use vdw       ,only: ired,kred,jvdw,ivdw,radmin_c
+     &              ,epsilon_c,radmin,radmin4,epsilon,epsilon4
+     &              ,nvdwbloc,nvdwlocnl
+     &              ,nvdwlocnlb,nvdwclass
+     &              ,nvdwlocnlb_pair,nvdwlocnlb2_pair
+      use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
+     &              ,radrule_i,epsrule_i
+      use vdw_locArray
+      use virial    ,only: vir,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &              ,use_virial
+      implicit none
+      integer i,k,sz1
+      integer iglob,iivdw,iv,it,hal_Gs
+      real(t_p)  galpha,glamb,lambdavt,lambdavt1
+      real(t_p)  xbeg,xend,ybeg,yend,zbeg,zend
+      real(t_p)  rinv,loff2
+      character*11 mode
+c
+      if(deb_Path) write (*,*) 'elj3c_cu'
+
+      call load_nbl2mod(vdw_nbl)
+
+      call spatialOrder_pos
+
+      xbeg = xbegproc(rank+1)
+      xend = xendproc(rank+1)
+      ybeg = ybegproc(rank+1)
+      yend = yendproc(rank+1)
+      zbeg = zbegproc(rank+1)
+      zend = zendproc(rank+1)
+
+      def_queue  = dir_queue
+      def_stream = dir_stream
+
+      !set the coefficients for the switching function
+      mode   = 'VDW'
+      hal_Gs = min(max((nb2p+nbap)/16,1),2**14)
+      sz1    = size(vcorrect_ik,1)
+      call   switch (mode)
+      rinv   = 1.0/(cut-off)
+      loff2  = merge((vdwshortcut-shortheal)**2,0.0_ti_p,use_vdwlong)
+
+      if (nmut.ne.0) then
+         galpha    = scalpha/(2d0**(sck/6d0))
+         glamb     = 1.0-vlambda
+         lambdavt  = vlambda ** sct
+         lambdavt1 = sct*(vlambda**(sct-1.0))
+      end if
+c
+c     Call Lennard-Jones kernel in CUDA using C2 nblist
+c
+!$acc host_data use_device(so_x,so_y,so_z,sgl_id,slc_id
+!$acc&    ,i12,mutInt,b2pl,bapl,abpl,cellv_jvdw,epsilon_c
+!$acc&    ,radmin_c,radv,epsv,grplist,wgrp
+!$acc&    ,d_x,d_y,d_z,ered_buff,vred_buff,nred_buff,lam_buff
+!$acc&    ,x,y,z,vcorrect_ik,vcorrect_scale,loc,jvdw
+!$acc&    ,radmin,epsilon,radmin4,epsilon4,dev
+!$acc&    )
+
+      call lj3_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
+     &            (so_x,so_y,so_z,sgl_id,slc_id
+     &            ,b2pl,bapl,abpl,cellv_jvdw,i12,mutInt
+     &            ,epsilon_c,radmin_c,radv,epsv
+     &            ,d_x,d_y,d_z,ered_buff,vred_buff,nred_buff
+     &            ,nb2p,nbap,n,nbloc,nvdwlocnl,nab,nvdwclass
+     &            ,radrule_i,epsrule_i
+     &            ,cut2,cut,off2,off,loff2,shortheal,rinv
+     &            ,use_group,grplist,wgrp
+     &            ! lambdaDyn
+     &            ,sck,sct,scs,scalpha,galpha,use_lambdadyn,lambda
+     &            ,vlambda,glamb,lambdavt,lambdavt1,lam_buff
+     &            ! Scaling factor
+     &            ,x,y,z,vcorrect_ik,vcorrect_scale,sz1,n_vscale
+     &            ,loc,jvdw
+     &            ,radmin,epsilon,radmin4,epsilon4,dev
+     &            ! Box data
+     &            ,xbeg,xend,ybeg,yend,zbeg,zend
+     &            )
+      call check_launch_kernel(" lj3_kcu ")
+
+!$acc end host_data
+
+      call reduce_energy_action(ev,nev,ered_buff,def_queue)
 
       end subroutine
+#endif

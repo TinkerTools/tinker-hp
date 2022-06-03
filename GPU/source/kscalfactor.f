@@ -63,7 +63,7 @@ c     vecl       length of each gang
       use mpole  ,only: npolelocnl,npolebloc
       use polgrp
       use polpot ,only: n_uscale,n_dpscale,n_dpuscale
-      use potent ,only: use_polar
+      use potent ,only: use_polar,fuse_chglj
       use tinMemory
       use utilcomm,only: no_commdir
       use vdwpot ,only: n_vscale
@@ -119,6 +119,10 @@ c     vecl       length of each gang
 
       allocate (pair_factorn(max_factorn,nlocnl))
       allocate (scal_factorn(max_factorn,nlocnl))
+      if (fuse_chglj) then
+         allocate(scal_factorp(max_factorn,nlocnl))
+!$acc enter data create(scal_factorp) async
+      end if
       allocate (   n_factorn(nlocnl))
       allocate (scan_factorn(nlocnl))
 
@@ -399,8 +403,12 @@ c!$acc loop seq
 !$acc&     async
 
 !$acc serial async
-      n_vscale  = 0
-      vscalevec = (/0.0_ti_p,v2scale,v3scale,v4scale,v5scale/)
+      n_vscale     = 0
+      vscalevec(1) = 0.0_ti_p
+      vscalevec(2) = v2scale
+      vscalevec(3) = v3scale
+      vscalevec(4) = v4scale
+      vscalevec(5) = v5scale
 !$acc end serial
 
 !$acc parallel loop async
@@ -537,6 +545,7 @@ c
       use inform ,only: deb_Path,tindPath
       use mpi
       use kscalfactor_inl
+      use potent ,only: use_charge
       use tinheader
       use tinMemory ,only: prmem_request
       use vdw       ,only: nvdwlocnl,ivdw,skipvdw12
@@ -557,7 +566,8 @@ c
       real(t_p) vscalevec(5),vscale
 
       if (deb_Path)
-     &   write(*,'(2x,a)') 'vdw_scalingnl'
+     &   write(*,'(2x,a,4F5.2)') 'vdw_scalingnl'
+     &                    ,v2scale,v3scale,v4scale,v5scale
 
 !$acc data create(vscalevec) 
 !$acc&     present(vdwglobnl,ivdw,pair_factorn,scal_factorn,
@@ -572,18 +582,18 @@ c
       zbeg = zbegproc(rank+1)
       zend = zendproc(rank+1)
 
-      skipvdw12 = .false.
-      if (v2scale.eq.0.0_ti_p) then
-         skipvdw12 = .true.
-      end if
+      skipvdw12 = merge(.true.,.false.,v2scale.eq.0.0_ti_p)
 #ifdef _OPENACC
       call cu_update_skipvdw12(skipvdw12)
 #endif
 
 !$acc serial async
-      n_vscale  = 0
-      vscalevec = (/0.0_ti_p,1.0_ti_p-v2scale,1.0_ti_p-v3scale,
-     &                               -v4scale,1.0_ti_p-v5scale/)
+      n_vscale     = 0
+      vscalevec(1) = 0.0_ti_p
+      vscalevec(2) = 1.0_ti_p-v2scale
+      vscalevec(3) = 1.0_ti_p-v3scale
+      vscalevec(4) =         -v4scale
+      vscalevec(5) = 1.0_ti_p-v5scale
 !$acc end serial
 
 !$acc parallel loop async
@@ -650,8 +660,8 @@ c
       if (f_call.eq.0) then
          call MPI_AllReduce(n_vscale,n_vscale1,1,MPI_INT,MPI_SUM
      &                  ,COMM_TINKER,ii)
- 11      format(' n_vscale (',I0,') sum_vscale ('I0,')',I4)
-         if(rank.lt.3) print 11, n_vscale,n_vscale1,rank
+ 11      format(' n_vscale (',I0,') sum_vscale ('I0,')',I4,L4)
+         if(rank.lt.3) print 11, n_vscale,n_vscale1,rank,skipvdw12
       else
          call MPI_AllReduce(n_vscale,n_vscalei,1,MPI_INT,MPI_SUM
      &                  ,COMM_TINKER,ii)
@@ -659,7 +669,7 @@ c
  12         format(' MPI',I9,' vscale pair found against',2I9,I3)
             print 12,n_vscalei,n_vscale1,n_vscale,rank
          else
-            if(rank.lt.3) print*, 'n_vscale',n_vscale,rank
+            if(rank.lt.3) print*, 'n_vscale',n_vscale,rank,skipvdw12
          end if
       end if
 
@@ -739,9 +749,12 @@ c
       zend = zendproc(rank+1)
 
 !$acc serial async
-      n_mscale  = 0
-      mscalevec = (/0.0_ti_p,1.0_ti_p-m2scale,1.0_ti_p-m3scale,
-     &                       1.0_ti_p-m4scale,1.0_ti_p-m5scale/)
+      n_mscale     = 0
+      mscalevec(1) = 0.0_ti_p
+      mscalevec(2) = 1.0_ti_p-m2scale
+      mscalevec(3) = 1.0_ti_p-m3scale
+      mscalevec(4) = 1.0_ti_p-m4scale
+      mscalevec(5) = 1.0_ti_p-m5scale
 !$acc end serial
 
 !$acc parallel loop async
@@ -890,17 +903,26 @@ c
 c     Construct induced dipoles scalar product scaling interactions
 c
 !$acc serial async
-      n_uscale   = 0
-      !n_dscale   = 0
-      !n_pscale   = 0
-      n_dpscale  = 0
-      n_dpuscale = 0
-      uscalevec  = (/1.0_ti_p-u1scale,1.0_ti_p-u2scale,
-     &               1.0_ti_p-u3scale,1.0_ti_p-u4scale,0.0_ti_p/)
-      dscalevec  = (/1.0_ti_p-d1scale,1.0_ti_p-d2scale,
-     &               1.0_ti_p-d3scale,1.0_ti_p-d4scale,0.0_ti_p/)
-      pscalevec  = (/0.0_ti_p,1.0_ti_p-p2scale,1.0_ti_p-p3scale,
-     &                        1.0_ti_p-p4scale,1.0_ti_p-p5scale/)
+      n_uscale     = 0
+      !n_dscale     = 0
+      !n_pscale     = 0
+      n_dpscale    = 0
+      n_dpuscale   = 0
+      uscalevec(1) = 1.0_ti_p-u1scale
+      uscalevec(2) = 1.0_ti_p-u2scale
+      uscalevec(3) = 1.0_ti_p-u3scale
+      uscalevec(4) = 1.0_ti_p-u4scale
+      uscalevec(5) = 0.0_ti_p
+      dscalevec(1) = 1.0_ti_p-d1scale
+      dscalevec(2) = 1.0_ti_p-d2scale
+      dscalevec(3) = 1.0_ti_p-d3scale
+      dscalevec(4) = 1.0_ti_p-d4scale
+      dscalevec(5) = 0.0_ti_p
+      pscalevec(1) = 0.0_ti_p
+      pscalevec(2) = 1.0_ti_p-p2scale
+      pscalevec(3) = 1.0_ti_p-p3scale
+      pscalevec(4) = 1.0_ti_p-p4scale
+      pscalevec(5) = 1.0_ti_p-p5scale
 !$acc end serial
 
       call set_to_zero1(scal_factorp(1,1),
@@ -1184,17 +1206,26 @@ c
 c     Construct induced dipoles scalar product scaling interactions
 c
 !$acc serial async
-      n_uscale   = 0
-      !n_dscale   = 0
-      !n_pscale   = 0
-      n_dpscale  = 0
-      n_dpuscale = 0
-      uscalevec  = (/1.0_ti_p-u1scale,1.0_ti_p-u2scale,
-     &               1.0_ti_p-u3scale,1.0_ti_p-u4scale,0.0_ti_p/)
-      dscalevec  = (/1.0_ti_p-d1scale,1.0_ti_p-d2scale,
-     &               1.0_ti_p-d3scale,1.0_ti_p-d4scale,0.0_ti_p/)
-      pscalevec  = (/0.0_ti_p,1.0_ti_p-p2scale,1.0_ti_p-p3scale,
-     &                        1.0_ti_p-p4scale,1.0_ti_p-p5scale/)
+      n_uscale     = 0
+      !n_dscale     = 0
+      !n_pscale     = 0
+      n_dpscale    = 0
+      n_dpuscale   = 0
+      uscalevec(1) = 1.0_ti_p-u1scale
+      uscalevec(2) = 1.0_ti_p-u2scale
+      uscalevec(3) = 1.0_ti_p-u3scale
+      uscalevec(4) = 1.0_ti_p-u4scale
+      uscalevec(5) = 0.0_ti_p
+      dscalevec(1) = 1.0_ti_p-d1scale
+      dscalevec(2) = 1.0_ti_p-d2scale
+      dscalevec(3) = 1.0_ti_p-d3scale
+      dscalevec(4) = 1.0_ti_p-d4scale
+      dscalevec(5) = 0.0_ti_p
+      pscalevec(1) = 0.0_ti_p
+      pscalevec(2) = 1.0_ti_p-p2scale
+      pscalevec(3) = 1.0_ti_p-p3scale
+      pscalevec(4) = 1.0_ti_p-p4scale
+      pscalevec(5) = 1.0_ti_p-p5scale
 !$acc end serial
 
 c
@@ -1557,12 +1588,21 @@ c
       !n_pscale   = 0
       n_dpscale  = 0
       !n_dpuscale = 0
-      uscalevec  = (/1.0_ti_p-u1scale,1.0_ti_p-u2scale,
-     &               1.0_ti_p-u3scale,1.0_ti_p-u4scale,0.0_ti_p/)
-      dscalevec  = (/1.0_ti_p-d1scale,1.0_ti_p-d2scale,
-     &               1.0_ti_p-d3scale,1.0_ti_p-d4scale,0.0_ti_p/)
-      pscalevec  = (/0.0_ti_p,1.0_ti_p-p2scale,1.0_ti_p-p3scale,
-     &                        1.0_ti_p-p4scale,1.0_ti_p-p5scale/)
+      uscalevec(1) = 1.0_ti_p-u1scale
+      uscalevec(2) = 1.0_ti_p-u2scale
+      uscalevec(3) = 1.0_ti_p-u3scale
+      uscalevec(4) = 1.0_ti_p-u4scale
+      uscalevec(5) = 0.0_ti_p
+      dscalevec(1) = 1.0_ti_p-d1scale
+      dscalevec(2) = 1.0_ti_p-d2scale
+      dscalevec(3) = 1.0_ti_p-d3scale
+      dscalevec(4) = 1.0_ti_p-d4scale
+      dscalevec(5) = 0.0_ti_p
+      pscalevec(1) = 0.0_ti_p
+      pscalevec(2) = 1.0_ti_p-p2scale
+      pscalevec(3) = 1.0_ti_p-p3scale
+      pscalevec(4) = 1.0_ti_p-p4scale
+      pscalevec(5) = 1.0_ti_p-p5scale
 !$acc end serial
       ngangs = min(maxgangs,npolebloc/vecl)
       call prmem_request(workS  ,worksize1,max_factorp,async=.true.)
@@ -1769,6 +1809,8 @@ c
      &                  xendproc,yendproc,zendproc
       use inform ,only: deb_Path
       use kscalfactor_inl
+      use potent ,only: use_lambdadyn
+      use sizes  ,only: tinkerdebug
       use tinheader
       use tinMemory ,only: prmem_request
 #ifdef _OPENACC
@@ -1784,6 +1826,7 @@ c
       real(t_p) xi,yi,zi,xk,yk,zk
       real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
       real(t_p) cscalevec(5),cscale
+      logical cycle_v,cycle_c
 
 !$acc data create(cscalevec)
 !$acc&     present(chgglobnl,iion,pair_factorn,scal_factorn,
@@ -1866,7 +1909,9 @@ c
          scan_factorn(ii) = n_factorn(ii-1) + scan_factorn(ii-1)
       end do
 #endif
-c     print*,n_cscale,nionlocnl
+      if (tinkerdebug.gt.0) then
+         if (rank.lt.4) print*,'n_cscale',n_cscale,rank
+      end if
 
       ! Allocate memory to store m_scaling
       call prmem_request(ccorrect_ik,n_cscale,2,cdim=.false.)
@@ -1896,10 +1941,165 @@ c
 
       end
 
+      subroutine charge_lj_scaling
+      use atoms     ,only: x,y,z
+      use atmlst    ,only: chgglobnl
+      use chgpot    , n_scale => n_cscale
+      use charge    ,only: nionlocnl,iion,pchg,chglist
+      use couple   
+      use domdec    ,only: rank,nlocnl
+     &              ,xbegproc,ybegproc,zbegproc
+     &              ,xendproc,yendproc,zendproc
+      use inform    ,only: deb_Path
+      use kscalfactor_inl
+      use polgrp    ,only: scal_factorp
+      use sizes     ,only: tinkerdebug
+      use tinheader
+      use tinMemory ,only: prmem_request
+      use vdwpot
+#ifdef _OPENACC
+      use thrust
+      use utilgpu,only: rec_stream
+#endif
+      implicit none
+      integer i,ii,j,k,cap,iichg,kkchg
+      integer*1:: iscal
+      integer iscalbeg,iglob,kglob,iscan
+      integer nn12,nn13,nn14,nn15,ntot
+      real(t_p) pos1,pos2,pos3
+      real(t_p) xi,yi,zi,xk,yk,zk
+      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
+      real(t_p) cscalevec(5),cscale
+      real(t_p) vscalevec(5),vscale
+      logical cycle_v,cycle_c
+
+!$acc data create(cscalevec,vscalevec)
+!$acc&     present(chgglobnl,iion,pair_factorn,scal_factorn,
+!$acc& scan_factorn,n_factorn,n_scale,
+!$acc& allscal_n,typscal_n,scalbeg_n,numscal_n)
+!$acc&     async
+
+      if (deb_Path)
+     &   write(*,'(2x,a)') 'charge_lj_scaling'
+
+      xbeg = xbegproc(rank+1)
+      xend = xendproc(rank+1)
+      ybeg = ybegproc(rank+1)
+      yend = yendproc(rank+1)
+      zbeg = zbegproc(rank+1)
+      zend = zendproc(rank+1)
+
+!$acc serial async
+      n_scale  = 0
+      cscalevec = (/0.0_ti_p,1.0_ti_p-c2scale,1.0_ti_p-c3scale,
+     &                       1.0_ti_p-c4scale,1.0_ti_p-c5scale/)
+      vscalevec = (/0.0_ti_p,1.0_ti_p-v2scale,1.0_ti_p-v3scale,
+     &                               -v4scale,1.0_ti_p-v5scale/)
+!$acc end serial
+
+!$acc parallel loop async
+      do ii = 1,nlocnl
+         n_factorn(ii)=0
+      end do
+c
+c     Filter scaling factor for vscale
+c
+!$acc parallel loop gang vector async
+      do ii = 1,nionlocnl
+         iglob = iion(chgglobnl(ii))
+         k     = 0
+         ntot     = numscal_n(iglob)
+         iscalbeg = scalbeg_n(iglob)
+         xi    = x(iglob)
+         yi    = y(iglob)
+         zi    = z(iglob)
+!$acc loop seq
+         do j = 1, ntot
+            kglob  = allscal_n(iscalbeg+j)
+            iscal  = typscal_n(iscalbeg+j)
+            cscale = cscalevec(iscal)
+            vscale = vscalevec(iscal)
+            cycle_v = .false.
+            cycle_c = .false.
+            if (cscale.eq.0.0_ti_p) cycle_c=.true.
+            if (iscal.ne.4.and.vscale.eq.0) cycle_v=.true.
+
+            if (cycle_v.and.cycle_c) cycle
+
+            xk   =  x(kglob)
+            yk   =  y(kglob)
+            zk   =  z(kglob)
+            pos1 =  xi - xk
+            pos2 =  yi - yk
+            pos3 =  zi - zk
+            call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
+            if ((zk.lt.zbeg).or.(zk.ge.zend)
+     &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
+     &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
+            k  = k+1
+            pair_factorn(k,ii) = kglob
+            scal_factorn(k,ii) = cscale
+            scal_factorp(k,ii) = vscale
+         end do
+
+         n_factorn(ii) = k
+         n_scale      = n_scale + k
+      end do
+
+!$acc update host(n_scale) async
+
+c
+c     Procede to scan
+c
+#ifdef _OPENACC
+!$acc wait
+!$acc host_data use_device(n_factorn,scan_factorn)
+      call thrust_exclusive_scan(n_factorn, nionlocnl, scan_factorn
+     &                          ,rec_stream)
+!$acc end host_data
+#else
+      scan_factorn(1) = 0
+      do ii = 2,nionlocnl
+         scan_factorn(ii) = n_factorn(ii-1) + scan_factorn(ii-1)
+      end do
+#endif
+      if (tinkerdebug.gt.0) then
+         if (rank.lt.4) print*,'n_scale',n_scale,rank
+      end if
+
+      ! Allocate memory to store m_scaling
+      call prmem_request(ccorrect_ik,n_scale,2,cdim=.false.)
+      call prmem_request(ccorrect_scale,2*(n_scale+1))
+      call prmem_request(vcorrect_scale,(n_scale+1))
+c
+c     Fill scaling the scaling_factor intercations along with their
+c     types and value
+c
+!$acc parallel loop default(present)
+!$acc&         gang vector async
+      do ii = 1, nionlocnl
+         iichg = chgglobnl(ii)
+         iglob = iion(iichg)
+         iscan = scan_factorn(ii)
+         do j = 1, n_factorn(ii)
+            k  = pair_factorn(j,ii)
+            ccorrect_ik(iscan+j,1)  = iglob
+            ccorrect_ik(iscan+j,2)  = k
+            ccorrect_scale(2*(iscan+j)+1) =-scal_factorn(j,ii)
+            ccorrect_scale(2*(iscan+j)+2) = pchg(iichg)*
+     &                  pchg(chglist(k))
+            vcorrect_scale(iscan+j) = scal_factorp(j,ii)
+         end do
+      end do
+
+!$acc end data
+
+      end
+
       subroutine scaling_postop
       use couple
       use polgrp
-      use potent ,only: use_polar
+      use potent ,only: use_polar, fuse_chglj
       use tinMemory
       implicit none 
 
@@ -1913,6 +2113,10 @@ c
 !$acc&    scan_factorn) async
       deallocate (pair_factorn)
       deallocate (scal_factorn)
+      if (fuse_chglj) then
+!$acc exit data delete(scal_factorp) async
+         deallocate(scal_factorp)
+      end if
       deallocate (   n_factorn)
       deallocate (scan_factorn)
       if (use_polar) then
@@ -2029,9 +2233,13 @@ c
       call timer_enter(timer_scalfactor)
       call scaling_preop(istep)
 
-      if (use_vdw)    call vdw_scalingnl
+      if (fuse_chglj) then
+         call charge_lj_scaling
+      else
+         if (use_vdw)    call vdw_scalingnl
+         if (use_charge) call charge_scaling
+      end if
       if (use_mpole)  call mpole_scaling
-      if (use_charge) call charge_scaling
       if (use_polar) then
          call polar_scaling_p
          if (no_commdir) call u_dp_scaling_extent

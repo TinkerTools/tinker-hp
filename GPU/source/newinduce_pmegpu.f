@@ -443,7 +443,8 @@ c
 !$acc parallel loop present(poleglob,polarity,diag) async
          do i = 1, npoleloc
             iipole = poleglob(i)
-            diag(i) = polarity(iipole)
+            term   = polarity(iipole)
+            diag(i)= merge(tinypol,term,term.eq.0.0)
          end do
          if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else
@@ -1096,6 +1097,7 @@ c
       use pme1
       use potent
       use timestat
+      use tinMemory  ,only: mipk
       use utils
       use utilgpu
       use mpi
@@ -1110,6 +1112,7 @@ c
       integer qgridout_size
       integer qgridin_size
       integer,parameter::nrhs=2
+      integer(mipk) sizqg
       real(t_p) r1,r2,r3
       real(t_p) h1,h2,h3
       real(t_p) volterm,denom
@@ -1149,6 +1152,8 @@ c
       call mallocMpiGrid
       call prmem_request(cmp,10,npolerecloc,async=.true.)
       call prmem_request(fmp,10,npolerecloc,async=.true.)
+      call prmem_request(cphirec,10,npolerecloc,async=.true.)
+      call prmem_request(fphirec,20,npolerecloc,async=.true.)
 
       istat2 = istart2(rankloc+1)
       ied2   = iend2  (rankloc+1)
@@ -1157,22 +1162,16 @@ c
       kstat2 = kstart2(rankloc+1)
       ked2   = kend2  (rankloc+1)
       qgridin_size = 2*(nrec_send+1)*n1mpimax*n2mpimax*n3mpimax
-
-!!$acc enter data create(cmp,fmp) async(rec_queue)
-c
-!!$acc data
-!!$acc&     present(cphi)
-!!$acc&     present(polerecglob,ipole,rpole,kstart2,kend2,
-!!$acc&  jstart2,jend2,istart2,iend2,bsmod1,bsmod2,bsmod3,
-!!$acc&  repart,qgridin_2d,qgridout_2d,use_bounds,qfac_2d,
-!!$acc&  octahedron,use_pmecore,cphirec,fphirec,recip,cmp,fmp)
-!!$acc&     async(rec_queue)
 c
 c     zero out the PME charge grid
 c
       call timer_enter( timer_grid1 )
-      call set_to_zero1(qgridin_2d(1,1,1,1,1),
-     &                  qgridin_size,rec_queue)
+      sizqg  = qgridin_size
+      call mem_set(qgridin_2d,0.0_ti_p,sizqg,rec_stream)
+      sizqg  = 20*npolerecloc
+      call mem_set(fphirec,0.0_ti_p, sizqg,rec_stream)
+      sizqg  = 10*npolerecloc
+      call mem_set(cphirec,0.0_ti_p, sizqg,rec_stream)
 c
 c     fill the pme grid, loop over the multipoles sites
 c
@@ -1332,9 +1331,6 @@ c
       end do
       call timer_exit ( timer_grid2,quiet_timers )
 
-!!$acc end data
-c
-!!$acc exit data delete(cmp,fmp) async(rec_queue)
       deallocate (reqbcastrec)
       deallocate (reqbcastsend)
       deallocate (reqrec)
@@ -1365,9 +1361,11 @@ c
       use polar_temp,only: fuind,fuinp,h
      &              ,fdip_phi1=>fphid,fdip_phi2=>fphip !Reuse module memory
       use timestat
+      use tinMemory ,only: mipk
       use mpi
       use utils
-      use utilgpu,only: rec_queue,dir_queue,prmem_request
+      use utilgpu   ,only: rec_queue,dir_queue,rec_stream,prmem_request
+     &              ,mem_set
 #ifdef _OPENACC
      &           ,start_dir_stream_cover,end_dir_stream_cover
 #endif
@@ -1377,6 +1375,7 @@ c
       integer nrhs,iipole
       integer i,j,k,i1,i2,iloc
       integer qgrid2_size
+      integer(mipk) sizqg
       real(t_p) time0,time1,timem
 c     real(t_p) fuind(3), fuinp(3)
       real(t_p) term
@@ -1404,12 +1403,13 @@ c     real(t_p),dimension(10,npolerecloc)::fdip_phi1,fdip_phi2
       end subroutine
       end interface
 c
-      if (deb_Path)
-     &   write(*,'(4x,a)') 'tmatxbrecipgpu'
-c
 c     return if the Ewald coefficient is zero
 c
       if (aewald .lt. 1.0d-6)  return
+c
+      call timer_enter( timer_tmatxrecipgpu )
+      if (deb_Path)
+     &   write(*,'(4x,a)') 'tmatxbrecipgpu'
 
       if (use_pmecore) then
          nprocloc = nrec
@@ -1420,7 +1420,6 @@ c
          commloc  = COMM_TINKER
          rankloc  = rank
       end if
-      call timer_enter( timer_tmatxrecipgpu )
 
       call mallocMpiGrid
       call prmem_request(fuind    , 3,npolerecloc,async=.false.)
@@ -1436,21 +1435,19 @@ c
       if (f_in) then
 !$acc enter data create(a)
       end if
-
-!$acc data present(mu,murec)
-!$acc&     present(fuind,fuinp,fdip_phi1,fdip_phi2
-!$acc&    ,polerecglob,ipole,poleloc,repart
-!$acc&    ,recip,a,ksize2,jsize2,isize2)
 c
 c     zero out the PME charge grid
 c
       call timer_enter( timer_grid1 )
-      call set_to_zero1(qgrid2in_2d(1,1,1,1,1),
-     &     2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),rec_queue)
+      sizqg = 2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1)
+      call mem_set(qgrid2in_2d,0.0_ti_p,sizqg,rec_stream)
 c
 c     fill the pme grid, loop over the induced dipoles sites
 c
+!$acc host_data use_device(a,polerecglob,ipole,poleloc
+!$acc&         ,fuind,fuinp,mu,murec)
 !$acc parallel loop collapse(2) async(rec_queue)
+!$acc&         deviceptr(a)
       do j = 1, 3
          do i = 1, 3
             if (i.eq.1) then
@@ -1463,8 +1460,8 @@ c
          end do
       end do
 c
-!$acc parallel loop collapse(2)
-!$acc&         async(rec_queue)
+!$acc parallel loop collapse(2) async(rec_queue)
+!$acc&   deviceptr(polerecglob,ipole,poleloc,a,fuind,fuinp,mu,murec)
       do i = 1, npolerecloc
          do k = 1, 3
             iipole = polerecglob(i)
@@ -1490,6 +1487,7 @@ c
             end if
          end do
       end do
+!$acc end host_data
 c
 c     assign PME grid
 c
@@ -1503,10 +1501,12 @@ c
       ! Only enabled in parallel
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) then
-         call fftTrC_tmat_alloc(nrhs,npolebloc,.true.,mu,h)
-c        call start_dir_stream_cover
-c        call tmatxb_cp(nrhs,.true.,mu,h)
-c        call incMatvecStep
+         if (nproc.gt.1) then
+            call fftTrC_tmat_alloc(nrhs,npolebloc,.true.,mu,h)
+         else
+            call start_dir_stream_cover
+            call tmatxb_cp(nrhs,.true.,mu,h)
+         end if
       end if
 #endif
 c
@@ -1532,7 +1532,11 @@ c
      &               *ksize2(rankloc+1)
 #ifdef _OPENACC
       ! Increment Matrix-Vector product counter
-      if (dir_queue.ne.rec_queue) call incMatvecStep
+      if (dir_queue.ne.rec_queue) then
+         call incMatvecStep
+         ! Compute second half of matvec
+         if (nproc.eq.1) call tmatxb_cp(nrhs,.true.,mu,h)
+      end if
 #endif
 c
 c     complete the transformation of the charge grid
@@ -1555,26 +1559,8 @@ c
       ! Exchange Grid Between reciprocal process
       call commGridBack( qgrid2in_2d,r_comm )
 c
-      ! Compute second half of matvec
-#ifdef _OPENACC
-c     if (dir_queue.ne.rec_queue) then
-c        call start_dir_stream_cover
-c        call tmatxb_cp(nrhs,.true.,mu,h)
-c        call resetMatvecStep
-c     end if
-#endif
-c
       ! Wait for Backward Grid communication
       call commGridBack( qgrid2in_2d,r_wait )
-
-#ifdef _OPENACC
-      ! set an event to sync with rec_stream
-c     if (dir_queue.ne.rec_queue) call end_dir_stream_cover
-      if (dir_queue.ne.rec_queue) then
-         call resetMatvecStep
-         call fftTrC_tmat_free
-      end if
-#endif
 
 c
 c     get fields
@@ -1582,8 +1568,22 @@ c
       call timer_enter( timer_grid2 )
       call fphi_uind_site2_p(fdip_phi1,fdip_phi2)
 
-!$acc parallel loop collapse(2)
-!$acc&         async(rec_queue)
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue) then
+         call resetMatvecStep
+         if (nproc.gt.1) then
+            call fftTrC_tmat_free
+         else
+            call end_dir_stream_cover
+         end if
+      end if
+#endif
+
+!$acc host_data use_device(polerecglob,ipole,poleloc,repart
+!$acc&         ,a,fdip_phi1,fdip_phi2,dipfield,dipfieldbis)
+!$acc parallel loop collapse(2) async(rec_queue)
+!$acc&         deviceptr(polerecglob,ipole,poleloc,repart
+!$acc&        ,a,fdip_phi1,fdip_phi2,dipfield,dipfieldbis)
       do i = 1, npolerecloc
          do k = 1, 3
             iipole = polerecglob(i)
@@ -1609,9 +1609,8 @@ c
             end if
          end do
       end do
+!$acc end host_data
       call timer_exit ( timer_grid2,quiet_timers )
-
-!$acc end data
 c
       if (f_in) f_in=.false.
       deallocate (reqrec)

@@ -148,7 +148,7 @@ c
          recip(1,3) = (ar2*br3 - br2*ar3) / volbox
          recip(2,3) = (ar3*br1 - br3*ar1) / volbox
          recip(3,3) = (ar1*br2 - br1*ar2) / volbox
-#ifdef _CUDA
+#ifdef _OPENACC
          call copy_recip_cu
 #endif
 !$acc update device(recip(:,:))

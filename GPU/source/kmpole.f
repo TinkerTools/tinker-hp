@@ -18,16 +18,20 @@ c
       subroutine kmpole(init,istep)
       use sizes
       use atmlst
+      use atmtyp
       use atoms
+      use chgpen
       use couple
       use cutoff
       use domdec
       use inform
       use iounit
+      use kcpen
       use keys
       use kmulti
       use mpole
       use neigh
+      use pme
       use polar
       use polgrp
       use potent
@@ -43,7 +47,7 @@ c
       integer sizepole
       integer ji,ki,li
       integer it,jt,kt,lt
-      integer imp,nmp
+      integer ic,imp,nmp
       integer size_t,next
       integer number
       integer kz,kx,ky
@@ -53,8 +57,8 @@ c
       integer, allocatable :: mpz(:)
       integer, allocatable :: mpx(:)
       integer, allocatable :: mpy(:)
+      real(t_p) pel,pal
       real(t_p) mpl(13)
-      real(t_p) emtp1,emtp2,emtp3
       real(t_p) d
       logical header,path
       character*4 pa,pb,pc,pd
@@ -81,7 +85,14 @@ c
 
         uinp_p => uinp
         uind_p => uind
-!$acc enter data attach(uind_p,uinp_p)
+
+        vmxx = 0d0
+        vmxy = 0d0
+        vmxz = 0d0
+        vmyy = 0d0
+        vmyz = 0d0
+        vmzz = 0d0
+!$acc update host(vmxx,vmxy,vmxz,vmyy,vmyz,vmzz)
 
 !$acc parallel loop collapse(2)
 !$acc&         present(uind,uinp)
@@ -89,6 +100,10 @@ c
            do j = 1,3
               uind(j,i) = 0
               uinp(j,i) = 0
+              if(i.eq.1.and.j.eq.1) then
+                 uind(1,1) = 1
+                 uinp(1,1) = 1
+              end if
            end do
         end do
 c
@@ -248,29 +263,6 @@ c
            end if
         end do
 c
-c    find and count new sibfacp parameters in the keyfile
-c
-        do i = 1, nkey
-          next = 1
-          record = keyline(i)
-          call gettext (record,keyword,next)
-          call upcase (keyword)
-          if (keyword(1:8) .eq. 'SIBFACP ') then
-            ia = 0
-            emtp1 = 0.0_ti_p
-            emtp2 = 0.0_ti_p
-            emtp3 = 0.0_ti_p
-            string = record(next:240)
-            read (string,*,err=220,end=220) ia,emtp1,emtp2,emtp3
-            if (ia.ne.0) then
-              sibfacp(1,ia) = emtp1
-              sibfacp(2,ia) = emtp2
-              sibfacp(3,ia) = emtp3
-            end if
-  220       continue
-          end if
-        end do
-c
 c       zero out local axes, multipoles and polarization attachments
 c
         npole = 0
@@ -287,27 +279,7 @@ c
            np12(i) = 0
            np13(i) = 0
            np14(i) = 0
-           if (use_emtp) then
-             alphapen(i) = 0.0_ti_p
-             betapen(i)  = 0.0_ti_p
-             gammapen(i) = 0.0_ti_p
-           end if
         end do
-c
-c     assign sibfacp parameters
-c
-        if (use_emtp) then
-          do i = 1, n
-            it = type(i)
-            do k = 1, maxtyp
-              if (it.eq.k) then
-                alphapen(i) = sibfacp(1,k)
-                betapen(i)  = sibfacp(2,k)
-                gammapen(i) = sibfacp(3,k)
-              end if
-            end do
-          end do
-        end if
 c
 c       perform dynamic allocation of some local arrays
 c
@@ -573,6 +545,7 @@ c 230    call MPI_BARRIER(hostcomm,ierr)
 c
 c       get the order of the multipole expansion at each site
 c
+        npole = n
         do i = 1, n
            size_t = 0
            do k = 1, maxpole
@@ -586,10 +559,93 @@ c
            polsiz(i) = size_t
         end do
 c
+c     find new charge penetration parameters in the keyfile
+c
+        header = .true.
+        do i = 1, nkey
+           next = 1
+           record = keyline(i)
+           call gettext (record,keyword,next)
+           call upcase (keyword)
+           if (keyword(1:7) .eq. 'CHGPEN ') then
+              k = 0
+              pel = 0.0_ti_p
+              pal = 0.0_ti_p
+              string = record(next:240)
+              read (string,*,err=340,end=340)  k,pel,pal
+              cpele(k) = abs(pel)
+              cpalp(k) = pal
+              if (header .and. .not.silent) then
+                 header = .false.
+                 write (iout,320)
+  320           format (/,' Additional Charge Penetration Parameters :',
+     &                  //,5x,'Atom Class',11x,'Core Chg',11x,'Damp',/)
+              end if
+              if (.not. silent) then
+                 write (iout,330)  k,pel,pal
+  330            format (6x,i6,7x,f15.3,f15.4)
+              end if
+  340         continue
+           end if
+        end do
+c
+c     assign the charge penetration charge and alpha parameters 
+c     
+        ncp = 0
+        do i = 1, n
+           pcore(i)  = 0.0_ti_p
+           pval(i)   = pole(1,i)
+           pval0(i)  = pval(i)
+           palpha(i) = 0.0_ti_p
+           ic = class(i)
+           if (ic .ne. 0) then
+              pcore(i)  = cpele(ic)
+              pval(i)   = pole(1,i) - cpele(ic)
+              pval0(i)  = pval(i)
+              palpha(i) = cpalp(ic)
+           end if
+        end do
+c
+c     process keywords with charge penetration for specific atoms
+c
+        header = .true.
+        do i = 1, nkey
+           next = 1
+           record = keyline(i)
+           call gettext (record,keyword,next)
+           call upcase (keyword)
+           if (keyword(1:7) .eq. 'CHGPEN ') then
+              k = 0
+              pel = 0.0_ti_p
+              pal = 0.0_ti_p
+              string = record(next:240)
+              read (string,*,err=370,end=370)  k,pel,pal
+              if (k.lt.0 .and. k.ge.-n) then
+                 k = -k
+                 pcore(k) = abs(pel)
+                 pval(k) = pole(1,k) - abs(pel)
+                 palpha(k) = pal
+                 if (header .and. .not.silent) then
+                    header = .false.
+                    write (iout,350)
+  350               format (/,' Additional Charge Penetration',
+     &                         ' for Specific Atoms :',
+     &                      //,5x,'Atom',17x,'Core Chg',11x,'Damp',/)
+                 end if
+                 if (.not. silent) then
+                    write (iout,360)  k,pel,pal
+  360               format (6x,i6,7x,f15.3,f15.4)
+                 end if
+              end if
+  370         continue
+           end if
+        end do
+c
 c       remove any zero or undefined atomic multipoles
 c
-        if (.not.use_polar) then
+        if ((.not.use_polar).and.(.not.use_chgtrn)) then
            npole = 0
+           ncp = 0
            do i = 1, n
               if (polsiz(i) .ne. 0) then
                  nbpole(i)     = npole
@@ -603,30 +659,39 @@ c
                  do j = 1, maxpole
                     pole(j,npole) = pole(j,i)
                  end do
-                 if (use_emtp) then
-                   alphapen(npole) = alphapen(i)
-                   betapen(npole)  = betapen(i)
-                   gammapen(npole) = gammapen(i)
-                 end if
+                 mono0(npole)  = pole(1,i)
+                 if (palpha(i) .ne. 0.0)  ncp = ncp + 1
+                 pcore(npole)  = pcore(i)
+                 pval(npole)   = pval(i)
+                 pval0(npole)  = pval(i)
+                 palpha(npole) = palpha(i)
               end if
            end do
            call FromPolaxe2Ipolaxe ! Brodcast 'nZ_onlyglob' after this call
         end if
 c
+c       copy original multipole values that won't change during mutation
+c
+        if (use_lambdadyn) then
+           pole_orig(1:13,1:n) = pole(1:13,1:n)
+        end if
+c
 c       test multipoles at chiral sites and invert if necessary
 c
-           call chkpole(.true.)
+        if (use_mpole .and. .not.use_polar .and. .not.use_chgtrn)
+     &   call chkpole(.true.)
 c
-c        end if
  230    call MPI_BARRIER(hostcomm,ierr)
         call MPI_BCAST(npole,1,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(ncp,1,MPI_INT,0,hostcomm,ierr)
+
         if (.not. use_polar)
      &     call MPI_BCAST(nZ_Onlyglob,1,MPI_INT,0,hostcomm,ierr)
         !TODO 1.2 Why xaxis need to be allocatable
 c
 c       Update use_mpole switch
 c
-        if (.not.use_polar.and.npole.eq.0)  then
+        if (npole.eq.0)  then
            use_mpole = .false.
            use_mlist = .false.
 !$acc update device(use_mpole)
@@ -643,6 +708,10 @@ c
               do j = 1, 3
                  uind(j,i) = 0.0_ti_p
                  uinp(j,i) = 0.0_ti_p
+              if(i.eq.1.and.j.eq.1) then
+                 uind(1,1) = 1
+                 uinp(1,1) = 1
+              end if
               end do
            end do
         end if
@@ -654,7 +723,7 @@ c
 c       remove any zero or undefined atomic multipoles
 c
       !TODO Clean this part
-      if (.not.use_polar .and. .not.use_solv) then
+      if (.not.use_mpole.or.use_polar) return
 
          if (nproc.eq.1) then
             call kpolar_reset1(istep)
@@ -662,9 +731,8 @@ c
             call kpolar_reset(istep)
          end if
 
-      end if
       end
-      
+
       subroutine FromPolaxe2Ipolaxe
       use atoms  ,only: n
       use domdec ,only: rank
@@ -730,12 +798,14 @@ c    &     print*,'nZ_Only axe : ',nZ_Onlyglob
       end subroutine
 
       subroutine upload_device_mpole
+      use chgpen
       use domdec ,only: rank,hostcomm
      &           ,bufbegpole,domlenpole,domlenpolerec
       use inform ,only: deb_Path
       use mpi    ,only: MPI_BARRIER
       use mpole
       use polar
+      use potent ,only: use_lambdadyn
       use polgrp
       use sizes
       implicit none
@@ -746,16 +816,22 @@ c    &     print*,'nZ_Only axe : ',nZ_Onlyglob
       if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
 #endif
-!$acc update device(nbpole,polsiz)
-!$acc update device(ipole,xaxis,yaxis,zaxis)
-!$acc update device(ipolaxe,pollist,pole)
+!$acc update device(nbpole,polsiz
+!$acc&       ,ipole,xaxis,yaxis,zaxis
+!$acc&       ,ipolaxe,pollist,pole
+!$acc&       ,mono0,pcore,pval,pval0,palpha)
+      if (use_lambdadyn) then
+!$acc  update device(pole_orig)
+      end if
 
-!$acc enter data copyin(npoleloc,npolebloc,npolerecloc,
-!$acc&   npolerecloc_old,npolelocnl,bufbegpole,domlenpole,
-!$acc&   domlenpolerec)
+!$acc enter data copyin(npoleloc,npolebloc,npolerecloc
+!$acc&      ,npolerecloc_old,npolelocnl,bufbegpole
+!$acc&      ,domlenpole,domlenpolerec)
+
       end subroutine
 
-      subroutine delete_data_mpole
+      subroutine dealloc_shared_mpole
+      use chgpen
       use domdec
       use inform ,only: deb_Path
       use mpole
@@ -766,7 +842,7 @@ c    &     print*,'nZ_Only axe : ',nZ_Onlyglob
       use tinMemory
       implicit none
 
- 12   format(2x,'delete_data_mpole')
+ 12   format(2x,'dealloc_shared_mpole')
       if(deb_Path) print 12
 
       call shmem_request(polsiz, winpolsiz, [0],config=mhostacc)
@@ -774,18 +850,20 @@ c    &     print*,'nZ_Only axe : ',nZ_Onlyglob
       call shmem_request(yaxis,  winyaxis,  [0],config=mhostacc)
       call shmem_request(xaxis,  winxaxis,  [0],config=mhostacc)
       call shmem_request(pole,   winpole,[13,0],config=mhostacc)
+      if (use_lambdadyn) then
+      call shmem_request(pole_orig,winpole_orig,[13,0],config=mhostacc)
+      end if
+      call shmem_request(mono0,   winmono0, [0],config=mhostacc)
       call shmem_request(polaxe, winpolaxe, [0])
       call shmem_request(ipolaxe,winipolaxe,[0],config=mhostacc)
       call shmem_request(ipole,  winipole,  [0],config=mhostacc)
       call shmem_request(pollist,winpollist,[0],config=mhostacc)
       call shmem_request(nbpole, winnbpole, [0],config=mhostacc)
+      call shmem_request(pcore,   winpcore, [0],config=mhostacc)
+      call shmem_request(pval,     winpval, [0],config=mhostacc)
+      call shmem_request(pval0,   winpval0, [0],config=mhostacc)
+      call shmem_request(palpha, winpalpha, [0],config=mhostacc)
 
-      if (use_emtp) then
-      call shmem_request(alphapen,winalphapen,[0])
-      call shmem_request(betapen, winbetapen, [0])
-      call shmem_request(gammapen,wingammapen,[0])
-      end if
-c
       call shmem_request(ip11,winip11,[maxp11,0])
       call shmem_request(np11,winnp11,[0])
       call shmem_request(ip12,winip12,[maxp12,0])
@@ -803,6 +881,7 @@ c
       subroutine alloc_shared_mpole
       use sizes
       use atoms
+      use chgpen
       use domdec
       use mpole
       use polgrp
@@ -814,21 +893,23 @@ c
       if (associated(ipole).and.n.eq.size(pole)) return
 
       call shmem_request(polsiz, winpolsiz, [n],config=mhostacc)
-      call shmem_request(zaxis,  winzaxis,  [n],config=mhostacc)
-      call shmem_request(yaxis,  winyaxis,  [n],config=mhostacc)
-      call shmem_request(xaxis,  winxaxis,  [n],config=mhostacc)
+      call shmem_request(zaxis,   winzaxis, [n],config=mhostacc)
+      call shmem_request(yaxis,   winyaxis, [n],config=mhostacc)
+      call shmem_request(xaxis,   winxaxis, [n],config=mhostacc)
       call shmem_request(pole,   winpole,[13,n],config=mhostacc)
+      if (use_lambdadyn) then
+      call shmem_request(pole_orig,winpole_orig,[13,n],config=mhostacc)
+      end if
+      call shmem_request(mono0,   winmono0, [n],config=mhostacc)
       call shmem_request(polaxe, winpolaxe, [n])
       call shmem_request(ipolaxe,winipolaxe,[n],config=mhostacc)
-      call shmem_request(ipole,  winipole,  [n],config=mhostacc)
+      call shmem_request(ipole,   winipole, [n],config=mhostacc)
       call shmem_request(pollist,winpollist,[n],config=mhostacc)
       call shmem_request(nbpole, winnbpole, [n],config=mhostacc)
-
-      if (use_emtp) then
-      call shmem_request(alphapen,winalphapen,[n])
-      call shmem_request(betapen, winbetapen, [n])
-      call shmem_request(gammapen,wingammapen,[n])
-      end if
+      call shmem_request(pcore,   winpcore, [n],config=mhostacc)
+      call shmem_request(pval,     winpval, [n],config=mhostacc)
+      call shmem_request(pval0,   winpval0, [n],config=mhostacc)
+      call shmem_request(palpha, winpalpha, [n],config=mhostacc)
 c
       call shmem_request(ip11,winip11,[maxp11,n])
       call shmem_request(np11,winnp11,[n])

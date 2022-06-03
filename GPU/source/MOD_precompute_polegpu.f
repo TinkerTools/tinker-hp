@@ -19,7 +19,6 @@ c
         real(t_p), allocatable,target :: rr3_bn1_precompute(:) ! Precomputed distance 
         real(t_p), allocatable,target :: rr5_bn2_precompute(:) ! Precomputed distance  
         logical :: precompute_solvpole=.false.
-        logical :: precompute_mpole=.false.
         logical :: precompute_tmat=.true.
 
         include "erfcore_data.f.inc"
@@ -108,132 +107,6 @@ c
       end if
       end subroutine
 
-      ! Precompute multipole interactions via neigbhor list
-      subroutine mpole_precompute()
-      use atoms   , only : x, y, z
-      use atmlst  , only : poleglobnl
-      use couple  , only : allscal_n,typscal_n,numscal_n,scalbeg_n
-      use chgpot  , only : dielec,electric
-      use ewald   , only : aewald
-      use math    , only : sqrtpi
-      use utilgpu , only : def_queue
-      use mpole   , only : ipole,poleloc,npolelocnl
-      use mplpot  , only : m2scale,m3scale,m4scale,m5scale
-      use neigh   , only : nelst, elst
-      use polar   , only : polarity, thole, pdamp
-      use shunt   , only : cut2
-      use utilgpu , only : maxscaling1,maxscaling,dir_queue,warning
-      use domdec  , only : loc, nlocnl, nbloc
-      use polpot  , only : u1scale, u2scale, u3scale, u4scale
-      use sizes   , only : maxelst
-      use tinheader,only : ti_p
-      implicit none
-
-      integer :: j, k                
-      integer :: ii, iipole, iglob, iploc ! Indexes associated to local atom
-      integer :: kpole, kpoleloc, kglob   ! Indexes associated to neighbor atom
-      real(t_p) :: rx, ry, rz             ! Difference between atoms positions
-      real(t_p) :: d1, d2                 ! Distance (d2 squared) between atoms      
-      real(t_p) :: alsq2, alsq2n          ! ewald precomputed constants
-      real(t_p) :: bn0,sc3,sc5,ralpha,exp2a
-      real(t_p) :: sdamp,sdamp1,expdamp1,pgamma
-      real(t_p) :: bn1,bn2,rr3,rr5
-      integer   :: imscal(maxscaling)  ! Temporary array to store interaction type for neighbors
-      real(t_p) :: fmscal(maxscaling)  ! Temporary array to store scaling factors for neighbors
-      integer nn12,nn13,nn14,ntot,km
-      real(t_p) mscale ! Scaling factor for interaction
-      real(t_p) :: f
-      real(t_p),save:: mscalevec(5)
-      logical,save:: f_in=.true.
-      integer :: nprecomp_capture
-
-!!$acc update host(poleglobnl,polarity,loc,ipole,nelst)
-      call allocate_precompute_data
-      if (f_in) then
-         mscalevec = [0.0_ti_p,m2scale,m3scale,m4scale,m5scale]
-!$acc enter data copyin(mscalevec)
-         f_in = .false.
-      end if
-
-!$acc data present(poleglobnl,ipole,poleloc)
-!$acc&     present(polarity,thole,pdamp)
-!$acc&     present(rx_precompute, ry_precompute, rz_precompute,
-!$acc& rr3_bn1_precompute, rr5_bn2_precompute,
-!$acc& ms_precompute,iipole_precompute,kkpole_precompute)
-!$acc&     present(numscal_n,scalbeg_n,allscal_n,typscal_n)
-!$acc&     present(mscalevec)
-
-      ! gather some parameters, then set up the damping factors.
-      nprecomp = 0
-
-!$acc parallel loop gang vector_length(32) copy(nprecomp)
-!$acc&         private(km,imscal,fmscal)
-!$acc&         async(dir_queue)
-      PRECOMPUTE_LOOP:
-     &do ii = 1, npolelocnl
-           iipole = poleglobnl(ii)
-           iglob  = ipole  (iipole)
-           if (loc(iglob) == 0 .or. loc(iglob)>nbloc) then
-              print*,warning
-              cycle PRECOMPUTE_LOOP           
-           end if
-
-           km    = 0
-           if (ntot.gt.maxscaling) 
-     &        print*,'scaling array too short mpole precompute'
-
-           ntot = numscal_n(iglob)
-           nn12 = scalbeg_n(iglob)
-!$acc loop vector
-           do j = 1,ntot
-              imscal(j) = allscal_n(nn12+j)
-              fmscal(j) = mscalevec(typscal_n(nn12+j))
-           end do
-
-           ! Loop on neighbors
-!$acc loop vector
-           do k =  1, nelst(ii)
-              kpole    = elst(k,ii)
-              kglob    = ipole(kpole)
-
-              mscale   = 1
-              if (km<ntot) then
-!$acc loop seq
-                 do j=1,ntot
-                    if (imscal(j)==kglob) then
-                       mscale = fmscal(j)
-!$acc atomic update
-                       km  = km+1
-                       exit
-                    end if
-                 end do
-              end if
-
-              rx = x(kglob) - x(iglob)
-              ry = y(kglob) - y(iglob)
-              rz = z(kglob) - z(iglob)
-              call image_inl(rx,ry,rz)
-              d2 = rx*rx + ry*ry + rz*rz
-              if (d2 > cut2) cycle
-
-!$acc atomic capture
-              nprecomp = nprecomp + 1
-              nprecomp_capture = nprecomp
-!$acc end atomic
-
-              iipole_precompute(nprecomp_capture) = iipole
-              kkpole_precompute(nprecomp_capture) = kpole
-              rx_precompute    (nprecomp_capture) = rx
-              ry_precompute    (nprecomp_capture) = ry
-              rz_precompute    (nprecomp_capture) = rz
-              ms_precompute    (nprecomp_capture) = 1-mscale
-           enddo
-      end do PRECOMPUTE_LOOP
-!$acc end data
-!$acc wait(def_queue)
-
-      end subroutine
-
       ! Compute the direct space contribution to the electric field due to the current value of the induced dipoles
       subroutine tmatxb_precompute()
       use atoms   , only : x, y, z
@@ -275,8 +148,7 @@ c
 
       ! No need to reallocate if it has already been done precomputing
       ! mpole
-      if (.not.precompute_mpole)
-     &   call allocate_precompute_data
+      call allocate_precompute_data
       !FIXME Scaling factor containers are not on device anymore
 
 !$acc data present(poleglobnl,ipole,poleloc)

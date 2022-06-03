@@ -409,14 +409,6 @@ c              pt = pd//pc//pb//pa
 !$acc update host(nstrtorloc) async
       end if
 
-#ifdef _OPENACC
-      if (ndir.eq.1) then
-!$acc wait
-!$acc host_data use_device(strtorglob)
-         call thrust_sort(strtorglob,nstrtorloc,rec_stream)
-!$acc end host_data
-      end if
-#endif
       end
 
       subroutine upload_device_kstrtor

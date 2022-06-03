@@ -124,7 +124,7 @@ c
 
 !$acc parallel loop private(ft12,ftt,ft1,ft2,dedi)
 !$acc&         present(tortorglob,ibitor,x,y,z,type,atomic,
-!$acc&   use,loc,itt,ttx,tty,tbf,tbx,tby,tbxy)
+!$acc&   use,loc,itt,ttx,tty,tnx,tny,tbf,tbx,tby,tbxy)
 !$acc&         present(ett,dett)
 !$acc&         present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) async
       do itortor = 1, ntortorloc

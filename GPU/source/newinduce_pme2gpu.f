@@ -95,14 +95,6 @@ c
       call prmem_request(buffermpi2,10,max(npolerecloc,1),
      &     async=.true.)
       end if
-c
-c     allocate (cphi(10,max(npoleloc,1)))
-
-      if (.not.use_mpole) then
-         j = max(npolerecloc,1)
-         call prmem_request(cphirec,10,j,async=.true.)
-         call prmem_request(fphirec,20,j,async=.true.)
-      end if
 
       allocate (reqrecdirsend(nproc))
       allocate (reqrecdirrec(nproc))
@@ -111,26 +103,17 @@ c     allocate (cphi(10,max(npoleloc,1)))
       allocate (req2send(nproc))
       allocate (req2rec(nproc))
 
-!$acc data present(ef,mu,murec,cphi)
-!$acc&     present(cphirec,fphirec,rpole,uind,uinp,polarity,
-#ifndef USE_NVSHMEM_CUDA
-!$acc&   upalt,udalt,
-#endif
-!$acc&   bpred,poleloc,poleglob)
-
       ! set arrays to zero
       call set_to_zero2(mu,ef,3*nrhs*npolebloc,rec_queue)
-      call set_to_zero1(fphirec,20*npolerecloc,rec_queue)
       if (nproc.eq.1) then
          call set_to_zero1(murec,3*nrhs*npolerecloc,rec_queue)
          call set_to_zero1(cphi   ,10*npoleloc   ,rec_queue)
-         call set_to_zero1(cphirec,10*npolerecloc,rec_queue)
       else
          call set_to_zero1(buffermpimu1,3*nrhs*npoleloc ,rec_queue)
          call set_to_zero2(murec,buffermpimu2,3*nrhs*npolerecloc,
      &                    rec_queue)
          call set_to_zero2(cphi   ,buffermpi1,10*npoleloc   ,rec_queue)
-         call set_to_zero2(cphirec,buffermpi2,10*npolerecloc,rec_queue)
+         call set_to_zero1(buffermpi2,10*npolerecloc,rec_queue)
       end if
       call timer_exit (timer_other,quiet_timers)
 c
@@ -150,12 +133,14 @@ c
       call efld0_recipgpu(cphi,ef)
       call timer_exit( timer_recdip,quiet_timers )
 c
+      if (aewald.ge.1d-6) then
       call commrecdirfieldsgpu(0,cphirec,cphi,buffermpi1,buffermpi2,
      &     reqrecdirrec,reqrecdirsend)
       call commrecdirfieldsgpu(1,cphirec,cphi,buffermpi1,buffermpi2,
      &     reqrecdirrec,reqrecdirsend)
       call commrecdirfieldsgpu(2,cphirec,cphi,buffermpi1,buffermpi2,
      &     reqrecdirrec,reqrecdirsend)
+      end if
 c
       call commfieldgpu(nrhs,ef)
 #ifdef _OPENACC
@@ -169,16 +154,12 @@ c
       term = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
       def_queue = rec_queue
 
-!$acc parallel loop collapse(3) async(def_queue)
-      do i = 1,npoleloc
-         do j = 1,nrhs
-            do k = 1,3
-               iipole = poleglob(i)
-               comp = term*rpole(k+1,iipole) - cphi(k+1,i)
-               ef(k,j,i) = ef(k,j,i) + comp
-            end do
-         end do
-      end do
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+      do i = 1,npoleloc; do j = 1,nrhs; do k = 1,3
+         iipole = poleglob(i)
+         comp = term*rpole(k+1,iipole) - cphi(k+1,i)
+         ef(k,j,i) = ef(k,j,i) + comp
+      end do; end do; end do
       wtime1 = mpi_wtime()
 c
 c     guess the dipoles:
@@ -188,29 +169,21 @@ c
       if (use_pred .and. nualt.eq.maxualt) then
          call pred_InitField(mu)
       else if (polgsf.eq.0) then
-!$acc parallel loop collapse(3) async(def_queue)
-         do i = 1, npoleloc
-            do k = 1, nrhs
-               do j = 1, 3
-                  iipole = poleglob(i)
-                  mu(j,k,i) = polarity(iipole)*ef(j,k,i)
-               end do
-            end do
-         end do
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+         do i = 1,npoleloc; do k = 1,nrhs; do j = 1,3
+            iipole = poleglob(i)
+            mu(j,k,i) = polarity(iipole)*ef(j,k,i)
+         end do; end do; end do
       else
-!$acc parallel loop collapse(3) async(def_queue)
-         do i = 1, npoleloc
-            do j = 1,nrhs
-               do k = 1, 3
-                  iipole = poleglob(i)
-                  if (btest(j,0)) then !j==1
-                     mu(k,j,i) = uind(k,iipole)
-                  else  !j/=1
-                     mu(k,j,i) = uinp(k,iipole)
-                  end if
-               end do
-            end do
-         end do
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+         do i = 1,npoleloc; do j = 1,nrhs; do k = 1,3
+            iipole = poleglob(i)
+            if (btest(j,0)) then !j==1
+               mu(k,j,i) = uind(k,iipole)
+            else  !j/=1
+               mu(k,j,i) = uinp(k,iipole)
+            end if
+         end do; end do; end do
       end if
       call commdirdirgpu(nrhs,1,mu,reqrec,reqsend)
       call commdirdirgpu(nrhs,2,mu,reqrec,reqsend)
@@ -256,34 +229,29 @@ c     move the computed dipoles in the common block.
 c
       call timer_enter( timer_other )
       def_queue = rec_queue
-!$acc parallel loop collapse(2) async(def_queue)
-      do i = 1, npolebloc
-         do j = 1, 3
-            iipole         = poleglob(i)
-            uind(j,iipole) = mu(j,1,i)
-            uinp(j,iipole) = mu(j,2,i)
-         end do
-      end do
-!$acc parallel loop collapse(2) async(def_queue)
-      do i = 1, npolerecloc
-         do j = 1, 3
-            iipole = polerecglob(i)
-            iglob  = ipole(iipole)
-            if (repart(iglob).ne.rank) then
-               uind(j,iipole) = murec(j,1,i)
-               uinp(j,iipole) = murec(j,2,i)
-            else
-               uind(j,iipole) = mu(j,1,poleloc(iipole))
-               uinp(j,iipole) = mu(j,2,poleloc(iipole))
-            end if
-         end do
-      end do
+!$acc parallel loop collapse(2) async(def_queue) default(present)
+      do i = 1, npolebloc; do j = 1, 3
+         iipole         = poleglob(i)
+         uind(j,iipole) = mu(j,1,i)
+         uinp(j,iipole) = mu(j,2,i)
+      end do; end do
+!$acc parallel loop collapse(2) async(def_queue) default(present)
+      do i = 1, npolerecloc; do j = 1, 3
+         iipole = polerecglob(i)
+         iglob  = ipole(iipole)
+         if (repart(iglob).ne.rank) then
+            uind(j,iipole) = murec(j,1,i)
+            uinp(j,iipole) = murec(j,2,i)
+         else
+            uind(j,iipole) = mu(j,1,poleloc(iipole))
+            uinp(j,iipole) = mu(j,2,poleloc(iipole))
+         end if
+      end do; end do
       call timer_exit( timer_other,quiet_timers )
 c
 c     update the lists of previous induced dipole values
 c
       if (use_pred) call pred_SetAlt
-!$acc end data
 
       deallocate (reqrec)
       deallocate (reqsend)
@@ -291,17 +259,6 @@ c
       deallocate (req2send)
       deallocate (reqrecdirrec)
       deallocate (reqrecdirsend)
-c     deallocate (buffermpi1)
-c     deallocate (buffermpi2)
-c     deallocate (buffermpimu1)
-c     deallocate (buffermpimu2)
-c     deallocate (ef)
-c     deallocate (fphi)
-c     deallocate (mu)
-c     deallocate (murec)
-c     deallocate (cphi)
-c     deallocate (cphirec)
-      return
       end
 
       subroutine pred_InitField(mu)
@@ -427,9 +384,10 @@ c     write(*,*)
       use domdec ,only: nproc,rank,ndir
       use inform ,only: deb_Path
       use mpole
+      use mutant ,only: elambda
       use nvshmem
       use polar
-      use potent ,only: use_pmecore,use_polarshortreal
+      use potent ,only: use_pmecore,use_polarshortreal,use_lambdadyn
       use timestat
       use tinheader ,only: ti_p
       use uprior
@@ -441,7 +399,8 @@ c     write(*,*)
       integer ipe,ind
 #endif
 
-      ! TODO use shortnualt instead
+      if (use_lambdadyn.and.elambda.gt.0.0) return
+
       if (deb_Path) print '(3x,A)',"pred_SetAlt"
       call timer_enter( timer_ulspred )
 
@@ -543,12 +502,26 @@ c     write(*,*)
 c
 c
 c
+      module inducepcg_mod
+      integer  :: indpcg_call=0
+      integer  :: precnd1
+      integer  :: lastIter=0,sameIter=0
+      logical  :: exitlast=.false.
+      real(t_p):: ggold1,ggold2
+      real(r_p):: gg1,gg2,ggnew1,ggnew2,ene1,ene2
+      real(t_p),target :: gbuff(4)
+      real(r_p),target :: gbuff1(6)
+      real(r_p),pointer:: gnorm(:), ggnew(:), ene(:)
+      !real(t_p):: ggdev1=0.0,ggdev2=0.0
+      !real(t_p):: alphacg1=0.0,alphacg2=0.0
+      end module
       subroutine inducepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
       use atmlst
       use domdec
       use ewald
       use iounit
-      use inform    ,only: deb_Path,abort,minmaxone
+      use inform    ,only: deb_Path,abort,minmaxone,app_id,dynamic_a
+      use inducepcg_mod
       use interfaces,only: tmatxb_pmegpu
       use math
       use mpole
@@ -576,27 +549,15 @@ c
       real(t_p),intent(inout):: mu   (:,:,:)
       real(t_p),intent(inout):: murec(:,:,:)
       procedure(tmatxb_pmegpu) :: matvec
-
-      integer i, it, j, k
-      integer,save:: precnd1
-      real(t_p) ggold(2), alphacg(2), gg(2)
-      real(r_p) gnorm(2), ggnew(2), ene(2)
-      real(t_p),save:: ggold1=0.0,ggold2=0.0
-      real(r_p),save:: ggnew1=0.0,ggnew2=0.0
-      real(t_p),save:: ggdev1=0.0,ggdev2=0.0
-      real(r_p),save:: gnorm1=0.0,gnorm2=0.0
-      real(t_p),save:: gg1=0.0,gg2=0.0
-      real(r_p),save:: ene1=0.0,ene2=0.0
-      real(t_p),save:: alphacg1=0.0,alphacg2=0.0
-      real(t_p)  zero, one, term
-      real(r_p) zerom, pt5
-      real(r_p) resnrm
+c
+      integer   i, it, j, k
+      real(t_p) zero, one, reg1
+      real(r_p) zerom, pt5, resnrm, term
       parameter(zero=0.0,zerom=0,pt5=0.5,one=1.0)
 c
 c     MPI
 c
       integer iglob, iipole, ierr, tag, proc, sizeloc, sizebloc
-      integer ::place, place_tmp=0, place1=0
       integer req1, req2, req3, req4, req5
       integer status(MPI_STATUS_SIZE)
       integer,allocatable :: reqrecdirrec(:),reqrecdirsend(:)
@@ -604,9 +565,7 @@ c
       integer,allocatable :: req2rec(:),req2send(:)
       integer,allocatable :: reqendrec(:),reqendsend(:)
       integer,allocatable :: req2endrec(:),req2endsend(:)
-      logical,save::first_in=.true.
-      logical tinker_isnan_m
-      integer,save::icall=0
+      logical tinker_isnan_m,skip_chk
 c
  1000 format(' cgiter converged after ',I3,' iterations.',/,
      &       ' final energy        = ',2D14.7,/,
@@ -625,6 +584,7 @@ c
      &   write(*,'(3x,a)') 'inducepcg_pme2gpu'
 
       call timer_enter ( timer_other )
+      indpcg_call = indpcg_call+1
 c
 c     Allocate some memory
 c
@@ -663,31 +623,39 @@ c
       allocate (reqendrec(nproc))
       allocate (req2endsend(nproc))
       allocate (req2endrec(nproc))
+      gbuff1     = 0.0_re_p
+      ggnew(1:2) => gbuff1(1:2)
+        ene(1:2) => gbuff1(3:4)
+      gnorm(1:2) => gbuff1(5:6)
 
       sizeloc  = 3*nrhs*npoleloc
       sizebloc = 3*nrhs*npolebloc
-      if (first_in) then
-!$acc enter data create(gg1,gg2)
-         first_in=.false.
-         call Tinker_shellEnv("PRECND",precnd1,0)
-         if (precnd1) call polarEingenVal
-      end if
 c
 c     setup the preconditioner
 c
       if (precnd) then
-!$acc parallel loop present(poleglob,polarity) async
+!$acc parallel loop default(present) async(rec_queue)
          do i = 1, npoleloc
-            iipole = poleglob(i)
-            diag(i) = polarity(iipole)
+            iipole  = poleglob(i)
+            reg1    = polarity(iipole)
+            diag(i) = merge(tinypol,reg1,reg1.eq.0.0_ti_p)
          end do
          if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else
-!$acc parallel loop async
+!$acc parallel loop default(present) async(rec_queue)
          do i = 1, npoleloc
             diag(i) = one
          end do
       end if
+c
+      if (indpcg_call.eq.1) then
+!$acc enter data create(gg1,gg2,ggnew1,ene1,ggnew2,ene2
+!$acc&          ,ggold1,ggold2,gbuff,gbuff1)
+        !Set up Deflation Preconditioner
+         call Tinker_shellEnv("PRECND",precnd1,0)
+         !if (precnd1) call polarEingenVal
+      end if
+      !if (precnd1) call restartDeflat
 c
 c     initialize to zero
 c
@@ -705,20 +673,18 @@ c
       call timer_exit( timer_other,quiet_timers )
 c     now, compute the initial direction
 c
-      ggold  = 0.0_ti_p
+!$acc serial async(rec_queue) present(ggold1,ggold2)
       ggold1 = 0.0_ti_p
       ggold2 = 0.0_ti_p
+!$acc end serial
 
 #ifdef _OPENACC
-      if (dir_queue.ne.rec_queue)
-     &   call start_dir_stream_cover
+      if (dir_queue.ne.rec_queue) call start_dir_stream_cover
 #endif
-      if (precnd1) then
-         !call projectorOpe(mu,mu,0)
-         !call invertDefaultQmat(ef,mu,1.0_ti_p)
-         call ProjectorPTransGeneric(mu,mu)
-         call ApplyQxV(ef,mu,1.0_ti_p)
-      end if
+      !if (precnd1) then
+      !   call ProjectorPTransGeneric(mu,mu)
+      !   call ApplyQxV(ef,mu,1.0_ti_p)
+      !end if
 c
       call timer_enter( timer_realdip )
       call matvec(nrhs,.true.,mu,h)
@@ -744,20 +710,25 @@ c
       call timer_enter( timer_other )
 
       if (precnd1) then
-!$acc parallel loop collapse(3) present(ef) async(rec_queue)
+
+!$acc parallel loop collapse(3) default(present) async(rec_queue)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
          h(i,j,k)   = h(i,j,k)  + dipfield(i,j,k) - term*mu(i,j,k)
          res(i,j,k) = ef(i,j,k) - h(i,j,k)
       end do; end do; end do
       call adaptedDeflat2(res,pp,diag)
-!$acc parallel loop collapse(3) present(ef) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc&        present(ggold1,ggold2) reduction(+:ggold1,ggold2)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
          if (btest(j,0)) then; ggold1= ggold1 + res(i,j,k)*pp(i,j,k)
          else;                 ggold2= ggold2 + res(i,j,k)*pp(i,j,k)
          end if
       end do; end do; end do
+
       else
-!$acc parallel loop collapse(3) present(ef) async(rec_queue)
+
+!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc&              present(ggold1,ggold2) reduction(+:ggold1,ggold2)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
          h(i,j,k)   = h(i,j,k)  + dipfield(i,j,k) - term*mu(i,j,k)
          res(i,j,k) = ef(i,j,k) - h(i,j,k)
@@ -769,19 +740,26 @@ c
             ggold2  = ggold2 + res(i,j,k)*zr(i,j,k)
          end if
       end do; end do; end do
-      end if
-!$acc wait(rec_queue)
-      !if (precnd1) call projectorOpe(pp,pp,0)
 
-      ggold(1) = ggold1
-      ggold(2) = ggold2
+      end if
 
       if (nproc.gt.1) then
-         call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC
-     &                      ,MPI_SUM,COMM_TINKER,req1,ierr)
+!$acc serial async present(gbuff,ggold1,ggold2)
+         gbuff(1) = ggold1
+         gbuff(2) = ggold2
+!$acc end serial
+!$acc wait(rec_queue)
+!$acc host_data use_device(gbuff)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff,nrhs,MPI_TPREC
+     &                     ,MPI_SUM,COMM_TINKER,ierr)
+!$acc end host_data
+!$acc serial async present(ggold1,ggold2,gbuff)
+         ggold1 = gbuff(1)
+         ggold2 = gbuff(2)
+!$acc end serial
+         !if (nproc.gt.1) call MPI_WAIT(req1,status,ierr)
       end if
       call timer_exit ( timer_other )
-
 c
 c     MPI : begin sending
 c
@@ -792,15 +770,9 @@ c
       call commrecdirdipgpu(nrhs,2,murec,pp,buffermpimu1,
      &     buffermpimu2,req2rec,req2send)
 
-      if (nproc.gt.1) call MPI_WAIT(req1,status,ierr)
-
-      ggold1 = ggold(1)
-      ggold2 = ggold(2)
-
-!!$acc update host(pp,murec,zr,res,h,dipfield,dipfieldbis,diag)
-c
+c     -------------------------
 c     now, start the main loop:
-c
+c     -------------------------
       do it = 1,politer
 c
          call timer_enter( timer_realdip )
@@ -811,8 +783,10 @@ c
          call tmatxbrecipgpu(pp,murec,nrhs,dipfield,dipfieldbis)
          call timer_exit ( timer_recdip,quiet_timers )
 
-!$acc serial async present(gg1,gg2)
+!$acc serial async present(gg1,gg2,ggnew1,ggnew2,ene1,ene2)
          gg1=zero; gg2=zero
+         ggnew1 = zerom; ggnew2 = zerom
+         ene1 = zerom; ene2 = zerom
 !$acc end serial
 c
          call commfieldgpu(nrhs,h)
@@ -838,20 +812,18 @@ c
          if (dir_queue.ne.rec_queue) then
 !$acc wait(dir_queue)
          end if
+!$acc host_data use_device(h,pp,dipfield)
 !$acc parallel loop collapse(3) present(gg1,gg2) async(rec_queue)
-!$acc&         default(present)
+!$acc&         deviceptr(h,dipfield,pp)
          do k=1,npoleloc; do j=1,nrhs; do i=1,3
             h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*pp(i,j,k)
-         end do; end do; end do
-!$acc parallel loop collapse(3) present(gg1,gg2) async(rec_queue)
-!$acc&         default(present)
-         do k=1,npoleloc; do j=1,nrhs; do i=1,3
             if (btest(j,0)) then
                gg1 = gg1 + pp(i,j,k)*h(i,j,k)
             else
                gg2 = gg2 + pp(i,j,k)*h(i,j,k)
             end if
          end do; end do; end do
+!$acc end host_data
 
          if (nproc.gt.1) then
 !$acc host_data use_device(gg1,gg2)
@@ -885,8 +857,11 @@ c
          ene1 = zerom; ene2 = zerom
 
          if (precnd1) then
+         !   call loadKrylovBase(res,h,ggdev1,ggdev2)
 
-!$acc parallel loop collapse(3) async(rec_queue) present(gg1,gg2,mu,ef)
+!$acc parallel loop collapse(3) async(rec_queue)
+!$acc&         present(gg1,gg2,ggold1,ggold2,ene1,ene2)
+!$acc&         default(present)
          do k=1,npoleloc; do j=1,nrhs; do i=1,3
             if (btest(j,0)) then
                mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
@@ -901,7 +876,9 @@ c
 
          call adaptedDeflat2(res,zr,diag)
 
-!$acc parallel loop collapse(3) async(rec_queue) present(gg1,gg2,mu,ef)
+!$acc parallel loop collapse(3) async(rec_queue)
+!$acc&         present(gg1,gg2,ggnew1,ggnew2,ene1,ene2)
+!$acc&         default(present)
          do k=1,npoleloc; do j=1,nrhs; do i=1,3
             if (btest(j,0)) then; ggnew1= ggnew1 + res(i,j,k)*zr(i,j,k)
             else; ggnew2 = ggnew2 + res(i,j,k)*zr(i,j,k); end if
@@ -909,7 +886,11 @@ c
 
          else
 
-!$acc parallel loop collapse(3) async(rec_queue) present(gg1,gg2,mu,ef)
+!$acc host_data use_device(h,pp,dipfield,mu,res,ef,zr,diag)
+!$acc parallel loop collapse(3) async(rec_queue)
+!$acc&         present(gg1,gg2,ggold1,ggold2,ggnew1,ggnew2,ene1,ene2)
+!$acc&         deviceptr(mu,pp,res,h,zr,diag,ef)
+!$acc&         reduction(+:ggnew1,ggnew2,ene1,ene2)
          do k=1,npoleloc; do j=1,nrhs; do i=1,3
             if (btest(j,0)) then
                mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
@@ -925,37 +906,46 @@ c
                ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
             end if
          end do; end do; end do
+!$acc end host_data
 
          end if
+
+         if (nproc.gt.1) then
 c Implicit wait seems to be removed with PGI-20
-!$acc wait
-         ene2 = -pt5*ene2; ene1 = -pt5*ene1
-         ggnew(1)=ggnew1; ggnew(2)=ggnew2
-           ene(1)=  ene1;   ene(2)=  ene2
+!$acc serial async(rec_queue) present(ene1,ene2,ggnew1,ggnew2,gbuff1)
+         gbuff1(1)=ggnew1; gbuff1(2)=ggnew2
+         gbuff1(3)=  ene1; gbuff1(4)=  ene2
+!$acc end serial
+!$acc wait(rec_queue)
+!$acc host_data use_device(gbuff1)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff1,2*nrhs,MPI_RPREC,
+     &        MPI_SUM,COMM_TINKER,ierr)
+!$acc end host_data
+         !call MPI_WAIT(req3,status,ierr)
+         !call MPI_WAIT(req4,status,ierr)
+!$acc serial async(rec_queue) present(ggnew1,ggnew2,ene1,ene2,gbuff1)
+         ggnew1 = gbuff1(1); ggnew2 = gbuff1(2)
+         ene1   = gbuff1(3); ene2   = gbuff1(4)
+!$acc end serial
+         end if
 
-         call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_RPREC,
-     &        MPI_SUM,COMM_TINKER,req3,ierr)
-         call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_RPREC,MPI_SUM,
-     &        COMM_TINKER,req4,ierr)
-         call MPI_WAIT(req3,status,ierr)
-         call MPI_WAIT(req4,status,ierr)
-         resnrm = 0.0_re_p
-
-         !if (precnd1) then
-         !   call projectorOpe(zr,zr,0)
-         !end if
-
-         ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
-!$acc parallel loop collapse(3) async(rec_queue)
+!$acc parallel loop collapse(3) async(rec_queue) default(present)
+!$acc&         present(ggnew1,ggnew2,ggold1,ggold2)
          do k=1,npoleloc; do j=1,nrhs; do i=1,3
             if (btest(j,0)) then
-               pp(i,j,k) = zr(i,j,k)+ ggdev1*pp(i,j,k)
+               pp(i,j,k) = zr(i,j,k)+ (ggnew1/ggold1)*pp(i,j,k)
             else
-               pp(i,j,k) = zr(i,j,k)+ ggdev2*pp(i,j,k)
+               pp(i,j,k) = zr(i,j,k)+ (ggnew2/ggold2)*pp(i,j,k)
             end if
          end do; end do; end do
-
+c
          call timer_exit( timer_other )
+c
+         ! Skip Iteration check
+         skip_chk = it.lt.2.or.(exitlast.and.(it.lt.lastIter))
+         ! Skip last Iteration check
+         if (exitlast.and.it.eq.lastIter.and.mod(sameIter,3).ne.0)
+     &      goto 10
 c
          call commdirdirgpu(nrhs,1,pp,reqrec,reqsend)
          call commdirdirgpu(nrhs,0,pp,reqrec,reqsend)
@@ -964,17 +954,31 @@ c
          call commrecdirdipgpu(nrhs,0,murec,pp,buffermpimu1,
      &        buffermpimu2,req2rec,req2send)
 c
-         do k = 1, nrhs
-            gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
-            resnrm   = max(resnrm,gnorm(k))
-         end do
+!$acc serial async(rec_queue)
+!$acc&       present(ggold1,ggold2,ggnew1,ggnew2,ene1,ene2,gbuff1)
+         ggold1 = ggnew1
+         ggold2 = ggnew2
+         if (nproc.eq.1) then
+            gbuff1(1)= ggnew1; gbuff1(2)= ggnew2
+            gbuff1(3)= ene1  ; gbuff1(4)= ene2  
+         end if
+!$acc end serial
 
+         if (skip_chk) then
+            resnrm = 2*poleps
+         else
+!$acc update host(gbuff1) async(rec_queue)
+!$acc wait(rec_queue)
+            do k = 1, nrhs
+               gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
+            end do
+            resnrm = max(gnorm(1),gnorm(2))
+         end if
+c
+         ene = -pt5*ene
          if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
      &      it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
 c
-         ggold  = ggnew
-         ggold1 = ggnew(1)
-         ggold2 = ggnew(2)
          call commdirdirgpu(nrhs,2,pp,reqrec,reqsend)
          call commrecdirdipgpu(nrhs,1,murec,pp,buffermpimu1,
      &        buffermpimu2,req2rec,req2send)
@@ -986,6 +990,7 @@ c
             ! Not converged Exit
             if (rank.eq.0) write(0,1050) it,max(gnorm(1),gnorm(2))
             abort = .true.
+            goto 10
          end if
 c
          if (resnrm.lt.poleps) then
@@ -995,6 +1000,15 @@ c
          end if
       end do
  10   continue
+
+      ! Save and Check Convergence Iteration Index
+      if (app_id.eq.dynamic_a) then
+      sameIter = merge(0,sameIter+1,lastIter.ne.it)
+      lastIter = it
+      exitlast = polprt.eq.0.and.sameIter.gt.25
+     &           .and.mod(indpcg_call,100).ne.0
+      if (deb_Path) print*, 'pcg_conv iter',lastIter,sameIter,exitlast
+      end if
 
 c
 c     Begin reception of mu for PME
@@ -1017,6 +1031,10 @@ c
 c
 c     finalize and debug printing:
 c
+      !if (precnd1) then
+      !   call FinalizeKrylovBase
+      !end if
+
       if (polprt.ge.3) then
 !$acc wait
 !$acc update host(mu)
@@ -1036,10 +1054,6 @@ c
          end do
       end if
  50   continue
-      icall = icall+1
-
-!!$acc end data
-!!$acc exit data delete(res,pp,dipfield,dipfieldbis) async
       deallocate (reqrecdirsend)
       deallocate (reqrecdirrec)
       deallocate (reqsend)
@@ -1050,17 +1064,6 @@ c
       deallocate (reqendrec)
       deallocate (req2endsend)
       deallocate (req2endrec)
-c     deallocate (buffermpi1)
-c     deallocate (buffermpimu1)
-c     deallocate (buffermpimu2)
-c     deallocate (buffermpi2)
-c     deallocate (dipfield)
-c     deallocate (dipfieldbis)
-c     deallocate (res)
-c     deallocate (h)
-c     deallocate (pp)
-c     deallocate (zr)
-c     deallocate (diag)
       end
 c
       subroutine inducejac_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
@@ -1687,7 +1690,7 @@ c     end subroutine
       real(r_p) theta(k),sigma(k)
       integer i
 
-      do i = 0,cgstep_max
+      do i = 0,min(k-1,cgstep_max)
          sh_the(i) = theta(i+1)
 c        sh_sig(i) = sigma(i+1)
       end do
@@ -1813,8 +1816,8 @@ c
          call initcuSolver(rec_stream)
 #endif
 !$acc enter data create(ipiv)
-         call Tinker_shellEnv('SSDIM',sshort,5)
-         call Tinker_shellEnv('SDIM',slong,7)
+         call Tinker_shellEnv('SSDIM',sshort,4)
+         call Tinker_shellEnv('SDIM',slong,5)
          sshort = min(sshort,cgstep_max)
          slong  = min(slong ,cgstep_max)
 c

@@ -19,16 +19,19 @@ c
       use atomsMirror
       use boxes
       use files
+      use inform   ,only:n_fwriten
       use group
       use mdstuf
       use moldyn
+      use output   ,only:new_restart
       use titles
       use timestat ,only:timer_io,timer_enter,timer_exit,quiet_timers
       implicit none
-      integer i,idyn
+      integer i,idyn,lext
       integer freeunit
       logical exist
       character*2 atmc
+      character*10 ext
       character*40 fstr
       character*240 dynfile
 c
@@ -37,7 +40,20 @@ c
 c     update an existing restart file or open a new one
 c
       idyn = freeunit ()
-      dynfile = filename(1:leng)//'.dyn'
+      if (new_restart.and.n_fwriten.ne.0) then
+         if (n_fwriten.eq.-1) then
+            dynfile = filename(1:leng)//'_err.dyn'
+            call version(dynfile,'new')
+         else
+            lext=6
+            call numeral(n_fwriten,ext,lext)
+            dynfile = filename(1:leng)//'_'//ext(1:lext)//'.dyn'
+            call version(dynfile,'new')
+         end if
+      else
+         dynfile = filename(1:leng)//'.dyn'
+      end if
+
       inquire (file=dynfile,exist=exist)
       if (exist) then
          open (unit=idyn,file=dynfile,status='old')

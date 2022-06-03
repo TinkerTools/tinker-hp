@@ -41,6 +41,49 @@
 #endif
       end subroutine image_inl
 
+      M_subroutine
+     &            image1_inl(xr,yr,zr,info)
+!$acc routine seq
+      use tinheader,only:ti_p,prec_eps
+#ifdef TINKER_CUF
+      use utilcu
+#else
+      use boxes ,only: octahedron,box34
+      use cell
+#endif
+      implicit none
+      real(ti_p),intent(inout):: xr,yr,zr
+      integer(1),intent(out)  :: info
+
+      info = 0
+      if (f_abs(xr) .gt. xcell2) then
+         xr  = xr - f_sign(xcell,xr)
+     &             *f_floor((f_abs(xr)-xcell2)*i_xcell + 1.0_ti_p)
+         info=1
+      end if
+      if (f_abs(yr) .gt. ycell2) then
+         yr  = yr - f_sign(ycell,yr)
+     &             *f_floor((f_abs(yr)-ycell2)*i_ycell + 1.0_ti_p)
+         info=1
+      end if
+      if (f_abs(zr) .gt. zcell2) then
+         zr  = zr - f_sign(zcell,zr)
+     &             *f_floor((f_abs(zr)-zcell2)*i_zcell + 1.0_ti_p)
+         info=1
+      end if
+
+#ifdef INC_OCTAHEDRON_BOX_SHAPE
+      if (octahedron) then
+         if (f_abs(xr)+f_abs(yr)+f_abs(zr) .gt. box34) then
+            info=1
+            xr = xr - f_sign(xcell2,xr)
+            yr = yr - f_sign(ycell2,yr)
+            zr = zr - f_sign(zcell2,zr)
+         end if
+      end if
+#endif
+      end subroutine image1_inl
+
 
       M_subroutine
      &            imagem_inl(xr,yr,zr,xbox2,ybox2,zbox2,box3)

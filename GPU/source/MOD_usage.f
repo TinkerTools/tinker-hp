@@ -14,6 +14,7 @@ c     nuse   total number of active atoms in energy calculation
 c     iuse   numbers of the atoms active in energy calculation
 c     winiuse window object corresponding to iuse
 c     use    true if an atom is active, false if inactive
+c     useAll true if all atoms are being used
 c     winuse window object corresponding to use
 c
 c
@@ -23,4 +24,5 @@ c
       integer, pointer :: iuse(:)
       logical, pointer :: use(:)
       integer winuse,winiuse
+      logical useAll
       end

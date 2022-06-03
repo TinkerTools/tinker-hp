@@ -361,7 +361,8 @@ c
       if (precnd) then
         do i = 1, npoleloc
           iipole = poleglob(i)
-          diag(i) = polarity(iipole)
+          term   = polarity(iipole) 
+          diag(i)= merge(tinypol,term,term.eq.0.0)
         end do
         if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else

@@ -4,8 +4,9 @@ c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       module tmatxb_inl_subroutines
-        use utilgpu ,only: real3,real6
+        use tintypes ,only: real3,real6,real7
         integer:: icall=1,ndec=1
         include "erfcore_data.f.inc"
         real(t_p),allocatable::mu3(:,:),mu4(:,:)
@@ -119,7 +120,7 @@ c===============================================================================
      &        ,/,' ndec  ', I4
      &        ,/,' icall ', I4 )
          write(*, 13) ndec, icall
-         call fatal
+         __TINKER_FATAL__
       end if
       icall = 1
       end subroutine
@@ -980,6 +981,7 @@ c
      &            , iseblst_s=>ishorteblst, seblst_s=>shorteblst
      &            , eblst_s=>eblst, x_s=>celle_x, y_s=>celle_y
      &            , z_s=>celle_z
+     &            , b_stat
       use interfaces,only: tmatxb_correct_interactions
       use polar   , only : polarity, thole, pdamp
       use potent  , only : use_polarshortreal
@@ -993,9 +995,11 @@ c
       use cudafor
       use interfaces, only : cu_tmatxb_pme
       use utilcu    , only : BLOCK_DIM,check_launch_kernel
-      use utilgpu   , only : def_stream,rec_stream, nSMP
+      use utilgpu   , only : def_stream,rec_stream,rec_queue,nSMP
+     &              , efit=>ug_workS_r, transposez_r6
       use tmatxb_pmecu,only: tmatxb_pme_core_cu
 #endif
+      use tinMemory , only : prmem_request
       implicit none
       integer i
       integer start,start1,sized
@@ -1016,6 +1020,8 @@ c
       p_zend = zendproc(rank+1)
       begin  = 2*npolelocnlb_pair+1
 
+      call prmem_request(efit,6*npolebloc,async=.false.)
+
       alsq2  = 2 * aewald**2
       alsq2n = 0
       if (aewald > 0) alsq2n = 1 / (sqrtpi*aewald)
@@ -1031,22 +1037,23 @@ c
 
       if (use_polarshortreal) then
 
-      if (dyn_gS) gS = min(nspnlb2/4,maxBlock)
+      if (dyn_gS) gS = min(max(nspnlb2,4)/4,maxBlock)
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
-!$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
+!$acc&    ,b_stat,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit)
 
+      !TODO Adapt C Kernel for efit shape
 c     call cu_tmatxb_pme    !Find his interface inside MOD_inteface
 c    &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)
-c    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
+c    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit
 c    &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc
 c    &     ,.not.no_commdir
 c    &     ,cut2,alsq2,alsq2n,aewald
 c    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
 c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)
-     &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
-     &     ,npolelocnlb,nspnlb2,npolebloc,n
+     &     (ipole_s,pglob_s,b_stat,ploc_s,iseblst_s,seblst_s(begin)
+     &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit
+     &     ,npolelocnl,npolelocnlb,nspnlb2,npolebloc,n
      &     ,cut2,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
       call check_launch_kernel(" tmatxb_pme_core_cu")
@@ -1060,10 +1067,10 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       start  = (icall-1)*sized + 1
       start1 = begin+(start-1)*BLOCK_SIZE
       if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
-      if (dyn_gS) gS = min(sized/4,maxBlock)
+      if (dyn_gS) gS = min(max(sized,4)/4,maxBlock)
 
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
-!$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
+!$acc&     ,b_stat,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit)
 
 c     call cu_tmatxb_pme    !Find his interface inside MOD_inteface
 c    &     (ipole_s,pglob_s,ploc_s
@@ -1075,10 +1082,10 @@ c    &     ,cut2,alsq2,alsq2n,aewald
 c    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
 c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &     (ipole_s,pglob_s,ploc_s
+     &     (ipole_s,pglob_s,b_stat,ploc_s
      &     ,ieblst_s(start),eblst_s(start1)
-     &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
-     &     ,npolelocnlb,sized,npolebloc,n
+     &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit
+     &     ,npolelocnl,npolelocnlb,sized,npolebloc,n
      &     ,cut2,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
       call check_launch_kernel(" tmatxb_pme_core_cu")
@@ -1086,12 +1093,15 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
 !$acc end host_data
 
       end if
+
+      call transposez_r6(efit,efi,ploc_s,npolelocnl,npolebloc
+     &                  ,def_queue)
 #else
       print 100
  100  format('tmatxb_pme_core3 is a specific device routine',/,
      &       'you are not supposed to get inside with your compile',
      &        'type.')
-      call fatal
+      __TINKER_FATAL__
 #endif
 c
       call tmatxb_correct_interactions(mu,efi)
@@ -1173,7 +1183,7 @@ c
 
       if (use_polarshortreal) then
 
-      if (dyn_gS) gS = nspnlb2/4
+      if (dyn_gS) gS = max(nspnlb2,4)/4
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
 !$acc&    ,x_s,y_s,z_s,pdamp,thole,polarity,mu,mu3,mu4,efi,efi3,efi4)
 
@@ -1192,13 +1202,13 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
      &     ,npolelocnlb,nspnlb2,npolebloc,n
      &     ,cut2,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
-      call check_launch_kernel(" tmatxb_pme_core_cu")
+      call check_launch_kernel(" tmatxb_pme_core_v4_cu")
 
 !$acc end host_data
 
       else
 
-      if (dyn_gS) gS = npolelocnlb2_pair/4
+      if (dyn_gS) gS = max(npolelocnlb2_pair,4)/4
       ! Split matvec kernel to ease recovering process in MPI
       sized  = npolelocnlb2_pair/ndec
       start  = (icall-1)*sized + 1
@@ -1225,7 +1235,7 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
      &     ,npolelocnlb,sized,npolebloc,n
      &     ,cut2,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
-      call check_launch_kernel(" tmatxb_pme_core_cu")
+      call check_launch_kernel(" tmatxb_pme_core_v4_cu")
 
 !$acc end host_data
 
@@ -1235,7 +1245,7 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
  100  format('tmatxb_pme_core3 is a specific device routine',/,
      &       'you are not supposed to get inside with your compile',
      &        'type.')
-      call fatal
+      __TINKER_FATAL__
 #endif
 c
       call tmatxb_correct_interactions(mu,efi)
@@ -1312,7 +1322,7 @@ c
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,grplst
 !$acc&    ,iseblst_s,seblst_s,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
 
-      if (dyn_gS) gS = nspnlb2/4
+      if (dyn_gS) gS = max(nspnlb2,4)/4
       call otfdc_tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,ploc_s,grplst,iseblst_s,seblst_s(begin)
      &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
@@ -1328,7 +1338,7 @@ c
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,grplst
 !$acc&    ,ieblst_s,eblst_s,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
 
-      if (dyn_gS) gS = npolelocnlb2_pair/4
+      if (dyn_gS) gS = max(npolelocnlb2_pair,4)/4
       call otfdc_tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,ploc_s,grplst,ieblst_s,eblst_s(begin)
      &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
@@ -1345,7 +1355,7 @@ c
  100  format('otf_dc_tmatxb_pme_core3 is a specific device routine',/,
      &       'you are not supposed to get inside with your compile',
      &        'type.')
-      call fatal
+      __TINKER_FATAL__
 #endif
 c
       call otf_dc_tmatxb_correct_interactions(mu,efi)

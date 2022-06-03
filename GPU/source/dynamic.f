@@ -16,6 +16,7 @@ c     any of several possible integration methods
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       program dynamic
       use mpi
 #ifdef _OPENACC
@@ -309,6 +310,7 @@ c     integrate equations of motion to take a time step
 c
       time0 = 0
       do istep = 1, nstep
+         step_c = istep
          call timer_enter( timer_timestep )
          if      (integrate .eq. 'VERLET') then
             call verlet (istep,dt)
@@ -319,8 +321,8 @@ c
          else if (integrate .eq. 'BAOAB') then
             call baoab(istep,dt)
          else if (integrate .eq. 'BAOABPISTON') then
-            print*,"BAOABPISTON integrator unavailable for now"
-            call fatal
+            write(0,*) "BAOABPISTON integrator unavailable for now"
+            __TINKER_FATAL__
             !call baoabpiston(istep,dt)
          else if (integrate .eq. 'BAOABRESPA') then
             call baoabrespa(istep,dt)
@@ -353,7 +355,7 @@ c
          end if
 
          ! Abort if any problem detected
-         if (abort) call fatal
+         if (abort) __TINKER_FATAL__
       end do
 c
 c     perform any final tasks before program exit

@@ -19,15 +19,18 @@ c
       module echarge3gpu_inl
         use tinTypes , only: real3,real3_red,rpole_elt
         implicit none
+#include "atomicOp.h.f"
         include "erfcore_data.f.inc"
         contains
 #include "convert.f.inc"
 #include "image.f.inc"
+#include "atomicOp.inc.f"
 #if defined(SINGLE) | defined(MIXED)
         include "erfcscore.f.inc"
 #else
         include "erfcdcore.f.inc"
 #endif
+#include "groups.inc.f"
 #include "switch_respa.f.inc"
 #include "pair_charge.f.inc"
       end module
@@ -92,7 +95,6 @@ c
       integer iglob,iichg,inl
       integer nnchg,nnchg1,nnchg2
       integer nn12,nn13,nn14,ntot
-      integer nect
       real(t_p) f,fi
       real(en_p) e,efull
       real(t_p) fs
@@ -200,214 +202,6 @@ c
       end
 
       subroutine ecreal3dgpu
-      use action ,only: nec_
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use deriv
-      use domdec
-      use echarge3gpu_inl
-      use energi  ,only:ec=>ec_r
-      use ewald
-      use iounit
-      use inform
-      use inter
-      use math
-      use molcul
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use usage
-      use utilgpu
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iichg,iglob
-      integer ii,kkk,kglob,kkchg
-      real(t_p) e
-      real(t_p) f,fi,fik,pchgk
-      real(t_p) r,r2,rew
-      real(t_p) rb,rb2
-
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-
-      real(t_p),parameter:: scale_f=1.0
-
-      character*10 mode
-
-      if (deb_path) write(*,'(2x,a)') 'ecreal3dgpu'
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f    = electric / dielec
-      mode = 'ewald'
-      call switch (mode)
-c
-c     compute the real space ewald energy and first derivatives
-c
-!$acc parallel loop vector_length(32) async(dir_queue)
-!$acc&         present(chgglobnl,iion,loc,x,y,z,pchg,nelst,elst,
-!$acc&    ec,nec_)
-      do ii = 1, nionlocnl
-         iichg = chgglobnl(ii)
-         iglob = iion(iichg)
-         i     = loc(iglob)
-         xi    = x(iglob)
-         yi    = y(iglob)
-         zi    = z(iglob)
-         fi    = f * pchg(iichg)
-!$acc loop vector
-         do kkk = 1, nelst(ii)
-            kkchg = elst(kkk,ii)
-            if (kkchg.eq.0) cycle
-            kglob = iion(kkchg)
-c
-c     compute the energy contribution for this interaction
-c
-            xr = xi - x(kglob)
-            yr = yi - y(kglob)
-            zr = zi - z(kglob)
-c
-c     find energy for interactions within real space cutoff
-c
-            call image_inl (xr,yr,zr)
-            r2 = xr*xr + yr*yr + zr*zr
-            if (r2 .le. off2) then
-#ifdef TINKER_DEBUG
-!$acc atomic
-               ninte(iglob) = ninte(iglob) + 1
-#endif
-               fik   = fi*pchg(kkchg)
-               k     = loc(kglob)
-               call charge3_couple(r2,xr,yr,zr,ebuffer
-     &                            ,fik,aewald,scale_f,e,0)
-c
-c     increment the overall energy and derivative expressions
-c
-               ec       = ec + tp2enr(e)
-               nec_     = nec_ + 1
-            end if
-         end do
-      end do
-
-      call ecreal3_scaling
-      end
-
-#ifdef _CUDA
-      subroutine ecreal3d_cu
-      use action ,only: nec_,nec
-      use atmlst
-      use atoms
-      use bound
-      use boxes
-      use charge
-      use chgpot
-      use couple
-      use deriv
-      use domdec
-      use echargecu
-      use energi ,only: ec=>ec_r
-      use ewald
-      use iounit
-      use inform
-      use inter
-      use math
-      use molcul
-      use neigh  , iion_s=>celle_glob,chg_s=>celle_chg
-     &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
-     &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
-      use potent
-      use shunt
-      use timestat
-      use usage
-      use utilcu
-      use utilgpu ,only: def_queue,dir_queue,nred_buff
-     &            , zero_en_red_buffer,reduce_energy_action
-     &            , ered_buff=>ered_buf1,dir_stream,def_stream
-      use virial
-      use mpi
-      implicit none
-      integer i,j,k,iichg,iglob
-      integer ii,kkk,kglob,kkchg
-      real(t_p) e
-      real(t_p) f,fi,fik,pchgk
-      real(t_p) r,r2,rew
-      real(t_p) rb,rb2
-
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-      real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-
-      logical,save:: first_in=.true.
-      logical,parameter:: dyn_gS=.true.
-      integer,save:: gS
-
-      real(t_p),parameter:: scale_f=1.0
-
-      character*10 mode
-
-      if (deb_path) write(*,'(2x,a)') 'ecreal3d_cu'
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f    = electric / dielec
-      mode = 'ewald'
-      call switch (mode)
-
-      if (first_in) then
-         call cudaMaxGridSize("ecreal3d_core_cu",gS)
-         first_in = .false.
-      end if
-      if(dyn_gS) gs = nionlocnlb2_pair/4
-
-      p_xbeg = xbegproc(rank+1)
-      p_xend = xendproc(rank+1)
-      p_ybeg = ybegproc(rank+1)
-      p_yend = yendproc(rank+1)
-      p_zbeg = zbegproc(rank+1)
-      p_zend = zendproc(rank+1)
-
-      def_stream = dir_stream
-      def_queue  = dir_queue
-
-      call zero_en_red_buffer(def_queue)
-      call set_ChgData_CellOrder(.false.)
-
-c
-c     compute the real space ewald energy and first derivatives
-c
-!$acc host_data use_device(iion_s,chg_s,loc_s,ieblst_s,eblst_s,
-!$acc&   x_s,y_s,z_s,pchg,ered_buff,nred_buff
-!$acc&    )
-      call ecreal3d_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &     ( iion_s,chg_s,loc_s,ieblst_s
-     &     , eblst_s(2*nionlocnlb_pair+1)
-     &     , nionlocnlb,nionlocnlb2_pair,nionbloc,n
-     &     , x_s,y_s,z_s,pchg
-     &     , off2,f,aewald, ebuffer
-     &     , ered_buff, nred_buff
-     &     , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-#ifdef TINKER_DEBUG
-#endif
-     &     )
-      call check_launch_kernel(" ecreal1d_core_cu")
-!$acc end host_data
-
-      call reduce_energy_action(ec,nec,ered_buff,def_queue)
-
-      call ecreal3_scaling
-      end
-#endif
-c
-c     Scaling interaction correction subroutines
-c
-      subroutine ecreal3_scaling
       use action
       use atmlst
       use atoms
@@ -416,79 +210,281 @@ c
       use charge
       use chgpot
       use couple
+      use cutoff
       use deriv
       use domdec
       use echarge3gpu_inl
-      use energi  ,only: ec=>ec_r
+      use energi ,only: ec=>ec_r
       use ewald
+      use group
       use iounit
       use inform
       use inter
       use math
       use molcul
+      use mutant
       use neigh
       use potent
       use shunt
       use timestat
       use usage
+      use tinTypes
       use utilgpu
       use virial
       use mpi
       implicit none
-      integer i,j,k,iichg,iglob
-      integer ii,kkk,kglob,kkchg
-      real(t_p) e
-      real(t_p) f,fi,fik
-      real(t_p) r,r2,rew
-      real(t_p) rb,rb2
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-      real(t_p) scale_f
-      character*10 mode
+      integer    i,j,k,iichg,iglob,ii,kkk,kglob,kkchg,ver,ver1,fea
+      integer   ,pointer:: lst(:,:),nlst(:)
+      integer(1) mutik,muti
+      real(t_p)  e,delambdae_
+      real(t_p)  f,fi,fi_,fik,fik_,r,r2,rew,rb,rb2
+      real(t_p)  xi,yi,zi,xr,yr,zr
+      real(t_p)  loff2,scut,scale_f,scale,fgrp
+      type(real3)   ded
+      character*11  mode
+      parameter( scale_f= 1.0
+     &         , ver    = __use_ene__+__use_act__
+     &         , ver1   =       ver  +__use_sca__
+     &         )
 
-      if (deb_Path) write(*,'(3x,a)') 'ecreal3_scaling'
-c
-c     set conversion factor, cutoff and switching coefficients
-c
+      if (deb_Path) write(*,'(2x,a)') 'ecreal3dgpu'
+
+      fea = __use_mpi__
+      if (use_lambdadyn) fea = fea + __use_lambdadyn__
+
+      !set conversion factor, cutoff and switching coefficients
       f    = electric / dielec
-      mode = 'EWALD'
-      call switch (mode)
+      if (use_cshortreal) then
+         mode  = 'SHORTEWALD'
+         call switch (mode)
+         loff2 = 0
+         scut  = off
+         lst   => shortelst
+         nlst  => nshortelst
+         fea   = fea + __use_shortRange__
+      else if (use_clong) then
+         mode  = 'EWALD'
+         call switch (mode)
+         loff2 = (chgshortcut-shortheal)**2
+         scut  = chgshortcut
+         lst   => elst
+         nlst  => nelst
+         fea   = fea + __use_longRange__
+      else
+         mode  = 'EWALD'
+         call switch (mode)
+         loff2 = 0
+         scut  = chgshortcut
+         lst   => elst
+         nlst  => nelst
+      end if
 c
-c     compute the real space Ewald energy and first derivatives
+c     Scaling interaction correction subroutines
 c
-!$acc parallel loop vector_length(32) async(dir_queue)
-!$acc&         present(ccorrect_ik,ccorrect_scale,loc,x,y,z,
-!$acc&    ec,nec_)
+!$acc parallel loop gang vector async(dir_queue)
+!$acc&         present(ccorrect_ik,ccorrect_scale,loc,x,y,z,mutInt,
+!$acc&   grplist,wgrp,pchg,pchg_orig,ec,nec_) reduction(+:ec,nec_)
+!$acc&         private(ded)
       do ii = 1, n_cscale
          iglob = ccorrect_ik(ii,1)
          kglob = ccorrect_ik(ii,2)
-         scale_f =   ccorrect_scale(2*ii+1)
-         fik     = f*ccorrect_scale(2*ii+2)
+         scale = ccorrect_scale(2*ii+1)
+         if (use_lambdadyn) then
+         fi    = pchg(chglist(iglob))
+         fik   = f*fi*pchg(chglist(kglob))
+         fi    = pchg_orig(chglist(iglob))
+         fik_  = f*fi*pchg_orig(chglist(kglob))
+         mutik = mutInt(iglob)+mutInt(kglob)
+         else
+         fik   = f*ccorrect_scale(2*ii+2)
+         end if
          xi    = x(iglob)
          yi    = y(iglob)
          zi    = z(iglob)
-
-         !compute the energy contribution for this interaction
+c
+c     compute the energy contribution for this interaction
+c
          xr    = xi - x(kglob)
          yr    = yi - y(kglob)
          zr    = zi - z(kglob)
-
-         !find energy for interactions within real space cutoff
          call image_inl (xr,yr,zr)
          r2 = xr*xr + yr*yr + zr*zr
 
-         if (r2 .le. off2) then
-            i     = loc(iglob)
-            k     = loc(kglob)
-            call charge3_couple(r2,xr,yr,zr,ebuffer
-     &                         ,fik,aewald,scale_f
-     &                         ,e,1)
-            ec    = ec  + tp2enr(e)
-            if (scale_f.eq.-1.0_ti_p) nec_=nec_-1
+         if (use_group) then
+            call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+            scale = scale *fgrp
+         end if
+c
+c     find energy for interactions within real space cutoff
+c
+         if (r2.gt.loff2 .and. r2.le.off2) then
+            call charge_couple(r2,xr,yr,zr,ebuffer,fik_,fik,aewald
+     &                        ,scale,mutik,use_lambdadyn,shortheal
+     &                        ,scut,elambda,delambdae_,e,ded,ver1,fea)
+ 
+           !increment the overall energy and derivative expressions
+            ec = ec + tp2enr(e)
+            if (scale.eq.-1.0) nec_ = nec_-1
          end if
       end do
-
+c
+c     compute the real space Ewald energy and first derivatives
+c
+!$acc parallel loop gang vector_length(32) async(dir_queue)
+!$acc&         present(chgglobnl,iion,loc,x,y,z,pchg,nlst,lst,mutInt,
+!$acc&    ec,nec_) reduction(+:ec,nec_)
+      do ii = 1, nionlocnl
+         iichg = chgglobnl(ii)
+         iglob = iion(iichg)
+         if (use_lambdadyn) muti = mutInt(iglob)
+         xi    = x(iglob)
+         yi    = y(iglob)
+         zi    = z(iglob)
+         fi    = f * pchg(iichg)
+!$acc loop vector private(ded) reduction(+:ec,nec_)
+         do kkk = 1, nlst(ii)
+            kkchg = lst(kkk,ii)
+            if (kkchg.eq.0) cycle
+            kglob = iion(kkchg)
+            if (use_lambdadyn) mutik = muti+mutInt(kglob)
+c
+c     compute the energy contribution for this interaction
+c
+            xr = xi - x(kglob)
+            yr = yi - y(kglob)
+            zr = zi - z(kglob)
+            call image_inl (xr,yr,zr)
+            r2 = xr*xr + yr*yr + zr*zr
+c
+c     find energy for interactions within real space cutoff
+c
+            if (r2.gt.loff2 .and. r2.le.off2) then
+               if (use_group) then
+                  call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+               end if
+               fik  = fi*pchg(kkchg)
+               call charge_couple(r2,xr,yr,zr,ebuffer,fik_,fik,aewald
+     &                           ,fgrp,mutik,use_lambdadyn,shortheal
+     &                           ,scut,elambda,delambdae_,e,ded,ver,fea)
+ 
+              !increment the overall energy and derivative expressions
+               ec   = ec + tp2enr(e)
+               nec_ = nec_ + 1
+            end if
+         end do
+      end do
       end
+
+#ifdef _CUDA
+      subroutine ecreal3d_cu
+      use action
+      use atmlst
+      use atoms
+      use bound
+      use boxes
+      use charge
+      use chgpot
+      use couple
+      use cutoff
+      use deriv
+      use domdec
+      use echargecu
+      use energi , only: ec=>ec_r,calc_e
+      use ewald
+      use group
+      use iounit
+      use inform
+      use inter
+      use math
+      use molcul
+      use mpi
+      use mutant
+      use neigh  , iion_s=>celle_glob,chg_s=>celle_chg
+     &           , loc_s=>celle_loc, ieblst_s=>ieblst, eblst_s=>eblst
+     &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
+      use potent
+      use shunt
+      use timestat
+      use usage
+      use utilcu  ,only: BLOCK_DIM,check_launch_kernel 
+      use utilgpu ,only: def_queue,dir_queue,dir_stream,def_stream
+     &            , vred_buff,lam_buff,ered_buff=>ered_buf1,nred_buff
+     &            , reduce_energy_virial, reduce_energy_action
+      use virial
+      implicit none
+      integer i,szcik
+      real(t_p) f
+      real(t_p) loff2,scut,scale_f
+      real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+      logical,save:: first_in=.true.
+      integer,save:: gS
+      character*10 mode
+      logical,parameter::dyn_gS=.true.
+
+      if (deb_Path) write(*,'(2X,A)') 'ecreal3d_cu'
+
+      if (first_in) then
+         call cudaMaxGridSize("ecreal3_kcu",gS)
+         first_in=.false.
+      end if
+      if (dyn_gS) gs = max(nionlocnlb2_pair/8,1)
+
+      p_xbeg = xbegproc(rank+1)
+      p_xend = xendproc(rank+1)
+      p_ybeg = ybegproc(rank+1)
+      p_yend = yendproc(rank+1)
+      p_zbeg = zbegproc(rank+1)
+      p_zend = zendproc(rank+1)
+
+      !set conversion factor, cutoff and switching coefficients
+      f    = electric / dielec
+      if (use_cshortreal) then
+         mode  = 'SHORTEWALD'
+         call switch (mode)
+         loff2 = 0
+         scut  = off
+      else if (use_clong) then
+         mode  = 'EWALD'
+         call switch (mode)
+         loff2 = (chgshortcut-shortheal)**2
+         scut  = chgshortcut
+      else
+         mode  = 'EWALD'
+         call switch (mode)
+         loff2 = 0
+         scut  = chgshortcut
+      end if
+
+      def_stream = dir_stream
+      def_queue  = dir_queue
+      szcik      = size(ccorrect_ik,1)
+
+!$acc host_data use_device(iion_s,chg_s,loc_s,ieblst_s,eblst_s
+!$acc&    ,x_s,y_s,z_s,pchg,pchg_orig,mutInt,grplist,wgrp
+!$acc&    ,dec,ered_buff,vred_buff,lam_buff,nred_buff
+!$acc&    ,ccorrect_ik,ccorrect_scale,chglist,loc,x,y,z
+!$acc&    )
+
+      call ecreal3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     ( iion_s,chg_s,loc_s,ieblst_s
+     &     , eblst_s(2*nionlocnlb_pair+1)
+     &     , nionlocnlb,nionlocnlb2_pair,nionbloc,n
+     &     , x_s,y_s,z_s,pchg,pchg_orig,mutInt
+     &     , off2,loff2,scut,shortheal,f,aewald,ebuffer
+     &     , elambda,use_lambdadyn
+     &     , dec,ered_buff,vred_buff,lam_buff,nred_buff
+     &     , use_group, grplist, wgrp
+     &     , ccorrect_ik,ccorrect_scale,chglist,x,y,z,loc,n_cscale,szcik
+     &     , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     )
+      call check_launch_kernel(" ecreal1d_core_cu")
+
+!$acc end host_data
+
+      call reduce_energy_action(ec,nec,ered_buff,def_queue)
+
+      end subroutine
+#endif
 c
 c     GPU version of ecrecip
 c
@@ -527,7 +523,7 @@ c
       real(t_p) hsq,struc2
       real(t_p) h1,h2,h3
       real(t_p) r1,r2,r3
-      integer,dimension(nproc*proc)::req(:),reqbcast(:)
+      integer,dimension(nproc*nproc)::req,reqbcast
       logical,save:: f_in=.true.
 c
 c     return if the Ewald coefficient is zero

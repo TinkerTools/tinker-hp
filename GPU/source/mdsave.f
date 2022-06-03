@@ -71,13 +71,14 @@ c
 
       ! Umbrella Sampling step follows
       if (US_enable) US_step = istep+1
-      if (moddump .ne. 0)  return
+      if (moddump.ne.0.and..not.f_mdsave)  return
 c
 c     wrap coordinates in unit cell
 c
       !call molecule(.false.)   ! No need to be called
-      if (use_bounds) call bounds
+      if (use_bounds.and..not.f_mdsave) call bounds
 !$acc update host(glob,v,a,x,y,z,aalt,epot) async
+      if (nproc.eq.1) goto 34
 c
 c     Send positions,velocities and accelerations to the master
 c
@@ -297,12 +298,20 @@ c
       deallocate (atemp)
       deallocate (aalttemp)
       if (rank.ne.0) return
+ 34   continue
+!$acc wait
 c
 c     get the sequence number of the current trajectory frame
 c
-      idump = nprior + istep/iwrite
-      lext = 3
-      call numeral (idump,ext,lext)
+      if (f_mdsave) then
+         idump = merge(0,n_fwriten,n_fwriten.eq.-1)
+         lext  = merge(1,        6,n_fwriten.eq.-1)
+         call numeral (idump,ext,lext)
+      else
+         idump = nprior + istep/iwrite
+         lext  = 3
+         call numeral (idump,ext,lext)
+      end if
 c
 c     print header for the instantaneous values at current step
 c
@@ -343,7 +352,15 @@ c
               open (unit=ixyz,file=xyzfile,status='new')
            end if
         else
+           if (f_mdsave) then
+              if (n_fwriten.eq.-1) then
+              xyzfile = filename(1:leng)//'_err'
+              else
+              xyzfile = filename(1:leng)//'_'//ext(1:lext)
+              end if
+           else
            xyzfile = filename(1:leng)//'.'//ext(1:lext)
+           end if
            call version (xyzfile,'new')
            open (unit=ixyz,file=xyzfile,status='new')
         end if
@@ -474,5 +491,4 @@ c
          write (iout,210)
   210    format ()
       end if
-      return
       end

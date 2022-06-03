@@ -15,12 +15,14 @@ c     noversion  logical flag governing use of filename versions
 c     overwrite  logical flag to overwrite intermediate files inplace
 c     cyclesave  logical flag to mark use of numbered cycle files
 c     coordtype  selects Cartesian, internal, rigid body or none
+c     new_restart logical flag to write restart  in a new file
+c     f_mdsave    logical flag to force md traj writing
 c
 c
       module output
       implicit none
       logical archive,noversion
       logical overwrite,cyclesave
+      logical new_restart,f_mdsave
       character*9 coordtype
-      save
       end

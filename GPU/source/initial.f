@@ -164,6 +164,7 @@ c
       nextiter = 0
       iprint   = -1
       iwrite   = -1
+      n_fwriten= 0
       stpmax   = 0.0_ti_p
 c
 c     initialize timer values
@@ -172,6 +173,7 @@ c
       call timer_enter(timer_prog)
 
       dotstgrad      = .false.
+      calc_e         = .true.
 
       end
 c
@@ -206,7 +208,7 @@ c
 
       call MPI_COMM_SIZE(COMM_TINKER,nproc,ierr)
       call MPI_COMM_RANK(COMM_TINKER,rank,ierr)
-      CALL MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
+      CALL MPI_Comm_split_type(COMM_TINKER, MPI_COMM_TYPE_SHARED, 0,
      $     MPI_INFO_NULL, hostcomm,ierr)
       CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
 
@@ -222,6 +224,7 @@ c
 c     Initialize GPU
 c
       subroutine initDevice
+      use deriv  ,only: delambdae,delambdav
       use domdec ,only: rank,hostcomm
       use energi
       use inter  ,only: einter
@@ -283,8 +286,13 @@ c
 c     create energy data on device
 c
       call create_energi_on_device()
-!$acc enter data create(einter)
-!$acc enter data create(ered_buff,ered_buf1,vred_buff)
+!$acc enter data create(einter,delambdae,delambdav)
+c
+c     set to zero reductions buffers for (action,energy and virial)
+c
+!$acc enter data create(ered_buff,ered_buf1,lam_buff
+!$acc&          ,vred_buff,vred_buf1,nred_buff)
+      call zero_mdred_buffers
 c
 c     mapping parallelism for gpu execution
 c

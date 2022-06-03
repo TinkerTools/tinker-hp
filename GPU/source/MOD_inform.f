@@ -15,6 +15,7 @@ c     digits    decimal places output for energy and coordinates
 c     iprint    steps between status printing (0=no printing)
 c     iwrite    steps between coordinate dumps (0=no dumps)
 c     isend     steps between socket communication (0=no sockets)
+c     n_fwriten increments every time we force a frame to be written
 c     silent    logical flag to turn off all information printing
 c     verbose   logical flag to turn on extra information printing
 c     debug     logical flag to turn on full debug printing
@@ -25,6 +26,7 @@ c     deb_Path   logical flag to print tinker Path
 c     deb_Force  logical flag to print Forces information
 c     deb_Energy logical flag to print Energy
 c     deb_Polar  logical flag for polarisation potent
+c     tinEssai   variable for testing and developping
 c
 c     dint1 dint2 dibuff  useful for storing purpose
 
@@ -34,9 +36,10 @@ c     dint1 dint2 dibuff  useful for storing purpose
       module inform
       implicit none
       integer digits,iprint
-      integer iwrite,isend
+      integer iwrite,isend,n_fwriten
       logical silent,verbose
       logical debug,holdup,abort
+      integer tinEssai
 
       ! All program list
       enum,bind(C)
@@ -66,7 +69,8 @@ c     dint1 dint2 dibuff  useful for storing purpose
       end interface
 
       interface
-        module subroutine info_minmax_pva
+        module subroutine info_minmax_pva(opt)
+        integer,optional::opt
         end subroutine
       end interface
       interface

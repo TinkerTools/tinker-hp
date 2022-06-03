@@ -52,7 +52,7 @@ c
 c
 c     process keywords containing angle bending parameters
 c
-      if(rank.eq.0.and.tinkerdebug) print*,'kangle'
+      if(deb_Path) print*,'kangle'
       blank = '         '
       header = .true.
       do i = 1, nkey
@@ -414,6 +414,7 @@ c
          anat(i) = 0.0_ti_p
          afld(i) = 0.0_ti_p
          angtyp(i) = 'HARMONIC'
+        angtypI(i) = ANG_HARMONIC
          done = .false.
 c
 c     count number of non-angle hydrogens on the central atom
@@ -493,6 +494,7 @@ c
                   ak(i) = aconp(j)
                   anat(i) = angp(nh,j)
                   angtyp(i) = 'IN-PLANE'
+                 angtypI(i) = ANG_IN_PLANE
                   done = .true.
                   goto 290
                end if
@@ -508,6 +510,7 @@ c
                   anat(i) = angf(1,j)
                   afld(i) = angf(2,j)
                   angtyp(i) = 'FOURIER'
+                 angtypI(i) = ANG_FOURIER
                   done = .true.
                   goto 290
                end if
@@ -557,7 +560,7 @@ c
  12   format(2x,'upload_device_kangle')
       if(rank.eq.0.and.tinkerdebug) print 12
 #endif
-!$acc update device(afld,anat,ak,angtyp)
+!$acc update device(afld,anat,ak,angtypI)
       end subroutine
 
       subroutine delete_data_kangle
@@ -574,7 +577,8 @@ c
       call shmem_request(ak,     winak,     [0], config=mhostacc)
       call shmem_request(anat,   winanat,   [0], config=mhostacc)
       call shmem_request(afld,   winafld,   [0], config=mhostacc)
-      call shmem_request(angtyp, winangtyp, [0], config=mhostacc)
+      call shmem_request(angtyp, winangtyp, [0], config=mhostonly)
+      call shmem_request(angtypI,winangtypI,[0], config=mhostacc)
       end subroutine
 c
 c
@@ -804,7 +808,7 @@ c
                if (c(ina) .eq. 1000.0_ti_p)  goto 20
                if (c(inb) .eq. 1000.0_ti_p)  goto 20
                if (c(inc) .eq. 1000.0_ti_p)  goto 20
-               do k = 1, maxbnd
+               do k = 1, nbond
                   if ((min(ia,ib).eq.ibnd(1,k)) .and.
      &                (max(ia,ib).eq.ibnd(2,k))) then
                      bnd_ab = k
@@ -858,7 +862,7 @@ c
                end if
                if (ring3)  anat(i) = 60.0_ti_p
                if (ring4)  anat(i) = 90.0_ti_p
-               do k = 1, maxbnd
+               do k = 1, nbond
                   if ((min(ia,ib).eq.ibnd(1,k)) .and.
      &                (max(ia,ib).eq.ibnd(2,k))) then
                      bnd_ab = k
@@ -879,7 +883,11 @@ c
             end if
          end if
          angtyp(i) = 'HARMONIC'
-         if (anat(i) .eq. 180.0_ti_p)  angtyp(i) = 'LINEAR'
+        angtypI(i) = ANG_HARMONIC
+         if (anat(i) .eq. 180.0_ti_p) then
+            angtyp(i) = 'LINEAR'
+           angtypI(i) = ANG_LINEAR
+         end if
       end do
 c
 c     turn off the angle bending potential if it is not used

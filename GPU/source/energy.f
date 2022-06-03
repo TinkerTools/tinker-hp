@@ -139,11 +139,11 @@ c
 c     check for an illegal value for the total energy
 c
       if (tinker_isnan_m(esum).or.esum.eq.inf_r) then
-         write (iout,10) esum
+         write (0,10) esum
    10    format (/,' ENERGY  --  Illegal Value for the Total',
      &             ' Potential Energy',F16.6)
          call info_energy(0)
-         call fatal
+         __TINKER_FATAL__
       end if
 !$acc end data
       end

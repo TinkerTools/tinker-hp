@@ -284,14 +284,6 @@ c
 !$acc update host(nangtorloc) async
 !$acc end data
 
-#ifdef _OPENACC
-      if (ndir.eq.1) then
-!$acc wait
-!$acc host_data use_device(angtorglob)
-         call thrust_sort(angtorglob,nangtorloc,rec_stream)
-!$acc end host_data
-      end if
-#endif
       end
 
       subroutine upload_device_kangtor

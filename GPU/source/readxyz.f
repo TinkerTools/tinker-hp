@@ -24,6 +24,7 @@ c
       use bound
       use boxes
       use couple
+      use domdec    ,only: ranktot
       use files
       use inform
       use iounit
@@ -277,6 +278,34 @@ c
          end do
       end if
 !$acc update device(i12(:,:))
+c
+c     Determine maxn12 and maxd12
+c
+      block
+      integer b0,idx
+      maxn12_ = 0
+      maxd12  = 0
+      do i = 1,n
+         maxn12_ = max(maxn12_,n12(i))
+      end do
+      do i = 1,n; do j = 1,n12(i)
+         b0 = (i12(j,i))
+         if (b0.eq.0) cycle
+         b0 = abs(b0 - i)
+         if (b0.gt.maxd12) then
+            maxd12 = b0
+            idx    = i
+         end if
+      end do; end do
+#ifdef _OPENACC
+      if (ranktot.eq.0.And.maxn12_.gt.4) then
+ 111     format(" Tinker-HP: Detected atom ",I0," with a",I2
+     &   ," valence !!!",/,9x," --- Operating to Legacy subroutines"
+     &   ,/)
+         write(*,111) maxd12,maxn12_
+      end if
+#endif
+      end block
 c
 c     perform deallocation of some local arrays
 c

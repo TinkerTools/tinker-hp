@@ -190,6 +190,115 @@ c
 
       end subroutine
 
+      subroutine dev_sort_global_buffers(istep)
+      use angle   ,only: nangleloc
+      use angtor  ,only: nangtorloc
+      use atmlst
+      use bond    ,only: nbondloc
+      use charge  ,only: nionloc,nionrecloc,nionlocnl
+      use domdec  ,only: nproc,rank
+      use disp    ,only: ndisplocnl,displocnl
+      use improp  ,only: niproploc
+      use imptor  ,only: nitorsloc
+      use inform  ,only: deb_Path
+      use mpole   ,only: npoleloc,npolelocnl,npolerecloc
+     &            ,polerecloc,polelocnl
+      use neigh   ,only: ineigup
+      use opbend  ,only: nopbendloc
+      use pitors  ,only: npitorsloc
+      use potent
+      use strbnd  ,only: nstrbndloc
+      use strtor  ,only: nstrtorloc
+      use tors    ,only: ntorsloc
+      use tortor  ,only: ntortorloc
+      use utilgpu
+      use urey    ,only: nureyloc
+      use vdw     ,only: nvdwloc,nvdwlocnl,nvdwbloc
+     &            ,vdwlocnl
+      implicit none
+#if _OPENACC
+      integer i,istep
+      logical rebuildnl
+
+      if(nproc.gt.1) goto 20
+
+ 10   format('dev_sort_global_buffers',I8)
+      if (deb_Path) write(*,10) istep
+
+      if(use_bond) call dev_sort(nbondloc,bndglob,rec_stream)
+      if(use_urey) call dev_sort(nureyloc,ureyglob,rec_stream)
+      if(use_angle) then
+         call dev_sort(nangleloc,angleglob,rec_stream)
+         ! 'angleloc' never used across the code
+c!$acc parallel loop present(angleglob,angleloc) async
+c         do i = 1,nangleloc
+c            angleloc(angleglob(i)) = i
+c         end do
+       end if
+
+       if(use_opbend) call dev_sort(nopbendloc,opbendglob,rec_stream)
+       if(use_strbnd) call dev_sort(nstrbndloc,strbndglob,rec_stream)
+
+       if(use_improp) call dev_sort( niproploc,impropglob,rec_stream) 
+       if(use_imptor) call dev_sort( nitorsloc,imptorglob,rec_stream) 
+
+       if(use_tors  ) call dev_sort(  ntorsloc,  torsglob,rec_stream)
+       if(use_pitors) call dev_sort(npitorsloc,pitorsglob,rec_stream)
+       if(use_tortor) call dev_sort(ntortorloc,tortorglob,rec_stream)
+       if(use_strtor) call dev_sort(nstrtorloc,strtorglob,rec_stream)
+       if(use_angtor) call dev_sort(nangtorloc,angtorglob,rec_stream)
+
+ 20    continue
+       rebuildnl =merge(.true.,.false.
+     &                 ,mod(istep,ineigup).eq.0.and.istep.ge.0)
+
+       if (use_vdw.And.rebuildnl) then
+          !call dev_sort(nvdwloc  ,vdwglob  ,rec_stream)
+          call dev_sort(nvdwlocnl,vdwglobnl,rec_stream)
+!$acc parallel loop present(vdwglobnl,vdwlocnl) async(rec_queue)
+          do i =1, nvdwlocnl
+             vdwlocnl(vdwglobnl(i)) = i
+          end do
+       end if
+
+       if (use_disp.and.rebuildnl) then
+          call dev_sort(ndisplocnl,dispglobnl,rec_stream)
+!$acc parallel loop present(dispglobnl,displocnl) async(rec_queue)
+          do i =1, ndisplocnl
+             displocnl(dispglobnl(i)) = i
+          end do
+       end if
+
+       if (use_charge) then
+          !call dev_sort(nionloc   ,chgglob   ,rec_stream)
+          call dev_sort(nionrecloc,chgrecglob,rec_stream)
+          if(rebuildnl) call dev_sort(nionlocnl ,chgglobnl ,rec_stream)
+          !chgloc & chglocnl appears to be unused
+       end if
+
+       if (use_mpole.or.use_polar) then
+c         call dev_sort(npoleloc   ,poleglob   ,rec_stream)
+          call dev_sort(npolerecloc,polerecglob,rec_stream)
+          if(rebuildnl) call dev_sort(npolelocnl,poleglobnl,rec_stream)
+
+c!$acc parallel loop async(rec_queue)
+c         do i = 1,npolebloc
+c            poleloc(poleglob(i)) = i
+c         end do
+!$acc parallel loop present(polerecloc,polerecglob) async(rec_queue)
+          do i = 1,npolerecloc
+             polerecloc(polerecglob(i)) = i
+          end do
+          if (rebuildnl) then
+!$acc parallel loop present(polelocnl,poleglobnl) async(rec_queue)
+             do i = 1,npolelocnl
+                polelocnl(poleglobnl(i)) = i
+             end do
+          end if
+       end if
+#endif
+      end subroutine
+
       subroutine delete_data_bonds
       use atmlst
       use bond

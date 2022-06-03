@@ -14,8 +14,8 @@ c     krylovDim   holds the krylov subspace dimension
 c     nEigenV     holds the number of EigenVector to be computed
 c     EigenVec_l  computes the EigenVectors to Tmat ? yes : no
 c     lz_WorkSpace   holds the workspace for lanzcos iterations
-c     lz_StoreSpace*  holds the sotorage space for module subroutine
-c     lz_T        holds tridiagonal matrix computed from lanzcos iterations
+c     lz_SS[*][_]    holds the storage space for module subroutine -- (*)instances  (_)inc precision
+c     lz_T[*]        holds tridiagonal matrix computed from lanzcos iterations (*)dipoles
 c
 #include "tinker_precision.h"
 c
@@ -24,30 +24,35 @@ c
       use cublas_v2
 #endif
       integer,parameter:: orthMaxInstances=2
-      integer krylovDim,nEigenV
-      integer betw
-      logical EigenVec_l
-      integer  ,target:: Ipivot(150)
+      integer krylovDim,maxKD,wKD,nEigenV
+      integer betw,l_idx
+      integer MdiagITmat,OrthBase
+      logical EigenVec_l,saveResAmat_l
+      logical debg
+      integer  ,allocatable,target:: Ipivot(:)
       real(t_p),allocatable,target:: lz_WorkSpace(:)
-      real(t_p),allocatable,target:: lz_StoreSpace(:),lz_StoreSpace1(:)
-      real(r_p),allocatable,target:: lz_StoreSpace_rp(:)
-     &         , lz_StoreSpace1_rp(:)
+      real(t_p),allocatable,target:: lz_SS(:),lz_SS1(:)
+      real(r_p),allocatable,target:: lz_SS_(:)
+     &         , lz_SS1_(:), lz_WS_(:)
       real(t_p),allocatable,target:: Evec_(:,:), MIdk(:,:)
       real(r_p),allocatable,target:: Evec (:,:)
 
-      real(r_p),pointer :: lz_T(:), EigVal(:)
+      real(r_p),pointer :: lz_T(:),lz_T1(:),lz_MT(:,:),lz_MT1(:,:)
+     &         , EigVal(:), Eigval1(:)
       real(t_p),pointer :: lz_V(:,:,:,:)
-      real(t_p),pointer :: lz_Q(:,:,:),Vp(:,:,:),TVp(:,:,:)
-      real(r_p),pointer :: MatE(:,:)
-      real(t_p),pointer :: MatE_(:,:)
+      real(t_p),pointer :: lz_Q(:,:,:), Vp(:,:,:), TVp(:,:,:)
+     &         , lz_AQ(:,:,:),lz_Q1(:,:,:),Vp1(:,:,:),TVp1(:,:,:)
+     &         , lz_AQ1(:,:,:)
+     &         , lz_Z(:,:),lz_Z1(:,:)
+      real(r_p),pointer :: MatE (:,:),MatE1 (:,:)
+      real(t_p),pointer :: MatE_(:,:),MatE1_(:,:)
 
-      parameter(betw=32)
+      parameter(betw=32,debg=.false.)
 
 #ifdef _OPENACC
       type(cublashandle):: cBhandle
       logical :: init_cublas_handle_l=.false.
 #endif
-!$acc declare create(Ipivot)
 
       interface printVec
          module procedure printVec1_
@@ -57,21 +62,20 @@ c
       end interface
 
       interface chkOrthogonality
-        subroutine chkOrthogonality_(Mat,nl,nc,ldM,name)
+        subroutine chkOrthogonality_r4(Mat,nl,nc,ldM,name)
         implicit none
         integer,intent(in):: nc,nl,ldM
-        real(t_p),intent(in):: Mat(ldM,*)
-        character(*) name
+        real(4),intent(in):: Mat(ldM,*)
+        character(8),intent(in) :: name
 !DIR$ ignore_tkr (r) Mat
         end subroutine
-#if TINKER_MIXED_PREC
-        subroutine chkOrthogonality_r(Mat,nl,nc,ldM)
+        subroutine chkOrthogonality_r8(Mat,nl,nc,ldM,name)
         implicit none
         integer,intent(in):: nc,nl,ldM
-        real(r_p),intent(in):: Mat(ldM,*)
+        real(8),intent(in):: Mat(ldM,*)
+        character(8),intent(in) :: name
 !DIR$ ignore_tkr (r) Mat
         end subroutine
-#endif
       end interface
 
       interface
@@ -176,6 +180,8 @@ c
          end if
          MatE (j,i) = 0
          MatE_(j,i) = 0
+         MatE1 (j,i) = 0
+         MatE1_(j,i) = 0
       end do; end do
 
       end subroutine

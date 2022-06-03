@@ -81,7 +81,8 @@ c      parameter (Ncurng=5120)
       data first  / .true. /
       data compute  / .true. /
 
-      public :: init_rand_engine,random,normal,ranvec,sphere
+      public :: init_rand_engine,random,randomvec,normal,normalvec
+     &         ,ranvec,sphere
 #ifdef _OPENACC
      &         ,init_curand_engine,randomgpu,normalgpu,rand_unitgpu
 #endif
@@ -243,7 +244,7 @@ c
       if (istat.ne.0)
      &   print*,'curand initialisation failed ',istat
 
-       end subroutine
+      end subroutine
 c
 c     get a sample following uniform distribution on GPU
 c
@@ -413,6 +414,24 @@ c  20    format (' NORMAL  --  The Random Number Value is',f12.8)
 c     end if
       return
       end
+c
+c     get a sample following uniform distribution
+c
+      subroutine randomvec(array,n)
+      implicit none
+      real(t_p) array(*)
+      integer n,i
+      do i = 1,n; array(i) = random(); end do
+      end subroutine
+c
+c     get a sample following normal distribution
+c
+      subroutine normalvec(array,n)
+      implicit none
+      real(t_p) array(n)
+      integer i,n
+      do i = 1,n; array(i) = normal(); end do;
+      end subroutine
 c
 c
 c     ##############################################################

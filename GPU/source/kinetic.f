@@ -103,6 +103,7 @@ c
       use atoms
       use bath
       use domdec
+      use energi ,only: calc_e
       use group
       use mdstuf
       use moldyn
@@ -124,33 +125,17 @@ c
 
       if (f_in) then
          f_in=.false.
-!$acc enter data create(ekin11,ekin12,ekin13,ekin21,ekin22,ekin23
-!$acc&            ,ekin31,ekin32,ekin33)
+         ekin11=0;ekin22=0;ekin33=0;
+!$acc enter data copyin(ekin11,ekin22,ekin33)
       end if
 c
-!$acc data present(ekin,eksum,temp)
-!$acc&     present(ekin11,ekin12,ekin13,ekin21,ekin22,ekin23,
-!$acc&  ekin31,ekin32,ekin33)
-!$acc&     present(use,glob,v,eta)
-c
-c     zero out the total kinetic energy and its outer product
-c
-!$acc serial async
-      eksum  = 0.0_re_p
-      ekin11 = 0.0_re_p
-      ekin12 = 0.0_re_p
-      ekin13 = 0.0_re_p
-      ekin21 = 0.0_re_p
-      ekin22 = 0.0_re_p
-      ekin23 = 0.0_re_p
-      ekin31 = 0.0_re_p
-      ekin32 = 0.0_re_p
-      ekin33 = 0.0_re_p
-!$acc end serial
+!$acc host_data use_device(ekin,eksum,temp
+!$acc&         )
 c
 c     get the total kinetic energy and tensor for atomic sites
 c
 !$acc parallel loop collapse(2) async
+!$acc&         present(ekin11,ekin22,ekin33) default(present)
       do i = 1, nloc
          do j = 1, 3
             iglob = glob(i)
@@ -158,61 +143,68 @@ c
                term = 0.5_re_p * mass(iglob) / convert
                if (j.eq.1) then
                   ekin11 = ekin11 + real(term*v(1,iglob)*v(1,iglob),r_p)
-                  ekin21 = ekin21 + real(term*v(1,iglob)*v(2,iglob),r_p)
-                  ekin31 = ekin31 + real(term*v(1,iglob)*v(3,iglob),r_p)
+                  !ekin21 = ekin21 + real(term*v(1,iglob)*v(2,iglob),r_p)
+                  !ekin31 = ekin31 + real(term*v(1,iglob)*v(3,iglob),r_p)
                else if (j.eq.2) then
-                  ekin12 = ekin12 + real(term*v(2,iglob)*v(1,iglob),r_p)
+                  !ekin12 = ekin12 + real(term*v(2,iglob)*v(1,iglob),r_p)
                   ekin22 = ekin22 + real(term*v(2,iglob)*v(2,iglob),r_p)
-                  ekin32 = ekin32 + real(term*v(2,iglob)*v(3,iglob),r_p)
+                  !ekin32 = ekin32 + real(term*v(2,iglob)*v(3,iglob),r_p)
                else
-                  ekin13 = ekin13 + real(term*v(3,iglob)*v(1,iglob),r_p)
-                  ekin23 = ekin23 + real(term*v(3,iglob)*v(2,iglob),r_p)
+                  !ekin13 = ekin13 + real(term*v(3,iglob)*v(1,iglob),r_p)
+                  !ekin23 = ekin23 + real(term*v(3,iglob)*v(2,iglob),r_p)
                   ekin33 = ekin33 + real(term*v(3,iglob)*v(3,iglob),r_p)
                end if
             end if
          end do
       end do
 
-!$acc serial async
+!$acc serial async deviceptr(ekin,eksum,temp)
+!$acc&       present(ekin11,ekin22,ekin33)
       ekin(1,1) = ekin11
-      ekin(2,1) = ekin21
-      ekin(3,1) = ekin31
-      ekin(1,2) = ekin12
+      !ekin(2,1) = ekin21
+      !ekin(3,1) = ekin31
+      !ekin(1,2) = ekin12
       ekin(2,2) = ekin22
-      ekin(3,2) = ekin32
-      ekin(1,3) = ekin13
-      ekin(2,3) = ekin23
+      !ekin(3,2) = ekin32
+      !ekin(1,3) = ekin13
+      !ekin(2,3) = ekin23
       ekin(3,3) = ekin33
+
+      !---zero out the total kinetic energy and its outer product
+      ekin11 = 0.0_re_p
+      ekin22 = 0.0_re_p
+      ekin33 = 0.0_re_p
+
+      !---set the instantaneous temperature from total kinetic energy
+      eksum = ekin(1,1) + ekin(2,2) + ekin(3,3)
+      temp  = 2.0_re_p*real(eksum,r_p) / (real(nfree,r_p) * gasconst)
 !$acc end serial
 
       if (nproc.ne.1) then
 !$acc wait
-!$acc host_data use_device(ekin)
          call MPI_ALLREDUCE(MPI_IN_PLACE,ekin,9,MPI_RPREC,MPI_SUM,
      &                      COMM_TINKER,ierr)
-!$acc end host_data
       end if
 c
-      if (isobaric .and. barostat.eq.'BUSSI') then
+      if (isobaric.and.barostat.eq.'BUSSI') then
          term  = real(nfree,t_p)*gasconst*kelvin*taupres*taupres
-!$acc serial async
-         value = 0.5_re_p * term * eta * eta
-         do j = 1, 3
-            ekin(j,j) = ekin(j,j) + value/3.0
-         end do
-c
-c     set the instantaneous temperature from total kinetic energy
-c
+!$acc serial async deviceptr(ekin)
+         value = 0.5_re_p * term * eta * eta / 3.0
+         ekin(1,1) = ekin(1,1) + value
+         ekin(2,2) = ekin(2,2) + value
+         ekin(3,3) = ekin(3,3) + value
+ 
+         !---set the instantaneous temperature from total kinetic energy
          eksum = ekin(1,1) + ekin(2,2) + ekin(3,3)
          temp  = 2.0_re_p*real(eksum,r_p) / (real(nfree,r_p) * gasconst)
 !$acc end serial
-      else
-      ! set the instantaneous temperature from total kinetic energy
-!$acc serial async
+      else if (nproc.ne.1) then
+         !---set the instantaneous temperature from total kinetic energy
+!$acc serial async deviceptr(eksum,ekin,temp)
          eksum = ekin(1,1) + ekin(2,2) + ekin(3,3)
          temp  = 2.0_re_p*real(eksum,r_p) / (real(nfree,r_p) * gasconst)
 !$acc end serial
       end if
 c
-!$acc end data
+!$acc end host_data
       end

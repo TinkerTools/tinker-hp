@@ -15,11 +15,13 @@ c     for a molecular dynamics trajectory, including restarts
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       subroutine mdinit(dt)
       use atmtyp
       use atomsMirror
       use bath
       use bound
+      use colvars
       use couple
       use cutoff
       use deriv
@@ -33,6 +35,7 @@ c
       use langevin
       use mamd
       use mdstuf
+      use mdstuf1 ,only: gpuAllocMdstuf1Data
       use molcul
       use moldyn
       use mpole
@@ -42,33 +45,37 @@ c
       use potent
       use polar
       use random_mod
+      use tinMemory ,only: mipk
       use units 
       use uprior
       use utils
 #ifdef _OPENACC
       use utilcu  ,only: cu_update_vir_switch
 #endif
-      use utilgpu ,only: prmem_requestm,rec_queue
+      use utilgpu ,only: prmem_requestm,rec_queue,rec_stream,mem_set
       use usage
       use virial
       implicit none
-      integer i,j,k,idyn,iglob
+      integer i,j,idyn,iglob
       integer next
       integer lext,freeunit
-      integer ierr,correc
+      integer correc
+      integer(mipk) siz_
       real(r_p) e
       real(r_p) speed
       real(t_p) vec(3)
       real(r_p) dt
       real(r_p), allocatable :: derivs(:,:)
       real(r_p), allocatable :: speedvec(:)
-      real(r_p) eps
-      logical exist
+      real(r_p) eps,zero
+      mdyn_rtyp zero_md
+      logical exist,s_colvars
       character*7 ext
       character*20 keyword
       character*240 dynfile
       character*240 record
       character*240 string
+      parameter(zero=0.0,zero_md=0)
 
       interface
       subroutine maxwellgpu (mass,temper,nloc,max_result)
@@ -301,6 +308,7 @@ c
         use_shortmlist = use_mlist
         use_shortclist = use_clist
         use_shortvlist = use_vlist
+        use_shortdlist = use_dlist
       end if
 c    
 c     initialization for Langevin dynamics
@@ -330,6 +338,26 @@ c
          end do
 !$acc update device(Rn) async
          dorest = .false.
+      end if
+c
+c     Colvars Feature Initialization
+c
+      call colvars_init(dt)
+c
+c     lambda dynamic initialization
+c
+      if (use_lambdadyn.or.use_osrw) then
+         if (use_colvars) then
+            call def_lambdadyn_init
+         else
+ 42   format(/," --- Tinker-HP : ",
+     &,"cannot perform lambda dynamic without colvar",/,6x
+     &,"PROPOSAL : Either remove -lambdadyn- keyword or activate "
+     &,"colvar feature")
+            write(0,42)
+            !use_lambdadyn = .false.
+            __TINKER_FATAL__
+         end if
       end if
 c
 c     set the number of degrees of freedom for the system
@@ -389,6 +417,26 @@ c
       !FIXME remain case where integrate .eq. BAOAB* for dorest
 
       if (tinkerdebug.gt.0.and.rank.eq.0) call info_dyn
+      call up_fuse_bonded  ! Update fuse_bonded
+c
+c     Reinterpret force buffer shape (3,nloc) --> (nloc,3)
+c
+      if (fdebs_l.and.use_bond.and.fuse_bonded.and..not.use_strtor
+     &   .and..not.use_geom.and..not.use_angang.and..not.use_opdist
+     &   .and..not.lplumed.and..not.use_colvars) then
+         tdes_l=.true.
+         if (tinkerdebug.gt.0.and.rank.eq.0) then
+            print*
+            print*,'--- Reshape force to (n,3) ---'
+         end if
+      end if
+
+      ! Create device Data for mdstuf1
+      call gpuAllocMdstuf1Data
+
+      !Disable COLVARS until end of routine
+        s_colvars = use_colvars
+      use_colvars = .false.
 c
 c     try to restart using prior velocities and accelerations
 c
@@ -396,8 +444,8 @@ c
       call version (dynfile,'old')
       inquire (file=dynfile,exist=exist)
       if (exist) then
- 32   format(/," --- Tinker-HP loading Restart file for ",A,
-     &         " system ---",/)
+ 32   format(/," --- Tinker-HP: loading restart file from ",A,
+     &         " system --- ")
          if (verbose.and.rank.eq.0) write(*,32) filename(1:leng)
          idyn = freeunit ()
          open (unit=idyn,file=dynfile,status='old')
@@ -425,8 +473,8 @@ c
       else if ((integrate.eq.'RESPA').or.
      $   (integrate.eq.'BAOABRESPA')) then
 
- 33   format (/," Tinker-HP find No Restart file for ",A," system",/,
-     $       6x,"--- Initiate dynamic from beginning ---",/)
+ 33   format (/," --- Tinker-HP: No Restart file was found from ",A
+     $       ," system",/,16x,"Dynamic Initialization")
          if (verbose.and.rank.eq.0) write(*,33) filename(1:leng)
 c
 c     Do the domain decomposition
@@ -440,15 +488,16 @@ c
 !$acc data create(derivs,e)
 !$acc&     present(glob,mass,v,a,samplevec) async
 c
-!$acc parallel loop collapse(2) async
-         do i=1,nbloc
-            do j = 1, 3
-               derivs(j,i) = 0.0_re_p
-            end do
-         end do
+         siz_=3*nbloc
+         call mem_set(derivs,zero,siz_,rec_stream)
          call allocsteprespa(.false.)
          call gradslow (e,derivs)
-         call commforcesrespa(derivs,.false.)
+         call comm_forces(derivs,cNBond)
+         if (ftot_l) then
+            call get_ftot (derivs,nbloc)
+            siz_ = dr_stride3
+            call mem_set( de_tot,zero_md,siz_,rec_stream)
+         end if
 
          if(deb_Force) call info_forces(cNBond)
          if(deb_Energy)call info_energy(rank)
@@ -499,15 +548,16 @@ c
             end do
 !$acc update device(v,a,aalt) async
          end if
-!$acc parallel loop collapse(2) async
-         do i = 1, nbloc
-            do j = 1, 3
-               derivs(j,i) = 0.0_re_p
-            end do
-         end do
+         siz_=3*nbloc
+         call mem_set(derivs,zero,siz_,rec_stream)
          call allocsteprespa(.true.)
          call gradfast (e,derivs)
-         call commforcesrespa(derivs,.true.)
+         call comm_forces(derivs,cBond)
+         if (ftot_l) then
+            call get_ftot (derivs,nbloc)
+            siz_ = dr_stride3
+            call mem_set( de_tot,zero_md,siz_,rec_stream)
+         end if
 
          !Debug Info
          if(deb_Force) call info_forces(cBond)
@@ -548,12 +598,13 @@ c
          allocate (derivs(3,nbloc))
 !$acc data create(derivs,e) async
 !$acc&     present(aalt2,mass,aalt,glob,v,a)
-         call prmem_requestm(desave,3,nbloc,async=.true.)
-         call set_to_zero2m(derivs,desave,3*nbloc,rec_queue)
+         siz_=3*nbloc
+         call mem_set(derivs,zero,siz_,rec_stream)
          call allocsteprespa(.false.)
 
-         call gradfast1(e,derivs)
-         call commforcesrespa1(derivs,0)
+         call gradfast(e,derivs)
+         call comm_forces(derivs,cBond)
+         if (ftot_l) call get_ftot (derivs,nbloc)
 
          !Debug info
          if(deb_Force) call info_forces(cBond)
@@ -571,8 +622,9 @@ c
          end do
 
          call set_to_zero1m(derivs,3*nbloc,rec_queue)
-         call gradint1(e,derivs)
-         call commforcesrespa1(derivs,1)
+         call gradint(e,derivs)
+         call comm_forces(derivs,cSNBond)
+         if (ftot_l) call get_ftot (derivs,nbloc)
 
          !Debug info
          if(deb_Force) call info_forces(cSNBond)
@@ -591,8 +643,13 @@ c
          end do
 
          call set_to_zero1m(derivs,3*nbloc,rec_queue)
-         call gradslow1(e,derivs)
-         call commforcesrespa1(derivs,2)
+         call gradslow(e,derivs)
+         call comm_forces(derivs,cNBond)
+         if (ftot_l) then
+            call get_ftot (derivs,nbloc)
+            siz_ = dr_stride3
+            call mem_set( de_tot,zero_md,siz_,rec_stream)
+         end if
 
          if(deb_Force) call info_forces(cNBond)
 #ifdef _OPENACC
@@ -662,22 +719,21 @@ c
 !$acc data create(e,derivs)
 !$acc&     present(glob,mass,v,a,samplevec) async
 c
-!$acc parallel loop collapse(2) async
-         do i=1,nbloc
-            do j = 1, 3
-               derivs(j,i) = 0.0_re_p
-            end do
-         end do
-
+         siz_=3*nbloc
+         call mem_set(derivs,zero,siz_,rec_stream)
          call allocstep
          call gradient (e,derivs)
-         call commforces(derivs)
+         call comm_forces(derivs,cNBond)
+         if (ftot_l) then
+            call get_ftot (derivs,nbloc)
+            siz_ = dr_stride3
+            call mem_set( de_tot,zero_md,siz_,rec_stream)
+         end if
 
          ! Debug informations
          if(deb_Energy) call info_energy(rank)
          if(deb_Force)  call info_forces(cDef)
          if (nproc.eq.1.and.tinkerdebug.eq.64) call prtEForces(derivs,e)
-
 c
 #ifdef _OPENACC
          if (.not.host_rand_platform) then
@@ -757,7 +813,10 @@ c
          end if
       end do
       nprior = i - 1
-      return
+c
+c     Re-Enable COLVARS if necessary
+c
+      use_colvars = s_colvars
       end
 c
       subroutine info_atoms
@@ -776,4 +835,23 @@ c
       print 543, "ntors",ntors
       print 543, "nbitor",nbitor
       print 543, "nangang",nangang
+      end subroutine
+
+      ! Update fuse_bonded flag
+      subroutine up_fuse_bonded
+      use potent
+      use inform
+      use virial
+      implicit none
+
+#ifdef _OPENACC
+      if (.not.use_virial.and..not.deb_Energy.and.
+     &   (use_bond.or.use_urey.or.use_opbend.or.use_strbnd.or.use_angle
+     &.or.use_tors.or.use_pitors.or.use_tortor
+     &.or.use_improp.or.use_imptor)) then
+         fuse_bonded=.true.
+      else
+         fuse_bonded=.false.
+      end if
+#endif
       end subroutine
