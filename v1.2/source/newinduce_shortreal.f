@@ -243,7 +243,11 @@ c
       if (precnd) then
         do i = 1, npoleloc
           iipole = poleglob(i)
-          diag(i) = polarity(iipole)
+          if (polarity(iipole).eq.0) then
+            diag(i) = tinypol
+          else
+            diag(i) = polarity(iipole)
+          end if
         end do
         if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else
@@ -714,13 +718,17 @@ c
            dscale(ip14(j,iglob)) = u4scale
         end do
 c
-        nnelst = merge(nshortelst(ii),
-     &                 nelst(ii),
-     &                 shortrange)
+        if (shortrange) then
+          nnelst = nshortelst(ii)
+        else
+          nnelst = nelst(ii)
+        end if
         do kkk = 1, nnelst
-          kkpole = merge(shortelst(kkk,ii),
-     &                   elst(kkk,ii),
-     &                   shortrange)
+          if (shortrange) then
+            kkpole = shortelst(kkk,ii)
+          else
+            kkpole = elst(kkk,ii)
+          end if
           kglob = ipole(kkpole)
           kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle

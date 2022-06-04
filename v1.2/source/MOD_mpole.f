@@ -14,6 +14,8 @@ c     maxpole   max components (monopole=1,dipole=4,quadrupole=13)
 c
 c     pole      multipole values for each site in the local frame
 c     winpole    window object corresponding to pole
+c     pole_orig  original multipole values for each site in the local frame (lambdadyn)
+c     winpole_orig    window object corresponding to pole_orig
 c     rpole     multipoles rotated to the global coordinate system
 c     mono0     original atomic monopole values for charge flux
 c     winmono0    window object corresponding to mono0
@@ -63,9 +65,9 @@ c
       real*8, allocatable :: rpole(:,:)
       real*8, pointer :: mono0(:)
       integer :: winmono0
-      real*8, pointer :: pole(:,:)
+      real*8, pointer :: pole(:,:),pole_orig(:,:)
       real*8, pointer :: alphapen(:),betapen(:),gammapen(:)
-      integer :: winpole,winalphapen,winbetapen,wingammapen
+      integer :: winpole,winpole_orig,winalphapen,winbetapen,wingammapen
       real*8 vmxx,vmyy,vmzz
       real*8 vmxy,vmxz,vmyz
       character*8, pointer ::  polaxe(:)

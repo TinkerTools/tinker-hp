@@ -25,6 +25,7 @@ c
       use katoms
       use mutant
       use mpi
+      use potent
       implicit none
       integer i,j,k,ihyb
       integer it0,it1,next
@@ -54,6 +55,9 @@ c
       tlambda = 1.0d0
       vlambda = 1.0d0
       elambda = 1.0d0
+      sck = 6.0d0
+      sct = 1.0d0
+      scs = 2.0d0
       vcouple = 0
 c
 c     perform dynamic allocation of some local arrays
@@ -94,6 +98,36 @@ c
            else if (keyword(1:11) .eq. 'ELE-LAMBDA ') then
               string = record(next:240)
               read (string,*,err=30)  elambda
+           else if (keyword(1:17) .eq. 'BOUND-VDW-LAMBDA ') then
+              string = record(next:120)
+              read (string,*,err=30)  bvlambda
+              if (rank.eq.0) write(iout,35) bvlambda
+ 35           format('Intervall bound for lambda_vdw is  ', F15.3)
+           else if (keyword(1:17) .eq. 'BOUND-ELE-LAMBDA ') then
+              string = record(next:120)
+              read (string,*,err=30)  belambda
+              if (rank.eq.0) write(iout,45) belambda
+ 45           format('Intervall bound for lambda_elec is  ', F15.3)
+           else if (keyword(1:17) .eq. 'BOUND-POL-LAMBDA ') then
+              string = record(next:120)
+              read (string,*,err=30)  bplambda
+           else if (keyword(1:11) .eq. 'VDW-SC-EXP ') then
+              string = record(next:120)
+              read (string,*,err=30)  scexp
+           else if (keyword(1:13) .eq. 'VDW-SC-ALPHA ') then
+              string = record(next:120)
+              read (string,*,err=30)  scalpha
+           else if (keyword(1:9) .eq. 'VDW-SC-K ') then
+              string = record(next:120)
+              read (string,*,err=30)  sck
+           else if (keyword(1:9) .eq. 'VDW-SC-T ') then
+              string = record(next:120)
+              read (string,*,err=30)  sct
+           else if (keyword(1:9) .eq. 'VDW-SC-S ') then
+              string = record(next:120)
+              read (string,*,err=30)  scs
+           else if (keyword(1:10) .eq. 'LAMBDADYN ') then
+              use_lambdadyn = .true.
            else if (keyword(1:15) .eq. 'VDW-ANNIHILATE ') then
               vcouple = 1
            else if (keyword(1:7) .eq. 'MUTATE ') then
@@ -159,6 +193,11 @@ c
       call MPI_BCAST(vlambda,1,MPI_REAL8,0,hostcomm,ierr)
       call MPI_BCAST(tlambda,1,MPI_REAL8,0,hostcomm,ierr)
       call MPI_BCAST(vcouple,1,MPI_INT,0,hostcomm,ierr)
+      call MPI_BCAST(scexp,1,MPI_REAL8,0,hostcomm,ierr)
+      call MPI_BCAST(scalpha,1,MPI_REAL8,0,hostcomm,ierr)
+      call MPI_BCAST(sck,1,MPI_REAL8,0,hostcomm,ierr)
+      call MPI_BCAST(sct,1,MPI_REAL8,0,hostcomm,ierr)
+      call MPI_BCAST(scs,1,MPI_REAL8,0,hostcomm,ierr)
 c
 c     scale electrostatic parameter values based on lambda
 c
@@ -253,8 +292,12 @@ c     based on the lambda mutation parameter "elmd"
 c
 c
       subroutine altelec
-      use sizes
+      use angle
+      use bond
       use charge
+      use chgpen
+      use chgtrn
+      use cflux
       use domdec
       use mpole
       use mutant
@@ -262,6 +305,7 @@ c
       use potent
       implicit none
       integer i,j,k
+      integer ia,ib,ic
 c
 c
 c     set electrostatic parameters for partial charge models
@@ -270,8 +314,10 @@ c
          do i = 1, nion
             k = iion(i)
             if (mut(k)) then
-               pchg(i) = pchg(i) * elambda
+c               pchg(i) = pchg(i) * elambda
+               pchg(i) = pchg_orig(i) * elambda
             end if
+            pchg0(i) = pchg(i)
          end do
       end if
 c
@@ -282,16 +328,211 @@ c
             k = ipole(i)
             if (mut(k)) then
                do j = 1, 13
-                  pole(j,i) = pole(j,i) * elambda
+c                  pole(j,i) = pole(j,i) * elambda
+                  pole(j,i) = pole_orig(j,i) * elambda
                end do
+               mono0(i) = pole(1,i)
+               if (use_chgpen) then
+                  pcore(i) = pcore(i) * elambda
+                  pval(i) = pval(i) * elambda
+                  pval0(i) = pval(i)
+               end if
             end if
          end do
+      end if
+
+      if (use_polar) then 
          do i = 1, npole
             k = ipole(i)
             if (mut(k)) then
-               polarity(i) = polarity(i) * elambda
+c               polarity(i) = polarity(i) * elambda
+               polarity(i) = polarity_orig(i) * elambda
             end if
          end do
+      end if
+c
+c     set scaled parameters for charge transfer models
+c
+      if (use_chgtrn) then
+         do i = 1, npole
+            k = ipole(i)
+            if (mut(k)) then
+               chgct(i) = chgct(i) * elambda
+            end if
+         end do
+      end if
+c
+c     set scaled parameters for bond stretch charge flux
+c
+      if (use_chgflx) then
+         do i = 1, nbond
+            ia = ibnd(1,i)
+            ib = ibnd(2,i)
+            if (mut(ia) .and. mut(ib)) then
+               bflx(i) = bflx(i) * elambda
+            end if
+         end do
+      end if
+c
+c     set scaled parameters for angle bend charge flux
+c
+      if (use_chgflx) then
+         do i = 1, nangle
+            ia = iang(1,i)
+            ib = iang(2,i)
+            ic = iang(3,i)
+            if (mut(ia) .and. mut(ib) .and. mut(ic)) then
+               aflx(1,i) = aflx(1,i) * elambda
+               aflx(2,i) = aflx(2,i) * elambda
+               abflx(1,i) = abflx(1,i) * elambda
+               abflx(2,i) = abflx(2,i) * elambda
+            end if
+         end do
+      end if
+
+      return
+      end
+c
+c     subroutine def_lambdadyn_init: lambda dynamics initialization
+c
+      subroutine def_lambdadyn_init
+      use iounit
+      use keys
+      use mutant
+      implicit none
+      integer i,next
+      character*20 keyword
+      character*240 record
+      character*240 string
+c
+      bvlambda = 0.5d0
+      belambda = 0.5d0
+      bplambda = 0.7d0
+c
+c     search keywords for lambda dynamics options
+c
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call gettext (record,keyword,next)
+         call upcase (keyword)
+         if (keyword(1:17) .eq. 'BOUND-VDW-LAMBDA ') then
+            string = record(next:120)
+            read (string,*,err=20)  bvlambda
+            write(iout,30) bvlambda
+ 30         format('Intervall bound for lambda_vdw is  ', F15.3)
+         else if (keyword(1:17) .eq. 'BOUND-ELE-LAMBDA ') then
+            string = record(next:120)
+            read (string,*,err=20)  belambda
+            write(iout,40) belambda
+ 40         format('Intervall bound for lambda_elec is  ', F15.3)
+         else if (keyword(1:17) .eq. 'BOUND-POL-LAMBDA ') then
+            string = record(next:120)
+            read (string,*,err=20)  bplambda
+         end if
+   20    continue
+      end do
+      call def_lambdadyn
+      return
+      end
+
+c
+c     #############################################################################
+c     ##                                                                         ##
+c     ##  subroutine def_lambdadyn -- state weighting values for van der Waals   ##
+c     ##                              and electrostatic interactions             ##
+c     ##                                                                         ##
+c     #############################################################################
+c
+c     "def_lambdadyn" constructs the state weighting values vlambda and elambda for
+c     the van der Waals and electrostatic interactions respectively, defining them
+c     as functions of the generic state weighting value lambda 
+c
+c
+      subroutine def_lambdadyn
+      use atmtyp
+      use atoms
+      use domdec
+      use deriv
+      use keys
+      use inform
+      use iounit
+      use mutant
+      use mpi
+      use potent
+      implicit none
+      integer ierr
+
+c     checks if the intervall bounds for vlambda and elambda are consistent
+      if (rank.eq.0) then
+       if ( bvlambda .le. 0.0d0 .OR. bvlambda .gt. 1.0d0 ) then
+         write(iout,*) 'Intervall bound for vlambda must be between 0 ',
+     $ 'and 1'
+         call fatal
+       else if ( belambda .lt. 0.0d0 .OR. belambda .ge. 1.0d0 ) then
+         write(iout,*) 'Intervall bound for elambda must be between 0 ',
+     $ 'and 1'
+         call fatal
+       end if
+
+       if (bvlambda.eq.0.0d0) then
+ 10       format('Forbidden value of bvlambda: ',F15.3)
+          call fatal
+       end if
+       if (belambda.eq.1.0d0) then
+ 15       format('Forbidden value of belambda: ',F15.3)
+          call fatal
+       end if
+
+       if (bvlambda .lt. belambda ) then
+          write(iout,*) 'Intervall bound for vlambda cannot be ',
+     $ 'less than the intervall bound for elambda'
+          call fatal
+       end if
+      end if
+
+      if (lambda.lt.0.0d0) then
+         vlambda = 0.0d0
+         dlambdavlambda = 0.0d0
+         elambda = 0.0d0
+         dlambdaelambda = 0.0d0
+      else if (lambda.lt.belambda) then
+         vlambda = lambda/bvlambda
+         dlambdavlambda = 1.0d0 / bvlambda
+         elambda = 0.0d0
+         dlambdaelambda = 0.0d0
+      else if (lambda.lt.bvlambda) then
+         vlambda = lambda / bvlambda
+         dlambdavlambda = 1.0d0/bvlambda
+         elambda = (1.0d0/(1-belambda))*lambda - belambda/(1-belambda)
+         dlambdaelambda = 1.0d0/(1-belambda)
+      else if (lambda.lt.1.0d0) then
+         vlambda = 1.0d0
+         dlambdavlambda = 0.0d0
+         elambda = (1.0d0/(1-belambda)) * lambda - belambda/(1-belambda)
+         dlambdaelambda = 1.0d0/(1-belambda)
+      else
+         vlambda = 1.0d0
+         dlambdavlambda = 0.0d0
+         elambda = 1.0d0
+         dlambdaelambda = 0.0d0
+      end if
+
+      if ((rank.eq.0).and.(verbose)) then
+         write(iout,20) vlambda, dlambdavlambda
+ 20      format('Value of vlambda is ', F15.3, 
+     $        ' Value of dlambdavlambda is ',F15.3)
+         write(iout,25) elambda, dlambdaelambda
+ 25      format('Value of elambda is ', F15.3,
+     $        ' Value of dlambdaelambda is ',F15.3)
+      end if
+      if (hostrank.eq.0) call altelec
+      call MPI_BARRIER(hostcomm,ierr)
+c     Initialising double derivatives in case of OSRW
+      if (use_OSRW) then
+         d2edlambda2 = 0.0d0
+         d2edlambdae2 = 0.0d0
+         d2edlambdav2 = 0.0d0
       end if
       return
       end

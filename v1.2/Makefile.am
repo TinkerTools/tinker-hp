@@ -7,8 +7,8 @@
 #
 # Declare the subdirectories we'll work on
 #
-SUBDIRS= 2decomp_fft/src source tutorials example params plumed2 scripts
-DIST_SUBDIRS= 2decomp_fft/src source tutorials example params plumed2
+SUBDIRS= 2decomp_fft/src source tutorials example params plumed2 scripts colvars
+DIST_SUBDIRS= 2decomp_fft/src source tutorials example params plumed2 colvars
 
 EXTRA_DIST =
 

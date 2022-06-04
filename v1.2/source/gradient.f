@@ -32,6 +32,9 @@ c
       use boxes
       use plumed
 #endif
+#ifdef COLVARS
+      use colvars
+#endif
       implicit none
 #ifdef PLUMED
       integer iglob,iloc
@@ -188,6 +191,17 @@ c
      &              ' Potential Energy')
          call fatal
       end if
+#ifdef COLVARS
+      if (use_colvars) then
+        call prepare_colvars 
+c
+c       only the master does colvars computations
+c
+        if (rank.eq.0) call compute_colvars_tinker()
+        energy = esum
+        call distrib_colvars(derivs)
+      end if
+#endif
 
 #ifdef PLUMED
       if (lplumed) then

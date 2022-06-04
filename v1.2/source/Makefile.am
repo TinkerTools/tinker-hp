@@ -33,19 +33,19 @@ bin_PROGRAMS += testgrad
 #
 
 analyze_SOURCES       = analyze.f
-analyze_DEPENDENCIES  = libtinkermod.a libtinkercalc.a
+analyze_DEPENDENCIES  = libtinkermod.a libtinkercalc.a libtinkerclv.a
 
 bar_SOURCES           = bar.f
-bar_DEPENDENCIES      = libtinkermod.a libtinkercalc.a
+bar_DEPENDENCIES      = libtinkermod.a libtinkercalc.a libtinkerclv.a
 
 dynamic_SOURCES       = dynamic.f
-dynamic_DEPENDENCIES  = libtinkermod.a libtinkercalc.a
+dynamic_DEPENDENCIES  = libtinkermod.a libtinkercalc.a libtinkerclv.a
 
 minimize_SOURCES      = minimize.f
-minimize_DEPENDENCIES = libtinkermod.a libtinkercalc.a
+minimize_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a
 
 testgrad_SOURCES      = testgrad.f
-testgrad_DEPENDENCIES = libtinkermod.a libtinkercalc.a
+testgrad_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a
 
 #############################################
 #
@@ -64,13 +64,13 @@ testgrad_DEPENDENCIES = libtinkermod.a libtinkercalc.a
 # These libraries come from tinker 
 #
 
-LDADD  = libtinkercalc.a libtinkermod.a
+LDADD  = libtinkercalc.a libtinkermod.a libtinkerclv.a
 
 #
 # These libraries are external and defined by configure
 #
 
-LDADD += $(LIBPLUMED_LIB) $(LIB2DECOMP_LIB) $(FFTW_LIBS) $(BLAS)
+LDADD += $(LIBCOLVARS_LIB) $(LIBPLUMED_LIB) $(LIB2DECOMP_LIB) $(FFTW_LIBS) $(BLAS)
 
 #
 # Declare the Tinker libraries needed by the programs
@@ -79,13 +79,13 @@ LDADD += $(LIBPLUMED_LIB) $(LIB2DECOMP_LIB) $(FFTW_LIBS) $(BLAS)
 # libtinkercal.a contains all the calculation routines
 #
 
-noinst_LIBRARIES = libtinkermod.a libtinkercalc.a
+noinst_LIBRARIES = libtinkermod.a libtinkercalc.a libtinkerclv.a
 
 #
 # states that libtinkercal.a depends upon libtinkermod.a
 #
 #
-libtinkercalc_a_DEPENDENCIES = libtinkermod.a
+libtinkercalc_a_DEPENDENCIES = libtinkermod.a libtinkerclv.a
 
 #
 # Declare that depend.mk and plumedlibs should be generated before everything else
@@ -93,6 +93,7 @@ libtinkercalc_a_DEPENDENCIES = libtinkermod.a
 
 BUILT_SOURCES  = depend.mk
 BUILT_SOURCES += plumed
+BUILT_SOURCES += colvars
 
 #
 #depend.mk is ghenerated by a python script
@@ -114,6 +115,15 @@ noplumed.mk:
 	-echo "		-touch noplumed" >> ../plumed2/install.mk
 	-echo "all:" >> ../plumed2/install.mk
 	-echo "		-touch noplumed" >> ../plumed2/install.mk
+#
+# colvarslibs is generated, either by plumed.mk or noplumed.mk
+
+colvars.mk:
+	-echo "colvars:" > $@
+	-echo "		-(cd ../colvars ; make -j 8 VERBOSE=1)" >> $@
+nocolvars.mk:
+	-echo "colvars:" > $@
+	-echo "		-touch colvars" >> $@
 
 #
 # Declare the sources for the modules. They are compiled in the order determined by depend.mk
@@ -138,6 +148,7 @@ libtinkermod_a_SOURCES += MOD_bond.f
 libtinkermod_a_SOURCES += MOD_bound.f
 libtinkermod_a_SOURCES += MOD_boxes.f
 libtinkermod_a_SOURCES += MOD_cell.f
+libtinkermod_a_SOURCES += MOD_colvars.f
 libtinkermod_a_SOURCES += MOD_cflux.f
 libtinkermod_a_SOURCES += MOD_charge.f
 libtinkermod_a_SOURCES += MOD_chgpen.f
@@ -240,6 +251,15 @@ libtinkermod_a_SOURCES += MOD_usage.f
 libtinkermod_a_SOURCES += MOD_vdw.f
 libtinkermod_a_SOURCES += MOD_vdwpot.f
 libtinkermod_a_SOURCES += MOD_virial.f
+
+#
+# Declare the sources for the colvar interface routines
+#
+libtinkerclv_a_SOURCES =
+libtinkerclv_a_SOURCES += colvarproxy_tinkerhp.cpp
+libtinkerclv_a_SOURCES += colvarproxy_tinkerhp.h
+libtinkerclv_a_SOURCES += colvarproxy_tinkerhp_interface.h
+libtinkerclv_a_CXXFLAGS = -I ../colvars/ 
 
 #############################################
 #
@@ -499,7 +519,7 @@ libtinkercalc_a_SOURCES += version.f
 # So, this include flag is used only for *.f90 sources
 # For *.f sources, that would have been AM_FFLAGS
 #
-AM_FCFLAGS=$(LIB2DECOMP_INC) $(PLUMEDFLAG) $(LIBPLUMED_INC)
+AM_FCFLAGS=$(LIB2DECOMP_INC) $(PLUMEDFLAG) $(LIBPLUMED_INC) $(LIBCOLVARS_INC)
  
 #
 # local cleaning of *.mod files
@@ -507,7 +527,7 @@ AM_FCFLAGS=$(LIB2DECOMP_INC) $(PLUMEDFLAG) $(LIBPLUMED_INC)
 
 
 clean-local :
-	-rm -f *.mod depend.mk plumed.mk noplumed.mk plumed *_genmod.f90 *.debug
+	-rm -f *.mod depend.mk plumed.mk noplumed.mk plumed colvars.mk nocolvars.mk colvars *_genmod.f90 *.debug
 
 #
 # include dependencies (Key substituted by configure)
@@ -520,6 +540,11 @@ clean-local :
 # So, it's either plumed.mk or noplumed.mk
 #
 @INCLUDE_PLUMED_MK@
+#
+# include colvars generation (Key substitutued by configure)
+# So, it's either colvars.mk or colvars.mk
+#
+@INCLUDE_COLVARS_MK@
 #
 # End of Makefile.am
 #

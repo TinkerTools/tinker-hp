@@ -276,6 +276,10 @@ c
           udalt = 0.0d0
         end if
 c
+c       copy original polarizability values that won't change during mutation
+c
+        polarity_orig = polarity
+c
       end if
 
       if ((use_polar .or. use_repuls) .and. .not.use_chgtrn) then
@@ -683,6 +687,11 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winpolarity,ierr)
       end if
+      if (associated(polarity_orig)) then
+        CALL MPI_Win_shared_query(winpolarity_orig, 0, windowsize,
+     $  disp_unit,baseptr, ierr)
+        CALL MPI_Win_free(winpolarity_orig,ierr)
+      end if
       if (associated(thole)) then
         CALL MPI_Win_shared_query(winthole, 0, windowsize, disp_unit,
      $  baseptr, ierr)
@@ -739,6 +748,29 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,polarity,arrayshape)
+c
+c     polarity_orig
+c
+      arrayshape=(/n/)
+      if (hostrank == 0) then
+        windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winpolarity_orig, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winpolarity_orig, 0, windowsize,
+     $  disp_unit,baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,polarity_orig,arrayshape)
 c
 c     thole
 c

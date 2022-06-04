@@ -152,15 +152,17 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         nnelst = merge(nshortelst(ii),
-     &                  nelst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnelst = nshortelst(ii)
+         else
+           nnelst = nelst(ii)
+         end if
          do kkk = 1, nnelst
-            kkpole = merge(shortelst(kkk,ii),
-     &                     elst     (kkk,ii),
-     &                     shortrange
-     &                   )
+            if (shortrange) then
+              kkpole = shortelst(kkk,ii)
+            else
+              kkpole = elst(kkk,ii)
+            end if
             kglob = ipole(kkpole)
             kbis = loc(kglob)
             proceed = (usei .or. use(kglob))

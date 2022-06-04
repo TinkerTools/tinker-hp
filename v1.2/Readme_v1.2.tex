@@ -39,6 +39,8 @@
 \def\enaknl{\texttt{--enable-knl}}
 \def\plumed{\textsc{Plumed}}
 \def\enaplumed{\texttt{--enable-plumed}}
+\def\colvars{\textsc{Colvars}}
+\def\enacolvars{\texttt{--enable-colvars}}
 \def\enafftgen{\texttt{--enable-fft-generic}}
 \def\enafftmkl{\texttt{--enable-fft-mkl\hskip5em}}
 \def\enafftw{\texttt{--enable-fft-fftw3}}
@@ -140,6 +142,7 @@ Optional Features:
   --enable-fft-fftw3            Enable fftw3 FFT mode [default is no]
   --enable-fft-fftw3_f03        Enable fftw3_f03 FFT mode [default is no]
   --enable-plumed               Enable plumed interface [default is no]
+  --enable-colvars              Enable Colvars interface [default is no]
 Optional Packages:
   --with-blaslib=<BLAS LIB>     Specify BLAS library [mkl, lapack or 
                                 /absolute/path/to/BLAS_library]
@@ -181,6 +184,10 @@ Tinker-HP also needs some functions that resides in a working  \blas\ library. S
 Tinker-HP is now able to be interfaced with \plumed. So, there is an option for that :
 \begin{itemize}
     \item [] \enaplumed
+\end{itemize}
+Tinker-HP is now able to be interfaced with \colvars. So, there is an option for that :
+\begin{itemize}
+    \item [] \enacolvars
 \end{itemize}
 
 Finally, as there might be some execution problems, or compilation problems for the users who develop code, Tinker-HP has an \texttt{--enable-debug} option.
@@ -328,7 +335,7 @@ configure:
 
 This log confirms that we are in DEBUG mode and that we use the Intel compiler \texttt{ifort} and the \texttt{mpiifort} wrapper from Intel\mpi. As The \plumed\ interface has been selected, the configure script shows the \plumed\ settings. The installation directory where all binaries (with \texttt{.debug} extension) will be installed is shown as well.
 
-In the case of the \plumed\ interface, the \config\ command will configure the plumed library as well.
+In the case of the \plumed\ or the \colvars\ interface, the \config\ command will configure the plumed or the Colvars library as well.
 
 \subsection{Making binaries}
 
@@ -348,8 +355,10 @@ Mode & Extension \\
 \hline
 \texttt{NORMAL} & .prod \\
 \texttt{PLUMED NORMAL} & \_plumed.prod \\
+\texttt{COLVARS NORMAL} & \_colvars.prod \\
 \texttt{DEBUG}  & .debug \\
 \texttt{PLUMED DEBUG} & \_plumed.debug \\
+\texttt{COLVARS DEBUG} & \_colvars.debug \\
 \hline
 \end{tabular}
 \end{center}

@@ -333,15 +333,17 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         nnelst = merge(nshortelst(ii),
-     &                  nelst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnelst = nshortelst(ii)
+         else
+           nnelst = nelst(ii)
+         end if
          do kkk = 1, nnelst
-            kkpole = merge(shortelst(kkk,ii),
-     &                     elst     (kkk,ii),
-     &                     shortrange
-     &                   )
+            if (shortrange) then
+              kkpole = shortelst(kkk,ii)
+            else
+              kkpole = elst(kkk,ii)
+            end if
             kglob = ipole(kkpole)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
@@ -497,7 +499,7 @@ c
 
 
                if(shortrange .or. longrange)
-     &            call switch_respa(r,mpoleshortcut,shortheal,s,ds)
+     &            call switch_respa(r,ewaldshortcut,shortheal,s,ds)
 c
 c     fix the s factor, depending on the range
 c

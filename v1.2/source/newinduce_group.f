@@ -199,7 +199,11 @@ c
           iglobgroup = ipolegroup(poleglobgroup(i))
           iglob = globglobgroup(iglobgroup)
           iipole = pollist(iglob)
-          diag(i) = polarity(iipole)
+          if (polarity(iipole).eq.0) then
+            diag(i) = tinypol
+          else
+            diag(i) = polarity(iipole)
+          end if
         end do
         if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else

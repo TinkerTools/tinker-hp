@@ -227,7 +227,7 @@ c
 c
 c     update the lists of previous induced dipole values
 c
-      if (use_pred) then
+      if ((use_pred).and..not.(use_lambdadyn)) then
          nualt = min(nualt+1,maxualt)
          do i = 1, npolebloc
            iipole = poleglob(i)
@@ -350,7 +350,11 @@ c
       if (precnd) then
         do i = 1, npoleloc
           iipole = poleglob(i)
-          diag(i) = polarity(iipole)
+          if (polarity(iipole).eq.0) then
+            diag(i) = tinypol
+          else
+            diag(i) = polarity(iipole)
+          end if
         end do
         if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else

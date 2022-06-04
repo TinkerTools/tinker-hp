@@ -41,6 +41,22 @@ c     dex     extra energy term Cartesian coordinate derivatives
 c     desave  stored Cartesian coordinate derivatives
 c     desmd   extra smd energy term Cartesian coordinate derivatives
 c
+c     Lambda-dynamics derivatives
+c
+c     delambda           hamiltonian derivative with respect to lambda (to be sent to colvar)
+c     delambdae          hamiltonian derivative with respect to elambda
+c     delambdav          hamiltonian derivative with respect to vlambda
+c     dlambdaelambda     derivative of elambda with respect to lambda
+c     dlambdavlambda     derivative of vlambda with respect to lambda     
+c
+c     Orthogonal Space Random Walk - note x stands for Cartesian coordinates
+c     dxdelambda         hamiltonian double derivative with respect to x and lambda (to be sent to colvar)
+c     dxdelambdae        hamiltonian double derivative with respect to x and elambda (electrostatic interactions)
+c     dxdelambdav        hamiltonian double derivative with respect to x and vlambda (vdw interactions)
+c     d2edlambda2         hamiltonian double derivative with respect to lambda (to be sent to colvar)
+c     d2edlambdae2        hamiltonian double derivative with respect to elambda (electrostatic interactions)
+c     d2edlambdav2        hamiltonian double derivative with respect to vlambda (vdw interactions)
+c
 c     dotstgrad : flag when the main program is testgrad (communication
 c      of the forces one by one)
 c
@@ -59,6 +75,11 @@ c
       real*8, allocatable :: decrec(:,:),demrec(:,:),deprec(:,:)
       real*8, allocatable :: debond(:,:),desave(:,:)
       real*8, allocatable :: desmd(:,:)
+      real*8 :: delambda,delambdae,delambdav
+      real*8 :: d2edlambda2,d2edlambdae2,d2edlambdav2
+      real*8 :: dlambdaelambda, dlambdavlambda
+      real*8, allocatable  :: dxdelambda(:,:)
+      real*8, allocatable :: dxdelambdae(:,:), dxdelambdav(:,:)
       logical dotstgrad
       save
       end

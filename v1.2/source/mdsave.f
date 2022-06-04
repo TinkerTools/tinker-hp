@@ -148,9 +148,6 @@ c
       else if (frcsave) then
         do i = 1, nloc
           iglob = glob(i)
-c          derivstemp(1,i) = derivs(1,i)
-c          derivstemp(2,i) = derivs(2,i)
-c          derivstemp(3,i) = derivs(3,i)
           derivstemp2(1,iglob) = derivs(1,i)
           derivstemp2(2,iglob) = derivs(2,i)
           derivstemp2(3,iglob) = derivs(3,i)

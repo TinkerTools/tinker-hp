@@ -59,7 +59,7 @@ c
       use mpi
       implicit none
       integer i,iglob,iichg
-      integer ii
+      integer ii,ierr
       real*8 e
       real*8 f
       real*8 fs
@@ -119,8 +119,16 @@ c
               yd = yd + pchg(iichg)*y(iglob)
               zd = zd + pchg(iichg)*z(iglob)
            end do
+           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
            e = (2.0d0/3.0d0) * f * (pi/volbox) * (xd*xd+yd*yd+zd*zd)
-           ec = ec + e
+           if (rank.eq.0) then
+             ec = ec + e
+           end if
            nec = nec + 1
            do ii = 1, nionloc
               iichg = chgglob(ii)
@@ -257,15 +265,17 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = c5scale
          end do
-         nnelst = merge(nshortelst(ii),
-     &                  nelst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnelst = nshortelst(ii)
+         else
+           nnelst = nelst(ii)
+         end if
          do kkk = 1, nnelst
-            kkchg = merge(shortelst(kkk,ii),
-     &                    elst     (kkk,ii),
-     &                    shortrange
-     &                   )
+            if (shortrange) then
+              kkchg = shortelst(kkk,ii)
+            else
+              kkchg = elst(kkk,ii)
+            end if
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)

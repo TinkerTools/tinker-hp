@@ -16,7 +16,11 @@ c
 c
 c     choose the method for summing over multipole interactions
 c
-      call empole1c
+      if (use_lambdadyn) then
+        call elambdampole1c
+      else
+        call empole1c
+      end if
 c
 c     zero out energy and derivative terms which are not in use
 c
@@ -29,6 +33,360 @@ c
       return
       end
 c
+c
+c     "elambdampole1c" calculates the multipole energy and derivatives
+c     with respect to Cartesian coordinates using particle mesh Ewald
+c     summation and a neighbor list during lambda dynamics
+c
+c
+      subroutine elambdampole1c
+      use sizes
+      use atmlst
+      use atoms
+      use boxes
+      use chgpot
+      use deriv
+      use domdec
+      use energi
+      use ewald
+      use math
+      use mpole
+      use mutant
+      use potent
+      use timestat
+      use virial
+      use mpi
+      implicit none
+      integer i,ii
+      integer iipole,iglob,iloc,ierr
+      real*8 e,f
+      real*8 term,fterm
+      real*8 cii,dii,qii
+      real*8 xi,yi,zi
+      real*8 xd,yd,zd
+      real*8 xdtemp,ydtemp,zdtemp
+      real*8 qtemp,muxtemp,muytemp,muztemp
+      real*8 xq,yq,zq
+      real*8 xv,yv,zv,vterm
+      real*8 ci,dix,diy,diz
+      real*8 qixx,qixy,qixz
+      real*8 qiyy,qiyz,qizz
+      real*8 xdfield,ydfield
+      real*8 zdfield
+      real*8 fx,fy,fz
+      real*8 vxx,vyy,vzz
+      real*8 vxy,vxz,vyz
+      real*8 trq(3),frcx(3)
+      real*8 frcy(3),frcz(3)
+      real*8 time0,time1
+      real*8 citemp,dixtemp,diytemp,diztemp
+      real*8 qixxtemp,qixytemp,qixztemp
+      real*8 qiyytemp,qiyztemp,qizztemp
+      real*8 elambdatemp
+      real*8, allocatable :: delambdarec0(:,:),delambdarec1(:,:)
+      real*8 :: elambdarec0,elambdarec1
+      real*8, allocatable :: pot(:)
+      real*8, allocatable :: decfx(:)
+      real*8, allocatable :: decfy(:)
+      real*8, allocatable :: decfz(:)
+c
+      allocate (delambdarec0(3,nlocrec2))
+      allocate (delambdarec1(3,nlocrec2))
+      elambdatemp = elambda  
+c
+c     zero out the atomic multipole energy and derivatives
+c
+      em = 0.0d0
+      dem = 0d0
+      if (npole .eq. 0)  return
+      delambdae = 0d0
+
+      aewald = aeewald
+c
+c     set the energy unit conversion factor
+c
+      f = electric / dielec
+c
+c     check the sign of multipole components at chiral sites
+c
+      call chkpole(.false.)
+c
+c     rotate the multipole components into the global frame
+c
+      call rotpole
+c
+c     compute the reciprocal space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
+     $   then
+        if (use_mrec) then 
+          time0 = mpi_wtime()
+c
+c         the reciprocal part is interpolated between 0 and 1
+c
+          elambda = 0d0
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+          call rotpole
+          em = 0d0
+          demrec = 0d0
+          if (elambda.lt.1d0) then
+            call emrecip1
+          end if
+          elambdarec0  = em
+          delambdarec0 = demrec
+
+          elambda = 1d0
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+          call rotpole
+          em = 0d0
+          demrec = 0d0
+          if (elambda.gt.0d0) then
+            call emrecip1
+          end if
+          elambdarec1  = em
+          delambdarec1 = demrec
+
+          elambda = elambdatemp 
+          em = (1-elambda)*elambdarec0 + elambda*elambdarec1
+          demrec = (1-elambda)*delambdarec0+elambda*delambdarec1
+          delambdae = delambdae + elambdarec1-elambdarec0
+c
+c         reset lambda to initial value
+c
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+          call rotpole
+          time1 = mpi_wtime()
+          timerec = timerec + time1 - time0
+        end if
+      end if
+c
+c     compute the real space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
+        if (use_mreal) then
+          time0 = mpi_wtime()
+          call emreal1c
+          time1 = mpi_wtime()
+          timereal = timereal + time1 - time0
+        end if
+c
+        if (use_mself) then
+c
+c     compute the Ewald self-energy term over all the atoms
+c
+c
+c     perform dynamic allocation of some local arrays
+c
+          allocate (pot(nbloc))
+          allocate (decfx(nbloc))
+          allocate (decfy(nbloc))
+          allocate (decfz(nbloc))
+          pot = 0d0
+          term = 2.0d0 * aewald * aewald
+          fterm = -f * aewald / sqrtpi
+          do i = 1, npoleloc
+             iipole = poleglob(i)
+             iglob = ipole(iipole)
+             iloc = loc(iglob)
+             ci = rpole(1,iipole)
+             dix = rpole(2,iipole)
+             diy = rpole(3,iipole)
+             diz = rpole(4,iipole)
+             qixx = rpole(5,iipole)
+             qixy = rpole(6,iipole)
+             qixz = rpole(7,iipole)
+             qiyy = rpole(9,iipole)
+             qiyz = rpole(10,iipole)
+             qizz = rpole(13,iipole)
+             cii = ci*ci
+             dii = dix*dix + diy*diy + diz*diz
+             qii = 2.0d0*(qixy*qixy+qixz*qixz+qiyz*qiyz)
+     &                + qixx*qixx + qiyy*qiyy + qizz*qizz
+             e = fterm * (cii + term*(dii/3.0d0+2.0d0*term*qii/5.0d0))
+             em = em + e
+             pot(iloc) = 2.0d0 * fterm * ci
+             if (mut(iglob).and.elambda.gt.0) then
+               citemp = ci/elambda
+               dixtemp = rpole(2,iipole)/elambda
+               diytemp = rpole(3,iipole)/elambda
+               diztemp = rpole(4,iipole)/elambda
+               qixxtemp = rpole(5,iipole)/elambda
+               qixytemp = rpole(6,iipole)/elambda
+               qixztemp = rpole(7,iipole)/elambda
+               qiyytemp = rpole(9,iipole)/elambda
+               qiyztemp = rpole(10,iipole)/elambda
+               qizztemp = rpole(13,iipole)/elambda
+               delambdae = delambdae + fterm*2d0*elambda*citemp**2
+               delambdae = delambdae + fterm*term*2d0*elambda*
+     $           (dixtemp**2 + diytemp**2 + diztemp**2)/3d0
+               delambdae = delambdae + fterm*term**2*8d0*elambda*
+     $           (qixytemp**2 + qixztemp**2 + qiyztemp**2)/5d0
+               delambdae = delambdae + fterm*term**2*4d0*elambda*
+     $           (qixxtemp**2 + qiyytemp**2 + qizztemp**2)/5d0
+             end if
+          end do
+c
+c     modify gradient and virial for charge flux self-energy
+c
+          if (use_chgflx) then
+             call commpot(pot,1)
+             call dcflux (pot,decfx,decfy,decfz)
+             do i = 1, npolebloc
+                iipole = poleglob(i)
+                iglob = ipole(iipole)
+                iloc = loc(iglob)
+                xi = x(iglob)
+                yi = y(iglob)
+                zi = z(iglob)
+                fx = decfx(iloc)
+                fy = decfy(iloc)
+                fz = decfz(iloc)
+                dem(1,iloc) = dem(1,iloc) + fx
+                dem(2,iloc) = dem(2,iloc) + fy
+                dem(3,iloc) = dem(3,iloc) + fz
+                vxx = xi * fx
+                vxy = yi * fx
+                vxz = zi * fx
+                vyy = yi * fy
+                vyz = zi * fy
+                vzz = zi * fz
+                vir(1,1) = vir(1,1) + vxx
+                vir(2,1) = vir(2,1) + vxy
+                vir(3,1) = vir(3,1) + vxz
+                vir(1,2) = vir(1,2) + vxy
+                vir(2,2) = vir(2,2) + vyy
+                vir(3,2) = vir(3,2) + vyz
+                vir(1,3) = vir(1,3) + vxz
+                vir(2,3) = vir(2,3) + vyz
+                vir(3,3) = vir(3,3) + vzz
+             end do
+          end if
+c
+c     perform deallocation of some local arrays
+c
+          deallocate (pot)
+          deallocate (decfx)
+          deallocate (decfy)
+          deallocate (decfz)
+c
+c       compute the cell dipole boundary correction term
+c
+          if (boundary .eq. 'VACUUM') then
+             xd = 0.0d0
+             yd = 0.0d0
+             zd = 0.0d0
+             xdtemp = 0.0d0
+             ydtemp = 0.0d0
+             zdtemp = 0.0d0
+             do i = 1, npoleloc
+                iipole = poleglob(i)
+                iglob = ipole(iipole)
+                xd = xd + rpole(2,iipole) + rpole(1,iipole)*x(iglob)
+                yd = yd + rpole(3,iipole) + rpole(1,iipole)*y(iglob)
+                zd = zd + rpole(4,iipole) + rpole(1,iipole)*z(iglob)
+                if (mut(iglob)) then
+                  qtemp = rpole(1,iipole)/elambda
+                  muxtemp = rpole(2,iipole)/elambda
+                  muytemp = rpole(3,iipole)/elambda
+                  muztemp = rpole(4,iipole)/elambda
+                  xdtemp = xdtemp + muxtemp + qtemp*x(iglob)
+                  ydtemp = ydtemp + muytemp + qtemp*y(iglob)
+                  zdtemp = zdtemp + muztemp + qtemp*z(iglob)
+                end if
+             end do
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xdtemp,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,ydtemp,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zdtemp,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             term = (2.0d0/3.0d0) * f * (pi/volbox)
+             if (rank.eq.0) then
+               em = em + term*(xd*xd+yd*yd+zd*zd)
+             end if
+             do ii = 1, npoleloc
+                iipole = poleglob(ii)
+                iglob = ipole(iipole)
+                i = loc(iglob)
+                dem(1,i) = dem(1,i) + 2.0d0*term*rpole(1,iipole)*xd
+                dem(2,i) = dem(2,i) + 2.0d0*term*rpole(1,iipole)*yd
+                dem(3,i) = dem(3,i) + 2.0d0*term*rpole(1,iipole)*zd
+             end do
+             xdfield = -2.0d0 * term * xd
+             ydfield = -2.0d0 * term * yd
+             zdfield = -2.0d0 * term * zd
+             do i = 1, npoleloc
+                iipole = poleglob(i)
+              trq(1) = rpole(3,iipole)*zdfield - rpole(4,iipole)*ydfield
+              trq(2) = rpole(4,iipole)*xdfield - rpole(2,iipole)*zdfield
+              trq(3) = rpole(2,iipole)*ydfield - rpole(3,iipole)*xdfield
+                call torque(iipole,trq,frcx,frcy,frcz,dem)
+             end do
+c
+c       boundary correction to virial due to overall cell dipole
+c
+             xd = 0.0d0
+             yd = 0.0d0
+             zd = 0.0d0
+             xq = 0.0d0
+             yq = 0.0d0
+             zq = 0.0d0
+             do i = 1, npoleloc
+                iipole = poleglob(i)
+                iglob = ipole(iipole)
+                xd = xd + rpole(2,iipole)
+                yd = yd + rpole(3,iipole)
+                zd = zd + rpole(4,iipole)
+                xq = xq + rpole(1,iipole)*x(iglob)
+                yq = yq + rpole(1,iipole)*y(iglob)
+                zq = zq + rpole(1,iipole)*z(iglob)
+             end do
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xq,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,yq,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zq,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             if (rank.eq.0) then
+               xv = xd * xq
+               yv = yd * yq
+               zv = zd * zq
+               vterm = term * (xd*xd + yd*yd + zd*zd + 2.0d0*(xv+yv+zv)
+     &                            + xq*xq + yq*yq + zq*zq)
+               vir(1,1) = vir(1,1) + 2.0d0*term*(xq*xq+xv) + vterm
+               vir(2,1) = vir(2,1) + 2.0d0*term*(xq*yq+xv)
+               vir(3,1) = vir(3,1) + 2.0d0*term*(xq*zq+xv)
+               vir(1,2) = vir(1,2) + 2.0d0*term*(yq*xq+yv)
+               vir(2,2) = vir(2,2) + 2.0d0*term*(yq*yq+yv) + vterm
+               vir(3,2) = vir(3,2) + 2.0d0*term*(yq*zq+yv)
+               vir(1,3) = vir(1,3) + 2.0d0*term*(zq*xq+zv)
+               vir(2,3) = vir(2,3) + 2.0d0*term*(zq*yq+zv)
+               vir(3,3) = vir(3,3) + 2.0d0*term*(zq*zq+zv) + vterm
+             end if
+          end if
+        end if
+      end if
+      return
+      end
 c
 c     "empole1c" calculates the multipole energy and derivatives
 c     with respect to Cartesian coordinates using particle mesh Ewald
@@ -818,6 +1176,7 @@ c     if shortrange, calculates just the short range part
       use math
       use mplpot
       use mpole
+      use mutant
       use neigh
       use potent
       use shunt
@@ -873,6 +1232,10 @@ c     if shortrange, calculates just the short range part
       real*8 term1k,term2k,term3k
       real*8 term1ik,term2ik,term3ik
       real*8 term4ik,term5ik
+      real*8 citemp,cktemp,term1temp
+      real*8 dirtemp,dkrtemp,diktemp,term2temp
+      real*8 qkrtemp,qirtemp,qiktemp,dkqitemp,diqktemp,qiqktemp
+      real*8 term3temp,term4temp,term5temp
       real*8 poti,potk
       real*8 frcx,frcy,frcz
       real*8 vxx,vyy,vzz
@@ -976,15 +1339,17 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         nnelst = merge(nshortelst(ii),
-     &                  nelst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnelst = nshortelst(ii)
+         else
+           nnelst = nelst(ii)
+         end if
          do kkk = 1, nnelst
-            kkpole = merge(shortelst(kkk,ii),
-     &                     elst     (kkk,ii),
-     &                     shortrange
-     &                   )
+            if (shortrange) then
+              kkpole = shortelst(kkk,ii)
+            else
+              kkpole = elst(kkk,ii)
+            end if
             kglob = ipole(kkpole)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
@@ -1183,6 +1548,43 @@ c
                   e = term1*rr1 + term2*rr3 + term3*rr5
      &                   + term4*rr7 + term5*rr9
 c
+                  if ((use_lambdadyn).and.(elambda.gt.0).and.
+     $                (elambda.lt.1)) then
+                     if (mut(iglob).and.mut(kglob)) then
+                       citemp = ci/elambda
+                       cktemp = ck/elambda
+                       term1temp = 2d0*citemp*cktemp*elambda
+                       dirtemp = dir/elambda
+                       dkrtemp = dkr/elambda
+                       diktemp = dik/(elambda**2)
+                       term2temp = cktemp*dirtemp*2d0*elambda - 
+     $                  citemp*dkrtemp*2d0*elambda + diktemp*2d0*elambda
+                       qkrtemp = qkr/elambda
+                       qirtemp = qir/elambda
+                       qiktemp = qik/(elambda**2)
+                       dkqitemp = dkqi/(elambda**2)
+                       diqktemp = diqk/(elambda**2)
+                       qiqktemp = qiqk/(elambda**2)
+                       term3temp = citemp*qkrtemp*2d0*elambda +
+     $                   cktemp*qirtemp*2d0*elambda - 
+     $                   dirtemp*dkrtemp*2d0*elambda + 
+     $                2.0d0*(dkqitemp*2d0*elambda-diqktemp*2d0*elambda
+     $                 +qiqktemp*2d0*elambda)
+                       term4temp = dirtemp*qkrtemp*2d0*elambda 
+     $                   - dkrtemp*qirtemp*2d0*elambda 
+     $                   - 4.0d0*qiktemp*2d0*elambda
+                       term5temp = qirtemp*qkrtemp*2d0*elambda
+                       delambdae = delambdae +  term1temp*rr1 
+     $                 + term2temp*rr3 + term3temp*rr5  + term4temp*rr7 
+     $                 + term5temp*rr9
+                     else if ((mut(iglob).and..not.mut(kglob)).or.
+     $                       (mut(kglob).and..not.mut(iglob))) then
+                       delambdae = delambdae +  e/elambda
+                     end if
+                  else
+                    delambdae = 0d0
+                  end if
+c
 c     find standard multipole intermediates for force and torque
 c
                   de = term1*rr3 + term2*rr5 + term3*rr7
@@ -1218,7 +1620,7 @@ c
 c     compute the energy contributions for this interaction
 c
                if(shortrange .or. longrange)
-     &            call switch_respa(r,mpoleshortcut,shortheal,s,ds)
+     &            call switch_respa(r,ewaldshortcut,shortheal,s,ds)
 
 c
 c     fix the s and ds factors, depending on the range

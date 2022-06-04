@@ -36,6 +36,7 @@ c
       use mpole
       use neigh
       use polpot
+      use potent
       use units 
       use uprior
       use usage
@@ -101,6 +102,11 @@ c      volscale = 'ATOMIC'
       masspiston = 0.000200d0
       virsave = 0d0
 c
+c     set default values for lambda dynamic
+c
+      use_lambdadyn = .false.
+      use_OSRW = .false.
+c
 c     check for keywords containing any altered parameters
 c
       do i = 1, nkey
@@ -162,6 +168,11 @@ c
             read (string,*,err=10,end=10) gammapiston
          else if (keyword(1:12) .eq. 'MASSPISTON ') then
             read (string,*,err=10,end=10) masspiston
+         else if (keyword(1:10) .eq. 'LAMBDADYN ') then
+           use_lambdadyn = .true.
+         else if (keyword(1:5) .eq. 'OSRW ') then
+            use_lambdadyn = .true.
+            use_OSRW = .true.
 #ifdef PLUMED
 c
 c initialise PLUMED
@@ -209,6 +220,12 @@ c
          end if
    10    continue
       end do
+c
+c     lambda dynamic initialization
+c
+      if ((use_lambdadyn).or.(use_osrw)) then
+        call def_lambdadyn_init
+      end if
 c
 c     enforce the use of monte-carlo barostat with the TCG family of solvers
 c

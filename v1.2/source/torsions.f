@@ -86,7 +86,7 @@ c
         end do
       end if
       if (allocated(torsglob)) deallocate (torsglob)
-      allocate (torsglob(6*nbloc))
+      allocate (torsglob(8*nbloc))
       ntorsloc = 0
       do i = 1, nbondloc
         ibond = bndglob(i)

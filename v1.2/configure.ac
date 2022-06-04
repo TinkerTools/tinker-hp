@@ -25,6 +25,7 @@ unset F77
 # Find the default ranlib program (help linking static libraries)
 #
 
+AC_PROG_CXX([mpiicpc mpic++])
 AC_PROG_RANLIB
 
 #
@@ -114,7 +115,7 @@ AS_IF([test "x$REALFC" = "xnone" ],
 # Use -cpp for all compilers
 
 AC_FC_PP_DEFINE
-CPPFLAGS="-cpp"
+#CPPFLAGS="-cpp"
 
 #
 # All sources will be in fixed forms
@@ -141,11 +142,16 @@ LIB2DECOMP_LIB="-L $LIB2DECOMP_PATH -l2decomp_fft"
 FORT_FLAGSIF="-no-ipo -no-prec-div -inline -heap-arrays -traceback" 
 FORT_FLAGSPF="-traceback -Mbackslash -Mdalign -gopt" 
 FORT_FLAGSGF="-C -fbacktrace" 
+
+CXX_FLAGSIC="-no-ipo -no-prec-div -heap-arrays -traceback" 
+CXX_FLAGSPC="-traceback -Mdalign -gopt" 
+CXX_FLAGSGC="-C " 
 #
 # We begin with null flags
 #
 FORT_FLAGS=""
-FCFLAGS=""
+
+CCFLAGS=""
 
 #
 # MKL link flags for intel, portland and gnu compilers
@@ -181,22 +187,27 @@ EXEEXT=".prod"                                                    # Default is n
  AC_ARG_ENABLE([debug],
                [AS_HELP_STRING([--enable-debug], [Enable debug mode (check array bounds, implicit none, etc...). Should not be active in normal operations @<:@default is no@:>@])],
                [EXEEXT=".debug"                                                   # Extension is _debug (Automake variable)
-                FCFLAGS="-O0 -g"                                       # FCFLAGS is no optimization
+                FCFLAGS="$FCFLAGS -O0 -g"                                       # FCFLAGS is no optimization
+                CCFLAGS="-O0 -g"                                       # CCFLAGS is no optimization
                 AC_FC_CHECK_BOUNDS([:],[AC_MSG_FAILURE([$CHECKBOUND_FAILMSG])])   # Modify FCFLAGS
                 AC_MSG_RESULT([${GRN}$ac_cv_fc_check_bounds${CLR}])
                 FORT_FLAGS="$ac_cv_fc_check_bounds"                               # Modify FORT_FLAGS
                 case "x$REALFC" in
-                   xifort    ) IMPFLAG="-u";             WARNFLAG="-warn all";;
-                   xpgfortran) IMPFLAG="-Mdclchk"        WARNFLAG="-Minform=inform";;
+                   xifort    ) IMPFLAG="-u";             WARNFLAG="-warn all";
+                               CIMPFLAG="-u";           CWARNFLAG="-warn" ;;
+                   xpgfortran) IMPFLAG="-Mdclchk"        WARNFLAG="-Minform=inform";
+                               CIMPFLAG="";             CWARNFLAG="-Minform=inform";;
                    xgfortran ) IMPFLAG="-fimplicit-none" WARNFLAG="-Wall";;
                 esac
                 AC_MSG_RESULT([Force implicit none with $GRN$IMPFLAG$CLR flag])
                 FCFLAGS="$FCFLAGS $IMPFLAG"                                       # Modify FCFLAGS
+                CCFLAGS="$CCFLAGS $CIMPFLAG"                                      # Modify CCFLAGS
                 AC_MSG_RESULT([Turn on warnings with $GRN$WARNFLAG$CLR flag])
-                FCFLAGS="$FCFLAGS $WARNFLAG"                                       # Modify FCFLAGS
+                FCFLAGS="$FCFLAGS $WARNFLAG"                                      # Modify FCFLAGS
+                CCFLAGS="$CCFLAGS $CWARNFLAG"                                     # Modify CCFLAGS
                 DEBUG_MODE="DEBUG"
                ],
-               [FCFLAGS="-O3"                                                     # and maximal optimization
+               [FCFLAGS="$FCFLAGS -O3" ; CCFLAGS="-O3"                                    # and maximal optimization                                                    # and maximal optimization
                 DEBUG_MODE="NORMAL"
                ]
           )
@@ -207,6 +218,7 @@ EXEEXT=".prod"                                                    # Default is n
 #
 # Skylake   architecture
 #
+
 AC_ARG_ENABLE([skylake],
               [AS_HELP_STRING([--enable-skylake], [Enable AVX512 Optimization for Skylake Processors @<:@default is no@:>@])],
               [ARCHIF="-xCORE-AVX512 -qopt-zmm-usage=high";
@@ -229,6 +241,7 @@ AC_ARG_ENABLE([knl],
 #
 # Enable FFT modes (default is generic) FFTW_TYPE will contain the value chosen by the user
 #
+
 FFTW_TYPE=generic
 
 AC_ARG_ENABLE([fft-generic],
@@ -254,6 +267,7 @@ AC_ARG_ENABLE([fft-fftw3_f03],
 #
 # Enable plumed interface. PLUMED will contain the value chosen by the user
 #
+
 PLUMED=
 PLUMEDFLAG=
 LIBPLUMED_PATH=
@@ -263,6 +277,23 @@ LIBPLUMED_INC=
 AC_ARG_ENABLE([plumed],
               [AS_HELP_STRING([--enable-plumed], [Enable plumed interface @<:@default is no@:>@])],
               [PLUMED="PLUMED"],
+              [:]
+             )
+
+
+#
+# Enable colvars interface. COLVARS will contain the value chosen by the user
+#
+
+COLVARS=
+COLVARSFLAG=
+LIBCOLVARS_PATH=
+LIBCOLVARS_LIB=
+LIBCOLVARS_INC=
+
+AC_ARG_ENABLE([colvars],
+              [AS_HELP_STRING([--enable-colvars], [Enable colvars interface @<:@default is no@:>@])],
+              [COLVARS="COLVARS"],
               [:]
              )
 
@@ -388,7 +419,7 @@ FFTUNKMSG="${RED}Unknown FFT LIB ${YEL}$FFTW_LIB${RED} : must be${GRN} mkl${RED}
 case "$FFTW_LIB" in
     none )                                                     # none case
       AS_IF([test "x$FFTW_TYPE" = "xgeneric"],                 # This is legal, as long as we use the generic implementation in 2decomp 
-            [FFTW_INCLUDES="-I ."; FFTW_LIB=""],
+            [FFTW_INCLUDES="-I ."; FFTW_LIB="" FFTW_INCLUDES_PATH="." ],
             [AC_MSG_FAILURE(["$NO_FFT_FAILMSG"])]              # If not, we absolutely need a fftw3 library
            )
        ;;
@@ -478,14 +509,13 @@ case "$FFTW_LIB" in
     *)  AC_MSG_FAILURE( [$FFTUNKMSG]) ;;
 esac
 
-PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED : must be ${GRN} ifort ${RED}.${CLR}"
+#
 # setup plumed 
-       AS_IF([test $PLUMED = PLUMED],
+#
+PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED : must be ${GRN} ifort ${RED}.${CLR}"
+
+       AS_IF([test x$PLUMED = xPLUMED],
              [ PLUMEDFLAG="-DPLUMED"
-#              AS_IF([test x$REALFC = xifort],
-#                    [COMP="Intel"],
-#                    [AC_MSG_FAILURE([$PLUMBADCOMPILMSG])]
-#                   )
                case "x$REALFC" in
                   xifort    ) COMP="Intel";;
                   xpgfortran) COMP="Portland";;
@@ -511,22 +541,65 @@ PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED
                PLUEXT=""
                MAKEPLUMED="touch noplumed"
                INITPLUMED=""
- #             AC_CONFIG_FILES(plumed2/Makefile.conf, [ touch noplumed ] )
                PLUMEDINCLUDE="noplumed.mk"
+	     ]
+            )
+COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVARS : must be ${GRN} ifort ${RED}.${CLR}"
+#
+# setup colvars 
+#
+       AS_IF([test x$COLVARS = xCOLVARS],
+             [ COLVARSFLAG="-DCOLVARS"
+               case "x$REALFC" in
+                  xifort    ) COMP="Intel";;
+                  xpgfortran) COMP="Portland";;
+                  xgfortran ) COMP="Gnu";;
+               esac
+               LIBCOLVARS_PATH="../colvars/"
+               LIBCOLVARS_LIBPATH="$LIBCOLVARS_PATH/"
+               LIBCOLVARS_LIB="-L $LIBCOLVARS_LIBPATH/ -lcolvars -lstdc++ "
+               LIBCOLVARS_INC="-I $LIBCOLVARS_PATH"
+               LIBCOLVARS_CPPFLAGS="$LIBCOLVAR_INC"
+               COLVEXT="_colvars"
+               #
+               # Add the Makefile for libcolvars to the list of files to be generated
+               #
+               AC_CONFIG_FILES(colvars/Makefile)
+               COLVARSINCLUDE="colvars.mk"
+               TINKERCOLVARS="libtinkerclv_a"
+             ],
+             [ COLVARSFLAG=""
+               LIBCOLVARS_PATH=""
+               LIBCOLVARS_LIB=""
+               LIBCOLVARS_INC="" 
+               COLVEXT=""
+               MAKECOLVARS="touch nocolvars"
+               COLVARSINCLUDE="nocolvars.mk"
+               TINKERCOLVARS=""
 	     ]
             )
 #
 # Final setting of the Compiler flags
 #
        case "x$REALFC" in
-          xifort    ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSIF $ARCHIF";PREPROFLAG="-fpp";;
-          xpgfortran) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSPF $ARCHPF";PREPROFLAG="-Mpreprocess";;
-          xgfortran ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSGF $ARCHGF";PREPROFLAG="-cpp";;
+          xifort    ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSIF $ARCHIF";PREPROFLAG="-fpp";
+                      CXX_FLAGS="$CXX_FLAGSIC $ARCHIF";;
+          xpgfortran) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSPF $ARCHPF";PREPROFLAG="-Mpreprocess";
+                      CXX_FLAGS="$CXX_FLAGSPC $ARCHPF";;
+          xgfortran ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSGF $ARCHGF";PREPROFLAG="-cpp";
+                      CXX_FLAGS="$CXX_FLAGSGC $ARCHGF";;
        esac
+
+#
+# Flags for .cpp sources 
+#
+CXXFLAGS="-std=c++11 $COLVARSFLAG $PLUMEDFLAG $CCFLAGS $CXX_FLAGS"
+AM_CPPFLAGS="$LIBCOLVARS_CPPFLAGS"
+
 #
 # Flags for .f sources are the same as those for .f90 sources
 # Fortran compiler is the wrapper
-FCFLAGS="$PREPROFLAG $PLUMEDFLAG $FCFLAGS $FORT_FLAGS"
+FCFLAGS="$PREPROFLAG $COLVARSFLAG $PLUMEDFLAG $FCFLAGS $FORT_FLAGS"
 FFLAGS=$FCFLAGS
 FC=$MPIFC
 
@@ -560,10 +633,15 @@ LDFLAGS=
 #
 
 AS_IF([test "x$DEBUG_MODE" = xDEBUG ],
-      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $DEBUG_MODE$GRN (binaries'extension is $YEL'$EXEEXT'$GRN)"],
-      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $DEBUG_MODE$GRN (No extension for binaries)"]
+      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $COLVARS $DEBUG_MODE$GRN (binaries'extension is $YEL'$EXEEXT'$GRN)"],
+      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $COLVARS $DEBUG_MODE$GRN (No extension for binaries)"]
      )
-EXEEXT="$PLUEXT$EXEEXT"
+#
+# set the extension of binaries
+# composite of _plumed, _colvars and .debug or .prod 
+#
+EXEEXT="$PLUEXT$COLVEXT$EXEEXT"
+
 #
 # Build the messages for NOTICE
 #
@@ -579,6 +657,8 @@ FOFL2_MSG="**                      : ${GRN}${FCFLAGS:73:146}"
 DECLI_MSG="** 2decomp Library      : ${GRN}$LIB2DECOMP_LIB"
 PLULI_MSG="** PLUMED  Library      : ${GRN}$LIBPLUMED_LIB"
 PLUIN_MSG="** PLUMED  Includes     : ${GRN}$LIBPLUMED_INC"
+COLLI_MSG="** COLVARS  Library     : ${GRN}$LIBCOLVARS_LIB"
+COLIN_MSG="** COLVARS  Includes    : ${GRN}$LIBCOLVARS_INC"
 FFTTY_MSG="** FFTW3 Interface      : ${GRN}$FFTW_TYPE of the $FFTWTYPE library"
 FFTPA_MSG="** FFTW3 Path           : ${GRN}$FFTW_LIB_PATH"
 FFTIN_MSG="** FFTW3 Includes       : ${GRN}$FFTW_INCLUDES"
@@ -596,6 +676,8 @@ FOFL2_MSG="$CLR$FOFL2_MSG${PADD:0:$((120 - ${#FOFL2_MSG}))}$CLR"
 DECLI_MSG="$CLR$DECLI_MSG${PADD:0:$((120 - ${#DECLI_MSG}))}$CLR"
 PLULI_MSG="$CLR$PLULI_MSG${PADD:0:$((120 - ${#PLULI_MSG}))}$CLR"
 PLUIN_MSG="$CLR$PLUIN_MSG${PADD:0:$((120 - ${#PLUIN_MSG}))}$CLR"
+COLLI_MSG="$CLR$COLLI_MSG${PADD:0:$((120 - ${#COLLI_MSG}))}$CLR"
+COLIN_MSG="$CLR$COLIN_MSG${PADD:0:$((120 - ${#COLIN_MSG}))}$CLR"
 FFTTY_MSG="$CLR$FFTTY_MSG${PADD:0:$((120 - ${#FFTTY_MSG}))}$CLR"
 FFTPA_MSG="$CLR$FFTPA_MSG${PADD:0:$((120 - ${#FFTPA_MSG}))}$CLR"
 FFTIN_MSG="$CLR$FFTIN_MSG${PADD:0:$((120 - ${#FFTIN_MSG}))}$CLR"
@@ -617,6 +699,7 @@ AC_SUBST([LIB2DECOMP_INC])
 AC_SUBST([LIB2DECOMP_LIB])
 AC_SUBST([PLUMED])
 AC_SUBST([LIBPLUMED_INC])
+AC_SUBST([LIBCOLVARS_INC])
 AC_SUBST([LIBPLUMED_LIB])
 AC_SUBST([LIBPLUMED_LIBPATH])
 AC_SUBST([FFTW_TYPE])
@@ -628,8 +711,11 @@ AC_SUBST([FFTW_LIBS])
 AC_SUBST([BLAS])
 AC_SUBST([PYTHON])
 AC_SUBST([PREFIX])
-AC_SUBST([INCLUDE_PLUMED_MK],["include depend.mk"])
-AC_SUBST([INCLUDE_DEPEND_MK],["include "$PLUMEDINCLUDE])
+AC_SUBST([INCLUDE_DEPEND_MK],["include depend.mk"])
+AC_SUBST([INCLUDE_PLUMED_MK],["include "$PLUMEDINCLUDE])
+AC_SUBST([INCLUDE_COLVARS_MK],["include "$COLVARSINCLUDE])
+AC_SUBST([LIBTINKERCLV],[$TINKERCOLVARS])
+AC_SUBST([LIBCOLVARS_LIB],[$LIBCOLVARS_LIB])
 
 #
 # States that these Makefiles should be generated
@@ -668,6 +754,8 @@ AC_MSG_NOTICE([$FOFL2_MSG])
 AC_MSG_NOTICE([$DECLI_MSG])
 AC_MSG_NOTICE([$PLULI_MSG])
 AC_MSG_NOTICE([$PLUIN_MSG])
+AC_MSG_NOTICE([$COLLI_MSG])
+AC_MSG_NOTICE([$COLIN_MSG])
 AC_MSG_NOTICE([$FFTTY_MSG])
 AC_MSG_NOTICE([$FFTPA_MSG])
 AC_MSG_NOTICE([$FFTIN_MSG])

@@ -75,6 +75,7 @@ c
       use vdw
       use vdwpot
       use virial
+      use mutant
       use mpi
       implicit none
       integer i,j,iglob,kglob,kbis,iivdw,nnvlst
@@ -94,11 +95,19 @@ c
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
       real*8 s,ds,vdwshortcut2,facts,factds
+      real*8 :: rho,rhok,rvk,lambdavt
+      real*8 :: derho,gsc,dgscrho,dgsclambda, dgscrholambda
+      real*8 :: d2gscdlambda2
+      real*8 :: drhodelambdav, part1, part2, part3
+      real*8 :: temp1,temp2,temp3,temp4
+      real*8:: drdelambdav
+      real*8:: drdelambdavdx, drdelambdavdy, drdelambdavdz
+      real*8 :: galpha,glamb1,evdw,devdwgsc,d2evdwdgsc2
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
-      logical usei
+      logical usei,muti,mutk,mutik
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
@@ -127,6 +136,7 @@ c     zero out the van der Waals energy and first derivatives
 c
       ev = 0.0d0
       dev = 0.0d0
+      delambdav = 0d0
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -143,7 +153,6 @@ c
 c
 c     set the coefficients for the switching function
 c
-!     mode = 'VDW'
       call switch (mode)
       vdwshortcut2 = (vdwshortcut-shortheal)**2
 c
@@ -174,6 +183,7 @@ c
            write(iout,1000)
            cycle
          end if
+         muti = mut(iglob)
          iv = ired(iglob)
          ivloc = loc(iv)
          redi = kred(iglob)
@@ -203,15 +213,17 @@ c
 c     decide whether to compute the current interaction
 c
 
-         nnvlst = merge(nshortvlst(ii),
-     &                  nvlst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnvlst = nshortvlst(ii)
+         else
+           nnvlst = nvlst(ii)
+         end if
          do kk = 1, nnvlst
-            kglob = merge(shortvlst(kk,ii),
-     &                    vlst     (kk,ii),
-     &                    shortrange
-     &                   )
+            if (shortrange) then
+              kglob = shortvlst(kk,ii)
+            else
+              kglob = vlst(kk,ii)
+            end if
             if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
             kv = ired(kglob)
@@ -221,6 +233,7 @@ c
                write(iout,1000)
                cycle
             end if
+            mutk = mut(kglob)
             redk = kred(kglob)
             redkv = 1.0d0 - redk
 c
@@ -239,7 +252,6 @@ c
      &                      rik2 .le. off2,
      &                      longrange
      &                     )
-c           if (rik2 .le. off2) then
             if (testcut) then
                rv = radmin(kt,it)
                eps = epsilon(kt,it)
@@ -248,24 +260,69 @@ c           if (rik2 .le. off2) then
                   eps = epsilon4(kt,it)
                end if
                eps = eps * vscale(kglob)
+c
+c     set use of lambda scaling for decoupling or annihilation
+c
+               mutik = .false.
+               if (muti .or. mutk) then
+                  if (vcouple .eq. 1) then
+                     mutik = .true.
+                  else if (.not.muti .or. .not.mutk) then
+                     mutik = .true.
+                  end if
+               end if
+
                rik = sqrt(rik2)
-               p6 = rv**6 / rik2**3
-               p12 = p6 * p6
-               e = eps * (p12-2.0d0*p6)
-               de = eps * (p12-p6) * (-12.0d0/rik)
+               if (mutik) then
+                 rho = rik/rv
+                 rhok = rho**sck
+                 rvk  = rv**sck
+                 galpha = scalpha/(2d0**(sck/6d0))
+                 glamb1 = 1.0d0-vlambda
+c                Softcore expression 
+                 gsc = rv *(galpha * glamb1**scs + rhok )**(1d0/sck)
+
+c                Softcore derivatives w.r.t rho, r and lambda_v 
+                 dgscrho = rvk * (rho**(sck-1d0))* gsc ** (1d0-sck)
+                
+                 dgsclambda = -(scs/sck)*rvk*galpha*(glamb1**(scs-1d0))*
+     $             gsc**(1d0-sck) 
+
 c
-c     use energy switching if near the cutoff distance
-c     at short or long range
-c
+                 evdw = eps*(rv**12/(gsc**12)-2d0*rv**6/(gsc**6))
+
+                  if((lambda.gt.0d0).and.(lambda.lt.1d0)) then
+                      devdwgsc =eps*12d0*(rv**6/(gsc**7)-
+     $                  rv**12/(gsc**13))
+                  else
+                      devdwgsc = 0d0
+                  end if
+c   
+                 lambdavt =  vlambda ** sct 
+                 e = lambdavt*evdw
+                 derho = lambdavt*dgscrho*devdwgsc
+                 de = derho/rv
+                 delambdav  = delambdav + sct*(vlambda**(sct-1d0))*
+     $                evdw+lambdavt*dgsclambda*devdwgsc
+               else
+                 p6 = rv**6 / rik2**3
+                 p12 = p6 * p6
+                 e = eps * (p12-2.0d0*p6)
+                 de = eps * (p12-p6) * (-12.0d0/rik)
+               end if
+c  
+c       use energy switching if near the cutoff distance
+c       at short or long range
+c  
                if(longrange .or. fullrange) then
                   if (rik2 .gt. cut2) then
                      rik3 = rik2 * rik
                      rik4 = rik2 * rik2
                      rik5 = rik2 * rik3
                      taper =  c5*rik5 + c4*rik4 + c3*rik3
-     &                      + c2*rik2 + c1*rik + c0
-                     dtaper =  5.0d0*c5*rik4 + 4.0d0*c4*rik3
-     &                       + 3.0d0*c3*rik2 + 2.0d0*c2*rik + c1
+     &                    + c2*rik2 + c1*rik + c0
+                    dtaper =  5.0d0*c5*rik4 + 4.0d0*c4*rik3
+     &                     + 3.0d0*c3*rik2 + 2.0d0*c2*rik + c1
                      de = e * dtaper + de * taper
                      e  = e * taper
                   end if

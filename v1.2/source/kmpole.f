@@ -694,6 +694,10 @@ c
               end do
            end do
         end if
+c
+c       copy original multipole values that won't change during mutation
+c
+        pole_orig = pole
       end if
 c
 c
@@ -840,6 +844,11 @@ c
         CALL MPI_Win_shared_query(winpole, 0, windowsize, disp_unit,
      $  baseptr, ierr)
         CALL MPI_Win_free(winpole,ierr)
+      end if
+      if (associated(pole_orig)) then
+        CALL MPI_Win_shared_query(winpole_orig,0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winpole_orig,ierr)
       end if
       if (associated(mono0)) then
         CALL MPI_Win_shared_query(winmono0, 0, windowsize, disp_unit,
@@ -993,6 +1002,29 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,pole,arrayshape2)
+c
+c     pole_orig
+c
+      arrayshape2=(/13,n/)
+      if (hostrank == 0) then
+        windowsize = int(13*n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winpole_orig, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winpole_orig,0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,pole_orig,arrayshape2)
 c
 c     mono0
 c

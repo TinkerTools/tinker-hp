@@ -212,15 +212,17 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         nnvlst = merge(nshortvlst(ii),
-     &                  nvlst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnvlst = nshortvlst(ii)
+         else
+           nnvlst = nvlst(ii)
+         end if
          do kkk = 1, nnvlst
-            kk = merge(shortvlst(kkk,ii),
-     &                    vlst     (kkk,ii),
-     &                    shortrange
-     &                   )
+            if (shortrange) then
+              kk = shortvlst(kkk,ii)
+            else
+              kk = vlst(kkk,ii)
+            end if
             kglob = idisp(kk)
             kbis = loc(kglob)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
@@ -589,18 +591,20 @@ c
          do j = 1, n15(iglob)
             dspscale(i15(j,iglob)) = dsp5scale
          end do
-         nnvlst = merge(nshortvlst(ii),
-     &                  nvlst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnvlst = nshortvlst(ii)
+         else
+           nnvlst = nvlst(ii)
+         end if
 c
 c     decide whether to compute the current interaction
 c
          do kkk = 1, nnvlst
-            kk = merge(shortvlst(kkk,ii),
-     &                    vlst     (kkk,ii),
-     &                    shortrange
-     &                   )
+            if (shortrange) then
+              kk = shortvlst(kkk,ii)
+            else
+              kk = vlst(kkk,ii)
+            end if
             kglob = idisp(kk)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)

@@ -267,7 +267,7 @@ c
 c
 c     update the lists of previous induced dipole values
 c
-      if (use_pred) then
+      if ((use_pred).and..not.(use_lambdadyn)) then
         if (rank.le.ndir-1) then
            nualt = min(nualt+1,maxualt)
            do i = 1, npolebloc
@@ -388,7 +388,11 @@ c
       if (precnd) then
         do i = 1, npoleloc
           iipole = poleglob(i)
-          diag(i) = polarity(iipole)
+          if (polarity(iipole).eq.0) then
+            diag(i) = tinypol
+          else
+            diag(i) = polarity(iipole)
+          end if
         end do
         if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
       else
@@ -1113,13 +1117,17 @@ c
            end do
         end if
 c
-        nnelst=merge(nshortelst(ii),
-     &               nelst(ii),
-     &               shortrange)
+         if (shortrange) then
+           nnelst = nshortelst(ii)
+         else
+           nnelst = nelst(ii)
+         end if
         do kkk = 1, nnelst
-          kkpole = merge(shortelst(kkk,ii),
-     &                   elst(kkk,ii),
-     &                 shortrange)
+          if (shortrange) then
+            kkpole = shortelst(kkk,ii)
+          else
+            kkpole = elst(kkk,ii)
+          end if
           kbis = poleloc(kkpole)
           kglob = ipole(kkpole)
           if ((kbis.eq.0).or.(kbis.gt.npolebloc)) then
@@ -1451,13 +1459,17 @@ c
         do j = 1, np14(iglob)
            uscale(ip14(j,iglob)) = u4scale
         end do
-        nnelst = merge(nshortelst(ii),
-     &                 nelst(ii),
-     &                 shortrange)
+        if (shortrange) then
+          nnelst = nshortelst(ii)
+        else
+          nnelst = nelst(ii)
+        end if
         do kkk = 1, nnelst
-          kkpole = merge(shortelst(kkk,ii),
-     &                   elst(kkk,ii),
-     &                   shortrange)
+          if (shortrange) then
+            kkpole = shortelst(kkk,ii)
+          else
+            kkpole = elst(kkk,ii)
+          end if
           kglob = ipole(kkpole)
           kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle

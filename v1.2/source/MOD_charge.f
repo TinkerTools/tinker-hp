@@ -33,6 +33,8 @@ c     chgrecloc  global-local reciprocal charge correspondance
 c     winchgrecloc    window object corresponding to chgrecloc
 c     pchg      magnitude of the partial charges (e-)
 c     winpchg    window object corresponding to pchg
+c     pchg_orig   original magnitude of the partial charges (e-) (lambda dyn)
+c     winpchg_orig    window object corresponding to pchg_orig
 c     pchg0     original partial charge values for charge flux
 c     winpchg0    window object corresponding to pchg0
 c
@@ -48,7 +50,7 @@ c
       integer, pointer :: nbchg(:)
       integer :: winiion,winjion,winkion,winchglist,winnbchg
       integer :: winchgloc,winchglocnl,winchgrecloc
-      real*8, pointer ::  pchg(:),pchg0(:)
-      integer :: winpchg,winpchg0
+      real*8, pointer ::  pchg(:),pchg0(:),pchg_orig(:)
+      integer :: winpchg,winpchg0,winpchg_orig
       save 
       end

@@ -60,6 +60,7 @@ c
       use group
       use inter
       use molcul
+      use mutant
       use neigh
       use potent
       use shunt
@@ -79,11 +80,13 @@ c
       real*8 xr,yr,zr
       real*8 rik,rik2,rik3
       real*8 rik4,rik5,taper
+      real*8 rho,rhok,rvk,galpha,glamb1,gsc,evdw,lambdavt
       real*8 s,ds,vdwshortcut2
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
+      logical muti,mutk,mutik
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
@@ -149,6 +152,7 @@ c
          iivdw = vdwglobnl(ii)
          iglob = ivdw(iivdw)
          i     = loc(iglob)
+         muti  = mut(iglob)
          iv    = ired(iglob)
          it    = jvdw(iglob)
          xi    = xred(i)
@@ -174,18 +178,21 @@ c
 c     decide whether to compute the current interaction
 c
 
-         nnvlst = merge(nshortvlst(ii),
-     &                  nvlst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnvlst = nshortvlst(ii)
+         else
+           nnvlst = nvlst(ii)
+         end if
          do kk = 1, nnvlst
-            kglob = merge(shortvlst(kk,ii),
-     &                    vlst     (kk,ii),
-     &                    shortrange
-     &                   )
+            if (shortrange) then
+              kglob = shortvlst(kk,ii)
+            else
+              kglob = vlst(kk,ii)
+            end if
             if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
             kv = ired(kglob)
+            mutk = mut(kglob)
 c
 c     compute the energy contribution for this interaction
 c
@@ -204,7 +211,6 @@ c
      &                      rik2 .le. off2,
      &                      longrange
      &                     )
-c           if (rik2 .le. off2) then
             if (testcut) then
                rik = sqrt(rik2)
                rv  = radmin(kt,it)
@@ -214,10 +220,36 @@ c           if (rik2 .le. off2) then
                   eps = epsilon4(kt,it)
                end if
                eps = eps * vscale(kglob)
+c
+c     set use of lambda scaling for decoupling or annihilation
+c
+               mutik = .false.
+               if (muti .or. mutk) then
+                  if (vcouple .eq. 1) then
+                     mutik = .true.
+                  else if (.not.muti .or. .not.mutk) then
+                     mutik = .true.
+                  end if
+               end if
 
-               p6 = rv**6 / rik2**3
-               p12 = p6 * p6
-               e = eps * (p12 - 2.0d0*p6)
+               if (mutik) then
+                 rho = rik/rv
+                 rhok = rho**sck
+                 rvk  = rv**sck
+                 galpha = scalpha/(2d0**(sck/6d0))
+                 glamb1 = 1.0d0-vlambda
+c                Softcore expression 
+                 gsc = rv *(galpha * glamb1**scs + rhok )**(1d0/sck)
+
+                 evdw = eps*(rv**12/(gsc**12)-2d0*rv**6/(gsc**6))
+
+                 lambdavt =  vlambda ** sct 
+                 e = lambdavt*evdw
+               else
+                 p6 = rv**6 / rik2**3
+                 p12 = p6 * p6
+                 e = eps * (p12-2.0d0*p6)
+               end if
 
 c
 c     use energy switching if near the cutoff distance at short range

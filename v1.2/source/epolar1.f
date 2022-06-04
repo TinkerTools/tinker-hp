@@ -22,17 +22,21 @@ c
 c
 c     choose the method for summing over polarization interactions
 c
-      if (use_polarshortreal) then
-        if (polalgshort.eq.3) then
-          call epolar1tcg
-        else
-          call epolar1c
-        end if
+      if (use_lambdadyn) then
+        call elambdapolar1c
       else
-        if (polalg.eq.3) then
-          call epolar1tcg
+        if (use_polarshortreal) then
+          if (polalgshort.eq.3) then
+            call epolar1tcg
+          else
+            call epolar1c
+          end if
         else
-          call epolar1c
+          if (polalg.eq.3) then
+            call epolar1tcg
+          else
+            call epolar1c
+          end if
         end if
       end if
       return
@@ -292,6 +296,134 @@ c     get group polarization if necessary
 c
       if (use_group) call switch_group_grad
 
+      return
+      end
+c
+c
+c
+      subroutine elambdapolar1c
+      use atmlst
+      use atoms
+      use boxes
+      use chgpot
+      use deriv
+      use domdec
+      use energi
+      use ewald
+      use iounit
+      use math
+      use mpole
+      use mutant
+      use polar
+      use polpot
+      use potent
+      use uprior
+      use virial
+      use mpi
+      implicit none
+      integer i,iipole,j,k,ierr
+      real*8 elambdatemp,plambda
+      real*8, allocatable :: delambdap0(:,:),delambdap1(:,:)
+      real*8, allocatable :: delambdaprec0(:,:),delambdaprec1(:,:)
+      real*8 :: elambdap0,elambdap1
+      real*8 dplambdadelambdae,d2plambdad2elambdae
+c
+      allocate (delambdaprec0(3,nlocrec2))
+      allocate (delambdaprec1(3,nlocrec2))
+      allocate (delambdap0(3,nbloc))
+      allocate (delambdap1(3,nbloc))
+      elambdatemp = elambda  
+c
+c     zero out the polarization energy and derivatives
+c
+      ep = 0.0d0
+      dep = 0d0
+      deprec = 0d0
+c
+      if (npole .eq. 0)  return
+      if (.not.(use_mpole)) then
+        delambdae = 0d0
+      end if
+
+c
+c     polarization is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
+c     otherwise the value taken is for elambda=0
+c
+      elambdap1 = 0d0
+      delambdap1 = 0d0
+      delambdaprec1 = 0d0
+      if (elambda.gt.bplambda) then
+        elambda = 1d0
+        call MPI_BARRIER(hostcomm,ierr)
+        if (hostrank.eq.0) call altelec
+        call MPI_BARRIER(hostcomm,ierr)
+        call rotpole
+        ep = 0d0
+        dep = 0d0
+        deprec = 0d0
+        call epolar1c
+        elambdap1  = ep
+        delambdap1 = dep
+        delambdaprec1 = deprec
+      end if
+
+      elambda = 0d0
+      call MPI_BARRIER(hostcomm,ierr)
+      if (hostrank.eq.0) call altelec
+      call MPI_BARRIER(hostcomm,ierr)
+      call rotpole
+      ep = 0d0
+      dep = 0d0
+      deprec = 0d0
+      call epolar1c
+      elambdap0  = ep
+      delambdap0 = dep
+      delambdaprec0 = deprec
+c
+c     also store the dipoles to build ASPC guess
+c
+      nualt = min(nualt+1,maxualt)
+      do i = 1, npolebloc
+        iipole = poleglob(i)
+         do j = 1, 3
+            do k = nualt, 2, -1
+               udalt(k,j,iipole) = udalt(k-1,j,iipole)
+               upalt(k,j,iipole) = upalt(k-1,j,iipole)
+            end do
+            udalt(1,j,iipole) = uind(j,iipole)
+            upalt(1,j,iipole) = uinp(j,iipole)
+          end do
+      end do
+ 
+      elambda = elambdatemp 
+c
+c     interpolation of "plambda" between bplambda and 1 as a function of
+c     elambda: 
+c       plambda = 0 for elambda.le.bplambda
+c       u = (elambda-bplambda)/(1-bplambda)
+c       plambda = u**3 for elambda.gt.plambda
+c       ep = (1-plambda)*ep0 +  plambda*ep1
+c
+      if (elambda.le.bplambda) then
+        plambda = 0d0
+        dplambdadelambdae = 0d0
+        d2plambdad2elambdae = 0d0
+      else
+        plambda = ((elambda-bplambda)/(1-bplambda))**3
+        dplambdadelambdae = 3d0*((elambda-bplambda)/(1-bplambda))**2
+        d2plambdad2elambdae = 6d0*((elambda-bplambda)/(1-bplambda))
+      end if
+      ep = plambda*elambdap1 + (1-plambda)*elambdap0
+      deprec = (1-plambda)*delambdaprec0+plambda*delambdaprec1
+      dep = (1-plambda)*delambdap0 + plambda*delambdap1
+      delambdae = delambdae + (elambdap1-elambdap0)*dplambdadelambdae
+c
+c     reset lambda to initial value
+c
+      call MPI_BARRIER(hostcomm,ierr)
+      if (hostrank.eq.0) call altelec
+      call MPI_BARRIER(hostcomm,ierr)
+      call rotpole
       return
       end
 c
@@ -1418,15 +1550,17 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         nnelst = merge(nshortelst(ii),
-     &                  nelst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnelst = nshortelst(ii)
+         else
+           nnelst = nelst(ii)
+         end if
          do kkk = 1, nnelst
-            kkpole = merge(shortelst(kkk,ii),
-     &                     elst     (kkk,ii),
-     &                     shortrange
-     &                   )
+            if (shortrange) then
+              kkpole = shortelst(kkk,ii)
+            else
+              kkpole = elst(kkk,ii)
+            end if
             kglob = ipole(kkpole)
             kbis = loc(kglob)
             if (kbis.eq.0) then

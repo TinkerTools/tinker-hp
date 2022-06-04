@@ -12,6 +12,8 @@ c
 c
 c     polarity  dipole polarizability for each multipole site (Ang**3)
 c     winpolariy    window object corresponding to polariy
+c     polarity_orig  original dipole polarizability for each multipole site (Ang**3) (lambdadyn)
+c     winpolariy_orig    window object corresponding to polariy_orig
 c     thole     Thole polarizability damping value for each site
 c     winthole    window object corresponding to thole
 c     pdamp     value of polarizability scale factor for each site
@@ -28,8 +30,8 @@ c
       implicit none
       integer npolar
       real*8, parameter :: tinypol = 1e-5
-      real*8, pointer :: polarity(:),thole(:),pdamp(:)
-      integer :: winpolarity,winthole,winpdamp
+      real*8, pointer :: polarity(:),polarity_orig(:),thole(:),pdamp(:)
+      integer :: winpolarity,winpolarity_orig,winthole,winpdamp
       real*8, allocatable :: uind(:,:),uinp(:,:)
       real*8, pointer :: dirdamp(:)
       integer :: windirdamp

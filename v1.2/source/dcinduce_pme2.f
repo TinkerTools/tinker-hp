@@ -237,7 +237,7 @@ c
 c
 c     update the lists of previous induced dipole values
 c
-      if (use_pred) then
+      if ((use_pred).and..not.(use_lambdadyn)) then
          nualt = min(nualt+1,maxualt)
          do i = 1, npolebloc
            iipole = poleglob(i)

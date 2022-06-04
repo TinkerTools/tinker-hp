@@ -298,7 +298,7 @@ c        deallocate (cphirec)
 c
 c     update the lists of previous induced dipole values
 c
-      if (use_pred) then
+      if ((use_pred).and..not.(use_lambdadyn)) then
          if (rank.le.ndir-1) then
            nualt = min(nualt+1,maxualt)
            do i = 1, npolebloc
@@ -872,13 +872,17 @@ c
            wscale(i15(j,iglob)) = w5scale
         end do
 c
-        nnelst=merge(nshortelst(ii),
-     &               nelst(ii),
-     &               shortrange)
+        if (shortrange) then
+          nnelst = nshortelst(ii)
+        else
+          nnelst = nelst(ii)
+        end if
         do kkk = 1, nnelst
-          kkpole = merge(shortelst(kkk,ii),
-     &                   elst(kkk,ii),
-     &                 shortrange)
+          if (shortrange) then
+            kkpole = shortelst(kkk,ii)
+          else
+            kkpole = elst(kkk,ii)
+          end if
           kbis = poleloc(kkpole)
           kglob = ipole(kkpole)
           if ((kbis.eq.0).or.(kbis.gt.npolebloc)) then
@@ -1297,19 +1301,28 @@ c
         puiy = mu(2,2,ipoleloc)
         puiz = mu(3,2,ipoleloc)
 c
-        nnelst = merge(nshortelst(ii),
-     &                 nelst(ii),
-     &                 shortrange)
+        if (shortrange) then
+          nnelst = nshortelst(ii)
+        else
+          nnelst = nelst(ii)
+        end if
+        if (shortrange) then
+          nnelst = nshortelst(ii)
+        else
+          nnelst = nelst(ii)
+        end if
         do kkk = 1, nnelst
-          kglob = merge(shortelst(kkk,ii),
-     &                  elst(kkk,ii),
-     &                   shortrange)
+          if (shortrange) then
+            kkpole = shortelst(kkk,ii)
+          else
+            kkpole = elst(kkk,ii)
+          end if
 c
 c     only build induced field for interactons outside of a block
 c     check if the atoms are in the same block
 c
+          kglob = ipole(kkpole)
           if(l .ne. grplst(kglob) .or. l .lt. 0)then
-          kkpole = pollist(kglob)
           kbis = loc(kglob)
           kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle
@@ -1506,13 +1519,17 @@ c
         do j = 1, np14(iglob)
            uscale(ip14(j,iglob)) = u4scale
         end do
-        nnelst = merge(nshortelst(ii),
-     &                 nelst(ii),
-     &                 shortrange)
+        if (shortrange) then
+          nnelst = nshortelst(ii)
+        else
+          nnelst = nelst(ii)
+        end if
         do kkk = 1, nnelst
-          kkpole = merge(shortelst(kkk,ii),
-     &                   elst(kkk,ii),
-     &                   shortrange)
+          if (shortrange) then
+            kkpole = shortelst(kkk,ii)
+          else
+            kkpole = elst(kkk,ii)
+          end if
           kglob = ipole(kkpole)
 c
 c     only build induced field for interactions outside of a block
@@ -1898,13 +1915,17 @@ c
            uscale(ip14(j,iglob)) = u4scale
         end do
 c
-        nnelst=merge(nshortelst(ii),
-     &               nelst(ii),
-     &               shortrange)
+        if (shortrange) then
+          nnelst = nshortelst(ii)
+        else
+          nnelst = nelst(ii)
+        end if
         do kkk = 1, nnelst
-          kkpole = merge(shortelst(kkk,ii),
-     &                   elst(kkk,ii),
-     &                 shortrange)
+          if (shortrange) then
+            kkpole = shortelst(kkk,ii)
+          else
+            kkpole = elst(kkk,ii)
+          end if
           kbis = poleloc(kkpole)
           kglob = ipole(kkpole)
           if ((kbis.eq.0).or.(kbis.gt.npolebloc)) then

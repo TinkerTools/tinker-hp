@@ -204,15 +204,17 @@ c
 c     decide whether to compute the current interaction
 c
 
-         nnvlst = merge(nshortvlst(ii),
-     &                  nvlst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnvlst = nshortvlst(ii)
+         else
+           nnvlst = nvlst(ii)
+         end if
          do kk = 1, nnvlst
-            kglob = merge(shortvlst(kk,ii),
-     &                    vlst     (kk,ii),
-     &                    shortrange
-     &                   )
+            if (shortrange) then
+              kglob = shortvlst(kk,ii)
+            else
+              kglob = vlst(kk,ii)
+            end if
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
             kv = ired(kglob)

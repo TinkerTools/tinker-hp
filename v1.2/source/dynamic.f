@@ -36,7 +36,12 @@ c
       use mdstuf
       use moldyn
       use mpi
+      use potent
       use timestat
+
+#ifdef COLVARS
+      use colvars
+#endif
       implicit none
       integer i,istep,nstep,ierr
       integer mode,next
@@ -255,9 +260,39 @@ c
          end if
       end if
 c
-c     setup dynamics
-c
       call mdinit(dt)
+
+#ifdef COLVARS
+      dt_sim = dt*1000d0
+c
+c     only the master does colvars computations, but other ranks need to allocate coord arrays
+c
+      if (rank.eq.0) then
+         call allocate_colvars
+      end if
+      call MPI_BCAST(use_colvars,1,MPI_LOGICAL,0,COMM_TINKER,ierr)
+      if (use_colvars) then
+        call MPI_BCAST(ncvatoms,1,MPI_INT,0,COMM_TINKER,ierr)
+        if (rank.gt.0) then
+          allocate (cvatoms_ids(ncvatoms))
+        end if
+        call MPI_BCAST(cvatoms_ids,ncvatoms,MPI_INT,0,COMM_TINKER,
+     $       ierr)
+        if (rank.gt.0) then
+           allocate (cv_pos(3,ncvatoms))
+           allocate (decv(3,ncvatoms),decv_tot(3,ncvatoms))
+           cv_pos = 0d0
+           decv = 0d0
+           decv_tot = 0d0
+        end if
+      end if
+#endif
+      if (use_lambdadyn .and. .not.(use_colvars)) then
+        if (rank.eq.0) then
+          write(iout,*) 'cannot run lambda dynamics without colvars'
+        end if
+        call fatal
+      end if
 c
 c     print out a header line for the dynamics computation
 c

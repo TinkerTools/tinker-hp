@@ -69,6 +69,8 @@ c     use_chgtrn  logical flag governing use of charge transfer term
 c     use_chgflx  logical flag governing use of charge flux term
 c     use_dewald  logical flag governing use of PME for dispersion
 c     use_chgpen  logical flag governing use of charge penetration
+c     use_lambdadyn logical flag governing use of lambda dynamic (with colvar module)
+c     use_OSRW    logical flag governing us of Orthogonal Space Random Walk sampling (with colvar module)
 c
 c
       module potent
@@ -96,5 +98,7 @@ c
       logical use_chgtrnshort
       logical use_repulslong,use_displong,use_chgtrnlong
       logical use_dewald,use_chgpen
+      logical use_lambdadyn
+      logical use_OSRW
       save
       end

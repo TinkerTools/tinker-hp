@@ -175,6 +175,11 @@ c
            use_charge = .false.
            use_clist = .false.
         end if
+c
+c       copy original charge values that won't change during mutation
+c
+        pchg_orig = pchg
+
         if (.not.(use_charge)) return
         if (allocated(chglocnl)) deallocate(chglocnl)
         allocate (chglocnl(n))
@@ -493,6 +498,11 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winpchg,ierr)
       end if
+      if (associated(pchg_orig)) then
+        CALL MPI_Win_shared_query(winpchg_orig,0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winpchg_orig,ierr)
+      end if
       if (associated(pchg0)) then
         CALL MPI_Win_shared_query(winpchg0, 0, windowsize, disp_unit,
      $  baseptr, ierr)
@@ -618,6 +628,29 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,pchg,arrayshape)
+c
+c     pchg_orig
+c
+      arrayshape=(/n/)
+      if (hostrank == 0) then
+        windowsize = int(n,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winpchg_orig, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winpchg_orig,0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,pchg_orig,arrayshape)
 c
 c     pchg0
 c

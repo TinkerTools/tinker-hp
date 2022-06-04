@@ -15,14 +15,21 @@ c     and first derivatives with respect to Cartesian coordinates
 c
 c
       subroutine echarge1
+      use potent
       implicit none
 c
 c     choose the method for summing over pairwise interactions
 c
-      call echarge1c
+      if (use_lambdadyn) then
+        call elambdacharge1c
+      else
+        call echarge1c
+      end if
 c
       return
       end
+c
+c     echarge1c: charge electrostatic interactions
 c
       subroutine echarge1c
       use atmlst
@@ -45,7 +52,7 @@ c
       use mpi
       use sizes
       implicit none
-      integer ii,i,iglob,iichg
+      integer ii,i,iglob,iichg,ierr
       real*8 e,de,term
       real*8 f,fs
       real*8 xd,yd,zd
@@ -102,9 +109,17 @@ c
              yd = yd + pchg(iichg)*y(iglob)
              zd = zd + pchg(iichg)*z(iglob)
            end do
+           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
            term = (2.0d0/3.0d0) * f * (pi/volbox)
            e = term * (xd*xd+yd*yd+zd*zd)
-           ec = ec + e
+           if (rank.eq.0) then
+             ec = ec + e
+           end if
            do ii = 1, nionloc
               iichg = chgglob(ii)
               iglob = iion(iichg)
@@ -134,6 +149,188 @@ c
       return
       end
 c
+c     subroutine elambdacharge1c : charge electrostatic interactions during lambda dynamics
+c
+      subroutine elambdacharge1c
+      use atmlst
+      use atoms
+      use bound
+      use boxes
+      use charge
+      use chgpot
+      use deriv
+      use energi
+      use ewald
+      use domdec
+      use iounit
+      use inter
+      use math
+      use mutant
+      use potent
+      use timestat
+      use usage
+      use virial
+      use mpi
+      use potent
+      use sizes
+      implicit none
+      integer ii,i,iglob,iichg,ierr
+      real*8 e,de,term
+      real*8 f,fs
+      real*8 xd,yd,zd
+      real*8 xdtemp,ydtemp,zdtemp
+      real*8 dedx,dedy,dedz
+      real*8 time0,time1
+      real*8 elambdatemp
+      real*8, allocatable :: delambdarec0(:,:),delambdarec1(:,:)
+      real*8 :: elambdarec0,elambdarec1,qtemp
+c
+      allocate (delambdarec0(3,nlocrec2))
+      allocate (delambdarec1(3,nlocrec2))
+      elambdatemp = elambda  
+c
+c     zero out the Ewald summation energy and derivatives
+c
+      ec = 0.0d0
+      dec = 0.0d0
+      if (nion .eq. 0)  return
+      delambdae = 0d0
+c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
+c     compute the reciprocal space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
+     $  then
+        time0 = mpi_wtime()
+        if (use_crec) then
+c
+c         the reciprocal part is interpolated between 0 and 1
+c
+          elambda = 0d0
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+          ec = 0d0
+          decrec = 0d0
+          if (elambda.lt.1d0) then
+            call ecrecip1
+          end if
+          elambdarec0  = ec
+          delambdarec0 = decrec
+
+          elambda = 1d0
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+          ec = 0d0
+          decrec = 0d0
+          if (elambda.gt.0d0) then
+            call ecrecip1
+          end if
+          elambdarec1  = ec
+          delambdarec1 = decrec
+
+          elambda = elambdatemp 
+          ec = (1-elambda)*elambdarec0 + elambda*elambdarec1
+          decrec = (1-elambda)*delambdarec0+elambda*delambdarec1
+          delambdae = delambdae + elambdarec1-elambdarec0
+c     
+c         reset lambda to initial value
+c
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+        end if
+        time1 = mpi_wtime()
+        timerec = timerec + time1 - time0
+        if (use_pmecore) return
+      end if
+c
+      if (use_cself) then
+c
+c     compute the Ewald self-energy term over all the atoms
+c
+        f = electric / dielec
+        fs = -f * aewald / sqrtpi
+        do ii = 1, nionloc
+          iichg = chgglob(ii)
+          iglob = iion(iichg)
+          e = fs * pchg(iichg)**2
+          ec = ec + e
+          if (mut(iglob)) then
+            qtemp =  pchg_orig(iichg)
+            delambdae = delambdae + fs*2d0*elambda*qtemp**2
+          end if
+        end do
+c
+c     compute the cell dipole boundary correction term
+c
+        if (boundary .eq. 'VACUUM') then
+           xd = 0.0d0
+           yd = 0.0d0
+           zd = 0.0d0
+           xdtemp = 0.0d0
+           ydtemp = 0.0d0
+           zdtemp = 0.0d0
+           do ii = 1, nionloc
+             iichg = chgglob(ii)
+             iglob = iion(iichg)
+             i = loc(iglob)
+             xd = xd + pchg(iichg)*x(iglob)
+             yd = yd + pchg(iichg)*y(iglob)
+             zd = zd + pchg(iichg)*z(iglob)
+             if (mut(iglob)) then
+               qtemp = pchg(iichg)/elambda
+               xdtemp = xdtemp + qtemp*x(iglob)
+               ydtemp = ydtemp + qtemp*y(iglob)
+               zdtemp = zdtemp + qtemp*z(iglob)
+             end if
+           end do
+           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           term = (2.0d0/3.0d0) * f * (pi/volbox)
+           e = term * (xd*xd+yd*yd+zd*zd)
+           if (rank.eq.0) then
+             ec = ec + e
+           end if
+           delambdae = delambdae + term*(xdtemp**2+ydtemp**2+zdtemp**2)
+           do ii = 1, nionloc
+              iichg = chgglob(ii)
+              iglob = iion(iichg)
+              i = loc(iglob)
+              de = 2.0d0 * term * pchg(iichg)
+              dedx = de * xd
+              dedy = de * yd
+              dedz = de * zd
+              dec(1,i) = dec(1,i) + dedx
+              dec(2,i) = dec(2,i) + dedy
+              dec(3,i) = dec(3,i) + dedz
+           end do
+        end if
+      end if
+c
+c     compute the real space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
+        if (use_creal) then
+          time0 = mpi_wtime()
+          call ecreal1d
+          time1 = mpi_wtime()
+          timereal = timereal + time1 - time0
+        end if
+      end if
+      deallocate(delambdarec0,delambdarec1)
+      return
+      end
+c
 c
 c     "ecreal1d" evaluates the real space portion of the Ewald sum
 c     energy and first derivative due to atomic charge interactions
@@ -159,6 +356,7 @@ c
       use inter
       use iounit
       use math
+      use mutant
       use molcul
       use neigh
       use potent
@@ -171,11 +369,13 @@ c
       integer i,j,k,iichg,iglob,kglob,kkchg,nnchg
       integer ii,kkk
       real*8 e,de,efull
-      real*8 f,fi,fik
+      real*8 f,fi,fik,fikbis
       real*8 r,r2,rew
       real*8 rb,rb2
       real*8 xi,yi,zi
       real*8 xr,yr,zr
+      real*8 qitemp,qktemp
+      real*8 drdelambdae,drdelambdaedx,drdelambdaedy,drdelambdaedz
       real*8 erfc,erfterm
       real*8 scale,scaleterm
       real*8 fgrp
@@ -253,15 +453,17 @@ c
          do j = 1, n15(iglob)
             cscale(i15(j,iglob)) = c5scale
          end do
-         nnchg = merge(nshortelst(ii),
-     &                  nelst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnchg = nshortelst(ii)
+         else
+           nnchg = nelst(ii)
+         end if
          do kkk = 1, nnchg
-            kkchg = merge(shortelst(kkk,ii),
-     &                    elst     (kkk,ii),
-     &                    shortrange
-     &                   )
+            if (shortrange) then
+              kkchg = shortelst(kkk,ii)
+            else
+              kkchg = elst(kkk,ii)
+            end if
             if (kkchg.eq.0) cycle
             kglob = iion(kkchg)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
@@ -299,8 +501,6 @@ c
                de = -fik * ((erfterm+scaleterm)/rb2
      &                 + (2.0d0*aewald/sqrtpi)*exp(-rew**2)/rb)
 c
-c     use energy switching if near the cutoff distance
-c     at short or long range
 c
                if(shortrange .or. longrange)
      &            call switch_respa(r,chgshortcut,shortheal,s,ds)
@@ -318,6 +518,22 @@ c
 
                de = de * facts + e * factds
                e  =  e * facts
+c
+c              when two interacting atoms are mutated
+c
+               if (use_lambdadyn) then
+                  if (mut(iglob).and.mut(kglob)) then
+                     qitemp = pchg_orig(iichg)
+                     qktemp = pchg_orig(kkchg)
+                     delambdae = delambdae + 
+     $    2d0*elambda*(f*qitemp*qktemp/rb)*(erfterm+scaleterm)*facts
+                  else if ((mut(iglob).and..not.mut(kglob)).or.
+     $                    (mut(kglob).and..not.mut(iglob))) then
+                      fikbis = f*pchg_orig(iichg) * pchg_orig(kkchg)
+                      delambdae = delambdae + (fikbis/rb) * 
+     $                   (erfterm+scaleterm)
+                  end if
+               end if
 c     form the chain rule terms for derivative expressions
 c
                de = de / r

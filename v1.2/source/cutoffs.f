@@ -214,14 +214,14 @@ c     return an error if PME is not used
 c
       if (.not.(use_ewald)) then
         if (rank.eq.0) 
-     $   write(*,*) 'This program is only compatible with PME'
+     $   write(iout,*) 'This program is only compatible with PME'
         call fatal
       end if
 c
 c     apply any Ewald cutoff to charge and multipole terms
 c
       if (use_ewald) then
-         mpolecut = ewaldcut
+         mpolecut = ewaldcut 
          mpoleshortcut = ewaldshortcut
          chgcut = ewaldcut
          chgshortcut = ewaldshortcut

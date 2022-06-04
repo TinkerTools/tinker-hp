@@ -23,6 +23,7 @@ c
       use atmlst
       use charge
       use chgpen
+      use domdec
       use inform
       use iounit
       use mplpot
@@ -30,7 +31,7 @@ c
       use potent
       implicit none
       integer i,k,ii
-      integer iloc
+      integer iloc,ierr
       real*8, allocatable :: pdelta(:)
       logical header
 c
@@ -53,11 +54,12 @@ c
 c     communicate neighboring values of delta to modify charges
 c
       call commchgflx(pdelta)
+      call MPI_BARRIER(hostcomm,ierr)
 c
 c     alter atomic partial charge values for charge flux
 c
       header = .true.
-      do iloc = 1, nionloc
+      do iloc = 1, nionbloc
          i = chgglob(iloc)
          k = iion(i)
          pchg(i) = pchg0(i) + pdelta(k)
@@ -77,7 +79,7 @@ c
 c     alter monopoles and charge penetration for charge flux
 c
       header = .true.
-      do ii = 1, npoleloc
+      do ii = 1, npolebloc
          i = poleglob(ii)
          k = ipole(i)
          pole(1,i) = mono0(i) + pdelta(k)

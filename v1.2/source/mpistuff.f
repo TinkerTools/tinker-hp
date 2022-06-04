@@ -4348,7 +4348,7 @@ c
       integer i,tag,ierr,iproc
       integer iloc,iglob,j
       integer, allocatable :: reqrec(:),reqsend(:)
-      real*8, allocatable :: buffer(:,:)
+      real*8, allocatable :: buffer(:,:),buffer2(:)
       real*8, allocatable :: buffers(:)
       real*8 pdelta(*)
       integer status(MPI_STATUS_SIZE)
@@ -4402,9 +4402,56 @@ c
         end do
       end do
 c
+c     then send accumulated values to neighbors
+c
+      deallocate (buffer)
+      allocate (buffer2(max(1,nbloc)))
+c
+c     MPI : begin reception in buffer
+c
+      do i = 1, nbig_recep
+        tag = nproc*rank + pbig_recep(i) + 1
+        call MPI_IRECV(buffer2(bufbeg(pbig_recep(i)+1)),
+     $   domlen(pbig_recep(i)+1),
+     $   MPI_REAL8,pbig_recep(i),tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+c
+c     MPI : move in buffer
+c
+      do i = 1, nloc
+        iglob = glob(i)
+        buffers(i) = pdelta(iglob)
+      end do
+c
+c     MPI : begin sending
+c
+      do i = 1, nbig_send
+        tag = nproc*pbig_send(i) + rank + 1
+        call MPI_ISEND(buffers,nloc,
+     $   MPI_REAL8,pbig_send(i),tag,COMM_TINKER,
+     $   reqsend(i),ierr)
+      end do
+c
+      do i = 1, nbig_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+      do i = 1, nbig_send
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+c
+c     MPI : move in global arrays
+c
+      do iproc = 1, nbig_recep
+        do i = 1, domlen(pbig_recep(iproc)+1)
+          iloc = bufbeg(pbig_recep(iproc)+1)+i-1
+          iglob = glob(iloc)
+          pdelta(iglob) = buffer2(iloc)
+        end do
+      end do
+c
       deallocate (reqsend)
       deallocate (reqrec)
-      deallocate (buffer)
+      deallocate (buffer2)
       deallocate (buffers)
       return
       end

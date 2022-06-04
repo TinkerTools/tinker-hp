@@ -93,6 +93,8 @@ c
       real*8 tau,tau7,scal
       real*8 s1,s2,t1,t2
       real*8 dt1drho,dt2drho
+      real*8 dt1dlambda, dt2dlambda
+      real*8 ds1dlambda, ds2dlambda
       real*8 dtau,gtau
       real*8 taper,dtaper
       real*8 rik,rik2,rik3
@@ -134,6 +136,8 @@ c
 c     zero out the van der Waals energy and first derivatives
 c
       ev = 0.0d0
+      dev = 0d0
+      delambdav = 0d0
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -209,15 +213,17 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         nnvlst = merge(nshortvlst(ii),
-     &                  nvlst     (ii),
-     &                  shortrange
-     &                 )
+         if (shortrange) then
+           nnvlst = nshortvlst(ii)
+         else
+           nnvlst = nvlst(ii)
+         end if
          do kk = 1, nnvlst
-            kglob = merge(shortvlst(kk,ii),
-     &                    vlst     (kk,ii),
-     &                    shortrange
-     &                   )
+            if (shortrange) then
+              kglob = shortvlst(kk,ii)
+            else
+              kglob = vlst(kk,ii)
+            end if
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
             kv = ired(kglob)
@@ -278,7 +284,7 @@ c
                      rho = rik / rv
                      rho6 = rho**6
                      rho7 = rho6 * rho
-                     eps = eps * vlambda**scexp
+c                     eps = eps * vlambda**scexp
                      scal = scalpha * (1.0d0-vlambda)**2
                      s1 = 1.0d0 / (scal+(rho+dhal)**7)
                      s2 = 1.0d0 / (scal+rho7+ghal)
@@ -286,8 +292,19 @@ c
                      t2 = (1.0d0+ghal) * s2
                      dt1drho = -7.0d0*(rho+dhal)**6 * t1 * s1
                      dt2drho = -7.0d0*rho6 * t2 * s2
-                     e = eps * t1 * (t2-2.0d0)
-                     de = eps * (dt1drho*(t2-2.0d0)+t1*dt2drho) / rv
+                     e = eps * (vlambda**scexp)* t1 * (t2-2.0d0)
+                     if (use_lambdadyn) then
+                       ds1dlambda=2*scalpha*(1.0d0-vlambda)*s1*s1
+                       ds2dlambda=2*scalpha*(1.0d0-vlambda)*s2*s2
+                       dt1dlambda=(1.0d0+dhal)**7 *ds1dlambda
+                       dt2dlambda=(1.0d0+ghal)*ds2dlambda
+                       delambdav = delambdav +
+     $                    eps*scexp*vlambda**(scexp-1)*t1*(t2-2.0d0)+
+     $                    eps*(vlambda**scexp)*(dt1dlambda*(t2-2.0d0)+
+     $                    t1*dt2dlambda)
+                     end if
+                     de = eps * (vlambda**scexp) *
+     $                    (dt1drho*(t2-2.0d0)+t1*dt2drho) / rv
                   else
                      rv7 = rv**7
                      rik6 = rik2**3
