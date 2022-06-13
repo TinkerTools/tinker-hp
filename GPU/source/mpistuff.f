@@ -4553,7 +4553,7 @@ c
           end if
         end do
         if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
-        if (deb_Path) write(*,41) 'commrecdirdipgpu    '
+        if (deb_Path) write(*,42) 'commrecdirdipgpu    '
       else if (rule.eq.2) then
         do i = 1, nrecdir_send1
           proc = precdir_send1(i)

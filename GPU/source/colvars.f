@@ -19,12 +19,14 @@ c     #############################################################
       use iso_c_binding
       use colvars
       use mpi
+      use sizes ,only: tinkerdebug
       use domdec
       implicit none
       integer :: ncvatoms_in
       integer ierr
       integer, dimension(ncvatoms_in) :: cvatoms_ids_in
       ncvatoms = ncvatoms_in
+      if (tinkerdebug.gt.0) print*, 'set_cvatoms_ids', ncvatoms
       allocate (cvatoms_ids(ncvatoms))
       cvatoms_ids(1:ncvatoms) = cvatoms_ids_in(1:ncvatoms)
       allocate (cv_pos(3,ncvatoms))
