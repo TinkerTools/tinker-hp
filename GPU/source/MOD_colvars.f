@@ -26,6 +26,7 @@ c
         end subroutine delete_colvars
       end interface
 #endif
+      character*240,target:: filenamerestart
       logical :: use_colvars
       integer :: ncvatoms
       integer  ,allocatable:: cvatoms_ids(:)

@@ -154,10 +154,10 @@ c     print 12,'get_pos', atom_number,xr,yr,zr
       end subroutine
 
       subroutine get_restart_filename(input_name,len_name)
+      use colvars ,only: filenamerestart
       use files
       use iso_c_binding
       implicit none
-      character*240,target:: filenamerestart
       logical :: exist
       type(c_ptr) :: input_name
       integer(c_int) :: len_name
