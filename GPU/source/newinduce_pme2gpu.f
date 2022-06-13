@@ -28,6 +28,8 @@ c
      &                   , efld0_directgpu2, efld0_directgpu_p
       use math
       use mpole
+      use mutant    ,only: nmut,elambda
+      use polar_temp,only: ef,mu,murec,cphi
       use nvshmem
       use pme
       use polar
@@ -229,6 +231,12 @@ c     move the computed dipoles in the common block.
 c
       call timer_enter( timer_other )
       def_queue = rec_queue
+      if (nmut.gt.0.and.elambda.eq.0.0) then
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+         do i = 1, npolebloc; do j = 1, nrhs; do k = 1,3
+            if (polarity(poleglob(i)).eq.0.0) mu(k,j,i) = 0.0
+         end do; end do; end do
+      end if
 !$acc parallel loop collapse(2) async(def_queue) default(present)
       do i = 1, npolebloc; do j = 1, 3
          iipole         = poleglob(i)
