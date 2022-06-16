@@ -270,6 +270,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
+      call mechanicstep(0)
       call nblist(0)
       if (abort) then
          if (rank.eq.0) write (iout,90)
@@ -340,6 +341,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
+      call mechanicstep(0)
       call nblist(0)
 c
 c     find potential energies for trajectory A in state 1
@@ -416,6 +418,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
+      call mechanicstep(0)
       call nblist(0)
       if (abort) then
          if (rank.eq.0) write (iout,140)
@@ -486,6 +489,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
+      call mechanicstep(0)
       call nblist(0)
 c
 c     find potential energies for trajectory B in state 1

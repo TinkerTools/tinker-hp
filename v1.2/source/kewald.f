@@ -290,9 +290,6 @@ c
 c     perform dynamic allocation of some pointer arrays
 c
       if (allocated(thetai1)) call fft_final
-      if (allocated(thetai1))  deallocate (thetai1)
-      if (allocated(thetai2))  deallocate (thetai2)
-      if (allocated(thetai3))  deallocate (thetai3)
 c
       if (allocated(qgridin_2d))  deallocate (qgridin_2d)
       if (allocated(qgrid2in_2d))  deallocate (qgrid2in_2d)

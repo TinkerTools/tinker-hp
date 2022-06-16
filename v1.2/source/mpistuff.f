@@ -3740,6 +3740,7 @@ c
       use domdec
       use potent
       use mpi
+      use pme
       implicit none
       integer, allocatable :: counttemp(:),ind1temp(:)
       integer count,rankloc,nprocloc,commloc
@@ -3865,6 +3866,16 @@ c
       deallocate (counttemp)
       deallocate (reqsend)
       deallocate (reqrec)
+c
+c     also allocate spline arrays
+c
+      if (allocated(thetai1))  deallocate (thetai1)
+      if (allocated(thetai2))  deallocate (thetai2)
+      if (allocated(thetai3))  deallocate (thetai3)
+      allocate (thetai1(4,bsorder,nlocrec))
+      allocate (thetai2(4,bsorder,nlocrec))
+      allocate (thetai3(4,bsorder,nlocrec))
+
       return
       end
 c
