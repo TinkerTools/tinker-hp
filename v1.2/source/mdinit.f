@@ -348,15 +348,6 @@ c
          dorest = .false.
       end if
 
-      if (debug) then
-         write (iout,50)  nfree
-   50    format (/,' Number of Degrees of Freedom for Dynamics :',i10)
-      end if
-      if (nfree .eq. 0) then
-         write (iout,60)
-   60    format (/,' MDINIT  --  No Degrees of Freedom for Dynamics')
-         call fatal
-      end if
 c
 c     decide whether to remove center of mass motion
 c
@@ -384,6 +375,16 @@ c
 c     check for a nonzero number of degrees of freedom
 c
       if (nfree .lt. 0)  nfree = 0
+
+      if (debug) then
+         write (iout,50)  nfree
+   50    format (/,' Number of Degrees of Freedom for Dynamics :',i10)
+      end if
+      if (nfree .eq. 0) then
+         write (iout,60)
+   60    format (/,' MDINIT  --  No Degrees of Freedom for Dynamics')
+         call fatal
+      end if
 c
 c     try to restart using prior velocities and accelerations
 c
