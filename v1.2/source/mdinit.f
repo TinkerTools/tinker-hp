@@ -68,6 +68,7 @@ c
       integrate = 'BEEMAN'
       bmnmix = 8
       nfree = 0
+      dorest = .true.
       irest = 1
       velsave = .false.
       frcsave = .false.
@@ -120,8 +121,8 @@ c
             call upcase (integrate)
          else if (keyword(1:14) .eq. 'BEEMAN-MIXING ') then
             read (string,*,err=10,end=10)  bmnmix
-         else if (keyword(1:16) .eq. 'DEGREES-FREEDOM ') then
-            read (string,*,err=10,end=10)  nfree
+c         else if (keyword(1:16) .eq. 'DEGREES-FREEDOM ') then
+c            read (string,*,err=10,end=10)  nfree
          else if (keyword(1:15) .eq. 'REMOVE-INERTIA ') then
             read (string,*,err=10,end=10)  irest
          else if (keyword(1:14) .eq. 'SAVE-VELOCITY ') then
@@ -336,7 +337,7 @@ c
             end if
            call fatal
          end if
-         thermostat = 'none'
+         thermostat = 'LANGEVIN'
          if (allocated(Rn)) deallocate (Rn)
          allocate (Rn(3,nloc))
          do i = 1, nloc
@@ -346,29 +347,7 @@ c
          end do
          dorest = .false.
       end if
-c
-c     set the number of degrees of freedom for the system
-c
-      if (nfree .eq. 0) then
-         nfree = 3 * nuse
-         if (isothermal .and. thermostat.ne.'ANDERSEN') then
-            if (use_bounds) then
-               nfree = nfree - 3
-            else
-               nfree = nfree - 6
-            end if
-         end if
-         if (use_rattle) then
-            nfree = nfree - nrat
-            do i = 1, nratx
-               nfree = nfree - kratx(i)
-            end do
-         end if
-      end if
-c
-c     check for a nonzero number of degrees of freedom
-c
-      if (nfree .lt. 0)  nfree = 0
+
       if (debug) then
          write (iout,50)  nfree
    50    format (/,' Number of Degrees of Freedom for Dynamics :',i10)
@@ -381,10 +360,30 @@ c
 c
 c     decide whether to remove center of mass motion
 c
-      dorest = .true.
       if (irest .eq. 0)  dorest = .false.
       if (nuse. ne. n)  dorest = .false.
       if (isothermal .and. thermostat.eq.'ANDERSEN')  dorest = .false.
+c
+c     set the number of degrees of freedom for the system
+c
+      nfree = 3 * nuse
+      if (dorest) then
+         if (use_bounds) then
+            nfree = nfree - 3
+         else
+            nfree = nfree - 6
+         end if
+      end if
+      if (use_rattle) then
+         nfree = nfree - nrat
+         do i = 1, nratx
+            nfree = nfree - kratx(i)
+         end do
+      end if
+c
+c     check for a nonzero number of degrees of freedom
+c
+      if (nfree .lt. 0)  nfree = 0
 c
 c     try to restart using prior velocities and accelerations
 c
