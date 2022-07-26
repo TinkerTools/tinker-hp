@@ -383,7 +383,8 @@ c
         xr = x(iglob)
         yr = y(iglob)
         zr = z(iglob)
-        if (use_bounds) call image(xr,yr,zr)
+c        if (use_bounds) call image(xr,yr,zr)
+        call image(xr,yr,zr)
         if (abs(xr-xcell2).lt.eps1) xr = xr-eps2
         if (abs(yr-ycell2).lt.eps1) yr = yr-eps2
         if (abs(zr-zcell2).lt.eps1) zr = zr-eps2
@@ -814,7 +815,7 @@ c
         xr = x(iglob)
         yr = y(iglob)
         zr = z(iglob)
-        if (use_bounds) call image(xr,yr,zr)
+        call image(xr,yr,zr)
         if (abs(xr-xcell2).lt.eps1) xr = xr-eps2
         if (abs(yr-ycell2).lt.eps1) yr = yr-eps2
         if (abs(zr-zcell2).lt.eps1) zr = zr-eps2

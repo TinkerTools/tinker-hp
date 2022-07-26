@@ -110,7 +110,7 @@ c
             use_ewald = .true.
          else if (keyword(1:13) .eq. 'EWALD-CUTOFF ') then
             read (string,*,err=10,end=10)  ewaldcut
-         else if (keyword(1:13) .eq. 'EWALDSHORT-CUTOFF ') then
+         else if (keyword(1:18) .eq. 'EWALDSHORT-CUTOFF ') then
             read (string,*,err=10,end=10)  ewaldshortcut
          else if (keyword(1:11) .eq. 'SHORT-HEAL ') then
             read (string,*,err=10,end=10)  shortheal

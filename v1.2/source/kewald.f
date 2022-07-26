@@ -112,7 +112,7 @@ c     set the system extent for nonperiodic Ewald summation
 c
       if (.not. use_bounds) then
          call extent (rmax)
-         xbox = 2.0d0 * (rmax+ewaldcut)
+         xbox = 2.0d0 * (rmax+max(ewaldcut,dewaldcut))
          ybox = xbox
          zbox = xbox
          alpha = 90.0d0
