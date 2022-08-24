@@ -15,6 +15,7 @@ c     space using a low storage BFGS nonlinear optimization
 c
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       program minimize
       use mpi
       implicit none
@@ -306,13 +307,15 @@ c
       use sizes
       use atomsMirror
       use domdec
-      use deriv ,only:info_forces,cDef
-      use energi,only:info_energy
+      use deriv  ,only:info_forces,cDef,ftot_l,comm_forces,get_ftot
+     &           ,de_tot,dr_stride3
+      use energi ,only:info_energy
       use inform
       use scales
+      use tinMemory,only:mipk
       use usage
-      use utils,only:set_to_zero1m
-      use utilgpu,only:rec_queue
+      use utils  ,only:set_to_zero1m
+      use utilgpu,only:rec_queue,rec_stream,mem_set
       use mpi
       implicit none
       integer i,iglob,ierr
@@ -322,8 +325,11 @@ c
       real(r_p) xx(*)
       real(r_p) g(*)
       real(r_p), allocatable :: derivs(:,:)
+      mdyn_rtyp  zero_md
+      integer(mipk) siz_
       logical analytic
       external energy
+      parameter(zero_md=0)
 c
 c     use either analytical or numerical gradients
 c
@@ -363,11 +369,16 @@ c     compute and store the energy and gradient
 c
 c      if (analytic) then
          call gradient (e,derivs)
-         call commforces(derivs)
+         call comm_forces(derivs)
 c      else
 c         e = energy ()
 c         call numgrad (energy,derivs,eps)
 c      end if
+      if (ftot_l) then
+         siz_ = dr_stride3
+         call get_ftot(derivs,nbloc)
+         call mem_set (de_tot,zero_md,siz_,rec_stream)
+      end if
       call allreduceen(e)
 
       !Debug
