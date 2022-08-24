@@ -455,18 +455,24 @@ c
             ELSE
                rr1    = c_mscale*f * invr
             END IF
+            rr3 =       rr1 * invr2
+            rr5 = 3.0 * rr3 * invr2
+            rr7 = 5.0 * rr5 * invr2
+            rr9 = 7.0 * rr7 * invr2
+            rr11= 9.0 * rr9 * invr2
          ELSE
-            IF (iand(fea,grp).ne.0.and.ugrp) THEN
-               rr1    = 1.0 - fgrp*f * invr
-            ELSE
-               rr1    = c_mscale*f * invr
-            END IF
+            !IF (iand(fea,grp).ne.0.and.ugrp) THEN
+            !   rr1    = c_mscale*fgrp*f * invr
+            !ELSE
+            !   rr1    = c_mscale*f * invr
+            !END IF
+            rr1    = 0.0
+            rr3    = 0.0
+            rr5    = 0.0
+            rr7    = 0.0
+            rr9    = 0.0
+            rr11   = 0.0
          END IF
-         rr3    =       rr1 * invr2
-         rr5    = 3.0 * rr3 * invr2
-         rr7    = 5.0 * rr5 * invr2
-         rr9    = 7.0 * rr7 * invr2
-         rr11   = 9.0 * rr9 * invr2
 c
 c        calculate the real space Ewald error function terms
 c
