@@ -5,7 +5,7 @@
 
 <B>***In addition to GitHub, a GPUs container (quick install!) is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp </B>
 
-<B>-Update 08/2022: support to neural networks (ANI-2X, DeepMD etc...) to be pushed soon. Check the Deep-HP module paper: https://arxiv.org/abs/2207.14276</B>
+<B>-Update 08/2022: support for neural networks potential (ANI-2X, DeepMD etc...) to be pushed soon. Check the Deep-HP module paper: https://arxiv.org/abs/2207.14276</B>
 
 <B>-Update 03/02/2021 : PLUMED Support for GPUs !</B>
 
