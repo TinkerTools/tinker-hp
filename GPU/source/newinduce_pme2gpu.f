@@ -14,6 +14,7 @@ c     Computations Using Smooth Particle Mesh Ewald",L. Lagardere et al.,
 c     J. Chem. Theory Comput., 2015, 11 (6), pp 2589–2599
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       subroutine newinduce_pme2gpu
       use atoms     ,only: n,n_pe
       use atomsmirror
@@ -836,9 +837,9 @@ c
          if (nproc.gt.1) then
 !$acc host_data use_device(gg1,gg2)
 !$acc wait(rec_queue)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_TPREC,MPI_SUM,
+            call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_RPREC,MPI_SUM,
      $           COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_TPREC,MPI_SUM,
+            call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_RPREC,MPI_SUM,
      $           COMM_TINKER,ierr)
 !$acc end host_data
          end if
@@ -950,7 +951,8 @@ c
          call timer_exit( timer_other )
 c
          ! Skip Iteration check
-         skip_chk = it.lt.2.or.(exitlast.and.(it.lt.lastIter))
+         skip_chk = (it.lt.2.or.(exitlast.and.(it.lt.lastIter)))
+     &              .and.polprt.eq.0
          ! Skip last Iteration check
          if (exitlast.and.it.eq.lastIter.and.mod(sameIter,3).ne.0)
      &      goto 10
@@ -981,11 +983,11 @@ c
                gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
             end do
             resnrm = max(gnorm(1),gnorm(2))
-         end if
 c
-         ene = -pt5*ene
-         if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
-     &      it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
+            ene = -pt5*ene
+            if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
+     &         it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
+         end if
 c
          call commdirdirgpu(nrhs,2,pp,reqrec,reqsend)
          call commrecdirdipgpu(nrhs,1,murec,pp,buffermpimu1,
