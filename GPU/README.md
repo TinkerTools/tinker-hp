@@ -30,4 +30,5 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - Plumed support available
    - Colvars support available
    - Lambda dynamic support available
+   - Neural Network Potentials (ANI-2X, etc...) support available in beta version (Checkout the Deep-HP branch)
    - More to come
