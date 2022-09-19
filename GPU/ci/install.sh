@@ -88,7 +88,7 @@ current_config_m="$current_config FPA_SUPPORT=$FPA prec=m prog_suffix=$p_suffix"
 # ------------------------------------
 # Clean Project and exit if instructed
 # ------------------------------------
-[ $# -ge 1 ] && [ $1 = "clean" ] && make $current_config distclean && exit
+[ $# -ge 1 ] && [ $1 = "clean" ] && cd $tinkerdir/source && make -f Makefile.pgi $current_config distclean && exit
 
 [ $# -ge 1 ] && ntask=$1 || ntask=16
 
