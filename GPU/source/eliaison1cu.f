@@ -822,7 +822,7 @@ c
               end block; end if
 #endif
 #if __tfea__ & __use_gamd__
-              if (use_amd_dih) call atomic_add( eDaMD,e )
+              if (use_amd_dih) call atomic_add_m( eDaMD,e )
 #endif
               end block
            end if
