@@ -5,7 +5,7 @@
 
 <B>***In addition to GitHub, a GPUs container (quick install!) is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp </B>
 
-<B>-Update 10/2022: New website for Tinker-HP, check it out!!! hhtp://tinker-hp.org
+<B>-Update 10/2022: New website for Tinker-HP, check it out!!! http://tinker-hp.org
 
 <B>-Update 09/2022: support for neural networks potentials (ANI-2X, DeepMD etc...) is available in beta version (see Deep-HP branch on Github). Check the Deep-HP module paper: https://arxiv.org/abs/2207.14276</B>
 
