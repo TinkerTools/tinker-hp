@@ -1,8 +1,9 @@
 # Tinker-HP: High-Performance Massively Parallel Evolution of Tinker on CPUs & GPUs
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
-<H2><B>Versions</B></H2>
+<H2><B>News</B></H2>
 
+------------------------------
 <B>-Update 10/2022: New website for Tinker-HP, check it out!!! https://tinker-hp.org
 
 <B>-Update 09/2022: support for neural networks potentials (ANI-2X, DeepMD etc...) is available in beta version (see Deep-HP branch on Github). Check the Deep-HP module paper: https://arxiv.org/abs/2207.14276</B>
@@ -12,6 +13,10 @@
 <B>-Update 02/11/2021 : PLUMED Support for version 1.2 (CPUs) !</B>
 
 <B>-Update 11/24/2020 : all versions have been pushed to GitHub</B>
+ 
+ ------------------------------
+ 
+ <H2><B>Versions</B></H2>
 
 Current Github version: 1.1v (enhanced AVX512 vectorized CPUs version), 1.2 (CPUs) + 1.2 (multi)-GPUs
 
