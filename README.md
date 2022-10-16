@@ -25,6 +25,8 @@ Current Development version: 1.3 (CPUs + multi-GPUs)
 
 All releases of the Tinker-HP code are now being performed on Github. For news, benchmarks and additional tutorials, please visit the Tinker-HP website
 http://tinker-hp.org/  
+ 
+ ------------------------------
 
 Tinker-HP is a CPUs and GPUs based, multi-precision, MPI massively parallel package dedicated to long polarizable molecular dynamics simulations and to polarizable QM/MM. Tinker-HP is an evolution of the popular Tinker package that conserves it simplicity of use but brings new 
 capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores. 
@@ -67,4 +69,4 @@ We provide support to user:
 
 Email: TinkerHP_Support@ip2ct.upmc.fr
 
-v) <B>***In addition to GitHub, a GPUs container (quick install!) is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp </B>
+v) <B>In addition to GitHub, a GPUs container (quick install!) is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp </B>
