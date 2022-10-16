@@ -3,19 +3,17 @@
 
 <H2><B>Versions</B></H2>
 
-<B>***In addition to GitHub, a GPUs container (quick install!) is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp </B>
-
 <B>-Update 10/2022: New website for Tinker-HP, check it out!!! https://tinker-hp.org
 
 <B>-Update 09/2022: support for neural networks potentials (ANI-2X, DeepMD etc...) is available in beta version (see Deep-HP branch on Github). Check the Deep-HP module paper: https://arxiv.org/abs/2207.14276</B>
 
-<B>-Update 03/02/2021 : PLUMED Support for GPUs !</B>
+<B>-Update 03/02/2021 : PLUMED Support for version 1.2 GPUs !</B>
 
 <B>-Update 02/11/2021 : PLUMED Support for version 1.2 (CPUs) !</B>
 
 <B>-Update 11/24/2020 : all versions have been pushed to GitHub</B>
 
-Current Github version: 1.1v (enhanced AVX512 vectorized CPUs version), 1.2 (CPUs) + 1.2/phase advance (multi)-GPUs
+Current Github version: 1.1v (enhanced AVX512 vectorized CPUs version), 1.2 (CPUs) + 1.2 (multi)-GPUs
 
 Current Development version: 1.3 (CPUs + multi-GPUs)
 
@@ -44,7 +42,7 @@ https://doi.org/10.1039/C7SC04531J
 Tinker-HP : Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using GPUs and Multi-GPUs systems
 Olivier Adjoua, Louis Lagardère, Luc-Henri Jolly, Arnaud Durocher, Thibaut Very, Isabelle Dupays, Zhi Wang, Théo Jaffrelot Inizan, Frédéric Célerse, Pengyu Ren, Jay W. Ponder, Jean-Philip Piquemal, J. Chem. Theory. Comput., 2021, 17 (4), 2034–2053(Open Access) https://doi.org/10.1021/acs.jctc.0c01164
 
-- if you are using the AVX512 vectorized version (1.1v) dedicated to Intel's CPUs (Skylake, CascadeLake etc...), please also cite:
+- if you are using the AVX512 vectorized version dedicated to Intel's CPUs (Skylake, CascadeLake etc...), please also cite:
 Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.0].
 L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access)
  https://doi.org/10.33011/livecoms.1.2.10409
@@ -64,4 +62,4 @@ We provide support to user:
 
 Email: TinkerHP_Support@ip2ct.upmc.fr
 
-
+v) <B>***In addition to GitHub, a GPUs container (quick install!) is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp </B>
