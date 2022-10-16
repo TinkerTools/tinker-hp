@@ -29,10 +29,10 @@ The Tinker-HP approach offers various strategies using domain decomposition tech
 framework of the (n)log(n) Smooth Particle Mesh Ewald. Tinker-HP proposes a high performance scalable computing environment for 
 polarizable (AMOEBA, Amberpol...) and classical (Amber, Charmm, OPLS...) force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters. Tinker-HP supports Intel (AVX5212 enhanced version) and AMD CPUs platforms as well as NVIDIA GPUs (1080, 2080, 3090, P100, V100, A100). 
 
-Tinker-HP is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf).
+i) Tinker-HP is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf).
 Non-academic entities (e.g., companies, for profit organizations) should contact the managing universities (see license).
 
-<B>If you use Tinker-HP, please cite:</B>
+ii) <B>If you use Tinker-HP, please cite:</B>
 
 - Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems 
 with Advanced Polarizable Force Fields.
@@ -49,7 +49,7 @@ Raising the Performance of the Tinker-HP Molecular Modeling Package [Article v1.
 L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-P. Piquemal, LiveCoMS, 2019, 1 (2), 10409  (Open Access)
  https://doi.org/10.33011/livecoms.1.2.10409
  
-<b>Tinkertools</b>
+iii) <b>Tinkertools</b>
 Tinker-HP is part of the Tinker distribution and uses the same tools as Tinker. These tools can be found here : https://github.com/TinkerTools/tinker
 
 If you use the Tinkertools please cite :
@@ -57,7 +57,7 @@ If you use the Tinkertools please cite :
 Tinker 8: Software Tools for Molecular Design.
 J. A. Rackers, Z. Wang, C. Lu, M. L. Maury, L. Lagardère, M. J. Schnieders, J.-P. Piquemal, P. Ren, J. W. Ponder,  J. Chem. Theory. Comput., 2018, 14 (10), 5273–5289 DOI: http://dx.doi.org/10.1021/acs.jctc.8b00529 ; PMC free text : https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6335969/
 
-iii) <B>Support:</B>
+iv) <B>Support:</B>
 
 We provide support to user:
 
