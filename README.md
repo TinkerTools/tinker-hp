@@ -67,7 +67,7 @@ J. A. Rackers, Z. Wang, C. Lu, M. L. Maury, L. Lagardère, M. J. Schnieders, J.-
 
 iv) <B>Support:</B>
 
-We provide support to user:
+We provide support to users:
 
 Email: TinkerHP_Support@ip2ct.upmc.fr
 
