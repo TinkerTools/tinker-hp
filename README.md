@@ -24,7 +24,7 @@ Current Development version: 1.3 (CPUs + multi-GPUs)
 
 
 All releases of the Tinker-HP code are now being performed on Github. For news, benchmarks and additional tutorials, please visit the Tinker-HP website
-http://tinker-hp.org/  
+http://tinker-hp.org/  and follow us on Twitter: https://twitter.com/TINKERtoolsMD
  
 <B>In addition to GitHub, a GPUs container (quick install!) is available thanks to NVIDIA on the NVIDIA NGC's website: https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp </B>
  
