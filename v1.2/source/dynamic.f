@@ -287,12 +287,14 @@ c
         end if
       end if
 #endif
-      if (use_lambdadyn .and. .not.(use_colvars)) then
+#ifndef COLVARS
+      if (use_lambdadyn) then
         if (rank.eq.0) then
           write(iout,*) 'cannot run lambda dynamics without colvars'
         end if
         call fatal
       end if
+#endif
 c
 c     print out a header line for the dynamics computation
 c

@@ -1,21 +1,53 @@
+
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            Tinker-HP  ---  Software Tools for Molecular Design         ###
+ ##                                                                          ##
+ ##                        Version 1.2   November 2019                       ##
+ ##                                                                          ##
+ ##     Copyright (c) Washington University in Saint Louis (WU)              ##
+ ##                   The University of Texas at Austin                      ##
+ ##                   Sorbonne Universites, UPMC (Sorbonne)                  ##
+ ##                              1990-2019                                   ##
+ ###                       All Rights Reserved                              ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+License Number : LICENSENUMBER
+
+Cite this work as :
+
+   Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale
+   Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+
+   Louis Lagardère, Luc-Henri Jolly, Filippo Lipparini, Felix Aviat,
+   Benjamin Stamm, Zhifeng F. Jing, Matthew Harger, Hedieh Torabifard,
+   G. Andrès Cisneros, Michael J. Schnieders, Nohad Gresh, Yvon Maday,
+   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal,
+
+   Chem. Sci., 2018, 9, 956-972,  doi: 10.1039/c7sc04531j
+
  3D Domain Decomposition
 Nx =     2  Ny =     2  Nz =     2
  In auto-tuning mode......
  factors:            1           2           4           8
- processor grid           1  by            8  time=   3.8064688444137573E-002
- processor grid           2  by            4  time=   4.0769338607788086E-002
- processor grid           4  by            2  time=   3.8122236728668213E-002
- processor grid           8  by            1  time=   3.7300795316696167E-002
- the best processor grid is probably            8  by            1
+ processor grid           1  by            8  time=  2.699927054345608E-002
+ processor grid           2  by            4  time=  2.316373470239341E-002
+ processor grid           4  by            2  time=  1.720906328409910E-002
+ processor grid           8  by            1  time=  1.744350488297641E-002
+ the best processor grid is probably            4  by            2
   
  ***** Using the generic FFT engine *****
   
 
- Smooth Particle Mesh Ewald Parameters :
+ Particle Mesh Ewald Parameters :
 
-    Ewald Coefficient      Charge Grid Dimensions      B-Spline Order
+     Type                Ewald Alpha    Grid Dimensions    Spline Order
 
-          0.5446              180   180   180                 5
+   Electrostatics           0.5446       180  180  180           5
+   Polarization             0.5446       180  180  180           5
  3D Domain Decomposition
 Nx =     2  Ny =     2  Nz =     2
 
@@ -35,3 +67,5 @@ Nx =     2  Ny =     2  Nz =     2
          8  -569637.4558  -827614.9030   257977.4471     300.51    1672.26
          9  -570154.6753  -827688.2924   257533.6171     299.99    -593.05
         10  -570231.7705  -828139.8895   257908.1190     300.43   -1988.89
+
+ TINKER-HP is Exiting following Normal Termination

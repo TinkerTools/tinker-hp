@@ -1,25 +1,53 @@
-#
-# as the restart file comes from a 2fs simulation, the system is not equilibrated yet
-#
 
-3D Domain Decomposition
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            Tinker-HP  ---  Software Tools for Molecular Design         ###
+ ##                                                                          ##
+ ##                        Version 1.2   November 2019                       ##
+ ##                                                                          ##
+ ##     Copyright (c) Washington University in Saint Louis (WU)              ##
+ ##                   The University of Texas at Austin                      ##
+ ##                   Sorbonne Universites, UPMC (Sorbonne)                  ##
+ ##                              1990-2019                                   ##
+ ###                       All Rights Reserved                              ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+License Number : LICENSENUMBER
+
+Cite this work as :
+
+   Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale
+   Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+
+   Louis Lagardère, Luc-Henri Jolly, Filippo Lipparini, Felix Aviat,
+   Benjamin Stamm, Zhifeng F. Jing, Matthew Harger, Hedieh Torabifard,
+   G. Andrès Cisneros, Michael J. Schnieders, Nohad Gresh, Yvon Maday,
+   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal,
+
+   Chem. Sci., 2018, 9, 956-972,  doi: 10.1039/c7sc04531j
+
+ 3D Domain Decomposition
 Nx =     2  Ny =     2  Nz =     2
  In auto-tuning mode......
  factors:            1           2           4           8
- processor grid           1  by            8  time=   1.0754168033599854E-003
- processor grid           2  by            4  time=   7.9318881034851074E-004
- processor grid           4  by            2  time=   6.2164664268493652E-004
- processor grid           8  by            1  time=   5.0690770149230957E-004
- the best processor grid is probably            8  by            1
+ processor grid           1  by            8  time=  1.660628477111459E-003
+ processor grid           2  by            4  time=  1.161454943940043E-003
+ processor grid           4  by            2  time=  1.038165530189872E-003
+ processor grid           8  by            1  time=  1.137019600719213E-003
+ the best processor grid is probably            4  by            2
   
  ***** Using the generic FFT engine *****
   
 
- Smooth Particle Mesh Ewald Parameters :
+ Particle Mesh Ewald Parameters :
 
-    Ewald Coefficient      Charge Grid Dimensions      B-Spline Order
+     Type                Ewald Alpha    Grid Dimensions    Spline Order
 
-          0.5446               72    54    54                 5
+   Electrostatics           0.5446        72   54   54           5
+   Polarization             0.5446        72   54   54           5
 
  Random Number Generator Initialized with SEED :          12345
  3D Domain Decomposition
@@ -29,13 +57,15 @@ Nx =     2  Ny =     2  Nz =     2
 
     MD Step      E Total   E Potential     E Kinetic       Temp       Pres
 
-         1   -17567.7201   -28137.9429    10570.2227     364.23   -2562.26
-         2   -17700.0612   -26869.3452     9169.2840     315.95   -1227.56
-         3   -17619.2427   -26018.3393     8399.0965     289.41    1817.98
-         4   -17620.5412   -27517.3003     9896.7591     341.02   -3027.48
-         5   -17729.5235   -27447.2187     9717.6953     334.85    1285.47
-         6   -17558.9287   -26233.2183     8674.2896     298.90    1154.06
-         7   -17628.9752   -27009.4820     9380.5068     323.23   -2015.96
-         8   -17695.8435   -27237.0370     9541.1936     328.77    1596.95
-         9   -17549.0786   -26854.6693     9305.5907     320.65     -13.92
-        10   -17650.6586   -27033.3361     9382.6775     323.31    -943.75
+         1   -17332.4162   -28037.9639    10705.5477     368.85  -11861.99
+         2   -17471.7102   -26592.7605     9121.0503     314.26  -10867.86
+         3   -17412.8658   -25822.5090     8409.6432     289.75   -7532.76
+         4   -17419.5574   -27400.9000     9981.3426     343.90  -12688.84
+         5   -17508.8852   -27221.4575     9712.5724     334.64   -7183.44
+         6   -17364.5752   -26007.4774     8642.9022     297.78   -9307.20
+         7   -17498.1930   -26832.9740     9334.7809     321.62  -10980.33
+         8   -17494.5033   -27190.0384     9695.5352     334.05   -6881.24
+         9   -17409.2373   -26669.1871     9259.9499     319.04  -11364.58
+        10   -17522.5012   -26741.0816     9218.5805     317.62   -9096.28
+
+ TINKER-HP is Exiting following Normal Termination
