@@ -2,8 +2,10 @@
 /// Interfaces to Fortran via C functions declared in colvarproxy_tinkerhp_interface.h
 
 
+#include <mpi.h>
 #include <colvarproxy.h>
 #include "colvarproxy_tinkerhp_interface.h"
+#include <iostream>
 
 /// \brief Communication between colvars and TINKER
 /// (implementation of \link colvarproxy \endlink)
@@ -40,24 +42,27 @@ private:
   int set_unit_system(std::string const &units_in, bool check_only);
 
   /// \brief target Boltzmann constant
-  cvm::real* sim_boltzmann;
-  cvm::real boltzmann() { return *sim_boltzmann; }
+  cvm::real sim_boltzmann;
+  cvm::real boltzmann() { return sim_boltzmann; }
 
   /// \brief Target temperature of the simulation (K units)
-  cvm::real* sim_temperature;
+  cvm::real sim_temperature;
 
-  cvm::real temperature() {return *sim_temperature;}
+  cvm::real temperature() {return sim_temperature;}
 
   /// \brief Target Time step of the simulation (fs)
-  cvm::real* sim_dt; 
+  cvm::real sim_dt; 
 
   /// \brief Time step of the simulation (fs)
-  cvm::real dt() { return *sim_dt;}
+  cvm::real dt() { return sim_dt;}
 
-  /// \brief target mpi communicator, associated rank and number of procs
-  int* commcv;
-  int* rankcv;
-  int* nproccv;
+  /// \brief mpi communicator, associated rank and number of procs
+  int commcv;
+  int rankcv;
+  int nproccv;
+
+  MPI_Comm inter_comm;        // MPI comm with 1 root proc from each world
+  int inter_me, inter_num;    // rank for the inter replica comm
 
   /// \brief Pseudo-random number with Gaussian distribution
   cvm::real rand_gaussian(){
@@ -88,6 +93,17 @@ private:
   /// Print a message to the main log and exit with error code
   inline void fatal_error(std::string const &message) { std::cout << "colvars: " <<  message << std::endl; fatal_error_(); }
 
+#ifdef COLVARS_TCL
+  virtual int run_force_callback();
+
+  virtual int run_colvar_callback(std::string const &name,
+                                  std::vector<const colvarvalue *> const &cvcs,
+                                  colvarvalue &value);
+
+  virtual int run_colvar_gradient_callback(std::string const &name,
+                                           std::vector<const colvarvalue *> const &cvc_values,
+                                           std::vector<cvm::matrix2d<cvm::real> > &gradient);
+#endif
   /// Get value of alchemical lambda parameter from back-end
   int get_alch_lambda(cvm::real* lambda) {
     // Call C/Fortran implementation
@@ -110,9 +126,7 @@ private:
   }
 
   /// Get energy derivative with respect to lambda
-  int apply_force_dE_dlambda(cvm::real* force) {
-    // Call C/Fortran implementation
-    apply_force_delambda_(force);
+  int apply_force_dE_dlambda(cvm::real* force) { // Call C/Fortran implementation apply_force_delambda_(force);
     return COLVARS_OK;
   }
 
@@ -122,4 +136,12 @@ private:
     get_d2edlambda2_(d2E_dlambda2);
     return COLVARS_OK;
   }
+
+  virtual int replica_enabled();
+  virtual int replica_index();
+  virtual int num_replicas();
+//
+  virtual void replica_comm_barrier();
+  virtual int replica_comm_recv(char *msg_data, int buf_len, int src_rep);
+  virtual int replica_comm_send(char *msg_data, int msg_len, int dest_rep);
 };

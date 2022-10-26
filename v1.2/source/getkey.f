@@ -22,6 +22,7 @@ c
       use keys
       use iounit
       use potent
+      use replicas
       implicit none
       integer i,ikey
       integer next,length
@@ -176,6 +177,20 @@ c
          string = record(next:240)
          if (keyword(1:6) .eq. 'DCDIO ') then
             dcdio = .true.
+         end if
+      end do
+c
+c     read number of replicas in multiple replicas run
+c
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call upcase (record)
+         call gettext (record,keyword,next)
+         string = record(next:240)
+         if (keyword(1:9) .eq. 'REPLICAS ') then
+            read (string,*,err=110,end=110)  nreps
+  110       continue
          end if
       end do
 c

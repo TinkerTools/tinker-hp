@@ -21,6 +21,7 @@ c
       use group
       use mdstuf
       use moldyn
+      use replicas
       use titles
       implicit none
       integer i,idyn
@@ -29,12 +30,23 @@ c
       character*2 atmc
       character*40 fstr
       character*240 dynfile
+      character*3 numberreps
 c
+c     if multiple replicas, the restart are numbered
+c
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+      end if
+
 c
 c     update an existing restart file or open a new one
 c
       idyn = freeunit ()
-      dynfile = filename(1:leng)//'.dyn'
+      if (use_reps) then
+         dynfile = filename(1:leng)//'_reps'//numberreps//'.dyn'
+      else
+        dynfile = filename(1:leng)//'.dyn'
+      end if
       inquire (file=dynfile,exist=exist)
       if (exist) then
          open (unit=idyn,file=dynfile,status='old')

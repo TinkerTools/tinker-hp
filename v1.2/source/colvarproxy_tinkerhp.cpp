@@ -1,6 +1,7 @@
 #include "colvarproxy_tinkerhp.h"
 #include "colvarproxy_tinkerhp_interface.h"
 #include <colvarscript.h>
+#include <mpi.h>
 
 // This to avoid having to pass around proxy pointers
 // This is unique to each MPI rank
@@ -38,7 +39,7 @@ colvarproxy_tinkerhp::colvarproxy_tinkerhp()
 
 colvarproxy_tinkerhp::~colvarproxy_tinkerhp()
 {
-  if ( rankcv != NULL && *rankcv == 0) {
+  if ( rankcv != NULL && rankcv == 0) {
     // Finalize e.g. output from biases, and flush output streams
     post_run();
     // Delete the colvarmodule instance
@@ -49,30 +50,29 @@ colvarproxy_tinkerhp::~colvarproxy_tinkerhp()
 // Colvars Initialization
 void colvarproxy_tinkerhp::init() {
   // Initialize colvars.
-  total_force_requested = false;
-  // User-scripted forces are not available in TINKER
-  force_script_defined = false;
-  have_scripts = false;
   get_system_size_(&n);
   get_sim_dt_(&sim_dt);
   get_sim_temp_(&sim_temperature);
   get_sim_boltzmann_(&sim_boltzmann);
+  angstrom_value = 1.0;
   get_mpi_(&commcv,&rankcv,&nproccv);
+
   colvars_restart = false;
   // the input file must be "<input>.colvars"
   char* buff;
   int len_buff;
   get_input_filename_(&buff,&len_buff);
-  std::string prefix(buff,len_buff);
   if (len_buff>0) {
     bool use_colvars = true;
     set_use_colvars_(&use_colvars);
-    config_file = std::string(prefix).append(".colvars");
+    config_file = std::string(buff,len_buff);
   // Output
-    output_prefix_str = std::string(prefix);
+    get_output_filename_(&buff,&len_buff);
+    output_prefix_str = std::string(buff,len_buff);
   //
     get_restart_filename_(&buff,&len_buff);
     input_prefix_str = std::string(buff,len_buff);
+
 //
   // initiate module: this object will be the communication proxy
     colvars = new colvarmodule (this);
@@ -82,6 +82,8 @@ void colvarproxy_tinkerhp::init() {
     colvars->read_config_file(config_file.c_str());
     colvars->setup_input();
     colvars->setup_output();
+  //Tinker-HP always starts at 1, so add 1 rightaway
+    colvars->it++;
 
 //    if (step != 0) {
 //      cvm::log("Initializing step number to "+cvm::to_str(step)+".\n");
@@ -101,6 +103,14 @@ void colvarproxy_tinkerhp::init() {
       log("done initializing the colvars proxy object.\n");
     {
     }
+   // initialize multi-replica support, if available
+  if (replica_enabled() == COLVARS_OK) {
+    get_root2root_(&inter_comm);
+    get_index_rep_(&inter_me);
+    get_num_rep_(&inter_num);
+    MPI_Comm_rank(inter_comm, &inter_me);
+    MPI_Comm_size(inter_comm, &inter_num);
+  }
   }
   else {
     bool use_colvars = false;
@@ -113,12 +123,12 @@ int colvarproxy_tinkerhp::init_atom(int atom_number)
 {
   // save time by checking first whether this atom has been requested before
   // (this is more common than a non-valid atom number)
-  int aid = (atom_number);
+  int aid = (atom_number-1);
 
-  if ( (atom_number < 0) || (atom_number > n) ) {
-    cvm::fatal_error ("Error: invalid atom number specified, "+
-                      cvm::to_str (atom_number+1)+"\n");
-  }
+//  if ( (atom_number < 0) || (atom_number > n) ) {
+//    cvm::fatal_error ("Error: invalid atom number specified, "+
+//                      cvm::to_str (atom_number+1)+"\n");
+//  }
 
   for (size_t i = 0; i < atoms_ids.size(); i++) {
     if (atoms_ids[i] == aid) {
@@ -152,7 +162,7 @@ void colvarproxy_tinkerhp::request_total_force (bool yesno) {
 
 int colvarproxy_tinkerhp::check_atom_id(int atom_number)
 {
-  int const aid = atom_number;
+  int const aid = atom_number-1;
 
   if (cvm::debug())
     log("Adding atom "+cvm::to_str(atom_number)+
@@ -197,7 +207,7 @@ int colvarproxy_tinkerhp::set_unit_system(std::string const &units_in, bool /*ch
 double colvarproxy_tinkerhp::compute()
 {
 // only the master does the calculation
-   if (*rankcv>0) {
+   if (rankcv>0) {
      return 0.0;
    }
 
@@ -284,3 +294,101 @@ double colvarproxy_tinkerhp::compute()
 
   return bias_energy;
 }
+
+// multi-replica support
+
+int colvarproxy_tinkerhp::replica_enabled()
+{
+  bool doreplica = false;
+  get_use_reps_(&doreplica);
+  return (doreplica) ? COLVARS_OK : COLVARS_NOT_IMPLEMENTED;
+}
+
+
+int colvarproxy_tinkerhp::replica_index()
+{
+  int index;
+  get_index_rep_(&index);
+  return index;
+}
+
+//
+int colvarproxy_tinkerhp::num_replicas()
+{
+  int inter_num;
+  get_num_rep_(&inter_num);
+  return inter_num;
+}
+//
+//
+void colvarproxy_tinkerhp::replica_comm_barrier()
+{
+  MPI_Barrier(inter_comm);
+}
+//
+//
+int colvarproxy_tinkerhp::replica_comm_recv(char* msg_data,
+                                          int buf_len, int src_rep)
+{
+  MPI_Status status;
+  int retval;
+
+  retval = MPI_Recv(msg_data,buf_len,MPI_CHAR,src_rep,0,inter_comm,&status);
+  if (retval == MPI_SUCCESS) {
+    MPI_Get_count(&status, MPI_CHAR, &retval);
+  } else retval = 0;
+  return retval;
+}
+//
+//
+int colvarproxy_tinkerhp::replica_comm_send(char* msg_data,
+                                          int msg_len, int dest_rep)
+{
+  int retval;
+  retval = MPI_Send(msg_data,msg_len,MPI_CHAR,dest_rep,0,inter_comm);
+  if (retval == MPI_SUCCESS) {
+    retval = msg_len;
+  } else retval = 0;
+  return retval;
+}
+/// Use embedded Tcl interpreter for callbacks if available
+#ifdef COLVARS_TCL
+
+int colvarproxy_tinkerhp::run_force_callback()
+{
+  int res = colvarproxy::tcl_run_force_callback();
+  if (res == COLVARS_NOT_IMPLEMENTED)
+    cvm::log("Tcl scripts are not enabled in this build of the Colvars library / Tinker-HP.\n");
+  if (res != COLVARS_OK)
+    cvm::error("Error running Tcl forces script.\n");
+  return res;
+}
+
+int colvarproxy_tinkerhp::run_colvar_callback(
+                         std::string const &name,
+                         std::vector<const colvarvalue *> const &cvc_values,
+                         colvarvalue &value)
+{
+  int res = colvarproxy::tcl_run_colvar_callback(name, cvc_values, value);
+  if (res == COLVARS_NOT_IMPLEMENTED)
+    cvm::log("Tcl scripts are not enabled in this build of the Colvars library / Tinker-HP.\n");
+  if (res != COLVARS_OK)
+    cvm::error("Error running Tcl colvar script.\n");
+  return res;
+}
+
+int colvarproxy_tinkerhp::run_colvar_gradient_callback(
+                         std::string const &name,
+                         std::vector<const colvarvalue *> const &cvc_values,
+                         std::vector<cvm::matrix2d<cvm::real> > &gradient)
+{
+  int res = colvarproxy::tcl_run_colvar_gradient_callback(name, cvc_values,
+                                                       gradient);
+  if (res == COLVARS_NOT_IMPLEMENTED)
+    cvm::log("Tcl scripts are not enabled in this build of the Colvars library / Tinker-HP.\n");
+  if (res != COLVARS_OK)
+    cvm::error("Error running Tcl colvar gradient script.\n");
+  return res;
+}
+
+#endif

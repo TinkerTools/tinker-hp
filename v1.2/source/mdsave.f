@@ -34,6 +34,7 @@ c
       use output
       use polar
       use potent
+      use replicas
       use titles
       use units
       use mpi
@@ -63,6 +64,8 @@ c
       character*240 velfile
       character*240 frcfile
       character*240 indfile
+      character*3 numberreps
+      character*240 exten
 c
       moddump = mod(istep,iwrite)
       if (moddump .ne. 0)  return
@@ -499,7 +502,16 @@ c
         ixyz = freeunit ()
         if (archive) then
            xyzfile = filename(1:leng)
+c
+c          if multiple replicas, then number the traj outputs
+c
+           if (use_reps) then
+             write(numberreps, '(i3.3)') rank_reploc
+             exten='_reps'//numberreps
+             xyzfile = filename(1:leng)//trim(exten)
+           end if
            call suffix (xyzfile,'arc','old')
+
            inquire (file=xyzfile,exist=exist)
            if (exist) then
               call openend (ixyz,xyzfile)
@@ -507,7 +519,14 @@ c
               open (unit=ixyz,file=xyzfile,status='new')
            end if
         else
-           xyzfile = filename(1:leng)//'.'//ext(1:lext)
+           if (use_reps) then
+             write(numberreps, '(i3.3)') rank_reploc
+             exten='_reps'//numberreps
+             xyzfile = filename(1:leng)//trim(exten)
+     &                            //'.'//ext(1:lext)
+           else
+             xyzfile = filename(1:leng)//'.'//ext(1:lext)
+           end if
            call version (xyzfile,'new')
            open (unit=ixyz,file=xyzfile,status='new')
         end if

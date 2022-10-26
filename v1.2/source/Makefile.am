@@ -17,6 +17,7 @@ bin_PROGRAMS =
 bin_PROGRAMS += analyze
 bin_PROGRAMS += bar
 bin_PROGRAMS += dynamic
+bin_PROGRAMS += dynamic_rep
 bin_PROGRAMS += minimize
 bin_PROGRAMS += testgrad
 
@@ -40,6 +41,9 @@ bar_DEPENDENCIES      = libtinkermod.a libtinkercalc.a libtinkerclv.a
 
 dynamic_SOURCES       = dynamic.f
 dynamic_DEPENDENCIES  = libtinkermod.a libtinkercalc.a libtinkerclv.a
+
+dynamic_rep_SOURCES       = dynamic_rep.f
+dynamic_rep_DEPENDENCIES  = libtinkermod.a libtinkercalc.a libtinkerclv.a
 
 minimize_SOURCES      = minimize.f
 minimize_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a
@@ -231,6 +235,7 @@ libtinkermod_a_SOURCES += MOD_potent.f
 libtinkermod_a_SOURCES += MOD_precis.f
 libtinkermod_a_SOURCES += MOD_ptable.f
 libtinkermod_a_SOURCES += MOD_repel.f
+libtinkermod_a_SOURCES += MOD_replicas.f
 libtinkermod_a_SOURCES += MOD_reppot.f
 libtinkermod_a_SOURCES += MOD_resdue.f
 libtinkermod_a_SOURCES += MOD_ring.f
@@ -448,6 +453,7 @@ libtinkercalc_a_SOURCES += lbfgs.f
 libtinkercalc_a_SOURCES += linalg.f
 libtinkercalc_a_SOURCES += maxwell.f
 libtinkercalc_a_SOURCES += mdinit.f
+libtinkercalc_a_SOURCES += mdinitreps.f
 libtinkercalc_a_SOURCES += mdrest.f
 libtinkercalc_a_SOURCES += mdsave.f
 libtinkercalc_a_SOURCES += mdstat.f

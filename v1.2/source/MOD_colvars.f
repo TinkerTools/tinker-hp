@@ -9,6 +9,10 @@ c     ##  module colvars  --  Colvars/Tinker-HP interface             ##
 c     ##                                                              ##
 c     ##################################################################
 c
+c     colvarsinput   base filename used by colvars input
+c     colvarsoutput   base filename used by colvars output
+c     colvarsrestart   base filename used by colvars restart
+c
       module colvars
       use iso_c_binding
       use bath
@@ -31,6 +35,8 @@ c
       real*8, allocatable :: cv_pos(:,:),decv(:,:),decv_tot(:,:)
       real*8, target :: dt_sim
       real*8, target :: temp_rand
+      character*240, target:: colvarsinput,colvarsoutput
+      character*240, target :: colvarsrestart
       save
       end
 
@@ -41,11 +47,14 @@ c
       use domdec
       implicit none
       integer :: ncvatoms_in
-      integer ierr
+      integer ierr,i
       integer, dimension(ncvatoms_in) :: cvatoms_ids_in
       ncvatoms = ncvatoms_in
       allocate (cvatoms_ids(ncvatoms))
-      cvatoms_ids(1:ncvatoms) = cvatoms_ids_in(1:ncvatoms)
+      do i = 1, ncvatoms
+        cvatoms_ids(i) = cvatoms_ids_in(i)+1
+      end do
+c      cvatoms_ids(1:ncvatoms) = cvatoms_ids_in(1:ncvatoms)
       allocate (cv_pos(3,ncvatoms))
       allocate (decv(3,ncvatoms),decv_tot(3,ncvatoms))
       cv_pos = 0d0
@@ -54,28 +63,28 @@ c
       return
       end subroutine
 
+c
+c     get a copy of values rather than the same address (they don't
+change during MD)
+c
       subroutine get_mpi(commcv,rankcv,nproccv)
       use domdec
       use iso_c_binding
       implicit none
-c     targeted integers, to make pgfortran and gfortran happy with their c_bindings
-      type(c_ptr) :: commcv,rankcv,nproccv
-      commcv = c_loc(COMM_TINKER)
-      rankcv = c_loc(rank)
-      nproccv = c_loc(nproc)
+      integer(c_int) :: commcv,rankcv,nproccv
+      commcv = COMM_TINKER
+      rankcv = rank
+      nproccv = nproc
       return
       end subroutine
-
 
 
       subroutine get_sim_temp(res)
       use bath
       use iso_c_binding
       implicit none
-      real*8, target :: kel_vin
-      type(c_ptr) :: res
-      kel_vin = kelvin
-      res = c_loc(kel_vin)
+      real(c_double) :: res
+      res = kelvin
       return
       end subroutine
 
@@ -83,13 +92,8 @@ c     targeted integers, to make pgfortran and gfortran happy with their c_bindi
       use units
       use iso_c_binding
       implicit none
-c     targeted real, to make pgfortran and gfortran happy with their c_bindings
-c     must use a real variable to get gasconst
-c     because c_bindings doesn't like const arg to c_loc
-      real*8, target :: gas_const = gasconst
-      type(c_ptr) :: res
-c      res = c_loc(boltzmann)
-      res = c_loc(gas_const)
+      real(c_double) :: res
+      res = gasconst
       return
       end subroutine
 
@@ -97,11 +101,11 @@ c      res = c_loc(boltzmann)
       use colvars
       use iso_c_binding
       implicit none
-      type(c_ptr) :: res
+      real(c_double) :: res
 c
 c     In colvars, the time step is in fs
 c
-      res = c_loc(dt_sim)
+      res = dt_sim
       return
       end subroutine
 c
@@ -156,40 +160,80 @@ c
       fz = -decv_tot(3,atom_number)
       end subroutine
 
+c
       subroutine get_input_filename(input_name,len_name)
+      use colvars
       use files
       use iso_c_binding
       implicit none
       type(c_ptr) :: input_name
       integer(c_int) :: len_name
-      character*240 filenamecolvars
       logical :: exist
-      filenamecolvars = filename(1:leng)//'.colvars'
-      inquire (file=filenamecolvars,exist=exist)
+      colvarsinput = filename(1:leng)//'.colvars'
+      inquire (file=colvarsinput,exist=exist)
       if (exist) then
-        input_name = c_loc(filename)
-        len_name = leng
+        input_name = c_loc(colvarsinput(1:1))
+        len_name = leng+8
       else
-        input_name = c_loc(filename)
+        input_name = c_loc(colvarsinput(1:1))
         len_name = 0
       end if
       end subroutine
-
-      subroutine get_restart_filename(input_name,len_name)
+c
+c     TODO : gestion multi repliques
+c
+      subroutine get_output_filename(output_name,len_name)
+      use colvars
       use files
+      use replicas
       use iso_c_binding
       implicit none
-      character*240 filenamerestart
+      type(c_ptr) :: output_name
+      integer(c_int) :: len_name
+      integer :: lenadd
+      character*3 numberreps
       logical :: exist
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+        colvarsoutput =
+     $ filename(1:leng)//'_reps'//numberreps
+        lenadd = 8
+      else
+        colvarsoutput = filename(1:leng)
+        lenadd = 0
+      end if
+      output_name = c_loc(colvarsoutput(1:1))
+      len_name = leng+lenadd
+      end subroutine
+c
+c     TODO : gestion multi repliques
+c
+      subroutine get_restart_filename(input_name,len_name)
+      use colvars
+      use files
+      use replicas
+      use iso_c_binding
+      implicit none
+      character*3 numberreps
+      logical :: exist
+      integer :: lenadd
       type(c_ptr) :: input_name
       integer(c_int) :: len_name
-      filenamerestart = filename(1:leng)//'.colvars.state'
-      inquire (file=filenamerestart,exist=exist)
-      if (exist) then
-        input_name = c_loc(filenamerestart)
-        len_name = leng+14
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+        colvarsrestart =
+     $ filename(1:leng)//'_reps'//numberreps//'.colvars.state'
+        lenadd = 22
       else
-        input_name = c_loc(filenamerestart)
+        colvarsrestart = filename(1:leng)//'.colvars.state'
+        lenadd = 14
+      end if
+      inquire (file=colvarsrestart,exist=exist)
+      if (exist) then
+        input_name = c_loc(colvarsrestart(1:1))
+        len_name = leng+lenadd
+      else
+        input_name = c_loc(colvarsrestart(1:1))
         len_name = 0
       end if
       end subroutine
@@ -310,14 +354,14 @@ c
       end subroutine
 
       subroutine apply_force_delambda(force)
-        use mutant
-        use iso_c_binding
-        implicit none
-        real(c_double) :: force
-c       flambdabias is the energy derivative with respect to dE/dlambda
-c       which is equal to minus the force on dE/dlambda
-        flambdabias = -force
-        end subroutine
+      use mutant
+      use iso_c_binding
+      implicit none
+      real(c_double) :: force
+c     flambdabias is the energy derivative with respect to dE/dlambda
+c     which is equal to minus the force on dE/dlambda
+      flambdabias = -force
+      end subroutine
 
 c
 c     the master gets all the cv positions and total forces
@@ -440,5 +484,48 @@ c
           derivs(3,iloc) = derivs(3,iloc) + decv(3,i)
         end if
       end do
+      return
+      end subroutine
+c
+c     retreive the use of replicas
+c
+      subroutine get_use_reps(doreplica)
+      use replicas
+      use iso_c_binding
+      implicit none
+      logical(c_bool) :: doreplica
+      doreplica = use_reps
+      end subroutine
+c
+c     retreive index of local replica
+c
+      subroutine get_index_rep(index)
+      use replicas
+      use iso_c_binding
+      implicit none
+      integer(c_int) :: index
+      index = rank_reploc
+      end subroutine
+c
+c     retreive number of replicas
+c
+      subroutine get_num_rep(inter_num)
+      use replicas
+      use iso_c_binding
+      implicit none
+      integer(c_int) :: inter_num
+      inter_num = nreps
+      end subroutine
+c
+c     retreive root 2 root communicator
+c
+      subroutine get_root2root(intercomm)
+      use domdec
+      use replicas
+      use iso_c_binding
+      implicit none
+c     targeted integers, to make pgfortran and gfortran happy with their c_bindings
+      integer(c_int) :: intercomm
+      intercomm = COMM_ROOT2ROOT
       return
       end subroutine

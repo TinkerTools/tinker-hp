@@ -14,6 +14,7 @@ c
       use dcdmod
       use files
       use inform
+      use replicas
       use, intrinsic :: iso_c_binding
       implicit none
       integer i,istep
@@ -26,12 +27,23 @@ c
       character (len=79) :: info1,info2
       character (len=8) :: date
       character (len=10) :: time
+      character*240 exten
+      character*3 numberreps
 c
       natoms = n
       coord_size = 4*natoms
       timestep = istep
 
-      dcdfile = filename(1:leng)//'.dcd'
+c
+c     if multiple replicas, then number the traj outputs
+c
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+        exten='_reps'//numberreps//'.dcd'
+        dcdfile = filename(1:leng)//exten
+      else
+        dcdfile = filename(1:leng)//'.dcd'
+      end if
       init = (istep.eq.iwrite)
 c
       if (init) then

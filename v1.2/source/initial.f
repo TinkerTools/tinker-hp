@@ -31,6 +31,7 @@ c
       use output
       use params
       use precis
+      use replicas
       use timestat
       use mpi
       implicit none
@@ -38,6 +39,9 @@ c
       integer ierr
       real*8 precise
 c
+c     replicas
+c
+      nreps = 0
 c
 c     cores, thread count and options for OpenMP
 c
@@ -164,39 +168,67 @@ c
       return
       end
 c
-c     subroutine initmpi
-c
-c     initialize local communicator and generate replicas if necessary
-c
-      subroutine initmpi
+      subroutine initmpi_reps()
       use domdec
+      use iounit
+      use replicas
       use mpi
       implicit none
-      integer ierr,iproc,rank_beadloc
+      integer ierr,color
 
-      integer, allocatable :: bead_rank(:)
+      if (nproctot.lt.nreps) then
+        nproc = 1
+        if (ranktot.eq.0) then
+          write(iout,*) 'each process should deal with max 1 replica'
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+        call fatal
+      else if (mod(nproctot,nreps).ne.0) then
+        if (ranktot.eq.0) then
+          write(iout,*) 'Error: inconsistent number 
+     &     of process for parallelism'
+          write(iout,*) 'the total number of processors
+     &      should be lower
+     &     or a multiple of nreps'
+          call fatal
+        end if
+      else
+        nproc = nproctot/nreps
+      end if
+      call initmpi
 c
-      allocate (bead_rank(nproctot))
+c     create inter root communicator
 c
-c     not dealing with replicas for now
-c
-      bead_rank = 0d0
-c
-      do iproc = 0, nproctot-1
-        rank_beadloc = int(iproc/nproc)
-        bead_rank(iproc+1) = rank_beadloc
-      end do
+      color = 1
+      if (rank.eq.0) color = 0
+      call MPI_Comm_split(MPI_COMM_WORLD,color,ranktot,COMM_ROOT2ROOT,
+     $  ierr)
+      
+      end subroutine initmpi_reps
 
+      subroutine initmpi
+      use domdec
+      use inform
+      use mpi
+      use replicas
+      implicit none
+      integer ierr,iproc
+      integer ncomm
+c
+c     if nreps > 1, nproc is defined earlier (in dynamic_rep.f)
+c     else, we specify that we use standard parallelization (nproc=nproctot)
+c
+      if(nreps==1) nproc=nproctot
+      rank_reploc = int(ranktot/nproc)
+      ncomm = int(nproctot/nproc)
+      if ((ncomm-nproc*nproctot).gt.0) ncomm = ncomm+1
 
-      CALL MPI_Comm_split(MPI_COMM_WORLD,bead_rank(ranktot+1),
-     $  ranktot,COMM_TINKER,ierr)
+      CALL MPI_Comm_split(MPI_COMM_WORLD,rank_reploc,
+     $     ranktot,COMM_TINKER,ierr)
 
       call MPI_COMM_SIZE(COMM_TINKER,nproc,ierr)
       call MPI_COMM_RANK(COMM_TINKER,rank,ierr)
       CALL MPI_Comm_split_type(COMM_TINKER, MPI_COMM_TYPE_SHARED, 0,
-     $  MPI_INFO_NULL, hostcomm,ierr)
+     $     MPI_INFO_NULL, hostcomm,ierr)
       CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
-      deallocate (bead_rank)
-c
-      return
       end

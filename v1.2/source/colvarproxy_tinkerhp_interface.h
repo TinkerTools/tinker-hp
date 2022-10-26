@@ -3,6 +3,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <mpi.h>
 
 // C functions exposed by Colvars to Tinker
 
@@ -21,13 +22,13 @@ void delete_colvars();
 // implemented in MOD_colvars.f
 
 /// Get MPI communicator info from Tinker
-void get_mpi_(int** commnuicator, int** rank, int** nrpoc);
+void get_mpi_(int* communicator, int* rank, int* nproc);
 
-void get_sim_temp_(cvm::real**);
+void get_sim_temp_(cvm::real*);
 
-void get_sim_boltzmann_(cvm::real**);
+void get_sim_boltzmann_(cvm::real*);
 
-void get_sim_dt_(cvm::real**);
+void get_sim_dt_(cvm::real*);
 
 void rand_colvars_(cvm::real*);
 
@@ -57,6 +58,9 @@ void pbc_image_(cvm::rvector* r1, cvm::rvector* r2, cvm::rvector* dr);
 
 /// Get the filename of the Tinker input
 void get_input_filename_(char** input_name, int* len_name);
+
+/// Get the filename of the colvars output
+void get_output_filename_(char** output_name, int* len_name);
 
 /// Check the existence of the colvars restart file through tinker
 void get_restart_filename_(char** input_name, int* len_name);
@@ -91,6 +95,18 @@ void apply_force_delambda_(double* force);
 
 /// Get second derivative of the (unbiased force field) energy with respect to lambda
 void get_d2edlambda2_(double* d2E_dlambda2);
+
+/// get use of replicas
+void get_use_reps_(bool* doreplica);
+
+/// get index of local replica
+void get_index_rep_(int* index);
+
+/// get number of replicas
+void get_num_rep_(int* inter_num);
+
+/// get root2root communicator
+void get_root2root_(MPI_Comm* inter_comm);
 
 #ifdef __cplusplus
 }
