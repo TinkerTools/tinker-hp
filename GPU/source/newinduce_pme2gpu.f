@@ -14,6 +14,7 @@ c     Computations Using Smooth Particle Mesh Ewald",L. Lagardere et al.,
 c     J. Chem. Theory Comput., 2015, 11 (6), pp 2589–2599
 c
 #include "tinker_precision.h"
+#include "tinker_types.h"
       subroutine newinduce_pme2gpu
       use atoms     ,only: n,n_pe
       use atomsmirror
@@ -28,6 +29,8 @@ c
      &                   , efld0_directgpu2, efld0_directgpu_p
       use math
       use mpole
+      use mutant    ,only: nmut,elambda
+      use polar_temp,only: ef,mu,murec,cphi
       use nvshmem
       use pme
       use polar
@@ -229,6 +232,12 @@ c     move the computed dipoles in the common block.
 c
       call timer_enter( timer_other )
       def_queue = rec_queue
+      if (nmut.gt.0.and.elambda.eq.0.0) then
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+         do i = 1, npolebloc; do j = 1, nrhs; do k = 1,3
+            if (polarity(poleglob(i)).eq.0.0) mu(k,j,i) = 0.0
+         end do; end do; end do
+      end if
 !$acc parallel loop collapse(2) async(def_queue) default(present)
       do i = 1, npolebloc; do j = 1, 3
          iipole         = poleglob(i)
@@ -828,9 +837,9 @@ c
          if (nproc.gt.1) then
 !$acc host_data use_device(gg1,gg2)
 !$acc wait(rec_queue)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_TPREC,MPI_SUM,
+            call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_RPREC,MPI_SUM,
      $           COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_TPREC,MPI_SUM,
+            call MPI_ALLREDUCE(MPI_IN_PLACE,gg2,1,MPI_RPREC,MPI_SUM,
      $           COMM_TINKER,ierr)
 !$acc end host_data
          end if
@@ -942,7 +951,8 @@ c
          call timer_exit( timer_other )
 c
          ! Skip Iteration check
-         skip_chk = it.lt.2.or.(exitlast.and.(it.lt.lastIter))
+         skip_chk = (it.lt.2.or.(exitlast.and.(it.lt.lastIter)))
+     &              .and.polprt.eq.0
          ! Skip last Iteration check
          if (exitlast.and.it.eq.lastIter.and.mod(sameIter,3).ne.0)
      &      goto 10
@@ -973,11 +983,11 @@ c
                gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
             end do
             resnrm = max(gnorm(1),gnorm(2))
-         end if
 c
-         ene = -pt5*ene
-         if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
-     &      it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
+            ene = -pt5*ene
+            if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
+     &         it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
+         end if
 c
          call commdirdirgpu(nrhs,2,pp,reqrec,reqsend)
          call commrecdirdipgpu(nrhs,1,murec,pp,buffermpimu1,

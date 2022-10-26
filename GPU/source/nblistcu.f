@@ -1441,7 +1441,7 @@ c             if (ilane.lt.nbits+1) lst(iscan+oldnb+ilane) = kdx_
 
            attr = merge(d_bl,merge(i_bl,n_bl,isIn),travers)
 
-           if (attr.eq.n_bl) then
+           if (attr.ne.d_bl) then
            ! Extract block physical center
            xlow = xs; xhig = xs;
            ylow = ys; yhig = ys;

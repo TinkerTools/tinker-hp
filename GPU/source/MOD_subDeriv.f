@@ -1899,8 +1899,8 @@ c        call minmaxone(mmx(23),mmx(nf+23),mmx(2*nf+23),deamdD ,3*nloc);
 c        call minmaxone(mmx(24),mmx(nf+24),mmx(2*nf+24),deW1aMD,3*nloc);
 c     end if
 
-      if (use_colvars) then
-!$acc data copy(decv,decv_tot)
+      if (use_colvars.and.ncvatoms.gt.0) then
+!$acc data copyin(decv,decv_tot)
       call minmaxone(mmx(26),mmx(nf+26),mmx(2*nf+26),decv_tot
      &              ,3*ncvatoms,'decolv');
       call minmaxone(mmx(27),mmx(nf+27),mmx(2*nf+27),decv

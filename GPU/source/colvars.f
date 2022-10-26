@@ -19,12 +19,14 @@ c     #############################################################
       use iso_c_binding
       use colvars
       use mpi
+      use sizes ,only: tinkerdebug
       use domdec
       implicit none
       integer :: ncvatoms_in
       integer ierr
       integer, dimension(ncvatoms_in) :: cvatoms_ids_in
       ncvatoms = ncvatoms_in
+      if (tinkerdebug.gt.0) print*, 'set_cvatoms_ids', ncvatoms
       allocate (cvatoms_ids(ncvatoms))
       cvatoms_ids(1:ncvatoms) = cvatoms_ids_in(1:ncvatoms)
       allocate (cv_pos(3,ncvatoms))
@@ -152,10 +154,10 @@ c     print 12,'get_pos', atom_number,xr,yr,zr
       end subroutine
 
       subroutine get_restart_filename(input_name,len_name)
+      use colvars ,only: filenamerestart
       use files
       use iso_c_binding
       implicit none
-      character*240,target:: filenamerestart
       logical :: exist
       type(c_ptr) :: input_name
       integer(c_int) :: len_name
