@@ -165,7 +165,6 @@ MKLGF_LIBS="-lmkl_gf_lp64    -lmkl_sequential -lmkl_core -ldl"
 # Default targeted architecture (It's the machine we compile on)
 #
 
-ARCHIF="-xHost"
 ARCHIF=""
 ARCHPF=""
 ARCHGF=""
@@ -187,7 +186,8 @@ EXEEXT=".prod"                                                    # Default is n
  AC_ARG_ENABLE([debug],
                [AS_HELP_STRING([--enable-debug], [Enable debug mode (check array bounds, implicit none, etc...). Should not be active in normal operations @<:@default is no@:>@])],
                [EXEEXT=".debug"                                                   # Extension is _debug (Automake variable)
-                FCFLAGS="$FCFLAGS -O0 -g"                                       # FCFLAGS is no optimization
+                #FCFLAGS="$FCFLAGS -O0 -g"                                       # FCFLAGS is no optimization
+                FCFLAGS="-O0 -g"                                       # FCFLAGS is no optimization
                 CCFLAGS="-O0 -g"                                       # CCFLAGS is no optimization
                 AC_FC_CHECK_BOUNDS([:],[AC_MSG_FAILURE([$CHECKBOUND_FAILMSG])])   # Modify FCFLAGS
                 AC_MSG_RESULT([${GRN}$ac_cv_fc_check_bounds${CLR}])
@@ -207,7 +207,7 @@ EXEEXT=".prod"                                                    # Default is n
                 CCFLAGS="$CCFLAGS $CWARNFLAG"                                     # Modify CCFLAGS
                 DEBUG_MODE="DEBUG"
                ],
-               [FCFLAGS="$FCFLAGS -O3" ; CCFLAGS="-O3"                                    # and maximal optimization                                                    # and maximal optimization
+               [FCFLAGS="-O3" ; CCFLAGS="-O3"                 # and maximal optimization
                 DEBUG_MODE="NORMAL"
                ]
           )
