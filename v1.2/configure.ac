@@ -33,6 +33,18 @@ AC_PROG_RANLIB
 #
 AC_PREFIX_DEFAULT($PWD)
 
+# 
+# Grab the prefix given by the --prefix option of configure
+# If none, default to the... default !
+# That's just for the NOTICE
+#
+
+PREFIX=$prefix
+AS_IF([test "x$prefix" = xNONE],
+      [PREFIX=$ac_default_prefix],
+      [PREFIX=$prefix]
+     )
+
 #
 # We are using Fortran 
 #
@@ -112,10 +124,8 @@ AS_IF([test "x$REALFC" = "xnone" ],
  
 #
 # Find the flag to set DEFINES for the preprocessing of fortran sources
-# Use -cpp for all compilers
 
 AC_FC_PP_DEFINE
-#CPPFLAGS="-cpp"
 
 #
 # All sources will be in fixed forms
@@ -146,11 +156,12 @@ FORT_FLAGSGF="-C -fbacktrace"
 CXX_FLAGSIC="-no-ipo -no-prec-div -heap-arrays -traceback" 
 CXX_FLAGSPC="-traceback -Mdalign -gopt" 
 CXX_FLAGSGC="-C " 
+
 #
 # We begin with null flags
 #
-FORT_FLAGS=""
 
+FORT_FLAGS=""
 CCFLAGS=""
 
 #
@@ -162,13 +173,12 @@ MKLPF_LIBS="-lmkl_intel_lp64 -lmkl_sequential -lmkl_core -ldl"
 MKLGF_LIBS="-lmkl_gf_lp64    -lmkl_sequential -lmkl_core -ldl"
 
 #
-# Default targeted architecture (It's the machine we compile on)
+# No Default targeted architecture
 #
 
 ARCHIF=""
 ARCHPF=""
 ARCHGF=""
-
 
 
 #
@@ -186,9 +196,8 @@ EXEEXT=".prod"                                                    # Default is n
  AC_ARG_ENABLE([debug],
                [AS_HELP_STRING([--enable-debug], [Enable debug mode (check array bounds, implicit none, etc...). Should not be active in normal operations @<:@default is no@:>@])],
                [EXEEXT=".debug"                                                   # Extension is _debug (Automake variable)
-                #FCFLAGS="$FCFLAGS -O0 -g"                                       # FCFLAGS is no optimization
-                FCFLAGS="-O0 -g"                                       # FCFLAGS is no optimization
-                CCFLAGS="-O0 -g"                                       # CCFLAGS is no optimization
+                FCFLAGS="-O0 -g"                                                  # FCFLAGS is no optimization
+                CCFLAGS="-O0 -g"                                                  # CCFLAGS is no optimization
                 AC_FC_CHECK_BOUNDS([:],[AC_MSG_FAILURE([$CHECKBOUND_FAILMSG])])   # Modify FCFLAGS
                 AC_MSG_RESULT([${GRN}$ac_cv_fc_check_bounds${CLR}])
                 FORT_FLAGS="$ac_cv_fc_check_bounds"                               # Modify FORT_FLAGS
@@ -207,7 +216,7 @@ EXEEXT=".prod"                                                    # Default is n
                 CCFLAGS="$CCFLAGS $CWARNFLAG"                                     # Modify CCFLAGS
                 DEBUG_MODE="DEBUG"
                ],
-               [FCFLAGS="-O3" ; CCFLAGS="-O3"                 # and maximal optimization
+               [FCFLAGS="-O3" ; CCFLAGS="-O3"                                     #  maximal optimization
                 DEBUG_MODE="NORMAL"
                ]
           )
@@ -462,7 +471,7 @@ case "$FFTW_LIB" in
        AS_IF([test "x$FFTW_TYPE" = "xfftw3" || test "x$FFTW_TYPE" = "xfftw3_f03"], # If we want the fftw3* interface of MKL
               [FFTW_INCLUDES_PATH="${FFTW_INCLUDES_PATH}/fftw";                    # Add fftw to the include path
                FFTW_INCLUDES="${FFTW_INCLUDES}/fftw"],
-              [ MKL_MOD_BIN="mkl_dfti.o"                            # if not, compile the special mkl module
+              [ MKL_MOD_BIN="mkl_dfti.o"                                           # if not, compile the special mkl module
                 MKL_MOD_SOURCE="${MKL_MOD_BIN%%.o}.f90"
               ]
             )
@@ -521,26 +530,22 @@ PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED
                   xpgfortran) COMP="Portland";;
                   xgfortran ) COMP="Gnu";;
                esac
-               LIBPLUMED_PATH="../plumed/$COMP"
+               LIBPLUMED_PATH="$PREFIX/plumed/$COMP"
                LIBPLUMED_LIBPATH="$LIBPLUMED_PATH/lib/"
                LIBPLUMED_LIB="-L $LIBPLUMED_LIBPATH -lplumed -lplumedKernel"
                LIBPLUMED_INC="-I $LIBPLUMED_PATH/include"
                PLUEXT="_plumed"
+               PLUMEDINCLUDE="plumed.mk"
                #
                # States that this Makefiles.conf should be generated
                #
-               MAKEPLUMED="(cd plumed2 ; ./configure MPICXX=$CC --prefix=$PREFIX  --enable-mpi)"
-               INITPLUMED="PREFIX=$(pwd)/plumed/$COMP/"
                AC_CONFIG_FILES(plumed2/Makefile.conf, [(cd plumed2 ; ./configure MPICXX=$CC --prefix=$PREFIX  --enable-mpi)],[PREFIX=$(pwd)/plumed/$COMP/ ] )
-               PLUMEDINCLUDE="plumed.mk"
              ],
              [ PLUMEDFLAG=""
                LIBPLUMED_PATH=""
                LIBPLUMED_LIB=""
                LIBPLUMED_INC="" 
                PLUEXT=""
-               MAKEPLUMED="touch noplumed"
-               INITPLUMED=""
                PLUMEDINCLUDE="noplumed.mk"
 	     ]
             )
@@ -561,10 +566,6 @@ COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVAR
                LIBCOLVARS_INC="-I $LIBCOLVARS_PATH"
                LIBCOLVARS_CPPFLAGS="$LIBCOLVAR_INC"
                COLVEXT="_colvars"
-               #
-               # Add the Makefile for libcolvars to the list of files to be generated
-               #
-               AC_CONFIG_FILES(colvars/Makefile)
                COLVARSINCLUDE="colvars.mk"
                TINKERCOLVARS="libtinkerclv_a"
              ],
@@ -573,7 +574,6 @@ COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVAR
                LIBCOLVARS_LIB=""
                LIBCOLVARS_INC="" 
                COLVEXT=""
-               MAKECOLVARS="touch nocolvars"
                COLVARSINCLUDE="nocolvars.mk"
                TINKERCOLVARS=""
 	     ]
@@ -602,18 +602,6 @@ AM_CPPFLAGS="$LIBCOLVARS_CPPFLAGS"
 FCFLAGS="$PREPROFLAG $COLVARSFLAG $PLUMEDFLAG $FCFLAGS $FORT_FLAGS"
 FFLAGS=$FCFLAGS
 FC=$MPIFC
-
-# 
-# Grab the prefix given by the --prefix option of configure
-# If none, default to the... default !
-# That's just for the NOTICE
-#
-
-PREFIX=$prefix
-AS_IF([test "x$prefix" = xNONE],
-      [PREFIX=$ac_default_prefix],
-      [PREFIX=$prefix]
-     )
 
 #
 # if we have MKL for both BLAS and FFTW3, just remove the FFTW3 stuff from the link command to avoid duplication
@@ -726,6 +714,7 @@ AC_CONFIG_FILES( Makefile
                  example/Makefile
                  params/Makefile
                  source/Makefile
+                 colvars/Makefile
                  tutorials/Makefile
                  tutorials/SMD/Makefile
                  tutorials/SMD/CFSMD/Makefile
