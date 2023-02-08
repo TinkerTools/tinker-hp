@@ -1,0 +1,28 @@
+name: tinkerml 
+channels:
+  - pytorch
+  - anaconda
+  - https://conda.deepmodeling.org
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - git
+  - cudatoolkit=11.3
+  - cffi=1.15.0
+  - scipy=1.7.1
+  - cudnn
+  - cupti=11.3
+  - h5py
+  - hdf5
+  - horovod
+  - pycuda
+  - tensorflow-base=2.5.0=gpu*
+  - libtensorflow_cc=2.5.0=gpu_cuda11.3_0
+  - deepmd-kit=2.0.3=*_gpu
+  - libdeepmd=2.0.3=*gpu
+  - pytorch=1.10.0=*cuda11.3*
+  - tqdm
+  - pip:
+    - git+https://github.com/thomasple/torchani.git
