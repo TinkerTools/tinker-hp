@@ -14,7 +14,7 @@ c     "echarge3" calculates the charge-charge interaction energy
 c     and partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine echarge3vec
       implicit none
 c

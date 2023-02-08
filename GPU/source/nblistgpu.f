@@ -14,7 +14,7 @@ c     "nblist" constructs and maintains nonbonded pair neighbor lists
 c     for vdw and electrostatic interactions
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module nblistgpu_inl
         contains
 #include "image.f.inc"
@@ -106,6 +106,7 @@ c
       use inform ,only: deb_Path
       use nblistgpu_inl
       use utilgpu,only:rank,dir_queue
+      use sizes  ,only: tinkerdebug
 
       implicit none
       integer,intent(in)   :: nloc
@@ -132,7 +133,7 @@ c
       write_index    = 0
 !$acc parallel loop gang private(read_index,read_nei,read_pos,
 !$acc&  read_posl)
-!$acc&         present(nblist,nneig,nneig_cut,glob,ktype)
+!$acc&         present(nblist,nneig,nneig_cut,glob,ktype,x,y,z)
 !$acc&         vector_length(32) async(dir_queue)
       do i = 1,nloc
          nnneig     = nneig(i)
@@ -220,14 +221,14 @@ c
                   read_posl(read_cap) = write_index
                end if
             end do
-            if (i.eq.1.and.rank.eq.1) then
-               count=0
-               do k=1,nnneig
-                  !print*, k,nblist(k,i)
-                  if (nblist(k,i).eq.-1) count=count+1
-               end do
-               !print*,count
-            end if
+            !if (i.eq.1.and.rank.eq.1) then
+            !   count=0
+            !   do k=1,nnneig
+            !      !print*, k,nblist(k,i)
+            !      !if (nblist(k,i).eq.-1) count=count+1
+            !   end do
+            !   !print*,count
+            !end if
 
 c
 c           Retrive all missing interactions under the cutoff index
@@ -255,7 +256,7 @@ c
          end do
       end do
 
-#ifdef TINKER_DEBUG
+      if (tinkerdebug.gt.0) then
       read_index =0
 !$acc parallel loop vector_length(32) async(dir_queue)
 !$acc&         present(nblist,nneig,nneig_cut) private(read_index)
@@ -276,7 +277,7 @@ c
 !$acc serial
       !print*, 'Check nblist suceed'
 !$acc end serial
-#endif
+      end if
       end subroutine
 c
 c     subroutine initmpipme : build the arrays to communicate direct and reciprocal fields
@@ -2545,7 +2546,7 @@ c
  13   format( I3," iteration(s) required to build Adj lst" )
 c14   format( I10," nblocks process at once over",I10 )
 c15   format(1x,'Size Adj Mat (Mo)',F12.3,';',4x,'buffer (Go)',F10.6)
- 16   format(1x,'natmnl',I8,';',3x,'mlist mem space (Mo)',F12.3)
+ 16   format(1x,'natmnl',I8,';',3x,'ani list mem space (Mo)',F12.3)
          !nbMatb = max(1,min(int(buffMatb*1d9/(4*szMatb)),nblock))
          szolst = nbpairs*(BLOCK_SIZE**2+2)*szoi
          !if (use_shortmlist) szolst = 2*szolst

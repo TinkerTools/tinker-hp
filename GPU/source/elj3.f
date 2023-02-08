@@ -14,7 +14,7 @@ c     "elj3" calculates the Lennard-Jones 6-12 van der Waals energy
 c     and also partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine elj3
       use analyz
       use atoms
@@ -26,14 +26,16 @@ c
       use vdwpot
       implicit none
       integer i
-      real(t_p) elrc,aelrc
+      real(r_p) elrc,aelrc
+      character*11 mode
 c
       call elj3c
 c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr (elrc)
+         mode = 'VDW'
+         call evcorr (mode,elrc)
          ev = ev + elrc
          aelrc = elrc / real(n,t_p)
          do i = 1, nbloc
@@ -88,7 +90,7 @@ c
       integer kk,kv,kt
       integer nevt
       integer, allocatable :: iv14(:)
-      real(t_p) e,eintert
+      real(t_p) e,eintert,fgrp
       real(r_p) evt
       real(t_p) p6,p12,eps
       real(t_p) rv,rdn
@@ -190,8 +192,8 @@ c
             kglob = vlst(kk,ii)
             kbis = loc(kglob)
             kv = ired(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -228,6 +230,10 @@ c
      &                          + c2*rik2 + c1*rik + c0
                      e = e * taper
                   end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     increment the overall van der Waals energy components
 c

@@ -3,7 +3,7 @@ c     Sorbonne University
 c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       function sprod(n,v,w)
       implicit real(t_p) (a-h,o-z)
       integer,parameter::ti_p=t_p

@@ -216,8 +216,8 @@ c
       use vdw     ,only: nvdwloc,nvdwlocnl,nvdwbloc
      &            ,vdwlocnl
       implicit none
-#if _OPENACC
       integer i,istep
+#if _OPENACC
       logical rebuildnl
 
       if(nproc.gt.1) goto 20

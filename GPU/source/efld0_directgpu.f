@@ -3,9 +3,9 @@ c     Sorbonne University
 c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module efld0_directgpu_inl
-        use tinheader, only: ti_p
+        use tinheader, only: ti_p, zeror, zerom
         use tintypes , only: real3, rpole_elt, real7
         implicit none
         include "erfcore_data.f.inc"
@@ -16,7 +16,7 @@ c
 #else
         include "erfcdcore.f.inc"
 #endif
-#include "pair_tmatxb.f.inc"
+#include "pair_efld.inc.f"
       end module
 
 c
@@ -27,7 +27,7 @@ c
       subroutine efld0_directgpu(nrhs,ef)
       use atmlst   ,only: poleglobnl
       use atoms    ,only: x,y,z
-      use couple   ,only: i12,i13,i14,i15,n12,n13,n14,n15
+      use couple
       use domdec   ,only: rank,loc,nbloc
       use ewald    ,only: aewald
       use efld0_directgpu_inl
@@ -36,10 +36,9 @@ c
       use mpole    ,only: npolebloc,ipole,rpole,poleloc,npolelocnl
       use neigh    ,only: nelst,elst,shortelst,nshortelst
       use polar    ,only: pdamp,thole
-      use polgrp   ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
-      use potent  , only : use_polarshortreal
-      use polpot   ,only: d1scale,d2scale,d3scale,d4scale,
-     &                    p2scale,p3scale,p4scale,p41scale,p5scale
+      use polgrp
+      use potent   ,only: use_polarshortreal
+      use polpot
       use shunt    ,only: cut2
       use utilgpu  ,only: dir_queue,rec_queue,def_queue,
      &                    warning,maxscaling,maxscaling1
@@ -56,7 +55,7 @@ c
       integer i,iglob,iploc,kk
       !integer countsel
       integer ii,j,k,ksp,kd,iipole,kbis,kpole,kglob
-      integer nn12,nn13,nn14,ntot
+      integer nn12,nn13,nn14,nn4,ntot,nn15
       integer nnp11,nnp12,nnp13,nnp14
       integer nnelst
       integer,pointer :: lst(:,:),nlst(:)    ! pointers to neighbor list
@@ -71,6 +70,7 @@ c
       type(real3) fid,fip,fkd,fkp,pos
       integer   ipscal(maxscaling),idscal(maxscaling1)
       real(t_p) fpscal(maxscaling),fdscal(maxscaling1)
+      real(t_p) dscalevec(5),pscalevec(5)
       character*10 mode
 
       parameter(half=0.5_ti_p)
@@ -85,6 +85,9 @@ c
          nlst => nelst
          mode = 'EWALD'
       end if
+      dscalevec(:) = [d1scale,d2scale,d3scale,d4scale,0.0_ti_p]
+      pscalevec(:) = [0.0_ti_p,p2scale,p3scale,p4scale,p5scale]
+
 !$acc enter data attach(lst,nlst) async(def_queue)
       call switch (mode)
 c
@@ -98,10 +101,10 @@ c
       def_queue = dir_queue
 
 !$acc parallel loop gang vector_length(32)
-!$acc&         present(ef)
-!$acc&         present(poleglobnl,ipole,loc,pdamp,thole,x,y,z,
-!$acc&  rpole,nelst,elst,poleloc,i12,i13,i14,n12,n13,n14,n15)
-!$acc&         private(ksp,kd,idscal,fdscal,ipscal,fpscal,ip)
+!$acc&         copyin(dscalevec,pscalevec) present(ef)
+!$acc&         default(present)
+!$acc&         private(ksp,kd,idscal,fdscal,ipscal,fpscal,ip,nn4,nn15,
+!$acc&  nnp11)
 !$acc&         async(def_queue)
       MAINLOOP:
      &do ii = 1, npolelocnl
@@ -141,14 +144,13 @@ c
 c
 c       get number of atoms  directly (1-2) or 1-3 or 1-4 bonded
 c
-         nn12     = n12 (iglob)
-         nn13     = n13 (iglob) + nn12
-         nn14     = n14 (iglob) + nn13
-         ntot     = n15 (iglob) + nn14
-         nnp11    = np11(iglob)
-         nnp12    = np12(iglob) + nnp11
-         nnp13    = np13(iglob) + nnp12
-         nnp14    = np14(iglob) + nnp13
+         nn4   = 0
+         nn15  = 0
+         nnp11 = 0
+         ntot  = numscal_n(iglob)
+         nn12  = scalbeg_n(iglob)
+         nnp14 = numscal_p(iglob)
+         nnp12 = scalbeg_p(iglob)
          if (ntot.gt.maxscaling) 
      &      print*,'scaling array too short efldo_dir'
          if (nnp14.gt.maxscaling1) 
@@ -157,45 +159,30 @@ c
 c       fill scaling factor along kglob and interaction type
 c
 !$acc loop vector
-         do j=1,nn13
-            if      (j.le.nn12) then
-              ipscal(j) = i12 (j,iglob)
-              fpscal(j) = p2scale
-            else
-              ipscal(j) = i13 (j-nn12,iglob)
-              fpscal(j) = p3scale
+         do j = 1,ntot
+            ipscal(j) = allscal_n(nn12+j)
+            fpscal(j) = pscalevec(typscal_n(nn12+j))
+            if (int(typscal_n(nn12+j)).eq.4) then
+!$acc atomic
+               nn4 = nn4 +1
+            end if
+            if (int(typscal_n(nn12+j)).eq.5) then
+!$acc atomic
+               nn15 = nn15 +1
             end if
          end do
+
 !$acc loop vector
-         do j=nn13+1,ntot
-            if      (j.le.nn14) then
-              ipscal(j) = i14 (j-nn13,iglob)
-              fpscal(j) = p4scale
-            else
-              ipscal(j) = i15 (j-nn14,iglob)
-              fpscal(j) = p5scale
+         do j = 1,nnp14
+            idscal(j) = allscal_p(nnp12+j)
+            fdscal(j) = dscalevec(int(typscal_p(nnp12+j)))
+            if (int(typscal_p(nnp12+j)).eq.1) then
+!$acc atomic
+               nnp11 = nnp11 +1
             end if
          end do
-!$acc loop vector
-         do j = 1,nnp12
-            if      (j.le.nnp11) then
-              idscal(j) = ip11(j,iglob)
-              fdscal(j) = d1scale
-            else
-              idscal(j) = ip12(j-nnp11,iglob)
-              fdscal(j) = d2scale
-            end if
-         end do
-!$acc loop vector
-         do j = nnp12+1,nnp14
-            if      (j.le.nnp13) then
-              idscal(j) = ip13(j-nnp12,iglob)
-              fdscal(j) = d3scale
-            else
-              idscal(j) = ip14(j-nnp13,iglob)
-              fdscal(j) = d4scale
-            end if
-         end do
+         nn13 = ntot - nn4 - nn15
+         nn14 = ntot - nn15
 
 !$acc loop vector private(fip,fid,fkp,fkd,kp)
          do k =  1, nnelst
@@ -316,7 +303,7 @@ c
       use mpole   ,only: npolebloc,ipole,rpole,poleloc,npolelocnl
       use neigh   ,only: nelst,elst,shortelst,nshortelst
       use polar   ,only: pdamp,thole
-      use potent  , only : use_polarshortreal
+      use potent  , only : use_polarshortreal,use_chgpen
       !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
       use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
       use shunt   ,only: cut2
@@ -351,6 +338,15 @@ c
 
       parameter(one =1.0_ti_p)
 
+      if (use_chgpen) then
+#ifdef _OPENACC
+         __TINKER_FATAL__
+#else
+         call efld0_direct(nrhs,ef)
+         return
+#endif
+      end if
+         
       if (deb_Path)
      &   write(*,'(3x,a,L3)') 'efld0_directgpu2',use_polarshortreal
       call timer_enter( timer_efld0_direct )
@@ -438,29 +434,29 @@ c
      &                 aewald,damp,pgamma,1.0_ti_p,1.0_ti_p,
      &                 fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.false.)
 
-!$acc atomic update
+!$acc atomic
             ef(1,1,iploc) = ef(1,1,iploc) + fid%x
-!$acc atomic update
+!$acc atomic
             ef(2,1,iploc) = ef(2,1,iploc) + fid%y
-!$acc atomic update
+!$acc atomic
             ef(3,1,iploc) = ef(3,1,iploc) + fid%z
-!$acc atomic update
+!$acc atomic
             ef(1,2,iploc) = ef(1,2,iploc) + fip%x
-!$acc atomic update
+!$acc atomic
             ef(2,2,iploc) = ef(2,2,iploc) + fip%y
-!$acc atomic update
+!$acc atomic
             ef(3,2,iploc) = ef(3,2,iploc) + fip%z
-!$acc atomic update
+!$acc atomic
             ef(1,1,kbis)  = ef(1,1,kbis ) + fkd%x
-!$acc atomic update       
+!$acc atomic
             ef(2,1,kbis)  = ef(2,1,kbis ) + fkd%y
-!$acc atomic update       
+!$acc atomic
             ef(3,1,kbis)  = ef(3,1,kbis ) + fkd%z
-!$acc atomic update       
+!$acc atomic
             ef(1,2,kbis)  = ef(1,2,kbis ) + fkp%x
-!$acc atomic update       
+!$acc atomic
             ef(2,2,kbis)  = ef(2,2,kbis ) + fkp%y
-!$acc atomic update       
+!$acc atomic
             ef(3,2,kbis)  = ef(3,2,kbis ) + fkp%z
          end do NEIGHBORS LOOP
 
@@ -477,113 +473,168 @@ c
       use atmlst  ,only: poleglobnl
       use atoms   ,only: x,y,z,n
       use cell
+      use chgpen  ,only: pcore,pval,palpha
       use domdec  ,only: xbegproc,ybegproc,zbegproc
      &            ,nproc,rank,xendproc,yendproc,zendproc
      &            ,nbloc,loc
       use ewald   ,only: aewald
       use efld0_directgpu_inl
-      use inform  ,only: deb_Path
+      use efld0_cpencu
+      use inform  ,only: deb_Path,minmaxone
       use interfaces ,only: efld0_direct_correct_scaling
      &               , cu_efld0_direct
       use math    ,only: sqrtpi
+      use mplpot  ,only: pentyp_i
       use mpole   ,only: npolebloc,ipole,rpole,poleloc,npolelocnl
-     &            , npolelocnlb_pair,npolelocnlb,npolelocnlb2_pair
+     &            , npolelocnlb_pair,npolelocnlb
+     &            ,  npnlb2=>npolelocnlb2_pair
      &            , nspnlb2=>nshortpolelocnlb2_pair
       use neigh   , only : ipole_s=>celle_glob,pglob_s=>celle_pole
      &            , ploc_s=>celle_ploc, ieblst_s=>ieblst
      &            , iseblst_s=>ishorteblst, seblst_s=>shorteblst
      &            , eblst_s=>eblst, x_s=>celle_x, y_s=>celle_y
      &            , z_s=>celle_z
-      use polar   ,only: pdamp,thole,polarity
+      use polar   ,only: pdamp,thole,polarity,dirdamp
       use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
-      use potent  , only : use_polarshortreal
+      use potent  , only : use_polarshortreal,use_chgpen
       !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
       use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
+     &            ,use_thole,use_dirdamp
       use shunt   ,only: cut2
+      use utilcu     ,only: check_launch_kernel,BLOCK_DIM
       use utilcomm,only: no_commdir
-      use utilgpu ,only: dir_queue,rec_queue,def_queue
+      use utilgpu ,only: dir_queue,rec_queue,def_queue,get_GridDim
      &                  ,dir_stream,def_stream,stream_wait_async,
      &                   rec_stream,rec_event
+      use utils   ,only: associate_ptr
+      use timestat,only: timer_enter,timer_exit,timer_efld0_direct
+      use tinMemory    ,only: mipk
       use tmatxb_pmecu ,only: efld0_direct_scaling_cu
-      use utilcu     ,only: check_launch_kernel,BLOCK_DIM
-      use timestat   ,only: timer_enter,timer_exit,timer_efld0_direct
       implicit none
 
       integer  ,intent(in)   :: nrhs
       ! shape (ef) = (/3,nrhs,npolebloc/)
       real(t_p),intent(inout):: ef(:,:,:)
 
-      integer i,iglob,iploc,kk,start_lst,gS
+      integer i,iglob,iploc,kk,start_lst,gS,idirdamp
+      integer(mipk) n_
       real(t_p) alsq2, alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+      real(t_p),pointer:: gamma(:)
       character*11 mode
+      character*64 rtami
 c
-      if (deb_Path)
-     &   write(*,'(3x,a,L3)') 'efld0_directgpu3',use_polarshortreal
+      if (deb_Path) then
+         rtami = 'efld0_directgpu3'//merge(' THOLE','',use_thole)
+     &         //merge(' DIRDAMP','',use_dirdamp)
+     &         //merge(' CHGPEN','',use_chgpen.and..not.use_thole)
+     &         //merge(' SHORT','',use_polarshortreal)
+         write(*,'(3x,a)') rtami
+      end if
       call timer_enter( timer_efld0_direct )
 
-      if (use_polarshortreal) then
-         mode = 'SHORTEWALD'
-      else
-         mode = 'EWALD'
-      end if
+      mode      = merge('SHORTEWALD','EWALD',use_polarshortreal)
       call switch (mode)
 
-      p_xbeg = xbegproc(rank+1)
-      p_xend = xendproc(rank+1)
-      p_ybeg = ybegproc(rank+1)
-      p_yend = yendproc(rank+1)
-      p_zbeg = zbegproc(rank+1)
-      p_zend = zendproc(rank+1)
+      p_xbeg    = xbegproc(rank+1)
+      p_xend    = xendproc(rank+1)
+      p_ybeg    = ybegproc(rank+1)
+      p_yend    = yendproc(rank+1)
+      p_zbeg    = zbegproc(rank+1)
+      p_zend    = zendproc(rank+1)
       start_lst = 2*npolelocnlb_pair + 1
 
-      alsq2  = 2.0_ti_p * aewald**2
-      alsq2n = 0.0_ti_p
-      if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
+      alsq2     = 2.0_ti_p * aewald**2
+      alsq2n    = merge(1.0_re_p/real(sqrtpi*aewald,r_p),zerom
+     &                 ,aewald.gt.zeror)
       def_queue = dir_queue
       def_stream= dir_stream
 
-      if (use_polarshortreal) then
+      thole_cpen: if (use_thole) then
+         n_ = size(dirdamp)
+         if (use_dirdamp) then
+            idirdamp = 1
+            call associate_ptr(gamma,dirdamp,n_)
+         else
+            idirdamp = 0
+            call associate_ptr(gamma,thole,n_)
+         end if
+
+      range0: if (use_polarshortreal) then
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
-!$acc&    ,x_s,y_s,z_s,pdamp,rpole,thole,polarity,ef)
+!$acc&    ,x_s,y_s,z_s,pdamp,rpole,gamma,polarity,ef)
 
       call cu_efld0_direct    !Find his interface inside MOD_inteface
      &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(start_lst)
-     &     ,x_s,y_s,z_s,pdamp,thole,polarity,rpole,ef
-     &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc
+     &     ,x_s,y_s,z_s,pdamp,gamma,polarity,rpole,ef
+     &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc,idirdamp
      &     ,.not.no_commdir
      &     ,cut2,alsq2,alsq2n,aewald
-     &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
+     &     ,xcell,ycell,zcell,xcell2,ycell2,zcell2
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
 
 !$acc end host_data
       else
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
-!$acc&    ,x_s,y_s,z_s,pdamp,rpole,thole,polarity,ef)
+!$acc&    ,x_s,y_s,z_s,pdamp,rpole,gamma,polarity,ef)
 
       call cu_efld0_direct    !Find his interface inside MOD_inteface
      &     (ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(start_lst)
-     &     ,x_s,y_s,z_s,pdamp,thole,polarity,rpole,ef
-     &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n,nproc
+     &     ,x_s,y_s,z_s,pdamp,gamma,polarity,rpole,ef
+     &     ,npolelocnlb,npnlb2,npolebloc,n,nproc,idirdamp
      &     ,.not.no_commdir
      &     ,cut2,alsq2,alsq2n,aewald
      &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
 
 !$acc end host_data
-      end if
+      end if range0
       
       if (n_dpscale.gt.0) then
-         gS = n_dpscale/(BLOCK_DIM)
+         gS = get_GridDim(n_dpscale,BLOCK_DIM,1)
 !$acc host_data use_device(dpcorrect_ik,dpcorrect_scale,poleloc,ipole
-!$acc&         ,pdamp,thole,rpole,x,y,z,ef)
+!$acc&         ,pdamp,gamma,rpole,x,y,z,ef)
          call efld0_direct_scaling_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &        (dpcorrect_ik,dpcorrect_scale,poleloc,ipole,pdamp,thole
-     &        ,x,y,z,rpole,ef,n_dpscale,n,npolebloc
+     &        (dpcorrect_ik,dpcorrect_scale,poleloc,ipole,pdamp,gamma
+     &        ,x,y,z,rpole,ef,n_dpscale,n,npolebloc,use_dirdamp
      &        ,cut2,aewald,alsq2,alsq2n)
 !$acc end host_data
          call check_launch_kernel( 'efld0_direct_scaling_cu' )
       end if
+
+      else if (use_chgpen) then
+
+      range1: if (use_polarshortreal) then
+         gS = get_GridDim(nspnlb2,BLOCK_DIM)
+!$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
+!$acc&    ,x_s,y_s,z_s,pcore,pval,palpha,rpole,ef
+!$acc&    ,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z)
+         call efld0_cpen_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &       (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(start_lst)
+     &       ,x_s,y_s,z_s,pcore,pval,palpha,rpole,npolelocnl
+     &       ,npolelocnlb,nspnlb2,npolebloc,n,pentyp_i,cut2,aewald
+     &       ,ef
+     &       ,xcell,ycell,zcell,xcell2,ycell2,zcell2
+     &       ,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z,n_dpscale
+     &       )
+!$acc end host_data
+      else
+         gS = get_GridDim(npnlb2,BLOCK_DIM)
+!$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
+!$acc&    ,x_s,y_s,z_s,pcore,pval,palpha,rpole,ef
+!$acc&    ,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z)
+         call efld0_cpen_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &       (ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(start_lst)
+     &       ,x_s,y_s,z_s,pcore,pval,palpha,rpole,npolelocnl
+     &       ,npolelocnlb,npnlb2,npolebloc,n,pentyp_i,cut2,aewald
+     &       ,ef
+     &       ,xcell,ycell,zcell,xcell2,ycell2,zcell2
+     &       ,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z,n_dpscale
+     &       )
+!$acc end host_data
+      end if range1
+
+      end if thole_cpen
 
       call timer_exit( timer_efld0_direct )
 #else
@@ -595,11 +646,11 @@ c
 #endif
       end subroutine
 
-c====================================================================
+c""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 c---------------------------
 c     Otf routines for efld0
 c---------------------------
-c====================================================================
+c""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
       subroutine otf_dc_efld0_directgpu2(nrhs,ef)
       use atmlst  ,only: poleglobnl
@@ -982,6 +1033,7 @@ c
      &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
 
+
 !$acc end host_data
       end if
 #else
@@ -998,11 +1050,11 @@ c
       end subroutine
 
 
-c======================================================================
+c""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 c     --------------------------
 c     Correcting scaling interactions routines
 c     --------------------------
-c======================================================================
+c""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
       subroutine efld0_direct_correct_scaling(ef)
       use atmlst   ,only: poleglobnl
@@ -1109,31 +1161,31 @@ c
      &              fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.true.)
 
          if (dscale.ne.0.0_ti_p) then
-!$acc atomic update
+!$acc atomic
             ef(1,1,iploc) = ef(1,1,iploc) + fid%x
-!$acc atomic update
+!$acc atomic
             ef(2,1,iploc) = ef(2,1,iploc) + fid%y
-!$acc atomic update
+!$acc atomic
             ef(3,1,iploc) = ef(3,1,iploc) + fid%z
-!$acc atomic update
+!$acc atomic
             ef(1,1,kbis)  = ef(1,1,kbis ) + fkd%x
-!$acc atomic update       
+!$acc atomic
             ef(2,1,kbis)  = ef(2,1,kbis ) + fkd%y
-!$acc atomic update       
+!$acc atomic
             ef(3,1,kbis)  = ef(3,1,kbis ) + fkd%z
          end if
          if (pscale.ne.0.0_ti_p) then
-!$acc atomic update
+!$acc atomic
             ef(1,2,iploc) = ef(1,2,iploc) + fip%x
-!$acc atomic update
+!$acc atomic
             ef(2,2,iploc) = ef(2,2,iploc) + fip%y
-!$acc atomic update
+!$acc atomic
             ef(3,2,iploc) = ef(3,2,iploc) + fip%z
-!$acc atomic update       
+!$acc atomic
             ef(1,2,kbis)  = ef(1,2,kbis ) + fkp%x
-!$acc atomic update       
+!$acc atomic
             ef(2,2,kbis)  = ef(2,2,kbis ) + fkp%y
-!$acc atomic update       
+!$acc atomic
             ef(3,2,kbis)  = ef(3,2,kbis ) + fkp%z
          end if
          end do

@@ -14,7 +14,7 @@ c     "prtdyn" writes out the information needed to restart a
 c     molecular dynamics trajectory to an external disk file
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine prtdyn
       use atomsMirror
       use boxes

@@ -15,7 +15,7 @@ c     atomic multipole and dipole polarizability interactions,
 c     and partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine empole3vec
       implicit none
 c

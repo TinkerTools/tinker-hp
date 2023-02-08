@@ -14,7 +14,7 @@ c     "kangle" assigns the force constants and ideal angles for
 c     the bond angles; also processes new or changed parameters
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kangle
       use angle
       use angpot

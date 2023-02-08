@@ -14,7 +14,7 @@ c     "epolar1" calculates the induced dipole polarization energy
 c     and derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine epolar1vec
       implicit none
 c

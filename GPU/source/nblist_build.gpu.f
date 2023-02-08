@@ -65,24 +65,30 @@ c
       use atoms   ,only: n,x,y,z
       use domdec
       use neigh
+      use nblist_b_inl
       use utilgpu
       use vdw
       implicit none
       integer i,iglob
+      real(t_p) xr,yr,zr
 
 !$acc parallel loop async(def_queue) default(present)
       do i = 1, nab
          if (i.le.na) then
-            iglob      = sgl_id(i)
-            slc_id(i)  = loc(iglob)
-            so_x(i)    = x(iglob)
-            so_y(i)    = y(iglob)
-            so_z(i)    = z(iglob)
+            iglob     = sgl_id(i)
+            slc_id(i) = loc(iglob)
+            xr        = x(iglob)
+            yr        = y(iglob)
+            zr        = z(iglob)
+            call image_inl(xr,yr,zr)
+            so_x(i)   = xr
+            so_y(i)   = yr
+            so_z(i)   = zr
          else
-            slc_id(i)  = nbloc
-            so_x(i)    = inf
-            so_y(i)    = inf
-            so_z(i)    = inf
+            slc_id(i) = nbloc
+            so_x(i)   = inf
+            so_y(i)   = inf
+            so_z(i)   = inf
          end if
       end do
       end subroutine
@@ -176,8 +182,8 @@ c     integer j,ibl,iblv(32)
       l%nbap_1 = 0
       nb2p_0   = 0
       ! Get data from struct via associate_ptr
-      call associate_ptr(l%a_kind,atomk,int(l%na,mipk))
-      call associate_ptr(l%ag_id,atomgid,int(n,mipk))
+      call associate_ptr(atomk,l%a_kind,int(l%na,mipk))
+      call associate_ptr(atomgid,l%ag_id,int(n,mipk))
 
       ! Add margin to serve as out-of-bound exclusion interactions for C2 nblist
       szMatb    = ((nb-1)/bit_si) + 1
@@ -185,7 +191,9 @@ c     integer j,ibl,iblv(32)
       niterMatb = (nb-1)/nbMatb + 1
 
       n_nbl     = merge(2,1,l%use2lists)
+#ifdef _OPENACC
       siztr     = n_nbl*(sztb+1)*nb+32
+#endif
 
       ! Allocate buffers
       call prmem_request(l%so_x,   nab,async=.false.)
@@ -364,7 +372,7 @@ c
 !$acc wait
          call get_vdw_nblst_sizes
          print '(A,6I12)','C1 vs C2 vdw nblist pairs blocks number '
-     &         , nb2p_0 , trackb(1:4)
+     &         , nb2p_0  ,trackb(1:4)
       end if
 c!$acc update host(b2pl,bapl,abpl)
 c      do i = 0,trackb(3)-1

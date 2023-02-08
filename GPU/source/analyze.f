@@ -13,7 +13,12 @@ c
 c     "analyze" computes and displays the total potential energy;
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
+      module analyze_inl
+      contains
+#include "convert.f.inc"
+      end module
+
       program analyze
       use mpi
       implicit none
@@ -117,11 +122,11 @@ c
 c     perform analysis for each successive coordinate structure
 c
       do while (.not. abort)
-           frame = frame + 1
-           if (frame .gt. 1) then
-              if (rank.eq.0) write (iout,90)  frame
-   90         format (/,' Analysis for Archive Structure :',8x,i8)
-           end if
+         frame = frame + 1
+         if (frame .gt. 1) then
+            if (rank.eq.0) write (iout,90)  frame
+   90       format (/,' Analysis for Archive Structure :',8x,i8)
+         end if
 c
 c       setup for MPI
 c
@@ -166,9 +171,9 @@ c
 c     perform any final tasks before program exit
 c
       if (dcdio) then
-        call dcdfile_close
+         call dcdfile_close
       else
-        close (unit=ixyz)
+         close (unit=ixyz)
       end if
       call final
       end
@@ -238,13 +243,16 @@ c
 c
       subroutine partyze
       use action
+      use analyze_inl
       use energi
       use inform
       use iounit
+      use ani, only: MLpot
       implicit none
       character*12 form1
       character*12 form2
       character*240 fstr
+      real(r_p) ect_,edsp_,er_
 c
 c
 c     write out each energy component to the desired precision
@@ -320,6 +328,20 @@ c
          end if
          write (iout,fstr)  ev,nev
       end if
+      if (ner.ne.0.or.er.ne.0) then
+         er_ = enr2en(er)
+         if (abs(er_) .lt. 1.0d10) then
+            fstr = '('' Repulsion'',18x,'//form1//')'
+         else
+            fstr = '('' Repulsion'',18x,'//form2//')'
+         end if
+         write (iout,fstr)  er_,ner
+      end if
+      if (nedsp.ne.0.or.edsp.ne.0) then
+         edsp_ = enr2en(edsp)
+         fstr = '('' Dispersion'',17x,'//form1//')'
+         write (iout,fstr)  edsp_,nedsp
+      end if
       if (nec.ne.0) then
          if (abs(ec) .lt. 1.0d10) then
             fstr = '('' Charge-Charge'',14x,'//form1//')'
@@ -327,6 +349,15 @@ c
             fstr = '('' Charge-Charge'',14x,'//form2//')'
          end if
          write (iout,fstr)  ec,nec
+      end if
+      if (nect.ne.0.or.ect.ne.0) then
+         ect_ = enr2en(ect)
+         if (abs(ect_) .lt. 1.0d10) then
+            fstr = '('' Charge Transfer'',12x,'//form1//')'
+         else
+            fstr = '('' Charge Transfer'',12x,'//form2//')'
+         end if
+         write (iout,fstr)  ect_,nect
       end if
       if (nem.ne.0) then
          if (abs(em) .lt. 1.0d10) then
@@ -351,6 +382,10 @@ c
       if (nex.ne.0) then
          fstr = '('' Extra Energy Terms'',9x,'//form1//')'
          write (iout,fstr)  ex,nex
+      end if
+      if (nemlpot.ne.0) then
+         fstr = '('' ML Potential ('//trim(MLpot)//')'',7x,'//form1//')'
+         write (iout,fstr)  emlpot,nemlpot
       end if
       return
       end

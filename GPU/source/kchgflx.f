@@ -11,7 +11,7 @@ c     correction values and processes any new or changed values
 c     for these parameters
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kchgflx
       use sizes
       use angle
@@ -259,7 +259,7 @@ c
       subroutine upload_dev_shd_chgflx
       use cflux
       implicit none
-!$acc update host(aflx,bflx,abflx) async
+!$acc update device(aflx,bflx,abflx) async
       end subroutine
 c
 c     subroutine dealloc_shared_chgflx :

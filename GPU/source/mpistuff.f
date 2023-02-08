@@ -3,7 +3,7 @@ c     Sorbonne University
 c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module mpistuff_inl
         ! ReassignRespa Exchange space
         type t_elt
@@ -25,7 +25,7 @@ c
       use domdec
       use inform   ,only: deb_Path
       use mpi
-      use potent   ,only: use_pmecore
+      use potent   ,only: use_pmecore,use_ani_only
       use pme      ,only: GridDecomp1d
       use timestat ,only: timer_enter,timer_exit,timer_commstep
      &             ,quiet_timers
@@ -40,7 +40,7 @@ c
       integer status(MPI_STATUS_SIZE)
       real(r_p),pointer :: buffer(:,:),buffers(:,:)
 c
-      if (nproc.eq.1) return
+      if (nproc.eq.1.or.use_ani_only) return
       if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) return
 
       call timer_enter( timer_commstep )
@@ -68,10 +68,7 @@ c
 c
 c     MPI : begin reception in buffer
 c
-!$acc data present(x,y,z,glob,globrec)
-!$acc data present(buffer,buffers)
-
-!$acc host_data use_device(buffer,buffers)
+!$acc host_data use_device(glob,buffer,buffers,x,y,z)
       do i = 1, nrecdir_recep2
         if (precdir_recep2(i).ne.rank) then
           tag = nproc*rank + precdir_recep2(i) + 1
@@ -83,7 +80,7 @@ c
 c
 c     MPI : move in buffer
 c
-!$acc parallel loop async
+!$acc parallel loop async deviceptr(glob,x,y,z,buffers)
       do i = 1, nloc
          iglob        = glob(i)
          buffers(1,i) = x(iglob)
@@ -101,7 +98,12 @@ c
      &         tag,COMM_TINKER,reqsend(i),ierr)
         end if
       end do
-!$acc end host_data
+
+      do i = 1, nrecdir_recep2
+         if (precdir_recep2(i).ne.rank) then
+            call MPI_Wait(reqrec(i),status,ierr)
+         end if
+      end do
 c
 c     MPI : move in global arrays
 c
@@ -110,7 +112,8 @@ c
            call MPI_WAIT(reqrec(iproc),status,ierr)
            ibufbeg = bufbeg(precdir_recep2(iproc)+1)
            idomlen = domlen(precdir_recep2(iproc)+1)
-!$acc parallel loop async
+!$acc parallel loop async 
+!$acc&         deviceptr(glob,x,y,z,buffer)
            do i = 1, idomlen
              iloc     = ibufbeg+i-1
              iglob    = glob(iloc)
@@ -120,6 +123,7 @@ c
            end do
          end if
       end do
+!$acc end host_data
 c
       do i = 1, nrecdir_send2
          if (precdir_send2(i).ne.rank) then
@@ -127,30 +131,27 @@ c
          end if
       end do
 c
-!$acc end data
-!$acc wait
       nullify(buffer)
       nullify(buffers)
+!$acc wait
 c
 c     then do rec rec communications
 c
       buffer (1:3,1:nlocrec2) =>buffMpi_p1(1:3*nlocrec2)
       buffers(1:3,1:nlocrec)  =>buffMpi_p2(1:3*nlocrec)
-!$acc data present(buffer,buffers)
 c
 c     MPI : begin reception in buffer
 c
-!$acc host_data use_device(buffer,buffers)
+!$acc host_data use_device(globrec,buffer,buffers,x,y,z)
       do i = 1, nrec_recep
         tag = nprocloc*rankloc + prec_recep(i) + 1
         call MPI_IRECV(buffer(1,bufbegrec(prec_recep(i)+1))
      $      ,3*domlenrec(prec_recep(i)+1),MPI_RPREC
      $      ,prec_recep(i),tag,commloc,reqrec(i),ierr)
       end do
-c
+
 c     MPI : move in buffer
-c
-!$acc parallel loop
+!$acc parallel loop deviceptr(globrec,buffers,x,y,z)
       do i = 1, nlocrec
         iglob        = globrec(i)
         buffers(1,i) = x(iglob)
@@ -165,15 +166,18 @@ c
          call MPI_ISEND(buffers,3*nlocrec,MPI_RPREC,prec_send(i)
      $       ,tag,commloc,reqsend(i),ierr)
       end do
-!$acc end host_data
-c
-c     MPI : move in global arrays
-c
+
+      ! Wait for receiving requests
+      do i = 1, nrec_recep
+        call MPI_WAIT(reqrec(i),status,ierr)
+      end do
+
+c     !MPI : move in global arrays
       do iproc = 1, nrec_recep
          call MPI_WAIT(reqrec(iproc),status,ierr)
          ibufbeg = bufbegrec(prec_recep(iproc)+1)-1
          idomlen = domlenrec(prec_recep(iproc)+1)
-!$acc parallel loop async
+!$acc parallel loop async deviceptr(globrec,buffer,x,y,z)
          do i = 1, idomlen
             iloc     = ibufbeg+i
             iglob    = globrec(iloc)
@@ -182,6 +186,7 @@ c
             z(iglob) = buffer(3,iloc)
          end do
       end do
+!$acc end host_data
       call reCast_position
 
       ! Wait for sending requests
@@ -189,8 +194,6 @@ c
         call MPI_WAIT(reqsend(i),status,ierr)
       end do
 
-!$acc end data
-!$acc end data
       nullify(buffer)
       nullify(buffers)
 
@@ -235,6 +238,7 @@ c
 c
 c     MPI : begin reception in buffer
 c
+!$acc wait
 !$acc host_data use_device(buffer)
       do i = 1, nbig_recep
         tag = nproc*rank + pbig_recep(i) + 1
@@ -246,7 +250,7 @@ c
 c
 c     MPI : move in buffer
 c
-!$acc parallel loop async default(present)
+!$acc parallel loop default(present)
       do i = 1, nloc
         iglob = glob(i)
         buffers(1,i) = x(iglob)
@@ -256,7 +260,6 @@ c
 c
 c     MPI : begin sending
 c
-!$acc wait
 !$acc host_data use_device(buffers)
       do i = 1, nbig_send
         tag = nproc*pbig_send(i) + rank + 1
@@ -266,12 +269,7 @@ c
       end do
 !$acc end host_data
 c
-      do i = 1, nbig_recep
-        call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, nbig_send
-        call MPI_WAIT(reqsend(i),status,ierr)
-      end do
+      do i = 1,nbig_recep; call MPI_WAIT(reqrec(i),status,ierr); end do
 c
 c     MPI : move in global arrays
 c
@@ -289,6 +287,8 @@ c
       end do
       call reCast_position
 c
+      do i = 1,nbig_send; call MPI_WAIT(reqsend(i),status,ierr); end do
+
       nullify(buffer)
       nullify(buffers)
       deallocate (reqsend)
@@ -477,7 +477,7 @@ c
         xr    = x(iglob)
         yr    = y(iglob)
         zr    = z(iglob)
-        if (use_bounds) call image(xr,yr,zr)
+        call image(xr,yr,zr)
         if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
         if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
         if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
@@ -724,17 +724,62 @@ c     Assign all atoms to their real space domain
 c
       subroutine AllDirAssign
       use atoms
+      use boxes
       use cell
       use domdec
       use inform
       use potent
+      use tinheader,only: prec_eps
       use timestat ,only: timer_eneig,quiet_timers,timer_enter
      &             ,timer_exit
       implicit none
-      integer i,iproc
+      integer i,j,k,iproc
       integer nprocloc,rankloc
       real(t_p) xr,yr,zr
+      real(t_p) eps1,eps2
+      real(r_p),dimension(nproc) :: xbegproctemp,ybegproctemp
+     &         , zbegproctemp,xendproctemp,yendproctemp,zendproctemp
 !$acc routine(image_acc)
+
+      xbegproctemp = 0; xendproctemp=0
+      ybegproctemp = 0; yendproctemp=0
+      zbegproctemp = 0; zendproctemp=0
+
+      nx_box = xbox/nxdd
+      ny_box = ybox/nydd
+      nz_box = zbox/nzdd
+      eps1   =  5*xcell2*prec_eps
+      eps2   = 0.05*min(nx_box,ny_box)
+      do i = 0, nxdd-1
+        xbegproctemp(i+1) = -xbox2 + i*nx_box
+        xendproctemp(i+1) = -xbox2 + (i+1)*nx_box
+      end do
+      do i = 0, nydd-1
+        ybegproctemp(i+1) = -ybox2 + i*ny_box
+        yendproctemp(i+1) = -ybox2 + (i+1)*ny_box
+      end do
+      do i = 0, nzdd-1
+        zbegproctemp(i+1) = -zbox2 + i*nz_box
+        zendproctemp(i+1) = -zbox2 + (i+1)*nz_box
+      end do
+c
+c     assign processes
+c
+      do k = 1, nzdd
+        do j = 1, nydd
+          do i = 1, nxdd
+              iproc = (k-1)*nydd*nxdd+(j-1)*nxdd+i
+              xbegproc(iproc) = xbegproctemp(i)
+              xendproc(iproc) = xendproctemp(i)
+              ybegproc(iproc) = ybegproctemp(j)
+              yendproc(iproc) = yendproctemp(j)
+              zbegproc(iproc) = zbegproctemp(k)
+              zendproc(iproc) = zendproctemp(k)
+          end do
+        end do
+      end do
+!$acc update device(xbegproc,xendproc,
+!$acc& ybegproc,yendproc,zbegproc,zendproc) async
 
       if (nproc.eq.1.or.use_pmecore.and.ndir.eq.1) return
       if (deb_Path) print*, 'AllDirAssign'
@@ -951,9 +996,10 @@ c
         izbeg = zbegproc(rank+1)
         izend = zendproc(rank+1)
 
-!$acc kernels async
-        n_data_send(:) = 0
-!$acc end kernels
+!$acc parallel loop async
+        do i = 0,nneig_send
+           n_data_send(i) = 0
+        end do
 
         ! Get process domain of each atoms
 !$acc   parallel loop async
@@ -962,7 +1008,7 @@ c
           xr = x(iglob)
           yr = y(iglob)
           zr = z(iglob)
-          if (use_bounds) call image_inl(xr,yr,zr)
+          call image_inl(xr,yr,zr)
           ! Check box limits (SP Issue)
           xtemp = xr
           if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
@@ -1324,9 +1370,8 @@ c
 !$acc data async
 !$acc& create(buflen3,bufbeg3,buf3bis)
 
-!$acc kernels async
-      buflen3(1:nproc) = 0
-!$acc end kernels
+!$acc parallel loop async
+      do i=1,nproc; buflen3(i) = 0; end do
 c
 c     get particules that changed of domain
 c
@@ -1336,7 +1381,7 @@ c
         xr = x(iglob)
         yr = y(iglob)
         zr = z(iglob)
-        if (use_bounds) call image_acc(xr,yr,zr)
+        call image_acc(xr,yr,zr)
         if (abs(xr-xcell2).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
         if (abs(yr-ycell2).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
         if (abs(zr-zcell2).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
@@ -1371,9 +1416,8 @@ c
       allocate (buf3(bufbeg3(nproc)+buflen3(nproc)))
 !$acc data create(buf3) async
 
-!$acc kernels async
-      buf3(:) = 0
-!$acc end kernels
+!$acc parallel loop async
+      do i=1,size(buf3); buf3(i) = 0; end do
 
 !$acc parallel loop default(present) async
       do iproc = 1, nproc
@@ -1392,10 +1436,11 @@ c
 
 !$acc data create(buflen4,bufbeg4) async
 
-!$acc kernels async
-      buflen4(:) = 0
-      bufbeg4(:) = 0
-!$acc end kernels
+!$acc parallel loop async
+      do i=1,nprocloc
+         buflen4(i) = 0
+         bufbeg4(i) = 0
+      end do
 
 !$acc wait
 !$acc host_data use_device(buflen4)
@@ -2172,12 +2217,10 @@ c
 c     subroutine commforces : communicate forces between processes
 c
       subroutine commforces(derivs)
-      use domdec,only:nbloc,nproc
+      use domdec,only: nbloc,nproc
       use timestat
-      use mpi
       implicit none
       real(r_p) derivs(3,nbloc)
-      real*8 time0,time1,time2
 c
       call timer_enter( timer_fcomm )
       call commforcesrec(derivs)
@@ -2250,15 +2293,20 @@ c
       use energi
       use inter
       use inform ,only: deb_Energy
+      use mpistuff_inl
       use potent
       use virial
       use mpi
+      use utilgpu
       use timestat
+      use tinheader
       implicit none
       integer ierr,commloc
+      integer(8) nill,nine
       real(r_p) epot
-      real(r_p) buffer1(6),buffer2(17)
+      real(r_p) buffer1(10),buffer2(20)
       real(r_p) vir_copy(3,3)
+      parameter(nill=0,nine=9)
 c
       if (ndir.eq.1) return
 
@@ -2271,26 +2319,29 @@ c
 !$acc data create(buffer1,buffer2,vir_copy)
 !$acc&     present_or_copy(epot)
 !$acc&     present(eb,eba,eub,eopb,et,ept,ett,ebt,ea
-!$acc&           ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex
-!$acc&           ,esum)
+!$acc&           ,eaa,eopd,eid,eit,ec,ev,er,edsp,em,ep,ect,eg,ex
+!$acc&           ,esum,vir)
 c
-!$acc serial async
+!$acc wait(rec_queue)
+!$acc serial
       buffer1(1) = ec
       buffer1(2) = em
       buffer1(3) = ep
       buffer1(4) = epot
       buffer1(5) = esum
       buffer1(6) = ev
+      buffer1(7) = enr2en(edsp)
+      buffer1(8) = enr2en(er )
+      buffer1(9) = enr2en(ect)
 !$acc end serial
 c
 !$acc host_data use_device(buffer1)
-!$acc wait
       if (rank.eq.0) then
-        call MPI_REDUCE(MPI_IN_PLACE,buffer1,6,MPI_RPREC,MPI_SUM,0,
-     $       COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,buffer1,9,MPI_RPREC
+     $                 ,MPI_SUM,0,COMM_TINKER,ierr)
       else
-        call MPI_REDUCE(buffer1,buffer1,6,MPI_RPREC,MPI_SUM,0,
-     $       COMM_TINKER,ierr)
+        call MPI_REDUCE(buffer1,buffer1,9,MPI_RPREC
+     $                 ,MPI_SUM,0,COMM_TINKER,ierr)
       end if
 !$acc end host_data
 c
@@ -2301,30 +2352,28 @@ c
       epot   = buffer1(4)
       esum   = buffer1(5)
       ev     = buffer1(6)
+      edsp   = rp2enr(buffer1(7))
+      er     = rp2enr(buffer1(8))
+      ect    = rp2enr(buffer1(9))
 !$acc end serial
 c
 c   MPI: get virial
 c
       if (use_virial) then
-!$acc kernels async
-      vir_copy(:,:) = vir(:,:)
-!$acc end kernels
+      call mem_move(vir_copy,vir,nine,nill)
 c
 !$acc host_data use_device(vir_copy)
-!$acc wait
-      call MPI_ALLREDUCE(MPI_IN_PLACE,vir_copy,9,MPI_RPREC,MPI_SUM,
-     $                   COMM_TINKER,ierr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,vir_copy(1,1),9,MPI_RPREC
+     $                  ,MPI_SUM,COMM_TINKER,ierr)
 !$acc end host_data
 c
-!$acc kernels async
-      vir(:,:) = vir_copy(:,:)
-!$acc end kernels
+      call mem_move(vir,vir_copy,nine,nill)
       end if
 c
       if ((use_pmecore).and.(rank.gt.(ndir-1))) goto 10
       if (.not.deb_Energy) goto 10
 c
-!$acc serial async
+!$acc serial
       buffer2(1)  = eba
       buffer2(2)  = ea
       buffer2(3)  = eb
@@ -2345,34 +2394,33 @@ c
 !$acc end serial
 c
 !$acc host_data use_device(buffer2)
-!$acc wait
       if (rank.eq.0) then
-        call MPI_REDUCE(MPI_IN_PLACE,buffer2,17,MPI_RPREC,MPI_SUM,0,
-     $       commloc,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,buffer2,20,MPI_RPREC
+     $                 ,MPI_SUM,0,commloc,ierr)
       else
-        call MPI_REDUCE(buffer2,buffer2,17,MPI_RPREC,MPI_SUM,0,
-     $       commloc,ierr)
+        call MPI_REDUCE(buffer2,buffer2,20,MPI_RPREC
+     $                 ,MPI_SUM,0,commloc,ierr)
       end if
 !$acc end host_data
 c
-!$acc serial async
-      eba  = buffer2(1)
-      ea   = buffer2(2)
-      eb   = buffer2(3)
+!$acc serial
+      eba   = buffer2(1)
+      ea    = buffer2(2)
+      eb    = buffer2(3)
       einter= buffer2(4)
-      eub  = buffer2(5)
-      eaa  = buffer2(6)
-      eopb = buffer2(7)
-      eopd = buffer2(8)
-      eid  = buffer2(9)
-      eit  = buffer2(10)
-      et   = buffer2(11)
-      ept  = buffer2(12)
-      ebt  = buffer2(13)
-      ett  = buffer2(14)
-      eg   = buffer2(15)
-      ex   = buffer2(16)
-      eat  = buffer2(17)
+      eub   = buffer2(5)
+      eaa   = buffer2(6)
+      eopb  = buffer2(7)
+      eopd  = buffer2(8)
+      eid   = buffer2(9)
+      eit   = buffer2(10)
+      et    = buffer2(11)
+      ept   = buffer2(12)
+      ebt   = buffer2(13)
+      ett   = buffer2(14)
+      eg    = buffer2(15)
+      ex    = buffer2(16)
+      eat   = buffer2(17)
 !$acc end serial
 
   10  continue
@@ -2704,7 +2752,7 @@ c
       use mpi
       use potent ,pa=>PotentialAll
       use pme    ,only: GridDecomp1d
-      use inform ,only: deb_Path
+      use inform ,only: deb_Path,deb_Force,minmaxone
       use sizes
       use timestat ,only: timer_enter,timer_exit,quiet_timers
      &             ,timer_dirreccomm,timer_fmanage
@@ -2735,16 +2783,22 @@ c
          goto 100
       end if
 
-      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
-         call timer_enter( timer_dirreccomm )
-         if (ftot_l) then
-            call add_forces_rec_1d( de_tot )
-         else
-            call add_forces_rec1_1d( derivs )
-         end if
-         call timer_exit( timer_dirreccomm,quiet_timers )
-         return
-      end if
+c     if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
+c        !allocate temporary buffer
+c        sz3 = 3*max(1,nlocrec2)
+c        call prmem_requestm(buffMpi_p3,max(size(buffMpi_p3),sz3))
+c FIXME  temprec(1:3,1:max(1,nlocrec2))           => buffMpi_p3(1:sz3)
+c FIXME  call sum_forces_rec1( temprec )
+c        call comm_forces_rec( temprec )
+c        call timer_enter( timer_dirreccomm )
+c        if (ftot_l) then
+c           call add_forces_rec_1d1( de_tot,temprec )
+c FIXME  else
+c FIXME     call add_forces_rec1_1d1( derivs,temprec )
+c        end if
+c        call timer_exit( timer_dirreccomm,quiet_timers )
+c        return
+c     end if
 
       call timer_enter( timer_dirreccomm )
 
@@ -2777,13 +2831,14 @@ c
         if (use_mpole ) call commforcesrec1(dem,demrec)
         if (use_polar ) call commforcesrec1(dep,deprec)
         if (use_charge) call commforcesrec1(dec,decrec)
+        if (use_disp  ) call commforcesrec1(dedsp,dedsprec)
       end if
 
       block  ! Zero reciprocal forces buffer
       integer(mipk) lenr,offr
       real(r_p),parameter::zer=0
       lenr = dr_nbnbr*dr_strider3; offr=dr_obnbr
-      call mem_set(de_buffr,zer,lenr,rec_stream,offr)
+      if(.not.deb_Force) call mem_set(de_buffr,zer,lenr,rec_stream,offr)
       end block
 
       end
@@ -2797,7 +2852,7 @@ c
       use mpistuff_inl
       use potent ,pa=>PotentialAll
       use pme    ,only: GridDecomp1d
-      use inform ,only: deb_Path
+      use inform ,only: deb_Path,minmaxone
       use sizes
       use timestat ,only: timer_enter,timer_exit,quiet_timers
      &             ,timer_dirreccomm,timer_fmanage
@@ -2826,17 +2881,19 @@ c
          return
       end if
 c
-      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
-         call timer_enter( timer_dirreccomm )
-!$acc parallel loop collapse(2) default(present) async
-         do i = 1,nbloc; do j = 1,3
-            ilocrec = locrec(glob(i))
-            if (ilocrec.eq.0) cycle
-            derivs(j,i) = derivs(j,i) + rp2mdr(derivrec(j,ilocrec))
-         end do; end do
-         call timer_exit( timer_dirreccomm,quiet_timers )
-         return
-      end if
+c      FIXME 
+c      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
+c         call comm_forces_rec ( derivrec )
+c         call timer_enter( timer_dirreccomm )
+c!$acc parallel loop collapse(2) default(present) async
+c         do i = 1,nbloc; do j = 1,3
+c            ilocrec = locrec(glob(i))
+c            if (ilocrec.eq.0) cycle
+c            derivs(j,i) = derivs(j,i) + rp2mdr(derivrec(j,ilocrec))
+c         end do; end do
+c         call timer_exit( timer_dirreccomm,quiet_timers )
+c         return
+c      end if
 
       call comm_forces_rec ( derivrec )
       call comm_forces_recdir ( derivs,derivrec )
@@ -3026,7 +3083,13 @@ c
      &                                    reqrec,reqsend)
       call Icommforceststgrad(detot,dev  ,buffer,buffers,
      &                                    reqrec,reqsend)
+      call Icommforceststgrad(detot,der  ,buffer,buffers,
+     &                                    reqrec,reqsend)
+      call Icommforceststgrad(detot,dedsp,buffer,buffers,
+     &                                    reqrec,reqsend)
       call Icommforceststgrad(detot,dec  ,buffer,buffers,
+     &                                    reqrec,reqsend)
+      call Icommforceststgrad(detot,dect ,buffer,buffers,
      &                                    reqrec,reqsend)
       call Icommforceststgrad(detot,dem  ,buffer,buffers,
      &                                    reqrec,reqsend)
@@ -3828,11 +3891,11 @@ c
       use inform  ,only: deb_Path
       use mpole
       use mpi
-      use utilgpu ,only:rec_queue
-      use sizes   ,only:tinkerdebug
-      use utilcomm,only:reqsend=>reqs_dirdir,reqrec=>reqr_dirdir
+      use utilgpu ,only: rec_queue
+      use sizes   ,only: tinkerdebug
+      use utilcomm,only: reqsend=>reqs_dirdir,reqrec=>reqr_dirdir
      &            ,skpPcomm
-      use timestat,only:timer_enter,timer_exit,timer_polsolvcomm
+      use timestat,only: timer_enter,timer_exit,timer_polsolvcomm
      &            ,quiet_timers
       implicit none
       integer nrhs,rule,ierr,status(MPI_STATUS_SIZE),tag,tag0,i

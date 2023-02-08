@@ -16,11 +16,14 @@ c     on positions, distances, angles and torsions as well as
 c     Gaussian basin and spherical droplet restraints
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module egeom1gpu_inl
+#include "atomicOp.h.f"
         contains
 #include "image.f.inc"
 #include "midpointimage.f.inc"
+#include "groups.inc.f"
+#include "atomicOp.inc.f"
       end module
 
       subroutine egeom1gpu
@@ -55,7 +58,7 @@ c
       real(t_p) e,xr,yr,zr
       real(t_p) de,dt,dt2,deddt
       real(t_p) r,r2,r6,r12
-      real(r_p) dedx,dedy,dedz
+      real(t_p) dedx,dedy,dedz
       real(t_p) angle,target
       real(t_p) dot,force
       real(t_p) cosine,sine
@@ -82,10 +85,10 @@ c
       real(t_p) rcb,dedphi
       real(t_p) dedxt,dedyt,dedzt
       real(t_p) dedxu,dedyu,dedzu
-      real(r_p) dedxia,dedyia,dedzia
-      real(r_p) dedxib,dedyib,dedzib
-      real(r_p) dedxic,dedyic,dedzic
-      real(r_p) dedxid,dedyid,dedzid
+      real(t_p) dedxia,dedyia,dedzia
+      real(t_p) dedxib,dedyib,dedzib
+      real(t_p) dedxic,dedyic,dedzic
+      real(t_p) dedxid,dedyid,dedzid
       real(t_p) df1,df2
       real(t_p) af1,af2
       real(t_p) tf1,tf2,t1,t2
@@ -99,6 +102,8 @@ c
       real(t_p) a,b,buffer,term
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
+      real(t_p) fgrp
+      integer iga,igb,igc,igd,gmin,gmax
       logical proceed,intermol
 c
 c
@@ -122,9 +127,9 @@ c
       do inpfix = 1, npfixloc
          i  = npfixglob(inpfix)
          ia = ipfix(i)
-         ialoc   = loc(ia)
-         proceed = .true.
-         if (proceed) proceed = (use(ia))
+         ialoc   =  loc(ia)
+         proceed = (use(ia))
+         if (use_group)  call groups1_inl (fgrp,ia,ngrp,grplist,wgrp)
          if (proceed) then
             xr = 0.0_ti_p
             yr = 0.0_ti_p
@@ -141,6 +146,13 @@ c
             if (r .eq. 0.0_ti_p)  r = 1.0_ti_p
             de = 2.0_ti_p * force * dt / r
 c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+                e =  e * fgrp
+               de = de * fgrp
+            end if
+c
 c     compute chain rule terms needed for derivatives
 c
             dedx = de * xr
@@ -150,12 +162,10 @@ c
 c     increment the total energy and first derivatives
 c
             eg = eg + e
-!$acc atomic update
-            deg(1,ialoc) = deg(1,ialoc) + dedx
-!$acc atomic update
-            deg(2,ialoc) = deg(2,ialoc) + dedy
-!$acc atomic update
-            deg(3,ialoc) = deg(3,ialoc) + dedz
+c
+            call atomic_add( deg(1,ialoc),dedx )
+            call atomic_add( deg(2,ialoc),dedy )
+            call atomic_add( deg(3,ialoc),dedz )
 c
 c     increment the internal virial tensor components
 c
@@ -182,6 +192,7 @@ c
          ialoc = loc(ia)
          ibloc = loc(ib)
          proceed = (use(ia) .or. use(ib))
+         if (use_group)  call groups2_inl (fgrp,ia,ib,ngrp,grplist,wgrp)
          if (proceed) then
             xr = x(ia) - x(ib)
             yr = y(ia) - y(ib)
@@ -201,6 +212,14 @@ c            if (use_bounds)  call image (xr,yr,zr)
             e = force * dt2
             if (r .eq. 0.0_ti_p)  r = 1.0_ti_p
             de = 2.0_ti_p * force * dt / r
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+                e = e * fgrp
+               de = de * fgrp
+            end if
+
             if (save_US) then
                !print*,"save us in array"
                sl = (cpt_wh-1)*ndfix*4 + (i-1)*4
@@ -219,19 +238,13 @@ c
 c     increment the total energy and first derivatives
 c
             eg = eg + e
-!$acc atomic
-            deg(1,ialoc) = deg(1,ialoc) + dedx
-!$acc atomic
-            deg(2,ialoc) = deg(2,ialoc) + dedy
-!$acc atomic
-            deg(3,ialoc) = deg(3,ialoc) + dedz
+            call atomic_add( deg(1,ialoc),dedx )
+            call atomic_add( deg(2,ialoc),dedy )
+            call atomic_add( deg(3,ialoc),dedz )
 c
-!$acc atomic
-            deg(1,ibloc) = deg(1,ibloc) - dedx
-!$acc atomic
-            deg(2,ibloc) = deg(2,ibloc) - dedy
-!$acc atomic
-            deg(3,ibloc) = deg(3,ibloc) - dedz
+            call atomic_sub( deg(1,ibloc),dedx )
+            call atomic_sub( deg(2,ibloc),dedy )
+            call atomic_sub( deg(3,ibloc),dedz )
 c
 c     increment the internal virial tensor components
 c
@@ -265,8 +278,8 @@ c
          ibloc = loc(ib)
          ic = iafix(3,i)
          icloc = loc(ic)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if(use_group) call groups3_inl(fgrp,ia,ib,ic,ngrp,grplist,wgrp)
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -307,6 +320,13 @@ c
                e = force * dt2
                deddt = 2.0_ti_p * force * dt
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  deddt = deddt * fgrp
+               end if
+c
 c     compute derivative components for this interaction
 c
                terma = -deddt / (rab2*rp)
@@ -324,26 +344,17 @@ c
 c     increment the overall energy term and derivatives
 c
                eg = eg + e
-!$acc atomic update  
-               deg(1,ialoc) = deg(1,ialoc) + dedxia
-!$acc atomic update  
-               deg(2,ialoc) = deg(2,ialoc) + dedyia
-!$acc atomic update  
-               deg(3,ialoc) = deg(3,ialoc) + dedzia
+               call atomic_add( deg(1,ialoc),dedxia )
+               call atomic_add( deg(2,ialoc),dedyia )
+               call atomic_add( deg(3,ialoc),dedzia )
 c
-!$acc atomic update  
-               deg(1,ibloc) = deg(1,ibloc) + dedxib
-!$acc atomic update  
-               deg(2,ibloc) = deg(2,ibloc) + dedyib
-!$acc atomic update  
-               deg(3,ibloc) = deg(3,ibloc) + dedzib
+               call atomic_add( deg(1,ibloc),dedxib )
+               call atomic_add( deg(2,ibloc),dedyib )
+               call atomic_add( deg(3,ibloc),dedzib )
 c
-!$acc atomic update  
-               deg(1,icloc) = deg(1,icloc) + dedxic
-!$acc atomic update  
-               deg(2,icloc) = deg(2,icloc) + dedyic
-!$acc atomic update  
-               deg(3,icloc) = deg(3,icloc) + dedzic
+               call atomic_add( deg(1,icloc),dedxic )
+               call atomic_add( deg(2,icloc),dedyic )
+               call atomic_add( deg(3,icloc),dedzic )
 c
 c     increment the internal virial tensor components
 c
@@ -381,9 +392,10 @@ c
          icloc   = loc(ic)
          id      = itfix(4,i)
          idloc   = loc(id)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                            use(ic) .or. use(id))
+         if (use_group)
+     &      call groups4_inl (fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -464,6 +476,13 @@ c
                e = force * dt2
                dedphi = 2.0_ti_p * force * dt
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
+c
 c     chain rule terms for first derivative components
 c
                xca = xic - xia
@@ -497,33 +516,21 @@ c
 c     increment the overall energy term and derivatives
 c
                eg = eg + e
-!$acc atomic update
-               deg(1,ialoc) = deg(1,ialoc) + dedxia
-!$acc atomic update
-               deg(2,ialoc) = deg(2,ialoc) + dedyia
-!$acc atomic update
-               deg(3,ialoc) = deg(3,ialoc) + dedzia
+               call atomic_add( deg(1,ialoc),dedxia )
+               call atomic_add( deg(2,ialoc),dedyia )
+               call atomic_add( deg(3,ialoc),dedzia )
 c
-!$acc atomic update
-               deg(1,ibloc) = deg(1,ibloc) + dedxib
-!$acc atomic update
-               deg(2,ibloc) = deg(2,ibloc) + dedyib
-!$acc atomic update
-               deg(3,ibloc) = deg(3,ibloc) + dedzib
+               call atomic_add( deg(1,ibloc),dedxib )
+               call atomic_add( deg(2,ibloc),dedyib )
+               call atomic_add( deg(3,ibloc),dedzib )
 c
-!$acc atomic update
-               deg(1,icloc) = deg(1,icloc) + dedxic
-!$acc atomic update
-               deg(2,icloc) = deg(2,icloc) + dedyic
-!$acc atomic update
-               deg(3,icloc) = deg(3,icloc) + dedzic
+               call atomic_add( deg(1,icloc),dedxic )
+               call atomic_add( deg(2,icloc),dedyic )
+               call atomic_add( deg(3,icloc),dedzic )
 c
-!$acc atomic update
-               deg(1,idloc) = deg(1,idloc) + dedxid
-!$acc atomic update
-               deg(2,idloc) = deg(2,idloc) + dedyid
-!$acc atomic update
-               deg(3,idloc) = deg(3,idloc) + dedzid
+               call atomic_add( deg(1,idloc),dedxid )
+               call atomic_add( deg(2,idloc),dedyid )
+               call atomic_add( deg(3,idloc),dedzid )
 c
 c     increment the internal virial tensor components
 c
@@ -606,8 +613,6 @@ c         if (use_bounds)  call image (xr,yr,zr)
          e = force * dt2
          if (r .eq. 0.0_ti_p)  r = 1.0_ti_p
          de = 2.0_ti_p * force * dt / r
-         ! Save data for Fred
-
 !$acc loop vector
          do j = 1,1
             if (save_US) then
@@ -625,29 +630,26 @@ c
          dedx = de * xr
          dedy = de * yr
          dedz = de * zr
+c
+c     increment the total energy and first derivatives
+c
 !$acc loop vector
          do j = igrp(1,ia), igrp(2,ia)
             k = kgrp(j)
             kloc = loc(k)
             ratio = mass(k) / weigha
-!$acc atomic update  
-            deg(1,kloc) = deg(1,kloc) + dedx*ratio
-!$acc atomic update  
-            deg(2,kloc) = deg(2,kloc) + dedy*ratio
-!$acc atomic update  
-            deg(3,kloc) = deg(3,kloc) + dedz*ratio
+            call atomic_add( deg(1,kloc),dedx*ratio )
+            call atomic_add( deg(2,kloc),dedy*ratio )
+            call atomic_add( deg(3,kloc),dedz*ratio )
          end do
 !$acc loop vector
          do j = igrp(1,ib), igrp(2,ib)
             k = kgrp(j)
             kloc = loc(k)
             ratio = mass(k) / weighb
-!$acc atomic update 
-            deg(1,kloc) = deg(1,kloc) - dedx*ratio
-!$acc atomic update 
-            deg(2,kloc) = deg(2,kloc) - dedy*ratio
-!$acc atomic update 
-            deg(3,kloc) = deg(3,kloc) - dedz*ratio
+            call atomic_sub( deg(1,kloc),dedx*ratio )
+            call atomic_sub( deg(2,kloc),dedy*ratio )
+            call atomic_sub( deg(3,kloc),dedz*ratio )
          end do
 
 !$acc loop vector
@@ -683,18 +685,19 @@ c
 !$acc&         default(present)
 !$acc&         reduction(+:eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do inchir = 1, nchirloc
-         i = nchirglob(inchir)
-         ia = ichir(1,i)
+         i     = nchirglob(inchir)
+         ia    = ichir(1,i)
          ialoc = loc(ia)
-         ib = ichir(2,i)
+         ib    = ichir(2,i)
          ibloc = loc(ib)
-         ic = ichir(3,i)
+         ic    = ichir(3,i)
          icloc = loc(ic)
-         id = ichir(4,i)
+         id    = ichir(4,i)
          idloc = loc(id)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
+         if (use_group)
+     &      call groups4_inl (fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
          if (proceed) then
             xad = x(ia) - x(id)
             yad = y(ia) - y(id)
@@ -720,6 +723,13 @@ c
             e = force * dt2
             deddt = 2.0_ti_p * force * dt
 c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               deddt = deddt * fgrp
+            end if
+c
 c     compute derivative components for this interaction
 c
             dedxia = deddt * (ybd*zcd - zbd*ycd)
@@ -738,33 +748,21 @@ c
 c     increment the overall energy term and derivatives
 c
             eg = eg + e
-!$acc atomic
-            deg(1,ialoc) = deg(1,ialoc) + dedxia
-!$acc atomic
-            deg(2,ialoc) = deg(2,ialoc) + dedyia
-!$acc atomic
-            deg(3,ialoc) = deg(3,ialoc) + dedzia
+            call atomic_add( deg(1,ialoc),dedxia )
+            call atomic_add( deg(2,ialoc),dedyia )
+            call atomic_add( deg(3,ialoc),dedzia )
 c
-!$acc atomic
-            deg(1,ibloc) = deg(1,ibloc) + dedxib
-!$acc atomic
-            deg(2,ibloc) = deg(2,ibloc) + dedyib
-!$acc atomic
-            deg(3,ibloc) = deg(3,ibloc) + dedzib
+            call atomic_add( deg(1,ibloc),dedxib )
+            call atomic_add( deg(2,ibloc),dedyib )
+            call atomic_add( deg(3,ibloc),dedzib )
 c
-!$acc atomic
-            deg(1,icloc) = deg(1,icloc) + dedxic
-!$acc atomic
-            deg(2,icloc) = deg(2,icloc) + dedyic
-!$acc atomic
-            deg(3,icloc) = deg(3,icloc) + dedzic
+            call atomic_add( deg(1,icloc),dedxic )
+            call atomic_add( deg(2,icloc),dedyic )
+            call atomic_add( deg(3,icloc),dedzic )
 c
-!$acc atomic
-            deg(1,idloc) = deg(1,idloc) + dedxid
-!$acc atomic
-            deg(2,idloc) = deg(2,idloc) + dedyid
-!$acc atomic
-            deg(3,idloc) = deg(3,idloc) + dedzid
+            call atomic_add( deg(1,idloc),dedxid )
+            call atomic_add( deg(2,idloc),dedyid )
+            call atomic_add( deg(3,idloc),dedzid )
 c
 c     increment the internal virial tensor components
 c
@@ -808,8 +806,9 @@ c
                xk = x(kglob)
                yk = y(kglob)
                zk = z(kglob)
-               proceed = .true.
-               if (proceed)  proceed = (use(iglob) .or. use(kglob))
+               proceed = (use(iglob) .or. use(kglob))
+               if (use_group)
+     &            call groups2_inl(fgrp,i,k,ngrp,grplist,wgrp)
                if (proceed) then
                   if (kglob.le.iglob) cycle
 
@@ -825,6 +824,13 @@ c
                   de = -2.0_ti_p * width * e
                   e = e - depth
 c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     de = de * fgrp
+                  end if
+c
 c     compute chain rule terms needed for derivatives
 c
                   dedx = de * xr
@@ -834,19 +840,13 @@ c
 c     increment the overall energy term and derivatives
 c
                   eg = eg + e
-!$acc atomic
-                  deg(1,i) = deg(1,i) + dedx
-!$acc atomic
-                  deg(2,i) = deg(2,i) + dedy
-!$acc atomic
-                  deg(3,i) = deg(3,i) + dedz
+                  call atomic_add( deg(1,i),dedx )
+                  call atomic_add( deg(2,i),dedy )
+                  call atomic_add( deg(3,i),dedz )
 c
-!$acc atomic
-                  deg(1,k) = deg(1,k) - dedx
-!$acc atomic
-                  deg(2,k) = deg(2,k) - dedy
-!$acc atomic
-                  deg(3,k) = deg(3,k) - dedz
+                  call atomic_sub( deg(1,k),dedx )
+                  call atomic_sub( deg(2,k),dedy )
+                  call atomic_sub( deg(3,k),dedz )
 c
 c     increment the internal virial tensor components
 c
@@ -870,6 +870,7 @@ c
 !$acc parallel loop default(present) async(def_queue)
          do i = 1, nloc
             iglob = glob(i)
+            if (use_group) call groups1_inl (fgrp,i,ngrp,grplist,wgrp)
             if (use(iglob)) then
                xi = x(iglob)
                yi = y(iglob)
@@ -883,6 +884,13 @@ c
                if (ri .eq. 0.0_ti_p)  ri = 1.0_ti_p
                de = (12.0_ti_p*a/r12 - 6.0_ti_p*b/r6) / (r*ri)
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  de = de * fgrp
+               end if
+c
 c     compute chain rule terms needed for derivatives
 c
                dedx = de * xi
@@ -892,12 +900,9 @@ c
 c     increment the overall energy term and derivatives
 c
                eg = eg + e
-!$acc atomic update
-               deg(1,i) = deg(1,i) + dedx
-!$acc atomic update
-               deg(2,i) = deg(2,i) + dedy
-!$acc atomic update
-               deg(3,i) = deg(3,i) + dedz
+               call atomic_add( deg(1,i),dedx )
+               call atomic_add( deg(2,i),dedy )
+               call atomic_add( deg(3,i),dedz )
 c
 c     increment the internal virial tensor components
 c

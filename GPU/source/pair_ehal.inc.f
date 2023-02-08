@@ -1,7 +1,6 @@
 #ifndef PAIR_EHAL_INC
 #define PAIR_EHAL_INC
 #include "tinker_cudart.h"
-#include "tinker_types.h"
 #include "convert.f.inc"
 #include "switch_respa.f.inc"
 

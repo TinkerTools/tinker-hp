@@ -22,7 +22,7 @@ c     Flannery, Numerical Recipes (Fortran), 2nd Ed., Cambridge
 c     University Press, 1992, Section 7.1
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module random_mod
       use domdec
       use inform
@@ -40,14 +40,15 @@ c
       !use openacc_curand
 #endif
       implicit none
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       private
       integer im1,ia1,iq1,ir1
       integer im2,ia2,iq2,ir2
       integer big,nshuffle
       integer imm1,ndiv
       integer iyr
-      integer seed,seed2,seed_save
+      integer:: seed,seed2,seed_save=0
+      integer(8) npick,npickD,npickDr
       real(t_p) factor_u,store
       real(t_p),public,allocatable::samplevec(:)
       real(t_p),public :: pick
@@ -82,13 +83,24 @@ c      parameter (Ncurng=5120)
       data compute  / .true. /
 
       public :: init_rand_engine,random,randomvec,normal,normalvec
-     &         ,ranvec,sphere
+     &         ,ranvec,sphere,get_randseed,get_pickcount
 #ifdef _OPENACC
      &         ,init_curand_engine,randomgpu,normalgpu,rand_unitgpu
+     &         ,reset_curand_seed,disp_ranvec
 #endif
-!$acc declare create(samplevec)
-!$acc declare copyin(host_rand_platform)
       contains
+
+      integer function get_randseed()
+      get_randseed = seed_save
+      end function
+
+      subroutine get_pickcount(npic,npicD,npicDr)
+      implicit none
+      integer(8) npic, npicD, npicDr
+      npic  = npick
+      npicD = npickD
+      npicDr= npickDr
+      end subroutine
 
       subroutine init_rand_engine
       implicit none
@@ -104,27 +116,31 @@ c     random number seed is first set to a big number,
 c     then incremented by the seconds elapsed this decade
 c
       first = .false.
-      seed = big
-      call calendar (year,month,day,hour,minute,second)
-      year = mod(year,10)
-      seed = seed + 32140800*year + 2678400*(month-1)
-      seed = seed + 86400*(day-1) + 3600*hour
-      seed = seed + 60*minute + second
+      if (seed_save.eq.0) then
+         seed = big
+         call calendar (year,month,day,hour,minute,second)
+         year = mod(year,10)
+         seed = seed + 32140800*year + 2678400*(month-1)
+         seed = seed + 86400*(day-1) + 3600*hour
+         seed = seed + 60*minute + second + 10*rank
 c
-c     search the keywords for a random number seed
+c        search the keywords for a random number seed
 c
-      do i = 1, nkey
-         next = 1
-         record = keyline(i)
-         call gettext (record,keyword,next)
-         call upcase (keyword)
-         if (keyword(1:11) .eq. 'RANDOMSEED ') then
-            string = record(next:240)
-            read (string,*,err=10)  seed
-            seed = max(1,seed)
-         end if
-   10    continue
-      end do
+         do i = 1, nkey
+            next = 1
+            record = keyline(i)
+            call gettext (record,keyword,next)
+            call upcase (keyword)
+            if (keyword(1:11) .eq. 'RANDOMSEED ') then
+               string = record(next:240)
+               read (string,*,err=10)  seed
+               seed = max(1,seed)
+            end if
+   10       continue
+         end do
+      else
+         seed = seed_save
+      end if
 c
 c     print the value used for the random number seed
 c
@@ -133,6 +149,10 @@ c
    20    format (/,' Random Number Generator Initialized',
      &              ' with SEED :',3x,i12)
       end if
+c
+c     Initiate counter
+c
+      npick=0
 c
 c     warm up and then load the shuffling table
 c
@@ -171,6 +191,8 @@ c
 c
 c     print the value of the current random number
 c
+      !Incement counter
+      npick = npick+1
 c     if (debug) then
 c        write (iout,30)  random
 c  30    format (' RANDOM  --  The Random Number Value is',f12.8)
@@ -233,7 +255,11 @@ c    &                   CURAND_RNG_PSEUDO_MRGP32)
 
       istat = istat + curandSetPseudoRandomGeneratorSeed(curng,
      &                   seed_save)
-
+c
+c     Initiate counter
+c
+      npickD = 0
+      npickDr= 0
 c
 c     Set cuda stream if necessary
 c
@@ -244,6 +270,15 @@ c
       if (istat.ne.0)
      &   print*,'curand initialisation failed ',istat
 
+      end subroutine
+
+      subroutine reset_curand_seed
+      implicit none
+      integer istat
+      istat = curandSetPseudoRandomGeneratorSeed(curng,
+     &                   seed_save)
+      if (istat.ne.0)
+     &   print*,'curand set seed failed ',istat
       end subroutine
 c
 c     get a sample following uniform distribution on GPU
@@ -264,6 +299,9 @@ c
       istat = istat + curandGenerate(curng,array,n)
 !$acc end host_data
       if (istat.ne.0) print*,'ERROR in curandGenerate',istat
+
+      !Increment counter
+      npickDr= npickDr+ n
       end
 c
 c     get a sample following normal distribution on GPU
@@ -297,8 +335,14 @@ c
 !$acc host_data use_device(array)
       istat = istat + curandGenerate(curng,array,num,mean,stddev)
 !$acc end host_data
-
       if (istat.ne.0) print*,'ERROR in curandGenerateNormal',istat
+c!$acc wait
+c!$acc update host(array(1:50))
+c      print 16, array(1:7)
+c  16  format(8F9.5)
+
+      !Increment counter
+      npickD = npickD + num
       end subroutine
 c
 c     Following the principle of ranvec but using the spherical approch
@@ -309,43 +353,35 @@ c
       integer i,j
       integer,  intent(in) :: n
       real(t_p),intent(out):: vector(3,*)
-      real(t_p), work(2,n)
       real(t_p), theta,phi,pi
       real(t_p) x,y,s
       parameter(pi=3.141592653589793d0)
 c
 c     get a pair of random spherical coordinates
 c
-!$acc data create(work) present(vector) async
-      call randomgpu(work(1,1),2*n)
+      call randomgpu(samplevec,2*n+2)
 
-!$acc parallel loop collapse(2) async
-      do i = 1, n
-         do j = 1, 2
-            if (btest(j,0)) then
-               work(1,i) = -pi + 2*pi*work(1,i) !theta angle
-            else
-               work(2,i) = -0.5*pi + pi*work(2,i) !phi angle
-            end if
-         end do
-      end do
+!$acc parallel loop collapse(2) default(present) async
+      do i = 0, n-1; do j = 1, 2
+         if (btest(j,0)) then
+            samplevec(1+2*i) = -pi + 2*pi*samplevec(1+2*i) !theta angle
+         else
+            samplevec(2+2*i) = -0.5*pi + pi*samplevec(2+2*i) !phi angle
+         end if
+      end do; end do
 c
 c     construct the 3-dimensional random unit vector
 c
-!$acc parallel loop collapse(2) async
-      do i = 1, n
-         do j= 1, 3
-            if (j.eq.1) then
-               vector(1,i) = sin(work(1,n))*cos(work(2,n))
-            else if (j.eq.2) then
-               vector(2,i) = sin(work(1,n))*sin(work(2,n))
-            else
-               vector(3,i) = cos(work(1,n))
-            end if
-         end do
-      end do
-c
-!$acc end data
+!$acc parallel loop collapse(2) default(present) async
+      do i = 0, n-1; do j= 1, 3
+         if (j.eq.1) then
+            vector(1,i+1) = sin(samplevec(1+2*i))*cos(samplevec(2+2*i))
+         else if (j.eq.2) then
+            vector(2,i+1) = sin(samplevec(1+2*i))*sin(samplevec(2+2*i))
+         else
+            vector(3,i+1) = cos(samplevec(1+2*i))
+         end if
+      end do; end do
 c
 c     print the components of the random unit vector
 c
@@ -354,6 +390,7 @@ c        write (iout,10)  vector(1),vector(2),vector(3)
 c  10    format (' RANVEC  --  The Random Vector is',3f10.4)
 c     end if
       end
+
 c
 c     Destroy rng
 c
@@ -367,6 +404,20 @@ c
 
       end
 #endif
+      subroutine disp_ranvec(n)
+      implicit none
+      integer i,n
+ 16   format(I4,10F9.6)
+      !call randomgpu(samplevec(1),20)
+      !call normalgpu(samplevec(1),10)
+      !call randomgpu(samplevec(11),10)
+      !call normalgpu(samplevec(21),20)
+!$acc wait
+!$acc update host(samplevec(1:500))
+      do i = 0,4
+         print 16, i*10, samplevec(i*10+1:i*10+10)
+      end do
+      end subroutine
 c
 c
 c     ############################################################

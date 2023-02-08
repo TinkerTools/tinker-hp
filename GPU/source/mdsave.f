@@ -18,6 +18,7 @@ c
 #include "tinker_precision.h"
       subroutine mdsave (istep,dt,epot)
       use atmtyp
+      use atmlst
       use atomsMirror
       use bound
       use boxes
@@ -39,36 +40,27 @@ c
       use units
       use mpi
       implicit none
-      integer i,j,k,istep,iloc
-      integer nprocloc,count
-      integer ixyz,iind
-      integer ivel,ifrc
-      integer iend1,idump,lext
-      integer freeunit,trimtext
-      integer moddump
-      real(r_p) dt
-      real(r_p) pico,wt
-      real(r_p) epot
-      real(r_p), allocatable :: vtemp(:,:),postemp(:,:)
-     &         ,atemp(:,:),aalttemp(:,:)
-      integer, allocatable :: bufbegsave(:),globsave(:)
-      integer req(nproc*nproc)
-      integer iproc,ierr
-      integer tagmpi,iglob,status(MPI_STATUS_SIZE)
-      integer,parameter::PERIOD_INBOX_ATOMS=500
-      logical exist
+      integer   i,j,k,istep,iloc,nprocloc,count
+      integer   ixyz,iind,ivel,ifrc
+      integer   iend1,idump,lext
+      integer   freeunit,trimtext,moddump
+      integer   iproc,ierr,req(nproc*nproc)
+      integer   tagmpi,iglob,status(MPI_STATUS_SIZE)
+      logical   exist
+      real(r_p) dt,pico,wt,epot
+      real(r_p),allocatable:: vtemp(:,:),postemp(:,:)
+     &         ,atemp(:,:),aalttemp(:,:),uindtemp(:,:)
+      integer  ,allocatable:: bufbegsave(:),globsave(:)
+     &         ,bufbegpolesave(:),globpolesave(:)
+      integer  ,parameter::PERIOD_INBOX_ATOMS=500
       character*7 ext
-      character*240 endfile
-      character*240 xyzfile
-      character*240 velfile
-      character*240 frcfile
-      character*240 indfile
+      character*240 endfile,xyzfile,velfile,frcfile,indfile
 c
       moddump = mod(istep,iwrite)
-
-      if (mod(istep,PERIOD_INBOX_ATOMS).eq.0.and.use_bounds) 
+c
+      if (mod(istep,PERIOD_INBOX_ATOMS).eq.0.and.use_bounds)
      &   call bounds
-
+c
       ! Umbrella Sampling step follows
       if (US_enable) US_step = istep+1
       if (moddump.ne.0.and..not.f_mdsave)  return
@@ -77,7 +69,12 @@ c     wrap coordinates in unit cell
 c
       !call molecule(.false.)   ! No need to be called
       if (use_bounds.and..not.f_mdsave) call bounds
+
 !$acc update host(glob,v,a,x,y,z,aalt,epot) async
+      if (uindsave.and.use_polar) then
+!$acc update host(uind) async
+      end if
+
       if (nproc.eq.1) goto 34
 c
 c     Send positions,velocities and accelerations to the master
@@ -90,6 +87,10 @@ c
         allocate (vtemp(3,nloc))
         allocate (atemp(3,nloc))
         allocate (aalttemp(3,nloc))
+        if (uindsave .and. use_polar) then
+          allocate (uindtemp(3,nloc))
+          uindtemp = 0d0
+        end if
         postemp  = 0_re_p
         vtemp    = 0_re_p
         atemp    = 0_re_p
@@ -101,6 +102,14 @@ c
         allocate (aalttemp(3,n))
         allocate (bufbegsave(nproc))
         allocate (globsave(n))
+        if (uindsave .and. use_polar) then
+          allocate (uindtemp(3,n))
+          allocate (bufbegpolesave(nproc))
+          allocate (globpolesave(n))
+          uindtemp       = 0
+          bufbegpolesave = 0
+          globpolesave   = 0
+        end if
         postemp  = 0_re_p
         vtemp    = 0_re_p
         atemp    = 0_re_p
@@ -128,6 +137,14 @@ c
           aalttemp(2,i) = aalt(2,iglob)
           aalttemp(3,i) = aalt(3,iglob)
         end do
+        if (uindsave .and. use_polar) then
+          do i = 1, npoleloc
+            iglob = poleglob(i)
+            uindtemp(1,i) = uind(1,iglob)
+            uindtemp(2,i) = uind(2,iglob)
+            uindtemp(3,i) = uind(3,iglob)
+          end do
+        end if
       end if
 c
 c    master get size of all domains
@@ -147,6 +164,25 @@ c
         call MPI_ISEND(domlen(rank+1),1,MPI_INT,0,tagmpi,
      $   COMM_TINKER,req(tagmpi),ierr)
         call MPI_WAIT(req(tagmpi),status,ierr)
+      end if
+
+      if (uindsave .and. use_polar) then
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(domlenpole(iproc+1),1,MPI_INT,iproc,tagmpi,
+     $       COMM_TINKER,req(tagmpi),ierr)
+          end do
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(domlenpole(rank+1),1,MPI_INT,0,tagmpi,
+     $     COMM_TINKER,req(tagmpi),ierr)
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
       end if
 c
 c     master get all the indexes
@@ -177,8 +213,41 @@ c
      $   tagmpi,COMM_TINKER,req(tagmpi),ierr)
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
+
+      if (uindsave .and. use_polar) then
+        if (rank.eq.0) then
+          count = domlenpole(rank+1)
+          do iproc = 1, nproc-1
+            if (domlenpole(iproc+1).ne.0) then
+              bufbegpolesave(iproc+1) = count + 1
+              count = count + domlenpole(iproc+1)
+            else
+              bufbegpolesave(iproc+1) = 1
+            end if
+          end do
+c
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(globpolesave(bufbegpolesave(iproc+1)),
+     $       domlenpole(iproc+1),MPI_INT,iproc,tagmpi,COMM_TINKER,
+     $       req(tagmpi),ierr)
+          end do
+          do iproc = 1, nproc-1
+            tagmpi = nproc*rank + iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(poleglob,domlenpole(rank+1),MPI_INT,0,
+     $     tagmpi,COMM_TINKER,req(tagmpi),ierr)
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
+      end if
 c
 c    send them to the master
+c
+c
+c     positions
 c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
@@ -201,6 +270,9 @@ c
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
+c
+c     velocities
+c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
           tagmpi = iproc + 1
@@ -221,6 +293,9 @@ c
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
+c
+c     accelerations
+c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
           tagmpi = iproc + 1
@@ -241,6 +316,9 @@ c
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
+c
+c     alternate accelerations
+c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
           tagmpi = iproc + 1
@@ -261,6 +339,33 @@ c
       else
         tagmpi = rank + 1
         call MPI_WAIT(req(tagmpi),status,ierr)
+      end if
+c
+c
+c     induced dipoles
+c 
+      if (uindsave .and. use_polar) then
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(uindtemp(1,bufbegpolesave(iproc+1)),
+     $       3*domlenpole(iproc+1),
+     $       MPI_REAL8,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(uindtemp,3*npoleloc,MPI_REAL8,0,tagmpi,
+     $    COMM_TINKER,req(tagmpi),ierr)
+        end if
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
       end if
 c
 c     put the array in global order to be written
@@ -290,6 +395,28 @@ c
               aalt(3,iglob) = aalttemp(3,iloc)
             end if
           end do
+          if (uindsave .and. use_polar) then
+            do i = 1, domlenpole(iproc+1)
+              if (domlenpole(iproc+1).ne.0) then
+                iloc = bufbegpolesave(iproc+1)+i-1
+                iglob = globpolesave(iloc)
+                uind(1,iglob) = uindtemp(1,iloc)
+                uind(2,iglob) = uindtemp(2,iloc)
+                uind(3,iglob) = uindtemp(3,iloc)
+              end if
+            end do
+          end if
+c         if (frcsave) then
+c           do i = 1, domlen(iproc+1)
+c             if (domlen(iproc+1).ne.0) then
+c               iloc = bufbegsave(iproc+1)+i-1
+c               iglob = globsave(iloc)
+c               derivstemp2(1,iglob) = derivstemp(1,iloc)
+c               derivstemp2(2,iglob) = derivstemp(2,iloc)
+c               derivstemp2(3,iglob) = derivstemp(3,iloc)
+c             end if
+c           end do
+c         end if
         end do
       end if
       deallocate (postemp)
@@ -297,6 +424,7 @@ c
       deallocate (vtemp)
       deallocate (atemp)
       deallocate (aalttemp)
+      if (uindsave .and. use_polar) deallocate (uindtemp)
       if (rank.ne.0) return
  34   continue
 !$acc wait

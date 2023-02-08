@@ -32,8 +32,9 @@ c     particle mesh Ewald for large biomolecular systems",
 c     J. Chem. Phys. 115, 2348-2358 (2001)
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine respa1(istep,dt)
+      use ani
       use atmtyp
       use atomsMirror
       use cutoff
@@ -41,10 +42,13 @@ c
       use deriv
       use energi  ,only: info_energy,calc_e
       use freeze
+      use group
       use inform
       use mdstuf1
       use moldyn
       use timestat
+      use potent
+      use uprior  ,only: use_pred
       use utils   ,only: set_to_zero1m
       use utilgpu ,only: prmem_requestm,rec_queue
       use units
@@ -57,6 +61,7 @@ c
       real(r_p) dt,dt_2
       real(r_p) dta,dta_2,dta2
       real(8) time0,time1
+      logical save_pred
 c
 c     set some time values for the dynamics integration
 c
@@ -64,6 +69,7 @@ c
       dta   = dt / dinter
       dta_2 = 0.5_re_p * dta
       dta2  = dta / dshort
+      if(use_ml_embedding) use_mlpot=.FALSE.
 c
 c     store the current atom positions, then find half-step
 c     velocities via velocity Verlet recursion
@@ -113,6 +119,25 @@ c
 c     MPI : get total energy
 c
       call reduceen(epot)
+
+      if(use_ml_embedding) then
+!$acc parallel loop collapse(2) async
+        do i = 1, 3; do j = 1, 3
+          viralt(j,i) = vir(j,i) + viralt(j,i)
+        end do; end do
+c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
+        use_mlpot= .TRUE.
+        call zero_forces_rec
+        save_pred = use_pred
+        use_pred = .FALSE.
+        call gradient (eml,derivs)
+        use_pred = save_pred
+        call reduceen(eml)
+        call commforces(derivs)
+!$acc serial async
+         epot = epot+eml
+!$acc end serial
+      endif
 c
 c     use Newton's second law to get the slow accelerations;
 c     find full-step velocities using velocity Verlet recursion
@@ -191,7 +216,7 @@ c
       logical save_pitors,save_strtor
       logical save_angtor,save_tortor,save_geom
       logical save_extra
-      logical save_mrec
+      logical save_mrec,save_disprec
       logical save_prec,save_crec
       integer save_polalg,save_tcgorder
       logical save_tcgprec,save_tcgguess,save_tcgpeek
@@ -218,6 +243,7 @@ c
       save_crec   = use_crec
       save_mrec   = use_mrec
       save_prec   = use_prec
+      save_disprec  = use_disprec
       save_polalg = polalg
       save_tcgorder = tcgorder
       save_tcgprec  = tcgprec
@@ -248,13 +274,19 @@ c
       use_crec   = .false.
       use_mrec   = .false.
       use_prec   = .false.
+      use_disprec= .false.
       use_cself  = .false.
       use_mself  = .false.
       use_pself  = .false.
+      use_dispself       = .false.
       use_cshortreal     = .true.
       use_mpoleshortreal = .true.
       use_vdwshort       = .true.
       use_polarshortreal = .true.
+      use_repulsshort    = .true.
+      use_dispshort      = .true.
+      use_dispshortreal  = .true.
+      use_chgtrnshort    = .true.
       polalg     = polalgshort
       tcgorder   = tcgordershort
       tcgprec    = tcgprecshort
@@ -291,13 +323,19 @@ c
       use_crec   = save_crec
       use_mrec   = save_mrec
       use_prec   = save_prec
+      use_disprec= save_disprec
       use_cself  = .true.
       use_mself  = .true.
       use_pself  = .true.
+      use_dispself       = .true.
       use_cshortreal     = .false.
       use_mpoleshortreal = .false.
       use_vdwshort       = .false.
       use_polarshortreal = .false.
+      use_repulsshort    = .false.
+      use_dispshort      = .false.
+      use_dispshortreal  = .false.
+      use_chgtrnshort    = .false.
       polalg     = save_polalg
       tcgorder   = save_tcgorder
       tcgprec    = save_tcgprec
@@ -319,18 +357,21 @@ c     subroutine respaint1 :
 c     find intermediate-evolving velocities and positions via velocity Verlet recursion
 c
       subroutine respaint1(ealt,viralt,dta,dta2)
+      use ani
       use atomsMirror ,only: integrate_vel
       use atmtyp
       use cutoff
       use deriv
       use domdec
-      use deriv
+      use deriv   ,only: zero_forces_rec
       use energi  ,only: info_energy,calc_e
       use freeze
       use inform
       use mdstuf1 ,only: ealt2,viralt2,derivs
       use moldyn
+      use potent
       use timestat
+      use uprior  ,only: use_pred
       use utils   ,only: set_to_zero1m
       use utilgpu ,only:prmem_requestm,rec_queue
       use units
@@ -339,6 +380,7 @@ c
       use mpi
       implicit none
       integer i,j,k,iglob
+      logical save_pred
       real(r_p) dta,dta_2,dta2
       real(r_p) ealt,viralt(3,3)
 
@@ -379,7 +421,7 @@ c
          if(deb_Energy) call info_energy(rank)
          if(deb_Force ) call info_forces(cSNBond)
          if(deb_Atom  ) call info_minmax_pva
-         if(abort)      call fatal
+         if(abort     ) __TINKER_FATAL__
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion

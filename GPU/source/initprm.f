@@ -14,7 +14,7 @@ c     "initprm" completely initializes a force field by setting all
 c     parameters to zero and using defaults for control values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine initprm
       use sizes
       use angpot
@@ -376,10 +376,10 @@ c
 c
 c     set default control parameters for repulsion terms
 c
-      r2scale = 0.0d0
-      r3scale = 0.0d0
-      r4scale = 1.0d0
-      r5scale = 1.0d0
+      r2scale = 0.0_ti_p
+      r3scale = 0.0_ti_p
+      r4scale = 1.0_ti_p
+      r5scale = 1.0_ti_p
 c
 c     set default control parameters for charge-charge terms
 c
@@ -396,18 +396,11 @@ c
 c     set default control parameters for polarizable multipoles
 c
       pentyp = 'GORDON1'
-      m2scale = 0.0d0
-      m3scale = 0.0d0
-      m4scale = 1.0d0
-      m5scale = 1.0d0
-      p2scale = 0.0d0
-      p3scale = 0.0d0
-      p4scale = 1.0d0
-      p5scale = 1.0d0
-      p2iscale = 0.0d0
-      p3iscale = 0.0d0
-      p4iscale = 0.5d0
-      p5iscale = 1.0d0
+      pentyp_i = PT_GORDON1
+      m2scale = 0.0_ti_p
+      m3scale = 0.0_ti_p
+      m4scale = 1.0_ti_p
+      m5scale = 1.0_ti_p
 c
 c     set default control parameters for polarizable multipoles
 c
@@ -415,11 +408,15 @@ c
       m3scale  = 0.0_ti_p
       m4scale  = 1.0_ti_p
       m5scale  = 1.0_ti_p
-      p2scale  = 0.0_ti_p
+      P2scale  = 0.0_ti_p
       p3scale  = 0.0_ti_p
       p4scale  = 1.0_ti_p
       p5scale  = 1.0_ti_p
-      p41scale = 0.5_ti_p
+      p2iscale = 0.0_ti_p
+      p3iscale = 0.0_ti_p
+      p4iscale = 0.5_ti_p
+      p5iscale = 1.0_ti_p
+      p41scale = p4iscale
 !$acc update device(m2scale,m3scale,m4scale,m5scale,p2scale,
 !$acc& p3scale,p4scale,p41scale,p5scale)
 c
@@ -454,6 +451,8 @@ c
       u4scale = 1.0_ti_p
       w2scale = 1.0_ti_p
       w3scale = 1.0_ti_p
+      w4scale = 1.0_ti_p
+      w5scale = 1.0_ti_p
 !$acc update device(d1scale,d2scale,d3scale,d4scale,
 !$acc& u1scale,u2scale,u3scale,u4scale)
       use_chgpen  = .false.
@@ -471,4 +470,5 @@ c
 c     set default control parameters for charge transfer terms
 c
       ctrntyp = 'SEPARATE'
+      ctrntyp_ID= CHGT_SEPARATE
       end

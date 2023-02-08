@@ -14,7 +14,7 @@ c     "eurey1" calculates the Urey-Bradley interaction energy and
 c     its first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eurey1
       use atmlst
       use atoms
@@ -37,6 +37,8 @@ c
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
       real(t_p) xac,yac,zac,rac
+      real(t_p) fgrp
+      integer iga,igc
       logical proceed
 c
 !$acc update host(deub,vir)
@@ -74,6 +76,14 @@ c
             e = ureyunit * force * dt2 * (1.0_ti_p+cury*dt+qury*dt2)
             deddt = 2.0_ti_p * ureyunit * force * dt
      &                 * (1.0_ti_p+1.5_ti_p*cury*dt+2.0_ti_p*qury*dt2)
+
+            if(use_group) then
+              iga=grplist(ia)
+              igc=grplist(ic)
+              fgrp = wgrp(iga+1,igc+1)
+              e = e*fgrp
+              deddt = deddt*fgrp
+            endif
 c
 c     compute chain rule terms needed for derivatives
 c

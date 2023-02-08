@@ -9,7 +9,7 @@ c     "bspline_fill_site" finds B-spline coefficients and derivatives
 c     for PME i-th atomic sites along the fractional coordinate axes
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 c
 c
 c     #################################################################
@@ -202,11 +202,13 @@ c
       use boxes
       use charge   ,only:iion,nion,nionrecloc
       use domdec   ,only:nproc,nrec
-      use inform   ,only:deb_Path
+      use disp     ,only:idisp,ndisprecloc
+      use inform   ,only:deb_Path,minmaxone
       use interfaces,only:grid_pchg_site_p,grid_pchg_sitecu
      &              ,grid_mpole_site_p,grid_mpole_sitecu
+     &              ,grid_disp_site_p,grid_disp_sitecu
       use mpole
-      use neigh    ,only:celle_pole,celle_chg
+      use neigh    ,only:celle_pole,celle_chg,disp_nbl
       use pme
       use tinheader,only:ti_p,prec1_eps
       use utilgpu  ,only:rec_queue,nSMP
@@ -246,6 +248,15 @@ c
             type_p => celle_chg
          end if
 #endif
+      else if (cfg.eq.c_disp) then
+         glob_p => idisp
+         type_p => disprecglob
+         c_n    =  ndisprecloc
+#ifdef _OPENACC
+         if (associated(grid_disp_site_p,grid_disp_sitecu)) then
+            type_p => disp_nbl%s_kind
+         end if
+#endif
       end if
 
       if (cfg.eq.c_mpole) then
@@ -283,7 +294,7 @@ c
          call bsplgen (w,k,thetai3(1,1,k))
       end do
 
-      else if (cfg.eq.c_charge) then
+      else if (cfg.eq.c_charge.or.cfg.eq.c_disp) then
 
 !$acc parallel loop num_gangs(4*nSMP)
 !$acc&         present(x,y,z,recip,igrid,thetai1_p
@@ -330,6 +341,7 @@ c
       use chunks
       use domdec
       use fft
+      use inform ,only:deb_Path
       use mpole
       use pme
       use potent
@@ -357,6 +369,7 @@ c
       real(t_p) fmp(10)
       real(t_p) fmpvec(10,max(npolerecloc,1))
 c
+      if (deb_Path) write(*,'(4X,A)') "grid_mpole_sitegpu"
       if (use_pmecore) then
         rankloc  = rank_bis
       else
@@ -462,23 +475,43 @@ c             call atomic_adds(location,term,qgridin_p(1))
       end do
       end
 c
-c     "grid_pchg_site" places the i-th fractional atomic charge onto
+c     "grid_pchg_sitegpu" places the i-th fractional atomic charge onto
 c     the particle mesh Ewald grid
 c
       subroutine grid_pchg_sitegpu
+      use atmlst ,only: chgrecglob
+      use charge ,only: pchg,iion,nionrecloc
+      implicit none
+      call grid_put_site( chgrecglob,iion,pchg,nionrecloc,0)
+      end subroutine
+c
+c
+c     "grid_disp_sitegpu" places the i-th damped dispersion coefficients onto
+c     the particle mesh Ewald grid
+c
+c
+      subroutine grid_disp_sitegpu
       use atmlst
-      use charge
+      use disp
+      implicit none
+      call grid_put_site( disprecglob,idisp,csix,ndisprecloc,1 )
+      end subroutine
+
+      subroutine grid_put_site( kind_id,atom_id,attr,nk,prm)
+      use atoms  ,only: n
       use chunks
       use domdec
       use fft
-      use inform,only:deb_Path
+      use inform ,only: deb_Path
       use mpole
       use pme
-      use potent
+      use potent ,only: use_pmecore
       use sizes
       use utils
-      use utilgpu,only:rec_queue,ngangs_rec
+      use utilgpu,only: rec_queue
       implicit none
+      integer  ,intent(in):: nk, prm, kind_id(nk), atom_id(n)
+      real(t_p),intent(in):: attr(n)
       integer istart,iend,jstart,jend,kstart,kend
       integer istat,ied,jstat,jed,kstat,ked
       integer iichg
@@ -496,12 +529,12 @@ c
       real(t_p) term,term0
       logical,save:: f_in=.true.
 c
+      if (deb_Path) write(*,'(3x,a,I3)') "grid_put_site",prm
       if (use_pmecore) then
         rankloc  = rank_bis
       else
         rankloc  = rank
       end if
-      if (deb_Path) write(*,'(3x,a)') "grid_pchg_sitegpu"
 
       kstat = kstart1(rankloc+1)
       ked   = kend1  (rankloc+1)
@@ -516,13 +549,12 @@ c
 c     put the permanent multipole moments onto the grid
 c
 !$acc parallel loop gang worker vector_length(32)
-!$acc&         present(chgrecglob,igrid,iion,thetai1_p,thetai2_p)
-!$acc&         present(thetai3_p,qgridin_2d)
-!$acc&         async(rec_queue)
-      do impi = 1,nionrecloc
-        iichg   = chgrecglob(impi)
-        isite   = iion(iichg)
-        q       = pchg(iichg)
+!$acc&         present(kind_id,atom_id,attr,igrid,thetai1_p,thetai2_p
+!$acc&   ,thetai3_p,qgridin_2d) async(rec_queue)
+      do impi = 1,nk
+        iichg   = kind_id(impi)
+        isite   = atom_id(iichg)
+        q       = attr   (iichg)
         offsetx = 1 - (igrid(1,isite) + grdoff - nlpts)
         offsety = 1 - (igrid(2,isite) + grdoff - nlpts)
         offsetz = 1 - (igrid(3,isite) + grdoff - nlpts)
@@ -598,6 +630,7 @@ c
       use chunks
       use domdec
       use fft
+      use inform,only:deb_Path
       use mpole
       use pme
       use potent
@@ -627,12 +660,9 @@ c
       real(t_p),intent(in),dimension(3,npolerecloc)::fuindvec,fuinpvec
       real(t_p) qgrid2loc(:,:,:,:,:)
       logical,save::first_in=.true.
-!$acc routine(adjust) seq
-      if (use_pmecore) then
-         rankloc = rank_bis
-      else
-         rankloc = rank
-      end if
+
+      if (deb_Path)  print '(5x,a)','grid_uind_sitegpu'
+      rankloc = merge(rank_bis,rank,use_pmecore)
       kstat = kstart1(rankloc+1)
       ked   = kend1  (rankloc+1)
       jstat = jstart1(rankloc+1)
@@ -769,7 +799,7 @@ c
       real(t_p) tuv003,tuv210,tuv201,tuv120
       real(t_p) tuv021,tuv102,tuv012,tuv111
 c
-      if (deb_Path) write(*,'(4X,A)') "fphi_mpole_sitegpu"
+      if (deb_Path) write(*,'(5x,a)') "fphi_mpole_sitegpu"
       if (use_pmecore) then
         rankloc  = rank_bis
       else
@@ -942,6 +972,11 @@ c
       end do
       end
 
+      subroutine grid_disp_force
+      write(0,*) " TINKER_ERROR !! Code Source Alteration !! "
+      write(0,*) " grid_disp_force is not supposed to be called "
+      __TINKER_FATAL__
+      end subroutine
 c
 c     "grid_pchg_force"
 c     get first derivatives of the reciprocal space energy
@@ -1081,10 +1116,11 @@ c
       use atmlst
       use domdec
       use fft
-      use mpole, only : npolerecloc, ipole
+      use inform ,only: deb_Path
+      use mpole  ,only: npolerecloc, ipole
       use pme
       use potent
-      use utilgpu,only:rec_queue,ngangs_rec
+      use utilgpu,only: rec_queue,ngangs_rec
       implicit none
       integer istart,iend,jstart,jend,kstart,kend
       integer istat,ied,jstat,jed,kstat,ked
@@ -1119,6 +1155,7 @@ c
       real(t_p),dimension(:,:)::fdip_phi1,fdip_phi2
       real(t_p) fdip_sum_phi(:,:)
 
+      if (deb_Path) write(*,'(4X,A)') "fphi_uind_sitegpu1"
       if (use_pmecore) then
         kstat = kstart1(rank_bis+1)
         ked   = kend1  (rank_bis+1)
@@ -1397,11 +1434,12 @@ c
       use boxes
       use domdec
       use fft
-      use mpole, only : npolerecloc, ipole
+      use inform ,only: deb_Path
+      use mpole  ,only: npolerecloc, ipole
       use pme
       use potent
       use utils
-      use utilgpu,only:rec_queue,ngangs_rec
+      use utilgpu,only: rec_queue,ngangs_rec
       implicit none
       real(t_p),dimension(:,:)::fdip_phi1,fdip_phi2
 
@@ -1440,6 +1478,7 @@ c
       real(t_p) tuv021,tuv102,tuv012,tuv111
       real(t_p) tuv1(9),tuv2(9)
 
+      if (deb_Path) write(*,'(4X,A)') "fphi_uind_sitegpu2"
       if (use_pmecore) then
         kstat = kstart1(rank_bis+1)
         ked   = kend1  (rank_bis+1)
@@ -1736,14 +1775,144 @@ c
       call timer_exit ( timer_scalar,quiet_timers )
       end subroutine
 
+      ! Scalar sum for reciprocal space (dispersion)
+      subroutine pme_convd_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
+      use atmlst
+      use atoms
+      use bound
+      use boxes
+      use charge
+      use chgpot
+      use deriv
+      use domdec
+      use energi
+      use ewald
+      use fft
+      use inform
+      use math
+      use pme
+      use pme1
+      use potent
+      use utils
+      use utilgpu
+      use timestat
+      implicit none
+      real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
+      integer k1,k2,k3,m1,m2,m3,rankloc
+      integer nf1,nf2,nf3,nff
+      integer ist2,jst2,kst2,ien2,jen2,ken2
+      real(t_p) e0,bfac,fac1,fac2,fac3,term,expterm,erfcterm
+      real(t_p) vterm,pterm
+      real(t_p) h,b,hhh,denom,denom0
+      real(t_p) hsq,struc2
+      real(t_p) h1,h2,h3
+      real(t_p) r1,r2,r3
+c
+c     use scalar sum to get reciprocal space energy and virial
+c
+      call timer_enter( timer_scalar )
+      if(deb_Path) write(*,'(4x,A)') 'pme_convd_gpu'
+
+      rankloc = merge(rank_bis,rank,use_pmecore)
+      ist2    = istart2(rankloc+1)
+      jst2    = jstart2(rankloc+1)
+      kst2    = kstart2(rankloc+1)
+      ien2    =   iend2(rankloc+1)
+      jen2    =   jend2(rankloc+1)
+      ken2    =   kend2(rankloc+1)
+      bfac    = pi / aewald
+      fac1    = 2.0*pi**(3.5)
+      fac2    = aewald**3
+      fac3    = -2.0d0*aewald*pi**2
+      denom0 = (6.0d0*volbox)/(pi**1.5d0)
+      pterm   = (pi/aewald)**2
+      nff     = nfft1 * nfft2
+      nf1     = (nfft1+1) / 2
+      nf2     = (nfft2+1) / 2
+      nf3     = (nfft3+1) / 2
+
+      if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
+     $   (kstart2(rankloc+1).eq.1)) then
+         qgridout_2d(1,1,1,1) = 0.0d0
+         qgridout_2d(2,1,1,1) = 0.0d0
+      end if
+
+!$acc host_data use_device(
+!$acc&          qgridout_2d,e,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc parallel loop collapse(3) async(rec_queue)
+!$acc&         deviceptr(
+!$acc&         qgridout_2d,e,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc&         reduction(+:e,vxx,vxy,vxz,vyy,vyz,vzz)
+      do k3 = kst2,ken2
+        do k2 = jst2,jen2
+          do k1 = ist2,ien2
+            m1 = k1 - 1
+            m2 = k2 - 1
+            m3 = k3 - 1
+            if (k1 .gt. nf1)  m1 = m1 - nfft1
+            if (k2 .gt. nf2)  m2 = m2 - nfft2
+            if (k3 .gt. nf3)  m3 = m3 - nfft3
+            if ((m1.eq.0).and.(m2.eq.0).and.(m3.eq.0)) goto 10
+            r1 = real(m1,t_p)
+            r2 = real(m2,t_p)
+            r3 = real(m3,t_p)
+            h1 = recip(1,1)*r1 + recip(1,2)*r2 + recip(1,3)*r3
+            h2 = recip(2,1)*r1 + recip(2,2)*r2 + recip(2,3)*r3
+            h3 = recip(3,1)*r1 + recip(3,2)*r2 + recip(3,3)*r3
+            hsq = h1*h1 + h2*h2 + h3*h3
+            h   = sqrt(hsq)
+            b   = h*bfac
+            hhh = h*hsq
+            term = -b * b
+            expterm = 0.0_ti_p
+           denom = denom0*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
+            if (term .gt. -50.0_ti_p) then
+               expterm = exp(term)
+              erfcterm = erfc(b)
+               if (.not. use_bounds) then
+                  expterm =  expterm * (1.0-cos(pi*xbox*h))
+                 erfcterm = erfcterm * (1.0-cos(pi*xbox*h))
+               else if (octahedron) then
+                  if (mod(m1+m2+m3,2).ne.0) then
+                     expterm = 0.0_ti_p
+                    erfcterm = 0.0_ti_p
+                  end if
+               end if
+                term = fac1*erfcterm*hhh + expterm*(fac2 + fac3*hsq)
+               struc2 = qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1)**2
+     $                + qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1)**2
+                e0 = -(term / denom) * struc2
+                 e = e + e0
+               vterm = 3.0*(fac1*erfcterm*h + fac3*expterm)*struc2/denom
+               vxx   = vxx + h1*h1*vterm - e0
+               vxy   = vxy + h1*h2*vterm
+               vxz   = vxz + h1*h3*vterm
+               vyy   = vyy + h2*h2*vterm - e0
+               vyz   = vyz + h3*h2*vterm
+               vzz   = vzz + h3*h3*vterm - e0
+            end if
+            qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1) = expterm *
+     $      qgridout_2d(1,k1-ist2+1,k2-jst2+1,k3-kst2+1)
+
+            qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1) = expterm *
+     $      qgridout_2d(2,k1-ist2+1,k2-jst2+1,k3-kst2+1)
+ 10         continue
+          end do
+        end do
+      end do
+!$acc end host_data
+      call timer_exit ( timer_scalar,quiet_timers )
+      end subroutine
+
 #ifdef _CUDA
       subroutine grid_mpole_sitecu(fmpvec)
       use atmlst    ,only:polerecglob
       use chunks
       use domdec
       use fft
+      use inform    ,only:deb_Path
       use mpole
-      use neigh  ,only:celle_glob
+      use neigh     ,only:celle_glob
       use pme
       use potent
       use utils
@@ -1757,18 +1926,15 @@ c
       real(t_p) fmpvec(10,max(npolerecloc,1))
       integer,save::gS
       logical,save::first_in=.true.
-!$acc routine(adjust) seq
-      if (use_pmecore) then
-         rankloc = rank_bis
-      else
-         rankloc = rank
-      end if
-      kstat = kstart1(rankloc+1)
-      ked   = kend1  (rankloc+1)
-      jstat = jstart1(rankloc+1)
-      jed   = jend1  (rankloc+1)
-      istat = istart1(rankloc+1)
-      ied   = iend1  (rankloc+1)
+
+      if (deb_Path) print '(4x,A)', 'grid_mpole_sitecu'
+      rankloc = merge(rank_bis,rank,use_pmecore)
+      kstat   = kstart1(rankloc+1)
+      ked     = kend1  (rankloc+1)
+      jstat   = jstart1(rankloc+1)
+      jed     = jend1  (rankloc+1)
+      istat   = istart1(rankloc+1)
+      ied     = iend1  (rankloc+1)
       twonlpts_1  = 2*nlpts+1
       twonlpts_12 = twonlpts_1**2
       nlptsit     = (2*nlpts+1)**3-1
@@ -1796,28 +1962,47 @@ c
 !$acc end host_data
       if (first_in) first_in=.false.
       end subroutine
-
 c
 c     "grid_pchg_sitecu" places the i-th fractional atomic charge onto
 c     the particle mesh Ewald grid (CUDA Routine)
 c
       subroutine grid_pchg_sitecu
-      use atmlst  ,only:chgrecglob
-      use charge
+      use charge ,only: pchg,nionrecloc
+      use neigh  ,only: celle_chg, celle_glob, celle_x, celle_y, celle_z
+      implicit none
+      call grid_put_sitecu( celle_chg,celle_glob,pchg,celle_x,celle_y
+     &         ,celle_z,nionrecloc,0 )
+      end subroutine
+c
+c     "grid_disp_sitecu" places the i-th damped dispersion coefficients onto
+c     the particle mesh Ewald grid
+c
+      subroutine grid_disp_sitecu
+      use atmlst
+      use disp
+      use neigh  ,only: s_kind,sgl_id,so_x,so_y,so_z
+      implicit none
+      call grid_put_sitecu( s_kind,sgl_id,csix,so_x,so_y,so_z
+     &         , ndisprecloc,1 )
+      end subroutine
+
+      subroutine grid_put_sitecu( kind_id,atom_id,entity,x,y,z,nk,prm )
       use chunks
       use domdec
       use fft
-      use inform  ,only:deb_Path
+      use inform  ,only: deb_Path
       use mpole
-      use neigh   ,chg_s=>celle_chg,glob_s=>celle_glob
       use pme
-      use pmestuffcu,only:grid_pchg_sitecu_core_1p
+      use pmestuffcu,only: grid_put_site_kcu1
       use potent
       use sizes
       use utils
-      use utilcu  ,only:PME_GRID_BDIM,check_launch_kernel
-      use utilgpu ,only:rec_queue,rec_stream,ngangs_rec
+      use utilcu  ,only: PME_GRID_BDIM,check_launch_kernel
+      use utilgpu ,only: rec_stream
       implicit none
+      integer  ,intent(in):: nk, prm, kind_id(*),atom_id(*)
+      real(t_p),intent(in):: entity(*),x(*),y(*),z(*)
+
       integer istart,iend,jstart,jend,kstart,kend
       integer istat,ied,jstat,jed,kstat,ked
       integer iichg
@@ -1836,12 +2021,12 @@ c
       logical,save::f_in=.true.
       integer,save::gS
 c
+      if (deb_Path) write(*,'(3x,a,I3)') "grid_put_sitecu",prm
       if (use_pmecore) then
         rankloc  = rank_bis
       else
         rankloc  = rank
       end if
-      if (deb_Path) write(*,'(3x,a)') "grid_pchg_sitecu"
 
       kstat = kstart1(rankloc+1)
       ked   = kend1  (rankloc+1)
@@ -1854,30 +2039,31 @@ c
       nlptsit     = (2*nlpts+1)**3 - 1
 
       if (f_in) then
-         call cudaMaxgridsize("grid_pchg_core",gS)
+         call cudaMaxgridsize("grid_put_site_kcu1",gS)
       end if
       call set_pme_texture
 c
 c     put the permanent multipole moments onto the grid
 c
       if (nproc.eq.1.or.nrec.eq.1) then
-!$acc host_data use_device(chg_s,glob_s,igrid,pchg
+!$acc host_data use_device(kind_id,atom_id,igrid,entity
 !$acc&         ,thetai1_p,thetai2_p,thetai3_p,qgridin_2d
-!$acc&         ,celle_x,celle_y,celle_z)
-      call grid_pchg_sitecu_core_1p<<<gS,PME_GRID_BDIM,0,rec_stream>>>
-     &     (chg_s,glob_s,igrid,pchg,thetai1_p,thetai2_p,thetai3_p
-     &     ,celle_x,celle_y,celle_z
+!$acc&         ,x,y,z)
+      call grid_put_site_kcu1<<<gS,PME_GRID_BDIM,0,rec_stream>>>
+     &     (kind_id,atom_id,igrid,entity,thetai1_p,thetai2_p,thetai3_p
+     &     ,x,y,z
      &     ,kstat,ked,jstat,jed,istat,ied
-     &     ,nfft1,nfft2,nfft3,nionrecloc
+     &     ,nfft1,nfft2,nfft3,nk
      &     ,nlpts,twonlpts_1,twonlpts_12,nlptsit,grdoff
      &     ,bsorder,n1mpimax,n2mpimax,n3mpimax,nrec_send
      &     ,qgridin_2d,f_in)
-      call check_launch_kernel(" grid_uind_sitecu_core_1p")
+      call check_launch_kernel(" grid_uind_site_kcu1")
 !$acc end host_data
       else
-         print*, 'FATAL ERROR, grid_pchg_sitecu is sequential specific'
-         call fatal
+         print*,'FATAL ERROR, grid_put_site_kcu1 is sequential specific'
+         __TINKER_FATAL__
       end if
+      if (f_in) f_in=.false.
       end subroutine
 
       subroutine grid_uind_sitecu(fuindvec,fuinpvec,qgrid2loc)
@@ -1987,6 +2173,86 @@ c
 
       end subroutine
 
+      subroutine grid_disp_forcecu
+      use atoms  ,only: n
+      use atmlst ,only: disprecglob
+      use boxes  ,only: recip
+      use disp
+      use domdec ,only: rank,rank_bis,nproc,nrec,ndir,comm_rec
+     &           ,COMM_TINKER,nrec_send,locrec,prec_send,nbloc
+      use deriv  ,only: dedsprec
+      use fft
+      use inform ,only: deb_Path
+      use pme    ,only: igrid,nfft1,nfft2,nfft3,bsorder
+     &           ,thetai1_p,thetai2_p,thetai3_p,qgridin_2d
+      use pmestuffcu,only: grid_calc_frc_kcu,grid_calc_frc_kcu1
+      use potent ,only: use_pmecore
+      use utilcu ,only: PME_BLOCK_DIM,check_launch_kernel
+      use utilgpu,only: rec_queue,rec_stream
+      implicit none
+      integer iichg,iglob,iloc,iatm,isite,rankloc
+     &       ,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3
+     &       ,istat,ied,jstat,jed,kstat,ked
+     &       ,iproc,proc,commloc,nprocloc
+      integer,save:: gS,gS1
+      real(t_p) f,fi,dn1,dn2,dn3,de1,de2,de3,t1,t2,t3
+     &       ,dt1,dt2,dt3,term
+      logical,save:: f_in=.true.
+
+      if (use_pmecore) then
+        nprocloc = nrec
+        commloc  = comm_rec
+        rankloc  = rank_bis
+      else
+        nprocloc = nproc
+        commloc  = COMM_TINKER
+        rankloc  = rank
+      end if
+      if (deb_Path) write(*,'(3x,a)') ' grid_disp_forcecu'
+
+      istat = istart1(rankloc+1)
+      jstat = jstart1(rankloc+1)
+      kstat = kstart1(rankloc+1)
+      ied   =   iend1(rankloc+1)
+      jed   =   jend1(rankloc+1)
+      ked   =   kend1(rankloc+1)
+      dn1   = real(nfft1,t_p)
+      dn2   = real(nfft2,t_p)
+      dn3   = real(nfft3,t_p)
+
+      if (f_in) then
+         call cudaMaxgridsize("grid_calc_frc_kcu",gS)
+         call cudaMaxgridsize("grid_calc_frc_kcu1",gS1)
+         !gS = gS - 2*nSMP
+         f_in =.false.
+      end if
+      call set_pme_texture
+
+!$acc host_data use_device(disprecglob,idisp,locrec,igrid,csix
+!$acc&         ,thetai1_p,thetai2_p,thetai3_p,dedsprec)
+      if (nproc.eq.1.or.nrec.eq.1) then
+         call grid_calc_frc_kcu1<<<gS1,PME_BLOCK_DIM,0,rec_stream>>>
+     &        (disprecglob,idisp,locrec,igrid,csix
+     &        ,thetai1_p,thetai2_p,thetai3_p
+     &        ,dedsprec
+     &        ,kstat,ked,jstat,jed,istat,ied
+     &        ,nrec_send,ndisprecloc,n,nfft1,nfft2,nfft3
+     &        ,1.0,2.0,dn1,dn2,dn3)
+         call check_launch_kernel(" grid_calc_frc_kcu1")
+      else
+         call grid_calc_frc_kcu<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
+     &        (disprecglob,idisp,locrec,igrid,csix
+     &        ,thetai1_p,thetai2_p,thetai3_p
+     &        ,dedsprec
+     &        ,kstat,ked,jstat,jed,istat,ied
+     &        ,nrec_send,ndisprecloc,n,nfft1,nfft2,nfft3
+     &        ,1.0,2.0,dn1,dn2,dn3)
+         call check_launch_kernel(" grid_calc_frc_kcu")
+      end if
+!$acc end host_data
+
+      end subroutine
+
       subroutine grid_pchg_forcecu
       use atoms  ,only: n
       use atmlst ,only: chgrecglob
@@ -2000,10 +2266,10 @@ c
       use inform ,only: deb_Path
       use pme    ,only: igrid,nfft1,nfft2,nfft3,bsorder
      &           ,thetai1_p,thetai2_p,thetai3_p,qgridin_2d
-      use pmestuffcu,only: grid_pchg_force_core,grid_pchg_force_core1
+      use pmestuffcu,only: grid_calc_frc_kcu,grid_calc_frc_kcu1
       use potent ,only: use_pmecore
       use utilcu ,only: PME_BLOCK_DIM,check_launch_kernel
-      use utilgpu,only: ngangs_rec,rec_queue,rec_stream
+      use utilgpu,only: rec_queue,rec_stream
       implicit none
       integer iichg,iglob,iloc,iatm,isite,rankloc
      &       ,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3
@@ -2037,8 +2303,8 @@ c
       dn3   = real(nfft3,t_p)
 
       if (f_in) then
-         call cudaMaxgridsize("grid_pchg_force_core",gS)
-         call cudaMaxgridsize("grid_pchg_force_core1",gS1)
+         call cudaMaxgridsize("grid_calc_frc_kcu",gS)
+         call cudaMaxgridsize("grid_calc_frc_kcu1",gS1)
          !gS = gS - 2*nSMP
          f_in=.false.
       end if
@@ -2047,23 +2313,23 @@ c
 !$acc host_data use_device(chgrecglob,iion,locrec,igrid,pchg
 !$acc&         ,thetai1_p,thetai2_p,thetai3_p,decrec)
       if (nproc.eq.1.or.nrec.eq.1) then
-         call grid_pchg_force_core1<<<gS1,PME_BLOCK_DIM,0,rec_stream>>>
+         call grid_calc_frc_kcu1<<<gS1,PME_BLOCK_DIM,0,rec_stream>>>
      &        (chgrecglob,iion,locrec,igrid,pchg
      &        ,thetai1_p,thetai2_p,thetai3_p
      &        ,decrec
      &        ,kstat,ked,jstat,jed,istat,ied
      &        ,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3
-     &        ,f,dn1,dn2,dn3)
-         call check_launch_kernel(" grid_pchg_force_core1")
+     &        ,f,1.0,dn1,dn2,dn3)
+         call check_launch_kernel(" grid_calc_frc_kcu1")
       else
-         call grid_pchg_force_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
+         call grid_calc_frc_kcu<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
      &        (chgrecglob,iion,locrec,igrid,pchg
      &        ,thetai1_p,thetai2_p,thetai3_p
      &        ,decrec
      &        ,kstat,ked,jstat,jed,istat,ied
      &        ,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3
-     &        ,f,dn1,dn2,dn3)
-         call check_launch_kernel(" grid_pchg_force_core")
+     &        ,f,1.0,dn1,dn2,dn3)
+         call check_launch_kernel(" grid_calc_frc_kcu")
       end if
 !$acc end host_data
 
@@ -2288,11 +2554,91 @@ c
       call timer_exit ( timer_scalar,quiet_timers )
       end subroutine
 
+      ! Scalar sum for reciprocal space (dispersion)
+      subroutine pme_convd_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
+      use bound     ,only: use_bounds
+      use boxes     ,only: xbox,volbox
+      use chgpot    ,only: dielec,electric
+      use domdec    ,only: rank_bis,rank
+      use energi    ,only: calc_e
+      use ewald     ,only: aewald
+      use fft       ,only: istart2,jstart2,kstart2,isize2,jsize2,ksize2
+      use inform    ,only: deb_Path
+      use math      ,only: pi
+      use pme       ,only: bsmod1,bsmod2,bsmod3,qgridout_2d
+     &              ,nfft1,nfft2,nfft3
+      use pmestuffcu,only: pme_conv_kcu
+      use potent    ,only: use_pmecore
+      use timestat
+      use tinheader ,only: ti_p
+      use utilcu    ,only: check_launch_kernel
+      use utilgpu   ,only: reduce_energy_virial,ered_buff,vred_buf1
+     &              ,rec_queue,rec_stream
+      use virial    ,only: use_virial
+      implicit none
+      real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
+      integer k1,k2,k3,m1,m2,m3,rankloc,gDim,bDim,mgDim
+      integer nf1,nf2,nf3,nff
+      integer ist2,jst2,kst2,qsz1,qsz2,qsz12,qsz
+      real(t_p) e0,bfac,fac1,fac2,fac3,term,expterm,erfcterm
+      real(t_p) vterm,pterm
+      real(t_p) h,b,hhh,denom,denom0
+      real(t_p) hsq,struc2
+      real(t_p) h1,h2,h3
+      real(t_p) r1,r2,r3,xbox_
+      parameter(bDim=128,mgDim=2**16)
+c
+c     use scalar sum to get reciprocal space energy and virial
+c
+      call timer_enter( timer_scalar )
+      if(deb_Path) write(*,'(4x,A)') 'pme_convd_cu'
+
+      rankloc = merge(rank_bis,rank,use_pmecore)
+      ist2    = istart2(rankloc+1)
+      jst2    = jstart2(rankloc+1)
+      kst2    = kstart2(rankloc+1)
+      qsz1    = isize2(rankloc+1)
+      qsz2    = jsize2(rankloc+1)
+      qsz12   = qsz1*qsz2
+      qsz     = qsz12*ksize2(rankloc+1)
+      bfac    = pi / aewald
+      fac1    = 2.0*pi**(3.5)
+      fac2    = aewald**3
+      fac3    = -2.0d0*aewald*pi**2
+      denom0 = (6.0d0*volbox)/(pi**1.5d0)
+      pterm   = (pi/aewald)**2
+      nff     = nfft1 * nfft2
+      nf1     = (nfft1+1) / 2
+      nf2     = (nfft2+1) / 2
+      nf3     = (nfft3+1) / 2
+      xbox_   = xbox
+      gDim    = min(qsz/(2*bDim),mgDim)
+
+!$acc host_data use_device(bsmod1,bsmod2,bsmod3,qgridout_2d
+!$acc&         ,ered_buff,vred_buf1)
+      call pme_convd_kcu<<<gDim,bDim,0,rec_stream>>>
+     &    (bsmod1,bsmod2,bsmod3
+     &    ,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
+     &    ,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3
+     &    ,bfac,fac1,fac2,fac3,denom0,pterm,xbox_,calc_e,use_bounds
+     &    ,qgridout_2d,ered_buff,vred_buf1)
+      call check_launch_kernel(" pme_convd_kcu")
+!$acc end host_data
+
+      if (calc_e.or.use_virial) then
+      call reduce_energy_virial(e,vxx,vyz,vyz,vyy,vyz,vzz
+     &           ,ered_buff,vred_buf1,rec_queue)
+      end if
+
+      call timer_exit ( timer_scalar,quiet_timers )
+
+      end subroutine
+
       subroutine cudaMaxGridSize(kernelname,gS)
       use cudafor
       use echargecu  ,only: ecreal1_kcu,ecreal3_kcu
       use eChgLjcu
-      use empole1cu  ,only: emreal1shr_kcu,emreal3_kcu
+      use empole1cu  ,only: emreal1_kcu,emreal3_kcu
       use epolar1cu  ,only: epreal1c_core_cu
      &               ,epreal3_cu,mpreal1c_core_cu
       use pmestuffcu
@@ -2342,21 +2688,21 @@ c
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."grid_pchg_core") then
+      else if (kernelname.eq."grid_put_site_kcu1") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,grid_pchg_sitecu_core_1p,PME_BLOCK_DIM1,0)
+     &          (gS,grid_put_site_kcu1,PME_BLOCK_DIM1,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."grid_pchg_force_core") then
+      else if (kernelname.eq."grid_calc_frc_kcu") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,grid_pchg_force_core,PME_BLOCK_DIM1,0)
+     &          (gS,grid_calc_frc_kcu,PME_BLOCK_DIM1,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."grid_pchg_force_core1") then
+      else if (kernelname.eq."grid_calc_frc_kcu1") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,grid_pchg_force_core1,PME_BLOCK_DIM1,0)
+     &          (gS,grid_calc_frc_kcu1,PME_BLOCK_DIM1,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
@@ -2384,9 +2730,9 @@ c
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP
-      else if (kernelname.eq."emreal1shr_kcu") then
+      else if (kernelname.eq."emreal1_kcu") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
-     &          (gS,emreal1shr_kcu,BLOCK_DIM,0)
+     &          (gS,emreal1_kcu,BLOCK_DIM,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP

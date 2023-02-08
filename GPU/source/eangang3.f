@@ -14,7 +14,7 @@ c     "eangang3" calculates the angle-angle potential energy;
 c     also partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eangang3
       use action
       use analyz
@@ -50,6 +50,7 @@ c
       real(t_p) xeb,yeb,zeb
       real(t_p) rab2,rcb2
       real(t_p) rdb2,reb2
+      real(t_p) fgrp
       logical proceed
       logical header,huge
 c
@@ -60,7 +61,6 @@ c
       eaa = 0.0_ti_p
       aeaa = 0.0_ti_p
       header = .true.
-      print*, 'angang3'
 c
 c     find the energy of each angle-angle interaction
 c
@@ -77,7 +77,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,0)
          proceed = (use(ia) .or. use(ib) .or. use(ic)
      &                               .or. use(id) .or. use(ie))
 c
@@ -139,6 +139,10 @@ c
 c     get the angle-angle interaction energy
 c
                e = aaunit * kaa(iangang) * dt1 * dt2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) e = e * fgrp
 c
 c     increment the total angle-angle energy
 c

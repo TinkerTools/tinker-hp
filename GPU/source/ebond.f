@@ -13,10 +13,11 @@ c
 c     "ebond" calculates the bond stretching energy
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module ebond_inl
+#include "atomicOp.h.f"
         contains
-#include "image.f.inc"
+#include "ker_bond.inc.f"
       end module
 
       subroutine ebond
@@ -26,23 +27,26 @@ c
       use bndpot
       use bond
       use bound
+      use deriv
+      use domdec
       use ebond_inl
       use energi
       use group
       use nvshmem
-      use tinheader
       use timestat ,only: timer_enter,timer_exit,timer_ebond
      &             ,quiet_timers
+      use tinheader
+      use tinTypes ,only: real3
       use usage
+      use virial
       implicit none
-      integer i,ia,ib,ibond
-      integer ind,ipe
-      real(t_p) e,ideal,force
-      real(t_p) expterm,bde
-      real(t_p) dt,dt2
-      real(t_p) xab,yab,zab,rab
-      logical proceed
-c
+      integer     i,ia,ib,ibond,fea,ver
+      real(t_p)   ideal,force,e,fgrp,xab,yab,zab
+      type(real3) ded
+      parameter(
+     &       ver=__use_ene__,
+     &       fea=__use_gamd__+__use_polymer__+__use_groups__
+     &         )
 c
 c     zero out the bond stretching energy
 c
@@ -51,7 +55,16 @@ c
 c
 c     calculate the bond stretching energy term
 c
-!$acc parallel loop default(present) present(eb) async
+!$acc parallel loop present(x,y,z,use,loc,bndglob,grplist,wgrp
+!$acc&    ,eb,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&     async
+#ifdef USE_NVSHMEM_CUDA
+!$acc&         deviceptr(d_ibnd,d_bl,d_bk)
+#else
+!$acc&         present(bl,bk,ibnd)
+#endif
+!$acc&         reduction(+:eb)
+!$acc&         private(fgrp)
       do ibond = 1, nbondloc
          i     = bndglob(ibond)
 #ifdef USE_NVSHMEM_CUDA
@@ -67,42 +80,23 @@ c
          ideal = bl(i)
          force = bk(i)
 #endif
-c
-c     decide whether to compute the current interaction
-c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         if (use_group.AND.IAND(fea,__use_groups__).NE.0)
+     &      call groups2_inl(fgrp,ia,ib,ngrp,grplist,wgrp)
 c
 c     compute the value of the bond length deviation
+c     decide whether to compute the current interaction
 c
-         if (proceed) then
-            xab = x(ia) - x(ib)
-            yab = y(ia) - y(ib)
-            zab = z(ia) - z(ib)
-            if (use_polymer)  call image_inl (xab,yab,zab)
-            rab = sqrt(xab*xab + yab*yab + zab*zab)
-            dt = rab - ideal
-c
-c     harmonic potential uses Taylor expansion of Morse potential
-c     through the fourth power of the bond length deviation
-c
-            if (bndtyp_i .eq. BND_HARMONIC) then
-               dt2 = dt * dt
-               e = bndunit * force * dt2 * (1.0_ti_p+cbnd*dt+qbnd*dt2)
-c
-c     Morse potential uses energy = BDE * (1 - e**(-alpha*dt))**2)
-c     with the approximations alpha = sqrt(ForceConst/BDE) = -2
-c     and BDE = Bond Dissociation Energy = ForceConst/alpha**2
-c
-            else if (bndtyp_i .eq. BND_MORSE) then
-               expterm = exp(-2.0_ti_p*dt)
-               bde = 0.25_ti_p * bndunit * force
-               e = bde * (1.0_ti_p-expterm)**2
-            end if
-c
-c     increment the total bond stretching energy
-c
-            eb = eb + e
+         if (useAll.or.use(ia).or.use(ib)) then
+
+         xab = x(ia) - x(ib)
+         yab = y(ia) - y(ib)
+         zab = z(ia) - z(ib)
+         call ker_bond(i,ia,ib,loc,ideal,force,fgrp,xab,yab,zab
+     &           ,bndtyp_i,use_polymer,use_group
+     &           ,cbnd,qbnd,bndunit,eb,e,ded
+     &           ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &           ,ver,fea)
+
          end if
       end do
       call timer_exit( timer_ebond,quiet_timers )

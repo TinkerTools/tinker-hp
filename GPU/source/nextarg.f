@@ -14,7 +14,7 @@ c     "nextarg" finds the next unused command line argument
 c     and returns it in the input character string
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine nextarg (string,exist)
       use argue
       implicit none

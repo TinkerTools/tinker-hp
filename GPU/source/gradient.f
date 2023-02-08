@@ -14,7 +14,7 @@ c     "gradient" calls subroutines to calculate the potential energy
 c     and first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
       module gradient_inl
       contains
@@ -22,16 +22,19 @@ c
       end module
 
       subroutine gradient (energy,derivs)
+      use ani
       use atoms
       use atmlst
       use atmtyp
       use bitor
+      use cell
       use colvars
       use couple
       use deriv
       use domdec
       use energi
       use gradient_inl
+      use group
       use inter
       use iounit
       use inform    ,only:abort,minmaxone,deb_Force
@@ -45,7 +48,7 @@ c
       use timestat
       use tors
       use tortor
-      use utilgpu   ,only:rec_queue,inf_r,zero_mdred_buffers
+      use utilgpu   ,only:rec_queue,def_queue,inf_r,zero_mdred_buffers
       use sizes
       use vdwpot
       use virial
@@ -56,11 +59,16 @@ c
       real(r_p) time0,time1,time2
       logical tinker_isnan_m
       logical,save::first_in_gradient=.true.
+      real(t_p), allocatable, save :: wgrp_save(:,:)
 
       if (first_in_gradient) then
          first_in_gradient=.false.
       end if
 
+      if(use_ml_embedding .and. use_mlpot) then
+        call save_wgrp
+        call set_embedding_weights()
+      endif
 
       call timer_enter( timer_fmanage )
       if (calc_e.or.use_virial) then    ! Energy and virial computation
@@ -68,11 +76,13 @@ c
 !$acc host_data use_device(energy
 !$acc&          ,eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
 !$acc&          ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
+!$acc&          ,edsp,edsprec,er,ect,emlpot
 !$acc&          ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
 !$acc&          ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&          ,ensmd,einter,ePaMD,eDaMD,eW1aMD)
 !$acc serial deviceptr(eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
 !$acc&      ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
+!$acc&      ,edsp,edsprec,er,ect,emlpot
 !$acc&      ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
 !$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(rec_queue)
@@ -87,8 +97,13 @@ c
       eat      = 0.0_re_p  ! eangtor
       ebt      = 0.0_re_p  ! estrtor
       ea       = 0.0_re_p  ! eangle
+      emlpot   = 0.0_re_p  ! emlpot
       ev       = 0.0_re_p  ! ehal1
       ev_r     = 0
+      edsp     = 0         ! edisp
+      edsprec  = 0         ! edisp rec
+      er       = 0         ! erepel
+      ect      = 0         ! echgtrn
       em       = 0.0_re_p  ! empole
       emrec    = 0.0_re_p  ! empole (reciprocal)
       em_r     = 0
@@ -178,6 +193,12 @@ c
       if (use_geom)     call egeom1gpu
       if (use_extra)    call extra1
       if (use_bond) call timer_exit ( timer_bonded )
+      
+      if (use_mlpot) then
+         call timer_enter(timer_b1)
+         call ml_potential(.true.)
+         call timer_exit(timer_b1)
+      end if
 
 !
 !     ----------------------------------------
@@ -195,6 +216,12 @@ c
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal1gpu
          call timer_exit ( timer_vdw )
       end if
+      if (use_repuls)   call erepel1
+      if (use_disp)     call edisp1
+c
+c     alter partial charges and multipoles for charge flux
+c
+      if (use_chgflx)  call alterchg1
 c
 c     call the electrostatic energy and gradient routines
 c
@@ -208,8 +235,11 @@ c
                         call epolar1gpu
          call timer_exit ( timer_polar )
       endif
+      if (use_chgtrn)   call echgtrn1gpu
 
       if (use_smd_velconst.or.use_smd_forconst) call esmd1
+
+      if (use_group) call switch_group(.TRUE.)
 
       if (use_vdw.or.use_mpole.or.use_charge)
      &   call timer_exit(timer_nonbonded)
@@ -234,11 +264,13 @@ c
 !$acc host_data use_device(energy
 !$acc&         ,eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
 !$acc&         ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
+!$acc&         ,edsp,edsprec,er,ect
 !$acc&         ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
 !$acc&         ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&         ,ensmd,einter,ePaMD,eDaMD,eW1aMD)
 !$acc serial deviceptr(energy,eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
 !$acc&      ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
+!$acc&      ,edsp,edsprec,er,ect
 !$acc&      ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
 !$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(rec_queue)
@@ -261,7 +293,7 @@ c
       if (eb_r.ne.0) eb = eb + enr2en(eb_r)
       esum = eit + eopd + eopb + eaa + eub + eba + ea + eb + em  + ep
      &      + ec + ev   + et   + ept + ebt + eat +ett + eg + ex + eid
-     &      + ensmd
+     &      + ensmd + emlpot + enr2en(edsp + er + ect)
       energy = esum
 !$acc end serial
 !$acc end host_data
@@ -270,6 +302,11 @@ c
 
       ! Apply plumed bias
       if (lplumed) call eplumed(energy,derivs)
+
+      if(use_ml_embedding .and. use_mlpot) then
+        wgrp = wgrp_save
+!$acc update device(wgrp) async
+      endif
 
 c
 c     check for an illegal value for the total energy

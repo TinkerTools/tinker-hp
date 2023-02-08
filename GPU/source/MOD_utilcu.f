@@ -11,13 +11,12 @@ c     ####################################################################
 c
 #ifdef _CUDA
 #define TINKER_CUF
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module utilcu
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
         use libm ,only: f_sign=>copysignf, f_abs=>fabsf
      &           , f_sqrt=>sqrtf, f_floor=>floorf, f_erfc=>erfcf
-     &           , f_exp=>expf
+     &           , f_exp=>expf, f_min=>fminf, f_max=>fmaxf
         use cudadevice ,only: f_inv=>__frcp_rn
 #  ifdef USE_DETERMINISTIC_REDUCTION
      &                 , __tp2ll_rz=>__float2ll_rz
@@ -26,6 +25,7 @@ c
 #else
         use libm ,only: f_sign=>copysign, f_abs=>fabs
      &           , f_floor=>floor, f_erfc=> erfc
+     &           , f_min=>fmin, f_max=>fmax
         use cudadevice ,only: f_inv=>__drcp_rn
 #endif
         use cudadevice ,only: __ll_as_tp=>__longlong_as_double
@@ -40,7 +40,7 @@ c
         integer  ,parameter :: PME_FPHI_BDIM=PME_BLOCK_DIM
         integer  ,parameter :: VDW_BLOCK_DIM=BLOCK_DIM
         integer  ,parameter :: TRP_BLOCK_DIM=64
-        integer  ,constant  :: nproc, ndir
+        integer  ,constant  :: nproc, ndir, ngrp
         real(t_p),constant  :: xcell,ycell,zcell
      &           ,i_xcell,i_ycell,i_zcell
      &           ,xcell2,ycell2,zcell2,mincell2,eps_cell,box34
@@ -83,7 +83,7 @@ c
         xcell2  = xcell2_
         ycell2  = ycell2_
         zcell2  = zcell2_
-        mincell2= min(xcell2_,ycell2_,zcell2_)
+        mincell2= minval([xcell2_,ycell2_,zcell2_])
         eps_cell= eps_cell_
         i_xcell = 1/xcell_
         i_ycell = 1/ycell_
@@ -98,6 +98,12 @@ c
         implicit none
         logical,intent(in):: use_vir
         use_virial = use_vir
+        end subroutine
+
+        subroutine htod_ngrp(ngrp_)
+        implicit none
+        integer,intent(in)::ngrp_
+        ngrp = ngrp_
         end subroutine
 
         subroutine cu_update_vcouple(vcouple_)
@@ -221,6 +227,32 @@ c
       if (present(offset)) offset_=offset
       ierr = cudaMemsetAsync(dst(offset_),val,n,stream)
       call chk_cuAPI_O(ierr,'utilcu_cuMemset')
+      end subroutine
+
+      attributes(device) subroutine
+     &          warpReduce_ev(e,vxx,vxy,vxz,vyy,vyz,vzz)
+      ener_rtyp e
+      real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
+      integer i
+      i=1
+      do while( i.lt.WARPSIZE )
+         vxx = min( vxx,__shfl_xor(vxx,i+1) )
+         vxy = min( vxy,__shfl_xor(vxy,i+1) )
+         vxz = min( vxz,__shfl_xor(vxz,i+1) )
+         vyy = min( vyy,__shfl_xor(vyy,i+1) )
+         vyz = min( vyz,__shfl_xor(vyz,i+1) )
+         vzz = min( vzz,__shfl_xor(vzz,i+1) )
+         i = i*2
+      end do
+      end subroutine
+
+      attributes(global) subroutine
+     &          reduce_ev(e,vxx,vxy,vxz,vyy,vyz,vzz,ered_b,vred_b)
+      ener_rtyp,device:: e(1)
+      real(r_p),device:: vxx(1),vxy(1),vxz(1),vyy(1),vyz(1),vzz(1)
+      real(t_p),device:: vred_b(*)
+      ener_rtyp,device:: ered_b(*)
+      integer i
       end subroutine
 
         attributes(global)

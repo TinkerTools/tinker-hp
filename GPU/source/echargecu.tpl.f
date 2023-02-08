@@ -28,7 +28,7 @@ c
      &            ,ieblst(*),eblst(*),correct_ik(siz,2)
      &            ,grplist(*),chglist(*)
         real(t_p) ,device,intent(in):: x(*),y(*),z(*),pchg(*),pchg_(*)
-     &            ,x_(*),y_(*),z_(*),correct_scale(*),wgrp(maxgrp+1,*)
+     &            ,x_(*),y_(*),z_(*),correct_scale(*),wgrp(ngrp+1,*)
         integer   ,device:: act_buff(*)
         real(t_p) ,device:: vir_buff(*)
         real(r_p) ,device:: lam_buff(*)
@@ -105,8 +105,8 @@ c
 #if __tfea__ & __use_groups__
               if (use_group) then; block
               real(t_p) fgrp
-                 call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
-                 scale_f = scale_f * fgrp
+                 call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
+                 scale_f = 1.0 - scale_f*(1.0-fgrp)
               end block; end if
 #endif
              !correct pair
@@ -270,7 +270,10 @@ c
 #endif
 #if __tfea__ & __use_groups__
                  if (use_group) then
-                    call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+                    call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
+                    fgrp = 1.0-fgrp
+                 else
+                    fgrp = 0.0
                  end if
 #endif 
 #if __tfea__ & (__use_lambdadyn__+__use_softcore__)
@@ -278,12 +281,12 @@ c
 #endif
                  call charge_couple(d2,pos%x,pos%y,pos%z,ebuffer
 #if __tfea__ & (__use_lambdadyn__+__use_softcore__)
-     &                             ,fi_*fk_(klane),fi*fk(klane),aewald
+     &                      ,fi_*fk_(klane),fi*fk(klane),aewald
 #else
-     &                             ,fi_,fi*fk(klane),aewald
+     &                      ,fi_,fi*fk(klane),aewald
 #endif
-     &     ,fgrp,mutik,use_lambdadyn,shortheal,scut,elambda,delambdae_
-     &                             ,e,frc,ver,fea)
+     &                      ,fgrp,mutik,use_lambdadyn,shortheal,scut
+     &                      ,elambda,delambdae_,e,frc,ver,fea)
 
 #if __tver__ & __use_ene__
                  ec_     =  ec_ + tp2enr(e)

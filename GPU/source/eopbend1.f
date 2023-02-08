@@ -15,7 +15,7 @@ c     first derivatives at trigonal centers via a Wilson-Decius-Cross
 c     or Allinger angle
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eopbend1
       use angle
       use angpot
@@ -35,7 +35,7 @@ c
       integer i,iopbend,iopbendloc
       integer ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
-      real(t_p) e,angle1,force
+      real(t_p) e,angle1,force,fgrp
       real(t_p) dot,cosine
       real(t_p) cc,ee,bkk2,term
       real(t_p) deddt,dedcos
@@ -65,8 +65,6 @@ c
       real(t_p) vyx,vzx,vzy
       logical proceed
 c
-!$acc update host(deopb,vir)
-c
 c     zero out out-of-plane energy and first derivatives
 c
       eopb = 0.0_ti_p
@@ -88,8 +86,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     get the coordinates of the atoms at trigonal center
@@ -169,7 +167,20 @@ c
                deddt = opbunit * force * dt * radian
      &                * (2.0_ti_p + 3.0_ti_p*copb*dt + 4.0_ti_p*qopb*dt2
      &                        + 5.0_ti_p*popb*dt3 + 6.0_ti_p*sopb*dt4)
+
+               if(use_group) then
+                  call groups(fgrp,ia,ib,ic,id,0,0)
+                  e = e*fgrp
+                  deddt = deddt*fgrp
+                endif
                dedcos = -deddt * sign(1.0_ti_p,ee) / sqrt(cc*bkk2)
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedcos = dedcos * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c
@@ -261,6 +272,5 @@ c
             end if
          end if
       end do
-!$acc update device(deopb,vir)
       return
       end

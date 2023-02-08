@@ -19,9 +19,11 @@ c
       use domdec,only:rank
       use iounit,only:iout
       use mpi
+      use mdstate
       implicit none
       integer errorcode,ierr
 c
+      if (track_mds) call mds_prt
 c
 c     print a final warning message, then quit
 c

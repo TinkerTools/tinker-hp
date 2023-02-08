@@ -14,7 +14,7 @@ c     "echarge1" calculates the charge-charge interaction energy
 c     and first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine echarge1
       use potent
       implicit none
@@ -355,6 +355,7 @@ c
       use domdec
       use energi
       use ewald
+      use group
       use iounit
       use inform
       use inter
@@ -375,7 +376,7 @@ c
       real(t_p) e,de,efull
       real(t_p) f,fi,fik
       real(t_p) r,r2,rew
-      real(t_p) rb,rb2
+      real(t_p) rb,rb2,fgrp
       real(t_p) qitemp,qktemp
 
       real(t_p) xi,yi,zi
@@ -472,6 +473,7 @@ c
               write(iout,1000)
               cycle
             end if
+            if(use_group) call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -491,6 +493,7 @@ c
                rew = aewald * r
                erfterm = erfc (rew)
                scale = cscale(kglob)
+               if(use_group) scale = scale * fgrp
                scaleterm = scale - 1.0
                e = (fik/rb) * (erfterm+scaleterm)
                de = -fik * ((erfterm+scaleterm)/rb2

@@ -14,7 +14,7 @@ c     "kmpole" assigns atomic multipole moments to the atoms of
 c     the structure and processes any new or changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kmpole(init,istep)
       use sizes
       use atmlst
@@ -683,6 +683,7 @@ c
 c
  230    call MPI_BARRIER(hostcomm,ierr)
         call MPI_BCAST(npole,1,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(nZ_Onlyglob, 1,    MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(ncp,1,MPI_INT,0,hostcomm,ierr)
 
         if (.not. use_polar)
@@ -696,6 +697,7 @@ c
            use_mlist = .false.
 !$acc update device(use_mpole)
         end if
+        if (ncp .ne. 0)  use_chgpen = .true.
 
         call upload_device_mpole
 c
@@ -717,20 +719,6 @@ c
         end if
       end if
 c
-      call prmem_request(poleglob   ,   nbloc,async=.true.)
-      call prmem_request(polerecglob,nlocrec2,async=.true.)
-c
-c       remove any zero or undefined atomic multipoles
-c
-      !TODO Clean this part
-      if (.not.use_mpole.or.use_polar) return
-
-         if (nproc.eq.1) then
-            call kpolar_reset1(istep)
-         else
-            call kpolar_reset(istep)
-         end if
-
       end
 
       subroutine FromPolaxe2Ipolaxe

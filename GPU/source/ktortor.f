@@ -14,7 +14,7 @@ c     "ktortor" assigns torsion-torsion parameters to adjacent
 c     torsion pairs and processes any new or changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine ktortor(init)
       use atmlst
       use atmtyp

@@ -14,9 +14,7 @@ c     "ehal1" calculates the buffered 14-7 van der waals energy and
 c     its first derivatives with respect to cartesian coordinates
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
-
+#include "tinker_macro.h"
       module ehal1gpu_inl
         real(r_p) elrc,vlrc
 !$acc declare create(elrc,vlrc)
@@ -42,19 +40,23 @@ c
       use virial     ,only: vir
       use vdwpot     ,only: use_vcorr
       implicit none
+      character*11 mode
+      logical      fullrange
 c
       ! PME-Core case
       if (use_pmecore.and.rank.ge.ndir) return
+      def_queue = dir_queue
+      fullrange = .not.(use_vdwshort.or.use_vdwlong)
 c
 c     choose the method for summing over pairwise interactions
 c
-      def_queue = dir_queue
       call ehal1c_p
 c
 c     apply long range van der Waals correction if desired
 c
-      if (use_vcorr.and..not.use_vdwlong) then
-         call evcorr1gpu (elrc,vlrc)
+      if (use_vcorr.and.(fullrange.or.use_vdwlong)) then
+         mode = "VDW"
+         call evcorr1gpu (mode,elrc,vlrc)
 !$acc serial present(ev,vir,elrc,vlrc) async(def_queue)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
@@ -87,7 +89,7 @@ c
       use domdec    ,only: loc,rank,nbloc
       use ehal1gpu_inl
       use energi    ,only: ev=>ev_r
-      use group     ,only: use_group,grplist,wgrp
+      use group     ,only: use_group,ngrp,grplist,wgrp
       use inform    ,only: deb_Path
       use mutant    ,only: scalpha,scexp,vlambda,vcouple,mut=>mutInt
      &              ,nmut
@@ -245,7 +247,8 @@ c
             eps2 = epsilon (kt,it)
          end if
 
-         if (use_group) call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+         if (use_group) 
+     &      call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 
          ! Compute pairwaise
          call duo_hal
@@ -349,7 +352,7 @@ c
             eps2 = epsilon (kt,it)
 
             if (use_group) 
-     &         call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &         call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
             
             ! Compute pairwaise
             call duo_hal
@@ -388,42 +391,43 @@ c
 
       end subroutine
 
+c      subroutine apply_vdw_reduction_factor_
+c      use atmlst    ,only: vdwglob
+c      use atoms     ,only: x,y,z
+c      use domdec    ,only: loc
+c      use tinMemory ,only: prmem_request
+c      use utilgpu   ,only: inf,def_queue
+c      use vdw       ,only: ired,ivdw,kred
+c     &              ,nvdwlocnl,nvdwlocnlb,nvdwbloc
+c      use vdw_locArray
+c      implicit none
+c      integer   k,i,iglob,iv
+c      real(t_p) rdn,rdn1
+c
+c      call prmem_request(xred    ,nvdwbloc,queue=def_queue)
+c      call prmem_request(yred    ,nvdwbloc,queue=def_queue)
+c      call prmem_request(zred    ,nvdwbloc,queue=def_queue)
+cc
+cc     apply any reduction factor to the atomic coordinates
+cc
+c!$acc parallel loop default(present) async(def_queue)
+c      do k = 1,nvdwbloc
+c         iglob    = ivdw(vdwglob(k))
+c         i        = loc  (iglob)
+c         iv       = ired (iglob)
+c         rdn      = kred (iglob)
+c         rdn1     = 1.0_ti_p - rdn
+c         xredc(i)  = rdn * x(iglob) + rdn1 * x(iv)
+c         yredc(i)  = rdn * y(iglob) + rdn1 * y(iv)
+c         zredc(i)  = rdn * z(iglob) + rdn1 * z(iv)
+c      end do
+c      end subroutine
+
       subroutine apply_vdw_reduction_factor
       use atmlst    ,only: vdwglob
       use atoms     ,only: x,y,z
-      use domdec    ,only: loc
-      use tinMemory ,only: prmem_request
-      use utilgpu   ,only: inf,def_queue
-      use vdw       ,only: ired,ivdw,kred
-     &              ,nvdwlocnl,nvdwlocnlb,nvdwbloc
-      use vdw_locArray
-      implicit none
-      integer   k,i,iglob,iv
-      real(t_p) rdn,rdn1
-
-      call prmem_request(xred    ,nvdwbloc,queue=def_queue)
-      call prmem_request(yred    ,nvdwbloc,queue=def_queue)
-      call prmem_request(zred    ,nvdwbloc,queue=def_queue)
-c
-c     apply any reduction factor to the atomic coordinates
-c
-!$acc parallel loop default(present) async(def_queue)
-      do k = 1,nvdwbloc
-         iglob    = ivdw(vdwglob(k))
-         i        = loc  (iglob)
-         iv       = ired (iglob)
-         rdn      = kred (iglob)
-         rdn1     = 1.0_ti_p - rdn
-         xredc(i)  = rdn * x(iglob) + rdn1 * x(iv)
-         yredc(i)  = rdn * y(iglob) + rdn1 * y(iv)
-         zredc(i)  = rdn * z(iglob) + rdn1 * z(iv)
-      end do
-      end subroutine
-
-      subroutine apply_vdw_reduction_factor1
-      use atmlst    ,only: vdwglob
-      use atoms     ,only: x,y,z
       use domdec    ,only: loc,nbloc
+      use ehal1gpu_inl
       use neigh     ,only: sgl_id,slc_id,cellv_jvdw
       use tinMemory ,only: prmem_request
       use utilgpu   ,only: inf,def_queue
@@ -432,7 +436,7 @@ c
       use vdw_locArray
       implicit none
       integer   k,i,iglob,iv,nvdwa
-      real(t_p) rdn,rdn1
+      real(t_p) rdn,rdn1,xr,yr,zr
 
       nvdwa = max(nvdwbloc,nvdwlocnlb)
 
@@ -458,9 +462,13 @@ c
             slc_id(k)   = loc(iglob)
             loc_ired(k) = loc(iv)
             loc_kred(k) = merge(rdn,1.0_ti_p,iglob.eq.iv)
-            xred(k)  = rdn * x(iglob) + rdn1 * x(iv)
-            yred(k)  = rdn * y(iglob) + rdn1 * y(iv)
-            zred(k)  = rdn * z(iglob) + rdn1 * z(iv)
+            xr       = rdn * x(iglob) + rdn1 * x(iv)
+            yr       = rdn * y(iglob) + rdn1 * y(iv)
+            zr       = rdn * z(iglob) + rdn1 * z(iv)
+            call image_inl(xr,yr,zr)
+            xred(k)  = xr
+            yred(k)  = yr
+            zred(k)  = zr
          else if (k.le.nvdwlocnlb) then
             ! Exclusion buffer to prevent interaction compute
             slc_id(k)   = nbloc
@@ -495,6 +503,7 @@ c
       use deriv  , dev_=>de_ws2
       use inform , only: deb_Path
       use utilgpu, only: def_queue
+      use group
       implicit none
       integer ii,j,i,il,iglob
       real(md_p) ded,de_red
@@ -618,7 +627,7 @@ c
      &   call stream_wait_async(rec_stream,dir_stream,rec_event)
 
       !if (use_virial.or.calc_e) call zero_evir_red_buffer(def_queue)
-      call apply_vdw_reduction_factor1
+      call apply_vdw_reduction_factor
 c
 c     Call Vdw kernel in CUDA using C2 nblist
 c
@@ -769,6 +778,7 @@ c
       use utilcu    ,only: check_launch_kernel
 #endif
       use energi    ,only: ev=>ev_r
+      use group     ,only: ngrp,wgrp,grplist,use_group
       use inform    ,only: deb_Path,dibuff
       use mutant    ,only: scalpha,scexp,vlambda,vcouple,mut=>mutInt
       use neigh 
@@ -967,6 +977,7 @@ c!$acc end atomic
 c
 c     find van der Waals energy and derivatives via neighbor list
 c
+#ifdef _OPENACC
 #if 0
 !$acc parallel loop num_gangs(2) vector_length(32)
 !$acc&         async(def_queue)
@@ -1066,7 +1077,7 @@ c
 c     Call Vdw kernel in CUDA using C2 nblist
 c
 !$acc host_data use_device(xred,yred,zred,sgl_id,slc_id
-!$acc&    ,loc_ired,ivblst,vblst,cellv_jvdw
+!$acc&    ,loc_ired,ivblst,vblst,cellv_jvdw,grplist,wgrp
 !$acc&    ,epsilon_c,radmin_c,mut,ired,kred,dev,ered_buff,vred_buff
 #ifdef TINKER_DEBUG
 !$acc&    ,inter
@@ -1081,12 +1092,12 @@ c
      &           (xred,yred,zred,sgl_id,slc_id,loc_ired
      &           ,ivblst,vblst(lst_start),cellv_jvdw
      &           ,epsilon_c,radmin_c
-     &           ,ired,kred,dev,ered_buff,vred_buff
+     &           ,ired,kred,grplist,wgrp,dev,ered_buff,vred_buff
      &           ,nvdwlocnlb2_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &           ,nvdwclass,rinv
      &           ,c0,c1,c2,c3,c4,c5,cut2,off2,off
      &           ,scexp,vlambda,scalpha,mut
-     &           ,shortheal,ghal,dhal,use_vdwshort
+     &           ,shortheal,ghal,dhal,use_vdwshort,use_group
      &           ,xmin,xmax,ymin,ymax,zmin,zmax
      &           ,int1,int2,rank
 #ifdef TINKER_DEBUG
@@ -1119,6 +1130,7 @@ c
 
       call reduce_energy_virial(ev,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
      &                         ,ered_buff,def_queue)
+#endif
 #endif
 
 #if 0

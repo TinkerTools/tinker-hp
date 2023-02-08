@@ -44,51 +44,51 @@
         rb  = r + ebuffer
         rb2 = rb * rb
 
-        IF (iand(ver,sca).eq.0) THEN
+        IF (IAND(ver,sca).EQ.0) THEN
            rew     = aewald * r
            exp2a   = f_exp(-rew**2)
            erfterm = f_erfc (rew)
-           IF (iand(fea,ace).ne.0.or.iand(ver,ene).ne.0)
-     &        e = ((fik/rb)*(erfterm))
-           IF (iand(ver,grd).ne.0)de = -fik * ((erfterm)/rb2
+           IF (IAND(fea,ace).NE.0.or.IAND(ver,ene).NE.0)
+     &        e = (fik/rb)*(erfterm+cscale)
+           IF (IAND(ver,grd).NE.0) de= -fik *((erfterm+cscale)/rb2
      &                + (2.0*aewald/sqrtpi)*exp2a/rb)
         ELSE
-           IF (iand(fea,ace).ne.0.or.iand(ver,ene).ne.0)
+           IF (IAND(fea,ace).NE.0.or.IAND(ver,ene).NE.0)
      &        e = ((fik/rb)*(cscale))
-           IF (iand(ver,grd).ne.0)de = -fik     * (cscale)/rb2
+           IF (IAND(ver,grd).NE.0)de = -fik     * (cscale)/rb2
         END IF
 
-        IF (iand(fea,shr+lgr).ne.0) THEN
+        IF (IAND(fea,shr+lgr).NE.0) THEN
            call switch_respa_inl(r,chgshortcut,shortheal,s,ds)
-           IF (iand(fea,shr).ne.0) THEN
+           IF (IAND(fea,shr).NE.0) THEN
               de = de*s + e*ds
-              IF (iand(fea,ace).ne.0) e = e*s
+              IF (IAND(fea,ace).NE.0) e = e*s
            ELSE
               de = de *(1.0-s) - e*ds
-              IF (iand(fea,ace).ne.0) e = e *(1.0-s)
+              IF (IAND(fea,ace).NE.0) e = e *(1.0-s)
            END IF
         END IF
 c
 c       lambdadyn
 c
-        IF (iand(fea,lbd).ne.0) then
+        IF (IAND(fea,lbd).NE.0) THEN
 
         if (use_lambdadyn) then
            delambdae = 0.0
            if      (mutik.eq.twoi1) then
-              IF (iand(ver,sca).ne.0) THEN
-                 delambdae = 2.0*elambda*(fik_/rb)*erfterm
+              IF (IAND(ver,sca).EQ.0) THEN
+                 delambdae = 2.0*elambda*(fik_/rb)*(erfterm+cscale)
               ELSE
                  delambdae = 2.0*elambda*(fik_/rb)*cscale
               END IF
-              IF     (iand(fea,shr).ne.0) THEN
+              IF     (IAND(fea,shr).NE.0) THEN
                  delambdae = delambdae*s
-              ELSE IF(iand(fea,lgr).ne.0) THEN
+              ELSE IF(IAND(fea,lgr).NE.0) THEN
                  delambdae = delambdae*(1.0-s)
               END IF
            else if (mutik.eq.onei1) then
-              IF (iand(ver,sca).eq.0) THEN
-                 delambdae = (fik_/rb)*erfterm
+              IF (IAND(ver,sca).EQ.0) THEN
+                 delambdae = (fik_/rb)*(erfterm+cscale)
               ELSE
                  delambdae = (fik_/rb)*cscale
               END IF
@@ -99,7 +99,7 @@ c
 c
 c     form the chain rule terms for derivative expressions
 c
-        IF (iand(ver,grd).ne.0) THEN
+        IF (IAND(ver,grd).NE.0) THEN
            de     = de / r
            ded%x  = de * xr
            ded%y  = de * yr
@@ -135,17 +135,17 @@ c
      &           )
 
         rb  = (r + ebuffer)**(-1)
-        if (iand(ver,sca).eq.0) then
+        IF (iand(ver,sca).EQ.0) THEN
            rew     = aewald * r
            exp2a   = f_exp(-rew**2)
            erfterm = f_erfc(rew)
            if(iand(ver,ene).ne.0)  e  = e + (fik*rb*erfterm)
            if(iand(ver,grd).ne.0) de  = -fik*rb*(erfterm*rb
      &                                + aewaldop*exp2a)
-        else
+        ELSE
            if(iand(ver,ene).ne.0)  e  = e + (fik*rb*cscale)
            if(iand(ver,grd).ne.0) de  = -fik*cscale*rb*rb
-        end if
+        END IF
       end subroutine
 
 #endif

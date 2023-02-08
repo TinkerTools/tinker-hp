@@ -25,18 +25,21 @@ c
      &    efld0_directgpu_p,
      &    inducejac_pmegpu
       use math
+      use mdstate   ,only: track_mds,ms_back_p
+      use moldyn    ,only: step_c,stepint
       use mpole
       use pme
       use polar
       use polpot
       use potent
       use units
-      use utilcomm ,buffermpi=>buffermpi2d,buffermpimu=>buffermpimu1
+      use utilcomm  ,buffermpi=>buffermpi2d,buffermpimu=>buffermpimu1
       use utils
       use utilgpu
       use uprior
       use mpi
       use timestat
+      use tinheader ,only: i_init
       implicit none
 c
 c     with separate cores for reciprocal part
@@ -171,7 +174,12 @@ c
         end do
       end if
       wtime1 = mpi_wtime()
-
+c
+c     Reset predictor if MD State Tracking is enabled 
+c
+      if (track_mds.and.mod(step_c,ms_back_p).eq.1.and.stepint
+     &   .eq.i_init) call pred_reset
+c
 c     guess the dipoles:
 c
 c     predicted values for always stable predictor-corrector method
@@ -1183,10 +1191,6 @@ c
             cmp(j,i) = rpole_scale(j)*rpole(rpole_ind_extract(j),iipole)
          end do
       end do
-c
-c     compute B-spline coefficients
-c
-      !call bspline_fill_sitegpu
 c
 c     convert Cartesian multipoles to fractional coordinates
 c

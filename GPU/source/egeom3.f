@@ -15,7 +15,7 @@ c     distances, angles and torsions as well as Gaussian basin and
 c     droplet restraints; also partitions energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine egeom3
       use action
       use analyz
@@ -42,7 +42,7 @@ c
       integer inpfix,indfix,inafix,intfix,ingfix,inchir
       logical docompute
       real(t_p) xk,yk,zk
-      real(t_p) e,dt,dt2
+      real(t_p) e,dt,dt2,fgrp
       real(t_p) xr,yr,zr
       real(t_p) r,r2,r6,r12
       real(t_p) angle,target
@@ -93,8 +93,8 @@ c
          i = npfixglob(inpfix)
          ia = ipfix(i)
          ialoc = loc(ia)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia))
+         proceed = (use(ia))
+         if (use_group)  call groups (fgrp,ia,0,0,0,0,0)
          if (proceed) then
             xr = 0.0_ti_p
             yr = 0.0_ti_p
@@ -108,6 +108,7 @@ c
             dt = max(0.0_ti_p,r-pfix(2,i))
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             neg = neg + 1
             eg = eg + e
             aeg(ialoc) = aeg(ialoc) + e
@@ -152,8 +153,8 @@ c
          ialoc = loc(ia)
          ib = idfix(2,i)
          ibloc = loc(ib)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group)  call groups (fgrp,ia,ib,0,0,0,0)
          if (proceed) then
             xr = x(ia) - x(ib)
             yr = y(ia) - y(ib)
@@ -171,6 +172,7 @@ c            if (use_bounds)  call image (xr,yr,zr)
             dt = r - target
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             neg = neg + 1
             eg = eg + e
             aeg(ialoc) = aeg(ialoc) + 0.5_ti_p*e
@@ -206,8 +208,8 @@ c
          ibloc = loc(ib)
          ic = iafix(3,i)
          icloc = loc(ic)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if (use_group)  call groups (fgrp,ia,ib,ic,0,0,0)
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -241,9 +243,13 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group)  e = e * fgrp
                neg = neg + 1
                eg = eg + e
                aeg(ibloc) = aeg(ibloc) + e
+               if (intermol) then
+                  einter = einter + e
+               end if
                huge = (e .gt. 10.0_ti_p)
                if (debug .or. (verbose.and.huge)) then
                   if (header) then
@@ -272,8 +278,8 @@ c
          ic = itfix(3,i)
          icloc = loc(ic)
          id = itfix(4,i)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
          if (proceed) then
             xia = x(ia)
@@ -353,6 +359,7 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group) e = e * fgrp
                neg = neg + 1
                eg = eg + e
                aeg(ibloc) = aeg(ibloc) + 0.5_ti_p*e
@@ -428,6 +435,7 @@ c         if (use_bounds)  call image (xr,yr,zr)
          dt = r - target
          dt2 = dt * dt
          e = force * dt2
+         if (use_group)  e = e * fgrp
          neg = neg + 1
          eg = eg + e
          size = real(igrp(2,ia - igrp(1,ia) + 1),t_p)
@@ -471,8 +479,8 @@ c
          icloc = loc(ic)
          id = ichir(4,i)
          idloc = loc(id)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
          if (proceed) then
             xad = x(ia) - x(id)
@@ -497,6 +505,7 @@ c
             dt = vol - target
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             neg = neg + 1
             eg = eg + e
             aeg(ialoc) = aeg(ialoc) + 0.25_ti_p*e
@@ -532,20 +541,22 @@ c
                xk = x(kglob)
                yk = y(kglob)
                zk = z(kglob)
-               proceed = .true.
-               if (proceed)  proceed = (use(iglob) .or. use(kglob))
+               if (use_group)  call groups (fgrp,i,k,0,0,0,0)
+               proceed = (use(iglob) .or. use(kglob))
                if (proceed) then
                   xr = xi - xk
                   yr = yi - yk
                   zr = zi - zk
                   if (kglob.le.iglob) cycle
-                  call midpoint(xi,yi,zi,xk,yk,zk,docompute)
+                  call midpointimage(xi,yi,zi,xk,yk,zk,xr,yr,zr,
+     $              docompute)
                   if (.not.(docompute)) cycle
                   r2 = xr*xr + yr*yr + zr*zr
                   term = -width * r2
                   e = 0.0_ti_p
                   if (term .gt. -50.0_ti_p)  e = depth * exp(term)
                   e = e - depth
+                  if (use_group)  e = e * fgrp
                   neg = neg + 1
                   eg = eg + e
                   aeg(i) = aeg(i) + 0.5_ti_p*e
@@ -580,8 +591,8 @@ c
          b = 64.0_ti_p
          do i = 1, nloc
             iglob = glob(i)
-            proceed = .true.
-            if (proceed)  proceed = (use(iglob))
+            if (use_group)  call groups (fgrp,i,0,0,0,0,0)
+            proceed = (use(iglob))
             if (proceed) then
                xi = x(iglob)
                yi = y(iglob)
@@ -592,6 +603,7 @@ c
                r6 = r2 * r2 * r2
                r12 = r6 * r6
                e = a/r12 - b/r6
+               if (use_group)  e = e * fgrp
                neg = neg + 1
                eg = eg + e
                aeg(i) = aeg(i) + e

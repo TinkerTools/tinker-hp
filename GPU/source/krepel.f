@@ -15,7 +15,7 @@ c     number of valence electrons for Pauli repulsion interactions
 c     and processes any new or changed values for these parameters
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine krepel
       use atoms
       use atmtyp

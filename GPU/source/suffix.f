@@ -14,7 +14,7 @@ c     "suffix" checks a filename for the presence of an extension,
 c     and appends an extension and version if none is found
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine suffix (filename,extension,status)
       use ascii
       implicit none

@@ -14,9 +14,10 @@ c     "mechanic" sets up needed parameters for the potential energy
 c     calculation and reads in many of the user selectable options
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine mechanic
       use atoms,only:n
+      use cutoff 
       use domdec
       use deriv ,only: ConfigPotential
       use inform
@@ -34,11 +35,8 @@ c
       use openacc
 #endif
       use mpi
+      use polpot
       implicit none
-c
-c     assign electrostatic and dispersion Ewald sum parameters
-c
-      call kewald
 c
 c     set the bonded connectivity lists and active atoms
 c
@@ -47,10 +45,10 @@ c
 c
 c     find bonds, angles, torsions, bitorsions and small rings
 c
-      call bonds(.true.)
-      call angles(.true.)
+      call bonds   (.true.)
+      call angles  (.true.)
       call torsions(.true.)
-      call bitors(.true.)
+      call bitors  (.true.)
       call rings
 c
 c     get the base force field from parameter file and keyfile
@@ -81,11 +79,17 @@ c
 c     find any pisystem atoms, bonds and torsional angles
 c
 c      call orbital
+c
+c     assign electrostatic and dispersion Ewald sum parameters
+c
+      call kewald
+c
       call clean_shared_space(0)
 c
 c     assign bond, angle and cross term potential parameters
 c
       call kbond
+      call kmlpot(.true.,0)
       if (use_angle .or. use_strbnd .or. use_angang)
      &                 call kangle
       if (use_strbnd)  call kstrbnd(.true.)
@@ -112,12 +116,19 @@ c     assign van der Waals and electrostatic potential parameters
 c
       if (use_charge)  call kcharge(.true.,0)
       if (use_vdw   )  call kvdw   (.true.,0)
-      if (use_mpole .or. use_polar .or. use_solv)
+      if (use_mpole .or. use_polar .or. use_chgtrn .or. use_solv)
      &                 call kmpole (.true.,0)
-      if (use_polar .or. use_mpole)
+      if (use_polar .or. use_chgtrn)
      &                 call kpolar (.true.,0)
 
       if (use_chgtrn)  call kchgtrn(.true.,0)
+      if (use_mpole.or.use_polar.or.use_chgtrn) then
+         if (nproc.eq.1) then
+                       call kpolar_reset1(0)
+         else
+                       call kpolar_reset (0)
+         end if
+      end if
       if (use_chgflx)  call kchgflx
 c
 c     assign restraint parameters
@@ -149,24 +160,25 @@ c
 c     aMD parametrization
 c
       call kamd(.true.)
-c
-c     associate pointers routine
-c
-      call configure_routine
-c
-c     Set Potential
-c
-      call ConfigPotential
-c
-c     construct scaling factors
-c
-      call build_scaling_factor(0)
 #ifdef _OPENACC
 c
 c     init cuda rand engine
 c
       call init_curand_engine(n,rec_queue)
 #endif
+c
+c     associate pointers routine
+c
+      call configure_routine
+c
+c     construct scaling factors
+c
+      call build_scaling_factor(0)
+c
+c     Set Potential
+c
+      call ConfigPotential
+c
       if (tinkerdebug.gt.0) call print_field
 c
 c     quit if essential parameter information is missing
@@ -199,20 +211,23 @@ c
       use bitor ,only:nbitor
       use cflux ,only:naflx,nbflx
       use chgtrn,only:nct
+      use chgpen,only:ncp
       use disp  ,only:ndisp
       use charge,only:nion
-      use domdec
+      use domdec,only:ranktot
+      use group ,only:ngrp,use_group
       use improp,only:niprop
       use imptor,only:nitors
-      use kgeoms
+      use kgeoms,only:npfix,ndfix,nafix,ntfix,ngfix,nchir
+     &          ,use_basin,use_wall
       use mpole ,only:npole
       use mutant,only:nmut
       use strbnd,only:nstrbnd
       use opbend,only:nopbend
       use opdist,only:nopdist
-      use potent
       use polar ,only:npolar
-      use mpi
+      use polpot,only:use_thole,use_dirdamp
+      use potent
       use pitors,only:npitors
       use repel ,only:nrep
       use strtor,only:nstrtor
@@ -221,11 +236,19 @@ c
       use urey  ,only:nurey
       use vdw   ,only:nvdw
       implicit none
+      character*10 prop
+      logical u_mpole,u_mpolec,u_polar,u_polarc
  12   format(1x,A15,2x,I8)
  13   format(5x,11("-"),2x,8("+"))
  14   format(1x,A15,2x,I8,3x,I8)
+ 17   format(1x,A15,2x,I8,2x,A)
 
-      if (rank.eq.0) then
+      if (ranktot.eq.0) then
+         prop = merge(' DIRDAMP','',use_dirdamp)
+         u_mpole  = use_mpole.and..not.use_chgpen
+         u_mpolec = use_mpole.and.use_chgpen
+         u_polar  = use_polar.and.use_thole
+         u_polarc = use_polar.and.use_chgpen.and..not.use_dirdamp
 
       if (use_bond  ) write(*,12) 'BOND'  ,nbond
       if (use_angle ) write(*,12) 'ANGLE' ,nangle
@@ -248,9 +271,12 @@ c
       if (use_vdw   ) write(*,12) 'VDW'   ,nvdw
       if (use_disp  ) write(*,12) 'DISP'  ,ndisp
       if (use_repuls) write(*,12) 'REPULS',nrep
-      if (use_mpole ) write(*,12) 'MPOLE' ,npole
-      if (use_polar ) write(*,12) 'POLAR' ,npolar
+      if (u_mpole   ) write(*,12) 'MPOLE' ,npole
+      if (u_mpolec  ) write(*,12) 'MPOLE CHGPEN',npole
+      if (u_polar   ) write(*,17) 'POLAR THOLE ',npolar,prop
+      if (u_polarc  ) write(*,12) 'POLAR CHGPEN',ncp
       if (nmut.ne.0 ) write(*,12) 'MUTATION',nmut
+      if (use_group ) write(*,12) 'GROUP' ,ngrp
       if (use_geom  ) then
  15      format(1x,A15,2x,I7,5I5)
  16      format(1x,15x,2x,A7,5A5)
@@ -343,6 +369,7 @@ c
       logical,save:: save_angtor,save_tortor,save_geom
       logical,save:: save_metal,save_extra
       logical,save:: save_vdw,save_charge
+      logical,save:: save_chgtrn,save_disp,save_repuls
       logical,save:: save_dipole
       logical,save:: save_mpole,save_polar
       logical,save:: save_rxnfld,save_solv
@@ -355,9 +382,12 @@ c
       if (config.eq.save_field) then
 
       save_vdw    = use_vdw
+      save_disp   = use_disp
+      save_repuls = use_repuls
       save_charge = use_charge
       save_mpole  = use_mpole
       save_polar  = use_polar
+      save_chgtrn = use_chgtrn
       save_solv   = use_solv
       save_bond   = use_bond
       save_angle  = use_angle
@@ -392,7 +422,7 @@ c
       if (passed.and.remove) call delete_data_ktors
       ! kmpole
       passed = save_solv.or.save_mpole.or.save_polar
-      remove = .not.(use_mpole)
+      remove = .not.(use_mpole.or.use_polar.or.use_chgtrn)
       if (passed.and.remove) call dealloc_shared_mpole
       ! kpolar
       passed = save_polar.or.save_mpole
@@ -434,9 +464,8 @@ c     call molecule(.false.)
       call bitors  (.false.)
 !$acc wait
       if (use_charge)  call kcharge(.false.,istep)
-      if (use_mpole )  call kmpole (.false.,istep)
-      if (use_polar )  call kpolar (.false.,istep)
-      if (use_chgtrn)  call kchgtrn(.false.,istep)
+      if (use_mpole.or.use_polar.or.use_chgtrn)
+     &                 call kpolar_reset(istep)
       if (use_vdw   )  call kvdw   (.false.,istep)
       if (use_disp  )  call kdisp  (.false.,istep)
       if (use_strbnd)  call kstrbnd(.false.)
@@ -452,6 +481,7 @@ c     call molecule(.false.)
       if (use_tortor)  call ktortor(.false.)
       if (use_geom  )  call kgeom  (.false.)
       if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
+      if (use_mlpot)   call kmlpot_reset(.false.,istep)
 !$acc wait
       call dev_sort_global_buffers(istep)
       call initmpipmegpu
@@ -510,11 +540,11 @@ c        print*,use_strtor,use_tortor,use_geom
 !$acc wait
       else
          if (use_charge) call kcharge(.false.,istep)
-         if (use_mpole ) call kmpole (.false.,istep)
-         if (use_polar ) call kpolar (.false.,istep)
+         if (use_mpole.or.use_polar.or.use_chgtrn)
+     &                   call kpolar_reset(istep)
          if (use_vdw   ) call kvdw   (.false.,istep)
          if (use_disp  ) call kdisp  (.false.,istep)
-         if (use_chgtrn) call kchgtrn(.false.,istep)
+         if (use_mlpot)  call kmlpot_reset(.false.,istep)
 !$acc wait
          call dev_sort_global_buffers(istep)
          call initmpipmegpu
@@ -583,18 +613,17 @@ c      call molecule(.false.)
 !$acc wait
       else if (rule.eq.1) then
         if (use_charge) call kcharge(.false.,istep)
-        if (use_mpole ) call kmpole (.false.,istep)
-        if (use_polar ) call kpolar (.false.,istep)
+        if (use_mpole.or.use_polar.or.use_chgtrn)
+     &                  call kpolar_reset(istep)
         if (use_vdw   ) call kvdw   (.false.,istep)
-        if (use_chgtrn) call kchgtrn(.false.,istep)
 !$acc wait
       else if (rule.eq.2) then
         if (use_charge) call kcharge(.false.,istep)
-        if (use_mpole ) call kmpole (.false.,istep)
-        if (use_polar ) call kpolar (.false.,istep)
+        if (use_mpole.or.use_polar.or.use_chgtrn)
+     &                  call kpolar_reset(istep)
         if (use_vdw   ) call kvdw   (.false.,istep)
-        if (use_disp  ) call kdisp(.false.,istep)
-        if (use_chgtrn) call kchgtrn(.false.,istep)
+        if (use_disp  ) call kdisp  (.false.,istep)
+        if (use_mlpot)  call kmlpot_reset(.false.,istep)
 !$acc wait
         call dev_sort_global_buffers(istep)
         call build_scaling_factor(istep)
@@ -615,6 +644,8 @@ c
       use interfaces
       use mdstuf
       use neigh      ,only: defaultlbuffer,defaultlbuffer1,lbuffer
+      use potent     ,only: use_chgpen
+      use polpot     ,only: use_thole, use_dirdamp
       use utilgpu
       use sizes
       implicit none
@@ -631,6 +662,7 @@ c
 
       if (sub_config.eq.-1) then
          sub_config = itrf_legacy
+         devname(:) = ""
 #ifdef _OPENACC
          devname = devProp%name
          call upcase(devname)
@@ -661,7 +693,7 @@ c
                       buff_t = merge( 0.5,1.0,(n.gt.95000) )
                       call update_lbuffer(buff_t)
                    else
-                      buff_t = merge( 0.7,0.4,(n.gt.95000) )
+                      buff_t = merge( 0.4,0.7,(n.gt.95000) )
                       call update_lbuffer(buff_t)
                    end if
                end if
@@ -682,6 +714,8 @@ c
          else
             sub_config = itrf_adapted
          end if
+         if (use_chgpen.or.use_dirdamp)
+     &      sub_config = itrf_adapted
 #endif
          if (tinkerdebug.gt.0.and.rank.eq.0) then
  12         format( /,'  --- run mode :  LEGACY  ',/ )
@@ -704,21 +738,28 @@ c
       use charge ,only: nion
       use domdec ,only: nproc,nrec
       use group  ,only: use_group
-      use inform ,only: tinEssai,deb_Path
-      use precompute_pole,only: tmatxb_pme_compute,
-     &    precompute_solvpole
+      use inform ,only: tinEssai,deb_Path,app_id,dynamic_a
+      use precompute_pole,only: tmatxb_pme_compute,polar_precomp
       use potent ,only: use_polar,use_mpole,use_vdw
-     &           , use_charge,use_pmecore,use_lambdadyn,fuse_chglj
+     &           , use_charge, use_pmecore, use_lambdadyn, fuse_chglj
+     &           , use_chgpen, use_chgtrn, use_disp, use_repuls
+     &           , use_chgflx
       use polar  ,only: use_mpolar_ker
+      use polpot ,only: use_dirdamp, use_thole
+     &           , u1scale,u2scale,u3scale,u4scale
       use neigh  ,only: vlst_enable,vlst2_enable
      &           , mlst_enable,mlst2_enable
      &           , clst_enable,clst2_enable
       use sizes  ,only: tinkerdebug
+#ifdef _OPENACC
+      use utilgpu,only: allow_precomp
+#endif
       use vdw    ,only: nvdw
       use vdwpot ,only: vdwtyp
       implicit none
       integer configure,shft
       integer,parameter:: hexa_len=16,sh_len=4
+      real(t_p) puscale
 #if _OPENACC
       procedure(tmatxb_pme_core1):: tmatxb_pme_core_v4
 #endif
@@ -795,6 +836,13 @@ c
 
       end if
 
+      if (use_disp) then
+
+         vlst_enable = .true.
+         vlst2_enable = .true.
+
+      end if
+
       if (use_charge) then
          shft     = ishft(sub_config,-conf_echg*sh_len)
          configure=  iand(shft,hexa_len-1)
@@ -815,7 +863,7 @@ c
             if (vdwtyp.eq.'LENNARD-JONES'.and.maxn12_.lt.5
      &         .and.associated(elj1c_p,elj1c_cu).and..not.use_group
      &         .and.n.eq.nvdw.and..not.use_lambdadyn
-     &         .and.btest(tinEssai,0)) then
+     &         .and.app_id.eq.dynamic_a.and.btest(tinEssai,0)) then
                fuse_chglj   = .true.
                vlst2_enable = .false.
                elj1c_p      => tinker_void_sub
@@ -882,15 +930,25 @@ c
          configure=iand(shft,hexa_len-1)
          tmatxb_p              => tmatxb_pmegpu
          otf_dc_tmatxb_pme_core_p => otf_dc_tmatxb_pme_core2
+         shft = merge(3*n/(2*nproc),n,nproc.gt.1)
+         puscale = u1scale*u2scale*u3scale*u4scale
          if      (configure.eq.conf_tmatxb_ref) then
             nullify(tmatxb_p)
             tmatxb_p          => tmatxb_pmegpu1
             mlst_enable = .true.
-         else if (configure.eq.conf_tmatxb_pre.or.
-     &            precompute_solvpole) then
+         else if (polar_precomp.and.use_thole.and..not.use_lambdadyn
+     &           .and.puscale.eq.1.0.and.
+     &           (configure.eq.conf_tmatxb_pre.or.
+     &             (sub_config.eq.itrf_legacy
+#ifdef _OPENACC
+     &              .and.allow_precomp(shft)
+#endif
+     &           ))) then
             tmatxb_pme_core_p => tmatxb_pme_compute
-            precompute_solvpole = .true.
             mlst_enable = .true.
+   33       format(/,' --- Tinker-HP: Enabling precomputation in'
+     &            ,'polarisation solver')
+            if (tinkerdebug.gt.0) print 33
          else if (configure.eq.conf_tmatxb_c1) then
             tmatxb_pme_core_p => tmatxb_pme_core1
             mlst_enable = .true.
@@ -912,6 +970,8 @@ c
             mlst_enable = .true.
          end if
          tmatxb_p1  => tmatxb_p
+         if (.not.associated(tmatxb_pme_core_p,tmatxb_pme_compute))
+     &      polar_precomp = .false.
 
          shft = ishft(sub_config,-conf_polar*sh_len)
          configure=iand(shft,hexa_len-1)
@@ -930,8 +990,11 @@ c
             epreal3d_p      => epreal3d_cu
             mlst2_enable    = .true.
             use_mpolar_ker  =
-     &      merge(.true.,.false.,use_mpole.and.tinkerdebug.eq.0
-     &            .and..not.use_lambdadyn)
+     &      merge(.true.,.false.,use_mpole.and.tinkerdebug.le.0
+     &           .and..not.use_lambdadyn.and..not.use_chgpen
+     &           .and..not.use_dirdamp.and..not.use_group
+     &           .and..not.use_chgflx)
+            !TODO Add group
             call attach_mpolar_pointer
 #endif
          else
@@ -941,6 +1004,22 @@ c
          end if
       end if
 
+      if (use_chgtrn) then
+#ifdef _OPENACC
+         mlst2_enable = .true.
+#else
+         mlst_enable  = .true.
+#endif
+      end if
+
+      if (use_disp) then
+#ifdef _OPENACC
+         vlst2_enable = .true.
+#else
+         vlst_enable = .false.
+#endif
+      end if
+
       shft = ishft(sub_config,-conf_fphi*sh_len)
       configure=iand(shft,hexa_len-1)
       if      (configure.eq.conf_fphi_acc) then
@@ -948,18 +1027,21 @@ c
          fphi_uind_site2_p => fphi_uind_sitegpu2
          fphi_mpole_site_p => fphi_mpole_sitegpu
          grid_pchg_force_p => grid_pchg_force
+         grid_disp_force_p => grid_disp_force
 #ifdef _OPENACC
       else if (configure.eq.conf_fphi_cuda) then
          fphi_uind_site1_p => fphi_uind_sitecu1
          fphi_uind_site2_p => fphi_uind_sitecu2
          fphi_mpole_site_p => fphi_mpole_sitecu
          grid_pchg_force_p => grid_pchg_forcecu
+         grid_disp_force_p => grid_disp_forcecu
 #endif
       else
          fphi_uind_site1_p => fphi_uind_sitegpu1
          fphi_uind_site2_p => fphi_uind_sitegpu2
          fphi_mpole_site_p => fphi_mpole_sitegpu
          grid_pchg_force_p => grid_pchg_force
+         grid_disp_force_p => grid_disp_force
       end if
 
       shft = ishft(sub_config,-conf_grid*sh_len)
@@ -968,26 +1050,31 @@ c
          grid_uind_site_p  => grid_uind_sitegpu
          grid_mpole_site_p => grid_mpole_sitegpu
          grid_pchg_site_p  => grid_pchg_sitegpu
+         grid_disp_site_p  => grid_disp_sitegpu
 #ifdef _OPENACC
       else if (configure.eq.conf_grid_cuda) then
          if (nproc.eq.1) then
             grid_uind_site_p  => grid_uind_sitecu
             grid_mpole_site_p => grid_mpole_sitecu
             grid_pchg_site_p  => grid_pchg_sitecu
+            grid_disp_site_p  => grid_disp_sitecu
          else if (use_pmecore.and.nrec.eq.1) then
             grid_uind_site_p  => grid_uind_sitecu
             grid_mpole_site_p => grid_mpole_sitecu
             grid_pchg_site_p  => grid_pchg_sitecu
+            grid_disp_site_p  => grid_disp_sitecu
          else
             grid_uind_site_p  => grid_uind_sitegpu
             grid_mpole_site_p => grid_mpole_sitegpu
             grid_pchg_site_p  => grid_pchg_sitegpu
+            grid_disp_site_p  => grid_disp_sitegpu
          end if
 #endif
       else
          grid_uind_site_p  => grid_uind_sitegpu
          grid_mpole_site_p => grid_mpole_sitegpu
          grid_pchg_site_p  => grid_pchg_sitegpu
+         grid_disp_site_p  => grid_disp_sitegpu
       end if
 
       shft     = ishft(sub_config,-conf_conv*sh_len)
@@ -1117,10 +1204,12 @@ c
 #ifdef _OPENACC
       use utilcu  ,only: cu_update_balanced_comput
 #endif
+      use tinheader ,only: isrel_build
       implicit none
       logical,parameter::accept=.false.
 
       if (nproc.gt.7.and.accept.and.use_polar.and.
+     &   .not.isrel_build.and.
      &   (associated(efld0_directgpu_p,efld0_directgpu3).or.
      &    associated(efld0_direct_cp,efld0_directgpu3)).and.
      &    associated(tmatxb_pme_core_p,tmatxb_pme_core3))

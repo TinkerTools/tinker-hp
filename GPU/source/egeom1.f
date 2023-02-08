@@ -16,7 +16,7 @@ c     on positions, distances, angles and torsions as well as
 c     Gaussian basin and spherical droplet restraints
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine egeom1
       use atmlst
       use atmtyp
@@ -79,7 +79,7 @@ c
       real(t_p) af1,af2
       real(t_p) tf1,tf2,t1,t2
       real(t_p) gf1,gf2
-      real(t_p) weigh,ratio
+      real(t_p) weigh,ratio,fgrp
       real(t_p) weigha,weighb
       real(t_p) xcm,ycm,zcm
       real(t_p) cf1,cf2,vol
@@ -102,8 +102,8 @@ c
          i = npfixglob(inpfix)
          ia = ipfix(i)
          ialoc = loc(ia)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia))
+         proceed = (use(ia))
+         if (use_group)  call groups (fgrp,ia,0,0,0,0,0)
          if (proceed) then
             xr = 0.0_ti_p
             yr = 0.0_ti_p
@@ -119,6 +119,13 @@ c
             e = force * dt2
             if (r .eq. 0.0_ti_p)  r = 1.0_ti_p
             de = 2.0_ti_p * force * dt / r
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+                e =  e * fgrp
+               de = de * fgrp
+            end if
 c
 c     compute chain rule terms needed for derivatives
 c
@@ -161,8 +168,8 @@ c
          ialoc = loc(ia)
          ib = idfix(2,i)
          ibloc = loc(ib)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group)  call groups (fgrp,ia,ib,0,0,0,0)
          if (proceed) then
             xr = x(ia) - x(ib)
             yr = y(ia) - y(ib)
@@ -182,6 +189,13 @@ c            if (use_bounds)  call image (xr,yr,zr)
             e = force * dt2
             if (r .eq. 0.0_ti_p)  r = 1.0_ti_p
             de = 2.0_ti_p * force * dt / r
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               de = de * fgrp
+            end if
 c
 c     compute chain rule terms needed for derivatives
 c
@@ -236,8 +250,8 @@ c
          ibloc = loc(ib)
          ic = iafix(3,i)
          icloc = loc(ic)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if (use_group)  call groups (fgrp,ia,ib,ic,0,0,0)
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -277,6 +291,13 @@ c
                dt2 = dt * dt
                e = force * dt2
                deddt = 2.0_ti_p * force * dt 
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  deddt = deddt * fgrp
+               end if
 c
 c     compute derivative components for this interaction
 c
@@ -337,7 +358,7 @@ c
 c     get energy and derivatives for torsion restraint terms
 c
       do intfix = 1, ntfixloc
-         i = ntfixglob(intfix)
+         i  = ntfixglob(intfix)
          ia = itfix(1,i)
          ialoc = loc(ia)
          ib = itfix(2,i)
@@ -346,9 +367,9 @@ c
          icloc = loc(ic)
          id = itfix(4,i)
          idloc = loc(id)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -428,6 +449,13 @@ c
                dt2 = dt * dt
                e = force * dt2
                dedphi = 2.0_ti_p * force * dt
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c
@@ -623,9 +651,9 @@ c
          icloc = loc(ic)
          id = ichir(4,i)
          idloc = loc(id)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          if (proceed) then
             xad = x(ia) - x(id)
             yad = y(ia) - y(id)
@@ -650,6 +678,13 @@ c
             dt2 = dt * dt
             e = force * dt2
             deddt = 2.0_ti_p * force * dt
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               deddt = deddt * fgrp
+            end if
 c
 c     compute derivative components for this interaction
 c
@@ -726,8 +761,8 @@ c
                xk = x(kglob)
                yk = y(kglob)
                zk = z(kglob)
-               proceed = .true.
-               if (proceed)  proceed = (use(iglob) .or. use(kglob))
+               proceed = (use(iglob) .or. use(kglob))
+               if (use_group)  call groups (fgrp,i,k,0,0,0,0)
                if (proceed) then
                   xr = xi - xk
                   yr = yi - yk
@@ -741,6 +776,13 @@ c
                   if (term .gt. -50.0_ti_p)  e = depth * exp(term)
                   de = -2.0_ti_p * width * e
                   e = e - depth
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     de = de * fgrp
+                  end if
 c
 c     compute chain rule terms needed for derivatives
 c
@@ -789,8 +831,8 @@ c
          b = 64.0_ti_p
          do i = 1, nloc
             iglob = glob(i)
-            proceed = .true.
-            if (proceed)  proceed = (use(iglob))
+            proceed = (use(iglob))
+            if (use_group)  call groups (fgrp,i,0,0,0,0,0)
             if (proceed) then
                xi = x(iglob)
                yi = y(iglob)
@@ -803,6 +845,13 @@ c
                e = a/r12 - b/r6
                if (ri .eq. 0.0_ti_p)  ri = 1.0_ti_p
                de = (12.0_ti_p*a/r12 - 6.0_ti_p*b/r6) / (r*ri)
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  de = de * fgrp
+               end if
 c
 c     compute chain rule terms needed for derivatives
 c

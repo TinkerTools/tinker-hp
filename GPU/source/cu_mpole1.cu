@@ -221,8 +221,15 @@ void mpole1_couple(const real r2, const real& xr, const real& yr, const real& zr
         , off2, f, alsq2, alsq2n, aewald                    \
         , MIDPOINTIMAGE_ARGS, nproc
 
+#define GROUPS_PARAMS \
+        const int ngrp, const int use_group \
+        , real (*restrict wgrp) \
+        , int (*restrict grplist)
+#define GROUPS_ARGS \
+        ngrp, use_group, wgrp, grplist
+
 __global__
-void cu_emreal1c_core (MPOLE1_PARAMS1,const int nproc){
+void cu_emreal1c_core (MPOLE1_PARAMS1,const int nproc,GROUPS_PARAMS){
 
    const int ithread = threadIdx.x + blockIdx.x*blockDim.x;
    const int iwarp   =               ithread / WARP_SIZE;
@@ -236,6 +243,7 @@ void cu_emreal1c_core (MPOLE1_PARAMS1,const int nproc){
    int iblock,idx,kdx;
    int iipole,iglob,i,kpole,kglob,kbis,kglob_;
    int do_pair,same_block;
+   //int iga,igb,igb_;
    real xk_,yk_,zk_,d2;
    real em_;
    real vir_[6];
@@ -246,6 +254,7 @@ void cu_emreal1c_core (MPOLE1_PARAMS1,const int nproc){
    real3m frc_i;
    __shared__ real3  posk[BLOCK_DIM],ttmk[BLOCK_DIM];
    __shared__ real3m frc_k[BLOCK_DIM];
+   real scale_;
 
    //if (ithread==0) printf( " %i %i %i %i %i %i %i " r_Format r_Format r_Format "\n", nwarp,RED_BUFF_SIZE,nproc,npolelocnlb,npolebloc,n,npolelocnlb_pair,off2,alsq2,aewald);
 
@@ -310,6 +319,11 @@ void cu_emreal1c_core (MPOLE1_PARAMS1,const int nproc){
 
       same_block = ( idx!=kdx )? 0:1 ;
 
+      //if(use_group){
+      //  iga=grplist[iglob];
+      //  igb=grplist[kglob];
+      //}
+
       for ( j=0; j<WARP_SIZE; j++ ){
          srclane  = (ilane+j) & (WARP_SIZE-1);
          klane    = threadIdx.x-ilane + srclane;
@@ -324,6 +338,12 @@ void cu_emreal1c_core (MPOLE1_PARAMS1,const int nproc){
          kp_.qyy  =      __shfl_sync(ALL_LANES,kp.qyy,srclane);
          kp_.qyz  =      __shfl_sync(ALL_LANES,kp.qyz,srclane);
          kp_.qzz  =      __shfl_sync(ALL_LANES,kp.qzz,srclane);*/
+         //if (use_group) {
+         // igb_ = __shfl_sync(ALL_LANES,igb,klane);
+         // scale_ =  wgrp[iga*(ngrp+1)+igb_];
+         //} else {
+          scale_ = 1.0;
+         //}
 
          if (nproc>1) {
             xk_   = posk[klane].x;
@@ -347,7 +367,7 @@ void cu_emreal1c_core (MPOLE1_PARAMS1,const int nproc){
          if (do_pair && d2<=off2 && accept_mid) {
             /* Compute one interaction
                This interaction is symetrical we thus don't need to switch comput */
-            mpole1_couple<0>(d2,pos.x,pos.y,pos.z,ip,kp[klane],0.0,aewald,f,alsq2n,alsq2,
+            mpole1_couple<0>(d2,pos.x,pos.y,pos.z,ip,kp[klane],1.0-scale_,aewald,f,alsq2n,alsq2,
                              em_,frc,frc_i,frc_k[klane],ttmi,ttmk[klane]);
             /* increment local virial */
             vir_[0] -= pos.x * frc.x;
@@ -399,7 +419,7 @@ int gS_emreal         = 120;
 
 
 EXTERN_C_BEG
-void cu_emreal1c(MPOLE1_PARAMS1,cudaStream_t st){
+void cu_emreal1c(MPOLE1_PARAMS1,cudaStream_t st,GROUPS_PARAMS){
    const int sh = 0;
    cudaError_t ierrSync;
 
@@ -410,7 +430,7 @@ void cu_emreal1c(MPOLE1_PARAMS1,cudaStream_t st){
    }
    gS_emreal = npolelocnlb_pair/4;
 
-   cu_emreal1c_core<<<gS_emreal,BLOCK_DIM,sh,st>>> (MPOLE1_ARGS);
+   cu_emreal1c_core<<<gS_emreal,BLOCK_DIM,sh,st>>> (MPOLE1_ARGS,GROUPS_ARGS);
    if (tinkerdebug) ierrSync = cudaDeviceSynchronize();
    else             ierrSync = cudaGetLastError();
    if (ierrSync != cudaSuccess)

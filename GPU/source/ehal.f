@@ -14,14 +14,17 @@ c     "ehal3" calculates the buffered 14-7 van der Waals energy
 c     and partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine ehal
       use energi
       use potent
       use vdwpot
       implicit none
       real(t_p) elrc
+      character*11 mode
+      logical      fullrange
 c
+      fullrange = .not.(use_vdwshort.or.use_vdwlong)
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -35,8 +38,9 @@ c
 c
 c     apply long range van der Waals correction if desired
 c
-      if (use_vcorr) then
-         call evcorr (elrc)
+      if (use_vcorr.and.(fullrange.or.use_vdwlong)) then
+         mode = 'VDW'
+         call evcorr (mode,elrc)
          ev = ev + elrc
       end if
       return
@@ -89,6 +93,7 @@ c
       real(t_p), allocatable :: yred(:)
       real(t_p), allocatable :: zred(:)
       real(t_p), allocatable :: vscale(:)
+      real(t_p) :: fgrp
       logical proceed,usei
       logical muti,mutk
       character*10 mode
@@ -167,8 +172,8 @@ c
             kbis = loc(kglob)
             kv = ired(kglob)
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if(use_group) call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -221,6 +226,10 @@ c
      &                          + c2*rik2 + c1*rik + c0
                      e = e * taper
                   end if
+c
+c     scale the interaction by the group factor
+c
+                  if (use_group) e = e * fgrp
 c
 c     increment the overall van der Waals energy components
 c
@@ -284,6 +293,7 @@ c
       use cutoff
       use domdec
       use energi
+      use group
       use inter
       use molcul
       use mutant
@@ -311,6 +321,7 @@ c
       real(t_p), allocatable :: yred(:)
       real(t_p), allocatable :: zred(:)
       real(t_p), allocatable :: vscale(:)
+      real(t_p) :: fgrp
       logical proceed,usei
       logical muti,mutk
       character*10 mode
@@ -389,8 +400,8 @@ c
             kbis = loc(kglob)
             kv = ired(kglob)
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if(use_group) call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -432,6 +443,10 @@ c
                      e = eps * rv7 * tau**7
      &                      * ((ghal+1.0_ti_p)*rv7/rho-2.0_ti_p)
                   end if
+c
+c     scale the interaction by the group factor
+c
+                  if(use_group) e=e*fgrp
 c
 c     use energy switching if near the cutoff distance
 c
@@ -502,6 +517,7 @@ c
       use cutoff
       use domdec
       use energi
+      use group
       use inter
       use molcul
       use mutant
@@ -529,6 +545,7 @@ c
       real(t_p), allocatable :: yred(:)
       real(t_p), allocatable :: zred(:)
       real(t_p), allocatable :: vscale(:)
+      real(t_p) fgrp
       logical proceed,usei
       logical muti,mutk
       character*10 mode
@@ -608,8 +625,8 @@ c
             kbis = loc(kglob)
             kv = ired(kglob)
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if(use_group) call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -650,6 +667,12 @@ c
                      tau = (dhal+1.0_ti_p) / (rik + dhal*rv)
                      e = eps * rv7 * tau**7
      &                      * ((ghal+1.0_ti_p)*rv7/rho-2.0_ti_p)
+                  end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
                   end if
 c
 c     use energy switching if close the cutoff distance (at short range)

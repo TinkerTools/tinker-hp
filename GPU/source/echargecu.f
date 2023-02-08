@@ -9,12 +9,11 @@ c
 c
 #ifndef TINKER_CUF
 #define TINKER_CUF
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
 #include "tinker_cudart.h"
       module echargecu
       use sizes   ,only: maxgrp
-      use utilcu  ,only: nproc,ndir,BLOCK_DIM,ALL_LANES,use_virial
+      use utilcu  ,only: nproc,ndir,ngrp,BLOCK_DIM,ALL_LANES,use_virial
       use utilgpu ,only: real3,real6,mdyn3_r,rpole_elt
      &            ,BLOCK_SIZE,RED_BUFF_SIZE,WARP_SIZE
 

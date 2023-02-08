@@ -29,8 +29,7 @@ c     nSMP         number of streaming Multi-processor on the device
 c     nSPcores     number of cores od the device
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module utilgpu
       use tinheader ,only: ti_p,re_p
       use boxes     ,only: orthogonal,octahedron,box34
@@ -50,17 +49,15 @@ c
       use openacc
       use cudafor
 #else
-#define cuda_stream_kind int_prt_kind()
+#define cuda_stream_kind 8
 #endif
       implicit none
       integer ngpus
       integer :: devicenum=-1
-      integer gpu_gangs,ngangs_rec
-      logical mod_gangs
-      integer gpu_workers
-      integer gpu_vector
-      integer rec_queue,dir_queue
-      integer def_queue
+      integer gpu_gangs,ngangs_rec,mod_gangs
+      integer gpu_workers,gpu_vector
+      integer rec_queue,dir_queue,def_queue
+      integer(mipk),private:: zero8
 #ifdef _OPENACC
       type(cudaDeviceProp) devProp
       integer(cuda_stream_kind) dir_stream,rec_stream
@@ -68,18 +65,16 @@ c
       type(cudaEvent) dir_event,rec_event,def_event
       integer,parameter :: zero_flag=0
 #else
-      integer dir_stream,rec_stream,def_stream,dir_event
+      integer(mipk) dir_stream,rec_stream,def_stream,dir_event
      &       ,rec_event,def_event
       parameter(dir_stream=0,rec_stream=0,def_stream=0
      &         ,dir_event=0,rec_event=0,def_event=0)
 #endif
       integer nSMP,nSPcores,cores_SMP
-      integer Ndir_block,Ndir_async_block
-      integer count_block
+      integer Ndir_block,Ndir_async_block,count_block
       real(t_p),parameter:: inf  =4*huge(0.0_ti_p)
-      real(t_p),parameter:: inf_r=4*huge(0.0_re_p)
+      real(r_p),parameter:: inf_r=4*huge(0.0_re_p)
 
-c     parameter(rec_queue=0)
       integer,parameter:: maxscaling=64
       integer,parameter:: maxscaling1=256
       integer,parameter:: maxBlock=ishft(1,16)
@@ -99,20 +94,30 @@ c     parameter(rec_queue=0)
       ener_rtyp ered_buf1(  RED_BUFF_SIZE)
       real(t_p),dimension(10,10)::ftc,ctf
 
-      ! WorkSpace buffer for module utilgpu
-      integer  ,allocatable:: ug_workS_i(:)
-      real(t_p),allocatable:: ug_workS_r(:)
+      ! WorkSpace buffer to be used across the code
+      integer  ,allocatable:: ug_workS_i(:),ug_workS_i1(:)
+      real(t_p),allocatable:: ug_workS_r(:),ug_workS_r1(:)
+      real(r_p),allocatable:: ug_workS_m(:),ug_workS_m1(:)
       ! -----------------------------------
+      ! ug_workS_r   is used within
+      !              - tmatxb_pme_core3
+      !              - empole1cgpu, epreal1cgpu, emreal3d_cu, epreal3d_cu, emrecip1gpu, eprecip1gpu
+      ! -----------------------------------
+      ! ug_workS_r1  is used within
+      !              - emrecip1gpu, eprecip1gpu
+      !
 
       character*128 warning,sugest_vdw
+
+      parameter( zero8=0 )
 
 #ifdef _OPENACC
       interface
         function acc_malloc_bc(bytes) result(ptr) 
      &                  bind(C,name='acc_malloc')
         import C_PTR
-        integer,value,intent(in)::bytes
-        type(C_PTR),intent(out)::ptr
+        integer,value,intent(in )::bytes
+        type(C_PTR)  ,intent(out)::ptr
         end function
       end interface
 
@@ -1136,12 +1141,28 @@ c
 
       end subroutine
 
+      ! Enables polarisation precomputation following
+      ! the available memory
+      logical function allow_precomp(n) result(auth)
+      implicit none
+      integer,intent(in) :: n
+#ifdef _OPENACC
+      integer(mipk) free,total,esti
+      integer ierr
+      esti = 200*n*7*ti_p
+      ierr = cudaMemGetinfo(free,total)
+      auth = (esti.lt.(free*9)/10)
+#else
+      auth = .true.
+#endif
+      end function
+
       integer function get_GridDim(n,bDim,opt) result(GDim)
       integer,intent(in):: bDim,n
       integer,optional :: opt
       integer,parameter:: maxB=2**14
       if (present(opt)) then
-         GDim = min(((n-1)/bDim)+1,maxB)
+         GDim = min(((n-1)/ishft(bDim,1))+1,maxB)
       else
          GDim = min(((n-1)*WARP_SIZE/bDim)+1,maxB)
       end if
@@ -1174,12 +1195,13 @@ c
       integer(mipk) i,offset_
  14   format(A,I4,A,/,4X,A)
 
-      offset_ = 0
+      offset_ = zero8
       if (present(offset)) offset_=offset
 #ifdef _OPENACC
 !$acc host_data use_device(dst)
-      if (stream.eq.0) then
+      if (stream.eq.zero8) then
          ierr = cudaMemset(dst(offset_+1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
       else
          ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
       end if
@@ -1204,12 +1226,13 @@ c
       integer(mipk) i,offset_
  14   format(A,I4,A,/,4X,A)
 
-      offset_ = 0
+      offset_ = zero8
       if (present(offset)) offset_=offset
 #ifdef _OPENACC
 !$acc host_data use_device(dst)
-      if (stream.eq.0) then
+      if (stream.eq.zero8) then
          ierr = cudaMemset(dst(offset_+1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
       else
          ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
       end if
@@ -1234,12 +1257,13 @@ c
       integer(mipk) i,offset_
  14   format(A,I4,A,/,4X,A)
 
-      offset_ = 0
+      offset_ = zero8
       if (present(offset)) offset_=offset
 #ifdef _OPENACC
 !$acc host_data use_device(dst)
-      if (stream.eq.0) then
+      if (stream.eq.zero8) then
          ierr = cudaMemset(dst(offset_+1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
       else
          ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
       end if
@@ -1264,12 +1288,13 @@ c
       integer(mipk) i,offset_
  14   format(A,I4,A,/,4X,A)
 
-      offset_ = 0
+      offset_ = zero8
       if (present(offset)) offset_=offset
 #ifdef _OPENACC
 !$acc host_data use_device(dst)
-      if (stream.eq.0) then
+      if (stream.eq.zero8) then
          ierr = cudaMemset(dst(offset_+1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
       else
          ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
       end if
@@ -1298,6 +1323,7 @@ c
 #ifdef _OPENACC
 !$acc host_data use_device(dst,src)
       ierr = cudaMemCpyAsync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.zero8) ierr = ierr + cudaStreamSynchronize(stream)
 !$acc end host_data
       if (ierr.ne.cudasuccess) then
          write(*,*) 'error',ierr,'detected in utilgpu_mem_move_i4'
@@ -1320,6 +1346,7 @@ c
 #ifdef _OPENACC
 !$acc host_data use_device(dst,src)
       ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.zero8) ierr = ierr + cudaStreamSynchronize(stream)
 !$acc end host_data
       if (ierr.ne.cudasuccess) then
          write(*,*) 'error',ierr,'detected in utilgpu_mem_move_i8'
@@ -1342,6 +1369,7 @@ c
 #ifdef _OPENACC
 !$acc host_data use_device(dst,src)
       ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.zero8) ierr = ierr + cudaStreamSynchronize(stream)
 !$acc end host_data
       if (ierr.ne.cudasuccess) then
          write(*,*) 'error',ierr,'detected in utilgpu_mem_move_r4'
@@ -1364,6 +1392,7 @@ c
 #ifdef _OPENACC
 !$acc host_data use_device(dst,src)
       ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.zero8) ierr = ierr + cudaStreamSynchronize(stream)
 !$acc end host_data
       if (ierr.ne.cudasuccess) then
          write(*,*) 'error',ierr,'detected in utilgpu_mem_move_r8'

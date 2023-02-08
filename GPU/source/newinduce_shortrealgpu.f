@@ -13,7 +13,7 @@ c     in Polarizable Molecular Dynamics: II. Toward Massively Parallel
 c     Computations Using Smooth Particle Mesh Ewald",L. Lagardere et al.,
 c     J. Chem. Theory Comput., 2015, 11 (6), pp 2589–2599
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine newinduce_shortrealgpu
       use atoms ,only: n,n_pe
       use atmlst
@@ -25,6 +25,8 @@ c
      &              ,tmatxb_p1,efld0_directgpu2
      &              ,efld0_directgpu_p1
       use math
+      use mdstate   ,only: track_mds,ms_back_p
+      use moldyn    ,only: step_c,stepint
       use mpole
       use pme
       use polar
@@ -76,9 +78,10 @@ c
       call prmem_request(mu,3,nrhs,max(npolebloc,1),async=.true.)
       call prmem_request(ef,3,nrhs,max(npolebloc,1),async=.true.)
 c
-      def_queue = dir_queue
-
 #ifdef _OPENACC
+      def_queue = dir_queue
+      def_stream= dir_stream
+
       if (dir_queue.ne.rec_queue) call start_dir_stream_cover
 #endif
 
@@ -93,6 +96,12 @@ c
       call commfieldshort(nrhs,ef)
 c
       call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
+c
+c     Reset predictor if MD State Tracking is enabled 
+c
+      if (track_mds.and.use_pred.and.mod(step_c,ms_back_p).eq.1
+     &   .and.stepint.eq.1) then; call pred_reset; call pred_zero;
+      end if
 c
 c
 c     guess the dipoles:
@@ -139,7 +148,7 @@ c
          call inducepcg_shortrealgpu(tmatxb_p1,nrhs,.true.,ef,mu)
       else if (polalg.eq.jacobi_SId) then
          call inducejac_shortrealgpu(tmatxb_p1,nrhs,.true.,ef,mu)
-#if 0
+#if !TINKERHP_REL_BUILD
       else if (polalg.eq.step_pcg_SId.or.polalg.eq.step_pcg_short_SId)
      &   then
          call inducestepcg_pme2gpu(tmatxb_p1,nrhs,.true.,ef,mu,murec)
@@ -193,9 +202,10 @@ c
       use ewald
       use inform     ,only: deb_Path,abort,minmaxone,app_id,dynamic_a
       use inducepcg_s_mod
-      use interfaces ,only: tmatxb_pmegpu
+      use interfaces ,only: tmatxb_pmegpu,pcg_a,pcg_b,pcg_newDirection
       use iounit
       use math
+      use mdstate    ,only: track_mds
       use mpole
       use polar
       use polpot
@@ -256,7 +266,10 @@ c
       commloc    = merge(comm_dir,COMM_TINKER,use_pmecore)
       npoleloc_e = merge(npolebloc,npoleloc,(skpPcomm))
       gbuff1     =  0.0_re_p
+#ifdef _OPENACC
       def_queue  = dir_queue
+      def_stream = dir_stream
+#endif
 
       if (ips_call.eq.1) then
 !$acc enter data create(ggold1,ggold2,gg1,gg2,ggnew1,ggnew2
@@ -349,7 +362,7 @@ c
       call timer_exit( timer_other,quiet_timers )
 
       if (nproc.ne.1) then
-!$acc serial async present(gbuff,ggold1,ggold2)
+!$acc serial async(def_queue) present(gbuff,ggold1,ggold2)
          gbuff(1) = ggold1
          gbuff(2) = ggold2
 !$acc end serial
@@ -359,7 +372,7 @@ c
      $                     ,MPI_SUM,commloc,ierr)
          !call MPI_WAIT(req1,status,ierr)
 !$acc end host_data
-!$acc serial async present(ggold1,ggold2,gbuff)
+!$acc serial async(def_queue) present(ggold1,ggold2,gbuff)
          ggold1 = gbuff(1)
          ggold2 = gbuff(2)
 !$acc end serial
@@ -389,15 +402,16 @@ c
 !$acc end serial
 
         call timer_enter( timer_other )
-!$acc parallel loop collapse(3) async(def_queue)
-!$acc&         present(gg1,gg2)
-        do i = 1,npoleloc; do j = 1,nrhs; do k = 1, 3
-           if (btest(j,0)) then
-              gg1 = gg1 + pp(k,j,i)*h(k,j,i)
-           else
-              gg2 = gg2 + pp(k,j,i)*h(k,j,i)
-           end if
-        end do; end do; end do
+        call pcg_a(6*npoleloc,pp,h,gg1,gg2)
+c!$acc parallel loop collapse(3) async(def_queue)
+c!$acc&         present(gg1,gg2)
+c        do i = 1,npoleloc; do j = 1,nrhs; do k = 1, 3
+c           if (btest(j,0)) then
+c              gg1 = gg1 + pp(k,j,i)*h(k,j,i)
+c           else
+c              gg2 = gg2 + pp(k,j,i)*h(k,j,i)
+c           end if
+c        end do; end do; end do
 
         if (nproc.ne.1) then
 !$acc wait(def_queue)
@@ -416,40 +430,9 @@ c
           if (gg2.eq.zero) goto 30
         end if
 
-!$acc parallel loop collapse(3) async(def_queue)
-!$acc&         default(present) 
-!$acc&         present(gg1,gg2,ggold1,ggold2,ggnew1,ggnew2,ene1,ene2)
-!$acc&         reduction(+:ggnew1,ggnew2,ene1,ene2)
-        do k=1,npoleloc; do j=1,nrhs; do i=1,3
-           if (btest(j,0)) then
-              mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
-              res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
-              zr (i,j,k) = diag(k)* res(i,j,k)
-              ggnew1     = ggnew1 + res(i,j,k)*zr(i,j,k)
-              ene1    = ene1 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
-            else
-              mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
-              res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
-              zr (i,j,k) = diag(k)* res(i,j,k)
-              ggnew2     = ggnew2 + res(i,j,k)*zr(i,j,k)
-              ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
-           end if
-        end do; end do; end do
-        if (skpPcomm) then
-!$acc parallel loop collapse(3) async(def_queue)
-!$acc&         default(present) present(gg1,gg2,ggold1,ggold2)
-        do k=npoleloc+1,npoleloc_e; do j=1,nrhs; do i=1,3
-           if (btest(j,0)) then
-              mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
-              res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
-              zr (i,j,k) = diag(k)* res(i,j,k)
-            else
-              mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
-              res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
-              zr (i,j,k) = diag(k)* res(i,j,k)
-           end if
-        end do; end do; end do
-        end if
+        call pcg_b(npoleloc,npoleloc_e,gg1,ggold1,gg2,ggold2
+     &            ,ggnew1,ene1,ggnew2,ene2
+     &            ,mu,pp,res,h,zr,diag,ef)
 
         if (nproc.ne.1) then
 !$acc serial async(def_queue) present(ene1,ene2,ggnew1,ggnew2,gbuff1)
@@ -470,17 +453,9 @@ c
 
         !ggdev1 = ggnew(1)/ggold(1); ggdev2 = ggnew(2)/ggold(2)
         ! Compute Next direction
-!$acc host_data use_device(pp,zr)
-!$acc parallel loop collapse(3) async(def_queue)
-!$acc&         present(ggold1,ggold2,ggnew1,ggnew2) deviceptr(pp,zr)
-        do k = 1,npoleloc_e; do j = 1,nrhs; do i = 1, 3
-           if (btest(j,0)) then
-             pp(i,j,k) = zr(i,j,k) + (ggnew1/ggold1)*pp(i,j,k)
-           else
-             pp(i,j,k) = zr(i,j,k) + (ggnew2/ggold2)*pp(i,j,k)
-           end if
-        end do; end do; end do
-!$acc end host_data
+        call pcg_newDirection(6*npoleloc_e,ggnew1,ggold1,ggnew2,ggold2
+     &                     ,zr,pp)
+
         if (precnd1) call projectorOpe(pp,pp,0)
 
 !$acc serial async(def_queue)
@@ -497,7 +472,8 @@ c
          ! Skip Iteration check
          skip_chk = it.lt.2.or.(exitlast.and.(it.lt.lastIter))
          ! Skip last Iteration check
-         if (exitlast.and.it.eq.lastIter.and.mod(sameIter,3).ne.0)
+         if (exitlast.and.it.eq.lastIter.and.mod(sameIter,3).ne.0
+     &      .and..not.track_mds)
      &      goto 10
 
         if (skip_chk) then
@@ -509,11 +485,11 @@ c
              gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
            end do
            resnrm = max(gnorm(1),gnorm(2))
-        end if
 
-        ene = -pt5*ene
-        if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
-     $    it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
+           ene = -pt5*ene
+           if (polprt.ge.2.and.rank.eq.0) write(iout,1010)
+     &        it, (ene(k)*coulomb, gnorm(k), k = 1, nrhs)
+        end if
 c
         if ((it.eq.politer.and.resnrm.gt.poleps)
      &     .or.tinker_isnan_m(gnorm(1))) then
@@ -573,6 +549,154 @@ c
 
   30  continue
       end
+
+      ! Interface added inside MOD_interfaces.f
+      subroutine pcg_a(siz,pp,h,gg1,gg2)
+      use utilgpu  ,only: def_queue
+      implicit none
+      integer  ,intent(in   ):: siz
+      real(r_p),intent(inout):: gg1,gg2
+      real(t_p),intent(in   ):: pp(*),h(*)
+      integer i,j
+
+!$acc parallel loop async(def_queue) default(present)
+!$acc&         present(gg1,gg2) reduction(+:gg1,gg2)
+      do i = 1, siz
+         j = (i-1)/3
+         if (btest(j,0)) then
+            gg2 = gg2 + pp(i)*h(i)
+         else
+            gg1 = gg1 + pp(i)*h(i)
+         end if
+      end do
+      end subroutine
+
+      subroutine pcg_aRec(siz,term,pp,dipf,h,gg1,gg2)
+      use utilgpu  ,only: def_queue
+      implicit none
+      integer  ,intent(in   ):: siz
+      real(t_p),intent(in   ):: term
+      real(r_p),intent(inout):: gg1,gg2
+      real(t_p),intent(in   ):: pp(*),dipf(*)
+      real(t_p),intent(inout):: h(*)
+      integer i,j
+      real(t_p) mh
+
+!$acc parallel loop async(def_queue) default(present)
+!$acc&         present(gg1,gg2) reduction(+:gg1,gg2)
+      do i = 1, siz
+         j  = (i-1)/3
+         mh =  h(i) + dipf(i) - term*pp(i)
+         if (btest(j,0)) then
+            gg2 = gg2 + pp(i)*mh
+         else
+            gg1 = gg1 + pp(i)*mh
+         end if
+         h(i) = mh
+      end do
+      end subroutine
+
+      ! Interface added inside MOD_interfaces.f
+      subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2
+     &                ,mu,pp,res,h,zr,diag,ef)
+      use utilgpu  ,only: def_queue
+      use polpot   ,only: polprt
+      use utilcomm
+      implicit none
+      integer  ,intent(in   ):: siz,siz1
+      real(t_p),intent(in   ):: ggo,ggo2
+      real(r_p),intent(in   ):: gg,gg2
+      real(r_p),intent(inout):: ggnew1,ggnew2,ene1,ene2
+      real(t_p),intent(in   ):: ef(*),pp(*),h(*),diag(*)
+      real(t_p),intent(inout):: mu(*),res(*),zr(*)
+      integer   i,j,k,nsiz,nsiz1
+      real(t_p) gno,mmu,mres,mzr
+
+      nsiz  = 6*siz
+      if (polprt.lt.2) then
+!$acc parallel loop async(def_queue)
+!$acc&         default(present) 
+!$acc&         present(gg,gg2,ggo,ggo2,ggnew1,ggnew2)
+!$acc&         reduction(+:ggnew1,ggnew2)
+         do i = 1,nsiz
+            j      = (i-1)/3
+            k      = (i-1)/6
+            gno    = merge(ggo2/real(gg2,t_p),ggo/real(gg,t_p)
+     &                    ,btest(j,0))
+            mmu    =  mu(i) + gno*pp(i)
+            mres   = res(i) - gno*h(i)
+            mzr    = diag(k+1)*mres
+            mu (i) = mmu
+            res(i) = mres
+            zr (i) = mzr
+            if (btest(j,0)) then
+               ggnew2 = ggnew2 + mres*mzr
+            else
+               ggnew1 = ggnew1 + mres*mzr
+            end if
+         end do
+      else
+!$acc parallel loop async(def_queue) default(present) 
+!$acc&         present(gg,gg2,ggo,ggo2,ggnew1,ggnew2,ene1,ene2)
+!$acc&         reduction(+:ggnew1,ggnew2,ene1,ene2)
+         do i = 1,nsiz
+            j      = (i-1)/3
+            k      = (i-1)/6
+            gno    = merge(ggo2/real(gg2,t_p),ggo/real(gg,t_p)
+     &                    ,btest(j,0))
+            mmu    =  mu(i) + gno*pp(i)
+            mres   = res(i) - gno*h(i)
+            mzr    = diag(k+1)*mres
+            mu (i) = mmu
+            res(i) = mres
+            zr (i) = mzr
+            if (btest(j,0)) then
+               ggnew2 = ggnew2 + mres*mzr
+               ene2   = ene2   + mmu*(mres+ef(i))
+            else
+               ggnew1 = ggnew1 + mres*mzr
+               ene1   = ene1   + mmu*(mres+ef(i))
+            end if
+         end do
+      end if
+      if (skpPcomm) then
+      nsiz1 = 6*siz1
+!$acc parallel loop async(def_queue)
+!$acc&         default(present) present(gg,gg2,ggo,ggo2)
+         do i = nsiz+1,nsiz1
+            j      = (i-1)/3
+            k      = (i-1)/6
+            gno    = merge(ggo2/real(gg2,t_p),ggo/real(gg,t_p)
+     &                    ,btest(j,0))
+            mmu    =  mu(i) + gno*pp(i)
+            mres   = res(i) - gno*h(i)
+            mzr    = diag(k+1)*mres
+            mu (i) = mmu
+            res(i) = mres
+            zr (i) = mzr
+         end do
+      end if
+      end subroutine
+
+      ! Interface added inside MOD_interfaces.f
+      subroutine pcg_newDirection(siz,ggn,ggo,ggn2,ggo2,zr,pp)
+      use utilgpu ,only: def_queue
+      implicit none
+      integer  ,intent(in   ):: siz
+      real(t_p),intent(in   ):: ggo,ggo2
+      real(r_p),intent(in   ):: ggn,ggn2
+      real(t_p),intent(in   ):: zr(*)
+      real(t_p),intent(inout):: pp(*)
+      real(t_p) gno,gno2
+      integer   i,j
+
+!$acc parallel loop present(pp,zr,ggn,ggo,ggn2,ggo2) async(def_queue)
+      do i = 1,siz
+         j     = (i-1)/3
+         gno   = merge(real(ggn2,t_p)/ggo2,real(ggn,t_p)/ggo,btest(j,0))
+         pp(i) = zr(i) + gno*pp(i)
+      end do
+      end subroutine
 c
       subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
       use atmlst

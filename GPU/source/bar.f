@@ -44,8 +44,7 @@ c     Assessments of Their Accuracy and Precision, Journal of Physical
 c     Chemistry, 114, 8166-8180 (2010)  [entropy and enthalpy]
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
 
       program bar
       use mpi

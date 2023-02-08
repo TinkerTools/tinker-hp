@@ -14,7 +14,7 @@ c     "ebond3" calculates the bond stretching energy; also
 c     partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine ebond3
       use action
       use analyz
@@ -37,6 +37,7 @@ c
       real(t_p) expterm,bde
       real(t_p) dt,dt2
       real(t_p) xab,yab,zab,rab
+      real(t_p) fgrp
       logical proceed
       logical header,huge
 c
@@ -61,8 +62,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group) call groups (fgrp,ia,ib,0,0,0,0)
 c
 c     compute the value of the bond length deviation
 c
@@ -90,6 +91,10 @@ c
                bde = 0.25_ti_p * bndunit * force
                e = bde * (1.0_ti_p-expterm)**2
             end if
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group)  e = e * fgrp
 c
 c     increment the total bond energy and partition between atoms
 c

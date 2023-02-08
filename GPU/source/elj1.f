@@ -15,14 +15,15 @@ c     "elj1" calculates the Lennard-Jones 6-12 van der Waals energy
 c     and its first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine elj1
       use energi
       use potent
       use virial
       use vdwpot
       implicit none
-      real(t_p) elrc,vlrc
+      real(r_p) elrc,vlrc
+      character*11 mode
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -31,7 +32,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr1 (elrc,vlrc)
+         mode = 'VDW'
+         call evcorr1 (mode,elrc,vlrc)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
          vir(2,2) = vir(2,2) + vlrc
@@ -329,6 +331,13 @@ c
                   e = e * fgrp
                   de = de * fgrp
                end if
+c
+c     scale the interaction based on its group membership
+c
+                if (use_group) then
+                   e = e * fgrp
+                   de = de * fgrp
+                end if
 c
 c     use energy switching if close the cutoff distance (at short range)
 c

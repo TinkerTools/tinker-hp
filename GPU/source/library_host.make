@@ -19,6 +19,7 @@ MOD_angang.o \
 MOD_angle.o \
 MOD_angpot.o \
 MOD_angtor.o \
+MOD_ani.o \
 MOD_argue.o \
 MOD_ascii.o \
 MOD_atmlst.o \
@@ -222,8 +223,10 @@ empole.o \
 empole0.o \
 empole1.o \
 empole1gpu.o \
+empole1_group.o \
 empole3.o \
 empole3gpu.o \
+empole3_group.o \
 energy.o \
 eopbend.o \
 eopbend1.o \
@@ -240,8 +243,10 @@ epitors3.o \
 epolar.o \
 epolar1.o \
 epolar1gpu.o \
+epolar1_group.o \
 epolar3.o \
 epolar3gpu.o \
+epolar3_group.o \
 esmd1.o \
 estrbnd.o \
 estrbnd1.o \
@@ -282,6 +287,7 @@ gettext.o \
 getword.o \
 getxyz.o \
 gradient.o \
+groups.o \
 image.o \
 initatom.o \
 initial.o \
@@ -300,6 +306,7 @@ kgeom.o \
 kimprop.o \
 kimptor.o \
 kinetic.o \
+kmlpot.o \
 kmpole.o \
 kopbend.o \
 kopdist.o \
@@ -333,6 +340,7 @@ newinduce_pme2.o \
 newinduce_pme2gpu.o \
 newinduce_shortreal.o \
 newinduce_shortrealgpu.o \
+newinduce_group.o \
 nextarg.o \
 nexttext.o \
 nspline.o \
@@ -367,6 +375,7 @@ rattle.o \
 shakeup.o \
 suffix.o \
 switch.o \
+switch_group.o \
 temper.o \
 tmatxb_pme.o \
 tmatxb_pmegpu.o \

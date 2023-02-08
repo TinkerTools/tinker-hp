@@ -14,7 +14,7 @@ c     "extra1" calculates any additional user defined potential
 c     energy contribution and its first derivatives
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine extra1
       use atoms
       use deriv

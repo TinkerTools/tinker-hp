@@ -15,7 +15,7 @@ c     to each bond in the structure and processes any new or
 c     changed parameter values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kbond
       use atmtyp
       use bond

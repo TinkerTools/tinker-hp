@@ -3,7 +3,7 @@ c     Sorbonne University
 c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module domdecstuff_inl
         contains
 #include "image.f.inc"
@@ -72,10 +72,14 @@ c
       call prmem_request(pbigshort_recep,nproc,config=mhostonly)
       call prmem_request(pbig_send      ,nproc,config=mhostonly)
       call prmem_request(pbigshort_send ,nproc,config=mhostonly)
+      call prmem_request(reqs_dird_a    ,nproc,config=mhostonly)
+      call prmem_request(reqr_dird_a    ,nproc,config=mhostonly)
       call prmem_request(reqs_dirdir    ,nproc,config=mhostonly)
       call prmem_request(reqr_dirdir    ,nproc,config=mhostonly)
       call prmem_request(reqs_recdir    ,nproc,config=mhostonly)
       call prmem_request(reqr_recdir    ,nproc,config=mhostonly)
+      call prmem_request(reqs_dirrec    ,nproc,config=mhostonly)
+      call prmem_request(reqr_dirrec    ,nproc,config=mhostonly)
       call prmem_request(reqs_recdirsolv,nproc,config=mhostonly)
       call prmem_request(reqr_recdirsolv,nproc,config=mhostonly)
       call prmem_request(reqs_poleglob  ,nproc,config=mhostonly)
@@ -1309,6 +1313,7 @@ c
 c
       subroutine ddpme3d
       use atoms
+      use ani
       use boxes
       use cell
       use cutoff
@@ -1327,6 +1332,7 @@ c
       real(t_p) dist,distRatio
       real(t_p) mbuf,vbuf,torquebuf,neigbuf,bigbuf
       real(t_p) mshortbuf,vshortbuf,torqueshortbuf,bigshortbuf
+      real(t_p) anibuf,distRatio1
       real(t_p) eps1,eps2
       real(r_p), allocatable :: xbegproctemp(:),ybegproctemp(:)
       real(r_p), allocatable :: zbegproctemp(:)
@@ -1354,7 +1360,7 @@ c
 c
       nbloc = 0
       nloc  = 0
-      nlocrec = 0
+      !nlocrec = 0
       if (use_pmecore) then
         nprocloc = ndir
         rankloc  = rank_bis
@@ -1727,19 +1733,29 @@ c
       torqueshortbuf = mshortbuf + lbuffer
       torquebuf2 = torquebuf*torquebuf 
       torqueshortbuf2 = torqueshortbuf*torqueshortbuf 
-      neigbuf = lbuffer
+      anibuf  = 0
+      if (use_mlpot) then
+         anibuf  = MLpotcut + lbuffer
+      end if
+      neigbuf = anibuf
 c
 c     get maximum cutoff value
 c
-      bigbuf = max(torquebuf,vbuf,ddcut)
+      bigbuf = max(torquebuf,vbuf,ddcut,anibuf)
       bigshortbuf = max(torqueshortbuf,vshortbuf,ddcut)
 
       ! Set the distannce ratio ragarding direct space neighbor process
       if (no_commdir) then
-         distRatio = 1
+         distRatio  = 1
+         distRatio1 = 1
       else
-         distRatio = 0.5
+         distRatio  = 0.5
+         distRatio1 = 0.5
       end if
+      if (use_mlpot) then
+         distRatio1 = 1
+      end if
+      distRatio1 = max(distRatio1,distRatio)
 c
       do iproc = 0, nprocloc-1
         do iproc1 = 0, nprocloc-1
@@ -1757,7 +1773,7 @@ c
             ntorquerecep(iproc1+1) = ntorquerecep(iproc1+1)+1
             ptorquerecep(ntorquerecep(iproc1+1),iproc1+1) = iproc
           end if
-          if (dist.le.(bigbuf*distRatio)) then
+          if (dist.le.(bigbuf*distRatio1)) then
             nbigrecep(iproc1+1) = nbigrecep(iproc1+1)+1
             pbigrecep(nbigrecep(iproc1+1),iproc1+1) = iproc
           end if

@@ -11,10 +11,13 @@ c     "eimptor1gpu" calculates on device improper torsion energy and its
 c     first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module eimptor1gpu_inl
+#include "atomicOp.h.f"
       contains
 #include "image.f.inc"
+#include "groups.inc.f"
+#include "atomicOp.inc.f"
       end module
 
       subroutine eimptor1gpu
@@ -36,7 +39,7 @@ c
       integer i,ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
       integer iimptor
-      real(t_p) e,dedphi
+      real(t_p) e,dedphi,fgrp
       real(t_p) rcb
       real(t_p) xt,yt,zt
       real(t_p) xu,yu,zu
@@ -68,6 +71,7 @@ c
       real(r_p) dedx,dedy,dedz
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
+      integer iga,igb,igc,igd,gmin,gmax
       logical proceed
 
       if (deb_Path) write(*,*) "eimptor1gpu",nitorsloc
@@ -80,7 +84,8 @@ c
 c     calculate the improper torsional angle energy term
 c
 !$acc parallel loop async default(present)
-!$acc&         present(eit,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&             present(eit,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&         reduction(+:eit,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do iimptor = 1, nitorsloc
          i  = imptorglob(iimptor)
          ia = iitors(1,i)
@@ -94,8 +99,9 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)
+     &      call groups4_inl(fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib) .or.
      &                            use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
@@ -174,6 +180,13 @@ c
                e = itorunit * (v1*phi1+v2*phi2+v3*phi3)
                dedphi = itorunit * (v1*dphi1+v2*dphi2+v3*dphi3)
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
+c
 c     chain rule terms for first derivative components
 c
                xca = xic - xia
@@ -186,9 +199,9 @@ c
                   call image_inl (xca,yca,zca)
                   call image_inl (xdb,ydb,zdb)
                end if
-               dedxt = dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
-               dedyt = dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
-               dedzt = dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
+               dedxt =  dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
+               dedyt =  dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
+               dedzt =  dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
                dedxu = -dedphi * (yu*zcb - ycb*zu) / (ru2*rcb)
                dedyu = -dedphi * (zu*xcb - zcb*xu) / (ru2*rcb)
                dedzu = -dedphi * (xu*ycb - xcb*yu) / (ru2*rcb)
@@ -211,45 +224,22 @@ c
 c     increment the improper torsion energy and gradient
 c
                eit = eit + e
-               dedx = dedxic
-               dedy = dedyic
-               dedz = dedzic
-!$acc atomic
-               deit(1,icloc) = deit(1,icloc) + dedx
-!$acc atomic
-               deit(2,icloc) = deit(2,icloc) + dedy
-!$acc atomic
-               deit(3,icloc) = deit(3,icloc) + dedz
+
+               deit(1,icloc) = deit(1,icloc) + dedxic
+               deit(2,icloc) = deit(2,icloc) + dedyic
+               deit(3,icloc) = deit(3,icloc) + dedzic
 c
-               dedx = dedxia
-               dedy = dedyia
-               dedz = dedzia
-!$acc atomic
-               deit(1,ialoc) = deit(1,ialoc) + dedx
-!$acc atomic
-               deit(2,ialoc) = deit(2,ialoc) + dedy
-!$acc atomic
-               deit(3,ialoc) = deit(3,ialoc) + dedz
+               deit(1,ialoc) = deit(1,ialoc) + dedxia
+               deit(2,ialoc) = deit(2,ialoc) + dedyia
+               deit(3,ialoc) = deit(3,ialoc) + dedzia
 c
-               dedx = dedxib
-               dedy = dedyib
-               dedz = dedzib
-!$acc atomic
-               deit(1,ibloc) = deit(1,ibloc) + dedx
-!$acc atomic
-               deit(2,ibloc) = deit(2,ibloc) + dedy
-!$acc atomic
-               deit(3,ibloc) = deit(3,ibloc) + dedz
+               deit(1,ibloc) = deit(1,ibloc) + dedxib
+               deit(2,ibloc) = deit(2,ibloc) + dedyib
+               deit(3,ibloc) = deit(3,ibloc) + dedzib
 c
-               dedx = dedxid
-               dedy = dedyid
-               dedz = dedzid
-!$acc atomic
-               deit(1,idloc) = deit(1,idloc) + dedx
-!$acc atomic
-               deit(2,idloc) = deit(2,idloc) + dedy
-!$acc atomic
-               deit(3,idloc) = deit(3,idloc) + dedz
+               deit(1,idloc) = deit(1,idloc) + dedxid
+               deit(2,idloc) = deit(2,idloc) + dedyid
+               deit(3,idloc) = deit(3,idloc) + dedzid
 c
 c     increment the internal virial tensor components
 c

@@ -14,10 +14,13 @@ c     "epitors1" calculates the pi-orbital torsion potential energy
 c     and first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module epitors1gpu_inl
+#include "atomicOp.h.f"
         contains
 #include "image.f.inc"
+#include "groups.inc.f"
+#include "atomicOp.inc.f"
       end module
 
       subroutine epitors1gpu
@@ -78,8 +81,9 @@ c
       real(t_p) dedxig,dedyig,dedzig
       real(t_p) dedxip,dedyip,dedzip
       real(t_p) dedxiq,dedyiq,dedziq
-      real(r_p) dedi(3)
       real(t_p) vxterm,vyterm,vzterm
+      real(t_p) fgrp
+      integer iga,igb,igc,igd,ige,igg,gmin,gmax
       logical proceed
 !$acc routine(image_acc) seq
 
@@ -87,7 +91,7 @@ c
 c
 c     calculate the pi-orbital torsion angle energy term
 c
-!$acc parallel loop private(dedi) async
+!$acc parallel loop async
 !$acc&         present(ept,dept,vir,pitorsglob,ipit,kpit,
 !$acc&     loc,x,y,z,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do ipitors = 1, npitorsloc
@@ -107,9 +111,10 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
-     &                              use(id) .or. use(ie) .or. use(ig))
+         if (use_group)
+     &      call groups6_inl (fgrp,ia,ib,ic,id,ie,ig,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
+     &              use(id) .or. use(ie) .or. use(ig))
 c
 c     compute the value of the pi-orbital torsion angle
 c
@@ -205,6 +210,13 @@ c
                e = ptorunit * v2 * phi2
                dedphi = ptorunit * v2 * dphi2
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
+c
 c     chain rule terms for first derivative components
 c
                xdp = xid - xip
@@ -260,65 +272,29 @@ c     increment the total pi-orbital torsion energy and gradient
 c
                ept = ept + e
 
-               dedi(1) = dedxic
-               dedi(2) = dedyic
-               dedi(3) = dedzic
-!$acc atomic update
-               dept(1,icloc) = dept(1,icloc) + dedi(1)
-!$acc atomic update
-               dept(2,icloc) = dept(2,icloc) + dedi(2)
-!$acc atomic update
-               dept(3,icloc) = dept(3,icloc) + dedi(3)
+               call atomic_add( dept(1,icloc),dedxic )
+               call atomic_add( dept(2,icloc),dedyic )
+               call atomic_add( dept(3,icloc),dedzic )
 c
-               dedi(1) = dedxia
-               dedi(2) = dedyia
-               dedi(3) = dedzia
-!$acc atomic update
-               dept(1,ialoc) = dept(1,ialoc) + dedi(1)
-!$acc atomic update
-               dept(2,ialoc) = dept(2,ialoc) + dedi(2)
-!$acc atomic update
-               dept(3,ialoc) = dept(3,ialoc) + dedi(3)
+               call atomic_add( dept(1,ialoc),dedxia )
+               call atomic_add( dept(2,ialoc),dedyia )
+               call atomic_add( dept(3,ialoc),dedzia )
 c
-               dedi(1) = dedxib
-               dedi(2) = dedyib
-               dedi(3) = dedzib
-!$acc atomic update
-               dept(1,ibloc) = dept(1,ibloc) + dedi(1)
-!$acc atomic update
-               dept(2,ibloc) = dept(2,ibloc) + dedi(2)
-!$acc atomic update
-               dept(3,ibloc) = dept(3,ibloc) + dedi(3)
+               call atomic_add( dept(1,ibloc),dedxib )
+               call atomic_add( dept(2,ibloc),dedyib )
+               call atomic_add( dept(3,ibloc),dedzib )
 c
-               dedi(1) = dedxid
-               dedi(2) = dedyid
-               dedi(3) = dedzid
-!$acc atomic update
-               dept(1,idloc) = dept(1,idloc) + dedi(1)
-!$acc atomic update
-               dept(2,idloc) = dept(2,idloc) + dedi(2)
-!$acc atomic update
-               dept(3,idloc) = dept(3,idloc) + dedi(3)
+               call atomic_add( dept(1,idloc),dedxid )
+               call atomic_add( dept(2,idloc),dedyid )
+               call atomic_add( dept(3,idloc),dedzid )
 c
-               dedi(1) = dedxie
-               dedi(2) = dedyie
-               dedi(3) = dedzie
-!$acc atomic update
-               dept(1,ieloc) = dept(1,ieloc) + dedi(1)
-!$acc atomic update
-               dept(2,ieloc) = dept(2,ieloc) + dedi(2)
-!$acc atomic update
-               dept(3,ieloc) = dept(3,ieloc) + dedi(3)
+               call atomic_add( dept(1,ieloc),dedxie )
+               call atomic_add( dept(2,ieloc),dedyie )
+               call atomic_add( dept(3,ieloc),dedzie )
 c
-               dedi(1) = dedxig
-               dedi(2) = dedyig
-               dedi(3) = dedzig
-!$acc atomic update
-               dept(1,igloc) = dept(1,igloc) + dedi(1)
-!$acc atomic update
-               dept(2,igloc) = dept(2,igloc) + dedi(2)
-!$acc atomic update
-               dept(3,igloc) = dept(3,igloc) + dedi(3)
+               call atomic_add( dept(1,igloc),dedxig )
+               call atomic_add( dept(2,igloc),dedyig )
+               call atomic_add( dept(3,igloc),dedzig )
 c
 c     increment the internal virial tensor components
 c

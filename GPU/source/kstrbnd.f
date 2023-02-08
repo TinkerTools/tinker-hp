@@ -14,7 +14,7 @@ c     "kstrbnd" assigns parameters for stretch-bend interactions
 c     and processes new or changed parameter values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kstrbnd(init)
       use angle
       use atmlst

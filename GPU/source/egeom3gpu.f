@@ -15,11 +15,14 @@ c     distances, angles and torsions as well as Gaussian basin and
 c     droplet restraints; also partitions energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module egeom3gpu_inl
+#include "atomicOp.h.f"
         contains
 #include "image.f.inc"
 #include "midpointimage.f.inc"
+#include "groups.inc.f"
+#include "atomicOp.inc.f"
       end module
 
       subroutine egeom3gpu
@@ -84,6 +87,8 @@ c
       real(t_p) xi,yi,zi,ri
       real(t_p) a,b,buffer,term
       real(t_p) time0,time1
+      real(t_p) fgrp
+      integer iga,igb,igc,igd,gmin,gmax
       logical proceed,intermol
       logical header,huge
       real(t_p) eg1
@@ -113,8 +118,8 @@ c
          i = npfixglob(inpfix)
          ia = ipfix(i)
          ialoc = loc(ia)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia))
+         proceed = (use(ia))
+         if (use_group)  call groups1_inl(fgrp,ia,ngrp,grplist,wgrp)
          if (proceed) then
             xr = 0.0_ti_p
             yr = 0.0_ti_p
@@ -128,10 +133,10 @@ c
             dt = max(0.0_ti_p,r-pfix(2,i))
             dt2 = dt * dt
             e = force * dt2
+            if (use_group) e = e * fgrp
             neg = neg + 1
-            eg = eg+ e
-!$acc atomic
-            aeg(ialoc) = aeg(ialoc) + e
+            eg = eg + e
+            call atomic_add( aeg(ialoc),e )
 #ifndef _OPENACC
             huge = (e .gt. 10.0_ti_p)
             if (debug .or. (verbose.and.huge)) then
@@ -157,7 +162,7 @@ c
    40             format (' Position',2x,i7,'-',a3,9x,'----',
      &                       6x,'----',1x,2f10.4,f12.4)
                else
-                 write (iout,50)  ia,name(ia),xpfix(i),ypfix(i),
+                  write (iout,50)  ia,name(ia),xpfix(i),ypfix(i),
      &                             zpfix(i),dt,e
    50             format (' Position',2x,i7,'-',a3,4x,4f10.4,f12.4)
                end if
@@ -181,14 +186,14 @@ c
          ialoc = loc(ia)
          ib = idfix(2,i)
          ibloc = loc(ib)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group)  call groups2_inl (fgrp,ia,ib,ngrp,grplist,wgrp)
          if (proceed) then
             xr = x(ia) - x(ib)
             yr = y(ia) - y(ib)
             zr = z(ia) - z(ib)
             intermol = (molcule(ia) .ne. molcule(ib))
-            if (use_bounds .and. intermol) 
+            if (use_bounds .and. intermol)
      &         call image_inl(xr,yr,zr)
 c            if (use_bounds)  call image (xr,yr,zr)
             r = sqrt(xr*xr + yr*yr + zr*zr)
@@ -201,12 +206,11 @@ c            if (use_bounds)  call image (xr,yr,zr)
             dt = r - target
             dt2 = dt * dt
             e = force * dt2
+            if (use_group) e = e * fgrp
             neg = neg + 1
             eg = eg + e
-!$acc atomic update 
-            aeg(ialoc) = aeg(ialoc) + 0.5_ti_p*e
-!$acc atomic update 
-            aeg(ibloc) = aeg(ibloc) + 0.5_ti_p*e
+            call atomic_add( aeg(ialoc),0.5_ti_p*e )
+            call atomic_add( aeg(ibloc),0.5_ti_p*e )
 c           if (intermol) then
 c              einter = einter + e
 c           end if
@@ -244,8 +248,8 @@ c
          ibloc = loc(ib)
          ic = iafix(3,i)
          icloc = loc(ic)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if(use_group) call groups3_inl(fgrp,ia,ib,ic,ngrp,grplist,wgrp)
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -279,10 +283,10 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e   = force * dt2
+               if (use_group) e = e * fgrp
                neg = neg + 1
                eg  = eg + e
-!$acc atomic
-               aeg(ibloc) = aeg(ibloc) + e
+               call atomic_add( aeg(ibloc),e )
 #ifndef _OPENACC
                huge = (e .gt. 10.0_ti_p)
                if (debug .or. (verbose.and.huge)) then
@@ -319,9 +323,10 @@ c
          ic = itfix(3,i)
          icloc = loc(ic)
          id = itfix(4,i)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                            use(ic) .or. use(id))
+         if (use_group)
+     &      call groups4_inl(fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib) .or.
+     &                              use(ic) .or. use(id))
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -400,12 +405,11 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group) e = e * fgrp
                neg = neg + 1
                eg = eg + e
-!$acc atomic update        
-               aeg(ibloc) = aeg(ibloc) + 0.5_ti_p*e
-!$acc atomic update        
-               aeg(icloc) = aeg(icloc) + 0.5_ti_p*e
+               call atomic_add( aeg(ibloc),0.5_ti_p*e )
+               call atomic_add( aeg(icloc),0.5_ti_p*e )
 c              if (molcule(ia).ne.molcule(ib) .or.
 c    &             molcule(ia).ne.molcule(ic) .or.
 c    &             molcule(ia).ne.molcule(id)) then
@@ -548,9 +552,10 @@ c
          icloc = loc(ic)
          id = ichir(4,i)
          idloc = loc(id)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                            use(ic) .or. use(id))
+         if (use_group)
+     &      call groups4_inl(fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib) .or.
+     &                              use(ic) .or. use(id))
          if (proceed) then
             xad = x(ia) - x(id)
             yad = y(ia) - y(id)
@@ -574,16 +579,13 @@ c
             dt  = vol - target
             dt2 = dt * dt
             e   = force * dt2
+            if (use_group) e = e * fgrp
             eg  = eg + e
             neg = neg + 1
-!$acc atomic update  
-            aeg(ialoc) = aeg(ialoc) + 0.25_ti_p*e
-!$acc atomic update  
-            aeg(ibloc) = aeg(ibloc) + 0.25_ti_p*e
-!$acc atomic update  
-            aeg(icloc) = aeg(icloc) + 0.25_ti_p*e
-!$acc atomic update  
-            aeg(idloc) = aeg(idloc) + 0.25_ti_p*e
+            call atomic_add( aeg(ialoc),0.25_ti_p*e )
+            call atomic_add( aeg(ibloc),0.25_ti_p*e )
+            call atomic_add( aeg(icloc),0.25_ti_p*e )
+            call atomic_add( aeg(idloc),0.25_ti_p*e )
 #ifndef _OPENACC
             huge = (e .gt. 10.0_ti_p)
             if (debug .or. (verbose.and.huge)) then
@@ -620,8 +622,9 @@ c
                xk = x(kglob)
                yk = y(kglob)
                zk = z(kglob)
-               proceed = .true.
-               if (proceed)  proceed = (use(iglob) .or. use(kglob))
+               if (use_group)
+     &            call groups2_inl(fgrp,i,k,ngrp,grplist,wgrp)
+               proceed = (use(iglob) .or. use(kglob))
                if (proceed) then
                   if (kglob.le.iglob) cycle
 
@@ -637,12 +640,11 @@ c                  term = -width *(xr*xr + yr*yr + zr*zr)
                   e = 0.0_ti_p
                   if (term .gt. -50.0_ti_p)  e = depth * exp(term)
                   e = e - depth
+                  if (use_group) e = e * fgrp
                   neg = neg + 1
                   eg = eg + e
-!$acc atomic update    
-                  aeg(i) = aeg(i) + 0.5_ti_p*e
-!$acc atomic update   
-                  aeg(k) = aeg(k) + 0.5_ti_p*e
+                  call atomic_add( aeg(i),0.5_ti_p*e )
+                  call atomic_add( aeg(k),0.5_ti_p*e )
 #ifndef _OPENACC
                   huge = (e .gt. 10.0_ti_p)
                   if (debug .or. (verbose.and.huge)) then
@@ -678,8 +680,8 @@ c
 !$acc parallel loop default(present) async
          do i = 1, nloc
             iglob = glob(i)
-            proceed = .true.
-            if (proceed)  proceed = (use(iglob))
+            if (use_group)  call groups1_inl (fgrp,i,ngrp,grplist,wgrp)
+            proceed = (use(iglob))
             if (proceed) then
                xi = x(iglob)
                yi = y(iglob)
@@ -690,6 +692,7 @@ c
                r6 = r2 * r2 * r2
                r12 = r6 * r6
                e = a/r12 - b/r6
+               if (use_group) e = e * fgrp
                neg = neg + 1
                eg = eg + e
                aeg(i) = aeg(i) + e

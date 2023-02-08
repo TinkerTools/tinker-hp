@@ -3,7 +3,7 @@ c     Sorbonne University
 c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine efld0_directvec(nrhs,ef)
 c
 c     Compute the direct space contribution to the permanent electric field.

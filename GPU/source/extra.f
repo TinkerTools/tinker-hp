@@ -14,7 +14,7 @@ c     "extra" calculates any additional user defined potential
 c     energy contribution
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine extra
       use atoms
       use domdec

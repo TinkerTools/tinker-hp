@@ -13,67 +13,54 @@ c
 c     "etortor" calculates the torsion-torsion potential energy
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module etortor_inl
+#include "atomicOp.h.f"
         contains
-#include "image.f.inc"
-      end module
-
-      subroutine etortor
+#include "ker_tortor.inc.f"
+      subroutine etortor_(i12,n12,typAtm,atomic,dett)
       use atmlst
-      use atmtyp ,only: atomic
-      use atoms
+      use atmtyp
+      use atoms    ,only: n,x,y,z
       use bitor
       use bound
+      use deriv    ,only: deamdD
+      use domdec
       use energi
-      use etortor_inl
       use group
+      use inform   ,only: deb_Path
       use ktrtor
+      use mamd
       use math
-      use tinheader
+      use potent   ,only: use_amd_dih
+      use sizes
+      use tinheader,only: ti_p,re_p
       use torpot
-      use tortor
+      use tortor   ,only: itt,ntortorloc
       use usage
+      use virial
       implicit none
-      integer i,k,itortor,iitortor
-      integer pos1,pos2
-      integer ia,ib,ic,id,ie
-      integer nlo,nhi,nt
-      integer xlo,ylo
-      real(t_p) e,sign
-      real(t_p) angle1,angle2
-      real(t_p) value1,value2
-      real(t_p) cosine1,cosine2
-      real(t_p) xt,yt,zt,rt2
-      real(t_p) xu,yu,zu,ru2
-      real(t_p) xv,yv,zv,rv2
-      real(t_p) rtru
-      real(t_p) rurv
-      real(t_p) x1l,x1u
-      real(t_p) y1l,y1u
-      real(t_p) xia,yia,zia
-      real(t_p) xib,yib,zib
-      real(t_p) xic,yic,zic
-      real(t_p) xid,yid,zid
-      real(t_p) xie,yie,zie
-      real(t_p) xba,yba,zba
-      real(t_p) xdc,ydc,zdc
-      real(t_p) xcb,ycb,zcb
-      real(t_p) xed,yed,zed
-      real(t_p) ftt(4),ft12(4)
-      real(t_p) ft1(4),ft2(4)
-      logical proceed
-!$acc routine(chkttor) seq
-!$acc routine(bcuint) seq
-c
-c     zero out the torsion-torsion energy
-c
-      ett = 0.0_re_p
+      integer  ,intent(in):: i12(:,:),n12(:)
+     &         ,atomic(:),typAtm(:)
+      real(r_p),intent(inout):: dett(3,*)
+
+      integer   i,k,itortor,iitortor,ia,ib,ic,id,ie,ver,fea
+      logical   proceed
+      real(t_p) ftt(4),ft12(4),ft1(4),ft2(4),cw(4,4)
+      real(t_p) fgrp
+      parameter(
+     &    ver=__use_ene__
+     &   ,fea=__use_mpi__+__use_polymer__+__use_groups__
+     &         )
 c
 c     calculate the torsion-torsion interaction energy term
 c
-!$acc parallel loop default(present) present(ett) async
-!$acc&         private(ftt,ft12,ft1,ft2)
+!$acc parallel loop private(ft12,ftt,ft1,ft2,cw) async
+!$acc&         present(tortorglob,ibitor,x,y,z,typAtm,atomic,i12,n12
+!$acc&   ,grplist,wgrp,use,loc,itt,ttx,tty,tnx,tny,tbf,tbx,tby,tbxy)
+!$acc&         present(ett,dett
+!$acc&   ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&         reduction(+:ett)
       do itortor = 1, ntortorloc
          iitortor = tortorglob(itortor)
          i = itt(1,iitortor)
@@ -94,136 +81,35 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic)
-     &                       .or. use(id) .or. use(ie))
+         if (use_group) 
+     &      call groups5_inl(fgrp,ia,ib,ic,id,ie,ngrp,grplist,wgrp)
+         proceed = merge(.true.,use(ia).or.use(ib).or.use(ic).or.
+     &                          use(id).or.use(ie), useAll)
 c
 c     compute the values of the torsional angles
 c
          if (proceed) then
-            xia = x(ia)
-            yia = y(ia)
-            zia = z(ia)
-            xib = x(ib)
-            yib = y(ib)
-            zib = z(ib)
-            xic = x(ic)
-            yic = y(ic)
-            zic = z(ic)
-            xid = x(id)
-            yid = y(id)
-            zid = z(id)
-            xie = x(ie)
-            yie = y(ie)
-            zie = z(ie)
-            xba = xib - xia
-            yba = yib - yia
-            zba = zib - zia
-            xcb = xic - xib
-            ycb = yic - yib
-            zcb = zic - zib
-            xdc = xid - xic
-            ydc = yid - yic
-            zdc = zid - zic
-            xed = xie - xid
-            yed = yie - yid
-            zed = zie - zid
-            if (use_polymer) then
-               call image_inl (xba,yba,zba)
-               call image_inl (xcb,ycb,zcb)
-               call image_inl (xdc,ydc,zdc)
-               call image_inl (xed,yed,zed)
-            end if
-            xt = yba*zcb - ycb*zba
-            yt = zba*xcb - zcb*xba
-            zt = xba*ycb - xcb*yba
-            xu = ycb*zdc - ydc*zcb
-            yu = zcb*xdc - zdc*xcb
-            zu = xcb*ydc - xdc*ycb
-            rt2 = xt*xt + yt*yt + zt*zt
-            ru2 = xu*xu + yu*yu + zu*zu
-            rtru = sqrt(rt2 * ru2)
-            xv = ydc*zed - yed*zdc
-            yv = zdc*xed - zed*xdc
-            zv = xdc*yed - xed*ydc
-            rv2 = xv*xv + yv*yv + zv*zv
-            rurv = sqrt(ru2 * rv2)
-            if (rtru.ne.0.0_ti_p .and. rurv.ne.0.0_ti_p) then
-               cosine1 = (xt*xu + yt*yu + zt*zu) / rtru
-               cosine1 = min(1.0_ti_p,max(-1.0_ti_p,cosine1))
-               angle1 = radian * acos(cosine1)
-               sign = xba*xu + yba*yu + zba*zu
-               if (sign .lt. 0.0_ti_p)  angle1 = -angle1
-               value1 = angle1
-               cosine2 = (xu*xv + yu*yv + zu*zv) / rurv
-               cosine2 = min(1.0_ti_p,max(-1.0_ti_p,cosine2))
-               angle2 = radian * acos(cosine2)
-               sign = xcb*xv + ycb*yv + zcb*zv
-               if (sign .lt. 0.0_ti_p)  angle2 = -angle2
-               value2 = angle2
-c
-c     check for inverted chirality at the central atom
-c
-               call chkttor (ib,ic,id,sign,value1,value2,x,y,z,
-     &                       type,atomic)
-c
-c     use bicubic interpolation to compute spline values
-c
-               nlo = 1
-               nhi = tnx(k)
-               do while (nhi-nlo .gt. 1)
-                  nt = (nhi+nlo) / 2
-                  if (ttx(nt,k) .gt. value1) then
-                     nhi = nt
-                  else
-                     nlo = nt
-                  end if
-               end do
-               xlo = nlo
-               nlo = 1
-               nhi = tny(k)
-               do while (nhi-nlo .gt. 1)
-                  nt = (nhi + nlo)/2
-                  if (tty(nt,k) .gt. value2) then
-                     nhi = nt
-                  else
-                     nlo = nt
-                  end if
-               end do
-               ylo = nlo
-               x1l = ttx(xlo,k)
-               x1u = ttx(xlo+1,k)
-               y1l = tty(ylo,k)
-               y1u = tty(ylo+1,k)
-               pos2 = ylo*tnx(k) + xlo
-               pos1 = pos2 - tnx(k)
-               ftt(1) = tbf(pos1,k)
-               ftt(2) = tbf(pos1+1,k)
-               ftt(3) = tbf(pos2+1,k)
-               ftt(4) = tbf(pos2,k)
-               ft1(1) = tbx(pos1,k)
-               ft1(2) = tbx(pos1+1,k)
-               ft1(3) = tbx(pos2+1,k)
-               ft1(4) = tbx(pos2,k)
-               ft2(1) = tby(pos1,k)
-               ft2(2) = tby(pos1+1,k)
-               ft2(3) = tby(pos2+1,k)
-               ft2(4) = tby(pos2,k)
-               ft12(1) = tbxy(pos1,k)
-               ft12(2) = tbxy(pos1+1,k)
-               ft12(3) = tbxy(pos2+1,k)
-               ft12(4) = tbxy(pos2,k)
-               call bcuint (ftt,ft1,ft2,ft12,x1l,x1u,
-     &                      y1l,y1u,value1,value2,e)
-               e = ttorunit * e
-c
-c     increment the total torsion-torsion energy
-c
-               ett = ett + e
-            end if
+            call ker_tortor
+     &           (k,ia,ib,ic,id,ie,iitortor,ntortorloc,n,loc ! Input
+     &           ,i12,n12,atomic,typAtm
+     &           ,x,y,z,tnx,tny,ttx,tty,tbf,tbx,tby,tbxy,ttorunit,fgrp
+     &           ,use_polymer,use_group,use_amd_dih,use_virial
+     &           ,ett,dett            ! Output
+     &           ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &           ,ver,fea)
          end if
       end do
-      end
+      end subroutine
+      end module
+
+      subroutine etortor
+      use atoms
+      use atmtyp
+      use couple
+      use deriv
+      use etortor_inl
+      call etortor_(i12,n12,type,atomic,dett)
+      end subroutine
 c
 c
 c     ###############################################################

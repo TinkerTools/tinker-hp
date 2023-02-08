@@ -14,7 +14,7 @@ c     "nblist" constructs and maintains nonbonded pair neighbor lists
 c     for vdw and electrostatic interactions
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module nblist_inl
         use tinheader,only:ti_p
         contains
@@ -22,74 +22,81 @@ c
       end module
 
       subroutine nblist(istep)
-      use atoms ,only:n
-      use boxes,only: xbox2,ybox2,zbox2
-      use cutoff,only:use_clist,use_mlist,use_vlist
+      use atoms ,only: n
+      use ani   ,only: mlpotcut, amloc, namloc
+      use boxes ,only: xbox2,ybox2,zbox2
+      use cutoff,only: use_clist,use_mlist,use_vlist,use_dlist
      &          ,use_shortvlist,use_shortclist,use_shortmlist
-      use cutoff,only:vdwcut,chgcut,mpolecut
+     &          ,use_shortdlist
+     &          ,vdwcut,chgcut,mpolecut,dispcut
       use domdec
       use inform,only: deb_Path,tindPath
+      use iounit,only: iout
       use mpole ,only: npolelocnl
       use neigh ,only: ineigup
      &          ,mlst_en=>mlst_enable,mlst2_en=>mlst2_enable
      &          ,clst_en=>clst_enable,clst2_en=>clst2_enable
      &          ,vlst_en=>vlst_enable,vlst2_en=>vlst2_enable
-      use neigh , only: mbuf2,cbuf2,vbuf2,lbuffer
+      use neigh ,only: mbuf2,cbuf2,vbuf2,dbuf2,lbuffer
+     &          , build_pairwise_list,list_ani,ineignl
       use potent
-      use sizes ,only:tinkerdebug
+      use sizes ,only: tinkerdebug
       use timestat
-      use tinMemory,only:print_memory_usage,extra_alloc,debMem
+      use tinMemory,only: print_memory_usage,extra_alloc,debMem
       use mpi
-      use utilgpu,only:rec_queue
+      use utilgpu  ,only: rec_queue
       implicit none
       integer istep,modnl
       integer i,j,k
       real(t_p)  time0,time1
       real(t_p) boxedge2
 c
-c     check the consistency of the cutoffs+buffer compared to the size
-c     of the box (minimum image convention)
-c 
-      boxedge2 = min(xbox2,ybox2,zbox2)
-      if (use_clist) then
-        if (cbuf2.gt.boxedge2*boxedge2) then
-          if (rank.eq.0) then
-            print*,'Error in neigbor list: max cutoff + ',
-     $   'buffer should be less than half one edge of the box'
-            print*,'Charge cutoff = ', chgcut
-            print*,'List buffer = ',lbuffer
-          end if
-          call fatal
-        end if
-      end if
-      if (use_mlist) then
-        if (mbuf2.gt.boxedge2*boxedge2) then
-          if (rank.eq.0) then
-            print*,'Error in neigbor list: max cutoff + ',
-     $   'buffer should be less than half one edge of the box'
-            print*,'Multipole cutoff = ', mpolecut
-            print*,'List buffer = ',lbuffer
-          end if
-          call fatal
-        end if
-      end if
-      if (use_vlist) then
-        if (vbuf2.gt.boxedge2*boxedge2) then
-          if (rank.eq.0) then
-            print*,'Error in neigbor list: max cutoff + ',
-     $   'buffer should be less than half one edge of the box'
-            print*,'VDW cutoff = ', vdwcut
-            print*,'List buffer = ',lbuffer
-          end if
-          call fatal
-        end if
-      end if
-c
 c     check number of steps between nl updates
 c
       modnl = mod(istep,ineigup)
       if (modnl.ne.0) return
 
+c
+c     check the consistency of the cutoffs+buffer compared to the size
+c     of the box (minimum image convention)
+c 
+ 1000 format('Error in ',A,' neigbor list: max cutoff + buffer should'
+     $      ,' be less than half one edge of the box')
+ 1010 format(A12,' cutoff = ',F14.3)
+ 1020 format(A8,'List buffer = ',F14.3)
+      boxedge2 = min(xbox2,ybox2,zbox2)
+      if (use_clist.and.cbuf2.gt.boxedge2*boxedge2) then
+         if (rank.eq.0) then
+            write(iout,1000) 'charge'
+            write(iout,1010) 'charge',chgcut
+            write(iout,1020) lbuffer
+         end if
+         call fatal
+      end if
+      if (use_mlist.and.mbuf2.gt.boxedge2*boxedge2) then
+         if (rank.eq.0) then
+            write(iout,1000) 'electrostatic'
+            write(iout,1010) 'Multipole',mpolecut
+            write(iout,1020) lbuffer
+         end if
+         call fatal
+      end if
+      if (use_vlist.and.vbuf2.gt.boxedge2*boxedge2) then
+         if (rank.eq.0) then
+            write(iout,1000) 'VDW'
+            write(iout,1010) 'VDW',vdwcut
+            write(iout,1020) lbuffer
+         end if
+         call fatal
+      end if
+      if (use_dlist.and.dbuf2.gt.boxedge2*boxedge2) then
+         if (rank.eq.0) then
+           write(iout,1000) 'dispersion'
+           write(iout,1010) 'dispersion',dispcut
+           write(iout,1020) lbuffer
+         end if
+         call fatal
+      end if
       if (debMem.and.
      &      (istep.lt.100.or.mod(istep,20*ineigup).eq.0))
      &       call print_memory_usage
@@ -127,6 +134,11 @@ c
          if (vlst_en) call vlistcellgpu
          call timer_exit ( timer_vlistcell )
       endif
+      if (use_shortdlist) then
+         if (vlst_en) call dlistcell2
+      else if (use_dlist) then
+         if (vlst_en) call dlistcell
+      end if
       if (use_shortmlist) then
          call timer_enter( timer_mlistcell )
          if (mlst_en) call mlistcell2gpu
@@ -135,7 +147,7 @@ c
          call timer_enter( timer_mlistcell )
          if (mlst_en) call mlistcellgpu
          call timer_exit ( timer_mlistcell )
-      endif        
+      endif
 
       ! C2 list (Atom-Blocks)
       if (use_vlist.or.use_shortvlist) then
@@ -152,6 +164,11 @@ c
          call timer_enter( timer_clistcell )
          if (clst2_en) call clist_block
          call timer_exit ( timer_clistcell )
+      end if
+      
+      if (use_mlpot) then
+         call build_pairwise_list(amloc, namloc
+     &                           ,(mlpotcut+lbuffer)**2 ,list_ani)
       end if
 
       !call save_atoms_nl
@@ -782,10 +799,12 @@ c     and the associated indexes
 c
       subroutine reinitnl(istep)
       use atoms
+      use ani     ,only: mlpotcut
       use domdec
       use cell    ,only: xcell,ycell,zcell
       use inform  ,only: deb_Path,tindPath,abort
       use neigh
+      use potent  ,only: use_mlpot
       use utilgpu ,only: rec_queue
       use utilcomm,only: no_commdir
       use tinMemory
@@ -818,6 +837,7 @@ c
 c
       if (istep.eq.0) call init_boxPart
       if (.not.allocated(ineignl)) then
+         if(use_mlpot) call init_aboxPart(list_ani%bPar)
          call prmem_request(ineignl,n)
 !$acc wait
       end if
@@ -825,6 +845,9 @@ c
          distcut = bigbuf
       else
          distcut = bigbuf/2
+      end if
+      if (use_mlpot) then
+         distcut = max(distcut, mlpotcut+lbuffer)
       end if
 c
 !$acc data copy(nlocnl,abort)
@@ -1662,6 +1685,232 @@ c
       deallocate (yred)
       deallocate (zred)
 c
+      deallocate (pos)
+      deallocate (index)
+      deallocate (indcell_loc)
+      deallocate (r2vec)
+      return
+      end
+c
+c    "dlistcell" performs a complete rebuild of the
+c     dispersion neighbor lists using linked cells method
+c
+      subroutine dlistcell
+      use atmlst
+      use atoms
+      use boxes
+      use cutoff
+      use disp
+      use domdec
+      use iounit
+      use kvdws
+      use neigh
+      use vdw
+      use mpi
+      implicit none
+      integer iglob,iloc
+      integer i,icell,j,k,nneigloc
+      integer ineig,iidisp
+      integer kcell,kglob
+      integer ncell_loc
+      integer, allocatable :: index(:),indcell_loc(:)
+      real(t_p) xi,yi,zi,xk,yk,zk,r2
+      real(t_p), allocatable :: pos(:,:),r2vec(:)
+      logical docompute
+c
+      allocate (index(nbloc))
+      allocate (indcell_loc(nbloc))
+      allocate(pos(3,nbloc))
+      allocate(r2vec(nbloc))
+c
+c     perform a complete list build
+c
+      do i = 1, ndisplocnl
+        iidisp = dispglobnl(i)
+        iglob  = idisp(iidisp)
+        icell = repartcell(iglob)
+        iloc = loc(iglob)
+        xi = x(iglob)
+        yi = y(iglob)
+        zi = z(iglob)
+c
+c       align data of the local cell and the neighboring ones
+c
+        ncell_loc = cell_len(icell)
+        indcell_loc(1:ncell_loc) = 
+     $  indcell(bufbegcell(icell):(bufbegcell(icell)+cell_len(icell)-1))
+        do ineig = 1, numneigcell(icell)
+          kcell = neigcell(ineig,icell)
+          indcell_loc(ncell_loc+1:(ncell_loc+cell_len(kcell))) = 
+     $  indcell(bufbegcell(kcell):(bufbegcell(kcell)+cell_len(kcell)-1))
+          ncell_loc = ncell_loc + cell_len(kcell)
+        end do
+c
+c       do the neighbor search
+c
+        nneigloc = 0 
+        do k = 1, ncell_loc
+          kglob = indcell_loc(k)
+          if (kglob.le.iglob) cycle
+          xk = x(kglob)
+          yk = y(kglob)
+          zk = z(kglob)
+          pos(1,nneigloc+1) = xi - xk
+          pos(2,nneigloc+1) = yi - yk
+          pos(3,nneigloc+1) = zi - zk
+          call midpointimage(xi,yi,zi,xk,yk,zk,pos(1,nneigloc+1),
+     $       pos(2,nneigloc+1),pos(3,nneigloc+1),docompute)
+          if (docompute) then
+            nneigloc = nneigloc + 1
+            index(nneigloc) = kglob
+          end if
+        end do
+c
+c       compute the distances and build the list accordingly
+c
+        r2vec(1:nneigloc) = pos(1,1:nneigloc)*pos(1,1:nneigloc) + 
+     $      pos(2,1:nneigloc)*pos(2,1:nneigloc) + 
+     $      pos(3,1:nneigloc)*pos(3,1:nneigloc)
+        
+        j = 0
+        do k = 1, nneigloc
+          r2 = r2vec(k)
+          kglob = index(k)
+          if (r2 .le. dbuf2) then
+             j = j + 1
+             vlst(j,i) = displist(kglob)
+          end if
+        end do
+        nvlst(i) = j
+c
+c     check to see if the neighbor list is too long
+c
+        if (nvlst(i) .ge. maxvlst) then
+           if (rank.eq.0) then
+             write (iout,10)
+   10        format (/,' DLISTCELL  --  Too many Neighbors;',
+     &                  ' Increase MAXVLST')
+             call fatal
+           end if
+        end if
+      end do
+c     
+      deallocate (pos)
+      deallocate (index)
+      deallocate (indcell_loc)
+      deallocate (r2vec)
+      return
+      end
+c
+c    "dlistcell2" performs a complete rebuild of the
+c     dispersion neighbor lists using linked cells method
+c
+      subroutine dlistcell2
+      use atmlst
+      use atoms
+      use boxes
+      use cutoff
+      use disp
+      use domdec
+      use iounit
+      use kvdws
+      use neigh
+      use vdw
+      use mpi
+      implicit none
+      integer iglob,iloc
+      integer i,icell,j,j1,k,nneigloc
+      integer ineig,iidisp
+      integer kcell,kglob
+      integer ncell_loc
+      integer  ,allocatable:: index(:),indcell_loc(:)
+      logical docompute
+      real(t_p) xi,yi,zi,xk,yk,zk,r2
+      real(t_p),allocatable:: pos(:,:),r2vec(:)
+c
+      allocate (index(nbloc))
+      allocate (indcell_loc(nbloc))
+      allocate(pos(3,nbloc))
+      allocate(r2vec(nbloc))
+c
+c     perform a complete list build
+c
+      do i = 1, ndisplocnl
+        iidisp = dispglobnl(i)
+        iglob  = idisp(iidisp)
+        icell = repartcell(iglob)
+        iloc = loc(iglob)
+        xi = x(iglob)
+        yi = y(iglob)
+        zi = z(iglob)
+c
+c       align data of the local cell and the neighboring ones
+c
+        ncell_loc = cell_len(icell)
+        indcell_loc(1:ncell_loc) = 
+     $  indcell(bufbegcell(icell):(bufbegcell(icell)+cell_len(icell)-1))
+        do ineig = 1, numneigcell(icell)
+          kcell = neigcell(ineig,icell)
+          indcell_loc(ncell_loc+1:(ncell_loc+cell_len(kcell))) = 
+     $  indcell(bufbegcell(kcell):(bufbegcell(kcell)+cell_len(kcell)-1))
+          ncell_loc = ncell_loc + cell_len(kcell)
+        end do
+c
+c       do the neighbor search
+c
+        nneigloc = 0 
+        do k = 1, ncell_loc
+          kglob = indcell_loc(k)
+          if (kglob.le.iglob) cycle
+          xk = x(kglob)
+          yk = y(kglob)
+          zk = z(kglob)
+          pos(1,nneigloc+1) = xi - xk
+          pos(2,nneigloc+1) = yi - yk
+          pos(3,nneigloc+1) = zi - zk
+          call midpointimage(xi,yi,zi,xk,yk,zk,pos(1,nneigloc+1),
+     $       pos(2,nneigloc+1),pos(3,nneigloc+1),docompute)
+          if (docompute) then
+            nneigloc = nneigloc + 1
+            index(nneigloc) = kglob
+          end if
+        end do
+c
+c       compute the distances and build the list accordingly
+c
+        r2vec(1:nneigloc) = pos(1,1:nneigloc)*pos(1,1:nneigloc) + 
+     $      pos(2,1:nneigloc)*pos(2,1:nneigloc) + 
+     $      pos(3,1:nneigloc)*pos(3,1:nneigloc)
+        
+        j = 0
+        j1 = 0
+        do k = 1, nneigloc
+          r2 = r2vec(k)
+          kglob = index(k)
+          if (r2 .le. dshortbuf2) then
+             j1 = j1 + 1
+             shortvlst(j1,i) = displist(kglob)
+          end if
+          if (r2 .le. dbuf2) then
+             j = j + 1
+             vlst(j,i) = displist(kglob)
+          end if
+        end do
+        nvlst(i) = j
+        nshortvlst(i) = j1
+c
+c     check to see if the neighbor list is too long
+c
+        if (nvlst(i) .ge. maxvlst) then
+           if (rank.eq.0) then
+             write (iout,10)
+   10        format (/,' DLISTCELL  --  Too many Neighbors;',
+     &                  ' Increase MAXVLST')
+             call fatal
+           end if
+        end if
+      end do
+c     
       deallocate (pos)
       deallocate (index)
       deallocate (indcell_loc)

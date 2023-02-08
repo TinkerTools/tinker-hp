@@ -7,7 +7,7 @@ c     "empole1" : driver for calculation of the multipole and dipole polarizatio
 c     energy and derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine empole1vec
       use domdec
       use energi

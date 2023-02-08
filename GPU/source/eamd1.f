@@ -22,7 +22,7 @@ c
 c     "aMD" calculates the aMD potentials and their respective  
 c     factors applied on the corresponded derivatives
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine aMD (derivs,epot)
       use deriv
       use domdec

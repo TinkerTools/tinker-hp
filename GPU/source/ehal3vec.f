@@ -15,7 +15,7 @@ c     "ehal3" calculates the buffered 14-7 van der Waals energy
 c     and partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine ehal3vec
       use analyz
       use atoms

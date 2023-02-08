@@ -9,8 +9,7 @@ c     ##  module interfaces  -- Tinker-HP interfaces functions and subroutines  
 c     ##                                                                             ##
 c     #################################################################################
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module interfaces
       use iso_c_binding ,only: c_int,c_float,c_double
 #ifdef _OPENACC
@@ -275,11 +274,19 @@ c
          end subroutine
          subroutine grid_pchg_sitecu
          end subroutine
+         subroutine grid_disp_sitegpu
+         end subroutine
+         subroutine grid_disp_sitecu
+         end subroutine
       end interface
       interface
          subroutine grid_pchg_force
          end subroutine
          subroutine grid_pchg_forcecu
+         end subroutine
+         subroutine grid_disp_force
+         end subroutine
+         subroutine grid_disp_forcecu
          end subroutine
       end interface
       interface
@@ -302,7 +309,9 @@ c
       procedure(grid_uind_sitegpu) ,pointer:: grid_uind_site_p
       procedure(grid_mpole_sitegpu),pointer:: grid_mpole_site_p
       procedure(grid_pchg_sitegpu) ,pointer:: grid_pchg_site_p
+     &                             ,grid_disp_site_p
       procedure(grid_pchg_force)   ,pointer:: grid_pchg_force_p
+     &                             ,grid_disp_force_p
       procedure(pme_conv_gpu)      ,pointer:: pme_conv_p
       procedure(tinker_void_sub)   ,pointer:: fphi_mpole_site_p
 
@@ -378,6 +387,10 @@ c
 !
 !  #############################################################################
       interface
+        subroutine efld0_directgpu(nrhs,ef)
+           integer  ,intent(in)   :: nrhs
+           real(t_p),intent(inout):: ef(3,nrhs,*)
+        end subroutine
         subroutine efld0_directgpu2(nrhs,ef)
            integer  ,intent(in)   :: nrhs
            real(t_p),intent(inout):: ef(:,:,:)
@@ -395,7 +408,7 @@ c
         end subroutine
       end interface
 
-      procedure(efld0_directgpu2):: efld0_directgpu,efld0_directgpu3
+      procedure(efld0_directgpu2):: efld0_directgpu3
       procedure(otf_dc_efld0_directgpu2)::oft_dc_efld0_directgpu3
 
       procedure(efld0_directgpu2),pointer:: efld0_directgpu_p
@@ -403,6 +416,36 @@ c
       procedure(otf_dc_efld0_directgpu2),pointer:: 
      &          otf_dc_efld0_directgpu_p
 
+      interface
+      subroutine pcg_newDirection(siz,ggn,ggo,ggn2,ggo2,zr,pp)
+      integer  ,intent(in   ):: siz
+      real(t_p),intent(in   ):: ggo,ggo2
+      real(r_p),intent(in   ):: ggn,ggn2
+      real(t_p),intent(in   ):: zr(*)
+      real(t_p),intent(inout):: pp(*)
+      end subroutine
+      subroutine pcg_a(siz,pp,h,gg1,gg2)
+      integer  ,intent(in   ):: siz
+      real(r_p),intent(inout):: gg1,gg2
+      real(t_p),intent(in   ):: pp(*),h(*)
+      end subroutine
+      subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2
+     &                ,mu,pp,res,h,zr,diag,ef)
+      integer  ,intent(in   ):: siz,siz1
+      real(t_p),intent(in   ):: ggo,ggo2
+      real(r_p),intent(in   ):: gg,gg2
+      real(r_p),intent(inout):: ggnew1,ggnew2,ene1,ene2
+      real(t_p),intent(in   ):: ef(*),pp(*),h(*),diag(*)
+      real(t_p),intent(inout):: mu(*),res(*),zr(*)
+      end subroutine
+      subroutine pcg_aRec(siz,term,pp,dipf,h,gg1,gg2)
+      integer  ,intent(in   ):: siz
+      real(t_p),intent(in   ):: term
+      real(r_p),intent(inout):: gg1,gg2
+      real(t_p),intent(in   ):: pp(*),dipf(*)
+      real(t_p),intent(inout):: h(*)
+      end subroutine
+      end interface
 
       interface
         subroutine inducepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
@@ -502,7 +545,7 @@ c
 !              Tinker CUDA(C/C++) Wrapper routines Interfaces
 !
 !  #############################################################################
-#ifdef _CUDA
+#ifdef _OPENACC
       interface
         subroutine cu_filter_lst_sparse
      &     (cell_glob,cell_scan,xred,yred,zred,matb_lst,
@@ -552,7 +595,7 @@ c
      &            (ipole,pglob,ploc,ieblst,eblst,x,y,z
      &            ,pdamp,thole,polarity,rpole,efi
      &            ,npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc
-     &            ,balanced
+     &            ,dirdamp,balanced
      &            ,cut2,alsq2,alsq2n,aewald
      &            , xcell, ycell, zcell,xcell2,ycell2,zcell2
      &            ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
@@ -560,7 +603,7 @@ c
      &            bind(C,name="cu_efld0_direct")
         import cuda_stream_kind
         integer,value,intent(in)::npolelocnlb,npolebloc,n,nproc
-     &         ,npolelocnlb_pair
+     &         ,npolelocnlb_pair,dirdamp
         logical,value,intent(in)::balanced
         integer(cuda_stream_kind),value::stream
         real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend
@@ -604,7 +647,8 @@ c
      &        , off2, f, alsq2, alsq2n, aewald
      &        , xcell, ycell, zcell,xcell2,ycell2,zcell2
      &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-     &        , stream)
+     &        , stream 
+     &        , ngrp, use_group, wgrp, grplist) 
      &        bind(C,name="cu_emreal1c")
         import cuda_stream_kind
         integer,value,intent(in)::npolelocnlb,npolebloc,n
@@ -617,6 +661,10 @@ c
         real(t_p),device:: x(*),y(*),z(*),rpole(13,*)
         real(t_p),device:: tem(3,*),vir_buffer(*)
         mdyn_rtyp,device:: dem(3,*),em_buffer(*)
+        integer,value,intent(in)::ngrp
+        logical,value,intent(in)::use_group
+        real(t_p),device, intent(in)::wgrp(ngrp+1,ngrp+1)
+        integer,device,intent(in)::grplist(*)
         end subroutine
       end interface 
 
@@ -754,6 +802,14 @@ c
             real(r_p),intent(inout)::de(:,:)
          end subroutine
       end interface
+      interface
+      subroutine torquegpu_group (trqvec,frcx,frcy,frcz,de)
+      real(t_p),intent(in)   :: trqvec(:,:)
+      real(t_p),intent(out)  :: frcx(:,:),frcy(:,:),frcz(:,:)
+      mdyn_rtyp,intent(inout):: de(:,:)
+      end subroutine
+      end interface
+
 
 
       procedure(tinker_void_sub) :: vlist_block,mlist_block
@@ -822,34 +878,37 @@ c
 
       subroutine init_routine_pointers
 
-      if (associated(ehal1c_p))      nullify(ehal1c_p)
-      if (associated(ehal3c_p))      nullify(ehal3c_p)
-      if (associated(elj1c_p))       nullify(elj1c_p)
-      if (associated(elj3c_p))       nullify(elj3c_p)
-      if (associated(tmatxb_p))      nullify(tmatxb_p)
-      if (associated(tmatxb_p1))     nullify(tmatxb_p1)
+      if (associated(ehal1c_p))          nullify(ehal1c_p)
+      if (associated(ehal3c_p))          nullify(ehal3c_p)
+      if (associated(elj1c_p))           nullify(elj1c_p)
+      if (associated(elj3c_p))           nullify(elj3c_p)
+      if (associated(tmatxb_p))          nullify(tmatxb_p)
+      if (associated(tmatxb_p1))         nullify(tmatxb_p1)
       if (associated(tmatxb_pme_core_p)) nullify(tmatxb_pme_core_p)
-      if (associated(otf_dc_tmatxb_pme_core_p)) 
+      if (associated(otf_dc_tmatxb_pme_core_p))
      &       nullify(otf_dc_tmatxb_pme_core_p)
       if (associated(otf_dc_efld0_directgpu_p))
      &       nullify(otf_dc_efld0_directgpu_p)
       if (associated(efld0_directgpu_p)) nullify(efld0_directgpu_p)
-      if (associated(efld0_directgpu_p1)) nullify(efld0_directgpu_p1)
+      if (associated(efld0_directgpu_p1))nullify(efld0_directgpu_p1)
       if (associated(fphi_uind_site1_p)) nullify(fphi_uind_site1_p)
       if (associated(fphi_uind_site2_p)) nullify(fphi_uind_site2_p)
       if (associated(fphi_mpole_site_p)) nullify(fphi_mpole_site_p)
       if (associated(grid_uind_site_p))  nullify(grid_uind_site_p)
       if (associated(grid_pchg_site_p))  nullify(grid_pchg_site_p)
+      if (associated(grid_disp_site_p))  nullify(grid_disp_site_p)
+      if (associated(grid_pchg_force_p)) nullify(grid_pchg_force_p)
+      if (associated(grid_disp_force_p)) nullify(grid_disp_force_p)
       if (associated(grid_mpole_site_p)) nullify(grid_mpole_site_p)
       if (associated(pme_conv_p))        nullify(pme_conv_p)
       if (associated(ecreal1d_p))        nullify(ecreal1d_p)
-      if (associated(ecreal3d_p))          nullify(ecreal3d_p)
-      if (associated(emreal3d_p))     nullify(emreal3d_p)
-      if (associated(emreal1c_p))     nullify(emreal1c_p)
-      if (associated(emreal1ca_p))    nullify(emreal1ca_p)
-      if (associated(epreal1c_p))      nullify(epreal1c_p)
-      if (associated(epreal1c_core_p)) nullify(epreal1c_core_p)
-      if (associated(epreal3d_p))      nullify(epreal3d_p)
+      if (associated(ecreal3d_p))        nullify(ecreal3d_p)
+      if (associated(emreal3d_p))        nullify(emreal3d_p)
+      if (associated(emreal1c_p))        nullify(emreal1c_p)
+      if (associated(emreal1ca_p))       nullify(emreal1ca_p)
+      if (associated(epreal1c_p))        nullify(epreal1c_p)
+      if (associated(epreal1c_core_p))   nullify(epreal1c_core_p)
+      if (associated(epreal3d_p))        nullify(epreal3d_p)
 
       ecreal1d_cp     => tinker_void_sub
       emreal1c_cp     => tinker_void_sub

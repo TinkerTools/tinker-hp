@@ -1294,10 +1294,12 @@ c     end if
          AB(1,i) = lz_T(i)
          AB(2,i) = lz_T(maxKD+i)
       end do
-#if 0
+
+#if !TINKERHP_REL_BUILD
       call M_sbev('V','L',krylovDim,kd,AB,ldAB
      &           ,EigVal,Z,maxKD,work,info)
       lz_Z(1:krylovDim,1:krylovDim) = Z(:,:)
+#endif
       if (info.ne.0) then
          print*, ' M_sbev fails with error',info 
       end if
@@ -1308,10 +1310,11 @@ c     end if
          AB(2,i) = lz_T1(maxKD+i)
       end do
 
+#if !TINKERHP_REL_BUILD
       call M_sbev('V','L',krylovDim,kd,AB,ldAB
      &           ,EigVal1,Z,maxKD,work,info)
-      lz_Z1(1:krylovDim,1:krylovDim) = Z(:,:)
 #endif
+      lz_Z1(1:krylovDim,1:krylovDim) = Z(:,:)
 
       if (.not.EigenVec_l) return
 

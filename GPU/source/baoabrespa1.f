@@ -41,8 +41,9 @@ c     particle mesh Ewald for large biomolecular systems",
 c     J. Chem. Phys. 115, 2348-2358 (2001)
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine baoabrespa1(istep,dt)
+      use ani
       use atmtyp
       use atomsMirror
       use cutoff
@@ -50,12 +51,15 @@ c
       use deriv
       use energi
       use freeze
+      use group
       use inform
       use mdstuf1
       use moldyn
       use mpi
+      use potent
       use timestat
       use units
+      use uprior  ,only: use_pred
       use usage
       use utilgpu
       use utils
@@ -65,15 +69,16 @@ c
       integer istep
       real(r_p) dt,dt_2
       real(r_p) dta,dta_2,dta2
-      real*8    time0,time1
+      logical save_pred
 c
 c     set some time values for the dynamics integration
 c
       dt_2  = 0.5_re_p * dt
       dta   = dt / dinter
       dta_2 = 0.5_re_p * dta
-c      
       dta2  = dta / dshort
+c      
+      if(use_ml_embedding) use_mlpot=.FALSE.
 c
 c     store the current atom positions, then find half-step
 c     velocities via BAOAB recursion
@@ -126,6 +131,25 @@ c
 c     MPI : get total energy
 c
       call reduceen(epot)
+
+      if(use_ml_embedding) then
+!$acc parallel loop collapse(2) async
+        do i = 1, 3; do j = 1, 3
+          viralt(j,i) = vir(j,i) + viralt(j,i)
+        end do; end do
+c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
+        use_mlpot=  .TRUE.
+        call zero_forces_rec
+        save_pred = use_pred
+        use_pred = .FALSE.
+        call gradient (eml,derivs)
+        use_pred = save_pred
+        call reduceen(eml)
+        call commforces(derivs)
+!$acc serial async
+         epot = epot+eml
+!$acc end serial
+      endif
 c
 c     make half-step temperature and pressure corrections
 c
@@ -188,6 +212,7 @@ c     subroutine baoabrespaint1 :
 c     find intermediate-evolving velocities and positions via BAOAB recursion
 c
       subroutine baoabrespaint1(ealt,viralt,dta,dta2)
+      use ani
       use atmtyp
       use atomsMirror
       use cutoff
@@ -199,8 +224,10 @@ c
       use inform
       use mdstuf1 ,only: derivs,ealt2,viralt2
       use moldyn
+      use potent
       use timestat
       use units
+      use uprior  ,only: use_pred
       use usage
       use utils
       use utilgpu
@@ -209,9 +236,9 @@ c
       implicit none
       integer i,j,k,iglob
       real(r_p) dta,dta_2,dta2
-      real(r_p) ealt
+      real(r_p) ealt,ealtml
       real(r_p) viralt(3,3)
-      real*8 time0,time1
+      logical save_pred
 
       dta_2 = 0.5_re_p * dta
 c
@@ -264,6 +291,28 @@ c
          if (deb_Atom)   call info_minmax_pva
          if (abort)      call emergency_save
          if (abort)      call fatal
+
+c      if(use_ml_embedding) then
+c!$acc parallel loop collapse(2) async
+c        do i = 1, 3; do j = 1, 3
+c          viralt2(j,i) = vir(j,i) + viralt2(j,i)
+c        end do; end do
+cc     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
+c        use_mlpot= .TRUE.
+c!$acc data create(ealtml)
+c        call resetForcesRec
+c        save_pred = use_pred
+c        use_pred  = .FALSE.
+c        call gradient (ealtml,derivs)
+c        use_pred  = save_pred
+c        call reduceen(ealtml)
+c        call commforces(derivs)
+c!$acc serial async present(ealt,ealtml)
+c         ealt = ealt + ealtml
+c!$acc end serial
+c!$acc end data
+c        use_mlpot= .FALSE.
+c      endif
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the BAOAB recursion
@@ -312,7 +361,6 @@ c
       implicit none
       integer i,j,k,iglob
       real(r_p) dta,dta_2
-      real(8) time0,time1
       real(r_p) a1,a2
       real(r_p) ealt,viralt(3,3)
 c

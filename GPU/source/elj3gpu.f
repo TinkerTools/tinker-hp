@@ -14,7 +14,7 @@ c     "elj3" calculates the Lennard-Jones 6-12 van der Waals energy
 c     and also partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module elj3gpu_inl
         integer(1) one1,two1
         parameter( one1=1, two1=2 )
@@ -42,6 +42,7 @@ c
       integer i
       real(t_p) elrc,aelrc
       real(t_p) time0,time1
+      character*11 mode
 c
       call timer_enter( timer_elj3 )
       call elj3c_p
@@ -50,7 +51,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr (elrc)
+         mode = 'VDW'
+         call evcorr (mode,elrc)
          ev = ev + elrc
          aelrc = elrc / real(n,t_p)
          do i = 1, nbloc
@@ -208,7 +210,8 @@ c
          mutik  = mutInt(iglob) + mutInt(kglob)
          if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
 
-         if (use_group) call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+         if (use_group)
+     &      call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 c
 c     replace 1-4 interactions
 c
@@ -302,7 +305,7 @@ c
                if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
 
                if (use_group)
-     &            call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &            call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 
                !compute the energy contribution for this interaction
                call duo_lj(rik2,xr,yr,zr,rv,eps,cut2

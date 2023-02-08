@@ -14,8 +14,7 @@ c     "echarge3" calculates the charge-charge interaction energy
 c     and partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module echarge3gpu_inl
         use tinTypes , only: real3,real3_red,rpole_elt
         implicit none
@@ -132,7 +131,7 @@ c     compute the Ewald self-energy term over all the atoms
 c
       fs   = -f * aewald / sqrtpi
 
-!$acc data create(e) present(ec,ec_r,nec,nec_) async
+!$acc data present(ec,ec_r,ecrec,nec,nec_) async
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.lt.ndir))
      $   then
 
@@ -145,7 +144,7 @@ c
 !$acc&           present(chgglob,pchg)
           do ii = 1, nionloc
              iichg = chgglob(ii)
-             e = e + fs * pchg(iichg)**2
+             ec    = ec + fs * pchg(iichg)**2
           end do
 c
 c       compute the cell dipole boundary correction term
@@ -191,8 +190,8 @@ c
       end if
 
 !$acc serial async
-      !print*,'echarge3gpu',nec_,nec,nionloc
-       ec = ec + e + enr2en( ec_r )
+      !print*, 'echarge3gpu',ec, ec_r, ecrec
+       ec = ec + enr2en( ec_r ) + ecrec
       nec = int(nec_) + nionloc + nec
 !$acc end serial
 
@@ -311,8 +310,8 @@ c
          r2 = xr*xr + yr*yr + zr*zr
 
          if (use_group) then
-            call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
-            scale = scale *fgrp
+            call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
+            scale = scale*fgrp
          end if
 c
 c     find energy for interactions within real space cutoff
@@ -360,12 +359,15 @@ c     find energy for interactions within real space cutoff
 c
             if (r2.gt.loff2 .and. r2.le.off2) then
                if (use_group) then
-                  call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+                  call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
+                  fgrp = fgrp-1.0
+               else
+                  fgrp = 0.0
                end if
                fik  = fi*pchg(kkchg)
                call charge_couple(r2,xr,yr,zr,ebuffer,fik_,fik,aewald
-     &                           ,fgrp,mutik,use_lambdadyn,shortheal
-     &                           ,scut,elambda,delambdae_,e,ded,ver,fea)
+     &                    ,fgrp-1.0,mutik,use_lambdadyn,shortheal,scut
+     &                    ,elambda,delambdae_,e,ded,ver,fea)
  
               !increment the overall energy and derivative expressions
                ec   = ec + tp2enr(e)
@@ -550,7 +552,7 @@ c
 !$acc data present(qgridin_2d,qgridout_2d,qfac_2d,
 !$acc&  kstart2,kend2,jstart2,jend2,istart2,iend2,
 !$acc&  bsmod1,bsmod2,bsmod3,use_bounds,
-!$acc&  octahedron,ec)
+!$acc&  octahedron,ecrec)
 c
 c     MPI : Begin reception
 c
@@ -635,7 +637,7 @@ c
      $  qgridout_2d(2,k1-istart2(rankloc+1)+1,k2-jstart2(rankloc+1)+1,
      $  k3-kstart2(rankloc+1)+1)**2
                  e = f * expterm * struc2
-                 ec = ec + e
+                 ecrec = ecrec + e
               end if
  10           continue
             end do
@@ -651,7 +653,7 @@ c
             expterm = 0.5_ti_p * pi / xbox
             struc2 = qgridout_2d(1,1,1,1)**2 + qgridout_2d(2,1,1,1)**2
             e = f * expterm * struc2
-            ec = ec + e
+            ecrec = ecrec + e
          end if
       end if
 !$acc end serial

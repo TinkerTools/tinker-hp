@@ -48,8 +48,8 @@ c
 c
 c     Get direct space induced field for divide and conquer methods
 c
-      external pc_dc_tmatxb_shortreal
-      external otf_dc_tmatxb_shortreal
+      external pc_dc_tmatxb_pme
+      external otf_dc_tmatxb_pme
 c
       if (.not.use_polar) return
 c
@@ -84,9 +84,9 @@ C         segmentation clustering
       end if
 
       if(precomp .eq. 1) then
-        call pc_dc_efld0_shortreal(nrhs,ef)
+        call pc_dc_efld0_direct(nrhs,ef)
       else
-        call otf_dc_efld0_shortreal(nrhs,ef)
+        call otf_dc_efld0_direct(nrhs,ef)
       end if
 c
 c     Factorization of Z has been interleaved with passing fields
@@ -128,10 +128,10 @@ c
 c     now, call the proper solver.
 c
       if(precomp .eq. 1) then
-        call inducedc_shortreal(pc_dc_tmatxb_shortreal,nrhs,.true.,ef,
+        call inducedc_shortreal(pc_dc_tmatxb_pme,nrhs,.true.,ef,
      $  mu)
       else
-        call inducedc_shortreal(otf_dc_tmatxb_shortreal,nrhs,.true.,ef,
+        call inducedc_shortreal(otf_dc_tmatxb_pme,nrhs,.true.,ef,
      $  mu)
       end if
 
@@ -594,6 +594,7 @@ c
       real(t_p)  zero, one, f50
       real(t_p), allocatable :: dscale(:)
       real(t_p)  cutoff2
+      real(t_p) fgrp,scale
       save    zero, one, f50
       data    zero/0.d0/, one/1.d0/, f50/50.d0/
       character*10 mode
@@ -657,6 +658,7 @@ c
           kbis = loc(kglob)
           kkpoleloc = poleloc(kkpole)
           if (kkpoleloc.eq.0) cycle
+          !if(use_group) call groups (fgrp,iglob,kglob,0,0,0,0)
           dx = x(kglob) - x(iglob)
           dy = y(kglob) - y(iglob)
           dz = z(kglob) - z(iglob)
@@ -688,8 +690,10 @@ c
               bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / d2
             end do
 c
-            scale3 = dscale(kglob)
-            scale5 = dscale(kglob)
+            scale = dscale(kglob)
+            !if (use_group) scale = scale*fgrp
+            scale3 = scale
+            scale5 = scale
             damp = pdi*pdamp(kkpole)
             if (damp.ne.zero) then
               pgamma = min(pti,thole(kbis))

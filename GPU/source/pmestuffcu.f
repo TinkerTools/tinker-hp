@@ -11,7 +11,7 @@ c     for PME i-th atomic sites along the fractional coordinate axes
 c
 c
 #define TINKER_CUF
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 #include "tinker_cudart.h"
       module pmestuffcu
         use math   ,only: pi
@@ -447,8 +447,8 @@ c       CUDA Fortran written kernel
 c       Work Only in Sequential
 c
 c
-        attributes(global) subroutine grid_pchg_sitecu_core_1p_o
-     &            (chgrecglob,iion,igrid,pchg,thetai1,thetai2,thetai3
+        attributes(global) subroutine grid_put_site_kcu_o
+     &            (kind_id,atom_id,igrid,pchg,thetai1,thetai2,thetai3
      &            ,x_sp,y_sp,z_sp
      &            ,kstat,ked,jstat,jed,istat,ied
      &            ,nfft1,nfft2,nfft3,nionrecloc
@@ -461,8 +461,8 @@ c
      &           ,n1mpimax,n2mpimax,n3mpimax,nrec_send
      &           ,nfft1,nfft2,nfft3,nionrecloc
         logical  ,value,intent(in):: fir
-        integer  ,device,intent(in):: chgrecglob(*),igrid(3,*)
-     &           ,iion(*)
+        integer  ,device,intent(in):: kind_id(*),igrid(3,*)
+     &           ,atom_id(*)
         real(t_p),device,intent(in):: pchg(*),thetai1(2*order,*)
      &           ,thetai2(2*order,*),thetai3(2*order,*)
      &           ,x_sp(*),y_sp(*),z_sp(*)
@@ -476,7 +476,7 @@ c
         real(t_p) q
 
         do impi = blockIdx%x, nionrecloc, gridDim%x
-           isite  = iion(impi)
+           isite  = atom_id(impi)
            igrid1 = igrid(1,isite)
            igrid2 = igrid(2,isite)
            igrid3 = igrid(3,isite)
@@ -487,7 +487,7 @@ c
               theta3(i) = thetai3(i,impi)
            end do
            if (blockDim%x>warpsize) call syncthreads
-           q         = pchg(chgrecglob(impi))
+           q         = pchg(kind_id(impi))
            offsetx   = 1 - ( igrid1 + grdoff - nlpts )
            offsety   = 1 - ( igrid2 + grdoff - nlpts )
            offsetz   = 1 - ( igrid3 + grdoff - nlpts )
@@ -519,8 +519,8 @@ c
         end do
         end
 
-        attributes(global) subroutine grid_pchg_sitecu_core_1p
-     &            (chgrecglob,iion,igrid,pchg,thetai1,thetai2,thetai3
+        attributes(global) subroutine grid_put_site_kcu1
+     &            (kind_id,atom_id,igrid,attr,thetai1,thetai2,thetai3
      &            ,x_sp,y_sp,z_sp
      &            ,kstat,ked,jstat,jed,istat,ied
      &            ,nfft1,nfft2,nfft3,nionrecloc
@@ -533,9 +533,9 @@ c
      &           ,n1mpimax,n2mpimax,n3mpimax,nrec_send
      &           ,nfft1,nfft2,nfft3,nionrecloc
         logical  ,value,intent(in):: fir
-        integer  ,device,intent(in):: chgrecglob(*),igrid(3,*)
-     &           ,iion(*)
-        real(t_p),device,intent(in):: pchg(*),thetai1(2*order,*)
+        integer  ,device,intent(in):: kind_id(*),igrid(3,*)
+     &           ,atom_id(*)
+        real(t_p),device,intent(in):: attr(*),thetai1(2*order,*)
      &           ,thetai2(2*order,*),thetai3(2*order,*)
      &           ,x_sp(*),y_sp(*),z_sp(*)
         real(t_p),device:: qgrid2loc(2,n1mpimax,n2mpimax,n3mpimax,
@@ -553,7 +553,7 @@ c
 
         do impi = (blockIdx%x-1)*blockDim%x + threadIdx%x, nionrecloc
      &          , blockDim%x*gridDim%x
-           q         = pchg(chgrecglob(impi))
+           q      = attr(kind_id(impi))
 c
 c          get the b-spline coefficients for the i-th atomic site
 c          it faster to recompute theta*
@@ -571,7 +571,7 @@ c
            igrid1 = ifr - bsorder
            w      = fr - real(ifr,t_p)
            call ibsplgen_21(w,theta1,temp(offset))
-           ! Why is this call using so much registers
+           ! FIXME Why is this call using so much registers
            call get_thetai_21(theta1,temp(offset))
 
            w      = xi*recip_c(1,2) + yi*recip_c(2,2) + zi*recip_c(3,2)
@@ -1841,22 +1841,22 @@ c
         end do
       end subroutine
 
-      attributes(global) subroutine grid_pchg_force_core
-     &                 (chgrec,iion,locrec,igrid
-     &                 ,pchg,thetai1,thetai2,thetai3
-     &                 ,decrec
+      attributes(global) subroutine grid_calc_frc_kcu
+     &                 (kind_id,atom_id,locrec,igrid
+     &                 ,attrb,thetai1,thetai2,thetai3
+     &                 ,derec
      &                 ,kstat,ked,jstat,jed,istat,ied
      &                 ,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3
-     &                 ,f,dn1,dn2,dn3)
+     &                 ,f,scal,dn1,dn2,dn3)
       implicit none
       integer,value,intent(in)::kstat,ked,jstat,jed,istat,ied,nrec_send
      &       ,nfft1,nfft2,nfft3,nionrecloc,n
-      real(t_p),value,intent(in):: dn1,dn2,dn3,f
-      integer,device,intent(in)::chgrec(nionrecloc),iion(n),locrec(n)
-     &       ,igrid(3,n)
-      real(t_p),device,intent(in):: pchg(n),thetai1(2,bsorder,*)
+      real(t_p),value,intent(in):: dn1,dn2,dn3,f,scal
+      integer,device,intent(in)::kind_id(nionrecloc),atom_id(n)
+     &       ,locrec(n),igrid(3,n)
+      real(t_p),device,intent(in):: attrb(n),thetai1(2,bsorder,*)
      &         ,thetai2(2,bsorder,*),thetai3(2,bsorder,*)
-      real(r_p),device,intent(out):: decrec(3,*)
+      real(r_p),device,intent(out):: derec(3,*)
 
       integer iichg,iglob,iloc,isite,rankloc
      &       ,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3
@@ -1872,8 +1872,8 @@ c
 
       do isite = (blockIdx%x-1)*blockDim%x + threadIdx%x, nionrecloc,
      &            blockDim%x*gridDim%x
-        iichg = chgrec (isite)
-        iglob = iion   (iichg)
+        iichg = kind_id (isite)
+        iglob = atom_id   (iichg)
         iloc  = locrec (iglob)
 #if 1
 c
@@ -1906,7 +1906,7 @@ c
         jgrd0  = igrid(2,iglob)
         kgrd0  = igrid(3,iglob)
 #endif
-        fi     = f * pchg(iichg)
+        fi     = f * attrb(iichg)
         de1    = 0.0_ti_p
         de2    = 0.0_ti_p
         de3    = 0.0_ti_p
@@ -1976,31 +1976,32 @@ c
               end do
            end do
         end do
-        decrec(1,iloc) =decrec(1,iloc)+fi*(recip_c(1,1)*de1
+        derec(1,iloc) =derec(1,iloc)+fi*scal*(recip_c(1,1)*de1
      &                   +recip_c(1,2)*de2+recip_c(1,3)*de3)
-        decrec(2,iloc) =decrec(2,iloc)+fi*(recip_c(2,1)*de1
+        derec(2,iloc) =derec(2,iloc)+fi*scal*(recip_c(2,1)*de1
      &                   +recip_c(2,2)*de2+recip_c(2,3)*de3)
-        decrec(3,iloc) =decrec(3,iloc)+fi*(recip_c(3,1)*de1
+        derec(3,iloc) =derec(3,iloc)+fi*scal*(recip_c(3,1)*de1
      &                   +recip_c(3,2)*de2+recip_c(3,3)*de3)
       end do
       end subroutine
 
-      attributes(global) subroutine grid_pchg_force_core1
-     &                 (chgrec,iion,locrec,igrid
-     &                 ,pchg,thetai1,thetai2,thetai3
-     &                 ,decrec
+      ! Scalar sum for reciprocal space (point charge)
+      attributes(global) subroutine grid_calc_frc_kcu1
+     &                 (kind_id,atom_id,locrec,igrid
+     &                 ,attrb,thetai1,thetai2,thetai3
+     &                 ,derec
      &                 ,kstat,ked,jstat,jed,istat,ied
      &                 ,nrec_send,nionrecloc,n,nfft1,nfft2,nfft3
-     &                 ,f,dn1,dn2,dn3)
+     &                 ,f,scal,dn1,dn2,dn3)
       implicit none
       integer,value,intent(in)::kstat,ked,jstat,jed,istat,ied,nrec_send
      &       ,nfft1,nfft2,nfft3,nionrecloc,n
-      real(t_p),value,intent(in):: f,dn1,dn2,dn3
-      integer,device,intent(in)::chgrec(nionrecloc),iion(n),locrec(n)
-     &       ,igrid(3,n)
-      real(t_p),device,intent(in):: pchg(n),thetai1(2,bsorder,*)
+      real(t_p),value,intent(in):: f,dn1,dn2,dn3,scal
+      integer,device,intent(in)::kind_id(nionrecloc),atom_id(n)
+     &       ,locrec(n),igrid(3,n)
+      real(t_p),device,intent(in):: attrb(n),thetai1(2,bsorder,*)
      &         ,thetai2(2,bsorder,*),thetai3(2,bsorder,*)
-      real(r_p),device,intent(out):: decrec(3,*)
+      real(r_p),device,intent(out):: derec(3,*)
 
       integer iichg,iglob,iloc,isite,rankloc
      &       ,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3
@@ -2016,8 +2017,8 @@ c
 
       do isite = (blockIdx%x-1)*blockDim%x + threadIdx%x, nionrecloc,
      &            blockDim%x*gridDim%x
-        iichg = chgrec (isite)
-        iglob = iion   (iichg)
+        iichg = kind_id (isite)
+        iglob = atom_id (iichg)
 #if 1
 c
 c       get the b-spline coefficients for the i-th atomic site
@@ -2049,7 +2050,7 @@ c
         jgrd0  = igrid(2,iglob)
         kgrd0  = igrid(3,iglob)
 #endif
-        fi     = f * pchg(iichg)
+        fi     = f * attrb(iichg)
         de1    = 0.0_ti_p
         de2    = 0.0_ti_p
         de3    = 0.0_ti_p
@@ -2095,16 +2096,17 @@ c
               end do
            end do
         end do
-        decrec(1,iglob)=decrec(1,iglob)+fi*(recip_c(1,1)*de1
+        derec(1,iglob)=derec(1,iglob)+fi*scal*(recip_c(1,1)*de1
      &                    +recip_c(1,2)*de2+recip_c(1,3)*de3)
-        decrec(2,iglob)=decrec(2,iglob)+fi*(recip_c(2,1)*de1
+        derec(2,iglob)=derec(2,iglob)+fi*scal*(recip_c(2,1)*de1
      &                    +recip_c(2,2)*de2+recip_c(2,3)*de3)
-        decrec(3,iglob)=decrec(3,iglob)+fi*(recip_c(3,1)*de1
+        derec(3,iglob)=derec(3,iglob)+fi*scal*(recip_c(3,1)*de1
      &                    +recip_c(3,2)*de2+recip_c(3,3)*de3)
       end do
       end subroutine
 
 
+      ! Scalar sum for reciprocal space (charges)
       attributes(global) subroutine pme_conv_kcu
      &                   (bsmod1,bsmod2,bsmod3
      &                   ,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
@@ -2192,6 +2194,96 @@ c
          qgrid(1) = expterm*qgrid(1)
          qgrid(2) = expterm*qgrid(2)
       end if
+      end subroutine
+
+      ! Scalar sum for reciprocal space (dispersion)
+      attributes(global) subroutine pme_convd_kcu
+     &          (bsmod1,bsmod2,bsmod3,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
+     &          ,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3,bfac,fac1,fac2,fac3
+     &          ,denom0,pterm,xbox,calc_e,use_bounds
+     &          ,qgrid,e_buff,v_buff)
+      implicit none
+      integer  ,value:: nf1,nf2,nf3,nff,nfft1,nfft2,nfft3
+     &         ,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz
+      logical  ,value:: calc_e,use_bounds
+      real(t_p),value:: pterm,f,xbox,volterm,bfac,fac1,fac2,fac3,denom0
+      real(t_p),device:: bsmod1(*),bsmod2(*),bsmod3(*)
+     &         ,qgrid(2*qsz)
+      real(r_p),device:: e_buff(  RED_BUFF_SIZE)
+      real(t_p),device:: v_buff(6*RED_BUFF_SIZE)
+
+      integer   ithread,nthread,it
+     &         ,k,k1,k2,k3,m1,m2,m3
+      real(t_p) vterm,term,e0,stat
+     &         ,expterm,erfcterm
+     &         ,denom,hsq,h,b,hhh,struc2
+     &         ,h1,h2,h3,r1,r2,r3
+
+      ithread = (blockIdx%x-1)*blockDim%x + threadIdx%x
+           it = iand(ithread-1,RED_BUFF_SIZE-1) + 1
+
+      if ((ist2.eq.1).and.(jst2.eq.1).and.(kst2.eq.1).and.
+     &    ithread.eq.1) then
+         qgrid(1) = 0.0
+         qgrid(2) = 0.0
+      end if
+c
+c     use scalar sum to get reciprocal space energy and virial
+c
+      do k  = ithread-1,qsz-1, blockDim%x*gridDim%x
+         k1   = mod(k,qsz1)      + ist2
+         k2   = mod(k/qsz1,qsz2) + jst2
+         k3   = k/qsz12          + kst2
+         m1   = k1 - 1 - merge(nfft1,0,(k1.gt.nf1))
+         m2   = k2 - 1 - merge(nfft2,0,(k2.gt.nf2))
+         m3   = k3 - 1 - merge(nfft3,0,(k3.gt.nf3))
+         if ((m1.eq.0).and.(m2.eq.0).and.(m3.eq.0)) goto 10
+         r1   = real(m1,t_p)
+         r2   = real(m2,t_p)
+         r3   = real(m3,t_p)
+         h1   = recip_c(1,1)*r1 + recip_c(1,2)*r2 + recip_c(1,3)*r3
+         h2   = recip_c(2,1)*r1 + recip_c(2,2)*r2 + recip_c(2,3)*r3
+         h3   = recip_c(3,1)*r1 + recip_c(3,2)*r2 + recip_c(3,3)*r3
+         h    = sqrt(hsq)
+         b    = h*bfac
+         hhh  = h*hsq
+         term = -b * b
+         expterm    = 0.0_ti_p
+        denom = denom0*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
+         if (term.gt.-50.0_ti_p) then
+             expterm = exp(term)
+            erfcterm = erfc(b)
+            if (.not. use_bounds) then
+               expterm =  expterm * (1.0-cos(pi*xbox*h))
+              erfcterm = erfcterm * (1.0-cos(pi*xbox*h))
+            else if (octahedron) then
+               if (mod(m1+m2+m3,2).ne.0) then
+                  expterm = 0.0_ti_p
+                 erfcterm = 0.0_ti_p
+               end if
+            end if
+             term = fac1*erfcterm*hhh + expterm*(fac2 + fac3*hsq)
+            struc2 = qgrid(1+2*k)**2 + qgrid(2+2*k)**2
+            if (calc_e.or.use_virial) then; block;
+            real(r_p) rstat
+              e0 = -(term / denom) * struc2
+            vterm= 3.0*(fac1*erfcterm*h + fac3*expterm)*struc2/denom
+            rstat= atomicAdd( e_buff(it),real(e0,r_p))
+            stat = atomicAdd( v_buff(0*RED_BUFF_SIZE+it), h1*h1*vterm
+     &                      - e0 )
+            stat = atomicAdd( v_buff(1*RED_BUFF_SIZE+it), h1*h2*vterm )
+            stat = atomicAdd( v_buff(2*RED_BUFF_SIZE+it), h1*h3*vterm )
+            stat = atomicAdd( v_buff(3*RED_BUFF_SIZE+it), h2*h2*vterm
+     &                      - e0 )
+            stat = atomicAdd( v_buff(4*RED_BUFF_SIZE+it), h3*h2*vterm )
+            stat = atomicAdd( v_buff(5*RED_BUFF_SIZE+it), h3*h3*vterm
+     &                      - e0 )
+            end block; end if
+         end if
+         qgrid(1+2*k) = expterm * qgrid(1+2*k)
+         qgrid(2+2*k) = expterm * qgrid(2+2*k)
+ 10      continue
+      end do
       end subroutine
 
       end module

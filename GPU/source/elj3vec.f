@@ -14,7 +14,7 @@ c     "elj3" calculates the Lennard-Jones 6-12 van der Waals energy
 c     and also partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine elj3vec
       use analyz
       use atoms

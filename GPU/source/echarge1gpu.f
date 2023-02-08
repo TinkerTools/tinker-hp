@@ -14,8 +14,7 @@ c     "echarge1" calculates the charge-charge interaction energy
 c     and first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module echarge1gpu_inl
         use utilgpu , only: real3,real3_red,rpole_elt
         implicit none
@@ -214,6 +213,7 @@ c
       use energi
       use ewald
       use domdec
+      use group
       use iounit
       use interfaces
       use inter
@@ -532,8 +532,8 @@ c
          yi    = y(iglob)
          zi    = z(iglob)
          if (use_group) then
-            call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
-            scale = scale *fgrp
+            call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
+            scale = 1.0 - fgrp*(1.0-scale)
          end if
 c
 c     compute the energy contribution for this interaction
@@ -583,14 +583,14 @@ c
          iichg = chgglobnl(ii)
          iglob = iion(iichg)
          i     = loc(iglob)
+         xi    = x(iglob)
+         yi    = y(iglob)
+         zi    = z(iglob)
+         fi    = f*pchg(iichg)
          if (use_lambdadyn) then
             muti = mutInt(iglob)
             fi_  = f*pchg_orig(iichg)
          end if
-         xi    = x(iglob)
-         yi    = y(iglob)
-         zi    = z(iglob)
-         fi    = pchg(iichg)
 !$acc loop vector private(ded)
 !$acc&   reduction(+:ec,delambdae,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          do kkk = 1, nlst(ii)
@@ -612,16 +612,17 @@ c
 c     find energy for interactions within real space cutoff
 c
             if (r2.gt.loff2 .and. r2.le.off2) then
-               fik  = fi_*pchg(kkchg)
+               fik  = fi*pchg(kkchg)
                k    = loc(kglob)
                if (use_lambdadyn.and.mutik.ne.zero1)
      &            fik_  = fi_*pchg_orig(kkchg)
 
                ! Apply pair group scaling
                if (use_group) then
-                  call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+                  call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
+                  fgrp = 1.0-fgrp
                else
-                  fgrp = 1.0
+                  fgrp = 0.0
                end if
 
                ! Compute charge pairwise interaction
@@ -820,7 +821,7 @@ c
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
       logical,save:: first_in=.true.
       integer,save:: gS
-      character*10 mode
+      character*11 mode
       logical,parameter::dyn_gS=.true.
       logical v0,v1
 
@@ -1020,7 +1021,7 @@ c
       call mallocMpiGrid
 c
       call timer_enter( timer_grid1 )
-#if _OPENACC
+#ifdef _OPENACC
       if (.not.associated(grid_pchg_site_p,grid_pchg_sitecu))
      &   call bspline_fill_sitegpu(1)
 #else
@@ -1036,10 +1037,12 @@ c
       call commGridFront( qgridin_2d,r_comm )
       call commGridFront( qgridin_2d,r_wait )
 
+#ifdef _OPENACC
       if (rec_queue.ne.dir_queue) then
          call start_dir_stream_cover
          call ecreal1d_cp
       end if
+#endif
 c
 c     perform the 3-D FFT forward transformation
 c
@@ -1088,8 +1091,9 @@ c
       call timer_enter( timer_grid2 )
       call grid_pchg_force_p
       call timer_exit ( timer_grid2,quiet_timers )
+#ifdef _OPENACC
       if (rec_queue.ne.dir_queue) then
          call end_dir_stream_cover
       end if
-
+#endif
       end

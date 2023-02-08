@@ -13,10 +13,11 @@ c
 c     "eimprop" calculates the improper dihedral potential energy
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module eimprop_inl
         contains
 #include "image.f.inc"
+#include "groups.inc.f"
       end module
 
       subroutine eimprop
@@ -36,7 +37,7 @@ c
       implicit none
       integer i,ia,ib,ic,id
       integer iimprop
-      real(t_p) e,dt
+      real(t_p) e,dt,fgrp
       real(t_p) ideal,force
       real(t_p) cosine,sine
       real(t_p) rcb,angle
@@ -51,6 +52,7 @@ c
       real(t_p) xba,yba,zba
       real(t_p) xcb,ycb,zcb
       real(t_p) xdc,ydc,zdc
+      integer iga,igb,igc,igd,gmin,gmax
       logical proceed
 
       if (deb_Path) write(*,*) 'eimprop'
@@ -62,8 +64,7 @@ c
 c     calculate the improper dihedral angle energy term
 c
 !$acc parallel loop async
-!$acc&         present(impropglob,iiprop,x,y,z,use,kprop,vprop)
-!$acc&         present(eid)
+!$acc&         default(present) present(eid)
       do iimprop = 1, niproploc
          i = impropglob(iimprop)
          ia = iiprop(1,i)
@@ -73,9 +74,10 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
+         if (use_group)
+     &      call groups4_inl(fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
 c
 c     compute the value of the improper dihedral angle
 c
@@ -143,6 +145,10 @@ c
 c     calculate the improper dihedral energy
 c
                e = idihunit * force * dt**2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total improper dihedral energy
 c

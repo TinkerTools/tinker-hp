@@ -3,40 +3,41 @@ c     Sorbonne University
 c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module precompute_pole
-        implicit none
+      implicit none
 
-        integer :: nprecomp
-        integer, allocatable,target :: kkpole_precompute(:)
-        integer, pointer :: kpoleloc_precompute(:)
-        integer, allocatable,target :: iipole_precompute(:)
-        integer, pointer :: iploc_precompute(:)
-        real(t_p), allocatable :: rx_precompute(:) ! Precomputed distance vectors (x)
-        real(t_p), allocatable :: ry_precompute(:) ! Precomputed distance vectors (y)
-        real(t_p), allocatable :: rz_precompute(:) ! Precomputed distance vectors (z)
-        real(t_p), pointer :: ms_precompute(:) ! m scaling factor
-        real(t_p), allocatable,target :: rr3_bn1_precompute(:) ! Precomputed distance 
-        real(t_p), allocatable,target :: rr5_bn2_precompute(:) ! Precomputed distance  
-        logical :: precompute_solvpole=.false.
-        logical :: precompute_tmat=.true.
+      integer :: nprecomp
+      integer, allocatable,target :: kkpole_precompute(:)
+      integer, pointer :: kpoleloc_precompute(:)
+      integer, allocatable,target :: iipole_precompute(:)
+      integer, pointer :: iploc_precompute(:)
+      real(t_p), allocatable :: rx_precompute(:) ! Precomputed distance vectors (x)
+      real(t_p), allocatable :: ry_precompute(:) ! Precomputed distance vectors (y)
+      real(t_p), allocatable :: rz_precompute(:) ! Precomputed distance vectors (z)
+      real(t_p), pointer :: ms_precompute(:) ! m scaling factor
+      real(t_p), allocatable,target :: rr3_bn1_precompute(:) ! Precomputed distance 
+      real(t_p), allocatable,target :: rr5_bn2_precompute(:) ! Precomputed distance  
+      logical :: polar_precomp=.true.
+      logical :: precompute_tmat=.true.
 
-        include "erfcore_data.f.inc"
+      private
+
+      public:: nprecomp,polar_precomp,precompute_tmat
+     &       , allocate_precompute_data,tmatxb_precompute
+     &       , tmatxb_pme_compute
 
       contains
 
 #include "image.f.inc"
-#if defined(SINGLE) | defined(MIXED)
-      include "erfcscore.f.inc"
-#else
-      include "erfcdcore.f.inc"
-#endif
 
       subroutine allocate_precompute_data
-      use inform ,only:deb_Path
+      use inform ,only: deb_Path
       use mpole
       use neigh
-      use utilgpu,only:dir_queue
+      use utilgpu,only: dir_queue
+      use tinMemory
+      use sizes  ,only: tinkerdebug
       implicit none
       logical :: do_deallocate, do_allocate
       logical,save :: first_in=.true.
@@ -87,7 +88,7 @@ c
         kpoleloc_precompute => kkpole_precompute
         iploc_precompute    => iipole_precompute
 
-        if (deb_Path) then
+        if (tinkerdebug.gt.0) then
 #if defined(SINGLE) | defined(MIXED)
         print *,"tmatxb Temporaries : 7*float*",shape(rx_precompute),
      &  ":", (7.*4.*size(rx_precompute))/(1024.*1024.*1024.), "Go"
@@ -113,17 +114,20 @@ c
       use atmlst  , only : poleglobnl
       use chgpot  , only : dielec,electric
       use ewald   , only : aewald
+      use group
       use math    , only : sqrtpi
       use utilgpu , only : def_queue
       use mpole   , only : ipole,poleloc,npolelocnl
       use mplpot  , only : m2scale,m3scale,m4scale,m5scale
-      use neigh   , only : nelst, elst, nelstc
+      use neigh   , only : nelst, nshortelst, elst, shortelst, nelstc,
+     &              nshortelstc
       use polar   , only : polarity, thole, pdamp
       use shunt   , only : cut2
       use utilgpu , only : maxscaling1,maxscaling,dir_queue,warning
       use domdec  , only : loc, nlocnl, nbloc
       use polgrp  , only : allscal_p,typscal_p,numscal_p,scalbeg_p
       use polpot  , only : u1scale, u2scale, u3scale, u4scale
+      use potent  , only : use_polarshortreal
       use sizes   , only : maxelst
       use tinheader,only : ti_p
       implicit none
@@ -140,39 +144,40 @@ c
       integer   :: iscal(maxscaling1)   ! Temporary array to store interaction type for neighbors
       real(t_p) :: fscal(maxscaling1)   ! Temporary array to store scaling factors for neighbors
       integer nnp11,nnp12,nnp13,nnp14,ki
-      real(t_p),parameter:: uscale=1.0   ! Scaling factor for interaction
+      real(t_p):: uscale   ! Scaling factor for interaction
       real(t_p) uscalevec(5)
       real(t_p) :: f
+      integer iga,igb
       integer   :: nprecomp_capture
+      integer,pointer :: lst(:,:),nlst(:)
       logical,save:: f_in=.true.
+      parameter(uscale=1.0)
 
       ! No need to reallocate if it has already been done precomputing
       ! mpole
       call allocate_precompute_data
       !FIXME Scaling factor containers are not on device anymore
 
-!$acc data present(poleglobnl,ipole,poleloc)
-!$acc&     present(polarity,thole,pdamp,elst,nelst,nelstc)
-!$acc&     present(iploc_precompute, kpoleloc_precompute)
-!$acc&     present(rx_precompute, ry_precompute, rz_precompute,
-!$acc&  rr3_bn1_precompute, rr5_bn2_precompute)
-!$acc&     present(numscal_p,scalbeg_p,allscal_p,typscal_p)
-c!$acc data create(uscalevec) async(dir_queue)
-
       ! gather some parameters, then set up the damping factors.
-      call switch ('EWALD')
+      if (use_polarshortreal) then
+         call switch ('SHORTEWALD')
+         nlst => nshortelstc
+         lst  =>  shortelst
+      else
+         call switch ('EWALD     ')
+         nlst => nelstc
+         lst  =>  elst
+      end if
+
       alsq2    = 2 * aewald**2
       alsq2n   = 0
       f        = electric / dielec
       nprecomp = 0
       if (aewald > 0) alsq2n = 1 / (sqrtpi*aewald)
-c!$acc serial async(def_queue)
-c      uscalevec = [u1scale,u2scale,u3scale,u4scale,0.0]
-c!$acc end serial
 
 !$acc parallel loop gang vector_length(32) copy(nprecomp)
-!$acc&         async(dir_queue)
-c!$acc&         private(ki,iscal,fscal)
+!$acc&         async(dir_queue) default(present) 
+c!$acc&        private(ki,iscal,fscal)
       PRECOMPUTE_LOOP:
      &do ii = 1, npolelocnl
            iipole = poleglobnl(ii)
@@ -193,8 +198,8 @@ c           end do
 
            ! Loop on neighbors
 !$acc loop vector
-           do k =  1, nelst(ii)
-              kpole    = elst(k,ii)
+           do k =  1, nlst(ii)
+              kpole    = lst(k,ii)
               kpoleloc = poleloc(kpole)
               if (kpoleloc.eq.0) cycle
               kglob    = ipole(kpole)
@@ -211,6 +216,11 @@ c                       exit
 c                    end if
 c                 end do
 c              end if
+              !if(use_group) then
+              !  iga=grplist(iglob)
+              !  igb=grplist(kglob)
+              !  uscale=uscale*wgrp(iga+1,igb+1)
+              !endif
 
               rx = x(kglob) - x(iglob)
               ry = y(kglob) - y(iglob)
@@ -220,11 +230,11 @@ c              end if
               if (d2 > cut2) cycle
 
               ! compute the distances and the scaling factors according to Thole's model.
-              d1      = sqrt(d2)
+              d1      = f_sqrt(d2)
 
               ralpha  = aewald * d1
-              exp2a   = exp(-ralpha*ralpha)
-              bn0     = erfc(ralpha)
+              exp2a   = f_exp(-ralpha*ralpha)
+              bn0     = f_erfc(ralpha)
               bn0     = bn0 / d1
               bn1     = (     bn0 +         alsq2  *alsq2n * exp2a) / d2
               bn2     = ( 3 * bn1 + alsq2 * alsq2 * alsq2n * exp2a) / d2
@@ -238,7 +248,7 @@ c              end if
               else
                 sdamp1 = - pgamma * (d1 / sdamp) ** 3
                 if (sdamp1 > -50) then
-                  expdamp1 = exp(sdamp1)
+                  expdamp1 = f_exp(sdamp1)
                   sc3      =   1 - expdamp1 * uscale
                   sc5      =   1 - expdamp1 * uscale
      &                      * (1 - sdamp1)
@@ -267,9 +277,7 @@ c              end if
            enddo
 
       end do PRECOMPUTE_LOOP
-c!$acc end data
-!$acc end data
-!$acc wait
+!$acc wait(dir_queue)
       end subroutine
 
       subroutine tmatxb_pme_compute(mu,efi)
@@ -305,7 +313,7 @@ c!$acc end data
       real(t_p) :: fkdx, fkpx ! Contribution of local pair to efi(kpoleloc)
       real(t_p) :: fkdy, fkpy ! Contribution of local pair to efi(kpoleloc)
       real(t_p) :: fkdz, fkpz ! Contribution of local pair to efi(kpoleloc)   
-      
+
 c
 c     Initiate precompute
 c
@@ -318,8 +326,8 @@ c
 !$acc parallel loop async(def_queue)
 !$acc&         present(poleglobnl,ipole,poleloc,polarity,mu,efi)
 !$acc&         present(rx_precompute,ry_precompute,rz_precompute
-!$acc&  ,rr3_bn1_precompute, rr5_bn2_precompute
-!$acc&  ,iploc_precompute, kpoleloc_precompute)
+!$acc&  ,rr3_bn1_precompute, rr5_bn2_precompute, iploc_precompute
+!$acc&  ,kpoleloc_precompute)
       MAINLOOP:
      &do ii = 1, nprecomp
 
@@ -394,4 +402,5 @@ c
 
       end do MAINLOOP
       end subroutine
+
       end module

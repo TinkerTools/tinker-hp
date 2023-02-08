@@ -9,8 +9,7 @@ c     ##  --  Routines associated to derivatives component managment    ##
 c     ##                                                                ##
 c     ####################################################################
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
 
       submodule(deriv) subderiv
       use atoms    ,only:x,y,z,n
@@ -179,10 +178,10 @@ c
       gamd_l     = use_gamd.or.use_amd_ene.or.use_amd_dih.or.
      &             use_amd_wat1
 
-      if (integrate.eq.'RESPA'.or.integrate.eq.'BAOABRESPA1'
-     &.or.integrate.eq.'VERLET') then
-         ftot_l  = .true.
-      end if
+      ftot_l = (integrate.eq.'RESPA'.or.respa1_l
+     &      .or.integrate.eq.'BAOAB'.or.integrate.eq.'BAOABRESPA'
+     &      .or.integrate.eq.'VERLET'.or.integrate.eq.'BBK'
+     &      .or.integrate.eq.'BEEMAN')
 
       fdebs_l    = merge(.true.,.false.,ftot_l.and..not.gamd_l
      &                   .and..not.deb_Force)
@@ -212,6 +211,8 @@ c
       dr_nb0 = dr_nb0 + merge(1,0,use_angtor.and.OK)
       dr_nb0 = dr_nb0 + merge(1,0,use_tortor.and.OK)
       dr_nb0 = dr_nb0 + merge(1,0,use_geom.and.OK)
+      dr_nb0 = dr_nb0 + merge(1,0,(use_mlpot.or.use_ml_embedding)
+     &                        .and.OK)
       dr_nb0 = dr_nb0 + merge(1,0,fdebs_l)
       dr_nbb = dr_nb0
 
@@ -349,6 +350,10 @@ c
          deat(1:3,1:dr_stride) => de_buff0(of0+1:of0+dr_stride3)
          of0 = of0 + merge(dr_stride3,0,OK)
       end if
+      if (use_mlpot.or.use_ml_embedding) then
+         dmlpot(1:3,1:dr_stride) => de_buff0(of0+1:of0+dr_stride3)
+         of0 = of0 + merge(dr_stride3,0,OK)
+      end if
       if (use_geom) then
          deg(1:3,1:dr_stride) => de_buff0(of0+1:of0+dr_stride3)
          of0 = of0 + merge(dr_stride3,0,OK)
@@ -369,25 +374,25 @@ c
       !         de_buff1 (mdyn_rtyp)
 
       de_tot (1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
-      derivx(1:dr_stride) => de_buff1(of1+0*dr_stride+1:of1+1*dr_stride)
+      derivx(1:dr_stride3) =>de_buff1(of1            +1:of1+dr_stride3)
       derivy(1:dr_stride) => de_buff1(of1+1*dr_stride+1:of1+2*dr_stride)
       derivz(1:dr_stride) => de_buff1(of1+2*dr_stride+1:of1+3*dr_stride)
       of1 = of1 + dr_stride3
 
       dr_obnb = of1
       if (use_vdw) then
-         dev(1:3,1:dr_stride) => de_buff1(of1+1:of0+dr_stride3)
+         dev(1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
          devx(1:dr_stride)=> de_buff1(of1+0*dr_stride+1:of1+1*dr_stride)
          devy(1:dr_stride)=> de_buff1(of1+1*dr_stride+1:of1+2*dr_stride)
          devz(1:dr_stride)=> de_buff1(of1+2*dr_stride+1:of1+3*dr_stride)
          of1 = of1 + dr_stride3
       end if
       if (use_disp) then
-         dedsp(1:3,1:dr_stride) => de_buff1(of1+1:of0+dr_stride3)
+         dedsp(1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
          of1 = of1 + dr_stride3
       end if
       if (use_repuls) then
-         der(1:3,1:dr_stride) => de_buff1(of1+1:of0+dr_stride3)
+         der(1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
          of1 = of1 + dr_stride3
       end if
       if (use_charge) then
@@ -398,7 +403,7 @@ c
          of1 = of1 + dr_stride3
       end if
       if (use_chgtrn) then
-         dect(1:3,1:dr_stride) => de_buff1(of1+1:of0+dr_stride3)
+         dect(1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
          of1 = of1 + dr_stride3
       end if
       if (use_mpole ) then
@@ -484,6 +489,9 @@ c
          print 21, ofr,sizr
          call fatal
       end if
+      if(use_mlpot) then
+!$acc update host(dmlpot)
+      end if
 
  30   continue
       if (mem_alloc_deriv_fcall) call zero_forces_host
@@ -507,11 +515,12 @@ c
       if (associated(deat))   nullify (deat)
       if (associated(debt))   nullify (debt)
       if (associated(dett))   nullify (dett)
+      if (associated(deg))    nullify (deg)
+      if (associated(dmlpot)) nullify (dmlpot)
       if (associated(dev))    nullify (dev)
       if (associated(dec))    nullify (dec)
       if (associated(dem))    nullify (dem)
       if (associated(dep))    nullify (dep)
-      if (associated(deg))    nullify (deg)
       if (associated(dect))   nullify (dect)
       if (associated(der))    nullify (der)
       if (associated(dedsp))  nullify (dedsp)
@@ -965,6 +974,45 @@ c
       end if
       end subroutine
 
+      module subroutine add_forces_rec_1d1(deadd,derec)
+      mdyn_rtyp deadd(3*nbloc)
+      real(r_p) derec(3*nlocrec2)
+      integer i,j,id1,id2,ilocrec,i1,i2,stride
+      integer(mipk) idx,idx1
+      real(r_p) tot_
+      mdyn_rtyp totr
+
+      if(deb_Path) write(*,*) "    add_forces_rec_1d"
+
+      stride = dr_strider3
+
+      if (tdes_l) then
+
+!$acc parallel loop async(rec_queue) default(present)
+      do i = 0,3*nbloc-1
+         i1      = mod(i,3)
+         i2      = i/3 + 1
+         ilocrec = locrec(glob(i2)) -1
+         if (ilocrec.eq.-1) cycle
+         idx1    = i1+1 + ilocrec*3
+         idx        = i2 + i1*dr_stride  
+         deadd(idx) = deadd(idx) + rp2mdr(derec(idx1))
+      end do
+
+      else
+
+!$acc parallel loop async(rec_queue) default(present)
+      do i = 1,3*nbloc
+         i1      = mod(i-1,3) +1
+         ilocrec = locrec(glob((i-1)/3+1)) -1
+         if (ilocrec.eq.-1) cycle
+         idx1    = ilocrec*3 + i1
+         deadd(i) = deadd(i) + rp2mdr(derec(idx1))
+      end do
+
+      end if
+      end subroutine
+
       module subroutine add_forces_rec1_1d(deadd)
       real(r_p) deadd(3*nbloc)
       integer i,j,ilocrec,i1,i2,stride
@@ -972,7 +1020,7 @@ c
       real(r_p) tot_
       mdyn_rtyp totr
 
-      if(deb_Path) write(*,*) "    add_forces_rec1_1d"
+      if(deb_Path) write(*,*) "    add_forces_rec1_1d1"
 
       stride = dr_strider3
 !$acc parallel loop async(rec_queue) default(present)
@@ -988,6 +1036,26 @@ c
             de_buffr(idx) = 0
          end do
          deadd(i) = deadd(i) + (tot_)
+      end do
+      end subroutine
+
+      module subroutine add_forces_rec1_1d1(deadd,derec)
+      real(r_p) deadd(3*nbloc), derec(3*nlocrec2)
+      integer i,j,ilocrec,i1,i2,stride
+      integer(mipk) idx1
+      real(r_p) tot_
+      mdyn_rtyp totr
+
+      if(deb_Path) write(*,*) "    add_forces_rec1_1d1"
+
+      stride = dr_strider3
+!$acc parallel loop async(rec_queue) default(present)
+      do i = 1,3*nbloc
+         i1       = mod(i-1,3) +1
+         ilocrec  = locrec(glob((i-1)/3+1)) -1
+         if (ilocrec.eq.-1) cycle
+         idx1     = ilocrec*3 + i1
+         deadd(i) = deadd(i) + derec(idx1)
       end do
       end subroutine
 
@@ -1709,7 +1777,7 @@ c
       !use atoms
       implicit none
       integer,intent(in) :: rule
-      integer,parameter:: nf=27  !number of forces
+      integer,parameter:: nf=28  !number of forces
       integer i,j,sze,ids
       real(8) mmx(3*nf),maxi
       logical tinker_isnan_m, save_arc,save_dcdio,focus_nbond,abortf
@@ -1816,6 +1884,12 @@ c
      &                  ,sze,'depsum');
       end if
 
+      if (use_chgtrn) then
+         call comm_forces_dd(dect,cNBond)
+         call minmaxone1(mmx(28),mmx(nf+28),mmx(2*nf+28),dect
+     &                  ,sze,'dect');
+      end if
+
       end if
 
       if (btest(rule,idBond)) then
@@ -1869,6 +1943,10 @@ c
       if(use_extra)
      &call minmaxone(mmx(15),mmx(nf+15),mmx(2*nf+15),dex
      &     ,sze,'dex');
+      if(use_mlpot.or.use_ml_embedding)
+     &call minmaxone(mmx(28),mmx(nf+28),mmx(2*nf+28),dmlpot
+     &     ,sze,'dmlpot');
+
       else
       call minmaxone1(mmx(01),mmx(nf+01),mmx(2*nf+01),de_tot
      &     ,sze,'de_tot');
@@ -2017,6 +2095,8 @@ c     end if
      &      mmx(21),mmx(21+nf),mmx(21+nf*2)
          if(mmx(2*nf+22)/=0.0) print 30,'depsum =>',
      &      mmx(22),mmx(22+nf),mmx(22+nf*2)
+         if(mmx(2*nf+28)/=0.0) print 30,'dect   =>',
+     &      mmx(28),mmx(28+nf),mmx(28+nf*2)
          if(mmx(2*nf+23)/=0.0) print 30,'deamdD =>',
      &      mmx(23),mmx(23+nf),mmx(23+nf*2)
          if(mmx(2*nf+24)/=0.0) print 30,'deW1aMD=>',
@@ -2025,6 +2105,8 @@ c     end if
      &      mmx(26),mmx(26+nf),mmx(26+nf*2)
          if(mmx(2*nf+27)/=0.0) print 30,'declvo =>',
      &      mmx(27),mmx(27+nf),mmx(27+nf*2)
+         if(mmx(2*nf+28)/=0.0) print 30,'dmlpot =>',
+     &      mmx(28),mmx(28+nf),mmx(28+nf*2)
       end if
 
       call reset_forces_d

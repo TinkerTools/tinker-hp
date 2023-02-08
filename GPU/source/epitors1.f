@@ -14,7 +14,7 @@ c     "epitors1" calculates the pi-orbital torsion potential energy
 c     and first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine epitors1
       use atmlst
       use atoms
@@ -74,6 +74,7 @@ c
       real(t_p) vxterm,vyterm,vzterm
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
+      real(t_p) fgrp
       logical proceed
 c
 !$acc update host(dept,vir)
@@ -101,8 +102,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,ig)
+         proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
      &                              use(id) .or. use(ie) .or. use(ig))
 c
 c     compute the value of the pi-orbital torsion angle
@@ -198,6 +199,13 @@ c     calculate pi-orbital torsion energy and master chain rule term
 c
                e = ptorunit * v2 * phi2
                dedphi = ptorunit * v2 * dphi2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c
@@ -304,8 +312,7 @@ c
 c     increment the aMD/GaMD derivs table
 c
       if (use_amd_dih) deamdD(:,1:nloc) = deamdD(:,1:nloc) +
-     $ dept(:,1:nloc)
+     &   dept(:,1:nloc)
       if (use_amd_dih) eDaMD = eDaMD + ept
-!$acc update device(dept,vir)
       return
       end

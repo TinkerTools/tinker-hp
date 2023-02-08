@@ -14,7 +14,7 @@ c     "field" sets the force field potential energy functions from
 c     a parameter file and modifications specified in a keyfile
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine field
       use keys
       use inform ,only: app_id,dynamic_a,pimd_a
@@ -80,6 +80,7 @@ c
       use_OSRW       = .false.
       fuse_chglj     = .false.
       fuse_bonded    = .false.
+      use_mlpot      = .false.
 c
 c     Flag for predictor-Corrector
 c

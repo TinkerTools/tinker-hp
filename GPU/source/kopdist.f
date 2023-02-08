@@ -15,7 +15,7 @@ c     distance at trigonal centers via the central atom height;
 c     also processes any new or changed parameter values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kopdist(init)
       use angpot
       use atmlst

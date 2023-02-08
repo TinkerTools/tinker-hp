@@ -19,6 +19,7 @@ c
       use argue
       use keys
       use inform
+      use tinheader ,only: isrel_build
       use output
       implicit none
       integer i,next
@@ -31,7 +32,7 @@ c
 c     set default values for information and output variables
 c
       !TODO 1.2 Return this variable to 4 before release
-      digits = 8
+      digits = merge(4,8,isrel_build)
       abort = .false.
       verbose = .false.
       debug = .false.

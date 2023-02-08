@@ -33,14 +33,14 @@ c
       use reppot
       use torpot
       use random_mod
-      use precompute_pole,only: precompute_solvpole
+      use precompute_pole,only: polar_precomp
       use urypot
       use USampling ,only: US_enable
       use utilgpu
       use uprior
       use vdwpot
       implicit none
-      integer next
+      integer next,ivalue
       character*4 value
       character*25 keyword
       character*240 text
@@ -392,6 +392,15 @@ c
 c
 c     set control parameters for atomic multipole potentials
 c
+      else if (keyword(1:12) .eq. 'PENETRATION ') then
+         call getword (record,pentyp,next)
+         if (pentyp.eq.'GORDON2') then
+            pentyp_i = PT_GORDON2
+         else if (pentyp.eq.'GORDON1') then
+            pentyp_i = PT_GORDON1
+         else
+            pentyp_i = PT_NONE
+         end if
       else if (keyword(1:15) .eq. 'MPOLE-12-SCALE ') then
          read (string,*,err=10,end=10)  m2scale
          if (m2scale .gt. 1.0_ti_p)  m2scale = 1.0_ti_p / m2scale
@@ -477,6 +486,8 @@ c
          read (string,*,err=10,end=10)  politer
       else if (keyword(1:10) .eq. 'POLAR-EPS ') then
          read (string,*,err=10,end=10)  poleps
+      else if (keyword(1:11) .eq. 'D-EQUALS-P ') then
+         dpequal = .true.
       else if (keyword(1:15) .eq. 'POLAR-12-SCALE ') then
          read (string,*,err=10,end=10)  p2scale
          if (p2scale .gt. 1.0_ti_p)  p2scale = 1.0_ti_p / p2scale
@@ -493,10 +504,19 @@ c
          read (string,*,err=10,end=10)  p5scale
          if (p5scale .gt. 1.0_ti_p)  p5scale = 1.0_ti_p / p5scale
 !$acc update device(p5scale)
+      else if (keyword(1:15) .eq. 'POLAR-12-INTRA ') then
+         read (string,*,err=10,end=10)  p2iscale
+         if (p2iscale .gt. 1.0_ti_p)  p2iscale = 1.0_ti_p / p2iscale
+      else if (keyword(1:15) .eq. 'POLAR-13-INTRA ') then
+         read (string,*,err=10,end=10)  p3iscale
+         if (p3iscale .gt. 1.0_ti_p)  p3iscale = 1.0_ti_p / p3iscale
       else if (keyword(1:15) .eq. 'POLAR-14-INTRA ') then
-         read (string,*,err=10,end=10)  p41scale
-         if (p41scale .gt. 1.0_ti_p)  p41scale = 1.0_ti_p / p41scale
-!$acc update device(p41scale)
+         read (string,*,err=10,end=10)  p4iscale
+         if (p4iscale .gt. 1.0_ti_p)  p4iscale = 1.0_ti_p / p4iscale
+            p41scale = p4iscale
+      else if (keyword(1:15) .eq. 'POLAR-15-INTRA ') then
+         read (string,*,err=10,end=10)  p5iscale
+         if (p5iscale .gt. 1.0_ti_p)  p5iscale = 1.0_ti_p / p5iscale
       else if (keyword(1:16) .eq. 'DIRECT-11-SCALE ') then
          read (string,*,err=10,end=10)  d1scale
          if (d1scale .gt. 1.0_ti_p)  d1scale = 1.0_ti_p / d1scale
@@ -546,6 +566,8 @@ c     set control parameters for charge transfer potentials
 c
       else if (keyword(1:15) .eq. 'CHARGETRANSFER ') then
          call getword (record,ctrntyp,next)
+         ctrntyp_ID=merge(CHGT_SEPARATE,CHGT_COMBINED
+     &                  ,(ctrntyp.eq.'SEPARATE'))
       else if (keyword(1:10) .eq. 'LAMBDADYN ') then
          use_lambdadyn = .true.
       else if (keyword(1:5) .eq. 'OSRW ') then
@@ -579,10 +601,10 @@ c
 #ifdef _OPENACC
       else if (keyword(1:21) .eq. 'HOST-RANDOM-PLATFORM ') then
          host_rand_platform = .true.
-!$acc update device(host_rand_platform)
 #endif
-      else if (keyword(1:18) .eq. 'QUICK-POLAR-SOLVE ') then
-         precompute_solvpole = .true.
+      else if (keyword(1:18) .eq. 'POLAR-PRECOMP ') then
+         read (string,*,err=10,end=10) ivalue
+         polar_precomp = btest(ivalue,0)
       else if (keyword(1:9) .eq. 'RUN-MODE ') then
          if      (index(string,'LEGACY').gt.0) then
             sub_config = itrf_legacy

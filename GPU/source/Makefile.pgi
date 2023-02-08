@@ -8,13 +8,12 @@
 RunF77       = mpif90
 RunCXX       = mpic++
 RunCUFC      = mpif90
-RunCUCC      = nvcc
+RunCUCC     := nvcc
 
 # Comma and space characters
 comma__     := ,
-space__     :=
-space__     +=
 empty__     :=
+space__     := $(empty__) $(empty__)
 
 # top-level directory
 makefile_path__ := $(abspath $(lastword $(MAKEFILE_LIST)))
@@ -34,12 +33,20 @@ opt         := release
 # Precision of floating point numbers and options (double|[m]ixed|[s]ingle)
 prec        := double
 
+arch        := device
 main_prec   := d
+
+mlplugin_installdir := $(top_dir__)/lib
+mlplugin_name       := mlinterface
 
 #
 #  OPTIONS
 # ________
 
+# HIP Compilation
+HIP_SUPPORT ?= 0
+# Device OpenMP Support
+OPENMP_SUPPORT ?= 0
 # Wether to build with NVSHMEM
 NVSHMEM_SUPPORT ?= 0
 # Wether to build with NVTX
@@ -55,9 +62,13 @@ FPA_SUPPORT ?= 0
 # Plumed Feature
 PLUMED_SUPPORT ?= 0
 # Colvar Feature
-COLVARS_SUPPORT ?=0
+COLVARS_SUPPORT ?= 0
+# NN Feature
+NN_SUPPORT  ?= 0
 # Verbosity
 VERBOSE     ?= 0
+# Release Build
+REL_BUILD   ?= 0
 
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
@@ -117,232 +128,18 @@ LIB_COLVARS    = $(COLVARS_HOME) -lcolvars
 library_link__ := static
 lib_dir__      := $(HOME)/local/lib
 
-#  Preprocessor options
-#  ____________________
-f_preprocess_flag__ := -cpp
+include config.nvidia.mk
 
-ifeq ($(prec),$(filter $(prec),single s))
-   main_prec := s
-   OPTIONS   := -DSINGLE
-   CUOPTIONS := $(OPTIONS) -DUSE_ERFC_HASTINGS
-else ifeq ($(prec),$(filter $(prec),mixed m))
-   main_prec := s
-   OPTIONS   := -DMIXED
-   CUOPTIONS := $(OPTIONS) -DUSE_ERFC_HASTINGS
-endif
-ifeq ($(NVSHMEM_SUPPORT),1)
-ifeq ($(arch),$(filter $(arch),device gpu))
-   OPTIONS   += -DUSE_NVSHMEM
-   CUOPTIONS += -DUSE_NVSHMEM
-endif
-endif
-#OPTIONS   += -DUSE_NVTX -DORTHOGONAL_BOX_SHAPE_ONLY
-ifeq ($(NVTX_SUPPORT),1)
-   OPTIONS += -DUSE_NVTX
-endif
-ifeq ($(ORTHO_BOX_ONLY_SUPPORT),1)
-   OPTIONS   += -DORTHOGONAL_BOX_SHAPE_ONLY
-   CUOPTIONS += -DORTHOGONAL_BOX_SHAPE_ONLY
-endif
-ifeq ($(NO_MUTATION),1)
-   OPTIONS   += -DTINKER_NO_MUTATE
-   CUOPTIONS += -DTINKER_NO_MUTATE
-endif
-ifeq ($(FPA_SUPPORT),1)
-ifeq ($(prec),$(filter $(prec),mixed m))
-   OPTIONS   += -DUSE_DETERMINISTIC_REDUCTION
-   CUOPTIONS += -DUSE_DETERMINISTIC_REDUCTION
-endif
-endif
-ifeq ($(PLUMED_SUPPORT),1)
-   OPTIONS   += -DPLUMED
-endif
-ifeq ($(COLVARS_SUPPORT),1)
-   OPTIONS   += -DCOLVARS
-endif
-ifneq ($(add_options),$(empty__))
-   OPTIONS   +=$(add_options)
-   CUOPTIONS +=$(add_options)
-endif
-FOPTIONS   = $(f_preprocess_flag__) $(OPTIONS)
-CUFOPTIONS = $(f_preprocess_flag__) $(CUOPTIONS)
-CUCOPTIONS = $(CUOPTIONS)
-ifneq ($(add_options_f),$(empty__))
-   FOPTIONS += $(add_options_f)
-endif
-ifneq ($(add_options_cuf),$(empty__))
-   CUFOPTIONS += $(add_options_cuf)
-endif
-ifneq ($(add_options_cu),$(empty__))
-   CUCOPTIONS += $(add_options_cu)
-endif
+#  -----------------  #
+## List Object Files ##
+#  -----------------  #
+MODSHA  = MOD_tinheader.o
+MODSHA += MOD_nvtx.o
+MODSHA += MOD_sizes.o
+MODSHA += MOD_memory.o
 
-ifeq ($(VERBOSE),0)
-   AT := @
-endif
-
-#  Optimisation flags
-#  __________________
-ifeq ($(opt), release)
-   COMMON       = -Mdalign -fast -g -traceback
-   CCOMMON      = -std=c++11 -O3 -Mdalign -g -traceback
-   CUCOMMON     = -std=c++11 -O3 -g
-else ifeq ($(opt), debug+)
-   COMMON       = -traceback -O0 -g -C -Mbounds -traceback
-   CCOMMON      = -std=c++11 -O0 -g -Mbounds -traceback
-   CUCOMMON     = -std=c++11 -O0 -g
-   ifeq ($(arch),$(filter $(arch),device gpu))
-     OPTIONS += -DTINKER_DEBUG
-   CUOPTIONS += -DTINKER_DEBUG
-   endif
-else
-   COMMON       = -O0 -g -Mbounds -traceback#-rc=${HOME}/localrc
-   CCOMMON      = -std=c++11 -O0 -g -Mbounds -traceback
-   CUCOMMON     = -std=c++11 -O0 -g
-endif
-ifneq ($(library_link__),static)
-   COMMON    += -fPIC
-   CCOMMON   += -fPIC
-   CUCOMMON  += --compiler-options -fPIC
-endif
-ifeq ($(prec),$(filter $(prec),mixed m))
-   COMMON    += -r4
-   #CCOMMON   += -r4
-   #CUCOMMON  += -r4
-else
-   COMMON    += -r8
-   #CCOMMON   += -r8
-   #CUCOMMON  += -r8
-endif
-
-#   Compile flags for target architecture, extracting, inlining, modules, host and device
-#   ____________________________________________________________________________________
-#/ # compute_capability=60,70
-#/ CUDA Compute Capability
-#/   - 35, 60, 70, 75, etc.
-#/   - Can be comma-separated, e.g. `35,60`.
-#/
-compute_capability := 60,70
-cuda_version       := 10.1
-cuda_c_compiler    := -ccbin $(RunCXX)
-
-cc_list__          := $(subst $(comma__), ,$(compute_capability))
-acc_cc_flag__      := $(foreach var,$(cc_list__),cc$(var))
-# 60,70 => cc60,cc70
-acc_cc_flag__      := $(subst $(space__),$(comma__),$(acc_cc_flag__))
-# 60,70 => -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70
-cuda_cc_flag__     := $(foreach var,$(cc_list__),-gencode arch=compute_$(var)$(comma__)code=sm_$(var))
-cuda_f_flag__      := -Mcuda=cuda$(cuda_version),unroll
-
-
-#   Target architecture to build binaries
-#   _____________________________________
-arch        := device
-ifeq ($(arch),$(filter $(arch),device gpu))
-   TARGET = -ta=tesla:$(acc_cc_flag__),cuda$(cuda_version)
-else ifeq ($(arch),$(filter $(arch),host cpu))
-   TARGET = -ta=host
-endif
-
-#  Fill flags containers
-#  _____________________
-CUCFLAGS     = $(CUCOPTIONS) $(cuda_c_compiler) $(CUCOMMON) $(cuda_cc_flag__)
-OPTFLAGS     = -Minline=maxsize:340
-
-ifeq ($(prec),$(filter $(prec),mixed m single s))
-   OPTFLAGS += -Mcuda=$(acc_cc_flag__),fastmath
-   CUCFLAGS += --use_fast_math
-else
-   OPTFLAGS += -Mcuda=$(acc_cc_flag__)
-endif
-
-OPTFLAGS += -I$(INC_WRAP)
-
-ifeq ($(NVSHMEM_SUPPORT), 1)
-   CUCFLAGS += $(cuda_c_compiler) -rdc=true -I$(INC_NVSHMEM)
-endif
-
-ifeq ($(arch),$(filter $(arch),device gpu))
-   CUFFLAGS     = $(COMMON) $(CUFOPTIONS) $(cuda_f_flag__) $(OPTFLAGS)
-   MODFLAGS     = $(COMMON) $(FOPTIONS) $(TARGET) $(OPTFLAGS)
-   GPUFLAGS     = $(COMMON) $(FOPTIONS) $(TARGET) $(OPTFLAGS)
-   HFLAGS       = $(COMMON) $(FOPTIONS)
-   TFLAGS       = $(COMMON) $(FOPTIONS) $(TARGET)
-else ifeq ($(arch),$(filter $(arch),host cpu))
-   OPTFLAGS     = -Minline
-   MODFLAGS     = $(COMMON) $(FOPTIONS) $(TARGET)
-   GPUFLAGS     = $(COMMON) $(FOPTIONS) $(TARGET) $(OPTFLAGS)
-   HFLAGS       = $(COMMON) $(FOPTIONS) $(OPTFLAGS)
-   TFLAGS       = $(COMMON) $(FOPTIONS) $(TARGET) $(OPTFLAGS)
-endif
-
-# compile flags
-FFLAGS       = $(TFLAGS)
-CXXFLAGS     = $(CCOMMON) $(FOPTIONS)
-# linking flags
-FFLAGS2      = $(FFLAGS)
-
-#  Finalize library
-#  _______________
-ifeq ($(library_link__),static)
-   LIBS           = libtinker.a
-   fobj_lext__   := o
-else
-   LIBS           = -L. -ltinker
-   fobj_lext__   := f
-endif
-depend_targets = 2decomp_fft
-
-LDLIBS         = -lm -L$(LIB_FFTDECOMP) -L$(LIB_CPP)
-ifeq ($(arch),$(filter $(arch),host cpu))
-   LDLIBS += -L$(LIB_MKL)
-endif
-
-#CULIBS         = -Mcudalib=cufft,cublas,curand -lcuda -lcudafor -lcudafor2 -lcudafor91 -lcusparse -lcudaforwrapblas -lcudadevice
-CULIBS         = -Mcudalib=curand,cufft,cublas -Mcuda=$(acc_cc_flag__) -lcusolver
-
-ifeq ($(findstring NVTX, $(OPTIONS)),NVTX)
-   CULIBS += -lnvToolsExt
-endif
-
-CULIBS += -L$(LIB_WRAP)
-
-ifeq ($(PLUMED_SUPPORT),1)
-   LDLIBS += -L$(LIB_PLUMED)
-   depend_targets += plumed
-endif
-
-ifeq ($(COLVARS_SUPPORT),1)
-   LDLIBS   += -L$(LIB_COLVARS)
-   CXXFLAGS += -I$(INC_COLVARS)
-   depend_targets += colvars
-endif
-
-ifeq ($(NVSHMEM_SUPPORT),1)
-   CULIBS += -L$(LIB_NVSHMEM) -L/$(LIB_CUDA_DRIVER) -lmpi_cxx
-endif
-
-ifneq ($(FFTW_SUPPORT),0)
-   LDLIBS += -L$(LIB_FFT)
-endif
-
-ifeq ($(arch),$(filter $(arch),device gpu))
-   LDLIBS += $(CULIBS)
-   ifeq ($(NVSHMEM_SUPPORT),1)
-      ADD_OBJECTS = cu_nvshmem_wrap.o
-   endif
-endif
-
-ifeq ($(arch),$(filter $(arch),device gpu))
-   depend_targets += thrust
-endif
- 
-
-# Object Files
-# ____________
-MODSHA = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o
-MODSAM = MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
-   MOD_angpot.o MOD_angtor.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
+MODSAM  = MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
+   MOD_angpot.o MOD_angtor.o MOD_ani.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
    MOD_atoms.o MOD_atmtyp.o MOD_bath.o MOD_bitor.o\
    MOD_bndpot.o MOD_bond.o MOD_bound.o MOD_boxes.o\
    MOD_cell.o MOD_cflux.o MOD_charge.o MOD_chgpen.o MOD_chgpot.o MOD_chgtrn.o MOD_chunks.o\
@@ -358,7 +155,7 @@ MODSAM = MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
    MOD_kstbnd.o MOD_ksttor.o MOD_ktorsn.o MOD_ktrtor.o\
    MOD_kurybr.o MOD_kvdwpr.o MOD_kvdws.o MOD_langevin.o\
    MOD_linmin.o
-MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
+MODSNZ += MOD_math.o MOD_mamd.o MOD_mdstate.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
    MOD_minima.o MOD_molcul.o MOD_moldyn.o MOD_mplpot.o\
    MOD_mutant.o MOD_neigh.o MOD_opbend.o MOD_opdist.o\
    MOD_output.o MOD_orthogonalize.o MOD_params.o MOD_pitors.o MOD_plumed.o MOD_pme.o\
@@ -367,41 +164,55 @@ MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
    MOD_ring.o MOD_scales.o MOD_shunt.o MOD_strbnd.o\
    MOD_strtor.o MOD_timestat.o MOD_titles.o MOD_torpot.o\
    MOD_tors.o MOD_tortor.o MOD_units.o MOD_uprior.o\
-   MOD_urey.o MOD_urypot.o MOD_usage.o MOD_vec.o MOD_vdwpot.o MOD_virial.o\
-   MOD_vdw.o MOD_utils.o MOD_utilcomm.o MOD_utilvec.o MOD_utilgpu.o\
-   MOD_precompute_polegpu.o MOD_USampling.o
-# Cuda Fortran module files
-MODCU = MOD_utilcu.o echargecu.o echgljcu.o eljcu.o ehal1cu.o nblistcu.o tmatxb_pmecu.o epolar1cu.o empole1cu.o pmestuffcu.o eliaison1cu.o
+   MOD_urey.o MOD_urypot.o MOD_usage.o MOD_vec.o MOD_vdwpot.o MOD_vdw.o MOD_virial.o
+MODSNZ += MOD_utils.o MOD_utilcomm.o MOD_utilvec.o MOD_utilgpu.o MOD_utilbaoab.o
+MODSNZ += MOD_precompute_polegpu.o MOD_USampling.o
+
+# Cuda-Fortran object Files
+MODCU  = MOD_utilcu.o
+MODCU += echargecu.o echgljcu.o
+MODCU += echgtrncu.o
+MODCU += efld0_cpencu.o
+MODCU += ehal1cu.o
+MODCU += eljcu.o
+MODCU += eliaison1cu.o
+MODCU += empole1cu.o empole_cpencu.o
+MODCU += epolar1cu.o epolar_cpencu.o
+MODCU += nblistcu.o
+MODCU += pmestuffcu.o
+MODCU += tmatxb_pmecu.o tmatxb_pme_cpen.cu.o
 
 OBJSAM = active.o analysis.o angles.o\
 	MOD_subDeriv.o MOD_subMemory.o MOD_subInform.o MOD_subAtoms.o\
 	nblistgpu.o nblist_build.gpu.o\
-   attach.o basefile.o beeman.o bicubic.o\
-   baoab.o baoabrespa.o baoabrespa1.o bbk.o\
+   alterchg.o alterchg.gpu.o ani.o attach.o basefile.o beeman.o bicubic.o\
+   baoab.o baoab_util.o baoabpiston.o baoabrespa.o baoabrespa1.o bbk.o\
    bitors.o bonds.o bounds.o calendar.o\
    chkpole.o chkpolegpu.o chkring.o chkxyz.o cholesky.o cluster.o\
-   colvars.o command.o control.o cspline.o\
-   cutoffs.o damping.o dcdio.o dcflux.o diis.o domdecstuff.o\
+   colvars.o command.o control.o cspline.o cutoffs.o\
+   damping.o dcdio.o dcflux.o dcflux.gpu.o diis.o domdecstuff.o\
    dcinduce_pme.o dcinduce_pmegpu.o dcinduce_pme2.o dcinduce_pme2gpu.o dcinduce_shortreal.o dcinduce_shortrealgpu.o\
    eamd1.o eangang.o eangang1.o eangang3.o\
    eangle.o eangle1.o eangle1gpu.o eangle3.o eangle3gpu.o\
 	eangtor.o eangtor1.o eangtor3.o\
    ebond.o ebond1.o ebond1gpu.o ebond3.o ebond3gpu.o\
-   echarge.o echarge1.o  echarge1gpu.o echarge3.o  echarge3gpu.o\
-   efld0_direct.o  efld0_directgpu.o\
+   echarge.o echarge1.o echarge1gpu.o echarge3.o echarge3gpu.o\
+	echgtrn.o echgtrn1.o echgtrn1gpu.o echgtrn3.o echgtrn3gpu.o\
+	edisp.o edisp1.o edisp3.o\
+   efld0_direct.o efld0_directgpu.o\
    egeom.o egeom1.o egeom1gpu.o egeom3.o egeom3gpu.o\
-   ehal.o ehal1.o  ehal1gpu.o ehal3.o  ehal3gpu.o\
+   ehal.o ehal1.o ehal1gpu.o ehal3.o ehal3gpu.o\
    eimprop.o eimprop1.o eimprop1gpu.o eimprop3.o\
    eimptor.o eimptor1.o eimptor1gpu.o eimptor3.o\
-   elj.o elj1.o  elj1gpu.o elj3.o  elj3gpu.o\
+   elj.o elj1.o elj1gpu.o elj3.o elj3gpu.o\
 	eliaison1gpu.o\
-   empole.o empole0.o empole1.o  empole1gpu.o\
-   empole3.o   empole3gpu.o\
-   energy.o eopbend.o eopbend1.o eopbend1gpu.o eopbend3.o eopbend3gpu.o\
+   empole.o empole1.o empole1gpu.o empole1_group.o empole3.o empole3gpu.o empole3_group.o\
+   energy.o\
+	eopbend.o eopbend1.o eopbend1gpu.o eopbend3.o eopbend3gpu.o\
    eopdist.o eopdist1.o eopdist3.o\
    epitors.o epitors1.o epitors1gpu.o epitors3.o\
-   epolar.o  epolar1.o  epolar1gpu.o\
-   epolar3.o  epolar3gpu.o\
+   epolar.o epolar1.o epolar1gpu.o epolar1_group.o epolar3.o epolar3gpu.o epolar3_group.o\
+	erepel.o erepel1.o erepel3.o\
    esmd1.o\
    estrbnd.o estrbnd1.o estrbnd1gpu.o estrbnd3.o\
    estrtor.o estrtor1.o estrtor1gpu.o estrtor3.o\
@@ -419,76 +230,101 @@ OBJSAM = active.o analysis.o angles.o\
    kamd.o katom.o kangtor.o kbond.o\
 	kcharge.o kchgflx.o kchgtrn.o\
 	kdisp.o kewald.o kgeom.o\
-   kimprop.o kimptor.o kinetic.o kmpole.o\
+   kimprop.o kimptor.o kinetic.o kmlpot.o kmpole.o\
    kopbend.o kopdist.o kpitors.o kpolar.o krepel.o\
    kstrbnd.o kstrtor.o kscalfactor.o ksmd.o ktors.o ktortor.o\
    kurey.o kvdw.o lattice.o lbfgs.o\
    linalg.o maxwell.o mdinit.o mdrest.o\
-   mdsave.o mdstat.o mechanic.o\
-   molecule.o mpistuff.o mutate.o
+   mdsave.o mdstat.o mdstate.gpu.o mechanic.o\
+   molecule.o mpistuff.o mpiUtils.gpu.o mutate.o
 ifeq ($(COLVARS_SUPPORT),1)
    OBJSAM += colvarproxy_tinkerhp.o
 endif
 
 # Cuda-C object Files
-OBJCU = cu_CholeskySolver.o cu_nblist.o cu_tmatxb_pme.o cu_mpole1.o
+OBJCU  = cu_CholeskySolver.o
+OBJCU += cu_nblist.o
+OBJCU += cu_tmatxb_pme.o
+OBJCU += cu_mpole1.o
 ifeq ($(NVSHMEM_SUPPORT),1)
    OBJCU += cu_nvshmem_wrap.o
 else ifeq ($(findstring NVSHMEM, $(OPTIONS)),NVSHMEM)
    OBJCU += cu_nvshmem_wrap.o
 endif
 
-OBJSNZ = nblist.o newinduce_pme.o  newinduce_pmegpu.o\
-   newinduce_pme2.o newinduce_pme2gpu.o\
-   newinduce_shortreal.o newinduce_shortrealgpu.o\
-   nextarg.o nexttext.o nspline.o number.o\
-   numeral.o orthogonalize.o openend.o optsave.o plumed.o pmestuff.o pmestuffgpu.o\
-   precise.o pressure.o prime.o promo.o promoamd.o promosmd.o prmkey.o\
-   prtdyn.o prtxyz.o readdyn.o\
-   readprm.o readxyz.o respa.o respa1.o\
-   rings.o rotpole.o rotpolegpu.o search.o sort.o\
-   rattle.o shakeup.o\
-   suffix.o switch.o temper.o testgrad.o tmatxb_pme.o  tmatxb_pmegpu.o\
-   torphase.o torque.o torquegpu.o  torsions.o trimtext.o\
-   unitcell.o verlet.o version.o
-
-# Objects that need to be reprocessed when using multi-platform compilation
-OBJHOST = baoabrespa1.o cluster.o domdecstuff.o dynamic.o echarge.o efld0_directgpu.o\
-          ehal1gpu.o empole.o empole1gpu.o epolar1gpu.o\
-          fft_mpi.o getprm.o kpolar.o kvdw.o kscalfactor.o lattice.o maxwell.o mdinit.o mechanic.o\
-			 nblistgpu.o initial.o newinduce_pmegpu.o newinduce_pme2gpu.o newinduce_shortrealgpu.o\
-          dcinduce_pmegpu.o dcinduce_pme2gpu.o dcinduce_shortrealgpu.o\
-          rotpolegpu.o temper.o
+OBJSNZ  = nblist.o
+OBJSNZ += newinduce_pme.o newinduce_pmegpu.o newinduce_pme2.o newinduce_pme2gpu.o newinduce_group.o newinduce_shortreal.o newinduce_shortrealgpu.o
+OBJSNZ += nextarg.o
+OBJSNZ += nexttext.o
+OBJSNZ += nspline.o
+OBJSNZ += number.o
+OBJSNZ += numeral.o
+OBJSNZ += orthogonalize.o
+OBJSNZ += openend.o
+OBJSNZ += optsave.o
+OBJSNZ += plumed.o
+OBJSNZ += pmestuff.o pmestuffgpu.o
+OBJSNZ += precise.o
+OBJSNZ += pressure.o
+OBJSNZ += prime.o
+OBJSNZ += promo.o promoamd.o promosmd.o
+OBJSNZ += prmkey.o
+OBJSNZ += prtdyn.o prtxyz.o
+OBJSNZ += readdyn.o readprm.o readxyz.o
+OBJSNZ += respa.o respa1.o
+OBJSNZ += rings.o
+OBJSNZ += rotpole.o rotpolegpu.o
+OBJSNZ += search.o sort.o
+OBJSNZ += rattle.o shakeup.o
+OBJSNZ += suffix.o
+OBJSNZ += switch.o switch_group.o
+OBJSNZ += temper.o
+OBJSNZ += tmatxb_pme.o tmatxb_pmegpu.o
+OBJSNZ += torphase.o
+OBJSNZ += torque.o torquegpu.o
+OBJSNZ += torsions.o
+OBJSNZ += trimtext.o
+OBJSNZ += unitcell.o
+OBJSNZ += verlet.o
+OBJSNZ += version.o
 
 # Tinker main programs object files
-PROGOBJ = analyze.o dynamic.o minimize.o bar.o
-
-# Inline files and virtual targets
-FILVINL = MOD_erf.vinl MOD_utils.vinl MOD_utilgpu.vinl image.vinl pmestuff.vinl linalg.vinl bicubic.vinl etortor.vinl
+PROGOBJ  = analyze.o
+PROGOBJ += bar.o
+PROGOBJ += dynamic.o
+PROGOBJ += minimize.o
+PROGOBJ += testgrad.o
 
 ifeq ($(arch),$(filter $(arch),device gpu))
-   MODS   = $(MODSHA) $(MODSAM) $(MODSNZ) $(MODCU)
-   OBJS   = $(OBJCU) $(OBJSAM) $(OBJSNZ)
-	library = library.make
+   ifeq ($(HIP_SUPPORT),0)
+      MODS = $(MODSHA) $(MODSAM) $(MODSNZ) $(MODCU)
+      OBJS = $(OBJCU) $(OBJSAM) $(OBJSNZ)
+   else
+      MODS = $(MODSHA) $(MODSAM) $(MODSNZ)
+      OBJS = $(OBJSAM) $(OBJSNZ)
+   endif
+   library = library.make
 else ifeq ($(arch),$(filter $(arch),host cpu))
-   MODS   = $(MODSHA) $(MODSAM) $(MODSNZ)
-   OBJS   = $(OBJSAM) $(OBJSNZ)
-	library = library_host.make
+   MODS    = $(MODSHA) $(MODSAM) $(MODSNZ)
+   OBJS    = $(OBJSAM) $(OBJSNZ)
+   library = library_host.make
 endif
 
 
-###############################
-#  List and describe Targets
-###############################
+   ############################
+###----------------------------###
+#  LIST AND TARGETS DESCRIPTION  #
+###----------------------------###
+   ############################
 
 all: analyze bar dynamic minimize
 
 everything: analyze bar dynamic minimize testgrad
 
 #
-analyze: libtinker
+analyze: libtinker $(mlplugin_name)
 	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
-	mv $@.x $(prefix)/$@$(prog_suffix)
+	mv $@.x $(prefix)/$@$(bin_sufx)
 #
 .PHONY: analyze.mixed
 analyze.mixed:
@@ -510,21 +346,30 @@ analyze.cpuh: build_mod $(OBJS)
 	@$(MAKE) cleanobjhost
 #
 link_analyze.cpu: build_mod $(OBJS)
-	@./$(library) $(ADD_OBJECTS)
 	$(RunF77) $(FFLAGS2) -o $(prefix)/analyze.cpu analyze.o $(LIBS) $(LDLIBS)
 	@echo "**"
 	@echo "**  analyze.cpu hybrid binary is successfully made"
 	@echo "**"
 #
-dynamic: libtinker
+dynamic: libtinker $(mlplugin_name)
 	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
-	mv $@.x $(prefix)/$@$(prog_suffix)
+	mv $@.x $(prefix)/$@$(bin_sufx)
 	@[ $(PLUMED_SUPPORT) -eq 1 ] && echo && \
+	echo '                         !!!    ATTENTION    !!!' && \
 	echo '-----------------------------------------------------------------------------------' && \
 	echo ' Please update <LD_LIBRARY_PATH> environment variable using' && \
 	echo " the following command in order to locate Plumed library at runtime " && \
 	echo && \
 	echo ' &> export LD_LIBRARY_PATH=$(top_dir__)/plumed/Portland/lib:$$LD_LIBRARY_PATH' && \
+	echo && \
+	echo '-----------------------------------------------------------------------------------' || :
+	@[ $(NN_SUPPORT) -eq 1 ] && echo && \
+	echo '                         !!!    ATTENTION    !!!' && \
+	echo '-----------------------------------------------------------------------------------' && \
+	echo ' Please update <LD_LIBRARY_PATH> environment variable using' && \
+	echo " the following command in order to locate mlinterface library at runtime " && \
+	echo && \
+	echo ' &> export LD_LIBRARY_PATH=$(mlplugin_installdir):$$LD_LIBRARY_PATH' && \
 	echo && \
 	echo '-----------------------------------------------------------------------------------' || :
 #
@@ -562,29 +407,20 @@ link_dynamic.cpu: libtinker
 	@echo "**  dynamic.cpu hybrid binary is successfully made "
 	@echo "**"
 #
-#  Building modules files
-#
-build_mod: FFLAGS=$(MODFLAGS)
+# --  Building modules files
+build_mod: FFLAGS=$(GPUFLAGS)
 build_mod: $(MODS)
 #
-#  Building object files
-#
+# --  Building object files
 build_obj: $(OBJS) $(PROGOBJ)
 #
-#  Compiling files targeting host platform (CPU)
-#
-compilehost: FFLAGS=$(HFLAGS)
-compilehost: OPTFLAGS=
-compilehost: GPUFLAGS=$(HFLAGS)
-compilehost: $(OBJHOST)
-#
-testgrad: libtinker
+testgrad: libtinker $(mlplugin_name)
 	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
-	mv $@.x $(prefix)/$@$(prog_suffix)
+	mv $@.x $(prefix)/$@$(bin_sufx)
 #
-minimize: libtinker
+minimize: libtinker $(mlplugin_name)
 	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
-	mv $@.x $(prefix)/$@$(prog_suffix)
+	mv $@.x $(prefix)/$@$(bin_sufx)
 #
 .PHONY: minimize.cpu
 minimize.cpu:
@@ -603,9 +439,9 @@ minimize.gpu:
 	@$(MAKE) prog_suffix=.gpu minimize
 #
 .PHONY: bar
-bar: libtinker
+bar: libtinker $(mlplugin_name)
 	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
-	mv $@.x $(prefix)/$@$(prog_suffix)
+	mv $@.x $(prefix)/$@$(bin_sufx)
 #
 .PHONY: bar.mixed
 bar.mixed:
@@ -622,7 +458,6 @@ ifeq ($(library_link__),static)
 	@echo
 	@echo "***** Making libtinker.a *****"
 	@ar -crs $@.a ${MODS} ${OBJS}
-#@./$(library) $(ADD_OBJECTS)
 else
 	@echo
 	@echo "***** Making libtinker.so *****"
@@ -630,17 +465,39 @@ else
 	@cp $@.so $(lib_dir__)
 endif
 
-#
-#  Plumed Package
-#
+
+#  ----------------------  #
+## Neural Network Package ##
+#  ----------------------  #
+.PHONY: $(mlplugin_name)
+ifeq ($(NN_SUPPORT),1)
+
+$(mlplugin_name): lib$(mlplugin_name).dylib $(mlplugin_installdir)/lib$(mlplugin_name).dylib
+
+lib$(mlplugin_name).dylib: mlbuilder.py $(mlplugin_name).py $(mlplugin_name).h
+	$(AT) python mlbuilder.py
+
+$(mlplugin_installdir)/lib$(mlplugin_name).dylib: lib$(mlplugin_name).dylib
+	$(AT) mkdir -p $(mlplugin_installdir) && \
+	cp $< $@
+
+else
+
+$(mlplugin_name):
+
+endif
+
+#  --------------  #
+## Plumed Package ##
+#  --------------  #
 .PHONY: plumed
 plumed:
 	@(cd $(top_dir__)/plumed2 && ln -sf $(plumed_config_file) Makefile.conf && \
 	  $(MAKE) install VERBOSE=1)
 
-#
-#  Colvars Package
-#
+#  ---------------  #
+## Colvars Package ##
+#  ---------------  #
 .PHONY: colvars
 colvars:
 	@cd $(COLVARS_HOME) && $(MAKE) CXXFLAGS="$(CXXFLAGS)" libcolvars.a
@@ -648,16 +505,16 @@ colvars:
 # Include source code dependencies file
 -include depend.mk
 
-#
-#  Generics rules
-#  ____________________
+#  --------------  #
+## Generics rules ##
+#  --------------  #
 #%.vinl: %.f
 #	@touch $@
 #	$(RunF77) $(EXTFLAGS) -c $*.f
 promoamd.o: promoamd.f
 	$(RunF77) $(FFLAGS) -Mbackslash -c $*.f
 promosmd.o: promosmd.f
-	$(RunF77) $(FFLAGS) -Mbackslash -c $*.f 
+	$(RunF77) $(FFLAGS) -Mbackslash -c $*.f
 active.o: active.f
 	$(RunF77) $(GPUFLAGS) -c $<
 attach.o: attach.f
@@ -677,15 +534,15 @@ lattice.o: lattice.f
 torsions.o: torsions.f
 	$(RunF77) $(GPUFLAGS) -c $<
 %cu.o: %cu.f
-	$(RunCUFC) $(CUFFLAGS) -c $*cu.f 
+	$(RunCUFC) $(CUFFLAGS) -c $*cu.f
 %.o: %.cu
 	$(RunCUCC) $(CUCFLAGS) -c $*.cu
 %gpu.o: %gpu.f
-	$(RunF77) $(GPUFLAGS) -c $*gpu.f 
+	$(RunF77) $(GPUFLAGS) -c $*gpu.f
 e%.o: e%.f
-	$(RunF77) $(GPUFLAGS) -c e$*.f 
+	$(RunF77) $(GPUFLAGS) -c e$*.f
 k%.o: k%.f
-	$(RunF77) $(GPUFLAGS) -c k$*.f 
+	$(RunF77) $(GPUFLAGS) -c k$*.f
 %.o: %.cpp %.h
 	$(RunCXX) $(CXXFLAGS) -c $*.cpp
 %.o: %.f
@@ -695,54 +552,65 @@ k%.o: k%.f
 %.o: %.f90
 	$(RunF77) $(FFLAGS) -I$(INC_FFTDECOMP) -c $*.f90
 
-#
-#  Build directories
-#
-BUILD_DIR     := ../build
-TINKER_SOURCE := ../source
+# -- Build directories
+BUILD_DIR     ?= $(top_dir__)/build
+TINKER_SOURCE  = $(top_dir__)/source
 .PHONY: create_build
 create_build:
 	mkdir -p $(BUILD_DIR)
-	@echo "Copy tinker source files and Makefile.pgi to $(BUILD_DIR)"
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.f .
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.f90 .
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.f.inc .
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.h .
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.cpp .
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.cu .
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.make .
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/*.mk .
-	@cd $(BUILD_DIR); ln -s $(TINKER_SOURCE)/Makefile.pgi Makefile
+	@echo "Linking Tinker-HP source files and Makefile.pgi to $(BUILD_DIR)"
+	@cd $(BUILD_DIR); \
+	   ln -s $(TINKER_SOURCE)/*.f .; ln -s $(TINKER_SOURCE)/*.f90 .; ln -s $(TINKER_SOURCE)/*.f.inc .;\
+	   ln -s $(TINKER_SOURCE)/*.h .; ln -s $(TINKER_SOURCE)/*.cpp .; ln -s $(TINKER_SOURCE)/*.cu .;\
+	   ln -s $(TINKER_SOURCE)/*.make .; ln -s $(TINKER_SOURCE)/*.mk .;\
+	   ln -s $(TINKER_SOURCE)/*.py .;\
+	   ln -s $(TINKER_SOURCE)/Makefile.pgi Makefile;
 	@echo "--- done ---"
 
-infos:
-	@echo "architecture      " $(arch)
-	@echo "precision         " $(prec)
-	@echo "OPTIONS           " $(FOPTIONS)
-	@echo "CUDA OPTIONS      " $(CUOPTIONS)
-	@echo "acc config        " $(TARGET)
-	@echo "cuda config       " $(OPTFLAGS)
-	@echo "fortran config    " $(COMMON)
-	@echo "CUDA libraries    " $(CULIBS)
-	@[ $(FPA_SUPPORT) -eq 1 ]    && echo "Fixed Precision Arithmetic Support enabled" || :
-	@[ $(PLUMED_SUPPORT) -eq 1 ] && echo "PLUMED plugin enabled" || :
-	@[ $(NVTX_SUPPORT) -eq 1 ]   && echo "NVTX Markers enabled" || :
-	@[ $(NVSHMEM_SUPPORT) -eq 1 ] && echo "NVSHMEM feature enabled" || :
 
-#
-#  Cleaning rules
-#
-.PHONY: cleanobjhost
-cleanobjhost:
-	rm -f $(OBJHOST)
-clean_vinl:
-	rm -f $(FILVINL)
+#  ------------------  #
+## Debug informations ##
+#  ------------------  #
+infos:
+	@echo "architecture       " $(arch)  $(REL_BUILD)
+	@echo "precision          " $(prec)
+	@echo "OPTIONS            " $(pp_flags_f_)
+	@echo "CUDA fortan flags  " $(cuda_flags_f_)
+	@echo "ACC config         " $(oacc_flags_f_)
+	@echo "CUDA config        " $(cuda_flags_c_)
+	@echo "FORTRAN config     " $(FFLAGS)
+	@echo "CUDA libraries     " $(dev_ldlibs)
+	@echo "Programs suffix    " $(bin_sufx)
+	@echo --------------------------------
+	@[ '$(add_mkl__)' = 'yes' ]   && echo "MKL  Libraries    " $(LIB_MKL) || :
+	@[ $(FPA_SUPPORT) -eq 1 ]     && echo "Fixed Precision Arithmetic Support enabled" || :
+	@[ $(PLUMED_SUPPORT) -eq 1 ]  && echo "PLUMED plugin enabled" || :
+	@[ $(NVTX_SUPPORT) -eq 1 ]    && echo "NVTX Markers enabled" || :
+	@[ $(NVSHMEM_SUPPORT) -eq 1 ] && echo "NVSHMEM feature enabled" || :
+	@[ $(COLVARS_SUPPORT) -eq 1 ] && echo "COLVARS plugin enabled" || :
+	@[ $(NN_SUPPORT) -eq 1 ] && echo "NEURAL Network plugin enabled" || :
+
+infos1:
+	@echo "FFLAGS     " $(FFLAGS)
+	@echo "GPUFLAGS   " $(GPUFLAGS)
+	@echo "CUFFLAGS   " $(CUFFLAGS)
+	@echo "CXXFLAGS   " $(CXXFLAGS)
+	@echo "CUCFLAGS   " $(CUCFLAGS)
+	@echo "FFLAGS2    " $(FFLAGS2)
+
+#  --------------  #
+## Cleaning rules ##
+#  --------------  #
 clean:
 	@echo
 	@echo "*****  Removing Object library and module files  *****"
 	@echo
 	$(AT)rm -fr $(MODS) $(OBJS) $(PROGOBJ) *.exe *.mod
-	$(AT)rm -f libtinker.a  *.so
+	$(AT)rm -f libtinker.a *.so
+ifeq ($(NN_SUPPORT),1)
+	$(AT)rm -f lib$(mlplugin_name).dylib $(mlplugin_installdir)/lib$(mlplugin_name).dylib
+endif
+
 distclean:
 	$(AT)$(MAKE) clean
 	$(AT)cd $(top_dir__)/2decomp_fft && $(MAKE) clean
@@ -754,51 +622,52 @@ ifeq ($(COLVARS_SUPPORT),1)
 	$(AT)cd $(top_dir__)/colvars     && $(MAKE) clean
 endif
 
-#
-# 2decomp_fft library rules
-#
+#  -------------------------  #
+## 2decomp_fft library rules ##
+#  -------------------------  #
 2decomp_fft:
 ifeq ($(main_prec),s)
-	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(DECOMP_FFLAGS)" "OPTIONS=-DOVERWRITE"
 else
-	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(COMMON) $(TARGET)"
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(DECOMP_FFLAGS)"
 endif
-2decomp_fft_single:
-	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
 2decomp_fft_rebuild:
 ifeq ($(main_prec),s)
-	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(DECOMP_FFLAGS)" "OPTIONS=-DOVERWRITE"
 else
-	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(COMMON) $(TARGET)"
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(DECOMP_FFLAGS)"
 endif
+2decomp_fft_single:
+	@echo "This target is deprecated; Please enter the following command"
+	@echo "$(MAKE) prec=m 2decomp_fft"
 2decomp_fft_rebuild_single:
-	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(COMMON) $(TARGET)" "OPTIONS=-DOVERWRITE"
+	@echo "This target is deprecated; Please enter the following command"
+	@echo "$(MAKE) prec=m 2decomp_fft_rebuild"
 2decomp_fft_clean:
 	@cd $(FFTDECOMPDIR); $(MAKE) clean
 
-#
-# Thrust wrapper target
-#
+#  ---------------------  #
+## Thrust wrapper target ##
+#  ---------------------  #
 .PHONY: thrust thrust_clean thrust_lib_rebuild
 #
 thrust:
-	@cd ../wrappers; $(MAKE) "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)" "AT=$(AT)"
+	@cd ../wrappers; $(MAKE) "CUDACC=$(RunCUCC)" "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)" "AT=$(AT)"
 #
 thrust_clean:
 	@cd ../wrappers; $(MAKE) clean
 #
 thrust_lib_rebuild:
-	@cd ../wrappers; $(MAKE) clean; $(MAKE) "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)" "AT=$(AT)"
-
+	@cd ../wrappers; $(MAKE) clean; $(MAKE) "CUDACC=$(RunCUCC)" "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)" "AT=$(AT)"
 #
 tags: tags-mark
 	-'rm' -f tags
 	ctags *.f
 	-'rm' -f tags-mark
-
+#
 tags-mark:
 	touch tags-mark
-
+#
 debug:
 	cat *.f > xxx.f
 	ftnchek xxx.f

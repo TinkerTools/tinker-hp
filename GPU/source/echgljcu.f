@@ -14,7 +14,7 @@ c     "ehal1" calculates the Lennard-Jones van der waals energy and
 c     its first derivatives with respect to cartesian coordinates
 c
 #define TINKER_CUF
-#include  "tinker_precision.h"
+#include  "tinker_macro.h"
       module eChgLjcu
         use cudafor
         use tinheader,only: ti_p,oner

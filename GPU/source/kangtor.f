@@ -14,7 +14,7 @@ c     "kangtor" assigns parameters for angle-torsion interactions
 c     and processes new or changed parameter values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kangtor(init)
       use angtor
       use atmlst

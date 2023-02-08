@@ -16,15 +16,14 @@ c
 c     *_t texture variable destined to be attached to their target
 #ifdef _CUDA
 #define TINKER_CUF
-#include  "tinker_precision.h"
-#include  "tinker_types.h"
+#include  "tinker_macro.h"
       module ehal1cu
         use cudafor
         use neigh    ,only: i_bl=>inside_block,n_bl=>normal_block
      &               ,d_bl=>disc_block
         use sizes    ,only: maxvalue,maxclass,maxgrp
         use tinheader,only: ti_p
-        use utilcu   ,only: nproc,all_lanes,VDW_BLOCK_DIM
+        use utilcu   ,only: nproc,ngrp,all_lanes,VDW_BLOCK_DIM
      &               ,skipvdw12,cu_update_skipvdw12,use_virial
      &               ,vcouple,xcell2,ycell2,zcell2,f_abs
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
@@ -129,12 +128,12 @@ c#define __tver__ (__use_ene__+__use_grd__+__use_vir__+__use_act__)
      &  subroutine ehal1short_cu_deb
      &           (xred,yred,zred,sgl_id,slc_id,loc_ired
      &           ,ivblst,vblst,jvdw,epsilon,radmin
-     &           ,ired,kred,dev,ev_buff,vir_buff
+     &           ,ired,kred,grplist,wgrp,dev,ev_buff,vir_buff
      &           ,nvdwlocnlb_pair,n,nbloc,nvdwlocnl,nvdwlocnlb
      &           ,nvdwclass,rinv
      &           ,c0,c1,c2,c3,c4,c5,cut2,off2,off
      &           ,scexp,vlambda,scalpha,mut
-     &           ,shortheal,ghal,dhal,use_short
+     &           ,shortheal,ghal,dhal,use_short,use_group
      &           ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
      &           ,int1,int2,rank
 #ifdef TINKER_DEBUG
@@ -164,10 +163,14 @@ c#define __tver__ (__use_ene__+__use_grd__+__use_vir__+__use_act__)
      &           ,yred(nvdwlocnlb),zred(nvdwlocnlb)
         mdyn_rtyp,device,intent(inout)::dev(3,nbloc)
         logical  ,value,intent(in)::use_short
+        logical, value, intent(in) :: use_group
+        integer, device, intent(in) :: grplist(*)
+        real(t_p), device, intent(in) :: wgrp(ngrp+1,ngrp+1)
 #ifdef TINKER_DEBUG
         integer,device:: inter(*)
 #endif
 
+        integer iga,igb,igb_
         integer ithread,iwarp,nwarp,ilane,srclane
         integer dstlane,klane,iblock
         integer idx,kdx,kdx_,kglob_,ii,j,i,iglob,it
@@ -178,7 +181,7 @@ c#define __tver__ (__use_ene__+__use_grd__+__use_vir__+__use_act__)
         ener_rtyp ev_
         real(t_p) xi,yi,zi,xk_,yk_,zk_,xpos,ypos,zpos
         real(t_p),shared,dimension(VDW_BLOCK_DIM)::xk,yk,zk
-        real(t_p) rik2,rv2,eps2
+        real(t_p) rik2,rv2,eps2,scale_
         real(t_p) dedx,dedy,dedz,devx,devy,devz
         mdyn_rtyp,shared,dimension(VDW_BLOCK_DIM)::gxk,gyk,gzk
         mdyn_rtyp gxi,gyi,gzi
@@ -244,6 +247,12 @@ c#define __tver__ (__use_ene__+__use_grd__+__use_vir__+__use_act__)
 
            same_block = (idx.ne.kdx)
 
+           ! load group factors
+            if (use_group) then
+              iga=grplist(iglob)
+              igb=grplist(kglob(threadIdx%x))
+            endif
+
            ! Interact block i with block k
            do j = 0,warpsize-1
               srclane = iand( ilane+j-1,warpsize-1 ) + 1
@@ -255,6 +264,12 @@ c#define __tver__ (__use_ene__+__use_grd__+__use_vir__+__use_act__)
 #ifndef TINKER_NO_MUTATE
               mutik   = muti + mutk(klane)
 #endif
+              if(use_group) then
+                igb_ = __shfl(igb,klane)
+                scale_ = wgrp(iga+1,igb_+1)
+              else
+                scale_  = 1.0_ti_p
+              endif
 
               if (skipvdw12) then
                  ! Look for 1-2 bond interaction

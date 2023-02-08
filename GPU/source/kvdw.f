@@ -15,7 +15,7 @@ c     van der Waals interactions and processes any new or changed
 c     values for these parameters
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kvdw(init,istep)
       use atmlst
       use atmtyp

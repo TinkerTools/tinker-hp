@@ -132,7 +132,7 @@ c
       if (maxiter .eq. 0)  maxiter = 1000000
       if (nextiter .eq. 0)  nextiter = 1
       if (iprint .lt. 0)  iprint = 1
-      if (iwrite .lt. 0)  iwrite = 1
+      if (iwrite .lt. 0)  iwrite = 25
 c
 c     set default parameters for the line search
 c

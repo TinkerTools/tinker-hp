@@ -5,40 +5,44 @@ c     University of Texas at Austin
 c
 #ifdef _CUDA
 #define TINKER_CUF
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 #include "tinker_cudart.h"
-#include "tinker_types.h"
 
       module tmatxb_pmecu
         use utilcu  ,only: nproc,BLOCK_DIM,ALL_LANES
-     &              ,bal_comp=>balanced_comput
+     &              ,bal_comp=>balanced_comput,f_min,f_max
         use utilgpu ,only: BLOCK_SIZE
         use tintypes,only: rpole_elt,real3,real6,real7
         use neigh   ,only: i_bl=>inside_block,d_bl=>disc_block
+        private
+        public :: tmatxb_pme_core_cu, tmatxb_pme_core_v4_cu
+     &          , otfdc_tmatxb_pme_core_cu, efld0_direct_scaling_cu
 
         contains
 
 #include "image.f.inc"
 #include "midpointimage.f.inc"
 #include "pair_tmatxb.f.inc"
+#include "pair_efld.inc.f"
 #define __tfea__ (__use_mpi__)
 
-        attributes(global) subroutine tmatxb_pme_core_cu
-     &                    (ipole,pglob,b_stat,ploc,ieblst,eblst,x,y,z
-     &                    ,pdamp,thole,polarity,mu,efi
-     &              ,npolelocnl,npolelocnlb,npolelocnlb_pair,npolebloc,n
-     &                    ,cut2,alsq2,alsq2n,aewald
-     &                    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+        attributes(global) 
+     &  subroutine tmatxb_pme_core_cu
+     &            (ipole,pglob,b_stat,ploc,ieblst,eblst,x,y,z
+     &            ,pdamp,thole,polarity,mu,efi
+     &            ,npolelocnl,npolelocnlb,npolelocnlb_pair,npolebloc,n
+     &            ,cut2,alsq2,alsq2n,aewald
+     &            ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
         implicit none
-        integer,value,intent(in):: npolelocnl,npolelocnlb,npolebloc,n
-     &         ,npolelocnlb_pair
+        integer  ,value,intent(in):: npolelocnl,npolelocnlb,npolebloc,n
+     &           ,npolelocnlb_pair
         real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend,cut2,alsq2,alsq2n,aewald
-        integer,device,intent(in)::ipole(npolelocnlb),pglob(npolelocnlb)
-     &         ,ploc(npolelocnlb),ieblst(npolelocnlb_pair)
-     &         ,eblst(npolelocnlb_pair*(BLOCK_SIZE+2)),b_stat(*)
+        integer  ,device,intent(in)::ipole(*),pglob(*),ploc(*)
+     &           ,ieblst(npolelocnlb_pair)
+     &           ,eblst(npolelocnlb_pair*(BLOCK_SIZE+2)),b_stat(*)
         real(t_p),device,intent(in)::pdamp(n),thole(n),polarity(n)
-     &           ,x(npolelocnlb),y(npolelocnlb),z(npolelocnlb)
+     &           ,x(*),y(*),z(*)
         real(t_p),device,intent(in):: mu(3,2,npolebloc)
         real(t_p),device,intent(inout):: efi(npolebloc,3,2)
 
@@ -112,12 +116,12 @@ c    &     ,aewald,npolelocnlb_pair
            fip%x   = 0
            fip%y   = 0
            fip%z   = 0
-           fkd%x = 0
-           fkd%y = 0
-           fkd%z = 0
-           fkp%x = 0
-           fkp%y = 0
-           fkp%z = 0
+           fkd%x   = 0
+           fkd%y   = 0
+           fkd%z   = 0
+           fkp%x   = 0
+           fkp%y   = 0
+           fkp%z   = 0
 
            do j = 0,warpsize-1
               srclane  = iand( ilane+j-1,warpsize-1 ) + 1
@@ -204,7 +208,7 @@ c    &     ,aewald,npolelocnlb_pair
      &                    ,mu,mu3,mu4,efi,efi3,efi4
      &                    ,npolelocnlb,npolelocnlb_pair,npolebloc,n
      &                    ,cut2,alsq2,alsq2n,aewald
-     &                    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+     &                    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
         implicit none
         integer,value,intent(in)::npolelocnlb,npolebloc,n
      &         ,npolelocnlb_pair
@@ -236,6 +240,8 @@ c    &     ,aewald,npolelocnlb_pair
         real(t_p)  ,shared:: kpdp(BLOCK_DIM),kpgm(BLOCK_DIM)
         type(real6),shared:: dpuk(BLOCK_DIM),equk(BLOCK_DIM)
         logical do_pair,same_block,accept_mid
+        real(t_p) scale_
+        integer iga,igb,igb_
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -361,7 +367,7 @@ c    &     ,aewald,npolelocnlb_pair
                   ! compute one interaction
                   call
      &           tmatxb4_couple(d2,pos,dpui,dpuk(klane),equi,equk(klane)
-     &                    ,pdp,pgm,aewald,alsq2,alsq2n,real(1,t_p)
+     &                    ,pdp,pgm,aewald,alsq2,alsq2n,1.0_ti_p
      &                    ,fid,fip,fkd(klane),fkp(klane)
      &                    ,fie,fiq,fke(klane),fkq(klane),.false.)
               end if
@@ -403,7 +409,7 @@ c    &     ,aewald,npolelocnlb_pair
      &                    ,pdamp,thole,polarity,mu,efi
      &                    ,npolelocnlb,npolelocnlb_pair,npolebloc,n
      &                    ,cut2,alsq2,alsq2n,aewald
-     &                    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+     &                    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
         implicit none
         integer,value,intent(in)::npolelocnlb,npolebloc,n
      &         ,npolelocnlb_pair
@@ -433,6 +439,8 @@ c    &     ,aewald,npolelocnlb_pair
         real(t_p)  ,shared:: kpdp(BLOCK_DIM),kpgm(BLOCK_DIM)
         type(real6),shared:: dpuk(BLOCK_DIM)
         logical do_pair,same_block,accept_mid
+        real(t_p) scale_
+        integer iga,igb,igb_
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         iwarp   = (ithread-1) / warpsize
@@ -534,7 +542,7 @@ c    &     ,aewald,npolelocnlb_pair
               if (do_pair.and.d2<=cut2.and.accept_mid) then
                   ! compute one interaction
                   call tmatxb_couple(d2,pos,dpui,dpuk(klane)
-     &                    ,pdp,pgm,aewald,alsq2,alsq2n,real(1,t_p)
+     &                    ,pdp,pgm,aewald,alsq2,alsq2n,1.0_ti_p
      &                    ,fid,fip,fkd(klane),fkp(klane),.false.)
               end if
  
@@ -559,21 +567,26 @@ c    &     ,aewald,npolelocnlb_pair
 
         attributes(global) subroutine efld0_direct_scaling_cu
      &            (dpcorrect_ik,dpcorrect_scale,poleloc,ipole,pdamp
-     &            ,thole,x,y,z,rpole,ef,n_dpscale,n,npolebloc
-     &            ,cut2,aewald,alsq2,alsq2n)
+     &            ,gamma,x,y,z,rpole,ef,n_dpscale,n,npolebloc
+     &            ,use_dirdamp,cut2,aewald,alsq2,alsq2n)
         implicit none
-        integer,device,intent(in)::dpcorrect_ik(*),poleloc(n),ipole(n)
-        real(t_p),device,intent(in):: dpcorrect_scale(*),pdamp(n)
-     &           ,thole(n),rpole(13,n),x(*),y(*),z(*)
-        real(t_p),device,intent(inout)::ef(3,2,*)
-        integer,value,intent(in)::n,npolebloc,n_dpscale
+        integer  ,value,intent(in)::n,npolebloc,n_dpscale
+        logical  ,value,intent(in)::use_dirdamp
         real(t_p),value,intent(in)::cut2,aewald,alsq2,alsq2n
+        integer  ,device,intent(in)::dpcorrect_ik(*),poleloc(n),ipole(n)
+        real(t_p),device,intent(in):: dpcorrect_scale(*),pdamp(n)
+     &           ,gamma(n),rpole(13,n),x(*),y(*),z(*)
+        real(t_p),device,intent(inout)::ef(3,2,*)
 
-        integer ii,ithread,iipole,kpole,iploc,iglob,kbis,kglob
-        real(t_p) pdi,pti,d2,damp,thole1,pgamma,d,bn1,bn2,sc3,sc5
+        integer   ii,ithread,iipole,kpole,iploc,iglob,kbis,kglob
+     &           ,tver,tfea
+        logical   u_ddamp
+        real(t_p) pdi,pgi,d2,damp,pgk,pgamma,d,bn1,bn2,sc3,sc5
      &           ,pscale,dscale,rstat
         type(real3) fid,fip,fkd,fkp,pos
         type(rpole_elt) ip,kp
+        parameter(tver=__use_sca__,tfea=__use_ddamp__
+     &           ,u_ddamp=.true.)
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
 
@@ -591,7 +604,7 @@ c    &     ,aewald,npolelocnlb_pair
            kglob  = ipole  (kpole)
 
            pdi    = pdamp(iipole)
-           pti    = thole(iipole)
+           pgi    = gamma(iipole)
 
            if (.not.bal_comp.and.
      &        (iploc.lt.1.or.iploc.gt.npolebloc.or.
@@ -626,18 +639,33 @@ c    &     ,aewald,npolelocnlb_pair
            kp%qyz = rpole(10, kpole)
            kp%qzz = rpole(13, kpole)
 
-           thole1 = thole(kpole)
+           pgk    = gamma(kpole)
            damp   = pdi * pdamp(kpole)
-           pgamma = min( pti,thole1 )
+           pgamma = f_min( pgi,pgk )
+           if (pgamma.eq.0.0) pgamma = f_max(pgi,pgk)
 
-           call efld0_couple(d2,pos,ip,kp,alsq2,alsq2n,
-     &                aewald,damp,pgamma,dscale,pscale,
-     &                fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.true.)
+           if (use_dirdamp) then
+              pscale = -pscale
+              dscale = -dscale
+           call duo_efld0(d2,pos,ip,kp,pscale,dscale,aewald,damp,pgamma
+     &             ,u_ddamp,fid,fkd,fip,fkp,tver,tfea)
+           else
+           call efld0_couple(d2,pos,ip,kp,alsq2,alsq2n
+     &               ,aewald,damp,pgamma,dscale,pscale
+     &               ,fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.true.)
+           end if
 
            if (dscale.ne.0.0_ti_p) then
               rstat = atomicAdd(ef(1,1,iploc), fid%x)
               rstat = atomicAdd(ef(2,1,iploc), fid%y)
               rstat = atomicAdd(ef(3,1,iploc), fid%z)
+           end if
+           if (pscale.ne.0.0_ti_p) then
+              rstat = atomicAdd(ef(1,2,kbis ), fkp%x)
+              rstat = atomicAdd(ef(2,2,kbis ), fkp%y)
+              rstat = atomicAdd(ef(3,2,kbis ), fkp%z)
+           end if
+           if (dscale.ne.0.0_ti_p) then
               rstat = atomicAdd(ef(1,1,kbis ), fkd%x)
               rstat = atomicAdd(ef(2,1,kbis ), fkd%y)
               rstat = atomicAdd(ef(3,1,kbis ), fkd%z)
@@ -646,9 +674,6 @@ c    &     ,aewald,npolelocnlb_pair
               rstat = atomicAdd(ef(1,2,iploc), fip%x)
               rstat = atomicAdd(ef(2,2,iploc), fip%y)
               rstat = atomicAdd(ef(3,2,iploc), fip%z)
-              rstat = atomicAdd(ef(1,2,kbis ), fkp%x)
-              rstat = atomicAdd(ef(2,2,kbis ), fkp%y)
-              rstat = atomicAdd(ef(3,2,kbis ), fkp%z)
            end if
            end do
         end subroutine

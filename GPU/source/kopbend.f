@@ -15,7 +15,7 @@ c     at trigonal centers via Wilson-Decius-Cross or Allinger angles;
 c     also processes any new or changed parameter values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kopbend(init)
       use angle
       use angpot

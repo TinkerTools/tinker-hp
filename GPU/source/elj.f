@@ -13,12 +13,13 @@ c
 c     "elj" calculates the Lennard-Jones 6-12 van der Waals energy
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine elj
       use energi
       use vdwpot
       implicit none
-      real(t_p) elrc
+      real(r_p) elrc
+      character*11 mode
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -27,7 +28,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr (elrc)
+         mode = "VDW"
+         call evcorr (mode,elrc)
          ev = ev + elrc
       end if
       return
@@ -63,7 +65,7 @@ c
       integer ii,iv,it
       integer kk,kv,kt
       integer, allocatable :: iv14(:)
-      real(t_p) e
+      real(t_p) e,fgrp
       real(t_p) p6,p12,eps
       real(t_p) rv,rdn
       real(t_p) xi,yi,zi
@@ -148,8 +150,8 @@ c
             kglob = vlst(kk,ii)
             kbis = loc(kglob)
             kv = ired(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -186,6 +188,10 @@ c
      &                          + c2*rik2 + c1*rik + c0
                      e = e * taper
                   end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     increment the overall van der Waals energy components
 c

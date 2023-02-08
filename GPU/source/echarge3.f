@@ -14,7 +14,7 @@ c     "echarge3" calculates the charge-charge interaction energy
 c     and partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine echarge3
       implicit none
 c
@@ -61,10 +61,10 @@ c
       implicit none
       integer i,iglob,iichg
       integer ii,ierr
-      real*8 e
-      real*8 f
-      real*8 fs
-      real*8 xd,yd,zd
+      real(t_p) e
+      real(t_p) f
+      real(t_p) fs
+      real(t_p) xd,yd,zd
       external erfc
 c
 c
@@ -281,6 +281,7 @@ c
             kglob = iion(kkchg)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             k = loc(kglob)
+            if(use_group) call groups(fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c

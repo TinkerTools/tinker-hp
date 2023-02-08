@@ -14,16 +14,17 @@ c     "ebond1" calculates the bond stretching energy and
 c     first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module ebond1gpu_inl
+#include "atomicOp.h.f"
         contains
-#include "image.f.inc"
+#include "ker_bond.inc.f"
       end module
 
       subroutine ebond1gpu
       use atmlst
-      use atoms    ,only: type
-      use atomsMirror
+      use atoms       ,only: type,n
+      use atomsMirror ,only: x,y,z
       use bndpot
       use bond
       use bound
@@ -32,46 +33,41 @@ c
       use energi
       use ebond1gpu_inl
       use group
-      use inform   ,only: deb_Path
+      use inform   ,only: deb_Path,minmaxone
       use nvshmem
       use usage
       use virial
       use timestat ,only: timer_enter,timer_exit,timer_ebond
      &             ,quiet_timers
       use tinheader
+      use tinTypes ,only: real3
       use mamd
       use potent   ,only: use_amd_wat1
       implicit none
-      integer i,ia,ib,ialoc,ibloc
-      integer iaglob,ibglob
-      integer ibond
-      integer ia1,ib1,ind,ipe
-      real(t_p) e
-      real(t_p) de
-      real(t_p) ideal,force
-      real(t_p) expterm,bde
-      real(t_p) dt
-      real(t_p) dt2
-      real(t_p) deddt
-      real(r_p) dedx,dedy,dedz
-      real(t_p) rab
-      real(t_p) xab,yab,zab
-      real(r_p) time0,time1
-      logical proceed
-!$acc routine(image_acc) seq  
+      integer i,ia,ib,ibond,fea,ver
+      real(t_p) ideal,force,e,fgrp,xab,yab,zab
+      type(real3) ded
+      parameter(
+     &       ver=__use_grd__+__use_ene__+__use_vir__,
+     &       fea=__use_gamd__+__use_polymer__+__use_groups__
+     &         )
 
-      if(deb_Path) write(*,*) 'ebond1gpu'
       call timer_enter( timer_ebond )
+      if (deb_Path) write(*,*) 'ebond1gpu'
 c
 c     calculate the bond stretch energy and first derivatives
 c
-!$acc parallel loop present(x,y,z,use,loc,bndglob,deb
-!$acc&    ,eb,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) async
+!$acc parallel loop present(x,y,z,use,loc,bndglob,grplist,wgrp,type
+!$acc&    ,aMDwattype,deW1amd,deb,eb,eW1aMD
+!$acc&    ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&     async
 #ifdef USE_NVSHMEM_CUDA
 !$acc&         deviceptr(d_ibnd,d_bl,d_bk)
 #else
 !$acc&         present(bl,bk,ibnd)
 #endif
+!$acc&       reduction(+:eb,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&       private(ded,fgrp)
       do ibond = 1, nbondloc
          i     = bndglob(ibond)
 #ifdef USE_NVSHMEM_CUDA
@@ -87,104 +83,48 @@ c
          ideal = bl(i)
          force = bk(i)
 #endif
-         ialoc = loc(ia)
-         ibloc = loc(ib)
-c
-c     decide whether to compute the current interaction
-c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         if (use_group.AND.IAND(fea,__use_groups__).NE.0)
+     &      call groups2_inl(fgrp,ia,ib,ngrp,grplist,wgrp)
 c
 c     compute the value of the bond length deviation
+c     decide whether to compute the current interaction
 c
-         if (proceed) then
-            xab = x(ia) - x(ib)
-            yab = y(ia) - y(ib)
-            zab = z(ia) - z(ib)
-            if (use_polymer)  call image_inl (xab,yab,zab)
-            rab = sqrt(xab*xab + yab*yab + zab*zab)
-            dt  = rab - ideal
-            if (dt.eq.0.0) cycle
-c
-c     harmonic potential uses Taylor expansion of Morse potential
-c     through the fourth power of the bond length deviation
-c
-            if (bndtyp_i .eq. BND_HARMONIC) then
-               dt2 = dt * dt
-               e = bndunit * force * dt2 * (1.0_ti_p+cbnd*dt+qbnd*dt2)
-               deddt = 2.0_ti_p * bndunit * force * dt
-     &                 * (1.0_ti_p+1.5_ti_p*cbnd*dt+2.0_ti_p*qbnd*dt2)
-c
-c     Morse potential uses energy = BDE * (1 - e**(-alpha*dt))**2)
-c     with the approximations alpha = sqrt(ForceConst/BDE) = -2
-c     and BDE = Bond Dissociation Energy = ForceConst/alpha**2
-c
-            else if (bndtyp_i .eq. BND_MORSE) then
-               expterm = exp(-2.0_ti_p*dt)
-               bde   = 0.25_ti_p * bndunit * force
-               e     = bde * (1.0_ti_p-expterm)**2
-               deddt = 4.0_ti_p * bde * (1.0_ti_p-expterm) * expterm
-            end if
-c
-c     compute chain rule terms needed for derivatives
-c
-            if (rab .eq. 0.0_ti_p) then
-               de = 0.0_ti_p
-            else
-               de = deddt / rab
-            end if
-            dedx = de * xab
-            dedy = de * yab
-            dedz = de * zab
-c
-c     increment the total bond energy and first derivatives
-c
-            eb = eb + e
-!$acc atomic update      
-            deb(1,ialoc) = deb(1,ialoc) + dedx
-!$acc atomic update  
-            deb(2,ialoc) = deb(2,ialoc) + dedy
-!$acc atomic update          
-            deb(3,ialoc) = deb(3,ialoc) + dedz
-c
-!$acc atomic update
-            deb(1,ibloc) = deb(1,ibloc) - dedx
-!$acc atomic update
-            deb(2,ibloc) = deb(2,ibloc) - dedy
-!$acc atomic update
-            deb(3,ibloc) = deb(3,ibloc) - dedz
+         if (useAll.or.use(ia).or.use(ib)) then
+
+         xab = x(ia) - x(ib)
+         yab = y(ia) - y(ib)
+         zab = z(ia) - z(ib)
+         call ker_bond(i,ia,ib,loc,ideal,force,fgrp,xab,yab,zab
+     &           ,bndtyp_i,use_polymer,use_group
+     &           ,cbnd,qbnd,bndunit,eb,e,ded
+     &           ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &           ,ver,fea)
+
+        !Increment the total bond first derivatives
+         call atomic_add( deb(1,ia),ded%x )
+         call atomic_add( deb(2,ia),ded%y )
+         call atomic_add( deb(3,ia),ded%z )
+         call atomic_sub( deb(1,ib),ded%x )
+         call atomic_sub( deb(2,ib),ded%y )
+         call atomic_sub( deb(3,ib),ded%z )
 c
 c     aMD storage if waters are considered
 c
-            if (use_amd_wat1) then
-            if (type(ia) == aMDwattype(1) .or. type(ib)
-     $      == aMDwattype(1)) then
-               eW1aMD = eW1aMD + e
-!$acc atomic
-               deW1aMD(1,ialoc) = deW1aMD(1,ialoc) + dedx
-!$acc atomic
-               deW1aMD(2,ialoc) = deW1aMD(2,ialoc) + dedy
-!$acc atomic
-               deW1aMD(3,ialoc) = deW1aMD(3,ialoc) + dedz
-!$acc atomic
-               deW1aMD(1,ibloc) = deW1aMD(1,ibloc) - dedx
-!$acc atomic
-               deW1aMD(2,ibloc) = deW1aMD(2,ibloc) - dedy
-!$acc atomic
-               deW1aMD(3,ibloc) = deW1aMD(3,ibloc) - dedz
-            end if
-            end if
-c
-c     increment the internal virial tensor components
-c
-            g_vxx = g_vxx + xab*dedx
-            g_vxy = g_vxy + yab*dedx
-            g_vxz = g_vxz + zab*dedx
-            g_vyy = g_vyy + yab*dedy
-            g_vyz = g_vyz + zab*dedy
-            g_vzz = g_vzz + zab*dedz
+         IF (use_amd_wat1.and.IAND(fea,__use_gamd__).NE.0) THEN
+         if (type(ia)==aMDwattype(1) .or.
+     $       type(ib)==aMDwattype(1)) then
+            eW1aMD = eW1aMD + e
+            call atomic_add_m( deW1amd(1,ia),ded%x )
+            call atomic_add_m( deW1amd(2,ia),ded%y )
+            call atomic_add_m( deW1amd(3,ia),ded%z )
+
+            call atomic_sub_m( deW1amd(1,ib),ded%x )
+            call atomic_sub_m( deW1amd(2,ib),ded%y )
+            call atomic_sub_m( deW1amd(3,ib),ded%z )
+         end if
+         END IF
+
          end if
       end do
-
       call timer_exit( timer_ebond )
       end

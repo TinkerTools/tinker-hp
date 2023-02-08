@@ -14,7 +14,7 @@ c     "kewald" assigns particle mesh Ewald parameters and options
 c     for a periodic system
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kewald
       use atoms
       use bound
@@ -615,7 +615,7 @@ c
          i = i + 1
          x = 2.0_ti_p * x
          y = x * cutoff
-         ratio = tinker_erfc(y) / cutoff
+         ratio = erfc(y) / cutoff
       end do
 c
 c     use a binary search to refine the coefficient
@@ -626,7 +626,7 @@ c
       do i = 1, k
          x = (xlo+xhi) / 2.0_ti_p
          y = x * cutoff
-         ratio = tinker_erfc(y) / cutoff
+         ratio = erfc(y) / cutoff
          if (ratio .ge. eps) then
             xlo = x
          else

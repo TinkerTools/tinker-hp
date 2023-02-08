@@ -19,19 +19,20 @@ c     M. P. Allen and D. J. Tildesley, "Computer Simulation of
 c     Liquids, 2nd Ed.", Oxford University Press, 2017, Section 2.8
 c
 c
-#include "tinker_precision.h"
-      subroutine evcorr (elrc)
+#include "tinker_macro.h"
+      subroutine evcorr (mode,elrc)
       use atmtyp
       use atoms
       use bound
       use boxes
       use domdec   ,only:rank
+      use kdsp
       use math
       use mutant
       use potent
       use shunt
       use inform   ,only:deb_path
-      use tinheader,only:ti_p
+      use tinheader,only:ti_p,re_p
       use vdw
       use vdwpot
       implicit none
@@ -52,7 +53,7 @@ c
       real(t_p) t1,t2,ri
       real(t_p) rho,tau,tau7
       real(t_p) expterm
-      character*10 mode
+      character*11 mode
       enum,bind(C)
       enumerator LENNARD_JONES,BUFFERED_14_7
       end enum
@@ -74,25 +75,26 @@ c
 c
 c     set the coefficients for the switching function
 c
-      mode = 'VDW'
       call switch (mode)
       if (vdwtyp.eq.'LENNARD-JONES') then
          vdwtyp_i=LENNARD_JONES
       else if (vdwtyp.eq.'BUFFERED-14-7') then
          vdwtyp_i=BUFFERED_14_7
-      else
-         return
+      else if (.not.use_disp) then
+ 33   format(' Tinker-HP: WARNING!!! Unidentified vdw type in '
+     &      ,' evcorr.f')
+         print 33
       end if
 c
 c     set number of steps and range for numerical integration
 c
-      nstep = 2
-      range = 100.0_ti_p
+      nstep  = 2
+      range  = 100.0_ti_p
       ndelta = int(real(nstep,t_p)*(range-cut))
       rdelta = (range-cut) / real(ndelta,t_p)
       offset = cut - 0.5_ti_p*rdelta
-      vlam1 = 1.0_ti_p - vlambda
-      rc     = 1.0/(cut-off)
+      vlam1  = 1.0_ti_p - vlambda
+      rc     = 1.0_re_p/(cut-off)
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -117,7 +119,6 @@ c
          if (mut(i))  mvt(nvt) = 1
    10    continue
       end do
-
 c
 c     find the correction energy via double loop search
 c
@@ -141,12 +142,16 @@ c
                fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
             end if
             if (k .eq. i)  fik = 0.5_ti_p * fik
-            rv  = radmin(kt,it)
-            eps = epsilon(kt,it)
-            etot = zero
-c           rv2 = rv * rv
-c           rv6 = rv2 * rv2 * rv2
-c           rv7 = rv6 * rv
+            if (use_disp) then
+               cik = dspsix(it) * dspsix(kt)
+            else
+               rv   = radmin(kt,it)
+               eps  = epsilon(kt,it)
+               etot = zero
+c              rv2 = rv * rv
+c              rv6 = rv2 * rv2 * rv2
+c              rv7 = rv6 * rv
+            end if
 !$acc loop seq
             do j = 1, ndelta
                r = offset + real(j,t_p)*rdelta
@@ -155,7 +160,9 @@ c              r3 = r2 * r
 c              r6 = r3 * r3
 c              r7 = r6 * r
 c              e = zero
-               if (vdwtyp_i .eq. LENNARD_JONES) then
+               if (use_disp) then
+                  e = -cik / (r**6)
+               else if (vdwtyp_i .eq. LENNARD_JONES) then
                   p6  = (rv / r)**6
                   e   = eps * (p6 - two)*p6
                else if (vdwtyp_i .eq. BUFFERED_14_7) then
@@ -207,13 +214,14 @@ c     M. P. Allen and D. J. Tildesley, "Computer Simulation of
 c     Liquids, 2nd Ed.", Oxford University Press, 2017, Section 2.8
 c
 c
-      subroutine evcorr1 (elrc,vlrc)
+      subroutine evcorr1 (mode,elrc,vlrc)
       use atmtyp
       use atoms
       use bound
       use boxes
       use domdec   ,only:rank
       use inform   ,only:deb_path
+      use kdsp
       use math
       use mutant
       use potent
@@ -241,7 +249,7 @@ c
       real(t_p) rho,tau,tau7
       real(t_p) dtau,gtau
       real(t_p) rvterm,expterm
-      character*10 mode
+      character*11 mode
       parameter(zero=0.0_ti_p,  one=1.0_ti_p,
      &           two=2.0_ti_p)
  12   format(2x,'evcorr1')
@@ -259,7 +267,6 @@ c
 c
 c     set the coefficients for the switching function
 c
-      mode = 'VDW'
       call switch (mode)
 c
 c     set number of steps and range for numerical integration
@@ -315,11 +322,15 @@ c
                fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
             end if
             if (k .eq. i)  fik = 0.5_ti_p * fik
-            rv = radmin(kt,it)
-            eps = epsilon(kt,it)
-            rv2 = rv * rv
-            rv6 = rv2 * rv2 * rv2
-            rv7 = rv6 * rv
+            if (use_disp) then
+               cik = dspsix(it) * dspsix(kt)
+            else
+               rv = radmin(kt,it)
+               eps = epsilon(kt,it)
+               rv2 = rv * rv
+               rv6 = rv2 * rv2 * rv2
+               rv7 = rv6 * rv
+            end if
             etot = 0.0_ti_p
             vtot = 0.0_ti_p
             do j = 1, ndelta
@@ -330,7 +341,10 @@ c
                r7 = r6 * r
                e = 0.0_ti_p
                de = 0.0_ti_p
-               if (vdwtyp .eq. 'LENNARD-JONES') then
+               if (use_disp) then
+                   e = -cik / r6
+                  de = 6.0d0 * cik / r7
+               else if (vdwtyp .eq. 'LENNARD-JONES') then
                   p6 = rv6 / r6
                   p12 = p6 * p6
                   e = eps * (p12 - 2.0_ti_p*p6)
@@ -381,13 +395,14 @@ c
 c
 c     Device version of evcorr1
 c
-      subroutine evcorr1gpu (elrc,vlrc)
+      subroutine evcorr1gpu (mode,elrc,vlrc)
       use atmtyp
       use atoms
       use bound
       use boxes
       use domdec    ,only: rank
       use inform    ,only: deb_path
+      use kdsp
       use math
       use mutant
       use potent
@@ -414,14 +429,13 @@ c
       real(t_p) t1,t2,s1,s2
       real(t_p) dt1drho,dt2drho
       real(t_p) taper,dtaper
-      real(t_p) rv,rv2,rv6,rv7
-      real(t_p) r,r2,r3,r4,ri,ri2,ri3
-      real(t_p) r5,r6,r7,rinv
-      real(t_p) cik,p,p6,p12
+      real(t_p) rv,rv2,rv6,rv7,p,p6,p12
+      real(t_p) r,r2,r3,r4,ri,ri2,ri3,rinv
+      real(r_p) r6,r7,cik
       real(t_p) rho,rho6,tau,tau7
       real(t_p) dtau,gtau
       real(t_p) rvterm,expterm
-      character*10 mode
+      character*11 mode
       enum,bind(C)
       enumerator LENNARD_JONES,BUFFERED_14_7
       end enum
@@ -444,14 +458,15 @@ c
 c
 c     set the coefficients for the switching function
 c
-      mode = 'VDW'
       call switch (mode)
       if (vdwtyp.eq.'LENNARD-JONES') then
          vdwtyp_i=LENNARD_JONES
       else if (vdwtyp.eq.'BUFFERED-14-7') then
          vdwtyp_i=BUFFERED_14_7
-      else
-         return
+      else if (.not.use_disp) then
+ 33   format(' Tinker-HP: WARNING!!! Unidentified vdw type in'
+     &      ,' ~evcorr1gpu~')
+         print 33
       end if
 c
 c     set number of steps and range for numerical integration
@@ -516,19 +531,28 @@ c
                   fik = vlambda*fi*fk + vlam1*(fi-fim)*(fk-fkm)
                end if
                if (k .eq. i)  fik = 0.5_ti_p * fik
-               r   = offset + real(j,t_p)*rdelta
-               rv  = radmin(kt,it)
-               eps = epsilon(kt,it)
-               etot = 0.0_re_p
-               vtot = 0.0_re_p
-c              rv2 = rv * rv
-c              rv6 = rv2 * rv2 * rv2
-c              rv7 = rv6 * rv
-c              r2 = r * r
-c              r3 = r2 * r
-c              r6 = r3 * r3
-c              r7 = r6 * r
-               if (vdwtyp_i .eq. LENNARD_JONES) then
+               if (use_disp) then
+                  cik = dspsix(it) * dspsix(kt)
+               else
+                  r   = offset + real(j,t_p)*rdelta
+                  rv  = radmin(kt,it)
+                  eps = epsilon(kt,it)
+                  etot = 0.0_re_p
+                  vtot = 0.0_re_p
+c                 rv2 = rv * rv
+c                 rv6 = rv2 * rv2 * rv2
+c                 rv7 = rv6 * rv
+c                 r2 = r * r
+c                 r3 = r2 * r
+c                 r6 = r3 * r3
+c                 r7 = r6 * r
+               end if
+               if (use_disp) then
+                   r6 = r**6
+                   r7 = r6*r
+                   e  = -cik / r6
+                  de  = 6.0d0 * cik / r7
+               else if (vdwtyp_i .eq. LENNARD_JONES) then
                   p6  = (rv / r)**6
                   e    = eps * (p6 - two)*p6
                   de   = eps * (p6 - one)*p6 * (-12.0_ti_p/r)

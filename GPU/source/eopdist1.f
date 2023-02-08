@@ -15,7 +15,7 @@ c     energy and first derivatives at trigonal centers via
 c     the central atom height
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eopdist1
       use angpot
       use atmlst
@@ -51,6 +51,7 @@ c
       real(t_p) dedxid,dedyid,dedzid
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
+      real(t_p) fgrp
       logical proceed
 c
 !$acc update host(deopb,deopd,vir)
@@ -75,8 +76,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     get the coordinates of the defining atoms
@@ -129,6 +130,19 @@ c
             deddt = opdunit * force * drt2
      &                * (2.0_ti_p + 3.0_ti_p*copd*dt + 4.0_ti_p*qopd*dt2
      &                     + 5.0_ti_p*popd*dt3 + 6.0_ti_p*sopd*dt4)
+
+              if(use_group) then
+                call groups(fgrp,ia,ib,ic,id,0,0)
+                e = e*fgrp
+                deddt = deddt*fgrp
+              endif
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e     =  e    * fgrp
+               deddt = deddt * fgrp
+            end if
 c
 c     chain rule terms for first derivative components
 c
@@ -196,8 +210,6 @@ c
             vir(3,3) = vir(3,3) + vzz
          end if
       end do
-!$acc data present(deopb,deopd,eopd,vir)
 !$acc update device(deopb,deopd,eopd,vir)
-!$acc end data
       return
       end

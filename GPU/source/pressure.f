@@ -372,7 +372,8 @@ c
       use mdstuf
       use molcul
       use moldyn
-      use inform     ,only: deb_Path,deb_Energy,deb_Force,verbose
+      use inform     ,only: mtc_nacc,deb_Path,deb_Energy,deb_Force
+     &               ,verbose
       use random_mod
       use units
       use usage
@@ -408,7 +409,7 @@ c
       logical dotrial
       logical isotropic
       parameter(third = 1.0_re_p / 3.0_re_p)
-      interface 
+      interface
         function energy ()
         real(r_p) energy
         end function
@@ -535,22 +536,22 @@ c           print*," _scale_ ",scale
                      end if
                   end do
                end do
-           else
+            else
 !$acc parallel loop async
-              do i = 1, nbloc
-                 iglob = glob(i)
-                 if (use(iglob)) then
-                    x(iglob) = x(iglob) * scale
-                    y(iglob) = y(iglob) * scale
-                    z(iglob) = z(iglob) * scale
-                    v(1,iglob) = v(1,iglob) / scale
-                    v(2,iglob) = v(2,iglob) / scale
-                    v(3,iglob) = v(3,iglob) / scale
-                 end if
-              end do
-c             call ddpme3dnpt(scale,0)
-           end if
-           call reCast_position
+               do i = 1, nbloc
+                  iglob = glob(i)
+                  if (use(iglob)) then
+                     x(iglob) = x(iglob) * scale
+                     y(iglob) = y(iglob) * scale
+                     z(iglob) = z(iglob) * scale
+                     v(1,iglob) = v(1,iglob) / scale
+                     v(2,iglob) = v(2,iglob) / scale
+                     v(3,iglob) = v(3,iglob) / scale
+                  end if
+               end do
+c              call ddpme3dnpt(scale,0)
+            end if
+            call reCast_position
          end if
 c
 c     get the potential energy and PV work changes for trial move
@@ -633,7 +634,8 @@ c
      &      write(*,15) ' Accept montecarlo',valrand
      &                 ,expterm,epot,eold,dpot,dkin
             if (rank.eq.0.and.verbose.and.tinkerdebug.eq.0)
-     &         write(*,*) 'Applied montecarlo barostat'
+     &         mtc_nacc = mtc_nacc + 1
+c    &         write(*,*) 'Applied montecarlo barostat'
          end if
 c
 c        rescale domain decomposition related stuff
@@ -654,3 +656,117 @@ c
          deallocate (vold)
       end if
       end
+c
+c     subroutine rescale: rescale positions and speeds after a change of volume
+c
+      subroutine rescale(istep)
+      use atomsMirror
+      use bath
+      use boxes
+      use domdec
+      use moldyn
+      use usage
+      implicit none
+      real(r_p) third,scale
+      integer iglob,i,istep
+      parameter(third=1.0/3.0)
+
+      scale =  (extvol/extvolold)**third
+c
+c     modify the current periodic box dimension values
+c
+      xbox = xbox * scale
+      ybox = ybox * scale
+      zbox = zbox * scale
+!$acc update device(xbox,ybox,zbox) async
+c
+c     propagate the new box dimensions to other lattice values
+c
+      call lattice
+
+!$acc parallel loop present(x,y,z,v,use,glob) async
+      do i = 1, nbloc
+         iglob = glob(i)
+         if (use(iglob)) then
+            x(iglob) = x(iglob) * scale
+            y(iglob) = y(iglob) * scale
+            z(iglob) = z(iglob) * scale
+            v(1,iglob) = v(1,iglob) / scale
+            v(2,iglob) = v(2,iglob) / scale
+            v(3,iglob) = v(3,iglob) / scale
+         end if
+      end do
+      call reCast_position
+c
+c     also rescale xbegproc, xendproc...
+c
+      call ddpme3dnpt(scale,istep)
+      end
+
+c
+c     propagate Volume with Langevin equation with a BAOAB propagator
+c
+      subroutine initialize_langevin_piston()
+      use bath
+      use boxes
+      use mpi
+      use domdec
+      implicit none
+      integer ierr
+      interface
+         function maxwell (mass,temper)
+         real(r_p) maxwell
+         real(r_p) mass
+         real(r_p) temper
+         end function
+      end interface
+
+      extvol     = volbox
+      extvolold  = volbox
+      temppiston = 0.0
+      aextvol    = 0.0
+      if ( rank.eq.0 ) vextvol  = maxwell(masspiston,kelvin)
+      if (nproc.gt.1 ) 
+     &   call MPI_BCAST(vextvol,1,MPI_RPREC,0,COMM_TINKER,ierr)
+      end subroutine initialize_langevin_piston
+
+      subroutine rescale_box(istep,scale)
+      use atoms
+      use bath
+      use boxes
+      use domdec
+      use moldyn
+      use usage
+      implicit none
+      integer, intent(in) :: istep
+      real(r_p), intent(in) :: scale
+      real*8 third
+      integer iglob,i
+c
+c     modify the current periodic box dimension values
+c
+      xbox = xbox * scale
+      ybox = ybox * scale
+      zbox = zbox * scale
+!$acc update device(xbox,ybox,zbox) async
+c
+c     propagate the new box dimensions to other lattice values
+c
+      call lattice
+c
+c   also rescale xbegproc, xendproc...
+c
+      call ddpme3dnpt(scale,istep)
+      end subroutine rescale_box
+
+      subroutine pressure_iso(eksum,dedv,pres)
+      use boxes
+      use units
+      implicit none
+      real(r_p), intent(inout) :: pres
+      real(r_p), intent(in) :: dedv,eksum
+!$acc serial async present(pres,dedv,eksum,volbox)
+      pres = prescon*( -dedv + 2.0*eksum
+     &                       /(3.0*volbox) )
+!$acc end serial
+      end subroutine pressure_iso

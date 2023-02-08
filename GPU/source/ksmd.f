@@ -23,7 +23,7 @@ c     "ksmd" checks the smd activation and assign the necessary
 c     parameters enters in the key file
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine ksmd(init)
       use angle
       use atomsMirror

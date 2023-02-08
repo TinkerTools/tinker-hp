@@ -10,7 +10,7 @@ c     ##                                                                   ##
 c     #######################################################################
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       submodule(atomsMirror) subAtoms
       use atmtyp    ,only: mass
       use atoms     , nr=>n,xr=>x,yr=>y,zr=>z
@@ -112,25 +112,27 @@ c
       real(r_p),intent(in):: dt
       integer i,j,iglob
 
+!$acc host_data use_device(v,a)
       if (useAll.and.nproc.eq.1) then ! Use all atoms in the box & sequential run
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async deviceptr(v,a)
          do i = 1, nloc; do j = 1, 3
             v(j,i) = v(j,i) + a(j,i)*dt
          end do; end do
       else if (useAll) then ! Use all atoms in the box
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async deviceptr(v,a)
          do i = 1, nloc; do j = 1, 3
             iglob = glob(i)
             v(j,iglob) = v(j,iglob) + a(j,iglob)*dt
          end do; end do
       else
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async deviceptr(v,a)
          do i = 1, nloc; do j = 1, 3
             iglob = glob(i)
             if (use(iglob))
      &         v(j,iglob) = v(j,iglob) + a(j,iglob)*dt
          end do; end do
       end if
+!$acc end host_data
       end subroutine
 
       module subroutine integrate_vel1(aalt,dta,a,dt)
@@ -139,19 +141,20 @@ c
       real(r_p),intent(in):: dt,dta
       integer i,j,iglob
 
+!$acc host_data use_device(v,a,aalt)
       if (useAll.and.nproc.eq.1) then ! Use all atoms in the box & sequential run
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async deviceptr(v,a,aalt)
          do i = 1, nloc; do j = 1, 3
             v(j,i) = v(j,i) + a(j,i)*dt + aalt(j,i)*dta
          end do; end do
       else if (useAll) then ! Use all atoms in the box
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async deviceptr(v,a,aalt)
          do i = 1, nloc; do j = 1, 3
             iglob = glob(i)
             v(j,iglob) = v(j,iglob) + a(j,iglob)*dt + aalt(j,iglob)*dta
          end do; end do
       else
-!$acc parallel loop collapse(2) async default(present)
+!$acc parallel loop collapse(2) async deviceptr(v,a,aalt)
          do i = 1, nloc; do j = 1, 3
             iglob = glob(i)
             if (use(iglob))
@@ -159,6 +162,7 @@ c
      &                                +aalt(j,iglob)*dta
          end do; end do
       end if
+!$acc end host_data
       end subroutine
 
       module subroutine integrate_acc_vel0(derivs,a,dt)
@@ -170,22 +174,24 @@ c
       integer(mipk) len,nloc1
       mdyn_rtyp,parameter:: zer=0
       real(r_p) ac,acx,acy,acz
+      mdyn_rtyp rx,ry,rz
 
 !$acc host_data use_device(glob,a,v,derivs,de_tot,mass
 !$acc&         ,derivx,derivy,derivz)
       if (ftot_l) then  ! Use de_tot buffer
+         if (tdes_l) then  ! de_tot transposition
 
-      if (tdes_l) then  ! de_tot transposition
-
-      if (useAll) then ! Use all atoms in the box
 !$acc parallel loop async 
 !$acc&         deviceptr(v,a,mass,glob,derivx,derivy,derivz)
          do i = 1, nbloc;
             if (i.le.nloc) then
                iglob      = glob(i)
-               acx        = -convert * mdr2md(derivx(i)) / mass(iglob)
-               acy        = -convert * mdr2md(derivy(i)) / mass(iglob)
-               acz        = -convert * mdr2md(derivz(i)) / mass(iglob)
+               rx         = derivx(i)
+               ry         = derivy(i)
+               rz         = derivz(i)
+               acx        = -convert * mdr2md(rx) / mass(iglob)
+               acy        = -convert * mdr2md(ry) / mass(iglob)
+               acz        = -convert * mdr2md(rz) / mass(iglob)
                v(1,iglob) = v(1,iglob) + acx*dt
                v(2,iglob) = v(2,iglob) + acy*dt
                v(3,iglob) = v(3,iglob) + acz*dt
@@ -201,64 +207,23 @@ c
                derivz(i) = 0
             end if
          end do;
-      else
-!$acc parallel loop async
-!$acc&         deviceptr(v,a,mass,glob,derivx,derivy,derivz)
-         do i = 1, nbloc;
-            iglob = glob(i)
-            if (i.le.nloc.and.use(iglob)) then
-               acx        = -convert * mdr2md(derivx(i)) / mass(iglob)
-               acy        = -convert * mdr2md(derivy(i)) / mass(iglob)
-               acz        = -convert * mdr2md(derivz(i)) / mass(iglob)
-               v(1,iglob) = v(1,iglob) + acx*dt
-               v(2,iglob) = v(2,iglob) + acy*dt
-               v(3,iglob) = v(3,iglob) + acz*dt
-               a(1,iglob) = acx
-               a(2,iglob) = acy
-               a(3,iglob) = acz
-               derivx(i) = 0
-               derivy(i) = 0
-               derivz(i) = 0
-            else
-               derivx(i) = 0
-               derivy(i) = 0
-               derivz(i) = 0
-            end if
-         end do;
-      end if
 
-      else
+         else
 
-      if (useAll) then ! Use all atoms in the box
 !$acc parallel loop collapse(2) async
 !$acc&         deviceptr(v,a,de_tot,mass,glob)
          do i = 1, nloc; do j = 1, 3
             iglob = glob(i)
-            ac         = -convert * mdr2md(de_tot(j,i)) / mass(iglob)
+            rx         = de_tot(j,i)
+            ac         = -convert * mdr2md(rx) / mass(iglob)
             v(j,iglob) = v(j,iglob) + ac*dt
             a(j,iglob) = ac
             de_tot(j,i)= 0
          end do; end do
+         len = 3*(nbloc-nloc); nloc1 = 3*nloc
+
+         end if  ! de_tot transposition
       else
-!$acc parallel loop collapse(2) async
-!$acc&         deviceptr(v,a,de_tot,mass,glob)
-         do i = 1, nloc; do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               ac         = -convert * mdr2md(de_tot(j,i)) / mass(iglob)
-               v(j,iglob) = v(j,iglob) + ac*dt
-               a(j,iglob) = ac
-               de_tot(j,i)= 0
-            end if
-         end do; end do
-      end if
-      len = 3*(nbloc-nloc); nloc1 = 3*nloc
-
-      end if  ! de_tot transposition
-
-      else
-
-      if (useAll) then ! Use all atoms in the box
 !$acc parallel loop collapse(2) async
 !$acc&         deviceptr(v,a,derivs,mass,glob)
          do i = 1, nloc; do j = 1, 3
@@ -267,18 +232,6 @@ c
             v(j,iglob) = v(j,iglob) + ac*dt
             a(j,iglob) = ac
          end do; end do
-      else
-!$acc parallel loop collapse(2) async
-!$acc&         deviceptr(v,a,derivs,mass,glob)
-         do i = 1, nloc; do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               ac         = -convert * derivs(j,i) / mass(iglob)
-               v(j,iglob) = v(j,iglob) + ac*dt
-               a(j,iglob) = ac
-            end if
-         end do; end do
-      end if
 
       end if  ! Use de_tot buffer
 !$acc end host_data
@@ -296,23 +249,25 @@ c
       integer(mipk) slen,nloc1
       mdyn_rtyp,parameter:: zer=0
       real(r_p) ac,acx,acy,acz
+      mdyn_rtyp rx,ry,rz
 
 !$acc host_data use_device(glob,a,aalt,v,derivs,de_tot,mass
 !$acc&         ,derivx,derivy,derivz)
       if (ftot_l) then
+         if (tdes_l) then  ! de_tot transposition
 
-      if (tdes_l) then  ! de_tot transposition
-
-      if (useAll) then ! Use all atoms in the box
 !$acc parallel loop async
 !$acc&         deviceptr(v,a,de_tot,mass,glob
 !$acc&                  ,derivx,derivy,derivz)
          do i = 1, nbloc;
             if (i.le.nloc) then
                iglob      = glob(i)
-               acx        = -convert * mdr2md(derivx(i)) / mass(iglob)
-               acy        = -convert * mdr2md(derivy(i)) / mass(iglob)
-               acz        = -convert * mdr2md(derivz(i)) / mass(iglob)
+               rx         = derivx(i)
+               ry         = derivy(i)
+               rz         = derivz(i)
+               acx        = -convert * mdr2md(rx) / mass(iglob)
+               acy        = -convert * mdr2md(ry) / mass(iglob)
+               acz        = -convert * mdr2md(rz) / mass(iglob)
                v(1,iglob) = v(1,iglob) + acx*dt + aalt(1,iglob)*dta
                v(2,iglob) = v(2,iglob) + acy*dt + aalt(2,iglob)*dta
                v(3,iglob) = v(3,iglob) + acz*dt + aalt(3,iglob)*dta
@@ -328,65 +283,24 @@ c
                derivz(i) = 0
             end if
          end do;
-      else
-!$acc parallel loop async
-!$acc&         deviceptr(v,a,de_tot,mass,glob
-!$acc&                  ,derivx,derivy,derivz)
-         do i = 1, nbloc;
-            iglob = glob(i)
-            if (i.le.nloc.and.use(iglob)) then
-               acx        = -convert * mdr2md(derivx(i)) / mass(iglob)
-               acy        = -convert * mdr2md(derivy(i)) / mass(iglob)
-               acz        = -convert * mdr2md(derivz(i)) / mass(iglob)
-               v(1,iglob) = v(1,iglob) + acx*dt + aalt(1,iglob)*dta
-               v(2,iglob) = v(2,iglob) + acy*dt + aalt(2,iglob)*dta
-               v(3,iglob) = v(3,iglob) + acz*dt + aalt(3,iglob)*dta
-               a(1,iglob) = acx
-               a(2,iglob) = acy
-               a(3,iglob) = acz
-               derivx(i) = 0
-               derivy(i) = 0
-               derivz(i) = 0
-            else
-               derivx(i) = 0
-               derivy(i) = 0
-               derivz(i) = 0
-            end if
-         end do;
-      end if
 
-      else
+         else
 
-      if (useAll) then ! Use all atoms in the box
 !$acc parallel loop collapse(2) async
 !$acc&         deviceptr(v,a,aalt,de_tot,mass,glob)
          do i = 1, nloc; do j = 1, 3
             iglob = glob(i)
-            ac         = -convert * mdr2md(de_tot(j,i)) / mass(iglob)
+            rx         = de_tot(j,i)
+            ac         = -convert * mdr2md(rx) / mass(iglob)
             v(j,iglob) = v(j,iglob) + ac*dt +aalt(j,iglob)*dta
             a(j,iglob) = ac
             de_tot(j,i)= 0
          end do; end do
-      else
-!$acc parallel loop collapse(2) async
-!$acc&         deviceptr(v,a,aalt,de_tot,mass,glob)
-         do i = 1, nloc; do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               ac         = -convert * mdr2md(de_tot(j,i)) / mass(iglob)
-               v(j,iglob) = v(j,iglob) + ac*dt +aalt(j,iglob)*dta
-               a(j,iglob) = ac
-               de_tot(j,i)= 0
-            end if
-         end do; end do
-      end if
       slen = 3*(nbloc-nloc); nloc1 = 3*nloc 
 
-      end if  ! de_tot transposition
-
+         end if  ! de_tot transposition
       else
 
-      if (useAll) then ! Use all atoms in the box
 !$acc parallel loop collapse(2) async 
 !$acc&         deviceptr(v,a,aalt,derivs,mass,glob)
          do i = 1, nloc; do j = 1, 3
@@ -395,18 +309,6 @@ c
             v(j,iglob) = v(j,iglob) + ac*dt +aalt(j,iglob)*dta
             a(j,iglob) = ac
          end do; end do
-      else
-!$acc parallel loop collapse(2) async
-!$acc&         deviceptr(v,a,aalt,derivs,mass,glob)
-         do i = 1, nloc; do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               ac         = -convert * derivs(j,i) / mass(iglob)
-               v(j,iglob) = v(j,iglob) + ac*dt +aalt(j,iglob)*dta
-               a(j,iglob) = ac
-            end if
-         end do; end do
-      end if
 
       end if
 !$acc end host_data
@@ -448,6 +350,10 @@ c
                   yr(iglob) = real( y(iglob),t_p )
                   zr(iglob) = real( z(iglob),t_p )
                end if
+            else
+               v(1,iglob) = 0
+               v(2,iglob) = 0
+               v(3,iglob) = 0
             end if
          end do
       end if

@@ -14,18 +14,19 @@ c     "dampewald" finds coefficients for error function damping used
 c     for Ewald real space interactions
 c
 c
+#include "tinker_macro.h"
       subroutine dampewald (rorder,r,r2,scale,dmpe)
       use ewald
       use math
       implicit none
       integer i,niter
       integer rorder
-      real*8 r,r2,scale
-      real*8 bfac,erfc
-      real*8 aesq2,afac
-      real*8 expterm,ra
-      real*8 bn(0:5)
-      real*8 dmpe(*)
+      real(t_p) r,r2,scale
+      real(t_p) bfac,erfc
+      real(t_p) aesq2,afac
+      real(t_p) expterm,ra
+      real(t_p) bn(0:5)
+      real(t_p) dmpe(*)
       external erfc
 c
 c
@@ -77,12 +78,12 @@ c
       implicit none
       integer i,j,k
       integer rorder
-      real*8 r,damp
-      real*8 damp2
-      real*8 damp3
-      real*8 expdamp
-      real*8 pgamma
-      real*8 dmpik(*)
+      real(t_p) r,damp
+      real(t_p) damp2
+      real(t_p) damp3
+      real(t_p) expdamp
+      real(t_p) pgamma
+      real(t_p) dmpik(*)
 c
 c
 c     initialize the Thole damping factors to a value of one
@@ -160,12 +161,12 @@ c
       implicit none
       integer i,j,k
       integer rorder
-      real*8 r,damp
-      real*8 damp2
-      real*8 damp3
-      real*8 expdamp
-      real*8 pgamma
-      real*8 dmpik(*)
+      real(t_p) r,damp
+      real(t_p) damp2
+      real(t_p) damp3
+      real(t_p) expdamp
+      real(t_p) pgamma
+      real(t_p) dmpik(*)
 c
 c
 c     initialize the Thole damping factors to a value of one
@@ -227,23 +228,23 @@ c
       use mplpot
       implicit none
       integer rorder
-      real*8 termi,termk
-      real*8 termi2,termk2
-      real*8 alphai,alphak
-      real*8 alphai2,alphak2
-      real*8 r,eps,diff
-      real*8 expi,expk
-      real*8 dampi,dampk
-      real*8 dampi2,dampi3
-      real*8 dampi4,dampi5
-      real*8 dampi6,dampi7
-      real*8 dampi8
-      real*8 dampk2,dampk3
-      real*8 dampk4,dampk5
-      real*8 dampk6
-      real*8 dmpi(*)
-      real*8 dmpk(*)
-      real*8 dmpik(*)
+      real(t_p) termi,termk
+      real(t_p) termi2,termk2
+      real(t_p) alphai,alphak
+      real(t_p) alphai2,alphak2
+      real(t_p) r,eps,diff
+      real(t_p) expi,expk
+      real(t_p) dampi,dampk
+      real(t_p) dampi2,dampi3
+      real(t_p) dampi4,dampi5
+      real(t_p) dampi6,dampi7
+      real(t_p) dampi8
+      real(t_p) dampk2,dampk3
+      real(t_p) dampk4,dampk5
+      real(t_p) dampk6
+      real(t_p) dmpi(*)
+      real(t_p) dmpk(*)
+      real(t_p) dmpik(*)
 c
 c
 c     compute tolerance and exponential damping factors
@@ -482,15 +483,15 @@ c
       subroutine dampdir (r,alphai,alphak,dmpi,dmpk)
       use mplpot
       implicit none
-      real*8 alphai,alphak
-      real*8 r,eps,diff
-      real*8 expi,expk
-      real*8 dampi,dampk
-      real*8 dampi2,dampk2
-      real*8 dampi3,dampk3
-      real*8 dampi4,dampk4
-      real*8 dmpi(*)
-      real*8 dmpk(*)
+      real(t_p) alphai,alphak
+      real(t_p) r,eps,diff
+      real(t_p) expi,expk
+      real(t_p) dampi,dampk
+      real(t_p) dampi2,dampk2
+      real(t_p) dampi3,dampk3
+      real(t_p) dampi4,dampk4
+      real(t_p) dmpi(*)
+      real(t_p) dmpk(*)
 c
 c
 c     compute tolerance and exponential damping factors
@@ -720,25 +721,25 @@ c
      &                       rorder,dmpi,dmpk,dmpik)
       implicit none
       integer rorder
-      real*8 r,r2,r3,r4
-      real*8 r5,r6,r7,r8
-      real*8 rr1,rr3,rr5
-      real*8 rr7,rr9,rr11
-      real*8 s,ds,d2s
-      real*8 d3s,d4s,d5s
-      real*8 dmpi,dmpk
-      real*8 dmpi2,dmpk2
-      real*8 dmpi22,dmpi23
-      real*8 dmpi24,dmpi25
-      real*8 dmpi26,dmpi27
-      real*8 dmpk22,dmpk23
-      real*8 dmpk24,dmpk25
-      real*8 dmpk26
-      real*8 eps,diff
-      real*8 expi,expk
-      real*8 dampi,dampk
-      real*8 pre,term,tmp
-      real*8 dmpik(*)
+      real(t_p) r,r2,r3,r4
+      real(t_p) r5,r6,r7,r8
+      real(t_p) rr1,rr3,rr5
+      real(t_p) rr7,rr9,rr11
+      real(t_p) s,ds,d2s
+      real(t_p) d3s,d4s,d5s
+      real(t_p) dmpi,dmpk
+      real(t_p) dmpi2,dmpk2
+      real(t_p) dmpi22,dmpi23
+      real(t_p) dmpi24,dmpi25
+      real(t_p) dmpi26,dmpi27
+      real(t_p) dmpk22,dmpk23
+      real(t_p) dmpk24,dmpk25
+      real(t_p) dmpk26
+      real(t_p) eps,diff
+      real(t_p) expi,expk
+      real(t_p) dampi,dampk
+      real(t_p) pre,term,tmp
+      real(t_p) dmpik(*)
 c
 c     compute tolerance value for damping exponents
 c

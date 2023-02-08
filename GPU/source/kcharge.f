@@ -14,7 +14,7 @@ c     "kcharge" assigns partial charges to the atoms within
 c     the structure and processes any new or changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kcharge(init,istep)
       use atmlst
       use atmtyp

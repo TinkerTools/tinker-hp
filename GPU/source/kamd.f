@@ -24,7 +24,7 @@ c     "kamd" checks the aMD activation and assign the necessary
 c     parameters enters in the key file
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kamd(init)
       use atoms
       use deriv

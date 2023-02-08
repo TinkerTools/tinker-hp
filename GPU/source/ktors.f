@@ -14,7 +14,7 @@ c     "ktors" assigns torsional parameters to each torsion in
 c     the structure and processes any new or changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine ktors
       use atmtyp
       use domdec

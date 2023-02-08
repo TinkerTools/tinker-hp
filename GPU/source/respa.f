@@ -27,16 +27,19 @@ c     Molecular Dynamics Simulations", Journal of Chemical Physics,
 c     115, 4019-4029 (2001)
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine respa(istep,dt)
+      use ani
       use atmtyp
       use atomsMirror
       use bath     ,only: barostat
       use cutoff
       use domdec
       use deriv    ,only: info_forces,cNBond,cBond,ftot_l,comm_forces
+     &             ,zero_forces_rec
       use energi   ,only: info_energy,calc_e,chk_energy_fluct
       use freeze
+      use group
       use inform
       use mdstuf1
       use moldyn
@@ -45,6 +48,8 @@ c
       use tors
       use units
       use usage
+      use potent
+      use uprior ,only: use_pred
       use utils
       use utilgpu  ,only: rec_queue,openacc_abort
       use virial
@@ -53,6 +58,7 @@ c
       implicit none
       integer i,j,k,iglob
       integer istep
+      logical save_pred
       real(r_p) dt,dt_2,dt_in
       real(r_p) dta,dta_2
 c
@@ -61,6 +67,8 @@ c
       dt_2  = 0.5_re_p * dt
       dta   = dt / dshort
       dta_2 = 0.5_re_p * dta
+
+      if (use_ml_embedding) use_mlpot=.FALSE.
 c
 c     make half-step temperature and pressure corrections
 c
@@ -192,6 +200,25 @@ c
 c     MPI : get total energy
 c
       call reduceen(epot)
+
+      if(use_ml_embedding) then
+!$acc parallel loop collapse(2) async
+        do i = 1, 3; do j = 1, 3
+          viralt(j,i) = vir(j,i) + viralt(j,i)
+        end do; end do
+c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
+        use_mlpot =  .TRUE.
+        call zero_forces_rec
+        save_pred = use_pred
+         use_pred = .FALSE.
+        call gradient (eml,derivs)
+        use_pred  = save_pred 
+        call reduceen(eml)
+        call comm_forces( derivs )
+!$acc serial async present(eml)
+         epot = epot+eml
+!$acc end serial
+      endif
 c
 c     use Newton's second law to get the slow accelerations;
 c     find full-step velocities using velocity Verlet recursion
@@ -275,9 +302,9 @@ c
       logical save_dipole
       logical save_mpole,save_polar
       logical save_rxnfld,save_solv
+      logical save_repuls,save_disp,save_chgtrn
       logical save_list
       logical save_smdvel, save_smdfor
-c
 c
 c     save the original state of slow-evolving potentials
 c
@@ -285,6 +312,9 @@ c
       save_charge = use_charge
       save_mpole  = use_mpole
       save_polar  = use_polar
+      save_repuls = use_repuls
+      save_disp   = use_disp
+      save_chgtrn = use_chgtrn
       save_solv   = use_solv
       save_list   = use_list
       save_smdvel = use_smd_velconst
@@ -297,6 +327,9 @@ c
       use_mpole  = .false.
       use_polar  = .false.
       use_solv   = .false.
+      use_repuls = .false.
+      use_disp   = .false.
+      use_chgtrn = .false.
       use_list   = .false.
       use_smd_velconst = .false.
       use_smd_forconst = .false.
@@ -312,12 +345,14 @@ c
       use_charge = save_charge
       use_mpole  = save_mpole
       use_polar  = save_polar
+      use_repuls = save_repuls
+      use_disp   = save_disp
+      use_chgtrn = save_chgtrn
       use_solv   = save_solv
       use_list   = save_list
       use_smd_velconst = save_smdvel
       use_smd_forconst = save_smdfor
       nonbonded_l      = .true.
-      return
       end
 c
 c
@@ -353,6 +388,7 @@ c
       logical save_tortor,save_geom
       logical save_metal,save_extra
       logical respa1_l
+      logical save_mlpot
 c
       respa1_l = (index(integrate,'RESPA1').gt.0)
 c
@@ -374,6 +410,8 @@ c
       save_tortor = use_tortor
       save_geom   = use_geom
       save_extra  = use_extra
+      save_mlpot  = use_mlpot
+
 c
 c     turn off fast-evolving valence potential energy terms
 c
@@ -392,12 +430,16 @@ c
       use_angtor = .false.
       use_tortor = .false.
       use_geom   = .false.
+      use_mlpot  = .false.
       use_extra  = .false.
       bonded_l   = .false.
       if (respa1_l) then
          use_vdwlong   = .true.
          use_clong     = .true.
+         use_repulslong= .true.
+         use_displong  = .true.
          use_mpolelong = .true.
+         use_chgtrnlong= .true.
       end if
 c
 c     get energy and gradient for slow-evolving potential terms
@@ -421,12 +463,16 @@ c
       use_angtor = save_angtor
       use_tortor = save_tortor
       use_geom   = save_geom
+      use_mlpot  = save_mlpot
       use_extra  = save_extra
       bonded_l   = .true.
       if (respa1_l) then
          use_vdwlong   = .false.
          use_clong     = .false.
          use_mpolelong = .false.
+         use_repulslong= .false.
+         use_displong  = .false.
+         use_chgtrnlong= .false.
 c
 c        substract the previously stored short range energy and forces
 c
@@ -443,4 +489,5 @@ c
 !$acc end serial
          end if
       end if
+
       end

@@ -14,8 +14,7 @@ c     "minimize" performs energy minimization in Cartesian coordinate
 c     space using a low storage BFGS nonlinear optimization
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       program minimize
       use mpi
       implicit none
@@ -29,8 +28,9 @@ c
       subroutine minimize_bis
       use atomsMirror
       use domdec
-      use deriv ,only:info_forces,cDef
-      use energi,only:info_energy
+      use deriv  ,only: ftot_l,cDef,dr_stride3,de_tot
+     &           ,info_forces,comm_forces
+      use energi ,only: info_energy
       use files
       use keys
       use inform
@@ -39,12 +39,11 @@ c
       use scales
       use tinMemory ,only: prmem_requestm
       use usage
-      use utils     ,only:set_to_zero1m
-      use utilgpu   ,only:rec_queue
+      use utilgpu   ,only: rec_queue
       use mpi
       implicit none
       integer i,j,imin,ierr
-      integer next,freeunit,nthreadsupport
+      integer next,freeunit
       integer iglob
       real(r_p) minimum,minimiz1
       real(r_p) grdmin
@@ -151,7 +150,7 @@ c
 c     perform dynamic allocation of some local arrays
 c
       allocate (xx(3*n))
-!$acc enter data create(xx) async
+!$acc enter data create(xx,minimum) async
 c
 c     scale the coordinates of each active atom
 c
@@ -189,9 +188,6 @@ c         call commstep
          call reCast_position
          call AllDirAssign
          call reassignpme(.false.)
-         allocate (derivs(3,nbloc))
-!$acc enter data create(derivs,minimum) async
-         call set_to_zero1m(derivs,size(derivs),rec_queue)
          call reinitnl(0)
          call mechanicstep(0)
          call allocstep
@@ -201,7 +197,7 @@ c         call commstep
 !$acc update host(minimum)
          call MPI_ALLREDUCE(MPI_IN_PLACE,minimum,1,MPI_RPREC,
      $        MPI_SUM,MPI_COMM_WORLD,ierr)
-         call commforces(derivs)
+         call comm_forces( derivs )
 c      else
 c         minimum = energy ()
 cc         call numgrad (energy,derivs,eps)
@@ -212,26 +208,24 @@ c      end if
       if(deb_Energy)call info_energy(rank)
 
       gnorm = 0.0_re_p
-!$acc parallel loop collapse(2) async present(derivs)
-      do i = 1, nloc
-         do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               gnorm = gnorm + derivs(j,i)**2
-            end if
-         end do
-      end do
-!$acc wait
+      call normp(de_tot,dr_stride3,gnorm)
+c!$acc parallel loop collapse(2) async present(de_tot)
+c      do i = 1, nloc; do j = 1, 3
+c         iglob = glob(i)
+c         if (use(iglob)) then
+c            gnorm = gnorm + mdr2md(de_tot(j,i))**2
+c         end if
+c      end do; end do
+
       call MPI_ALLREDUCE(MPI_IN_PLACE,gnorm,1,MPI_RPREC,
      $     MPI_SUM,COMM_TINKER,ierr)
       gnorm = sqrt(gnorm)
-      grms = gnorm / sqrt(real(3*n,r_p))
+      grms  = gnorm / sqrt(real(3*n,r_p))
 c
 c     perform deallocation of some local arrays
 c
-!$acc exit data delete(xx,derivs,minimum) async
+!$acc exit data delete(xx,minimum) async
       deallocate (xx)
-      deallocate (derivs)
 c
 c     write out the final function and gradient values
 c

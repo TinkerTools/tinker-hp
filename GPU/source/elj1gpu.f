@@ -15,7 +15,7 @@ c     "elj1" calculates the Lennard-Jones 6-12 van der Waals energy
 c     and its first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module elj1gpu_inl
         integer(1) one1,two1
 #include "atomicOp.h.f"
@@ -38,6 +38,7 @@ c
       use utilgpu
       implicit none
       real(t_p) elrc,vlrc
+      character*11 mode
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -47,9 +48,10 @@ c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
          def_queue = dir_queue
+         mode = 'VDW'
 !$acc data  create(elrc,vlrc) async(def_queue)
 !$acc&      present(ev,vir)
-         call evcorr1gpu (elrc,vlrc)
+         call evcorr1gpu (mode,elrc,vlrc)
 !$acc kernels async(def_queue)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
@@ -212,7 +214,8 @@ c
          mutik  = mutInt(iglob) + mutInt(kglob)
          if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
 
-         if (use_group) call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+         if (use_group)
+     &      call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 c
 c     replace 1-4 interactions
 c
@@ -327,7 +330,7 @@ c
                if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
 
                if (use_group)
-     &            call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &            call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 
                !compute the energy contribution for this interaction
                call duo_lj(rik2,xr,yr,zr,rv,eps,cut2

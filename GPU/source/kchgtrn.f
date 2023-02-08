@@ -15,6 +15,7 @@ c     charge transfer interactions and processes any new or changed
 c     values for these parameters
 c
 c
+#include "tinker_macro.h"
       subroutine kchgtrn(init,istep)
       use atmlst
       use atoms
@@ -184,12 +185,14 @@ c                   douind(i) = .true.
                 dmpct(npole) = dmpct(i)
              end if
           end do
+          call FromPolaxe2Ipolaxe ! Brodcast 'nZ_onlyglob' after this call
         end if
  100    call MPI_BARRIER(hostcomm,ierr)
         call MPI_BCAST(npole ,1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(npolar,1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(nct   ,1,MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(ncp   ,1,MPI_INT,0,hostcomm,ierr)
+        call MPI_BCAST(nZ_Onlyglob,1,    MPI_INT,0,hostcomm,ierr)
         call MPI_BCAST(use_dirdamp,1,MPI_LOGICAL,0,hostcomm,ierr)
 c
 c     test multipoles at chiral sites and invert if necessary
@@ -205,21 +208,14 @@ c
         if (nct    .eq.0) use_chgtrn = .false.
         if (use_dirdamp ) use_thole  = .true.
 
+        call upload_dev_shr_chgct
         if (use_chgtrn) then
-           call upload_dev_shr_chgct
+           use_mlist = .true.
         else
            call dealloc_shared_chgct
            return
         end if
 
-      end if
-
-      if (.not.use_chgtrn.or.use_mpole.or.use_polar) return
-
-      if (nproc.eq.1) then
-         call kpolar_reset1(istep)
-      else
-         call kpolar_reset(istep)
       end if
       end
 
@@ -231,7 +227,7 @@ c
       implicit none
 
 !$acc update device(chgct,dmpct)
-!$acc update device(nbpole,ipole,pollist,xaxis,yaxis,zaxis,polaxe
+!$acc update device(nbpole,ipole,pollist,xaxis,yaxis,zaxis,ipolaxe
 !$acc&      ,pole,pcore,pval,pval0,palpha,polarity,thole,dirdamp,pdamp)
 
       end subroutine

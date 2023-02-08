@@ -14,7 +14,7 @@ c     "kpolar" assigns atomic dipole polarizabilities to the atoms
 c     within the structure and processes any new or changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kpolar(init,istep)
       use atmlst
       use atoms
@@ -220,8 +220,8 @@ c
                 palpha(npole) = palpha(i)
              end if
           end do
+          call FromPolaxe2Ipolaxe ! Brodcast 'nZ_onlyglob' after this call
         end if
-        call FromPolaxe2Ipolaxe ! Brodcast 'nZ_onlyglob' after this call
 c
 c       Display if some poles does not have polarity
 c
@@ -248,12 +248,6 @@ c
            polarity_orig(:) = polarity(:)
         end if
 c
-c       initialization for TCG and omega fit
-c
-        if ((polalg.eq.3).and.tcgpeek) then 
-           poleps = 0.00000001
-        end if
-c
 c       turn off polarizable multipole potential if it is not used
 c
         if (npole .eq. 0)  then
@@ -278,6 +272,7 @@ c
 !$acc enter data copyin(nZ_onlyloc)
 
         if (use_polar) then
+           use_mlist = .true.
            call upload_device_polar(1)
         else
            return
@@ -399,13 +394,6 @@ c
         end if
 c
       end if
-
-      if (nproc.eq.1) then
-         call kpolar_reset1(istep)
-      else
-         call kpolar_reset(istep)
-      end if
-
       end subroutine
 
       subroutine kpolar_reset(istep)
@@ -434,6 +422,9 @@ c
       integer npolerecloc2
       real(t_p) d,distcut2
 !$acc routine(distprocpart1)
+
+      call prmem_request(poleglob   ,   nbloc,async=.true.)
+      call prmem_request(polerecglob,nlocrec2,async=.true.)
 
 !$acc data present(glob,pollist,poleglob,poleloc,nbpole,bufbegpole,
 !$acc&  domlenpole,domlenpolerec,polerecglob,poleloc,polerecloc)
@@ -632,6 +623,9 @@ c    &                     (mod(npolebloc,16).eq.0))
 
       do_not_commpole = .true.
       npoleloc = 0
+
+      call prmem_request(poleglob   ,   nbloc,async=.true.)
+      call prmem_request(polerecglob,nlocrec2,async=.true.)
 
       do i = 1, nloc
          iglob = glob(i)

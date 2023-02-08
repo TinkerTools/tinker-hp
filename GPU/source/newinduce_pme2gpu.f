@@ -13,8 +13,7 @@ c     in Polarizable Molecular Dynamics: II. Toward Massively Parallel
 c     Computations Using Smooth Particle Mesh Ewald",L. Lagardere et al.,
 c     J. Chem. Theory Comput., 2015, 11 (6), pp 2589–2599
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       subroutine newinduce_pme2gpu
       use atoms     ,only: n,n_pe
       use atomsmirror
@@ -28,9 +27,10 @@ c
      &                   , inducestepcg_pme2gpu
      &                   , efld0_directgpu2, efld0_directgpu_p
       use math
+      use mdstate   ,only: track_mds,ms_back_p
+      use moldyn    ,only: step_c,stepint
       use mpole
       use mutant    ,only: nmut,elambda
-      use polar_temp,only: ef,mu,murec,cphi
       use nvshmem
       use pme
       use polar
@@ -40,9 +40,10 @@ c
       use units
       use uprior
       use utils
-      use utilcomm ,buffermpi1=>buffermpi2d,buffermpi2=>buffermpi2d1
+      use utilcomm  ,buffermpi1=>buffermpi2d,buffermpi2=>buffermpi2d1
       use utilgpu
       use timestat
+      use tinheader ,only: i_init
       use mpi
       implicit none
 c
@@ -98,6 +99,10 @@ c
       call prmem_request(buffermpi2,10,max(npolerecloc,1),
      &     async=.true.)
       end if
+c
+      j = max(npolerecloc,1)
+      call prmem_request(cphirec,10,j,async=.true.)
+      call prmem_request(fphirec,20,j,async=.true.)
 
       allocate (reqrecdirsend(nproc))
       allocate (reqrecdirrec(nproc))
@@ -165,6 +170,11 @@ c
       end do; end do; end do
       wtime1 = mpi_wtime()
 c
+c     Reset predictor if MD State Tracking is enabled 
+c
+      if (track_mds.and.mod(step_c,ms_back_p).eq.1.and.stepint
+     &   .eq.i_init) call pred_reset
+c
 c     guess the dipoles:
 c
 c     predicted values for always stable predictor-corrector method
@@ -204,7 +214,7 @@ c
          call inducepcg_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
       else if (polalg.eq.jacobi_SId) then ! FIXME a porter
          call inducejac_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
-#if 0
+#if !TINKERHP_REL_BUILD
       else if (polalg.eq.step_pcg_SId) then
          call inducestepcg_pme2gpu(tmatxb_p,nrhs,.true.,ef,mu,murec)
       else if (polalg.eq.step_pcg_short_SId) then
@@ -269,6 +279,29 @@ c
       deallocate (reqrecdirrec)
       deallocate (reqrecdirsend)
       end
+
+      subroutine pred_reset
+      use uprior
+      nualt       = 0
+      lshalt      = maxualt+1
+      lalt        = maxualt+1
+      end subroutine
+
+      subroutine pred_zero
+      use uprior
+      use utilgpu
+      implicit none
+      integer(8) siz
+      real(t_p) ,parameter:: val=0.0
+      siz  = size(upalt)
+      call mem_set(upalt,val,siz,rec_stream)
+      call mem_set(udalt,val,siz,rec_stream)
+      if (allocated(upshortalt)) then
+         siz  = size(upshortalt)
+         call mem_set(upshortalt,val,siz,rec_stream)
+         call mem_set(udshortalt,val,siz,rec_stream)
+      end if
+      end subroutine
 
       subroutine pred_InitField(mu)
       use atmlst,only: poleglob
@@ -531,8 +564,10 @@ c
       use iounit
       use inform    ,only: deb_Path,abort,minmaxone,app_id,dynamic_a
       use inducepcg_mod
-      use interfaces,only: tmatxb_pmegpu
+      use interfaces,only: tmatxb_pmegpu,pcg_a,pcg_aRec,pcg_b
+     &              ,pcg_newDirection
       use math
+      use mdstate   ,only: track_mds
       use mpole
       use polar
       use polpot
@@ -560,8 +595,8 @@ c
       procedure(tmatxb_pmegpu) :: matvec
 c
       integer   i, it, j, k
-      real(t_p) zero, one, reg1
-      real(r_p) zerom, pt5, resnrm, term
+      real(t_p) zero, one, reg1, term
+      real(r_p) zerom, pt5, resnrm
       parameter(zero=0.0,zerom=0,pt5=0.5,one=1.0)
 c
 c     MPI
@@ -820,19 +855,22 @@ c
          call timer_enter( timer_other )
          if (dir_queue.ne.rec_queue) then
 !$acc wait(dir_queue)
+            def_queue = rec_queue
          end if
-!$acc host_data use_device(h,pp,dipfield)
-!$acc parallel loop collapse(3) present(gg1,gg2) async(rec_queue)
-!$acc&         deviceptr(h,dipfield,pp)
-         do k=1,npoleloc; do j=1,nrhs; do i=1,3
-            h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*pp(i,j,k)
-            if (btest(j,0)) then
-               gg1 = gg1 + pp(i,j,k)*h(i,j,k)
-            else
-               gg2 = gg2 + pp(i,j,k)*h(i,j,k)
-            end if
-         end do; end do; end do
-!$acc end host_data
+
+         call pcg_aRec(6*npoleloc,term,pp,dipfield,h,gg1,gg2)
+c!$acc host_data use_device(h,pp,dipfield)
+c!$acc parallel loop collapse(3) present(gg1,gg2) async(rec_queue)
+c!$acc&         deviceptr(h,dipfield,pp)
+c         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+c            h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*pp(i,j,k)
+c            if (btest(j,0)) then
+c               gg1 = gg1 + pp(i,j,k)*h(i,j,k)
+c            else
+c               gg2 = gg2 + pp(i,j,k)*h(i,j,k)
+c            end if
+c         end do; end do; end do
+c!$acc end host_data
 
          if (nproc.gt.1) then
 !$acc host_data use_device(gg1,gg2)
@@ -895,27 +933,30 @@ c
 
          else
 
-!$acc host_data use_device(h,pp,dipfield,mu,res,ef,zr,diag)
-!$acc parallel loop collapse(3) async(rec_queue)
-!$acc&         present(gg1,gg2,ggold1,ggold2,ggnew1,ggnew2,ene1,ene2)
-!$acc&         deviceptr(mu,pp,res,h,zr,diag,ef)
-!$acc&         reduction(+:ggnew1,ggnew2,ene1,ene2)
-         do k=1,npoleloc; do j=1,nrhs; do i=1,3
-            if (btest(j,0)) then
-               mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
-               res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
-               zr (i,j,k) = diag(k)* res(i,j,k)
-               ggnew1     = ggnew1 + res(i,j,k)*zr(i,j,k)
-               ene1    = ene1 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
-            else
-               mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
-               res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
-               zr (i,j,k) = diag(k)* res(i,j,k)
-               ggnew2     = ggnew2 + res(i,j,k)*zr(i,j,k)
-               ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
-            end if
-         end do; end do; end do
-!$acc end host_data
+        call pcg_b(npoleloc,npoleloc,gg1,ggold1,gg2,ggold2
+     &            ,ggnew1,ene1,ggnew2,ene2
+     &            ,mu,pp,res,h,zr,diag,ef)
+c!$acc host_data use_device(h,pp,dipfield,mu,res,ef,zr,diag)
+c!$acc parallel loop collapse(3) async(rec_queue)
+c!$acc&         present(gg1,gg2,ggold1,ggold2,ggnew1,ggnew2,ene1,ene2)
+c!$acc&         deviceptr(mu,pp,res,h,zr,diag,ef)
+c!$acc&         reduction(+:ggnew1,ggnew2,ene1,ene2)
+c         do k=1,npoleloc; do j=1,nrhs; do i=1,3
+c            if (btest(j,0)) then
+c               mu (i,j,k) = mu (i,j,k) + (ggold1/gg1)*pp(i,j,k)
+c               res(i,j,k) = res(i,j,k) - (ggold1/gg1)*h (i,j,k)
+c               zr (i,j,k) = diag(k)* res(i,j,k)
+c               ggnew1     = ggnew1 + res(i,j,k)*zr(i,j,k)
+c               ene1    = ene1 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
+c            else
+c               mu (i,j,k) = mu (i,j,k) + (ggold2/gg2)*pp(i,j,k)
+c               res(i,j,k) = res(i,j,k) - (ggold2/gg2)*h (i,j,k)
+c               zr (i,j,k) = diag(k)* res(i,j,k)
+c               ggnew2     = ggnew2 + res(i,j,k)*zr(i,j,k)
+c               ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
+c            end if
+c         end do; end do; end do
+c!$acc end host_data
 
          end if
 
@@ -938,15 +979,9 @@ c Implicit wait seems to be removed with PGI-20
 !$acc end serial
          end if
 
-!$acc parallel loop collapse(3) async(rec_queue) default(present)
-!$acc&         present(ggnew1,ggnew2,ggold1,ggold2)
-         do k=1,npoleloc; do j=1,nrhs; do i=1,3
-            if (btest(j,0)) then
-               pp(i,j,k) = zr(i,j,k)+ (ggnew1/ggold1)*pp(i,j,k)
-            else
-               pp(i,j,k) = zr(i,j,k)+ (ggnew2/ggold2)*pp(i,j,k)
-            end if
-         end do; end do; end do
+        !Compute Next direction
+         call pcg_newDirection(6*npoleloc,ggnew1,ggold1,ggnew2,ggold2
+     &                      ,zr,pp)
 c
          call timer_exit( timer_other )
 c
@@ -954,7 +989,8 @@ c
          skip_chk = (it.lt.2.or.(exitlast.and.(it.lt.lastIter)))
      &              .and.polprt.eq.0
          ! Skip last Iteration check
-         if (exitlast.and.it.eq.lastIter.and.mod(sameIter,3).ne.0)
+         if (exitlast.and.it.eq.lastIter.and.mod(sameIter,3).ne.0
+     &      .and..not.track_mds)
      &      goto 10
 c
          call commdirdirgpu(nrhs,1,pp,reqrec,reqsend)

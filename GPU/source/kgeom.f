@@ -15,7 +15,7 @@ c     "kgeom" asisgns parameters for geometric restraint terms
 c     to be included in the potential energy calculation
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kgeom(init)
       use atmlst
       use argue  ,only: arg

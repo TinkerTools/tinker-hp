@@ -141,7 +141,7 @@ c
          if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilate
 #endif
 #if __tfea__ & __use_groups__
-         if (ugrp) call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+         if (ugrp) call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 #endif
  20      continue
          if (do_scale4) then
@@ -298,18 +298,13 @@ c                  ==========================================
         j      = b_stat(iblock)
         info   = merge(0,1,j.eq.i_bl)
         if (info.and.ii.lt.nb2p.and.j.eq.n_bl) then
-           j = b_stat(kb)
-           info = merge(0,1,j.eq.i_bl)
-           if (j.eq.n_bl) then
-              xpos = b_rmid(1,iblock) - b_rmid(1,kb)
-              ypos = b_rmid(2,iblock) - b_rmid(2,kb)
-              zpos = b_rmid(3,iblock) - b_rmid(3,kb)
-              info = 0
-              !if(xpos**2+ypos**2+zpos**2.gt.off2) info=1
-              if( f_abs(xpos).gt.xcell2 ) info=1
-              if( f_abs(ypos).gt.ycell2 ) info=1
-              if( f_abs(zpos).gt.zcell2 ) info=1
-           end if
+           info = merge(0,1,b_stat(kb).eq.i_bl)
+           !if (j.eq.n_bl) then
+           !   xpos = b_rmid(1,iblock) - b_rmid(1,kb)
+           !   ypos = b_rmid(2,iblock) - b_rmid(2,kb)
+           !   zpos = b_rmid(3,iblock) - b_rmid(3,kb)
+           !   !info = 0
+           !end if
         end if
 
         if (skipvdw12) then; block; integer k
@@ -407,7 +402,8 @@ c                  ==========================================
               if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
 #endif
 #if __tfea__ & __use_groups__
-              if (ugrp) call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+              if (ugrp) 
+     &           call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 #endif
 #if __tfea__ & __radepsOpt__ 
               call get_rad(rvi,rvk,rv2,radrule)

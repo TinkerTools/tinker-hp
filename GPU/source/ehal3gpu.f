@@ -14,9 +14,7 @@ c     "ehal3" calculates the buffered 14-7 van der Waals energy
 c     and partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
-
+#include "tinker_macro.h"
       module ehal3gpu_inl
         implicit none
         contains
@@ -42,7 +40,10 @@ c
       implicit none
       integer i
       real(r_p) elrc,aelrc
+      character*11 mode
+      logical fullrange
 c
+      fullrange = .not.(use_vdwshort.or.use_vdwlong)
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -50,9 +51,10 @@ c
 c
 c     apply long range van der Waals correction if desired
 c
-      if (use_vcorr) then
+      if (use_vcorr.and.(fullrange.or.use_vdwlong)) then
+         mode = "VDW"
 !$acc data create(elrc) async
-         call evcorr (elrc)
+         call evcorr (mode,elrc)
 !$acc serial async present(ev,elrc)
          ev = ev + elrc
 !$acc end serial
@@ -94,7 +96,7 @@ c
       use domdec    ,only: loc,rank,nbloc
       use ehal3gpu_inl
       use energi    ,only: ev=>ev_r
-      use group     ,only: use_group,grplist,wgrp
+      use group     ,only: use_group,grplist,wgrp,ngrp
       use inform    ,only: deb_Path
       use mutant    ,only: scalpha,scexp,vlambda,vcouple,mut=>mutInt
      &              ,nmut
@@ -257,7 +259,8 @@ c
             eps2 = epsilon (kt,it)
          end if
 
-         if (use_group) call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+         if (use_group)
+     &      call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 
          ! Compute pairwaise
          call duo_hal
@@ -342,7 +345,7 @@ c
             eps2 = epsilon (kt,it)
 
             if (use_group) 
-     &         call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &         call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
             
             ! Compute pairwaise
             call duo_hal
@@ -438,7 +441,7 @@ c
       if (dir_queue.ne.rec_queue)
      &   call stream_wait_async(rec_stream,dir_stream,rec_event)
 
-      call apply_vdw_reduction_factor1
+      call apply_vdw_reduction_factor
 c
 c     Call Vdw kernel in CUDA using C2 nblist
 c

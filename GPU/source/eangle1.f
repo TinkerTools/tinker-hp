@@ -16,7 +16,7 @@ c     projected in-plane angles at trigonal centers, special linear
 c     or Fourier angle bending terms are optionally used
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eangle1
       use angle
       use angpot
@@ -37,7 +37,7 @@ c
       integer i,ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
       integer iangle
-      real(t_p) e,ideal,force
+      real(t_p) e,ideal,force,fgrp
       real(t_p) fold,factor,dot
       real(t_p) cosine,sine
       real(t_p) angle1
@@ -91,18 +91,19 @@ c
          ialoc = loc(ia)
          ibloc = loc(ib)
          icloc = loc(ic)
-         idloc = loc(id)
+         if (id.ne.0) idloc = loc(id)
          ideal = anat(i)
          force = ak(i)
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
          if (angtyp(i) .eq. 'IN-PLANE') then
-            if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+            if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+            proceed = (use(ia) .or. use(ib) .or.
      &                                 use(ic) .or. use(id))
          else
-            if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+            if (use_group)  call groups (fgrp,ia,ib,ic,0,0,0)
+            proceed = (use(ia) .or. use(ib) .or. use(ic))
          end if
 c
 c     get the coordinates of the atoms in the angle
@@ -169,6 +170,13 @@ c
                      sine = sin((fold*angle1-ideal)/radian)
                      e = factor * force * (1.0_ti_p+cosine)
                      deddt = -factor * force * fold * sine
+                  end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     deddt = deddt * fgrp
                   end if
 c
 c     compute derivative components for this interaction
@@ -281,6 +289,13 @@ c
                   deddt = angunit * force * dt * radian
      &                * (2.0_ti_p + 3.0_ti_p*cang*dt + 4.0_ti_p*qang*dt2
      &                        + 5.0_ti_p*pang*dt3 + 6.0_ti_p*sang*dt4)
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     deddt = deddt * fgrp
+                  end if
 c
 c     chain rule terms for first derivative components
 c

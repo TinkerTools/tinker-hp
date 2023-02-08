@@ -17,7 +17,7 @@ c     dispersion interactions and processes any new or changed
 c     values for these parameters
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kdisp(init,istep)
       use atoms
       use atmlst

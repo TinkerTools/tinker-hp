@@ -20,7 +20,7 @@ c     Efficiency of Large Time-Scale Molecular Dynamics Simulations
 c     of Hydrogen-Rich Systems", Journal of Computational Chemistry,
 c     8, 786-798 (1999)  [heavy hydrogen reweighting]
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine katom
       use atmtyp
       use atoms

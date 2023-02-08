@@ -173,8 +173,7 @@ c
      &     dst=c_iang(mype)%pel,nd=c_size,config=mnvshonly)
       end if
 #else
-!$acc update device(anglist)
-!$acc update device(iang)
+!$acc update device(anglist,balist,iang)
 #endif
 !$acc enter data copyin(nangleloc)
       end subroutine
@@ -218,7 +217,7 @@ c    &   .and.16*n.eq.size(anglist)) return ! Exit condition
       call shmem_request(anglist, winanglist,[16,n],   config=mhostacc)
       call shmem_request(iang,    winiang, [4,nangle], config=mhostacc)
 #endif
-      call shmem_request(balist,  winbalist, [2,6*n],  config=mhostonly)
+      call shmem_request(balist,  winbalist, [2,6*n],  config=mhostacc)
       call shmem_request(ak,      winak,     [nangle], config=mhostacc)
       call shmem_request(anat,    winanat,   [nangle], config=mhostacc)
       call shmem_request(afld,    winafld,   [nangle], config=mhostacc)
@@ -281,7 +280,7 @@ c    &   .and.16*n.eq.size(anglist)) return ! Exit condition
       call shmem_request(anglist, winanglist,[0,0],   config=mhostacc)
       call shmem_request(iang,    winiang, [0,0], config=mhostacc)
 #endif
-      call shmem_request(balist,  winbalist, [0,0*n],  config=mhostonly)
+      call shmem_request(balist,  winbalist, [0,0*n], config=mhostacc)
       call shmem_request(ak,      winak,     [0], config=mhostacc)
       call shmem_request(anat,    winanat,   [0], config=mhostacc)
       call shmem_request(afld,    winafld,   [0], config=mhostacc)

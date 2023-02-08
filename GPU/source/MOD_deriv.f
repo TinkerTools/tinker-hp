@@ -13,6 +13,7 @@ c
 c     derivs  total energy Cartesian coordinate derivatives
 c     deb     bond stretch Cartesian coordinate derivatives
 c     dea     angle bend Cartesian coordinate derivatives
+c     dmlpot  Machine learning potential Cartesian coordinate derivatives
 c     deba    stretch-bend Cartesian coordinate derivatives
 c     deub    Urey-Bradley Cartesian coordinate derivatives
 c     deaa    angle-angle Cartesian coordinate derivatives
@@ -86,8 +87,7 @@ c     dr_obnb     offset buffer for non bonded forces
 c     dr_obnbr    offset buffer for non bonded reciprocal forces
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
 
       module deriv
       implicit none
@@ -121,6 +121,7 @@ c
      &         ,debt(:,:),deat(:,:)
       !DIR$ ATTRIBUTES ALIGN:64:: deg,dex
       real(r_p),pointer :: deg(:,:),dex(:,:)
+      real(r_p),pointer :: dmlpot(:,:)
 
       mdyn_rtyp,pointer,dimension(:) :: derivx,derivy,derivz
      &         ,debx,deby,debz,deax,deay,deaz,deubx,deuby,deubz
@@ -200,8 +201,15 @@ c
       module subroutine add_forces_rec_1d(deadd)
       mdyn_rtyp deadd(*)
       end subroutine
+      module subroutine add_forces_rec_1d1(deadd,derec)
+      mdyn_rtyp deadd(*)
+      real(r_p) derec(*)
+      end subroutine
       module subroutine add_forces_rec1_1d(deadd)
       real(r_p) deadd(*)
+      end subroutine
+      module subroutine add_forces_rec1_1d1(deadd,derec)
+      real(r_p) deadd(*), derec(*)
       end subroutine
       module subroutine remove_desave(derivs)
       real(r_p) derivs(3,*)

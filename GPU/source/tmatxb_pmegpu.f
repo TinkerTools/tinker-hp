@@ -3,8 +3,7 @@ c     Sorbonne University
 c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module tmatxb_inl_subroutines
         use tintypes ,only: real3,real6,real7
         integer:: icall=1,ndec=1
@@ -38,7 +37,8 @@ c===============================================================================
         use inform  , only : deb_Path
         use interfaces ,only : tmatxb_pme_core2,tmatxb_pme_core3,
      &                  tmatxb_pme_core_p
-        use tinheader,only: ti_p
+        use potent  , only : use_chgpen
+        use tinheader,only : ti_p
         use timestat, only : timer_tmatxb_pmegpu, timer_enter,timer_exit
         use tmatxb_inl_subroutines , only : ndec, icall
         use utils   , only : set_to_zero1
@@ -46,14 +46,22 @@ c===============================================================================
         use potent  , only : use_polarshortreal
         use precompute_pole
         implicit none
-        integer   , intent(in) :: nrhs
-        logical   , intent(in) :: dodiag
-        real(t_p) , intent(in) :: mu(:,:,:)
-        real(t_p) , intent(out):: efi(:,:,:)
-        integer   i,iipole,irhs,j
-        integer npoleloc_e
-        real(t_p) ipolar
-        real(t_p) tmp
+        integer  ,intent(in) :: nrhs
+        logical  ,intent(in) :: dodiag
+        real(t_p),intent(in) :: mu(:,:,:)
+        real(t_p),intent(out):: efi(:,:,:)
+        integer   i,iipole,irhs,j,npoleloc_e
+        real(t_p) ipolar,tmp
+
+        if (use_chgpen) then
+#ifdef _OPENACC
+           if (associated(tmatxb_pme_core_p,tmatxb_pme_core2))
+     &        __TINKER_FATAL__
+#else
+           call tmatxb_pme(2,.true.,mu,efi)
+           return
+#endif
+        end if
 
         if(deb_Path) write(*,'(4x,a)') 'tmatxb_pmegpu'
         call timer_enter( timer_tmatxb_pmegpu )
@@ -64,10 +72,10 @@ c===============================================================================
 
         !gather some parameters, then set up the damping factors.
         if (use_polarshortreal) then
-           call switch ('SHORTEWALD')
+           call switch ('SHORTEWALD ')
            ndec = 1
         else
-           call switch ('EWALD     ')
+           call switch ('EWALD      ')
            ! Enable Matvec kernel split
            if (dir_queue.ne.rec_queue) ndec=2
         end if
@@ -173,6 +181,8 @@ c===============================================================================
       real(t_p) :: fkdx, fkpx ! Contribution of local pair to efi(kpoleloc)
       real(t_p) :: fkdy, fkpy ! Contribution of local pair to efi(kpoleloc)
       real(t_p) :: fkdz, fkpz ! Contribution of local pair to efi(kpoleloc)
+      real(t_p) :: fgrp
+      integer :: iga,igb
 
       integer :: iscal(maxscaling1)   ! Temporary array to store interaction type for neighbors
       real(t_p) :: fscal(maxscaling1) ! Temporary array to store scaling factors for neighbors
@@ -265,7 +275,6 @@ c
               if (d2 > cut2) cycle
 
               ! find exclusion coefficients for connected atoms
-              ! TODO : remove this ugly sequential loop
               uscale  = 1
               if (ki<nnp14) then
 !$acc   loop seq
@@ -306,18 +315,17 @@ c
 
               if( sdamp == 0 ) then
                 sdamp1  = -100.0
-                sc3      =   1 - exp(sdamp1) * uscale
-                sc5      =   1 - exp(sdamp1) * uscale * (1 - sdamp1)
+                sc3      =   (1 - exp(sdamp1)) * uscale
+                sc5      =   (1 - exp(sdamp1) * (1 - sdamp1))*uscale
               else
                 sdamp1 = - pgamma * (d1 / sdamp) ** 3
                 if (sdamp1 > -50) then
                   expdamp1 = exp(sdamp1)
-                  sc3      =   1 - expdamp1 * uscale
-                  sc5      =   1 - expdamp1 * uscale
-     &                      * (1 - sdamp1)
+                  sc3      =   (1 - expdamp1) * uscale
+                  sc5      =   (1 - expdamp1* (1 - sdamp1)) * uscale
                 else
-                  sc3     = 1
-                  sc5     = 1
+                  sc3     = uscale
+                  sc5     = uscale
                 end if
               endif
 
@@ -419,7 +427,6 @@ c
       use divcon
       use domdec
       use ewald
-      use group
       use inform    ,only: deb_Path
       use interfaces,only: otf_dc_tmatxb_pme_core_p
       use math
@@ -519,6 +526,8 @@ c======================================================================
       type(real3):: posi,dist  ! position of i pole and distance between i and k
       type(real3):: fid,fip    ! Contribution of local pair to efi(iploc)
       type(real3):: fkd,fkp    ! Contribution of local pair to efi(iploc)
+      real(t_p) :: fgrp
+      integer :: iga,igb
 
       integer   nnp11,nnp12,nnp13,nnp14,ki
       real(t_p) uscale ! Scaling factor for interaction
@@ -679,13 +688,13 @@ c
       use mpole   , only : ipole,poleloc,npolelocnl
       use neigh   , only : nelstc,elst,shortelst,nshortelstc
       use inform  , only : deb_Path
-      use interfaces,only: tmatxb_correct_interactions
+      use interfaces ,only: tmatxb_correct_interactions
       use polar   , only : polarity, thole, pdamp
       use shunt   , only : cut2
       use utilgpu , only : def_queue, dir_queue,real3,real6
       !use polpot  , only : n_uscale,ucorrect_ik,ucorrect_scale
       use potent  , only : use_polarshortreal
-      use tinheader, only : ti_p
+      use tinheader  ,only: ti_p
       use tmatxb_inl_subroutines
       implicit none
       real(t_p) ,intent(in)   :: mu(:,:,:)
@@ -704,7 +713,8 @@ c
       type(real3):: posi,dist  ! position of i pole and distance between i and k
       type(real3):: fid,fip    ! Contribution of local pair to efi(iploc)
       type(real3):: fkd,fkp    ! Contribution of local pair to efi(iploc)
-      !real(t_p) uscale ! Scaling factor for interaction
+      real(t_p) uscale,fgrp ! Scaling factor for interaction
+      integer :: iga,igb
 
       if(deb_Path)write(*,'(4x,a)') 'tmatxb_pme_core2'
       alsq2  = 2 * aewald**2
@@ -788,29 +798,29 @@ c
 
 
             ! increment electric field for each atoms
-!$acc atomic update
+!$acc atomic
             efi(1,1,iploc)    = efi(1,1,iploc)    + fid%x
-!$acc atomic update
+!$acc atomic
             efi(2,1,iploc)    = efi(2,1,iploc)    + fid%y
-!$acc atomic update
+!$acc atomic
             efi(3,1,iploc)    = efi(3,1,iploc)    + fid%z
-!$acc atomic update
+!$acc atomic
             efi(1,2,iploc)    = efi(1,2,iploc)    + fip%x
-!$acc atomic update
+!$acc atomic
             efi(2,2,iploc)    = efi(2,2,iploc)    + fip%y
-!$acc atomic update
+!$acc atomic
             efi(3,2,iploc)    = efi(3,2,iploc)    + fip%z
-!$acc atomic update
+!$acc atomic
             efi(1,1,kpoleloc) = efi(1,1,kpoleloc) + fkd%x
-!$acc atomic update
+!$acc atomic
             efi(2,1,kpoleloc) = efi(2,1,kpoleloc) + fkd%y
-!$acc atomic update
+!$acc atomic
             efi(3,1,kpoleloc) = efi(3,1,kpoleloc) + fkd%z
-!$acc atomic update
+!$acc atomic
             efi(1,2,kpoleloc) = efi(1,2,kpoleloc) + fkp%x
-!$acc atomic update
+!$acc atomic
             efi(2,2,kpoleloc) = efi(2,2,kpoleloc) + fkp%y
-!$acc atomic update
+!$acc atomic
             efi(3,2,kpoleloc) = efi(3,2,kpoleloc) + fkp%z
          enddo
 
@@ -855,7 +865,8 @@ c
       type(real3):: posi,dist  ! position of i pole and distance between i and k
       type(real3):: fid,fip    ! Contribution of local pair to efi(iploc)
       type(real3):: fkd,fkp    ! Contribution of local pair to efi(iploc)
-      !real(t_p) uscale ! Scaling factor for interaction
+      real(t_p) uscale, fgrp ! Scaling factor for interaction
+      integer :: iga,igb
 
 
       if(deb_Path)
@@ -925,35 +936,36 @@ c
             dpuk%yy  = mu(2,2,kpoleloc)
             dpuk%zz  = mu(3,2,kpoleloc)
 
+
             call tmatxb_couple(d2,dist,dpui,dpuk,
      &           sdamp,pgamma,aewald,alsq2,alsq2n,1.0_ti_p,
      &                         fid,fip,fkd,fkp,.false.)
 
 
             ! increment electric field for each atoms
-!$acc atomic update
+!$acc atomic
             efi(1,1,iploc)    = efi(1,1,iploc)    + fid%x
-!$acc atomic update
+!$acc atomic
             efi(2,1,iploc)    = efi(2,1,iploc)    + fid%y
-!$acc atomic update
+!$acc atomic
             efi(3,1,iploc)    = efi(3,1,iploc)    + fid%z
-!$acc atomic update
+!$acc atomic
             efi(1,2,iploc)    = efi(1,2,iploc)    + fip%x
-!$acc atomic update
+!$acc atomic
             efi(2,2,iploc)    = efi(2,2,iploc)    + fip%y
-!$acc atomic update
+!$acc atomic
             efi(3,2,iploc)    = efi(3,2,iploc)    + fip%z
-!$acc atomic update
+!$acc atomic
             efi(1,1,kpoleloc) = efi(1,1,kpoleloc) + fkd%x
-!$acc atomic update
+!$acc atomic
             efi(2,1,kpoleloc) = efi(2,1,kpoleloc) + fkd%y
-!$acc atomic update
+!$acc atomic
             efi(3,1,kpoleloc) = efi(3,1,kpoleloc) + fkd%z
-!$acc atomic update
+!$acc atomic
             efi(1,2,kpoleloc) = efi(1,2,kpoleloc) + fkp%x
-!$acc atomic update
+!$acc atomic
             efi(2,2,kpoleloc) = efi(2,2,kpoleloc) + fkp%y
-!$acc atomic update
+!$acc atomic
             efi(3,2,kpoleloc) = efi(3,2,kpoleloc) + fkp%z
          enddo
 
@@ -964,15 +976,18 @@ c
       end
 
       subroutine tmatxb_pme_core3(mu,efi)
-      use atoms   , only : n
+#ifdef _CUDA
+      use atoms   , only : n,x,y,z
       use atmlst  , only : poleglobnl
       use cell
+      use chgpen  , only : palpha
       use domdec  , only : xbegproc,ybegproc,zbegproc, rank, loc
      &            ,nproc,rank,xendproc,yendproc,zendproc
       !use erf_mod
       use ewald   , only : aewald
       use inform  , only : deb_Path
       use math    , only : sqrtpi
+      use mplpot  , only : pentyp_i
       use mpole   , only : ipole,poleloc,npolelocnl,npolebloc
      &            , npolelocnlb,npolelocnlb_pair,npolelocnlb2_pair
      &            , nspnlb2=>nshortpolelocnlb2_pair
@@ -984,21 +999,21 @@ c
      &            , b_stat
       use interfaces,only: tmatxb_correct_interactions
       use polar   , only : polarity, thole, pdamp
-      use potent  , only : use_polarshortreal
+      use potent  , only : use_polarshortreal,use_chgpen
+      use polpot  , only : use_thole,n_uscale,ucorrect_ik,ucorrect_scale
       use shunt   , only : cut2
-      use tinheader ,only: ti_p
+      use tinheader ,only: ti_p,re_p,zeror,zerom
       use tmatxb_inl_subroutines ,only : ndec,icall
       use utilcomm, only : no_commdir
       use utilgpu , only : def_queue, dir_queue,real3,real6
-     &            , maxBlock, BLOCK_SIZE
-#ifdef _OPENACC
+     &            , maxBlock, BLOCK_SIZE, get_GridDim
       use cudafor
       use interfaces, only : cu_tmatxb_pme
       use utilcu    , only : BLOCK_DIM,check_launch_kernel
       use utilgpu   , only : def_stream,rec_stream,rec_queue,nSMP
      &              , efit=>ug_workS_r, transposez_r6
       use tmatxb_pmecu,only: tmatxb_pme_core_cu
-#endif
+      use tmatxb_pme_cpencu ,only: tmatxb_pme_cpen_kcu
       use tinMemory , only : prmem_request
       implicit none
       integer i
@@ -1010,8 +1025,14 @@ c
       logical,save :: first_in=.true.,dyn_gS=.true.
       real(t_p) alsq2,alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+      character*64 rtami
 
-      if(deb_Path) write(*,'(4x,a)') 'tmatxb_pme_core3'
+      if (deb_Path) then
+         rtami = 'tmatxb_pme_core3'//merge(' THOLE','',use_thole)
+     &         //merge(' CHGPEN','',use_chgpen)
+     &         //merge(' SHORT','',use_polarshortreal)
+         write(*,'(4x,a)') rtami
+      end if
       p_xbeg = xbegproc(rank+1)
       p_xend = xendproc(rank+1)
       p_ybeg = ybegproc(rank+1)
@@ -1023,21 +1044,20 @@ c
       call prmem_request(efit,6*npolebloc,async=.false.)
 
       alsq2  = 2 * aewald**2
-      alsq2n = 0
-      if (aewald > 0) alsq2n = 1 / (sqrtpi*aewald)
-#ifdef _CUDA
+      alsq2n = merge(1.0_re_p/real(sqrtpi*aewald,r_p),zerom
+     &              ,aewald.gt.zeror)
       if (first_in) then
          ! Compute though occupancy the right gridSize to launch the kernel with
          first_in = .false.
          call cudaMaxGridSize("tmatxb_pme_core_cu",gS)
          if ( gS.eq.0 ) dyn_gS = .true.
-         !gS = gS-nSMP
          if (deb_Path) print*, 'tmatxb blockSize ',gS
       end if
 
-      if (use_polarshortreal) then
+      THOLE_CPEN:if (use_thole) then
 
-      if (dyn_gS) gS = min(max(nspnlb2,4)/4,maxBlock)
+         range0:if (use_polarshortreal) then
+            if (dyn_gS) gS = get_GridDim(nspnlb2,BLOCK_DIM)
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
 !$acc&    ,b_stat,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit)
 
@@ -1059,18 +1079,17 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       call check_launch_kernel(" tmatxb_pme_core_cu")
 
 !$acc end host_data
-
-      else
-
-      ! Split matvec kernel to ease recovering process in MPI
-      sized  = npolelocnlb2_pair/ndec
-      start  = (icall-1)*sized + 1
-      start1 = begin+(start-1)*BLOCK_SIZE
-      if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
-      if (dyn_gS) gS = min(max(sized,4)/4,maxBlock)
+         else
+            ! Split matvec kernel to ease recovering process in MPI
+            sized  = npolelocnlb2_pair/ndec
+            start  = (icall-1)*sized + 1
+            start1 = begin+(start-1)*BLOCK_SIZE
+            if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
+            if (dyn_gS) gS = get_GridDim(sized,BLOCK_DIM)
 
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
 !$acc&     ,b_stat,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit)
+
 
 c     call cu_tmatxb_pme    !Find his interface inside MOD_inteface
 c    &     (ipole_s,pglob_s,ploc_s
@@ -1091,11 +1110,54 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       call check_launch_kernel(" tmatxb_pme_core_cu")
 
 !$acc end host_data
-
-      end if
+         end if range0
 
       call transposez_r6(efit,efi,ploc_s,npolelocnl,npolebloc
      &                  ,def_queue)
+
+      call tmatxb_correct_interactions(mu,efi)
+
+      else if (use_chgpen) then
+
+         range1:if (use_polarshortreal) then
+            if (dyn_gS) gS = get_GridDim(nspnlb2,BLOCK_DIM)
+!$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
+!$acc&    ,b_stat,x_s,y_s,z_s,palpha,polarity,mu,efit
+!$acc&    ,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,efi )
+      call tmatxb_pme_cpen_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,b_stat,ploc_s,iseblst_s,seblst_s(begin)
+     &     ,x_s,y_s,z_s,palpha,polarity,mu,efit
+     &     ,npolelocnl,npolelocnlb,nspnlb2,npolebloc,n,pentyp_i,1
+     &     ,cut2,alsq2,alsq2n,aewald
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     ,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,n_uscale,efi)
+      call check_launch_kernel(" tmatxb_pme_cpen_kcu")
+!$acc end host_data
+         else
+            ! Split matvec kernel to ease recovering process in MPI
+            sized  = npolelocnlb2_pair/ndec
+            start  = (icall-1)*sized + 1
+            start1 = begin+(start-1)*BLOCK_SIZE
+            if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
+            if (dyn_gS) gS = get_GridDim(sized,BLOCK_DIM)
+!$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
+!$acc&    ,b_stat,x_s,y_s,z_s,palpha,polarity,mu,efit
+!$acc&    ,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,efi )
+      call tmatxb_pme_cpen_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,b_stat,ploc_s
+     &     ,ieblst_s(start),eblst_s(start1)
+     &     ,x_s,y_s,z_s,palpha,polarity,mu,efit
+     &     ,npolelocnl,npolelocnlb,sized,npolebloc,n,pentyp_i,icall
+     &     ,cut2,alsq2,alsq2n,aewald
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     ,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,n_uscale,efi)
+      call check_launch_kernel(" tmatxb_pme_cpen_kcu")
+!$acc end host_data
+         end if range1
+      call transposez_r6(efit,efi,ploc_s,npolelocnl,npolebloc
+     &                  ,def_queue)
+
+       end if THOLE_CPEN
 #else
       print 100
  100  format('tmatxb_pme_core3 is a specific device routine',/,
@@ -1104,7 +1166,6 @@ c    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
       __TINKER_FATAL__
 #endif
 c
-      call tmatxb_correct_interactions(mu,efi)
 
       end
 
@@ -1329,6 +1390,7 @@ c
      &     ,npolelocnlb,nspnlb2,npolebloc,n
      &     ,cut2,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+
       call check_launch_kernel(" otf_tmatxb_pme_core_cu")
 
 !$acc end host_data
@@ -1398,8 +1460,8 @@ c======================================================================
       type(real3):: posi,dist  ! position of i pole and distance between i and k
       type(real3):: fid,fip    ! Contribution of local pair to efi(iploc)
       type(real3):: fkd,fkp    ! Contribution of local pair to efi(iploc)
-
-      real(t_p) uscale ! Scaling factor for interaction
+      integer :: iga,igb
+      real(t_p) uscale,fgrp ! Scaling factor for interaction
 
       if (n_uscale.eq.0) return
 
@@ -1455,29 +1517,29 @@ c======================================================================
      &                      fid,fip,fkd,fkp,.true.)
 
          ! increment electric field for each atoms
-!$acc atomic update
+!$acc atomic
          efi(1,1,iploc)    = efi(1,1,iploc)    + fid%x
-!$acc atomic update
+!$acc atomic
          efi(2,1,iploc)    = efi(2,1,iploc)    + fid%y
-!$acc atomic update
+!$acc atomic
          efi(3,1,iploc)    = efi(3,1,iploc)    + fid%z
-!$acc atomic update
+!$acc atomic
          efi(1,2,iploc)    = efi(1,2,iploc)    + fip%x
-!$acc atomic update
+!$acc atomic
          efi(2,2,iploc)    = efi(2,2,iploc)    + fip%y
-!$acc atomic update
+!$acc atomic
          efi(3,2,iploc)    = efi(3,2,iploc)    + fip%z
-!$acc atomic update
+!$acc atomic
          efi(1,1,kpoleloc) = efi(1,1,kpoleloc) + fkd%x
-!$acc atomic update
+!$acc atomic
          efi(2,1,kpoleloc) = efi(2,1,kpoleloc) + fkd%y
-!$acc atomic update
+!$acc atomic
          efi(3,1,kpoleloc) = efi(3,1,kpoleloc) + fkd%z
-!$acc atomic update
+!$acc atomic
          efi(1,2,kpoleloc) = efi(1,2,kpoleloc) + fkp%x
-!$acc atomic update
+!$acc atomic
          efi(2,2,kpoleloc) = efi(2,2,kpoleloc) + fkp%y
-!$acc atomic update
+!$acc atomic
          efi(3,2,kpoleloc) = efi(3,2,kpoleloc) + fkp%z
       end do
       end
@@ -1510,8 +1572,8 @@ c======================================================================
       type(real3):: posi,dist  ! position of i pole and distance between i and k
       type(real3):: fid,fip    ! Contribution of local pair to efi(iploc)
       type(real3):: fkd,fkp    ! Contribution of local pair to efi(iploc)
-
-      real(t_p) uscale ! Scaling factor for interaction
+      integer   :: iga,igb
+      real(t_p) uscale,fgrp ! Scaling factor for interaction
 
       if (n_uscale.eq.0) return
 
@@ -1564,29 +1626,29 @@ c======================================================================
      &                      fid,fip,fkd,fkp,.true.)
 
          ! increment electric field for each atoms
-!$acc atomic update
+!$acc atomic
          efi(1,1,iploc)    = efi(1,1,iploc)    + fid%x
-!$acc atomic update
+!$acc atomic
          efi(2,1,iploc)    = efi(2,1,iploc)    + fid%y
-!$acc atomic update
+!$acc atomic
          efi(3,1,iploc)    = efi(3,1,iploc)    + fid%z
-!$acc atomic update
+!$acc atomic
          efi(1,2,iploc)    = efi(1,2,iploc)    + fip%x
-!$acc atomic update
+!$acc atomic
          efi(2,2,iploc)    = efi(2,2,iploc)    + fip%y
-!$acc atomic update
+!$acc atomic
          efi(3,2,iploc)    = efi(3,2,iploc)    + fip%z
-!$acc atomic update
+!$acc atomic
          efi(1,1,kpoleloc) = efi(1,1,kpoleloc) + fkd%x
-!$acc atomic update
+!$acc atomic
          efi(2,1,kpoleloc) = efi(2,1,kpoleloc) + fkd%y
-!$acc atomic update
+!$acc atomic
          efi(3,1,kpoleloc) = efi(3,1,kpoleloc) + fkd%z
-!$acc atomic update
+!$acc atomic
          efi(1,2,kpoleloc) = efi(1,2,kpoleloc) + fkp%x
-!$acc atomic update
+!$acc atomic
          efi(2,2,kpoleloc) = efi(2,2,kpoleloc) + fkp%y
-!$acc atomic update
+!$acc atomic
          efi(3,2,kpoleloc) = efi(3,2,kpoleloc) + fkp%z
       end do
       end

@@ -19,6 +19,7 @@ c
       subroutine final
       use analyz
       use angle
+      use ani, only: ml_resources_initialized
       use atmlst
       use atmtyp
       use atoms
@@ -40,6 +41,7 @@ c
       use mdstuf1
       use moldyn
       use molcul
+      use mdstate
       use mpi
       use mpole
       use neigh
@@ -57,9 +59,17 @@ c
 #endif
       implicit none
       integer i
+#ifdef NN_SUPPORT
+      interface
+        subroutine nuke_context(i) bind(C)
+          integer i
+        end subroutine
+      end interface
+#endif
 c
       call timer_exit(timer_prog)
       if (tinkertime.eq.all_time) call display_timers
+      if (fw_mds) call mds_prt
 c
 c     Free ressources
 c
@@ -68,6 +78,11 @@ c
          call free_FFTgrid_p
          is_fftInit = .false.
       end if
+#ifdef NN_SUPPORT
+      if (ml_resources_initialized) then
+         call nuke_context(i)
+      endif
+#endif
 ! Not supported for synchronous computation
 c#ifdef _OPENACC
 c      if (cudaStreamDestroy(dir_stream).ne.0)
@@ -342,9 +357,9 @@ c
       if (allocated(poleloc))    deallocate (poleloc)
       if (allocated(polelocnl))  deallocate (polelocnl)
       if (allocated(polerecloc)) deallocate (polerecloc)
-      if (allocated(zaxis))      deallocate (zaxis)
-      if (allocated(yaxis))      deallocate (yaxis)
-      if (allocated(xaxis))      deallocate (xaxis)
+c     if (allocated(zaxis))      deallocate (zaxis)
+c     if (allocated(yaxis))      deallocate (yaxis)
+c     if (allocated(xaxis))      deallocate (xaxis)
       if (allocated(rpole))      deallocate (rpole)
 c
 c     module mdstuf1

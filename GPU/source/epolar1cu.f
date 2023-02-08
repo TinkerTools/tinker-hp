@@ -16,41 +16,41 @@ c
 c
 #ifdef _CUDA
 #define TINKER_CUF
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
 #include "tinker_cudart.h"
 
       module epolar1cu
-        use utilcu  ,only: nproc,ndir,BLOCK_DIM,ALL_LANES
+        use utilcu  ,only: nproc,ndir,ngrp,BLOCK_DIM,ALL_LANES
         use utilgpu ,only: BLOCK_SIZE,RED_BUFF_SIZE
      &              ,WARP_SIZE
         use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
 
         contains
 
-#include "convert.f.inc"
 #include "image.f.inc"
 #include "midpointimage.f.inc"
-#include "pair_polar.f.inc"
+#include "convert.f.inc"
+#include "pair_polar.inc.f"
 
         attributes(global) subroutine epreal1c_core_cu
      &        ( ipole, pglob, loc, ploc, ieblst, eblst
-     &        , x, y, z, rpole, pdamp, thole, uind, uinp
-     &        , dep, trq, ep_buff, vir_buff
-     &        , npolelocnlb, npolelocnlb_pair, npolebloc, n
-     &        , off2, f, alsq2, alsq2n, aewald
+     &        , x, y, z, rpole, pdamp, dirdamp, thole, uind, uinp
+     &        , pot, dep, trq, ep_buff, vir_buff
+     &        , npolelocnlb, npolelocnlb_pair, npolebloc, n, u_cflx
+     &        , u_ddamp, off2, f, alsq2, alsq2n, aewald
      &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
         implicit none
-        integer,value,intent(in)::npolelocnlb,npolebloc,n
-     &         ,npolelocnlb_pair
+        integer  ,value,intent(in)::npolelocnlb,npolebloc,n
+     &           ,npolelocnlb_pair
+        logical  ,value,intent(in):: u_cflx, u_ddamp
         real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
      &           ,off2,alsq2,alsq2n,aewald,f
-        integer,device,intent(in)::ipole(*),pglob(*),loc(*),ploc(*)
-     &                ,ieblst(*),eblst(*)
+        integer  ,device,intent(in)::ipole(*),pglob(*),loc(*),ploc(*)
+     &           ,ieblst(*),eblst(*)
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
-     &                  ,pdamp(*),thole(*),uind(3,*),uinp(3,*)
-        real(t_p),device:: trq(3,*),vir_buff(*)
+     &           ,pdamp(*),dirdamp(*),thole(*),uind(3,*),uinp(3,*)
+        real(t_p),device:: trq(3,*),vir_buff(*),pot(*)
         mdyn_rtyp,device:: dep(3,*)
         ener_rtyp,device:: ep_buff(*)
 
@@ -61,8 +61,8 @@ c
         integer location
         integer,shared::kglob(BLOCK_DIM)
         real(t_p) xk_,yk_,zk_,d2
-        real(t_p) ep_
-        real(t_p) ipdp,ipgm,pdp,pgm,rstat
+        real(t_p) ep_,poti
+        real(t_p) ipdp,ipgm,ipgm1,pdp,pgm,pgm1,rstat
         type(real6) dpui
         type(real3) posi,pos
         type(real3) frc
@@ -70,6 +70,7 @@ c
         type(mdyn3_r),shared::frc_k(BLOCK_DIM)
         type(real3)  ,shared:: posk(BLOCK_DIM)
         real(t_p)    ,shared:: kpdp(BLOCK_DIM),kpgm(BLOCK_DIM)
+     &               ,kpgm1(BLOCK_DIM),potk(BLOCK_DIM)
         type(real3) trqi
         type(real3),shared:: trqk(BLOCK_DIM)
         type(real6),shared:: dpuk(BLOCK_DIM)
@@ -97,6 +98,7 @@ c
            posi%z  =     z(idx)
            ipdp    = pdamp(iipole)
            ipgm    = thole(iipole)
+           ipgm1   = dirdamp(iipole)
            ip%c    = rpole( 1, iipole)
            ip%dx   = rpole( 2, iipole)
            ip%dy   = rpole( 3, iipole)
@@ -125,6 +127,7 @@ c
            posk(threadIdx%x)%z  = z(kdx)
            kpdp(threadIdx%x)    = pdamp(kpole)
            kpgm(threadIdx%x)    = thole(kpole)
+           kpgm1(threadIdx%x)   = dirdamp(kpole)
            kp(threadIdx%x)%c    = rpole( 1, kpole)
            kp(threadIdx%x)%dx   = rpole( 2, kpole)
            kp(threadIdx%x)%dy   = rpole( 3, kpole)
@@ -157,6 +160,11 @@ c
            trqk(threadIdx%x)%y = 0.0_ti_p;
            trqk(threadIdx%x)%z = 0.0_ti_p;
 
+           if (u_cflx) then
+              poti = 0.0
+              potk(threadIdx%x)=0.0
+           end if
+
            !* set compute Data to 0
            ep_ = 0
            vir_(1)=0.0; vir_(2)=0.0; vir_(3)=0.0;
@@ -179,6 +187,10 @@ c
               kp_%qzz  = kp(klane)%qzz
               pdp      = ipdp*kpdp(klane)
               pgm      = min(ipgm,kpgm(klane))
+              if (u_ddamp) then
+                 pgm1 = min(ipgm1,kpgm1(klane))
+                 if (pgm1.ne.0.0) pgm1 = max(ipgm1,kpgm1(klane))
+              end if
 
               if (nproc.gt.1) then
                  xk_   = posk(klane)%x
@@ -207,10 +219,11 @@ c
      &                       ,same_block)
               if (do_pair.and.d2<=off2.and.accept_mid) then
                  ! compute one interaction
-                 call epolar1_couple(dpui,ip,dpuk(klane),kp_,d2,pos,
-     &                                aewald,alsq2,alsq2n,pgm,pdp,f,
-     &                                   1.0_ti_p,1.0_ti_p,1.0_ti_p,
-     &                ep_,frc,frc_k(klane),trqi,trqk(klane),.false.)
+                 call epolar1_couple(dpui,ip,dpuk(klane),kp_,d2,pos
+     &                       ,aewald,alsq2,alsq2n,pgm,pgm1,pdp,f
+     &                       ,1.0_ti_p,1.0_ti_p,1.0_ti_p,u_ddamp
+     &                       ,u_cflx,poti,potk(klane),ep_,frc
+     &                       ,frc_k(klane),trqi,trqk(klane),.false.)
 
                  vir_(1) = vir_(1) + pos%x * frc%x
                  vir_(2) = vir_(2) + pos%y * frc%x
@@ -243,6 +256,11 @@ c
            rstat = atomicAdd( trq(2,kploc),trqk(threadIdx%x)%y )
            rstat = atomicAdd( trq(3,kploc),trqk(threadIdx%x)%z )
 
+           if (u_cflx) then
+              rstat = atomicAdd( pot(i),poti )
+              rstat = atomicAdd( pot(kbis),potk(threadIdx%x) )
+           end if
+
            rstat = atomicAdd(vir_buff(0*RED_BUFF_SIZE+location),vir_(1))
            rstat = atomicAdd(vir_buff(1*RED_BUFF_SIZE+location),vir_(2))
            rstat = atomicAdd(vir_buff(2*RED_BUFF_SIZE+location),vir_(3))
@@ -256,20 +274,23 @@ c
 
         attributes(global) subroutine mpreal1c_core_cu
      &        ( ipole,pglob,loc,ploc,ieblst,eblst
-     &        , x,y,z,rpole,pdamp,thole,uind,uinp
+     &        , x,y,z,rpole,pdamp,thole,uind,uinp,use_group,grplist,wgrp
      &        , dep, trq, ep_buff, vir_buff
      &        , npolelocnlb, npolelocnlb_pair,npolebloc,n,mode
      &        , off2,f,alsq2,alsq2n,aewald,r_cut,s_cut2,shortheal
-     &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
+     &        , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
         implicit none
         integer,value,intent(in)::npolelocnlb,npolebloc,n
      &         ,npolelocnlb_pair,mode
+        logical,value,intent(in)::use_group
         real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
      &           ,off2,alsq2,alsq2n,aewald,f,shortheal,r_cut,s_cut2
         integer,device,intent(in)::ipole(*),pglob(*),loc(*),ploc(*)
-     &                ,ieblst(*),eblst(*)
+     &                ,ieblst(*),eblst(*),grplist(*)
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
      &                  ,pdamp(*),thole(*),uind(3,*),uinp(3,*)
+     &                  ,wgrp(ngrp+1,ngrp+1)
+
         real(t_p),device:: trq(3,*),vir_buff(*)
         mdyn_rtyp,device:: dep(3,*)
         ener_rtyp,device:: ep_buff(*)
@@ -280,8 +301,10 @@ c
         integer iipole,iglob,iploc,kpole,kploc
         integer location
         integer,shared::kglob(BLOCK_DIM)
+        integer iga,igb_,igb
+        !integer, shared :: igb(BLOCK_DIM)
         real(t_p) xk_,yk_,zk_,d2
-        real(t_p) ep_
+        real(t_p) ep_,scale_
         real(t_p) ipdp,ipgm,pdp,pgm,rstat
         type(real6) dpui
         type(real3) posi,pos
@@ -363,6 +386,12 @@ c
            dpuk(threadIdx%x)%yy = uinp ( 2, kpole)
            dpuk(threadIdx%x)%zz = uinp ( 3, kpole)
 
+           !if(use_group) then
+           !   iga = grplist(iglob)
+           !   !igb(threadIdx%x) = grplist(kglob(threadIdx%x))
+           !   igb = grplist(kglob(threadIdx%x))
+           !endif
+
            call syncwarp(ALL_LANES)
            frc_i%x = 0;
            frc_i%y = 0;
@@ -389,6 +418,13 @@ c
               klane    = threadIdx%x-ilane + srclane
               pdp      = ipdp*kpdp(klane)
               pgm      = min(ipgm,kpgm(klane))
+              !if(use_group) then
+              !  igb_ = __shfl(igb,klane)
+              !  !igb_ = igb(klane)
+              !  scale_ = wgrp(iga+1,igb_+1)
+              !else
+                scale_  = 1.0_ti_p
+              !endif
 
               if (nproc.gt.1) then
                  xk_   = posk(klane)%x
@@ -421,7 +457,7 @@ c
                  call mpolar1_couple_comp
      &               (dpui,ip,dpuk(klane),kp(klane),d2,pos,
      &                aewald,alsq2,alsq2n,pgm,pdp,f,r_cut,shortheal,
-     &                          0.0_ti_p,1.0_ti_p,1.0_ti_p,1.0_ti_p,
+     &                      1.0_ti_p-scale_,1.0_ti_p,1.0_ti_p,1.0_ti_p,
      &                ep_,frc,frc_k(klane),trqi,trqk(klane),.false.,
      &                mode,iglob,kglob(klane))
 
@@ -472,12 +508,12 @@ c
      &        , ep_buff, nep_buff
      &        , npolelocnlb, npolelocnlb_pair, npolebloc, n
      &        , off2, f, alsq2, alsq2n, aewald, off, shortheal
-     &        , use_short
+     &        , use_short, use_dirdamp
      &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend )
         implicit none
         integer,value,intent(in)::npolelocnlb,npolebloc,n
      &         ,npolelocnlb_pair
-        logical,value,intent(in)::use_short
+        logical,value,intent(in)::use_short,use_dirdamp
         real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend
      &           ,off2,alsq2,alsq2n,aewald,f,shortheal,off
@@ -485,6 +521,7 @@ c
      &                ,ieblst(*),eblst(*)
         real(t_p),device,intent(in):: x(*),y(*),z(*),rpole(13,*)
      &                  ,pdamp(*),thole(*),uind(3,*),uinp(3,*)
+
         integer  ,device:: nep_buff(*)
         mdyn_rtyp,device:: ep_buff(*)
 
@@ -575,7 +612,7 @@ c
            nep_= 0
 
            same_block = (idx.ne.kdx)
-
+ 
            do j = 1,warpsize
               srclane  = iand( ilane+j-1,warpsize-1 ) + 1
               klane    = threadIdx%x-ilane + srclane
@@ -591,6 +628,7 @@ c
               kp_%qzz  = __shfl(kp%qzz ,klane)
               pdp      = ipdp*kpdp(klane)
               pgm      = min(ipgm,kpgm(klane))
+              if (pgm.eq.0.0) pgm = max(ipgm,kpgm(klane))
 
               if (ndir.gt.1) then
                  xk_   = posk(klane)%x
@@ -619,10 +657,10 @@ c
      &                       ,same_block)
               if (do_pair.and.d2<=off2.and.accept_mid) then
                  ! compute one interaction
-                 call epolar3_couple(dpui,ip,dpuk(klane),kp_,d2,pos,
-     &                               aewald,alsq2,alsq2n,pgm,pdp,f,
-     &                               off,shortheal,1.0_ti_p,
-     &                               ep_,use_short,.false.)
+                 call epolar3_couple(dpui,ip,dpuk(klane),kp_,d2,pos
+     &                       ,aewald,alsq2,alsq2n,pgm,pdp,use_dirdamp
+     &                       ,f,off,shortheal,1.0_ti_p
+     &                       ,ep_,use_short,.false.)
                  nep_ = nep_ + 1
 
               end if
@@ -639,32 +677,35 @@ c
         ! Loop on scale interaction for correction
         attributes(global) subroutine epreal1c_scaling_cu
      &             (dpucorrect_ik,dpucorrect_scale,ipole,loc
-     &             ,polelocnl,x,y,z,pdamp,thole,rpole,uind,uinp
-     &             ,dep,trq,ep_buff,vir_buff
-     &             ,n,n_dpuscale,nbloc,off2,aewald,alsq2,alsq2n,f)
+     &             ,polelocnl,x,y,z,pdamp,dirdamp,thole,rpole,uind,uinp
+     &             ,pot,dep,trq,ep_buff,vir_buff,n,n_dpuscale
+     &             ,nbloc,u_cflx,u_ddamp,off2,aewald,alsq2,alsq2n,f)
         implicit none
 
         integer  ,device,intent(in)::dpucorrect_ik(*),ipole(n),loc(n)
      &           ,polelocnl(n)
         real(t_p),device,intent(in)::dpucorrect_scale(*),x(n),y(n),z(n)
-     &           ,pdamp(n),thole(n),rpole(13,n),uind(3,n),uinp(3,n)
+     &           ,pdamp(n),thole(n),dirdamp(*)
+     &           ,rpole(13,n),uind(3,n),uinp(3,n)
         integer  ,value,intent(in)::n,n_dpuscale,nbloc
+        logical  ,value,intent(in)::u_cflx,u_ddamp
         real(t_p),value,intent(in)::aewald,f,alsq2,alsq2n,off2
-        real(t_p),device,intent(inout)::trq(3,*)
+        real(t_p),device,intent(inout)::trq(3,*),pot(*)
      &           ,vir_buff(6*RED_BUFF_SIZE)
         mdyn_rtyp,device,intent(inout)::dep(3,nbloc)
         ener_rtyp,device,intent(inout)::ep_buff(RED_BUFF_SIZE)
 
-        integer i,k,iglob,kglob,iploc,kploc,ithread
-        integer ii,iipole,kpole,j,kbis,lot
-        real(t_p) r2,pgamma,damp,rstat
+        integer   i,k,iglob,kglob,iploc,kploc,ithread
+        integer   ii,iipole,kpole,j,lot
+        real(t_p) r2,pgamma,pgama1,damp,rstat
         real(t_p) e
-        real(t_p) pdi,pti
-        real(t_p) pscale,dscale,uscale
+        real(t_p) pdi,pti,ddi
+        real(t_p) pscale,dscale,uscale,poti,potk
         type(rpole_elt) ip,kp
         type(real6)     dpui,dpuk
         type(real3)     pos,posi,trqi,trqk,frc
         type(mdyn3_r)   frc_r
+        integer iga,igb
 
         ithread = threadIdx%x + (blockIdx%x-1)*blockDim%x
         do ii = ithread, n_dpuscale, blockDim%x*gridDim%x
@@ -689,6 +730,7 @@ c
 
            pdi      = pdamp(iipole)
            pti      = thole(iipole)
+           ddi      = dirdamp(iipole)
 
            ip%c     = rpole( 1,iipole)
            ip%dx    = rpole( 2,iipole)
@@ -732,18 +774,24 @@ c
 
            pgamma   = min( pti,thole(kpole) )
            damp     = pdi*pdamp(kpole)
+           if (u_ddamp) then
+              pgama1   = min( ddi,dirdamp(kpole) )
+              if (pgama1.eq.0.0) pgama1   = max( ddi,dirdamp(kpole) )
+           end if
 
            ! zero outputs
            e=0;
            frc_r%x=0; frc_r%y=0; frc_r%z=0;
             trqk%x=0;  trqk%y=0;  trqk%z=0;
             trqi%x=0;  trqi%y=0;  trqi%z=0;
+             poti=0.0; potk=0.0
 
            ! Compute polar interaction
-           call epolar1_couple(dpui,ip,dpuk,kp,r2,pos,
-     &                 aewald,alsq2,alsq2n,pgamma,damp,f,
-     &                 dscale,pscale,uscale,
-     &                 e,frc,frc_r,trqi,trqk,.true.)
+           call epolar1_couple(dpui,ip,dpuk,kp,r2,pos
+     &                 ,aewald,alsq2,alsq2n,pgamma,pgama1,damp,f
+     &                 ,dscale,pscale,uscale,u_ddamp
+     &                 ,u_cflx,poti,potk
+     &                 ,e,frc,frc_r,trqi,trqk,.true.)
 
            ! Increment energy
            lot   = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
@@ -755,6 +803,11 @@ c
            rstat = atomicAdd( dep(1,k), frc_r%x )
            rstat = atomicAdd( dep(2,k), frc_r%y )
            rstat = atomicAdd( dep(3,k), frc_r%z )
+
+           if (u_cflx) then
+              rstat = atomicAdd( pot(i),poti )
+              rstat = atomicAdd( pot(k),potk )
+           end if
 
            rstat = atomicAdd(vir_buff(0*RED_BUFF_SIZE+lot),pos%x*frc%x)
            rstat = atomicAdd(vir_buff(1*RED_BUFF_SIZE+lot),pos%y*frc%x)

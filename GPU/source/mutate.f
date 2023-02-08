@@ -14,8 +14,7 @@ c     "mutate" constructs the hybrid hamiltonian for a specified
 c     initial state, final state and mutation parameter "lambda"
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       subroutine mutate
       use atmtyp
       use atoms
@@ -446,6 +445,7 @@ c
          end do
       end if
 
+!$acc update device(mut,mutInt)
       call altchg(3)
 
       end if

@@ -14,7 +14,7 @@ c     "getxyz" asks for a Cartesian coordinate file name,
 c     then reads in the coordinates file
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine getxyz
       use inform
       use iounit

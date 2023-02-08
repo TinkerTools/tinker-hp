@@ -1,4 +1,7 @@
+#ifndef PAIR_TMATXB_INC_F
+#define PAIR_TMATXB_INC_F
 #include "tinker_cudart.h"
+#include "damping.inc.f"
 
         M_subroutine
      &              tmatxb_couple(d2,dist,dpui,dpuk,
@@ -22,11 +25,12 @@
            logical    ,intent(in)   :: do_correct
            real(t_p) d1,ralpha,exp2a
            real(t_p) bn0,bn1,bn2
-           real(t_p) sdamp1,expdamp1
+           real(t_p) sdamp1,sdamp2,expdamp1,expdamp2
            real(t_p) rr3,rr5,rr3_bn1,rr5_bn2,sc3,sc5
            real(t_p) duir,dukr,puir,pukr  ! Scalar products duir = (du(i).r)
+           parameter(sdamp2=-100.0,expdamp2= 0.0)
 
-           ! compute the distances and the scaling factors according to Thole's model.
+           ! compute the distances and the scaling factors according to Tholes model.
            d1      = f_sqrt(d2)
            d2      = d2**(-1)
 
@@ -38,42 +42,39 @@
               bn2     = 0.0
 
               if( sdamp == 0.0 ) then
-                sdamp1  = -100.0
-                sc3      =   f_exp(sdamp1) * uscale
-                sc5      =   f_exp(sdamp1) * uscale * (1 - sdamp1)
+                sc3   = (1.0 - f_exp(-100.0)) * uscale
+                sc5   = (1.0 - f_exp(-100.0)*(1-sdamp2)) * uscale
               else
-                sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
+                sdamp1= - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
                 if (sdamp1 > -50.0) then
                   expdamp1 = f_exp(sdamp1)
-                  sc3      =   expdamp1 * uscale
-                  sc5      =   expdamp1 * uscale * (1 - sdamp1)
+                  sc3 = (1.0- expdamp1) * uscale
+                  sc5 = (1.0- expdamp1*(1.0-sdamp1)) * uscale
                 else
-                  sc3     = 1
-                  sc5     = 1
+                  sc3 = uscale
+                  sc5 = uscale
                 end if
               end if
            else
               exp2a   = f_exp(-ralpha*ralpha)
               !call erfcore_inl(ralpha,bn0,1)
               bn0     = f_erfc(ralpha)   ! Attention to Macro f_erfc in single prec with hastings method (check tinker_cudart.h)
-              bn0     = bn0 * d1
-              bn1     = (     bn0 +         alsq2 * alsq2n * exp2a) * d2
-              bn2     = ( 3 * bn1 + alsq2 * alsq2 * alsq2n * exp2a) * d2
+              bn0     = bn0*d1
+              bn1     = (   bn0 +       alsq2*alsq2n*exp2a)*d2
+              bn2     = ( 3*bn1 + alsq2*alsq2*alsq2n*exp2a)*d2
 
               if( sdamp == 0.0 ) then
-                sdamp1   = -100.0
-                expdamp1 = f_exp(sdamp1)
-                sc3      =   1 - expdamp1 * uscale
-                sc5      =   1 - expdamp1 * uscale * (1 - sdamp1)
+                sc3   = (1.0 - expdamp2)
+                sc5   = (1.0 - expdamp2 * (1 - sdamp2))
               else
-                sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
+                sdamp1= - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
                 if (sdamp1 > -50.0) then
                   expdamp1 = f_exp(sdamp1)
-                  sc3      =   1 - expdamp1 * uscale
-                  sc5      =   1 - expdamp1 * uscale * (1 - sdamp1)
+                  sc3 = (1.0 - expdamp1)
+                  sc5 = (1.0 - expdamp1 * (1 - sdamp1))
                 else
-                  sc3     = 1
-                  sc5     = 1
+                  sc3 = 1.0
+                  sc5 = 1.0
                 end if
               end if
            end if
@@ -115,92 +116,89 @@
      &                          fid,fip,fkd,fkp,do_correct)
 !$acc routine
 #if  defined(TINKER_CUF)
-           use utilcu  ,only: f_erfc
+        use utilcu  ,only: f_erfc
 #  if (defined(SINGLE)||defined(MIXED))
-           use utilcu  ,only: f_sqrt,f_exp
+        use utilcu  ,only: f_sqrt,f_exp
 #  endif
 #endif
-           use utilgpu ,only: real3,real6
-           implicit none
-           type(real6),intent(in)   ::dpui
-           type(real7),intent(in)   ::dpuk
-           type(real3),intent(in)   ::dist
-           real(t_p)  ,intent(in)   ::sdamp,pgamma,aewald,alsq2,alsq2n
-           real(t_p)  ,intent(in)   ::uscale
-           real(t_p)  ,intent(inout)::d2
-           type(real3),intent(inout)::fid,fip,fkd,fkp
-           logical    ,intent(in)   :: do_correct
-           real(t_p) d1,ralpha,exp2a
-           real(t_p) bn0,bn1,bn2
-           real(t_p) sdamp1,expdamp1
-           real(t_p) rr3,rr5,rr3_bn1,rr5_bn2,sc3,sc5
-           real(t_p) duir,dukr,puir,pukr  ! Scalar products duir = (du(i).r)
+        use utilgpu ,only: real3,real6
+        implicit none
+        type(real6),intent(in)   ::dpui
+        type(real7),intent(in)   ::dpuk
+        type(real3),intent(in)   ::dist
+        real(t_p)  ,intent(in)   ::sdamp,pgamma,aewald,alsq2,alsq2n
+        real(t_p)  ,intent(in)   ::uscale
+        real(t_p)  ,intent(inout)::d2
+        type(real3),intent(inout)::fid,fip,fkd,fkp
+        logical    ,intent(in)   :: do_correct
+        real(t_p) d1,ralpha,exp2a
+        real(t_p) bn0,bn1,bn2
+        real(t_p) sdamp1,sdamp2,expdamp1,expdamp2
+        real(t_p) rr3,rr5,rr3_bn1,rr5_bn2,sc3,sc5
+        real(t_p) duir,dukr,puir,pukr  ! Scalar products duir = (du(i).r)
+        parameter(sdamp2=-100.0,expdamp2= 0.0)
 
-           ! compute the distances and the scaling factors according to Thole's model.
-           d1      = f_sqrt(d2)
-           d2      = d2**(-1)
+        ! compute the distances and the scaling factors according to Thole's model.
+        d1      = f_sqrt(d2)
+        d2      = d2**(-1)
 
-           ralpha  = aewald * d1
-           d1      = d1**(-1)
+        ralpha  = aewald * d1
+        d1      = d1**(-1)
 
-           if (do_correct) then
-              bn1     = 0.0
-              bn2     = 0.0
+        if (do_correct) then
+           bn1     = 0.0
+           bn2     = 0.0
 
-              if( sdamp == 0.0 ) then
-                sdamp1  = -100.0
-                sc3      =   f_exp(sdamp1) * uscale
-                sc5      =   f_exp(sdamp1) * uscale * (1 - sdamp1)
-              else
-                sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
-                if (sdamp1 > -50.0) then
-                  expdamp1 = f_exp(sdamp1)
-                  sc3      =   expdamp1 * uscale
-                  sc5      =   expdamp1 * uscale * (1 - sdamp1)
-                else
-                  sc3     = 1
-                  sc5     = 1
-                end if
-              end if
+           if( sdamp == 0.0 ) then
+             sc3    = (1.0-f_exp(sdamp2)) * uscale
+             sc5    = (1.0-f_exp(sdamp2) * (1-sdamp2)) * uscale
            else
-              exp2a   = f_exp(-ralpha*ralpha)
-              !call erfcore_inl(ralpha,bn0,1)
-              bn0     = f_erfc(ralpha)   ! Attention to Macro f_erfc in single prec with hastings method (check tinker_cudart.h)
-              bn0     = bn0 * d1
-              bn1     = (     bn0 +         alsq2 * alsq2n * exp2a) * d2
-              bn2     = ( 3 * bn1 + alsq2 * alsq2 * alsq2n * exp2a) * d2
-
-              if( sdamp == 0.0 ) then
-                sdamp1   = -100.0
-                expdamp1 = f_exp(sdamp1)
-                sc3      =   1 - expdamp1 * uscale
-                sc5      =   1 - expdamp1 * uscale * (1 - sdamp1)
-              else
-                sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
-                if (sdamp1 > -50.0) then
-                  expdamp1 = f_exp(sdamp1)
-                  sc3      =   1 - expdamp1 * uscale
-                  sc5      =   1 - expdamp1 * uscale * (1 - sdamp1)
-                else
-                  sc3     = 1
-                  sc5     = 1
-                end if
-              end if
+             sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
+             if (sdamp1 > -50.0) then
+               expdamp1 = f_exp(sdamp1)
+               sc3      =  (1.0-expdamp1) * uscale
+               sc5      =  (1.0-expdamp1*(1-sdamp1))* uscale
+             else
+               sc3  = uscale
+               sc5  = uscale
+             end if
            end if
+        else
+           exp2a    = f_exp(-ralpha*ralpha)
+           bn0      = f_erfc(ralpha)   ! Attention to Macro f_erfc in single prec with hastings method (check tinker_cudart.h)
+           bn0      = bn0 * d1
+           bn1      = (   bn0 +       alsq2*alsq2n*exp2a) * d2
+           bn2      = ( 3*bn1 + alsq2*alsq2*alsq2n*exp2a) * d2
 
-           ! compute the field.
-           rr3     =     (1 - sc3) * (d1 * d2)
-           rr5     = 3 * (1 - sc5) * (d1 * d2 * d2)
-           rr3_bn1 = rr3 - bn1
-           rr5_bn2 = rr5 - bn2
+           if( sdamp == 0.0 ) then
+             sc3    = 1.0 - expdamp2
+             sc5    = 1.0 - expdamp2*(1.0-sdamp2)
+           else
+             sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
+             if (sdamp1 > -50.0) then
+               expdamp1 = f_exp(sdamp1)
+               sc3  = 1.0 - expdamp1
+               sc5  = 1.0 - expdamp1 * (1.0 - sdamp1)
+             else
+               sc3  = 1.0
+               sc5  = 1.0
+             end if
+           end if
+        end if
 
-           duir    = dpui%x * dist%x + dpui%y * dist%y + dpui%z *dist%z
-           dukr    = dpuk%x * dist%x + dpuk%y * dist%y + dpuk%z *dist%z
+        ! compute the field.
+        rr3     =     (1 - sc3) * (d1 * d2)
+        rr5     = 3 * (1 - sc5) * (d1 * d2 * d2)
+        rr3_bn1 = rr3 - bn1
+        rr5_bn2 = rr5 - bn2
 
-           puir    = dpui%xx * dist%x + dpui%yy * dist%y
-     &             + dpui%zz * dist%z
-           pukr    = dpuk%xx * dist%x + dpuk%yy * dist%y
-     &             + dpuk%zz * dist%z
+        duir    = dpui%x * dist%x + dpui%y * dist%y + dpui%z *dist%z
+        dukr    = dpuk%x * dist%x + dpuk%y * dist%y + dpuk%z *dist%z
+
+        puir    = dpui%xx * dist%x + dpui%yy * dist%y
+     &          + dpui%zz * dist%z
+        pukr    = dpuk%xx * dist%x + dpuk%yy * dist%y
+     &          + dpuk%zz * dist%z
 
         fid%x  = WRITE_C(fid%x) - rr3_bn1*dpuk%x + rr5_bn2*dukr*dist%x
         fid%y  = WRITE_C(fid%y) - rr3_bn1*dpuk%y + rr5_bn2*dukr*dist%y
@@ -218,6 +216,275 @@
         fkp%y  = WRITE_C(fkp%y) - rr3_bn1*dpui%yy + rr5_bn2*puir*dist%y
         fkp%z  = WRITE_C(fkp%z) - rr3_bn1*dpui%zz + rr5_bn2*puir*dist%z
         end subroutine
+
+      M_subroutine
+     &        duo_tmatxb1a(d2,p,dpui,dpuk,damp,pgamma,aewald,scal
+     &           ,fid,fip,fkd,fkp,ver,fea)
+!$acc routine
+#if  defined(TINKER_CUF)
+      use utilcu  ,only: f_erfc
+#  if (defined(SINGLE)||defined(MIXED))
+      use utilcu  ,only: f_sqrt,f_exp
+#  endif
+#endif
+      use utilgpu ,only: real3,real6
+      implicit none
+      integer    ,intent(in) ::ver,fea
+      type(real6),intent(in) ::dpui
+      type(real7),intent(in) ::dpuk
+      type(real3),intent(in) ::p
+      real(t_p)  ,intent(in) ::d2,scal,aewald,damp,pgamma
+      type(real3),intent(out)::fid,fip,fkd,fkp
+      integer     sca
+      real(t_p)   ralpha,exp2a
+      real(t_p)   r,rr1,rr2,rr3,rr5
+      real(t_p)   dlc(6),dmpe(3),dmpik(2)
+      real(t_p)   dmp3,dmp5  ! Scalar products duir = (du(i).r)
+      parameter(sca=__use_sca__)
+c
+c     compute the distances and the scaling factors according to
+c     Thole's model.
+c
+      r   = f_sqrt(d2)
+      rr1 = r**(-1)
+      rr2 = rr1 * rr1
+      rr3 = rr2 * rr1
+      rr5 = 3.0 * rr2 * rr3
+c
+c     calculate real space Ewald error function damping
+c
+      IF (IAND(ver,sca).EQ.0) THEN
+         call dampewald_inl (5,r,d2,aewald,1.0,dmpe)
+      END IF
+c
+c     find the field components for Thole polarization damping
+c
+      call dampthole2_inl (damp,pgamma,5,r,dmpik)
+      IF (IAND(fea,sca).NE.0) THEN
+         dmp3 = scal*dmpik(1)*rr3
+         dmp5 = scal*dmpik(2)*rr5
+      ELSE
+         dmp3 = dmpe(2) - (1.0-dmpik(1))*rr3
+         dmp5 = dmpe(3) - (1.0-dmpik(2))*rr5
+      END IF
+      dlc(1) = -dmp3 + dmp5*p%x*p%x
+      dlc(2) =  dmp5*p%x*p%y
+      dlc(3) =  dmp5*p%x*p%z
+      dlc(4) = -dmp3 + dmp5*p%y*p%y
+      dlc(5) =  dmp5*p%y*p%z
+      dlc(6) = -dmp3 + dmp5*p%z*p%z
+c
+c     find the field components for charge penetration damping
+c
+
+      fid%x = -dlc(1)*dpuk%x+dlc(2)*dpuk%y+dlc(3)*dpuk%z
+      fid%y = -dlc(2)*dpuk%x+dlc(4)*dpuk%y+dlc(5)*dpuk%z
+      fid%z = -dlc(3)*dpuk%x+dlc(5)*dpuk%y+dlc(6)*dpuk%z
+      fkd%x = -dlc(1)*dpui%x+dlc(2)*dpui%y+dlc(3)*dpui%z
+      fkd%y = -dlc(2)*dpui%x+dlc(4)*dpui%y+dlc(5)*dpui%z
+      fkd%z = -dlc(3)*dpui%x+dlc(5)*dpui%y+dlc(6)*dpui%z
+
+      fip%x = -dlc(1)*dpuk%xx+dlc(2)*dpuk%yy+dlc(3)*dpuk%zz
+      fip%y = -dlc(2)*dpuk%xx+dlc(4)*dpuk%yy+dlc(5)*dpuk%zz
+      fip%z = -dlc(3)*dpuk%xx+dlc(5)*dpuk%yy+dlc(6)*dpuk%zz
+      fkp%x = -dlc(1)*dpui%xx+dlc(2)*dpui%yy+dlc(3)*dpui%zz
+      fkp%y = -dlc(2)*dpui%xx+dlc(4)*dpui%yy+dlc(5)*dpui%zz
+      fkp%z = -dlc(3)*dpui%xx+dlc(5)*dpui%yy+dlc(6)*dpui%zz
+
+      end subroutine
+
+      M_subroutine
+     &        duo_tmatxb_cpen(d2,p,dpui,dpuk,pentyp
+     &           ,alphai,alphak,aewald,scal
+     &           ,fid,fip,fkd,fkp,ver,fea)
+!$acc routine
+#if  defined(TINKER_CUF)
+      use utilcu  ,only: f_erfc
+#  if (defined(SINGLE)||defined(MIXED))
+      use utilcu  ,only: f_sqrt,f_exp
+#  endif
+#endif
+      use utilgpu ,only: real3,real6
+      implicit none
+      integer    ,intent(in) ::pentyp,ver,fea
+      type(real6),intent(in) ::dpui
+      type(real7),intent(in) ::dpuk
+      type(real3),intent(in) ::p
+      real(t_p)  ,intent(in) ::alphai,alphak,aewald,scal,d2
+      type(real3),intent(out)::fid,fip,fkd,fkp
+      integer   sca
+      real(t_p) ralpha,exp2a
+      real(t_p) bn0,bn1,bn2
+      real(t_p) sdamp1,expdamp1
+      real(t_p) r,rr1,rr2,rr3,rr5
+      real(t_p) dlc(6),dmpe(3),dmpik(2)
+      real(t_p) duir,dukr,puir,pukr  ! Scalar products duir = (du(i).r)
+      parameter(sca=__use_sca__)
+c
+c     compute the distances and the scaling factors according to
+c     Thole's model.
+c
+      r   = f_sqrt(d2)
+      rr1 = r**(-1)
+      rr2 = rr1 * rr1
+      rr3 = rr2 * rr1
+      rr5 = 3.0 * rr2 * rr3
+c
+c     calculate real space Ewald error function damping
+c
+      IF (IAND(ver,sca).EQ.0) THEN
+         call dampewald_inl (5,r,d2,aewald,1.0,dmpe)
+      END IF
+c
+c     find the field components for Thole polarization damping
+c
+c     if (use_thole) then
+c        call dampthole2_inl (damp,pgamma,5,r,dmpik)
+c        IF (IAND(fea,sca).NE.0) THEN
+c           dmp3 = scal*dmpik(1)*rr3
+c           dmp5 = scal*dmpik(2)*rr5
+c        ELSE
+c           dmp3 = dmpe(2) - (1.0-dmpik(1))*rr3
+c           dmp5 = dmpe(3) - (1.0-dmpik(2))*rr5
+c        END IF
+c        dlc(1) = -dmp3 + dmp5*p%x*p%x
+c        dlc(2) = dmp5*p%x*p%y
+c        dlc(3) = dmp5*p%x*p%z
+c        dlc(4) = -dmp3 + dmp5*p%y*p%y
+c        dlc(5) = dmp5*p%y*p%z
+c        dlc(6) = -dmp3 + dmp5*p%z*p%z
+c
+c     find the field components for charge penetration damping
+c
+c     else if (use_chgpen) then
+         call dampmut_inl (r,alphai,alphak,pentyp,dmpik)
+         if (IAND(fea,sca).NE.0) THEN
+            rr3 = scal*dmpik(1)*rr3
+            rr5 = scal*dmpik(2)*rr5
+         ELSE
+            rr3 = dmpe(2) - (1.0-dmpik(1))*rr3
+            rr5 = dmpe(3) - (1.0-dmpik(2))*rr5
+         END IF
+         dlc(1) = -rr3 + rr5*p%x*p%x
+         dlc(2) =        rr5*p%x*p%y
+         dlc(3) =        rr5*p%x*p%z
+         dlc(4) = -rr3 + rr5*p%y*p%y
+         dlc(5) =        rr5*p%y*p%z
+         dlc(6) = -rr3 + rr5*p%z*p%z
+c     end if
+
+      fid%x = -dlc(1)*dpuk%x+dlc(2)*dpuk%y+dlc(3)*dpuk%z
+      fid%y = -dlc(2)*dpuk%x+dlc(4)*dpuk%y+dlc(5)*dpuk%z
+      fid%z = -dlc(3)*dpuk%x+dlc(5)*dpuk%y+dlc(6)*dpuk%z
+      fkd%x = -dlc(1)*dpui%x+dlc(2)*dpui%y+dlc(3)*dpui%z
+      fkd%y = -dlc(2)*dpui%x+dlc(4)*dpui%y+dlc(5)*dpui%z
+      fkd%z = -dlc(3)*dpui%x+dlc(5)*dpui%y+dlc(6)*dpui%z
+
+      fip%x = -dlc(1)*dpuk%xx+dlc(2)*dpuk%yy+dlc(3)*dpuk%zz
+      fip%y = -dlc(2)*dpuk%xx+dlc(4)*dpuk%yy+dlc(5)*dpuk%zz
+      fip%z = -dlc(3)*dpuk%xx+dlc(5)*dpuk%yy+dlc(6)*dpuk%zz
+      fkp%x = -dlc(1)*dpui%xx+dlc(2)*dpui%yy+dlc(3)*dpui%zz
+      fkp%y = -dlc(2)*dpui%xx+dlc(4)*dpui%yy+dlc(5)*dpui%zz
+      fkp%z = -dlc(3)*dpui%xx+dlc(5)*dpui%yy+dlc(6)*dpui%zz
+
+      end subroutine
+
+      ! Increment output
+      M_subroutine
+     &        duo_tmatxb_cpen2(d2,p,dpui,dpuk,pentyp
+     &           ,alphai,alphak,aewald,scal
+     &           ,fid,fip,fkd,fkp,ver,fea)
+!$acc routine
+#if  defined(TINKER_CUF)
+      use utilcu  ,only: f_erfc
+#  if (defined(SINGLE)||defined(MIXED))
+      use utilcu  ,only: f_sqrt,f_exp
+#  endif
+#endif
+      use utilgpu ,only: real3,real6
+      implicit none
+      integer    ,intent(in)   ::pentyp,ver,fea
+      type(real6),intent(in)   ::dpui
+      type(real7),intent(in)   ::dpuk
+      type(real3),intent(in)   ::p
+      real(t_p)  ,intent(in)   ::alphai,alphak,aewald,scal,d2
+      type(real3),intent(inout)::fid,fip,fkd,fkp
+      integer   sca
+      real(t_p) ralpha,exp2a
+      real(t_p) bn0,bn1,bn2
+      real(t_p) sdamp1,expdamp1
+      real(t_p) r,rr1,rr2,rr3,rr5
+      real(t_p) dlc(6),dmpe(3),dmpik(2)
+      real(t_p) duir,dukr,puir,pukr  ! Scalar products duir = (du(i).r)
+      parameter(sca=__use_sca__)
+c
+c     compute the distances and the scaling factors according to
+c     Thole's model.
+c
+      r   = f_sqrt(d2)
+      rr1 = r**(-1)
+      rr2 = rr1 * rr1
+      rr3 = rr2 * rr1
+      rr5 = 3.0 * rr2 * rr3
+c
+c     calculate real space Ewald error function damping
+c
+      IF (IAND(ver,sca).EQ.0) THEN
+         call dampewald_inl (5,r,d2,aewald,1.0,dmpe)
+      END IF
+c
+c     find the field components for Thole polarization damping
+c
+c     if (use_thole) then
+c        call dampthole2_inl (damp,pgamma,5,r,dmpik)
+c        IF (IAND(fea,sca).NE.0) THEN
+c           dmp3 = scal*dmpik(1)*rr3
+c           dmp5 = scal*dmpik(2)*rr5
+c        ELSE
+c           dmp3 = dmpe(2) - (1.0-dmpik(1))*rr3
+c           dmp5 = dmpe(3) - (1.0-dmpik(2))*rr5
+c        END IF
+c        dlc(1) = -dmp3 + dmp5*p%x*p%x
+c        dlc(2) = dmp5*p%x*p%y
+c        dlc(3) = dmp5*p%x*p%z
+c        dlc(4) = -dmp3 + dmp5*p%y*p%y
+c        dlc(5) = dmp5*p%y*p%z
+c        dlc(6) = -dmp3 + dmp5*p%z*p%z
+c
+c     find the field components for charge penetration damping
+c
+c     else if (use_chgpen) then
+         call dampmut_inl (r,alphai,alphak,pentyp,dmpik)
+         IF (IAND(fea,sca).NE.0) THEN
+            rr3 = scal*dmpik(1)*rr3
+            rr5 = scal*dmpik(2)*rr5
+         ELSE
+            rr3 = dmpe(2) - (1.0-dmpik(1))*rr3
+            rr5 = dmpe(3) - (1.0-dmpik(2))*rr5
+         END IF
+         dlc(1) = -rr3 + rr5*p%x*p%x
+         dlc(2) =        rr5*p%x*p%y
+         dlc(3) =        rr5*p%x*p%z
+         dlc(4) = -rr3 + rr5*p%y*p%y
+         dlc(5) =        rr5*p%y*p%z
+         dlc(6) = -rr3 + rr5*p%z*p%z
+c     end if
+
+      fid%x = fid%x - dlc(1)*dpuk%x+dlc(2)*dpuk%y+dlc(3)*dpuk%z
+      fid%y = fid%y - dlc(2)*dpuk%x+dlc(4)*dpuk%y+dlc(5)*dpuk%z
+      fid%z = fid%z - dlc(3)*dpuk%x+dlc(5)*dpuk%y+dlc(6)*dpuk%z
+      fkd%x = fkd%x - dlc(1)*dpui%x+dlc(2)*dpui%y+dlc(3)*dpui%z
+      fkd%y = fkd%y - dlc(2)*dpui%x+dlc(4)*dpui%y+dlc(5)*dpui%z
+      fkd%z = fkd%z - dlc(3)*dpui%x+dlc(5)*dpui%y+dlc(6)*dpui%z
+
+      fip%x = fip%x - dlc(1)*dpuk%xx+dlc(2)*dpuk%yy+dlc(3)*dpuk%zz
+      fip%y = fip%y - dlc(2)*dpuk%xx+dlc(4)*dpuk%yy+dlc(5)*dpuk%zz
+      fip%z = fip%z - dlc(3)*dpuk%xx+dlc(5)*dpuk%yy+dlc(6)*dpuk%zz
+      fkp%x = fkp%x - dlc(1)*dpui%xx+dlc(2)*dpui%yy+dlc(3)*dpui%zz
+      fkp%y = fkp%y - dlc(2)*dpui%xx+dlc(4)*dpui%yy+dlc(5)*dpui%zz
+      fkp%z = fkp%z - dlc(3)*dpui%xx+dlc(5)*dpui%yy+dlc(6)*dpui%zz
+
+      end subroutine
 
         M_subroutine
      &              tmatxb4_couple(d2,dist,dpui,dpuk,equi,equk,
@@ -246,7 +513,7 @@
            real(t_p) rr3,rr5,rr3_bn1,rr5_bn2,sc3,sc5
            real(t_p) duir,dukr,puir,pukr  ! Scalar products duir = (du(i).r)
 
-           ! compute the distances and the scaling factors according to Thole's model.
+           ! compute the distances and the scaling factors according to Thole s model.
            d1      = f_sqrt(d2)
            d2      = d2**(-1)
 
@@ -259,17 +526,17 @@
 
               if( sdamp == 0.0 ) then
                 sdamp1  = -100.0
-                sc3      =   f_exp(sdamp1) * uscale
-                sc5      =   f_exp(sdamp1) * uscale * (1 - sdamp1)
+                sc3    = (1-f_exp(sdamp1)) * uscale
+                sc5    = (1-f_exp(sdamp1) * (1 - sdamp1)) * uscale
               else
                 sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
                 if (sdamp1 > -50.0) then
                   expdamp1 = f_exp(sdamp1)
-                  sc3      =   expdamp1 * uscale
-                  sc5      =   expdamp1 * uscale * (1 - sdamp1)
+                  sc3      =  (1- expdamp1) * uscale
+                  sc5      =   (1-expdamp1* (1 - sdamp1)) * uscale 
                 else
-                  sc3     = 1
-                  sc5     = 1
+                  sc3     = uscale
+                  sc5     = uscale 
                 end if
               end if
            else
@@ -283,17 +550,17 @@
               if( sdamp == 0.0 ) then
                 sdamp1   = -100.0
                 expdamp1 = f_exp(sdamp1)
-                sc3      =   1 - expdamp1 * uscale
-                sc5      =   1 - expdamp1 * uscale * (1 - sdamp1)
+                sc3      =   (1 - expdamp1) * uscale
+                sc5      =   (1 - expdamp1*(1 - sdamp1)) * uscale 
               else
                 sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp))
                 if (sdamp1 > -50.0) then
                   expdamp1 = f_exp(sdamp1)
-                  sc3      =   1 - expdamp1 * uscale
-                  sc5      =   1 - expdamp1 * uscale * (1 - sdamp1)
+                  sc3      =   (1 - expdamp1) * uscale
+                  sc5      =   (1 - expdamp1*(1 - sdamp1)) * uscale 
                 else
-                  sc3     = 1
-                  sc5     = 1
+                  sc3     = uscale
+                  sc5     = uscale
                 end if
               end if
            end if
@@ -352,164 +619,4 @@
         fkq%y  = WRITE_C(fkq%y) - rr3_bn1*equi%yy + rr5_bn2*puir*dist%y
         fkq%z  = WRITE_C(fkq%z) - rr3_bn1*equi%zz + rr5_bn2*puir*dist%z
         end subroutine
-
-        M_subroutine
-     &           efld0_couple(d2,pos,ip,kp,alsq2,alsq2n,
-     &             aewald,damp,pgamma,dscale,pscale,
-     &             fid,fip,fkd,fkp,d1,bn1,bn2,sc3,sc5,do_correct)
-!$acc routine
-        use tinheader ,only: ti_p
-        use tintypes  ,only: real3,rpole_elt
-#if  defined(TINKER_CUF)
-        use utilcu  ,only: f_erfc
-#  if (defined(SINGLE)||defined(MIXED))
-        use utilcu  ,only: f_sqrt,f_exp
-#  endif
 #endif
-        real(t_p)      ,intent(in) :: d2
-        type(real3)    ,intent(in) :: pos
-        type(rpole_elt),intent(in) :: ip,kp
-        real(t_p)      ,intent(in) :: aewald,damp,pgamma
-     &                 ,alsq2,alsq2n,pscale,dscale
-        logical        ,intent(in) :: do_correct
-        type(real3)    ,intent(out)::fid,fip,fkd,fkp
-        real(t_p)      ,intent(out):: d1,bn1,bn2,sc3,sc5
-
-        real(t_p) exp2a
-        real(t_p) invd1,invd2,invd3,invd5,invd7
-        real(t_p) sc7,dsc3,dsc5,dsc7,psc3,psc5,psc7
-        real(t_p) drr3,drr5,drr7,prr3,prr5,prr7
-        real(t_p) dir,qirr,dkr,qkrr
-        real(t_p) qirx,qiry,qirz,qkrx,qkry,qkrz
-        real(t_p) fkmx,fkmy,fkmz,fimx,fimy,fimz
-        real(t_p) invdamp,expdamp1,damp1
-        real(t_p) ralpha,bn0,bn3
-        real(t_p) one,two
-        parameter( one=1.0_ti_p , two = 2.0_ti_p)
-
-        damp1   = -100.0_ti_p
-        invdamp = damp ** (-one)
-        invd2   = d2 ** (-one)
-        d1      = d2 ** 0.5_ti_p
-        invd1   = d1 ** (-one)
-
-        sc3     = one
-        sc5     = one
-        sc7     = one
-
-        invd3   = invd1 * invd2
-        invd5   = invd3 * invd2
-        invd7   = invd5 * invd2
-
-        if (damp.ne.0.0_ti_p) damp1 = - pgamma*(d1*invdamp)**3
-
-        if (damp1 > -50.0_ti_p) then
-           expdamp1  = f_exp(damp1)
-           sc3  = one - expdamp1
-           sc5  = one - expdamp1*(one - damp1)
-           sc7  = one - expdamp1*(one - damp1 + 0.6_ti_p*damp1**2)
-        end if
-
-        if (do_correct) then
-           ! [dp]scale equal to 1-[dp]scale in this case
-           drr3    =      sc3*dscale * invd3
-           drr5    =  3 * sc5*dscale * invd5
-           drr7    = 15 * sc7*dscale * invd7
-
-           prr3    =      sc3*pscale * invd3
-           prr5    =  3 * sc5*pscale * invd5
-           prr7    = 15 * sc7*pscale * invd7
-        else
-c
-c     calculate the error function damping terms
-c
-           ralpha  = aewald * d1
-           exp2a   = f_exp( -ralpha**2 )
-           bn0     = f_erfc(ralpha)
-
-           bn0     =    bn0                            * invd1
-           bn1     = (  bn0  + alsq2    *alsq2n*exp2a) * invd2
-           bn2     = (3*bn1  + alsq2**2 *alsq2n*exp2a) * invd2
-           bn3     = (5*bn2  + alsq2**3 *alsq2n*exp2a) * invd2
-
-           drr3    =      (one - sc3*dscale) * invd3
-           drr5    =  3 * (one - sc5*dscale) * invd5
-           drr7    = 15 * (one - sc7*dscale) * invd7
-
-           prr3    =      (one - sc3*pscale) * invd3
-           prr5    =  3 * (one - sc5*pscale) * invd5
-           prr7    = 15 * (one - sc7*pscale) * invd7
-        end if
-c
-c     compute some intermediate quantities
-c
-        dir     =  ip%dx*pos%x +  ip%dy*pos%y +  ip%dz*pos%z
-        qirx    = ip%qxx*pos%x + ip%qxy*pos%y + ip%qxz*pos%z
-        qiry    = ip%qxy*pos%x + ip%qyy*pos%y + ip%qyz*pos%z
-        qirz    = ip%qxz*pos%x + ip%qyz*pos%y + ip%qzz*pos%z
-        qirr    =   qirx*pos%x +   qiry*pos%y +   qirz*pos%z
-
-        dkr     =  kp%dx*pos%x +  kp%dy*pos%y +   kp%dz*pos%z
-        qkrx    = kp%qxx*pos%x + kp%qxy*pos%y +  kp%qxz*pos%z
-        qkry    = kp%qxy*pos%x + kp%qyy*pos%y +  kp%qyz*pos%z
-        qkrz    = kp%qxz*pos%x + kp%qyz*pos%y +  kp%qzz*pos%z
-        qkrr    =   qkrx*pos%x +   qkry*pos%y +    qkrz*pos%z
-
-        if (do_correct) then
-           fimx = 0.0_ti_p; fimy = 0.0_ti_p; fimz = 0.0_ti_p;
-           fkmx = 0.0_ti_p; fkmy = 0.0_ti_p; fkmz = 0.0_ti_p;
-        else
-           fimx = -( bn1*kp%c  - bn2*dkr + bn3*qkrr )*pos%x
-     &            -  bn1*kp%dx + two*bn2*qkrx
-           fimy = -( bn1*kp%c  - bn2*dkr + bn3*qkrr )*pos%y
-     &            -  bn1*kp%dy + two*bn2*qkry
-           fimz = -( bn1*kp%c  - bn2*dkr + bn3*qkrr )*pos%z
-     &            -  bn1*kp%dz + two*bn2*qkrz
-           fkmx =  ( bn1*ip%c  + bn2*dir + bn3*qirr )*pos%x
-     &            -  bn1*ip%dx - two*bn2*qirx
-           fkmy =  ( bn1*ip%c  + bn2*dir + bn3*qirr )*pos%y
-     &            -  bn1*ip%dy - two*bn2*qiry
-           fkmz =  ( bn1*ip%c  + bn2*dir + bn3*qirr )*pos%z
-     &            -  bn1*ip%dz - two*bn2*qirz
-        end if
-
-        fid%x   =  ( drr3*kp%c  - drr5*dkr + drr7*qkrr )*pos%x
-     &            +  drr3*kp%dx - two*drr5*qkrx
-        fid%y   =  ( drr3*kp%c  - drr5*dkr + drr7*qkrr )*pos%y
-     &            +  drr3*kp%dy - two*drr5*qkry
-        fid%z   =  ( drr3*kp%c  - drr5*dkr + drr7*qkrr )*pos%z
-     &            +  drr3*kp%dz - two*drr5*qkrz
-        fip%x   =  ( prr3*kp%c  - prr5*dkr + prr7*qkrr )*pos%x
-     &            +  prr3*kp%dx - two*prr5*qkrx
-        fip%y   =  ( prr3*kp%c  - prr5*dkr + prr7*qkrr )*pos%y
-     &            +  prr3*kp%dy - two*prr5*qkry
-        fip%z   =  ( prr3*kp%c  - prr5*dkr + prr7*qkrr )*pos%z
-     &            +  prr3*kp%dz - two*prr5*qkrz
-
-        fkd%x   = -( drr3*ip%c  + drr5*dir + drr7*qirr )*pos%x
-     &            +  drr3*ip%dx + two*drr5*qirx
-        fkd%y   = -( drr3*ip%c  + drr5*dir + drr7*qirr )*pos%y
-     &            +  drr3*ip%dy + two*drr5*qiry
-        fkd%z   = -( drr3*ip%c  + drr5*dir + drr7*qirr )*pos%z
-     &            +  drr3*ip%dz + two*drr5*qirz
-        fkp%x   = -( prr3*ip%c  + prr5*dir + prr7*qirr )*pos%x
-     &            +  prr3*ip%dx + two*prr5*qirx
-        fkp%y   = -( prr3*ip%c  + prr5*dir + prr7*qirr )*pos%y
-     &            +  prr3*ip%dy + two*prr5*qiry
-        fkp%z   = -( prr3*ip%c  + prr5*dir + prr7*qirr )*pos%z
-     &            +  prr3*ip%dz + two*prr5*qirz
-
-        fid%x   =  fimx + fid%x
-        fid%y   =  fimy + fid%y
-        fid%z   =  fimz + fid%z
-        fip%x   =  fimx + fip%x
-        fip%y   =  fimy + fip%y
-        fip%z   =  fimz + fip%z
-        fkd%x   =  fkmx + fkd%x
-        fkd%y   =  fkmy + fkd%y
-        fkd%z   =  fkmz + fkd%z
-        fkp%x   =  fkmx + fkp%x
-        fkp%y   =  fkmy + fkp%y
-        fkp%z   =  fkmz + fkp%z
-        end subroutine
-

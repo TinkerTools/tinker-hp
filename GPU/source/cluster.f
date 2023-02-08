@@ -1,5 +1,5 @@
 
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module clusterInl
       contains
 #include "image.f.inc"
@@ -694,6 +694,9 @@ c
       use molcul
       use tinheader
       use tinMemory
+#ifdef _OPENACC
+      use utilcu ,only: htod_ngrp
+#endif
       implicit none
       integer i,j,k
       integer next,size
@@ -701,9 +704,10 @@ c
       integer, allocatable :: list(:)
       real(t_p) wg
       logical header
-      character*20 keyword
+      character*20 keyword,mft
       character*240 record
       character*240 string
+      integer, allocatable :: wgrpfull(:,:)
 c
 c
 c     perform dynamic allocation of some global arrays
@@ -714,10 +718,7 @@ c
      &   call prmem_request(igrp,2,maxgrp,ncst=0)
       if (.not. allocated(grpmass)) 
      &   call prmem_request(grpmass,maxgrp,nst=0)
-      if (.not. allocated(wgrp)) then
-         allocate (wgrp(0:maxgrp,0:maxgrp))
-!$acc enter data create(wgrp)
-      end if
+      allocate (wgrpfull(maxgrp+1,maxgrp+1))
       call prmem_request (   kgrp,n)
       call prmem_request (grplist,n)
 c
@@ -726,6 +727,8 @@ c
       use_group = .false.
       use_intra = .false.
       use_inter = .false.
+      use_group_polar = .true.
+      use_group_mpole = .true.
       ngrp = 0
       do i = 1, n
          kgrp(i) = 0
@@ -735,7 +738,7 @@ c
          igrp(1,i) = 1
          igrp(2,i) = 0
       end do
-      wgrp = 1.0_ti_p
+      wgrpfull = 1.0_ti_p
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -784,7 +787,7 @@ c
             use_group = .true.
             use_inter = .true.
             use_intra = .false.
-            if (nmol .gt. maxgrp) then
+            if (nmol+1 .gt. maxgrp) then
                write (iout,30)
    30          format (/,' CLUSTER  --  Too many Atom Groups;',
      &                    ' Increase MAXGRP')
@@ -805,9 +808,9 @@ c
             string = record(next:240)
             read (string,*,err=40,end=40)  ga,gb,wg
    40       continue
-            if (wg .lt. 0.0_ti_p)  wg = 1.0_ti_p
-            wgrp(ga,gb) = wg
-            wgrp(gb,ga) = wg
+            !if (wg .lt. 0.0_ti_p)  wg = 1.0_ti_p
+            wgrpfull(ga+1,gb+1) = wg
+            wgrpfull(gb+1,ga+1) = wg
             use_inter = .false.
 c
 c     get keywords to select common sets of group interactions
@@ -818,6 +821,10 @@ c
          else if (keyword(1:12) .eq. 'GROUP-INTER ') then
             use_inter = .true.
             use_intra = .false.
+         else if (keyword(1:15) .eq. 'NO-GROUP-POLAR ') then
+            use_group_polar = .false.
+         else if (keyword(1:15) .eq. 'NO-GROUP-MPOLE ') then
+            use_group_mpole = .false.
          end if
       end do
 c
@@ -852,27 +859,41 @@ c
      &         call sort (size,kgrp(igrp(1,i)))
          end do
       end if
+#ifdef _OPENACC
+      call htod_ngrp(ngrp)
+#endif
+c
+c     Reduce wgrpfull in wgrp
+c
+      if (.not.allocated(wgrp)) then
+         allocate(wgrp(ngrp+1,ngrp+1))
+!$acc enter data create(wgrp)
+      end if
+      do i = 1, ngrp+1; do j = 1, ngrp+1
+         wgrp(j,i) = wgrpfull(j,i)
+      end do ; enddo
 c
 c     perform deallocation of some local arrays
 c
       deallocate (list)
+      deallocate(wgrpfull)
 c
 c     use only intragroup or intergroup interactions if selected
 c
       if (use_intra) then
          do i = 0, ngrp
             do j = 0, ngrp
-               wgrp(j,i) = 0.0_ti_p
+               wgrp(j+1,i+1) = 0.0_ti_p
             end do
-            wgrp(i,i) = 1.0_ti_p
+            wgrp(i+1,i+1) = 1.0_ti_p
          end do
       end if
       if (use_inter) then
          do i = 0, ngrp
             do j = 0, ngrp
-               wgrp(j,i) = 1.0_ti_p
+               wgrp(j+1,i+1) = 1.0_ti_p
             end do
-            wgrp(i,i) = 0.0_ti_p
+            wgrp(i+1,i+1) = 0.0_ti_p
          end do
       end if
 c
@@ -882,8 +903,8 @@ c
          size = igrp(2,i) - igrp(1,i) + 1
          if (size .eq. 0) then
             do j = 0, ngrp
-               wgrp(j,i) = 0.0_ti_p
-               wgrp(i,j) = 0.0_ti_p
+               wgrp(j+1,i+1) = 0.0_ti_p
+               wgrp(i+1,j+1) = 0.0_ti_p
             end do
          end if
       end do
@@ -906,7 +927,22 @@ c
       end do
 !$acc update device(grplist,wgrp)
 !$acc update device(grpmass,kgrp,igrp)
-
+c
+c     return if no interactions between groups is scaled
+c
+      existScaledInter = .false.
+      do i = 1, ngrp; do j = 1, ngrp
+         if (wgrp(i,j).ne.1.0) then
+            existScaledInter = .true.
+            goto 55
+         end if
+      end do; end do
+   55 continue
+c
+      if (use_group.and..not.use_group_polar) then
+         write(*,*) '  Warning: Full polarization for groups'
+      endif
+c
 c     output the final list of atoms in each group
 c
       if (debug .and. use_group .and. rank.eq.0) then
@@ -921,13 +957,27 @@ c
          end do
       end if
 c
+c     verbose report
+c
+      if (tinkerdebug.gt.0.and.rank.eq.0.and.ngrp.gt.0) then
+   65    format(/," Inter-Group Scaling Factor Enabled over ",I0
+     &           ," groups ",/
+     &           ," Scaling matrix :")
+         write(*,65) ngrp+1
+         write(mft,*) ngrp+1
+         mft = "("//trim(mft)//"F5.2)"
+         do i = 1,ngrp+1;
+            write(*,mft) wgrp(i,1:ngrp+1)
+         end do
+      end if
+c
 c     output the weights for intragroup and intergroup interactions
 c
       if (debug .and. use_group .and. rank.eq.0) then
          header = .true.
          do i = 0, ngrp
             do j = i, ngrp
-               if (wgrp(j,i) .ne. 0.0_ti_p) then
+               if (wgrp(j+1,i+1) .ne. 0.0_ti_p) then
                   if (header) then
                      header = .false.
                      write (iout,70)
@@ -936,15 +986,15 @@ c
      &                       //,11x,'Groups',15x,'Type',14x,'Weight',/)
                   end if
                   if (i .eq. j) then
-                     write (iout,80)  i,j,wgrp(j,i)
+                     write (iout,80)  i,j,wgrp(j+1,i+1)
    80                format (5x,2i6,12x,'IntraGroup',5x,f12.4)
                   else
-                     write (iout,90)  i,j,wgrp(j,i)
+                     write (iout,90)  i,j,wgrp(j+1,i+1)
    90                format (5x,2i6,12x,'InterGroup',5x,f12.4)
                   end if
                end if
             end do
          end do
       end if
-      return
+
       end

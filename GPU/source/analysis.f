@@ -15,7 +15,7 @@ c     the potential energy and perform energy partitioning analysis
 c     in terms of type of interaction or atom number
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
       module analysis_inl
       contains
@@ -23,11 +23,13 @@ c
       end module
 
       subroutine analysis (energy)
+      use ani
       use action
       use analyz
       use analysis_inl
       use domdec
       use energi
+      use group
       use iounit
       use inter
       use potent
@@ -40,6 +42,15 @@ c
       integer ierr
       real(r_p) energy
       logical tinker_isnan_m
+      real(t_p), allocatable, save :: wgrp_save(:,:)
+
+      if(use_ml_embedding .and. use_mlpot) then
+        if(.not. allocated(wgrp_save)) then
+          allocate(wgrp_save(ngrp+1,ngrp+1))
+        end if
+        wgrp_save=wgrp
+        call set_embedding_weights()
+      endif
 c
 c     allocate arrays
 c
@@ -51,6 +62,12 @@ c
       allocate (aep(nbloc))
       if (allocated(aev)) deallocate (aev)
       allocate (aev(nbloc))
+      if (allocated(aer)) deallocate (aer)
+      allocate (aer(nbloc))
+      if (allocated(aedsp)) deallocate (aedsp)
+      allocate (aedsp(nbloc))
+      if (allocated(aect)) deallocate (aect)
+      allocate (aect(nbloc))
       if (allocated(aeb)) deallocate (aeb)
       allocate (aeb(nbloc))
       if (allocated(aea)) deallocate (aea)
@@ -86,7 +103,7 @@ c
       if (allocated(aesum)) deallocate (aesum)
       allocate (aesum(nbloc))
 !$acc enter data create(aec,aea,aeb,aub,aeopb,aeg,aeba,
-!$acc&      aet,aept,aebt,aett,aeat) async
+!$acc&      aet,aept,aebt,aett,aeat)
 
       call create_action_data_ondevice
 
@@ -94,10 +111,11 @@ c
 c
 c     zero out each of the potential energy components
 c
-!$acc data present(eb,eba,eub,eopb,et,ept,ett,ebt,eat,ea
-!$acc&      ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
-!$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
-!$acc&      ,emrec,eprec,nev,nec,nem,nep,nem_,nep_,nev_)
+!$acc data present(eb,eb_r,eba,eub,eopb,et,ept,ett,ebt,eat,ea
+!$acc&      ,eaa,eopd,eid,eit,eg,emlpot,ex,esum
+!$acc&      ,ev,ev_r,ec,ec_r,em,em_r,emrec,ep,ep_r,eprec
+!$acc&      ,er,edsp,edsprec,ect
+!$acc&      ,nev,ner,nedsp,nec,nem,nep,nect,nem_,nep_,nev_,nemlpot)
 
 !$acc serial async
       ec    = 0.0_re_p
@@ -108,6 +126,10 @@ c
       ep    = 0.0_re_p
       eprec = 0.0_re_p
       ep_r  = 0
+      er    = 0
+      edsp  = 0
+      edsprec=0
+      ect   = 0
       eb    = 0.0_re_p
       ev    = 0.0_re_p
       ea    = 0.0_re_p
@@ -124,15 +146,20 @@ c
       eat   = 0.0_re_p
       ett   = 0.0_re_p
       eg    = 0.0_re_p
+      emlpot = 0.0_re_p
       ev_r  = 0
       nec   = 0
       nev   = 0
+      ner   = 0
+      nedsp = 0
       nem   = 0
       nep   = 0
+      nect  = 0
       nev_  = 0.0
       nem_  = 0.0
       nep_  = 0.0
       nec_  = 0.0
+      nemlpot = 0
 !$acc end serial
 c
 c     zero out energy partitioning components for each atom
@@ -156,7 +183,10 @@ c
       aeopd = 0.0_ti_p
       aeid  = 0.0_ti_p
       aeit  = 0.0_ti_p
+      aect  = 0.0_ti_p
       aem   = 0.0_ti_p
+      aer   = 0.0_ti_p
+      aedsp = 0.0_ti_p
       aep   = 0.0_ti_p
       aev   = 0.0_ti_p
 c
@@ -164,17 +194,17 @@ c     zero out the total intermolecular energy
 c
       einter = 0.0_re_p
 c
+c     alter partial charges and multipoles for charge flux
+c
+      if (use_chgflx)  call alterchg1
+c
 c     call the local geometry energy component routines
 c
-c     if (use_bond)    call ebond3
       if (use_bond)    call ebond3gpu
-c     if (use_angle)   call eangle3
-      if (use_bond)    call eangle3gpu
+      if (use_angle)   call eangle3gpu
       if (use_strbnd)  call estrbnd3
-c     if (use_urey)    call eurey3
       if (use_urey)    call eurey3gpu
       if (use_angang)  call eangang
-c     if (use_opbend)  call eopbend3
       if (use_opbend)  call eopbend3gpu
       if (use_opdist)  call eopdist3
       if (use_improp)  call eimprop3
@@ -184,6 +214,8 @@ c     if (use_opbend)  call eopbend3
       if (use_angtor)  call eangtor3
       if (use_strtor)  call estrtor3
       if (use_tortor)  call etortor3
+
+      if (use_mlpot)   call ml_potential(.false.)
 c
 c     call the van der Waals energy component routines
 c
@@ -193,35 +225,40 @@ c
 c        if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3
 c        if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3vec
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3gpu
-         call timer_exit( timer_ehal3 )
+         call timer_exit ( timer_ehal3 )
       end if
+      if (use_repuls)  call erepel3   !TODO Amoebap
+      if (use_disp)    call edisp3    !TODO Amoebap
 c
 c     call the electrostatic energy component routines
 c
-      call MPI_BARRIER(hostcomm,ierr)
-      if (use_charge) call echarge3gpu
+      call MPI_BARRIER (hostcomm,ierr)
+      if (use_charge)  call echarge3gpu
 
-      if (use_mpole) call timer_enter( timer_empole3 )
-      if (use_mpole) call empole3gpu
-      if (use_mpole) call timer_exit( timer_empole3 )
+      if (use_mpole)   call timer_enter( timer_empole3 )
+      if (use_mpole)   call empole3gpu
+      if (use_mpole)   call timer_exit( timer_empole3 )
 
-      if (use_polar) call timer_enter( timer_polar )
-      if (use_polar) call epolar3gpu
-      if (use_polar) call timer_exit( timer_polar )
+      if (use_polar)   call timer_enter( timer_polar )
+      if (use_polar)   call epolar3gpu
+      if (use_polar)   call timer_exit( timer_polar )
 
+      if (use_chgtrn)  call echgtrn3gpu
+
+      if(use_group) call switch_group(.false.)
 c
 c     call any miscellaneous energy component routines
 c
-      if (use_geom)   call egeom3gpu
-      if (use_extra)  call extra3
+      if (use_geom)    call egeom3gpu
+      if (use_extra)   call extra3
 c
 c     Update data on host
 c
 !$acc wait
 !$acc update host(eb,eba,eub,eopb,et,ept,ett,ebt,eat,ea
-!$acc&     ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
+!$acc&     ,eaa,eopd,eid,eit,ec,ev,er,edsp,em,ep,ect,eg,emlpot,ex,esum
 !$acc&     ,eb_r,ev_r,ev_r,em_r,ep_r
-!$acc&     ,nec,nev,nep,nem)
+!$acc&     ,nev,ner,nedsp,nec,nem,nep,nect)
 
       ! get reducted contribution
       eb = eb + enr2en(eb_r)
@@ -245,6 +282,18 @@ c
         call MPI_REDUCE(MPI_IN_PLACE,ev,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,nev,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,er,1,MPI_MDTYP,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,ner,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,edsp,1,MPI_MDTYP,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,nedsp,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,ect,1,MPI_MDTYP,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,nect,1,MPI_INT,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,eb,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
@@ -312,6 +361,10 @@ c
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(MPI_IN_PLACE,einter,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,emlpot,1,MPI_RPREC,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,nemlpot,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
       else
         call MPI_REDUCE(ec,ec,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
@@ -328,6 +381,18 @@ c
         call MPI_REDUCE(ev,ev,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(nev,nev,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(er,er,1,MPI_MDTYP,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(ner,ner,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(edsp,edsp,1,MPI_MDTYP,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(nedsp,nedsp,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(ect,ect,1,MPI_MDTYP,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(nect,nect,1,MPI_INT,MPI_SUM,0,
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(eb,eb,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
@@ -395,26 +460,36 @@ c
      $     COMM_TINKER,ierr)
         call MPI_REDUCE(einter,einter,1,MPI_RPREC,MPI_SUM,0,
      $     COMM_TINKER,ierr)
+        call MPI_REDUCE(emlpot,emlpot,1,MPI_RPREC,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
+        call MPI_REDUCE(nemlpot,nemlpot,1,MPI_INT,MPI_SUM,0,
+     $     COMM_TINKER,ierr)
       end if
 c
 c     sum up to give the total potential energy
 c
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
      &          + et + ept + eat + ebt + ett + ev + em
-     &          + ec + ep +  eg + ex
+     &          + ec + ep + enr2en( edsp+er+ect ) +  eg + emlpot + ex
       energy = esum
 c
 c     sum up to give the total potential energy per atom
 c
-      aesum = aem + aec + aep + aev + aeb + aea + aeba + aub + aeaa
-     $  + aeopb + aeopd + aeid + aeit + aet + aept + aebt + aeat + aett
-     $  + aeg + aex
+c     aesum = aem + aec + aep + aev + aeb + aer + aedsp + aect + aea 
+c    $ + aeba + aub + aeaa + aeopb + aeopd + aeid + aeit + aet + aept
+c    $ + aeat +  aebt + aett + aeg + aex
 
 !$acc end data
 c
       call delete_action_data_ondevice
 !$acc exit data delete(aec,aea,aeb,aub,aeopb,aeg,aeba,
-!$acc&     aet,aept,aebt,aett,aeat) async
+!$acc&     aet,aept,aebt,aett,aeat)
+
+
+      if(use_ml_embedding .and. use_mlpot) then
+        wgrp = wgrp_save
+!$acc update device(wgrp) async
+      endif
 c
 c     check for an illegal value for the total energy
 c

@@ -14,7 +14,7 @@ c     "eurey3" calculates the Urey-Bradley energy; also
 c     partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eurey3
       use action
       use analyz
@@ -37,6 +37,8 @@ c
       real(t_p) e,ideal,force
       real(t_p) dt,dt2
       real(t_p) xac,yac,zac,rac
+      real(t_p) fgrp
+      integer iga,igc
       logical proceed
       logical header,huge
 c
@@ -79,6 +81,13 @@ c
 c     calculate the Urey-Bradley energy for this interaction
 c
             e = ureyunit * force * dt2 * (1.0_ti_p+cury*dt+qury*dt2)
+            
+            if(use_group) then
+              iga=grplist(ia)
+              igc=grplist(ic)
+              fgrp = wgrp(iga+1,igc+1)
+              e = e*fgrp
+            endif
 c
 c     increment the total Urey-Bradley energy
 c

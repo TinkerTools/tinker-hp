@@ -14,7 +14,7 @@ c     "prtxyz" writes out a set of Cartesian coordinates
 c     to an external disk file
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine prtxyz (ixyz)
       use atmtyp
       use atoms    ,only: type

@@ -20,7 +20,7 @@ c
        subroutine rot_mat_site(recBuild,nk,poleglobvec)
          logical,intent(in)::recBuild
          integer,intent(in)::nk
-         integer,intent(in)::poleglobvec(:)
+         integer,intent(in)::poleglobvec(nk)
        end subroutine
       end interface
 c
@@ -58,13 +58,14 @@ c
       subroutine rot_mat_site(recBuild,nk,poleglobvec)
       use atoms
       use domdec ,only: repart,rank
+      use mdstate
       use mpole
       use random_mod
       use utilgpu
       implicit none
       logical,intent(in):: recBuild
       integer,intent(in):: nk
-      integer,intent(in):: poleglobvec(:)
+      integer,intent(in):: poleglobvec(nk)
       integer ii,iipole,iglob
       integer ix,iy,iz
       integer i,j,k,m
@@ -94,7 +95,7 @@ c
          kk = 0
 !$acc end serial
 #ifdef _OPENACC
-         if (host_rand_platform) then
+         if (host_rand_platform.or.track_mds) then
             do ii = 1, 3*nZ_Onlyloc
                samplevec(ii) = random ()
             end do

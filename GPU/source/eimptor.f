@@ -13,10 +13,11 @@ c
 c     "eimptor" calculates the improper torsion potential energy
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module eimptor_inl
       contains
 #include "image.f.inc"
+#include "groups.inc.f"
       end module
 
       subroutine eimptor
@@ -34,7 +35,7 @@ c
       implicit none
       integer i,ia,ib,ic,id
       integer iimptor
-      real(t_p) e,rcb
+      real(t_p) e,rcb,fgrp
       real(t_p) xt,yt,zt
       real(t_p) xu,yu,zu
       real(t_p) xtu,ytu,ztu
@@ -53,6 +54,7 @@ c
       real(t_p) xba,yba,zba
       real(t_p) xcb,ycb,zcb
       real(t_p) xdc,ydc,zdc
+      integer iga,igb,igc,igd,gmin,gmax
       logical proceed
 c
 c
@@ -62,8 +64,7 @@ c
 c
 c     calculate the improper torsional angle energy term
 c
-!$acc parallel loop present(imptorglob,iitors,itors1,itors2,
-!$acc&    itors3,use,x,y,z) present(eid)
+!$acc parallel loop default(present) present(eid)
       do iimptor = 1, nitorsloc
          i = imptorglob(iimptor)
          ia = iitors(1,i)
@@ -73,8 +74,9 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)
+     &      call groups4_inl (fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
@@ -148,6 +150,10 @@ c
 c     calculate the improper torsional energy for this angle
 c
                e = itorunit * (v1*phi1 + v2*phi2 + v3*phi3)
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total torsional angle energy
 c

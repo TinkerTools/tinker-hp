@@ -15,7 +15,7 @@ c     at trigonal centers via the central atom height; also partitions
 c     the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eopdist3
       use action
       use analyz
@@ -45,6 +45,7 @@ c
       real(t_p) xbd,ybd,zbd
       real(t_p) xcd,ycd,zcd
       real(t_p) xt,yt,zt,rt2
+      real(t_p) fgrp
       logical proceed
       logical header,huge
 c
@@ -54,7 +55,7 @@ c
       neopd = 0
       eopd = 0.0_ti_p
       aeopd = 0.0_ti_p
-      header = .true.
+      header = (rank.eq.0)
 c
 c     calculate the out-of-plane distance energy term
 c
@@ -69,8 +70,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     get the coordinates of the central and peripheral atoms
@@ -118,6 +119,15 @@ c     find the out-of-plane distance energy
 c
             e = opdunit * force * dt2
      &             * (1.0_ti_p+copd*dt+qopd*dt2+popd*dt3+sopd*dt4)
+
+            if(use_group) then
+              call groups(fgrp,ia,ib,ic,id,0,0)
+              e = e*fgrp
+            endif
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) e = e * fgrp
 c
 c     increment the total out-of-plane distance energy
 c

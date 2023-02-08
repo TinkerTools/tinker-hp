@@ -14,7 +14,7 @@ c     "readdyn" get the positions, velocities and accelerations
 c     for a molecular dynamics restart from an external disk file
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine readdyn (idyn)
       use atomsMirror
       use boxes
@@ -112,7 +112,7 @@ c
          read (record,*,err=230,end=230)  a(1,i),a(2,i),a(3,i)
       end do
 !$acc update device(a)
-      read (idyn,210)
+      read (idyn,210,end=222)
   210 format ()
       do i = 1, n
          read (idyn,220)  record
@@ -121,15 +121,17 @@ c
      &                                    aalt(3,i)
       end do
 !$acc update device(aalt)
-c      read (idyn,230)
-c  230 format ()
-c      do i = 1, n
-c         read (idyn,240)  record
-c  240    format (a240)
-c         read (record,*,err=250,end=250)  aalt2(1,i),aalt2(2,i),
-c     &                                    aalt2(3,i)
-c      end do
-c!$acc update device(aalt2)
+      read (idyn,260,end=222)
+  260 format ()
+      do i = 1, n
+         read (idyn,270)  record
+  270    format (a240)
+         read (record,*,err=230,end=230)  aalt2(1,i),aalt2(2,i),
+     &                                    aalt2(3,i)
+      end do
+!$acc update device(aalt2)
+
+  222 continue
       quit = .false.
   230 continue
       !TODO 1.2 Check with Louis this part

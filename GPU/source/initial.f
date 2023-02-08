@@ -14,7 +14,7 @@ c     "initial" sets up original values for some parameters
 c     and variables that might not otherwise get initialized
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine initial
       use atoms
       use bath
@@ -123,6 +123,11 @@ c
 c      use_replica = .false.
       use_polymer = .false.
 c
+c     Stats on energy
+c
+      etot_ave = 0.0
+      etot_std = 0.0
+c
 c     flags for temperature and pressure baths
 c
       isothermal = .false.
@@ -229,6 +234,7 @@ c
       use energi
       use inter  ,only: einter
       use inform
+      use mamd   ,only: aMDwattype
       use nvshmem
       use utilgpu
 #ifdef _OPENACC
@@ -278,6 +284,7 @@ c     For blocking computation of direct space
 c
       Ndir_block        = 1
       Ndir_async_block  = 0
+!$acc enter data create(aMDwattype)
 c
 c     create virial component on device
 c

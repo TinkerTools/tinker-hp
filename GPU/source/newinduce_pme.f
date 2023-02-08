@@ -268,7 +268,7 @@ c
 c
 c     update the lists of previous induced dipole values
 c
-      if (use_pred) then
+      if ((use_pred).and..not.(use_lambdadyn)) then
         if (rank.le.ndir-1) then
            nualt = min(nualt+1,maxualt)
            do i = 1, npolebloc
@@ -425,10 +425,7 @@ c
         call commrecdirdip(nrhs,0,murec,pp,buffermpimu,
      $   buffermpimu,req2rec,req2send)
 c
-        time0 = mpi_wtime()
         call tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
-        time1 = mpi_wtime()
-        timerecdip = timerecdip + time1-time0
         call commrecdirsolv(nrhs,1,dipfieldbis,dipfield,buffermpi1,
      $      buffermpi2,reqrecdirrec,reqrecdirsend)
         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
@@ -436,27 +433,34 @@ c
       end if
       if (rank.le.ndir-1) then
 c
-        time0 = mpi_wtime()
         call matvec(nrhs,.true.,mu,h)
-        time1 = mpi_wtime()
-        timerealdip = timerealdip + time1-time0
         call commfield(nrhs,h)
 c
         call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
      $    buffermpi2,reqrecdirrec,reqrecdirsend)
         term = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
-        h(:,:,1:npoleloc) = h(:,:,1:npoleloc)+dipfield(:,:,1:npoleloc)
-     $  - term*mu(:,:,1:npoleloc)
-        res(:,:,1:npoleloc) = ef(:,:,1:npoleloc)-h(:,:,1:npoleloc)
-        do k = 1, nrhs
-          do j = 1, 3
-            zr(j,k,1:npoleloc) = diag(1:npoleloc)*res(j,k,1:npoleloc)
+
+        do i = 1, npoleloc
+          do k = 1, nrhs
+            do j = 1, 3
+              h(j,k,i) = h(j,k,i) + dipfield(j,k,i)-term*mu(j,k,i)
+              res(j,k,i) = ef(j,k,i)-h(j,k,i)
+              zr(j,k,i) = diag(i)*res(j,k,i)
+              pp(j,k,i) = zr(j,k,i)
+            end do
           end do
         end do
-        pp(:,:,1:npoleloc) = zr(:,:,1:npoleloc)
-        do k = 1, nrhs
-          ggold(k) = sum(res(:,k,:)*zr(:,k,:))
+
+        ggold = 0d0
+        do i = 1, npoleloc
+          do k = 1, nrhs
+            do j = 1, 3
+              ggold(k) = ggold(k) + res(j,k,i)*zr(j,k,i)
+            end do
+          end do
         end do
+
+
         call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,
      $     MPI_SUM,comm_dir,req1,ierr)
         call commdirdir(nrhs,1,pp,reqrec,reqsend)
@@ -511,11 +515,25 @@ c
           call commrecdirsolv(nrhs,2,dipfieldbis,dipfield,buffermpi1,
      $      buffermpi2,reqrecdirrec,reqrecdirsend)
 c
-          h(:,:,1:npoleloc) = h(:,:,1:npoleloc)+dipfield(:,:,1:npoleloc)
-     $     - term*pp(:,:,1:npoleloc)
-          do k = 1, nrhs
-            gg(k) = sum(pp(:,k,1:npoleloc)*h(:,k,1:npoleloc))
+          do i = 1, npoleloc
+            do k = 1, nrhs
+              do j = 1, 3
+                h(j,k,i) = h(j,k,i) + dipfield(j,k,i)-term*pp(j,k,i)
+              end do
+            end do
           end do
+          gg = 0d0
+          do i = 1, npoleloc
+            do k = 1, nrhs
+              do j = 1, 3
+                gg(k) = gg(k) + pp(j,k,i)*h(j,k,i)
+              end do
+            end do
+          end do
+
+
+
+
           call MPI_IALLREDUCE(MPI_IN_PLACE,gg(1),nrhs,MPI_TPREC,MPI_SUM,
      $      comm_dir,req2,ierr)
           call MPI_WAIT(req2,status,ierr)
@@ -525,33 +543,40 @@ c
             ggnew(k)  = zero
             ene(k)    = zero
           end do
-          do k = 1, nrhs
-            mu(:,k,1:npoleloc) = mu(:,k,1:npoleloc) + alphacg(k)*
-     $       pp(:,k,1:npoleloc)
-            res(:,k,1:npoleloc) = res(:,k,1:npoleloc) - alphacg(k)*
-     $       h(:,k,1:npoleloc)
-          end do
-          do k = 1, nrhs
-            do j = 1, 3
-              zr(j,k,1:npoleloc) = diag(1:npoleloc)*res(j,k,1:npoleloc)
+
+          do i = 1, npoleloc
+            do k = 1, nrhs
+              do j = 1, 3
+                mu(j,k,i) = mu(j,k,i) + alphacg(k)*pp(j,k,i)
+                res(j,k,i) = res(j,k,i)-alphacg(k)*h(j,k,i)
+                zr(j,k,i) = diag(i)*res(j,k,i)
+              end do
             end do
           end do
-          do k = 1, nrhs
-            ggnew(k) = sum(res(:,k,:)*zr(:,k,:))
-            ene(k) = -pt5*sum(mu(:,k,1:npoleloc)*(res(:,k,1:npoleloc)+
-     $        ef(:,k,1:npoleloc)))
+
+          do i = 1, npoleloc
+            do k = 1, nrhs
+              do j = 1, 3
+                ggnew(k) = ggnew(k) + res(j,k,i)*zr(j,k,i)
+                ene(k) = ene(k) - pt5*mu(j,k,i)*(res(j,k,i)+ef(j,k,i))
+              end do
+            end do
           end do
         end if
         call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_TPREC,
-     $      MPI_SUM,MPI_COMM_WORLD,req3,ierr)
+     $      MPI_SUM,COMM_TINKER,req3,ierr)
         call MPI_WAIT(req3,status,ierr)
         if (rank.le.ndir-1) then
           call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_TPREC,
      $      MPI_SUM,comm_dir,req4,ierr)
           call MPI_WAIT(req4,status,ierr)
-          do k = 1, nrhs
-            pp(:,k,1:npoleloc) = zr(:,k,1:npoleloc)+ggnew(k)/ggold(k)*
-     $         pp(:,k,1:npoleloc)
+
+          do i = 1, npoleloc
+            do k = 1, nrhs
+              do j = 1, 3
+                pp(j,k,i) = zr(j,k,i)+ ggnew(k)/ggold(k)*pp(j,k,i)
+              end do
+            end do
           end do
 c
           call commdirdir(nrhs,1,pp,reqrec,reqsend)
@@ -947,7 +972,7 @@ c
       real(t_p), allocatable :: qgridmpi(:,:,:,:,:)
       integer, allocatable :: reqrec(:),reqsend(:)
       integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
-      integer nprocloc,commloc,rankloc,proc
+      integer nprocloc,commloc,rankloc
       real(t_p) time0,time1
 c
       if (use_pmecore) then
@@ -956,7 +981,7 @@ c
         rankloc  = rank_bis
       else
         nprocloc = nproc
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
         rankloc  = rank
       end if
 
@@ -1038,20 +1063,14 @@ c
      $   qgridin_2d(1,1,1,1,1),
      $   qgridmpi(1,1,1,1,i),qgridin_2d(1,1,1,1,1))
       end do
-      time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1 - time0
 c
 c     Perform 3-D FFT forward transform
 c
-      time0 = mpi_wtime()
       call fft2d_frontmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
-      time1 = mpi_wtime()
-      timeffts = timeffts + time1-time0
 c
 c     make the scalar summation over reciprocal lattice
 c
-      time0 = mpi_wtime()
       if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
      $   (kstart2(rankloc+1).eq.1)) then
            qfac_2d(1,1,1) = 0.0_ti_p
@@ -1117,20 +1136,14 @@ c
            end do
          end do
       end do
-      time1 = mpi_wtime()
-      timescalar = timescalar + time1-time0
 c
 c     perform 3-D FFT backward transform
 c
-      time0 = mpi_wtime()
       call fft2d_backmpi(qgridin_2d,qgridout_2d,n1mpimax,n2mpimax,
      $ n3mpimax)
-      time1 = mpi_wtime()
-      timeffts = timeffts + time1-time0
 c
 c     MPI : Begin reception
 c
-      time0 = mpi_wtime()
       do i = 1, nrec_send
         tag = nprocloc*rankloc + prec_send(i) + 1
         call MPI_IRECV(qgridin_2d(1,1,1,1,i+1),
@@ -1153,12 +1166,9 @@ c
       do i = 1, nrec_recep
         call MPI_WAIT(reqbcastsend(i),status,ierr)
       end do
-      time1 = mpi_wtime()
-      timerecreccomm = timerecreccomm + time1-time0
 c
 c     get field
 c
-      time0 = mpi_wtime()
       do i = 1, npolerecloc
         iipole = polerecglob(i)
         iglob = ipole(iipole)
@@ -1169,8 +1179,6 @@ c
           call amove(10,cphirec(1,i),cphi(1,iloc))
         end if
       end do
-      time1 = mpi_wtime()
-      timegrid2 = timegrid2 + time1-time0
 c
       deallocate (qgridmpi)
       deallocate (reqbcastrec)
@@ -1219,7 +1227,7 @@ c
         rankloc  = rank_bis
       else
         nprocloc = nproc
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
         rankloc  = rank
       end if
 

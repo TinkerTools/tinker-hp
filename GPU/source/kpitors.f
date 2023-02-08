@@ -14,7 +14,7 @@ c     "kpitors" assigns pi-orbital torsion parameters to torsions
 c     needing them, and processes any new or changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kpitors(init)
       use atmlst
       use atmtyp

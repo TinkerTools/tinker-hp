@@ -15,9 +15,10 @@ c     distance windows and Ewald sum cutoffs,
 c     and the pairwise neighbor generation method
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine cutoffs
       use atoms  ,only: n
+      use ani    ,only: mlpotcut
       use bound
       use cutoff
       use domdec
@@ -58,6 +59,7 @@ c
       end if
       repcut        = 6.0_ti_p
       ctrncut       = 6.0_ti_p
+      mlpotcut      = 5.2_ti_p
       ewaldcut      = 7.0_ti_p
       ewaldshortcut = 5.0_ti_p
       repshortcut   = 4.0_ti_p
@@ -126,7 +128,7 @@ c
             use_ewald = .true.
          else if (keyword(1:13) .eq. 'EWALD-CUTOFF ') then
             read (string,*,err=10,end=10)  ewaldcut
-         else if (keyword(1:13) .eq. 'EWALDSHORT-CUTOFF ') then
+         else if (keyword(1:18) .eq. 'EWALDSHORT-CUTOFF ') then
             read (string,*,err=10,end=10)  ewaldshortcut
          else if (keyword(1:11) .eq. 'SHORT-HEAL ') then
             read (string,*,err=10,end=10)  shortheal
@@ -177,6 +179,8 @@ c
             read (string,*,err=10,end=10)  ctrncut
          else if (keyword(1:19) .eq. 'CHGTRNSHORT-CUTOFF ') then
             read (string,*,err=10,end=10)  ctrnshortcut
+         else if (keyword(1:13) .eq. 'MLPOT-CUTOFF ') then
+            read (string,*,err=10,end=10)  mlpotcut
 c
 c     get distance for initialization of energy switching
 c
@@ -285,6 +289,7 @@ c
 
       subroutine update_lbuffer(list_buff)
       use argue
+      use bath
       use cutoff
       use neigh
       use tinheader
@@ -308,6 +313,11 @@ c
       ! Update ineigup
       read(arg(3),*,err=30,end=30) dt           ! Fetch timestep among arguments
       dt         = dt*0.001_re_p  ! Convert to picoseconds
-      ineigup    = max( 1,int(((real(lbuffer,r_p)*0.02_re_p)/dt)+1d-3) )
+
+      if (.not.isothermal.and..not .isobaric) then  !Microcanonical (NVE)
+         ineigup = max( 1,int(((real(lbuffer,r_p)*0.015_re_p)/dt)+1d-3))
+      else
+         ineigup = max( 1,int(((real(lbuffer,r_p)*0.02_re_p)/dt)+1d-3) )
+      end if
  30   continue
       end subroutine

@@ -15,11 +15,12 @@ c     distances, angles and torsions as well as Gaussian basin and
 c     spherical droplet restraints
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module egeom_inl
         contains
 #include "image.f.inc"
 #include "midpointimage.f.inc"
+#include "groups.inc.f"
       end module
 
       subroutine egeom
@@ -77,6 +78,8 @@ c
       real(t_p) c1,c2,c3
       real(t_p) xi,yi,zi,ri
       real(t_p) a,b,buffer,term
+      real(t_p) fgrp
+      integer iga,igb,igc,igd,gmin,gmax
       logical proceed,intermol
 
       if (deb_Path) write(*,'(1X,A)') 'egeom'
@@ -94,8 +97,8 @@ c
       do inpfix = 1, npfixloc
          i = npfixglob(inpfix)
          ia = ipfix(i)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia))
+         proceed = (use(ia))
+         if (use_group)  call groups1_inl (fgrp,ia,ngrp,grplist,wgrp)
          if (proceed) then
             xr = 0.0_ti_p
             yr = 0.0_ti_p
@@ -109,6 +112,7 @@ c
             dt = max(0.0_ti_p,r-pfix(2,i))
             dt2 = dt * dt
             e = force * dt2
+            if (use_group)  e = e * fgrp
             eg = eg + e
          end if
       end do
@@ -124,15 +128,14 @@ c
          i = ndfixglob(indfix)
          ia = idfix(1,i)
          ib = idfix(2,i)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group)  call groups2_inl (fgrp,ia,ib,ngrp,grplist,wgrp)
          if (proceed) then
             xr = x(ia) - x(ib)
             yr = y(ia) - y(ib)
             zr = z(ia) - z(ib)
             intermol = (molcule(ia) .ne. molcule(ib))
             if (use_bounds .and. intermol)  call image_inl (xr,yr,zr)
-c            if (use_bounds)  call image_inl (xr,yr,zr)
             r = sqrt(xr*xr + yr*yr + zr*zr)
             force = dfix(1,i)
             df1 = dfix(2,i)
@@ -143,6 +146,7 @@ c            if (use_bounds)  call image_inl (xr,yr,zr)
             dt = r - target
             dt2 = dt * dt
             e = force * dt2
+            if (use_group) e = e * fgrp
             eg = eg + e
          end if
       end do
@@ -159,8 +163,9 @@ c
          ia = iafix(1,i)
          ib = iafix(2,i)
          ic = iafix(3,i)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if (use_group)
+     &      call groups3_inl (fgrp,ia,ib,ic,ngrp,grplist,wgrp)
          if (proceed) then
             xia = x(ia)
             yia = y(ia)
@@ -194,6 +199,7 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group)  e = e * fgrp
                eg = eg + e
             end if
          end if
@@ -212,8 +218,9 @@ c
          ib = itfix(2,i)
          ic = itfix(3,i)
          id = itfix(4,i)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)
+     &      call groups4_inl(fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
          if (proceed) then
             xia = x(ia)
@@ -293,6 +300,7 @@ c
                dt = dt / radian
                dt2 = dt * dt
                e = force * dt2
+               if (use_group)  e = e * fgrp
                eg = eg + e
             end if
          end if
@@ -353,6 +361,7 @@ c         if (use_bounds)  call image_inl (xr,yr,zr)
          dt  = r - target
          dt2 = dt * dt
          e   = force * dt2
+         if (use_group)  e = e * fgrp
          eg  = eg + e
       end do
 
@@ -369,9 +378,10 @@ c
          ib = ichir(2,i)
          ic = ichir(3,i)
          id = ichir(4,i)
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
-     &                              use(ic) .or. use(id))
+         if (use_group)
+     &      call groups4_inl (fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
+         proceed = (use(ia).or. use(ib).or.
+     &                              use(ic).or. use(id))
          if (proceed) then
             xad = x(ia) - x(id)
             yad = y(ia) - y(id)
@@ -395,6 +405,7 @@ c
             dt  = vol - target
             dt2 = dt * dt
             e   = force * dt2
+            if (use_group)  e = e * fgrp
             eg  = eg + e
          end if
       end do
@@ -416,8 +427,9 @@ c
                xk = x(kglob)
                yk = y(kglob)
                zk = z(kglob)
-               proceed = .true.
-               if (proceed) proceed = (use(iglob).or.use(kglob))
+               if (use_group) 
+     &            call groups2_inl(fgrp,i,k,ngrp,grplist,wgrp)
+               proceed = (use(iglob) .or. use(kglob))
                if (proceed) then
                   xr = xi - xk
                   yr = yi - yk
@@ -430,6 +442,7 @@ c
                   e = 0.0_ti_p
                   if (term .gt. -50.0_ti_p)  e = depth * exp(term)
                   e = e - depth
+                  if (use_group)  e = e * fgrp
                   eg = eg + e
                end if
             end do
@@ -445,8 +458,8 @@ c
 !$acc parallel loop present(glob) async
          do i = 1, nloc
             iglob = glob(i)
-            proceed = .true.
-            if (proceed)  proceed = (use(iglob))
+            if (use_group)  call groups1_inl (fgrp,i,ngrp,grplist,wgrp)
+            proceed = (use(iglob))
             if (proceed) then
                xi = x(iglob)
                yi = y(iglob)
@@ -457,6 +470,7 @@ c
                r6 = r2 * r2 * r2
                r12 = r6 * r6
                e = a/r12 - b/r6
+               if (use_group)  e = e * fgrp
                eg = eg + e
             end if
          end do

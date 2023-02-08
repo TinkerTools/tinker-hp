@@ -14,8 +14,7 @@ c     "verlet" performs a single molecular dynamics time step
 c     via the velocity Verlet multistep recursion formula
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       subroutine verlet (istep,dt)
       use atmtyp
       use atomsMirror

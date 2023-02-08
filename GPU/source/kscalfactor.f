@@ -8,7 +8,7 @@ c                low amount of memory
 c     maxgangs   maximum gangs number used to process polar scaling
 c                kernel
 c     vecl       length of each gang
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kscalfactor_inl
         integer maxgangs,vecl,worksize1
         integer,allocatable:: workS(:,:),workS_p(:,:)
@@ -63,7 +63,7 @@ c     vecl       length of each gang
       use mpole  ,only: npolelocnl,npolebloc
       use polgrp
       use polpot ,only: n_uscale,n_dpscale,n_dpuscale
-      use potent ,only: use_polar,fuse_chglj
+      use potent ,only: use_polar,fuse_chglj,use_chgpen
       use tinMemory
       use utilcomm,only: no_commdir
       use vdwpot ,only: n_vscale
@@ -106,12 +106,16 @@ c     vecl       length of each gang
       end if
       !print*,"scal1",szo_workspace/(2**20)*1.0
 
-      ! Selet polar scaling subroutine
+      ! Select polar scaling subroutine
       if (szo_workspace.gt.max_sfworkSpace) then
          s_sfWork = szo_workspace -
      &              ( npolelocnl*(max_factorn+max_factorp)*szoi  +
      &              3*npolelocnl*(max_factorn+max_factorp)*szoTp )
          polar_scaling_p => polar_scaling1
+         if (use_chgpen) then
+            write(0,*) ' polar_scaling_cpen1 routine is not implemented'
+            __TINKER_FATAL__
+         end if
       else
          s_sfWork = szo_workspace
          polar_scaling_p => polar_scaling
@@ -714,14 +718,15 @@ c
      &                  xendproc,yendproc,zendproc
       use inform ,only: deb_Path
       use kscalfactor_inl
-      use tinheader
-      use tinMemory ,only: prmem_request
       use mpole  ,only: npolelocnl, ipole
       use mplpot
+      use tinheader
+      use tinMemory ,only: prmem_request
 #ifdef _OPENACC
       use thrust
       use utilgpu,only: rec_stream
 #endif
+      use sizes  ,only: tinkerdebug
       implicit none
       integer i,ii,j,k,cap
       integer*1:: iscal
@@ -818,27 +823,32 @@ c
 #endif
 c     print*,n_mscale,npolelocnl
 
+!$acc end data
+
       ! Allocate memory to store m_scaling
-      call prmem_request(mcorrect_ik,n_mscale,2,cdim=.false.)
+      call prmem_request(mcorrect_ik,2,n_mscale)
       call prmem_request(mcorrect_scale,n_mscale)
+
+      if (tinkerdebug.gt.0) then
+  42     format (' mpole scaling(',I10,') rank(',I0,')')
+         print 42,n_mscale,rank
+      end if
+      if (n_mscale.eq.0) return
 c
 c     Fill scaling the scaling_factor intercations along with their
 c     types and value
 c
-!$acc parallel loop present(mcorrect_ik,mcorrect_scale)
-!$acc&         gang vector
-!$acc&         async
+!$acc parallel loop default(present) gang vector async
       do ii = 1, npolelocnl
          iglob = ipole(poleglobnl(ii))
          iscan = scan_factorn(ii)
+!$acc loop seq
          do j = 1, n_factorn(ii)
-            mcorrect_ik(iscan+j,1)  = iglob
-            mcorrect_ik(iscan+j,2)  = pair_factorn(j,ii)
+            mcorrect_ik(1,iscan+j)  = iglob
+            mcorrect_ik(2,iscan+j)  = pair_factorn(j,ii)
             mcorrect_scale(iscan+j) = scal_factorn(j,ii)
          end do
       end do
-
-!$acc end data
 
       end
 
@@ -878,12 +888,13 @@ c
       real(t_p) xi,yi,zi,xk,yk,zk
       real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
       real(t_p) uscalevec(5),uscale
-      real(t_p) pscalevec(5),pscale,pscale41
+      real(t_p) pscalevec(5),piscalvec(5),pscale,pscale41
       real(t_p) dscalevec(5),dscale
+      character*8 dpe
 
       if (deb_Path) print '(2X,A)','polar_scaling'
 
-!$acc data create(uscalevec,pscalevec,dscalevec)
+!$acc data create(uscalevec,pscalevec,piscalvec,dscalevec)
 !$acc&     present(poleglobnl,ipole,
 !$acc&  scan_factorn,n_factorn,pair_factorp,scal_factorp,
 !$acc&  scan_factorp,n_factorp,n_uscale,n_dpscale,n_dpuscale,
@@ -897,7 +908,7 @@ c
       yend = yendproc(rank+1)
       zbeg = zbegproc(rank+1)
       zend = zendproc(rank+1)
-      pscale41 = 1.0_ti_p-p4scale*p41scale
+      pscale41 = 1.0_ti_p-p4scale*p4iscale
       kglob_s=0
 c
 c     Construct induced dipoles scalar product scaling interactions
@@ -913,16 +924,29 @@ c
       uscalevec(3) = 1.0_ti_p-u3scale
       uscalevec(4) = 1.0_ti_p-u4scale
       uscalevec(5) = 0.0_ti_p
-      dscalevec(1) = 1.0_ti_p-d1scale
-      dscalevec(2) = 1.0_ti_p-d2scale
-      dscalevec(3) = 1.0_ti_p-d3scale
-      dscalevec(4) = 1.0_ti_p-d4scale
-      dscalevec(5) = 0.0_ti_p
+      if (dpequal) then
+         dscalevec(1) = 0.0_ti_p
+         dscalevec(2) = 0.0_ti_p
+         dscalevec(3) = 0.0_ti_p
+         dscalevec(4) = 0.0_ti_p
+         dscalevec(5) = 0.0_ti_p
+      else
+         dscalevec(1) = 1.0_ti_p-d1scale
+         dscalevec(2) = 1.0_ti_p-d2scale
+         dscalevec(3) = 1.0_ti_p-d3scale
+         dscalevec(4) = 1.0_ti_p-d4scale
+         dscalevec(5) = 0.0_ti_p
+      end if
       pscalevec(1) = 0.0_ti_p
       pscalevec(2) = 1.0_ti_p-p2scale
       pscalevec(3) = 1.0_ti_p-p3scale
       pscalevec(4) = 1.0_ti_p-p4scale
       pscalevec(5) = 1.0_ti_p-p5scale
+      piscalvec(1) = 0.0_ti_p
+      piscalvec(2) = 1.0_ti_p-p2iscale
+      piscalvec(3) = 1.0_ti_p-p3iscale
+      piscalvec(4) = 1.0_ti_p-p4iscale
+      piscalvec(5) = 1.0_ti_p-p5iscale
 !$acc end serial
 
       call set_to_zero1(scal_factorp(1,1),
@@ -994,7 +1018,7 @@ c
             kglob  = allscal_n(iscalbegp+j)
             iscal  = typscal_n(iscalbegp+j)
             pscale = pscalevec(iscal)
-            if (iscal.ne.4.and.pscale.eq.0.0_ti_p) cycle
+            !if (iscal.ne.4.and.pscale.eq.0.0_ti_p) cycle
 
             xk   =  x(kglob)
             yk   =  y(kglob)
@@ -1006,15 +1030,16 @@ c
             if ((zk.lt.zbeg).or.(zk.ge.zend)
      &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
      &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
-            if (iscal.eq.4) then ! deal with 4-1 interaction if 4n
+            !if (iscal.eq.4) then ! look into intra scaling interaction
                do i = 1,cpt-1
                   if (buff(i).eq.kglob) then
-                     pscale = pscale41
+                     !pscale = pscale41
+                     pscale = piscalvec(iscal)
                      exit
                   end if
                end do
                if (pscale.eq.0.0_ti_p) cycle
-            end if
+            !end if
             !kp = kp+1
             do i = 1,kdpu  !look among p interactions previously gathered
                if (pair_factorp(i,ii).eq.kglob) exit
@@ -1030,6 +1055,323 @@ c
                kdpu= kdpu+1
                pair_factorp(kdpu,ii) = kglob
                scal_factorp(3*(kdpu-1)+2,ii) = pscale
+            end if
+         end do
+
+         n_factorp (ii)= k
+         n_factordp(ii)= kdp
+         n_factorn (ii)= kdpu
+         n_uscale      = n_uscale   + k
+         !n_dscale      = n_dscale   + kd
+         n_dpscale     = n_dpscale  + kdp
+         n_dpuscale    = n_dpuscale + kdpu
+         !n_pscale      = n_pscale   + kp
+      end do
+
+!$acc update host(n_uscale,n_dpscale,n_dpuscale)
+!$acc&       async
+!$acc wait
+c
+c     Procede to scan
+c
+#ifdef _OPENACC
+!$acc host_data use_device(n_factorp,n_factorn,n_factordp,
+!$acc&     scan_factorp,scan_factorn,scan_factordp)
+      call thrust_exclusive_scan(n_factorn, npolelocnl, scan_factorn
+     &                          ,rec_stream)
+      if (.not.no_commdir) then
+      call thrust_exclusive_scan(n_factorp, npolelocnl, scan_factorp
+     &                          ,rec_stream)
+      call thrust_exclusive_scan(n_factordp, npolelocnl, scan_factordp
+     &                          ,rec_stream)
+      end if
+!$acc end host_data
+#else
+      scan_factorp (1) = 0
+      scan_factorn (1) = 0
+      scan_factordp(1) = 0
+      do ii = 2,npolelocnl
+         scan_factorp(ii)  = n_factorp (ii-1) + scan_factorp (ii-1)
+         scan_factorn(ii)  = n_factorn (ii-1) + scan_factorn (ii-1)
+         scan_factordp(ii) = n_factordp(ii-1) + scan_factordp(ii-1)
+      end do
+#endif
+      if (no_commdir) then  ! Skip u and dp if commdirdir is disabled
+         n_uscale  = 0
+         n_dpscale = 0
+!$acc update host(n_uscale,n_dpscale) async
+      end if
+
+      if (tinkerdebug.gt.0) then
+ 42      format(1x,'polar_scaling(',1X,3I10,') rank(',I0,')',A)
+         dpe = merge(' dpequal','',dpequal)
+         print 42, n_uscale,n_dpscale,n_dpuscale,rank,trim(dpe)
+      end if
+
+      ! Allocate memory to store u_scaling,dp_scaling & dpu_scaling
+      call prmem_request(  ucorrect_ik,2*n_uscale  )
+      call prmem_request( dpcorrect_ik,2*n_dpscale )
+      call prmem_request(dpucorrect_ik,2*n_dpuscale)
+      call prmem_request(  ucorrect_scale, n_uscale)
+      call prmem_request( dpcorrect_scale,2*n_dpscale)
+      call prmem_request(dpucorrect_scale,3*n_dpuscale)
+c
+c     Fill scaling the scaling_factor intercations along with their
+c     types and value
+c
+!$acc parallel loop present(ucorrect_ik,ucorrect_scale,dpcorrect_ik,
+!$acc&  dpcorrect_scale,dpucorrect_ik,dpucorrect_scale)
+!$acc&         gang vector
+!$acc&         async
+      do ii = 1, npolelocnl
+         iglob    = ipole(poleglobnl(ii))
+         iscan    = scan_factorp (ii)
+         iscandp  = scan_factordp(ii)
+         iscandpu = scan_factorn (ii)
+         k     = 0
+         kdp   = 0
+         kdpu  = 0
+         ! gather (d,p,u) scaling for polarisation compute
+         do j = 1, n_factorn(ii)
+            kglob  = pair_factorp(j,ii)
+            pscale = scal_factorp(3*(j-1)+2,ii)
+            uscale = scal_factorp(3*(j-1)+3,ii)
+            dscale = merge(pscale,scal_factorp(3*(j-1)+1,ii),dpequal)
+
+            dpucorrect_ik   (2*(iscandpu+j-1)+1) = iglob
+            dpucorrect_ik   (2*(iscandpu+j-1)+2) = kglob
+            dpucorrect_scale(3*(iscandpu+j-1)+1) = dscale
+            dpucorrect_scale(3*(iscandpu+j-1)+2) = pscale
+            dpucorrect_scale(3*(iscandpu+j-1)+3) = uscale
+            if (no_commdir) cycle
+            ! filter (d,p) scaling for efld0_direct
+            if (dscale.ne.0.0_ti_p.or.pscale.ne.0.0_ti_p) then
+               kdp  = kdp+1
+               dpcorrect_ik   (2*(iscandp+kdp-1)+1) = iglob
+               dpcorrect_ik   (2*(iscandp+kdp-1)+2) = kglob
+               dpcorrect_scale(2*(iscandp+kdp-1)+1) = dscale
+               dpcorrect_scale(2*(iscandp+kdp-1)+2) = pscale
+            end if
+            ! filter u scaling for tmatxb
+            if (uscale.ne.0.0_ti_p) then
+               k   = k+1
+               ucorrect_ik(2*(iscan+k-1)+1) = iglob
+               ucorrect_ik(2*(iscan+k-1)+2) = kglob
+               ucorrect_scale(iscan+k)      = uscale
+            end if
+         end do
+      end do
+
+!$acc end data
+
+      end
+
+      subroutine polar_scaling_cpen
+      use atoms  ,only: x,y,z
+      use atmlst ,only: poleglobnl
+      use couple
+      use domdec ,only: rank,nlocnl,
+     &                  xbegproc,ybegproc,zbegproc,
+     &                  xendproc,yendproc,zendproc
+      use inform ,only: deb_Path,tindPath
+      use kscalfactor_inl
+      use tinheader ,only: ti_p
+      use tinMemory ,only: prmem_request
+      use mpole  ,only: npolelocnl, ipole
+      use polgrp
+      use polpot
+#ifdef _OPENACC
+      use thrust
+#endif
+      use utilcomm,only: no_commdir
+      use utils  ,only: set_to_zero1
+      use utilgpu,only: rec_queue
+#ifdef _OPENACC
+     &           , rec_stream
+#endif
+      !use timestat
+      implicit none
+      integer i,ii,j,k,kdp,kdpu,cpt
+      integer*1:: iscal
+      integer iscalbeg,iscalbegp,iglob,kglob,kglob_s
+      integer iscan,iscandp,iscandpu
+      integer ntot,nnp14
+      !integer n_dscale,n_pscale,kd,kp
+      integer  :: buff(max_factorp)
+      real(t_p) pos1,pos2,pos3
+      real(t_p) xi,yi,zi,xk,yk,zk
+      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
+      real(t_p) uscalevec(5),uscale
+      real(t_p) pscalevec(5),piscalvec(5),pscale,pscali
+      real(t_p) dscalevec(5),dscale
+      character*8 dpe
+
+      if (deb_Path) print '(2X,A)','polar_scaling_cpen'
+
+!$acc data create(uscalevec,pscalevec,dscalevec,piscalvec)
+!$acc&     present(poleglobnl,ipole,
+!$acc&  scan_factorn,n_factorn,pair_factorp,scal_factorp,
+!$acc&  scan_factorp,n_factorp,n_uscale,n_dpscale,n_dpuscale,
+!$acc&  allscal_n,typscal_n,scalbeg_n,numscal_n,allscal_p,typscal_p,
+!$acc&  scalbeg_p,numscal_p,n_factordp,scan_factordp)
+!$acc&     async
+
+      xbeg = xbegproc(rank+1)
+      xend = xendproc(rank+1)
+      ybeg = ybegproc(rank+1)
+      yend = yendproc(rank+1)
+      zbeg = zbegproc(rank+1)
+      zend = zendproc(rank+1)
+c
+c     Construct induced dipoles scalar product scaling interactions
+c
+!$acc serial async
+      n_uscale     = 0
+      !n_dscale     = 0
+      !n_pscale     = 0
+      n_dpscale    = 0
+      n_dpuscale   = 0
+      uscalevec(1) = 0.0_ti_p
+      uscalevec(2) = 1.0_ti_p-w2scale
+      uscalevec(3) = 1.0_ti_p-w3scale
+      uscalevec(4) = 1.0_ti_p-w4scale
+      uscalevec(5) = 1.0_ti_p-w5scale
+      if (dpequal) then
+         dscalevec(1) = 0.0_ti_p
+         dscalevec(2) = 0.0_ti_p
+         dscalevec(3) = 0.0_ti_p
+         dscalevec(4) = 0.0_ti_p
+         dscalevec(5) = 0.0_ti_p
+      else
+         dscalevec(1) = 1.0_ti_p-d1scale
+         dscalevec(2) = 1.0_ti_p-d2scale
+         dscalevec(3) = 1.0_ti_p-d3scale
+         dscalevec(4) = 1.0_ti_p-d4scale
+         dscalevec(5) = 0.0_ti_p
+      end if
+      pscalevec(1) = 0.0_ti_p
+      pscalevec(2) = 1.0_ti_p-p2scale
+      pscalevec(3) = 1.0_ti_p-p3scale
+      pscalevec(4) = 1.0_ti_p-p4scale
+      pscalevec(5) = 1.0_ti_p-p5scale
+      piscalvec(1) = 0.0_ti_p
+      piscalvec(2) = 1.0_ti_p-p2iscale
+      piscalvec(3) = 1.0_ti_p-p3iscale
+      piscalvec(4) = 1.0_ti_p-p4iscale
+      piscalvec(5) = 1.0_ti_p-p5iscale
+!$acc end serial
+
+      call set_to_zero1(scal_factorp(1,1),
+     &            3*(max_factorn+max_factorp)*npolelocnl,rec_queue)
+c
+c     Filter scaling factor for vscale
+c
+!$acc parallel loop gang vector private(buff) async
+      do ii = 1,npolelocnl
+         iglob = ipole(poleglobnl(ii))
+         k     = 0
+         !kd    = 0
+         !kp    = 0
+         kdp   = 0
+         kdpu  = 0
+         kglob_s=0
+         cpt   = 1
+         ntot     = numscal_n(iglob)
+         nnp14    = numscal_p(iglob)
+         iscalbeg = scalbeg_p(iglob)
+         iscalbegp= scalbeg_n(iglob)
+         xi    = x(iglob)
+         yi    = y(iglob)
+         zi    = z(iglob)
+         if (.not.dpequal) then
+!$acc loop seq
+         do j = 1, nnp14
+            kglob  = allscal_p(iscalbeg+j)
+            iscal  = typscal_p(iscalbeg+j)
+            dscale = dscalevec(iscal)
+            if (dscale.eq.0.0_ti_p) cycle
+
+            xk   =  x(kglob)
+            yk   =  y(kglob)
+            zk   =  z(kglob)
+            pos1 =  xi - xk
+            pos2 =  yi - yk
+            pos3 =  zi - zk
+            call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
+            if ((zk.lt.zbeg).or.(zk.ge.zend)
+     &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
+     &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
+            if (dscale.ne.0.0_ti_p) then
+               !kd  = kd+1
+               kdp  = kdp+1
+               kdpu = kdpu+1
+               pair_factorp(kdpu,ii)         = kglob
+               scal_factorp(3*(kdpu-1)+1,ii) = dscale
+            end if
+         end do
+         end if  !dpequal
+
+         ! gather (4n - 1p) interactions
+         do while (cpt.le.nnp14.and.typscal_p(iscalbeg+cpt).eq.1)
+            buff(cpt) = allscal_p(iscalbeg+cpt)
+            cpt       = cpt + 1
+         end do
+!$acc loop seq
+         do j = 1, ntot
+            kglob  = allscal_n(iscalbegp+j)
+            iscal  = typscal_n(iscalbegp+j)
+            uscale = uscalevec(iscal)
+            pscale = pscalevec(iscal)
+            pscali = piscalvec(iscal)
+            if (pscale.eq.0.0_ti_p.and.pscali.eq.0.0_ti_p) cycle
+
+            xk   =  x(kglob)
+            yk   =  y(kglob)
+            zk   =  z(kglob)
+            pos1 =  xi - xk
+            pos2 =  yi - yk
+            pos3 =  zi - zk
+            call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
+            if ((zk.lt.zbeg).or.(zk.ge.zend)
+     &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
+     &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
+            do i = 1,cpt-1         ! deal with intra scaling interaction
+               if (buff(i).eq.kglob) then
+                  pscale = pscali
+                  exit
+               end if
+            end do
+            if (pscale.eq.0.0_ti_p.and.uscale.eq.0.0_ti_p) cycle
+
+            !kp = kp+1
+            do i = 1,kdpu  !look among p interactions previously gathered
+               if (pair_factorp(i,ii).eq.kglob) exit
+            end do
+            if (i.le.kdpu) then
+               if (uscale.ne.0.0_ti_p) then
+                  k    = k + 1
+                  scal_factorp(3*(i-1)+3,ii) = uscale
+               end if
+               if (pscale.ne.0.0_ti_p) then
+                  scal_factorp(3*(i-1)+2,ii) = pscale
+               end if
+               ! check if dscale==0.0 to increment couple (d,p) counter
+               if (scal_factorp(3*(i-1)+1,ii).eq.0.0_ti_p) then
+                  kdp=kdp+1
+               end if
+            else !add pscale to the triplet
+               if (uscale.ne.0.0_ti_p) then
+                  k    = k + 1
+                  kdpu = kdpu + 1
+                  kglob_s = kglob
+                  scal_factorp(3*(kdpu-1)+3,ii) = uscale
+               end if
+               if (pscale.ne.0.0_ti_p) then
+                  kdp = kdp+1
+                  if (kglob_s.ne.kglob) kdpu= kdpu+1
+                  scal_factorp(3*(kdpu-1)+2,ii) = pscale
+               end if
+               pair_factorp(kdpu,ii) = kglob
             end if
          end do
 
@@ -1077,8 +1419,11 @@ c
 !$acc update host(n_uscale,n_dpscale) async
       end if
 
-      if (btest(tinkerdebug,tindPath)) write(*,'(A,1X,5I10)')
-     &         'polar_scaling',n_uscale,n_dpscale,n_dpuscale,rank
+      if (tinkerdebug.gt.0) then
+ 42      format(1x,'polar_scaling(',1X,3I10,') rank(',I0,')',A)
+         dpe = merge(' dpequal','',dpequal)
+         print 42, n_uscale,n_dpscale,n_dpuscale,rank,trim(dpe)
+      end if
 
       ! Allocate memory to store u_scaling,dp_scaling & dpu_scaling
       call prmem_request(  ucorrect_ik,2*n_uscale  )
@@ -1106,9 +1451,9 @@ c
          ! gather (d,p,u) scaling for polarisation compute
          do j = 1, n_factorn(ii)
             kglob  = pair_factorp(j,ii)
-            dscale = scal_factorp(3*(j-1)+1,ii)
             pscale = scal_factorp(3*(j-1)+2,ii)
             uscale = scal_factorp(3*(j-1)+3,ii)
+            dscale = merge(pscale,scal_factorp(3*(j-1)+1,ii),dpequal)
 
             dpucorrect_ik   (2*(iscandpu+j-1)+1) = iglob
             dpucorrect_ik   (2*(iscandpu+j-1)+2) = kglob
@@ -1181,12 +1526,19 @@ c
       real(t_p) xi,yi,zi,xk,yk,zk
       real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
       real(t_p) uscalevec(5),uscale
-      real(t_p) pscalevec(5),pscale,pscale41
+      real(t_p) pscalevec(5),piscalvec(5),pscale,pscale41
       real(t_p) dscalevec(5),dscale
+      character*8 dpe
 
       if (deb_Path) print '(2X,A)','polar_scaling1'
+      if (p2scale.ne.p2iscale.or.p3scale.ne.p3iscale.or.
+     &    p5scale.ne.p5iscale) then
+         write(0,*) " --- Tinker-HP : Alert ! "
+     &             ,"Feature non Implemented"
+         __TINKER_FATAL__
+      end if
 
-!$acc data create(uscalevec,pscalevec,dscalevec)
+!$acc data create(uscalevec,pscalevec,piscalvec,dscalevec)
 !$acc&     present(poleglobnl,ipole,x,y,z,
 !$acc&  n_uscale,n_dpscale,n_dpuscale,
 !$acc&  allscal_n,typscal_n,scalbeg_n,numscal_n,
@@ -1199,9 +1551,9 @@ c
       yend = yendproc(rank+1)
       zbeg = zbegproc(rank+1)
       zend = zendproc(rank+1)
-      pscale41 = 1.0_ti_p-p4scale*p41scale
+      pscale41 = 1.0_ti_p-p4scale*p4iscale
       kglob_s=0
-      ngang = min(nSMP*8,npolelocnl/128)
+      ngang = min(nSMP*8,(npolelocnl-1)/128+1)
 c
 c     Construct induced dipoles scalar product scaling interactions
 c
@@ -1216,16 +1568,29 @@ c
       uscalevec(3) = 1.0_ti_p-u3scale
       uscalevec(4) = 1.0_ti_p-u4scale
       uscalevec(5) = 0.0_ti_p
-      dscalevec(1) = 1.0_ti_p-d1scale
-      dscalevec(2) = 1.0_ti_p-d2scale
-      dscalevec(3) = 1.0_ti_p-d3scale
-      dscalevec(4) = 1.0_ti_p-d4scale
-      dscalevec(5) = 0.0_ti_p
+      if (dpequal) then
+         dscalevec(1) = 0.0_ti_p
+         dscalevec(2) = 0.0_ti_p
+         dscalevec(3) = 0.0_ti_p
+         dscalevec(4) = 0.0_ti_p
+         dscalevec(5) = 0.0_ti_p
+      else
+         dscalevec(1) = 1.0_ti_p-d1scale
+         dscalevec(2) = 1.0_ti_p-d2scale
+         dscalevec(3) = 1.0_ti_p-d3scale
+         dscalevec(4) = 1.0_ti_p-d4scale
+         dscalevec(5) = 0.0_ti_p
+      end if
       pscalevec(1) = 0.0_ti_p
       pscalevec(2) = 1.0_ti_p-p2scale
       pscalevec(3) = 1.0_ti_p-p3scale
       pscalevec(4) = 1.0_ti_p-p4scale
       pscalevec(5) = 1.0_ti_p-p5scale
+      piscalvec(1) = 0.0_ti_p
+      piscalvec(2) = 1.0_ti_p-p2iscale
+      piscalvec(3) = 1.0_ti_p-p3iscale
+      piscalvec(4) = 1.0_ti_p-p4iscale
+      piscalvec(5) = 1.0_ti_p-p5iscale
 !$acc end serial
 
 c
@@ -1372,8 +1737,11 @@ c
          scan_factordp(ii) = n_factordp(ii-1) + scan_factordp(ii-1)
       end do
 #endif
-      if (btest(tinkerdebug,tindPath)) print '(A,4I10)',
-     &   'polar_scaling1',n_uscale,n_dpscale,n_dpuscale,rank
+      if (tinkerdebug.gt.0) then
+ 42      format(1x,'polar_scaling1(',1X,3I10,') rank(',I0,')',A)
+         dpe = merge(' dpequal','',dpequal)
+         print 42, n_uscale,n_dpscale,n_dpuscale,rank,trim(dpe)
+      end if
 c
       ! Allocate memory to store u_scaling,dp_scaling & dpu_scaling
       call prmem_request(  ucorrect_ik,2*n_uscale  )
@@ -1466,6 +1834,579 @@ c
             kglob  = allscal_n(iscalbegp+j)
             iscal  = typscal_n(iscalbegp+j)
             pscale = pscalevec(iscal)
+            !if (iscal.ne.4.and.pscale.eq.0.0_ti_p) cycle
+
+            xk   =  x(kglob)
+            yk   =  y(kglob)
+            zk   =  z(kglob)
+            pos1 =  xi - xk
+            pos2 =  yi - yk
+            pos3 =  zi - zk
+            call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
+            if ((zk.lt.zbeg).or.(zk.ge.zend)
+     &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
+     &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
+            !if (iscal.eq.4) then ! deal with 4-1 interaction if 4n
+               do i = 1,cpt-1
+                  if (buff(i).eq.kglob) then
+                     pscale = piscalvec(iscal)
+                     exit
+                  end if
+               end do
+               if (pscale.eq.0.0_ti_p) cycle
+            !end if
+            !kp = kp+1
+            do i = 1,kdpu  !look among p interactions previously gathered
+               if (dpucorrect_ik(2*(iscandpu+i-1)+2).eq.kglob) exit
+            end do
+            do i1 = 1,kdp
+               if (dpcorrect_ik(2*(iscandp+i1-1)+2).eq.kglob) exit
+            end do
+
+            ! Is p interaction already found among (d,p,u) triplet
+            if (i.le.kdpu) then
+               if(dpequal) dpucorrect_scale(3*(iscandpu+i-1)+1) = pscale
+               dpucorrect_scale(3*(iscandpu+i-1)+2) = pscale
+            else !add pscale to the triplet
+               kdpu= kdpu+1
+               dpucorrect_ik   (2*(iscandpu+kdpu-1)+1) = iglob
+               dpucorrect_ik   (2*(iscandpu+kdpu-1)+2) = kglob
+               if(dpequal) dpucorrect_scale(3*(iscandpu+i-1)+1) = pscale
+               dpucorrect_scale(3*(iscandpu+kdpu-1)+2) = pscale
+            end if
+
+            ! Is p interaction already found among (d,p) couple
+            if (i1.le.kdp) then
+               dpcorrect_scale(2*(iscandp +i1-1)+2) = pscale
+            else
+               kdp=kdp+1
+               dpcorrect_ik   (2*(iscandp+kdp-1)+1) = iglob
+               dpcorrect_ik   (2*(iscandp+kdp-1)+2) = kglob
+               if(dpequal) dpucorrect_scale(3*(iscandpu+i-1)+1) = pscale
+               dpcorrect_scale(2*(iscandp+kdp-1)+2) = pscale
+            end if
+
+         end do
+      end do
+
+!$acc end data
+
+      end
+
+      subroutine mpole_scaling_group
+      use atoms  ,only: x,y,z
+      use atmlst ,only: poleglobnl
+      use couple
+      use group
+      use domdec ,only: rank,nlocnl,
+     &                  xbegproc,ybegproc,zbegproc,
+     &                  xendproc,yendproc,zendproc
+      use inform ,only: deb_Path
+      use kscalfactor_inl
+      use tinheader
+      use tinMemory ,only: prmem_request
+      use mpole  ,only: npolelocnl, ipole
+      use mplpot
+#ifdef _OPENACC
+      use thrust
+      use utilgpu,only: rec_stream
+#endif
+      implicit none
+      integer i,ii,j,k,cap
+      integer*1:: iscal
+      integer iscalbeg,iglob,kglob,iscan,iglobgroup
+      integer nn12,nn13,nn14,nn15,ntot
+      real(t_p) pos1,pos2,pos3
+      real(t_p) xi,yi,zi,xk,yk,zk
+      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend 
+      real(t_p) mscalevec(5),mscale
+      logical :: alloc_scan
+      logical, save :: first_in = .true.
+
+      if (deb_Path) print '(2X,A)','>>> mpole_scaling_group'
+
+      if(first_in) then
+!$acc enter data create(n_mscale_group) async
+      first_in=.false.
+      endif
+
+      alloc_scan = .not.allocated(n_factorn)
+      if(alloc_scan) then
+        allocate (    n_factorn(npolegroup))
+        allocate ( scan_factorn(npolegroup))
+        allocate (pair_factorn(max_factorn,npolegroup))
+        allocate (scal_factorn(max_factorn,npolegroup))
+!$acc enter data create (n_factorn,scan_factorn,
+!$acc&   scal_factorn,pair_factorn) async
+      endif
+
+!$acc data create(mscalevec) 
+!$acc&     present(poleglobnl,ipole,pair_factorn,scal_factorn,
+!$acc& scan_factorn,n_factorn,n_mscale_group,
+!$acc& allscal_n,typscal_n,scalbeg_n,numscal_n)
+!$acc&     async
+
+      xbeg = xbegproc(rank+1)
+      xend = xendproc(rank+1)
+      ybeg = ybegproc(rank+1)
+      yend = yendproc(rank+1)
+      zbeg = zbegproc(rank+1)
+      zend = zendproc(rank+1)
+
+!$acc serial async
+      n_mscale_group  = 0
+      mscalevec = (/0.0_ti_p,1.0_ti_p-m2scale,1.0_ti_p-m3scale,
+     &                       1.0_ti_p-m4scale,1.0_ti_p-m5scale/)
+!$acc end serial
+
+!$acc parallel loop async
+      do ii = 1,npolegroup
+         n_factorn(ii)=0
+      end do
+c
+c     Filter scaling factor for vscale
+c
+!$acc parallel loop gang vector async
+      do ii = 1,npolegroup
+         iglobgroup = ipolegroup(ii)
+         iglob = globglobgroup(iglobgroup)
+         k     = 0
+         ntot     = numscal_n(iglob)
+         iscalbeg = scalbeg_n(iglob)
+         xi    = x(iglob)
+         yi    = y(iglob)
+         zi    = z(iglob)
+!$acc loop seq
+         do j = 1, ntot
+            kglob  = allscal_n(iscalbeg+j)
+            iscal  = typscal_n(iscalbeg+j)
+            mscale = mscalevec(iscal)
+            if (mscale.eq.0.0_ti_p) cycle
+
+            xk   =  x(kglob)
+            yk   =  y(kglob)
+            zk   =  z(kglob)
+            pos1 =  xi - xk
+            pos2 =  yi - yk
+            pos3 =  zi - zk
+            call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
+            if ((zk.lt.zbeg).or.(zk.ge.zend)
+     &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
+     &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
+            k  = k+1
+            pair_factorn(k,ii) = kglob
+            scal_factorn(k,ii) = mscale
+         end do
+
+         n_factorn(ii) = k
+         n_mscale_group      = n_mscale_group   +k
+      end do
+
+!$acc update host(n_mscale_group) async
+
+c
+c     Procede to scan
+c
+#ifdef _OPENACC
+!$acc wait
+!$acc host_data use_device(n_factorn,scan_factorn)
+      call thrust_exclusive_scan(n_factorn, npolegroup, scan_factorn
+     &                          ,rec_stream)
+!$acc end host_data
+#else
+      scan_factorn(1) = 0
+      do ii = 2,npolegroup
+         scan_factorn(ii) = n_factorn(ii-1) + scan_factorn(ii-1)
+      end do
+#endif
+c     print*,n_mscale,npolelocnl
+
+      ! Allocate memory to store m_scaling
+      call prmem_request(mcorrect_ik_group,n_mscale_group
+     &   ,2,cdim=.false.)
+      call prmem_request(mcorrect_scale_group,n_mscale_group)
+c
+c     Fill scaling the scaling_factor intercations along with their
+c     types and value
+c
+!$acc parallel loop present(mcorrect_ik_group,mcorrect_scale_group)
+!$acc&         gang vector
+!$acc&         async
+      do ii = 1, npolegroup
+         iglobgroup = ipolegroup(ii)
+         iglob = globglobgroup(iglobgroup)
+         iscan = scan_factorn(ii)
+         do j = 1, n_factorn(ii)
+            mcorrect_ik_group(iscan+j,1)  = iglob
+            mcorrect_ik_group(iscan+j,2)  = pair_factorn(j,ii)
+            mcorrect_scale_group(iscan+j) = scal_factorn(j,ii)
+         end do
+      end do
+
+!$acc end data
+
+      if(alloc_scan) then
+!$acc exit data delete(n_factorn,scan_factorn,scal_factorn,
+!$acc&   pair_factorn) async
+        deallocate(n_factorn,scan_factorn,scal_factorn)
+        deallocate(pair_factorn)
+      end if
+
+      if (deb_Path) then
+!$acc wait
+       print '(2X,A)','<<< mpole_scaling_group'
+      endif
+
+      end
+
+      ! This routine performs the same build as polar_scaling
+      ! But this one does not require any temporary buffer
+      ! Double processing is performed instead
+      ! only accounts for atoms inside the currenty selected group
+      subroutine polar_scaling1_group
+      use atoms  ,only: x,y,z
+      use atmlst ,only: poleglobnl
+      use couple
+      use domdec ,only: rank,nlocnl,
+     &                  xbegproc,ybegproc,zbegproc,
+     &                  xendproc,yendproc,zendproc
+      use inform ,only: deb_Path,tindPath
+      use kscalfactor_inl
+      use tinheader ,only: ti_p
+      use tinMemory ,only: prmem_request
+      use mpole  ,only: npolelocnl, ipole,pollist
+      use group
+      use polgrp
+      use polpot
+      use sizes  ,only: tinkerdebug
+#ifdef _OPENACC
+      use thrust
+#endif
+      use utils  ,only: set_to_zero1
+      use utilgpu,only: rec_queue
+#ifdef _OPENACC
+     &           , rec_stream
+#endif
+      !use timestat
+      implicit none
+      integer i,i1,ii,j,k,kdp,kdpu,kdpu_s,cpt,iipole
+      integer*1:: iscal
+      integer iscalbeg,iscalbegp,iglob,kglob,kglob_s
+      integer iscan,iscandp,iscandpu,iglobgroup
+      integer ntot,nnp14
+      integer ib,ic
+      !integer n_dscale,n_pscale,kd,kp
+      integer  :: buff(max_factorp)
+      integer  :: buffp(max_factorp)
+      integer  :: buffdp(0:5)
+      logical fdpu,fdp
+      real(t_p) pos1,pos2,pos3
+      real(t_p) xi,yi,zi,xk,yk,zk
+      real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
+      real(t_p) uscalevec(5),uscale
+      real(t_p) pscalevec(5),pscale,pscale41
+      real(t_p) dscalevec(5),dscale
+      logical :: alloc_scan
+      logical, save :: first_in=.true.
+
+      if (deb_Path) print '(2X,A)','>>> polar_scaling1_group'
+
+      if(first_in) then
+!$acc enter data create(n_uscale_group
+!$acc&  ,n_dpscale_group,n_dpuscale_group) async
+      first_in=.false.
+      endif
+
+      alloc_scan = .not.allocated(n_factorp)
+      if(alloc_scan) then
+        allocate (    n_factorn(npolegroup))
+        allocate (    n_factorp(npolegroup))
+        allocate (   n_factordp(npolegroup))
+        allocate ( scan_factorn(npolegroup))
+        allocate ( scan_factorp(npolegroup))
+        allocate (scan_factordp(npolegroup))
+
+!$acc enter data create (n_factorn,scan_factorn,n_factorp,
+!$acc&   n_factordp,scan_factorp,scan_factordp) async
+
+      endif
+
+!$acc data create(uscalevec,pscalevec,dscalevec)
+!$acc&     present(poleglobgroup,ipolegroup,x,y,z,
+!$acc&  n_uscale_group,n_dpscale_group,n_dpuscale_group,
+!$acc&  allscal_n,typscal_n,scalbeg_n,numscal_n,
+!$acc&  allscal_p,typscal_p,scalbeg_p,numscal_p)
+!$acc&     async
+
+      xbeg = xbegproc(rank+1)
+      xend = xendproc(rank+1)
+      ybeg = ybegproc(rank+1)
+      yend = yendproc(rank+1)
+      zbeg = zbegproc(rank+1)
+      zend = zendproc(rank+1)
+      pscale41 = 1.0_ti_p-p4scale*p41scale
+      kglob_s=0
+c
+c     Construct induced dipoles scalar product scaling interactions
+c
+!$acc serial async
+      n_uscale_group   = 0
+      n_dpscale_group  = 0
+      n_dpuscale_group = 0
+      uscalevec  = (/1.0_ti_p-u1scale,1.0_ti_p-u2scale,
+     &               1.0_ti_p-u3scale,1.0_ti_p-u4scale,0.0_ti_p/)
+      dscalevec  = (/1.0_ti_p-d1scale,1.0_ti_p-d2scale,
+     &               1.0_ti_p-d3scale,1.0_ti_p-d4scale,0.0_ti_p/)
+      pscalevec  = (/0.0_ti_p,1.0_ti_p-p2scale,1.0_ti_p-p3scale,
+     &                        1.0_ti_p-p4scale,1.0_ti_p-p5scale/)
+!$acc end serial
+
+c
+c     Analyze polar scaling interactions
+c
+!$acc parallel loop gang vector
+!$acc&         private(buff,buffp,buffdp,cpt,i)
+!$acc&         present(n_factorn,n_factorp,n_factordp)
+!$acc&         async
+      do ii = 1,npolegroup
+         !Fetch and init data
+         iglobgroup = ipolegroup(ii)
+         iglob = globglobgroup(iglobgroup)
+         iipole = pollist(iglob)
+         k     = 0
+         kdp   = 0
+         kdpu  = 0
+         cpt   = 1
+         ntot     = numscal_n(iglob)
+         nnp14    = numscal_p(iglob)
+         iscalbeg = scalbeg_p(iglob)
+         iscalbegp= scalbeg_n(iglob)
+         xi    = x(iglob)
+         yi    = y(iglob)
+         zi    = z(iglob)
+!$acc loop seq
+         do j = 0, 5
+            buffdp(j)=0
+         end do
+!$acc loop seq
+         do j = 1, nnp14  ! Loop on p interactions
+            kglob  = allscal_p(iscalbeg+j)
+            iscal  = typscal_p(iscalbeg+j)
+            uscale = uscalevec(iscal)
+            dscale = dscalevec(iscal)
+            if (uscale.eq.0.0_ti_p.and.dscale.eq.0.0_ti_p) cycle
+
+            xk   =  x(kglob)
+            yk   =  y(kglob)
+            zk   =  z(kglob)
+            pos1 =  xi - xk
+            pos2 =  yi - yk
+            pos3 =  zi - zk
+            call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
+            if ((zk.lt.zbeg).or.(zk.ge.zend)
+     &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
+     &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
+            if (uscale.ne.0.0_ti_p) then
+               k  = k+1       !Find uscale insteraction
+               kdpu = kdpu+1  !Find dpu triplet
+               kglob_s = kglob
+               buffp(kdpu) = kglob
+            end if
+            if (dscale.ne.0.0_ti_p) then
+               kdp = kdp+1    !Find new dp scale interaction
+               if (kglob.ne.kglob_s) then !look if not found previously
+                  kdpu = kdpu+1
+                  buffp(kdpu) = kglob
+               end if
+               buffdp((kdpu-1)/32)= ior(buffdp((kdpu-1)/32),
+     &                  ishft(1,iand(kdpu-1,31)))  !Mark flag for dp scale
+            end if
+         end do
+
+         kdpu_s = kdpu
+         ! gather (4n - 1p) interactions
+         do while (cpt.le.nnp14.and.typscal_p(iscalbeg+cpt).eq.1)
+            buff(cpt) = allscal_p(iscalbeg+cpt)
+            cpt       = cpt + 1
+         end do
+
+!$acc loop seq
+         do j = 1, ntot      ! Loop on n interactions
+            kglob  = allscal_n(iscalbegp+j)
+            iscal  = typscal_n(iscalbegp+j)
+            pscale = pscalevec(iscal)
+            if (iscal.ne.4.and.pscale.eq.0.0_ti_p) cycle
+
+            xk   =  x(kglob)
+            yk   =  y(kglob)
+            zk   =  z(kglob)
+            pos1 =  xi - xk
+            pos2 =  yi - yk
+            pos3 =  zi - zk
+            call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
+            if ((zk.lt.zbeg).or.(zk.ge.zend)
+     &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
+     &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
+            if (iscal.eq.4) then ! deal with 4-1 interaction if 4n
+               do i = 1,cpt-1
+                  if (buff(i).eq.kglob) then
+                     pscale = pscale41
+                     exit
+                  end if
+               end do
+               if (pscale.eq.0.0_ti_p) cycle
+            end if
+            fdp = .false.
+            fdpu = .false.
+            do i = 1,kdpu_s  !look among p interactions previously gathered in dpu triplet
+               if (buffp(i).eq.kglob) then
+                  fdpu = .true.
+                  ! Check if Flag has been marked for dp couple
+                  if (btest(buffdp((i-1)/32),iand(i-1,31))) fdp=.true.
+                  exit
+               end if
+            end do
+            if (.not.fdp) then
+               kdp = kdp+1
+            end if
+            if (.not.fdpu) kdpu= kdpu+1
+         end do
+
+         n_factorp(ii) = k
+         n_factordp(ii)= kdp
+         n_factorn(ii) = kdpu
+         n_uscale_group      = n_uscale_group   + k
+         n_dpscale_group     = n_dpscale_group  + kdp
+         n_dpuscale_group    = n_dpuscale_group + kdpu
+      end do
+
+!$acc update host(n_uscale_group,n_dpscale_group,n_dpuscale_group)
+!$acc&       async
+
+c
+c     Procede to scan
+c
+#ifdef _OPENACC
+!$acc wait
+!$acc host_data use_device(n_factorp,n_factorn,n_factordp,
+!$acc&     scan_factorp,scan_factorn,scan_factordp)
+      call thrust_exclusive_scan(n_factorp,npolegroup, scan_factorp
+     &                          ,rec_stream)
+      call thrust_exclusive_scan(n_factorn,npolegroup, scan_factorn
+     &                          ,rec_stream)
+      call thrust_exclusive_scan(n_factordp,npolegroup,scan_factordp
+     &                          ,rec_stream)
+!$acc end host_data
+#else
+      scan_factorp (1) = 0
+      scan_factorn (1) = 0
+      scan_factordp(1) = 0
+      do ii = 2,npolegroup
+         scan_factorp(ii)  = n_factorp (ii-1) + scan_factorp (ii-1)
+         scan_factorn(ii)  = n_factorn (ii-1) + scan_factorn (ii-1)
+         scan_factordp(ii) = n_factordp(ii-1) + scan_factordp(ii-1)
+      end do
+#endif
+      if (btest(tinkerdebug,tindPath)) print '(A,4I10)',
+     &   'polar_scaling1_group',n_uscale_group
+     &  ,n_dpscale_group,n_dpuscale_group,rank
+c
+      ! Allocate memory to store u_scaling,dp_scaling & dpu_scaling
+      call prmem_request(  ucorrect_ik_group,2*n_uscale_group  )
+      call prmem_request( dpcorrect_ik_group,2*n_dpscale_group )
+      call prmem_request(dpucorrect_ik_group,2*n_dpuscale_group)
+      call prmem_request(  ucorrect_scale_group, n_uscale_group)
+      call prmem_request( dpcorrect_scale_group,2*n_dpscale_group)
+      call prmem_request(dpucorrect_scale_group,3*n_dpuscale_group)
+
+      call set_to_zero1(  ucorrect_scale_group 
+     &   ,    n_uscale_group,rec_queue)
+      call set_to_zero1( dpcorrect_scale_group
+     &   ,2* n_dpscale_group,rec_queue)
+      call set_to_zero1(dpucorrect_scale_group
+     &   ,3*n_dpuscale_group,rec_queue)
+
+!$acc parallel loop gang vector private(buff,cpt,i,i1) async
+!$acc&         present(ucorrect_ik_group,ucorrect_scale_group,
+!$acc&  dpcorrect_ik_group, dpcorrect_scale_group,
+!$acc&  dpucorrect_ik_group,dpucorrect_scale_group,
+!$acc&  scan_factorp,scan_factorn,scan_factordp)
+      do ii = 1,npolegroup
+         iglobgroup = ipolegroup(ii)
+         iglob = globglobgroup(iglobgroup)
+         iipole = pollist(iglob)
+         iscan     = scan_factorp (ii)
+         iscandp   = scan_factordp(ii)
+         iscandpu  = scan_factorn (ii)
+         k         = 0
+         !kd        = 0
+         !kp        = 0
+         kdp       = 0
+         kdpu      = 0
+         cpt       = 1
+         ntot      = numscal_n(iglob)
+         nnp14     = numscal_p(iglob)
+         iscalbeg  = scalbeg_p(iglob)
+         iscalbegp = scalbeg_n(iglob)
+         xi        = x(iglob)
+         yi        = y(iglob)
+         zi        = z(iglob)
+!$acc loop seq
+         do j = 1, nnp14
+            kglob  = allscal_p(iscalbeg+j)
+            iscal  = typscal_p(iscalbeg+j)
+            uscale = uscalevec(iscal)
+            dscale = dscalevec(iscal)
+            if (uscale.eq.0.0_ti_p.and.dscale.eq.0.0_ti_p) cycle
+
+            xk   =  x(kglob)
+            yk   =  y(kglob)
+            zk   =  z(kglob)
+            pos1 =  xi - xk
+            pos2 =  yi - yk
+            pos3 =  zi - zk
+            call midpointimage_inl(xk,yk,zk,pos1,pos2,pos3)
+            if ((zk.lt.zbeg).or.(zk.ge.zend)
+     &      .or.(yk.lt.ybeg).or.(yk.ge.yend)
+     &      .or.(xk.lt.xbeg).or.(xk.ge.xend)) cycle
+            if (uscale.ne.0.0_ti_p) then
+               k       = k+1
+               kdpu    = kdpu+1
+               kglob_s = kglob
+               ucorrect_ik_group(2*(iscan+k-1)+1) = iglob
+               ucorrect_ik_group(2*(iscan+k-1)+2) = kglob
+               ucorrect_scale_group(iscan+k)      = uscale
+               dpucorrect_ik_group   (2*(iscandpu+kdpu-1)+1) = iglob
+               dpucorrect_ik_group   (2*(iscandpu+kdpu-1)+2) = kglob
+               dpucorrect_scale_group(3*(iscandpu+kdpu-1)+3) = uscale
+            end if
+            if (dscale.ne.0.0_ti_p) then
+               !kd  = kd+1
+               kdp = kdp+1
+               dpcorrect_ik_group   (2*(iscandp+kdp-1)+1) = iglob
+               dpcorrect_ik_group   (2*(iscandp+kdp-1)+2) = kglob
+               dpcorrect_scale_group(2*(iscandp+kdp-1)+1) = dscale
+               if (kglob.ne.kglob_s) then !look if not found previously
+                  kdpu = kdpu+1
+                  dpucorrect_ik_group   (2*(iscandpu+kdpu-1)+1) = iglob
+                  dpucorrect_ik_group   (2*(iscandpu+kdpu-1)+2) = kglob
+                  dpucorrect_scale_group(3*(iscandpu+kdpu-1)+1) = dscale
+               else
+                  dpucorrect_scale_group(3*(iscandpu+kdpu-1)+1) = dscale
+               end if
+            end if
+         end do
+
+         ! gather (4n - 1p) interactions
+         do while (cpt.le.nnp14.and.typscal_p(iscalbeg+cpt).eq.1)
+            buff(cpt) = allscal_p(iscalbeg+cpt)
+            cpt       = cpt + 1
+         end do
+!$acc loop seq
+         do j = 1, ntot
+            kglob  = allscal_n(iscalbegp+j)
+            iscal  = typscal_n(iscalbegp+j)
+            pscale = pscalevec(iscal)
             if (iscal.ne.4.and.pscale.eq.0.0_ti_p) cycle
 
             xk   =  x(kglob)
@@ -1489,36 +2430,49 @@ c
             end if
             !kp = kp+1
             do i = 1,kdpu  !look among p interactions previously gathered
-               if (dpucorrect_ik(2*(iscandpu+i-1)+2).eq.kglob) exit
+               if (dpucorrect_ik_group(2*(iscandpu+i-1)+2)
+     &               .eq.kglob) exit
             end do
             do i1 = 1,kdp
-               if (dpcorrect_ik(2*(iscandp+i1-1)+2).eq.kglob) exit
+               if (dpcorrect_ik_group(2*(iscandp+i1-1)+2)
+     &                 .eq.kglob) exit
             end do
 
             ! Is p interaction already found among (d,p,u) triplet
             if (i.le.kdpu) then
-              dpucorrect_scale(3*(iscandpu+i-1)+2) = pscale
+              dpucorrect_scale_group(3*(iscandpu+i-1)+2) = pscale
             else !add pscale to the triplet
                kdpu= kdpu+1
-               dpucorrect_ik   (2*(iscandpu+kdpu-1)+1) = iglob
-               dpucorrect_ik   (2*(iscandpu+kdpu-1)+2) = kglob
-               dpucorrect_scale(3*(iscandpu+kdpu-1)+2) = pscale
+               dpucorrect_ik_group   (2*(iscandpu+kdpu-1)+1) = iglob
+               dpucorrect_ik_group   (2*(iscandpu+kdpu-1)+2) = kglob
+               dpucorrect_scale_group(3*(iscandpu+kdpu-1)+2) = pscale
             end if
 
             ! Is p interaction already found among (d,p) couple
             if (i1.le.kdp) then
-               dpcorrect_scale(2*(iscandp +i1-1)+2) = pscale
+               dpcorrect_scale_group(2*(iscandp +i1-1)+2) = pscale
             else
                kdp=kdp+1
-               dpcorrect_ik   (2*(iscandp+kdp-1)+1) = iglob
-               dpcorrect_ik   (2*(iscandp+kdp-1)+2) = kglob
-               dpcorrect_scale(2*(iscandp+kdp-1)+2) = pscale
+               dpcorrect_ik_group   (2*(iscandp+kdp-1)+1) = iglob
+               dpcorrect_ik_group   (2*(iscandp+kdp-1)+2) = kglob
+               dpcorrect_scale_group(2*(iscandp+kdp-1)+2) = pscale
             end if
 
          end do
       end do
 
 !$acc end data
+
+      if(alloc_scan) then
+!$acc exit data delete(n_factorn,scan_factorn,n_factorp,
+!$acc&   n_factordp,scan_factorp,scan_factordp) async
+        deallocate(n_factorn,scan_factorn)
+        deallocate(n_factorp,scan_factorp)
+        deallocate(n_factordp,scan_factordp)
+      end if
+
+!$acc wait
+      if (deb_Path) print '(2X,A)','<<< polar_scaling1_group'
 
       end
 
@@ -1558,12 +2512,20 @@ c
       real(t_p) xi,yi,zi,xk,yk,zk
       real(t_p) zbeg,zend,ybeg,yend,xbeg,xend
       real(t_p) uscalevec(5),uscale
-      real(t_p) pscalevec(5),pscale,pscale41
+      real(t_p) pscalevec(5),piscalvec(5),pscale,pscale41
       real(t_p) dscalevec(5),dscale
+      character*8 dpe
 
       if (deb_Path) print '(2X,A)','u_dp_scaling_extent'
 
-!$acc data create(uscalevec,pscalevec,dscalevec)
+      if (p2scale.ne.p2iscale.or.p3scale.ne.p3iscale.or.
+     &    p5scale.ne.p5iscale) then
+         write(0,*) " --- Tinker-HP : Alert ! "
+     &             ,"Feature non Implemented"
+         __TINKER_FATAL__
+      end if
+
+!$acc data create(uscalevec,pscalevec,piscalvec,dscalevec)
 !$acc&     present(poleglob,ipole,n_uscale,n_dpscale,
 !$acc&  allscal_n,typscal_n,scalbeg_n,numscal_n,
 !$acc&  allscal_p,typscal_p,scalbeg_p,numscal_p)
@@ -1575,7 +2537,7 @@ c
       yend = yendproc(rank+1)
       zbeg = zbegproc(rank+1)
       zend = zendproc(rank+1)
-      pscale41 = 1.0_ti_p-p4scale*p41scale
+      pscale41 = 1.0_ti_p-p4scale*p4iscale
       kglob_s=0
 c
 c     Construct induced dipoles scalar product scaling interactions
@@ -1593,16 +2555,29 @@ c
       uscalevec(3) = 1.0_ti_p-u3scale
       uscalevec(4) = 1.0_ti_p-u4scale
       uscalevec(5) = 0.0_ti_p
-      dscalevec(1) = 1.0_ti_p-d1scale
-      dscalevec(2) = 1.0_ti_p-d2scale
-      dscalevec(3) = 1.0_ti_p-d3scale
-      dscalevec(4) = 1.0_ti_p-d4scale
-      dscalevec(5) = 0.0_ti_p
+      if (dpequal) then
+         dscalevec(1) = 0.0_ti_p
+         dscalevec(2) = 0.0_ti_p
+         dscalevec(3) = 0.0_ti_p
+         dscalevec(4) = 0.0_ti_p
+         dscalevec(5) = 0.0_ti_p
+      else
+         dscalevec(1) = 1.0_ti_p-d1scale
+         dscalevec(2) = 1.0_ti_p-d2scale
+         dscalevec(3) = 1.0_ti_p-d3scale
+         dscalevec(4) = 1.0_ti_p-d4scale
+         dscalevec(5) = 0.0_ti_p
+      end if
       pscalevec(1) = 0.0_ti_p
       pscalevec(2) = 1.0_ti_p-p2scale
       pscalevec(3) = 1.0_ti_p-p3scale
       pscalevec(4) = 1.0_ti_p-p4scale
       pscalevec(5) = 1.0_ti_p-p5scale
+      piscalvec(1) = 0.0_ti_p
+      piscalvec(2) = 1.0_ti_p-p2iscale
+      piscalvec(3) = 1.0_ti_p-p3iscale
+      piscalvec(4) = 1.0_ti_p-p4iscale
+      piscalvec(5) = 1.0_ti_p-p5iscale
 !$acc end serial
       ngangs = min(maxgangs,npolebloc/vecl)
       call prmem_request(workS  ,worksize1,max_factorp,async=.true.)
@@ -1784,11 +2759,13 @@ c
 
             ! Is p interaction already found among (d,p) couple
             if (i1.le.kdp) then  ! yes
+               if (dpequal) dpcorrect_scale(2*(iscandp+i1-1)+1)= pscale
                dpcorrect_scale(2*(iscandp +i1-1)+2) = pscale
             else  ! No
                kdp=kdp+1
                dpcorrect_ik   (2*(iscandp+kdp-1)+1) = iglob
                dpcorrect_ik   (2*(iscandp+kdp-1)+2) = kglob
+               if (dpequal) dpcorrect_scale(2*(iscandp+i1-1)+1)= pscale
                dpcorrect_scale(2*(iscandp+kdp-1)+2) = pscale
             end if
          end do
@@ -1846,8 +2823,11 @@ c
 
 !$acc serial async
       n_cscale  = 0
-      cscalevec = (/0.0_ti_p,1.0_ti_p-c2scale,1.0_ti_p-c3scale,
-     &                       1.0_ti_p-c4scale,1.0_ti_p-c5scale/)
+      cscalevec(1) = 0.0_ti_p
+      cscalevec(2) = 1.0_ti_p-c2scale
+      cscalevec(3) = 1.0_ti_p-c3scale
+      cscalevec(4) = 1.0_ti_p-c4scale
+      cscalevec(5) = 1.0_ti_p-c5scale
 !$acc end serial
 
 !$acc parallel loop async
@@ -1991,10 +2971,16 @@ c
 
 !$acc serial async
       n_scale  = 0
-      cscalevec = (/0.0_ti_p,1.0_ti_p-c2scale,1.0_ti_p-c3scale,
-     &                       1.0_ti_p-c4scale,1.0_ti_p-c5scale/)
-      vscalevec = (/0.0_ti_p,1.0_ti_p-v2scale,1.0_ti_p-v3scale,
-     &                               -v4scale,1.0_ti_p-v5scale/)
+      cscalevec(1) = 0.0_ti_p
+      cscalevec(2) = 1.0_ti_p-c2scale
+      cscalevec(3) = 1.0_ti_p-c3scale
+      cscalevec(4) = 1.0_ti_p-c4scale
+      cscalevec(5) = 1.0_ti_p-c5scale
+      vscalevec(1) = 0.0_ti_p
+      vscalevec(2) = 1.0_ti_p-v2scale
+      vscalevec(3) = 1.0_ti_p-v3scale
+      vscalevec(4) =         -v4scale
+      vscalevec(5) = 1.0_ti_p-v5scale
 !$acc end serial
 
 !$acc parallel loop async
@@ -2154,7 +3140,7 @@ c
             i     = loc(ivdw(iivdw))
             if (i.eq.0.or.i.gt.nbloc) then
                print*,warning
-               print*,"VLST"
+               print*,"sef fault VLST",nbloc,ivdw(iivdw),i
                cycle
             end if
          end do
@@ -2167,7 +3153,7 @@ c
             i      = loc(ipole(iipole))
             if ((i.eq.0).or.(i.gt.nbloc)) then
                print*, warning
-               print*, "ELST"
+               print*, "seg fault ELST",nbloc,ipole(iipole),i
                cycle
             end if
          end do
@@ -2181,6 +3167,7 @@ c
       use interfaces,only: polar_scaling_p
       use neigh   ,only: ineigup
       use potent
+      use polpot  ,only: use_thole
       use utilcomm,only: no_commdir
       use timestat,only: timer_enter,timer_exit,
      &                   timer_scalfactor
@@ -2239,10 +3226,16 @@ c
          if (use_vdw)    call vdw_scalingnl
          if (use_charge) call charge_scaling
       end if
-      if (use_mpole)  call mpole_scaling
+
+      if (use_mpole.or.use_chgtrn)  call mpole_scaling
+
       if (use_polar) then
-         call polar_scaling_p
-         if (no_commdir) call u_dp_scaling_extent
+         if      (use_thole) then 
+            call polar_scaling_p
+            if (no_commdir) call u_dp_scaling_extent
+         else if (use_chgpen) then
+            call polar_scaling_cpen
+         end if
       end if
 
       call scaling_postop

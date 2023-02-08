@@ -14,7 +14,7 @@ c     "empole3" calculates the electrostatic energy due to
 c     atomic multipole and dipole polarizability interactions,
 c     and partitions the energy among the atoms
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine empole3
       use energi
       use potent
@@ -75,6 +75,10 @@ c
       aem = 0_ti_p
       if (npole .eq. 0)  return
 c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
 c     set the energy unit conversion factor
 c
       f = electric / dielec
@@ -101,13 +105,7 @@ c
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
      $   then
         if (use_mreal) then
-          if (use_mpoleshortreal) then
-            call emrealshort3d
-          else if (use_mpolelong) then
-            call emreallong3d
-          else
-            call emreal3d
-          end if
+           call emreal3d
         end if
 
         if (use_mself) then
@@ -207,282 +205,13 @@ c
       use atoms
       use bound
       use chgpot
-      use couple
-      use domdec
-      use energi
-      use ewald
-      use inform
-      use inter
-      use iounit
-      use math
-      use molcul
-      use mplpot
-      use mpole
-      use neigh
-      use potent
-      use shunt
-      use tinheader ,only:ti_p,re_p
-      use mpi
-      implicit none
-      integer i,j
-      integer ii,kkk,iipole,kkpole
-      integer iglob,kglob,kbis
-      real(t_p) e,efull,f
-      real(t_p) bfac
-      real(t_p) alsq2,alsq2n
-      real(t_p) exp2a,ralpha
-      real(t_p) scalekk
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-      real(t_p) r,r2,rr1,rr3
-      real(t_p) rr5,rr7,rr9
-      real(t_p) ci,dix,diy,diz
-      real(t_p) qixx,qixy,qixz
-      real(t_p) qiyy,qiyz,qizz
-      real(t_p) ck,dkx,dky,dkz
-      real(t_p) qkxx,qkxy,qkxz
-      real(t_p) qkyy,qkyz,qkzz
-      real(t_p) qrix,qriy,qriz
-      real(t_p) qrkx,qrky,qrkz
-      real(t_p) dri,drk,dik
-      real(t_p) qrri,qrrk
-      real(t_p) qrrik,qik
-      real(t_p) diqrk,dkqri
-      real(t_p) term1,term2,term3
-      real(t_p) term4,term5
-      real(t_p) bn(0:4)
-      real(t_p), allocatable :: mscale(:)
-      logical header,huge
-      character*10 mode
-
-      if(rank.eq.0.and.tinkerdebug) write(*,*) 'emreal3d'
-c
-      if (npole .eq. 0)  return
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (mscale(n))
-c
-c     initialize connected atom exclusion coefficients
-c
-      mscale = 1.0_ti_p
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      mode = 'EWALD'
-      call switch (mode)
-c
-c     compute the real space portion of the Ewald summation
-c
-      do ii = 1, npolelocnl
-         iipole = poleglobnl(ii)
-         iglob = ipole(iipole)
-         i = loc(iglob)
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         ci = rpole(1,iipole)
-         dix = rpole(2,iipole)
-         diy = rpole(3,iipole)
-         diz = rpole(4,iipole)
-         qixx = rpole(5,iipole)
-         qixy = rpole(6,iipole)
-         qixz = rpole(7,iipole)
-         qiyy = rpole(9,iipole)
-         qiyz = rpole(10,iipole)
-         qizz = rpole(13,iipole)
-         do j = 1, n12(iglob)
-            mscale(i12(j,iglob)) = m2scale
-         end do
-         do j = 1, n13(iglob)
-            mscale(i13(j,iglob)) = m3scale
-         end do
-         do j = 1, n14(iglob)
-            mscale(i14(j,iglob)) = m4scale
-         end do
-         do j = 1, n15(iglob)
-            mscale(i15(j,iglob)) = m5scale
-         end do
-c
-c     evaluate all sites within the cutoff distance
-c
-         do kkk = 1, nelst(ii)
-            kkpole = elst(kkk,ii)
-            kglob = ipole(kkpole)
-            kbis = loc(kglob)
-            xr = x(kglob) - xi
-            yr = y(kglob) - yi
-            zr = z(kglob) - zi
-            if (use_bounds)  call image (xr,yr,zr)
-            r2 = xr*xr + yr* yr + zr*zr
-            if (r2 .le. off2) then
-               r = sqrt(r2)
-               ck = rpole(1,kkpole)
-               dkx = rpole(2,kkpole)
-               dky = rpole(3,kkpole)
-               dkz = rpole(4,kkpole)
-               qkxx = rpole(5,kkpole)
-               qkxy = rpole(6,kkpole)
-               qkxz = rpole(7,kkpole)
-               qkyy = rpole(9,kkpole)
-               qkyz = rpole(10,kkpole)
-               qkzz = rpole(13,kkpole)
-c
-c     get reciprocal distance terms for this interaction
-c
-               rr1 = f / r
-               rr3 = rr1 / r2
-               rr5 = 3.0_ti_p * rr3 / r2
-               rr7 = 5.0_ti_p * rr5 / r2
-               rr9 = 7.0_ti_p * rr7 / r2
-c
-c     calculate the real space Ewald error function terms
-c
-               ralpha = aewald * r
-               bn(0) = erfc(ralpha) / r
-               alsq2 = 2.0_ti_p * aewald**2
-               alsq2n = 0.0_ti_p
-               if (aewald .gt. 0.0_ti_p) 
-     &            alsq2n = 1.0_ti_p / (sqrtpi*aewald)
-               exp2a = exp(-ralpha**2)
-               do j = 1, 4
-                  bfac = real(j+j-1,t_p)
-                  alsq2n = alsq2 * alsq2n
-                  bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / r2
-               end do
-               do j = 0, 4
-                  bn(j) = f * bn(j)
-               end do
-c
-c     intermediates involving moments and distance separation
-c
-               dri = dix*xr + diy*yr + diz*zr
-               drk = dkx*xr + dky*yr + dkz*zr
-               dik = dix*dkx + diy*dky + diz*dkz
-               qrix = qixx*xr + qixy*yr + qixz*zr
-               qriy = qixy*xr + qiyy*yr + qiyz*zr
-               qriz = qixz*xr + qiyz*yr + qizz*zr
-               qrkx = qkxx*xr + qkxy*yr + qkxz*zr
-               qrky = qkxy*xr + qkyy*yr + qkyz*zr
-               qrkz = qkxz*xr + qkyz*yr + qkzz*zr
-               qrri = qrix*xr + qriy*yr + qriz*zr
-               qrrk = qrkx*xr + qrky*yr + qrkz*zr
-               qrrik = qrix*qrkx + qriy*qrky + qriz*qrkz
-               qik = 2.0_ti_p*(qixy*qkxy+qixz*qkxz+qiyz*qkyz)
-     &                  + qixx*qkxx + qiyy*qkyy + qizz*qkzz
-               diqrk = dix*qrkx + diy*qrky + diz*qrkz
-               dkqri = dkx*qrix + dky*qriy + dkz*qriz
-c
-c     calculate intermediate terms for multipole interaction
-c
-               term1 = ci*ck
-               term2 = ck*dri - ci*drk + dik
-               term3 = ci*qrrk + ck*qrri - dri*drk
-     &                    + 2.0_ti_p*(dkqri-diqrk+qik)
-               term4 = dri*qrrk - drk*qrri - 4.0_ti_p*qrrik
-               term5 = qrri*qrrk
-c
-c     compute the full undamped energy for this interaction
-c
-               efull = term1*rr1 + term2*rr3 + term3*rr5
-     &                    + term4*rr7 + term5*rr9
-               efull = mscale(kglob) * efull
-               if (efull .ne. 0.0_ti_p) then
-                  nem = nem + 1
-                  aem(i) = aem(i) + efull
-                  if (molcule(iglob) .ne. molcule(kglob))
-     &               einter = einter + efull
-               end if
-c
-c     modify error function terms to account for scaling
-c
-               scalekk = 1.0_ti_p - mscale(kglob)
-               rr1 = bn(0) - scalekk*rr1
-               rr3 = bn(1) - scalekk*rr3
-               rr5 = bn(2) - scalekk*rr5
-               rr7 = bn(3) - scalekk*rr7
-               rr9 = bn(4) - scalekk*rr9
-c
-c     compute the energy contribution for this interaction
-c
-               e = term1*rr1 + term2*rr3 + term3*rr5
-     &                + term4*rr7 + term5*rr9
-               em = em + e
-c
-c     print a message if the energy of this interaction is large
-c
-               huge = (abs(efull) .gt. 100.0_ti_p)
-               if ((debug.and.efull.ne.0.0_ti_p)
-     &               .or. (verbose.and.huge)) then
-                  if (header) then
-                     header = .false.
-                     write (iout,20)
-   20                format (/,' Individual Atomic Multipole',
-     &                          ' Interactions :',
-     &                       //,' Type',14x,'Atom Names',
-     &                          15x,'Distance',8x,'Energy',/)
-                  end if
-                  write (iout,30)  iglob,name(iglob),kglob,name(kglob),
-     &             r,efull
-   30             format (' M-Pole',4x,2(i7,'-',a3),9x,
-     &                       f10.4,2x,f12.4)
-               end if
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            mscale(i12(j,iglob)) = 1.0_ti_p
-         end do
-         do j = 1, n13(iglob)
-            mscale(i13(j,iglob)) = 1.0_ti_p
-         end do
-         do j = 1, n14(iglob)
-            mscale(i14(j,iglob)) = 1.0_ti_p
-         end do
-         do j = 1, n15(iglob)
-            mscale(i15(j,iglob)) = 1.0_ti_p
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (mscale)
-      return
-      end
-c
-c     ####################################################################################
-c     ##                                             i                                  ##
-c     ##  subroutine emrealshort3d  --  short range real space mpole analysis via list  ##
-c     ##                                                                                ##
-c     ####################################################################################
-c
-c
-c     "emreal3d" evaluates the short range real space portion of the Ewald sum
-c     energy due to atomic multipole interactions, and partitions
-c     the energy among the atoms using a pairwise neighbor list
-c
-c     literature reference:
-c
-c     W. Smith, "Point Multipoles in the Ewald Summation (Revisited)",
-c     CCP5 Newsletter, 46, 18-30, 1998  (see http://www.ccp5.org/)
-c
-c
-      subroutine emrealshort3d
-      use action
-      use analyz
-      use atmlst
-      use atmtyp
-      use atoms
-      use bound
-      use chgpot
+      use chgpen
       use couple
       use cutoff
       use domdec
       use energi
       use ewald
+      use group
       use inform
       use inter
       use iounit
@@ -496,314 +225,66 @@ c
       use tinheader ,only:ti_p,re_p
       use mpi
       implicit none
-      integer i,j
+      integer i,j,iglob,kglob,kbis,nnelst
       integer ii,kkk,iipole,kkpole
-      integer iglob,kglob,kbis
       real(t_p) e,efull,f
-      real(t_p) bfac
-      real(t_p) alsq2,alsq2n
-      real(t_p) exp2a,ralpha
-      real(t_p) scalekk
+      real(t_p) scalek
       real(t_p) xi,yi,zi
       real(t_p) xr,yr,zr
       real(t_p) r,r2,rr1,rr3
       real(t_p) rr5,rr7,rr9
+      real(t_p) rr1i,rr3i,rr5i
+      real(t_p) rr1k,rr3k,rr5k
+      real(t_p) rr1ik,rr3ik,rr5ik
+      real(t_p) rr7ik,rr9ik
       real(t_p) ci,dix,diy,diz
       real(t_p) qixx,qixy,qixz
       real(t_p) qiyy,qiyz,qizz
       real(t_p) ck,dkx,dky,dkz
       real(t_p) qkxx,qkxy,qkxz
       real(t_p) qkyy,qkyz,qkzz
-      real(t_p) qrix,qriy,qriz
-      real(t_p) qrkx,qrky,qrkz
-      real(t_p) dri,drk,dik
-      real(t_p) qrri,qrrk
-      real(t_p) qrrik,qik
-      real(t_p) diqrk,dkqri
+      real(t_p) dir,dkr,dik,qik
+      real(t_p) qix,qiy,qiz,qir
+      real(t_p) qkx,qky,qkz,qkr
+      real(t_p) diqk,dkqi,qiqk
+      real(t_p) corei,corek
+      real(t_p) vali,valk
+      real(t_p) alphai,alphak
       real(t_p) term1,term2,term3
       real(t_p) term4,term5
-      real(t_p) bn(0:4)
-      real(t_p) s,ds
-      real(t_p), allocatable :: mscale(:)
-      logical header,huge
-      character*10 mode
-c
-      if (npole .eq. 0)  return
-      if (rank.eq.0.and.tinkerdebug) write(*,*) 'emrealshort3d'
-
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (mscale(n))
-c
-c     initialize connected atom exclusion coefficients
-c
-      mscale = 1.0_ti_p
-c
-c     set conversion factor, cutoff and switching coefficients
-c
-      f = electric / dielec
-      mode = 'SHORTEWALD'
-      call switch (mode)
-c
-c     compute the real space portion of the Ewald summation
-c
-      do ii = 1, npolelocnl
-         iipole = poleglobnl(ii)
-         iglob = ipole(iipole)
-         i = loc(iglob)
-         xi = x(iglob)
-         yi = y(iglob)
-         zi = z(iglob)
-         ci = rpole(1,iipole)
-         dix = rpole(2,iipole)
-         diy = rpole(3,iipole)
-         diz = rpole(4,iipole)
-         qixx = rpole(5,iipole)
-         qixy = rpole(6,iipole)
-         qixz = rpole(7,iipole)
-         qiyy = rpole(9,iipole)
-         qiyz = rpole(10,iipole)
-         qizz = rpole(13,iipole)
-         do j = 1, n12(iglob)
-            mscale(i12(j,iglob)) = m2scale
-         end do
-         do j = 1, n13(iglob)
-            mscale(i13(j,iglob)) = m3scale
-         end do
-         do j = 1, n14(iglob)
-            mscale(i14(j,iglob)) = m4scale
-         end do
-         do j = 1, n15(iglob)
-            mscale(i15(j,iglob)) = m5scale
-         end do
-c
-c     evaluate all sites within the cutoff distance
-c
-         do kkk = 1, nelst(ii)
-            kkpole = elst(kkk,ii)
-            kglob = ipole(kkpole)
-            kbis = loc(kglob)
-            xr = x(kglob) - xi
-            yr = y(kglob) - yi
-            zr = z(kglob) - zi
-            if (use_bounds)  call image (xr,yr,zr)
-            r2 = xr*xr + yr* yr + zr*zr
-            if (r2 .le. off2) then
-               r = sqrt(r2)
-               ck = rpole(1,kkpole)
-               dkx = rpole(2,kkpole)
-               dky = rpole(3,kkpole)
-               dkz = rpole(4,kkpole)
-               qkxx = rpole(5,kkpole)
-               qkxy = rpole(6,kkpole)
-               qkxz = rpole(7,kkpole)
-               qkyy = rpole(9,kkpole)
-               qkyz = rpole(10,kkpole)
-               qkzz = rpole(13,kkpole)
-c
-c     get reciprocal distance terms for this interaction
-c
-               rr1 = f / r
-               rr3 = rr1 / r2
-               rr5 = 3.0_ti_p * rr3 / r2
-               rr7 = 5.0_ti_p * rr5 / r2
-               rr9 = 7.0_ti_p * rr7 / r2
-c
-c     calculate the real space Ewald error function terms
-c
-               ralpha = aewald * r
-               bn(0) = erfc(ralpha) / r
-               alsq2 = 2.0_ti_p * aewald**2
-               alsq2n = 0.0_ti_p
-               if (aewald .gt. 0.0_ti_p)
-     &            alsq2n = 1.0_ti_p / (sqrtpi*aewald)
-               exp2a = exp(-ralpha**2)
-               do j = 1, 4
-                  bfac = dble(j+j-1)
-                  alsq2n = alsq2 * alsq2n
-                  bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / r2
-               end do
-               do j = 0, 4
-                  bn(j) = f * bn(j)
-               end do
-c
-c     intermediates involving moments and distance separation
-c
-               dri = dix*xr + diy*yr + diz*zr
-               drk = dkx*xr + dky*yr + dkz*zr
-               dik = dix*dkx + diy*dky + diz*dkz
-               qrix = qixx*xr + qixy*yr + qixz*zr
-               qriy = qixy*xr + qiyy*yr + qiyz*zr
-               qriz = qixz*xr + qiyz*yr + qizz*zr
-               qrkx = qkxx*xr + qkxy*yr + qkxz*zr
-               qrky = qkxy*xr + qkyy*yr + qkyz*zr
-               qrkz = qkxz*xr + qkyz*yr + qkzz*zr
-               qrri = qrix*xr + qriy*yr + qriz*zr
-               qrrk = qrkx*xr + qrky*yr + qrkz*zr
-               qrrik = qrix*qrkx + qriy*qrky + qriz*qrkz
-               qik = 2.0_ti_p*(qixy*qkxy+qixz*qkxz+qiyz*qkyz)
-     &                  + qixx*qkxx + qiyy*qkyy + qizz*qkzz
-               diqrk = dix*qrkx + diy*qrky + diz*qrkz
-               dkqri = dkx*qrix + dky*qriy + dkz*qriz
-c
-c     calculate intermediate terms for multipole interaction
-c
-               term1 = ci*ck
-               term2 = ck*dri - ci*drk + dik
-               term3 = ci*qrrk + ck*qrri - dri*drk
-     &                    + 2.0_ti_p*(dkqri-diqrk+qik)
-               term4 = dri*qrrk - drk*qrri - 4.0_ti_p*qrrik
-               term5 = qrri*qrrk
-c
-c     compute the full undamped energy for this interaction
-c
-               efull = term1*rr1 + term2*rr3 + term3*rr5
-     &                    + term4*rr7 + term5*rr9
-               efull = mscale(kglob) * efull
-               if (efull .ne. 0.0_ti_p) then
-                  nem = nem + 1
-                  aem(i) = aem(i) + efull
-                  if (molcule(iglob) .ne. molcule(kglob))
-     &               einter = einter + efull
-               end if
-c
-c     modify error function terms to account for scaling
-c
-               scalekk = 1.0_ti_p - mscale(kglob)
-               rr1 = bn(0) - scalekk*rr1
-               rr3 = bn(1) - scalekk*rr3
-               rr5 = bn(2) - scalekk*rr5
-               rr7 = bn(3) - scalekk*rr7
-               rr9 = bn(4) - scalekk*rr9
-c
-c     compute the energy contribution for this interaction
-c
-               e = term1*rr1 + term2*rr3 + term3*rr5
-     &                + term4*rr7 + term5*rr9
-               call switch_respa(r,off,shortheal,s,ds)
-               em = em + e*s
-c
-c     print a message if the energy of this interaction is large
-c
-               huge = (abs(efull) .gt. 100.0_ti_p)
-               if ((debug.and.efull.ne.0.0_ti_p)
-     &               .or. (verbose.and.huge)) then
-                  if (header) then
-                     header = .false.
-                     write (iout,20)
-   20                format (/,' Individual Atomic Multipole',
-     &                          ' Interactions :',
-     &                       //,' Type',14x,'Atom Names',
-     &                          15x,'Distance',8x,'Energy',/)
-                  end if
-                  write (iout,30)  iglob,name(iglob),kglob,name(kglob),
-     &             r,efull
-   30             format (' M-Pole',4x,2(i7,'-',a3),9x,
-     &                       f10.4,2x,f12.4)
-               end if
-            end if
-         end do
-c
-c     reset exclusion coefficients for connected atoms
-c
-         do j = 1, n12(iglob)
-            mscale(i12(j,iglob)) = 1.0_ti_p
-         end do
-         do j = 1, n13(iglob)
-            mscale(i13(j,iglob)) = 1.0_ti_p
-         end do
-         do j = 1, n14(iglob)
-            mscale(i14(j,iglob)) = 1.0_ti_p
-         end do
-         do j = 1, n15(iglob)
-            mscale(i15(j,iglob)) = 1.0_ti_p
-         end do
-      end do
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (mscale)
-      return
-      end
-c
-c     ####################################################################################
-c     ##                                             i                                  ##
-c     ##  subroutine emreallong3d  --  long range real space mpole analysis via list    ##
-c     ##                                                                                ##
-c     ####################################################################################
-c
-c
-c     "emreal3d" evaluates the short range real space portion of the Ewald sum
-c     energy due to atomic multipole interactions, and partitions
-c     the energy among the atoms using a pairwise neighbor list
-c
-c     literature reference:
-c
-c     W. Smith, "Point Multipoles in the Ewald Summation (Revisited)",
-c     CCP5 Newsletter, 46, 18-30, 1998  (see http://www.ccp5.org/)
-c
-c
-      subroutine emreallong3d
-      use action
-      use analyz
-      use atmlst
-      use atmtyp
-      use atoms
-      use bound
-      use chgpot
-      use couple
-      use cutoff
-      use domdec
-      use energi
-      use ewald
-      use inform
-      use inter
-      use iounit
-      use math
-      use molcul
-      use mplpot
-      use mpole
-      use neigh
-      use potent
-      use shunt
-      use tinheader ,only:ti_p,re_p
-      use mpi
-      implicit none
-      integer i,j
-      integer ii,kkk,iipole,kkpole
-      integer iglob,kglob,kbis
-      real(t_p) e,efull,f
-      real(t_p) bfac
-      real(t_p) alsq2,alsq2n
-      real(t_p) exp2a,ralpha
-      real(t_p) scalekk
-      real(t_p) xi,yi,zi
-      real(t_p) xr,yr,zr
-      real(t_p) r,r2,rr1,rr3
-      real(t_p) rr5,rr7,rr9
-      real(t_p) ci,dix,diy,diz
-      real(t_p) qixx,qixy,qixz
-      real(t_p) qiyy,qiyz,qizz
-      real(t_p) ck,dkx,dky,dkz
-      real(t_p) qkxx,qkxy,qkxz
-      real(t_p) qkyy,qkyz,qkzz
-      real(t_p) qrix,qriy,qriz
-      real(t_p) qrkx,qrky,qrkz
-      real(t_p) dri,drk,dik
-      real(t_p) qrri,qrrk
-      real(t_p) qrrik,qik
-      real(t_p) diqrk,dkqri
-      real(t_p) term1,term2,term3
-      real(t_p) term4,term5
-      real(t_p) bn(0:4)
+      real(t_p) term1i,term2i,term3i
+      real(t_p) term1k,term2k,term3k
+      real(t_p) term1ik,term2ik,term3ik
+      real(t_p) term4ik,term5ik
+      real(t_p) dmpi(9),dmpk(9)
+      real(t_p) dmpik(9),dmpe(9)
+      real(t_p) fgrp
       real(t_p) s,ds,mpoleshortcut2
+      real(t_p) facts
+      logical testcut,shortrange,longrange,fullrange
       real(t_p), allocatable :: mscale(:)
       logical header,huge
-      character*10 mode
-c
+      character*11 mode
+      character*80 :: RoutineName
+      external erfc
+
+
+c     compute the short, long, or full real space part of the summation
+      shortrange = use_mpoleshortreal
+      longrange  = use_mpolelong
+      fullrange  = .not.(shortrange.or.longrange)
+      if (shortrange) then 
+         RoutineName = 'emrealshort3d'
+         mode        = 'SHORTEWALD'
+      else if (longrange) then
+         RoutineName = 'emreallong3d'
+         mode        = 'EWALD'
+      else
+         RoutineName = 'emreal3d'
+         mode        = 'EWALD'
+      endif
+
       if (npole .eq. 0)  return
-      if (rank.eq.0.and.tinkerdebug) write(*,*) 'emreallong3d'
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -811,21 +292,19 @@ c
 c
 c     initialize connected atom exclusion coefficients
 c
-      mscale = 1.0_ti_p
+      mscale = 1.0d0
 c
 c     set conversion factor, cutoff and switching coefficients
 c
       f = electric / dielec
-      mode = 'EWALD'
       call switch (mode)
-      mpoleshortcut2 = (mpoleshortcut-shortheal)**2
 c
 c     compute the real space portion of the Ewald summation
 c
       do ii = 1, npolelocnl
          iipole = poleglobnl(ii)
-         iglob = ipole(iipole)
-         i = loc(iglob)
+         iglob  = ipole(iipole)
+         i      = loc  (iglob)
          xi = x(iglob)
          yi = y(iglob)
          zi = z(iglob)
@@ -839,6 +318,11 @@ c
          qiyy = rpole(9,iipole)
          qiyz = rpole(10,iipole)
          qizz = rpole(13,iipole)
+         if (use_chgpen) then
+            corei = pcore(iipole)
+            vali = pval(iipole)
+            alphai = palpha(iipole)
+         end if
          do j = 1, n12(iglob)
             mscale(i12(j,iglob)) = m2scale
          end do
@@ -854,16 +338,31 @@ c
 c
 c     evaluate all sites within the cutoff distance
 c
-         do kkk = 1, nelst(ii)
-            kkpole = elst(kkk,ii)
+         if (shortrange) then
+           nnelst = nshortelst(ii)
+         else
+           nnelst = nelst(ii)
+         end if
+         do kkk = 1, nnelst
+            if (shortrange) then
+              kkpole = shortelst(kkk,ii)
+            else
+              kkpole = elst(kkk,ii)
+            end if
             kglob = ipole(kkpole)
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
+            !if(use_group) call groups (fgrp,iglob,kglob,0,0,0,0)
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi
             if (use_bounds)  call image (xr,yr,zr)
-            r2 = xr*xr + yr* yr + zr*zr
-            if ((r2 .le. off2).and.(r2.ge.mpoleshortcut2)) then
+            r2 = xr*xr + yr*yr + zr*zr
+            testcut = merge(r2 .le. off2.and.r2.ge.mpoleshortcut2,
+     &                      r2 .le. off2,
+     &                      longrange
+     &                     )
+            if (testcut) then
                r = sqrt(r2)
                ck = rpole(1,kkpole)
                dkx = rpole(2,kkpole)
@@ -876,92 +375,154 @@ c
                qkyz = rpole(10,kkpole)
                qkzz = rpole(13,kkpole)
 c
+c     intermediates involving moments and separation distance
+c
+               dir = dix*xr + diy*yr + diz*zr
+               qix = qixx*xr + qixy*yr + qixz*zr
+               qiy = qixy*xr + qiyy*yr + qiyz*zr
+               qiz = qixz*xr + qiyz*yr + qizz*zr
+               qir = qix*xr + qiy*yr + qiz*zr
+               dkr = dkx*xr + dky*yr + dkz*zr
+               qkx = qkxx*xr + qkxy*yr + qkxz*zr
+               qky = qkxy*xr + qkyy*yr + qkyz*zr
+               qkz = qkxz*xr + qkyz*yr + qkzz*zr
+               qkr = qkx*xr + qky*yr + qkz*zr
+               dik = dix*dkx + diy*dky + diz*dkz
+               qik = qix*qkx + qiy*qky + qiz*qkz
+               diqk = dix*qkx + diy*qky + diz*qkz
+               dkqi = dkx*qix + dky*qiy + dkz*qiz
+               qiqk = 2.0*(qixy*qkxy+qixz*qkxz+qiyz*qkyz)
+     &                   + qixx*qkxx + qiyy*qkyy + qizz*qkzz
+c
 c     get reciprocal distance terms for this interaction
 c
                rr1 = f / r
                rr3 = rr1 / r2
-               rr5 = 3.0_ti_p * rr3 / r2
-               rr7 = 5.0_ti_p * rr5 / r2
-               rr9 = 7.0_ti_p * rr7 / r2
+               rr5 = 3.0 * rr3 / r2
+               rr7 = 5.0 * rr5 / r2
+               rr9 = 7.0 * rr7 / r2
 c
-c     calculate the real space Ewald error function terms
+c     calculate real space Ewald error function damping
 c
-               ralpha = aewald * r
-               bn(0) = erfc(ralpha) / r
-               alsq2 = 2.0_ti_p * aewald**2
-               alsq2n = 0.0_ti_p
-               if (aewald .gt. 0.0_ti_p)
-     &            alsq2n = 1.0_ti_p / (sqrtpi*aewald)
-               exp2a = exp(-ralpha**2)
-               do j = 1, 4
-                  bfac = dble(j+j-1)
-                  alsq2n = alsq2 * alsq2n
-                  bn(j) = (bfac*bn(j-1)+alsq2n*exp2a) / r2
-               end do
-               do j = 0, 4
-                  bn(j) = f * bn(j)
-               end do
+               call dampewald (9,r,r2,f,dmpe)
 c
-c     intermediates involving moments and distance separation
+c     find damped multipole intermediates and energy value
 c
-               dri = dix*xr + diy*yr + diz*zr
-               drk = dkx*xr + dky*yr + dkz*zr
-               dik = dix*dkx + diy*dky + diz*dkz
-               qrix = qixx*xr + qixy*yr + qixz*zr
-               qriy = qixy*xr + qiyy*yr + qiyz*zr
-               qriz = qixz*xr + qiyz*yr + qizz*zr
-               qrkx = qkxx*xr + qkxy*yr + qkxz*zr
-               qrky = qkxy*xr + qkyy*yr + qkyz*zr
-               qrkz = qkxz*xr + qkyz*yr + qkzz*zr
-               qrri = qrix*xr + qriy*yr + qriz*zr
-               qrrk = qrkx*xr + qrky*yr + qrkz*zr
-               qrrik = qrix*qrkx + qriy*qrky + qriz*qrkz
-               qik = 2.0_ti_p*(qixy*qkxy+qixz*qkxz+qiyz*qkyz)
-     &                  + qixx*qkxx + qiyy*qkyy + qizz*qkzz
-               diqrk = dix*qrkx + diy*qrky + diz*qrkz
-               dkqri = dkx*qrix + dky*qriy + dkz*qriz
+               if (use_chgpen) then
+                  corek = pcore(kkpole)
+                  valk = pval(kkpole)
+                  alphak = palpha(kkpole)
+                  term1 = corei*corek
+                  term1i = corek*vali
+                  term2i = corek*dir
+                  term3i = corek*qir
+                  term1k = corei*valk
+                  term2k = -corei*dkr
+                  term3k = corei*qkr
+                  term1ik = vali*valk
+                  term2ik = valk*dir - vali*dkr + dik
+                  term3ik = vali*qkr + valk*qir - dir*dkr
+     &                         + 2.0*(dkqi-diqk+qiqk)
+                  term4ik = dir*qkr - dkr*qir - 4.0*qik
+                  term5ik = qir*qkr
+                  call damppole (r,9,alphai,alphak,
+     &                            dmpi,dmpk,dmpik)
+                  rr1i = dmpi(1)*rr1
+                  rr3i = dmpi(3)*rr3
+                  rr5i = dmpi(5)*rr5
+                  rr1k = dmpk(1)*rr1
+                  rr3k = dmpk(3)*rr3
+                  rr5k = dmpk(5)*rr5
+                  rr1ik = dmpik(1)*rr1
+                  rr3ik = dmpik(3)*rr3
+                  rr5ik = dmpik(5)*rr5
+                  rr7ik = dmpik(7)*rr7
+                  rr9ik = dmpik(9)*rr9
+                  e = term1*rr1 + term4ik*rr7ik + term5ik*rr9ik
+     &                   + term1i*rr1i + term1k*rr1k + term1ik*rr1ik
+     &                   + term2i*rr3i + term2k*rr3k + term2ik*rr3ik
+     &                   + term3i*rr5i + term3k*rr5k + term3ik*rr5ik
 c
-c     calculate intermediate terms for multipole interaction
+c     find standard multipole intermediates and energy value
 c
-               term1 = ci*ck
-               term2 = ck*dri - ci*drk + dik
-               term3 = ci*qrrk + ck*qrri - dri*drk
-     &                    + 2.0_ti_p*(dkqri-diqrk+qik)
-               term4 = dri*qrrk - drk*qrri - 4.0_ti_p*qrrik
-               term5 = qrri*qrrk
+               else
+                  term1 = ci*ck
+                  term2 = ck*dir - ci*dkr + dik
+                  term3 = ci*qkr + ck*qir - dir*dkr
+     &                       + 2.0*(dkqi-diqk+qiqk)
+                  term4 = dir*qkr - dkr*qir - 4.0*qik
+                  term5 = qir*qkr
+                  e = term1*rr1 + term2*rr3 + term3*rr5
+     &                   + term4*rr7 + term5*rr9
+               end if
 c
 c     compute the full undamped energy for this interaction
 c
-               efull = term1*rr1 + term2*rr3 + term3*rr5
-     &                    + term4*rr7 + term5*rr9
-               efull = mscale(kglob) * efull
-               if (efull .ne. 0.0_ti_p) then
+               efull = mscale(kglob) * e
+               if (efull .ne. 0.0) then
                   nem = nem + 1
-                  aem(i) = aem(i) + efull
-                  if (molcule(iglob) .ne. molcule(kglob))
-     &               einter = einter + efull
+                  aem(i) = aem(i) + 0.5*efull
+                  aem(kbis) = aem(kbis) + 0.5*efull
+                  if (molcule(iglob) .ne. molcule(kglob)) then
+                     einter = einter + efull
+                  end if
                end if
-c
-c     modify error function terms to account for scaling
-c
-               scalekk = 1.0_ti_p - mscale(kglob)
-               rr1 = bn(0) - scalekk*rr1
-               rr3 = bn(1) - scalekk*rr3
-               rr5 = bn(2) - scalekk*rr5
-               rr7 = bn(3) - scalekk*rr7
-               rr9 = bn(4) - scalekk*rr9
 c
 c     compute the energy contribution for this interaction
 c
-               e = term1*rr1 + term2*rr3 + term3*rr5
-     &                + term4*rr7 + term5*rr9
-               call switch_respa(r,mpoleshortcut,shortheal,s,ds)
-               em = em + (1-s)*e
+               if (use_chgpen) then
+                  scalek = mscale(kglob)
+                  if (use_group)  scalek = scalek * fgrp
+                  rr1i = dmpe(1) - (1.0-scalek*dmpi(1))*rr1
+                  rr3i = dmpe(3) - (1.0-scalek*dmpi(3))*rr3
+                  rr5i = dmpe(5) - (1.0-scalek*dmpi(5))*rr5
+                  rr1k = dmpe(1) - (1.0-scalek*dmpk(1))*rr1
+                  rr3k = dmpe(3) - (1.0-scalek*dmpk(3))*rr3
+                  rr5k = dmpe(5) - (1.0-scalek*dmpk(5))*rr5
+                  rr1ik = dmpe(1) - (1.0-scalek*dmpik(1))*rr1
+                  rr3ik = dmpe(3) - (1.0-scalek*dmpik(3))*rr3
+                  rr5ik = dmpe(5) - (1.0-scalek*dmpik(5))*rr5
+                  rr7ik = dmpe(7) - (1.0-scalek*dmpik(7))*rr7
+                  rr9ik = dmpe(9) - (1.0-scalek*dmpik(9))*rr9
+                  rr1 = dmpe(1) - (1.0-scalek)*rr1
+                  e = term1*rr1 + term4ik*rr7ik + term5ik*rr9ik
+     &                   + term1i*rr1i + term1k*rr1k + term1ik*rr1ik
+     &                   + term2i*rr3i + term2k*rr3k + term2ik*rr3ik
+     &                   + term3i*rr5i + term3k*rr5k + term3ik*rr5ik
+               else
+                  scalek = 1.0 - mscale(kglob)
+                  if (use_group)  then
+                    scalek = 1.0 - mscale(kglob)*fgrp
+                  end if
+                  rr1 = dmpe(1) - scalek*rr1
+                  rr3 = dmpe(3) - scalek*rr3
+                  rr5 = dmpe(5) - scalek*rr5
+                  rr7 = dmpe(7) - scalek*rr7
+                  rr9 = dmpe(9) - scalek*rr9
+                  e = term1*rr1 + term2*rr3 + term3*rr5
+     &                   + term4*rr7 + term5*rr9
+               end if
+
+
+               if(shortrange .or. longrange)
+     &            call switch_respa(r,ewaldshortcut,shortheal,s,ds)
+c
+c     fix the s factor, depending on the range
+c
+               if(shortrange) then
+                  facts  =         s
+               else if(longrange) then
+                  facts  = 1.0 - s
+               else
+                  facts  = 1.0
+               endif
+
+               em = em + facts * e
 c
 c     print a message if the energy of this interaction is large
 c
-               huge = (abs(efull) .gt. 100.0_ti_p)
-               if ((debug.and.efull.ne.0.0_ti_p)
+               huge = (abs(efull) .gt. 100.0)
+               if ((debug.and.efull.ne.0.0)
      &               .or. (verbose.and.huge)) then
                   if (header) then
                      header = .false.
@@ -982,16 +543,16 @@ c
 c     reset exclusion coefficients for connected atoms
 c
          do j = 1, n12(iglob)
-            mscale(i12(j,iglob)) = 1.0_ti_p
+            mscale(i12(j,iglob)) = 1.0
          end do
          do j = 1, n13(iglob)
-            mscale(i13(j,iglob)) = 1.0_ti_p
+            mscale(i13(j,iglob)) = 1.0
          end do
          do j = 1, n14(iglob)
-            mscale(i14(j,iglob)) = 1.0_ti_p
+            mscale(i14(j,iglob)) = 1.0
          end do
          do j = 1, n15(iglob)
-            mscale(i15(j,iglob)) = 1.0_ti_p
+            mscale(i15(j,iglob)) = 1.0
          end do
       end do
 c

@@ -11,7 +11,7 @@ c     ################################################################
 c
       ! off_* defines the offset device thread in charge of *
       ! num_* defines the total number of threads in charge of *
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module eliaison1gpu_inl
       integer,save:: eliaison1cu_call=0
       integer off_bond,num_bond,off_urey,num_urey,off_angl,num_angl
@@ -262,7 +262,7 @@ c      end block
       eliaison1cu_call = eliaison1cu_call + 1
 #else
  63   format(/,' --- ERROR --- '
-             /,' eliaison1gpu routine is not made for host execution ')
+     &       /,' eliaison1gpu routine is not made for host execution ')
       write(0,63); call fatal;
 #endif
       end subroutine

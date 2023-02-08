@@ -14,7 +14,7 @@ c     "kimptor" assigns torsional parameters to each improper
 c     torsion in the structure and processes any changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kimptor(init)
       use atmlst
       use atmtyp

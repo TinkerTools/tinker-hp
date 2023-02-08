@@ -14,8 +14,7 @@ c     "mdinit" initializes the velocities and accelerations
 c     for a molecular dynamics trajectory, including restarts
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       subroutine mdinit(dt)
       use atmtyp
       use atomsMirror
@@ -30,10 +29,12 @@ c
       use files
       use keys
       use freeze
+      use group
       use inform
       use iounit
       use langevin
       use mamd
+      use mdstate
       use mdstuf
       use mdstuf1 ,only: gpuAllocMdstuf1Data
       use molcul
@@ -67,7 +68,7 @@ c
       real(r_p) dt
       real(r_p), allocatable :: derivs(:,:)
       real(r_p), allocatable :: speedvec(:)
-      real(r_p) eps,zero
+      real(r_p) eps,zero,oe6
       mdyn_rtyp zero_md
       logical exist,s_colvars
       character*7 ext
@@ -75,7 +76,7 @@ c
       character*240 dynfile
       character*240 record
       character*240 string
-      parameter(zero=0.0,zero_md=0)
+      parameter(zero=0.0,zero_md=0,oe6=1d-6)
 
       interface
       subroutine maxwellgpu (mass,temper,nloc,max_result)
@@ -96,13 +97,14 @@ c
       integrate = 'VERLET'
       bmnmix    = 8
       nfree     = 0
+      dorest    = .true.
       irest     = 1
       velsave   = .false.
       frcsave   = .false.
       uindsave  = .false.
       polpred   = 'ASPC'
 #if (defined(SINGLE) || defined(MIXED))
-      iprint = 1000
+      iprint =merge(5000,1000,n.lt.10000.or.(use_charge.and.n.lt.50000))
       eps    =  0.000001_ti_p
 #else
       iprint = 100
@@ -110,10 +112,17 @@ c
 #endif
 c
 c      set default for neighbor list update,
-c             reference = 2\AA buffer allows 40fs integration in double precision
-c             reference = 0.7\AA buffer allows 14fs integration in mixed or single precision
 c
-      ineigup = max( 1,int(((real(lbuffer,r_p)*0.02_re_p)/dt)+1d-3) )
+      if (.not.isothermal.and..not .isobaric) then  !Microcanonical (NVE)
+c        reference = 2\AA buffer allows 30fs integration in double precision
+c        reference = 0.7\AA buffer allows 10.5fs integration in mixed or single precision
+         ineigup= max( 1,int(((real(lbuffer,r_p)*0.015_re_p)/dt)+1d-3) )
+         call fetchkey('POLAR-EPS',poleps,oe6)
+      else
+c        reference = 2\AA buffer allows 40fs integration in double precision
+c        reference = 0.7\AA buffer allows 14fs integration in mixed or single precision
+         ineigup= max( 1,int(((real(lbuffer,r_p)*0.02_re_p)/dt)+1d-3) )
+      end if
 c
 c     set default values for temperature and pressure control
 c
@@ -135,8 +144,8 @@ c      volscale = 'ATOMIC'
       gamma      = 1.0_ti_p
 ! this variable seems to be useless
 !!$acc update device(gamma)
-      gammapiston = 20.0_ti_p
-      masspiston  = 0.000200_ti_p
+      gammapiston = 20.0_re_p
+      masspiston  = 100000.0_re_p
       virsave     = 0.0_re_p
       viramdD     = 0.0_re_p
 !$acc update device(eta)
@@ -155,8 +164,8 @@ c
             call upcase (integrate)
          else if (keyword(1:14) .eq. 'BEEMAN-MIXING ') then
             read (string,*,err=10,end=10)  bmnmix
-         else if (keyword(1:16) .eq. 'DEGREES-FREEDOM ') then
-            read (string,*,err=10,end=10)  nfree
+c        else if (keyword(1:16) .eq. 'DEGREES-FREEDOM ') then
+c           read (string,*,err=10,end=10)  nfree
          else if (keyword(1:15) .eq. 'REMOVE-INERTIA ') then
             read (string,*,err=10,end=10)  irest
          else if (keyword(1:14) .eq. 'SAVE-VELOCITY ') then
@@ -190,8 +199,18 @@ c
             call upcase (volscale)
          else if (keyword(1:9) .eq. 'PRINTOUT ') then
             read (string,*,err=10,end=10)  iprint
+            if (iprint.eq.1) iprint=100
          else if (keyword(1:14) .eq. 'NLUPDATE ') then
-            read (string,*,err=10,end=10) ineigup
+            read (string,*,err=10,end=10) idyn
+            if (idyn.gt.ineigup) then
+ 09     format(/,' WARNING !!! Nb-list update interval(',I0,') is'
+     &  ,' too high compared to the buffer size(',F4.2,'Ang)',/
+     &  ,' WARNING   - Your dynamic may results unstable !',/
+     &  ,' PROPOSAL  - Please set nlupdate value in keyfile'
+     &  ,' at least under (',I0,') or comment the instruction !',/)
+               write(*,09) idyn,lbuffer,ineigup
+            endif
+            ineigup = idyn
             auto_lst = .false.
          else if (keyword(1:9) .eq. 'FRICTION ') then
             read (string,*,err=10,end=10) gamma
@@ -201,6 +220,8 @@ c
             read (string,*,err=10,end=10) masspiston
          else if (keyword(1:12) .eq. 'VIRIALTERM ') then
             use_virial=.true.
+         else if (keyword(1:14) .eq. 'TRACK-MDSTATE ') then
+            track_mds=.true.
          else if (keyword(1:7) .eq. 'PLUMED ') then
             lplumed = .true.
             call getword(record,pl_input ,next)
@@ -219,10 +240,9 @@ c
 c
 c     enforce the use of baoabpiston integrator with Langevin Piston barostat
 c
-      if (barostat.eq.'LANGEVIN') then
-        integrate = 'BAOABPISTON'
-        !FIXME
-        !call plangevin()
+      if (isobaric.and.barostat.eq.'LANGEVIN') then
+        use_piston = .TRUE.
+        call initialize_langevin_piston()
       end if
 c
 c     default time steps for respa and respa1 integrators
@@ -318,13 +338,13 @@ c
      $ (integrate.eq.'BAOABPISTON'))
      $   then
          if (.not.(isothermal)) then
-           if (rank.eq.0) then
+            if (rank.eq.0) then
              write(*,*) 'Langevin integrators only available with NVT',
      $ ' or NPT ensembles'
             end if
-           call fatal
+           __TINKER_FATAL__
          end if
-         thermostat = 'none'
+         thermostat = 'LANGEVIN'
          if (allocated(Rn)) then
 !$acc exit data delete(Rn) async
             deallocate (Rn)
@@ -337,8 +357,25 @@ c
            end do
          end do
 !$acc update device(Rn) async
+         if (track_mds) call init_rand_engine
          dorest = .false.
+         if (barostat.eq.'LANGEVIN'.and.integrate.eq.'BAOABRESPA1') then
+ 39      format(/," --- Tinker-HP : Alert! "
+     &   ,/,6x,'Langevin Barostat cannot be used with BAOABRESPA1 '
+     &   ,'integrator')
+            write(0,39); __TINKER_FATAL__
+         end if
+      else if (barostat.eq.'LANGEVIN') then
+ 41   format(/," --- Tinker-HP : Alert! "
+     &   ,/,6x,'Langevin Barostat can only be use with Langevin '
+     &   ,'integrators like BAOABRESPA')
+         write(0,41); __TINKER_FATAL__
       end if
+c
+c     Initiate Track of MD_state
+c     ! Do not move that call upstream
+c
+      if (app_id.eq.dynamic_a) call mds_init
 c
 c     Colvars Feature Initialization
 c
@@ -360,28 +397,10 @@ c
          end if
       end if
 c
-c     set the number of degrees of freedom for the system
-c
-      if (nfree .eq. 0) then
-         nfree = 3 * nuse
-         if (isothermal .and. thermostat.ne.'ANDERSEN') then
-            if (use_bounds) then
-               nfree = nfree - 3
-            else
-               nfree = nfree - 6
-            end if
-         end if
-         if (use_rattle) then
-            nfree = nfree - nrat
-            do i = 1, nratx
-               nfree = nfree - kratx(i)
-            end do
-         end if
-      end if
-c
 c     check wether or not to compute virial
 c
-      if (isobaric.and.barostat.eq.'BERENDSEN') use_virial=.true.
+      if (isobaric.and.barostat.eq.'BERENDSEN'.or.use_piston) 
+     &   use_virial=.true.
 #ifdef _OPENACC
       call cu_update_vir_switch(use_virial)
       if (use_virial.and.use_polar.and.
@@ -391,6 +410,31 @@ c
          use_mpolar_ker = .false.
       end if
 #endif
+c
+c     decide whether to remove center of mass motion
+c
+      if (irest.eq.0.or.nuse.ne.n)  dorest = .false.
+      if (isothermal.and.thermostat.eq.'ANDERSEN') dorest = .false.
+      if (use_smd_velconst.or.use_smd_forconst.or.
+     &    use_amd_dih.or.use_amd_ene.or.use_amd_wat1) dorest = .false.
+      !FIXME remain case where integrate .eq. BAOAB* for dorest
+c
+c     set the number of degrees of freedom for the system
+c
+      nfree = 3 * nuse
+      if (dorest) then
+         if (use_bounds) then
+            nfree = nfree - 3
+         else
+            nfree = nfree - 6
+         end if
+      end if
+      if (use_rattle) then
+         nfree = nfree - nrat
+         do i = 1, nratx
+            nfree = nfree - kratx(i)
+         end do
+      end if
 c
 c     check for a nonzero number of degrees of freedom
 c
@@ -405,17 +449,6 @@ c
          call fatal
       end if
 c
-c     decide whether to remove center of mass motion
-c
-      dorest = .true.
-      if (irest .eq. 0)  dorest = .false.
-      if (nuse. ne. n)  dorest = .false.
-      if (isothermal .and. thermostat.eq.'ANDERSEN')  dorest = .false.
-      if (use_smd_velconst .or. use_smd_forconst) dorest = .false.
-      if (use_amd_dih .or. use_amd_ene) dorest = .false.
-      if (use_amd_wat1) dorest = .false.
-      !FIXME remain case where integrate .eq. BAOAB* for dorest
-
       if (tinkerdebug.gt.0.and.rank.eq.0) call info_dyn
       call up_fuse_bonded  ! Update fuse_bonded
 c
@@ -423,6 +456,7 @@ c     Reinterpret force buffer shape (3,nloc) --> (nloc,3)
 c
       if (fdebs_l.and.use_bond.and.fuse_bonded.and..not.use_strtor
      &   .and..not.use_geom.and..not.use_angang.and..not.use_opdist
+     &   .and..not.use_mlpot
      &   .and..not.lplumed.and..not.use_colvars) then
          tdes_l=.true.
          if (tinkerdebug.gt.0.and.rank.eq.0) then
@@ -440,13 +474,24 @@ c
 c
 c     try to restart using prior velocities and accelerations
 c
-      dynfile = filename(1:leng)//'.dyn'
-      call version (dynfile,'old')
-      inquire (file=dynfile,exist=exist)
+      if (ms(1)%lddat) then
+         dynfile = ms(1)%dumpdyn
+         exist   = .true.
+      else
+         dynfile = filename(1:leng)//'.dyn'
+         inquire (file=dynfile,exist=exist)
+      end if
+
       if (exist) then
- 32   format(/," --- Tinker-HP: loading restart file from ",A,
+ 32   format(/," --- Tinker-HP: loading restart file for ",A,
      &         " system --- ")
-         if (verbose.and.rank.eq.0) write(*,32) filename(1:leng)
+         if (verbose.and.rank.eq.0) then
+            if (ms(1)%lddat) then
+               write(*,32) trim(dynfile)
+            else
+               write(*,32) filename(1:leng)
+            end if
+         end if
          idyn = freeunit ()
          open (unit=idyn,file=dynfile,status='old')
          rewind (unit=idyn)
@@ -462,10 +507,9 @@ c
          call allocstep
          call nblist(0)
 
-         if (barostat.eq.'LANGEVIN') then
-           integrate = 'BAOABPISTON'
-           !FIXME
-           !call plangevin()
+         if (isobaric.and.barostat.eq.'LANGEVIN') then
+            use_piston = .TRUE.
+            call initialize_langevin_piston()
          end if
 c
 c     set velocities and fast/slow accelerations for RESPA method
@@ -473,7 +517,7 @@ c
       else if ((integrate.eq.'RESPA').or.
      $   (integrate.eq.'BAOABRESPA')) then
 
- 33   format (/," --- Tinker-HP: No Restart file was found from ",A
+ 33   format (/," --- Tinker-HP: No Restart file was found for ",A
      $       ," system",/,16x,"Dynamic Initialization")
          if (verbose.and.rank.eq.0) write(*,33) filename(1:leng)
 c
@@ -701,7 +745,7 @@ c
 !$acc end data
          deallocate (derivs)
          if (nuse .eq. n)  call mdrestgpu (0)
-c
+
       else
          if (verbose.and.rank.eq.0) write(*,33) filename(1:leng)
 c
@@ -717,7 +761,7 @@ c     set velocities and accelerations for cartesian dynamics
 c
          allocate (derivs(3,nbloc))
 !$acc data create(e,derivs)
-!$acc&     present(glob,mass,v,a,samplevec) async
+!$acc&     present(glob,mass,v,a,samplevec)
 c
          siz_=3*nbloc
          call mem_set(derivs,zero,siz_,rec_stream)
@@ -789,6 +833,11 @@ c
          if (nuse .eq. n)  call mdrestgpu (0)
       end if
 c
+      if (.not.exist) then
+         if (track_mds) call init_rand_engine
+         if (track_mds) call reset_curand_seed
+      end if
+c
 c     check for any prior dynamics coordinate sets
 c
       i = 0
@@ -821,11 +870,12 @@ c
 c
       subroutine info_atoms
       use atoms ,only: n
-      use angle ,only: nangle
-      use tors  ,only: ntors
-      use bond  ,only: nbond
-      use bitor ,only: nbitor
       use angang,only: nangang
+      use angle ,only: nangle
+      use bitor ,only: nbitor
+      use bond  ,only: nbond
+      use bound ,only: use_polymer
+      use tors  ,only: ntors
       implicit none
  
  543  format (A15,I12)
@@ -839,13 +889,23 @@ c
 
       ! Update fuse_bonded flag
       subroutine up_fuse_bonded
-      use potent
+      use bound
+      use group
       use inform
+      use keys   ,only: fetchkey
+      use potent
       use virial
+      use sizes  ,only: tinkerdebug
       implicit none
+      logical auth
 
 #ifdef _OPENACC
-      if (.not.use_virial.and..not.deb_Energy.and.
+      call fetchkey('FUSE-BONDED',auth,.true.)
+      if (tinkerdebug.gt.0.and..not.auth)
+     &   print*, ' KEY! disable fuse bonded'
+
+      if (auth.and..not.deb_Energy.and..not.use_polymer.and..not.
+     &    use_group.and.
      &   (use_bond.or.use_urey.or.use_opbend.or.use_strbnd.or.use_angle
      &.or.use_tors.or.use_pitors.or.use_tortor
      &.or.use_improp.or.use_imptor)) then

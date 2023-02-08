@@ -25,8 +25,7 @@ c     "Explicit Reversible Integrators for Extended Systems Dynamics",
 c     Molecular Physics, 87, 1117-1157 (1996)
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       subroutine temper (dt,eksum,ekin,temp)
       use atoms
       use atmlst

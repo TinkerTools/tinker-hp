@@ -14,10 +14,11 @@ c     "eimprop3" calculates the improper dihedral potential
 c     energy; also partitions the energy terms among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module eimprop3_inl
         contains
 #include "image.f.inc"
+#include "groups.inc.f"
       end module
 
       subroutine eimprop3
@@ -41,7 +42,7 @@ c
       implicit none
       integer i,ia,ib,ic,id,ibloc,icloc
       integer iimprop
-      real(t_p) e,dt
+      real(t_p) e,dt,fgrp
       real(t_p) ideal,force
       real(t_p) cosine,sine
       real(t_p) rcb,angle
@@ -56,6 +57,7 @@ c
       real(t_p) xba,yba,zba
       real(t_p) xcb,ycb,zcb
       real(t_p) xdc,ydc,zdc
+      integer iga,igb,igc,igd,gmin,gmax
       logical proceed
       logical header,huge
 
@@ -84,8 +86,9 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)
+     &      call groups4_inl(fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the improper dihedral angle
@@ -154,6 +157,10 @@ c
 c     calculate the improper dihedral energy
 c
                e = idihunit * force * dt**2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total improper dihedral energy
 c

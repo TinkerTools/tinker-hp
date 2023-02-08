@@ -18,17 +18,8 @@ c     Dependent Charge Flux into the Polarizable AMOEBA+ Potential",
 c     Journal of Physical Chemistry Letters, 11, 419-426 (2020)
 c
 c
-#include "tinker_precision.h"
-      module alterchg_inl
-      implicit none
-      integer:: ncall_alterchg=0
-      real(t_p), allocatable :: pdelta(:)
-      contains
-#include "image.f.inc"
-      end module
-
+#include "tinker_macro.h"
       subroutine alterchg
-      use alterchg_inl
       use atoms
       use atmlst
       use charge
@@ -44,6 +35,7 @@ c
       integer i,k,ii
       integer iloc
       logical header
+      real(t_p), allocatable :: pdelta(:)
 c
 c
 c     perform dynamic allocation of some local arrays
@@ -53,7 +45,7 @@ c
 c     zero out the change in charge value at each site
 c
       do i = 1, n
-         pdelta(i) = 0.0d0
+         pdelta(i) = 0.0
       end do
 c
 c     find charge modifications due to charge flux
@@ -68,12 +60,12 @@ c
 c     alter atomic partial charge values for charge flux
 c
       header = .true.
-      do iloc = 1, nionloc
+      do iloc = 1, nionbloc
          i = chgglob(iloc)
          k = iion(i)
          pchg(i) = pchg0(i) + pdelta(k)
 #ifndef _OPENACC
-         if (debug .and. pdelta(k).ne.0.0d0) then
+         if (debug .and. pdelta(k).ne.0.0) then
             if (header) then
                header = .false.
                write (iout,10)
@@ -90,13 +82,13 @@ c
 c     alter monopoles and charge penetration for charge flux
 c
       header = .true.
-      do ii = 1, npoleloc
+      do ii = 1, npolebloc
          i = poleglob(ii)
          k = ipole(i)
          pole(1,i) = mono0(i) + pdelta(k)
          if (use_chgpen)  pval(i) = pval0(i) + pdelta(k)
 #ifndef _OPENACC
-         if (debug .and. pdelta(k).ne.0.0d0) then
+         if (debug .and. pdelta(k).ne.0.0) then
             if (header) then
                header = .false.
                write (iout,30)
@@ -109,8 +101,6 @@ c
          end if
 #endif
       end do
-
-      ncall_alterchg = ncall_alterchg+1  ! Count number of subroutine call
 c
 c     perform deallocation of some local arrays
 c
@@ -248,7 +238,7 @@ c
          rcb = sqrt(max(xcb*xcb+ycb*ycb+zcb*zcb,eps))
          dot = xab*xcb + yab*ycb + zab*zcb
          cosine = dot / (rab*rcb)
-         cosine = min(1.0d0,max(-1.0d0,cosine))
+         cosine = min(1.0,max(-1.0,cosine))
          angle1 = radian * acos(cosine)
 c
 c     find the charge flux increment for the current angle

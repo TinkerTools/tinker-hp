@@ -14,7 +14,7 @@ c     "etortor1" calculates the torsion-torsion energy and first
 c     derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine etortor1
       use sizes
       use atmlst
@@ -85,6 +85,7 @@ c
       real(t_p) vyx2,vzx2,vzy2
       real(t_p) ftt(4),ft12(4)
       real(t_p) ft1(4),ft2(4)
+      real(t_p) fgrp
       logical proceed
 c
 !$acc update host(dett,vir)
@@ -120,9 +121,9 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic)
-     &                               .or. use(id) .or. use(ie))
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,ie,0)
+         proceed = (use(ia) .or. use(ib) .or. use(ic)
+     &                 .or. use(id) .or. use(ie))
 c
 c     compute the values of the torsional angles
 c
@@ -246,6 +247,14 @@ c
                e = ttorunit * e
                dedang1 = sign * ttorunit * radian * dedang1
                dedang2 = sign * ttorunit * radian * dedang2
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedang1 = dedang1 * fgrp
+                  dedang2 = dedang2 * fgrp
+               endif
 c
 c     chain rule terms for first angle derivative components
 c

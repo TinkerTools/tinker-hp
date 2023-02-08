@@ -15,8 +15,7 @@ c     atomic multipole and dipole polarizability interactions,
 c     and partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module empole3gpu_inl
         use tintypes , only: real3,rpole_elt
         include "erfcore_data.f.inc"
@@ -38,8 +37,12 @@ c
       use energi
       use potent
       use mpi
-
+      use group
+      use tinheader,only: ti_p
       implicit none
+      if(use_group .and. wgrp(1,2).eq.0._ti_p) then
+        return
+      endif
 c
 c     choose the method for summing over multipole interactions
 c
@@ -108,48 +111,17 @@ c
 cold  aem   = 0_ti_p
 
 c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
 c     set the energy unit conversion factor
 c
       f = electric / dielec
 c
-c     Communicate poleglob
+c     Reset global data for electrostatic
 c
-#ifdef _OPENACC
-      call orderPole
-#endif
-      if (mlst2_enable) call set_ElecData_cellOrder(.false.)
-c
-c     check the sign of multipole components at chiral sites
-c
-      call chkpolegpu(.false.)
-c
-c     rotate the multipole components into the global frame
-c
-      call rotpolegpu
-c
-c     Reorder neigbhor list
-c
-      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
-     &   then
-         if (use_mreal) then
-            if (mlst_enable.and.use_mpoleshortreal) then
-               call switch('SHORTEWALD')
-               call reorder_nblist(shortelst,nshortelst,nshortelstc
-     &                    ,npolelocnl,off2,ipole,poleglobnl)
-            end if
-            if (mlst_enable) then
-               call switch('EWALD     ')
-               call reorder_nblist(elst,nelst,nelstc
-     &                    ,npolelocnl,off2,ipole,poleglobnl)
-            end if
-         end if
-      end if
-
-#ifdef _OPENACC
-      ! Start stream overlapping
-      if (dir_queue.ne.rec_queue)
-     &   call start_dir_stream_cover
-#endif
+      call elec_calc_reset
 c
 c     compute the real space part of the Ewald summation
 c
@@ -158,7 +130,15 @@ c
      $   then
         call timer_enter (timer_real )
         if (use_mreal) then
+#ifdef _OPENACC
            call emreal3d_p
+#else
+           if (use_chgpen) then
+              call emreal3d
+           else
+              call emreal3d_p
+           end if
+#endif
         end if
 c
 c     compute the self-energy part of the Ewald summation
@@ -282,7 +262,7 @@ c
       use empole3gpu_inl
       use energi ,only:em=>em_r
       use ewald  ,only:aewald
-      use group  ,only:use_group,grplist,wgrp
+      use group  ,only:use_group,grplist,wgrp,ngrp
       use inform ,only:deb_Path
       use math   ,only:sqrtpi
       use mutant ,only:elambda,mutInt
@@ -291,6 +271,7 @@ c
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl,npole
       use neigh  ,only:nelst,elst,shortelst,nshortelst
       use potent ,only:use_mpoleshortreal,use_mpolelong,use_lambdadyn
+     &           ,use_chgpen,use_chgflx
       use shunt  ,only:off,off2
       use timestat
       use tinheader ,only:ti_p,zeror,oner
@@ -302,8 +283,9 @@ c
       integer ii,kk,iipole,kkpole,nnelst
       integer(1) mutik
       integer,pointer::lst(:,:),nlst(:)
+      logical use_chgflx_
       real(t_p) scut
-      real(t_p) r2,f,e
+      real(t_p) r2,f,e,poti,potk
       real(t_p) alsq2,alsq2n
       real(t_p) xi,yi,zi,xr,yr,zr
      &         ,fgrp,delambdae_
@@ -311,14 +293,25 @@ c
       type(real3) frc,ttmi,ttmk
       real(t_p) mscale
       real(t_p) loff2
+      character*64 rtami
       parameter(ver =__use_ene__+__use_act__
      &         ,ver1=      ver  +__use_sca__
-     &         )
+     &         ,use_chgflx_=.false.)
 
       if (npole .eq. 0) return
-      if (deb_Path) write(*,'(2x,a,2L3)')
-     &   'emreal3d_ac',use_mpoleshortreal,use_mpolelong
+      if (use_chgpen) then
+         __TINKER_FATAL__
+      end if
       call timer_enter( timer_emreal )
+      if (deb_Path) then
+         rtami = ' emreal3d_ac'//merge(' CHGPEN','',use_chgpen)
+         if (use_mpoleshortreal) then
+            rtami = trim(rtami)//' SHORT'
+         else if (use_mpolelong) then
+            rtami = trim(rtami)//' LONG'
+         end if
+         write(*,'(a)') trim(rtami)
+      end if
 
       fea=__use_mpi__+__use_groups__
       if     (use_mpoleshortreal) then
@@ -362,8 +355,8 @@ c
 !$acc&         reduction(+:em,nem_)
 !$acc&         async(def_queue)
       do ii = 1, n_mscale
-         iipole = mcorrect_ik(ii,1)
-         kkpole = mcorrect_ik(ii,2)
+         iipole = mcorrect_ik(1,ii)
+         kkpole = mcorrect_ik(2,ii)
          mscale = mcorrect_scale(ii)
          iglob  = ipole(iipole)
          kglob  = ipole(kkpole)
@@ -401,13 +394,13 @@ c
 c        if (use_lambdadyn) mutik=mutInt(iglob)+mutInt(kglob)
 
          if (use_group)
-     &      call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &      call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 
          ! compute mpole one interaction
          call duo_mpole(r2,xr,yr,zr,ip,kp,mscale
-     &                 ,scut,shortheal,aewald,f,alsq2n,alsq2
-     &                 ,use_group,fgrp,use_lambdadyn,mutik,elambda
-     &                 ,delambdae_,e,frc,ttmi,ttmk,ver1,fea)
+     &           ,scut,shortheal,aewald,f,alsq2n,alsq2,use_group,fgrp
+     &           ,use_lambdadyn,mutik,elambda,use_chgflx_,poti,potk
+     &           ,delambdae_,e,frc,ttmi,ttmk,ver1,fea)
 
          ! update energy
          em     = em  + tp2enr(e)
@@ -471,14 +464,13 @@ c
             kp%qzz = rpole(13,kkpole)
 
             if (use_group)
-     &         call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &         call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
             
             ! compute mpole one interaction
             call duo_mpole(r2,xr,yr,zr,ip,kp,zeror
-     &                    ,scut,shortheal,aewald,f,alsq2n,alsq2
-     &                    ,use_group,fgrp,use_lambdadyn,mutik,elambda
-     &                    ,delambdae_,e,frc,ttmi,ttmk
-     &                    ,ver,fea)
+     &              ,scut,shortheal,aewald,f,alsq2n,alsq2,use_group,fgrp
+     &              ,use_lambdadyn,mutik,elambda,use_chgflx_,poti,potk
+     &              ,delambdae_,e,frc,ttmi,ttmk,ver,fea)
 
             ! update energy
             em       = em   + tp2enr(e)
@@ -497,6 +489,7 @@ c
       use atmlst ,only:poleglobnl
       use atoms  ,only:x,y,z,n
       use cutoff ,only:mpoleshortcut,shortheal,ewaldshortcut
+      use chgpen ,only:pcore,pval,palpha
       use chgpot ,only:electric,dielec
       use cell
       use deriv  ,only:dem,delambdae
@@ -504,6 +497,7 @@ c
      &           ,nproc,rank,xendproc,yendproc,zendproc
      &           ,nbloc,loc
       use empole1cu ,only: emreal3_kcu
+      use empole_cpencu
       use energi ,only:em=>em_r
       use ewald  ,only:aewald
       use group  ,only:use_group,grplist,wgrp
@@ -511,7 +505,7 @@ c
       use math   ,only:sqrtpi
       use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
       !use mpi
-      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale
+      use mplpot ,only:n_mscale,mcorrect_ik,mcorrect_scale,pentyp_i
       use mpole  ,only:rpole,ipole,polelocnl,npolelocnl
      &           ,npolelocnlb,npolelocnlb_pair,npolebloc
      &           ,npolelocnlb2_pair,nshortpolelocnlb2_pair,ipole
@@ -521,6 +515,7 @@ c
      &           , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
      &           , seblst_s=>shorteblst,iseblst_s=>ishorteblst
       use potent ,only:use_mpoleshortreal,use_mpolelong,use_lambdadyn
+     &           ,use_chgpen,use_chgflx
       use shunt  ,only:off,off2
       use timestat
       use tinheader,only: ti_p
@@ -530,6 +525,7 @@ c
      &           ,ered_buff=>ered_buf1,vred_buff,lam_buff,nred_buff
      &           ,reduce_energy_action
      &           ,zero_en_red_buffer
+     &           ,pot=>ug_workS_r
      &           ,dir_stream,def_stream
       !use tinTypes
       use virial
@@ -541,12 +537,23 @@ c
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
       real(t_p) loff2,lcut
       real(t_p),allocatable :: tem(:,:)
+      logical use_chgflx_
       logical,save:: first_in=.true.
       integer,save:: gS
       character*11 mode
+      character*64 rtami
+      parameter(use_chgflx_=.false.)
 
       call timer_enter( timer_emreal )
-      if (deb_Path) write(*,'(2x,a)') 'emreal3d_cu'
+      if (deb_Path) then
+         rtami = ' emreal3d_cu'//merge(' CHGPEN','',use_chgpen)
+         if (use_mpoleshortreal) then
+            rtami = trim(rtami)//' SHORT'
+         else if (use_mpolelong) then
+            rtami = trim(rtami)//' LONG'
+         end if
+         write(*,'(a)') trim(rtami)
+      end if
 
       if (use_mpoleshortreal.or.use_mpolelong) then
          __TINKER_FATAL__
@@ -586,17 +593,35 @@ c
 
       def_stream = dir_stream
       def_queue  = dir_queue
-      sizc       = size(mcorrect_ik,1)
       start1     = 2*npolelocnlb_pair+1
       call zero_en_red_buffer(def_queue)
 
 !$acc host_data use_device(ipole_s,pglob_s,loc_s
 !$acc&    ,ieblst_s,eblst_s,iseblst_s,seblst_s
-!$acc&    ,x_s,y_s,z_s,rpole,dem,tem
-!$acc&    ,grplist,wgrp,mutInt
+!$acc&    ,x_s,y_s,z_s,pcore,pval,palpha,rpole,dem,tem
+!$acc&    ,grplist,wgrp,mutInt,pot
 !$acc&    ,ered_buff,vred_buff,lam_buff,nred_buff
 !$acc&    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z
 !$acc&    )
+
+      if (use_chgpen) then
+
+      gs=1
+      call emreal_cpen3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &    (ipole_s,pglob_s,loc_s
+     &    ,ieblst_s,eblst_s(start1)
+     &    ,npolelocnlb,npolelocnlb2_pair,npolebloc,n,pentyp_i
+     &    ,x_s,y_s,z_s,pcore,pval,palpha,rpole
+     &    ,shortheal,lcut,loff2,off2,f,aewald
+     &    ,use_group,grplist,wgrp,use_lambdadyn,elambda,mutInt
+     &    ,use_chgflx_
+     &    ,dem,tem,pot,ered_buff,vred_buff,lam_buff,nred_buff
+     &    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale
+     &    )
+      call check_launch_kernel("emreal3_cpen_kcu")
+
+      else
 
       call emreal3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
      &    (ipole_s,pglob_s,loc_s
@@ -605,11 +630,14 @@ c
      &    ,x_s,y_s,z_s,rpole
      &    ,shortheal,lcut,loff2,off2,f,alsq2,alsq2n,aewald
      &    ,use_group,grplist,wgrp,use_lambdadyn,elambda,mutInt
-     &    ,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff
+     &    ,use_chgflx_
+     &    ,pot,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff
      &    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-     &    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale,sizc
+     &    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale
      &    )
       call check_launch_kernel("emreal3_kcu")
+
+      end if
 
 !$acc end host_data
 
@@ -655,7 +683,7 @@ c
       use fft
       use inform    ,only: deb_Path,minmaxone
       use interfaces,only: torquegpu,fphi_mpole_site_p
-     &              ,grid_mpole_site_p,bspline_fill_sitegpu
+     &              ,grid_mpole_site_p
       use polar_temp,only: cmp=>fphid,fmp=>fphip !Use register pool
       use math
       use mpole
@@ -745,7 +773,6 @@ c
          end do
       end do
       call cmp_to_fmp_sitegpu(cmp,fmp)
-      call bspline_fill_sitegpu
 c
 c     assign permanent multipoles to PME grid and perform
 c     the 3-D FFT forward transformation

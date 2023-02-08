@@ -14,8 +14,7 @@ c     "epolar1" calculates the induced dipole polarization energy
 c     and derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module epolar1gpu_inl
         include "erfcore_data.f.inc"
         contains
@@ -26,13 +25,19 @@ c
 #else
         include "erfcdcore.f.inc"
 #endif
-#include "pair_polar.f.inc"
+#include "pair_polar.inc.f"
       end module
 
       subroutine epolar1gpu
       use polpot
       use potent
+      use group
+      use tinheader ,only: ti_p
       implicit none
+
+      if(use_group .and. wgrp(1,2).eq.0._ti_p) then
+        return
+      endif
 c
 c     choose the method for summing over polarization interactions
 c
@@ -78,7 +83,7 @@ c
       use energi
       use epolar1gpu_inl
       use ewald
-      use inform ,only: deb_Path
+      use inform ,only: deb_Path,minmaxone
       use interfaces,only:torquegpu,epreal1c_p
      &              ,epreal1c_core3
       use iounit
@@ -89,8 +94,7 @@ c
       use polar
       use polpot
       use potent
-      use precompute_pole,only:precompute_tmat,
-     &                         precompute_solvpole
+      use precompute_pole,only:precompute_tmat,polar_precomp
       use virial
       use mpi
       use sizes
@@ -98,6 +102,7 @@ c
       use utils
       use utilgpu
       use vec
+      use group
 
       implicit none
       integer i,j,ii,iglob,iipole,ierr
@@ -123,6 +128,10 @@ c
          f_in=.false.
 !$acc enter data create(epself)
       end if
+c
+c     set Ewald coefficient
+c
+      aewald = apewald
 
 c
 !$acc serial async(rec_queue) present(epself,ep,ep_r,eprec)
@@ -135,7 +144,10 @@ c
 c     set the energy unit conversion factor
 c
       f = electric / dielec
-
+c
+c     Reset global data for electrostatic
+c
+      if (.not.use_mpole) call elec_calc_reset
 c
 c     compute the induced dipoles at each polarizable atom
 c
@@ -175,7 +187,7 @@ c
 c
 c     Reset precompute switch if necessary
 c
-      if (precompute_solvpole) precompute_tmat=.true.
+      if (polar_precomp) precompute_tmat=.true.
 
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) call start_dir_stream_cover
@@ -431,6 +443,10 @@ c
 !$acc end serial
       end if
 c
+c     set Ewald coefficient
+c
+      aewald = apewald
+c
       allocate (delambdaprec0(3,nlocrec2))
       allocate (delambdaprec1(3,nlocrec2))
       allocate (delambdap0(3,nbloc))
@@ -542,6 +558,7 @@ c
       use bound
       use chgpot
       use couple
+      use cflux
       use deriv
       use domdec
       use energi
@@ -550,7 +567,7 @@ c
       !use erf_mod
       use epolar1gpu_inl
       use ewald
-      use inform     ,only: deb_Path
+      use inform     ,only: deb_Path,minmaxone
       use inter
       use interfaces ,only: epreal1c_core_p,torquegpu
       use iounit
@@ -565,9 +582,11 @@ c
       use shunt
       use virial
       use mpi
+      use tinheader
       use tinMemory
       use utils
-      use utilgpu
+      use utilcomm
+      use utilgpu   ,pot=>ug_workS_r
       use timestat
 
       implicit none
@@ -610,6 +629,7 @@ c
       call prmem_request(fiy,3,npolelocnl)
       call prmem_request(fiz,3,npolelocnl)
       call prmem_request(trqvec,3,npolelocnl)
+      if(use_chgflx) call prmem_request(pot,nbloc)
 c
 c     set arrays to store fields
 c
@@ -729,6 +749,14 @@ c
       end if !( use_polarshortreal )
 
       end if !( use_virial )
+
+      if (use_chgflx) then
+         call commDDd_add(pot,1,ucComm+ucBig)
+         call commDDd_ext(pot,1,ucComm+ucNeig)
+         call dcflux2(pot,de_ws1)
+         call adflux2(de_ws1,dep)
+         call mem_set(pot,zeror,int(nbloc,mipk),rec_stream)
+      end if
 c
       call timer_exit( timer_epreal )
       end
@@ -771,16 +799,17 @@ c
       integer i,iglob,j,k,kk,ksp,kd,iploc,kploc
       integer nnelst,nnelst1
       integer ii,iii,iipole,ivec
+      integer iga,igb
       integer kpole,kglob,kbis
       integer nn12,nn13,nn14,ntot,nn4,nn15
       integer nnp11,nnp12,nnp13,nnp14
-      real(t_p) f,e,r2
+      real(t_p) f,e,r2,fgrp
       real(t_p) one,two,half
       real(t_p) alsq2,alsq2n
       real(t_p) xi,yi,zi
-      real(t_p) pdi,pti
-      real(t_p) pgamma,damp
-      real(t_p) pscale,dscale,uscale
+      real(t_p) pdi,pti,ddi
+      real(t_p) pgamma,pgama1,damp
+      real(t_p) pscale,dscale,uscale,poti,potk
 
       integer   ipscal(maxscaling),idscal(92)
       real(t_p) fpscal(maxscaling),fdscal(92),fuscal(92)
@@ -843,6 +872,7 @@ c
          posi%z  = z(iglob)
 
          pdi     = pdamp(iipole)
+         ddi     = dirdamp(iipole)
          pti     = thole(iipole)
 
          ip%c    = rpole( 1, iipole)
@@ -874,8 +904,8 @@ c
          nn12  = scalbeg_n(iglob)
          nnp14 = numscal_p(iglob)
          nnp12 = scalbeg_p(iglob)
-         if (nnp14>92) print*,"epreal_core1: not enough space for",
-     &      "scaling factor"
+         if (nnp14>maxscaling1)
+     &      print*,"epreal_core1: not enough space for scaling factor"
 !$acc loop vector
          do j = 1,ntot
             ipscal(j) = allscal_n(nn12+j)
@@ -979,6 +1009,10 @@ c
             dpuk%zz  = uinp ( 3, kpole)
 
             pgamma   = min( pti,thole(kpole) )
+            if (use_dirdamp) then
+               pgama1 = min( ddi,dirdamp(kpole) )
+               if (pgama1.eq.0.0) pgama1=max(ddi,dirdamp(kpole) )
+            end if
             damp     = pdi * pdamp (kpole)
 c
 c     Compute polar interaction
@@ -987,9 +1021,11 @@ c
             frc_r%x=0.0;frc_r%y=0.0;frc_r%z=0.0;
              trqi%x=0.0; trqi%y=0.0; trqi%z=0.0;
              trqk%x=0.0; trqk%y=0.0; trqk%z=0.0;
+             poti=0.0; potk=0.0
             call epolar1_couple(dpui,ip,dpuk,kp,r2,pos,
-     &                  aewald,alsq2,alsq2n,pgamma,damp,f,
-     &                  dscale,pscale,uscale,
+     &                  aewald,alsq2,alsq2n,pgamma,pgama1,damp,f,
+     &                  dscale,pscale,uscale,use_dirdamp,
+     &                  use_chgflx,poti,potk,
      &                  e,frc,frc_r,trqi,trqk,.false.)
 c
 c     increment energy
@@ -1052,13 +1088,14 @@ c
       use math    ,only: sqrtpi
       use mpole   ,only: npolelocnl,ipole,rpole,polelocnl
       use neigh   ,only: elst,nelst,nelstc,shortelst,nshortelst
-      use polar   ,only: uind,uinp,thole,pdamp
-      use potent  ,only: use_polarshortreal
+      use polar   ,only: uind,uinp,thole,pdamp,dirdamp
+      use potent  ,only: use_polarshortreal,use_chgflx
+      use polpot  ,only: use_dirdamp
       use shunt   ,only: off2
       use tinheader  ,only: ti_p
       use virial
       use tinTypes,only: real3,real6,rpole_elt,mdyn3_r
-      use utilgpu ,only: def_queue
+      use utilgpu ,only: def_queue, pot=>ug_workS_r
 
       implicit none
 
@@ -1071,11 +1108,11 @@ c
       integer kpole,kglob,kbis
       integer,pointer,save :: lst(:,:),nlst(:)
       real(t_p) alsq2,alsq2n
-      real(t_p) r2,pgamma,damp
+      real(t_p) r2,pgamma,pgama1,damp
       real(t_p) f,e
-      real(t_p) pdi,pti
+      real(t_p) pdi,pti,ddi
       real(t_p) one
-      real(t_p) pscale,dscale,uscale
+      real(t_p) pscale,dscale,uscale,poti,potk
 
       type(rpole_elt):: ip,kp
       type(real6) :: dpui,dpuk
@@ -1106,7 +1143,7 @@ c
 !$acc parallel loop gang vector_length(32)
 !$acc&         present(trqvec,vxx,vxy,vxz,vyy,vyz,vzz,ep)
 !$acc&         present(poleglobnl,ipole,rpole,thole,pdamp,
-!$acc&  loc,x,y,z,uind,uinp,lst,nlst,dep,vir,polelocnl)
+!$acc&  loc,x,y,z,uind,uinp,lst,nlst,pot,dep,vir,polelocnl)
 !$acc&         private(ip,dpui,posi)
 !$acc&         async(def_queue)
       MAINLOOP:
@@ -1123,6 +1160,7 @@ c
 
          pdi     = pdamp(iipole)
          pti     = thole(iipole)
+         ddi     = dirdamp(iipole)
 
          ip%c    = rpole( 1, iipole)
          ip%dx   = rpole( 2, iipole)
@@ -1157,7 +1195,7 @@ c
             call image_inl(pos%x,pos%y,pos%z)
             ! cutoff
             r2       = pos%x**2 + pos%y**2 + pos%z**2
-            if (r2>off2 .or. kbis.eq.0) cycle
+            if (r2>off2.or.kbis.eq.0) cycle
 c
             kp%c     = rpole( 1, kpole)
             kp%dx    = rpole( 2, kpole)
@@ -1178,7 +1216,9 @@ c
             dpuk%zz  = uinp ( 3, kpole)
 
             pgamma   = min( pti,thole(kpole) )
+            pgama1   = min( ddi,dirdamp(kpole) )
             damp     = pdi * pdamp (kpole)
+
 c
 c     Compute polar interaction
 c
@@ -1186,14 +1226,23 @@ c
             frc_r%x=0.0;frc_r%y=0.0;frc_r%z=0.0;
              trqi%x=0.0; trqi%y=0.0; trqi%z=0.0;
              trqk%x=0.0; trqk%y=0.0; trqk%z=0.0;
-            call epolar1_couple(dpui,ip,dpuk,kp,r2,pos,
-     &                  aewald,alsq2,alsq2n,pgamma,damp,f,
-     &                  1.0_ti_p,1.0_ti_p,1.0_ti_p,
-     &                  e,frc,frc_r,trqi,trqk,.false.)
+             poti=0.0; potk=0.0
+            call epolar1_couple(dpui,ip,dpuk,kp,r2,pos
+     &                  ,aewald,alsq2,alsq2n,pgamma,pgama1,damp,f
+     &                  ,1.0_ti_p,1.0_ti_p,1.0_ti_p,use_dirdamp
+     &                  ,use_chgflx,poti,potk
+     &                  ,e,frc,frc_r,trqi,trqk,.false.)
 c
 c     increment energy
 c
             ep          = ep + tp2enr(e)
+
+            if (use_chgflx) then
+!$acc atomic
+               pot(i)    = pot(i) + poti
+!$acc atomic
+               pot(kbis) = pot(kbis) + potk
+            end if
 c
 c     increment gradient and virial due to Cartesian forces
 c
@@ -1239,67 +1288,78 @@ c
 
       end
 
+#ifdef _CUDA
       subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
-      use atmlst  ,only: poleglobnl
-      use atoms   ,only: x,y,z,n
-      use chgpot  ,only: dielec,electric
-      use deriv   ,only: dep
-      use domdec  ,only: xbegproc,ybegproc,zbegproc
-     &            ,nproc,rank,xendproc,yendproc,zendproc
-     &            ,nbloc,loc
-      use energi  ,only: ep=>ep_r
-#ifdef _CUDA
+      use atmlst    ,only: poleglobnl
+      use atoms     ,only: x,y,z,n
+      use chgpot    ,only: dielec,electric
+      use chgpen    ,only: pcore,pval,palpha
+      use deriv     ,only: dep
+      use domdec    ,only: xbegproc,ybegproc,zbegproc
+     &              ,nproc,rank,xendproc,yendproc,zendproc
+     &              ,nbloc,loc
+      use energi    ,only: ep=>ep_r
       use epolar1cu ,only: epreal1c_core_cu
-#endif
-      use ewald   ,only: aewald
-      use inform  ,only: deb_Path
+      use epolar_cpencu
+      use ewald     ,only: aewald
+      use inform    ,only: deb_Path,minmaxone
       use interfaces ,only: epreal1c_correct_scale
-      use math    ,only: sqrtpi
-      use mpole   ,only: npolelocnl,ipole,rpole,polelocnl
-     &            ,ipole,npolelocnlb,npolebloc
-     &            ,npolelocnlb_pair,npolelocnlb2_pair
-     &            ,nspnlb2=>nshortpolelocnlb2_pair
-      use neigh   ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
-     &            , loc_s=>celle_loc, plocnl_s=>celle_plocnl
-     &            , ieblst_s=>ieblst, eblst_s=>eblst
-     &            , iseblst_s=>ishorteblst, seblst_s=>shorteblst
-     &            , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
-      use polar   ,only: uind,uinp,thole,pdamp
-      use potent  ,only: use_polarshortreal
-      use polpot  ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
-      use shunt   ,only: off2
-      use tinheader,only: ti_p
+      use math      ,only: sqrtpi
+      use mplpot    ,only: pentyp_i
+      use mpole     ,only: npolelocnl,ipole,rpole,polelocnl
+     &              ,ipole,npolelocnlb,npolebloc
+     &              ,npolelocnlb_pair,npolelocnlb2_pair
+     &              ,nspnlb2=>nshortpolelocnlb2_pair
+      use neigh     ,only:ipole_s=>celle_glob,pglob_s=>celle_pole
+     &              , loc_s=>celle_loc, plocnl_s=>celle_plocnl
+     &              , ieblst_s=>ieblst, eblst_s=>eblst
+     &              , iseblst_s=>ishorteblst, seblst_s=>shorteblst
+     &              , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
+      use polar     ,only: uind,uinp,thole,pdamp,dirdamp
+      use polpot    ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
+     &              ,use_thole,use_dirdamp
+      use potent    ,only: use_polarshortreal,use_chgpen,use_chgflx
+      use shunt     ,only: off2
+      use tinheader ,only: ti_p
       use virial
-#ifdef _CUDA
       use cudafor
-      use utilcu  ,only: BLOCK_DIM,check_launch_kernel
-#endif
-      use utilgpu ,only: def_queue
-     &            ,real3,real6,real3_red,rpole_elt
-     &            ,ered_buff=>ered_buf1,vred_buff
-     &            ,reduce_energy_virial
-     &            ,RED_BUFF_SIZE,zero_evir_red_buffer
-     &            ,maxBlock,BLOCK_SIZE
-#ifdef  _OPENACC
-     &            ,dir_stream,def_stream,rec_stream,nSMP
-#endif
-
+      use utilcu    ,only: BLOCK_DIM,check_launch_kernel
+      use utilgpu   ,only: def_queue
+     &              ,real3,real6,real3_red,rpole_elt
+     &              ,reduce_energy_virial,get_GridDim
+     &              ,zero_evir_red_buffer
+     &              ,maxBlock,BLOCK_SIZE,RED_BUFF_SIZE
+     &              ,dir_stream,def_stream,rec_stream,nSMP
+     &              ,ered_buff=>ered_buf1,vred_buff,nred_buff
+     &              ,pot=>ug_workS_r
       implicit none
 
       real(t_p),intent(inout):: trqvec(3,npolelocnl)
       real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
 
-      integer i
-      integer start,start1,sized
-      integer,save::ndec
-      integer lst_beg,gS1
-      integer,save:: gS=0
+      integer   i
+      integer   start,start1,sized
+      integer  ,save::ndec
+      integer   lst_beg,gS1
+      integer  ,save:: gS=0
+      logical  ,save::first_in=.true.
+      logical  ,parameter::dyn_gS=.false.
       real(t_p) alsq2,alsq2n,f
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
-      logical,save::first_in=.true.
-      logical,parameter::dyn_gS=.false.
+      character*64 :: srami
 
-      if(deb_Path)write(*,'(2x,a)') 'epreal1c_core3'
+      if (deb_Path) then
+         srami = 'epreal1c_core3'//merge(' SHORT',''
+     &          ,use_polarshortreal)
+         if (use_thole) then
+            srami = trim(srami)//' THOLE'
+     &            //merge(' DIRDAMP','',use_dirdamp)
+         else
+            srami = trim(srami)//' CHGPEN'
+         end if
+         write(*,'(2x,a)') srami
+      end if
+
 c
 c     set conversion factor, cutoff and switching coefficients
 c
@@ -1316,7 +1376,6 @@ c
       p_zend = zendproc(rank+1)
       lst_beg= 2*npolelocnlb_pair+1
 
-#ifdef _CUDA
       if (first_in) then
          ! Compute though occupancy the right gridSize to launch the kernel with
          call cudaMaxGridSize("epreal1c_core_cu",gS)
@@ -1324,76 +1383,114 @@ c
          ndec=1
          if (def_stream.ne.rec_stream) ndec=4
          first_in = .false.
+         ! TODO Amoebap (check gS for cpen (empole&polar)
       end if
-      !print*,'pair block ',npolelocnlb2_pair
 
       call zero_evir_red_buffer(def_queue)
 
-!$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s,
-!$acc&    iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,thole,
-!$acc&    loc,x,y,z,ipole,polelocnl,dpucorrect_ik,dpucorrect_scale,
-!$acc&    uind,uinp,dep,trqvec,ered_buff,vred_buff)
+      if (use_thole) then
+!$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s
+!$acc&    ,iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,dirdamp
+!$acc&    ,thole,loc,x,y,z,ipole,polelocnl,dpucorrect_ik
+!$acc&    ,dpucorrect_scale,uind,uinp
+!$acc&    ,pot,dep,trqvec,ered_buff,vred_buff)
 
-      if (use_polarshortreal) then
+         if (use_polarshortreal) then
 
-      if (dyn_gS) gS = min( nspnlb2/8,maxBlock )
+            if (dyn_gS) gS = get_GridDim( nspnlb2/2,BLOCK_DIM )
       call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,iseblst_s,seblst_s(lst_beg)
-     &     ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
-     &     ,dep,trqvec,ered_buff,vred_buff
-     &     ,npolelocnlb,nspnlb2,npolebloc,n
+     &     ,x_s,y_s,z_s,rpole,pdamp,dirdamp,thole,uind,uinp
+     &     ,pot,dep,trqvec,ered_buff,vred_buff
+     &     ,npolelocnlb,nspnlb2,npolebloc,n,use_chgflx,use_dirdamp
      &     ,off2,f,alsq2,alsq2n,aewald
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+      call check_launch_kernel(" epreal1c_core_cu short")
 
-      else
+         else
 
-      sized = npolelocnlb2_pair/ndec
-      if (dyn_gS) gS = min( sized/8,maxBlock )
+            sized = npolelocnlb2_pair/ndec
+            if (dyn_gS) gS = min( sized/2,maxBlock )
+
 
       ! Split electrostatic kernel to ease recovering process in MPI
-      do i = 1,ndec
-         start  = (i-1)*sized + 1
-         start1 = lst_beg+(start-1)*BLOCK_SIZE
-         if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
-         call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &        (ipole_s,pglob_s,loc_s,plocnl_s
-     &        ,ieblst_s(start),eblst_s(start1)
-     &        ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
-     &        ,dep,trqvec,ered_buff,vred_buff
-     &        ,npolelocnlb,sized,npolebloc,n
-     &        ,off2,f,alsq2,alsq2n,aewald
-     &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
-         call check_launch_kernel(" epreal1c_core_cu")
-      end do
+            do i = 1,ndec
+            start  = (i-1)*sized + 1
+            start1 = lst_beg+(start-1)*BLOCK_SIZE
+            if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
+            if (dyn_gS) gS = get_GridDim( ishft(sized,-1),BLOCK_DIM )
+      call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,loc_s,plocnl_s
+     &     ,ieblst_s(start),eblst_s(start1)
+     &     ,x_s,y_s,z_s,rpole,pdamp,dirdamp,thole,uind,uinp
+     &     ,pot,dep,trqvec,ered_buff,vred_buff
+     &     ,npolelocnlb,sized,npolebloc,n,use_chgflx,use_dirdamp
+     &     ,off2,f,alsq2,alsq2n,aewald
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+      call check_launch_kernel(" epreal1c_core_cu")
+            end do
 
-      end if
+         end if
 
-      gS1 = n_dpuscale/(2*BLOCK_DIM)
+         gs1 = get_GridDim(n_dpuscale/2,BLOCK_DIM,1)
       call epreal1c_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
      &     ( dpucorrect_ik,dpucorrect_scale,ipole,loc
-     &     , polelocnl,x,y,z,pdamp,thole,rpole,uind,uinp
-     &     , dep,trqvec,ered_buff,vred_buff
-     &     , n,n_dpuscale,nbloc
+     &     , polelocnl,x,y,z,pdamp,dirdamp,thole,rpole,uind,uinp
+     &     , pot,dep,trqvec,ered_buff,vred_buff
+     &     , n,n_dpuscale,nbloc,use_chgflx,use_dirdamp
      &     , off2,aewald,alsq2,alsq2n,f)
       call check_launch_kernel(" epreal1c_scaling_cu")
 
 !$acc end host_data
+      else if (use_chgpen) then
+!$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s
+!$acc&    ,iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pcore,pval
+!$acc&    ,palpha,uind,uinp,dep,pot,trqvec,ered_buff,vred_buff,nred_buff
+!$acc&    ,dpucorrect_ik,dpucorrect_scale,ipole,polelocnl,loc,x,y,z
+!$acc&    )
+         if (use_polarshortreal) then
+            if (dyn_gS) gS = get_GridDim( nspnlb2/2,BLOCK_DIM )
+      call epreal_cpen1_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,loc_s,plocnl_s
+     &     ,iseblst_s,seblst_s(lst_beg)
+     &     ,x_s,y_s,z_s,rpole,uind,uinp,pcore,pval,palpha
+     &     ,dep,trqvec,pot,ered_buff,vred_buff,nred_buff
+     &     ,npolelocnl,npolelocnlb,nspnlb2,npolebloc,n,1,pentyp_i
+     &     ,off2,f,aewald,use_chgflx
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     ,dpucorrect_ik,dpucorrect_scale,n_dpuscale,ipole,polelocnl
+     &     ,loc,x,y,z
+     &     )
+      call check_launch_kernel(" epreal_cpen1_kcu short")
+         else
+            ! Split electrostatic kernel to ease recovering process in MPI
+            do i = 1,ndec
+               start  = (i-1)*sized + 1
+               start1 = lst_beg+(start-1)*BLOCK_SIZE
+               if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
+               if (dyn_gS) gS = get_GridDim( ishft(sized,-1),BLOCK_DIM )
+      call epreal_cpen1_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,loc_s,plocnl_s
+     &     ,ieblst_s(start),eblst_s(start1)
+     &     ,x_s,y_s,z_s,rpole,uind,uinp,pcore,pval,palpha
+     &     ,dep,trqvec,pot,ered_buff,vred_buff,nred_buff
+     &     ,npolelocnl,npolelocnlb,sized,npolebloc,n,i,pentyp_i
+     &     ,off2,f,aewald,use_chgflx
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     ,dpucorrect_ik,dpucorrect_scale,n_dpuscale,ipole,polelocnl
+     &     ,loc,x,y,z
+     &     )
+      call check_launch_kernel(" epreal_cpen1_kcu")
+            end do
+         end if
+!$acc end host_data
+      end if !(thole | chgpen)
 
       call reduce_energy_virial(ep,vxx,vxy,vxz,vyy,vyz,vzz
      &                         ,ered_buff,def_queue)
-c     call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
-#else
-      print 100
- 100  format('epreal1c_core3 is a specific device routine',/,
-     &       'you are not supposed to get inside with your compile',
-     &       'type.')
-      __TINKER_FATAL__
-#endif
-
       end
 
-#ifdef _CUDA
       subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
       use atmlst  ,only: poleglobnl
       use atoms   ,only: x,y,z,n
@@ -1405,8 +1502,10 @@ c     call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
      &            ,nbloc,loc
       use energi  ,only: ep=>ep_r
       use empole1cu ,only: emreal_scaling_cu
+      use epolar_cpencu
       use epolar1cu ,only: mpreal1c_core_cu
       use ewald   ,only: aewald
+      use group
       use inform  ,only: deb_Path
       use interfaces ,only: epreal1c_correct_scale
      &               , m_normal,m_short,m_long
@@ -1421,10 +1520,11 @@ c     call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
      &            ,ieblst_s=>ieblst, eblst_s=>eblst
      &            ,iseblst_s=>ishorteblst, seblst_s=>shorteblst
      &            ,x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
-      use polar   ,only: uind,uinp,thole,pdamp
+      use polar   ,only: uind,uinp,thole,pdamp,dirdamp
       use polpot  ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
+     &            ,use_dirdamp
       use potent  ,only: use_polarshortreal,use_mpoleshortreal
-     &            ,use_mpolelong
+     &            ,use_mpolelong,use_chgflx
       use shunt   ,only: off,off2
       use tinheader  ,only: ti_p
       use virial
@@ -1433,7 +1533,8 @@ c     call epreal1c_correct_scale(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
       use utilgpu ,only: def_queue
      &            ,real3,real6,real3_red,rpole_elt
      &            ,ered_buff=>ered_buf1,vred_buff
-     &            ,reduce_energy_virial
+     &            ,pot=>ug_workS_r
+     &            ,reduce_energy_virial,get_GridDim
      &            ,RED_BUFF_SIZE,zero_evir_red_buffer
      &            ,maxBlock,BLOCK_SIZE
      &            ,dir_stream,def_stream,rec_stream,nSMP
@@ -1457,12 +1558,12 @@ c
 c     set conversion factor, cutoff and switching coefficients
 c
       f      = 0.5_ti_p * electric / dielec
-      fem    = 1.0_ti_p * electric / dielec
+      fem    =            electric / dielec
       alsq2  = 2.0_ti_p * aewald**2
       alsq22 = alsq2**2
       alsq24 = alsq22**2
       alsq2n = 0.0_ti_p
-      if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi * aewald)
+      if (aewald.gt.0.0_ti_p) alsq2n = 1.0_re_p / (sqrtpi * aewald)
 
       p_xbeg = xbegproc(rank+1)
       p_xend = xendproc(rank+1)
@@ -1490,27 +1591,28 @@ c
          if (def_stream.ne.rec_stream) ndec=4
          first_in = .false.
       end if
-      !print*,'pair block ',npolelocnlb2_pair
 
       call zero_evir_red_buffer(def_queue)
 
 !$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s,
-!$acc&    iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,thole,
-!$acc&    mcorrect_ik,mcorrect_scale,dpucorrect_ik,dpucorrect_scale,
-!$acc&    polelocnl,loc,ipole,x,y,z,
-!$acc&    uind,uinp,dep,trqvec,ered_buff,vred_buff)
+!$acc&    iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,dirdamp,
+!$acc&    thole,mcorrect_ik,mcorrect_scale,dpucorrect_ik,
+!$acc&    dpucorrect_scale,polelocnl,loc,ipole,x,y,z,wgrp,grplist,
+!$acc&    uind,uinp,pot,dep,trqvec,ered_buff,vred_buff)
 
       if (use_polarshortreal.or.use_mpoleshortreal) then
 
-      if (dyn_gS) gS = min(max(nspnlb2,8)/8,maxBlock)
+      if (dyn_gS) gS = get_GridDim(nspnlb2/2,BLOCK_DIM)
       call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,iseblst_s,seblst_s(lst_beg)
      &     ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
+     &     ,use_group,grplist,wgrp
      &     ,dep,trqvec,ered_buff,vred_buff
      &     ,npolelocnlb,nspnlb2,npolebloc,n,m_short
      &     ,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+      call check_launch_kernel(" mpreal1c_core_cu")
 
       else if (use_mpolelong) then
 
@@ -1518,20 +1620,10 @@ c
          write(0,*) '      cannot compute long range interactions'
          __TINKER_FATAL__
 
-      if (dyn_gS) gS = max(npolelocnlb2_pair,12)/12
-      call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &     (ipole_s,pglob_s,loc_s,plocnl_s
-     &     ,ieblst_s,eblst_s(lst_beg)
-     &     ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
-     &     ,dep,trqvec,ered_buff,vred_buff
-     &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n,m_long
-     &     ,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal
-     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
-
       else
 
       sized = npolelocnlb2_pair/ndec
-      if (dyn_gS) gS = min(max(sized,8)/8,maxBlock)
+      if (dyn_gS) gS = get_GridDim(sized,BLOCK_DIM)
 
       ! Split electrostatic kernel to ease recovering process in MPI
       do i = 1,ndec
@@ -1542,44 +1634,47 @@ c
      &        (ipole_s,pglob_s,loc_s,plocnl_s
      &        ,ieblst_s(start),eblst_s(start1)
      &        ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
+     &        ,use_group,grplist,wgrp
      &        ,dep,trqvec,ered_buff,vred_buff
      &        ,npolelocnlb,sized,npolebloc,n,m_normal
      &        ,off2,f,alsq2,alsq2n,aewald,r_cut,sh_cut2,shortheal
-     &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
+     &        ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &        )
          call check_launch_kernel(" mpreal1c_core_cu")
       end do
 
       end if
 
       if (n_mscale.gt.0) then
-         gS1 = max(n_mscale/(BLOCK_DIM),1)
+         gS1 = get_GridDim(n_mscale,BLOCK_DIM,1)
          if (use_mpoleshortreal) then
-         call emrealShLg_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
+         call emreals_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
      &        ( mcorrect_ik,mcorrect_scale,ipole,loc,polelocnl
-     &        , x,y,z,rpole
+     &        , x,y,z,rpole,grplist,wgrp
      &        , dep,trqvec,ered_buff,vred_buff
-     &        , n,nbloc,n_mscale,size(mcorrect_ik,1),.true.
+     &        , n,nbloc,n_mscale,.true.,use_group
      &        , r_cut,sh_cut2,off2
      &        , shortheal,fem,aewald,alsq2,alsq2n )
-         call check_launch_kernel(" emrealShLg_scaling_cu")
+         call check_launch_kernel(" emreals_scaling_cu")
          else
          call emreal_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
      &        ( mcorrect_ik,mcorrect_scale,ipole,loc,polelocnl
-     &        , x,y,z,rpole
+     &        , x,y,z,rpole,grplist,wgrp
      &        , dep,trqvec,ered_buff,vred_buff
-     &        , n,nbloc,n_mscale,size(mcorrect_ik,1),.true.
-     &        , off2,fem,aewald,alsq2,alsq2n )
+     &        , n,nbloc,n_mscale,.true.,use_group
+     &        , r_cut,sh_cut2,off2
+     &        , shortheal,fem,aewald,alsq2,alsq2n )
          call check_launch_kernel(" emreal_scaling_cu")
          end if
       end if
 
       if (n_dpuscale.gt.0) then
-         gS1 = max(n_dpuscale/(BLOCK_DIM),1)
+         gS1 = get_GridDim(n_dpuscale,BLOCK_DIM,1)
          call epreal1c_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>
      &        ( dpucorrect_ik,dpucorrect_scale,ipole,loc
-     &        , polelocnl,x,y,z,pdamp,thole,rpole,uind,uinp
-     &        , dep,trqvec,ered_buff,vred_buff
-     &        , n,n_dpuscale,nbloc
+     &        , polelocnl,x,y,z,pdamp,dirdamp,thole,rpole,uind,uinp
+     &        , pot,dep,trqvec,ered_buff,vred_buff
+     &        , n,n_dpuscale,nbloc,use_chgflx,use_dirdamp
      &        , off2,aewald,alsq2,alsq2n,f )
          call check_launch_kernel(" epreal1c_scaling_cu")
       end if
@@ -1607,12 +1702,14 @@ c
       use math    ,only: sqrtpi
       use mpole   ,only: npolelocnl,ipole,rpole,polelocnl
       use neigh   ,only: elst,nelst
-      use polar   ,only: uind,uinp,thole,pdamp
+      use polar   ,only: uind,uinp,thole,pdamp,dirdamp
       use polpot  ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
+     &            ,use_dirdamp
+      use potent  ,only: use_chgflx
       use shunt   ,only: off2
       use tinheader ,only: ti_p
       use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
-      use utilgpu ,only: def_queue
+      use utilgpu ,only: def_queue, pot=>ug_workS_r
       use virial
       implicit none
 
@@ -1623,11 +1720,11 @@ c
       integer ii,iipole,kpole,j,kbis
       integer nnelst
       real(t_p) alsq2,alsq2n
-      real(t_p) r2,pgamma,damp
+      real(t_p) r2,pgamma,pgama1,damp
       real(t_p) f,e
-      real(t_p) pdi,pti
+      real(t_p) pdi,pti,ddi
       real(t_p) one
-      real(t_p) pscale,dscale,uscale
+      real(t_p) pscale,dscale,uscale,poti,potk
       type(rpole_elt):: ip,kp
       type(real6)    :: dpui,dpuk
       type(real3)    :: pos,posi,ufli,uflk,trqi,trqk,frc
@@ -1646,9 +1743,9 @@ c
       if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi * aewald)
 
 !$acc parallel loop present(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
-!$acc&     present(poleglobnl,ipole,rpole,thole,pdamp,loc,x,y,z,
-!$acc&  uind,uinp,elst,nelst,dep,ep,vir,polelocnl,dpucorrect_ik,
-!$acc&  dpucorrect_scale)
+!$acc&     present(poleglobnl,ipole,rpole,thole,pdamp,dirdamp,
+!$acc&  loc,x,y,z,uind,uinp,elst,nelst,dep,ep,vir,polelocnl,
+!$acc&  dpucorrect_ik,dpucorrect_scale)
 !$acc&         private(pos,ip,kp,dpui,dpuk,trqk,trqi,frc_r,frc)
 !$acc&         async(def_queue)
       do ii = 1, n_dpuscale
@@ -1672,6 +1769,7 @@ c
          if (r2>off2) cycle
 
          pdi      = pdamp(iipole)
+         ddi      = dirdamp(iipole)
          pti      = thole(iipole)
 
          ip%c     = rpole( 1,iipole)
@@ -1715,7 +1813,12 @@ c
          dpuk%zz  = uinp ( 3, kpole)
 
          pgamma   = min( pti,thole(kpole) )
+         if (use_dirdamp) then
+            pgama1   = min( ddi,dirdamp(kpole) )
+            if (pgama1.eq.0.0) pgama1 = max( ddi,dirdamp(kpole) )
+         end if
          damp     = pdi * pdamp (kpole)
+
 c
 c     Compute polar interaction
 c
@@ -1723,14 +1826,26 @@ c
          frc_r%x=0.0;frc_r%y=0.0;frc_r%z=0.0;
           trqi%x=0.0; trqi%y=0.0; trqi%z=0.0;
           trqk%x=0.0; trqk%y=0.0; trqk%z=0.0;
+          poti=0.0; potk=0.0
          call epolar1_couple(dpui,ip,dpuk,kp,r2,pos,
-     &               aewald,alsq2,alsq2n,pgamma,damp,f,
-     &               dscale,pscale,uscale,
+     &               aewald,alsq2,alsq2n,pgamma,pgama1,damp,f,
+     &               dscale,pscale,uscale,use_dirdamp,
+     &               use_chgflx,poti,potk,
      &               e,frc,frc_r,trqi,trqk,.true.)
 c
 c     increment energy
 c
          ep       = ep + tp2enr(e)
+
+c
+c     store the potential at each site for use in charge flux
+c
+         if (use_chgflx) then
+!$acc atomic
+            pot(i)    = pot(i) + poti
+!$acc atomic
+            pot(kbis) = pot(kbis) + potk
+         end if
 c
 c     increment gradient and virial due to Cartesian forces
 c
@@ -1808,6 +1923,7 @@ c
       use bound
       use boxes
       use chgpot
+      use cflux
       use deriv
       use domdec
       use energi    ,only: eprec
@@ -1815,10 +1931,10 @@ c
       use ewald
       use fft
       use inform    ,only: deb_Path
-      use interfaces,only: fphi_uind_site1_p
-     &              ,torquegpu,grid_uind_site_p
-     &              ,grid_mpole_site_p,epreal1c_cp
+      use interfaces,only: fphi_uind_site1_p,torquegpu
+     &              ,grid_uind_site_p,grid_mpole_site_p,epreal1c_cp
       use math
+      use mpi
       use mpole
       use pme
       use pme1
@@ -1827,10 +1943,11 @@ c
       use polpot
       use potent
       use timestat
+      use tinheader ,only: zeror
       use utils
-      use utilgpu
+      use utilcomm
+      use utilgpu   ,pot=>ug_workS_r,potrec=>ug_workS_r1
       use virial
-      use mpi
       implicit none
       integer status(MPI_STATUS_SIZE),tag,ierr,siz
       integer i,j,k,m,ii,iipole,iipol,iglob,iloc
@@ -2395,6 +2512,37 @@ c
 c
 
  100  continue
+
+      !TODO Amoebap Reduce the communication - (commrecrec + addrec)
+      if (use_chgflx) then
+         def_queue = rec_queue
+         if (nproc.eq.1) then
+            if (npolerecloc.eq.n) then
+!$acc parallel loop async(rec_queue) default(present)
+               do i = 1,n; pot(i) = cphirec(1,i); end do
+            else
+!$acc parallel loop async(rec_queue) default(present)
+               do i = 1,npolerecloc
+                  iloc = loc(ipole(polerecglob(i)))
+                  pot(iloc) = cphirec(1,i)
+               end do
+            end if
+         else
+            call prmem_request(potrec,nlocrec)
+!$acc parallel loop async(rec_queue) default(present)
+            do i = 1,npolerecloc
+               iloc = locrec(ipole(polerecglob(i)))
+               potrec(iloc) = cphirec(1,i)
+            end do
+            call commDDrd   (pot,potrec,1,ucComm)
+            call commDDd_ext(pot,       1,ucNeig+ucComm)
+         end if
+         call dcflux2( pot,de_ws1 )
+         call adflux2( de_ws1,dep )
+         call mem_set(pot,zeror,int(nbloc,mipk),rec_stream)
+         if (nproc.ne.1) call mem_set
+     &      (potrec,zeror,int(nlocrec,mipk),rec_stream)
+      end if
 
 c!$acc update host(vxx,vxy,vxz,eprec) async(rec_queue)
 c!$acc update host(deprec,fmp) async

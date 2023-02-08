@@ -14,7 +14,7 @@ c     "epolar3" calculates the induced dipole polarization energy,
 c     and partitions the energy among atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine epolar3vec
       implicit none
      

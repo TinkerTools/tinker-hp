@@ -14,7 +14,7 @@ c     "elj1" calculates the Lennard-Jones 6-12 van der Waals energy
 c     and its first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine elj1vec
       use energi
       use virial

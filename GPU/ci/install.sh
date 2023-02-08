@@ -3,46 +3,6 @@
 # Tinker-HP [GPU] Quick Installation script
 # Some help on makefile's target can be found inside build.md in the root directory
 
-# --------------------
-# Function Definitions
-# --------------------
-in_notif(){
-   printf "\n <<<<<  %-60s  >>>>> \n\n" "$1" && sleep 1
-}
-error1st(){
-   cat << END
-
-             ------ WARNING ------
-   Something went wrong during compilation procedure "
-   Please Fix the issue and run ci/install.sh again"
-             ---------------------
-
-END
-   cd ..
-}
-error2nd(){
-   cat << END
-
-             ------ WARNING ------
-   Something went wrong during mixed precision compilation !!
-   Please Fix the issue and enter following commands to resume
-$> cd source
-$> make $current_config_m -j$ntask
-             ---------------------
-
-END
-   cd ../
-}
-error_mkl(){
-   cat << EOP
-
-   !!! ci/install.sh  ERROR !!!
-   >   MKLROOT is unset in your environment 
-   --  Please export That variable to MKL library's Root and rerun this script
-
-EOP
-}
-
 #test if sourced or not
 (return 0 2>/dev/null) && sourced=1 || sourced=0
 if [ $sourced -eq 1 ]; then
@@ -56,56 +16,45 @@ END
 else
 
 #set -x
-tinkerdir=$(dirname `dirname $0`)
+tinkerdir=$PWD/$(dirname `dirname $0`)
 
-# -------------
-# Configuration
-# -------------
+source $tinkerdir/ci/utils.sh
+unset CC CXX FC
+
 #
-# Carefully Add or Change 'var=value' in current_config to configure your installation
-# Make sure those params do not conflict with 'current_config_[dm]'
+#=======================
+# Configuration  Section
+
+# Change those 'value' according to comments ahead to configure your build
 #
 
-c_c=60,70,75,80               #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
-cuda_ver=11.0                 #   Cuda Version to be used by OpenACC compiler  (not the CUDA C/C++ compiler)
-build_plumed=0                #   [0]|1      0: disable 1: enable
-build_colvars=0               #   [0]|1      0: disable 1: enable
+dbuild=$tinkerdir/build0      #   Out-of-source build directory
 target_arch='gpu'             #   [gpu]|cpu
+c_c=60,70,75,80               #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
+cuda_ver=11.3                 #   Cuda Version to be used by OpenACC compiler  (not the CUDA C/C++ compiler)
 FPA=1                         #   Enable Fixed Precision Arithmetic (Useful for non HPC-Accelerators)
-#add_options_f='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package version 21.[3-7]
+build_plumed=0                #   [0]|1     0: disable 1: enable   PLUMED  Interface
+build_colvars=0               #   [0]|1     0: disable 1: enable   COLVARS Interface
+NN=0                          #   [0]|1     0: disable 1: enable   Neural Network Python Interface
+#add_host_f='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package version 21.[3-7]
 
-pre_suffix=''
-[ $build_plumed  -eq 1 ] && pre_suffix=${pre_suffix}_plumed
-[ $build_colvars -eq 1 ] && pre_suffix=${pre_suffix}_colvars
+#  End Config
+#=======================
 
-[ $FPA -eq 1 ] && p_suffix=${pre_suffix}.fpa || p_suffix=${pre_suffix}.mixed       # Config binary suffix following FPA feature
-current_config="arch=$target_arch compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed COLVARS_SUPPORT=$build_colvars"
+current_config="arch=$target_arch compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed COLVARS_SUPPORT=$build_colvars NN_SUPPORT=$NN"
 [ -n "$add_options_f" ] && current_config="$current_config add_options_f=$add_options_f"
-
-current_config_d="$current_config prog_suffix=${pre_suffix}.gpu"
-current_config_m="$current_config FPA_SUPPORT=$FPA prec=m prog_suffix=$p_suffix"
+current_config_d="$current_config"
+current_config_m="$current_config FPA_SUPPORT=$FPA prec=m"
 
 # ------------------------------------
 # Clean Project and exit if instructed
 # ------------------------------------
 [ $# -ge 1 ] && [ $1 = "clean" ] && cd $tinkerdir/source && make -f Makefile.pgi $current_config distclean && exit
 
-[ $# -ge 1 ] && ntask=$1 || ntask=16
+[ $# -ge 1 ] && [ $1 -gt 1 ] && ntask=$1 || ntask=16
+[ $# -ge 2 ] && [ $2 -gt 1 ] && ntask=$2 || ntask=16
 
-# Check for GNUROOT variable in your environnement path before running
-if [[ -z ${GNUROOT+x} ]]; then
-   GNUROOT=`which g++ | sed 's_/bin/g++__'`
-   export GNUROOT
-   cat << EOP
-   !!! WARNING GNUROOT variable not find in environment !!!
-   setting it to "$GNUROOT" according to g++ compiler location
-
-   *** You might later need to export this variable for development purposes ***
-
-   Installation will resume shortly
-EOP
-   sleep 4
-fi
+chk_gnuroot
 
 # ------------------------------------------------
 # Check for MKLROOT variable in your environnement
@@ -117,27 +66,33 @@ fi
 # --------
 cd $tinkerdir && \
 mkdir -p bin && \
-ln -sf Makefile.pgi source/Makefile  && \
-cd source
+[ ! -d $dbuild ] && cd source && \
+make -f Makefile.pgi create_build BUILD_DIR=$dbuild
+cd $dbuild
 
-# -----
-# Build
-# -----
+# ----------
+# Build Step
+# ----------
 if [ $build_plumed -eq 1 ]; then
-   in_notif "Building PLUMED" && make plumed -j$ntask
+   in_notif "Building PLUMED" &&\
+   make plumed -j$ntask
 fi
 
-in_notif "Compiling TINKER-HP" && \
-make $current_config_d -j$ntask
-[ "$?" != "0" ] && error1st && exit # Compiling test
+# Double precision build
+if [ $# -eq 0 ] || [ $# -eq 1 ] && [ "$1" != "nd" ]; then
+   in_notif "Compiling TINKER-HP" && \
+   make $current_config_d -j$ntask
+   [ "$?" != "0" ] && error1st && exit # Compiling test
 
-in_notif 'Cleaning objects files and modules' && \
-make clean >/dev/null
+   in_notif 'Cleaning objects files and modules' && \
+   make clean >/dev/null
+fi
 
+# Mixed precision build
 [ ${FPA} -eq 1 ] && in_notif "Recompiling TINKER-HP in mixed precision + FPA support"
 [ ${FPA} -eq 0 ] && in_notif "Recompiling TINKER-HP in mixed precision"
-make $current_config_m 2decomp_fft_rebuild_single   && \
-make $current_config_m -j$ntask
+make $current_config_m 2decomp_fft_rebuild   && \
+make $current_config_m -j$ntask dynamic bar
 [ "$?" != "0" ] && error2nd  && exit # Mixed Compiling test
 
 # --------

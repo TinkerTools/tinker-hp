@@ -11,7 +11,7 @@ c     "Fast Divide-and-Conquer Scheme for Evaluating Polarization
 c     in Classical Force Fields" D. Nocito and G. Beran. J. Chem. Phys. 146,
 c     114103 (2017)
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine dcinduce_pme2gpu
       use atmlst
       use divcon
@@ -132,7 +132,7 @@ c
 #ifdef _OPENACC
          call openacc_abort("dcinduce pc_dc not supported with OpenAcc")
 #endif
-         call pc_dc_efld0_directgpu(nrhs,ef)
+         call pc_dc_efld0_direct(nrhs,ef)
       else
          call otf_dc_efld0_directgpu_p(nrhs,ef)
       end if

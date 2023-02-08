@@ -14,10 +14,13 @@ c     "eimprop1" calculates improper dihedral energy and its
 c     first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module eimprop1gpu_inl
+#include "atomicOp.h.f"
         contains
 #include "image.f.inc"
+#include "groups.inc.f"
+#include "atomicOp.inc.f"
       end module
 
       subroutine eimprop1gpu
@@ -42,7 +45,7 @@ c
       integer i,ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
       integer iimprop
-      real(t_p) e,dedphi
+      real(t_p) e,dedphi,fgrp
       real(t_p) dt
       real(t_p) ideal,force
       real(t_p) cosine,sine
@@ -69,6 +72,7 @@ c
       real(t_p) dedxid,dedyid,dedzid
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
+      integer iga,igb,igc,igd,gmin,gmax
       logical proceed
 c
       if (deb_Path) write(*,*) 'eimprop1gpu'
@@ -83,6 +87,7 @@ c
 !$acc&         present(impropglob,iiprop,kprop,vprop,
 !$acc&   loc,use,x,y,z,deid)
 !$acc&         present(eid,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&         reduction(+:eid,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do iimprop = 1, niproploc
          i     = impropglob(iimprop)
          ia    = iiprop(1,i)
@@ -96,8 +101,9 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib)
+         if (use_group)
+     &      call groups4_inl (fgrp,ia,ib,ic,id,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib)
      &                       .or. use(ic) .or. use(id))
 c
 c     compute the value of the improper dihedral angle
@@ -168,6 +174,13 @@ c
                e = idihunit * force * dt**2
                dedphi = 2.0_ti_p * radian * idihunit * force * dt
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
+c
 c     chain rule terms for first derivative components
 c
                xca = xic - xia
@@ -206,45 +219,21 @@ c     calculate improper dihedral energy and derivatives
 c
                eid   = eid + e
 
-               dedx = dedxia
-               dedy = dedyia
-               dedz = dedzia
-!$acc atomic
-               deid(1,ialoc) = deid(1,ialoc) + dedx
-!$acc atomic
-               deid(2,ialoc) = deid(2,ialoc) + dedy
-!$acc atomic
-               deid(3,ialoc) = deid(3,ialoc) + dedz
+               call atomic_add( deid(1,ialoc),dedxia )
+               call atomic_add( deid(2,ialoc),dedyia )
+               call atomic_add( deid(3,ialoc),dedzia )
 c
-               dedx = dedxib
-               dedy = dedyib
-               dedz = dedzib
-!$acc atomic
-               deid(1,ibloc) = deid(1,ibloc) + dedx
-!$acc atomic
-               deid(2,ibloc) = deid(2,ibloc) + dedy
-!$acc atomic
-               deid(3,ibloc) = deid(3,ibloc) + dedz
+               call atomic_add( deid(1,ibloc),dedxib )
+               call atomic_add( deid(2,ibloc),dedyib )
+               call atomic_add( deid(3,ibloc),dedzib )
 c
-               dedx = dedxic
-               dedy = dedyic
-               dedz = dedzic
-!$acc atomic
-               deid(1,icloc) = deid(1,icloc) + dedx
-!$acc atomic
-               deid(2,icloc) = deid(2,icloc) + dedy
-!$acc atomic
-               deid(3,icloc) = deid(3,icloc) + dedz
+               call atomic_add( deid(1,icloc),dedxic )
+               call atomic_add( deid(2,icloc),dedyic )
+               call atomic_add( deid(3,icloc),dedzic )
 c
-               dedx = dedxid
-               dedy = dedyid
-               dedz = dedzid
-!$acc atomic
-               deid(1,idloc) = deid(1,idloc) + dedx
-!$acc atomic
-               deid(2,idloc) = deid(2,idloc) + dedy
-!$acc atomic
-               deid(3,idloc) = deid(3,idloc) + dedz
+               call atomic_add( deid(1,idloc),dedxid )
+               call atomic_add( deid(2,idloc),dedyid )
+               call atomic_add( deid(3,idloc),dedzid )
 c
 c     increment the internal virial tensor components
 c
@@ -257,5 +246,4 @@ c
             end if
          end if
       end do
-
       end

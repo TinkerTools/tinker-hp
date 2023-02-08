@@ -15,7 +15,7 @@ c     trigonal centers via a Wilson-Decius-Cross or Allinger angle;
 c     also partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eopbend3
       use action
       use analyz
@@ -37,7 +37,7 @@ c
       implicit none
       integer i,iopbend,iopbendloc
       integer ia,ib,ic,id,ibloc
-      real(t_p) e,angle1,force
+      real(t_p) e,angle1,force,fgrp
       real(t_p) cosine
       real(t_p) dt,dt2,dt3,dt4
       real(t_p) xia,yia,zia
@@ -77,8 +77,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     get the coordinates of the atoms at trigonal center
@@ -153,6 +153,14 @@ c
                dt4 = dt2 * dt2
                e = opbunit * force * dt2
      &                * (1.0_ti_p+copb*dt+qopb*dt2+popb*dt3+sopb*dt4)
+                if(use_group) then
+                  call groups(fgrp,ia,ib,ic,id,0,0)
+                  e = e*fgrp
+                endif
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group)  e = e * fgrp
 c
 c     increment the total out-of-plane bending energy
 c

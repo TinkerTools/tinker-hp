@@ -15,7 +15,7 @@ c     form statistics on various average values and fluctuations,
 c     and to periodically save the state of the trajectory
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
       ! Determine wether or not to compute energy
       subroutine inquire_calc_e(istep,period)
@@ -67,15 +67,18 @@ c
       use atoms
       use bound
       use boxes
+      use bath
       use cutoff
       use domdec
       use energi ,only: calc_e,epot_mean,epot_std10
+     &           , etot_ave,etot_std
       use inform
       use inter
       use iounit
       use mdstuf
       use molcul
       use potent
+      use mdstate
       use timestat
       use units
       use mpi
@@ -87,15 +90,15 @@ c
       real(r_p) dt,temp,pres
       real(r_p) etot,epot,ekin
       real(d_prec) pico,dens
-      real(d_prec) fluctuate,fluctuate2
+      real(d_prec) fluctuate2
       real(d_prec) intfluct,intfluct2
       real(d_prec) potfluct,potfluct2
       real(d_prec) kinfluct,kinfluct2
-      real(d_prec) tfluct,pfluct,dfluct
-      real(d_prec) tfluct2,pfluct2,dfluct2
+      real(d_prec) tfluct,pfluct,dfluct,vfluct
+      real(d_prec) tfluct2,pfluct2,dfluct2,vfluct2
       real(d_prec) etot_sum,etot2_sum
       real(d_prec) eint_sum,eint2_sum
-      real(d_prec) etot_ave,etot2_ave
+      real(d_prec) etot2_ave
       real(d_prec) eint_ave,eint2_ave
       real(d_prec) epot_sum,epot2_sum
       real(d_prec) ekin_sum,ekin2_sum
@@ -107,7 +110,9 @@ c
       real(d_prec) pres_ave,pres2_ave
       real(d_prec) dens_sum,dens2_sum
       real(d_prec) dens_ave,dens2_ave
-      real*8 buffer(18)
+      real(d_prec)  vol_sum, vol2_sum
+      real(d_prec)  vol_ave, vol2_ave
+      real(d_prec) buffer(18)
       logical display
       save etot_sum,etot2_sum
       save eint_sum,eint2_sum
@@ -116,6 +121,7 @@ c
       save temp_sum,temp2_sum
       save pres_sum,pres2_sum
       save dens_sum,dens2_sum
+      save  vol_sum, vol2_sum
 c
 c
 c     set number of steps for block averages of properties
@@ -129,7 +135,11 @@ c
       period  = 1
 #endif
 
-      modstep = mod(istep,iprint)
+      if (track_mds.and.mod(istep,ms_back_p).eq.0) then
+         call mds_save
+      end if
+
+      modstep =  mod(istep,iprint)
       display = (mod(istep,period).eq.0.and.verbose)
 
 c
@@ -150,6 +160,8 @@ c
          pres2_sum = 0.0_d_prec
          dens_sum  = 0.0_d_prec
          dens2_sum = 0.0_d_prec
+         vol_sum   = 0.0_d_prec
+         vol2_sum  = 0.0_d_prec
       end if
 
 c
@@ -226,7 +238,7 @@ c
 !$acc wait
               write (iout,40)  istep,etot,epot,ekin,temp
    40         format (i10,3f14.4,f11.2)
-           end  if
+           end if
            end if
         end if
 c
@@ -241,23 +253,35 @@ c
            write (iout,60)  pico
    60      format (/,' Simulation Time',5x,f15.4,' Picosecond')
         end if
+        if (display.and.etot_ave.eq.0.0) then
+           etot_ave = etot
+           etot_std = abs(etot)
+        end if
 c
 c       compute total energy and fluctuation for recent steps
 c
         if (display) then
-           etot_sum = etot_sum + real(etot,d_prec)
+           etot_sum  = etot_sum + real(etot,d_prec)
            etot2_sum = etot2_sum + real(etot,d_prec)**2
+           if (.not.isothermal.and..not.isobaric) then
+              if (abs(etot-etot_ave).gt.9*etot_std) then
+  600            format(/,"Detected brutal shift in Total Energy"
+     &                   ," (Etot|mean|std)",/,3F14.4)
+                 write(0,600) etot,etot_ave,etot_std
+                 __TINKER_FATAL__
+              end if
+           end if
         end if
         if (verbose.and.modstep.eq.0) then
            etot_ave = etot_sum / real(freq,d_prec)
            etot2_ave = etot2_sum / real(freq,d_prec)
            fluctuate2 = etot2_ave - etot_ave**2
            if (fluctuate2 .gt. 0.0_ti_p) then
-              fluctuate = sqrt(fluctuate2)
+              etot_std = sqrt(fluctuate2)
            else
-              fluctuate = 0.0_ti_p
+              etot_std = 0.0_ti_p
            end if
-           write (iout,70)  etot_ave,fluctuate
+           write (iout,70)  etot_ave,etot_std
    70      format (' Total Energy',8x,f15.4,' Kcal/mole',3x,
      &                '(+/-',f10.4,')')
         end if
@@ -342,8 +366,8 @@ c
               tfluct = 0.0_ti_p
            end if
            write (iout,110)  temp_ave,tfluct
-  110      format (' Temperature',9x,f15.2,' Kelvin',6x,
-     &                '(+/-',f10.2,')')
+  110      format (' Temperature',7x,f15.2,'   Kelvin',6x,
+     &                '(+/-',f8.2,'  )')
         end if
 c
 c       compute the average pressure and its fluctuation
@@ -364,8 +388,8 @@ c
               end if
               if (use_virial) then
               write (iout,120)  pres_ave,pfluct
-  120         format (' Pressure',12x,f15.2,' Atmosphere',2x,
-     &                   '(+/-',f10.2,')')
+  120         format (' Pressure',10x,f15.2,'   Atmosphere',2x,
+     &                   '(+/-',f8.2,'  )')
               end if
            end if
 c
@@ -389,6 +413,32 @@ c
               write (iout,130)  dens_ave,dfluct
   130         format (' Density',13x,f15.4,' Grams/cc',4x,
      &                   '(+/-',f10.4,')')
+           end if
+c
+c       compute the average volume and its fluctuation
+c
+        if (display.and.isobaric) then
+            vol_sum =  vol_sum + volbox*1d-3
+           vol2_sum = vol2_sum +(volbox*1d-3)**2
+        end if
+           if (verbose.and.isobaric.and.modstep.eq.0) then
+               vol_ave =  vol_sum / real(freq,d_prec)
+              vol2_ave = vol2_sum / real(freq,d_prec)
+              vfluct2  = vol2_ave - vol_ave**2
+              if (vfluct2 .gt. 0.0_ti_p) then
+                 vfluct = sqrt(vfluct2)
+              else
+                 vfluct = 0.0_ti_p
+              end if
+              write (iout,140)  vol_ave,vfluct
+  140         format (' Volume',14x,f15.4,' nm^3',8x,
+     &                   '(+/-',f10.4,')')
+           end if
+           if (verbose.and.isobaric.and.mtc_nacc.ne.0.and.modstep.eq.0)
+     &        then
+              write (iout,150) mtc_nacc
+  150         format(' Montecarlo Barostat applied',3x,I5,' times')
+              mtc_nacc = 0
            end if
         end if
 cc

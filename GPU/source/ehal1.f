@@ -14,7 +14,7 @@ c     "ehal1" calculates the buffered 14-7 van der Waals energy and
 c     its first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine ehal1
       use deriv,only:dev
       use energi
@@ -24,6 +24,7 @@ c
       use mpi
       implicit none
       real(t_p) elrc,vlrc
+      character*11 mode
 c
 c
 c     choose the method for summing over pairwise interactions
@@ -33,7 +34,8 @@ c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
-         call evcorr1 (elrc,vlrc)
+         mode = "VDW"
+         call evcorr1 (mode,elrc,vlrc)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
          vir(2,2) = vir(2,2) + vlrc
@@ -236,8 +238,8 @@ c
             redk = kred(kglob)
             redkv = 1.0 - redk
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
 c
 c     compute the energy contribution for this interaction
 c
@@ -316,6 +318,13 @@ c                     eps = eps * vlambda**scexp
                      gtau = eps*tau7*rik6*(ghal+1.0)*(rv7/rho)**2
                      e = eps*tau7*rv7*((ghal+1.0)*rv7/rho-2.0)
                      de = -7.0 * (dtau*e+gtau)
+                  end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group) then
+                     e = e * fgrp
+                     de = de * fgrp
                   end if
 c
 c     use energy switching if near the cutoff distance

@@ -11,7 +11,7 @@ c     to Cartesian coordinates using particle mesh Ewald summation and
 c     a neighbor list
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine epolar0cvec
       use sizes
       use atmlst

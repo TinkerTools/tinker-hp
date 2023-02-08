@@ -10,7 +10,7 @@ c     ##  Plumed utility functions                                     ##
 c     ##                                                               ##
 c     ###################################################################
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       submodule(plumed) PlumedImp
       use atomsMirror
       use atmtyp

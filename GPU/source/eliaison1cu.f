@@ -11,8 +11,7 @@ c     ################################################################
 c
 c
 #define TINKER_CUF
-#include  "tinker_precision.h"
-#include  "tinker_types.h"
+#include  "tinker_macro.h"
 #include  "tinker_cudart.h"
       module eliaisoncu
         use angpot   ,only: OPB_W_D_C,OPB_ALLINGER
@@ -38,7 +37,7 @@ c
 #include "image.f.inc"
 #include "atomicOp.inc.f"
 
-#define __tver__ (__use_grd__+__use_ene__)
+#define __tver__ (__use_grd__+__use_ene__+__use_vir__)
 #define __tfea__ (__use_mpi__+__use_gamd__)
 #define __sufx__
 
@@ -1129,7 +1128,7 @@ c
         integer ipe,ind
 #endif  
         real(t_p) e,angle1,force
-        real(t_p) dot,cosine
+        real(t_p) dot,sine
         real(t_p) cc,ee,bkk2,term
         real(t_p) deddt,dedcos
         real(t_p) dt,dt2,dt3,dt4
@@ -1245,20 +1244,19 @@ c
      &                + zdb*(xab*ycb-yab*xcb)
               rdb2 = xdb*xdb + ydb*ydb + zdb*zdb
               if (rdb2.ne.0.0_ti_p .and. cc.ne.0.0_ti_p) then
-                 bkk2 = rdb2 - ee*ee/cc
-                 cosine = f_sqrt(bkk2/rdb2)
-                 cosine = min(1.0_ti_p,max(-1.0_ti_p,cosine))
-                 angle1 = radian * acos(cosine)
-                 dt = angle1
-                 dt2 = dt * dt
-                 dt3 = dt2 * dt
-                 dt4 = dt2 * dt2
-                 e = opbunit * force * dt2
+                 sine   = abs(ee) * sqrt(1.0/(cc*rdb2))
+                 sine   = min(1.0,sine)
+                 angle1 = radian * asin(sine)
+                 dt     = angle1
+                 dt2    = dt * dt
+                 dt3    = dt2 * dt
+                 dt4    = dt2 * dt2
+                 e      = opbunit * force * dt2
      &                * (1.0_ti_p+copb*dt+qopb*dt2+popb*dt3+sopb*dt4)
                  deddt = opbunit * force * dt * radian
      &                * (2.0_ti_p + 3.0_ti_p*copb*dt + 4.0_ti_p*qopb*dt2
      &                 + 5.0_ti_p*popb*dt3 + 6.0_ti_p*sopb*dt4)
-                 dedcos = -deddt * sign(1.0_ti_p,ee) / f_sqrt(cc*bkk2)
+                 dedcos =-deddt*sign(1.0_ti_p,ee) /f_sqrt(cc*rdb2-ee*ee)
 c
 c       chain rule terms for first derivative components
 c

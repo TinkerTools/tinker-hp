@@ -14,7 +14,7 @@ c     "ebond1" calculates the bond stretching energy and
 c     first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine ebond1
       use atmlst
       use atoms
@@ -40,18 +40,18 @@ c
       real(t_p) xab,yab,zab,rab
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
+      real(t_p) fgrp
       logical proceed
 c
 c
 c     zero out the bond energy and first derivatives
 c
-!$acc update host(deb,vir)
       eb = 0.0_ti_p
 c
 c     calculate the bond stretch energy and first derivatives
 c
       do ibond = 1, nbondloc
-         i = bndglob(ibond)
+         i  = bndglob(ibond)
          ia = ibnd(1,i)
          ib = ibnd(2,i)
          ialoc = loc(ia)
@@ -61,8 +61,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         proceed = (use(ia) .or. use(ib))
+         if (use_group)  call groups (fgrp,ia,ib,0,0,0,0)
 c
 c     compute the value of the bond length deviation
 c
@@ -92,6 +92,13 @@ c
                bde = 0.25_ti_p * bndunit * force
                e = bde * (1.0_ti_p-expterm)**2
                deddt = 4.0_ti_p * bde * (1.0_ti_p-expterm) * expterm
+            end if
+c
+c     scale the interaction based on its group membership
+c
+            if (use_group) then
+               e = e * fgrp
+               deddt = deddt * fgrp
             end if
 c
 c     compute chain rule terms needed for derivatives
@@ -150,6 +157,4 @@ c
             vir(3,3) = vir(3,3) + vzz
          end if
       end do
-!$acc update device(deb,vir)
-      return
       end

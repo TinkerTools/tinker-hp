@@ -1,9 +1,10 @@
 #include "utils.h"
 #include "image.h"
+#include "damping.h"
 
 #define TMATXB_PARAMS_GEN                                              \
         const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict ieblst, const int*restrict eblst   \
-        , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict thole, const real*restrict polarity   \
+        , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict pgamma, const real*restrict polarity   \
         , const real (*restrict mu)[6] , real (*restrict efi)[6]                                               \
         , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc, const int balanced \
         , const real cut2, const real alsq2, const real alsq2n, const real aewald
@@ -14,13 +15,19 @@
 
 #define EFLD0_PARAMS_GEN                                              \
         const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict ieblst, const int*restrict eblst   \
-        , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict thole, const real*restrict polarity, const real (*restrict rpole)[13]  \
+        , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict pgamma, const real*restrict polarity, const real (*restrict rpole)[13]  \
         , real (*restrict efi)[6]                                               \
-        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc, const int balanced \
+        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc, const int idirdamp, const int balanced \
+        , const real cut2, const real alsq2, const real alsq2n, const real aewald
+#define EFLD0_GRP_PARAMS_GEN                                              \
+        const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict ieblst, const int*restrict eblst   \
+        , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict pgamma, const real*restrict polarity, const real (*restrict rpole)[13]  \
+        , real (*restrict efi)[6]                                               \
+        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc, const int idirdamp, const int balanced \
         , const real cut2, const real alsq2, const real alsq2n, const real aewald
 #define OTFDC_EFLD0_PARAMS_GEN                                              \
         const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict grplst, const int*restrict atmofst, const int*restrict npergrp, const int*restrict kofst, const int*restrict ieblst, const int*restrict eblst   \
-        , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict thole, const real*restrict polarity, const real (*restrict rpole)[13]  \
+        , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict pgamma, const real*restrict polarity, const real (*restrict rpole)[13]  \
         , real (*restrict efi)[6], real* restrict zmat                            \
         , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc \
         , const real cut2, const real alsq2, const real alsq2n, const real aewald
@@ -31,32 +38,34 @@
         OTFDC_EFLD0_PARAMS_GEN , MIDPOINTIMAGE_PARAMS
 #define EFLD0_PARAMS1                                              \
         EFLD0_PARAMS_GEN , MIDPOINTIMAGE1_PARAMS
+#define EFLD0_GRP_PARAMS                                           \
+        EFLD0_GRP_PARAMS_GEN , MIDPOINTIMAGE1_PARAMS
 #define OTFDC_EFLD0_PARAMS1                                        \
         OTFDC_EFLD0_PARAMS_GEN , MIDPOINTIMAGE1_PARAMS
 
 #define TMATXB_ARGS                                                 \
-          ipole,pglob,ploc,ieblst,eblst,x,y,z,pdamp,thole,polarity  \
+          ipole,pglob,ploc,ieblst,eblst,x,y,z,pdamp,pgamma,polarity  \
         , mu,efi                                                    \
         , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc,balanced   \
         , cut2,alsq2,alsq2n,aewald                                  \
         , MIDPOINTIMAGE_ARGS
 
 #define EFLD0_ARGS                                                       \
-          ipole,pglob,ploc,ieblst,eblst,x,y,z,pdamp,thole,polarity,rpole \
+          ipole,pglob,ploc,ieblst,eblst,x,y,z,pdamp,pgamma,polarity,rpole \
         , efi                                                            \
-        , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc,balanced        \
+        , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc,idirdamp,balanced\
         , cut2,alsq2,alsq2n,aewald                                       \
         , MIDPOINTIMAGE_ARGS
 #define OTFDC_EFLD0_ARGS                                                 \
           ipole,pglob,ploc,grplst,atmofst,npergrp,kofst,ieblst,eblst     \
-        , x,y,z,pdamp,thole,polarity,rpole,efi,zmat                      \
+        , x,y,z,pdamp,pgamma,polarity,rpole,efi,zmat                      \
         , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc                 \
         , cut2,alsq2,alsq2n,aewald                                       \
         , MIDPOINTIMAGE_ARGS
 
-__device__ inline
+__device__ __inline__
 void tmatxb_couple
-        ( real& d2, const real3& dist, const real6& dpui, const real6& dpuk, const real& sdamp, const real& pgamma, const real& aewald, const real& alsq2, const real& alsq2n, const real& uscale,
+        ( real& d2, const real3& dist, const real6& dpui, const real6& dpuk, const real& sdamp, const real& gamma, const real& aewald, const real& alsq2, const real& alsq2n, const real& uscale,
                        real3& fid, real3& fip, real3& fkd, real3& fkp ){
    real d1,ralpha,exp2a;
    real bn0,bn1,bn2;
@@ -66,31 +75,31 @@ void tmatxb_couple
 
    /* compute the distances and the scaling factors according to Thole's model. */
    d1      = f_sqrt(d2);
-   d2      = 1/d2;
+   d2      = 1.0/d2;
 
    ralpha  = aewald * d1;
-   d1      = 1/d1;
+   d1      = 1.0/d1;
    exp2a   = f_exp(-ralpha*ralpha);
    bn0     = f_erfc(ralpha);  // becomes a macro with USE_ERFC_HASTINGS
    bn0     = bn0 * d1;
    bn1     = (     bn0 +         alsq2 * alsq2n * exp2a) * d2;
-   bn2     = ( 3 * bn1 + alsq2 * alsq2 * alsq2n * exp2a) * d2;
+   bn2     = ( 3. * bn1 + alsq2 * alsq2 * alsq2n * exp2a) * d2;
 
    if( sdamp == 0.0 ) {
-     sdamp1  = -100.0;
-     sc3      =   1 - f_exp(sdamp1) * uscale;
-     sc5      =   1 - f_exp(sdamp1) * uscale * (1 - sdamp1);
+     const real sdamp2  = -100.0;
+     sc3   = (1 - f_exp(sdamp2)) * uscale;
+     sc5   = (1 - f_exp(sdamp2)  * (1 - sdamp2))* uscale;
    }
    else {
-     sdamp1 = - pgamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp));
+     sdamp1= - gamma / ((d1*sdamp)*(d1*sdamp)*(d1*sdamp));
      if (sdamp1 > -50.0) {
        expdamp1 = f_exp(sdamp1);
-       sc3      =   1 - expdamp1 * uscale;
-       sc5      =   1 - expdamp1 * uscale * (1 - sdamp1);
+       sc3 = (1 - expdamp1) * uscale;
+       sc5 = (1 - expdamp1  * (1 - sdamp1))* uscale;
      }
      else {
-       sc3     = 1;
-       sc5     = 1;
+       sc3 = uscale;
+       sc5 = uscale;
      }
    }
 
@@ -125,7 +134,7 @@ void tmatxb_couple
 
 __device__ inline
 void efld0_couple(const real d2,const real3& pos, const rpole_elt& ip, const rpole_elt& kp, const real& alsq2, const real& alsq2n,
-         const real& aewald, const real& damp, const real& pgamma, const real& dscale, const real& pscale,
+         const real& aewald, const real& damp, const real& gamma, const real& dscale, const real& pscale,
         real3& fid,real3& fip,real3& fkd,real3& fkp,real& d1, real& sc3, real& sc5, real& bn1, real& bn2, const int do_correct) {
 
    real exp2a;
@@ -154,7 +163,7 @@ void efld0_couple(const real d2,const real3& pos, const rpole_elt& ip, const rpo
    invd5   = invd3  * invd2;
    invd7   = invd5  * invd2;
 
-   if (damp!=0.0) damp1 = - pgamma*(d1*invdamp)*(d1*invdamp)*(d1*invdamp);
+   if (damp!=0.0) damp1 = - gamma*(d1*invdamp)*(d1*invdamp)*(d1*invdamp);
 
    if (damp1 > -50.0)  {
       expdamp1  = f_exp(damp1);
@@ -236,6 +245,76 @@ void efld0_couple(const real d2,const real3& pos, const rpole_elt& ip, const rpo
 
 }
 
+template<int fea> __device__ inline
+void duo_efld(const rpole_elt& mi, const rpole_elt& mk, const real& r2, const real3& p,
+         const real& aewald, real& damp, const real& gamma, const real& dscale, const real& pscale,
+         real3& fid,real3& fip,real3& fkd,real3& fkp, const int deb) {
+
+   real dmp3,dmp5,dmp7,dmpe[4],dmpik[3];
+
+   const real r   = f_sqrt(r2);
+   const real rr1 = f_inv (r);
+   const real rr2 = rr1 * rr1;
+   const real rr3 = rr2 * rr1;
+   const real rr5 = 3.0 * rr2 * rr3;
+   const real rr7 = 5.0 * rr2 * rr5;
+ 
+   //intermediates involving moments and separation distance
+   const real dir = mi.dx *p.x + mi.dy *p.y + mi.dz *p.z;
+   const real qix = mi.qxx*p.x + mi.qxy*p.y + mi.qxz*p.z;
+   const real qiy = mi.qxy*p.x + mi.qyy*p.y + mi.qyz*p.z;
+   const real qiz = mi.qxz*p.x + mi.qyz*p.y + mi.qzz*p.z;
+   const real dkr = mk.dx *p.x + mk.dy *p.y + mk.dz *p.z;
+   const real qkx = mk.qxx*p.x + mk.qxy*p.y + mk.qxz*p.z;
+   const real qky = mk.qxy*p.x + mk.qyy*p.y + mk.qyz*p.z;
+   const real qkz = mk.qxz*p.x + mk.qyz*p.y + mk.qzz*p.z;
+   const real qir =    qix*p.x +    qiy*p.y +    qiz*p.z;
+   const real qkr =    qkx*p.x +    qky*p.y +    qkz*p.z;
+
+   //calculate real space Ewald error function damping
+   if (~( fea & SCAL ) && (fea & EWALD)) dampewald<7>(r,r2,aewald,1.0,dmpe);
+
+   //find the field components for Thole polarization damping
+   dampthole<7,fea&DIRDAMP>(r,damp,gamma,dmpik);
+
+   //Apply d scaling factor
+   if (fea & SCAL) {
+      dmp3 = dscale*dmpik[0]*rr3;
+      dmp5 = dscale*dmpik[1]*rr5;
+      dmp7 = dscale*dmpik[2]*rr7;
+   } else {
+      if (fea & EWALD) {
+         dmp3 = dmpe[1] - (oner-dmpik[0])*rr3;
+         dmp5 = dmpe[2] - (oner-dmpik[1])*rr5;
+         dmp7 = dmpe[3] - (oner-dmpik[2])*rr7;
+      } else {
+         dmp3 = (dmpik[0]- oner)*rr3;
+         dmp5 = (dmpik[1]- oner)*rr5;
+         dmp7 = (dmpik[2]- oner)*rr7;
+      }
+   }
+
+   fid.x += -p.x*(dmp3*mk.c-dmp5*dkr+dmp7*qkr) - dmp3*mk.dx + 2.0*dmp5*qkx;
+   fid.y += -p.y*(dmp3*mk.c-dmp5*dkr+dmp7*qkr) - dmp3*mk.dy + 2.0*dmp5*qky;
+   fid.z += -p.z*(dmp3*mk.c-dmp5*dkr+dmp7*qkr) - dmp3*mk.dz + 2.0*dmp5*qkz;
+   fkd.x +=  p.x*(dmp3*mi.c+dmp5*dir+dmp7*qir) - dmp3*mi.dx - 2.0*dmp5*qix;
+   fkd.y +=  p.y*(dmp3*mi.c+dmp5*dir+dmp7*qir) - dmp3*mi.dy - 2.0*dmp5*qiy;
+   fkd.z +=  p.z*(dmp3*mi.c+dmp5*dir+dmp7*qir) - dmp3*mi.dz - 2.0*dmp5*qiz;
+
+   if (fea & SCAL) {
+      dmp3 = pscale*dmpik[0]*rr3;
+      dmp5 = pscale*dmpik[1]*rr5;
+      dmp7 = pscale*dmpik[2]*rr7;
+   }
+   fip.x += -p.x*(dmp3*mk.c-dmp5*dkr+dmp7*qkr) - dmp3*mk.dx + 2.0*dmp5*qkx;
+   fip.y += -p.y*(dmp3*mk.c-dmp5*dkr+dmp7*qkr) - dmp3*mk.dy + 2.0*dmp5*qky;
+   fip.z += -p.z*(dmp3*mk.c-dmp5*dkr+dmp7*qkr) - dmp3*mk.dz + 2.0*dmp5*qkz;
+   fkp.x +=  p.x*(dmp3*mi.c+dmp5*dir+dmp7*qir) - dmp3*mi.dx - 2.0*dmp5*qix;
+   fkp.y +=  p.y*(dmp3*mi.c+dmp5*dir+dmp7*qir) - dmp3*mi.dy - 2.0*dmp5*qiy;
+   fkp.z +=  p.z*(dmp3*mi.c+dmp5*dir+dmp7*qir) - dmp3*mi.dz - 2.0*dmp5*qiz;
+}
+
+
 __global__ void check_loc( const int*restrict pglob, const int*restrict ipole, const int*restrict ploc, const int npolelocnlb, const int nbloc, const int rank ){
    for ( int ii=threadIdx.x + blockIdx.x*blockDim.x;ii<npolelocnlb;ii+=blockDim.x*gridDim.x ){
        const int iipole = pglob[ii];
@@ -243,6 +322,142 @@ __global__ void check_loc( const int*restrict pglob, const int*restrict ipole, c
        if (iploc==0 || iploc>nbloc ) printf("check_ploc(%d) pole(%d) glob(%d) Idx(%d) rank(%d)\n",iploc,ipole[ii],iipole,ii+1,rank);
        //iploc = ploc_s(iipole)
        //if (iploc==0 || iploc.gt.nbloc) printf("out ploc %d %d %d %d",iploc,iipole,i,rank);
+   }
+}
+
+template<int fea> __global__
+void efld0_direct_kcu (EFLD0_PARAMS1){
+   const int ithread = threadIdx.x + blockIdx.x*blockDim.x;
+   const int iwarp   =               ithread / WARP_SIZE;
+   const int nwarp   =  blockDim.x*gridDim.x / WARP_SIZE;
+   const int ilane   = threadIdx.x & (WARP_SIZE-1);
+         int accept_mid=1;
+   const real fone   = 1.0;
+
+   int klane,srclane;
+   int ii,j;
+   int kpole,kglob,kploc,kglob_;
+   rpole_elt ip;
+   real3 posi,pos;
+   real3 fid,fip;
+   __shared__ real3 posk[BLOCK_DIM],fkd[BLOCK_DIM],fkp[BLOCK_DIM];
+   __shared__ rpole_elt kp[BLOCK_DIM];
+
+   for ( ii=iwarp; ii<npolelocnlb_pair; ii+=nwarp ){
+      /*  Load atom block i parameters */
+      const int iblock  = ieblst[ii];
+      if (iblock==0) continue;
+      const int idx     = (iblock-1)*WARP_SIZE + ilane;
+      const int iipole  = pglob[idx] -1;
+      const int iglob   = ipole[idx] -1;
+      const int iploc   = ploc [idx] -1;
+      posi.x  = x[idx];
+      posi.y  = y[idx];
+      posi.z  = z[idx];
+      const real ipdp    = pdamp [iipole];
+      const real ipgm    = pgamma[iipole];
+      ip.c    = rpole[iipole][0];
+      ip.dx   = rpole[iipole][1];
+      ip.dy   = rpole[iipole][2];
+      ip.dz   = rpole[iipole][3];
+      ip.qxx  = rpole[iipole][4];
+      ip.qxy  = rpole[iipole][5];
+      ip.qxz  = rpole[iipole][6];
+      ip.qyy  = rpole[iipole][8];
+      ip.qyz  = rpole[iipole][9];
+      ip.qzz  = rpole[iipole][12];
+
+      /*  Load atom block k parameters */
+      const int kdx   = eblst[ii*WARP_SIZE+ ilane] -1;
+      kpole   = pglob[kdx] -1;
+      kglob   = ipole[kdx] -1;
+      kploc   = ploc [kdx] -1;
+      posk[threadIdx.x].x  = x[kdx];
+      posk[threadIdx.x].y  = y[kdx];
+      posk[threadIdx.x].z  = z[kdx];
+      const real kpdp = pdamp [kpole];
+      const real kpgm = pgamma[kpole];
+      kp[threadIdx.x].c    = rpole[kpole][0];
+      kp[threadIdx.x].dx   = rpole[kpole][1];
+      kp[threadIdx.x].dy   = rpole[kpole][2];
+      kp[threadIdx.x].dz   = rpole[kpole][3];
+      kp[threadIdx.x].qxx  = rpole[kpole][4];
+      kp[threadIdx.x].qxy  = rpole[kpole][5];
+      kp[threadIdx.x].qxz  = rpole[kpole][6];
+      kp[threadIdx.x].qyy  = rpole[kpole][8];
+      kp[threadIdx.x].qyz  = rpole[kpole][9];
+      kp[threadIdx.x].qzz  = rpole[kpole][12];
+
+      /* set compute Data to]0 */
+      fid.x   = 0;
+      fid.y   = 0;
+      fid.z   = 0;
+      fip.x   = 0;
+      fip.y   = 0;
+      fip.z   = 0;
+      fkd[threadIdx.x].x = 0;
+      fkd[threadIdx.x].y = 0;
+      fkd[threadIdx.x].z = 0;
+      fkp[threadIdx.x].x = 0;
+      fkp[threadIdx.x].y = 0;
+      fkp[threadIdx.x].z = 0;
+
+      const int same_block = ( idx!=kdx )? 0:1 ;
+
+      for ( j=0; j<WARP_SIZE; j++ ){
+         srclane  = (ilane+j) & (WARP_SIZE-1);
+         klane    = threadIdx.x-ilane + srclane;
+         kglob_   =      __shfl_sync(ALL_LANES,kglob ,srclane);
+         real pdp = ipdp*__shfl_sync(ALL_LANES,kpdp  ,srclane);
+         real pgm = f_mmax( ipgm,__shfl_sync(ALL_LANES,kpgm  ,srclane) );
+
+         if ( nproc>1 && balanced ) {
+            real xk_,yk_,zk_;
+            xk_   = posk[klane].x;
+            yk_   = posk[klane].y;
+            zk_   = posk[klane].z;
+            pos.x = posi.x - xk_;
+            pos.y = posi.y - yk_;
+            pos.z = posi.z - zk_;
+            accept_mid = Midpointimage(xk_,yk_,zk_,pos.x,pos.y,pos.z);
+            pos.x=-pos.x; pos.y=-pos.y; pos.z=-pos.z;
+         }
+         else {
+            pos.x = posk[klane].x - posi.x;
+            pos.y = posk[klane].y - posi.y;
+            pos.z = posk[klane].z - posi.z;
+            Image(pos.x,pos.y,pos.z);
+         }
+         const real d2 = pos.x*pos.x + pos.y*pos.y + pos.z*pos.z;
+         const int do_pair = (same_block)? (iglob < kglob_):1;
+
+         if (do_pair && d2<=cut2 && accept_mid) {
+            /* Compute one interaction
+               Since the interaction is not symetrical we need to switch comput when necessary */
+            const int deb = 0;
+            if (iglob<kglob_)
+               duo_efld<fea>(ip,kp[klane],d2,pos,aewald,pdp,pgm,fone,fone
+                            ,fid,fip,fkd[klane],fkp[klane],deb);
+            else{
+               pos.x = -pos.x; pos.y=-pos.y; pos.z=-pos.z;
+               duo_efld<fea>(kp[klane],ip,d2,pos,aewald,pdp,pgm,fone,fone
+                            ,fkd[klane],fkp[klane],fid,fip,deb);
+            }
+         }
+      }
+      /* increment electric field for each atoms */
+      atomicAdd( &efi[iploc][0],fid.x );
+      atomicAdd( &efi[iploc][1],fid.y );
+      atomicAdd( &efi[iploc][2],fid.z );
+      atomicAdd( &efi[iploc][3],fip.x );
+      atomicAdd( &efi[iploc][4],fip.y );
+      atomicAdd( &efi[iploc][5],fip.z );
+      atomicAdd( &efi[kploc][0],fkd[threadIdx.x].x );
+      atomicAdd( &efi[kploc][1],fkd[threadIdx.x].y );
+      atomicAdd( &efi[kploc][2],fkd[threadIdx.x].z );
+      atomicAdd( &efi[kploc][3],fkp[threadIdx.x].x );
+      atomicAdd( &efi[kploc][4],fkp[threadIdx.x].y );
+      atomicAdd( &efi[kploc][5],fkp[threadIdx.x].z );
    }
 }
 
@@ -283,8 +498,8 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
       posi.x  = x[idx];
       posi.y  = y[idx];
       posi.z  = z[idx];
-      ipdp    = pdamp[iipole];
-      ipgm    = thole[iipole];
+      ipdp    = pdamp [iipole];
+      ipgm    = pgamma[iipole];
       ip.c    = rpole[iipole][0];
       ip.dx   = rpole[iipole][1];
       ip.dy   = rpole[iipole][2];
@@ -304,8 +519,8 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
       posk[threadIdx.x].x  = x[kdx];
       posk[threadIdx.x].y  = y[kdx];
       posk[threadIdx.x].z  = z[kdx];
-      kpdp    = pdamp[kpole];
-      kpgm    = thole[kpole];
+      kpdp    = pdamp [kpole];
+      kpgm    = pgamma[kpole];
       kp[threadIdx.x].c    = rpole[kpole][0];
       kp[threadIdx.x].dx   = rpole[kpole][1];
       kp[threadIdx.x].dy   = rpole[kpole][2];
@@ -440,8 +655,8 @@ void cu_otfdc_efld0_direct_core (OTFDC_EFLD0_PARAMS1){
       maxrow  =  npergrp[li-1]*3;
       kofi    =    kofst[li-1];
 
-      ipdp    = pdamp[iipole];
-      ipgm    = thole[iipole];
+      ipdp    = pdamp [iipole];
+      ipgm    = pgamma[iipole];
       ip.c    = rpole[iipole][0];
       ip.dx   = rpole[iipole][1];
       ip.dy   = rpole[iipole][2];
@@ -462,8 +677,8 @@ void cu_otfdc_efld0_direct_core (OTFDC_EFLD0_PARAMS1){
       posk[threadIdx.x].x  = x[kdx];
       posk[threadIdx.x].y  = y[kdx];
       posk[threadIdx.x].z  = z[kdx];
-      kpdp    = pdamp[kpole];
-      kpgm    = thole[kpole];
+      kpdp    = pdamp [kpole];
+      kpgm    = pgamma[kpole];
       kp[threadIdx.x].c    = rpole[kpole][0];
       kp[threadIdx.x].dx   = rpole[kpole][1];
       kp[threadIdx.x].dy   = rpole[kpole][2];
@@ -498,6 +713,7 @@ void cu_otfdc_efld0_direct_core (OTFDC_EFLD0_PARAMS1){
          pdp      = ipdp*__shfl_sync(ALL_LANES,kpdp  ,srclane);
          pgm      =      __shfl_sync(ALL_LANES,kpgm  ,srclane);
          if (ipgm<pgm) pgm = ipgm;
+
 
          if (nproc>1) {
             xk_   = posk[klane].x;
@@ -607,7 +823,6 @@ void cu_tmatxb_pme_core (TMATXB_PARAMS1){
    __shared__ real3 fid[BLOCK_DIM],fip[BLOCK_DIM];
    __shared__ real6 dpui[BLOCK_DIM],dpuk[BLOCK_DIM];
 
-
    //if (ithread==0) printf( " %i %i %i %i %i %i %i " r_Format r_Format r_Format "\n", nwarp,nproc,npolelocnlb,npolebloc,n,npolelocnlb_pair,cut2,alsq2,aewald);
 
    for ( ii=iwarp; ii<npolelocnlb_pair; ii+=nwarp ){
@@ -621,8 +836,8 @@ void cu_tmatxb_pme_core (TMATXB_PARAMS1){
       posi[threadIdx.x].x  = x[idx];
       posi[threadIdx.x].y  = y[idx];
       posi[threadIdx.x].z  = z[idx];
-      ipdp    = pdamp[iipole];
-      ipgm    = thole[iipole];
+      ipdp    = pdamp [iipole];
+      ipgm    = pgamma[iipole];
       dpui[threadIdx.x].x  = mu[iploc][0];
       dpui[threadIdx.x].y  = mu[iploc][1];
       dpui[threadIdx.x].z  = mu[iploc][2];
@@ -638,8 +853,8 @@ void cu_tmatxb_pme_core (TMATXB_PARAMS1){
       posk[threadIdx.x].x  = x[kdx];
       posk[threadIdx.x].y  = y[kdx];
       posk[threadIdx.x].z  = z[kdx];
-      kpdp[threadIdx.x]    = pdamp[kpole];
-      kpgm[threadIdx.x]    = thole[kpole];
+      kpdp[threadIdx.x]    = pdamp [kpole];
+      kpgm[threadIdx.x]    = pgamma[kpole];
       dpuk[threadIdx.x].x  = mu[kploc][0];
       dpuk[threadIdx.x].y  = mu[kploc][1];
       dpuk[threadIdx.x].z  = mu[kploc][2];
@@ -703,7 +918,7 @@ void cu_tmatxb_pme_core (TMATXB_PARAMS1){
 
          if (do_pair && d2<=cut2 && accept_mid) {
              /* compute one interaction */
-             tmatxb_couple(d2,pos,dpui[iilane],dpuk_,pdp,pgm,aewald,alsq2,alsq2n,1.
+             tmatxb_couple(d2,pos,dpui[iilane],dpuk_,pdp,pgm,aewald,alsq2,alsq2n,1.0
                           ,fid[iilane],fip[iilane],fkd[klane],fkp[klane]);
          }
       }
@@ -760,9 +975,9 @@ void C_get_cell( real xcell_, real ycell_, real zcell_, real eps_cell_, int octa
    _xcell   = xcell_;
    _ycell   = ycell_;
    _zcell   = zcell_;
-   _ixcell  = (real) 1.0/ (double)xcell_;
-   _iycell  = (real) 1.0/ (double)ycell_;
-   _izcell  = (real) 1.0/ (double)zcell_;
+   _ixcell  = (real) onem/ (double)xcell_;
+   _iycell  = (real) onem/ (double)ycell_;
+   _izcell  = (real) onem/ (double)zcell_;
    eps_cell = eps_cell_;
    octahedron = octa_;
    _box34   = box34_;
@@ -771,33 +986,44 @@ void C_get_cell( real xcell_, real ycell_, real zcell_, real eps_cell_, int octa
 int dynamic_gS        = 1;
 int first_call_efld0  = 1;
 int gS_efld    = 160;
+int gS_efld1   = 160;
 int gS_loc     = 160;
 const int maxBlock = 1<<16;
 
 
 void cu_efld0_direct(EFLD0_PARAMS,cudaStream_t st){
+   char rname[32];
    const int sh = 0;
    cudaError_t ierrSync;
 
    if (first_call_efld0){
       first_call_efld0=0;
       cudaKernelMaxGridSize(gS_efld,cu_efld0_direct_core,BLOCK_DIM,0)  /* This a Macro Function */
+      if (aewald!=(real)0.0) { cudaKernelMaxGridSize(gS_efld1,efld0_direct_kcu<DIRDAMP+EWALD>,BLOCK_DIM,0) }  /* This a Macro Function */
+      else                   { cudaKernelMaxGridSize(gS_efld1,efld0_direct_kcu<DIRDAMP      >,BLOCK_DIM,0) }
       if(rank==0 && tinkerdebug&1) {
-         printf (" gridSize efld0     %d \n", gS_efld);
+         printf (" gridSize efld0     %d  %d \n", gS_efld, gS_efld1);
          printf (" balanced computation     %d \n ", balanced);
       }
       if (nproc>1) {
          cudaKernelMaxGridSize(gS_loc,check_loc,BLOCK_DIM,0)  /* This a Macro Function */
          check_loc<<<gS_loc,BLOCK_DIM,sh,st>>>(pglob,ipole,ploc,npolelocnlb,npolebloc,rank);
-         ierrSync = tinkerdebug ? cudaDeviceSynchronize() : cudaGetLastError();
+         ierrSync = tinkerdebug>0 ? cudaDeviceSynchronize() : cudaGetLastError();
          if (ierrSync != cudaSuccess) printf("check_loc kernel error: %d ( %s )\n",ierrSync,cudaGetErrorString(ierrSync));
       }
    }
 
-   if (dynamic_gS) gS_efld= npolelocnlb_pair<=BLOCK_DIM/WARP_SIZE ? 1 : ((npolelocnlb_pair>>2 < maxBlock) ? npolelocnlb_pair>>2 : maxBlock) ;
-   cu_efld0_direct_core<<<gS_efld,BLOCK_DIM,sh,st>>> (EFLD0_ARGS);
-   ierrSync = tinkerdebug ? cudaDeviceSynchronize() : cudaGetLastError();
-   if (ierrSync != cudaSuccess) printf("efld0_direct_core C kernel error: %d ( %s )\n",ierrSync,cudaGetErrorString(ierrSync));
+   if (dynamic_gS){ gS_efld= npolelocnlb_pair<=BLOCK_DIM/WARP_SIZE ? 1 : ((npolelocnlb_pair>>2 < maxBlock) ? npolelocnlb_pair/(2*(BLOCK_DIM/WARP_SIZE)) : maxBlock) ; gS_efld1= gS_efld; }
+   if (idirdamp) {
+      efld0_direct_kcu<DIRDAMP+EWALD><<<gS_efld1,BLOCK_DIM,sh,st>>> (EFLD0_ARGS);
+      strcpy(rname,"efld0_direct_kcu");
+   }
+   else {
+      cu_efld0_direct_core<<<gS_efld,BLOCK_DIM,sh,st>>> (EFLD0_ARGS);
+      strcpy(rname,"cu_efld0_direct_core");
+   }
+   ierrSync = tinkerdebug>0 ? cudaDeviceSynchronize() : cudaGetLastError();
+   if (ierrSync != cudaSuccess) printf("%s C kernel error: %d ( %s )\n",rname,ierrSync,cudaGetErrorString(ierrSync));
 
    return;
 }
@@ -818,8 +1044,8 @@ void cu_otfdc_efld0_direct(OTFDC_EFLD0_PARAMS,cudaStream_t st){
    if (dynamic_gS) gS_otfdc_efld= (npolelocnlb_pair<=BLOCK_DIM/WARP_SIZE) ? 1 : npolelocnlb_pair/4;
 
    cu_otfdc_efld0_direct_core<<<gS_otfdc_efld,BLOCK_DIM,sh,st>>> (OTFDC_EFLD0_ARGS);
-   if  (tinkerdebug) gpuErrchk( cudaDeviceSynchronize() )
-   else              gpuErrchk( cudaGetLastError() )
+   if  (tinkerdebug>0) gpuErrchk( cudaDeviceSynchronize() )
+   else                gpuErrchk( cudaGetLastError() )
    return;
 }
 
@@ -839,8 +1065,8 @@ void cu_tmatxb_pme(TMATXB_PARAMS,cudaStream_t st){
 
    cu_tmatxb_pme_core<<<gS_tmat,BLOCK_DIM,sh,st>>> (TMATXB_ARGS);
    cudaError_t ierrSync;
-   if(tinkerdebug) ierrSync = cudaDeviceSynchronize();
-   else            ierrSync = cudaGetLastError();
+   if(tinkerdebug>0) ierrSync = cudaDeviceSynchronize();
+   else              ierrSync = cudaGetLastError();
    if (ierrSync != cudaSuccess)
       printf("tmatxb_pme_core C kernel error: %d \n  %s",ierrSync, cudaGetErrorString(ierrSync));
    return;

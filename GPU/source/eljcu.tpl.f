@@ -39,7 +39,7 @@ c
       integer(1),device:: mut(n)
       real(t_p),device,intent(in):: radmin(nvdwclass,nvdwclass)
      &         ,epsilon(nvdwclass,nvdwclass),radv(*),epsv(*)
-     &         ,correct_scale(*), wgrp(maxgrp+1,*)
+     &         ,correct_scale(*), wgrp(ngrp+1,*)
      &         ,radmin1(maxclass,*),epsilon1(maxclass,*)
      &         ,radmin4(maxclass,*),epsilon4(maxclass,*)
      &         ,x(nab),y(nab),z(nab),x_(n),y_(n),z_(n)
@@ -136,7 +136,7 @@ c
 #endif
 #if __tfea__ & __use_groups__
          if (ugrp)
-     &      call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &      call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 #endif
 c
 c     compute the energy contribution for this interaction
@@ -354,7 +354,7 @@ c
 #endif
 #if __tfea__ & __use_groups__
                if (ugrp)
-     &            call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &            call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 #endif
                call duo_lj(rik2,xpos,ypos,zpos,rv2,eps2,cut2
      &                    ,rinv,off,sheal,ugrp,fgrp,mutik

@@ -17,8 +17,10 @@ c
       subroutine promo
       use domdec
       use iounit
+      use tinheader
       implicit none
 c
+      if (isrel_build) then
 c
 c     print out the informational header message
 c
@@ -57,5 +59,5 @@ c
      &       '   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal',
      &       ',',/,/, '   Chem. Sci., 2018, 9, 956-972,  ',
      &       'doi: 10.1039/c7sc04531j',/)
-      return
+      end if
       end

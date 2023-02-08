@@ -15,7 +15,7 @@ c     for the Urey-Bradley 1-3 interactions; also processes any
 c     new or changed parameter values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kurey(init)
       use angle
       use atmlst

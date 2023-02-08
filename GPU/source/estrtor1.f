@@ -14,7 +14,7 @@ c     "estrtor1" calculates the stretch-torsion energy and first
 c     derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine estrtor1
       use atmlst
       use atoms
@@ -71,6 +71,7 @@ c
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
       real(t_p),parameter::rtiny=0.000001_ti_p
+      real(t_p) fgrp
       logical proceed
 c
 !$acc wait
@@ -96,6 +97,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
@@ -189,14 +191,22 @@ c
                dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
                ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rba
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e1 = e1 * fgrp
+                  dedphi = dedphi * fgrp
+                  ddr = ddr * fgrp
+               end if
+c
 c     compute derivative components for this interaction
 c
                ddrdx = xba * ddr
                ddrdy = yba * ddr
                ddrdz = zba * ddr
-               dedxt = dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
-               dedyt = dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
-               dedzt = dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
+               dedxt =  dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
+               dedyt =  dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
+               dedzt =  dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
                dedxu = -dedphi * (yu*zcb - ycb*zu) / (ru2*rcb)
                dedyu = -dedphi * (zu*xcb - zcb*xu) / (ru2*rcb)
                dedzu = -dedphi * (xu*ycb - xcb*yu) / (ru2*rcb)
@@ -233,14 +243,22 @@ c
                dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
                ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rcb
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e2 = e2 * fgrp
+                  dedphi = dedphi * fgrp
+                  ddr = ddr * fgrp
+               end if
+c
 c     compute derivative components for this interaction
 c
-               ddrdx = xcb * ddr
-               ddrdy = ycb * ddr
-               ddrdz = zcb * ddr
-               dedxt = dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
-               dedyt = dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
-               dedzt = dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
+               ddrdx =  xcb * ddr
+               ddrdy =  ycb * ddr
+               ddrdz =  zcb * ddr
+               dedxt =  dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
+               dedyt =  dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
+               dedzt =  dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
                dedxu = -dedphi * (yu*zcb - ycb*zu) / (ru2*rcb)
                dedyu = -dedphi * (zu*xcb - zcb*xu) / (ru2*rcb)
                dedzu = -dedphi * (xu*ycb - xcb*yu) / (ru2*rcb)
@@ -277,14 +295,22 @@ c
                dedphi = storunit * dr * (v1*dphi1 + v2*dphi2 + v3*dphi3)
                ddr = storunit * (v1*phi1 + v2*phi2 + v3*phi3) / rdc
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e3 = e3 * fgrp
+                  dedphi = dedphi * fgrp
+                  ddr = ddr * fgrp
+               end if
+c
 c     compute derivative components for this interaction
 c
-               ddrdx = xdc * ddr
-               ddrdy = ydc * ddr
-               ddrdz = zdc * ddr
-               dedxt = dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
-               dedyt = dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
-               dedzt = dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
+               ddrdx =  xdc * ddr
+               ddrdy =  ydc * ddr
+               ddrdz =  zdc * ddr
+               dedxt =  dedphi * (yt*zcb - ycb*zt) / (rt2*rcb)
+               dedyt =  dedphi * (zt*xcb - zcb*xt) / (rt2*rcb)
+               dedzt =  dedphi * (xt*ycb - xcb*yt) / (rt2*rcb)
                dedxu = -dedphi * (yu*zcb - ycb*zu) / (ru2*rcb)
                dedyu = -dedphi * (zu*xcb - zcb*xu) / (ru2*rcb)
                dedzu = -dedphi * (xu*ycb - xcb*yu) / (ru2*rcb)
@@ -356,9 +382,5 @@ c
       if (use_amd_dih) deamdD(:,1:nloc) = deamdD(:,1:nloc) +
      $ debt(:,1:nloc)
       if (use_amd_dih) eDaMD = eDaMD + ebt
-!$acc update device(debt,vir)
-!$acc data present(ebt)
-!$acc update host(ebt)
-!$acc end data
       return
       end

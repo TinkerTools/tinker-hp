@@ -11,9 +11,12 @@ c      end subroutine
 c      end interface
 
       interface atomic_add
+        module procedure atomic_add_i
         module procedure atomic_add_d
         module procedure atomic_add_s
+#if TINKER_MIXED_PREC
         module procedure atomic_add_m
+#endif
 #ifdef USE_DETERMINISTIC_REDUCTION
         module procedure atomic_add_f
         module procedure atomic_add_f1
@@ -22,9 +25,12 @@ c      end interface
       end interface
 
       interface atomic_sub
+        module procedure atomic_sub_i
         module procedure atomic_sub_d
         module procedure atomic_sub_s
+#if TINKER_MIXED_PREC
         module procedure atomic_sub_m
+#endif
 #ifdef USE_DETERMINISTIC_REDUCTION
         module procedure atomic_sub_f
         module procedure atomic_sub_f1

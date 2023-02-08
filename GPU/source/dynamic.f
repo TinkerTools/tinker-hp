@@ -15,8 +15,7 @@ c     in one of the standard statistical mechanical ensembles and using
 c     any of several possible integration methods
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       program dynamic
       use mpi
 #ifdef _OPENACC
@@ -35,6 +34,7 @@ c      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
       end
 c
       subroutine dynamic_bis
+      use ani
       use atoms
       use bath
       use bound
@@ -45,6 +45,7 @@ c
       use mdstuf
       use moldyn
       use mpi
+      use potent  ,only: use_ml_embedding
       use utils
       use utilgpu ,only: rec_queue
       use timestat
@@ -306,6 +307,13 @@ c
      &              ' Modified Beeman Algorithm')
       end if
 c
+c     Inform about ML Embedding
+c
+      if (use_ml_embedding) then
+         if(ranktot==0) write(*,*) 'USING ML EMBEDDING'
+         ml_embedding_mode=2
+      endif
+c
 c     integrate equations of motion to take a time step
 c
       time0 = 0
@@ -321,9 +329,7 @@ c
          else if (integrate .eq. 'BAOAB') then
             call baoab(istep,dt)
          else if (integrate .eq. 'BAOABPISTON') then
-            write(0,*) "BAOABPISTON integrator unavailable for now"
-            __TINKER_FATAL__
-            !call baoabpiston(istep,dt)
+            call baoabpiston(istep,dt)
          else if (integrate .eq. 'BAOABRESPA') then
             call baoabrespa(istep,dt)
          else if (integrate .eq. 'BAOABRESPA1') then

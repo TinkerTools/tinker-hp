@@ -7,7 +7,7 @@
 !  subroutine fft_setup: setup the arrays for the computations of 
 !  3d ffts with 2decomp&FFT
 !
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 subroutine fft_setup(nrec,rank_bis,istart1,iend1,isize1,jstart1, &
 jend1,jsize1,kstart1,kend1,ksize1,istart2,iend2,isize2,jstart2,     &
 jend2,jsize2,kstart2,kend2,ksize2,nx,ny,nz,comm_loc,ngrid1,ngrid2)
@@ -105,6 +105,7 @@ end
 subroutine fft2d_frontmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
 use decomp_2d
 use decomp_2d_fft
+use inform   ,only: deb_Path
 use timestat ,only: timer_enter,timer_exit,timer_ffts,quiet_timers
 implicit none
 include 'mpif.h'
@@ -116,6 +117,7 @@ integer i,j,k,n1mpimax,n2mpimax,n3mpimax
 ! input is X-pencil data
 ! output is Z-pencil data
 call timer_enter( timer_ffts )
+if (deb_Path) write(*,'(5x,a)') '>> fft2d_frontmpi'
 allocate (in(xstart(1):xend(1),xstart(2):xend(2),xstart(3):xend(3)))
 allocate (out(zstart(1):zend(1),zstart(2):zend(2),zstart(3):zend(3)))
 !
@@ -149,6 +151,7 @@ end do
 deallocate (in)
 deallocate (out)
 decomp2d_mpi_fcall=1
+if (deb_Path) write(*,'(5x,a)') '<< fft2d_frontmpi'
 call timer_exit( timer_ffts,quiet_timers )
 end
 !
@@ -208,6 +211,7 @@ end
 subroutine fft2d_backmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
 use decomp_2d
 use decomp_2d_fft
+use inform   ,only: deb_Path
 use timestat ,only: timer_enter,timer_exit,timer_ffts,quiet_timers
 implicit none
 include 'mpif.h'
@@ -219,6 +223,7 @@ integer i,j,k,n1mpimax,n2mpimax,n3mpimax
 ! input is Z-pencil data
 ! output is X-pencil data
 call timer_enter( timer_ffts )
+if (deb_Path) write(*,'(5x,a)') '>> fft2d_backmpi'
 allocate (in(xstart(1):xend(1),xstart(2):xend(2),xstart(3):xend(3)))
 allocate (out(zstart(1):zend(1),zstart(2):zend(2),zstart(3):zend(3)))
 !
@@ -252,6 +257,7 @@ end do
 deallocate (in)
 deallocate (out)
 decomp2d_mpi_fcall=1
+if (deb_Path) write(*,'(5x,a)') '<< fft2d_backmpi'
 call timer_exit( timer_ffts,quiet_timers )
 end
 !

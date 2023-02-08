@@ -14,7 +14,7 @@ c     "kangang" assigns the parameters for angle-angle cross term
 c     interactions and processes new or changed parameter values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kangang(init)
       use angang
       use angle

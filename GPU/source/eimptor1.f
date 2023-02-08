@@ -11,7 +11,7 @@ c     "eimptor1" calculates improper torsion energy and its
 c     first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eimptor1
       use atmlst
       use atoms
@@ -29,7 +29,7 @@ c
       integer i,ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
       integer iimptor
-      real(t_p) e,dedphi
+      real(t_p) e,dedphi,fgrp
       real(t_p) rcb
       real(t_p) xt,yt,zt
       real(t_p) xu,yu,zu
@@ -62,8 +62,6 @@ c
       real(t_p) vyx,vzx,vzy
       logical proceed
 c
-!$acc wait
-!$acc update host(imptorglob,loc,deit,vir,eit)
 c
 c     zero out energy and first derivative components
 c
@@ -84,9 +82,9 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
+         if(use_group) call groups(fgrp,ia,ib,ic,id,0,0)
 c
 c     compute the value of the torsional angle
 c
@@ -164,6 +162,13 @@ c
                e = itorunit * (v1*phi1+v2*phi2+v3*phi3)
                dedphi = itorunit * (v1*dphi1+v2*dphi2+v3*dphi3)
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
+c
 c     chain rule terms for first derivative components
 c
                xca = xic - xia
@@ -237,6 +242,5 @@ c
             end if
          end if
       end do
-!$acc update device(deit,vir,eit)
       return
       end

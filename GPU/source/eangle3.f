@@ -16,7 +16,7 @@ c     angles at trigonal centers, spceial linear or Fourier angle
 c     bending terms are optionally used
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eangle3
       use action
       use analyz
@@ -58,6 +58,7 @@ c
       real(t_p) rap2,rcp2
       real(t_p) xt,yt,zt
       real(t_p) rt2,delta
+      real(t_p) fgrp
       logical proceed
       logical header,huge
       character*9 label
@@ -84,12 +85,13 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
          if (angtyp(i) .eq. 'IN-PLANE') then
-            if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+            if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+            proceed = (use(ia) .or. use(ib) .or.
      &                                 use(ic) .or. use(id))
          else
-            if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+            if (use_group)  call groups (fgrp,ia,ib,ic,0,0,0)
+            proceed = (use(ia) .or. use(ib) .or. use(ic))
          end if
 c
 c     get the coordinates of the atoms in the angle
@@ -141,6 +143,10 @@ c
                      cosine = cos((fold*angle1-ideal)/radian)
                      e = factor * force * (1.0_ti_p+cosine)
                   end if
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     increment the total bond angle bending energy
 c
@@ -227,6 +233,10 @@ c
                   dt4 = dt2 * dt2
                   e = angunit * force * dt2
      &                   * (1.0_ti_p+cang*dt+qang*dt2+pang*dt3+sang*dt4)
+c
+c     scale the interaction based on its group membership
+c
+                  if (use_group)  e = e * fgrp
 c
 c     increment the total bond angle bending energy
 c

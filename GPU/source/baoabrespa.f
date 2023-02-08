@@ -29,103 +29,117 @@ c     Molecular Dynamics Simulations", Journal of Chemical Physics,
 c     115, 4019-4029 (2001)
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine baoabrespa (istep,dt)
+      use ani
       use atmtyp
       use atomsMirror
       use bath
       use cutoff
       use domdec
       use deriv,only:info_forces,cBond,cNBond,ftot_l,comm_forces
+     &         , zero_forces_rec
       use energi
       use freeze
+      use group
       use inform
       use langevin
       use mdstuf
       use mdstuf1
       use moldyn
       use mpi
+      use potent
       use random_mod
       use timestat
       use tortor
       use units
+      use uprior ,only: use_pred
       use usage
       use utils,only: set_to_zero1m
       use utilgpu
+      use utilbaoab
       use virial
       implicit none
       integer i,j,k,istep,iglob
       real(r_p) dt,dt_x,factor
       real(r_p) dta,dta_2,dt_2
       real(r_p) part1,part2
-      real(r_p) a1,a2
       real(8) time0,time1
-
+      logical save_mlpot
+      logical save_pred 
 c
 c     set some time values for the dynamics integration
 c
       dt_2  = 0.5_re_p * dt
       dta   = dt / dshort
       dta_2 = 0.5_re_p * dta
-c
-c     set time values and coefficients for BAOAB integration
-c
-      a1 = exp(-gamma*dta)
-      a2 = sqrt((1-a1**2)*boltzmann*kelvin)
+
+      if (istep.eq.1) then
+         if (use_piston) pres = atmsph
+         call set_langevin_thermostat_coeff(dta)
+      end if
+      if(use_ml_embedding) use_mlpot=.FALSE.
 c
 c     find quarter step velocities and half step positions via baoab recursion
 c
+      if (use_piston) call apply_b_piston(dt_2,pres)
+
       call integrate_vel( a,dt_2 )
 c
-      if (use_rattle) call rattle2(0.5*dt)
+      if (use_rattle) call rattle2(dt_2)
+      if (use_rattle) call save_atoms_pos
 c
 c     respa inner loop
 c
-c     initialize virial from fast-evolving potential energy terms
-c
+      !initialize virial from fast-evolving potential energy terms
       if (use_virial) call zero_virial(viralt)
+
+      if (use_piston) then
+         call apply_a_piston(dt_2,istep,.false.)
+         call apply_o_piston(dt)
+         if (use_rattle) call rattle (dta_2)
+         if (use_rattle) call rattle2(dta_2)
+
+         call reassignrespa(nalt,nalt)
+         call commposrespa(.true.)
+         if (.not.ftot_l) then
+            call prmem_requestm(derivs,3,nbloc,async=.true.)
+            call set_to_zero1m(derivs,3*nbloc,rec_queue)
+         end if
+         call mechanicsteprespa(istep,.true.)
+         call allocsteprespa(.true.)
+         call gradfast (ealt,derivs)
+         call comm_forces( derivs,cBond )
+         if (deb_Energy)call info_energy(rank)
+         if (deb_Force) call info_forces(cBond)
+      end if
 c
 c     find fast-evolving velocities and positions via BAOAB recursion
 c
       do stepfast = 1, nalt
 c
-        call integrate_vel( aalt,dta_2 )
+        if (use_piston.and.stepfast.eq.1) then
+           call integrate_vel( derivs,aalt,dta_2 )
+        else
+           call integrate_vel( aalt,dta_2 )
+        end if
 c
-        if (use_rattle) call save_atoms_pos
         if (use_rattle) call rattle2 (dta_2)
+        if (use_rattle) call save_atoms_pos
 c
         call integrate_pos( dta_2 )
 c
-        if (use_rattle) call rattle(dta_2)
+        if (use_rattle) call rattle (dta_2)
         if (use_rattle) call rattle2(dta_2)
+
+        call apply_langevin_thermostat
 c
-c     compute random part
-c
-        call prmem_request(Rn,3,nloc+1,async=.true.)
-#ifdef _OPENACC
-        call normalgpu(Rn(1,1),3*nloc)
-#endif
-        if (host_rand_platform) then
-          call normalvec(Rn,3*nloc)
-!$acc update device(Rn) async
-        end if
-!$acc parallel loop collapse(2) async
-        do i = 1,nloc; do j = 1,3
-           iglob = glob(i)
-           if (use(iglob)) then
-              v(j,iglob) = a1*v(j,iglob) +
-     $        a2*real(Rn(j,i),r_p)/sqrt(mass(iglob))
-           end if
-        end do; end do
-c
-        if (use_rattle) then
-           call rattle2(dta)
-           call save_atoms_pos
-        end if
+        if (use_rattle) call rattle2(dta_2)
+        if (use_rattle) call save_atoms_pos
 c
         call integrate_pos( dta_2 )
 c
-        if (use_rattle) call rattle(dta_2)
+        if (use_rattle) call rattle (dta_2)
         if (use_rattle) call rattle2(dta_2)
 c
 c       Reassign the particules that have changed of domain
@@ -147,7 +161,7 @@ c
 c
 c     get the fast-evolving potential energy and atomic forces
 c
-        call gradfast (ealt,derivs)
+        call gradfast ( ealt,derivs )
 c
 c       communicate forces
 c
@@ -172,11 +186,21 @@ c
 c
 c     increment average virial from fast-evolving potential terms
 c
-!$acc parallel loop collapse(2) async
-        do i = 1,3; do j = 1,3
-           viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
-        end do; end do
+        if (use_virial) then
+!$acc parallel loop collapse(2) async present(vir,viralt)
+           do i = 1,3; do j = 1,3
+              viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
+           end do; end do
+        end if
       end do
+
+      if (use_piston) then
+         if (use_rattle)  call save_atoms_pos
+         call apply_a_piston(dt_2,istep,.false.)
+         if (use_rattle) call rattle (dta_2)
+         if (use_rattle) call rattle2(dta_2)
+      end if
+
 c
 c     Reassign the particules that have changed of domain
 c
@@ -217,6 +241,25 @@ c
 c     MPI : get total energy
 c
       call reduceen(epot)
+
+      if(use_ml_embedding) then
+!$acc parallel loop collapse(2) async
+        do i = 1, 3; do j = 1, 3
+          viralt(j,i) = vir(j,i) + viralt(j,i)
+        end do; end do
+c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
+        use_mlpot=  .TRUE.
+        call zero_forces_rec
+        save_pred = use_pred
+        use_pred  = .FALSE.
+        call gradient (eml,derivs)
+        use_pred  = save_pred 
+        call reduceen(eml)
+        call commforces(derivs)
+!$acc serial async
+         epot = epot+eml
+!$acc end serial
+      endif
 c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the BAOAB recursion
@@ -228,15 +271,16 @@ c
       if (deb_Energy) call info_energy(rank)
       if (deb_Force)  call info_forces(cNBond)
       if (deb_Atom)   call info_minmax_pva
+      if (abort)   __TINKER_FATAL__
 c
 c     find the constraint-corrected full-step velocities
 c
-      if (use_rattle)  call rattle2 (dt)
+      if (use_rattle) call rattle2 (dt_2)
 c
 c     total potential and virial from sum of fast and slow parts
 c
       if (calc_e.or.use_virial) then
-!$acc serial async
+!$acc serial async present(epot,ealt,vir,viralt)
          epot = epot + ealt
          do i = 1,3; do j = 1,3
             vir(j,i) = vir(j,i) + viralt(j,i)
@@ -251,7 +295,7 @@ c
 c     total energy is sum of kinetic and potential energies
 c
       if (calc_e) then
-!$acc serial async
+!$acc serial async present(etot,epot,eksum)
          etot = eksum + epot
 !$acc end serial
       end if
@@ -261,4 +305,11 @@ c
       call mdsave (istep,dt,epot)
       call mdrestgpu (istep)
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
+
+      if (use_piston) then
+!$acc update host(pres) async
+!$acc wait
+         call apply_b_piston(dt_2,pres)
+      end if
+
       end

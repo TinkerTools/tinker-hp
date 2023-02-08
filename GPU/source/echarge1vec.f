@@ -14,7 +14,7 @@ c     "echarge1" calculates the charge-charge interaction energy
 c     and first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine echarge1vec
       implicit none
 c

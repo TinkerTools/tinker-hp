@@ -14,7 +14,7 @@ c     "estrbnd1" calculates the stretch-bend potential energy and
 c     first derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine estrbnd1
       use angle
       use angpot
@@ -60,9 +60,9 @@ c
       real(t_p) dedxic,dedyic,dedzic
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
+      real(t_p) fgrp
       logical proceed
 c
-!$acc update host(deba,vir)
 c
 c     zero out the energy and first derivative components
 c
@@ -84,8 +84,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic))
+         if (use_group)  call groups (fgrp,ia,ib,ic,0,0,0)
+         proceed = (use(ia) .or. use(ib) .or. use(ic))
 c
 c     get the coordinates of the atoms in the angle
 c
@@ -158,9 +158,23 @@ c     abbreviations used in defining chain rule terms
 c
                term1 = stbnunit * force1
                term2 = stbnunit * force2
+               if(use_group) then
+                  call groups(fgrp,ia,ib,ic,0,0,0)
+                  term1 = term1 * fgrp
+                  term2 = term2 * fgrp
+               endif
+
                termr = term1*dr1 + term2*dr2
                term1t = term1 * dt
-               term2t = term2 * dt
+               term2t = term2 * dt               
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  termr = termr * fgrp
+                  term1t = term1t * fgrp
+                  term2t = term2t * fgrp
+               end if
 c
 c     get the energy and master chain rule terms for derivatives
 c
@@ -228,6 +242,5 @@ c
             end if
          end if
       end do
-!$acc update device(deba,vir)
       return
       end

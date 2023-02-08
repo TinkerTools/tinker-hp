@@ -14,7 +14,7 @@ c     "kinetic" computes the total kinetic energy and kinetic energy
 c     contributions to the pressure tensor by summing over velocities
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kinetic (eksum,ekin,temp)
       use atmtyp
       use atoms
@@ -41,15 +41,15 @@ c
 c
 c     zero out the total kinetic energy and its outer product
 c
-!$acc kernels async
-!$acc loop vector collapse(2)
+!$acc parallel loop collapse(2) async
       do j = 1, 3
          do k = 1, 3
             ekin(k,j) = 0.0_re_p
          end do
       end do
+!$acc serial async
       eksum = 0.0_re_p
-!$acc end kernels
+!$acc end serial
 c
 c     get the total kinetic energy and tensor for atomic sites
 c
@@ -76,9 +76,9 @@ c
      $                      COMM_TINKER,ierr)
 !$acc end host_data
       end if
-!$acc kernels async
+!$acc serial async
       eksum = ekin(1,1) + ekin(2,2) + ekin(3,3)
-!$acc end kernels
+!$acc end serial
 !$acc update host(eta) async
 !$acc wait
 !$acc end data

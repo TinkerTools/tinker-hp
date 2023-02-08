@@ -14,93 +14,84 @@ c     "eurey3" calculates the Urey-Bradley energy; also
 c     partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
+      module eurey3gpu_inl
+#include "atomicOp.h.f"
+      contains
+#include "ker_urey.inc.f"
+      end module
+
       subroutine eurey3gpu
       use action
       use analyz
       use atmlst
-      use atmtyp
       use atoms
       use bound
+      use deriv
       use domdec
       use energi
+      use eurey3gpu_inl
       use group
-      use inform
-      use iounit
-      use tinheader ,only:ti_p,re_p
+      use inform    ,only: verbose,debug,deb_Path
+      use tinheader ,only: ti_p,re_p
+      use tinTypes  ,only: real3
       use urey
       use urypot
       use usage
+      use virial
       use timestat
       implicit none
-      integer i,ia,ib,ic,iurey
-      integer ibloc,icloc
-      real(t_p) e,ideal,force
-      real(t_p) dt,dt2
-      real(t_p) xac,yac,zac,rac
-      logical proceed
-      logical header,huge
-!$acc routine(image_acc) seq 
-c
-c
-c     zero out the Urey-Bradley energy and partitioning terms
-c
-      neub = 0
-      eub = 0.0_re_p
-c     aub = 0.0_ti_p
-      if (rank.eq.0) then
-         header = .true.
-      else
-         header=.false.
-      end if
+      integer i,ia,ic,iurey,grp,tver,tfea
+      real(t_p) ideal,force,fgrp,e
+      type(real3) ded
+      logical proceed,header,huge
+      parameter(
+     &         grp=__use_groups__,
+     &        tver=__use_ene__,
+     &        tfea=__use_groups__+__use_polymer__
+     &         )
 
-      if(rank.eq.0.and.tinkerdebug) write(*,*) 'eurey3gpu'
-      call timer_enter( timer_eurey3 )
-
+      if(deb_Path) write(*,*) 'eurey3gpu'
+c
+c     zero out the Urey-Bradley interaction energy
+c
+      eub    = 0.0_re_p
+      neub   = 0
+      header = rank.eq.0
 c
 c     calculate the Urey-Bradley 1-3 energy term
 c
-!$acc parallel loop present(ureyglob,iury,loc,x,y,z,ul,uk,use,aub)
-!$acc&         present(eub) async
+!$acc parallel loop present(ureyglob,iury,loc,x,y,z,ul,uk,grplist,wgrp
+!$acc&         ,use,eub,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) async
+!$acc&         reduction(+:eub,neub)
+!$acc&         private(fgrp)
       do iurey = 1, nureyloc
          i     = ureyglob(iurey)
          ia    = iury(1,i)
-         ib    = iury(2,i)
-         ibloc = loc(ib)
          ic    = iury(3,i)
-         icloc = loc(ic)
          ideal = ul(i)
          force = uk(i)
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ic))
+         proceed = (use(ia) .or. use(ic))
+
+         if (use_group.and.IAND(tfea,grp).NE.0)
+     &      call groups2_inl (fgrp,ia,ic,ngrp,grplist,wgrp)
 c
 c     compute the value of the 1-3 distance deviation
 c
          if (proceed) then
-            xac = x(ia) - x(ic)
-            yac = y(ia) - y(ic)
-            zac = z(ia) - z(ic)
-            if (use_polymer)  call image_acc(xac,yac,zac)
-            rac = sqrt(xac*xac + yac*yac + zac*zac)
-            dt  = rac - ideal
-            dt2 = dt * dt
-c
-c     calculate the Urey-Bradley energy for this interaction
-c
-            e   = ureyunit * force * dt2 * (1.0_ti_p+cury*dt+qury*dt2)
-c
-c     increment the total Urey-Bradley energy
-c
-            neub = neub + 1
-            eub  = eub + e
-!$acc atomic update  
-            aub(ibloc) = aub(ibloc) + 0.5_ti_p*e
-!$acc atomic update  
-            aub(icloc) = aub(icloc) + 0.5_ti_p*e
-#ifndef _OPENACC
+            call ker_urey(i,ia,ic,nbloc,loc,ideal,force,ureyunit
+     &              ,cury,qury,fgrp,use_group,use_polymer,x,y,z
+     &              ,eub,e,ded,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &              ,tver,tfea)
+            if(e.ne.0.0) neub = neub+1
+#if 0
+            ib = loc(ib)
+            ic = loc(ic)
+            aub(ib) = aub(ib) + 0.5_ti_p*e
+            aub(ic) = aub(ic) + 0.5_ti_p*e
 c
 c     print a message if the energy of this interaction is large
 c
@@ -121,6 +112,4 @@ c
 #endif
          end if
       end do
-!$acc update self(aub) async
-      call timer_exit( timer_eurey3 )
       end

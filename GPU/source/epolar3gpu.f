@@ -14,8 +14,7 @@ c     "epolar3" calculates the induced dipole polarization energy,
 c     and partitions the energy among atoms
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module epolar3gpu_inl
         include "erfcore_data.f.inc"
         contains
@@ -26,11 +25,16 @@ c
 #else
         include "erfcdcore.f.inc"
 #endif
-#include "pair_polar.f.inc"
+#include "pair_polar.inc.f"
       end module
 
       subroutine epolar3gpu
+      use group
+      use tinheader,only: ti_p
       implicit none
+      if(use_group .and. wgrp(1,2).eq.0._ti_p) then
+        return
+      endif
 c
 c
 c     choose the method for summing over polarization interactions
@@ -61,17 +65,19 @@ c
       use energi     ,only: ep,ep_r,eprec
       use ewald
       use epolar3gpu_inl
-      use inform     ,only: deb_Path
+      use inform     ,only: deb_Path,minmaxone
       use interfaces ,only: epreal3d_p
       use math
       use mpole
       use polar
       use polpot
       use potent
+      use precompute_pole,only:precompute_tmat,polar_precomp
       use mpi
       use utilgpu
       use sizes
       use timestat
+      use group
 
       implicit none
       integer i,k,ii,ierr
@@ -83,8 +89,12 @@ c
       real(t_p) xd,yd,zd
       real(t_p) xu,yu,zu
 c
-      if (npole .eq. 0)  return
-      if(deb_Path) write(*,*) 'epolar3cgpu'
+      if (npole.eq.0)  return
+      if (deb_Path) write(*,*) 'epolar3cgpu'
+c
+c     set Ewald coefficient
+c
+      aewald = apewald
 c
 c     zero out the dipole polarization energy and components
 c
@@ -100,13 +110,9 @@ c     set the energy unit conversion factor
 c
       f = electric / dielec
 c
-c     check the sign of multipole components at chiral sites
+c     Reset global data for electrostatic
 c
-      if (.not. use_mpole)  call chkpolegpu(.false.)
-c
-c     rotate the multipole components into the global frame
-c
-      if (.not. use_mpole)  call rotpolegpu
+      if (.not.use_mpole) call elec_calc_reset
 c
 c     compute the induced dipoles at each polarizable atom
 c
@@ -126,6 +132,14 @@ c
          end if
       end if
 c
+c     Reset precompute switch if necessary
+c
+      if (polar_precomp) precompute_tmat=.true.
+
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue) call start_dir_stream_cover
+#endif
+c
 c     compute the real space part of the Ewald summation
 c
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
@@ -133,16 +147,11 @@ c
          call timer_enter( timer_real )
          def_queue = dir_queue
          if (use_preal) then
-           if (use_polarshortreal) then
-             call epreal3d_p
-           else
-             call epreal3d_p
-           end if
+            call epreal3d_p
          end if
 
          if (use_pself) then
 !$acc data present(poleglob,ipole,loc,rpole,uind,ep,ep_r,nep_)
-
 c
 c     compute the Ewald self-energy term over all the atoms
 c
@@ -226,6 +235,9 @@ c
          ep  =  ep + eprec + enr2en(ep_r)
          nep = nep + int(nep_)
 !$acc end serial
+
+      !if (use_group .and. use_group_polar) call switch_group(.false.)
+
       end
 c
 c
@@ -243,7 +255,7 @@ c
       subroutine epreal3dgpu
       use action  ,only: nep_
       use analyz
-      use atoms   ,only: x,y,z
+      use atoms   ,only: x,y,z,n
       use chgpot  ,only: dielec,electric
       use atmlst  ,only: poleglobnl
       use atmtyp
@@ -268,6 +280,7 @@ c
       use potent
       use shunt
       use mpi
+      use utils
       use utilgpu
       use timestat
 
@@ -278,12 +291,14 @@ c
       integer ii,iipole
       integer kpole,kglob,kbis
       integer,pointer :: lst(:,:),nlst(:)
+      integer iga,igb
       real(t_p) alsq2,alsq2n
       real(t_p) r2,pgamma,damp
       real(t_p) f,e
       real(t_p) pdi,pti
       real(t_p) one
       real(t_p) pscale,dscale,uscale
+      real(t_p),pointer:: pgama(:)
 
       type(rpole_elt):: ip,kp
       type(real6) :: dpui,dpuk
@@ -307,6 +322,16 @@ c
           lst =>  elst
          nlst => nelstc
       end if
+      if (use_thole) then
+         if (use_dirdamp) then
+            call associate_ptr(pgama,dirdamp,int(n,8))
+         else
+            call associate_ptr(pgama,thole,int(n,8))
+         end if
+      else
+         write(0,*) ' --- Tinker-HP : Alert ! Feature untedected !'
+         __TINKER_FATAL__
+      end if
 
       alsq2  = 2.0_ti_p * aewald**2
       alsq2n = 0.0_ti_p
@@ -316,7 +341,7 @@ c
 !$acc enter data attach(nlst,lst) async(def_queue)
 
 !$acc parallel loop gang vector_length(32)
-!$acc&         present(poleglobnl,ipole,rpole,thole,pdamp,
+!$acc&         present(poleglobnl,ipole,rpole,pgama,pdamp,
 !$acc&  loc,x,y,z,uind,uinp,lst,nlst,polelocnl,ep,nep_)
 !$acc&         private(ip,dpui,posi)
 !$acc&         async(def_queue)
@@ -333,7 +358,7 @@ c
          posi%z  = z(iglob)
 
          pdi     = pdamp(iipole)
-         pti     = thole(iipole)
+         pti     = pgama(iipole)
 
          ip%c    = rpole( 1, iipole)
          ip%dx   = rpole( 2, iipole)
@@ -387,21 +412,23 @@ c
             dpuk%yy  = uinp ( 2, kpole)
             dpuk%zz  = uinp ( 3, kpole)
 
-            pgamma   = min( pti,thole(kpole) )
+            pgamma   = min( pti,pgama(kpole) )
+            if (pgamma.eq.0.0) pgamma = max( pti,pgama(kpole) )
             damp     = pdi * pdamp (kpole)
+
 c
 c     Compute polar interaction
 c
-            call epolar3_couple(dpui,ip,dpuk,kp,r2,pos,
-     &               aewald,alsq2,alsq2n,pgamma,damp,f,
-     &               off,shortheal,1.0_ti_p,
-     &               e,use_polarshortreal,.false.)
+            call epolar3_couple(dpui,ip,dpuk,kp,r2,pos
+     &                  ,aewald,alsq2,alsq2n,pgamma,damp,use_dirdamp
+     &                  ,f,off,shortheal,1.0_ti_p
+     &                  ,e,use_polarshortreal,.false.)
 c
 c     increment energy and interaction
 c
             ep   =  ep  + tp2enr(e)
             nep_ = nep_ + 1
-         enddo
+         end do
 
       end do  MAINLOOP
 !$acc exit data detach(nlst,lst) async(def_queue)
@@ -415,19 +442,23 @@ c
       use action  ,only: nep
       use atmlst  ,only: poleglobnl
       use atoms   ,only: x,y,z,n
+      use chgpen  ,only: pcore,pval,palpha
       use chgpot  ,only: dielec,electric
       use cutoff  ,only: shortheal
+      use deriv   ,only: dep
       use domdec  ,only: xbegproc,ybegproc,zbegproc
      &            ,nproc,rank,xendproc,yendproc,zendproc
      &            ,nbloc,loc
       use energi  ,only: ep=>ep_r
 #ifdef _CUDA
       use epolar1cu,only:epreal3_cu
+      use epolar_cpencu,only: epreal_cpen3_kcu
 #endif
       use ewald   ,only: aewald
       use inform  ,only: deb_Path
       use interfaces ,only: epreal3c_correct_scale
       use math    ,only: sqrtpi
+      use mplpot  ,only: pentyp_i
       use mpole   ,only: npolelocnl,ipole,rpole,polelocnl
      &            ,npolelocnlb,npolebloc
      &            ,npolelocnlb_pair,npolelocnlb2_pair
@@ -437,19 +468,23 @@ c
      &            , ieblst_s=>ieblst, eblst_s=>eblst
      &            , iseblst_s=>ishorteblst, seblst_s=>shorteblst
      &            , x_s=>celle_x, y_s=>celle_y, z_s=>celle_z
-      use polar   ,only: uind,uinp,thole,pdamp
-      use potent  ,only: use_polarshortreal
+      use polar   ,only: uind,uinp,thole,pdamp,dirdamp
+      use polpot  ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
+     &            ,use_thole,use_dirdamp
+      use potent  ,only: use_polarshortreal,use_chgpen,use_chgflx
       use shunt   ,only: off2,off
       use tinheader,only: ti_p
+      use utils   ,only: associate_ptr
 #ifdef _CUDA
       use cudafor
       use utilcu  ,only: BLOCK_DIM,check_launch_kernel
-#endif
       use utilgpu ,only: def_queue,dir_queue,rec_queue
      &            ,real3,real6,real3_red,rpole_elt
-     &            ,ered_buff=>ered_buf1,nred_buff,reduce_energy_action
+     &            ,ered_buff=>ered_buf1,vred_buff,nred_buff
+     &            ,reduce_energy_action,get_gridDim
      &            ,RED_BUFF_SIZE,zero_en_red_buffer
-#ifdef  _OPENACC
+     &            ,trqvec=>ug_workS_r1
+     &            ,pot=>ug_workS_r
      &            ,dir_stream,def_stream,nSMP
 #endif
 
@@ -461,11 +496,23 @@ c
       integer,save:: gS=0
       real(t_p) alsq2,alsq2n,f
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+      real(t_p),pointer:: pgama(:)
       logical,save::first_in=.true.
       logical,parameter::dyn_gS=.false.
-      character*10:: mode
+      character*11:: mode
+      character*64 :: srami
 
-      if(deb_Path)write(*,'(2x,a)') 'epreal3d_cu'
+      if (deb_Path) then
+         srami = 'epreal3d_cu'//merge(' SHORT',''
+     &          ,use_polarshortreal)
+         if (use_thole) then
+            srami = trim(srami)//' THOLE'
+     &            //merge(' DIRDAMP','',use_dirdamp)
+         else
+            srami = trim(srami)//' CHGPEN'
+         end if
+         write(*,'(2x,a)') srami
+      end if
 c
 c     set conversion factor, cutoff and switching coefficients
 c
@@ -490,50 +537,102 @@ c
          call switch (mode)
       end if
 
+      if (use_thole) then
+         if (use_dirdamp) then
+            call associate_ptr(pgama,dirdamp,int(n,8))
+         else
+            call associate_ptr(pgama,thole,int(n,8))
+         end if
+      end if
+
 #ifdef _CUDA
       def_stream = dir_stream
       if (first_in) then
-         ! Compute though occupancy the right gridSize to launch the kernel with
+         ! Compute through occupancy the right gridSize to launch the kernel with
          call cudaMaxGridSize("epreal3_cu",gS)
-         if (deb_Path) print*,'epreal3_cu blockSize',gS
+         if (deb_Path) print*,' epreal3_cu blockSize',gS
          first_in = .false.
       end if
-      if (dyn_gS) gS = max(npolelocnlb2_pair/8,1)
+      if (dyn_gS) gS = get_gridDim(
+     &    merge(nspnlb2/2,npolelocnlb2_pair/2,use_polarshortreal)
+     &   ,BLOCK_DIM )
 
       call zero_en_red_buffer(def_queue)
 
+      if (use_thole) then
 !$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s,
-!$acc&    iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,thole,
+!$acc&    iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,pgama,
 !$acc&    uind,uinp,ered_buff,nred_buff)
       
-      if (use_polarshortreal) then
+         if (use_polarshortreal) then
       call epreal3_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,iseblst_s,seblst_s(lst_beg)
-     &     ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
+     &     ,x_s,y_s,z_s,rpole,pdamp,pgama,uind,uinp
      &     ,ered_buff,nred_buff
      &     ,npolelocnlb,nspnlb2,npolebloc,n
      &     ,off2,f,alsq2,alsq2n,aewald,off,shortheal
-     &     ,use_polarshortreal
+     &     ,use_polarshortreal,use_dirdamp
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
-      else
+         else
       call epreal3_cu<<<gS,BLOCK_DIM,0,def_stream>>>
      &     (ipole_s,pglob_s,loc_s,plocnl_s
      &     ,ieblst_s,eblst_s(lst_beg)
-     &     ,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp
+     &     ,x_s,y_s,z_s,rpole,pdamp,pgama,uind,uinp
      &     ,ered_buff,nred_buff
      &     ,npolelocnlb,npolelocnlb2_pair,npolebloc,n
      &     ,off2,f,alsq2,alsq2n,aewald,off,shortheal
-     &     ,use_polarshortreal
+     &     ,use_polarshortreal,use_dirdamp
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend)
-      end if
+         end if
       call check_launch_kernel(" epreal3_cu")
 
 !$acc end host_data
+      else if (use_chgpen) then
+
+         if (use_polarshortreal) then
+!$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,iseblst_s
+!$acc&    ,seblst_s,x_s,y_s,z_s,rpole,pcore,pval
+!$acc&    ,palpha,uind,uinp,dep,pot,trqvec,ered_buff,vred_buff,nred_buff
+!$acc&    ,dpucorrect_ik,dpucorrect_scale,ipole,polelocnl,loc,x,y,z
+!$acc&    )
+      call epreal_cpen3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,loc_s,plocnl_s,iseblst_s,seblst_s(lst_beg)
+     &     ,x_s,y_s,z_s,rpole,uind,uinp,pcore,pval,palpha
+     &     ,dep,trqvec,pot,ered_buff,vred_buff,nred_buff
+     &     ,npolelocnl,npolelocnlb,nspnlb2,npolebloc,n,1
+     &     ,pentyp_i,off2,f,aewald,use_chgflx
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     ,dpucorrect_ik,dpucorrect_scale,n_dpuscale,ipole,polelocnl
+     &     ,loc,x,y,z
+     &     )
+      call check_launch_kernel(" epreal_cpen3_kcu")
+!$acc end host_data
+         else
+!$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s
+!$acc&    ,eblst_s,x_s,y_s,z_s,rpole,pcore,pval
+!$acc&    ,palpha,uind,uinp,dep,pot,trqvec,ered_buff,vred_buff,nred_buff
+!$acc&    ,dpucorrect_ik,dpucorrect_scale,ipole,polelocnl,loc,x,y,z
+!$acc&    )
+      call epreal_cpen3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &     (ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s,eblst_s(lst_beg)
+     &     ,x_s,y_s,z_s,rpole,uind,uinp,pcore,pval,palpha
+     &     ,dep,trqvec,pot,ered_buff,vred_buff,nred_buff
+     &     ,npolelocnl,npolelocnlb,npolelocnlb2_pair,npolebloc,n,1
+     &     ,pentyp_i,off2,f,aewald,use_chgflx
+     &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &     ,dpucorrect_ik,dpucorrect_scale,n_dpuscale,ipole,polelocnl
+     &     ,loc,x,y,z
+     &     )
+      call check_launch_kernel(" epreal_cpen3_kcu")
+!$acc end host_data
+         end if
+
+      end if
 
       call reduce_energy_action(ep,nep,ered_buff,def_queue)
 c
-      call epreal3c_correct_scale
+      if (use_thole) call epreal3c_correct_scale
 #else
       print 100
  100  format('epreal3_cu is a specific device routine',/,
@@ -548,7 +647,7 @@ c
       subroutine epreal3c_correct_scale
       use action  ,only: nep
       use atmlst  ,only: poleglobnl
-      use atoms   ,only: x,y,z
+      use atoms   ,only: x,y,z,n
       use chgpot  ,only: dielec,electric
       use cutoff  ,only: shortheal
       use domdec  ,only: rank,loc
@@ -558,11 +657,13 @@ c
       use inform  ,only: deb_Path
       use math    ,only: sqrtpi
       use mpole   ,only: npolelocnl,ipole,rpole,polelocnl
-      use polar   ,only: uind,uinp,thole,pdamp
+      use polar   ,only: uind,uinp,thole,pdamp,dirdamp
       use polpot  ,only: n_dpuscale,dpucorrect_ik,dpucorrect_scale
-      use potent  ,only: use_polarshortreal
+     &            ,use_dirdamp,use_thole
+      use potent  ,only: use_polarshortreal,use_chgpen
       use shunt   ,only: off2,off
       use tinheader,only: ti_p
+      use utils   ,only: associate_ptr
       use utilgpu ,only: def_queue,real3,real6,real3_red,rpole_elt
       use atoms   ,only: x,y,z
 
@@ -572,12 +673,14 @@ c
       integer nnelst
       integer ii,iipole,kpole
       integer j,kbis
+      integer iga,igb
       real(t_p) alsq2,alsq2n
       real(t_p) r2,pgamma,damp
       real(t_p) f,e
       real(t_p) pdi,pti
       real(t_p) one
       real(t_p) pscale,dscale,uscale
+      real(t_p),pointer:: pgama(:)
 
       type(rpole_elt):: ip,kp
       type(real6) :: dpui,dpuk
@@ -594,9 +697,19 @@ c
       alsq2  = 2.0_ti_p * aewald**2
       alsq2n = 0.0_ti_p
       if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi * aewald)
+      if (use_thole) then
+         if (use_dirdamp) then
+            call associate_ptr(pgama,dirdamp,int(n,8))
+         else
+            call associate_ptr(pgama,thole,int(n,8))
+         end if
+      else
+         write(0,*) ' --- Tinker-HP : Alert ! Feature untedected !'
+         __TINKER_FATAL__
+      end if
 
 !$acc parallel loop gang vector_length(32)
-!$acc&         present(ipole,rpole,thole,pdamp,loc,
+!$acc&         present(ipole,rpole,pgama,pdamp,loc,
 !$acc&     x,y,z,uind,uinp,polelocnl,dpucorrect_ik,
 !$acc&     dpucorrect_scale,nep,ep)
 !$acc&     private(pos,ip,kp,dpui,dpuk)
@@ -628,7 +741,7 @@ c
          if (r2>off2) cycle
 
          pdi      = pdamp(iipole)
-         pti      = thole(iipole)
+         pti      = pgama(iipole)
 
          ip%c     = rpole( 1,iipole)
          ip%dx    = rpole( 2,iipole)
@@ -666,15 +779,16 @@ c
          dpuk%yy  = uinp ( 2, kpole)
          dpuk%zz  = uinp ( 3, kpole)
 
-         pgamma   = min( pti,thole(kpole) )
-         damp     = pdi * pdamp (kpole)
+         pgamma   = min( pti,pgama(kpole) )
+         damp     = pdi* pdamp(kpole)
+         if (pgamma.eq.0.0) pgamma= max( pti,pgama(kpole) )
 c
 c     Compute polar interaction
 c
-         call epolar3_couple(dpui,ip,dpuk,kp,r2,pos,
-     &            aewald,alsq2,alsq2n,pgamma,damp,f,
-     &            off,shortheal,pscale,e,
-     &            use_polarshortreal,.true.)
+         call epolar3_couple(dpui,ip,dpuk,kp,r2,pos,aewald
+     &               ,alsq2,alsq2n,pgamma,damp,use_dirdamp
+     &               ,f,off,shortheal,pscale
+     &               ,e,use_polarshortreal,.true.)
 c
 c     increment energy
 c

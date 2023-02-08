@@ -7,7 +7,7 @@ c     "empole1" : driver for calculation of the multipole and dipole polarizatio
 c     energy and derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine empole1
       use domdec
       use energi
@@ -692,25 +692,25 @@ c
       integer deriv1(10)
       integer deriv2(10)
       integer deriv3(10)
-      real*8 e,eterm,f
-      real*8 r1,r2,r3
-      real*8 h1,h2,h3
-      real*8 f1,f2,f3
-      real*8 vxx,vyy,vzz
-      real*8 vxy,vxz,vyz
-      real*8 volterm,denom
-      real*8 hsq,expterm
-      real*8 term,pterm
-      real*8 vterm,struc2
-      real*8 xi,yi,zi,frcx,frcy,frcz
-      real*8 trq(3),fix(3)
-      real*8 fiy(3),fiz(3)
-      real*8, allocatable :: cmp(:,:),fmp(:,:)
-      real*8, allocatable :: qgridmpi(:,:,:,:,:)
-      real*8, allocatable :: pot(:),potrec(:)
-      real*8, allocatable :: decfx(:)
-      real*8, allocatable :: decfy(:)
-      real*8, allocatable :: decfz(:)
+      real(t_p) e,eterm,f
+      real(t_p) r1,r2,r3
+      real(t_p) h1,h2,h3
+      real(t_p) f1,f2,f3
+      real(t_p) vxx,vyy,vzz
+      real(t_p) vxy,vxz,vyz
+      real(t_p) volterm,denom
+      real(t_p) hsq,expterm
+      real(t_p) term,pterm
+      real(t_p) vterm,struc2
+      real(t_p) xi,yi,zi,frcx,frcy,frcz
+      real(t_p) trq(3),fix(3)
+      real(t_p) fiy(3),fiz(3)
+      real(t_p), allocatable :: cmp(:,:),fmp(:,:)
+      real(t_p), allocatable :: qgridmpi(:,:,:,:,:)
+      real(t_p), allocatable :: pot(:),potrec(:)
+      real(t_p), allocatable :: decfx(:)
+      real(t_p), allocatable :: decfy(:)
+      real(t_p), allocatable :: decfz(:)
       integer, allocatable :: reqsend(:),reqrec(:)
       integer, allocatable :: req2send(:),req2rec(:)
       integer nprocloc,commloc,rankloc,proc
@@ -1083,10 +1083,10 @@ c
 c
 c     modify the gradient and virial for charge flux
 c
-         pot = 0d0
+         pot(:) = 0.0
          do i = 1, npolerecloc
-           iipole = polerecglob(i)
-           iglob = ipole(iipole)
+           iipole  = polerecglob(i)
+           iglob   = ipole(iipole)
            ilocrec = locrec(iglob)
            potrec(ilocrec) = cphirec(1,i)
          end do
@@ -1186,75 +1186,75 @@ c     if shortrange, calculates just the short range part
       integer i,j,iglob,kglob,kbis,nnelst
       integer ii,kkk,iipole,kkpole
       integer ix,iy,iz
-      real*8 e,de,f
-      real*8 scalek
-      real*8 xi,yi,zi
-      real*8 xr,yr,zr
-      real*8 xix,yix,zix
-      real*8 xiy,yiy,ziy
-      real*8 xiz,yiz,ziz
-      real*8 r,r2,rr1,rr3
-      real*8 rr5,rr7,rr9,rr11
-      real*8 rr1i,rr3i,rr5i,rr7i
-      real*8 rr1k,rr3k,rr5k,rr7k
-      real*8 rr1ik,rr3ik,rr5ik
-      real*8 rr7ik,rr9ik,rr11ik
-      real*8 ci,dix,diy,diz
-      real*8 qixx,qixy,qixz
-      real*8 qiyy,qiyz,qizz
-      real*8 ck,dkx,dky,dkz
-      real*8 qkxx,qkxy,qkxz
-      real*8 qkyy,qkyz,qkzz
-      real*8 dir,dkr,dik,qik
-      real*8 qix,qiy,qiz,qir
-      real*8 qkx,qky,qkz,qkr
-      real*8 diqk,dkqi,qiqk
-      real*8 dirx,diry,dirz
-      real*8 dkrx,dkry,dkrz
-      real*8 dikx,diky,dikz
-      real*8 qirx,qiry,qirz
-      real*8 qkrx,qkry,qkrz
-      real*8 qikx,qiky,qikz
-      real*8 qixk,qiyk,qizk
-      real*8 qkxi,qkyi,qkzi
-      real*8 qikrx,qikry,qikrz
-      real*8 qkirx,qkiry,qkirz
-      real*8 diqkx,diqky,diqkz
-      real*8 dkqix,dkqiy,dkqiz
-      real*8 diqkrx,diqkry,diqkrz
-      real*8 dkqirx,dkqiry,dkqirz
-      real*8 dqikx,dqiky,dqikz
-      real*8 corei,corek
-      real*8 vali,valk
-      real*8 alphai,alphak
-      real*8 term1,term2,term3
-      real*8 term4,term5,term6
-      real*8 term1i,term2i,term3i
-      real*8 term1k,term2k,term3k
-      real*8 term1ik,term2ik,term3ik
-      real*8 term4ik,term5ik
-      real*8 citemp,cktemp,term1temp
-      real*8 dirtemp,dkrtemp,diktemp,term2temp
-      real*8 qkrtemp,qirtemp,qiktemp,dkqitemp,diqktemp,qiqktemp
-      real*8 term3temp,term4temp,term5temp
-      real*8 poti,potk
-      real*8 frcx,frcy,frcz
-      real*8 vxx,vyy,vzz
-      real*8 vxy,vxz,vyz
-      real*8 ttmi(3),ttmk(3)
-      real*8 fix(3),fiy(3),fiz(3)
-      real*8 dmpi(9),dmpk(9)
-      real*8 dmpik(11),dmpe(11)
-      real*8 fgrp
-      real*8 s,ds,mpoleshortcut2
-      real*8 facts,factds
+      real(t_p) e,de,f
+      real(t_p) scalek
+      real(t_p) xi,yi,zi
+      real(t_p) xr,yr,zr
+      real(t_p) xix,yix,zix
+      real(t_p) xiy,yiy,ziy
+      real(t_p) xiz,yiz,ziz
+      real(t_p) r,r2,rr1,rr3
+      real(t_p) rr5,rr7,rr9,rr11
+      real(t_p) rr1i,rr3i,rr5i,rr7i
+      real(t_p) rr1k,rr3k,rr5k,rr7k
+      real(t_p) rr1ik,rr3ik,rr5ik
+      real(t_p) rr7ik,rr9ik,rr11ik
+      real(t_p) ci,dix,diy,diz
+      real(t_p) qixx,qixy,qixz
+      real(t_p) qiyy,qiyz,qizz
+      real(t_p) ck,dkx,dky,dkz
+      real(t_p) qkxx,qkxy,qkxz
+      real(t_p) qkyy,qkyz,qkzz
+      real(t_p) dir,dkr,dik,qik
+      real(t_p) qix,qiy,qiz,qir
+      real(t_p) qkx,qky,qkz,qkr
+      real(t_p) diqk,dkqi,qiqk
+      real(t_p) dirx,diry,dirz
+      real(t_p) dkrx,dkry,dkrz
+      real(t_p) dikx,diky,dikz
+      real(t_p) qirx,qiry,qirz
+      real(t_p) qkrx,qkry,qkrz
+      real(t_p) qikx,qiky,qikz
+      real(t_p) qixk,qiyk,qizk
+      real(t_p) qkxi,qkyi,qkzi
+      real(t_p) qikrx,qikry,qikrz
+      real(t_p) qkirx,qkiry,qkirz
+      real(t_p) diqkx,diqky,diqkz
+      real(t_p) dkqix,dkqiy,dkqiz
+      real(t_p) diqkrx,diqkry,diqkrz
+      real(t_p) dkqirx,dkqiry,dkqirz
+      real(t_p) dqikx,dqiky,dqikz
+      real(t_p) corei,corek
+      real(t_p) vali,valk
+      real(t_p) alphai,alphak
+      real(t_p) term1,term2,term3
+      real(t_p) term4,term5,term6
+      real(t_p) term1i,term2i,term3i
+      real(t_p) term1k,term2k,term3k
+      real(t_p) term1ik,term2ik,term3ik
+      real(t_p) term4ik,term5ik
+      real(t_p) citemp,cktemp,term1temp
+      real(t_p) dirtemp,dkrtemp,diktemp,term2temp
+      real(t_p) qkrtemp,qirtemp,qiktemp,dkqitemp,diqktemp,qiqktemp
+      real(t_p) term3temp,term4temp,term5temp
+      real(t_p) poti,potk
+      real(t_p) frcx,frcy,frcz
+      real(t_p) vxx,vyy,vzz
+      real(t_p) vxy,vxz,vyz
+      real(t_p) ttmi(3),ttmk(3)
+      real(t_p) fix(3),fiy(3),fiz(3)
+      real(t_p) dmpi(9),dmpk(9)
+      real(t_p) dmpik(11),dmpe(11)
+      real(t_p) fgrp
+      real(t_p) s,ds,mpoleshortcut2
+      real(t_p) facts,factds
       logical testcut,shortrange,longrange,fullrange
-      real*8, allocatable :: mscale(:)
-      real*8, allocatable :: tem(:,:)
-      real*8, allocatable :: pot(:)
-      real*8, allocatable :: decfx(:)
-      real*8, allocatable :: decfy(:)
-      real*8, allocatable :: decfz(:)
+      real(t_p), allocatable :: mscale(:)
+      real(t_p), allocatable :: tem(:,:)
+      real(t_p), allocatable :: pot(:)
+      mdyn_rtyp, allocatable :: decfx(:)
+      mdyn_rtyp, allocatable :: decfy(:)
+      mdyn_rtyp, allocatable :: decfz(:)
       character*11 mode
       character*80 :: RoutineName
       external erfc

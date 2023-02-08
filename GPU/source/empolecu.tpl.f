@@ -15,26 +15,26 @@ c
      &      , shortheal, scut, loff2, off2, f
      &      , alsq2, alsq2n, aewald
      &      , ugrp, grplist, wgrp
-     &      , ulamdyn, elambda, mut
+     &      , ulamdyn, elambda, mut, u_cflx, pot
      &      , dem, tem, em_buff, vir_buff, lam_buff, nem_buff
      &      , p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
      &      , mcorrect_ik,mcorrect_scale,ipole_,loc_,x_,y_,z_
-     &      , n_mscale,sizemc
+     &      , n_mscale
      &      )
       implicit none
       integer  ,value :: npolelocnlb,npolebloc,n
-     &         ,npolelocnlb_pair,n_mscale,sizemc
-      logical  ,value :: ugrp,ulamdyn
+     &         ,npolelocnlb_pair,n_mscale
+      logical  ,value :: ugrp,ulamdyn,u_cflx
       real(t_p),value,intent(in):: p_xbeg,p_xend,p_ybeg,p_yend
      &         ,p_zbeg,p_zend,loff2,shortheal,elambda
      &         ,scut,off2,alsq2,alsq2n,aewald,f
       integer  ,device,intent(in)::ipole(*),pglob(*),loc(*)
      &         ,ieblst(*),eblst(*),grplist(*),ipole_(*),loc_(*)
-     &         ,mcorrect_ik(sizemc,2)
+     &         ,mcorrect_ik(2,*)
       integer(1),device,intent(in):: mut(n)
       real(t_p),device,intent(in):: x(*),y(*),z(*),x_(*),y_(*),z_(*)
-     &         , rpole(13,*),wgrp(maxgrp+1,*),mcorrect_scale(*)
-      real(t_p),device:: tem(3,*),vir_buff(*)
+     &         , rpole(13,*),wgrp(ngrp+1,*),mcorrect_scale(*)
+      real(t_p),device:: tem(3,*),pot(*),vir_buff(*)
       real(r_p),device:: lam_buff(*)
       integer  ,device:: nem_buff(*)
       mdyn_rtyp,device:: dem(3,*)
@@ -53,10 +53,11 @@ c
       type(real3) frc
       type(mdyn3_r) frc_i
       type(mdyn3_r),shared::frc_k(BLOCK_DIM)
-      type(real3) ,shared::posk(BLOCK_DIM)
-      type(real3) ttmi
-      type(real3) ,shared:: ttmk(BLOCK_DIM)
-      real(t_p) vir_(6)
+      type(real3)  ,shared::posk(BLOCK_DIM)
+      type(real3)   ttmi
+      type(real3)  ,shared:: ttmk(BLOCK_DIM)
+      real(t_p)    ,shared:: potk(BLOCK_DIM)
+      real(t_p) vir_(6),poti
       type(rpole_elt) ip
       type(rpole_elt),shared:: kp(BLOCK_DIM)
       logical do_pair,same_block,accept_mid
@@ -74,8 +75,8 @@ c
       block;
       real(t_p) mscale,delambdae_
       integer kkpole
-         iipole = mcorrect_ik(ii,1)
-         kkpole = mcorrect_ik(ii,2)
+         iipole = mcorrect_ik(1,ii)
+         kkpole = mcorrect_ik(2,ii)
          mscale = mcorrect_scale(ii)
          iglob  = ipole_(iipole)
          kglob  = ipole_(kkpole)
@@ -115,6 +116,12 @@ c
 #if __tfea__ & __use_lambdadyn__
          mutik  = mut(iglob)+mut(kglob)
 #endif
+#if __tfea__ & __use_chgflx__
+         if (u_cflx) then
+            poti = 0
+            potk(threadIdx%x) = 0
+         end if
+#endif
 c20        continue
 #if __tver__ & __use_ene__
          em_ = 0
@@ -124,14 +131,14 @@ c20        continue
          call  real3_zr(ttmk(threadIdx%x))
 #endif
 #if __tfea__ & __use_groups__
-         if (ugrp) call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+         if (ugrp) call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 #endif
          ! compute mpole one interaction
          call duo_mpole(d2,pos%x,pos%y,pos%z,ip,kp(threadIdx%x),mscale
-     &                 ,scut,shortheal,aewald,f,alsq2n,alsq2
-     &                 ,ugrp,fgrp,ulamdyn,mutik,elambda
-     &                 ,delambdae_,em_,frc,ttmi,ttmk(threadIdx%x)
-     &                 ,ver+__use_sca__,fea)
+     &           ,scut,shortheal,aewald,f,alsq2n,alsq2,ugrp,fgrp
+     &           ,ulamdyn,mutik,elambda,u_cflx,poti,potk(threadIdx%x)
+     &           ,delambdae_,em_,frc,ttmi,ttmk(threadIdx%x)
+     &           ,ver+__use_sca__,fea)
 
          ! update energy
          lot   = iand( ithread-1,RED_BUFF_SIZE-1 ) + 1
@@ -143,6 +150,12 @@ c20        continue
 #endif
 #if  __tfea__ & __use_lambdadyn__
          if (ulamdyn) call atomic_add_m(lam_buff(lot),delambdae_)
+#endif
+#if __tfea__ & __use_chgflx__
+         if (u_cflx) then
+            call atomic_add_c(pot(i),poti)
+            call atomic_add_c(pot(kbis),potk(threadIdx%x))
+         end if
 #endif
 #if __tver__ & __use_vir__
          ! increment the virial due to pairwise Cartesian forces c
@@ -234,6 +247,12 @@ c
            ttmk(threadIdx%x)%y = 0.0;
            ttmk(threadIdx%x)%z = 0.0;
 #endif
+#if __tfea__ & __use_chgflx__
+           if (u_cflx) then
+              poti = 0
+              potk(threadIdx%x) = 0
+           end if
+#endif
 #if __tver__ & __use_ene__
            em_ = 0
 #endif
@@ -289,18 +308,17 @@ c
      &           then
 #if __tfea__ & __use_groups__
                  if (ugrp)
-     &              call groups2_inl(fgrp,iglob,kglob,grplist,wgrp)
+     &              call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 #endif
 #if __tfea__ & __use_lambdadyn__
                  if (ulamdyn) mutik = muti + mutk(klane)
 #endif
                  ! compute one interaction
-                 call duo_mpole
-     &               (d2,pos%x,pos%y,pos%z,ip,kp(klane),zeror
-     &               ,scut,shortheal,aewald,f,alsq2n,alsq2
-     &               ,ugrp,fgrp,ulamdyn,mutik,elambda
-     &               ,delambdae_,em_,frc,ttmi,ttmk(klane)
-     &               ,ver,fea)
+                 call duo_mpole(d2,pos%x,pos%y,pos%z,ip,kp(klane),zeror
+     &                   ,scut,shortheal,aewald,f,alsq2n,alsq2,ugrp,fgrp
+     &                   ,ulamdyn,mutik,elambda,u_cflx,poti,potk(klane)
+     &                   ,delambdae_,em_,frc,ttmi,ttmk(klane)
+     &                   ,ver,fea)
 #if __tfea__ & __use_lambdadyn__
                  if (ulamdyn) delambdae = delambdae + delambdae_
 #endif
@@ -341,6 +359,12 @@ c
 #if __tver__ & __use_act__
            ! Update counter buffer
            call atomic_add_i(nem_buff(lot), nem_)
+#endif
+#if __tfea__ & __use_chgflx__
+           if (u_cflx) then
+              call atomic_add_c(pot(i),poti)
+              call atomic_add_c(pot(kbis),potk(threadIdx%x))
+           end if
 #endif
 #if __tver__ & __use_grd__
            ! Update forces

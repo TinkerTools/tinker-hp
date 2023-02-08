@@ -16,6 +16,7 @@ c     iprint    steps between status printing (0=no printing)
 c     iwrite    steps between coordinate dumps (0=no dumps)
 c     isend     steps between socket communication (0=no sockets)
 c     n_fwriten increments every time we force a frame to be written
+c     monte_naccept  records the number of application of montecarlo barostat
 c     silent    logical flag to turn off all information printing
 c     verbose   logical flag to turn on extra information printing
 c     debug     logical flag to turn on full debug printing
@@ -30,9 +31,7 @@ c     tinEssai   variable for testing and developping
 c
 c     dint1 dint2 dibuff  useful for storing purpose
 
-#include "tinker_precision.h"
-#include "tinker_types.h"
-
+#include "tinker_macro.h"
       module inform
       implicit none
       integer digits,iprint
@@ -40,6 +39,7 @@ c     dint1 dint2 dibuff  useful for storing purpose
       logical silent,verbose
       logical debug,holdup,abort
       integer tinEssai
+      integer mtc_nacc
 
       ! All program list
       enum,bind(C)
@@ -47,6 +47,7 @@ c     dint1 dint2 dibuff  useful for storing purpose
         enumerator bar_a
         enumerator dynamic_a
         enumerator minimize_a
+        enumerator radial_a
         enumerator testgrad_a
         enumerator pimd_a
       end enum
@@ -89,6 +90,13 @@ c     dint1 dint2 dibuff  useful for storing purpose
 !DIR$ ignore_tkr (r) vector
          end subroutine
 #endif
+         module subroutine minmaxonei( vector,sz,name )
+         implicit none
+         integer sz
+         integer vector(*)
+         character(*),optional,intent(in)::name
+!DIR$ ignore_tkr (r) vector
+         end subroutine
          module subroutine minmaxonet( vector,sz,name )
          implicit none
          integer sz
@@ -106,6 +114,35 @@ c     dint1 dint2 dibuff  useful for storing purpose
          end subroutine
 #endif
       end interface
+
+      interface normp
+         module subroutine normt( array,n,val,p )
+         integer siz
+         integer,optional::p
+         real(t_p) array(*)
+         real(r_p) val
+!DIR$ ignore_tkr (r) array
+         end subroutine
+#if TINKER_MIXED_PREC
+         module subroutine normr( array,n,val,p )
+         integer siz
+         integer,optional::p
+         real(r_p) array(*)
+         real(r_p) val
+!DIR$ ignore_tkr (r) array
+         end subroutine
+#endif
+#if USE_DETERMINISTIC_REDUCTION
+         module subroutine normf( array,n,val,p )
+         integer siz
+         integer,optional::p
+         mdyn_rtyp array(*)
+         real(r_p) val
+!DIR$ ignore_tkr (r) array
+         end subroutine
+#endif
+      end interface
+
       interface
       module subroutine check_loc(queue)
       integer queue

@@ -14,10 +14,13 @@ c     "epitors3" calculates the pi-orbital torsion potential energy;
 c     also partitions the energy terms among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module epitors3_inl
+#include "atomicOp.h.f"
         contains
 #include "image.f.inc"
+#include "groups.inc.f"
+#include "atomicOp.inc.f"
       end module
 
       subroutine epitors3
@@ -65,6 +68,8 @@ c
       real(t_p) xcp,ycp,zcp
       real(t_p) xdc,ydc,zdc
       real(t_p) xqd,yqd,zqd
+      real(t_p) fgrp
+      integer iga,igb,igc,igd,ige,igg,gmin,gmax
       logical proceed
       logical header,huge
 c
@@ -74,12 +79,7 @@ c
       if (deb_Path) write(*,*) "epitors3"
       nept   = 0
       ept    = 0.0_re_p
-c     aept   = 0.0_ti_p
-      if (rank.eq.0) then
-         header = .true.
-      else
-         header=.false.
-      end if
+      header = (rank.eq.0)
 c
 c     calculate the pi-orbital torsion angle energy term
 c
@@ -97,9 +97,10 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
-     &                            use(id) .or. use(ie) .or. use(ig))
+         if (use_group)
+     &      call groups6_inl (fgrp,ia,ib,ic,id,ie,ig,ngrp,grplist,wgrp)
+         proceed = (use(ia) .or. use(ib) .or. use(ic) .or.
+     &              use(id) .or. use(ie) .or. use(ig))
 c
 c     compute the value of the pi-orbital torsion angle
 c
@@ -198,14 +199,16 @@ c     calculate the pi-orbital torsion energy for this angle
 c
                e = ptorunit * v2 * phi2
 c
+c     scale the interaction based on its group membership
+c
+               if (use_group) e = e * fgrp
+c
 c     increment the total pi-orbital torsion angle energy
 c
                nept = nept + 1
                ept  =  ept + e
-!$acc atomic
-               aept(icloc) = aept(icloc) + 0.5_ti_p*e
-!$acc atomic
-               aept(idloc) = aept(idloc) + 0.5_ti_p*e
+               call atomic_add( aept(icloc),0.5_ti_p*e )
+               call atomic_add( aept(idloc),0.5_ti_p*e )
 #ifndef _OPENACC
 c
 c     print a message if the energy of this interaction is large

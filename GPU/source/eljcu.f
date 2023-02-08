@@ -14,13 +14,13 @@ c     "ehal1" calculates the Lennard-Jones van der waals energy and
 c     its first derivatives with respect to cartesian coordinates
 c
 #define TINKER_CUF
-#include  "tinker_precision.h"
+#include  "tinker_macro.h"
       module eljcu
         use cudafor
         use tinheader,only: ti_p
         use tintypes ,only: real3
         use sizes    ,only: maxclass,maxvalue
-        use utilcu   ,only: ndir,VDW_BLOCK_DIM,ALL_LANES,use_virial
+        use utilcu   ,only: ndir,ngrp,VDW_BLOCK_DIM,ALL_LANES,use_virial
      &               ,skipvdw12,vcouple
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
      &               ,f_sqrt

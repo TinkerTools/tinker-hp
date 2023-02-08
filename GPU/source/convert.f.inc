@@ -1,6 +1,5 @@
 #ifndef CONVERT_F_INC
 #define CONVERT_F_INC
-#include "tinker_types.h"
 
 #  ifdef USE_DETERMINISTIC_REDUCTION
 #  define _FRAC_BITS_E Z'040000000'
@@ -33,6 +32,15 @@
       real(t_p),intent(in):: input
       ener_rtyp,parameter :: frac_bits=_FRAC_BITS_E
       tp2enr = __tp2ll_rz(input*frac_bits)
+      end function
+
+      attributes(device)
+     &ener_rtyp function rp2enr( input )
+      use utilcu,only: __rp2ll_rz
+      implicit none
+      real(r_p),intent(in):: input
+      ener_rtyp,parameter :: frac_bits=_FRAC_BITS_E
+      rp2enr = __rp2ll_rz(input*frac_bits)
       end function
 
       attributes(device)
@@ -82,6 +90,14 @@
       tp2enr = int(input*frac_bits,8)
       end function
 
+      ener_rtyp function rp2enr( input )
+!$acc routine
+      implicit none
+      real(r_p),intent(in):: input
+      ener_rtyp,parameter :: frac_bits=_FRAC_BITS_E
+      rp2enr = int(input*frac_bits,8)
+      end function
+
       real(md_p) function mdr2md( input )
 !$acc routine
       implicit none
@@ -107,12 +123,14 @@
 #     define rp2mdr(x) real(x,md_p)
 #     define mdr2md(x) x
 #     define tp2enr(x) real(x,en_p)
+#     define rp2enr(x) real(x,en_p)
 #     define enr2en(x) x
 #  else
 #     define tp2mdr(x) x
 #     define rp2mdr(x) x
 #     define mdr2md(x) x
 #     define tp2enr(x) x
+#     define rp2enr(x) x
 #     define enr2en(x) x
 #  endif
 

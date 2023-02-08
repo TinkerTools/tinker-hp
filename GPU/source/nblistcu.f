@@ -1,5 +1,5 @@
 #ifdef _CUDA
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 #define TINKER_CUF
       module nblistcu
 
@@ -1298,14 +1298,15 @@ c          kglob = cell_glob(kdx)
                  xpos    = xi - xk_
                  ypos    = yi - yk_
                  zpos    = zi - zk_
-                 call midpointimage_inl( xk_,yk_,zk_, xpos,ypos,zpos )
-                 if ((zk_.lt.zbeg).or.(zk_.ge.zend)
-     &           .or.(yk_.lt.ybeg).or.(yk_.ge.yend)
-     &           .or.(xk_.lt.xbeg).or.(xk_.ge.xend)) then
-                    accept_mid = .false.
-                 else
+                 call image_inl(xpos,ypos,zpos)
+c                call midpointimage_inl( xk_,yk_,zk_, xpos,ypos,zpos )
+c                if ((zk_.lt.zbeg).or.(zk_.ge.zend)
+c    &           .or.(yk_.lt.ybeg).or.(yk_.ge.yend)
+c    &           .or.(xk_.lt.xbeg).or.(xk_.ge.xend)) then
+c                   accept_mid = .false.
+c                else
                     accept_mid = .true.
-                 end if
+c                end if
                  if (idx.eq.kdx) then ! Remove half
                     accept_mid = accept_mid.and.(kdx_.gt.idx)
                  end if
@@ -1376,9 +1377,6 @@ c             if (ilane.lt.nbits+1) lst(iscan+oldnb+ilane) = kdx_
            xs=xr; ys=yr; zs=zr;  !Save position
 
            call image_inl(xr,yr,zr)
-           if ((xcell2-xr).lt.eps_cell) xr = xr-0.05*len_xcell
-           if ((ycell2-yr).lt.eps_cell) yr = yr-0.05*len_ycell
-           if ((zcell2-zr).lt.eps_cell) zr = zr-0.05*len_zcell
 
            block;
            real(t_p) xlow,xhig,ylow,yhig,zlow,zhig,r2,r
@@ -1426,7 +1424,7 @@ c             if (ilane.lt.nbits+1) lst(iscan+oldnb+ilane) = kdx_
            ! Check if block volume is discontinuous
            it  = ballot( xr+xcell2.lt.len_xcell )
            it1 = ballot( xcell2-xr.lt.len_xcell )
-           travers = merge( .true.,.false.,it.ne.0.and.it1.ne.0 )
+           travers = ( it.ne.0.and.it1.ne.0 )
 
            ! Check if block is irregular (use d_bl tag for it)
            xr=xs; yr=ys; zr=zs;
@@ -1437,32 +1435,10 @@ c             if (ilane.lt.nbits+1) lst(iscan+oldnb+ilane) = kdx_
            it = ballot(xr.gt.xcell2)
            it = ior( it,ballot(yr.gt.ycell2) )
            it = ior( it,ballot(zr.gt.zcell2) )
-           travers = travers.or.(it.ne.0)
+           travers = travers.or.(it.ne.0)!.or.
+c    &                (2*r.lt.mincell2.and..not.isIn)  ! unfiliform block
 
            attr = merge(d_bl,merge(i_bl,n_bl,isIn),travers)
-
-           if (attr.ne.d_bl) then
-           ! Extract block physical center
-           xlow = xs; xhig = xs;
-           ylow = ys; yhig = ys;
-           zlow = zs; zhig = zs;
-
-           ! Min Max Warp Reduction
-           it=1
-           do while( it.lt.WARP_SIZE )
-              xlow = min( xlow,__shfl_xor(xlow,it+1) )
-              ylow = min( ylow,__shfl_xor(ylow,it+1) )
-              zlow = min( zlow,__shfl_xor(zlow,it+1) )
-              xhig = max( xhig,__shfl_xor(xhig,it+1) )
-              yhig = max( yhig,__shfl_xor(yhig,it+1) )
-              zhig = max( zhig,__shfl_xor(zhig,it+1) )
-              it = it*2
-           end do
-           ! Extract block Mid point
-           xmid = ( xlow+xhig )*0.5_ti_p
-           ymid = ( ylow+yhig )*0.5_ti_p
-           zmid = ( zlow+zhig )*0.5_ti_p
-           end if
 
            ! Load block data
            if (ilane.eq.1) then
@@ -1473,6 +1449,8 @@ c             if (ilane.lt.nbits+1) lst(iscan+oldnb+ilane) = kdx_
               b_rmid(4*(ib  )+4) = r
            end if
            end block
+
+           call image_inl(xs,ys,zs)
 
            if (idx.gt.na) then
               ikind = nab; iglob = n

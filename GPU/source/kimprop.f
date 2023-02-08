@@ -14,7 +14,7 @@ c     "kimprop" assigns potential parameters to each improper
 c     dihedral in the structure and processes any changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine kimprop(init)
       use atmlst
       use atmtyp

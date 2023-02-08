@@ -14,7 +14,7 @@ c     "kstrtor" assigns stretch-torsion parameters to torsions
 c     needing them, and processes any new or changed values
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kstrtor_inl
         interface fron_conv_base_inl
           module procedure front_convert_base3

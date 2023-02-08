@@ -14,7 +14,7 @@ c     "energy" calls the subroutines to calculate the potential
 c     energy terms and sums up to form the total energy
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
       module energy_inl
       contains
@@ -22,11 +22,13 @@ c
       end module
 
       function energy ()
+      use ani
       use action
       use energy_inl
       use sizes
       use domdec,only: rank
       use energi
+      use group
       use inform,only: deb_Path,abort
       use iounit
       use potent
@@ -37,6 +39,7 @@ c
       real(r_p) energy
       logical tinker_isnan_m
       logical ::first_in=.true.
+      real(t_p), allocatable, save :: wgrp_save(:,:)
 
       if (deb_Path) write(*,*) "energy"
 
@@ -44,12 +47,17 @@ c
          call create_action_data_ondevice
          first_in=.false.
       end if
+
+      if(use_ml_embedding .and. use_mlpot) then
+        call save_wgrp
+        call set_embedding_weights()
+      endif
 c
 c     zero out each of the potential energy components
 c
 !$acc data present(eb,eba,eub,eopb,et,ept,eat,ett,ebt,ea
-!$acc&      ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum
-!$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
+!$acc&      ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum,emlpot
+!$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r,edsp,edsprec,er,ect
 !$acc&      ,nev,nec,nem,nep,nev_,nec_,nem_,nep_)
 
 !$acc serial async
@@ -70,14 +78,19 @@ c
       ett  = 0.0_re_p
       ev   = 0.0_re_p
       ev_r = 0
+      edsp = 0
+      edsprec=0
+      er   = 0
       ec   = 0.0_re_p
       ec_r = 0
+      ect  = 0
       em   = 0.0_re_p
       em_r = 0
       ep   = 0.0_re_p
       ep_r = 0
       eg   = 0.0_re_p
       ex   = 0.0_re_p
+      emlpot = 0.0_re_p
       nec  = 0
       nev  = 0
       nem  = 0
@@ -88,6 +101,10 @@ c
       nec_ = 0.0
 !$acc end serial
 c
+c     alter partial charges and multipoles for charge flux
+c
+      if (use_chgflx)  call alterchg1
+c
 c     call the local geometry energy component routines
 c
       if (use_bond)    call ebond
@@ -95,7 +112,7 @@ c
       if (use_strbnd)  call estrbnd
       if (use_urey)    call eurey
       if (use_angang)  call eangang
-      if (use_opbend)  call eopbend
+      if (use_opbend)  call eopbend 
       if (use_opdist)  call eopdist
       if (use_improp)  call eimprop
       if (use_imptor)  call eimptor
@@ -104,6 +121,7 @@ c
       if (use_strtor)  call estrtor
       if (use_angtor)  call eangtor
       if (use_tortor)  call etortor
+      if (use_mlpot)   call ml_potential(.false.)
 c
 c     call the van der Waals energy component routines
 c
@@ -111,12 +129,17 @@ c
          if (vdwtyp .eq. 'LENNARD-JONES')  call elj3gpu
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3gpu
       end if
+      !if (use_repuls)  call erepel3gpu  !TODO Amoebap Uncomment
+      !if (use_disp  )  call edisp3gpu
 c
 c     call the electrostatic energy component routines
 c
       if (use_charge) call echarge3gpu
       if (use_mpole)  call empole3gpu
       if (use_polar)  call epolar3gpu
+
+      if (use_chgtrn) call echgtrn3gpu
+      if (use_group)  call switch_group(.false.)
 c
 c     call any miscellaneous energy component routines
 c
@@ -130,11 +153,17 @@ c
       if (eb_r.ne.0) eb = eb + enr2en(eb_r)
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
      &          + et + ept + ebt + eat + ett  + ev   + ec  + em
-     &          + ep +  ex + eg
+     &          + enr2en( edsp+er+ect )
+     &          + ep +  ex + eg  + emlpot
 !$acc end serial
 !$acc update host(esum) async
 !$acc wait
       energy = esum
+
+      if(use_ml_embedding .and. use_mlpot) then
+        wgrp = wgrp_save
+!$acc update device(wgrp) async
+      endif
 c
 c     check for an illegal value for the total energy
 c

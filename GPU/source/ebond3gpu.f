@@ -14,61 +14,65 @@ c     "ebond3" calculates the bond stretching energy; also
 c     partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
+      module ebond3gpu_inl
+#include "atomicOp.h.f"
+        contains
+#include "ker_bond.inc.f"
+      end module
+
       subroutine ebond3gpu
       use action
       use analyz
       use atmlst
-      use atmtyp
-      use atoms    ,only: type
-      use atomsMirror
+      use atoms       ,only: type
+      use atomsMirror ,only: x,y,z
       use bndpot
       use bond
       use bound
+      use deriv
       use domdec
       use energi
+      use ebond3gpu_inl
       use group
-      use inform
-      use iounit
+      use inform   ,only: debug,verbose,deb_Path
       use nvshmem
       use usage
+      use virial
       use timestat ,only: timer_enter,timer_exit,timer_ebond
      &             ,quiet_timers
       use tinheader
+      use tinTypes ,only: real3
+      use mamd
+      use potent   ,only: use_amd_wat1
       implicit none
-      integer i,ia,ib,ialoc,ibloc,ibond
-      integer ipe,ind
-      real(t_p) e,ideal,force
-      real(t_p) expterm,bde
-      real(t_p) dt,dt2
-      real(t_p) xab,yab,zab,rab
-      logical proceed
-      logical header,huge
-!$acc routine(image_acc) seq
-c
-c
-c     zero out the bond energy and partitioning terms
-c
-      if(deb_Path) write(*,*) 'ebond3gpu'
-      call timer_enter( timer_ebond )
+      integer     i,ia,ib,ibond,fea,ver
+      logical     header,huge
+      real(t_p)   ideal,force,e,fgrp,xab,yab,zab
+      type(real3) ded
+      parameter(
+     &       ver=__use_ene__+__use_act__,
+     &       fea=__use_gamd__+__use_polymer__+__use_groups__
+     &         )
 
+      call timer_enter( timer_ebond )
+      if (deb_Path) write(*,*) 'ebond3gpu'
       neb    = 0
-      eb     = 0.0_re_p
-c     aeb    = 0.0_ti_p
-      if (rank.eq.0) then
-         header = .true.
-      else
-         header=.false.
-      end if
+       eb    = 0
+      header = rank.eq.0
 c
-c     calculate the bond stretching energy term
+c     calculate the bond stretch energy and first derivatives
 c
-!$acc parallel loop present(eb) async
+!$acc parallel loop present(x,y,z,use,loc,bndglob,grplist,wgrp,type
+!$acc&    ,eb,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&     async
 #ifdef USE_NVSHMEM_CUDA
-!$acc&         default(present) deviceptr(d_ibnd,d_bl,d_bk)
+!$acc&         deviceptr(d_ibnd,d_bl,d_bk)
 #else
-!$acc&         present(x,y,z,use,loc,bndglob,ibnd,bl,bk,aeb)
+!$acc&         present(bl,bk,ibnd)
 #endif
+!$acc&       reduction(+:eb,neb)
+!$acc&       private(ded,fgrp)
       do ibond = 1, nbondloc
          i     = bndglob(ibond)
 #ifdef USE_NVSHMEM_CUDA
@@ -84,70 +88,45 @@ c
          ideal = bl(i)
          force = bk(i)
 #endif
-         ialoc = loc(ia)
-         ibloc = loc(ib)
-c
-c     decide whether to compute the current interaction
-c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib))
+         if (use_group.AND.IAND(fea,__use_groups__).NE.0)
+     &      call groups2_inl(fgrp,ia,ib,ngrp,grplist,wgrp)
 c
 c     compute the value of the bond length deviation
+c     decide whether to compute the current interaction
 c
-         if (proceed) then
-            xab = x(ia) - x(ib)
-            yab = y(ia) - y(ib)
-            zab = z(ia) - z(ib)
-            if (use_polymer)  call image_acc (xab,yab,zab)
-            rab = sqrt(xab*xab + yab*yab + zab*zab)
-            dt  = rab - ideal
-c
-c     harmonic potential uses Taylor expansion of Morse potential
-c     through the fourth power of the bond length deviation
-c
-            if (bndtyp_i .eq. BND_HARMONIC) then
-               dt2 = dt * dt
-               e = bndunit * force * dt2 * (1.0_ti_p+cbnd*dt+qbnd*dt2)
-c
-c     Morse potential uses energy = BDE * (1 - e**(-alpha*dt))**2)
-c     with the approximations alpha = sqrt(ForceConst/BDE) = -2
-c     and BDE = Bond Dissociation Energy = ForceConst/alpha**2
-c
-            else if (bndtyp_i .eq. BND_MORSE) then
-               expterm = exp(-2.0_ti_p*dt)
-               bde = 0.25_ti_p * bndunit * force
-               e = bde * (1.0_ti_p-expterm)**2
-            end if
-c
-c     increment the total bond energy and partition between atoms
-c
-            neb = neb + 1
-            eb = eb + e
-!$acc atomic update
-            aeb(ialoc) = aeb(ialoc) + 0.5_ti_p*e
-!$acc atomic update
-            aeb(ibloc) = aeb(ibloc) + 0.5_ti_p*e
-#ifndef _OPENACC
+         if (useAll.or.use(ia).or.use(ib)) then
+
+         xab = x(ia) - x(ib)
+         yab = y(ia) - y(ib)
+         zab = z(ia) - z(ib)
+         call ker_bond(i,ia,ib,loc,ideal,force,fgrp,xab,yab,zab
+     &           ,bndtyp_i,use_polymer,use_group
+     &           ,cbnd,qbnd,bndunit,eb,e,ded
+     &           ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+     &           ,ver,fea)
+         neb = neb + 1
+#if 0
+         ia = loc(ia); ib = loc(ib)
+         aeb(ia) = aeb(ia) + 0.5_ti_p*e
+         aeb(ib) = aeb(ib) + 0.5_ti_p*e
 c
 c     print a message if the energy of this interaction is large
 c
-            huge = (e .gt. 5.0_ti_p)
-            if (debug .or. (verbose.and.huge)) then
-               if (header) then
-                  header = .false.
-                  write (iout,10)
-   10             format (/,' Individual Bond Stretching',
-     &                       ' Interactions :',
-     &                    //,' Type',14x,'Atom Names',22x,'Ideal',
-     &                       4x,'Actual',6x,'Energy',/)
-               end if
-               write (iout,20)  ia,name(ia),ib,name(ib),ideal,rab,e
-   20          format (' Bond',6x,2(i7,'-',a3),13x,2f10.4,f12.4)
+         huge = (e .gt. 5.0_ti_p)
+         if (debug .or. (verbose.and.huge)) then
+            if (header) then
+               header = .false.
+               write (iout,10)
+   10          format (/,' Individual Bond Stretching',
+     &                    ' Interactions :',
+     &                 //,' Type',14x,'Atom Names',22x,'Ideal',
+     &                    4x,'Actual',6x,'Energy',/)
             end if
+            write (iout,20)  ia,name(ia),ib,name(ib),ideal,rab,e
+   20       format (' Bond',6x,2(i7,'-',a3),13x,2f10.4,f12.4)
+         end if
 #endif
          end if
       end do
-!$acc update host(aeb) async
-
       call timer_exit( timer_ebond )
       end

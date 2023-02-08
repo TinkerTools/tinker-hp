@@ -14,7 +14,7 @@ c     "extra3" calculates any additional user defined potential
 c     contribution and also partitions the energy among the atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine extra3
       use sizes
       use action

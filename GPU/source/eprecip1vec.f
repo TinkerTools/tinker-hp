@@ -21,7 +21,7 @@ c     modifications for nonperiodic systems suggested by Tom Darden
 c     during May 2007
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine eprecip1vec
       use atmlst
       use atoms

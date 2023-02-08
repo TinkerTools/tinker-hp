@@ -1,6 +1,3 @@
-#ifndef ATOMICOP_H_F
-#warning("__FILE__ header undetected !! common interface unavalaible") 
-#endif
 #ifndef ATOMICOP_INC
 #define ATOMICOP_INC
 #include "convert.f.inc"
@@ -130,9 +127,20 @@
       stat = atomicSub(dat, rp2mdr(val))
       end subroutine
 #else
+#ifndef ATOMICOP_H_F
+#warning("__FILE__ header undetected !! common interface unavalaible")
+#endif
       !
       !   OpenACC Section
       !
+      subroutine atomic_add_i( dat,val )
+!$acc routine
+      implicit none
+      integer dat
+      integer,intent(in)::val
+!$acc atomic
+      dat = dat + val
+      end subroutine
       subroutine atomic_add_s( dat,val )
 !$acc routine
       implicit none
@@ -152,9 +160,9 @@
       subroutine atomic_add_m( dat,val )
 !$acc routine
       implicit none
-      real(8) dat
-      real(4),intent(in)::val
-      real(8) val1
+      real(r_p) dat
+      real(t_p),intent(in)::val
+      real(r_p) val1
       val1 = val
 !$acc atomic
       dat = dat + val1
@@ -189,7 +197,15 @@
       end subroutine
 
 
-      subroutine atomic_sub_d( dat,val )
+      subroutine atomic_sub_i( dat,val )
+!$acc routine
+      implicit none
+      integer dat
+      integer,intent(in)::val
+!$acc atomic
+      dat = dat - val
+      end subroutine
+      subroutine atomic_sub_s( dat,val )
 !$acc routine
       implicit none
       real(4) dat
@@ -197,7 +213,7 @@
 !$acc atomic
       dat = dat - val
       end subroutine
-      subroutine atomic_sub_s( dat,val )
+      subroutine atomic_sub_d( dat,val )
 !$acc routine
       implicit none
       real(8) dat
@@ -208,9 +224,9 @@
       subroutine atomic_sub_m( dat,val )
 !$acc routine
       implicit none
-      real(8) dat
-      real(4),intent(in)::val
-      real(8) val1
+      real(r_p) dat
+      real(t_p),intent(in)::val
+      real(r_p) val1
       val1 = val
 !$acc atomic
       dat = dat - val1

@@ -14,7 +14,7 @@ c     "etors1" calculates the torsional potential energy and first
 c     derivatives with respect to Cartesian coordinates
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine etors1
       implicit none
       call etors1a
@@ -53,7 +53,7 @@ c
       integer i,ia,ib,ic,id
       integer ialoc,ibloc,icloc,idloc
       integer itor
-      real(t_p) e,dedphi,rcb
+      real(t_p) e,fgrp,dedphi,rcb
       real(t_p) v1,v2,v3,v4,v5,v6
       real(t_p) c1,c2,c3,c4,c5,c6
       real(t_p) s1,s2,s3,s4,s5,s6
@@ -109,8 +109,8 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         proceed = .true.
-         if (proceed)  proceed = (use(ia) .or. use(ib) .or.
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
+         proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
 c     compute the value of the torsional angle
@@ -211,6 +211,19 @@ c
      &                            + v4*phi4 + v5*phi5 + v6*phi6)
                dedphi = torsunit * (v1*dphi1 + v2*dphi2 + v3*dphi3
      &                                 + v4*dphi4 + v5*dphi5 + v6*dphi6)
+
+              if(use_group) then
+                call groups(fgrp,ia,ib,ic,id,0,0)
+                e = e*fgrp
+                dedphi = dedphi*fgrp
+              endif
+c
+c     scale the interaction based on its group membership
+c
+               if (use_group) then
+                  e = e * fgrp
+                  dedphi = dedphi * fgrp
+               end if
 c
 c     chain rule terms for first derivative components
 c

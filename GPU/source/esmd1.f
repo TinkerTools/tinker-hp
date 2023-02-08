@@ -29,7 +29,7 @@ c     F Célerse, L Lagardère, E Derat, JP Piquemal
 c     Journal of Chemical Theory and Computation 15 (6), 3694-3709
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module esmd1_inl
       contains
 #include "convert.f.inc"

@@ -8,7 +8,7 @@ c     ##                                                         ##
 c     ##  colvars Routines  --  Colvars/Tinker-HP interface      ##
 c     ##                                                         ##
 c     #############################################################
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module colvars_inl
       real(8),target:: kel_vin
       contains

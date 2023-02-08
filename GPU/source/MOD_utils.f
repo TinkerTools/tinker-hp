@@ -13,7 +13,7 @@ c
 c     rpole_ind_extract  indice to extract rpole
 c     rpole_der_ext      indice to extract rpole derivative term
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
       module utils
 
@@ -91,7 +91,6 @@ c     "imagevec" takes the components of pairwise distances between
 c     two points in a periodic box and converts to the components
 c     of the minimum image distances
 c
-#include "tinker_precision.h"
       subroutine imagevec2 (pos2,n)
       use sizes
       use boxes
@@ -606,28 +605,28 @@ c
 
       end subroutine
 c
-      subroutine associate_p_i41(src_t,dst_p,siz1)
+      subroutine associate_p_i41(dst_p,src_t,siz1)
       implicit none
       integer(int_ptr_kind()),intent(in):: siz1
       integer,target,intent(in) :: src_t(siz1)
       integer,pointer   :: dst_p(:)
       dst_p(1:siz1) => src_t(1:siz1)
       end subroutine
-      subroutine associate_p_i81(src_t,dst_p,siz1)
+      subroutine associate_p_i81(dst_p,src_t,siz1)
       implicit none
       integer(int_ptr_kind()),intent(in):: siz1
       integer(8),target,intent(in) :: src_t(siz1)
       integer(8),pointer   :: dst_p(:)
       dst_p(1:siz1) => src_t(1:siz1)
       end subroutine
-      subroutine associate_p_r41(src_t,dst_p,siz1)
+      subroutine associate_p_r41(dst_p,src_t,siz1)
       implicit none
       integer(int_ptr_kind()),intent(in):: siz1
       real(4),target,intent(in) :: src_t(siz1)
       real(4),pointer   :: dst_p(:)
       dst_p(1:siz1) => src_t(1:siz1)
       end subroutine
-      subroutine associate_p_r81(src_t,dst_p,siz1)
+      subroutine associate_p_r81(dst_p,src_t,siz1)
       implicit none
       integer(int_ptr_kind()),intent(in):: siz1
       real(8),target,intent(in) :: src_t(siz1)
