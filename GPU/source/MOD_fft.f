@@ -42,7 +42,7 @@ c     out      temporary complex grid to be send to transform with FFT mpi
 c     in_cptr,out_cptr  C generic pointer used for casting
 c     grid_pointer_assoc  decide whether or not in & out should be allocated or associated
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module fft
       use iso_c_binding,only: c_ptr
       use sizes        ,only: maxfft

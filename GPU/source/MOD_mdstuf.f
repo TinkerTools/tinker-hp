@@ -20,7 +20,7 @@ c     uindsave    logical flag to save induced atomic dipoles
 c     integrate   type of molecular dynamics integration algorithm
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module mdstuf
       implicit none
       integer nfree,irest
@@ -51,22 +51,22 @@ c
       implicit none
       integer,private:: isDataAlloc=.false.
       real(r_p),allocatable::derivs(:,:)
-      real(r_p) etot,epot,eksum,ealt,ealt2
+      real(r_p) etot,epot,eksum,ealt,ealt2,eml,ealtml
       real(r_p) temp,pres
       real(r_p) ekin(3,3),stress(3,3),viralt(3,3),viralt2(3,3)
 
       contains
       subroutine gpuAllocMdstuf1Data
       if (.not.isDataAlloc) then
-!$acc enter data create(etot,epot,eksum,ealt,ealt2,temp,pres,ekin
-!$acc&                 ,stress,viralt,viralt2)
+!$acc enter data create(etot,epot,eksum,ealt,ealt2,eml,ealtml,ekin
+!$acc&                 ,temp,pres,stress,viralt,viralt2)
          isDataAlloc=.true.
       end if
       end subroutine
       subroutine gpuFreeMdstuf1Data
       if (isDataAlloc) then
-!$acc exit data delete(etot,epot,eksum,ealt,ealt2,temp,pres,ekin
-!$acc&                ,stress,viralt,viralt2)
+!$acc exit data delete(etot,epot,eksum,ealt,ealt2,eml,ealtml,ekin
+!$acc&                ,temp,pres,stress,viralt,viralt2)
          isDataAlloc=.false.
       end if
       end subroutine

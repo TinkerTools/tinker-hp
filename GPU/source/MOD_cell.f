@@ -20,7 +20,7 @@ c     zcell2   half the length of the c-axis of the replicated cell
 c     eps_cell contains an epsilon value such that max(xcell,ycell,zcell)+eps_cell > max(xcell,ycell,zcell) 
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module cell
       implicit none
       real(t_p) xcell,ycell,zcell

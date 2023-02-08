@@ -72,7 +72,7 @@ C                    peek-step's omega to the energy from a CG
 c               - epCG : polarization energy issued from CG
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module polpot
       implicit none
 

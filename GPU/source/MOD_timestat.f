@@ -7,7 +7,7 @@ c   module timestat : Timers to measure time spent in regions of the code
 c
 c     tinkertime     logical flag to enable timers verbosity
 
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module timestat
         use domdec, only: rank,nproc,nproctot,COMM_TINKER
         use mpi   , only: MPI_Wtime, MPI_COMM_WORLD, MPI_REAL8
@@ -69,7 +69,7 @@ c     tinkertime     logical flag to enable timers verbosity
         ! number Timers
         integer, parameter:: max_timer_count=last_timer
 
-        integer :: stat_timers(31) =
+        integer :: stat_timers(32) =
      &          [timer_param,timer_nl,
      &           timer_bonded,timer_vdw,
      &           timer_real,timer_realdip,timer_rec,timer_recdip,
@@ -79,17 +79,17 @@ c     tinkertime     logical flag to enable timers verbosity
      &           timer_fcomm,timer_dirbondfcomm,timer_dirreccomm,
      &           timer_recreccomm,timer_commstep,timer_polsolvcomm,
      &           timer_polfieldcomm,timer_eneig,timer_reduceen,
-     &           timer_timestep,timer_b1
+     &           timer_b1,timer_b2,timer_timestep
      &          ]
         integer :: comm_timers(8) =
      &          [timer_param,timer_fcomm,timer_recreccomm,
      &           timer_polsolvcomm,timer_polfieldcomm,
      &           timer_eneig,timer_commstep,timer_reduceen
      &          ]
-        integer :: comp_timers(15) =
+        integer :: comp_timers(17) =
      &          [timer_fmanage,timer_bonded,timer_vdw,timer_nl,
      &           timer_real,timer_realdip,timer_grid1,timer_grid2,
-     &           timer_scalar,timer_ffts,timer_clear,
+     &           timer_scalar,timer_ffts,timer_clear,timer_b1,timer_b2,
      &           timer_other,timer_ulspred,timer_stepcg,timer_plumed
      &          ]
 
@@ -216,8 +216,8 @@ c     tinkertime     logical flag to enable timers verbosity
         call timer_init( "program"         , timer_prog)
         call timer_init( "reduceen"        , timer_reduceen)
         call timer_init( "plumed"          , timer_plumed)
-        call timer_init( "buff1"           , timer_b1)
-        call timer_init( "buff2"           , timer_b2)
+        call timer_init( "ML all"          , timer_b1)
+        call timer_init( "ML potential"    , timer_b2)
         call timer_init( "buff3"           , timer_b3)
         call timer_init( "last"            , last_timer)
 

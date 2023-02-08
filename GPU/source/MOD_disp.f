@@ -31,7 +31,7 @@ c     displocnl glob-locnl dispersion correspondance
 c     disprecloc  global-local reciprocal dispersion correspondance
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module disp
       implicit none
       integer ndisp,ndisploc,ndispbloc,ndisplocnl,ndisprecloc

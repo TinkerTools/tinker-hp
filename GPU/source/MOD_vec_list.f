@@ -13,7 +13,7 @@ c     ###################################################################
       use sizes
       use couple
       implicit none
-#include "tinker_precision.h"
+#include "tinker_macro.h"
   
       contains 
   

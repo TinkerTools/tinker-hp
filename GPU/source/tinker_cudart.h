@@ -11,6 +11,8 @@
 #   define f_inv(x) 1/x
 #   define f_erfc(x) erfc(x)
 #   define f_exp(x) exp(x)
+#   define f_min(x) min(x)
+#   define f_max(x) max(x)
 #   define WRITE_C(x)
 #else
 #   define M_subroutine attributes(device) subroutine

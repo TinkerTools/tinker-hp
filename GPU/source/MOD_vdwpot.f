@@ -35,7 +35,7 @@ c     vcorrect_scale   vscale value of vcorrect_ik interaction
 c     n_vscale         number of vscale interactions
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module vdwpot
       implicit none
       enum, bind(C)

@@ -32,7 +32,7 @@ c     extvolold   last value of the Volume as an extended variable for the Lange
 c     vextvol     Speed of the Volume extended variable for the Langevin Piston barostat
 c     aextvol     Acceleration of the Volume extended variable for the Langevin Piston barostat
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module bath
       implicit none
       integer voltrial
@@ -41,14 +41,15 @@ c
       real(r_p) compress,collide
       real(r_p) vbar,qbar,gbar
       real(r_p) eta,volmove
-      real(t_p) gammapiston,masspiston,extvolold
-      real(t_p) extvol,vextvol,aextvol
+      real(r_p) gammapiston,masspiston,extvolold
+      real(r_p) extvol,vextvol,aextvol
+      real(r_p) temppiston
+      logical use_piston
       logical isothermal
       logical isobaric
       logical anisotrop
       character*9 volscale
       character*11 barostat
       character*11 thermostat
-      save 
 !$acc declare create(eta)
       end

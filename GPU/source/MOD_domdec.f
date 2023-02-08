@@ -108,7 +108,7 @@ c     yendproc : y coordinate of the ending of each domain
 c     zendproc : z coordinate of the ending of each domain
 c     nxdd,nydd,nzdd : number of divisions along the axes, for domain decomposition
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module domdec
       implicit none
       logical Bdecomp1d,Bdecomp2d,Bdecomp3d

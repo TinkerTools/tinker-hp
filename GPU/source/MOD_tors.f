@@ -30,7 +30,7 @@ c     itors   numbers of the atoms in each torsional angle
 c     winitors    window object corresponding to itors
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module tors
 #ifdef USE_NVSHMEM_CUDA
       use tinTypes,only: i2dDPC=> Int2dDevPointerContainer 

@@ -17,7 +17,7 @@ c     winchgct  window associated to chgct array
 c     windmpct  window associated to dmpct array
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module chgtrn
       implicit none
       integer nct

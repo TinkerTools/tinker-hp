@@ -36,7 +36,7 @@ c     octahedron  flag to mark box as truncated octahedron
 c     spacegrp    space group symbol for the unitcell type
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module boxes
       implicit none
       real(r_p) xbox,ybox,zbox

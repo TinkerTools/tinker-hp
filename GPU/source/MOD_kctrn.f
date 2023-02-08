@@ -15,7 +15,7 @@ c     ctchg     charge transfer magnitude for each atom class
 c     ctdmp     alpha charge transfer parameter for each atom class
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kctrn
       use sizes ,only: maxtyp
       implicit none

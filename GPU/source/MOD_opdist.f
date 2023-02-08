@@ -20,7 +20,7 @@ c     opdk      force constant values for out-of-plane distance
 c     winopdk    window object corresponding to opdk
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module opdist
       implicit none
       integer nopdist,nopdistloc

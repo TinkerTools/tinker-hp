@@ -32,7 +32,7 @@ c     lalt      save location index of electrical field
 c     lshalt    save location index of short range electrical field
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module uprior
 #ifdef USE_NVSHMEM_CUDA
       use tinTypes ,only: r3dDPC=>Real3dDevPointerContainer

@@ -16,7 +16,7 @@ c     opds      force constant parameters for out-of-plane distance
 c     kopd      string of atom classes for out-of-plane distance
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kopdst
       implicit none
       integer maxnopd

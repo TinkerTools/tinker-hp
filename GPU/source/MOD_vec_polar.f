@@ -15,7 +15,7 @@ c     ###################################################################
       use vec
       use vec_elec
       implicit none
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 cold  !DIR$ ATTRIBUTES ALIGN:64:: kpolevec
 cold  integer kpolevec(maxelst)
 cold  !DIR$ ATTRIBUTES ALIGN:64::kpolevec1

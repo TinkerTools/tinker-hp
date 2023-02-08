@@ -9,7 +9,7 @@ c     ##  module colvars  --  Colvars/Tinker-HP interface             ##
 c     ##                                                              ##
 c     ##################################################################
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module colvars
       use iso_c_binding
       implicit none

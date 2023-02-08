@@ -15,7 +15,7 @@ c     maxiter   maximum number of iterations during optimization
 c     nextiter  iteration number to use for the first iteration
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module minima
       implicit none
       integer maxiter,nextiter

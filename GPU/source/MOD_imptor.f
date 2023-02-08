@@ -24,7 +24,7 @@ c
 c     nbimptor number of improper torsions before each atom
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module imptor
       implicit none
       integer nitors,nitorsloc

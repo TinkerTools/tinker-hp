@@ -20,7 +20,7 @@ c     winpval   window corresponding to pval array
 c     winpalpha window corresponding to palpha array
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module chgpen
       implicit none
       integer ncp

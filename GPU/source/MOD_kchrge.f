@@ -13,7 +13,7 @@ c
 c     chg   partial charge parameters for each atom type
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kchrge
       use sizes ,only: maxtyp
       implicit none

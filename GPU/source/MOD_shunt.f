@@ -30,7 +30,7 @@ c     f6     sixth order coefficient of additive switch function
 c     f7     seventh order coefficient of additive switch function
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module shunt
       implicit none
       real(t_p) off,off2,cut,cut2

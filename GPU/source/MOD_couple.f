@@ -50,7 +50,7 @@ c     sum_factorn   total number of useful n scaling factor
 c     max_facorn    maximum of n scaling factor for every atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module couple
       use sizes
       implicit none

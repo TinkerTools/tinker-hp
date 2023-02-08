@@ -32,7 +32,7 @@ c     kb3     string of atom classes for 3-ring bond stretch
 c     kel     string of atom classes for electronegativity corrections
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kbonds
       implicit none
       integer maxnb,maxnb5,maxnb4

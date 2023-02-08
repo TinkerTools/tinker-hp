@@ -16,7 +16,7 @@ c     bndunit   convert bond stretch energy to kcal/mole
 c     bndtyp    type of bond stretch potential energy function
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module bndpot
       implicit none
       real(t_p) cbnd,qbnd

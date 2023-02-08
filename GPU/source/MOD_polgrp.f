@@ -50,7 +50,7 @@ c     sum_factorp = sum(n_factorp)
 c     max_facorp    maximum of p scaling factor for every atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module polgrp
       use sizes
       implicit none

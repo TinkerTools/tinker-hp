@@ -82,7 +82,7 @@ c     pair_atlst  a derived type that gather all attributes of a pairwise
 c                neighbor list stored in a list structure 
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module neigh
       implicit none
       type boxPart

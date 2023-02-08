@@ -9,9 +9,7 @@ c     ##  module subInform  --  submodule for Inform                  ##
 c     ##                                                              ##
 c     ##################################################################
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
-
+#include "tinker_macro.h"
       submodule(inform) subInform
       use atomsMirror ,only: x,y,z,n
       use bath
@@ -22,6 +20,7 @@ c
       use mpi
       use neigh  ,only: ineigup, lbuffer
       use potent
+      use polpot
       use tinMemory,only: deb_Mem=>debMem
       use usage  ,only: muse=>use
       use utilgpu,only: Tinker_shellEnv
@@ -34,7 +33,7 @@ c
 
       module subroutine initDebugEnv()
       implicit none
-      integer ierr,length
+      integer ierr,length,sav
       character*32 dvalue
       integer,parameter::success=0
 
@@ -45,24 +44,28 @@ c
       deb_Polar   = .false.
       deb_Mem     = 0
       tinkerdebug = 0
+      mtc_nacc    = 0
+      sav         = 0
 
       ! Fetch if possible TINKER_DEBUG From environment
       call get_environment_variable("TINKER_DEBUG",dvalue,length,
      &         status=ierr)
 
-      if (ierr.eq.success) read(dvalue,*) tinkerdebug
+      if (ierr.eq.success) read(dvalue,'(I16)') tinkerdebug
+
+      sav = abs(tinkerdebug)
+      if (tinkerdebug.lt.0) tinkerdebug=ior(ishft(1,31),sav)
 
       ! Set debug switches
-      if (tinkerdebug>0) then
-         !if (rank.eq.0) print*, 'debug enable',tinkerdebug
-         if (btest(tinkerdebug,tindPath)) then
+      if (sav.gt.0) then
+         if (btest(sav,tindPath)) then
             if (rank.eq.MasterRank) deb_Path = .true.
          end if
-         if (btest(tinkerdebug,tindForce )) deb_Force  = .true.
-         if (btest(tinkerdebug,tindEnergy)) deb_Energy = .true.
-         if (btest(tinkerdebug,tindAtom  )) deb_Atom   = .true.
-         if (btest(tinkerdebug,tinMem    )) deb_Mem    = 1
-         if (btest(tinkerdebug,tindPolar )) deb_Polar  = .true.
+         if (btest(sav,tindForce )) deb_Force  = .true.
+         if (btest(sav,tindEnergy)) deb_Energy = .true.
+         if (btest(sav,tindAtom  )) deb_Atom   = .true.
+         if (btest(sav,tinMem    )) deb_Mem    = 1
+         if (btest(sav,tindPolar )) deb_Polar  = .true.
       end if
 
       call Tinker_shellEnv("ESSAI",tinEssai,1)
@@ -77,6 +80,7 @@ c
  14   format(A20,F15.6)
  15   format(A20,A15)
  16   format(A20,5x,L4)
+ 17   format(A20,G15.4E1)
 
       print 13, 'natoms', n
       if (n.ne.nbloc) print 13, 'nbloc', nbloc
@@ -94,6 +98,7 @@ c
          print 14, 'mpole cutoff' , mpolecut
          print 14, 'mpole short cutoff' , mpoleshortcut
          print 14, 'ewaldcut'     , ewaldcut
+         print 17, 'polar solver tol', poleps
       end if
       if (use_charge) then
          print 14, 'charge cutoff', mpolecut
@@ -154,6 +159,40 @@ c
       end if
       end subroutine
 #endif
+
+      module subroutine minmaxonei( vector,sz,name )
+      implicit none
+      integer sz
+      integer vector(*)
+      character(*),optional,intent(in)::name
+      integer mi,ma
+      integer(8) on,on1
+      integer i
+      integer val
+      mi=huge(mi);ma=-mi;on=0
+!$acc wait
+!$acc parallel loop async present(vector(1:sz))
+      do i = 1, sz
+         val = (vector(i))
+         mi  = min( mi,val )
+         ma  = max( ma,val )
+         on  = on + abs(val)
+      end do
+!$acc wait
+12    format(A6,2I8,1x,I12,I5)
+13    format(A6,2I8,1x,I12,I5,I0)
+      if (nproc.gt.1) then
+         call MPI_ALLREDUCE(on,on1,1,MPI_INTEGER
+     &       ,MPI_SUM,COMM_TINKER,i)
+      end if
+      !on1 = sqrt(on1)
+      !on  = sqrt(on )
+      if (rank.eq.0.and.nproc.gt.1) then
+      write(*,13) name,mi,ma,on,rank,on1
+      else
+      write(*,12) name,mi,ma,on,rank
+      end if
+      end subroutine
 
       module subroutine minmaxonet( vector,sz,name )
       implicit none
@@ -220,6 +259,76 @@ c
       else
       write(*,12) name,mi,ma,on,rank
       end if
+      end subroutine
+#endif
+      module subroutine normt( array,n,val,p )
+      implicit none
+      integer n
+      integer,optional::p
+      real(t_p) array(*)
+      real(r_p) val
+      integer i,p_
+
+      val=0
+      if (present(p)) then
+!$acc parallel loop present(array) copy(val) async
+         do i = 1,n
+            val = val + (abs(array(i)))**p
+         end do
+      else
+!$acc parallel loop present(array) copy(val) async
+         do i = 1,n
+            val = val + (abs(array(i)))**2
+         end do
+      end if
+!$acc wait
+      end subroutine
+#if TINKER_MIXED_PREC
+      module subroutine normr( array,n,val,p )
+      implicit none
+      integer n
+      integer,optional::p
+      real(r_p) array(*)
+      real(r_p) val
+      integer i,p_
+
+      val=0
+      if (present(p)) then
+!$acc parallel loop present(array) copy(val) async
+         do i = 1,n
+            val = val + (abs(array(i)))**p
+         end do
+      else
+!$acc parallel loop present(array) copy(val) async
+         do i = 1,n
+            val = val + (abs(array(i)))**2
+         end do
+      end if
+!$acc wait
+      end subroutine
+#endif
+#if USE_DETERMINISTIC_REDUCTION
+      module subroutine normf( array,n,val,p )
+      implicit none
+      integer n
+      integer,optional::p
+      mdyn_rtyp array(n)
+      real(r_p) val
+      integer i,p_
+
+      val=0
+      if (present(p)) then
+!$acc parallel loop present(array) copy(val) async
+         do i = 1,n
+            val = val + abs(mdr2md(array(i)))**p
+         end do
+      else
+!$acc parallel loop present(array) copy(val) async
+         do i = 1,n
+            val = val + abs(mdr2md(array(i)))**2
+         end do
+      end if
+!$acc wait
       end subroutine
 #endif
 

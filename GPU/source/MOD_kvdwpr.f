@@ -18,7 +18,7 @@ c     epspr    well depth parameter for special van der Waals pairs
 c     kvpr     string of atom classes for special van der Waals pairs
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kvdwpr
       implicit none
       integer maxnvp

@@ -15,5 +15,9 @@ c
 c
       module ctrpot
       implicit none
+      enum, bind(C)
+      enumerator CHGT_SEPARATE,CHGT_COMBINED
+      end enum
       character*8 ctrntyp
+      integer ctrntyp_ID
       end

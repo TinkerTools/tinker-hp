@@ -10,13 +10,13 @@ c     ##                                                               ##
 c     ###################################################################
 c
 c
+#include "tinker_macro.h"
       module vec
-      use sizes
-      use couple
-      use polgrp
+      use sizes  ,only: maxvlst,maxelst
+      use couple ,only: maxn14
+      use polgrp ,only: maxp11
 c     use domdec
       implicit none
-#include "tinker_precision.h"
 !DIR$ ATTRIBUTES ALIGN:64::itmp14
       integer itmp14(maxn14)
 !DIR$ ATTRIBUTES ALIGN:64:: iptmp11

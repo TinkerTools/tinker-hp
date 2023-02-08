@@ -21,7 +21,7 @@ c     kcfb      string of atom classes for bond stretch charge flux
 c     kcfa      string of atom classes for angle bend charge flux
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kcflux
       implicit none
       integer maxncfb

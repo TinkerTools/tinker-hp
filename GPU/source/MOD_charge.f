@@ -42,7 +42,7 @@ c     nionlocnlb_pair  total number of charge pair blocks interaction
 c     nionlocnlb2_pair  total number of charge pair blocks interaction from C2 nblist
 c     nshortionlocnlb2_pair  total number of charge pair blocks interaction in short range interaction list
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module charge
       implicit none
       integer nion,nionloc,nionbloc,nionlocnl,nionrecloc

@@ -37,7 +37,7 @@ c     kap      string of atom classes for in-plane angle bends
 c     kaf      string of atom classes for Fourier angle bends
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kangs
       implicit none
       integer maxna,maxna5,maxna4

@@ -28,7 +28,7 @@ c     npolar_ne_npole     (npolar.ne.npole)
 c     use_mpolar_ker   controls use of mpolar kernel (empole+polar) 
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module polar
       implicit none
       integer   npolar

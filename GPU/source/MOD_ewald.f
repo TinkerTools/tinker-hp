@@ -18,7 +18,7 @@ c     adwald     Ewald convergence coefficient value (Ang-1) for dispersion
 c     boundary   Ewald boundary condition; none, tinfoil or vacuum
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module ewald
       implicit none
       real(t_p) aewald,adewald,aeewald,apewald,ewald_tiny

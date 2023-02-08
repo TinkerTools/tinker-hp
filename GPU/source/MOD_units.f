@@ -53,7 +53,7 @@ c     debye       conversion from electron-Ang to Debyes
 c     prescon     conversion from kcal/mole/Ang**3 to Atm
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module units
       use tinheader ,only: ti_p
       implicit none

@@ -13,7 +13,7 @@ c     ######################################################################
 c
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module divcon
       implicit none
       integer maxdim,km,zdim,kblks,natprblk 

@@ -5,7 +5,7 @@ c     ##  module plumed                                                ##
 c     ##                                                               ##
 c     ###################################################################
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module plumed
       implicit none
       integer  ncount

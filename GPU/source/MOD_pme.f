@@ -38,7 +38,7 @@ c     igrid      initial Ewald charge grid values for B-spline
 c     pme_eps offset used to shift sites off exact lattice bounds
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module pme
       use sizes
       implicit none

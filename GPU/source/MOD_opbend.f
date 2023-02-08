@@ -20,7 +20,7 @@ c     opbk      force constant values for out-of-plane bending
 c     winopbk    window object corresponding to opbk
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module opbend
       implicit none
       integer nopbend,nopbendloc

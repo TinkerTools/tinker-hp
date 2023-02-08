@@ -17,7 +17,7 @@ c     epshb    well depth parameter for hydrogen bonding pairs
 c     khb      string of atom types for hydrogen bonding pairs
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module khbond
       implicit none
       integer maxnhb

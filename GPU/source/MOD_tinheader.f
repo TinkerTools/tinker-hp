@@ -17,20 +17,20 @@ c     ti_eps    contains an espilon value for Tinker
 c     prec_eps  smallest value depending on the precision such that (2+prec_esp>2)
 c     prec1_eps  smallest value depending on the precision such that (1+prec_esp>1)
 
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module tinheader
       !use mpi,only:MPI_REAL4,MPI_REAL8
       implicit none
-      integer ti_p,re_p
-      integer i_init
+      integer    ti_p,re_p
+      integer    i_init
       integer(1) zero1,one1,two1,three1
       integer(4) zeroi4,onei4,twoi4
       integer(8) zero8,one8
+      logical    isrel_build
       !integer MPI_TYPE,MPI_RTYPE
-      real(t_p) ti_eps,prec_eps,prec1_eps
-      real(r_p) precm_eps
-      real(t_p) a_init
+      real(t_p)  ti_eps,prec_eps,prec1_eps
+      real(r_p)  precm_eps
+      real(t_p)  a_init
       real(t_p)  zeror,oner,twor,halfr
       real(r_p)  zerom,onem,twom,halfm
       mdyn_rtyp  zeromd,onemd,twomd
@@ -49,6 +49,11 @@ c     prec1_eps  smallest value depending on the precision such that (1+prec_esp
      &          ,prec_eps =2*epsilon(ti_eps)
      &          ,prec1_eps=  epsilon(ti_eps)
      &          ,precm_eps=2*epsilon(precm_eps)
+#if TINKERHP_REL_BUILD
+     &          ,isrel_build=.true.
+#else
+     &          ,isrel_build=.false.
+#endif
      &          )
       !parameter(MPI_TYPE=MPI_TPREC)
       !parameter(MPI_RTYPE=MPI_RPREC)

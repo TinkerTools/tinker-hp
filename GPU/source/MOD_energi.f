@@ -14,6 +14,7 @@ c     calc_e switch to compute energy
 c     esum   total potential energy of the system
 c     eb     bond stretch potential energy of the system
 c     ea     angle bend potential energy of the system
+c     emlpot Machine learning potential energy of the system
 c     eba    stretch-bend potential energy of the system
 c     eub    Urey-Bradley potential energy of the system
 c     eaa    angle-angle potential energy of the system
@@ -46,23 +47,24 @@ c     eW1aMD extra term aMD potential for bonds/angles of waters
 c     eW2aMD extra term aMD potential energy of waters
 c
 c
-#include "tinker_precision.h"
-#include "tinker_types.h"
+#include "tinker_macro.h"
       module energi
       implicit none
       logical   calc_e
       real(r_p) esum,eb,ea,eba
+      real(r_p) emlpot
       real(r_p) eub,eaa,eopb,eopd
       real(r_p) eid,eit,et,ept
       real(r_p) eat,ebt,ett
-      real(r_p) ev,ec,ecrec,em,emrec,ep,eprec
-      ener_rtyp er,edsp,edsprec,ect
+      real(r_p) ev,ec,ecrec,em,emrec,ep,eprec,edsprec
+      ener_rtyp er,edsp,ect
       real(r_p) eg,ex
       real(r_p) esave
       real(r_p) ensmd
       real(r_p) eDaMD,ePaMD,eW1aMD,eW2aMD
       ener_rtyp ev_r,ec_r,em_r,ep_r,eb_r
       real(r_p) epot_std10,epot_mean
+      real(r_p) etot_std,etot_ave
 
       interface
       module subroutine create_energi_on_device()
@@ -92,6 +94,7 @@ c
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
 !$acc&                  er,edsp,edsprec,ect,
 !$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
+!$acc&                  emlpot,
 !$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
       end subroutine
       module subroutine delete_energi_on_device()
@@ -101,6 +104,7 @@ c
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
 !$acc&                  er,edsp,edsprec,ect,
 !$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
+!$acc&                  emlpot,
 !$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
       end subroutine
 
@@ -117,7 +121,9 @@ c
 !$acc update host(esum,eb,ea,eba,eub,eaa,eopb,eopd,
 !$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,eat,
 !$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
+!$acc&                  er,edsp,edsprec,ect,
 !$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
+!$acc&                  emlpot,
 !$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
 
          ebonded = 
@@ -134,16 +140,20 @@ c
          if (ept  /=real(0,r_p)) print 30, 'ept    = ',ept
          if (ebt  /=real(0,r_p)) print 30, 'ebt    = ',ebt
          if (ett  /=real(0,r_p)) print 30, 'ett    = ',ett
-         if (eat  /=real(0,r_p)) print 30, 'eat    = ',ett
+         if (eat  /=real(0,r_p)) print 30, 'eat    = ',eat
          if (eopb /=real(0,r_p)) print 30, 'eopb   = ',eopb
          if (eopd /=real(0,r_p)) print 30, 'eopd   = ',eopd
          if (eg   /=real(0,r_p)) print 30, 'eg     = ',eg
          if (ex   /=real(0,r_p)) print 30, 'ex     = ',ex
+         if (emlpot /=real(0,r_p)) print 30, 'emlpot  =',emlpot
          if (ebonded/=real(0,r_p)) print 30, 'ebonded =',ebonded
          if (ec   /=real(0,r_p)) print 30, 'ec     = ',ec
          if (ev   /=real(0,r_p)) print 30, 'ev     = ',ev
+         if (er   /=     0     ) print 30, 'er     = ',enr2en(er)
+         if (edsp /=     0     ) print 30, 'edsp   = ',enr2en(edsp)
          if (em   /=real(0,r_p)) print 30, 'em     = ',em
          if (ep   /=real(0,r_p)) print 30, 'ep     = ',ep
+         if (ect  /=     0     ) print 30, 'ect    = ',enr2en(ect)
          if (ensmd/=real(0,r_p)) print 30, 'ensmd  = ',ensmd
          if (eDaMD/=real(0,r_p)) print 30, 'eDaMD  = ',eDaMD
          if (ePaMD/=real(0,r_p)) print 30, 'ePaMD  = ',ePaMD

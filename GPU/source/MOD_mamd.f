@@ -63,7 +63,7 @@ c     gamd_deltaV
 c     aMDwattype
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module mamd
       implicit none
       logical amddebug
@@ -109,8 +109,6 @@ c
       real(t_p) amdboostW1, amdboostavgW1
       real(r_p) gamd_factor_dih, gamd_factor_tot, gamd_factor_wat1
       integer aMDwattype(2)
-!$acc declare create(aMDwattype)
-      save
       end
 
 

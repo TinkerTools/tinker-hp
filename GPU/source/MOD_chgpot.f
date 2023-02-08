@@ -24,7 +24,7 @@ c     ccorrect_scale   vscale value of ccorrect_ik interaction
 c     n_cscale         number of cscale interactions
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module chgpot
       implicit none
       real(t_p) electric

@@ -17,7 +17,7 @@ c     lz_WorkSpace   holds the workspace for lanzcos iterations
 c     lz_SS[*][_]    holds the storage space for module subroutine -- (*)instances  (_)inc precision
 c     lz_T[*]        holds tridiagonal matrix computed from lanzcos iterations (*)dipoles
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 c
       module orthogonalize
 #ifdef _OPENACC

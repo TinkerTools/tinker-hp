@@ -15,7 +15,7 @@ c     ###################################################################
       use vec
       use vec_elec
       implicit none
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
 !PGI$ ATTRIBUTES ALIGN:64::kvec,kvec1,kvec2
       integer kvec(maxelst),kvec1(maxelst),kvec2(maxelst)

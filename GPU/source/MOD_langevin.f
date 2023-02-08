@@ -13,7 +13,7 @@ c     gamma : friction parameter in ps-1
 c     Rn : white noise 
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module langevin
       implicit none
       real(t_p) gamma

@@ -20,7 +20,7 @@ c     isb       angle and bond numbers used in stretch-bend
 c     winisb    window object corresponding to isb
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module strbnd
 #ifdef USE_NVSHMEM_CUDA
       use tinTypes,only: i2dDPC=> Int2dDevPointerContainer

@@ -12,7 +12,7 @@ c
 c
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module utilvec
       use tinheader ,only: ti_p,re_p
       use cell

@@ -18,7 +18,7 @@ c     symbol     modified atomic symbol for each atom type
 c     describe   string identifying each of the atom types
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module katoms
       use sizes ,only: maxtyp
       implicit none

@@ -16,7 +16,7 @@ c     pgrp   connected types in polarization group of each atom type
 c     ddir   direct polarization damping value for each atom type
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kpolr
       use sizes ,only: maxtyp,maxvalue
       implicit none

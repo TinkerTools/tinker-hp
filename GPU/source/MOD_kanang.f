@@ -13,7 +13,7 @@ c
 c     anan   angle-angle cross term parameters for each atom class
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kanang
       use sizes ,only: maxclass
       implicit none

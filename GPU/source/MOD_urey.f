@@ -22,7 +22,7 @@ c     nburey    numbers of Urey-Bradley interactions before each atom
 c     winnburey    window object corresponding to nburey
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module urey
       implicit none
       integer nurey,nureyloc

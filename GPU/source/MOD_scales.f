@@ -14,7 +14,7 @@ c     scale      multiplicative factor for each optimization parameter
 c     set_scale  logical flag to show if scale factors have been set
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module scales
       implicit none
       real(r_p), pointer :: scale(:)

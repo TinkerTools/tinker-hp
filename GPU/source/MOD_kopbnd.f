@@ -17,7 +17,7 @@ c     kopb      signature of atom classes for out-of-plane bending
 c     kopb_sys  system signature of atom classes for out-of-plane bending
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kopbnd
       implicit none
       integer maxnopb

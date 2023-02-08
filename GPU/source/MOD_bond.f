@@ -20,7 +20,7 @@ c     nbondloc   local number of bond stretches in the system
 c     ibnd    numbers of the atoms in each bond stretch
 c     winibnd    window object corresponding to ibnd
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module bond
 #ifdef USE_NVSHMEM_CUDA
       use tinTypes,only: i2dDPC=>Int2dDevPointerContainer 

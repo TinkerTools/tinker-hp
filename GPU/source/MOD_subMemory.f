@@ -12,7 +12,7 @@ c
 c     tinMemory submodule contains the implementation part of
 c     of tinMemory
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
       submodule(tinMemory) subMemory
       use atoms  ,only: natoms=>n
@@ -2632,13 +2632,17 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
             allocate(array(nstr:s_alloc))
             if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
+#ifdef _OPENACC
                if ( async_queue.ne.acc_async_sync ) then
                call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)
      &                     ,rec_stream)
                else
+#endif
                call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)
      &                     ,int(0,mipk))
+#ifdef _OPENACC
                end if
+#endif
             end if
             s_array = s_alloc*szoTp
             s_prmem = s_prmem + s_array
@@ -2667,13 +2671,17 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               s_prmem = s_prmem + s_array
               if (btest(cfg,memacc)) then
 !$acc enter data create(array) async( async_queue )
+#ifdef _OPENACC
                 if ( async_queue.ne.acc_async_sync ) then
                 call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)
      &                      ,rec_stream)
                 else
+#endif
                 call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)
      &                      ,int(0,mipk))
+#ifdef _OPENACC
                 end if
+#endif
               sd_prmem =sd_prmem + s_array
               end if
             endif
@@ -2703,6 +2711,17 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
             allocate(array(s_alloc))
             s_array = s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
+#ifdef _OPENACC
+            if ( async_queue.ne.acc_async_sync ) then
+            call mem_set(array,0.0_re_p,int(s_alloc,mipk)
+     &                  ,rec_stream)
+            else
+#endif
+            call mem_set(array,0.0_re_p,int(s_alloc,mipk)
+     &                  ,int(0,mipk))
+#ifdef _OPENACC
+            end if
+#endif
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
            if(debMem) print*,'alloc rm ',n,s_alloc
@@ -2724,6 +2743,17 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
                allocate(array(s_alloc))
                s_array = s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
+#ifdef _OPENACC
+               if ( async_queue.ne.acc_async_sync ) then
+               call mem_set(array,0.0_re_p,int(s_alloc,mipk)
+     &                     ,rec_stream)
+               else
+#endif
+               call mem_set(array,0.0_re_p,int(s_alloc,mipk)
+     &                     ,int(0,mipk))
+#ifdef _OPENACC
+               end if
+#endif
                 s_prmem =  s_prmem + s_array
                sd_prmem = sd_prmem + s_array
             endif
@@ -2753,6 +2783,17 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
             allocate(array(s_alloc))
             s_array = s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
+#ifdef _OPENACC
+            if ( async_queue.ne.acc_async_sync ) then
+            call mem_set(array,0.0_re_p,int(s_alloc,mipk)
+     &                  ,rec_stream)
+            else
+#endif
+            call mem_set(array,0.0_re_p,int(s_alloc,mipk)
+     &                  ,int(0,mipk))
+#ifdef _OPENACC
+            end if
+#endif
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
            if(debMem) print*,'alloc rm ',n,s_alloc
@@ -2774,6 +2815,17 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
                allocate(array(s_alloc))
                s_array = s_alloc*szoRp
 !$acc enter data create(array) async( async_queue )
+#ifdef _OPENACC
+               if ( async_queue.ne.acc_async_sync ) then
+               call mem_set(array,0.0_re_p,int(s_alloc,mipk)
+     &                     ,rec_stream)
+               else
+#endif
+               call mem_set(array,0.0_re_p,int(s_alloc,mipk)
+     &                     ,int(0,mipk))
+#ifdef _OPENACC
+               end if
+#endif
                 s_prmem =  s_prmem + s_array
                sd_prmem = sd_prmem + s_array
             endif

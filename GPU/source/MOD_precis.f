@@ -15,7 +15,7 @@ c     small   the smallest relative floating point spacing
 c     huge    the largest relative floating point spacing
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module precis
       implicit none
       real(t_p) tiny,small,huge

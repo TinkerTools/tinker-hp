@@ -55,7 +55,7 @@ c     use_basin  logical flag governing use of Gaussian basin
 c     use_wall   logical flag governing use of droplet boundary
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kgeoms
       implicit none
       integer npfix

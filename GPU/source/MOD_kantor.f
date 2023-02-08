@@ -18,7 +18,7 @@ c     kat      id of atom classes for angle-torsion terms of the model
 c     kat_sys  id of atom classes for angle-torsion terms of the system
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kantor
       implicit none
       integer maxnat

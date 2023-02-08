@@ -18,7 +18,7 @@ c     s_driver  CUDA Driver memory size
 c     s_sfWork  Scaling factor workspace size
 c     s_tinWork Tinker-HP workSpace Estimation
 
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
       module nvshmem
       use,intrinsic:: iso_c_binding

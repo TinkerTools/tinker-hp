@@ -28,7 +28,7 @@ c     mmffaromc  cationic aromatic rings parameters
 c     mmffaroma  anionic aromatic rings parameters
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module merck
       use sizes
       implicit none

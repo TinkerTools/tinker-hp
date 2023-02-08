@@ -44,7 +44,7 @@ c     use_shortvlist   logical flag governing use of short range vdw neighbor li
 c     use_shortdlist   logical flag governing use of short range dispersion neighbor list
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module cutoff
       implicit none
       real(t_p) vdwcut,chgcut

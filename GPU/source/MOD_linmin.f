@@ -18,7 +18,7 @@ c     angmax   maximum angle between search direction and -gradient
 c     intmax   maximum number of interpolations during line search
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module  linmin
       implicit none
       integer intmax

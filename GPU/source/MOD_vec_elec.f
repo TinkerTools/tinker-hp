@@ -16,7 +16,7 @@ c
       use polgrp
       use vec
       implicit none
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 !PGI$ ATTRIBUTES ALIGN:64:: kpolelocvec
       integer kpolelocvec(maxelst)
 !PGI$ ATTRIBUTES ALIGN:64:: kpolelocvec1

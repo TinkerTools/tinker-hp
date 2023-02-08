@@ -20,7 +20,7 @@ c     ipit      numbers of the atoms in each pi-orbital torsion
 c     winipit    window object corresponding to ipit
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module pitors
 #ifdef USE_NVSHMEM_CUDA
       use tinTypes,only: i2dDPC=>Int2dDevPointerContainer 

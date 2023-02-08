@@ -18,7 +18,7 @@ c     ti3      torsional parameters for improper 3-fold rotation
 c     kti      string of atom classes for improper torsional parameters
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kitors
       implicit none
       integer maxnti

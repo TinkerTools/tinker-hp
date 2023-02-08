@@ -43,7 +43,7 @@ c     mutInt        1 if an atom is to be mutated,     0 otherwise
 c     winmut    window object corresponding to mut
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module mutant
       implicit none
       integer nmut

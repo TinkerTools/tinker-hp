@@ -17,7 +17,7 @@ c     g_svx*  scalar component of stored virial Cartesian
 c     use_virial  switch on virial computing
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module virial
       implicit none
       logical:: use_virial=.false.

@@ -29,7 +29,7 @@ c     stepint  index of inner intermediate timestep for short range
 c     step_c   index of outer timestep
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module moldyn
       implicit none
       real(r_p),allocatable,target :: v(:,:),a(:,:),aalt(:,:),aalt2(:,:)

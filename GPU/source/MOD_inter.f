@@ -13,7 +13,7 @@ c
 c     einter   total intermolecular potential energy
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module inter
       implicit none
       real(r_p) einter

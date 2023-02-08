@@ -15,7 +15,7 @@ c     ###################################################################
       use vec
       use vec_elec
       implicit none
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       !PGI$ ATTRIBUTES ALIGN:64:: imscalevec
       integer imscalevec(maxelst)
       !PGI$ ATTRIBUTES ALIGN:64:: r2vec1

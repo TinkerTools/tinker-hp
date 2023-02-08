@@ -18,10 +18,10 @@ c     sqrttwo  numerical value of the square root of two
 c     twosix   numerical value of the sixth root of two
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module math
       implicit none
-      integer,private,parameter :: math_prec=t_p !Get precision from tinker_precision.h
+      integer,private,parameter :: math_prec=t_p !Get precision from tinker_macro.h
       real(t_p) radian,pi
       real(t_p) sqrtpi,logten
       real(t_p) sqrttwo,twosix

@@ -26,7 +26,7 @@ c     ktt       signature of torsion-torsion atom classes
 c     ktt_sys   system signature of torsion-torsion atom classes
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module ktrtor
       implicit none
       integer maxntt,maxtgrd,maxtgrd2

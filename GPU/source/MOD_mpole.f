@@ -62,7 +62,7 @@ c     npolelocnlb_pair  total number of electrostatics pair blocks interaction
 c     npolelocnlb2_pair  total number of electrostatics pair blocks interaction from C2 nblist
 c     nshortpolelocnlb2_pair  total number of electrostatics pair blocks interaction in short range interaction list
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module mpole
       !use iso_c_binding,only:c_ptr
       implicit none

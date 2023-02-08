@@ -19,7 +19,7 @@ c     atorunit  convert angle-torsion energy to kcal/mole
 c     ttorunit  convert stretch-torsion energy to kcal/mole
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module torpot
       implicit none
       real(t_p) idihunit,itorunit,torsunit

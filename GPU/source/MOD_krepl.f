@@ -16,7 +16,7 @@ c     prdmp     alpha Pauli repulsion parameter for each atom class
 c     prele     number of valence electrons for each atom class
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module krepl
       use sizes ,only: maxtyp
       implicit none

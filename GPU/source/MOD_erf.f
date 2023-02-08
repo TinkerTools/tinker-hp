@@ -30,7 +30,7 @@ c             the equation:  W(x) * (1-0.5/x**2) = XMIN, where
 c             W(x) = exp(-x*x)/[x*sqrt(pi)]
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module erf_mod
       use tinheader ,only:ti_p
       implicit none

@@ -48,5 +48,9 @@
 #define __use_longRange__  512
 #define __use_ewald__     1024
 #define __use_lambdadyn__ 2048
+#define __use_thole__     4096
+#define __use_ddamp__     8192
+#define __use_chgpen__   16384
+#define __use_chgflx__   32768
 
 #endif

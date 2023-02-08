@@ -34,7 +34,7 @@ c     maxtors         torsional angles in molecular system
 c     maxbitor        bitorsions in molecular system
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module sizes
       implicit none
       integer maxvalue,maxgrp
@@ -55,8 +55,13 @@ c
       parameter (maxclass =  1000)
       parameter (maxprm   = 25000)
       parameter (maxkey   =  5000)
+#if TINKERHP_REL_BUILD
       parameter (maxvlst  =  2500)
-      parameter (maxelst  =  1200)
+      parameter (maxelst  =  1250)
+#else
+      parameter (maxvlst  =  1500)
+      parameter (maxelst  =   700)
+#endif
       parameter (maxfft   =   864)
       parameter (maxring  = 10000)
       parameter (maxbio   = 10000)

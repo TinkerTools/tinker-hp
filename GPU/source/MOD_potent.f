@@ -82,6 +82,7 @@ c     PotentialAll     logical flag enable with all potential (default)
 c     PotentialAmoeba* logical flag enable when Amoeba forcefield is being processed
 c     PotentialCharmm  logical flag enable with Charmm forcefield
 c     PotentialWater*  logical flag enable with Water's main potential terms
+c     use_mlpot         flag enable when ML potential is being processed
 c
       module amdpotent
       implicit none
@@ -116,6 +117,7 @@ c
       logical use_dispreal,use_dispself,use_disprec
       logical use_repulsshort,use_dispshort,use_dispshortreal
       logical use_chgtrnshort
+      !logical use_ctransfer,use_dispersion,use_repulsion
       logical use_repulslong,use_displong,use_chgtrnlong
       logical use_smd_velconst, use_smd_forconst
       logical use_dewald,use_chgpen
@@ -130,6 +132,7 @@ c
       logical use_born,use_pmecore
       logical use_emtp
       logical bonded_l,shortnonBonded_l,nonBonded_l
+      logical use_mlpot,use_ml_embedding,use_ani_only
       logical use_lambdadyn
       logical use_OSRW
 

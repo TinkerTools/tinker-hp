@@ -20,7 +20,7 @@ c     epsv     van der Waals well depth parameter for each atom
 c     vadradrule  pairwise vdw rule type
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kvdws
       use sizes
       implicit none

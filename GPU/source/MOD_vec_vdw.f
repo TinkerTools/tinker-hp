@@ -10,7 +10,7 @@ c     ##                                                               ##
 c     ###################################################################
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module vec_vdw
       use sizes
       use couple

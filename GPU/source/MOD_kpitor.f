@@ -17,7 +17,7 @@ c     kpt      integer siganture of atom classes for pi-orbital torsion terms
 c     kpt_sys  system siganture of atom classes for pi-orbital torsion terms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kpitor
       implicit none
       integer maxnpt

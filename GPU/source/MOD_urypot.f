@@ -15,7 +15,7 @@ c     qury       quartic coefficient in Urey-Bradley potential
 c     ureyunit   convert Urey-Bradley energy to kcal/mole
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module urypot
       implicit none
       real(t_p) cury,qury

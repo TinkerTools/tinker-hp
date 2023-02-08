@@ -20,7 +20,7 @@ c     windmppr window object corresponding to damppr
 c     winelepr window object corresponding to elepr
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module repel
       implicit none
       integer nrep,nreploc

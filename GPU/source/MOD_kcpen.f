@@ -19,7 +19,7 @@ c     cpele     valence electron magnitude for each atom class
 c     cpalp     alpha charge penetration parameter for each atom class
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kcpen
       use sizes ,only: maxclass
       implicit none

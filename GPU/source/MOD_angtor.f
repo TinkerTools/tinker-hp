@@ -20,7 +20,7 @@ c     kant      1-, 2- and 3-fold angle-torsion force constants
 c     winkant   window object corresponding to kant
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module angtor
       implicit none
       integer nangtor,nangtorloc

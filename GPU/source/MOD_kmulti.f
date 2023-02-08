@@ -17,7 +17,7 @@ c     mpaxis   type of local axis definition for atomic multipoles
 c     kmp      string of atom types for atomic multipoles
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kmulti
       use sizes
       implicit none

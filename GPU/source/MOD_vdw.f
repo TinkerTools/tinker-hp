@@ -56,7 +56,7 @@ c     vdw_lcut2  defines a lower bound under which any vdwinteraction is neglect
 c     vdweAbsurd  defines an energy limit above which any vdwinteraction is skiped
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module vdw
       implicit none
       integer nvdw,nvt,nvdwloc,nvdwbloc,nvdwlocnl

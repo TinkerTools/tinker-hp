@@ -20,7 +20,7 @@ c     ist       torsion and bond numbers used in stretch-torsion
 c     winist    window object corresponding to ist
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module strtor
       implicit none
       integer nstrtor,nstrtorloc

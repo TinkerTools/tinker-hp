@@ -23,7 +23,7 @@ c     molcule   number of the molecule to which each atom belongs
 c     winmolcule    window object corresponding to molcule
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module molcul
       implicit none
       integer nmol,nmoleloc

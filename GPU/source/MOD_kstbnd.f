@@ -17,7 +17,7 @@ c     ksb      integer signature of atom classes for stretch-bend terms
 c     ksb_sys  integer signature of atom classes for stretch-bend terms of the system simulated
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kstbnd
       implicit none
       integer maxnsb

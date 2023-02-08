@@ -36,7 +36,7 @@ c     bufrat1   list of indexes of buffer of constraints to send at each rattle 
 c     bufrat2   list of indexes of buffer of constraints to receive at each rattle iteration
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module freeze
       implicit none
       integer nrat,nratx

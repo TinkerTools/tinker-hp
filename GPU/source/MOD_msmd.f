@@ -78,7 +78,7 @@ c     nsmdglob 1D table corresponded to the number of each SMD atoms
 c     smdprocprint Decide which proc has to send the information to the master
 c ####################################
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module msmd
       implicit none
       logical use_smdk2, use_atfol 

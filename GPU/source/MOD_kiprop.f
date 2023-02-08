@@ -17,7 +17,7 @@ c     tdi      ideal dihedral angle values for improper dihedrals
 c     kdi      string of atom classes for improper dihedral angles
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kiprop
       implicit none
       integer maxndi

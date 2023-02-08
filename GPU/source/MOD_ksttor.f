@@ -16,7 +16,7 @@ c     btcon    force constant parameters for stretch-torsion
 c     kbt      string of atom classes for stretch-torsion terms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module ksttor
       implicit none
       integer maxnbt

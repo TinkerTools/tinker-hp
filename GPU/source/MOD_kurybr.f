@@ -18,7 +18,7 @@ c     ku      integer signature of atom classes for Urey-Bradley terms
 c     ku_sys  integer signature of atom classes for Urey-Bradley terms of the simulated system
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module kurybr
       implicit none
       integer maxnu

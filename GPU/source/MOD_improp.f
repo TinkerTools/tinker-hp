@@ -21,7 +21,7 @@ c     nbimprop number of improper diehedral before each atom
 c     winnbimprop    window object corresponding to nbimprop
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module improp
       implicit none
       integer niprop,niproploc

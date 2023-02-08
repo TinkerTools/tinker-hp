@@ -37,7 +37,7 @@ c     kt5      string of atom classes for 5-ring torsions
 c     kt4      string of atom classes for 4-ring torsions
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module ktorsn
       implicit none
       integer maxnt,maxnt5,maxnt4
