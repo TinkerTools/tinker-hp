@@ -1,12 +1,13 @@
 # Prerequisites
 
+
 ## Hardware
 A relatively recent Nvidia GPU is mandatory for the GPU code. One with at least a compute capability above 5.0.
 
 Nothing special is needed for the CPU code.
 
 
-## Compilers, Operating Systems and Environment
+## Compilers, Operating Systems
    - A GNU or Intel FORTRAN compiler for the CPU code (Not recommended at this point)
    - The most recent [PGI compiler](https://www.pgroup.com/products/community.htm).
    - The nvidia CUDA C/C++ compiler for CUDA Files in GPU code
@@ -19,24 +20,40 @@ Nothing special is needed for the CPU code.
      This package contains everything you need to build Tinker-HP (GPU code). Previously listed items are already available within it. However, we need to make sure the installation has been correctly done and the environment variables (PATH; CPATH & NVHPC) are set and updated. Follow instructions described in `$PREFIX/modulefiles` with `$PREFIX` the installation directory of your package.
 
 
+## Python Environment 
+If you plan to combine machine learning with MD, we provide an environment file `tinker-hp/GPU/tinkerml.yaml` which installs python modules for machine learning. This specific python environment requires [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) to be installed on the host machine. Install the environment according to the next instructions before proceeding to Tinker-HP.
+
+To create the environment, run in your shell: `conda env create -f tinkerml.yaml`; <br />
+Activate or deactivate it respectively with `conda activate tinkerml` or `conda deactivate`;  <br />
+
+Composition of the environment:  
+* [Pytorch](https://pytorch.org/), [TensorFlow](https://www.tensorflow.org/) are the building block of most of machine learning potential libraries.
+* Deepmd-kit and libdeepmd are used for [DeePMD](https://docs.deepmodeling.com/projects/deepmd/en/master/index.html) models.
+* Our [TorchANI](https://aiqm.github.io/torchani/)-based library composed of lot of new features, more coming soon!
+
+
 ## Mandatory Libraries
    - FFt libraries
       - `libfftw3` or `libfftw3f` in single or mixed precision mode.
         You will need to provide in that case FFTW install directory to both Tinker's and 2decompfft's Makefile.
-        Exporting `FFTW=/path_to_fftw3` as an environment variable should be enough to make.
+        Setting `FFTW=/path_to_fftw3` as an environment variable should be enough to make.
       - It is also possible to use the generic fft provided with your compiler (Default behavior).
    - Intel MKL Library (Only for host/CPU build!)
-      - Export `MKLROOT=/path_to_mkl_library` inside your shell environment
-      - `lmkl_intel_lp64 lmkl_sequential lmkl_core` are required
+      - Set `MKLROOT=/path_to_mkl_library` inside your shell environment
+      - `libmkl_intel_lp64 libmkl_sequential libmkl_core` are required
    - `2decomp_fft` library already provided inside the repository.
-   - `libstdc++` Standard C++ library
-      - Export `GNUROOT=/path_to_gnu`.
-      This is not mandatory for a first and unique installation with `install.sh` but it is required for developers or when you need to recompile in an other configuration.
-      e.g. `export GNUROOT=/usr` for conventional Linux systems
+   - Standard C++ library
+      - Set `GNUROOT=/path_to_gnu`. This is not mandatory for a first and unique installation with `ci/install.sh` but it is required for developers or when you need to recompile in an other configuration.  
+      e.g. `export GNUROOT=/usr` for conventional Linux systems. The aim is to fetch `libstdc++` from `${GNUROOT}/lib64`
    - `CUDA` (Toolkit and libraries)
       - Cuda(C/C++) compiler `nvcc`
       - Recent CUDA libraries are required by the GPU code. Every CUDA version since 9.1 has been tested.
-        They are delivered with NVIDIA HPC-SDK packages
+        From now on, CUDA Toolkit is a part of NVIDIA HPC-SDK package.
 
-### Notes
-It is important to make sure that your environments (both build and run) are version consistent. In most cases, we have to pay attention our native CUDA version does not differ from PGI provided CUDA and/or NVIDIA driver installed. This matter will not happen with Nvidia HPC Package installed and loaded in your environment.
+:warning: ** !! Warning !!**  
+If you are building with machine learning interface, please ensure the consistency of your environment between the one of Tinker-HP (HPC-SDK) and python ; especially the installed version of CUDA. Default python environment comes with cuda11.3 version `(tinkerml.yaml)`. Therefore, it is mandatory to use an NVIDIA HPC-SDK package which contains cuda11.3?  
+Should that instruction being discarded, unexpected behaviors may occur while running Tinker-HP.
+
+
+## Notes
+It is necessary to make sure that your environments (both build and run) are version consistent. In most cases, we have to pay attention, our native CUDA version does not differ from PGI provided CUDA and, is compatible with NVIDIA installed driver. Naturally, this issue will not occur with Nvidia HPC-SDK Package.
