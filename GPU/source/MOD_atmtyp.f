@@ -20,7 +20,7 @@ c     story     descriptive type for each atom in system
 c     win*      window object corresponding to *
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module atmtyp
       implicit none
       integer,   pointer :: tag(:),class(:)

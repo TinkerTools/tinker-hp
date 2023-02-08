@@ -35,7 +35,7 @@ c     opbtyp     type of out-of-plane bend potential energy function
 c     opbtypI    Integer type of out-of-plane bend potential energy function
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module angpot
       implicit none
       enum, bind(C)

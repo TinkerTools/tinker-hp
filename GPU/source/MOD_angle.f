@@ -24,7 +24,7 @@ c     nangleloc numbers of bond angles in the local domain
 c     angleloc correspondance between global and local bond angles
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module angle
 #ifdef USE_NVSHMEM_CUDA
       use tinTypes,only: i2dDPC=>Int2dDevPointerContainer

@@ -36,7 +36,7 @@ c     aeg     geometric restraint energy partitioned over atoms
 c     aex     extra energy term partitioned over atoms
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module analyz
       implicit none
       real(t_p), allocatable :: aesum(:),aem (:),aep (:),aev (:)

@@ -27,7 +27,7 @@ c     type    atom type number for each atom in the system
 c     wintype window object corresponding to type
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module atoms
       implicit none
       integer n,nloop,n_pe

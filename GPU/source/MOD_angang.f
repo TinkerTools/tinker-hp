@@ -20,7 +20,7 @@ c     iaa       angle numbers used in each angle-angle term
 c     winiaa    window object corresponding to iaa
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module angang
       implicit none
       integer nangang,nangangloc

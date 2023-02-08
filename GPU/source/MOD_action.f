@@ -45,13 +45,19 @@ c
       integer ner,nedsp,nect
       integer nem,nep
       integer neg,nex
+      integer nemlpot
+      logical :: action_data_ondevice=.FALSE.
       real*8 nem_,nep_,nev_,nec_
-      contains
 
+      contains
       subroutine create_action_data_ondevice
-!$acc enter data create(nev,nec,nem,nep,nem_,nep_,nev_,nec_)
+!$acc enter data create(nev,ner,nedsp,nec,nem,nep,nect
+!$acc&     ,nem_,nep_,nev_,nec_,nemlpot)
+      action_data_ondevice=.TRUE.
       end subroutine
       subroutine delete_action_data_ondevice
-!$acc exit data delete(nev,nec,nem,nep,nem_,nep_,nev_,nec_)
+!$acc exit data delete(nev,ner,nedsp,nec,nem,nep,nect
+!$acc&    ,nem_,nep_,nev_,nec_,nemlpot)
+      action_data_ondevice=.FALSE.
       end subroutine
       end

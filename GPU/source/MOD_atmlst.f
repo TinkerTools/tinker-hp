@@ -54,7 +54,7 @@ c     vdwglobnl  localnl - global vdw correspondance
 c     dispglobnl  localnl - global dispersion correspondance 
 c     poleglobbnl  localnl - global direct multipole correspondance 
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module atmlst
 #ifdef USE_NVSHMEM_CUDA
       use tinTypes,only: i2dDPC=>Int2dDevPointerContainer

@@ -17,7 +17,7 @@ c     listarg   flag to mark available command line arguments
 c     arg       strings containing the command line arguments
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module argue
       implicit none
       integer maxarg

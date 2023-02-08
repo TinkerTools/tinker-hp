@@ -6,7 +6,7 @@ c
 c     Umbrella Sampling control module
 c
 
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module USampling
       use kgeoms
       implicit none
