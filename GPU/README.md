@@ -33,5 +33,5 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - **Plumed** support available
    - **Colvars** support available
    - **Neural Network** Interface via *Deep-HP*
-   - **Lambda dynamic** support available for *free energy* calculations
+   - **Lambda dynamics** support available for *free energy* calculations
    -  **More to come**
