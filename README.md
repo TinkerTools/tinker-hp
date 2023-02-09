@@ -2,11 +2,11 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
 <H2><B>News</B></H2>
-
+------------------------------
 <B>-Update 02/2023: support for neural networks potentials (ANI-2X, DeepMD etc...) is available. Check the Deep-HP module paper: https://arxiv.org/abs/2207.14276</B>
 
 <B>-Update 02/2023: support for the AMOEBA+ potential now available.</B>
-------------------------------
+
 <B>-Update 10/2022: New website for Tinker-HP, check it out!!! https://tinker-hp.org
 
 <B>-Update 03/02/2021 : PLUMED Support for version 1.2 GPUs !</B>
