@@ -68,7 +68,7 @@ NN_SUPPORT  ?= 0
 # Verbosity
 VERBOSE     ?= 0
 # Release Build
-REL_BUILD   ?= 0
+REL_BUILD   ?= 1
 
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
