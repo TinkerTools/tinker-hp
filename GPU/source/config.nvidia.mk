@@ -122,7 +122,7 @@ endif
 ifneq ($(add_options_cu),$(empty__))
    pp_flags_cuda_c_ += $(add_options_cu)
 endif
-pp_flags_f_         := $(pp_flags_f_)$(pp_flags_common_)
+pp_flags_f_         := $(pp_flags_f_) $(pp_flags_common_)
 pp_flags_cxx_       += $(pp_flags_common_)
 pp_flags_cuda_c_    += $(pp_flags_common_)
 pp_flags_cuda_f_    += $(pp_flags_common_)
