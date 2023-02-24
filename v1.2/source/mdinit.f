@@ -209,7 +209,6 @@ c fs -> ps
      $          char(0))
             call plumed_f_gcmd("setLogFile"//char(0),trim(pl_output)//
      $          char(0))
-            call plumed_f_gcmd("setLogFile"//char(0),pl_output)
             call plumed_f_gcmd("setNatoms"//char(0),n)
             call plumed_f_gcmd("setMDEngine"//char(0),"TinkerHP");
             call plumed_f_gcmd("setTimestep"//char(0),dt);
