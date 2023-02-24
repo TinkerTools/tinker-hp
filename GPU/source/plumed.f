@@ -60,7 +60,6 @@ c fs -> ps
       call plumed_f_gcmd("setPlumedDat"//char(0),trim(pl_input)//
      $    char(0))
       call plumed_f_gcmd("setLogFile"//char(0),trim(pl_output)//char(0))
-      call plumed_f_gcmd("setLogFile"//char(0),pl_output)
       call plumed_f_gcmd("setNatoms"//char(0),n)
       call plumed_f_gcmd("setMDEngine"//char(0),"TinkerHP");
       call plumed_f_gcmd("setTimestep"//char(0),dt);
@@ -179,7 +178,7 @@ c
       if (ftot_l) then
 !$acc parallel loop collapse(2) async
          do i = 1,nloc; do j = 1,3
-            de_tot(j,i) = de_tot(j,i) - md2mdr(pl_force(j,i))
+            de_tot(j,i) = de_tot(j,i) - rp2mdr(pl_force(j,i))
          end do; end do
       else
 !$acc parallel loop collapse(2) async

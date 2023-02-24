@@ -166,9 +166,10 @@ c
 !$acc routine
       implicit none
       integer  ,intent(in)::
-     &          k,ia,ib,ic,id,ie,iitortor,ntortorloc,n,ver,fea
+     &          k,iitortor,ntortorloc,n,ver,fea
      &         ,loc(n),i12(maxvalue,n),n12(n),atomic(*)
      &         ,typeAtm(*),tnx(maxntt),tny(maxntt)
+      integer  ,intent(inout):: ia,ib,ic,id,ie
       logical  ,intent(in):: use_amd_dih,use_group,use_virial
      &         ,use_polymer
       real(t_p),intent(in)::

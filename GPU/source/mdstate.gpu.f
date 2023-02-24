@@ -3,6 +3,7 @@
       use atoms
       use argue
       use bath
+      use boxes
       use cell
       use domdec     ,only: nproc,rank,nloc
       use energi     ,only: etot_ave,etot_std

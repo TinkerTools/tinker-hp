@@ -1111,7 +1111,7 @@ c
       use inform ,only: deb_Path
       use iounit
       use mpole
-      use nblistgpu_inl
+      use nblist_b_inl
       use neigh
       use mpi
       use utilgpu
@@ -1230,7 +1230,7 @@ c
       use inform ,only: deb_Path
       use iounit
       use mpole
-      use nblistgpu_inl
+      use nblist_b_inl
       use neigh
       use mpi
       use utilgpu
@@ -1357,7 +1357,7 @@ c
       use domdec
       use inform ,only: deb_Path
       use iounit
-      use nblistgpu_inl
+      use nblist_b_inl
       use neigh
       use utilgpu
       use mpi
@@ -1465,7 +1465,7 @@ c
       use domdec
       use inform ,only: deb_Path
       use iounit
-      use nblistgpu_inl
+      use nblist_b_inl
       use neigh
       use utilgpu
       use mpi
