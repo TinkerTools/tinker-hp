@@ -13,7 +13,7 @@ c
 c     "ehal1" calculates the buffered 14-7 van der waals energy and
 c     its first derivatives with respect to cartesian coordinates
 c
-c     *_t texture variable destined to be attached to their target
+c     *_t pointer variable destined to be attached to their target
 #ifdef _CUDA
 #define TINKER_CUF
 #include  "tinker_macro.h"
@@ -38,7 +38,7 @@ c     *_t texture variable destined to be attached to their target
         integer  ,pointer,device::ired_t(:)
      &           ,loc_ired_t(:),vblst_t(:),ivblst_t(:)
      &           ,jvdw_t(:),i12_p(:,:)
-        real(t_p),pointer,texture::radmin_t(:,:),epsilon_t(:,:)
+        real(t_p),pointer,device::radmin_t(:,:),epsilon_t(:,:)
         real(t_p),pointer,device::
      &            kred_t(:),xred_t(:),yred_t(:),zred_t(:)
         parameter(one1=1, two1=2)

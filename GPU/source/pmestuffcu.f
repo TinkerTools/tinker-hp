@@ -32,7 +32,7 @@ c
 #   endif
         integer,parameter :: bsorder=5
 #endif
-        ! PME texture variable
+        ! PME pointer variable
         real(t_p),constant :: recip_c(3,3)
 #if (defined(SINGLE)||defined(MIXED))
         real(t_p),constant :: pme_eps
