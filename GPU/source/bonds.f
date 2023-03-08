@@ -47,6 +47,7 @@ c
       use couple
       use domdec
       use iounit
+      use inform  ,only: deb_Path
       use nvshmem
       use utilgpu
       use tinMemory
@@ -66,7 +67,7 @@ c
 c
 c     loop over all atoms, storing the atoms in each bond
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'bonds init'
+        if(deb_Path) print*,'bonds init'
         nbond = 0
         do i = 1, n
            do j = 1, n12(i)

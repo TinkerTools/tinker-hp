@@ -367,7 +367,7 @@ c
          call initcuSolver(rec_stream)
 #endif
 12       format(1x,"Cluster2: Iproc",I5,3x,"K grid",3I6,3x,"km",I6)
-         if (tinkerdebug) print 12 ,rank,dcx,dcy,dcz,km
+         if (tinkerdebug.gt.0) print 12 ,rank,dcx,dcy,dcz,km
          call prmem_request(grplst,n)
          call prmem_request(npergrp,km)
          call prmem_request(atmofst,n)

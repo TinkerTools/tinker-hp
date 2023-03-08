@@ -280,7 +280,7 @@ c
          gnorm(1:2) => gbuff1(5:6)
       end if
 
-      if (precnd1) call polarEingenVal
+      if (btest(precnd1,0)) call polarEingenVal
 c
 c     allocate some memory and setup the preconditioner:
 c
@@ -321,7 +321,7 @@ c
       ggold2 = zero
 !$acc end serial
 c
-      if (precnd1) then
+      if (btest(precnd1,0)) then
          call projectorOpe(mu,mu,0)
          call invertDefaultQmat(ef,mu,1.0_ti_p)
       end if
@@ -357,7 +357,7 @@ c
           pp(i,j,k) = reg2
       end do; end do; end do
       end if
-      if (precnd1) call projectorOpe(pp,pp,0)
+      if (btest(precnd1,0)) call projectorOpe(pp,pp,0)
 
       call timer_exit( timer_other,quiet_timers )
 
@@ -456,7 +456,7 @@ c        end do; end do; end do
         call pcg_newDirection(6*npoleloc_e,ggnew1,ggold1,ggnew2,ggold2
      &                     ,zr,pp)
 
-        if (precnd1) call projectorOpe(pp,pp,0)
+        if (btest(precnd1,0)) call projectorOpe(pp,pp,0)
 
 !$acc serial async(def_queue)
 !$acc&       present(ggold1,ggold2,ggnew1,ggnew2,ene1,ene2,gbuff1)
@@ -497,8 +497,8 @@ c
            ! Not converged Abort
            write(0,1050) it,max(gnorm(1),gnorm(2))
            write(0,'(6f12.7)') gbuff1(1:4),gbuff(1:2)
-           call minmaxone(ef,size(ef),'ef')
-           call minmaxone(mu,size(mu),'mu')
+           call minmaxone(ef(1:,1,1),size(ef),'ef')
+           call minmaxone(mu(1:,1,1),size(mu),'mu')
            abort = .true.
            goto 10  !Exit Loop
         end if

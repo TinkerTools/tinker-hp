@@ -11,7 +11,7 @@
      &             ,nbloc,n,use_group,use_polymer
      &             ,e,ebt,debt,vxx,vxy,vxz,vyy,vyz,vzz,ver,fea
      &             )
-        use tinheader ,only: precm_eps
+        use tinheader ,only: ti_p,re_p,precm_eps
         use ktrtor    ,only: maxntt
 !$acc routine seq
         implicit none

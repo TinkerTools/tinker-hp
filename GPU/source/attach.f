@@ -22,6 +22,7 @@ c
       use couple
       use domdec
       use iounit
+      use inform  ,only: deb_Path
       use utilgpu
       implicit none
       integer i,j,k,m,ierr
@@ -35,7 +36,7 @@ c
 c
 c       only master of the node fill the arrays
 c
-      if (rank.eq.0.and.tinkerdebug) print*, 'attach init'
+      if (deb_Path) print*, 'attach init'
       if (hostrank.ne.0) goto 70
       n13 = 0
       i13 = 0

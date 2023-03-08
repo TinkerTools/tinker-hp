@@ -19,12 +19,6 @@ c
 #include "atomicOp.h.f"
         contains
 #include "ker_tors.inc.f"
-      end module
-
-      subroutine etors3
-      implicit none
-      call etors3a
-      end
 c
 c
 c     ###########################################################
@@ -48,7 +42,6 @@ c
       use bound
       use domdec
       use energi
-      use etors3_inl
       use group
       use inform
       use iounit
@@ -147,17 +140,12 @@ c
          end if
       end do
       end
+      end module
 
-      subroutine etors3a
+      subroutine etors3
       use deriv   ,only: det
+      use etors3_inl
       use tors
       implicit none
-      interface
-      subroutine etors3a_(tors1,tors2,tors3,tors4,tors5,tors6,det)
-      real(t_p),intent(in):: tors1(:,:),tors2(:,:),tors3(:,:),tors4(:,:)
-     &         ,tors5(:,:),tors6(:,:)
-      real(r_p)  det(*)
-      end subroutine
-      end interface
       call etors3a_(tors1,tors2,tors3,tors4,tors5,tors6,det)
       end subroutine

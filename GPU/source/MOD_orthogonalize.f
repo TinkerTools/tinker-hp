@@ -56,8 +56,10 @@ c
 
       interface printVec
          module procedure printVec1_
+         module procedure printVec1_2d
 #if TINKER_MIXED_PREC
          module procedure printVec1_r
+         module procedure printVec1_r_2d
 #endif
       end interface
 
@@ -137,6 +139,36 @@ c
 
       end subroutine
 
+      subroutine printVec1_2d(name,Vec,siz,prec,precD,period)
+      implicit none
+      character(*)         :: name
+      real(t_p),intent(in) :: Vec(1,*)
+      integer,intent(in)   :: siz
+      integer,optional     :: prec,precD,period
+      integer i,begi,last,prec_,precd_,period_, nloop
+      character*15::fmt,fmt1
+
+      prec_=10; precd_=6; period_=10;
+      if (present(prec)  ) prec_  = prec
+      if (present(precD) ) precd_ = precD
+      if (present(period)) period_= period
+      nloop = ceiling(siz/(period_*1.0d0))
+
+ 11   format("(6X,"I0,"I",I0,")")
+ 12   format("(I6,",I0,"F",I0,".",I0,")")
+      write(fmt1,11) period_,prec_
+      write(fmt,12) period_,prec_,precd_
+
+      write(*,*) name
+      write(*,fmt1) [ (i,i=1,period_) ]
+      do i = 1,nloop
+         begi = (i-1)*period_+1
+         last = min(i*period_,siz)
+         write(*,fmt) i,Vec(1,begi:last)
+      end do
+
+      end subroutine
+
       subroutine printVec1_r(name,Vec,siz,prec,precD,period)
       implicit none
       character(*)         :: name
@@ -163,6 +195,36 @@ c
          begi = (i-1)*period_+1
          last = min(i*period_,siz)
          write(*,fmt) i,Vec(begi:last)
+      end do
+
+      end subroutine
+
+      subroutine printVec1_r_2d(name,Vec,siz,prec,precD,period)
+      implicit none
+      character(*)         :: name
+      real(r_p),intent(in) :: Vec(1,*)
+      integer,intent(in)   :: siz
+      integer,optional     :: prec,precD,period
+      integer i,begi,last,prec_,precd_,period_, nloop
+      character*15::fmt,fmt1
+
+      prec_=10; precd_=6; period_=10;
+      if (present(prec)  ) prec_  = prec
+      if (present(precD) ) precd_ = precD
+      if (present(period)) period_= period
+      nloop = ceiling(siz/(period_*1.0d0))
+
+ 11   format("(6X,"I0,"I",I0,")")
+ 12   format("(I6,",I0,"F",I0,".",I0,")")
+      write(fmt1,11) period_,prec_
+      write(fmt,12) period_,prec_,precd_
+
+      write(*,*) name
+      write(*,fmt1) [ (i,i=1,period_) ]
+      do i = 1,nloop
+         begi = (i-1)*period_+1
+         last = min(i*period_,siz)
+         write(*,fmt) i,Vec(1,begi:last)
       end do
 
       end subroutine

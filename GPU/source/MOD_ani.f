@@ -39,11 +39,11 @@ c
         ! Initiate devices and python ressources for ani
         function init_ml_ressources(rank,nn_name,model_file
      &       ,debug)  bind(C)
-          import c_int32_t
+          import c_int32_t,c_char
           integer(c_int32_t) :: init_ml_ressources
           integer(c_int32_t),value :: rank, debug
-          character(*) :: nn_name
-          character(*) :: model_file
+          character(kind=c_char),dimension(*) :: nn_name
+          character(kind=c_char),dimension(*) :: model_file
         end function
 
         function ml_models(m_c, a_en, f_c, ce_a, a_c, 

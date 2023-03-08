@@ -184,6 +184,7 @@ c
       use atoms
       use bound
       use chgpot
+      use chgpen
       use couple
       use cutoff
       use domdec
@@ -194,9 +195,11 @@ c
       use mpole
       use mplpot
       use neigh
+      use potent
       use shunt
       use tinheader ,only:ti_p,re_p
       use mpi
+      implicit none
       integer i,j,iglob,kglob,nnelst
       integer ii,kkk,iipole,kkpole
       real(t_p) e,f
@@ -505,6 +508,7 @@ c
       use energi
       use ewald
       use fft
+      use inform ,only: deb_Path
       use math
       use mpole
       use pme
@@ -532,7 +536,7 @@ c
       integer, allocatable :: req2send(:),req2rec(:)
       real(t_p), allocatable :: qgridmpi(:,:,:,:,:)
 c
-      if (rank==0.and.tinkerdebug) write(*,*) ' emrecip'
+      if (deb_Path) write(*,*) ' emrecip'
       if (use_pmecore) then
         nprocloc = nrec
         rankloc = rank_bis

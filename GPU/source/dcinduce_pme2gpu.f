@@ -18,6 +18,7 @@ c
       use domdec
       use ewald
       use iounit
+      use inform    ,only: deb_Path
       use interfaces,only: otf_dc_efld0_directgpu_p
       use math
       use mpole
@@ -56,7 +57,7 @@ c
       external pc_dc_tmatxb_pmegpu
       external otf_dc_tmatxb_pmegpu
 c
-      if (rank.eq.0.and.tinkerdebug)
+      if (deb_Path)
      &   write(*,'(2x,a)') 'dcinduce_pme2gpu'
       if (.not.use_polar) return
 c
@@ -287,6 +288,7 @@ c
       use domdec
       use ewald
       use iounit
+      use inform     ,only: deb_Path
       use interfaces
       use math
       use mpole
@@ -345,7 +347,7 @@ c
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
 c
-      if (rank.eq.0.and.tinkerdebug)
+      if (deb_Path)
      &   write(*,'(3x,a)') 'inducedc_pme2gpu'
 
       call prmem_request(buffermpi1,3,nrhs,max(npoleloc,1),

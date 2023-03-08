@@ -19,7 +19,7 @@ c
       use dcdmod   ,only:dcdio
       use inform   ,only:deb_Path,deb_Force,abort,n_fwriten
      &             ,dint1,dint2,mmo=>minmaxone
-      use,intrinsic:: iso_c_binding ,only: c_ptr,c_f_pointer
+      use,intrinsic:: iso_c_binding ,only: c_ptr,c_f_pointer,c_loc
       use mpi
       use mdstuf   ,only:integrate
       use mdstuf1  ,only:epot
@@ -368,6 +368,9 @@ c
          of0 = of0 + dr_stride3
          deW1aMD(1:3,1:dr_stride) => de_buff0(of0+1:of0+dr_stride3)
          of0 = of0 + dr_stride3
+      else
+          deamdD(1:3,1:1) => de_buff0(of0-dr_stride3+1:)
+         deW1aMD(1:3,1:1) => de_buff0(of0-dr_stride3+1:)
       end if
 
       ! ------------------------------------------------------------------------
@@ -1760,7 +1763,7 @@ c
       open( unit=iunit,file=Ffile,status='new' )
  12   format(3F18.10)
  13   format(F30.10)
-      write (iunit,'(I)') n
+      write (iunit,'(I0)') n
       write (iunit,13 ) etot
 
       do i = 1,n

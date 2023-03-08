@@ -78,11 +78,11 @@ c
 
       ! Polarisation Solvers present in Tinker-HP
       enum,bind(C)
-      enumerator pcg_SId=1
+      enumerator :: pcg_SId=1
       enumerator jacobi_SId
       enumerator tcg_SId
-      enumerator dc_diis_SId=5
-      enumerator step_pcg_SId=60
+      enumerator :: dc_diis_SId=5
+      enumerator :: step_pcg_SId=60
       enumerator step_pcg_short_SId
       end enum
 
@@ -105,11 +105,11 @@ c
       real(t_p) w2scale,w3scale
       real(t_p) w4scale,w5scale
       real(t_p) tcgomega,tcgomegashort
-      character*6 poltyp
-      logical :: omegafitstep,tcgomegafit
-      integer :: omegafitfreq
+      character(6) poltyp
+      logical omegafitstep,tcgomegafit
+      integer omegafitfreq
       real(t_p), allocatable :: residue(:,:), munp(:,:), efres(:,:)
-      real(t_p):: epCG
+      real(t_p) epCG
       logical use_thole,use_dirdamp,dpequal
 
       integer  ,allocatable:: ucorrect_ik(:),dpcorrect_ik(:),

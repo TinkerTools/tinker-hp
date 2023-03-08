@@ -323,8 +323,11 @@ c#endif
       !print*,max_factorp,ninteract_scaling_p,ninteract_scaling_p/n
       call shmem_request(allscal_p,winallscal_p,[ninteract_scaling_p]
      &     ,config=mhostacc)
-      call shmem_request(typscal_p,wintypscal_p,[ninteract_scaling_p]
+      call shmem_request(typscal_p,wintypscal_p,[ninteract_scaling_p+1]
      &     ,config=mhostacc)
+      ! +1 is added to the size of typscal_p in prevision of the 4-1
+      ! scaling interaction search which is made in ~polar_scaling~
+      ! routines
 
 
 c!$acc parallel loop
@@ -1104,7 +1107,7 @@ c
 
       if (tinkerdebug.gt.0) then
  42      format(1x,'polar_scaling(',1X,3I10,') rank(',I0,')',A)
-         dpe = merge(' dpequal','',dpequal)
+         dpe = merge(' dpequal','        ',dpequal)
          print 42, n_uscale,n_dpscale,n_dpuscale,rank,trim(dpe)
       end if
 
@@ -1421,7 +1424,7 @@ c
 
       if (tinkerdebug.gt.0) then
  42      format(1x,'polar_scaling(',1X,3I10,') rank(',I0,')',A)
-         dpe = merge(' dpequal','',dpequal)
+         dpe = merge(' dpequal','        ',dpequal)
          print 42, n_uscale,n_dpscale,n_dpuscale,rank,trim(dpe)
       end if
 
@@ -1739,7 +1742,7 @@ c
 #endif
       if (tinkerdebug.gt.0) then
  42      format(1x,'polar_scaling1(',1X,3I10,') rank(',I0,')',A)
-         dpe = merge(' dpequal','',dpequal)
+         dpe = merge(' dpequal','        ',dpequal)
          print 42, n_uscale,n_dpscale,n_dpuscale,rank,trim(dpe)
       end if
 c

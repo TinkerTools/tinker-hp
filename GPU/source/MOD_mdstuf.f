@@ -49,7 +49,7 @@ c     pres    holds the system pressure at current timestep
 c
       module mdstuf1
       implicit none
-      integer,private:: isDataAlloc=.false.
+      logical  ,private:: isDataAlloc=.false.
       real(r_p),allocatable::derivs(:,:)
       real(r_p) etot,epot,eksum,ealt,ealt2,eml,ealtml
       real(r_p) temp,pres

@@ -14,7 +14,7 @@ c     "molecule" counts the molecules, assigns each atom to
 c     its molecule and computes the mass of each molecule
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine molecule(init)
       use sizes
       use atmlst
@@ -22,6 +22,7 @@ c
       use atoms
       use couple
       use domdec
+      use inform
       use molcul
       use mpi
 #ifdef _OPENACC
@@ -42,7 +43,7 @@ c
 c
 c     allocate global arrays
 c
-        if (rank.eq.0.and.tinkerdebug) print*,'molecule init'
+        if (deb_Path) print*,'molecule init'
         call alloc_shared_mol
 c
 c       only master of the node fill the arrays

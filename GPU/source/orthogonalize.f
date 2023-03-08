@@ -232,7 +232,7 @@ c
       end if
 
       ! Apply diag preconditionner
-      if (MdiagITmat) then
+      if (MdiagITmat.ne.0) then
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
          do k=1,npoleloc; do j=1,nrhs; do i=1,3
             Rout(i,j,k) = diag(k)*Rout(i,j,k)
@@ -377,7 +377,7 @@ c
 
       end subroutine
 
-      subroutine lanzcos_init(k0,compEv,mu)
+      subroutine lanzcos_init(k0,compEv,mu_)
       use domdec
       use orthogonalize
       use mpole
@@ -393,7 +393,7 @@ c
       implicit none
       integer  ,parameter :: nrhs=2
       integer  ,intent(in):: k0,compEv
-      real(t_p),intent(in):: mu(3,nrhs,*)
+      real(t_p),intent(in):: mu_(3,nrhs,*)
       real(r_p) l2_norm,l2_norm1
       real(t_p) temp
       integer i,j,k,ierr,sz
@@ -406,8 +406,8 @@ c
       EigenVec_l= merge(.true.,.false.,nEigenV.gt.0)
 
       if (nEigenV.gt.krylovDim) then
- 61      format(' ERROR ! --- Krylov Space dimension is lower than the
-     & Eigen vector number ---',/,2I4, ) 
+ 61      format(' ERROR ! --- Krylov Space dimension is lower than the'
+     &   ,' Eigen vector number ---',/,2I4 ) 
          write(0,61) krylovDim, nEigenV
       end if
 
@@ -429,9 +429,10 @@ c
       call Tinker_shellEnv("MINV_TMAT",MdiagITmat,0)
 
       if(debg.and.rank.eq.0) then
-         if (OrthBase) print*, ' < ----  Enable Base Orthoginalisation
-     & ---> '
-         if (MdiagITmat) print*, ' < ---- Enable M^{-1} * A ----  > '
+         if (OrthBase.ne.0) print*,' < ----  Enable Base'
+     &       ,' Orthoginalisation ---> '
+         if (MdiagITmat.ne.0)
+     &       print*, ' < ---- Enable M^{-1} * A ----  > '
       end if
 
       ! lz_SS   [ Vp  | Vp1 |  lz_Q  |  lz_Q1  | lz_AQ | lz_AQ1 | lz_Z | lz_Z1 | MatE_ | MatE1_ ]
@@ -497,23 +498,23 @@ c
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
          do k = 1,npoleloc; do j=1,2; do i=1,3
             if (btest(j,0)) then
-               lz_V(i,j,k,1) = mu(i,j,k)*diag(k)
+               lz_V(i,j,k,1) = mu_(i,j,k)*diag(k)
             else
-               lz_V(i,j,k,1) = mu(i,j,k)*diag(k)
+               lz_V(i,j,k,1) = mu_(i,j,k)*diag(k)
             end if
          end do; end do; end do
       else
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
          do k = 1,npoleloc; do j=1,2; do i=1,3
             if (btest(j,0)) then
-               lz_V(i,j,k,1) = mu(i,j,k)
+               lz_V(i,j,k,1) = mu_(i,j,k)
             else
-               lz_V(i,j,k,1) = mu(i,j,k)
+               lz_V(i,j,k,1) = mu_(i,j,k)
             end if
          end do; end do; end do
       end if
 
-      if (MdiagITmat) then
+      if (MdiagITmat.ne.0) then
          call InnerMProdEf(lz_V,lz_V,npoleloc,l2_norm,l2_norm1)
       else
          call InnerProdEf(lz_V,lz_V,npoleloc,l2_norm,l2_norm1)
@@ -592,15 +593,15 @@ c
 
       call MatxVec(lz_V(:,:,:,1),res)
 
-      if (MdiagITmat) then
-         call InnerMProdEf(lz_V,res,npoleloc,alpha,alpha1)
+      if (MdiagITmat.ne.0) then
+         call InnerMProdEf(lz_V(1:,1:,1:,1),res,npoleloc,alpha,alpha1)
       else
-         call InnerProdEf (lz_V,res,npoleloc,alpha,alpha1)
+         call InnerProdEf (lz_V(1:,1:,1:,1),res,npoleloc,alpha,alpha1)
       end if
 !$acc wait
       alphaa = alpha; alphaa1=alpha1;
 
-      if (MdiagITmat) then
+      if (MdiagITmat.ne.0) then
 !$acc    parallel loop collapse(3) default(present) async(rec_queue)
          do k=1,npoleloc; do j = 1,2; do i = 1,3
             if (btest(j,0)) then
@@ -640,10 +641,12 @@ c
       nrmbi1= real(1,r_p)/beta1
 
       if (tinkerdebug.gt.0) then
-         if(MdiagITmat) then
-            call InnerMProdEf(lz_V,res,npoleloc,db_scal,db_scal1)
+         if(MdiagITmat.ne.0) then
+            call InnerMProdEf(lz_V(1:,1:,1:,1),res,npoleloc,db_scal
+     &                       ,db_scal1)
          else
-            call InnerProdEf(lz_V,res,npoleloc,db_scal,db_scal1)
+            call InnerProdEf(lz_V(1:,1:,1:,1),res,npoleloc,db_scal
+     &                      ,db_scal1)
          end if
 !$acc wait
          if (rank.eq.0) then
@@ -692,10 +695,12 @@ c
 
          if (tinkerdebug.gt.0) then  ! (DEBUG INFO)
 
-         if(MdiagITmat) then
-         call InnerMProdEf(lz_V(1,1,1,2),lz_V,npoleloc,db_scal,db_scal1)
+         if(MdiagITmat.ne.0) then
+         call InnerMProdEf(lz_V(1:,1:,1:,2),lz_V,npoleloc,db_scal
+     &                    ,db_scal1)
          else
-         call InnerProdEf(lz_V(1,1,1,2),lz_V,npoleloc,db_scal,db_scal1)
+         call InnerProdEf(lz_V(1:,1:,1:,2),lz_V,npoleloc,db_scal
+     &                   ,db_scal1)
          end if
 
 c        if (EigenVec_l.and.kk.gt.lossOrthIt) then
@@ -708,10 +713,12 @@ c        end if
 
          call MatxVec(lz_V(:,:,:,1),res)
 
-         if (MdiagITmat) then
-            call InnerMProdEf(lz_V,res,npoleloc,alpha,alpha1)
+         if (MdiagITmat.ne.0) then
+            call InnerMProdEf(lz_V(1:,1:,1:,1),res,npoleloc,alpha
+     &                       ,alpha1)
          else
-            call InnerProdEf (lz_V,res,npoleloc,alpha,alpha1)
+            call InnerProdEf (lz_V(1:,1:,1:,1),res,npoleloc,alpha
+     &                       ,alpha1)
          end if
 !$acc wait
 
@@ -723,7 +730,7 @@ c        end if
 
          alphaa= alpha; alphaa1= alpha1
 
-         if (MdiagITmat) then
+         if (MdiagITmat.ne.0) then
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
             do k=1,npoleloc; do j=1,2; do i=1,3
                if (btest(j,0)) then
@@ -766,7 +773,7 @@ c        end if
          nrmbi = real(real(1,r_p)/beta,t_p)
          nrmbi1= real(real(1,r_p)/beta1,t_p)
 
-         if (OrthBase.and.EigenVec_l.and.kk.gt.lossOrthIt) then  ! FULL ORTHOGONALISATION
+         if (OrthBase.ne.0.and.EigenVec_l.and.kk.gt.lossOrthIt) then  ! FULL ORTHOGONALISATION
 !$acc parallel loop gang vector_length(256) default(present) async
             do it = 1,kk-02
                alpha1 = 0
@@ -844,15 +851,15 @@ c     end if
       if (kk.ne.krylovDim+1) write(*,15) 'early termination of',
      &   'lanzcos ',kk,'k0(',krylovDim,')'
          if (EigenVec_l) then
-            if( MdiagITmat) then
+            if( MdiagITmat.ne.0) then
             call chkMOrthogonality_(lz_Q,3*npoleloc,krylovDim
      &          ,3*npoleloc,'verb    ')
             call chkMOrthogonality_(lz_Q1,3*npoleloc,krylovDim
      &          ,3*npoleloc,'verb    ')
             else
-            call chkOrthogonality(lz_Q,3*npoleloc,krylovDim
+            call chkOrthogonality(lz_Q(1:,1:,1),3*npoleloc,krylovDim
      &          ,3*npoleloc,'lz_Q    ')
-            call chkOrthogonality(lz_Q1,3*npoleloc,krylovDim
+            call chkOrthogonality(lz_Q1(1:,1:,1),3*npoleloc,krylovDim
      &          ,3*npoleloc,'lz_Q1   ')
             end if
          end if
@@ -1429,7 +1436,7 @@ c     end if
       integer lda
       real(t_p),pointer:: work(:,:,:,:)
       !real(t_p) eps
-      logical MdiagITmat_s
+      integer MdiagITmat_s
       interface
       subroutine MatxVec(Rin,Rout)
       real(t_p),contiguous:: Rin(:,:,:),Rout(:,:,:)
@@ -1440,7 +1447,7 @@ c     end if
       lz_V(1:3,1:2,1:npolebloc,1:2) => lz_WorkSpace(1:12*npolebloc)
 
       MdiagITmat_s  = MdiagITmat
-      MdiagITmat    = .false.
+      MdiagITmat    = 0
       saveResAmat_l = .false.
 
 c      do it = 1,nEigenV
@@ -1703,7 +1710,7 @@ c
          Vout(i,j,k) = Vin(i,j,k) - tot
       end do; end do; end do;
 
-      call minmaxone(Vout,6*npoleloc,'Vout')
+      call minmaxone(Vout(1:,1,1),6*npoleloc,'Vout')
 
       end subroutine
 
@@ -2029,16 +2036,16 @@ c
       work(1:3,1:2,1:npoleloc)=> lz_WorkSpace(6*npoleloc+1:12*npoleloc)
 
       if(debg) print*, 'adaptedDeflat2'
-      call diagPrecnd(Vin,work,Minv)
-      if(debg) call minmaxone(work,6*npoleloc,'work')
+      call diagPrecnd(Vin,work)
+      if(debg) call minmaxone(work(1:,1,1),6*npoleloc,'work')
       if (.false.) then
          call projectorOpe(work,work,0)
       else
          call ProjectorPTransGeneric(work,work)
       end if
-      if(debg) call minmaxone(work,6*npoleloc,'work')
+      if(debg) call minmaxone(work(1:,1,1),6*npoleloc,'work')
       call ApplyQxV(Vin,work,1.0_ti_p)
-      if(debg) call minmaxone(work,6*npoleloc,'work')
+      if(debg) call minmaxone(work(1:,1,1),6*npoleloc,'work')
       if(debg) print*, '-----------------------------------------------'
 
 !$acc parallel loop async default(present)
@@ -2119,9 +2126,9 @@ c
       krylovDim = wKD - 1
 
       if (tinkerdebug.gt.0.and.EigenVec_l) then
-         call chkOrthogonality(lz_Q,3*npoleloc,krylovDim
+         call chkOrthogonality(lz_Q(1:,1:,1),3*npoleloc,krylovDim
      &       ,3*npoleloc,'lz_Q    ')
-         call chkMOrthogonality_(lz_Q,3*npoleloc,krylovDim
+         call chkMOrthogonality_(lz_Q(1:,1:,1),3*npoleloc,krylovDim
      &       ,3*npoleloc,'lz_Q    ')
       end if
 
@@ -2200,7 +2207,7 @@ c            Evec(ii,2) = Evec(ii,2) + tot2
       call lanzcos_iteration
 
       do i = 1,nlop
-      call bissectionGivens1(lz_T,lz_T(sz_max+1),sz_init
+      call bissectionGivens1(lz_T,lz_T(sz_max+1:),sz_init
      &                      ,ncount,ri,si,tol,Eig)
 
  12   format(A,I7,A,20F10.6)

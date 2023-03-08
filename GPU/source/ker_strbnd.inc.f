@@ -13,7 +13,7 @@
 #endif
      &          ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
      &          ,tver,tfea)
-        use tinheader,only: ti_p
+        use tinheader,only: ti_p,re_p
         use math     ,only: radian
         implicit none
         integer  ,intent(in):: i,istrbnd,loc(*),tver,tfea,isb(3,*)

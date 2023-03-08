@@ -26,7 +26,6 @@ c
 
       subroutine etortor1gpu_(i12,n12,typAtm,atomic,dett)
       use atmlst
-      use atmtyp
       use atoms    ,only: n,x,y,z
       use bitor
       use bound

@@ -272,8 +272,12 @@ c
             ms_a(3*(i-1)+j) = a(j,i) 
          end do
       end do
-      if ( respa_l) call mem_move(ms_alt ,aalt ,int(3*n,8),rec_stream)
-      if (respa1_l) call mem_move(ms_alt2,aalt2,int(3*n,8),rec_stream)
+#if TINKER_SINGLE_PREC
+      __TINKER_FATAL__
+#else
+      if( respa_l)call mem_move_r8(ms_alt ,aalt ,int(3*n,8),rec_stream)
+      if(respa1_l)call mem_move_r8(ms_alt2,aalt2,int(3*n,8),rec_stream)
+#endif
       end subroutine
 
       module subroutine mds_prt

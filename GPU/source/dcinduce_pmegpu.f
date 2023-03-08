@@ -709,6 +709,7 @@ c
       use domdec
       use ewald
       use group
+      use inform ,only: deb_Path
       use math
       use mpole
       use neigh
@@ -732,7 +733,7 @@ c
       save    zero, one, f50
       character*10 mode
 
-      if (rank.eq.0.and.tinkerdebug)
+      if (deb_Path)
      &   write(*,'(4x,a)') 'pc_dc_tmatxb_pmegpu'
 
       zero = 0.0d0

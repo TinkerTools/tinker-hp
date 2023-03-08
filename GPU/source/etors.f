@@ -120,7 +120,7 @@ c
       subroutine etors0a_(tors1,tors2,tors3,tors4,tors5,tors6,det)
       real(t_p),intent(in):: tors1(:,:),tors2(:,:),tors3(:,:),tors4(:,:)
      &         ,tors5(:,:),tors6(:,:)
-      real(r_p)  det(*)
+      real(r_p),intent(inout)::  det(1)
       end subroutine
       end interface
       call etors0a_(tors1,tors2,tors3,tors4,tors5,tors6,det)

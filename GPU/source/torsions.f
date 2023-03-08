@@ -21,6 +21,7 @@ c
       use bond
       use couple
       use domdec
+      use inform
       use iounit
       use nvshmem
       use tors
@@ -37,7 +38,7 @@ c
 c
 c     loop over all bonds, storing the atoms in each torsion
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'torsions init'
+        if(deb_Path) print*,'torsions init'
         ntors = 0
         do i = 1, nbond
            ib = ibnd(1,i)

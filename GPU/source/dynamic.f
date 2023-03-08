@@ -47,7 +47,7 @@ c
       use mpi
       use potent  ,only: use_ml_embedding
       use utils
-      use utilgpu ,only: rec_queue
+      use utilgpu ,only: rec_queue,ti_p,re_p
       use timestat
       use tinMemory
       implicit none

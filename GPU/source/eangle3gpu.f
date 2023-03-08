@@ -18,17 +18,10 @@ c
 c
 #include "tinker_macro.h"
       module eangle3gpu_inl
-#include "atomicOp.h.f"
-        interface
-        subroutine eangle3gpu_(dea,deW1aMD,atmType,afld)
-         integer  ,intent(in)   :: atmType(:)
-         real(t_p),intent(inout):: afld(:)
-         real(r_p),intent(inout):: dea(*),deW1aMD(*)
-        end subroutine
-        end interface
-        contains
+#include "atomicOp.h.f"      
+      contains
+
 #include "ker_angle.inc.f"
-      end module
 
       subroutine eangle3gpu_(dea,deW1aMD,atmType,afld)
       use action
@@ -41,7 +34,6 @@ c
       use bound
       use domdec
       use energi
-      use eangle3gpu_inl
       use group
       use inform
       use iounit
@@ -207,11 +199,15 @@ c
       call timer_exit( timer_eangle )
       end
 
+      end module
+
       subroutine eangle3gpu
       use angle
       use atoms
       use deriv
       use eangle3gpu_inl,only: eangle3gpu_
+      use utilgpu       ,only: lam_buff
       implicit none
-      call eangle3gpu_(dea,deW1aMD,type,afld)
+      ! lam_buff acts as an unsued but allocated variable to this call
+      call eangle3gpu_(lam_buff,lam_buff,type,afld)
       end subroutine

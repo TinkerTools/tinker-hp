@@ -387,7 +387,7 @@ c
          if (use_colvars) then
             call def_lambdadyn_init
          else
- 42   format(/," --- Tinker-HP : ",
+ 42   format(/," --- Tinker-HP : "
      &,"cannot perform lambda dynamic without colvar",/,6x
      &,"PROPOSAL : Either remove -lambdadyn- keyword or activate "
      &,"colvar feature")
@@ -835,7 +835,9 @@ c
 c
       if (.not.exist) then
          if (track_mds) call init_rand_engine
+#ifdef _OPENACC
          if (track_mds) call reset_curand_seed
+#endif
       end if
 c
 c     check for any prior dynamics coordinate sets

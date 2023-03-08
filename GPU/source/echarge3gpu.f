@@ -108,7 +108,7 @@ c
       parameter(half=0.5_ti_p)
       parameter(one=1.0_ti_p)
 
-      if(rank.eq.0.and.tinkerdebug) write (*,*) 'echarge3cgpu'
+      if(deb_Path) write (*,*) 'echarge3cgpu'
       call timer_enter(timer_echarge)
 c
 c     zero out the Ewald summation energy and partitioning
@@ -227,6 +227,7 @@ c
       use shunt
       use timestat
       use usage
+      use tinheader ,only: ti_p
       use tinTypes
       use utilgpu
       use virial
@@ -501,6 +502,7 @@ c
       use energi
       use ewald
       use fft
+      use inform    ,only: deb_Path
       use interfaces,only: grid_pchg_site_p
       use math
       use mpi
@@ -508,6 +510,7 @@ c
       use pme1
       use potent
       use timestat
+      use tinheader ,only: ti_p
       use utils     ,only: set_to_zero1
       use utilgpu   ,only: rec_queue
       implicit none
@@ -532,7 +535,7 @@ c     return if the Ewald coefficient is zero
 c
       if (aewald .lt. 1.0d-6)  return
 c
-      if (rank.eq.0.and.tinkerdebug)
+      if (deb_Path)
      &   write(*,'(2x,a)') 'ecrecipgpu'
 
       if (use_pmecore) then

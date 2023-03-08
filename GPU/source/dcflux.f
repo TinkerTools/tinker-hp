@@ -17,7 +17,7 @@ c     Dependent Charge Flux into the Polarizable AMOEBA+ Potential",
 c     Journal of Physical Chemistry Letters, 11, 419-426 (2020)
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine dcflux (pot,dcfx,dcfy,dcfz)
       use atmlst
       use sizes

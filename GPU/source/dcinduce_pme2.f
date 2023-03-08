@@ -59,7 +59,7 @@ c
       external pc_dc_tmatxb_pme
       external otf_dc_tmatxb_pme
 c
-      if (rank.eq.0.and.tinkerdebug) write(*,*) 'dcinduce_pme2'
+      if (rank.eq.0.and.btest(tinkerdebug,0)) write(*,*) 'dcinduce_pme2'
       if (.not.use_polar) return
 c
  1000 format(' illegal polalg in newinduce.')

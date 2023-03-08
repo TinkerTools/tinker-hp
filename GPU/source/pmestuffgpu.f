@@ -295,6 +295,7 @@ c
       end do
 
       else if (cfg.eq.c_charge.or.cfg.eq.c_disp) then
+         ! FIXME GnU thetai1_p(1,1,1) instead of thetai1_p 
 
 !$acc parallel loop num_gangs(4*nSMP)
 !$acc&         present(x,y,z,recip,igrid,thetai1_p
@@ -314,19 +315,19 @@ c
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(1,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai1_p(1,1,1))
+         call bsplgen_chg (w,k,thetai1_p)
          w    = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
          fr   = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(2,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai2_p(1,1,1))
+         call bsplgen_chg (w,k,thetai2_p)
          w    = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
          fr   = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(3,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai3_p(1,1,1))
+         call bsplgen_chg (w,k,thetai3_p)
       end do
 
       end if
@@ -995,6 +996,7 @@ c
      &           ,thetai1_p,thetai2_p,thetai3_p,qgridin_2d
       use potent ,only: use_pmecore
       use utilgpu,only: ngangs_rec,rec_queue
+      use tinheader ,only: ti_p
       implicit none
       integer iichg,iglob,iloc,iatm,isite,rankloc
      &       ,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3
@@ -1121,6 +1123,7 @@ c
       use pme
       use potent
       use utilgpu,only: rec_queue,ngangs_rec
+      use tinheader ,only: ti_p
       implicit none
       integer istart,iend,jstart,jend,kstart,kend
       integer istat,ied,jstat,jed,kstat,ked
@@ -1440,6 +1443,7 @@ c
       use potent
       use utils
       use utilgpu,only: rec_queue,ngangs_rec
+      use tinheader ,only: ti_p
       implicit none
       real(t_p),dimension(:,:)::fdip_phi1,fdip_phi2
 

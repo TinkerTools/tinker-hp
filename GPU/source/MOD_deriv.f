@@ -91,11 +91,10 @@ c
 
       module deriv
       implicit none
-      integer,parameter::ipk=int_ptr_kind()
       logical fdebs_l, tdes_l, ftot_l
       integer dr_stride,dr_stride3,dr_strider,dr_strider3
       integer dr_nb0,dr_nb1,dr_nbb,dr_nbnb,dr_nbnbr
-      integer(ipk) dr_obb,dr_obnb,dr_obnbr,dr_obws
+      integer(ipk_) dr_obb,dr_obnb,dr_obnbr,dr_obws
 
       real(r_p),allocatable,target :: de_buff0(:)
       real(r_p),allocatable,target :: de_buffr(:)
@@ -190,29 +189,29 @@ c
       real(r_p) deadd(*)
       end subroutine
       module subroutine add_forces_rec(deadd)
-      mdyn_rtyp deadd(*)
+      mdyn_rtyp deadd(dr_strider3)
       end subroutine
       module subroutine add_forces_rec1(deadd)
-      real(r_p) deadd(*)
+      real(r_p) deadd(dr_strider3)
       end subroutine
       module subroutine sum_forces_rec1(desum)
-      real(r_p) desum(*)
+      real(r_p) desum(dr_stride3)
       end subroutine
       module subroutine add_forces_rec_1d(deadd)
-      mdyn_rtyp deadd(*)
+      mdyn_rtyp deadd(dr_stride3)
       end subroutine
       module subroutine add_forces_rec_1d1(deadd,derec)
-      mdyn_rtyp deadd(*)
-      real(r_p) derec(*)
+      mdyn_rtyp deadd(dr_stride3)
+      real(r_p) derec(dr_strider3)
       end subroutine
       module subroutine add_forces_rec1_1d(deadd)
-      real(r_p) deadd(*)
+      real(r_p) deadd(dr_stride3)
       end subroutine
       module subroutine add_forces_rec1_1d1(deadd,derec)
-      real(r_p) deadd(*), derec(*)
+      real(r_p) deadd(dr_stride3), derec(dr_strider3)
       end subroutine
       module subroutine remove_desave(derivs)
-      real(r_p) derivs(3,*)
+      real(r_p) derivs(3,dr_stride)
       end subroutine
       end interface
 
@@ -232,19 +231,19 @@ c
       integer,optional:: opt
       end subroutine
       module subroutine comm_forces_rec(de_rec,opt)
-      real(r_p) de_rec(3,*)
+      real(r_p) de_rec(3,dr_strider)
       integer,optional:: opt
       end subroutine
       module subroutine comm_forces_recdir(derivs,de_rec,opt)
       implicit none
-      mdyn_rtyp,intent(inout):: derivs(*)
-      real(r_p),intent(in)::    de_rec(3,*)
+      mdyn_rtyp,intent(inout):: derivs(dr_stride3)
+      real(r_p),intent(in)::    de_rec(3,dr_strider)
       integer  ,optional:: opt
       end subroutine
       module subroutine comm_forces_recdir1(derivs,de_rec,opt)
       implicit none
-      real(r_p),intent(inout):: derivs(3,*)
-      real(r_p),intent(in)::    de_rec(3,*)
+      real(r_p),intent(inout):: derivs(3,dr_stride)
+      real(r_p),intent(in)::    de_rec(3,dr_strider)
       integer  ,optional:: opt
       end subroutine
       module subroutine comm_forces(derivs,opt)

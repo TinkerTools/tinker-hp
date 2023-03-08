@@ -28,8 +28,9 @@ c
       use openacc
 #endif
       use utilgpu,only: mem_set,rec_stream,rec_queue
+      use tinheader ,only: ti_p,re_p
       use vdw    ,only: nvdwlocnl
-      integer(4),private:: mv_realloc_i=0
+      integer(4) :: mv_realloc_i=0
 
       contains
 
@@ -69,7 +70,7 @@ c
 c     Deallocation
 c
       if (associated(shArray)) then
-         if (debMem.and.hostrank.eq.0) print 13, configure
+         if (debMem.ne.0.and.hostrank.eq.0) print 13, configure
          if (btest(configure,memacc)) then
             sd_ddmem = sd_ddmem - size(shArray)*szoi
 !$acc exit data delete(shArray)
@@ -115,7 +116,7 @@ c
 c
 c     allocation
 c
-      if (debMem.and.hostrank.eq.0) print 14,request_size,rank
+      if (debMem.ne.0.and.hostrank.eq.0) print 14,request_size,rank
       if (btest(configure,memhost)) then
         CALL MPI_Win_allocate_shared(windowsize, disp_unit,
      $       MPI_INFO_NULL, hostcomm, baseptr, winarray, ierr)
@@ -196,7 +197,7 @@ c
 c     Deallocation
 c
       if (associated(shArray)) then
-         if (debMem.and.hostrank.eq.0) print 13, configure
+         if (debMem.ne.0.and.hostrank.eq.0) print 13, configure
          if (btest(configure,memacc)) then
             sd_ddmem = sd_ddmem - (size(shArray,1)*szoi)*size(shArray,2)
 !$acc exit data delete(shArray)
@@ -245,7 +246,7 @@ c
 c
 c     allocation
 c
-      if (debMem.and.hostrank.eq.0) print 14,request_shape
+      if (debMem.ne.0.and.hostrank.eq.0) print 14,request_shape
      &                              ,request_size,rank
       if (btest(configure,memhost)) then
         CALL MPI_Win_allocate_shared(windowsize, disp_unit,
@@ -1389,7 +1390,7 @@ c
       character(*),intent(in):: error_type
       integer(4) ,parameter :: SUCCESS=0
 
-65    format ("FORTRAN ASSERT: ",A,A,1x,6I,/,15x,A,1x,"line",5I)
+65    format ("FORTRAN ASSERT: ",A,A,1x,I6,/,15x,A,1x,"line",I5)
 
       if (istat.ne.SUCCESS) then
          write(0,65) error_type," Error :",istat,filename,line
@@ -1508,7 +1509,7 @@ c
      &  "iRank"," |","Host--",2x,"Shr",7x,"Pvt",5x,"Total"," |",
      &  "Device--",2x,"Shr",7x,"Pvt",6x,"Libs",5x,"Total"," |",
      &  1x,"WorkSpace",6x,"diff",2x,"Memory (MiB)")
- 14     format(,I5," |",1x,3F10.3," |",3x,4F10.3," |",2F10.3)
+ 14     format(I5," |",1x,3F10.3," |",3x,4F10.3," |",2F10.3)
  15     format(
      &  " Rank",I4,4x,"On host",F12.3,4x,"On device",F12.3)
 
@@ -1697,7 +1698,7 @@ c
         integer(4), optional, intent(in) :: queue, config
 
         integer(4) cfg
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -1727,14 +1728,14 @@ c
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print 13,'alloc i',n.ne.s_alloc,n,rank
+           if(debMem.ne.0) print 13,'alloc i',n.ne.s_alloc,n,rank
         else if (btest(cfg,memfree).or.n.eq.0) then
            s_array = size(array)*szoi
            if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
 !$acc exit data delete(array) async( async_queue )
            end if
-           if(debMem) print*, 'dealloc i ',rank
+           if(debMem.ne.0) print*, 'dealloc i ',rank
            s_prmem = s_prmem - s_array
            deallocate(array)
         else
@@ -1746,7 +1747,7 @@ c
               ! Compute extra-reallocation if necessary
               s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
      &                    ,extra_alloc.and.n.ne.natoms)
-              if(debMem) print 14,'realloc i',n.ne.s_alloc
+              if(debMem.ne.0) print 14,'realloc i',n.ne.s_alloc
      &                           ,n,size(array),rank
 
               s_array = size(array)*szoi
@@ -1774,11 +1775,11 @@ c
       implicit none
       integer(4),intent(in)::cfg
       if (cfg.eq.0.and.n_realloc_i.gt.20) then
-         if(debMem) print*, 'enable extra allocation i',rank
+         if(debMem.ne.0) print*, 'enable extra allocation i',rank
          extra_alloc = .true.
          n_realloc_i = 0
       else if(cfg.eq.1.and.n_realloc_r.gt.20) then
-         if(debMem) print*, 'enable extra allocation r',rank
+         if(debMem.ne.0) print*, 'enable extra allocation r',rank
          extra_alloc = .true.
          n_realloc_r = 0
       end if
@@ -1799,7 +1800,7 @@ c
         integer(4), optional, intent(in) :: queue, config
 
         integer(4) cfg
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -1828,7 +1829,7 @@ c
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print 13,'alloc i8 ',n.ne.s_alloc,n,rank
+           if(debMem.ne.0) print 13,'alloc i8 ',n.ne.s_alloc,n,rank
         else if (btest(cfg,memfree).or.n.eq.0) then
            s_array = size(array)*szoi8
            if (btest(cfg,memacc)) then
@@ -1840,7 +1841,7 @@ c
            deallocate(array)
         else
            if ( n > size(array) .or. n < 4*size(array)/5 ) then
-              if(debMem) print 14,'realloc i8',n.ne.s_alloc
+              if(debMem.ne.0) print 14,'realloc i8',n.ne.s_alloc
      &                           ,n,size(array),rank
               s_array = size(array)*szoi8
               s_prmem = s_prmem - s_array
@@ -1871,7 +1872,7 @@ c
         integer(4), optional, intent(in) :: queue, config
 
         integer(4) cfg
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -1900,7 +1901,7 @@ c
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print 13,'alloc i8 ',n.ne.s_alloc,n,rank
+           if(debMem.ne.0) print 13,'alloc i8 ',n.ne.s_alloc,n,rank
         else if (btest(cfg,memfree).or.n.eq.0) then
            s_array = size(array)*szoi8
            if (btest(cfg,memacc)) then
@@ -1912,7 +1913,7 @@ c
            deallocate(array)
         else
            if ( n > size(array) .or. n < 4*size(array)/5 ) then
-              if(debMem) print 14,'realloc i8',n.ne.s_alloc
+              if(debMem.ne.0) print 14,'realloc i8',n.ne.s_alloc
      &                           ,n,size(array),rank
               s_array = size(array)*szoi8
               s_prmem = s_prmem - s_array
@@ -1946,7 +1947,7 @@ c
 
         integer(4)   cfg
         integer(8) s_alloc8
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -1979,7 +1980,7 @@ c
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print*,'alloc i o1',n.ne.s_alloc8,n,rank
+           if(debMem.ne.0) print*,'alloc i o1',n.ne.s_alloc8,n,rank
 
         else if (btest(cfg,memfree).or.n.eq.0) then
 
@@ -1997,7 +1998,7 @@ c
            if ( n > sz_array .or. n < 4*sz_array/5 ) then
               s_alloc8 = merge(n+int(real(n,8)*mem_inc,8),n
      &                        ,extra_alloc.and.n.ne.natoms)
-              if(debMem) print 14,'realloc i o1',n.ne.s_alloc8
+              if(debMem.ne.0) print 14,'realloc i o1',n.ne.s_alloc8
      &                           ,n,sz_array,rank
 
               s_array = sz_array*szoi
@@ -2031,7 +2032,7 @@ c
 
         integer(4)   cfg
         integer(8) s_alloc8
-        integer(int_ptr_kind()) s_array,sz_array
+        integer(mipk) s_array,sz_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2063,7 +2064,7 @@ c
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print*,'alloc i o1',n.ne.s_alloc8,n,rank
+           if(debMem.ne.0) print*,'alloc i o1',n.ne.s_alloc8,n,rank
 
         else if (btest(cfg,memfree).or.n.eq.0) then
 
@@ -2081,7 +2082,7 @@ c
            if ( n > sz_array .or. n < 3*sz_array/5 ) then
               s_alloc8 = merge(n+int(real(n,8)*mem_inc,8),n
      &                        ,extra_alloc.and.n.ne.natoms)
-              if(debMem) print 14,'realloc i o1',n.ne.s_alloc8
+              if(debMem.ne.0) print 14,'realloc i o1',n.ne.s_alloc8
      &                           ,n,size(array),rank
 
               s_array = sz_array*szoi
@@ -2113,7 +2114,7 @@ c
         integer(4), optional, intent(in) :: config
         integer(4) cfg
 
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2136,7 +2137,7 @@ c
 !$acc enter data create(array) async( async_queue )
            sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print*,'alloc pi ',n.ne.s_alloc,n,rank
+           if(debMem.ne.0) print*,'alloc pi ',n.ne.s_alloc,n,rank
         else
            if ( n>size(array) .or. n<4*size(array)/5 ) then
 
@@ -2144,7 +2145,7 @@ c
               call enable_extra_alloc(0)
               s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
      &                       ,extra_alloc.and.n.ne.natoms)
-              if(debMem) print 14,'realloc pi ',n.ne.s_alloc
+              if(debMem.ne.0) print 14,'realloc pi ',n.ne.s_alloc
      &                           ,n,size(array),rank
 
               s_array = size(array)*szoi
@@ -2173,7 +2174,7 @@ c
         integer(4)   , intent(in) :: n
         logical   , optional, intent(in) :: async
 
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2190,10 +2191,10 @@ c
 !$acc enter data create(array) async( async_queue )
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
-           if(debMem) print*,'alloc i1',n.ne.s_alloc,n,rank
+           if(debMem.ne.0) print*,'alloc i1',n.ne.s_alloc,n,rank
         else
            if ( n > size(array) .or. n < 4*size(array)/5 ) then
-              if(debMem) print*,'realloc i1  ',n.ne.s_alloc
+              if(debMem.ne.0) print*,'realloc i1  ',n.ne.s_alloc
      &                         ,n,size(array),rank
                s_array = size(array)*szoi1
                s_prmem =  s_prmem - s_array
@@ -2223,7 +2224,7 @@ c
 
         integer(4) ashape(2)
         integer(4) cfg, nlstr, ncstr
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
         logical f_col
 #ifdef _OPENACC
         integer(4) :: async_queue
@@ -2268,7 +2269,7 @@ c
 !$acc enter data create(array) async( async_queue )
               sd_prmem =sd_prmem + s_array
            end if
-           if(debMem) print 13,'alloc i 2',extra_alloc,nl,nc,rank
+           if(debMem.ne.0) print 13,'alloc i 2',extra_alloc,nl,nc,rank
 
         else if (btest(cfg,memfree).or.nc*nl.eq.0) then
            ashape = shape(array)
@@ -2290,7 +2291,7 @@ c
               n_realloc_i = n_realloc_i + 1
               s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
      &                       ,extra_alloc.and.nc.ne.natoms)
-              if(debMem) print 14,'realloc i 2 ',nc.ne.s_alloc
+              if(debMem.ne.0) print 14,'realloc i 2 ',nc.ne.s_alloc
      &                           ,nc,ashape,rank
 
               s_array = ashape(1)*ashape(2)*szoi
@@ -2312,7 +2313,7 @@ c
               n_realloc_i = n_realloc_i + 1
               s_alloc = merge(nl+int(real(nl,t_p)*mem_inc),nl
      &                       ,extra_alloc.and.nl.ne.natoms)
-              if(debMem) print 14,'realloc i 2 ',nl.ne.s_alloc
+              if(debMem.ne.0) print 14,'realloc i 2 ',nl.ne.s_alloc
      &                           ,nl,ashape,rank
 
               s_array = ashape(1)*ashape(2)*szoi
@@ -2341,7 +2342,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         logical, optional, intent(in) :: async
 
         integer(4) ashape(2)
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2371,7 +2372,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
               s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
      &                       ,extra_alloc.and.nc.ne.natoms)
-              if(debMem) print 14,'realloc i1 2',nc.ne.s_alloc
+              if(debMem.ne.0) print 14,'realloc i1 2',nc.ne.s_alloc
      &                           ,nc,ashape,rank
 
               s_prmem = s_prmem - ashape(1)*ashape(2)*szoi1
@@ -2399,7 +2400,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
         integer(4) ashape(2)
         integer(4) cfg, nlstr, ncstr
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2441,7 +2442,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         else
            ashape = shape(array)
            if ( nc>ashape(2) .or. nl.ne.ashape(1) ) then
-              if(debMem) print*,'realloc i8 2',nc,nl,ashape
+              if(debMem.ne.0) print*,'realloc i8 2',nc,nl,ashape
               s_array = ashape(1)*ashape(2)*szoi8
               s_prmem = s_prmem - s_array
              sd_prmem =sd_prmem - s_array
@@ -2469,7 +2470,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
         integer(4) ashape(2)
         integer(4) cfg, nlstr, ncstr
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2511,7 +2512,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         else
            ashape = shape(array)
            if ( nc>ashape(2) .or. nl.ne.ashape(1) ) then
-              if(debMem) print*,'realloc i8 2',nc,nl,ashape
+              if(debMem.ne.0) print*,'realloc i8 2',nc,nl,ashape
               s_array = ashape(1)*ashape(2)*szoi8
               s_prmem = s_prmem - s_array
              sd_prmem =sd_prmem - s_array
@@ -2536,7 +2537,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         integer(4), optional, intent(in) :: queue, config
 
         integer(4) cfg
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2562,7 +2563,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + sizeof(array)
            end if
-           if (debMem) print*,'alloc l  ',n.ne.s_alloc,n,rank
+           if (debMem.ne.0) print*,'alloc l  ',n.ne.s_alloc,n,rank
         else if (btest(cfg,memfree).or.n.eq.0) then
            if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - sizeof(array)
@@ -2572,7 +2573,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
            deallocate(array)
         else
            if ( n > size(array) .or. n < 4*size(array)/5 ) then
-              if(debMem) print*,'realloc l  ',n.ne.s_alloc
+              if(debMem.ne.0) print*,'realloc l  ',n.ne.s_alloc
      &                         ,n,size(array),rank
               s_prmem = s_prmem - sizeof(array)
               if (btest(cfg,memacc)) then
@@ -2603,7 +2604,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         integer(4), optional, intent(in) :: config, nst
 
         integer(4) nstr, cfg
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2647,7 +2648,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
             s_array = s_alloc*szoTp
             s_prmem = s_prmem + s_array
            sd_prmem =sd_prmem + s_array
-           if(debMem) print 13,'alloc r ',n.ne.s_alloc,n,rank
+           if(debMem.ne.0) print 13,'alloc r ',n.ne.s_alloc,n,rank
         else
             if( n-nstr+1 > size(array).or.nstr.ne.1 ) then
 
@@ -2655,7 +2656,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               call enable_extra_alloc(1)
               s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
      &                       ,extra_alloc.and.n.ne.natoms)
-              if(debMem) print 14,'realloc r ',n.ne.s_alloc
+              if(debMem.ne.0) print 14,'realloc r ',n.ne.s_alloc
      &                         ,n,size(array),rank
 
               s_array = size(array)*szoTp
@@ -2695,7 +2696,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         real(r_p), allocatable, intent(inout) :: array(:)
         integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2724,7 +2725,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 #endif
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
-           if(debMem) print*,'alloc rm ',n,s_alloc
+           if(debMem.ne.0) print*,'alloc rm ',n,s_alloc
         else
             if( n > size(array) ) then
 
@@ -2732,7 +2733,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
                call enable_extra_alloc(1)
                s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
      &                        ,extra_alloc.and.n.ne.natoms)
-               if(debMem) print 14,'realloc rm ',n.ne.s_alloc
+               if(debMem.ne.0) print 14,'realloc rm ',n.ne.s_alloc
      &                            ,n,size(array),rank
 
                 s_array = size(array)*szoRp
@@ -2767,7 +2768,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         real(r_p), allocatable, intent(inout) :: array(:)
         integer(mipk), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2796,7 +2797,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 #endif
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
-           if(debMem) print*,'alloc rm ',n,s_alloc
+           if(debMem.ne.0) print*,'alloc rm ',n,s_alloc
         else
             if( n > size(array) ) then
 
@@ -2804,7 +2805,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
                call enable_extra_alloc(1)
                s_alloc = merge(n+int(real(n,8)*mem_inc,mipk),n
      &                        ,extra_alloc.and.n.ne.natoms)
-               if(debMem) print 14,'realloc rm ',n.ne.s_alloc
+               if(debMem.ne.0) print 14,'realloc rm ',n.ne.s_alloc
      &                            ,n,size(array),rank
 
                 s_array = size(array)*szoRp
@@ -2839,7 +2840,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         real(r_p), pointer, intent(inout) :: array(:)
         integer(4), intent(in) :: n
         logical, optional, intent(in) :: async
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2858,14 +2859,14 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 !$acc enter data create(array) async( async_queue )
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
-           if(debMem) print*,'alloc prm ',n,s_alloc
+           if(debMem.ne.0) print*,'alloc prm ',n,s_alloc
         else
             if( n > size(array) ) then
 
                n_realloc_r = n_realloc_r + 1
                s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
      &                        ,extra_alloc.and.n.ne.natoms)
-               if(debMem) print 14,'realloc pm ',n.ne.s_alloc
+               if(debMem.ne.0) print 14,'realloc pm ',n.ne.s_alloc
      &                            ,n,size(array),rank
 
                 s_array = size(array)*szoRp
@@ -2906,14 +2907,14 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 !$acc enter data create(array) async( async_queue )
             s_prmem =  s_prmem + sizeof(array)
            sd_prmem = sd_prmem + sizeof(array)
-           if(debMem) print 13,'alloc pr ',n.ne.s_alloc,n,rank
+           if(debMem.ne.0) print 13,'alloc pr ',n.ne.s_alloc,n,rank
         else
             if( n > size(array) ) then
 
                n_realloc_r = n_realloc_r + 1
                s_alloc = merge(n+int(real(n,t_p)*mem_inc),n
      &                        ,extra_alloc.and.n.ne.natoms)
-               if(debMem) print 14,'realloc pr ',n.ne.s_alloc
+               if(debMem.ne.0) print 14,'realloc pr ',n.ne.s_alloc
      &                            ,n,size(array),rank
 
                 s_prmem = s_prmem - sizeof(array)
@@ -2942,7 +2943,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
         integer(4) ashape(2)
         integer(4) cfg, nlstr, ncstr
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -2977,7 +2978,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 !$acc enter data create(array) async( async_queue )
            sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print*,'alloc r 2',nc.ne.s_alloc,nl,nc
+           if(debMem.ne.0) print*,'alloc r 2',nc.ne.s_alloc,nl,nc
         else
            ashape  = shape(array)
            s_array = ashape(1)*ashape(2)*szoTp
@@ -2991,7 +2992,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               call enable_extra_alloc(1)
               s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
      &                 ,extra_alloc.and.nc.ne.natoms)
-              if(debMem) print 12,'realloc r 2',nc.ne.s_alloc
+              if(debMem.ne.0) print 12,'realloc r 2',nc.ne.s_alloc
      &                         ,nc,ashape,rank
 
               if (btest(cfg,memacc)) then
@@ -3019,7 +3020,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         integer(4)  , intent(in) :: nc, nl
         logical  , optional, intent(in) :: async
         integer(4) ashape(2)
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -3039,7 +3040,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 !$acc enter data create(array) async( async_queue )
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
-           if(debMem) print*,'alloc rm 2',nc.ne.s_alloc,nl,nc
+           if(debMem.ne.0) print*,'alloc rm 2',nc.ne.s_alloc,nl,nc
         else
            ashape = shape(array)
            if (nl.ne.ashape(1)) then
@@ -3051,7 +3052,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               n_realloc_r = n_realloc_r + 1
               s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
      &                       ,extra_alloc.and.nc.ne.natoms)
-              if(debMem) print 12,'realloc rm 2',nc.ne.s_alloc
+              if(debMem.ne.0) print 12,'realloc rm 2',nc.ne.s_alloc
      &                         ,nc,ashape,rank
 
               s_array  = ashape(1)*ashape(2)*szoRp
@@ -3076,7 +3077,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         integer(4)  , intent(in) :: nc, nl
         logical  , optional, intent(in) :: async
         integer(4) ashape(2)
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -3096,7 +3097,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 !$acc enter data create(array) async( async_queue )
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
-           if(debMem) print*,'alloc rm 2',nc.ne.s_alloc,nl,nc
+           if(debMem.ne.0) print*,'alloc rm 2',nc.ne.s_alloc,nl,nc
         else
            ashape = shape(array)
            if (nl.ne.ashape(1)) then
@@ -3108,7 +3109,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               n_realloc_r = n_realloc_r + 1
               s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc
      &                       ,extra_alloc.and.nc.ne.natoms)
-              if(debMem) print 12,'realloc rm 2',nc.ne.s_alloc
+              if(debMem.ne.0) print 12,'realloc rm 2',nc.ne.s_alloc
      &                         ,nc,ashape,rank
 
               s_array  = ashape(1)*ashape(2)*szoRp
@@ -3137,7 +3138,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         integer(4)  , optional, intent(in) :: queue_, config
         integer(4) ashape(3)
         integer(4) cfg
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -3166,7 +3167,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 !$acc enter data create(array) async( async_queue )
            sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print*,'alloc r 3',nz.ne.s_alloc,nx,ny,nz
+           if(debMem.ne.0) print*,'alloc r 3',nz.ne.s_alloc,nx,ny,nz
         else if (btest(cfg,memfree).or.nx*ny*nz.eq.0) then
            ashape = shape(array)
            s_array= ashape(1)*ashape(2)*ashape(3)*szoTp
@@ -3189,7 +3190,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               n_realloc_r = n_realloc_r + 1
               s_alloc = merge(nz+int(real(nz,t_p)*mem_inc),nz
      &                       ,extra_alloc.and.nz.ne.natoms)
-              if(debMem) print 13,'realloc r 3',nz.ne.s_alloc
+              if(debMem.ne.0) print 13,'realloc r 3',nz.ne.s_alloc
      &                           ,nz,ashape,rank
 
               s_array = ashape(1)*ashape(2)*ashape(3)*szoTp
@@ -3221,7 +3222,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
         integer(4)  , optional, intent(in) :: queue_, config
         integer(4) ashape(3)
         integer(4) cfg
-        integer(int_ptr_kind()) s_array,so_array
+        integer(mipk) s_array,so_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -3250,7 +3251,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 !$acc enter data create(array) async( async_queue )
            sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print*,'alloc rm 3',nz.ne.s_alloc,nz,rank
+           if(debMem.ne.0) print*,'alloc rm 3',nz.ne.s_alloc,nz,rank
         else if (btest(cfg,memfree).or.nx*ny*nz.eq.0) then
            ashape = shape(array)
            s_array= ashape(1)*ashape(2)*ashape(3)*szoTp
@@ -3272,7 +3273,8 @@ c          end if
            if ( btest(cfg,memrealloc).or.s_array > so_array ) then
 
  13           format(A13,3I10,3x,3I10,2x,I4)
-              if(debMem) print 13,'realloc rm 3',nx,ny,nz,ashape,rank
+              if(debMem.ne.0) print 13,'realloc rm 3',nx,ny,nz,ashape
+     &           ,rank
 
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - so_array
@@ -3299,7 +3301,7 @@ c          end if
         integer(4)  , intent(in) :: nx, ny, nz, nc
         logical  , optional, intent(in) :: async
         integer(4) ashape(4)
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
 #ifdef _OPENACC
         integer(4) :: async_queue
         async_queue = acc_async_sync
@@ -3319,7 +3321,7 @@ c          end if
            s_array  = nx*ny*s_alloc*nc*szoTp
             s_prmem =  s_prmem + s_array
            sd_prmem = sd_prmem + s_array
-           if(debMem) print*,'alloc r 4',nx,ny,nz,nc,rank
+           if(debMem.ne.0) print*,'alloc r 4',nx,ny,nz,nc,rank
         else
            ashape = shape(array)
            if (nx.ne.ashape(1) .or. ny.ne.ashape(2) .or.
@@ -3337,7 +3339,7 @@ c          end if
               n_realloc_r = n_realloc_r + 1
               s_alloc = merge(nz+int(real(nz,t_p)*mem_inc),nz
      &                       ,extra_alloc.and.nz.ne.natoms)
-              if(debMem) print 13,'realloc r 4',nz.ne.s_alloc
+              if(debMem.ne.0) print 13,'realloc r 4',nz.ne.s_alloc
      &                           ,nz,ashape,rank
 
               s_array = ashape(1)*ashape(2)*ashape(3)*ashape(4)*szoTp
@@ -3366,7 +3368,7 @@ c
         integer(4), optional, intent(in) :: queue, config
 
         integer(4) cfg,sz_array,i
-        integer(int_ptr_kind()) s_array
+        integer(mipk) s_array
         integer(4),allocatable:: buffer(:)
 #ifdef _OPENACC
         integer(4) :: async_queue
@@ -3405,7 +3407,7 @@ c
 !$acc enter data create(array) async( async_queue )
               sd_prmem = sd_prmem + s_array
            end if
-           if(debMem) print*,'mvalloc i',n.ne.s_alloc,n,s_array
+           if(debMem.ne.0) print*,'mvalloc i',n.ne.s_alloc,n,s_array
         else if (btest(cfg,memfree).or.n.eq.0) then
            s_array = size(array)*szoi
            if (btest(cfg,memacc)) then
@@ -3430,7 +3432,7 @@ c
                  s_alloc = n+int(real(n,t_p)*mem_inc)
                  mv_realloc_i=0
               end if
-              if(debMem) print 16,'mvrealloc i ',n.ne.s_alloc
+              if(debMem.ne.0) print 16,'mvrealloc i ',n.ne.s_alloc
      &                           ,n,size(array),n_realloc_i,rank
 
               sz_array = size(array)

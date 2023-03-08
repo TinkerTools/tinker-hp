@@ -14,7 +14,7 @@ c     "nblist" constructs and maintains nonbonded pair neighbor lists
 c     for vdw
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       module nblist_b_inl
         contains
 #include "image.f.inc"
@@ -413,7 +413,7 @@ c
       use utilgpu ,only: mem_set,rec_stream
       implicit none
       integer i
-      integer(int_ptr_kind()) nb_
+      integer(ipk_) nb_
 
       if (allocated(vdw_nbl%b_stat)) then
          nb_ = vdw_nbl%nb

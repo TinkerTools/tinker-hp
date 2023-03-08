@@ -42,13 +42,18 @@ c     prec1_eps  smallest value depending on the precision such that (1+prec_esp
      &          ,zeror=0,oner=1.0,twor=2.0,halfr=0.5
      &          ,zerom=0,onem=1.0,twom=2.0,halfm=0.5
      &          ,zeromd=0,onemd=1.0,twomd=2.0
-     &          ,ti_p=t_p
-     &          ,re_p=r_p
+#if (defined(SINGLE) || defined(MIXED))
+     &          ,ti_eps=1d-5
+#else
+     &          ,ti_eps=1d-12
+#endif
+     &          ,ti_p  =t_p
+     &          ,re_p  =r_p
      &          ,i_init=-1
      &          ,a_init=-1.0
-     &          ,prec_eps =2*epsilon(ti_eps)
-     &          ,prec1_eps=  epsilon(ti_eps)
-     &          ,precm_eps=2*epsilon(precm_eps)
+     &          ,prec_eps =2*epsilon(zeror)
+     &          ,prec1_eps=  epsilon(zeror)
+     &          ,precm_eps=2*epsilon(zerom)
 #if TINKERHP_REL_BUILD
      &          ,isrel_build=.true.
 #else
@@ -57,12 +62,6 @@ c     prec1_eps  smallest value depending on the precision such that (1+prec_esp
      &          )
       !parameter(MPI_TYPE=MPI_TPREC)
       !parameter(MPI_RTYPE=MPI_RPREC)
-
-#if (defined(SINGLE) || defined(MIXED))
-      parameter(ti_eps=1d-5)
-#else
-      parameter(ti_eps=1d-12)
-#endif
 
       end module
 

@@ -208,7 +208,7 @@ c
          if (rik2.lt.loff2.or.rik2.gt.off2) cycle
 
          mutik  = mutInt(iglob) + mutInt(kglob)
-         if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
+         if (btest(vcouple,0).and.mutik.eq.two1) mutik=one1 ! Annihilation
 
          if (use_group)
      &      call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
@@ -302,7 +302,7 @@ c
                rv   = radmin (kt,it)
                eps  = epsilon(kt,it)
                mutik= muti + mutInt( kglob )
-               if (vcouple.and.mutik.eq.two1) mutik=one1 ! Annihilation
+               if (btest(vcouple,0).and.mutik.eq.two1) mutik=one1 ! Annihilation
 
                if (use_group)
      &            call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)

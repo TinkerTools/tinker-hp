@@ -18,17 +18,13 @@ c
 #include "atomicOp.h.f"
       contains
 #include "ker_angtor.inc.f"
-      end module
 
       subroutine eangtor_(iat,anat,kant,tors1,tors2,tors3,deat)
       use atmlst
-      use angle
       use angtor   ,only: nangtor,nangtorloc
       use atoms
       use bound
-      use deriv
       use domdec
-      use eangtor_inl
       use energi
       use group
       use inform   ,only: deb_Path
@@ -100,19 +96,16 @@ c
          end if
       end do
       end
+      end module
 
       subroutine eangtor
       use angle
       use angtor
+      use eangtor_inl
       use deriv
       use tors
+      use utilgpu ,only: lam_buff
       implicit none
-      interface
-      subroutine eangtor_(iat,anat,kant,tors1,tors2,tors3,deat)
-      integer  ,intent(in):: iat(:,:)
-      real(t_p),intent(in)::anat(:),kant(:,:)
-     &         ,tors1(:,:),tors2(:,:),tors3(:,:)
-      real(r_p):: deat(*)
-      end subroutine; end interface
-      call eangtor_(iat,anat,kant,tors1,tors2,tors3,deat)
+      
+      call eangtor_(iat,anat,kant,tors1,tors2,tors3,lam_buff)
       end subroutine

@@ -270,7 +270,7 @@ c
  13   format(I3)
       do i = sec,1,-1
          if (btest(i,0).and.rank.eq.0) then
-            write(0,13,advance='no'),i
+            write(0,13,advance='no') i
          end if
          if (i.eq.1.and.rank.eq.0) write(0,'(A)') '  Resume'
          call sleep(1)
@@ -607,28 +607,28 @@ c
 c
       subroutine associate_p_i41(dst_p,src_t,siz1)
       implicit none
-      integer(int_ptr_kind()),intent(in):: siz1
+      integer(ipk_),intent(in):: siz1
       integer,target,intent(in) :: src_t(siz1)
       integer,pointer   :: dst_p(:)
       dst_p(1:siz1) => src_t(1:siz1)
       end subroutine
       subroutine associate_p_i81(dst_p,src_t,siz1)
       implicit none
-      integer(int_ptr_kind()),intent(in):: siz1
+      integer(ipk_),intent(in):: siz1
       integer(8),target,intent(in) :: src_t(siz1)
       integer(8),pointer   :: dst_p(:)
       dst_p(1:siz1) => src_t(1:siz1)
       end subroutine
       subroutine associate_p_r41(dst_p,src_t,siz1)
       implicit none
-      integer(int_ptr_kind()),intent(in):: siz1
+      integer(ipk_),intent(in):: siz1
       real(4),target,intent(in) :: src_t(siz1)
       real(4),pointer   :: dst_p(:)
       dst_p(1:siz1) => src_t(1:siz1)
       end subroutine
       subroutine associate_p_r81(dst_p,src_t,siz1)
       implicit none
-      integer(int_ptr_kind()),intent(in):: siz1
+      integer(ipk_),intent(in):: siz1
       real(8),target,intent(in) :: src_t(siz1)
       real(8),pointer   :: dst_p(:)
       dst_p(1:siz1) => src_t(1:siz1)

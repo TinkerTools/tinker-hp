@@ -31,7 +31,6 @@ c
 
       subroutine alterchg1
       use alterchg1_inl
-      use atoms   ,only: x,y,z,n
       use atmlst  ,only: chgglob,poleglob
       use charge
       use chgpen
@@ -142,9 +141,9 @@ c     monopoles due to bond stretch using a charge flux formulation
 c
 c
       subroutine bndchg1 (pdelta)
-      use alterchg1_inl
+      use alterchg1_inl ,only: atomic_add,image_inl
       use atmlst
-      use atoms
+      use atoms   ,only: x,y,z
       use bond
       use bound
       use cflux
@@ -203,7 +202,7 @@ c     monopoles due to angle bending using a charge flux formulation
 c
 c
       subroutine angchg1 (pdelta)
-      use alterchg1_inl
+      use alterchg1_inl ,only: atomic_add,image_inl
       use angle
       use atmlst
       use atoms

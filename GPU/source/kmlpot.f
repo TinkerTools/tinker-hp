@@ -168,7 +168,7 @@ c
            call upcase (keyword)
            string = record(next:240)
            if (keyword(1:6) .eq. 'MLATOM ') then
-              read (string,*,err=20,end=20)  (fixed(i),i=nfixed+1,n)
+              read (string,*,err=20,end=20)  (fixed(j),j=nfixed+1,n)
    20         continue
               do while (fixed(nfixed+1) .ne. 0)
                  nfixed = nfixed + 1

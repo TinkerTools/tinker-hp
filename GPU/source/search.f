@@ -47,6 +47,7 @@ c
      &                          fgvalue,status)
       use domdec
       use linmin
+      use inform    ,only: deb_Path
       use interfaces,only:sendvecmin
       use math
       use mpi
@@ -90,7 +91,7 @@ c
       if (angmax .eq. 0.0_re_p)  angmax = 180.0_re_p
       if (intmax .eq. 0)  intmax = 5
 
-      if (rank.eq.0.and.tinkerdebug) write(*,'(x,a)') "***search"
+      if (deb_Path) write(*,'(x,a)') "***search"
 c
 c     perform dynamic allocation of some local arrays
 c

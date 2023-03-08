@@ -52,7 +52,7 @@ c
 c
 c     process keywords containing Urey-Bradley parameters
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'kurey'
+        if(deb_Path) print*,'kurey'
         header = .true.
         do i = 1, nkey
            next = 1
@@ -226,9 +226,9 @@ c
 
       subroutine upload_device_kurey
       use domdec,only: rank,hostcomm
+      use inform,only: deb_Path
       use kurybr
       use mpi   ,only: MPI_BARRIER
-      use sizes ,only: tinkerdebug
       use tinMemory
       use urey
       implicit none
@@ -236,7 +236,7 @@ c
 
 #ifdef _OPENACC
  12   format(2x,'upload_device_kurey')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
 #endif
 !$acc update device(ul,uk,iury,nburey)
@@ -246,14 +246,14 @@ c
 
       subroutine delete_data_kurey
       use domdec,only:rank
+      use inform,only: deb_Path
       use kurybr
-      use sizes ,only:tinkerdebug
       use tinMemory
       use urey
       implicit none
 
  12   format(2x,'delete_data_kurey')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
 
       call shmem_request(uk,    winuk,     [0],config=mhostacc)
       call shmem_request(ul,    winul,     [0],config=mhostacc)

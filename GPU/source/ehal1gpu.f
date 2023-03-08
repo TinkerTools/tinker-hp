@@ -429,6 +429,7 @@ c      end subroutine
       use domdec    ,only: loc,nbloc
       use ehal1gpu_inl
       use neigh     ,only: sgl_id,slc_id,cellv_jvdw
+      use tinheader ,only: ti_p
       use tinMemory ,only: prmem_request
       use utilgpu   ,only: inf,def_queue
       use vdw       ,only: ired,ivdw,kred
@@ -502,6 +503,7 @@ c
       use domdec , only: loc,rank,nbloc
       use deriv  , dev_=>de_ws2
       use inform , only: deb_Path
+      use tinheader ,only: ti_p,re_p
       use utilgpu, only: def_queue
       use group
       implicit none

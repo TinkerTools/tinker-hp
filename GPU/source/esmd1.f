@@ -42,10 +42,11 @@ c
       use domdec
       use energi
       use esmd1_inl
+      use inform    ,only: deb_Path
       use mpi
       use msmd
       use potent
-      use sizes ,only: tinkerdebug
+      use sizes     ,only: tinkerdebug
       use tinheader ,only:ti_p,re_p
       use virial
       implicit none
@@ -69,7 +70,7 @@ c
       integer ib
       logical IsParallel
 
-      if (rank.eq.0.and.tinkerdebug) print*,"esmd1"
+      if (deb_Path) print*,"esmd1"
 c
 c     SMD storage: initialization
 c

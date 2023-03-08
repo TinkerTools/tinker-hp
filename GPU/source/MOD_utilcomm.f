@@ -36,7 +36,7 @@ c
       enum,bind(C)
       enumerator ucBig,ucNeig,ucShort,ucRec,ucDirRec
       enumerator ucNfea
-      enumerator ucSend=32,ucRecv=64,ucWait=128
+      enumerator :: ucSend=32,ucRecv=64,ucWait=128
       end enum
       integer    ucComm
       logical    skpPcomm
@@ -80,7 +80,8 @@ c
 
       parameter (ucComm=ucSend+ucRecv+ucWait
      &          ,skpPcomm=.false.
-     &          ,ucOptName=['Big','Neig','Short','Rec','DirRec']
+     &          ,ucOptName=['Big   ','Neig  ','Short ','Rec   '
+     &                     ,'DirRec']
      &          )
 
       interface commDDd_ext

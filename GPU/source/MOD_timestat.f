@@ -29,7 +29,7 @@ c     tinkertime     logical flag to enable timers verbosity
           enumerator sumy_time
           enumerator path_time
           enumerator sync_time
-          enumerator all_time=8
+          enumerator :: all_time=8
         end enum
         ! Timers ids used in code
         enum, bind(C)

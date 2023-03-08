@@ -152,7 +152,7 @@ c
       subroutine eangle1gpu_(dea,deW1aMD,atmType,afld,s)
        integer  ,intent(in)   :: atmType(:),s
        real(t_p),intent(in)   :: afld(:)
-       real(r_p),intent(inout):: dea(:,:),deW1aMD(3,*)
+       real(r_p),intent(inout):: dea(:,:),deW1aMD(3,s)
       end subroutine
       end interface
       call eangle1gpu_(dea,deW1aMD,type,afld,max(1,size(deW1aMD,2)))

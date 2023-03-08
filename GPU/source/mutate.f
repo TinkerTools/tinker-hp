@@ -743,13 +743,14 @@ c     Initialising double derivatives in case of OSRW
 
       subroutine dealloc_shared_mutate
       use domdec,only:rank
+      use inform,only:deb_Path
       use mutant
       use tinMemory
       use sizes ,only:tinkerdebug
       implicit none
 
  12   format(2x,'dealloc_shared_mutate')
-      if (rank.eq.0.and.tinkerdebug) print 12
+      if (deb_Path) print 12
 
       call shmem_request(imut,  winimut,  [0])
       !TODO Remove mut from device

@@ -26,15 +26,13 @@ c
         temp=var1;var1=var2;var2=temp;
         end subroutine
 
-        function spbox2cmap(a,b,c,nx,ny,nxy) result(id)
+        integer function spbox2cmap(a,b,c,nx,ny,nxy) result(id)
         integer,intent(in )::a,b,c,nx,ny,nxy
-        integer,intent(out):: id
         id = a + b*nx + c*nxy
         end function
 
-        function spbox2smap(a,b,c,nx,ny,nxy) result(id)
+        integer function spbox2smap(a,b,c,nx,ny,nxy) result(id)
         integer,intent(in )::a,b,c,nx,ny,nxy
-        integer,intent(out):: id
         if (btest(c,0)) then
            id = merge(0,a + b*nx + c*nxy,btest(b,0))
         else
@@ -293,7 +291,7 @@ c
       use utilgpu ,only: rec_queue
       implicit none
       integer ierr,iipole
-      integer i,iproc,tag,iglob
+      integer i,k,j,iproc,tag,iglob
       integer ipre_rec1,ipre_rec2
       integer irepart,sbuf1
       integer count1,count_cap
@@ -470,11 +468,15 @@ c       sd_prmem = sd_prmem + 12*bsorder*sbuf1*szoTp
 #ifdef _OPENACC
          call attach_pmecu_pointer(1)
 #endif
-!$acc parallel loop async default(present)
-         do i =1,size(thetai1)
-            thetai1(i,1,1) =0
-            thetai2(i,1,1) =0
-            thetai3(i,1,1) =0
+!$acc parallel loop collapse(3) async default(present)
+         do k = 1,nlocrec
+            do j = 1,bsorder
+               do i =1,4
+                  thetai1(i,j,k) =0
+                  thetai2(i,j,k) =0
+                  thetai3(i,j,k) =0
+               end do
+            end do
          end do
       else if (nlocrec>size(thetai1,dim=3)) then
 c        sbuf1 = merge(nlocrec+int(real(nlocrec,t_p)*mem_inc),nlocrec
@@ -2477,6 +2479,14 @@ c
       integer  ,pointer:: list(:),blist(:),c_glob(:)
       real(t_p),pointer:: cell_x(:),cell_y(:),cell_z(:)
       real(t_p) xbeg,xend,ybeg,yend,zbeg,zend
+      interface
+         subroutine set_pairlist_Cellorder(atList,a_plist,buildnl)
+         import pair_atlst
+         integer atList(*)
+         type(pair_atlst),target:: a_plist
+         logical,intent(in):: buildnl
+         end subroutine
+      end interface
 
       if (deb_Path) print*, 'build_pairwise_list'
 

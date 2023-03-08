@@ -57,7 +57,7 @@ c
 c
 c     zero out the energy component and partitioning terms
 c
-      if(deb_Path) write(*,*) 'estrbnd3'
+      if(deb_Path) write(*,*) 'estrbnd'
       eba    = 0
 c
 c     calculate the stretch-bend energy term
@@ -113,7 +113,7 @@ c
       subroutine estrbnd_(isb,typeA,anat,bl,deba,deW1aMD)
       integer  ,intent(in):: isb(:,:),typeA(:)
       real(t_p),intent(in):: anat(:),bl(:)
-      real(r_p),intent(out):: deba(*),deW1aMD(*)
+      real(r_p),intent(out):: deba(1),deW1aMD(1)
       end subroutine
       end interface
       call estrbnd_(isb,type,anat,bl,deba,deW1aMD)

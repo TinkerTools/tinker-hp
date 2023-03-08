@@ -113,7 +113,7 @@ c
       subroutine estrbnd1gpu_(isb,typeA,anat,bl,deba,deW1aMD,s)
       integer  ,intent(in):: isb(:,:),typeA(:),s
       real(t_p),intent(in):: anat(:),bl(:)
-      real(r_p),intent(out):: deba(:,:),deW1aMD(3,*)
+      real(r_p),intent(out):: deba(:,:),deW1aMD(3,s)
       end subroutine
       end interface
       s = size(deW1aMD,2)

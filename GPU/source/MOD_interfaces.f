@@ -94,9 +94,9 @@ c
       end enum
 
       integer(8):: sub_config=-1
-                                           !fedcba9876543210!
-      integer(8),parameter:: itrf_legacy =Z'0000111101110000'
-      integer(8),parameter:: itrf_adapted=Z'0111222202220000'
+                                               !fedcba9876543210!
+      integer(8),parameter:: itrf_legacy =int(Z'0000111101110000',8)
+      integer(8),parameter:: itrf_adapted=int(Z'0111222202220000',8)
       ! parameter for long range interactions comput
       ! parameter for short range interactions comput
       enum,bind(C)
@@ -366,7 +366,7 @@ c
         end subroutine
         subroutine emreal1ca_ac(tem,vxx,vxy,vxz,vyy,vyz,vzz)
            real(r_p),intent(inout):: vxx,vxy,vxz,vyy,vyz,vzz
-           real(t_p),intent(inout):: tem(:,:)
+           real(t_p),intent(inout):: tem(3,*)
         end subroutine
       end interface
       procedure(emreal1ca_ac):: emreal1ca_cu,emreal1c_core4
@@ -466,6 +466,15 @@ c
            real(t_p),intent(inout):: murec(:,:,:)
            procedure(tmatxb_pmegpu)::matvec
         end subroutine
+        subroutine inducestepcg_pme2gpu(matvec,nrhs,precnd,ef,mu,murec)
+           import tmatxb_pmegpu
+           integer  ,intent(in)   :: nrhs
+           logical  ,intent(in)   :: precnd
+           real(t_p),intent(in)   :: ef   (:,:,:)
+           real(t_p),intent(inout):: mu   (:,:,:)
+           real(t_p),intent(inout):: murec(:,:,:)
+           procedure(tmatxb_pmegpu)::matvec
+        end subroutine
         subroutine inducejac_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
            import tmatxb_pmegpu
            integer  ,intent(in)   :: nrhs
@@ -493,7 +502,6 @@ c
            procedure(tmatxb_pmegpu)::matvec
         end subroutine
       end interface
-      procedure(inducepcg_pme2gpu):: inducestepcg_pme2gpu
 
 !  #############################################################################
 !  SECTION
@@ -811,6 +819,54 @@ c
       end interface
 
 
+!  #############################################################################
+!  SECTION
+!                Group routines Interfaces
+!
+!  #############################################################################
+      interface
+         subroutine efld0_group(nrhs,ef)
+            integer  , intent(in)    :: nrhs
+            real(t_p), intent(inout) :: ef(:,:,:)
+         end subroutine efld0_group
+         subroutine efld0_group_correct_scaling(nrhs,ef)
+            integer  , intent(in)    :: nrhs
+            real(t_p), intent(inout) :: ef(:,:,:)
+         end subroutine efld0_group_correct_scaling
+         subroutine commfieldfull(nrhs,ef)
+            integer  , intent(in)    :: nrhs
+            real(t_p), intent(inout) :: ef(:,:,:)
+         end subroutine commfieldfull
+         subroutine commdirdirfull(nrhs,rule,mu,reqrec,reqsend)
+            integer, intent(in) :: nrhs,rule
+            integer, intent(inout) :: reqrec(*),reqsend(*)
+            real(t_p), intent(inout) ::  mu(:,:,:)
+         end subroutine commdirdirfull
+         subroutine inducepcg_group(nrhs,precnd,ef,mu)
+            integer  ,intent(in)   :: nrhs
+            logical  ,intent(in)   :: precnd
+            real(t_p),intent(in)   :: ef (:,:,:)
+            real(t_p),intent(inout):: mu (:,:,:)
+         end subroutine inducepcg_group
+         subroutine tmatxb_group(nrhs,dodiag,mu,efi)
+            integer, intent(in) ::  nrhs
+            logical, intent(in) ::  dodiag
+            real(t_p), intent(in) ::  mu(:,:,:)
+            real(t_p), intent(inout) ::  efi(:,:,:)
+         end subroutine tmatxb_group
+         subroutine tmatxb_correct_interactions_group(nrhs,mu,efi)
+            integer, intent(in) ::  nrhs
+            real(t_p), intent(in) ::  mu(:,:,:)
+            real(t_p), intent(inout) ::  efi(:,:,:)
+         end subroutine tmatxb_correct_interactions_group
+      end interface
+
+
+!  #############################################################################
+!  SECTION
+!                Other Interfaces
+!
+!  #############################################################################
 
       procedure(tinker_void_sub) :: vlist_block,mlist_block
      &           ,vlistcell,mlistcell,clistcell

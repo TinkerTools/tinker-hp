@@ -83,42 +83,6 @@ c
      &         , dpcorrect_scale_group(:)
      &         , dpucorrect_scale_group(:), mcorrect_scale_group(:)
 
-      interface
-        subroutine efld0_group(nrhs,ef)
-          integer  , intent(in)    :: nrhs
-          real(t_p), intent(inout) :: ef(:,:,:)
-        end subroutine efld0_group
-        subroutine efld0_group_correct_scaling(nrhs,ef)
-          integer  , intent(in)    :: nrhs
-          real(t_p), intent(inout) :: ef(:,:,:)
-        end subroutine efld0_group_correct_scaling
-        subroutine commfieldfull(nrhs,ef)
-          integer  , intent(in)    :: nrhs
-          real(t_p), intent(inout) :: ef(:,:,:)
-        end subroutine commfieldfull
-        subroutine commdirdirfull(nrhs,rule,mu,reqrec,reqsend)
-          integer, intent(in) :: nrhs,rule
-          integer, intent(inout) :: reqrec(nproc),reqsend(nproc)
-          real(t_p), intent(inout) ::  mu(:,:,:)
-        end subroutine commdirdirfull
-        subroutine inducepcg_group(nrhs,precnd,ef,mu)
-          integer  ,intent(in)   :: nrhs
-          logical  ,intent(in)   :: precnd
-          real(t_p),intent(in)   :: ef (:,:,:)
-          real(t_p),intent(inout):: mu (:,:,:)
-        end subroutine inducepcg_group
-        subroutine tmatxb_group(nrhs,dodiag,mu,efi)
-          integer, intent(in) ::  nrhs
-          logical, intent(in) ::  dodiag
-          real(t_p), intent(in) ::  mu(:,:,:)
-          real(t_p), intent(inout) ::  efi(:,:,:)
-        end subroutine tmatxb_group
-        subroutine tmatxb_correct_interactions_group(nrhs,mu,efi)
-          integer, intent(in) ::  nrhs
-          real(t_p), intent(in) ::  mu(:,:,:)
-          real(t_p), intent(inout) ::  efi(:,:,:)
-        end subroutine tmatxb_correct_interactions_group
-      end interface
 
       contains
 

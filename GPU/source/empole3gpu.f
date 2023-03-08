@@ -304,7 +304,7 @@ c
       end if
       call timer_enter( timer_emreal )
       if (deb_Path) then
-         rtami = ' emreal3d_ac'//merge(' CHGPEN','',use_chgpen)
+         rtami = ' emreal3d_ac'//merge(' CHGPEN','       ',use_chgpen)
          if (use_mpoleshortreal) then
             rtami = trim(rtami)//' SHORT'
          else if (use_mpolelong) then
@@ -697,6 +697,7 @@ c
      &            ,convolution_product
       use mpi
       use timestat
+      use tinheader,only: ti_p,re_p
       implicit none
       integer ierr,iipole,proc,iglob
       integer status(MPI_STATUS_SIZE),tag,commloc

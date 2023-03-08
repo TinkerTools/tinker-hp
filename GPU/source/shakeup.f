@@ -28,6 +28,7 @@ c
       use domdec
       use freeze
       use keys
+      use inform    ,only: deb_Path
       use math
       use molcul
       use potent
@@ -67,7 +68,7 @@ c
 c
 c       to move to shared memory segments
 c
-        if (rank.eq.0.and.tinkerdebug) print*,'shakeup'
+        if (deb_Path) print*,'shakeup'
         call alloc_shared_shake
 c
 c       process keywords containing holonomic constraint options

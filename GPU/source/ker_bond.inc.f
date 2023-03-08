@@ -17,7 +17,7 @@
      &            ,ver,fea)
 !$acc routine
       use bndpot    ,only: BND_HARMONIC,BND_MORSE
-      use tinheader ,only: ti_p
+      use tinheader ,only: ti_p,zeror
       use tinTypes  ,only: real3
       implicit none
       integer  ,intent(in):: i,ver,fea,bndtyp_i
@@ -91,7 +91,7 @@ c
       IF (IAND(ver,grd+vir).NE.0) THEN
          ia    = loc(ia)
          ib    = loc(ib)
-         de    = merge( deddt/rab, 0.0, rab.ne.0.0)
+         de    = merge( deddt/rab, zeror, rab.ne.zeror)
          ded%x = de* xab
          ded%y = de* yab
          ded%z = de* zab

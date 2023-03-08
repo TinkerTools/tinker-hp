@@ -20,7 +20,7 @@ c
 #include "ker_tortor.inc.f"
       subroutine etortor_(i12,n12,typAtm,atomic,dett)
       use atmlst
-      use atmtyp
+      !use atmtyp
       use atoms    ,only: n,x,y,z
       use bitor
       use bound

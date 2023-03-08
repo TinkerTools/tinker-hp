@@ -567,12 +567,12 @@ c
       use angle
       use angpot
       use domdec,only:rank
+      use inform,only:deb_Path
       use potent
-      use sizes,only:tinkerdebug
       use tinMemory
       implicit none
  12   format(2x,'delete_data_kangle')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
 
       call shmem_request(ak,     winak,     [0], config=mhostacc)
       call shmem_request(anat,   winanat,   [0], config=mhostacc)

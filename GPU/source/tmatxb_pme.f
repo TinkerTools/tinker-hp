@@ -263,9 +263,9 @@ c
 c     if no polarisability, take a negligeable value to allow convergence
 c
           if (polarity(iipole).eq.0.0) then
-             pol = tinypol ** -1
+             pol = tinypol ** (-1)
           else
-             pol  = polarity(iipole) ** -1
+             pol  = polarity(iipole) ** (-1)
           endif
           do irhs = 1, nrhs
             do j = 1, 3

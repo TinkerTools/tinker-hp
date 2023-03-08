@@ -26,6 +26,7 @@ c
       use domdec
       use energi
       use group
+      use inform    ,only:deb_Path
       use inter
       use kgeoms
       use math
@@ -89,7 +90,7 @@ c
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
       logical proceed,intermol
-      if (rank.eq.0.and.tinkerdebug) write(*,*) 'egeom1'
+      if (deb_Path) write(*,*) 'egeom1'
 !$acc update host(deg,vir)
 c
 c     zero out the restraint energy term and first derivatives

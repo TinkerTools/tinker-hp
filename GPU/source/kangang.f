@@ -47,7 +47,7 @@ c
 c
 c     process keywords containing angle-angle parameters
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'kangang'
+        if(deb_Path) print*,'kangang'
         header = .true.
         do i = 1, nkey
            next = 1

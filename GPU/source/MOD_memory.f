@@ -64,12 +64,8 @@ c     s_tinWork Tinker-HP workSpace Estimation
       end interface
 #endif
       interface value_pe
-        integer(4) function value_pe_i4( input )
-        integer(4),intent(in)::input
-        end function
-        integer(8) function value_pe_i8( input )
-        integer(8),intent(in)::input
-        end function
+        module procedure value_pe_i4
+        module procedure value_pe_i8
       end interface
       contains
 
@@ -80,7 +76,7 @@ c     s_tinWork Tinker-HP workSpace Estimation
 
       integer(8) function value_pe_i8( input ) result(valu)
       integer(8),intent(in)::input
-      valu = ceiling(1.0*input/npes,kind=8)
+      valu = ceiling(1.0*real(input,r_p)/npes,kind=8)
       end function
 
       subroutine init_nvshmem( mpi_comm )
@@ -109,18 +105,19 @@ c     s_tinWork Tinker-HP workSpace Estimation
 #endif
 
       implicit none
-      integer(4),parameter      :: mipk=int_ptr_kind()
-      integer(int_ptr_kind()) s_shmem,sd_shmem,sd_ddmem
-      integer(int_ptr_kind()) s_prmem,sd_prmem
+      !integer(4),parameter      :: mipk=mipk
+      integer(4),parameter      :: mipk=8
+      integer(mipk) s_shmem,sd_shmem,sd_ddmem
+      integer(mipk) s_prmem,sd_prmem
 
-      integer(int_ptr_kind()) s_cufft,s_curand,s_nvshmem
-      integer(int_ptr_kind()) s_driver,s_sfwork,s_tinWork
+      integer(mipk) s_cufft,s_curand,s_nvshmem
+      integer(mipk) s_driver,s_sfwork,s_tinWork
 
-      integer(int_ptr_kind()) szoi1,szoi,szoi8,szoip
-      integer(int_ptr_kind()) szor4,szor8,szoTp,szoRp
-      integer(int_ptr_kind()) szol1,szol
-      integer(int_ptr_kind()) szoc8
-      real(int_ptr_kind()),protected::Mio,Mo
+      integer(mipk) szoi1,szoi,szoi8,szoip
+      integer(mipk) szor4,szor8,szoTp,szoRp
+      integer(mipk) szol1,szol
+      integer(mipk) szoc8
+      real(mipk)    Mio,Mo
 
       integer(1),private:: i1
       integer(8),private:: i8
@@ -131,7 +128,7 @@ c     s_tinWork Tinker-HP workSpace Estimation
       real(8)   ,private:: r8
       logical   ,private:: lgc
       logical(1),private:: lgc1
-      character*8,private:: char8
+      character(8),private:: char8
 
       enum, bind(C)
         enumerator :: memhost=00
@@ -641,7 +638,7 @@ c     end do
 
       subroutine mem_get_int(hmem,dmem)
       implicit none
-      integer(int_ptr_kind()),intent(out):: hmem,dmem
+      integer(mipk),intent(out):: hmem,dmem
       hmem =  s_prmem +  s_shmem
       dmem = sd_prmem + sd_shmem + sd_ddmem
       end subroutine

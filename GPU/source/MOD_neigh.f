@@ -177,8 +177,8 @@ c
 
       ! Adjacency Matrix & List attributes
       integer, allocatable,target:: matb_lst(:), bb_lst(:)
-      integer(int_ptr_kind()):: szoMatb=0
-      real(8) :: buffMatb=2.0d0
+      integer(8):: szoMatb=0
+      real(8)   :: buffMatb=2.0d0
       integer szMatb
       integer nbMatb, niterMatb, offsetlMb, offsetrMb
 
@@ -353,7 +353,7 @@ c
       type(nblst_t),target:: l
       integer,intent(in),optional:: option
       integer,parameter:: deflt=0,short=1
-      integer(int_ptr_kind()) siz1,siz2
+      integer(8) siz1,siz2
       integer n_nbl
 
       na     = l%na
@@ -405,7 +405,7 @@ c
             siz2 = size(l%a2l_1,2)
             a2l_1(1:siz1,1:siz2) => l%a2l_1(1:siz1*siz2,1)
          end if
-         if (allocated(l%b2pl_1)) then
+         if (associated(l%b2pl_1)) then
             siz1 = size(l%b2pl_1)
             b2pl_1(1:nb2p_1) => l%b2pl(nb2p_0+1:)
             siz1 = size(l%bapl_1)

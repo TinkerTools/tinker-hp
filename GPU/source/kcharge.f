@@ -56,7 +56,7 @@ c
 c
 c       deallocate global pointers if necessary
 c
-        if (rank.eq.0.and.tinkerdebug) print*,'kcharge'
+        if (deb_Path) print*,'kcharge'
 c
 c       allocate global pointers
 c
@@ -529,13 +529,14 @@ c
       use atoms
       use charge
       use domdec
+      use inform,only: deb_Path
       use potent,only: use_lambdadyn
       use sizes
       use tinMemory
       implicit none
  
  12   format(2x,'dealloc_shared_chg')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call shmem_request(iion,   winiion,   [0], config=mhostacc)
       call shmem_request(jion,   winjion,   [0])
       call shmem_request(kion,   winkion,   [0])

@@ -55,7 +55,7 @@ c
 c
 c     allocate some arrays
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'kopdist init'
+        if(deb_Path) print*,'kopdist init'
         call alloc_shared_opdist
 c
 c       process keywords containing out-of-plane distance parameters
@@ -295,12 +295,12 @@ c
       subroutine delete_data_kopdist
       use angpot
       use domdec,only:rank
+      use inform,only:deb_Path
       use opdist
-      use sizes,only:tinkerdebug
       use tinMemory
       implicit none
  12   format(2x,'delete_data_kopdist')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
 
       call shmem_request(opdk,winopdk,[0])
       call shmem_request(iopd,winiopd,[0,0])

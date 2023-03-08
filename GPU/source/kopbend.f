@@ -309,13 +309,13 @@ c
       subroutine upload_device_kopbend(config)
       use angle
       use angpot
-      use domdec,only:rank,hostcomm
+      use domdec ,only:rank,hostcomm
       use fields
       use kopbnd
-      use mpi   ,only: MPI_BARRIER
+      use inform ,only:deb_Path
+      use mpi    ,only:MPI_BARRIER
       use nvshmem
       use opbend
-      use sizes,only:tinkerdebug
       use tinMemory
       implicit none
       integer,intent(in)::config
@@ -323,7 +323,7 @@ c
 
 #ifdef _OPENACC
  12   format(2x,'upload_device_kopbend')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
 #endif
 
@@ -352,16 +352,17 @@ c
       subroutine delete_data_kopbend
       use angle
       use angpot
-      use domdec,only:rank
+      use domdec   ,only:rank
       use fields
+      use inform   ,only:deb_Path
       use kopbnd
       use opbend
-      use sizes,only:tinkerdebug
+      use sizes    ,only:tinkerdebug
       use tinMemory
       implicit none
 
  12   format(2x,'delete_data_kopbend')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call shmem_request(opbk,winopbk,[0],config=mhostacc)
       call shmem_request(iopb,winiopb,[0],config=mhostacc)
       if (forcefield .eq. 'MMFF94') return

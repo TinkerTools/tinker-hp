@@ -54,6 +54,7 @@ c
       use energi
       use ewald
       use group
+      use inform    ,only: deb_Path
       use math
       use mpole
       use polar
@@ -74,7 +75,7 @@ c
 c
 c     zero out the dipole polarization energy and components
 c
-      if(rank.eq.0.and.tinkerdebug) write(*,*) 'epolar3c'
+      if(deb_Path) write(*,*) 'epolar3c'
       nep = 0
       ep = 0.0_re_p
       aep = 0_ti_p

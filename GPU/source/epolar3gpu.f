@@ -503,11 +503,11 @@ c
       character*64 :: srami
 
       if (deb_Path) then
-         srami = 'epreal3d_cu'//merge(' SHORT',''
+         srami = 'epreal3d_cu'//merge(' SHORT','      '
      &          ,use_polarshortreal)
          if (use_thole) then
             srami = trim(srami)//' THOLE'
-     &            //merge(' DIRDAMP','',use_dirdamp)
+     &            //merge(' DIRDAMP','        ',use_dirdamp)
          else
             srami = trim(srami)//' CHGPEN'
          end if
@@ -841,6 +841,7 @@ c
       use utilgpu,only:rec_queue
       use mpi
       use timestat
+      use tinheader ,only: ti_p,re_p
       implicit none
       integer ierr,iipole,proc
       integer status(MPI_STATUS_SIZE),tag,commloc

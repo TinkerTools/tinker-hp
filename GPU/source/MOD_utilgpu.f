@@ -54,10 +54,11 @@ c
       implicit none
       integer ngpus
       integer :: devicenum=-1
-      integer gpu_gangs,ngangs_rec,mod_gangs
+      integer gpu_gangs,ngangs_rec
       integer gpu_workers,gpu_vector
       integer rec_queue,dir_queue,def_queue
       integer(mipk),private:: zero8
+      logical mod_gangs
 #ifdef _OPENACC
       type(cudaDeviceProp) devProp
       integer(cuda_stream_kind) dir_stream,rec_stream
@@ -152,14 +153,22 @@ c
          module procedure mem_move_i4
          module procedure mem_move_i8
          module procedure mem_move_r4
+         module procedure mem_move_r4_2d
          module procedure mem_move_r8
+         module procedure mem_move_r8_2d
       end interface
 
       interface mem_set
          module procedure mem_set_i4
          module procedure mem_set_i8
          module procedure mem_set_r4
+         module procedure mem_set_r4_2d
+         module procedure mem_set_r4_3d
+         module procedure mem_set_r4_5d
          module procedure mem_set_r8
+         module procedure mem_set_r8_2d
+         module procedure mem_set_r8_3d
+         module procedure mem_set_r8_5d
       end interface
 
       interface reduce_buffer
@@ -1278,6 +1287,99 @@ c
       end do
 #endif
       end subroutine
+      subroutine mem_set_r4_2d(dst,val,n,stream,offset)
+      real(4) dst(n,1)
+      real(4),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14   format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.zero8) then
+         ierr = cudaMemset(dst(offset_+1,1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1,1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_r4'
+     &               ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i,1) = val
+      end do
+#endif
+      end subroutine
+      subroutine mem_set_r4_3d(dst,val,n,stream,offset)
+      real(4) dst(n,1,1)
+      real(4),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14   format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.zero8) then
+         ierr = cudaMemset(dst(offset_+1,1,1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1,1,1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_r4'
+     &               ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i,1,1) = val
+      end do
+#endif
+      end subroutine
+      subroutine mem_set_r4_5d(dst,val,n,stream,offset)
+      real(4) dst(n,1,1,1,1)
+      real(4),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14   format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.zero8) then
+         ierr = cudaMemset(dst(offset_+1,1,1,1,1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1,1,1,1,1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_r4'
+     &               ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i,1,1,1,1) = val
+      end do
+#endif
+      end subroutine
       subroutine mem_set_r8(dst,val,n,stream,offset)
       real(8) dst(*)
       real(8),intent(in):: val
@@ -1306,6 +1408,99 @@ c
 #else
       do i = offset_+1,offset_+n
          dst(i) = val
+      end do
+#endif
+      end subroutine
+      subroutine mem_set_r8_2d(dst,val,n,stream,offset)
+      real(8) dst(n,1)
+      real(8),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14   format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.zero8) then
+         ierr = cudaMemset(dst(offset_+1,1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1,1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_r8'
+     &               ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i,1) = val
+      end do
+#endif
+      end subroutine
+      subroutine mem_set_r8_3d(dst,val,n,stream,offset)
+      real(8) dst(n,1,1)
+      real(8),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14   format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.zero8) then
+         ierr = cudaMemset(dst(offset_+1,1,1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1,1,1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_r8'
+     &               ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i,1,1) = val
+      end do
+#endif
+      end subroutine
+      subroutine mem_set_r8_5d(dst,val,n,stream,offset)
+      real(8) dst(n,1,1,1,1)
+      real(8),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14   format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+!$acc host_data use_device(dst)
+      if (stream.eq.zero8) then
+         ierr = cudaMemset(dst(offset_+1,1,1,1,1),val,n)
+         ierr = ierr + cudaStreamSynchronize(stream)
+      else
+         ierr = cudaMemsetAsync(dst(offset_+1,1,1,1,1),val,n,stream)
+      end if
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in utilgpu_mem_set_r4'
+     &               ,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i,1,1,1,1) = val
       end do
 #endif
       end subroutine
@@ -1382,9 +1577,32 @@ c
 #endif
       end subroutine
 
-      subroutine mem_move_r8(dst,src,n,stream)
-      real(8) src(*),dst(*)
+      subroutine mem_move_r4_2d(dst,src,n,stream)
       integer(mipk),intent(in):: n
+      real(4) src(n,1),dst(n,1)
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+      integer(mipk) i
+   
+#ifdef _OPENACC
+!$acc host_data use_device(dst,src)
+      ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.zero8) ierr = ierr + cudaStreamSynchronize(stream)
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in utilgpu_mem_move_r4'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      do i = 1,n
+         dst(i,1) = src(i,1)
+      end do
+#endif
+      end subroutine
+
+      subroutine mem_move_r8(dst,src,n,stream)
+      integer(mipk),intent(in):: n
+      real(8) src(*),dst(*)
       integer(cuda_stream_kind),intent(in):: stream
       integer ierr
       integer(mipk) i
@@ -1401,6 +1619,29 @@ c
 #else
       do i = 1,n
          dst(i) = src(i)
+      end do
+#endif
+      end subroutine
+
+      subroutine mem_move_r8_2d(dst,src,n,stream)
+      integer(mipk),intent(in):: n
+      real(8) src(n,1),dst(n,1)
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+      integer(mipk) i
+
+#ifdef _OPENACC
+!$acc host_data use_device(dst,src)
+      ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.zero8) ierr = ierr + cudaStreamSynchronize(stream)
+!$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in utilgpu_mem_move_r8'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      do i = 1,n
+         dst(i,1) = src(i,1)
       end do
 #endif
       end subroutine
@@ -1495,8 +1736,8 @@ c
      &           ,ered_b,vred_b,queue)
       implicit none
       integer,intent(in):: queue
-      real(r_p),intent(inout):: ered_b(RED_BUFF_SIZE)
-      real(t_p),intent(inout):: vred_b(RED_BUFF_SIZE)
+      real(r_p),intent(inout):: ered_b(  RED_BUFF_SIZE)
+      real(t_p),intent(inout):: vred_b(6*RED_BUFF_SIZE)
       real(r_p) energy
       real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
       integer i

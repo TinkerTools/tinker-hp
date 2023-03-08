@@ -19,32 +19,30 @@ c
 #include "atomicOp.h.f"
       contains
 #include "ker_angtor.inc.f"
-      end module
+
 
       subroutine eangtor3_(iat,anat,kant,tors1,tors2,tors3,deat)
       use action
       use analyz
-      !use angle
       use angtor ,only: nangtor,nangtorloc
       use atmtyp
       use atmlst
       use atoms
       use bound
       use domdec   ,only: rank,loc
-      use eangtor3_inl
       use energi
       use group
       use inform
       use iounit
       use math
-      use tinheader,only: ti_p
+      use tinheader,only: ti_p,re_p
       use torpot
       use tors     ,only: itors
       use usage
       use virial
       implicit none
       integer  ,intent(in):: iat(:,:)
-      real(t_p),intent(in)::anat(:),kant(:,:)
+      real(t_p),intent(in):: anat(:),kant(:,:)
      &         ,tors1(:,:),tors2(:,:),tors3(:,:)
       real(r_p):: deat(1)
 
@@ -145,19 +143,16 @@ c
          end if
       end do
       end
+      end module
 
       subroutine eangtor3
       use angle
       use angtor
+      use eangtor3_inl
       use deriv
       use tors
+      use utilgpu ,only: lam_buff
       implicit none
-      interface
-      subroutine eangtor3_(iat,anat,kant,tors1,tors2,tors3,deat)
-      integer  ,intent(in):: iat(:,:)
-      real(t_p),intent(in)::anat(:),kant(:,:)
-     &         ,tors1(:,:),tors2(:,:),tors3(:,:)
-      real(r_p):: deat(*)
-      end subroutine; end interface
-      call eangtor3_(iat,anat,kant,tors1,tors2,tors3,deat)
+
+      call eangtor3_(iat,anat,kant,tors1,tors2,tors3,lam_buff)
       end subroutine

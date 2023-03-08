@@ -24,6 +24,7 @@ c
       use couple
       use domdec
       use iounit
+      use inform  ,only: deb_Path
       use nvshmem
 #ifdef _OPENACC
       use thrust
@@ -40,7 +41,7 @@ c
 c
 c     loop over all atoms, storing the atoms in each bond angle
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'angles init'
+        if(deb_Path) print*,'angles init'
         nangle = 0
         do i = 1, n
            do j = 1, n12(i)-1

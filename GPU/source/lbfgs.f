@@ -114,7 +114,7 @@ c      rms = sqrt(real(nvar,t_p))
       done = .false.
       nerr = 0
       maxerr = 2
-      if (rank.eq.0.and.tinkerdebug) write(*,'(x,a)') "***lbfgs"
+      if (deb_Path) write(*,'(x,a)') "***lbfgs"
 c
 c     set default values for variable scale factors
 c

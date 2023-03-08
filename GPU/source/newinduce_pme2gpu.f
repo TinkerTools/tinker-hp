@@ -697,9 +697,9 @@ c
 !$acc&          ,ggold1,ggold2,gbuff,gbuff1)
         !Set up Deflation Preconditioner
          call Tinker_shellEnv("PRECND",precnd1,0)
-         !if (precnd1) call polarEingenVal
+         !if (btest(precnd1,0)) call polarEingenVal
       end if
-      !if (precnd1) call restartDeflat
+      !if (btest(precnd1,0)) call restartDeflat
 c
 c     initialize to zero
 c
@@ -725,7 +725,7 @@ c
 #ifdef _OPENACC
       if (dir_queue.ne.rec_queue) call start_dir_stream_cover
 #endif
-      !if (precnd1) then
+      !if (btest(precnd1,0)) then
       !   call ProjectorPTransGeneric(mu,mu)
       !   call ApplyQxV(ef,mu,1.0_ti_p)
       !end if
@@ -739,6 +739,7 @@ c
       call timer_exit ( timer_recdip,quiet_timers )
 
       call commfieldgpu(nrhs,h)
+      if (nproc.gt.1) then
       call commrecdirsolvgpu(nrhs,0,dipfieldbis,dipfield,buffermpi1,
      $     buffermpi2,reqrecdirrec,reqrecdirsend)
       call commdirdirgpu(nrhs,0,pp,reqrec,reqsend)
@@ -749,11 +750,12 @@ c
      $     buffermpimu2,req2rec,req2send)
       call commrecdirsolvgpu(nrhs,2,dipfieldbis,dipfield,buffermpi1,
      $     buffermpi2,reqrecdirrec,reqrecdirsend)
+      end if
       term = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
 
       call timer_enter( timer_other )
 
-      if (precnd1) then
+      if (btest(precnd1,0)) then
 
 !$acc parallel loop collapse(3) default(present) async(rec_queue)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
@@ -837,6 +839,7 @@ c
 c
 c     Begin the reception of the reciprocal fields
 c
+         if (nproc.gt.1) then
          call commrecdirsolvgpu(nrhs,0,dipfieldbis,dipfield,buffermpi1,
      &        buffermpi2,reqrecdirrec,reqrecdirsend)
 c
@@ -849,6 +852,7 @@ c       Wait for the reciprocal fields
 c
          call commrecdirsolvgpu(nrhs,2,dipfieldbis,dipfield,buffermpi1,
      &        buffermpi2,reqrecdirrec,reqrecdirsend)
+         end if
 
          term = (4.0_ti_p/3.0_ti_p)*aewald**3 / sqrtpi
 
@@ -903,7 +907,7 @@ c!$acc end host_data
          ggnew1 = zerom; ggnew2 = zerom
          ene1 = zerom; ene2 = zerom
 
-         if (precnd1) then
+         if (btest(precnd1,0)) then
          !   call loadKrylovBase(res,h,ggdev1,ggdev2)
 
 !$acc parallel loop collapse(3) async(rec_queue)
@@ -1077,7 +1081,7 @@ c
 c
 c     finalize and debug printing:
 c
-      !if (precnd1) then
+      !if (btest(precnd1,0)) then
       !   call FinalizeKrylovBase
       !end if
 
@@ -1734,7 +1738,7 @@ c     end subroutine
       implicit none
       integer,intent(in)::k
       real(r_p) theta(k),sigma(k)
-      integer i
+      integer i,j
 
       do i = 0,min(k-1,cgstep_max)
          sh_the(i) = theta(i+1)
@@ -1749,9 +1753,9 @@ c     sh_the(1) = theta(1)
 
          do i = 1,nproc
             write(0,'(A,I0,$)')'theta ',rank
-            write(0,'(F8.4,$)')(sh_the(i),i=0,cgstep_max)
+            write(0,'(F8.4,$)')(sh_the(j),j=0,cgstep_max)
             write(0,*) ''
-            call MPI_BARRIER(COMM_TINKER,i)
+            call MPI_BARRIER(COMM_TINKER,j)
          end do
       end if
       !print*,'sigma',(real(sh_sig(i),4),i=0,cgstep_max)
@@ -2104,7 +2108,7 @@ c
 
             if (its.ne.s) then  !Unecessary on last
             if (shift_enabled) then
-               call shift_field(h,Mres_s(1,1,1,its),MRes_s(1,1,1,its-1)
+            call shift_field(h,Mres_s(1:,1,1,its),MRes_s(1:,1,1,its-1)
      &                        ,3*nrhs*npoleloc,its)
             end if
 !$acc parallel loop collapse(3) async(dir_queue)
@@ -2123,8 +2127,8 @@ c
             end do; end do; end do
             if (its.ne.s) then
             if (shift_enabled) then
-               call shift_field(h,MRes_s(1,1,1,its),MRes_s(1,1,1,its-1)
-     &                         ,3*nrhs*npoleloc,its)
+            call shift_field(h,MRes_s(1:,1,1,its),MRes_s(1:,1,1,its-1)
+     &                        ,3*nrhs*npoleloc,its)
             end if
 !$acc parallel loop collapse(3) async(rec_queue)
             do j=1,nrhs; do k=1,npoleloc; do i=1,3
@@ -2162,8 +2166,8 @@ c    &   call minmaxone(Mres_s(1,1,1,its+1),6*npoleloc,'res')
                tempo = 0
                stdec = (i-1)*sdec+1
                ledec = min(sdec,3*npoleloc-stdec+1)
-               call prod_scal_n1(ledec,MQs(stdec,1,j,ll)
-     &                         ,MPs(stdec,1,j,lc),tempo)
+               call prod_scal_n1(ledec,MQs(stdec:,1,j,ll)
+     &                         ,MPs(stdec:,1,j,lc),tempo)
 !$acc loop vector
                do k = 1,32
                   if (k.eq.1) then
@@ -2189,7 +2193,7 @@ c    &   call minmaxone(Mres_s(1,1,1,its+1),6*npoleloc,'res')
      &                     ,rec_stream)
 !$acc end host_data
 #else
-               call M_gesvm(s,s,MatW_sr(1,1,j),s,ipiv,MatBs_r(1,1,j)
+               call M_gesvm(s,s,MatW_sr(1:,1,j),s,ipiv,MatBs_r(1:,1,j)
      &                     ,s,info)
 #endif
             end do
@@ -2241,8 +2245,8 @@ c    &   call minmaxone(Mres_s(1,1,1,its+1),6*npoleloc,'res')
             tempo = 0
             stdec = (i-1)*sdec+1
             ledec = min(sdec,3*npoleloc-stdec+1)
-            call prod_scal1(ledec,MQs(stdec,1,j,ll)
-     &                    ,MPs(stdec,1,j,lc),tempo)
+            call prod_scal1(ledec,MQs(stdec:,1,j,ll)
+     &                    ,MPs(stdec:,1,j,lc),tempo)
 !$acc loop vector
             do k = 1,32
                if (k.eq.1) then
@@ -2259,8 +2263,8 @@ c    &   call minmaxone(Mres_s(1,1,1,its+1),6*npoleloc,'res')
             tempo = 0
             stdec = (i-1)*sdec+1
             ledec = min(sdec,3*npoleloc-stdec+1)
-            call prod_scal2(ledec,MPs(stdec,1,j,ll)
-     &                    ,MRes_s0(stdec,1,j),tempo)
+            call prod_scal2(ledec,MPs(stdec:,1,j,ll)
+     &                    ,MRes_s0(stdec:,1,j),tempo)
 !$acc loop vector
             do k = 1,32
                if (k.eq.1) then
@@ -2293,7 +2297,7 @@ c    &   call minmaxone(Mres_s(1,1,1,its+1),6*npoleloc,'res')
      &                 ,s,rec_stream)
 !$acc end host_data
 #else
-           call M_gesvm(s,1,MatWs_r(1,1,j),s,ipiv,Vas_r(1,j),s,info)
+           call M_gesvm(s,1,MatWs_r(1:,1,j),s,ipiv,Vas_r(1:,j),s,info)
 #endif
          end do
          call amovec(size(stepMatVr),stepMatVr,stepMatV,rec_queue)

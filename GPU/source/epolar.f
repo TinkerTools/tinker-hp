@@ -523,13 +523,14 @@ c
       use energi
       use ewald
       use fft
+      use inform   ,only: deb_Path
       use math
       use mpole
       use pme
       use polar
       use polpot
       use potent
-      use tinheader ,only:ti_p,re_p
+      use tinheader ,only: ti_p,re_p
       use mpi
       implicit none
       integer iipole
@@ -543,7 +544,7 @@ c
       real(t_p) a(3,3),ftc(10,10)
       real(t_p) fuind(3)
 c
-      if (rank.eq.0.and.tinkerdebug) write(*,*) 'eprecip'
+      if (deb_Path) write(*,*) 'eprecip'
       if (use_pmecore) then
         nprocloc = nrec
         rankloc = rank_bis

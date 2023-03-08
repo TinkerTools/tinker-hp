@@ -93,12 +93,12 @@ c
 
       ! Axetyp enumeration
       enum,bind(C)
-      enumerator Ax_None=0
-      enumerator Ax_3_Fold=1
-      enumerator Ax_Bisector=2
-      enumerator Ax_Z_Bisect=4
-      enumerator Ax_Z_Only=8
-      enumerator Ax_Z_Then_X=16
+        enumerator ::Ax_None=0
+        enumerator ::Ax_3_Fold=1
+        enumerator ::Ax_Bisector=2
+        enumerator ::Ax_Z_Bisect=4
+        enumerator ::Ax_Z_Only=8
+        enumerator ::Ax_Z_Then_X=16
       end enum
 !$acc declare create(vmxx,vmxy,vmxz,vmyy,vmyz,vmzz)
       end

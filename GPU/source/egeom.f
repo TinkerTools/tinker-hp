@@ -307,7 +307,7 @@ c
       end do
 
       end if
-      if (ngfix) then
+      if (ngfix.gt.0) then
 c
 c     compute the energy for group distance restraint terms
 c

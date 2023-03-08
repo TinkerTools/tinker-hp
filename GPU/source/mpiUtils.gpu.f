@@ -23,9 +23,6 @@ c
       use utilgpu
       use sizes    ,only: tinkerdebug
       implicit none
-      private
-
-      public :: commDDd_ext_c,commDDd_add_c,commDDrd_add_c
 
       contains
 #include "convert.f.inc"
@@ -83,7 +80,7 @@ c
          p_beg (1:nproc) => bufbeg(:)
          d_len (1:nproc) => domlen(:)
       else
- 16      format(' ERROR! routine ',A,
+ 16      format(' ERROR! routine ',A
      &       ,/,' --- Available options ',3I3
      &       ,/,' ---   UNKNOWN OPTION  ',I3   )
          write(0,16) name,ucNeig,ucShort,ucBig,opt_
@@ -391,4 +388,4 @@ c
       nullify(buffers)
       end subroutine
 
-      end module
+      end submodule

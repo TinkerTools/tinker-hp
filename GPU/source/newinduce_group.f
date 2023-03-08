@@ -34,8 +34,10 @@ c
       use iounit
       use inform    ,only: deb_Path,minmaxone
       use interfaces,only: inducepcg_pme2gpu,tmatxb_p
-     &                   , inducestepcg_pme2gpu
-     &                   , efld0_directgpu2, efld0_directgpu_p
+     &              , inducestepcg_pme2gpu, efld0_group
+     &              , efld0_directgpu2, efld0_directgpu_p
+     &              , commfieldfull, commdirdirfull
+     &              , inducepcg_group
       use math
       use mpole
       use nvshmem
@@ -147,6 +149,7 @@ c
       use domdec
       use ewald
       use inform     ,only: deb_Path,abort,minmaxone
+      use interfaces ,only: commfieldfull, commdirdirfull, tmatxb_group
       use iounit
       use math
       use mpole
@@ -471,6 +474,7 @@ c
       use ewald   ,only: aewald
       use newinduce_group_inl
       use inform  ,only: deb_Path
+      use interfaces ,only: efld0_group_correct_scaling
       use math    ,only: sqrtpi
       use mpole   ,only: npolebloc,ipole,rpole,npolelocnl,pollist
       use polar   ,only: pdamp,thole
@@ -483,6 +487,7 @@ c
      &                   rec_stream,rec_event
 #endif
       use timestat   ,only: timer_enter,timer_exit,timer_efld0_direct
+      use tinheader  ,only: ti_p,re_p
       use group
       implicit none
       integer  , intent(in)    :: nrhs
@@ -621,6 +626,7 @@ c
       use shunt    ,only: cut2
       use utilgpu  ,only: dir_queue,def_queue
       use timestat ,only: timer_enter,timer_exit,timer_efld0_direct
+      use tinheader,only: ti_p
       implicit none
 
       ! shape(ef) = (/3,nrhs,npolegroup/)
@@ -710,7 +716,7 @@ c
          pgamma = min( pti,thole1 )
 
          call efld0_couple(d2,pos,ip,kp,0._ti_p,0._ti_p,
-     &              0._ti_p,damp,pgamma,dscale,pscale,
+     &              0.0_ti_p,damp,pgamma,dscale,pscale,
      &              fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.true.)
 
          if (dscale.ne.0.0_ti_p) then
@@ -754,6 +760,7 @@ c
       !use erf_mod
       use ewald   , only : aewald
       use inform  , only : deb_Path
+      use interfaces ,only: tmatxb_correct_interactions_group
       use math    , only : sqrtpi
       use mpole   , only : ipole,poleloc,npolelocnl,pollist
       use neigh   , only : nelst,nelstc,elst,shortelst,nshortelstc
@@ -765,6 +772,7 @@ c
       use polgrp  , only : np11, np12, np13, np14, ip11, ip12, ip13,ip14
       use polpot  , only : u1scale, u2scale, u3scale, u4scale
       use potent  , only : use_polarshortreal
+      use tinheader ,only: ti_p
       use newinduce_group_inl
       use group
       implicit none
@@ -910,11 +918,9 @@ c
         end do; enddo; enddo
       end if
 
-
-      return
       end
 
-       subroutine tmatxb_correct_interactions_group(nrhs,mu,efi)
+      subroutine tmatxb_correct_interactions_group(nrhs,mu,efi)
       use atoms   , only : x, y, z
       use atmlst  , only : poleglobnl
       !use erf_mod
@@ -927,6 +933,7 @@ c
       use utilcomm, only : no_commdir
       use domdec  , only : loc
       use polpot  , only : n_uscale,ucorrect_ik,ucorrect_scale
+      use tinheader ,only: ti_p
       use newinduce_group_inl
       use group
       use inform

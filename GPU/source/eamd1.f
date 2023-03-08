@@ -206,10 +206,11 @@ c
       use deriv
       use domdec
       use energi
+      use inform ,only: deb_Path
       use mamd
       use mpi
       use potent
-      use sizes ,only:tinkerdebug
+      use sizes  ,only:tinkerdebug
       use virial
       implicit none
       integer i, j
@@ -218,7 +219,7 @@ c
       real(r_p) epot
 c
       if (use_amd_dih .or. use_amd_ene .or. use_amd_wat1) then        ! LOOP1
-         if (rank.eq.0.and.tinkerdebug) write(*,'(A)') "GaMD"
+         if (deb_Path) write(*,'(A)') "GaMD"
 !$acc wait
 !$acc update host(epot,eDaMD,eW1aMD)
          ePaMD = epot
@@ -322,6 +323,7 @@ c
       use domdec
       use deriv
       use energi
+      use inform ,only: deb_Path
       use mamd
       use mdstuf
       use mpi
@@ -341,7 +343,7 @@ c     real(r_p) derivs(3,nbloc)
 c
 c     Initialization of the values
 c
-      if (rank.eq.0.and.tinkerdebug) write(*,'(2x,a)') "eamd1"
+      if (deb_Path) write(*,'(2x,a)') "eamd1"
       energy_amd = 0.0d0
       amdboost = 0.0d0
 c

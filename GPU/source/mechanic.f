@@ -244,7 +244,7 @@ c
  17   format(1x,A15,2x,I8,2x,A)
 
       if (ranktot.eq.0) then
-         prop = merge(' DIRDAMP','',use_dirdamp)
+         prop = merge(' DIRDAMP','        ',use_dirdamp)
          u_mpole  = use_mpole.and..not.use_chgpen
          u_mpolec = use_mpole.and.use_chgpen
          u_polar  = use_polar.and.use_thole
@@ -908,7 +908,7 @@ c
          configure=iand(shft,hexa_len-1)
          otf_dc_efld0_directgpu_p => otf_dc_efld0_directgpu2
          if      (configure.eq.conf_efld0_directgpu1) then
-            efld0_directgpu_p => efld0_directgpu
+            efld0_directgpu_p => efld0_directgpu2
             mlst_enable = .true.
          else if (configure.eq.conf_efld0_directgpu2) then
             efld0_directgpu_p => efld0_directgpu2

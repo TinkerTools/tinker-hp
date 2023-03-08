@@ -50,7 +50,7 @@ c
 c
 c     process keywords containing bond stretch parameters
 c
-      if(rank.eq.0.and.tinkerdebug) print*,'kbonds'
+      if(deb_Path) print*,'kbonds'
       blank = '        '
       header = .true.
       do i = 1, nkey

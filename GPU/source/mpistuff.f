@@ -1049,7 +1049,7 @@ c
         if (s_bufi.gt.max_atoms_send) then
            max_atoms_send =
      &             merge( int(s_bufi*(1+mem_inc)),s_bufi,extra_alloc )
-           if (debMem) print*,'reassign::realloc s',s_bufi,rank
+           if (debMem.ne.0) print*,'reassign::realloc s',s_bufi,rank
            if (allocated(data_send)) then
 !$acc exit data delete(data_send) async
               deallocate(data_send)
@@ -1107,7 +1107,8 @@ c
         if ( max_data_recv.gt.max_atoms_recv ) then
            max_atoms_recv = merge(int(max_data_recv*(1+mem_inc))
      &                           ,max_data_recv,extra_alloc)
-           if (debMem) print*,'reassign::realloc r',max_data_recv,rank
+           if (debMem.ne.0) print*,'reassign::realloc r',max_data_recv
+     &                            ,rank
            if (allocated(data_recv)) then
 !$acc exit data delete(data_recv)
               deallocate(data_recv)
@@ -1261,7 +1262,7 @@ c
               write(fmt,18) nneig_send+1,nneig_recep
               write(*,19) rank,xbegproc,xendproc,ybegproc
      &                   ,yendproc,zbegproc,zendproc
-              write(* ,fmt), 'r',rank, ' send(',n_data_send,
+              write(* ,fmt) 'r',rank, ' send(',n_data_send,
      &           ') recv(',n_data_recv, ') nloc_s(',nloc_save
            end if
         end if
@@ -4920,7 +4921,7 @@ c
      &            ,quiet_timers
       implicit none
       integer,intent(in)::rule
-      real(t_p),qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
+      real(t_p) qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
 
       integer i,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_sz
       integer mpi_status1(MPI_STATUS_SIZE)
@@ -5022,7 +5023,7 @@ c
      &            ,quiet_timers
       implicit none
       integer,intent(in)::rule
-      real(t_p),qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
+      real(t_p) qgrid(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1)
 
       integer i,j,ierr,tag0,tag1,commloc,proc,MPI_TYPE,MSG_szs,MSG_szr
       integer off,off1,qIdx3

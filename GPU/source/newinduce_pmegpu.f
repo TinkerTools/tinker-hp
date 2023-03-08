@@ -1106,6 +1106,7 @@ c
       use potent
       use timestat
       use tinMemory  ,only: mipk
+      use tinheader  ,only: ti_p
       use utils
       use utilgpu
       use mpi
@@ -1366,6 +1367,7 @@ c
      &              ,fdip_phi1=>fphid,fdip_phi2=>fphip !Reuse module memory
       use timestat
       use tinMemory ,only: mipk
+      use tinheader ,only: ti_p
       use mpi
       use utils
       use utilgpu   ,only: rec_queue,dir_queue,rec_stream,prmem_request

@@ -55,7 +55,7 @@ c
 c
 #include "tinker_macro.h"
       module units
-      use tinheader ,only: ti_p
+      use tinheader ,only: ti_p,re_p
       implicit none
       real(r_p) avogadro,lightspd
       real(r_p) boltzmann,gasconst

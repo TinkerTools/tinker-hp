@@ -39,6 +39,8 @@ main_prec   := d
 mlplugin_installdir := $(top_dir__)/lib
 mlplugin_name       := mlinterface
 
+config_file__  ?= config.nvidia.mk
+
 #
 #  OPTIONS
 # ________
@@ -68,7 +70,7 @@ NN_SUPPORT  ?= 0
 # Verbosity
 VERBOSE     ?= 0
 # Release Build
-REL_BUILD   ?= 1
+REL_BUILD   ?= 0
 
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
@@ -128,7 +130,7 @@ LIB_COLVARS    = $(COLVARS_HOME) -lcolvars
 library_link__ := static
 lib_dir__      := $(HOME)/local/lib
 
-include config.nvidia.mk
+include $(config_file__)
 
 #  -----------------  #
 ## List Object Files ##
@@ -614,7 +616,9 @@ endif
 distclean:
 	$(AT)$(MAKE) clean
 	$(AT)cd $(top_dir__)/2decomp_fft && $(MAKE) clean
+ifeq ($(arch), $(filter $(arch),device gpu))
 	$(AT)cd $(top_dir__)/wrappers    && $(MAKE) clean
+endif
 ifeq ($(PLUMED_SUPPORT),1)
 	$(AT)cd $(top_dir__)/plumed2     && $(MAKE) clean
 endif

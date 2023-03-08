@@ -27,6 +27,7 @@ c
       use files  ,only: filename,leng
       use group
       use iounit
+      use inform ,only: deb_Path
       use keys
       use kgeoms
       use molcul
@@ -70,7 +71,7 @@ c
 c
 c     allocate global arrays
 c
-        if (rank.eq.0.and.tinkerdebug) print*,'kgeom'
+        if (deb_Path) print*,'kgeom'
         call alloc_shared_geom
 c
 c       set the default values for the restraint variables
@@ -631,6 +632,7 @@ c
       use domdec,only: rank,hostcomm
       use mpi   ,only: MPI_BARRIER
       use kgeoms
+      use inform,only: deb_Path
       use vdw
       use sizes
       use tinMemory
@@ -638,7 +640,7 @@ c
       integer ierr
 #ifdef _OPENACC
  12   format(2x,'upload_device_kgeom')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
 #endif
 !$acc update device(ipfix,xpfix,ypfix,zpfix) async
@@ -650,12 +652,13 @@ c
       subroutine delete_data_kgeom
       use domdec
       use kgeoms
+      use inform ,only: deb_Path
       use sizes
       use tinMemory
       implicit none
 
  12   format(2x,'delete_data_kgeom')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
 
       call shmem_request(xpfix,winxpfix,  [0], config=mhostacc)
       call shmem_request(ypfix,winypfix,  [0], config=mhostacc)

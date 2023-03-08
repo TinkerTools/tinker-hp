@@ -23,9 +23,8 @@ c
       subroutine etortor3_(i12,n12,typAtm,atomic,dett)
       use action   ,only: nett
       use analyz   ,only: aett
-      use atmlst
-      use atmtyp
       use atoms    ,only: n,x,y,z
+      use atmlst   ,only: tortorglob
       use bitor
       use bound
       use deriv    ,only: deamdD

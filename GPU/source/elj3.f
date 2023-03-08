@@ -107,7 +107,7 @@ c
       logical header,huge
       character*10 mode
     
-      if(rank.eq.0.and.tinkerdebug) write (*,*) 'elj3c'
+      if(rank.eq.0.and.btest(tinkerdebug,0)) write (*,*) 'elj3c'
 
 c
 c

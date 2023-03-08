@@ -214,14 +214,14 @@ c
 c
 c     scale the interaction based on its group membership
 c
-           if (IAND(fea,grp).and.ugrp) then
+           if (IAND(fea,grp).NE.0.and.ugrp) then
                e =  e * fgrp
-              IF (iand(ver,grd).ne.0) de = de * fgrp
+              IF (IAND(ver,grd).NE.0) de = de * fgrp
            end if
 c
 c          use energy switching if near the cutoff distance
 c
-           IF (iand(fea,shr).eq.0) THEN ! CONST TEST (not short range)
+           IF (IAND(fea,shr).EQ.0) THEN ! CONST TEST (not short range)
 c
            if (rik2 > cut2) then ! mask energy switch
               r      = (rik - off)*rinv
@@ -230,10 +230,10 @@ c
               taper  = r3 * (6*r2 - 15*r + 10)
               dtaper = 30* (r*(1.0-r))*(r*(1.0-r)) *rinv;
 
-              IF (iand(ver,grd).ne.0) de =(e*dtaper + de*taper )/rik
-              IF (iand(ver,ene).ne.0)  e = e * taper
+              IF (IAND(ver,grd).NE.0) de =(e*dtaper + de*taper )/rik
+              IF (IAND(ver,ene).NE.0)  e = e * taper
            else
-              IF (iand(ver,grd).ne.0) de = de / rik
+              IF (IAND(ver,grd).NE.0) de = de / rik
            end if
 c
            END IF

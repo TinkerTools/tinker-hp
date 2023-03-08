@@ -20,7 +20,6 @@ c
 #include "atomicOp.h.f"
         contains
 #include "ker_opbend.inc.f"
-      end module
 
       subroutine eopbend1gpu_(deopb)
       use angle
@@ -30,7 +29,6 @@ c
       use bound
       use domdec
       use energi
-      use eopbend1gpu_inl
       use group
       use inform    ,only: deb_Path
       use math
@@ -103,12 +101,11 @@ c
       end do
       call timer_exit( timer_eopbend1 )
       end
+      end module
 
       subroutine eopbend1gpu
       use deriv
+      use eopbend1gpu_inl
       implicit none
-      interface; subroutine eopbend1gpu_(deopb)
-      real(r_p),intent(out):: deopb(:,:)
-      end subroutine; end interface
       call eopbend1gpu_(deopb)
       end subroutine

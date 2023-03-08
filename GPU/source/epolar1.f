@@ -1428,7 +1428,7 @@ c
       ufld   = 0.0_ti_p
       dufld  = 0.0_ti_p
       pot    = 0.0_ti_p
-      if(rank.eq.0.and.tinkerdebug) write (*,*) 'epreal1c'
+      if(deb_Path) write (*,*) 'epreal1c'
 
 c
 c     set conversion factor, cutoff and switching coefficients

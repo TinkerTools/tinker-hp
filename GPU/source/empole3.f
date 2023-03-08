@@ -51,6 +51,7 @@ c
       use domdec
       use energi
       use ewald
+      use inform    ,only: deb_Path
       use math
       use mpole
       use potent
@@ -69,7 +70,7 @@ c
 c
 c     zero out the multipole and polarization energies
 c
-      if(rank.eq.0.and.tinkerdebug) write(*,*) 'empole3c'
+      if(deb_Path) write(*,*) 'empole3c'
       nem = 0
       em = 0.0_re_p
       aem = 0_ti_p

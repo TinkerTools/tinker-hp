@@ -4,6 +4,7 @@
 #    error include tinker_precision.h before tinker_types.h
 #  endif
 
+#  define ipk_ 8
 #  define md_p r_p
 #  define en_p r_p
 #  define Md_p(x) x ## _re_p

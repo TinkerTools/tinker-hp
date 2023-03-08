@@ -33,7 +33,8 @@
 #else
          real(t_p)      ,intent(out):: e
 #endif
-         real(t_p)      ,intent(out):: delambdae,poti,potk
+         real(t_p)      ,intent(out):: delambdae
+         real(t_p)      ,intent(inout):: poti,potk
          type(real3)    ,intent(out):: frc,ttmi,ttmk
 
          integer   ene,grd,sca,grp,lbd,shr,lgr

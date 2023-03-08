@@ -57,7 +57,7 @@ c
 c
 c     process keywords containing improper torsion parameters
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'kimptor init'
+        if(deb_Path) print*,'kimptor init'
         header = .true.
         ntis = 0
 

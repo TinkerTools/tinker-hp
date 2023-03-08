@@ -413,6 +413,7 @@ c              pt = pd//pc//pb//pa
 
       subroutine upload_device_kstrtor
       use domdec,only: rank,hostcomm
+      use inform,only: deb_Path
       use ksttor
       use mpi   ,only: MPI_BARRIER
       use sizes ,only: tinkerdebug
@@ -422,7 +423,7 @@ c              pt = pd//pc//pb//pa
 
 #ifdef _OPENACC
  12   format(2x,'upload_device_kstrtor')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
 #endif
 
@@ -433,6 +434,7 @@ c              pt = pd//pc//pb//pa
 
       subroutine delete_data_kstrtor
       use domdec,only: rank
+      use inform,only: deb_Path
       use ksttor
       use sizes ,only: tinkerdebug
       use strtor
@@ -440,7 +442,7 @@ c              pt = pd//pc//pb//pa
       implicit none
 
  12   format(2x,'delete_data_kstrtor')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
 
 !$acc exit data delete(nstrtorloc,nstrtor)
       call shmem_request(ist,     winist,    [0,0],config=mhostacc)

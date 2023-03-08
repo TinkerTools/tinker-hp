@@ -39,7 +39,7 @@ c
       use scales
       use tinMemory ,only: prmem_requestm
       use usage
-      use utilgpu   ,only: rec_queue
+      use utilgpu   ,only: rec_queue,ti_p,re_p
       use mpi
       implicit none
       integer i,j,imin,ierr
@@ -208,7 +208,7 @@ c      end if
       if(deb_Energy)call info_energy(rank)
 
       gnorm = 0.0_re_p
-      call normp(de_tot,dr_stride3,gnorm)
+      call normp(de_tot(1:,1),dr_stride3,gnorm)
 c!$acc parallel loop collapse(2) async present(de_tot)
 c      do i = 1, nloc; do j = 1, 3
 c         iglob = glob(i)
@@ -309,7 +309,7 @@ c
       use tinMemory,only:mipk
       use usage
       use utils  ,only:set_to_zero1m
-      use utilgpu,only:rec_queue,rec_stream,mem_set
+      use utilgpu,only:rec_queue,rec_stream,mem_set,ti_p,re_p
       use mpi
       implicit none
       integer i,iglob,ierr

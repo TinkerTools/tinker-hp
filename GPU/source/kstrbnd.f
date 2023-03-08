@@ -58,7 +58,7 @@ c
 c
 c     process keywords containing stretch-bend parameters
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'kstrbnd init'
+        if(deb_Path) print*,'kstrbnd init'
         isys   = 0
         header = .true.
         do i = 1, nkey
@@ -250,6 +250,7 @@ c
       subroutine upload_device_kstrbnd
       use domdec,only: rank,hostcomm
       use fields,only:forcefield
+      use inform,only:deb_Path
       use kstbnd
       use mpi   ,only: MPI_BARRIER
       use sizes ,only:tinkerdebug
@@ -259,7 +260,7 @@ c
 
 #ifdef _OPENACC
  12   format(2x,'upload_device_kstrbnd')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
 #endif
 
@@ -273,6 +274,7 @@ c
       subroutine delete_data_kstrbnd
       use domdec,only:rank
       use fields,only:forcefield
+      use inform,only:deb_Path
       use kstbnd
       use sizes ,only:tinkerdebug
       use strbnd
@@ -280,7 +282,7 @@ c
       implicit none
 
  12   format(2x,'delete_data_kstrbnd')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
 
       call shmem_request(isb,  winisb,  [0,0], config=mhostacc)
       call shmem_request(sbk,  winsbk,  [0,0], config=mhostacc)

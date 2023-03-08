@@ -372,16 +372,16 @@ c     find parameters for this torsion-torsion interaction
       subroutine upload_device_ktortor
       use bitor
       use domdec,only: rank,hostcomm
+      use inform,only: deb_Path
       use ktrtor
       use mpi   ,only: MPI_BARRIER
-      use sizes ,only: tinkerdebug
       use tortor
       implicit none
       integer ierr
 
 #ifdef _OPENACC
  12   format(2x,'upload_device_kpitors')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
       call malloc_device_data
 #endif
@@ -395,14 +395,14 @@ c     find parameters for this torsion-torsion interaction
       subroutine delete_data_ktortor
       use bitor
       use domdec,only: rank
+      use inform,only: deb_Path
       use ktrtor
-      use sizes ,only: tinkerdebug
       use tinMemory
       use tortor
       implicit none
 
  12   format(2x,'delete_data_kpitors')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
 
       call free_device_data
       call shmem_request(itt,     winitt,   [0,0],config=mhostacc)

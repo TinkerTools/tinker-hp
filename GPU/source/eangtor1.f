@@ -23,11 +23,9 @@ c
 
       subroutine eangtor1_(iat,anat,kant,tors1,tors2,tors3,deat)
       use atmlst
-      !use angle
       use angtor ,only: nangtor,nangtorloc
       use atoms
       use bound
-      use deriv
       use domdec
       use eangtor1_inl
       use energi

@@ -56,7 +56,7 @@ c     blank = '        '
 c
 c     process keywords containing pi-orbital torsion parameters
 c
-        if(rank.eq.0.and.tinkerdebug) print*,'kpitors init'
+        if(deb_Path) print*,'kpitors init'
         header = .true.
         do i = 1, nkey
            next = 1
@@ -246,6 +246,7 @@ c
       use bond
       use domdec,only: rank,hostcomm
       use kpitor
+      use inform,only: deb_Path
       use mpi   ,only: MPI_BARRIER
       use nvshmem
       use pitors
@@ -256,7 +257,7 @@ c
       integer ierr
 #ifdef _OPENACC
  12   format(2x,'upload_device_kpitors')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
 #endif
 
@@ -273,6 +274,7 @@ c
 
       subroutine delete_data_kpitors
       use domdec,only: rank
+      use inform,only: deb_Path
       use pitors
       use sizes ,only: tinkerdebug
       use tinMemory
@@ -280,7 +282,7 @@ c
       implicit none
 
  12   format(2x,'delete_data_kpitors')
-      if(rank.eq.0.and.tinkerdebug) print 12
+      if(deb_Path) print 12
 
 !$acc exit data delete(npitorsloc)
       call shmem_request(kpit,winkpit,[0]  ,config=mhostacc)

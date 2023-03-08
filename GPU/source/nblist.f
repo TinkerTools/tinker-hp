@@ -97,7 +97,7 @@ c
          end if
          call fatal
       end if
-      if (debMem.and.
+      if (debMem.ne.0.and.
      &      (istep.lt.100.or.mod(istep,20*ineigup).eq.0))
      &       call print_memory_usage
 
@@ -175,7 +175,7 @@ c
 
       ! Disable Extra allocation
 c     if (extra_alloc.and.istep.gt.1.and.mod(istep,2*ineigup).eq.0) then
-c        if (debMem) print*, 'Disable extra allocation',rank
+c        if (debMem.ne.0) print*, 'Disable extra allocation',rank
 c        extra_alloc=.false.
 c     end if
 

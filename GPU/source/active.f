@@ -40,7 +40,7 @@ c     perform dynamic allocation of some pointer arrays
 c
       call alloc_shared_active
 c
-      if (rank.eq.0.and.tinkerdebug) print*, 'active init'
+      if (deb_Path) print*, 'active init'
       if (hostrank.ne.0) goto 90
 c
 c     perform dynamic allocation of some local arrays

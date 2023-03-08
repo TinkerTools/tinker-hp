@@ -20,6 +20,7 @@ c
       use ewald
       use group
       use iounit
+      use inform ,only: deb_Path
       use math
       use mpole
       use neigh
@@ -29,7 +30,6 @@ c
       use potent
       use shunt
       use mpi
-      use sizes ,only: tinkerdebug
       implicit none
       integer i,iglob,kglob,nrhs,ipoleloc,nnelst
       real(t_p)  ef(3,nrhs,npolebloc)
@@ -75,7 +75,7 @@ c
          RoutineName='efld0_direct'
          mode = 'EWALD'
       endif
-      if (rank.eq.0.and.tinkerdebug) write(*,*)
+      if (deb_Path) write(*,*)
      &     ' efld0_direct', use_polarshortreal
 c
       call switch (mode)

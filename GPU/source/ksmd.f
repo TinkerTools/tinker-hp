@@ -961,7 +961,7 @@ c
       subroutine ksmd_recom
       use atoms    ,only:x,y,z
       use atmtyp   ,only:mass
-      use tinheader,only:ti_p
+      use tinheader,only:ti_p,re_p
       use potent   ,only:use_smd_velconst,use_smd_forconst
       use msmd
       implicit none
