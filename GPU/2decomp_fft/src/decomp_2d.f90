@@ -147,7 +147,7 @@ module decomp_2d
   integer, save, dimension(3), public :: zstart, zend, zsize  ! z-pencil
 !$acc declare create(xstart,xend,zstart,zend,xsize,zsize)
 
-  integer(int_ptr_kind()),public:: cufft_worksize=0 !Total workspace of cufft library at runtime
+  integer(8),public:: cufft_worksize=0 !Total workspace of cufft library at runtime
 
   ! These are data attributes for Decomp2d_mpi_alltoallv
   integer,allocatable,private:: reqsendall(:),reqrecvall(:)    &
@@ -544,10 +544,10 @@ contains
 
     ! free buffers for Decomp2d_mpi_alltoallv
     if (allocated(reqsendall)) then
-       deallocate(reqsendall(nproc))
-       deallocate(reqrecvall(nproc))
-       deallocate(alltoall_recv_pattern(nproc))
-       deallocate(alltoall_send_pattern(nproc))
+       deallocate(reqsendall)
+       deallocate(reqrecvall)
+       deallocate(alltoall_recv_pattern)
+       deallocate(alltoall_send_pattern)
     end if
 
     decomp_buf_size = 0
@@ -1526,8 +1526,8 @@ contains
     integer status(MPI_STATUS_SIZE),tag
     integer i,ii,n,nsend,sloc,rloc,irank,send_rank,recv_rank
     integer icomm,isave
-    integer,parameter::pivot=7
-    integer,parameter::salvo=3
+    integer,parameter::pivot=3
+    integer,parameter::salvo=2
     complex(mytype) icplx
     real(8),parameter:: Mio=(sizeof(icplx)*1.0d0)/(1024*1024)
 
