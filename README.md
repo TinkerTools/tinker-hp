@@ -4,7 +4,7 @@
 <H2><B>News</B></H2>
 ------------------------------
 
-<B>-Update 02/2023: support for neural networks potentials (ANI-2X, DeepMD etc...) is available. Check the Deep-HP module paper: https://arxiv.org/abs/2207.14276</B>
+<B>-Update 02/2023: support for neural networks potentials (ANI-2X, DeepMD etc...) is available. Check the Deep-HP module paper: https://doi.org/10.1039/D2SC04815A (Chem. Sci., 2023,14, 5438-5452)</B>
 
 <B>-Update 02/2023: support for the AMOEBA+ potential now available.</B>
 
@@ -36,7 +36,7 @@ Tinker-HP is a CPUs and GPUs based, multi-precision, MPI massively parallel pack
 capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores. 
 The Tinker-HP approach offers various strategies using domain decomposition techniques for periodic boundary conditions in the 
 framework of the (n)log(n) Smooth Particle Mesh Ewald. Tinker-HP proposes a high performance scalable computing environment for 
-polarizable (AMOEBA, Amberpol...) and classical (Amber, Charmm, OPLS...) force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters. Tinker-HP supports Intel (AVX5212 enhanced version) and AMD CPUs platforms as well as NVIDIA GPUs (1080, 2080, 3090, P100, V100, A100). 
+polarizable (AMOEBA, Amberpol...) and classical (Amber, Charmm, OPLS...) force fields giving access to large systems up to millions of atoms. It can be used on supercomputers as well as on lab clusters. Tinker-HP supports Intel (AVX5212 enhanced version) and AMD CPUs platforms as well as NVIDIA GPUs (1080, 2080, 3090, 4090, P100, V100, A100). 
 
 i) Tinker-HP is available free of charge for ALL Academic Institutions, National Laboratories and supercomputer centers through the global Tinker license (https://dasher.wustl.edu/tinker/downloads/license.pdf).
 Non-academic entities (e.g., companies, for profit organizations) should contact the managing universities (see license).
