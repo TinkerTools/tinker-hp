@@ -4,6 +4,7 @@
 
 #include <mpi.h>
 #include <colvarproxy.h>
+#include <colvarproxy_system.h>
 #include "colvarproxy_tinkerhp_interface.h"
 #include <iostream>
 
@@ -33,22 +34,12 @@ private:
   void init();
   /// size of the system
   int n;
-  /// \brief Value of the unit for atomic coordinates with respect to
-  /// angstroms (used by some variables for hard-coded default values)
-  cvm::real backend_angstrom_value()
-  {
-    return 1.0;
-  }
   int set_unit_system(std::string const &units_in, bool check_only);
 
   /// \brief target Boltzmann constant
   cvm::real sim_boltzmann;
   cvm::real boltzmann() { return sim_boltzmann; }
 
-  /// \brief Target temperature of the simulation (K units)
-  cvm::real sim_temperature;
-
-  cvm::real temperature() {return sim_temperature;}
 
   /// \brief Target Time step of the simulation (fs)
   cvm::real sim_dt; 
@@ -93,7 +84,6 @@ private:
   /// Print a message to the main log and exit with error code
   inline void fatal_error(std::string const &message) { std::cout << "colvars: " <<  message << std::endl; fatal_error_(); }
 
-#ifdef COLVARS_TCL
   virtual int run_force_callback();
 
   virtual int run_colvar_callback(std::string const &name,
@@ -103,7 +93,7 @@ private:
   virtual int run_colvar_gradient_callback(std::string const &name,
                                            std::vector<const colvarvalue *> const &cvc_values,
                                            std::vector<cvm::matrix2d<cvm::real> > &gradient);
-#endif
+
   /// Get value of alchemical lambda parameter from back-end
   int get_alch_lambda(cvm::real* lambda) {
     // Call C/Fortran implementation

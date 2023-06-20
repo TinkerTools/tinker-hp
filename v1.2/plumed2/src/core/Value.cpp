@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,6 +36,22 @@ Value::Value():
   value(0.0),
   inputForce(0.0),
   hasForce(false),
+  hasDeriv(true),
+  periodicity(unset),
+  min(0.0),
+  max(0.0),
+  max_minus_min(0.0),
+  inv_max_minus_min(0.0)
+{
+}
+
+Value::Value(const std::string& name):
+  action(NULL),
+  value_set(false),
+  value(0.0),
+  inputForce(0.0),
+  hasForce(false),
+  name(name),
   hasDeriv(true),
   periodicity(unset),
   min(0.0),
@@ -91,9 +107,9 @@ void Value::setNotPeriodic() {
 
 void Value::setDomain(const std::string& pmin,const std::string& pmax) {
   str_min=pmin;
-  if( !Tools::convert(str_min,min) ) action->error("could not convert period string " + str_min + " to real");
+  if( !Tools::convertNoexcept(str_min,min) ) action->error("could not convert period string " + str_min + " to real");
   str_max=pmax;
-  if( !Tools::convert(str_max,max) ) action->error("could not convert period string " + str_max + " to read");
+  if( !Tools::convertNoexcept(str_max,max) ) action->error("could not convert period string " + str_max + " to read");
   setupPeriodicity();
 }
 
@@ -116,7 +132,7 @@ void Value::setGradients() {
   ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
   ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);
   if(aa) {
-    Atoms&atoms((aa->plumed).getAtoms());
+    const Atoms&atoms((aa->plumed).getAtoms());
     for(unsigned j=0; j<aa->getNumberOfAtoms(); ++j) {
       AtomNumber an=aa->getAbsoluteIndex(j);
       if(atoms.isVirtualAtom(an)) {

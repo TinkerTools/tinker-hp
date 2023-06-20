@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,7 +46,7 @@ Random::Random(const std::string & name):
   name(&name!=&noname?name:"noname")
 {
   iy=0;
-  iv[0]=0;
+  for(unsigned i=0; i<NTAB; i++) iv[i]=0;
   setSeed(0);
 }
 
@@ -151,7 +151,7 @@ double Random::Gaussian() {
     rsq=v1*v1+v2*v2;
     if(rsq<1.0 && rsq>0.0) break;
   }
-  double fac=sqrt(-2.*std::log(rsq)/rsq);
+  double fac=std::sqrt(-2.*std::log(rsq)/rsq);
   saveGaussian=v1*fac;
   switchGaussian=true;
   return v2*fac;

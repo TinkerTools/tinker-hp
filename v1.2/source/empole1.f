@@ -85,6 +85,7 @@ c
       real*8 elambdatemp
       real*8, allocatable :: delambdarec0(:,:),delambdarec1(:,:)
       real*8 :: elambdarec0,elambdarec1
+      real*8 :: vir0(3,3),vir1(3,3),virtemp(3,3)
       real*8, allocatable :: pot(:)
       real*8, allocatable :: decfx(:)
       real*8, allocatable :: decfy(:)
@@ -125,17 +126,20 @@ c
 c         the reciprocal part is interpolated between 0 and 1
 c
           elambda = 0d0
+          virtemp = vir
           call MPI_BARRIER(hostcomm,ierr)
           if (hostrank.eq.0) call altelec
           call MPI_BARRIER(hostcomm,ierr)
           call rotpole
           em = 0d0
           demrec = 0d0
+          vir = 0d0
           if (elambda.lt.1d0) then
             call emrecip1
           end if
           elambdarec0  = em
           delambdarec0 = demrec
+          vir0 = vir
 
           elambda = 1d0
           call MPI_BARRIER(hostcomm,ierr)
@@ -144,16 +148,19 @@ c
           call rotpole
           em = 0d0
           demrec = 0d0
+          vir = 0d0
           if (elambda.gt.0d0) then
             call emrecip1
           end if
           elambdarec1  = em
           delambdarec1 = demrec
+          vir1 = vir
 
           elambda = elambdatemp 
           em = (1-elambda)*elambdarec0 + elambda*elambdarec1
           demrec = (1-elambda)*delambdarec0+elambda*delambdarec1
           delambdae = delambdae + elambdarec1-elambdarec0
+          vir = virtemp + (1-elambda)*vir0 + elambda*vir1
 c
 c         reset lambda to initial value
 c

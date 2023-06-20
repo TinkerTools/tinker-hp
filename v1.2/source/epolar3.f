@@ -496,7 +496,7 @@ c
                if (efull .ne. 0.0d0) then
                   nep = nep + 1
                   aep(i) = aep(i) + 0.5d0*efull
-                  aep(k) = aep(k) + 0.5d0*efull
+                  aep(kbis) = aep(kbis) + 0.5d0*efull
                   if (molcule(iglob) .ne. molcule(kglob)) then
                      einter = einter + efull
                   end if
@@ -515,7 +515,7 @@ c
      &                       //,' Type',14x,'Atom Names',
      &                          15x,'Distance',8x,'Energy',/)
                   end if
-                  write (iout,30)  i,name(i),k,name(k),r,efull
+                  write (iout,30)  i,name(i),kglob,name(kglob),r,efull
    30             format (' Polar',5x,2(i7,'-',a3),9x,
      &                       f10.4,2x,f12.4)
                end if

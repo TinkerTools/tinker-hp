@@ -1,0 +1,18 @@
+angle atoms=2,6,3 label=ang1
+ang2: AnglE ATOMS=2,6,7,3
+anglE ATOMS=2,6,7,3
+
+RESTRAINT ...
+  ARG=ang2
+  KAPPA=20.0
+  AT=0.8
+...
+
+PRINT ...
+  STRIDE=10
+  arg=ang1,ang2
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+

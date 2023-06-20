@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -82,7 +82,7 @@ ActionWithAveraging::ActionWithAveraging( const ActionOptions& ao ):
       ActionWithValue* val = plumed.getActionSet().selectWithLabel<ActionWithValue*>(wwstr[i]);
       if( !val ) error("could not find value named");
       bias::ReweightBase* iswham=dynamic_cast<bias::ReweightBase*>( val );
-      if( iswham->buildsWeightStore() ) error("to use wham you must gather data using COLLECT_FRAMES");
+      if( iswham && iswham->buildsWeightStore() ) error("to use wham you must gather data using COLLECT_FRAMES");
       weights.push_back( val->copyOutput(val->getLabel()) );
       arg.push_back( val->copyOutput(val->getLabel()) );
       log.printf("%s ",wwstr[i].c_str() );
@@ -106,6 +106,7 @@ bool ActionWithAveraging::ignoreNormalization() const {
 }
 
 void ActionWithAveraging::setAveragingAction( std::unique_ptr<AveragingVessel> av_vessel, const bool& usetasks ) {
+  // cppcheck-suppress danglingLifetime
   myaverage=av_vessel.get();
   addVessel( std::move(av_vessel) );
   useRunAllTasks=usetasks; resizeFunctions();
@@ -178,7 +179,7 @@ void ActionWithAveraging::update() {
 
 void ActionWithAveraging::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
   if( my_analysis_object ) {
-    analysis::DataCollectionObject& mystore=my_analysis_object->getStoredData( current, false );
+    const analysis::DataCollectionObject& mystore=my_analysis_object->getStoredData( current, false );
     for(unsigned i=0; i<getNumberOfArguments(); ++i) myvals.setValue( 1+i, mystore.getArgumentValue( ActionWithArguments::getArguments()[i]->getName() ) );
     myvals.setValue( 0, my_analysis_object->getWeight(current) );
     if( normalization==f ) myvals.setValue( 1+getNumberOfArguments(), 1.0 ); else myvals.setValue( 1+getNumberOfArguments(), 1.0 / cweight );

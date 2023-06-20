@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,12 +23,6 @@
 #include "tools/NeighborList.h"
 #include "ActionRegister.h"
 #include "tools/SwitchingFunction.h"
-
-#include <string>
-#include <cmath>
-#include <memory>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -112,7 +106,7 @@ private:
   bool pbc, serial, docomp, dosum, docmdist;
   std::unique_ptr<NeighborList> nl;
   std::vector<SwitchingFunction> sfs;
-  vector<double> reference, weight;
+  std::vector<double> reference, weight;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ContactMap(const ActionOptions&);
@@ -180,7 +174,7 @@ ContactMap::ContactMap(const ActionOptions&ao):
     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
   }
   // Create neighbour lists
-  nl.reset(new NeighborList(ga_lista,gb_lista,true,pbc,getPbc()));
+  nl=Tools::make_unique<NeighborList>(ga_lista,gb_lista,serial,true,pbc,getPbc(),comm);
 
   // Read in switching functions
   std::string errors; sfs.resize( ga_lista.size() ); unsigned nswitch=0;

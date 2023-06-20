@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,8 +25,6 @@
 
 #include <string>
 #include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace multicolvar {
@@ -155,7 +153,7 @@ XYDistances::XYDistances(const ActionOptions&ao):
 double XYDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector distance;
   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
-  const double value=sqrt(distance[myc1]*distance[myc1] + distance[myc2]*distance[myc2] );
+  const double value=std::sqrt(distance[myc1]*distance[myc1] + distance[myc2]*distance[myc2] );
   const double invvalue=1.0/value;
 
   Vector myvec; myvec.zero();

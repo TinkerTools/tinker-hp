@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/Atoms.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/PDB.h"
 #include "PCA.h"
 
@@ -78,8 +78,8 @@ OutputPCAProjection::OutputPCAProjection( const ActionOptions& ao ):
   mypdb.setArgumentNames( (mypca->my_input_data)->getArgumentNames() );
 
   // Find a moldata object
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.empty() ) warning("PDB output files do not have atom types unless you use MOLDATA");
+  auto* moldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+  if( moldat ) warning("PDB output files do not have atom types unless you use MOLDATA");
 
   parse("FILE",filename); parse("FMT",fmt);
   if( !getRestart() ) { OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
@@ -88,15 +88,13 @@ OutputPCAProjection::OutputPCAProjection( const ActionOptions& ao ):
 
 void OutputPCAProjection::performAnalysis() {
   // Find a moldata object
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()>1 ) error("you should only have one MOLINFO action in your input file");
-  SetupMolInfo* mymoldat=NULL; if( moldat.size()==1 ) mymoldat=moldat[0];
+  auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis");
   mypdb.setAtomPositions( (mypca->myref)->getReferencePositions() );
   for(unsigned j=0; j<mypca->getArguments().size(); ++j) mypdb.setArgumentValue( (mypca->getArguments()[j])->getName(), (mypca->myref)->getReferenceArgument(j) );
   // And output the first frame
-  afile.open( filename.c_str() ); afile.printf("REMARK TYPE=%s \n", mypca->mtype.c_str() );
+  afile.open( filename ); afile.printf("REMARK TYPE=%s \n", mypca->mtype.c_str() );
   if( plumed.getAtoms().usingNaturalUnits() ) mypdb.print( 1.0, mymoldat, afile, fmt );
   else mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, afile, fmt );
   // And now output the eigenvectors

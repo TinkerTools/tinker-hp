@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -55,19 +55,20 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
       plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif
     } else {
-      r=fwrite(ptr,1,s,fp);
+      r=std::fwrite(ptr,1,s,fp);
     }
   }
+  if(comm) {
 //  This barrier is apparently useless since it comes
 //  just before a Bcast.
 //
 //  Anyway, it looks like it is solving an issue that appeared on
 //  TRAVIS (at least on my laptop) so I add it here.
 //  GB
-  if(comm) comm->Barrier();
+    comm->Barrier();
+    comm->Bcast(r,0);
+  }
 
-
-  if(comm) comm->Bcast(r,0);
   return r;
 }
 
@@ -81,12 +82,11 @@ OFile::OFile():
   fmtField();
   buflen=1;
   actual_buffer_length=0;
-  buffer.reset(new char [buflen]);
+  buffer.resize(buflen);
 // these are set to zero to avoid valgrind errors
   for(int i=0; i<buflen; ++i) buffer[i]=0;
-  buffer_string.reset(new char [1000]);
 // these are set to zero to avoid valgrind errors
-  for(unsigned i=0; i<1000; ++i) buffer_string[i]=0;
+  buffer_string.resize(1000,0);
 }
 
 OFile& OFile::link(OFile&l) {
@@ -109,10 +109,10 @@ int OFile::printf(const char*fmt,...) {
   if(r>=buflen-actual_buffer_length) {
     int newlen=buflen;
     while(newlen<=r+actual_buffer_length) newlen*=2;
-    std::unique_ptr<char[]> newbuf{new char [newlen]};
-    memmove(newbuf.get(),buffer.get(),buflen);
+    std::vector<char> newbuf(newlen);
+    std::memmove(newbuf.data(),buffer.data(),buflen);
     for(int k=buflen; k<newlen; k++) newbuf[k]=0;
-    buffer=std::move(newbuf);
+    std::swap(buffer,newbuf);
     buflen=newlen;
     va_list arg;
     va_start(arg, fmt);
@@ -122,19 +122,19 @@ int OFile::printf(const char*fmt,...) {
   plumed_massert(r>-1 && r<buflen-actual_buffer_length,"error using fmt string " + std::string(fmt));
 
 // Line is buffered until newline, then written with a PLUMED: prefix
-  char*p1=buffer.get();
+  char*p1=buffer.data();
   char*p2;
 // newline is only searched in the just added portion:
   char*psearch=p1+actual_buffer_length;
   actual_buffer_length+=r;
-  while((p2=strchr(psearch,'\n'))) {
+  while((p2=std::strchr(psearch,'\n'))) {
     if(linePrefix.length()>0) llwrite(linePrefix.c_str(),linePrefix.length());
     llwrite(p1,p2-p1+1);
     actual_buffer_length-=(p2-p1)+1;
     p1=p2+1;
     psearch=p1;
   };
-  if(buffer.get()!=p1) memmove(buffer.get(),p1,actual_buffer_length);
+  if(buffer.data()!=p1) std::memmove(buffer.data(),p1,actual_buffer_length);
   return r;
 }
 
@@ -168,14 +168,44 @@ OFile& OFile::printField(const std::string&name,double v) {
 // The distinction between +nan and -nan is not well defined
 // Always printing nan simplifies some regtest (special functions computed our of range).
   if(std::isnan(v)) v=std::numeric_limits<double>::quiet_NaN();
-  sprintf(buffer_string.get(),fieldFmt.c_str(),v);
-  printField(name,buffer_string.get());
+  std::snprintf(buffer_string.data(),buffer_string.size(),fieldFmt.c_str(),v);
+  printField(name,buffer_string.data());
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,int v) {
-  sprintf(buffer_string.get()," %d",v);
-  printField(name,buffer_string.get());
+  std::snprintf(buffer_string.data(),buffer_string.size()," %d",v);
+  printField(name,buffer_string.data());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,long int v) {
+  std::snprintf(buffer_string.data(),buffer_string.size()," %ld",v);
+  printField(name,buffer_string.data());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,long long int v) {
+  std::snprintf(buffer_string.data(),buffer_string.size()," %lld",v);
+  printField(name,buffer_string.data());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,unsigned v) {
+  std::snprintf(buffer_string.data(),buffer_string.size()," %u",v);
+  printField(name,buffer_string.data());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,long unsigned v) {
+  std::snprintf(buffer_string.data(),buffer_string.size()," %lu",v);
+  printField(name,buffer_string.data());
+  return *this;
+}
+
+OFile& OFile::printField(const std::string&name,long long unsigned v) {
+  std::snprintf(buffer_string.data(),buffer_string.size()," %llu",v);
+  printField(name,buffer_string.data());
   return *this;
 }
 
@@ -267,6 +297,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
   if(maxbackup>0 && (!comm || comm->Get_rank()==0)) {
     FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
     if(ff) {
+      // no exception here
       std::fclose(ff);
       std::string backup;
       size_t found=fname.find_last_of("/\\");
@@ -278,11 +309,12 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
         if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
         backup=directory+bstring +"."+num+"."+file;
         FILE* fff=std::fopen(backup.c_str(),"r");
+        // no exception here
         if(!fff) break;
         else std::fclose(fff);
       }
       int check=rename(fname.c_str(),backup.c_str());
-      plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
+      plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
     }
   }
 }
@@ -328,11 +360,6 @@ OFile& OFile::rewind() {
 // moreover, we can take a backup of the file
   plumed_assert(fp);
   clearFields();
-  if(gzfp) {
-#ifdef __PLUMED_HAS_ZLIB
-    gzclose((gzFile)gzfp);
-#endif
-  } else fclose(fp);
 
   if(!comm || comm->Get_rank()==0) {
     std::string fname=this->path;
@@ -341,16 +368,22 @@ OFile& OFile::rewind() {
     std::string file=fname.substr(found+1);
     std::string backup=directory+backstring +".last."+file;
     int check=rename(fname.c_str(),backup.c_str());
-    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
+    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
   }
 
   if(comm) comm->Barrier();
 
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
+    gzclose((gzFile)gzfp);
+    // no exception here
     gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
 #endif
-  } else fp=std::fopen(const_cast<char*>(path.c_str()),"w");
+  } else {
+    std::fclose(fp);
+    // no exception here
+    fp=std::fopen(const_cast<char*>(path.c_str()),"w");
+  }
   return *this;
 }
 
@@ -359,10 +392,12 @@ FileBase& OFile::flush() {
     if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
       gzclose(gzFile(gzfp));
+      // no exception here
       gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"a");
 #endif
     } else {
-      fclose(fp);
+      std::fclose(fp);
+      // no exception here
       fp=std::fopen(const_cast<char*>(path.c_str()),"a");
     }
   } else {

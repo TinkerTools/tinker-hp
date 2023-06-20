@@ -1,13 +1,14 @@
 [![Homepage](https://img.shields.io/badge/Home-plumed.org-green.svg)](http://www.plumed.org)
 [![Homepage](https://img.shields.io/badge/Google_group-plumed--users-green.svg)](http://groups.google.com/forum/#!forum/plumed-users)
 [![codecov](https://codecov.io/gh/plumed/plumed2/branch/master/graph/badge.svg)](https://codecov.io/gh/plumed/plumed2)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/plumed/plumed2.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/plumed/plumed2/context:python)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/plumed/plumed2.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/plumed/plumed2/context:cpp)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
 [![Github Releases](https://img.shields.io/github/release/plumed/plumed2.svg)](https://github.com/plumed/plumed2/releases)
 [![MacPorts package](https://repology.org/badge/version-for-repo/macports/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/plumed/badges/version.svg)](https://anaconda.org/conda-forge/plumed)
 [![AUR package](https://repology.org/badge/version-for-repo/aur/plumed.svg)](https://repology.org/project/plumed/versions)
+[![DPorts package](https://repology.org/badge/version-for-repo/dports/plumed.svg)](https://repology.org/project/plumed/versions)
+[![FreeBSD port](https://repology.org/badge/version-for-repo/freebsd/plumed.svg)](https://repology.org/project/plumed/versions)
+[![Spack package](https://repology.org/badge/version-for-repo/spack/plumed.svg)](https://repology.org/project/plumed/versions)
 [![Twitter Follow](https://img.shields.io/twitter/follow/plumed_org.svg?style=social&label=Follow)](https://twitter.com/plumed_org)
 
 Branches and releases
@@ -40,14 +41,17 @@ When reporting please provide the git hash (you can obtain it with `git rev-pars
 Status
 ------
 
-Below you find the status on [Travis-CI](http://travis-ci.org/plumed/plumed2) for the release branches.
+Below you find the status on [GitHub Actions](https://github.com/plumed/plumed2/actions) for the release branches.
 
 | Branch   |      Status   | First stable release (year) | Still supported |
 |:--------:|:-------------:|:--------:|:------:|
-| master   | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=master)](https://travis-ci.org/plumed/plumed2) | 2020 (expected) | / |
-| v2.6     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.6)](https://travis-ci.org/plumed/plumed2)   | 2019 | yes |
-| v2.5     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.5)](https://travis-ci.org/plumed/plumed2)   | 2018 | yes |
-| v2.4     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.4)](https://travis-ci.org/plumed/plumed2)   | 2017 | no |
+| master   | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=master)](https://github.com/plumed/plumed2/actions) | 2024 (expected) | / |
+| v2.9     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.9)](https://github.com/plumed/plumed2/actions)   | 2023 (expected) | yes |
+| v2.8     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.8)](https://github.com/plumed/plumed2/actions)   | 2022 | yes |
+| v2.7     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.7)](https://github.com/plumed/plumed2/actions)   | 2020 | no |
+| v2.6     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.6)](https://github.com/plumed/plumed2/actions)   | 2019 | no |
+| v2.5     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.5)](https://github.com/plumed/plumed2/actions)   | 2018 | no |
+| v2.4     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.4)](https://github.com/plumed/plumed2/actions)   | 2017 | no |
 | v2.3     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.3)](https://travis-ci.org/plumed/plumed2)   | 2016 | no |
 | v2.2     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.2)](https://travis-ci.org/plumed/plumed2)   | 2015 | no |
 | v2.1     | [![Build Status](https://travis-ci.org/plumed/plumed2.svg?branch=v2.1)](https://travis-ci.org/plumed/plumed2)   | 2014 | no |
@@ -64,7 +68,7 @@ Here's a description of the content of each file and directory in the root PLUME
     Makefile.conf.in : template configuration makefile
     PEOPLE           : list of authors
     README.md        : this file
-    VERSION          : version file
+    VERSION.txt      : version file
     astyle           : a local version of astyle, used to format code
     configure        : configuration script
     configure.ac     : configuration script (autoconf)
@@ -91,7 +95,6 @@ Required software:
 * C/c++ compiler (c++11 support is required as of version 2.4).
 * A modern version of the `patch` command line tool.
 * Support for POSIX library `dirent.h`.
-* `xxd` (present in most UNIX distributions).
 
 Suggested software (libraries are checked by `./configure` and enabled if available):
 
@@ -99,8 +102,6 @@ Suggested software (libraries are checked by `./configure` and enabled if availa
 * Optimized blas and lapack libraries. They are automatically replaced by an internal version if not available.
 * [VMD molfile plugins](http://www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats. They are automatically replaced by an internal version supporting a few formats if not available.
 * [Zlib library](http://zlib.net/) to use compressed data files.
-* [Xdrfile library](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library) to have read/write access to gromacs
-  trajectory files.
 * [Doxygen](http:://www.doxygen.org) to build user manual. Doxygen might need the following packages:
   * Latex to build the pdf user manual.
   * [Graphviz](http://www.graphviz.org) to show class hierarchy in
@@ -109,7 +110,7 @@ Suggested software (libraries are checked by `./configure` and enabled if availa
 Quick compilation instructions
 ------------------------------
 
-Extensive installation instructions are in the [user documentation](http://www.plumed.org/documentation).
+Extensive installation instructions are in the [user documentation](http://www.plumed.org/doc).
 Quick instructions:
 
     ./configure --prefix=$HOME/opt
@@ -119,11 +120,11 @@ Quick instructions:
 
 User documentation can be found at `user-doc/html/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
-[Pre-compiled documentation](http://www.plumed.org/documentation) is available online, so this is only required
+[Pre-compiled documentation](http://www.plumed.org/doc) is available online, so this is only required
 if you are working with a modified version of the code!
 
 In order to run PLUMED without installing it you should type `source sourceme.sh`. However,
-we recomment installing PLUMED. 
+we recommend installing PLUMED. 
 To install it in `$HOME/opt` (directory should be set during `./configure`):
 
     umask 022
@@ -138,3 +139,4 @@ If you compiled your own documentation, paths to the installed documentation can
 A sample modulefile with environment variable will be placed in
 `$HOME/opt/lib/plumed/src/lib/modulefile`. This can be useful if you want to
 install multiple PLUMED versions side by side and select them with env modules.
+

@@ -596,7 +596,7 @@ c
       real*8 alphai,alphak
       real*8 dmp3,dmp5,dmp7
       real*8 dmpi(7),dmpk(7)
-      real*8 dmpik(7),dmpe(7)
+      real*8 dmpik(7)
       real*8 scalek
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
@@ -743,10 +743,6 @@ c
           qky = qkxy*xr + qkyy*yr + qkyz*zr
           qkz = qkxz*xr + qkyz*yr + qkzz*zr
           qkr = qkx*xr + qky*yr + qkz*zr
-c
-c     calculate real space Ewald error function damping
-c
-          call dampewald (7,r,r2,1.0d0,dmpe)
 c
 c     find the field components for Thole polarization damping
 c
@@ -943,7 +939,7 @@ c
       real*8 dmp3,dmp5
       real*8 fid(3),fkd(3)
       real*8 fip(3),fkp(3)
-      real*8 dmpik(7),dmpe(7)
+      real*8 dmpik(7)
       real*8 dlocal(6)
       real*8 duix,duiy,duiz
       real*8 puix,puiy,puiz
@@ -1039,10 +1035,6 @@ c
           if (use_chgpen) then
              alphak = palpha(kkpole)
           end if
-c
-c     calculate real space Ewald error function damping
-c
-          call dampewald (7,r,r2,1.0d0,dmpe)
 c
 c     find the field components for Thole polarization damping
 c

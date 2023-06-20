@@ -1,6 +1,6 @@
 
 # version number
-VERSION = $(shell if test -f ../../VERSION ; then grep -v \\\# ../../VERSION ; else echo "Unknown" ; fi )
+VERSION = $(shell if test -f ../../VERSION.txt ; then grep -v \\\# ../../VERSION.txt ; else echo "Unknown" ; fi )
 
 # here we build the list of modules to be linked in plumedKernel
 KERNEL_MODULES := $(addprefix ../,$(shell ../maketools/find_modules.sh))
@@ -101,9 +101,9 @@ endif
 # check if bindir and libdir are consistent.
 # notice that this is not required yet but if we later we want
 # to use $ORIGIN based rpaths this would be needed
-ifneq ($(dir $(bindir)),$(dir $(libdir)))
-  $(error bindir and libdir are not consistent, please set them as subdirectories of the same directory)
-endif
+#ifneq ($(dir $(bindir)),$(dir $(libdir)))
+#  $(error bindir $(bindir) and libdir $(libdir) are not consistent, please set them as subdirectories of the same directory)
+#endif
 
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.inc install $(PLUMED_SCRIPTS_EXE) install-html
 all:
@@ -308,6 +308,8 @@ endif
 	if test -d ../../vim/syntax ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/syntax | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -f ../../vim/scripts.vim ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/vim" && cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
+# json syntax file
+	if test -f ../../json/syntax.json ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/json" && cp ../../json/syntax.json  "$(DESTDIR)$(libdir)/$(program_name)/json/" ; fi
 # python installation (rebuild prior to installation so as to discover plumed in path)
 ifdef python_bin
 	cp -pr ../../python install 
@@ -326,6 +328,9 @@ ifdef BASH_COMPLETION_DIR
 	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"
 	cp bash.completion "$(DESTDIR)$(BASH_COMPLETION_DIR)/$(program_name)"
 endif
+	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/fortran"
+	cp ../../fortran/plumed.f90 "$(DESTDIR)$(libdir)/$(program_name)/fortran/"
+	cp ../../fortran/plumed_f08.f90 "$(DESTDIR)$(libdir)/$(program_name)/fortran/"
 # making everything visible:
 	chmod -R go+rX,go-w "$(DESTDIR)$(libdir)/$(program_name)"
 	chmod -R go+rX,go-w "$(DESTDIR)$(includedir)/$(program_name)"
@@ -433,7 +438,7 @@ lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED
            $(PLUMED_LIBDIR)Plumed.cmake $(PLUMED_LIBDIR)Plumed.cmake.runtime $(PLUMED_LIBDIR)Plumed.cmake.shared
 
 $(PLUMED_SCRIPTS_EXE):
-	@echo "#! /bin/bash" > $@
+	@echo "#! /usr/bin/env bash" > $@
 	@echo "echo 'NOTE: shell only version, useful when plumed is cross compiled' >&2" >> $@
 # The logic implemented here should be the same as in config/Config.inc.in
 # Please keep them consistent
@@ -444,6 +449,7 @@ ifeq ($(PLUMED_INSTALL),Install)
 	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_INCLUDEDIR-$(includedir)}\"" >> $@
 	@echo "export PLUMED_HTMLDIR=\"\$${PLUMED_HTMLDIR=$(htmldir)}\"" >> $@
 	@echo "export PLUMED_PROGRAM_NAME=\"\$${PLUMED_PROGRAM_NAME-$(program_name)}\"" >> $@
+	@echo "export PLUMED_VERSION=$(VERSION)" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 else
 	@echo "export PLUMED_IS_INSTALLED=no" >> $@
@@ -451,6 +457,7 @@ else
 	@echo "export PLUMED_INCLUDEDIR=\"\$${PLUMED_ROOT}/src/include\"" >> $@
 	@echo "export PLUMED_HTMLDIR=\"\$${PLUMED_ROOT}\"" >> $@
 	@echo "export PLUMED_PROGRAM_NAME=plumed" >> $@
+	@echo "export PLUMED_VERSION=$(VERSION)" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 endif
 	chmod a+x $@
@@ -489,7 +496,7 @@ $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 # I thus prefer to directly link PLUMED_KERNEL.
 # This makes Linux identical to OSX and is likely more portable.
 $(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(OBJ_WRAPPER) $(PLUMED_KERNEL)
-	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(LD_MAIN_RUNPATH)
 ifeq ($(use_loader_path),yes)
 ifeq ($(PLUMED_INSTALL),Install)
 	install_name_tool -change "$(SONAME_INSTALL_PATH)$(notdir $(PLUMED_KERNEL))" "@loader_path/../$(notdir $(libdir))/$(notdir $(PLUMED_KERNEL))" $@
@@ -518,6 +525,8 @@ ifeq ($(make_static_archive),yes)
 	@echo "PLUMED_STATIC_DEPENDENCIES= \"$(libdir)/lib$(program_name).a\"" >> $@
 endif
 	@echo "PLUMED_SHARED_DEPENDENCIES= \"$(libdir)/lib$(program_name).$(SOEXT)\""  >> $@
+	@echo "PLUMED_FORTRAN= \"$(libdir)/$(program_name)/fortran/plumed.f90\"" >> $@
+	@echo "PLUMED_FORTRAN08= \"$(libdir)/$(program_name)/fortran/plumed_f08.f90\"" >> $@
 else
 Plumed.inc:
 	@echo Building Plumed.inc
@@ -531,6 +540,8 @@ endif
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
 	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath .)/libplumed.$(SOEXT)  >> $@
+	@echo "PLUMED_FORTRAN= "$(realpath .)/../../fortran/plumed.f90 >> $@
+	@echo "PLUMED_FORTRAN08= "$(realpath .)/../../fortran/plumed_f08.f90 >> $@
 endif
 
 $(PLUMED_LIBDIR)Plumed.cmake: $(PLUMED_LIBDIR)Plumed.inc
@@ -541,31 +552,37 @@ $(PLUMED_LIBDIR)Plumed.inc.runtime: $(PLUMED_LIBDIR)Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
 	@echo "# PLUMED: runtime installation" > $@
 	@grep PLUMED_RUNTIME $< | sed 's/PLUMED_RUNTIME_/PLUMED_/' >> $@
+	@grep PLUMED_FORTRAN $< >> $@
 
 $(PLUMED_LIBDIR)Plumed.inc.static: $(PLUMED_LIBDIR)Plumed.inc
 	@echo Building Plumed.inc, static version
 	@echo "# PLUMED: static installation" > $@
 	@grep PLUMED_STATIC $< | sed 's/PLUMED_STATIC_/PLUMED_/' >> $@
+	@grep PLUMED_FORTRAN $< >> $@
 
 $(PLUMED_LIBDIR)Plumed.inc.shared: $(PLUMED_LIBDIR)Plumed.inc
 	@echo Building Plumed.inc, shared version
 	@echo "# PLUMED: shared installation" > $@
 	@grep PLUMED_SHARED $< | sed 's/PLUMED_SHARED_/PLUMED_/' >> $@
+	@grep PLUMED_FORTRAN $< >> $@
 
 $(PLUMED_LIBDIR)Plumed.cmake.runtime: $(PLUMED_LIBDIR)Plumed.cmake
 	@echo Building Plumed.cmake, runtime-linking version
 	@echo "# PLUMED: runtime installation" > $@
 	@grep PLUMED_RUNTIME $< | sed 's/PLUMED_RUNTIME_/PLUMED_/' >> $@
+	@grep PLUMED_FORTRAN $< >> $@
 
 $(PLUMED_LIBDIR)Plumed.cmake.static: $(PLUMED_LIBDIR)Plumed.cmake
 	@echo Building Plumed.cmake, static version
 	@echo "# PLUMED: static installation" > $@
 	@grep PLUMED_STATIC $< | sed 's/PLUMED_STATIC_/PLUMED_/' >> $@
+	@grep PLUMED_FORTRAN $< >> $@
 
 $(PLUMED_LIBDIR)Plumed.cmake.shared: $(PLUMED_LIBDIR)Plumed.cmake
 	@echo Building Plumed.cmake, shared version
 	@echo "# PLUMED: shared installation" > $@
 	@grep PLUMED_SHARED $< | sed 's/PLUMED_SHARED_/PLUMED_/' >> $@
+	@grep PLUMED_FORTRAN $< >> $@
 
 
 # Individual dependencies

@@ -1,0 +1,18 @@
+a: ANGLE ATOMS=1,5,15
+d: DISTANCE ATOMS=1,10
+ene: ENERGY
+
+RESTRAINT ...
+  ARG=ene,d
+  KAPPA=0.008,10.
+  AT=-530,1
+...
+
+PRINT ...
+  STRIDE=10
+  ARG=*
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+

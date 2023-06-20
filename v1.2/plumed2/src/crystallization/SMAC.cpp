@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,9 @@
 
 //+PLUMEDOC MCOLVARF SMAC
 /*
-Calculate a variant on the SMAC collective variable discussed in \cite smac-paper
+Calculate a variant on the SMAC collective variable
+
+This variable is discussed in \cite smac-paper
 
 The SMAC collective variable can be used to study the formation of molecular solids
 from either the melt or from solution.  The idea behind this variable is that what
@@ -173,7 +175,7 @@ double SMAC::computeVectorFunction( const Vector& conn, const std::vector<double
   unsigned nvectors = ( vec1.size() - 2 ) / 3; plumed_assert( (vec1.size()-2)%3==0 );
   std::vector<Vector> dv1(nvectors), dv2(nvectors), tdconn(nvectors); Torsion t; std::vector<Vector> v1(nvectors), v2(nvectors);
   std::vector<std::unique_ptr<Value>> pos;
-  for(unsigned i=0; i<nvectors; ++i) { pos.emplace_back( new Value() ); pos[i]->setDomain( "-pi", "pi" ); }
+  for(unsigned i=0; i<nvectors; ++i) { pos.emplace_back( Tools::make_unique<Value>() ); pos[i]->setDomain( "-pi", "pi" ); }
 
   for(unsigned j=0; j<nvectors; ++j) {
     for(unsigned k=0; k<3; ++k) {

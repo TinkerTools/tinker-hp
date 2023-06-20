@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -21,8 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PathMSDBase.h"
 #include "core/PlumedMain.h"
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -116,8 +114,9 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
      <<plumed.cite("Spiwok V, Kralova B  J. Chem. Phys. 135,  224504 (2011)")
      <<"\n";
   if(labels.size()==0) {
-    char buf[500];
-    sprintf(buf,"Need to specify PROPERTY with this action\n");
+    const std::size_t buflen=500;
+    char buf[buflen];
+    std::snprintf(buf,buflen,"Need to specify PROPERTY with this action\n");
     plumed_merror(buf);
   } else {
     for(unsigned i=0; i<labels.size(); i++) {
@@ -129,13 +128,14 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
     //reparse the REMARK field and pick the index
     for(unsigned i=0; i<pdbv.size(); i++) {
       // now look for X=1.34555 Y=5.6677
-      vector<double> labelvals;
+      std::vector<double> labelvals;
       for(unsigned j=0; j<labels.size(); j++) {
         double val;
         if( pdbv[i].getArgumentValue(labels[j],val) ) {labelvals.push_back(val);}
         else {
-          char buf[500];
-          sprintf(buf,"PROPERTY LABEL \" %s \" NOT FOUND IN REMARK FOR FRAME %u \n",labels[j].c_str(),i);
+          const std::size_t buflen=500;
+          char buf[buflen];
+          std::snprintf(buf,buflen,"PROPERTY LABEL \" %s \" NOT FOUND IN REMARK FOR FRAME %u \n",labels[j].c_str(),i);
           plumed_merror(buf);
         };
       }

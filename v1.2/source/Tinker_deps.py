@@ -20,7 +20,7 @@ def get_deps_and_mods(filename):
     mods = []
     f = open(filename)
     if not f:
-       print "ERROR: unable to open %s%s" % filename
+       print ("ERROR: unable to open %s%s" % filename)
        sys.exit(1)
 #
 # Match  USE statement in fortran sources (case insensitive)

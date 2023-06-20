@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,9 +26,6 @@
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"
-#include <memory>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -40,19 +37,18 @@ class PCARMSD : public Colvar {
   bool nopbc;
   std::vector< std::vector<Vector> > eigenvectors;
   std::vector<PDB> pdbv;
-  std::vector<string> pca_names;
+  std::vector<std::string> pca_names;
 public:
   explicit PCARMSD(const ActionOptions&);
   void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
-
-using namespace std;
-
 //+PLUMEDOC DCOLVAR PCARMSD
 /*
-Calculate the PCA components ( see \cite Sutto:2010 and \cite spiwok )  for a number of provided eigenvectors and an average structure. Performs optimal alignment at every step and reports the rmsd so you know if you are far or close from the average structure.
+Calculate the PCA components for a number of provided eigenvectors and an average structure.
+
+For information on this method ( see \cite Sutto:2010 and \cite spiwok ). Performs optimal alignment at every step and reports the rmsd so you know if you are far or close from the average structure.
 It takes the average structure and eigenvectors in form of a pdb.
 Note that beta and occupancy values in the pdb are neglected and all the weights are placed to 1 (differently from the RMSD colvar for example)
 
@@ -120,11 +116,11 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   squared(true),
   nopbc(false)
 {
-  string f_average;
+  std::string f_average;
   parse("AVERAGE",f_average);
-  string type;
+  std::string type;
   type.assign("OPTIMAL");
-  string f_eigenvectors;
+  std::string f_eigenvectors;
   parse("EIGENVECTORS",f_eigenvectors);
   bool sq;  parseFlag("SQUARED_ROOT",sq);
   if (sq) { squared=false; }
@@ -137,7 +133,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   if( !pdb.read(f_average,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
     error("missing input file " + f_average );
 
-  rmsd.reset( new RMSD() );
+  rmsd=Tools::make_unique<RMSD>();
   bool remove_com=true;
   bool normalize_weights=true;
   // here align and displace are a simple vector of ones
@@ -164,16 +160,20 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   log<<"  Bibliography "<<plumed.cite("Spiwok, Lipovova and Kralova, JPCB, 111, 3073 (2007)  ");
   log<<" "<<plumed.cite( "Sutto, D'Abramo, Gervasio, JCTC, 6, 3640 (2010)");
 
-  // now get the eigenvectors
-  // open the file
-  FILE* fp=fopen(f_eigenvectors.c_str(),"r");
-  std::vector<AtomNumber> aaa;
   unsigned neigenvects;
   neigenvects=0;
-  if (fp!=NULL)
+  // now get the eigenvectors
+  // open the file
+  if (FILE* fp=this->fopen(f_eigenvectors.c_str(),"r"))
   {
+// call fclose when exiting this block
+    auto deleter=[this](FILE* f) { this->fclose(f); };
+    std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+
+    std::vector<AtomNumber> aaa;
     log<<"  Opening the eigenvectors file "<<f_eigenvectors.c_str()<<"\n";
     bool do_read=true;
+    unsigned nat=0;
     while (do_read) {
       PDB mypdb;
       // check the units for reading this file: how can they make sense?
@@ -181,7 +181,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
       if(do_read) {
         neigenvects++;
         if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
-        unsigned nat=mypdb.getAtomNumbers().size();
+        if(nat==0) nat=mypdb.getAtomNumbers().size();
         if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
         if(aaa.empty()) aaa=mypdb.getAtomNumbers();
         if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
@@ -190,14 +190,13 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
         eigenvectors.push_back(mypdb.getPositions());
       } else {break ;}
     }
-    fclose (fp);
     log<<"  Found total "<<neigenvects<< " eigenvectors in the file "<<f_eigenvectors.c_str()<<" \n";
     if(neigenvects==0) error("at least one eigenvector is expected");
   }
   // the components
   for(unsigned i=0; i<neigenvects; i++) {
     std::string num; Tools::convert( i, num );
-    string name; name=string("eig-")+num;
+    std::string name; name=std::string("eig-")+num;
     pca_names.push_back(name);
     addComponentWithDerivatives(name); componentIsNotPeriodic(name);
   }

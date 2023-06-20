@@ -124,9 +124,13 @@ c
 c     module "atoms"
 c
       if (allocated(type)) deallocate (type)
+      if (allocated(pbcwrapindex)) deallocate (pbcwrapindex)
       if (allocated(x)) deallocate (x)
       if (allocated(y)) deallocate (y)
       if (allocated(z)) deallocate (z)
+      if (allocated(xwrite)) deallocate (xwrite)
+      if (allocated(ywrite)) deallocate (ywrite)
+      if (allocated(zwrite)) deallocate (zwrite)
       if (allocated(xold)) deallocate (xold)
       if (allocated(yold)) deallocate (yold)
       if (allocated(zold)) deallocate (zold)

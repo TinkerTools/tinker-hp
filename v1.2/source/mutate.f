@@ -99,32 +99,32 @@ c
               string = record(next:240)
               read (string,*,err=30)  elambda
            else if (keyword(1:17) .eq. 'BOUND-VDW-LAMBDA ') then
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=30)  bvlambda
               if (rank.eq.0) write(iout,35) bvlambda
  35           format('Intervall bound for lambda_vdw is  ', F15.3)
            else if (keyword(1:17) .eq. 'BOUND-ELE-LAMBDA ') then
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=30)  belambda
               if (rank.eq.0) write(iout,45) belambda
  45           format('Intervall bound for lambda_elec is  ', F15.3)
            else if (keyword(1:17) .eq. 'BOUND-POL-LAMBDA ') then
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=30)  bplambda
            else if (keyword(1:11) .eq. 'VDW-SC-EXP ') then
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=30)  scexp
            else if (keyword(1:13) .eq. 'VDW-SC-ALPHA ') then
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=30)  scalpha
            else if (keyword(1:9) .eq. 'VDW-SC-K ') then
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=30)  sck
            else if (keyword(1:9) .eq. 'VDW-SC-T ') then
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=30)  sct
            else if (keyword(1:9) .eq. 'VDW-SC-S ') then
-              string = record(next:120)
+              string = record(next:240)
               read (string,*,err=30)  scs
            else if (keyword(1:10) .eq. 'LAMBDADYN ') then
               use_lambdadyn = .true.
@@ -159,12 +159,12 @@ c
                  else
                     do j = abs(list(k)), abs(list(k+1))
                        nmut = nmut + 1
-                       imut(nmut) = i
+                       imut(nmut) = j
                        mut(j) = .true.
                        type0(nmut) = 0
-                       type1(nmut) = type(i)
+                       type1(nmut) = type(j)
                        class0(nmut) = 0
-                       class1(nmut) = class(i)
+                       class1(nmut) = class(j)
                     end do
                     k = k + 2
                  end if
@@ -417,17 +417,17 @@ c
          call gettext (record,keyword,next)
          call upcase (keyword)
          if (keyword(1:17) .eq. 'BOUND-VDW-LAMBDA ') then
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=20)  bvlambda
             write(iout,30) bvlambda
  30         format('Intervall bound for lambda_vdw is  ', F15.3)
          else if (keyword(1:17) .eq. 'BOUND-ELE-LAMBDA ') then
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=20)  belambda
             write(iout,40) belambda
  40         format('Intervall bound for lambda_elec is  ', F15.3)
          else if (keyword(1:17) .eq. 'BOUND-POL-LAMBDA ') then
-            string = record(next:120)
+            string = record(next:240)
             read (string,*,err=20)  bplambda
          end if
    20    continue

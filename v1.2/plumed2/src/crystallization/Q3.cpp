@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -83,15 +83,15 @@ Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN LABEL=q3
 PRINT ARG=q3.mean FILE=colvar
 \endplumedfile
 
-If you simply want to examine the values of the Q3 parameters for each of the atoms in your system you can do so by exploiting the 
-command \ref DUMPMULTICOLVAR as shown in the example below.  The following output file will output a file in an extended xyz format 
-called q3.xyz for each frame of the analysed MD trajectory.  The first column in this file will contain a dummy name for each of the 
-atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q3 paramter, columns
+If you simply want to examine the values of the Q3 parameters for each of the atoms in your system you can do so by exploiting the
+command \ref DUMPMULTICOLVAR as shown in the example below.  The following output file will output a file in an extended xyz format
+called q3.xyz for each frame of the analyzed MD trajectory.  The first column in this file will contain a dummy name for each of the
+atoms, columns 2-4 will then contain the x, y and z positions of the atoms, column 5 will contain the value of the Q3 parameter, columns
 6-12 will contain the real parts of the director of the \f$q_{3m}\f$ vector while columns 12-19 will contain the imaginary parts of this director.
 
 \plumedfile
 q3: Q3 SPECIESA=1-64 SPECIESB=65-128 D_0=1.3 R_0=0.2 MEAN
-DUMPMULTICOLVAR DATA=q3 FILE=q3.xyz 
+DUMPMULTICOLVAR DATA=q3 FILE=q3.xyz
 \endplumedfile
 
 */
@@ -184,8 +184,6 @@ public:
   explicit Q3( const ActionOptions& ao );
 };
 
-// For some reason, this is not seen correctly by cppcheck
-// cppcheck-suppress unknownMacro
 PLUMED_REGISTER_ACTION(Q3,"Q3")
 typedef LocalSteinhardt<Q3> LOCAL_Q3;
 PLUMED_REGISTER_ACTION(LOCAL_Q3,"LOCAL_Q3")

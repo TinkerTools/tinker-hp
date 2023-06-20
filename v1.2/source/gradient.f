@@ -99,6 +99,11 @@ c
       deg = 0d0
       desmd = 0d0
       dex = 0d0
+#ifdef COLVARS
+      delambdae = 0d0
+      delambdav = 0d0
+      delambda = 0d0
+#endif
 c
 c     zero out the virial and the intermolecular energy
 c
@@ -213,9 +218,12 @@ c
         do iloc = 1, nloc
           iglob = glob(iloc)
           pl_glob(iloc) = glob(iloc) - 1
-          pl_pos(1,iloc) = x(iglob)
-          pl_pos(2,iloc) = y(iglob)
-          pl_pos(3,iloc) = z(iglob)
+c
+c  get the unwrapped coordinates
+c
+          pl_pos(1,iloc) = x(iglob) + pbcwrapindex(1,iglob)*xbox
+          pl_pos(2,iloc) = y(iglob) + pbcwrapindex(2,iglob)*ybox
+          pl_pos(3,iloc) = z(iglob) + pbcwrapindex(3,iglob)*zbox
           pl_mass( iloc) = mass(iglob)
         enddo
 c

@@ -144,9 +144,9 @@ c
       end if
 
       allocate (posw(3,natoms))
-      posw(1,1:natoms) = real(x(1:natoms),4)
-      posw(2,1:natoms) = real(y(1:natoms),4)
-      posw(3,1:natoms) = real(z(1:natoms),4)
+      posw(1,1:natoms) = real(xwrite(1:natoms),4)
+      posw(2,1:natoms) = real(ywrite(1:natoms),4)
+      posw(3,1:natoms) = real(zwrite(1:natoms),4)
 
       write(idcd) 48
     
@@ -405,7 +405,7 @@ c
       !            A       gamma   B       beta    alpha   C
       read(idcd) box(1), box(6), box(2), box(5), box(4), box(3)
       if (box(1) < 0 .or. box(2) < 0 .or. box(3) < 0) then
-        if (rank.eq.0) write(iout,*) 'Problm reading in DCD snapshot',
+        if (rank.eq.0) write(iout,*) 'Problem reading in DCD snapshot',
      $  ' box dimensions.'
         call fatal
       end if

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,7 +56,7 @@ public:
 /// Remove a distribution function from the register of distribution functions
   void remove(creator_pointer f);
 /// Verify if a distribution keyword is present in the register
-  bool check(std::string keyname);
+  bool check(const std::string & keyname);
 /// Create a distribution function of the specified type
   std::unique_ptr<Vessel> create(std::string keyword, const VesselOptions&da);
 /// Return the keywords
@@ -66,12 +66,12 @@ public:
 VesselRegister& vesselRegister();
 
 #define PLUMED_REGISTER_VESSEL(classname,keyword) \
-  static class classname##RegisterMe{ \
-    static std::unique_ptr<PLMD::vesselbase::Vessel> create(const PLMD::vesselbase::VesselOptions&da){return std::unique_ptr<classname>( new classname(da) );} \
+  namespace { class classname##RegisterMe{ \
+    static std::unique_ptr<PLMD::vesselbase::Vessel> create(const PLMD::vesselbase::VesselOptions&da){return Tools::make_unique<classname>(da);} \
   public: \
     classname##RegisterMe(){PLMD::vesselbase::vesselRegister().add(keyword,create,classname::reserveKeyword,classname::registerKeywords);} \
     ~classname##RegisterMe(){PLMD::vesselbase::vesselRegister().remove(create);} \
-  } classname##RegisterMeObject;
+  } classname##RegisterMeObject; }
 
 }
 }

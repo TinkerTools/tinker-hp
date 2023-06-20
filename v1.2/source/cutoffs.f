@@ -201,7 +201,7 @@ c
          call upcase (record)
          call gettext (record,keyword,next)
          string = record(next:240)
-         if (keyword(1:15) .eq. 'DD-CUTOFF ') then
+         if (keyword(1:10) .eq. 'DD-CUTOFF ') then
             read (string,*,err=100,end=100)  ddcut
             if (rank.eq.0) write(iout,1000) ddcut
          end if

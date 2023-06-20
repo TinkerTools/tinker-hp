@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -554,13 +554,14 @@ void diagMatSym(const TensorGeneric<n,n>&mat,VectorGeneric<m>&evals,TensorGeneri
   // of each of them is positive
   // We can do it because the phase is arbitrary, and helps making
   // the result reproducible
-  for(int i=0; i<m; ++i) {
-    int j=0;
+  for(unsigned i=0; i<m; ++i) {
+    unsigned j=0;
     for(j=0; j<n; j++) if(evec(i,j)*evec(i,j)>1e-14) break;
     if(j<n) if(evec(i,j)<0.0) for(j=0; j<n; j++) evec(i,j)*=-1;
   }
 }
 
+static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not satisfied");
 
 }
 

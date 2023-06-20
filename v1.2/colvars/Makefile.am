@@ -12,6 +12,7 @@
 
 noinst_LIBRARIES = libcolvars.a
 
+AM_CXXFLAGS=$(LIB2DECOMP_INC) $(PLUMEDFLAG) $(LIBPLUMED_INC) $(LIBCOLVARS_INC) $(TCLFLAG) $(LIBTCL_INC)
 #
 # Declare her sources
 #
@@ -45,7 +46,9 @@ libcolvars_a_SOURCES += colvarmodule.cpp
 libcolvars_a_SOURCES += colvarparams.cpp
 libcolvars_a_SOURCES += colvarparse.cpp
 libcolvars_a_SOURCES += colvarproxy.cpp
+libcolvars_a_SOURCES += colvarproxy_io.cpp
 libcolvars_a_SOURCES += colvarproxy_replicas.cpp
+libcolvars_a_SOURCES += colvarproxy_system.cpp
 libcolvars_a_SOURCES += colvarproxy_tcl.cpp
 libcolvars_a_SOURCES += colvarproxy_volmaps.cpp
 libcolvars_a_SOURCES += colvarscript.cpp

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -27,6 +27,8 @@
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "tools/Grid.h"
+
+#include <limits>
 
 
 namespace PLMD {
@@ -223,6 +225,7 @@ void TD_LinearCombination::updateGrid() {
     for(unsigned int i=0; i<ndist_; i++) {
       value += weights_[i]*grid_pntrs_[i]->getValue(l);
     }
+    if(value==0.0) value=std::numeric_limits<double>::denorm_min();
     targetDistGrid().setValue(l,value);
     logTargetDistGrid().setValue(l,-std::log(value));
   }

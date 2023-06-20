@@ -1,19 +1,19 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 {
 echo "#ifndef __PLUMED_config_version_h"
 echo "#define __PLUMED_config_version_h"
 echo "#define PLUMED_VERSION_SHORT \"$(
-  if test -f ../../VERSION ; then
-    grep -v "#" ../../VERSION | sed  's/^\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/'
+  if test -f ../../VERSION.txt ; then
+    grep -v "#" ../../VERSION.txt | sed  's/^\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/'
   else
     echo "Unknown"
   fi
 )\""
 
 echo "#define PLUMED_VERSION_LONG \"$(
-  if test -f ../../VERSION ; then
-    grep -v "#" ../../VERSION
+  if test -f ../../VERSION.txt ; then
+    grep -v "#" ../../VERSION.txt
   else
     echo "Unknown"
   fi
@@ -27,6 +27,18 @@ echo "#define PLUMED_VERSION_GIT \"$(
     echo "Unknown"
   fi
 )\""
+
+echo "#define PLUMED_VERSION_MAJOR $(
+  grep -v "#" ../../VERSION.txt | sed  's/^\([0-9][0-9]*\).*/\1/'
+)"
+
+echo "#define PLUMED_VERSION_MINOR $(
+  grep -v "#" ../../VERSION.txt | sed  's/^[0-9][0-9]*\.\([0-9][0-9]*\).*/\1/'
+)"
+
+echo "#define PLUMED_VERSION_PATCH $(
+  grep -v "#" ../../VERSION.txt | sed  's/^[0-9][0-9]*\.[0-9][0-9]*\.\([0-9][0-9]*\).*/\1/'
+)"
 
 echo "#endif"
 

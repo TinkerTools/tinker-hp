@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -31,6 +31,7 @@
 #include <stack>
 #include <memory>
 #include <map>
+#include <atomic>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -64,6 +65,8 @@ class Citations;
 class ExchangePatterns;
 class FileBase;
 class DataFetchingObject;
+class TypesafePtr;
+class IFile;
 
 /**
 Main plumed object.
@@ -107,6 +110,8 @@ private:
 
   plumed_error_handler error_handler= {NULL,NULL};
 
+  bool nestedExceptions=false;
+
 /// Forward declaration.
   ForwardDecl<DLLoader> dlloader_fwd;
   DLLoader& dlloader=*dlloader_fwd;
@@ -135,7 +140,7 @@ private:
   Citations& citations=*citations_fwd;
 
 /// Present step number.
-  long int step;
+  long long int step;
 
 /// Condition for plumed to be active.
 /// At every step, PlumedMain is checking if there are Action's requiring some work.
@@ -190,9 +195,12 @@ private:
 /// Flag for checkpointig
   bool doCheckPoint;
 
-
+private:
+/// Forward declaration.
+  ForwardDecl<TypesafePtr> stopFlag_fwd;
+public:
 /// Stuff to make plumed stop the MD code cleanly
-  int* stopFlag;
+  TypesafePtr& stopFlag=*stopFlag_fwd;
   bool stopNow;
 
 /// Stack for update flags.
@@ -205,6 +213,9 @@ public:
 
 /// Flag to switch on detailed timers
   bool detailedTimers;
+
+/// GpuDevice Identifier
+  int gpuDeviceId;
 
 /// Generic map string -> double
 /// intended to pass information across Actions
@@ -238,13 +249,18 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,void*val=NULL) override;
+  void cmd(const std::string&key,const TypesafePtr & val=nullptr) override;
   ~PlumedMain();
   /**
     Read an input file.
     \param str name of the file
   */
-  void readInputFile(std::string str);
+  void readInputFile(const std::string & str);
+  /**
+    Read an input file.
+    \param ifile
+  */
+  void readInputFile(IFile & ifile);
   /**
     Read an input string.
     \param str name of the string
@@ -257,6 +273,15 @@ public:
     At variance with readInputWords(), this is splitting the string into words
   */
   void readInputLine(const std::string & str);
+
+  /**
+    Read an input buffer.
+    \param str name of the string
+    Same as readInputFile, but first write str on a temporary file and then read
+    that files. At variance with readInputLine, it can take care of comments and
+    continuation lines.
+  */
+  void readInputLines(const std::string & str);
 
   /**
     Initialize the object.
@@ -292,6 +317,11 @@ public:
     Shortcut for: waitData() + justCalculate() + backwardPropagate()
   */
   void performCalcNoUpdate();
+  /**
+    Perform the calculation without backpropagation nor update()
+    Shortcut for: waitData() + justCalculate()
+  */
+  void performCalcNoForces();
   /**
     Complete PLUMED calculation.
     Shortcut for prepareCalc() + performCalc()
@@ -334,7 +364,7 @@ public:
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
-  long int getStep()const {return step;}
+  long long int getStep()const {return step;}
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library
@@ -389,10 +419,27 @@ public:
   bool updateFlagsTop();
 /// Set end of input file
   void setEndPlumed();
+/// Get the value of the end plumed flag
+  bool getEndPlumed() const ;
+/// Get the value of the gpuDeviceId
+  int getGpuDeviceId() const ;
 /// Call error handler.
 /// Should only be called from \ref plumed_plumedmain_cmd().
 /// If the error handler was not set, returns false.
   bool callErrorHandler(int code,const char* msg)const;
+private:
+  std::atomic<unsigned> referenceCounter{};
+public:
+/// Atomically increase reference counter and return the new value
+  unsigned increaseReferenceCounter() noexcept;
+/// Atomically decrease reference counter and return the new value
+  unsigned decreaseReferenceCounter() noexcept;
+/// Report the reference counter
+  unsigned useCountReferenceCounter() const noexcept;
+  void enableNestedExceptions();
+  bool getNestedExceptions()const {
+    return nestedExceptions;
+  }
 };
 
 /////
@@ -461,6 +508,16 @@ bool PlumedMain::updateFlagsTop() {
 inline
 void PlumedMain::setEndPlumed() {
   endPlumed=true;
+}
+
+inline
+bool PlumedMain::getEndPlumed() const {
+  return endPlumed;
+}
+
+inline
+int PlumedMain::getGpuDeviceId() const {
+  return gpuDeviceId;
 }
 
 inline

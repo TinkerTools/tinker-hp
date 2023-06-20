@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -114,9 +114,9 @@ PLUMED_REGISTER_ACTION(TD_GeneralizedExtremeValue,"TD_GENERALIZED_EXTREME_VALUE"
 
 void TD_GeneralizedExtremeValue::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","LOCATION","The \\f$\\mu\\f$ parameter of the generalized extreme value distribution.");
-  keys.add("compulsory","SCALE","The \\f$\\sigma\\f$ parameter for the generalized extreme value distribution given as a positive number.");
-  keys.add("compulsory","SHAPE","The \\f$\\xi\\f$ parameter for the generalized extreme value distribution.");
+  keys.add("compulsory","LOCATION","The mu parameter of the generalized extreme value distribution.");
+  keys.add("compulsory","SCALE","The sigma parameter for the generalized extreme value distribution given as a positive number.");
+  keys.add("compulsory","SHAPE","The xi parameter for the generalized extreme value distribution.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
   keys.use("NORMALIZE");

@@ -106,7 +106,8 @@ void get_index_rep_(int* index);
 void get_num_rep_(int* inter_num);
 
 /// get root2root communicator
-void get_root2root_(MPI_Comm* inter_comm);
+//void get_root2root_(MPI_Comm* inter_comm);
+void get_root2root_(int* inter_comm);
 
 #ifdef __cplusplus
 }

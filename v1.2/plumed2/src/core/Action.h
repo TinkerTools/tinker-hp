@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -99,6 +99,8 @@ private:
 
   bool doCheckPoint;
 
+/// The set of default arguments that we are using
+  std::string defaults;
 public:
 
 /// Reference to main plumed object
@@ -114,7 +116,7 @@ public:
   void clearDependencies();
 
 /// Return the present timestep
-  long int getStep()const;
+  long long int getStep()const;
 
 /// Return the present time
   double getTime()const;
@@ -151,7 +153,7 @@ public:
   void parseFlag(const std::string&key,bool&t);
 
 /// Crash calculation and print documentation
-  void error( const std::string & msg ) const;
+  [[noreturn]] void error( const std::string & msg ) const;
 
 /// Issue a warning
   void warning( const std::string & msg );
@@ -287,6 +289,9 @@ public:
 
 /// Cite a paper see PlumedMain::cite
   std::string cite(const std::string&s);
+
+/// Get the defaults
+  std::string getDefaultString() const ;
 };
 
 /////////////////////
@@ -321,10 +326,10 @@ void Action::parse(const std::string&key,T&t) {
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,t) ) {
-        log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
-        this->exit(1);
+      if( def.length()==0 || !Tools::convertNoexcept(def,t) ) {
+        plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
       }
+      defaults += " " + key + "=" + def;
     } else if( keywords.style(key,"compulsory") ) {
       error("keyword " + key + " is compulsory for this action");
     }
@@ -371,12 +376,13 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
   // If it isn't read and it is compulsory see if a default value was specified
   if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ) {
     if( keywords.getDefaultValue(key,def) ) {
-      if( def.length()==0 || !Tools::convert(def,val) ) {
-        log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
-        this->exit(1);
+      if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
+        plumed_error() <<"ERROR in action "<<name<<" with label "<<label<<" : keyword "<<key<<" has weird default value";
       } else {
-        if(t.size()>0) for(unsigned i=0; i<t.size(); ++i) t[i]=val;
-        else t.push_back(val);
+        if(t.size()>0) {
+          for(unsigned i=0; i<t.size(); ++i) t[i]=val;
+          defaults += " " + key + "=" + def; for(unsigned i=1; i<t.size(); ++i) defaults += "," + def;
+        } else { t.push_back(val); defaults += " " + key + "=" + def; }
       }
     } else if( keywords.style(key,"compulsory") ) {
       error("keyword " + key + " is compulsory for this action");
@@ -425,6 +431,11 @@ bool Action::isOptionOn(const std::string &s)const {
 inline
 bool Action::getRestart()const {
   return restart;
+}
+
+inline
+std::string Action::getDefaultString() const {
+  return defaults;
 }
 
 }

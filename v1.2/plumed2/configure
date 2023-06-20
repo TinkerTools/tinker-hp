@@ -630,12 +630,13 @@ use_loader_path
 use_absolute_soname
 program_can_run_mpi
 program_can_run
-xxd
 make_pdfdoc
 dot
 doxygen
 make_doc
 readelf
+LD_MAIN_RUNPATH
+use_debug_glibcxx
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -708,6 +709,7 @@ enable_doc
 enable_pdfdoc
 enable_debug
 enable_gcov
+enable_cxx
 enable_basic_warnings
 enable_fussy
 enable_debug_glibcxx
@@ -735,9 +737,9 @@ enable_rtld_default
 enable_chdir
 enable_subprocess
 enable_getcwd
+enable_popen
 enable_execinfo
 enable_gsl
-enable_xdrfile
 enable_boost_graph
 enable_boost_serialization
 enable_fftw
@@ -745,6 +747,7 @@ enable_python
 enable_af_ocl
 enable_af_cuda
 enable_af_cpu
+enable_libtorch
 enable_openmp
 '
       ac_precious_vars='build_alias
@@ -1389,6 +1392,9 @@ Optional Features:
   --enable-pdfdoc         enable pdf version of the manual, default: no
   --enable-debug          enable debugging, default: no
   --enable-gcov           enable gcov to estimate code coverage, default: no
+  --enable-cxx            11 or 14. To link libraries with headers that need
+                          this C++ level. Use --enable-cxx=none to remove
+                          -std=c++ flag
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
@@ -1413,7 +1419,7 @@ Optional Features:
                           yes
   --enable-static-archive enable try to build libplumed.a for static linking,
                           default: yes
-  --enable-asmjit         enable enable embedded asmjit, default: no
+  --enable-asmjit         enable enable embedded asmjit, default: yes
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
@@ -1433,9 +1439,9 @@ Optional Features:
   --enable-subprocess     enable search for functions needed to manage a
                           subprocess, default: yes
   --enable-getcwd         enable search for getcwd function, default: yes
+  --enable-popen          enable search for popen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-gsl            enable search for gsl, default: yes
-  --enable-xdrfile        enable search for xdrfile, default: yes
   --enable-boost_graph    enable search for boost graph, default: no
   --enable-boost_serialization
                           enable search for boost serialization, default: no
@@ -1444,6 +1450,7 @@ Optional Features:
   --enable-af_ocl         enable search for arrayfire_ocl, default: no
   --enable-af_cuda        enable search for arrayfire_cuda, default: no
   --enable-af_cpu         enable search for arrayfire_cpu, default: no
+  --enable-libtorch       enable search for libtorch, default: no
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
@@ -2402,7 +2409,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 # PLUMED_SEARCH_LIBS(function,search-libs[,action-if-found][,action-if-not-found][,other-libraries])
-# same as AC_SEARCH_LIBS, but does not try any library unless $libsearch==true
+# same as AC_SEARCH_LIBS, but does not try any library unless $libsearch=true
 # Should be used instead of AC_SEARCH_LIBS in order to make --disable-libsearch work correctly
 
 
@@ -2412,11 +2419,12 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # in the library. finally, we set the define flag
 
 
-# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library])
+# PLUMED_CHECK_CXX_PACKAGE(name,program,define[,library,multiple_libraries])
 # Similar to PLUMED_CHECK_PACKAGE but suitable for checking C++ libraries.
 # Name is just a string used in the configure log
 # program is a string containing a short C++ program that should compiled.
 # If present and necessary, library is also linked.
+# If multiple_libraries is true check the program using all the libraries specified in `library` rather than as alternatives one at a time.
 
 
 ##################################################################
@@ -2429,10 +2437,10 @@ rm -f src/*.on src/*.off
 if test "${enable_modules+set}" = set; then :
   enableval=$enable_modules;
    rm -f src/*.on src/*.off
-   if test "${enableval}" == yes ; then
+   if test "${enableval}" = yes ; then
      enableval=reset
    fi
-   if test "${enableval}" == no ; then
+   if test "${enableval}" = no ; then
      enableval=none
    fi
    for modules_mod in `echo "${enableval}" | sed 's/:/ /g' | sed 's/+/ +/g' | sed 's/-/ -/g'`
@@ -2456,6 +2464,9 @@ $as_echo "$as_me: Resetting modules to default" >&6;}
        modules_mod=`echo "${modules_mod}" | sed "s|-||"`
        if test ! -f src/$modules_mod/module.type ; then
          as_fn_error $? "trying to remove module $modules_mod which does not exist" "$LINENO" 5
+       fi
+       if grep -q always src/$modules_mod/module.type ; then
+         as_fn_error $? "trying to remove module $modules_mod which is always enabled" "$LINENO" 5
        fi
        { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling module ${modules_mod}" >&5
 $as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
@@ -2603,6 +2614,25 @@ else
 
 fi
 
+
+# Check whether --enable-cxx was given.
+if test "${enable_cxx+set}" = set; then :
+  enableval=$enable_cxx;
+    case "${enableval}" in
+    (11) cxx_level=11 ;;
+    (14) cxx_level=14 ;;
+    (none) cxx_level="" ;;
+    (*) as_fn_error $? "cxx level not supported" "$LINENO" 5
+    esac
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Selected C++ level: $cxx_level" >&5
+$as_echo "$as_me: Selected C++ level: $cxx_level" >&6;}
+
+else
+
+    cxx_level="11"
+
+
+fi
 
 
 basic_warnings=
@@ -2848,7 +2878,7 @@ if test "${enable_asmjit+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-asmjit" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) asmjit=true ;;
              (no)  asmjit=false ;;
   esac
@@ -3091,6 +3121,24 @@ fi
 
 
 
+popen=
+# Check whether --enable-popen was given.
+if test "${enable_popen+set}" = set; then :
+  enableval=$enable_popen; case "${enableval}" in
+             (yes) popen=true ;;
+             (no)  popen=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-popen" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) popen=true ;;
+             (no)  popen=false ;;
+  esac
+
+fi
+
+
+
 execinfo=
 # Check whether --enable-execinfo was given.
 if test "${enable_execinfo+set}" = set; then :
@@ -3121,24 +3169,6 @@ else
   case "yes" in
              (yes) gsl=true ;;
              (no)  gsl=false ;;
-  esac
-
-fi
-
-
-
-xdrfile=
-# Check whether --enable-xdrfile was given.
-if test "${enable_xdrfile+set}" = set; then :
-  enableval=$enable_xdrfile; case "${enableval}" in
-             (yes) xdrfile=true ;;
-             (no)  xdrfile=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-xdrfile" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) xdrfile=true ;;
-             (no)  xdrfile=false ;;
   esac
 
 fi
@@ -3271,6 +3301,24 @@ fi
 
 
 
+libtorch=
+# Check whether --enable-libtorch was given.
+if test "${enable_libtorch+set}" = set; then :
+  enableval=$enable_libtorch; case "${enableval}" in
+             (yes) libtorch=true ;;
+             (no)  libtorch=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-libtorch" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) libtorch=true ;;
+             (no)  libtorch=false ;;
+  esac
+
+fi
+
+ #added by luigibonati
+
 
 
 
@@ -3300,8 +3348,8 @@ case `(uname)` in
 esac
 
 # if searching for MPI, try first mpi-like compilers
-if test $mpi == true ; then
-compilers="mpiicpc mpic++ mpicxx  openmpic++ openmpicxx $compilers"
+if test $mpi = true ; then
+compilers="mpiicpc mpic++ mpicxx openmpic++ openmpicxx $compilers"
 fi
 
 # do the actual search
@@ -4410,7 +4458,7 @@ $as_echo "$as_me: Initial LDSHARED:    $LDSHARED" >&6;}
 $as_echo "$as_me: Initial SOEXT:       $SOEXT" >&6;}
 
 # check C++ flags
-if test $shared == true
+if test $shared = true
 then
 
 
@@ -4520,7 +4568,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 fi
 
-if test $basic_warnings == true
+if test $basic_warnings = true
 then
 
   save_CXXFLAGS="$CXXFLAGS"
@@ -4614,11 +4662,15 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+fi
+
+if test -n "$cxx_level"
+then
 
   save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -std=c++11"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++11" >&5
-$as_echo_n "checking whether $CXX accepts -std=c++11... " >&6; }
+  CXXFLAGS="$CXXFLAGS -std=c++$cxx_level"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++$cxx_level" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++$cxx_level... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4662,7 +4714,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 
-if test $debug == true
+if test $debug = true
 then
 
   save_CXXFLAGS="$CXXFLAGS"
@@ -4712,7 +4764,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 
-if test $gcov == true
+if test $gcov = true
 then
   CXX="$CXX --coverage"
   LDSHARED="$LDSHARED --coverage"
@@ -4746,7 +4798,7 @@ rm -f core conftest.err conftest.$ac_objext \
   STATIC_LIBS="$STATIC_LIBS --coverage"
 fi
 
-if test $fussy == true
+if test $fussy = true
 then
 
   save_CXXFLAGS="$CXXFLAGS"
@@ -5768,7 +5820,7 @@ lapack_found=
 
 # external lapack can only work with external blas
 # thus, if external blas are disabled also external lapack should be disabled
-if test "$external_blas" == false && test "$external_lapack" == true ; then
+if test "$external_blas" = false && test "$external_lapack" = true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Internal blas can only be used with internal lapack" >&5
 $as_echo "$as_me: Internal blas can only be used with internal lapack" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: Will not search for external lapack" >&5
@@ -5777,9 +5829,9 @@ $as_echo "$as_me: Will not search for external lapack" >&6;}
 fi
 
 # first look for blas
-if test "$external_blas" == true ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether dgemv can be linked with no library" >&5
-$as_echo_n "checking whether dgemv can be linked with no library... " >&6; }
+if test "$external_blas" = true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether dgemv_ can be linked with no library" >&5
+$as_echo_n "checking whether dgemv_ can be linked with no library... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5789,11 +5841,11 @@ $as_echo_n "checking whether dgemv can be linked with no library... " >&6; }
 #ifdef __cplusplus
 extern "C"
 #endif
-char dgemv ();
+char dgemv_ ();
 int
 main ()
 {
-return dgemv ();
+return dgemv_ ();
   ;
   return 0;
 }
@@ -5802,7 +5854,7 @@ if ac_fn_cxx_try_link "$LINENO"; then :
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-    blas_found=nounderscore
+    blas_found=underscore
 
 else
 
@@ -5819,11 +5871,11 @@ $as_echo_n "checking whether dgemv_ can be linked with no library... " >&6; }
 #ifdef __cplusplus
 extern "C"
 #endif
-char dgemv_ ();
+char dgemv ();
 int
 main ()
 {
-return dgemv_ ();
+return dgemv ();
   ;
   return 0;
 }
@@ -5832,14 +5884,72 @@ if ac_fn_cxx_try_link "$LINENO"; then :
 
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-      blas_found=underscore
+      blas_found=nounderscore
 
 else
 
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv_" >&5
+$as_echo_n "checking for library containing dgemv_... " >&6; }
+if ${ac_cv_search_dgemv_+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dgemv_ ();
+int
+main ()
+{
+return dgemv_ ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' blas; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_dgemv_=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_dgemv_+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_dgemv_+:} false; then :
+
+else
+  ac_cv_search_dgemv_=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dgemv_" >&5
+$as_echo "$ac_cv_search_dgemv_" >&6; }
+ac_res=$ac_cv_search_dgemv_
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  blas_found=underscore
+else
+
+
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv" >&5
 $as_echo_n "checking for library containing dgemv... " >&6; }
 if ${ac_cv_search_dgemv+:} false; then :
@@ -5894,126 +6004,6 @@ ac_res=$ac_cv_search_dgemv
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
   blas_found=nounderscore
-else
-
-
-  if test "${libsearch}" == true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv_" >&5
-$as_echo_n "checking for library containing dgemv_... " >&6; }
-if ${ac_cv_search_dgemv_+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char dgemv_ ();
-int
-main ()
-{
-return dgemv_ ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' blas; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_dgemv_=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_dgemv_+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_dgemv_+:} false; then :
-
-else
-  ac_cv_search_dgemv_=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dgemv_" >&5
-$as_echo "$ac_cv_search_dgemv_" >&6; }
-ac_res=$ac_cv_search_dgemv_
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  blas_found=underscore
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv_" >&5
-$as_echo_n "checking for library containing dgemv_... " >&6; }
-if ${ac_cv_search_dgemv_+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char dgemv_ ();
-int
-main ()
-{
-return dgemv_ ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_dgemv_=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_dgemv_+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_dgemv_+:} false; then :
-
-else
-  ac_cv_search_dgemv_=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dgemv_" >&5
-$as_echo "$ac_cv_search_dgemv_" >&6; }
-ac_res=$ac_cv_search_dgemv_
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  blas_found=underscore
-fi
-
-  fi
-
-
 fi
 
   else
@@ -6071,64 +6061,11 @@ ac_res=$ac_cv_search_dgemv
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
   blas_found=nounderscore
-else
+fi
 
-
-  if test "${libsearch}" == true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv_" >&5
-$as_echo_n "checking for library containing dgemv_... " >&6; }
-if ${ac_cv_search_dgemv_+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char dgemv_ ();
-int
-main ()
-{
-return dgemv_ ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' blas; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
   fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_dgemv_=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_dgemv_+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_dgemv_+:} false; then :
 
-else
-  ac_cv_search_dgemv_=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dgemv_" >&5
-$as_echo "$ac_cv_search_dgemv_" >&6; }
-ac_res=$ac_cv_search_dgemv_
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  blas_found=underscore
+
 fi
 
   else
@@ -6186,6 +6123,121 @@ ac_res=$ac_cv_search_dgemv_
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
   blas_found=underscore
+else
+
+
+  if test "${libsearch}" = true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv" >&5
+$as_echo_n "checking for library containing dgemv... " >&6; }
+if ${ac_cv_search_dgemv+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dgemv ();
+int
+main ()
+{
+return dgemv ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' blas; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_dgemv=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_dgemv+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_dgemv+:} false; then :
+
+else
+  ac_cv_search_dgemv=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dgemv" >&5
+$as_echo "$ac_cv_search_dgemv" >&6; }
+ac_res=$ac_cv_search_dgemv
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  blas_found=nounderscore
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dgemv" >&5
+$as_echo_n "checking for library containing dgemv... " >&6; }
+if ${ac_cv_search_dgemv+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dgemv ();
+int
+main ()
+{
+return dgemv ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_dgemv=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_dgemv+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_dgemv+:} false; then :
+
+else
+  ac_cv_search_dgemv=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dgemv" >&5
+$as_echo "$ac_cv_search_dgemv" >&6; }
+ac_res=$ac_cv_search_dgemv
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  blas_found=nounderscore
 fi
 
   fi
@@ -6217,14 +6269,14 @@ if test -n "$blas_found" ; then
 $as_echo "#define __PLUMED_HAS_EXTERNAL_BLAS 1" >>confdefs.h
 
 
-if test "$external_lapack" == true ; then
+if test "$external_lapack" = true ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
 (nounderscore) search_for=dsyevr ;;
 esac
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     as_ac_Search=`$as_echo "ac_cv_search_$search_for" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing $search_for" >&5
 $as_echo_n "checking for library containing $search_for... " >&6; }
@@ -6360,7 +6412,7 @@ fi
 # in case external blas have been found, take note of their underscoring
 # notice that this applies also when external blas are used with internal lapack
 # in the latter case, also (internal) lapack names will be underscored consistently
-if test "$blas_found" == nounderscore
+if test "$blas_found" = nounderscore
 then
   $as_echo "#define F77_NO_UNDERSCORE 1" >>confdefs.h
 
@@ -6416,7 +6468,7 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
 fi
 
 
-if test "$sdot_returns_float" == no ;
+if test "$sdot_returns_float" = no ;
 then
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether sdot returns double" >&5
@@ -6502,7 +6554,7 @@ $as_echo "$as_me: Now we will check for optional headers and libraries" >&6;}
 # GB
 #############################################################
 
-if test $molfile_plugins == true ; then
+if test $molfile_plugins = true ; then
 
 # Check for molfile_plugins and use internal fallback if not found. TG
 
@@ -6510,7 +6562,7 @@ if test $molfile_plugins == true ; then
 $as_echo "#define __PLUMED_HAS_MOLFILE_PLUGINS 1" >>confdefs.h
 
 
-  if test "$external_molfile_plugins" == true ; then
+  if test "$external_molfile_plugins" = true ; then
 
     found=ko
     __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS=no
@@ -6518,7 +6570,7 @@ $as_echo "#define __PLUMED_HAS_MOLFILE_PLUGINS 1" >>confdefs.h
 if test "x$ac_cv_header_libmolfile_plugin_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing molfile_dcdplugin_init" >&5
 $as_echo_n "checking for library containing molfile_dcdplugin_init... " >&6; }
 if ${ac_cv_search_molfile_dcdplugin_init+:} false; then :
@@ -6638,7 +6690,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
 
        __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS=yes
@@ -6703,7 +6755,7 @@ fi
 
 mpi_found=ko
 # optional libraries follow
-if test $mpi == true ; then
+if test $mpi = true ; then
 
     found=ko
     __PLUMED_HAS_MPI=no
@@ -6711,7 +6763,7 @@ if test $mpi == true ; then
 if test "x$ac_cv_header_mpi_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing MPI_Init" >&5
 $as_echo_n "checking for library containing MPI_Init... " >&6; }
 if ${ac_cv_search_MPI_Init+:} false; then :
@@ -6831,7 +6883,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_MPI 1" >>confdefs.h
 
        __PLUMED_HAS_MPI=yes
@@ -6916,12 +6968,52 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
 
 
 
-if test $asmjit == true ; then
+if test $asmjit = true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether architecture is X86/X64" >&5
+$as_echo_n "checking whether architecture is X86/X64... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#if !(defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
+      defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
+      defined(__i486__) || defined(__i586__) || defined(__i686__) || \
+      defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
+      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
+this_is_not_x86_x64
+#endif
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; };
+  x86_x64=true
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; } ;
+  x86_x64=false
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+if test $asmjit = true && test $x86_x64 = false ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: asmjit does not support this architecture, it will be disabled" >&5
+$as_echo "$as_me: WARNING: asmjit does not support this architecture, it will be disabled" >&2;}
+  asmjit=false
+fi
+
+if test $asmjit = true ; then
   found=ko
 # asmjit calls clock_gettime and thus should be linked to rt on Linux
   if test `(uname)` = Linux ; then
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
 $as_echo_n "checking for library containing clock_gettime... " >&6; }
 if ${ac_cv_search_clock_gettime+:} false; then :
@@ -7052,7 +7144,7 @@ $as_echo "$as_me: WARNING: cannot link clock_gettime on this Linux, asmjit will 
 fi
 
 
-if test $readdir_r == true ; then
+if test $readdir_r = true ; then
 
     found=ko
     __PLUMED_HAS_READDIR_R=no
@@ -7060,7 +7152,7 @@ if test $readdir_r == true ; then
 if test "x$ac_cv_header_dirent_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing readdir_r" >&5
 $as_echo_n "checking for library containing readdir_r... " >&6; }
 if ${ac_cv_search_readdir_r+:} false; then :
@@ -7180,7 +7272,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_READDIR_R 1" >>confdefs.h
 
        __PLUMED_HAS_READDIR_R=yes
@@ -7190,7 +7282,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_READDIR_R" >&2;}
     fi
 
 fi
-if test $cregex == true ; then
+if test $cregex = true ; then
 
     found=ko
     __PLUMED_HAS_CREGEX=no
@@ -7198,7 +7290,7 @@ if test $cregex == true ; then
 if test "x$ac_cv_header_regex_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing regcomp" >&5
 $as_echo_n "checking for library containing regcomp... " >&6; }
 if ${ac_cv_search_regcomp+:} false; then :
@@ -7318,7 +7410,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_CREGEX 1" >>confdefs.h
 
        __PLUMED_HAS_CREGEX=yes
@@ -7328,7 +7420,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&2;}
     fi
 
 fi
-if test $dlopen == true ; then
+if test $dlopen = true ; then
 
     found=ko
     __PLUMED_HAS_DLOPEN=no
@@ -7336,7 +7428,7 @@ if test $dlopen == true ; then
 if test "x$ac_cv_header_dlfcn_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dlopen" >&5
 $as_echo_n "checking for library containing dlopen... " >&6; }
 if ${ac_cv_search_dlopen+:} false; then :
@@ -7456,7 +7548,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_DLOPEN 1" >>confdefs.h
 
        __PLUMED_HAS_DLOPEN=yes
@@ -7467,27 +7559,33 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&2;}
 
 fi
 
-if test $rtld_default == true ; then
+if test $rtld_default = true ; then
 
     found=ko
     __PLUMED_HAS_RTLD_DEFAULT=no
-    if test "${libsearch}" == true ; then
+    if test "${libsearch}" = true ; then
       testlibs=""
     else
       testlibs=""
     fi
-    for testlib in "" $testlibs
-    do
-      save_LIBS="$LIBS"
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with -l$testlib" >&5
-$as_echo_n "checking RTLD_DEFAULT with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT without extra libs" >&5
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT without extra libs" >&5
 $as_echo_n "checking RTLD_DEFAULT without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <dlfcn.h>
@@ -7510,12 +7608,73 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found == ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with $all_LIBS" >&5
+$as_echo_n "checking RTLD_DEFAULT with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking RTLD_DEFAULT with -l$testlib" >&5
+$as_echo_n "checking RTLD_DEFAULT with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <dlfcn.h>
+int
+main ()
+{
+  void* f=dlsym(RTLD_DEFAULT,"path");
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      LIBS="$save_LIBS"
-    done
-    if test $found == ok ; then
+    fi
+
+    if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_RTLD_DEFAULT 1" >>confdefs.h
 
       __PLUMED_HAS_RTLD_DEFAULT=yes
@@ -7527,7 +7686,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_RTLD_DEFAULT" >&2;}
 
 fi
 
-if test $chdir == true ; then
+if test $chdir = true ; then
 
     found=ko
     __PLUMED_HAS_CHDIR=no
@@ -7535,7 +7694,7 @@ if test $chdir == true ; then
 if test "x$ac_cv_header_unistd_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing chdir" >&5
 $as_echo_n "checking for library containing chdir... " >&6; }
 if ${ac_cv_search_chdir+:} false; then :
@@ -7655,7 +7814,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_CHDIR 1" >>confdefs.h
 
        __PLUMED_HAS_CHDIR=yes
@@ -7666,27 +7825,33 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CHDIR" >&2;}
 
 fi
 
-if test $subprocess == true ; then
+if test $subprocess = true ; then
 
     found=ko
     __PLUMED_HAS_SUBPROCESS=no
-    if test "${libsearch}" == true ; then
+    if test "${libsearch}" = true ; then
       testlibs=""
     else
       testlibs=""
     fi
-    for testlib in "" $testlibs
-    do
-      save_LIBS="$LIBS"
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with -l$testlib" >&5
-$as_echo_n "checking subprocess with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess without extra libs" >&5
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess without extra libs" >&5
 $as_echo_n "checking subprocess without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* random program calling all the functions needed to manage a subprocess */
@@ -7732,12 +7897,119 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found == ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with $all_LIBS" >&5
+$as_echo_n "checking subprocess with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* random program calling all the functions needed to manage a subprocess */
+#include <cstdio>
+#include <unistd.h>
+#include <csignal>
+
+int
+main ()
+{
+// notice that [] is required to cheat autoconf
+  int cp[2];
+  FILE* fp;
+  char* arr[3];
+  arr[0]=NULL;
+  arr[1]=NULL;
+  arr[2]=NULL;
+  arr[3]=NULL;
+  if(pipe(cp)>=0)
+  if(fork()>=0)
+  if(close(1)>=0)
+  if(dup(cp[1])>=0) {
+    fp=fdopen(cp[0],"w");
+    execv(arr[0],arr);
+  }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
+  return 0;
+}
+
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking subprocess with -l$testlib" >&5
+$as_echo_n "checking subprocess with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* random program calling all the functions needed to manage a subprocess */
+#include <cstdio>
+#include <unistd.h>
+#include <csignal>
+
+int
+main ()
+{
+// notice that [] is required to cheat autoconf
+  int cp[2];
+  FILE* fp;
+  char* arr[3];
+  arr[0]=NULL;
+  arr[1]=NULL;
+  arr[2]=NULL;
+  arr[3]=NULL;
+  if(pipe(cp)>=0)
+  if(fork()>=0)
+  if(close(1)>=0)
+  if(dup(cp[1])>=0) {
+    fp=fdopen(cp[0],"w");
+    execv(arr[0],arr);
+  }
+  auto p=fork();
+  kill(p,SIGINT);
+  kill(p,SIGCONT);
+  kill(p,SIGSTOP);
+  return 0;
+}
+
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      LIBS="$save_LIBS"
-    done
-    if test $found == ok ; then
+    fi
+
+    if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_SUBPROCESS 1" >>confdefs.h
 
       __PLUMED_HAS_SUBPROCESS=yes
@@ -7749,7 +8021,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_SUBPROCESS" >&2;}
 
 fi
 
-if test $getcwd == true ; then
+if test $getcwd = true ; then
 
     found=ko
     __PLUMED_HAS_GETCWD=no
@@ -7757,7 +8029,7 @@ if test $getcwd == true ; then
 if test "x$ac_cv_header_unistd_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing getcwd" >&5
 $as_echo_n "checking for library containing getcwd... " >&6; }
 if ${ac_cv_search_getcwd+:} false; then :
@@ -7877,7 +8149,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_GETCWD 1" >>confdefs.h
 
        __PLUMED_HAS_GETCWD=yes
@@ -7888,7 +8160,146 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETCWD" >&2;}
 
 fi
 
-if test $execinfo == true ; then
+if test $popen = true ; then
+
+    found=ko
+    __PLUMED_HAS_POPEN=no
+    ac_fn_cxx_check_header_mongrel "$LINENO" "cstdio" "ac_cv_header_cstdio" "$ac_includes_default"
+if test "x$ac_cv_header_cstdio" = xyes; then :
+
+
+  if test "${libsearch}" = true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing popen" >&5
+$as_echo_n "checking for library containing popen... " >&6; }
+if ${ac_cv_search_popen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char popen ();
+int
+main ()
+{
+return popen ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_popen=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_popen+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_popen+:} false; then :
+
+else
+  ac_cv_search_popen=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_popen" >&5
+$as_echo "$ac_cv_search_popen" >&6; }
+ac_res=$ac_cv_search_popen
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing popen" >&5
+$as_echo_n "checking for library containing popen... " >&6; }
+if ${ac_cv_search_popen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char popen ();
+int
+main ()
+{
+return popen ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_popen=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_popen+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_popen+:} false; then :
+
+else
+  ac_cv_search_popen=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_popen" >&5
+$as_echo "$ac_cv_search_popen" >&6; }
+ac_res=$ac_cv_search_popen
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  fi
+
+
+fi
+
+
+    if test $found = ok ; then
+       $as_echo "#define __PLUMED_HAS_POPEN 1" >>confdefs.h
+
+       __PLUMED_HAS_POPEN=yes
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_POPEN" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_POPEN" >&2;}
+    fi
+
+fi
+
+if test $execinfo = true ; then
 
     found=ko
     __PLUMED_HAS_EXECINFO=no
@@ -7896,7 +8307,7 @@ if test $execinfo == true ; then
 if test "x$ac_cv_header_execinfo_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing backtrace" >&5
 $as_echo_n "checking for library containing backtrace... " >&6; }
 if ${ac_cv_search_backtrace+:} false; then :
@@ -8016,7 +8427,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_EXECINFO 1" >>confdefs.h
 
        __PLUMED_HAS_EXECINFO=yes
@@ -8026,7 +8437,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_EXECINFO" >&2;}
     fi
 
 fi
-if test $zlib == true ; then
+if test $zlib = true ; then
 
     found=ko
     __PLUMED_HAS_ZLIB=no
@@ -8034,7 +8445,7 @@ if test $zlib == true ; then
 if test "x$ac_cv_header_zlib_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gzopen" >&5
 $as_echo_n "checking for library containing gzopen... " >&6; }
 if ${ac_cv_search_gzopen+:} false; then :
@@ -8154,7 +8565,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_ZLIB 1" >>confdefs.h
 
        __PLUMED_HAS_ZLIB=yes
@@ -8165,10 +8576,10 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&2;}
 
 fi
 
-if test $gsl == true ; then
+if test $gsl = true ; then
   found=ko
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cblas_dgemv" >&5
 $as_echo_n "checking for library containing cblas_dgemv... " >&6; }
 if ${ac_cv_search_cblas_dgemv+:} false; then :
@@ -8227,7 +8638,7 @@ if test "$ac_res" != no; then :
 if test "x$ac_cv_header_gsl_gsl_vector_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gsl_vector_alloc" >&5
 $as_echo_n "checking for library containing gsl_vector_alloc... " >&6; }
 if ${ac_cv_search_gsl_vector_alloc+:} false; then :
@@ -8409,7 +8820,7 @@ if test "$ac_res" != no; then :
 if test "x$ac_cv_header_gsl_gsl_vector_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gsl_vector_alloc" >&5
 $as_echo_n "checking for library containing gsl_vector_alloc... " >&6; }
 if ${ac_cv_search_gsl_vector_alloc+:} false; then :
@@ -8534,7 +8945,7 @@ fi
 
   fi
 
-  if test $found == ok ; then
+  if test $found = ok ; then
     $as_echo "#define __PLUMED_HAS_GSL 1" >>confdefs.h
 
   else
@@ -8543,166 +8954,33 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GSL" >&2;}
   fi
 fi
 
-if test $xdrfile == true ; then
-
-    found=ko
-    __PLUMED_HAS_XDRFILE=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "xdrfile/xdrfile_xtc.h" "ac_cv_header_xdrfile_xdrfile_xtc_h" "$ac_includes_default"
-if test "x$ac_cv_header_xdrfile_xdrfile_xtc_h" = xyes; then :
-
-
-  if test "${libsearch}" == true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing write_xtc" >&5
-$as_echo_n "checking for library containing write_xtc... " >&6; }
-if ${ac_cv_search_write_xtc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char write_xtc ();
-int
-main ()
-{
-return write_xtc ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' xdrfile; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_write_xtc=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_write_xtc+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_write_xtc+:} false; then :
-
-else
-  ac_cv_search_write_xtc=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_write_xtc" >&5
-$as_echo "$ac_cv_search_write_xtc" >&6; }
-ac_res=$ac_cv_search_write_xtc
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing write_xtc" >&5
-$as_echo_n "checking for library containing write_xtc... " >&6; }
-if ${ac_cv_search_write_xtc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char write_xtc ();
-int
-main ()
-{
-return write_xtc ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_write_xtc=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_write_xtc+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_write_xtc+:} false; then :
-
-else
-  ac_cv_search_write_xtc=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_write_xtc" >&5
-$as_echo "$ac_cv_search_write_xtc" >&6; }
-ac_res=$ac_cv_search_write_xtc
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found == ok ; then
-       $as_echo "#define __PLUMED_HAS_XDRFILE 1" >>confdefs.h
-
-       __PLUMED_HAS_XDRFILE=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_XDRFILE" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_XDRFILE" >&2;}
-    fi
-
-fi
-
-if test $boost_graph == true ; then
+if test $boost_graph = true ; then
 
     found=ko
     __PLUMED_HAS_BOOST_GRAPH=no
-    if test "${libsearch}" == true ; then
+    if test "${libsearch}" = true ; then
       testlibs=""
     else
       testlibs=""
     fi
-    for testlib in "" $testlibs
-    do
-      save_LIBS="$LIBS"
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with -l$testlib" >&5
-$as_echo_n "checking boost graph with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph without extra libs" >&5
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph without extra libs" >&5
 $as_echo_n "checking boost graph without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <boost/graph/graph_utility.hpp>
@@ -8727,12 +9005,77 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found == ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with $all_LIBS" >&5
+$as_echo_n "checking boost graph with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <boost/graph/graph_utility.hpp>
+#include <boost/graph/adjacency_matrix.hpp>
+int
+main ()
+{
+  boost::adjacency_matrix<boost::directedS> a(1);
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost graph with -l$testlib" >&5
+$as_echo_n "checking boost graph with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <boost/graph/graph_utility.hpp>
+#include <boost/graph/adjacency_matrix.hpp>
+int
+main ()
+{
+  boost::adjacency_matrix<boost::directedS> a(1);
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      LIBS="$save_LIBS"
-    done
-    if test $found == ok ; then
+    fi
+
+    if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_BOOST_GRAPH 1" >>confdefs.h
 
       __PLUMED_HAS_BOOST_GRAPH=yes
@@ -8744,27 +9087,33 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_GRAPH" >&2;}
 
 fi
 
-if test $boost_serialization == true ; then
+if test $boost_serialization = true ; then
 
     found=ko
     __PLUMED_HAS_BOOST_SERIALIZATION=no
-    if test "${libsearch}" == true ; then
+    if test "${libsearch}" = true ; then
       testlibs="boost_serialization boost_serialization-mt"
     else
       testlibs=""
     fi
-    for testlib in "" $testlibs
-    do
-      save_LIBS="$LIBS"
-      if test -n "$testlib" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization with -l$testlib" >&5
-$as_echo_n "checking boost serialization with -l$testlib... " >&6; }
-        LIBS="-l$testlib $LIBS"
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization without extra libs" >&5
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization without extra libs" >&5
 $as_echo_n "checking boost serialization without extra libs... " >&6; }
-      fi
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <fstream>
@@ -8787,12 +9136,73 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      if test $found == ok ; then
-        break
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization with $all_LIBS" >&5
+$as_echo_n "checking boost serialization with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+int main() {
+    std::ofstream ofs("filename");
+    boost::archive::text_oarchive oa(ofs);
+    return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking boost serialization with -l$testlib" >&5
+$as_echo_n "checking boost serialization with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+int main() {
+    std::ofstream ofs("filename");
+    boost::archive::text_oarchive oa(ofs);
+    return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
       fi
-      LIBS="$save_LIBS"
-    done
-    if test $found == ok ; then
+    fi
+
+    if test $found = ok ; then
       $as_echo "#define __PLUMED_HAS_BOOST_SERIALIZATION 1" >>confdefs.h
 
       __PLUMED_HAS_BOOST_SERIALIZATION=yes
@@ -8805,7 +9215,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_BOOST_SERIALIZATION" >&2;}
 # notice: macports install libraries with -mt suffix
 fi
 
-if test $fftw == true ; then
+if test $fftw = true ; then
 
     found=ko
     __PLUMED_HAS_FFTW=no
@@ -8813,7 +9223,7 @@ if test $fftw == true ; then
 if test "x$ac_cv_header_fftw3_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing fftw_execute" >&5
 $as_echo_n "checking for library containing fftw_execute... " >&6; }
 if ${ac_cv_search_fftw_execute+:} false; then :
@@ -8933,7 +9343,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_FFTW 1" >>confdefs.h
 
        __PLUMED_HAS_FFTW=yes
@@ -8944,7 +9354,7 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_FFTW" >&2;}
 
 fi
 
-if test $python == true  ; then
+if test $python = true  ; then
 # if PYTHON_BIN is defined, it is expected to be the full path to python
 # Otherwise, search from a list of names:
   if test -z "$PYTHON_BIN" ; then
@@ -8995,19 +9405,15 @@ done
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Python executable is $PYTHON_BIN" >&5
 $as_echo "$as_me: Python executable is $PYTHON_BIN" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (python3, setuptools, cython, subprocess, os, shutil)" >&5
-$as_echo_n "checking support for required python modules (python3, setuptools, cython, subprocess, os, shutil)... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking support for required python modules (python3, setuptools, cython)" >&5
+$as_echo_n "checking support for required python modules (python3, setuptools, cython)... " >&6; }
 testimport="
 from setuptools import setup
 from setuptools import Extension
-import subprocess
-import os
-import os.path
-import sys
-from shutil import copyfile
 from Cython.Build import cythonize
+import sys
 if sys.version_info < (3,):
-    raise ImportError('PLUMED 2.6 only supports Python 3')
+    raise ImportError('PLUMED>= 2.6 only supports Python 3')
 "
     if echo "$testimport" | "$PYTHON_BIN" 1>/dev/null 2>/dev/null;  then
        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -9027,7 +9433,7 @@ $as_echo "$as_me: WARNING: cannot enable python interface" >&2;}
   fi
 fi
 
-if test "$af_ocl" == true ; then
+if test "$af_ocl" = true ; then
 
     found=ko
     __PLUMED_HAS_ARRAYFIRE=no
@@ -9035,7 +9441,7 @@ if test "$af_ocl" == true ; then
 if test "x$ac_cv_header_arrayfire_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
 $as_echo_n "checking for library containing af_is_double... " >&6; }
 if ${ac_cv_search_af_is_double+:} false; then :
@@ -9155,7 +9561,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
 
        __PLUMED_HAS_ARRAYFIRE=yes
@@ -9164,8 +9570,144 @@ fi
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
     fi
 
+
+    found=ko
+    __PLUMED_HAS_ARRAYFIRE_OCL=no
+    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
+if test "x$ac_cv_header_arrayfire_h" = xyes; then :
+
+
+  if test "${libsearch}" = true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' afopencl; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
 fi
-if test "$af_cuda" == true ; then
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  fi
+
+
+fi
+
+
+    if test $found = ok ; then
+       $as_echo "#define __PLUMED_HAS_ARRAYFIRE_OCL 1" >>confdefs.h
+
+       __PLUMED_HAS_ARRAYFIRE_OCL=yes
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE_OCL" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE_OCL" >&2;}
+    fi
+
+fi
+if test "$af_cuda" = true ; then
 
     found=ko
     __PLUMED_HAS_ARRAYFIRE=no
@@ -9173,7 +9715,7 @@ if test "$af_cuda" == true ; then
 if test "x$ac_cv_header_arrayfire_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
 $as_echo_n "checking for library containing af_is_double... " >&6; }
 if ${ac_cv_search_af_is_double+:} false; then :
@@ -9293,7 +9835,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
 
        __PLUMED_HAS_ARRAYFIRE=yes
@@ -9302,8 +9844,144 @@ fi
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
     fi
 
+
+    found=ko
+    __PLUMED_HAS_ARRAYFIRE_CUDA=no
+    ac_fn_cxx_check_header_mongrel "$LINENO" "arrayfire.h" "ac_cv_header_arrayfire_h" "$ac_includes_default"
+if test "x$ac_cv_header_arrayfire_h" = xyes; then :
+
+
+  if test "${libsearch}" = true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' afcuda; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
 fi
-if test "$af_cpu" == true ; then
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
+$as_echo_n "checking for library containing af_is_double... " >&6; }
+if ${ac_cv_search_af_is_double+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_is_double ();
+int
+main ()
+{
+return af_is_double ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_af_is_double=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_af_is_double+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_af_is_double+:} false; then :
+
+else
+  ac_cv_search_af_is_double=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_af_is_double" >&5
+$as_echo "$ac_cv_search_af_is_double" >&6; }
+ac_res=$ac_cv_search_af_is_double
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+fi
+
+  fi
+
+
+fi
+
+
+    if test $found = ok ; then
+       $as_echo "#define __PLUMED_HAS_ARRAYFIRE_CUDA 1" >>confdefs.h
+
+       __PLUMED_HAS_ARRAYFIRE_CUDA=yes
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE_CUDA" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE_CUDA" >&2;}
+    fi
+
+fi
+if test "$af_cpu" = true ; then
 
     found=ko
     __PLUMED_HAS_ARRAYFIRE=no
@@ -9311,7 +9989,7 @@ if test "$af_cpu" == true ; then
 if test "x$ac_cv_header_arrayfire_h" = xyes; then :
 
 
-  if test "${libsearch}" == true ; then
+  if test "${libsearch}" = true ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing af_is_double" >&5
 $as_echo_n "checking for library containing af_is_double... " >&6; }
 if ${ac_cv_search_af_is_double+:} false; then :
@@ -9431,7 +10109,7 @@ fi
 fi
 
 
-    if test $found == ok ; then
+    if test $found = ok ; then
        $as_echo "#define __PLUMED_HAS_ARRAYFIRE 1" >>confdefs.h
 
        __PLUMED_HAS_ARRAYFIRE=yes
@@ -9442,20 +10120,197 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ARRAYFIRE" >&2;}
 
 fi
 
+#added by luigibonati
+if test $libtorch = true ; then
+  # enable c++14 support
+
+  save_CXXFLAGS="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAGS -std=c++14"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -std=c++14" >&5
+$as_echo_n "checking whether $CXX accepts -std=c++14... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  # test program
+
+    found=ko
+    __PLUMED_HAS_LIBTORCH=no
+    if test "${libsearch}" = true ; then
+      testlibs=" torch_cpu c10 "
+    else
+      testlibs=""
+    fi
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "true" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch without extra libs" >&5
+$as_echo_n "checking libtorch without extra libs... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <torch/torch.h>
+#include <torch/script.h>
+int main() {
+  torch::Tensor tensor = torch::rand({2, 3});
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with $all_LIBS" >&5
+$as_echo_n "checking libtorch with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <torch/torch.h>
+#include <torch/script.h>
+int main() {
+  torch::Tensor tensor = torch::rand({2, 3});
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libtorch with -l$testlib" >&5
+$as_echo_n "checking libtorch with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <torch/torch.h>
+#include <torch/script.h>
+int main() {
+  torch::Tensor tensor = torch::rand({2, 3});
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
+      fi
+    fi
+
+    if test $found = ok ; then
+      $as_echo "#define __PLUMED_HAS_LIBTORCH 1" >>confdefs.h
+
+      __PLUMED_HAS_LIBTORCH=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBTORCH" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+fi
+
 # in non-debug mode, add -DNDEBUG
-if test "$debug" == false ; then
+if test "$debug" = false ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Release mode, adding -DNDEBUG" >&5
 $as_echo "$as_me: Release mode, adding -DNDEBUG" >&6;}
   $as_echo "#define NDEBUG 1" >>confdefs.h
 
 fi
 
+
 # in debug-glibcxx mode, add -D_GLIBCXX_DEBUG
-if test "$debug_glibcxx" == true ; then
+# also take note that we are using this to relax `make nmcheck`
+use_debug_glibcxx=no
+if test "$debug_glibcxx" = true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Check boundaries, adding -D_GLIBCXX_DEBUG" >&5
 $as_echo "$as_me: Check boundaries, adding -D_GLIBCXX_DEBUG" >&6;}
   $as_echo "#define _GLIBCXX_DEBUG 1" >>confdefs.h
 
+  use_debug_glibcxx=yes
 fi
 
 # this is necessary in many MPI implementations
@@ -9466,6 +10321,7 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 #### Options for dynamic library to work properly ####
 
 
+
 # these are libraries that should be linked also to MD engines
 
 # python executable
@@ -9473,7 +10329,7 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 
 
-if test "$shared" == true ; then
+if test "$shared" = true ; then
   case `(uname)` in
   (Darwin)
     { $as_echo "$as_me:${as_lineno-$LINENO}: *** Special settings for dynamic libraries on OSX ***" >&5
@@ -9525,7 +10381,7 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-    if test "$bsymbolic" == true ; then
+    if test "$bsymbolic" = true ; then
 
   save_LDFLAGS="$LDFLAGS"
   LDFLAGS="$LDFLAGS -Wl,-Bsymbolic"
@@ -9624,11 +10480,19 @@ $as_echo "no" >&6; }
 fi
 
 
-    if test "$readelf" == found ; then
+    if test "$readelf" = found ; then
       test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
       $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LDSHARED="$LDSHARED -Wl,-R -Wl,\"$LIBRARY_PATH\""
+        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling RPATH" >&5
+$as_echo "$as_me: Enabling RPATH" >&6;}
+      elif readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
+        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling RUNPATH" >&5
+$as_echo "$as_me: Enabling RUNPATH" >&6;}
       else
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: -R option seems not working, disabling rpath" >&5
 $as_echo "$as_me: WARNING: -R option seems not working, disabling rpath" >&2;}
@@ -9644,7 +10508,7 @@ fi
 
 
 make_doc=no
-if test "$doc" == true
+if test "$doc" = true
 then
 
 make_doc=yes
@@ -9687,10 +10551,10 @@ $as_echo "no" >&6; }
 fi
 
 
-if test "$doxygen" == found
+if test "$doxygen" = found
 then
   doxygen_version=`doxygen --version | awk 'BEGIN{FS="."}{if($1>1 || ($1==1 && $2>=8)) print "ok"}'`
-  if test "$doxygen_version" == ok
+  if test "$doxygen_version" = ok
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Doxygen version is fine" >&5
 $as_echo "$as_me: Doxygen version is fine" >&6;}
@@ -9757,7 +10621,7 @@ fi
 
 
 make_pdfdoc=""
-if test "$pdfdoc" == true && test "$make_doc" == yes
+if test "$pdfdoc" = true && test "$make_doc" = yes
 then
   { $as_echo "$as_me:${as_lineno-$LINENO}: A PDF version of the manual will be generated" >&5
 $as_echo "$as_me: A PDF version of the manual will be generated" >&6;}
@@ -9766,49 +10630,6 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: A PDF version of the manual will not be generated" >&5
 $as_echo "$as_me: A PDF version of the manual will not be generated" >&6;}
   make_pdfdoc=no
-fi
-
-### Look for xxd
-# Extract the first word of "xxd", so it can be a program name with args.
-set dummy xxd; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_xxd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$xxd"; then
-  ac_cv_prog_xxd="$xxd" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_xxd="found"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-xxd=$ac_cv_prog_xxd
-if test -n "$xxd"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $xxd" >&5
-$as_echo "$xxd" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-if test "$xxd" != found
-then
-  as_fn_error $? "xxd should be installed for PLUMED to compile properly" "$LINENO" 5
 fi
 
 
@@ -9852,7 +10673,7 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
 fi
 
 
-if test $mpi_found == ok ; then
+if test $mpi_found = ok ; then
 
 program_can_run_mpi=""
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether a program compiled with mpi can be run on this machine" >&5
@@ -9891,7 +10712,7 @@ fi
 
 fi
 
-if test $mpi_found == ok ; then
+if test $mpi_found = ok ; then
   if test -n "$MPIEXEC" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Regtest suite will use $MPIEXEC command to run MPI tests" >&5
 $as_echo "$as_me: Regtest suite will use $MPIEXEC command to run MPI tests" >&6;}
@@ -9901,15 +10722,15 @@ $as_echo "$as_me: Regtest suite will use env var PLUMED_MPIRUN to run MPI tests 
   fi
 fi
 
-if test "$SOEXT" == "dylib" ; then
+if test "$SOEXT" = "dylib" ; then
   use_absolute_soname=yes
 else
   use_absolute_soname=no
 fi
 
 
-if test "$absolute_soname" == true ; then
-  if test "$SOEXT" == "dylib" ; then
+if test "$absolute_soname" = true ; then
+  if test "$SOEXT" = "dylib" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-absolute-soname has no effect on OSX" >&5
 $as_echo "$as_me: WARNING: --enable-absolute-soname has no effect on OSX" >&2;}
   else
@@ -9919,8 +10740,8 @@ $as_echo "$as_me: enabling absolute soname. Full path will be hardcoded in plume
   fi
 fi
 
-if test "$absolute_install_name" == false ; then
-  if test "$SOEXT" == "so" ; then
+if test "$absolute_install_name" = false ; then
+  if test "$SOEXT" = "so" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --disable-absolute-install-name has no effect on Linux" >&5
 $as_echo "$as_me: WARNING: --disable-absolute-install-name has no effect on Linux" >&2;}
   else
@@ -9931,8 +10752,8 @@ $as_echo "$as_me: enabling relative install_name. You will have to set DYLD_LIBR
 fi
 
 
-if test "$SOEXT" == "dylib" ; then
-  if test "$loader_path" == true ; then
+if test "$SOEXT" = "dylib" ; then
+  if test "$loader_path" = true ; then
     use_loader_path=yes
   else
     use_loader_path=no
@@ -9948,13 +10769,13 @@ $as_echo "$as_me: PLUMED seems to be configured properly!" >&6;}
 $as_echo "$as_me: **************************" >&6;}
 
 LD_RO=
-if test "$ld_r" == true ; then
+if test "$ld_r" = true ; then
 for test_LD_RO in "$($CXX --print-prog-name=ld) -r -o" "$CXX -Wl,-r -o" "ld -r -o"
 do
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ objects can be grouped with $test_LD_RO" >&5
 $as_echo_n "checking whether C++ objects can be grouped with $test_LD_RO... " >&6; }
 
-  rm -f conftest-*
+  rm -f conftest*
 
   cat << EOF > conftest-main.cpp
   void f(void);
@@ -9992,13 +10813,13 @@ fi
 
 
 AR_CR=
-if test "$ar_cr" == true ; then
+if test "$ar_cr" = true ; then
 for test_AR_CR in "$($CXX --print-prog-name=ar) cr" "ar cr"
 do
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether static libraries can be created with $test_AR_CR" >&5
 $as_echo_n "checking whether static libraries can be created with $test_AR_CR... " >&6; }
 
-  rm -f conftest-*
+  rm -f conftest*
 
   cat << EOF > conftest-main.cpp
   void f(void);
@@ -10037,7 +10858,7 @@ fi
 make_static_archive=no
 
 
-if test "${static_archive}" == true ; then
+if test "${static_archive}" = true ; then
   if test -z "$LD_RO" || test -z "$AR_CR" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: no way to create a static archive if ld -ro or ar cr do not work" >&5
 $as_echo "$as_me: WARNING: no way to create a static archive if ld -ro or ar cr do not work" >&2;}
@@ -10045,7 +10866,7 @@ $as_echo "$as_me: WARNING: no way to create a static archive if ld -ro or ar cr 
   fi
 fi
 
-if test "${static_archive}" == true ; then
+if test "${static_archive}" = true ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether static-object constructors can be linked from a static archive" >&5
 $as_echo_n "checking whether static-object constructors can be linked from a static archive... " >&6; }
 
@@ -10088,7 +10909,7 @@ $as_echo "no" >&6; }
   fi
 fi
 
-if test "${static_patch}" == true ; then
+if test "${static_patch}" = true ; then
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: I will now check if C++ objects can be linked by C/Fortran compilers" >&5
 $as_echo "$as_me: I will now check if C++ objects can be linked by C/Fortran compilers" >&6;}
@@ -10129,7 +10950,7 @@ EOF
     $CXX $CXXFLAGS -c conftest.cpp
 # start search:
     found=
-    if test "${libsearch}" == true ; then
+    if test "${libsearch}" = true ; then
       testlibs="-lstdc++ -lc++ -lmpi_cxx"
     else
       testlibs=""
@@ -10170,7 +10991,7 @@ else
 $as_echo "$as_me: Static patching is disabled, thus tests required for static patching will be skipped" >&6;}
 fi
 
-if test "$prefix" == NONE
+if test "$prefix" = NONE
 then
   prefix=/usr/local
 fi
@@ -10224,7 +11045,7 @@ done
 
 
 if test -z "$BASH_COMPLETION_DIR" && test -n "$pkgconfig_bin"; then
-  if test "$prefix" == "$(pkg-config --variable=prefix bash-completion 2>/dev/null)"
+  if test "$prefix" = "$(pkg-config --variable=prefix bash-completion 2>/dev/null)"
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: bash-completion is installed on the same prefix where plumed will be installed" >&5
 $as_echo "$as_me: bash-completion is installed on the same prefix where plumed will be installed" >&6;}
@@ -10320,8 +11141,8 @@ $as_echo "$as_me: WARNING: **** _$program_name() { eval \"\$($program_name --no-
 $as_echo "$as_me: WARNING: **** complete -F _$program_name -o default $program_name" >&2;}
 fi
 
-if test $mpi == true; then
-  if test $mpi_found == ok; then
+if test $mpi = true; then
+  if test $mpi_found = ok; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled using MPI" >&5
 $as_echo "$as_me: **** PLUMED will be compiled using MPI" >&6;}
   else
@@ -10333,13 +11154,13 @@ else
 $as_echo "$as_me: **** PLUMED will be compiled without MPI" >&6;}
 fi
 
-if test $program_can_run == no ; then
+if test $program_can_run = no ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: plumed executable will not run on this machine" >&5
 $as_echo "$as_me: WARNING: plumed executable will not run on this machine" >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to patch an MD code use 'plumed-patch'" >&5
 $as_echo "$as_me: WARNING: to patch an MD code use 'plumed-patch'" >&2;}
-elif test $mpi_found == ok ; then
-  if test $program_can_run_mpi == no ; then
+elif test $mpi_found = ok ; then
+  if test $program_can_run_mpi = no ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: plumed executable will not run on this machine" >&5
 $as_echo "$as_me: WARNING: plumed executable will not run on this machine" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unless you invoke it as 'plumed --no-mpi'" >&5

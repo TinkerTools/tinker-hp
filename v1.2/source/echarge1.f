@@ -173,6 +173,7 @@ c
       use mpi
       use potent
       use sizes
+      use virial
       implicit none
       integer ii,i,iglob,iichg,ierr
       real*8 e,de,term
@@ -184,6 +185,7 @@ c
       real*8 elambdatemp
       real*8, allocatable :: delambdarec0(:,:),delambdarec1(:,:)
       real*8 :: elambdarec0,elambdarec1,qtemp
+      real*8 :: vir0(3,3),vir1(3,3),virtemp(3,3)
 c
       allocate (delambdarec0(3,nlocrec2))
       allocate (delambdarec1(3,nlocrec2))
@@ -210,16 +212,19 @@ c
 c         the reciprocal part is interpolated between 0 and 1
 c
           elambda = 0d0
+          virtemp = vir
           call MPI_BARRIER(hostcomm,ierr)
           if (hostrank.eq.0) call altelec
           call MPI_BARRIER(hostcomm,ierr)
           ec = 0d0
           decrec = 0d0
+          vir = 0d0
           if (elambda.lt.1d0) then
             call ecrecip1
           end if
           elambdarec0  = ec
           delambdarec0 = decrec
+          vir0 = vir
 
           elambda = 1d0
           call MPI_BARRIER(hostcomm,ierr)
@@ -227,16 +232,19 @@ c
           call MPI_BARRIER(hostcomm,ierr)
           ec = 0d0
           decrec = 0d0
+          vir = 0d0
           if (elambda.gt.0d0) then
             call ecrecip1
           end if
           elambdarec1  = ec
           delambdarec1 = decrec
+          vir1 = vir
 
           elambda = elambdatemp 
           ec = (1-elambda)*elambdarec0 + elambda*elambdarec1
           decrec = (1-elambda)*delambdarec0+elambda*delambdarec1
           delambdae = delambdae + elambdarec1-elambdarec0
+          vir = virtemp + (1-elambda)*vir0 + elambda*vir1
 c     
 c         reset lambda to initial value
 c

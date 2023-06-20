@@ -89,16 +89,16 @@ FORT_COMP_FAILMSG="${RED}No known compiler found !!! Must have ${GRN}ifort${RED}
 FORT_COMP_FAILMSG="$FORT_COMP_FAILMSG ${GRN}pgfortran ${RED} or ${GRN}gfortran$CLR"
 CHECKBOUNDS_FAILMSG="${RED} No Flag available to check array bounds !!! $CLR"
 NO_FFT_FAILMSG="${RED}Must have a FFT Library if FFTW_TYPE is not generic !$CLR"
-PYTHON_FAILMSG="${RED}No python2 found !!! Must have it to compile sources ! $CLR"
+PYTHON_FAILMSG="${RED}No python found !!! Must have it to compile sources ! $CLR"
 
 #
 # Check for python2 to run Tinker_deps.py
 #
 
-AC_CHECK_PROG(python,python2,"ok","no")
+AC_CHECK_PROG(python,python,"ok","no")
 
 AS_IF([test $python = ok],
-      [PYTHON=python2],
+      [PYTHON=python],
       [AC_MSG_FAILURE([$PYTHON_FAILMSG])]
      )
 
@@ -149,6 +149,7 @@ LIB2DECOMP_LIB="-L $LIB2DECOMP_PATH -l2decomp_fft"
 # compilation flags for intel, portland and gnu compilers
 #
 
+NVMPICXX=""
 FORT_FLAGSIF="-no-ipo -no-prec-div -inline -heap-arrays -traceback" 
 FORT_FLAGSPF="-traceback -Mbackslash -Mdalign -gopt" 
 FORT_FLAGSGF="-C -fbacktrace" 
@@ -282,6 +283,11 @@ PLUMEDFLAG=
 LIBPLUMED_PATH=
 LIBPLUMED_LIB=
 LIBPLUMED_INC=
+TCL=
+TCLFLAG=
+LIBTCL_PATH=
+LIBTCL_LIB=
+LIBTCL_INC=
 
 AC_ARG_ENABLE([plumed],
               [AS_HELP_STRING([--enable-plumed], [Enable plumed interface @<:@default is no@:>@])],
@@ -302,9 +308,21 @@ LIBCOLVARS_INC=
 
 AC_ARG_ENABLE([colvars],
               [AS_HELP_STRING([--enable-colvars], [Enable colvars interface @<:@default is no@:>@])],
-              [COLVARS="COLVARS"],
+              [COLVARS="COLVARS"; TCL="TCL"],
               [:]
              )
+
+#
+# Enable tcl interface. TCL will contain the value chosen by the user
+#
+
+
+AC_ARG_ENABLE([tcl],
+              [AS_HELP_STRING([--enable-tcl], [Enable tcl library @<:@default is no@:>@])],
+              [TCL="TCL"],
+              [:]
+             )
+
 
 
 #
@@ -526,9 +544,9 @@ PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED
        AS_IF([test x$PLUMED = xPLUMED],
              [ PLUMEDFLAG="-DPLUMED"
                case "x$REALFC" in
-                  xifort    ) COMP="Intel";;
-                  xpgfortran) COMP="Portland";;
-                  xgfortran ) COMP="Gnu";;
+                  xifort    ) COMP="Intel"; CXXCOMP="mpiicpc";;
+                  xpgfortran) COMP="Portland"; CXXCOMP="mpic++";;
+                  xgfortran ) COMP="Gnu"; CXXCOMP="mpic++";;
                esac
                LIBPLUMED_PATH="$PREFIX/plumed/$COMP"
                LIBPLUMED_LIBPATH="$LIBPLUMED_PATH/lib/"
@@ -536,10 +554,11 @@ PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED
                LIBPLUMED_INC="-I $LIBPLUMED_PATH/include"
                PLUEXT="_plumed"
                PLUMEDINCLUDE="plumed.mk"
+               AC_MSG_NOTICE(["$YEL Configuring PLUMED in $LIBPLUMED_PATH$GRN${CLR}"])
                #
                # States that this Makefiles.conf should be generated
                #
-               AC_CONFIG_FILES(plumed2/Makefile.conf, [(cd plumed2 ; ./configure MPICXX=$CC --prefix=$PREFIX  --enable-mpi)],[PREFIX=$(pwd)/plumed/$COMP/ ] )
+               AC_CONFIG_FILES(plumed2/Makefile.conf, [(cd plumed2 ; ./configure MPICXX=$CXXCOMP --prefix=$PREFIX  --enable-mpi)],[PREFIX=$(pwd)/plumed/$COMP/; CXXCOMP=$CXXCOMP ] )
              ],
              [ PLUMEDFLAG=""
                LIBPLUMED_PATH=""
@@ -549,12 +568,12 @@ PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED
                PLUMEDINCLUDE="noplumed.mk"
 	     ]
             )
-COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVARS : must be ${GRN} ifort ${RED}.${CLR}"
 #
 # setup colvars 
 #
+COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVARS : must be ${GRN} ifort ${RED}.${CLR}"
        AS_IF([test x$COLVARS = xCOLVARS],
-             [ COLVARSFLAG="-DCOLVARS"
+             [ COLVARSFLAG="-DCOLVARS -DCOLVARS_TCL"
                case "x$REALFC" in
                   xifort    ) COMP="Intel";;
                   xpgfortran) COMP="Portland";;
@@ -563,7 +582,7 @@ COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVAR
                LIBCOLVARS_PATH="../colvars/"
                LIBCOLVARS_LIBPATH="$LIBCOLVARS_PATH/"
                LIBCOLVARS_LIB="-L $LIBCOLVARS_LIBPATH/ -lcolvars -lstdc++ "
-               LIBCOLVARS_INC="-I $LIBCOLVARS_PATH"
+               LIBCOLVARS_INC="-I $LIBCOLVARS_PATH -I $PREFIX/tcl8.16.3/generic"
                LIBCOLVARS_CPPFLAGS="$LIBCOLVAR_INC"
                COLVEXT="_colvars"
                COLVARSINCLUDE="colvars.mk"
@@ -579,27 +598,62 @@ COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVAR
 	     ]
             )
 #
+# setup tcl 
+#
+TCLBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for TCL : must be ${GRN} icc ${RED}.${CLR}"
+
+       AS_IF([test x$TCL = xTCL],
+             [ TCLFLAG="-DTCL"
+               case "x$REALFC" in
+                  xifort    ) COMP="Intel"; CCOMP="icc";;
+                  xpgfortran) COMP="Portland"; CCOMP="pgcc";;
+                  xgfortran ) COMP="Gnu"; CCOMP="gcc";;
+               esac
+               LIBTCL_EXEPATH="$PREFIX/tcl8/$COMP"
+               LIBTCL_EXELIBPATH="$LIBTCL_EXEPATH/lib/"
+               LIBTCL_PATH="$PREFIX/tcl8.6.13/unix/"
+               LIBTCL_LIBPATH="$LIBTCL_PATH"
+               LIBTCL_LIB="-L $LIBTCL_LIBPATH -ltcl8.6"
+               LIBTCL_INC="-I $LIBTCL_PATH/../generic"
+               TCLEXT="_tcl"
+               TCLINCLUDE="tcl.mk"
+               AC_MSG_NOTICE(["$YEL Configuring TCL in $LIBTCL_PATH$GRN${CLR}"])
+               #
+               # States that this Makefiles.conf should be generated
+               #
+               AC_CONFIG_FILES(tcl8.6.13/unix/Makefile.conf, [(cd $LIBTCL_PATH ; ./configure CC=$CCOMP --prefix=$PREFIXTCL)],[PREFIXTCL=$(pwd)/tcl8/$COMP/ ; CCOMP=$CCOMP ; LIBTCL_PATH=$LIBTCL_PATH] )
+             ],
+             [ TCLFLAG=""
+               LIBTCL_PATH=""
+               LIBTCL_LIB=""
+               LIBTCL_INC="" 
+               TCLEXT=""
+               TCLINCLUDE="notcl.mk"
+	     ]
+            )
+#
 # Final setting of the Compiler flags
 #
        case "x$REALFC" in
           xifort    ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSIF $ARCHIF";PREPROFLAG="-fpp";
                       CXX_FLAGS="$CXX_FLAGSIC $ARCHIF";;
           xpgfortran) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSPF $ARCHPF";PREPROFLAG="-Mpreprocess";
+                      NVMPICXX="-lmpi_cxx"; # Added in LDADD when using pgfortran
                       CXX_FLAGS="$CXX_FLAGSPC $ARCHPF";;
-          xgfortran ) FORT_FLAGS="$FORT_FLAGS $FORT_FLAGSGF $ARCHGF";PREPROFLAG="-cpp";
+          xgfortran ) FORT_FLAGS="-Wno-argument-mismatch $FORT_FLAGS $FORT_FLAGSGF $ARCHGF";PREPROFLAG="-cpp";
                       CXX_FLAGS="$CXX_FLAGSGC $ARCHGF";;
        esac
 
 #
 # Flags for .cpp sources 
 #
-CXXFLAGS="-std=c++11 $COLVARSFLAG $PLUMEDFLAG $CCFLAGS $CXX_FLAGS"
+CXXFLAGS="-std=c++11 $COLVARSFLAG $PLUMEDFLAG $TCLFLAG $CCFLAGS $CXX_FLAGS"
 AM_CPPFLAGS="$LIBCOLVARS_CPPFLAGS"
 
 #
 # Flags for .f sources are the same as those for .f90 sources
 # Fortran compiler is the wrapper
-FCFLAGS="$PREPROFLAG $COLVARSFLAG $PLUMEDFLAG $FCFLAGS $FORT_FLAGS"
+FCFLAGS="$PREPROFLAG $COLVARSFLAG $PLUMEDFLAG $TCLFLAG $FCFLAGS $FORT_FLAGS"
 FFLAGS=$FCFLAGS
 FC=$MPIFC
 
@@ -621,14 +675,14 @@ LDFLAGS=
 #
 
 AS_IF([test "x$DEBUG_MODE" = xDEBUG ],
-      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $COLVARS $DEBUG_MODE$GRN (binaries'extension is $YEL'$EXEEXT'$GRN)"],
-      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $COLVARS $DEBUG_MODE$GRN (No extension for binaries)"]
+      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $COLVARS $TCL $DEBUG_MODE$GRN (binaries'extension is $YEL'$EXEEXT'$GRN)"],
+      [RUNMO_MSG="** Running Mode         : ${YEL}$PLUMED $COLVARS $TCL $DEBUG_MODE$GRN (No extension for binaries)"]
      )
 #
 # set the extension of binaries
 # composite of _plumed, _colvars and .debug or .prod 
 #
-EXEEXT="$PLUEXT$COLVEXT$EXEEXT"
+EXEEXT="$PLUEXT$COLVEXT$TCLEXT$EXEEXT"
 
 #
 # Build the messages for NOTICE
@@ -647,6 +701,8 @@ PLULI_MSG="** PLUMED  Library      : ${GRN}$LIBPLUMED_LIB"
 PLUIN_MSG="** PLUMED  Includes     : ${GRN}$LIBPLUMED_INC"
 COLLI_MSG="** COLVARS  Library     : ${GRN}$LIBCOLVARS_LIB"
 COLIN_MSG="** COLVARS  Includes    : ${GRN}$LIBCOLVARS_INC"
+TCLLI_MSG="** TCL  Library         : ${GRN}$LIBTCL_LIB"
+TCLIN_MSG="** TCL  Includes        : ${GRN}$LIBTCL_INC"
 FFTTY_MSG="** FFTW3 Interface      : ${GRN}$FFTW_TYPE of the $FFTWTYPE library"
 FFTPA_MSG="** FFTW3 Path           : ${GRN}$FFTW_LIB_PATH"
 FFTIN_MSG="** FFTW3 Includes       : ${GRN}$FFTW_INCLUDES"
@@ -666,6 +722,8 @@ PLULI_MSG="$CLR$PLULI_MSG${PADD:0:$((120 - ${#PLULI_MSG}))}$CLR"
 PLUIN_MSG="$CLR$PLUIN_MSG${PADD:0:$((120 - ${#PLUIN_MSG}))}$CLR"
 COLLI_MSG="$CLR$COLLI_MSG${PADD:0:$((120 - ${#COLLI_MSG}))}$CLR"
 COLIN_MSG="$CLR$COLIN_MSG${PADD:0:$((120 - ${#COLIN_MSG}))}$CLR"
+TCLLI_MSG="$CLR$TCLLI_MSG${PADD:0:$((120 - ${#TCLLI_MSG}))}$CLR"
+TCLIN_MSG="$CLR$TCLIN_MSG${PADD:0:$((120 - ${#TCLIN_MSG}))}$CLR"
 FFTTY_MSG="$CLR$FFTTY_MSG${PADD:0:$((120 - ${#FFTTY_MSG}))}$CLR"
 FFTPA_MSG="$CLR$FFTPA_MSG${PADD:0:$((120 - ${#FFTPA_MSG}))}$CLR"
 FFTIN_MSG="$CLR$FFTIN_MSG${PADD:0:$((120 - ${#FFTIN_MSG}))}$CLR"
@@ -690,6 +748,11 @@ AC_SUBST([LIBPLUMED_INC])
 AC_SUBST([LIBCOLVARS_INC])
 AC_SUBST([LIBPLUMED_LIB])
 AC_SUBST([LIBPLUMED_LIBPATH])
+AC_SUBST([TCL])
+AC_SUBST([LIBTCL_INC])
+AC_SUBST([LIBTCL_LIB])
+AC_SUBST([LIBTCL_LIBPATH])
+AC_SUBST([LIBTCL_EXELIBPATH])
 AC_SUBST([FFTW_TYPE])
 AC_SUBST([FFTW_LIB_PATH])
 AC_SUBST([FFTW_INCLUDES])
@@ -697,10 +760,12 @@ AC_SUBST([FFTW_INCLUDES_PATH])
 AC_SUBST([FFTW_MKL_INCLUDES_PATH])
 AC_SUBST([FFTW_LIBS])
 AC_SUBST([BLAS])
+AC_SUBST([NVMPICXX])
 AC_SUBST([PYTHON])
 AC_SUBST([PREFIX])
 AC_SUBST([INCLUDE_DEPEND_MK],["include depend.mk"])
 AC_SUBST([INCLUDE_PLUMED_MK],["include "$PLUMEDINCLUDE])
+AC_SUBST([INCLUDE_TCL_MK],["include "$TCLINCLUDE])
 AC_SUBST([INCLUDE_COLVARS_MK],["include "$COLVARSINCLUDE])
 AC_SUBST([LIBTINKERCLV],[$TINKERCOLVARS])
 AC_SUBST([LIBCOLVARS_LIB],[$LIBCOLVARS_LIB])
@@ -745,6 +810,8 @@ AC_MSG_NOTICE([$PLULI_MSG])
 AC_MSG_NOTICE([$PLUIN_MSG])
 AC_MSG_NOTICE([$COLLI_MSG])
 AC_MSG_NOTICE([$COLIN_MSG])
+AC_MSG_NOTICE([$TCLLI_MSG])
+AC_MSG_NOTICE([$TCLIN_MSG])
 AC_MSG_NOTICE([$FFTTY_MSG])
 AC_MSG_NOTICE([$FFTPA_MSG])
 AC_MSG_NOTICE([$FFTIN_MSG])

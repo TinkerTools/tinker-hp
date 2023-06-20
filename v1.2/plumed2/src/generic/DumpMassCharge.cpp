@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,8 +25,6 @@
 #include "tools/File.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-
-using namespace std;
 
 namespace PLMD
 {
@@ -65,26 +63,13 @@ plumed driver --mc mcfile --plumed plumed.dat --ixyz traj.xyz
 \endverbatim
 
 With the following input you can dump only the charges for a specific
-group.
+group:
+
 \plumedfile
 solute_ions: GROUP ATOMS=1-121,200-2012
 DUMPATOMS FILE=traj.gro ATOMS=solute_ions STRIDE=100
 DUMPMASSCHARGE FILE=mcfile ATOMS=solute_ions
 \endplumedfile
-Notice however that if you want to process the charges
-with the driver (e.g. reading traj.gro) you have to fix atom
-numbers first, e.g. with the script
-\verbatim
-awk 'BEGIN{c=0}{
-  if(match($0,"#")) print ; else {print c,$2,$3; c++}
-}' < mc > newmc
-}'
-\endverbatim
-then
-\verbatim
-plumed driver --mc newmc --plumed plumed.dat --ixyz traj.gro
-\endverbatim
-
 
 */
 //+ENDPLUMEDOC
@@ -93,7 +78,7 @@ class DumpMassCharge:
   public ActionAtomistic,
   public ActionPilot
 {
-  string file;
+  std::string file;
   bool first;
   bool second;
   bool print_masses;
@@ -130,7 +115,7 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
   print_masses(true),
   print_charges(true)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parse("FILE",file);
   if(file.length()==0) error("name of output file was not specified");
   log.printf("  output written to file %s\n",file.c_str());
@@ -173,7 +158,7 @@ DumpMassCharge::DumpMassCharge(const ActionOptions&ao):
 
 void DumpMassCharge::prepare() {
   if(!first && second) {
-    requestAtoms(vector<AtomNumber>());
+    requestAtoms(std::vector<AtomNumber>());
     second=false;
   }
 }

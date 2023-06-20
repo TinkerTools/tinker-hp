@@ -356,18 +356,18 @@ inline size_t colvarvalue::size() const
   switch (value_type) {
   case colvarvalue::type_notset:
   default:
-    return 0;
+    return 0; break;
   case colvarvalue::type_scalar:
-    return 1;
+    return 1; break;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
-    return 3;
+    return 3; break;
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
-    return 4;
+    return 4; break;
   case colvarvalue::type_vector:
-    return vector1d_value.size();
+    return vector1d_value.size(); break;
   }
 }
 
@@ -378,19 +378,19 @@ inline cvm::real colvarvalue::operator [] (int const i) const
   case colvarvalue::type_notset:
   default:
     cvm::error("Error: trying to access a colvar value "
-               "that is not initialized.\n", BUG_ERROR);
-    return 0.0;
+               "that is not initialized.\n", COLVARS_BUG_ERROR);
+    return 0.0; break;
   case colvarvalue::type_scalar:
-    return real_value;
+    return real_value; break;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
-    return rvector_value[i];
+    return rvector_value[i]; break;
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
-    return quaternion_value[i];
+    return quaternion_value[i]; break;
   case colvarvalue::type_vector:
-    return vector1d_value[i];
+    return vector1d_value[i]; break;
   }
 }
 
@@ -401,19 +401,19 @@ inline cvm::real & colvarvalue::operator [] (int const i)
   case colvarvalue::type_notset:
   default:
     cvm::error("Error: trying to access a colvar value "
-               "that is not initialized.\n", BUG_ERROR);
-    return real_value;
+               "that is not initialized.\n", COLVARS_BUG_ERROR);
+    return real_value; break;
   case colvarvalue::type_scalar:
-    return real_value;
+    return real_value; break;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
-    return rvector_value[i];
+    return rvector_value[i]; break;
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
-    return quaternion_value[i];
+    return quaternion_value[i]; break;
   case colvarvalue::type_vector:
-    return vector1d_value[i];
+    return vector1d_value[i]; break;
   }
 }
 
@@ -673,7 +673,7 @@ inline cvm::real colvarvalue::norm2() const
     } else {
       return vector1d_value.norm2();
     }
-/*   break; */
+    break;
   case colvarvalue::type_notset:
   default:
     return 0.0;

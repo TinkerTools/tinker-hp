@@ -336,9 +336,7 @@ c
       use potent
       use mpi
       implicit none
-      integer i
-      integer iproc,ierr,iglob
-
+      integer i,iproc,ierr,iglob
       real*8 xr,yr,zr,eps1,eps2
       integer tag,status(MPI_STATUS_SIZE)
       integer, allocatable :: reqsend(:),reqrec(:)
@@ -369,9 +367,9 @@ c
       allocate (reqrec(nproc))
 c
       allocate (count2(nproc))
-      allocate (buflen3(nproc))
-      allocate (bufbeg3(nproc))
-      allocate (buf3bis(nloc,nproc))
+      allocate (buflen3(nprocloc))
+      allocate (bufbeg3(nprocloc))
+      allocate (buf3bis(nloc,nprocloc))
       count2 = 0
       buflen3 = 0
       bufbeg3 = 0
@@ -511,6 +509,10 @@ c
           a(3,iglob) = buffer(9,bufbeg4(proc+1)+j)
         end do
       end do
+c
+c     also send the pbcwrap indexes
+c
+      call commpbcwrapindex(bufbeg3,buf3,buflen3,bufbeg4,buflen4)
 c
 c     if rattle is used, also send the old coordinates
 c
@@ -944,6 +946,10 @@ c
           a(3,iglob) = buffer(9,bufbeg4(proc+1)+j)
         end do
       end do
+c
+c     also send the pbcwrap indexes
+c
+      call commpbcwrapindex(bufbeg3,buf3,buflen3,bufbeg4,buflen4)
 c
 c     reorder indexes accordingly and build local repart array
 c
@@ -1554,106 +1560,56 @@ c
       ect  = buffer2(18)
       eat  = buffer2(19)
       if (.not.use_dewald) edsp = buffer2(20)
+c      call info_energy(0)
 c
       return
       end
-cc
-cc     subroutine reduceen : make the necessary reductions over the processes to get the
-cc     total values of the energies
-cc
-c      subroutine reduceen(epot)
-c      use domdec
-c      use energi
-c      use inter
-c      use potent
-c      use virial
-c      use mpi
-c      implicit none
-c      integer ierr,commloc
-c      real*8 epot
-c      real*8 buffer1(6),buffer2(17)
-cc
-c      if (use_pmecore) then
-c        commloc = comm_dir
-c      else
-c        commloc = COMM_TINKER
-c      end if
-cc
-c      buffer1(1) = ec
-c      buffer1(2) = em
-c      buffer1(3) = ep
-c      buffer1(4) = epot
-c      buffer1(5) = esum
-c      buffer1(6) = einter 
-cc
-c      if (rank.eq.0) then
-c        call MPI_REDUCE(MPI_IN_PLACE,buffer1,6,MPI_REAL8,MPI_SUM,0,
-c     $     COMM_TINKER,ierr)
-c      else
-c        call MPI_REDUCE(buffer1,buffer1,6,MPI_REAL8,MPI_SUM,0,
-c     $     COMM_TINKER,ierr)
-c      end if
-c      ec = buffer1(1)
-c      em = buffer1(2)
-c      ep = buffer1(3)
-c      epot = buffer1(4)
-c      esum = buffer1(5)
-c      einter = buffer1(6)
-cc
-cc   MPI: get virial
-cc
-c      call MPI_ALLREDUCE(MPI_IN_PLACE,vir,9,MPI_REAL8,MPI_SUM,
-c     $   COMM_TINKER,ierr)
-cc
-c      if ((use_pmecore).and.(rank.gt.(ndir-1))) return
-cc
-c      buffer2(1) = eba
-c      buffer2(2) = ea
-c      buffer2(3) = eb
-c      buffer2(4) = ev
-c      buffer2(5) = eub
-c      buffer2(6) = eaa
-c      buffer2(7) = eopb
-c      buffer2(8) = eopd
-c      buffer2(9) = eid
-c      buffer2(10) = eit
-c      buffer2(11) = et
-c      buffer2(12) = ept
-c      buffer2(13) = ebt
-c      buffer2(14) = ett
-c      buffer2(15) = eg
-c      buffer2(16) = ex
-c      buffer2(17) = eat
-cc
-c      if (rank.eq.0) then
-c        call MPI_REDUCE(MPI_IN_PLACE,buffer2,17,MPI_REAL8,MPI_SUM,0,
-c     $     commloc,ierr)
-c      else
-c        call MPI_REDUCE(buffer2,buffer2,17,MPI_REAL8,MPI_SUM,0,
-c     $     commloc,ierr)
-c      end if
-cc
-c      eba  = buffer2(1) 
-c      ea   = buffer2(2) 
-c      eb   = buffer2(3) 
-c      ev   = buffer2(4) 
-c      eub  = buffer2(5) 
-c      eaa  = buffer2(6) 
-c      eopb = buffer2(7) 
-c      eopd = buffer2(8) 
-c      eid  = buffer2(9) 
-c      eit  = buffer2(10)
-c      et   = buffer2(11)
-c      ept  = buffer2(12)
-c      ebt  = buffer2(13)
-c      ett  = buffer2(14)
-c      eg   = buffer2(15)
-c      ex   = buffer2(16)
-c      eat  = buffer2(17)
-cc
-c      return
-c      end
-c
+
+      subroutine info_energy(rank)
+      use energi
+      implicit none
+      integer,intent(in):: rank
+      real(8) ebonded
+
+      if (rank.eq.0) then
+!$acc wait
+ 20   format ( 40('-'))
+         print 20
+ 30   format (1x,A,F18.6)
+!$acc update host(esum,eb,ea,eba,eub,eaa,eopb,eopd,
+!$acc&                  eid,eit,et,ept,ebt,ett,eg,ex,eat,
+!$acc&                  ev,ec,ecrec,em,emrec,ep,eprec,esave,ensmd,
+!$acc&                  eDaMD,ePaMD,eW1aMD,eW2aMD,
+!$acc&                  ev_r,ec_r,em_r,ep_r,eb_r)
+
+         ebonded = 
+     &   eb+ea+eba+eub+eaa+eid+eit+et+ept+ebt+ett+eat+eopb+eopd+eg+ex
+         if (eb   /=real(0,8)) print 30, 'eb     = ',eb
+         !if (eb_r /=tp2enr(0.0)) print 30, 'eb_r = ',enr2en(eb_r)
+         if (ea   /=real(0,8)) print 30, 'ea     = ',ea 
+         if (eba  /=real(0,8)) print 30, 'eba    = ',eba
+         if (eub  /=real(0,8)) print 30, 'eub    = ',eub
+         if (eaa  /=real(0,8)) print 30, 'eaa    = ',eaa
+         if (eid  /=real(0,8)) print 30, 'eid    = ',eid
+         if (eit  /=real(0,8)) print 30, 'eit    = ',eit
+         if (et   /=real(0,8)) print 30, 'et     = ',et
+         if (ept  /=real(0,8)) print 30, 'ept    = ',ept
+         if (ebt  /=real(0,8)) print 30, 'ebt    = ',ebt
+         if (ett  /=real(0,8)) print 30, 'ett    = ',ett
+         if (eat  /=real(0,8)) print 30, 'eat    = ',ett
+         if (eopb /=real(0,8)) print 30, 'eopb   = ',eopb
+         if (eopd /=real(0,8)) print 30, 'eopd   = ',eopd
+         if (eg   /=real(0,8)) print 30, 'eg     = ',eg
+         if (ex   /=real(0,8)) print 30, 'ex     = ',ex
+         if (ebonded/=real(0,8)) print 30, 'ebonded =',ebonded
+         if (ec   /=real(0,8)) print 30, 'ec     = ',ec
+         if (ev   /=real(0,8)) print 30, 'ev     = ',ev
+         if (em   /=real(0,8)) print 30, 'em     = ',em
+         if (ep   /=real(0,8)) print 30, 'ep     = ',ep
+         !if (esum/=real(0,8)) print 30, 'esum    = ',esum
+      end if
+!$acc wait
+      end subroutine
 c     subroutine commforcesbonded : deal with communications of some
 c     bonded forces modifier avec nlocnl ?
 c
@@ -3543,6 +3499,7 @@ c
      $    COMM_TINKER,ierr)
        call MPI_ALLREDUCE(MPI_IN_PLACE,einter,1,MPI_REAL8,MPI_SUM,
      $    COMM_TINKER,ierr)
+c      call info_energy(0)
       return
       end
 c
@@ -4734,5 +4691,87 @@ c
         end do
       end do
 
+      return
+      end
+c
+c     subroutine commpbcwrapindex: communicate local pbcwrap index during reassign
+c
+      subroutine commpbcwrapindex(bufbeg3,buf3,buflen3,bufbeg4,
+     $  buflen4)
+      use atoms
+      use domdec
+      use mpi
+      use potent
+      implicit none
+      integer tag,status(MPI_STATUS_SIZE),i,j,proc
+      integer nprocloc,rankloc,commloc
+      integer iglob,jglob,ierr
+      integer, allocatable :: reqsend(:),reqrec(:)
+      integer, dimension (*) :: buflen3,bufbeg3,buflen4,bufbeg4
+      integer, dimension (*) :: buf3
+      integer, allocatable :: buffers(:,:),buffer(:,:)
+c
+      if (use_pmecore) then
+        nprocloc = ndir
+        commloc  = comm_dir
+        rankloc  = rank_bis
+      else
+        nprocloc = nproc
+        commloc  = COMM_TINKER
+        rankloc  = rank
+      end if
+c
+      allocate (reqsend(nproc))
+      allocate (reqrec(nproc))
+c
+c
+c     communicate the corresponding indexes
+c
+      proc = pneig_send(nneig_send)
+      allocate (buffers(4,bufbeg3(proc+1)+buflen3(proc+1)))
+      proc = pneig_recep(nneig_recep)
+      allocate (buffer(4,bufbeg4(proc+1)+buflen4(proc+1)))
+c
+c     Begin reception 
+c
+      do i = 1, nneig_recep
+        proc = pneig_recep(i)
+        tag = nprocloc*rankloc + proc + 1
+        call MPI_IRECV(buffer(1,bufbeg4(proc+1)),4*buflen4(proc+1),
+     $    MPI_INT,proc,tag,COMM_TINKER,reqrec(i),ierr)
+      end do
+      do i = 1, nneig_send
+        proc = pneig_send(i)
+        do j = 0, buflen3(proc+1)-1
+          jglob = buf3(bufbeg3(proc+1)+j)
+          buffers(1,bufbeg3(proc+1)+j) = pbcwrapindex(1,jglob)
+          buffers(2,bufbeg3(proc+1)+j) = pbcwrapindex(2,jglob)
+          buffers(3,bufbeg3(proc+1)+j) = pbcwrapindex(3,jglob)
+          buffers(4,bufbeg3(proc+1)+j) = jglob
+        end do
+      end do
+c
+c     send the pbc indexes
+c
+      do i = 1, nneig_send
+        proc = pneig_send(i)
+        tag = nprocloc*proc + rankloc + 1
+        call MPI_ISEND(buffers(1,bufbeg3(proc+1)),4*buflen3(proc+1),
+     $   MPI_INT,proc,tag,COMM_TINKER,reqsend(i),ierr)
+      end do
+      do i = 1, nneig_send
+        proc = pneig_send(i)
+        call MPI_WAIT(reqsend(i),status,ierr)
+      end do
+      do i = 1, nneig_recep
+        proc = pneig_recep(i)
+        call MPI_WAIT(reqrec(i),status,ierr)
+        do j = 0, buflen4(proc+1)-1
+          iglob = int(buffer(4,bufbeg4(proc+1)+j))
+          pbcwrapindex(1,iglob) = buffer(1,bufbeg4(proc+1)+j)
+          pbcwrapindex(2,iglob) = buffer(2,bufbeg4(proc+1)+j)
+          pbcwrapindex(3,iglob) = buffer(3,bufbeg4(proc+1)+j)
+        end do
+      end do
       return
       end

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,7 @@
 #include "Log.h"
 #include "Tools.h"
 #include <iostream>
+#include <iomanip>
 
 namespace PLMD {
 
@@ -60,6 +61,11 @@ void Keywords::KeyType::setStyle( const std::string& type ) {
   } else {
     plumed_massert(false,"invalid keyword specifier " + type);
   }
+}
+
+std::string Keywords::getStyle( const std::string & k ) const {
+  plumed_massert( types.count(k), "Did not find keyword " + k );
+  return (types.find(k)->second).toString();
 }
 
 void Keywords::add( const Keywords& newkeys ) {
@@ -115,7 +121,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
   plumed_assert( !exists(k) && !reserved(k) );
   std::string fd, lowkey=k;
   // Convert to lower case
-  std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
+  std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),[](unsigned char c) { return std::tolower(c); });
 // Remove any underscore characters
   for(unsigned i=0;; ++i) {
     std::size_t num=lowkey.find_first_of("_");
@@ -131,7 +137,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
     types.insert( std::pair<std::string,KeyType>(k,KeyType("vessel")) );
   } else if( t=="numbered" ) {
-    fd = d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
+    fd = d + ". You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
     types.insert( std::pair<std::string,KeyType>(k,KeyType("optional")) );
   } else {
@@ -150,7 +156,7 @@ void Keywords::reserveFlag( const std::string & k, const bool def, const std::st
   std::string defstr;
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
-  std::string fd,lowkey=k; std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
+  std::string fd,lowkey=k; std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),[](unsigned char c) { return std::tolower(c); });
   fd=defstr + d;
   documentation.insert( std::pair<std::string,std::string>(k,fd) );
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
@@ -176,7 +182,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
   plumed_massert( !exists(k) && t!="flag" && !reserved(k) && t!="vessel", "keyword " + k + " has already been registered");
   std::string fd;
   if( t=="numbered" ) {
-    fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
+    fd=d + ". You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
     types.insert( std::pair<std::string,KeyType>(k, KeyType("optional")) );
   } else {
@@ -236,9 +242,7 @@ bool Keywords::numbered( const std::string & k ) const {
 }
 
 bool Keywords::style( const std::string & k, const std::string & t ) const {
-  plumed_massert( types.count(k), "Did not find keyword " + k );
-
-  if( (types.find(k)->second).toString()==t ) return true;
+  if( getStyle(k)==t ) return true;
   return false;
 }
 
@@ -267,7 +271,7 @@ bool Keywords::reserved( const std::string & k ) const {
 
 void Keywords::print_template(const std::string& actionname, bool include_optional) const {
   unsigned nkeys=0;
-  printf("%s",actionname.c_str());
+  std::printf("%s",actionname.c_str());
   for(unsigned i=0; i<keys.size(); ++i) {
     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
@@ -277,8 +281,8 @@ void Keywords::print_template(const std::string& actionname, bool include_option
       if( (types.find(keys[i])->second).isAtomList() ) {
         plumed_massert( atomtags.count(keys[i]), "keyword " + keys[i] + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
         if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second ) break;
-        if( (atomtags.find(keys[i])->second).find("residues")!=std::string::npos) printf(" %s=<residue selection>", keys[i].c_str() );
-        else printf(" %s=<atom selection>", keys[i].c_str() );
+        if( (atomtags.find(keys[i])->second).find("residues")!=std::string::npos) std::printf(" %s=<residue selection>", keys[i].c_str() );
+        else std::printf(" %s=<atom selection>", keys[i].c_str() );
         prevtag=atomtags.find(keys[i])->second;
       }
     }
@@ -293,30 +297,30 @@ void Keywords::print_template(const std::string& actionname, bool include_option
       if ( (types.find(keys[i])->second).isCompulsory() ) {
         std::string def;
         if( getDefaultValue( keys[i], def) ) {
-          printf(" %s=%s ", keys[i].c_str(), def.c_str() );
+          std::printf(" %s=%s ", keys[i].c_str(), def.c_str() );
         } else {
-          printf(" %s=    ", keys[i].c_str() );
+          std::printf(" %s=    ", keys[i].c_str() );
         }
       } else if (include_optional) {
         // TG no defaults for optional keywords?
-        printf(" [%s]", keys[i].c_str() );
+        std::printf(" [%s]", keys[i].c_str() );
       }
     }
   }
-  printf("\n");
+  std::printf("\n");
+  std::flush(std::cout);
 }
 
 void Keywords::print_vim() const {
   for(unsigned i=0; i<keys.size(); ++i) {
     if( (types.find(keys[i])->second).isFlag() ) {
-      printf( ",flag:%s", keys[i].c_str() );
+      std::printf( ",flag:%s", keys[i].c_str() );
     } else {
-      if( allowmultiple.find(keys[i])->second ) printf(",numbered:%s",keys[i].c_str() );
-      else printf(",option:%s",keys[i].c_str() );
+      if( allowmultiple.find(keys[i])->second ) std::printf(",numbered:%s",keys[i].c_str() );
+      else std::printf(",option:%s",keys[i].c_str() );
     }
   }
-  fprintf(stdout,"\n");
-  print(stdout);
+  std::fprintf(stdout, "\n%s", getHelpString().c_str() );
 }
 
 void Keywords::print_html() const {
@@ -332,29 +336,29 @@ void Keywords::print_html() const {
       std::cout<<"\\par Description of components\n\n";
       std::cout<<cstring<<"\n\n";
       std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-      printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
+      std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
       unsigned nndef=0;
       for(unsigned i=0; i<cnames.size(); ++i) {
         //plumed_assert( ckey.find(cnames[i])->second=="default" );
         if( ckey.find(cnames[i])->second!="default" ) { nndef++; continue; }
-        printf("<tr>\n");
-        printf("<td width=15%%> <b> %s </b></td>\n",cnames[i].c_str() );
-        printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
-        printf("</tr>\n");
+        std::printf("<tr>\n");
+        std::printf("<td width=15%%> <b> %s </b></td>\n",cnames[i].c_str() );
+        std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+        std::printf("</tr>\n");
       }
       std::cout<<"</table>\n\n";
       if( nndef>0 ) {
         std::cout<<"In addition the following quantities can be calculated by employing the keywords listed below"<<std::endl;
         std::cout<<"\n\n";
         std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-        printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
+        std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
         for(unsigned i=0; i<cnames.size(); ++i) {
           if( ckey.find(cnames[i])->second!="default") {
-            printf("<tr>\n");
-            printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
-                   cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
-            printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
-            printf("</tr>\n");
+            std::printf("<tr>\n");
+            std::printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
+                        cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
+            std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+            std::printf("</tr>\n");
           }
         }
         std::cout<<"</table>\n\n";
@@ -368,14 +372,14 @@ void Keywords::print_html() const {
         std::cout<<"\\par Description of components\n\n";
         std::cout<<cstring<<"\n\n";
         std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-        printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
+        std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
         for(unsigned i=0; i<cnames.size(); ++i) {
           if( exists(ckey.find(cnames[i])->second) ) {
-            printf("<tr>\n");
-            printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
-                   cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
-            printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
-            printf("</tr>\n");
+            std::printf("<tr>\n");
+            std::printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
+                        cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
+            std::printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+            std::printf("</tr>\n");
           }
         }
         std::cout<<"</table>\n\n";
@@ -448,19 +452,34 @@ void Keywords::print_html() const {
 }
 
 void Keywords::print_spelling() const {
-  for(unsigned i=0; i<keys.size(); ++i) printf("%s\n", keys[i].c_str() );
-  for(unsigned i=0; i<cnames.size(); ++i) printf("%s\n",cnames[i].c_str() );
+  for(unsigned i=0; i<keys.size(); ++i) std::printf("%s\n", keys[i].c_str() );
+  for(unsigned i=0; i<cnames.size(); ++i) std::printf("%s\n",cnames[i].c_str() );
 }
 
-void Keywords::print( FILE* out ) const {
-  unsigned nkeys=0;
+std::string Keywords::getKeywordDocs( const std::string& key ) const {
+  bool killdot=( (documentation.find(key)->second).find("\\f$")!=std::string::npos ); // Check for latex
+  std::vector<std::string> w=Tools::getWords( documentation.find(key)->second );
+  std::stringstream sstr; sstr<<std::setw(23)<<key<<" - ";
+  unsigned nl=0; std::string blank=" ";
+  for(unsigned i=0; i<w.size(); ++i) {
+    nl+=w[i].length() + 1;
+    if( nl>60 ) {
+      sstr<<"\n"<<std::setw(23)<<blank<<"   "<<w[i]<<" "; nl=0;
+    } else sstr<<w[i]<<" ";
+    if( killdot && w[i].find(".")!=std::string::npos ) break; // If there is latex only write up to first dot
+  }
+  sstr<<"\n"; return sstr.str();
+}
+
+std::string Keywords::getHelpString() const {
+  std::string helpstr; unsigned nkeys=0;
   for(unsigned i=0; i<keys.size(); ++i) {
     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
   if( nkeys>0 ) {
-    fprintf(out,"The input trajectory can be in any of the following formats: \n\n");
+    helpstr += "The input trajectory can be in any of the following formats: \n\n";
     for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isAtomList() ) printKeyword( keys[i], out );
+      if ( (types.find(keys[i])->second).isAtomList() ) helpstr += getKeywordDocs( keys[i] );
     }
   }
   nkeys=0;
@@ -469,9 +488,9 @@ void Keywords::print( FILE* out ) const {
   }
   unsigned ncompulsory=nkeys;
   if( nkeys>0 ) {
-    fprintf(out,"\nThe following arguments are compulsory: \n\n");
+    helpstr += "\nThe following arguments are compulsory: \n\n";
     for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isCompulsory() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
+      if ( (types.find(keys[i])->second).isCompulsory() ) helpstr += getKeywordDocs( keys[i] );
     }
   }
   nkeys=0;
@@ -479,10 +498,10 @@ void Keywords::print( FILE* out ) const {
     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
   }
   if( nkeys>0 ) {
-    if(ncompulsory>0) fprintf( out,"\nIn addition you may use the following options: \n\n");
-    else fprintf( out,"\nThe following options are available\n\n");
+    if(ncompulsory>0) helpstr += "\nIn addition you may use the following options: \n\n";
+    else helpstr += "\nThe following options are available\n\n";
     for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isFlag() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
+      if ( (types.find(keys[i])->second).isFlag() ) helpstr += getKeywordDocs( keys[i] ).c_str();
     }
   }
   nkeys=0;
@@ -491,88 +510,19 @@ void Keywords::print( FILE* out ) const {
   }
   if( nkeys>0 ) {
     for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
+      if ( (types.find(keys[i])->second).isOptional() || (types.find(keys[i])->second).isVessel() ) helpstr += getKeywordDocs( keys[i] );
     }
-    fprintf(out,"\n");
+    helpstr += "\n";
   }
-}
-
-void Keywords::printKeyword( const std::string& key, FILE* out ) const {
-  bool killdot=( (documentation.find(key)->second).find("\\f$")!=std::string::npos ); // Check for latex
-  std::vector<std::string> w=Tools::getWords( documentation.find(key)->second );
-  fprintf(out,"%23s - ", key.c_str() );
-  unsigned nl=0; std::string blank=" ";
-  for(unsigned i=0; i<w.size(); ++i) {
-    nl+=w[i].length() + 1;
-    if( nl>60 ) {
-      fprintf(out,"\n%23s   %s ", blank.c_str(), w[i].c_str() ); nl=0;
-    } else {
-      fprintf(out,"%s ", w[i].c_str() );
-    }
-    if( killdot && w[i].find(".")!=std::string::npos ) break; // If there is latex only write up to first dot
-  }
-  fprintf(out,"\n");
+  return helpstr;
 }
 
 void Keywords::print( Log& log ) const {
-  unsigned nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
-  }
-  if (nkeys>0 ) {
-    log.printf( "The input for this keyword can be specified using one of the following \n\n");
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isAtomList() ) printKeyword( keys[i], log );   //log.printKeyword( keys[i], documentation[i] );
-    }
-  }
-  nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
-  }
-  if( nkeys>0 ) {
-    log.printf( "\n The compulsory keywords for this action are: \n\n");
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isCompulsory() ) printKeyword( keys[i], log );   //log.printKeyword( keys[i], documentation[i] );
-    }
-  }
-  nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
-  }
-  if( nkeys>0 ) {
-    log.printf( "\n The following options are available: \n\n");
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isFlag() ) printKeyword( keys[i], log );   //log.printKeyword( keys[i], documentation[i] );
-    }
-    log.printf("\n");
-  }
-  nkeys=0;
-  for(unsigned i=0; i<keys.size(); ++i) {
-    if ( (types.find(keys[i])->second).isOptional() ) nkeys++;
-  }
-  if( nkeys>0 ) {
-    for(unsigned i=0; i<keys.size(); ++i) {
-      if ( (types.find(keys[i])->second).isOptional() ) printKeyword( keys[i], log );   //log.printKeyword( keys[i], documentation[i] );
-    }
-    log.printf("\n");
-  }
+  log.printf("%s", getHelpString().c_str() );
 }
 
-void Keywords::printKeyword( const std::string& key, Log& log ) const {
-  bool killdot=( (documentation.find(key)->second).find("\\f$")!=std::string::npos ); // Check for latex
-  std::vector<std::string> w=Tools::getWords( documentation.find(key)->second );
-  log.printf("%23s - ", key.c_str() );
-  unsigned nl=0; std::string blank=" ";
-  for(unsigned i=0; i<w.size(); ++i) {
-    nl+=w[i].length() + 1;
-    if( nl>60 ) {
-      log.printf("\n%23s   %s ", blank.c_str(), w[i].c_str() ); nl=0;
-    } else {
-      log.printf("%s ", w[i].c_str() );
-    }
-    if( killdot && w[i].find(".")!=std::string::npos ) break; // If there is latex only write up to first dot
-  }
-  log.printf("\n");
+void Keywords::print( FILE* out ) const {
+  fprintf( out,"%s", getHelpString().c_str() );
 }
 
 std::string Keywords::getTooltip( const std::string& name ) const {
@@ -597,10 +547,10 @@ std::string Keywords::getTooltip( const std::string& name ) const {
 }
 
 void Keywords::print_html_item( const std::string& key ) const {
-  printf("<tr>\n");
-  printf("<td width=15%%> <b> %s </b></td>\n",key.c_str() );
-  printf("<td> %s </td>\n",(documentation.find(key)->second).c_str() );
-  printf("</tr>\n");
+  std::printf("<tr>\n");
+  std::printf("<td width=15%%> <b> %s </b></td>\n",key.c_str() );
+  std::printf("<td> %s </td>\n",(documentation.find(key)->second).c_str() );
+  std::printf("</tr>\n");
 }
 
 std::string Keywords::get( const unsigned k ) const {
@@ -608,7 +558,7 @@ std::string Keywords::get( const unsigned k ) const {
   return keys[k];
 }
 
-bool Keywords::getLogicalDefault( std::string key, bool& def ) const {
+bool Keywords::getLogicalDefault(const std::string & key, bool& def ) const {
   if( booldefs.find(key)!=booldefs.end() ) {
     def=booldefs.find(key)->second;
     return true;
@@ -617,7 +567,7 @@ bool Keywords::getLogicalDefault( std::string key, bool& def ) const {
   }
 }
 
-bool Keywords::getDefaultValue( std::string key, std::string& def ) const {
+bool Keywords::getDefaultValue(const std::string & key, std::string& def ) const {
   plumed_assert( style(key,"compulsory") || style(key,"hidden") );
 
   if( numdefs.find(key)!=numdefs.end() ) {
@@ -644,7 +594,10 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
 
   std::size_t num2=name.find_first_of("_");
-  if( num2!=std::string::npos ) plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
+  if( num2!=std::string::npos ) {
+    char uu = '_'; plumed_massert( std::count(name.begin(),name.end(), uu)==1, "underscore is reserved character in component names and there should only be one");
+    plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
+  }
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );
@@ -668,6 +621,10 @@ bool Keywords::outputComponentExists( const std::string& name, const bool& custo
   return false;
 }
 
+std::string Keywords::getOutputComponentFlag( const std::string& name ) const {
+  return ckey.find(name)->second;
+}
+
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {
   if( cstring.find("customized")!=std::string::npos ) return "the label of this action is set by user in the input. See documentation above.";
 
@@ -680,9 +637,10 @@ std::string Keywords::getOutputComponentDescription( const std::string& name ) c
 }
 
 void Keywords::removeComponent( const std::string& name ) {
-  bool found=false; unsigned j=0, n=0;
+  bool found=false;
 
   while(true) {
+    unsigned j;
     for(j=0; j<cnames.size(); j++) if(cnames[j]==name)break;
     if(j<cnames.size()) {
       cnames.erase(cnames.begin()+j);
@@ -692,6 +650,14 @@ void Keywords::removeComponent( const std::string& name ) {
   // Delete documentation, type and so on from the description
   cdocs.erase(name); ckey.erase(name);
   plumed_massert(found,"You are trying to remove " + name + " a component that isn't there");
+}
+
+std::vector<std::string> Keywords::getOutputComponents() const {
+  return cnames;
+}
+
+std::string Keywords::getKeywordDescription( const std::string& key ) const {
+  plumed_assert( exists( key ) ); return documentation.find(key)->second;
 }
 
 }

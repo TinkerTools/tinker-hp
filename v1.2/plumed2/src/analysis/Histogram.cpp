@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -494,7 +494,7 @@ void Histogram::compute( const unsigned& current, MultiValue& myvals ) const {
       // Evalulate dot product
       double dot=0; for(unsigned j=0; j<getNumberOfArguments(); ++j) { dot+=val[j]*getArgument(j); der[j]=val[j]; }
       // Von misses distribution for concentration parameter
-      double newval = (myhist->von_misses_norm)*exp( (myhist->von_misses_concentration)*dot ); myvals.setValue( 1, newval );
+      double newval = (myhist->von_misses_norm)*std::exp( (myhist->von_misses_concentration)*dot ); myvals.setValue( 1, newval );
       // And final derivatives
       for(unsigned j=0; j<getNumberOfArguments(); ++j) der[j] *= (myhist->von_misses_concentration)*newval;
     }

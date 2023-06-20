@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,6 +23,8 @@
 #define __PLUMED_tools_Tools_h
 
 #include "AtomNumber.h"
+#include "Vector.h"
+#include "Tensor.h"
 #include <vector>
 #include <string>
 #include <cctype>
@@ -32,6 +34,9 @@
 #include <algorithm>
 #include <sstream>
 #include <memory>
+#include <cstddef>
+#include <queue>
+#include <mutex>
 
 namespace PLMD {
 
@@ -49,6 +54,16 @@ const double kBoltzmann(0.0083144621);
 /// PI
 const double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
 
+const double dp2cutoff(6.25);
+
+const double dp2cutoffA=1.00193418799744762399; // 1.0/(1-std::exp(-dp2cutoff));
+const double dp2cutoffB=-.00193418799744762399; // -std::exp(-dp2cutoff)/(1-std::exp(-dp2cutoff));
+
+inline static bool dp2cutoffNoStretch() {
+  static const auto* res=std::getenv("PLUMED_DP2CUTOFF_NOSTRETCH");
+  return res;
+}
+
 /// \ingroup TOOLBOX
 /// Empty class which just contains several (static) tools
 class Tools {
@@ -59,6 +74,9 @@ class Tools {
 /// T should be either float, double, or long double
   template<class T>
   static bool convertToReal(const std::string & str,T &t);
+/// class to convert a string to a int type T
+  template<class T>
+  static bool convertToInt(const std::string & str,T &t);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
@@ -75,24 +93,31 @@ public:
 /// compare two string in a case insensitive manner
   static bool caseInSensStringCompare(const std::string & str1, const std::string &str2);
 /// Convert a string to a double, reading it
-  static bool convert(const std::string & str,double & t);
+  static bool convertNoexcept(const std::string & str,double & t);
 /// Convert a string to a long double, reading it
-  static bool convert(const std::string & str,long double & t);
+  static bool convertNoexcept(const std::string & str,long double & t);
 /// Convert a string to a float, reading it
-  static bool convert(const std::string & str,float & t);
+  static bool convertNoexcept(const std::string & str,float & t);
 /// Convert a string to a int, reading it
-  static bool convert(const std::string & str,int & t);
+  static bool convertNoexcept(const std::string & str,int & t);
 /// Convert a string to a long int, reading it
-  static bool convert(const std::string & str,long int & t);
+  static bool convertNoexcept(const std::string & str,long int & t);
+/// Convert a string to a long long int, reading it
+  static bool convertNoexcept(const std::string & str,long long int & t);
 /// Convert a string to an unsigned int, reading it
-  static bool convert(const std::string & str,unsigned & t);
+  static bool convertNoexcept(const std::string & str,unsigned & t);
+/// Convert a string to a long unsigned int, reading it
+  static bool convertNoexcept(const std::string & str,long unsigned & t);
+/// Convert a string to a long long unsigned int, reading it
+  static bool convertNoexcept(const std::string & str,long long unsigned & t);
 /// Convert a string to a atom number, reading it
-  static bool convert(const std::string & str,AtomNumber & t);
+  static bool convertNoexcept(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)
-  static bool convert(const std::string & str,std::string & t);
+  static bool convertNoexcept(const std::string & str,std::string & t);
 /// Convert anything into a string
   template<typename T>
-  static void convert(T i,std::string & str);
+  static bool convertNoexcept(T i,std::string & str);
+/// Convert anything into anything, throwing an exception in case there is an error
 /// Remove trailing blanks
   static void trim(std::string & s);
 /// Remove trailing comments
@@ -107,7 +132,11 @@ public:
 /// will set s="xx"
   static bool getKey(std::vector<std::string>& line,const std::string & key,std::string & s,int rep=-1);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to val
-  template <class T>
+  template <typename T,typename U>
+  static void convert(const T & t,U & u) {
+    plumed_assert(convertNoexcept(t,u)) <<"Error converting  "<<t;
+  }
+  template <typename T>
   static bool parse(std::vector<std::string>&line,const std::string&key,T&val,int rep=-1);
 /// Find a keyword on the input line, eventually deleting it, and saving its value to a vector
   template <class T>
@@ -179,19 +208,154 @@ public:
 /// In case system calls to change dir are not available it throws an exception.
 /// \warning By construction, changing directory breaks thread safety! Use with care.
   class DirectoryChanger {
-    static const size_t buffersize=4096;
+    static const std::size_t buffersize=4096;
     char cwd[buffersize]= {0};
   public:
     explicit DirectoryChanger(const char*path);
     ~DirectoryChanger();
   };
+/// Mimic C++14 std::make_unique
+  template<class T> struct _Unique_if {
+    typedef std::unique_ptr<T> _Single_object;
+  };
+  template<class T> struct _Unique_if<T[]> {
+    typedef std::unique_ptr<T[]> _Unknown_bound;
+  };
+  template<class T, std::size_t N> struct _Unique_if<T[N]> {
+    typedef void _Known_bound;
+  };
+  template<class T, class... Args>
+  static typename _Unique_if<T>::_Single_object
+  make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+  }
+  template<class T>
+  static typename _Unique_if<T>::_Unknown_bound
+  make_unique(std::size_t n) {
+    typedef typename std::remove_extent<T>::type U;
+    return std::unique_ptr<T>(new U[n]());
+  }
+  template<class T, class... Args>
+  static typename _Unique_if<T>::_Known_bound
+  make_unique(Args&&...) = delete;
+
+  static void set_to_zero(double*ptr,unsigned n) {
+    for(unsigned i=0; i<n; i++) ptr[i]=0.0;
+  }
+
+  template<unsigned n>
+  static void set_to_zero(std::vector<VectorGeneric<n>> & vec) {
+    unsigned s=vec.size();
+    if(s==0) return;
+    set_to_zero(&vec[0][0],s*n);
+  }
+
+  template<unsigned n,unsigned m>
+  static void set_to_zero(std::vector<TensorGeneric<n,m>> & vec) {
+    unsigned s=vec.size();
+    if(s==0) return;
+    set_to_zero(&vec[0](0,0),s*n*m);
+  }
+
+
+
+
+  /// Merge sorted vectors.
+  /// Takes a vector of pointers to containers and merge them.
+  /// Containers should be already sorted.
+  /// The content is appended to the result vector.
+  /// Optionally, uses a priority_queue implementation.
+  template<class C>
+  static void mergeSortedVectors(const std::vector<C*> & vecs, std::vector<typename C::value_type> & result,bool priority_queue=false) {
+
+    /// local class storing the range of remaining objects to be pushed
+    struct Entry
+    {
+      typename C::const_iterator fwdIt,endIt;
+
+      explicit Entry(C const& v) : fwdIt(v.begin()), endIt(v.end()) {}
+      /// check if this vector still contains something to be pushed
+      explicit operator bool () const { return fwdIt != endIt; }
+      /// to allow using a priority_queu, which selects the highest element.
+      /// we here (counterintuitively) define < as >
+      bool operator< (Entry const& rhs) const { return *fwdIt > *rhs.fwdIt; }
+    };
+
+    if(priority_queue) {
+      std::priority_queue<Entry> queue;
+      // note: queue does not have reserve() method
+
+      // add vectors to the queue
+      {
+        std::size_t maxsize=0;
+        for(unsigned i=0; i<vecs.size(); i++) {
+          if(vecs[i]->size()>maxsize) maxsize=vecs[i]->size();
+          if(!vecs[i]->empty())queue.push(Entry(*vecs[i]));
+        }
+        // this is just to save multiple reallocations on push_back
+        result.reserve(maxsize);
+      }
+
+      // first iteration (to avoid a if in the main loop)
+      if(queue.empty()) return;
+      auto tmp=queue.top();
+      queue.pop();
+      result.push_back(*tmp.fwdIt);
+      tmp.fwdIt++;
+      if(tmp) queue.push(tmp);
+
+      // main loop
+      while(!queue.empty()) {
+        auto tmp=queue.top();
+        queue.pop();
+        if(result.back() < *tmp.fwdIt) result.push_back(*tmp.fwdIt);
+        tmp.fwdIt++;
+        if(tmp) queue.push(tmp);
+      }
+    } else {
+
+      std::vector<Entry> entries;
+      entries.reserve(vecs.size());
+
+      {
+        std::size_t maxsize=0;
+        for(int i=0; i<vecs.size(); i++) {
+          if(vecs[i]->size()>maxsize) maxsize=vecs[i]->size();
+          if(!vecs[i]->empty())entries.push_back(Entry(*vecs[i]));
+        }
+        // this is just to save multiple reallocations on push_back
+        result.reserve(maxsize);
+      }
+
+      while(!entries.empty()) {
+        // find smallest pending element
+        // we use max_element instead of min_element because we are defining < as > (see above)
+        const auto minval=*std::max_element(entries.begin(),entries.end())->fwdIt;
+
+        // push it
+        result.push_back(minval);
+
+        // fast forward vectors with elements equal to minval (to avoid duplicates)
+        for(auto & e : entries) while(e && *e.fwdIt==minval) ++e.fwdIt;
+
+        // remove from the entries vector all exhausted vectors
+        auto erase=std::remove_if(entries.begin(),entries.end(),[](const Entry & e) {return !e;});
+        entries.erase(erase,entries.end());
+      }
+    }
+
+  }
+  static std::unique_ptr<std::lock_guard<std::mutex>> molfile_lock();
+  /// Build a concatenated exception message.
+  /// Should be called with an in-flight exception.
+  static std::string concatenateExceptionMessages();
 };
 
 template <class T>
 bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val,int rep) {
   std::string s;
   if(!getKey(line,key+"=",s,rep)) return false;
-  if(s.length()>0 && !convert(s,val))return false;
+  if(s.length()>0 && !convertNoexcept(s,val))return false;
   return true;
 }
 
@@ -211,7 +375,7 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
       plumed_assert(rep<static_cast<int>(words.size()));
       s=words[rep];
     }
-    if(!convert(s,v))return false;
+    if(!convertNoexcept(s,v))return false;
     val.push_back(v);
   }
   return true;
@@ -256,10 +420,11 @@ double Tools::pbc(double x) {
 }
 
 template<typename T>
-void Tools::convert(T i,std::string & str) {
+bool Tools::convertNoexcept(T i,std::string & str) {
   std::ostringstream ostr;
   ostr<<i;
   str=ostr.str();
+  return true;
 }
 
 inline

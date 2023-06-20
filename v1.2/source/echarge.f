@@ -15,12 +15,165 @@ c     and partitions the energy among the atoms
 c
 c
       subroutine echarge
+      use potent
       implicit none
 c
 c     choose the method for summing over pairwise interactions
 c
-      call echarge0c
+      if (use_lambdadyn) then
+        call elambdacharge0c
+      else
+        call echarge0c
+      end if
 c
+      return
+      end
+c
+c     ################################################################
+c     ##                                                                  ##
+c     ##  subroutine elambdacharge0c  --  Ewald charge analysis via list  ##
+c     ##                                                                  ##
+c     ################################################################
+c
+c
+c     "echarge0c" calculates the charge-charge interaction energy
+c     and partitions the energy among the atoms using a particle
+c     mesh Ewald summation, if lambdadyn is activated
+c
+c
+      subroutine elambdacharge0c
+      use atmlst
+      use atoms
+      use bound
+      use boxes
+      use charge
+      use chgpot
+      use couple
+      use domdec
+      use energi
+      use ewald
+      use inform
+      use inter
+      use iounit
+      use math
+      use molcul
+      use mutant
+      use neigh
+      use potent
+      use shunt
+      use usage
+      use mpi
+      implicit none
+      integer i,iglob,iichg
+      integer ii,ierr
+      real*8 e
+      real*8 f
+      real*8 fs
+      real*8 xd,yd,zd
+      real*8 :: elambdatemp
+      real*8 :: elambdarec0,elambdarec1
+      external erfc
+c
+c
+c     zero out the Ewald summation energy and partitioning
+c
+      ec = 0.0d0
+c
+      if (nion .eq. 0)  return
+c
+c     set Ewald coefficient
+c
+      aewald = aeewald
+c
+c     compute the reciprocal space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
+     $  then
+        if (use_crec) then
+c
+c         the reciprocal part is interpolated between 0 and 1
+c
+          elambda = 0d0
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+          ec = 0d0
+          if (elambda.lt.1d0) then
+            call ecrecip
+          end if
+          elambdarec0  = ec
+
+          elambda = 1d0
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+          ec = 0d0
+          if (elambda.gt.0d0) then
+            call ecrecip
+          end if
+          elambdarec1  = ec
+
+          elambda = elambdatemp 
+          ec = (1-elambda)*elambdarec0 + elambda*elambdarec1
+c
+c         reset lambda to initial value
+c
+          call MPI_BARRIER(hostcomm,ierr)
+          if (hostrank.eq.0) call altelec
+          call MPI_BARRIER(hostcomm,ierr)
+        end if
+        if (use_pmecore) return
+      end if
+
+      if (use_cself) then
+c
+c     compute the Ewald self-energy term over all the atoms
+c
+        f = electric / dielec
+        fs = -f * aewald / sqrtpi
+        do ii = 1, nionloc
+           iichg = chgglob(ii)
+           iglob = iion(iichg)
+           i = loc(iglob)
+           e = fs * pchg(iichg)**2
+           ec = ec + e
+        end do
+c
+c     compute the cell dipole boundary correction term
+c
+        if (boundary .eq. 'VACUUM') then
+           xd = 0.0d0
+           yd = 0.0d0
+           zd = 0.0d0
+           do ii = 1, nionloc
+              iichg = chgglob(ii)
+              iglob = iion(iichg)
+              i = loc(iglob)
+              xd = xd + pchg(iichg)*x(iglob)
+              yd = yd + pchg(iichg)*y(iglob)
+              zd = zd + pchg(iichg)*z(iglob)
+           end do
+           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $        COMM_TINKER,ierr)
+           e = (2.0d0/3.0d0) * f * (pi/volbox) * (xd*xd+yd*yd+zd*zd)
+           if (rank.eq.0) then
+             ec = ec + e
+           end if
+        end if
+      end if
+c
+c     compute the real space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
+        if (use_creal) then
+          call ecreal0d
+        end if
+      end if
       return
       end
 c

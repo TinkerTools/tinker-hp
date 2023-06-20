@@ -1198,6 +1198,7 @@ c
       use cutoff
       use domdec
       use iounit
+      use keys
       use neigh
       use potent
       use mpi

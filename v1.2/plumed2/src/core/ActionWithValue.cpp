@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -23,7 +23,6 @@
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 
-using namespace std;
 namespace PLMD {
 
 void ActionWithValue::registerKeywords(Keywords& keys) {
@@ -33,6 +32,7 @@ void ActionWithValue::registerKeywords(Keywords& keys) {
                                  "below.  These quantities can be referenced elsewhere in the input by using this Action's "
                                  "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
+  keys.add("hidden","HAS_VALUES","this is used in json output to determine those actions that have values");
 }
 
 void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
@@ -92,7 +92,6 @@ Value* ActionWithValue::copyOutput( const std::string& name ) const {
     if (values[i]->name==name) return values[i].get();
   }
   plumed_merror("there is no pointer with name " + name);
-  return NULL;
 }
 
 Value* ActionWithValue::copyOutput( const unsigned& n ) const {
@@ -104,12 +103,12 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 void ActionWithValue::addValue() {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(new Value(this,getLabel(), false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false ) );
 }
 
 void ActionWithValue::addValueWithDerivatives() {
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(new Value(this,getLabel(), true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true ) );
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -145,7 +144,7 @@ void ActionWithValue::addComponent( const std::string& name ) {
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
-  values.emplace_back(new Value(this,thename, false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, false ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -162,7 +161,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
-  values.emplace_back(new Value(this,thename, true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, true ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
@@ -174,7 +173,6 @@ int ActionWithValue::getComponent( const std::string& name ) const {
     if (values[i]->name==thename) return i;
   }
   plumed_merror("there is no component with name " + name);
-  return -1;
 }
 
 std::string ActionWithValue::getComponentsList( ) const {

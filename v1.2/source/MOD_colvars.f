@@ -30,8 +30,8 @@ c
       end interface
 c
       logical :: use_colvars
-      integer :: ncvatoms
-      integer, allocatable :: cvatoms_ids(:)
+      integer :: ncvatoms,ncvatomsmol
+      integer, allocatable :: cvatoms_ids(:),cvatomsmol(:)
       real*8, allocatable :: cv_pos(:,:),decv(:,:),decv_tot(:,:)
       real*8, target :: dt_sim
       real*8, target :: temp_rand
@@ -42,14 +42,17 @@ c
 
       subroutine set_cvatoms_ids(ncvatoms_in,cvatoms_ids_in)
       use iso_c_binding
+      use atoms
       use colvars
-      use mpi
       use domdec
+      use mpi
+      use molcul
       implicit none
       integer :: ncvatoms_in
-      integer ierr,i
+      integer ierr,i,j,k,l,mol,o,p,init,stop
       integer, dimension(ncvatoms_in) :: cvatoms_ids_in
       ncvatoms = ncvatoms_in
+      if (allocated(cvatoms_ids)) deallocate(cvatoms_ids)
       allocate (cvatoms_ids(ncvatoms))
       do i = 1, ncvatoms
         cvatoms_ids(i) = cvatoms_ids_in(i)+1
@@ -60,6 +63,37 @@ c      cvatoms_ids(1:ncvatoms) = cvatoms_ids_in(1:ncvatoms)
       cv_pos = 0d0
       decv = 0d0
       decv_tot = 0d0
+c
+c     also build the extended list of atoms involved in the CV+ones
+c     of the associated molecules
+      ncvatomsmol = ncvatoms 
+      if (allocated(cvatomsmol)) deallocate(cvatomsmol)
+      allocate (cvatomsmol(n))
+      cvatomsmol(1:ncvatoms) = cvatoms_ids(1:ncvatoms)
+      do i = 1, ncvatoms
+        j = cvatoms_ids(i)
+        mol = molcule(j)
+        init = imol(1,mol)
+        stop = imol(2,mol)
+        do k = init, stop
+          l = kmol(k)
+c
+c       check wether atom is already in the list
+c
+          do o = 1, ncvatomsmol
+            p = cvatomsmol(o)
+            if (p.eq.l) goto 10
+          end do
+          ncvatomsmol = ncvatomsmol + 1
+          cvatomsmol(ncvatomsmol) = l
+ 10       continue
+        end do
+      end do
+c      write(*,*) 'ncvatomsmol = ',ncvatomsmol
+c      do j = 1, ncvatomsmol
+c        write(*,*) 'j = ',j,'cvatomsmol = ',cvatomsmol(j)
+c      end do
+c
       return
       end subroutine
 
@@ -223,10 +257,10 @@ c
         write(numberreps, '(i3.3)') rank_reploc
         colvarsrestart =
      $ filename(1:leng)//'_reps'//numberreps//'.colvars.state'
-        lenadd = 22
+        lenadd = 8
       else
         colvarsrestart = filename(1:leng)//'.colvars.state'
-        lenadd = 14
+        lenadd = 0
       end if
       inquire (file=colvarsrestart,exist=exist)
       if (exist) then
@@ -368,6 +402,7 @@ c     the master gets all the cv positions and total forces
 c
       subroutine prepare_colvars
       use atoms
+      use boxes
       use colvars
       use deriv
       use domdec
@@ -385,9 +420,12 @@ c
         iglob = cvatoms_ids(i)
         iloc = loc(iglob)
         if (repart(iglob).eq.rank) then
-          cv_pos(1,i) = x(iglob)
-          cv_pos(2,i) = y(iglob)
-          cv_pos(3,i) = z(iglob)
+c
+c   get the unwrapped coordinates
+c
+          cv_pos(1,i) = x(iglob) + pbcwrapindex(1,iglob)*xbox
+          cv_pos(2,i) = y(iglob) + pbcwrapindex(2,iglob)*ybox
+          cv_pos(3,i) = z(iglob) + pbcwrapindex(3,iglob)*zbox
         end if
         if ((iloc.gt.0).and.(iloc.le.nbloc)) then
           decv_tot(1,i) = desum(1,iloc)
@@ -450,14 +488,17 @@ c
 c     the master sends the new forces, he already has the bias
 c
       subroutine distrib_colvars(derivs)
+      use atoms
       use colvars
       use deriv
       use domdec
       use mpi
       use mutant
       use potent
+      use virial
       implicit none
       real*8 derivs(3,*)
+      real*8 vxx,vxy,vxz,vyy,vyz,vzz
       integer i,iglob,iloc,ierr
 c
       call MPI_BCAST(decv,3*ncvatoms,MPI_REAL8,0,COMM_TINKER,ierr)
@@ -482,6 +523,24 @@ c
           derivs(1,iloc) = derivs(1,iloc) + decv(1,i)
           derivs(2,iloc) = derivs(2,iloc) + decv(2,i)
           derivs(3,iloc) = derivs(3,iloc) + decv(3,i)
+c
+c         add virial contribution from colvars
+c
+          vxx =  x(iglob)*decv(1,i)
+          vxy =  y(iglob)*decv(1,i)
+          vxz =  z(iglob)*decv(1,i)
+          vyy =  y(iglob)*decv(2,i)
+          vyz =  z(iglob)*decv(2,i)
+          vzz =  z(iglob)*decv(3,i)
+          vir(1,1) = vir(1,1) + vxx
+          vir(2,1) = vir(2,1) + vxy
+          vir(3,1) = vir(3,1) + vxz
+          vir(1,2) = vir(1,2) + vxy
+          vir(2,2) = vir(2,2) + vyy
+          vir(3,2) = vir(3,2) + vyz
+          vir(1,3) = vir(1,3) + vxz
+          vir(2,3) = vir(2,3) + vyz
+          vir(3,3) = vir(3,3) + vzz
         end if
       end do
       return

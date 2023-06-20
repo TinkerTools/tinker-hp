@@ -1,0 +1,3 @@
+type=driver
+plumed_needs=molfile_plugins
+arg="--plumed plumed.dat --mf_xtc test.xtc"

@@ -52,9 +52,11 @@ void colvarproxy_tinkerhp::init() {
   // Initialize colvars.
   get_system_size_(&n);
   get_sim_dt_(&sim_dt);
-  get_sim_temp_(&sim_temperature);
+  cvm::real T;
+  get_sim_temp_(&T);
+  set_target_temperature(T);
   get_sim_boltzmann_(&sim_boltzmann);
-  angstrom_value = 1.0;
+  angstrom_value_ = 1.0;
   get_mpi_(&commcv,&rankcv,&nproccv);
 
   colvars_restart = false;
@@ -105,11 +107,15 @@ void colvarproxy_tinkerhp::init() {
     }
    // initialize multi-replica support, if available
   if (replica_enabled() == COLVARS_OK) {
-    get_root2root_(&inter_comm);
-    get_index_rep_(&inter_me);
-    get_num_rep_(&inter_num);
-    MPI_Comm_rank(inter_comm, &inter_me);
-    MPI_Comm_size(inter_comm, &inter_num);
+    {
+      int inter_comm_temp;
+      get_root2root_(&inter_comm_temp);
+      get_index_rep_(&inter_me);
+      get_num_rep_(&inter_num);
+      inter_comm = MPI_Comm_f2c( (MPI_Fint) inter_comm_temp );
+      MPI_Comm_rank(inter_comm, &inter_me);
+      MPI_Comm_size(inter_comm, &inter_num);
+    }
   }
   }
   else {
@@ -139,7 +145,7 @@ int colvarproxy_tinkerhp::init_atom(int atom_number)
   }
 
   if (aid < 0) {
-    return INPUT_ERROR;
+    return COLVARS_INPUT_ERROR;
   }
 
   int const index = add_atom_slot(aid);
@@ -171,8 +177,8 @@ int colvarproxy_tinkerhp::check_atom_id(int atom_number)
   // TODO add upper boundary check?
   if ( (aid < 0) ) {
     cvm::error("Error: invalid atom number specified, "+
-               cvm::to_str(atom_number)+"\n", INPUT_ERROR);
-    return INPUT_ERROR;
+               cvm::to_str(atom_number)+"\n", COLVARS_INPUT_ERROR);
+    return COLVARS_INPUT_ERROR;
   }
 
   return aid;
@@ -260,7 +266,7 @@ double colvarproxy_tinkerhp::compute()
     cvm::log("atoms_new_colvar_forces = "+cvm::to_str(atoms_new_colvar_forces)+"\n");
     cvm::log("atoms_total_forces = "+cvm::to_str(atoms_total_forces)+"\n");
     cvm::log("CVM timestep: " + cvm::to_str(cvm::step_absolute())+"\n");
-    cvm::log("CVM temperature:  " + cvm::to_str(cvm::temperature()) + "\n");
+    cvm::log("CVM temperature:  " + cvm::to_str(target_temperature()) + "\n");
   }
 
   // call the collective variable module

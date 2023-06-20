@@ -23,15 +23,22 @@ c
       implicit none
       real*8 elrc,vlrc
       character*11 mode
+      logical shortrange,longrange,fullrange
 c
 c     evaluate pairwise interactions
 c
       call ehal1c
+c
+c     get the nature of pairwise interactions
+c
+      shortrange = use_vdwshort
+      longrange  = use_vdwlong
+      fullrange  = .not.(shortrange.or.longrange)
 
 c
 c     apply long range van der Waals correction if desired
 c
-      if (use_vcorr) then
+      if ((use_vcorr).and.(fullrange.or.longrange)) then
          mode = 'VDW'
          call evcorr1 (mode,elrc,vlrc)
          ev = ev + elrc

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2018 The VES code team
+   Copyright (c) 2016-2021 The VES code team
    (see the PEOPLE-VES file at the root of this folder for a list of names)
 
    See http://www.ves-code.org for more information.
@@ -34,6 +34,8 @@ namespace ves {
 
 //+PLUMEDOC VES_BIAS VES_DELTA_F
 /*
+Implementation of VES Delta F method
+
 Implementation of VES\f$\Delta F\f$ method \cite Invernizzi2019vesdeltaf (step two only).
 
 \warning
@@ -72,36 +74,44 @@ However, as discussed in Ref. \cite Invernizzi2019vesdeltaf, a better estimate o
 The following performs the optimization of the free energy difference between two metastable basins:
 
 \plumedfile
-VES_DELTA_F ...
-  LABEL=ves
+cv: DISTANCE ATOMS=1,2
+ves: VES_DELTA_F ...
   ARG=cv
   TEMP=300
-  FILE_F0=../fesA.data
-  FILE_F1=../fesB.data
+  FILE_F0=fesA.data
+  FILE_F1=fesB.data
   BIASFACTOR=10.0
   M_STEP=0.1
   AV_STRIDE=500
   PRINT_STRIDE=100
-... VES_DELTA_F
-
+...
 PRINT FMT=%g STRIDE=500 FILE=Colvar.data ARG=cv,ves.bias,ves.rct
 \endplumedfile
 
 The local FES files can be obtained as described in Sec. 4.2 of Ref. \cite Invernizzi2019vesdeltaf, i.e. for example:
 - run 4 independent metad runs, all starting from basin A, and kill them as soon as they make the first transition (see e.g. \ref COMMITTOR)
 - \verbatim cat HILLS* > all_HILLS \endverbatim
-- \verbatim plumed sum_hills --hills all_HILLS --outfile all_fesA.dat --mintozero --min -1 --max 1 --bin 100 \endverbatim
+- \verbatim plumed sum_hills --hills all_HILLS --outfile all_fesA.dat --mintozero --min 0 --max 1 --bin 100 \endverbatim
 - \verbatim awk -v n_rep=4 '{if($1!="#!" && $1!="") {for(i=1+(NF-1)/2; i<=NF; i++) $i/=n_rep;} print $0}' all_fesA.dat > fesA.data \endverbatim
 
-The header of the file should be similar to the following:
+The header of both FES files must be identical, and should be similar to the following:
 
-\verbatim
+\auxfile{fesA.data}
 #! FIELDS cv file.free der_cv
-#! SET min_cv -1
+#! SET min_cv 0
 #! SET max_cv 1
 #! SET nbins_cv  100
 #! SET periodic_cv false
-\endverbatim
+0 0 0
+\endauxfile
+\auxfile{fesB.data}
+#! FIELDS cv file.free der_cv
+#! SET min_cv 0
+#! SET max_cv 1
+#! SET nbins_cv  100
+#! SET periodic_cv false
+0 0 0
+\endauxfile
 
 */
 //+ENDPLUMEDOC
@@ -126,7 +136,7 @@ private:
   std::vector<double> norm_;
 
 //optimizer-related stuff
-  long unsigned mean_counter_;
+  long long unsigned mean_counter_;
   unsigned mean_weight_tau_;
   unsigned alpha_size_;
   unsigned sym_alpha_size_;
@@ -177,15 +187,15 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.add("numbered","FILE_F","names of files containing local free energies and derivatives. "
            "The first one, FILE_F0, is used as reference for all the free energy differences.");
   keys.reset_style("FILE_F","compulsory");
-  keys.addFlag("NORMALIZE",false,"normalize all local free energies so that alpha will be (approx) \\f$\\Delta F\\f$");
+  keys.addFlag("NORMALIZE",false,"normalize all local free energies so that alpha will be (approx) Delta F");
   keys.addFlag("NO_MINTOZERO",false,"leave local free energies as provided, without shifting them to zero min");
 //target distribution
-  keys.add("compulsory","BIASFACTOR","0","the \\f$\\gamma\\f$ bias factor used for well-tempered target \\f$p(\\mathbf{s})\\f$."
+  keys.add("compulsory","BIASFACTOR","0","the gamma bias factor used for well-tempered target p(s)."
            " Set to 0 for non-tempered flat target");
   keys.add("optional","TG_STRIDE","( default=1 ) number of AV_STRIDE between updates"
-           " of target \\f$p(\\mathbf{s})\\f$ and reweighing factor \\f$c(t)\\f$");
+           " of target p(s) and reweighing factor c(t)");
 //optimization
-  keys.add("compulsory","M_STEP","1.0","the \\f$\\mu\\f$ step used for the \\f$\\Omega\\f$ functional minimization");
+  keys.add("compulsory","M_STEP","1.0","the mu step used for the Omega functional minimization");
   keys.add("compulsory","AV_STRIDE","500","number of simulation steps between alpha updates");
   keys.add("optional","TAU_MEAN","exponentially decaying average for alpha (rescaled using AV_STRIDE)."
            " Should be used only in very specific cases");
@@ -202,7 +212,7 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
 
 //output components
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("rct","default","the reweighting factor \\f$c(t)\\f$");
+  keys.addOutputComponent("rct","default","the reweighting factor c(t)");
   keys.addOutputComponent("work","default","the work done by the bias in one AV_STRIDE");
 }
 
@@ -665,7 +675,7 @@ void VesDeltaF::update_alpha()
   }
 //calculate the increment and update alpha
   mean_counter_++;
-  long unsigned mean_weight=mean_counter_;
+  long long unsigned mean_weight=mean_counter_;
   if(mean_weight_tau_>0 && mean_weight_tau_<mean_counter_)
     mean_weight=mean_weight_tau_;
   std::vector<double> damping(alpha_size_);

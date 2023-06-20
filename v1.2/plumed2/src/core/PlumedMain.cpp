@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -40,9 +40,11 @@
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
 #include "DataFetchingObject.h"
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <set>
 #include <unordered_map>
@@ -51,6 +53,8 @@
 #include <ios>
 #include <new>
 #include <typeinfo>
+#include <iostream>
+#include <algorithm>
 #ifdef __PLUMED_LIBCXX11
 #include <system_error>
 #include <future>
@@ -59,12 +63,10 @@
 #endif
 
 
-using namespace std;
-
 namespace PLMD {
 
 /// Small utility just used in this file to throw arbitrary exceptions
-static void testThrow(const char* what) {
+[[noreturn]] static void testThrow(const char* what) {
   auto words=Tools::getWords(what);
   plumed_assert(words.size()>0);
 #define __PLUMED_THROW_NOMSG(type) if(words[0]==#type) throw type()
@@ -118,8 +120,77 @@ static void testThrow(const char* what) {
     throw std::ios_base::failure(what);
   }
 
+  if(words[0]=="int") {
+    int value=0;
+    if(words.size()>1) Tools::convert(words[1],value);
+    throw value;
+  }
+
+  if(words[0]=="test_nested1") {
+    try {
+      throw Exception(std::string("inner ")+what);
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested2") {
+    try {
+      throw std::bad_alloc();
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
+  if(words[0]=="test_nested3") {
+    try {
+      throw "inner";
+    } catch(...) {
+      try {
+        std::throw_with_nested(Exception(std::string("middle ")+what));
+      } catch(...) {
+        std::throw_with_nested(Exception(std::string("outer ")+what));
+      }
+    }
+  }
+
   plumed_error() << "unknown exception " << what;
 }
+
+namespace {
+// This is an internal tool used to count how many PlumedMain objects have been created
+// and if they were correctly destroyed.
+// When using debug options, it leads to a crash
+// Otherwise, it just prints a message
+class CountInstances {
+  std::atomic<int> counter{};
+public:
+  void increase() noexcept {
+    ++counter;
+  }
+  void decrease() noexcept {
+    --counter;
+  }
+  ~CountInstances() {
+    if(counter!=0) {
+      std::cerr<<"WARNING: internal inconsistency in allocated PlumedMain instances (" <<counter<< ")\n";
+#ifndef NDEBUG
+      std::abort();
+#endif
+    }
+  }
+};
+static CountInstances countInstances;
+}
+
 
 PlumedMain::PlumedMain():
   initialized(false),
@@ -136,17 +207,21 @@ PlumedMain::PlumedMain():
   exchangeStep(false),
   restart(false),
   doCheckPoint(false),
-  stopFlag(NULL),
   stopNow(false),
   novirial(false),
-  detailedTimers(false)
+  detailedTimers(false),
+  gpuDeviceId(-1)
 {
+  increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
+  // this is at last so as to avoid inconsistencies if an exception is thrown
+  countInstances.increase(); // noexcept
 }
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
+  countInstances.decrease();
 }
 
 /////////////////////////////////////////////////////////////
@@ -157,7 +232,7 @@ PlumedMain::~PlumedMain() {
 #define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
 
 
-void PlumedMain::cmd(const std::string & word,void*val) {
+void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
 
 // Enumerate all possible commands:
   enum {
@@ -262,6 +337,10 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         CHECK_INIT(initialized,word);
         performCalcNoUpdate();
         break;
+      case cmd_performCalcNoForces:
+        CHECK_INIT(initialized,word);
+        performCalcNoForces();
+        break;
       case cmd_update:
         CHECK_INIT(initialized,word);
         update();
@@ -269,43 +348,49 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setStep:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        step=(*static_cast<int*>(val));
+        step=val.get<int>();
         atoms.startStep();
         break;
       case cmd_setStepLong:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        step=(*static_cast<long int*>(val));
+        step=val.get<long int>();
+        atoms.startStep();
+        break;
+      case cmd_setStepLongLong:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        step=val.get<long long int>();
         atoms.startStep();
         break;
       // words used less frequently:
       case cmd_setAtomsNlocal:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsNlocal(*static_cast<int*>(val));
+        atoms.setAtomsNlocal(val.get<int>());
         break;
       case cmd_setAtomsGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(static_cast<int*>(val),false);
+        atoms.setAtomsGatindex(val,false);
         break;
       case cmd_setAtomsFGatindex:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(static_cast<int*>(val),true);
+        atoms.setAtomsGatindex(val,true);
         break;
       case cmd_setAtomsContiguous:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setAtomsContiguous(*static_cast<int*>(val));
+        atoms.setAtomsContiguous(val.get<int>());
         break;
       case cmd_createFullList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.createFullList(static_cast<int*>(val));
+        atoms.createFullList(val);
         break;
       case cmd_getFullList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.getFullList(static_cast<int**>(val));
+        atoms.getFullList(val);
         break;
       case cmd_clearFullList:
         CHECK_INIT(initialized,word);
@@ -314,14 +399,14 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API==6 */
       case cmd_getDataRank:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", static_cast<long*>(val) );
-        else DataFetchingObject::get_rank( actionSet, words[1], words[2], static_cast<long*>(val) );
+        if( nw==2 ) DataFetchingObject::get_rank( actionSet, words[1], "", val);
+        else DataFetchingObject::get_rank( actionSet, words[1], words[2], val);
         break;
       /* ADDED WITH API==6 */
       case cmd_getDataShape:
         CHECK_INIT(initialized,words[0]); plumed_assert(nw==2 || nw==3);
-        if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", static_cast<long*>(val) );
-        else DataFetchingObject::get_shape( actionSet, words[1], words[2], static_cast<long*>(val) );
+        if( nw==2 ) DataFetchingObject::get_shape( actionSet, words[1], "", val );
+        else DataFetchingObject::get_shape( actionSet, words[1], words[2], val );
         break;
       /* ADDED WITH API==6 */
       case cmd_setMemoryForData:
@@ -332,19 +417,24 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       /* ADDED WITH API==6 */
       case cmd_setErrorHandler:
       {
-        if(val) error_handler=*static_cast<plumed_error_handler*>(val);
+        if(val) error_handler=*static_cast<const plumed_error_handler*>(val.get<const void*>());
         else error_handler.handler=NULL;
       }
       break;
       case cmd_read:
         CHECK_INIT(initialized,word);
-        if(val)readInputFile(static_cast<char*>(val));
+        if(val)readInputFile(val.get<const char*>());
         else   readInputFile("plumed.dat");
         break;
       case cmd_readInputLine:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        readInputLine(static_cast<char*>(val));
+        readInputLine(val.get<const char*>());
+        break;
+      case cmd_readInputLines:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        readInputLines(val.get<const char*>());
         break;
       case cmd_clear:
         CHECK_INIT(initialized,word);
@@ -352,7 +442,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        *(static_cast<int*>(val))=7;
+        val.set(int(10));
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -362,8 +452,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setRealPrecision:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setRealPrecision(*static_cast<int*>(val));
-        mydatafetcher=DataFetchingObject::create(*static_cast<int*>(val),*this);
+        atoms.setRealPrecision(val.get<int>());
+        mydatafetcher=DataFetchingObject::create(val.get<int>(),*this);
         break;
       case cmd_setMDLengthUnits:
         CHECK_NOTINIT(initialized,word);
@@ -409,7 +499,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setPlumedDat:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        plumedDat=static_cast<char*>(val);
+        plumedDat=val.get<const char*>();
         break;
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);
@@ -428,7 +518,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setNatoms:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        atoms.setNatoms(*static_cast<int*>(val));
+        atoms.setNatoms(val.get<int>());
         break;
       case cmd_setTimestep:
         CHECK_NOTINIT(initialized,word);
@@ -445,65 +535,84 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_setRestart:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(*static_cast<int*>(val)!=0) restart=true;
+        if(val.get<int>()!=0) restart=true;
         break;
       /* ADDED WITH API==4 */
       case cmd_doCheckPoint:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         doCheckPoint = false;
-        if(*static_cast<int*>(val)!=0) doCheckPoint = true;
+        if(val.get<int>()!=0) doCheckPoint = true;
         break;
       /* ADDED WITH API==6 */
       case cmd_setNumOMPthreads:
         CHECK_NOTNULL(val,word);
-        OpenMP::setNumThreads(*static_cast<int*>(val)>0?*static_cast<int*>(val):1);
+        {
+          auto nt=val.get<unsigned>();
+          if(nt==0) nt=1;
+          OpenMP::setNumThreads(nt);
+        }
+        break;
+      /* ADDED WITH API==10 */
+      case cmd_setGpuDeviceId:
+        CHECK_NOTNULL(val,word);
+        {
+          auto id=val.get<int>();
+          if(id>=0) gpuDeviceId=id;
+        }
         break;
       /* ADDED WITH API==6 */
       /* only used for testing */
       case cmd_throw:
         CHECK_NOTNULL(val,word);
-        testThrow((const char*) val);
+        testThrow(val.get<const char*>());
+      /* ADDED WITH API==10 */
+      case cmd_setNestedExceptions:
+        CHECK_NOTNULL(val,word);
+        if(val.get<int>()!=0) nestedExceptions=true;
+        else nestedExceptions=false;
+        break;
       /* STOP API */
       case cmd_setMDEngine:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        MDEngine=static_cast<char*>(val);
+        MDEngine=val.get<const char*>();
         break;
       case cmd_setLog:
         CHECK_NOTINIT(initialized,word);
-        log.link(static_cast<FILE*>(val));
+        log.link(val.get<FILE*>());
         break;
       case cmd_setLogFile:
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        log.open(static_cast<char*>(val));
+        log.open(val.get<const char*>());
         break;
       // other commands that should be used after initialization:
       case cmd_setStopFlag:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        stopFlag=static_cast<int*>(val);
+        val.get<int*>(); // just check type and discard pointer
+        stopFlag=val.copy();
         break;
       case cmd_getExchangesFlag:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.getFlag((*static_cast<int*>(val)));
+        exchangePatterns.getFlag(*val.get<int*>()); // note: getFlag changes the value of the reference!
         break;
       case cmd_setExchangesSeed:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.setSeed((*static_cast<int*>(val)));
+        exchangePatterns.setSeed(val.get<int>());
         break;
       case cmd_setNumberOfReplicas:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.setNofR((*static_cast<int*>(val)));
+        exchangePatterns.setNofR(val.get<int>());
         break;
       case cmd_getExchangesList:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        exchangePatterns.getList((static_cast<int*>(val)));
+        exchangePatterns.getList(val.get<int*>());
         break;
       case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
@@ -512,8 +621,8 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_isEnergyNeeded:
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
-        if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
-        else                       *(static_cast<int*>(val))=0;
+        if(atoms.isEnergyNeeded()) val.set(int(1));
+        else                       val.set(int(0));
         break;
       case cmd_getBias:
         CHECK_INIT(initialized,word);
@@ -523,7 +632,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
-        *(static_cast<int*>(val))=(actionRegister().check(words[1]) ? 1:0);
+        val.set(int(actionRegister().check(words[1]) ? 1:0));
         break;
       case cmd_setExtraCV:
         CHECK_NOTNULL(val,word);
@@ -535,8 +644,15 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         plumed_assert(nw==2);
         atoms.setExtraCVForce(words[1],val);
         break;
+      /* ADDED WITH API==10 */
+      case cmd_isExtraCVNeeded:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        if(atoms.isExtraCVNeeded(words[1])) val.set(int(1));
+        else                                val.set(int(0));
+        break;
       case cmd_GREX:
-        if(!grex) grex.reset(new GREX(*this));
+        if(!grex) grex=Tools::make_unique<GREX>(*this);
         plumed_massert(grex,"error allocating grex");
         {
           std::string kk=words[1];
@@ -546,7 +662,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
         break;
       case cmd_CLTool:
         CHECK_NOTINIT(initialized,word);
-        if(!cltool) cltool.reset(new CLToolMain);
+        if(!cltool) cltool=Tools::make_unique<CLToolMain>();
         {
           std::string kk=words[1];
           for(unsigned i=2; i<words.size(); i++) kk+=" "+words[i];
@@ -558,7 +674,7 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       {
         double v;
         plumed_assert(words.size()==2);
-        if(Tools::convert(words[1],v)) atoms.double2MD(v,val);
+        if(Tools::convertNoexcept(words[1],v)) atoms.double2MD(v,val);
       }
       break;
       default:
@@ -567,12 +683,17 @@ void PlumedMain::cmd(const std::string & word,void*val) {
       }
     }
 
-  } catch (std::exception &e) {
+  } catch (...) {
     if(log.isOpen()) {
-      log<<"\n\n################################################################################\n\n";
-      log<<e.what();
-      log<<"\n\n################################################################################\n\n";
-      log.flush();
+      try {
+        log<<"\n################################################################################\n";
+        log<<Tools::concatenateExceptionMessages();
+        log<<"\n################################################################################\n";
+        log.flush();
+      } catch(...) {
+        // ignore errors here.
+        // in any case, we are rethrowing this below
+      }
     }
     throw;
   }
@@ -621,19 +742,23 @@ void PlumedMain::init() {
   log<<"Finished setup\n";
 }
 
-void PlumedMain::readInputFile(std::string str) {
+void PlumedMain::readInputFile(const std::string & str) {
   plumed_assert(initialized);
-  log.printf("FILE: %s\n",str.c_str());
+  log<<"FILE: "<<str<<"\n";
   IFile ifile;
   ifile.link(*this);
   ifile.open(str);
   ifile.allowNoEOL();
+  readInputFile(ifile);
+  log<<"END FILE: "<<str<<"\n";
+  log.flush();
+
+}
+
+void PlumedMain::readInputFile(IFile & ifile) {
   std::vector<std::string> words;
   while(Tools::getParsedLine(ifile,words) && !endPlumed) readInputWords(words);
   endPlumed=false;
-  log.printf("END FILE: %s\n",str.c_str());
-  log.flush();
-
   pilots=actionSet.select<ActionPilot*>();
 }
 
@@ -648,6 +773,34 @@ void PlumedMain::readInputLine(const std::string & str) {
     log<<citations;
     log<<"Please read and cite where appropriate!\n";
   }
+}
+
+void PlumedMain::readInputLines(const std::string & str) {
+  plumed_assert(initialized);
+  if(str.empty()) return;
+
+  log<<"FILE: (temporary)\n";
+
+  // Open a temporary file
+  auto fp=std::tmpfile();
+  plumed_assert(fp);
+
+  // make sure file is closed (and thus deleted) also if an exception occurs
+  auto deleter=[](FILE* fp) { std::fclose(fp); };
+  std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
+
+  auto ret=std::fputs(str.c_str(),fp);
+  plumed_assert(ret!=EOF);
+
+  std::rewind(fp);
+
+  IFile ifile;
+  ifile.link(*this);
+  ifile.link(fp);
+  ifile.allowNoEOL();
+
+  readInputFile(ifile);
+  log<<"END FILE: (temporary)\n";
 }
 
 void PlumedMain::readInputWords(const std::vector<std::string> & words) {
@@ -668,7 +821,7 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words) {
       log << msg;
       log.flush();
       plumed_merror(msg);
-    };
+    }
     action->checkRead();
     actionSet.emplace_back(std::move(action));
   };
@@ -748,6 +901,11 @@ void PlumedMain::performCalcNoUpdate() {
   backwardPropagate();
 }
 
+void PlumedMain::performCalcNoForces() {
+  waitData();
+  justCalculate();
+}
+
 void PlumedMain::performCalc() {
   waitData();
   justCalculate();
@@ -774,37 +932,43 @@ void PlumedMain::justCalculate() {
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
     Action* p(pp.get());
-    if(p->isActive()) {
+    try {
+      if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-      Stopwatch::Handler sw;
-      if(detailedTimers) {
-        std::string actionNumberLabel;
-        Tools::convert(iaction,actionNumberLabel);
-        const unsigned m=actionSet.size();
-        unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
-        const int pad=k-actionNumberLabel.length();
-        for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
-        sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        Stopwatch::Handler sw;
+        if(detailedTimers) {
+          std::string actionNumberLabel;
+          Tools::convert(iaction,actionNumberLabel);
+          const unsigned m=actionSet.size();
+          unsigned k=0; unsigned n=1; while(n<m) { n*=10; k++; }
+          const int pad=k-actionNumberLabel.length();
+          for(int i=0; i<pad; i++) actionNumberLabel=" "+actionNumberLabel;
+          sw=stopwatch.startStop("4A "+actionNumberLabel+" "+p->getLabel());
+        }
+        ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
+        ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
+        {
+          if(av) av->clearInputForces();
+          if(av) av->clearDerivatives();
+        }
+        {
+          if(aa) aa->clearOutputForces();
+          if(aa) if(aa->isActive()) aa->retrieveAtoms();
+        }
+        if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
+        else p->calculate();
+        // This retrieves components called bias
+        if(av) {
+          bias+=av->getOutputQuantity("bias");
+          work+=av->getOutputQuantity("work");
+          av->setGradientsIfNeeded();
+        }
+        ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
+        if(avv)avv->setGradientsIfNeeded();
       }
-      ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
-      ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
-      {
-        if(av) av->clearInputForces();
-        if(av) av->clearDerivatives();
-      }
-      {
-        if(aa) aa->clearOutputForces();
-        if(aa) if(aa->isActive()) aa->retrieveAtoms();
-      }
-      if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
-      else p->calculate();
-      // This retrieves components called bias
-      if(av) bias+=av->getOutputQuantity("bias");
-      if(av) work+=av->getOutputQuantity("work");
-      if(av)av->setGradientsIfNeeded();
-      ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
-      if(avv)avv->setGradientsIfNeeded();
+    } catch(...) {
+      plumed_error_nested() << "An error happened while calculating " << p->getLabel();
     }
     iaction++;
   }
@@ -871,7 +1035,7 @@ void PlumedMain::update() {
   if(!updateFlags.empty()) plumed_merror("non matching changes in the update flags");
 // Check that no action has told the calculation to stop
   if(stopNow) {
-    if(stopFlag) (*stopFlag)=1;
+    if(stopFlag) stopFlag.set(int(1));
     else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }
 
@@ -902,7 +1066,7 @@ void PlumedMain::load(const std::string& ss) {
       if(comm.Get_size()>0) log<<" (only on master node)";
       log<<"\n";
       if(comm.Get_rank()==0) {
-        int ret=system(cmd.c_str());
+        int ret=std::system(cmd.c_str());
         if(ret!=0) plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
@@ -968,6 +1132,18 @@ void PlumedMain::runJobsAtEndOfCalculation() {
   for(const auto & p : actionSet) {
     p->runFinalJobs();
   }
+}
+
+unsigned PlumedMain::increaseReferenceCounter() noexcept {
+  return ++referenceCounter;
+}
+
+unsigned PlumedMain::decreaseReferenceCounter() noexcept {
+  return --referenceCounter;
+}
+
+unsigned PlumedMain::useCountReferenceCounter() const noexcept {
+  return referenceCounter;
 }
 
 #ifdef __PLUMED_HAS_PYTHON

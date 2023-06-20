@@ -88,7 +88,7 @@ c
             end if
    10       continue
          end do
-         seed = rank+seed
+         seed = ranktot+seed
 c
 c     print the value used for the random number seed
 c

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "tools/Vector.h"
 #include "tools/Exception.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace vatom {
 
@@ -42,7 +40,7 @@ It is also possible to assign a predefined charge or mass to the atom.
 Similar to \ref POSITION this variable is not invariant for translation
 of the system. Adding a force on it can create serious troubles.
 
-Notice that the distance between to atoms created
+Notice that the distance between two atoms created
 using FIXEDATOM is invariant for translation.
 Additionally, if one first align atoms to a reference using \ref FIT_TO_TEMPLATE,
 then it is safe to add further fixed atoms without breaking translational invariance.
@@ -110,13 +108,13 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()!=0) error("ATOMS should be empty");
 
   parseFlag("SCALED_COMPONENTS",scaled_components);
 
-  vector<double> at;
+  std::vector<double> at;
   parseVector("AT",at);
   if(at.size()!=3) error("AT should be a list of three real numbers");
 
@@ -133,7 +131,7 @@ FixedAtom::FixedAtom(const ActionOptions&ao):
 }
 
 void FixedAtom::calculate() {
-  vector<Tensor> deriv(getNumberOfAtoms());
+  std::vector<Tensor> deriv(getNumberOfAtoms());
   if(scaled_components) {
     setPosition(getPbc().scaledToReal(coord));
   } else {

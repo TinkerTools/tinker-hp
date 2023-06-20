@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,12 +24,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-
-#include <iostream>
-
-#include <string>
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -123,7 +117,7 @@ DHEnergy::DHEnergy(const ActionOptions&ao):
   checkRead();
   if( plumed.getAtoms().usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
   constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength()*atoms.getUnits().getCharge()*atoms.getUnits().getCharge();
-  k=sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
+  k=std::sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
   checkRead();
   log<<"  with solvent dielectric constant "<<epsilon<<"\n";
   log<<"  at temperature "<<T<<" K\n";
@@ -139,7 +133,7 @@ double DHEnergy::pairing(double distance2,double&dfunc,unsigned i,unsigned j)con
     return 0.0;
   }
   double invdistance=1.0/distance;
-  double tmp=exp(-k*distance)*invdistance*constant*getCharge(i)*getCharge(j)/epsilon;
+  double tmp=std::exp(-k*distance)*invdistance*constant*getCharge(i)*getCharge(j)/epsilon;
   double dtmp=-(k+invdistance)*tmp;
   dfunc=dtmp*invdistance;
   return tmp;

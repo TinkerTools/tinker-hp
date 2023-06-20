@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,12 +24,6 @@
 #include "tools/Random.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-
-#include <iostream>
-
-
-using namespace std;
-
 
 namespace PLMD {
 namespace bias {
@@ -247,8 +241,8 @@ void ExtendedLagrangian::update() {
   double dt=getTimeStep()*getStride();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     double mass=kappa[i]*tau[i]*tau[i]/(4*pi*pi); // should be k/omega**2
-    double c1=exp(-0.5*friction[i]*dt);
-    double c2=sqrt(kbt*(1.0-c1*c1)/mass);
+    double c1=std::exp(-0.5*friction[i]*dt);
+    double c2=std::sqrt(kbt*(1.0-c1*c1)/mass);
 // consider additional forces on the fictitious particle
 // (e.g. MetaD stuff)
     ffict[i]+=fictValue[i]->getForce();

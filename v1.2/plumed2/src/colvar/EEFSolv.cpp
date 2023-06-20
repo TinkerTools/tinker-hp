@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2020 The plumed team
+   Copyright (c) 2016-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -26,7 +26,7 @@
 #include "ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/SetupMolInfo.h"
+#include "core/GenericMolInfo.h"
 #include "tools/OpenMP.h"
 #include <initializer_list>
 
@@ -34,8 +34,6 @@
 #define KCAL_TO_KJ 4.184
 #define ANG_TO_NM 0.1
 #define ANG3_TO_NM3 0.001
-
-using namespace std;
 
 namespace PLMD {
 namespace colvar {
@@ -59,15 +57,16 @@ The output from this collective variable, the free energy of solvation, can be u
 \par Examples
 
 \plumedfile
-#SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
+#SETTINGS MOLFILE=regtest/basic/rt77/peptide.pdb
 MOLINFO MOLTYPE=protein STRUCTURE=peptide.pdb
 WHOLEMOLECULES ENTITY0=1-111
 
 # This allows us to select only non-hydrogen atoms
+#SETTINGS AUXFILE=regtest/basic/rt77/index.ndx
 protein-h: GROUP NDX_FILE=index.ndx NDX_GROUP=Protein-H
 
 # We extend the cutoff by 0.1 nm and update the neighbor list every 40 steps
-solv: EEFSOLV ATOMS=protein-h NL_STRIDE=40 NL_BUFFER=0.1
+solv: EEFSOLV ATOMS=protein-h
 
 # Here we actually add our calculated energy back to the potential
 bias: BIASVALUE ARG=solv
@@ -86,12 +85,12 @@ private:
   double nl_buffer;
   unsigned nl_stride;
   unsigned nl_update;
-  vector<vector<unsigned> > nl;
-  vector<vector<bool> > nlexpo;
-  vector<vector<double> > parameter;
-  void setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr);
-  map<string, map<string, string> > setupTypeMap();
-  map<string, vector<double> > setupValueMap();
+  std::vector<std::vector<unsigned> > nl;
+  std::vector<std::vector<bool> > nlexpo;
+  std::vector<std::vector<double> > parameter;
+  void setupConstants(const std::vector<AtomNumber> &atoms, std::vector<std::vector<double> > &parameter, bool tcorr);
+  std::map<std::string, std::map<std::string, std::string> > setupTypeMap();
+  std::map<std::string, std::vector<double> > setupValueMap();
   void update_neighb();
 
 public:
@@ -120,7 +119,7 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
   nl_stride(40),
   nl_update(0)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS", atoms);
   const unsigned size = atoms.size();
   bool tcorr = false;
@@ -140,7 +139,7 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
 
   nl.resize(size);
   nlexpo.resize(size);
-  parameter.resize(size, vector<double>(4, 0));
+  parameter.resize(size, std::vector<double>(4, 0));
   setupConstants(atoms, parameter, tcorr);
 
   addValueWithDerivatives();
@@ -186,7 +185,7 @@ void EEFSolv::calculate() {
 
   const unsigned size=getNumberOfAtoms();
   double bias = 0.0;
-  vector<Vector> deriv(size, Vector(0,0,0));
+  std::vector<Vector> deriv(size, Vector(0,0,0));
 
   unsigned stride;
   unsigned rank;
@@ -203,7 +202,7 @@ void EEFSolv::calculate() {
 
   #pragma omp parallel num_threads(nt)
   {
-    vector<Vector> deriv_omp(size, Vector(0,0,0));
+    std::vector<Vector> deriv_omp(size, Vector(0,0,0));
     #pragma omp for reduction(+:bias) nowait
     for (unsigned i=rank; i<size; i+=stride) {
       const Vector posi = getPosition(i);
@@ -235,7 +234,7 @@ void EEFSolv::calculate() {
           if(inv_rij > 0.5*inv_lambda_i && delta_g_free_i!=0.)
           {
             const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
-            const double expo  = exp(-e_arg*e_arg);
+            const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*fact_ij;
             const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_i);
             const Vector dd    = e_deriv*dist;
@@ -249,7 +248,7 @@ void EEFSolv::calculate() {
           if(inv_rij > 0.5*inv_lambda_j && delta_g_free_j!=0.)
           {
             const double e_arg = (rij - vdw_radius_j)*inv_lambda_j;
-            const double expo  = exp(-e_arg*e_arg);
+            const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*fact_ji;
             const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_j);
             const Vector dd    = e_deriv*dist;
@@ -263,7 +262,7 @@ void EEFSolv::calculate() {
           if(inv_rij > 0.5*inv_lambda_i)
           {
             const double e_arg = (rij - vdw_radius_i)*inv_lambda_i;
-            const double expo  = exp(-e_arg*e_arg);
+            const double expo  = std::exp(-e_arg*e_arg);
             const double fact  = expo*(fact_ij + fact_ji);
             const double e_deriv = inv_rij*fact*(inv_rij + e_arg*inv_lambda_i);
             const Vector dd    = e_deriv*dist;
@@ -303,31 +302,31 @@ void EEFSolv::calculate() {
   }
 }
 
-void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<double> > &parameter, bool tcorr) {
-  vector<vector<double> > parameter_temp;
-  parameter_temp.resize(atoms.size(), vector<double>(7,0));
-  map<string, vector<double> > valuemap;
-  map<string, map<string, string> > typemap;
+void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<std::vector<double> > &parameter, bool tcorr) {
+  std::vector<std::vector<double> > parameter_temp;
+  parameter_temp.resize(atoms.size(), std::vector<double>(7,0));
+  std::map<std::string, std::vector<double> > valuemap;
+  std::map<std::string, std::map<std::string, std::string> > typemap;
   valuemap = setupValueMap();
   typemap  = setupTypeMap();
-  vector<SetupMolInfo*> moldat = plumed.getActionSet().select<SetupMolInfo*>();
+  auto * moldat = plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
   bool cter=false;
-  if (moldat.size() == 1) {
-    log << "  MOLINFO DATA found, using proper atom names\n";
+  if (moldat) {
+    log<<"  MOLINFO DATA found with label " <<moldat->getLabel()<<", using proper atom names\n";
     for(unsigned i=0; i<atoms.size(); ++i) {
 
       // Get atom and residue names
-      string Aname = moldat[0]->getAtomName(atoms[i]);
-      string Rname = moldat[0]->getResidueName(atoms[i]);
-      string Atype = typemap[Rname][Aname];
+      std::string Aname = moldat->getAtomName(atoms[i]);
+      std::string Rname = moldat->getResidueName(atoms[i]);
+      std::string Atype = typemap[Rname][Aname];
 
       // Check for terminal COOH or COO- (different atomtypes & parameters!)
-      if (moldat[0]->getAtomName(atoms[i]) == "OT1" || moldat[0]->getAtomName(atoms[i]) == "OXT") {
+      if (Aname == "OT1" || Aname == "OXT") {
         // We create a temporary AtomNumber object to access future atoms
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 2);
-        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+        if (moldat->checkForAtom(tmp_an) && moldat->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OB";
         } else {
@@ -336,11 +335,11 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
         }
         cter = true;
       }
-      if (moldat[0]->getAtomName(atoms[i]) == "OT2" || (cter == true && moldat[0]->getAtomName(atoms[i]) == "O")) {
+      if (Aname == "OT2" || (cter == true && Aname == "O")) {
         unsigned ai = atoms[i].index();
         AtomNumber tmp_an;
         tmp_an.setIndex(ai + 1);
-        if (moldat[0]->getAtomName(tmp_an) == "HT2") {
+        if (moldat->checkForAtom(tmp_an) && moldat->getAtomName(tmp_an) == "HT2") {
           // COOH
           Atype = "OH1";
         } else {
@@ -368,7 +367,7 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
       // Lookup atomtype in table or throw exception if its not there
       try {
         parameter_temp[i] = valuemap.at(Atype);
-      } catch (exception &e) {
+      } catch (const std::exception &e) {
         log << "Type: " << Atype << "  Name: " << Aname << "  Residue: " << Rname << "\n";
         error("Invalid atom type!\n");
       }
@@ -395,845 +394,781 @@ void EEFSolv::setupConstants(const vector<AtomNumber> &atoms, vector<vector<doub
   for(unsigned i=0; i<atoms.size(); ++i) delta_g_ref += parameter_temp[i][1];
 }
 
-map<string, map<string, string> > EEFSolv::setupTypeMap()  {
-  map<string, map<string, string> > typemap;
-  typemap = {
-    { "ACE", {
-        {"CH3", "CT3"},
-        {"HH31","HA3"},
-        {"HH32","HA3"},
-        {"HH33","HA3"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "ALA", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT3"},
-        {"HB1", "HA3"},
-        {"HB2", "HA3"},
-        {"HB3", "HA3"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "ARG", {
-        {"N",    "NH1"},
-        {"HN",   "H"  },
-        {"CA",   "CT1"},
-        {"HA",   "HB1"},
-        {"CB",   "CT2"},
-        {"HB1",  "HA2"},
-        {"HB2",  "HA2"},
-        {"CG",   "CT2"},
-        {"HG1",  "HA2"},
-        {"HG2",  "HA2"},
-        {"CD",   "CT2"},
-        {"HD1",  "HA2"},
-        {"HD2",  "HA2"},
-        {"NE",   "NC2"},
-        {"HE",   "HC" },
-        {"CZ",   "C"  },
-        {"NH1",  "NC2"},
-        {"HH11", "HC" },
-        {"HH12", "HC" },
-        {"NH2",  "NC2"},
-        {"HH21", "HC" },
-        {"HH22", "HC" },
-        {"C",    "C"  },
-        {"O",    "O"  }
-      }
-    },
-    { "ASN", {
-        {"N",    "NH1"},
-        {"HN",   "H"  },
-        {"CA",   "CT1"},
-        {"HA",   "HB1"},
-        {"CB",   "CT2"},
-        {"HB1",  "HA2"},
-        {"HB2",  "HA2"},
-        {"CG",   "CC" },
-        {"OD1",  "O"  },
-        {"ND2",  "NH2"},
-        {"HD21", "H"  },
-        {"HD22", "H"  },
-        {"C",    "C"  },
-        {"O",    "O"  }
-      }
-    },
-    { "ASPP", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CD" },
-        {"OD1", "OB" },
-        {"OD2", "OH1"},
-        {"HD2", "H"  },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "ASP", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CC" },
-        {"OD1", "OC" },
-        {"OD2", "OC" },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "CYS", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"SG",  "S"  },
-        {"HG1", "HS" },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "GLN", {
-        {"N",    "NH1" },
-        {"HN",   "H"   },
-        {"CA",   "CT1" },
-        {"HA",   "HB1" },
-        {"CB",   "CT2" },
-        {"HB1",  "HA2" },
-        {"HB2",  "HA2" },
-        {"CG",   "CT2" },
-        {"HG1",  "HA2" },
-        {"HG2",  "HA2" },
-        {"CD",   "CC"  },
-        {"OE1",  "O"   },
-        {"NE2",  "NH2" },
-        {"HE21", "H"   },
-        {"HE22", "H"   },
-        {"C",    "C"   },
-        {"O",    "O"   }
-      }
-    },
-    { "GLUP", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CT2"},
-        {"HG1", "HA2"},
-        {"HG2", "HA2"},
-        {"CD",  "CD" },
-        {"OE1", "OB" },
-        {"OE2", "OH1"},
-        {"HE2", "H"  },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "GLU", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CT2"},
-        {"HG1", "HA2"},
-        {"HG2", "HA2"},
-        {"CD",  "CC" },
-        {"OE1", "OC" },
-        {"OE2", "OC" },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "GLY", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT2"},
-        {"HA1", "HB2"},
-        {"HA2", "HB2"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "HSD", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"ND1", "NR1"},
-        {"HD1", "H"  },
-        {"CG",  "CPH1"},
-        {"CE1", "CPH2"},
-        {"HE1", "HR1"},
-        {"NE2", "NR2"},
-        {"CD2", "CPH1"},
-        {"HD2", "HR3"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "HIS", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"ND1", "NR2"},
-        {"CG",  "CPH1"},
-        {"CE1", "CPH2"},
-        {"HE1", "HR1"},
-        {"NE2", "NR1"},
-        {"HE2", "H"  },
-        {"CD2", "CPH1"},
-        {"HD2", "HR3"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "HSE", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"ND1", "NR2"},
-        {"CG",  "CPH1"},
-        {"CE1", "CPH2"},
-        {"HE1", "HR1"},
-        {"NE2", "NR1"},
-        {"HE2", "H"  },
-        {"CD2", "CPH1"},
-        {"HD2", "HR3"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "HSP", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CD2", "CPH1"},
-        {"HD2", "HR1"},
-        {"CG",  "CPH1"},
-        {"NE2", "NR3"},
-        {"HE2", "H"  },
-        {"ND1", "NR3"},
-        {"HD1", "H"  },
-        {"CE1", "CPH2"},
-        {"HE1", "HR2"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "ILE", {
-        {"N",    "NH1"},
-        {"HN",   "H"  },
-        {"CA",   "CT1"},
-        {"HA",   "HB1"},
-        {"CB",   "CT1"},
-        {"HB",   "HA1"},
-        {"CG2",  "CT3"},
-        {"HG21", "HA3"},
-        {"HG22", "HA3"},
-        {"HG23", "HA3"},
-        {"CG1",  "CT2"},
-        {"HG11", "HA2"},
-        {"HG12", "HA2"},
-        {"CD",   "CT3"},
-        {"HD1",  "HA3"},
-        {"HD2",  "HA3"},
-        {"HD3",  "HA3"},
-        {"C",    "C"  },
-        {"O",    "O"  }
-      }
-    },
-    { "LEU", {
-        {"N",    "NH1"},
-        {"HN",   "H"  },
-        {"CA",   "CT1"},
-        {"HA",   "HB1"},
-        {"CB",   "CT2"},
-        {"HB1",  "HA2"},
-        {"HB2",  "HA2"},
-        {"CG",   "CT1"},
-        {"HG",   "HA1"},
-        {"CD1",  "CT3"},
-        {"HD11", "HA3"},
-        {"HD12", "HA3"},
-        {"HD13", "HA3"},
-        {"CD2",  "CT3"},
-        {"HD21", "HA3"},
-        {"HD22", "HA3"},
-        {"HD23", "HA3"},
-        {"C",    "C"  },
-        {"O",    "O"  }
-      }
-    },
-    { "LYS", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CT2"},
-        {"HG1", "HA2"},
-        {"HG2", "HA2"},
-        {"CD",  "CT2"},
-        {"HD1", "HA2"},
-        {"HD2", "HA2"},
-        {"CE",  "CT2"},
-        {"HE1", "HA2"},
-        {"HE2", "HA2"},
-        {"NZ",  "NH3"},
-        {"HZ1", "HC" },
-        {"HZ2", "HC" },
-        {"HZ3", "HC" },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "MET", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CT2"},
-        {"HG1", "HA2"},
-        {"HG2", "HA2"},
-        {"SD",  "S"  },
-        {"CE",  "CT3"},
-        {"HE1", "HA3"},
-        {"HE2", "HA3"},
-        {"HE3", "HA3"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "NMA", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CH3", "CT3"},
-        {"HH31","HA3"},
-        {"HH32","HA3"},
-        {"HH33","HA3"},
-      }
-    },
-    { "PHE", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CA" },
-        {"CD1", "CA" },
-        {"HD1", "HP" },
-        {"CE1", "CA" },
-        {"HE1", "HP" },
-        {"CZ",  "CA" },
-        {"HZ",  "HP" },
-        {"CD2", "CA" },
-        {"HD2", "HP" },
-        {"CE2", "CA" },
-        {"HE2", "HP" },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "PRO", {
-        {"N",   "N"  },
-        {"CD",  "CP3"},
-        {"HD1", "HA2"},
-        {"HD2", "HA2"},
-        {"CA",  "CP1"},
-        {"HA",  "HB1"},
-        {"CB",  "CP2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CP2"},
-        {"HG1", "HA2"},
-        {"HG2", "HA2"},
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "SER", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"OG",  "OH1"},
-        {"HG1", "H"  },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "THR", {
-        {"N",    "NH1"},
-        {"HN",   "H"  },
-        {"CA",   "CT1"},
-        {"HA",   "HB1"},
-        {"CB",   "CT1"},
-        {"HB",   "HA1"},
-        {"OG1",  "OH1"},
-        {"HG1",  "H"  },
-        {"CG2",  "CT3"},
-        {"HG21", "HA3"},
-        {"HG22", "HA3"},
-        {"HG23", "HA3"},
-        {"C",    "C"  },
-        {"O",    "O"  }
-      }
-    },
-    { "TRP", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CY" },
-        {"CD1", "CA" },
-        {"HD1", "HP" },
-        {"NE1", "NY" },
-        {"HE1", "H"  },
-        {"CE2", "CPT"},
-        {"CD2", "CPT"},
-        {"CE3", "CAI"},
-        {"HE3", "HP" },
-        {"CZ3", "CA" },
-        {"HZ3", "HP" },
-        {"CZ2", "CAI"},
-        {"HZ2", "HP" },
-        {"CH2", "CA" },
-        {"HH2", "HP" },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "TYR", {
-        {"N",   "NH1"},
-        {"HN",  "H"  },
-        {"CA",  "CT1"},
-        {"HA",  "HB1"},
-        {"CB",  "CT2"},
-        {"HB1", "HA2"},
-        {"HB2", "HA2"},
-        {"CG",  "CA" },
-        {"CD1", "CA" },
-        {"HD1", "HP" },
-        {"CE1", "CA" },
-        {"HE1", "HP" },
-        {"CZ",  "CA" },
-        {"OH",  "OH1"},
-        {"HH",  "H"  },
-        {"CD2", "CA" },
-        {"HD2", "HP" },
-        {"CE2", "CA" },
-        {"HE2", "HP" },
-        {"C",   "C"  },
-        {"O",   "O"  }
-      }
-    },
-    { "VAL", {
-        {"N",    "NH1"},
-        {"HN",   "H"  },
-        {"CA",   "CT1"},
-        {"HA",   "HB1"},
-        {"CB",   "CT1"},
-        {"HB",   "HA1"},
-        {"CG1",  "CT3"},
-        {"HG11", "HA3"},
-        {"HG12", "HA3"},
-        {"HG13", "HA3"},
-        {"CG2",  "CT3"},
-        {"HG21", "HA3"},
-        {"HG22", "HA3"},
-        {"HG23", "HA3"},
-        {"C",    "C"  },
-        {"O",    "O"  }
-      }
-    }
+std::map<std::string, std::map<std::string, std::string> > EEFSolv::setupTypeMap()  {
+  std::map<std::string, std::map<std::string, std::string> > typemap;
+  typemap["ACE"] = {
+    {"CH3", "CT3"},
+    {"HH31","HA3"},
+    {"HH32","HA3"},
+    {"HH33","HA3"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["ALA"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT3"},
+    {"HB1", "HA3"},
+    {"HB2", "HA3"},
+    {"HB3", "HA3"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["ARG"] = {
+    {"N",    "NH1"},
+    {"HN",   "H"  },
+    {"CA",   "CT1"},
+    {"HA",   "HB1"},
+    {"CB",   "CT2"},
+    {"HB1",  "HA2"},
+    {"HB2",  "HA2"},
+    {"CG",   "CT2"},
+    {"HG1",  "HA2"},
+    {"HG2",  "HA2"},
+    {"CD",   "CT2"},
+    {"HD1",  "HA2"},
+    {"HD2",  "HA2"},
+    {"NE",   "NC2"},
+    {"HE",   "HC" },
+    {"CZ",   "C"  },
+    {"NH1",  "NC2"},
+    {"HH11", "HC" },
+    {"HH12", "HC" },
+    {"NH2",  "NC2"},
+    {"HH21", "HC" },
+    {"HH22", "HC" },
+    {"C",    "C"  },
+    {"O",    "O"  }
+  };
+  typemap["ASN"] = {
+    {"N",    "NH1"},
+    {"HN",   "H"  },
+    {"CA",   "CT1"},
+    {"HA",   "HB1"},
+    {"CB",   "CT2"},
+    {"HB1",  "HA2"},
+    {"HB2",  "HA2"},
+    {"CG",   "CC" },
+    {"OD1",  "O"  },
+    {"ND2",  "NH2"},
+    {"HD21", "H"  },
+    {"HD22", "H"  },
+    {"C",    "C"  },
+    {"O",    "O"  }
+  };
+  typemap["ASPP"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CD" },
+    {"OD1", "OB" },
+    {"OD2", "OH1"},
+    {"HD2", "H"  },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["ASP"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CC" },
+    {"OD1", "OC" },
+    {"OD2", "OC" },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["CYS"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"SG",  "S"  },
+    {"HG1", "HS" },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["GLN"] = {
+    {"N",    "NH1" },
+    {"HN",   "H"   },
+    {"CA",   "CT1" },
+    {"HA",   "HB1" },
+    {"CB",   "CT2" },
+    {"HB1",  "HA2" },
+    {"HB2",  "HA2" },
+    {"CG",   "CT2" },
+    {"HG1",  "HA2" },
+    {"HG2",  "HA2" },
+    {"CD",   "CC"  },
+    {"OE1",  "O"   },
+    {"NE2",  "NH2" },
+    {"HE21", "H"   },
+    {"HE22", "H"   },
+    {"C",    "C"   },
+    {"O",    "O"   }
+  };
+  typemap["GLUP"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CT2"},
+    {"HG1", "HA2"},
+    {"HG2", "HA2"},
+    {"CD",  "CD" },
+    {"OE1", "OB" },
+    {"OE2", "OH1"},
+    {"HE2", "H"  },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["GLU"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CT2"},
+    {"HG1", "HA2"},
+    {"HG2", "HA2"},
+    {"CD",  "CC" },
+    {"OE1", "OC" },
+    {"OE2", "OC" },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["GLY"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT2"},
+    {"HA1", "HB2"},
+    {"HA2", "HB2"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["HSD"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"ND1", "NR1"},
+    {"HD1", "H"  },
+    {"CG",  "CPH1"},
+    {"CE1", "CPH2"},
+    {"HE1", "HR1"},
+    {"NE2", "NR2"},
+    {"CD2", "CPH1"},
+    {"HD2", "HR3"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["HIS"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"ND1", "NR2"},
+    {"CG",  "CPH1"},
+    {"CE1", "CPH2"},
+    {"HE1", "HR1"},
+    {"NE2", "NR1"},
+    {"HE2", "H"  },
+    {"CD2", "CPH1"},
+    {"HD2", "HR3"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["HSE"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"ND1", "NR2"},
+    {"CG",  "CPH1"},
+    {"CE1", "CPH2"},
+    {"HE1", "HR1"},
+    {"NE2", "NR1"},
+    {"HE2", "H"  },
+    {"CD2", "CPH1"},
+    {"HD2", "HR3"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["HSP"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CD2", "CPH1"},
+    {"HD2", "HR1"},
+    {"CG",  "CPH1"},
+    {"NE2", "NR3"},
+    {"HE2", "H"  },
+    {"ND1", "NR3"},
+    {"HD1", "H"  },
+    {"CE1", "CPH2"},
+    {"HE1", "HR2"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["ILE"] = {
+    {"N",    "NH1"},
+    {"HN",   "H"  },
+    {"CA",   "CT1"},
+    {"HA",   "HB1"},
+    {"CB",   "CT1"},
+    {"HB",   "HA1"},
+    {"CG2",  "CT3"},
+    {"HG21", "HA3"},
+    {"HG22", "HA3"},
+    {"HG23", "HA3"},
+    {"CG1",  "CT2"},
+    {"HG11", "HA2"},
+    {"HG12", "HA2"},
+    {"CD",   "CT3"},
+    {"HD1",  "HA3"},
+    {"HD2",  "HA3"},
+    {"HD3",  "HA3"},
+    {"C",    "C"  },
+    {"O",    "O"  }
+  };
+  typemap["LEU"] = {
+    {"N",    "NH1"},
+    {"HN",   "H"  },
+    {"CA",   "CT1"},
+    {"HA",   "HB1"},
+    {"CB",   "CT2"},
+    {"HB1",  "HA2"},
+    {"HB2",  "HA2"},
+    {"CG",   "CT1"},
+    {"HG",   "HA1"},
+    {"CD1",  "CT3"},
+    {"HD11", "HA3"},
+    {"HD12", "HA3"},
+    {"HD13", "HA3"},
+    {"CD2",  "CT3"},
+    {"HD21", "HA3"},
+    {"HD22", "HA3"},
+    {"HD23", "HA3"},
+    {"C",    "C"  },
+    {"O",    "O"  }
+  };
+  typemap["LYS"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CT2"},
+    {"HG1", "HA2"},
+    {"HG2", "HA2"},
+    {"CD",  "CT2"},
+    {"HD1", "HA2"},
+    {"HD2", "HA2"},
+    {"CE",  "CT2"},
+    {"HE1", "HA2"},
+    {"HE2", "HA2"},
+    {"NZ",  "NH3"},
+    {"HZ1", "HC" },
+    {"HZ2", "HC" },
+    {"HZ3", "HC" },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["MET"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CT2"},
+    {"HG1", "HA2"},
+    {"HG2", "HA2"},
+    {"SD",  "S"  },
+    {"CE",  "CT3"},
+    {"HE1", "HA3"},
+    {"HE2", "HA3"},
+    {"HE3", "HA3"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["NMA"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CH3", "CT3"},
+    {"HH31","HA3"},
+    {"HH32","HA3"},
+    {"HH33","HA3"},
+  };
+  typemap["PHE"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CA" },
+    {"CD1", "CA" },
+    {"HD1", "HP" },
+    {"CE1", "CA" },
+    {"HE1", "HP" },
+    {"CZ",  "CA" },
+    {"HZ",  "HP" },
+    {"CD2", "CA" },
+    {"HD2", "HP" },
+    {"CE2", "CA" },
+    {"HE2", "HP" },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["PRO"] = {
+    {"N",   "N"  },
+    {"CD",  "CP3"},
+    {"HD1", "HA2"},
+    {"HD2", "HA2"},
+    {"CA",  "CP1"},
+    {"HA",  "HB1"},
+    {"CB",  "CP2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CP2"},
+    {"HG1", "HA2"},
+    {"HG2", "HA2"},
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["SER"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"OG",  "OH1"},
+    {"HG1", "H"  },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["THR"] = {
+    {"N",    "NH1"},
+    {"HN",   "H"  },
+    {"CA",   "CT1"},
+    {"HA",   "HB1"},
+    {"CB",   "CT1"},
+    {"HB",   "HA1"},
+    {"OG1",  "OH1"},
+    {"HG1",  "H"  },
+    {"CG2",  "CT3"},
+    {"HG21", "HA3"},
+    {"HG22", "HA3"},
+    {"HG23", "HA3"},
+    {"C",    "C"  },
+    {"O",    "O"  }
+  };
+  typemap["TRP"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CY" },
+    {"CD1", "CA" },
+    {"HD1", "HP" },
+    {"NE1", "NY" },
+    {"HE1", "H"  },
+    {"CE2", "CPT"},
+    {"CD2", "CPT"},
+    {"CE3", "CAI"},
+    {"HE3", "HP" },
+    {"CZ3", "CA" },
+    {"HZ3", "HP" },
+    {"CZ2", "CAI"},
+    {"HZ2", "HP" },
+    {"CH2", "CA" },
+    {"HH2", "HP" },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["TYR"] = {
+    {"N",   "NH1"},
+    {"HN",  "H"  },
+    {"CA",  "CT1"},
+    {"HA",  "HB1"},
+    {"CB",  "CT2"},
+    {"HB1", "HA2"},
+    {"HB2", "HA2"},
+    {"CG",  "CA" },
+    {"CD1", "CA" },
+    {"HD1", "HP" },
+    {"CE1", "CA" },
+    {"HE1", "HP" },
+    {"CZ",  "CA" },
+    {"OH",  "OH1"},
+    {"HH",  "H"  },
+    {"CD2", "CA" },
+    {"HD2", "HP" },
+    {"CE2", "CA" },
+    {"HE2", "HP" },
+    {"C",   "C"  },
+    {"O",   "O"  }
+  };
+  typemap["VAL"] = {
+    {"N",    "NH1"},
+    {"HN",   "H"  },
+    {"CA",   "CT1"},
+    {"HA",   "HB1"},
+    {"CB",   "CT1"},
+    {"HB",   "HA1"},
+    {"CG1",  "CT3"},
+    {"HG11", "HA3"},
+    {"HG12", "HA3"},
+    {"HG13", "HA3"},
+    {"CG2",  "CT3"},
+    {"HG21", "HA3"},
+    {"HG22", "HA3"},
+    {"HG23", "HA3"},
+    {"C",    "C"  },
+    {"O",    "O"  }
   };
   return typemap;
 }
 
-map<string, vector<double> > EEFSolv::setupValueMap() {
+std::map<std::string, std::vector<double> > EEFSolv::setupValueMap() {
   // Volume ∆Gref ∆Gfree ∆H ∆Cp λ vdw_radius
-  map<string, vector<double> > valuemap;
-  valuemap = {
-    { "C", {
-        ANG3_TO_NM3 * 14.720,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.0,
-        1. / (ANG_TO_NM * 3.5),
-        0.20,
-      }
-    },
-    { "CD", {
-        ANG3_TO_NM3 * 14.720,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.0,
-        1. / (ANG_TO_NM * 3.5),
-        0.20,
-      }
-    },
-    { "CT1", {
-        ANG3_TO_NM3 * 11.507,
-        KCAL_TO_KJ * -0.187,
-        KCAL_TO_KJ * -0.187,
-        KCAL_TO_KJ * 0.876,
-        KCAL_TO_KJ * 0.0,
-        1. / (ANG_TO_NM * 3.5),
-        0.20,
-      }
-    },
-    { "CT2", {
-        ANG3_TO_NM3 * 18.850,
-        KCAL_TO_KJ * 0.372,
-        KCAL_TO_KJ * 0.372,
-        KCAL_TO_KJ * -0.610,
-        KCAL_TO_KJ * 18.6,
-        1. / (ANG_TO_NM * 3.5),
-        0.20,
-      }
-    },
-    { "CT2A", {
-        ANG3_TO_NM3 * 18.666,
-        KCAL_TO_KJ * 0.372,
-        KCAL_TO_KJ * 0.372,
-        KCAL_TO_KJ * -0.610,
-        KCAL_TO_KJ * 18.6,
-        1. / (ANG_TO_NM * 3.5),
-        0.20,
-      }
-    },
-    { "CT3", {
-        ANG3_TO_NM3 * 27.941,
-        KCAL_TO_KJ * 1.089,
-        KCAL_TO_KJ * 1.089,
-        KCAL_TO_KJ * -1.779,
-        KCAL_TO_KJ * 35.6,
-        1. / (ANG_TO_NM * 3.5),
-        0.204,
-      }
-    },
-    { "CPH1", {
-        ANG3_TO_NM3 * 5.275,
-        KCAL_TO_KJ * 0.057,
-        KCAL_TO_KJ * 0.080,
-        KCAL_TO_KJ * -0.973,
-        KCAL_TO_KJ * 6.9,
-        1. / (ANG_TO_NM * 3.5),
-        0.18,
-      }
-    },
-    { "CPH2", {
-        ANG3_TO_NM3 * 11.796,
-        KCAL_TO_KJ * 0.057,
-        KCAL_TO_KJ * 0.080,
-        KCAL_TO_KJ * -0.973,
-        KCAL_TO_KJ * 6.9,
-        1. / (ANG_TO_NM * 3.5),
-        0.18,
-      }
-    },
-    { "CPT", {
-        ANG3_TO_NM3 * 4.669,
-        KCAL_TO_KJ * -0.890,
-        KCAL_TO_KJ * -0.890,
-        KCAL_TO_KJ * 2.220,
-        KCAL_TO_KJ * 6.9,
-        1. / (ANG_TO_NM * 3.5),
-        0.186,
-      }
-    },
-    { "CY", {
-        ANG3_TO_NM3 * 10.507,
-        KCAL_TO_KJ * -0.890,
-        KCAL_TO_KJ * -0.890,
-        KCAL_TO_KJ * 2.220,
-        KCAL_TO_KJ * 6.9,
-        1. / (ANG_TO_NM * 3.5),
-        0.199,
-      }
-    },
-    { "CP1", {
-        ANG3_TO_NM3 * 25.458,
-        KCAL_TO_KJ * -0.187,
-        KCAL_TO_KJ * -0.187,
-        KCAL_TO_KJ * 0.876,
-        KCAL_TO_KJ * 0.0,
-        1. / (ANG_TO_NM * 3.5),
-        0.227,
-      }
-    },
-    { "CP2", {
-        ANG3_TO_NM3 * 19.880,
-        KCAL_TO_KJ * 0.372,
-        KCAL_TO_KJ * 0.372,
-        KCAL_TO_KJ * -0.610,
-        KCAL_TO_KJ * 18.6,
-        1. / (ANG_TO_NM * 3.5),
-        0.217,
-      }
-    },
-    { "CP3", {
-        ANG3_TO_NM3 * 26.731,
-        KCAL_TO_KJ * 0.372,
-        KCAL_TO_KJ * 0.372,
-        KCAL_TO_KJ * -0.610,
-        KCAL_TO_KJ * 18.6,
-        1. / (ANG_TO_NM * 3.5),
-        0.217,
-      }
-    },
-    { "CC", {
-        ANG3_TO_NM3 * 16.539,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.000,
-        KCAL_TO_KJ * 0.0,
-        1. / (ANG_TO_NM * 3.5),
-        0.20,
-      }
-    },
-    { "CAI", {
-        ANG3_TO_NM3 * 18.249,
-        KCAL_TO_KJ * 0.057,
-        KCAL_TO_KJ * 0.057,
-        KCAL_TO_KJ * -0.973,
-        KCAL_TO_KJ * 6.9,
-        1. / (ANG_TO_NM * 3.5),
-        0.199,
-      }
-    },
-    { "CA", {
-        ANG3_TO_NM3 * 18.249,
-        KCAL_TO_KJ * 0.057,
-        KCAL_TO_KJ * 0.057,
-        KCAL_TO_KJ * -0.973,
-        KCAL_TO_KJ * 6.9,
-        1. / (ANG_TO_NM * 3.5),
-        0.199,
-      }
-    },
-    { "N", {
-        ANG3_TO_NM3 * 0.000,
-        KCAL_TO_KJ * -1.000,
-        KCAL_TO_KJ * -1.000,
-        KCAL_TO_KJ * -1.250,
-        KCAL_TO_KJ * 8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.185,
-      }
-    },
-    { "NR1", {
-        ANG3_TO_NM3 * 15.273,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -9.059,
-        KCAL_TO_KJ * -8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.185,
-      }
-    },
-    { "NR2", {
-        ANG3_TO_NM3 * 15.111,
-        KCAL_TO_KJ * -3.820,
-        KCAL_TO_KJ * -3.820,
-        KCAL_TO_KJ * -4.654,
-        KCAL_TO_KJ * -8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.185,
-      }
-    },
-    { "NR3", {
-        ANG3_TO_NM3 * 15.071,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -9.059,
-        KCAL_TO_KJ * -8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.185,
-      }
-    },
-    { "NH1", {
-        ANG3_TO_NM3 * 10.197,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -9.059,
-        KCAL_TO_KJ * -8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.185,
-      }
-    },
-    { "NH2", {
-        ANG3_TO_NM3 * 18.182,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -9.059,
-        KCAL_TO_KJ * -8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.185,
-      }
-    },
-    { "NH3", {
-        ANG3_TO_NM3 * 18.817,
-        KCAL_TO_KJ * -20.000,
-        KCAL_TO_KJ * -20.000,
-        KCAL_TO_KJ * -25.000,
-        KCAL_TO_KJ * -18.0,
-        1. / (ANG_TO_NM * 6.0),
-        0.185,
-      }
-    },
-    { "NC2", {
-        ANG3_TO_NM3 * 18.215,
-        KCAL_TO_KJ * -10.000,
-        KCAL_TO_KJ * -10.000,
-        KCAL_TO_KJ * -12.000,
-        KCAL_TO_KJ * -7.0,
-        1. / (ANG_TO_NM * 6.0),
-        0.185,
-      }
-    },
-    { "NY", {
-        ANG3_TO_NM3 * 12.001,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -5.950,
-        KCAL_TO_KJ * -9.059,
-        KCAL_TO_KJ * -8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.185,
-      }
-    },
-    { "NP", {
-        ANG3_TO_NM3 * 4.993,
-        KCAL_TO_KJ * -20.000,
-        KCAL_TO_KJ * -20.000,
-        KCAL_TO_KJ * -25.000,
-        KCAL_TO_KJ * -18.0,
-        1. / (ANG_TO_NM * 6.0),
-        0.185,
-      }
-    },
-    { "O", {
-        ANG3_TO_NM3 * 11.772,
-        KCAL_TO_KJ * -5.330,
-        KCAL_TO_KJ * -5.330,
-        KCAL_TO_KJ * -5.787,
-        KCAL_TO_KJ * -8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.170,
-      }
-    },
-    { "OB", {
-        ANG3_TO_NM3 * 11.694,
-        KCAL_TO_KJ * -5.330,
-        KCAL_TO_KJ * -5.330,
-        KCAL_TO_KJ * -5.787,
-        KCAL_TO_KJ * -8.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.170,
-      }
-    },
-    { "OC", {
-        ANG3_TO_NM3 * 12.003,
-        KCAL_TO_KJ * -10.000,
-        KCAL_TO_KJ * -10.000,
-        KCAL_TO_KJ * -12.000,
-        KCAL_TO_KJ * -9.4,
-        1. / (ANG_TO_NM * 6.0),
-        0.170,
-      }
-    },
-    { "OH1", {
-        ANG3_TO_NM3 * 15.528,
-        KCAL_TO_KJ * -5.920,
-        KCAL_TO_KJ * -5.920,
-        KCAL_TO_KJ * -9.264,
-        KCAL_TO_KJ * -11.2,
-        1. / (ANG_TO_NM * 3.5),
-        0.177,
-      }
-    },
-    { "OS", {
-        ANG3_TO_NM3 * 6.774,
-        KCAL_TO_KJ * -2.900,
-        KCAL_TO_KJ * -2.900,
-        KCAL_TO_KJ * -3.150,
-        KCAL_TO_KJ * -4.8,
-        1. / (ANG_TO_NM * 3.5),
-        0.177,
-      }
-    },
-    { "S", {
-        ANG3_TO_NM3 * 20.703,
-        KCAL_TO_KJ * -3.240,
-        KCAL_TO_KJ * -3.240,
-        KCAL_TO_KJ * -4.475,
-        KCAL_TO_KJ * -39.9,
-        1. / (ANG_TO_NM * 3.5),
-        0.20,
-      }
-    },
-    { "SM", {
-        ANG3_TO_NM3 * 21.306,
-        KCAL_TO_KJ * -3.240,
-        KCAL_TO_KJ * -3.240,
-        KCAL_TO_KJ * -4.475,
-        KCAL_TO_KJ * -39.9,
-        1. / (ANG_TO_NM * 3.5),
-        0.197,
-      }
-    }
+  std::map<std::string, std::vector<double> > valuemap;
+  valuemap["C"] = {
+    ANG3_TO_NM3 * 14.720,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.0,
+    1. / (ANG_TO_NM * 3.5),
+    0.20,
+  };
+  valuemap["CD"] = {
+    ANG3_TO_NM3 * 14.720,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.0,
+    1. / (ANG_TO_NM * 3.5),
+    0.20,
+  };
+  valuemap["CT1"] = {
+    ANG3_TO_NM3 * 11.507,
+    KCAL_TO_KJ * -0.187,
+    KCAL_TO_KJ * -0.187,
+    KCAL_TO_KJ * 0.876,
+    KCAL_TO_KJ * 0.0,
+    1. / (ANG_TO_NM * 3.5),
+    0.20,
+  };
+  valuemap["CT2"] = {
+    ANG3_TO_NM3 * 18.850,
+    KCAL_TO_KJ * 0.372,
+    KCAL_TO_KJ * 0.372,
+    KCAL_TO_KJ * -0.610,
+    KCAL_TO_KJ * 18.6,
+    1. / (ANG_TO_NM * 3.5),
+    0.20,
+  };
+  valuemap["CT2A"] = {
+    ANG3_TO_NM3 * 18.666,
+    KCAL_TO_KJ * 0.372,
+    KCAL_TO_KJ * 0.372,
+    KCAL_TO_KJ * -0.610,
+    KCAL_TO_KJ * 18.6,
+    1. / (ANG_TO_NM * 3.5),
+    0.20,
+  };
+  valuemap["CT3"] = {
+    ANG3_TO_NM3 * 27.941,
+    KCAL_TO_KJ * 1.089,
+    KCAL_TO_KJ * 1.089,
+    KCAL_TO_KJ * -1.779,
+    KCAL_TO_KJ * 35.6,
+    1. / (ANG_TO_NM * 3.5),
+    0.204,
+  };
+  valuemap["CPH1"] = {
+    ANG3_TO_NM3 * 5.275,
+    KCAL_TO_KJ * 0.057,
+    KCAL_TO_KJ * 0.080,
+    KCAL_TO_KJ * -0.973,
+    KCAL_TO_KJ * 6.9,
+    1. / (ANG_TO_NM * 3.5),
+    0.18,
+  };
+  valuemap["CPH2"] = {
+    ANG3_TO_NM3 * 11.796,
+    KCAL_TO_KJ * 0.057,
+    KCAL_TO_KJ * 0.080,
+    KCAL_TO_KJ * -0.973,
+    KCAL_TO_KJ * 6.9,
+    1. / (ANG_TO_NM * 3.5),
+    0.18,
+  };
+  valuemap["CPT"] = {
+    ANG3_TO_NM3 * 4.669,
+    KCAL_TO_KJ * -0.890,
+    KCAL_TO_KJ * -0.890,
+    KCAL_TO_KJ * 2.220,
+    KCAL_TO_KJ * 6.9,
+    1. / (ANG_TO_NM * 3.5),
+    0.186,
+  };
+  valuemap["CY"] = {
+    ANG3_TO_NM3 * 10.507,
+    KCAL_TO_KJ * -0.890,
+    KCAL_TO_KJ * -0.890,
+    KCAL_TO_KJ * 2.220,
+    KCAL_TO_KJ * 6.9,
+    1. / (ANG_TO_NM * 3.5),
+    0.199,
+  };
+  valuemap["CP1"] = {
+    ANG3_TO_NM3 * 25.458,
+    KCAL_TO_KJ * -0.187,
+    KCAL_TO_KJ * -0.187,
+    KCAL_TO_KJ * 0.876,
+    KCAL_TO_KJ * 0.0,
+    1. / (ANG_TO_NM * 3.5),
+    0.227,
+  };
+  valuemap["CP2"] = {
+    ANG3_TO_NM3 * 19.880,
+    KCAL_TO_KJ * 0.372,
+    KCAL_TO_KJ * 0.372,
+    KCAL_TO_KJ * -0.610,
+    KCAL_TO_KJ * 18.6,
+    1. / (ANG_TO_NM * 3.5),
+    0.217,
+  };
+  valuemap["CP3"] = {
+    ANG3_TO_NM3 * 26.731,
+    KCAL_TO_KJ * 0.372,
+    KCAL_TO_KJ * 0.372,
+    KCAL_TO_KJ * -0.610,
+    KCAL_TO_KJ * 18.6,
+    1. / (ANG_TO_NM * 3.5),
+    0.217,
+  };
+  valuemap["CC"] = {
+    ANG3_TO_NM3 * 16.539,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.000,
+    KCAL_TO_KJ * 0.0,
+    1. / (ANG_TO_NM * 3.5),
+    0.20,
+  };
+  valuemap["CAI"] = {
+    ANG3_TO_NM3 * 18.249,
+    KCAL_TO_KJ * 0.057,
+    KCAL_TO_KJ * 0.057,
+    KCAL_TO_KJ * -0.973,
+    KCAL_TO_KJ * 6.9,
+    1. / (ANG_TO_NM * 3.5),
+    0.199,
+  };
+  valuemap["CA"] = {
+    ANG3_TO_NM3 * 18.249,
+    KCAL_TO_KJ * 0.057,
+    KCAL_TO_KJ * 0.057,
+    KCAL_TO_KJ * -0.973,
+    KCAL_TO_KJ * 6.9,
+    1. / (ANG_TO_NM * 3.5),
+    0.199,
+  };
+  valuemap["N"] = {
+    ANG3_TO_NM3 * 0.000,
+    KCAL_TO_KJ * -1.000,
+    KCAL_TO_KJ * -1.000,
+    KCAL_TO_KJ * -1.250,
+    KCAL_TO_KJ * 8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.185,
+  };
+  valuemap["NR1"] = {
+    ANG3_TO_NM3 * 15.273,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -9.059,
+    KCAL_TO_KJ * -8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.185,
+  };
+  valuemap["NR2"] = {
+    ANG3_TO_NM3 * 15.111,
+    KCAL_TO_KJ * -3.820,
+    KCAL_TO_KJ * -3.820,
+    KCAL_TO_KJ * -4.654,
+    KCAL_TO_KJ * -8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.185,
+  };
+  valuemap["NR3"] = {
+    ANG3_TO_NM3 * 15.071,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -9.059,
+    KCAL_TO_KJ * -8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.185,
+  };
+  valuemap["NH1"] = {
+    ANG3_TO_NM3 * 10.197,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -9.059,
+    KCAL_TO_KJ * -8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.185,
+  };
+  valuemap["NH2"] = {
+    ANG3_TO_NM3 * 18.182,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -9.059,
+    KCAL_TO_KJ * -8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.185,
+  };
+  valuemap["NH3"] = {
+    ANG3_TO_NM3 * 18.817,
+    KCAL_TO_KJ * -20.000,
+    KCAL_TO_KJ * -20.000,
+    KCAL_TO_KJ * -25.000,
+    KCAL_TO_KJ * -18.0,
+    1. / (ANG_TO_NM * 6.0),
+    0.185,
+  };
+  valuemap["NC2"] = {
+    ANG3_TO_NM3 * 18.215,
+    KCAL_TO_KJ * -10.000,
+    KCAL_TO_KJ * -10.000,
+    KCAL_TO_KJ * -12.000,
+    KCAL_TO_KJ * -7.0,
+    1. / (ANG_TO_NM * 6.0),
+    0.185,
+  };
+  valuemap["NY"] = {
+    ANG3_TO_NM3 * 12.001,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -5.950,
+    KCAL_TO_KJ * -9.059,
+    KCAL_TO_KJ * -8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.185,
+  };
+  valuemap["NP"] = {
+    ANG3_TO_NM3 * 4.993,
+    KCAL_TO_KJ * -20.000,
+    KCAL_TO_KJ * -20.000,
+    KCAL_TO_KJ * -25.000,
+    KCAL_TO_KJ * -18.0,
+    1. / (ANG_TO_NM * 6.0),
+    0.185,
+  };
+  valuemap["O"] = {
+    ANG3_TO_NM3 * 11.772,
+    KCAL_TO_KJ * -5.330,
+    KCAL_TO_KJ * -5.330,
+    KCAL_TO_KJ * -5.787,
+    KCAL_TO_KJ * -8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.170,
+  };
+  valuemap["OB"] = {
+    ANG3_TO_NM3 * 11.694,
+    KCAL_TO_KJ * -5.330,
+    KCAL_TO_KJ * -5.330,
+    KCAL_TO_KJ * -5.787,
+    KCAL_TO_KJ * -8.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.170,
+  };
+  valuemap["OC"] = {
+    ANG3_TO_NM3 * 12.003,
+    KCAL_TO_KJ * -10.000,
+    KCAL_TO_KJ * -10.000,
+    KCAL_TO_KJ * -12.000,
+    KCAL_TO_KJ * -9.4,
+    1. / (ANG_TO_NM * 6.0),
+    0.170,
+  };
+  valuemap["OH1"] = {
+    ANG3_TO_NM3 * 15.528,
+    KCAL_TO_KJ * -5.920,
+    KCAL_TO_KJ * -5.920,
+    KCAL_TO_KJ * -9.264,
+    KCAL_TO_KJ * -11.2,
+    1. / (ANG_TO_NM * 3.5),
+    0.177,
+  };
+  valuemap["OS"] = {
+    ANG3_TO_NM3 * 6.774,
+    KCAL_TO_KJ * -2.900,
+    KCAL_TO_KJ * -2.900,
+    KCAL_TO_KJ * -3.150,
+    KCAL_TO_KJ * -4.8,
+    1. / (ANG_TO_NM * 3.5),
+    0.177,
+  };
+  valuemap["S"] = {
+    ANG3_TO_NM3 * 20.703,
+    KCAL_TO_KJ * -3.240,
+    KCAL_TO_KJ * -3.240,
+    KCAL_TO_KJ * -4.475,
+    KCAL_TO_KJ * -39.9,
+    1. / (ANG_TO_NM * 3.5),
+    0.20,
+  };
+  valuemap["SM"] = {
+    ANG3_TO_NM3 * 21.306,
+    KCAL_TO_KJ * -3.240,
+    KCAL_TO_KJ * -3.240,
+    KCAL_TO_KJ * -4.475,
+    KCAL_TO_KJ * -39.9,
+    1. / (ANG_TO_NM * 3.5),
+    0.197,
   };
   return valuemap;
 }

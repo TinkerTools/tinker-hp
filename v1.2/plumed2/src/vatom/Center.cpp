@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -24,8 +24,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include <cmath>
-
-using namespace std;
 
 namespace PLMD {
 namespace vatom {
@@ -124,6 +122,10 @@ class Center:
   std::vector<double> weights;
   std::vector<Tensor> dcenter_sin;
   std::vector<Tensor> dcenter_cos;
+  double charge_;
+  double mass_;
+  bool isChargeSet_;
+  bool isMassSet_;
   bool weight_mass;
   bool nopbc;
   bool first;
@@ -140,6 +142,8 @@ PLUMED_REGISTER_ACTION(Center,"COM")
 void Center::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
+  keys.add("optional","SET_CHARGE","Set the charge of the virtual atom to a given value.");
+  keys.add("optional","SET_MASS","Set the mass of the virtual atom to a given value.");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("MASS",false,"If set center is mass weighted");
   keys.addFlag("PHASES",false,"Compute center using trigonometric phases");
@@ -148,18 +152,27 @@ void Center::registerKeywords(Keywords& keys) {
 Center::Center(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao),
+  charge_(nan("")),
+  mass_(-1),
+  isChargeSet_(false),
+  isMassSet_(false),
   weight_mass(false),
   nopbc(false),
   first(true),
   phases(false)
 {
-  vector<AtomNumber> atoms;
+  std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) error("at least one atom should be specified");
   parseVector("WEIGHTS",weights);
   parseFlag("MASS",weight_mass);
   parseFlag("NOPBC",nopbc);
   parseFlag("PHASES",phases);
+  parse("SET_CHARGE",charge_);
+  if(!std::isnan(charge_)) isChargeSet_=true;
+  parse("SET_MASS",mass_);
+  if(mass_>0.) isMassSet_=true;
+  if(mass_==0.) error("SETMASS must be greater than 0");
   if( getName()=="COM") weight_mass=true;
   checkRead();
   log.printf("  of atoms:");
@@ -170,7 +183,7 @@ Center::Center(const ActionOptions&ao):
   log<<"\n";
   if(weight_mass) {
     log<<"  mass weighted\n";
-    if(weights.size()!=0) error("WEIGHTS and MASS keywords should not be used simultaneously");
+    if(weights.size()!=0) error("WEIGHTS and MASS keywords cannot not be used simultaneously");
   } else {
     if( weights.size()==0) {
       log<<" using the geometric center\n";
@@ -215,12 +228,14 @@ void Center::calculate() {
     first=false;
   }
 
-  vector<Tensor> deriv(getNumberOfAtoms());
+  std::vector<Tensor> deriv(getNumberOfAtoms());
   for(unsigned i=0; i<getNumberOfAtoms(); i++) mass+=getMass(i);
-  if( plumed.getAtoms().chargesWereSet() ) {
+  if( plumed.getAtoms().chargesWereSet() && !isChargeSet_) {
     double charge(0.0);
     for(unsigned i=0; i<getNumberOfAtoms(); i++) charge+=getCharge(i);
     setCharge(charge);
+  } else if(isChargeSet_) {
+    setCharge(charge_);
   } else {
     setCharge(0.0);
   }
@@ -239,7 +254,7 @@ void Center::calculate() {
       if(weight_mass) w=getMass(i)/mass;
       else w=weights[i]/wtot;
 
-// real to scaled
+      // real to scaled
       const Vector scaled=matmul(getPosition(i),invbox2pi);
       const Vector ccos(
         w*std::cos(scaled[0]),
@@ -254,8 +269,8 @@ void Center::calculate() {
       center_cos+=ccos;
       center_sin+=csin;
       for(unsigned l=0; l<3; l++) for(unsigned k=0; k<3; k++) {
-// k over real coordinates
-// l over scaled coordinates
+          // k over real coordinates
+          // l over scaled coordinates
           dcenter_sin[i][l][k]=ccos[l]*invbox2pi[k][l];
           dcenter_cos[i][l][k]=-csin[l]*invbox2pi[k][l];
         }
@@ -266,7 +281,7 @@ void Center::calculate() {
       std::atan2(center_sin[2],center_cos[2])
     );
 
-// normalization is convenient for doing derivatives later
+    // normalization is convenient for doing derivatives later
     for(unsigned l=0; l<3; l++) {
       double norm=1.0/(center_sin[l]*center_sin[l]+center_cos[l]*center_cos[l]);
       center_sin[l]*=norm;
@@ -276,16 +291,17 @@ void Center::calculate() {
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       Tensor dd;
       for(unsigned l=0; l<3; l++) for(unsigned k=0; k<3; k++) {
-// k over real coordinates
-// l over scaled coordinates
+          // k over real coordinates
+          // l over scaled coordinates
           dd[l][k]= (center_cos[l]*dcenter_sin[i][l][k] - center_sin[l]*dcenter_cos[i][l][k]);
         }
-// scaled to real
+      // scaled to real
       deriv[i]=matmul(dd,box2pi);
     }
-    setMass(mass);
+    if(!isMassSet_) setMass(mass);
+    else setMass(mass_);
     setAtomsDerivatives(deriv);
-// scaled to real
+    // scaled to real
     setPosition(matmul(c,box2pi));
   } else {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
@@ -296,7 +312,8 @@ void Center::calculate() {
       deriv[i]=w*Tensor::identity();
     }
     setPosition(pos);
-    setMass(mass);
+    if(!isMassSet_) setMass(mass);
+    else setMass(mass_);
     setAtomsDerivatives(deriv);
   }
 }

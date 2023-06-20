@@ -52,6 +52,7 @@ c
       real*8, allocatable :: derivstemp2(:,:)
       real*8, allocatable :: uindtemp(:,:)
       real*8 :: derivs(3,*)
+      integer, allocatable :: pbcwrapindextemp(:,:)
       integer, allocatable :: bufbegsave(:),globsave(:)
       integer, allocatable :: bufbegpolesave(:),globpolesave(:)
       integer req(nproc*nproc)
@@ -93,6 +94,10 @@ c
           allocate (uindtemp(3,nloc))
           uindtemp = 0d0
         end if
+        if (pbcunwrap) then
+          allocate (pbcwrapindextemp(3,nloc))
+          pbcwrapindextemp = 0
+        end if
       else
         allocate (postemp(3,n))
         postemp = 0d0
@@ -115,6 +120,10 @@ c
           derivstemp = 0d0
           allocate (derivstemp2(3,n))
           derivstemp2 = 0d0
+        end if
+        if (pbcunwrap) then
+          allocate (pbcwrapindextemp(3,n))
+          pbcwrapindextemp = 0
         end if
         allocate (bufbegsave(nproc))
         bufbegsave = 0
@@ -146,6 +155,12 @@ c
             uindtemp(1,i) = uind(1,iglob)
             uindtemp(2,i) = uind(2,iglob)
             uindtemp(3,i) = uind(3,iglob)
+          end do
+        end if
+        if (pbcunwrap) then
+          do i = 1, nloc
+            iglob = glob(i)
+            pbcwrapindextemp(:,i) = pbcwrapindex(:,iglob)
           end do
         end if
       else if (frcsave) then
@@ -403,6 +418,32 @@ c
         end if
       end if
 c
+c     pbcwrap indexes
+c
+      if (pbcunwrap) then
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(pbcwrapindextemp(1,bufbegsave(iproc+1)),
+     $       3*domlen(iproc+1)
+     $       ,MPI_INT,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(pbcwrapindextemp,3*nloc,MPI_INT,0,tagmpi,
+     $     COMM_TINKER,req(tagmpi),ierr)
+        end if
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
+      end if
+c
 c     put the array in global order to be written
 c
       if (rank.eq.0) then
@@ -452,9 +493,38 @@ c
               end if
             end do
           end if
+          if (pbcunwrap) then
+            do i = 1, domlen(iproc+1)
+              if (domlen(iproc+1).ne.0) then
+                iloc = bufbegsave(iproc+1)+i-1
+                iglob = globsave(iloc)
+                pbcwrapindex(1,iglob) = pbcwrapindextemp(1,iloc)
+                pbcwrapindex(2,iglob) = pbcwrapindextemp(2,iloc)
+                pbcwrapindex(3,iglob) = pbcwrapindextemp(3,iloc)
+              end if
+            end do
+          end if
         end do
       end if
       deallocate (postemp)
+c
+c     Put the proper coordinates (potentially unwrapped) in xwrite,ywrite and zwrite
+c
+      if (rank.eq.0) then
+        if (pbcunwrap) then
+          do i = 1, n
+            xwrite(i) = x(i) + pbcwrapindex(1,i)*xbox
+            ywrite(i) = y(i) + pbcwrapindex(2,i)*ybox
+            zwrite(i) = z(i) + pbcwrapindex(3,i)*zbox
+          end do
+        else
+          do i = 1, n
+            xwrite(i) = x(i)
+            ywrite(i) = y(i)
+            zwrite(i) = z(i)
+          end do
+        end if
+      end if
 c
       deallocate (vtemp)
       deallocate (atemp)

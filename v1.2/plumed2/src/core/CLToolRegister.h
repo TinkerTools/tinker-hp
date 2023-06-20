@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -56,7 +56,7 @@ public:
 /// \param kp  A pointer to a function which returns the allowed keywords
   void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
-  bool check(std::string cltool)const;
+  bool check(const std::string & cltool)const;
 /// Create an CLTool of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<CLTool> create(const CLToolOptions&ao);
@@ -89,12 +89,12 @@ std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar);
 /// \param directive a string containing the corresponding directive
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_CLTOOL(classname,directive) \
-  static class classname##RegisterMe{ \
-    static std::unique_ptr<PLMD::CLTool> create(const PLMD::CLToolOptions&ao){return std::unique_ptr<classname>(new classname(ao));} \
+  namespace { class classname##RegisterMe{ \
+    static std::unique_ptr<PLMD::CLTool> create(const PLMD::CLToolOptions&ao){return PLMD::Tools::make_unique<classname>(ao);} \
   public: \
     classname##RegisterMe(){PLMD::cltoolRegister().add(directive,create,classname::registerKeywords);} \
     ~classname##RegisterMe(){PLMD::cltoolRegister().remove(create);} \
-  } classname##RegisterMeObject;
+  } classname##RegisterMeObject; }
 
 
 #endif

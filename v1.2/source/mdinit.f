@@ -108,6 +108,23 @@ c
       use_lambdadyn = .false.
       use_OSRW = .false.
 c
+c     set default for pbc unwrapping
+c
+      pbcunwrap = .false.
+c
+c     allocate array of positions to be printed
+c
+      if (allocated(xwrite)) deallocate (xwrite)
+      allocate (xwrite(n))
+      xwrite = 0d0
+      if (allocated(ywrite)) deallocate (ywrite)
+      allocate (ywrite(n))
+      ywrite = 0d0
+      if (allocated(zwrite)) deallocate (zwrite)
+      allocate (zwrite(n))
+      zwrite = 0d0
+c
+c
 c     check for keywords containing any altered parameters
 c
       do i = 1, nkey
@@ -161,6 +178,8 @@ c            read (string,*,err=10,end=10)  nfree
             call upcase (volscale)
          else if (keyword(1:9) .eq. 'PRINTOUT ') then
             read (string,*,err=10,end=10)  iprint
+         else if (keyword(1:10) .eq. 'PBCUNWRAP ') then
+           pbcunwrap = .true.
          else if (keyword(1:14) .eq. 'NLUPDATE ') then
             read (string,*,err=10,end=10) ineigup
          else if (keyword(1:9) .eq. 'FRICTION ') then
@@ -220,6 +239,12 @@ c
          end if
    10    continue
       end do
+c
+c     pbcwrapindex initialization
+c
+      if (allocated (pbcwrapindex)) deallocate (pbcwrapindex)
+      allocate (pbcwrapindex(3,n))
+      pbcwrapindex = 0
 c
 c     lambda dynamic initialization
 c

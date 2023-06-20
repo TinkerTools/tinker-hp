@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2020 The plumed team
+   Copyright (c) 2015-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -92,8 +92,12 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
   npoints=1; bounds_set=true;
   for(unsigned i=0; i<dimension; ++i) {
     str_min[i]=smin[i]; str_max[i]=smax[i];
-    Tools::convert( str_min[i], min[i] );
-    Tools::convert( str_max[i], max[i] );
+    // GB: I ignore the result here not to break test multicolvar/rt-dens-average
+    // where these functions were called with str_min[i] and str_max[i] as empty string
+    // To be checked.
+    Tools::convertNoexcept( str_min[i], min[i] );
+    Tools::convertNoexcept( str_max[i], max[i] );
+
     if( spacing.size()==dimension && binsin.size()==dimension ) {
       if( spacing[i]==0 ) nbin[i] = binsin[i];
       else {
@@ -113,8 +117,8 @@ void GridVessel::setBounds( const std::vector<std::string>& smin, const std::vec
 }
 
 void GridVessel::setupFibonacciGrid( const unsigned& np ) {
-  bounds_set=true; root5 = sqrt(5);
-  npoints = np; golden = ( 1 + sqrt(5) ) / 2.0; igolden = golden - 1;
+  bounds_set=true; root5 = std::sqrt(5);
+  npoints = np; golden = ( 1 + std::sqrt(5) ) / 2.0; igolden = golden - 1;
   fib_increment = 2*pi*igolden; log_golden2 = std::log( golden*golden );
   fib_offset = 2 / static_cast<double>( npoints );
   fib_shift = fib_offset/2 - 1;
@@ -140,7 +144,7 @@ void GridVessel::setupFibonacciGrid( const unsigned& np ) {
   }
   double final_cutoff;
   if( getFibonacciCutoff()<-1 ) final_cutoff=-1;
-  else final_cutoff = cos( acos( getFibonacciCutoff() ) + acos( min ) );
+  else final_cutoff = std::cos( std::acos( getFibonacciCutoff() ) + std::acos( min ) );
 
   // And now construct the neighbor list
   fib_nlist.resize( npoints );
@@ -225,7 +229,7 @@ unsigned GridVessel::getIndex( const std::vector<double>& point ) const {
 unsigned GridVessel::getFibonacciIndex( const std::vector<double>& p ) const {
   plumed_dbg_assert( gtype==fibonacci );
   // Convert input point to coordinates on cylinder
-  int k=2; double phi = atan2( p[2], p[0] ), sinthet2 = 1 - p[1]*p[1];
+  int k=2; double phi = std::atan2( p[2], p[0] ), sinthet2 = 1 - p[1]*p[1];
   // Calculate power to raise golden ratio
   if( sinthet2<epsilon ) { k = 2; }
   else {
@@ -239,7 +243,7 @@ unsigned GridVessel::getFibonacciIndex( const std::vector<double>& p ) const {
   B(1,0) = -2*F0/npoints; B(1,1) = -2*F1/npoints; Invert( B, invB );
   std::vector<double> vv(2), rc(2); vv[0]=-phi; vv[1] = p[1] - fib_shift;
   mult( invB, vv, rc ); std::vector<int> c(2); c[0]=std::floor(rc[0]); c[1]=std::floor(rc[1]);
-  unsigned outind; double mindist = 10000000.;
+  unsigned outind=0; double mindist = 10000000.;
   for(int s=0; s<4; ++s) {
     double ttt, costheta = B(1,0)*( c[0] + s%2 ) + B(1,1)*( c[1] + s/2 ) + fib_shift;
     if( costheta>1 ) ttt=1; else if( costheta<-1 ) ttt=-1; else ttt=costheta;
@@ -288,10 +292,10 @@ void GridVessel::getFlatGridCoordinates( const unsigned& ipoint, std::vector<uns
 
 void GridVessel::getFibonacciCoordinates( const unsigned& ipoint, std::vector<double>& x ) const {
   plumed_dbg_assert( gtype==fibonacci );
-  x[1] = (ipoint*fib_offset) + fib_shift; double r = sqrt( 1 - x[1]*x[1] );
-  double phi = ipoint*fib_increment; x[0] = r*cos(phi); x[2] = r*sin(phi);
+  x[1] = (ipoint*fib_offset) + fib_shift; double r = std::sqrt( 1 - x[1]*x[1] );
+  double phi = ipoint*fib_increment; x[0] = r*std::cos(phi); x[2] = r*std::sin(phi);
   double norm=0; for(unsigned j=0; j<3; ++j) norm+=x[j]*x[j];
-  norm = sqrt(norm); for(unsigned j=0; j<3; ++j) x[j] = x[j] / norm;
+  norm = std::sqrt(norm); for(unsigned j=0; j<3; ++j) x[j] = x[j] / norm;
 }
 
 void GridVessel::getSplineNeighbors( const unsigned& mybox, unsigned& nneighbors, std::vector<unsigned>& mysneigh ) const {
@@ -475,11 +479,11 @@ double GridVessel::getValueAndDerivatives( const std::vector<double>& x, const u
       int x0=1;
       if(nindices[j]==indices[j]) x0=0;
       double ddx=dx[j];
-      X=fabs((x[j]-xfloor[j])/ddx-(double)x0);
+      X=std::fabs((x[j]-xfloor[j])/ddx-(double)x0);
       X2=X*X;
       X3=X2*X;
       double yy;
-      if(fabs(grid)<0.0000001) yy=0.0;
+      if(std::fabs(grid)<0.0000001) yy=0.0;
       else yy=-dder[j]/grid;
       C[j]=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*ddx;
       D[j]=( -6.0*X +6.0*X2) - (x0?-1.0:1.0)*yy*(1.0-4.0*X +3.0*X2)*ddx;

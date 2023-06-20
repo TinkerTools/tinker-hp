@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013-2020 The plumed team
+   Copyright (c) 2013-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -68,13 +68,13 @@ void FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
   buffer[bufstart] += contr;
 
   if( diffweight ) myvals.chainRule( 0, 0, 1, 0, f, bufstart, buffer );
-  if( getAction()->derivativesAreRequired() && fabs(dval)>0.0 ) myvals.chainRule( mycomp, 0, 1, 0, weight*dval, bufstart, buffer );
+  if( getAction()->derivativesAreRequired() && std::fabs(dval)>0.0 ) myvals.chainRule( mycomp, 0, 1, 0, weight*dval, bufstart, buffer );
 
   return;
 }
 
 double FunctionVessel::calcTransform( const double&, double& ) const {
-  plumed_error(); return 1.0;
+  plumed_error();
 }
 
 void FunctionVessel::finish( const std::vector<double>& buffer ) {

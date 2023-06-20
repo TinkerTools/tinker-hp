@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -28,35 +28,78 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <vector>
 
-using namespace std;
 namespace PLMD {
 
-Exception::Exception():
-  note(true)
+namespace {
+// see https://www.geeksforgeeks.org/simplify-directory-path-unix-like/
+
+// function to simplify a Unix - styled
+// absolute path
+std::string simplify(const std::string & path)
 {
-#ifdef __PLUMED_HAS_EXECINFO
-  {
-    void* callstack[128];
-    int frames = backtrace(callstack, 128);
-    char** strs = backtrace_symbols(callstack, frames);
-    for (int i = 0; i < frames; ++i) {stackString+=strs[i]; stackString+="\n";}
-    free(strs);
+  // using vector in place of stack
+  std::vector<std::string> v;
+  int n = path.length();
+  std::string ans;
+  for (int i = 0; i < n; i++) {
+    std::string dir = "";
+    // forming the current directory.
+    while (i < n && path[i] != '/') {
+      dir += path[i];
+      i++;
+    }
+
+    // if ".." , we pop.
+    if (dir == "..") {
+      if (!v.empty())
+        v.pop_back();
+    }
+    else if (dir == "." || dir == "") {
+      // do nothing (added for better understanding.)
+    }
+    else {
+      // push the current directory into the vector.
+      v.push_back(dir);
+    }
   }
-#endif
-  const char* env=getenv("PLUMED_STACK_TRACE");
-  if(stackString.length()>0 && env && !strcmp(env,"yes")) {
+
+  // forming the ans
+  bool first=true;
+  for (auto i : v) {
+    if(!first) ans += "/";
+    first=false;
+    ans += i;
+  }
+
+  // vector is empty
+  if (ans == "")
+    return "/";
+
+  return ans;
+}
+
+}
+
+Exception::Exception()
+{
+  callstack.fill(nullptr);
+#ifdef __PLUMED_HAS_EXECINFO
+  callstack_n = backtrace(&callstack[0], callstack.size()-1);
+  const char* env=std::getenv("PLUMED_STACK_TRACE");
+  if(env && !std::strcmp(env,"yes")) {
     msg+="\n\n********** STACK DUMP **********\n";
-    msg+=stackString;
+    msg+=stack();
     msg+="\n********** END STACK DUMP **********\n";
   }
-  msg+="\n+++ PLUMED error";
+#endif
 }
 
 Exception& Exception::operator<<(const std::string&msg)
 {
   if(msg.length()>0) {
-    if(note) this->msg +="\n+++ message follows +++\n";
+    if(note) this->msg +="\n";
     this->msg +=msg;
     note=false;
   }
@@ -66,14 +109,20 @@ Exception& Exception::operator<<(const std::string&msg)
 Exception& Exception::operator<<(const Location&loc)
 {
   if(loc.file) {
-    char cline[1000];
-    sprintf(cline,"%u",loc.line);
-    this->msg += "\n+++ at ";
-    this->msg += loc.file;
+    const std::size_t clinelen=1000;
+    char cline[clinelen];
+    std::snprintf(cline,clinelen,"%u",loc.line);
+    this->msg += "\n(";
+    try {
+      this->msg += simplify(loc.file);
+    } catch(...) {
+      // ignore
+    }
     this->msg += ":";
     this->msg += cline;
+    this->msg += ")";
     if(loc.pretty && loc.pretty[0]) {
-      this->msg += ", function ";
+      this->msg += " ";
       this->msg += loc.pretty;
     }
   }
@@ -89,6 +138,17 @@ Exception& Exception::operator<<(const Assertion&as)
   }
   note=true;
   return *this;
+}
+
+const char* Exception::stack() const {
+#ifdef __PLUMED_HAS_EXECINFO
+  if(stackTrace.length()==0) {
+    char** strs = backtrace_symbols(&callstack[0], callstack_n);
+    for (int i = 0; i < callstack_n; ++i) {stackTrace+=strs[i]; stackTrace+="\n";}
+    free(strs);
+  }
+#endif
+  return stackTrace.c_str();
 }
 
 }

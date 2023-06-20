@@ -224,7 +224,7 @@ c
 c     use energy switching if close the cutoff distance (at short range)
 c
                   if(shortrange .or. longrange)
-     &               call switch_respa(r,repshortcut,shortheal,s,ds)
+     &               call switch_respa(r,ctrnshortcut,shortheal,s,ds)
 
                   if(shortrange) then
                      facts =          s

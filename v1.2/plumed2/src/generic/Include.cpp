@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2020 The plumed team
+   Copyright (c) 2012-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -25,14 +25,12 @@
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
 
-using namespace std;
-
 namespace PLMD {
 namespace generic {
 
 //+PLUMEDOC GENERIC INCLUDE
 /*
-Includes an external input file, similar to "#include" in C preprocessor.
+Includes an external input file, similar to #include in C preprocessor.
 
 Useful to split very large plumed.dat files. Notice that in PLUMED 2.4 this action
 cannot be used before the initial setup part of the file (e.g. in the part with \ref UNITS, \ref MOLINFO, etc).

@@ -100,6 +100,14 @@ c     set the energy unit conversion factor
 c
       f = electric / dielec
 c
+c     check the sign of multipole components at chiral sites
+c
+      if (.not. use_mpole)  call chkpole(.false.)
+c
+c     rotate the multipole components into the global frame
+c
+      if (.not. use_mpole)  call rotpole
+c
 c     compute the induced dipoles at each polarizable atom
 c
       if (use_polarshortreal) then
@@ -303,15 +311,10 @@ c
 c
       subroutine elambdapolar1c
       use atmlst
-      use atoms
-      use boxes
-      use chgpot
       use deriv
       use domdec
       use energi
-      use ewald
       use iounit
-      use math
       use mpole
       use mutant
       use polar
@@ -327,6 +330,7 @@ c
       real*8, allocatable :: delambdaprec0(:,:),delambdaprec1(:,:)
       real*8 :: elambdap0,elambdap1
       real*8 dplambdadelambdae,d2plambdad2elambdae
+      real*8 :: vir0(3,3),vir1(3,3),virtemp(3,3)
 c
       allocate (delambdaprec0(3,nlocrec2))
       allocate (delambdaprec1(3,nlocrec2))
@@ -344,6 +348,7 @@ c
       if (.not.(use_mpole)) then
         delambdae = 0d0
       end if
+      virtemp = vir
 
 c
 c     polarization is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
@@ -352,6 +357,7 @@ c
       elambdap1 = 0d0
       delambdap1 = 0d0
       delambdaprec1 = 0d0
+      vir1 = 0d0
       if (elambda.gt.bplambda) then
         elambda = 1d0
         call MPI_BARRIER(hostcomm,ierr)
@@ -361,10 +367,12 @@ c
         ep = 0d0
         dep = 0d0
         deprec = 0d0
+        vir = 0d0
         call epolar1c
         elambdap1  = ep
         delambdap1 = dep
         delambdaprec1 = deprec
+        vir1 = vir
       end if
 
       elambda = 0d0
@@ -375,10 +383,12 @@ c
       ep = 0d0
       dep = 0d0
       deprec = 0d0
+      vir = 0d0
       call epolar1c
       elambdap0  = ep
       delambdap0 = dep
       delambdaprec0 = deprec
+      vir0 = vir
 c
 c     also store the dipoles to build ASPC guess
 c
@@ -417,6 +427,7 @@ c
       deprec = (1-plambda)*delambdaprec0+plambda*delambdaprec1
       dep = (1-plambda)*delambdap0 + plambda*delambdap1
       delambdae = delambdae + (elambdap1-elambdap0)*dplambdadelambdae
+      vir = virtemp + plambda*vir1 + (1-plambda)*vir0
 c
 c     reset lambda to initial value
 c
@@ -471,7 +482,7 @@ c
       use mpi
       implicit none
       integer status(MPI_STATUS_SIZE),tag,ierr
-      integer i,j,k,ii,iipole,iglob,iloc
+      integer i,j,k,ii,iipole,iglob,iloc,ilocrec
       integer j1,j2,j3
       integer k1,k2,k3
       integer m1,m2,m3
@@ -1154,7 +1165,12 @@ c     modify the gradient and virial for charge flux
 c
          pot = 0d0
          potrec = 0d0
-         potrec = cphidprec(1,:)
+         do i = 1, npolerecloc
+           iipole = polerecglob(i)
+           iglob = ipole(iipole)
+           ilocrec = locrec(iglob)
+           potrec(ilocrec) = cphidprec(1,i)
+         end do
 c
 c     communicate reciprocal potential to get local values
 c

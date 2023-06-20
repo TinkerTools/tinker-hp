@@ -230,6 +230,12 @@ c
       subroutine gradfast1(energy,derivs)
       use cutoff
       use potent
+#ifdef COLVARS
+      use colvars
+#endif
+#ifdef PLUMED
+      use plumed
+#endif
       implicit none
       real*8 energy
       real*8 derivs(3,*)
@@ -237,6 +243,12 @@ c
       logical save_mpole,save_polar
       logical save_repuls,save_disp,save_chgtrn
       logical save_list
+#ifdef COLVARS
+      logical save_colvars
+#endif
+#ifdef PLUMED
+      logical save_plumed
+#endif
 c
 c
 c     save the original state of slow-evolving potentials
@@ -249,6 +261,12 @@ c
       save_disp = use_disp
       save_chgtrn = use_chgtrn
       save_list = use_list
+#ifdef COLVARS
+      save_colvars = use_colvars
+#endif
+#ifdef PLUMED
+      save_plumed = lplumed
+#endif
 c
 c     turn off slow-evolving nonbonded potential energy terms
 c
@@ -260,6 +278,12 @@ c
       use_disp = .false.
       use_chgtrn = .false.
       use_list = .false.
+#ifdef COLVARS
+      use_colvars = .false.
+#endif
+#ifdef PLUMED
+      lplumed = .false.
+#endif
 c
 c     get energy and gradient for fast-evolving potential terms
 c
@@ -275,6 +299,12 @@ c
       use_disp = save_disp
       use_chgtrn = save_chgtrn
       use_list = save_list
+#ifdef COLVARS
+      use_colvars = save_colvars
+#endif
+#ifdef PLUMED
+      lplumed = save_plumed
+#endif
       return
       end
 c
@@ -295,6 +325,12 @@ c
       use energi
       use polpot
       use potent
+#ifdef COLVARS
+      use colvars
+#endif
+#ifdef PLUMED
+      use plumed
+#endif
       implicit none
       real*8 energy
       real*8 derivs(3,*)
@@ -312,6 +348,12 @@ c
       logical save_prec,save_crec
       integer save_polalg,save_tcgorder
       logical save_tcgprec,save_tcgguess,save_tcgpeek
+#ifdef COLVARS
+      logical save_colvars
+#endif
+#ifdef PLUMED
+      logical save_plumed
+#endif
 c
 c
 c     save the original state of fast-evolving potentials
@@ -342,6 +384,12 @@ c
       save_tcgguess = tcgguess
       save_tcgpeek = tcgpeek
       save_tcgomega = tcgomega
+#ifdef COLVARS
+      save_colvars = use_colvars
+#endif
+#ifdef PLUMED
+      save_plumed = lplumed
+#endif
 c
 c     turn off fast-evolving valence potential energy terms
 c
@@ -383,6 +431,12 @@ c
       tcgguess = tcgguessshort
       tcgpeek = tcgpeekshort
       tcgomega = tcgomegashort
+#ifdef COLVARS
+      use_colvars = .false.
+#endif
+#ifdef PLUMED
+      lplumed = .false.
+#endif
 c
 c     get energy and gradient for slow-evolving potential terms
 c
@@ -427,6 +481,12 @@ c
       tcgprec = save_tcgprec
       tcgguess = save_tcgguess
       tcgpeek = save_tcgpeek
+#ifdef COLVARS
+      use_colvars = save_colvars
+#endif
+#ifdef PLUMED
+      lplumed = save_plumed
+#endif
 c
 c
 c     also save the values of the short range real space forces

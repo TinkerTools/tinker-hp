@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -46,6 +46,9 @@
   The interface is almost perfectly backward compatible, although it implements
   a few additional functions. See more details below.
 
+  A further improvement has been made in PLUMED 2.8, where the interface has
+  been modified to allow dynamic type checking. See more details below.
+
   Why is Plumed.c written in C and not C++? The reason is that the resulting Plumed.o
   needs to be linked with the host MD code immediately (whereas the rest of plumed
   could be linked a posteriori). Imagine the MD code is written in FORTRAN: when we
@@ -83,7 +86,9 @@
   applications with conventional MD codes) it is possible to take advantage
   of a global interface, which is implicitly referring to a unique global instance.
   The global object should still be initialized and finalized properly.
-  This global object is obviously not usable in a multithread context.
+  This global object is obviously not usable in a multithread context. In addition,
+  it is difficult to use it in an exception-safe manner, so its usage in C++ is
+  allowed but discouraged.
 
   As of PLUMED 2.5, the interface contains a reference counter that allows
   for a better control of plumed initializations and deallocations.
@@ -92,6 +97,9 @@
   In other languages, to use the reference counter correctly it is sufficient to
   remember the following rule: for any `plumed_create*` call, there should be a corresponding
   `plumed_finalize` call. More examples can be found below.
+
+  Notice that up to PLUMED 2.8 the reference counter was not thread safe. This is fixed
+  when using PLUMED>=2.9 wrappers with a PLUMED>=2.9 kernel.
 
   The basic method to send a message to plumed is
 \verbatim
@@ -108,11 +116,21 @@
 \endverbatim
 
   As of PLUMED 2.5, you can also initialize a plumed object using the following functions,
-  that load a specific kernel:
+  that load a specific kernel. The function plumed_create_dlopen2 allows to specify options
+  for dlopen. The C++ version accepts an optional argument to this aim.
 \verbatim
-  (C)        plumed_create_dlopen
+  (C)        plumed_create_dlopen or plumed_create_dlopen2
   (C++)      PLMD::Plumed::dlopen
   (FORTRAN)  PLUMED_F_CREATE_DLOPEN
+\endverbatim
+
+  As of PLUMED 2.8, you can also initialize a plumed object using the following function,
+  that loads a kernel from an already loaded shared library. It accepts a handler
+  returned by `dlopen`:
+\verbatim
+  (C)        plumed_create_dlsym
+  (C++)      PLMD::Plumed::dlsym
+  (FORTRAN not allowed)
 \endverbatim
 
   To finalize a plumed object, use
@@ -191,7 +209,7 @@
   since, when compiling with debug options, it will check if the void pointer actually points to a plumed object.
 
   As of PLUMED 2.5, we added a reference count. It is in practice possible
-  to create multiple `plumed` object that refer to the same environment.
+  to create multiple `plumed` objects that refer to the same environment.
   This is done using the following functions
 \verbatim
   (C)        plumed_create_reference     (from a C object)
@@ -265,7 +283,7 @@
 
   First of all, notice that access to PLUMED goes through three functions:
   - plumed_create: this, as of PLUMED 2.5, is guaranteed not to throw any exception. If there is a problem, it will
-    just return a NULL pointer
+    just return a plumed object containing a NULL pointer
   - plumed_cmd: this function might throw exceptions.
   - plumed_finalize: this is a destructor and is guaranteed not to throw any exception.
 
@@ -273,20 +291,18 @@
 
   If you use C/FORTRAN, you will basically have no way to intercept the exception and the program will just terminate.
 
-  If you use C++ but you are calling the C interface (e.g. \ref plumed_cmd), then you might be
-  able to catch the exceptions thrown by PLUMED. Notice that all the exceptions thrown by PLUMED inherit from std::exception,
-  so you might want to catch it by reference. Notice however that there is a C layer between your C++ code and the PLUMED
-  library. In principle, the stack unwinding performed during exception handling is undefined in C and might lead to problems
-  that are system and compiler dependent. In addition to this, there might be troubles when combining different compilers
-  or different standard libraries. E.g., if you MD code is linked against a given C++ library and PLUMED is linked against
-  another one, the two std::exception types will differ and you won't be able to catch exceptions raised by PLUMED.
-
   If you use C++ and you are calling the C++ interface (e.g. \ref Plumed::cmd), as of PLUMED 2.5 we implemented a complete
   remapping of the exceptions thrown by PLUMED.  This solves both the problems mentioned above. In particular:
   - Instead of throwing an exception, PLUMED will return (using a \ref plumed_nothrow_handler) the details about the occurred error.
   - An equivalent exception will be thrown within the inline PLUMED interface compiled with your MD code.
 
   As a consequence, you will be able to combine different compilers and avoid stack unwinding in the C layer.
+
+  If you use C++ but you are calling the C interface (e.g. \ref plumed_cmd), then you might be
+  able to catch the exceptions thrown by PLUMED. Notice that all the exceptions thrown by PLUMED inherit from std::exception,
+  so you might want to catch it by reference. By default, as of PLUMED 2.8 \ref plumed_cmd is redefined as a macro and directly calls
+  the \ref Plumed::cmd interface, and thus behaves in an equivalent manner. With previous versions of this header
+  one could have encountered problems with stack unwinding performed during exception handling in the C layer.
 
   Notice that, even if you use \ref Plumed::cmd, if you are loading a kernel <=2.4 any exception generated by PLUMED will
   leak through the C layer. This might lead to undefined behavior. If you are lucky (with some compiler it works!) and
@@ -297,6 +313,39 @@
   Notice that this implies some loss of information, since the original exception might have been of a different type.
   However, it also implies that the virtual table of the original exception won't be needed anymore. This allows to
   completely decouple the MD code from the PLUMED library.
+
+\section ReferencePlumedH-typesafe Typesafe interface
+
+  Starting with PLUMED 2.8, the `cmd` function of the C++ interface, and the similar function `gcmd`, can be called
+  with several interfaces and can perform a typechecking on the passed argument. In particular, the following
+  forms are now possible:
+\verbatim
+  cmd("string",value);        // by value
+  cmd("string",&value);       // by pointer
+  cmd("string",&value,nelem); // by pointer, specifying the number of elements of the passed array
+  cmd("string",&value,shape); // by pointer, specifying the shape of the passed array
+\endverbati
+  The `nelem` and `shape` arguments are used by PLUMED to check that the user
+  provided enough elements. If nelem is provided, the check is done on the flatten array, whereas if shape
+  is passed a more thorough check is performed controlling each of the dimensions of the array.
+  In addition to this, the type of the pointer (or of the value) is checked at runtime.
+
+  All these checks are only implemented if the PLUMED library is recent (>=2.8). However, it will still be
+  possible to load at runtime an older PLUMED library (<=2.7). For this reason, it is still compulsory
+  to pass the correct types to the `cmd` function, also when the argument is passed by value.
+  Type conversions are only performed between pointers and only in ways compatible with
+  what is allowed in C++ (e.g., `const void*` cannot be converted to `void*`, but `void*` can
+  be converted to `const void*`).
+
+  Type checkes can be disabled in two ways:
+  - By compiling `Plumed.h` with `-D__PLUMED_WRAPPER_CXX_TYPESAFE=0`
+  - By setting `export PLUMED_TYPESAFE_IGNORE=yes` at runtime.
+
+  Typechecks are also enabled in the C interface (plumed_cmd). This function is replaced with a macro by default.
+  In particular:
+  - If the C interface is used in C++ code, it calls the C++ interface. Can be disabled with `-D__PLUMED_WRAPPER_CXX_BIND_C=0`.
+  - If the C interface is used in C code and compiled with a C11 compiler, it uses _Generic to pass type information.
+    Can be disabled using `-D__PLUMED_WRAPPER_C_TYPESAFE=0`.
 
 \section ReferencePlumedH-2-5 New in PLUMED 2.5
 
@@ -413,6 +462,33 @@
 #endif
 
 /*
+  1: Enable typesafe C interface (default)
+  0: Disable typesafe C interface
+
+  Only used in declarations. Requires C11 _Generic and variadic macros, and so it is
+  disabled by default with C++ and pre C11 compilers.
+
+  https://mort.coffee/home/c-compiler-quirks/
+*/
+
+#ifndef __PLUMED_WRAPPER_C_TYPESAFE
+#  if defined(__STDC_VERSION__)
+#    if ! defined(__cplusplus) && __STDC_VERSION__ >= 201112L
+#      if defined(__GNUC__) && !defined(__clang__)
+#        if (__GNUC__ >= 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
+#          define __PLUMED_WRAPPER_C_TYPESAFE 1
+#        endif
+#      else
+#        define __PLUMED_WRAPPER_C_TYPESAFE 1
+#      endif
+#    endif
+#  endif
+#  ifndef __PLUMED_WRAPPER_C_TYPESAFE
+#    define __PLUMED_WRAPPER_C_TYPESAFE 0
+#  endif
+#endif
+
+/*
   1: enable C++ wrapper (default)
   0: disable C++ wrapper
 
@@ -455,6 +531,19 @@
 #define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE 0
 #endif
 
+
+/*
+  1: throw exceptions such as PLMD::Exception
+  0: throw exceptions such as PLMD::Plumed::Exception (default)
+
+  This is useful when including Plumed.h within the plumed library
+  in anonymous mode, to make sure that the exception types from the
+  library are used.
+*/
+#ifndef __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+#define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS 0
+#endif
+
 /*
   1: make PLMD::Plumed class polymorphic (default)
   0: make PLMD::Plumed class non-polymorphic
@@ -464,6 +553,43 @@
 
 #ifndef __PLUMED_WRAPPER_CXX_POLYMORPHIC
 #define __PLUMED_WRAPPER_CXX_POLYMORPHIC 1
+#endif
+
+/*
+  1: Enable typesafe interface (default)
+  0: Disable typesafe interface
+
+  Only used in declarations.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_TYPESAFE
+#define __PLUMED_WRAPPER_CXX_TYPESAFE 1
+#endif
+
+/*
+  1: Define macros plumed_cmd and plumed_gcmd to use the C++ interface (default).
+  0: Don't define macros plumed_cmd and plumed_gcmd.
+
+  Only used in declarations.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_BIND_C
+#define __PLUMED_WRAPPER_CXX_BIND_C 1
+#endif
+
+/*
+  1: Enable passing long long int
+  0: Disable passing long long int
+
+  Only used in declarations. Default is 0 in C++<11 and 1 in C++>=11
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_LONGLONG
+#if __cplusplus > 199711L
+#define __PLUMED_WRAPPER_CXX_LONGLONG 1
+#else
+#define __PLUMED_WRAPPER_CXX_LONGLONG 0
+#endif
 #endif
 
 /*
@@ -486,6 +612,19 @@
 #define __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER 512
 #endif
 
+/*
+  1: enable nested exceptions (only with C++11) (default)
+  0: disable nested exceptions
+
+  For internal testing, used to mimic pre C++11 behavior on
+  nested exception.
+
+  Only used in declarations.
+*/
+
+#ifndef __PLUMED_WRAPPER_CXX_ENABLE_NESTED_EXCEPTIONS
+#define __PLUMED_WRAPPER_CXX_ENABLE_NESTED_EXCEPTIONS 1
+#endif
 
 /*
  By default, assume C++11 compliant library is not available.
@@ -520,14 +659,33 @@
 #endif
 
 /* Allow using noexcept, explicit, and override with C++11 compilers */
+#ifdef __cplusplus /*{*/
 #if __cplusplus > 199711L
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT noexcept
+#define __PLUMED_WRAPPER_CXX_NORETURN [[ noreturn ]]
 #define __PLUMED_WRAPPER_CXX_EXPLICIT explicit
 #define __PLUMED_WRAPPER_CXX_OVERRIDE override
+#define __PLUMED_WRAPPER_CXX_NULLPTR  nullptr
 #else
 #define __PLUMED_WRAPPER_CXX_NOEXCEPT throw()
+#define __PLUMED_WRAPPER_CXX_NORETURN
 #define __PLUMED_WRAPPER_CXX_EXPLICIT
 #define __PLUMED_WRAPPER_CXX_OVERRIDE
+#define __PLUMED_WRAPPER_CXX_NULLPTR  NULL
+#endif
+#else
+#define __PLUMED_WRAPPER_CXX_NOEXCEPT
+#define __PLUMED_WRAPPER_CXX_NORETURN
+#define __PLUMED_WRAPPER_CXX_EXPLICIT
+#define __PLUMED_WRAPPER_CXX_OVERRIDE
+#define __PLUMED_WRAPPER_CXX_NULLPTR  NULL
+#endif /*}*/
+
+/* static inline, for to avoid compiler warnings */
+#if defined(__cplusplus) || __STDC_VERSION__>=199901L
+#define __PLUMED_WRAPPER_STATIC_INLINE static inline
+#else
+#define __PLUMED_WRAPPER_STATIC_INLINE static
 #endif
 
 /* Macros for anonymous namespace */
@@ -552,7 +710,7 @@
 #define __PLUMED_WRAPPER_C_BEGIN  __PLUMED_WRAPPER_ANONYMOUS_BEGIN inline
 #define __PLUMED_WRAPPER_C_END __PLUMED_WRAPPER_ANONYMOUS_END
 #else
-#define __PLUMED_WRAPPER_C_BEGIN static
+#define __PLUMED_WRAPPER_C_BEGIN __PLUMED_WRAPPER_STATIC_INLINE
 #define __PLUMED_WRAPPER_C_END
 #endif
 
@@ -564,6 +722,41 @@
 #define __PLUMED_WRAPPER_GLOBAL 0
 
 #endif /*}*/
+
+#if __PLUMED_WRAPPER_CXX_STD
+#include <cstddef> /* size_t */
+#include <cstring> /* memcpy */
+#include <cstdio> /* fprintf */
+#include <cstdlib> /* abort */
+#include <cassert> /* assert */
+#else
+#include <stddef.h>
+#include <string.h>
+#include <stdio.h> /* FILE and fprintf */
+#include <stdlib.h> /* abort */
+#include <limits.h> /* CHAR_MIN */
+#include <assert.h> /* assert */
+#endif
+
+/**
+  This is an internal tool, to make sure that all malloc calls inside the
+  plumed library refer to the same implementation. When compiling with
+  __PLUMED_WRAPPER_DEBUG_REFCOUNT=1 it is possible to log
+  allocations and deallocations, so as to debug the wrappers.
+*/
+__PLUMED_WRAPPER_C_BEGIN
+void* plumed_malloc(__PLUMED_WRAPPER_STD size_t size);
+__PLUMED_WRAPPER_C_END
+
+/**
+  This is an internal tool, to make sure that all free calls inside the
+  plumed library refer to the same implementation. When compiling with
+  __PLUMED_WRAPPER_DEBUG_REFCOUNT=1 it is possible to log
+  allocations and deallocations, so as to debug the wrappers.
+*/
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_free(void* ptr);
+__PLUMED_WRAPPER_C_END
 
 /**
   \brief Main plumed object
@@ -592,6 +785,257 @@ typedef struct {
   void* ptr;
   void (*handler)(void*,int,const char*,const void*);
 } plumed_nothrow_handler;
+
+/** \relates plumed
+    \brief Structure holding a typesafe pointer.
+*/
+
+typedef struct {
+  /** Pointer to data */
+  const void* ptr;
+  /** Number of elements (in case pointing to an array) */
+  __PLUMED_WRAPPER_STD size_t nelem;
+  /** Shape (scanned up to a zero value is found) */
+  const __PLUMED_WRAPPER_STD size_t* shape;
+  /**
+    sum of:
+    sizeof(pointed data), up to 0x10000 (65536). 0 means size not checked
+    0x10000    * data type, up to 0xff (255)
+               0 not typechecked
+               1 void
+               2 nullptr
+               3 integral
+               4 floating point
+               5 FILE (size will not be computed as it might be incomplete)
+               >5 not typechecked, reserved for future extensions
+    0x1000000  * 1 for unsigned (ignored)
+    0x2000000  * pointer/const type, up to 8
+               0 not typechecked
+               1 T (pass-by-value)
+               2 T       *
+               3 T const *
+               4 T       *       *
+               5 T       * const *
+               6 T const *       *
+               7 T const * const *
+    0x10000000 * 1 to forbid pointer copy (pointer copy is also forbidden for pass-by-value)
+    0x20000000 and higher bits are ignored, reserved for future extensions
+  */
+  __PLUMED_WRAPPER_STD size_t flags;
+  /** Optional information, not used yet  */
+  const void* opt;
+} plumed_safeptr;
+
+/**
+  Small structure that is only defined locally to retrieve errors.
+
+  It is supposed to be used in the C11/C++ plumed_cmd interface as follows:
+\verbatim
+  plumed p;
+  plumed_error error;
+
+  p=plumed_create();
+
+  plumed_cmd(p,"setNatoms",10,&error);
+  if(error.code) {
+    fprintf(errors,"%d\n",error.code);
+    plumed_error_finalize(error); // make sure the error object is finalized!
+  }
+  // if no error was raised (error.code==0), it is not necessary to call plumed_error_finalize.
+  // but doing it is harmless
+
+  // no need to initialize error, it is written in the plumed_cmd function
+  plumed_cmd(p,"init",&error);
+  if(error.code) {
+    fprintf(errors,"%d\n",error.code);
+    plumed_error_finalize(error); // make sure the error object is finalized!
+  }
+\endverbatim
+
+  The layout of this structure is subject to change, thus all the functions manipulating it
+  are defined as inline/static functions. In the future, we might reach some form
+  of ABI stability, and these functions might be moved below to the implementation
+  file.
+
+  Notice that there is a macro plumed_error() defined in the PLUMED source code
+  (at tools/Exception.h). There is no conflict with this type since C preprocessor
+  distinguishes macros and function-like macros.
+*/
+typedef struct plumed_error {
+  /** code used for translating messages */
+  int code;
+  /** error code for system_error */
+  int error_code;
+  /** message */
+  const char* what;
+  /** the buffer containing the message to be deallocated */
+  char* what_buffer;
+  /** pointer to nested exception */
+  struct plumed_error* nested;
+} plumed_error;
+
+/** Initialize error (for internal usage) */
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_init(plumed_error* error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  assert(error);
+  error->code=0;
+  error->error_code=0;
+  error->what=__PLUMED_WRAPPER_CXX_NULLPTR;
+  error->what_buffer=__PLUMED_WRAPPER_CXX_NULLPTR;
+  error->nested=__PLUMED_WRAPPER_CXX_NULLPTR;
+}
+
+/** Finalize error - should be called when an error is raised to avoid leaks */
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_finalize(plumed_error error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  if(!error.code) return;
+  if(error.nested) {
+    plumed_error_finalize(*error.nested);
+    plumed_free(error.nested);
+  }
+  if(error.what_buffer) {
+    plumed_free(error.what_buffer);
+  }
+}
+
+/** Access message - more robust than directly accessing what ptr, for future extensibility */
+__PLUMED_WRAPPER_STATIC_INLINE const char* plumed_error_what(plumed_error error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  return error.what;
+}
+
+/** Set error to bad_alloc (for internal usage).
+    At variance with plumed_error_init, it also finalizes the error, possibly
+    deallocating any buffer.
+*/
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set_bad_alloc(plumed_error*error) {
+  assert(error);
+  plumed_error_finalize(*error);
+  plumed_error_init(error);
+  error->what="[msg erased due to allocation failure]";
+  error->code=11400;
+}
+
+/** Recursive merge (for internal usage) */
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_recursive_merge(plumed_error* error,char*buffer,const char*join,__PLUMED_WRAPPER_STD size_t*len) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  if(error->nested) plumed_error_recursive_merge(error->nested,buffer,join,len);
+  __PLUMED_WRAPPER_STD strncat(buffer,plumed_error_what(*error),*len);
+  *len -= __PLUMED_WRAPPER_STD strlen(plumed_error_what(*error));
+  __PLUMED_WRAPPER_STD strncat(buffer,join,*len);
+  *len -= __PLUMED_WRAPPER_STD strlen(join);
+}
+
+/** Merge with nested exceptions */
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_merge_with_nested(plumed_error* error) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  __PLUMED_WRAPPER_STD size_t len;
+  __PLUMED_WRAPPER_STD size_t len_join;
+  /* The is temporarily holding the new message */
+  char* new_buffer;
+  /* This is the string used to concatenate messages */
+  const char* join="\n\nThe above exception was the direct cause of the following exception:\n";
+  /* This is used to iterate over the linked list of nested exceptions */
+  plumed_error*e;
+
+  /* If exception is not nested, nothing to do */
+  if(!error->nested) return;
+
+  /* Accumulate the total length of the concatenated message */
+  len_join=__PLUMED_WRAPPER_STD strlen(join);
+  e=error;
+  len=__PLUMED_WRAPPER_STD strlen(plumed_error_what(*e));
+  while(e->nested) {
+    e=e->nested;
+    len+=len_join+__PLUMED_WRAPPER_STD strlen(plumed_error_what(*e));
+  }
+
+  /* Allocate the new message */
+  new_buffer=(char*)plumed_malloc(len+1);
+  if(new_buffer) {
+    /* If allocation was successful, merge the messages */
+    new_buffer[0]='\0';
+    /* Notice that we have a forward linked list but we need to go through that in backward order
+       (inner to outer). To do that without allocating an additional array, we use a recursive
+       function.
+    */
+    assert(error->nested);
+    plumed_error_recursive_merge(error->nested,new_buffer,join,&len);
+    __PLUMED_WRAPPER_STD strncat(new_buffer,plumed_error_what(*error),len);
+    len -= __PLUMED_WRAPPER_STD strlen(plumed_error_what(*error));
+    /* we keep track of length of buffer for safety */
+    assert(len==0);
+  }
+  error->what=new_buffer;
+
+  /* Deallocate the previous message */
+  if(error->what_buffer) plumed_free(error->what_buffer);
+  error->what_buffer=new_buffer;
+
+  /* Finalize the chain of nested exceptions */
+  plumed_error_finalize(*error->nested);
+  plumed_free(error->nested);
+  error->nested=__PLUMED_WRAPPER_CXX_NULLPTR;
+
+  if(!error->what) {
+    /* If allocation was not successful, reset to bad_alloc */
+    plumed_error_set_bad_alloc(error);
+  }
+}
+
+/** Rethrow error (calling abort) */
+__PLUMED_WRAPPER_CXX_NORETURN __PLUMED_WRAPPER_STATIC_INLINE void plumed_error_rethrow(plumed_error h) {
+  if(h.nested) plumed_error_merge_with_nested(&h);
+  __PLUMED_WRAPPER_STD fprintf(stderr,"Terminate due to exception. Code: %d\n%s\n",h.code,plumed_error_what(h));
+  __PLUMED_WRAPPER_STD abort();
+}
+
+/** Callback (for internal usage) */
+__PLUMED_WRAPPER_STATIC_INLINE void plumed_error_set(void*ptr,int code,const char*what,const void* opt) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+  plumed_error* error;
+  __PLUMED_WRAPPER_STD size_t len;
+  void*const* options;
+
+  error=(plumed_error*) ptr;
+
+  error->code=code;
+  error->error_code=0;
+  len=__PLUMED_WRAPPER_STD strlen(what);
+  error->what_buffer=(char*) plumed_malloc(len+1);
+  if(!error->what_buffer) {
+    plumed_error_set_bad_alloc(error);
+    return;
+  }
+
+  __PLUMED_WRAPPER_STD strncpy(error->what_buffer,what,len+1);
+  error->what=error->what_buffer;
+
+  /* interpret optional arguments */
+  if(opt) {
+    options=(void*const*)opt;
+    while(*options) {
+      /* c: error code */
+      if(*((const char*)*options)=='c' && *(options+1)) {
+        error->error_code=*((const int*)*(options+1));
+        break;
+      }
+      options+=2;
+    }
+    options=(void*const*)opt;
+    while(*options) {
+      /* n: nested exception */
+      if(*((const char*)*options)=='n' && *(options+1)) {
+        /* notice that once this is allocated it is guaranteed to be deallocated by the recursive destructor */
+        error->nested=(plumed_error*) plumed_malloc(sizeof(plumed_error));
+        /* this is if malloc fails */
+        if(!error->nested) {
+          plumed_error_set_bad_alloc(error);
+          break;
+        }
+        plumed_error_init((plumed_error*)error->nested);
+        /* plumed will make sure to only use this if it is not null */
+        *(void**)*(options+1)=error->nested;
+        break;
+      }
+      options+=2;
+    }
+  }
+}
 
 /** \relates plumed
     \brief Constructor
@@ -659,6 +1103,18 @@ __PLUMED_WRAPPER_C_END
 */
 __PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_dlopen2(const char*path,int mode);
+__PLUMED_WRAPPER_C_END
+
+/**
+  \brief Constructor from dlopen handle. Available as of PLUMED 2.8
+
+  Same as  \ref plumed_create_dlopen, but it acts on an already loaded library.
+  This allows to separate the library loading from the construction of the
+  plumed object. By using this function, the caller takes the responsibility
+  to later use dlclose on this handle.
+*/
+__PLUMED_WRAPPER_C_BEGIN
+plumed plumed_create_dlsym(void* dlhandle);
 __PLUMED_WRAPPER_C_END
 
 /** \relates plumed
@@ -772,6 +1228,14 @@ __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
 void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_handler nothrow);
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr,plumed_nothrow_handler nothrow);
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_safe(plumed p,const char*key,plumed_safeptr);
 __PLUMED_WRAPPER_C_END
 
 /** \relates plumed
@@ -920,6 +1384,186 @@ __PLUMED_WRAPPER_C_BEGIN
 plumed plumed_v2c(void*);
 __PLUMED_WRAPPER_C_END
 
+#if ! defined( __cplusplus) /*{*/
+
+#if __PLUMED_WRAPPER_C_TYPESAFE /*{*/
+
+#define __PLUMED_WRAPPER_C_TYPESAFE_INNER(type_,typen_,flags_) \
+  static inline void plumed_cmdnse_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem, const size_t* shape,plumed_error* error) { \
+    plumed_safeptr safe; \
+    plumed_nothrow_handler nothrow; \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.shape=(const size_t*)shape; \
+    safe.flags=flags_; \
+    safe.opt=NULL; \
+    if(error) { \
+      plumed_error_init(error); \
+      nothrow.ptr=error; \
+      nothrow.handler=plumed_error_set; \
+      plumed_cmd_safe_nothrow(p,key,safe,nothrow); \
+    } else { \
+      plumed_cmd_safe(p,key,safe); \
+    } \
+  } \
+  static inline void plumed_cmdne_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem, plumed_error* error) { \
+    plumed_cmdnse_ ## typen_(p,key,ptr,nelem,NULL,error); \
+  } \
+  static inline void plumed_cmdse_ ## typen_(plumed p,const char*key,type_*ptr, const size_t* shape, plumed_error* error) { \
+    plumed_cmdnse_ ## typen_(p,key,ptr,0,shape,error); \
+  } \
+  static inline void plumed_cmdn_ ## typen_(plumed p,const char*key,type_*ptr, size_t nelem) { \
+    plumed_cmdnse_ ## typen_(p,key,ptr,nelem,NULL,NULL); \
+  } \
+  static inline void plumed_cmds_ ## typen_(plumed p,const char*key,type_*ptr, const size_t* shape) { \
+    plumed_cmdnse_ ## typen_(p,key,ptr,0,shape,NULL); \
+  } \
+  static inline void plumed_cmde_ ## typen_(plumed p,const char*key,type_*ptr, plumed_error* error) { \
+    plumed_cmdnse_ ## typen_(p,key,ptr,0,NULL,error); \
+  }
+
+#define __PLUMED_WRAPPER_C_TYPESAFE_OUTER(type,type_,code,size) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type,             type_ ## _p,  size | (0x10000*(code)) | (0x2000000*2)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type const,       type_ ## _c,  size | (0x10000*(code)) | (0x2000000*3)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type*,            type_ ## _pp, size | (0x10000*(code)) | (0x2000000*4)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type*const,       type_ ## _pc, size | (0x10000*(code)) | (0x2000000*5)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type const*,      type_ ## _cp, size | (0x10000*(code)) | (0x2000000*6)) \
+  __PLUMED_WRAPPER_C_TYPESAFE_INNER(type const*const, type_ ## _cc, size | (0x10000*(code)) | (0x2000000*7))
+
+#define __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(type,type_,code) __PLUMED_WRAPPER_C_TYPESAFE_OUTER(type,type_,code,0)
+
+#define __PLUMED_WRAPPER_C_TYPESAFE_SIZED(type,type_,code) \
+  __PLUMED_WRAPPER_C_TYPESAFE_OUTER(type,type_,code,sizeof(type)) \
+  static inline void plumed_cmdnse_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem, const size_t* shape, plumed_error* error) { \
+    plumed_safeptr safe; \
+    plumed_nothrow_handler nothrow; \
+    (void) nelem; \
+    (void) shape; \
+    safe.ptr=&val; \
+    safe.nelem=1; \
+    safe.shape=NULL; \
+    safe.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
+    safe.opt=NULL; \
+    if(error) { \
+      plumed_error_init(error); \
+      nothrow.ptr=error; \
+      nothrow.handler=plumed_error_set; \
+      plumed_cmd_safe_nothrow(p,key,safe,nothrow); \
+    } else { \
+      plumed_cmd_safe(p,key,safe); \
+    } \
+  } \
+  static inline void plumed_cmdne_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem, plumed_error* error) {  \
+    plumed_cmdnse_ ## type_ ## _v(p,key,val,nelem,NULL,error); \
+  } \
+  static inline void plumed_cmdse_ ## type_ ## _v(plumed p,const char*key,type val, const size_t* shape, plumed_error* error) {  \
+    plumed_cmdnse_ ## type_ ## _v(p,key,val,0,shape,error); \
+  } \
+  static inline void plumed_cmdn_ ## type_ ## _v(plumed p,const char*key,type val, size_t nelem) {  \
+    plumed_cmdnse_ ## type_ ## _v(p,key,val,nelem,NULL,NULL); \
+  } \
+  static inline void plumed_cmds_ ## type_ ## _v(plumed p,const char*key,type val, const size_t* shape) {  \
+    plumed_cmdnse_ ## type_ ## _v(p,key,val,0,shape,NULL); \
+  } \
+  static inline void plumed_cmde_ ## type_ ## _v(plumed p,const char*key,type val, plumed_error* error) {  \
+    plumed_cmdnse_ ## type_ ## _v(p,key,val,0,NULL,error); \
+  }
+
+#define __PLUMED_WRAPPER_C_GENERIC1(flavor,type,typen_) \
+    type: plumed_ ## flavor ## _ ## typen_,
+
+#define __PLUMED_WRAPPER_C_GENERIC_EMPTY(flavor,type,type_) \
+  __PLUMED_WRAPPER_C_GENERIC1(flavor,type*,             type_ ## _p) \
+  __PLUMED_WRAPPER_C_GENERIC1(flavor,type const*,       type_ ## _c) \
+  __PLUMED_WRAPPER_C_GENERIC1(flavor,type**,            type_ ## _pp) \
+  __PLUMED_WRAPPER_C_GENERIC1(flavor,type*const*,       type_ ## _pc) \
+  __PLUMED_WRAPPER_C_GENERIC1(flavor,type const**,      type_ ## _cp) \
+  __PLUMED_WRAPPER_C_GENERIC1(flavor,type const*const*, type_ ## _cc)
+
+#define __PLUMED_WRAPPER_C_GENERIC2(flavor,type,type_) \
+  __PLUMED_WRAPPER_C_GENERIC_EMPTY(flavor,type,type_) \
+  __PLUMED_WRAPPER_C_GENERIC1(flavor,type,             type_ ## _v)
+
+/// Here we create all the required instances
+/// 1: void
+/// 3: integral
+/// 4: floating
+/// 5: FILE
+/// 0x100: unsigned
+__PLUMED_WRAPPER_C_TYPESAFE_EMPTY(void,void,1)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(char,char,(CHAR_MIN==0)*0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned char,unsigned_char,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(signed char,signed_char,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(short,short,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned short,unsigned_short,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(int,int,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned int,unsigned_int,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(long,long,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned long,unsigned_long,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(long long,long_long,3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(unsigned long long,unsigned_long_long,0x100+3)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(float,float,4)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(double,double,4)
+__PLUMED_WRAPPER_C_TYPESAFE_SIZED(long double,long_double,4)
+__PLUMED_WRAPPER_C_TYPESAFE_EMPTY(FILE,FILE,5)
+
+static inline void plumed_cmd_null_e(plumed p,const char*key,plumed_error* error,int ignore) {
+  (void) ignore;
+  plumed_cmde_void_p(p,key,NULL,error);
+}
+
+#define plumed_cmdnse_inner(flavor,val) _Generic((val), \
+    __PLUMED_WRAPPER_C_GENERIC_EMPTY(flavor,void,void) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,char,char) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,unsigned char,unsigned_char) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,signed char,signed_char) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,short,short) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,unsigned short,unsigned_short) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,int,int) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,unsigned int,unsigned_int) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,long,long) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,unsigned long,unsigned_long) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,long long,long_long) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,unsigned long long,unsigned_long_long) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,float,float) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,double,double) \
+    __PLUMED_WRAPPER_C_GENERIC2(flavor,long double,long_double) \
+    __PLUMED_WRAPPER_C_GENERIC_EMPTY(flavor,FILE,FILE) \
+    default: plumed_ ## flavor ## _void_c)
+
+#define plumed_cmd_2args(p,key) plumed_cmdnse_inner(cmdn,NULL) (p,key,NULL,0)
+
+#define plumed_cmd_3args(p,key,X) _Generic((X), \
+    plumed_error*: plumed_cmd_null_e, \
+    default:       plumed_cmdnse_inner(cmdn,X)) (p,key,X,0)
+
+/* ((X)+(size_t)0): for pointers, no op; for integers, convert to size_t */
+#define plumed_cmd_4args(p,key,val,X) _Generic(((X)+(size_t)0), \
+    const size_t *: plumed_cmdnse_inner(cmds,val), \
+    size_t *: plumed_cmdnse_inner(cmds,val), \
+    size_t: plumed_cmdnse_inner(cmdn,val), \
+    plumed_error*: plumed_cmdnse_inner(cmde,val) \
+    ) (p,key,val,X)
+
+/* ((X)+(size_t)0): for pointers, no op; for integers, convert to size_t */
+#define plumed_cmd_5args(p,key,val,X,error) _Generic(((X)+(size_t)0), \
+    const size_t *: plumed_cmdnse_inner(cmdse,val), \
+    size_t *: plumed_cmdnse_inner(cmdse,val), \
+    size_t: plumed_cmdnse_inner(cmdne,val) \
+    ) (p,key,val,X,error)
+
+#define __PLUMED_WRAPPER_C_GET_MACRO(_1,_2,_3,_4,_5,NAME,...) NAME
+#define plumed_cmd_c11(...) __PLUMED_WRAPPER_C_GET_MACRO(__VA_ARGS__, plumed_cmd_5args, plumed_cmd_4args, plumed_cmd_3args, plumed_cmd_2args)(__VA_ARGS__)
+
+#define plumed_gcmd_c11(...) plumed_cmd(plumed_global(),__VA_ARGS__)
+
+#define __PLUMED_WRAPPER_REDEFINE_CMD plumed_cmd_c11
+#define __PLUMED_WRAPPER_REDEFINE_GCMD plumed_gcmd_c11
+
+#endif /*}*/
+
+#endif /*}*/
+
 
 #if __PLUMED_WRAPPER_GLOBAL /*{*/
 
@@ -969,6 +1613,17 @@ extern
 void plumed_gcmd(const char* key,const void* val);
 
 /** \relates plumed
+    \brief Tells to the global interface to execute a command.
+
+    \param key The name of the command to be executed
+    \param safe A safe pointer
+
+    `plumed_gcmd_safe(a,b);` is equivalent to `plumed_cmd_safe(plumed_global(),a,b);`.
+*/
+extern
+void plumed_gcmd_safe(const char* key,plumed_safeptr);
+
+/** \relates plumed
     \brief Destructor for the global interface.
 
     `plumed_gfinalize(a,b);` is similar to `plumed_finalize(plumed_global(),a,b);`, but not completely
@@ -996,12 +1651,16 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 
 #if __PLUMED_WRAPPER_CXX_STD
 #include <cstdlib> /* NULL getenv */
+#include <cstddef> /* nullptr_t */
 #include <cstring> /* strncat strlen */
-#include <cstdio> /* fprintf */
+#include <cassert> /* assert */
+#include <climits> /* CHAR_MIN */
 #else
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include <assert.h>
+#include <limits.h>
 #endif
 
 #include <exception> /* exception bad_exception */
@@ -1017,8 +1676,17 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #include <functional> /* bad_function_call */
 #endif
 
+#if __cplusplus > 199711L
+#include <array> /* array */
+#include <initializer_list> /* initializer_list */
+#endif
+
 /* C++ interface is hidden in PLMD namespace (same as plumed library) */
 namespace PLMD {
+
+/* Optionally, it is further hidden in an anonymous namespace */
+
+__PLUMED_WRAPPER_ANONYMOUS_BEGIN /*{*/
 
 /**
   Retrieve PLUMED_EXCEPTIONS_DEBUG (internal utility).
@@ -1031,10 +1699,6 @@ inline static bool PlumedGetenvExceptionsDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT {
   static const char* res=__PLUMED_WRAPPER_STD getenv("PLUMED_EXCEPTIONS_DEBUG");
   return res;
 }
-
-/* Optionally, it is further hidden in an anonymous namespace */
-
-__PLUMED_WRAPPER_ANONYMOUS_BEGIN /*{*/
 
 /**
   C++ wrapper for \ref plumed.
@@ -1051,131 +1715,177 @@ class Plumed {
   */
   plumed main;
 
-  /**
-    Error handler used to rethrow exceptions.
-  */
-
-  struct NothrowHandler {
-    /** code used for translating messages */
-    int code;
-    /** short message buffer for non-throwing exceptions */
-    char exception_buffer[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER];
-    /** if exception_buffer='\0', message stored as an allocatable string */
-    ::std::string what;
-    /** error code for system_error */
-    int error_code;
-  };
+private:
 
   /**
-    Callback function that sets the error handler.
+    This is an internal utility to dispatch exceptions based on the plumed_error object.
 
-    opt argument is interpreted as the pointer to a null terminated array of void*.
-    The number of non-null element is expected to be even, and there should be a null element
-    that follows. Every pair of pointers should point
-    to a char, identifying the type of argument passed, and an arbitrary object.
-    Currently used to (optionally) pass error_code.
+    It takes information about the exception to be thrown by the passed h object
+    and use it to call function f() on the resulting exception. Notice that:
+    - this function does not consider if the error is nested.
+    - f should be a callable object, so that it can store information
+    - f operator() should be a template function so as to act based on the
+      type of its argument
+
+    New exceptions added here should be kept in sync with core/PlumedMainInitializer.cpp
+
+    Notice that this function also finalizes in place plumed_error h, so as to avoid
+    memory leaks.
   */
-  static void nothrow_handler(void*ptr,int code,const char*what,const void* opt) {
-    NothrowHandler* h=(NothrowHandler*) ptr;
-    h->code=code;
-    h->exception_buffer[0]='\0';
-    h->what.clear();
-    h->error_code=0;
-    /*
-       These codes correspond to exceptions that should not allocate a separate buffer but use the fixed one.
-       Notice that a mismatch between the exceptions using the stack buffer here and those implementing
-       the stack buffer would be in practice harmless. However, it makes sense to be consistent.
-    */
-    if(code==10000 || (code>=11000 && code<12000)) {
-      __PLUMED_WRAPPER_STD strncat(h->exception_buffer,what,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
-    } else {
-      h->what=what;
-    }
-
-    /* interpret optional arguments */
-    const void** options=(const void**)opt;
-    if(options) while(*options) {
-        if(*((char*)*options)=='c') h->error_code=*((int*)*(options+1));
-        options+=2;
-      }
-
-    if(PlumedGetenvExceptionsDebug()) {
-      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ PLUMED_EXCEPTIONS_DEBUG\n");
-      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ code: %d error_code: %d message:\n%s\n",h->code,h->error_code,what);
-      if(__PLUMED_WRAPPER_STD strlen(what) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
-      __PLUMED_WRAPPER_STD fprintf(stderr,"+++ END PLUMED_EXCEPTIONS_DEBUG\n");
-    }
-
-  }
-
-  /**
-    Rethrow the exception based on the information saved in the NothrowHandler.
-  */
-
-  static void rethrow(const NothrowHandler&h) {
-    /* The interpretation of the codes should be kept in sync with core/PlumedMainInitializer.cpp */
-    /* check if we are using a full string or a fixes size buffer */
-    const char* msg=(h.exception_buffer[0]?h.exception_buffer:h.what.c_str());
-    if(h.code==1) throw Plumed::Invalid(msg);
+  template<typename F>
+  __PLUMED_WRAPPER_CXX_NORETURN static void exception_dispatch(plumed_error&h,F f) {
+    /* this is required to make sure h is finalized when leaving this function */
+    finalize_plumed_error finalize(h);
+    /* grab the message */
+    const char* msg=plumed_error_what(h);
+    if(h.code==1) f(Plumed::Invalid(msg));
     /* logic errors */
     if(h.code>=10100 && h.code<10200) {
-      if(h.code>=10105 && h.code<10110) throw ::std::invalid_argument(msg);
-      if(h.code>=10110 && h.code<10115) throw ::std::domain_error(msg);
-      if(h.code>=10115 && h.code<10120) throw ::std::length_error(msg);
-      if(h.code>=10120 && h.code<10125) throw ::std::out_of_range(msg);
-      throw ::std::logic_error(msg);
+      if(h.code>=10105 && h.code<10110) f(::std::invalid_argument(msg));
+      if(h.code>=10110 && h.code<10115) f(::std::domain_error(msg));
+      if(h.code>=10115 && h.code<10120) f(::std::length_error(msg));
+      if(h.code>=10120 && h.code<10125) f(::std::out_of_range(msg));
+      f(::std::logic_error(msg));
     }
     /* runtime errors */
     if(h.code>=10200 && h.code<10300) {
-      if(h.code>=10205 && h.code<10210) throw ::std::range_error(msg);
-      if(h.code>=10210 && h.code<10215) throw ::std::overflow_error(msg);
-      if(h.code>=10215 && h.code<10220) throw ::std::underflow_error(msg);
+      if(h.code>=10205 && h.code<10210) f(::std::range_error(msg));
+      if(h.code>=10210 && h.code<10215) f(::std::overflow_error(msg));
+      if(h.code>=10215 && h.code<10220) f(::std::underflow_error(msg));
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-      if(h.code==10220) throw ::std::system_error(h.error_code,::std::generic_category(),msg);
-      if(h.code==10221) throw ::std::system_error(h.error_code,::std::system_category(),msg);
-      if(h.code==10222) throw ::std::system_error(h.error_code,::std::iostream_category(),msg);
-      if(h.code==10223) throw ::std::system_error(h.error_code,::std::future_category(),msg);
+      if(h.code==10220) f(::std::system_error(h.error_code,::std::generic_category(),msg));
+      if(h.code==10221) f(::std::system_error(h.error_code,::std::system_category(),msg));
+      if(h.code==10222) f(::std::system_error(h.error_code,::std::iostream_category(),msg));
+      if(h.code==10223) f(::std::system_error(h.error_code,::std::future_category(),msg));
 #endif
       if(h.code>=10230 && h.code<10240) {
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
 // These cases are probably useless as it looks like this should always be std::iostream_category
-        if(h.code==10230) throw ::std::ios_base::failure(msg,std::error_code(h.error_code,::std::generic_category()));
-        if(h.code==10231) throw ::std::ios_base::failure(msg,std::error_code(h.error_code,::std::system_category()));
-        if(h.code==10232) throw ::std::ios_base::failure(msg,std::error_code(h.error_code,::std::iostream_category()));
-        if(h.code==10233) throw ::std::ios_base::failure(msg,std::error_code(h.error_code,::std::future_category()));
+        if(h.code==10230) f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::generic_category())));
+        if(h.code==10231) f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::system_category())));
+        if(h.code==10232) f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::iostream_category())));
+        if(h.code==10233) f(::std::ios_base::failure(msg,::std::error_code(h.error_code,::std::future_category())));
 #endif
-        throw ::std::ios_base::failure(msg);
+        f(::std::ios_base::failure(msg));
       }
-      throw ::std::runtime_error(msg);
+      f(::std::runtime_error(msg));
     }
     /* "bad" errors */
-    if(h.code>=11000 && h.code<11100) throw Plumed::std_bad_typeid(msg);
-    if(h.code>=11100 && h.code<11200) throw Plumed::std_bad_cast(msg);
+    /* "< ::" space required in C++ < 11 */
+    if(h.code>=11000 && h.code<11100) f(add_buffer_to< ::std::bad_typeid>(msg));
+    if(h.code>=11100 && h.code<11200) f(add_buffer_to< ::std::bad_cast>(msg));
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-    if(h.code>=11200 && h.code<11300) throw Plumed::std_bad_weak_ptr(msg);
-    if(h.code>=11300 && h.code<11400) throw Plumed::std_bad_function_call(msg);
+    if(h.code>=11200 && h.code<11300) f(add_buffer_to< ::std::bad_weak_ptr>(msg));
+    if(h.code>=11300 && h.code<11400) f(add_buffer_to< ::std::bad_function_call>(msg));
 #endif
     if(h.code>=11400 && h.code<11500) {
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-      if(h.code>=11410 && h.code<11420) throw Plumed::std_bad_array_new_length(msg);
+      if(h.code>=11410 && h.code<11420) f(add_buffer_to< ::std::bad_array_new_length>(msg));
 #endif
-      throw Plumed::std_bad_alloc(msg);
+      f(add_buffer_to< ::std::bad_alloc>(msg));
     }
-    if(h.code>=11500 && h.code<11600) throw Plumed::std_bad_exception(msg);
+    if(h.code>=11500 && h.code<11600) f(add_buffer_to< ::std::bad_exception>(msg));
     /* lepton error */
-    if(h.code>=19900 && h.code<20000) throw Plumed::LeptonException(msg);
+    if(h.code>=19900 && h.code<20000) f(Plumed::LeptonException(msg));
     /* plumed exceptions */
     if(h.code>=20000 && h.code<30000) {
       /* debug - only raised with debug options */
-      if(h.code>=20100 && h.code<20200) throw Plumed::ExceptionDebug(msg);
+      if(h.code>=20100 && h.code<20200) f(Plumed::ExceptionDebug(msg));
       /* error - runtime check */
-      if(h.code>=20200 && h.code<20300) throw Plumed::ExceptionError(msg);
-      throw Plumed::Exception(msg);
+      if(h.code>=20200 && h.code<20300) f(Plumed::ExceptionError(msg));
+      /* error - type error */
+      if(h.code>=20300 && h.code<20400) f(Plumed::ExceptionTypeError(msg));
+      f(Plumed::Exception(msg));
     }
     /* fallback for any other exception */
-    throw Plumed::std_exception(msg);
+    f(add_buffer_to< ::std::exception>(msg));
   }
 
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_ENABLE_NESTED_EXCEPTIONS
+  /** Internal class used by exception_dispatch. */
+  class rethrow_nested {
+  public:
+    template<typename E>
+    __PLUMED_WRAPPER_CXX_NORETURN void operator()(const E&e) {
+      std::throw_with_nested(e);
+    }
+  };
+#endif
+
+  /** Internal class used by exception_dispatch. */
+  class rethrow_not_nested {
+  public:
+    template<typename E>
+    __PLUMED_WRAPPER_CXX_NORETURN void operator()(const E&e) {
+      throw e;
+    }
+  };
+
+  /** Internal class to simplify plumed_error finalization */
+  class finalize_plumed_error {
+    plumed_error&e;
+    finalize_plumed_error(const finalize_plumed_error&); //not implemented
+  public:
+    __PLUMED_WRAPPER_CXX_EXPLICIT finalize_plumed_error(plumed_error&e):
+      e(e)
+    {}
+    ~finalize_plumed_error() {
+      plumed_error_finalize(e);
+      e.code=0; // make sure it's not finalized again
+    }
+  };
+
+  /**
+    Recursive function that rethrows an exception with all the nested ones.
+
+    In order to do so, we start throwing from the first exception that was originally thrown
+    and recursively throw the others using throw_with_nested.
+
+    plumed_error h is finalized at exit by the exception_dispatch function, to avoid memory leaks
+  */
+  __PLUMED_WRAPPER_CXX_NORETURN static void rethrow(plumed_error&h) {
+#if __cplusplus > 199711L && __PLUMED_WRAPPER_CXX_ENABLE_NESTED_EXCEPTIONS
+    /*
+      When using C++11 nested exceptions, we need to rethrow recursively
+    */
+    try {
+      if(h.nested) rethrow(*h.nested); /* recursive throw */
+    } catch(...) {
+      exception_dispatch(h,rethrow_nested());
+    }
+    exception_dispatch(h,rethrow_not_nested());
+#else
+    /*
+      When using C++<11 exceptions, we merge the message and then throw the resulting exception
+    */
+    if(h.nested) plumed_error_merge_with_nested(&h);
+    exception_dispatch(h,rethrow_not_nested());
+#endif
+  }
+
+public:
+  /**
+    This is a tool to rethrow an error as an exception and finalize the error.
+
+    In practice, this makes it possible to write a code like this:
+    ```
+    Plumed p;
+    plumed_error e;
+    // store error in e if something wrong happes
+    // notice that Plumed (C++) is implicitly converted to plumed (C) when calling plumed_cmd
+    plumed_cmd(p,"init",&e);
+    // do other things here
+    // then throw the exception
+    if(e.code) plumed_error_rethrow(e);
+
+    It should be used through the macro plumed_error_rethrow.
+    ```
+  */
+  __PLUMED_WRAPPER_CXX_NORETURN static void plumed_error_rethrow_cxx(plumed_error h) {
+    rethrow(h);
+  }
+
+private:
   /**
     Rethrow the current exception.
 
@@ -1183,27 +1893,27 @@ class Plumed {
     Only std exceptions are handled, though some of them are thrown as special
     Plumed exceptions in order to be attached a message.
   */
-  static void rethrow() {
+  __PLUMED_WRAPPER_CXX_NORETURN static void rethrow() {
     try {
       throw;
     } catch(const ::std::bad_exception & e) {
-      throw Plumed::std_bad_exception(e.what());
+      throw add_buffer_to< ::std::bad_exception>(e.what());
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
     } catch(const ::std::bad_array_new_length & e) {
-      throw Plumed::std_bad_array_new_length(e.what());
+      throw add_buffer_to< ::std::bad_array_new_length>(e.what());
 #endif
     } catch(const ::std::bad_alloc & e) {
-      throw Plumed::std_bad_alloc(e.what());
+      throw add_buffer_to< ::std::bad_alloc>(e.what());
 #if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
     } catch(const ::std::bad_function_call & e) {
-      throw Plumed::std_bad_function_call(e.what());
+      throw add_buffer_to< ::std::bad_function_call>(e.what());
     } catch(const ::std::bad_weak_ptr & e) {
-      throw Plumed::std_bad_weak_ptr(e.what());
+      throw add_buffer_to< ::std::bad_weak_ptr>(e.what());
 #endif
     } catch(const ::std::bad_cast & e) {
-      throw Plumed::std_bad_cast(e.what());
+      throw add_buffer_to< ::std::bad_cast>(e.what());
     } catch(const ::std::bad_typeid & e) {
-      throw Plumed::std_bad_typeid(e.what());
+      throw add_buffer_to< ::std::bad_typeid>(e.what());
       // not implemented yet: std::regex_error
       // we do not allow regex yet due to portability problems with gcc 4.8
       // as soon as we transition to using <regex> it should be straightforward to add
@@ -1238,18 +1948,20 @@ class Plumed {
     } catch(const ::std::logic_error & e) {
       throw ::std::logic_error(e.what());
     } catch(const ::std::exception & e) {
-      throw Plumed::std_exception(e.what());
+      throw add_buffer_to< ::std::exception>(e.what());
     } catch(...) {
-      throw Plumed::std_bad_exception("plumed could not translate exception");
+      throw add_buffer_to< ::std::bad_exception>("plumed could not translate exception");
     }
   }
 
 public:
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using Exception = PLMD::Exception;
+#else
   /**
     Base class used to rethrow PLUMED exceptions.
   */
-
   class Exception :
     public ::std::exception
   {
@@ -1257,33 +1969,49 @@ public:
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Exception(const char* msg): msg(msg) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg.c_str();}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~Exception() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~Exception() throw() {}
+#endif
   };
+#endif
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using ExceptionError = PLMD::ExceptionError;
+#else
   /**
     Used to rethrow a PLMD::ExceptionError
   */
-
   class ExceptionError :
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionError(const char* msg): Exception(msg) {}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~ExceptionError() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~ExceptionError() throw() {}
+#endif
   };
+#endif
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using ExceptionDebug = PLMD::ExceptionDebug;
+#else
   /**
     Used to rethrow a PLMD::ExceptionDebug
   */
-
   class ExceptionDebug :
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionDebug(const char* msg): Exception(msg) {}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~ExceptionDebug() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~ExceptionDebug() throw() {}
+#endif
   };
+#endif
 
   /**
     Thrown when trying to access an invalid plumed object
@@ -1293,10 +2021,34 @@ public:
     public Exception {
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT Invalid(const char* msg): Exception(msg) {}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~Invalid() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~Invalid() throw() {}
+#endif
   };
 
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using ExceptionTypeError = PLMD::ExceptionTypeError;
+#else
+  /**
+    Thrown when a wrong pointer is passed to the PLUMED interface.
+  */
+  class ExceptionTypeError:
+    public Exception {
+  public:
+    __PLUMED_WRAPPER_CXX_EXPLICIT ExceptionTypeError(const char* msg): Exception(msg) {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~ExceptionTypeError() throw() {}
+#endif
+  };
+#endif
+
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE_PLMD_EXCEPTIONS
+  using LeptonException = PLMD::lepton::Exception;
+#else
   /**
     Class used to rethrow Lepton exceptions.
   */
@@ -1308,9 +2060,13 @@ public:
   public:
     __PLUMED_WRAPPER_CXX_EXPLICIT LeptonException(const char* msg): msg(msg) {}
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg.c_str();}
-    /* Destructor should be declared in order to have the correct throw() */
-    ~LeptonException() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~LeptonException() throw() {}
+#endif
   };
+#endif
 
 private:
   /*
@@ -1321,43 +2077,156 @@ private:
     such they use a fixed size buffer.
   */
 
-#define __PLUMED_WRAPPER_NOSTRING_EXCEPTION(name) \
-  class std_ ## name : \
-    public ::std::name \
-  { \
+  template<typename T>
+  class add_buffer_to:
+    public T
+  {
     char msg[__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER]; \
-  public: \
-    __PLUMED_WRAPPER_CXX_EXPLICIT std_ ## name(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-      this->msg[0]='\0'; \
-      __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
-      if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n"); \
-    } \
-    std_ ## name(const std_ ## name & other) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-      msg[0]='\0'; \
-      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
-    } \
-    std_ ## name & operator=(const std_ ## name & other) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
-      if(this==&other) return *this;\
-      msg[0]='\0'; \
-      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1); \
-      return *this; \
-    } \
-    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;} \
-    ~std_ ## name() __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {} \
+  public:
+    __PLUMED_WRAPPER_CXX_EXPLICIT add_buffer_to(const char * msg) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      this->msg[0]='\0';
+      __PLUMED_WRAPPER_STD strncat(this->msg,msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      if(PlumedGetenvExceptionsDebug() && __PLUMED_WRAPPER_STD strlen(msg) > __PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1) __PLUMED_WRAPPER_STD fprintf(stderr,"+++ WARNING: message will be truncated\n");
+    }
+    add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      msg[0]='\0';
+      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+    }
+    add_buffer_to & operator=(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      if(this==&other) return *this;
+      msg[0]='\0';
+      __PLUMED_WRAPPER_STD strncat(msg,other.msg,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER-1);
+      return *this;
+    }
+    const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {return msg;}
+#if ! (__cplusplus > 199711L)
+    /* Destructor should be declared in order to have the correct throw() before C++11 */
+    /* see https://stackoverflow.com/questions/50025862/why-is-the-stdexception-destructor-not-noexcept */
+    ~add_buffer_to() throw() {}
+#endif
   };
 
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_typeid)
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_cast)
-#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_weak_ptr)
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_function_call)
+private:
+  /// Small class that wraps plumed_safeptr in order to make its initialization easier
+  class SafePtr {
+    /// non copyable (copy would require managing buffer, could be added in the future if needed)
+    SafePtr(const SafePtr&);
+    /// non assignable (assignment would require managing buffer, could be added in the future if needed)
+    SafePtr& operator=(SafePtr const&);
+  public:
+    plumed_safeptr safe;
+    /// This buffer holds a copy of the data when they are passed by value.
+    /// The size is sufficient to hold any primitive type.
+    /// Notice that the buffer is required to enable conversions (e.g., passing a class that can be converted to int)
+    /// and, at the same time, allow the object to exist after SafePtr constructor has completed.
+    /// A perhaps cleaner implementation would require a base class containing
+    /// the plumed_safeptr object, derived classes depending on the
+    /// argument type as a template parameter, and overloaded functions
+    /// returning this derived class.
+    char buffer[32];
+    /// Default constructor, nullptr
+    SafePtr() __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      safe.ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+      safe.nelem=0;
+      safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR;
+      safe.flags=0x10000*2;
+      safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR;
+      buffer[0]='\0';
+    }
+
+    __PLUMED_WRAPPER_CXX_EXPLICIT SafePtr(const plumed_safeptr & safe,__PLUMED_WRAPPER_STD size_t nelem=0, const __PLUMED_WRAPPER_STD size_t* shape=__PLUMED_WRAPPER_CXX_NULLPTR) __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      this->safe=safe;
+      buffer[0]='\0';
+      if(nelem>0) this->safe.nelem=nelem;
+      if(shape) this->safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape);
+    }
+
+#if __cplusplus > 199711L
+    /// Construct from null
+    SafePtr(__PLUMED_WRAPPER_STD nullptr_t,__PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) noexcept {
+      safe.ptr=nullptr;
+      safe.nelem=0;
+      safe.shape=nullptr;
+      safe.flags=0x10000*2;
+      safe.opt=nullptr;
+      buffer[0]='\0';
+      (void) nelem;
+      (void) shape;
+    }
 #endif
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_alloc)
-#if __cplusplus > 199711L && __PLUMED_WRAPPER_LIBCXX11
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_array_new_length)
+
+/// Macro that generate a constructor with given type and flags
+#define __PLUMED_WRAPPER_SAFEPTR_INNER(type_,flags_) \
+  SafePtr(type_*ptr, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    safe.ptr=ptr; \
+    safe.nelem=nelem; \
+    safe.shape=const_cast<__PLUMED_WRAPPER_STD size_t*>(shape); \
+    safe.flags=flags_; \
+    safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
+    buffer[0]='\0'; \
+  }
+
+/// Macro that uses __PLUMED_WRAPPER_SAFEPTR_INNER to generate constructors with
+/// all possible pointer-const combinations
+#define __PLUMED_WRAPPER_SAFEPTR(type,code,size) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type,             size | (0x10000*(code)) | (0x2000000*2)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type const,       size | (0x10000*(code)) | (0x2000000*3)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type*,            size | (0x10000*(code)) | (0x2000000*4)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type*const,       size | (0x10000*(code)) | (0x2000000*5)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type const*,      size | (0x10000*(code)) | (0x2000000*6)) \
+  __PLUMED_WRAPPER_SAFEPTR_INNER(type const*const, size | (0x10000*(code)) | (0x2000000*7))
+
+/// Macro that generates the constructors from empy types (those of which sizeof cannot be computed)
+#define __PLUMED_WRAPPER_SAFEPTR_EMPTY(type,code) __PLUMED_WRAPPER_SAFEPTR(type,code,0)
+
+/// Macro that generates the constructors from sized types (those of which sizeof can be computed).
+/// In addition to generating constructors with all pointer types, it generates a constructor to
+/// allow pass-by-value
+#define __PLUMED_WRAPPER_SAFEPTR_SIZED(type,code) \
+  __PLUMED_WRAPPER_SAFEPTR(type,code,sizeof(type)) \
+  SafePtr(type val, __PLUMED_WRAPPER_STD size_t nelem, const __PLUMED_WRAPPER_STD size_t* shape) __PLUMED_WRAPPER_CXX_NOEXCEPT { \
+    assert(sizeof(type)<=32); \
+    (void) nelem; \
+    (void) shape; \
+    safe.ptr=buffer; \
+    safe.nelem=1; \
+    safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR; \
+    safe.flags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
+    safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR; \
+    __PLUMED_WRAPPER_STD memcpy(buffer,&val,sizeof(type)); \
+  }
+
+/// Here we create all the required instances
+/// 1: void
+/// 3: integral
+/// 4: floating
+/// 5: FILE
+/// 0x100: unsigned
+    __PLUMED_WRAPPER_SAFEPTR_EMPTY(void,1)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(char,(CHAR_MIN==0)*0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned char,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(signed char,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(short,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned short,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(int,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned int,0x100+3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long,0x100+3)
+#if __PLUMED_WRAPPER_CXX_LONGLONG
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long long,3)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(unsigned long long,0x100+3)
 #endif
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(bad_exception)
-  __PLUMED_WRAPPER_NOSTRING_EXCEPTION(exception)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(float,4)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(double,4)
+    __PLUMED_WRAPPER_SAFEPTR_SIZED(long double,4)
+    __PLUMED_WRAPPER_SAFEPTR_EMPTY(FILE,5)
+
+    /// Return the contained plumed_safeptr
+    plumed_safeptr get_safeptr() const __PLUMED_WRAPPER_CXX_NOEXCEPT {
+      return safe;
+    }
+
+  };
 
 public:
 
@@ -1425,6 +2294,9 @@ public:
   }
   /**
      Initialize global-plumed.
+     \warning Using the global objects in C++ is not recommended since they are difficult to use in
+              an exception safe manner. In particular, one should explicitly catch exceptions to
+              properly call gfinalize()
      \note Equivalent to plumed_gcreate()
   */
   static void gcreate() __PLUMED_WRAPPER_CXX_NOEXCEPT {
@@ -1433,13 +2305,59 @@ public:
   /**
      Send a command to global-plumed
       \param key The name of the command to be executed
-      \param val The argument. It is declared as const to allow calls like gcmd("A","B"),
-                 but for some choice of key it can change the content
      \note Equivalent to plumed_gcmd()
   */
-  static void gcmd(const char* key,const void* val=NULL) {
+  static void gcmd(const char*key) {
+    global().cmd(key);
+  }
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument.
+     \note Equivalent to plumed_gcmd()
+  */
+  template<typename T>
+  static void gcmd(const char*key,T val) {
     global().cmd(key,val);
   }
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument.
+      \param nelem Number of elements in the passed array, for typechecking.
+     \note Equivalent to plumed_gcmd()
+  */
+  template<typename T>
+  static void gcmd(const char*key,T* val,__PLUMED_WRAPPER_STD size_t nelem) {
+    global().cmd(key,val,nelem);
+  }
+
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument.
+      \param shape The shape of the argument.
+     \note Equivalent to plumed_gcmd()
+  */
+  template<typename T>
+  static void gcmd(const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape) {
+    global().cmd(key,val,shape);
+  }
+
+#if __cplusplus > 199711L
+  /**
+     Send a command to global-plumed
+      \param key The name of the command to be executed
+      \param val The argument.
+      \param shape The shape of the argument, in the form of an initialier_list (e.g., {10,3}).
+     \note Equivalent to plumed_gcmd()
+  */
+  template<typename T>
+  static void gcmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+    global().cmd(key,val,shape);
+  }
+#endif
+
   /**
      Finalize global-plumed
   */
@@ -1528,7 +2446,7 @@ Plumed(const Plumed& p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   Plumed&operator=(const Plumed&p) __PLUMED_WRAPPER_CXX_NOEXCEPT {
     if(this != &p) {
 // the check is needed to avoid calling plumed_finalize on moved objects
-      if(main.p) decref();
+      if(main.p) plumed_finalize(main);
       main=plumed_create_reference(p.main);
     }
     return *this;
@@ -1555,7 +2473,7 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   Plumed& operator=(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
     if(this != &p) {
 // the check is needed to avoid calling plumed_finalize on moved objects
-      if(main.p) decref();
+      if(main.p) plumed_finalize(main);
       main=p.main;
       p.main.p=nullptr;
     }
@@ -1580,8 +2498,10 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   \endverbatim
   */
   static Plumed dlopen(const char* path)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create_dlopen(path)).decref();
+    plumed p=plumed_create_dlopen(path);
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
 
   /**
@@ -1590,9 +2510,24 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     Same as \ref dlopen(const char* path), but allows a dlopen mode to be chosen explicitly.
   */
   static Plumed dlopen(const char* path,int mode)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create_dlopen2(path,mode)).decref();
+    plumed p=plumed_create_dlopen2(path,mode);
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
+  /**
+    Create a PLUMED object loading from an already opened shared library. Available as of PLUMED 2.8.
+
+    Same as \ref dlopen(const char* path), but searches functions in an already loaded library.
+    See \ref plumed_create_dlsym.
+  */
+  static Plumed dlsym(void* dlhandle)__PLUMED_WRAPPER_CXX_NOEXCEPT  {
+    plumed p=plumed_create_dlsym(dlhandle);
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
+  }
+
   /** Invalid constructor. Available as of PLUMED 2.5.
 
     Can be used to initialize an invalid object. It might be useful to postpone
@@ -1621,8 +2556,10 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   \endverbatim
   */
   static Plumed makeInvalid() __PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create_invalid()).decref();
+    plumed p=plumed_create_invalid();
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
 
   /**
@@ -1633,8 +2570,10 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
   */
 
   static Plumed makeValid()__PLUMED_WRAPPER_CXX_NOEXCEPT  {
-// use decref to remove the extra reference
-    return Plumed(plumed_create()).decref();
+    plumed p=plumed_create();
+    Plumed pp(p);
+    plumed_finalize(p);
+    return pp;
   }
 
 
@@ -1713,21 +2652,33 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
     return *this;
   }
 
+private:
+
   /**
-     Send a command to this plumed object
-      \param key The name of the command to be executed
-      \param val The argument. It is declared as const to allow calls like p.cmd("A","B"),
-                 but for some choice of key it can change the content
-      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
-            rethrow any exception raised within PLUMED.
+    Private version of cmd. It is used here to avoid duplication of code between typesafe and not-typesafe versions
   */
-  void cmd(const char*key,const void*val=NULL) {
-    NothrowHandler h;
-    h.code=0;
-    plumed_nothrow_handler nothrow= {&h,nothrow_handler};
+  static void cmd_priv(plumed main,const char*key, SafePtr*safe=__PLUMED_WRAPPER_CXX_NULLPTR, const void* unsafe=__PLUMED_WRAPPER_CXX_NULLPTR,plumed_error*error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+
+    plumed_error error_cxx;
+    plumed_error_init(&error_cxx);
+
+    plumed_nothrow_handler nothrow;
+    if(error) {
+      plumed_error_init(error);
+      nothrow.ptr=error;
+    } else {
+      nothrow.ptr=&error_cxx;
+    }
+    nothrow.handler=plumed_error_set;
+
     try {
-      plumed_cmd_nothrow(main,key,val,nothrow);
+      if(safe) {
+        plumed_cmd_safe_nothrow(main,key,safe->get_safeptr(),nothrow);
+      } else {
+        plumed_cmd_nothrow(main,key,unsafe,nothrow);
+      }
     } catch (...) {
+      assert(error_cxx.code==0); /* no need to plumed_error_finalize here */
       /*
         When loading a kernel <=2.4, plumed_cmd_nothrow could throw an exception.
         If the exception is transmitted through the C interface and arrives here,
@@ -1735,7 +2686,91 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
       */
       rethrow();
     }
-    if(h.code!=0) rethrow(h);
+    /* plumed_error_rethrow is finalizing */
+    if(!error && error_cxx.code!=0) plumed_error_rethrow_cxx(error_cxx);
+  }
+
+public:
+
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+  */
+  void cmd(const char*key) {
+    plumed_cmd_cxx(main,key);
+  }
+
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by value.
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+             the type of the argument is checked.
+  */
+  template<typename T>
+  void cmd(const char*key,T val) {
+    plumed_cmd_cxx(main,key,val);
+  }
+
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by pointer.
+      \param shape A zero-terminated array containing the shape of the data.
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+             the type of the argument is checked. If shape is passed, it is also
+             checked that PLUMED access only compatible indexes.
+  */
+  template<typename T>
+  void cmd(const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape) {
+    plumed_cmd_cxx(main,key,val,shape);
+  }
+
+#if __cplusplus > 199711L
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by pointer.
+      \param shape The shape of the argument, in the form of an initialier_list (e.g., {10,3}).
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+             the type of the argument is checked. If shape is passed, it is also
+             checked that PLUMED access only compatible indexes.
+  */
+  template<typename T>
+  void cmd(const char*key,T* val, std::initializer_list<std::size_t> shape) {
+    if(shape.size()>4) throw Plumed::ExceptionTypeError("Maximum shape size is 4");
+    std::array<std::size_t,5> shape_;
+    unsigned j=0;
+    for(auto i : shape) {
+      shape_[j]=i;
+      j++;
+    }
+    shape_[j]=0;
+    plumed_cmd_cxx(main,key,val,&shape_[0]);
+  }
+#endif
+  /**
+     Send a command to this plumed object
+      \param key The name of the command to be executed
+      \param val The argument, passed by pointer.
+      \param nelem The number of elements passed.
+      \note Similar to \ref plumed_cmd(). It actually called \ref plumed_cmd_nothrow() and
+            rethrow any exception raised within PLUMED.
+      \note Unless one defines __PLUMED_WRAPPER_CXX_TYPESAFE=0 or PLUMED library is <=2.7,
+             the type of the argument is checked.  nelem is used to check
+             the maximum index interpreting the array as flattened.
+  */
+  template<typename T>
+  void cmd(const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem) {
+    plumed_cmd_cxx(main,key,val,nelem);
   }
 
   /**
@@ -1753,8 +2788,164 @@ Plumed(Plumed&&p)__PLUMED_WRAPPER_CXX_NOEXCEPT :
 #endif
   ~Plumed() __PLUMED_WRAPPER_CXX_NOEXCEPT {
 // the check is needed to avoid calling plumed_finalize on moved objects
-    if(main.p) decref();
+    if(main.p) plumed_finalize(main);
   }
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  static void plumed_cmd_cxx(plumed p,const char*key,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s;
+    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+#else
+    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+#endif
+  }
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  template<typename T>
+  static void plumed_cmd_cxx(plumed p,const char*key,T val,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s(val,0,__PLUMED_WRAPPER_CXX_NULLPTR);
+    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+#else
+    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,&val,error);
+#endif
+  }
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  template<typename T>
+  static void plumed_cmd_cxx(plumed p,const char*key,T* val,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s(val,0,__PLUMED_WRAPPER_CXX_NULLPTR);
+    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+#else
+    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,val,error);
+#endif
+  }
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  template<typename T>
+  static void plumed_cmd_cxx(plumed p,const char*key,T* val, __PLUMED_WRAPPER_STD size_t nelem,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s(val,nelem,__PLUMED_WRAPPER_CXX_NULLPTR);
+    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+#else
+    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,val,error);
+#endif
+  }
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  template<typename T>
+  static void plumed_cmd_cxx(plumed p,const char*key,T* val, const __PLUMED_WRAPPER_STD size_t* shape,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+#if __PLUMED_WRAPPER_CXX_TYPESAFE
+    SafePtr s(val,0,shape);
+    cmd_priv(p,key,&s,__PLUMED_WRAPPER_CXX_NULLPTR,error);
+#else
+    cmd_priv(p,key,__PLUMED_WRAPPER_CXX_NULLPTR,val,error);
+#endif
+  }
+
+
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
+  /**
+    \related Plumed
+    This function can be used to make plumed_gcmd behave as the C++ wrapper PLMD::Plumed::gcmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_gcmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    Available as of PLUMED 2.8.
+  */
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  static void plumed_gcmd_cxx(const char*key,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+    plumed_cmd_cxx(plumed_global(),key,error);
+  }
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  template<typename T>
+  static void plumed_gcmd_cxx(const char*key,T val,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+    plumed_cmd_cxx(plumed_global(),key,val,error);
+  }
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  template<typename T>
+  static void plumed_gcmd_cxx(const char*key,T val, __PLUMED_WRAPPER_STD size_t nelem,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+    plumed_cmd_cxx(plumed_global(),key,val,nelem,error);
+  }
+
+  /**
+    These functions can be used to make plumed_cmd behave as the C++ wrapper PLMD::Plumed::cmd,
+    namely implement typechecks and rethrowing exception.
+    To be used through the macro plumed_cmd (defined when __PLUMED_WRAPPER_CXX_BIND_C==1).
+    They are also used by the Plumed::cmd functions to avoid code duplication.
+    Available as of PLUMED 2.8.
+  */
+  template<typename T>
+  static void plumed_gcmd_cxx(const char*key,T val, const __PLUMED_WRAPPER_STD size_t* shape,plumed_error* error=__PLUMED_WRAPPER_CXX_NULLPTR) {
+    plumed_cmd_cxx(plumed_global(),key,val,shape,error);
+  }
+
+#endif /*}*/
+
+#if __PLUMED_WRAPPER_CXX_BIND_C /*{*/
+
+#define __PLUMED_WRAPPER_REDEFINE_CMD ::PLMD::Plumed::plumed_cmd_cxx
+
+#if __PLUMED_WRAPPER_GLOBAL /*{*/
+#define __PLUMED_WRAPPER_REDEFINE_GCMD ::PLMD::Plumed::plumed_gcmd_cxx
+#endif /*}*/
+
+#define __PLUMED_WRAPPER_REDEFINE_ERROR_RETHROW ::PLMD::Plumed::plumed_error_rethrow_cxx
+
+#endif /*}*/
+
 };
 
 /**
@@ -1919,7 +3110,7 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 #include <cstdio>  /* fprintf */
 #include <cstring> /* memcpy strlen strncpy memcmp memmove strcmp memcpy */
 #include <cassert> /* assert */
-#include <cstdlib> /* getenv malloc free abort exit */
+#include <cstdlib> /* getenv malloc free abort */
 #include <climits> /* CHAR_BIT */
 #else
 #include <stdio.h>
@@ -1963,12 +3154,22 @@ typedef struct {
   version=2, cmd_nothrow.
 
   This function accepts an extra argument `plumed_nothrow_handler*handler`.
-  In case an exception is thrown withint plumed, it just calls `handler->handler(handler->ptr,code,message,opt)` and return.
+  In case an exception is thrown within plumed, it just calls `handler->handler(handler->ptr,code,message,opt)` and return.
   An alternative would have been to install an error handler (with a call to cmd("setErrorHandler")). However, the cost
   of doing it everytime Plumed::cmd is called is too high. On the other hand, installing it only at object construction
   is very risky since and object created in that way would not report any error if manipulated from the C interface.
   So, it looks like this is the only possibility.
 
+  version=3, cmd_safe and cmd_safe_nothrow
+
+  These are functions that accept a plumed_safeptr object, which can carry information about the passed type and size.
+  Since new information should be passed at every cmd call, this can only be obtained by adding new cmd calls.
+
+  version=4, thread-safe reference counter
+
+  These functions allow to access a thread-safe reference counter that is stored within the PlumedMain object.
+  This allows avoiding to enable atomic access also the C compiler used build Plumed.c. It's added here and not as a new
+  cmd since this is a very low-level functionality.
 */
 typedef struct {
   /**
@@ -1989,15 +3190,45 @@ typedef struct {
     Available with version>=2.
   */
   void (*cmd_nothrow)(void*plumed,const char*key,const void*val,plumed_nothrow_handler);
+  /**
+    Pointer to a cmd function that accepts typeinfos.
+
+    Available with version>=3.
+  */
+  void (*cmd_safe)(void*plumed,const char*key,plumed_safeptr);
+
+  /**
+    Pointer to a cmd function guaranteed not to throw exceptions and that accepts typeinfos.
+
+    Available with version>=3.
+  */
+  void (*cmd_safe_nothrow)(void*plumed,const char*key,plumed_safeptr,plumed_nothrow_handler);
+
+  /**
+    Pointer to a function that increments the internal reference counter.
+
+    Available with version>=4.
+  */
+  unsigned (*create_reference)(void*);
+  /**
+    Pointer to a function that decrements the internal reference counter.
+
+    Available with version>=4.
+  */
+  unsigned (*delete_reference)(void*);
+  /**
+    Pointer to a function that returns the internal reference counter.
+
+    Available with version>=4.
+  */
+  unsigned (*use_count)(void*);
 } plumed_symbol_table_type;
 
 /* Utility to convert function pointers to pointers, just for the sake of printing them */
-#define __PLUMED_CONVERT_FPTR(ptr,fptr) { ptr=NULL; __PLUMED_WRAPPER_STD memcpy(&ptr,&fptr,(sizeof(fptr)>sizeof(ptr)?sizeof(ptr):sizeof(fptr))); }
+#define __PLUMED_CONVERT_FPTR(ptr,fptr) { ptr=__PLUMED_WRAPPER_CXX_NULLPTR; __PLUMED_WRAPPER_STD memcpy(&ptr,&fptr,(sizeof(fptr)>sizeof(ptr)?sizeof(ptr):sizeof(fptr))); }
 
 #define __PLUMED_GETENV __PLUMED_WRAPPER_STD getenv
 #define __PLUMED_FPRINTF __PLUMED_WRAPPER_STD fprintf
-#define __PLUMED_MALLOC __PLUMED_WRAPPER_STD malloc
-#define __PLUMED_FREE __PLUMED_WRAPPER_STD free
 
 /**
   Historically (PLUMED<=2.4) register for plumedmain function pointers.
@@ -2013,7 +3244,7 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
   void* tmpptr;
   if(f) {
     if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) {
-      __PLUMED_FPRINTF(stderr,"+++ Ignoring registration at %p (",(void*)f);
+      __PLUMED_FPRINTF(stderr,"+++ Ignoring registration at %p (",(const void*)f);
       __PLUMED_CONVERT_FPTR(tmpptr,f->create);
       __PLUMED_FPRINTF(stderr,"%p,",tmpptr);
       __PLUMED_CONVERT_FPTR(tmpptr,f->cmd);
@@ -2022,7 +3253,7 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
       __PLUMED_FPRINTF(stderr,"%p) +++\n",tmpptr);
     }
   }
-  return NULL;
+  return __PLUMED_WRAPPER_CXX_NULLPTR;
 }
 __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #endif
@@ -2041,16 +3272,16 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
   char* pathcopy;
   void* p;
   char* pc;
-  size_t strlenpath;
+  __PLUMED_WRAPPER_STD size_t strlenpath;
   FILE* fp;
-  pathcopy=NULL;
-  p=NULL;
-  pc=NULL;
+  pathcopy=__PLUMED_WRAPPER_CXX_NULLPTR;
+  p=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pc=__PLUMED_WRAPPER_CXX_NULLPTR;
   strlenpath=0;
   fp=__PLUMED_WRAPPER_STD fopen(path,"r");
   if(!fp) {
     __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",path);
-    return NULL;
+    return __PLUMED_WRAPPER_CXX_NULLPTR;
   }
   __PLUMED_WRAPPER_STD fclose(fp);
   dlerror();
@@ -2065,7 +3296,11 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
     */
     __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
     strlenpath=__PLUMED_WRAPPER_STD strlen(path);
-    pathcopy=(char*) __PLUMED_MALLOC(strlenpath+1);
+    pathcopy=(char*) plumed_malloc(strlenpath+1);
+    if(!pathcopy) {
+      __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
+      __PLUMED_WRAPPER_STD abort();
+    }
     __PLUMED_WRAPPER_STD strncpy(pathcopy,path,strlenpath+1);
     pc=pathcopy+strlenpath-6;
     while(pc>=pathcopy && __PLUMED_WRAPPER_STD memcmp(pc,"Kernel",6)) pc--;
@@ -2076,15 +3311,15 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       fp=__PLUMED_WRAPPER_STD fopen(path,"r");
       if(!fp) {
         __PLUMED_FPRINTF(stderr,"+++ File %s does not exist or cannot be read\n",pathcopy);
-        __PLUMED_FREE(pathcopy);
-        return NULL;
+        plumed_free(pathcopy);
+        return __PLUMED_WRAPPER_CXX_NULLPTR;
       }
       __PLUMED_WRAPPER_STD fclose(fp);
       dlerror();
       p=dlopen(pathcopy,mode);
       if(!p) __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
     }
-    __PLUMED_FREE(pathcopy);
+    plumed_free(pathcopy);
   }
   return p;
 }
@@ -2115,11 +3350,11 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
   plumed_symbol_table_type* table_ptr;
   void* tmpptr;
   char* debug;
-  functions.create=NULL;
-  functions.cmd=NULL;
-  functions.finalize=NULL;
-  table_ptr=NULL;
-  tmpptr=NULL;
+  functions.create=__PLUMED_WRAPPER_CXX_NULLPTR;
+  functions.cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+  functions.finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
+  table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  tmpptr=__PLUMED_WRAPPER_CXX_NULLPTR;
   /*
     Notice that as of PLUMED 2.5 we ignore self registrations.
     Pointers are searched in the form of a single pointer to a structure, which
@@ -2160,10 +3395,10 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
     if(!functions.create) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_create not found +++\n");
     if(!functions.cmd) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_cmd not found +++\n");
     if(!functions.finalize) __PLUMED_FPRINTF(stderr,"+++ Pointer to (plumed_)plumedmain_finalize not found +++\n");
-    f->create=NULL;
-    f->cmd=NULL;
-    f->finalize=NULL;
-    if(table) *table=NULL;
+    f->create=__PLUMED_WRAPPER_CXX_NULLPTR;
+    f->cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+    f->finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
+    if(table) *table=__PLUMED_WRAPPER_CXX_NULLPTR;
   }
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -2231,16 +3466,16 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   */
   plumed_symbol_table_type* ptr=plumed_symbol_table_reexport();
   if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=ptr;
-  if(handle) *handle=NULL;
+  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
   if(functions) *functions=ptr->functions;
 #elif ! defined(__PLUMED_HAS_DLOPEN)
   /*
     When dlopen is not available, we hard code them to NULL
   */
-  fprintf(stderr,"+++ PLUMED has been compiled without dlopen and without a static kernel +++\n");
-  plumed_plumedmain_function_holder g= {NULL,NULL,NULL};
-  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=NULL;
-  if(handle) *handle=NULL;
+  __PLUMED_FPRINTF(stderr,"+++ PLUMED has been compiled without dlopen and without a static kernel +++\n");
+  plumed_plumedmain_function_holder g= {__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR};
+  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
   if(functions) *functions=g;
 #else
   /*
@@ -2252,15 +3487,15 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   void* p;
   char* debug;
   int dlopenmode;
-  g.create=NULL;
-  g.cmd=NULL;
-  g.finalize=NULL;
+  g.create=__PLUMED_WRAPPER_CXX_NULLPTR;
+  g.cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+  g.finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
   path=__PLUMED_GETENV("PLUMED_KERNEL");
-  p=NULL;
+  p=__PLUMED_WRAPPER_CXX_NULLPTR;
   debug=__PLUMED_GETENV("PLUMED_LOAD_DEBUG");
   dlopenmode=0;
-  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=NULL;
-  if(handle) *handle=NULL;
+  if(plumed_symbol_table_ptr) *plumed_symbol_table_ptr=__PLUMED_WRAPPER_CXX_NULLPTR;
+  if(handle) *handle=__PLUMED_WRAPPER_CXX_NULLPTR;
 #ifdef __PLUMED_DEFAULT_KERNEL
   /*
     This variable allows a default path for the kernel to be hardcoded.
@@ -2275,8 +3510,8 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   if(! (path && (*path) )) path=PLUMED_QUOTE(__PLUMED_DEFAULT_KERNEL);
 #endif
   if(path && (*path)) {
-    fprintf(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
-    fprintf(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
+    __PLUMED_FPRINTF(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
+    __PLUMED_FPRINTF(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
     if(debug) __PLUMED_FPRINTF(stderr,"+++ Loading with mode RTLD_NOW");
     dlopenmode=RTLD_NOW;
     if(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE"),"LOCAL")) {
@@ -2311,7 +3546,7 @@ __PLUMED_WRAPPER_INTERNALS_END
 typedef struct {
   /* allows errors with pointers to be found when debugging */
   char magic[6];
-  /* reference count */
+  /* reference count. this is only used with PLUMED<=2.8. Later versions have an internal thread-safe reference counter. */
   int refcount;
   /* handler to dlopened library. NULL if there was no library opened */
   void* dlhandle;
@@ -2331,7 +3566,7 @@ __PLUMED_WRAPPER_INTERNALS_BEGIN
 plumed_implementation* plumed_malloc_pimpl() {
   plumed_implementation* pimpl;
   /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
-  pimpl=(plumed_implementation*) __PLUMED_MALLOC(sizeof(plumed_implementation));
+  pimpl=(plumed_implementation*) plumed_malloc(sizeof(plumed_implementation));
   if(!pimpl) {
     __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
     __PLUMED_WRAPPER_STD abort();
@@ -2339,16 +3574,16 @@ plumed_implementation* plumed_malloc_pimpl() {
   __PLUMED_WRAPPER_STD memcpy(pimpl->magic,"pLuMEd",6);
   pimpl->refcount=1;
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  fprintf(stderr,"refcount: new at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: new at %p\n",(void*)pimpl);
 #endif
-  pimpl->dlhandle=NULL;
+  pimpl->dlhandle=__PLUMED_WRAPPER_CXX_NULLPTR;
   pimpl->dlclose=0;
   pimpl->used_plumed_kernel=0;
-  pimpl->functions.create=NULL;
-  pimpl->functions.cmd=NULL;
-  pimpl->functions.finalize=NULL;
-  pimpl->table=NULL;
-  pimpl->p=NULL;
+  pimpl->functions.create=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pimpl->functions.cmd=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pimpl->functions.finalize=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pimpl->table=__PLUMED_WRAPPER_CXX_NULLPTR;
+  pimpl->p=__PLUMED_WRAPPER_CXX_NULLPTR;
   return pimpl;
 }
 __PLUMED_WRAPPER_INTERNALS_END
@@ -2419,7 +3654,7 @@ plumed plumed_create_dlopen(const char*path) {
 __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
-plumed plumed_create_dlopen2(const char*path,int mode) {
+plumed plumed_create_dlsym(void* dlhandle) {
   /* returned object */
   plumed p;
   /* pointer to implementation */
@@ -2427,10 +3662,8 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
   /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
   pimpl=plumed_malloc_pimpl();
 #ifdef __PLUMED_HAS_DLOPEN
-  if(path) pimpl->dlhandle=plumed_attempt_dlopen(path,mode);
-  /* mark this library to be dlclosed when the object is finalized */
-  pimpl->dlclose=1;
-  if(pimpl->dlhandle) plumed_search_symbols(pimpl->dlhandle,&pimpl->functions,&pimpl->table);
+  pimpl->dlhandle=dlhandle;
+  plumed_search_symbols(pimpl->dlhandle,&pimpl->functions,&pimpl->table);
 #endif
   if(!pimpl->functions.create) {
     p.p=pimpl;
@@ -2449,15 +3682,48 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
 __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
+plumed plumed_create_dlopen2(const char*path,int mode) {
+#ifdef __PLUMED_HAS_DLOPEN
+  /* returned object */
+  plumed p;
+  /* pointer to implementation */
+  plumed_implementation* pimpl;
+  /* handler */
+  void* dlhandle;
+  dlhandle=__PLUMED_WRAPPER_CXX_NULLPTR;
+  if(path) dlhandle=plumed_attempt_dlopen(path,mode);
+  /* a NULL handle implies the file could not be loaded */
+  if(dlhandle) {
+    p=plumed_create_dlsym(dlhandle);
+    /* obtain pimpl */
+    pimpl=(plumed_implementation*) p.p;
+    /* make sure the handler is closed when plumed is finalized */
+    pimpl->dlclose=1;
+    return p;
+  }
+#else
+  (void) path;
+  (void) mode;
+#endif
+  return plumed_create_invalid();
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
 plumed plumed_create_reference(plumed p) {
   plumed_implementation* pimpl;
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
   /* increase reference count */
-  pimpl->refcount++;
+  /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
+  if(pimpl->p && pimpl->table && pimpl->table->version>3) {
+    pimpl->table->create_reference(pimpl->p);
+  } else {
+    pimpl->refcount++;
+  }
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  fprintf(stderr,"refcount: increase at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: increase at %p\n",(void*)pimpl);
 #endif
   return p;
 }
@@ -2494,7 +3760,7 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
   if(!pimpl->p) {
     __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
     if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
-    __PLUMED_WRAPPER_STD exit(1);
+    __PLUMED_WRAPPER_STD abort();
   }
   assert(pimpl->functions.create);
   assert(pimpl->functions.cmd);
@@ -2505,16 +3771,21 @@ void plumed_cmd(plumed p,const char*key,const void*val) {
 __PLUMED_WRAPPER_C_END
 
 __PLUMED_WRAPPER_C_BEGIN
-void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_handler nothrow) {
+void plumed_cmd_safe_nothrow(plumed p,const char*key,plumed_safeptr safe,plumed_nothrow_handler nothrow) {
   plumed_implementation* pimpl;
+  /* This is to allow caller to use a null handler to imply that handling is not done */
+  if(!nothrow.handler) {
+    plumed_cmd_safe(p,key,safe);
+    return;
+  }
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
   if(!pimpl->p) {
     if(pimpl->used_plumed_kernel) {
-      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.",NULL);
+      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.\nCheck your PLUMED_KERNEL environment variable.",__PLUMED_WRAPPER_CXX_NULLPTR);
     } else {
-      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.",NULL);
+      nothrow.handler(nothrow.ptr,1,"You are trying to use plumed, but it is not available.",__PLUMED_WRAPPER_CXX_NULLPTR);
     }
     return;
   }
@@ -2522,11 +3793,43 @@ void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_ha
   assert(pimpl->functions.cmd);
   assert(pimpl->functions.finalize);
   /* execute */
-  if(pimpl->table && pimpl->table->version>1) (*(pimpl->table->cmd_nothrow))(pimpl->p,key,val,nothrow);
-  else (*(pimpl->functions.cmd))(pimpl->p,key,val);
+  if(pimpl->table && pimpl->table->version>2) (*(pimpl->table->cmd_safe_nothrow))(pimpl->p,key,safe,nothrow);
+  else if(pimpl->table && pimpl->table->version>1) (*(pimpl->table->cmd_nothrow))(pimpl->p,key,safe.ptr,nothrow);
+  else (*(pimpl->functions.cmd))(pimpl->p,key,safe.ptr);
 }
 __PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_nothrow(plumed p,const char*key,const void*val,plumed_nothrow_handler nothrow) {
+  plumed_safeptr safe;
+  safe.ptr=val;
+  safe.flags=0;
+  safe.nelem=0;
+  safe.shape=__PLUMED_WRAPPER_CXX_NULLPTR;
+  safe.opt=__PLUMED_WRAPPER_CXX_NULLPTR;
+  plumed_cmd_safe_nothrow(p,key,safe,nothrow);
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_cmd_safe(plumed p,const char*key,plumed_safeptr safe) {
+  plumed_implementation* pimpl;
+  /* obtain pimpl */
+  pimpl=(plumed_implementation*) p.p;
+  assert(plumed_check_pimpl(pimpl));
+  if(!pimpl->p) {
+    __PLUMED_FPRINTF(stderr,"+++ ERROR: You are trying to use an invalid plumed object. +++\n");
+    if(pimpl->used_plumed_kernel) __PLUMED_FPRINTF(stderr,"+++ Check your PLUMED_KERNEL environment variable. +++\n");
+    __PLUMED_WRAPPER_STD abort();
+  }
+  assert(pimpl->functions.create);
+  assert(pimpl->functions.cmd);
+  assert(pimpl->functions.finalize);
+  /* execute */
+  if(pimpl->table && pimpl->table->version>2) (*(pimpl->table->cmd_safe))(pimpl->p,key,safe);
+  else (*(pimpl->functions.cmd))(pimpl->p,key,safe.ptr);
+}
+__PLUMED_WRAPPER_C_END
 
 
 __PLUMED_WRAPPER_C_BEGIN
@@ -2535,12 +3838,15 @@ void plumed_finalize(plumed p) {
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
-  /* decrease reference count */
-  pimpl->refcount--;
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  fprintf(stderr,"refcount: decrease at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: decrease at %p\n",(void*)pimpl);
 #endif
-  if(pimpl->refcount>0) return;
+  /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
+  if(pimpl->p && pimpl->table && pimpl->table->version>3) {
+    if(pimpl->table->delete_reference(pimpl->p)>0) return;
+  } else {
+    if(--pimpl->refcount>0) return;
+  }
   /* to allow finalizing an invalid plumed object, we only call
      finalize if the object is valid */
   if(pimpl->p) {
@@ -2553,15 +3859,15 @@ void plumed_finalize(plumed p) {
 #ifdef __PLUMED_HAS_DLOPEN
   /* dlclose library */
   if(pimpl->dlhandle && pimpl->dlclose) {
-    if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) fprintf(stderr,"+++ Unloading library\n");
+    if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) __PLUMED_FPRINTF(stderr,"+++ Unloading library\n");
     dlclose(pimpl->dlhandle);
   }
 #endif
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT
-  fprintf(stderr,"refcount: delete at %p\n",(void*)pimpl);
+  __PLUMED_FPRINTF(stderr,"refcount: delete at %p\n",(void*)pimpl);
 #endif
   /* free pimpl space */
-  __PLUMED_FREE(pimpl);
+  plumed_free(pimpl);
 }
 __PLUMED_WRAPPER_C_END
 
@@ -2582,7 +3888,12 @@ int plumed_use_count(plumed p) {
   /* obtain pimpl */
   pimpl=(plumed_implementation*) p.p;
   assert(plumed_check_pimpl(pimpl));
-  return pimpl->refcount;
+  /* with PLUMED > 2.8, we can use an internal reference counter which is thread safe */
+  if(pimpl->p && pimpl->table && pimpl->table->version>3) {
+    return pimpl->table->use_count(pimpl->p);
+  } else {
+    return pimpl->refcount;
+  }
 }
 __PLUMED_WRAPPER_C_END
 
@@ -2597,13 +3908,33 @@ int plumed_installed(void) {
 }
 __PLUMED_WRAPPER_C_END
 
+__PLUMED_WRAPPER_C_BEGIN
+void* plumed_malloc(__PLUMED_WRAPPER_STD size_t size) {
+  void* ptr;
+  ptr=__PLUMED_WRAPPER_STD malloc(size);
+#if __PLUMED_WRAPPER_DEBUG_REFCOUNT
+  if(ptr) fprintf(stderr,"plumed_malloc: %p\n",ptr);
+#endif
+  return ptr;
+}
+__PLUMED_WRAPPER_C_END
+
+__PLUMED_WRAPPER_C_BEGIN
+void plumed_free(void* ptr) {
+  __PLUMED_WRAPPER_STD free(ptr);
+#if __PLUMED_WRAPPER_DEBUG_REFCOUNT
+  fprintf(stderr,"plumed_free: %p\n",ptr);
+#endif
+}
+__PLUMED_WRAPPER_C_END
+
 #if __PLUMED_WRAPPER_GLOBAL /*{*/
 
 __PLUMED_WRAPPER_EXTERN_C_BEGIN
 
 /* we declare a Plumed_g_main object here, in such a way that it is always available */
 
-static plumed plumed_gmain= {NULL};
+static plumed plumed_gmain= {__PLUMED_WRAPPER_CXX_NULLPTR};
 
 plumed plumed_global(void) {
   return plumed_gmain;
@@ -2611,7 +3942,7 @@ plumed plumed_global(void) {
 
 void plumed_gcreate(void) {
   /* should be created once */
-  assert(plumed_gmain.p==NULL);
+  assert(plumed_gmain.p==__PLUMED_WRAPPER_CXX_NULLPTR);
   plumed_gmain=plumed_create();
 }
 
@@ -2619,9 +3950,14 @@ void plumed_gcmd(const char*key,const void*val) {
   plumed_cmd(plumed_gmain,key,val);
 }
 
+/* cppcheck-suppress passedByValue */
+void plumed_gcmd_safe(const char*key,plumed_safeptr safe) {
+  plumed_cmd_safe(plumed_gmain,key,safe);
+}
+
 void plumed_gfinalize(void) {
   plumed_finalize(plumed_gmain);
-  plumed_gmain.p=NULL;
+  plumed_gmain.p=__PLUMED_WRAPPER_CXX_NULLPTR;
 }
 
 int plumed_ginitialized(void) {
@@ -2676,6 +4012,11 @@ plumed plumed_f2c(const char*c) {
   assert(sizeof(p.p)<=16);
 
   assert(c);
+
+  /*
+     needed to avoid cppcheck warning on uninitialized p
+  */
+  p.p=__PLUMED_WRAPPER_CXX_NULLPTR;
   cc=(unsigned char*)&p.p;
   for(i=0; i<sizeof(p.p); i++) {
     assert(c[2*i]>=48 && c[2*i]<48+64);
@@ -2780,6 +4121,40 @@ __PLUMED_IMPLEMENT_FORTRAN(plumed_f_use_count,PLUMED_F_USE_COUNT,(char*c,int*i),
   *i=plumed_use_count(plumed_f2c(c));
 }
 
+/* New in PLUMED 2.8 */
+
+/* note: flags & (~0x1ffffff) removes bits that are set here (code and size) */
+
+#define __PLUMED_IMPLEMENT_F_SAFEPTR_INNER(type,type_,size,code,suffix) \
+plumed_safeptr plumed_f_safeptr_ ## type_ ## suffix(void*val,__PLUMED_WRAPPER_STD size_t nelem,__PLUMED_WRAPPER_STD size_t*shape,__PLUMED_WRAPPER_STD size_t flags,void*opt) {\
+  plumed_safeptr safe; \
+  safe.ptr=val; \
+  safe.nelem=nelem; \
+  safe.shape=shape; \
+  safe.flags= (flags & (~0x1ffffffu)) + 0x10000*code + size; \
+  safe.opt=opt; \
+  return safe; \
+}
+
+#define __PLUMED_IMPLEMENT_F_SAFEPTR(type,type_,size,code) \
+  __PLUMED_IMPLEMENT_F_SAFEPTR_INNER(type,type_,size,code,) \
+  __PLUMED_IMPLEMENT_F_SAFEPTR_INNER(type,type_,size,code,_scalar)
+
+#define __PLUMED_IMPLEMENT_F_SAFEPTR_EMPTY(type,type_,code) \
+        __PLUMED_IMPLEMENT_F_SAFEPTR(type,type_,0,code)
+
+#define __PLUMED_IMPLEMENT_F_SAFEPTR_SIZED(type,type_,code) \
+        __PLUMED_IMPLEMENT_F_SAFEPTR(type,type_,sizeof(type),code)
+
+__PLUMED_IMPLEMENT_F_SAFEPTR_EMPTY(void,ptr,0)
+__PLUMED_IMPLEMENT_F_SAFEPTR_SIZED(float,float,4)
+__PLUMED_IMPLEMENT_F_SAFEPTR_SIZED(double,double,4)
+__PLUMED_IMPLEMENT_F_SAFEPTR_SIZED(long double,long_double,4)
+__PLUMED_IMPLEMENT_F_SAFEPTR_SIZED(int,int,3)
+__PLUMED_IMPLEMENT_F_SAFEPTR_SIZED(short,short,3)
+__PLUMED_IMPLEMENT_F_SAFEPTR_SIZED(long,long,3)
+__PLUMED_IMPLEMENT_F_SAFEPTR_SIZED(char,char,3)
+
 #if __PLUMED_WRAPPER_GLOBAL /*{*/
 
 __PLUMED_IMPLEMENT_FORTRAN(plumed_f_global,PLUMED_F_GLOBAL,(char*c),(c)) {
@@ -2825,3 +4200,26 @@ __PLUMED_WRAPPER_EXTERN_C_END
 
 #undef __PLUMED_WRAPPER_IMPLEMENTATION_
 
+/* this macro is set in declarations */
+#ifdef __PLUMED_WRAPPER_REDEFINE_CMD
+#if defined(plumed_cmd)
+#undef plumed_cmd
+#endif
+#define plumed_cmd __PLUMED_WRAPPER_REDEFINE_CMD
+#endif
+
+/* this macro is set in declarations */
+#ifdef __PLUMED_WRAPPER_REDEFINE_GCMD
+#if defined(plumed_gcmd)
+#undef plumed_gcmd
+#endif
+#define plumed_gcmd __PLUMED_WRAPPER_REDEFINE_GCMD
+#endif
+
+/* this macro is set in declarations */
+#ifdef __PLUMED_WRAPPER_REDEFINE_ERROR_RETHROW
+#if defined(plumed_error_rethrow)
+#undef plumed_error_rethrow
+#endif
+#define plumed_error_rethrow __PLUMED_WRAPPER_REDEFINE_ERROR_RETHROW
+#endif

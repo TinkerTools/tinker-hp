@@ -109,23 +109,23 @@ std::string const colvarvalue::type_desc(Type t)
 {
   switch (t) {
   case colvarvalue::type_scalar:
-    return "scalar number";
+    return "scalar number"; break;
   case colvarvalue::type_3vector:
-    return "3-dimensional vector";
+    return "3-dimensional vector"; break;
   case colvarvalue::type_unit3vector:
-    return "3-dimensional unit vector";
+    return "3-dimensional unit vector"; break;
   case colvarvalue::type_unit3vectorderiv:
-    return "derivative of a 3-dimensional unit vector";
+    return "derivative of a 3-dimensional unit vector"; break;
   case colvarvalue::type_quaternion:
-    return "4-dimensional unit quaternion";
+    return "4-dimensional unit quaternion"; break;
   case colvarvalue::type_quaternionderiv:
-    return "4-dimensional tangent vector";
+    return "4-dimensional tangent vector"; break;
   case colvarvalue::type_vector:
-    return "n-dimensional vector";
+    return "n-dimensional vector"; break;
   case colvarvalue::type_notset:
     // fallthrough
   default:
-    return "not set";
+    return "not set"; break;
   }
 }
 
@@ -133,23 +133,23 @@ std::string const colvarvalue::type_desc(Type t)
 std::string const colvarvalue::type_keyword(Type t)
 {
   switch (t) {
-  case colvarvalue::type_scalar:
-    return "scalar";
-  case colvarvalue::type_3vector:
-    return "vector3";
-  case colvarvalue::type_unit3vector:
-    return "unit_vector3";
-  case colvarvalue::type_unit3vectorderiv:
-    return "";
-  case colvarvalue::type_quaternion:
-    return "unit_quaternion";
-  case colvarvalue::type_quaternionderiv:
-    return "";
-  case colvarvalue::type_vector:
-    return "vector";
   case colvarvalue::type_notset:
   default:
-    return "not_set";
+    return "not_set"; break;
+  case colvarvalue::type_scalar:
+    return "scalar"; break;
+  case colvarvalue::type_3vector:
+    return "vector3"; break;
+  case colvarvalue::type_unit3vector:
+    return "unit_vector3"; break;
+  case colvarvalue::type_unit3vectorderiv:
+    return ""; break;
+  case colvarvalue::type_quaternion:
+    return "unit_quaternion"; break;
+  case colvarvalue::type_quaternionderiv:
+    return ""; break;
+  case colvarvalue::type_vector:
+    return "vector"; break;
   }
 }
 
@@ -157,22 +157,22 @@ std::string const colvarvalue::type_keyword(Type t)
 size_t colvarvalue::num_df(Type t)
 {
   switch (t) {
-  case colvarvalue::type_scalar:
-    return 1;
-  case colvarvalue::type_3vector:
-    return 3;
-  case colvarvalue::type_unit3vector:
-  case colvarvalue::type_unit3vectorderiv:
-    return 2;
-  case colvarvalue::type_quaternion:
-  case colvarvalue::type_quaternionderiv:
-    return 3;
-  case colvarvalue::type_vector:
-    // the size of a vector is unknown without its object
-    return 0;
   case colvarvalue::type_notset:
   default:
-    return 0;
+    return 0; break;
+  case colvarvalue::type_scalar:
+    return 1; break;
+  case colvarvalue::type_3vector:
+    return 3; break;
+  case colvarvalue::type_unit3vector:
+  case colvarvalue::type_unit3vectorderiv:
+    return 2; break;
+  case colvarvalue::type_quaternion:
+  case colvarvalue::type_quaternionderiv:
+    return 3; break;
+  case colvarvalue::type_vector:
+    // the size of a vector is unknown without its object
+    return 0; break;
   }
 }
 
@@ -180,21 +180,21 @@ size_t colvarvalue::num_df(Type t)
 size_t colvarvalue::num_dimensions(Type t)
 {
   switch (t) {
+  case colvarvalue::type_notset:
+  default:
+    return 0; break;
   case colvarvalue::type_scalar:
-    return 1;
+    return 1; break;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
-    return 3;
+    return 3; break;
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
-    return 4;
+    return 4; break;
   case colvarvalue::type_vector:
     // the size of a vector is unknown without its object
-    return 0;
-  case colvarvalue::type_notset:
-  default:
-    return 0;
+    return 0; break;
   }
 }
 
@@ -614,6 +614,7 @@ colvarvalue colvarvalue::dist2_grad(colvarvalue const &x2) const
     return this->quaternion_value.dist2_grad(x2.quaternion_value);
   case colvarvalue::type_vector:
     return colvarvalue(2.0 * (this->vector1d_value - x2.vector1d_value), colvarvalue::type_vector);
+    break;
   case colvarvalue::type_notset:
   default:
     this->undef_op();
@@ -632,7 +633,7 @@ colvarvalue const colvarvalue::interpolate(colvarvalue const &x1,
 
   if ((lambda < 0.0) || (lambda > 1.0)) {
     cvm::error("Error: trying to interpolate between two colvarvalues with a "
-               "lamdba outside [0:1].\n", BUG_ERROR);
+               "lamdba outside [0:1].\n", COLVARS_BUG_ERROR);
   }
 
   colvarvalue interp = ((1.0-lambda)*x1 + lambda*x2);
@@ -645,16 +646,18 @@ colvarvalue const colvarvalue::interpolate(colvarvalue const &x1,
   case colvarvalue::type_unit3vectorderiv:
   case colvarvalue::type_quaternionderiv:
     return interp;
+    break;
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_quaternion:
     if (interp.norm()/cvm::sqrt(d2) < 1.0e-6) {
       cvm::error("Error: interpolation between "+cvm::to_str(x1)+" and "+
                  cvm::to_str(x2)+" with lambda = "+cvm::to_str(lambda)+
                  " is undefined: result = "+cvm::to_str(interp)+"\n",
-                 INPUT_ERROR);
+                 COLVARS_INPUT_ERROR);
     }
     interp.apply_constraints();
     return interp;
+    break;
   case colvarvalue::type_notset:
   default:
     x1.undef_op();
@@ -669,15 +672,19 @@ std::string colvarvalue::to_simple_string() const
   switch (type()) {
   case colvarvalue::type_scalar:
     return cvm::to_str(real_value, 0, cvm::cv_prec);
+    break;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
     return rvector_value.to_simple_string();
+    break;
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
     return quaternion_value.to_simple_string();
+    break;
   case colvarvalue::type_vector:
     return vector1d_value.to_simple_string();
+    break;
   case colvarvalue::type_notset:
   default:
     undef_op();
@@ -693,15 +700,19 @@ int colvarvalue::from_simple_string(std::string const &s)
   case colvarvalue::type_scalar:
     return ((std::istringstream(s) >> real_value)
             ? COLVARS_OK : COLVARS_ERROR);
+    break;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
     return rvector_value.from_simple_string(s);
+    break;
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
     return quaternion_value.from_simple_string(s);
+    break;
   case colvarvalue::type_vector:
     return vector1d_value.from_simple_string(s);
+    break;
   case colvarvalue::type_notset:
   default:
     undef_op();
@@ -905,6 +916,7 @@ void colvarvalue::p2leg_opt(colvarvalue const                        &x,
     cvm::error("Error: cannot calculate Legendre polynomials "
                "for scalar variables.\n");
     return;
+    break;
   case colvarvalue::type_3vector:
     while (xvi != xv_end) {
       cvm::real const cosine =

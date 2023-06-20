@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2020 The plumed team
+   Copyright (c) 2011-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -63,7 +63,7 @@ public:
 /// \param kp A pointer to a function which returns the allowed keywords
   void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
-  bool check(std::string action);
+  bool check(const std::string & action);
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<Action> create(const ActionOptions&ao);
@@ -74,6 +74,8 @@ public:
 /// Print out a template command for an action
   bool printTemplate(const std::string& action, bool include_optional);
   void remove(creator_pointer);
+/// Get a list of action names
+  std::vector<std::string> getActionNames() const ;
   ~ActionRegister();
 };
 
@@ -99,12 +101,12 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 /// \param directive a string containing the corresponding directive
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_ACTION(classname,directive) \
-  static class  PLUMED_UNIQUENAME(classname##RegisterMe){ \
-    static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return std::unique_ptr<classname>(new classname(ao));} \
+  namespace { class PLUMED_UNIQUENAME(classname##RegisterMe){ \
+    static std::unique_ptr<PLMD::Action> create(const PLMD::ActionOptions&ao){return PLMD::Tools::make_unique<classname>(ao);} \
   public: \
     PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
     ~PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().remove(create);} \
-  } PLUMED_UNIQUENAME(classname##RegisterMe);
+  } PLUMED_UNIQUENAME(classname##RegisterMe); }
 
 
 #endif

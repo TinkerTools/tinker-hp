@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014-2020 The plumed team
+   Copyright (c) 2014-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -54,7 +54,7 @@ public:
 
 template<typename T>
 unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n) {
-  unsigned long p=(unsigned long) x;
+  unsigned long long p=(unsigned long long) x;
   (void) p; // this is not to have warnings. notice that the pointer location is not used actually.
 // a factor two is necessary since there is no guarantee that x is aligned
 // to cache line boundary

@@ -291,19 +291,21 @@ c                Softcore derivatives w.r.t rho, r and lambda_v
 c
                  evdw = eps*(rv**12/(gsc**12)-2d0*rv**6/(gsc**6))
 
-                  if((lambda.gt.0d0).and.(lambda.lt.1d0)) then
+c                  if((lambda.gt.0d0).and.(lambda.lt.1d0)) then
                       devdwgsc =eps*12d0*(rv**6/(gsc**7)-
      $                  rv**12/(gsc**13))
-                  else
-                      devdwgsc = 0d0
-                  end if
+c                  else
+c                      devdwgsc = 0d0
+c                  end if
 c   
                  lambdavt =  vlambda ** sct 
                  e = lambdavt*evdw
                  derho = lambdavt*dgscrho*devdwgsc
                  de = derho/rv
+                 if (use_lambdadyn) then
                  delambdav  = delambdav + sct*(vlambda**(sct-1d0))*
      $                evdw+lambdavt*dgsclambda*devdwgsc
+                  end if
                else
                  p6 = rv**6 / rik2**3
                  p12 = p6 * p6

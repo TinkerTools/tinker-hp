@@ -1,6 +1,19 @@
+// -*- Mode:c++; c-basic-offset: 4; -*-
+
+// This file is part of the Collective Variables module (Colvars).
+// The original version of Colvars and its updates are located at:
+// https://github.com/Colvars/colvars
+// Please update all Colvars source files before making any changes.
+// If you wish to distribute your changes, please submit them to the
+// Colvars repository at GitHub.
+
+#include <iostream>
+#include <fstream>
+
 #if (__cplusplus >= 201103L)
 #include "colvar_neuralnetworkcompute.h"
 #include "colvarparse.h"
+#include "colvarproxy.h"
 
 namespace neuralnetworkCV {
 std::map<std::string, std::pair<std::function<double(double)>, std::function<double(double)>>> activation_function_map
@@ -61,31 +74,31 @@ void customActivationFunction::setExpression(const std::string& expression_strin
     try {
         parsed_expression = Lepton::Parser::parse(expression);
     } catch (...) {
-        cvm::error("Error parsing or compiling expression \"" + expression + "\".\n", INPUT_ERROR);
+        cvm::error("Error parsing or compiling expression \"" + expression + "\".\n", COLVARS_INPUT_ERROR);
     }
     // compile the expression
     try {
         value_evaluator = std::unique_ptr<Lepton::CompiledExpression>(new Lepton::CompiledExpression(parsed_expression.createCompiledExpression()));
     } catch (...) {
-        cvm::error("Error compiling expression \"" + expression + "\".\n", INPUT_ERROR);
+        cvm::error("Error compiling expression \"" + expression + "\".\n", COLVARS_INPUT_ERROR);
     }
     // create a compiled expression for the derivative
     try {
         gradient_evaluator = std::unique_ptr<Lepton::CompiledExpression>(new Lepton::CompiledExpression(parsed_expression.differentiate(activation_input_variable).createCompiledExpression()));
     } catch (...) {
-        cvm::error("Error creating compiled expression for variable \"" + activation_input_variable + "\".\n", INPUT_ERROR);
+        cvm::error("Error creating compiled expression for variable \"" + activation_input_variable + "\".\n", COLVARS_INPUT_ERROR);
     }
     // get the reference to the input variable in the compiled expression
     try {
         input_reference = &(value_evaluator->getVariableReference(activation_input_variable));
     } catch (...) {
-        cvm::error("Error on getting the reference to variable \"" + activation_input_variable + "\" in the compiled expression.\n", INPUT_ERROR);
+        cvm::error("Error on getting the reference to variable \"" + activation_input_variable + "\" in the compiled expression.\n", COLVARS_INPUT_ERROR);
     }
     // get the reference to the input variable in the compiled derivative expression
     try {
         derivative_reference = &(gradient_evaluator->getVariableReference(activation_input_variable));
     } catch (...) {
-        cvm::error("Error on getting the reference to variable \"" + activation_input_variable + "\" in the compiled derivative exprssion.\n", INPUT_ERROR);
+        cvm::error("Error on getting the reference to variable \"" + activation_input_variable + "\" in the compiled derivative exprssion.\n", COLVARS_INPUT_ERROR);
     }
 }
 
@@ -124,27 +137,48 @@ void denseLayer::readFromFile(const std::string& weights_file, const std::string
     m_weights.clear();
     m_biases.clear();
     std::string line;
-    std::ifstream ifs_weights(weights_file.c_str());
+    colvarproxy *proxy = cvm::main()->proxy;
+    auto &ifs_weights = proxy->input_stream(weights_file, "weights file");
     while (std::getline(ifs_weights, line)) {
+        if (ifs_weights.bad()) {
+            throw std::runtime_error("I/O error while reading " + weights_file);
+        }
         std::vector<std::string> splitted_data;
         colvarparse::split_string(line, std::string{" "}, splitted_data);
         if (splitted_data.size() > 0) {
             std::vector<double> weights_tmp(splitted_data.size());
             for (size_t i = 0; i < splitted_data.size(); ++i) {
-                weights_tmp[i] = std::stod(splitted_data[i]);
+                try {
+                    weights_tmp[i] = std::stod(splitted_data[i]);
+                } catch (...) {
+                    throw std::runtime_error("Cannot convert " + splitted_data[i] + " to a number while reading file " + weights_file);
+                }
             }
             m_weights.push_back(weights_tmp);
         }
     }
+    proxy->close_input_stream(weights_file);
+
     // parse biases file
-    std::ifstream ifs_biases(biases_file.c_str());
+    auto &ifs_biases = proxy->input_stream(biases_file, "biases file");
     while (std::getline(ifs_biases, line)) {
+        if (ifs_biases.bad()) {
+            throw std::runtime_error("I/O error while reading " + biases_file);
+        }
         std::vector<std::string> splitted_data;
         colvarparse::split_string(line, std::string{" "}, splitted_data);
         if (splitted_data.size() > 0) {
-            m_biases.push_back(std::stod(splitted_data[0]));
+            double bias = 0;
+            try {
+                bias = std::stod(splitted_data[0]);
+            } catch (...) {
+                throw std::runtime_error("Cannot convert " + splitted_data[0] + " to a number while reading file " + biases_file);
+            }
+            m_biases.push_back(bias);
         }
     }
+    proxy->close_input_stream(biases_file);
+
     m_input_size = m_weights[0].size();
     m_output_size = m_weights.size();
 }

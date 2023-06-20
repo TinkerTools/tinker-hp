@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2019 The plumed team
+   Copyright (c) 2019-2023 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -36,14 +36,12 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
 namespace PLMD {
 namespace cltools {
 
 //+PLUMEDOC TOOLS gen_example
 /*
-gen_example is a tool that you can use to construct a example for the manual that users can interact with to understand
+gen_example is a tool that you can use to construct an example for the manual that users can interact with to understand
 
 The example constructed by this action is in html. In all probability you will never need to use this
 tool. However, it is used within the scripts that generate the html manual for PLUMED.  If you need to use this
@@ -72,7 +70,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit GenExample(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
-  string description()const override {
+  std::string description()const override {
     return "construct an example for the manual that users can interact with";
   }
   void printExampleInput( const std::vector<std::vector<std::string> >& input, const std::string& egname, const std::string& divname, std::ofstream& ofile );
@@ -112,9 +110,15 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     intracomm.Set_comm(pc.Get_comm());
   }
 
-  if( config::getVersionLong().find("dev")==std::string::npos ) version=config::getVersion();
+  if( config::getVersionLong().find("dev")==std::string::npos ) version="v"+config::getVersion();
   std::string fname, egname, outfile; parse("--plumed",fname);
   parse("--name",egname); parse("--out",outfile); parse("--status",status);
+
+  int r=0;
+  if(intracomm.Get_rank()==0) r=intercomm.Get_rank();
+  intracomm.Bcast(r,0);
+  if(r>0) outfile="/dev/null";
+
   IFile ifile; ifile.open(fname); ifile.allowNoEOL(); std::ofstream ofile; ofile.open(outfile); std::vector<bool> shortcuts;
   bool hasshortcuts=false, endplumed=false; std::vector<std::vector<std::string> > input; std::vector<std::string> words;
   while( Tools::getParsedLine(ifile, words, false) ) {
@@ -140,6 +144,7 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
   else if(status=="incomplete") ofile<<version<<"-incomplete-yellow";
   else error("unknown status");
   ofile<<".svg\" alt=\"tested on "<<version<<"\" /></div>";
+  ofile.flush();
   if( hasshortcuts ) {
     // Write out the short version of the input
     ofile<<"<div style=\"width: 100%; float:left\" id=\"input_"<<egname<<"\"></div>"<<std::endl;
@@ -313,7 +318,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
             unsigned ncomp = av->getNumberOfComponents();
             for(unsigned k=0; k<ncomp; ++k ) {
               std::string myname = av->copyOutput(k)->getName(); std::size_t dot=myname.find_first_of(".");
-              std::string tname=myname.substr(dot+1); std::size_t und=tname.find_first_of("_"); std::size_t hyph=tname.find_first_of("-");
+              std::string tname=myname.substr(dot+1); std::size_t und=tname.find_last_of("_"); std::size_t hyph=tname.find_first_of("-");
               if( und!=std::string::npos && hyph!=std::string::npos ) plumed_merror("cannot use underscore and hyphen in name");
               ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>";
               if( und!=std::string::npos ) {
@@ -322,7 +327,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
               } else if( hyph!=std::string::npos ) {
                 ofile<<keys.getOutputComponentDescription(tname.substr(0,hyph))<<"  This is the "<<tname.substr(hyph+1)<<"th of these quantities";
               } else ofile<<keys.getOutputComponentDescription(tname);
-              ofile<<"</td></tr>";
+              ofile<<"</td></tr>"<<std::endl;
             }
             ofile<<"</table>"<<std::endl;
           }
@@ -332,10 +337,11 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
           else if( interpreted[0]=="GROUP" ) ofile<<" defines a group of atoms so that they can be referred to later in the input";
         }
         ofile<<"</span>"<<std::endl;
-      } else if( status!="working" ) {
+      } else {
         ofile<<"<span style=\"display:none;\" id=\""<<egname<<lab<<"\"> You cannot view the components that are calculated by each action for this input file. Sorry </span>"<<std::endl;
-      } else ofile<<std::endl;
+      }
     }
+    ofile.flush();
   }
   ofile<<"</pre>"<<std::endl;
 }
