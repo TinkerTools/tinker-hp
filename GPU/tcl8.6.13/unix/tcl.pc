@@ -1,0 +1,16 @@
+# tcl pkg-config source file
+
+prefix=/home/adjoua/tinkerhp/pmerel/v1.2/tcl8/Portland/
+exec_prefix=/home/adjoua/tinkerhp/pmerel/v1.2/tcl8/Portland/
+libdir=/home/adjoua/tinkerhp/pmerel/v1.2/tcl8/Portland//lib
+includedir=${prefix}/include
+libfile=libtcl8.6.so
+
+Name: Tool Command Language
+Description: Tcl is a powerful, easy-to-learn dynamic programming language, suitable for a wide range of uses.
+URL: https://www.tcl-lang.org/
+Version: 8.6.13
+Requires.private: zlib >= 1.2.3
+Libs: -L${libdir} -ltcl8.6 -ltclstub8.6
+Libs.private: -ldl -lz  -lpthread 
+Cflags: -I${includedir}
