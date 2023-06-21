@@ -122,7 +122,8 @@ am_libcolvars_a_OBJECTS = colvar.$(OBJEXT) \
 	colvarcomp_volmaps.$(OBJEXT) colvardeps.$(OBJEXT) \
 	colvargrid.$(OBJEXT) colvarmodule.$(OBJEXT) \
 	colvarparams.$(OBJEXT) colvarparse.$(OBJEXT) \
-	colvarproxy.$(OBJEXT) colvarproxy_replicas.$(OBJEXT) \
+	colvarproxy.$(OBJEXT) colvarproxy_io.$(OBJEXT) \
+	colvarproxy_replicas.$(OBJEXT) colvarproxy_system.$(OBJEXT) \
 	colvarproxy_tcl.$(OBJEXT) colvarproxy_volmaps.$(OBJEXT) \
 	colvarscript.$(OBJEXT) colvarscript_commands.$(OBJEXT) \
 	colvarscript_commands_bias.$(OBJEXT) \
@@ -219,6 +220,7 @@ FFTW_TYPE = @FFTW_TYPE@
 INCLUDE_COLVARS_MK = @INCLUDE_COLVARS_MK@
 INCLUDE_DEPEND_MK = @INCLUDE_DEPEND_MK@
 INCLUDE_PLUMED_MK = @INCLUDE_PLUMED_MK@
+INCLUDE_TCL_MK = @INCLUDE_TCL_MK@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -234,6 +236,10 @@ LIBPLUMED_INC = @LIBPLUMED_INC@
 LIBPLUMED_LIB = @LIBPLUMED_LIB@
 LIBPLUMED_LIBPATH = @LIBPLUMED_LIBPATH@
 LIBS = @LIBS@
+LIBTCL_EXELIBPATH = @LIBTCL_EXELIBPATH@
+LIBTCL_INC = @LIBTCL_INC@
+LIBTCL_LIB = @LIBTCL_LIB@
+LIBTCL_LIBPATH = @LIBTCL_LIBPATH@
 LIBTINKERCLV = @LIBTINKERCLV@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -241,6 +247,7 @@ MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 MKL_MOD_BIN = @MKL_MOD_BIN@
 MKL_MOD_SOURCE = @MKL_MOD_SOURCE@
+NVMPICXX = @NVMPICXX@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
@@ -258,6 +265,7 @@ REALFC = @REALFC@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+TCL = @TCL@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -306,7 +314,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 tput = @tput@
 noinst_LIBRARIES = libcolvars.a
-
+AM_CXXFLAGS = $(LIB2DECOMP_INC) $(PLUMEDFLAG) $(LIBPLUMED_INC) $(LIBCOLVARS_INC) $(TCLFLAG) $(LIBTCL_INC)
 #
 # Declare her sources
 #
@@ -322,7 +330,8 @@ libcolvars_a_SOURCES = colvar.cpp colvar_neuralnetworkcompute.cpp \
 	colvarcomp_protein.cpp colvarcomp_rotations.cpp \
 	colvarcomp_volmaps.cpp colvardeps.cpp colvargrid.cpp \
 	colvarmodule.cpp colvarparams.cpp colvarparse.cpp \
-	colvarproxy.cpp colvarproxy_replicas.cpp colvarproxy_tcl.cpp \
+	colvarproxy.cpp colvarproxy_io.cpp colvarproxy_replicas.cpp \
+	colvarproxy_system.cpp colvarproxy_tcl.cpp \
 	colvarproxy_volmaps.cpp colvarscript.cpp \
 	colvarscript_commands.cpp colvarscript_commands_bias.cpp \
 	colvarscript_commands_colvar.cpp colvartypes.cpp \
@@ -404,7 +413,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarparams.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarparse.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy_replicas.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy_system.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy_tcl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy_volmaps.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarscript.Po@am__quote@

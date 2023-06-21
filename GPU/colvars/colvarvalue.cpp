@@ -133,6 +133,9 @@ std::string const colvarvalue::type_desc(Type t)
 std::string const colvarvalue::type_keyword(Type t)
 {
   switch (t) {
+  case colvarvalue::type_notset:
+  default:
+    return "not_set";
   case colvarvalue::type_scalar:
     return "scalar";
   case colvarvalue::type_3vector:
@@ -147,9 +150,6 @@ std::string const colvarvalue::type_keyword(Type t)
     return "";
   case colvarvalue::type_vector:
     return "vector";
-  case colvarvalue::type_notset:
-  default:
-    return "not_set";
   }
 }
 
@@ -157,6 +157,9 @@ std::string const colvarvalue::type_keyword(Type t)
 size_t colvarvalue::num_df(Type t)
 {
   switch (t) {
+  case colvarvalue::type_notset:
+  default:
+    return 0;
   case colvarvalue::type_scalar:
     return 1;
   case colvarvalue::type_3vector:
@@ -170,9 +173,6 @@ size_t colvarvalue::num_df(Type t)
   case colvarvalue::type_vector:
     // the size of a vector is unknown without its object
     return 0;
-  case colvarvalue::type_notset:
-  default:
-    return 0;
   }
 }
 
@@ -180,6 +180,9 @@ size_t colvarvalue::num_df(Type t)
 size_t colvarvalue::num_dimensions(Type t)
 {
   switch (t) {
+  case colvarvalue::type_notset:
+  default:
+    return 0;
   case colvarvalue::type_scalar:
     return 1;
   case colvarvalue::type_3vector:
@@ -191,9 +194,6 @@ size_t colvarvalue::num_dimensions(Type t)
     return 4;
   case colvarvalue::type_vector:
     // the size of a vector is unknown without its object
-    return 0;
-  case colvarvalue::type_notset:
-  default:
     return 0;
   }
 }
@@ -614,6 +614,7 @@ colvarvalue colvarvalue::dist2_grad(colvarvalue const &x2) const
     return this->quaternion_value.dist2_grad(x2.quaternion_value);
   case colvarvalue::type_vector:
     return colvarvalue(2.0 * (this->vector1d_value - x2.vector1d_value), colvarvalue::type_vector);
+  //break;
   case colvarvalue::type_notset:
   default:
     this->undef_op();
@@ -632,7 +633,7 @@ colvarvalue const colvarvalue::interpolate(colvarvalue const &x1,
 
   if ((lambda < 0.0) || (lambda > 1.0)) {
     cvm::error("Error: trying to interpolate between two colvarvalues with a "
-               "lamdba outside [0:1].\n", BUG_ERROR);
+               "lamdba outside [0:1].\n", COLVARS_BUG_ERROR);
   }
 
   colvarvalue interp = ((1.0-lambda)*x1 + lambda*x2);
@@ -651,7 +652,7 @@ colvarvalue const colvarvalue::interpolate(colvarvalue const &x1,
       cvm::error("Error: interpolation between "+cvm::to_str(x1)+" and "+
                  cvm::to_str(x2)+" with lambda = "+cvm::to_str(lambda)+
                  " is undefined: result = "+cvm::to_str(interp)+"\n",
-                 INPUT_ERROR);
+                 COLVARS_INPUT_ERROR);
     }
     interp.apply_constraints();
     return interp;
@@ -693,15 +694,19 @@ int colvarvalue::from_simple_string(std::string const &s)
   case colvarvalue::type_scalar:
     return ((std::istringstream(s) >> real_value)
             ? COLVARS_OK : COLVARS_ERROR);
+  //break;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
     return rvector_value.from_simple_string(s);
+  //break;
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
     return quaternion_value.from_simple_string(s);
+  //break;
   case colvarvalue::type_vector:
     return vector1d_value.from_simple_string(s);
+   //reak;
   case colvarvalue::type_notset:
   default:
     undef_op();
@@ -905,6 +910,7 @@ void colvarvalue::p2leg_opt(colvarvalue const                        &x,
     cvm::error("Error: cannot calculate Legendre polynomials "
                "for scalar variables.\n");
     return;
+    break;
   case colvarvalue::type_3vector:
     while (xvi != xv_end) {
       cvm::real const cosine =

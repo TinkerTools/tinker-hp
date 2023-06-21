@@ -132,26 +132,35 @@ am_libcolvars_a_OBJECTS = colvar.$(OBJEXT) \
 	colvarcomp_volmaps.$(OBJEXT) colvardeps.$(OBJEXT) \
 	colvargrid.$(OBJEXT) colvarmodule.$(OBJEXT) \
 	colvarparams.$(OBJEXT) colvarparse.$(OBJEXT) \
-	colvarproxy.$(OBJEXT) colvarproxy_replicas.$(OBJEXT) \
+	colvarproxy.$(OBJEXT) colvarproxy_io.$(OBJEXT) \
+	colvarproxy_replicas.$(OBJEXT) colvarproxy_system.$(OBJEXT) \
 	colvarproxy_tcl.$(OBJEXT) colvarproxy_volmaps.$(OBJEXT) \
 	colvarscript.$(OBJEXT) colvarscript_commands.$(OBJEXT) \
 	colvarscript_commands_bias.$(OBJEXT) \
 	colvarscript_commands_colvar.$(OBJEXT) colvartypes.$(OBJEXT) \
 	colvarvalue.$(OBJEXT) nr_jacobi.$(OBJEXT)
 libcolvars_a_OBJECTS = $(am_libcolvars_a_OBJECTS)
-AM_V_P = $(am__v_P_$(V))
-am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
-am__v_P_0 = false
-am__v_P_1 = :
-AM_V_GEN = $(am__v_GEN_$(V))
-am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
+AM_V_P      = $(am__v_P_$(V))
+am__v_P_    = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
+am__v_P_0   = false
+am__v_P_1   = :
+AM_V_GEN    = $(am__v_GEN_$(V))
+am__v_GEN_  = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN     " $@;
 am__v_GEN_1 = 
-AM_V_at = $(am__v_at_$(V))
-am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
-am__v_at_0 = @
-am__v_at_1 = 
+AM_V_at     = $(am__v_at_$(V))
+am__v_at_   = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0  = @
+am__v_at_1  =
+TCL_SUPPORT ?= 0
+TCL_HOME    ?= /usr
+tcl__include = -I$(top_dir__)/tcl8.6.13/generic
+tcl__macro   = -DCOLVARS_TCL
+tcl__lib     = -L$(TCL_HOME)/lib -ltcl8.6
 DEFAULT_INCLUDES = -I.
+ifeq ($(TCL_SUPPORT),1)
+   DEFAULT_INCLUDES += $(tcl__include)
+endif
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
@@ -206,9 +215,12 @@ BLAS = -L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -ld
 CPPFLAGS = 
 CXX = nvc++
 CXXDEPMODE = depmode=pgcc
-CXXFLAGS := -std=c++11 -DCOLVARS -O3 -traceback -Mdalign -gopt 
+CXXFLAGS := -std=c++11 -fast -traceback -Mdalign -gopt
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"Tinker-HP\" -DPACKAGE_TARNAME=\"tinker-hp\" -DPACKAGE_VERSION=\"1.2\" -DPACKAGE_STRING=\"Tinker-HP\ 1.2\" -DPACKAGE_BUGREPORT=\"tinkersupp@ip2ct.upmc.fr\" -DPACKAGE_URL=\"\" -DPACKAGE=\"tinker-hp\" -DVERSION=\"1.2\"
+DEFS := -DPACKAGE_NAME=\"Tinker-HP\" -DPACKAGE_TARNAME=\"tinker-hp\" -DPACKAGE_VERSION=\"1.2\" -DPACKAGE_STRING=\"Tinker-HP\ 1.2\" -DPACKAGE_BUGREPORT=\"tinkersupp@ip2ct.upmc.fr\" -DPACKAGE_URL=\"\" -DPACKAGE=\"tinker-hp\" -DVERSION=\"1.2\"
+ifeq ($(TCL_SUPPORT),1)
+   DEFS += $(tcl__macro)
+endif
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
@@ -216,10 +228,10 @@ ECHO_T =
 EXEEXT = _colvars.prod
 F77 = mpif90
 FC = mpif90
-FCFLAGS = -cpp -DCOLVARS -g -O3 -traceback -Mbackslash -Mdalign
+FCFLAGS = -Mpreprocess -DCOLVARS  -g -Mbounds -O3  -traceback -Mbackslash -Mdalign -gopt 
 FCFLAGS_F = 
 FC_DEFINE = -D
-FFLAGS = -cpp -DCOLVARS -g -O3 -traceback -Mbackslash -Mdalign
+FFLAGS = -Mpreprocess -DCOLVARS  -g -Mbounds -O3  -traceback -Mbackslash -Mdalign -gopt 
 FFTW_INCLUDES = -I .
 FFTW_INCLUDES_PATH = .
 FFTW_LIBS = 
@@ -229,6 +241,7 @@ FFTW_TYPE = generic
 INCLUDE_COLVARS_MK = include colvars.mk
 INCLUDE_DEPEND_MK = include depend.mk
 INCLUDE_PLUMED_MK = include noplumed.mk
+INCLUDE_TCL_MK = include tcl.mk
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -251,6 +264,7 @@ MAKEINFO = ${SHELL} $(top_dir__)/missing makeinfo
 MKDIR_P = /usr/bin/mkdir -p
 MKL_MOD_BIN = 
 MKL_MOD_SOURCE = 
+NVMPICXX = 
 OBJEXT = o
 PACKAGE = tinker-hp
 PACKAGE_BUGREPORT = tinkersupp@ip2ct.upmc.fr
@@ -262,12 +276,13 @@ PACKAGE_VERSION = 1.2
 PATH_SEPARATOR = :
 PLUMED = 
 PREFIX = $(top_dir__)
-PYTHON = python2
+PYTHON = python
 RANLIB = ranlib
 REALFC = pgfortran
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = 
+TCL = TCL
 VERSION = 1.2
 abs_builddir = $(top_dir__)/colvars
 abs_srcdir = $(top_dir__)/colvars
@@ -316,7 +331,7 @@ top_builddir = .
 top_srcdir = $(top_dir__)
 tput = ok
 noinst_LIBRARIES = libcolvars.a
-
+AM_CXXFLAGS = $(LIB2DECOMP_INC) $(PLUMEDFLAG) $(LIBPLUMED_INC) $(LIBCOLVARS_INC) $(TCLFLAG) $(LIBTCL_INC)
 #
 # Declare her sources
 #
@@ -332,7 +347,8 @@ libcolvars_a_SOURCES = colvar.cpp colvar_neuralnetworkcompute.cpp \
 	colvarcomp_protein.cpp colvarcomp_rotations.cpp \
 	colvarcomp_volmaps.cpp colvardeps.cpp colvargrid.cpp \
 	colvarmodule.cpp colvarparams.cpp colvarparse.cpp \
-	colvarproxy.cpp colvarproxy_replicas.cpp colvarproxy_tcl.cpp \
+	colvarproxy.cpp colvarproxy_io.cpp colvarproxy_replicas.cpp \
+	colvarproxy_system.cpp colvarproxy_tcl.cpp \
 	colvarproxy_volmaps.cpp colvarscript.cpp \
 	colvarscript_commands.cpp colvarscript_commands_bias.cpp \
 	colvarscript_commands_colvar.cpp colvartypes.cpp \
@@ -417,7 +433,9 @@ distclean-compile:
 -include ./$(DEPDIR)/colvarparams.Po
 -include ./$(DEPDIR)/colvarparse.Po
 -include ./$(DEPDIR)/colvarproxy.Po
+-include ./$(DEPDIR)/colvarproxy_io.Po
 -include ./$(DEPDIR)/colvarproxy_replicas.Po
+-include ./$(DEPDIR)/colvarproxy_system.Po
 -include ./$(DEPDIR)/colvarproxy_tcl.Po
 -include ./$(DEPDIR)/colvarproxy_volmaps.Po
 -include ./$(DEPDIR)/colvarscript.Po

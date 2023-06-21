@@ -36,21 +36,17 @@ You can browse the class hierarchy or the list of source files.
 #define COLVARS_OK 0
 #define COLVARS_ERROR   1
 #define COLVARS_NOT_IMPLEMENTED (1<<1)
-#define INPUT_ERROR     (1<<2) // out of bounds or inconsistent input
-#define BUG_ERROR       (1<<3) // Inconsistent state indicating bug
-#define FILE_ERROR      (1<<4)
-#define MEMORY_ERROR    (1<<5)
-#define FATAL_ERROR     (1<<6) // Should be set, or not, together with other bits
-//#define DELETE_COLVARS  (1<<7) // Instruct the caller to delete cvm
-#define COLVARS_NO_SUCH_FRAME (1<<8) // Cannot load the requested frame
+#define COLVARS_INPUT_ERROR     (1<<2) // out of bounds or inconsistent input
+#define COLVARS_BUG_ERROR       (1<<3) // Inconsistent state indicating bug
+#define COLVARS_FILE_ERROR      (1<<4)
+#define COLVARS_MEMORY_ERROR    (1<<5)
+#define COLVARS_NO_SUCH_FRAME   (1<<6) // Cannot load the requested frame
 
-#include <iostream>
-#include <iomanip>
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <list>
+#include <iosfwd>
 
 class colvarparse;
 class colvar;
@@ -378,6 +374,9 @@ public:
   /// Parse and initialize collective variables
   int parse_colvars(std::string const &conf);
 
+  /// Run provided Tcl script
+  int run_tcl_script(std::string const &filename);
+
   /// Parse and initialize collective variable biases
   int parse_biases(std::string const &conf);
 
@@ -405,6 +404,9 @@ private:
   /// Test error condition and keyword parsing
   /// on error, delete new bias
   bool check_new_bias(std::string &conf, char const *key);
+
+  /// Initialization Tcl script, user-provided
+  std::string source_Tcl_script;
 
 public:
 
@@ -630,12 +632,6 @@ public:
 
   // proxy functions
 
-  /// \brief Boltmann constant
-  static real boltzmann();
-
-  /// \brief Temperature of the simulation (K)
-  static real temperature();
-
   /// \brief Time step of MD integrator (fs)
   static real dt();
 
@@ -652,9 +648,6 @@ public:
   /// \param message Message to print
   /// \param min_log_level Only print if cvm::log_level() >= min_log_level
   static void log(std::string const &message, int min_log_level = 10);
-
-  /// Print a message to the main log and exit with error code
-  static int fatal_error(std::string const &message);
 
   /// Print a message to the main log and set global error code
   static int error(std::string const &message, int code = COLVARS_ERROR);
@@ -765,20 +758,11 @@ public:
 
 protected:
 
-  /// Configuration file
-  std::ifstream config_s;
-
   /// Configuration file parser object
   colvarparse *parse;
 
   /// Name of the trajectory file
   std::string cv_traj_name;
-
-  /// Collective variables output trajectory file
-  std::ostream *cv_traj_os;
-
-  /// Appending to the existing trajectory file?
-  bool cv_traj_append;
 
   /// Write labels at the next iteration
   bool cv_traj_write_labels;

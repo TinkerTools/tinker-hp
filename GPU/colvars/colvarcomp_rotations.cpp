@@ -36,7 +36,7 @@ int colvar::orientation::init(std::string const &conf)
     cvm::log("Using reference positions from input file.\n");
     if (ref_pos.size() != atoms->size()) {
       return cvm::error("Error: reference positions do not "
-                        "match the number of requested atoms.\n", INPUT_ERROR);
+                        "match the number of requested atoms.\n", COLVARS_INPUT_ERROR);
     }
   }
 
@@ -51,7 +51,7 @@ int colvar::orientation::init(std::string const &conf)
         bool found = get_keyval(conf, "refPositionsColValue", file_col_value, 0.0);
         if (found && file_col_value==0.0) {
           return cvm::error("Error: refPositionsColValue, "
-                            "if provided, must be non-zero.\n", INPUT_ERROR);
+                            "if provided, must be non-zero.\n", COLVARS_INPUT_ERROR);
         }
       }
 
@@ -63,19 +63,21 @@ int colvar::orientation::init(std::string const &conf)
 
   if (!ref_pos.size()) {
     return cvm::error("Error: must define a set of "
-                      "reference coordinates.\n", INPUT_ERROR);
+                      "reference coordinates.\n", COLVARS_INPUT_ERROR);
   }
 
 
-  cvm::log("Centering the reference coordinates: it is "
-            "assumed that each atom is the closest "
-            "periodic image to the center of geometry.\n");
   cvm::rvector ref_cog(0.0, 0.0, 0.0);
   size_t i;
   for (i = 0; i < ref_pos.size(); i++) {
     ref_cog += ref_pos[i];
   }
   ref_cog /= cvm::real(ref_pos.size());
+  cvm::log("Centering the reference coordinates on the origin by subtracting "
+           "the center of geometry at "+
+           cvm::to_str(-1.0 * ref_cog)+"; it is "
+           "assumed that each atom is the closest "
+           "periodic image to the center of geometry.\n");
   for (i = 0; i < ref_pos.size(); i++) {
     ref_pos[i] -= ref_cog;
   }

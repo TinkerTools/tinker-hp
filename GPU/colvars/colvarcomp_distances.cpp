@@ -911,7 +911,7 @@ colvar::inertia_z::inertia_z(std::string const &conf)
   init_as_distance();
   if (get_keyval(conf, "axis", axis, cvm::rvector(0.0, 0.0, 1.0))) {
     if (axis.norm2() == 0.0) {
-      cvm::error("Axis vector is zero!", INPUT_ERROR);
+      cvm::error("Axis vector is zero!", COLVARS_INPUT_ERROR);
       return;
     }
     if (axis.norm2() != 1.0) {
@@ -1055,6 +1055,7 @@ colvar::rmsd::rmsd(std::string const &conf)
   n_permutations = 1;
 
   while (key_lookup(conf, "atomPermutation", &perm_conf, &pos)) {
+    cvm::main()->cite_feature("Symmetry-adapted RMSD");
     std::vector<size_t> perm;
     if (perm_conf.size()) {
       std::istringstream is(perm_conf);
@@ -1265,13 +1266,13 @@ colvar::eigenvector::eigenvector(std::string const &conf)
   }
 
   if (ref_pos.size() == 0) {
-    cvm::error("Error: reference positions were not provided.\n", INPUT_ERROR);
+    cvm::error("Error: reference positions were not provided.\n", COLVARS_INPUT_ERROR);
     return;
   }
 
   if (ref_pos.size() != atoms->size()) {
     cvm::error("Error: reference positions do not "
-               "match the number of requested atoms.\n", INPUT_ERROR);
+               "match the number of requested atoms.\n", COLVARS_INPUT_ERROR);
     return;
   }
 
@@ -1370,7 +1371,7 @@ colvar::eigenvector::eigenvector(std::string const &conf)
         eigenvec[i] = atoms->rot.rotate(eigenvec[i]);
       }
     }
-    cvm::log("\"differenceVector\" is on: subtracting the reference positions from the provided vector: v = v - x0.\n");
+    cvm::log("\"differenceVector\" is on: subtracting the reference positions from the provided vector: v = x_vec - x_ref.\n");
     for (size_t i = 0; i < atoms->size(); i++) {
       eigenvec[i] -= ref_pos[i];
     }
@@ -1388,22 +1389,32 @@ colvar::eigenvector::eigenvector(std::string const &conf)
     }
   }
 
-  // cvm::log("The first three components(v1x, v1y, v1z) of the resulting vector are: "+cvm::to_str (eigenvec[0])+".\n");
-
-  // for inverse gradients
+  // eigenvec_invnorm2 is used when computing inverse gradients
   eigenvec_invnorm2 = 0.0;
   for (size_t ein = 0; ein < atoms->size(); ein++) {
     eigenvec_invnorm2 += eigenvec[ein].norm2();
   }
   eigenvec_invnorm2 = 1.0 / eigenvec_invnorm2;
 
-  if (b_difference_vector) {
-    cvm::log("\"differenceVector\" is on: normalizing the vector.\n");
+  // Vector normalization overrides the default normalization for differenceVector
+  bool normalize = false;
+  get_keyval(conf, "normalizeVector", normalize, normalize);
+
+  if (normalize) {
+    cvm::log("Normalizing the vector so that |v| = 1.\n");
+    for (size_t i = 0; i < atoms->size(); i++) {
+      eigenvec[i] *= cvm::sqrt(eigenvec_invnorm2);
+    }
+    eigenvec_invnorm2 = 1.0;
+  } else if (b_difference_vector) {
+    cvm::log("Normalizing the vector so that the norm of the projection |v ⋅ (x_vec - x_ref)| = 1.\n");
     for (size_t i = 0; i < atoms->size(); i++) {
       eigenvec[i] *= eigenvec_invnorm2;
     }
+    eigenvec_invnorm2 = 1.0/eigenvec_invnorm2;
   } else {
-    cvm::log("The norm of the vector is |v| = "+cvm::to_str(eigenvec_invnorm2)+".\n");
+    cvm::log("The norm of the vector is |v| = "+
+             cvm::to_str(1.0/cvm::sqrt(eigenvec_invnorm2))+".\n");
   }
 }
 
@@ -1562,4 +1573,3 @@ void colvar::cartesian::apply_force(colvarvalue const &force)
     }
   }
 }
-

@@ -378,7 +378,7 @@ inline cvm::real colvarvalue::operator [] (int const i) const
   case colvarvalue::type_notset:
   default:
     cvm::error("Error: trying to access a colvar value "
-               "that is not initialized.\n", BUG_ERROR);
+               "that is not initialized.\n", COLVARS_BUG_ERROR);
     return 0.0;
   case colvarvalue::type_scalar:
     return real_value;
@@ -401,7 +401,7 @@ inline cvm::real & colvarvalue::operator [] (int const i)
   case colvarvalue::type_notset:
   default:
     cvm::error("Error: trying to access a colvar value "
-               "that is not initialized.\n", BUG_ERROR);
+               "that is not initialized.\n", COLVARS_BUG_ERROR);
     return real_value;
   case colvarvalue::type_scalar:
     return real_value;
@@ -673,7 +673,6 @@ inline cvm::real colvarvalue::norm2() const
     } else {
       return vector1d_value.norm2();
     }
-/*   break; */
   case colvarvalue::type_notset:
   default:
     return 0.0;
