@@ -41,7 +41,7 @@ c
       integer:: n_adjust=0
       mdyn_rtyp,parameter::zero_md=0
       real(r_p),parameter::zero_rp=0
-      logical n_debf
+      logical n_debf,respa1_l
       logical:: mem_alloc_deriv_fcall=.true.
       real(r_p) f_ulim
 
@@ -167,7 +167,7 @@ c
       end if
 
       block
-      logical OK,respa1_l,smd_l,gamd_l
+      logical OK,smd_l,gamd_l
 
       fdebs_l    = .false.
       tdes_l     = .false.
@@ -427,10 +427,6 @@ c
          desmd  (1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
          of1 = of1 + dr_stride3
       end if
-      if (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1') then
-         desave (1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
-         of1 = of1 + dr_stride3
-      end if
 
       dr_obws = of1
       de_ws1 (1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
@@ -444,6 +440,11 @@ c
       de1z (1:dr_stride) => de_buff1(of1+2*dr_stride+1:of1+3*dr_stride)
       of1 = of1 + dr_stride3
 
+      if (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1') then
+         desave (1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
+         of1 = of1 + dr_stride3
+      end if
+
       if (of0.ne.siz0.or.of1.ne.siz1) then
  11      format('ERROR! mem_alloc_deriv',
      &        /,' end offset unequal to size',4I10)
@@ -452,7 +453,8 @@ c
       end if
 
  20   continue
-      if (nlocrec2<=dr_strider.or..not.btest(opt_,idNBond)) goto 30
+      if (nlocrec2<=dr_strider.or..not.btest(opt_,idNBond)
+     &   .or.dr_nbnbr.eq.0) goto 30
       if (deb_Path) write(*,*)
      &   "mem_alloc_deriv_rec",opt_,nlocrec2
 
@@ -491,9 +493,6 @@ c
      &        /,' end offset unequal to size',2I10)
          print 21, ofr,sizr
          call fatal
-      end if
-      if(use_mlpot) then
-!$acc update host(dmlpot)
       end if
 
  30   continue
@@ -549,11 +548,11 @@ c
       integer(mipk) siz0,siz1,sizr
 
       siz0 = dr_nb0  *int(dr_stride3 ,mipk)
-      siz1 = dr_nb1  *int(dr_stride3 ,mipk)
+      siz1 = merge(dr_nb1-1,dr_nb1,respa1_l)  *int(dr_stride3 ,mipk)
       sizr = dr_nbnbr*int(dr_strider3,mipk)
       call mem_set( de_buff0,zero_rp,siz0,rec_stream )
       call mem_set( de_buff1,zero_md,siz1,rec_stream )
-      call mem_set( de_buffr,zero_rp,sizr,rec_stream )
+      if (sizr.ne.0) call mem_set( de_buffr,zero_rp,sizr,rec_stream )
 
       end subroutine
 
@@ -598,7 +597,7 @@ c
 
       offset = dr_stride3
       siz0   = dr_nb0  *int(dr_stride3 ,mipk)
-      siz1   = dr_nb1  *int(dr_stride3 ,mipk)
+      siz1   = merge(dr_nb1-1,dr_nb1,respa1_l)  *int(dr_stride3 ,mipk)
       call mem_set( de_buff0,zero_rp,siz0,rec_stream )
       call mem_set( de_buff1,zero_md,siz1-offset,rec_stream,offset )
 
@@ -608,7 +607,7 @@ c
       integer(mipk) sizr
 
       sizr = dr_nbnbr*int(dr_strider3,mipk)
-      call mem_set( de_buffr,zero_rp,sizr,rec_stream )
+      if (sizr.ne.0) call mem_set( de_buffr,zero_rp,sizr,rec_stream )
 
       end subroutine
 
@@ -645,7 +644,7 @@ c
 
 
       !save the values of the short range real space polarizable forces
-      if (shortnonbonded_l.and.stepint.eq.nalt)
+      if (shortnonbonded_l.and.stepint.eq.nalt.and.use_polar)
      &   call mem_move(desave,dep,stride,rec_stream)
 
       if (tdes_l) then  ! (n,3) buffer format
@@ -838,6 +837,7 @@ c
       real(r_p) tot_
       mdyn_rtyp totr
 
+      if (dr_nbnbr.eq.0) return
       if(deb_Path) write(*,*) "   add_forces_rec"
 
       stride = dr_strider3
@@ -886,6 +886,7 @@ c
       real(r_p) tot_
       mdyn_rtyp totr
 
+      if (dr_nbnbr.eq.0) return
       if(deb_Path) write(*,*) "   add_forces_rec1"
 
       stride = dr_strider3
@@ -911,7 +912,8 @@ c
       real(r_p) tot_
       mdyn_rtyp totr
 
-      if(deb_Path) write(*,*) "   sum_add_forces_rec1"
+      if (dr_nbnbr.eq.0) return
+      if (deb_Path) write(*,*) "   sum_add_forces_rec1"
 
       stride = dr_strider3
 !$acc parallel loop async(rec_queue) default(present)
@@ -934,7 +936,8 @@ c
       real(r_p) tot_
       mdyn_rtyp totr
 
-      if(deb_Path) write(*,*) "    add_forces_rec_1d"
+      if (dr_nbnbr.eq.0) return
+      if (deb_Path) write(*,*) "    add_forces_rec_1d"
 
       stride = dr_strider3
 
@@ -985,6 +988,7 @@ c
       real(r_p) tot_
       mdyn_rtyp totr
 
+      if (dr_nbnbr.eq.0) return
       if(deb_Path) write(*,*) "    add_forces_rec_1d"
 
       stride = dr_strider3
@@ -1023,6 +1027,7 @@ c
       real(r_p) tot_
       mdyn_rtyp totr
 
+      if (dr_nbnbr.eq.0) return
       if(deb_Path) write(*,*) "    add_forces_rec1_1d1"
 
       stride = dr_strider3
@@ -1049,6 +1054,7 @@ c
       real(r_p) tot_
       mdyn_rtyp totr
 
+      if (dr_nbnbr.eq.0) return
       if(deb_Path) write(*,*) "    add_forces_rec1_1d1"
 
       stride = dr_strider3

@@ -39,9 +39,9 @@ c
       integer bta,btb,btc,btd,bte
       integer iglob,imptorcount,nitorsloc1
       integer isize,next,capt
-      integer ft(3)
+      integer ft(6)
       real(t_p) angle,symm
-      real(t_p) vt(3),st(3)
+      real(t_p) vt(6),st(6)
       logical header,done
 c     character*4 pa,pb,pc,pd
       integer,parameter:: zero=0

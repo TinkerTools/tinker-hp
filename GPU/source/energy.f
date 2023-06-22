@@ -57,7 +57,7 @@ c     zero out each of the potential energy components
 c
 !$acc data present(eb,eba,eub,eopb,et,ept,eat,ett,ebt,ea
 !$acc&      ,eaa,eopd,eid,eit,ec,ev,em,ep,eg,ex,esum,emlpot
-!$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r,edsp,edsprec,er,ect
+!$acc&      ,ev_r,ec_r,ecrec,em_r,ep_r,eb_r,edsp,edsprec,er,ect
 !$acc&      ,nev,nec,nem,nep,nev_,nec_,nem_,nep_)
 
 !$acc serial async
@@ -82,6 +82,7 @@ c
       edsprec=0
       er   = 0
       ec   = 0.0_re_p
+      ecrec= 0.0_re_p
       ec_r = 0
       ect  = 0
       em   = 0.0_re_p
@@ -121,7 +122,12 @@ c
       if (use_strtor)  call estrtor
       if (use_angtor)  call eangtor
       if (use_tortor)  call etortor
-      if (use_mlpot)   call ml_potential(.false.)
+
+      if (use_mlpot) then
+         if (ml_embedding_mode .ne. 3) then
+            call ml_potential(.false.)
+         endif
+      endif
 c
 c     call the van der Waals energy component routines
 c

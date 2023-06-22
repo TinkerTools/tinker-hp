@@ -316,6 +316,7 @@ c
       call check_launch_kernel(" blocksat_kcu")
 
       ! Set irregular flag to all blocks if box is to small
+      !TODO Lambda : Set to true
       if (octahedron.or.l%use2lists) then
 !$acc parallel loop async(rec_queue) deviceptr(b_stat)
          do i = 1,nb

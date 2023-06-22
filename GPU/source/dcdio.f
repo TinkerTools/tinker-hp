@@ -7,14 +7,46 @@ c     "dcdio_write" writes out a set of Cartesian coordinates
 c     to an external disk file in the dcd format
 c     based on libdcdfort: https://github.com/wesbarnett/dcdfort
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
+      subroutine unwrap_dcd_pos(pos,wrapIdx,wdim)
+      use atomsMirror
+      use cell
+      implicit none
+      integer(1) wrapIdx(*)
+      integer   ,intent(in):: wdim
+      real(4)   ,intent(inout):: pos(n)
+      integer    kk,i
+
+ 66   format(" Unknown option for unwrap_dcd_pos ",I0)
+      select case (wdim)
+             case (1)
+      do i=1,n
+         pos(i)= real(x(i)+ int(wrapIdx(4*(i-1)+wdim))*xcell,4)
+      end do
+             case (2)
+      do i=1,n
+         pos(i)= real(y(i)+ int(wrapIdx(4*(i-1)+wdim))*ycell,4)
+      end do
+             case (3)
+      do i=1,n
+         pos(i)= real(z(i)+ int(wrapIdx(4*(i-1)+wdim))*zcell,4)
+      end do
+             case default
+      print 66, wdim
+      __TINKER_FATAL__
+      end select
+
+      end subroutine
+
       subroutine dcdio_write(istep,dt)
       use atmtyp
+      use atoms      ,only: pbcunwrap,pbcWrapIdx
       use atomsMirror
       use boxes
       use dcdmod
       use files
       use inform
+      use replicas
       use iso_c_binding, only: C_NULL_CHAR
       implicit none
       integer i,j,k,istep
@@ -28,12 +60,23 @@ c
       character (len=79) :: info1,info2
       character (len=8) :: date
       character (len=10) :: time
+      character*240 exten
+      character*3 numberreps
 
       natoms     = n
       coord_size = 4*natoms
       timestep   = istep
 
-      dcdfile    = filename(1:leng)//'.dcd'
+c
+c     if multiple replicas, then number the traj outputs
+c
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+        exten='_reps'//numberreps//'.dcd'
+        dcdfile = filename(1:leng)//exten
+      else
+        dcdfile = filename(1:leng)//'.dcd'
+      end if
       init       = (istep.eq.iwrite)
 c
       if (init) then
@@ -154,25 +197,31 @@ c
       write(idcd) 48
       write(idcd) coord_size
       
-      do i = 1,natoms
-         posw(i) = real(x(i),4)
-      end do
+      if (pbcunwrap) then
+         call unwrap_dcd_pos(posw,pbcWrapIdx,1)
+      else
+         do i = 1,natoms; posw(i) = real(x(i),4); end do
+      end if
       write(idcd) posw(:)
 
       write(idcd) coord_size
       write(idcd) coord_size
 
-      do i = 1,natoms
-         posw(i) = real(y(i),4)
-      end do
+      if (pbcunwrap) then
+         call unwrap_dcd_pos(posw,pbcWrapIdx,2)
+      else
+         do i = 1,natoms; posw(i) = real(y(i),4); end do
+      end if
       write(idcd) posw(:)
 
       write(idcd) coord_size
       write(idcd) coord_size
 
-      do i = 1,natoms
-         posw(i) = real(z(i),4)
-      end do
+      if (pbcunwrap) then
+         call unwrap_dcd_pos(posw,pbcWrapIdx,3)
+      else
+         do i = 1,natoms; posw(i) = real(z(i),4); end do
+      end if
       write(idcd) posw(:)
 
       write(idcd) coord_size

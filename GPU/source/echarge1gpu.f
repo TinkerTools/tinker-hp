@@ -241,6 +241,12 @@ c
       real(t_p) elambdatemp
       real(r_p), allocatable :: delambdarec0(:,:),delambdarec1(:,:)
       real(r_p) :: elambdarec0,elambdarec1,qtemp
+      real(r_p) :: g_vxx_temp,g_vxy_temp,g_vxz_temp
+      real(r_p) :: g_vyy_temp,g_vyz_temp,g_vzz_temp
+      real(r_p) :: g_vxx_1,g_vxy_1,g_vxz_1
+      real(r_p) :: g_vyy_1,g_vyz_1,g_vzz_1
+      real(r_p) :: g_vxx_0,g_vxy_0,g_vxz_0
+      real(r_p) :: g_vyy_0,g_vyz_0,g_vzz_0
       parameter( zero_m=0.0 
 #ifdef _OPENACC
      &         , altopt=0 
@@ -257,7 +263,9 @@ c
       allocate (delambdarec0(3,nlocrec2))
       allocate (delambdarec1(3,nlocrec2))
 !$acc enter data create(delambdarec0,delambdarec1
-!$acc&     ,elambdarec0,elambdarec1) async
+!$acc&     ,elambdarec0,elambdarec1
+!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
+!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async
       elambdatemp = elambda  
 c
 c     zero out the Ewald summation energy and derivatives
@@ -362,8 +370,22 @@ c
 c         the reciprocal part is interpolated between 0 and 1
 c
           siz8 = 3*nlocrec2
-!$acc serial async present(ecrec)
+!$acc serial async present(ecrec,g_vxx_temp,g_vxy_temp,g_vxz_temp,
+!$acc&  g_vyy_temp,g_vyz_temp,g_vzz_temp,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
           ecrec = 0.0
+          g_vxx_temp = g_vxx
+          g_vxy_temp = g_vxy
+          g_vxz_temp = g_vxz
+          g_vyy_temp = g_vyy
+          g_vyz_temp = g_vyz
+          g_vzz_temp = g_vzz
+          g_vxx = 0.0
+          g_vxy = 0.0
+          g_vxz = 0.0
+          g_vyy = 0.0
+          g_vyz = 0.0
+          g_vzz = 0.0
 !$acc end serial
           call mem_set(decrec,zero_m,siz8,rec_stream)
 
@@ -372,8 +394,16 @@ c
           if (elambda.lt.1.0) then
             call ecrecip1gpu
           end if
-!$acc serial async present(elambdarec0,ecrec)
+!$acc serial async present(elambdarec0,ecrec,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
           elambdarec0  = ecrec
+          g_vxx_0 = g_vxx
+          g_vxy_0 = g_vxy
+          g_vxz_0 = g_vxz
+          g_vyy_0 = g_vyy
+          g_vyz_0 = g_vyz
+          g_vzz_0 = g_vzz
+
           ecrec = 0.0
 !$acc end serial
           call mem_move(delambdarec0,decrec,siz8,rec_stream)
@@ -384,14 +414,30 @@ c
           if (elambda.gt.0.0) then
             call ecrecip1gpu
           end if
-!$acc serial async present(elambdarec1,ecrec)
+!$acc serial async present(elambdarec1,ecrec,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
           elambdarec1  = ecrec
+          g_vxx_1 = g_vxx
+          g_vxy_1 = g_vxy
+          g_vxz_1 = g_vxz
+          g_vyy_1 = g_vyy
+          g_vyz_1 = g_vyz
+          g_vzz_1 = g_vzz
 !$acc end serial
           call mem_move(delambdarec1,decrec,siz8,rec_stream)
 
           elambda   = elambdatemp
-!$acc serial async present(elambdarec0,elambdarec1,ecrec,delambdae)
+!$acc wait
+!$acc serial async present(elambdarec0,elambdarec1,ecrec,delambdae,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,g_vxx_temp,g_vxy_temp,
+!$acc& g_vxz_temp,g_vyy_temp,g_vyz_temp,g_vzz_temp)
           ecrec     = (1.0-elambda)*elambdarec0 + elambda*elambdarec1
+          g_vxx = g_vxx_temp + (1.0-elambda)*g_vxx_0+elambda*g_vxx_1
+          g_vxy = g_vxy_temp + (1.0-elambda)*g_vxy_0+elambda*g_vxy_1
+          g_vxz = g_vxz_temp + (1.0-elambda)*g_vxz_0+elambda*g_vxz_1
+          g_vyy = g_vyy_temp + (1.0-elambda)*g_vyy_0+elambda*g_vyy_1
+          g_vyz = g_vyz_temp + (1.0-elambda)*g_vyz_0+elambda*g_vyz_1
+          g_vzz = g_vzz_temp + (1.0-elambda)*g_vzz_0+elambda*g_vzz_1
           delambdae = delambdae + elambdarec1-elambdarec0
 !$acc end serial
 !$acc parallel loop async collapse(2) default(present)
@@ -418,7 +464,9 @@ c
 !$acc update host(delambdae) async
 c
 !$acc exit data delete(delambdarec0,delambdarec1
-!$acc&    ,elambdarec0,elambdarec1) async
+!$acc&    ,elambdarec0,elambdarec1
+!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
+!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async
       deallocate(delambdarec0,delambdarec1)
 
       call timer_exit(timer_echarge)

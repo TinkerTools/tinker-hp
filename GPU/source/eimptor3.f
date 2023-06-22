@@ -77,7 +77,9 @@ c     aeit = 0.0_ti_p
 c
 c     calculate the improper torsional angle energy term
 c
-!$acc parallel loop default(present) async
+!$acc parallel loop default(present) present(eit) async
+!$acc&         present(imptorglob,iitors,loc,grplist,wgrp,x,y,z,itors1,
+!$acc&    itors2,itors3,use)
 !$acc&         reduction(+:eit,neit)
       do iimptor = 1, nitorsloc
          i = imptorglob(iimptor)

@@ -37,7 +37,7 @@ c
       use vdwpot
       use utilgpu
       implicit none
-      real(t_p) elrc,vlrc
+      real(r_p) elrc,vlrc
       character*11 mode
 c
 c     choose the method for summing over pairwise interactions
@@ -52,12 +52,12 @@ c
 !$acc data  create(elrc,vlrc) async(def_queue)
 !$acc&      present(ev,vir)
          call evcorr1gpu (mode,elrc,vlrc)
-!$acc kernels async(def_queue)
+!$acc serial async(def_queue)
          ev = ev + elrc
          vir(1,1) = vir(1,1) + vlrc
          vir(2,2) = vir(2,2) + vlrc
          vir(3,3) = vir(3,3) + vlrc
-!$acc end kernels
+!$acc end serial
 !$acc wait
 !$acc end data
       end if

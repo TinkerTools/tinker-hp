@@ -106,6 +106,9 @@ ifeq ($(PLUMED_SUPPORT),1)
 endif
 ifeq ($(COLVARS_SUPPORT),1)
    pp_flags_common_ += -DCOLVARS
+   ifeq ($(TCL_SUPPORT),1)
+      pp_flags_common_ += -DCOLVARS_TCL
+   endif
 endif
 ifeq ($(NN_SUPPORT),1)
    pp_flags_common_ += -DNN_SUPPORT
@@ -271,6 +274,9 @@ endif
 endif
 ifeq ($(COLVARS_SUPPORT),1)
    comp_flags_cxx_    += -I$(INC_COLVARS)
+   ifeq ($(TCL_SUPPORT),1)
+      comp_flags_cxx_ += -I$(INC_TCL)
+   endif
 endif
 comp_flags_cuda_f_    := $(pp_flags_cuda_f_) $(host_flags_cuda_f_) $(cuda_flags_f_)
 ifneq ($(device_flags_f_),$(empty__))
@@ -285,6 +291,7 @@ DECOMP_FFLAGS          = $(decp_flags_f_)
 GPUFLAGS               = $(comp_flags_gpu_f_)
 CUFFLAGS               = $(comp_flags_cuda_f_)
 CXXFLAGS               = $(comp_flags_cxx_)
+COLVARS_CXX_F          = $(host_flags_cxx_)
 ifeq ($(HIP_SUPPORT),0)
    CUCFLAGS            = $(comp_flags_cuda_c_)
 else
@@ -330,7 +337,14 @@ ifeq ($(PLUMED_SUPPORT),1)
 endif
 ifeq ($(COLVARS_SUPPORT),1)
    LDLIBS             += -L$(LIB_COLVARS)
+   ifeq ($(TCL_SUPPORT),1)
+      ifeq ($(TCL_HOME),$(TCL_HOME__))
+         depend_targets += tcl
+      endif
+      LDLIBS          += -L$(LIB_TCL)
+   endif
    depend_targets     += colvars
+   CULIBS += -lmpi_cxx
 endif
 ifeq ($(NVSHMEM_SUPPORT),1)
    dev_ldlibs         += -L$(LIB_NVSHMEM) -L/$(LIB_CUDA_DRIVER) -lmpi_cxx
@@ -341,4 +355,7 @@ endif
 ifeq ($(arch),$(filter $(arch),device gpu))
    LDLIBS             += $(dev_ldlibs)
    depend_targets     += thrust
+   ifeq ($(NN_SUPPORT),1)
+      depend_targets  += $(mlplugin_name)
+   endif
 endif

@@ -61,11 +61,11 @@ c
 c
            evdw = eps*rvogsc6*(rvogsc6 - 2.0)
 
-           if((lambda.gt.0.0).and.(lambda.lt.1.0)) then
+c           if((lambda.gt.0.0).and.(lambda.lt.1.0)) then
               devdwgsc = eps*12.0*rvogsc6*(1.0-rvogsc6)/gsc
-           else
-              devdwgsc = 0.0
-           end if
+c           else
+c              devdwgsc = 0.0
+c           end if
 c
            e  =  lambdavt*evdw
            IF (iand(ver,grd).ne.0)de = (lambdavt*dgscrho*devdwgsc)/rv

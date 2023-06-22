@@ -73,7 +73,8 @@ c
 c     calculate the improper dihedral angle energy term
 c
 !$acc parallel loop async present(eid)
-!$acc&         present(impropglob,iiprop,x,y,z,use,kprop,vprop)
+!$acc&         present(impropglob,iiprop,grplist,wgrp,x,y,z,use
+!$acc&    ,kprop,vprop)
 !$acc&         reduction(+:eid,neid)
       do iimprop = 1, niproploc
          i     = impropglob(iimprop)

@@ -155,7 +155,7 @@ c
       integer,allocatable :: buf1(:),buf2(:)
       integer,allocatable :: buflen1(:),buflen2(:)
 
-      real(t_p) nx_box,ny_box,nz_box
+      real(r_p) nx_box,ny_box,nz_box
 !DIR$ ATTRIBUTES ALIGN:64:: xbegproc,xendproc,ybegproc,yendproc
 !DIR$ ATTRIBUTES ALIGN:64:: zbegproc,zendproc
       real(t_p), allocatable :: xbegproc(:),xendproc(:)

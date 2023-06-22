@@ -21,29 +21,37 @@ c
 #include "image.f.inc"
       end module
 
-      subroutine set_embedding_weights
-      use ani
-      use group
-      use tinheader
-      implicit none
+      subroutine set_embedding_weights()
+        use ani
+        use domdec
+        use group
+        use tinheader
+        implicit none
+        
+        SELECT CASE(ml_embedding_mode)
+        CASE(0)
+          return
+        CASE(1)
+        ! full calculation with embedding
+          mlpotscale  = wgrp(2,2)
+          wgrp(2,2)   = 0.0_ti_p
+        CASE(2)
+        ! only compute intra-group difference
+          mlpotscale  = wgrp(2,2)
+          wgrp(:,:)   = 0.0_ti_p
+          wgrp(2,2)   = -mlpotscale
+        CASE(3)
+        ! only compute chosen intra terms-group difference
+          mlpotscale  = 0.0_ti_p 
+          wgrp(:,:)   = 0.0_ti_p
+          wgrp(2,2)   = 1.0_ti_p   
+        CASE DEFAULT
+          write(0,*) 'unknown embedding mode',ml_embedding_mode
+          call fatal
+        END SELECT
 
-      SELECT case(ml_embedding_mode)
-         case(0)
-            return
-         case(1)
-         ! full calculation with embedding
-            mlpotscale  = wgrp(2,2)
-            wgrp(2,2)   = 0.0_ti_p
-         case(2)
-         ! only compute intra-group difference
-            mlpotscale  = wgrp(2,2)
-            wgrp(:,:)   = 0.0_ti_p
-            wgrp(2,2)   = -mlpotscale
-         case defaULT
-            write(0,*) 'unknown embedding mode',ml_embedding_mode
-            call fatal
-      END SELECT
 !$acc update device(wgrp) async
+        
       end subroutine set_embedding_weights
 
       subroutine ml_potential(dograd)
@@ -100,10 +108,6 @@ c
           call fatal
         endif
         ml_resources_initialized = .true.
-c        if (use_mpole.or.use_polar.or.use_bond.or.use_angle
-c     &     .or.use_tors.or.use_charge.or.use_urey) then
-c            use_ani_only = .false.
-c         end if
       end if
 
       if (f_in.or.isobaric) then
@@ -118,8 +122,11 @@ c         end if
 
       !TODO Make atomic_ani an integer(8)
       nadd   = 0
-      pairs  = list_ani%npairs
       natmnl = list_ani%natmnl
+c      natmnl = merge(n,list_ani%natmnl,use_bondorder)
+      if (use_bondorder) call init_build_ml_bond_list
+c      pairs  = list_ani%npairs
+      pairs  = merge(nlst_bond, list_ani%npairs, use_bondorder)
 
       call realloc_position_buffer(natmnl,pairs)
       call set_pairlist_Cellorder(amloc,list_ani,.false.)
@@ -127,11 +134,18 @@ c         end if
       if (deb_Path) write(*,*) 'ML POTENTIAL set_pairlist'
 
       c_glob => list_ani%c_glob
-      list1(1:pairs) => list_ani%list(1:pairs)
-      list2(1:pairs) => list_ani%list(1+pairs:2*pairs)
       cell_x => list_ani%cell_x
       cell_y => list_ani%cell_y
       cell_z => list_ani%cell_z
+
+      if (use_bondorder) then
+         call build_ml_bond_list
+         list1 => blist1
+         list2 => blist2
+      else
+         list1(1:pairs) => list_ani%list(1:pairs)
+         list2(1:pairs) => list_ani%list(1+pairs:2*pairs)
+      end if
 
       allocate(istrict(natmnl))
 !$acc data create(istrict)
@@ -140,6 +154,7 @@ c         end if
 !$acc parallel loop async default(present) copy(nstrict)
       do i=1,natmnl
          iglob             = c_glob(i)
+c         iglob             = merge(i,c_glob(i), use_bondorder)
          xyz_c(i         ) = x(iglob)
          xyz_c(i+  natmnl) = y(iglob)
          xyz_c(i+2*natmnl) = z(iglob)
@@ -193,8 +208,9 @@ c         end if
 !$acc&  default(present) reduction(+:nadd) 
 !$acc&  present(emlpot,g_vxx,g_vyy,g_vzz,g_vxy,g_vyz,g_vxz)
         do i = 1,natmnl
-          iglob= c_glob(i)
-          iloc = loc(iglob)
+          iglob = c_glob(i)
+c          iglob = merge(i,c_glob(i), use_bondorder)
+          iloc  = loc(iglob)
 !$acc loop seq
           do j=1,3
           dmlpot(j,iloc) = dmlpot(j,iloc) + d_ani(j+3*(i-1))*mlpotscale
@@ -220,6 +236,7 @@ c         end if
 !$acc&         default(present) present(emlpot) reduction(+:nadd)
         do i = 1,natmnl
           iloc = loc(c_glob(i))
+c          iloc = loc(merge(i,c_glob(i),use_bondorder))
           if (iloc.le.nloc) then
             emlpot = emlpot + aeani(i)
             nadd = nadd +1
@@ -260,6 +277,146 @@ c         end if
 
 
       end subroutine ml_potential
+
+
+      subroutine init_build_ml_bond_list
+      use ani
+      use atoms
+      use couple
+      implicit none
+      integer i,j,k
+      integer sizenn,cpt
+
+      sizenn = 0
+      cpt    = 0
+
+      do i = 1, n
+         sizenn = sizenn+n12(i)+n13(i)+n14(i)+n15(i)
+      end do
+
+      if (allocated(blist1)) then
+!$acc exit data delete(blist1,blist2)
+         deallocate(blist1,blist2)
+      end if
+      allocate(blist1(sizenn),blist2(sizenn))
+
+      do i = 1, n
+         if (laml(i)) then
+            do j = 1, n12(i)
+               k = i12(j,i)
+               if (laml(k)) then
+                  if (k .gt. i) then
+                     cpt = cpt +1
+                  end if
+               end if
+            end do
+            if (bondorder > 1) then
+               do j = 1, n13(i)
+                  k = i13(j,i)
+                  if (laml(k)) then
+                     if (k .gt. i) then
+                        cpt = cpt + 1
+                     end if
+                  end if
+               end do
+            end if
+            if (bondorder > 2) then
+               do j = 1, n14(i)
+                  k = i14(j,i)
+                  if (laml(k)) then
+                     if (k .gt. i) then
+                        cpt = cpt + 1
+                     end if
+                  end if
+               end do
+            end if
+            if (bondorder > 3) then
+               do j = 1, n15(i)
+                  k = i15(j,i)
+                  if (laml(k)) then
+                     if (k .gt. i) then
+                        cpt = cpt + 1
+                     end if
+                  end if
+               end do
+            end if
+         end if
+      end do
+      nlst_bond=cpt
+
+      end subroutine init_build_ml_bond_list
+
+      subroutine build_ml_bond_list
+      use ani
+      use atoms
+      use couple
+      use neigh     ,only: list_ani
+      implicit none
+      integer i,j,k,l
+      integer sizenn,cpt,natmnl
+
+      sizenn = 0
+      cpt    = 0
+      natmnl = list_ani%natmnl
+
+!$acc enter data create(blist1,blist2)
+
+c      do l = 1, natmnl
+c         i = c_globbl(l)
+      do i = 1, n
+         if (laml(i)) then
+            do j = 1, n12(i)
+               k = i12(j,i)
+               if (laml(k)) then
+                  if (k .gt. i) then
+                     cpt = cpt +1
+                     blist1(cpt) = i-1
+                     blist2(cpt) = k-1
+                  end if
+               end if
+            end do
+            if (bondorder > 1) then
+               do j = 1, n13(i)
+                  k = i13(j,i)
+                  if (laml(k)) then
+                     if (k .gt. i) then
+                        cpt = cpt +1
+                        blist1(cpt) = i-1
+                        blist2(cpt) = k-1
+                     end if
+                  end if
+               end do
+            end if
+            if (bondorder > 2) then
+               do j = 1, n14(i)
+                  k = i14(j,i)
+                  if (laml(k)) then
+                     if (k .gt. i) then
+                        cpt = cpt +1
+                        blist1(cpt) = i-1
+                        blist2(cpt) = k-1
+                     end if
+                  end if
+               end do
+            end if
+            if (bondorder > 3) then
+               do j = 1, n15(i)
+                  k = i15(j,i)
+                  if (laml(k)) then
+                     if (k .gt. i) then
+                        cpt = cpt +1
+                        blist1(cpt) = i-1
+                        blist2(cpt) = k-1
+                     end if
+                  end if
+               end do
+            end if
+         end if
+      end do
+!$acc update device(blist1,blist2)
+
+      end subroutine build_ml_bond_list
+
 #else
       subroutine ml_potential
       use domdec
@@ -272,5 +429,12 @@ c         end if
       endif
       end subroutine ml_potential
       subroutine set_embedding_weights
+      implicit none
+      end subroutine
+      subroutine init_build_ml_bond_list
+      implicit none
+      end subroutine
+      subroutine build_ml_bond_list
+      implicit none
       end subroutine
 #endif

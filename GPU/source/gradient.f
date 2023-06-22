@@ -264,13 +264,13 @@ c
 !$acc host_data use_device(energy
 !$acc&         ,eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
 !$acc&         ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
-!$acc&         ,edsp,edsprec,er,ect
+!$acc&         ,edsp,edsprec,er,ect,emlpot
 !$acc&         ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
 !$acc&         ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&         ,ensmd,einter,ePaMD,eDaMD,eW1aMD)
 !$acc serial deviceptr(energy,eb,eba,eub,eopb,et,ept,ett,eat,ebt,ea
 !$acc&      ,eaa,eopd,eid,eit,ec,ecrec,ev,em,emrec,ep,eprec
-!$acc&      ,edsp,edsprec,er,ect
+!$acc&      ,edsp,edsprec,er,ect,emlpot
 !$acc&      ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
 !$acc&      ,ev_r,ec_r,em_r,ep_r,eb_r
 !$acc&      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(rec_queue)

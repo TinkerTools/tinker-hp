@@ -54,7 +54,7 @@ c
       implicit none
       real(t_p),intent(in):: tors1(:,:),tors2(:,:),tors3(:,:),tors4(:,:)
      &         ,tors5(:,:),tors6(:,:)
-      real(r_p),intent(inout):: det(1)
+      real(r_p),intent(inout):: det(:,:)
       integer itor,i,ia,ib,ic,id,tver,tfea,grp
 #ifdef USE_NVSHMEM_CUDA
       integer ipe,ind
@@ -146,6 +146,9 @@ c
       use deriv   ,only: det
       use etors3_inl
       use tors
-      implicit none
-      call etors3a_(tors1,tors2,tors3,tors4,tors5,tors6,det)
+      use utilgpu ,only: lam_buff
+      implicit  none
+      real(r_p),pointer:: buff(:,:)
+      buff(1:3,1:1) => lam_buff(1:3)
+      call etors3a_(tors1,tors2,tors3,tors4,tors5,tors6,buff)
       end subroutine

@@ -15,10 +15,11 @@ c     auxiliary files with velocity, force or induced dipole data;
 c     also checks for user requested termination of a simulation
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       subroutine mdsave (istep,dt,epot)
       use atmtyp
       use atmlst
+      use atoms   ,only: pbcunwrap,pbcWrap
       use atomsMirror
       use bound
       use boxes
@@ -34,6 +35,7 @@ c
       use output
       use polar
       use potent
+      use replicas
       use titles
       use USampling ,only: US_step=>step,prtUS
      &              ,US_enable
@@ -51,10 +53,11 @@ c
       real(r_p),allocatable:: vtemp(:,:),postemp(:,:)
      &         ,atemp(:,:),aalttemp(:,:),uindtemp(:,:)
       integer  ,allocatable:: bufbegsave(:),globsave(:)
-     &         ,bufbegpolesave(:),globpolesave(:)
+     &         ,pbcWrapTemp(:),bufbegpolesave(:),globpolesave(:)
       integer  ,parameter::PERIOD_INBOX_ATOMS=500
       character*7 ext
-      character*240 endfile,xyzfile,velfile,frcfile,indfile
+      character*240 endfile,xyzfile,velfile,frcfile,indfile,exten
+      character*3 numberreps
 c
       moddump = mod(istep,iwrite)
 c
@@ -71,6 +74,9 @@ c
       if (use_bounds.and..not.f_mdsave) call bounds
 
 !$acc update host(glob,v,a,x,y,z,aalt,epot) async
+      if (pbcunwrap) then
+!$acc update host(pbcWrap) async
+      end if
       if (uindsave.and.use_polar) then
 !$acc update host(uind) async
       end if
@@ -83,6 +89,7 @@ c
 c      allocate temporary arrays
 c
       if (rank.ne.0) then
+        allocate (pbcWrapTemp(n))
         allocate (postemp(3,nloc))
         allocate (vtemp(3,nloc))
         allocate (atemp(3,nloc))
@@ -95,14 +102,16 @@ c
         vtemp    = 0_re_p
         atemp    = 0_re_p
         aalttemp = 0_re_p
+        pbcWrapTemp = 0
       else
+        allocate (pbcWrapTemp(n))
         allocate (postemp(3,n))
         allocate (vtemp(3,n))
         allocate (atemp(3,n))
         allocate (aalttemp(3,n))
         allocate (bufbegsave(nproc))
         allocate (globsave(n))
-        if (uindsave .and. use_polar) then
+        if (uindsave.and.use_polar) then
           allocate (uindtemp(3,n))
           allocate (bufbegpolesave(nproc))
           allocate (globpolesave(n))
@@ -114,8 +123,9 @@ c
         vtemp    = 0_re_p
         atemp    = 0_re_p
         aalttemp = 0_re_p
-        bufbegsave = 0
-        globsave = 0
+        bufbegsave  = 0
+        globsave    = 0
+        pbcWrapTemp = 0
       end if
 c
 c     put the arrays to be sent in the right order
@@ -136,6 +146,7 @@ c
           aalttemp(1,i) = aalt(1,iglob)
           aalttemp(2,i) = aalt(2,iglob)
           aalttemp(3,i) = aalt(3,iglob)
+          pbcWrapTemp(i)= pbcWrap(iglob)
         end do
         if (uindsave .and. use_polar) then
           do i = 1, npoleloc
@@ -147,7 +158,7 @@ c
         end if
       end if
 c
-c    master get size of all domains
+c     master get size of all domains
 c
       if (rank.eq.0) then
         do iproc = 1, nproc-1
@@ -271,6 +282,32 @@ c
         call MPI_WAIT(req(tagmpi),status,ierr)
       end if
 c
+c     pbc Wrap State
+c
+      if (pbcunwrap) then
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_IRECV(pbcWrapTemp(bufbegsave(iproc+1))
+     $       ,domlen(iproc+1),
+     $       MPI_INT,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_ISEND(pbcWrapTemp,nloc,MPI_INT,0,tagmpi
+     $    ,COMM_TINKER,req(tagmpi),ierr)
+        end if
+        if (rank.eq.0) then
+          do iproc = 1, nproc-1
+            tagmpi = iproc + 1
+            call MPI_WAIT(req(tagmpi),status,ierr)
+          end do
+        else
+          tagmpi = rank + 1
+          call MPI_WAIT(req(tagmpi),status,ierr)
+        end if
+      end if
+c
 c     velocities
 c
       if (rank.eq.0) then
@@ -384,6 +421,7 @@ c
               x(iglob) = postemp(1,iloc)
               y(iglob) = postemp(2,iloc)
               z(iglob) = postemp(3,iloc)
+              pbcWrap(iglob) = pbcWrapTemp(iloc)
               v(1,iglob) = vtemp(1,iloc)
               v(2,iglob) = vtemp(2,iloc)
               v(3,iglob) = vtemp(3,iloc)
@@ -462,7 +500,7 @@ c
 c
 c     update the information needed to restart the trajectory
 c
-      call prtdyn
+      if (mod(istep,idumpdyn).eq.0) call prtdyn
 c
 c     save coordinates to an archive or numbered structure file, or dcd file
 c
@@ -472,7 +510,16 @@ c
         ixyz = freeunit ()
         if (archive) then
            xyzfile = filename(1:leng)
+c
+c          if multiple replicas, then number the traj outputs
+c
+           if (use_reps) then
+             write(numberreps, '(i3.3)') rank_reploc
+             exten='_reps'//numberreps
+             xyzfile = filename(1:leng)//trim(exten)
+           end if
            call suffix (xyzfile,'arc','old')
+
            inquire (file=xyzfile,exist=exist)
            if (exist) then
               call openend (ixyz,xyzfile)
@@ -480,6 +527,14 @@ c
               open (unit=ixyz,file=xyzfile,status='new')
            end if
         else
+           if (use_reps) then
+             write(numberreps, '(i3.3)') rank_reploc
+             exten='_reps'//numberreps
+             xyzfile = filename(1:leng)//trim(exten)
+     &                            //'.'//ext(1:lext)
+           else
+             xyzfile = filename(1:leng)//'.'//ext(1:lext)
+           end if
            if (f_mdsave) then
               if (n_fwriten.eq.-1) then
               xyzfile = filename(1:leng)//'_err'
@@ -487,7 +542,7 @@ c
               xyzfile = filename(1:leng)//'_'//ext(1:lext)
               end if
            else
-           xyzfile = filename(1:leng)//'.'//ext(1:lext)
+             xyzfile = filename(1:leng)//'.'//ext(1:lext)
            end if
            call version (xyzfile,'new')
            open (unit=ixyz,file=xyzfile,status='new')
@@ -502,7 +557,6 @@ c     Save data for fred
 c
       if (US_enable) call prtUS
 
-c      call netcdfamber(istep,dt)
 c
 c     save the velocity vector components at the current step
 c

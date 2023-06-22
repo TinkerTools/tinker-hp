@@ -170,6 +170,7 @@ c
 !$acc serial present(epot,eksum,etot) async
          etot = eksum + epot
 !$acc end serial
+         if(rank.eq.0) call chk_energy_fluct(epot,eksum,abort)
       end if
 c
 c     compute statistics and save trajectory for this step

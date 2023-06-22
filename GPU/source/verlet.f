@@ -16,16 +16,19 @@ c
 c
 #include "tinker_macro.h"
       subroutine verlet (istep,dt)
+      use ani
       use atmtyp
       use atomsMirror
       use cutoff
       use domdec
-      use deriv  ,only: info_forces,prtEForces,cDef,ftot_l,comm_forces
+      use deriv  ,only: info_forces,prtEForces,cDef,zero_forces_rec
+     &           ,ftot_l,comm_forces
       use energi ,only: info_energy,calc_e,chk_energy_fluct
       use freeze
       use inform
       use mdstuf1
       use moldyn
+      use potent
       use timestat
       use units
       use usage
@@ -85,9 +88,27 @@ c     get the potential energy and atomic forces
 c
       call gradient (epot,derivs)
 c
+c     communicate forces
+c
+      call commforces(derivs)
+c
 c     MPI : get total energy
 c
       call reduceen(epot)
+c
+c     compute hybrid machine learning potential embedding
+c
+      if(use_embd_potoff) then
+        ml_embedding_mode=3
+        call zero_forces_rec
+        call gradembedding (eml,derivs)
+        call reduceen(eml)
+        call commforces(derivs)
+!$acc serial async
+        epot = epot+eml
+!$acc end serial
+        ml_embedding_mode=1
+      endif
 c
 c     make half-step temperature and pressure corrections
 c
@@ -130,7 +151,7 @@ c
 !$acc serial present(etot,eksum,epot) async
          etot = eksum + epot
 !$acc end serial
-         call chk_energy_fluct(epot,eksum,abort)
+         if(rank.eq.0) call chk_energy_fluct(epot,eksum,abort)
       end if
       if (nproc.eq.1.and.tinkerdebug.eq.64) call prtEForces(derivs,epot)
 c
@@ -141,4 +162,85 @@ c
       call mdsave (istep,dt,epot)
       call mdrestgpu (istep)
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
+      end
+c
+c
+c     ############################################################################
+c     ##                                                                        ##
+c     ##  subroutine gradembedding  --  embedding energy & gradient components  ##
+c     ##                                                                        ##
+c     ############################################################################
+c
+c
+c     "gradembedding" calculates the potential energy and first derivatives
+c     for the chosen embedding potential energy terms
+c
+c
+      subroutine gradembedding (energy,derivs)
+      use potent
+      implicit none
+      real(r_p) energy
+      real(r_p) derivs(3,*)
+      logical save_embd_bond,save_embd_angle
+      logical save_embd_strbnd,save_embd_urey
+      logical save_embd_angang,save_embd_opbend
+      logical save_embd_opdist,save_embd_improp
+      logical save_embd_imptor,save_embd_tors
+      logical save_embd_pitors,save_embd_strtor
+      logical save_embd_tortor
+c
+c
+c     save the original state of intra potential energy terms
+c
+      save_embd_bond   = use_bond
+      save_embd_angle  = use_angle
+      save_embd_strbnd = use_strbnd
+      save_embd_urey   = use_urey
+      save_embd_angang = use_angang
+      save_embd_opbend = use_opbend
+      save_embd_opdist = use_opdist
+      save_embd_improp = use_improp
+      save_embd_imptor = use_imptor
+      save_embd_tors   = use_tors
+      save_embd_pitors = use_pitors
+      save_embd_strtor = use_strtor
+      save_embd_tortor = use_tortor
+
+c
+c     turn off chosen intra potential energy terms
+c
+      if (.not. use_embd_bond)  use_bond = .false. 
+      if (.not. use_embd_angle)  use_angle = .false. 
+      if (.not. use_embd_strbnd)  use_strbnd = .false. 
+      if (.not. use_embd_urey)  use_urey = .false. 
+      if (.not. use_embd_angang)  use_angang = .false. 
+      if (.not. use_embd_opbend)  use_opbend = .false. 
+      if (.not. use_embd_opdist)  use_opdist = .false. 
+      if (.not. use_embd_improp)  use_improp = .false. 
+      if (.not. use_embd_imptor)  use_imptor = .false. 
+      if (.not. use_embd_tors)  use_tors = .false. 
+      if (.not. use_embd_pitors)  use_pitors = .false. 
+      if (.not. use_embd_strtor)  use_strtor = .false. 
+      if (.not. use_embd_tortor)  use_tortor = .false. 
+c
+c     get energy and gradient for potential terms
+c
+      call gradient (energy,derivs)
+c
+c     restore the original state of fintra potential energy term
+c
+      use_bond   = save_embd_bond    
+      use_angle  = save_embd_angle   
+      use_strbnd = save_embd_strbnd  
+      use_urey   = save_embd_urey    
+      use_angang = save_embd_angang  
+      use_opbend = save_embd_opbend  
+      use_opdist = save_embd_opdist  
+      use_improp = save_embd_improp  
+      use_imptor = save_embd_imptor  
+      use_tors   = save_embd_tors    
+      use_pitors = save_embd_pitors  
+      use_strtor = save_embd_strtor  
+      use_tortor = save_embd_tortor  
+
       end

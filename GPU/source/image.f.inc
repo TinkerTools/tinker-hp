@@ -86,7 +86,7 @@
 
 
       M_subroutine
-     &            imagem_inl(xr,yr,zr,xbox2,ybox2,zbox2,box3)
+     &            imagem_inl(xr,wx,yr,wy,zr,wz,xbox2,ybox2,zbox2,box3)
 !$acc routine seq
       use tinheader,only:ti_p,re_p,prec_eps
 #ifdef TINKER_CUF
@@ -96,12 +96,26 @@
       use cell
 #endif
       implicit none
-      real(re_p),intent(in)::xbox2,ybox2,zbox2,box3
+      real(re_p),intent(in)   :: xbox2,ybox2,zbox2,box3
       real(re_p),intent(inout):: xr,yr,zr
+      integer(1),intent(out)  :: wx,wy,wz
 
-      if (abs(xr) .gt. xbox2) xr = xr - sign(2*xbox2,xr)
-      if (abs(yr) .gt. ybox2) yr = yr - sign(2*ybox2,yr)
-      if (abs(zr) .gt. zbox2) zr = zr - sign(2*zbox2,zr)
+      wx = 0
+      wy = 0
+      wz = 0
+
+      if (abs(xr) .gt. xbox2) then
+         xr = xr - sign(2*xbox2,xr)
+         wx = wx + merge(-1,1,xr.gt.0)
+      end if
+      if (abs(yr) .gt. ybox2) then
+         yr = yr - sign(2*ybox2,yr)
+         wy = wy + merge(-1,1,yr.gt.0)
+      end if
+      if (abs(zr) .gt. zbox2) then
+         zr = zr - sign(2*zbox2,zr)
+         wz = wz + merge(-1,1,zr.gt.0)
+      end if
 
 #ifdef INC_OCTAHEDRON_BOX_SHAPE
       if (octahedron) then
@@ -109,6 +123,9 @@
             xr = xr - sign(xbox2,xr)
             yr = yr - sign(ybox2,yr)
             zr = zr - sign(zbox2,zr)
+            wx = wx + merge(-1,1,xr.gt.0)
+            wy = wy + merge(-1,1,yr.gt.0)
+            wz = wz + merge(-1,1,zr.gt.0)
          end if
       end if
 #endif

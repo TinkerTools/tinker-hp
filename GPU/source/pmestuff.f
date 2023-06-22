@@ -2131,13 +2131,13 @@ c
         rankloc  = rank
       end if
       kstart = kstart1(rankloc+1)
-      kend = kend1(rankloc+1)
+      kend   = kend1(rankloc+1)
       jstart = jstart1(rankloc+1)
-      jend = jend1(rankloc+1)
+      jend   = jend1(rankloc+1)
       istart = istart1(rankloc+1)
-      iend = iend1(rankloc+1)
+      iend   = iend1(rankloc+1)
 c
-      iatm = isite
+      iatm   = isite
       nearpt(1) = igrid(1,iatm) + grdoff
       nearpt(2) = igrid(2,iatm) + grdoff
       nearpt(3) = igrid(3,iatm) + grdoff

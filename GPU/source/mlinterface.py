@@ -22,15 +22,15 @@ try:
   except:
     sys.argv.append('mlinterface.py')
   
-  _hartree2kcalmol = 627.5094738 
-  _ev2kcalmol = 23.06054
+  _hartree2kcalmol = 627.5094738
+  _ev2kcalmol      =  23.06054
   # _default_model_dir is modified by mlbuilder.py to point to the Tinker intallation directory
   _default_model_dir = "."
   try:
     _model_dir = os.environ["TINKER_ML_DIR"]
   except:
     print("TINKER_ML_DIR environment variable not set."
-      ," Using default model directory: "+_default_model_dir)
+      ," Using default model directory: "+_default_model_dir, flush=True)
     _model_dir = _default_model_dir
   _ctype2tensordtype = {}
   _ctype2dtype       = {}
@@ -55,7 +55,7 @@ try:
         #os.environ["TF_INTER_OP_PARALLELISM_THREADS"] = "1"
         global tf
         if key_upper == "DEEPMD":
-          print("loading DEEPMD module")
+          print("loading DEEPMD module",flush=True)
           global DeepPot,default_tf_session_config
           from deepmd.env import tf,default_tf_session_config
           tf.compat.v1.enable_eager_execution()
@@ -75,24 +75,24 @@ try:
             global models, MOD_neigh
             from torchanimulti_2x import models
             import MOD_neighborlist as MOD_neigh
-            print("loading torchanimulti_2x module")
+            print("loading torchanimulti_2x module",flush=True)
           except:
-            print("torchanimulti_2x module not found, using standard torchani")
+            print("torchanimulti_2x module not found",flush=True)
             use_custom_torchani = False
         if not use_custom_torchani:
+          print("Loading standard torchani",flush=True)
           global models, torchani, NbList,MOD_neigh
           #import torchani
           from torchani  import models
           from torchani.aev import NbList
           MOD_neigh = None
-      
+
       global pcd, GPUArray
       import pycuda.driver   as pcd
       from pycuda.gpuarray import GPUArray
       load_err=0
     except Exception as exp:
-      print('Exception Fail to load modules with exception:', exp, flush=True)
-      print(traceback.format_exc(),flush=True)
+      print('Exception: Fail to load modules with exception:', exp, flush=True)
       load_err=1
     return load_err
 
@@ -137,17 +137,16 @@ try:
       
       return 0
     except Exception as err:
-      print('Exception Fail to build ctypes with exception:', err, flush=True)
-      print(traceback.format_exc(),flush=True)
+      print('Exception: Fail to build ctypes with exception:', err, flush=True)
+      #print(traceback.format_exc(),flush=True)
       return 1
 
   class AniRessources:
-    verbose      = False
     nb_species   = 0
-    
+
     def __init__(self,rank:int ,mlpot_key:str
                     ,model_file:Optional[str]=None
-                    ,verbose:bool=True
+                    ,verbose:bool=False
                     ,debug:bool=False)->None:
 
       self.verbose = debug
@@ -160,12 +159,17 @@ try:
       try:
         # SELECT DEVICE
         if mlpot_key in _torchani_models:
-            pcd.init()
-            self.cuDeviceId    = pcd.Device(rank)
-            self.context  = self.cuDeviceId.make_context()
-            device_name = 'cuda:'+str(rank) if torch.cuda.is_available() else 'cpu'
-            if verbose:  print("selecting torch device "+device_name,flush=True)
-            self.device    = torch.device(device_name)
+            #pcd.init()
+            torch.cuda.init()
+            self.cuDeviceId = pcd.Device(rank)
+            self.context    = self.cuDeviceId.retain_primary_context()
+            device_name     = 'cuda:'+str(rank) if torch.cuda.is_available() else 'cpu'
+            self.device     = torch.device(device_name)
+            if self.verbose: print("I rank ",rank," select device "+device_name,flush=True)
+            try:
+               test = torch.tensor(np.empty(512),dtype=torch.float32,device=self.device)
+            except Exception as exp:
+               raise Exception('test torch '+str(exp))
         elif mlpot_key in _tf_models:
             default_tf_session_config.device_count['GPU']=1
             default_tf_session_config.gpu_options.visible_device_list=str(rank)
@@ -178,7 +182,7 @@ try:
         
         # SELECT MODEL
         if mlpot_key in _torchani_models:
-            if (verbose): print( f'Loading {mlpot_key} model...', flush=True)
+            if (self.verbose): print( f'Loading {mlpot_key} model...', flush=True)
             if use_custom_torchani: MOD_neigh.verbose = self.verbose
             self.pbc       = torch.tensor([True, True, True]).to(self.device)
             if self.mlpot_key == "ANI1CCX":
@@ -212,7 +216,7 @@ try:
               raise ValueError("ani model "+self.mlpot_key+" not supported",flush=True)
             self.model.train(False)
         elif mlpot_key in _tf_models:
-            if (verbose): print(f'Loading {mlpot_key} model...', flush=True)
+            if (self.verbose): print(f'Loading {mlpot_key} model...', flush=True)
             if self.mlpot_key=="DEEPMD" and model_file is not None:
               self.model_file=model_file
               print(f'(from file "{model_file}")',flush=True)
@@ -230,7 +234,7 @@ try:
       except pcd.CompileError as cex:
         raise Exception('CompileError '+str(cex))
       except Exception as exp:
-        raise Exception(str(exp))
+        raise Exception('arRessources init ',str(exp))
       except:
         raise Exception('Unknown Exception detected in AniRessources.__init__')
     
@@ -284,7 +288,7 @@ try:
           else:
             predictor = self.model.atomic_energies((atomic_species, coordinates)
               , cell=cell, pbc=self.pbc ,nblist=nblist
-              ,shift_energies=True)
+              ,shift_energies=False)
 
           if self.verbose:
             torch.cuda.synchronize()
@@ -302,7 +306,7 @@ try:
             print(' calc ML transf {:.6f} s'.format(time()-init_time_transf), flush=True)
 
           if dograd:
-            gradient[:] = _hartree2kcalmol*torch.autograd.grad( 
+            gradient[:] = _hartree2kcalmol*torch.autograd.grad(
                               predictor.energies[0][istrict].sum()
                               ,coordinates
                            )[0].squeeze().squeeze()
@@ -426,27 +430,37 @@ except Exception as err:
 
 @ffi.def_extern()
 def init_ml_ressources(rank,nn_name,model_file_,debug_int):
-  debug = debug_int != 0
-  if global_load != 0: return global_load
-  #if ar.verbose:
-  ml_key=ffi.string(nn_name).decode('UTF-8').strip().upper()
-  model_file=ffi.string(model_file_).decode('UTF-8').strip()
-  init_time = time()
-  print('init ML ressources',rank,ml_key,flush=True)
-  load_err = load_modules(ml_key,debug)
-  if load_err != 0: return load_err
-  ctype_err = build_ctypes_converters()
-  if ctype_err != 0: return ctype_err
-  if debug: print(f'_model_dir="{_model_dir}"')
-  global ar
-  ar=AniRessources(rank,ml_key,model_file=model_file,debug=debug)
-  torch.cuda.synchronize()
-  print(f'init ML ressources done {time()-init_time} s'.format(), flush=True)
-  if rank==0:
-    print('', flush=True)
-    print(' *****    Using ML potential engine    ***** ', flush=True)
-    print('', flush=True)
-  return 0
+  try:
+     if global_load != 0: return global_load
+     init_time  = time()
+     ierr       = 0
+     debug      = debug_int != 0
+     ml_key     = ffi.string(nn_name).decode('UTF-8').strip().upper()
+     model_file = ffi.string(model_file_).decode('UTF-8').strip()
+     if (debug): print('init ML ressources',rank,model_file,debug_int,ml_key,flush=True)
+
+     if load_modules(ml_key,debug) != 0: return load_err
+
+     if build_ctypes_converters() != 0: return ctype_err
+
+     if debug: print(f'_model_dir="{_model_dir}"')
+
+     global ar
+     ar=AniRessources(rank,ml_key,model_file=model_file,debug=debug)
+     torch.cuda.synchronize()
+
+     if (ar.verbose): print(f'init ML ressources done {time()-init_time} s'.format(), flush=True)
+     if rank==0:
+        print('', flush=True)
+        print(' *****    Using ML potential engine    ***** ', flush=True)
+        print('', flush=True)
+  except Exception as err:
+     ierr = 1
+     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",flush=True)
+     print(traceback.format_exc(),flush=True)
+     print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",flush=True)
+     #raise Exception('init_ml_ressources:'+str(err))
+  return ierr
 
 @ffi.def_extern()
 def ml_models(coord_ptr, atm_ener_ptr, gradient_ptr, cell_ptr, atm_sp_ptr
@@ -454,21 +468,21 @@ def ml_models(coord_ptr, atm_ener_ptr, gradient_ptr, cell_ptr, atm_sp_ptr
   try:
     dograd = dograd_int != 0
     ierr = ar.compute(coord_ptr, atm_ener_ptr, gradient_ptr, cell_ptr, atm_sp_ptr
-        , neigh1Idx_ptr, neigh2Idx_ptr, dist_ptr, dxyz_ptr,istrict_ptr, nb_species, nb_pairs, nb_strict, dograd)
-    
-    return ierr
+         , neigh1Idx_ptr, neigh2Idx_ptr, dist_ptr, dxyz_ptr,istrict_ptr, nb_species, nb_pairs, nb_strict, dograd)
   except Exception as err:
-    print('ML potential Exception:',err, flush=True)
+    ierr = 1
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",flush=True)
     print(traceback.format_exc(),flush=True)
-    return 1
+    print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",flush=True)
+    #raise Exception("ml_models "+str(err))
+  return ierr
 
-  
+
 @ffi.def_extern()
 def nuke_context( i ):
   try:
-    if ar.mlpot_key in _torchani_models:
-      if ar.verbose:
-        print('ML potential pop CUDA Context', flush=True)
-      ar.context.pop()
-  except:
-    pass
+     if ar.mlpot_key in _torchani_models:
+        if ar.verbose: print('ML potential pop CUDA Context', flush=True)
+        #ar.context.pop()
+  except Exception as err:
+     raise Exception('nuke_context'+str(err))

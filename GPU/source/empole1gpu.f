@@ -469,6 +469,12 @@ c
       real(t_p) time0,time1
       real(r_p),allocatable:: delambdarec0(:,:),delambdarec1(:,:)
       real(r_p) elambdarec0,elambdarec1
+      real(r_p) :: g_vxx_temp,g_vxy_temp,g_vxz_temp
+      real(r_p) :: g_vyy_temp,g_vyz_temp,g_vzz_temp
+      real(r_p) :: g_vxx_1,g_vxy_1,g_vxz_1
+      real(r_p) :: g_vyy_1,g_vyz_1,g_vzz_1
+      real(r_p) :: g_vxx_0,g_vxy_0,g_vxz_0
+      real(r_p) :: g_vyy_0,g_vyz_0,g_vzz_0
       parameter(zero=0.0_ti_p,  one=1.0_ti_p
      &         , two=2.0_ti_p,three=3.0_ti_p
      &         ,half=0.5_ti_p
@@ -494,7 +500,9 @@ c
       allocate (delambdarec0(3,nlocrec2))
       allocate (delambdarec1(3,nlocrec2))
 !$acc enter data create(elambdarec0,elambdarec1
-!$acc&     ,delambdarec0,delambdarec1) async(rec_queue)
+!$acc&     ,delambdarec0,delambdarec1
+!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
+!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async(rec_queue)
       elambdatemp = elambda  
 c
 c     zero out the atomic multipole energy and derivatives
@@ -725,13 +733,41 @@ c
          siz8    = 3*nlocrec2
          call altelec(altopt)
          call rotpolegpu
-!$acc serial async(rec_queue) present(emrec)
+!$acc serial async(rec_queue)
+!$acc& present(emrec,g_vxx_temp,g_vxy_temp,g_vxz_temp,
+!$acc&  g_vyy_temp,g_vyz_temp,g_vzz_temp,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          emrec   = 0.0
+         g_vxx_temp = g_vxx
+         g_vxy_temp = g_vxy
+         g_vxz_temp = g_vxz
+         g_vyy_temp = g_vyy
+         g_vyz_temp = g_vyz
+         g_vzz_temp = g_vzz
+         g_vxx = 0.0
+         g_vxy = 0.0
+         g_vxz = 0.0
+         g_vyy = 0.0
+         g_vyz = 0.0
+         g_vzz = 0.0
 !$acc end serial
          call mem_set(demrec,zerom,siz8,rec_stream)
          call emrecip1gpu
-!$acc serial async(rec_queue) present(elambdarec0,emrec)
+!$acc serial async(rec_queue) present(elambdarec0,emrec,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          elambdarec0 = emrec
+         g_vxx_0 = g_vxx
+         g_vxy_0 = g_vxy
+         g_vxz_0 = g_vxz
+         g_vyy_0 = g_vyy
+         g_vyz_0 = g_vyz
+         g_vzz_0 = g_vzz
+         g_vxx = 0.0
+         g_vxy = 0.0
+         g_vxz = 0.0
+         g_vyy = 0.0
+         g_vyz = 0.0
+         g_vzz = 0.0
          emrec       = 0.0
 !$acc end serial
          call mem_move(delambdarec0,demrec,siz8,rec_stream)
@@ -741,15 +777,31 @@ c
          call altelec(altopt)
          call rotpolegpu
          call emrecip1gpu
-!$acc serial async(rec_queue) present(elambdarec1,emrec)
+!$acc serial async(rec_queue) present(elambdarec1,emrec,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          elambdarec1 = emrec
+         g_vxx_1 = g_vxx
+         g_vxy_1 = g_vxy
+         g_vxz_1 = g_vxz
+         g_vyy_1 = g_vyy
+         g_vyz_1 = g_vyz
+         g_vzz_1 = g_vzz
 !$acc end serial
          call mem_move(delambdarec1,demrec,siz8,rec_stream)
 
          elambda = elambdatemp
+!$acc wait
 !$acc serial async(rec_queue)
-!$acc&       present(emrec,delambdae,elambdarec0,elambdarec1)
+!$acc&       present(emrec,delambdae,elambdarec0,elambdarec1,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,g_vxx_temp,g_vxy_temp,
+!$acc& g_vxz_temp,g_vyy_temp,g_vyz_temp,g_vzz_temp)
          emrec     = (1-elambda)*elambdarec0 + elambda*elambdarec1
+         g_vxx = g_vxx_temp + (1.0-elambda)*g_vxx_0+elambda*g_vxx_1
+         g_vxy = g_vxy_temp + (1.0-elambda)*g_vxy_0+elambda*g_vxy_1
+         g_vxz = g_vxz_temp + (1.0-elambda)*g_vxz_0+elambda*g_vxz_1
+         g_vyy = g_vyy_temp + (1.0-elambda)*g_vyy_0+elambda*g_vyy_1
+         g_vyz = g_vyz_temp + (1.0-elambda)*g_vyz_0+elambda*g_vyz_1
+         g_vzz = g_vzz_temp + (1.0-elambda)*g_vzz_0+elambda*g_vzz_1
          delambdae = delambdae + elambdarec1-elambdarec0
 !$acc end serial
 !$acc parallel loop async(rec_queue) collapse(2) default(present)
@@ -774,12 +826,14 @@ c
 c
 c     Add both contribution to the energy
 c
-!$acc serial async(rec_queue) present(em,emself,em_r,emrec)
+!$acc serial async(rec_queue) present(em,emself,em_r,emrec,delambdae)
       em = em + enr2en(emself + em_r) + emrec
 !$acc end serial
 c
 !$acc exit data delete(elambdarec0,elambdarec1
-!$acc&    ,delambdarec0,delambdarec1) async(rec_queue)
+!$acc&    ,delambdarec0,delambdarec1
+!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
+!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async(rec_queue)
       end
 c
 c     #################################################################
@@ -2037,17 +2091,15 @@ c
 c     increment the internal virial tensor components
 c
 !$acc serial async(rec_queue) default(present)
-!$acc&       present(e,emrec,vxx,vxy,vxz,vyy,vyz,vzz)
+!$acc&       present(e,emrec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&       present(vxx,vxy,vxz,vyy,vyz,vzz)
       emrec    = emrec + half*e
-      vir(1,1) = vir(1,1) + vxx
-      vir(2,1) = vir(2,1) + vxy
-      vir(3,1) = vir(3,1) + vxz
-      vir(1,2) = vir(1,2) + vxy
-      vir(2,2) = vir(2,2) + vyy
-      vir(3,2) = vir(3,2) + vyz
-      vir(1,3) = vir(1,3) + vxz
-      vir(2,3) = vir(2,3) + vyz
-      vir(3,3) = vir(3,3) + vzz
+      g_vxx =  g_vxx + vxx
+      g_vxy =  g_vxy + vxy
+      g_vxz =  g_vxz + vxz
+      g_vyy =  g_vyy + vyy
+      g_vyz =  g_vyz + vyz
+      g_vzz =  g_vzz + vzz
 !$acc end serial
       
       else

@@ -23,6 +23,7 @@ c
       use group
       use mdstuf
       use moldyn
+      use replicas
       use output   ,only:new_restart
       use titles
       use timestat ,only:timer_io,timer_enter,timer_exit,quiet_timers
@@ -34,6 +35,13 @@ c
       character*10 ext
       character*40 fstr
       character*240 dynfile
+      character*3 numberreps
+c
+c     if multiple replicas, the restart are numbered
+c
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+      end if
 c
       call timer_enter(timer_io)
 c
@@ -42,16 +50,28 @@ c
       idyn = freeunit ()
       if (new_restart.and.n_fwriten.ne.0) then
          if (n_fwriten.eq.-1) then
-            dynfile = filename(1:leng)//'_err.dyn'
-            call version(dynfile,'new')
+           if (use_reps) then
+             dynfile = filename(1:leng)//'_reps'//numberreps//'_err.dyn'
+           else
+             dynfile = filename(1:leng)//'_err.dyn'
+             call version(dynfile,'new')
+           end if
          else
             lext=6
             call numeral(n_fwriten,ext,lext)
-            dynfile = filename(1:leng)//'_'//ext(1:lext)//'.dyn'
+            if (use_reps) then
+              dynfile= filename(1:leng)//'_reps'//numberreps//'_.dyn'
+            else
+              dynfile = filename(1:leng)//'_'//ext(1:lext)//'.dyn'
+            end if
             call version(dynfile,'new')
          end if
       else
-         dynfile = filename(1:leng)//'.dyn'
+        if (use_reps) then
+           dynfile = filename(1:leng)//'_reps'//numberreps//'.dyn'
+        else
+           dynfile = filename(1:leng)//'.dyn'
+        end if
       end if
 
       inquire (file=dynfile,exist=exist)

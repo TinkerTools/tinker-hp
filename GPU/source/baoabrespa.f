@@ -247,12 +247,16 @@ c
         do i = 1, 3; do j = 1, 3
           viralt(j,i) = vir(j,i) + viralt(j,i)
         end do; end do
-c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
+c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode)
         use_mlpot=  .TRUE.
         call zero_forces_rec
         save_pred = use_pred
         use_pred  = .FALSE.
-        call gradient (eml,derivs)
+        if(use_embd_potoff) then
+           call gradembedding2 (eml,derivs)
+        else
+           call gradient (eml,derivs)
+        endif
         use_pred  = save_pred 
         call reduceen(eml)
         call commforces(derivs)

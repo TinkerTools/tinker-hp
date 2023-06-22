@@ -68,6 +68,7 @@ alterchg.o: image.f.inc MOD_atoms.o MOD_atmlst.o MOD_atmlst.o MOD_inform.o MOD_m
 alterchg.gpu.o: image.f.inc MOD_atoms.o MOD_atmlst.o MOD_atmlst.o MOD_inform.o MOD_mplpot.o MOD_potent.o MOD_utilcomm.o
 analysis.o: MOD_vdw.o
 angles.o: MOD_utilgpu.o
+ani.o: MOD_ani.o MOD_atoms.o MOD_bath.o MOD_domdec.o
 attach.o: MOD_utilgpu.o
 basefile.o:
 beeman.o:

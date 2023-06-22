@@ -46,7 +46,11 @@ c
 c
 c     choose the method for summing over multipole interactions
 c
-      call empole3cgpu
+      if (use_lambdadyn) then
+        call elambdampole3cgpu
+      else
+        call empole3cgpu
+      end if
 c
       return
       end
@@ -232,6 +236,258 @@ c
       em  = em  + emrec + enr2en( em_r )
       nem = nem + int(nem_)
 !$acc end serial
+c
+      end
+c
+c     ########################################################################
+c     ##                                                                    ##
+c     ##  subroutine elambdampole3cgpu     --  Ewald multipole analysis via list  ##
+c     ##                                                                    ##
+c     ########################################################################
+c
+c
+c     "empole3d" calculates the atomic multipole interaction energy
+c     using particle mesh Ewald summation and a neighbor list, and
+c     partitions the energy among the atoms, when lambdadyn is activated
+c
+c
+      subroutine elambdampole3cgpu
+      use sizes
+      use action
+      use analyz
+      use atmlst
+      use atoms
+      use boxes
+      use chgpot
+      use domdec
+      use empole3gpu_inl
+      use energi
+      use ewald
+      use inform     ,only: deb_Path
+      use interfaces ,only: reorder_nblist,emreal3d_p
+      use math
+      use mpole
+      use mpi
+      use mutant
+      use neigh
+      use potent
+      use shunt
+      use utilgpu
+      use timestat
+      implicit none
+      integer k,i,ii,ierr
+      integer iipoledefault
+      integer iipole
+      integer iglob
+      integer altopt
+      real(t_p) f,emdir
+      real(t_p) term,fterm
+      real(t_p) xd,yd,zd
+      real(t_p) cii,ci,dix,diy,diz
+      real(t_p) qixx,qixy,qixz,qiyy,qiyz,qizz
+      real(t_p) dii,qii,e
+      real(r_p) elambdarec0,elambdarec1,elambdatemp
+      parameter(
+#ifdef _OPENACC
+     &         altopt = 0
+#else
+     &         ,altopt = 1
+#endif
+     &         )
+c
+      if (npole .eq. 0)  return
+      if(deb_Path) write(*,*) 'empole3cgpu'
+c
+      elambdatemp = elambda  
+c
+c     zero out the multipole and polarization energies
+c
+!$acc serial present(nem,em,emrec,nem_) async
+      nem   = 0
+      nem_  = 0.0
+      em    = 0.0_re_p
+      emrec = 0.0_re_p
+!$acc end serial
+cold  aem   = 0_ti_p
+
+!$acc enter data create(elambdarec0,elambdarec1)
+c
+c     set the energy unit conversion factor
+c
+      f = electric / dielec
+c
+c     Communicate poleglob
+c
+#ifdef _OPENACC
+      call orderPole
+#endif
+      if (mlst2_enable) call set_ElecData_cellOrder(.false.)
+c
+c     check the sign of multipole components at chiral sites
+c
+      call chkpolegpu(.false.)
+c
+c     rotate the multipole components into the global frame
+c
+      call rotpolegpu
+c
+c     Reorder neigbhor list
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     &   then
+         if (use_mreal) then
+            if (mlst_enable.and.use_mpoleshortreal) then
+               call switch('SHORTEWALD')
+               call reorder_nblist(shortelst,nshortelst,nshortelstc
+     &                    ,npolelocnl,off2,ipole,poleglobnl)
+            end if
+            if (mlst_enable) then
+               call switch('EWALD     ')
+               call reorder_nblist(elst,nelst,nelstc
+     &                    ,npolelocnl,off2,ipole,poleglobnl)
+            end if
+         end if
+      end if
+
+#ifdef _OPENACC
+      ! Start stream overlapping
+      if (dir_queue.ne.rec_queue)
+     &   call start_dir_stream_cover
+#endif
+c
+c     compute the real space part of the Ewald summation
+c
+      def_queue = dir_queue
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
+        call timer_enter (timer_real )
+        if (use_mreal) then
+           call emreal3d_p
+        end if
+c
+c     compute the self-energy part of the Ewald summation
+c
+        if (use_mself) then
+           term  = 2.0_ti_p * aewald * aewald
+           fterm = -f    * aewald / sqrtpi
+
+!$acc parallel loop async(def_queue)
+!$acc&         default(present) present(em,nem_)
+           do ii = 1, npoleloc
+              iipole = poleglob(ii)
+              iglob  = ipole(iipole)
+              i      = loc(iglob)
+              ci     = rpole(1,iipole)
+              dix    = rpole(2,iipole)
+              diy    = rpole(3,iipole)
+              diz    = rpole(4,iipole)
+              qixx   = rpole(5,iipole)
+              qixy   = rpole(6,iipole)
+              qixz   = rpole(7,iipole)
+              qiyy   = rpole(9,iipole)
+              qiyz   = rpole(10,iipole)
+              qizz   = rpole(13,iipole)
+              cii    = ci*ci
+              dii    = dix*dix + diy*diy + diz*diz
+              qii    = 2.0_ti_p*(qixy*qixy+qixz*qixz+qiyz*qiyz)
+     &                         + qixx*qixx+qiyy*qiyy+qizz*qizz
+              e    = fterm * (cii + term*(dii/3.0_ti_p+
+     &                        2.0_ti_p*term*qii/5.0_ti_p))
+              em   = em + e
+              nem_ = nem_ + 1.0
+           end do
+c
+c          compute the cell dipole boundary correction term
+c
+           if (boundary .eq. 'VACUUM') then
+              xd = 0.0_ti_p
+              yd = 0.0_ti_p
+              zd = 0.0_ti_p
+!$acc parallel loop default(present) async(def_queue)
+              do ii = 1, npoleloc
+                 iipole = poleglob(ii)
+                 iglob  = ipole(iipole)
+                 dix    = rpole(2,iipole)
+                 diy    = rpole(3,iipole)
+                 diz    = rpole(4,iipole)
+                 xd     = xd + dix + rpole(1,iipole)*x(iglob)
+                 yd     = yd + diy + rpole(1,iipole)*y(iglob)
+                 zd     = zd + diz + rpole(1,iipole)*z(iglob)
+              end do
+              call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,
+     $             COMM_TINKER,ierr)
+              call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,
+     $             COMM_TINKER,ierr)
+              call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,
+     $             COMM_TINKER,ierr)
+              if (rank.eq.0) then
+                term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
+                e  = term * (xd*xd+yd*yd+zd*zd)
+!$acc serial async(def_queue) copyin(e) present(em,nem_)
+                em = em + e
+                nem_ = nem_ + 1
+!$acc end serial
+              end if
+           end if
+        end if
+        call timer_exit( timer_real,quiet_timers )
+      end if
+c
+c     compute the reciprocal space part of the Ewald summation
+c
+      def_queue = rec_queue
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
+     &   then
+         call timer_enter( timer_rec )
+c
+c        the reciprocal part is interpolated between 0 and 1
+c
+         elambda = 0.0
+         call altelec(altopt)
+         call rotpolegpu
+!$acc serial async(rec_queue) present(emrec)
+         emrec   = 0.0
+!$acc end serial
+         call emrecipgpu
+!$acc serial async(rec_queue) present(elambdarec0,emrec)
+         elambdarec0 = emrec
+         emrec       = 0.0
+!$acc end serial
+
+         elambda = 1.0
+         call altelec(altopt)
+         call rotpolegpu
+         call emrecipgpu
+!$acc serial async(rec_queue) present(elambdarec1,emrec)
+         elambdarec1 = emrec
+!$acc end serial
+
+         elambda = elambdatemp
+!$acc serial async(rec_queue)
+!$acc&       present(emrec,elambdarec0,elambdarec1)
+         emrec     = (1-elambda)*elambdarec0 + elambda*elambdarec1
+!$acc end serial
+
+         !reset lambda to initial value
+         call altelec(altopt)
+         call rotpolegpu
+         call timer_exit( timer_rec,quiet_timers )
+      end if
+c
+c     Finalize async overlapping
+c
+#ifdef _OPENACC
+      if (dir_queue.ne.rec_queue)
+     &   call end_dir_stream_cover
+#endif
+c
+c     Sum both contribution
+c
+!$acc serial present(em,emrec,em_r,nem,nem_) async(rec_queue)
+      em  = em  + emrec + enr2en( em_r )
+      nem = nem + int(nem_)
+!$acc end serial
+!$acc exit data delete(elambdarec0,elambdarec1)
 c
       end
 c

@@ -25,17 +25,22 @@ c             (nvshmem feature)
 c     nloop   First multiple of 16 after n
 c     type    atom type number for each atom in the system
 c     wintype window object corresponding to type
+c     pbcWrap array containing the  (n1,n2,n3,0) of the "real" cell of each atom
+c     pbcWrapIdx integer(1) pointer to integer(4) pbcWrap array (pbc wrapping state)
 c
 c
 #include "tinker_macro.h"
       module atoms
       implicit none
       integer n,nloop,n_pe
-      integer :: wintype
-      integer  , pointer :: type(:)
-      real(t_p),allocatable ,target :: x(:),y(:),z(:)
-      real(t_p),allocatable ,target :: xold(:),yold(:),zold(:)
-      real(t_p),allocatable :: xold_nl(:),yold_nl(:),zold_nl(:)
+      integer wintype
+      logical pbcunwrap
+      integer(1), pointer :: pbcWrapIdx(:)
+      integer   , pointer :: type(:)
+      integer   ,allocatable ,target :: pbcWrap(:)
+      real(t_p) ,allocatable ,target :: x(:),y(:),z(:)
+      real(t_p) ,allocatable ,target :: xold(:),yold(:),zold(:)
+      real(t_p) ,allocatable :: xold_nl(:),yold_nl(:),zold_nl(:)
 !$acc declare create(n)
       end
 

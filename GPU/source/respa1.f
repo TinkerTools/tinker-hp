@@ -203,6 +203,8 @@ c
       use energi
       use polpot
       use potent
+      use colvars
+      use plumed
       implicit none
       real(r_p) energy
       real(r_p) derivs(3,*)
@@ -221,6 +223,8 @@ c
       integer save_polalg,save_tcgorder
       logical save_tcgprec,save_tcgguess,save_tcgpeek
       logical save_smdvel, save_smdfor
+      logical save_colvars
+      logical save_plumed
 c
 c     save the original state of fast-evolving potentials
 c
@@ -252,6 +256,8 @@ c
       save_tcgomega = tcgomega
       save_smdvel   = use_smd_velconst
       save_smdfor   = use_smd_forconst
+      save_colvars = use_colvars
+      save_plumed = lplumed
 c
 c     turn off fast-evolving valence potential energy terms
 c
@@ -297,6 +303,8 @@ c
       use_smd_forconst   = .false.
       bonded_l    = .false.
       shortnonbonded_l   = .true.
+      use_colvars = .false.
+      lplumed = .false.
 c
 c     get energy and gradient for slow-evolving potential terms
 c
@@ -345,6 +353,8 @@ c
       use_smd_forconst   = save_smdfor
       bonded_l   = .true.
       shortnonbonded_l   = .false.
+      use_colvars = save_colvars
+      lplumed = save_plumed
 
       if (calc_e) then
 !$acc serial present(esave,ep) async

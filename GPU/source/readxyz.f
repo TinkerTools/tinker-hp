@@ -28,6 +28,7 @@ c
       use files
       use inform
       use iounit
+      use iso_c_binding ,only: c_loc, c_f_pointer
       use nvshmem
       use titles
       use timestat  ,only:timer_io,timer_enter,timer_exit,quiet_timers
@@ -45,7 +46,7 @@ c
       real*8 :: aang,bang,gang
       logical exist,opened
       logical quit,reorder
-      logical clash
+      logical clash,use_wrap
       character*240 xyzfile
       character*240 record
       character*240 string
@@ -104,6 +105,12 @@ c
       call prmem_request(zold,n)
       call prmem_request(type,n)
       call prmem_request(tag,n,config=mhostonly)
+      use_wrap = app_id.eq.dynamic_a.or.app_id.eq.dynamic_rep_a.or.
+     &           app_id.eq.pimd_a
+      if (use_wrap) then
+         call prmem_request(pbcWrap,n)
+         call c_f_pointer(c_loc(pbcWrap),pbcWrapIdx,[4*n])
+      end if
       call atomsmirror_init
 
       if (.not.associated(name)) allocate (name(n))
@@ -214,6 +221,15 @@ c               call lattice
       end do
 !$acc update device(type)
 !$acc update device(xm,ym,zm)
+
+      ! Init Wrapping state buffer
+      if (app_id.eq.dynamic_a) then
+         do i = 1, n
+            pbcWrap(i) = 0
+         end do
+!$acc update device(pbcWrap)
+      end if
+
       quit = .false.
    80 continue
       if (.not. opened)  close (unit=ixyz)

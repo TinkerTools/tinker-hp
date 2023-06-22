@@ -35,11 +35,16 @@ c
       end module
 
       subroutine echarge3gpu
+      use potent
       implicit none  
 c
 c     choose the method for summing over pairwise interactions
 c
-      call echarge3cgpu
+      if (use_lambdadyn) then
+        call elambdacharge3cgpu
+      else
+        call echarge3cgpu
+      end if
 c
       return
       end
@@ -192,6 +197,201 @@ c
 !$acc serial async
       !print*, 'echarge3gpu',ec, ec_r, ecrec
        ec = ec + enr2en( ec_r ) + ecrec
+      nec = int(nec_) + nionloc + nec
+!$acc end serial
+
+!$acc end data
+
+      call timer_exit(timer_echarge)
+      end
+c
+c     ###################################################################
+c     ##                                                               ##
+c     ##  subroutine elambdacharge3cgpu  --  Ewald charge analysis via list  ##
+c     ##                                                               ##
+c     ###################################################################
+c
+c
+c
+c     "echarge3cgpu" calculates the charge-charge interaction energy
+c     and partitions the energy among the atoms using a particle
+c     mesh Ewald summation, when lambdadyn is activated
+c
+c
+      subroutine elambdacharge3cgpu
+      use action
+      use analyz
+      use atmlst
+      use atoms
+      use bound
+      use boxes
+      use charge
+      use chgpot
+      use couple
+      use domdec
+      use echarge3gpu_inl
+      use energi
+      use erf_mod
+      use ewald
+      use group
+      use inform
+      use inter
+      use interfaces,only: ecreal3d_p
+      use iounit
+      use math
+      use molcul
+      use mpi
+      use mutant
+      use neigh
+      use potent
+      use shunt
+      use timestat
+      use usage
+      use utilgpu
+      use utilvec
+
+      implicit none
+      integer i,k,ii,kk,ksave
+      integer iglob,iichg,inl
+      integer nnchg,nnchg1,nnchg2
+      integer nn12,nn13,nn14,ntot
+      integer altopt
+      real(t_p) f,fi
+      real(en_p) e,efull
+      real(t_p) fs
+      real(t_p) xi,yi,zi
+      real(t_p) xd,yd,zd
+      real(t_p) rew,erf1,fik
+      real(t_p) r,r2
+      real(t_p) term,term1,term2
+      real(t_p) one,half
+      real(t_p) time0,time1
+      real(t_p) elambdatemp
+      real(r_p) :: elambdarec0,elambdarec1,qtemp
+      character*10 mode
+      parameter(half=0.5_ti_p)
+      parameter(one=1.0_ti_p)
+      parameter(
+#ifdef _OPENACC
+     &         altopt=0 
+#else
+     &         , altopt=1
+#endif
+     &         )
+
+      if(rank.eq.0.and.tinkerdebug) write (*,*) 'echarge3cgpu'
+      call timer_enter(timer_echarge)
+c
+c     zero out the Ewald summation energy and partitioning
+c
+      nec = 0
+      ec  = 0.0_re_p
+c     aec = 0.0_ti_p
+
+      if (nion .eq. 0)  return
+c
+c     set conversion factor, cutoff and switching coefficients
+c     update the number of gangs required for gpu
+c
+      f    = electric / dielec
+      mode = 'EWALD'
+      call switch (mode)
+      call update_gang(nionlocnl)
+c
+!$acc enter data create(elambdarec0,elambdarec1) async
+      elambdatemp = elambda  
+c
+c     compute the Ewald self-energy term over all the atoms
+c
+      fs   = -f * aewald / sqrtpi
+
+!$acc data create(e) present(ec,ec_r,ecrec,nec,nec_) async
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.lt.ndir))
+     $   then
+
+        if (use_cself) then
+
+          call timer_enter(timer_other)
+          f  = electric / dielec
+          fs = -f * aewald / sqrtpi
+!$acc   parallel loop async(dir_queue)
+!$acc&           present(chgglob,pchg)
+          do ii = 1, nionloc
+             iichg = chgglob(ii)
+             e = e + fs * pchg(iichg)**2
+          end do
+c
+c       compute the cell dipole boundary correction term
+c
+          if (boundary .eq. 'VACUUM') then
+             term = (2.0_ti_p/3.0_ti_p) * f * (pi/volbox)
+             xd   = 0.0_ti_p
+             yd   = 0.0_ti_p
+             zd   = 0.0_ti_p
+!$acc   parallel loop async
+!$acc&           present(chgglob,iion,pchg,x,y,z)
+             do k = 1,nionloc
+                iichg = chgglob(ii)
+                iglob = iion(iichg)
+                xd    = xd + pchg(iichg)*x(iglob)
+                yd    = yd + pchg(iichg)*y(iglob)
+                zd    = zd + pchg(iichg)*z(iglob)
+             enddo
+!$acc serial async
+             ec   = ec + term * ( xd**2 + yd**2 + zd**2 )
+             nec_ = nec_ + 1
+!$acc end serial
+          end if
+          call timer_exit( timer_other,quiet_timers )
+
+        end if
+c
+c     compute the real space portion of the Ewald summation
+c
+        call timer_enter(timer_real)
+        call ecreal3d_p
+        call timer_exit( timer_real )
+
+      end if
+c
+c     compute the reciprocal space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
+     $   then
+         call timer_enter( timer_rec )
+c
+c         the reciprocal part is interpolated between 0 and 1
+c
+!$acc serial async present(ecrec)
+          ecrec = 0.0
+!$acc end serial
+          elambda = 0.0
+          call altelec(altopt)
+          if (elambda.lt.1.0) then
+            call ecrecipgpu
+          end if
+!$acc serial async present(elambdarec0,ecrec)
+          elambdarec0  = ecrec
+          ecrec = 0.0
+!$acc end serial
+          elambda = 1.0
+          call altelec(altopt)
+          if (elambda.gt.0.0) then
+            call ecrecipgpu
+          end if
+!$acc serial async present(elambdarec1,ecrec)
+          elambdarec1  = ecrec
+!$acc end serial
+          elambda   = elambdatemp
+!$acc serial async present(elambdarec0,elambdarec1,ecrec)
+          ecrec     = (1.0-elambda)*elambdarec0 + elambda*elambdarec1
+!$acc end serial
+         call timer_exit ( timer_rec,quiet_timers )
+      end if
+
+!$acc serial async
+      !print*,'echarge3gpu',nec_,nec,nionloc
+       ec = ec + e + enr2en( ec_r ) + ecrec
       nec = int(nec_) + nionloc + nec
 !$acc end serial
 

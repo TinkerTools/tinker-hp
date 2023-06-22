@@ -138,6 +138,7 @@ c
             end if
    10       continue
          end do
+         seed = seed + ranktot
       else
          seed = seed_save
       end if

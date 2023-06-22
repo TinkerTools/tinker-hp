@@ -156,16 +156,19 @@ c
 c     call temper2 (temp)
 c     call pressure2 (epot,temp)
 c
+c     Debug print information
+c
+      if (deb_Energy) call info_energy(rank)
+      if (deb_Force) then
+         call info_forces(cNBond)
+         !if (ftot_l) call minmaxone(de_tot,3*nloc,'de_tot')
+      end if
+      if (deb_Atom)   call info_minmax_pva
+c
 c     use Newton's second law to get the slow accelerations;
 c     find full-step velocities using BAOAB recursion
 c
       call integrate_vel(derivs,a,dt_2)
-c
-c     Debug print information
-c
-      if (deb_Energy) call info_energy(rank)
-      if (deb_Force)  call info_forces(cNBond)
-      if (deb_Atom)   call info_minmax_pva
 c
 c     find the constraint-corrected full-step velocities
 c
@@ -180,7 +183,7 @@ c
             vir(j,i) = vir(j,i) + viralt(j,i)
          end do; end do
 !$acc end serial
-         call chk_energy_fluct(epot,ealt,abort)
+         if(rank.eq.0) call chk_energy_fluct(epot,ealt,abort)
       end if
 c
 c     make full-step temperature and pressure corrections
@@ -287,7 +290,10 @@ c
 c     Debug print information
 c
          if (deb_Energy) call info_energy(rank)
-         if (deb_Force)  call info_forces(cSNBond)
+         if (deb_Force)  then
+            call info_forces(cSNBond)
+            !if (ftot_l) call minmaxone(de_tot,3*nloc,'de_tot')
+         end if
          if (deb_Atom)   call info_minmax_pva
          if (abort)      call emergency_save
          if (abort)      call fatal

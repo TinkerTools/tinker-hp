@@ -26,10 +26,11 @@ c
         end subroutine delete_colvars
       end interface
 #endif
-      character*240,target:: filenamerestart
+      character*240,target:: colvarsrestart
+      character*240, target:: colvarsinput,colvarsoutput
       logical :: use_colvars
-      integer :: ncvatoms
-      integer  ,allocatable:: cvatoms_ids(:)
+      integer :: ncvatoms,ncvatomsmol
+      integer  ,allocatable:: cvatoms_ids(:),cvatomsmol(:)
       real(r_p),allocatable:: cv_pos(:,:),decv(:,:),decv_tot(:,:)
       real(r_p),target:: dt_sim
       real(r_p),target:: temp_rand

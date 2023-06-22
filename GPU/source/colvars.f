@@ -17,68 +17,99 @@ c     #############################################################
 
       subroutine set_cvatoms_ids(ncvatoms_in,cvatoms_ids_in)
       use iso_c_binding
+      use atoms, only: n
       use colvars
       use mpi
       use sizes ,only: tinkerdebug
       use domdec
+      use molcul
       implicit none
       integer :: ncvatoms_in
-      integer ierr
+      integer ierr,i,j,k,l,mol,o,p,init,stop
       integer, dimension(ncvatoms_in) :: cvatoms_ids_in
       ncvatoms = ncvatoms_in
       if (tinkerdebug.gt.0) print*, 'set_cvatoms_ids', ncvatoms
+      if (allocated(cvatoms_ids)) deallocate(cvatoms_ids)
       allocate (cvatoms_ids(ncvatoms))
-      cvatoms_ids(1:ncvatoms) = cvatoms_ids_in(1:ncvatoms)
+      do i = 1, ncvatoms
+        cvatoms_ids(i) = cvatoms_ids_in(i)+1
+      end do
+c      cvatoms_ids(1:ncvatoms) = cvatoms_ids_in(1:ncvatoms)
       allocate (cv_pos(3,ncvatoms))
       allocate (decv(3,ncvatoms),decv_tot(3,ncvatoms))
       cv_pos   = 0d0
       decv     = 0d0
       decv_tot = 0d0
+c
+c     also build the extended list of atoms involved in the CV+ones
+c     of the associated molecules
+      ncvatomsmol = ncvatoms 
+      if (allocated(cvatomsmol)) deallocate(cvatomsmol)
+      allocate (cvatomsmol(n))
+      cvatomsmol(1:ncvatoms) = cvatoms_ids(1:ncvatoms)
+      do i = 1, ncvatoms
+        j = cvatoms_ids(i)
+        mol = molcule(j)
+        init = imol(1,mol)
+        stop = imol(2,mol)
+        do k = init, stop
+          l = kmol(k)
+c
+c       check wether atom is already in the list
+c
+          do o = 1, ncvatomsmol
+            p = cvatomsmol(o)
+            if (p.eq.l) goto 10
+          end do
+          ncvatomsmol = ncvatomsmol + 1
+          cvatomsmol(ncvatomsmol) = l
+ 10       continue
+        end do
+      end do
       end subroutine
 
+c     get a copy of values rather than the same address (they don't
+change during MD)
+c
       subroutine get_mpi(commcv,rankcv,nproccv)
       use domdec
       use iso_c_binding
       implicit none
-c     targeted integers, to make pgfortran and gfortran happy with their c_bindings
-      type(c_ptr) :: commcv,rankcv,nproccv
-      commcv  = c_loc(COMM_TINKER)
-      rankcv  = c_loc(rank)
-      nproccv = c_loc(nproc)
+      integer(c_int) :: commcv,rankcv,nproccv
+      commcv = COMM_TINKER
+      rankcv = rank
+      nproccv = nproc
+      return
       end subroutine
 
       subroutine get_sim_temp(res)
       use bath
-      use colvars_inl ,only: kel_vin
       use iso_c_binding
       implicit none
-      type(c_ptr) :: res
-      kel_vin = kelvin
-      res     = c_loc(kel_vin)
+      real(c_double) :: res
+      res = kelvin
+      return
       end subroutine
 
       subroutine get_sim_boltzmann(res)
       use units
       use iso_c_binding
       implicit none
-c     targeted real, to make pgfortran and gfortran happy with their c_bindings
-c     must use a real variable to get gasconst
-c     because c_bindings doesn't like const arg to c_loc
-      real*8, target :: gas_const = gasconst
-      type(c_ptr) :: res
-c      res = c_loc(boltzmann)
-      res = c_loc(gas_const)
+      real(c_double) :: res
+      res = gasconst
+      return
       end subroutine
 
       subroutine get_sim_dt(res)
       use colvars
       use iso_c_binding
       implicit none
-      type(c_ptr) :: res
+      real(c_double) :: res
 c
 c     In colvars, the time step is in fs
 c
-      res = c_loc(dt_sim)
+      res = dt_sim
+      return
       end subroutine
 c
       subroutine rand_colvars(res)
@@ -135,39 +166,74 @@ c     print 12,'get_pos', atom_number,xr,yr,zr
       end subroutine
 
       subroutine get_input_filename(input_name,len_name)
+      use colvars
       use files
       use iso_c_binding
       implicit none
       type(c_ptr) :: input_name
       integer(c_int) :: len_name
-      character*240 filenamecolvars
       logical :: exist
-      filenamecolvars = filename(1:leng)//'.colvars'
-      inquire (file=filenamecolvars,exist=exist)
+      colvarsinput = filename(1:leng)//'.colvars'
+      inquire (file=colvarsinput,exist=exist)
       if (exist) then
-        input_name = c_loc(filename(1:1))
-        len_name = leng
+        input_name = c_loc(colvarsinput(1:1))
+        len_name = leng+8
       else
-        input_name = c_loc(filename(1:1))
+        input_name = c_loc(colvarsinput(1:1))
         len_name = 0
       end if
       end subroutine
 
-      subroutine get_restart_filename(input_name,len_name)
-      use colvars ,only: filenamerestart
+      subroutine get_output_filename(output_name,len_name)
+      use colvars
       use files
+      use replicas
       use iso_c_binding
       implicit none
+      type(c_ptr) :: output_name
+      integer(c_int) :: len_name
+      integer :: lenadd
+      character*3 numberreps
       logical :: exist
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+        colvarsoutput =
+     $ filename(1:leng)//'_reps'//numberreps
+        lenadd = 8
+      else
+        colvarsoutput = filename(1:leng)
+        lenadd = 0
+      end if
+      output_name = c_loc(colvarsoutput(1:1))
+      len_name = leng+lenadd
+      end subroutine
+
+      subroutine get_restart_filename(input_name,len_name)
+      use colvars
+      use files
+      use replicas
+      use iso_c_binding
+      implicit none
+      character*3 numberreps
+      logical :: exist
+      integer :: lenadd
       type(c_ptr) :: input_name
       integer(c_int) :: len_name
-      filenamerestart = filename(1:leng)//'.colvars.state'
-      inquire (file=filenamerestart,exist=exist)
-      if (exist) then
-        input_name = c_loc(filenamerestart(1:1))
-        len_name = leng+14
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+        colvarsrestart =
+     $ filename(1:leng)//'_reps'//numberreps//'.colvars.state'
+        lenadd = 8
       else
-        input_name = c_loc(filenamerestart(1:1))
+        colvarsrestart = filename(1:leng)//'.colvars.state'
+        lenadd = 0
+      end if
+      inquire (file=colvarsrestart,exist=exist)
+      if (exist) then
+        input_name = c_loc(colvarsrestart(1:1))
+        len_name = leng+lenadd
+      else
+        input_name = c_loc(colvarsrestart(1:1))
         len_name = 0
       end if
       end subroutine
@@ -328,7 +394,9 @@ c
 c     the master gets all the cv positions and total forces
 c
       subroutine prepare_colvars(derivs)
+      use atoms    ,only: pbcWrapIdx
       use atomsMirror
+      use boxes
       use colvars
       use colvars_inl
       use deriv
@@ -348,14 +416,15 @@ c
 
 !$acc parallel loop gang vector async copyin(cvatoms_ids)
 !$acc&         copy(decv_tot,cv_pos)
-!$acc& present(x,y,z,de_tot,derivs,de_buffr,repart,repartrec,loc,locrec)
+!$acc& present(x,y,z,de_tot,derivs,de_buffr,repart,repartrec,loc,locrec
+!$acc&        ,pbcWrapIdx)
       do i = 1, ncvatoms
         iglob = cvatoms_ids(i)
         iloc = loc(iglob)
         if (repart(iglob).eq.rank) then
-          cv_pos(1,i) = x(iglob)
-          cv_pos(2,i) = y(iglob)
-          cv_pos(3,i) = z(iglob)
+          cv_pos(1,i) = x(iglob) + pbcWrapIdx(4*(iglob-1)+1)*xbox
+          cv_pos(2,i) = y(iglob) + pbcWrapIdx(4*(iglob-1)+2)*ybox
+          cv_pos(3,i) = z(iglob) + pbcWrapIdx(4*(iglob-1)+3)*zbox
         end if
         if (ftot_l) then
            if ((iloc.gt.0).and.(iloc.le.nbloc)) then
@@ -424,14 +493,17 @@ c
       end subroutine
 
       subroutine prepare_colvars1(derivs)
+      use atoms       ,only: pbcWrapIdx
       use atomsMirror
       use colvars
       use colvars_inl
+      use cell        ,only: xcell,ycell,zcell
       use deriv
       use domdec
       use inform
       use mpi
       use potent
+      use mutant
       implicit none
       integer i,j,k,idx,iglob,iloc,ilocrec,ierr,offr
       real(r_p) derivs(3,nbloc)
@@ -443,14 +515,15 @@ c
       cv_pos   = 0d0
       offr     = dr_obnbr
 
+
 !$acc parallel loop gang vector copyin(cvatoms_ids)
 !$acc&         copy(decv_tot,cv_pos)
-!$acc&         present(x,y,z,de_tot,derivs,de_buffr) async
+!$acc&         present(x,y,z,de_tot,derivs,de_buffr,pbcWrapIdx) async
       do i = 1, ncvatoms
         iglob = cvatoms_ids(i)
-        cv_pos(1,i) = x(iglob)
-        cv_pos(2,i) = y(iglob)
-        cv_pos(3,i) = z(iglob)
+        cv_pos(1,i) = x(iglob) + pbcWrapIdx(4*(iglob-1)+1)*xcell
+        cv_pos(2,i) = y(iglob) + pbcWrapIdx(4*(iglob-1)+2)*ycell
+        cv_pos(3,i) = z(iglob) + pbcWrapIdx(4*(iglob-1)+3)*zcell
         if (ftot_l) then
           decv_tot(1,i) = mdr2md(de_tot(1,iglob))
           decv_tot(2,i) = mdr2md(de_tot(2,iglob))
@@ -481,6 +554,7 @@ c
 c     the master sends the new forces, he already has the bias
 c
       subroutine distrib_colvars(derivs)
+      use atoms
       use colvars
       use colvars_inl
       use deriv
@@ -489,8 +563,10 @@ c
       use mpi
       use mutant
       use potent
+      use virial
       implicit none
       real(r_p) derivs(3,nbloc)
+      real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
       integer   i,iglob,iloc,ierr
 c
       call MPI_BCAST(decv,3*ncvatoms,MPI_RPREC,0,COMM_TINKER,ierr)
@@ -523,7 +599,7 @@ c
          end do
       else
 !$acc parallel loop async copyin(cvatoms_ids,decv)
-!$acc&         present(derivs,repart,loc)
+!$acc&         present(derivs,repart,loc,x,y,z,vir)
          do i = 1, ncvatoms
            iglob = cvatoms_ids(i)
            if (repart(iglob).eq.rank) then
@@ -531,6 +607,24 @@ c
              derivs(1,iloc) = derivs(1,iloc) + decv(1,i)
              derivs(2,iloc) = derivs(2,iloc) + decv(2,i)
              derivs(3,iloc) = derivs(3,iloc) + decv(3,i)
+c
+c         add virial contribution from colvars
+c
+             vxx =  x(iglob)*decv(1,i)
+             vxy =  y(iglob)*decv(1,i)
+             vxz =  z(iglob)*decv(1,i)
+             vyy =  y(iglob)*decv(2,i)
+             vyz =  z(iglob)*decv(2,i)
+             vzz =  z(iglob)*decv(3,i)
+             vir(1,1) = vir(1,1) + vxx
+             vir(2,1) = vir(2,1) + vxy
+             vir(3,1) = vir(3,1) + vxz
+             vir(1,2) = vir(1,2) + vxy
+             vir(2,2) = vir(2,2) + vyy
+             vir(3,2) = vir(3,2) + vyz
+             vir(1,3) = vir(1,3) + vxz
+             vir(2,3) = vir(2,3) + vyz
+             vir(3,3) = vir(3,3) + vzz
            end if
          end do
       end if
@@ -538,6 +632,7 @@ c
       end subroutine
 
       subroutine distrib_colvars1(derivs)
+      use atoms
       use colvars
       use colvars_inl
       use deriv
@@ -546,8 +641,10 @@ c
       use mpi
       use mutant
       use potent
+      use virial
       implicit none
       real(r_p) derivs(3,nbloc)
+      real(r_p) vxx,vxy,vxz,vyy,vyz,vzz
       integer   i,iglob,iloc,ierr
 c
       if (deb_Path) print*, 'distrib_colvars1'
@@ -582,6 +679,24 @@ c        print 12, 'de_t',de_tot(642*3+1:642*3+6,1)
            derivs(1,iglob) = derivs(1,iglob) + decv(1,i)
            derivs(2,iglob) = derivs(2,iglob) + decv(2,i)
            derivs(3,iglob) = derivs(3,iglob) + decv(3,i)
+c
+c         add virial contribution from colvars
+c
+           vxx =  x(iglob)*decv(1,i)
+           vxy =  y(iglob)*decv(1,i)
+           vxz =  z(iglob)*decv(1,i)
+           vyy =  y(iglob)*decv(2,i)
+           vyz =  z(iglob)*decv(2,i)
+           vzz =  z(iglob)*decv(3,i)
+           vir(1,1) = vir(1,1) + vxx
+           vir(2,1) = vir(2,1) + vxy
+           vir(3,1) = vir(3,1) + vxz
+           vir(1,2) = vir(1,2) + vxy
+           vir(2,2) = vir(2,2) + vyy
+           vir(3,2) = vir(3,2) + vyz
+           vir(1,3) = vir(1,3) + vxz
+           vir(2,3) = vir(2,3) + vyz
+           vir(3,3) = vir(3,3) + vzz
          end do
       end if
 !$acc wait
@@ -666,4 +781,47 @@ c
          call fatal
       end if
 #endif
+      end subroutine
+c
+c     retreive the use of replicas
+c
+      subroutine get_use_reps(doreplica)
+      use replicas
+      use iso_c_binding
+      implicit none
+      logical(c_bool) :: doreplica
+      doreplica = use_reps
+      end subroutine
+c
+c     retreive index of local replica
+c
+      subroutine get_index_rep(index)
+      use replicas
+      use iso_c_binding
+      implicit none
+      integer(c_int) :: index
+      index = rank_reploc
+      end subroutine
+c
+c     retreive number of replicas
+c
+      subroutine get_num_rep(inter_num)
+      use replicas
+      use iso_c_binding
+      implicit none
+      integer(c_int) :: inter_num
+      inter_num = nreps
+      end subroutine
+c
+c     retreive root 2 root communicator
+c
+      subroutine get_root2root(intercomm)
+      use domdec
+      use replicas
+      use iso_c_binding
+      implicit none
+c     targeted integers, to make pgfortran and gfortran happy with their c_bindings
+      integer(c_int) :: intercomm
+      intercomm = COMM_ROOT2ROOT
+      return
       end subroutine

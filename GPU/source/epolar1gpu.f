@@ -428,6 +428,12 @@ c
       real(r_p), allocatable :: delambdaprec0(:,:),delambdaprec1(:,:)
       real(r_p) elambdap0,elambdap1
       real(r_p) dplambdadelambdae,d2plambdad2elambdae
+      real(r_p) :: g_vxx_temp,g_vxy_temp,g_vxz_temp
+      real(r_p) :: g_vyy_temp,g_vyz_temp,g_vzz_temp
+      real(r_p) :: g_vxx_1,g_vxy_1,g_vxz_1
+      real(r_p) :: g_vyy_1,g_vyz_1,g_vzz_1
+      real(r_p) :: g_vxx_0,g_vxy_0,g_vxz_0
+      real(r_p) :: g_vyy_0,g_vyz_0,g_vzz_0
       parameter(
 #ifdef _OPENACC
      &          altopt = 0
@@ -452,7 +458,9 @@ c
       allocate (delambdap0(3,nbloc))
       allocate (delambdap1(3,nbloc))
 !$acc enter data create(delambdaprec0,delambdaprec1,delambdap0
-!$acc&          ,delambdap1,elambdap0,elambdap1) async(rec_queue)
+!$acc&          ,delambdap1,elambdap0,elambdap1
+!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
+!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async(rec_queue)
       elambdatemp = elambda  
       sizd8  = 3*nbloc
       sizr8  = 3*nlocrec2
@@ -462,12 +470,42 @@ c     otherwise the value taken is for elambda=0
 c
       if (elambda.gt.bplambda) then
          elambda = 1.0
+!$acc serial async(rec_queue)
+!$acc& present(g_vxx_temp,g_vxy_temp,g_vxz_temp,
+!$acc&  g_vyy_temp,g_vyz_temp,g_vzz_temp,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+         g_vxx_temp = g_vxx
+         g_vxy_temp = g_vxy
+         g_vxz_temp = g_vxz
+         g_vyy_temp = g_vyy
+         g_vyz_temp = g_vyz
+         g_vzz_temp = g_vzz
+         g_vxx = 0.0
+         g_vxy = 0.0
+         g_vxz = 0.0
+         g_vyy = 0.0
+         g_vyz = 0.0
+         g_vzz = 0.0
+!$acc end serial
          call altelec(altopt)
          call rotpolegpu
          call epolar1cgpu
 
-!$acc serial async(rec_queue) present(elambdap1,ep)
+!$acc serial async(rec_queue) present(elambdap1,ep,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          elambdap1  = ep
+         g_vxx_1 = g_vxx
+         g_vxy_1 = g_vxy
+         g_vxz_1 = g_vxz
+         g_vyy_1 = g_vyy
+         g_vyz_1 = g_vyz
+         g_vzz_1 = g_vzz
+         g_vxx = 0.0
+         g_vxy = 0.0
+         g_vxz = 0.0
+         g_vyy = 0.0
+         g_vyz = 0.0
+         g_vzz = 0.0
          ep         = 0
 !$acc end serial
          call mem_move(delambdap1,dep,sizd8,rec_stream)
@@ -479,6 +517,23 @@ c
 !$acc end serial
          call mem_set(delambdap1,zeromd,sizd8,rec_stream)
          call mem_set(delambdaprec1,zerom,sizr8,rec_stream)
+!$acc serial async(rec_queue)
+!$acc& present(g_vxx_temp,g_vxy_temp,g_vxz_temp,
+!$acc&  g_vyy_temp,g_vyz_temp,g_vzz_temp,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+         g_vxx_temp = g_vxx
+         g_vxy_temp = g_vxy
+         g_vxz_temp = g_vxz
+         g_vyy_temp = g_vyy
+         g_vyz_temp = g_vyz
+         g_vzz_temp = g_vzz
+         g_vxx = 0.0
+         g_vxy = 0.0
+         g_vxz = 0.0
+         g_vyy = 0.0
+         g_vyz = 0.0
+         g_vzz = 0.0
+!$acc end serial
       end if
 
       elambda = 0.0
@@ -487,9 +542,16 @@ c
       call mem_set(dep,zeromd,sizd8,rec_stream)
       call mem_set(deprec,zerom,sizr8,rec_stream)
       call epolar1cgpu
-!$acc serial async(rec_queue) present(elambdap0,ep)
+!$acc serial async(rec_queue) present(elambdap0,ep,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       elambdap0  = ep
-!$acc end serial
+      g_vxx_0 = g_vxx
+      g_vxy_0 = g_vxy
+      g_vxz_0 = g_vxz
+      g_vyy_0 = g_vyy
+      g_vyz_0 = g_vyz
+      g_vzz_0 = g_vzz
+!$acc end  serial
       call mem_move(delambdap0,dep,sizd8,rec_stream)
       call mem_move(delambdaprec0,deprec,sizr8,rec_stream)
  
@@ -512,9 +574,16 @@ c
         d2plambdad2elambdae = 6.0*((elambda-bplambda)/(1-bplambda))
       end if
 
-!$acc serial async(rec_queue) present(elambdap0,elambdap1,ep
-!$acc&      ,delambdae)
+!$acc serial async(rec_queue) present(elambdap0,elambdap1,ep,delambdae,
+!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,g_vxx_temp,g_vxy_temp,
+!$acc& g_vxz_temp,g_vyy_temp,g_vyz_temp,g_vzz_temp)
       ep        =  plambda*elambdap1 + (1-plambda)*elambdap0
+      g_vxx = g_vxx_temp + (1.0-plambda)*g_vxx_0+plambda*g_vxx_1
+      g_vxy = g_vxy_temp + (1.0-plambda)*g_vxy_0+plambda*g_vxy_1
+      g_vxz = g_vxz_temp + (1.0-plambda)*g_vxz_0+plambda*g_vxz_1
+      g_vyy = g_vyy_temp + (1.0-plambda)*g_vyy_0+plambda*g_vyy_1
+      g_vyz = g_vyz_temp + (1.0-plambda)*g_vyz_0+plambda*g_vyz_1
+      g_vzz = g_vzz_temp + (1.0-plambda)*g_vzz_0+plambda*g_vzz_1
       delambdae = delambdae + (elambdap1-elambdap0)*dplambdadelambdae
 !$acc end serial
 !$acc parallel loop async(rec_queue) collapse(2) default(present)
@@ -535,7 +604,9 @@ c
       call altelec(altopt)
       call rotpolegpu
 !$acc exit data delete(delambdaprec0,delambdaprec1,delambdap0
-!$acc&         ,delambdap1,elambdap0,elambdap1) async(rec_queue)
+!$acc&         ,delambdap1,elambdap0,elambdap1
+!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
+!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async(rec_queue)
       end
 c
 c
@@ -1986,7 +2057,7 @@ c
         rankloc  = rank_bis
       else
         nprocloc = nproc
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
         rankloc  = rank
       end if
 c
@@ -2497,16 +2568,14 @@ c     Proceed to atomic update to avoid collision with direct queue
 c     even if it's highly unlikely
 c
 !$acc serial async(rec_queue) default(present)
-!$acc&       present(vir,vxx,vxy,vxz,vyy,vyz,vzz)
-      vir(1,1) = vir(1,1) + vxx
-      vir(2,1) = vir(2,1) + vxy
-      vir(3,1) = vir(3,1) + vxz
-      vir(1,2) = vir(1,2) + vxy
-      vir(2,2) = vir(2,2) + vyy
-      vir(3,2) = vir(3,2) + vyz
-      vir(1,3) = vir(1,3) + vxz
-      vir(2,3) = vir(2,3) + vyz
-      vir(3,3) = vir(3,3) + vzz
+!$acc&       present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&       present(vxx,vxy,vxz,vyy,vyz,vzz)
+      g_vxx =  g_vxx + vxx
+      g_vxy =  g_vxy + vxy
+      g_vxz =  g_vxz + vxz
+      g_vyy =  g_vyy + vyy
+      g_vyz =  g_vyz + vyz
+      g_vzz =  g_vzz + vzz
 !$acc end serial
       call timer_exit(timer_other,quiet_timers)
 c

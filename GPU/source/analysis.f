@@ -113,12 +113,13 @@ c     zero out each of the potential energy components
 c
 !$acc data present(eb,eb_r,eba,eub,eopb,et,ept,ett,ebt,eat,ea
 !$acc&      ,eaa,eopd,eid,eit,eg,emlpot,ex,esum
-!$acc&      ,ev,ev_r,ec,ec_r,em,em_r,emrec,ep,ep_r,eprec
+!$acc&      ,ev,ev_r,ec,ec_r,ecrec,em,em_r,emrec,ep,ep_r,eprec
 !$acc&      ,er,edsp,edsprec,ect
 !$acc&      ,nev,ner,nedsp,nec,nem,nep,nect,nem_,nep_,nev_,nemlpot)
 
 !$acc serial async
       ec    = 0.0_re_p
+      ecrec = 0.0_re_p
       ec_r  = 0
       em    = 0.0_re_p
       emrec = 0.0_re_p
@@ -215,17 +216,17 @@ c
       if (use_strtor)  call estrtor3
       if (use_tortor)  call etortor3
 
-      if (use_mlpot)   call ml_potential(.false.)
+      if (use_mlpot) then
+         if (ml_embedding_mode .ne. 3) then
+            call ml_potential(.false.)
+         endif
+      endif
 c
 c     call the van der Waals energy component routines
 c
       if (use_vdw) then
          if (vdwtyp .eq. 'LENNARD-JONES')  call elj3gpu
-         call timer_enter( timer_ehal3 )
-c        if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3
-c        if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3vec
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3gpu
-         call timer_exit ( timer_ehal3 )
       end if
       if (use_repuls)  call erepel3   !TODO Amoebap
       if (use_disp)    call edisp3    !TODO Amoebap

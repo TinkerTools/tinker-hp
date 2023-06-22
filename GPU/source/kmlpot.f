@@ -10,7 +10,8 @@ c     ##                                                           ##
 c     ###############################################################
 c
 c
-c     "kmlpot" assigns Machine learning potential parameters 
+c     "kmlpot" assigns Machine learning potential and 
+c     embedding parameters for building hybrid models
 c
 c
 #include "tinker_precision.h"
@@ -53,8 +54,23 @@ c
       character*240 string
 
       MLpot = "ANI2X"
-      use_ani_only = .FALSE.
-      use_ml_embedding=.FALSE.
+      use_ani_only    = .FALSE.
+      use_bondorder   = .FALSE.
+      use_ml_embedding= .FALSE.
+      use_embd_potoff = .FALSE.
+      use_embd_bond   = .TRUE.
+      use_embd_angle  = .TRUE.
+      use_embd_strbnd = .TRUE.
+      use_embd_urey   = .TRUE.
+      use_embd_angang = .TRUE.
+      use_embd_opbend = .TRUE.
+      use_embd_opdist = .TRUE.
+      use_embd_improp = .TRUE.
+      use_embd_imptor = .TRUE.
+      use_embd_tors   = .TRUE.
+      use_embd_pitors = .TRUE.
+      use_embd_strtor = .TRUE.
+      use_embd_tortor = .TRUE.
       mlpotscale = 1.0_ti_p
       ml_embedding_mode=1
 c
@@ -66,6 +82,7 @@ c
          record = record_raw
          call upcase (record)
          call gettext (record,keyword,next)
+         string = record(next:240)
 
          if (keyword(1:8) .eq. 'ANI1CCX ') then
             call getword (record,word,next)
@@ -105,13 +122,99 @@ c
             elseif (value .eq. 'NONE') then
               use_mlpot = .false.
             end if
-          else if (keyword(1:9) .eq. 'ML-MODEL ') then
+         else if (keyword(1:9) .eq. 'ML-MODEL ') then
             call getword (record,MLpot,next)
             if (trim(MLpot)=="ANI_GENERIC") then
               call getword (record_raw,model_file,next)
             elseif (trim(MLpot)=="DEEPMD") then
               call getword (record_raw,model_file,next)
             endif
+         else if (keyword(1:14) .eq. 'BONDTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_bond = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:15) .eq. 'ANGLETERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_angle = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:16) .eq. 'STRBNDTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_strbnd = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:14) .eq. 'UREYTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_urey = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:16) .eq. 'ANGANGTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_angang = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:16) .eq. 'OPBENDTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_opbend = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:16) .eq. 'OPDISTTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_opdist = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:16) .eq. 'IMPROPTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_improp = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:17) .eq. 'IMPTORSTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_imptor = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:17) .eq. 'TORSIONTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE')  then
+               use_embd_tors = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:16) .eq. 'PITORSTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then 
+               use_embd_pitors = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:16) .eq. 'STRTORTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_strtor = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:16) .eq. 'TORTORTERM-EMBD ') then
+            call getword (record,value,next)
+            if (value .eq. 'NONE') then
+               use_embd_tortor = .false.
+               use_embd_potoff = .true.
+            end if
+         else if (keyword(1:10) .eq. 'BOND-LIST ') then
+            read (string,*,err=10,end=10)  bondorder
+            if (bondorder > 4) then
+               write(0,*) "Warning: Maximum bond order is 4!"
+               write(0,*) "Bond order is set to 4"
+            end if
+ 10         continue
+            use_bondorder = .true.
          end if
       end do
 
@@ -258,6 +361,8 @@ c
          iglob = glob(i)
          if (i.le.nloc) then
             if (laml(iglob)) then
+c                 print*, 'iglob', iglob, 'i', i
+c                 print*, 'laml()', laml(iglob)
 !$acc atomic capture
                  namloc   = namloc + 1
                  naml_cap = namloc

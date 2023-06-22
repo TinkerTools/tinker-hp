@@ -211,11 +211,15 @@ c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
         call zero_forces_rec
         save_pred = use_pred
          use_pred = .FALSE.
-        call gradient (eml,derivs)
+        if(use_embd_potoff) then
+           call gradembedding2 (eml,derivs)
+        else
+           call gradient (eml,derivs)
+        endif
         use_pred  = save_pred 
         call reduceen(eml)
         call comm_forces( derivs )
-!$acc serial async present(eml)
+!$acc serial async present(epot,eml)
          epot = epot+eml
 !$acc end serial
       endif
@@ -244,7 +248,7 @@ c
 !$acc serial async present(epot,ealt)
          epot = epot + ealt
 !$acc end serial
-         call chk_energy_fluct(epot,ealt,abort)
+         if(rank.eq.0) call chk_energy_fluct(epot,ealt,abort)
       end if
 c
       if (use_virial) then
@@ -295,6 +299,8 @@ c
       subroutine gradfast (energy,derivs)
       use cutoff
       use potent
+      use colvars
+      use plumed
       implicit none
       real(r_p) energy
       real(r_p) derivs(3,*)
@@ -305,6 +311,8 @@ c
       logical save_repuls,save_disp,save_chgtrn
       logical save_list
       logical save_smdvel, save_smdfor
+      logical save_colvars
+      logical save_plumed
 c
 c     save the original state of slow-evolving potentials
 c
@@ -319,6 +327,8 @@ c
       save_list   = use_list
       save_smdvel = use_smd_velconst
       save_smdfor = use_smd_forconst
+      save_colvars = use_colvars
+      save_plumed = lplumed
 c
 c     turn off slow-evolving nonbonded potential energy terms
 c
@@ -334,6 +344,8 @@ c
       use_smd_velconst = .false.
       use_smd_forconst = .false.
       nonbonded_l      = .false.
+      use_colvars = .false.
+      lplumed = .false.
 c
 c     get energy and gradient for fast-evolving potential terms
 c
@@ -352,6 +364,8 @@ c
       use_list   = save_list
       use_smd_velconst = save_smdvel
       use_smd_forconst = save_smdfor
+      use_colvars = save_colvars
+      lplumed = save_plumed
       nonbonded_l      = .true.
       end
 c
@@ -489,5 +503,122 @@ c
 !$acc end serial
          end if
       end if
+
+      end
+c
+c
+c     #############################################################################
+c     ##                                                                         ##
+c     ##  subroutine gradembedding2  --  embedding energy & gradient components  ##
+c     ##                                                                         ##
+c     #############################################################################
+c
+c
+c     "gradembedding2" calculates the potential energy and first derivatives
+c     for the chosen embedding potential energy terms to substract for respa
+c
+c
+      subroutine gradembedding2 (energy,derivs)
+      use cutoff
+      use potent
+      implicit none
+      real(r_p) energy
+      real(r_p) derivs(3,*)
+      logical save_embd_bond,save_embd_angle
+      logical save_embd_strbnd,save_embd_urey
+      logical save_embd_angang,save_embd_opbend
+      logical save_embd_opdist,save_embd_improp
+      logical save_embd_imptor,save_embd_tors
+      logical save_embd_pitors,save_embd_angtor,save_embd_strtor
+      logical save_embd_tortor,save_embd_geom
+      logical save_embd_metal,save_embd_extra
+      logical save_embd_mlpot
+      logical save_embd_vdw,save_embd_charge
+      logical save_embd_dipole
+      logical save_embd_mpole,save_embd_polar
+      logical save_embd_rxnfld,save_embd_solv
+      logical save_embd_list
+      logical save_embd_smdvel, save_embd_smdfor
+c
+c
+c     save the original state of potential energy terms
+c
+      save_embd_bond   = use_bond
+      save_embd_angle  = use_angle
+      save_embd_strbnd = use_strbnd
+      save_embd_urey   = use_urey
+      save_embd_angang = use_angang
+      save_embd_opbend = use_opbend
+      save_embd_opdist = use_opdist
+      save_embd_improp = use_improp
+      save_embd_imptor = use_imptor
+      save_embd_tors   = use_tors
+      save_embd_pitors = use_pitors
+      save_embd_strtor = use_strtor
+      save_embd_angtor = use_angtor
+      save_embd_tortor = use_tortor
+      save_embd_geom   = use_geom
+      save_embd_extra  = use_extra
+      save_embd_mlpot  = use_mlpot
+      save_embd_vdw    = use_vdw
+      save_embd_charge = use_charge
+      save_embd_mpole  = use_mpole
+      save_embd_polar  = use_polar
+      save_embd_solv   = use_solv
+      save_embd_list   = use_list
+      save_embd_smdvel = use_smd_velconst
+      save_embd_smdfor = use_smd_forconst
+c
+c     turn on only chosen intra potential energy terms
+c     that will be substract for respa
+c
+      call potoff
+
+      use_geom         = save_embd_geom
+      use_extra        = save_embd_extra         
+      use_solv         = save_embd_solv          
+      use_smd_velconst = save_embd_smdvel        
+      use_smd_forconst = save_embd_smdfor        
+
+      if (.not. use_embd_bond)  use_bond = .true. 
+      if (.not. use_embd_angle)  use_angle = .true. 
+      if (.not. use_embd_strbnd)  use_strbnd = .true. 
+      if (.not. use_embd_urey)  use_urey  = .true. 
+      if (.not. use_embd_angang)  use_angang = .true. 
+      if (.not. use_embd_opbend)  use_opbend = .true. 
+      if (.not. use_embd_opdist)  use_opdist = .true. 
+      if (.not. use_embd_improp)  use_improp = .true. 
+      if (.not. use_embd_imptor)  use_imptor = .true. 
+      if (.not. use_embd_tors)  use_tors = .true. 
+      if (.not. use_embd_pitors)  use_pitors = .true. 
+      if (.not. use_embd_strtor)  use_strtor = .true. 
+      if (.not. use_embd_tortor)  use_tortor = .true. 
+c
+c     get energy and gradient for potential terms
+c
+      call gradient (energy,derivs)
+c
+c     restore the original state of potential energy term
+c
+      use_bond         = save_embd_bond       
+      use_angle        = save_embd_angle         
+      use_strbnd       = save_embd_strbnd        
+      use_urey         = save_embd_urey          
+      use_angang       = save_embd_angang        
+      use_opbend       = save_embd_opbend        
+      use_opdist       = save_embd_opdist        
+      use_improp       = save_embd_improp        
+      use_imptor       = save_embd_imptor        
+      use_tors         = save_embd_tors          
+      use_pitors       = save_embd_pitors        
+      use_strtor       = save_embd_strtor        
+      use_angtor       = save_embd_angtor        
+      use_tortor       = save_embd_tortor        
+      use_mlpot        = save_embd_mlpot         
+      use_vdw          = save_embd_vdw           
+      use_charge       = save_embd_charge        
+      use_mpole        = save_embd_mpole         
+      use_polar        = save_embd_polar         
+      use_list         = save_embd_list          
 
       end

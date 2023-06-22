@@ -17,6 +17,7 @@ c
 #include "tinker_macro.h"
       subroutine mdinit(dt)
       use atmtyp
+      use atoms      ,only: pbcunwrap
       use atomsMirror
       use bath
       use bound
@@ -46,6 +47,7 @@ c
       use potent
       use polar
       use random_mod
+      use replicas
       use tinMemory ,only: mipk
       use units 
       use uprior
@@ -151,6 +153,10 @@ c      volscale = 'ATOMIC'
 !$acc update device(eta)
 !$acc update device(vir,viramdD)
 c
+c     set default for pbc unwrapping
+c
+      pbcunwrap = .false.
+c
 c     check for keywords containing any altered parameters
 c
       do i = 1, nkey
@@ -200,6 +206,8 @@ c           read (string,*,err=10,end=10)  nfree
          else if (keyword(1:9) .eq. 'PRINTOUT ') then
             read (string,*,err=10,end=10)  iprint
             if (iprint.eq.1) iprint=100
+         else if (keyword(1:10) .eq. 'PBCUNWRAP ') then
+           pbcunwrap = .true.
          else if (keyword(1:14) .eq. 'NLUPDATE ') then
             read (string,*,err=10,end=10) idyn
             if (idyn.gt.ineigup) then
@@ -379,6 +387,7 @@ c
 c
 c     Colvars Feature Initialization
 c
+      if (use_reps.and.use_lambdadyn) call lambda_init_reps
       call colvars_init(dt)
 c
 c     lambda dynamic initialization
@@ -452,6 +461,13 @@ c
       if (tinkerdebug.gt.0.and.rank.eq.0) call info_dyn
       call up_fuse_bonded  ! Update fuse_bonded
 c
+c     Info Unwraping
+c
+      if (verbose.and.ranktot.eq.0.and.pbcunwrap) then
+ 26      format(" --- Tinker-HP: Unwrapped Sampling Enabled ")     
+         write(*,26)
+      end if
+c
 c     Reinterpret force buffer shape (3,nloc) --> (nloc,3)
 c
       if (fdebs_l.and.use_bond.and.fuse_bonded.and..not.use_strtor
@@ -464,6 +480,8 @@ c
             print*,'--- Reshape force to (n,3) ---'
          end if
       end if
+
+      call set_dumpdyn_freq
 
       ! Create device Data for mdstuf1
       call gpuAllocMdstuf1Data

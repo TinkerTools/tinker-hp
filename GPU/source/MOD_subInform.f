@@ -16,6 +16,7 @@ c
       use cutoff
       use domdec ,only: rank,MasterRank,COMM_TINKER
      &           ,glob,nloc,nlocnl,nbloc,nproc
+      use keys   ,only: fetchkey
       use moldyn ,only: v,a,aalt,aalt2
       use mpi
       use neigh  ,only: ineigup, lbuffer
@@ -132,7 +133,7 @@ c
       mdyn_rtyp vector(*)
       character(*),optional,intent(in)::name
       real(8)     ,optional,intent(inout):: mi_,ma_,on_
-      real(8) mi,ma,on,on1
+      real(8) mi,mi1,ma,ma1,on,on1
       integer i
       real(md_p) val
       mi=huge(mi);ma=tiny(ma);on=0
@@ -149,11 +150,15 @@ c
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
      &       ,MPI_SUM,COMM_TINKER,i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8
+     &       ,MPI_MIN,COMM_TINKER,i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8
+     &       ,MPI_MAX,COMM_TINKER,i)
       end if
       !on1 = sqrt(on1)
       !on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
-      write(*,13) name,mi,ma,on,rank,on1
+      write(*,13) name,mi1,ma1,on,rank,on1
       else
       write(*,12) name,mi,ma,on,rank
       end if
@@ -199,7 +204,7 @@ c
       integer sz
       real(t_p) vector(*)
       character(*),optional,intent(in)::name
-      real(8) mi,ma,on,on1
+      real(8) mi,mi1,ma,ma1,on,on1
       integer i
       real(8) val
       mi=huge(mi);ma=tiny(ma);on=0
@@ -217,11 +222,15 @@ c
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
      &       ,MPI_SUM,COMM_TINKER,i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8
+     &       ,MPI_MIN,COMM_TINKER,i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8
+     &       ,MPI_MAX,COMM_TINKER,i)
       end if
       !on1 = sqrt(on1)
       !on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
-      write(*,13) name,mi,ma,on,rank,on1
+      write(*,13) name,mi1,ma1,on,rank,on1
       else
       write(*,12) name,mi,ma,on,rank
       end if
@@ -233,7 +242,7 @@ c
       integer sz
       real(r_p) vector(*)
       character(*),optional,intent(in)::name
-      real(8) mi,ma,on,on1
+      real(8) mi,mi1,ma,ma1,on,on1
       integer i
       real(r_p) val
       mi=huge(mi);ma=tiny(ma);on=0
@@ -251,11 +260,15 @@ c
       if (nproc.gt.1) then
          call MPI_ALLREDUCE(on,on1,1,MPI_REAL8
      &       ,MPI_SUM,COMM_TINKER,i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8
+     &       ,MPI_MIN,COMM_TINKER,i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8
+     &       ,MPI_MAX,COMM_TINKER,i)
       end if
       on1 = sqrt(on1)
       on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
-      write(*,13) name,mi,ma,on,rank,on1
+      write(*,13) name,mi1,ma1,on,rank,on1
       else
       write(*,12) name,mi,ma,on,rank
       end if
@@ -458,18 +471,18 @@ c
 !$acc end data
       if (rank.eq.0) then
          call MPI_REDUCE(MPI_IN_PLACE,minmax,nel,MPI_RPREC,
-     &                   MPI_MIN,0,MPI_COMM_WORLD,i)
+     &                   MPI_MIN,0,COMM_TINKER,i)
          call MPI_REDUCE(MPI_IN_PLACE,minmax(6),nel,MPI_RPREC,
-     &                   MPI_MAX,0,MPI_COMM_WORLD,i)
+     &                   MPI_MAX,0,COMM_TINKER,i)
          call MPI_REDUCE(MPI_IN_PLACE,minmax(11),2,MPI_RPREC,
-     &                   MPI_SUM,0,MPI_COMM_WORLD,i)
+     &                   MPI_SUM,0,COMM_TINKER,i)
       else
          call MPI_REDUCE(minmax,minmax,nel,MPI_RPREC,
-     &                   MPI_MIN,0,MPI_COMM_WORLD,i)
+     &                   MPI_MIN,0,COMM_TINKER,i)
          call MPI_REDUCE(minmax(6),minmax(6),nel,MPI_RPREC,
-     &                   MPI_MAX,0,MPI_COMM_WORLD,i)
+     &                   MPI_MAX,0,COMM_TINKER,i)
          call MPI_REDUCE(minmax(11),minmax(11),2,MPI_RPREC,
-     &                   MPI_SUM,0,MPI_COMM_WORLD,i)
+     &                   MPI_SUM,0,COMM_TINKER,i)
       end if
 
       if (rank.eq.0) then
@@ -566,6 +579,19 @@ c
 !$acc wait
       end if
       end subroutine
+
+      module subroutine set_dumpdyn_freq
+      use argue
+      real(r_p) rdyndump,dtdump
+
+      read(arg(4),*) dtdump
+      call fetchkey('DUMPDYN',rdyndump,dtdump)
+      idumpdyn = iwrite*max(1,nint(rdyndump/dtdump))
+
+      if (rank.eq.0.and.tinkerdebug.gt.0)
+     &   print*, '--set_dumpdyn_freq',idumpdyn,iwrite
+      end subroutine
+
       end submodule
 
       subroutine write0_mpi(name,line)

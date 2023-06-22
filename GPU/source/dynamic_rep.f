@@ -5,18 +5,19 @@ c     University of Texas at Austin
 c
 c     #################################################################
 c     ##                                                             ##
-c     ##  program dynamic  --  run molecular or stochastic dynamics  ##
+c     ##  program dynamic_rep  --  run dynamics with replicas        ##
 c     ##                                                             ##
 c     #################################################################
 c
 c
-c     "dynamic" computes a molecular dynamics trajectory
+c     "dynamic_rep" computes a molecular dynamics trajectory
 c     in one of the standard statistical mechanical ensembles and using
 c     any of several possible integration methods
 c
 c
-#include "tinker_macro.h"
-      program dynamic
+#include "tinker_precision.h"
+#include "tinker_types.h"
+      program dynamic_rep
       use mpi
 #ifdef _OPENACC
       use utilgpu,only: bind_gpu
@@ -28,26 +29,26 @@ c
 #endif
 c      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
       call MPI_INIT(ierr)
-      call dynamic_bis
+      call dynamic_rep_bis
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       call MPI_FINALIZE(ierr)
       end
 c
-      subroutine dynamic_bis
-      use ani
+      subroutine dynamic_rep_bis
       use atoms
       use bath
       use bound
       use domdec
+      use files
       use keys
       use inform
       use iounit
       use mdstuf
       use moldyn
       use mpi
-      use potent  ,only: use_ml_embedding
+      use replicas
       use utils
-      use utilgpu ,only: rec_queue,ti_p,re_p
+      use utilgpu ,only: rec_queue
       use timestat
       use tinMemory
       implicit none
@@ -64,12 +65,24 @@ c
  1000 Format(' Time for ',I4,' Steps :',f12.4)
  1010 Format(' ns per day',10x,':',f12.4)
       ! Sign running program
-      app_id = dynamic_a
+      app_id = dynamic_rep_a
 c
 c     set up the structure and molecular mechanics calculation
 c
       call initial
-      call initmpi
+      call init_keys
+      if (nreps.eq.0) then
+        if (ranktot.eq.0) then
+          write(iout,*) 'Error: number of replicas not specified'
+        end if
+        call fatal
+      end if
+      use_reps = .true.
+      call initmpi_reps
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      if (ranktot.eq.0) then
+        write(iout,*) 'Using multiple replicas, nreps = ',nreps
+      end if
       call getxyz
       call unitcell
       call cutoffs
@@ -267,6 +280,10 @@ c     setup dynamics
 c
       call mdinit(dt)
 c
+c     deal with restart of the replicas
+c
+      call mdinitreps
+c
 c     print out a header line for the dynamics computation
 c
       if (integrate .eq. 'VERLET') then
@@ -306,13 +323,6 @@ c
   460    format (/,' Molecular Dynamics Trajectory via',
      &              ' Modified Beeman Algorithm')
       end if
-c
-c     Inform about ML Embedding
-c
-      if (use_ml_embedding) then
-         if(ranktot==0) write(*,*) 'USING ML EMBEDDING'
-         ml_embedding_mode=2
-      endif
 c
 c     integrate equations of motion to take a time step
 c

@@ -31,6 +31,7 @@ c
       subroutine epolar3gpu
       use group
       use tinheader,only: ti_p
+      use potent,only: use_lambdadyn
       implicit none
       if(use_group .and. wgrp(1,2).eq.0._ti_p) then
         return
@@ -39,7 +40,11 @@ c
 c
 c     choose the method for summing over polarization interactions
 c
-      call epolar3cgpu
+      if (use_lambdadyn) then
+        call elambdapolar3cgpu
+      else
+        call epolar3cgpu
+      end if
       end
 
 c     #####################################################################
@@ -239,8 +244,103 @@ c
       !if (use_group .and. use_group_polar) call switch_group(.false.)
 
       end
+
+      subroutine elambdapolar3cgpu
+      use atmlst
+      use atoms
+      use boxes
+      use chgpot
+      use deriv
+      use domdec
+      use energi
+      use ewald
+      use epolar1gpu_inl
+      use iounit
+      use math
+      use mpi
+      use mpole
+      use mutant
+      use polar
+      use polpot
+      use potent
+      use tinheader,only: zerom,zeromd
+      use uprior
+      use utilgpu
+      use virial
+      implicit none
+      integer i,iipole,j,k,ierr,altopt
+      integer(mipk) sizd8, sizr8
+      real(r_p) elambdatemp,plambda,temp0
+      real(r_p) elambdap0,elambdap1
+      parameter(
+#ifdef _OPENACC
+     &          altopt = 0
+#else
+     &          altopt = 1
+#endif
+     &         )
+c
+      if (npole .eq. 0)  return
+c
+!$acc enter data create(elambdap0,elambdap1) async(rec_queue)
+      elambdatemp = elambda  
+c
+c     polarization is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
+c     otherwise the value taken is for elambda=0
+c
+      if (elambda.gt.bplambda) then
+         elambda = 1.0
+         call altelec(altopt)
+         call rotpolegpu
+         call epolar3cgpu
+
+!$acc serial async(rec_queue) present(elambdap1,ep)
+         elambdap1  = ep
+         ep         = 0
+!$acc end serial
+      else
+!$acc serial async(rec_queue) present(elambdap1,ep)
+         elambdap1 = 0.0
+         ep        = 0
+!$acc end serial
+      end if
+
+      elambda = 0.0
+      call altelec(altopt)
+      call rotpolegpu
+      call epolar3cgpu
+!$acc serial async(rec_queue) present(elambdap0,ep)
+      elambdap0  = ep
+!$acc end serial
+ 
+      elambda = elambdatemp 
+c
+c     interpolation of "plambda" between bplambda and 1 as a function of
+c     elambda: 
+c       plambda = 0 for elambda.le.bplambda
+c       u = (elambda-bplambda)/(1-bplambda)
+c       plambda = u**3 for elambda.gt.plambda
+c       ep = (1-plambda)*ep0 +  plambda*ep1
+c
+      if (elambda.le.bplambda) then
+           plambda          = 0.0
+      else
+           plambda          =     ((elambda-bplambda)/(1-bplambda))**3
+      end if
+
+!$acc serial async(rec_queue) present(elambdap0,elambdap1,ep)
+      ep        =  plambda*elambdap1 + (1-plambda)*elambdap0
+!$acc end serial
+c
+c     reset lambda to initial value
+c
+      call altelec(altopt)
+      call rotpolegpu
+!$acc exit data delete(elambdap0,elambdap1) async(rec_queue)
+      end
 c
 c
+      
 c     ######################################################################
 c     ##                                                                  ##
 c     ##  subroutine epreal3dgpu  --  real space polar analysis via list  ##

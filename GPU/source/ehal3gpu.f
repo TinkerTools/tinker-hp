@@ -34,6 +34,7 @@ c
       use interfaces ,only: ehal3c_p
       use potent
       use tinheader  ,only:ti_p,re_p
+      use timestat
       use vdwpot
       use mpi
 
@@ -47,31 +48,32 @@ c
 c
 c     choose the method for summing over pairwise interactions
 c
+      call timer_enter( timer_ehal3 )
       call ehal3c_p
 c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr.and.(fullrange.or.use_vdwlong)) then
          mode = "VDW"
-!$acc data create(elrc) async
+!$acc data copyout(elrc) present(ev)
          call evcorr (mode,elrc)
-!$acc serial async present(ev,elrc)
+!$acc serial async
          ev = ev + elrc
 !$acc end serial
+!$acc wait
 c        aelrc = elrc / real(n,r_p)
 c        do i = 1, nbloc
 c           aev(i) = aev(i) + aelrc
 c        end do
-!$acc wait
+!$acc end data
          if (rank.eq.0.and.verbose) then
-!$acc update host(elrc) async
             if (elrc.ne.0.0_ti_p.and.app_id.eq.analyze_a) then
                write (iout,10)  elrc
    10          format (/,' Long Range vdw Correction :',9x,f12.4)
             end if
          end if
-!$acc end data
       end if
+      call timer_exit( timer_ehal3,quiet_timers )
       end
 c
 c

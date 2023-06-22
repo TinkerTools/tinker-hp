@@ -15,37 +15,32 @@ c     then reads in the coordinates file
 c
 c
 #include "tinker_macro.h"
+      subroutine get_xyz_filename(xyzfile)
+      use files
+      use iounit
+      implicit none
+      character*240, intent(inout) :: xyzfile
+
+      if(.not. keys_already_read) then
+        call init_keys
+      endif 
+
+      xyzfile = filename
+      call suffix (xyzfile,'xyz','old')
+      
+      end subroutine
+
       subroutine getxyz
       use inform
       use iounit
       use output
+      use files
       implicit none
       integer ixyz
       integer freeunit
-      logical exist
       character*240 xyzfile
-c
-c
-c     try to get a filename from the command line arguments
-c
-      call nextarg (xyzfile,exist)
-      if (exist) then
-         call basefile (xyzfile)
-         call suffix (xyzfile,'xyz','old')
-         inquire (file=xyzfile,exist=exist)
-      end if
-c
-c     ask for the user specified input structure filename
-c
-      do while (.not. exist)
-   10    format(/,' Enter Cartesian Coordinate File Name :  ',$)
-   20    format (a240)
-         write (iout,10)
-         read (input,20) xyzfile
-         call basefile (xyzfile)
-         call suffix (xyzfile,'xyz','old')
-         inquire (file=xyzfile,exist=exist)
-      end do
+
+      call get_xyz_filename(xyzfile)
 c
 c     first open and then read the Cartesian coordinates file
 c

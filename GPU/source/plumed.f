@@ -12,6 +12,7 @@ c     ###################################################################
 c
 #include "tinker_macro.h"
       submodule(plumed) PlumedImp
+      use atoms    ,only: pbcWrapIdx
       use atomsMirror
       use atmtyp
       use boxes
@@ -93,25 +94,25 @@ c fs -> ps
       if (deb_Path) print*,'eplumed'
 
 !$acc data present(pl_force,pl_pos,pl_glob,pl_mass
-!$acc&    ,glob,x,y,z,mass,vir,glob,energy,derivs)
+!$acc&    ,glob,x,y,z,mass,vir,glob,energy,pbcWrapIdx,derivs)
 
       ncount = ncount + 1
       if (nproc.eq.1) then
 !$acc parallel loop async
          do i = 1,n
-           pl_pos(1,i) = x(i)
-           pl_pos(2,i) = y(i)
-           pl_pos(3,i) = z(i)
+           pl_pos(1,i) = x(i) + pbcWrapIdx(4*(i-1)+1)*xbox
+           pl_pos(2,i) = y(i) + pbcWrapIdx(4*(i-1)+2)*ybox
+           pl_pos(3,i) = z(i) + pbcWrapIdx(4*(i-1)+3)*zbox
          end do
 !$acc update host(pl_pos,energy) async
       else
-!$acc parallel loop async
+!$acc parallel loop async default(present)
          do iloc = 1, nloc
            iglob          = glob(iloc)
            pl_glob (iloc) = iglob - 1
-           pl_pos(1,iloc) = x(iglob)
-           pl_pos(2,iloc) = y(iglob)
-           pl_pos(3,iloc) = z(iglob)
+           pl_pos(1,iloc) = x(iglob) + pbcWrapIdx(4*(iglob-1)+1)*xbox
+           pl_pos(2,iloc) = y(iglob) + pbcWrapIdx(4*(iglob-1)+2)*ybox
+           pl_pos(3,iloc) = z(iglob) + pbcWrapIdx(4*(iglob-1)+3)*zbox
            pl_mass( iloc) = mass(iglob)
          enddo
 !$acc update host(pl_glob,pl_pos,pl_mass,energy) async

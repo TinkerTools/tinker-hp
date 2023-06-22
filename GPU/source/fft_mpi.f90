@@ -21,7 +21,7 @@ use inform   ,only: verbose
 use tinMemory,only: s_cufft
 use sizes    ,only: tinkerdebug
 #ifdef _OPENACC
-use utilgpu  ,only: rec_queue,dir_queue
+use utilgpu  ,only: rec_q=>rec_queue,dir_q=>dir_queue
 use decomp_2d_cufft
 #endif
 
@@ -74,7 +74,7 @@ ksize2(rank_bis+1)  = zsize(3)
 call decomp_2d_fft_init
 !
 #ifdef _OPENACC
-call get_rec_dir_queue(rec_queue,dir_queue)
+call get_rec_dir_queue(rec_q,dir_q)
 call init_cufft_engine
 s_cufft = decomp2d_cufftGetSize()
 #endif
@@ -163,7 +163,7 @@ subroutine cufft2d_frontmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   use inform   ,only: deb_Path
   use fft
   use timestat ,only: timer_enter,timer_exit,timer_ffts,quiet_timers
-  use utilgpu, only :rec_queue
+  use utilgpu  ,only: rec_q=>rec_queue
   implicit none
   !include 'mpif.h'
   real(t_p) qgridin(2,n1mpimax,n2mpimax,n3mpimax,*)
@@ -184,7 +184,7 @@ subroutine cufft2d_frontmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   !
   ! fill in array with qgridin
   !
-     call r2c_grid(qgridin,n1mpimax*n2mpimax*n3mpimax,in,rec_queue)
+     call r2c_grid(qgridin,n1mpimax*n2mpimax*n3mpimax,in,rec_q)
   else
      call associate_grid_pointer(qgridin,qgridout)
   end if
@@ -199,7 +199,7 @@ subroutine cufft2d_frontmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   ! fill qgridout array with out
   !
   if (.not.grid_pointer_assoc) &
-     call c2r_grid(out,zsize(1)*zsize(2)*zsize(3),qgridout,rec_queue)
+     call c2r_grid(out,zsize(1)*zsize(2)*zsize(3),qgridout,rec_q)
   !
   if (deb_Path) write(*,'(5x,a)') '<< cufft2d_frontmpi'
   call timer_exit( timer_ffts,quiet_timers )
@@ -269,7 +269,7 @@ subroutine cufft2d_backmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   use inform   ,only: deb_Path
   use fft
   use timestat ,only: timer_enter,timer_exit,timer_ffts,quiet_timers
-  use utilgpu, only:rec_queue
+  use utilgpu  ,only: rec_q=>rec_queue
   implicit none
   !include 'mpif.h'
   real(t_p) qgridin(2,n1mpimax,n2mpimax,n3mpimax,*)
@@ -285,7 +285,7 @@ subroutine cufft2d_backmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   ! fill out array with qgridout
   !
   if (.not.grid_pointer_assoc) &
-     call r2c_grid(qgridout,zsize(1)*zsize(2)*zsize(3),out,rec_queue)
+     call r2c_grid(qgridout,zsize(1)*zsize(2)*zsize(3),out,rec_q)
   !
   ! ===== 3D backward FFT =====
   !
@@ -294,7 +294,7 @@ subroutine cufft2d_backmpi(qgridin,qgridout,n1mpimax,n2mpimax,n3mpimax)
   ! fill qgridin array with in
   !
   if (.not.grid_pointer_assoc) &
-     call c2r_grid(in,n1mpimax*n2mpimax*n3mpimax,qgridin,rec_queue)
+     call c2r_grid(in,n1mpimax*n2mpimax*n3mpimax,qgridin,rec_q)
 
   if (deb_Path) write(*,'(5x,a)') '<< cufft2d_backmpi'
   call timer_exit( timer_ffts,quiet_timers )

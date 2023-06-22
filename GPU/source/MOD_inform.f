@@ -15,6 +15,7 @@ c     digits    decimal places output for energy and coordinates
 c     iprint    steps between status printing (0=no printing)
 c     iwrite    steps between coordinate dumps (0=no dumps)
 c     isend     steps between socket communication (0=no sockets)
+c     idumpdyn  steps between restart dumps
 c     n_fwriten increments every time we force a frame to be written
 c     monte_naccept  records the number of application of montecarlo barostat
 c     silent    logical flag to turn off all information printing
@@ -35,7 +36,7 @@ c     dint1 dint2 dibuff  useful for storing purpose
       module inform
       implicit none
       integer digits,iprint
-      integer iwrite,isend,n_fwriten
+      integer iwrite,isend,n_fwriten,idumpdyn
       logical silent,verbose
       logical debug,holdup,abort
       integer tinEssai
@@ -46,6 +47,7 @@ c     dint1 dint2 dibuff  useful for storing purpose
         enumerator analyze_a
         enumerator bar_a
         enumerator dynamic_a
+        enumerator dynamic_rep_a
         enumerator minimize_a
         enumerator radial_a
         enumerator testgrad_a
@@ -144,10 +146,16 @@ c     dint1 dint2 dibuff  useful for storing purpose
       end interface
 
       interface
+      module subroutine set_dumpdyn_freq
+      end subroutine
+      end interface
+
+      interface
       module subroutine check_loc(queue)
       integer queue
       end subroutine
       end interface
+
       interface
       module subroutine check_loc1
       end subroutine

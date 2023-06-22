@@ -1306,6 +1306,55 @@ c
         dist = min(dist1,dist2)
       end if
       end
+
+      subroutine build_domain_delimiters
+      use boxes
+      use cell
+      use domdec
+      implicit none
+      integer   i,j,k,iproc
+      real(t_p), dimension(nproc):: xbegproctemp,ybegproctemp
+     &         ,zbegproctemp,xendproctemp,yendproctemp,zendproctemp
+
+      nx_box = xbox/nxdd
+      ny_box = ybox/nydd
+      nz_box = zbox/nzdd
+c
+      do i = 0, nxdd-1
+        xbegproctemp(i+1) = -xbox2 + i*nx_box
+        xendproctemp(i+1) = -xbox2 + (i+1)*nx_box
+      end do
+      do i = 0, nydd-1
+        ybegproctemp(i+1) = -ybox2 + i*ny_box
+        yendproctemp(i+1) = -ybox2 + (i+1)*ny_box
+      end do
+      do i = 0, nzdd-1
+        zbegproctemp(i+1) = -zbox2 + i*nz_box
+        zendproctemp(i+1) = -zbox2 + (i+1)*nz_box
+      end do
+
+      !xendproctemp(nxdd) = xbox2
+      !yendproctemp(nydd) = ybox2
+      !yendproctemp(nzdd) = zbox2
+c
+c     assign processes
+c
+      do k = 1, nzdd
+        do j = 1, nydd
+          do i = 1, nxdd
+              iproc = (k-1)*nydd*nxdd+(j-1)*nxdd+i
+              xbegproc(iproc) = xbegproctemp(i)
+              xendproc(iproc) = xendproctemp(i)
+              ybegproc(iproc) = ybegproctemp(j)
+              yendproc(iproc) = yendproctemp(j)
+              zbegproc(iproc) = zbegproctemp(k)
+              zendproc(iproc) = zendproctemp(k)
+          end do
+        end do
+      end do
+!$acc update device(xbegproc,xendproc,
+!$acc& ybegproc,yendproc,zbegproc,zendproc) async
+      end subroutine
 c
 c     subroutine ddpme: domain decomposition load balancing
 c     assign atom sites to MPI processes based on a domain decomposition
@@ -1333,11 +1382,7 @@ c
       real(t_p) mbuf,vbuf,torquebuf,neigbuf,bigbuf
       real(t_p) mshortbuf,vshortbuf,torqueshortbuf,bigshortbuf
       real(t_p) anibuf,distRatio1
-      real(t_p) eps1,eps2
-      real(r_p), allocatable :: xbegproctemp(:),ybegproctemp(:)
-      real(r_p), allocatable :: zbegproctemp(:)
-      real(r_p), allocatable :: xendproctemp(:),yendproctemp(:)
-      real(r_p), allocatable :: zendproctemp(:)
+      real(t_p) eps1
       integer p,q,r,numneig
       integer temp_x,temp_y,temp_z,tempproc
       integer, allocatable :: neigproc(:,:),numneigproc(:),filledproc(:)
@@ -1412,12 +1457,6 @@ c
 c
       pneigrecep = 0
 c
-      allocate (xbegproctemp(nproc))
-      allocate (ybegproctemp(nproc))
-      allocate (xendproctemp(nproc))
-      allocate (yendproctemp(nproc))
-      allocate (zbegproctemp(nproc))
-      allocate (zendproctemp(nproc))
       allocate (neigproc(26,nproc))
       allocate (numneigproc(nproc))
       allocate (filledproc(nproc))
@@ -1427,15 +1466,9 @@ c
       xbegproc     = 0_ti_p
       ybegproc     = 0_ti_p
       zbegproc     = 0_ti_p
-      xbegproctemp = 0_re_p
-      ybegproctemp = 0_re_p
-      zbegproctemp = 0_re_p
       xendproc     = 0_ti_p
       yendproc     = 0_ti_p
       zendproc     = 0_ti_p
-      xendproctemp = 0_re_p
-      yendproctemp = 0_re_p
-      zendproctemp = 0_re_p
       repart       = 0
       domlen       = 0
       glob         = 0
@@ -1461,41 +1494,8 @@ c
          Bdecomp3d=.true.
       end if
 c
-      nx_box = xbox/nxdd
-      ny_box = ybox/nydd
-      nz_box = zbox/nzdd
+      call build_domain_delimiters
       eps1   =  5*xcell2*prec_eps
-      eps2   = 0.05*min(nx_box,ny_box)
-      do i = 0, nxdd-1
-        xbegproctemp(i+1) = -xbox2 + i*nx_box
-        xendproctemp(i+1) = -xbox2 + (i+1)*nx_box
-      end do
-      do i = 0, nydd-1
-        ybegproctemp(i+1) = -ybox2 + i*ny_box
-        yendproctemp(i+1) = -ybox2 + (i+1)*ny_box
-      end do
-      do i = 0, nzdd-1
-        zbegproctemp(i+1) = -zbox2 + i*nz_box
-        zendproctemp(i+1) = -zbox2 + (i+1)*nz_box
-      end do
-c
-c     assign processes
-c
-      do k = 1, nzdd
-        do j = 1, nydd
-          do i = 1, nxdd
-              iproc = (k-1)*nydd*nxdd+(j-1)*nxdd+i
-              xbegproc(iproc) = xbegproctemp(i)
-              xendproc(iproc) = xendproctemp(i)
-              ybegproc(iproc) = ybegproctemp(j)
-              yendproc(iproc) = yendproctemp(j)
-              zbegproc(iproc) = zbegproctemp(k)
-              zendproc(iproc) = zendproctemp(k)
-          end do
-        end do
-      end do
-!$acc update device(xbegproc,xendproc,
-!$acc& ybegproc,yendproc,zbegproc,zendproc) async
 c
 c     count number of particules per domain
 c
@@ -1989,12 +1989,6 @@ c
       deallocate (filledproc)
       deallocate (numneigproc)
       deallocate (neigproc)
-      deallocate (xbegproctemp)
-      deallocate (xendproctemp)
-      deallocate (ybegproctemp)
-      deallocate (yendproctemp)
-      deallocate (zbegproctemp)
-      deallocate (zendproctemp)
       deallocate (nrecep1)
       deallocate (precep1)
       deallocate (nrecep2)
@@ -2036,12 +2030,14 @@ c
       call MPI_AllReduce(nloc,nd,1,MPI_INT,MPI_SUM,comm_d,ierr)
       call MPI_AllReduce(nlocrec,nr,1,MPI_INT,MPI_SUM,comm_r,ierr)
 
- 12   format("An issue has been detectected during reassign process "
-     &       ,/,A,' > nloc ',I10,' ntot ',3I10)
+ 11   format("An issue has been detected during reassign process")
+ 12   format(A,' > nloc ',I10,' ntot ',3I10)
 
       if (nd.ne.n) then
+         if (rank.eq.0) print 11
          write(*,12) " direct space",nloc,n,nd; ierr=1;
-      endif;
+      end if
+
       if (rank.eq.0.And.nr.ne.n) write(*,12) " rec    space",nlocrec,n
       end subroutine
 
@@ -2243,16 +2239,8 @@ cc
         rankloc  = rank
       end if
 c
-      do iproc = 1, nprocloc
-        xbegproc(iproc) = scale*real(xbegproc(iproc),r_p)
-        xendproc(iproc) = scale*real(xendproc(iproc),r_p)
-        ybegproc(iproc) = scale*real(ybegproc(iproc),r_p)
-        yendproc(iproc) = scale*real(yendproc(iproc),r_p)
-        zbegproc(iproc) = scale*real(zbegproc(iproc),r_p)
-        zendproc(iproc) = scale*real(zendproc(iproc),r_p)
-      end do
-!$acc update device(xbegproc,xendproc,
-!$acc& ybegproc,yendproc,zbegproc,zendproc) async
+      call build_domain_delimiters
+
       if (modnl.ne.0) return
 c
       allocate (reqsend(nprocloc))

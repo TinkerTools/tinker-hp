@@ -20,11 +20,14 @@ c
       use, intrinsic :: iso_c_binding
 
       integer, private:: s_save=0
-      integer    naml, namloc
+      integer    naml, namloc, nlst_bond
       integer :: ml_embedding_mode=1
+      integer :: bondorder=1
       integer, allocatable:: list(:), iaml(:), amloc(:)
      &       , atomic_ani(:)
+      integer, allocatable, target :: blist1(:), blist2(:)
       logical :: ml_resources_initialized=.FALSE.
+      logical :: use_bondorder=.FALSE.
       logical, allocatable:: laml(:), grpmllist(:) 
       real(t_p) mlpotcut
       real(t_p) :: mlpotscale=1.0
@@ -65,6 +68,10 @@ c
       interface
         subroutine set_embedding_weights
         end subroutine
+        subroutine init_build_ml_bond_list
+        end subroutine
+        subroutine build_ml_bond_list
+        end subroutine
       end interface
 
       contains
@@ -92,5 +99,6 @@ c
       end if
 
       end subroutine realloc_position_buffer
+
 
       end module

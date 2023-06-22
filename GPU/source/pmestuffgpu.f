@@ -2803,9 +2803,6 @@ c
 !$acc host_data use_device(thetai1,thetai2,thetai3,igrid
 !$acc&  ,x,y,z,qgrid2in_2d,qgridin_2d,kstart1,kend1,jstart1,jend1
 !$acc&  ,istart1,iend1,prec_send)
-         x_t         => x
-         y_t         => y
-         z_t         => z
          qgridin_t   => qgridin_2d
          qgrid2in_t  => qgrid2in_2d
          kstart1_t   => kstart1

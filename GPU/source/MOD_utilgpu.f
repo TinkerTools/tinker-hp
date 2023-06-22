@@ -91,7 +91,7 @@ c
       real(t_p) vred_buff(6*RED_BUFF_SIZE)
       real(t_p) vred_buf1(6*RED_BUFF_SIZE)
       real(r_p) ered_buff(  RED_BUFF_SIZE)
-      real(r_p)  lam_buff(  RED_BUFF_SIZE)
+      real(r_p),target::  lam_buff(  RED_BUFF_SIZE)
       ener_rtyp ered_buf1(  RED_BUFF_SIZE)
       real(t_p),dimension(10,10)::ftc,ctf
 

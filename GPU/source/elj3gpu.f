@@ -40,29 +40,33 @@ c
       use mpi
       implicit none
       integer i
-      real(t_p) elrc,aelrc
-      real(t_p) time0,time1
+      real(r_p) elrc,aelrc
       character*11 mode
 c
       call timer_enter( timer_elj3 )
       call elj3c_p
-      call timer_exit( timer_elj3,quiet_timers )
 c
 c     apply long range van der Waals correction if desired
 c
       if (use_vcorr) then
          mode = 'VDW'
+!$acc data copyout(elrc) present(ev) async
          call evcorr (mode,elrc)
+!$acc serial async
          ev = ev + elrc
-         aelrc = elrc / real(n,t_p)
-         do i = 1, nbloc
-            aev(i) = aev(i) + aelrc
-         end do
+!$acc end serial
+!$acc wait
+c        aelrc = elrc / real(n,t_p)
+c        do i = 1, nbloc
+c           aev(i) = aev(i) + aelrc
+c        end do
+!$acc end data
          if (verbose .and. elrc.ne.0.0_ti_p) then
             write (iout,10)  elrc
    10       format (/,' Long Range vdw Correction :',9x,f12.4)
          end if
       end if
+      call timer_exit( timer_elj3,quiet_timers )
       end
 
 c

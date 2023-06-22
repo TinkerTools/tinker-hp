@@ -208,6 +208,7 @@ c
 c
 c     get trajectory B archive and setup mechanics calculation
 c
+      keys_already_read=.false.
       call getxyz
       !call ddpme3d
 c     call AllDirAssign

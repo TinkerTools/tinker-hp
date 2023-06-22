@@ -24,6 +24,20 @@ c     use_tors       logical flag governing use of torsional potential
 c     use_pitors     logical flag governing use of pi-orbital torsion term
 c     use_strtor     logical flag governing use of stretch-torsion term
 c     use_tortor     logical flag governing use of torsion-torsion term
+c     use_embd_potoff logical flag governing use of potential in embedding
+c     use_embd_bond  logical flag governing use of bond stretch potential in embedding
+c     use_embd_angle logical flag governing use of angle bend potential in embedding
+c     use_embd_strbnd logical flag governing use of stretch-bend potential in embedding
+c     use_embd_urey  logical flag governing use of Urey-Bradley potential in embedding
+c     use_embd_angang logical flag governing use of angle-angle cross term in embedding
+c     use_embd_opbend logical flag governing use of out-of-plane bend term in embedding
+c     use_embd_opdist logical flag governing use of out-of-plane distance in embedding
+c     use_embd_improp logical flag governing use of improper dihedral term in embedding
+c     use_embd_imptor logical flag governing use of improper torsion term in embedding
+c     use_embd_tors  logical flag governing use of torsional potential in embedding
+c     use_embd_pitors logical flag governing use of pi-orbital torsion term in embedding
+c     use_embd_strtor logical flag governing use of stretch-torsion term in embedding
+c     use_embd_tortor logical flag governing use of torsion-torsion term in embedding
 c     use_vdw        logical flag governing use of vdw der Waals potential
 c     use_vdwshort   logical flag governing use of short range vdw potential
 c     use_vdwlong    logical flag governing use of long range vdw potential
@@ -98,6 +112,13 @@ c
       logical use_tors,use_pitors,use_strtor,use_angtor
       logical use_tortor
       logical use_geom,use_extra
+      logical use_embd_potoff
+      logical use_embd_bond,use_embd_angle,use_embd_strbnd
+      logical use_embd_urey,use_embd_angang,use_embd_opbend
+      logical use_embd_opdist,use_embd_improp,use_embd_imptor
+      logical use_embd_tors,use_embd_pitors,use_embd_strtor
+      logical use_embd_angtor,use_embd_tortor
+      logical use_embd_geom,use_embd_extra
       end module
       
       module nonbondedpotent

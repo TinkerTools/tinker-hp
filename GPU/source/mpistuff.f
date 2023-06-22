@@ -741,45 +741,7 @@ c
      &         , zbegproctemp,xendproctemp,yendproctemp,zendproctemp
 !$acc routine(image_acc)
 
-      xbegproctemp = 0; xendproctemp=0
-      ybegproctemp = 0; yendproctemp=0
-      zbegproctemp = 0; zendproctemp=0
-
-      nx_box = xbox/nxdd
-      ny_box = ybox/nydd
-      nz_box = zbox/nzdd
-      eps1   =  5*xcell2*prec_eps
-      eps2   = 0.05*min(nx_box,ny_box)
-      do i = 0, nxdd-1
-        xbegproctemp(i+1) = -xbox2 + i*nx_box
-        xendproctemp(i+1) = -xbox2 + (i+1)*nx_box
-      end do
-      do i = 0, nydd-1
-        ybegproctemp(i+1) = -ybox2 + i*ny_box
-        yendproctemp(i+1) = -ybox2 + (i+1)*ny_box
-      end do
-      do i = 0, nzdd-1
-        zbegproctemp(i+1) = -zbox2 + i*nz_box
-        zendproctemp(i+1) = -zbox2 + (i+1)*nz_box
-      end do
-c
-c     assign processes
-c
-      do k = 1, nzdd
-        do j = 1, nydd
-          do i = 1, nxdd
-              iproc = (k-1)*nydd*nxdd+(j-1)*nxdd+i
-              xbegproc(iproc) = xbegproctemp(i)
-              xendproc(iproc) = xendproctemp(i)
-              ybegproc(iproc) = ybegproctemp(j)
-              yendproc(iproc) = yendproctemp(j)
-              zbegproc(iproc) = zbegproctemp(k)
-              zendproc(iproc) = zendproctemp(k)
-          end do
-        end do
-      end do
-!$acc update device(xbegproc,xendproc,
-!$acc& ybegproc,yendproc,zbegproc,zendproc) async
+      call build_domain_delimiters
 
       if (nproc.eq.1.or.use_pmecore.and.ndir.eq.1) return
       if (deb_Path) print*, 'AllDirAssign'
@@ -900,9 +862,11 @@ c
       end subroutine
 
       subroutine reassignrespa(ialt,nalt)
+        use atoms       ,only : pbcWrap
         use atomsMirror ,only : x,y,z,xold,yold,zold,n
         use bound ,only : use_bounds
-        use cell  ,only : xcell2, ycell2, zcell2, eps_cell
+        !use cell  ,only : xcell2, ycell2, zcell2, eps_cell
+        use cell
         use domdec,only : nloc,nproc,glob,comm_dir,rank,rank_bis,ndir,
      &                    xbegproc,ybegproc,zbegproc,
      &                    xendproc,yendproc,zendproc,
@@ -943,8 +907,9 @@ c
         integer i, ierr, iglob, iloc, iproc, ineighbor
         integer nloc_save, n_data_send_capture,max_data_recv
         integer nloc_capture
-        integer s_bufi
+        integer s_bufi,pbcw
         integer :: max_data_recv_save=0
+        logical ifind
         character(len=40) ::fmt
         real(t_p) ixbeg,ixend,iybeg,iyend,izbeg,izend,xtemp
 #if  (defined(SINGLE)||defined(MIXED))
@@ -977,10 +942,10 @@ c
         if (deb_Path) write(*,'(A,2I4)') '  -- reassignrespa ',ialt,nalt
         call timer_enter( timer_eneig )
 
-        s_bufi = nloc*(nneig_send+1)
+        s_bufi = 2*nloc*(nneig_send+1)
         call prmem_request( buffMpi_i1,max(s_bufi,size(buffMpi_i1)) )
         !Associate iglob_send pointer to buffer
-        iglob_send(1:nloc,0:nneig_send) => buffMpi_i1(1:s_bufi)
+        iglob_send(1:2*nloc,0:nneig_send) => buffMpi_i1(1:s_bufi)
 
 !$acc wait
 !$acc data copyin(pneig_recep, pneig_send) async
@@ -1008,9 +973,11 @@ c
           xr = x(iglob)
           yr = y(iglob)
           zr = z(iglob)
+          pbcw = pbcWrap(iglob)
           call image_inl(xr,yr,zr)
           ! Check box limits (SP Issue)
           xtemp = xr
+          ifind = .false.
           if ((xcell2-abs(xr)).lt.eps_cell) xr = xr-sign(4*eps_cell,xr)
           if ((ycell2-abs(yr)).lt.eps_cell) yr = yr-sign(4*eps_cell,yr)
           if ((zcell2-abs(zr)).lt.eps_cell) zr = zr-sign(4*eps_cell,zr)
@@ -1021,7 +988,9 @@ c
               n_data_send(0) = n_data_send(0) + 1
               n_data_send_capture = n_data_send(0)
 !$acc end atomic
-              iglob_send(n_data_send_capture,0) = glob(i)
+              iglob_send(2*(n_data_send_capture-1)+1,0)=iglob
+              iglob_send(2*(n_data_send_capture-1)+2,0)= pbcw
+              ifind = .true.
           else  ! (not in rank domain)
 !$acc loop seq
             do ineighbor = 1, nneig_send   ! Look among neighbour
@@ -1034,28 +1003,35 @@ c
                 n_data_send(ineighbor) = n_data_send(ineighbor) + 1
                 n_data_send_capture = n_data_send(ineighbor)
 !$acc end atomic
-                iglob_send(n_data_send_capture,ineighbor) = glob(i)
+                iglob_send(2*(n_data_send_capture-1)+1,ineighbor)= iglob
+                iglob_send(2*(n_data_send_capture-1)+2,ineighbor)= pbcw
+                ifind = .true.
                 exit ! if found
-              endif
+              end if
             end do
           end if ! (Find atom domain)
+          if (.not.ifind) then
+             print*, 'Issue reassign',rank,iglob,xr,yr,zr,x(iglob)
+     &        ,y(iglob),z(iglob),eps_cell,xcell2>xr,ycell2>yr,zcell2>zr
+     &        ,xcell2,ycell2,zcell2,xcell,ycell,zcell
+          end if
         end do
 !$acc update host(n_data_send) async
 !Wait for n_data_send
 !$acc wait
 
-        ! Allocate and fill data to send (Optimzed reallocation)
+        ! Allocate and fill data to send (Optimize reallocation)
         s_bufi = maxval(n_data_send(1:nneig_send))
         if (s_bufi.gt.max_atoms_send) then
            max_atoms_send =
      &             merge( int(s_bufi*(1+mem_inc)),s_bufi,extra_alloc )
            if (debMem.ne.0) print*,'reassign::realloc s',s_bufi,rank
            if (allocated(data_send)) then
-!$acc exit data delete(data_send) async
+!$acc exit data delete(data_send)
               deallocate(data_send)
            end if
            allocate( data_send( max_atoms_send,nneig_send ) )
-!$acc enter data create(data_send) async
+!$acc enter data create(data_send)
         end if
 
 !$acc parallel loop present(iglob_send) async
@@ -1063,7 +1039,7 @@ c
         do ineighbor = 1, nneig_send  ! Gather Data for each neighbor domain
 !$acc loop vector
           do i = 1, n_data_send(ineighbor)
-            iglob = iglob_send(i,ineighbor)
+            iglob = iglob_send(2*(i-1)+1,ineighbor)
             d    => data_send( i, ineighbor )
             d%x  = x(iglob)
             d%y  = y(iglob)
@@ -1082,9 +1058,10 @@ c
         req_data_send (:) = MPI_REQUEST_NULL
 !Wait for iglob_send and data_send
 !$acc wait
-!$acc host_data use_device(iglob_send, data_send)
+!$acc host_data use_device(iglob_send)
         do ineighbor = 1, nneig_send
-          call MPI_Isend(iglob_send(1,ineighbor),n_data_send(ineighbor)
+          call MPI_Isend(iglob_send(1,ineighbor)
+     &            ,2*n_data_send(ineighbor)
      &            ,MPI_INT,   pneig_send(ineighbor), 0, COMM_TINKER,
      &            req_iglob_send(ineighbor), ierr)
         end do
@@ -1100,10 +1077,11 @@ c
         end do
 
         ! Allocate and recv data depending on message size
+        n_data_recv(:)= n_data_recv(:)/2
         max_data_recv = maxval(n_data_recv)
-        s_bufi        = max_data_recv*nneig_recep
+        s_bufi        = 2*max_data_recv*nneig_recep
         call prmem_request( buffMpi_i2,max(s_bufi,size(buffMpi_i2)) )
-        iglob_recv(1:max_data_recv,1:nneig_recep)=>buffMpi_i2(1:s_bufi)
+       iglob_recv(1:2*max_data_recv,1:nneig_recep)=>buffMpi_i2(1:s_bufi)
         if ( max_data_recv.gt.max_atoms_recv ) then
            max_atoms_recv = merge(int(max_data_recv*(1+mem_inc))
      &                           ,max_data_recv,extra_alloc)
@@ -1114,7 +1092,7 @@ c
               deallocate(data_recv)
            end if
            allocate( data_recv( max_atoms_recv, nneig_recep) )
-!$acc enter data create(data_recv) async
+!$acc enter data create(data_recv)
         end if
 
         req_iglob_recv(:) = MPI_REQUEST_NULL
@@ -1123,7 +1101,7 @@ c
 !$acc wait
 !$acc host_data use_device(iglob_recv,data_recv,data_send)
         do ineighbor = 1, nneig_recep
-          call MPI_Irecv(iglob_recv(1,ineighbor),n_data_recv(ineighbor)
+         call MPI_Irecv(iglob_recv(1,ineighbor),2*n_data_recv(ineighbor)
      &            ,MPI_INT, pneig_recep(ineighbor), 0, COMM_TINKER,
      &            req_iglob_recv(ineighbor), ierr)
           call MPI_Irecv(data_recv(1,ineighbor),9*n_data_recv(ineighbor)
@@ -1153,7 +1131,7 @@ c
 !$acc parallel loop present(iglob_send) async
         do i = 1, n
            if (i.lt.nloc+1)
-     &        glob(i) = iglob_send(i, 0)
+     &        glob(i) = iglob_send(2*(i-1)+1, 0)
            loc(i)     = 0
            repart(i)  = -1
            locrec(i)    = 0
@@ -1172,13 +1150,15 @@ c
         do ineighbor = 1, nneig_recep
 !$acc loop vector
           do i = 1, n_data_recv(ineighbor)
-            iglob = iglob_recv(i,ineighbor)
+            iglob = iglob_recv(2*(i-1)+1,ineighbor)
+            pbcw  = iglob_recv(2*(i-1)+2,ineighbor)
 !$acc atomic capture
             nloc = nloc+1
             nloc_capture = nloc
 !$acc end atomic
             glob(nloc_capture) = iglob
             d => data_recv(i,ineighbor)
+            pbcWrap(iglob)     = pbcw
             x(iglob)   = d%x
             y(iglob)   = d%y
             z(iglob)   = d%z
@@ -1203,7 +1183,7 @@ c
         do ineighbor = 1, nneig_send  ! Gather Data for each neighbor domain
 !$acc loop vector
           do i = 1, n_data_send(ineighbor)
-            iglob = iglob_send(i,ineighbor)
+            iglob = iglob_send(2*(i-1)+1,ineighbor)
             b    =>   old_send(i,ineighbor)
             b%x  = xold(iglob)
             b%y  = yold(iglob)
@@ -1236,7 +1216,7 @@ c
         do ineighbor = 1, nneig_recep
 !$acc loop vector
           do i = 1, n_data_recv(ineighbor)
-            iglob   = iglob_recv(i,ineighbor)
+            iglob   = iglob_recv(2*(i-1)+1,ineighbor)
             b       =>  old_recv(i,ineighbor)
             xold(iglob) = b%x
             yold(iglob) = b%y
@@ -1253,17 +1233,19 @@ c
            print 16,rank,max_data_recv_save,nloc
         end if
  17     format('reassign nloc ',I9,' max_data_recv',I9)
- 18     format('(a,I3,a,',I0,'I6,a,',I0,'I6,a,I7,")")')
- 19     format(I3,12F11.6)
+ 18     format('(a,I3,a,',I0,'I6,a,',I0,'I6,a,I7,a)')
+ 19     format(I3,6F12.6)
         if (deb_Path) write(*,17) nloc,max_data_recv
         if (tinkerdebug.gt.0.and.nproc.gt.1) then
            call AtomDebRepart(ierr)
            if (ierr.ne.0) then
               write(fmt,18) nneig_send+1,nneig_recep
-              write(*,19) rank,xbegproc,xendproc,ybegproc
-     &                   ,yendproc,zbegproc,zendproc
+              write(*,19) rank,ixbeg,ixend,iybeg,iyend
+     &                   ,izbeg,izend
               write(* ,fmt) 'r',rank, ' send(',n_data_send,
-     &           ') recv(',n_data_recv, ') nloc_s(',nloc_save
+     &              ') recv(',n_data_recv, ') nloc_s(',nloc_save,')'
+           call emergency_save
+           __TINKER_FATAL__
            end if
         end if
 

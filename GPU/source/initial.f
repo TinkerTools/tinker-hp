@@ -317,3 +317,67 @@ c
 !$acc update device(rank,ngpus,devicenum,gpu_gangs
 !$acc&  ,gpu_workers,gpu_vector)
       end subroutine
+
+      subroutine initmpi_reps()
+      use domdec
+      use iounit
+      use inform
+      use replicas
+      use mpi
+      use tinMemory,only: extra_alloc
+      implicit none
+      integer ierr,color,ncomm
+
+      if (nproctot.lt.nreps) then
+        nproc = 1
+        if (ranktot.eq.0) then
+          write(iout,*) 'each process should deal with max 1 replica'
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+        call fatal
+      else if (mod(nproctot,nreps).ne.0) then
+        if (ranktot.eq.0) then
+          write(iout,*) 'Error: inconsistent number 
+     &     of process for parallelism'
+          write(iout,*) 'the total number of processors
+     &      should be lower
+     &     or a multiple of nreps'
+          call fatal
+        end if
+      else
+        nproc = nproctot/nreps
+      end if
+c
+c     if nreps > 1, nproc is defined earlier (in dynamic_rep.f)
+c     else, we specify that we use standard parallelization (nproc=nproctot)
+c
+      if(nreps==1) nproc=nproctot
+      rank_reploc = int(ranktot/nproc)
+      ncomm = int(nproctot/nproc)
+      if ((ncomm-nproc*nproctot).gt.0) ncomm = ncomm+1
+
+      CALL MPI_Comm_split(MPI_COMM_WORLD,rank_reploc,
+     $     ranktot,COMM_TINKER,ierr)
+
+      call MPI_COMM_SIZE(COMM_TINKER,nproc,ierr)
+      call MPI_COMM_RANK(COMM_TINKER,rank,ierr)
+      CALL MPI_Comm_split_type(COMM_TINKER, MPI_COMM_TYPE_SHARED, 0,
+     $     MPI_INFO_NULL, hostcomm,ierr)
+      CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
+      rank_reploc = int(ranktot/nproc)
+
+      call initDebugEnv
+c
+      call initDevice
+c
+      if (nproc.gt.1) extra_alloc=.true.
+c
+c     create inter root communicator
+c
+      color = 1
+      if (rank.eq.0) color = 0
+      call MPI_Comm_split(MPI_COMM_WORLD,color,ranktot,COMM_ROOT2ROOT,
+     $  ierr)
+      
+      end subroutine initmpi_reps
+

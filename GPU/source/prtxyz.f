@@ -15,9 +15,23 @@ c     to an external disk file
 c
 c
 #include "tinker_macro.h"
+      subroutine unwrap_pos(xr,yr,zr,wrapIdx,k)
+      use cell
+      implicit none
+      integer,intent(in)::k
+      integer(1) wrapIdx(*)
+      real(r_p),intent(inout):: xr,yr,zr
+      integer kk
+
+      kk = 4*(k-1)
+      xr = xr + int(wrapIdx(kk+1))*xcell
+      yr = yr + int(wrapIdx(kk+2))*ycell
+      zr = zr + int(wrapIdx(kk+3))*zcell
+      end subroutine
+
       subroutine prtxyz (ixyz)
       use atmtyp
-      use atoms    ,only: type
+      use atoms    ,only: type,pbcunwrap,pbcWrapIdx
       use atomsMirror
       use bound
       use boxes
@@ -30,7 +44,7 @@ c
       implicit none
       integer i,k,ixyz
       integer size,crdsiz
-      real(r_p) crdmin,crdmax
+      real(r_p) crdmin,crdmax,xi,yi,zi
       logical opened
       character*2 atmc
       character*2 crdc
@@ -100,10 +114,21 @@ c     write out the coordinate line for each atom
 c
       fstr = '('//atmc//',2x,a3,3f'//crdc//
      &          '.'//digc//',i6,8'//atmc//')'
+      if (pbcunwrap) then
+         do i = 1, n
+            xi = x(i)
+            yi = y(i)
+            zi = z(i)
+            call unwrap_pos(xi,yi,zi,pbcWrapIdx,i)
+            write (ixyz,fstr)  i,name(i),xi,yi,zi,type(i),
+     &                      (i12(k,i),k=1,n12(i))
+         end do
+      else
       do i = 1, n
          write (ixyz,fstr)  i,name(i),x(i),y(i),z(i),type(i),
      &                      (i12(k,i),k=1,n12(i))
       end do
+      end if
 c
 c     close the output unit if opened by this routine
 c
