@@ -2320,6 +2320,10 @@ std::istream & colvar::read_state(std::istream &is)
              cvm::to_str(x)+"\n");
     x_restart = x;
     after_restart = true;
+    // Externally driven cv (e.g. alchemical lambda) is imposed by restart value
+    if (is_enabled(f_cv_external)) {
+      cvcs[0]->set_value(x);
+    }
   }
 
   if (is_enabled(f_cv_extended_Lagrangian)) {
