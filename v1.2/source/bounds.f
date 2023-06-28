@@ -121,11 +121,11 @@ c
       use boxes
       implicit none
       integer i,j,k
-      integer nlist,list(nlist)
+      integer, intent(in):: nlist,list(nlist)
       real*8 weigh,weight
       real*8 xmid,ymid,zmid
-      real*8 xfrac,yfrac,zfrac
-      real*8 xcom,ycom,zcom
+      real*8 dx,dy,dz
+      integer :: xshift,yshift,zshift
 c
 c
       xmid = 0.0d0
@@ -143,6 +143,36 @@ c
       xmid = xmid / weight
       ymid = ymid / weight
       zmid = zmid / weight
+      
+      call compute_wrap_shifts(xmid,ymid,zmid,dx,dy,dz
+     &                         ,xshift,yshift,zshift)
+c
+c     translate coordinates via offset from center of mass
+c
+      do j = 1, nlist
+         k = list(j)
+         x(k) = x(k) + dx
+         y(k) = y(k) + dy
+         z(k) = z(k) + dz
+         pbcwrapindex(1,k) = pbcwrapindex(1,k) + xshift
+         pbcwrapindex(2,k) = pbcwrapindex(2,k) + yshift
+         pbcwrapindex(3,k) = pbcwrapindex(3,k) + zshift
+      end do
+      return
+      end
+
+      subroutine compute_wrap_shifts(xmid,ymid,zmid
+     &    ,dx,dy,dz,xshift,yshift,zshift)
+      use sizes
+      use atmtyp
+      use atoms
+      use boxes
+      implicit none
+      real*8, intent(in):: xmid,ymid,zmid
+      real*8, intent(out):: dx,dy,dz
+      integer, intent(out):: xshift,yshift,zshift
+      real*8 xcom,ycom,zcom
+      real*8 xfrac,yfrac,zfrac
 c
 c     get fractional coordinates of center of mass
 c
@@ -162,23 +192,32 @@ c
 c
 c     translate center of mass into the periodic box
 c
+      xshift = 0
+      yshift = 0
+      zshift = 0
       do while (xfrac .gt. xbox2)
          xfrac = xfrac - xbox
+         xshift = xshift + 1
       end do
       do while (xfrac .lt. -xbox2)
          xfrac = xfrac + xbox
+         xshift = xshift - 1
       end do
       do while (yfrac .gt. ybox2)
          yfrac = yfrac - ybox
+         yshift = yshift + 1
       end do
       do while (yfrac .lt. -ybox2)
          yfrac = yfrac + ybox
+         yshift = yshift - 1
       end do
       do while (zfrac .gt. zbox2)
          zfrac = zfrac - zbox
+         zshift = zshift + 1
       end do
       do while (zfrac .lt. -zbox2)
          zfrac = zfrac + zbox
+         zshift = zshift - 1
       end do
 c
 c     truncated octahedron needs to have corners removed
@@ -206,14 +245,9 @@ c
          ycom = yfrac*gamma_sin + zfrac*beta_term
          zcom = zfrac * gamma_term
       end if
-c
-c     translate coordinates via offset from center of mass
-c
-      do j = 1, nlist
-         k = list(j)
-         x(k) = x(k) - xmid + xcom
-         y(k) = y(k) - ymid + ycom
-         z(k) = z(k) - zmid + zcom
-      end do
-      return
-      end
+
+      dx = xcom - xmid
+      dy = ycom - ymid
+      dz = zcom - zmid
+
+      end subroutine compute_wrap_shifts
