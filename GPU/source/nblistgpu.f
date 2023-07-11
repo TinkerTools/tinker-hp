@@ -260,21 +260,25 @@ c
 !$acc&         present(nblist,nneig,nneig_cut) private(read_index)
       do i = 1,nloc
 !$acc loop vector
+         do k = 1,32
+            if (k.eq.1) then; read_index = 0; end if
+         end do
+!$acc loop vector
          do k = 1,nneig(i)
             if (nblist(k,i).eq.-1) then
 !$acc atomic update
                read_index = read_index + 1
             end if
          end do
-         if (read_index.ne.0) then
-            print*,'-----error-nblist-reordering-----'
-            print*,i,read_index,nneig(i),nneig_cut(i)
-            stop
-         end if
+!$acc loop vector
+         do k = 1,32
+            if (k.eq.1.and.read_index.ne.0) then
+               print*,'-----error-nblist-reordering-----'
+               print*,i,read_index,nneig(i),nneig_cut(i)
+               stop
+            end if
+         end do
       end do
-!$acc serial
-      !print*, 'Check nblist suceed'
-!$acc end serial
       end if
       end subroutine
 c
