@@ -614,7 +614,7 @@ infos:
 	@echo "FORTRAN config     " $(FFLAGS)
 	@echo "CUDA libraries     " $(dev_ldlibs)
 	@echo "Programs suffix    " $(bin_sufx)
-	@echo --------------------------------
+	@echo -----------------------------------------------------------------------------------
 	@[ '$(add_mkl__)' = 'yes' ]   && echo "    MKL Libraries    " $(LIB_MKL) || :
 	@[ $(FPA_SUPPORT) -eq 1 ]     && echo "  Fixed Precision Arithmetic Support enabled" || :
 	@[ $(PLUMED_SUPPORT) -eq 1 ]  && echo " PLUMED interface enabled" || :

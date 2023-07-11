@@ -12,6 +12,6 @@ else
 
 basedir=$(dirname $(realpath $0))
 cd $basedir/..
-bash $basedir/install.sh clean
+$basedir/install.sh clean
 
 fi

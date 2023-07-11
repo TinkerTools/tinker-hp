@@ -16,8 +16,9 @@ END
 else
 
 #set -x
-tinkerdir=$PWD/$(dirname `dirname $0`)
+tinkerdir=$(realpath $(dirname `dirname $0`))
 
+#echo "Tinker-HP dir :" $tinkerdir
 source $tinkerdir/ci/utils.sh
 unset CC CXX FC
 
@@ -30,13 +31,13 @@ unset CC CXX FC
 
 dbuild=$tinkerdir/build0      #   Out-of-source build directory
 target_arch='gpu'             #   [gpu]|cpu
-c_c=60,70,75,80               #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
-cuda_ver=11.3                 #   Cuda Version to be used by OpenACC compiler  (not the CUDA C/C++ compiler)
+c_c=60,70,80,86               #   Target GPU compute capability  [https://en.wikipedia.org/wiki/CUDA]
+cuda_ver=11.7                 #   Cuda Version to be used by OpenACC compiler  (not the CUDA C/C++ compiler)
 FPA=1                         #   Enable Fixed Precision Arithmetic (Useful for non HPC-Accelerators)
 build_plumed=0                #   [0]|1     0: disable 1: enable   PLUMED  Interface
 build_colvars=0               #   [0]|1     0: disable 1: enable   COLVARS Interface
 NN=0                          #   [0]|1     0: disable 1: enable   Neural Network Python Interface
-#add_host_f='-Mx,231,0x1'   #   Uncomment this when building Nvidia HPC-SDK package version 21.[3-7]
+#add_host_f='-Mx,231,0x1'      #   Uncomment this when building Nvidia HPC-SDK package version 21.[3-7]
 
 #  End Config
 #=======================
@@ -49,7 +50,7 @@ current_config_m="$current_config FPA_SUPPORT=$FPA prec=m"
 # ------------------------------------
 # Clean Project and exit if instructed
 # ------------------------------------
-[ $# -ge 1 ] && [ $1 = "clean" ] && cd $tinkerdir/source && make -f Makefile.pgi $current_config distclean && exit
+[ $# -ge 1 ] && [ $1 = "clean" ] && cd $dbuild && make $current_config distclean && exit
 
 [ $# -ge 1 ] && [ $1 -gt 1 ] && ntask=$1 || ntask=16
 [ $# -ge 2 ] && [ $2 -gt 1 ] && ntask=$2 || ntask=16
