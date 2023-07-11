@@ -11,7 +11,8 @@ In addition to GitHub, a [GPU container](https://ngc.nvidia.com/catalog/containe
 
 
 ## Installation Guide and tutorials
-   -  [Prerequisites](Prerequisites.md)
+   -  [Prerequisites](Prerequisites.md)  
+   Some setup may prove to be unstable. Please, find out [here](Prerequisites.md)
    -  [Build Tinker-HP (GPU version)](build.md)
    -  [Deep-HP](Deep-HP.md)
 

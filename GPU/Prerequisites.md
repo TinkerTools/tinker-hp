@@ -14,10 +14,27 @@ Nothing special is needed for the CPU code.
    - MPI Fortran wrapper on the selected compiler and compiled to be CUDA-Aware for device communications during multi-GPUs execution.
    - Linux or Windows 10 (Windows Subsystem for Linux) are preferred  
      __Note :__ PGI compiler does not support the GPU code on macOS.
-   - [Nvidia HPC Package](https://developer.nvidia.com/nvidia-hpc-sdk-releases) Any version under __21.2 !__ is operational.  
-     An issue involving "atomic operations" has been discovered with higher versions of the package (21.[3-9]). Luckily it is possible to bypass it by adding a compiler flag during the build step. Look for `add_options_f` variable configuration inside `ci/install.sh` to be revert to the old behavior and fix the problem. However be aware that this is just a temporary fix.  
+   - [Nvidia HPC Package](https://developer.nvidia.com/nvidia-hpc-sdk-releases) Any version under __22.7 !__ is operational.  
+     An issue involving "atomic operations" has been discovered with versions of the package (21.[3-9]). Luckily it is possible to bypass it by adding a compiler flag during the build step. Look for `add_options_f` variable configuration inside `ci/install.sh` to be revert to the old behavior and fix the problem. However be aware that this is just a temporary fix.  
      Starting from version 22.XX, the previously described issue has been solved by the developers, and the OpenACC compiler bug lately detected within 22.XX version has also been fixed. It involves an ambiguous OpenACC compilation when calling an acc device subroutine compiled in an other translation unit.  
      This package contains everything you need to build Tinker-HP (GPU code). Previously listed items are already available within it. However, we need to make sure the installation has been correctly done and the environment variables (PATH; CPATH & NVHPC) are set and updated. Follow instructions described in `$PREFIX/modulefiles` with `$PREFIX` the installation directory of your package.
+
+## Issues
+   #### SDK version
+   Lately, we have been reporting some unexpected behaviors on binaries generated with Compiler versions strictly above 22.7. Depending on the machine, some programs may or may not crash at start. Discussions are initiated in order to identify and resolve the issue. Meanwhile, here are some stable setup able to run Tinker-HP
+
+   - HPC-SDK 22.7 + cuda11.7 + GNU-11.x.x
+   - HPC-SDK 22.7 + cuda11.0 + GNU-9.x.x
+   - HPC-SDK 22.2 + cuda11.6 + GNU-9.x.x
+   - HPC-SDK 22.2 + cuda11.0 + GNU-9.x.x
+   - HPC-SDK 21.9 + cuda11.4 + GNU-8.x.x
+   - HPC-SDK 21.2 + cuda11.2 + GNU-8.x.x
+
+   If you have a multi-CUDA HPC-SDK installation, you can reconfigure the compilers to use the desired version of CUDA by editing/creating the `localrc` file inside the `nvfortran` compiler directory. Fill or complete the file with the instruction.
+   ```
+   set CUDAVERSION=11.x;
+   ```
+   In the case where you do not have write access in the directory, you can also edit a local file and _export_ an env variable named `NVLOCALRC` to hold the file path.
 
 
 ## Python Environment 
