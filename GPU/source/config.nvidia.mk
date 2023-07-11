@@ -136,8 +136,8 @@ pp_flags_cuda_f_    += $(pp_flags_common_)
 # Compilation Flags
 # -----------------
 legacy_flags        := off
-cxx_std             := 11
-compute_capability  := 60,70
+cxx_std             := 14
+compute_capability  := 60,70,80
 cuda_version        := 11.0
 device_c_comp       := -ccbin $(RunCXX)
 
