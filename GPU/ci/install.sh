@@ -93,7 +93,7 @@ fi
 [ ${FPA} -eq 1 ] && in_notif "Recompiling TINKER-HP in mixed precision + FPA support"
 [ ${FPA} -eq 0 ] && in_notif "Recompiling TINKER-HP in mixed precision"
 make $current_config_m 2decomp_fft_rebuild   && \
-make $current_config_m -j$ntask dynamic bar
+make $current_config_m -j$ntask dynamic bar pibar pimd
 [ "$?" != "0" ] && error2nd  && exit # Mixed Compiling test
 
 # --------

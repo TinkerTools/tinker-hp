@@ -1,5 +1,7 @@
+[![DOI:10.1021/acs.jctc.0c01164](https://zenodo.org/badge/DOI/10.1021/acs.jctc.0c01164.svg)](https://doi.org/10.1021/acs.jctc.0c01164)
+
 Tinker-HP: High Performance Multi-GPUs Massively Parallel Evolution of Tinker
-==================================================================
+=============================================================================
 
 
 <b>This phase-advance GPU version (1.2 ++) is not (yet) an official release of Tinker-HP but is made freely available in link with the COVID-19 HPC community effort.</b>
@@ -15,6 +17,7 @@ In addition to GitHub, a [GPU container](https://ngc.nvidia.com/catalog/containe
    Some setup may prove to be unstable. Please, find out [here](Prerequisites.md)
    -  [Build Tinker-HP (GPU version)](build.md)
    -  [Deep-HP](Deep-HP.md)
+   -  [Quantum-HP](Quantum-HP_tutorial.md)
 
 
 ## Run Tinker-HP (CPU/GPU)
@@ -22,7 +25,7 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
 
 
 ### GPU available features
-   - **Applications :** *dynamic analyze minimize* and *bar* programs
+   - **Applications :** *dynamic analyze minimize bar pimd radial* programs
    - **Integrators :** *(RESPA, RESPA1, BAOAB, BAOAB-RESPA, BAOAB-RESPA1, VERLET, BEEMAN, BBK)*
    - **Force field :** polarizable ones *(Amoeba/Amoeba+)*, classical ones *(AMBER/CHARMM/OPLS)*
    - New implementation of **PCG**(default) and **DC-DIIS** solver for polarization (DC-DIIS is not adapted to the device, use PCG instead!)
@@ -35,4 +38,23 @@ There is no difference between the use of Tinker-HP and Tinker-HP (GPU version) 
    - **Colvars** support available
    - **Neural Network** Interface via *Deep-HP*
    - **Lambda dynamics** support available for *free energy* calculations
+   - **Nuclear Quantum Effects** via Ring Polymer Molecular Dynamics (RPMD) and adaptive Quantum Thermal Bath (adQTB)
    -  **More to come**
+
+## Contact
+For any bug report, please refere to :
+   *  TinkerHP_Support@ip2ct.upmc.fr
+
+## Please Cite
+```tex
+@article{2021tinkerhpGPU,
+  title={Tinker-HP: Accelerating molecular dynamics simulations of large complex systems with advanced point dipole polarizable force fields using GPUs and multi-GPU systems},
+  author={Adjoua, Olivier and Lagard{\`e}re, Louis and Jolly, Luc-Henri and Durocher, Arnaud and Very, Thibaut and Dupays, Isabelle and Wang, Zhi and Inizan, Th{\'e}o Jaffrelot and C{\'e}lerse, Fr{\'e}d{\'e}ric and Ren, Pengyu and others},
+  journal={Journal of chemical theory and computation},
+  volume={17},
+  number={4},
+  pages={2034--2053},
+  year={2021},
+  publisher={ACS Publications}
+}
+```
