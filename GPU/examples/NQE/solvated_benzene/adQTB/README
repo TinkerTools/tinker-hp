@@ -1,0 +1,9 @@
+This example runs adQTB MD for a benzene molecule solvated in a box of water.
+The file `benzenebox.key` can be edited to choose the adaptation type
+
+NVT dynamics at 300K can be run with the command:
+mpirun -np 1 path/to/dynamic benzenebox 200000 2 1 2 300
+
+NPT dynamics at 300K/1atm can be run with the command:
+mpirun -np 1 path/to/dynamic benzenebox 200000 2 1 4 300 1
+
