@@ -20,5 +20,10 @@ c
       implicit none
       real(t_p) cury,qury
       real(t_p) ureyunit
+      integer  , pointer :: ureytypI(:)
+      integer :: winureytypI
+      enum,bind(C)
+      enumerator UREY_BRAD, UREY_ANGREP, UREY_QUARTIC
+      end enum
       save
       end

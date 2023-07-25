@@ -1717,7 +1717,7 @@ c
           tag = nproc*rank + precdir_recep(i) + 1
           call MPI_IRECV(repartrec(bufbeg(precdir_recep(i)+1)),
      $     domlen(precdir_recep(i)+1),MPI_INT,precdir_recep(i),tag,
-     $     MPI_COMM_WORLD,req(tag),ierr)
+     $     COMM_TINKER,req(tag),ierr)
         end if
       end do
 c
@@ -1725,7 +1725,7 @@ c
         if (precdir_send(i).ne.rank) then
           tag = nproc*precdir_send(i) + rank + 1
           call MPI_ISEND(repartrec,
-     $    nloc,MPI_INT,precdir_send(i),tag,MPI_COMM_WORLD,
+     $    nloc,MPI_INT,precdir_send(i),tag,COMM_TINKER,
      $    req(tag),ierr)
         end if
       end do

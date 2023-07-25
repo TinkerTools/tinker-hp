@@ -73,6 +73,22 @@ c
 #undef  __tfea__
 #undef  __sufx__
 
+#define __tver__ (__use_ene__+__use_act__)
+#define __tfea__ (__use_mpi__+__use_groups__+__use_shortRange__)
+#define __sufx__ 3s_kcu
+#include "empolecu.tpl.f"
+#undef  __tver__
+#undef  __tfea__
+#undef  __sufx__
+
+#define __tver__ (__use_ene__+__use_act__)
+#define __tfea__ (__use_mpi__+__use_groups__+__use_longRange__)
+#define __sufx__ 3l_kcu
+#include "empolecu.tpl.f"
+#undef  __tver__
+#undef  __tfea__
+#undef  __sufx__
+
         attributes(global) subroutine emreal_scaling_cu
      &            (mcorrect_ik,mcorrect_scale,ipole,loc,locp
      &            ,x,y,z,rpole,grplist,wgrp

@@ -50,6 +50,7 @@ c
       use utilgpu ,only: rec_queue,ti_p,re_p
       use timestat
       use tinMemory
+      use qtb, only: qtb_thermostat,adaptive_qtb
       implicit none
       integer i,istep,nstep,ierr
       integer mode,next
@@ -69,6 +70,7 @@ c
 c     set up the structure and molecular mechanics calculation
 c
       call initial
+      call init_keys
       call initmpi
       call getxyz
       call unitcell
@@ -297,15 +299,19 @@ c
          if (rank.eq.0) write (iout,440)
   440    format (/,' Molecular Dynamics Trajectory via',
      &              ' r-RESPA-1 MTS Algorithm')
-      else if (integrate .eq. 'BAOABPISTON') then
-         if (rank.eq.0) write (iout,450)
-  450    format (/,' Molecular Dynamics Trajectory via',
-     &              ' BAOAB-PISTON Algorithm')
       else
-         if (rank.eq.0) write (iout,460)
-  460    format (/,' Molecular Dynamics Trajectory via',
+         if (rank.eq.0) write (iout,470)
+  470    format (/,' Molecular Dynamics Trajectory via',
      &              ' Modified Beeman Algorithm')
       end if
+
+      if(qtb_thermostat .and. rank==0) then
+         if(adaptive_qtb) then
+            write(iout,*) " using adaptive QTB thermostat"
+         else
+            write(iout,*) " using standard QTB thermostat"
+         endif
+      endif
 c
 c     Inform about ML Embedding
 c
@@ -328,8 +334,6 @@ c
             call bbk(istep,dt)
          else if (integrate .eq. 'BAOAB') then
             call baoab(istep,dt)
-         else if (integrate .eq. 'BAOABPISTON') then
-            call baoabpiston(istep,dt)
          else if (integrate .eq. 'BAOABRESPA') then
             call baoabrespa(istep,dt)
          else if (integrate .eq. 'BAOABRESPA1') then

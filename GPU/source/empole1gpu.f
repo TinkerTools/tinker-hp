@@ -1974,9 +1974,9 @@ c     nff   = 2*isize2(rankloc+1)*jsize2(rankloc+1)*ksize2(rankloc+1)
 c     time0 = comput_norm(qgridout_2d,nff,0)
 c     time1 = comput_norm(qgridout_2d,nff,1)
 c     call MPI_ALLREDUCE(MPI_in_place,time0,1,MPI_real8,MPI_MAX,
-c    &     MPI_COMM_WORLD,i)
+c    &     COMM_TINKER,i)
 c     call MPI_ALLREDUCE(MPI_in_place,time1,1,MPI_real8,MPI_SUM,
-c    &     MPI_COMM_WORLD,i)
+c    &     COMM_TINKER,i)
 c     if (rank.eq.0) print*,' gridout Li ',time0
 c     if (rank.eq.0) print*,' gridout L1 ',time1
 c

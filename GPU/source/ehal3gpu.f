@@ -138,16 +138,16 @@ c
       integer(1) muti,mutik
       character*11 mode
       parameter( ver =__use_ene__+__use_act__
-     &         , ver1=ver+__use_sca__
-     &         , fea =__use_mpi__+__use_groups__+__use_softcore__)
+     &         , ver1=ver+__use_sca__ )
+c     &         , fea =__use_mpi__+__use_groups__+__use_softcore__)
 
 c
       if(deb_Path) write (*,*) 'ehal3c_ac',use_vdwshort,use_vdwlong
       ncall = ncall + 1
 
-      !fea    = __use_mpi__
-      !if (use_group) fea = fea + __use_groups__
-      !if (nmut.ne.0) fea = fea + __use_softcore__
+      fea    = __use_mpi__
+      if (use_group) fea = fea + __use_groups__
+      if (nmut.ne.0) fea = fea + __use_softcore__
       !if (use_lambdadyn) fea = fea + __use_lambdadyn__
 
 #ifdef _OPENACC
@@ -181,19 +181,15 @@ c
       if    (use_vdwshort) then
          mode = 'SHORTVDW'
          loff2= 0.0
-         !fea  = fea + __use_shortRange__
+         fea  = fea + __use_shortRange__
           lst =>  shortvlst
          nlst => nshortvlst
-         write(0,*) 'Multi Range feature unavailable in ehal3c routine'
-         __TINKER_FATAL__
       else if (use_vdwlong) then
          mode = 'VDW'
          loff2= (vdwshortcut-shortheal)**2
-         !fea  = fea + __use_longRange__
+         fea  = fea + __use_longRange__
           lst =>  vlst
          nlst => nvlst
-         write(0,*) 'Multi Range feature unavailable in ehal3c routine'
-         __TINKER_FATAL__
       else
          mode = 'VDW'
          loff2= 0.0
@@ -390,7 +386,7 @@ c
      &              ,na,nab,nb2p,nb2p_1,nbap,nbap_1
      &              ,vdw_nbl,b2pl,b2pl_1,bapl,bapl_1,abpl,abpl_1
      &              ,b_stat,b_rmid,load_nbl2mod
-      use potent    ,only: use_lambdadyn
+      use potent    ,only: use_lambdadyn,use_vdwshort,use_vdwlong
       use tinheader ,only: ti_p
       use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
       use utilcu    ,only: check_launch_kernel
@@ -416,7 +412,7 @@ c
       real(t_p)  rinv,vdwshortcut2,dt1lamb,dt2lamb
       character*10 mode
 c
-      if(deb_Path) write (*,*) 'ehal3c_cu'
+      if(deb_Path) write (*,*) 'ehal3c_cu',use_vdwshort,use_vdwlong
       def_stream = dir_stream
       xbeg  = xbegproc(rank+1)
       xend  = xendproc(rank+1)
@@ -430,9 +426,10 @@ c
       call load_nbl2mod(vdw_nbl)
  
       !set the coefficients for the switching function
-      mode = 'VDW'
+      mode = merge('SHORTVDW','VDW',use_vdwshort)
       call switch (mode)
-      vdwshortcut2 = (vdwshortcut-shortheal)**2
+      vdwshortcut2 = merge(0.0_ti_p,(vdwshortcut-shortheal)**2
+     &                    ,use_vdwshort)
       rinv    = 1.0_ti_p/(cut-off)
       !hal_Gs  = nvdwlocnlb_pair/4
       i       = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
@@ -455,7 +452,48 @@ c
 !$acc&    ,vcorrect_ik,vcorrect_scale,loc,jvdw,xredc,yredc,zredc
 !$acc&    ,radmin,radmin4,epsilon,epsilon4,dev
 !$acc&    )
-      call hal3_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
+      if (use_vdwshort) then
+!$acc host_data use_device(b2pl_1,bapl_1,abpl_1)
+        call hal3s_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
+     &             (xred,yred,zred,sgl_id,slc_id,loc_ired,b2pl_1,bapl_1
+     &             ,abpl_1,b_stat,b_rmid,grplist,cellv_jvdw
+     &             ,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred
+     &             ,d_x,d_y,d_z,ered_buff,vred_buff,nred_buff,lam_buff
+     &             ,nb2p_1,nbap_1,n,nbloc,na,nab
+     &             ,nvdwclass,radrule_i,epsrule_i
+     &             ,c0,c1,c2,c3,c4,c5,rinv,shortheal,ghal,dhal
+     &             ,cut2,cut,vdwshortcut2,vdwshortcut,off2,off
+     &             ,scexp,vlambda,scalpha,dt1lamb,dt2lamb,mut
+     &             ,use_lambdadyn,use_group
+     &             ,xbeg,xend,ybeg,yend,zbeg,zend,rank
+     &             ! Scaling Factor Params
+     &             ,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc
+     &             ,jvdw,xredc,yredc,zredc
+     &             ,radmin4,epsilon4,radmin,epsilon,dev
+     &             )
+!$acc end host_data
+        call check_launch_kernel(" hal3s_kcu ")
+      else if (use_vdwlong) then
+              call hal3l_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
+     &             (xred,yred,zred,sgl_id,slc_id,loc_ired,b2pl,bapl
+     &             ,abpl,b_stat,b_rmid,grplist,cellv_jvdw
+     &             ,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred
+     &             ,d_x,d_y,d_z,ered_buff,vred_buff,nred_buff,lam_buff
+     &             ,nb2p,nbap,n,nbloc,na,nab
+     &             ,nvdwclass,radrule_i,epsrule_i
+     &             ,c0,c1,c2,c3,c4,c5,rinv,shortheal,ghal,dhal
+     &             ,cut2,cut,vdwshortcut2,vdwshortcut,off2,off
+     &             ,scexp,vlambda,scalpha,dt1lamb,dt2lamb,mut
+     &             ,use_lambdadyn,use_group
+     &             ,xbeg,xend,ybeg,yend,zbeg,zend,rank
+     &             ! Scaling Factor Params
+     &             ,n_vscale,sizvc,vcorrect_ik,vcorrect_scale,loc
+     &             ,jvdw,xredc,yredc,zredc
+     &             ,radmin4,epsilon4,radmin,epsilon,dev
+     &             )
+        call check_launch_kernel(" hal3l_kcu ")
+      else
+        call hal3_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>
      &             (xred,yred,zred,sgl_id,slc_id,loc_ired,b2pl,bapl
      &             ,abpl,b_stat,b_rmid,grplist,cellv_jvdw
      &             ,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred
@@ -473,6 +511,7 @@ c
      &             ,radmin4,epsilon4,radmin,epsilon,dev
      &             )
       call check_launch_kernel(" hal3_kcu ")
+      endif
 !$acc end host_data
 
       call reduce_energy_action(ev,nev,ered_buff,def_queue)

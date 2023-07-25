@@ -36,9 +36,11 @@ c
       use utilgpu,only:prmem_requestm,rec_queue
       use mpi
       use sizes
+      use spectra
       implicit none
       integer i,j,istep
       integer iglob
+      real(r_p),save :: dip(3),dipind(3)
       real(r_p) dt,dt_2
       real(r_p) time0,time1
 c
@@ -144,6 +146,12 @@ c     make full-step temperature and pressure corrections
 c
       call temper   (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
+      if(ir) then
+        call compute_dipole(dip,dipind,full_dipole)
+!$acc update host(dip,dipind) async
+!$acc wait
+        call save_dipole_traj(dip,dipind)
+      endif
 c
 c     total energy is sum of kinetic and potential energies
 c

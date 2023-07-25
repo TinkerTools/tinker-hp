@@ -20,7 +20,7 @@ c     P. W. Atkins, "Physical Chemistry, 4th Edition", W. H. Freeman,
 c     New York, 1990; see section 24.2 for general discussion
 c
 c
-#include "tinker_precision.h"
+#include "tinker_macro.h"
       function maxwell (mass,temper)
       use erf_mod
       use random_mod
@@ -120,7 +120,7 @@ c
 !$acc end data
 
       if (check) then
-!$acc exit data delete(Rn) async
+!$acc exit data delete(Rn)
          deallocate(Rn)
       end if
 

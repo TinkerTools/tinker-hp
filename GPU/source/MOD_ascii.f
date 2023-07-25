@@ -91,4 +91,91 @@ c
       parameter (vertical=124)
       parameter (tilde=126)
       save
+
+      contains
+
+      function int_to_str(value,n_char_min) result(str)
+        IMPLICIT NONE
+        INTEGER, INTENT(in) :: value
+        INTEGER, INTENT(in), OPTIONAL :: n_char_min
+        CHARACTER(:), ALLOCATABLE :: str
+        INTEGER :: n_char
+        CHARACTER(10) :: n_char_char
+
+        if(value==0) then
+            n_char=1
+        else
+            n_char=int(log10(real(value)))+1
+        endif
+        if (present(n_char_min)) then
+          if(n_char<n_char_min) n_char=n_char_min
+        endif
+        !write(0,*) n_char
+        allocate(character(n_char) :: str)
+        write(n_char_char,'(i10.10)') n_char
+      ! write(0,*) n_char_char
+        write(str,'(i'//trim(n_char_char)//'.'//trim(n_char_char)//')') 
+     &     value
+      end function int_to_str
+
+      function str_to_bool(input) result(res)
+        character*(*), INTENT(IN) :: input
+        character*1 :: res
+        integer :: i,ntrue,nfalse
+        integer, parameter :: bool_size = 10
+        character*(bool_size) :: str,testval
+        character*(*), parameter :: true_vals='yes       '
+     &                                      //'y         '
+     &                                      //'true      '
+     &                                      //'t         '
+     &                                      //'.true.    '
+        character*(*), parameter :: false_vals='no        '
+     &                                       //'n         '
+     &                                       //'false     '
+     &                                       //'f         '
+     &                                       //'.false.   '
+
+        str = trim(input)
+        call lowcase(str)
+
+        res="U"
+
+        ntrue = len(true_vals)/bool_size
+        do i=1,ntrue
+          testval = true_vals((i-1)*bool_size+1:i*bool_size)
+          if(str==testval) then
+            res="T"
+            return
+          endif
+        enddo
+
+        nfalse = len(false_vals)/bool_size
+        do i=1,nfalse
+          testval = false_vals((i-1)*bool_size+1:i*bool_size)
+          if(str==testval) then
+            res="F"
+            return
+          endif
+        enddo
+
+      end function str_to_bool
+
+      function str_to_logical(input) result(res)
+        character*(*), INTENT(IN) :: input
+        logical :: res
+        character*1 :: bool
+
+        bool = str_to_bool(input)
+        if(bool=="T") then
+          res=.true.
+        else
+          res=.false.
+          if(bool=="U") then
+            write(0,*) "Warning: input is not a valid logical value"
+            write(0,*) "         input string: ",input
+          endif
+        endif
+
+      end function str_to_logical
+
       end

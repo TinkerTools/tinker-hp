@@ -76,6 +76,7 @@ c
       use inter
       use iounit
       use mdstuf
+      use mdstuf1
       use molcul
       use potent
       use mdstate
@@ -87,6 +88,7 @@ c
       integer,parameter:: d_prec= kind(1.0d0)
       integer istep,modstep
       integer period,freq
+      integer, save :: count=0
       real(r_p) dt,temp,pres
       real(r_p) etot,epot,ekin
       real(d_prec) pico,dens
@@ -96,6 +98,8 @@ c
       real(d_prec) kinfluct,kinfluct2
       real(d_prec) tfluct,pfluct,dfluct,vfluct
       real(d_prec) tfluct2,pfluct2,dfluct2,vfluct2
+      real(d_prec) tpistonfluct
+      real(d_prec) tpistonfluct2
       real(d_prec) etot_sum,etot2_sum
       real(d_prec) eint_sum,eint2_sum
       real(d_prec) etot2_ave
@@ -106,12 +110,18 @@ c
       real(d_prec) ekin_ave,ekin2_ave
       real(d_prec) temp_sum,temp2_sum
       real(d_prec) temp_ave,temp2_ave
+      real(d_prec) tpiston_sum,tpiston2_sum
+      real(d_prec) tpiston_ave,tpiston2_ave
       real(d_prec) pres_sum,pres2_sum
       real(d_prec) pres_ave,pres2_ave
       real(d_prec) dens_sum,dens2_sum
       real(d_prec) dens_ave,dens2_ave
       real(d_prec)  vol_sum, vol2_sum
       real(d_prec)  vol_ave, vol2_ave
+      real(d_prec)  box_sum(3), box2_sum(3)
+      real(d_prec)  box_ave(3), box2_ave(3)
+      real(d_prec)  stress_sum(3,3), stress2_sum(3,3)
+      real(d_prec)  stress_ave(3,3), stress2_ave(3,3)
       real(d_prec) buffer(18)
       logical display
       save etot_sum,etot2_sum
@@ -119,9 +129,23 @@ c
       save epot_sum,epot2_sum
       save ekin_sum,ekin2_sum
       save temp_sum,temp2_sum
+      save tpiston_sum,tpiston2_sum
       save pres_sum,pres2_sum
       save dens_sum,dens2_sum
       save  vol_sum, vol2_sum
+      save  box_sum, box2_sum
+      save  stress_sum, stress2_sum
+#ifdef SINGLE
+      character(1) :: edcim = '2'
+#else
+      character(1) :: edcim = '4'
+#endif
+      character(2) :: esize
+      character(5) :: f_ener
+
+      esize='14'
+      if (n>5d6) esize='17'
+      f_ener = 'f'//esize//'.'//edcim
 c
 c
 c     set number of steps for block averages of properties
@@ -146,6 +170,7 @@ c
 c     zero out summation variables for new averaging period
 c
       if (modstep.eq.1 .or. iprint.eq.1) then
+         count=0
          etot_sum  = 0.0_d_prec
          etot2_sum = 0.0_d_prec
          epot_sum  = 0.0_d_prec
@@ -156,20 +181,30 @@ c
          eint2_sum = 0.0_d_prec
          temp_sum  = 0.0_d_prec
          temp2_sum = 0.0_d_prec
+         tpiston_sum  = 0.0_d_prec
+         tpiston2_sum = 0.0_d_prec
          pres_sum  = 0.0_d_prec
          pres2_sum = 0.0_d_prec
          dens_sum  = 0.0_d_prec
          dens2_sum = 0.0_d_prec
          vol_sum   = 0.0_d_prec
          vol2_sum  = 0.0_d_prec
+         box_sum   = 0.0_d_prec
+         box2_sum  = 0.0_d_prec
+         stress_sum   = 0.0_d_prec
+         stress2_sum  = 0.0_d_prec
       end if
-
+      if(display) then
+        count=count+1
+        dens = (1.0d24/real(volbox,d_prec))
+     &          * (real(totmass,d_prec)/real(avogadro,d_prec))
+      endif
 c
 c     print energy, temperature and pressure for current step
 c
       if (rank.eq.0) then
         if (modstep.eq.0.or.display) then
-!$acc update host(etot,epot,ekin,temp,pres) async
+!$acc update host(etot,epot,ekin,temp,pres,stress) async
            if (.not.calc_e) then
    09         format(
      &        " -- ERROR -- mdstat ",/
@@ -182,62 +217,40 @@ c
         if (verbose) then
            if (modstep .eq. 1) then
               if (use_bounds .and. integrate.ne.'STOCHASTIC') then
-                 if (n>5d6) then
-                  if  (use_virial) then
-                  write (iout,11)
-   11             format (/,4x,'MD Step',9x,'E Total',6x,'E Potential',
-     &                      8x,'E Kinetic',7x,'Temp',7x,'Pres',/)
-                  else
-                  write (iout,13)
-   13             format (/,4x,'MD Step',9x,'E Total',6x,'E Potential',
-     &                      8x,'E Kinetic',7x,'Temp'/)
-                  end  if
-                 else
-                  if (use_virial) then
-                  write (iout,10)
-   10             format (/,4x,'MD Step',6x,'E Total',3x,'E Potential',
-     &                      5x,'E Kinetic',7x,'Temp',7x,'Pres',/)
-                  else
-                  write (iout,20)
-   20             format (/,4x,'MD Step',6x,'E Total',3x,'E Potential',
-     &                      5x,'E Kinetic',7x,'Temp',/)
-                  end  if
-                 end if
+                 write(iout,'(A)',advance="no") 
+     &                         "     MD Step"
+     &                       //"     E total"
+     &                       //"   E Potential"            
+     &                       //"     E Kinetic"
+     &                       //"       Temp"
+                 if(use_virial) then
+                   write(iout,'(A)',advance="no") 
+     &                         "       Pres"
+                 endif
+c                 if(isobaric) then
+c                   write(iout,'(A)',advance="no") 
+c     &                         "     Density"
+c     &                       //"      Volume"
+c                 endif
+                 write(iout,*)
               end if
            end if
            if (display) then
            if  (use_bounds .and. integrate.ne.'STOCHASTIC') then
 !$acc wait
-              if (n>5d6) then
-                 if (use_virial) then
-                 write (iout,33)  istep,etot,epot,ekin,temp,pres
-   33            format (i10,3f17.4,2f11.2)
-                 else
-                 write (iout,34)  istep,etot,epot,ekin,temp
-   34            format (i10,3f17.4,f11.2)
-                 end if
-              else
-                 if (use_virial) then
-                 write (iout,30)  istep,etot,epot,ekin,temp,pres
-                 !if(n.lt.5d4) write (iout,*) epot
-#ifdef SINGLE
-   30            format (i10,3f14.2,2f11.2)
-#else
-   30            format (i10,3f14.4,2f11.2)
-#endif
-                 else
-                 write (iout,31)  istep,etot,epot,ekin,temp
-#ifdef SINGLE
-   31            format (i10,3f14.2,f11.2)
-#else
-   31            format (i10,3f14.4,f11.2)
-#endif
-                 end if
-              end if
+               write(iout,'(i10,3'//f_ener//',f11.2)',advance="no")
+     &             istep,etot,epot,ekin,temp
+               if(use_virial) then
+                 write(iout,'(f11.2)',advance="no") pres
+               endif
+               !if(isobaric) then
+               !  write(iout,'(f12.4,f12.2)',advance="no") dens,volbox
+               !endif
+               write(iout,*)
            else
 !$acc wait
-              write (iout,40)  istep,etot,epot,ekin,temp
-   40         format (i10,3f14.4,f11.2)
+              write (iout,'(i10,3f14.4,f11.2)')  
+     &             istep,etot,epot,ekin,temp
            end if
            end if
         end if
@@ -273,8 +286,8 @@ c
            end if
         end if
         if (verbose.and.modstep.eq.0) then
-           etot_ave = etot_sum / real(freq,d_prec)
-           etot2_ave = etot2_sum / real(freq,d_prec)
+           etot_ave = etot_sum / real(count,d_prec)
+           etot2_ave = etot2_sum / real(count,d_prec)
            fluctuate2 = etot2_ave - etot_ave**2
            if (fluctuate2 .gt. 0.0_ti_p) then
               etot_std = sqrt(fluctuate2)
@@ -293,8 +306,8 @@ c
         epot2_sum = epot2_sum + real(epot,d_prec)**2
         end if
         if (verbose.and.modstep.eq.0) then
-           epot_ave = epot_sum / real(freq,d_prec)
-           epot2_ave = epot2_sum / real(freq,d_prec)
+           epot_ave = epot_sum / real(count,d_prec)
+           epot2_ave = epot2_sum / real(count,d_prec)
            potfluct2 = epot2_ave - epot_ave**2
            if (potfluct2 .gt. 0.0_ti_p) then
               potfluct = sqrt(potfluct2)
@@ -315,8 +328,8 @@ c
         ekin2_sum = ekin2_sum + real(ekin,d_prec)**2
         end if
         if (verbose.and.modstep.eq.0) then
-           ekin_ave = ekin_sum / real(freq,d_prec)
-           ekin2_ave = ekin2_sum / real(freq,d_prec)
+           ekin_ave = ekin_sum / real(count,d_prec)
+           ekin2_ave = ekin2_sum / real(count,d_prec)
            kinfluct2 = ekin2_ave - ekin_ave**2
            if (kinfluct2 .gt. 0.0_ti_p) then
               kinfluct = sqrt(kinfluct2)
@@ -336,8 +349,8 @@ c
            eint2_sum = eint2_sum + real(einter,d_prec)**2
            end if
            if (verbose.and.modstep.eq.0) then
-              eint_ave = eint_sum / real(freq,d_prec)
-              eint2_ave = eint2_sum / real(freq,d_prec)
+              eint_ave = eint_sum / real(count,d_prec)
+              eint2_ave = eint2_sum / real(count,d_prec)
               intfluct2 = eint2_ave - eint_ave**2
               if (intfluct2 .gt. 0.0_ti_p) then
                  intfluct = sqrt(intfluct2)
@@ -357,8 +370,8 @@ c
         temp2_sum = temp2_sum + real(temp,d_prec)**2
         end if
         if (verbose.and.modstep.eq.0) then
-           temp_ave = temp_sum / real(freq,d_prec)
-           temp2_ave = temp2_sum / real(freq,d_prec)
+           temp_ave = temp_sum / real(count,d_prec)
+           temp2_ave = temp2_sum / real(count,d_prec)
            tfluct2 = temp2_ave - temp_ave**2
            if (tfluct2 .gt. 0.0_ti_p) then
               tfluct = sqrt(tfluct2)
@@ -369,6 +382,26 @@ c
   110      format (' Temperature',7x,f15.2,'   Kelvin',6x,
      &                '(+/-',f8.2,'  )')
         end if
+
+        if(use_piston .or. use_piston_save) then
+          if (display) then
+          tpiston_sum = tpiston_sum + (temppiston-kelvin)
+          tpiston2_sum = tpiston2_sum + (temppiston -kelvin)**2
+          end if
+          if (verbose.and.modstep.eq.0) then
+             tpistonfluct2 = (tpiston2_sum  
+     &          - tpiston_sum**2/real(count,d_prec))
+     &              /(real(count-1,d_prec))
+             tpiston_ave = kelvin + tpiston_sum / real(count,d_prec)
+             if (tpistonfluct2 .gt. 0.0_ti_p) then
+                tpistonfluct = sqrt(tpistonfluct2)
+             else
+                tpistonfluct = 0.0_ti_p
+             end if
+             write (iout,'(A,12x,f15.2,A,6x,A,f10.2,A)')  ' T_piston'
+     &            ,tpiston_ave,' Kelvin' ,'(+/-',tpistonfluct,')'
+          end if
+        endif
 c
 c       compute the average pressure and its fluctuation
 c
@@ -378,8 +411,8 @@ c
            pres2_sum = pres2_sum + real(pres,d_prec)**2
         end if
            if (verbose.and.modstep.eq.0) then
-              pres_ave = pres_sum / real(freq,d_prec)
-              pres2_ave = pres2_sum / real(freq,d_prec)
+              pres_ave = pres_sum / real(count,d_prec)
+              pres2_ave = pres2_sum / real(count,d_prec)
               pfluct2 = pres2_ave - pres_ave**2
               if (pfluct2 .gt. 0.0_ti_p) then
                  pfluct = sqrt(pfluct2)
@@ -396,14 +429,12 @@ c
 c       compute the average density and its fluctuation
 c
         if (display) then
-           dens = (1.0d24/real(volbox,d_prec))
-     &          * (real(totmass,d_prec)/real(avogadro,d_prec))
            dens_sum = dens_sum + dens
            dens2_sum = dens2_sum + dens**2
         end if
            if (verbose.and.modstep.eq.0) then
-              dens_ave = dens_sum / real(freq,d_prec)
-              dens2_ave = dens2_sum / real(freq,d_prec)
+              dens_ave = dens_sum / real(count,d_prec)
+              dens2_ave = dens2_sum / real(count,d_prec)
               dfluct2 = dens2_ave - dens_ave**2
               if (dfluct2 .gt. 0.0_ti_p) then
                  dfluct = sqrt(dfluct2)
@@ -417,12 +448,23 @@ c
 c
 c       compute the average volume and its fluctuation
 c
-        if (display.and.isobaric) then
+        if (display.and.(isobaric.or.isobaric_save)) then
             vol_sum =  vol_sum + volbox*1d-3
            vol2_sum = vol2_sum +(volbox*1d-3)**2
+           if (anisotrop) then
+             stress_sum = stress_sum + stress
+             stress2_sum = stress2_sum + stress**2
+             box_sum(1) = box_sum(1) + xbox
+             box_sum(2) = box_sum(2) + ybox
+             box_sum(3) = box_sum(3) + zbox
+             box2_sum(1) = box2_sum(1) + xbox**2
+             box2_sum(2) = box2_sum(2) + ybox**2
+             box2_sum(3) = box2_sum(3) + zbox**2
+           endif
         end if
-           if (verbose.and.isobaric.and.modstep.eq.0) then
-               vol_ave =  vol_sum / real(freq,d_prec)
+           if (verbose.and.(isobaric.or.isobaric_save)
+     &         .and.modstep.eq.0) then
+              vol_ave =  vol_sum / real(freq,d_prec)
               vol2_ave = vol2_sum / real(freq,d_prec)
               vfluct2  = vol2_ave - vol_ave**2
               if (vfluct2 .gt. 0.0_ti_p) then
@@ -433,6 +475,19 @@ c
               write (iout,140)  vol_ave,vfluct
   140         format (' Volume',14x,f15.4,' nm^3',8x,
      &                   '(+/-',f10.4,')')
+              if (anisotrop) then
+                box_ave =  box_sum / real(freq,d_prec)
+                box2_ave = box2_sum / real(freq,d_prec)
+                write (iout,'(A,6x,3f15.4,A)') ' Box parameters'
+     &                  ,box_ave,'  Angstrom'  
+                stress_ave =  stress_sum / real(freq,d_prec)
+                stress2_ave = stress2_sum / real(freq,d_prec)
+                write (iout,'(A,A,2x,6f15.4,A)') ' Stress Tensor '
+     &                  ,'(xx yy zz xy yz xz)'
+     &                  ,stress_ave(1,1),stress_ave(2,2),stress_ave(3,3)
+     &                  ,stress_ave(1,2),stress_ave(2,3),stress_ave(1,3)
+     &                  ,' Atmosphere'
+              endif
            end if
            if (verbose.and.isobaric.and.mtc_nacc.ne.0.and.modstep.eq.0)
      &        then

@@ -30,8 +30,8 @@ c
       integer nbond,nbondloc
       integer  , pointer :: ibnd(:,:)
       integer :: winibnd
-      real(t_p), pointer :: bk(:),bl(:)
-      integer :: winbk,winbl
+      real(t_p), pointer :: bk(:),bl(:),ba(:)
+      integer :: winbk,winbl,winba
 
 #ifdef USE_NVSHMEM_CUDA
       !d_*     device data type container for nvshmem feature
@@ -39,7 +39,7 @@ c
       integer nbond_pe
       type(i2dDPC),device,pointer::d_ibnd(:)
       type(i2dDPC),   allocatable::c_ibnd(:)
-      type(rDPC)  ,device,pointer::d_bk(:),d_bl(:)
-      type(rDPC)  ,   allocatable::c_bk(:),c_bl(:)
+      type(rDPC)  ,device,pointer::d_bk(:),d_bl(:),d_ba(:)
+      type(rDPC)  ,   allocatable::c_bk(:),c_bl(:),c_ba(:)
 #endif
       end

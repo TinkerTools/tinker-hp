@@ -106,10 +106,10 @@ endif
 MODSAM = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o\
    MOD_action.o MOD_analyz.o MOD_angang.o MOD_angle.o\
    MOD_angpot.o MOD_angtor.o MOD_ani.o MOD_argue.o MOD_ascii.o MOD_atmlst.o\
-   MOD_atoms.o MOD_atmtyp.o MOD_bath.o MOD_bitor.o\
+   MOD_atoms.o MOD_atmtyp.o MOD_bath.o MOD_beads.o MOD_bitor.o\
    MOD_bndpot.o MOD_bond.o MOD_bound.o MOD_boxes.o\
    MOD_cell.o MOD_charge.o MOD_chgpot.o MOD_chunks.o\
-   MOD_couple.o MOD_cutoff.o MOD_dcdio.o MOD_deriv.o MOD_divcon.o\
+   MOD_couple.o MOD_cutoff.o MOD_dcdio.o MOD_deconvolution.o MOD_deriv.o MOD_divcon.o\
    MOD_domdec.o MOD_energi.o MOD_ewald.o MOD_fft.o\
    MOD_fields.o MOD_files.o MOD_freeze.o MOD_group.o\
    MOD_improp.o MOD_imptor.o MOD_inform.o MOD_inter.o MOD_interfaces.o\
@@ -121,16 +121,17 @@ MODSAM = MOD_tinheader.o MOD_nvtx.o MOD_sizes.o MOD_memory.o\
    MOD_kurybr.o MOD_kvdwpr.o MOD_kvdws.o MOD_langevin.o\
    MOD_linmin.o
 MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
+   MOD_commstuffpi.o \
    MOD_minima.o MOD_molcul.o MOD_moldyn.o MOD_mplpot.o\
    MOD_mutant.o MOD_neigh.o MOD_opbend.o MOD_opdist.o\
-   MOD_output.o MOD_orthogonalize.o MOD_params.o MOD_pitors.o MOD_pme.o MOD_pme.o\
+   MOD_output.o MOD_orthogonalize.o MOD_params.o MOD_pitors.o MOD_pme.o\
    MOD_polar.o MOD_polgrp.o MOD_polpot.o MOD_erf.o\
-   MOD_potent.o MOD_precis.o MOD_ptable.o MOD_random.o MOD_resdue.o\
-   MOD_ring.o MOD_scales.o MOD_shunt.o MOD_strbnd.o\
+   MOD_potent.o MOD_precis.o MOD_ptable.o MOD_qtb.o MOD_random.o MOD_resdue.o\
+   MOD_ring.o MOD_scales.o MOD_shunt.o MOD_spectra.o MOD_strbnd.o\
    MOD_strtor.o MOD_timestat.o MOD_titles.o MOD_torpot.o\
    MOD_tors.o MOD_tortor.o MOD_units.o MOD_uprior.o\
    MOD_urey.o MOD_urypot.o MOD_usage.o MOD_vdwpot.o MOD_virial.o\
-   MOD_vdw.o MOD_utils.o MOD_utilcomm.o MOD_utilvec.o MOD_utilgpu.o\
+   MOD_vdw.o MOD_utilbaoab.o MOD_utilbaoabpi.o MOD_utils.o MOD_utilcomm.o MOD_utilvec.o MOD_utilgpu.o\
 	MOD_subDeriv.o MOD_subMemory.o MOD_subInform.o MOD_subAtoms.o\
    MOD_vec.o MOD_vec_elec.o MOD_vec_vdw.o\
    MOD_vec_list.o MOD_vec_mpole.o MOD_vec_polar.o MOD_vec_charge.o\
@@ -138,7 +139,7 @@ MODSNZ = MOD_math.o MOD_mamd.o MOD_msmd.o MOD_merck.o MOD_mpole.o MOD_mdstuf.o\
 
 OBJSAM = active.o analysis.o analyze.o angles.o\
    attach.o bar.o basefile.o beeman.o bicubic.o\
-   baoab.o baoabrespa.o baoabrespa1.o bbk.o\
+   baoab.o baoabrespa.o baoabrespa1.o baoabpi.o baoabrespapi.o bbk.o\
    bitors.o bonds.o bounds.o calendar.o\
    chkpole.o chkpolegpu.o chkring.o chkxyz.o cholesky.o cluster.o\
    command.o control.o cspline.o\
@@ -182,16 +183,16 @@ OBJSAM = active.o analysis.o analyze.o angles.o\
    kstrbnd.o kstrtor.o kscalfactor.o ksmd.o ktors.o ktortor.o\
    kurey.o kvdw.o lattice.o lbfgs.o\
    linalg.o maxwell.o mdinit.o mdrest.o\
-   mdsave.o mdstat.o mechanic.o minimize.o\
+   mdsave.o mdsavebeads.o mdstat.o mdstatpi.o mechanic.o minimize.o\
    molecule.o mpistuff.o mutate.o
 
 OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o newinduce_pmegpu.o\
    newinduce_pme2.o newinduce_pme2vec.o newinduce_pme2gpu.o newinduce_group.o\
    newinduce_shortreal.o newinduce_shortrealgpu.o\
    nextarg.o nexttext.o nspline.o number.o\
-   numeral.o orthogonalize.o openend.o optsave.o plumed.o pmestuff.o pmestuffgpu.o\
+   numeral.o orthogonalize.o openend.o optsave.o pimd.o plumed.o pmestuff.o pmestuffgpu.o\
    precise.o pressure.o prime.o promo.o promoamd.o promosmd.o prmkey.o\
-   prtdyn.o prtxyz.o readdyn.o\
+   prtdyn.o prtxyz.o radial.o readdyn.o\
    readprm.o readxyz.o respa.o respa1.o\
    rings.o rotpole.o rotpolegpu.o search.o sort.o\
    rattle.o shakeup.o\
@@ -202,9 +203,9 @@ OBJSNZ = nblist.o nblistvec.o nblistgpu.o newinduce_pme.o newinduce_pmevec.o new
 MODS   = $(MODSAM) $(MODSNZ)
 OBJS   = $(OBJSAM) $(OBJSNZ)
 
-all: libtinker analyze dynamic testgrad minimize bar
+all: libtinker analyze dynamic testgrad minimize bar pimd radial
 
-everything: libtinker analyze dynamic testgrad bar
+everything: libtinker analyze dynamic testgrad bar pimd radial
 
 
 #  Installation program target
@@ -279,6 +280,19 @@ bar: libtinker
 	$(RunF77) $(FFLAGS) $(FFLAGS2) -o bar.x bar.o $(LIBS) $(LDLIBS)
 	mv bar.x $(prefix)/$@$(prog_suffix)
 #
+pimd: libtinker
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o pimd.x pimd.o $(LIBS) $(LDLIBS)
+	mv pimd.x $(prefix)/$@$(prog_suffix)
+#
+radial: libtinker
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o radial.x radial.o $(LIBS) $(LDLIBS)
+	mv radial.x $(prefix)/$@$(prog_suffix)
+#
+radial.OK: $(MODS) $(OBJS)
+	$(RunF77) $(FFLAGS) $(FFLAGS2) -o radial.x radial.o $(LIBS) $(LDLIBS)
+	strip radial.x
+	mv radial.x $(prefix)/$@
+#
 libtinker: $(MODS) $(OBJS)
 	./library_host.make
  
@@ -291,6 +305,10 @@ MOD_subInform.o: MOD_inform.o
 
 #
 ## Generics Rules
+MOD_spectra.o: MOD_spectra.f
+	$(RunF77) $(FFLAGS) -c $*.f $(FFTDECOMP)
+MOD_qtb.o: MOD_qtb.f
+	$(RunF77) $(FFLAGS) -c $*.f $(FFTDECOMP)
 promo%.o: promo%.f
 	$(RunF77) $(FFLAGS) $(ADDFLAGS) -c promo$*.f
 %.o: %.f

@@ -56,6 +56,7 @@ c
      &         ,pbcWrapTemp(:),bufbegpolesave(:),globpolesave(:)
       integer  ,parameter::PERIOD_INBOX_ATOMS=500
       character*7 ext
+      type(dcdinfo_t), save :: dcdinfo
       character*240 endfile,xyzfile,velfile,frcfile,indfile,exten
       character*3 numberreps
 c
@@ -498,6 +499,14 @@ c
       write (iout,60)  idump
    60 format (' Frame Number',13x,i10)
 c
+c     if multiple replicas, then number the traj outputs
+c
+      exten=''
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+        exten='_reps'//numberreps
+      end if
+c
 c     update the information needed to restart the trajectory
 c
       if (mod(istep,idumpdyn).eq.0) call prtdyn
@@ -505,19 +514,11 @@ c
 c     save coordinates to an archive or numbered structure file, or dcd file
 c
       if (dcdio) then
-        call dcdio_write(istep,dt)
+        call dcdio_write(dcdinfo,istep,dt,exten)
       else
         ixyz = freeunit ()
         if (archive) then
-           xyzfile = filename(1:leng)
-c
-c          if multiple replicas, then number the traj outputs
-c
-           if (use_reps) then
-             write(numberreps, '(i3.3)') rank_reploc
-             exten='_reps'//numberreps
-             xyzfile = filename(1:leng)//trim(exten)
-           end if
+           xyzfile = filename(1:leng)//trim(exten)
            call suffix (xyzfile,'arc','old')
 
            inquire (file=xyzfile,exist=exist)
@@ -527,22 +528,16 @@ c
               open (unit=ixyz,file=xyzfile,status='new')
            end if
         else
-           if (use_reps) then
-             write(numberreps, '(i3.3)') rank_reploc
-             exten='_reps'//numberreps
-             xyzfile = filename(1:leng)//trim(exten)
-     &                            //'.'//ext(1:lext)
-           else
-             xyzfile = filename(1:leng)//'.'//ext(1:lext)
-           end if
            if (f_mdsave) then
               if (n_fwriten.eq.-1) then
-              xyzfile = filename(1:leng)//'_err'
+              xyzfile = filename(1:leng)//trim(exten)//'_err'
               else
-              xyzfile = filename(1:leng)//'_'//ext(1:lext)
+              xyzfile = filename(1:leng)//trim(exten)
+     &                       //'_'//ext(1:lext)
               end if
            else
-             xyzfile = filename(1:leng)//'.'//ext(1:lext)
+             xyzfile = filename(1:leng)//trim(exten)
+     &                       //'.'//ext(1:lext)
            end if
            call version (xyzfile,'new')
            open (unit=ixyz,file=xyzfile,status='new')
@@ -563,7 +558,7 @@ c
       if (velsave) then
          ivel = freeunit ()
          if (archive) then
-            velfile = filename(1:leng)
+            velfile = filename(1:leng)//trim(exten)
             call suffix (velfile,'vel','old')
             inquire (file=velfile,exist=exist)
             if (exist) then
@@ -572,7 +567,8 @@ c
                open (unit=ivel,file=velfile,status='new')
             end if
          else
-            velfile = filename(1:leng)//'.'//ext(1:lext)//'v'
+            velfile = filename(1:leng)//trim(exten)
+     &           //'.'//ext(1:lext)//'v'
             call version (velfile,'new')
             open (unit=ivel,file=velfile,status='new')
          end if
@@ -592,7 +588,7 @@ c
       if (frcsave) then
          ifrc = freeunit ()
          if (archive) then
-            frcfile = filename(1:leng)
+            frcfile = filename(1:leng)//trim(exten)
             call suffix (frcfile,'frc','old')
             inquire (file=frcfile,exist=exist)
             if (exist) then
@@ -619,7 +615,7 @@ c
       if (uindsave .and. use_polar) then
          iind = freeunit ()
          if (archive) then
-            indfile = filename(1:leng)
+            indfile = filename(1:leng)//trim(exten)
             call suffix (indfile,'uind','old')
             inquire (file=indfile,exist=exist)
             if (exist) then
@@ -628,7 +624,8 @@ c
                open (unit=iind,file=indfile,status='new')
             end if
          else
-            indfile = filename(1:leng)//'.'//ext(1:lext)//'u'
+            indfile = filename(1:leng)//trim(exten)
+     &                 //'.'//ext(1:lext)//'u'
             call version (indfile,'new')
             open (unit=iind,file=indfile,status='new')
          end if

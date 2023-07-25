@@ -86,7 +86,8 @@ c
 !$acc&     present(x,y,z,loc,use,iang,angleglob,anat,
 #endif
 !$acc&     ak,afld,angtypI,grplist,wgrp,atmType,aMDwattype,deW1aMD,
-!$acc&     dea,ea,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&     dea,ea,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,
+!$acc&     fmat_ps,dfmat_ps)
 !$acc&     reduction(+:ea,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
 !$acc&     private(fgrp)
       do iangle = 1, nangleloc
@@ -129,7 +130,7 @@ c
      &                 ,angunit,cang,pang,sang,qang,fgrp
      &                 ,use_group,use_polymer,angtypii,x,y,z,afld
      &                 ,ea,e,dea,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz
-     &                 ,g_vzz,tver,tfea)
+     &                 ,g_vzz,tver,tfea,fmat_ps,dfmat_ps)
             else
                call ker_angle_plan(i,ia,ib,ic,id,loc,ideal,force
      &                 ,angunit,cang,pang,sang,qang,fgrp

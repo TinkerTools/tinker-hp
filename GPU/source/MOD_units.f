@@ -51,6 +51,8 @@ c     efreq       conversion from Hartree to cm-1
 c     coulomb     conversion from electron**2/Ang to kcal/mole
 c     debye       conversion from electron-Ang to Debyes
 c     prescon     conversion from kcal/mole/Ang**3 to Atm
+c     hbar_planck Planck's constant in g*Ang**2/ps**2/mole*ps
+c     cm1         conversion from ps-1 to cm-1
 c
 c
 #include "tinker_macro.h"
@@ -59,12 +61,13 @@ c
       implicit none
       real(r_p) avogadro,lightspd
       real(r_p) boltzmann,gasconst
-      real(r_p) emass,planck
+      real(r_p) emass,planck,hbar_planck
       real(r_p) joule,convert
       real(r_p) bohr,hartree
       real(r_p) evolt,efreq
       real(r_p) coulomb,debye
       real(r_p) prescon
+      real(r_p) cm1
       parameter (avogadro = 6.02214129d+23)
       parameter (lightspd = 2.99792458d-2)
       parameter (boltzmann= 0.831446215_re_p)
@@ -80,5 +83,7 @@ c
       parameter (coulomb  = 332.063714_re_p)
       parameter (debye    = 4.80321_re_p)
       parameter (prescon  = 6.85684112d+4)
+      parameter (hbar_planck=(planck*1.d11*avogadro)/(2d0*acos(-1.d0)))
+      parameter (cm1=1d0/lightspd/(2d0*acos(-1.d0)))
       save
       end

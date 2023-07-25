@@ -2628,7 +2628,7 @@ c          print*,vxx,vxy,eprec,ep
 c          print*,comput_norm(qgrid2in_2d,
 c     &       2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),2)
 c         end if
-c         call mpi_barrier(MPI_COMM_WORLD,j)
+c         call mpi_barrier(COMM_TINKER,j)
 c      end do
 
       call timer_exit( timer_eprecip )

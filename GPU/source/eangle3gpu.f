@@ -79,7 +79,8 @@ c
 !$acc&         present(x,y,z,loc,use,iang,angleglob
 #endif
 !$acc&    ,anat,ak,afld,angtypI,grplist,wgrp,atmType,aMDwattype
-!$acc&    ,ea,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) async
+!$acc&    ,ea,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+!$acc&    ,fmat_ps,dfmat_ps) async
 !$acc&         reduction(+:ea,nea)
       do iangle = 1, nangleloc
          i     = angleglob(iangle)
@@ -123,7 +124,7 @@ c
      &                 ,angunit,cang,pang,sang,qang,fgrp
      &                 ,use_group,use_polymer,angtypii,x,y,z,afld
      &                 ,ea,e,dea,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz
-     &                 ,g_vzz,tver,tfea)
+     &                 ,g_vzz,tver,tfea,fmat_ps,dfmat_ps)
  
               !increment the total bond angle bending energy
                nea = nea + 1

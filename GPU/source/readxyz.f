@@ -105,8 +105,7 @@ c
       call prmem_request(zold,n)
       call prmem_request(type,n)
       call prmem_request(tag,n,config=mhostonly)
-      use_wrap = app_id.eq.dynamic_a.or.app_id.eq.dynamic_rep_a.or.
-     &           app_id.eq.pimd_a
+      use_wrap = app_id.eq.dynamic_a.or.app_id.eq.pimd_a
       if (use_wrap) then
          call prmem_request(pbcWrap,n)
          call c_f_pointer(c_loc(pbcWrap),pbcWrapIdx,[4*n])

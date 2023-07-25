@@ -972,7 +972,7 @@ c
       else
         nprocloc = nproc
         rankloc  = rank
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
       end if
 c
 c     return if the Ewald coefficient is zero

@@ -105,6 +105,7 @@ c
  14   format('no cores assigned to compute reciprocal space ',
      &       'contribution')
       if (use_pmecore) then
+!$acc update device(use_pmecore)
          if (nrec.eq.0) then
            if (rank.eq.0) write(iout,14)
             call fatal
@@ -2209,7 +2210,17 @@ c
 c     subroutine ddpme3dnpt : rescale geomtry of the domains and recompute the related quantities
 c     for communications
 c
-      subroutine ddpme3dnpt(scale,istep)
+      subroutine ddpme3dnpt(scaleiso,istep)
+      real(r_p) scaleiso
+      integer istep
+      real(r_p) scale(3)
+
+      scale(:)=scaleiso
+      call ddpme3dnptaniso(scale,istep)
+
+      end subroutine ddpme3dnpt
+
+      subroutine ddpme3dnptaniso(scale,istep)
       use cutoff
       use domdec
       use neigh
@@ -2223,7 +2234,7 @@ c
       real(t_p) mbuf,vbuf,torquebuf,neigbuf,bigbuf
       real(t_p) mshortbuf,vshortbuf,torqueshortbuf,bigshortbuf
       real(t_p) dist
-      real(r_p) scale
+      real(r_p) scale(3)
       integer, allocatable :: bufcount(:),buffer(:,:)
       integer, allocatable :: reqsend(:),reqrec(:)
 cc

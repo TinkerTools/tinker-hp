@@ -430,7 +430,7 @@ cnew  enddo
         ggold(k) = sum(res(:,k,:)*zr(:,k,:))
       end do
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,MPI_SUM,
-     $     MPI_COMM_WORLD,req1,ierr)
+     $     COMM_TINKER,req1,ierr)
 c
 c     MPI : begin sending
 c
@@ -486,7 +486,7 @@ c
           gg(k) = sum(pp(:,k,1:npoleloc)*h(:,k,1:npoleloc))
         end do
         call MPI_IALLREDUCE(MPI_IN_PLACE,gg(1),nrhs,MPI_TPREC,MPI_SUM,
-     $    MPI_COMM_WORLD,req2,ierr)
+     $    COMM_TINKER,req2,ierr)
         call MPI_WAIT(req2,status,ierr)
         do k = 1, nrhs
           if (gg(k).eq.zero) return
@@ -517,9 +517,9 @@ cnew    end do
 cnew    end do
         end do
         call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_TPREC,
-     $    MPI_SUM,MPI_COMM_WORLD,req3,ierr)
+     $    MPI_SUM,COMM_TINKER,req3,ierr)
         call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_TPREC,MPI_SUM,
-     $    MPI_COMM_WORLD,req4,ierr)
+     $    COMM_TINKER,req4,ierr)
         call MPI_WAIT(req3,status,ierr)
         call MPI_WAIT(req4,status,ierr)
         resnrm = zero
@@ -760,7 +760,7 @@ c
         end do
 c
         call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,
-     $    MPI_SUM,MPI_COMM_WORLD,reqnorm,ierr)
+     $    MPI_SUM,COMM_TINKER,reqnorm,ierr)
         if (dodiis) then
           ind = 0
           do i = 1, npoleloc
@@ -776,7 +776,7 @@ c
 c         Compute Pulay's Matrix and extrapolate
 c
           call diis(ndismx,3*nrhs*npoleloc,xdiis,ediis,
-     $      bmat,nmat,reqdiis,MPI_COMM_WORLD)
+     $      bmat,nmat,reqdiis,COMM_TINKER)
 c
           do i = 1, 2*nmat-3
             call MPI_WAIT(reqdiis(i),status,ierr)
@@ -996,7 +996,7 @@ c
       if (use_pmecore) then
         commloc = comm_dir
       else
-        commloc = MPI_COMM_WORLD
+        commloc = COMM_TINKER
       end if
 c
       allocate (buffer(3,nrhs,max(npoleloc,1),n_send1))
@@ -1064,7 +1064,7 @@ cnon
 cnon  if (use_pmecore) then
 cnon    commloc = comm_dir
 cnon  else
-cnon    commloc = MPI_COMM_WORLD
+cnon    commloc = COMM_TINKER
 cnon  end if
 cnon
 cnon  allocate (buffer(3,nrhs,max(npoleloc,1),n_sendshort1))

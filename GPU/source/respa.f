@@ -55,18 +55,29 @@ c
       use virial
       use improp
       use mpi
+      use spectra
       implicit none
       integer i,j,k,iglob
       integer istep
       logical save_pred
       real(r_p) dt,dt_2,dt_in
       real(r_p) dta,dta_2
+      real(r_p), allocatable, save :: dip(:,:),dipind(:,:)
+      logical  ,save:: f_in=.true.
 c
 c     set some time values for the dynamics integration
 c
       dt_2  = 0.5_re_p * dt
       dta   = dt / dshort
       dta_2 = 0.5_re_p * dta
+
+      if (f_in) then
+         if (ir) then
+            allocate(dip(3,nalt),dipind(3,nalt))
+!$acc enter data create(dip,dipind)
+         end if
+         f_in = .false.
+      end if
 
       if (use_ml_embedding) use_mlpot=.FALSE.
 c
@@ -138,7 +149,7 @@ c
          dt_in = merge(dt_in,dta_2,stepfast.ne.nalt) ! level 0
          call integrate_vel(derivs,aalt,dt_in)
 c
-c     use Newton's second law to get fast-evolving accelerations;
+c     use Newtons second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion
 c
          if (use_rattle) then
@@ -156,6 +167,12 @@ c
                viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
             end do; end do
          end if
+
+         if(ir .and. stepfast<nalt) then
+c           call rotpolegpu
+            call compute_dipole(dip(:,stepfast)
+     &          ,dipind(:,stepfast),.FALSE.)
+         endif
       end do
 c
 c     Reassign the particules that have changed of domain
@@ -263,6 +280,13 @@ c
       call temper (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
       call pressure2 (epot,temp)
+      if(ir) then
+        call compute_dipole(dip(:,nalt)
+     &       ,dipind(:,nalt),full_dipole)
+!$acc update host(dip,dipind) async
+!$acc wait
+        call save_dipole_respa(dip,dipind)
+      endif
 c
 c     total energy is sum of kinetic and potential energies
 c

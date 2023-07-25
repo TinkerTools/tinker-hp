@@ -137,8 +137,8 @@ pp_flags_cuda_f_    += $(pp_flags_common_)
 # -----------------
 legacy_flags        := off
 cxx_std             := 14
-compute_capability  := 60,70,80
-cuda_version        := 11.0
+compute_capability  := 60,70
+cuda_version        := 11.7
 device_c_comp       := -ccbin $(RunCXX)
 
 # -- Nvidia Device's compute capability
@@ -316,6 +316,8 @@ endif
 LDLIBS                 = -lm -L$(LIB_FFTDECOMP) -L$(LIB_CPP)
 ifeq ($(add_mkl__),yes)
    LDLIBS             += -L$(LIB_MKL)
+else
+   LDLIBS             += $(LIB_LAPACK)
 endif
 
 dev_ldlibs            :=

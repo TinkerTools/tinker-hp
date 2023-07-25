@@ -94,7 +94,7 @@ c
 c
 #ifdef _OPENACC
          if (.not.host_rand_platform) then
-            call normalgpu(samplevec(1),nfree)
+            call normalgpu(samplevec,nfree)
 !$acc parallel loop async present(pick1,samplevec)
             do i = 2, nfree
                pick1 = pick1 + real(samplevec(i)**2,r_p)

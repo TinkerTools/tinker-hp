@@ -153,7 +153,7 @@ c
          if (keyword(1:15) .eq. 'PME-PROCS ') then
             nrec = 0
             use_pmecore = .true.
-!$acc update device(use_pmecore)
+c!$acc update device(use_pmecore)
             read (string,*,err=90,end=90)  nrec
    90       continue
             if (nrec.eq.0) then
@@ -183,6 +183,7 @@ c
 c
 c     read number of replicas in multiple replicas run
 c
+      use_reps = .false.
       do i = 1, nkey
          next = 1
          record = keyline(i)
@@ -191,9 +192,45 @@ c
          string = record(next:240)
          if (keyword(1:9) .eq. 'REPLICAS ') then
             read (string,*,err=110,end=110)  nreps
+            use_reps = .true.
   110       continue
          end if
       end do
 c
       return
       end
+
+      subroutine init_keys()
+      use iounit
+      use files
+      implicit none
+      integer ixyz
+      integer freeunit
+      logical exist
+      character*240 xyzfile
+c
+c
+c     try to get a filename from the command line arguments
+c
+      call nextarg (xyzfile,exist)
+      if (exist) then
+         call basefile (xyzfile)
+         call suffix (xyzfile,'xyz','old')
+         inquire (file=xyzfile,exist=exist)
+      end if
+c
+c     ask for the user specified input structure filename
+c
+      do while (.not. exist)
+   10    format(/,' Enter Cartesian Coordinate File Name :  ',$)
+   20    format (a240)
+         write (iout,10)
+         read (input,20) xyzfile
+         call basefile (xyzfile)
+         call suffix (xyzfile,'xyz','old')
+         inquire (file=xyzfile,exist=exist)
+      end do
+
+      keys_already_read = .true.
+
+      end subroutine init_keys

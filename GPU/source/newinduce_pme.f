@@ -831,7 +831,7 @@ c
 c
         end if
         call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,
-     $    MPI_SUM,MPI_COMM_WORLD,reqnorm,ierr)
+     $    MPI_SUM,COMM_TINKER,reqnorm,ierr)
         if (rank.le.ndir-1) then
           if (dodiis) then
             ind = 0

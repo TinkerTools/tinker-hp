@@ -37,6 +37,7 @@ c
       use moldyn
       use mpi
       use random_mod
+      use spectra
       use timestat
       use tinMemory,only: prmem_requestm
       use tinheader,only: re_p
@@ -49,17 +50,19 @@ c
       implicit none
       integer  ,intent(in):: istep
       real(r_p),intent(in):: dt
+      real(r_p),save :: dip(3),dipind(3)
       integer i,j,iglob
       real(r_p) dt_2
 
       dt_2 = 0.5_re_p*dt
 
       if (istep.eq.1) then
+!$acc enter data create(dip, dipind)
          if (use_piston) pres = atmsph
          call set_langevin_thermostat_coeff(dt)
       end if
 
-      if (use_piston) call apply_b_piston(dt_2,pres)
+      !if (use_piston) call apply_b_piston(dt_2,pres,stress)
 c
 c     find quarter step velocities and half step positions via BAOAB recursion
 c
@@ -71,7 +74,7 @@ c
       end if
 c
       if (use_piston) then
-         call apply_a_piston(dt_2,istep,.true.)
+         call apply_a_piston(dt_2,-1,.true.)
          call apply_o_piston(dt)
       else
          call integrate_pos( dt_2 )
@@ -80,7 +83,7 @@ c
       if (use_rattle) call rattle (dt_2)
       if (use_rattle) call rattle2(dt_2)
 c
-      call apply_langevin_thermostat
+      call apply_langevin_thermostat(dt)
 c
       if (use_rattle) call rattle2(dt_2)
       if (use_rattle) call save_atoms_pos
@@ -88,7 +91,7 @@ c
 c     find full step positions via BAOAB recursion
 c
       if(use_piston) then
-         call apply_a_piston(dt_2,istep,.TRUE.)
+         call apply_a_piston(dt_2,-1,.TRUE.)
       else
          call integrate_pos( dt_2 )
       end if
@@ -108,6 +111,7 @@ c     communicate positions
 c
       call commpos
       call commposrec
+      call reCast_position
 c
       if (.not.ftot_l) then
          call prmem_requestm(derivs,3,nbloc,async=.true.)
@@ -138,7 +142,7 @@ c
 c
 c     aMD/GaMD contributions
 c
-      call aMD (derivs,epot)
+      call aMD (derivs,epot)      
 c
 c     Debug print information
 c
@@ -159,6 +163,12 @@ c
 c
       call temper   (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
+      if(ir) then
+        call compute_dipole(dip,dipind,full_dipole)
+!$acc update host(dip,dipind) async
+!$acc wait
+        call save_dipole_traj(dip,dipind)
+      endif
 c
 c     make half-step temperature and pressure corrections
 c
@@ -180,9 +190,10 @@ c
       call mdrestgpu (istep)
 
       if (use_piston) then
-!$acc update host(pres) async
+!$acc update host(pres,stress) async
 !$acc wait
-         call apply_b_piston(dt_2,pres)
+         call apply_b_piston(dt,pres,stress)
+         call ddpme3dnpt(1.0_re_p,istep)
       endif
 
       end

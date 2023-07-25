@@ -44,10 +44,15 @@ c
       real(r_p) gammapiston,masspiston,extvolold
       real(r_p) extvol,vextvol,aextvol
       real(r_p) temppiston
+      real(r_p) extbox(3) 
+      real(r_p) vextbox(3)
+      real(r_p) aextbox(3)
       logical use_piston
       logical isothermal
       logical isobaric
       logical anisotrop
+      logical :: isobaric_save=.FALSE.
+      logical :: use_piston_save=.FALSE.
       character*9 volscale
       character*11 barostat
       character*11 thermostat

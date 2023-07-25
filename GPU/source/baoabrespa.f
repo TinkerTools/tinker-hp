@@ -35,6 +35,7 @@ c
       use atmtyp
       use atomsMirror
       use bath
+      use boxes,only: volbox
       use cutoff
       use domdec
       use deriv,only:info_forces,cBond,cNBond,ftot_l,comm_forces
@@ -43,7 +44,6 @@ c
       use freeze
       use group
       use inform
-      use langevin
       use mdstuf
       use mdstuf1
       use moldyn
@@ -59,11 +59,16 @@ c
       use utilgpu
       use utilbaoab
       use virial
+      use spectra
+      use utilbaoab
       implicit none
-      integer i,j,k,istep,iglob
-      real(r_p) dt,dt_x,factor
+      real(r_p), intent(in) :: dt
+      integer, intent(in) :: istep
+      integer i,j,k,iglob
+      real(r_p) dt_x,factor
       real(r_p) dta,dta_2,dt_2
       real(r_p) part1,part2
+      real(r_p), allocatable, save :: dip(:,:),dipind(:,:)
       real(8) time0,time1
       logical save_mlpot
       logical save_pred 
@@ -75,6 +80,8 @@ c
       dta_2 = 0.5_re_p * dta
 
       if (istep.eq.1) then
+         allocate(dip(3,nalt),dipind(3,nalt))
+!$acc enter data create(dip,dipind)
          if (use_piston) pres = atmsph
          call set_langevin_thermostat_coeff(dta)
       end if
@@ -82,47 +89,27 @@ c
 c
 c     find quarter step velocities and half step positions via baoab recursion
 c
-      if (use_piston) call apply_b_piston(dt_2,pres)
-
       call integrate_vel( a,dt_2 )
 c
       if (use_rattle) call rattle2(dt_2)
       if (use_rattle) call save_atoms_pos
-c
-c     respa inner loop
-c
       !initialize virial from fast-evolving potential energy terms
       if (use_virial) call zero_virial(viralt)
 
       if (use_piston) then
-         call apply_a_piston(dt_2,istep,.false.)
+         call apply_a_piston(dt_2,-1,.false.)
          call apply_o_piston(dt)
          if (use_rattle) call rattle (dta_2)
          if (use_rattle) call rattle2(dta_2)
-
-         call reassignrespa(nalt,nalt)
-         call commposrespa(.true.)
-         if (.not.ftot_l) then
-            call prmem_requestm(derivs,3,nbloc,async=.true.)
-            call set_to_zero1m(derivs,3*nbloc,rec_queue)
-         end if
-         call mechanicsteprespa(istep,.true.)
-         call allocsteprespa(.true.)
-         call gradfast (ealt,derivs)
-         call comm_forces( derivs,cBond )
-         if (deb_Energy)call info_energy(rank)
-         if (deb_Force) call info_forces(cBond)
       end if
 c
-c     find fast-evolving velocities and positions via BAOAB recursion
+c     respa inner loop
 c
       do stepfast = 1, nalt
 c
-        if (use_piston.and.stepfast.eq.1) then
-           call integrate_vel( derivs,aalt,dta_2 )
-        else
-           call integrate_vel( aalt,dta_2 )
-        end if
+c     find fast-evolving velocities and positions via BAOAB recursion
+c
+        call integrate_vel( aalt,dta_2 )
 c
         if (use_rattle) call rattle2 (dta_2)
         if (use_rattle) call save_atoms_pos
@@ -132,7 +119,7 @@ c
         if (use_rattle) call rattle (dta_2)
         if (use_rattle) call rattle2(dta_2)
 
-        call apply_langevin_thermostat
+        call apply_langevin_thermostat(dta)
 c
         if (use_rattle) call rattle2(dta_2)
         if (use_rattle) call save_atoms_pos
@@ -192,15 +179,20 @@ c
               viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
            end do; end do
         end if
+
+        if (ir .and. stepfast<nalt) then
+c          call rotpolegpu
+           call compute_dipole(dip(:,stepfast)
+     &         ,dipind(:,stepfast),.FALSE.)
+        end if
       end do
 
       if (use_piston) then
          if (use_rattle)  call save_atoms_pos
-         call apply_a_piston(dt_2,istep,.false.)
+         call apply_a_piston(dt_2,-1,.false.)
          if (use_rattle) call rattle (dta_2)
          if (use_rattle) call rattle2(dta_2)
       end if
-
 c
 c     Reassign the particules that have changed of domain
 c
@@ -295,6 +287,13 @@ c
       call temper   (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
       call pressure2 (epot,temp)
+      if(ir) then
+        call compute_dipole(dip(:,nalt)
+     &       ,dipind(:,nalt),full_dipole)
+!$acc update host(dip,dipind) async
+!$acc wait
+        call save_dipole_respa(dip,dipind)
+      endif
 c
 c     total energy is sum of kinetic and potential energies
 c
@@ -311,9 +310,10 @@ c
       call mdstat (istep,dt,etot,epot,eksum,temp,pres)
 
       if (use_piston) then
-!$acc update host(pres) async
+!$acc update host(pres,stress) async
 !$acc wait
-         call apply_b_piston(dt_2,pres)
+         call apply_b_piston(dt,pres,stress)
+         call ddpme3dnpt(1.0_re_p,istep)
       end if
 
       end

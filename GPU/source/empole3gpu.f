@@ -218,9 +218,11 @@ c
       def_queue = rec_queue
       if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
      &   then
+         if(use_mrec) then
          call timer_enter( timer_rec )
          call emrecipgpu
          call timer_exit( timer_rec,quiet_timers )
+         endif
       end if
 c
 c     Finalize async overlapping
@@ -291,7 +293,7 @@ c
 #ifdef _OPENACC
      &         altopt = 0
 #else
-     &         ,altopt = 1
+     &         altopt = 1
 #endif
      &         )
 c
@@ -811,13 +813,14 @@ c
          write(*,'(a)') trim(rtami)
       end if
 
-      if (use_mpoleshortreal.or.use_mpolelong) then
-         __TINKER_FATAL__
-      end if
 c
 c     set conversion factor, cutoff and switching coefficients
 c
-      mode   = 'EWALD'
+      if(use_mpoleshortreal) then
+        mode='SHORTEWALD'
+      else
+        mode   = 'EWALD'
+      endif
       call switch (mode)
 
       f      = electric / dielec
@@ -879,7 +882,8 @@ c
 
       else
 
-      call emreal3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+      if(use_mpoleshortreal) then
+        call emreal3s_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
      &    (ipole_s,pglob_s,loc_s
      &    ,ieblst_s,eblst_s(start1)
      &    ,npolelocnlb,npolelocnlb2_pair,npolebloc,n
@@ -891,7 +895,36 @@ c
      &    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
      &    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale
      &    )
-      call check_launch_kernel("emreal3_kcu")
+        call check_launch_kernel("emreal3s_kcu")
+      elseif(use_mpolelong) then
+        call emreal3l_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &    (ipole_s,pglob_s,loc_s
+     &    ,ieblst_s,eblst_s(start1)
+     &    ,npolelocnlb,npolelocnlb2_pair,npolebloc,n
+     &    ,x_s,y_s,z_s,rpole
+     &    ,shortheal,lcut,loff2,off2,f,alsq2,alsq2n,aewald
+     &    ,use_group,grplist,wgrp,use_lambdadyn,elambda,mutInt
+     &    ,use_chgflx_
+     &    ,pot,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff
+     &    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale
+     &    )
+        call check_launch_kernel("emreal3l_kcu")
+      else
+        call emreal3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+     &    (ipole_s,pglob_s,loc_s
+     &    ,ieblst_s,eblst_s(start1)
+     &    ,npolelocnlb,npolelocnlb2_pair,npolebloc,n
+     &    ,x_s,y_s,z_s,rpole
+     &    ,shortheal,lcut,loff2,off2,f,alsq2,alsq2n,aewald
+     &    ,use_group,grplist,wgrp,use_lambdadyn,elambda,mutInt
+     &    ,use_chgflx_
+     &    ,pot,dem,tem,ered_buff,vred_buff,lam_buff,nred_buff
+     &    ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+     &    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z,n_mscale
+     &    )
+        call check_launch_kernel("emreal3_kcu")
+      endif
 
       end if
 
@@ -986,7 +1019,7 @@ c
       else
         nprocloc = nproc
         rankloc  = rank
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
       end if
       f = electric / dielec
 c

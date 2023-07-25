@@ -21,9 +21,11 @@ c
       module virial
       implicit none
       logical:: use_virial=.false.
+      logical:: virnum=.false.
 
       real(r_p) vir(3,3),virsave(3,3)
      &         ,viramdD(3,3)
+      real(r_p) dedv
       real(r_p) g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
      &         ,g_svxx,g_svxy,g_svxz,g_svyy,g_svyz,g_svzz
 

@@ -1,6 +1,9 @@
+MOD_beads.o: MOD_dcdio.o
 MOD_couple.o: MOD_sizes.o
+MOD_commstuffpi.o: MOD_beads.o MOD_qtb.o
 MOD_fft.o: MOD_sizes.o
 MOD_fields.o: MOD_sizes.o
+MOD_files.o: MOD_iounit.o
 MOD_group.o: MOD_sizes.o
 MOD_kanang.o: MOD_sizes.o
 MOD_katoms.o: MOD_sizes.o
@@ -8,6 +11,16 @@ MOD_kchrge.o: MOD_sizes.o
 MOD_kcpen.o: MOD_sizes.o
 MOD_krepl.o: MOD_sizes.o
 MOD_params.o: MOD_sizes.o
+MOD_qtb.o: MOD_atmtyp.o MOD_atoms.o MOD_bath.o MOD_domdec.o MOD_langevin.o\
+           MOD_math.o MOD_moldyn.o MOD_sizes.o MOD_usage.o MOD_units.o MOD_random.o\
+           MOD_utilgpu.o MOD_subAtoms.o MOD_mdstuf.o MOD_spectra.o MOD_beads.o
+MOD_spectra.o: MOD_atmtyp.o MOD_atoms.o MOD_bath.o MOD_domdec.o MOD_langevin.o\
+           MOD_math.o MOD_moldyn.o MOD_sizes.o MOD_usage.o MOD_units.o MOD_random.o\
+           MOD_utilgpu.o MOD_subAtoms.o MOD_mdstuf.o MOD_boxes.o MOD_charge.o MOD_mpole.o MOD_atmlst.o\
+           MOD_utils.o MOD_uprior.o
+MOD_utilbaoab.o:
+MOD_utilbaoabpi.o: MOD_beads.o MOD_deriv.o MOD_langevin.o MOD_utils.o MOD_cell.o \
+					 MOD_utilgpu.o MOD_couple.o MOD_commstuffpi.o MOD_spectra.o MOD_qtb.o
 MOD_utilgpu.o: MOD_couple.o MOD_cell.o MOD_polgrp.o MOD_polpot.o MOD_sizes.o MOD_vdwpot.o
 MOD_utils.o: MOD_sizes.o
 MOD_utilvec.o: MOD_polgrp.o MOD_polpot.o MOD_vdwpot.o
@@ -56,11 +69,10 @@ efld0_directgpu.o: tmatxb_pmecu.o efld0_cpencu.o
 tmatxb_pmegpu.o: MOD_utilcomm.o tmatxb_pmecu.o tmatxb_pme_cpen.cu.o
 pmestuffgpu.o: pmestuffcu.o
 endif
-
 MOD_vec.o: MOD_sizes.o MOD_couple.o MOD_polgrp.o
 MOD_subAtoms.o: MOD_atoms.o MOD_utilgpu.o
 MOD_subMemory.o: MOD_memory.o MOD_atoms.o MOD_vdw.o
-MOD_subDeriv.o: MOD_deriv.o MOD_atoms.o MOD_domdec.o MOD_neigh.o MOD_utilgpu.o
+MOD_subDeriv.o: MOD_deriv.o MOD_atoms.o MOD_domdec.o MOD_neigh.o MOD_utilgpu.o MOD_beads.o
 MOD_subInform.o: MOD_inform.o MOD_neigh.o MOD_usage.o MOD_utilgpu.o MOD_vdw.o
 MOD_precompute_polegpu.o: MOD_atoms.o MOD_atmlst.o MOD_couple.o MOD_chgpot.o MOD_domdec.o MOD_inform.o MOD_mpole.o MOD_mplpot.o MOD_neigh.o MOD_polar.o MOD_utilgpu.o MOD_sizes.o MOD_vdwpot.o
 active.o:
@@ -75,10 +87,16 @@ beeman.o:
 bicubic.o:
 baoab.o:
 baoab_util.o: MOD_atoms.o MOD_atmtyp.o MOD_bath.o MOD_domdec.o MOD_freeze.o MOD_moldyn.o MOD_usage.o
+baoabpi.o: MOD_utilbaoabpi.o
 baoabpiston.o: MOD_utilgpu.o
 baoabrespa.o: MOD_utilgpu.o MOD_utilbaoab.o
+baoabrespapi.o: MOD_utilbaoabpi.o
 baoabrespa1.o: MOD_utilgpu.o MOD_utilbaoab.o
 bbk.o:
+beads.o: MOD_beads.o MOD_atoms.o MOD_bitor.o MOD_bond.o MOD_boxes.o MOD_charge.o MOD_cutoff.o MOD_dcdio.o MOD_domdec.o MOD_energi.o MOD_freeze.o MOD_inform.o MOD_improp.o MOD_imptor.o\
+					MOD_math.o MOD_mdstuf.o MOD_molcul.o MOD_moldyn.o MOD_mpole.o MOD_neigh.o\
+					MOD_opbend.o MOD_opdist.o MOD_pitors.o MOD_potent.o MOD_polar.o MOD_strbnd.o MOD_tors.o\
+					MOD_strtor.o MOD_timestat.o MOD_tortor.o MOD_units.o MOD_uprior.o MOD_urey.o MOD_usage.o MOD_utilgpu.o MOD_utils.o MOD_vdw.o MOD_virial.o
 bitors.o: MOD_utilgpu.o
 bonds.o: MOD_neigh.o MOD_vdw.o MOD_utilgpu.o
 bounds.o: MOD_neigh.o
@@ -98,7 +116,8 @@ dcflux.o:
 dcflux.gpu.o: MOD_cflux.o
 diis.o:
 domdecstuff.o:
-dcdio.o:
+dcdio.o: MOD_dcdio.o MOD_subAtoms.o MOD_boxes.o MOD_files.o MOD_inform.o  MOD_iounit.o\
+					MOD_domdec.o MOD_atoms.o
 dcinduce_pme.o: MOD_neigh.o MOD_pme.o
 dcinduce_pme2.o: MOD_neigh.o MOD_pme.o
 dcinduce_pmegpu.o: MOD_neigh.o MOD_pme.o MOD_utilgpu.o
@@ -209,7 +228,7 @@ getxyz.o:
 gradient.o: MOD_utilgpu.o
 image.o:
 initatom.o:
-initial.o: MOD_neigh.o MOD_utilgpu.o
+initial.o: MOD_beads.o MOD_neigh.o MOD_utilgpu.o
 initprm.o:
 initres.o:
 invert.o:
@@ -231,11 +250,15 @@ kscalfactor.o: MOD_neigh.o MOD_utilgpu.o MOD_vdw.o
 kstrbnd.o: MOD_utilgpu.o
 kstrtor.o: MOD_utilgpu.o
 ktortor.o: MOD_utilgpu.o
-kurey.o: MOD_utilgpu.o
+kurey.o: MOD_utilgpu.o MOD_urey.o MOD_urypot.o MOD_kurybr.o
 kvdw.o: MOD_neigh.o MOD_utilgpu.o MOD_vdw.o
 lattice.o: MOD_pme.o
 linalg.o: MOD_utilgpu.o
-mdinit.o: MOD_neigh.o MOD_utilgpu.o
+maxwell.o: MOD_atoms.o MOD_domdec.o MOD_langevin.o MOD_tinheader.o MOD_random.o MOD_units.o
+mdinit.o: MOD_beads.o MOD_neigh.o MOD_qtb.o MOD_utilgpu.o
+mdinitbead.o:  MOD_beads.o
+mdsavebeads.o: MOD_beads.o
+mdstatpi.o: MOD_beads.o
 mechanic.o: MOD_neigh.o MOD_sizes.o MOD_utilgpu.o MOD_vdw.o
 minimize.o: MOD_utilgpu.o
 molecule.o: MOD_sizes.o
@@ -250,9 +273,11 @@ newinduce_pme2gpu.o: MOD_pme.o MOD_sizes.o MOD_utilgpu.o
 newinduce_shortreal.o: MOD_neigh.o MOD_pme.o MOD_utilcomm.o
 newinduce_shortrealgpu.o: MOD_pme.o MOD_sizes.o MOD_utilcomm.o MOD_utilgpu.o
 orthogonalize.o: MOD_orthogonalize.o MOD_utilgpu.o
+pimd.o: MOD_beads.o MOD_commstuffpi.o
 pmestuff.o: MOD_pme.o MOD_sizes.o MOD_utilgpu.o
 pmestuffgpu.o: MOD_neigh.o MOD_sizes.o MOD_pme.o MOD_utilgpu.o
 prmkey.o: MOD_neigh.o MOD_vdw.o
+prtdynbeads.o: MOD_beads.o
 respa.o:MOD_utilgpu.o
 respa1.o: MOD_utilgpu.o
 rotpolegpu.o: MOD_pme.o MOD_utilgpu.o

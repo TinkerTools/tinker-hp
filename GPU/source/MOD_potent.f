@@ -158,7 +158,7 @@ c
       logical use_OSRW
 
       logical fuse_chglj
-      logical fuse_bonded
+      logical fuse_bonded, disable_fuse_bonded
 
       logical PotentialAll
       logical PotentialAmoeba,PotentialAmoeba18

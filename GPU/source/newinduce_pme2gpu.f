@@ -562,7 +562,8 @@ c
       use domdec
       use ewald
       use iounit
-      use inform    ,only: deb_Path,abort,minmaxone,app_id,dynamic_a
+      use inform    ,only: deb_Path,abort,minmaxone
+     &              ,app_id,dynamic_a,pimd_a
       use inducepcg_mod
       use interfaces,only: tmatxb_pmegpu,pcg_a,pcg_aRec,pcg_b
      &              ,pcg_newDirection
@@ -1052,7 +1053,7 @@ c
  10   continue
 
       ! Save and Check Convergence Iteration Index
-      if (app_id.eq.dynamic_a) then
+      if (app_id.eq.dynamic_a.or.app_id.eq.pimd_a) then
       sameIter = merge(0,sameIter+1,lastIter.ne.it)
       lastIter = it
       exitlast = polprt.eq.0.and.sameIter.gt.25

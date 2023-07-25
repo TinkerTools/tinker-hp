@@ -16,7 +16,11 @@ c
 #include "tinker_macro.h"
       module langevin
       implicit none
-      real(t_p) gamma
+      logical :: use_noselangevin
+      logical :: use_noselangevin_massive
+      real(r_p) gamma
+      real(r_p), allocatable :: gamma_friction(:)
+      real(r_p) nose,nose_mass
       !DIR$ ATTRIBUTES ALIGN:64 :: Rn
-      real(t_p), allocatable :: Rn(:,:)
+      real(t_p), allocatable :: Rn(:,:),noses(:,:)
       end

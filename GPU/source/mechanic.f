@@ -648,6 +648,7 @@ c
       use polpot     ,only: use_thole, use_dirdamp
       use utilgpu
       use sizes
+      use beads, only: centroid_recip
       implicit none
       integer devtyp,devtyp1
       enum,bind(C)

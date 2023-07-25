@@ -16,9 +16,10 @@ c
 #else                
      &               ,e,dea
 #endif               
-     &               ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,tver,tfea)
+     &               ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,tver,tfea
+     &               ,fmat_ps,dfmat_ps)
         use angpot   ,only: ANG_HARMONIC,ANG_LINEAR,ANG_FOURIER
-     &               , ANG_IN_PLANE
+     &               , ANG_IN_PLANE, ANG_PS, c5z_ps, idx_ps
         use math     ,only: radian
         use tinheader,only: ti_p
         implicit none
@@ -39,10 +40,13 @@ c
         real(r_p),intent(inout):: dea(3,*),ea
      &           , g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
 #endif
-        integer   grd,ene,act,vir,gamd,grp,plm
+        real(t_p),intent(inout):: fmat_ps(15,3,*),dfmat_ps(15,3,*)
+        integer   grd,ene,act,vir,gamd,grp,plm,j
         real(t_p) xia,yia,zia,xib,yib,zib,xic,yic,zic,xab,yab,zab
-     &           ,xcb,ycb,zcb,rab2,rcb2,xp,yp,zp,rp,dot,cosine,angle1
-     &           ,dt,dt2,dt3,dt4,factor,sine,deddt,fold
+     &           ,xcb,ycb,zcb,rab2,rcb2,rab,rcb,xp,yp,zp,rp,dot,cosine
+     &           ,angle1,r_e,x1,x2,x3,drab,drcb,gaussterm
+     &           ,dgaussdrab,dgaussdrcb,term,dtermdrab,dtermdrcb
+     &           ,dt,dt2,dt3,dt4,factor,sine,deddt,fold,dedrab,dedrcb
      &           ,terma,termc,dedxia,dedyia,dedzia
      &           ,dedxib,dedyib,dedzib,dedxic,dedyic,dedzic
         parameter(
@@ -85,7 +89,9 @@ c
            rp     = sqrt(xp*xp + yp*yp + zp*zp)
            rp     = max(rp,0.000001)
            dot    = xab*xcb + yab*ycb + zab*zcb
-           cosine = dot / sqrt(rab2*rcb2)
+           rab = sqrt(rab2)
+           rcb = sqrt(rcb2)
+           cosine = dot / (rab*rcb)
            cosine = min(1.0,max(-1.0,cosine))
            angle1 = radian * acos(cosine)
 c
@@ -101,11 +107,15 @@ c
               deddt = angunit * force * dt * radian
      &          * (2.0 + 3.0_ti_p*cang*dt + 4.0_ti_p*qang*dt2
      &                    + 5.0_ti_p*pang*dt3 + 6.0_ti_p*sang*dt4)
+              dedrab = 0.0_ti_p
+              dedrcb = 0.0_ti_p
            else if (angtypI .eq. ANG_LINEAR) then
               factor = 2.0_ti_p * angunit * radian**2
               sine   = sqrt(1.0_ti_p-cosine*cosine)
               e      = factor * force * (1.0_ti_p+cosine)
               deddt  = -factor * force * sine
+              dedrab = 0.0_ti_p
+              dedrcb = 0.0_ti_p
            else if (angtypI .eq. ANG_FOURIER) then
               fold   = afld(i)
               factor = 2.0_ti_p * angunit * (radian/fold)**2
@@ -113,6 +123,73 @@ c
               sine   = sin((fold*angle1-ideal)/radian)
               e      = factor * force * (1.0_ti_p+cosine)
               deddt  = -factor * force * fold * sine
+              dedrab = 0.0_ti_p
+              dedrcb = 0.0_ti_p
+           elseif (angtypI .eq. ANG_PS) then
+              r_e = afld(i)
+              x3 = cosine - cos(ideal/radian)
+              sine = sin(angle1/radian)
+              drab = rab - r_e
+              drcb = rcb - r_e 
+              gaussterm = exp(-force*(drab**2+drcb**2))
+              dgaussdrab = -2.0_ti_p*force*drab*gaussterm
+              dgaussdrcb = -2.0_ti_p*force*drcb*gaussterm
+              x1 = drab/r_e
+              x2 = drcb/r_e
+              fmat_ps(1,1,i)=1.0_ti_p
+              fmat_ps(1,2,i)=1.0_ti_p
+              fmat_ps(1,3,i)=1.0_ti_p
+              dfmat_ps(1,1,i)=0.0_ti_p
+              dfmat_ps(1,2,i)=0.0_ti_p
+              dfmat_ps(1,3,i)=0.0_ti_p
+!$acc loop seq
+              do j=2,15
+                fmat_ps(j,1,i)=fmat_ps(j-1,1,i)*x1
+                fmat_ps(j,2,i)=fmat_ps(j-1,2,i)*x2
+                fmat_ps(j,3,i)=fmat_ps(j-1,3,i)*x3
+                !deriv with respect to rab
+                dfmat_ps(j,1,i)=dfmat_ps(j-1,1,i)*x1
+     &               + fmat_ps(j-1,1,i)/r_e
+                !deriv with respect to rcb
+                dfmat_ps(j,2,i)=dfmat_ps(j-1,2,i)*x2 
+     &              + fmat_ps(j-1,2,i)/r_e
+                !deriv with respect to angle
+                dfmat_ps(j,3,i)=dfmat_ps(j-1,3,i)*x3 
+     &              - fmat_ps(j-1,3,i)*sine
+              enddo
+              e=0.0_ti_p
+              deddt=0._ti_p
+              dedrab=0._ti_p
+              dedrcb=0._ti_p
+!$acc loop seq
+              do j=2,245
+                term=fmat_ps(idx_ps(j,1),1,i)
+     &                    *fmat_ps(idx_ps(j,2),2,i) 
+     &               +fmat_ps(idx_ps(j,2),1,i)
+     &                    *fmat_ps(idx_ps(j,1),2,i)
+                dtermdrab=
+     &              dfmat_ps(idx_ps(j,1),1,i)
+     &                     *fmat_ps(idx_ps(j,2),2,i) 
+     &             +dfmat_ps(idx_ps(j,2),1,i)
+     &                     *fmat_ps(idx_ps(j,1),2,i)
+                dtermdrcb=
+     &              fmat_ps(idx_ps(j,1),1,i)
+     &                     *dfmat_ps(idx_ps(j,2),2,i) 
+     &             +fmat_ps(idx_ps(j,2),1,i)
+     &                     *dfmat_ps(idx_ps(j,1),2,i)
+
+                e=e+c5z_ps(j)*term*fmat_ps(idx_ps(j,3),3,i)
+                deddt=deddt+c5z_ps(j)*term
+     &              *dfmat_ps(idx_ps(j,3),3,i)
+                dedrab=dedrab+c5z_ps(j)
+     &              *dtermdrab*fmat_ps(idx_ps(j,3),3,i)
+                dedrcb=dedrcb+c5z_ps(j)
+     &              *dtermdrcb*fmat_ps(idx_ps(j,3),3,i)
+              enddo
+              deddt = deddt*gaussterm
+              dedrab = dedrab*gaussterm + e*dgaussdrab
+              dedrcb = dedrcb*gaussterm + e*dgaussdrcb
+              e =  e*gaussterm ! + c5z_ps(1)
            end if
 c
 c     scale the interaction based on its group membership
@@ -120,6 +197,8 @@ c
            if (use_group.and.IAND(tfea,grp).NE.0) then
               e     =  e    * fgrp
               deddt = deddt * fgrp
+              if (dedrab .ne. 0.0_ti_p) dedrab = dedrab * fgrp
+              if (dedrcb .ne. 0.0_ti_p) dedrcb = dedrcb * fgrp
            end if
 c
 c     increment the total bond angle energy and derivatives
@@ -148,6 +227,25 @@ c
               dedxib = -dedxia - dedxic
               dedyib = -dedyia - dedyic
               dedzib = -dedzia - dedzic
+              if (dedrab .ne. 0.0_ti_p) then
+                term = dedrab/rab
+                dedxia = dedxia + term * xab
+                dedxib = dedxib - term * xab
+                dedyia = dedyia + term * yab
+                dedyib = dedyib - term * yab
+                dedzia = dedzia + term * zab
+                dedzib = dedzib - term * zab
+              end if
+
+              if (dedrcb .ne. 0.0_ti_p) then
+                term = dedrcb/rcb
+                dedxic = dedxic + term * xcb
+                dedxib = dedxib - term * xcb
+                dedyic = dedyic + term * ycb
+                dedyib = dedyib - term * ycb
+                dedzic = dedzic + term * zcb
+                dedzib = dedzib - term * zcb
+              end if
 #ifdef TINKER_CUF
               call atomic_add_f1 ( deax(ib),dedxib )
               call atomic_add_f1 ( deay(ib),dedyib )

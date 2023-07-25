@@ -161,7 +161,7 @@ c     MPI : move in buffer
 c
 c     MPI : begin sending
 c
-      do i = 1, nrec_send
+      do i = 1, nrec_send 
          tag = nprocloc*prec_send(i) + rankloc+1
          call MPI_ISEND(buffers,3*nlocrec,MPI_RPREC,prec_send(i)
      $       ,tag,commloc,reqsend(i),ierr)
@@ -190,7 +190,7 @@ c     !MPI : move in global arrays
       call reCast_position
 
       ! Wait for sending requests
-      do i = 1, nrec_send
+      do i = 1, nrec_send 
         call MPI_WAIT(reqsend(i),status,ierr)
       end do
 
@@ -422,6 +422,7 @@ c
      &             ,quiet_timers
       use tinheader,only: ti_eps
       use mpi
+      use qtb, only: qtb_thermostat, reassignqtb
       implicit none
       integer i
       integer iproc,ierr,iglob
@@ -438,6 +439,9 @@ c
       integer, allocatable :: glob1(:)
       integer rankloc,commloc,nprocloc,proc,j,jglob
       integer nloc1
+      integer nloc_save,max_atoms_recv,max_atoms_send
+      integer, allocatable :: iglob_send(:,:), iglob_recv(:,:)
+      integer, allocatable :: n_data_send(:), n_data_recv(:)
 #if (defined(SINGLE)||defined(MIXED))
       parameter(eps1 = 1d1*ti_eps, eps2 = 1d3*ti_eps)
 #else
@@ -518,6 +522,10 @@ c
       buflen4 = 0
       allocate (bufbeg4(nprocloc))
       bufbeg4 = 0
+      allocate(n_data_send(0:nneig_send))
+      n_data_send(:)=0
+      allocate(n_data_recv(nneig_recep))
+      n_data_recv(:)=0
 c
       do iproc = 1, nneig_recep
         proc = pneig_recep(iproc)
@@ -535,10 +543,12 @@ c
       do iproc = 1, nneig_recep
         proc = pneig_recep(iproc)
         call MPI_WAIT(reqrec(iproc),status,ierr)
+        n_data_recv(iproc)=buflen4(proc+1)
       end do
       do iproc = 1, nneig_send
         proc = pneig_recep(iproc)
         call MPI_WAIT(reqsend(iproc),status,ierr)
+        n_data_send(iproc)=buflen3(proc+1)
       end do
 c
       bufbeg4(pneig_recep(1)+1) = 1
@@ -562,10 +572,15 @@ c
         call MPI_IRECV(buffer(1,bufbeg4(proc+1)),10*buflen4(proc+1),
      $       MPI_RPREC,proc,tag,COMM_TINKER,reqrec(i),ierr)
       end do
+
+      max_atoms_send=maxval(n_data_send)
+      allocate(iglob_send(nloc,0:nneig_send))
+      iglob_send(:,:)=0
       do i = 1, nneig_send
         proc = pneig_send(i)
         do j = 0, buflen3(proc+1)-1
           jglob = buf3(bufbeg3(proc+1)+j)
+          iglob_send(j+1,i)=jglob
           buffers(1,bufbeg3(proc+1)+j) = x(jglob)
           buffers(2,bufbeg3(proc+1)+j) = y(jglob)
           buffers(3,bufbeg3(proc+1)+j) = z(jglob)
@@ -591,11 +606,16 @@ c
         proc = pneig_send(i)
         call MPI_WAIT(reqsend(i),status,ierr)
       end do
+
+      max_atoms_recv=maxval(n_data_recv)
+      allocate(iglob_recv(max_atoms_recv,nneig_recep))
+      iglob_recv(:,:)=0
       do i = 1, nneig_recep
         proc = pneig_recep(i)
         call MPI_WAIT(reqrec(i),status,ierr)
         do j = 0, buflen4(proc+1)-1
           iglob = int(buffer(10,bufbeg4(proc+1)+j))
+          iglob_recv(j+1,i)=iglob
           x(iglob) = buffer(1,bufbeg4(proc+1)+j)
           y(iglob) = buffer(2,bufbeg4(proc+1)+j)
           z(iglob) = buffer(3,bufbeg4(proc+1)+j)
@@ -701,6 +721,11 @@ c
       deallocate (buffer)
       deallocate (buffers)
 c
+      if(qtb_thermostat) call reassignqtb(nloc,max_atoms_recv
+     &      ,nneig_recep, n_data_recv, iglob_recv, pneig_recep 
+     &      ,nneig_send , n_data_send, iglob_send, pneig_send 
+     &      ,max_atoms_recv, max_atoms_send)
+
       nloc = nloc1
       domlen(rank+1) = nloc
       glob = glob1
@@ -887,6 +912,7 @@ c
         use utilcomm ,only: buffMpi_i1,buffMpi_i2
         use mpi
         use sizes    ,only: tinkerdebug
+        use qtb, only: qtb_thermostat, reassignqtb
         implicit none
         integer, intent(in) :: ialt, nalt
 
@@ -962,7 +988,7 @@ c
         izend = zendproc(rank+1)
 
 !$acc parallel loop async
-        do i = 0,nneig_send
+        do i = 0,nneig_send 
            n_data_send(i) = 0
         end do
 
@@ -1059,7 +1085,7 @@ c
 !Wait for iglob_send and data_send
 !$acc wait
 !$acc host_data use_device(iglob_send)
-        do ineighbor = 1, nneig_send
+        do ineighbor = 1, nneig_send 
           call MPI_Isend(iglob_send(1,ineighbor)
      &            ,2*n_data_send(ineighbor)
      &            ,MPI_INT,   pneig_send(ineighbor), 0, COMM_TINKER,
@@ -1117,7 +1143,7 @@ c
         call MPI_Waitall(nneig_send ,req_iglob_send,MPI_STATUSES_IGNORE,
      &                   ierr)
 
-        do ineighbor = 1, nneig_send
+        do ineighbor = 1, nneig_send 
           call MPI_Isend(data_send(1,ineighbor),9*n_data_send(ineighbor)
      &            ,MPI_RPREC, pneig_send(ineighbor), 1, COMM_TINKER,
      &            req_data_send(ineighbor), ierr)
@@ -1193,7 +1219,7 @@ c
 
 !$acc wait
 !$acc host_data use_device(old_send, old_recv)
-        do ineighbor = 1, nneig_send
+        do ineighbor = 1, nneig_send 
           call MPI_Isend(old_send(1,ineighbor),3*n_data_send(ineighbor)
      &            ,MPI_TPREC, pneig_send(ineighbor), 0, COMM_TINKER,
      &            req_data_send(ineighbor), ierr)
@@ -1240,8 +1266,8 @@ c
            call AtomDebRepart(ierr)
            if (ierr.ne.0) then
               write(fmt,18) nneig_send+1,nneig_recep
-              write(*,19) rank,ixbeg,ixend,iybeg,iyend
-     &                   ,izbeg,izend
+              write(*,19) rank,ixbeg,ixend,iybeg,iyend 
+     &                   ,izbeg,izend 
               write(* ,fmt) 'r',rank, ' send(',n_data_send,
      &              ') recv(',n_data_recv, ') nloc_s(',nloc_save,')'
            call emergency_save
@@ -1257,6 +1283,11 @@ c
         end do
 
         domlen(rank+1) = nloc
+
+        if(qtb_thermostat) call reassignqtb(nloc_save,max_data_recv
+     &      ,nneig_recep, n_data_recv, buffMpi_i2, pneig_recep 
+     &      ,nneig_send , n_data_send, buffMpi_i1, pneig_send 
+     &      ,max_atoms_recv, max_atoms_send)
 
 !$acc end data
 !copyin(pneig_recep, pneig_send)
@@ -4792,7 +4823,7 @@ c
       end if
       end
 c
-c     subroutine commfieldshort : communicate some short range direct fields (newton's third law)
+c     subroutine commfieldshort : communicate some short range direct fields (newton s third law)
 c
       subroutine commfieldshort(nrhs,ef)
       use domdec

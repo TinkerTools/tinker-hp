@@ -29,8 +29,9 @@ c
       use utils
       use urey
       use utilgpu  
+      use urypot
       implicit none
-      integer i,j,nu
+      integer i,j,nu,nups,nutot,nuq
       integer ia,ib,ic
       integer ita,itb,itc
 #ifdef USE_NVSHMEM_CUDA
@@ -46,7 +47,7 @@ c
       character*20 keyword
       character*240 record
       character*240 string
-      logical init
+      logical init,max_reach
 c
       if (init) then
 c
@@ -90,33 +91,161 @@ c                pt = pa//pb//pc
                  call front_convert_base(ic,ib,ia,pt)
 c                pt = pc//pb//pa
               end if
+              max_reach =.true.
               do j = 1, maxnu
                  if (ku(j).eq. -1 .or. ku(j).eq.pt) then
                     ku(j)    = pt
                     ucon(j)  = bb
                     dst13(j) = tt
-                    goto 50
+                    max_reach=.false.
+                    exit
                  end if
               end do
-              if (rank.eq.0) write (iout,40)
-   40         format (/,' KUREY  --  Too many Urey-Bradley',
-     &                   ' Interaction Parameters')
-              abort = .true.
-   50         continue
+              if (max_reach) then
+                if (rank.eq.0) write (iout,*)
+     &         ' KUREY  --  Too many Urey-Bradley',
+     &                   ' Interaction Parameters'
+                abort = .true.
+              endif
+           end if
+        end do
+c
+c     process keywords containing Angle repulsion parameters
+c
+        header = .true.
+        do i = 1, nkey
+           next = 1
+           record = keyline(i)
+           call gettext (record,keyword,next)
+           call upcase (keyword)
+           if (keyword(1:7) .eq. 'ANGREP ') then
+              ia = 0
+              ib = 0
+              ic = 0
+              bb = 0.0d0
+              tt = 0.0d0
+              string = record(next:240)
+              read (string,*)  ia,ib,ic,bb,tt
+              if (.not. silent) then
+                 if (header) then
+                    header = .false.
+                    if (rank.eq.0) write (iout,'(A,5x,A,8x,A,5x,A)')
+     &                  ' Additional Angle repulsion Parameters :',
+     &                     'Atom Classes','D','1/b'
+                 end if
+                 if (rank.eq.0) write (iout,'(4x,3i4,2x,f12.3,f12.4)')
+     &               ia,ib,ic,bb,tt
+              end if
+              size = 4
+c              call numeral (ia,pa,size)
+c              call numeral (ib,pb,size)
+c              call numeral (ic,pc,size)
+              if (ia .le. ic) then
+                 call front_convert_base(ia,ib,ic,pt)
+c                pt = pa//pb//pc
+              else
+                 call front_convert_base(ic,ib,ia,pt)
+c                pt = pc//pb//pa
+              end if
+              max_reach =.true.
+              do j = 1, maxnups
+                 if (kups(j).eq.-1 .or. kups(j).eq.pt) then
+                    kups(j) = pt
+                    uconps(j) = bb
+                    dst13ps(j) = tt
+                    max_reach=.false.
+                    exit
+                 end if
+              end do
+              if (max_reach) then
+                if (rank.eq.0) write (iout,*)
+     &              ' KUREY  --  Too many Angle repulsion',
+     &                   ' Interaction Parameters'
+                abort = .true.
+              end if
+           end if
+        end do
+c
+c     process keywords containing Quartic Urey parameters
+c
+        header = .true.
+        do i = 1, nkey
+           next = 1
+           record = keyline(i)
+           call gettext (record,keyword,next)
+           call upcase (keyword)
+           if (keyword(1:12) .eq. 'UREYQUARTIC ') then
+              ia = 0
+              ib = 0
+              ic = 0
+              bb = 0.0d0
+              tt = 0.0d0
+              string = record(next:240)
+              read (string,*)  ia,ib,ic,bb,tt
+              if (.not. silent) then
+                 if (header) then
+                    header = .false.
+                    if (rank.eq.0) write (iout,'(A,5x,A,8x,A,5x,A)')
+     &                  ' Additional Urey Quartic Parameters :',
+     &                     'Atom Classes','D','1/b'
+                 end if
+                 if (rank.eq.0) write (iout,'(4x,3i4,2x,f12.3,f12.4)')
+     &               ia,ib,ic,bb,tt
+              end if
+              size = 4
+c              call numeral (ia,pa,size)
+c              call numeral (ib,pb,size)
+c              call numeral (ic,pc,size)
+              if (ia .le. ic) then
+                 call front_convert_base(ia,ib,ic,pt)
+c                pt = pa//pb//pc
+              else
+                 call front_convert_base(ic,ib,ia,pt)
+c                pt = pc//pb//pa
+              end if
+              max_reach =.true.
+              do j = 1, maxnuq
+                 if (kuq(j).eq.-1 .or. kuq(j).eq.pt) then
+                    kuq(j) = pt
+                    uconq(j) = bb
+                    dst13q(j) = tt
+                    max_reach=.false.
+                    exit
+                 end if
+              end do
+              if (max_reach) then
+                if (rank.eq.0) write (iout,*)
+     &              ' KUREY  --  Too many Quartic Urey',
+     &                   ' Interaction Parameters'
+                abort = .true.
+              end if
            end if
         end do
 c
 c       determine the total number of forcefield parameters
 c
         nu = maxnu
+        nups = maxnups
+        nuq = maxnuq
         do i = maxnu, 1, -1
            if (ku(i) .eq. -1)  nu = i - 1
         end do
+        do i = maxnups, 1, -1
+           if (kups(i) .eq. -1)  nups = i - 1
+        end do
+        do i = maxnups, 1, -1
+           if (kuq(i) .eq. -1)  nuq = i - 1
+        end do
+        nutot = nu + nups + nuq
+
+        if (nups > 0 .or. nuq > 0) then
+          disable_fuse_bonded = .true.
+        endif
 c
 c       assign the Urey-Bradley parameters for each angle
 c
         nurey = 0
-        if (nu .ne. 0) then
+        if (nutot .ne. 0) then
            do i = 1, nangle
               ia = iang(1,i)
               ib = iang(2,i)
@@ -144,7 +273,42 @@ c                pt = pc//pb//pa
                     iury(3,nurey) = ic
                     uk(nurey) = ucon(j)
                     ul(nurey) = dst13(j)
+                    ureytypI(nurey) = UREY_BRAD
                     ! ku_sys construction
+                    if (.not.is_find8(ku_sys(1),isys,pt)) then
+                       isys = isys + 1
+                       ku_sys(isys) = pt
+                    end if
+                    goto 60
+                 end if
+              end do
+              do j = 1, nups
+                 if (kups(j) .eq. pt) then
+                    nurey = nurey + 1
+                    iury(1,nurey) = ia
+                    iury(2,nurey) = ib
+                    iury(3,nurey) = ic
+                    ureytypI(nurey) = UREY_ANGREP
+
+                    uk(nurey) = uconps(j)
+                    ul(nurey) = dst13ps(j)
+                    if (.not.is_find8(ku_sys(1),isys,pt)) then
+                       isys = isys + 1
+                       ku_sys(isys) = pt
+                    end if
+                    goto 60
+                 end if
+              end do
+              do j = 1, nuq
+                 if (kuq(j) .eq. pt) then
+                    nurey = nurey + 1
+                    iury(1,nurey) = ia
+                    iury(2,nurey) = ib
+                    iury(3,nurey) = ic
+                    ureytypI(nurey) = UREY_QUARTIC
+
+                    uk(nurey) = uconq(j)
+                    ul(nurey) = dst13q(j)
                     if (.not.is_find8(ku_sys(1),isys,pt)) then
                        isys = isys + 1
                        ku_sys(isys) = pt
@@ -231,6 +395,7 @@ c
       use mpi   ,only: MPI_BARRIER
       use tinMemory
       use urey
+      use urypot
       implicit none
       integer ierr
 
@@ -239,7 +404,7 @@ c
       if(deb_Path) print 12
       call MPI_BARRIER(hostcomm,ierr)
 #endif
-!$acc update device(ul,uk,iury,nburey)
+!$acc update device(ul,uk,iury,nburey,ureytypI)
 !$acc update device(ku,ku_sys)
 !$acc enter data copyin(nureyloc)
       end subroutine
@@ -250,6 +415,7 @@ c
       use kurybr
       use tinMemory
       use urey
+      use urypot
       implicit none
 
  12   format(2x,'delete_data_kurey')
@@ -259,4 +425,5 @@ c
       call shmem_request(ul,    winul,     [0],config=mhostacc)
       call shmem_request(iury,  winiury, [0,0],config=mhostacc)
       call shmem_request(nburey,winnburey, [0],config=mhostacc)
+      call shmem_request(ureytypI,winureytypI, [0],config=mhostacc)
       end subroutine

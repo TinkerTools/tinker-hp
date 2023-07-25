@@ -20,6 +20,7 @@ c
       use atoms      ,only: pbcunwrap
       use atomsMirror
       use bath
+      use beads, only: path_integral_md
       use bound
       use colvars
       use couple
@@ -52,12 +53,15 @@ c
       use units 
       use uprior
       use utils
+      use qtb
 #ifdef _OPENACC
       use utilcu  ,only: cu_update_vir_switch
 #endif
       use utilgpu ,only: prmem_requestm,rec_queue,rec_stream,mem_set
       use usage
       use virial
+      use math, only:pi
+      use spectra
       implicit none
       integer i,j,idyn,iglob
       integer next
@@ -128,10 +132,15 @@ c        reference = 0.7\AA buffer allows 14fs integration in mixed or single pr
 c
 c     set default values for temperature and pressure control
 c
-      thermostat = 'BUSSI'
       tautemp    = 0.2_re_p
       collide    = 0.1_re_p
-      barostat   = 'BERENDSEN'
+      if(path_integral_md) then
+         barostat = 'LANGEVIN'
+         thermostat = 'LANGEVIN'
+      else
+        barostat   = 'BERENDSEN'
+        thermostat = 'BUSSI'
+      endif
       anisotrop  = .false.
       taupres    = 2.0_re_p
       compress   = 0.000046_re_p
@@ -141,15 +150,29 @@ c
       eta        = 0.0_re_p
       voltrial   = 20
       volmove    = 100.0_re_p
-      volscale   = 'MOLECULAR'
-c      volscale = 'ATOMIC'
+      !volscale   = 'MOLECULAR'
+      volscale = 'ATOMIC'
+      virnum=.false.
       gamma      = 1.0_ti_p
-! this variable seems to be useless
-!!$acc update device(gamma)
+      use_piston = .FALSE.
       gammapiston = 20.0_re_p
       masspiston  = 100000.0_re_p
       virsave     = 0.0_re_p
       viramdD     = 0.0_re_p
+
+      omegacut = 15000.d0/cm1
+      Tseg = 1
+      ir=.false.
+      full_dipole=.TRUE.
+      deconvolute_IR = .FALSE.
+      niter_deconvolution = 20
+      startsavespec=25
+      qtb_thermostat=.false.
+      adaptive_qtb=.false.
+      
+      use_noselangevin = .FALSE.
+      use_noselangevin_massive = .FALSE.
+      nose_mass=20.0d0
 !$acc update device(eta)
 !$acc update device(vir,viramdD)
 c
@@ -190,8 +213,9 @@ c           read (string,*,err=10,end=10)  nfree
          else if (keyword(1:9) .eq. 'BAROSTAT ') then
             call getword (record,barostat,next)
             call upcase (barostat)
-         else if (keyword(1:15) .eq. 'ANISO-PRESSURE ') then
+         else if (keyword(1:14) .eq. 'ANISO-PRESSURE ') then
             anisotrop = .true.
+            write(*,*) "ANISO-PRESSURE"
          else if (keyword(1:13) .eq. 'TAU-PRESSURE ') then
             read (string,*,err=10,end=10)  taupres
          else if (keyword(1:9) .eq. 'COMPRESS ') then
@@ -200,9 +224,9 @@ c           read (string,*,err=10,end=10)  nfree
             read (string,*,err=10,end=10)  voltrial
          else if (keyword(1:12) .eq. 'VOLUME-MOVE ') then
             read (string,*,err=10,end=10)  volmove
-         else if (keyword(1:13) .eq. 'VOLUME-SCALE ') then
-            call getword (record,volscale,next)
-            call upcase (volscale)
+c         else if (keyword(1:13) .eq. 'VOLUME-SCALE ') then
+c            call getword (record,volscale,next)
+c            call upcase (volscale)
          else if (keyword(1:9) .eq. 'PRINTOUT ') then
             read (string,*,err=10,end=10)  iprint
             if (iprint.eq.1) iprint=100
@@ -222,18 +246,42 @@ c           read (string,*,err=10,end=10)  nfree
             auto_lst = .false.
          else if (keyword(1:9) .eq. 'FRICTION ') then
             read (string,*,err=10,end=10) gamma
+         else if (keyword(1:9) .eq. 'OMEGACUT ') then
+            read (string,*,err=10,end=10) omegacut
+            omegacut=omegacut/cm1
+         else if (keyword(1:5) .eq. 'TSEG ') then
+            read (string,*,err=10,end=10) TSEG
          else if (keyword(1:15) .eq. 'FRICTIONPISTON ') then
             read (string,*,err=10,end=10) gammapiston
          else if (keyword(1:12) .eq. 'MASSPISTON ') then
             read (string,*,err=10,end=10) masspiston
          else if (keyword(1:12) .eq. 'VIRIALTERM ') then
             use_virial=.true.
+         else if (keyword(1:7) .eq. 'VIRNUM ') then
+            virnum=.true.
+            if(ranktot.eq.0) then
+              write(*,*) 'WARNING - virial pressure',
+     &               ' computed using finite differences.'
+            endif
+         else if (keyword(1:14) .eq. 'STARTSAVESPEC ') then
+            read (string,*,err=10,end=10) startsavespec
+         else if (keyword(1:11) .eq. 'IR_SPECTRA ') then
+            ir = .true.
+         else if (keyword(1:17) .eq. 'IR_LINEAR_DIPOLE ') then
+            full_dipole = .false.
+         else if (keyword(1:17) .eq. 'IR_DECONVOLUTION ') then
+            deconvolute_IR = .true.
+         else if (keyword(1:13) .eq. 'NITER_DECONV ') then
+            read (string,*,err=10,end=10) niter_deconvolution
+         else if (keyword(1:14) .eq. 'MASS_NOSE_LGV ') then
+            read (string,*,err=10,end=10) nose_mass
          else if (keyword(1:14) .eq. 'TRACK-MDSTATE ') then
             track_mds=.true.
          else if (keyword(1:7) .eq. 'PLUMED ') then
             lplumed = .true.
             call getword(record,pl_input ,next)
             call getword(record,pl_output,next)
+         
          end if
    10    continue
       end do
@@ -244,13 +292,6 @@ c
         barostat = 'MONTECARLO' 
         if (rank.eq.0) write(iout,*)'enforcing the use of Monte Carlo ',
      $    'Barostat with TCG'
-      end if
-c
-c     enforce the use of baoabpiston integrator with Langevin Piston barostat
-c
-      if (isobaric.and.barostat.eq.'LANGEVIN') then
-        use_piston = .TRUE.
-        call initialize_langevin_piston()
       end if
 c
 c     default time steps for respa and respa1 integrators
@@ -281,14 +322,21 @@ c
       end do
 c
       if ((integrate.eq.'RESPA').or.(integrate.eq.'BAOABRESPA')) then
-        nalt = int(dt/(dshort+eps)) + 1
+        nalt   = int(dt/(dshort+eps)) + 1
+        nalt2  = 1
         dshort = real(nalt,r_p)
+        dinter = 1.d0
       else if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1'))
      $  then
         nalt   = int(dt/(dinter+eps)) + 1
         nalt2  = int(dinter/(dshort+eps)) + 1
         dinter = real(nalt,r_p)
         dshort = real(nalt2,r_p)
+      else
+        dshort = 1.d0
+        dinter = 1.d0
+        nalt   = 1
+        nalt2  = 1
       end if
 c
 c     make sure all atoms or groups have a nonzero mass
@@ -310,7 +358,16 @@ c
 c
 c     enforce use of velocity Verlet with Andersen thermostat
 c
-      if (thermostat .eq. 'ANDERSEN') then
+      
+      if(thermostat.eq.'QTB') then
+        qtb_thermostat=.TRUE.
+        adaptive_qtb=.FALSE.
+      elseif(thermostat.eq.'ADQTB') then
+        qtb_thermostat=.TRUE.
+        adaptive_qtb=.TRUE.
+      elseif(path_integral_md) then
+        thermostat='LANGEVIN'
+      elseif (thermostat .eq. 'ANDERSEN') then
          if (integrate .eq. 'BEEMAN')  integrate = 'VERLET'
       end if
 c
@@ -332,7 +389,7 @@ c
 c     nblist initialization for respa-n integrators
 c
       if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1')) 
-     $  then
+     &  then
         use_shortmlist = use_mlist
         use_shortclist = use_clist
         use_shortvlist = use_vlist
@@ -341,31 +398,49 @@ c
 c    
 c     initialization for Langevin dynamics
 c
-      if ((integrate .eq. 'BBK').or.(integrate.eq.'BAOAB').or.
-     $ (integrate.eq.'BAOABRESPA').or.(integrate.eq.'BAOABRESPA1').or.
-     $ (integrate.eq.'BAOABPISTON'))
-     $   then
+      if ((integrate.eq.'BBK').or.(integrate.eq.'BAOAB').or.
+     &    (integrate.eq.'BAOABRESPA').or.(integrate.eq.'BAOABRESPA1'))
+     &   then
          if (.not.(isothermal)) then
             if (rank.eq.0) then
-             write(*,*) 'Langevin integrators only available with NVT',
-     $ ' or NPT ensembles'
+               write(*,*) 'Langevin integrators only available',
+     &                    ' with NVT or NPT ensembles'
             end if
-           __TINKER_FATAL__
+            __TINKER_FATAL__
          end if
-         thermostat = 'LANGEVIN'
-         if (allocated(Rn)) then
+         if (.not.qtb_thermostat) then
+            if (thermostat=='NOSE_LGV') then
+               write(*,*) "NOSE_LGV thermostat"
+               nose = 0.d0
+!$acc enter    data copyin(nose)
+               use_noselangevin=.TRUE.
+            elseif(thermostat=='NOSE_MLGV') then
+               allocate(noses(3,n))
+!$acc enter data create(noses) async
+!$acc parallel loop collapse(2) async
+               do i = 1, n
+                 do j = 1, 3
+                   noses(j,i) = 0.d0
+                 end do
+               end do
+               use_noselangevin_massive=.TRUE.
+            else
+               thermostat = 'LANGEVIN'
+            end if
+            if (allocated(Rn)) then
 !$acc exit data delete(Rn) async
-            deallocate (Rn)
-         end if
-         allocate (Rn(3,nloc))
+               deallocate (Rn)
+            end if
+            allocate (Rn(3,nloc))
 !$acc enter data create(Rn) async
-         do i = 1, nloc
-           do j = 1, 3
-             Rn(j,i) = normal()
-           end do
-         end do
+            do i = 1, nloc
+              do j = 1, 3
+                Rn(j,i) = normal()
+              end do
+            end do
 !$acc update device(Rn) async
-         if (track_mds) call init_rand_engine
+            if (track_mds) call init_rand_engine
+         end if
          dorest = .false.
          if (barostat.eq.'LANGEVIN'.and.integrate.eq.'BAOABRESPA1') then
  39      format(/," --- Tinker-HP : Alert! "
@@ -408,12 +483,16 @@ c
 c
 c     check wether or not to compute virial
 c
+      if (isobaric .AND. barostat.eq.'LANGEVIN') then
+        use_piston = .TRUE.
+        use_virial=.true.
+      endif
       if (isobaric.and.barostat.eq.'BERENDSEN'.or.use_piston) 
      &   use_virial=.true.
 #ifdef _OPENACC
       call cu_update_vir_switch(use_virial)
       if (use_virial.and.use_polar.and.
-     &   (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1'))
+     &   (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1' ) )
      &   then
          call detach_mpolar_pointer
          use_mpolar_ker = .false.
@@ -426,7 +505,7 @@ c
       if (isothermal.and.thermostat.eq.'ANDERSEN') dorest = .false.
       if (use_smd_velconst.or.use_smd_forconst.or.
      &    use_amd_dih.or.use_amd_ene.or.use_amd_wat1) dorest = .false.
-      !FIXME remain case where integrate .eq. BAOAB* for dorest
+      if (qtb_thermostat) dorest = .false. 
 c
 c     set the number of degrees of freedom for the system
 c
@@ -525,19 +604,17 @@ c
          call allocstep
          call nblist(0)
 
-         if (isobaric.and.barostat.eq.'LANGEVIN') then
-            use_piston = .TRUE.
-            call initialize_langevin_piston()
-         end if
 c
 c     set velocities and fast/slow accelerations for RESPA method
 c
       else if ((integrate.eq.'RESPA').or.
-     $   (integrate.eq.'BAOABRESPA')) then
+     &   (integrate.eq.'BAOABRESPA')) then
 
  33   format (/," --- Tinker-HP: No Restart file was found for ",A
-     $       ," system",/,16x,"Dynamic Initialization")
-         if (verbose.and.rank.eq.0) write(*,33) filename(1:leng)
+     &       ," system",/,16x,"Dynamic Initialization")
+         if (verbose.and.ranktot.eq.0
+     &     .and.(.not. use_reps) .and. (.not. path_integral_md)
+     &    ) write(*,33) filename(1:leng)
 c
 c     Do the domain decomposition
 c
@@ -645,9 +722,10 @@ c
 c     set velocities and fast/inter/slow accelerations for RESPA-n method
 c
       else if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1'))
-     $ then
+     & then
 
-         if (verbose.and.rank.eq.0) write(*,33) filename(1:leng)
+         if (verbose.and.rank.eq.0 .and. (.not. path_integral_md) )
+     &          write(*,33) filename(1:leng)
 c
 c     Do the domain decomposition
 c
@@ -676,7 +754,7 @@ c
                iglob = glob(i)
                if (use(iglob)) then
                   aalt2(j,iglob) = -convert *
-     $               derivs(j,i) / mass(iglob)
+     &               derivs(j,i) / mass(iglob)
                else
                   aalt2(j,iglob) = 0.0_re_p
                end if
@@ -697,7 +775,7 @@ c
                iglob = glob(i)
                if (use(iglob)) then
                   aalt(j,iglob) = -convert *
-     $                derivs(j,i) / mass(iglob)
+     &                derivs(j,i) / mass(iglob)
                else
                   aalt(j,iglob) = 0.0_re_p
                end if
@@ -765,7 +843,8 @@ c
          if (nuse .eq. n)  call mdrestgpu (0)
 
       else
-         if (verbose.and.rank.eq.0) write(*,33) filename(1:leng)
+         if (verbose.and.rank.eq.0 .and. (.not. path_integral_md) )
+     &          write(*,33) filename(1:leng)
 c
 c     Do the domain decomposition
 c
@@ -882,11 +961,80 @@ c
          end if
       end do
       nprior = i - 1
+
+c
+c     initialize langevin piston 
+c
+      if (use_piston) call initialize_langevin_piston()
+
+      !dshort=1. if not respa(1); !dinter=1. if not respa1
+      if(ir) then
+        if (use_reps) then
+          write(0,*) "Error: IR not compatible with replicas yet"
+          call fatal
+        endif
+        call initialize_spectra(dt/dshort/dinter)
+      endif
+
+      if(qtb_thermostat) then
+        call check_qtb_compatibility()
+        !dshort=1. if not respa(1); !dinter=1. if not respa1
+        call qtbinit(dt/dinter/dshort)
+      else
+        corr_fact_qtb=1.d0
+        use_corr_fact_qtb=.FALSE.
+      endif
+
+      if (use_reps) call mdinitreps
 c
 c     Re-Enable COLVARS if necessary
 c
       use_colvars = s_colvars
       end
+
+      subroutine check_qtb_compatibility()
+      use domdec
+      use beads, only: path_integral_md
+      use tinheader
+      use replicas, only : use_reps
+      use freeze, only: use_rattle
+      use bath, only: barostat, isobaric
+      use mdstuf, only: integrate
+      implicit none
+
+      if(ranktot/=0) return
+
+      if(path_integral_md .and. isrel_build) then
+        write(0,*) 'PIQTB not available yet!'
+        __TINKER_FATAL__
+      endif
+
+      if (use_reps) then
+        write(0,*) "Error: QTB not compatible with replicas yet"
+        __TINKER_FATAL__
+      endif
+
+      if(use_rattle) then
+        write(0,*) "Error: QTB not compatible with RATTLE"
+        __TINKER_FATAL__
+      endif
+
+      if(isobaric .AND. barostat /= 'LANGEVIN') then
+        write(0,*) "Error: QTB only compatible",
+     &      " with LANGEVIN barostat"
+        __TINKER_FATAL__
+      endif
+
+      if(.NOT. (integrate.eq."BAOAB"
+     &     .OR. integrate.eq."BAOABRESPA"
+     &     .OR. integrate.eq."BAOABRESPA1" )) then
+
+        write(0,*) "Error: QTB only compatible with ",
+     &         "BAOAB, BAOABRESPA and BAOABRESPA1 integrators"
+        __TINKER_FATAL__
+      endif
+
+      end subroutine check_qtb_compatibility
 c
       subroutine info_atoms
       use atoms ,only: n
@@ -918,6 +1066,11 @@ c
       use sizes  ,only: tinkerdebug
       implicit none
       logical auth
+
+      if (disable_fuse_bonded) then
+        fuse_bonded=.false.
+        return
+      endif
 
 #ifdef _OPENACC
       call fetchkey('FUSE-BONDED',auth,.true.)

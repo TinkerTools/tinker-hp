@@ -116,6 +116,7 @@ c
       integer nxdd,nydd,nzdd
       integer nproctot,ranktot
       integer,target:: COMM_TINKER,nproc,rank
+      integer nproc_polymer,rank_polymer,COMM_POLYMER
       integer rank_bis,nthread,nrec,ndir,comm_rec,comm_dir
       integer hostrank,hostcomm
       integer n_recep1, n_send1, nrec_recep,nrec_send

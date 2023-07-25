@@ -36,19 +36,24 @@ c
       module kbonds
       implicit none
       integer maxnb,maxnb5,maxnb4
+      integer maxnbm,maxnbm4
       integer maxnb3,maxnel
       parameter (maxnb=2000)
       parameter (maxnb5=500)
       parameter (maxnb4=500)
       parameter (maxnb3=500)
       parameter (maxnel=500)
+      parameter (maxnbm=500)
+      parameter (maxnbm4=500)
       real(r_p) bcon(maxnb),blen(maxnb)
       real(r_p) bcon5(maxnb5),blen5(maxnb5)
       real(r_p) bcon4(maxnb4),blen4(maxnb4)
       real(r_p) bcon3(maxnb3),blen3(maxnb3)
       real(r_p) dlen(maxnel)
+      real(r_p) bmor(3,maxnbm),bmor4(3,maxnbm4)
       character*8 kb(maxnb),kb5(maxnb5)
       character*8 kb4(maxnb4),kb3(maxnb3)
+      character*8 kbm(maxnbm),kbm4(maxnbm4)
       character*12 kel(maxnel)
       save
       end

@@ -104,6 +104,12 @@ c
       do i = 1, maxnb3
          kb3(i) = blank8
       end do
+      do i = 1, maxnbm
+         kbm(i) = blank8
+      end do
+      do i = 1, maxnbm4
+         kbm4(i) = blank8
+      end do
       do i = 1, maxnel
          kel(i) = blank12
       end do
@@ -125,11 +131,17 @@ c
       do i = 1, maxnaf
          kaf(i) = blank12
       end do
+      do i = 1, maxnaps
+         kaps(i) = blank12
+      end do
       do i = 1, maxnsb
          ksb(i) = initi
       end do
       do i = 1, maxnu
          ku(i)  = initi
+      end do
+      do i = 1, maxnups
+         kups(i)  = initi
       end do
       do i = 1, maxnopb
          kopb(i) = initi

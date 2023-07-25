@@ -45,6 +45,7 @@ c
       enum,bind(C)
       enumerator ANG_HARMONIC, ANG_IN_PLANE
       enumerator ANG_FOURIER,  ANG_LINEAR
+      enumerator ANG_PS
       end enum
       real(t_p) angunit,stbnunit,aaunit
       real(t_p) opbunit,opdunit
@@ -56,4 +57,9 @@ c
       character*8, pointer :: angtyp(:)
       integer    , pointer :: angtypI(:)
       integer :: winangtyp, winangtypI
+      real(t_p) :: c5z_ps(245)
+      integer :: idx_ps(245,3)
+      real(t_p), allocatable :: fmat_ps(:,:,:), dfmat_ps(:,:,:)
+
+!$acc declare create(c5z_ps,idx_ps)
       end

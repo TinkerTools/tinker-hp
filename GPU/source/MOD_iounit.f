@@ -17,5 +17,4 @@ c
       module iounit
       implicit none
       integer iout,input
-      save
       end

@@ -17,6 +17,7 @@ c
 #include "tinker_macro.h"
       subroutine initial
       use atoms
+      use beads
       use bath
       use bound
       use cell
@@ -53,6 +54,8 @@ c
 c
 c     cores, thread count and options for OpenMP
 c
+      nbeads = 1
+      nbeads_ctr = 0
       nproc = 1
       nthread = 1
 c     call omp_set_num_threads (nthread)
@@ -181,6 +184,94 @@ c
       calc_e         = .true.
 
       end
+
+      subroutine set_nproc()
+      use domdec
+      use iounit
+      use replicas
+      use mpi
+      use beads
+      implicit none
+      integer ierr,nbeads_para
+
+      if (path_integral_md .AND. use_reps) then
+        if (ranktot.eq.0) then
+          write(iout,*) 'Error: PIMD and classical replicas 
+     &     cannot be used together'
+        end if
+        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+        call fatal
+      end if
+
+      if (use_reps) then
+        ! check consistency of replica numbers for classical replicas
+        ! and define nproc
+        if(nreps<=0) then
+          if (ranktot.eq.0) then
+            write(iout,*) 'Error: number of replicas should be > 0'
+          end if
+          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+          call fatal
+        endif
+        if (nproctot.lt.nreps) then
+          nproc = 1
+          if (ranktot.eq.0) then
+            write(iout,*) 'each process should deal with max 1 replica'
+          end if
+          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+          call fatal
+        else if (mod(nproctot,nreps).ne.0) then
+          if (ranktot.eq.0) then
+            write(iout,*) 'Error: inconsistent number 
+     &     of process for parallelism'
+            write(iout,*) 'the total number of processors
+     &      should be lower
+     &     or a multiple of nreps'
+            call fatal
+          end if
+        else
+          nproc = nproctot/nreps
+        end if
+        if (ranktot==0) then
+          write(iout,*) 'Using multiple replicas, nreps = ',nreps
+        endif
+
+      elseif(path_integral_md) then
+        ! check consistency of replica numbers for PIMD
+        if(contract .and. nbeads_ctr>1) then
+          nbeads_para = nbeads_ctr
+        else
+          nbeads_para = nbeads
+        endif
+        if(nbeads_para<=0) then
+          if (ranktot.eq.0) then
+            write(iout,*) 'Error: number of beads should be > 0'
+          end if
+          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+          call fatal
+        endif
+        
+
+        if (nproctot.lt.nbeads_para) then
+          nproc = 1
+        else if (mod(nproctot,nbeads_para).ne.0) then
+          if (ranktot.eq.0) then
+            write(iout,*) 'Error: inconsistent number 
+     &     of process for parallelism'
+            write(iout,*) 'the total number of processors
+     &      should be lower
+     &     or a multiple of nbeads'
+            call fatal
+          end if
+        else
+          nproc = nproctot/nbeads_para
+        end if
+
+      else ! standard parallelization (no replicas)
+        nproc = nproctot
+      end if
+
+      end subroutine set_nproc
 c
 c     subroutine initmpi
 c
@@ -191,28 +282,24 @@ c
       use inform
       use mpi
       use tinMemory,only: extra_alloc
+      use beads
+      use replicas
       implicit none
-      integer ierr,iproc,rank_beadloc
+      integer ierr,iproc,ncomm,color
 
-      integer, allocatable :: bead_rank(:)
-c
-      allocate (bead_rank(nproctot))
-c
-c     not dealing with replicas for now
-c
-      nproc = nproctot
-      bead_rank = 0
-c
-      do iproc = 0, nproctot-1
-        rank_beadloc = int(iproc/nproc)
-        bead_rank(iproc+1) = rank_beadloc
-      end do
+      call set_nproc()
 
-      CALL MPI_Comm_split(MPI_COMM_WORLD,bead_rank(ranktot+1),
+      ! compute rank for spatial communicator
+      rank_reploc = int(ranktot/nproc)
+      ncomm = int(nproctot/nproc)
+      if ((ncomm-nproc*nproctot).gt.0) ncomm = ncomm+1
+
+      ! split MPI_COMM_WORLD into spatial communicator COMM_TINKER
+      CALL MPI_Comm_split(MPI_COMM_WORLD,rank_reploc,
      $     ranktot,COMM_TINKER,ierr)
-
       call MPI_COMM_SIZE(COMM_TINKER,nproc,ierr)
       call MPI_COMM_RANK(COMM_TINKER,rank,ierr)
+
       CALL MPI_Comm_split_type(COMM_TINKER, MPI_COMM_TYPE_SHARED, 0,
      $     MPI_INFO_NULL, hostcomm,ierr)
       CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
@@ -220,17 +307,31 @@ c
       call initDebugEnv
 
       call initDevice
+      
+      ! create polymer communicator
+      CALL MPI_Comm_split(MPI_COMM_WORLD,rank,
+     $   ranktot,COMM_POLYMER,ierr)
+      call MPI_COMM_SIZE(COMM_POLYMER,nproc_polymer,ierr)
+      call MPI_COMM_RANK(COMM_POLYMER,rank_polymer,ierr)
+
+      if(use_reps) then
+        ! create inter root communicator
+        color = 1
+        if (rank.eq.0) color = 0
+        call MPI_Comm_split(MPI_COMM_WORLD,color,ranktot,COMM_ROOT2ROOT,
+     $    ierr)
+
+      endif
 
       if (nproc.gt.1) extra_alloc=.true.
 
-      deallocate (bead_rank)
       end
 c
 c     Initialize GPU
 c
       subroutine initDevice
       use deriv  ,only: delambdae,delambdav
-      use domdec ,only: rank,hostcomm
+      use domdec ,only: rank,ranktot,hostcomm
       use energi
       use inter  ,only: einter
       use inform
@@ -267,7 +368,7 @@ c
 c     For Mpi debug purpose
 c
       if (btest(tinkerdebug,tindGdb)) then
-         if (rank.eq.0) then
+         if (ranktot.eq.0) then
             print*
             write(*,*) "*** Enabled Debug with [cuda-]Gdb ***"
             i = 0
@@ -317,67 +418,4 @@ c
 !$acc update device(rank,ngpus,devicenum,gpu_gangs
 !$acc&  ,gpu_workers,gpu_vector)
       end subroutine
-
-      subroutine initmpi_reps()
-      use domdec
-      use iounit
-      use inform
-      use replicas
-      use mpi
-      use tinMemory,only: extra_alloc
-      implicit none
-      integer ierr,color,ncomm
-
-      if (nproctot.lt.nreps) then
-        nproc = 1
-        if (ranktot.eq.0) then
-          write(iout,*) 'each process should deal with max 1 replica'
-        end if
-        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-        call fatal
-      else if (mod(nproctot,nreps).ne.0) then
-        if (ranktot.eq.0) then
-          write(iout,*) 'Error: inconsistent number 
-     &     of process for parallelism'
-          write(iout,*) 'the total number of processors
-     &      should be lower
-     &     or a multiple of nreps'
-          call fatal
-        end if
-      else
-        nproc = nproctot/nreps
-      end if
-c
-c     if nreps > 1, nproc is defined earlier (in dynamic_rep.f)
-c     else, we specify that we use standard parallelization (nproc=nproctot)
-c
-      if(nreps==1) nproc=nproctot
-      rank_reploc = int(ranktot/nproc)
-      ncomm = int(nproctot/nproc)
-      if ((ncomm-nproc*nproctot).gt.0) ncomm = ncomm+1
-
-      CALL MPI_Comm_split(MPI_COMM_WORLD,rank_reploc,
-     $     ranktot,COMM_TINKER,ierr)
-
-      call MPI_COMM_SIZE(COMM_TINKER,nproc,ierr)
-      call MPI_COMM_RANK(COMM_TINKER,rank,ierr)
-      CALL MPI_Comm_split_type(COMM_TINKER, MPI_COMM_TYPE_SHARED, 0,
-     $     MPI_INFO_NULL, hostcomm,ierr)
-      CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
-      rank_reploc = int(ranktot/nproc)
-
-      call initDebugEnv
-c
-      call initDevice
-c
-      if (nproc.gt.1) extra_alloc=.true.
-c
-c     create inter root communicator
-c
-      color = 1
-      if (rank.eq.0) color = 0
-      call MPI_Comm_split(MPI_COMM_WORLD,color,ranktot,COMM_ROOT2ROOT,
-     $  ierr)
-      
-      end subroutine initmpi_reps
 

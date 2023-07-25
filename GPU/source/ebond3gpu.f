@@ -46,9 +46,9 @@ c
       use mamd
       use potent   ,only: use_amd_wat1
       implicit none
-      integer     i,ia,ib,ibond,fea,ver
+      integer     i,ia,ib,ibond,fea,ver,bndtypii
       logical     header,huge
-      real(t_p)   ideal,force,e,fgrp,xab,yab,zab
+      real(t_p)   ideal,force,e,fgrp,xab,yab,zab,alp
       type(real3) ded
       parameter(
      &       ver=__use_ene__+__use_act__,
@@ -64,7 +64,7 @@ c
 c     calculate the bond stretch energy and first derivatives
 c
 !$acc parallel loop present(x,y,z,use,loc,bndglob,grplist,wgrp,type
-!$acc&    ,eb,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&    ,eb,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,bndtypI)
 !$acc&     async
 #ifdef USE_NVSHMEM_CUDA
 !$acc&         deviceptr(d_ibnd,d_bl,d_bk)
@@ -75,6 +75,7 @@ c
 !$acc&       private(ded,fgrp)
       do ibond = 1, nbondloc
          i     = bndglob(ibond)
+         bndtypii = bndtypI(i)
 #ifdef USE_NVSHMEM_CUDA
          ipe   = (i-1)/nbond_pe
          ind   = mod((i-1),nbond_pe) +1
@@ -82,11 +83,13 @@ c
          ib    = d_ibnd(ipe)%pel(2,ind)
          ideal = d_bl  (ipe)%pel(ind)
          force = d_bk  (ipe)%pel(ind)
+         alp   = d_ba  (ipe)%pel(ind)
 #else
          ia    = ibnd(1,i)
          ib    = ibnd(2,i)
          ideal = bl(i)
          force = bk(i)
+         alp   = ba(i)
 #endif
          if (use_group.AND.IAND(fea,__use_groups__).NE.0)
      &      call groups2_inl(fgrp,ia,ib,ngrp,grplist,wgrp)
@@ -99,8 +102,8 @@ c
          xab = x(ia) - x(ib)
          yab = y(ia) - y(ib)
          zab = z(ia) - z(ib)
-         call ker_bond(i,ia,ib,loc,ideal,force,fgrp,xab,yab,zab
-     &           ,bndtyp_i,use_polymer,use_group
+         call ker_bond(i,ia,ib,loc,ideal,force,alp,fgrp,xab,yab,zab
+     &           ,bndtypii,use_polymer,use_group
      &           ,cbnd,qbnd,bndunit,eb,e,ded
      &           ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
      &           ,ver,fea)

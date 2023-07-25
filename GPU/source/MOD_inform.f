@@ -47,11 +47,12 @@ c     dint1 dint2 dibuff  useful for storing purpose
         enumerator analyze_a
         enumerator bar_a
         enumerator dynamic_a
-        enumerator dynamic_rep_a
         enumerator minimize_a
         enumerator radial_a
         enumerator testgrad_a
         enumerator pimd_a
+        enumerator analyze_beads_a
+        enumerator pibar_a
       end enum
       integer:: app_id=dynamic_a ! Only to be modifed inside a program
 

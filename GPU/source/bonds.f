@@ -19,7 +19,7 @@ c
       contains
       !routine that says whether an interaction between two particules has 
       !to be computed within the current domain or not 
-      !(dd half cell method, Newton's3rd law)
+      !(dd half cell method, Newtons3rd law)
 #include "image.f.inc"
       subroutine halfcell(xi,yi,zi,xj,yj,zj,docompute,use_bounds)
           implicit none
@@ -320,6 +320,7 @@ c
       use tors
       use tinMemory
       use utils
+      use bndpot
       implicit none
  
 c     if (associated(bl)     .and.nbond.eq.size(bl) .and.
@@ -334,6 +335,8 @@ c    &    associated(bndlist).and.  8*n.eq.size(bndlist)) return
      &     mhostnvsh)
       call shmem_request(bl      ,winbl      ,[nbond]  , c_bl, d_bl,
      &     mhostnvsh)
+      call shmem_request(ba      ,winba      ,[nbond]  , c_ba, d_ba,
+     &     mhostnvsh)
       call shmem_request(nbtors, winnbtors, [nbond], c_nbtors,
      &     d_nbtors, config=mhostnvsh)
       call shmem_request(nbpitors,winnbpitors,[nbond] , c_nbpitors,
@@ -341,11 +344,13 @@ c    &    associated(bndlist).and.  8*n.eq.size(bndlist)) return
 #else
       call shmem_request(bk      ,winbk      ,[nbond]  ,config=mhostacc)
       call shmem_request(bl      ,winbl      ,[nbond]  ,config=mhostacc)
+      call shmem_request(ba      ,winba      ,[nbond]  ,config=mhostacc)
       call shmem_request(bndlist ,winbndlist ,[8,n]    ,config=mhostacc)
       call shmem_request(ibnd    ,winibnd    ,[2,nbond],config=mhostacc)
       call shmem_request(nbtors  ,winnbtors  ,[nbond]  ,config=mhostacc)
       call shmem_request(nbpitors,winnbpitors,[nbond]  ,config=mhostacc)
 #endif
+      call shmem_request(bndtypI  ,winbndtypI,[nbond],config=mhostacc)
 
 #ifdef USE_NVSHMEM_CUDA
       ! Explicit Reassociate to make device pointer data accessible by OpenACC
@@ -357,6 +362,8 @@ c    &    associated(bndlist).and.  8*n.eq.size(bndlist)) return
       d_bl        => rDPC_expl
       rDPC_expl   => d_bk
       d_bk        => rDPC_expl
+      rDPC_expl   => d_ba
+      d_ba        => rDPC_expl
       ! self association for openAcc visibility
       d_nbtors    => d_nbtors
       d_nbpitors  => d_nbpitors

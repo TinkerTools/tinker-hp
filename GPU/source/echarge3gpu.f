@@ -275,7 +275,7 @@ c
 #ifdef _OPENACC
      &         altopt=0 
 #else
-     &         , altopt=1
+     &         altopt=1
 #endif
      &         )
 
@@ -745,7 +745,7 @@ c
       else
         nprocloc = nproc
         rankloc = rank
-        commloc = MPI_COMM_WORLD
+        commloc = COMM_TINKER
       end if
 c
 c     dynamic allocation of local arrays

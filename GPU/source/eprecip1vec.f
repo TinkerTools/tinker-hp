@@ -95,7 +95,7 @@ c
         rankloc  = rank_bis
       else
         nprocloc = nproc
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
         rankloc  = rank
       end if
 c

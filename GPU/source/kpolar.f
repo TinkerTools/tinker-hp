@@ -37,6 +37,7 @@ c
       use uprior
       use tinheader ,only:ti_p,re_p
       use tinMemory
+      use beads, only: centroid_longrange
       implicit none
       integer istep,modnl,ierr
       integer i,j,k,ii,it,maxdr
@@ -301,6 +302,7 @@ c
            call prmem_request(upalt,3,n,maxualt)
 #endif
            if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1')
+     &        .OR. centroid_longrange 
      &        .and.(.not.use_pmecore.or.use_pmecore.and.rank.lt.ndir))
      &        then
 #ifdef USE_NVSHMEM_CUDA
@@ -367,6 +369,7 @@ c
 #endif
 
            if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1')
+     &          .or.centroid_longrange
      &        .and.(.not.use_pmecore.or.use_pmecore.and.rank.lt.ndir))
      &        then
 #ifdef USE_NVSHMEM_CUDA

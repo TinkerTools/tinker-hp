@@ -83,11 +83,21 @@ c      parameter (Ncurng=5120)
       data compute  / .true. /
 
       public :: init_rand_engine,random,randomvec,normal,normalvec
-     &         ,ranvec,sphere,get_randseed,get_pickcount
+     &         ,ranvec,sphere,get_randseed,get_pickcount,normalarray
 #ifdef _OPENACC
      &         ,init_curand_engine,randomgpu,normalgpu,rand_unitgpu
-     &         ,reset_curand_seed,disp_ranvec
+     &         ,normalgpuR4,reset_curand_seed,disp_ranvec
+
+      interface normalgpu
+         module procedure normalgpuR4
+         module procedure normalgpuR8
+      end interface
 #endif
+
+      interface normalarray
+         module procedure normalarrayR4
+         module procedure normalarrayR8
+      end interface
       contains
 
       integer function get_randseed()
@@ -201,6 +211,54 @@ c     end if
       return
       end
 
+      subroutine normalarrayR4(array,n,mean_,stddev_,stream_)
+      implicit none
+      real(4), intent(inout) ::  array(*)
+      integer,   intent(in)::n
+      integer,   intent(in),optional::stream_
+      real(4), intent(in),optional::mean_,stddev_
+      integer:: i
+
+#ifdef _OPENACC
+        if(.not. host_rand_platform) then
+          call normalgpuR4(array,n,mean_,stddev_,stream_)
+        endif
+#endif
+        if (host_rand_platform) then
+          do i = 1, n
+              array(i) = normal()
+          end do
+          if (present(stddev_)) array(1:n) = array(1:n) * stddev_
+          if (present(mean_))   array(1:n) = array(1:n) + mean_
+!$acc update device(array(1:n)) async
+        end if
+
+      end subroutine normalarrayR4
+
+      subroutine normalarrayR8(array,n,mean_,stddev_,stream_)
+      implicit none
+      real(8), intent(inout) ::  array(*)
+      integer,   intent(in)::n
+      integer,   intent(in),optional::stream_
+      real(8), intent(in),optional::mean_,stddev_
+      integer:: i
+
+#ifdef _OPENACC
+        if (.not. host_rand_platform) then
+           call normalgpuR8(array,n,mean_,stddev_,stream_)
+        endif
+#endif
+        if (host_rand_platform) then
+          do i = 1, n
+              array(i) = normal()
+          end do
+          if (present(stddev_)) array(1:n) = array(1:n) * stddev_
+          if (present(mean_))   array(1:n) = array(1:n) + mean_
+!$acc update device(array(1:n)) async
+        end if
+
+      end subroutine normalarrayR8
+
 #ifdef _OPENACC
 c
 c      All functions within this scope are specific to the GPU
@@ -307,18 +365,18 @@ c
 c
 c     get a sample following normal distribution on GPU
 c
-      subroutine normalgpu(array,n,mean_,stddev_,stream_)
+      subroutine normalgpuR8(array,n,mean_,stddev_,stream_)
       implicit none
-      real(t_p), array(*)
+      real(8), array(*)
       integer,   intent(in)::n
       integer,   intent(in),optional::stream_
-      real(t_p), intent(in),optional::mean_,stddev_
-      real(t_p) mean,stddev
+      real(8), intent(in),optional::mean_,stddev_
+      real(8) mean,stddev
       integer istat,num
       istat=0
 
-      mean   = 0.0_ti_p
-      stddev = 1.0_ti_p
+      mean   = 0.0
+      stddev = 1.0
       if (present(mean_)) mean = mean_
       if (present(stddev_)) stddev = stddev_
       if (present(stream_))
@@ -336,12 +394,44 @@ c
 !$acc host_data use_device(array)
       istat = istat + curandGenerate(curng,array,num,mean,stddev)
 !$acc end host_data
-      if (istat.ne.0) print*,'ERROR in curandGenerateNormal',istat
-c!$acc wait
-c!$acc update host(array(1:50))
-c      print 16, array(1:7)
-c  16  format(8F9.5)
 
+      if (istat.ne.0) print*,'ERROR in curandGenerateNormalR8',istat
+      !Increment counter
+      npickD = npickD + num
+      end subroutine
+c
+c     get a sample following normal distribution on GPU with forced simple precision
+c
+      subroutine normalgpuR4(array,n,mean_,stddev_,stream_)
+      implicit none
+      real(4), array(*)
+      integer,   intent(in)::n
+      integer,   intent(in),optional::stream_
+      real(4), intent(in),optional::mean_,stddev_
+      real(4):: mean,stddev
+      integer :: istat,num
+      istat=0
+
+      mean=0.0; stddev=1.0
+      if (present(mean_)) mean = mean_
+      if (present(stddev_)) stddev = stddev_
+      if (present(stream_))
+     &   istat = istat + curandSetStream(curng,
+     &                       acc_get_cuda_stream(stream_))
+
+      ! normal generator needs 'num' to be even to work with
+      ! pseudo rand generator
+      if (btest(n,0)) then
+         num = n + 1  !first multiple of two following n
+      else
+         num = n
+      end if
+
+!$acc host_data use_device(array)
+      istat = istat + curandGenerate(curng,array,num,mean,stddev)
+!$acc end host_data
+
+      if (istat.ne.0) print*,'ERROR in curandGenerateNormalR4',istat
       !Increment counter
       npickD = npickD + num
       end subroutine

@@ -28,6 +28,7 @@ c
       use neigh
       use potent ,only: use_dewald
       use tinheader
+      use beads, only: centroid_recip
       implicit none
       integer i,next
       real(t_p) big,value

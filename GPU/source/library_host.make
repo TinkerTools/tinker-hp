@@ -26,6 +26,7 @@ MOD_atmlst.o \
 MOD_atoms.o \
 MOD_atmtyp.o \
 MOD_bath.o \
+MOD_beads.o \
 MOD_bitor.o \
 MOD_bndpot.o \
 MOD_bond.o \
@@ -38,6 +39,7 @@ MOD_chunks.o \
 MOD_couple.o \
 MOD_cutoff.o \
 MOD_dcdio.o \
+MOD_deconvolution.o \
 MOD_deriv.o \
 MOD_divcon.o \
 MOD_domdec.o \
@@ -89,6 +91,7 @@ MOD_memory.o \
 MOD_minima.o \
 MOD_molcul.o \
 MOD_moldyn.o \
+MOD_commstuffpi.o \
 MOD_mplpot.o \
 MOD_msmd.o \
 MOD_mutant.o \
@@ -109,11 +112,13 @@ MOD_potent.o \
 MOD_precis.o \
 MOD_precompute_polegpu.o \
 MOD_ptable.o \
+MOD_qtb.o \
 MOD_random.o \
 MOD_resdue.o \
 MOD_ring.o \
 MOD_scales.o \
 MOD_shunt.o \
+MOD_spectra.o \
 MOD_strbnd.o \
 MOD_strtor.o \
 MOD_subAtoms.o \
@@ -131,10 +136,13 @@ MOD_urey.o \
 MOD_urypot.o \
 MOD_usage.o \
 MOD_USampling.o \
+MOD_utilbaoab.o \
+MOD_utilbaoabpi.o \
 MOD_utils.o \
 MOD_utilcomm.o \
 MOD_utilvec.o \
 MOD_utilgpu.o \
+MOD_vec.o \
 MOD_virial.o \
 MOD_vdw.o \
 MOD_vdwpot.o \
@@ -148,7 +156,10 @@ bicubic.o \
 baoab.o \
 baoabrespa.o \
 baoabrespa1.o \
+baoabpi.o \
+baoabrespapi.o \
 bbk.o \
+beads.o \
 bitors.o \
 bonds.o \
 bounds.o \
@@ -325,9 +336,12 @@ lbfgs.o \
 linalg.o \
 maxwell.o \
 mdinit.o \
+mdinitbead.o \
 mdrest.o \
 mdsave.o \
+mdsavebeads.o \
 mdstat.o \
+mdstatpi.o \
 mechanic.o \
 mpistuff.o \
 molecule.o \
@@ -360,6 +374,7 @@ promoamd.o \
 promosmd.o \
 prmkey.o \
 prtdyn.o \
+prtdynbeads.o \
 prtxyz.o \
 readdyn.o \
 readprm.o \

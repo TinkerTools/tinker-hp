@@ -8,27 +8,32 @@ c     to an external disk file in the dcd format
 c     based on libdcdfort: https://github.com/wesbarnett/dcdfort
 c
 #include "tinker_macro.h"
-      subroutine unwrap_dcd_pos(pos,wrapIdx,wdim)
+      submodule(dcdmod) subdcdmod
+      implicit none
+
+      contains
+
+      subroutine unwrap_dcd_pos(pos,wrapIdx,na,wdim)
       use atomsMirror
       use cell
       implicit none
       integer(1) wrapIdx(*)
-      integer   ,intent(in):: wdim
+      integer   ,intent(in):: na, wdim
       real(4)   ,intent(inout):: pos(n)
       integer    kk,i
 
  66   format(" Unknown option for unwrap_dcd_pos ",I0)
       select case (wdim)
              case (1)
-      do i=1,n
+      do i=1,na
          pos(i)= real(x(i)+ int(wrapIdx(4*(i-1)+wdim))*xcell,4)
       end do
              case (2)
-      do i=1,n
+      do i=1,na
          pos(i)= real(y(i)+ int(wrapIdx(4*(i-1)+wdim))*ycell,4)
       end do
              case (3)
-      do i=1,n
+      do i=1,na
          pos(i)= real(z(i)+ int(wrapIdx(4*(i-1)+wdim))*zcell,4)
       end do
              case default
@@ -38,71 +43,65 @@ c
 
       end subroutine
 
-      subroutine dcdio_write(istep,dt)
+      module subroutine dcdio_write(dcdinfo,istep,dt,suffix)
       use atmtyp
       use atoms      ,only: pbcunwrap,pbcWrapIdx
       use atomsMirror
       use boxes
-      use dcdmod
       use files
       use inform
       use replicas
       use iso_c_binding, only: C_NULL_CHAR
       implicit none
-      integer i,j,k,istep
+      type(dcdinfo_t), intent(inout) :: dcdinfo
+      character(*), intent(in) :: suffix
+      integer, intent(in) :: istep
+      real(r_p), intent(in) :: dt
+      integer i,j,k,idcd
       integer freeunit
       integer(kind=4) :: coord_size
       real(kind=4), allocatable :: posw(:)
       real(kind=8) :: box(6)
-      real*8 :: dt
       logical init,exist
       character*240 dcdfile
       character (len=79) :: info1,info2
       character (len=8) :: date
       character (len=10) :: time
-      character*240 exten
-      character*3 numberreps
 
-      natoms     = n
-      coord_size = 4*natoms
-      timestep   = istep
+      dcdinfo%natoms     = n
+      coord_size = 4*dcdinfo%natoms
+      dcdinfo%timestep   = istep
 
-c
-c     if multiple replicas, then number the traj outputs
-c
-      if (use_reps) then
-        write(numberreps, '(i3.3)') rank_reploc
-        exten='_reps'//numberreps//'.dcd'
-        dcdfile = filename(1:leng)//exten
-      else
-        dcdfile = filename(1:leng)//'.dcd'
-      end if
+      dcdinfo%filename = filename(1:leng)//trim(suffix)//'.dcd'
       init       = (istep.eq.iwrite)
+      idcd = dcdinfo%idcd
 c
       if (init) then
-        idcd = freeunit ()
 c
 c     check if dcd trajectory file exists
 c
-        inquire (file=trim(dcdfile),exist=exist)
+        inquire (file=trim(dcdinfo%filename),exist=exist)
         if (exist) then
-          open (unit=idcd,file=trim(dcdfile),access="stream",
-     $      status='old',position='append')
+          open (newunit=idcd,file=trim(dcdinfo%filename)
+     $      ,access="stream",status='old',position='append')
+          dcdinfo%idcd=idcd
 c
 c     check header
 c
-          call dcdfile_read_header(.true.)
+          call dcdfile_read_header(dcdinfo,.true.)
 c
 c       nevery: frequency output in timesteps
 c
-          nevery = iwrite 
+          dcdinfo%nevery = iwrite 
 c  
         else
 c
 c     open dcd trajectory file
 c
-          open(newunit=idcd, file=trim(dcdfile), form="unformatted",
-     $     access="stream", status="replace")
+          open(newunit=idcd, file=trim(dcdinfo%filename)
+     $     , form="unformatted",access="stream", status="replace")
+
+          dcdinfo%idcd=idcd
 c  
 c     create the header
 c
@@ -114,41 +113,41 @@ c
           call date_and_time(date=date,time=time)
           info2 = "Created on "//date//" "//time
 
-          nframes = 0
+          dcdinfo%nframes = 0
 c
 c       istart: first timestep
 c
-          istart = iwrite
-          iend = istart
+          dcdinfo%istart = iwrite
+          dcdinfo%iend = dcdinfo%istart
 c
 c       nevery: frequency output in timesteps
 c
-          nevery = iwrite 
+          dcdinfo%nevery = iwrite 
 
           write(idcd) 84
           write(idcd) "CORD"
 
-          inquire(unit=idcd, pos=nframes_pos)
+          inquire(unit=idcd, pos=dcdinfo%nframes_pos)
 
 ! Number of snapshots in file
-          write(idcd) nframes
+          write(idcd) dcdinfo%nframes
 c
 ! Timestep of first snapshot
-          write(idcd) istart
+          write(idcd) dcdinfo%istart
 c
 ! Save snapshots every this many steps
-          write(idcd) nevery
+          write(idcd) dcdinfo%nevery
 c
-          inquire(unit=idcd, pos=iend_pos)
+          inquire(unit=idcd, pos=dcdinfo%iend_pos)
 ! Timestep ! of ! last ! snapshot
-          write(idcd) iend
+          write(idcd) dcdinfo%iend 
 
           do i = 1, 5
             write(idcd) 0
           end do
 
 ! Simulation timestep
-          write(idcd) timestep
+          write(idcd) dcdinfo%timestep
 
 ! Has unit cell
           write(idcd) 1
@@ -169,14 +168,14 @@ c
           write(idcd) 4
 
           ! Number of atoms in each snapshot
-          write(idcd) natoms
+          write(idcd) dcdinfo%natoms
           write(idcd) 4
 
           flush(idcd)
         end if
       end if
 
-      allocate (posw(natoms))
+      allocate (posw(dcdinfo%natoms))
 
       write(idcd) 48
     
@@ -196,11 +195,11 @@ c
 
       write(idcd) 48
       write(idcd) coord_size
-      
+
       if (pbcunwrap) then
-         call unwrap_dcd_pos(posw,pbcWrapIdx,1)
+         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,1)
       else
-         do i = 1,natoms; posw(i) = real(x(i),4); end do
+         do i = 1,dcdinfo%natoms; posw(i) = real(x(i),4); end do
       end if
       write(idcd) posw(:)
 
@@ -208,9 +207,9 @@ c
       write(idcd) coord_size
 
       if (pbcunwrap) then
-         call unwrap_dcd_pos(posw,pbcWrapIdx,2)
+         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,2)
       else
-         do i = 1,natoms; posw(i) = real(y(i),4); end do
+         do i = 1,dcdinfo%natoms; posw(i) = real(y(i),4); end do
       end if
       write(idcd) posw(:)
 
@@ -218,23 +217,23 @@ c
       write(idcd) coord_size
 
       if (pbcunwrap) then
-         call unwrap_dcd_pos(posw,pbcWrapIdx,3)
+         call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,3)
       else
-         do i = 1,natoms; posw(i) = real(z(i),4); end do
+         do i = 1,dcdinfo%natoms; posw(i) = real(z(i),4); end do
       end if
       write(idcd) posw(:)
 
       write(idcd) coord_size
 
-      inquire(unit=idcd, pos=curr_pos)
+      inquire(unit=idcd, pos=dcdinfo%curr_pos)
 
-      nframes = nframes+1
-      iend = iend + nevery
+      dcdinfo%nframes = dcdinfo%nframes+1
+      dcdinfo%iend = dcdinfo%iend + dcdinfo%nevery
 
       ! Go back and update header
-      write(idcd, pos=9) nframes
-      write(idcd, pos=21) iend
-      write(idcd, pos=curr_pos)
+      write(idcd, pos=9) dcdinfo%nframes
+      write(idcd, pos=21) dcdinfo%iend 
+      write(idcd, pos=dcdinfo%curr_pos)
 
       flush(idcd)
 
@@ -244,34 +243,36 @@ c
 c
 c     subroutine dcdfile_open: opens file to read trajectory from
 c
-      subroutine dcdfile_open(dcdfile)
-      use dcdmod
+      module subroutine dcdfile_open(dcdinfo,dcdfile)
       use domdec
       use files
       use inform
       use iounit
       implicit none
-      character*240 dcdfile
+      type(dcdinfo_t), intent(inout) :: dcdinfo
+      character(*), intent(in) :: dcdfile
       character(len=*), parameter :: magic_string = "CORD"
       integer(kind=4), parameter :: magic_number = 84
       integer(kind=4) :: line1, charmm_version, has_extra_block, 
      $  four_dimensions
-      integer :: freeunit
+      integer :: freeunit,idcd
       character(len=4) :: line2
       logical :: ex
 c
       ! Does file exist?
-      inquire(file=trim(dcdfile), exist=ex, size=filesize)
-      if (ex .eqv. .false.) then
+      dcdinfo%filename = trim(dcdfile)
+      inquire(file=trim(dcdfile), exist=ex, size=dcdinfo%filesize)
+      if (.not.ex) then
         if (rank.eq.0) write(iout,*) 'The specified DCD file ',
      $    trim(dcdfile), ' does not exist'
         call fatal
       end if
 
       ! Open file in native endinness
-      idcd = freeunit ()
-      open(newunit=idcd, file=trim(dcdfile), form="unformatted",
+      idcd = freeunit()
+      open(unit=idcd, file=trim(dcdfile), form="unformatted",
      $      access="stream", status="old")
+      dcdinfo%idcd = idcd
 
       ! Read in magic number of magic string
       read(idcd,pos=1) line1
@@ -313,36 +314,45 @@ c
 c
 c     read header of the dcd file
 c
-      subroutine dcdfile_read_header(dowrite)
+      module subroutine dcdfile_read_header(dcdinfo,dowrite,verbose)
       use atoms,only :n
-      use dcdmod
       use domdec
       use iounit
       use iso_c_binding, only: C_NULL_CHAR
       implicit none
+      type(dcdinfo_t), intent(inout) :: dcdinfo
+      logical, intent(in) :: dowrite
+      logical, intent(in), optional :: verbose
       integer(kind=4) :: i, ntitle, m, dummy, pos
       integer(kind=8) :: nframes2,newpos
       character(len=80) :: title_string
-      logical :: dowrite
+      integer :: idcd
+      logical :: verbose_
 
-      read(idcd, pos=9) nframes, istart, nevery, iend
+      verbose_=.true.
+      if(present(verbose)) verbose_=verbose
 
-      read(idcd, pos=45) timestep
+      idcd = dcdinfo%idcd
+      read(idcd, pos=9) dcdinfo%nframes, dcdinfo%istart
+     &   , dcdinfo%nevery, dcdinfo%iend 
+
+      read(idcd, pos=45) dcdinfo%timestep
 
       read(idcd, pos=97) ntitle
-      if (ntitle > 0) then
+      if (ntitle > 0 .and. verbose_) then
         if (rank.eq.0) write(iout,*) "The following titles were found:"
       end if
-      if (allocated(titlesdcd)) deallocate(titlesdcd)
-      allocate(titlesdcd(ntitle))
+      if (allocated(dcdinfo%titlesdcd)) deallocate(dcdinfo%titlesdcd)
+      allocate(dcdinfo%titlesdcd(ntitle))
       do i = 1, ntitle
           read(idcd) title_string
           m = 1
           do while (m .le. 80 .and. title_string(m:m) .ne. C_NULL_CHAR)
               m = m + 1
           end do
-          titlesdcd(i) = trim(title_string(1:m-1))
-          if (rank.eq.0) write(iout,*) titlesdcd(i)
+          dcdinfo%titlesdcd(i) = trim(title_string(1:m-1))
+          if (rank.eq.0 .and. verbose_) 
+     &       write(iout,*) dcdinfo%titlesdcd(i)
       end do
 
       read(idcd) dummy, dummy
@@ -353,14 +363,14 @@ c
       end if
 
       ! Number of atoms in each snapshot
-      read(idcd) natoms, dummy
+      read(idcd) dcdinfo%natoms, dummy
 c
 c    check if the number of atoms is the one of the "topology" xyz file
 c
-      if (natoms.ne.n) then
+      if (dcdinfo%natoms.ne.n) then
         if (rank.eq.0) write(iout,*) 'number of atoms in the ',
      $   'trajectory is not the same as in the xyz file'
-        if (rank.eq.0) write(iout,*) 'respectively ',natoms,n
+        if (rank.eq.0) write(iout,*) 'respectively ',dcdinfo%natoms,n
         call fatal
       end if
 
@@ -376,69 +386,71 @@ c
       ! Each frame has natoms*3 (4 bytes each) = natoms*12
       ! plus 6 box dimensions (8 bytes each) = 48
       ! Additionally there are 32 bytes of file information in each frame
-      framesize = natoms*12 + 80
+      dcdinfo%framesize = dcdinfo%natoms*12 + 80
       ! Header is typically 276 bytes, but inquire gives us exact size
       ! Only check size if we are reading and not if we are appending a
       ! file 
       if (dowrite) then
       ! Where are we?
         inquire(unit=idcd, pos=pos)
-        newpos = pos + framesize*nframes - 4
+        newpos = pos + dcdinfo%framesize*dcdinfo%nframes - 4
         read(idcd, pos=newpos) dummy
         return
       end if
-      nframes2 = (filesize-pos)/framesize
-      if ( nframes2 .ne. nframes) then
+      nframes2 = (dcdinfo%filesize-pos)/dcdinfo%framesize
+      if ( nframes2 .ne. dcdinfo%nframes) then
           write(iout,'(a,i0,a,i0,a)') "WARNING:
-     $         Header indicates ", nframes, 
+     $         Header indicates ", dcdinfo%nframes, 
      $         " frames, but file size indicates ", nframes2, "." 
-          nframes = int(nframes2)
+          dcdinfo%nframes = int(nframes2)
       end if
       end subroutine dcdfile_read_header
 c
 c      Closes DCD file
 c
-      subroutine dcdfile_close
-      use dcdmod
+      module subroutine dcdfile_close(dcdinfo)
       implicit none
-      deallocate(titlesdcd)
-      close(idcd)
+      type(dcdinfo_t), intent(inout) :: dcdinfo
+      deallocate(dcdinfo%titlesdcd)
+      close(dcdinfo%idcd)
       end subroutine dcdfile_close
 
       !> @Reads next frame into memory
-      subroutine dcdfile_read_next
+      module subroutine dcdfile_read_next(dcdinfo)
 c      use atoms, only : x,y,z
       use atomsMirror,only:xm=>x,ym=>y,zm=>z
      &               ,reCast_position,atomsmirror_init
      &               ,download_position
       use boxes, only : xbox,ybox,zbox,alpha,beta,gamma
-      use dcdmod
       use domdec
       use inform,only: abort
       use iounit
       use tinheader ,only:ti_p,re_p
       implicit none
+      type(dcdinfo_t), intent(inout) :: dcdinfo
       integer(kind=4) :: dummy(6), nbytes, ndims, i
       integer(kind=8) :: pos,newpos
       real(kind=4), allocatable :: xd(:),yd(:),zd(:)
       real(kind=8) :: box(6)
       character*120 :: linepos
+      integer :: idcd
 c
 c     abort if we are past the end of the file
 c
       ! Where are we?
+      idcd = dcdinfo%idcd
       inquire(unit=idcd, pos=pos)
 
       ! We subtract 4 bytes so that the next read of the 4-byte integer will line things up properly for the next read
       newpos = pos - 4
-      if (newpos.ge.(framesize*nframes)) then
+      if (newpos.ge.(dcdinfo%framesize*dcdinfo%nframes)) then
         abort = .true.
         return
       end if
 
-      allocate(xd(natoms))
-      allocate(yd(natoms))
-      allocate(zd(natoms))
+      allocate(xd(dcdinfo%natoms))
+      allocate(yd(dcdinfo%natoms))
+      allocate(zd(dcdinfo%natoms))
       nbytes = size(xd)*4
       ndims  = 3
 
@@ -500,7 +512,7 @@ c     put coordinates in global Tinker arrays
 c
 c     for reproducibility: first write truncated value in a char and then read them
 c
-      do i = 1, natoms
+      do i = 1, dcdinfo%natoms
         write(linepos,'(3F16.6)') xd(i),yd(i),zd(i)
         read(linepos,'(3F16.6)') xm(i),ym(i),zm(i)
       end do
@@ -517,24 +529,26 @@ c
 c
 c     Skips reading n-1 frames into memory
 c
-      subroutine dcdfile_skip_next(n)
-      use dcdmod
+      module subroutine dcdfile_skip_next(dcdinfo,n)
       implicit none
+      type(dcdinfo_t), intent(inout) :: dcdinfo
       integer(kind=4) :: dummy
       integer(kind=8) :: pos, newpos
       integer(kind=4), intent(in), optional :: n
    
       ! Where are we?
-      inquire(unit=idcd, pos=pos)
+      inquire(unit=dcdinfo%idcd, pos=pos)
 
       ! We subtract 4 bytes so that the next read of the 4-byte integer will line things up properly for the next read
       if (.not. present(n)) then
-          newpos = pos + framesize - 4
+          newpos = pos + dcdinfo%framesize - 4
       else
-          newpos = pos + framesize*n - 4
+          newpos = pos + dcdinfo%framesize*n - 4
       end if
 
-      read(idcd, pos=newpos) dummy
+      read(dcdinfo%idcd, pos=newpos) dummy
       
       end subroutine dcdfile_skip_next
+
+      end submodule
 

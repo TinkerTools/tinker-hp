@@ -766,7 +766,7 @@ c
       else
         nprocloc = nproc
         rankloc = rank
-        commloc = MPI_COMM_WORLD
+        commloc = COMM_TINKER
       end if
       allocate(iipolevec(npolerecloc))
       allocate(fuindvec(3,npolerecloc))

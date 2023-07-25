@@ -1332,14 +1332,13 @@ c           nx_cell = nx_cell + 1
          end do
 
       else
-
          c_glob  => a_plist%c_glob
          cell_x  => a_plist%cell_x
          cell_y  => a_plist%cell_y
          cell_z  => a_plist%cell_z
 !$acc parallel loop async(rec_queue)
 !$acc&         present(c_glob
-!$acc&   ,celle_x,celle_y,celle_z,x,y,z)
+!$acc&   ,cell_x,cell_y,cell_z,x,y,z)
          do i = 1, natmnlb
             if (i.le.natmnl) then
                iglob     = c_glob(i)

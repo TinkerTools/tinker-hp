@@ -30,15 +30,17 @@ c
       use tinheader
       use tinMemory
       use usage
+      use bndpot
       implicit none
       integer i,j
       integer ia,ib,ita,itb
       integer nb,nb5,nb4,nb3
+      integer nbm,nbm4
       integer size,next
       integer minat,iring
       integer d_size
       integer ierr
-      real(r_p) fc,bd
+      real(r_p) fc,bd, balpha
       logical header,done
       logical use_ring
       character*4 pa,pb
@@ -47,6 +49,7 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+      logical :: max_reach
 c
 c     process keywords containing bond stretch parameters
 c
@@ -157,12 +160,126 @@ c
          end if
       end do
 c
+c     process keywords containing MORSE stretch parameters
+c
+      blank = '        '
+      header = .true.
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call gettext (record,keyword,next)
+         call upcase (keyword)
+         iring = -1
+         if (keyword(1:6) .eq. 'MORSE ') then
+            ia = 0
+            ib = 0
+            fc = 0.0d0
+            bd = 0.0d0
+            balpha = 2.d0
+            string = record(next:240)
+            read (string,*)  ia,ib,fc,bd,balpha
+            if (.not. silent) then
+               if (header) then
+                header = .false.
+                if (rank.eq.0) write (iout,'(A,5x,A,9x,A,6x,A)') 
+     &             ' Additional Morse Stretching Parameters :',
+     &             'Atom Classes','K(S)','Length'
+               end if
+               if (rank.eq.0) 
+     &               write (iout,'(6x,2i4,4x,f12.3,f12.4)')
+     &                       ia,ib,fc,bd,balpha
+            end if
+            size = 4
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            if (ia .le. ib) then
+               pt = pa//pb
+            else
+               pt = pb//pa
+            end if
+            do j = 1, maxnbm
+              max_reach=.true.
+              if (kbm(j).eq.blank .or. kbm(j).eq.pt) then
+                  kbm(j) = pt
+                  bmor(1,j) = fc
+                  bmor(2,j) = bd
+                  bmor(3,j) = balpha
+                  max_reach = .false.
+                  exit
+              end if
+            end do
+            if (max_reach) then
+               if (rank.eq.0) write (iout,*)  
+     &           'KBOND  --  Too many Morse Stretching Parameters'
+               abort = .true.
+            endif
+         end if
+      end do
+c
+c     process keywords containing MORSE4 stretch parameters
+c
+      blank = '        '
+      header = .true.
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call gettext (record,keyword,next)
+         call upcase (keyword)
+         iring = -1
+         if (keyword(1:7) .eq. 'MORSE4 ') then
+            ia = 0
+            ib = 0
+            fc = 0.0d0
+            bd = 0.0d0
+            balpha = 2.d0
+            string = record(next:240)
+            read (string,*)  ia,ib,fc,bd,balpha
+            if (.not. silent) then
+               if (header) then
+                header = .false.
+                if (rank.eq.0) write (iout,'(A,5x,A,9x,A,6x,A)') 
+     &             ' Additional Morse4 Stretching Parameters :',
+     &             'Atom Classes','K(S)','Length'
+               end if
+               if (rank.eq.0) 
+     &               write (iout,'(6x,2i4,4x,f12.3,f12.4)')
+     &                       ia,ib,fc,bd,balpha
+            end if
+            size = 4
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            if (ia .le. ib) then
+               pt = pa//pb
+            else
+               pt = pb//pa
+            end if
+            do j = 1, maxnbm4
+              max_reach=.true.
+              if (kbm4(j).eq.blank .or. kbm4(j).eq.pt) then
+                  kbm4(j) = pt
+                  bmor4(1,j) = fc
+                  bmor4(2,j) = bd
+                  bmor4(3,j) = balpha
+                  max_reach = .false.
+                  exit
+              end if
+            end do
+            if (max_reach) then
+               if (rank.eq.0) write (iout,*)  
+     &           'KBOND  --  Too many Morse4 Stretching Parameters'
+               abort = .true.
+            endif
+         end if
+      end do
+c
 c     determine the total number of forcefield parameters
 c
       nb = maxnb
       nb5 = maxnb5
       nb4 = maxnb4
       nb3 = maxnb3
+      nbm = maxnbm
+      nbm4 = maxnbm4
       do i = maxnb, 1, -1
          if (kb(i) .eq. blank)  nb = i - 1
       end do
@@ -175,8 +292,18 @@ c
       do i = maxnb3, 1, -1
          if (kb3(i) .eq. blank)  nb3 = i - 1
       end do
+      do i = maxnbm, 1, -1
+         if (kbm(i) .eq. blank)  nbm = i - 1
+      end do
+      do i = maxnbm4, 1, -1
+         if (kbm4(i) .eq. blank)  nbm4 = i - 1
+      end do
       use_ring = .false.
       if (min(nb5,nb4,nb3) .ne. 0)  use_ring = .true.
+
+      if (nbm > 0 .or. nbm4>0) then
+        disable_fuse_bonded = .true.
+      endif
 c
 c     use special bond parameter assignment method for MMFF
 c
@@ -203,6 +330,8 @@ c
          end if
          bk(i) = 0.0_ti_p
          bl(i) = 0.0_ti_p
+         ba(i) = 2.0_ti_p
+         bndtypI(i)=bndtyp_i
          done = .false.
 c
 c     make a check for bonds contained inside small rings
@@ -265,6 +394,36 @@ c
             end do
          end if
 c
+c     assign stretching parameters for Morse bonds
+c
+         if (.not. done) then
+            do j = 1, nbm
+               if (kbm(j) .eq. pt) then
+                  bk(i) = bmor(1,j)
+                  bl(i) = bmor(2,j)
+                  ba(i) = bmor(3,j)
+                  bndtypI(i) = BND_MORSE
+                  done = .true.
+                  goto 130
+               end if
+            end do
+         end if
+c
+c     assign stretching parameters for Morse4 bonds
+c
+         if (.not. done) then
+            do j = 1, nbm4
+               if (kbm4(j) .eq. pt) then
+                  bk(i) = bmor4(1,j)
+                  bl(i) = bmor4(2,j)
+                  ba(i) = bmor4(3,j)
+                  bndtypI(i) = BND_MORSE4
+                  done = .true.
+                  goto 130
+               end if
+            end do
+         end if
+c
 c     warning if suitable bond stretching parameter not found
 c
   130    continue
@@ -309,6 +468,7 @@ c
       use nvshmem
       use sizes,only:tinkerdebug
       use tinMemory
+      use bndpot
       implicit none
 #ifdef _OPENACC
  12   format(2x,'upload_device_kbond')
@@ -319,11 +479,14 @@ c
      &     dst=c_bk(mype)%pel,nd=nbond_pe,config=mhostnvsh)
       call shmem_update_device(bl,nbond,
      &     dst=c_bl(mype)%pel,nd=nbond_pe,config=mhostnvsh)
+      call shmem_update_device(ba,nbond,
+     &     dst=c_ba(mype)%pel,nd=nbond_pe,config=mhostnvsh)
 c     call nvshmem_check_data( ibnd,c_ibnd(mype)%pel,2*nbond,
 c    &     2*nbond_pe)
 #else
-!$acc update device(bl,bk)
+!$acc update device(bl,bk,ba)
 #endif
+!$acc update device(bndtypI)
       end subroutine
 c
 c

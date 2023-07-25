@@ -3,8 +3,8 @@
       implicit none
 
       interface
-      module subroutine apply_b_piston(dt,pres)
-      real(r_p), intent(in) :: dt,pres
+      module subroutine apply_b_piston(dt,pres,stress)
+      real(r_p), intent(in) :: dt,pres,stress(3,3)
       end subroutine
 
       module subroutine apply_o_piston(dt)
@@ -21,7 +21,8 @@
       real(r_p),intent(in):: dta
       end subroutine
 
-      module subroutine apply_langevin_thermostat
+      module subroutine apply_langevin_thermostat(dt)
+      real(r_p),intent(in):: dt
       end subroutine
       end interface
 

@@ -214,6 +214,8 @@ c
          call getword (record,bndtyp,next)
          if (bndtyp.eq.'MORSE') then
             bndtyp_i = BND_MORSE
+         else if (bndtyp.eq.'MORSE4') then
+            bndtyp_i = BND_MORSE4
          else if (bndtyp.eq.'HARMONIC') then
             bndtyp_i = BND_HARMONIC
          else
@@ -578,6 +580,7 @@ c
          call getword (record,polpred,next)
          call upcase (polpred)
          if (polpred .eq. 'NONE') use_pred = .false.
+         if (polpred .eq. 'ENAB') use_pred = .true.
       !GPU Tools
       else if (keyword(1:10) .eq. 'GPU-GANGS ')       then
          read (string,*,err=10,end=10)   gpu_gangs

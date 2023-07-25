@@ -123,6 +123,22 @@ c#define __tver__ (__use_ene__+__use_grd__+__use_vir__+__use_act__)
 #undef __tfea__
 #undef __sufx__
 
+#define __tver__ (__use_ene__+__use_act__)
+#define __tfea__ (__use_mpi__+__use_softcore__+__use_groups__+__use_shortRange__)
+#define __sufx__ 3s_kcu
+#include "ehalcu.tpl.f"
+#undef __tver__
+#undef __tfea__
+#undef __sufx__
+
+#define __tver__ (__use_ene__+__use_act__)
+#define __tfea__ (__use_mpi__+__use_softcore__+__use_groups__+__use_longRange__)
+#define __sufx__ 3l_kcu
+#include "ehalcu.tpl.f"
+#undef __tver__
+#undef __tfea__
+#undef __sufx__
+
 #if 1
         attributes(global)
      &  subroutine ehal1short_cu_deb

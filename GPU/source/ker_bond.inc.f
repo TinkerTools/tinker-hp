@@ -4,7 +4,7 @@
 #include "groups.inc.f"
 
       M_subroutine 
-     &         ker_bond(i,ia,ib,loc,ideal,force,fgrp,xab,yab,zab
+     &         ker_bond(i,ia,ib,loc,ideal,force,alp,fgrp,xab,yab,zab
      &            ,bndtyp_i
      &            ,use_polymer,use_group
      &            ,cbnd,qbnd,bndunit,eb,e
@@ -16,13 +16,13 @@
      &            ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
      &            ,ver,fea)
 !$acc routine
-      use bndpot    ,only: BND_HARMONIC,BND_MORSE
+      use bndpot    ,only: BND_HARMONIC,BND_MORSE,BND_MORSE4
       use tinheader ,only: ti_p,zeror
       use tinTypes  ,only: real3
       implicit none
       integer  ,intent(in):: i,ver,fea,bndtyp_i
       integer  ,intent(in):: loc(*)
-      real(t_p),intent(in):: cbnd,qbnd,bndunit,ideal,force,fgrp
+      real(t_p),intent(in):: cbnd,qbnd,bndunit,ideal,force,alp,fgrp
       real(t_p),intent(inout):: xab,yab,zab
       logical  ,intent(in):: use_group,use_polymer
       integer  ,intent(inout):: ia,ib
@@ -41,7 +41,7 @@
       integer   grd,ene,act,vir,gamd,plm,grp
       real(t_p) de,expterm,bde,dt,dt2
      &         ,deddt
-     &         ,rab
+     &         ,rab, ba2
       parameter(
      &         grd=__use_grd__,ene=__use_ene__,
      &         act=__use_act__,vir=__use_vir__,
@@ -74,16 +74,27 @@ c
      &         *(1.0 + 1.5*cbnd*dt + 2.0*qbnd*dt2)
 c
 c     Morse potential uses energy = BDE * (1 - e**(-alpha*dt))**2)
-c     with the approximations alpha = sqrt(ForceConst/BDE) = -2
+c     with alpha = sqrt(ForceConst/BDE)
 c     and BDE = Bond Dissociation Energy = ForceConst/alpha**2
 c
       else if (bndtyp_i .eq. BND_MORSE) then
-         expterm = exp(-2.0_ti_p*dt)
-         bde   = 0.25_ti_p * bndunit * force
+         expterm = exp(-alp*dt)
+         bde   = bndunit * force / (alp*alp)
          IF (IAND(ver,ene).NE.0)
      &      e  = bde * (1.0_ti_p-expterm)**2
          IF (IAND(ver,grd+vir).NE.0)
-     &   deddt = 4.0_ti_p * bde * (1.0_ti_p-expterm) * expterm
+     &   deddt = 2.0_ti_p * bde * alp  
+     &       * (1.0_ti_p-expterm) * expterm
+      else if (bndtyp_i .eq. BND_MORSE4) then
+         dt2 = dt * dt
+         ba2 = 7._ti_p/12._ti_p* alp*alp
+         IF (IAND(ver,ene).NE.0)
+     &      e  = bndunit * force * dt2 
+     &        * (1.0_ti_p - alp*dt + ba2*dt2)
+         IF (IAND(ver,grd+vir).NE.0)
+     &   deddt = bndunit * force * dt 
+     &           * (2.0_ti_p-3._ti_p*alp*dt
+     &                + 4._ti_p*ba2*dt2)
       end if
 c
 c     compute chain rule terms needed for derivatives

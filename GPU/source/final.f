@@ -197,10 +197,10 @@ c     module "couple"
 c
       if (allocated(n12)) deallocate (n12)
       if (allocated(i12)) deallocate (i12)
-c
-c     module "dcdmod"
-c
-      if (allocated(titlesdcd)) deallocate (titlesdcd)
+cc
+cc     module "dcdmod"
+cc
+c      if (allocated(titlesdcd)) deallocate (titlesdcd)
 c
 c     module "deriv"
 c

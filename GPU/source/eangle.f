@@ -78,7 +78,8 @@ c
 !$acc&         present(x,y,z,loc,use,iang,aea,angleglob
 #endif
 !$acc&    ,anat,ak,afld,angtypI,grplist,wgrp,atmType,aMDwattype,deW1aMD
-!$acc&    ,dea,ea,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
+!$acc&    ,dea,ea,eW1aMD,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+!$acc&    ,fmat_ps,dfmat_ps)
 !$acc&         present(ea) async reduction(+:ea)
       do iangle = 1, nangleloc
          i     = angleglob(iangle)
@@ -122,7 +123,7 @@ c
      &                 ,angunit,cang,pang,sang,qang,fgrp
      &                 ,use_group,use_polymer,angtypii,x,y,z,afld
      &                 ,ea,e,dea,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz
-     &                 ,g_vzz,tver,tfea)
+     &                 ,g_vzz,tver,tfea,fmat_ps,dfmat_ps)
 c
 c     compute the projected in-plane angle bend energy
 c

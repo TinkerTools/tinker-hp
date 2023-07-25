@@ -131,7 +131,7 @@ c
      &            ,so_x,so_y,so_z
       use utils   ,only: set_to_zero1_int1,set_to_zero1_int
      &            ,associate_ptr
-      use inform  ,only: deb_Path
+      use inform  ,only: deb_Path, app_id,pimd_a,analyze_beads_a,pibar_a
       use nblist_b_inl
       use interfaces ,only: pre_process_adjacency_matrix
 
@@ -304,7 +304,7 @@ c
 #ifdef _CUDA
 !$acc host_data use_device(sgl_id,cell_scan,cell_len
 !$acc&    ,x,y,z,matb_lst,bb_lst,atomk,atomgid,s_key
-!$acc&    ,sgl_id,slc_id,cellv_jvdw,trackb,b2pl,abpl,abpl_1,bapl
+!$acc&    ,sgl_id,slc_id,cellv_jvdw,trackb,b2pl,abpl,bapl
 !$acc&    ,so_x,so_y,so_z,b_stat,b_rmid)
 
       ! Build block satellite data ( middle point and locality )
@@ -317,7 +317,8 @@ c
 
       ! Set irregular flag to all blocks if box is to small
       !TODO Lambda : Set to true
-      if (octahedron.or.l%use2lists) then
+      if(app_id==pimd_a .or. app_id==analyze_beads_a
+     &     .or. app_id==pibar_a.or.octahedron.or.l%use2lists) then
 !$acc parallel loop async(rec_queue) deviceptr(b_stat)
          do i = 1,nb
             b_stat(i)=disc_block
@@ -333,7 +334,7 @@ c
 c     From Block-Block to compressed Block-Atoms list
 c
       if (l%use2lists) then
-
+!$acc host_data use_device(abpl_1)
         call filter_lsts_sparse <<<*,128,0,rec_stream>>>
      &       (sgl_id,cell_scan,so_x,so_y,so_z,b_stat,b_rmid,matb_lst
      &       ,nab,nb,szMatb,nb2p_0
@@ -342,7 +343,7 @@ c
      &       ,b2pl,trackb(3),abpl_1
      &       ,trackb(17),trackb(n_nbl*nb+17))
         call check_launch_kernel(" filter_lsts_sparse")
-
+!$acc end host_data
       else
 
         call filter_lst_sparse <<<*,128,0,rec_stream>>>

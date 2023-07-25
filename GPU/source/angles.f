@@ -200,6 +200,7 @@ c
       use tinMemory
       use urey
       use mpi
+      use urypot
       implicit none
 c
 c     if (associated(ak).and.size(ak).eq.nangle
@@ -224,6 +225,8 @@ c    &   .and.16*n.eq.size(anglist)) return ! Exit condition
       call shmem_request(afld,    winafld,   [nangle], config=mhostacc)
       call shmem_request(angtyp,  winangtyp, [nangle], config=mhostonly)
       call shmem_request(angtypI, winangtypI,[nangle], config=mhostacc)
+      call shmem_request(ureytypI, winureytypI
+     &   ,[nangle], config=mhostacc)
 
       call shmem_request(isb,     winisb,  [3,nangle], config=mhostacc)
       call shmem_request(sbk,     winsbk,  [2,nangle], config=mhostacc)
@@ -263,6 +266,7 @@ c
       use tinMemory
       use urey
       use mpi
+      use urypot
       implicit none
 c
 c     if (associated(ak).and.size(ak).eq.nangle
@@ -287,6 +291,7 @@ c    &   .and.16*n.eq.size(anglist)) return ! Exit condition
       call shmem_request(afld,    winafld,   [0], config=mhostacc)
       call shmem_request(angtyp,  winangtyp, [0], config=mhostonly)
       call shmem_request(angtypI, winangtypI,[0], config=mhostacc)
+      call shmem_request(ureytypI, winureytypI,[0], config=mhostacc)
 
       call shmem_request(isb,     winisb,  [0,0], config=mhostacc)
       call shmem_request(sbk,     winsbk,  [0,0], config=mhostacc)

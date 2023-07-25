@@ -84,8 +84,7 @@ c
 c
 c     Flag for predictor-Corrector
 c
-      use_pred       = merge(.true.,.false.,app_id.eq.dynamic_a.or.
-     &                       app_id.eq.pimd_a)
+      use_pred       = merge(.true.,.false.,app_id.eq.dynamic_a)
 c
 c     Set default values of Force field potential
 c

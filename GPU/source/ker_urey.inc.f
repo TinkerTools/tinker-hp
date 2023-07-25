@@ -5,6 +5,7 @@
       M_subroutine
      &        ker_urey(i,ia,ic,nbloc,loc
      &            ,ideal,force,ureyunit,cury,qury,fgrp
+     &            ,ureytyp_i
      &            ,use_group,use_polymer
      &            ,x,y,z
      &            ,eub
@@ -16,8 +17,10 @@
 #endif
      &            ,tver,tfea)
       use tinTypes,only: real3
+      use tinheader,only: ti_p
+      use urypot, only: UREY_ANGREP, UREY_QUARTIC
       implicit none
-      integer  ,intent(in) :: i,nbloc,tver,tfea,loc(*)
+      integer  ,intent(in) :: i,nbloc,tver,tfea,loc(*),ureytyp_i
       logical  ,intent(in) :: use_group,use_polymer
       real(t_p),intent(in) :: ideal,force,ureyunit,cury,qury,fgrp
      &         , x(*),y(*),z(*)
@@ -55,11 +58,22 @@
      &   call image_inl (xac,yac,zac)
 
       rac = sqrt(xac*xac + yac*yac + zac*zac)
-      dt  = rac - ideal
-      dt2 = dt * dt
-      e   = ureyunit *force *dt2 *(1.0+cury*dt+qury*dt2)
-      deddt = 2.0 *ureyunit *force *dt
-     &            *(1.0 + 1.5*cury*dt + 2.0*qury*dt2)
+      if (ureytyp_i .eq. UREY_ANGREP) then
+        e = ureyunit * force * exp(-rac/ideal)
+        deddt = - e / ideal
+      elseif (ureytyp_i .eq. UREY_QUARTIC) then
+        dt  = ideal / rac
+        dt2 = dt * dt
+        e   = ureyunit *force * (dt2 - 1.0_ti_p)**2
+        deddt = 4.0_ti_p *ureyunit *force *dt2
+     &                *(1.0_ti_p - dt2) / rac
+      else
+        dt  = rac - ideal
+        dt2 = dt * dt
+        e   = ureyunit *force *dt2 *(1.0_ti_p+cury*dt+qury*dt2)
+        deddt = 2.0_ti_p *ureyunit *force *dt
+     &            *(1.0_ti_p + 1.5_ti_p*cury*dt + 2.0_ti_p*qury*dt2)
+      endif
 c
 c     scale the interaction based on its group membership
 c

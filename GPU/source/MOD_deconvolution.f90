@@ -1,4 +1,4 @@
-#include "tinker_precision.h"
+#include "tinker_macro.h"
 
 MODULE deconvolution
   IMPLICIT NONE

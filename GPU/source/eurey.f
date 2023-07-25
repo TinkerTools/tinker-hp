@@ -38,7 +38,7 @@ c
       use virial
       use timestat
       implicit none
-      integer i,ia,ic,iurey,grp,tver,tfea
+      integer i,ia,ic,iurey,grp,tver,tfea,ureytypii
       real(t_p) ideal,force,fgrp,e
       type(real3) ded
       logical proceed
@@ -57,11 +57,13 @@ c
 c     calculate the Urey-Bradley 1-3 energy term
 c
 !$acc parallel loop present(ureyglob,iury,loc,x,y,z,ul,uk,grplist,wgrp
-!$acc&         ,use,deub,eub,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) async
+!$acc&         ,use,deub,eub,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
+!$acc&         ,ureytypI) async
 !$acc&         reduction(+:eub)
 !$acc&         private(fgrp)
       do iurey = 1, nureyloc
          i     = ureyglob(iurey)
+         ureytypii = ureytypI(i)
          ia    = iury(1,i)
          ic    = iury(3,i)
          ideal = ul(i)
@@ -78,7 +80,8 @@ c     compute the value of the 1-3 distance deviation
 c
          if (proceed) then
             call ker_urey(i,ia,ic,nbloc,loc,ideal,force,ureyunit
-     &              ,cury,qury,fgrp,use_group,use_polymer,x,y,z
+     &              ,cury,qury,fgrp,ureytypii,use_group,use_polymer
+     &              ,x,y,z
      &              ,eub,e,ded,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz
      &              ,tver,tfea)
          end if

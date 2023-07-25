@@ -23,9 +23,12 @@ c
       real(t_p) bndunit
       character*8 bndtyp
       integer bndtyp_i
+      integer , pointer :: bndtypI(:)
+      integer :: winbndtypI
       enum,bind(C)
       enumerator BND_HARMONIC
       enumerator BND_MORSE
+      enumerator BND_MORSE4
       enumerator BND_NO_TYPE
       end enum
       save

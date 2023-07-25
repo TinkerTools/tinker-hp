@@ -62,13 +62,14 @@ c
       use uprior  ,only: use_pred
       use usage
       use utilgpu
+      use utilbaoab
       use utils
       use virial
       implicit none
       integer i,j,iglob
       integer istep
       real(r_p) dt,dt_2
-      real(r_p) dta,dta_2,dta2
+      real(r_p) dta,dta_2,dts
       logical save_pred
 c
 c     set some time values for the dynamics integration
@@ -76,9 +77,10 @@ c
       dt_2  = 0.5_re_p * dt
       dta   = dt / dinter
       dta_2 = 0.5_re_p * dta
-      dta2  = dta / dshort
-c      
-      if(use_ml_embedding) use_mlpot=.FALSE.
+      dts   = dta / dshort
+      if (istep.eq.1) call set_langevin_thermostat_coeff(dts)
+c
+      if (use_ml_embedding) use_mlpot=.FALSE.
 c
 c     store the current atom positions, then find half-step
 c     velocities via BAOAB recursion
@@ -89,7 +91,7 @@ c
 c
 c     find intermediate-evolving velocities and positions via BAOAB recursion
 c
-      call baoabrespaint1(ealt,viralt,dta,dta2)
+      call baoabrespaint1(ealt,viralt,dta,dts)
 c
 c     Reassign the particules that have changed of domain
 c
@@ -214,7 +216,7 @@ c
 c     subroutine baoabrespaint1 : 
 c     find intermediate-evolving velocities and positions via BAOAB recursion
 c
-      subroutine baoabrespaint1(ealt,viralt,dta,dta2)
+      subroutine baoabrespaint1(ealt,viralt,dta,dts)
       use ani
       use atmtyp
       use atomsMirror
@@ -238,7 +240,7 @@ c
       use mpi
       implicit none
       integer i,j,k,iglob
-      real(r_p) dta,dta_2,dta2
+      real(r_p) dta,dta_2,dts
       real(r_p) ealt,ealtml
       real(r_p) viralt(3,3)
       logical save_pred
@@ -256,7 +258,7 @@ c
 c
 c     find fast-evolving velocities and positions via BAOAB recursion
 c
-         call baoabrespafast1(ealt2,viralt2,dta2)
+         call baoabrespafast1(ealt2,viralt2,dts)
 c
 c       Reassign the particules that have changed of domain
 c
@@ -364,6 +366,7 @@ c
       use usage
       use virial
       use mpi
+      use utilbaoab
       implicit none
       integer i,j,k,iglob
       real(r_p) dta,dta_2
@@ -372,8 +375,6 @@ c
 c
 c     set time values and coefficients for BAOAB integration
 c
-      a1 = exp(-gamma*dta)
-      a2 = sqrt((1-a1**2)*boltzmann*kelvin)
       dta_2 = 0.5_re_p * dta
 c
 c     initialize virial from fast-evolving potential energy terms
@@ -394,26 +395,8 @@ c
             call rattle(dta_2)
             call rattle2(dta_2) !TODO Ask L about this call
          end if
-c
-c     compute random part
-c
-         call prmem_request(Rn,3,nloc+1,async=.true.)
-#ifdef _OPENACC
-         call normalgpu(Rn(1,1),3*nloc)
-#endif
-         if (host_rand_platform) then
-            call normalvec(Rn,3*nloc)
-!$acc update device(Rn) async
-         end if
 
-!$acc parallel loop collapse(2) async default(present)
-         do i = 1, nloc; do j = 1, 3
-            iglob = glob(i)
-            if (use(iglob)) then
-               v(j,iglob) = a1*v(j,iglob) + 
-     &         a2*real(Rn(j,i),r_p)/sqrt(mass(iglob))
-            end if
-         end do; end do
+         call apply_langevin_thermostat(dta)
 c
          if (use_rattle) then
             call rattle2(dta)

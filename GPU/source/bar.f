@@ -157,6 +157,7 @@ c
       character*240 barfile
       character*240, allocatable :: keys0(:)
       character*240, allocatable :: keys1(:)
+      type(dcdinfo_t) :: dcdinfo,dcdinfoB
 c
 c
 c     get trajectory A archive and setup mechanics calculation
@@ -259,10 +260,10 @@ c
       arcfile = fnamea
       if (dcdio) then
         dcdfile = fnamea(1:lenga)//'.dcd'
-        call dcdfile_open(dcdfile)
-        call dcdfile_read_header(.false.)
-        call dcdfile_read_next
-        call dcdfile_skip_next(0)
+        call dcdfile_open(dcdinfo,dcdfile)
+        call dcdfile_read_header(dcdinfo,.false.)
+        call dcdfile_read_next(dcdinfo)
+        call dcdfile_skip_next(dcdinfo,0)
       else
         call suffix (arcfile,'arc','old')
         open (unit=iarc,file=arcfile,status ='old')
@@ -306,8 +307,8 @@ c
          ua0(i)  = epot
          vola(i) = volbox
          if (dcdio) then
-           call dcdfile_read_next
-           call dcdfile_skip_next(0)
+           call dcdfile_read_next(dcdinfo)
+           call dcdfile_skip_next(dcdinfo,0)
            if (abort) cycle
          else
            call readxyz (iarc)
@@ -334,12 +335,12 @@ c
 c     reset trajectory A using the parameters for state 1
 c
       if (dcdio) then
-        call dcdfile_close
+        call dcdfile_close(dcdinfo)
         dcdfile = fnamea(1:lenga)//'.dcd'
-        call dcdfile_open(dcdfile)
-        call dcdfile_read_header(.false.)
-        call dcdfile_read_next
-        call dcdfile_skip_next(0)
+        call dcdfile_open(dcdinfo,dcdfile)
+        call dcdfile_read_header(dcdinfo,.false.)
+        call dcdfile_read_next(dcdinfo)
+        call dcdfile_skip_next(dcdinfo,0)
         abort = .false.
       else
         rewind (unit=iarc)
@@ -382,8 +383,8 @@ c
   130       format (i11,2x,3f16.4)
          end if
          if (dcdio) then
-           call dcdfile_read_next
-           call dcdfile_skip_next(0)
+           call dcdfile_read_next(dcdinfo)
+           call dcdfile_skip_next(dcdinfo,0)
            if (abort) cycle
          else
            call readxyz (iarc)
@@ -403,7 +404,7 @@ c
       end do
       nfrma = i
       if (dcdio) then
-        call dcdfile_close
+        call dcdfile_close(dcdinfo)
       else
         close (unit=iarc)
       end if
@@ -414,10 +415,10 @@ c
       arcfile = fnameb
       if (dcdio) then
         dcdfile = fnameb(1:lengb)//'.dcd'
-        call dcdfile_open(dcdfile)
-        call dcdfile_read_header(.false.)
-        call dcdfile_read_next
-        call dcdfile_skip_next(0)
+        call dcdfile_open(dcdinfo,dcdfile)
+        call dcdfile_read_header(dcdinfo,.false.)
+        call dcdfile_read_next(dcdinfo)
+        call dcdfile_skip_next(dcdinfo,0)
         abort = .false.
       else
         call suffix (arcfile,'arc','old')
@@ -459,8 +460,8 @@ c
          ub0 (i) = epot
          volb(i) = volbox
          if (dcdio) then
-           call dcdfile_read_next
-           call dcdfile_skip_next(0)
+           call dcdfile_read_next(dcdinfo)
+           call dcdfile_skip_next(dcdinfo,0)
            if (abort) cycle
          else
            call readxyz (iarc)
@@ -486,12 +487,12 @@ c
 c     reset trajectory B
 c
       if (dcdio) then
-        call dcdfile_close
+        call dcdfile_close(dcdinfo)
         dcdfile = fnameb(1:lengb)//'.dcd'
-        call dcdfile_open(dcdfile)
-        call dcdfile_read_header(.false.)
-        call dcdfile_read_next
-        call dcdfile_skip_next(0)
+        call dcdfile_open(dcdinfo,dcdfile)
+        call dcdfile_read_header(dcdinfo,.false.)
+        call dcdfile_read_next(dcdinfo)
+        call dcdfile_skip_next(dcdinfo,0)
         abort = .false.
       else
         rewind (unit=iarc)
@@ -535,8 +536,8 @@ c
          end if
 
          if (dcdio) then
-           call dcdfile_read_next
-           call dcdfile_skip_next(0)
+           call dcdfile_read_next(dcdinfo)
+           call dcdfile_skip_next(dcdinfo,0)
            if (abort) cycle
          else
            call readxyz (iarc)
@@ -555,7 +556,7 @@ c
       end do
       nfrmb = i
       if (dcdio) then
-        call dcdfile_close
+        call dcdfile_close(dcdinfo)
       else
         close (unit=iarc)
       end if
@@ -623,7 +624,7 @@ c
       use iounit
       use titles
       use random_mod
-      use units
+      use units, only: gasconst, prescon
       use domdec
       implicit none
       integer i,j,k,ibar

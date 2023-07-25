@@ -11,7 +11,7 @@ c     literature reference:
 c     "Scalable Evaluation of Polarization Energy and Associated Forces
 c     in Polarizable Molecular Dynamics: II. Toward Massively Parallel
 c     Computations Using Smooth Particle Mesh Ewald",L. Lagardere et al.,
-c     J. Chem. Theory Comput., 2015, 11 (6), pp 2589â~@~S2599
+c     J. Chem. Theory Comput., 2015, 11 (6), pp 2589ï¿½~@~S2599
 c
 #include "tinker_precision.h"
       subroutine newinduce_pmevec
@@ -559,7 +559,7 @@ cnew         end do
           end do
         end if
         call MPI_IALLREDUCE(MPI_IN_PLACE,ggnew(1),nrhs,MPI_TPREC,
-     $      MPI_SUM,MPI_COMM_WORLD,req3,ierr)
+     $      MPI_SUM,COMM_TINKER,req3,ierr)
         call MPI_WAIT(req3,status,ierr)
         if (rank.le.ndir-1) then
           call MPI_IALLREDUCE(MPI_IN_PLACE,ene(1),nrhs,MPI_TPREC,
@@ -822,7 +822,7 @@ c
 c
         end if
         call MPI_IALLREDUCE(MPI_IN_PLACE,rnorm(1),nrhs,MPI_TPREC,
-     $    MPI_SUM,MPI_COMM_WORLD,reqnorm,ierr)
+     $    MPI_SUM,COMM_TINKER,reqnorm,ierr)
         if (rank.le.ndir-1) then
           if (dodiis) then
             ind = 0
@@ -968,7 +968,7 @@ c
         rankloc  = rank_bis
       else
         nprocloc = nproc
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
         rankloc  = rank
       end if
 
@@ -1231,7 +1231,7 @@ c
         rankloc  = rank_bis
       else
         nprocloc = nproc
-        commloc  = MPI_COMM_WORLD
+        commloc  = COMM_TINKER
         rankloc  = rank
       end if
 

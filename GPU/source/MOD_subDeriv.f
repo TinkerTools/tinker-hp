@@ -14,11 +14,12 @@ c
       submodule(deriv) subderiv
       use atoms    ,only:x,y,z,n
       use argue    ,only:arg
+      use beads    ,only: centroid_longrange, polar_allbeads
       use colvars  ,only:use_colvars,ncvatoms,decv,decv_tot
       use domdec
       use dcdmod   ,only:dcdio
       use inform   ,only:deb_Path,deb_Force,abort,n_fwriten
-     &             ,dint1,dint2,mmo=>minmaxone
+     &             ,dint1,dint2,mmo=>minmaxone,app_id,pimd_a
       use,intrinsic:: iso_c_binding ,only: c_ptr,c_f_pointer,c_loc
       use mpi
       use mdstuf   ,only:integrate
@@ -174,6 +175,7 @@ c
       ftot_l     = .false.
 
       respa1_l   = (index(integrate,'RESPA1').gt.0)
+     &     .or. (centroid_longrange .and. polar_allbeads) 
       smd_l      = use_smd_velconst.or.use_smd_forconst
       gamd_l     = use_gamd.or.use_amd_ene.or.use_amd_dih.or.
      &             use_amd_wat1
@@ -181,7 +183,7 @@ c
       ftot_l = (integrate.eq.'RESPA'.or.respa1_l
      &      .or.integrate.eq.'BAOAB'.or.integrate.eq.'BAOABRESPA'
      &      .or.integrate.eq.'VERLET'.or.integrate.eq.'BBK'
-     &      .or.integrate.eq.'BEEMAN')
+     &      .or.integrate.eq.'BEEMAN').and.(app_id.ne.pimd_a)
 
       fdebs_l    = merge(.true.,.false.,ftot_l.and..not.gamd_l
      &                   .and..not.deb_Force)
@@ -257,6 +259,7 @@ c
       end subroutine
 
       module subroutine mem_alloc_deriv(opt)
+      use beads, only: centroid_longrange, polar_allbeads
       implicit none
       integer,optional:: opt
       integer(mipk) i,j
@@ -440,7 +443,9 @@ c
       de1z (1:dr_stride) => de_buff1(of1+2*dr_stride+1:of1+3*dr_stride)
       of1 = of1 + dr_stride3
 
-      if (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1') then
+      if (integrate.eq.'RESPA1'.or.integrate.eq.'BAOABRESPA1'
+     &    .or. (centroid_longrange.and.polar_allbeads)
+     & ) then
          desave (1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
          of1 = of1 + dr_stride3
       end if
@@ -457,7 +462,6 @@ c
      &   .or.dr_nbnbr.eq.0) goto 30
       if (deb_Path) write(*,*)
      &   "mem_alloc_deriv_rec",opt_,nlocrec2
-
       dr_strider  = prmemGetAllocSize(nlocrec2)
       dr_strider3 = 3*dr_strider
 
@@ -1716,18 +1720,18 @@ c
 !$acc end data
       if (rank.eq.0) then
          call MPI_REDUCE(MPI_IN_PLACE,mini,1,MPI_RPREC,
-     &                   MPI_MIN,0,MPI_COMM_WORLD,i)
+     &                   MPI_MIN,0,COMM_TINKER,i)
          call MPI_REDUCE(MPI_IN_PLACE,maxi,1,MPI_RPREC,
-     &                   MPI_MAX,0,MPI_COMM_WORLD,i)
+     &                   MPI_MAX,0,COMM_TINKER,i)
          call MPI_REDUCE(MPI_IN_PLACE,norm_l1,1,MPI_RPREC,
-     &                   MPI_SUM,0,MPI_COMM_WORLD,i)
+     &                   MPI_SUM,0,COMM_TINKER,i)
       else
          call MPI_REDUCE(mini,mini,1,MPI_RPREC,
-     &                   MPI_MIN,0,MPI_COMM_WORLD,i)
+     &                   MPI_MIN,0,COMM_TINKER,i)
          call MPI_REDUCE(maxi,maxi,1,MPI_RPREC,
-     &                   MPI_MAX,0,MPI_COMM_WORLD,i)
+     &                   MPI_MAX,0,COMM_TINKER,i)
          call MPI_REDUCE(norm_l1,norm_l1,1,MPI_RPREC,
-     &                   MPI_SUM,0,MPI_COMM_WORLD,i)
+     &                   MPI_SUM,0,COMM_TINKER,i)
       end if
 
  30   format(a7,a3,3F20.8)
@@ -1998,18 +2002,18 @@ c     end if
       if (nproc.gt.1) then
       if (rank.eq.0) then
          call MPI_REDUCE(MPI_IN_PLACE,mmx,nf,MPI_RPREC,
-     &                   MPI_MIN,0,MPI_COMM_WORLD,i)
+     &                   MPI_MIN,0,COMM_TINKER,i)
          call MPI_REDUCE(MPI_IN_PLACE,mmx(nf+1),nf,MPI_RPREC,
-     &                   MPI_MAX,0,MPI_COMM_WORLD,i)
+     &                   MPI_MAX,0,COMM_TINKER,i)
          call MPI_REDUCE(MPI_IN_PLACE,mmx(2*nf+1),nf,MPI_RPREC,
-     &                   MPI_SUM,0,MPI_COMM_WORLD,i)
+     &                   MPI_SUM,0,COMM_TINKER,i)
       else
          call MPI_REDUCE(mmx,mmx,nf,MPI_RPREC,
-     &                   MPI_MIN,0,MPI_COMM_WORLD,i)
+     &                   MPI_MIN,0,COMM_TINKER,i)
          call MPI_REDUCE(mmx(nf+1),mmx(nf+1),nf,MPI_RPREC,
-     &                   MPI_MAX,0,MPI_COMM_WORLD,i)
+     &                   MPI_MAX,0,COMM_TINKER,i)
          call MPI_REDUCE(mmx(2*nf+1),mmx(2*nf+1),nf,MPI_RPREC,
-     &                   MPI_SUM,0,MPI_COMM_WORLD,i)
+     &                   MPI_SUM,0,COMM_TINKER,i)
       end if
       end if
 
