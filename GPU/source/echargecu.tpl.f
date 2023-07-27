@@ -123,7 +123,7 @@ c
               call atomic_add_f( ec_buff(lot),tp2enr(e) )
 #endif
 #if __tver__ & __use_act__
-              call atomic_sub_i( act_buff(lot),1 )
+              if(scale_f.eq.-1.0) call atomic_sub_i( act_buff(lot),1 )
 #endif
 #if __tfea__ & __use_lambdadyn__
               if (use_lambdadyn) 

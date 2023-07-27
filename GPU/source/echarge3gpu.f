@@ -567,7 +567,7 @@ c
                end if
                fik  = fi*pchg(kkchg)
                call charge_couple(r2,xr,yr,zr,ebuffer,fik_,fik,aewald
-     &                    ,fgrp-1.0,mutik,use_lambdadyn,shortheal,scut
+     &                    ,fgrp,mutik,use_lambdadyn,shortheal,scut
      &                    ,elambda,delambdae_,e,ded,ver,fea)
  
               !increment the overall energy and derivative expressions
