@@ -1,8 +1,8 @@
 # tcl pkg-config source file
 
-prefix=/home/adjoua/tinkerhp/pmerel/v1.2/tcl8/Portland/
-exec_prefix=/home/adjoua/tinkerhp/pmerel/v1.2/tcl8/Portland/
-libdir=/home/adjoua/tinkerhp/pmerel/v1.2/tcl8/Portland//lib
+prefix=.
+exec_prefix=.
+libdir=./lib
 includedir=${prefix}/include
 libfile=libtcl8.6.so
 
