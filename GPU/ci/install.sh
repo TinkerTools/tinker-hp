@@ -50,7 +50,8 @@ current_config_m="$current_config FPA_SUPPORT=$FPA prec=m"
 # ------------------------------------
 # Clean Project and exit if instructed
 # ------------------------------------
-[ $# -ge 1 ] && [ $1 = "clean" ] && cd $dbuild && make $current_config distclean && exit
+[ $# -ge 1 ] && [ $1 = "clean" ] && cd $dbuild && make $current_config distclean
+[ $# -ge 1 ] && [ $1 = "clean" ] && exit
 
 [ $# -ge 1 ] && [ $1 -gt 1 ] && ntask=$1 || ntask=16
 [ $# -ge 2 ] && [ $2 -gt 1 ] && ntask=$2 || ntask=16
