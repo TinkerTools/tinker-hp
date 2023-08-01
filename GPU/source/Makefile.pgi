@@ -203,9 +203,9 @@ MODCU += pmestuffcu.o
 MODCU += tmatxb_pmecu.o tmatxb_pme_cpen.cu.o
 
 OBJSAM = active.o analysis.o angles.o\
-	MOD_subDeriv.o MOD_subMemory.o MOD_subInform.o MOD_subAtoms.o\
-  beads.o \
-	nblistgpu.o nblist_build.gpu.o\
+   MOD_subDeriv.o MOD_subMemory.o MOD_subInform.o MOD_subAtoms.o\
+   beads.o \
+   nblistgpu.o nblist_build.gpu.o\
    alterchg.o alterchg.gpu.o ani.o attach.o basefile.o beeman.o bicubic.o\
    baoab.o baoab_util.o baoabrespa.o baoabrespa1.o baoabpi.o baoabrespapi.o bbk.o\
    bitors.o bonds.o bounds.o calendar.o\
@@ -215,25 +215,25 @@ OBJSAM = active.o analysis.o angles.o\
    dcinduce_pme.o dcinduce_pmegpu.o dcinduce_pme2.o dcinduce_pme2gpu.o dcinduce_shortreal.o dcinduce_shortrealgpu.o\
    eamd1.o eangang.o eangang1.o eangang3.o\
    eangle.o eangle1.o eangle1gpu.o eangle3.o eangle3gpu.o\
-	eangtor.o eangtor1.o eangtor3.o\
+   eangtor.o eangtor1.o eangtor3.o\
    ebond.o ebond1.o ebond1gpu.o ebond3.o ebond3gpu.o\
    echarge.o echarge1.o echarge1gpu.o echarge3.o echarge3gpu.o\
-	echgtrn.o echgtrn1.o echgtrn1gpu.o echgtrn3.o echgtrn3gpu.o\
-	edisp.o edisp1.o edisp3.o\
+   echgtrn.o echgtrn1.o echgtrn1gpu.o echgtrn3.o echgtrn3gpu.o\
+   edisp.o edisp1.o edisp3.o\
    efld0_direct.o efld0_directgpu.o\
    egeom.o egeom1.o egeom1gpu.o egeom3.o egeom3gpu.o\
    ehal.o ehal1.o ehal1gpu.o ehal3.o ehal3gpu.o\
    eimprop.o eimprop1.o eimprop1gpu.o eimprop3.o\
    eimptor.o eimptor1.o eimptor1gpu.o eimptor3.o\
    elj.o elj1.o elj1gpu.o elj3.o elj3gpu.o\
-	eliaison1gpu.o\
+   eliaison1gpu.o\
    empole.o empole1.o empole1gpu.o empole1_group.o empole3.o empole3gpu.o empole3_group.o\
    energy.o\
-	eopbend.o eopbend1.o eopbend1gpu.o eopbend3.o eopbend3gpu.o\
+   eopbend.o eopbend1.o eopbend1gpu.o eopbend3.o eopbend3gpu.o\
    eopdist.o eopdist1.o eopdist3.o\
    epitors.o epitors1.o epitors1gpu.o epitors3.o\
    epolar.o epolar1.o epolar1gpu.o epolar1_group.o epolar3.o epolar3gpu.o epolar3_group.o\
-	erepel.o erepel1.o erepel3.o\
+   erepel.o erepel1.o erepel3.o\
    esmd1.o\
    estrbnd.o estrbnd1.o estrbnd1gpu.o estrbnd3.o\
    estrtor.o estrtor1.o estrtor1gpu.o estrtor3.o\
@@ -249,8 +249,8 @@ OBJSAM = active.o analysis.o angles.o\
    initatom.o initial.o initprm.o initres.o\
    invert.o kangang.o kangle.o\
    kamd.o katom.o kangtor.o kbond.o\
-	kcharge.o kchgflx.o kchgtrn.o\
-	kdisp.o kewald.o kgeom.o\
+   kcharge.o kchgflx.o kchgtrn.o\
+   kdisp.o kewald.o kgeom.o\
    kimprop.o kimptor.o kinetic.o kmlpot.o kmpole.o\
    kopbend.o kopdist.o kpitors.o kpolar.o krepel.o\
    kstrbnd.o kstrtor.o kscalfactor.o ksmd.o ktors.o ktortor.o\
@@ -497,7 +497,7 @@ plumed:
 .PHONY: tcl
 tcl:
 	$(AT) if [ ! -d $(install_libdir) ]; then mkdir -p $(install_libdir); fi
-	$(AT) cd $(TCL_HOME) && make -j 8 VERBOSE=1 && mv $(TCL_HOME)/libtcl8.6.so $(install_libdir)
+	$(AT) cd $(TCL_HOME) && $(MAKE) VERBOSE=1 && mv $(TCL_HOME)/libtcl8.6.so $(install_libdir)
 #  ---------------  #
 ## Colvars Package ##
 #  ---------------  #
