@@ -756,7 +756,7 @@ ${TCL_EXE}: ${TCLSH_OBJS} ${TCL_LIB_FILE} ${TCL_STUB_LIB_FILE}
 ${NATIVE_TCLSH}:
 
 Makefile: $(UNIX_DIR)/Makefile.in $(DLTEST_DIR)/Makefile.in
-	$(SHELL) config.status
+#	$(SHELL) config.status
 #tclConfig.h: $(UNIX_DIR)/tclConfig.h.in
 #	$(SHELL) config.status
 
