@@ -37,13 +37,13 @@ FPA=1                         #   Enable Fixed Precision Arithmetic (Useful for 
 build_plumed=0                #   [0]|1     0: disable 1: enable   PLUMED  Interface
 build_colvars=0               #   [0]|1     0: disable 1: enable   COLVARS Interface
 NN=0                          #   [0]|1     0: disable 1: enable   Neural Network Python Interface
-#add_host_f='-Mx,231,0x1'      #   Uncomment this when building Nvidia HPC-SDK package version 21.[3-7]
+#add_host_f='-Mx,231,0x1'      #   Uncomment this when building Nvidia HPC-SDK package version 21.[3-9]
 
 #  End Config
 #=======================
 
 current_config="arch=$target_arch compute_capability=$c_c cuda_version=$cuda_ver PLUMED_SUPPORT=$build_plumed COLVARS_SUPPORT=$build_colvars NN_SUPPORT=$NN"
-[ -n "$add_options_f" ] && current_config="$current_config add_options_f=$add_options_f"
+[ -n "$add_host_f" ] && current_config="$current_config add_host_f=$add_host_f"
 current_config_d="$current_config"
 current_config_m="$current_config FPA_SUPPORT=$FPA prec=m"
 
