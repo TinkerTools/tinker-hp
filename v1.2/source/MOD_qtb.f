@@ -937,7 +937,7 @@ c
 
       !call gather_vad()
 
-      fftfact=dt_spec/real(3*n*nseg,8)
+      fftfact=dt_spec/real(3*nseg,8)
       do ibead=1,nbeads; do i=ibegbeg,iendend  
        iglob=glob(i)
        itype=adqtb_type(iglob)

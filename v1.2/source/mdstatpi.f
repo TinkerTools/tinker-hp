@@ -120,39 +120,28 @@ c
         if (verbose) then
           if(modstep==1) then
             write(iout,'(A)',advance="no") "    MD Step"
-     &                   //"    E total"
-     &                  //"       E Pot"            
-c            if(contract) then
+     &                  //"      E total"
+     &                  //"   E Potential"            
+     &                  //"     E Kinetic"
+c     &                  //"     Ek prim"
+     &                  //"       Temp"
+     &                  //"    Temp_cl"
+            write(iout,'(A)',advance="no") "       Pres"
+c            if(isobaric) then
 c              write(iout,'(A)',advance="no") 
-c     &                    "       E intra"
-c     &                  //"       E inter"
+c     &                    "     Density"
+c     &                  //"      Volume"
 c            endif
-            write(iout,'(A)',advance="no") 
-     &                    "      Ek vir"
-     &                  //"     Ek prim"
-     &                  //"        Temp"
-     &                  //"     Temp_cl"
-            write(iout,'(A)',advance="no") "        Pres"
-            if(isobaric) then
-              write(iout,'(A)',advance="no") 
-     &                    "     Density"
-     &                  //"      Volume"
-            endif
             write(iout,*)
           endif
 
-!$acc wait
-          write(iout,'(i10,2f12.2)',advance="no") istep
-     &               ,ekvir+epotpi,epotpi
-c          if(contract) then
-c            write(iout,'(2f14.2)',advance="no") eintrapi,einterpi
-c          endif
-          write(iout,'(4f12.2)',advance="no") ekvir,ekprim
-     &               ,temppi,temppi_cl/nbeads
-           write(iout,'(f12.2)',advance="no") presvir
-          if(isobaric) then
-            write(iout,'(f12.4,f12.2)',advance="no") dens,volbox
-          endif
+          write(iout,'(i10,3f14.4,2f11.2)',advance="no") istep
+     &                ,ekvir+epotpi,epotpi,ekvir !,ekprim
+     &                ,temppi,temppi_cl/nbeads
+          write(iout,'(f11.2)',advance="no") presvir
+c           if(isobaric) then
+c             write(iout,'(f12.4,f12.2)',advance="no") dens,volbox
+c           endif
           write(iout,*)
         end if
 
