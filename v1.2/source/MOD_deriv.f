@@ -82,4 +82,15 @@ c
       real*8, allocatable :: dxdelambdae(:,:), dxdelambdav(:,:)
       logical dotstgrad
       save
+
+      contains
+
+      subroutine resetForcesRec
+      implicit none
+        if(allocated(demrec)) demrec = 0.0d0
+        if(allocated(decrec)) decrec = 0.0d0
+        if(allocated(deprec)) deprec = 0.0d0
+        if(allocated(dedsprec)) dedsprec = 0.0d0
+      end subroutine resetForcesRec
+
       end

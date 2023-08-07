@@ -72,12 +72,21 @@ c
             zac = z(ia) - z(ic)
             if (use_polymer)  call image (xac,yac,zac)
             rac = sqrt(xac*xac + yac*yac + zac*zac)
-            dt = rac - ideal
-            dt2 = dt * dt
 c
 c     calculate the Urey-Bradley energy for this interaction
 c
-            e = ureyunit * force * dt2 * (1.0d0+cury*dt+qury*dt2)
+            if (ureytyp(i) == 'ANGREP') then
+              e = ureyunit * force * exp(-rac/ideal)
+            elseif (ureytyp(i) == 'UREYQUAR') then
+              dt  = ideal / rac
+              dt2 = dt * dt
+              e   = ureyunit *force * (dt2 - 1.0d0)**2
+            else
+              dt = rac - ideal
+              dt2 = dt * dt
+              e = ureyunit * force * dt2 * (1.0d0+cury*dt+qury*dt2)
+            endif
+            !write(*,*) ureytyp,e,ureyunit,force,ideal
 c
 c     scale the interaction based on its group membership
 c

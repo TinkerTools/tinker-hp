@@ -39,6 +39,7 @@ c
       use usage
       use virial
       use mpi
+      use spectra
       implicit none
       integer i,j,iglob
       integer istep
@@ -53,6 +54,7 @@ c
       real*8 viralt(3,3)
       real*8 time0,time1
       real*8, allocatable :: derivs(:,:)
+      real*8 dip(3,nalt),dipind(3,nalt)
       time0 = mpi_wtime()
 c
 c     set some time values for the dynamics integration
@@ -77,7 +79,7 @@ c
 c
 c     find fast-evolving velocities and positions via velocity Verlet recursion
 c
-      call respafast(ealt,viralt,dta,istep)
+      call respafast(ealt,viralt,dta,istep,dip,dipind)
 c
 c     Reassign the particules that have changed of domain
 c
@@ -191,6 +193,11 @@ c
       time0 = mpi_wtime()
       call temper (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
+      if(ir) then
+        call compute_dipole(dip(:,nalt)
+     &       ,dipind(:,nalt),full_dipole)
+        call save_dipole_respa(dip,dipind)
+      endif
       time1 = mpi_wtime()
       timetp = timetp + time1-time0
 c
@@ -406,7 +413,7 @@ c
 c     subroutine respafast : 
 c     find fast-evolving velocities and positions via velocity Verlet recursion
 c
-      subroutine respafast(ealt,viralt,dta,istep)
+      subroutine respafast(ealt,viralt,dta,istep,dip,dipind)
       use atmtyp
       use atoms
       use cutoff
@@ -418,9 +425,11 @@ c
       use usage
       use virial
       use mpi
+      use spectra
       implicit none
       integer i,j,k,iglob
       integer istep
+      real*8 dip(3,nalt),dipind(3,nalt)
       real*8 dta,dta_2
       real*8 ealt
       real*8 time0,time1
@@ -535,6 +544,12 @@ c
               viralt(j,i) = viralt(j,i) + vir(j,i)/dshort
            end do
         end do
+
+        if(ir .and. k<nalt) then
+           !call rotpole
+           call compute_dipole(dip(:,k)
+     &        ,dipind(:,k),.FALSE.)
+        endif
         time1 = mpi_wtime()
         timeinte = timeinte + time1-time0
       end do

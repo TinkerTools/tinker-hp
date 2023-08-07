@@ -21,6 +21,7 @@ c
       use keys
       use mutant
       use replicas
+      use domdec, only: rank
       implicit none
       integer lext,freeunit,idyn
       integer next
@@ -42,6 +43,10 @@ c
       call version (dynfile,'old')
       inquire (file=dynfile,exist=exist)
       if (exist) then
+         if(rank==0) then
+          write(*,*) " --- Tinker-HP loading Restart file "
+     &         //trim(dynfile)//"  ---"
+         endif
          idyn = freeunit ()
          open (unit=idyn,file=dynfile,status='old')
          rewind (unit=idyn)

@@ -3,54 +3,79 @@ c     Sorbonne University
 c     Washington University in Saint Louis
 c     University of Texas at Austin
 c
-c     #################################################################
-c     ##                                                             ##
-c     ##  program dynamic_rep  --  run dynamics with replicas        ##
-c     ##                                                             ##
-c     #################################################################
+c     ###################################################################
+c     ##                                                               ##
+c     ##  program pimd  --  run pimd molecular or stochastic dynamics  ##
+c     ##                                                               ##
+c     ###################################################################
 c
 c
-c     "dynamic_rep" computes a molecular dynamics trajectory
+c     "pimd" computes a molecular dynamics trajectory
 c     in one of the standard statistical mechanical ensembles and using
 c     any of several possible integration methods
 c
 c
-      program dynamic_rep
+      program pimd
       use mpi
       implicit none
-      integer ierr
-      call MPI_INIT(ierr)
-      call dynamic_rep_bis
+      integer ierr,nthreadsupport
+c      call MPI_INIT(ierr)
+      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,nthreadsupport,ierr)
+      call pimd_bis
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       call MPI_FINALIZE(ierr)
       end
 c
-      subroutine dynamic_rep_bis
+      subroutine pimd_bis
       use atoms
       use bath
+      use beads
       use bound
+      use boxes
       use domdec
       use keys
       use inform
       use iounit
       use mdstuf
+      use commstuffpi
       use moldyn
-      use mpi
-      use potent
-      use replicas
+      use neigh
       use timestat
-
-#ifdef COLVARS
-      use colvars
-#endif
+      use mpi
+      use cutoff
+      use ascii, only: int_to_str
+      use qtb, only: qtb_thermostat,adaptive_qtb,piqtb
+      use units
       implicit none
-      integer i,istep,nstep,ierr
-      integer mode,next
-      real*8 dt,dtdump,time0,time1
-      logical exist,query
+      integer i,istep,nstep,ierr,k,ibead,ibeadglob!,nstep_therm
+      integer iglob
+      integer mode,next,nseg
+      real*8 dt,dtdump,time0,time1,bufpi
+      logical exist,query,restart
       character*20 keyword
       character*240 record
+      real*8 pres_tmp
       character*240 string
+      real*8 maxwell
+      logical pi_isobaric,restart_bead
+      logical only_long
+      TYPE(POLYMER_COMM_TYPE), save :: polymer,polymer_ctr
+      INTERFACE
+        subroutine baoabpi(polymer,polymer_ctr,istep,dt)
+          import :: POLYMER_COMM_TYPE 
+          TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer,polymer_ctr
+          integer, intent(in) :: istep
+          real*8, intent(in) :: dt
+        end subroutine baoabpi
+        subroutine baoabrespapi(polymer,polymer_ctr,istep,dt)
+          import :: POLYMER_COMM_TYPE 
+          TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer,polymer_ctr
+          integer, intent(in) :: istep
+          real*8, intent(in) :: dt
+        end subroutine baoabrespapi
+      END INTERFACE
+
+      path_integral_md=.TRUE.
 c
 c
  1000 Format(' Time for 100 Steps: ',f15.4,/,
@@ -60,24 +85,26 @@ c
 c     set up the structure and molecular mechanics calculation
 c
       call initial
+      call init_keys
+      call read_bead_config
       call getxyz
-c      nproc = nproctot
-      if (nreps.eq.0) then
-        if (ranktot.eq.0) then
-          write(iout,*) 'Error: number of replicas not specified'
-        end if
-        call fatal
-      end if
-      use_reps = .true.
-      call initmpi_reps
-      if (ranktot.eq.0) then
-        write(iout,*) 'Using multiple replicas, nreps = ',nreps
-      end if
-      call unitcell
+      call initmpi
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+
+      if(nproctot==1) pi_comm_report=.FALSE.
+      if(pi_comm_report) then
+        open(newunit=pi_comm_unit,
+     &    file="comm_report_rank"//int_to_str(ranktot)//".out")
+      endif
+
       call cutoffs
+      call unitcell
       call lattice
 c
 c     setup for MPI
+c
+c
+c     get nprocforce to do correct allocation of MPI arrays
 c
       call drivermpi
       call reinitnl(0)
@@ -90,13 +117,10 @@ c
       allocate (a(3,n))
       if (allocated(aalt)) deallocate (aalt)
       allocate (aalt(3,n))
-      if (allocated(aalt2)) deallocate (aalt2)
-      allocate (aalt2(3,n))
 c
       a = 0d0
       v = 0d0
       aalt = 0d0
-      aalt2 = 0d0
 c
       call mechanic
       call nblist(0)
@@ -107,21 +131,6 @@ c
       atmsph = 0.0d0
       isothermal = .false.
       isobaric = .false.
-c
-c     check for keywords containing any altered parameters
-c
-      integrate = 'BEEMAN'
-      do i = 1, nkey
-         next = 1
-         record = keyline(i)
-         call gettext (record,keyword,next)
-         call upcase (keyword)
-         string = record(next:240)
-         if (keyword(1:11) .eq. 'INTEGRATOR ') then
-            call getword (record,integrate,next)
-            call upcase (integrate)
-         end if
-      end do
 c
 c     initialize the simulation length as number of time steps
 c
@@ -139,6 +148,7 @@ c
          read (input,30)  nstep
    30    format (i10)
       end if
+
 c
 c     get the length of the dynamics time step in picoseconds
 c
@@ -216,7 +226,13 @@ c
   200          continue
             end do
          end if
-         if (mode.eq.3 .or. mode.eq.4) then
+        if (mode.eq.1 .or. mode.eq.3) then
+            if(ranktot.eq.0) then
+               write(iout,*) 'NVE, NPH and NPT not implemented yet!'
+               call fatal
+            endif
+        endif
+        if(mode.eq.4) then
             isobaric = .true.
             atmsph = -1.0d0
             call nextarg (string,exist)
@@ -271,115 +287,137 @@ c
          end if
       end if
 c
-      call mdinit(dt)
+c     setup dynamics
 c
-c     deal with restart of the replicas
-c
-      call mdinitreps
+      call reset_observables(.true.)
+      call allocpi(polymer,polymer_ctr)     
+      if(centroid_longrange) then
+        use_shortmlist = use_mlist
+        use_shortclist = use_clist
+        use_shortvlist = use_vlist
+      endif
 
-#ifdef COLVARS
-      dt_sim = dt*1000d0
-c
-c     only the master does colvars computations, but other ranks need to allocate coord arrays
-c
-      if (rank.eq.0) then
-         call allocate_colvars
-      end if
-      call MPI_BCAST(use_colvars,1,MPI_LOGICAL,0,COMM_TINKER,ierr)
-      if (use_colvars) then
-        call MPI_BCAST(ncvatoms,1,MPI_INT,0,COMM_TINKER,ierr)
-        if (rank.gt.0) then
-          allocate (cvatoms_ids(ncvatoms))
-        end if
-        call MPI_BCAST(cvatoms_ids,ncvatoms,MPI_INT,0,COMM_TINKER,
-     $       ierr)
-        if (rank.gt.0) then
-           allocate (cv_pos(3,ncvatoms))
-           allocate (decv(3,ncvatoms),decv_tot(3,ncvatoms))
-           cv_pos = 0d0
-           decv = 0d0
-           decv_tot = 0d0
-        end if
-      end if
-#endif
-#ifndef COLVARS
-      if (use_lambdadyn) then
-        if (rank.eq.0) then
-          write(iout,*) 'cannot run lambda dynamics without colvars'
-        end if
-        call fatal
-      end if
-#endif
+      if(add_buffer_pi) then
+        bufpi = 2.d0*hbar_planck/sqrt(12.d0*boltzmann*kelvin)
+        call update_lbuffer(lbuffer+bufpi)
+        write(*,*) 'Added buffer of ',bufpi,' Angstroms'
+        write(*,*) 'The buffer is now ',lbuffer,' Angstroms'
+        write(*,*) 'with nlupdate = ',ineigup
+      endif
+
+      call mdinit(dt)    
+      call mdinitbead(dt,polymer)
+
+      !if(qtb_thermostat) then
+      !  if(ranktot==0) then
+      !    write(0,*) 'PIQTB not available yet!'
+      !    call fatal
+      !  endif
+      !endif  
+      
+
+      pi_isobaric=isobaric
+      if(isobaric) then
+        if(pi_start_isobaric>dt) isobaric=.FALSE.
+        !masspiston=masspiston*nbeads
+        !vextvol=vextvol*sqrt(real(nbeads,8))
+        if(ranktot.eq.0 .and. barostat/='LANGEVIN') then
+            write(0,*) "Error: PIMD only compatible"
+     &         //" with langevin barostat yet"
+            call fatal
+        endif
+      endif   
+
+      only_long = centroid_longrange .and.
+     &      (.not. (contract.and.nbeads_ctr==1) )
+      if(only_long .and. polar_allbeads) then
+        if(ranktot==0) then
+            write(0,*) "Warning: centroid polarization contribution "//
+     &    "to the virial might not be accurate !"//
+     &    " Pressure could be WRONG !"
+        endif
+      endif       
+
+
 c
 c     print out a header line for the dynamics computation
 c
-      if (integrate .eq. 'VERLET') then
-         if (rank.eq.0) write (iout,330)
-  330    format (/,' Molecular Dynamics Trajectory via',
-     &              ' Velocity Verlet Algorithm')
-      else if (integrate .eq. 'RESPA') then
-         if (rank.eq.0) write (iout,390)
-  390    format (/,' Molecular Dynamics Trajectory via',
-     &              ' r-RESPA MTS Algorithm')
-      else if (integrate .eq. 'BBK') then
-         if (rank.eq.0) write (iout,400)
-  400    format (/,' Langevin Molecular Dynamics Trajectory via',
-     &              ' BBK Algorithm')
-      else if (integrate .eq. 'BAOAB') then
-         if (rank.eq.0) write (iout,410)
-  410    format (/,' Langevin Molecular Dynamics Trajectory via',
-     &              ' BAOAB Algorithm')
-      else if (integrate .eq. 'BAOABRESPA') then
-         if (rank.eq.0) write (iout,420)
-  420    format (/,' Langevin Molecular Dynamics Trajectory via',
-     &              ' BAOAB-RESPA Algorithm')
-      else if (integrate .eq. 'BAOABRESPA1') then
-         if (rank.eq.0) write (iout,430)
-  430    format (/,' Langevin Molecular Dynamics Trajectory via',
-     &              ' BAOAB-RESPA-1 Algorithm')
-      else if (integrate .eq. 'RESPA1') then
-         if (rank.eq.0) write (iout,440)
-  440    format (/,' Molecular Dynamics Trajectory via',
-     &              ' r-RESPA-1 MTS Algorithm')
-      else if (integrate .eq. 'BAOABPISTON') then
-         if (rank.eq.0) write (iout,450)
-  450    format (/,' Molecular Dynamics Trajectory via',
-     &              ' BAOAB-PISTON Algorithm')
-      else
-         if (rank.eq.0) write (iout,460)
-  460    format (/,' Molecular Dynamics Trajectory via',
-     &              ' Modified Beeman Algorithm')
-      end if
+
+      if(ranktot==0) then
+        write(iout,*)
+        write(iout,'(A)') 
+     &     ' Path Integral MD trajectory via the '
+     &      //trim(integrate)//' algorithm'
+        write(iout,'(A,i3,A)', advance="no") 
+     &     '  - with ',nbeads,' beads'
+        if(contract) then
+          write(iout,'(A,i3,A)', advance="no") 
+     &     ' and ',nbeads_ctr,' contracted beads'
+        endif
+        write(iout,*)
+        if (piqtb) then
+          if (adaptive_qtb) then
+            write(iout,'(A)')
+     &     '  - with adaptive PI-QTB thermostat'
+          else
+            write(iout,'(A)')
+     &     '  - with PI-QTB thermostat'
+          endif
+        endif
+        if(cay_correction) then
+          write(iout,'(A)') 
+     &     '  - using CAY correction for fluctuation modes'
+        endif
+        if(centroid_longrange) then
+           write(iout,'(A)') 
+     &      '  - long-range interactions on centroid only'
+        endif
+        write(iout,*)
+      endif
+
 c
 c     integrate equations of motion to take a time step
 c
+      time0=mpi_wtime()
       do istep = 1, nstep
-         time0 = mpi_wtime()
-         if (integrate .eq. 'VERLET') then
-            call verlet (istep,dt)
-         else if (integrate .eq. 'RESPA') then
-            call respa (istep,dt)
-         else if (integrate .eq. 'BBK') then
-           call bbk(istep,dt)
-         else if (integrate .eq. 'BAOAB') then
-           call baoab(istep,dt)
-         else if (integrate .eq. 'BAOABPISTON') then
-           call baoabpiston(istep,dt)
-         else if (integrate .eq. 'BAOABRESPA') then
-           call baoabrespa(istep,dt)
-         else if (integrate .eq. 'BAOABRESPA1') then
-           call baoabrespa1(istep,dt)
-         else if (integrate .eq. 'RESPA1') then
-           call respa1(istep,dt)
-         else
-            call beeman (istep,dt)
-        end if
-         time1 = mpi_wtime()
-         timestep = timestep + time1-time0
-         call mdstattime(istep,dt)
+
+        if(istep*dt>pi_start_isobaric) isobaric=pi_isobaric
+
+        ! perform a step of PIMD integration
+        if(integrate.eq.'BAOAB') then
+          call baoabpi(polymer,polymer_ctr,istep,dt)
+        elseif(integrate.eq.'BAOABRESPA') then
+          call baoabrespapi(polymer,polymer_ctr,istep,dt)
+        elseif(ranktot==0) then
+          write(0,*) "Unknown integrator "//integrate//" for PIMD"
+          call fatal
+        endif
+
+        if (mod(istep,iprint).eq.0) then
+           time1 = mpi_wtime()
+           timestep = time1-time0
+           if (ranktot.eq.0) then
+             call MPI_REDUCE(MPI_IN_PLACE,timestep,1,MPI_REAL8,MPI_SUM,
+     $          0,MPI_COMM_WORLD,ierr)
+           else
+             call MPI_REDUCE(timestep,timestep,1,MPI_REAL8,MPI_SUM,0,
+     $          MPI_COMM_WORLD,ierr)
+           end if
+           if (ranktot.eq.0) then
+            write(6,1000) (timestep)/nproctot
+     &         ,(timestep)/dble(nproctot*iprint)
+            write(6,1010) 86400*dt*dble(iprint*nproctot)/(1000*timestep)
+           end if
+           time0 = time1
+         end if
       end do
-c
+
 c     perform any final tasks before program exit
 c
       call final
-      end
+
+      end subroutine
+        
+
+
+      

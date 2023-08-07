@@ -42,5 +42,7 @@ c
       character*8 opbtyp
       character*8, pointer :: angtyp(:)
       integer :: winangtyp
+      real*8 :: c5z_ps(245)
+      integer :: idx_ps(245,3)
       save
       end

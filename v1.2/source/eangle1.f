@@ -30,7 +30,7 @@ c
       use usage
       use virial
       implicit none
-      integer i,ia,ib,ic,id
+      integer i,ia,ib,ic,id,j
       integer ialoc,ibloc,icloc,idloc
       integer iangle
       real*8 e,ideal,force
@@ -70,6 +70,12 @@ c
       real*8 vyx,vzx,vzy
       real*8 fgrp
       logical proceed
+      real*8 angle_mean
+      real*8 fmat(15,3),dfmat(15,3)
+      real*8 r_e,drab,drcb,x1,x2,x3
+      real*8 gaussterm, dgaussdrab, dgaussdrcb
+      real*8 dedrab,dedrcb,dtermdrab,dtermdrcb
+      real*8 rab,rcb
 c
 c
 c     zero out energy and first derivative components
@@ -90,6 +96,8 @@ c
          if (id.ne.0) idloc = loc(id)
          ideal = anat(i)
          force = ak(i)
+         dedrab=0.d0
+         dedrcb=0.d0
 c
 c     decide whether to compute the current interaction
 c
@@ -130,6 +138,7 @@ c
                end if
                rab2 = xab*xab + yab*yab + zab*zab
                rcb2 = xcb*xcb + ycb*ycb + zcb*zcb
+               rab = sqrt(rab2) ; rcb = sqrt(rcb2)
                if (rab2.ne.0.0d0 .and. rcb2.ne.0.0d0) then
                   xp = ycb*zab - zcb*yab
                   yp = zcb*xab - xcb*zab
@@ -165,6 +174,59 @@ c
                      sine = sin((fold*angle1-ideal)/radian)
                      e = factor * force * (1.0d0+cosine)
                      deddt = -factor * force * fold * sine
+                  elseif (angtyp(i) .eq. 'ANGLEPS') then
+                     r_e = afld(i)
+                     x3 = cosine - cos(ideal/radian)
+                     sine = sin(angle1/radian)
+                     drab = rab - r_e
+                     drcb = rcb - r_e 
+                     gaussterm = exp(-ak(i)*(drab**2+drcb**2))
+                     dgaussdrab = -2.0d0*ak(i)*drab*gaussterm
+                     dgaussdrcb = -2.0d0*ak(i)*drcb*gaussterm
+                     x1 = drab/r_e
+                     x2 = drcb/r_e
+                     fmat(1,1)=1d0
+                     fmat(1,2)=1d0
+                     fmat(1,3)=1d0
+                     dfmat(1,1)=0d0
+                     dfmat(1,2)=0d0
+                     dfmat(1,3)=0d0
+                     do j=2,15
+                      fmat(j,1)=fmat(j-1,1)*x1
+                      fmat(j,2)=fmat(j-1,2)*x2
+                      fmat(j,3)=fmat(j-1,3)*x3
+                      !deriv with respect to rab
+                      dfmat(j,1)=dfmat(j-1,1)*x1 + fmat(j-1,1)/r_e
+                      !deriv with respect to rcb
+                      dfmat(j,2)=dfmat(j-1,2)*x2 + fmat(j-1,2)/r_e
+                      !deriv with respect to angle
+                      dfmat(j,3)=dfmat(j-1,3)*x3 - fmat(j-1,3)*sine
+                     enddo
+                     e=0.d0
+                     deddt=0.d0
+                     dedrab=0.d0
+                     dedrcb=0.d0
+                     do j=2,245
+                      term=fmat(idx_ps(j,1),1)*fmat(idx_ps(j,2),2) 
+     &                    +fmat(idx_ps(j,2),1)*fmat(idx_ps(j,1),2)
+                      dtermdrab=
+     &                   dfmat(idx_ps(j,1),1)*fmat(idx_ps(j,2),2) 
+     &                  +dfmat(idx_ps(j,2),1)*fmat(idx_ps(j,1),2)
+                      dtermdrcb=
+     &                   fmat(idx_ps(j,1),1)*dfmat(idx_ps(j,2),2) 
+     &                  +fmat(idx_ps(j,2),1)*dfmat(idx_ps(j,1),2)
+
+                      e=e+c5z_ps(j)*term*fmat(idx_ps(j,3),3)
+                      deddt=deddt+c5z_ps(j)*term*dfmat(idx_ps(j,3),3)
+                      dedrab=dedrab+c5z_ps(j)
+     &                   *dtermdrab*fmat(idx_ps(j,3),3)
+                      dedrcb=dedrcb+c5z_ps(j)
+     &                   *dtermdrcb*fmat(idx_ps(j,3),3)
+                     enddo
+                     deddt = deddt*gaussterm
+                     dedrab = dedrab*gaussterm + e*dgaussdrab
+                     dedrcb = dedrcb*gaussterm + e*dgaussdrcb
+                     e =  e*gaussterm ! + c5z_ps(1)
                   end if
 c
 c     scale the interaction based on its group membership
@@ -187,6 +249,28 @@ c
                   dedxib = -dedxia - dedxic
                   dedyib = -dedyia - dedyic
                   dedzib = -dedzia - dedzic
+
+                  if (dedrab .ne. 0.0d0) then
+                    if (use_group) dedrab=dedrab*fgrp
+                    term = dedrab/rab
+                    dedxia = dedxia + term * xab
+                    dedxib = dedxib - term * xab
+                    dedyia = dedyia + term * yab
+                    dedyib = dedyib - term * yab
+                    dedzia = dedzia + term * zab
+                    dedzib = dedzib - term * zab
+                  end if
+
+                  if (dedrcb .ne. 0.0d0) then
+                    if (use_group) dedrcb=dedrcb*fgrp
+                    term = dedrcb/rcb
+                    dedxic = dedxic + term * xcb
+                    dedxib = dedxib - term * xcb
+                    dedyic = dedyic + term * ycb
+                    dedyib = dedyib - term * ycb
+                    dedzic = dedzic + term * zcb
+                    dedzib = dedzib - term * zcb
+                  end if
 c
 c     increment the total bond angle energy and derivatives
 c

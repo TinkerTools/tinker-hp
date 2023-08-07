@@ -25,7 +25,7 @@ c
       integer nbond,nbondloc
       integer, pointer :: ibnd(:,:)
       integer :: winibnd
-      real*8, pointer ::  bk(:),bl(:)
-      integer :: winbk,winbl
+      real*8, pointer ::  bk(:),bl(:),ba(:)
+      integer :: winbk,winbl, winba
       save
       end

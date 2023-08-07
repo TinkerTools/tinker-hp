@@ -1,5 +1,4 @@
 #ifdef COLVARS
-
 #include "colvarproxy_tinkerhp.h"
 #include "colvarproxy_tinkerhp_interface.h"
 #include <colvarscript.h>
@@ -400,5 +399,4 @@ int colvarproxy_tinkerhp::run_colvar_gradient_callback(
 }
 
 #endif
-
 #endif

@@ -15,25 +15,16 @@ c     in a periodic box and maintains a constant desired pressure
 c     via a barostat method
 c
 c
-      subroutine pressure (dt,ekin,pres,stress,istep)
-      use bath
-      use bound
+      subroutine stress_press(ekin,vir,pres,stress)
       use boxes
-      use domdec
       use units
-      use virial
       implicit none
-      integer i,j,istep
-      real*8 dt
-      real*8 pres
+      real*8, intent(in) :: ekin(3,3),vir(3,3)
+      real*8, intent(out) :: pres,stress(3,3)
       real*8 factor
-      real*8 ekin(3,3)
-      real*8 stress(3,3)
-c
-c
-c     only necessary if periodic boundaries are in use
-c
-      if (.not. use_bounds)  return
+      real*8  ekin_trace
+      integer i,j
+
 c
 c     calculate the stress tensor for anisotropic systems
 c
@@ -48,6 +39,41 @@ c     set isotropic pressure to the average of tensor diagonal
 c
       pres = (stress(1,1)+stress(2,2)+stress(3,3)) / 3.0d0
 c
+c     compute pressure via numerical virial if necessary
+c
+      ! call dedvcalc()
+      ! if(kin_instant) then
+      !    ekin_trace=(ekin(1,1)+ekin(2,2)+ekin(3,3))/corr_fact_qtb
+      !    pres=prescon*(2.0d0*ekin_trace/(3.d0*volbox)-dedv)
+      ! else
+      !    pres=prescon*(nfree*kelvin*gasconst/(3.d0*volbox)-dedv)
+      ! endif
+
+      end subroutine stress_press
+
+      subroutine pressure (dt,ekin,pres,stress,istep)
+      use bath
+      use bound
+      use boxes
+      use domdec
+      use mdstuf
+      use units
+      use virial
+      implicit none
+      integer i,j,istep
+      real*8 dt
+      real*8 pres
+      real*8 factor
+      real*8 ekin(3,3), ekin_trace
+      real*8 stress(3,3)
+c
+c
+c     only necessary if periodic boundaries are in use
+c
+      if (.not. use_bounds)  return
+
+      call stress_press(ekin,vir,pres,stress)
+
 c     use either the Berendsen or Monte Carlo barostat method
 c
       if (isobaric) then
@@ -174,33 +200,181 @@ cc
 c
 c     propagate Volume with Langevin equation with a BAOAB propagator
 c
-      subroutine plangevin ()
-      use atoms
+      subroutine initialize_langevin_piston()
       use bath
       use boxes
-      use domdec
-      use math
-      use moldyn
-      use units
-      use usage
       use mpi
+      use domdec
+      use units, only: boltzmann
       implicit none
       integer ierr
-
-
-      real*8 third
-      real*8 maxwell
-      third = 1.0d0 / 3.0d0
-
+      interface
+       function maxwell (mass,temper)
+       real*8 maxwell
+       real*8 mass
+       real*8 temper
+       end function
+      end interface
+      
       extvol = volbox
       extvolold = volbox
       if (rank.eq.0) then
-        vextvol = maxwell(masspiston,kelvin)
+        if (.not. anisotrop) then
+          vextvol  = maxwell(masspiston,kelvin)
+        else
+          vextbox(1) = maxwell(masspiston,kelvin)
+          vextbox(2) = maxwell(masspiston,kelvin)
+          vextbox(3) = maxwell(masspiston,kelvin)
+        endif
       end if
-      call MPI_BCAST(vextvol,1,MPI_REAL8,0,COMM_TINKER,ierr)
+      if (.not. anisotrop) then
+        call MPI_BCAST(vextvol,1,MPI_REAL8,0,COMM_TINKER,ierr)
+      else
+        call MPI_BCAST(vextbox,3,MPI_REAL8,0,COMM_TINKER,ierr)
+      endif
       aextvol = 0d0
-      return
-      end
+      aextbox = 0d0
+      end subroutine initialize_langevin_piston
+c
+c
+c     #################################################################
+c     ##                                                             ##
+c     ##  subroutine dedvcalc  --  find virial tensor via finite
+c                                                        difference  ##
+c     ##                                                             ##
+c     #################################################################
+c
+c
+      subroutine dedvcalc()
+      use atoms
+      use bath
+      use bound
+      use boxes
+      use domdec
+      use iounit
+      use units
+      use virial
+      implicit none
+      integer i,iglob
+      real*8 energy,third
+      real*8 delta,step,scale
+      real*8 pres
+      real*8 vold,xboxold
+      real*8 yboxold,zboxold
+      real*8 epos,eneg
+      real*8, allocatable :: xoldloc(:)
+      real*8, allocatable :: yoldloc(:)
+      real*8, allocatable :: zoldloc(:)
+
+      !write(*,*)'Im in'
+c
+c
+c     set relative volume change for finite-differences
+c
+      if (.not. use_bounds)  return
+      
+      if(virnum) then
+        delta = 0.000001d0
+        step = volbox * delta
+c
+c     perform dynamic allocation of some local arrays
+c
+        allocate (xoldloc(n))
+        allocate (yoldloc(n))
+        allocate (zoldloc(n))
+c
+c     store original box dimensions and coordinate values
+c
+        xboxold = xbox
+        yboxold = ybox
+        zboxold = zbox
+        vold = volbox
+        do i = 1, nbloc
+           iglob = glob(i)
+           xoldloc(iglob) = x(iglob)
+           yoldloc(iglob) = y(iglob)
+           zoldloc(iglob) = z(iglob)
+        end do
+c
+c     get scale factor to reflect a negative volume change
+c
+        volbox = vold - step
+        third = 1.0d0 / 3.0d0
+        scale = (volbox/vold)**third
+c
+c     set new box dimensions and coordinate values
+c
+        xbox = xboxold * scale
+        ybox = yboxold * scale
+        zbox = zboxold * scale
+        call lattice
+        do i = 1, nbloc
+           iglob = glob(i)
+           x(iglob) = xoldloc(iglob) * scale
+           y(iglob) = yoldloc(iglob) * scale
+           z(iglob) = zoldloc(iglob) * scale
+        end do
+c
+c     compute potential energy for negative volume change
+c
+        eneg = energy ()
+        call allreduceen(eneg)
+c
+c     get scale factor to reflect a positive volume change
+c
+        volbox = vold + step
+        third = 1.0d0 / 3.0d0
+        scale = (volbox/vold)**third
+c
+c     set new box dimensions and coordinate values
+c
+        xbox = xboxold * scale
+        ybox = yboxold * scale
+        zbox = zboxold * scale
+        call lattice
+        do i = 1, nbloc
+           iglob = glob(i)
+           x(iglob) = xoldloc(iglob) * scale
+           y(iglob) = yoldloc(iglob) * scale
+           z(iglob) = zoldloc(iglob) * scale
+        end do
+c
+c     compute potential energy for positive volume change
+c
+        epos = energy ()
+        call allreduceen(epos)
+c
+c     restore original box dimensions and coordinate values
+c
+        xbox = xboxold
+        ybox = yboxold
+        zbox = zboxold
+        call lattice
+        do i = 1, nbloc
+           iglob = glob(i)
+           x(iglob) = xoldloc(iglob)
+           y(iglob) = yoldloc(iglob)
+           z(iglob) = zoldloc(iglob)
+        end do
+c
+c     perform deallocation of some local arrays
+c
+        deallocate (xoldloc)
+        deallocate (yoldloc)
+        deallocate (zoldloc)
+c
+c     get virial and finite difference values of dE/dV
+c
+        dedv = (epos-eneg) / (2.0d0*step)
+      else
+        dedv = (vir(1,1)+vir(2,2)+vir(3,3)) / (3.0d0*volbox)
+      endif
+      
+      end subroutine dedvcalc
+c
+
+c
+c
 c
 c
 c
@@ -389,7 +563,7 @@ c
       integer i,j,k,iglob,ierr
       integer start,stop
       real*8 epot,temp,term
-      real*8 energy,random
+      real*8 energy
       real*8 kt,expterm
       real*8 third,weigh
       real*8 step,scale
@@ -412,6 +586,7 @@ c
       real*8 valrand
       logical dotrial
       logical isotropic
+      real*8 random
       external random
 c
 c
@@ -613,9 +788,9 @@ c
       return
       end
 c
-c     subroutine rescale: rescale positions and speeds after a change of volume
+c     subroutine rescale_box: rescale simulation box (isotropic) 
 c
-      subroutine rescale(istep)
+      subroutine rescale_box(istep,scale)
       use atoms
       use bath
       use boxes
@@ -623,42 +798,23 @@ c
       use moldyn
       use usage
       implicit none
-      real*8 third,scale
-      integer iglob,i,istep
-      third = 1.0d0 / 3.0d0
-
-      scale  =  (extvol/extvolold)**third
+      integer, intent(in) :: istep
+      real*8, intent(in) :: scale(3)
+      real*8 third
+      integer iglob,i
 c
 c     modify the current periodic box dimension values
 c
-      xbox = xbox * scale
-      ybox = ybox * scale
-      zbox = zbox * scale
+      xbox = xbox * scale(1)
+      ybox = ybox * scale(2)
+      zbox = zbox * scale(3)
 c
 c     propagate the new box dimensions to other lattice values
 c
-c      if (rank.eq.0) then
-c      write(*,*) 'volume rescale = ',xbox*ybox*zbox
-c      end if
       call lattice
-
-      do i = 1, nbloc
-         iglob = glob(i)
-         if (use(iglob)) then
-            x(iglob) = x(iglob) * scale
-            y(iglob) = y(iglob) * scale
-            z(iglob) = z(iglob) * scale
-            v(1,iglob) = v(1,iglob) / scale
-            v(2,iglob) = v(2,iglob) / scale
-            v(3,iglob) = v(3,iglob) / scale
-         end if
-      end do
-c      if (rank.eq.0) then
-c      write(*,*) 'scale = ',scale
-c      end if
 c
 c   also rescale xbegproc, xendproc...
 c
-      call ddpme3dnpt(scale,istep)
-      return
-      end
+      call ddpme3dnptaniso(scale,istep)
+
+      end subroutine rescale_box

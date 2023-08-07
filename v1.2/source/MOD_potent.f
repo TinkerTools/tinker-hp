@@ -28,6 +28,7 @@ c     use_vdw     logical flag governing use of vdw der Waals potential
 c     use_vdwshort   logical flag governing use of short range vdw potential
 c     use_vdwlong   logical flag governing use of long range vdw potential
 c     use_charge  logical flag governing use of charge-charge potential
+c     use_grad    logical flag being true only if the main is "dynamic"
 c     use_mpole   logical flag governing use of multipole potential
 c     use_mpoleshortreal   logical flag governing use of short range real space multipole potential
 c     use_mpolelong   logical flag governing use of long range real space multipole potential
@@ -41,6 +42,7 @@ c     use_pmecore logical flag governing use of separate cores for pme
 c     use_emtp    logical flag governing use of emtp formula for electrostatics
 c     use_ctransfer logical flag governing use of ect potential
 c     use_dispersion logical flag governing use of dispersion potential
+c     use_repulsion logical flag governing use of repulsion potential
 c     use_mreal   logical flag governing use of real space multipolar potential
 c     use_mrec    logical flag governing use of reciprocal space multipolar potential
 c     use_mself   logical flag governing use of self multipolar potential
@@ -85,6 +87,7 @@ c
       logical use_geom,use_extra
       logical use_born,use_pmecore
       logical use_emtp,use_ctransfer,use_dispersion
+      logical use_repulsion,use_grad
       logical use_mreal,use_mrec,use_preal,use_prec
       logical use_creal,use_crec,use_cself
       logical use_polarshortreal

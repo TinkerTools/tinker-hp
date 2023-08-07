@@ -343,25 +343,30 @@ c
       end subroutine
 
       subroutine get_delambda(res)
-      use iounit
       use deriv
+      use iounit
+      use inform
       use iso_c_binding
       use mutant
       implicit none
       real(c_double) :: res
-      write(iout,5) lambda
- 5    format('get_delambda -- value of lambda: ',F15.3)
-      write(iout,10) delambdae
- 10   format('value of delambdae: ',F15.3)
-      write(iout,20) dlambdaelambda
- 20   format('value of dlambdaelambda: ',F15.3)
-      write(iout,30) delambdav
- 30   format('value of delambdav: ',F15.3)
-      write(iout,40) dlambdavlambda
- 40   format('value of dlambdavlambda: ',F15.3)
+      if (verbose) then
+        write(iout,5) lambda
+ 5      format('get_delambda -- value of lambda: ',F15.3)
+        write(iout,10) delambdae
+ 10     format('value of delambdae: ',F15.3)
+        write(iout,20) dlambdaelambda
+ 20     format('value of dlambdaelambda: ',F15.3)
+        write(iout,30) delambdav
+ 30     format('value of delambdav: ',F15.3)
+        write(iout,40) dlambdavlambda
+ 40     format('value of dlambdavlambda: ',F15.3)
+      end if
       delambda = delambdae * dlambdaelambda + delambdav * dlambdavlambda
-      write(iout,50) delambda
- 50   format('value of delambda: ',F15.3)
+      if (verbose) then
+        write(iout,50) delambda
+ 50     format('value of delambda: ',F15.3)
+      end if
       res = delambda
       end subroutine
 

@@ -21,6 +21,7 @@ c
       use domdec
       use mpole
       implicit none
+      logical, intent(in) :: init
       integer k,ii,iipole,nloop
       integer ia,ib,ic,id
       integer, allocatable :: globloop(:)
@@ -28,18 +29,19 @@ c
       real*8 xbd,ybd,zbd
       real*8 xcd,ycd,zcd
       real*8 c1,c2,c3,vol
-      logical check,init
+      logical check
+      integer :: ierr
 c
       if (init) then
         nloop = npole
-        allocate(globloop(npole))
+        allocate(globloop(npole),stat=ierr)
         do ii = 1, npole
           globloop(ii) = ii
         end do
       else
         nloop = npolelocnl
-        allocate(globloop(nlocnl))
-        globloop = poleglobnl
+        allocate(globloop(npolelocnl),stat=ierr)
+        globloop(:) = poleglobnl(:)
       end if
 
 c

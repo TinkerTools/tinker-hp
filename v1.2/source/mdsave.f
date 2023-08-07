@@ -52,10 +52,10 @@ c
       real*8, allocatable :: derivstemp2(:,:)
       real*8, allocatable :: uindtemp(:,:)
       real*8 :: derivs(3,*)
-      integer, allocatable :: pbcwrapindextemp(:,:)
+      !integer, allocatable :: pbcwrapindextemp(:,:)
       integer, allocatable :: bufbegsave(:),globsave(:)
       integer, allocatable :: bufbegpolesave(:),globpolesave(:)
-      integer req(nproc*nproc)
+      integer req(nproc*nproc),reqr(4)!,reqs(3*(nproc-1))
       integer iproc,ierr
       integer tagmpi,iglob,status(MPI_STATUS_SIZE)
       logical exist
@@ -67,6 +67,7 @@ c
       character*240 indfile
       character*3 numberreps
       character*240 exten
+      type(dcdinfo_t), save :: dcdinfo
 c
       moddump = mod(istep,iwrite)
       if (moddump .ne. 0)  return
@@ -76,8 +77,8 @@ c
 c
 c     wrap coordinates in unit cell
 c
-      call molecule(.false.)
-      if (use_bounds) call bounds
+      !call molecule(.false.)
+      !if (use_bounds) call bounds
 c
 c      allocate temporary arrays
 c
@@ -94,10 +95,10 @@ c
           allocate (uindtemp(3,nloc))
           uindtemp = 0d0
         end if
-        if (pbcunwrap) then
-          allocate (pbcwrapindextemp(3,nloc))
-          pbcwrapindextemp = 0
-        end if
+        !if (pbcunwrap) then
+        !  allocate (pbcwrapindextemp(3,nloc))
+        !  pbcwrapindextemp = 0
+        !end if
       else
         allocate (postemp(3,n))
         postemp = 0d0
@@ -121,10 +122,10 @@ c
           allocate (derivstemp2(3,n))
           derivstemp2 = 0d0
         end if
-        if (pbcunwrap) then
-          allocate (pbcwrapindextemp(3,n))
-          pbcwrapindextemp = 0
-        end if
+        !if (pbcunwrap) then
+        !  allocate (pbcwrapindextemp(3,n))
+        !  pbcwrapindextemp = 0
+        !end if
         allocate (bufbegsave(nproc))
         bufbegsave = 0
         allocate (globsave(n))
@@ -157,12 +158,12 @@ c
             uindtemp(3,i) = uind(3,iglob)
           end do
         end if
-        if (pbcunwrap) then
-          do i = 1, nloc
-            iglob = glob(i)
-            pbcwrapindextemp(:,i) = pbcwrapindex(:,iglob)
-          end do
-        end if
+        !if (pbcunwrap) then
+        !  do i = 1, nloc
+        !    iglob = glob(i)
+        !    pbcwrapindextemp(:,i) = pbcwrapindex(:,iglob)
+        !  end do
+        !end if
       else if (frcsave) then
         do i = 1, nloc
           iglob = glob(i)
@@ -420,29 +421,29 @@ c
 c
 c     pbcwrap indexes
 c
-      if (pbcunwrap) then
-        if (rank.eq.0) then
-          do iproc = 1, nproc-1
-            tagmpi = iproc + 1
-            call MPI_IRECV(pbcwrapindextemp(1,bufbegsave(iproc+1)),
-     $       3*domlen(iproc+1)
-     $       ,MPI_INT,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
-          end do
-        else
-          tagmpi = rank + 1
-          call MPI_ISEND(pbcwrapindextemp,3*nloc,MPI_INT,0,tagmpi,
-     $     COMM_TINKER,req(tagmpi),ierr)
-        end if
-        if (rank.eq.0) then
-          do iproc = 1, nproc-1
-            tagmpi = iproc + 1
-            call MPI_WAIT(req(tagmpi),status,ierr)
-          end do
-        else
-          tagmpi = rank + 1
-          call MPI_WAIT(req(tagmpi),status,ierr)
-        end if
-      end if
+c      if (pbcunwrap) then
+c        if (rank.eq.0) then
+c          do iproc = 1, nproc-1
+c            tagmpi = iproc + 1
+c            call MPI_IRECV(pbcwrapindextemp(1,bufbegsave(iproc+1)),
+c     $       3*domlen(iproc+1)
+c     $       ,MPI_INT,iproc,tagmpi,COMM_TINKER,req(tagmpi),ierr)
+c          end do
+c        else
+c          tagmpi = rank + 1
+c          call MPI_ISEND(pbcwrapindextemp,3*nloc,MPI_INT,0,tagmpi,
+c     $     COMM_TINKER,req(tagmpi),ierr)
+c        end if
+c        if (rank.eq.0) then
+c          do iproc = 1, nproc-1
+c            tagmpi = iproc + 1
+c            call MPI_WAIT(req(tagmpi),status,ierr)
+c          end do
+c        else
+c          tagmpi = rank + 1
+c          call MPI_WAIT(req(tagmpi),status,ierr)
+c        end if
+c      end if
 c
 c     put the array in global order to be written
 c
@@ -493,25 +494,40 @@ c
               end if
             end do
           end if
-          if (pbcunwrap) then
-            do i = 1, domlen(iproc+1)
-              if (domlen(iproc+1).ne.0) then
-                iloc = bufbegsave(iproc+1)+i-1
-                iglob = globsave(iloc)
-                pbcwrapindex(1,iglob) = pbcwrapindextemp(1,iloc)
-                pbcwrapindex(2,iglob) = pbcwrapindextemp(2,iloc)
-                pbcwrapindex(3,iglob) = pbcwrapindextemp(3,iloc)
-              end if
-            end do
-          end if
+          !if (pbcunwrap) then
+          !  do i = 1, domlen(iproc+1)
+          !    if (domlen(iproc+1).ne.0) then
+          !      iloc = bufbegsave(iproc+1)+i-1
+          !      iglob = globsave(iloc)
+          !      pbcwrapindex(1,iglob) = pbcwrapindextemp(1,iloc)
+          !      pbcwrapindex(2,iglob) = pbcwrapindextemp(2,iloc)
+          !      pbcwrapindex(3,iglob) = pbcwrapindextemp(3,iloc)
+          !    end if
+          !  end do
+          !end if
         end do
+        if (use_bounds) call bounds
       end if
       deallocate (postemp)
+
+      if (use_bounds .and. nproc>1) then
+c
+c     The master broadcasts the system (back in the unit cell)
+c        
+        call MPI_IBCAST(x,n,MPI_REAL8,0,COMM_TINKER,reqr(1),ierr)
+        call MPI_IBCAST(y,n,MPI_REAL8,0,COMM_TINKER,reqr(2),ierr)
+        call MPI_IBCAST(z,n,MPI_REAL8,0,COMM_TINKER,reqr(3),ierr)
+        call MPI_IBCAST(pbcwrapindex,3*n,MPI_INT,0,COMM_TINKER
+     &                                             ,reqr(4),ierr)
+        call MPI_WAITALL(4,reqr,MPI_STATUSES_IGNORE,ierr)
+      end if
+
 c
 c     Put the proper coordinates (potentially unwrapped) in xwrite,ywrite and zwrite
 c
       if (rank.eq.0) then
         if (pbcunwrap) then
+          ! warning, only orthorhombic cells are supported right now !
           do i = 1, n
             xwrite(i) = x(i) + pbcwrapindex(1,i)*xbox
             ywrite(i) = y(i) + pbcwrapindex(2,i)*ybox
@@ -559,27 +575,29 @@ c
       end if
       write (iout,60)  idump
    60 format (' Frame Number',13x,i10)
+
+c
+c     if multiple replicas, then number the traj outputs
+c
+      exten=''
+      if (use_reps) then
+        write(numberreps, '(i3.3)') rank_reploc
+        exten='_reps'//numberreps
+      end if
 c
 c     update the information needed to restart the trajectory
 c
-      call prtdyn
+      call prtdyn(exten)
 c
 c     save coordinates to an archived, numbered structure file, or dcd file
 c
       if (dcdio) then
-        call dcdio_write(istep)
+        call dcdio_write(dcdinfo,istep,exten)
       else
         ixyz = freeunit ()
         if (archive) then
-           xyzfile = filename(1:leng)
-c
-c          if multiple replicas, then number the traj outputs
-c
-           if (use_reps) then
-             write(numberreps, '(i3.3)') rank_reploc
-             exten='_reps'//numberreps
-             xyzfile = filename(1:leng)//trim(exten)
-           end if
+           xyzfile = filename(1:leng)//trim(exten)
+
            call suffix (xyzfile,'arc','old')
 
            inquire (file=xyzfile,exist=exist)
@@ -589,14 +607,8 @@ c
               open (unit=ixyz,file=xyzfile,status='new')
            end if
         else
-           if (use_reps) then
-             write(numberreps, '(i3.3)') rank_reploc
-             exten='_reps'//numberreps
-             xyzfile = filename(1:leng)//trim(exten)
+           xyzfile = filename(1:leng)//trim(exten)
      &                            //'.'//ext(1:lext)
-           else
-             xyzfile = filename(1:leng)//'.'//ext(1:lext)
-           end if
            call version (xyzfile,'new')
            open (unit=ixyz,file=xyzfile,status='new')
         end if
@@ -611,7 +623,7 @@ c
       if (velsave) then
          ivel = freeunit ()
          if (archive) then
-            velfile = filename(1:leng)
+            velfile = filename(1:leng)//trim(exten)
             call suffix (velfile,'vel','old')
             inquire (file=velfile,exist=exist)
             if (exist) then
@@ -620,7 +632,8 @@ c
                open (unit=ivel,file=velfile,status='new')
             end if
          else
-            velfile = filename(1:leng)//'.'//ext(1:lext)//'v'
+            velfile = filename(1:leng)//trim(exten)
+     &                           //'.'//ext(1:lext)//'v'
             call version (velfile,'new')
             open (unit=ivel,file=velfile,status='new')
          end if
@@ -643,7 +656,7 @@ c
      $ .and. integrate.ne.'BAOABRESPA1') then
          ifrc = freeunit ()
          if (archive) then
-            frcfile = filename(1:leng)
+            frcfile = filename(1:leng)//trim(exten)
             call suffix (frcfile,'frc','old')
             inquire (file=frcfile,exist=exist)
             if (exist) then
@@ -652,7 +665,8 @@ c
                open (unit=ifrc,file=frcfile,status='new')
             end if
          else
-            frcfile = filename(1:leng)//'.'//ext(1:lext)//'f'
+            frcfile = filename(1:leng)//trim(exten)
+     &                         //'.'//ext(1:lext)//'f'
             call version (frcfile,'new')
             open (unit=ifrc,file=frcfile,status='new')
          end if
@@ -674,7 +688,7 @@ c
       if (uindsave .and. use_polar) then
          iind = freeunit ()
          if (archive) then
-            indfile = filename(1:leng)
+            indfile = filename(1:leng)//trim(exten)
             call suffix (indfile,'uind','old')
             inquire (file=indfile,exist=exist)
             if (exist) then
@@ -683,7 +697,8 @@ c
                open (unit=iind,file=indfile,status='new')
             end if
          else
-            indfile = filename(1:leng)//'.'//ext(1:lext)//'u'
+            indfile = filename(1:leng)//trim(exten)
+     &                         //'.'//ext(1:lext)//'u'
             call version (indfile,'new')
             open (unit=iind,file=indfile,status='new')
          end if

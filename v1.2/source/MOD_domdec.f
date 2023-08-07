@@ -111,6 +111,7 @@ c
       integer nproctot,ranktot
       integer, target :: COMM_TINKER,nproc,rank
       integer rank_bis,nthread,nrec,ndir,comm_rec,comm_dir
+      integer COMM_POLYMER, rank_polymer, nproc_polymer
       integer hostrank,hostcomm
       integer n_recep1, n_send1, nrec_recep,nrec_send
       integer n_recep2, n_send2, nrecdir_recep,nrecdir_send

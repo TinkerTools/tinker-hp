@@ -171,6 +171,11 @@ c
      $  baseptr, ierr)
         CALL MPI_Win_free(winangtyp,ierr)
       end if
+      if (associated(ureytyp)) then
+        CALL MPI_Win_shared_query(winureytyp, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winureytyp,ierr)
+      end if
       if (associated(isb)) then
         CALL MPI_Win_shared_query(winisb, 0, windowsize, disp_unit,
      $  baseptr, ierr)
@@ -424,6 +429,29 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,angtyp,arrayshape)
+c
+c     ureytyp
+c
+      arrayshape=(/nangle/)
+      if (hostrank == 0) then
+        windowsize = int(nangle,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winureytyp, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winureytyp, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,ureytyp,arrayshape)
 c
 c     isb
 c

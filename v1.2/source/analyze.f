@@ -30,6 +30,7 @@ c
       use inform
       use iounit
       use mpi
+      use potent
       implicit none
       integer i,ixyz
       integer frame
@@ -42,7 +43,11 @@ c
       character*240 string
       character*240 xyzfile
       character*240 dcdfile
+      type(dcdinfo_t) :: dcdinfo
 c
+c     initializing use_grad
+c
+      use_grad = .false.
 c
 c     set up the structure and mechanics calculation
 c
@@ -98,10 +103,10 @@ c
       frame = 0
       if (dcdio) then
         dcdfile = filename(1:leng)//'.dcd'
-        call dcdfile_open(dcdfile)
-        call dcdfile_read_header(.false.)
-        call dcdfile_read_next
-        call dcdfile_skip_next(0)
+        call dcdfile_open(dcdinfo,dcdfile)
+        call dcdfile_read_header(dcdinfo,.false.)
+        call dcdfile_read_next(dcdinfo)
+        call dcdfile_skip_next(dcdinfo,0)
       else
         ixyz = freeunit ()
         xyzfile = filename
@@ -158,15 +163,15 @@ c
          if (.not.dcdio) then
            call readxyz (ixyz)
          else 
-           call dcdfile_read_next
-           call dcdfile_skip_next(0)
+           call dcdfile_read_next(dcdinfo)
+           call dcdfile_skip_next(dcdinfo,0)
          end if
       end do
 c
 c     perform any final tasks before program exit
 c
       if (dcdio) then
-        call dcdfile_close
+        call dcdfile_close(dcdinfo)
       else
         close (unit=ixyz)
       end if

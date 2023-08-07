@@ -76,7 +76,7 @@ c
 c     harmonic potential uses Taylor expansion of Morse potential
 c     through the fourth power of the bond length deviation
 c
-            if (bndtyp .eq. 'HARMONIC') then
+            if (bndtyp(i) .eq. 'HARMONIC') then
                dt2 = dt * dt
                e = bndunit * force * dt2 * (1.0d0+cbnd*dt+qbnd*dt2)
 c
@@ -84,10 +84,18 @@ c     Morse potential uses energy = BDE * (1 - e**(-alpha*dt))**2)
 c     with the approximations alpha = sqrt(ForceConst/BDE) = -2
 c     and BDE = Bond Dissociation Energy = ForceConst/alpha**2
 c
-            else if (bndtyp .eq. 'MORSE') then
-               expterm = exp(-2.0d0*dt)
-               bde = 0.25d0 * bndunit * force
+            else if (bndtyp(i) .eq. 'MORSE') then
+               expterm = exp(-ba(i)*dt)
+               bde = bndunit * force / ba(i)**2
                e = bde * (1.0d0-expterm)**2
+c
+c     Morse potential expanded to 4th order 
+c              
+            else if (bndtyp(i) .eq. 'MORSE4') then
+               !bde = bndunit * force / ba(i)**2
+               dt2 = dt * dt
+               e = bndunit * force * dt2 * (1.0d0-ba(i)*dt
+     &           + 7.d0/12.d0*ba(i)*ba(i)*dt2)
             end if
 c
 c     scale the interaction based on its group membership

@@ -93,7 +93,6 @@ c
       return
       end
 c
-c
 c    "mlistcell" performs a complete rebuild of the
 c     electrostatic neighbor lists for multipoles using linked cells method
 c
@@ -223,7 +222,7 @@ c
       deallocate (indcell_loc)
       deallocate (r2vec)
       return
-      end
+      end 
 c
 c    "mlistcell2" performs a complete rebuild of the
 c     short range and regular electrostatic neighbor lists for 
@@ -1092,6 +1091,7 @@ c
       deallocate (r2vec)
       return
       end
+
 c
 c    "vlistcell" performs a complete rebuild of the
 c     vdw neighbor lists for charges using linked cells method
@@ -1678,3 +1678,4 @@ c
       deallocate (r2vec)
       return
       end
+

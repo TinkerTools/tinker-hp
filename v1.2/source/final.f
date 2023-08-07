@@ -148,7 +148,7 @@ c
 c
 c     module "dcdmod"
 c
-      if (allocated(titlesdcd)) deallocate (titlesdcd)
+c     if (allocated(titlesdcd)) deallocate (titlesdcd)
 c
 c     module "deriv"
 c

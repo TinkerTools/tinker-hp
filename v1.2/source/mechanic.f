@@ -134,7 +134,7 @@ c
       call angles(.false.)
       call torsions(.false.)
       call bitors(.false.)
-
+c
       if (use_charge) call kcharge(.false.,istep)
       if (use_mpole) call kmpole(.false.,istep)
       if (use_polar) call kpolar(.false.,istep)

@@ -25,6 +25,7 @@ c
       use units
       use usage
       use mpi
+      use qtb, only: corr_fact_qtb
       implicit none
       integer i,j,k,ierr,iglob
 
@@ -56,6 +57,11 @@ c
             end do
          end if
       end do
+
+      do j=1,3; do k=1,3
+        ekin(k,j)=ekin(k,j)/sqrt(corr_fact_qtb(k)*corr_fact_qtb(j))
+      enddo; enddo
+
       call MPI_ALLREDUCE(MPI_IN_PLACE,ekin,9,MPI_REAL8,MPI_SUM,
      $  COMM_TINKER,ierr)
       eksum = ekin(1,1) + ekin(2,2) + ekin(3,3)

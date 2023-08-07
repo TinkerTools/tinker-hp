@@ -23,7 +23,7 @@ c
       use mdstuf
       use moldyn
       implicit none
-      integer i,idyn,ndyn
+      integer i,idyn,ndyn,ios
       logical exist,opened,quit
       character*240 dynfile
       character*240 record
@@ -121,6 +121,17 @@ c  240    format (a240)
 c         read (record,*,err=250,end=250)  aalt2(1,i),aalt2(2,i),
 c     &                                    aalt2(3,i)
 c      end do
+      read (idyn,230,iostat=ios)
+  230 format ()
+      if (ios == 0) then
+        do i = 1, n
+           read (idyn,240)  record
+  240       format (a240)
+           read (record,*,err=250,end=250)  pbcwrapindex(1,i)
+     &                     ,pbcwrapindex(2,i),pbcwrapindex(3,i)
+        end do
+      end if
+      
   250 continue
       quit = .false.
       if (.not. opened)  close (unit=idyn)

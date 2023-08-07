@@ -41,7 +41,7 @@ c
       integer maxprm,maxkey
       integer maxopt
       integer maxvlst,maxelst
-      integer maxfft
+      integer maxfft,maxfrq
       integer maxcell,maxref
       integer maxring,maxbio,maxres
       integer maxele,maxamino,maxnuc
@@ -57,6 +57,7 @@ c
       parameter (maxvlst=2500)
       parameter (maxelst=1200)
       parameter (maxfft=864)
+      parameter (maxfrq=21)
       parameter (maxring=10000)
       parameter (maxbio=10000)
       parameter (maxres=10000)

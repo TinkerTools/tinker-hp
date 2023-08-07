@@ -51,8 +51,9 @@ c
       integer if,ig,ih,ii
       integer size,next
       integer length,trimtext
-      integer nb,nb5,nb4,nb3,nel
-      integer na,na5,na4,na3,nap,naf
+      integer nb,nb5,nb4,nb3,nel,nbm,nbm4
+      integer na,na5,na4,na3,nap,naf,naps
+      integer nups,nuq
       integer nsb,nu,nopb,nopd
       integer ndi,nti,nt,nt5,nt4
       integer npt,nbt,nat,ntt,nd,nd5
@@ -76,6 +77,8 @@ c
       real*8 vd,cg
       real*8 fc,bd,dl
       real*8 pt,pol,thl
+      real*8 pol_ts,excfreq,rad_ts
+      real*8 rad_free,pol_free
       real*8 abc,cba
       real*8 gi,alphi
       real*8 nni,factor
@@ -107,6 +110,8 @@ c
       nvp = 0
       nhb = 0
       nb = 0
+      nbm = 0
+      nbm4 = 0
       nb5 = 0
       nb4 = 0
       nb3 = 0
@@ -117,6 +122,9 @@ c
       na3 = 0
       nap = 0
       naf = 0
+      naps = 0
+      nups = 0
+      nuq = 0
       nsb = 0
       nu = 0
       nopb = 0
@@ -308,6 +316,44 @@ c
             end if
             bcon(nb) = fc
             blen(nb) = bd
+         else if (keyword(1:6) .eq. 'MORSE ') then
+            ia = 0
+            ib = 0
+            fc = 0.0d0
+            bd = 0.0d0
+            ep = 2.0d0
+            string = record(next:240)
+            read (string,*)  ia,ib,fc,bd,ep
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            nbm = nbm + 1
+            if (ia .le. ib) then
+               kbm(nbm) = pa//pb
+            else
+               kbm(nbm) = pb//pa
+            end if
+            bmor(1,nbm) = fc
+            bmor(2,nbm) = bd
+            bmor(3,nbm) = ep
+         else if (keyword(1:7) .eq. 'MORSE4 ') then
+            ia = 0
+            ib = 0
+            fc = 0.0d0
+            bd = 0.0d0
+            ep = 2.0d0
+            string = record(next:240)
+            read (string,*)  ia,ib,fc,bd,ep
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            nbm4 = nbm4 + 1
+            if (ia .le. ib) then
+               kbm4(nbm4) = pa//pb
+            else
+               kbm4(nbm4) = pb//pa
+            end if
+            bmor4(1,nbm4) = fc
+            bmor4(2,nbm4) = bd
+            bmor4(3,nbm4) = ep
 c
 c     bond stretching parameters for 5-membered rings
 c
@@ -525,6 +571,31 @@ c
             aconf(naf) = fc
             angf(1,naf) = an
             angf(2,naf) = pr
+
+c     Partridge-Schwenke bond angle bending parameters
+c
+         else if (keyword(1:8) .eq. 'ANGLEPS ') then
+            ia = 0
+            ib = 0
+            ic = 0
+            fc = 0.0d0
+            an = 0.0d0
+            pr = 0.0d0
+            string = record(next:240)
+            ! ia ib ic  theta_e  r_e  beta
+            read (string,*)  ia,ib,ic,fc,an,pr
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
+            naps = naps + 1
+            if (ia .le. ic) then
+               kaps(naps) = pa//pb//pc
+            else
+               kaps(naps) = pc//pb//pa
+            end if
+            angps(1,naps) = fc 
+            angps(2,naps) = an
+            angps(3,naps) = pr
 c
 c     in-plane projected angle bending parameters
 c
@@ -598,6 +669,52 @@ c
             end if
             ucon(nu) = fc
             dst13(nu) = ds
+c
+c     Partridge-Schwenke-type Angle repulsion (HH potential)
+c
+         else if (keyword(1:7) .eq. 'ANGREP ') then
+            ia = 0
+            ib = 0
+            ic = 0
+            fc = 0.0d0
+            ds = 0.0d0
+            string = record(next:240)
+            read (string,*,err=221,end=221)  ia,ib,ic,fc,ds
+  221       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
+            nups = nups + 1
+            if (ia .le. ic) then
+               kups(nups) = pa//pb//pc
+            else
+               kups(nups) = pc//pb//pa
+            end if
+            uconps(nups) = fc
+            dst13ps(nups) = ds
+c
+c     Quartic Urey parameters
+c
+         else if (keyword(1:12) .eq. 'UREYQUARTIC ') then
+            ia = 0
+            ib = 0
+            ic = 0
+            fc = 0.0d0
+            ds = 0.0d0
+            string = record(next:240)
+            read (string,*,err=222,end=222)  ia,ib,ic,fc,ds
+  222       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
+            nuq = nuq + 1
+            if (ia .le. ic) then
+               kuq(nuq) = pa//pb//pc
+            else
+               kuq(nuq) = pc//pb//pa
+            end if
+            uconq(nuq) = fc
+            dst13q(nuq) = ds
 c
 c     angle-angle parameters
 c
@@ -1717,7 +1834,6 @@ c
             else if (ie .eq. 1) then
                mmffaroma(ia,if) = ic
             end if
-c
 c     Pauli repulsion parameters
 c
          else if (keyword(1:10) .eq. 'REPULSION ') then

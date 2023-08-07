@@ -21,7 +21,7 @@ c
       integer j, k 
       integer reqdiis(*)
 c
-c 1000 format(' DIIS will restart the extrapolation.')
+ 1000 format(' DIIS will restart the extrapolation.')
  1010 format(' Restarting from ',I4)
 c
 c     if needed, resize the matrix and restart the extrapolation.
@@ -70,9 +70,11 @@ c
 c
 c   build or update pulay's diis matrix. 
 c
-      integer ndsmax, n, nvec, j, ierr, reqdiis(*), comm
+      integer ndsmax, n, nvec, j, i, ierr, reqdiis(*), comm
       real*8 e(n,*), b(ndsmax+1,*), zero, one, sprod
       data zero/0.d0/, one/1.d0/
+c
+c
 c
       if(nvec.eq.1) then 
 c
@@ -105,6 +107,7 @@ c
         call MPI_IALLREDUCE(MPI_IN_PLACE,b(nvec+1,nvec+1),1,
      $   MPI_REAL8,MPI_SUM,comm,reqdiis(2*nvec-1),ierr)
       endif
+c
       return
       end
 c
@@ -120,7 +123,7 @@ c
       real*8  xdiis(n,ndsmax), ediis(n,ndsmax), bmat(ndsmax+1,ndsmax+1)
       integer j, k 
 c
-c1000 format(' DIIS will restart the extrapolation.')
+ 1000 format(' DIIS will restart the extrapolation.')
  1010 format(' Restarting from ',I4)
 c
 c     if needed, resize the matrix and restart the extrapolation.
@@ -154,7 +157,7 @@ c
 c
 c   build or update pulay's diis matrix. 
 c
-      integer ndsmax, n, nvec, j
+      integer ndsmax, n, nvec, j, ierr
       real*8 e(n,*), b(ndsmax+1,*), zero, one, sprod
       data zero/0.d0/, one/1.d0/
 c

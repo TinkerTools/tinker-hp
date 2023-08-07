@@ -14,39 +14,28 @@ c     "prtdyn" writes out the information needed to restart a
 c     molecular dynamics trajectory to an external disk file
 c
 c
-      subroutine prtdyn
+      subroutine prtdyn(suffix)
       use atoms
       use boxes
       use files
       use group
       use mdstuf
       use moldyn
-      use replicas
       use titles
       implicit none
+      character(*), intent(in) :: suffix
       integer i,idyn
       integer freeunit
       logical exist
       character*2 atmc
       character*40 fstr
       character*240 dynfile
-      character*3 numberreps
-c
-c     if multiple replicas, the restart are numbered
-c
-      if (use_reps) then
-        write(numberreps, '(i3.3)') rank_reploc
-      end if
 
 c
 c     update an existing restart file or open a new one
 c
       idyn = freeunit ()
-      if (use_reps) then
-         dynfile = filename(1:leng)//'_reps'//numberreps//'.dyn'
-      else
-        dynfile = filename(1:leng)//'.dyn'
-      end if
+      dynfile = filename(1:leng)//trim(suffix)//'.dyn'
       inquire (file=dynfile,exist=exist)
       if (exist) then
          open (unit=idyn,file=dynfile,status='old')
@@ -110,6 +99,13 @@ c      fstr = '(3d26.16)'
 c      do i = 1, n
 c         write (idyn,fstr(1:9))  aalt2(1,i),aalt2(2,i),aalt2(3,i)
 c      end do
+      fstr =  '('' pbc wrap index :'')'
+      write (idyn,fstr(1:21))
+      fstr = '(3i3)'
+      do i = 1, n
+         write (idyn,fstr(1:9))  pbcwrapindex(1,i),pbcwrapindex(2,i)
+     &                                            ,pbcwrapindex(3,i)
+      end do
 c
 c     close the dynamics trajectory restart file
 c

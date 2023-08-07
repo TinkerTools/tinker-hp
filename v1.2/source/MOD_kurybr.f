@@ -19,9 +19,13 @@ c
 c
       module kurybr
       implicit none
-      integer maxnu
+      integer maxnu,maxnups,maxnuq
       parameter (maxnu=2000)
+      parameter (maxnups=500)
+      parameter (maxnuq=500)
       real*8 ucon(maxnu),dst13(maxnu)
-      character*12 ku(maxnu)
+      real*8 uconps(maxnups), dst13ps(maxnups)
+      real*8 uconq(maxnuq), dst13q(maxnuq)
+      character*12 ku(maxnu),kups(maxnups),kuq(maxnuq)
       save
       end

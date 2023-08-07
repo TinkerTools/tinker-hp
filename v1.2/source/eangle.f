@@ -26,7 +26,7 @@ c
       use math
       use usage
       implicit none
-      integer i,ia,ib,ic,id,iangle
+      integer i,ia,ib,ic,id,iangle,j
       real*8 e,ideal,force
       real*8 fold,factor
       real*8 dot,cosine
@@ -49,6 +49,9 @@ c
       real*8 xt,yt,zt
       real*8 rt2,delta
       real*8 fgrp
+      real*8 fmat(15,3)
+      real*8 r_e,drab,drcb,x1,x2,x3
+      real*8 gaussterm,term
       logical proceed
 c
 c
@@ -126,6 +129,29 @@ c
                      factor = 2.0d0 * angunit * (radian/fold)**2
                      cosine = cos((fold*angle1-ideal)/radian)
                      e = factor * force * (1.0d0+cosine)
+                  elseif (angtyp(i) .eq. 'ANGLEPS') then
+                     r_e = afld(i)
+                     x3 = cosine - cos(ideal/radian)
+                     drab = sqrt(rab2) - r_e
+                     drcb = sqrt(rcb2) - r_e 
+                     gaussterm = exp(-ak(i)*(drab**2+drcb**2))
+                     x1 = drab/r_e
+                     x2 = drcb/r_e
+                     fmat(1,1)=1d0
+                     fmat(1,2)=1d0
+                     fmat(1,3)=1d0
+                     do j=2,15
+                      fmat(j,1)=fmat(j-1,1)*x1
+                      fmat(j,2)=fmat(j-1,2)*x2
+                      fmat(j,3)=fmat(j-1,3)*x3
+                     enddo
+                     e=0.d0
+                     do j=2,245
+                      term=fmat(idx_ps(j,1),1)*fmat(idx_ps(j,2),2) 
+     &                     +fmat(idx_ps(j,2),1)*fmat(idx_ps(j,1),2)
+                      e=e+c5z_ps(j)*term*fmat(idx_ps(j,3),3)
+                     enddo
+                     e =  e*gaussterm !+ c5z_ps(1)
                   end if
 c
 c     scale the interaction based on its group membership

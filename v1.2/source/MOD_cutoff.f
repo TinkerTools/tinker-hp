@@ -49,7 +49,8 @@ c
       real*8 vdwcut,chgcut
       real*8 mpolecut
       real*8 vdwtaper,shortheal,chgtaper
-      real*8 mpoletaper,disptaper,ctrntaper,reptaper
+      real*8 mpoletaper
+      real*8 disptaper,ctrntaper,reptaper
       real*8 ewaldcut,ewaldshortcut
       real*8 vdwshortcut,mpoleshortcut,chgshortcut
       real*8 ctrncut,dispcut,repcut

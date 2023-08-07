@@ -186,7 +186,7 @@ c
      $ + deub + deit + det + dept + deat + debt + dett + deg
 
 c
-      derivs(:,1:nloc) = derivs(:,1:nloc) + desum(:,1:nloc)
+      derivs(:,1:nbloc) = derivs(:,1:nbloc) + desum(:,1:nbloc)
 c
 c     check for an illegal value for the total energy
 c

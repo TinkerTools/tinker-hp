@@ -48,11 +48,11 @@ c
      &      ' Package for Multiscale',/,'   Simulations of Large',
      &      ' Complex ',
      &       'Systems with Advanced Polarizable Force Fields.',/,/,
-     &       '   Louis Lagardère, Luc-Henri Jolly, Filippo Lipparini,',
+     &       '   Louis Lagardere, Luc-Henri Jolly, Filippo Lipparini,',
      &       ' Felix Aviat,',/,
      &       '   Benjamin Stamm, Zhifeng F. Jing, Matthew ',
      &       'Harger, Hedieh Torabifard,'/,
-     &       '   G. Andrès Cisneros, Michael J. Schnieders, Nohad ',
+     &       '   G. Andres Cisneros, Michael J. Schnieders, Nohad ',
      &       'Gresh, Yvon Maday,',/,
      &       '   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal',
      &       ',',/,/, '   Chem. Sci., 2018, 9, 956-972,  '

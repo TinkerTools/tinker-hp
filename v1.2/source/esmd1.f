@@ -25,7 +25,7 @@ c
 c     literature reference:
 c     Massively Parallel Implementation of Steered Molecular Dynamics in Tinker-HP:
 c     Comparisons of Polarizable and Non-Polarizable Simulations of Realistic Systems
-c     F Célerse, L Lagardère, E Derat, JP Piquemal
+c     F Celerse, L Lagardere, E Derat, JP Piquemal
 c     Journal of Chemical Theory and Computation 15 (6), 3694-3709
 c
 c

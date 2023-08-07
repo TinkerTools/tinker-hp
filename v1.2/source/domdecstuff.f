@@ -1838,7 +1838,17 @@ c
 c     subroutine ddpme3dnpt : rescale geomtry of the domains and recompute the related quantities
 c     for communications
 c
-      subroutine ddpme3dnpt(scale,istep)
+      subroutine ddpme3dnpt(scaleiso,istep)
+      real*8 scaleiso
+      integer istep
+      real*8 scale(3)
+
+      scale(:)=scaleiso
+      call ddpme3dnptaniso(scale,istep)
+
+      end subroutine ddpme3dnpt
+
+      subroutine ddpme3dnptaniso(scale,istep)
       use cutoff
       use domdec
       use neigh
@@ -1850,7 +1860,7 @@ c
       integer istep,modnl
       real*8 mbuf,vbuf,neigbuf,bigbuf
       real*8 mshortbuf,vshortbuf,bigshortbuf
-      real*8 dist, scale
+      real*8 dist, scale(3)
       integer, allocatable :: bufcount(:),buffer(:,:)
       integer, allocatable :: reqsend(:),reqrec(:)
 cc
@@ -1867,12 +1877,12 @@ cc
       end if
 c
       do iproc = 1, nprocloc
-        xbegproc(iproc) = scale*xbegproc(iproc)
-        xendproc(iproc) = scale*xendproc(iproc)
-        ybegproc(iproc) = scale*ybegproc(iproc)
-        yendproc(iproc) = scale*yendproc(iproc)
-        zbegproc(iproc) = scale*zbegproc(iproc)
-        zendproc(iproc) = scale*zendproc(iproc)
+        xbegproc(iproc) = scale(1)*xbegproc(iproc)
+        xendproc(iproc) = scale(1)*xendproc(iproc)
+        ybegproc(iproc) = scale(2)*ybegproc(iproc)
+        yendproc(iproc) = scale(2)*yendproc(iproc)
+        zbegproc(iproc) = scale(3)*zbegproc(iproc)
+        zendproc(iproc) = scale(3)*zendproc(iproc)
       end do
       if (modnl.ne.0) return
 c

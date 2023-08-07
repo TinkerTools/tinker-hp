@@ -730,3 +730,16 @@ c
       deallocate (reqrec)
       return
       end
+
+      subroutine save_atoms_pos
+      use atoms
+      use domdec
+      implicit none
+      integer i,iglob
+      do i = 1,nloc
+        iglob=glob(i)
+         xold(iglob) = x(iglob)
+         yold(iglob) = y(iglob)
+         zold(iglob) = z(iglob)
+      enddo
+      end subroutine save_atoms_pos

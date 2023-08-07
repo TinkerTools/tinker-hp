@@ -16,6 +16,7 @@ c
       module langevin
       implicit none
       real*8 gamma
+      real*8, allocatable :: gamma_friction(:)
       real*8, allocatable :: Rn(:,:)
       save
       end

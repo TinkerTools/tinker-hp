@@ -559,57 +559,23 @@ c
       use potent
       use units
       use mpi
+      use spectra, only: compute_dipole
       implicit none
       integer i,iipole,iglob,ierr
       integer iichg
       real*8 q,xr,yr,zr
+      real*8 dip(3),dipind(3)
       real*8 dipx,dipy,dipz
       real*8 mux,muy,muz,mudx,mudy,mudz,mupx,mupy,mupz
  1000 format(/'x dipolar moment : ',F14.5)
  1010 format(/'y dipolar moment : ',F14.5)
  1020 format(/'z dipolar moment : ',F14.5)
 c
-      dipx = 0d0
-      dipy = 0d0
-      dipz = 0d0
-      if (use_mpole) then
-        do i = 1, npoleloc
-          iipole = poleglob(i)
-          iglob = ipole(iipole)
-          xr = x(iglob)
-          yr = y(iglob)
-          zr = z(iglob)
-          q = rpole(1,iipole)
-          mux = rpole(2,iipole)
-          muy = rpole(3,iipole)
-          muz = rpole(4,iipole)
-          mudx = uind(1,iipole)
-          mudy = uind(2,iipole)
-          mudz = uind(3,iipole)
-          mupx = uinp(1,iipole)
-          mupy = uinp(2,iipole)
-          mupz = uinp(3,iipole)
-          dipx = dipx + q*xr + mux + 0.5*(mudx+mupx)
-          dipy = dipy + q*yr + muy + 0.5*(mudy+mupy)
-          dipz = dipz + q*zr + muz + 0.5*(mudz+mupz)
-        end do
-      else if (use_charge) then
-        do i = 1, nionloc
-          iichg = chgglob(i)
-          iglob = iion(iichg)
-          xr = x(iglob)
-          yr = y(iglob)
-          zr = z(iglob)
-          q = pchg(iichg)
-          dipx = dipx + q*xr 
-          dipy = dipy + q*yr 
-          dipz = dipz + q*zr 
-        end do
-      end if
+      call compute_dipole(dip,dipind,.TRUE.)
 
-      dipx = debye*dipx
-      dipy = debye*dipy
-      dipz = debye*dipz
+      dipx = debye*(dip(1) + dipind(1))
+      dipy = debye*(dip(2) + dipind(2))
+      dipz = debye*(dip(3) + dipind(3))
 
       if (rank.eq.0) then
         call MPI_REDUCE(MPI_IN_PLACE,dipx,1,MPI_REAL8,MPI_SUM,0,

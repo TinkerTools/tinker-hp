@@ -27,7 +27,7 @@ c
       use potent
       use urey   
       implicit none
-      integer i,j,nu
+      integer i,j,nu,nups,nuq,nutot
       integer ia,ib,ic
       integer ita,itb,itc
       integer size,next
@@ -39,7 +39,7 @@ c
       character*20 keyword
       character*240 record
       character*240 string
-      logical init
+      logical init,max_reach
 c
       blank = '            '
       if (init) then
@@ -59,8 +59,7 @@ c
               bb = 0.0d0
               tt = 0.0d0
               string = record(next:240)
-              read (string,*,err=10,end=10)  ia,ib,ic,bb,tt
-   10         continue
+              read (string,*)  ia,ib,ic,bb,tt
               if (.not. silent) then
                  if (header) then
                     header = .false.
@@ -81,33 +80,153 @@ c
               else
                  pt = pc//pb//pa
               end if
+              max_reach = .true.
               do j = 1, maxnu
                  if (ku(j).eq.blank .or. ku(j).eq.pt) then
                     ku(j) = pt
                     ucon(j) = bb
                     dst13(j) = tt
-                    goto 50
+                    max_reach = .false.
+                    exit
                  end if
               end do
-              if (rank.eq.0) write (iout,40)
-   40         format (/,' KUREY  --  Too many Urey-Bradley',
-     &                   ' Interaction Parameters')
-              abort = .true.
-   50         continue
+              if (max_reach) then
+                if (rank.eq.0) write (iout,*)
+     &            ' KUREY  --  Too many Urey-Bradley',
+     &                   ' Interaction Parameters'
+                abort = .true.
+              endif
+           end if
+        end do
+c
+c     process keywords containing Angle repulsion parameters
+c
+        header = .true.
+        do i = 1, nkey
+           next = 1
+           record = keyline(i)
+           call gettext (record,keyword,next)
+           call upcase (keyword)
+           if (keyword(1:7) .eq. 'ANGREP ') then
+              ia = 0
+              ib = 0
+              ic = 0
+              bb = 0.0d0
+              tt = 0.0d0
+              string = record(next:240)
+              read (string,*)  ia,ib,ic,bb,tt
+              if (.not. silent) then
+                 if (header) then
+                    header = .false.
+                    if (rank.eq.0) write (iout,'(A,5x,A,8x,A,5x,A)')
+     &                  ' Additional Angle repulsion Parameters :',
+     &                     'Atom Classes','D','1/b'
+                 end if
+                 if (rank.eq.0) write (iout,'(4x,3i4,2x,f12.3,f12.4)')
+     &               ia,ib,ic,bb,tt
+              end if
+              size = 4
+              call numeral (ia,pa,size)
+              call numeral (ib,pb,size)
+              call numeral (ic,pc,size)
+              if (ia .le. ic) then
+                 pt = pa//pb//pc
+              else
+                 pt = pc//pb//pa
+              end if
+              max_reach =.true.
+              do j = 1, maxnups
+                 if (kups(j).eq.blank .or. kups(j).eq.pt) then
+                    kups(j) = pt
+                    uconps(j) = bb
+                    dst13ps(j) = tt
+                    max_reach=.false.
+                    exit
+                 end if
+              end do
+              if (max_reach) then
+                if (rank.eq.0) write (iout,*)
+     &              ' KUREY  --  Too many Angle repulsion',
+     &                   ' Interaction Parameters'
+                abort = .true.
+              end if
+           end if
+        end do
+c
+c     process keywords containing Quartic Urey parameters
+c
+        header = .true.
+        do i = 1, nkey
+           next = 1
+           record = keyline(i)
+           call gettext (record,keyword,next)
+           call upcase (keyword)
+           if (keyword(1:12) .eq. 'UREYQUARTIC ') then
+              ia = 0
+              ib = 0
+              ic = 0
+              bb = 0.0d0
+              tt = 0.0d0
+              string = record(next:240)
+              read (string,*)  ia,ib,ic,bb,tt
+              if (.not. silent) then
+                 if (header) then
+                    header = .false.
+                    if (rank.eq.0) write (iout,'(A,5x,A,8x,A,5x,A)')
+     &                  ' Additional Angle repulsion Parameters :',
+     &                     'Atom Classes','D','1/b'
+                 end if
+                 if (rank.eq.0) write (iout,'(4x,3i4,2x,f12.3,f12.4)')
+     &               ia,ib,ic,bb,tt
+              end if
+              size = 4
+              call numeral (ia,pa,size)
+              call numeral (ib,pb,size)
+              call numeral (ic,pc,size)
+              if (ia .le. ic) then
+                 pt = pa//pb//pc
+              else
+                 pt = pc//pb//pa
+              end if
+              max_reach =.true.
+              do j = 1, maxnups
+                 if (kuq(j).eq.blank .or. kuq(j).eq.pt) then
+                    kuq(j) = pt
+                    uconq(j) = bb
+                    dst13q(j) = tt
+                    max_reach=.false.
+                    exit
+                 end if
+              end do
+              if (max_reach) then
+                if (rank.eq.0) write (iout,*)
+     &              ' KUREY  --  Too many Quartic Urey',
+     &                   ' Interaction Parameters'
+                abort = .true.
+              end if
            end if
         end do
 c
 c       determine the total number of forcefield parameters
 c
         nu = maxnu
+        nups = maxnups
+        nuq = maxnuq
         do i = maxnu, 1, -1
            if (ku(i) .eq. blank)  nu = i - 1
         end do
+        do i = maxnups, 1, -1
+           if (kups(i) .eq. blank)  nups = i - 1
+        end do
+        do i = maxnuq, 1, -1
+           if (kuq(i) .eq. blank)  nuq = i - 1
+        end do
+        nutot = nu + nups + nuq
 c
 c       assign the Urey-Bradley parameters for each angle
 c
         nurey = 0
-        if (nu .ne. 0) then
+        if (nutot .ne. 0) then
            do i = 1, nangle
               ia = iang(1,i)
               ib = iang(2,i)
@@ -131,8 +250,33 @@ c
                     iury(1,nurey) = ia
                     iury(2,nurey) = ib
                     iury(3,nurey) = ic
+                    ureytyp(nurey) = 'UREYBRAD'
                     uk(nurey) = ucon(j)
                     ul(nurey) = dst13(j)
+                    goto 60
+                 end if
+              end do
+              do j = 1, nups
+                 if (kups(j) .eq. pt) then
+                    nurey = nurey + 1
+                    iury(1,nurey) = ia
+                    iury(2,nurey) = ib
+                    iury(3,nurey) = ic
+                    ureytyp(nurey) = 'ANGREP'
+                    uk(nurey) = uconps(j)
+                    ul(nurey) = dst13ps(j)
+                    goto 60
+                 end if
+              end do
+              do j = 1, nuq
+                 if (kuq(j) .eq. pt) then
+                    nurey = nurey + 1
+                    iury(1,nurey) = ia
+                    iury(2,nurey) = ib
+                    iury(3,nurey) = ic
+                    ureytyp(nurey) = 'UREYQUAR'
+                    uk(nurey) = uconq(j)
+                    ul(nurey) = dst13q(j)
                     goto 60
                  end if
               end do
@@ -144,10 +288,21 @@ c       turn off the Urey-Bradley potential if it is not used
 c
         if (nurey .eq. 0)  use_urey = .false.
       end if
+
       nu = maxnu
+      nups = maxnups
+      nuq = maxnuq
       do i = maxnu, 1, -1
          if (ku(i) .eq. blank)  nu = i - 1
       end do
+      do i = maxnups, 1, -1
+          if (kups(i) .eq. blank)  nups = i - 1
+      end do
+       do i = maxnuq, 1, -1
+          if (kuq(i) .eq. blank)  nuq = i - 1
+      end do
+      nutot = nu + nups + nuq
+      
       if (allocated(ureyglob)) deallocate(ureyglob)
       allocate (ureyglob(nangleloc))
       nureyloc = 0
@@ -172,6 +327,22 @@ c
         nureyloc1 = 0
         do j = 1, nu
            if (ku(j) .eq. pt) then
+              nureyloc = nureyloc + 1
+              nureyloc1 = nureyloc1 + 1
+              ureyglob(nureyloc) = ureycount + nureyloc1
+              goto 70
+           end if
+        end do
+        do j = 1, nups
+           if (kups(j) .eq. pt) then
+              nureyloc = nureyloc + 1
+              nureyloc1 = nureyloc1 + 1
+              ureyglob(nureyloc) = ureycount + nureyloc1
+              goto 70
+           end if
+        end do
+        do j = 1, nuq
+           if (kuq(j) .eq. pt) then
               nureyloc = nureyloc + 1
               nureyloc1 = nureyloc1 + 1
               ureyglob(nureyloc) = ureycount + nureyloc1

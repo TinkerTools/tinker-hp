@@ -25,7 +25,7 @@ def get_deps_and_mods(filename):
 #
 # Match  USE statement in fortran sources (case insensitive)
 #
-    use_line_re  = re.compile("(?i)^\s*use\s+(\S.+)\s*$")
+    use_line_re  = re.compile("(?i)^\s*use\s+(\S.+?)\s*(?:,\s*only\s*:.*)?$")
 #
 # Match  other modules names in the same USE statement on a continuation line
 # (i.e.  use modulea,

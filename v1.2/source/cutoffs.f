@@ -253,14 +253,41 @@ c
 c
 c     set buffer region limits for pairwise neighbor lists
 c
-      lbuf2 = (0.5d0*lbuffer)**2
-      vbuf2 = (vdwcut+lbuffer)**2
-      cbuf2 = (chgcut+lbuffer)**2
-      dbuf2 = (dispcut+lbuffer)**2
-      mbuf2 = (mpolecut+lbuffer)**2
+      call update_lbuffer(lbuffer)
+      return
+      end
+
+      subroutine update_lbuffer(list_buff)
+      use argue
+      use bath
+      use cutoff
+      use neigh
+      implicit none
+      real*8,intent(in):: list_buff
+      real*8 dt
+c
+c     set buffer region limits for pairwise neighbor lists
+c
+      lbuffer    = list_buff
+      lbuf2      = (0.5d0*lbuffer)**2
+      vbuf2      = (vdwcut+lbuffer)**2
+      cbuf2      = (chgcut+lbuffer)**2
+      dbuf2      = (dispcut+lbuffer)**2
+      mbuf2      = (mpolecut+lbuffer)**2
       vshortbuf2 = (vdwshortcut+lbuffer)**2
       cshortbuf2 = (chgshortcut+lbuffer)**2
       mshortbuf2 = (mpoleshortcut+lbuffer)**2
       dshortbuf2 = (dispshortcut+lbuffer)**2
-      return
-      end
+
+      ! Update ineigup
+      read(arg(3),*,err=30,end=30) dt  ! Fetch timestep among arguments
+      dt         = dt*0.001  ! Convert to picoseconds
+
+      if (.not.isothermal.and..not .isobaric) then  !Microcanonical (NVE)
+         ineigup = max( 1,int(((real(lbuffer,8)*0.015)/dt)+1d-3))
+      else
+         ineigup = max( 1,int(((real(lbuffer,8)*0.02)/dt)+1d-3) )
+      end if
+ 30   continue
+
+      end subroutine

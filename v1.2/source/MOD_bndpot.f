@@ -20,6 +20,8 @@ c
       implicit none
       real*8 cbnd,qbnd
       real*8 bndunit
-      character*8 bndtyp
+      character*8 bndtyp_default
+      character*8, pointer :: bndtyp(:)
+      integer :: winbndtyp
       save 
       end

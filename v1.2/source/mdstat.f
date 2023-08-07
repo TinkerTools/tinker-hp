@@ -18,6 +18,7 @@ c
       subroutine mdstat (istep,dt,etot,epot,ekin,temp,pres)
       use sizes
       use atoms
+      use bath
       use bound
       use boxes
       use cutoff
@@ -42,6 +43,8 @@ c
       real*8 kinfluct,kinfluct2
       real*8 tfluct,pfluct,dfluct
       real*8 tfluct2,pfluct2,dfluct2
+      real*8 tpistonfluct
+      real*8 tpistonfluct2
       real*8 etot_sum,etot2_sum
       real*8 eint_sum,eint2_sum
       real*8 etot_ave,etot2_ave
@@ -56,6 +59,11 @@ c
       real*8 pres_ave,pres2_ave
       real*8 dens_sum,dens2_sum
       real*8 dens_ave,dens2_ave
+      real*8 vol_sum,vol2_sum
+      real*8 vol_ave,vol2_ave
+      real*8 tpiston_sum,tpiston2_sum
+      real*8 tpiston_ave,tpiston2_ave
+
       save etot_sum,etot2_sum
       save eint_sum,eint2_sum
       save epot_sum,epot2_sum
@@ -63,6 +71,8 @@ c
       save temp_sum,temp2_sum
       save pres_sum,pres2_sum
       save dens_sum,dens2_sum
+      save vol_sum,vol2_sum
+      save tpiston_sum,tpiston2_sum
 c
 c
 c     set number of steps for block averages of properties
@@ -86,16 +96,39 @@ c
          pres2_sum = 0.0d0
          dens_sum = 0.0d0
          dens2_sum = 0.0d0
+         vol_sum = 0.0d0
+         vol2_sum = 0.0d0
+         tpiston_sum = 0.0d0
+         tpiston2_sum = 0.0d0
       end if
+      dens = (1.0d24/volbox) * (totmass/avogadro)
+
+
       if (rank.eq.0) then
         if (verbose) then
-           if (modstep .eq. 1) then
-               write (iout,10)
-   10          format (/,4x,'MD Step',6x,'E Total',3x,'E Potential',
-     &                    5x,'E Kinetic',7x,'Temp',7x,'Pres',/)
-           end if
-           write (iout,30)  istep,etot,epot,ekin,temp,pres
-   30      format (i10,3f14.4,2f11.2)
+          if (modstep .eq. 1) then
+            write (iout,"(/,4x,'MD Step',6x,'E Total',3x,'E Potential'"
+     &                    //",5x,'E Kinetic',7x,'Temp')"
+     &             ,advance="no")
+            if (use_bounds .and. integrate.ne.'STOCHASTIC') then
+              write(iout,"(7x,'Pres')", advance="no")
+            endif
+            if(isobaric) then
+              write(iout,'(A)',advance="no") 
+     &                         "     Density"
+     &                       //"      Volume"
+            endif
+            write(iout,'(/)')
+          end if
+          write (iout,'(i10,3f14.4,f11.2)',advance="no") 
+     &       istep,etot,epot,ekin,temp
+          if (use_bounds .and. integrate.ne.'STOCHASTIC') then
+            write(iout,"(f11.2)", advance="no") pres
+          endif
+          if(isobaric) then
+            write(iout,'(f12.4,f12.2)',advance="no") dens,volbox
+          endif
+          write(iout,*)
         end if
 c
 c       print header for the averages over a group of recent steps
@@ -222,7 +255,6 @@ c
 c
 c       compute the average density and its fluctuation
 c
-           dens = (1.0d24/volbox) * (totmass/avogadro)
            dens_sum = dens_sum + dens
            dens2_sum = dens2_sum + dens**2
            if (modstep .eq. 0) then
@@ -238,6 +270,39 @@ c
   130         format (' Density',13x,f15.4,' Grams/cc',4x,
      &                   '(+/-',f9.4,')')
            end if
+           vol_sum = vol_sum + volbox
+           vol2_sum = vol2_sum + volbox**2
+           if (modstep .eq. 0) then
+              vol_ave = vol_sum / dble(iprint)
+              vol2_ave = vol2_sum / dble(iprint)
+              dfluct2 = vol2_ave - vol_ave**2
+              if (dfluct2 .gt. 0.0d0) then
+                 dfluct = sqrt(dfluct2)
+              else
+                 dfluct = 0.0d0
+              end if
+              write (iout,140)  vol_ave,dfluct
+  140         format (' Volume',13x,f15.4,' Angstrom^3',4x,
+     &                   '(+/-',f9.4,')')
+           end if
+           if(use_piston .or. use_piston_save) then
+             temppiston = masspiston*vextvol**2/boltzmann
+             tpiston_sum = tpiston_sum + temppiston
+             tpiston2_sum = tpiston2_sum + temppiston**2
+             if (modstep .eq. 0) then
+                tpiston_ave = tpiston_sum / dble(iprint)
+                tpiston2_ave = tpiston2_sum / dble(iprint)
+                tpistonfluct2 = tpiston2_ave - tpiston_ave**2
+                if (tpistonfluct2 .gt. 0.0d0) then
+                   tpistonfluct = sqrt(tpistonfluct2)
+                else
+                   tpistonfluct = 0.0d0
+                end if
+                write (iout,150)  tpiston_ave,tpistonfluct
+  150           format (' T_piston',13x,f15.4,' Kelvin',4x,
+     &                     '(+/-',f9.4,')')
+             end if
+            endif
         end if
       end if
       return

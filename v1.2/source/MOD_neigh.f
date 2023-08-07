@@ -56,7 +56,7 @@ c
       integer, allocatable :: neigcell(:,:),numneigcell(:),repartcell(:)
       integer, allocatable :: cell_len(:),indcell(:),bufbegcell(:)
       real*8 lbuffer,lbuf2
-      real*8 vbuf2,cbuf2,mbuf2,torquebuf2,dbuf2
+      real*8 vbuf2,cbuf2,mbuf2,torquebuf2,dbuf2,srbuf2
       real*8 vshortbuf2,cshortbuf2,mshortbuf2,torqueshortbuf2
       real*8 dshortbuf2
       real*8, allocatable :: xbegcell(:),ybegcell(:),zbegcell(:)

@@ -16,7 +16,10 @@ c
 c
       module virial
       implicit none
+      real*8 dedv
       real*8 vir(3,3)
       real*8 virsave(3,3)
+      logical virnum
+      logical kin_instant
       save
       end

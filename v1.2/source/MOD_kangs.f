@@ -40,20 +40,22 @@ c
       module kangs
       implicit none
       integer maxna,maxna5,maxna4
-      integer maxna3,maxnap,maxnaf
+      integer maxna3,maxnap,maxnaf, maxnaps
       parameter (maxna=2000)
       parameter (maxna5=500)
       parameter (maxna4=500)
       parameter (maxna3=500)
       parameter (maxnap=2000)
+      parameter (maxnaps=2000)
       parameter (maxnaf=500)
       real*8 acon(maxna),acon5(maxna5),acon4(maxna4)
       real*8 acon3(maxna3),aconf(maxnaf)
       real*8 aconp(maxnap)
       real*8 ang(3,maxna),ang5(3,maxna5),ang4(3,maxna4)
       real*8 ang3(3,maxna3),angf(2,maxnaf),angp(2,maxnap)
+      real*8 angps(3,maxnaps)
       character*12 ka(maxna),ka5(maxna5),ka4(maxna4)
       character*12 ka3(maxna3),kaf(maxnaf)
-      character*12 kap(maxnap)
+      character*12 kap(maxnap),kaps(maxnaps)
       save
       end

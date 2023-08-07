@@ -27,6 +27,7 @@ c
       integer nurey,nureyloc
       integer, pointer :: iury(:,:),nburey(:)
       real*8, pointer ::  uk(:),ul(:)
-      integer :: winiury,winnburey,winuk,winul
+      integer :: winiury,winnburey,winuk,winul,winureytyp
+      character*8, pointer :: ureytyp(:)
       save
       end

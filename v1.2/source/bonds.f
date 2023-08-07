@@ -106,6 +106,7 @@ c
       USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER
       use atmlst
       use bond
+      use bndpot
       use pitors
       use tors
       use mpi
@@ -127,6 +128,16 @@ c
         CALL MPI_Win_shared_query(winbl, 0, windowsize, disp_unit,
      $  baseptr, ierr)
         CALL MPI_Win_free(winbl,ierr)
+      end if
+      if (associated(ba)) then
+        CALL MPI_Win_shared_query(winba, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winba,ierr)
+      end if
+      if (associated(bndtyp)) then
+        CALL MPI_Win_shared_query(winbndtyp, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+        CALL MPI_Win_free(winbndtyp,ierr)
       end if
       if (associated(ibnd)) then
         CALL MPI_Win_shared_query(winibnd, 0, windowsize, disp_unit,
@@ -156,6 +167,7 @@ c
       use atmlst
       use atoms
       use bond
+      use bndpot
       use domdec
       use pitors
       use tors
@@ -211,6 +223,52 @@ c
 c    association with fortran pointer
 c
       CALL C_F_POINTER(baseptr,bl,arrayshape)
+c
+c     ba
+c
+      arrayshape=(/nbond/)
+      if (hostrank == 0) then
+        windowsize = int(nbond,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winba, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winba, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,ba,arrayshape)
+c
+c     bndtyp
+c
+      arrayshape=(/nbond/)
+      if (hostrank == 0) then
+        windowsize = int(nbond,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      else
+        windowsize = 0_MPI_ADDRESS_KIND
+      end if
+      disp_unit = 1
+c
+c    allocation
+c
+      CALL MPI_Win_allocate_shared(windowsize, disp_unit, MPI_INFO_NULL,
+     $  hostcomm, baseptr, winbndtyp, ierr)
+      if (hostrank /= 0) then
+        CALL MPI_Win_shared_query(winbndtyp, 0, windowsize, disp_unit,
+     $  baseptr, ierr)
+      end if
+c
+c    association with fortran pointer
+c
+      CALL C_F_POINTER(baseptr,bndtyp,arrayshape)
 c
 c     bndlist
 c

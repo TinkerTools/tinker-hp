@@ -92,7 +92,7 @@ c
 c
 c     print the value used for the random number seed
 c
-         if ((verbose).and.(rank.eq.0)) then
+         if ((verbose).and.(ranktot.eq.0)) then
             write (iout,20)  seed
    20       format (/,' Random Number Generator Initialized',
      &                 ' with SEED :',3x,i12)
@@ -182,6 +182,44 @@ c  20    format (' NORMAL  --  The Random Number Value is',f12.8)
 c     end if
       return
       end
+
+c
+c
+c     ############################################################
+c     ##                                                        ##
+c     ##  function radeamacher  -- rademached distribution      ##
+c     ##                                                        ##
+c     ############################################################
+c
+c
+c     "rademached" generates as output  a random variate X has a 50%
+c      chance of being +1 and a 50% chance of being -1
+c
+c
+      function rademacher ()
+      implicit none
+      real*8 random,tmpreal
+      real*8 rademacher,outreal
+c
+c     using the random function
+c
+      tmpreal = random ()
+c
+      if (tmpreal.ge.0.5d00) then
+         outreal = 1.00d0
+      else
+         outreal = - 1.0d00
+      end if
+c
+      rademacher = outreal
+c
+      return
+      end
+
+
+
+
+
 c
 c
 c     ##############################################################

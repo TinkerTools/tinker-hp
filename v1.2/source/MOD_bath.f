@@ -41,10 +41,17 @@ c
       real*8 vbar,qbar,gbar
       real*8 eta,volmove
       real*8 gammapiston,masspiston,extvolold
+      real*8 temppiston
       real*8 extvol,vextvol,aextvol
+      real*8 extbox(3) 
+      real*8 vextbox(3)
+      real*8 aextbox(3)
       logical isothermal
       logical isobaric
       logical anisotrop
+      logical use_piston
+      logical :: isobaric_save=.FALSE.
+      logical :: use_piston_save=.FALSE.
       character*9 volscale
       character*11 barostat
       character*11 thermostat

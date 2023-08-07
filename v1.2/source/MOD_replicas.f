@@ -20,7 +20,7 @@ c
       integer :: nreps
       integer :: rank_reploc
       integer :: COMM_ROOT2ROOT
-      logical :: use_reps
+      logical :: use_reps=.FALSE.
       real*8, allocatable :: lambdastart(:)
       save
       end module replicas

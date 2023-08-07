@@ -21,5 +21,6 @@ c
       implicit none
       integer nprior,ldir,leng
       character*240 filename,outfile
+      logical :: keys_already_read=.FALSE.
       save
       end

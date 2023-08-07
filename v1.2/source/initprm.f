@@ -90,6 +90,12 @@ c
       do i = 1, maxnb
          kb(i) = blank8
       end do
+      do i = 1, maxnbm
+         kbm(i) = blank8
+      end do
+      do i = 1, maxnbm4
+         kbm4(i) = blank8
+      end do
       do i = 1, maxnb5
          kb5(i) = blank8
       end do
@@ -119,6 +125,12 @@ c
       end do
       do i = 1, maxnaf
          kaf(i) = blank12
+      end do
+      do i = 1, maxnaps
+         kaps(i) = blank12
+      end do
+      do i = 1, maxnups
+         kups(i) = blank12
       end do
       do i = 1, maxnsb
          ksb(i) = blank12
@@ -310,7 +322,7 @@ c
 c
 c     set default control parameters for local geometry terms
 c
-      bndtyp = 'HARMONIC'
+      bndtyp_default = 'HARMONIC'
       bndunit = 1.0d0
       cbnd = 0.0d0
       qbnd = 0.0d0

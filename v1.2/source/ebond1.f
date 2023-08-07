@@ -29,7 +29,7 @@ c
       implicit none
       integer i,ia,ib,ialoc,ibloc
       integer ibond
-      real*8 e,ideal,force
+      real*8 e,ideal,force,ba2
       real*8 expterm,bde
       real*8 dt,dt2,deddt
       real*8 de,dedx,dedy,dedz
@@ -73,7 +73,7 @@ c
 c     harmonic potential uses Taylor expansion of Morse potential
 c     through the fourth power of the bond length deviation
 c
-            if (bndtyp .eq. 'HARMONIC') then
+            if (bndtyp(i) .eq. 'HARMONIC') then
                dt2 = dt * dt
                e = bndunit * force * dt2 * (1.0d0+cbnd*dt+qbnd*dt2)
                deddt = 2.0d0 * bndunit * force * dt
@@ -83,11 +83,21 @@ c     Morse potential uses energy = BDE * (1 - e**(-alpha*dt))**2)
 c     with the approximations alpha = sqrt(ForceConst/BDE) = -2
 c     and BDE = Bond Dissociation Energy = ForceConst/alpha**2
 c
-            else if (bndtyp .eq. 'MORSE') then
-               expterm = exp(-2.0d0*dt)
-               bde = 0.25d0 * bndunit * force
+            else if (bndtyp(i) .eq. 'MORSE') then
+               expterm = exp(-ba(i)*dt)
+               bde = bndunit * force / ba(i)**2
                e = bde * (1.0d0-expterm)**2
-               deddt = 4.0d0 * bde * (1.0d0-expterm) * expterm
+               deddt = 2.0d0 * bde * ba(i) * (1.0d0-expterm) * expterm
+c
+c     Morse potential expanded to 4th order 
+c              
+            else if (bndtyp(i) .eq. 'MORSE4') then
+               dt2 = dt * dt
+               ba2 = 7.d0/12.d0*ba(i) * ba(i)
+               e = bndunit * force * dt2 * (1.0d0-ba(i)*dt
+     &                  + ba2*dt2)
+               deddt = bndunit * force * dt * (2.0d0-3.d0*ba(i)*dt
+     &                 + 4.d0*ba2*dt2)
             end if
 c
 c     scale the interaction based on its group membership

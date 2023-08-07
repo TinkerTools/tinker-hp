@@ -25,6 +25,7 @@ c
       use units
       use usage
       use mpi
+      use spectra
       implicit none
       integer i,j,istep
       integer iglob
@@ -36,6 +37,7 @@ c
       real*8 stress(3,3)
       real*8 time0,time1
       real*8, allocatable :: derivs(:,:)
+      real*8 dip(3),dipind(3)
       time0 = mpi_wtime()
 c
 c     set some time values for the dynamics integration
@@ -170,6 +172,10 @@ c
       time0 = mpi_wtime()
       call temper (dt,eksum,ekin,temp)
       call pressure (dt,ekin,pres,stress,istep)
+      if(ir) then
+        call compute_dipole(dip,dipind,full_dipole)
+        call save_dipole_traj(dip,dipind)
+      endif
       time1 = mpi_wtime()
       timetp = timetp + time1-time0
 c

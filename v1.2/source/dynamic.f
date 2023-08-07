@@ -36,9 +36,9 @@ c
       use mdstuf
       use moldyn
       use mpi
+      use qtb, only: qtb_thermostat,adaptive_qtb
       use potent
       use timestat
-
 #ifdef COLVARS
       use colvars
 #endif
@@ -46,7 +46,7 @@ c
       integer i,istep,nstep,ierr
       integer mode,next
       real*8 dt,dtdump,time0,time1
-      logical exist,query
+      logical exist,query,use_colvars_
       character*20 keyword
       character*240 record
       character*240 string
@@ -60,7 +60,6 @@ c     set up the structure and molecular mechanics calculation
 c
       call initial
       call getxyz
-      nproc = nproctot
       call initmpi
       call unitcell
       call cutoffs
@@ -326,15 +325,19 @@ c
          if (rank.eq.0) write (iout,440)
   440    format (/,' Molecular Dynamics Trajectory via',
      &              ' r-RESPA-1 MTS Algorithm')
-      else if (integrate .eq. 'BAOABPISTON') then
-         if (rank.eq.0) write (iout,450)
-  450    format (/,' Molecular Dynamics Trajectory via',
-     &              ' BAOAB-PISTON Algorithm')
       else
-         if (rank.eq.0) write (iout,460)
-  460    format (/,' Molecular Dynamics Trajectory via',
+         if (rank.eq.0) write (iout,480)
+  480    format (/,' Molecular Dynamics Trajectory via',
      &              ' Modified Beeman Algorithm')
       end if
+
+      if(qtb_thermostat .and. rank==0) then
+         if(adaptive_qtb) then
+            write(iout,*) " using adaptive QTB thermostat"
+         else
+            write(iout,*) " using standard QTB thermostat"
+         endif
+      endif
 c
 c     integrate equations of motion to take a time step
 c
@@ -348,8 +351,6 @@ c
            call bbk(istep,dt)
          else if (integrate .eq. 'BAOAB') then
            call baoab(istep,dt)
-         else if (integrate .eq. 'BAOABPISTON') then
-           call baoabpiston(istep,dt)
          else if (integrate .eq. 'BAOABRESPA') then
            call baoabrespa(istep,dt)
          else if (integrate .eq. 'BAOABRESPA1') then
