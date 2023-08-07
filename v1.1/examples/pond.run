@@ -1,2 +1,0 @@
-ulimit -s unlimited
-mpirun -np 8 ../bin/dynamic pond 10 2.0 1.0 2 300.0 
