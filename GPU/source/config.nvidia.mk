@@ -206,6 +206,7 @@ else ifeq ($(opt), debug+)
    host_flags_cuda_c_ := -std=c++$(cxx_std) -g -O0
    host_flags_cuda_f_ := -traceback -g -O0 -C -Mbounds
 endif
+extra_flags_cxx_ :=
 # -- Static/Dynamic binaries
 ifneq ($(library_link__),static)
    host_flags_f_      += -fPIC
@@ -226,6 +227,10 @@ ifneq ($(add_host),$(empty__))
    host_flags_cxx_    += $(add_host)
    host_flags_cuda_c_ += $(add_host)
    host_flags_cuda_f_ += $(add_host)
+endif
+ifneq ($(add_host_cxx),$(empty__))
+   host_flags_cxx_      += $(add_host_cxx)
+	extra_flags_cxx_     += $(add_host_cxx)
 endif
 ifneq ($(add_host_f),$(empty__))
    host_flags_f_      += $(add_host_f)
@@ -292,6 +297,7 @@ GPUFLAGS               = $(comp_flags_gpu_f_)
 CUFFLAGS               = $(comp_flags_cuda_f_)
 CXXFLAGS               = $(comp_flags_cxx_)
 COLVARS_CXX_F          = $(host_flags_cxx_)
+TCL_CXX_F              = $(extra_flags_cxx_)
 ifeq ($(HIP_SUPPORT),0)
    CUCFLAGS            = $(comp_flags_cuda_c_)
 else

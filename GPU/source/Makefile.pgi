@@ -204,7 +204,7 @@ MODCU += tmatxb_pmecu.o tmatxb_pme_cpen.cu.o
 
 OBJSAM = active.o analysis.o angles.o\
    MOD_subDeriv.o MOD_subMemory.o MOD_subInform.o MOD_subAtoms.o\
-   beads.o \
+   beads.o\
    nblistgpu.o nblist_build.gpu.o\
    alterchg.o alterchg.gpu.o ani.o attach.o basefile.o beeman.o bicubic.o\
    baoab.o baoab_util.o baoabrespa.o baoabrespa1.o baoabpi.o baoabrespapi.o bbk.o\
@@ -497,7 +497,7 @@ plumed:
 .PHONY: tcl
 tcl:
 	$(AT) if [ ! -d $(install_libdir) ]; then mkdir -p $(install_libdir); fi
-	$(AT) cd $(TCL_HOME) && $(MAKE) VERBOSE=1 && mv $(TCL_HOME)/libtcl8.6.so $(install_libdir)
+	$(AT) cd $(TCL_HOME) && $(MAKE) VERBOSE=0 EXTRA_CFLAGS="$(TCL_CXX_F)" && mv $(TCL_HOME)/libtcl8.6.so $(install_libdir)
 #  ---------------  #
 ## Colvars Package ##
 #  ---------------  #
@@ -574,6 +574,15 @@ create_build:
 	   ln -s $(TINKER_SOURCE)/*.py .;\
 	   ln -s $(TINKER_SOURCE)/Makefile.pgi Makefile;
 	@echo "--- done ---"
+update_build:
+	@echo "Update Tinker-HP source files and Makefile.pgi"
+	@ln -s $(TINKER_SOURCE)/*.f . 2>/dev/null; ln -s $(TINKER_SOURCE)/*.f90 . 2>/dev/null; ln -s $(TINKER_SOURCE)/*.f.inc . 2>/dev/null;\
+	 ln -s $(TINKER_SOURCE)/*.h . 2>/dev/null; ln -s $(TINKER_SOURCE)/*.cpp .; ln -s $(TINKER_SOURCE)/*.cu . 2>/dev/null;\
+	 ln -s $(TINKER_SOURCE)/*.make .; ln -s $(TINKER_SOURCE)/*.mk .;\
+	 ln -s $(TINKER_SOURCE)/*.py . 2>/dev/null;\
+	 ln -s $(TINKER_SOURCE)/Makefile.pgi Makefile;
+	@echo "--- done ---"
+
 
 
 #  ------------------  #
