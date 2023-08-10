@@ -65,7 +65,7 @@ c
       implicit none
       integer i,j,idyn,iglob
       integer next
-      integer lext,freeunit
+      integer lext,freeunit, ios
       integer correc
       integer(mipk) siz_
       real(r_p) e
@@ -183,107 +183,113 @@ c
 c     check for keywords containing any altered parameters
 c
       do i = 1, nkey
-         next = 1
-         record = keyline(i)
-         call gettext (record,keyword,next)
-         call upcase (keyword)
-         string = record(next:240)
-         if (keyword(1:11) .eq. 'INTEGRATOR ') then
-            call getword (record,integrate,next)
-            call upcase (integrate)
-         else if (keyword(1:14) .eq. 'BEEMAN-MIXING ') then
-            read (string,*,err=10,end=10)  bmnmix
-c        else if (keyword(1:16) .eq. 'DEGREES-FREEDOM ') then
-c           read (string,*,err=10,end=10)  nfree
-         else if (keyword(1:15) .eq. 'REMOVE-INERTIA ') then
-            read (string,*,err=10,end=10)  irest
-         else if (keyword(1:14) .eq. 'SAVE-VELOCITY ') then
-            velsave = .true.
-         else if (keyword(1:11) .eq. 'SAVE-FORCE ') then
-            frcsave = .true.
-         else if (keyword(1:13) .eq. 'SAVE-INDUCED ') then
-            uindsave = .true.
-         else if (keyword(1:11) .eq. 'THERMOSTAT ') then
-            call getword (record,thermostat,next)
-            call upcase (thermostat)
-         else if (keyword(1:16) .eq. 'TAU-TEMPERATURE ') then
-            read (string,*,err=10,end=10)  tautemp
-         else if (keyword(1:10) .eq. 'COLLISION ') then
-            read (string,*,err=10,end=10)  collide
-         else if (keyword(1:9) .eq. 'BAROSTAT ') then
-            call getword (record,barostat,next)
-            call upcase (barostat)
-         else if (keyword(1:14) .eq. 'ANISO-PRESSURE ') then
-            anisotrop = .true.
-            write(*,*) "ANISO-PRESSURE"
-         else if (keyword(1:13) .eq. 'TAU-PRESSURE ') then
-            read (string,*,err=10,end=10)  taupres
-         else if (keyword(1:9) .eq. 'COMPRESS ') then
-            read (string,*,err=10,end=10)  compress
-         else if (keyword(1:13) .eq. 'VOLUME-TRIAL ') then
-            read (string,*,err=10,end=10)  voltrial
-         else if (keyword(1:12) .eq. 'VOLUME-MOVE ') then
-            read (string,*,err=10,end=10)  volmove
-c         else if (keyword(1:13) .eq. 'VOLUME-SCALE ') then
-c            call getword (record,volscale,next)
-c            call upcase (volscale)
-         else if (keyword(1:9) .eq. 'PRINTOUT ') then
-            read (string,*,err=10,end=10)  iprint
-            if (iprint.eq.1) iprint=100
-         else if (keyword(1:10) .eq. 'PBCUNWRAP ') then
-           pbcunwrap = .true.
-         else if (keyword(1:14) .eq. 'NLUPDATE ') then
-            read (string,*,err=10,end=10) idyn
-            if (idyn.gt.ineigup) then
- 09     format(/,' WARNING !!! Nb-list update interval(',I0,') is'
-     &  ,' too high compared to the buffer size(',F4.2,'Ang)',/
-     &  ,' WARNING   - Your dynamic may results unstable !',/
-     &  ,' PROPOSAL  - Please set nlupdate value in keyfile'
-     &  ,' at least under (',I0,') or comment the instruction !',/)
-               write(*,09) idyn,lbuffer,ineigup
-            endif
-            ineigup = idyn
-            auto_lst = .false.
-         else if (keyword(1:9) .eq. 'FRICTION ') then
-            read (string,*,err=10,end=10) gamma
-         else if (keyword(1:9) .eq. 'OMEGACUT ') then
-            read (string,*,err=10,end=10) omegacut
-            omegacut=omegacut/cm1
-         else if (keyword(1:5) .eq. 'TSEG ') then
-            read (string,*,err=10,end=10) TSEG
-         else if (keyword(1:15) .eq. 'FRICTIONPISTON ') then
-            read (string,*,err=10,end=10) gammapiston
-         else if (keyword(1:12) .eq. 'MASSPISTON ') then
-            read (string,*,err=10,end=10) masspiston
-         else if (keyword(1:12) .eq. 'VIRIALTERM ') then
-            use_virial=.true.
-         else if (keyword(1:7) .eq. 'VIRNUM ') then
-            virnum=.true.
-            if(ranktot.eq.0) then
-              write(*,*) 'WARNING - virial pressure',
+        ios = 0
+        next = 1
+        record = keyline(i)
+        call gettext (record,keyword,next)
+        call upcase (keyword)
+        string = record(next:240)
+
+        select case (trim(keyword))
+        case ('INTEGRATOR')
+          call getword (record,integrate,next)
+          call upcase (integrate)
+        case ('BEEMAN-MIXING')
+          read (string,*,iostat=ios)  bmnmix
+c      else if (keyword(1:16) .eq. 'DEGREES-FREEDOM ') then
+c         read (string,*,iostat=ios)  nfree
+        case ('REMOVE-INERTIA')
+          read (string,*,iostat=ios)  irest
+        case ('SAVE-VELOCITY')
+          velsave = .true.
+        case ('SAVE-FORCE')
+          frcsave = .true.
+        case ('SAVE-INDUCED')
+          uindsave = .true.
+        case ('THERMOSTAT')
+          call getword (record,thermostat,next)
+          call upcase (thermostat)
+        case ('TAU-TEMPERATURE')
+          read (string,*,iostat=ios)  tautemp
+        case ('COLLISION')
+          read (string,*,iostat=ios)  collide
+        case ('BAROSTAT')
+          call getword (record,barostat,next)
+          call upcase (barostat)
+        case ('ANISO-PRESSURE')
+          anisotrop = .true.
+          write(*,*) "ANISO-PRESSURE"
+        case ('TAU-PRESSURE')
+          read (string,*,iostat=ios)  taupres
+        case ('COMPRESS')
+          read (string,*,iostat=ios)  compress
+        case ('VOLUME-TRIAL')
+          read (string,*,iostat=ios)  voltrial
+        case ('VOLUME-MOVE')
+          read (string,*,iostat=ios)  volmove
+c       else if (keyword(1:13) .eq. 'VOLUME-SCALE ') then
+c          call getword (record,volscale,next)
+c          call upcase (volscale)
+        case ('PRINTOUT')
+          read (string,*,iostat=ios)  iprint
+          if (iprint.eq.1) iprint=100
+        case ('PBCUNWRAP')
+          pbcunwrap = .true.
+        case ('NLUPDATE')
+          read (string,*,iostat=ios) idyn
+          if (idyn.gt.ineigup) then
+            write(*,'(A,I0,A,F4.2,A,I0,A)') 
+     &       ' WARNING !!! Nb-list update interval(',idyn
+     &  ,') is too high compared to the buffer size(',lbuffer,'Ang)'//
+     &  ' WARNING   - Your dynamic may results unstable !'//
+     &  ' PROPOSAL  - Please set nlupdate value in keyfile'//
+     &  ' at least under (',ineigup,') or comment the instruction !'
+          endif
+          ineigup = idyn
+          auto_lst = .false.
+        case ('FRICTION')
+          read (string,*,iostat=ios) gamma
+        case ('OMEGACUT')
+          read (string,*,iostat=ios) omegacut
+          omegacut=omegacut/cm1
+        case ('TSEG')
+          read (string,*,iostat=ios) TSEG
+        case ('FRICTIONPISTON')
+          read (string,*,iostat=ios) gammapiston
+        case ('MASSPISTON')
+          read (string,*,iostat=ios) masspiston
+        case ('VIRIALTERM')
+          use_virial=.true.
+        case ('VIRNUM')
+          virnum=.true.
+          if(ranktot.eq.0) then
+            write(*,*) 'WARNING - virial pressure',
      &               ' computed using finite differences.'
-            endif
-         else if (keyword(1:14) .eq. 'STARTSAVESPEC ') then
-            read (string,*,err=10,end=10) startsavespec
-         else if (keyword(1:11) .eq. 'IR_SPECTRA ') then
-            ir = .true.
-         else if (keyword(1:17) .eq. 'IR_LINEAR_DIPOLE ') then
-            full_dipole = .false.
-         else if (keyword(1:17) .eq. 'IR_DECONVOLUTION ') then
-            deconvolute_IR = .true.
-         else if (keyword(1:13) .eq. 'NITER_DECONV ') then
-            read (string,*,err=10,end=10) niter_deconvolution
-         else if (keyword(1:14) .eq. 'MASS_NOSE_LGV ') then
-            read (string,*,err=10,end=10) nose_mass
-         else if (keyword(1:14) .eq. 'TRACK-MDSTATE ') then
-            track_mds=.true.
-         else if (keyword(1:7) .eq. 'PLUMED ') then
-            lplumed = .true.
-            call getword(record,pl_input ,next)
-            call getword(record,pl_output,next)
-         
-         end if
-   10    continue
+          endif
+        case ('STARTSAVESPEC')
+          read (string,*,iostat=ios) startsavespec
+        case ('IR_SPECTRA')
+          ir = .true.
+        case ('IR_LINEAR_DIPOLE')
+          full_dipole = .false.
+        case ('IR_DECONVOLUTION')
+          deconvolute_IR = .true.
+        case ('NITER_DECONV')
+          read (string,*,iostat=ios) niter_deconvolution
+        case ('MASS_NOSE_LGV')
+          read (string,*,iostat=ios) nose_mass
+        case ('TRACK-MDSTATE')
+          track_mds=.true.
+        case ('PLUMED')
+          lplumed = .true.
+          call getword(record,pl_input ,next)
+          call getword(record,pl_output,next)
+        end select
+
+        if (ios /= 0) then
+          write(*,*) "Warning: keyword ",trim(keyword)
+     &         ," not correctly read!"
+        endif
       end do
 c
 c     enforce the use of monte-carlo barostat with the TCG family of solvers

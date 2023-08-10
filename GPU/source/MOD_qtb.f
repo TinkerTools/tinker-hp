@@ -465,7 +465,7 @@ c
       character*240 :: record
       character*240 :: string
       character*240 :: xyzfile
-      integer :: next,i
+      integer :: next,i, ios
 
       qtb_verbose=.FALSE.
 
@@ -496,56 +496,63 @@ c
 
 !      nstep_therm=0
       do i = 1, nkey
+        ios = 0
         next = 1
         record = keyline(i)
         call gettext (record,keyword,next)
         call upcase (keyword)
         string = record(next:240)
-        if (keyword(1:8) .eq. 'A_GAMMA ') then
-          read (string,*,err=10,end=10) a_gamma_default
-        else if (keyword(1:8) .eq. 'SKIPSEG ') then
-          read (string,*,err=10,end=10) skipseg
-        else if (keyword(1:6) .eq. 'NOQTB ') then
+        
+        select case (trim(keyword))
+        case ('A_GAMMA')
+          read (string,*,iostat=ios) a_gamma_default
+        case ('SKIPSEG')
+          read (string,*,iostat=ios) skipseg
+        case ('NOQTB')
           noQTB = .true.
-        else if (keyword(1:14) .eq. 'GAMMA_HISTORY ') then
+        case ('GAMMA_HISTORY')
           save_gamma_history = .true.
-        else if (keyword(1:12) .eq. 'QTB_VERBOSE ') then
+        case ('QTB_VERBOSE')
           QTB_verbose=.TRUE.
-        else if (keyword(1:14) .eq. 'CORR_FACT_QTB ') then
-          read (string,*,err=10,end=10) corr_fact_qtb(1)
+        case ('CORR_FACT_QTB')
+          read (string,*,iostat=ios) corr_fact_qtb(1)
           corr_fact_qtb(:)=corr_fact_qtb(1)
           use_corr_fact_qtb=.TRUE.
-        else if (keyword(1:17) .eq. 'CORR_FACT_NO_POT ') then
+        case ('CORR_FACT_NO_POT')
           corr_pot_corr_fact=.FALSE.
-        else if (keyword(1:11) .eq. 'NO_CORR_POT ') then
+        case ('NO_CORR_POT')
           corr_pot = .false.
-        else if (keyword(1:17) .eq. 'REGISTER_SPECTRA ') then
+        case ('REGISTER_SPECTRA')
           register_spectra = .true.
-        else if (keyword(1:15) .eq. 'QTB_BATCH_SIZE ') then
-          read (string,*,err=10,end=10) qtb_batch_size
-        else if (keyword(1:16) .eq. 'ADQTB_OPTIMIZER ') then
+        case ('QTB_BATCH_SIZE')
+          read (string,*,iostat=ios) qtb_batch_size
+        case ('ADQTB_OPTIMIZER')
           call getword (record,adqtb_optimizer,next)
           call upcase (adqtb_optimizer)
-        else if (keyword(1:15) .eq. 'ADQTB_START_CL ') then
+        case ('ADQTB_START_CL')
           adqtb_start_classical = .true.
-        else if (keyword(1:14) .eq. 'ADQTB_TAU_AVG ') then
-          read (string,*,err=10,end=10) adqtb_tau_avg_default
-        else if (keyword(1:16) .eq. 'ADQTB_TAU_ADAPT ') then
-          read (string,*,err=10,end=10) adqtb_tau_adapt
-        else if (keyword(1:16) .eq. 'ADQTB_BIAS_CORR ') then
+        case ('ADQTB_TAU_AVG')
+          read (string,*,iostat=ios) adqtb_tau_avg_default
+        case ('ADQTB_TAU_ADAPT')
+          read (string,*,iostat=ios) adqtb_tau_adapt
+        case ('ADQTB_BIAS_CORR')
           adqtb_correct_bias=.TRUE.
-        else if (keyword(1:16) .eq. 'ADQTB_AVG_ADAPT ') then
-          read (string,*,err=10,end=10) adqtb_avg_adapt
-        else if (keyword(1:15) .eq. 'ADQTB_WIN_CORR ') then
+        case ('ADQTB_AVG_ADAPT')
+          read (string,*,iostat=ios) adqtb_avg_adapt
+        case ('ADQTB_WIN_CORR')
           adqtb_win_corr=.TRUE.
-        else if (keyword(1:13) .eq. 'ADQTB_SMOOTH ') then
-          read (string,*,err=10,end=10) adqtb_smooth_default
-        else if (keyword(1:18) .eq. 'PIQTB_CL_CENTROID ') then
+        case ('ADQTB_SMOOTH')
+          read (string,*,iostat=ios) adqtb_smooth_default
+        case ('PIQTB_CL_CENTROID')
           piqtb_classical_centroid=.TRUE.
-        else if (keyword(1:13) .eq. 'PIQTB_BRIEUC ') then
+        case ('PIQTB_BRIEUC')
           brieuc_piqtb=.TRUE.
-        end if
-  10   continue
+        end select
+
+        if (ios /= 0) then
+          write(*,*) "Warning: keyword ",trim(keyword)
+     &         ," not correctly read!"
+        endif
       end do
 
       end subroutine read_qtb_keys
@@ -579,36 +586,35 @@ c
         call upcase (keyword)
         string = record(next:240)
 
-        if (keyword(1:15) .eq. 'ADQTB_MODIFIER ') then
-          smooth=-1
-          tmp=-1
-          read(string,*,iostat=ios) k,opttype,tmp,smooth
+        if (trim(keyword) /= 'ADQTB_MODIFIER') cycle
 
-          if(ios/=0) then
-            write(*,*) "Error: ADQTB_MODIFIER keyword is not",
-     &          " properly defined"
-            call fatal
-          endif
+        smooth=-1
+        tmp=-1
+        read(string,*,iostat=ios) k,opttype,tmp,smooth
 
-          if (smooth<0.d0) smooth=adqtb_smooth_default
-
-          call upcase(opttype)
-          if (opttype=="RATIO") then
-            if (tmp<0.d0) tmp=adqtb_tau_avg_default
-            adqtb_tau_avg(k)=tmp
-          elseif (opttype=="SIMPLE") then
-            if (tmp<0.d0) tmp=A_gamma_default
-            A_gamma(k)=tmp
-          else
-            write(*,*) "Error: unknown adqtb optimizer ",opttype
-            call fatal
-          endif
-          adqtb_optimizer_type(k)=opttype
-
-          write(*,'(A,I,3x,A,2F10.3)') "ADQTB_MODIFIER"
-     &         ,k,opttype,tmp,smooth
+        if(ios/=0) then
+          write(*,*) "Error: ADQTB_MODIFIER keyword is not",
+     &         " properly defined"
+          call fatal
         endif
-    
+
+        if (smooth<0.d0) smooth=adqtb_smooth_default
+
+        call upcase(opttype)
+        if (opttype=="RATIO") then
+          if (tmp<0.d0) tmp=adqtb_tau_avg_default
+          adqtb_tau_avg(k)=tmp
+        elseif (opttype=="SIMPLE") then
+          if (tmp<0.d0) tmp=A_gamma_default
+          A_gamma(k)=tmp
+        else
+          write(*,*) "Error: unknown adqtb optimizer ",opttype
+          call fatal
+        endif
+        adqtb_optimizer_type(k)=opttype
+
+        write(*,'(A,I,3x,A,2F10.3)') "ADQTB_MODIFIER"
+     &         ,k,opttype,tmp,smooth
       enddo
 
       adqtb_smooth_type(:)=adqtb_smooth_type(:)/cm1

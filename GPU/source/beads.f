@@ -1025,7 +1025,7 @@
       character*240 :: record
       character*240 :: string
       character*240 :: xyzfile
-      integer :: next,i
+      integer :: next,i,ios
 
 c
 c     check for keywords containing any altered parameters
@@ -1041,39 +1041,46 @@ c
       add_buffer_pi=.FALSE.
       lambda_trpmd=1.0d0
       default_lambda_trpmd=.TRUE.
-!      nstep_therm=0
+
       do i = 1, nkey
+        ios = 0
         next = 1
         record = keyline(i)
         call gettext (record,keyword,next)
         call upcase (keyword)
         string = record(next:240)
-        if (keyword(1:7) .eq. 'NBEADS ') then
-          read (string,*,err=5,end=5) nbeads
-        elseif (keyword(1:11) .eq. 'NBEADS_CTR ') then
-            read (string,*,err=5,end=5) nbeads_ctr
-        elseif (keyword(1:15) .eq. 'PI_COMM_REPORT ') then
-            pi_comm_report=.TRUE.
-        elseif (keyword(1:11) .eq. 'SAVE_BEADS ') then
-            call getword (record,save_beads,next)
-            call upcase (save_beads)
-        elseif (keyword(1:8) .eq. 'PITIMER ') then
-            PITIMER=.TRUE.
-        elseif (keyword(1:18) .eq. 'PI_START_ISOBARIC ') then
-            read (string,*,err=5,end=5) pi_start_isobaric
-        elseif (keyword(1:15) .eq. 'POLAR_CENTROID ') then
-            polar_allbeads = .FALSE.
-        elseif (keyword(1:19) .eq. 'CENTROID_LONGRANGE ') then
-            centroid_longrange = .TRUE.
-        elseif (keyword(1:9) .eq. 'CAY_CORR ') then
-            cay_correction = .TRUE.
-        elseif (keyword(1:14) .eq. 'ADD_BUFFER_PI ') then
-            add_buffer_pi=.TRUE.
-        elseif (keyword(1:13) .eq. 'LAMBDA_TRPMD ') then
-            read (string,*,err=5,end=5) lambda_trpmd
-            default_lambda_trpmd=.FALSE.
-        end if
-   5  continue
+        
+        select case (trim(keyword))
+        case ('NBEADS')
+          read (string,*,iostat=ios) nbeads
+        case ('NBEADS_CTR')
+          read (string,*,iostat=ios) nbeads_ctr
+        case ('PI_COMM_REPORT')
+          pi_comm_report=.TRUE.
+        case ('SAVE_BEADS')
+          call getword (record,save_beads,next)
+          call upcase (save_beads)
+        case ('PITIMER')
+          PITIMER=.TRUE.
+        case ('PI_START_ISOBARIC')
+          read (string,*,iostat=ios) pi_start_isobaric
+        case ('POLAR_CENTROID')
+          polar_allbeads = .FALSE.
+        case ('CENTROID_LONGRANGE')
+          centroid_longrange = .TRUE.
+        case ('CAY_CORR')
+          cay_correction = .TRUE.
+        case ('ADD_BUFFER_PI')
+          add_buffer_pi=.TRUE.
+        case ('LAMBDA_TRPMD')
+          read (string,*,iostat=ios) lambda_trpmd
+          default_lambda_trpmd=.FALSE.
+        end select
+
+        if (ios /= 0) then
+          write(*,*) "Warning: keyword ",trim(keyword)
+     &         ," not correctly read!"
+        endif
       end do
 
       
