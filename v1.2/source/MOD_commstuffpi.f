@@ -882,7 +882,7 @@ c
       integer :: ibeadbeg,ibeadend,nu
       integer :: ilocend,ilocbeg
       integer :: cshift,nelt
-      integer :: send_vel_
+      logical :: send_vel_
       real*8, allocatable :: bufferpi_s(:,:,:)
       real*8, allocatable :: bufferpi_r(:,:,:)
 

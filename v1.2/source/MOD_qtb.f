@@ -565,7 +565,7 @@ c
           endif
           adqtb_optimizer_type(k)=opttype
 
-          write(*,'(A,I,3x,A,2F10.3)') "ADQTB_MODIFIER"
+          write(*,*) "ADQTB_MODIFIER"
      &         ,k,opttype,tmp,smooth
         endif
     

@@ -40,7 +40,7 @@ c
         end do
       else
         nloop = npolelocnl
-        allocate(globloop(npolelocnl),stat=ierr)
+        allocate(globloop(nlocnl),stat=ierr)
         globloop(:) = poleglobnl(:)
       end if
 

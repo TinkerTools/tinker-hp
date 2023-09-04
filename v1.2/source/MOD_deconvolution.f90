@@ -97,7 +97,7 @@ SUBROUTINE deconvolute_spectrum(s_in,omega,nIterations, &
     ALLOCATE(D(nom,nom),K(nom,nom))
     compute_kernel=.TRUE.
   endif
-  if(trans /= trans_save) compute_kernel=.TRUE.
+  if(trans .neqv. trans_save) compute_kernel=.TRUE.
   trans_save=trans
   if(gamma /= gamma_save) compute_kernel=.TRUE.
   gamma_save=gamma

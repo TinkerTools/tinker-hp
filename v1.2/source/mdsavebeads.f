@@ -533,6 +533,6 @@ c        endif
         call MPI_IBCAST(pbcwrapindex,3*n,MPI_INT,0
      &     ,MPI_COMM_WORLD,reqr(2),ierr)
 
-        call MPI_WAITALL(2,reqr,MPI_STATUS_IGNORE,ierr)
+        call MPI_WAITALL(2,reqr,MPI_STATUSES_IGNORE,ierr)
       
       end subroutine comm_after_boundspi
