@@ -419,9 +419,8 @@ c
         dplambdadelambdae = 0d0
         d2plambdad2elambdae = 0d0
       else
-        plambda = ((elambda-bplambda)/(1-bplambda))**3
-        dplambdadelambdae = 3d0*((elambda-bplambda)/(1-bplambda))**2
-        d2plambdad2elambdae = 6d0*((elambda-bplambda)/(1-bplambda))
+        plambda = ((elambda-bplambda)/(1d0-bplambda))**3
+        dplambdadelambdae = 3d0*((elambda-bplambda)**2/(1-bplambda)**3)
       end if
       ep = plambda*elambdap1 + (1-plambda)*elambdap0
       deprec = (1-plambda)*delambdaprec0+plambda*delambdaprec1

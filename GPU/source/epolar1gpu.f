@@ -570,8 +570,8 @@ c
         d2plambdad2elambdae = 0.0
       else
            plambda          =     ((elambda-bplambda)/(1-bplambda))**3
-          dplambdadelambdae = 3.0*((elambda-bplambda)/(1-bplambda))**2
-        d2plambdad2elambdae = 6.0*((elambda-bplambda)/(1-bplambda))
+          dplambdadelambdae =3.0*((elambda-bplambda)**2/(1-bplambda)**3)
+c        d2plambdad2elambdae = 6.0*((elambda-bplambda)/(1-bplambda))
       end if
 
 !$acc serial async(rec_queue) present(elambdap0,elambdap1,ep,delambdae,
