@@ -403,6 +403,12 @@ c
           g_vyy_0 = g_vyy
           g_vyz_0 = g_vyz
           g_vzz_0 = g_vzz
+          g_vxx = 0.0
+          g_vxy = 0.0
+          g_vxz = 0.0
+          g_vyy = 0.0
+          g_vyz = 0.0
+          g_vzz = 0.0
 
           ecrec = 0.0
 !$acc end serial
