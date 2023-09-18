@@ -118,6 +118,11 @@ c
       call version (minfile,'new')
       if (rank.eq.0) then
         open (unit=imin,file=minfile,status='new')
+        do i = 1, n
+          xwrite(i) = x(i)
+          ywrite(i) = y(i)
+          zwrite(i) = z(i)
+        end do
         call prtxyz (imin)
         close (unit=imin)
         outfile = minfile
@@ -249,6 +254,11 @@ c
         imin = freeunit ()
         open (unit=imin,file=minfile,status='old')
         rewind (unit=imin)
+        do i = 1, n
+          xwrite(i) = x(i)
+          ywrite(i) = y(i)
+          zwrite(i) = z(i)
+        end do
         call prtxyz (imin)
         close (unit=imin)
       end if
