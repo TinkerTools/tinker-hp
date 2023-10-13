@@ -47,6 +47,7 @@ c
       tinkerdebug = 0
       mtc_nacc    = 0
       sav         = 0
+      dd_verbose  = .true.
 
       ! Fetch if possible TINKER_DEBUG From environment
       call get_environment_variable("TINKER_DEBUG",dvalue,length,

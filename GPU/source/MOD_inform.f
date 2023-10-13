@@ -37,7 +37,7 @@ c     dint1 dint2 dibuff  useful for storing purpose
       implicit none
       integer digits,iprint
       integer iwrite,isend,n_fwriten,idumpdyn
-      logical silent,verbose
+      logical silent,verbose,dd_verbose
       logical debug,holdup,abort
       integer tinEssai
       integer mtc_nacc

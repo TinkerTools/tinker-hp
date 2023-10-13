@@ -120,7 +120,7 @@ c
 c
 c     communicate forces
 c
-      call commforces(derivs)
+      call comm_forces(derivs)
 c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the Beeman recursion

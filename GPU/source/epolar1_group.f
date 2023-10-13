@@ -128,6 +128,7 @@ c
       use epolar1group_inl
       use ewald
       use inform     ,only: deb_Path
+      use interfaces ,only: torquegpu_group
       use inter
       use iounit
       use math
@@ -339,12 +340,12 @@ c
       if (use_virial) then
 
 !$acc parallel loop async(def_queue)
-!$acc&   present(globglobgroup,ipolegroup,pollist,polelocgroup
+!$acc&   present(globglobgroup,ipolegroup,pollist !,polelocgroup
 !$acc&  ,x,y,z,xaxis,yaxis,zaxis,fix,fiy,fiz)
         do i = 1, npolegroup
           iglob = globglobgroup(ipolegroup(i))
           iipole = pollist(iglob)
-          ii = polelocgroup(i)
+          !ii = polelocgroup(i)
           iax    = xaxis(iipole)
           iay    = yaxis(iipole)
           iaz    = zaxis(iipole)
@@ -461,7 +462,7 @@ c
       parameter(pgama1=0.0)
 
       if(deb_Path)
-     &   write(*,'(2x,a)') 'epreal1c_correct_scale'
+     &   write(*,'(2x,a)') '  >>> epreal1c_correct_scale_group'
 c
 c     set conversion factor, cutoff and switching coefficients
 c
@@ -586,5 +587,8 @@ c
          call atomic_add( trqvec(2,kploc),trqk%y )
          call atomic_add( trqvec(3,kploc),trqk%z )
       end do
+
+      if(deb_Path)
+     &   write(*,'(2x,a)') '  <<< epreal1c_correct_scale_group'
 c
       end

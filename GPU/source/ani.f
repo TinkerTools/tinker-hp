@@ -278,6 +278,20 @@ c          iloc = loc(merge(i,c_glob(i),use_bondorder))
 
       end subroutine ml_potential
 
+      subroutine ml_deb
+      use ani
+      use neigh
+      implicit none
+      integer ierr,n
+!$acc wait
+      n = 3*list_ani%natmnl
+!$acc host_data use_device(d_ani)
+      ierr = ml_debug( d_ani,n )
+!$acc end host_data
+      if (ierr/=0) then
+         stop
+      end if
+      end subroutine
 
       subroutine init_build_ml_bond_list
       use ani

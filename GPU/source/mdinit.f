@@ -609,7 +609,19 @@ c
          call mechanicstep(0)
          call allocstep
          call nblist(0)
-
+#ifdef COLVARS
+c
+c       for lambda-dynamics, do a "blank" colvars computation to get restart value of lambda
+c
+        if (use_lambdadyn) then
+          allocate(derivs(3,nbloc))
+          derivs = 0d0
+          call allocstep
+!$acc enter data create(derivs)
+          call colvars_run(derivs)
+!$acc    exit data delete(derivs) async
+        end if
+#endif
 c
 c     set velocities and fast/slow accelerations for RESPA method
 c

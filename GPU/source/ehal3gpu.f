@@ -277,7 +277,8 @@ c
 
          ! deal with 1-4 Interactions
          if (vscale4.gt.0) then
-            vscale    =  vscale4
+            vscale    = vscale4
+            nev_      = nev_+1
             do_scale4 = .true.
             vscale4   = 0
             goto 20

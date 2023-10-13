@@ -69,7 +69,7 @@ c
 c
       if (.not.ftot_l) then
          call prmem_requestm(derivs,3,nbloc,async=.true.)
-         call set_to_zero1m(derivs,3*nbloc,rec_queue)
+         call set_to_zero1m (derivs,3*nbloc,rec_queue)
       end if
 c
       call reinitnl(istep)
@@ -92,7 +92,7 @@ c
 c
 c     communicate forces
 c
-      call commforces(derivs)
+      call comm_forces( derivs )
 c
 c     MPI : get total energy
 c
@@ -105,7 +105,7 @@ c
         call zero_forces_rec
         call gradembedding (eml,derivs)
         call reduceen(eml)
-        call commforces(derivs)
+        call comm_forces( derivs )
 !$acc serial async
         epot = epot+eml
 !$acc end serial

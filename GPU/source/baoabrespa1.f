@@ -147,7 +147,7 @@ c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode=2)
         call gradient (eml,derivs)
         use_pred = save_pred
         call reduceen(eml)
-        call commforces(derivs)
+        call comm_forces(derivs)
 !$acc serial async
          epot = epot+eml
 !$acc end serial
@@ -314,7 +314,7 @@ c        use_pred  = .FALSE.
 c        call gradient (ealtml,derivs)
 c        use_pred  = save_pred
 c        call reduceen(ealtml)
-c        call commforces(derivs)
+c        call comm_forces(derivs)
 c!$acc serial async present(ealt,ealtml)
 c         ealt = ealt + ealtml
 c!$acc end serial

@@ -253,8 +253,9 @@ c
            read (string,*,err=20,end=20)  nxdd,nydd,nzdd
  20        continue
            if (nxdd*nydd*nzdd.eq.nproc) then
-             if (istep.eq.0.and.verbose) then
+             if (istep.eq.0.and.verbose.and.dd_verbose) then
                if (ranktot.eq.0) write(iout,11) nxdd,nydd,nzdd
+               dd_verbose = .false.
              end if
              return
            else
@@ -267,8 +268,9 @@ c
            nxdd = 1
            nydd = 1
            nzdd = ndir
-           if (ranktot.eq.0.and.istep.eq.0.and.verbose)
+           if (ranktot.eq.0.and.istep.eq.0.and.verbose.and.dd_verbose)
      &        write(iout,14)  nxdd,nydd,nzdd
+              dd_verbose = .false.
            return
          end if
       end do
@@ -278,9 +280,10 @@ c
          nxdd = 1
          nydd = 1
          nzdd = 2
-         if (ranktot.eq.0.and.verbose) then
+         if (ranktot.eq.0.and.verbose.and.dd_verbose) then
             write(iout,*) '3D Domain Decomposition'
             write(iout,10) nxdd,nydd,nzdd
+            dd_verbose = .false.
          end if
          return
       end if
@@ -425,9 +428,10 @@ c
           end if
         end if
       end if
-      if (istep.eq.0.and.verbose.and.ndir.gt.1) then
+      if (istep.eq.0.and.verbose.and.ndir.gt.1.and.dd_verbose) then
         if (ranktot.eq.0) write(iout,*) '3D Domain Decomposition'
         if (ranktot.eq.0) write(iout,10) nxdd,nydd,nzdd
+        dd_verbose = .false.
       end if
       deallocate (d)
       end

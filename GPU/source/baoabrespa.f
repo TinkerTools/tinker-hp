@@ -251,7 +251,7 @@ c     COMPUTE ML DELTA CONTRIBUTION (ml_embedding_mode)
         endif
         use_pred  = save_pred 
         call reduceen(eml)
-        call commforces(derivs)
+        call comm_forces(derivs)
 !$acc serial async
          epot = epot+eml
 !$acc end serial

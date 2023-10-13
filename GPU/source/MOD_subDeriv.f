@@ -1363,7 +1363,7 @@ c
       integer  ,pointer:: p_send(:),p_recv(:),p_beg(:),d_len(:)
       real(r_p),pointer:: buffer(:,:,:)
 c
-      if (nproc.eq.1) return
+      if (nproc.eq.1.or.dr_nbnbr.eq.0) return
 c
       nsend     =  nrec_send
       nrecv     =  nrec_recep
@@ -1436,6 +1436,7 @@ c
       real(r_p),pointer:: buffer(:,:,:),buffers(:,:)
       parameter(tag=0)
 
+      if (nproc.eq.1.or.dr_nbnbr.eq.0) return
       call timer_enter( timer_dirreccomm )
       if (deb_Path) write(*,*) '   << comm_forces_recdir'
 
@@ -1573,6 +1574,7 @@ c
       real(r_p),pointer:: buffer(:,:,:),buffers(:,:)
       parameter(tag=0)
 
+      if (nproc.eq.1.or.dr_nbnbr.eq.0) return
       call timer_enter( timer_dirreccomm )
       if (deb_Path) write(*,*) '   << comm_forces_recdir1'
 
@@ -1679,7 +1681,8 @@ c
       if (present(opt)) opt_=opt
       call timer_enter( timer_fcomm )
 
-      if (opt_.eq.cNBond) call commforcesrec(derivs,opt_)
+      if (opt_.eq.cNBond.and.dr_nbnbr.gt.0)
+     &   call commforcesrec(derivs,opt_)
 
       if (ftot_l) then
          call load_mpi_buffer(0)

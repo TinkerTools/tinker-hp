@@ -304,8 +304,7 @@ c
       if (lplumed) call eplumed(energy,derivs)
 
       if(use_ml_embedding .and. use_mlpot) then
-        wgrp = wgrp_save
-!$acc update device(wgrp) async
+        call load_wgrp()
       endif
 
 c

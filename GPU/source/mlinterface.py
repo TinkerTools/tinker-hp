@@ -29,8 +29,8 @@ try:
   try:
     _model_dir = os.environ["TINKER_ML_DIR"]
   except:
-    print("TINKER_ML_DIR environment variable not set."
-      ," Using default model directory: "+_default_model_dir, flush=True)
+    #print("TINKER_ML_DIR environment variable not set."
+    #  ," Using default model directory: "+_default_model_dir, flush=True)
     _model_dir = _default_model_dir
   _ctype2tensordtype = {}
   _ctype2dtype       = {}
@@ -38,10 +38,9 @@ try:
   _tf_models = ["DEEPMD"]
   _torchani_models = ["ANI_GENERIC","ANI1X","ANI1CCX","ANI2X","ML_MBD"]
 
-  def load_modules(ml_key:str,debug:bool=False)->int:
+  def load_modules(ml_key:str,rank:int=0,debug:bool=False)->int:
     """ Load modules according to the model to initialize """
     key_upper=ml_key.upper()
-    load_err=1
     try:
       if key_upper in _tf_models:
         if debug:
@@ -55,7 +54,7 @@ try:
         #os.environ["TF_INTER_OP_PARALLELISM_THREADS"] = "1"
         global tf
         if key_upper == "DEEPMD":
-          print("loading DEEPMD module",flush=True)
+          if (rank==0): print("loading DEEPMD module",flush=True)
           global DeepPot,default_tf_session_config
           from deepmd.env import tf,default_tf_session_config
           tf.compat.v1.enable_eager_execution()
@@ -75,26 +74,28 @@ try:
             global models, MOD_neigh
             from torchanimulti_2x import models
             import MOD_neighborlist as MOD_neigh
-            print("loading torchanimulti_2x module",flush=True)
+            if (rank==0): print("loading torchanimulti_2x module",flush=True)
           except:
-            print("torchanimulti_2x module not found",flush=True)
+            if (rank==0): print("torchanimulti_2x module not found",flush=True)
             use_custom_torchani = False
         if not use_custom_torchani:
-          print("Loading standard torchani",flush=True)
+          if (rank==0): print("Loading standard torchani",flush=True)
           global models, torchani, NbList,MOD_neigh
           #import torchani
           from torchani  import models
           from torchani.aev import NbList
           MOD_neigh = None
-
-      global pcd, GPUArray
-      import pycuda.driver   as pcd
-      from pycuda.gpuarray import GPUArray
-      load_err=0
+      try:
+        global pcd, GPUArray
+        import pycuda.driver   as pcd
+        from pycuda.gpuarray import GPUArray
+      except Exception as exp:
+        print('Exception: Fail to load pycuda with exception:', exp, flush=True)
+        return 2
     except Exception as exp:
       print('Exception: Fail to load modules with exception:', exp, flush=True)
-      load_err=1
-    return load_err
+      return 1
+    return 0
 
   def build_ctypes_converters()->int:
     """ Build dictionary of type correspondance with ctypes 
@@ -161,8 +162,8 @@ try:
         if mlpot_key in _torchani_models:
             #pcd.init()
             torch.cuda.init()
-            self.cuDeviceId = pcd.Device(rank)
-            self.context    = self.cuDeviceId.retain_primary_context()
+            #self.cuDeviceId = pcd.Device(rank)
+            #self.context    = self.cuDeviceId.retain_primary_context()
             device_name     = 'cuda:'+str(rank) if torch.cuda.is_available() else 'cpu'
             self.device     = torch.device(device_name)
             if self.verbose: print("I rank ",rank," select device "+device_name,flush=True)
@@ -250,7 +251,7 @@ try:
           self.getmcache(nb_species)
 
         cell             = torch.from_numpy(asarray(ffi, cell_ptr, [3,3])).to(self.device)
-        atomic_species   = asTensor(   atm_sp_ptr,'int32_t',[1,nb_species],self.device,order='F').type(torch.long)
+        atomic_species   = asTensor(   atm_sp_ptr,'int64_t',[1,nb_species],self.device,order='F')
         coordinates      = asTensor(    coord_ptr,  'float',[1,nb_species,3],self.device,order='F').requires_grad_()
         atomic_energies  = asTensor( atm_ener_ptr,  'float',[1,nb_species],self.device)
         if dograd: gradient  = asTensor( gradient_ptr, 'float',[nb_species,3],self.device)
@@ -431,7 +432,7 @@ except Exception as err:
 @ffi.def_extern()
 def init_ml_ressources(rank,nn_name,model_file_,debug_int):
   try:
-     if global_load != 0: return global_load
+     if global_load != 0: return 1
      init_time  = time()
      ierr       = 0
      debug      = debug_int != 0
@@ -439,9 +440,11 @@ def init_ml_ressources(rank,nn_name,model_file_,debug_int):
      model_file = ffi.string(model_file_).decode('UTF-8').strip()
      if (debug): print('init ML ressources',rank,model_file,debug_int,ml_key,flush=True)
 
-     if load_modules(ml_key,debug) != 0: return load_err
-
-     if build_ctypes_converters() != 0: return ctype_err
+     load_err = load_modules(ml_key,rank,debug)
+     if  load_err != 0: return 10+load_err
+    
+     ctype_err = build_ctypes_converters()
+     if ctype_err != 0: return 20+ctype_err
 
      if debug: print(f'_model_dir="{_model_dir}"')
 
@@ -476,6 +479,18 @@ def ml_models(coord_ptr, atm_ener_ptr, gradient_ptr, cell_ptr, atm_sp_ptr
     print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",flush=True)
     #raise Exception("ml_models "+str(err))
   return ierr
+
+@ffi.def_extern()
+def ml_debug(array_ptr, size):
+  try:
+    print('-----------mdi',ar.rank,size,array_ptr,type(array_ptr),flush=True)
+    array = asTensor(array_ptr,'float',[1,size],ar.device,order='F')
+    print('-----------mdi',array[0,0:9],flush=True)
+    return 0
+  except Exception as err:
+    print(traceback.format_exc(),flush=True)
+    return 1
+
 
 
 @ffi.def_extern()

@@ -140,6 +140,9 @@ c
       do i = 1, maxnu
          ku(i)  = initi
       end do
+      do i = 1, maxnuq
+         kuq(i)  = initi
+      end do
       do i = 1, maxnups
          kups(i)  = initi
       end do

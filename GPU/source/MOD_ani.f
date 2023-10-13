@@ -24,7 +24,7 @@ c
       integer :: ml_embedding_mode=1
       integer :: bondorder=1
       integer, allocatable:: list(:), iaml(:), amloc(:)
-     &       , atomic_ani(:)
+      integer(c_int64_t),allocatable:: atomic_ani(:)
       integer, allocatable, target :: blist1(:), blist2(:)
       logical :: ml_resources_initialized=.FALSE.
       logical :: use_bondorder=.FALSE.
@@ -57,12 +57,18 @@ c
             real(c_float)  m_c(*), ce_a(*)
             real(c_float)  dist(*), dv(*), a_en(*)
             real(c_float) f_c(*)
-            integer(c_int32_t) a_c(*)
+            integer(c_int64_t) a_c(*)
             integer(c_int32_t) l1(*), l2(*),istrict(*)
             integer(c_int32_t),value :: nb, nbp,nstrict
             integer(c_int32_t),value :: dograd
             integer(c_int32_t) :: ml_models
         end function ml_models
+
+        function ml_debug( a_r, n) bind(C)
+             import c_float,c_int32_t
+             real(c_float) a_r(*)
+             integer(c_int32_t),value:: n
+        end function
       end interface
 
       interface
