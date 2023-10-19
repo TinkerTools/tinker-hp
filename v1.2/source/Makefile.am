@@ -229,6 +229,7 @@ libtinkermod_a_SOURCES += MOD_kmulti.f
 libtinkermod_a_SOURCES += MOD_kopbnd.f
 libtinkermod_a_SOURCES += MOD_kopdst.f
 libtinkermod_a_SOURCES += MOD_kpitor.f
+libtinkermod_a_SOURCES += MOD_kpolpr.f
 libtinkermod_a_SOURCES += MOD_kpolr.f
 libtinkermod_a_SOURCES += MOD_krepl.f
 libtinkermod_a_SOURCES += MOD_kstbnd.f

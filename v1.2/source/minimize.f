@@ -57,23 +57,42 @@ c     set up the structure and mechanics calculation
 c
       call initial
       call getxyz
-      nproc = nproctot
       call initmpi
       call unitcell
       call cutoffs
       call lattice
 c
+c     get parameters
+c
+      call mechanic
+c
 c     setup for MPI
 c
       call drivermpi
       call reinitnl(0)
+      call mechanic_init_para
 c
-      call mechanic
       call nblist(0)
       call allocstep
 c
       if (associated(scale)) deallocate (scale)
        allocate (scale(3*n))
+c
+c     set default for pbc unwrapping
+c
+      pbcunwrap = .false.
+c
+c     allocate array of positions to be printed
+c
+      if (allocated(xwrite)) deallocate (xwrite)
+      allocate (xwrite(n))
+      xwrite = 0d0
+      if (allocated(ywrite)) deallocate (ywrite)
+      allocate (ywrite(n))
+      ywrite = 0d0
+      if (allocated(zwrite)) deallocate (zwrite)
+      allocate (zwrite(n))
+      zwrite = 0d0
 c 
 c     use either analytical or numerical gradients
 c
@@ -176,7 +195,7 @@ c         call commstep
          allocate (derivs(3,nbloc))
          derivs = 0d0
          call reinitnl(0)
-         call mechanicstep(0)
+         call mechanic_up_para(0)
          call allocstep
          call nblist(0)
          call gradient (minimum,derivs)
@@ -324,7 +343,7 @@ c
       allocate (derivs(3,nbloc))
       derivs = 0d0
       call reinitnl(0)
-      call mechanicstep(0)
+      call mechanic_up_para(0)
       call allocstep
       call nblist(0)
 c

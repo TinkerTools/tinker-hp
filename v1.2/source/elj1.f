@@ -96,13 +96,8 @@ c
       real*8 vyx,vzx,vzy
       real*8 s,ds,vdwshortcut2,facts,factds
       real*8 :: rho,rhok,rvk,lambdavt
-      real*8 :: derho,gsc,dgscrho,dgsclambda, dgscrholambda
-      real*8 :: d2gscdlambda2
-      real*8 :: drhodelambdav, part1, part2, part3
-      real*8 :: temp1,temp2,temp3,temp4
-      real*8:: drdelambdav
-      real*8:: drdelambdavdx, drdelambdavdy, drdelambdavdz
-      real*8 :: galpha,glamb1,evdw,devdwgsc,d2evdwdgsc2
+      real*8 :: derho,gsc,dgscrho,dgsclambda
+      real*8 :: galpha,glamb1,evdw,devdwgsc
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)

@@ -15,7 +15,7 @@ c     overlapping dihedral angles, and the numbers of the five
 c     atoms defining each bitorsion
 c
 c
-      subroutine bitors(init)
+      subroutine bitors
       use angle
       use atmlst
       use bitor
@@ -23,70 +23,81 @@ c
       use domdec
       use iounit
       implicit none
-      integer i,j,k,iangle,nbitorloc1,bitorscount
+      integer i,j,k
       integer ia,ib,ic,id,ie
-      logical init
-c
-      if (init) then
 c
 c     loop over all angles, storing the atoms in each bitorsion
 c
-        nbitor = 0
-        do i = 1, nangle
-           ib = iang(1,i)
-           ic = iang(2,i)
-           id = iang(3,i)
-           do j = 1, n12(ib)
-              ia = i12(j,ib)
-              if (ia.ne.ic .and. ia.ne.id) then
-                 do k = 1, n12(id)
-                    ie = i12(k,id)
-                    if (ie.ne.ic .and. ie.ne.ib .and. ie.ne.ia) then
-                       nbitor = nbitor + 1
-                       if (nbitor .gt. maxbitor) then
-                          if (rank.eq.0) write (iout,10)
-   10                     format (/,' BITORS  --  Too many Adjacent',
-     &                               ' Torsions; Increase MAXBITOR')
-                          call fatal
-                       end if
-                    end if
-                 end do
-              end if
-           end do
-        end do
+      nbitor = 0
+      do i = 1, nangle
+         ib = iang(1,i)
+         ic = iang(2,i)
+         id = iang(3,i)
+         do j = 1, n12(ib)
+            ia = i12(j,ib)
+            if (ia.ne.ic .and. ia.ne.id) then
+               do k = 1, n12(id)
+                  ie = i12(k,id)
+                  if (ie.ne.ic .and. ie.ne.ib .and. ie.ne.ia) then
+                     nbitor = nbitor + 1
+                     if (nbitor .gt. maxbitor) then
+                        if (rank.eq.0) write (iout,10)
+   10                   format (/,' BITORS  --  Too many Adjacent',
+     &                             ' Torsions; Increase MAXBITOR')
+                        call fatal
+                     end if
+                  end if
+               end do
+            end if
+         end do
+      end do
 c
-c       deallocate global pointers if necessary
+c     deallocate global pointers if necessary
 c
-        call dealloc_shared_bitors
+      call dealloc_shared_bitors
 c
-c       allocate global pointers
+c     allocate global pointers
 c
-        call alloc_shared_bitors
+      call alloc_shared_bitors
 c
-        nbitorloc = 0
-        do i = 1, nangle
-           ib = iang(1,i)
-           ic = iang(2,i)
-           id = iang(3,i)
-           nbbitors(i) = nbitorloc
-           do j = 1, n12(ib)
-              ia = i12(j,ib)
-              if (ia.ne.ic .and. ia.ne.id) then
-                 do k = 1, n12(id)
-                    ie = i12(k,id)
-                    if (ie.ne.ic .and. ie.ne.ib .and. ie.ne.ia) then
-                       nbitorloc = nbitorloc + 1
-                       ibitor(1,nbitorloc) = ia
-                       ibitor(2,nbitorloc) = ib
-                       ibitor(3,nbitorloc) = ic
-                       ibitor(4,nbitorloc) = id
-                       ibitor(5,nbitorloc) = ie
-                    end if
-                 end do
-              end if
-           end do
-        end do
-      end if
+      nbitorloc = 0
+      do i = 1, nangle
+         ib = iang(1,i)
+         ic = iang(2,i)
+         id = iang(3,i)
+         nbbitors(i) = nbitorloc
+         do j = 1, n12(ib)
+            ia = i12(j,ib)
+            if (ia.ne.ic .and. ia.ne.id) then
+               do k = 1, n12(id)
+                  ie = i12(k,id)
+                  if (ie.ne.ic .and. ie.ne.ib .and. ie.ne.ia) then
+                     nbitorloc = nbitorloc + 1
+                     ibitor(1,nbitorloc) = ia
+                     ibitor(2,nbitorloc) = ib
+                     ibitor(3,nbitorloc) = ic
+                     ibitor(4,nbitorloc) = id
+                     ibitor(5,nbitorloc) = ie
+                  end if
+               end do
+            end if
+         end do
+      end do
+      return
+      end
+c
+c     subroutine bitors_update : update local bitors
+c
+      subroutine bitors_update
+      use angle
+      use atmlst
+      use bitor
+      use couple
+      use domdec
+      implicit none
+      integer i,j,k,iangle,nbitorloc1,bitorscount
+      integer ia,ib,ic,id,ie
+c
       if (allocated(bitorsglob)) deallocate(bitorsglob)
       allocate (bitorsglob(8*nbloc))
       nbitorloc = 0

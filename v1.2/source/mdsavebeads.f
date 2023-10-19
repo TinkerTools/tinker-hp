@@ -41,21 +41,20 @@ c
       integer, intent(in) :: istep
       real*8, intent(in) :: dt
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
-      integer i,j,k,ierr
-      integer ixyz,iind
+      integer i,j,ierr
+      integer ixyz
       integer ivel,ifrc
-      integer iend1,idump,lext
+      integer idump,lext
       integer freeunit,trimtext
       integer moddump
-      real*8 pico,wt,r
+      real*8 pico,r
       integer ibead,ibead_save
       logical exist
       character*7 ext
-      character*240 endfile
       character*240 xyzfile
       character*240 velfile
       character*240 frcfile
-      character*240 indfile,exten
+      character*240 exten
       character*3 numberbeads
       integer :: nproc_write,ibead_beg,ibead_end
       logical :: save_all
@@ -335,11 +334,10 @@ c
         integer, intent(in) :: nproc_write
         integer, intent(out) :: ibead_beg_r,ibead_end_r
         integer :: nbeads_write,nbeads_write_max
-        integer :: natpi_max,iproc, ibead
+        integer :: natpi_max,iproc
         integer :: ibead_beg_s,ibead_end_s
-        integer :: ibegpi_r,iendpi_r
-        integer :: cs,cr,nsend,nsendbis,nbeads_send
-        integer i,j,k,ii,jj,kk,ierr
+        integer :: cs,cr,nsend
+        integer i,j,k,ii,kk,ierr
         integer, allocatable :: nlocr(:)
         real*8, allocatable :: buffers(:,:,:),buffer(:,:,:)
         integer, allocatable :: reqr(:),reqs(:),reqsize(:)
@@ -497,8 +495,7 @@ c     &       ,(ibead_end_s-ibead_beg_s+1)
         type(POLYMER_COMM_TYPE), intent(inout) :: polymer
         integer, intent(in) :: nproc_write
         integer ierr
-        integer reqs(2*nproctot),reqr(2)
-        integer count,iproc
+        integer reqr(2)
 
 
         ! BROADCAST NEW CENTROID AFTER BOUNDARY WRAP

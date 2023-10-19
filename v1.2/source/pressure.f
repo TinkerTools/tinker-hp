@@ -22,7 +22,6 @@ c
       real*8, intent(in) :: ekin(3,3),vir(3,3)
       real*8, intent(out) :: pres,stress(3,3)
       real*8 factor
-      real*8  ekin_trace
       integer i,j
 
 c
@@ -60,11 +59,10 @@ c
       use units
       use virial
       implicit none
-      integer i,j,istep
+      integer istep
       real*8 dt
       real*8 pres
-      real*8 factor
-      real*8 ekin(3,3), ekin_trace
+      real*8 ekin(3,3)
       real*8 stress(3,3)
 c
 c
@@ -258,7 +256,6 @@ c
       integer i,iglob
       real*8 energy,third
       real*8 delta,step,scale
-      real*8 pres
       real*8 vold,xboxold
       real*8 yboxold,zboxold
       real*8 epos,eneg
@@ -800,8 +797,6 @@ c
       implicit none
       integer, intent(in) :: istep
       real*8, intent(in) :: scale(3)
-      real*8 third
-      integer iglob,i
 c
 c     modify the current periodic box dimension values
 c

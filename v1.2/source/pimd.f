@@ -44,20 +44,15 @@ c
       use mpi
       use cutoff
       use ascii, only: int_to_str
-      use qtb, only: qtb_thermostat,adaptive_qtb,piqtb
+      use qtb, only: adaptive_qtb,piqtb
       use units
       implicit none
-      integer i,istep,nstep,ierr,k,ibead,ibeadglob!,nstep_therm
-      integer iglob
-      integer mode,next,nseg
+      integer istep,nstep,ierr
+      integer mode
       real*8 dt,dtdump,time0,time1,bufpi
-      logical exist,query,restart
-      character*20 keyword
-      character*240 record
-      real*8 pres_tmp
+      logical exist,query
       character*240 string
-      real*8 maxwell
-      logical pi_isobaric,restart_bead
+      logical pi_isobaric
       logical only_long
       TYPE(POLYMER_COMM_TYPE), save :: polymer,polymer_ctr
       INTERFACE
@@ -101,6 +96,10 @@ c
       call unitcell
       call lattice
 c
+c     get parameters
+c
+      call mechanic
+c
 c     setup for MPI
 c
 c
@@ -108,6 +107,7 @@ c     get nprocforce to do correct allocation of MPI arrays
 c
       call drivermpi
       call reinitnl(0)
+      call mechanic_init_para
 c
 c     allocate some arrays
 c
@@ -122,7 +122,6 @@ c
       v = 0d0
       aalt = 0d0
 c
-      call mechanic
       call nblist(0)
 c
 c     initialize the temperature, pressure and coupling baths
@@ -306,7 +305,7 @@ c
       endif
 
       call mdinit(dt)    
-      call mdinitbead(dt,polymer)
+      call mdinitbead(polymer)
 
       !if(qtb_thermostat) then
       !  if(ranktot==0) then

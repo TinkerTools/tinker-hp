@@ -14,7 +14,7 @@ c     "mdinitbead" initializes the velocities and positions
 c     for a molecular pimd trajectory, including restarts
 c
 c
-      subroutine mdinitbead(dt,polymer)
+      subroutine mdinitbead(polymer)
       use atmtyp
       use atoms
       use bath
@@ -40,24 +40,13 @@ c
       use uprior
       use usage
       implicit none
-      real*8, intent(in) :: dt
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
-      integer i,j,k,idyn,iglob,nh,ibead
-      integer next
+      integer i,j,idyn,iglob,ibead
       integer lext,freeunit
-      integer ierr
-      real*8 e,wt
-      real*8 maxwell,speed
-      real*8 hmax,hmass
-      real*8 sum,dmass
-      real*8 vec(3),Rn,Rnvar
-      real*8, allocatable :: derivs(:,:)
+      real*8 wt
       logical exist,heavy
       character*7 ext
-      character*20 keyword
       character*240 dynfile
-      character*240 record
-      character*240 string
       character*3 numberbeads
       logical restart
       interface
@@ -194,7 +183,7 @@ c
         call ddpme3d
         call reinitnl(0)
         call reassignpme(.true.)
-        call mechanicstep(0)
+        call mechanic_init_para
         call allocstep
         call nblist(0)
         call update_nlocpi(nloc)

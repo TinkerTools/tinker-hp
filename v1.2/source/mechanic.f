@@ -29,11 +29,11 @@ c
 c
 c     find bonds, angles, torsions, bitorsions and small rings
 c
-      call bonds(.true.)
-      call angles(.true.)
-      call torsions(.true.)
-      call bitors(.true.)
-      call rings(.true.)
+      call bonds
+      call angles
+      call torsions
+      call bitors
+      call rings
 c
 c     get the base force field from parameter file and keyfile
 c
@@ -60,33 +60,33 @@ c     assign bond, angle and cross term potential parameters
 c
       call kbond
       call kangle
-      call kstrbnd(.true.)
-      call kurey(.true.)
-      call kangang(.true.)
+      call kstrbnd
+      call kurey
+      call kangang
 c
 c     assign out-of-plane deformation potential parameters
 c
-      call kopbend(.true.)
-      call kopdist(.true.)
-      call kimprop(.true.)
-      call kimptor(.true.)
+      call kopbend
+      call kopdist
+      call kimprop
+      call kimptor
 c
 c     assign torsion and torsion cross term potential parameters
 c
       call ktors
-      call kpitors(.true.)
-      call kstrtor(.true.)
-      call kangtor(.true.)
-      call ktortor(.true.)
+      call kpitors
+      call kstrtor
+      call kangtor
+      call ktortor
 c
 c     assign van der Waals and electrostatic potential parameters
 c
-      call kcharge(.true.,0)
-      call kvdw(.true.,0)
-      call kmpole(.true.,0)
-      call kpolar(.true.,0)
+      call kcharge
+      call kvdw
+      call kmpole
+      call kpolar
 
-      call kchgtrn(.true.,0)
+      call kchgtrn
       call kchgflx
 c
       if (use_polar) call initmpipme
@@ -94,11 +94,11 @@ c
 c     assign repulsion and dispersion parameters
 c
       call krepel 
-      call kdisp(.true.,0) 
+      call kdisp 
 c
 c     assign restraint parameters
 c
-      call kgeom(.true.)
+      call kgeom
 c
 c     set hybrid parameter values for free energy perturbation
 c
@@ -106,7 +106,7 @@ c
 c
 c     set holonomic constrains
 c
-      call shakeup(.true.)
+      call shakeup
 c
 c     SMD parametrization
 c
@@ -123,92 +123,150 @@ c
       return
       end
 c
-c     subroutine mechanicstep : fill the array parameters between two time steps
+c     subroutine mechanic_init_para: initialize parallel parameters after domain decomposition
 c
-      subroutine mechanicstep(istep)
+c
+      subroutine mechanic_init_para
       use potent
       implicit none
-      integer istep
 c
-      call bonds(.false.)
-      call angles(.false.)
-      call torsions(.false.)
-      call bitors(.false.)
-c
-      if (use_charge) call kcharge(.false.,istep)
-      if (use_mpole) call kmpole(.false.,istep)
-      if (use_polar) call kpolar(.false.,istep)
-      if (use_chgtrn) call kchgtrn(.false.,istep)
-      if (use_vdw) call kvdw(.false.,istep)
-      if (use_disp) call kdisp(.false.,istep)
-      if (use_strbnd) call kstrbnd(.false.)
-      if (use_urey) call kurey(.false.)
-      if (use_angang) call kangang(.false.)
-      if (use_opbend)  call kopbend(.false.)
-      if (use_opdist)  call kopdist(.false.)
-      if (use_improp)  call kimprop(.false.)
-      if (use_imptor)  call kimptor(.false.)
-      if (use_pitors)  call kpitors(.false.)
-      if (use_strtor)  call kstrtor(.false.)
-      if (use_angtor)  call kangtor(.false.)
-      if (use_tortor)  call ktortor(.false.)
-      if (use_geom)  call kgeom(.false.)
+      call bonds_update
+      call angles_update
+      call torsions_update
+      call bitors_update
+
+      call kewald_dd_init
+      
+      if (use_strbnd) call kstrbnd_update
+      if (use_urey)   call kurey_update
+      if (use_angang)  call kangang_update
+
+      if (use_opbend)  call kopbend_update
+      if (use_opdist) call kopdist_update
+      if (use_improp) call kimprop_update
+      if (use_imptor) call kimptor_update
+
+      if (use_pitors) call kpitors_update
+      if (use_strtor) call kstrtor_update
+      if (use_angtor) call kangtor_update
+      if (use_tortor) call ktortor_update
+
+      if (use_charge) call kcharge_update(0)
+      if (use_vdw)    call kvdw_update(0)
+      if (use_mpole)  call kmpole_update(0)
+      if (use_polar)  call kpolar_update(0)
+
+      if (use_chgtrn) call kchgtrn_update(0)
+
+      if (use_polar)  call initmpipme
+
+      if (use_disp)   call kdisp_update(0)
+
+      if (use_geom)   call kgeom_update
+
+      call shakeup_update
+
       if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
-      if (use_polar) call initmpipme
-
-c     set holonomic constrains
 c
-      call shakeup(.false.)
-
       return
       end
 c
-c     subroutine mechanicsteprespa: fill the array parameters between two time steps
+c     subroutine mechanic_up_para: update parallel parameters
 c
-      subroutine mechanicsteprespa(istep,fast)
+c
+      subroutine mechanic_up_para(istep)
       use potent
       implicit none
       integer istep
-      logical fast
 c
-c      call molecule(.false.)
+      call bonds_update
+      call angles_update
+      call torsions_update
+      call bitors_update
+
+c      call molecule_update
+      
+      if (use_strbnd) call kstrbnd_update
+      if (use_urey)   call kurey_update
+      if (use_angang)  call kangang_update
+
+      if (use_opbend)  call kopbend_update
+      if (use_opdist) call kopdist_update
+      if (use_improp) call kimprop_update
+      if (use_imptor) call kimptor_update
+
+      if (use_pitors) call kpitors_update
+      if (use_strtor) call kstrtor_update
+      if (use_angtor) call kangtor_update
+      if (use_tortor) call ktortor_update
+
+      if (use_charge) call kcharge_update(istep)
+      if (use_vdw)    call kvdw_update(istep)
+      if (use_mpole)  call kmpole_update(istep)
+      if (use_polar)  call kpolar_update(istep)
+
+      if (use_chgtrn) call kchgtrn_update(istep)
+
+      if (use_polar)  call initmpipme
+
+      if (use_disp)   call kdisp_update(istep)
+
+      if (use_geom)   call kgeom_update
+
+      call shakeup_update
+
+      if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
+c
+      return
+      end
+
+c
+c     subroutine mechanic_up_para_respa: update parallel parameters between two respa steps
+c
+c
+      subroutine mechanic_up_para_respa(istep,fast)
+      use potent
+      implicit none
+      logical fast
+      integer istep
+c
       if (fast) then
-        call bonds(.false.)
-        call angles(.false.)
-        call torsions(.false.)
-        call bitors(.false.)
-        if (use_strbnd) call kstrbnd(.false.)
-        if (use_urey) call kurey(.false.)
-        if (use_angang) call kangang(.false.)
-        if (use_opbend)  call kopbend(.false.)
-        if (use_opdist)  call kopdist(.false.)
-        if (use_improp)  call kimprop(.false.)
-        if (use_imptor)  call kimptor(.false.)
-        if (use_pitors)  call kpitors(.false.)
-        if (use_strtor)  call kstrtor(.false.)
-        if (use_angtor)  call kangtor(.false.)
-        if (use_tortor)  call ktortor(.false.)
-        if (use_geom)  call kgeom(.false.)
+        call bonds_update
+        call angles_update
+        call torsions_update
+        call bitors_update
+        if (use_strbnd) call kstrbnd_update
+        if (use_urey) call kurey_update
+        if (use_angang) call kangang_update
+        if (use_opbend)  call kopbend_update
+        if (use_opdist)  call kopdist_update
+        if (use_improp)  call kimprop_update
+        if (use_imptor)  call kimptor_update
+        if (use_pitors)  call kpitors_update
+        if (use_strtor)  call kstrtor_update
+        if (use_angtor)  call kangtor_update
+        if (use_tortor)  call ktortor_update
+        if (use_geom)  call kgeom_update
         if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
       else
-        if (use_charge) call kcharge(.false.,istep)
-        if (use_mpole) call kmpole(.false.,istep)
-        if (use_polar) call kpolar(.false.,istep)
-        if (use_vdw) call kvdw(.false.,istep)
-        if (use_disp) call kdisp(.false.,istep)
-        if (use_chgtrn) call kchgtrn(.false.,istep)
-        if ((istep.ne.-1).and.use_polar) call initmpipme
+        if (use_charge) call kcharge_update(istep)
+        if (use_mpole) call kmpole_update(istep)
+        if (use_polar) call kpolar_update(istep)
+        if (use_vdw) call kvdw_update(istep)
+        if (use_disp) call kdisp_update(istep)
+        if (use_chgtrn) call kchgtrn_update(istep)
+        if (use_polar) call initmpipme
 c
 c     set holonomic constrains
 c
-      call shakeup(.false.)
+        call shakeup_update
       end if
       return
       end
 c
-c     subroutine mechanicsteprespa1: fill the array parameters between two time steps
+c     subroutine mechanic_up_para_respa1: update parameters between two time steps
 c
-      subroutine mechanicsteprespa1(istep,rule)
+      subroutine mechanic_up_para_respa1(istep,rule)
       use domdec
       use iounit
       use potent
@@ -222,43 +280,45 @@ c     rule = 2: slow part of the forces
 c
 c      call molecule(.false.)
       if (rule.eq.0) then
-        call bonds(.false.)
-        call angles(.false.)
-        call torsions(.false.)
-        call bitors(.false.)
-        if (use_strbnd) call kstrbnd(.false.)
-        if (use_urey) call kurey(.false.)
-        if (use_angang) call kangang(.false.)
-        if (use_opbend)  call kopbend(.false.)
-        if (use_opdist)  call kopdist(.false.)
-        if (use_improp)  call kimprop(.false.)
-        if (use_imptor)  call kimptor(.false.)
-        if (use_pitors)  call kpitors(.false.)
-        if (use_strtor)  call kstrtor(.false.)
-        if (use_angtor)  call kangtor(.false.)
-        if (use_tortor)  call ktortor(.false.)
-        if (use_geom)  call kgeom(.false.)
+        call bonds_update
+        call angles_update
+        call torsions_update
+        call bitors_update
+        if (use_strbnd) call kstrbnd_update
+        if (use_urey) call kurey_update
+        if (use_angang) call kangang_update
+        if (use_opbend)  call kopbend_update
+        if (use_opdist)  call kopdist_update
+        if (use_improp)  call kimprop_update
+        if (use_imptor)  call kimptor_update
+        if (use_pitors)  call kpitors_update
+        if (use_strtor)  call kstrtor_update
+        if (use_angtor)  call kangtor_update
+        if (use_tortor)  call ktortor_update
+        if (use_geom)  call kgeom_update
         if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
       else if (rule.eq.1) then
-        if (use_charge) call kcharge(.false.,istep)
-        if (use_mpole) call kmpole(.false.,istep)
-        if (use_polar) call kpolar(.false.,istep)
-        if (use_vdw) call kvdw(.false.,istep)
-        if (use_chgtrn) call kchgtrn(.false.,istep)
+        if (use_charge) call kcharge_update(istep)
+        if (use_mpole) call kmpole_update(istep)
+        if (use_polar) call kpolar_update(istep)
+        if (use_vdw) call kvdw_update(istep)
+        if (use_chgtrn) call kchgtrn_update(istep)
       else if (rule.eq.2) then
-        if (use_charge) call kcharge(.false.,istep)
-        if (use_mpole) call kmpole(.false.,istep)
-        if (use_polar) call kpolar(.false.,istep)
-        if (use_vdw) call kvdw(.false.,istep)
-        if (use_disp) call kdisp(.false.,istep)
-        if (use_chgtrn) call kchgtrn(.false.,istep)
+        if (use_charge) call kcharge_update(istep)
+        if (use_mpole) call kmpole_update(istep)
+        if (use_polar) call kpolar_update(istep)
+        if (use_vdw) call kvdw_update(istep)
+        if (use_disp) call kdisp_update(istep)
+        if (use_chgtrn) call kchgtrn_update(istep)
         if ((istep.ne.-1).and.use_polar) call initmpipme
 c
 c     set holonomic constrains
 c
-        call shakeup(.false.)
+        call shakeup_update
       else
          if (rank.eq.0) write(iout,1000) 
       end if
       return
       end
+
+c

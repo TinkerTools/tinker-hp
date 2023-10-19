@@ -1804,12 +1804,9 @@ c-------------------------------------------------------------
       integer :: isend,ii,ierr,ns,nr,iloc,kk,l
       integer, parameter :: mptag_size=0,mptag_data=1
       integer :: reqs(2*nproc_polymer)
-      LOGICAL :: flag
-      integer :: nbeadslocmax, nlocproc
-      integer :: ibeadbeg,ibeadend,nu
+      integer :: nlocproc
       integer :: ilocend,ilocbeg
-      integer :: cshift,nelt
-      integer :: send_vel_
+      integer :: nelt
       real(4), allocatable :: bufferpi_s(:,:,:,:)
       real(4), allocatable :: bufferpi_r(:,:,:,:,:)
 
@@ -1885,15 +1882,12 @@ c-------------------------------------------------------------
       implicit none
       integer :: ibead,k,i,j,iglob,iproc,maxsend,nsend,maxloc
       integer :: maxrecv,nproc_recv
-      integer :: isend,ii,ierr,ns,nr,iloc,kk,l
+      integer :: isend,ii,ierr,ns,nr,kk,l
       integer, parameter :: mptag_size=0,mptag_data=1
       integer :: reqs(2*nproc_polymer)
-      LOGICAL :: flag
-      integer :: nbeadslocmax, nlocproc
-      integer :: ibeadbeg,ibeadend,nu
+      integer :: nlocproc
       integer :: ilocend,ilocbeg
-      integer :: cshift,nelt,ineighbor
-      integer :: send_vel_
+      integer :: nelt,ineighbor
       real(4), allocatable :: buffer(:,:,:,:)
 
       if(nproc_polymer==1 .or. nproc==1) return

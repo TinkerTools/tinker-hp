@@ -31,20 +31,20 @@ c
       use usage
       use mpi
       implicit none
-      integer i,j,k
+      integer i,j
       integer ia,ib,ic
       integer ita,itb,itc
       integer na,nb
       integer size,next
       integer ierr
-      real*8 fc,bd,cfb
+      real*8 cfb
       real*8 cfa1,cfa2
       real*8 cfb1,cfb2
       logical headerb
       logical headera
       character*4 pa,pb,pc
       character*8 blank8
-      character*8 pt,pt2
+      character*8 pt2
       character*8 ptab,ptbc
       character*12 blank12,pt3
       character*20 keyword
@@ -260,7 +260,7 @@ c
       use mpi
       implicit none
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr,total
+      INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
 c
       if (associated(aflx)) then
@@ -295,7 +295,7 @@ c
       use mpi
       implicit none
       INTEGER(KIND=MPI_ADDRESS_KIND) :: windowsize
-      INTEGER :: disp_unit,ierr,total
+      INTEGER :: disp_unit,ierr
       TYPE(C_PTR) :: baseptr
       integer :: arrayshape(1),arrayshape2(2)
 c

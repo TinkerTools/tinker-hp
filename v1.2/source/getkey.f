@@ -203,8 +203,6 @@ c
       use iounit
       use files
       implicit none
-      integer ixyz
-      integer freeunit
       logical exist
       character*240 xyzfile
 c

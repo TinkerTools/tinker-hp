@@ -107,7 +107,7 @@ c
       use shunt
       use mpi
       implicit none
-      integer i,j,k,iglob,kglob,kbis
+      integer j,k,iglob,kglob
       integer ii,kk,kkk,iipole,kkpole
       integer iipolegroup,iglobgroup,kglobgroup
       real*8 e,f
@@ -135,7 +135,7 @@ c
       real*8 alphai,alphak
       real*8 term1,term2,term3
       real*8 dmpi(7),dmpk(7)
-      real*8 dmpik(7),dmpe(7)
+      real*8 dmpik(7)
       real*8 scalek
       real*8, allocatable :: pscale(:)
 c

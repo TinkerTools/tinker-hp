@@ -23,11 +23,10 @@ c
       use replicas
       use domdec, only: rank
       implicit none
-      integer lext,freeunit,idyn
+      integer freeunit,idyn
       integer next
-      integer i,j,k,num
+      integer i,j,num
       logical exist
-      character*7 ext
       character*240 dynfile
       character*3 numberreps
       character*20 keyword
@@ -58,7 +57,7 @@ c
          call ddpme3d
          call reinitnl(0)
          call reassignpme(.true.)
-         call mechanicstep(0)
+         call mechanic_up_para(0)
          call allocstep
          call nblist(0)
       endif

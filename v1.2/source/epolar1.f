@@ -1280,6 +1280,7 @@ c
       integer i,j,k,nnelst
       integer iglob,kglob,kbis
       integer ii,kkk
+      integer it,kt
       integer iipole,kkpole
       integer ix,iy,iz
       real*8 e
@@ -1454,7 +1455,7 @@ c
          if (use_thole) then
             pdi = pdamp(iipole)
             pti = thole(iipole)
-            ddi = dirdamp(iipole)
+            ddi = tholed(iipole)
          else if (use_chgpen) then
             corei = pcore(iipole)
             vali = pval(iipole)
@@ -1650,11 +1651,10 @@ c     apply Thole polarization damping to scale factors
 c
                if (use_thole) then
                   damp = pdi * pdamp(kkpole)
-                  if (use_dirdamp) then
-                     pgamma = min(ddi,dirdamp(kkpole))
-                     if (pgamma .eq. 0.0d0) then
-                        pgamma = max(ddi,dirdamp(kkpole))
-                     end if
+                  it = jpolar(iglob)
+                  kt = jpolar(kglob)
+                  if (use_tholed) then
+                     pgamma = thdval(it,kt)
                      if (damp.ne.0.0d0 .and. pgamma.ne.0.0d0) then
                         damp = pgamma * (r/damp)**(1.5d0)
                         if (damp .lt. 50.0d0) then
@@ -1678,10 +1678,7 @@ c
                         end if
                      end if
                   else
-                     pgamma = min(pti,thole(kkpole))
-                     if (pgamma .eq. 0.0d0) then
-                        pgamma = max(pti,thole(kkpole))
-                     end if
+                     pgamma = thlval(it,kt)
                      if (damp.ne.0.0d0 .and. pgamma.ne.0.0d0) then
                         damp = pgamma * (r/damp)**3
                         if (damp .lt. 50.0d0) then
@@ -1798,7 +1795,7 @@ c
 c     get permanent field to get polarization energy
 c
                if (use_thole) then
-                  call dampthole (iipole,kkpole,7,r,dmpik)
+                  call damptholed (iipole,kkpole,7,r,dmpik)
                   scalek = pscale(kglob)
                   dmp3 = dmpe(3) - (1.0d0-scalek*dmpik(3))*rr3
                   dmp5 = dmpe(5) - (1.0d0-scalek*dmpik(5))*rr5
@@ -2223,7 +2220,7 @@ c
 c
 c     reset Thole values when alternate direct damping is used
 c
-               if (use_dirdamp) then
+               if (use_tholed) then
                   sc3 = 1.0d0
                   sc5 = 1.0d0
                   sc7 = 1.0d0

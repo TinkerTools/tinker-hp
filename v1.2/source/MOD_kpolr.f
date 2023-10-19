@@ -13,13 +13,13 @@ c
 c     polr   dipole polarizability parameters for each atom type
 c     athl   Thole polarizability damping value for each atom type
 c     pgrp   connected types in polarization group of each atom type
-c     ddir   direct polarization damping value for each atom type
+c     dthl   alternate Thole direct polarization damping values
 c
 c
       module kpolr
       use sizes
       implicit none
       integer pgrp(maxvalue,maxtyp)
-      real*8 polr(maxtyp),athl(maxtyp),ddir(maxtyp)
+      real*8 polr(maxtyp),athl(maxtyp),dthl(maxtyp)
       save
       end

@@ -570,10 +570,10 @@ c
       use shunt
       use mpi
       implicit none
-      integer i,iglob,kglob,nrhs,ipoleloc
+      integer iglob,kglob,nrhs
       integer iglobgroup,kglobgroup
       real*8  ef(3,nrhs,npolegroup)
-      integer ii, j, k,kk, kkk, iipole, kkpole,kbis
+      integer ii, j, k,kk, kkk, iipole, kkpole
       real*8 xr,yr,zr
       real*8 r,r2,rr1,rr2
       real*8 rr3,rr5,rr7
@@ -590,7 +590,6 @@ c
       real*8 qkx,qky,qkz,qkr
       real*8 fid(3), fip(3)
       real*8 fkd(3), fkp(3)
-      real*8 cutoff2
       real*8 corei,corek
       real*8 vali,valk
       real*8 alphai,alphak
@@ -747,7 +746,7 @@ c
 c     find the field components for Thole polarization damping
 c
           if (use_thole) then
-             call dampthole (iipole,kkpole,7,r,dmpik)
+             call damptholed (iipole,kkpole,7,r,dmpik)
              scalek = dscale(kglob)
              dmp3 = scalek*dmpik(3)*rr3
              dmp5 = scalek*dmpik(5)*rr5
@@ -928,7 +927,7 @@ c
       use shunt
       use mpi
       implicit none
-      integer i,nrhs,iglob,kglob,iipole,kkpole,kkpoleloc
+      integer i,nrhs,iglob,kglob,iipole,kkpole
       integer kk,iglobgroup,kglobgroup
       real*8  mu(3,nrhs,npolegroup), efi(3,nrhs,npolegroup)
       real*8 xr,yr,zr
@@ -950,7 +949,6 @@ c
       real*8, allocatable :: uscale(:)
       real*8, allocatable :: wscale(:)
       logical dodiag
-      logical shortrange
       integer j, ii, kkk, irhs
 c
 c     initialize the result vector
@@ -1039,7 +1037,7 @@ c
 c     find the field components for Thole polarization damping
 c
           if (use_thole) then
-             call dampthole2 (iipole,kkpole,5,r,dmpik)
+             call dampthole (iipole,kkpole,5,r,dmpik)
              scalek = uscale(kglob)
              dmp3 = -scalek*dmpik(3)*rr3
              dmp5 = -scalek*dmpik(5)*rr5

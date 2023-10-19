@@ -170,7 +170,7 @@ c
       if (use_charge) call echarge3
       if (use_mpole)  call empole3
       if (use_polar)  call epolar3
-
+c
       if (use_chgtrn)  call echgtrn3
 c
 c     call any miscellaneous energy component routines

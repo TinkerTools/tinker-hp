@@ -14,7 +14,7 @@ c     "kgeom" asisgns parameters for geometric restraint terms
 c     to be included in the potential energy calculation
 c
 c
-      subroutine kgeom(init)
+      subroutine kgeom
       use atmlst
       use atmtyp
       use atoms
@@ -29,10 +29,9 @@ c
       use molcul
       use potent
       implicit none
-      integer i,j,k,l
-      integer ip,next
+      integer i,j,k
+      integer next
       integer ia,ib,ic,id
-      integer sizegroup
       real*8 p1,p2,p3,p4,p5
       real*8 d1,d2,d3
       real*8 a1,a2,a3
@@ -52,143 +51,138 @@ c
       character*20 keyword
       character*240 record
       character*240 string
-      logical init,docompute
-      real*8 xa,ya,za,xb,yb,zb
-      real*8 pos(3,4)
-      real*8, allocatable :: posgroup(:,:)
 c
-      if (init) then
 c
 c     deallocate global pointers if necessary
 c
-        call dealloc_shared_geom
+      call dealloc_shared_geom
 c
 c     allocate global pointers
 c
-        call alloc_shared_geom
+      call alloc_shared_geom
 c
-c       set the default values for the restraint variables
+c     set the default values for the restraint variables
 c
-        npfix = 0
-        ndfix = 0
-        nafix = 0
-        ntfix = 0
-        ngfix = 0
-        nchir = 0
-        depth = 0.0d0
-        width = 0.0d0
-        use_basin = .false.
-        use_wall = .false.
+      npfix = 0
+      ndfix = 0
+      nafix = 0
+      ntfix = 0
+      ngfix = 0
+      nchir = 0
+      depth = 0.0d0
+      width = 0.0d0
+      use_basin = .false.
+      use_wall = .false.
 c
-c       search the keywords for restraint parameters
+c     search the keywords for restraint parameters
 c
-        do i = 1, nkey
-           next = 1
-           record = keyline(i)
-           call gettext (record,keyword,next)
-           call upcase (keyword)
-           string = record(next:240)
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call gettext (record,keyword,next)
+         call upcase (keyword)
+         string = record(next:240)
 c
-c       get atom restrained to a specified position range
+c     get atom restrained to a specified position range
 c
-           if (keyword(1:18) .eq. 'RESTRAIN-POSITION ') then
-              ia = 0
-              ib = 0
-              p1 = 0.0d0
-              p2 = 0.0d0
-              p3 = 0.0d0
-              p4 = 0.0d0
-              p5 = 0.0d0
-              next = 1
-              call getword (string,letter,next)
-              if (letter .eq. ' ') then
-                 call getnumb (string,ia,next)
-                 if (ia.ge.1 .and. ia.le.n) then
-                    p1 = x(ia)
-                    p2 = y(ia)
-                    p3 = z(ia)
-                    string = string(next:240)
-                    read (string,*,err=10,end=10)  p1,p2,p3,p4,p5
-   10               continue
-                    if (p4 .eq. 0.0d0)  p4 = 100.0d0
-                    npfix = npfix + 1
-                    ipfix(npfix) = ia
-                    kpfix(1,npfix) = 1
-                    kpfix(2,npfix) = 1
-                    kpfix(3,npfix) = 1
-                    xpfix(npfix) = p1
-                    ypfix(npfix) = p2
-                    zpfix(npfix) = p3
-                    pfix(1,npfix) = p4
-                    pfix(2,npfix) = p5
-                 else if (ia.ge.-n .and. ia.le.-1) then
-                    ia = abs(ia)
-                    call getnumb (string,ib,next)
-                    ib = min(abs(ib),n)
-                    string = string(next:240)
-                    read (string,*,err=11,end=11)  p1,p2
-   11               continue
-                    if (p1 .eq. 0.0d0)  p1 = 100.0d0
-                    do j = ia, ib
-                       npfix = npfix + 1
-                       ipfix(npfix) = j
-                       kpfix(1,npfix) = 1
-                       kpfix(2,npfix) = 1
-                       kpfix(3,npfix) = 1
-                       xpfix(npfix) = x(j)
-                       ypfix(npfix) = y(j)
-                       zpfix(npfix) = z(j)
-                       pfix(1,npfix) = p1
-                       pfix(2,npfix) = p2
-                    end do
-                 end if
-              else
-                 call upcase (letter)
-                 read (string,*,err=12,end=12)  ia
-                 string = string(next:240)
-                 read (string,*,err=12,end=12)  p1,p2,p3
-   12            continue
-                 if (p2 .eq. 0.0d0)  p2 = 100.0d0
-                 npfix = npfix + 1
-                 ipfix(npfix) = ia
-                 kpfix(1,npfix) = 0
-                 kpfix(2,npfix) = 0
-                 kpfix(3,npfix) = 0
-                 if (letter .eq. 'X') then
-                    kpfix(1,npfix) = 1
-                    xpfix(npfix) = p1
-                 else if (letter .eq. 'Y') then
-                    kpfix(2,npfix) = 1
-                    ypfix(npfix) = p1
-                 else if (letter .eq. 'Z') then
-                    kpfix(3,npfix) = 1
-                    zpfix(npfix) = p1
-                 end if
-                 pfix(1,npfix) = p2
-                 pfix(2,npfix) = p3
-              end if
-c
-c       restrain backbone atoms at their initial position (equilibration phase)
-c
-           else if (keyword(1:18) .eq. 'RESTRAIN-BACKBONE ') then
-              p1 = 0d0
-              read (string,*,err=14,end=14)  p1
-   14         continue
-             if (p1.eq.0d0) p1 = 100d0
-             do j = 1, n
-               if (name(j).eq.'CA') then
-                 npfix = npfix + 1
-                 ipfix(npfix) = j
-                 kpfix(1,npfix) = 1
-                 kpfix(2,npfix) = 1
-                 kpfix(3,npfix) = 1
-                 xpfix(npfix) = x(j) 
-                 ypfix(npfix) = y(j) 
-                 zpfix(npfix) = z(j) 
-                 pfix(1,npfix) = p1
-                 pfix(2,npfix) = 0.0d0
+         if (keyword(1:18) .eq. 'RESTRAIN-POSITION ') then
+            ia = 0
+            ib = 0
+            p1 = 0.0d0
+            p2 = 0.0d0
+            p3 = 0.0d0
+            p4 = 0.0d0
+            p5 = 0.0d0
+            next = 1
+            call getword (string,letter,next)
+            if (letter .eq. ' ') then
+               call getnumb (string,ia,next)
+               if (ia.ge.1 .and. ia.le.n) then
+                  p1 = x(ia)
+                  p2 = y(ia)
+                  p3 = z(ia)
+                  string = string(next:240)
+                  read (string,*,err=10,end=10)  p1,p2,p3,p4,p5
+   10             continue
+                  if (p4 .eq. 0.0d0)  p4 = 100.0d0
+                  npfix = npfix + 1
+                  ipfix(npfix) = ia
+                  kpfix(1,npfix) = 1
+                  kpfix(2,npfix) = 1
+                  kpfix(3,npfix) = 1
+                  xpfix(npfix) = p1
+                  ypfix(npfix) = p2
+                  zpfix(npfix) = p3
+                  pfix(1,npfix) = p4
+                  pfix(2,npfix) = p5
+               else if (ia.ge.-n .and. ia.le.-1) then
+                  ia = abs(ia)
+                  call getnumb (string,ib,next)
+                  ib = min(abs(ib),n)
+                  string = string(next:240)
+                  read (string,*,err=11,end=11)  p1,p2
+   11             continue
+                  if (p1 .eq. 0.0d0)  p1 = 100.0d0
+                  do j = ia, ib
+                     npfix = npfix + 1
+                     ipfix(npfix) = j
+                     kpfix(1,npfix) = 1
+                     kpfix(2,npfix) = 1
+                     kpfix(3,npfix) = 1
+                     xpfix(npfix) = x(j)
+                     ypfix(npfix) = y(j)
+                     zpfix(npfix) = z(j)
+                     pfix(1,npfix) = p1
+                     pfix(2,npfix) = p2
+                  end do
                end if
-             end do
+            else
+               call upcase (letter)
+               read (string,*,err=12,end=12)  ia
+               string = string(next:240)
+               read (string,*,err=12,end=12)  p1,p2,p3
+   12          continue
+               if (p2 .eq. 0.0d0)  p2 = 100.0d0
+               npfix = npfix + 1
+               ipfix(npfix) = ia
+               kpfix(1,npfix) = 0
+               kpfix(2,npfix) = 0
+               kpfix(3,npfix) = 0
+               if (letter .eq. 'X') then
+                  kpfix(1,npfix) = 1
+                  xpfix(npfix) = p1
+               else if (letter .eq. 'Y') then
+                  kpfix(2,npfix) = 1
+                  ypfix(npfix) = p1
+               else if (letter .eq. 'Z') then
+                  kpfix(3,npfix) = 1
+                  zpfix(npfix) = p1
+               end if
+               pfix(1,npfix) = p2
+               pfix(2,npfix) = p3
+            end if
+c
+c     restrain backbone atoms at their initial position (equilibration phase)
+c
+         else if (keyword(1:18) .eq. 'RESTRAIN-BACKBONE ') then
+            p1 = 0d0
+            read (string,*,err=14,end=14)  p1
+   14       continue
+           if (p1.eq.0d0) p1 = 100d0
+           do j = 1, n
+             if (name(j).eq.'CA') then
+               npfix = npfix + 1
+               ipfix(npfix) = j
+               kpfix(1,npfix) = 1
+               kpfix(2,npfix) = 1
+               kpfix(3,npfix) = 1
+               xpfix(npfix) = x(j) 
+               ypfix(npfix) = y(j) 
+               zpfix(npfix) = z(j) 
+               pfix(1,npfix) = p1
+               pfix(2,npfix) = 0.0d0
+             end if
+           end do
 c
 c     get atom restrained to a specified position range
 c
@@ -413,40 +407,67 @@ c
                  end if
               end do
 c
-c       setup any shallow Gaussian basin restraint between atoms
+c     setup any shallow Gaussian basin restraint between atoms
 c
-           else if (keyword(1:6) .eq. 'BASIN ') then
-              depth = 0.0d0
-              width = 0.0d0
-              read (string,*,err=160,end=160)  depth,width
-  160         continue
-              use_basin = .true.
-              if (depth .eq. 0.0d0)  use_basin = .false.
-              if (width .eq. 0.0d0)  use_basin = .false.
-              if (depth .gt. 0.0d0)  depth = -depth
+         else if (keyword(1:6) .eq. 'BASIN ') then
+            depth = 0.0d0
+            width = 0.0d0
+            read (string,*,err=160,end=160)  depth,width
+  160       continue
+            use_basin = .true.
+            if (depth .eq. 0.0d0)  use_basin = .false.
+            if (width .eq. 0.0d0)  use_basin = .false.
+            if (depth .gt. 0.0d0)  depth = -depth
 c
-c       setup any spherical droplet restraint between atoms
+c     setup any spherical droplet restraint between atoms
 c
-           else if (keyword(1:5) .eq. 'WALL ') then
-              rwall = 0.0d0
-              read (string,*,err=170,end=170)  rwall
-  170         continue
-              if (rwall .gt. 0.0d0)  use_wall = .true.
-           end if
-        end do
+         else if (keyword(1:5) .eq. 'WALL ') then
+            rwall = 0.0d0
+            read (string,*,err=170,end=170)  rwall
+  170       continue
+            if (rwall .gt. 0.0d0)  use_wall = .true.
+         end if
+      end do
 c
-c       turn on the geometric restraint potential if it is used
-        use_geom = .false.
-        if (npfix .ne. 0)  use_geom = .true.
-        if (ndfix .ne. 0)  use_geom = .true.
-        if (nafix .ne. 0)  use_geom = .true.
-        if (ntfix .ne. 0)  use_geom = .true.
-        if (ngfix .ne. 0)  use_geom = .true.
-        if (nchir .ne. 0)  use_geom = .true.
-        if (use_basin)  use_geom = .true.
-        if (use_wall)  use_geom = .true.
+c     turn on the geometric restraint potential if it is used
+      use_geom = .false.
+      if (npfix .ne. 0)  use_geom = .true.
+      if (ndfix .ne. 0)  use_geom = .true.
+      if (nafix .ne. 0)  use_geom = .true.
+      if (ntfix .ne. 0)  use_geom = .true.
+      if (ngfix .ne. 0)  use_geom = .true.
+      if (nchir .ne. 0)  use_geom = .true.
+      if (use_basin)  use_geom = .true.
+      if (use_wall)  use_geom = .true.
+      return
+      end
 c
-      end if
+c
+c     subroutine kgeom_update: update local geom
+c
+      subroutine kgeom_update
+      use atmlst
+      use atmtyp
+      use atoms
+      use bound
+      use couple
+      use domdec
+      use group
+      use iounit
+      use katoms
+      use keys
+      use kgeoms
+      use molcul
+      use potent
+      implicit none
+      integer i,j,k,l
+      integer ip
+      integer ia,ib,ic,id
+      integer sizegroup
+      logical docompute
+      real*8 xa,ya,za,xb,yb,zb
+      real*8 pos(3,4)
+      real*8, allocatable :: posgroup(:,:)
 c
       if (allocated(npfixglob)) deallocate(npfixglob)
       allocate (npfixglob(nloc))

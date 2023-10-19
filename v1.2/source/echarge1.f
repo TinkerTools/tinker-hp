@@ -383,7 +383,6 @@ c
       real*8 xi,yi,zi
       real*8 xr,yr,zr
       real*8 qitemp,qktemp
-      real*8 drdelambdae,drdelambdaedx,drdelambdaedy,drdelambdaedz
       real*8 erfc,erfterm
       real*8 scale,scaleterm
       real*8 fgrp

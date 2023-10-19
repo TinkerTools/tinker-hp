@@ -62,7 +62,6 @@ c
       implicit none
       integer i,j,iglob
       integer istep
-      integer,save::n_call=0
       real*8 dt,dt_2
       real*8 dta,dta_2,dta2
       real*8    time0,time1
@@ -122,7 +121,7 @@ c
       time1 = mpi_wtime()
       timeinte = timeinte + time1-time0
 c
-      call mechanicsteprespa1(istep,2)
+      call mechanic_up_para_respa1(istep,2)
 
       call allocsteprespa(.false.)
       time1 = mpi_wtime()
@@ -241,7 +240,7 @@ c
       use mpi
       use mdstuf1
       implicit none
-      integer i,j,k,iglob,stepint
+      integer i,j,iglob,stepint
       real*8 dta,dta_2,dta2
       real*8 time0,time1
       time0 = mpi_wtime()
@@ -271,7 +270,7 @@ c
          call baoabrespafast1(dta2)
 c
          time0 = mpi_wtime()
-         call mechanicsteprespa1(-1,1)
+         call mechanic_up_para_respa1(-1,1)
          time1 = mpi_wtime()
          timeparam = timeparam + time1 - time0
 
@@ -361,10 +360,9 @@ c
       use utilbaoab
       use mdstuf1
       implicit none
-      integer i,j,k,iglob,stepfast
+      integer i,j,iglob,stepfast
       real*8 dta,dta_2
       real*8 time0,time1
-      real*8 a1,a2
 
       time0 = mpi_wtime()
 c
@@ -420,7 +418,7 @@ c
 c
          if (stepfast.eq.nalt2) then
             time0 = mpi_wtime()
-            call mechanicsteprespa1(-1,0)
+            call mechanic_up_para_respa1(-1,0)
             timeparam = timeparam + time1 - time0
             time0 = mpi_wtime()
             call allocsteprespa(.true.)

@@ -17,6 +17,9 @@ void compute_colvars();
 /// Called from Tinker: delete the Colvars proxy object, triggering post-run
 void delete_colvars();
 
+/// Called from Tinker: get value of lambda from Colvars
+void init_lambda();
+
 
 // FORTRAN routines exposed by Tinker to Colvars
 // implemented in MOD_colvars.f

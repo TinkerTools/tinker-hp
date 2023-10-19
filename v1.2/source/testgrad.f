@@ -82,12 +82,17 @@ c
       call unitcell
       call cutoffs
       call lattice
+c
+c     get parameters
+c
+      call mechanic
+
       call drivermpi
       call reinitnl(0)
+      call mechanic_init_para
 c
       dotstgrad = .true.
 c
-      call mechanic
       call nblist(0)
       call allocstep
 c
@@ -169,7 +174,7 @@ c
       call ddpme3d
       call reassignpme(.false.)
       call reinitnl(0)
-      call mechanicstep(0)
+      call mechanic_up_para(0)
       call nblist(0)
 c
 c     compute the analytical gradient components

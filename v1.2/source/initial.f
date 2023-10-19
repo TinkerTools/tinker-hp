@@ -268,7 +268,7 @@ c
       use replicas
       use beads
       implicit none
-      integer ierr,iproc
+      integer ierr
       integer ncomm,color
 
       call set_nproc()

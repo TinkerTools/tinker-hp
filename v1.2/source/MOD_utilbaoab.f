@@ -12,7 +12,7 @@
       use freeze
       implicit none
       real*8, intent(in) :: dt
-      integer :: i,j,iglob
+      integer :: i,iglob
 
       if (use_rattle) then
         call save_atoms_pos
@@ -153,7 +153,7 @@ c
       real*8, intent(in) :: dt
       integer, intent(in) :: istep
       logical, intent(in) :: A_full
-      integer :: i,j,iglob
+      integer :: i,iglob
       real*8 :: scale(3)
       real*8 :: tau(3)
 

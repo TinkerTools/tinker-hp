@@ -84,7 +84,7 @@ c
 c
 c     find intermediate-evolving velocities and positions via velocity Verlet recursion
 c
-      call respaint1(ealt,viralt,dta,dta2,istep)
+      call respaint1(ealt,viralt,dta,dta2)
 c
 c     Reassign the particules that have changed of domain
 c
@@ -108,7 +108,7 @@ c
       timeinte = timeinte + time1-time0
 c
       time0 = mpi_wtime()
-      call mechanicsteprespa1(istep,2)
+      call mechanic_up_para_respa1(istep,2)
       time1 = mpi_wtime()
       timeparam = timeparam + time1 - time0
 
@@ -617,7 +617,7 @@ c
 c     subroutine respaint1 : 
 c     find intermediate-evolving velocities and positions via velocity Verlet recursion
 c
-      subroutine respaint1(ealt,viralt,dta,dta2,istep)
+      subroutine respaint1(ealt,viralt,dta,dta2)
       use atmtyp
       use atoms
       use cutoff
@@ -666,10 +666,10 @@ c
 c
 c     find fast-evolving velocities and positions via velocity Verlet recursion
 c
-        call respafast1(ealt2,viralt2,dta2,istep)
+        call respafast1(ealt2,viralt2,dta2)
 c
         time0 = mpi_wtime()
-        call mechanicsteprespa1(-1,1)
+        call mechanic_up_para_respa1(-1,1)
         time1 = mpi_wtime()
         timeparam = timeparam + time1 - time0
 c
@@ -738,7 +738,7 @@ c
 c     subroutine respafast1 : 
 c     find fast-evolving velocities and positions via velocity Verlet recursion
 c
-      subroutine respafast1(ealt,viralt,dta,istep)
+      subroutine respafast1(ealt,viralt,dta)
       use atmtyp
       use atoms
       use cutoff
@@ -752,7 +752,6 @@ c
       use mpi
       implicit none
       integer i,j,k,iglob
-      integer istep
       real*8 dta,dta_2
       real*8 ealt
       real*8 time0,time1
@@ -814,7 +813,7 @@ c
         timeinte = timeinte + time1-time0
 c
         time0 = mpi_wtime()
-        if (k.eq.nalt2) call mechanicsteprespa1(-1,0)
+        if (k.eq.nalt2) call mechanic_up_para_respa1(-1,0)
         time1 = mpi_wtime()
         timeparam = timeparam + time1 - time0
         time0 = mpi_wtime()

@@ -70,7 +70,7 @@ c
 c
 c   build or update pulay's diis matrix. 
 c
-      integer ndsmax, n, nvec, j, i, ierr, reqdiis(*), comm
+      integer ndsmax, n, nvec, j, ierr, reqdiis(*), comm
       real*8 e(n,*), b(ndsmax+1,*), zero, one, sprod
       data zero/0.d0/, one/1.d0/
 c
@@ -157,7 +157,7 @@ c
 c
 c   build or update pulay's diis matrix. 
 c
-      integer ndsmax, n, nvec, j, ierr
+      integer ndsmax, n, nvec, j
       real*8 e(n,*), b(ndsmax+1,*), zero, one, sprod
       data zero/0.d0/, one/1.d0/
 c

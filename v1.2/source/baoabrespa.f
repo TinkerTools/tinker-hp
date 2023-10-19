@@ -34,7 +34,6 @@ c
       use atmtyp
       use atoms
       use bath
-      use boxes,only: volbox
       use cutoff
       use domdec
       use deriv
@@ -55,11 +54,8 @@ c
       implicit none
       real*8, intent(in) :: dt
       integer, intent(in) :: istep
-      integer i,j,k,iglob,stepfast
-      real*8 dt_x,factor
+      integer i,iglob,stepfast
       real*8 dta,dta_2,dt_2
-      real*8 part1,part2
-      real*8 a1,a2
       real*8 time0,time1
       real*8 dip(3,nalt),dipind(3,nalt)
 
@@ -127,7 +123,7 @@ c
         allocate(derivs(3,nbloc))
         derivs(:,:)=0.d0
 c
-        call mechanicsteprespa(istep,.true.)
+        call mechanic_up_para_respa(istep,.true.)
         call allocsteprespa(.true.)
 c
 c     get the fast-evolving potential energy and atomic forces
@@ -193,7 +189,7 @@ c
       timeinte = timeinte + time1-time0
       time0 = mpi_wtime()
 c
-      call mechanicsteprespa(istep,.false.)
+      call mechanic_up_para_respa(istep,.false.)
 
       call allocsteprespa(.false.)
       time1 = mpi_wtime()

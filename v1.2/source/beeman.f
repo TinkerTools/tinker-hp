@@ -114,7 +114,7 @@ c
       timeinte = timeinte + time1-time0
 c
       time0 = mpi_wtime()
-      call mechanicstep(istep)
+      call mechanic_up_para(istep)
       time1 = mpi_wtime()
       timeparam = timeparam + time1 - time0
 c

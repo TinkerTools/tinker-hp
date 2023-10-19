@@ -14,7 +14,7 @@ c     "torsions" finds the total number of dihedral angles and
 c     the numbers of the four atoms defining each dihedral angle
 c
 c
-      subroutine torsions(init)
+      subroutine torsions
       use atmlst
       use atoms
       use bond
@@ -25,66 +25,79 @@ c
       implicit none
       integer i,j,k
       integer ia,ib,ic,id
-      integer ibond,torscount,ntorsloc1
-      logical init
 c
-      if (init) then
 c
 c     loop over all bonds, storing the atoms in each torsion
 c
-        ntors = 0
-        do i = 1, nbond
-           ib = ibnd(1,i)
-           ic = ibnd(2,i)
-           do j = 1, n12(ib)
-              ia = i12(j,ib)
-              if (ia .ne. ic) then
-                 do k = 1, n12(ic)
-                    id = i12(k,ic)
-                    if (id.ne.ib .and. id.ne.ia) then
-                       ntors = ntors + 1
-                       if (ntors .gt. 8*n) then
-                          if (rank.eq.0) write (iout,10)
-   10                     format (/,' TORSIONS  --  Too many Torsional',
-     &                               ' Angles; Increase MAXTORS')
-                          call fatal
-                       end if
-                    end if
-                 end do
-              end if
-           end do
-        end do
+      ntors = 0
+      do i = 1, nbond
+         ib = ibnd(1,i)
+         ic = ibnd(2,i)
+         do j = 1, n12(ib)
+            ia = i12(j,ib)
+            if (ia .ne. ic) then
+               do k = 1, n12(ic)
+                  id = i12(k,ic)
+                  if (id.ne.ib .and. id.ne.ia) then
+                     ntors = ntors + 1
+                     if (ntors .gt. 8*n) then
+                        if (rank.eq.0) write (iout,10)
+   10                   format (/,' TORSIONS  --  Too many Torsional',
+     &                             ' Angles; Increase MAXTORS')
+                        call fatal
+                     end if
+                  end if
+               end do
+            end if
+         end do
+      end do
 c
-c       deallocate global pointers if necessary
+c     deallocate global pointers if necessary
 c
-        call dealloc_shared_torsions
+      call dealloc_shared_torsions
 c
-c       allocate global pointers
+c     allocate global pointers
 c
-        call alloc_shared_torsions
+      call alloc_shared_torsions
 c
-        ntorsloc = 0
-        do i = 1, nbond
-           ib = ibnd(1,i)
-           ic = ibnd(2,i)
-           nbtors(i) = ntorsloc
-           do j = 1, n12(ib)
-              ia = i12(j,ib)
-              if (ia .ne. ic) then
-                 do k = 1, n12(ic)
-                    id = i12(k,ic)
-                    if (id.ne.ib .and. id.ne.ia) then
-                       ntorsloc = ntorsloc + 1
-                       itors(1,ntorsloc) = ia
-                       itors(2,ntorsloc) = ib
-                       itors(3,ntorsloc) = ic
-                       itors(4,ntorsloc) = id
-                    end if
-                 end do
-              end if
-           end do
-        end do
-      end if
+      ntorsloc = 0
+      do i = 1, nbond
+         ib = ibnd(1,i)
+         ic = ibnd(2,i)
+         nbtors(i) = ntorsloc
+         do j = 1, n12(ib)
+            ia = i12(j,ib)
+            if (ia .ne. ic) then
+               do k = 1, n12(ic)
+                  id = i12(k,ic)
+                  if (id.ne.ib .and. id.ne.ia) then
+                     ntorsloc = ntorsloc + 1
+                     itors(1,ntorsloc) = ia
+                     itors(2,ntorsloc) = ib
+                     itors(3,ntorsloc) = ic
+                     itors(4,ntorsloc) = id
+                  end if
+               end do
+            end if
+         end do
+      end do
+      return
+      end
+c
+c     subroutine torsions_update : update local torsions
+c
+      subroutine torsions_update
+      use atmlst
+      use atoms
+      use bond
+      use couple
+      use domdec
+      use tors
+      implicit none
+      integer i,j,k
+      integer ia,ib,ic,id
+      integer ibond,torscount,ntorsloc1
+c      
       if (allocated(torsglob)) deallocate (torsglob)
       allocate (torsglob(8*nbloc))
       ntorsloc = 0

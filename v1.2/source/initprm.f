@@ -42,6 +42,7 @@ c
       use kmulti
       use kpitor
       use kpolr
+      use kpolpr
       use krepl
       use kstbnd
       use ksttor
@@ -132,6 +133,9 @@ c
       do i = 1, maxnups
          kups(i) = blank12
       end do
+      do i = 1, maxnuq
+        kuq(i) = blank12
+      end do
       do i = 1, maxnsb
          ksb(i) = blank12
       end do
@@ -174,6 +178,9 @@ c
       do i = 1, maxnmp
          kmp(i) = blank12
       end do
+      do i = 1, maxnpp
+         kppr(i) = blank8
+      end do
 c
 c     initialize values of some force field parameters
 c
@@ -193,7 +200,7 @@ c
          chg(i) = 0.0d0
          polr(i) = 0.0d0
          athl(i) = 0.0d0
-         ddir(i) = 0.0d0
+         dthl(i) = 0.0d0
          do j = 1, maxvalue
             pgrp(j,i) = 0
          end do
@@ -459,7 +466,7 @@ c
       w5scale = 1.0d0
       use_chgpen = .false.
       use_thole = .true.
-      use_dirdamp = .false.
+      use_tholed = .false.
       dpequal = .false.
 c
 c     set default divide and conquer ji/diis parameters

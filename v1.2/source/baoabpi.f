@@ -48,16 +48,12 @@ c
       TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer_ctr
       integer, intent(in) :: istep
       real*8, intent(in) :: dt
-      integer :: ibead,i,j,k,iglob,ierr,kk
-      real(8),save::time0=0d0,time1=0d0,time00=0d0
-      real(8),save::time01=0d0, timebegin=0d0
+      integer :: i,j,k
+      real(8),save::timebegin=0d0
       real(8),save::timefull=0d0
-      logical :: skip_parameters_copy
-      real*8 :: dt2,sqrtnu,factor1,factor2
-      real*8 :: scale,eigx0,eigv0,a1,a2
-      integer :: nnoise,iloc,iqtb
-      real*8 :: gammak,nuratio     
-      integer :: ilocbeg,ilocend,ibeadbeg
+      real*8 :: dt2,sqrtnu
+      integer :: iloc
+      integer :: ibeadbeg
       logical :: only_long
 
       dt2=0.5d0*dt

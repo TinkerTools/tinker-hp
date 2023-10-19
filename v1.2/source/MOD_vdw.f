@@ -56,5 +56,6 @@ c
       integer :: winradmin,winepsilon,winradmin4
       integer :: winepsilon4,winradhbnd,winepshbnd
       integer :: winkred
+      integer nvdwblocloop
       save
       end

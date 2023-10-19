@@ -90,10 +90,10 @@ c
       !! CENTROID IS LOADED !!
       call reinitnl(istep)
       if(respa) then
-        call mechanicsteprespa(istep,.FALSE.)
+        call mechanic_up_para_respa(istep,.FALSE.)
         call allocsteprespa(.false.)
       else
-        call mechanicstep(istep)
+        call mechanic_up_para(istep)
         call allocstep
       endif
       if (use_list) call nblist(istep)
@@ -104,11 +104,9 @@ c
       use beads
       use domdec
       use atoms
-      use cutoff, only: use_list
       implicit none
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
       integer, intent(in) :: istep
-      integer :: iloc,i
 
       !! UPDATE DIRECT SPACE BEFORE GRADIENT CALCULATION !!
       call update_direct_space_pi(polymer)
@@ -122,13 +120,13 @@ c
 
       !! LOAD CENTROID !! 
       call load_bead(polymer,0)
-      call mechanicsteprespa(istep,.true.)
+      call mechanic_up_para_respa(istep,.true.)
       call allocsteprespa(.true.)
 
       end subroutine fast_gradient_prepare_pi
 
       subroutine reassignpi(polymer,polymer_ctr)
-        use atoms ,only : x,y,z,xold,yold,zold,n
+        use atoms ,only : n
         use beads
         use bound ,only : use_bounds
         use cell  ,only : xcell2, ycell2, zcell2
@@ -138,9 +136,7 @@ c
      &                    repart, loc, domlen, COMM_TINKER,
      &                    nneig_send, nneig_recep,
      &                    pneig_recep, pneig_send, 
-     &                    nproc_polymer, COMM_POLYMER, rank_polymer
-        use freeze,only : use_rattle
-        use moldyn,only : a,v
+     &                    rank_polymer
         use potent,only : use_pmecore
         use mpi
         use qtb
@@ -153,9 +149,7 @@ c
         
         real*8 xr, yr, zr ! adjusted position
         type(t_elt),pointer :: d
-        type(real3),pointer :: b
         type(real3),pointer :: d_ctr
-        type(real3),pointer :: old_send(:,:),old_recv(:,:)
 
         integer  n_data_send(0:nneig_send),   n_data_recv(nneig_recep)
         integer req_iglob_send(nneig_send),req_iglob_recv(nneig_recep)
@@ -166,17 +160,14 @@ c
         type(real3), allocatable,target :: data_send_ctr(:,:)
      &                                       , data_recv_ctr(:,:)
 
-        integer ibeadbeg,ibeadend, nbeadsproc, nbeadssend 
+        integer ibeadbeg,ibeadend, nbeadsproc
         integer ibeadbeg_ctr,ibeadend_ctr, nbeadsproc_ctr
         integer nprocloc, commloc, rankloc ! local (pme) mpi info
-        integer i,k,j, ierr, iglob, iloc, iproc, ineighbor
-        integer nloc_save, n_data_send_capture,max_data_recv
-        integer nloc_capture
+        integer i,k,ierr, iglob, iproc, ineighbor
+        integer nloc_save
         integer s_bufi
-        integer :: max_data_recv_save=0
-        character(len=40) ::fmt
         real*8 :: sqrtnu
-        real*8 ixbeg,ixend,iybeg,iyend,izbeg,izend,xtemp
+        real*8 ixbeg,ixend,iybeg,iyend,izbeg,izend
         logical :: send_ctr
         real*8, parameter:: eps1= 1.0d-10, eps2= 1.0d-8
 
@@ -479,7 +470,7 @@ c
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
       logical, intent(in) :: send_centroid
       logical, intent(in) :: fast
-      integer i,k,j,tag,ierr,iproc
+      integer i,k,tag,ierr,iproc
       integer iloc,iglob,idomlen,ibufbeg
       real*8, allocatable:: buffer(:,:,:),buffers(:,:,:)
       integer, allocatable :: reqrec(:),reqsend(:)
@@ -596,8 +587,8 @@ c
       implicit none
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
       logical, intent(in) :: send_centroid
-      integer i,iproc,iprec
-      integer iglob,iloc,j,k
+      integer i,iproc
+      integer iglob,iloc,k
       integer tag,ierr,ibufbeg,idomlen
       integer rankloc,commloc,nprocloc
       integer status(MPI_STATUS_SIZE)
@@ -871,12 +862,10 @@ c
       type(POLYMER_COMM_TYPE),intent(inout) :: polymer
       logical, intent(in) :: send_centroid
       logical, intent(in), optional :: send_vel
-      integer :: ibead,k,i,j,iglob,iproc,maxsend,nsend,maxloc
-      integer :: maxrecv,nproc_recv
-      integer :: isend,ii,ierr,ns,nr,iloc,kk
+      integer :: ibead,k,i,j,iproc,maxloc
+      integer :: ii,ierr,iloc,kk
       integer, parameter :: mptag_size=0,mptag_data=1
       integer :: reqs(2*nproc_polymer)
-      LOGICAL :: flag
       real*8 :: sqrtnu
       integer :: nbeadslocmax, nlocproc
       integer :: ibeadbeg,ibeadend,nu
@@ -1055,18 +1044,14 @@ c
       real*8, intent(inout), optional :: array2(:,:,:)
       real*8, intent(inout), optional :: array3(:,:,:)
       real*8, intent(inout), optional :: array4(:,:,:)
-      logical :: send_pos_, send_vel_,slow_
-      logical :: correctorder
-      integer :: ibead,k,i,j,iglob,iproc,maxsend,nsend,maxloc
-      integer :: maxrecv,nproc_recv
-      integer :: isend,ii,ierr,ns,nr,iloc,kk
+      integer :: ibead,k,i,j,iproc,maxloc
+      integer :: ii,ierr,iloc,kk
       integer, parameter :: mptag_size=0,mptag_data=1
       integer :: reqs(2*nproc_polymer)
-      LOGICAL :: flag
       real*8 :: sqrtnu
       integer :: nbeadslocmax,nlocproc
       integer :: ibeadbeg,ibeadend,nu
-      integer :: ilocend,ilocbeg,nelt,ielt
+      integer :: ilocend,ilocbeg,nelt
       real*8, allocatable :: bufferpi_s(:,:,:)
       real*8, allocatable :: bufferpi_r(:,:,:)
 
@@ -1247,8 +1232,8 @@ c
       integer, intent(in) :: nbeadsproc
       real*8, intent(inout) :: derivs(3,nbloc,*)
       real*8, intent(inout) :: temprec(3,nlocrec2,*)
-      integer i,j,k,tag,ierr,iproc,iglob,iloc,ilocrec,ibufbeg
-      integer jloc,jglob,jlocrec,ii
+      integer i,k,tag,ierr,iglob,iloc,ilocrec,ibufbeg
+      integer ii
       integer sz1,sz2,sz3
       integer rankloc,commloc,nprocloc
       integer reqsend(nproc),reqrec(nproc)
@@ -1410,13 +1395,10 @@ c
       implicit none
       type(POLYMER_COMM_TYPE),intent(inout) :: polymer_ctr
       real*8, intent(inout) :: derivs_ctr(3,nbloc,*)
-      integer :: ibead,k,i,j,iglob,iproc,maxsend,nsend,maxloc
-      integer :: maxrecv,nproc_recv
-      integer :: isend,ii,ierr,ns,nr,iloc,kk
+      integer :: k,i,iproc,maxloc
+      integer :: ii,ierr,iloc,kk
       integer, parameter :: mptag_size=0,mptag_data=1
       integer :: reqs(2*nproc_polymer)
-      LOGICAL :: flag
-      real*8 :: sqrtnu
       integer :: nbeadslocmax,nlocproc,nbeadsproc
       integer :: ibeadbeg,ibeadend,nu
       integer :: ilocend,ilocbeg

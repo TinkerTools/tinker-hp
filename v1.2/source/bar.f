@@ -149,7 +149,7 @@ c
       character*240 dcdfile
       character*240, allocatable :: keys0(:)
       character*240, allocatable :: keys1(:)
-      type(dcdinfo_t) :: dcdinfo,dcdinfoB
+      type(dcdinfo_t) :: dcdinfo
 c
 c
 c     get trajectory A archive and setup mechanics calculation
@@ -160,12 +160,16 @@ c      call initial
       call unitcell
       call lattice
 c
+c     get parameters
+c
+      call mechanic
+c
 c     setup for MPI
 c
       call drivermpi
       call reinitnl(0)
+      call mechanic_init_para
 
-      call mechanic
       call nblist(0)
 c
 c     find the original temperature value for trajectory A
@@ -207,6 +211,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
+      call mechanic_init_para
       silent = .true.
 c
 c     find the original temperature value for trajectory B
@@ -271,7 +276,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
-      call mechanicstep(0)
+      call mechanic_init_para
       call nblist(0)
       if (abort) then
          if (rank.eq.0) write (iout,90)
@@ -310,7 +315,7 @@ c
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)
-         call mechanicstep(0)
+         call mechanic_init_para
          call nblist(0)
          if (i .ge. maxframe)  abort = .true.
          if (mod(i,100).eq.0 .or. abort) then
@@ -343,7 +348,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
-      call mechanicstep(0)
+      call mechanic_init_para
       call nblist(0)
 c
 c     find potential energies for trajectory A in state 1
@@ -383,7 +388,7 @@ c
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)
-         call mechanicstep(0)
+         call mechanic_init_para
          call nblist(0)
          if (i .ge. maxframe)  abort = .true.
       end do
@@ -420,7 +425,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
-      call mechanicstep(0)
+      call mechanic_init_para
       call nblist(0)
       if (abort) then
          if (rank.eq.0) write (iout,140)
@@ -459,7 +464,7 @@ c
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)
-         call mechanicstep(0)
+         call mechanic_init_para
          call nblist(0)
          if (i .ge. maxframe)  abort = .true.
          if (mod(i,100).eq.0 .or. abort) then
@@ -492,7 +497,7 @@ c
       call reassignpme(.true.)
       call reinitnl(0)
       call mechanic
-      call mechanicstep(0)
+      call mechanic_init_para
       call nblist(0)
 c
 c     find potential energies for trajectory B in state 1
@@ -532,7 +537,7 @@ c
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)
-         call mechanicstep(0)
+         call mechanic_init_para
          call nblist(0)
          if (i .ge. maxframe)  abort = .true.
       end do

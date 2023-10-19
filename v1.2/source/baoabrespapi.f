@@ -52,28 +52,23 @@ c
       TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer_ctr
       integer, intent(in) :: istep
       real*8, intent(in) :: dt
-      integer :: ibead,i,j,k,iglob,ierr,kk,ialt
-      real(8),save::time0=0d0,time1=0d0,time00=0d0
-      real(8),save::time01=0d0, timebegin=0d0
+      integer :: i,k
+      real(8),save::timebegin=0d0
       real(8),save::timefull=0d0
-      logical :: add_eslow
-      real*8 :: dt2,sqrtnu,factor1,factor2,dta,dta2
-      real*8 :: scale,eigx0,eigv0,a1,a2
-      integer :: nnoise,iloc,iqtb
-      real*8 :: gammak,nuratio     
-      integer :: ilocbeg,ilocend,ibeadbeg
+      real*8 :: dt2,sqrtnu,dta
+      integer :: iloc
+      integer :: ibeadbeg
       logical :: only_long
       real*8 :: dip(3,nalt),dipind(3,nalt)
       interface
-        subroutine baoabrespapi_fast(polymer,polymer_ctr
-     &     ,istep,dt,nsteps,epot,vir_,dip_,dipind_)
+        subroutine baoabrespapi_fast(polymer
+     &     ,istep,dt,nsteps,epot,vir_,dip_)
           import :: POLYMER_COMM_TYPE 
           TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
-          TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer_ctr
           integer, intent(in) :: istep,nsteps
           real*8, intent(in) :: dt
           real*8, intent(inout) :: epot,vir_(3,3)
-          real*8 :: dip_(3,nsteps),dipind_(3,nsteps)
+          real*8 :: dip_(3,nsteps)
         end subroutine baoabrespapi_fast
       end interface
 
@@ -94,8 +89,8 @@ c
       endif
 
       !! INTERNAL BAOAB STEPS FOR FAST EVOLVING FORCES !!
-      call baoabrespapi_fast(polymer,polymer_ctr
-     &   ,istep,dta,nalt,epotpi,virpi,dip,dipind)
+      call baoabrespapi_fast(polymer
+     &   ,istep,dta,nalt,epotpi,virpi,dip)
 
       if(isobaric) call plangevinpi(polymer,dt2,-1,'A')
       if(PITIMER) call stopwatchpi(timeaoa,.false.,.false.)
@@ -245,8 +240,8 @@ c     &           , timepush/iprint, ' ( ',100*timepush/timefull,' %)'
 
       end subroutine baoabrespapi
 
-      subroutine baoabrespapi_fast(polymer,polymer_ctr,
-     &   istep,dta,nsteps,epot,vir_,dip,dipind)
+      subroutine baoabrespapi_fast(polymer,
+     &   istep,dta,nsteps,epot,vir_,dip)
       use bath
       use atoms
       use atmtyp
@@ -273,22 +268,15 @@ c     &           , timepush/iprint, ' ( ',100*timepush/timefull,' %)'
       use commstuffpi
       implicit none
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
-      type(POLYMER_COMM_TYPE), intent(inout) :: polymer_ctr
       integer, intent(in) :: istep,nsteps
       real*8, intent(in) :: dta
       real*8, intent(inout) :: epot,vir_(3,3)
-      real*8, intent(inout) :: dip(3,nsteps),dipind(3,nsteps)
-      integer :: ibead,i,j,k,iglob,ierr,kk,ialt
-      real(8),save::time0=0d0,time1=0d0,time00=0d0
-      real(8),save::time01=0d0, timebegin=0d0
-      real(8),save::timefull=0d0
-      logical :: add_eslow
-      real*8 :: dt2,sqrtnu,factor1,factor2,dta2
-      real*8 :: scale,eigx0,eigv0,a1,a2
-      integer :: nnoise,iloc,iqtb
-      real*8 :: gammak,nuratio,rsteps   
-      integer :: ilocbeg,ilocend,ibeadbeg
-      logical :: only_long
+      real*8, intent(inout) :: dip(3,nsteps)
+      integer :: i,k,ialt
+      real*8 :: dta2
+      integer :: iloc
+      real*8 :: rsteps   
+      integer :: ibeadbeg
 
       dta2 = 0.5d0*dta
       rsteps=real(nsteps,8)

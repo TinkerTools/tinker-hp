@@ -128,7 +128,7 @@ c
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
       integer, intent(in) :: ibead_beg,ibead_end
       integer, intent(in) :: nlist,list(nlist)
-      integer i,j,k,ibead
+      integer j,k,ibead
       real*8 weigh,weight
       real*8 xmid,ymid,zmid
       real*8 dx,dy,dz

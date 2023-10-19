@@ -120,7 +120,7 @@ c
       use atoms
       use boxes
       implicit none
-      integer i,j,k
+      integer j,k
       integer, intent(in):: nlist,list(nlist)
       real*8 weigh,weight
       real*8 xmid,ymid,zmid

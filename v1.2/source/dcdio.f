@@ -23,17 +23,14 @@ c
       type(dcdinfo_t), intent(inout) :: dcdinfo
       character(*), intent(in) :: suffix
       integer, intent(in) :: istep
-      integer i,j,k,idcd
-      integer freeunit
+      integer i,idcd
       integer(kind=4) :: coord_size
       real(kind=4), allocatable :: posw(:)
       real(kind=8) :: box(6)
       logical init,exist
-      character*240 dcdfile
       character (len=79) :: info1,info2
       character (len=8) :: date
       character (len=10) :: time
-      character (len=3) :: numberbeads
 
       dcdinfo%natoms     = n
       coord_size = 4*dcdinfo%natoms

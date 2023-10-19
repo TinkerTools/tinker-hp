@@ -59,12 +59,15 @@ c
       call cutoffs
       call lattice
 c
+c     get parameters
+c
+      call mechanic
+c
 c     setup for MPI
 c
       call drivermpi
       call reinitnl(0)
-c
-      call mechanic
+      call mechanic_init_para
 c
       call nblist(0)
 c
@@ -134,7 +137,7 @@ c
          call ddpme3d
          call reassignpme(.true.)
          call reinitnl(0)
-         call mechanicstep(0)
+         call mechanic_up_para(0)
          call nblist(0)
 c
 c     make the call to compute the potential energy

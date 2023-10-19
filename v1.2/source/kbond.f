@@ -191,7 +191,7 @@ c
      &             'Atom Classes','K(S)','Length'
                end if
                if (rank.eq.0) 
-     &               write (iout,'(6x,2i4,4x,f12.3,f12.4)')
+     &               write (iout,'(6x,2i4,4x,f12.3,f12.4,f12.4)')
      &                       ia,ib,fc,bd,balpha
             end if
             size = 4
@@ -247,7 +247,7 @@ c
      &             'Atom Classes','K(S)','Length'
                end if
                if (rank.eq.0) 
-     &               write (iout,'(6x,2i4,4x,f12.3,f12.4)')
+     &               write (iout,'(6x,2i4,4x,f12.3,f12.4,f12.4)')
      &                       ia,ib,fc,bd,balpha
             end if
             size = 4

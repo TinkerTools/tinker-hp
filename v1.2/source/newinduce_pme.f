@@ -1177,7 +1177,7 @@ c
 c     find the field components for Thole polarization damping
 c
             if (use_thole) then
-               call dampthole (iipole,kkpole,7,r,dmpik)
+               call damptholed (iipole,kkpole,7,r,dmpik)
                scalek = dscale(kglob)
                dmp3 = dmpe(3) - (1.0d0-scalek*dmpik(3))*rr3
                dmp5 = dmpe(5) - (1.0d0-scalek*dmpik(5))*rr5
@@ -1505,7 +1505,7 @@ c
 c     find the field components for Thole polarization damping
 c
             if (use_thole) then
-               call dampthole2 (iipole,kkpole,5,r,dmpik)
+               call dampthole (iipole,kkpole,5,r,dmpik)
                scalek = uscale(kglob)
                dmp3 = dmpe(3) - (1.0d0-scalek*dmpik(3))*rr3
                dmp5 = dmpe(5) - (1.0d0-scalek*dmpik(5))*rr5

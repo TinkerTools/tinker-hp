@@ -108,7 +108,7 @@ c
       timeinte = timeinte + time1-time0
 c
       time0 = mpi_wtime()
-      call mechanicsteprespa(istep,.false.)
+      call mechanic_up_para_respa(istep,.false.)
       time1 = mpi_wtime()
       timeparam = timeparam + time1 - time0
 
@@ -494,7 +494,7 @@ c
         timeinte = timeinte + time1-time0
 c
         time0 = mpi_wtime()
-        call mechanicsteprespa(istep,.true.)
+        call mechanic_up_para_respa(istep,.true.)
         call allocsteprespa(.true.)
         time1 = mpi_wtime()
         timeparam = timeparam + time1 - time0

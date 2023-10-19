@@ -43,11 +43,9 @@ c
       implicit none
       real*8, intent(in) :: dt
       integer, intent(in) :: istep
-      integer i,j,iglob
+      integer i,iglob
       real*8 :: dip(3),dipind(3)
-      real*8 :: dt_2,factor
-      real*8 :: part1,part2
-      real*8 :: a1,a2
+      real*8 :: dt_2
       real*8 :: time0,time1
       time0 = mpi_wtime()
 c
@@ -117,7 +115,7 @@ c
       timeinte = timeinte + time1-time0
 c
       time0 = mpi_wtime()
-      call mechanicstep(istep)
+      call mechanic_up_para(istep)
       time1 = mpi_wtime()
       timeparam = timeparam + time1 - time0
 c

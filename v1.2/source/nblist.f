@@ -23,11 +23,15 @@ c
       use mpi
       implicit none
       integer istep,modnl
+      real*8 time0,time1
 c
 c
 c     check number of steps between nl updates
 c
       modnl = mod(istep,ineigup)
+      nblocloop = merge( nbloc,
+     &                     (int(nbloc/16)+1)*16,
+     &                     (mod(nbloc,16).eq.0))
       if (modnl.ne.0) return
 
       if ((use_clist).or.(use_mlist)) then
@@ -67,7 +71,9 @@ c
 c
 c     build the cells at the beginning and assign the particules to them
 c
+      time0 = mpi_wtime()
       call build_cell_list
+      time1 = mpi_wtime()
 c
       if (use_shortclist) then
         call clistcell2
@@ -77,7 +83,12 @@ c
       if (use_shortvlist) then
         call vlistcell2
       else if (use_vlist) then
-        call vlistcell
+c        time0 = mpi_wtime()
+c        call vlistcell
+c        time1 = mpi_wtime()
+        time0 = mpi_wtime()
+        call vlistcellvec
+        time1 = mpi_wtime()
       end if
       if (use_shortdlist) then
         call dlistcell2
@@ -87,7 +98,9 @@ c
       if (use_shortmlist) then
         call mlistcell2
       else if (use_mlist) then
+        time0 = mpi_wtime()
         call mlistcell
+        time1 = mpi_wtime()
       end if
 c
       return
@@ -1679,3 +1692,337 @@ c
       return
       end
 
+c
+c     ####################################################################
+c     ##                                                                ##
+c     ##  function imagevec3  --  compute the minimum image distance    ##
+c     ##                                                                ##
+c     ####################################################################
+c
+c
+c     "imagevec3" takes the components of pairwise distances between
+c     two points in a periodic box and converts to the components
+c     of the minimum image distances. Indice i designs x, y or z
+c     direction
+c
+c     xcell    length of the a-axis of the complete replicated cell
+c     ycell    length of the b-axis of the complete replicated cell
+c     zcell    length of the c-axis of the complete replicated cell
+c     xcell2   half the length of the a-axis of the replicated cell
+c     ycell2   half the length of the b-axis of the replicated cell
+c     zcell2   half the length of the c-axis of the replicated cell
+
+c     n REALLY SHOULD be a multiple of 16 
+
+      subroutine imagevec3(imageout,pos,n,i)
+      use cell
+      implicit none
+      integer, intent (in) ::i,n
+      real*8,  intent (in) ::  pos(n)
+      real*8,  intent (out) ::  imageout(n)
+      integer k
+      real*8 coordcell,coordcell2
+c
+      SELECT CASE (i)
+         CASE (1)
+            coordcell  = xcell
+            coordcell2 = xcell2
+         CASE (2)
+            coordcell  = ycell
+            coordcell2 = ycell2
+         CASE (3)
+            coordcell  = zcell
+            coordcell2 = zcell2
+         CASE DEFAULT
+            coordcell  = xcell
+            coordcell2 = xcell2
+      END SELECT
+      do k = 1, n
+         imageout(k) =  pos(k)
+     &                - int( (abs(pos(k)) - coordcell2) / coordcell
+     &                      + 1.0d0
+     &                     ) * sign (coordcell,pos(k))
+      enddo
+      end subroutine imagevec3
+c
+c     ####################################################################
+c     ##                                                                ##
+c     ##  subroutine image3dvec -- Use imagevec to compute minimal       ##
+c     ##                          distance in all directions            ##
+c     ##                                                                ##
+c     ####################################################################
+c
+      subroutine image3dvec(posx,posy,posz,n)
+      implicit none
+      integer, intent (in) ::n
+      real*8, intent (inout) ::  posx(n)
+      real*8, intent (inout) ::  posy(n)
+      real*8, intent (inout) ::  posz(n)
+      call imagevec3(posx,posx,n,1)
+      call imagevec3(posy,posy,n,2)
+      call imagevec3(posz,posz,n,3)
+      return
+      end subroutine image3dvec
+c
+c    "vlistcell" performs a complete rebuild of the
+c     vdw neighbor lists for charges using linked cells method
+c
+      subroutine vlistcellvec
+      use atmlst
+      use atoms
+      use domdec
+      use iounit
+      use kvdws
+      use neigh
+      use vdw
+      use mpi
+
+      implicit none
+      integer iglob
+      integer iglobdefault,kglobdefault
+      integer iloc
+      integer icell,kcell
+      integer lencell,lenloop16
+      integer nneigcell,nneloop16
+      integer ncell_loc,nceloop16
+      integer i,j,k, kk
+      integer iivdw
+
+      real*8 xi,yi,zi
+      integer indcell_locvec(nblocloop)
+      integer iglobvec(nblocloop)
+      integer ivec(nblocloop)
+      integer ivvec(nblocloop)
+      integer kglobvec(nblocloop)
+      integer kglobvec1(nblocloop)
+      integer kbisvec(nblocloop)
+      real*8 rdnvec(nblocloop)
+      real*8 xposvec(nblocloop)
+      real*8 yposvec(nblocloop)
+      real*8 zposvec(nblocloop)
+      real*8 xkvec(nblocloop)
+      real*8 ykvec(nblocloop)
+      real*8 zkvec(nblocloop)
+      real*8 xred(0:nblocloop)
+      real*8 yred(0:nblocloop)
+      real*8 zred(0:nblocloop)
+      logical mask(nblocloop)
+
+c     set default values to point to for various indices
+      iglobdefault = ivdw(vdwglob (nvdwbloc))
+c     nvdwblocloop is nvdwbloc if nvdwbloc is a multiple of 16, or the first one greater
+      nvdwblocloop = merge( nvdwbloc,
+     &                     (int(nvdwbloc/16)+1)*16,
+     &                     (mod(nvdwbloc,16).eq.0))
+
+
+c
+c     apply reduction factors to find coordinates for each site
+c
+      do k = 1,nvdwblocloop
+         if (k.le.nvdwbloc) then
+            iglobvec (k) = ivdw (vdwglob (k))
+         else
+            iglobvec(k) = iglobdefault ! safe value by default
+         endif
+      enddo
+
+      do k = 1 , nvdwblocloop
+         ivec    (k) = loc  (iglobvec(k))
+         ivvec   (k) = ired (iglobvec(k))
+         rdnvec  (k) = kred (iglobvec(k))
+
+         xred(ivec(k)) =  rdnvec(k) * x(iglobvec(k))
+     &                  + (1.0d0 - rdnvec(k)) * x(ivvec(k))
+         yred(ivec(k)) =  rdnvec(k) * y(iglobvec(k))
+     &                  + (1.0d0 - rdnvec(k)) * y(ivvec(k))
+         zred(ivec(k)) =  rdnvec(k) * z(iglobvec(k))
+     &                  + (1.0d0 - rdnvec(k)) * z(ivvec(k))
+      enddo
+
+c
+c     perform a complete list build
+c
+      do i = 1, nvdwlocnl
+         iivdw = vdwglobnl(i)
+         iglob = ivdw(iivdw)
+         icell = repartcell(iglob)
+         iloc  = loc(iglob)
+         kglobdefault = iglob
+c
+c       align data of the local cell and the neighboring ones
+c
+         ncell_loc = cell_len(icell)
+         nceloop16 = (int(ncell_loc / 16) + 1) * 16! First multiple of 16
+         nceloop16 = merge(ncell_loc,nceloop16, mod(ncell_loc,16).eq.0)
+
+         nneigcell = numneigcell(icell)
+         nneloop16 = (int(nneigcell / 16) + 1) * 16! First multiple of 16
+         nneloop16 = merge(nneigcell,nneloop16, mod(nneigcell,16).eq.0)
+         do k = 1, nceloop16
+            if(k.le.ncell_loc) then
+              indcell_locvec(k) = indcell(bufbegcell(icell)+k-1)
+            endif
+         enddo
+         do j = 1, nneloop16
+            if(j.le.nneigcell) then
+               kcell     = neigcell(j,icell)
+               lencell   = cell_len(kcell)
+               lenloop16 = (int(lencell / 16) + 1) * 16! First multiple of 16
+               do k = 1 , lenloop16
+                  if(k.le.lencell) then
+                     indcell_locvec(ncell_loc+k) =
+     &                                   indcell(bufbegcell(kcell)+k-1)
+                  endif
+               enddo
+               ncell_loc = ncell_loc + lencell
+            endif
+         end do
+
+         nceloop16 = (int(ncell_loc / 16) + 1) * 16! First multiple of 16
+         nceloop16 = merge(ncell_loc,nceloop16, mod(ncell_loc,16).eq.0)
+c
+c       do the neighbor search
+c
+         xi = xred(iloc)
+         yi = yred(iloc)
+         zi = zred(iloc)
+         do k = 1, nceloop16
+            if(k.le.ncell_loc) then
+               kglobvec(k) = indcell_locvec(k)
+            else
+               kglobvec(k) = kglobdefault ! exclude value by default
+            endif
+         enddo
+c   keep atom if it is in the vdw neighbor charge list
+c
+         kk = 0
+         do k = 1, nceloop16
+            if(     rad(jvdw(kglobvec(k))).ne.0
+     &         .and.kglobvec(k).gt.iglob) then
+              kk = kk + 1
+              kglobvec1(kk) = kglobvec(k)
+              kbisvec  (kk) = loc(kglobvec(k))
+            endif
+         enddo
+         ncell_loc = kk
+  
+         nceloop16 = (int(ncell_loc / 16) + 1) * 16! First multiple of 16
+         nceloop16 = merge(ncell_loc,nceloop16, mod(ncell_loc,16).eq.0)
+
+         do k = 1, nceloop16
+            if(k.le.ncell_loc) then
+               xkvec(k) = xred(kbisvec(k))
+               ykvec(k) = yred(kbisvec(k))
+               zkvec(k) = zred(kbisvec(k))
+            endif
+            xposvec(k) = xi - xkvec(k)
+            yposvec(k) = yi - ykvec(k)
+            zposvec(k) = zi - zkvec(k)
+         enddo
+c        call imagevec(xposvec,nceloop16,1)
+c        call imagevec(yposvec,nceloop16,2)
+c        call imagevec(zposvec,nceloop16,3)
+         call image3dvec(xposvec,yposvec,zposvec,nceloop16)
+c
+c   select  the atoms with the midpoint method
+c
+         call midpointimagevec(ncell_loc,
+     &                          nceloop16,
+     &                          xkvec,
+     &                          ykvec,
+     &                          zkvec,
+     &                          xposvec,
+     &                          yposvec,
+     &                          zposvec,
+     &                          mask)
+c
+c    combine the mask with the distances cutoff and build the list accordingly
+c
+         kk = 0
+         do k = 1, nceloop16
+            if(      mask(k)
+     &         .and.(  xposvec(k) ** 2 + yposvec(k) ** 2
+     &               + zposvec(k) ** 2 .le.vbuf2 )
+     &        ) then
+               kk = kk + 1
+               kglobvec(kk) = kglobvec1(k)
+            end if
+         end do
+         nvlst(i) = kk
+         nneloop16 = (int(nvlst(i) / 16) + 1) * 16! First multiple of 16
+         nneloop16 = merge(nvlst(i),nneloop16, mod(nvlst(i),16).eq.0)
+        do k = 1,  nneloop16
+             vlst(k,i) = kglobvec(k)
+        enddo
+!       call sort(nvlst(i), vlst(:,i))
+c
+c     check to see if the neighbor list is too long
+c
+        if (nvlst(i) .ge. maxvlst) then
+           if (rank.eq.0) then
+             write (iout,10)
+   10        format (/,' VBUILD  --  Too many Neighbors;',
+     &                  ' Increase MAXVLST')
+             call fatal
+           end if
+        end if
+      end do
+      return
+      end subroutine vlistcellvec
+c
+c     compute the selection mask with the midpoint method
+c     
+      subroutine midpointimagevec(ncell_loc,ncell,
+     &                            xk,yk,zk,
+     &                            xr,yr,zr,
+     &                            docompute)
+      use domdec
+      implicit none
+      integer, intent (in) :: ncell,ncell_loc
+c      real*8, contiguous, intent (in)  :: xk(:)
+c      real*8, contiguous, intent (in)  :: yk(:)
+c      real*8, contiguous, intent (in)  :: zk(:)
+c      real*8, contiguous, intent (in)  :: xr(:)
+c      real*8, contiguous, intent (in)  :: yr(:)
+c      real*8, contiguous, intent (in)  :: zr(:)
+      real*8, intent (in)  :: xk(nblocloop)
+      real*8, intent (in)  :: yk(nblocloop)
+      real*8, intent (in)  :: zk(nblocloop)
+      real*8, intent (in)  :: xr(nblocloop)
+      real*8, intent (in)  :: yr(nblocloop)
+      real*8, intent (in)  :: zr(nblocloop)
+      logical, intent(out)  :: docompute(ncell)
+      integer k
+      real*8 xrmid(ncell)
+      real*8 yrmid(ncell)
+      real*8 zrmid(ncell)
+c
+c     
+c     definition of the middle point between i and k atoms
+c
+      do k = 1, ncell
+         xrmid(k) = xk(k) + xr(k)/2.0d0
+         yrmid(k) = yk(k) + yr(k)/2.0d0
+         zrmid(k) = zk(k) + zr(k)/2.0d0
+      enddo
+        call  image3dvec(xrmid,yrmid,zrmid,ncell)
+      do k = 1, ncell
+!!        docompute(k) = (     zrmid(k).ge.zbegproc(rank+1)
+!!    &                   .and.zrmid(k).lt.zendproc(rank+1)
+!!    &                   .and.yrmid(k).ge.ybegproc(rank+1)
+!!    &                   .and.yrmid(k).lt.yendproc(rank+1)
+!!    &                   .and.xrmid(k).ge.xbegproc(rank+1)
+!!    &                   .and.xrmid(k).lt.xendproc(rank+1)
+!!    &                   .and.k.le.ncell_loc)
+         docompute(k) = .not.(    zrmid(k).lt.zbegproc(rank+1)
+     &                        .or.zrmid(k).ge.zendproc(rank+1)
+     &                        .or.yrmid(k).lt.ybegproc(rank+1)
+     &                        .or.yrmid(k).ge.yendproc(rank+1)
+     &                        .or.xrmid(k).lt.xbegproc(rank+1)
+     &                        .or.xrmid(k).ge.xendproc(rank+1)
+     &                        .or.k.gt.ncell_loc)
+      enddo
+c     docompute = fmidpointimagevec(ncell_loc,ncell,xk,yk,zk,xr,yr,zr)
+
+      end subroutine midpointimagevec

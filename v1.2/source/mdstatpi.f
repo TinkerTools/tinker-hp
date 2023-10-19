@@ -37,12 +37,10 @@ c
       implicit none
       integer, intent(in) ::  istep
       real*8, intent(in) :: dt
-      integer :: mode,modstep,ierr,i
-      real*8 :: temp,pres
-      real*8 :: etotppi,epot,ekin,vol
+      integer :: modstep
+      real*8 :: etotppi
       real*8 :: pico,dens,pistontemppi
       real*8 :: fluctuatepi,fluctuate2pi
-      real*8 :: intfluctpi,intfluct2pi
       real*8 :: potfluctpi,potfluct2pi
       real*8 :: kinfluctpi,kinfluct2pi
       real*8 :: tfluctpi,pfluctpi,dfluctpi,volfluctpi

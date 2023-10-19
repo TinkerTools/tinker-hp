@@ -550,7 +550,7 @@ PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED
                esac
                LIBPLUMED_PATH="$PREFIX/plumed/$COMP"
                LIBPLUMED_LIBPATH="$LIBPLUMED_PATH/lib/"
-               LIBPLUMED_LIB="-L $LIBPLUMED_LIBPATH -lplumed -lplumedKernel"
+               LIBPLUMED_LIB="-L $LIBPLUMED_LIBPATH -lplumed -lplumedKernel -lstdc++"
                LIBPLUMED_INC="-I $LIBPLUMED_PATH/include"
                PLUEXT="_plumed"
                PLUMEDINCLUDE="plumed.mk"

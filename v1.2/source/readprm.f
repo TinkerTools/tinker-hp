@@ -34,6 +34,7 @@ c
       use kopbnd
       use kopdst
       use kpitor
+      use kpolpr
       use kpolr
       use krepl
       use kstbnd
@@ -57,7 +58,7 @@ c
       integer nsb,nu,nopb,nopd
       integer ndi,nti,nt,nt5,nt4
       integer npt,nbt,nat,ntt,nd,nd5
-      integer nd4,nd3,nvp,nhb,nmp
+      integer nd4,nd3,nvp,nhb,nmp,npp
       integer npi,npi5,npi4
       integer cls,atn,lig
       integer nx,ny,nxy
@@ -76,9 +77,7 @@ c
       real*8 an,pr,ds,dk
       real*8 vd,cg
       real*8 fc,bd,dl
-      real*8 pt,pol,thl
-      real*8 pol_ts,excfreq,rad_ts
-      real*8 rad_free,pol_free
+      real*8 pt,pol,thl,thd
       real*8 abc,cba
       real*8 gi,alphi
       real*8 nni,factor
@@ -92,7 +91,7 @@ c
       real*8 ctrn,atrn
       real*8 cfb,cfb1,cfb2
       real*8 cfa1,cfa2
-      real*8 cdp,adp,ddp
+      real*8 cdp,adp
       real*8 pal,pel
       logical header,swap
       character*1 da1
@@ -143,6 +142,7 @@ c
       nd4 = 0
       nd3 = 0
       nmp = 0
+      npp = 0
       ncfb = 0
       ncfa = 0
       npi = 0
@@ -1312,7 +1312,7 @@ c
             ia = 0
             pol = 0.0d0
             thl = 0.0d0
-            ddp = 0.0d0
+            thd = 0.0d0
             do i = 1, maxvalue
                pg(i) = 0
             end do
@@ -1330,7 +1330,7 @@ c
                call getnumb (text,pg(1),i)
                string = string(next:240)
                if (pg(1) .eq. 0) then
-                  read (text,*,err=440,end=440)  ddp
+                  read (text,*,err=440,end=440)  thd
                   read (string,*,err=440,end=440)  (pg(i),i=1,maxvalue)
                else
                   read (string,*,err=440,end=440)  (pg(i),i=2,maxvalue)
@@ -1343,15 +1343,32 @@ c
             if (ia .ne. 0) then
                polr(ia) = pol
                athl(ia) = thl
-               ddir(ia) = ddp
+               dthl(ia) = thd
                do i = 1, maxvalue
                   pgrp(i,ia) = pg(i)
                end do
             end if
-         else if (keyword(1:6) .eq. 'METAL ') then
+c
+c     polarization parameters for specific atom pairs
+c
+         else if (keyword(1:8) .eq. 'POLPAIR ') then
+            ia = 0
+            ib = 0
+            thl = 0.0d0
+            thd = 0.0d0
             string = record(next:240)
-            read (string,*,err=490,end=490)  ia
+            read (string,*,err=490,end=490)  ia,ib,thl,thd
   490       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            npp = npp + 1
+            if (ia .le. ib) then
+               kppr(npp) = pa//pb
+            else
+               kppr(npp) = pb//pa
+            end if
+            thlpr(npp) = thl
+            thdpr(npp) = thd
 c
 c     biopolymer atom type conversion definitions
 c

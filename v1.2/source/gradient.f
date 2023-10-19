@@ -21,6 +21,7 @@ c
       use energi
       use inter
       use iounit
+      use mutant
       use potent
       use timestat
       use vdwpot

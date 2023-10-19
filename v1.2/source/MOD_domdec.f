@@ -70,6 +70,7 @@ c     p*_send*  list of the corresponding processes
 c
 c     nloc  local number of atoms
 c     nbloc local + neighbors number of atoms
+c     nblocloop local + neighbors number of atoms : nbloc if nbloc is a multiple of 16, or the first one greater
 c     nlocrec  local reciprocal number of atoms
 c     nlocrec2  local + reciprocal neighbors number of atoms
 c     nlocnl local nl number of atoms
@@ -123,6 +124,7 @@ c
       integer nbigshort_recep,nbigshort_send
       integer nbloc,nloc,nlocrec,nlocrec2
       integer nlocnl,nblocrecdir
+      integer nblocloop
       integer, allocatable :: domlen(:), domlenrec(:)
       integer, allocatable :: domlenpole(:), domlenpolerec(:)
       integer, allocatable :: p_recep1(:), p_send1(:)

@@ -18,7 +18,7 @@ c
       use atmtyp
       use atoms
       use bath
-      use beads, only: nbeads,path_integral_md
+      use beads, only: path_integral_md
       use bound
       use couple
       use cutoff
@@ -407,7 +407,7 @@ c
 c    
 c     initialization for Langevin dynamics
 c
-      if ((integrate .eq. 'BBK').or.(integrate.eq.'BAOAB').or.
+      if ((integrate.eq.'BAOAB').or.
      $ (integrate.eq.'BAOABRESPA').or.(integrate.eq.'BAOABRESPA1'))
      $   then
          if (.not.(isothermal)) then
@@ -496,7 +496,7 @@ c
          call ddpme3d
          call reinitnl(0)
          call reassignpme(.true.)
-         call mechanicstep(0)
+         call mechanic_init_para
          call allocstep
          call nblist(0)
 c    
@@ -511,7 +511,7 @@ c
          call ddpme3d
          call reinitnl(0)
          call reassignpme(.false.)
-         call mechanicstep(0)
+         call mechanic_init_para
          call nblist(0)
          allocate (derivs(3,nbloc))
          derivs = 0d0
@@ -567,7 +567,7 @@ c
          call ddpme3d
          call reinitnl(0)
          call reassignpme(.false.)
-         call mechanicstep(0)
+         call mechanic_init_para
          call nblist(0)
          allocate (derivs(3,nbloc))
          derivs = 0d0
@@ -640,7 +640,7 @@ c
         call ddpme3d
         call reinitnl(0)
         call reassignpme(.false.)
-        call mechanicstep(0)
+        call mechanic_init_para
         call nblist(0)
 c    
 c     set velocities and accelerations for cartesian dynamics
@@ -730,7 +730,6 @@ c
 
       subroutine check_qtb_compatibility()
       use domdec
-      use beads, only: path_integral_md
       use replicas, only : use_reps
       use freeze, only: use_rattle
       use bath, only: barostat, isobaric

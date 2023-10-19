@@ -14,7 +14,7 @@ c     "kcharge" assigns partial charges to the atoms within
 c     the structure and processes any new or changed values
 c
 c
-      subroutine kcharge(init,istep)
+      subroutine kcharge
       use atmlst
       use atmtyp
       use atoms
@@ -33,161 +33,185 @@ c
       use pme
       use mpi
       implicit none
-      integer i,iglob,ionloc,it
-      integer ia,next,ierr,istep,iproc
-      integer modnl,ioncount
+      integer i,it
+      integer ia,next,ierr
       integer, allocatable :: list(:)
       integer, allocatable :: nc12(:)
-      real*8 cg,d
+      real*8 cg
       logical header
       character*20 keyword
       character*240 record
       character*240 string
-      logical init
 c
-      if (init) then
 c
-c       deallocate global pointers if necessary
+c     deallocate global pointers if necessary
 c
-        call dealloc_shared_chg
+      call dealloc_shared_chg
 c
-c       allocate global pointers
+c     allocate global pointers
 c
-        call alloc_shared_chg
-        if (hostrank.ne.0) goto 1000
+      call alloc_shared_chg
+      if (hostrank.ne.0) goto 1000
 c
-c       process keywords containing partial charge parameters
+c     process keywords containing partial charge parameters
 c
-        header = .true.
-        do i = 1, nkey
-           next = 1
-           record = keyline(i)
-           call gettext (record,keyword,next)
-           call upcase (keyword)
-           if (keyword(1:7) .eq. 'CHARGE ') then
-              ia = 0
-              cg = 0.0d0
-              string = record(next:240)
-              read (string,*,err=40,end=40)  ia,cg
-              if (ia .gt. 0) then
-                 if (header .and. .not.silent) then
-                    header = .false.
-                    write (iout,10)
-   10               format (/,' Additional Atomic Partial Charge',
-     &                         ' Parameters :',
-     &                      //,5x,'Atom Type',10x,'Charge',/)
-                 end if
-                 if (ia .le. maxtyp) then
-                    chg(ia) = cg
-                    if (.not. silent) then
-                       write (iout,20)  ia,cg
-   20                  format (4x,i6,8x,f12.4)
-                    end if
-                 else
-                    write (iout,30)
-   30               format (/,' KCHARGE  --  Too many Partial Charge',
-     &                         ' Parameters')
-                    abort = .true.
-                 end if
-              end if
-   40         continue
-           end if
-        end do
+      header = .true.
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call gettext (record,keyword,next)
+         call upcase (keyword)
+         if (keyword(1:7) .eq. 'CHARGE ') then
+            ia = 0
+            cg = 0.0d0
+            string = record(next:240)
+            read (string,*,err=40,end=40)  ia,cg
+            if (ia .gt. 0) then
+               if (header .and. .not.silent) then
+                  header = .false.
+                  write (iout,10)
+   10             format (/,' Additional Atomic Partial Charge',
+     &                       ' Parameters :',
+     &                    //,5x,'Atom Type',10x,'Charge',/)
+               end if
+               if (ia .le. maxtyp) then
+                  chg(ia) = cg
+                  if (.not. silent) then
+                     write (iout,20)  ia,cg
+   20                format (4x,i6,8x,f12.4)
+                  end if
+               else
+                  write (iout,30)
+   30             format (/,' KCHARGE  --  Too many Partial Charge',
+     &                       ' Parameters')
+                  abort = .true.
+               end if
+            end if
+   40       continue
+         end if
+      end do
 c
-c       find and store all the atomic partial charges
+c     find and store all the atomic partial charges
 c
-        do i = 1, n
-           pchg(i) = 0.0d0
-           pchg0(i) = 0.0d0
-           it = type(i)
-           if (it .ne. 0)  pchg(i) = chg(it)
-        end do
+      do i = 1, n
+         pchg(i) = 0.0d0
+         pchg0(i) = 0.0d0
+         it = type(i)
+         if (it .ne. 0)  pchg(i) = chg(it)
+      end do
 c
-c       use special charge parameter assignment method for MMFF
+c     use special charge parameter assignment method for MMFF
 c
-        if (forcefield .eq. 'MMFF94')  call kchargem
+      if (forcefield .eq. 'MMFF94')  call kchargem
 c
-c       process keywords containing atom specific partial charges
+c     process keywords containing atom specific partial charges
 c
-        header = .true.
-        do i = 1, nkey
-           next = 1
-           record = keyline(i)
-           call gettext (record,keyword,next)
-           call upcase (keyword)
-           if (keyword(1:7) .eq. 'CHARGE ') then
-              ia = 0
-              cg = 0.0d0
-              string = record(next:240)
-              read (string,*,err=70,end=70)  ia,cg
-              if (ia.lt.0 .and. ia.ge.-n) then
-                 ia = -ia
-                 if (header .and. .not.silent) then
-                    header = .false.
-                    write (iout,50)
-   50               format (/,' Additional Partial Charges for',
-     &                         ' Specific Atoms :',
-     &                      //,6x,'Atom',14x,'Charge',/)
-                 end if
-                 if (.not. silent) then
-                    write (iout,60)  ia,cg
-   60               format (4x,i6,8x,f12.4)
-                 end if
-                 pchg(ia) = cg
-              end if
-   70         continue
-           end if
-        end do
+      header = .true.
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call gettext (record,keyword,next)
+         call upcase (keyword)
+         if (keyword(1:7) .eq. 'CHARGE ') then
+            ia = 0
+            cg = 0.0d0
+            string = record(next:240)
+            read (string,*,err=70,end=70)  ia,cg
+            if (ia.lt.0 .and. ia.ge.-n) then
+               ia = -ia
+               if (header .and. .not.silent) then
+                  header = .false.
+                  write (iout,50)
+   50             format (/,' Additional Partial Charges for',
+     &                       ' Specific Atoms :',
+     &                    //,6x,'Atom',14x,'Charge',/)
+               end if
+               if (.not. silent) then
+                  write (iout,60)  ia,cg
+   60             format (4x,i6,8x,f12.4)
+               end if
+               pchg(ia) = cg
+            end if
+   70       continue
+         end if
+      end do
 c
-c       perform dynamic allocation of some local arrays
+c     perform dynamic allocation of some local arrays
 c
-        allocate (list(n))
-        allocate (nc12(n))
+      allocate (list(n))
+      allocate (nc12(n))
 c
-c       remove zero partial charges from the list of charges
+c     remove zero partial charges from the list of charges
 c
-        nion = 0
-        do i = 1, n
-           list(i) = 0
-           if (pchg(i) .ne. 0.0d0) then
-              nbchg(i) = nion
-              nion = nion + 1
-              iion(nion) = i
-              jion(nion) = i
-              kion(nion) = i
-              pchg(nion) = pchg(i)
-              pchg0(nion) = pchg(i)
-              list(i) = nion
-           end if
-        end do
+      nion = 0
+      do i = 1, n
+         list(i) = 0
+         if (pchg(i) .ne. 0.0d0) then
+            nbchg(i) = nion
+            nion = nion + 1
+            iion(nion) = i
+            jion(nion) = i
+            kion(nion) = i
+            pchg(nion) = pchg(i)
+            pchg0(nion) = pchg(i)
+            list(i) = nion
+         end if
+      end do
 c
-c       perform deallocation of some local arrays
+c     perform deallocation of some local arrays
 c
-        chglist = list
-        deallocate (list)
-        deallocate (nc12)
- 1000   call MPI_BARRIER(hostcomm,ierr)
-        call MPI_BCAST(nion,1,MPI_INT,0,hostcomm,ierr)
+      chglist = list
+      deallocate (list)
+      deallocate (nc12)
+ 1000 call MPI_BARRIER(hostcomm,ierr)
+      call MPI_BCAST(nion,1,MPI_INT,0,hostcomm,ierr)
 c
-c       turn off charge-charge and charge-dipole terms if not used
+c     turn off charge-charge and charge-dipole terms if not used
 c
-        if (nion .eq. 0) then
-           use_charge = .false.
-           use_clist = .false.
-        end if
-c
-c       copy original charge values that won't change during mutation
-c
-        pchg_orig = pchg
-
-        if (.not.(use_charge)) return
-        if (allocated(chglocnl)) deallocate(chglocnl)
-        allocate (chglocnl(n))
-        if (allocated(chgloc)) deallocate(chgloc)
-        allocate (chgloc(n))
-        if (allocated(chgrecloc)) deallocate(chgrecloc)
-        allocate (chgrecloc(n))
+      if (nion .eq. 0) then
+         use_charge = .false.
+         use_clist = .false.
       end if
+c
+c     copy original charge values that won't change during mutation
+c
+      pchg_orig = pchg
+
+      if (.not.(use_charge)) return
+      if (allocated(chglocnl)) deallocate(chglocnl)
+      allocate (chglocnl(n))
+      if (allocated(chgloc)) deallocate(chgloc)
+      allocate (chgloc(n))
+      if (allocated(chgrecloc)) deallocate(chgrecloc)
+      allocate (chgrecloc(n))
+      return
+      end
+c
+c     subroutine kcharge_update: update local charges
+c
+      subroutine kcharge_update(istep)
+      use atmlst
+      use atmtyp
+      use atoms
+      use charge
+      use chgpot
+      use couple
+      use cutoff
+      use domdec
+      use fields
+      use keys
+      use kchrge
+      use inform
+      use iounit
+      use neigh
+      use potent
+      use pme
+      use mpi
+      implicit none
+      integer i,iglob,ionloc
+      integer istep,iproc
+      integer modnl,ioncount
+      real*8 d
 c
       if (allocated(chgglob)) deallocate(chgglob)
       allocate (chgglob(nbloc))

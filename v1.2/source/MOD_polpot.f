@@ -96,6 +96,6 @@ c
       integer :: omegafitfreq
       real*8, allocatable :: residue(:,:), munp(:,:), efres(:,:)
       real*8  :: epCG
-      logical use_thole,use_dirdamp,dpequal
+      logical use_thole,use_tholed,dpequal
       save
       end

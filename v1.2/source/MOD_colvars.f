@@ -49,7 +49,7 @@ c
       use molcul
       implicit none
       integer :: ncvatoms_in
-      integer ierr,i,j,k,l,mol,o,p,init,stop
+      integer i,j,k,l,mol,o,p,init,stop
       integer, dimension(ncvatoms_in) :: cvatoms_ids_in
       ncvatoms = ncvatoms_in
       if (allocated(cvatoms_ids)) deallocate(cvatoms_ids)
@@ -89,10 +89,6 @@ c
  10       continue
         end do
       end do
-c      write(*,*) 'ncvatomsmol = ',ncvatomsmol
-c      do j = 1, ncvatomsmol
-c        write(*,*) 'j = ',j,'cvatomsmol = ',cvatomsmol(j)
-c      end do
 c
       return
       end subroutine
@@ -226,7 +222,6 @@ c
       integer(c_int) :: len_name
       integer :: lenadd
       character*3 numberreps
-      logical :: exist
       if (use_reps) then
         write(numberreps, '(i3.3)') rank_reploc
         colvarsoutput =

@@ -501,7 +501,7 @@ c
         end if
       end if
 c
-       call reassignpme(.true.)
+c       call reassignpme(.true.)
 c
 c     print a message listing some of the Ewald parameters
 c
@@ -521,6 +521,19 @@ c
   110       format (3x,'Dispersion',13x,f8.4,5x,3i5,7x,i5)
          end if
       end if
+      return
+      end
+c
+c     subroutine kewald_dd_init: initialization of ewald related dd quantities
+c
+      subroutine kewald_dd_init
+      use bound
+      implicit none
+c
+      if (.not. use_bounds) then
+         call drivermpi
+      end if
+      call reassignpme(.true.)
       return
       end
 c

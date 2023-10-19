@@ -14,7 +14,7 @@ c     "bonds" finds the total number of covalent bonds and
 c     stores the atom numbers of the atoms defining each bond
 c
 c
-      subroutine bonds(init)
+      subroutine bonds
       use atmlst
       use atoms
       use bond
@@ -23,59 +23,70 @@ c
       use iounit
       implicit none
       integer i,j,k,m
-      integer iglob
-      real*8 xi,yi,zi,xk,yk,zk
-      logical init,docompute
    10              format (/,' BONDS  --  Too many Bonds; Increase',
      &                        ' MAXBND')
 c
-      if (init) then
 c
 c
 c     loop over all atoms, storing the atoms in each bond
 c
-        nbond = 0
-        do i = 1, n
-           do j = 1, n12(i)
-              k = i12(j,i)
-              if (i.lt.k) then
-                nbond = nbond + 1
-                if (nbond .gt. 4*n) then
-                   if (rank.eq.0) write (iout,10)
-                   call fatal
-                end if
+      nbond = 0
+      do i = 1, n
+         do j = 1, n12(i)
+            k = i12(j,i)
+            if (i.lt.k) then
+              nbond = nbond + 1
+              if (nbond .gt. 4*n) then
+                 if (rank.eq.0) write (iout,10)
+                 call fatal
               end if
-           end do
-        end do
+            end if
+         end do
+      end do
 c
-c       deallocate global pointers if necessary
+c     deallocate global pointers if necessary
 c
-        call dealloc_shared_bond
+      call dealloc_shared_bond
 c
-c       allocate global pointers
+c     allocate global pointers
 c
-        call alloc_shared_bond
+      call alloc_shared_bond
 c
-        nbondloc = 0
-        do i = 1, n
-           do j = 1, n12(i)
-              k = i12(j,i)
-              if (i.lt.k) then
-                nbondloc = nbondloc + 1
-                ibnd(1,nbondloc) = i
-                ibnd(2,nbondloc) = k
-                bndlist(j,i) = nbondloc
-                do m = 1, n12(k)
-                   if (i .eq. i12(m,k)) then
-                      bndlist(m,k) = nbondloc
-                      goto 20
-                   end if
-                end do
-   20           continue
-              end if
-           end do
-        end do
-      end if
+      nbondloc = 0
+      do i = 1, n
+         do j = 1, n12(i)
+            k = i12(j,i)
+            if (i.lt.k) then
+              nbondloc = nbondloc + 1
+              ibnd(1,nbondloc) = i
+              ibnd(2,nbondloc) = k
+              bndlist(j,i) = nbondloc
+              do m = 1, n12(k)
+                 if (i .eq. i12(m,k)) then
+                    bndlist(m,k) = nbondloc
+                    goto 20
+                 end if
+              end do
+   20         continue
+            end if
+         end do
+      end do
+      return
+      end
+c
+c     subroutine bonds_update : update local bonds
+c
+      subroutine bonds_update
+      use atmlst
+      use atoms
+      use bond
+      use couple
+      use domdec
+      implicit none
+      integer i,j,k,iglob
+      logical docompute
+      real*8 xk,yk,zk,xi,yi,zi
+c
       if (allocated(bndglob)) deallocate(bndglob)
       allocate (bndglob(maxvalue*nbloc))
       nbondloc = 0

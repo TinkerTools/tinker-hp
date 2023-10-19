@@ -16,7 +16,7 @@ c     each angle to a trivalent central atom, the third bonded
 c     atom is stored for use in out-of-plane bending
 c
 c
-      subroutine angles(init)
+      subroutine angles
       use angle
       use atmlst
       use atoms
@@ -24,75 +24,85 @@ c
       use domdec
       use iounit
       implicit none
-      integer i,j,k,m,iglob
+      integer i,j,k,m
       integer ia,ib,ic
-      logical init
-c
-      if (init) then
 c
 c     loop over all atoms, storing the atoms in each bond angle
 c
-        nangle = 0
-        do i = 1, n
-           do j = 1, n12(i)-1
-              do k = j+1, n12(i)
-                nangle = nangle + 1
-                if (nangle .gt. 4*n) then
-                   if (rank.eq.0) write (iout,10)
-   10              format (/,' ANGLES  --  Too many Bond Angles;',
-     &                        ' Increase MAXANG')
-                   call fatal
-                end if
-              end do
-           end do
-        end do
+      nangle = 0
+      do i = 1, n
+         do j = 1, n12(i)-1
+            do k = j+1, n12(i)
+              nangle = nangle + 1
+              if (nangle .gt. 4*n) then
+                 if (rank.eq.0) write (iout,10)
+   10            format (/,' ANGLES  --  Too many Bond Angles;',
+     &                      ' Increase MAXANG')
+                 call fatal
+              end if
+            end do
+         end do
+      end do
 c
-c       deallocate global pointers if necessary
+c     deallocate global pointers if necessary
 c
-        call dealloc_shared_angles
+      call dealloc_shared_angles
 c
-c       allocate global pointers
+c     allocate global pointers
 c
-        call alloc_shared_angles
+      call alloc_shared_angles
 c
-        nangleloc = 0
-        do i = 1, n
-           m = 0
-           do j = 1, n12(i)-1
-              do k = j+1, n12(i)
-                nangleloc = nangleloc + 1
-                m = m + 1
-                anglist(m,i) = nangleloc
-                iang(1,nangleloc) = i12(j,i)
-                iang(2,nangleloc) = i
-                iang(3,nangleloc) = i12(k,i)
-                iang(4,nangleloc) = 0
-              end do
-           end do
+      nangleloc = 0
+      do i = 1, n
+         m = 0
+         do j = 1, n12(i)-1
+            do k = j+1, n12(i)
+              nangleloc = nangleloc + 1
+              m = m + 1
+              anglist(m,i) = nangleloc
+              iang(1,nangleloc) = i12(j,i)
+              iang(2,nangleloc) = i
+              iang(3,nangleloc) = i12(k,i)
+              iang(4,nangleloc) = 0
+            end do
+         end do
 c
-c       set the out-of-plane atom for angles at trivalent centers
+c     set the out-of-plane atom for angles at trivalent centers
 c
-           if (n12(i) .eq. 3) then
-              iang(4,nangleloc) = i12(1,i)
-              iang(4,nangleloc-1) = i12(2,i)
-              iang(4,nangleloc-2) = i12(3,i)
-           end if
-        end do
+         if (n12(i) .eq. 3) then
+            iang(4,nangleloc) = i12(1,i)
+            iang(4,nangleloc-1) = i12(2,i)
+            iang(4,nangleloc-2) = i12(3,i)
+         end if
+      end do
 c
-c       store the numbers of the bonds comprising each bond angle
+c     store the numbers of the bonds comprising each bond angle
 c
-        do i = 1, nangle
-           ia = iang(1,i)
-           ib = iang(2,i)
-           ic = iang(3,i)
-           do k = 1, n12(ib)
-              if (i12(k,ib) .eq. ia)  balist(1,i) = bndlist(k,ib)
-              if (i12(k,ib) .eq. ic)  balist(2,i) = bndlist(k,ib)
-           end do
-        end do
-        if (allocated(angleloc)) deallocate(angleloc)
-        allocate (angleloc(nangle))
-      end if
+      do i = 1, nangle
+         ia = iang(1,i)
+         ib = iang(2,i)
+         ic = iang(3,i)
+         do k = 1, n12(ib)
+            if (i12(k,ib) .eq. ia)  balist(1,i) = bndlist(k,ib)
+            if (i12(k,ib) .eq. ic)  balist(2,i) = bndlist(k,ib)
+         end do
+      end do
+      if (allocated(angleloc)) deallocate(angleloc)
+      allocate (angleloc(nangle))
+      return
+      end
+c
+c     subroutine angles_update : update local angles
+c
+      subroutine angles_update
+      use atmlst
+      use atoms
+      use angle
+      use couple
+      use domdec
+      implicit none
+      integer i,j,k,iglob,m
+c
       if (allocated(angleglob)) deallocate(angleglob)
       allocate (angleglob(4*nbloc))
       nangleloc = 0

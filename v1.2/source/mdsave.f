@@ -46,7 +46,7 @@ c
       integer iend1,idump,lext
       integer freeunit,trimtext
       integer moddump
-      real*8 dt,epot,pico,wt
+      real*8 dt,epot,pico
       real*8, allocatable :: vtemp(:,:),postemp(:,:),atemp(:,:)
       real*8, allocatable :: aalttemp(:,:),derivstemp(:,:)
       real*8, allocatable :: derivstemp2(:,:)

@@ -36,6 +36,7 @@ c
       use mdstuf
       use moldyn
       use mpi
+      use mutant
       use qtb, only: qtb_thermostat,adaptive_qtb
       use potent
       use timestat
@@ -65,10 +66,15 @@ c
       call cutoffs
       call lattice
 c
+c     get parameters
+c
+      call mechanic
+c
 c     setup for MPI
 c
       call drivermpi
       call reinitnl(0)
+      call mechanic_init_para
 c
 c     allocate some arrays
 c
@@ -86,7 +92,6 @@ c
       aalt = 0d0
       aalt2 = 0d0
 c
-      call mechanic
       call nblist(0)
 c
 c     initialize the temperature, pressure and coupling baths
@@ -284,6 +289,15 @@ c
            decv = 0d0
            decv_tot = 0d0
         end if
+c
+c       for lambda-dynamics, do a "blank" colvars computation to get restart value of lambda
+c
+        if (use_lambdadyn) then
+          call prepare_colvars 
+          if (rank.eq.0) call compute_colvars_tinker()
+          call MPI_BCAST(lambda,1,MPI_REAL8,0,COMM_TINKER,ierr)
+          call def_lambdadyn
+        end if
       end if
 #endif
 #ifndef COLVARS
@@ -305,10 +319,6 @@ c
          if (rank.eq.0) write (iout,390)
   390    format (/,' Molecular Dynamics Trajectory via',
      &              ' r-RESPA MTS Algorithm')
-      else if (integrate .eq. 'BBK') then
-         if (rank.eq.0) write (iout,400)
-  400    format (/,' Langevin Molecular Dynamics Trajectory via',
-     &              ' BBK Algorithm')
       else if (integrate .eq. 'BAOAB') then
          if (rank.eq.0) write (iout,410)
   410    format (/,' Langevin Molecular Dynamics Trajectory via',
@@ -347,8 +357,6 @@ c
             call verlet (istep,dt)
          else if (integrate .eq. 'RESPA') then
             call respa (istep,dt)
-         else if (integrate .eq. 'BBK') then
-           call bbk(istep,dt)
          else if (integrate .eq. 'BAOAB') then
            call baoab(istep,dt)
          else if (integrate .eq. 'BAOABRESPA') then

@@ -1807,10 +1807,9 @@ c
       integer i,j,k,m,impi,rankloc
       integer ii,jj,kk
       integer iproc,proc
-      integer ichk,isite,iatm
+      integer isite,iatm
       integer offsetx,offsety
       integer offsetz
-      integer cid(3)
       integer nearpt(3)
       integer abound(6)
       integer cbound(6)

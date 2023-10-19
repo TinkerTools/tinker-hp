@@ -432,7 +432,7 @@ c
 c     find the energy value for Thole polarization damping
 c
                if (use_thole) then
-                  call dampthole (iipole,kkpole,7,r,dmpik)
+                  call damptholed (iipole,kkpole,7,r,dmpik)
                   scalek = pscale(kglob)
                   rr3 = f / (r*r2)
                   rr5 = 3.0d0 * rr3 / r2
@@ -561,12 +561,9 @@ c
       use mpi
       use spectra, only: compute_dipole
       implicit none
-      integer i,iipole,iglob,ierr
-      integer iichg
-      real*8 q,xr,yr,zr
+      integer ierr
       real*8 dip(3),dipind(3)
       real*8 dipx,dipy,dipz
-      real*8 mux,muy,muz,mudx,mudy,mudz,mupx,mupy,mupz
  1000 format(/'x dipolar moment : ',F14.5)
  1010 format(/'y dipolar moment : ',F14.5)
  1020 format(/'z dipolar moment : ',F14.5)

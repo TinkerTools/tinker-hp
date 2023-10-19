@@ -45,7 +45,7 @@ c
       implicit none
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
       real*8, intent(in) :: dt
-      integer :: nu,iloc, i,j,k,ilocbeg
+      integer :: nu,iloc, i,k,ilocbeg
 
       nu=polymer%nbeads
       ilocbeg = ilocpi_beg(rank_polymer+1)
@@ -71,8 +71,8 @@ c
         implicit none
         TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
         real*8, intent(in) :: dt
-        integer :: i,j,k,iloc,kk,nu
-        real*8 :: dt2, eigx0,eigv0,gammak,a1,a2,cayfact,Rn
+        integer :: i,j,k,iloc,nu
+        real*8 :: dt2, a1,a2,Rn
         integer :: ilocbeg, inoise
         interface
           function normal()
@@ -191,8 +191,8 @@ c
         implicit none
         TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
         real*8, intent(in) :: dt
-        integer :: i,j,k,iloc,kk,nu
-        real*8 :: dt2, eigx0,eigv0,gammak,a1,a2,cayfact
+        integer :: i,j,k,iloc,nu
+        real*8 :: eigx0,eigv0,cayfact
         integer :: ilocbeg
 
         nu=polymer%nbeads
@@ -226,8 +226,8 @@ c
         implicit none
         TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
         real*8, intent(in) :: dt
-        integer :: i,j,k,iloc,kk,nu
-        real*8 :: dt2, eigx0,eigv0,gammak,a1,a2,cayfact
+        integer :: i,j,k,iloc,nu
+        real*8 :: eigx0,eigv0
         integer :: ilocbeg
 
         nu=polymer%nbeads
@@ -287,12 +287,10 @@ c       GRADIENT SUBROUTINES
       logical save_tortor,save_geom
       logical save_extra
       logical save_vdw,save_charge
-      logical save_mpole,save_polar
-      logical save_list
-      logical save_smdvel, save_smdfor
+      logical save_mpole
       logical save_mrec
       logical save_prec,save_crec
-      logical save_disprec,save_dispself
+      logical save_disprec
       logical save_disp,save_chgtrn,save_repuls
       integer save_polalg,save_tcgorder
       real*8 save_tcgomega
@@ -539,7 +537,7 @@ c
       logical, intent(in) :: do_long, do_int, do_short
       logical, intent(in) :: compute_polar
       real*8 save_tcgomega
-      integer i,j,k,iloc,ibead
+      integer i,j,k,ibead
       logical save_bond,save_angle
       logical save_strbnd,save_urey
       logical save_angang,save_opbend 
@@ -562,11 +560,9 @@ c
 #ifdef PLUMED
       logical save_plumed
 #endif
-      real*8 eloc,nu
-      integer nbeadsproc,ibeadbeg,ibeadend ,ierr
-      real*8 time0,time1
+      real*8 nu
+      integer nbeadsproc,ibeadbeg,ibeadend
       logical :: fullpotential,bonded_only
-      real*8 diploc(3),dipindloc(3)
 
 
       ibeadbeg=polymer%ibead_beg(rank_polymer+1)
@@ -866,8 +862,8 @@ c     BAROSTAT SUBROUTINES
       REAL*8, intent(in) :: dt
       integer, intent(in) :: istep
       character, intent(in) :: bloc
-      integer :: iloc,ierr,i,j
-      real*8 :: dt2,factor,a1p,a2p,scale(3),tmp
+      integer :: iloc,ierr,i
+      real*8 :: factor,a1p,a2p,scale(3),tmp
       real*8 :: normal
 
       SELECT CASE(bloc)
@@ -941,18 +937,8 @@ c     BAROSTAT SUBROUTINES
       TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
       REAL*8, intent(in) :: dt
       integer, intent(in) :: istep
-      integer i,j,k,iglob,iloc,ierr
-      integer start,stop
-      real*8 pres
-      real*4 weigh,cosine
+      integer i,iloc,ierr
       real*8 scale,third
-      real*8 xcm,xmove
-      real*8 ycm,ymove
-      real*8 zcm,zmove
-      real*8 stress(3,3)
-      real*4 temp(3,3)
-      real*4 hbox(3,3)
-      real*4 ascale(3,3)
       parameter(third = 1.0d0 / 3.0d0)
 c
 c     find the isotropic scale factor for constant pressure
