@@ -26,6 +26,7 @@ c
       use couple
       use domdec
       use freeze
+      use iounit
       use keys
       use math
       use molcul
@@ -37,6 +38,7 @@ c
       integer ia,ib,ic
       integer ja,jb,jc
       integer ilist,next
+      integer ierr
       real*8 rab,rbc,rac
       real*8 cosine
       logical done
@@ -370,6 +372,15 @@ c
 c     if no holonomic constraints are present, turn off their use
 c
       if (nrat.eq.0 .and. nratx.eq.0)  use_rattle = .false.
+c
+c     rattle algorithm not compatible with parallel simulations
+c
+      if (use_rattle.and.nproc.gt.1) then
+        if (rank.eq.0) write(iout,*) 'RATTLE algorithm incompatible ',
+     &   'with parallel simulaions'
+        call MPI_BARRIER(COMM_TINKER,ierr)
+        call fatal
+      end if
       return
       end
 c

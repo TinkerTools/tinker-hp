@@ -109,7 +109,6 @@ c
 c     zero out the virial and the intermolecular energy
 c
       vir = 0d0
-      virsave = 0d0
       einter = 0.0d0
       time1 = mpi_wtime()
       timecleargrad = timecleargrad + time1-time0

@@ -2371,6 +2371,17 @@ c
                vir(1,3) = vir(1,3) + vxz
                vir(2,3) = vir(2,3) + vyz
                vir(3,3) = vir(3,3) + vzz
+               if (shortrange) then
+                 virsave(1,1) = virsave(1,1) + vxx
+                 virsave(2,1) = virsave(2,1) + vxy
+                 virsave(3,1) = virsave(3,1) + vxz
+                 virsave(1,2) = virsave(1,2) + vxy
+                 virsave(2,2) = virsave(2,2) + vyy
+                 virsave(3,2) = virsave(3,2) + vyz
+                 virsave(1,3) = virsave(1,3) + vxz
+                 virsave(2,3) = virsave(2,3) + vyz
+                 virsave(3,3) = virsave(3,3) + vzz
+               end if
             end if
          end do
 c
