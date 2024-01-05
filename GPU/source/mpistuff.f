@@ -1046,6 +1046,7 @@ c
 !Wait for n_data_send
 !$acc wait
 
+
         ! Allocate and fill data to send (Optimize reallocation)
         s_bufi = maxval(n_data_send(1:nneig_send))
         if (s_bufi.gt.max_atoms_send) then
@@ -1154,15 +1155,26 @@ c
         ! Rebuild glob(:) with old local atoms
         nloc = n_data_send(0)
 
+        if (allocated(repartrec)) then
 !$acc parallel loop present(iglob_send) async
-        do i = 1, n
-           if (i.lt.nloc+1)
-     &        glob(i) = iglob_send(2*(i-1)+1, 0)
-           loc(i)     = 0
-           repart(i)  = -1
-           locrec(i)    = 0
-           repartrec(i) = -1
-        end do
+           do i = 1, n
+              if (i.lt.nloc+1)
+     &           glob(i) = iglob_send(2*(i-1)+1, 0)
+              loc(i)     = 0
+              repart(i)  =-1
+              locrec(i)  = 0
+              repartrec(i) = -1
+           end do
+        else
+!$acc parallel loop present(iglob_send) async
+           do i = 1, n
+              if (i.lt.nloc+1)
+     &           glob(i) = iglob_send(2*(i-1)+1, 0)
+              loc(i)     = 0
+              repart(i)  =-1
+              locrec(i)  = 0
+           end do
+        end if
 
         ! Wait all communications
         call MPI_Waitall(nneig_recep,req_data_recv ,MPI_STATUSES_IGNORE,
@@ -3210,6 +3222,8 @@ c
       allocate (ind1temp(n))
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
+c
+      if (tinkerdebug.gt.0) call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       if (deb_Path) write(*,*) '   >> orderbuffer',init
 c
 c      ind1temp = 0
@@ -3413,6 +3427,7 @@ c
       ! doesn't exceed a certain amount
       ! Consider using classical method with more than 64 MPI process
 
+      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
       if (deb_Path) write(*,*) '   >> orderbuffer_gpu',init
       ! Get domlen values of all processes
       call MPI_IAllgather( MPI_IN_PLACE, 1, MPI_DATATYPE_NULL,
@@ -3559,10 +3574,11 @@ c
 c     subroutine orderbufferrec : get the indexes of the particules in the reciprocal processes
 c
       subroutine orderbufferrec
-      use atoms  , only : n
+      use atoms  , only: n
       use domdec
-      use inform , only : deb_Path
+      use inform , only: deb_Path
       use potent
+      use sizes  , only: tinkerdebug
       use mpi
       implicit none
       integer counttemp(nproc),reqsend(nproc),reqrec(nproc)
@@ -3572,6 +3588,9 @@ c
       integer iloc,iglob,ierr,tag,status(MPI_STATUS_SIZE)
       integer iprec,ind1
 c
+      if (use_ani_only) return
+c
+      if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,i)
       if (deb_Path) write(*,*) '   >> orderbufferrec'
 c     allocate (ind1temp(n))
 c
@@ -3608,7 +3627,6 @@ c
             end if
           end do
         end do
-!$acc update device(globrec,locrec) async
       end if
 c
       if (use_pmecore) then
@@ -3707,6 +3725,7 @@ c     end do
 c
 c     deallocate (ind1temp)
 
+      if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,i)
       if (deb_Path) write(*,*) '   << orderbufferrec'
       end
 
@@ -3727,6 +3746,9 @@ c     integer, allocatable :: counttemp(:),ind1temp(:)
       integer iloc,iglob
       integer ierr,tag,status(MPI_STATUS_SIZE)
 c
+      if (use_ani_only) return
+c
+      if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,i)
       if (deb_Path) write(*,*) '   >> orderbufferrec_gpu'
 c
       if (use_pmecore) then
@@ -3858,6 +3880,8 @@ c
          end do
       end do
 !$acc end data
+      !if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,i)
+      !if (deb_Path) write(0,*) __FILE__,__LINE__
 
 c     call MPI_BARRIER(hostcomm,ierr)
 c46   format(I3,'domlen',4I8,'bufbeg',2I8)
@@ -3889,6 +3913,8 @@ c     print 46, rank,domlen,domlenrec,bufbegrec
       end do
 
       end if
+
+      if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,i)
       if (deb_Path) write(*,*) '   << orderbufferrec_gpu'
       end
 c

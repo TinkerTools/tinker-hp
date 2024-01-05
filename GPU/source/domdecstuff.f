@@ -1511,9 +1511,12 @@ c
         zr = z(i)
         call image(xr,yr,zr)
         ! Avoid box limits
-        if ((xcell2-abs(xr)).lt.eps1) xr = xr-0.05*sign(nx_box,xr)
-        if ((ycell2-abs(yr)).lt.eps1) yr = yr-0.05*sign(ny_box,yr)
-        if ((zcell2-abs(zr)).lt.eps1) zr = zr-0.05*sign(nz_box,zr)
+        if ((xcell2-abs(xr)).lt.eps1)
+     &     xr = xr-0.05*sign(real(nx_box,t_p),xr)
+        if ((ycell2-abs(yr)).lt.eps1)
+     &     yr = yr-0.05*sign(real(ny_box,t_p),yr)
+        if ((zcell2-abs(zr)).lt.eps1)
+     &     zr = zr-0.05*sign(real(nz_box,t_p),zr)
         do iproc = 0, nprocloc-1
           if ((zr.ge.zbegproc(iproc+1)).and.(zr.lt.zendproc(iproc+1))
      &   .and.(yr.ge.ybegproc(iproc+1)).and.(yr.lt.yendproc(iproc+1))
@@ -1732,17 +1735,14 @@ c
         mshortbuf = 0.0_ti_p
       end if
 c
-      vbuf = sqrt(vbuf2)+2.0_ti_p
-      vshortbuf = sqrt(vshortbuf2)+2.0_ti_p
-      torquebuf = mbuf + lbuffer
-      torqueshortbuf = mshortbuf + lbuffer
-      torquebuf2 = torquebuf*torquebuf 
+      vbuf            = sqrt(vbuf2) + lbuffer
+      vshortbuf       = sqrt(vshortbuf2) + lbuffer
+      torquebuf       = mbuf + lbuffer
+      torqueshortbuf  = mshortbuf + lbuffer
+      torquebuf2      = torquebuf*torquebuf 
       torqueshortbuf2 = torqueshortbuf*torqueshortbuf 
-      anibuf  = 0
-      if (use_mlpot) then
-         anibuf  = MLpotcut + lbuffer
-      end if
-      neigbuf = anibuf
+      anibuf          = merge(MLpotcut + lbuffer, 0.0_ti_p, use_mlpot)
+      neigbuf         = 0.0_ti_p
 c
 c     get maximum cutoff value
 c
@@ -1831,7 +1831,6 @@ c
 c
       nneig_recep = nneigrecep(rankloc+1)
       pneig_recep = pneigrecep(:,rankloc+1)
-!$acc update device(p_recep1,p_recep2)
 c
       n_send1 = 0
 c
@@ -1963,12 +1962,15 @@ c
       end do
       if ( rank.eq.0.and.tinkerdebug.gt.0.and.nproc.gt.1 ) then
  46       format(a21,I3,';',$)
- 47       format(I3,$)
+ 47       format(I4,$)
           write(*,46) 'nbigshort_recep    = ',nbigshort_recep
           write(*,47) ( pbigshort_recep(i),i=1,nbigshort_recep)
           write(*,*)
           write(*,46) 'nbig_recep         = ',nbig_recep
           write(*,47) (pbig_recep(i),i=1,nbig_recep)
+          write(*,*)
+          write(*,46) 'nneig_recep        = ',nneig_recep
+          write(*,47) (pneig_recep(i),i=1,nneig_recep)
           write(*,*)
           write(*,46) 'n_recepshort1      = ',n_recepshort1
           write(*,47) (p_recepshort1(i),i=1,n_recepshort1)
@@ -2371,7 +2373,6 @@ c
           end if
  70     continue
       end do
-!$acc update device(p_recep1,p_recep2) async
 c
       n_send1 = 0
 c

@@ -16,6 +16,7 @@ c
 c
 #include "tinker_precision.h"
       subroutine prmkey (text)
+      use ani
       use angpot
       use bndpot
       use bound
@@ -123,6 +124,118 @@ c
          if (value .eq. 'ONLY')  call potoff
          use_tortor = .true.
          if (value .eq. 'NONE')  use_tortor = .false.
+      else if (keyword(1:8) .eq. 'ANI1CCX ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY') then
+            call potoff; use_ani_only=.true.;
+         end if
+         use_mlpot    = .true.
+         MLpot = "ANI1CCX"
+         if (value .eq. 'NONE')  use_mlpot = .false.
+      else if (keyword(1:6) .eq. 'ANI1X ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY') then
+            call potoff; use_ani_only=.true.
+         end if
+         use_mlpot    = .true.
+         MLpot = "ANI1X"
+         if (value .eq. 'NONE')  use_mlpot = .false.
+      else if (keyword(1:6) .eq. 'ANI2X ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY') then
+            call potoff; use_ani_only=.true.
+         end if
+         use_mlpot    = .true.
+         MLpot = "ANI2X"
+         if (value .eq. 'NONE')  use_mlpot = .false.
+      else if (keyword(1:6) .eq. 'MLPOT ') then
+         call getword (record,value,next)
+         use_mlpot    = .true.
+         if (value .eq. 'ONLY') then
+           call potoff; use_ani_only=.true.
+         elseif (value .eq. 'EMBEDDING') then
+           use_ml_embedding=.true.
+         elseif (value .eq. 'NONE') then
+           use_mlpot = .false.
+         end if
+      else if (keyword(1:14) .eq. 'BONDTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_bond = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:15) .eq. 'ANGLETERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_angle = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:16) .eq. 'STRBNDTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_strbnd = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:14) .eq. 'UREYTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_urey = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:16) .eq. 'ANGANGTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_angang = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:16) .eq. 'OPBENDTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_opbend = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:16) .eq. 'OPDISTTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_opdist = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:16) .eq. 'IMPROPTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_improp = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:17) .eq. 'IMPTORSTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_imptor = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:17) .eq. 'TORSIONTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE')  then
+            use_embd_tors = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:16) .eq. 'PITORSTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then 
+            use_embd_pitors = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:16) .eq. 'STRTORTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_strtor = .false.
+            use_embd_potoff = .true.
+         end if
+      else if (keyword(1:16) .eq. 'TORTORTERM-EMBD ') then
+         call getword (record,value,next)
+         if (value .eq. 'NONE') then
+            use_embd_tortor = .false.
+            use_embd_potoff = .true.
+         end if
       else if (keyword(1:8) .eq. 'VDWTERM ') then
          call getword (record,value,next)
          if (value .eq. 'ONLY')  call potoff
@@ -652,6 +765,7 @@ c
       use_strbnd = .false.
       use_urey = .false.
       use_angang = .false.
+      use_angtor = .false.
       use_opbend = .false.
       use_opdist = .false.
       use_improp = .false.
@@ -663,6 +777,7 @@ c
       use_vdw = .false.
       use_charge = .false.
       use_mpole = .false.
+      use_chgpen= .false.
       use_polar = .false.
       use_solv = .false.
       use_geom = .false.
@@ -671,6 +786,7 @@ c
       use_disp = .false.
       use_repuls = .false.
       use_chgtrn = .false.
+      use_chgflx = .false.
 !$acc update device (use_mpole,use_polar)
       return
       end

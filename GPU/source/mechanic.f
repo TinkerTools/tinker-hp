@@ -82,7 +82,7 @@ c      call orbital
 c
 c     assign electrostatic and dispersion Ewald sum parameters
 c
-      call kewald
+      if (.not.use_ani_only) call kewald
 c
       call clean_shared_space(0)
 c
@@ -481,7 +481,7 @@ c     call molecule(.false.)
       if (use_tortor)  call ktortor(.false.)
       if (use_geom  )  call kgeom  (.false.)
       if (use_smd_velconst .or. use_smd_forconst) call ksmd(.false.)
-      if (use_mlpot)   call kmlpot_reset(.false.,istep)
+      if (use_mlpot)   call kmlpot_reset(istep)
 !$acc wait
       call dev_sort_global_buffers(istep)
       call initmpipmegpu
@@ -544,7 +544,7 @@ c        print*,use_strtor,use_tortor,use_geom
      &                   call kpolar_reset(istep)
          if (use_vdw   ) call kvdw   (.false.,istep)
          if (use_disp  ) call kdisp  (.false.,istep)
-         if (use_mlpot)  call kmlpot_reset(.false.,istep)
+         if (use_mlpot)  call kmlpot_reset(istep)
 !$acc wait
          call dev_sort_global_buffers(istep)
          call initmpipmegpu
@@ -623,7 +623,7 @@ c      call molecule(.false.)
      &                  call kpolar_reset(istep)
         if (use_vdw   ) call kvdw   (.false.,istep)
         if (use_disp  ) call kdisp  (.false.,istep)
-        if (use_mlpot)  call kmlpot_reset(.false.,istep)
+        if (use_mlpot)  call kmlpot_reset(istep)
 !$acc wait
         call dev_sort_global_buffers(istep)
         call build_scaling_factor(istep)

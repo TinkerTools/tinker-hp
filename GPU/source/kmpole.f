@@ -758,7 +758,7 @@ c
 c       if (nZ_Onlyglob.ne.0.and.rank.eq.0)
 c    &     print*,'nZ_Only axe : ',nZ_Onlyglob
 
-        if (tinkerdebug.gt.0) then
+        if (tinkerdebug.gt.0.and.rank.eq.0) then
            n3_f = 0
            nbis = 0
            nzbi = 0

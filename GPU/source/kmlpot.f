@@ -53,25 +53,10 @@ c
       character*240 record_raw
       character*240 string
 
-      MLpot = "ANI2X"
-      use_ani_only    = .FALSE.
-      use_bondorder   = .FALSE.
-      use_ml_embedding= .FALSE.
-      use_embd_potoff = .FALSE.
-      use_embd_bond   = .TRUE.
-      use_embd_angle  = .TRUE.
-      use_embd_strbnd = .TRUE.
-      use_embd_urey   = .TRUE.
-      use_embd_angang = .TRUE.
-      use_embd_opbend = .TRUE.
-      use_embd_opdist = .TRUE.
-      use_embd_improp = .TRUE.
-      use_embd_imptor = .TRUE.
-      use_embd_tors   = .TRUE.
-      use_embd_pitors = .TRUE.
-      use_embd_strtor = .TRUE.
-      use_embd_tortor = .TRUE.
-      mlpotscale = 1.0_ti_p
+ 01   format(' kmlpot init',L3,' step',I0)
+      if (deb_Path) write(*,01) init,istep
+
+      mlpotscale      = 1.0_ti_p
       ml_embedding_mode=1
 c
 c     parse the line to extract any possible keyword
@@ -84,130 +69,7 @@ c
          call gettext (record,keyword,next)
          string = record(next:240)
 
-         if (keyword(1:8) .eq. 'ANI1CCX ') then
-            call getword (record,word,next)
-            value = trim(word)
-            if (value .eq. 'ONLY') then
-               call potoff; use_ani_only=.true.;
-            end if
-            use_mlpot    = .true.
-            MLpot = "ANI1CCX"
-            if (value .eq. 'NONE')  use_mlpot = .false.
-         else if (keyword(1:6) .eq. 'ANI1X ') then
-            call getword (record,word,next)
-            value = trim(word)
-            if (value .eq. 'ONLY') then
-               call potoff; use_ani_only=.true.
-            end if
-            use_mlpot    = .true.
-            MLpot = "ANI1X"
-            if (value .eq. 'NONE')  use_mlpot = .false.
-         else if (keyword(1:6) .eq. 'ANI2X ') then
-            call getword (record,word,next)
-            value = trim(word)
-            if (value .eq. 'ONLY') then
-               call potoff; use_ani_only=.true.
-            end if
-            use_mlpot    = .true.
-            MLpot = "ANI2X"
-            if (value .eq. 'NONE')  use_mlpot = .false.
-         else if (keyword(1:6) .eq. 'MLPOT ') then
-            call getword (record,word,next)
-            value = trim(word)
-            use_mlpot    = .true.
-            if (value .eq. 'ONLY') then
-              call potoff; use_ani_only=.true.
-            elseif (value .eq. 'EMBEDDING') then
-              use_ml_embedding=.true.
-            elseif (value .eq. 'NONE') then
-              use_mlpot = .false.
-            end if
-         else if (keyword(1:9) .eq. 'ML-MODEL ') then
-            call getword (record,MLpot,next)
-            if (trim(MLpot)=="ANI_GENERIC") then
-              call getword (record_raw,model_file,next)
-            elseif (trim(MLpot)=="DEEPMD") then
-              call getword (record_raw,model_file,next)
-            endif
-         else if (keyword(1:14) .eq. 'BONDTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_bond = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:15) .eq. 'ANGLETERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_angle = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:16) .eq. 'STRBNDTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_strbnd = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:14) .eq. 'UREYTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_urey = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:16) .eq. 'ANGANGTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_angang = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:16) .eq. 'OPBENDTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_opbend = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:16) .eq. 'OPDISTTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_opdist = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:16) .eq. 'IMPROPTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_improp = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:17) .eq. 'IMPTORSTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_imptor = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:17) .eq. 'TORSIONTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE')  then
-               use_embd_tors = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:16) .eq. 'PITORSTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then 
-               use_embd_pitors = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:16) .eq. 'STRTORTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_strtor = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:16) .eq. 'TORTORTERM-EMBD ') then
-            call getword (record,value,next)
-            if (value .eq. 'NONE') then
-               use_embd_tortor = .false.
-               use_embd_potoff = .true.
-            end if
-         else if (keyword(1:10) .eq. 'BOND-LIST ') then
+         if (keyword(1:10) .eq. 'BOND-LIST ') then
             read (string,*,err=10,end=10)  bondorder
             if (bondorder > 4) then
                write(0,*) "Warning: Maximum bond order is 4!"
@@ -215,7 +77,15 @@ c
             end if
  10         continue
             use_bondorder = .true.
+         else if (keyword(1:9) .eq. 'ML-MODEL ') then
+            call getword (record,MLpot,next)
+            if (trim(MLpot)=="ANI_GENERIC") then
+              call getword (record_raw,model_file,next)
+            else if (trim(MLpot)=="DEEPMD") then
+              call getword (record_raw,model_file,next)
+            end if
          end if
+
       end do
 
       if (.not.use_mlpot) return
@@ -316,9 +186,9 @@ c
            call sort (naml,iaml)
         end if
 
+!$acc update device(iaml,laml)
       endif
 
-!$acc update device(iaml,laml)
 
       if (init) then
 !$acc enter data copyin(namloc)

@@ -163,9 +163,7 @@ c
      &         , ybegproc(:),yendproc(:),zbegproc(:),zendproc(:)
 
 !$acc declare create(rank,rank_bis)
-!$acc declare create(nrec_send)
-!$acc declare create(p_recep1,p_recep2)
-!$acc declare create(prec_send,prec_recep)
+!$acc declare create(prec_send)
 !$acc declare create(bufbeg1,bufbeg2)
 !$acc declare create(xbegproc,xendproc)
 !$acc declare create(ybegproc,yendproc)

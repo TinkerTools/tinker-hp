@@ -290,6 +290,7 @@ c
       use domdec
       use mpole
       use pme
+      use potent  ,only: use_ani_only
       use mpi
       use tinMemory
       use utilgpu ,only: rec_queue
@@ -301,6 +302,8 @@ c
       integer count1,count_cap
       integer status(MPI_STATUS_SIZE)
       integer, allocatable :: req(:),req2(:),count(:)
+
+      if (use_ani_only) return
 
       allocate (req(nproc*nproc))
       allocate (req2(nproc*nproc))

@@ -1330,6 +1330,7 @@ c
       type(c_ptr) grid_ptr
       logical init
 c
+      if (use_ani_only) return
 #if defined(SINGLE) || defined(MIXED)
       eps = 1.0d-4
 #else
@@ -1687,7 +1688,7 @@ c
 
           if ( rank.eq.0.and.nproc.gt.1.and.tinkerdebug.gt.0 ) then
   46         format(A20,I3,';',1x,$)
-  47         format(I3,$)
+  47         format(I4,$)
               write(*,46)'nrec_send      = ',nrec_send
               write(*,47) (prec_send(i),i=1,nrec_send)
               write(*,*)
@@ -1713,8 +1714,7 @@ c
               write(*,47) (precdir_recep2(i),i=1,nrecdir_recep2)
               write(*,*)
           end if
-!$acc update device(prec_send,prec_recep) async
-!$acc update device(nrec_send) async
+!$acc update device(prec_send)
 c
           gridin_size  = 2*(nrec_send+1)*n1mpimax*n2mpimax*n3mpimax
           gridout_size = 2*isize2(rankloc+1)*jsize2(rankloc+1)*
@@ -1844,10 +1844,8 @@ c
       end if
 c
       nlocrecold = nlocrec
-!$acc data present(glob,x,y,z,repartrec,repartrectemp
-!$acc&            ,recip,kstart1,kend1,jstart1,jend1)
 
-!$acc parallel loop async
+!$acc parallel loop async default(present)
       do i = 1, nloc
         iglob = glob(i)
         xi    = x(iglob)
@@ -1873,6 +1871,7 @@ c
           end if
         end do
       end do
+
 c
 c     send and receive repartrectemp
 c
@@ -1906,7 +1905,7 @@ c
      &    call MPI_WAIT(req(nproc+i),status,ierr)
       end do
 
-!$acc parallel loop async
+!$acc parallel loop present(glob,repartrec,repartrectemp) async
       do i = 1, nloc
          iglob = glob(i)
          repartrec(iglob) =  repartrectemp(i)
@@ -1927,7 +1926,6 @@ c
 
       call orderbufferrec_gpu
 c
-!$acc end data
 
       deallocate (domlentemp)
       deallocate (counttemp)

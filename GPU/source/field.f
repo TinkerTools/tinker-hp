@@ -16,6 +16,7 @@ c
 c
 #include "tinker_macro.h"
       subroutine field
+      use ani    ,only: MLpot,use_bondorder
       use keys
       use inform ,only: app_id,dynamic_a,pimd_a
       use potent
@@ -81,6 +82,27 @@ c
       fuse_chglj     = .false.
       fuse_bonded    = .false.
       use_mlpot      = .false.
+c
+c     Flags for Machine learning potentials
+c
+      MLpot           = "ANI2X"
+      use_ani_only    = .FALSE.
+      use_bondorder   = .FALSE.
+      use_ml_embedding= .FALSE.
+      use_embd_potoff = .FALSE.
+      use_embd_bond   = .TRUE.
+      use_embd_angle  = .TRUE.
+      use_embd_strbnd = .TRUE.
+      use_embd_urey   = .TRUE.
+      use_embd_angang = .TRUE.
+      use_embd_opbend = .TRUE.
+      use_embd_opdist = .TRUE.
+      use_embd_improp = .TRUE.
+      use_embd_imptor = .TRUE.
+      use_embd_tors   = .TRUE.
+      use_embd_pitors = .TRUE.
+      use_embd_strtor = .TRUE.
+      use_embd_tortor = .TRUE.
 c
 c     Flag for predictor-Corrector
 c

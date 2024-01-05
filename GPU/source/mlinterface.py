@@ -145,7 +145,7 @@ try:
   class AniRessources:
     nb_species   = 0
 
-    def __init__(self,rank:int ,mlpot_key:str
+    def __init__(self,rank:int ,devID:int, mlpot_key:str
                     ,model_file:Optional[str]=None
                     ,verbose:bool=False
                     ,debug:bool=False)->None:
@@ -154,17 +154,18 @@ try:
       if verbose:
         init_time = time()
 
-      self.mlpot_key   = mlpot_key
-      self.rank = rank
+      self.mlpot_key  = mlpot_key
+      self.rank       = rank
+      self.devID      = devID
 
       try:
         # SELECT DEVICE
         if mlpot_key in _torchani_models:
             #pcd.init()
             torch.cuda.init()
-            #self.cuDeviceId = pcd.Device(rank)
+            #self.cuDeviceId = pcd.Device(devID)
             #self.context    = self.cuDeviceId.retain_primary_context()
-            device_name     = 'cuda:'+str(rank) if torch.cuda.is_available() else 'cpu'
+            device_name     = 'cuda:'+str(devID) if torch.cuda.is_available() else 'cpu'
             self.device     = torch.device(device_name)
             if self.verbose: print("I rank ",rank," select device "+device_name,flush=True)
             try:
@@ -173,10 +174,10 @@ try:
                raise Exception('test torch '+str(exp))
         elif mlpot_key in _tf_models:
             default_tf_session_config.device_count['GPU']=1
-            default_tf_session_config.gpu_options.visible_device_list=str(rank)
+            default_tf_session_config.gpu_options.visible_device_list=str(devID)
             physical_devices = tf.config.list_physical_devices('GPU')
-            # Only use the GPU corresponding to rank
-            tf.config.set_visible_devices(physical_devices[rank], 'GPU')
+            # Only use the GPU corresponding to devID
+            tf.config.set_visible_devices(physical_devices[devID], 'GPU')
             logical_devices = tf.config.list_logical_devices('GPU')
             assert len(logical_devices) == 1
             self.device = tf.device('/GPU:0')
@@ -430,7 +431,7 @@ except Exception as err:
 # define actual interface
 
 @ffi.def_extern()
-def init_ml_ressources(rank,nn_name,model_file_,debug_int):
+def init_ml_ressources(rank,devID,nn_name,model_file_,debug_int):
   try:
      if global_load != 0: return 1
      init_time  = time()
@@ -438,7 +439,7 @@ def init_ml_ressources(rank,nn_name,model_file_,debug_int):
      debug      = debug_int != 0
      ml_key     = ffi.string(nn_name).decode('UTF-8').strip().upper()
      model_file = ffi.string(model_file_).decode('UTF-8').strip()
-     if (debug): print('init ML ressources',rank,model_file,debug_int,ml_key,flush=True)
+     if (debug and rank==0): print('init ML ressources',rank,model_file,debug_int,ml_key,flush=True)
 
      load_err = load_modules(ml_key,rank,debug)
      if  load_err != 0: return 10+load_err
@@ -449,7 +450,7 @@ def init_ml_ressources(rank,nn_name,model_file_,debug_int):
      if debug: print(f'_model_dir="{_model_dir}"')
 
      global ar
-     ar=AniRessources(rank,ml_key,model_file=model_file,debug=debug)
+     ar=AniRessources(rank,devID,ml_key,model_file=model_file,debug=debug)
      torch.cuda.synchronize()
 
      if (ar.verbose): print(f'init ML ressources done {time()-init_time} s'.format(), flush=True)
@@ -459,9 +460,10 @@ def init_ml_ressources(rank,nn_name,model_file_,debug_int):
         print('', flush=True)
   except Exception as err:
      ierr = 1
-     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",flush=True)
-     print(traceback.format_exc(),flush=True)
-     print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",flush=True)
+     if (rank<4):
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",flush=True)
+        print(traceback.format_exc(),flush=True)
+        print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",flush=True)
      #raise Exception('init_ml_ressources:'+str(err))
   return ierr
 
@@ -474,9 +476,10 @@ def ml_models(coord_ptr, atm_ener_ptr, gradient_ptr, cell_ptr, atm_sp_ptr
          , neigh1Idx_ptr, neigh2Idx_ptr, dist_ptr, dxyz_ptr,istrict_ptr, nb_species, nb_pairs, nb_strict, dograd)
   except Exception as err:
     ierr = 1
-    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",flush=True)
-    print(traceback.format_exc(),flush=True)
-    print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",flush=True)
+    if (ar.rank<4):
+       print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",flush=True)
+       print(traceback.format_exc(),flush=True)
+       print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",flush=True)
     #raise Exception("ml_models "+str(err))
   return ierr
 
@@ -495,9 +498,10 @@ def ml_debug(array_ptr, size):
 
 @ffi.def_extern()
 def nuke_context( i ):
-  try:
-     if ar.mlpot_key in _torchani_models:
-        if ar.verbose: print('ML potential pop CUDA Context', flush=True)
-        #ar.context.pop()
-  except Exception as err:
-     raise Exception('nuke_context'+str(err))
+  pass
+  #try:
+  #   if ar.mlpot_key in _torchani_models:
+  #      if ar.verbose: print('ML potential pop CUDA Context', flush=True)
+  #      #ar.context.pop()
+  #except Exception as err:
+  #   raise Exception('nuke_context'+str(err))

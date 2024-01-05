@@ -101,10 +101,12 @@ c
       if (deb_Path) write(*,*) '>> ml_potential'
       if (f_in) then
         if (deb_Path) write(*,*) 'init_ml_ressources'
-        ierr =  init_ml_ressources(devicenum,trim(MLpot)//char(0)
+        ierr =  init_ml_ressources(rank,devicenum,trim(MLpot)//char(0)
      &     ,trim(model_file)//char(0),tinkerdebug)
         if (ierr /= 0) then
-          write(0,*) "Error ",ierr," in init_ml_ressources"
+ 22       format("Error ",I0," detected from rank ",I0," in
+     & init_ml_ressources")
+          write(0,*) ierr,rank
           call fatal
         endif
         ml_resources_initialized = .true.
@@ -194,11 +196,12 @@ c         iglob             = merge(i,c_glob(i), use_bondorder)
      &                ,merge(1,0,dograd))
 !$acc end host_data
         if (ierr /= 0) then
-          write(0,*) "Error ",ierr," in ml_models"
+ 24       format("Error ",I0," detected from rank ",I0," in ml_models")
+          write(0,24) ierr,rank
           call fatal
         else if(deb_Path) then
            write(*,*) 'ML POTENTIAL successfully got result ' 
-     &                  ,'from external routine!'
+     &               ,'from external routine!'
         endif
 !$acc wait
       call timer_exit(timer_b2)
@@ -263,8 +266,8 @@ c          iloc = loc(merge(i,c_glob(i),use_bondorder))
       if (rank.lt.2.and.tinkerdebug.gt.0) then
 !$acc wait
 !$acc update host(emlpot)
- 24   format(A,F14.4,' loc nl pairs',2I8,I10,F6.2,' rank',I2)
-         print 24, 'e ani',emlpot
+ 26   format(A,F14.4,' loc nl pairs',2I8,I10,F6.2,' rank',I2)
+         print 26, 'e ani',emlpot
      &           ,nloc,natmnl,pairs,n/(1.0d0*natmnl),rank
          end if
          if (nadd.ne.nloc.and.naml.eq.n) then

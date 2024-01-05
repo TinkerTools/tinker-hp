@@ -84,14 +84,14 @@ if (tinkerdebug.gt.0) then
    if (rank_bis.eq.0) write(*,*) '--- fft_setup'
    do i = 0,nrec-1
       if (rank_bis.eq.i) then
-13       format(I4,'in ',6I8)
+13       format(' --fft_dd',I4,'in ',6I8)
          write(*,13) i, xstart(1),xend(1),xstart(2),xend(2),xstart(3),xend(3)
       end if
       call MPI_Barrier(comm_loc,k)
    end do
    do i = 0,nrec-1
       if (rank_bis.eq.i) then
-14       format(I4,'out',6I8)
+14       format(9X,I4,'out',6I8)
          write(*,14) i, zstart(1),zend(1),zstart(2),zend(2),zstart(3),zend(3)
       end if
       call MPI_Barrier(comm_loc,k)
