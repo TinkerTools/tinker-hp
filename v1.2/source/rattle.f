@@ -246,7 +246,7 @@ c
 c     initialize arrays for MPI 
 c
       call initmpirattle
-      call commrattleinit
+      call commrattleinit2
 c
 c     set the iteration counter, termination and tolerance
 c
@@ -333,7 +333,7 @@ c
             update(i) = .false.
          end do
       end do
-      call commrattleend
+      call commrattleend2
       call MPI_ALLREDUCE(MPI_IN_PLACE,virtemp,9,MPI_REAL8,MPI_SUM,
      $ COMM_TINKER,ierr)
       vir = vir + virtemp
@@ -743,3 +743,177 @@ c
          zold(iglob) = z(iglob)
       enddo
       end subroutine save_atoms_pos
+c
+c     subroutine commrattleinit2 : deal with necessary comms before rattle2 iterations
+c
+      subroutine commrattleinit2
+      use atoms
+      use domdec
+      use freeze
+      use moldyn
+      use mpi
+      implicit none
+      integer i,j,proc,ierr,iglob
+      integer tag,status(MPI_STATUS_SIZE)
+      integer, allocatable :: reqrec(:),reqsend(:)
+      real*8, allocatable :: buffermpi1(:,:),buffermpi2(:,:)
+c
+      allocate (reqrec(nproc))
+      allocate (reqsend(nproc))
+      allocate (buffermpi1(3,max(nbloc,1)))
+      buffermpi1 = 0d0
+      allocate (buffermpi2(3,max(nbloc,1)))
+      buffermpi2 = 0d0
+c
+c     Begin the reception of the constrained atoms
+c
+      do i = 1, nneig_recep
+        proc = pneig_recep(i)
+        if (proc.ne.rank) then
+          tag = nproc*rank + proc + 1
+          call MPI_IRECV(buffermpi1(1,bufbegrat2(proc+1)),
+     $      3*buflenrat2(proc+1),
+     $      MPI_REAL8,proc,tag,COMM_TINKER,reqrec(i),ierr)
+        end if
+      end do
+c
+      do i = 1, nneig_send
+        proc = pneig_send(i)
+        if (proc.ne.rank) then
+          do j = 0, buflenrat1(proc+1)-1
+            iglob = bufrat1(bufbegrat1(proc+1)+j)
+            buffermpi2(1,bufbegrat1(proc+1)+j) = 
+     $          v(1,iglob)
+            buffermpi2(2,bufbegrat1(proc+1)+j) = 
+     $          v(2,iglob)
+            buffermpi2(3,bufbegrat1(proc+1)+j) = 
+     $          v(3,iglob)
+          end do
+        end if
+      end do
+c
+      do i = 1, nneig_send
+        proc = pneig_send(i)
+        if (proc.ne.rank) then
+          tag = nproc*proc + rank + 1
+          call MPI_ISEND(buffermpi2(1,bufbegrat1(proc+1)),
+     $     3*buflenrat1(proc+1),MPI_REAL8,proc,tag,COMM_TINKER,
+     $     reqsend(i),ierr)
+        end if
+      end do
+c
+      do i = 1, nneig_send
+        proc = pneig_send(i)
+        if (proc.ne.rank) then
+          tag = nproc*proc + rank + 1
+          call MPI_WAIT(reqsend(i),status,ierr)
+        end if
+      end do
+c
+      do i = 1, nneig_recep
+        proc = pneig_recep(i)
+        if (proc.ne.rank) then
+          tag = nproc*rank + proc + 1
+          call MPI_WAIT(reqrec(i),status,ierr)
+          do j = 0, buflenrat2(proc+1)-1
+            iglob = bufrat2(bufbegrat2(proc+1)+j)
+            v(1,iglob) = buffermpi1(1,bufbegrat2(proc+1)+j)
+            v(2,iglob) = buffermpi1(2,bufbegrat2(proc+1)+j)
+            v(3,iglob) = buffermpi1(3,bufbegrat2(proc+1)+j)
+          end do
+        end if
+      end do
+c
+      deallocate (buffermpi2)
+      deallocate (buffermpi1)
+      deallocate (reqsend)
+      deallocate (reqrec)
+      return
+      end
+c
+c     subroutine commrattleend2 : deal with necessary comms after rattle2 iterations
+c
+      subroutine commrattleend2
+      use atoms
+      use domdec
+      use freeze
+      use moldyn
+      use mpi
+      implicit none
+      integer i,j,proc,ierr,iglob
+      integer tag,status(MPI_STATUS_SIZE)
+      integer, allocatable :: reqrec(:),reqsend(:)
+      real*8, allocatable :: buffermpi1(:,:),buffermpi2(:,:)
+c
+      allocate (reqrec(nproc))
+      allocate (reqsend(nproc))
+      allocate (buffermpi1(3,max(nbloc,1)))
+      buffermpi1 = 0d0
+      allocate (buffermpi2(3,max(nbloc,1)))
+      buffermpi2 = 0d0
+c
+c     Begin the reception of the constrained atoms
+c
+      do i = 1, nneig_send
+        proc = pneig_send(i)
+        if (proc.ne.rank) then
+          tag = nproc*rank + proc + 1
+          call MPI_IRECV(buffermpi2(1,bufbegrat1(proc+1)),
+     $      3*buflenrat1(proc+1),
+     $      MPI_REAL8,proc,tag,COMM_TINKER,reqrec(i),ierr)
+        end if
+      end do
+c
+      do i = 1, nneig_recep
+        proc = pneig_recep(i)
+        if (proc.ne.rank) then
+          do j = 0, buflenrat2(proc+1)-1
+            iglob = bufrat2(bufbegrat2(proc+1)+j)
+            buffermpi1(1,bufbegrat2(proc+1)+j) = 
+     $          v(1,iglob)
+            buffermpi1(2,bufbegrat2(proc+1)+j) = 
+     $          v(2,iglob)
+            buffermpi1(3,bufbegrat2(proc+1)+j) = 
+     $          v(3,iglob)
+          end do
+        end if
+      end do
+c
+      do i = 1, nneig_recep
+        proc = pneig_recep(i)
+        if (proc.ne.rank) then
+          tag = nproc*proc + rank + 1
+          call MPI_ISEND(buffermpi1(1,bufbegrat2(proc+1)),
+     $     3*buflenrat2(proc+1),MPI_REAL8,proc,tag,COMM_TINKER,
+     $     reqsend(i),ierr)
+        end if
+      end do
+c
+      do i = 1, nneig_recep
+        proc = pneig_recep(i)
+        if (proc.ne.rank) then
+          tag = nproc*proc + rank + 1
+          call MPI_WAIT(reqsend(i),status,ierr)
+        end if
+      end do
+c
+      do i = 1, nneig_send
+        proc = pneig_send(i)
+        if (proc.ne.rank) then
+          tag = nproc*rank + proc + 1
+          call MPI_WAIT(reqrec(i),status,ierr)
+          do j = 0, buflenrat1(proc+1)-1
+            iglob = bufrat1(bufbegrat1(proc+1)+j)
+            v(1,iglob) = buffermpi2(1,bufbegrat1(proc+1)+j)
+            v(2,iglob) = buffermpi2(2,bufbegrat1(proc+1)+j)
+            v(3,iglob) = buffermpi2(3,bufbegrat1(proc+1)+j)
+          end do
+        end if
+      end do
+c
+      deallocate (buffermpi2)
+      deallocate (buffermpi1)
+      deallocate (reqsend)
+      deallocate (reqrec)
+      return
+      end

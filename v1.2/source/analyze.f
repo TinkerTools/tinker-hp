@@ -406,11 +406,12 @@ c
       real*8 dipx,dipy,dipz
 
       real*8 mux,muy,muz,mudx,mudy,mudz,mupx,mupy,mupz
- 1000 format(/'x dipolar moment of molecule',I5,' : ',F14.5)
- 1010 format(/'y dipolar moment of molecule',I5,' : ',F14.5)
- 1020 format(/'z dipolar moment of molecule',I5,' : ',F14.5)
- 1030 format(/'Norm of the dipolar moment of molecule',I5,' : ',F14.5)
+ 1000 format(/'x dipolar moment of molecule',I15,' : ',F14.5)
+ 1010 format(/'y dipolar moment of molecule',I15,' : ',F14.5)
+ 1020 format(/'z dipolar moment of molecule',I15,' : ',F14.5)
+ 1030 format(/'Norm of the dipolar moment of molecule',I15,' : ',F14.5)
 c
+      call molecule(.false.)
       if (use_mpole) then
         do i = 1, nmoleloc
           iimol = molculeglob(i)

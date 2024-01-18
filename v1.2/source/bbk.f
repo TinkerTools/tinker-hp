@@ -72,6 +72,10 @@ c
             z(iglob) = z(iglob) + v(3,iglob)*dt
             end if
       end do
+c
+c     get constraint-corrected positions and half-step velocities
+c
+      if (use_rattle)  call rattle (dt)
       time1 = mpi_wtime()
       timeinte = timeinte + time1-time0 
 c
@@ -88,13 +92,6 @@ c
       call reassignpme(.false.)
       time1 = mpi_wtime()
       timereneig = timereneig + time1 - time0
-c
-c     get constraint-corrected positions and half-step velocities
-c
-      time0 = mpi_wtime()
-      if (use_rattle)  call rattle (dt)
-      time1 = mpi_wtime()
-      timeinte = timeinte + time1-time0 
 c
 c     communicate positions
 c

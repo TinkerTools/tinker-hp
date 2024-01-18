@@ -373,14 +373,14 @@ c     if no holonomic constraints are present, turn off their use
 c
       if (nrat.eq.0 .and. nratx.eq.0)  use_rattle = .false.
 c
-c     rattle algorithm not compatible with parallel simulations
-c
-      if (use_rattle.and.nproc.gt.1) then
-        if (rank.eq.0) write(iout,*) 'RATTLE algorithm incompatible ',
-     &   'with parallel simulaions'
-        call MPI_BARRIER(COMM_TINKER,ierr)
-        call fatal
-      end if
+cc     rattle algorithm not compatible with parallel simulations
+cc
+c      if (use_rattle.and.nproc.gt.1) then
+c        if (rank.eq.0) write(iout,*) 'RATTLE algorithm incompatible ',
+c     &   'with parallel simulaions'
+c        call MPI_BARRIER(COMM_TINKER,ierr)
+cc        call fatal
+c      end if
       return
       end
 c
