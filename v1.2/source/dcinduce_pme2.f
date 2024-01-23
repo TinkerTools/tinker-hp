@@ -19,6 +19,7 @@ c
       use iounit
       use math
       use mpole
+      use mutant
       use pme
       use polar
       use polpot
@@ -44,6 +45,7 @@ c
       parameter (nrhs=2)
       real*8  wtime0, wtime1, wtime2, udsum, upsum
       real*8  term
+      real*8 plambda,dplambdadelambdae
       real*8, allocatable :: ef(:,:,:), mu(:,:,:), murec(:,:,:)
       real*8, allocatable :: cphi(:,:)
 c
@@ -129,6 +131,44 @@ c
 c     Factorization of Z has been interleaved with passing fields
 c
       call commfield2(nrhs,ef)
+c
+c     get derivative (wrt elambda) of total permanent field for lambda dynamics
+c
+      if (use_lambdadyn) then
+c
+        call commfield(nrhs,deflambda)
+        call commrecdirfields(0,cphirec0,cphi0,buffermpi1,buffermpi2,
+     $   reqrecdirrec,reqrecdirsend)
+        call commrecdirfields(1,cphirec0,cphi0,buffermpi1,buffermpi2,
+     $   reqrecdirrec,reqrecdirsend)
+        call commrecdirfields(2,cphirec0,cphi0,buffermpi1,buffermpi2,
+     $   reqrecdirrec,reqrecdirsend)
+        call commrecdirfields(0,cphirec1,cphi1,buffermpi1,buffermpi2,
+     $   reqrecdirrec,reqrecdirsend)
+        call commrecdirfields(1,cphirec1,cphi1,buffermpi1,buffermpi2,
+     $   reqrecdirrec,reqrecdirsend)
+        call commrecdirfields(2,cphirec1,cphi1,buffermpi1,buffermpi2,
+     $   reqrecdirrec,reqrecdirsend)
+c
+        if (elambda.le.bplambda) then
+          plambda = 0d0
+          dplambdadelambdae = 0d0
+        else
+          plambda = ((elambda-bplambda)/(1d0-bplambda))**3
+          dplambdadelambdae = 
+     $        3d0*((elambda-bplambda)**2/(1-bplambda)**3)
+        end if
+c
+        do i = 1, npoleloc
+          iipole = poleglob(i)
+          do j = 1, 3
+            deflambda(j,1,i)  = deflambda(j,1,i) - 
+     $       dplambdadelambdae*(cphi1(j+1,i) - cphi0(j+1,i))
+            deflambda(j,2,i)  = deflambda(j,2,i) -
+     $       dplambdadelambdae*(cphi1(j+1,i) - cphi0(j+1,i))
+          end do
+        end do
+      end if
 c
       call commdirdir(nrhs,0,mu,reqrec,reqsend)
 c

@@ -267,6 +267,7 @@ c
       use mpi
       use replicas
       use beads
+      use potent
       implicit none
       integer ierr
       integer ncomm,color

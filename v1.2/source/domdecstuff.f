@@ -135,8 +135,14 @@ c
         call MPI_Comm_create(COMM_TINKER,rec_group,comm_rec,ierr)
         if (rank.le.ndir-1) then
           call MPI_COMM_RANK(comm_dir,rank_bis,ierr)
+          CALL MPI_Comm_split_type(comm_dir, MPI_COMM_TYPE_SHARED, 0,
+     $      MPI_INFO_NULL, hostcomm,ierr)
+          CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
         else
           call MPI_COMM_RANK(comm_rec,rank_bis,ierr)
+          CALL MPI_Comm_split_type(comm_rec, MPI_COMM_TYPE_SHARED, 0,
+     $      MPI_INFO_NULL, hostcomm,ierr)
+          CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
         end if
         deallocate (direct_rank)
 c

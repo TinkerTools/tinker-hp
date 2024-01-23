@@ -163,7 +163,6 @@ c
 c
         call commrecdirfields(2,cphirec,cphi,buffermpi,buffermpi,
      $   reqrecdirrec,reqrecdirsend)
-
 c
 c       Add direct and reciprocal fields
 c
@@ -298,7 +297,7 @@ c        deallocate (cphirec)
 c
 c     update the lists of previous induced dipole values
 c
-      if ((use_pred).and..not.(use_lambdadyn)) then
+      if (use_pred) then
          if (rank.le.ndir-1) then
            nualt = min(nualt+1,maxualt)
            do i = 1, npolebloc
@@ -647,6 +646,7 @@ c
       use iounit
       use math
       use mpole
+      use mutant
       use neigh
       use polar
       use polgrp
@@ -676,6 +676,8 @@ c
       real*8 qkx,qky,qkz,qkr
       real*8 fid(3), fip(3)
       real*8 fkd(3), fkp(3)
+      real*8 fidlambda(3), fiplambda(3)
+      real*8 fkdlambda(3), fkplambda(3)
       real*8 fiu(9)
       real*8 invpol
       real*8 cutoff2
@@ -965,6 +967,39 @@ c
      &                     - dmp3*diy - 2.0d0*dmp5*qiy
                fkp(3) = zr*(dmp3*ci+dmp5*dir+dmp7*qir)
      &                     - dmp3*diz - 2.0d0*dmp5*qiz
+c
+c     get vector of derivative of direct field wrt lambda for lambda-dynamics         
+c
+               if ((use_lambdadyn).and.(elambda.gt.0)) then
+                 fidlambda = 0d0
+                 fiplambda = 0d0
+                 fkdlambda = 0d0
+                 fkplambda = 0d0
+c
+c     get contribution of derivatives of the multipoles
+c
+                 if (mut(kglob)) then
+                   fidlambda = fidlambda + fid/elambda
+                   fiplambda = fiplambda + fip/elambda
+                 end if
+                 if (mut(iglob)) then
+                   fkdlambda = fkdlambda + fkd/elambda
+                   fkplambda = fkplambda + fkp/elambda
+                 end if
+c
+c     increment the derivative of the field at each site due to this interaction
+c
+                 do j = 1, 3
+                    deflambda(j,1,ipoleloc) = deflambda(j,1,ipoleloc)
+     $                   + fidlambda(j)
+                    deflambda(j,1,kbis) = deflambda(j,1,kbis) 
+     $                   + fkdlambda(j)
+                    deflambda(j,2,ipoleloc) = deflambda(j,2,ipoleloc)
+     $                   + fiplambda(j)
+                    deflambda(j,2,kbis) = deflambda(j,2,kbis) 
+     $                   + fkplambda(j)
+                 end do
+               end if
 
                call dampthole (iipole,kkpole,5,r,dmpik)
                scaleu = uscale(kglob)
@@ -1694,6 +1729,7 @@ c
       use iounit
       use math
       use mpole
+      use mutant
       use neigh
       use polar
       use polgrp
@@ -1723,6 +1759,8 @@ c
       real*8 qkx,qky,qkz,qkr
       real*8 fid(3), fip(3)
       real*8 fkd(3), fkp(3)
+      real*8 fidlambda(3), fiplambda(3)
+      real*8 fkdlambda(3), fkplambda(3)
       real*8 fiu(9)
       real*8 cutoff2
       real*8 corei,corek
@@ -2008,6 +2046,39 @@ c
      &                     - dmp3*diy - 2.0d0*dmp5*qiy
                fkp(3) = zr*(dmp3*ci+dmp5*dir+dmp7*qir)
      &                     - dmp3*diz - 2.0d0*dmp5*qiz
+c
+c     get vector of derivative of direct field wrt lambda for lambda-dynamics         
+c
+               if ((use_lambdadyn).and.(elambda.gt.0)) then
+                 fidlambda = 0d0
+                 fiplambda = 0d0
+                 fkdlambda = 0d0
+                 fkplambda = 0d0
+c
+c     get contribution of derivatives of the multipoles
+c
+                 if (mut(kglob)) then
+                   fidlambda = fidlambda + fid/elambda
+                   fiplambda = fiplambda + fip/elambda
+                 end if
+                 if (mut(iglob)) then
+                   fkdlambda = fkdlambda + fkd/elambda
+                   fkplambda = fkplambda + fkp/elambda
+                 end if
+c
+c     increment the derivative of the field at each site due to this interaction
+c
+                 do j = 1, 3
+                    deflambda(j,1,ipoleloc) = deflambda(j,1,ipoleloc)
+     $                   + fidlambda(j)
+                    deflambda(j,1,kbis) = deflambda(j,1,kbis) 
+     $                   + fkdlambda(j)
+                    deflambda(j,2,ipoleloc) = deflambda(j,2,ipoleloc)
+     $                   + fiplambda(j)
+                    deflambda(j,2,kbis) = deflambda(j,2,kbis) 
+     $                   + fkplambda(j)
+                 end do
+               end if
 
                call dampthole (iipole,kkpole,5,r,dmpik)
                scalek = uscale(kglob)

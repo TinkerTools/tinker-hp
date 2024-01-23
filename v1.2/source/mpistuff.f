@@ -402,14 +402,14 @@ c        if (use_bounds) call image(xr,yr,zr)
         end do
       end do
       bufbeg3(1) = 1
-      do iproc = 1, nproc-1
+      do iproc = 1, nprocloc-1
         bufbeg3(iproc+1) = bufbeg3(iproc)+buflen3(iproc)
       end do
 c
-      allocate (buf3(bufbeg3(nproc)+buflen3(nproc)))
+      allocate (buf3(bufbeg3(nprocloc)+buflen3(nprocloc)))
       buf3 = 0
 c
-      do iproc = 1, nproc
+      do iproc = 1, nprocloc
         buf3(bufbeg3(iproc):(bufbeg3(iproc)+buflen3(iproc)-1)) = 
      $    buf3bis(1:buflen3(iproc),iproc)
       end do
@@ -599,7 +599,7 @@ c
       glob1 = 0
       do i = 1, nloc
         iglob = glob(i)
-        do j = 1, bufbeg3(nproc)+buflen3(nproc)-1
+        do j = 1, bufbeg3(nprocloc)+buflen3(nprocloc)-1
           jglob = buf3(j)
           if (iglob.eq.jglob) goto 10
         end do

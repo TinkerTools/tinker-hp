@@ -32,6 +32,12 @@ c     bsporder   order of the polarization PME B-spline values
 c     bsdorder   order of the dispersion PME B-spline values
 c     cphirec    permanent electric fields, cartesian coordinates
 c     fphirec    permanent electric fields, fractional coordinates
+c     cphirec0    permanent electric fields, cartesian coordinates, elambda=0
+c     fphirec0    permanent electric fields, fractional coordinates, elambda=0
+c     cphi0    permanent electric fields, cartesian coordinates, elambda=0
+c     cphirec1    permanent electric fields, cartesian coordinates, elambda=1
+c     fphirec1    permanent electric fields, fractional coordinates, elambda=1
+c     cphi1    permanent electric fields, cartesian coordinates, elambda=1
 c     cphidprec    dipolar electric fields, cartesian coordinates
 c     fphidprec    dipolar electric fields, fractional coordinates
 c     igrid      initial Ewald charge grid values for B-spline
@@ -57,6 +63,9 @@ c
       real*8, allocatable :: qgrid2out_2d(:,:,:,:)
       real*8, allocatable :: qfac_2d(:,:,:)
       real*8, allocatable :: cphirec(:,:),fphirec(:,:)
+      real*8, allocatable :: cphi0(:,:),cphi1(:,:)
+      real*8, allocatable :: cphirec0(:,:),cphirec1(:,:)
+      real*8, allocatable :: fphirec0(:,:),fphirec1(:,:)
       real*8, allocatable :: cphidprec(:,:),fphidprec(:,:)
       integer, allocatable :: igrid(:,:)
       save

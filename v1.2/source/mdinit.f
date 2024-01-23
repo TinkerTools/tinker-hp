@@ -51,7 +51,7 @@ c
       use math, only:pi
       use spectra
       implicit none
-      integer i,j,idyn,iglob
+      integer i,j,idyn,iglob,ierr
       integer next
       integer lext,freeunit,ios
       real*8 e
@@ -299,6 +299,17 @@ c
 c     lambda dynamic initialization
 c
       if ((use_lambdadyn).or.(use_osrw)) then
+c
+c     lambda-dynamics not compatible with pmecore
+c
+        if (use_pmecore) then
+          if (rank.eq.0) then
+            write(iout,*) 'Lambda-dynamics not compatible with',
+     $      'separate cores for PME'
+          end if
+          call MPI_BARRIER(COMM_TINKER,ierr)
+          call fatal
+        end if
         call def_lambdadyn_init
       end if
 c

@@ -126,8 +126,8 @@ c
            else if (keyword(1:9) .eq. 'VDW-SC-S ') then
               string = record(next:240)
               read (string,*,err=30)  scs
-           else if (keyword(1:10) .eq. 'LAMBDADYN ') then
-              use_lambdadyn = .true.
+c           else if (keyword(1:10) .eq. 'LAMBDADYN ') then
+c              use_lambdadyn = .true.
            else if (keyword(1:15) .eq. 'VDW-ANNIHILATE ') then
               vcouple = 1
            else if (keyword(1:7) .eq. 'MUTATE ') then

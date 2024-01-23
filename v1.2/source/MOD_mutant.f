@@ -40,6 +40,7 @@ c     class1     atom class of each atom in the final state system
 c     winclass1    window object corresponding to class1
 c     mut        true if an atom is to be mutated, false otherwise
 c     winmut    window object corresponding to mut
+c     deflambda derivative of direct permanent field wrt elambda
 c
 c
       module mutant
@@ -59,6 +60,7 @@ c
       real*8 bvlambda, belambda
       real*8 bplambda
       real*8 flambdabias
+      real*8, allocatable :: deflambda(:,:,:)
       save
       save
       end

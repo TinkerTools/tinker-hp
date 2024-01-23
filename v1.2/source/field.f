@@ -72,6 +72,7 @@ c
       use_dispself = .true.
       use_chgtrn = .true.
       use_chgflx = .true.
+      use_lambdadyn = .false.
 c
 c     read the potential energy force field parameter file
 c

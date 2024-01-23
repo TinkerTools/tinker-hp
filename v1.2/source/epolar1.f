@@ -23,7 +23,8 @@ c
 c     choose the method for summing over polarization interactions
 c
       if (use_lambdadyn) then
-        call elambdapolar1c
+c        call elambdapolar1c
+        call elambdapolar1c_new
       else
         if (use_polarshortreal) then
           if (polalgshort.eq.3) then
@@ -349,7 +350,6 @@ c
         delambdae = 0d0
       end if
       virtemp = vir
-
 c
 c     polarization is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
 c     otherwise the value taken is for elambda=0
@@ -434,6 +434,305 @@ c
       if (hostrank.eq.0) call altelec
       call MPI_BARRIER(hostcomm,ierr)
       call rotpole
+      return
+      end
+c
+c
+      subroutine elambdapolar1c_new
+      use atmlst
+      use atoms
+      use boxes
+      use chgpot
+      use deriv
+      use domdec
+      use energi
+      use ewald
+      use iounit
+      use math
+      use mpole
+      use mutant
+      use pme
+      use polar
+      use polpot
+      use potent
+      use virial
+      use mpi
+      implicit none
+      integer i,ii,iglob,iipole,ierr,j
+      real*8 e,f,term,fterm
+      real*8 dix,diy,diz
+      real*8 uix,uiy,uiz,uii
+      real*8 xd,yd,zd
+      real*8 xq,yq,zq
+      real*8 xu,yu,zu
+      real*8 xup,yup,zup
+      real*8 xv,yv,zv,vterm
+      real*8 xufield,yufield
+      real*8 zufield
+      real*8 fix(3),fiy(3),fiz(3)
+      real*8 trq(3)
+c
+c     zero out the polarization energy and derivatives
+c
+      ep = 0.0d0
+      dep = 0d0
+      deprec = 0d0
+c
+c     set the energy unit conversion factor
+c
+      f = electric / dielec
+c
+      if (npole .eq. 0)  return
+      if (.not.(use_mpole)) then
+        delambdae = 0d0
+      end if
+      aewald = apewald
+c
+c     check the sign of multipole components at chiral sites
+c
+      if (.not. use_mpole)  call chkpole(.false.)
+c
+c     rotate the multipole components into the global frame
+c
+      if (.not. use_mpole)  call rotpole
+c
+c     allocate reciprocal permanent electric field for lambda=0 and lambda=1
+c
+      if (allocated(cphirec0)) deallocate (cphirec0)
+      allocate (cphirec0(10,max(npolerecloc,1)))
+      cphirec0 = 0d0
+      if (allocated(fphirec0)) deallocate (fphirec0)
+      allocate (fphirec0(20,max(npolerecloc,1)))
+      fphirec0 = 0.0d0
+      if (allocated(cphirec1)) deallocate (cphirec1)
+      allocate (cphirec1(10,max(npolerecloc,1)))
+      cphirec1 = 0d0
+      if (allocated(fphirec1)) deallocate (fphirec1)
+      allocate (fphirec1(20,max(npolerecloc,1)))
+      fphirec1 = 0.0d0
+      if (allocated(cphi0)) deallocate (cphi0)
+      allocate (cphi0(10,max(npoleloc,1)))
+      cphi0 = 0d0
+      if (allocated(cphi1)) deallocate (cphi1)
+      allocate (cphi1(10,max(npoleloc,1)))
+      cphi1 = 0d0
+c
+c     allocate derivative of permanent direct field wrt to lambda
+c
+      if (allocated(deflambda)) deallocate (deflambda)
+      allocate (deflambda(3,2,npolebloc))
+      deflambda = 0d0
+c
+c     get dipoles associated to interpolated recip fields
+c
+      if (use_pmecore) then
+        if (polalg.eq.5) then
+          call dcinduce_pme
+        else
+          call newinduce_pme
+        end if
+      else
+        if (polalg.eq.5) then
+          call dcinduce_pme2
+        else
+          call newinduce_pme2
+        end if
+      end if
+c
+c     compute the reciprocal space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
+     $   then
+        if (use_prec) then
+          call eprecip1
+        end if
+      end if
+c
+c     compute the real space part of the Ewald summation
+c
+      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
+     $   then
+        if (use_preal) then
+          call epreal1c
+        end if
+
+        if (use_pself) then
+c
+c     compute the Ewald self-energy term over all the atoms
+c
+          term = 2.0d0 * aewald * aewald
+          fterm = -f * aewald / sqrtpi
+          do ii = 1, npoleloc
+             iipole = poleglob(ii)
+             dix = rpole(2,iipole)
+             diy = rpole(3,iipole)
+             diz = rpole(4,iipole)
+             uix = uind(1,iipole)
+             uiy = uind(2,iipole)
+             uiz = uind(3,iipole)
+             uii = dix*uix + diy*uiy + diz*uiz
+             e = fterm * term * uii / 3.0d0
+             ep = ep + e
+          end do
+c
+c       compute the self-energy torque term due to induced dipole
+c
+          term = (4.0d0/3.0d0) * f * aewald**3 / sqrtpi
+          do ii = 1, npoleloc
+             iipole = poleglob(ii)
+             dix = rpole(2,iipole)
+             diy = rpole(3,iipole)
+             diz = rpole(4,iipole)
+             uix = 0.5d0 * (uind(1,iipole)+uinp(1,iipole))
+             uiy = 0.5d0 * (uind(2,iipole)+uinp(2,iipole))
+             uiz = 0.5d0 * (uind(3,iipole)+uinp(3,iipole))
+             trq(1) = term * (diy*uiz-diz*uiy)
+             trq(2) = term * (diz*uix-dix*uiz)
+             trq(3) = term * (dix*uiy-diy*uix)
+             call torque (iipole,trq,fix,fiy,fiz,dep)
+          end do
+c
+c       compute the cell dipole boundary correction term
+c
+          if (boundary .eq. 'VACUUM') then
+             xd = 0.0d0
+             yd = 0.0d0
+             zd = 0.0d0
+             xu = 0.0d0
+             yu = 0.0d0
+             zu = 0.0d0
+             xup = 0.0d0
+             yup = 0.0d0
+             zup = 0.0d0
+             do i = 1, npoleloc
+                iipole = poleglob(i)
+                iglob = ipole(iipole)
+                xd = xd + rpole(2,iipole) + rpole(1,iipole)*x(iglob)
+                yd = yd + rpole(3,iipole) + rpole(1,iipole)*y(iglob)
+                zd = zd + rpole(4,iipole) + rpole(1,iipole)*z(iglob)
+                xu = xu + uind(1,iipole)
+                yu = yu + uind(2,iipole)
+                zu = zu + uind(3,iipole)
+                xup = xup + uinp(1,iipole)
+                yup = yup + uinp(2,iipole)
+                zup = zup + uinp(3,iipole)
+             end do
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xu,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,yu,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zu,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xup,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,yup,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zup,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             term = (2.0d0/3.0d0) * f * (pi/volbox)
+             if (rank.eq.0) then
+               ep = ep + term*(xd*xu+yd*yu+zd*zu)
+             end if
+             do ii = 1, npoleloc
+                iipole = poleglob(ii)
+                iglob = ipole(iipole)
+                i = loc(iglob)
+                dep(1,i) = dep(1,i) + term*rpole(1,iipole)*(xu+xup)
+                dep(2,i) = dep(2,i) + term*rpole(1,iipole)*(yu+yup)
+                dep(3,i) = dep(3,i) + term*rpole(1,iipole)*(zu+zup)
+             end do
+             xufield = -term * (xu+xup)
+             yufield = -term * (yu+yup)
+             zufield = -term * (zu+zup)
+             do i = 1, npoleloc
+                iipole = poleglob(i)
+              trq(1) = rpole(3,iipole)*zufield - rpole(4,iipole)*yufield
+              trq(2) = rpole(4,iipole)*xufield - rpole(2,iipole)*zufield
+              trq(3) = rpole(2,iipole)*yufield - rpole(3,iipole)*xufield
+                call torque (iipole,trq,fix,fiy,fiz,dep)
+             end do
+c
+c       boundary correction to virial due to overall cell dipole
+c
+             xd = 0.0d0
+             yd = 0.0d0
+             zd = 0.0d0
+             xq = 0.0d0
+             yq = 0.0d0
+             zq = 0.0d0
+             do i = 1, npoleloc
+                iipole = poleglob(i)
+                iglob = ipole(iipole)
+                xd = xd + rpole(2,iipole)
+                yd = yd + rpole(3,iipole)
+                zd = zd + rpole(4,iipole)
+                xq = xq + rpole(1,iipole)*x(iglob)
+                yq = yq + rpole(1,iipole)*y(iglob)
+                zq = zq + rpole(1,iipole)*z(iglob)
+             end do
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,xq,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,yq,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             call MPI_ALLREDUCE(MPI_IN_PLACE,zq,1,MPI_REAL8,MPI_SUM,
+     $          COMM_TINKER,ierr)
+             if (rank.eq.0) then
+               xv = xq * (xu+xup)
+               yv = yq * (yu+yup)
+               zv = zq * (zu+zup)
+               vterm = xv + yv + zv + xu*xup + yu*yup + zu*zup
+     &                    + xd*(xu+xup) + yd*(yu+yup) + zd*(zu+zup)
+               vterm = term * vterm
+               vir(1,1) = vir(1,1) + term*xv + vterm
+               vir(2,1) = vir(2,1) + term*xv
+               vir(3,1) = vir(3,1) + term*xv
+               vir(1,2) = vir(1,2) + term*yv
+               vir(2,2) = vir(2,2) + term*yv + vterm
+               vir(3,2) = vir(3,2) + term*yv
+               vir(1,3) = vir(1,3) + term*zv
+               vir(2,3) = vir(2,3) + term*zv
+               vir(3,3) = vir(3,3) + term*zv + vterm
+             end if
+           end if
+        end if
+      end if
+c
+c     get diagonal contribution to delambdae
+c
+      do i = 1, npoleloc
+        iipole = poleglob(i)
+        iglob = ipole(iipole)
+        if (mut(iglob)) then
+          if (elambda.gt.0) then
+            do j = 1, 3
+            delambdae = delambdae - (1/(2*polarity(iipole)*elambda))*
+     $          uind(j,iipole)*uinp(j,iipole)*f
+            end do
+          end if
+        end if
+      end do
+c
+c     get contribution of the derivative of the permanent field to delambdae
+c
+      do i = 1, npoleloc
+        iipole = poleglob(i)
+        do j = 1, 3
+          delambdae = delambdae - 0.5d0*(uind(j,iipole)*deflambda(j,2,i)
+     $         + uinp(j,iipole)*deflambda(j,1,i))*f
+        end do
+      end do
       return
       end
 c
@@ -1268,6 +1567,7 @@ c
       use math
       use molcul
       use mpole
+      use mutant
       use neigh
       use polar
       use polgrp
@@ -1359,6 +1659,7 @@ c
       real*8 dmpi(9),dmpk(9)
       real*8 dmpik(9),dmpe(9)
       real*8 fip(3),fkp(3)
+      real*8 dr(3),dlik(7)
       logical shortrange,longrange,fullrange
       real*8, allocatable :: pscale(:)
       real*8, allocatable :: dscale(:)
@@ -2304,6 +2605,26 @@ c
                   frcx = frcx + depx
                   frcy = frcy + depy
                   frcz = frcz + depz
+c                  if ((use_lambdadyn).and.(elambda.gt.0).and.
+c     $                (elambda.lt.1)) then
+c                    if (mut(iglob).or.mut(kglob)) then
+c                      call detholelambda(iipole,kkpole,r,dlik)
+c                      dr(1) = xr
+c                      dr(2) = yr
+c                      dr(3) = zr
+c                      do i = 1, 3
+c                        do j = 1, 3
+c                          delambdae = delambdae + uind(i,iipole)*
+c     $        (dlik(5)*dr(i)*dr(j)*rr5)*uinp(j,iipole)*
+c     $        uscale(kglob)                   
+c                          if (i.eq.j) then
+c                            delambdae = delambdae - 
+c     $        uscale(kglob)*uind(i,iipole)*dlik(3)*uinp(j,iipole)*rr3
+c                          end if
+c                        end do
+c                      end do
+c                    end if
+c                  end if
 c
 c     get the dtau/dr terms used for mutual polarization force
 c

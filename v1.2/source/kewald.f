@@ -46,7 +46,7 @@ c
       character*20 keyword
       character*240 record
       character*240 string
- 120  format('2d parallel FFT grid : ','Ngrid1 = ',I5,2x,'Ngrid2 = ',I5)
+c 120  format('2d parallel FFT grid : ','Ngrid1 = ',I5,2x,'Ngrid2 = ',I5)
 c
       if (use_pmecore) then
         nprocloc = nrec
@@ -358,6 +358,42 @@ c
 c
       end if
 c
+c     print a message listing some of the Ewald parameters
+c
+      if (verbose.and.(rank.eq.0)) then
+         write (iout,80)
+   80    format (/,' Particle Mesh Ewald Parameters :',
+     &           //,5x,'Type',16x,'Ewald Alpha',4x,'Grid',
+     &              ' Dimensions',4x,'Spline Order',/)
+         write (iout,90)  aeewald,nfft1,nfft2,nfft3,bsorder
+   90    format (3x,'Electrostatics',9x,f8.4,5x,3i5,7x,i5)
+         if (use_polar) then
+            write (iout,100)  apewald,nfft1,nfft2,nfft3,bsorder
+  100       format (3x,'Polarization',11x,f8.4,5x,3i5,7x,i5)
+         end if
+         if (use_dewald) then
+            write (iout,110)  adewald,nfft1,nfft2,nfft3,bsorder
+  110       format (3x,'Dispersion',13x,f8.4,5x,3i5,7x,i5)
+         end if
+      end if
+      return
+      end
+c
+c
+c     initialization of PME related quantities, after (potential)
+c     initialization of comm_rec communicator
+c
+      subroutine kewald_2
+      use domdec
+      use fft
+      use iounit
+      use mpi
+      use pme
+      use potent
+      implicit none
+      integer iproc,ierr
+ 120  format('2d parallel FFT grid : ','Ngrid1 = ',I5,2x,'Ngrid2 = ',I5)
+c
 c     initialize the PME arrays that can be precomputed
 c
       call moduli
@@ -499,27 +535,6 @@ c
         else if (.not.(use_pmecore).and.(rank.eq.0)) then
           write(iout,120) ngrid1,ngrid2
         end if
-      end if
-c
-c       call reassignpme(.true.)
-c
-c     print a message listing some of the Ewald parameters
-c
-      if (verbose.and.(rank.eq.0)) then
-         write (iout,80)
-   80    format (/,' Particle Mesh Ewald Parameters :',
-     &           //,5x,'Type',16x,'Ewald Alpha',4x,'Grid',
-     &              ' Dimensions',4x,'Spline Order',/)
-         write (iout,90)  aeewald,nfft1,nfft2,nfft3,bsorder
-   90    format (3x,'Electrostatics',9x,f8.4,5x,3i5,7x,i5)
-         if (use_polar) then
-            write (iout,100)  apewald,nfft1,nfft2,nfft3,bsorder
-  100       format (3x,'Polarization',11x,f8.4,5x,3i5,7x,i5)
-         end if
-         if (use_dewald) then
-            write (iout,110)  adewald,nfft1,nfft2,nfft3,bsorder
-  110       format (3x,'Dispersion',13x,f8.4,5x,3i5,7x,i5)
-         end if
       end if
       return
       end

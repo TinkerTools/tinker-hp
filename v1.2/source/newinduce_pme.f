@@ -27,11 +27,12 @@ c
       use units
       use uprior
       use mpi
+      use pme
       implicit none
 c
 c     with separate cores for reciprocal part
 c
-      integer i, j, k, nrhs
+      integer i, j, k, nrhs, iglob
 c
 c     MPI
 c
@@ -111,6 +112,8 @@ c
 c
         call commrecdirfields(0,cphirec,cphi,buffermpi,buffermpi,
      $   reqrecdirrec,reqrecdirsend)
+        call commrecdirfields(2,cphirec,cphi,buffermpi,buffermpi,
+     $   reqrecdirrec,reqrecdirsend)
       else 
 c
 c    compute the reciprocal space contribution (fields)
@@ -130,9 +133,6 @@ c
 c
         call efld0_direct(nrhs,ef)
         call commfield(nrhs,ef)
-c
-        call commrecdirfields(2,cphirec,cphi,buffermpi,buffermpi,
-     $   reqrecdirrec,reqrecdirsend)
 c
 c       Add direct and reciprocal fields
 c
@@ -267,7 +267,7 @@ c
 c
 c     update the lists of previous induced dipole values
 c
-      if ((use_pred).and..not.(use_lambdadyn)) then
+      if (use_pred) then
         if (rank.le.ndir-1) then
            nualt = min(nualt+1,maxualt)
            do i = 1, npolebloc
@@ -934,7 +934,6 @@ c
       return
       end
 c
-c
       subroutine efld0_direct(nrhs,ef)
 c
 c     Compute the direct space contribution to the permanent electric field.
@@ -952,6 +951,7 @@ c
       use iounit
       use math
       use mpole
+      use mutant
       use neigh
       use polar
       use polgrp
@@ -979,13 +979,17 @@ c
       real*8 qkx,qky,qkz,qkr
       real*8 fid(3), fip(3)
       real*8 fkd(3), fkp(3)
+      real*8 fidlambda(3), fiplambda(3)
+      real*8 fkdlambda(3), fkplambda(3)
       real*8 cutoff2
       real*8 corei,corek
       real*8 vali,valk
       real*8 alphai,alphak
       real*8 dmp3,dmp5,dmp7
+      real*8 dmp3l,dmp5l,dmp7l
       real*8 dmpi(7),dmpk(7)
       real*8 dmpik(7),dmpe(7)
+      real*8 dlik(7)
       real*8 scalek
       real*8, allocatable :: dscale(:)
       real*8, allocatable :: pscale(:)
@@ -1210,6 +1214,40 @@ c
      &                     - dmp3*diy - 2.0d0*dmp5*qiy
                fkp(3) = zr*(dmp3*ci+dmp5*dir+dmp7*qir)
      &                     - dmp3*diz - 2.0d0*dmp5*qiz
+c
+c     get vector of derivative of direct field wrt lambda for lambda-dynamics         
+c
+               if ((use_lambdadyn).and.(elambda.gt.0)) then
+                 fidlambda = 0d0
+                 fiplambda = 0d0
+                 fkdlambda = 0d0
+                 fkplambda = 0d0
+c
+c     get contribution of derivatives of the multipoles
+c
+                 if (mut(kglob)) then
+                   fidlambda = fidlambda + fid/elambda
+                   fiplambda = fiplambda + fip/elambda
+                 end if
+                 if (mut(iglob)) then
+                   fkdlambda = fkdlambda + fkd/elambda
+                   fkplambda = fkplambda + fkp/elambda
+                 end if
+c
+c     increment the derivative of the field at each site due to this interaction
+c
+                 do j = 1, 3
+                    deflambda(j,1,ipoleloc) = deflambda(j,1,ipoleloc)
+     $                   + fidlambda(j)
+                    deflambda(j,1,kbis) = deflambda(j,1,kbis) 
+     $                   + fkdlambda(j)
+                    deflambda(j,2,ipoleloc) = deflambda(j,2,ipoleloc)
+     $                   + fiplambda(j)
+                    deflambda(j,2,kbis) = deflambda(j,2,kbis) 
+     $                   + fkplambda(j)
+                 end do
+                   
+               end if
 c
 c     find the field components for charge penetration damping
 c
@@ -1609,8 +1647,26 @@ c
       deallocate (wscale)
       return
       end
-
+c
+c
       subroutine efld0_recip(cphi)
+c
+c     driver for recip field computation: depending on interpolated
+c     field (lambda dynamics) or not
+      use potent
+      implicit none
+      real*8 cphi(10,*)
+
+      if (use_lambdadyn) then
+        call efld0_recip_lambda(cphi)
+      else
+        call efld0_recip_orig(cphi)
+      end if
+      return
+      end
+c
+
+      subroutine efld0_recip_orig(cphi)
 c
 c     Compute the reciprocal space contribution to the electric field due to the permanent 
 c     multipoles
@@ -1851,6 +1907,94 @@ c
       deallocate (reqbcastsend)
       deallocate (reqrec)
       deallocate (reqsend)
+      return
+      end
+c
+c     Compute the reciprocal space contribution to the electric field due to the permanent 
+c     multipoles during lambda dynamics: interpolate it between lambdae=0 and lambdae=1
+c
+      subroutine efld0_recip_lambda(cphi)
+      use domdec
+      use mpi
+      use mpole
+      use mutant
+      use pme
+      implicit none
+      real*8 :: cphi(10,max(1,npoleloc))
+c      real*8, allocatable :: cphi0(:,:),cphirec0(:,:)
+c      real*8, allocatable :: cphi1(:,:),cphirec1(:,:)
+      real*8 :: elambdap0,elambdap1
+      real*8 :: elambdatemp,plambda,dplambdadelambdae
+      integer :: ierr,i
+c
+c      allocate (cphi1(10,max(1,npoleloc)))
+c      cphi1 = 0.0d0
+cc      allocate (cphirec1(10,max(npolerecloc,1)))
+cc      cphirec1 = 0.0d0
+c      allocate (cphi0(10,max(1,npoleloc)))
+c      cphi0 = 0d0
+cc      allocate (cphirec0(10,max(npolerecloc,1)))
+cc      cphirec1 = 0.0d0
+      elambdatemp = elambda  
+c
+c     recip field is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
+c     otherwise the value taken is for elambda=0
+c
+ 
+      if (elambda.gt.bplambda) then
+        elambda = 1d0
+        call MPI_BARRIER(hostcomm,ierr)
+        if (hostrank.eq.0) call altelec
+        call MPI_BARRIER(hostcomm,ierr)
+        call rotpole
+        cphi = 0d0
+        cphirec = 0d0
+        fphirec = 0d0
+        call efld0_recip_orig(cphi)
+        cphi1  = cphi
+        cphirec1 = cphirec
+        fphirec1 = fphirec
+      end if
+
+      elambda = 0d0
+      call MPI_BARRIER(hostcomm,ierr)
+      if (hostrank.eq.0) call altelec
+      call MPI_BARRIER(hostcomm,ierr)
+      call rotpole
+      cphi = 0d0
+      cphirec = 0d0
+      fphirec = 0d0
+      call efld0_recip_orig(cphi)
+      cphi0  = cphi
+      cphirec0 = cphirec
+      fphirec0 = fphirec
+c
+      elambda = elambdatemp 
+c
+c     interpolation of "plambda" between bplambda and 1 as a function of
+c     elambda: 
+c       plambda = 0 for elambda.le.bplambda
+c       u = (elambda-bplambda)/(1-bplambda)
+c       plambda = u**3 for elambda.gt.plambda
+c       ep = (1-plambda)*ep0 +  plambda*ep1
+c
+      if (elambda.le.bplambda) then
+        plambda = 0d0
+        dplambdadelambdae = 0d0
+      else
+        plambda = ((elambda-bplambda)/(1d0-bplambda))**3
+        dplambdadelambdae = 3d0*((elambda-bplambda)**2/(1-bplambda)**3)
+      end if
+      cphi = plambda*cphi1 + (1-plambda)*cphi0
+      cphirec = (1-plambda)*cphirec0+plambda*cphirec1
+      fphirec = (1-plambda)*fphirec0+plambda*fphirec1
+c
+c     reset lambda to initial value
+c
+      call MPI_BARRIER(hostcomm,ierr)
+      if (hostrank.eq.0) call altelec
+      call MPI_BARRIER(hostcomm,ierr)
+      call rotpole
       return
       end
 c
