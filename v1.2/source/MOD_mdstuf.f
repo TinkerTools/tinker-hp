@@ -18,6 +18,7 @@ c     velsave     logical flag to save velocity vector components
 c     frcsave     logical flag to save force vector components
 c     uindsave    logical flag to save induced atomic dipoles
 c     integrate   type of molecular dynamics integration algorithm
+c     mts         logical flag regarding multi-timestep integration
 c
 c
       module mdstuf
@@ -28,6 +29,7 @@ c
       logical velsave
       logical frcsave
       logical uindsave
+      logical mts
       character*11 integrate
       save
       end

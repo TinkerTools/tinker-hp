@@ -78,6 +78,7 @@ c
 c     set default parameters for the dynamics trajectory
 c
       integrate = 'BEEMAN'
+      mts = .false.
       bmnmix = 8
       nfree = 0
       dorest = .true.
@@ -326,10 +327,12 @@ c
       if ((integrate.eq.'RESPA').or.(integrate.eq.'BAOABRESPA')) then
         eps =  0.00000001d0
         dshort = 0.00025
+        mts = .true.
       else if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1'))
      $  then
         dinter = 0.002
         dshort = 0.00025
+        mts = .true.
       end if
 c
 c     keywords fr respa and respa1 integrators

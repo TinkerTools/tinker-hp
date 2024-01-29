@@ -401,15 +401,20 @@ c
 c     the master gets all the cv positions and total forces
 c
       subroutine prepare_colvars
+      use atmtyp
       use atoms
       use boxes
       use colvars
       use deriv
       use domdec
+      use mdstuf
+      use moldyn
       use mpi
       use potent
+      use units
       implicit none
       integer i,iglob,iloc,ilocrec,ierr
+      real*8 temp
 c
 c
       decv =0d0
@@ -431,6 +436,18 @@ c
           decv_tot(1,i) = desum(1,iloc)
           decv_tot(2,i) = desum(2,iloc)
           decv_tot(3,i) = desum(3,iloc)
+c
+c   for RESPA(1) integrators, also add fast/intermediate forces (through aalt array)
+c
+          if (mts) then
+            temp = -mass(iglob)/convert
+            decv_tot(1,i) = decv_tot(1,i) +
+     $                        temp*(aalt(1,iglob)+aalt2(1,iglob))
+            decv_tot(2,i) = decv_tot(2,i) +
+     $                        temp*(aalt(2,iglob)+aalt2(1,iglob))
+            decv_tot(3,i) = decv_tot(3,i) +
+     $                        temp*(aalt(3,iglob)+aalt2(1,iglob))
+          end if
         end if
 c
 c       also add reciprocal part of the forces (in a separate array for now)
