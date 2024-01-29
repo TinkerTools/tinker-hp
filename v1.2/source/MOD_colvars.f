@@ -444,9 +444,9 @@ c
             decv_tot(1,i) = decv_tot(1,i) +
      $                        temp*(aalt(1,iglob)+aalt2(1,iglob))
             decv_tot(2,i) = decv_tot(2,i) +
-     $                        temp*(aalt(2,iglob)+aalt2(1,iglob))
+     $                        temp*(aalt(2,iglob)+aalt2(2,iglob))
             decv_tot(3,i) = decv_tot(3,i) +
-     $                        temp*(aalt(3,iglob)+aalt2(1,iglob))
+     $                        temp*(aalt(3,iglob)+aalt2(3,iglob))
           end if
         end if
 c
