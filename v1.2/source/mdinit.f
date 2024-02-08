@@ -588,6 +588,10 @@ c
          if (allocated(desave)) deallocate (desave)
          allocate (desave(3,nbloc))
          desave = 0d0
+#ifdef COLVARS
+         delambdaesave = 0d0
+         delambdavsave = 0d0
+#endif
          call allocsteprespa(.false.)
 
          call gradfast1(e,derivs)

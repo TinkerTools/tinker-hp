@@ -610,7 +610,11 @@ c
       desum = desum - desave
       derivs(:,1:nloc) = derivs(:,1:nloc) - desave(:,1:nloc)
       vir = vir - virsave/dinter
+      esave = 0d0
       virsave = 0d0
+      desave = 0d0
+
+
       return
       end
 c
@@ -625,6 +629,7 @@ c
       use domdec
       use freeze
       use moldyn
+      use potent
       use timestat
       use units
       use usage
@@ -731,6 +736,10 @@ c
         end do
         time1 = mpi_wtime()
         timeinte = timeinte + time1-time0
+        if (use_lambdadyn.and.k.ne.nalt) then
+          delambdaesave = 0d0
+          delambdavsave = 0d0
+        end if
       end do
       return
       end

@@ -1649,24 +1649,24 @@ c
       end
 c
 c
+c      subroutine efld0_recip(cphi)
+cc
+cc     driver for recip field computation: depending on interpolated
+cc     field (lambda dynamics) or not
+c      use potent
+c      implicit none
+c      real*8 cphi(10,*)
+c
+c      if (use_lambdadyn) then
+c        call efld0_recip_lambda(cphi)
+c      else
+c        call efld0_recip_orig(cphi)
+c      end if
+c      return
+c      end
+c
+c
       subroutine efld0_recip(cphi)
-c
-c     driver for recip field computation: depending on interpolated
-c     field (lambda dynamics) or not
-      use potent
-      implicit none
-      real*8 cphi(10,*)
-
-      if (use_lambdadyn) then
-        call efld0_recip_lambda(cphi)
-      else
-        call efld0_recip_orig(cphi)
-      end if
-      return
-      end
-c
-
-      subroutine efld0_recip_orig(cphi)
 c
 c     Compute the reciprocal space contribution to the electric field due to the permanent 
 c     multipoles
@@ -1909,94 +1909,94 @@ c
       deallocate (reqsend)
       return
       end
+cc
+cc     Compute the reciprocal space contribution to the electric field due to the permanent 
+cc     multipoles during lambda dynamics: interpolate it between lambdae=0 and lambdae=1
+cc
+c      subroutine efld0_recip_lambda(cphi)
+c      use domdec
+c      use mpi
+c      use mpole
+c      use mutant
+c      use pme
+c      implicit none
+c      real*8 :: cphi(10,max(1,npoleloc))
+cc      real*8, allocatable :: cphi0(:,:),cphirec0(:,:)
+cc      real*8, allocatable :: cphi1(:,:),cphirec1(:,:)
+c      real*8 :: elambdap0,elambdap1
+c      real*8 :: elambdatemp,plambda,dplambdadelambdae
+c      integer :: ierr,i
+cc
+cc      allocate (cphi1(10,max(1,npoleloc)))
+cc      cphi1 = 0.0d0
+ccc      allocate (cphirec1(10,max(npolerecloc,1)))
+ccc      cphirec1 = 0.0d0
+cc      allocate (cphi0(10,max(1,npoleloc)))
+cc      cphi0 = 0d0
+ccc      allocate (cphirec0(10,max(npolerecloc,1)))
+ccc      cphirec1 = 0.0d0
+c      elambdatemp = elambda  
+cc
+cc     recip field is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
+cc     otherwise the value taken is for elambda=0
+cc
+c 
+c      if (elambda.gt.bplambda) then
+c        elambda = 1d0
+c        call MPI_BARRIER(hostcomm,ierr)
+c        if (hostrank.eq.0) call altelec
+c        call MPI_BARRIER(hostcomm,ierr)
+c        call rotpole
+c        cphi = 0d0
+c        cphirec = 0d0
+c        fphirec = 0d0
+c        call efld0_recip_orig(cphi)
+c        cphi1  = cphi
+c        cphirec1 = cphirec
+c        fphirec1 = fphirec
+c      end if
 c
-c     Compute the reciprocal space contribution to the electric field due to the permanent 
-c     multipoles during lambda dynamics: interpolate it between lambdae=0 and lambdae=1
-c
-      subroutine efld0_recip_lambda(cphi)
-      use domdec
-      use mpi
-      use mpole
-      use mutant
-      use pme
-      implicit none
-      real*8 :: cphi(10,max(1,npoleloc))
-c      real*8, allocatable :: cphi0(:,:),cphirec0(:,:)
-c      real*8, allocatable :: cphi1(:,:),cphirec1(:,:)
-      real*8 :: elambdap0,elambdap1
-      real*8 :: elambdatemp,plambda,dplambdadelambdae
-      integer :: ierr,i
-c
-c      allocate (cphi1(10,max(1,npoleloc)))
-c      cphi1 = 0.0d0
-cc      allocate (cphirec1(10,max(npolerecloc,1)))
-cc      cphirec1 = 0.0d0
-c      allocate (cphi0(10,max(1,npoleloc)))
-c      cphi0 = 0d0
-cc      allocate (cphirec0(10,max(npolerecloc,1)))
-cc      cphirec1 = 0.0d0
-      elambdatemp = elambda  
-c
-c     recip field is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
-c     otherwise the value taken is for elambda=0
-c
- 
-      if (elambda.gt.bplambda) then
-        elambda = 1d0
-        call MPI_BARRIER(hostcomm,ierr)
-        if (hostrank.eq.0) call altelec
-        call MPI_BARRIER(hostcomm,ierr)
-        call rotpole
-        cphi = 0d0
-        cphirec = 0d0
-        fphirec = 0d0
-        call efld0_recip_orig(cphi)
-        cphi1  = cphi
-        cphirec1 = cphirec
-        fphirec1 = fphirec
-      end if
-
-      elambda = 0d0
-      call MPI_BARRIER(hostcomm,ierr)
-      if (hostrank.eq.0) call altelec
-      call MPI_BARRIER(hostcomm,ierr)
-      call rotpole
-      cphi = 0d0
-      cphirec = 0d0
-      fphirec = 0d0
-      call efld0_recip_orig(cphi)
-      cphi0  = cphi
-      cphirec0 = cphirec
-      fphirec0 = fphirec
-c
-      elambda = elambdatemp 
-c
-c     interpolation of "plambda" between bplambda and 1 as a function of
-c     elambda: 
-c       plambda = 0 for elambda.le.bplambda
-c       u = (elambda-bplambda)/(1-bplambda)
-c       plambda = u**3 for elambda.gt.plambda
-c       ep = (1-plambda)*ep0 +  plambda*ep1
-c
-      if (elambda.le.bplambda) then
-        plambda = 0d0
-        dplambdadelambdae = 0d0
-      else
-        plambda = ((elambda-bplambda)/(1d0-bplambda))**3
-        dplambdadelambdae = 3d0*((elambda-bplambda)**2/(1-bplambda)**3)
-      end if
-      cphi = plambda*cphi1 + (1-plambda)*cphi0
-      cphirec = (1-plambda)*cphirec0+plambda*cphirec1
-      fphirec = (1-plambda)*fphirec0+plambda*fphirec1
-c
-c     reset lambda to initial value
-c
-      call MPI_BARRIER(hostcomm,ierr)
-      if (hostrank.eq.0) call altelec
-      call MPI_BARRIER(hostcomm,ierr)
-      call rotpole
-      return
-      end
+c      elambda = 0d0
+c      call MPI_BARRIER(hostcomm,ierr)
+c      if (hostrank.eq.0) call altelec
+c      call MPI_BARRIER(hostcomm,ierr)
+c      call rotpole
+c      cphi = 0d0
+c      cphirec = 0d0
+c      fphirec = 0d0
+c      call efld0_recip_orig(cphi)
+c      cphi0  = cphi
+c      cphirec0 = cphirec
+c      fphirec0 = fphirec
+cc
+c      elambda = elambdatemp 
+cc
+cc     interpolation of "plambda" between bplambda and 1 as a function of
+cc     elambda: 
+cc       plambda = 0 for elambda.le.bplambda
+cc       u = (elambda-bplambda)/(1-bplambda)
+cc       plambda = u**3 for elambda.gt.plambda
+cc       ep = (1-plambda)*ep0 +  plambda*ep1
+cc
+c      if (elambda.le.bplambda) then
+c        plambda = 0d0
+c        dplambdadelambdae = 0d0
+c      else
+c        plambda = ((elambda-bplambda)/(1d0-bplambda))**3
+c        dplambdadelambdae = 3d0*((elambda-bplambda)**2/(1-bplambda)**3)
+c      end if
+c      cphi = plambda*cphi1 + (1-plambda)*cphi0
+c      cphirec = (1-plambda)*cphirec0+plambda*cphirec1
+c      fphirec = (1-plambda)*fphirec0+plambda*fphirec1
+cc
+cc     reset lambda to initial value
+cc
+c      call MPI_BARRIER(hostcomm,ierr)
+c      if (hostrank.eq.0) call altelec
+c      call MPI_BARRIER(hostcomm,ierr)
+c      call rotpole
+c      return
+c      end
 c
 c
       subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)

@@ -46,6 +46,8 @@ c
 c     delambda           hamiltonian derivative with respect to lambda (to be sent to colvar)
 c     delambdae          hamiltonian derivative with respect to elambda
 c     delambdav          hamiltonian derivative with respect to vlambda
+c     delambdaesave      stored hamiltonian derivative with respect to elambda
+c     delambdavsave      stored hamiltonian derivative with respect to vlambda
 c     dlambdaelambda     derivative of elambda with respect to lambda
 c     dlambdavlambda     derivative of vlambda with respect to lambda     
 c
@@ -76,6 +78,7 @@ c
       real*8, allocatable :: debond(:,:),desave(:,:)
       real*8, allocatable :: desmd(:,:)
       real*8 :: delambda,delambdae,delambdav
+      real*8 :: delambdaesave,delambdavsave
       real*8 :: d2edlambda2,d2edlambdae2,d2edlambdav2
       real*8 :: dlambdaelambda, dlambdavlambda
       real*8, allocatable  :: dxdelambda(:,:)

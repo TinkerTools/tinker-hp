@@ -20,6 +20,7 @@ c
       use iounit
       use math
       use mpole
+      use mutant
       use pme
       use polar
       use polpot
@@ -73,6 +74,12 @@ c
       call efld0_direct(nrhs,ef)
 c
       call commfieldshort(nrhs,ef)
+c
+cc     get derivative (wrt elambda) of total permanent field for lambda dynamics
+cc
+c      if (use_lambdadyn) then
+c        call commfield(nrhs,deflambda)
+c      end if
 c
       call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
 c

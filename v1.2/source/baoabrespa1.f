@@ -233,6 +233,7 @@ c
       use freeze
       use inform
       use moldyn
+      use potent
       use timestat
       use units
       use usage
@@ -335,6 +336,10 @@ c
         end do
         time1 = mpi_wtime()
         timeinte = timeinte + time1-time0
+        if (use_lambdadyn.and.stepint.ne.nalt) then
+          delambdaesave = 0d0
+          delambdavsave = 0d0
+        end if
       end do
       end
 c

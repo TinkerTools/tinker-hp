@@ -110,6 +110,7 @@ c
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
       real*8 s,ds,vdwshortcut2,facts,factds
+      real*8 delambdavtemp
       real*8, allocatable :: xred(:)
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
@@ -144,7 +145,10 @@ c     zero out the van der Waals energy and first derivatives
 c
       ev = 0.0d0
       dev = 0d0
-      delambdav = 0d0
+      if (use_lambdadyn) then
+        delambdav = 0d0
+        delambdavsave = 0d0
+      end if
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -305,10 +309,16 @@ c                     eps = eps * vlambda**scexp
                        ds2dlambda=2*scalpha*(1.0d0-vlambda)*s2*s2
                        dt1dlambda=(1.0d0+dhal)**7 *ds1dlambda
                        dt2dlambda=(1.0d0+ghal)*ds2dlambda
-                       delambdav = delambdav +
+                       delambdavtemp =
+c                       delambdav = delambdav + 
      $                    eps*scexp*vlambda**(scexp-1)*t1*(t2-2.0d0)+
      $                    eps*(vlambda**scexp)*(dt1dlambda*(t2-2.0d0)+
      $                    t1*dt2dlambda)
+c                       if (shortrange) then
+c                         delambdavsave = delambdavsave + delambdavtemp
+c                       else
+c                         delambdav = delambdav + delambdavtemp
+c                       end if
                      end if
                      de = eps * (vlambda**scexp) *
      $                    (dt1drho*(t2-2.0d0)+t1*dt2drho) / rv
@@ -367,6 +377,15 @@ c
 
                   de = de * facts + e * factds
                   e  = e  * facts
+
+                  if (use_lambdadyn) then
+                    delambdavtemp = facts*delambdavtemp
+                    if (shortrange) then
+                      delambdavsave = delambdavsave + delambdavtemp
+                    else
+                      delambdav = delambdav + delambdavtemp
+                    end if
+                  end if
 
                   ev = ev + e
 c
