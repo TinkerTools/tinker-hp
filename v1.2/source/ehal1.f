@@ -147,7 +147,6 @@ c
       dev = 0d0
       if (use_lambdadyn) then
         delambdav = 0d0
-        delambdavsave = 0d0
       end if
 c
 c     perform dynamic allocation of some local arrays
@@ -310,15 +309,9 @@ c                     eps = eps * vlambda**scexp
                        dt1dlambda=(1.0d0+dhal)**7 *ds1dlambda
                        dt2dlambda=(1.0d0+ghal)*ds2dlambda
                        delambdavtemp =
-c                       delambdav = delambdav + 
      $                    eps*scexp*vlambda**(scexp-1)*t1*(t2-2.0d0)+
      $                    eps*(vlambda**scexp)*(dt1dlambda*(t2-2.0d0)+
      $                    t1*dt2dlambda)
-c                       if (shortrange) then
-c                         delambdavsave = delambdavsave + delambdavtemp
-c                       else
-c                         delambdav = delambdav + delambdavtemp
-c                       end if
                      end if
                      de = eps * (vlambda**scexp) *
      $                    (dt1drho*(t2-2.0d0)+t1*dt2drho) / rv
