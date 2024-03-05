@@ -66,6 +66,11 @@ private:
 
   void request_total_force (bool yesno);
 
+  bool total_forces_same_step() const
+  {
+      return true;
+  }
+
   /// numeric index (1-based)
   int init_atom(int atom_number);
 

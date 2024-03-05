@@ -34,22 +34,22 @@ bin_PROGRAMS += testgrad
 #
 
 analyze_SOURCES       = analyze.f
-analyze_DEPENDENCIES  = libtinkermod.a libtinkercalc.a libtinkerclv.a
+analyze_DEPENDENCIES  = libtinkermod.a libtinkercalc.a libtinkerclv.a @COLVARSDEP@ @PLUMEDDEP@
 
 bar_SOURCES           = bar.f
-bar_DEPENDENCIES      = libtinkermod.a libtinkercalc.a libtinkerclv.a
+bar_DEPENDENCIES      = libtinkermod.a libtinkercalc.a libtinkerclv.a @COLVARSDEP@ @PLUMEDDEP@
 
 dynamic_SOURCES       = dynamic.f
-dynamic_DEPENDENCIES  = libtinkermod.a libtinkercalc.a libtinkerclv.a
+dynamic_DEPENDENCIES  = libtinkermod.a libtinkercalc.a libtinkerclv.a @COLVARSDEP@ @PLUMEDDEP@
 
 minimize_SOURCES      = minimize.f
-minimize_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a
+minimize_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a @COLVARSDEP@ @PLUMEDDEP@
 
 pimd_SOURCES      = pimd.f
-pimd_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a
+pimd_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a @COLVARSDEP@ @PLUMEDDEP@
 
 testgrad_SOURCES      = testgrad.f
-testgrad_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a
+testgrad_DEPENDENCIES = libtinkermod.a libtinkercalc.a libtinkerclv.a @COLVARSDEP@ @PLUMEDDEP@
 
 #############################################
 #

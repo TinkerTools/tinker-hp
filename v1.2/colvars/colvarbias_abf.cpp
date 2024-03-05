@@ -93,6 +93,10 @@ int colvarbias_abf::init(std::string const &conf)
     }
   }
   b_history_files = (history_freq > 0);
+  // Default to standard (infinite temperature) ABF
+  bias_factor = 0.0;
+  get_keyval(conf, "biasFactor", bias_factor, bias_factor);
+
 
   // shared ABF
   get_keyval(conf, "shared", shared_on, false);
@@ -454,11 +458,11 @@ int colvarbias_abf::update()
         // Enforce a zero-mean bias on periodic, 1D coordinates
         // in other words: boundary condition is that the biasing potential is periodic
         // This is enforced naturally if using integrated PMF
-        colvar_forces[0].real_value = fact * (grad[0] - gradients->average ());
+        colvar_forces[0].real_value = fact * (grad[0] - gradients->average ()) * (1. - bias_factor);
       } else {
         for (i = 0; i < num_variables(); i++) {
           // subtracting the mean force (opposite of the FE gradient) means adding the gradient
-          colvar_forces[i].real_value = fact * grad[i];
+          colvar_forces[i].real_value = fact * grad[i] * (1. - bias_factor);
         }
       }
       if (cap_force) {

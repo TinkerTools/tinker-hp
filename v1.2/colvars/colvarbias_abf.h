@@ -53,6 +53,9 @@ private:
   /// Integrate gradients into a PMF on output
   bool    b_integrate;
 
+  /// Factor for finite-temperature ABF. Zero for standard ABF, one for no bias.
+  cvm::real bias_factor;
+
   /// Number of samples per bin before applying the full biasing force
   size_t  full_samples;
   /// Number of samples per bin before applying a scaled-down biasing force
@@ -115,8 +118,9 @@ private:
 
   inline int update_system_force(size_t i)
   {
-    if (colvars[i]->is_enabled(f_cv_subtract_applied_force)) {
+    if (colvars[i]->is_enabled(f_cv_subtract_applied_force) || cvm::proxy->total_forces_same_step()) {
       // this colvar is already subtracting the ABF force
+      // or the "total force" is really a system force at current step
       system_force[i] = colvars[i]->total_force().real_value;
     } else {
       system_force[i] = colvars[i]->total_force().real_value

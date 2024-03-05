@@ -554,6 +554,7 @@ PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED
                LIBPLUMED_INC="-I $LIBPLUMED_PATH/include"
                PLUEXT="_plumed"
                PLUMEDINCLUDE="plumed.mk"
+               PLUMEDDEP="$LIBPLUMED_LIBPATH/libplumed.so $LIBPLUMED_LIBPATH/libplumedKernel.so"
                AC_MSG_NOTICE(["$YEL Configuring PLUMED in $LIBPLUMED_PATH$GRN${CLR}"])
                #
                # States that this Makefiles.conf should be generated
@@ -566,6 +567,7 @@ PLUMBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for PLUMED
                LIBPLUMED_INC="" 
                PLUEXT=""
                PLUMEDINCLUDE="noplumed.mk"
+               PLUMEDDEP=""
 	     ]
             )
 #
@@ -587,6 +589,7 @@ COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVAR
                COLVEXT="_colvars"
                COLVARSINCLUDE="colvars.mk"
                TINKERCOLVARS="libtinkerclv_a"
+               COLVARSDEP="$LIBCOLVARS_PATH/libcolvars.a"
              ],
              [ COLVARSFLAG=""
                LIBCOLVARS_PATH=""
@@ -595,6 +598,7 @@ COLVBADCOMPILMSG="${RED} Invalid wrapped compiler ${YEL}$REALFC${RED} for COLVAR
                COLVEXT=""
                COLVARSINCLUDE="nocolvars.mk"
                TINKERCOLVARS=""
+               COLVARSDEP=""
 	     ]
             )
 #
@@ -748,6 +752,7 @@ AC_SUBST([LIBPLUMED_INC])
 AC_SUBST([LIBCOLVARS_INC])
 AC_SUBST([LIBPLUMED_LIB])
 AC_SUBST([LIBPLUMED_LIBPATH])
+AC_SUBST([PLUMEDDEP],[$PLUMEDDEP])
 AC_SUBST([TCL])
 AC_SUBST([LIBTCL_INC])
 AC_SUBST([LIBTCL_LIB])
@@ -769,6 +774,7 @@ AC_SUBST([INCLUDE_TCL_MK],["include "$TCLINCLUDE])
 AC_SUBST([INCLUDE_COLVARS_MK],["include "$COLVARSINCLUDE])
 AC_SUBST([LIBTINKERCLV],[$TINKERCOLVARS])
 AC_SUBST([LIBCOLVARS_LIB],[$LIBCOLVARS_LIB])
+AC_SUBST([COLVARSDEP],[$COLVARSDEP])
 
 #
 # States that these Makefiles should be generated
