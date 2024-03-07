@@ -95,11 +95,11 @@ PYTHON_FAILMSG="${RED}No python found !!! Must have it to compile sources ! $CLR
 # Check for python2 to run Tinker_deps.py
 #
 
-AC_CHECK_PROG(python,python,"ok","no")
+AC_CHECK_PROGS([PYTHON],[python  python2  python3],["no"])
 
-AS_IF([test $python = ok],
-      [PYTHON=python],
-      [AC_MSG_FAILURE([$PYTHON_FAILMSG])]
+AS_IF([test "x$PYTHON" = "xno"],
+      [AC_MSG_FAILURE([$PYTHON_FAILMSG])],
+      [:]
      )
 
 #
