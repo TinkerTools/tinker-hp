@@ -89,7 +89,7 @@ c
       call kchgtrn
       call kchgflx
 c
-      if (use_polar) call initmpipme
+c      if (use_polar) call initmpipme
 c
 c     assign repulsion and dispersion parameters
 c

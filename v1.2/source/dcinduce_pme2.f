@@ -146,6 +146,7 @@ c
         term = (4.0d0/3.0d0) * aewald**3 / sqrtpi
       do i = 1, npoleloc
         iipole = poleglob(i)
+        iglob = ipole(iipole)
         do j = 1, 3
           ef(j,1,i)  = ef(j,1,i) - cphi(j+1,i) +
      $       term*rpole(j+1,iipole)

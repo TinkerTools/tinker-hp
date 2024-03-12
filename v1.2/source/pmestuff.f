@@ -650,8 +650,7 @@ c
       real*8 v0,v1
       real*8 u0,u1
       real*8 t0,t1,tq
-      real*8 tu00,tu10,tu01,tu20,tu11
-      real*8 tu02,tu21,tu12,tu30,tu03
+      real*8 tu00,tu10,tu01
       real*8 tuv000,tuv100,tuv010,tuv001
 c
       if (use_pmecore) then
@@ -677,13 +676,6 @@ c
          tu00 = 0.0d0
          tu10 = 0.0d0
          tu01 = 0.0d0
-         tu20 = 0.0d0
-         tu11 = 0.0d0
-         tu02 = 0.0d0
-         tu30 = 0.0d0
-         tu21 = 0.0d0
-         tu12 = 0.0d0
-         tu03 = 0.0d0
          j0 = jgrd0
          do it2 = 1, bsorder
             j0 = j0 + 1

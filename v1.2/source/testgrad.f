@@ -77,7 +77,6 @@ c     set up the structure and mechanics calculation
 c
       call initial
       call getxyz
-      nproc = nproctot
       call initmpi
       call unitcell
       call cutoffs
@@ -88,6 +87,7 @@ c
       call mechanic
 
       call drivermpi
+      call kewald_2
       call reinitnl(0)
       call mechanic_init_para
 c
@@ -181,6 +181,7 @@ c     compute the analytical gradient components
 c
       if (doanalyt) then
          call gradient (etot,detot)
+c         call ptest
 c
 c    MPI : communicate analytical forces and torques
 c

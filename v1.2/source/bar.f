@@ -167,10 +167,6 @@ c
 c     setup for MPI
 c
       call drivermpi
-      call reinitnl(0)
-      call mechanic_init_para
-
-      call nblist(0)
 c
 c     find the original temperature value for trajectory A
 c
@@ -206,12 +202,8 @@ c
 c
 c     get trajectory B archive and setup mechanics calculation
 c
+      keys_already_read=.false.
       call getxyz
-      call ddpme3d
-      call reassignpme(.true.)
-      call reinitnl(0)
-      call mechanic
-      call mechanic_init_para
       silent = .true.
 c
 c     find the original temperature value for trajectory B
@@ -272,10 +264,11 @@ c
          keyline(i) = keys0(i)
       end do
       call lattice
+      call mechanic
       call ddpme3d
+      call kewald_2
       call reassignpme(.true.)
       call reinitnl(0)
-      call mechanic
       call mechanic_init_para
       call nblist(0)
       if (abort) then
@@ -344,10 +337,11 @@ c
          keyline(i) = keys1(i)
       end do
       call lattice
+      call mechanic
       call ddpme3d
+      call kewald_2
       call reassignpme(.true.)
       call reinitnl(0)
-      call mechanic
       call mechanic_init_para
       call nblist(0)
 c
@@ -421,10 +415,11 @@ c
          keyline(i) = keys0(i)
       end do
       call lattice
+      call mechanic
       call ddpme3d
+      call kewald_2
       call reassignpme(.true.)
       call reinitnl(0)
-      call mechanic
       call mechanic_init_para
       call nblist(0)
       if (abort) then
@@ -493,10 +488,11 @@ c
          keyline(i) = keys1(i)
       end do
       call lattice
+      call mechanic
       call ddpme3d
+      call kewald_2
       call reassignpme(.true.)
       call reinitnl(0)
-      call mechanic
       call mechanic_init_para
       call nblist(0)
 c

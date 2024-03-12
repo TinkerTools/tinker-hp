@@ -84,7 +84,6 @@ c
       real*8 zufield
       real*8 fix(3),fiy(3),fiz(3)
       real*8 trq(3)
-      real*8 delambdaetemp
 c
 c
 c     zero out the polarization energy and derivatives
@@ -101,7 +100,6 @@ c
         if (allocated(deflambda)) deallocate (deflambda)
         allocate (deflambda(3,2,npolebloc))
         deflambda = 0d0
-        delambdaetemp = 0d0
       end if
 c
       if (npole .eq. 0)  return
@@ -344,9 +342,6 @@ c
               do j = 1, 3
               delambdae = delambdae-(1/(2d0*polarity(iipole)*elambda))*
      $          uind(j,iipole)*uinp(j,iipole)*f
-c              delambdaetemp = delambdaetemp-
-c     $           (1/(2d0*polarity(iipole)*elambda))*
-c     $          uind(j,iipole)*uinp(j,iipole)*f
               end do
             end if
           end if
@@ -359,20 +354,8 @@ c
           do j = 1, 3
             delambdae = delambdae-0.5d0*(uind(j,iipole)*deflambda(j,2,i)
      $         + uinp(j,iipole)*deflambda(j,1,i))*f
-c            delambdaetemp = delambdaetemp -
-c     $            0.5d0*(uind(j,iipole)*deflambda(j,2,i)
-c     $         + uinp(j,iipole)*deflambda(j,1,i))*f
           end do
         end do
-c
-c    for short range real space, store the opposite of the contribution
-c    of the short range polarization 
-c
-c        if (use_polarshortreal) then
-c          delambdaesave = delambdaesave - delambdaetemp
-c        else
-c          delambdae = delambdae + delambdaetemp
-c        end if
       end if
 c
 c     get group polarization if necessary

@@ -323,7 +323,7 @@ c               pchg(i) = pchg(i) * elambda
 c
 c     set electrostatic parameters for polarizable multipole models
 c
-      if (use_mpole) then
+      if (use_mpole.or.use_polar) then
          do i = 1, npole
             k = ipole(i)
             if (mut(k)) then
