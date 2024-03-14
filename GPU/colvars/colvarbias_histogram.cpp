@@ -7,10 +7,13 @@
 // If you wish to distribute your changes, please submit them to the
 // Colvars repository at GitHub.
 
+#include <iostream>
+
 #include "colvarmodule.h"
 #include "colvarproxy.h"
 #include "colvar.h"
 #include "colvarbias_histogram.h"
+#include "colvars_memstream.h"
 
 
 colvarbias_histogram::colvarbias_histogram(char const *key)
@@ -23,7 +26,10 @@ colvarbias_histogram::colvarbias_histogram(char const *key)
 
 int colvarbias_histogram::init(std::string const &conf)
 {
-  colvarbias::init(conf);
+  int err = colvarbias::init(conf);
+  if (err != COLVARS_OK) {
+    return err;
+  }
   cvm::main()->cite_feature("Histogram colvar bias implementation");
 
   enable(f_cvb_scalar_variables);
@@ -197,13 +203,18 @@ int colvarbias_histogram::write_output_files()
 
 std::istream & colvarbias_histogram::read_state_data(std::istream& is)
 {
-  if (! read_state_data_key(is, "grid")) {
-    return is;
+  if (read_state_data_key(is, "grid")) {
+    grid->read_raw(is);
   }
-  if (! grid->read_raw(is)) {
-    return is;
-  }
+  return is;
+}
 
+
+cvm::memory_stream & colvarbias_histogram::read_state_data(cvm::memory_stream& is)
+{
+  if (read_state_data_key(is, "grid")) {
+    grid->read_raw(is);
+  }
   return is;
 }
 
@@ -212,8 +223,16 @@ std::ostream & colvarbias_histogram::write_state_data(std::ostream& os)
 {
   std::ios::fmtflags flags(os.flags());
   os.setf(std::ios::fmtflags(0), std::ios::floatfield);
-  os << "grid\n";
+  write_state_data_key(os, "grid");
   grid->write_raw(os, 8);
   os.flags(flags);
+  return os;
+}
+
+
+cvm::memory_stream & colvarbias_histogram::write_state_data(cvm::memory_stream& os)
+{
+  write_state_data_key(os, "grid");
+  grid->write_raw(os);
   return os;
 }

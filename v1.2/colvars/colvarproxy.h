@@ -12,7 +12,6 @@
 
 #include "colvarmodule.h"
 #include "colvartypes.h"
-#include "colvarvalue.h"
 #include "colvarproxy_io.h"
 #include "colvarproxy_system.h"
 #include "colvarproxy_tcl.h"
@@ -56,6 +55,9 @@ public:
   /// corresponding atom yet
   virtual int check_atom_id(int atom_number);
 
+  /// Check whether it is possible to select atoms by residue number name
+  virtual int check_atom_name_selections_available();
+
   /// Select this atom for collective variables calculation, using name and
   /// residue number.  Not all programs support this: leave this function as
   /// is in those cases.
@@ -69,68 +71,78 @@ public:
                             std::string const     &segment_id);
 
   /// \brief Used by the atom class destructor: rather than deleting the array slot
-  /// (costly) set the corresponding atoms_ncopies to zero
+  /// (costly) set the corresponding atoms_refcount to zero
   virtual void clear_atom(int index);
 
-  /// \brief Select atom IDs from a file (usually PDB) \param filename name of
-  /// the file \param atoms array to which atoms read from "filename" will be
-  /// appended \param pdb_field (optional) if the file is a PDB and this
-  /// string is non-empty, select atoms for which this field is non-zero
-  /// \param pdb_field_value (optional) if non-zero, select only atoms whose
-  /// pdb_field equals this
-  virtual int load_atoms(char const *filename,
-                         cvm::atom_group &atoms,
-                         std::string const &pdb_field,
-                         double pdb_field_value = 0.0);
+  /// \brief Read a selection of atom IDs from a coordinate file (only PDB is supported)
+  /// \param[in] filename name of the file
+  /// \param[in,out] atoms array into which atoms will be read from "filename"
+  /// \param[in] pdb_field if the file is a PDB and this string is non-empty,
+  /// select atoms for which this field is non-zero
+  /// \param[in] pdb_field_value if non-zero, select only atoms whose pdb_field equals this
+  virtual int load_atoms(char const *filename, cvm::atom_group &atoms, std::string const &pdb_field,
+                         double pdb_field_value);
 
-  /// \brief Load a set of coordinates from a file (usually PDB); if "pos" is
-  /// already allocated, the number of its elements must match the number of
-  /// entries in "filename" \param filename name of the file \param pos array
-  /// of coordinates \param sorted_ids array of sorted internal IDs, used to
-  /// loop through the file only once \param pdb_field (optional) if the file
-  /// is a PDB and this string is non-empty, select atoms for which this field
-  /// is non-zero \param pdb_field_value (optional) if non-zero, select only
-  /// atoms whose pdb_field equals this
-  virtual int load_coords(char const *filename,
-                          std::vector<cvm::atom_pos> &pos,
-                          std::vector<int> const &sorted_ids,
-                          std::string const &pdb_field,
-                          double pdb_field_value = 0.0);
+  /// \brief Load a set of coordinates from a file (PDB or XYZ)
+  /// \param[in] filename name of the file
+  /// \param[in,out] pos array of coordinates; if not empty, the number of its elements must match
+  /// the number of entries in "filename"
+  /// \param[in] sorted_ids array of sorted internal IDs, used to loop through the file only once
+  /// \param[in] pdb_field if the file is a PDB and this string is non-empty, only atoms for which
+  /// this field is non-zero will be processed
+  /// \param[in] pdb_field_value if non-zero, process only atoms whose pdb_field equals this
+  virtual int load_coords(char const *filename, std::vector<cvm::atom_pos> &pos,
+                          std::vector<int> const &sorted_ids, std::string const &pdb_field,
+                          double pdb_field_value);
 
   /// Clear atomic data
   int reset();
 
-  /// Get the numeric ID of the given atom (for the program)
+  /// Get the numeric ID of the given atom
+  /// \param index Internal index in the Colvars arrays
   inline int get_atom_id(int index) const
   {
     return atoms_ids[index];
   }
 
   /// Get the mass of the given atom
+  /// \param index Internal index in the Colvars arrays
   inline cvm::real get_atom_mass(int index) const
   {
     return atoms_masses[index];
   }
 
+  /// Increase the reference count of the given atom
+  /// \param index Internal index in the Colvars arrays
+  inline void increase_refcount(int index)
+  {
+    atoms_refcount[index] += 1;
+  }
+
   /// Get the charge of the given atom
+  /// \param index Internal index in the Colvars arrays
   inline cvm::real get_atom_charge(int index) const
   {
     return atoms_charges[index];
   }
 
   /// Read the current position of the given atom
+  /// \param index Internal index in the Colvars arrays
   inline cvm::rvector get_atom_position(int index) const
   {
     return atoms_positions[index];
   }
 
   /// Read the current total force of the given atom
+  /// \param index Internal index in the Colvars arrays
   inline cvm::rvector get_atom_total_force(int index) const
   {
     return atoms_total_forces[index];
   }
 
   /// Request that this force is applied to the given atom
+  /// \param index Internal index in the Colvars arrays
+  /// \param new_force Force to add
   inline void apply_atom_force(int index, cvm::rvector const &new_force)
   {
     atoms_new_colvar_forces[index] += new_force;
@@ -149,6 +161,9 @@ public:
   {
     return &atoms_ids;
   }
+
+  /// Return number of atoms with positive reference count
+  size_t get_num_active_atoms() const;
 
   inline std::vector<cvm::real> const *get_atom_masses() const
   {
@@ -228,6 +243,18 @@ public:
     return atoms_max_applied_force_id_;
   }
 
+  /// Whether the atom list has been modified internally
+  inline bool modified_atom_list() const
+  {
+    return modified_atom_list_;
+  }
+
+  /// Reset the modified atom list flag
+  inline void reset_modified_atom_list()
+  {
+    modified_atom_list_ = false;
+  }
+
   /// Record whether masses have been updated
   inline bool updated_masses() const
   {
@@ -246,7 +273,7 @@ protected:
   /// within the host program
   std::vector<int>          atoms_ids;
   /// \brief Keep track of how many times each atom is used by a separate colvar object
-  std::vector<size_t>       atoms_ncopies;
+  std::vector<size_t>       atoms_refcount;
   /// \brief Masses of the atoms (allow redefinition during a run, as done e.g. in LAMMPS)
   std::vector<cvm::real>    atoms_masses;
   /// \brief Charges of the atoms (allow redefinition during a run, as done e.g. in LAMMPS)
@@ -266,6 +293,9 @@ protected:
 
   /// ID of the atom with the maximum norm among all applied forces
   int atoms_max_applied_force_id_;
+
+  /// Whether the atom list has been modified internally
+  bool modified_atom_list_;
 
   /// Whether the masses and charges have been updated from the host code
   bool updated_masses_, updated_charges_;
@@ -350,6 +380,9 @@ public:
     return &atom_groups_ids;
   }
 
+  /// Return number of atom groups with positive reference count
+  size_t get_num_active_atom_groups() const;
+
   inline std::vector<cvm::real> *modify_atom_group_masses()
   {
     // TODO updated_masses
@@ -401,7 +434,7 @@ protected:
   /// within the host program
   std::vector<int>          atom_groups_ids;
   /// \brief Keep track of how many times each group is used by a separate cvc
-  std::vector<size_t>       atom_groups_ncopies;
+  std::vector<size_t>       atom_groups_refcount;
   /// \brief Total masses of the atom groups
   std::vector<cvm::real>    atom_groups_masses;
   /// \brief Total charges of the atom groups (allow redefinition during a run, as done e.g. in LAMMPS)
@@ -424,6 +457,12 @@ protected:
 };
 
 
+#if defined(_OPENMP)
+#include <omp.h>
+#else
+struct omp_lock_t;
+#endif
+
 /// \brief Methods for SMP parallelization
 class colvarproxy_smp {
 
@@ -440,7 +479,7 @@ public:
   bool b_smp_active;
 
   /// Whether threaded parallelization is available (TODO: make this a cvm::deps feature)
-  virtual int smp_enabled();
+  virtual int check_smp_enabled();
 
   /// Distribute calculation of colvars (and their components) across threads
   virtual int smp_colvars_loop();
@@ -469,7 +508,7 @@ public:
 protected:
 
   /// Lock state for OpenMP
-  void *omp_lock_state;
+  omp_lock_t *omp_lock_state;
 };
 
 
@@ -539,9 +578,9 @@ public:
 
 
 
-/// \brief Interface between the collective variables module and
-/// the simulation or analysis program (NAMD, VMD, LAMMPS...).
-/// This is the base class: each interfaced program is supported by a derived class.
+/// Interface between Colvars and MD engine (GROMACS, LAMMPS, NAMD, VMD...)
+///
+/// This is the base class: each engine is supported by a derived class.
 class colvarproxy
   : public colvarproxy_system,
     public colvarproxy_atoms,
@@ -563,15 +602,20 @@ public:
   colvarproxy();
 
   /// Destructor
-  virtual ~colvarproxy();
+  ~colvarproxy() override;
 
-  virtual bool io_available() /* override */;
+  inline std::string const &engine_name() const
+  {
+    return engine_name_;
+  }
+
+  bool io_available() override;
 
   /// Request deallocation of the module (currently only implemented by VMD)
   virtual int request_deletion();
 
   /// Whether deallocation was requested
-  inline bool delete_requested()
+  inline bool delete_requested() const
   {
     return b_delete_requested;
   }
@@ -579,18 +623,30 @@ public:
   /// \brief Reset proxy state, e.g. requested atoms
   virtual int reset();
 
-  /// (Re)initialize required member data after construction
+  /// (Re)initialize the module
+  virtual int parse_module_config();
+
+  /// (Re)initialize required member data (called after the module)
   virtual int setup();
 
-  /// \brief Update data required by the colvars module (e.g. cache atom positions)
+  /// Whether the engine allows to fully initialize Colvars immediately
+  inline bool engine_ready() const
+  {
+    return engine_ready_;
+  }
+
+  /// Enqueue new configuration text, to be parsed as soon as possible
+  void add_config(std::string const &cmd, std::string const &conf);
+
+  /// Update data required by Colvars module (e.g. read atom positions)
   ///
   /// TODO Break up colvarproxy_namd and colvarproxy_lammps function into these
   virtual int update_input();
 
-  /// \brief Update data based from the results of a module update (e.g. send forces)
+  /// Update data based on the results of a Colvars call (e.g. send forces)
   virtual int update_output();
 
-  /// Carry out operations needed before next step is run
+  /// Carry out operations needed before next simulation step is run
   int end_of_step();
 
   /// Print a message to the main log
@@ -642,6 +698,9 @@ public:
 
 protected:
 
+  /// Whether the engine allows to fully initialize Colvars immediately
+  bool engine_ready_;
+
   /// Collected error messages
   std::string error_output;
 
@@ -661,6 +720,14 @@ protected:
 
   /// Track which features have been acknowledged during the last run
   size_t features_hash;
+
+protected:
+
+  /// Name of the simulation engine that the derived proxy object supports
+  std::string engine_name_ = "standalone";
+
+  /// Queue of config strings or files to be fed to the module
+  void *config_queue_;
 
 };
 

@@ -51,6 +51,7 @@ libcolvars_a_SOURCES += colvarproxy_replicas.cpp
 libcolvars_a_SOURCES += colvarproxy_system.cpp
 libcolvars_a_SOURCES += colvarproxy_tcl.cpp
 libcolvars_a_SOURCES += colvarproxy_volmaps.cpp
+libcolvars_a_SOURCES += colvars_memstream.cpp
 libcolvars_a_SOURCES += colvarscript.cpp
 libcolvars_a_SOURCES += colvarscript_commands.cpp
 libcolvars_a_SOURCES += colvarscript_commands_bias.cpp

@@ -10,7 +10,6 @@
 #include <iostream>
 #include <fstream>
 
-#if (__cplusplus >= 201103L)
 #include "colvar_neuralnetworkcompute.h"
 #include "colvarparse.h"
 #include "colvarproxy.h"
@@ -140,7 +139,7 @@ void denseLayer::readFromFile(const std::string& weights_file, const std::string
     colvarproxy *proxy = cvm::main()->proxy;
     auto &ifs_weights = proxy->input_stream(weights_file, "weights file");
     while (std::getline(ifs_weights, line)) {
-        if (ifs_weights.bad()) {
+        if (!ifs_weights) {
             throw std::runtime_error("I/O error while reading " + weights_file);
         }
         std::vector<std::string> splitted_data;
@@ -162,7 +161,7 @@ void denseLayer::readFromFile(const std::string& weights_file, const std::string
     // parse biases file
     auto &ifs_biases = proxy->input_stream(biases_file, "biases file");
     while (std::getline(ifs_biases, line)) {
-        if (ifs_biases.bad()) {
+        if (!ifs_biases) {
             throw std::runtime_error("I/O error while reading " + biases_file);
         }
         std::vector<std::string> splitted_data;
@@ -272,9 +271,12 @@ std::vector<std::vector<double>> neuralNetworkCompute::multiply_matrix(const std
     const size_t t = B[0].size();
     std::vector<std::vector<double>> C(m, std::vector<double>(t, 0.0));
     for (size_t i = 0; i < m; ++i) {
-        for (size_t j = 0; j < t; ++j) {
-            for (size_t k = 0; k < n; ++k) {
-                C[i][j] += A[i][k] * B[k][j];
+        for (size_t k = 0; k < n; ++k) {
+            const auto tmp = A[i][k];
+            auto& C_i = C[i];
+            auto& B_k = B[k];
+            for (size_t j = 0; j < t; ++j) {
+                C_i[j] += tmp * B_k[j];
             }
         }
     }
@@ -306,5 +308,3 @@ void neuralNetworkCompute::compute() {
     }
 }
 }
-
-#endif

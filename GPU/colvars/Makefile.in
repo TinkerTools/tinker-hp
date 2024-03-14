@@ -125,7 +125,8 @@ am_libcolvars_a_OBJECTS = colvar.$(OBJEXT) \
 	colvarproxy.$(OBJEXT) colvarproxy_io.$(OBJEXT) \
 	colvarproxy_replicas.$(OBJEXT) colvarproxy_system.$(OBJEXT) \
 	colvarproxy_tcl.$(OBJEXT) colvarproxy_volmaps.$(OBJEXT) \
-	colvarscript.$(OBJEXT) colvarscript_commands.$(OBJEXT) \
+	colvars_memstream.$(OBJEXT) colvarscript.$(OBJEXT) \
+	colvarscript_commands.$(OBJEXT) \
 	colvarscript_commands_bias.$(OBJEXT) \
 	colvarscript_commands_colvar.$(OBJEXT) colvartypes.$(OBJEXT) \
 	colvarvalue.$(OBJEXT) nr_jacobi.$(OBJEXT)
@@ -194,6 +195,7 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BLAS = @BLAS@
+COLVARSDEP = @COLVARSDEP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXDEPMODE = @CXXDEPMODE@
@@ -258,6 +260,7 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PLUMED = @PLUMED@
+PLUMEDDEP = @PLUMEDDEP@
 PREFIX = @PREFIX@
 PYTHON = @PYTHON@
 RANLIB = @RANLIB@
@@ -303,7 +306,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-python = @python@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -332,7 +334,7 @@ libcolvars_a_SOURCES = colvar.cpp colvar_neuralnetworkcompute.cpp \
 	colvarmodule.cpp colvarparams.cpp colvarparse.cpp \
 	colvarproxy.cpp colvarproxy_io.cpp colvarproxy_replicas.cpp \
 	colvarproxy_system.cpp colvarproxy_tcl.cpp \
-	colvarproxy_volmaps.cpp colvarscript.cpp \
+	colvarproxy_volmaps.cpp colvars_memstream.cpp colvarscript.cpp \
 	colvarscript_commands.cpp colvarscript_commands_bias.cpp \
 	colvarscript_commands_colvar.cpp colvartypes.cpp \
 	colvarvalue.cpp nr_jacobi.cpp
@@ -418,6 +420,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy_system.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy_tcl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarproxy_volmaps.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvars_memstream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarscript.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarscript_commands.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarscript_commands_bias.Po@am__quote@

@@ -278,20 +278,19 @@
     "  url = {https://doi.org/10.1063/5.0014475}\n"
     "}\n";
 
-  paper_count_[std::string("Plimpton1995")] = 0;
-  paper_url_[std::string("Plimpton1995")] = "https://doi.org/10.1006/jcph.1995.1039";
-  paper_bibtex_[std::string("Plimpton1995")] =
+  paper_count_[std::string("Thompson2022")] = 0;
+  paper_url_[std::string("Thompson2022")] = "https://doi.org/10.1016/j.cpc.2021.108171";
+  paper_bibtex_[std::string("Thompson2022")] =
     "\n"
-    "@article{Plimpton1995,\n"
-    "  title = {Fast parallel algorithms for short-range molecular dynamics},\n"
-    "  author = {Plimpton, Steve},\n"
-    "  journal = {J. Comp. Phys.},\n"
-    "  year = {1995},\n"
-    "  volume = {117},\n"
-    "  number = {1},\n"
-    "  pages = {1--19},\n"
-    "  doi = {10.1006/jcph.1995.1039},\n"
-    "  url = {https://doi.org/10.1006/jcph.1995.1039}\n"
+    "@article{Thompson2022,\n"
+    "  title = {{LAMMPS} - a flexible simulation tool for particle-based materials modeling at the atomic, meso, and continuum scales},\n"
+    "  author = {Thompson, Aidan P. and Aktulga, H. Metin and Berger, Richard and Bolintineanu, Dan S. and Brown, W. Michael and Crozier, Paul S. and {in't Veld}, Pieter J. and Kohlmeyer, Axel and Moore, Stan G. and Nguyen, Trung Dac and Shan, Ray and Stevens, Mark J. and Tranchida, Julien and Trott, Christian and Plimpton, Steven J.},\n"
+    "  journal = {Comp. Phys. Comm.},\n"
+    "  volume = {271},\n"
+    "  pages = {108171},\n"
+    "  year = {2022},\n"
+    "  doi = {10.1016/j.cpc.2021.108171},\n"
+    "  url = {https://doi.org/10.1016/j.cpc.2021.108171}\n"
     "}\n";
 
   paper_count_[std::string("Shen2015")] = 0;
@@ -442,14 +441,14 @@
   feature_count_[std::string("orientationAngle colvar component (derived from orientation)")] = 0;
   feature_paper_map_[std::string("orientationAngle colvar component (derived from orientation)")] = "Fiorin2013";
 
-  feature_count_[std::string("orientationProj colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("orientationProj colvar component (derived from orientation)")] = "Fiorin2013";
+  feature_count_[std::string("orientationProj colvar component (derived from orientationAngle)")] = 0;
+  feature_paper_map_[std::string("orientationProj colvar component (derived from orientationAngle)")] = "Fiorin2013";
 
-  feature_count_[std::string("spinAngle colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("spinAngle colvar component (derived from orientation)")] = "Fiorin2013";
+  feature_count_[std::string("spinAngle colvar component (derived from tilt)")] = 0;
+  feature_paper_map_[std::string("spinAngle colvar component (derived from tilt)")] = "Fiorin2013";
 
-  feature_count_[std::string("tilt colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("tilt colvar component (derived from orientation)")] = "Fiorin2013";
+  feature_count_[std::string("tilt colvar component (derived from orientationProj)")] = 0;
+  feature_paper_map_[std::string("tilt colvar component (derived from orientationProj)")] = "Fiorin2013";
 
   feature_count_[std::string("alpha colvar component")] = 0;
   feature_paper_map_[std::string("alpha colvar component")] = "Fiorin2013";
@@ -499,14 +498,14 @@
   feature_count_[std::string("polarPhi colvar component")] = 0;
   feature_paper_map_[std::string("polarPhi colvar component")] = "Fu2017";
 
-  feature_count_[std::string("eulerPhi colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("eulerPhi colvar component (derived from orientation)")] = "Fu2017";
+  feature_count_[std::string("eulerPhi colvar component (derived from orientation_angle)")] = 0;
+  feature_paper_map_[std::string("eulerPhi colvar component (derived from orientation_angle)")] = "Fu2017";
 
-  feature_count_[std::string("eulerTheta colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("eulerTheta colvar component (derived from orientation)")] = "Fu2017";
+  feature_count_[std::string("eulerTheta colvar component (derived from orientation_angle)")] = 0;
+  feature_paper_map_[std::string("eulerTheta colvar component (derived from orientation_angle)")] = "Fu2017";
 
-  feature_count_[std::string("eulerPsi colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("eulerPsi colvar component (derived from orientation)")] = "Fu2017";
+  feature_count_[std::string("eulerPsi colvar component (derived from orientation_angle)")] = 0;
+  feature_paper_map_[std::string("eulerPsi colvar component (derived from orientation_angle)")] = "Fu2017";
 
   feature_count_[std::string("dipoleAngle colvar component")] = 0;
   feature_paper_map_[std::string("dipoleAngle colvar component")] = "Garate2019";
@@ -542,7 +541,7 @@
   feature_paper_map_[std::string("Scalable center-of-mass computation (NAMD)")] = "Phillips2020";
 
   feature_count_[std::string("LAMMPS engine")] = 0;
-  feature_paper_map_[std::string("LAMMPS engine")] = "Plimpton1995";
+  feature_paper_map_[std::string("LAMMPS engine")] = "Thompson2022";
 
   feature_count_[std::string("distancePairs colvar component")] = 0;
   feature_paper_map_[std::string("distancePairs colvar component")] = "Shen2015";

@@ -10,7 +10,7 @@
 #ifndef COLVARMODULE_H
 #define COLVARMODULE_H
 
-#include <cmath>
+#include <cstdint>
 
 #include "colvars_version.h"
 
@@ -19,9 +19,11 @@
 #endif
 
 /*! \mainpage Main page
-This is the Developer's documentation for the Collective Variables Module.
+This is the Developer's documentation for the Collective Variables module (Colvars).
 
 You can browse the class hierarchy or the list of source files.
+
+Please note that this documentation is only supported for the master branch, and its features may differ from those in a given release of a simulation package.
  */
 
 /// \file colvarmodule.h
@@ -33,26 +35,15 @@ You can browse the class hierarchy or the list of source files.
 /// shared between all object instances) to be accessed from other
 /// objects.
 
-#define COLVARS_OK 0
-#define COLVARS_ERROR   1
-#define COLVARS_NOT_IMPLEMENTED (1<<1)
-#define COLVARS_INPUT_ERROR     (1<<2) // out of bounds or inconsistent input
-#define COLVARS_BUG_ERROR       (1<<3) // Inconsistent state indicating bug
-#define COLVARS_FILE_ERROR      (1<<4)
-#define COLVARS_MEMORY_ERROR    (1<<5)
-#define COLVARS_NO_SUCH_FRAME   (1<<6) // Cannot load the requested frame
-
-#include <sstream>
+#include <cmath>
+#include <iosfwd>
 #include <string>
 #include <vector>
-#include <list>
-#include <iosfwd>
 
 class colvarparse;
 class colvar;
 class colvarbias;
 class colvarproxy;
-class colvarscript;
 class colvarvalue;
 
 
@@ -90,8 +81,6 @@ public:
   }
 
   friend class colvarproxy;
-  // TODO colvarscript should be unaware of colvarmodule's internals
-  friend class colvarscript;
 
   /// Use a 64-bit integer to store the step number
   typedef long long step_number;
@@ -190,7 +179,9 @@ public:
   template <class T> class matrix2d;
   class quaternion;
   class rotation;
+
   class usage;
+  class memory_stream;
 
   /// Residue identifier
   typedef int residue_id;
@@ -246,6 +237,8 @@ public:
   {
     return it;
   }
+
+  bool binary_restart;
 
   /// \brief Finite difference step size (if there is no dynamics, or
   /// if gradients need to be tested independently from the size of
@@ -345,6 +338,9 @@ public:
   /// Destructor
   ~colvarmodule();
 
+  /// Set the initial step number (it is 0 otherwise); may be overridden when reading a state
+  void set_initial_step(step_number it);
+
   /// Actual function called by the destructor
   int reset();
 
@@ -439,9 +435,9 @@ public:
   // from the proxy that may change during program execution)
   // No additional parsing is done within these functions
 
-  /// (Re)initialize internal data (currently used by LAMMPS)
+  /// (Re)initialize any internal data affected by changes in the engine
   /// Also calls setup() member functions of colvars and biases
-  int setup();
+  int update_engine_parameters();
 
   /// (Re)initialize and (re)read the input state file calling read_restart()
   int setup_input();
@@ -449,17 +445,52 @@ public:
   /// (Re)initialize the output trajectory and state file (does not write it yet)
   int setup_output();
 
-  /// Read a restart file
-  std::istream & read_restart(std::istream &is);
+private:
+
+  template <typename IST> IST & read_state_template_(IST &is);
+
+  /// Default input state file; if given, it is read unless the MD engine provides it
+  std::string default_input_state_file_;
+
+  /// Internal state buffer, to be read as an unformatted stream
+  std::vector<unsigned char> input_state_buffer_;
+
+public:
+
+  /// Read all objects' state fron a formatted (text) stream
+  std::istream & read_state(std::istream &is);
+
+  /// Read all objects' state fron an unformatted (binary) stream
+  memory_stream & read_state(memory_stream &is);
+
+  /// Set an internal state buffer, to be read later as an unformatted stream when ready
+  int set_input_state_buffer(size_t n, unsigned char *buf);
+
+  /// Same as set_input_state_buffer() for C array, but uses std::move
+  int set_input_state_buffer(std::vector<unsigned char> &buf);
 
   /// Read the states of individual objects; allows for changes
   std::istream & read_objects_state(std::istream &is);
 
+  /// Read the states of individual objects; allows for changes
+  memory_stream & read_objects_state(memory_stream &is);
+
   /// If needed (old restart file), print the warning that cannot be ignored
   int print_total_forces_errning(bool warn_total_forces);
 
-  /// Write the output restart file
-  std::ostream & write_restart(std::ostream &os);
+private:
+  template <typename OST> OST &write_state_template_(OST &os);
+
+public:
+
+  /// Write the state of the module to a formatted (text) file
+  std::ostream & write_state(std::ostream &os);
+
+  /// Write the state of the module to an unformatted (binary) file
+  memory_stream & write_state(memory_stream &os);
+
+  /// Write the state of the module to an array of bytes (wrapped as a memory_stream object)
+  int write_state_buffer(std::vector<unsigned char> &buffer);
 
   /// Strips .colvars.state from filename and checks that it is not empty
   static std::string state_file_prefix(char const *filename);
@@ -650,7 +681,7 @@ public:
   static void log(std::string const &message, int min_log_level = 10);
 
   /// Print a message to the main log and set global error code
-  static int error(std::string const &message, int code = COLVARS_ERROR);
+  static int error(std::string const &message, int code = -1);
 
 private:
 
@@ -743,7 +774,8 @@ public:
   /// Load coordinates into an atom group from an XYZ file (assumes Angstroms)
   int load_coords_xyz(char const *filename,
                       std::vector<rvector> *pos,
-                      atom_group *atoms);
+                      atom_group *atoms,
+                      bool keep_open = false);
 
   /// Frequency for collective variables trajectory output
   static size_t cv_traj_freq;
@@ -754,7 +786,7 @@ public:
   std::string   restart_out_name;
 
   /// Pseudo-random number with Gaussian distribution
-  static real rand_gaussian(void);
+  static real rand_gaussian();
 
 protected:
 
@@ -837,9 +869,20 @@ public:
 typedef colvarmodule cvm;
 
 
-
 std::ostream & operator << (std::ostream &os, cvm::rvector const &v);
 std::istream & operator >> (std::istream &is, cvm::rvector &v);
+
+
+namespace {
+  constexpr int32_t COLVARS_OK = 0;
+  constexpr int32_t COLVARS_ERROR = 1;
+  constexpr int32_t COLVARS_NOT_IMPLEMENTED = (1<<1);
+  constexpr int32_t COLVARS_INPUT_ERROR     = (1<<2); // out of bounds or inconsistent input
+  constexpr int32_t COLVARS_BUG_ERROR       = (1<<3); // Inconsistent state indicating bug
+  constexpr int32_t COLVARS_FILE_ERROR      = (1<<4);
+  constexpr int32_t COLVARS_MEMORY_ERROR    = (1<<5);
+  constexpr int32_t COLVARS_NO_SUCH_FRAME   = (1<<6); // Cannot load the requested frame
+}
 
 
 #endif

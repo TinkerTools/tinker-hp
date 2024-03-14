@@ -135,7 +135,8 @@ am_libcolvars_a_OBJECTS = colvar.$(OBJEXT) \
 	colvarproxy.$(OBJEXT) colvarproxy_io.$(OBJEXT) \
 	colvarproxy_replicas.$(OBJEXT) colvarproxy_system.$(OBJEXT) \
 	colvarproxy_tcl.$(OBJEXT) colvarproxy_volmaps.$(OBJEXT) \
-	colvarscript.$(OBJEXT) colvarscript_commands.$(OBJEXT) \
+	colvars_memstream.$(OBJEXT) colvarscript.$(OBJEXT) \
+	colvarscript_commands.$(OBJEXT) \
 	colvarscript_commands_bias.$(OBJEXT) \
 	colvarscript_commands_colvar.$(OBJEXT) colvartypes.$(OBJEXT) \
 	colvarvalue.$(OBJEXT) nr_jacobi.$(OBJEXT)

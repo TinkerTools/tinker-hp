@@ -16,13 +16,18 @@
 #include "colvarmodule.h"
 #include "colvarvalue.h"
 #include "colvarparse.h"
-#include "colvar.h"
 #include "colvarcomp.h"
-#include "colvarscript.h"
+#include "colvar.h"
+#include "colvarbias.h"
+#include "colvars_memstream.h"
 
-#if (__cplusplus >= 201103L)
-std::map<std::string, std::function<colvar::cvc* (const std::string& subcv_conf)>> colvar::global_cvc_map = std::map<std::string, std::function<colvar::cvc* (const std::string& subcv_conf)>>();
-#endif
+
+std::map<std::string, std::function<colvar::cvc *()>> colvar::global_cvc_map =
+    std::map<std::string, std::function<colvar::cvc *()>>();
+
+std::map<std::string, std::string> colvar::global_cvc_desc_map =
+    std::map<std::string, std::string>();
+
 
 colvar::colvar()
 {
@@ -34,6 +39,8 @@ colvar::colvar()
 #ifdef LEPTON
   dev_null = 0.0;
 #endif
+
+  matching_state = false;
 
   expand_boundaries = false;
 
@@ -130,7 +137,14 @@ int colvar::init(std::string const &conf)
 
     // Sort array of cvcs based on their names
     // Note: default CVC names are in input order for same type of CVC
-    std::sort(cvcs.begin(), cvcs.end(), colvar::compare_cvc);
+    std::sort(cvcs.begin(), cvcs.end(),
+              [](std::shared_ptr<colvar::cvc> const &cvc1,
+                 std::shared_ptr<colvar::cvc> const &cvc2) -> bool {
+                if (cvc1 && cvc2) {
+                  return cvc1->name < cvc2->name;
+                }
+                return false;
+              });
 
     if(cvcs.size() > 1) {
       cvm::log("Sorted list of components for this scripted colvar:\n");
@@ -160,12 +174,6 @@ int colvar::init(std::string const &conf)
 
   set_enabled(f_cv_scalar, (value().type() == colvarvalue::type_scalar));
 
-  // If using scripted biases, any colvar may receive bias forces
-  // and will need its gradient
-  if (cvm::scripted_forces()) {
-    enable(f_cv_gradient);
-  }
-
   // check for linear combinations
   {
     bool lin = !(is_enabled(f_cv_scripted) || is_enabled(f_cv_custom_function));
@@ -185,9 +193,9 @@ int colvar::init(std::string const &conf)
 
         if ((cvcs[i])->sup_np < 0) {
           cvm::log("Warning: you chose a negative exponent in the combination; "
-                    "if you apply forces, the simulation may become unstable "
-                    "when the component \""+
-                    (cvcs[i])->function_type+"\" approaches zero.\n");
+                   "if you apply forces, the simulation may become unstable "
+                   "when the component \""+
+                   (cvcs[i])->function_type()+"\" approaches zero.\n");
         }
       }
     }
@@ -294,8 +302,13 @@ int colvar::init(std::string const &conf)
   error_code |= init_grid_parameters(conf);
 
   // Detect if we have a single component that is an alchemical lambda
-  if (is_enabled(f_cv_single_cvc) && cvcs[0]->function_type == "alchLambda") {
+  if (is_enabled(f_cv_single_cvc) && cvcs[0]->function_type() == "alchLambda") {
     enable(f_cv_external);
+  }
+
+  // If using scripted biases, any colvar may receive bias forces
+  if (cvm::scripted_forces()) {
+    enable(f_cv_apply_force);
   }
 
   error_code |= init_extended_Lagrangian(conf);
@@ -467,13 +480,6 @@ int colvar::init_custom_function(std::string const &conf)
   size_t pos = 0;
   if (key_lookup(conf, "customFunction", &expr, &pos)) {
     std::string msg("Error: customFunction requires the Lepton library.");
-#if (__cplusplus < 201103L)
-    // NOTE: this is not ideal; testing for the Lepton library's version would
-    // be more accurate, but also less portable
-    msg +=
-      std::string("  Note also that recent versions of Lepton require C++11: "
-                  "please see https://colvars.github.io/README-c++11.html.");
-#endif
     return cvm::error(msg, COLVARS_NOT_IMPLEMENTED);
   }
 
@@ -646,14 +652,15 @@ int colvar::init_extended_Lagrangian(std::string const &conf)
     x_ext.type(colvarvalue::type_notset);
     v_ext.type(value());
     fr.type(value());
-    const bool temp_provided = get_keyval(conf, "extendedTemp", temp,
-                                          proxy->target_temperature());
+    const bool temp_provided = get_keyval(conf, "extendedTemp", temp, proxy->target_temperature());
     if (is_enabled(f_cv_external)) {
-      // In the case of an "external" coordinate, there is no coupling potential:
+      // In the case of a driven external parameter in the back-end, there is no coupling potential:
       // only the fictitious mass is meaningful
       get_keyval(conf, "extendedMass", ext_mass);
       // Ensure that the computed restraint energy term is zero
       ext_force_k = 0.0;
+      // Then we need forces from the back-end
+      enable(f_cv_total_force_calc);
     } else {
       // Standard case of coupling to a geometric colvar
       if (temp <= 0.0) { // Then a finite temperature is required
@@ -748,75 +755,56 @@ int colvar::init_output_flags(std::string const &conf)
   return COLVARS_OK;
 }
 
-#if (__cplusplus >= 201103L)
-// C++11
-template<typename def_class_name> int colvar::init_components_type(std::string const &,
-                                                                   char const * /* def_desc */,
-                                                                   char const *def_config_key) {
-  // global_cvc_map is only supported in the C++11 case
-  global_cvc_map[def_config_key] = [](const std::string& cvc_conf){return new def_class_name(cvc_conf);};
-  // TODO: maybe it is better to do more check to avoid duplication in the map?
-  return COLVARS_OK;
+
+template <typename def_class_name>
+void colvar::add_component_type(char const *def_description, char const *def_config_key)
+{
+  if (global_cvc_map.count(def_config_key) == 0) {
+    global_cvc_map[def_config_key] = []() {
+      return new def_class_name();
+    };
+    global_cvc_desc_map[def_config_key] = std::string(def_description);
+  }
 }
 
-int colvar::init_components_type_from_global_map(const std::string& conf,
-                                                 const char* def_config_key) {
-#else
-template<typename def_class_name> int colvar::init_components_type(std::string const & conf,
-                                                                   char const * /* def_desc */,
-                                                                   char const *def_config_key) {
-#endif
+
+int colvar::init_components_type(const std::string& conf, const char* def_config_key) {
   size_t def_count = 0;
   std::string def_conf = "";
   size_t pos = 0;
+  int error_code = COLVARS_OK;
   while ( this->key_lookup(conf,
                            def_config_key,
                            &def_conf,
                            &pos) ) {
-    if (!def_conf.size()) continue;
+
     cvm::log("Initializing "
              "a new \""+std::string(def_config_key)+"\" component"+
              (cvm::debug() ? ", with configuration:\n"+def_conf
               : ".\n"));
+    cvc *cvcp = global_cvc_map[def_config_key]();
+    if (!cvcp) {
+      return cvm::error("Error: in creating object of type \"" + std::string(def_config_key) +
+                            "\".\n",
+                        COLVARS_MEMORY_ERROR);
+    }
+    cvcs.push_back(std::shared_ptr<colvar::cvc>(cvcp));
+
     cvm::increase_depth();
-    // only the following line is different from init_components_type
-    // in the non-C++11 case
-#if (__cplusplus >= 201103L)
-    cvc *cvcp = global_cvc_map.at(def_config_key)(def_conf);
-#else
-    cvc *cvcp = new def_class_name(def_conf);
-#endif
-    if (cvcp != NULL) {
-      cvcs.push_back(cvcp);
-      cvcp->check_keywords(def_conf, def_config_key);
-      cvcp->set_function_type(def_config_key);
-      if (cvm::get_error()) {
-        cvm::error("Error: in setting up component \""+
-                   std::string(def_config_key)+"\".\n", COLVARS_INPUT_ERROR);
-        return COLVARS_INPUT_ERROR;
-      }
-      cvm::decrease_depth();
-    } else {
-      cvm::decrease_depth();
-      cvm::error("Error: in allocating component \""+
-                   std::string(def_config_key)+"\".\n",
-                 COLVARS_MEMORY_ERROR);
-      return COLVARS_MEMORY_ERROR;
+    int error_code_this = cvcp->init(def_conf);
+    if (error_code_this == COLVARS_OK) {
+      // Checking for invalid keywords only if the parsing was successful, otherwise any
+      // early-returns due to errors would raise false positives
+      error_code_this |= cvcp->check_keywords(def_conf, def_config_key);
+    }
+    cvm::decrease_depth();
+    if (error_code_this != COLVARS_OK) {
+      error_code |=
+          cvm::error("Error: in setting up component \"" + std::string(def_config_key) + "\".\n",
+                     COLVARS_INPUT_ERROR);
     }
 
-    if ( (cvcp->period != 0.0) || (cvcp->wrap_center != 0.0) ) {
-      if (! cvcp->is_enabled(f_cvc_periodic)) {
-        cvm::error("Error: invalid use of period and/or "
-                   "wrapAround in a \""+
-                   std::string(def_config_key)+
-                   "\" component.\n"+
-                   "Period: "+cvm::to_str(cvcp->period) +
-                   " wrapAround: "+cvm::to_str(cvcp->wrap_center),
-                   COLVARS_INPUT_ERROR);
-        return COLVARS_INPUT_ERROR;
-      }
-    }
-
+    // Set default name if it doesn't have one
     if ( ! cvcs.back()->name.size()) {
       std::ostringstream s;
       s << def_config_key << std::setfill('0') << std::setw(4) << ++def_count;
@@ -826,135 +814,138 @@ template<typename def_class_name> int colvar::init_components_type(std::string c
 
     cvcs.back()->setup();
     if (cvm::debug()) {
-      cvm::log("Done initializing a \""+
-               std::string(def_config_key)+
-               "\" component"+
-               (cvm::debug() ?
-                ", named \""+cvcs.back()->name+"\""
-                : "")+".\n");
+      cvm::log("Done initializing a \"" + std::string(def_config_key) + "\" component" +
+               (cvm::debug() ? ", named \"" + cvcs.back()->name + "\"" : "") + ".\n");
     }
+
     def_conf = "";
     if (cvm::debug()) {
-      cvm::log("Parsed "+cvm::to_str(cvcs.size())+
-               " components at this time.\n");
+      cvm::log("Parsed " + cvm::to_str(cvcs.size()) + " components at this time.\n");
     }
   }
 
-  return COLVARS_OK;
+  return error_code;
 }
+
+
+void colvar::define_component_types()
+{
+  colvarproxy *proxy = cvm::main()->proxy;
+
+  add_component_type<distance>("distance", "distance");
+  add_component_type<distance_vec>("distance vector", "distanceVec");
+  add_component_type<cartesian>("Cartesian coordinates", "cartesian");
+  add_component_type<distance_dir>("distance vector direction", "distanceDir");
+  add_component_type<distance_z>("distance projection on an axis", "distanceZ");
+  add_component_type<distance_xy>("distance projection on a plane", "distanceXY");
+  add_component_type<polar_theta>("spherical polar angle theta", "polarTheta");
+  add_component_type<polar_phi>("spherical azimuthal angle phi", "polarPhi");
+  add_component_type<distance_inv>("average distance weighted by inverse power", "distanceInv");
+  add_component_type<distance_pairs>("N1xN2-long vector of pairwise distances", "distancePairs");
+  add_component_type<dipole_magnitude>("dipole magnitude", "dipoleMagnitude");
+  add_component_type<coordnum>("coordination number", "coordNum");
+  add_component_type<selfcoordnum>("self-coordination number", "selfCoordNum");
+  add_component_type<groupcoordnum>("group-coordination number", "groupCoord");
+  add_component_type<angle>("angle", "angle");
+  add_component_type<dipole_angle>("dipole angle", "dipoleAngle");
+  add_component_type<dihedral>("dihedral", "dihedral");
+  add_component_type<h_bond>("hydrogen bond", "hBond");
+
+  if (proxy->check_atom_name_selections_available() == COLVARS_OK) {
+    add_component_type<alpha_angles>("alpha helix", "alpha");
+    add_component_type<dihedPC>("dihedral principal component", "dihedralPC");
+  }
+
+  add_component_type<orientation>("orientation", "orientation");
+  add_component_type<orientation_angle>("orientation angle", "orientationAngle");
+  add_component_type<orientation_proj>("orientation projection", "orientationProj");
+  add_component_type<tilt>("tilt", "tilt");
+  add_component_type<spin_angle>("spin angle", "spinAngle");
+  add_component_type<rmsd>("RMSD", "rmsd");
+  add_component_type<gyration>("radius of gyration", "gyration");
+  add_component_type<inertia>("moment of inertia", "inertia");
+  add_component_type<inertia_z>("moment of inertia around an axis", "inertiaZ");
+  add_component_type<eigenvector>("eigenvector", "eigenvector");
+  add_component_type<alch_lambda>("alchemical coupling parameter", "alchLambda");
+  add_component_type<alch_Flambda>("force on alchemical coupling parameter", "alchFLambda");
+  add_component_type<aspath>("arithmetic path collective variables (s)", "aspath");
+  add_component_type<azpath>("arithmetic path collective variables (z)", "azpath");
+  add_component_type<gspath>("geometrical path collective variables (s)", "gspath");
+  add_component_type<gzpath>("geometrical path collective variables (z)", "gzpath");
+  add_component_type<linearCombination>("linear combination of other collective variables", "linearCombination");
+  add_component_type<gspathCV>("geometrical path collective variables (s) for other CVs", "gspathCV");
+  add_component_type<gzpathCV>("geometrical path collective variables (z) for other CVs", "gzpathCV");
+  add_component_type<aspathCV>("arithmetic path collective variables (s) for other CVs", "aspathCV");
+  add_component_type<azpathCV>("arithmetic path collective variables (s) for other CVs", "azpathCV");
+  add_component_type<euler_phi>("euler phi angle of the optimal orientation", "eulerPhi");
+  add_component_type<euler_psi>("euler psi angle of the optimal orientation", "eulerPsi");
+  add_component_type<euler_theta>("euler theta angle of the optimal orientation", "eulerTheta");
+
+#ifdef LEPTON
+  add_component_type<customColvar>("CV with support of the Lepton custom function", "customColvar");
+#endif
+
+  add_component_type<neuralNetwork>("neural network CV for other CVs", "neuralNetwork");
+
+  if (proxy->check_volmaps_available() == COLVARS_OK) {
+    add_component_type<map_total>("total value of atomic map", "mapTotal");
+  }
+}
+
 
 int colvar::init_components(std::string const &conf)
 {
   int error_code = COLVARS_OK;
   size_t i = 0, j = 0;
 
-  // in the non-C++11 case, the components are initialized directly by init_components_type;
-  // in the C++11 case, the components are stored in the global_cvc_map at first
-  // by init_components_type, and then the map is iterated to initialize all components.
-  error_code |= init_components_type<distance>(conf, "distance", "distance");
-  error_code |= init_components_type<distance_vec>(conf, "distance vector", "distanceVec");
-  error_code |= init_components_type<cartesian>(conf, "Cartesian coordinates", "cartesian");
-  error_code |= init_components_type<distance_dir>(conf, "distance vector "
-    "direction", "distanceDir");
-  error_code |= init_components_type<distance_z>(conf, "distance projection "
-    "on an axis", "distanceZ");
-  error_code |= init_components_type<distance_xy>(conf, "distance projection "
-    "on a plane", "distanceXY");
-  error_code |= init_components_type<polar_theta>(conf, "spherical polar angle theta",
-    "polarTheta");
-  error_code |= init_components_type<polar_phi>(conf, "spherical azimuthal angle phi",
-    "polarPhi");
-  error_code |= init_components_type<distance_inv>(conf, "average distance "
-    "weighted by inverse power", "distanceInv");
-  error_code |= init_components_type<distance_pairs>(conf, "N1xN2-long vector "
-    "of pairwise distances", "distancePairs");
-  error_code |= init_components_type<dipole_magnitude>(conf, "dipole magnitude",
-    "dipoleMagnitude");
-  error_code |= init_components_type<coordnum>(conf, "coordination "
-    "number", "coordNum");
-  error_code |= init_components_type<selfcoordnum>(conf, "self-coordination "
-    "number", "selfCoordNum");
-  error_code |= init_components_type<groupcoordnum>(conf, "group-coordination "
-    "number", "groupCoord");
-  error_code |= init_components_type<angle>(conf, "angle", "angle");
-  error_code |= init_components_type<dipole_angle>(conf, "dipole angle", "dipoleAngle");
-  error_code |= init_components_type<dihedral>(conf, "dihedral", "dihedral");
-  error_code |= init_components_type<h_bond>(conf, "hydrogen bond", "hBond");
-  error_code |= init_components_type<alpha_angles>(conf, "alpha helix", "alpha");
-  error_code |= init_components_type<dihedPC>(conf, "dihedral "
-    "principal component", "dihedralPC");
-  error_code |= init_components_type<orientation>(conf, "orientation", "orientation");
-  error_code |= init_components_type<orientation_angle>(conf, "orientation "
-    "angle", "orientationAngle");
-  error_code |= init_components_type<orientation_proj>(conf, "orientation "
-    "projection", "orientationProj");
-  error_code |= init_components_type<tilt>(conf, "tilt", "tilt");
-  error_code |= init_components_type<spin_angle>(conf, "spin angle", "spinAngle");
-  error_code |= init_components_type<rmsd>(conf, "RMSD", "rmsd");
-  error_code |= init_components_type<gyration>(conf, "radius of "
-    "gyration", "gyration");
-  error_code |= init_components_type<inertia>(conf, "moment of "
-    "inertia", "inertia");
-  error_code |= init_components_type<inertia_z>(conf, "moment of inertia around an axis", "inertiaZ");
-  error_code |= init_components_type<eigenvector>(conf, "eigenvector", "eigenvector");
-  error_code |= init_components_type<alch_lambda>(conf, "alchemical coupling parameter", "alchLambda");
-  error_code |= init_components_type<alch_Flambda>(conf, "force on alchemical coupling parameter", "alchFLambda");
-  error_code |= init_components_type<gspath>(conf, "geometrical path collective variables (s)", "gspath");
-  error_code |= init_components_type<gzpath>(conf, "geometrical path collective variables (z)", "gzpath");
-  error_code |= init_components_type<linearCombination>(conf, "linear combination of other collective variables", "linearCombination");
-  error_code |= init_components_type<gspathCV>(conf, "geometrical path collective variables (s) for other CVs", "gspathCV");
-  error_code |= init_components_type<gzpathCV>(conf, "geometrical path collective variables (z) for other CVs", "gzpathCV");
-  error_code |= init_components_type<aspathCV>(conf, "arithmetic path collective variables (s) for other CVs", "aspathCV");
-  error_code |= init_components_type<azpathCV>(conf, "arithmetic path collective variables (s) for other CVs", "azpathCV");
-  error_code |= init_components_type<euler_phi>(conf, "euler phi angle of the optimal orientation", "eulerPhi");
-  error_code |= init_components_type<euler_psi>(conf, "euler psi angle of the optimal orientation", "eulerPsi");
-  error_code |= init_components_type<euler_theta>(conf, "euler theta angle of the optimal orientation", "eulerTheta");
-#ifdef LEPTON
-  error_code |= init_components_type<customColvar>(conf, "CV with support of the lepton custom function", "customColvar");
-#endif
-  error_code |= init_components_type<neuralNetwork>(conf, "neural network CV for other CVs", "NeuralNetwork");
+  if (global_cvc_map.empty()) {
+    define_component_types();
+  }
 
-  error_code |= init_components_type<map_total>(conf, "total value of atomic map", "mapTotal");
-#if (__cplusplus >= 201103L)
   // iterate over all available CVC in the map
   for (auto it = global_cvc_map.begin(); it != global_cvc_map.end(); ++it) {
-    error_code |= init_components_type_from_global_map(conf, it->first.c_str());
+    error_code |= init_components_type(conf, it->first.c_str());
     // TODO: is it better to check the error code here?
     if (error_code != COLVARS_OK) {
       cvm::log("Failed to initialize " + it->first + " with the following configuration:\n");
       cvm::log(conf);
       // TODO: should it stop here?
+      break;
     }
   }
-#endif
-  if (!cvcs.size() || (error_code != COLVARS_OK)) {
-    cvm::error("Error: no valid components were provided "
-               "for this collective variable.\n",
-               COLVARS_INPUT_ERROR);
-    return COLVARS_INPUT_ERROR;
+
+  if (!cvcs.size()) {
+    std::string msg("Error: no valid components were provided for this collective variable.\n");
+    msg += "Currently available component types are: \n";
+    for (auto it = global_cvc_desc_map.begin(); it != global_cvc_desc_map.end(); ++it) {
+      msg += "    " + it->first + " -- " + it->second + "\n";
+    }
+    msg += "\nPlease note that some of the above types may still be unavailable, irrespective of this error.\n";
+    error_code |= cvm::error(msg, COLVARS_INPUT_ERROR);
   }
 
   // Check for uniqueness of CVC names (esp. if user-provided)
   for (i = 0; i < cvcs.size(); i++) {
-    for (j = i+1; j < cvcs.size(); j++) {
+    for (j = i + 1; j < cvcs.size(); j++) {
       if (cvcs[i]->name == cvcs[j]->name) {
-        cvm::error("Components " + cvm::to_str(i) + " and " + cvm::to_str(j) +\
-          " cannot have the same name \"" +  cvcs[i]->name+ "\".\n", COLVARS_INPUT_ERROR);
-        return COLVARS_INPUT_ERROR;
+        error_code |= cvm::error("Components " + cvm::to_str(i) + " and " + cvm::to_str(j) +
+                                     " cannot have the same name \"" + cvcs[i]->name + "\".\n",
+                                 COLVARS_INPUT_ERROR);
       }
     }
   }
 
-  n_active_cvcs = cvcs.size();
-
-  // Store list of children cvcs for dependency checking purposes
-  for (i = 0; i < cvcs.size(); i++) {
-    add_child(cvcs[i]);
+  if (error_code == COLVARS_OK) {
+    // Store list of children cvcs for dependency checking purposes
+    for (i = 0; i < cvcs.size(); i++) {
+      add_child(cvcs[i].get());
+    }
+    // By default all CVCs are active at the start
+    n_active_cvcs = cvcs.size();
+    cvm::log("All components initialized.\n");
   }
 
-  cvm::log("All components initialized.\n");
-
-  return COLVARS_OK;
+  return error_code;
 }
 
 
@@ -1106,6 +1097,9 @@ int colvar::init_dependencies() {
     init_feature(f_cv_gradient, "gradient", f_type_dynamic);
     require_feature_children(f_cv_gradient, f_cvc_gradient);
 
+    init_feature(f_cv_apply_force, "apply_force", f_type_dynamic);
+    require_feature_alt(f_cv_apply_force, f_cv_gradient, f_cv_external);
+
     init_feature(f_cv_collect_gradient, "collect_gradient", f_type_dynamic);
     require_feature_self(f_cv_collect_gradient, f_cv_gradient);
     require_feature_self(f_cv_collect_gradient, f_cv_scalar);
@@ -1123,6 +1117,8 @@ int colvar::init_dependencies() {
     // System force: either trivial (spring force); through extended Lagrangian, or calculated explicitly
     init_feature(f_cv_total_force, "total_force", f_type_dynamic);
     require_feature_alt(f_cv_total_force, f_cv_extended_Lagrangian, f_cv_total_force_calc);
+
+    init_feature(f_cv_total_force_current_step, "total_force_current_step", f_type_dynamic);
 
     // Deps for explicit total force calculation
     init_feature(f_cv_total_force_calc, "total_force_calculation", f_type_dynamic);
@@ -1142,13 +1138,15 @@ int colvar::init_dependencies() {
 
     init_feature(f_cv_extended_Lagrangian, "extended_Lagrangian", f_type_user);
     require_feature_self(f_cv_extended_Lagrangian, f_cv_scalar);
-    require_feature_self(f_cv_extended_Lagrangian, f_cv_gradient);
+    require_feature_self(f_cv_extended_Lagrangian, f_cv_apply_force);
 
     init_feature(f_cv_Langevin, "Langevin_dynamics", f_type_user);
     require_feature_self(f_cv_Langevin, f_cv_extended_Lagrangian);
 
-    init_feature(f_cv_external, "external", f_type_user);
+    init_feature(f_cv_external, "external_parameter", f_type_static);
     require_feature_self(f_cv_external, f_cv_single_cvc);
+    // External parameters always report the total force for current step
+    require_feature_self(f_cv_external, f_cv_total_force_current_step);
 
     init_feature(f_cv_single_cvc, "single_component", f_type_static);
 
@@ -1209,10 +1207,16 @@ int colvar::init_dependencies() {
     init_feature(f_cv_linear, "linear", f_type_static);
     init_feature(f_cv_homogeneous, "homogeneous", f_type_static);
 
-    // because total forces are obtained from the previous time step,
-    // we cannot (currently) have colvar values and total forces for the same timestep
     init_feature(f_cv_multiple_ts, "multiple_timestep", f_type_static);
-    exclude_feature_self(f_cv_multiple_ts, f_cv_total_force_calc);
+
+    // when total atomic forces are obtained from the previous time step,
+    // we cannot (currently) have colvar values and projected total forces for the same timestep
+    // TODO this will need refining for driven alchemical parameters
+    // ie. the combination of f_cv_total_force_calc and f_cv_multiple_ts requires f_cv_total_force_current_step
+    // or we need to anticipate the total force request by one timestep
+    if (!cvm::main()->proxy->total_forces_same_step()) {
+      exclude_feature_self(f_cv_multiple_ts, f_cv_total_force_calc);
+    }
 
     // check that everything is initialized
     for (i = 0; i < colvardeps::f_cv_ntot; i++) {
@@ -1224,7 +1228,7 @@ int colvar::init_dependencies() {
 
   // Initialize feature_states for each instance
   feature_states.reserve(f_cv_ntot);
-  for (i = 0; i < f_cv_ntot; i++) {
+  for (i = feature_states.size(); i < f_cv_ntot; i++) {
     feature_states.push_back(feature_state(true, false));
     // Most features are available, so we set them so
     // and list exceptions below
@@ -1232,6 +1236,10 @@ int colvar::init_dependencies() {
 
   feature_states[f_cv_fdiff_velocity].available =
     cvm::main()->proxy->simulation_running();
+
+  // Some back-ends report current total forces for all colvars
+  if (cvm::main()->proxy->total_forces_same_step())
+    enable(f_cv_total_force_current_step);
 
   return COLVARS_OK;
 }
@@ -1287,14 +1295,10 @@ colvar::~colvar()
   // for dependency purposes
   remove_all_children();
 
-  for (std::vector<cvc *>::reverse_iterator ci = cvcs.rbegin();
-      ci != cvcs.rend();
-      ++ci) {
-    // clear all children of this cvc (i.e. its atom groups)
-    // because the cvc base class destructor can't do it early enough
-    // and we don't want to have each cvc derived class do it separately
+  for (auto ci = cvcs.rbegin(); ci != cvcs.rend(); ++ci) {
+    // Clear all children of this cvc (i.e. its atom groups), because the cvc base class destructor
+    // can't do it early enough and we don't want to have each cvc derived class do it separately
     (*ci)->remove_all_children();
-    delete *ci;
   }
   cvcs.clear();
 
@@ -1363,7 +1367,6 @@ int colvar::calc_cvcs(int first_cvc, size_t num_cvcs)
     cvm::log("Calculating colvar \""+this->name+"\", components "+
              cvm::to_str(first_cvc)+" through "+cvm::to_str(first_cvc+num_cvcs)+".\n");
 
-  colvarproxy *proxy = cvm::main()->proxy;
   int error_code = COLVARS_OK;
 
   error_code |= check_cvc_range(first_cvc, num_cvcs);
@@ -1371,7 +1374,7 @@ int colvar::calc_cvcs(int first_cvc, size_t num_cvcs)
     return error_code;
   }
 
-  if ((cvm::step_relative() > 0) && (!proxy->total_forces_same_step())){
+  if ((cvm::step_relative() > 0) && (!is_enabled(f_cv_total_force_current_step))){
     // Use Jacobian derivative from previous timestep
     error_code |= calc_cvc_total_force(first_cvc, num_cvcs);
   }
@@ -1379,7 +1382,7 @@ int colvar::calc_cvcs(int first_cvc, size_t num_cvcs)
   error_code |= calc_cvc_values(first_cvc, num_cvcs);
   error_code |= calc_cvc_gradients(first_cvc, num_cvcs);
   error_code |= calc_cvc_Jacobians(first_cvc, num_cvcs);
-  if (proxy->total_forces_same_step()){
+  if (is_enabled(f_cv_total_force_current_step)){
     // Use Jacobian derivative from this timestep
     error_code |= calc_cvc_total_force(first_cvc, num_cvcs);
   }
@@ -1396,10 +1399,9 @@ int colvar::collect_cvc_data()
   if (cvm::debug())
     cvm::log("Calculating colvar \""+this->name+"\"'s properties.\n");
 
-  colvarproxy *proxy = cvm::main()->proxy;
   int error_code = COLVARS_OK;
 
-  if ((cvm::step_relative() > 0) && (!proxy->total_forces_same_step())){
+  if ((cvm::step_relative() > 0) && (!is_enabled(f_cv_total_force_current_step))){
     // Total force depends on Jacobian derivative from previous timestep
     // collect_cvc_total_forces() uses the previous value of jd
     error_code |= collect_cvc_total_forces();
@@ -1407,7 +1409,7 @@ int colvar::collect_cvc_data()
   error_code |= collect_cvc_values();
   error_code |= collect_cvc_gradients();
   error_code |= collect_cvc_Jacobians();
-  if (proxy->total_forces_same_step()){
+  if (is_enabled(f_cv_total_force_current_step)){
     // Use Jacobian derivative from this timestep
     error_code |= collect_cvc_total_forces();
   }
@@ -1516,6 +1518,7 @@ int colvar::collect_cvc_values()
               cvm::to_str(x, cvm::cv_width, cvm::cv_prec)+".\n");
 
   if (after_restart) {
+    x_old = x_restart;
     if (cvm::proxy->simulation_running()) {
       cvm::real const jump2 = dist2(x, x_restart) / (width*width);
       if (jump2 > 0.25) {
@@ -1559,11 +1562,11 @@ int colvar::calc_cvc_gradients(int first_cvc, size_t num_cvcs)
         (cvcs[i])->debug_gradients();
     }
 
-    cvm::decrease_depth();
-
     if (cvm::debug())
       cvm::log("Done calculating gradients of colvar \""+this->name+"\".\n");
   }
+
+  cvm::decrease_depth();
 
   return COLVARS_OK;
 }
@@ -1710,12 +1713,13 @@ int colvar::calc_colvar_properties()
     // Do the same if no simulation is running (eg. VMD postprocessing)
     if ((cvm::step_relative() == 0 && !after_restart) || x_ext.type() == colvarvalue::type_notset || !cvm::proxy->simulation_running()) {
       x_ext = x;
+      cvm::log("Initializing extended coordinate to colvar value.\n");
       if (is_enabled(f_cv_reflecting_lower_boundary) && x_ext < lower_boundary) {
-        cvm::log("Warning: initializing extended coordinate to reflective lower boundary, as colvar value is below.");
+        cvm::log("Warning: initializing extended coordinate to reflective lower boundary, as colvar value is below.\n");
         x_ext = lower_boundary;
       }
       if (is_enabled(f_cv_reflecting_upper_boundary) && x_ext > upper_boundary) {
-        cvm::log("Warning: initializing extended coordinate to reflective upper boundary, as colvar value is above.");
+        cvm::log("Warning: initializing extended coordinate to reflective upper boundary, as colvar value is above.\n");
         x_ext = upper_boundary;
       }
 
@@ -1725,8 +1729,18 @@ int colvar::calc_colvar_properties()
     // Special case of a repeated timestep (eg. multiple NAMD "run" statements)
     // revert values of the extended coordinate and velocity prior to latest integration
     if (cvm::proxy->simulation_running() && cvm::step_relative() == prev_timestep) {
-      x_ext = prev_x_ext;
-      v_ext = prev_v_ext;
+      // Detect jumps due to discrete changes in coordinates (eg. in replica exchange schemes)
+      cvm::real const jump2 = dist2(x, x_old) / (width*width);
+      if (jump2 > 0.25) {
+        cvm::log("Detected discrete jump in colvar value from "
+            + cvm::to_str(x_old) + " to " + cvm::to_str(x) + ".\n");
+        cvm::log("Reinitializing extended coordinate to colvar value.\n");
+        x_ext = x;
+      } else {
+        cvm::log("Reinitializing extended coordinate to last value.\n");
+        x_ext = prev_x_ext;
+        v_ext = prev_v_ext;
+      }
     }
     // report the restraint center as "value"
     // These position and velocities come from integration at the _previous timestep_ in update_forces_energy()
@@ -1825,7 +1839,8 @@ void colvar::update_extended_Lagrangian()
   // Integrate with slow timestep (if time_step_factor != 1)
   cvm::real dt = cvm::dt() * cvm::real(time_step_factor);
 
-  colvarvalue f_ext(fr.type()); // force acting on the extended variable
+  // Force acting on the extended variable
+  colvarvalue f_ext(fr.type());
   f_ext.reset();
 
   if (is_enabled(f_cv_external)) {
@@ -1834,12 +1849,12 @@ void colvar::update_extended_Lagrangian()
     f += fb_actual;
   }
 
-  // fr: bias force on extended variable (without harmonic spring), for output in trajectory
-  fr = f;
-
   // External force has been scaled for an inner-timestep impulse (for the back-end integrator)
   // here we scale it back because this integrator uses only the outer (long) timestep
   f_ext = f / cvm::real(time_step_factor);
+
+  // fr: bias force on extended variable (without harmonic spring), for output in trajectory
+  fr = f_ext;
 
   colvarvalue f_system(fr.type()); // force exterted by the system on the extended DOF
 
@@ -1880,15 +1895,22 @@ void colvar::update_extended_Lagrangian()
 
   // BAOA (GSD) integrator as formulated in https://doi.org/10.1021/acs.jctc.2c00585
   // starting from x_t, f_t, v_(t-1/2)
+  // Variation: the velocity step is split in two to estimate the kinetic energy at time t
+  // so this is more of a "BBAOA" scheme: a rearranged BAOAB where the second B is deferred
+  // to the next time step for implementation reasons (waiting for the force calculation)
 
   // [B] Eq. (10a) split into two half-steps
-  // This reduces to leapfrog when gamma = 0
+  // would reduce to leapfrog when gamma = 0 if this was the reported velocity
   v_ext  += 0.5 * dt * f_ext / ext_mass;
+
   // Kinetic energy at t
   kinetic_energy = 0.5 * ext_mass * v_ext * v_ext;
 
   // Potential energy at t
   potential_energy = 0.5 * ext_force_k * this->dist2(x_ext, x);
+
+  // Total energy will lag behind position by one timestep
+  // (current kinetic energy is not accessible before the next force calculation)
 
   v_ext  += 0.5 * dt * f_ext / ext_mass;
   // Final v_ext lags behind x_ext by half a timestep
@@ -1913,8 +1935,8 @@ void colvar::update_extended_Lagrangian()
     x_ext -= 2.0 * delta;
     // Bounce happened on average at t+1/2 -> reflect velocity at t+1/2
     v_ext = -0.5 * (prev_v_ext + v_ext);
-    if ((is_enabled(f_cv_reflecting_lower_boundary) && (delta = x_ext - lower_boundary) < 0) ||
-        (is_enabled(f_cv_reflecting_upper_boundary) && (delta = x_ext - upper_boundary) > 0)) {
+    if ((is_enabled(f_cv_reflecting_lower_boundary) && (x_ext - lower_boundary) < 0.0) ||
+        (is_enabled(f_cv_reflecting_upper_boundary) && (x_ext - upper_boundary) > 0.0)) {
       cvm::error("Error: extended coordinate value " + cvm::to_str(x_ext) + " is still outside boundaries after reflection.\n");
     }
   }
@@ -1935,9 +1957,8 @@ int colvar::end_of_step()
   if (cvm::debug())
     cvm::log("End of step for colvar \""+this->name+"\".\n");
 
-  if (is_enabled(f_cv_fdiff_velocity)) {
-    x_old = x;
-  }
+  // Used for fdiff_velocity and for detecting jumps for extended Lagrangian colvars
+  x_old = x;
 
   if (is_enabled(f_cv_subtract_applied_force)) {
     f_old = f;
@@ -2277,51 +2298,72 @@ void colvar::wrap(colvarvalue &x_unwrapped) const
 
 std::istream & colvar::read_state(std::istream &is)
 {
-  std::streampos const start_pos = is.tellg();
+  auto const start_pos = is.tellg();
 
   std::string conf;
-  if ( !(is >> colvarparse::read_block("colvar", &conf)) ) {
+  if ( !(is >> colvarparse::read_block("colvar", &conf)) ||
+       (check_matching_state(conf) != COLVARS_OK) ) {
     // this is not a colvar block
     is.clear();
-    is.seekg(start_pos, std::ios::beg);
+    is.seekg(start_pos);
     is.setstate(std::ios::failbit);
     return is;
   }
 
-  {
-    std::string check_name = "";
-    get_keyval(conf, "name", check_name,
-               std::string(""), colvarparse::parse_silent);
-    if (check_name.size() == 0) {
-      cvm::error("Error: Collective variable in the "
-                 "restart file without any identifier.\n", COLVARS_INPUT_ERROR);
-      is.clear();
-      is.seekg(start_pos, std::ios::beg);
-      is.setstate(std::ios::failbit);
-      return is;
-    }
-
-    if (check_name != name)  {
-      if (cvm::debug()) {
-        cvm::log("Ignoring state of colvar \""+check_name+
-                 "\": this colvar is named \""+name+"\".\n");
-      }
-      is.seekg(start_pos, std::ios::beg);
-      return is;
-    }
+  if (!matching_state) {
+    // No errors reading, but this state is not for this colvar; rewind
+    is.seekg(start_pos);
+    return is;
   }
 
+  if (set_state_params(conf) != COLVARS_OK) {
+    is.clear();
+    is.seekg(start_pos);
+    is.setstate(std::ios::failbit);
+  }
+
+  return is;
+}
+
+
+int colvar::check_matching_state(std::string const &conf)
+{
+  std::string check_name = "";
+  get_keyval(conf, "name", check_name, std::string(""), colvarparse::parse_silent);
+
+  if (check_name.size() == 0) {
+    return cvm::error("Error: Collective variable in the "
+                      "state file without any identifier.\n", COLVARS_INPUT_ERROR);
+  }
+
+  if (check_name != name)  {
+    if (cvm::debug()) {
+      cvm::log("Ignoring state of colvar \""+check_name+
+               "\": this colvar is named \""+name+"\".\n");
+    }
+    matching_state = false;
+  } else {
+    matching_state = true;
+  }
+
+  return COLVARS_OK;
+}
+
+
+int colvar::set_state_params(std::string const &conf)
+{
+  int error_code = COLVARS_OK;
   if ( !(get_keyval(conf, "x", x, x, colvarparse::parse_silent)) ) {
-    cvm::log("Error: restart file does not contain "
-             "the value of the colvar \""+
-             name+"\" .\n");
+    error_code |= cvm::error("Error: restart file does not contain "
+                             "the value of the colvar \""+
+                             name+"\" .\n", COLVARS_INPUT_ERROR);
   } else {
     cvm::log("Restarting collective variable \""+name+"\" from value: "+
              cvm::to_str(x)+"\n");
     x_restart = x;
     after_restart = true;
     // Externally driven cv (e.g. alchemical lambda) is imposed by restart value
-    if (is_enabled(f_cv_external)) {
+    if (is_enabled(f_cv_external) && is_enabled(f_cv_extended_Lagrangian)) {
       cvcs[0]->set_value(x);
     }
   }
@@ -2331,9 +2373,10 @@ std::istream & colvar::read_state(std::istream &is)
                       colvarvalue(x.type()), colvarparse::parse_silent)) ||
          !(get_keyval(conf, "extended_v", v_ext,
                       colvarvalue(x.type()), colvarparse::parse_silent)) ) {
-      cvm::log("Error: restart file does not contain "
-               "\"extended_x\" or \"extended_v\" for the colvar \""+
-               name+"\", but you requested \"extendedLagrangian\".\n");
+      error_code |= cvm::error("Error: restart file does not contain "
+                               "\"extended_x\" or \"extended_v\" for the colvar \""+
+                               name+"\", but you requested \"extendedLagrangian\".\n",
+                               COLVARS_INPUT_ERROR);
     }
     x_reported = x_ext;
   } else {
@@ -2344,9 +2387,10 @@ std::istream & colvar::read_state(std::istream &is)
 
     if ( !(get_keyval(conf, "v", v_fdiff,
                       colvarvalue(x.type()), colvarparse::parse_silent)) ) {
-      cvm::log("Error: restart file does not contain "
-               "the velocity for the colvar \""+
-               name+"\", but you requested \"outputVelocity\".\n");
+      error_code |= cvm::error("Error: restart file does not contain "
+                               "the velocity for the colvar \""+
+                               name+"\", but you requested \"outputVelocity\".\n",
+                               COLVARS_INPUT_ERROR);
     }
 
     if (is_enabled(f_cv_extended_Lagrangian)) {
@@ -2356,6 +2400,41 @@ std::istream & colvar::read_state(std::istream &is)
     }
   }
 
+  return error_code;
+}
+
+
+cvm::memory_stream &colvar::read_state(cvm::memory_stream &is)
+{
+  auto const start_pos = is.tellg();
+  std::string key, data;
+  if (is >> key) {
+    if (key == "colvar") {
+      // Read a formatted config string, then read the state parameters from it
+      if (is >> data) {
+        if (set_state_params(data) == COLVARS_OK) {
+          return is;
+        }
+      }
+    }
+  }
+
+  auto const error_pos = is.tellg();
+
+  is.clear();
+  is.seekg(start_pos);
+  is.setstate(std::ios::failbit);
+
+  std::string error_msg("Error: in reading state data for colvar \"" + name + " at position " +
+                        cvm::to_str(error_pos) + " in unformatted stream.\n");
+  if (key.size() && key != "colvar") {
+    error_msg += "; the keyword read was \"" + key + "\", but \"colvar\" was expected";
+  }
+  if (data.size()) {
+    error_msg += "; the configuration string read was not recognized";
+  }
+  error_msg += ".\n";
+  cvm::error(error_msg, COLVARS_INPUT_ERROR);
   return is;
 }
 
@@ -2370,7 +2449,7 @@ std::istream & colvar::read_traj(std::istream &is)
       cvm::log("Error: in reading the value of colvar \""+
                 this->name+"\" from trajectory.\n");
       is.clear();
-      is.seekg(start_pos, std::ios::beg);
+      is.seekg(start_pos);
       is.setstate(std::ios::failbit);
       return is;
     }
@@ -2410,14 +2489,33 @@ std::istream & colvar::read_traj(std::istream &is)
 
 // ******************** OUTPUT FUNCTIONS ********************
 
-std::ostream & colvar::write_state(std::ostream &os) {
+std::ostream & colvar::write_state(std::ostream &os) const
+{
+  os << "colvar {\n" << get_state_params() << "}\n\n";
 
-  os << "colvar {\n"
-     << "  name " << name << "\n"
+  if (runave_outfile.size() > 0) {
+    cvm::main()->proxy->flush_output_stream(runave_outfile);
+  }
+
+  return os;
+}
+
+
+std::string const colvar::get_state_params() const
+{
+  std::ostringstream os;
+
+  os << "  name " << name << "\n"
      << "  x "
      << std::setprecision(cvm::cv_prec)
-     << std::setw(cvm::cv_width)
-     << x << "\n";
+     << std::setw(cvm::cv_width);
+  if (is_enabled(f_cv_external)) {
+    // For an external colvar, x is one timestep in the future after integration
+    // write x at beginning of timestep
+    os << x_reported << "\n";
+  } else {
+    os << x << "\n";
+  }
 
   if (is_enabled(f_cv_output_velocity)) {
     os << "  v "
@@ -2437,7 +2535,13 @@ std::ostream & colvar::write_state(std::ostream &os) {
        << v_reported << "\n";
   }
 
-  os << "}\n\n";
+  return os.str();
+}
+
+
+cvm::memory_stream & colvar::write_state(cvm::memory_stream &os) const
+{
+  os << std::string("colvar") << get_state_params();
 
   if (runave_outfile.size() > 0) {
     cvm::main()->proxy->flush_output_stream(runave_outfile);
@@ -2566,7 +2670,7 @@ int colvar::write_output_files()
       cvm::backup_file(acf_outfile.c_str());
       std::ostream &acf_os = cvm::proxy->output_stream(acf_outfile,
                                                        "colvar ACF file");
-      if (acf_os.bad()) {
+      if (!acf_os) {
         error_code |= COLVARS_FILE_ERROR;
       } else {
         error_code |= write_acf(acf_os);
@@ -2900,14 +3004,11 @@ int colvar::calc_runave()
         runave_variance *= 1.0 / cvm::real(runave_length-1);
 
         if (runave_outfile.size() > 0) {
-          std::ostream &runave_os = proxy->output_stream(runave_outfile);
-          runave_os << std::setw(cvm::it_width) << cvm::step_relative()
-                    << "   "
-                    << std::setprecision(cvm::cv_prec)
-                    << std::setw(cvm::cv_width)
-                    << runave << " "
-                    << std::setprecision(cvm::cv_prec)
-                    << std::setw(cvm::cv_width)
+          std::ostream &runave_os =
+              proxy->output_stream(runave_outfile, "running average output file");
+          runave_os << std::setw(cvm::it_width) << cvm::step_relative() << "   "
+                    << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width) << runave << " "
+                    << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
                     << cvm::sqrt(runave_variance) << "\n";
         }
       }

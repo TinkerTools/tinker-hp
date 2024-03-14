@@ -139,7 +139,7 @@ int colvarproxy_tinkerhp::init_atom(int atom_number)
   for (size_t i = 0; i < atoms_ids.size(); i++) {
     if (atoms_ids[i] == aid) {
       // this atom id was already recorded
-      atoms_ncopies[i] += 1;
+      atoms_refcount[i] += 1;
       return i;
     }
   }
@@ -261,7 +261,7 @@ double colvarproxy_tinkerhp::compute()
 
   if (cvm::debug()) {
     cvm::log("atoms_ids = "+cvm::to_str(atoms_ids)+"\n");
-    cvm::log("atoms_ncopies = "+cvm::to_str(atoms_ncopies)+"\n");
+    cvm::log("atoms_ncopies = "+cvm::to_str(atoms_refcount)+"\n");
     cvm::log("atoms_positions = "+cvm::to_str(atoms_positions)+"\n");
     cvm::log("atoms_new_colvar_forces = "+cvm::to_str(atoms_new_colvar_forces)+"\n");
     cvm::log("atoms_total_forces = "+cvm::to_str(atoms_total_forces)+"\n");
@@ -290,9 +290,9 @@ double colvarproxy_tinkerhp::compute()
 
 
   if (cvm::debug()) {
-    cvm::log("Value of first colvar: " + cvm::to_str((*colvars->variables())[0]->value()) + "\n");
+//    cvm::log("Value of first colvar: " + cvm::to_str((*colvars->variables())[0]->value()) + "\n");
     cvm::log("atoms_ids = "+cvm::to_str(atoms_ids)+"\n");
-    cvm::log("atoms_ncopies = "+cvm::to_str(atoms_ncopies)+"\n");
+    cvm::log("atoms_ncopies = "+cvm::to_str(atoms_refcount)+"\n");
     cvm::log("atoms_positions = "+cvm::to_str(atoms_positions)+"\n");
     cvm::log("atoms_new_colvar_forces = "+cvm::to_str(atoms_new_colvar_forces)+"\n");
     cvm::log("atoms_total_forces = "+cvm::to_str(atoms_total_forces)+"\n");
