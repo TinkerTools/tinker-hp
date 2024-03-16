@@ -46,7 +46,7 @@ void colvar::alch_lambda::calc_value()
   // By default, follow external parameter
   // This might get overwritten by driving extended dynamics
   // (in apply_force() below)
-  cvm::proxy->get_alch_lambda(&x.real_value);
+  //cvm::proxy->get_alch_lambda(&x.real_value);
 
   cvm::proxy->get_dE_dlambda(&ft.real_value);
   ft.real_value *= -1.0; // Convert energy derivative to force
