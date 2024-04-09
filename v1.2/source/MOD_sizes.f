@@ -64,5 +64,6 @@ c
       parameter (maxele=112)
       parameter (maxamino=38)
       parameter (maxnuc=12)
+      integer tinkerdebug
       save
       end

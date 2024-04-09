@@ -102,7 +102,7 @@ c
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
-      logical usei,muti,mutk,mutik
+      logical usei,proceed,muti,mutk,mutik
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
@@ -231,6 +231,8 @@ c
             mutk = mut(kglob)
             redk = kred(kglob)
             redkv = 1.0d0 - redk
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if (.not.proceed) cycle
 c
 c     compute the energy contribution for this interaction
 c

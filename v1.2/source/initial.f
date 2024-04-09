@@ -285,6 +285,7 @@ c
       call MPI_COMM_SIZE(COMM_TINKER,nproc,ierr)
       call MPI_COMM_RANK(COMM_TINKER,rank,ierr)
 
+      call initDebugEnv
 
       CALL MPI_Comm_split_type(COMM_TINKER, MPI_COMM_TYPE_SHARED, 0,
      $  MPI_INFO_NULL, hostcomm,ierr)

@@ -55,12 +55,16 @@ c
       end
 c
       subroutine bar_bis
+      use inform
       use iounit
       use domdec
       implicit none
       integer mode
       logical exist,query
       character*240 string
+c
+      ! Sign running program
+      app_id = bar_a
 c
 c
 c     find thermodynamic perturbation procedure to perform

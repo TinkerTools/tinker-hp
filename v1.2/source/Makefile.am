@@ -278,6 +278,7 @@ libtinkermod_a_SOURCES += MOD_shunt.f
 libtinkermod_a_SOURCES += MOD_spectra.f
 libtinkermod_a_SOURCES += MOD_strbnd.f
 libtinkermod_a_SOURCES += MOD_strtor.f
+libtinkermod_a_SOURCES += MOD_subInform.f
 libtinkermod_a_SOURCES += MOD_timestat.f
 libtinkermod_a_SOURCES += MOD_titles.f
 libtinkermod_a_SOURCES += MOD_torpot.f

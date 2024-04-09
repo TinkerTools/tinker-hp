@@ -29,362 +29,6 @@ c
       return
       end
 c
-cc
-cc     "elambdampole1c" calculates the multipole energy and derivatives
-cc     with respect to Cartesian coordinates using particle mesh Ewald
-cc     summation and a neighbor list during lambda dynamics
-cc
-cc
-c      subroutine elambdampole1c
-c      use sizes
-c      use atmlst
-c      use atoms
-c      use boxes
-c      use chgpot
-c      use deriv
-c      use domdec
-c      use energi
-c      use ewald
-c      use math
-c      use mpole
-c      use mutant
-c      use potent
-c      use timestat
-c      use virial
-c      use mpi
-c      implicit none
-c      integer i,ii
-c      integer iipole,iglob,iloc,ierr
-c      real*8 e,f
-c      real*8 term,fterm
-c      real*8 cii,dii,qii
-c      real*8 xi,yi,zi
-c      real*8 xd,yd,zd
-c      real*8 xdtemp,ydtemp,zdtemp
-c      real*8 qtemp,muxtemp,muytemp,muztemp
-c      real*8 xq,yq,zq
-c      real*8 xv,yv,zv,vterm
-c      real*8 ci,dix,diy,diz
-c      real*8 qixx,qixy,qixz
-c      real*8 qiyy,qiyz,qizz
-c      real*8 xdfield,ydfield
-c      real*8 zdfield
-c      real*8 fx,fy,fz
-c      real*8 vxx,vyy,vzz
-c      real*8 vxy,vxz,vyz
-c      real*8 trq(3),frcx(3)
-c      real*8 frcy(3),frcz(3)
-c      real*8 time0,time1
-c      real*8 citemp,dixtemp,diytemp,diztemp
-c      real*8 qixxtemp,qixytemp,qixztemp
-c      real*8 qiyytemp,qiyztemp,qizztemp
-c      real*8 elambdatemp
-c      real*8, allocatable :: delambdarec0(:,:),delambdarec1(:,:)
-c      real*8 :: elambdarec0,elambdarec1
-c      real*8 :: vir0(3,3),vir1(3,3),virtemp(3,3)
-c      real*8, allocatable :: pot(:)
-c      real*8, allocatable :: decfx(:)
-c      real*8, allocatable :: decfy(:)
-c      real*8, allocatable :: decfz(:)
-cc
-c      allocate (delambdarec0(3,nlocrec2))
-c      allocate (delambdarec1(3,nlocrec2))
-c      elambdatemp = elambda  
-cc
-cc     zero out the atomic multipole energy and derivatives
-cc
-c      em = 0.0d0
-c      dem = 0d0
-c      if (npole .eq. 0)  return
-c      delambdae = 0d0
-c
-c      aewald = aeewald
-cc
-cc     set the energy unit conversion factor
-cc
-c      f = electric / dielec
-cc
-cc     check the sign of multipole components at chiral sites
-cc
-c      call chkpole(.false.)
-cc
-cc     rotate the multipole components into the global frame
-cc
-c      call rotpole
-cc
-cc     compute the reciprocal space part of the Ewald summation
-cc
-c      if (use_mrec) then 
-c        time0 = mpi_wtime()
-cc
-cc       the reciprocal part is interpolated between 0 and 1
-cc
-c        elambda = 0d0
-c        virtemp = vir
-c        call MPI_BARRIER(hostcomm,ierr)
-c        if (hostrank.eq.0) call altelec
-c        call MPI_BARRIER(hostcomm,ierr)
-c        call rotpole
-c        em = 0d0
-c        demrec = 0d0
-c        vir = 0d0
-c        if (elambda.lt.1d0) then
-c          call emrecip1
-c        end if
-c        elambdarec0  = em
-c        delambdarec0 = demrec
-c        vir0 = vir
-c
-c        elambda = 1d0
-c        call MPI_BARRIER(hostcomm,ierr)
-c        if (hostrank.eq.0) call altelec
-c        call MPI_BARRIER(hostcomm,ierr)
-c        call rotpole
-c        em = 0d0
-c        demrec = 0d0
-c        vir = 0d0
-c        if (elambda.gt.0d0) then
-c          call emrecip1
-c        end if
-c        elambdarec1  = em
-c        delambdarec1 = demrec
-c        vir1 = vir
-c
-c        elambda = elambdatemp 
-c        em = (1-elambda)*elambdarec0 + elambda*elambdarec1
-c        demrec = (1-elambda)*delambdarec0+elambda*delambdarec1
-c        delambdae = delambdae + elambdarec1-elambdarec0
-c        vir = virtemp + (1-elambda)*vir0 + elambda*vir1
-cc
-cc       reset lambda to initial value
-cc
-c        call MPI_BARRIER(hostcomm,ierr)
-c        if (hostrank.eq.0) call altelec
-c        call MPI_BARRIER(hostcomm,ierr)
-c        call rotpole
-c        time1 = mpi_wtime()
-c        timerec = timerec + time1 - time0
-c      end if
-cc
-cc     compute the real space part of the Ewald summation
-cc
-c      if (use_mreal) then
-c        time0 = mpi_wtime()
-c        call emreal1c
-c        time1 = mpi_wtime()
-c        timereal = timereal + time1 - time0
-c      end if
-cc
-c      if (use_mself) then
-cc
-cc     compute the Ewald self-energy term over all the atoms
-cc
-cc
-cc     perform dynamic allocation of some local arrays
-cc
-c        allocate (pot(nbloc))
-c        allocate (decfx(nbloc))
-c        allocate (decfy(nbloc))
-c        allocate (decfz(nbloc))
-c        pot = 0d0
-c        term = 2.0d0 * aewald * aewald
-c        fterm = -f * aewald / sqrtpi
-c        do i = 1, npoleloc
-c           iipole = poleglob(i)
-c           iglob = ipole(iipole)
-c           iloc = loc(iglob)
-c           ci = rpole(1,iipole)
-c           dix = rpole(2,iipole)
-c           diy = rpole(3,iipole)
-c           diz = rpole(4,iipole)
-c           qixx = rpole(5,iipole)
-c           qixy = rpole(6,iipole)
-c           qixz = rpole(7,iipole)
-c           qiyy = rpole(9,iipole)
-c           qiyz = rpole(10,iipole)
-c           qizz = rpole(13,iipole)
-c           cii = ci*ci
-c           dii = dix*dix + diy*diy + diz*diz
-c           qii = 2.0d0*(qixy*qixy+qixz*qixz+qiyz*qiyz)
-c     &              + qixx*qixx + qiyy*qiyy + qizz*qizz
-c           e = fterm * (cii + term*(dii/3.0d0+2.0d0*term*qii/5.0d0))
-c           em = em + e
-c           pot(iloc) = 2.0d0 * fterm * ci
-c           if (mut(iglob).and.elambda.gt.0) then
-c             citemp = ci/elambda
-c             dixtemp = rpole(2,iipole)/elambda
-c             diytemp = rpole(3,iipole)/elambda
-c             diztemp = rpole(4,iipole)/elambda
-c             qixxtemp = rpole(5,iipole)/elambda
-c             qixytemp = rpole(6,iipole)/elambda
-c             qixztemp = rpole(7,iipole)/elambda
-c             qiyytemp = rpole(9,iipole)/elambda
-c             qiyztemp = rpole(10,iipole)/elambda
-c             qizztemp = rpole(13,iipole)/elambda
-c             delambdae = delambdae + fterm*2d0*elambda*citemp**2
-c             delambdae = delambdae + fterm*term*2d0*elambda*
-c     $         (dixtemp**2 + diytemp**2 + diztemp**2)/3d0
-c             delambdae = delambdae + fterm*term**2*8d0*elambda*
-c     $         (qixytemp**2 + qixztemp**2 + qiyztemp**2)/5d0
-c             delambdae = delambdae + fterm*term**2*4d0*elambda*
-c     $         (qixxtemp**2 + qiyytemp**2 + qizztemp**2)/5d0
-c           end if
-c        end do
-cc
-cc     modify gradient and virial for charge flux self-energy
-cc
-c        if (use_chgflx) then
-c           call commpot(pot,1)
-c           call dcflux (pot,decfx,decfy,decfz)
-c           do i = 1, npolebloc
-c              iipole = poleglob(i)
-c              iglob = ipole(iipole)
-c              iloc = loc(iglob)
-c              xi = x(iglob)
-c              yi = y(iglob)
-c              zi = z(iglob)
-c              fx = decfx(iloc)
-c              fy = decfy(iloc)
-c              fz = decfz(iloc)
-c              dem(1,iloc) = dem(1,iloc) + fx
-c              dem(2,iloc) = dem(2,iloc) + fy
-c              dem(3,iloc) = dem(3,iloc) + fz
-c              vxx = xi * fx
-c              vxy = yi * fx
-c              vxz = zi * fx
-c              vyy = yi * fy
-c              vyz = zi * fy
-c              vzz = zi * fz
-c              vir(1,1) = vir(1,1) + vxx
-c              vir(2,1) = vir(2,1) + vxy
-c              vir(3,1) = vir(3,1) + vxz
-c              vir(1,2) = vir(1,2) + vxy
-c              vir(2,2) = vir(2,2) + vyy
-c              vir(3,2) = vir(3,2) + vyz
-c              vir(1,3) = vir(1,3) + vxz
-c              vir(2,3) = vir(2,3) + vyz
-c              vir(3,3) = vir(3,3) + vzz
-c           end do
-c        end if
-cc
-cc     perform deallocation of some local arrays
-cc
-c        deallocate (pot)
-c        deallocate (decfx)
-c        deallocate (decfy)
-c        deallocate (decfz)
-cc
-cc     compute the cell dipole boundary correction term
-cc
-c        if (boundary .eq. 'VACUUM') then
-c           xd = 0.0d0
-c           yd = 0.0d0
-c           zd = 0.0d0
-c           xdtemp = 0.0d0
-c           ydtemp = 0.0d0
-c           zdtemp = 0.0d0
-c           do i = 1, npoleloc
-c              iipole = poleglob(i)
-c              iglob = ipole(iipole)
-c              xd = xd + rpole(2,iipole) + rpole(1,iipole)*x(iglob)
-c              yd = yd + rpole(3,iipole) + rpole(1,iipole)*y(iglob)
-c              zd = zd + rpole(4,iipole) + rpole(1,iipole)*z(iglob)
-c              if (mut(iglob)) then
-c                qtemp = rpole(1,iipole)/elambda
-c                muxtemp = rpole(2,iipole)/elambda
-c                muytemp = rpole(3,iipole)/elambda
-c                muztemp = rpole(4,iipole)/elambda
-c                xdtemp = xdtemp + muxtemp + qtemp*x(iglob)
-c                ydtemp = ydtemp + muytemp + qtemp*y(iglob)
-c                zdtemp = zdtemp + muztemp + qtemp*z(iglob)
-c              end if
-c           end do
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,xdtemp,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,ydtemp,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,zdtemp,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           term = (2.0d0/3.0d0) * f * (pi/volbox)
-c           if (rank.eq.0) then
-c             em = em + term*(xd*xd+yd*yd+zd*zd)
-c           end if
-c           do ii = 1, npoleloc
-c              iipole = poleglob(ii)
-c              iglob = ipole(iipole)
-c              i = loc(iglob)
-c              dem(1,i) = dem(1,i) + 2.0d0*term*rpole(1,iipole)*xd
-c              dem(2,i) = dem(2,i) + 2.0d0*term*rpole(1,iipole)*yd
-c              dem(3,i) = dem(3,i) + 2.0d0*term*rpole(1,iipole)*zd
-c           end do
-c           xdfield = -2.0d0 * term * xd
-c           ydfield = -2.0d0 * term * yd
-c           zdfield = -2.0d0 * term * zd
-c           do i = 1, npoleloc
-c              iipole = poleglob(i)
-c            trq(1) = rpole(3,iipole)*zdfield - rpole(4,iipole)*ydfield
-c            trq(2) = rpole(4,iipole)*xdfield - rpole(2,iipole)*zdfield
-c            trq(3) = rpole(2,iipole)*ydfield - rpole(3,iipole)*xdfield
-c              call torque(iipole,trq,frcx,frcy,frcz,dem)
-c           end do
-cc
-cc     boundary correction to virial due to overall cell dipole
-cc
-c           xd = 0.0d0
-c           yd = 0.0d0
-c           zd = 0.0d0
-c           xq = 0.0d0
-c           yq = 0.0d0
-c           zq = 0.0d0
-c           do i = 1, npoleloc
-c              iipole = poleglob(i)
-c              iglob = ipole(iipole)
-c              xd = xd + rpole(2,iipole)
-c              yd = yd + rpole(3,iipole)
-c              zd = zd + rpole(4,iipole)
-c              xq = xq + rpole(1,iipole)*x(iglob)
-c              yq = yq + rpole(1,iipole)*y(iglob)
-c              zq = zq + rpole(1,iipole)*z(iglob)
-c           end do
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,xq,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,yq,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           call MPI_ALLREDUCE(MPI_IN_PLACE,zq,1,MPI_REAL8,MPI_SUM,
-c     $        COMM_TINKER,ierr)
-c           if (rank.eq.0) then
-c             xv = xd * xq
-c             yv = yd * yq
-c             zv = zd * zq
-c             vterm = term * (xd*xd + yd*yd + zd*zd + 2.0d0*(xv+yv+zv)
-c     &                          + xq*xq + yq*yq + zq*zq)
-c             vir(1,1) = vir(1,1) + 2.0d0*term*(xq*xq+xv) + vterm
-c             vir(2,1) = vir(2,1) + 2.0d0*term*(xq*yq+xv)
-c             vir(3,1) = vir(3,1) + 2.0d0*term*(xq*zq+xv)
-c             vir(1,2) = vir(1,2) + 2.0d0*term*(yq*xq+yv)
-c             vir(2,2) = vir(2,2) + 2.0d0*term*(yq*yq+yv) + vterm
-c             vir(3,2) = vir(3,2) + 2.0d0*term*(yq*zq+yv)
-c             vir(1,3) = vir(1,3) + 2.0d0*term*(zq*xq+zv)
-c             vir(2,3) = vir(2,3) + 2.0d0*term*(zq*yq+zv)
-c             vir(3,3) = vir(3,3) + 2.0d0*term*(zq*zq+zv) + vterm
-c           end if
-c        end if
-c      end if
-c      return
-c      end
-c
 c     "empole1c" calculates the multipole energy and derivatives
 c     with respect to Cartesian coordinates using particle mesh Ewald
 c     summation and a neighbor list
@@ -470,27 +114,6 @@ c
         if (use_mrec) then 
           time0 = mpi_wtime()
           call emrecip1
-c
-c     compute recip contribution to lambda derivative for lambda dynamics
-c
-          if (use_lambdadyn) then
-            do i = 1, npolerecloc
-              iipole = polerecglob(i)
-              iglob = ipole(iipole)
-              if (mut(iglob).and.elambda.gt.0) then
-                delambdae = delambdae + (rpole(1,iipole)*cphirec(1,i) 
-     $   +           rpole(2,iipole)*cphirec(2,i)
-     $   +           rpole(3,iipole)*cphirec(3,i)
-     $   +           rpole(4,iipole)*cphirec(4,i)
-     $   +           rpole(5,iipole)*cphirec(5,i)
-     $   +           rpole(9,iipole)*cphirec(6,i)
-     $   +           rpole(13,iipole)*cphirec(7,i)
-     $   +           2d0*rpole(6,iipole)*cphirec(8,i)
-     $   +           2d0*rpole(7,iipole)*cphirec(9,i)
-     $   +           2d0*rpole(10,iipole)*cphirec(10,i))/elambda
-              end if
-            end do
-          end if
           time1 = mpi_wtime()
           timerec = timerec + time1 - time0
         end if
@@ -728,6 +351,7 @@ c
       use pme
       use math
       use mpole
+      use mutant
       use potent
       use timestat
       use virial
@@ -1195,6 +819,27 @@ c
       deallocate (req2rec)
       time1 = mpi_wtime()
       timegrid2 = timegrid2 + time1-time0
+c
+c     compute recip contribution to lambda derivative for lambda dynamics
+c
+      if (use_lambdadyn) then
+            do i = 1, npolerecloc
+              iipole = polerecglob(i)
+              iglob = ipole(iipole)
+              if (mut(iglob).and.elambda.gt.0) then
+                delambdae = delambdae + (rpole(1,iipole)*cphirec(1,i) 
+     $   +           rpole(2,iipole)*cphirec(2,i)
+     $   +           rpole(3,iipole)*cphirec(3,i)
+     $   +           rpole(4,iipole)*cphirec(4,i)
+     $   +           rpole(5,iipole)*cphirec(5,i)
+     $   +           rpole(9,iipole)*cphirec(6,i)
+     $   +           rpole(13,iipole)*cphirec(7,i)
+     $   +           2d0*rpole(6,iipole)*cphirec(8,i)
+     $   +           2d0*rpole(7,iipole)*cphirec(9,i)
+     $   +           2d0*rpole(10,iipole)*cphirec(10,i))/elambda
+              end if
+            end do
+      end if
       return
       end
 c
@@ -1231,6 +876,7 @@ c     if shortrange, calculates just the short range part
       use neigh
       use potent
       use shunt
+      use usage
       use virial
       implicit none
       integer i,j,iglob,kglob,kbis,nnelst
@@ -1300,6 +946,7 @@ c     if shortrange, calculates just the short range part
       real*8 facts,factds
       real*8 delambdaetemp
       logical testcut,shortrange,longrange,fullrange
+      logical usei,proceed
       real*8, allocatable :: mscale(:)
       real*8, allocatable :: tem(:,:)
       real*8, allocatable :: pot(:)
@@ -1371,6 +1018,7 @@ c
          qiyy = rpole(9,iipole)
          qiyz = rpole(10,iipole)
          qizz = rpole(13,iipole)
+         usei = use(iglob)
          if (use_chgpen) then
             corei = pcore(iipole)
             vali = pval(iipole)
@@ -1405,6 +1053,8 @@ c
             kglob = ipole(kkpole)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
+            proceed = (usei .or. use(kglob))
+            if (.not.proceed) cycle
             if (kbis.eq.0) then
               write(iout,1000)
               cycle

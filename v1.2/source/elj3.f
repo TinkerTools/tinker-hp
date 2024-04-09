@@ -104,7 +104,7 @@ c
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
-      logical muti,mutk,mutik
+      logical usei,proceed,muti,mutk,mutik
       real*8 s,ds,vdwshortcut2,facts
       logical header,huge
       logical testcut,shortrange,longrange,fullrange
@@ -178,6 +178,7 @@ c
          iglob = ivdw(iivdw)
          i     = loc(iglob)
          muti  = mut(iglob)
+         usei = (use(iglob) .or. use(iv))
          iv    = ired(iglob)
          it    = jvdw(iglob)
          xi    = xred(i)
@@ -218,6 +219,8 @@ c
             kbis = loc(kglob)
             kv = ired(kglob)
             mutk = mut(kglob)
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if (.not.proceed) cycle
 c
 c     compute the energy contribution for this interaction
 c

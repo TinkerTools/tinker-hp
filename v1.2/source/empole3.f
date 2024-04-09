@@ -218,6 +218,7 @@ c     if shortrange, calculates just the short range part
       use neigh
       use potent
       use shunt
+      use usage
       use mpi
       implicit none
       integer i,j,iglob,kglob,kbis,nnelst
@@ -256,6 +257,7 @@ c     if shortrange, calculates just the short range part
       real*8 fgrp
       real*8 s,ds,mpoleshortcut2
       real*8 facts
+      logical usei,proceed
       logical testcut,shortrange,longrange,fullrange
       real*8, allocatable :: mscale(:)
       logical header,huge
@@ -313,6 +315,7 @@ c
          qiyy = rpole(9,iipole)
          qiyz = rpole(10,iipole)
          qizz = rpole(13,iipole)
+         usei = use(iglob)
          if (use_chgpen) then
             corei = pcore(iipole)
             vali = pval(iipole)
@@ -347,6 +350,8 @@ c
             kglob = ipole(kkpole)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             kbis = loc(kglob)
+            proceed = (usei .or. use(kglob))
+            if (.not.proceed) cycle
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi

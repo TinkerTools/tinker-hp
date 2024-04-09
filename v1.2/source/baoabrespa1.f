@@ -340,6 +340,8 @@ c
           delambdaesave = 0d0
           delambdavsave = 0d0
         end if
+        write(*,*) 'delambdaesave = ',delambdaesave
+        write(*,*) 'delambdavsave = ',delambdavsave
       end do
       end
 c

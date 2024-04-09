@@ -246,8 +246,7 @@ c
             redk = kred(kglob)
             redkv = 1.0d0 - redk
             mutk = mut(kglob)
-            proceed = .true.
-            if (proceed)  proceed = (usei .or. use(kglob) .or. use(kv))
+            proceed = (usei .or. use(kglob) .or. use(kv))
 c
 c     compute the energy contribution for this interaction
 c

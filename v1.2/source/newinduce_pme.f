@@ -1649,23 +1649,6 @@ c
       end
 c
 c
-c      subroutine efld0_recip(cphi)
-cc
-cc     driver for recip field computation: depending on interpolated
-cc     field (lambda dynamics) or not
-c      use potent
-c      implicit none
-c      real*8 cphi(10,*)
-c
-c      if (use_lambdadyn) then
-c        call efld0_recip_lambda(cphi)
-c      else
-c        call efld0_recip_orig(cphi)
-c      end if
-c      return
-c      end
-c
-c
       subroutine efld0_recip(cphi)
 c
 c     Compute the reciprocal space contribution to the electric field due to the permanent 
@@ -2039,16 +2022,16 @@ c
         commloc  = COMM_TINKER
         rankloc  = rank
       end if
+c
+c     return if the Ewald coefficient is zero
+c
+      if (aewald .lt. 1.0d-6)  return
 
       allocate (reqbcastrec(nprocloc))
       allocate (reqbcastsend(nprocloc))
       allocate (reqrec(nprocloc))
       allocate (reqsend(nprocloc))
       allocate (qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,nrec_recep))
-c
-c     return if the Ewald coefficient is zero
-c
-      if (aewald .lt. 1.0d-6)  return
 c
 c     MPI : Begin reception
 c

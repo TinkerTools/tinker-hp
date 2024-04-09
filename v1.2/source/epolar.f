@@ -19,98 +19,11 @@ c
       use potent
       implicit none
 c
-      if (use_lambdadyn) then
-        call elambdapolar0c
+      if (polalg.eq.3) then
+        call epolar3tcg
       else
-        if (polalg.eq.3) then
-          call epolar3tcg
-        else
-          call epolar0c
-        end if
-      end if
-      return
-      end
-c
-c     ###################################################################
-c     ##                                                                     ##
-c     ##  subroutine elambdapolar0c  --  Ewald polarization derivs via list  ##
-c     ##                                                                     ##
-c     ###################################################################
-c
-c
-c     "epolar0c" calculates the dipole polarization energy with respect
-c     to Cartesian coordinates using particle mesh Ewald summation and
-c     a neighbor list, when lambdadyn is activated
-c
-c
-      subroutine elambdapolar0c
-      use sizes
-      use domdec
-      use energi
-      use mpole
-      use mutant
-      use polar
-      use potent
-      use mpi
-      implicit none
-      integer :: ierr
-      real*8 :: elambdatemp,plambda
-      real*8 :: elambdap0,elambdap1
-c
-      elambdatemp = elambda  
-c
-c     zero out the polarization energy and derivatives
-c
-      ep = 0.0d0
-      if (npole .eq. 0)  return
-c
-c     polarization is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
-c     otherwise the value taken is for elambda=0
-c
-      elambdap1 = 0d0
-      if (elambda.gt.bplambda) then
-        elambda = 1d0
-        call MPI_BARRIER(hostcomm,ierr)
-        if (hostrank.eq.0) call altelec
-        call MPI_BARRIER(hostcomm,ierr)
-        call rotpole
-        ep = 0d0
         call epolar0c
-        elambdap1  = ep
       end if
-
-      elambda = 0d0
-      call MPI_BARRIER(hostcomm,ierr)
-      if (hostrank.eq.0) call altelec
-      call MPI_BARRIER(hostcomm,ierr)
-      call rotpole
-      ep = 0d0
-      call epolar0c
-      elambdap0  = ep
- 
-      elambda = elambdatemp 
-c
-c     interpolation of "plambda" between bplambda and 1 as a function of
-c     elambda: 
-c       plambda = 0 for elambda.le.bplambda
-c       u = (elambda-bplambda)/(1-bplambda)
-c       plambda = u**3 for elambda.gt.plambda
-c       ep = (1-plambda)*ep0 +  plambda*ep1
-c
-      if (elambda.le.bplambda) then
-        plambda = 0d0
-      else
-        plambda = ((elambda-bplambda)/(1-bplambda))**3
-      end if
-      ep = plambda*elambdap1 + (1-plambda)*elambdap0
-c
-c     reset lambda to initial value
-c
-      call MPI_BARRIER(hostcomm,ierr)
-      if (hostrank.eq.0) call altelec
-      call MPI_BARRIER(hostcomm,ierr)
-      call rotpole
-c
       return
       end
 c
@@ -302,6 +215,7 @@ c
       use polpot
       use potent
       use shunt
+      use usage
       use mpi
       implicit none
       integer i,j,k,iglob,kglob,kbis,nnelst
@@ -339,7 +253,6 @@ c
       external erfc
 
 
-
 c     compute the short, or full real space part of the summation
       shortrange = use_polarshortreal
       longrange  = .false.
@@ -355,8 +268,6 @@ c     compute the short, or full real space part of the summation
          RoutineName = 'epreal0c'
          mode        = 'MPOLE'
       endif
-
-
 c
 c
 c     perform dynamic allocation of some local arrays

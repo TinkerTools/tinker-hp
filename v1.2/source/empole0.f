@@ -20,181 +20,8 @@ c
 c
 c     choose the method for summing over multipole interactions
 c
-      if (use_lambdadyn) then
-        call elambdampole0c
-      else
-        call empole0c
-      end if
+      call empole0c
 c
-      return
-      end
-c
-c     ################################################################
-c     ##                                                                  ##
-c     ##  subroutine elambdampole0c  --  Ewald multipole energy via list  ##
-c     ##                                                                  ##
-c     ################################################################
-c
-c
-c     "elambdampole0d" calculates the atomic multipole interaction energy
-c     using particle mesh Ewald summation and a neighbor list, if lambdadyn
-c     is activated
-c
-c
-      subroutine elambdampole0c
-      use sizes
-      use atmlst
-      use atoms
-      use boxes
-      use chgpot
-      use domdec
-      use energi
-      use ewald
-      use math
-      use mpole
-      use mutant
-      use potent
-      use mpi
-      implicit none
-      integer i,ii,iglob,iipole,ierr
-      real*8 e,f
-      real*8 term,fterm
-      real*8 cii,dii,qii
-      real*8 xd,yd,zd
-      real*8 ci,dix,diy,diz
-      real*8 qixx,qixy,qixz
-      real*8 qiyy,qiyz,qizz
-      real*8 :: elambdatemp
-      real*8 :: elambdarec0,elambdarec1
-c
-      elambdatemp = elambda  
-c
-c     zero out the total atomic multipole energy
-c
-      em = 0.0d0
-      if (npole .eq. 0)  return
-      aewald = aeewald
-c
-c     set the energy unit conversion factor
-c
-      f = electric / dielec
-c
-c     check the sign of multipole components at chiral sites
-c
-      call chkpole(.false.)
-c
-c     rotate the multipole components into the global frame
-c
-      call rotpole
-c
-c     compute the reciprocal space part of the Ewald summation
-c
-      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
-     $  then
-        if (use_mrec) then
-c
-c         the reciprocal part is interpolated between 0 and 1
-c
-          elambda = 0d0
-          call MPI_BARRIER(hostcomm,ierr)
-          if (hostrank.eq.0) call altelec
-          call MPI_BARRIER(hostcomm,ierr)
-          call rotpole
-          em = 0d0
-          if (elambda.lt.1d0) then
-            call emrecip
-          end if
-          elambdarec0  = em
-
-          elambda = 1d0
-          call MPI_BARRIER(hostcomm,ierr)
-          if (hostrank.eq.0) call altelec
-          call MPI_BARRIER(hostcomm,ierr)
-          call rotpole
-          em = 0d0
-          if (elambda.gt.0d0) then
-            call emrecip
-          end if
-          elambdarec1  = em
-
-          elambda = elambdatemp 
-          em = (1-elambda)*elambdarec0 + elambda*elambdarec1
-c
-c         reset lambda to initial value
-c
-          call MPI_BARRIER(hostcomm,ierr)
-          if (hostrank.eq.0) call altelec
-          call MPI_BARRIER(hostcomm,ierr)
-          call rotpole
-        end if
-      end if
-c
-c     compute the real space part of the Ewald summation
-c
-      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
-     $   then
-        if (use_mreal) then
-          call emreal0d
-        end if
-
-        if (use_mself) then
-c
-c     compute the self-energy portion of the Ewald summation
-c
-          term = 2.0d0 * aewald * aewald
-          fterm = -f * aewald / sqrtpi
-          do ii = 1, npoleloc
-             iipole = poleglob(ii)
-             iglob = ipole(iipole)
-             i = loc(iglob)
-             ci = rpole(1,iipole)
-             dix = rpole(2,iipole)
-             diy = rpole(3,iipole)
-             diz = rpole(4,iipole)
-             qixx = rpole(5,iipole)
-             qixy = rpole(6,iipole)
-             qixz = rpole(7,iipole)
-             qiyy = rpole(9,iipole)
-             qiyz = rpole(10,iipole)
-             qizz = rpole(13,iipole)
-             cii = ci*ci
-             dii = dix*dix + diy*diy + diz*diz
-             qii = 2.0d0*(qixy*qixy+qixz*qixz+qiyz*qiyz)
-     &                + qixx*qixx + qiyy*qiyy + qizz*qizz
-             e = fterm * (cii + term*(dii/3.0d0+2.0d0*term*qii/5.0d0))
-             em = em + e
-          end do
-c
-c       compute the cell dipole boundary correction term
-c
-          if (boundary .eq. 'VACUUM') then
-             xd = 0.0d0
-             yd = 0.0d0
-             zd = 0.0d0
-             do ii = 1, npoleloc
-                iipole = poleglob(ii)
-                iglob = ipole(iipole)
-                dix = rpole(2,iipole)
-                diy = rpole(3,iipole)
-                diz = rpole(4,iipole)
-                xd = xd + dix + rpole(1,iipole)*x(iglob)
-                yd = yd + diy + rpole(1,iipole)*y(iglob)
-                zd = zd + diz + rpole(1,iipole)*z(iglob)
-             end do
-             call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,
-     $          COMM_TINKER,ierr)
-             call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,
-     $          COMM_TINKER,ierr)
-             call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,
-     $          COMM_TINKER,ierr)
-             if (rank.eq.0) then
-               term = (2.0d0/3.0d0) * f * (pi/volbox)
-               e = term * (xd*xd+yd*yd+zd*zd)
-               em = em + e
-             end if
-          end if
-        end if
-      end if
       return
       end
 c
@@ -368,6 +195,7 @@ c     if shortrange, calculates just the short range part
       use neigh
       use potent
       use shunt
+      use usage
       use mpi
       implicit none
       integer i,j,iglob,kglob,nnelst
@@ -406,6 +234,7 @@ c     if shortrange, calculates just the short range part
       real*8 fgrp
       real*8 s,ds,mpoleshortcut2
       real*8 facts
+      logical usei,proceed
       logical testcut,shortrange,longrange,fullrange
       real*8, allocatable :: mscale(:)
       character*11 mode
@@ -460,6 +289,7 @@ c
          qiyy = rpole(9,iipole)
          qiyz = rpole(10,iipole)
          qizz = rpole(13,iipole)
+         usei = use(iglob)
          if (use_chgpen) then
             corei = pcore(iipole)
             vali = pval(iipole)
@@ -493,6 +323,8 @@ c
             end if
             kglob = ipole(kkpole)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+            proceed = (usei .or. use(kglob))
+            if (.not.proceed) cycle
             xr = x(kglob) - xi
             yr = y(kglob) - yi
             zr = z(kglob) - zi

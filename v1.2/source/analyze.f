@@ -45,6 +45,9 @@ c
       character*240 dcdfile
       type(dcdinfo_t) :: dcdinfo
 c
+      ! Sign running program
+      app_id = analyze_a
+c
 c     initializing use_grad
 c
       use_grad = .false.

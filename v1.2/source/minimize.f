@@ -52,6 +52,9 @@ c
       external minimiz1
       external optsave
 c
+      ! Sign running program
+      app_id = minimize_a
+c
 c
 c     set up the structure and mechanics calculation
 c

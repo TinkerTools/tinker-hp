@@ -202,6 +202,7 @@ c
       real*8 fgrp
       real*8, allocatable :: cscale(:)
       real*8 s,ds,cshortcut2,facts
+      logical usei,proceed
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
@@ -250,6 +251,7 @@ c
          yi = y(iglob)
          zi = z(iglob)
          fi = f * pchg(iichg)
+         usei = use(iglob)
 c
 c     set exclusion coefficients for connected atoms
 c
@@ -280,6 +282,8 @@ c
             kglob = iion(kkchg)
             if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
             k = loc(kglob)
+            proceed = (usei .or. use(kglob))
+            if (.not.proceed) cycle
 c
 c     compute the energy contribution for this interaction
 c

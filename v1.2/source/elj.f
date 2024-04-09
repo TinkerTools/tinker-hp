@@ -86,7 +86,7 @@ c
       real*8, allocatable :: yred(:)
       real*8, allocatable :: zred(:)
       real*8, allocatable :: vscale(:)
-      logical muti,mutk,mutik
+      logical usei,proceed,muti,mutk,mutik
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
@@ -158,6 +158,7 @@ c
          xi    = xred(i)
          yi    = yred(i)
          zi    = zred(i)
+         usei = (use(iglob) .or. use(iv))
 c
 c     set interaction scaling coefficients for connected atoms
 c
@@ -193,6 +194,8 @@ c
             kbis = loc(kglob)
             kv = ired(kglob)
             mutk = mut(kglob)
+            proceed = (usei .or. use(kglob) .or. use(kv))
+            if (.not.proceed) cycle
 c
 c     compute the energy contribution for this interaction
 c

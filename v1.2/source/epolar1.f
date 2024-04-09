@@ -145,27 +145,27 @@ c
      $   then
         if (use_prec) then
           call eprecip1
-c
-c     get contribution of the reciprocal permanent electric field to delambdae
-c
-          if (use_lambdadyn) then
-            do i = 1, npolerecloc
-              iipole = polerecglob(i)
-              iglob = ipole(iipole)
-              if (mut(iglob).and.elambda.gt.0) then
-                delambdae = delambdae + (rpole(1,iipole)*cphidprec(1,i) 
-     $   +           rpole(2,iipole)*cphidprec(2,i)
-     $   +           rpole(3,iipole)*cphidprec(3,i)
-     $   +           rpole(4,iipole)*cphidprec(4,i)
-     $   +           rpole(5,iipole)*cphidprec(5,i)
-     $   +           rpole(9,iipole)*cphidprec(6,i)
-     $   +           rpole(13,iipole)*cphidprec(7,i)
-     $   +           2d0*rpole(6,iipole)*cphidprec(8,i)
-     $   +           2d0*rpole(7,iipole)*cphidprec(9,i)
-     $   +           2d0*rpole(10,iipole)*cphidprec(10,i))/elambda
-              end if
-            end do
-          end if
+cc
+cc     get contribution of the reciprocal permanent electric field to delambdae
+cc
+c          if (use_lambdadyn) then
+c            do i = 1, npolerecloc
+c              iipole = polerecglob(i)
+c              iglob = ipole(iipole)
+c              if (mut(iglob).and.elambda.gt.0) then
+c                delambdae = delambdae + (rpole(1,iipole)*cphidprec(1,i) 
+c     $   +           rpole(2,iipole)*cphidprec(2,i)
+c     $   +           rpole(3,iipole)*cphidprec(3,i)
+c     $   +           rpole(4,iipole)*cphidprec(4,i)
+c     $   +           rpole(5,iipole)*cphidprec(5,i)
+c     $   +           rpole(9,iipole)*cphidprec(6,i)
+c     $   +           rpole(13,iipole)*cphidprec(7,i)
+c     $   +           2d0*rpole(6,iipole)*cphidprec(8,i)
+c     $   +           2d0*rpole(7,iipole)*cphidprec(9,i)
+c     $   +           2d0*rpole(10,iipole)*cphidprec(10,i))/elambda
+c              end if
+c            end do
+c          end if
         end if
       end if
 c
@@ -364,136 +364,6 @@ c
 
       return
       end
-cc
-cc
-cc
-c      subroutine elambdapolar1c
-c      use atmlst
-c      use deriv
-c      use domdec
-c      use energi
-c      use iounit
-c      use mpole
-c      use mutant
-c      use polar
-c      use polpot
-c      use potent
-c      use uprior
-c      use virial
-c      use mpi
-c      implicit none
-c      integer i,iipole,j,k,ierr
-c      real*8 elambdatemp,plambda
-c      real*8, allocatable :: delambdap0(:,:),delambdap1(:,:)
-c      real*8, allocatable :: delambdaprec0(:,:),delambdaprec1(:,:)
-c      real*8 :: elambdap0,elambdap1
-c      real*8 dplambdadelambdae,d2plambdad2elambdae
-c      real*8 :: vir0(3,3),vir1(3,3),virtemp(3,3)
-cc
-c      allocate (delambdaprec0(3,nlocrec2))
-c      allocate (delambdaprec1(3,nlocrec2))
-c      allocate (delambdap0(3,nbloc))
-c      allocate (delambdap1(3,nbloc))
-c      elambdatemp = elambda  
-cc
-cc     zero out the polarization energy and derivatives
-cc
-c      ep = 0.0d0
-c      dep = 0d0
-c      deprec = 0d0
-cc
-c      if (npole .eq. 0)  return
-c      if (.not.(use_mpole)) then
-c        delambdae = 0d0
-c      end if
-c      virtemp = vir
-cc
-cc     polarization is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
-cc     otherwise the value taken is for elambda=0
-cc
-c      elambdap1 = 0d0
-c      delambdap1 = 0d0
-c      delambdaprec1 = 0d0
-c      vir1 = 0d0
-c      if (elambda.gt.bplambda) then
-c        elambda = 1d0
-c        call MPI_BARRIER(hostcomm,ierr)
-c        if (hostrank.eq.0) call altelec
-c        call MPI_BARRIER(hostcomm,ierr)
-c        call rotpole
-c        ep = 0d0
-c        dep = 0d0
-c        deprec = 0d0
-c        vir = 0d0
-c        call epolar1c
-c        elambdap1  = ep
-c        delambdap1 = dep
-c        delambdaprec1 = deprec
-c        vir1 = vir
-c      end if
-c
-c      elambda = 0d0
-c      call MPI_BARRIER(hostcomm,ierr)
-c      if (hostrank.eq.0) call altelec
-c      call MPI_BARRIER(hostcomm,ierr)
-c      call rotpole
-c      ep = 0d0
-c      dep = 0d0
-c      deprec = 0d0
-c      vir = 0d0
-c      call epolar1c
-c      elambdap0  = ep
-c      delambdap0 = dep
-c      delambdaprec0 = deprec
-c      vir0 = vir
-cc
-cc     also store the dipoles to build ASPC guess
-cc
-c      nualt = min(nualt+1,maxualt)
-c      do i = 1, npolebloc
-c        iipole = poleglob(i)
-c         do j = 1, 3
-c            do k = nualt, 2, -1
-c               udalt(k,j,iipole) = udalt(k-1,j,iipole)
-c               upalt(k,j,iipole) = upalt(k-1,j,iipole)
-c            end do
-c            udalt(1,j,iipole) = uind(j,iipole)
-c            upalt(1,j,iipole) = uinp(j,iipole)
-c          end do
-c      end do
-c 
-c      elambda = elambdatemp 
-cc
-cc     interpolation of "plambda" between bplambda and 1 as a function of
-cc     elambda: 
-cc       plambda = 0 for elambda.le.bplambda
-cc       u = (elambda-bplambda)/(1-bplambda)
-cc       plambda = u**3 for elambda.gt.plambda
-cc       ep = (1-plambda)*ep0 +  plambda*ep1
-cc
-c      if (elambda.le.bplambda) then
-c        plambda = 0d0
-c        dplambdadelambdae = 0d0
-c        d2plambdad2elambdae = 0d0
-c      else
-c        plambda = ((elambda-bplambda)/(1d0-bplambda))**3
-c        dplambdadelambdae = 3d0*((elambda-bplambda)**2/(1-bplambda)**3)
-c      end if
-c      ep = plambda*elambdap1 + (1-plambda)*elambdap0
-c      deprec = (1-plambda)*delambdaprec0+plambda*delambdaprec1
-c      dep = (1-plambda)*delambdap0 + plambda*delambdap1
-c      delambdae = delambdae + (elambdap1-elambdap0)*dplambdadelambdae
-c      vir = virtemp + plambda*vir1 + (1-plambda)*vir0
-cc
-cc     reset lambda to initial value
-cc
-c      call MPI_BARRIER(hostcomm,ierr)
-c      if (hostrank.eq.0) call altelec
-c      call MPI_BARRIER(hostcomm,ierr)
-c      call rotpole
-c      return
-c      end
-cc
 c
 c     ###################################################################
 c     ##                                                               ##
@@ -530,6 +400,7 @@ c
       use fft
       use math
       use mpole
+      use mutant
       use pme
       use polar
       use polpot
@@ -1275,6 +1146,27 @@ c
       vir(1,3) = vir(1,3) + vxz
       vir(2,3) = vir(2,3) + vyz
       vir(3,3) = vir(3,3) + vzz
+c
+c     get contribution of the reciprocal permanent electric field to delambdae
+c
+      if (use_lambdadyn) then
+        do i = 1, npolerecloc
+          iipole = polerecglob(i)
+          iglob = ipole(iipole)
+          if (mut(iglob).and.elambda.gt.0) then
+            delambdae = delambdae + (rpole(1,iipole)*cphidprec(1,i) 
+     $   +           rpole(2,iipole)*cphidprec(2,i)
+     $   +           rpole(3,iipole)*cphidprec(3,i)
+     $   +           rpole(4,iipole)*cphidprec(4,i)
+     $   +           rpole(5,iipole)*cphidprec(5,i)
+     $   +           rpole(9,iipole)*cphidprec(6,i)
+     $   +           rpole(13,iipole)*cphidprec(7,i)
+     $   +           2d0*rpole(6,iipole)*cphidprec(8,i)
+     $   +           2d0*rpole(7,iipole)*cphidprec(9,i)
+     $   +           2d0*rpole(10,iipole)*cphidprec(10,i))/elambda
+          end if
+        end do
+      end if
 c
 c     perform deallocation of some local arrays
 c

@@ -71,6 +71,9 @@ c
       character*240 string
       data axis  / 'X','Y','Z' /
 c
+      ! Sign running program
+      app_id = testgrad_a
+c
       call MPI_INIT(ierr)
 c
 c     set up the structure and mechanics calculation
