@@ -55,6 +55,10 @@ c
       call integrate_vel( a,dt_2 )
       call integrate_pos( dt )
 c
+c     get constraint-corrected positions and half-step velocities
+c
+      if (use_rattle)  call rattle (dt)
+c
 c     Reassign the particules that have changed of domain
 c
 c     -> real space
@@ -77,10 +81,6 @@ c
       call mechanicstep(istep)
 
       call allocstep
-c
-c     get constraint-corrected positions and half-step velocities
-c
-      if (use_rattle)  call rattle (dt)
 c
 c     rebuild the neighbor list
 c

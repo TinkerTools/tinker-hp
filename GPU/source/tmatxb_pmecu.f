@@ -566,17 +566,18 @@ c    &     ,aewald,npolelocnlb_pair
         end subroutine
 
         attributes(global) subroutine efld0_direct_scaling_cu
-     &            (dpcorrect_ik,dpcorrect_scale,poleloc,ipole,pdamp
-     &            ,gamma,x,y,z,rpole,ef,n_dpscale,n,npolebloc
-     &            ,use_dirdamp,cut2,aewald,alsq2,alsq2n)
+     &            (dpcorrect_ik,dpcorrect_scale,poleloc,ipole,mut,pdamp
+     &            ,gamma,x,y,z,rpole,ef,defl,n_dpscale,n,npolebloc
+     &            ,use_dirdamp,use_lam,elambda,cut2,aewald,alsq2,alsq2n)
         implicit none
         integer  ,value,intent(in)::n,npolebloc,n_dpscale
-        logical  ,value,intent(in)::use_dirdamp
-        real(t_p),value,intent(in)::cut2,aewald,alsq2,alsq2n
+        logical  ,value,intent(in)::use_dirdamp,use_lam
+        real(t_p),value,intent(in)::cut2,aewald,alsq2,alsq2n,elambda
         integer  ,device,intent(in)::dpcorrect_ik(*),poleloc(n),ipole(n)
+        logical  ,device,intent(in)::mut(n)
         real(t_p),device,intent(in):: dpcorrect_scale(*),pdamp(n)
      &           ,gamma(n),rpole(13,n),x(*),y(*),z(*)
-        real(t_p),device,intent(inout)::ef(3,2,*)
+        real(t_p),device,intent(inout)::ef(3,2,*),defl(3,2,*)
 
         integer   ii,ithread,iipole,kpole,iploc,iglob,kbis,kglob
      &           ,tver,tfea
@@ -655,6 +656,32 @@ c    &     ,aewald,npolelocnlb_pair
      &               ,fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.true.)
            end if
 
+           if (use_lam.and.elambda.gt.0) then
+              if (mut(kglob)) then
+                 if (dscale.ne.0.0_ti_p) then
+                    rstat = atomicAdd(defl(1,1,iploc), fid%x)
+                    rstat = atomicAdd(defl(2,1,iploc), fid%y)
+                    rstat = atomicAdd(defl(3,1,iploc), fid%z)
+                 end if
+                 if (pscale.ne.0.0_ti_p) then
+                    rstat = atomicAdd(defl(1,2,iploc), fip%x)
+                    rstat = atomicAdd(defl(2,2,iploc), fip%y)
+                    rstat = atomicAdd(defl(3,2,iploc), fip%z)
+                 end if
+              end if
+              if (mut(iglob)) then
+                 if (dscale.ne.0.0_ti_p) then
+                    rstat = atomicAdd(defl(1,1,kbis ), fkd%x)
+                    rstat = atomicAdd(defl(2,1,kbis ), fkd%y)
+                    rstat = atomicAdd(defl(3,1,kbis ), fkd%z)
+                 end if
+                 if (pscale.ne.0.0_ti_p) then
+                    rstat = atomicAdd(defl(1,2,kbis ), fkp%x)
+                    rstat = atomicAdd(defl(2,2,kbis ), fkp%y)
+                    rstat = atomicAdd(defl(3,2,kbis ), fkp%z)
+                 end if
+              end if
+           end if
            if (dscale.ne.0.0_ti_p) then
               rstat = atomicAdd(ef(1,1,iploc), fid%x)
               rstat = atomicAdd(ef(2,1,iploc), fid%y)

@@ -15,8 +15,6 @@ try:
     print("Warning: mlplugin not found, ffi was defined as dummy object")
     global_load=1
 
-  import torch
-
   try:
     print(sys.argv[0])
   except:
@@ -68,7 +66,8 @@ try:
           import tensorflow as tf
           tf.compat.v1.enable_eager_execution()
       elif key_upper in _torchani_models:
-        global use_custom_torchani
+        global torch, use_custom_torchani
+        import torch
         if use_custom_torchani:
           try:
             global models, MOD_neigh
@@ -81,7 +80,6 @@ try:
         if not use_custom_torchani:
           if (rank==0): print("Loading standard torchani",flush=True)
           global models, torchani, NbList,MOD_neigh
-          #import torchani
           from torchani  import models
           from torchani.aev import NbList
           MOD_neigh = None
@@ -144,19 +142,22 @@ try:
 
   class AniRessources:
     nb_species   = 0
+    mod_torch    = 0
+    mod_tf       = 1
 
     def __init__(self,rank:int ,devID:int, mlpot_key:str
                     ,model_file:Optional[str]=None
                     ,verbose:bool=False
                     ,debug:bool=False)->None:
 
-      self.verbose = debug
+      self.verbose = debug and mlpot_key in _torchani_models
       if verbose:
         init_time = time()
 
       self.mlpot_key  = mlpot_key
       self.rank       = rank
       self.devID      = devID
+      self.use_mod    = self.mod_torch if mlpot_key in _torchani_models else self.mod_tf
 
       try:
         # SELECT DEVICE
@@ -391,7 +392,8 @@ try:
             torch.cuda.synchronize()
             print('getmcache',torch.cuda.list_gpu_processes(), flush=True)
 
-        Ten  = torch.empty([allocSize],dtype=torch.float32,device=self.device,requires_grad=False)
+        if (self.use_mod==self.mod_torch):
+           Ten  = torch.empty([allocSize],dtype=torch.float32,device=self.device,requires_grad=False)
 
         if self.verbose:
             torch.cuda.synchronize()
@@ -451,7 +453,7 @@ def init_ml_ressources(rank,devID,nn_name,model_file_,debug_int):
 
      global ar
      ar=AniRessources(rank,devID,ml_key,model_file=model_file,debug=debug)
-     torch.cuda.synchronize()
+     if(ar.use_mod==ar.mod_torch): torch.cuda.synchronize()
 
      if (ar.verbose): print(f'init ML ressources done {time()-init_time} s'.format(), flush=True)
      if rank==0:

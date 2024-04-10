@@ -38,10 +38,10 @@ Nothing special is needed for the CPU code.
 
 
 ## Python Environment 
-If you plan to combine machine learning with MD, we provide an environment file `tinker-hp/GPU/tinkerml.yaml` which installs python modules for machine learning. This specific python environment requires [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) to be installed on the host machine. Install the environment according to the next instructions before proceeding to Tinker-HP.
+If you plan to combine machine learning with MD, we provide environment files `tinker-hp/GPU/tinkerml.[torch|tensorflow].yaml` which installs python modules for machine learning. First one install the pytorch module and TorchAni model whereas the second focuses on DeepMD-kit over Tensorflow module. Those specific python environments require [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) to be installed on the host machine. Install the environment of your choice according to your ML Model by following the next instructions. Of course this step has to be carried out before moving to Tinker-HP.
 
-To create the environment, run in your shell: `conda env create -f tinkerml.yaml`; <br />
-Activate or deactivate it respectively with `conda activate tinkerml` or `conda deactivate`;  <br />
+To create the pytorch environment, run in your shell: `conda env create -f tinkerml.torch.yaml`; <br />
+Activate or deactivate it respectively with `conda activate DeepHP-torch` or `conda deactivate`;  <br />
 
 Composition of the environment:  
 * [Pytorch](https://pytorch.org/), [TensorFlow](https://www.tensorflow.org/) are the building block of most of machine learning potential libraries.

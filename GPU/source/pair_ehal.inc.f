@@ -206,9 +206,15 @@ c
               IF (iand(fea,shr).ne.0)  THEN ! Short Range
                  IF (iand(ver,grd).ne.0) de = ( e*ds + de*s )/rik
                                           e = e*s
+                 IF (iand(ver,grd).ne.0.and.ulamdyn) THEN
+                   delambdav = delambdav*s
+                 END IF
               ELSE
                  IF (iand(ver,grd).ne.0) de = ( -e*ds + (1-s)*de )
                                           e = (1-s)*e
+                 IF (iand(ver,grd).ne.0.and.ulamdyn) THEN
+                   delambdav = delambdav*(1-s)
+                 END IF
               END IF
            END IF
 c

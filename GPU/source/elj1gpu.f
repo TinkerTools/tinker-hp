@@ -30,7 +30,7 @@ c
 
       subroutine elj1gpu
       use energi
-      use deriv     ,only: delambdav
+      use deriv     ,only: delambdav,delambdavsave
       use interfaces,only: elj1c_p
       use potent
       use virial
@@ -61,8 +61,17 @@ c
 !$acc wait
 !$acc end data
       end if
+
       if (use_lambdadyn) then
-!$acc update host(delambdav) async
+c
+c     save delambdav for short range computation
+c
+         if (use_vdwshort) then
+!$acc serial async(def_queue) present(delambdav,delambdavsave)
+            delambdavsave = delambdav
+!$acc end serial
+         end if
+!$acc update host(delambdav,delambdavsave) async
       end if
       end
 c
@@ -237,6 +246,7 @@ c
          if (.not.do_scale4) then
          e     = -e
          ded%x = -ded%x; ded%y = -ded%y; ded%z = -ded%z;
+         delambdav_ = -delambdav_
          end if
 
          ev = ev + tp2enr(e)

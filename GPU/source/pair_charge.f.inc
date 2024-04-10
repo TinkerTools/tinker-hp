@@ -92,6 +92,11 @@ c
               ELSE
                  delambdae = (fik_/rb)*cscale
               END IF
+              IF     (IAND(fea,shr).NE.0) THEN
+                 delambdae = delambdae*s
+              ELSE IF(IAND(fea,lgr).NE.0) THEN
+                 delambdae = delambdae*(1.0-s)
+              END IF
            end if
         end if
 

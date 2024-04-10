@@ -19,7 +19,7 @@
       type(real3),intent(out):: frc
 
       integer   grd,ene,sca,grp,shr,lgr
-      real(t_p) rik,rr1,expi,expk,de
+      real(t_p) rik,rr1,expi,expk,chgik,alphaik,de
       parameter(grd=__use_grd__,ene=__use_ene__,sca=__use_sca__
      &         ,grp=__use_groups__,shr=__use_shortRange__
      &         ,lgr=__use_longRange__
@@ -34,12 +34,12 @@
          IF (IAND(ver,ene).NE.0)  e=-chgi*expk - chgk*expi
          IF (IAND(ver,grd).NE.0) de= chgi*expk*alphak + chgk*expi*alphai
       else
-         associate(chgik=>expi,alphaik=>expk)
+         !associate(chgik=>expi,alphaik=>expk)
          chgik   = f_sqrt(f_abs(chgi*chgk))
          alphaik = 0.5* (alphai+alphak)
          IF (IAND(ver,ene).NE.0)  e= -chgik* f_exp(-alphaik*rik)
          IF (IAND(ver,grd).NE.0) de= -e* alphaik
-         end associate
+         !end associate
       end if
 
       IF (IAND(ver,sca).NE.0) THEN

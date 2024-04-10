@@ -465,6 +465,10 @@ c
      $                 ,MPI_SUM,0,COMM_TINKER,ierr)
       end if
       if (use_lambdadyn) then
+        delambdae = delambdae + delambdaesave
+        delambdaesave = 0d0
+        delambdav = delambdav + delambdavsave
+        delambdavsave = 0d0
         if (rank.eq.0) then
           call MPI_REDUCE(MPI_IN_PLACE,delambdav,1,MPI_RPREC
      $                   ,MPI_SUM,0,COMM_TINKER,ierr)
@@ -477,19 +481,19 @@ c
      $                   ,MPI_SUM,0,COMM_TINKER,ierr)
         end if
       end if
-      if (use_osrw) then
-        if (rank.eq.0) then
-          call MPI_REDUCE(MPI_IN_PLACE,d2edlambdav2,1,MPI_RPREC
-     $                   ,MPI_SUM,0,COMM_TINKER,ierr)
-          call MPI_REDUCE(MPI_IN_PLACE,d2edlambdae2,1,MPI_RPREC
-     $                   ,MPI_SUM,0,COMM_TINKER,ierr)
-        else
-          call MPI_REDUCE(d2edlambdav2,d2edlambdav2,1,MPI_RPREC
-     $                   ,MPI_SUM,0,COMM_TINKER,ierr)
-          call MPI_REDUCE(d2edlambdae2,d2edlambdae2,1,MPI_RPREC
-     $                   ,MPI_SUM,0,COMM_TINKER,ierr)
-        end if
-      end if
+c      if (use_osrw) then
+c        if (rank.eq.0) then
+c          call MPI_REDUCE(MPI_IN_PLACE,d2edlambdav2,1,MPI_RPREC
+c     $                   ,MPI_SUM,0,COMM_TINKER,ierr)
+c          call MPI_REDUCE(MPI_IN_PLACE,d2edlambdae2,1,MPI_RPREC
+c     $                   ,MPI_SUM,0,COMM_TINKER,ierr)
+c        else
+c          call MPI_REDUCE(d2edlambdav2,d2edlambdav2,1,MPI_RPREC
+c     $                   ,MPI_SUM,0,COMM_TINKER,ierr)
+c          call MPI_REDUCE(d2edlambdae2,d2edlambdae2,1,MPI_RPREC
+c     $                   ,MPI_SUM,0,COMM_TINKER,ierr)
+c        end if
+c      end if
       end subroutine
 
       subroutine prepare_colvars1(derivs)
@@ -549,6 +553,12 @@ c12   format(A,3f10.4)
 c13   format(A,6f16.10)
 c     print 13, 'pos ',cv_pos(1:6,1)
 c     print 13, 'frc_',decv_tot(1:6,1)
+      if (use_lambdadyn) then
+        delambdae = delambdae + delambdaesave
+        delambdaesave = 0d0
+        delambdav = delambdav + delambdavsave
+        delambdavsave = 0d0
+      end if
       end subroutine
 c
 c     the master sends the new forces, he already has the bias

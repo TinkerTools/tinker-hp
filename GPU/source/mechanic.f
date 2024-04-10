@@ -1027,6 +1027,7 @@ c
          fphi_uind_site1_p => fphi_uind_sitegpu1
          fphi_uind_site2_p => fphi_uind_sitegpu2
          fphi_mpole_site_p => fphi_mpole_sitegpu
+         fphi_chg_site_p   => fphi_chg_sitegpu
          grid_pchg_force_p => grid_pchg_force
          grid_disp_force_p => grid_disp_force
 #ifdef _OPENACC
@@ -1034,6 +1035,7 @@ c
          fphi_uind_site1_p => fphi_uind_sitecu1
          fphi_uind_site2_p => fphi_uind_sitecu2
          fphi_mpole_site_p => fphi_mpole_sitecu
+         fphi_chg_site_p   => fphi_chg_sitecu
          grid_pchg_force_p => grid_pchg_forcecu
          grid_disp_force_p => grid_disp_forcecu
 #endif
@@ -1041,6 +1043,7 @@ c
          fphi_uind_site1_p => fphi_uind_sitegpu1
          fphi_uind_site2_p => fphi_uind_sitegpu2
          fphi_mpole_site_p => fphi_mpole_sitegpu
+         fphi_chg_site_p   => fphi_chg_sitegpu
          grid_pchg_force_p => grid_pchg_force
          grid_disp_force_p => grid_disp_force
       end if

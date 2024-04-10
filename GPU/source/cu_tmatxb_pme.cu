@@ -14,11 +14,11 @@
         TMATXB_PARAMS_GEN , MIDPOINTIMAGE1_PARAMS
 
 #define EFLD0_PARAMS_GEN                                              \
-        const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict ieblst, const int*restrict eblst   \
+        const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict ieblst, const int*restrict eblst, const char*restrict mut   \
         , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict pgamma, const real*restrict polarity, const real (*restrict rpole)[13]  \
-        , real (*restrict efi)[6]                                               \
-        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc, const int idirdamp, const int balanced \
-        , const real cut2, const real alsq2, const real alsq2n, const real aewald
+        , real (*restrict efi)[6], real (*restrict defl)[6]               \
+        , const int npolelocnlb, const int npolelocnlb_pair, const int npolebloc, const int n, const int nproc, const int idirdamp, const int useLambdaDyn, const int balanced \
+        , const real cut2, const real alsq2, const real alsq2n, const real aewald, const real elambda
 #define EFLD0_GRP_PARAMS_GEN                                              \
         const int*restrict ipole, const int*restrict pglob, const int*restrict ploc, const int*restrict ieblst, const int*restrict eblst   \
         , const real*restrict x, const real*restrict y, const real*restrict z, const real*restrict pdamp, const real*restrict pgamma, const real*restrict polarity, const real (*restrict rpole)[13]  \
@@ -51,14 +51,15 @@
         , MIDPOINTIMAGE_ARGS
 
 #define EFLD0_ARGS                                                       \
-          ipole,pglob,ploc,ieblst,eblst,x,y,z,pdamp,pgamma,polarity,rpole \
-        , efi                                                            \
-        , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc,idirdamp,balanced\
-        , cut2,alsq2,alsq2n,aewald                                       \
+          ipole,pglob,ploc,ieblst,eblst,mut,x,y,z,pdamp,pgamma,polarity,rpole \
+        , efi, defl                                                      \
+        , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc                 \
+        , idirdamp,useLambdaDyn,balanced                                 \
+        , cut2,alsq2,alsq2n,aewald,elambda                               \
         , MIDPOINTIMAGE_ARGS
 #define OTFDC_EFLD0_ARGS                                                 \
           ipole,pglob,ploc,grplst,atmofst,npergrp,kofst,ieblst,eblst     \
-        , x,y,z,pdamp,pgamma,polarity,rpole,efi,zmat                      \
+        , x,y,z,pdamp,pgamma,polarity,rpole,efi,zmat                     \
         , npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc                 \
         , cut2,alsq2,alsq2n,aewald                                       \
         , MIDPOINTIMAGE_ARGS
@@ -132,10 +133,13 @@ void tmatxb_couple
    fkp.z  += -rr3_bn1*dpui.zz + rr5_bn2*puir*dist.z;
 }
 
+const int L_INC=1;
+const int R_INC=2;
+
 __device__ inline
 void efld0_couple(const real d2,const real3& pos, const rpole_elt& ip, const rpole_elt& kp, const real& alsq2, const real& alsq2n,
          const real& aewald, const real& damp, const real& gamma, const real& dscale, const real& pscale,
-        real3& fid,real3& fip,real3& fkd,real3& fkp,real& d1, real& sc3, real& sc5, real& bn1, real& bn2, const int do_correct) {
+        real3& fid,real3& fip,real3& fkd,real3& fkp,real& d1, real& sc3, real& sc5, real& bn1, real& bn2, const int fea, const int ikInc) {
 
    real exp2a;
    real invd1,invd2,invd3,invd5,invd7;
@@ -172,7 +176,7 @@ void efld0_couple(const real d2,const real3& pos, const rpole_elt& ip, const rpo
       sc7  = one - expdamp1*(one - damp1 + 0.6*damp1*damp1);
    }
 
-   if (do_correct) {
+   if (fea & SCAL) {
       /*  [dp]scale equal to 1-[dp]scale in this case */
       drr3    =      sc3*dscale * invd3;
       drr5    =  3 * sc5*dscale * invd5;
@@ -216,7 +220,7 @@ void efld0_couple(const real d2,const real3& pos, const rpole_elt& ip, const rpo
    qkrz    = kp.qxz*pos.x + kp.qyz*pos.y +  kp.qzz*pos.z;
    qkrr    =   qkrx*pos.x +   qkry*pos.y +    qkrz*pos.z;
 
-   if (do_correct) {
+   if (fea & SCAL) {
       fimx = 0.0; fimy = 0.0; fimz = 0.0;
       fkmx = 0.0; fkmy = 0.0; fkmz = 0.0;
    }
@@ -229,19 +233,23 @@ void efld0_couple(const real d2,const real3& pos, const rpole_elt& ip, const rpo
       fkmz =  ( bn1*ip.c  + bn2*dir + bn3*qirr )*pos.z - bn1*ip.dz - two*bn2*qirz;
    }
 
+   if (ikInc & L_INC) {
    fid.x  += fimx + ( drr3*kp.c  - drr5*dkr + drr7*qkrr )*pos.x +  drr3*kp.dx - two*drr5*qkrx;
    fid.y  += fimy + ( drr3*kp.c  - drr5*dkr + drr7*qkrr )*pos.y +  drr3*kp.dy - two*drr5*qkry;
    fid.z  += fimz + ( drr3*kp.c  - drr5*dkr + drr7*qkrr )*pos.z +  drr3*kp.dz - two*drr5*qkrz;
    fip.x  += fimx + ( prr3*kp.c  - prr5*dkr + prr7*qkrr )*pos.x +  prr3*kp.dx - two*prr5*qkrx;
    fip.y  += fimy + ( prr3*kp.c  - prr5*dkr + prr7*qkrr )*pos.y +  prr3*kp.dy - two*prr5*qkry;
    fip.z  += fimz + ( prr3*kp.c  - prr5*dkr + prr7*qkrr )*pos.z +  prr3*kp.dz - two*prr5*qkrz;
+   }
 
+   if (ikInc & R_INC) {
    fkd.x  += fkmx - ( drr3*ip.c  + drr5*dir + drr7*qirr )*pos.x +  drr3*ip.dx + two*drr5*qirx;
    fkd.y  += fkmy - ( drr3*ip.c  + drr5*dir + drr7*qirr )*pos.y +  drr3*ip.dy + two*drr5*qiry;
    fkd.z  += fkmz - ( drr3*ip.c  + drr5*dir + drr7*qirr )*pos.z +  drr3*ip.dz + two*drr5*qirz;
    fkp.x  += fkmx - ( prr3*ip.c  + prr5*dir + prr7*qirr )*pos.x +  prr3*ip.dx + two*prr5*qirx;
    fkp.y  += fkmy - ( prr3*ip.c  + prr5*dir + prr7*qirr )*pos.y +  prr3*ip.dy + two*prr5*qiry;
    fkp.z  += fkmz - ( prr3*ip.c  + prr5*dir + prr7*qirr )*pos.z +  prr3*ip.dz + two*prr5*qirz;
+   }
 
 }
 
@@ -482,7 +490,7 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
    real3 fid,fip;
    __shared__ real3 posk[BLOCK_DIM],fkd[BLOCK_DIM],fkp[BLOCK_DIM];
    __shared__ rpole_elt kp[BLOCK_DIM];
-   //__shared__ int ncalc[4];
+   __shared__ char mutk[BLOCK_DIM];
    //__shared__ int cont;
 
    //if (ithread==0) printf( " %i %i %i %i %i %i %i " r_Format r_Format r_Format "\n", nwarp,nproc,npolelocnlb,npolebloc,n,npolelocnlb_pair,cut2,alsq2,aewald);
@@ -585,11 +593,11 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
             //if (iblock<500) atomicAdd( &ncalc[threadIdx.x/WARP_SIZE],1 );
             if (iglob<kglob_)
                efld0_couple(d2,pos,ip,kp[klane],alsq2,alsq2n,aewald,pdp,pgm,1.0,1.0,
-                            fid,fip,fkd[klane],fkp[klane],d,sc3,sc5,bn1,bn2,0);
+                            fid,fip,fkd[klane],fkp[klane],d,sc3,sc5,bn1,bn2,0,L_INC+R_INC);
             else{
                pos.x = -pos.x; pos.y=-pos.y; pos.z=-pos.z;
                efld0_couple(d2,pos,kp[klane],ip,alsq2,alsq2n,aewald,pdp,pgm,1.0,1.0,
-                            fkd[klane],fkp[klane],fid,fip,d,sc3,sc5,bn1,bn2,0);
+                            fkd[klane],fkp[klane],fid,fip,d,sc3,sc5,bn1,bn2,0,L_INC+R_INC);
             }
          }
       }
@@ -610,6 +618,85 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
       atomicAdd( &efi[kploc][5],fkp[threadIdx.x].z );
       __syncwarp(ALL_LANES);
       //if (ilane==1 && iblock<500) printf("ii %8d %8d    %8d \n",ii+1,iblock,ncalc[threadIdx.x/WARP_SIZE]);
+
+      if (useLambdaDyn && elambda>(real)0) {
+
+      /* set compute Data to]0 */
+      fid.x   = 0;
+      fid.y   = 0;
+      fid.z   = 0;
+      fip.x   = 0;
+      fip.y   = 0;
+      fip.z   = 0;
+      const char muti    = mut[iglob];
+      fkd[threadIdx.x].x = 0;
+      fkd[threadIdx.x].y = 0;
+      fkd[threadIdx.x].z = 0;
+      fkp[threadIdx.x].x = 0;
+      fkp[threadIdx.x].y = 0;
+      fkp[threadIdx.x].z = 0;
+      mutk[threadIdx.x]  = mut[kglob];
+
+      for ( j=0; j<WARP_SIZE; j++ ) {
+         srclane  = (ilane+j) & (WARP_SIZE-1);
+         klane    = threadIdx.x-ilane + srclane;
+         kglob_   =      __shfl_sync(ALL_LANES,kglob ,srclane);
+         pdp      = ipdp*__shfl_sync(ALL_LANES,kpdp  ,srclane);
+         pgm      =      __shfl_sync(ALL_LANES,kpgm  ,srclane);
+         if (ipgm<pgm) pgm = ipgm;
+
+         if (nproc>1 && balanced ) {
+            xk_   = posk[klane].x;
+            yk_   = posk[klane].y;
+            zk_   = posk[klane].z;
+            pos.x = posi.x - xk_;
+            pos.y = posi.y - yk_;
+            pos.z = posi.z - zk_;
+            accept_mid = Midpointimage(xk_,yk_,zk_,pos.x,pos.y,pos.z);
+            pos.x=-pos.x; pos.y=-pos.y; pos.z=-pos.z;
+         }
+         else {
+            pos.x = posk[klane].x - posi.x;
+            pos.y = posk[klane].y - posi.y;
+            pos.z = posk[klane].z - posi.z;
+            Image(pos.x,pos.y,pos.z);
+         }
+         d2      = pos.x*pos.x + pos.y*pos.y + pos.z*pos.z;
+         do_pair = (same_block)? (iglob < kglob_):1;
+
+         if (do_pair && d2<=cut2 && accept_mid) {
+            //atomicAdd( &cont, 1);
+            /* Compute one interaction
+               Since the interaction is not symetrical we need to switch comput when necessary */
+            real d,sc3,sc5,bn1,bn2;
+            //if (iblock<500) atomicAdd( &ncalc[threadIdx.x/WARP_SIZE],1 );
+            if (iglob<kglob_) {
+               const int ikInc = (muti? R_INC: 0) + (mutk[klane]? L_INC: 0);
+               efld0_couple(d2,pos,ip,kp[klane],alsq2,alsq2n,aewald,pdp,pgm,1.0,1.0,
+                            fid,fip,fkd[klane],fkp[klane],d,sc3,sc5,bn1,bn2,0,ikInc);
+            } else {
+               const int ikInc = (muti? L_INC: 0) + (mutk[klane]? R_INC: 0);
+               pos.x = -pos.x; pos.y=-pos.y; pos.z=-pos.z;
+               efld0_couple(d2,pos,kp[klane],ip,alsq2,alsq2n,aewald,pdp,pgm,1.0,1.0,
+                            fkd[klane],fkp[klane],fid,fip,d,sc3,sc5,bn1,bn2,0,ikInc);
+            }
+         }
+      }
+      /* increment derivative of electric field according to lambda for each atoms */
+      atomicAdd( &defl[iploc][0],fid.x );
+      atomicAdd( &defl[iploc][1],fid.y );
+      atomicAdd( &defl[iploc][2],fid.z );
+      atomicAdd( &defl[iploc][3],fip.x );
+      atomicAdd( &defl[iploc][4],fip.y );
+      atomicAdd( &defl[iploc][5],fip.z );
+      atomicAdd( &defl[kploc][0],fkd[threadIdx.x].x );
+      atomicAdd( &defl[kploc][1],fkd[threadIdx.x].y );
+      atomicAdd( &defl[kploc][2],fkd[threadIdx.x].z );
+      atomicAdd( &defl[kploc][3],fkp[threadIdx.x].x );
+      atomicAdd( &defl[kploc][4],fkp[threadIdx.x].y );
+      atomicAdd( &defl[kploc][5],fkp[threadIdx.x].z );
+
+      }
    }
 }
 
@@ -740,11 +827,11 @@ void cu_otfdc_efld0_direct_core (OTFDC_EFLD0_PARAMS1){
             real d,sc3,sc5,bn1,bn2;
             if (iglob<kglob_)
                efld0_couple(d2,pos,ip,kp[klane],alsq2,alsq2n,aewald,pdp,pgm,1.0,1.0,
-                            fid,fip,fkd[klane],fkp[klane],d,sc3,sc5,bn1,bn2,0);
+                            fid,fip,fkd[klane],fkp[klane],d,sc3,sc5,bn1,bn2,0,3);
             else{
                pos.x = -pos.x; pos.y=-pos.y; pos.z=-pos.z;
                efld0_couple(d2,pos,kp[klane],ip,alsq2,alsq2n,aewald,pdp,pgm,1.0,1.0,
-                            fkd[klane],fkp[klane],fid,fip,d,sc3,sc5,bn1,bn2,0);
+                            fkd[klane],fkp[klane],fid,fip,d,sc3,sc5,bn1,bn2,0,3);
             }
             if (li==lk[klane] && li!=-1) {
 
@@ -1015,6 +1102,7 @@ void cu_efld0_direct(EFLD0_PARAMS,cudaStream_t st){
 
    if (dynamic_gS){ gS_efld= npolelocnlb_pair<=BLOCK_DIM/WARP_SIZE ? 1 : ((npolelocnlb_pair>>2 < maxBlock) ? npolelocnlb_pair/(2*(BLOCK_DIM/WARP_SIZE)) : maxBlock) ; gS_efld1= gS_efld; }
    if (idirdamp) {
+      if (useLambdaDyn){ printf(" Lambda Dynamic is unavailable with DIRECT DAMPING model on CUDA Kernel !\n  - Add `run-mode   legacy` into keyfile"); exit(1); } 
       efld0_direct_kcu<DIRDAMP+EWALD><<<gS_efld1,BLOCK_DIM,sh,st>>> (EFLD0_ARGS);
       strcpy(rname,"efld0_direct_kcu");
    }

@@ -27,9 +27,10 @@ c
       subroutine rattle (dt)
       use atmlst
       use atmtyp
-      use atoms
+      use atomsMirror
       use domdec
       use freeze
+      use molcul
       use inform
       use iounit
       use moldyn
@@ -37,10 +38,11 @@ c
       use usage
       use mpi
       implicit none
-      integer i,j,k,iloc,iglob,ierr
+      integer i,j,k,iloc,iglob,ierr,imol_
       integer ia,ib,ialoc,ibloc,mode
       integer niter,maxiter
-      real(t_p) dt,eps,sor
+      real(r_p) dt,eps
+      real(t_p) sor
       real(t_p) xr,yr,zr
       real(t_p) xo,yo,zo
       real(t_p) dot,rma,rmb
@@ -48,40 +50,28 @@ c
       real(t_p) delta,term
       real(t_p) xterm,yterm,zterm
       real(t_p), allocatable :: displace(:,:)
+      integer :: n_not_done,ii,nratmol_
       logical done
       logical, allocatable :: moved(:)
       logical, allocatable :: update(:)
 c
-#ifdef _OPENACC
- 15   format(' Rattle Feature is for now unavailable !!!'
-     &    ,/,'   Please Target host build(CPU) to benefit from it')
-      write(0,15)
-      call fatal
-#endif
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (moved(nbloc))
-      allocate (update(nbloc))
-      allocate (displace(3,nbloc))
-      displace = 0_ti_p
-c
-c     initialize the lists of atoms previously corrected
-c
-      do i = 1, nbloc
-         iglob = glob(i)
-         if (use(iglob)) then
-            moved(i) = .true.
-         else
-            moved(i) = .false.
-         end if
-         update(i) = .false.
-      end do
+c#ifdef _OPENACC
+c 15   format(' Rattle Feature is for now unavailable !!!'
+c     &    ,/,'   Please Target host build(CPU) to benefit from it')
+c      write(0,15)
+c      call fatal
+c#endif
+
+      if (nproc > 1) then
+         write (0,*) 'Error: RATTLE is not implemented for for nproc>1'
+         call fatal
+      end if
+
 c
 c     initialize arrays for MPI 
 c
-      call initmpirattle
-      call commrattleinit
+c      call initmpirattle
+c      call commrattleinit
 c
 c     set the iteration counter, termination and tolerance
 c
@@ -93,91 +83,88 @@ c     apply RATTLE to distances and half-step velocity values
 c
       niter = 0
       done = .false.
-      do while (.not.done .and. niter.lt.maxiter)
-         niter = niter + 1
-         done = .true.
-         displace = 0_ti_p
-         do iloc = 1, nratloc
-            i = ratglob(iloc) 
+      !do while (.not.done .and. niter.lt.maxiter)
+      !   niter = niter + 1
+      !   n_not_done = 0
+      !   ! do iloc = 1, nratloc
+      !   !    i = ratglob(iloc) 
+
+!$acc parallel loop default(present) async
+      do imol_ = 1, nmol
+         if (nratmol(imol_) == 0) cycle
+!$acc loop seq
+         do niter = 1,maxiter
+           n_not_done=0
+!$acc loop seq
+           do ii = 1,nratmol(imol_)
+            i = iratmol(ii,imol_)
             ia = irat(1,i)
             ib = irat(2,i)
-            ialoc = loc(ia)
-            ibloc = loc(ib)
-            if (moved(ialoc) .or. moved(ibloc)) then
-               xr = x(ib) - x(ia)
-               yr = y(ib) - y(ia)
-               zr = z(ib) - z(ia)
-               if (ratimage(i))  call image (xr,yr,zr)
-               dist2 = xr**2 + yr**2 + zr**2
-               delta = krat(i)**2 - dist2
-               if (abs(delta) .gt. eps) then
-                  done = .false.
-                  update(ialoc) = .true.
-                  update(ibloc) = .true.
-                  xo = xold(ib) - xold(ia)
-                  yo = yold(ib) - yold(ia)
-                  zo = zold(ib) - zold(ia)
-                  if (ratimage(i))  call image (xo,yo,zo)
-                  dot = xr*xo + yr*yo + zr*zo
-                  rma = 1.0_ti_p / mass(ia)
-                  rmb = 1.0_ti_p / mass(ib)
-                  term = sor * delta / (2.0_ti_p * (rma+rmb) * dot)
-                  xterm = xo * term
-                  yterm = yo * term
-                  zterm = zo * term
-                  x(ia) =  x(ia) - xterm*rma
-                  y(ia) =  y(ia) - yterm*rma
-                  z(ia) =  z(ia) - zterm*rma
-                  x(ib) =  x(ib) + xterm*rmb
-                  y(ib) =  y(ib) + yterm*rmb
-                  z(ib) =  z(ib) + zterm*rmb
-                  displace(1,ialoc) =  displace(1,ialoc) - xterm*rma
-                  displace(2,ialoc) =  displace(2,ialoc) - yterm*rma
-                  displace(3,ialoc) =  displace(3,ialoc) - zterm*rma
-                  displace(1,ibloc) =  displace(1,ibloc) + xterm*rmb
-                  displace(2,ibloc) =  displace(2,ibloc) + yterm*rmb
-                  displace(3,ibloc) =  displace(3,ibloc) + zterm*rmb
-                  rma = rma / dt
-                  rmb = rmb / dt
-                  v(1,ia) = v(1,ia) - xterm*rma
-                  v(2,ia) = v(2,ia) - yterm*rma
-                  v(3,ia) = v(3,ia) - zterm*rma
-                  v(1,ib) = v(1,ib) + xterm*rmb
-                  v(2,ib) = v(2,ib) + yterm*rmb
-                  v(3,ib) = v(3,ib) + zterm*rmb
-               end if
-            end if
-         end do
-         call MPI_ALLREDUCE(MPI_IN_PLACE,done,1,MPI_LOGICAL,MPI_LAND,
-     $    COMM_TINKER,ierr)
-c
-         do i = 1, nbloc
-            moved(i) = update(i)
-            update(i) = .false.
+            if(.not.(use(ia) .or. use(ib))) cycle
+            
+            xr = x(ib) - x(ia)
+            yr = y(ib) - y(ia)
+            zr = z(ib) - z(ia)
+            !if (ratimage(i))  call image (xr,yr,zr)
+            dist2 = xr**2 + yr**2 + zr**2
+            delta = krat(i)**2 - dist2
+            if(abs(delta) <= eps) cycle
+
+            n_not_done = n_not_done + 1
+            xo = xold(ib) - xold(ia)
+            yo = yold(ib) - yold(ia)
+            zo = zold(ib) - zold(ia)
+            !if (ratimage(i))  call image (xo,yo,zo)
+            dot = xr*xo + yr*yo + zr*zo
+            rma = 1.0_ti_p / mass(ia)
+            rmb = 1.0_ti_p / mass(ib)
+            term = sor * delta / (2.0_ti_p * (rma+rmb) * dot)
+            xterm = xo * term
+            yterm = yo * term
+            zterm = zo * term
+            x(ia) =  x(ia) - xterm*rma
+            y(ia) =  y(ia) - yterm*rma
+            z(ia) =  z(ia) - zterm*rma
+            x(ib) =  x(ib) + xterm*rmb
+            y(ib) =  y(ib) + yterm*rmb
+            z(ib) =  z(ib) + zterm*rmb
+            rma = rma / dt
+            rmb = rmb / dt
+            v(1,ia) = v(1,ia) - xterm*rma
+            v(2,ia) = v(2,ia) - yterm*rma
+            v(3,ia) = v(3,ia) - zterm*rma
+            v(1,ib) = v(1,ib) + xterm*rmb
+            v(2,ib) = v(2,ib) + yterm*rmb
+            v(3,ib) = v(3,ib) + zterm*rmb
+           end do
+           if (n_not_done == 0) exit
          end do
       end do
-      call commrattleend
-!$acc update device(x(:),y(:),z(:),v)
-c
-c    faire routine qui envoie chaque partie des contraintes convergees a tous les voisins
-c
-c     perform deallocation of some local arrays
-c
-      deallocate (moved)
-      deallocate (update)
+c!$acc wait
+c         !write(*,*) 'n_not_done = ',n_not_done
+c         done = (n_not_done == 0)
+cc         call MPI_ALLREDUCE(MPI_IN_PLACE,done,1,MPI_LOGICAL,MPI_LAND,
+cc     $    COMM_TINKER,ierr)
+cc
+c      end do
+
+
+      call reCast_position
+
+c      call commrattleend
 c
 c     write information on the number of iterations needed
 c
-      if (niter .eq. maxiter) then
-         write (iout,10)
-   10    format (/,' RATTLE  --  Warning, Distance Constraints',
-     &              ' not Satisfied')
-         call fatal
-      else if (debug) then
-         write (iout,20)  niter
-   20    format (' RATTLE   --  Distance Constraints met at',i6,
-     &              ' Iterations')
-      end if
+c      if (niter .eq. maxiter) then
+c         write (iout,10)
+c   10    format (/,' RATTLE  --  Warning, Distance Constraints',
+c     &              ' not Satisfied')
+c         call fatal
+c      if (debug) then
+c         write (iout,20)  niter
+c   20    format (' RATTLE   --  Distance Constraints met at',i6,
+c     &              ' Iterations')
+c      end if
 c
       return
       end
@@ -198,7 +185,7 @@ c
       subroutine rattle2 (dt)
       use atmlst
       use atmtyp
-      use atoms
+      use atomsMirror
       use domdec
       use group
       use freeze
@@ -209,13 +196,15 @@ c
       use units
       use usage
       use virial
+      use molcul
       use mpi
       implicit none
       integer i,j,k,iloc,iglob,ierr
       integer ia,ib,ialoc,ibloc,mode
       integer niter,maxiter
       integer start,stop
-      real(t_p) dt,eps,sor
+      real(r_p) dt,eps
+      real(t_p) sor
       real(t_p) xr,yr,zr
       real(t_p) xv,yv,zv
       real(t_p) dot,rma,rmb
@@ -223,44 +212,25 @@ c
       real(t_p) xterm,yterm,zterm
       real(t_p) vxx,vyy,vzz
       real(t_p) vyx,vzx,vzy
-      real(t_p), allocatable :: displace(:,:)
-      real(t_p) virtemp(3,3)
+      real(r_p), save :: gxx,gyy,gzz
+      real(r_p), save :: gyx,gzx,gzy
+      real(r_p) gxx_loc,gyy_loc,gzz_loc
+      real(r_p) gyx_loc,gzx_loc,gzy_loc
       logical done
-      logical, allocatable :: moved(:)
-      logical, allocatable :: update(:)
+      integer :: n_not_done,imol_,ii
+      logical, save :: f_in=.TRUE.
 c
-#ifdef _OPENACC
- 15   format(' Rattle Feature is for now unavailable !!!'
-     &    ,/,' > Please Target host(CPU) build to benefit from it')
-      write(0,15)
-      call fatal
-#endif
-c
-c     perform dynamic allocation of some local arrays
-c
-      allocate (moved(nbloc))
-      allocate (update(nbloc))
-      allocate (displace(3,nbloc))
-      displace = 0_ti_p
-c
-      virtemp = 0_ti_p
-c
-c     initialize the lists of atoms previously corrected
-c
-      do i = 1, nbloc
-         iglob = glob(i)
-         if (use(iglob)) then
-            moved(i) = .true.
-         else
-            moved(i) = .false.
-         end if
-         update(i) = .false.
-      end do
+c#ifdef _OPENACC
+c 15   format(' Rattle Feature is for now unavailable !!!'
+c     &    ,/,' > Please Target host(CPU) build to benefit from it')
+c      write(0,15)
+c      call fatal
+c#endif
 c
 c     initialize arrays for MPI 
 c
-      call initmpirattle
-      call commrattleinit
+c      call initmpirattle
+c      call commrattleinit
 c
 c     set the iteration counter, termination and tolerance
 c
@@ -273,105 +243,144 @@ c
 c
 c     apply the RATTLE algorithm to correct the velocities
 c
-      do while (.not.done .and. niter.lt.maxiter)
-         niter = niter + 1
-         done = .true.
-         displace = 0_ti_p
-         do iloc = 1, nratloc
-            i = ratglob(iloc)
+c      do while (.not.done .and. niter.lt.maxiter)
+c         niter = niter + 1
+c         n_not_done = 0
+
+      if (f_in) then
+         f_in = .false.
+        gxx = 0.0_re_p
+        gyy = 0.0_re_p
+        gzz = 0.0_re_p
+        gyx = 0.0_re_p
+        gzx = 0.0_re_p
+        gzy = 0.0_re_p
+!$acc enter data async copyin(gxx,gyy,gzz,gyx,gzx,gzy)
+      endif
+
+!$acc parallel loop default(present)  async
+!$acc& present(gxx,gyy,gzz,gyx,gzx,gzy)
+!$acc& reduction(+:gxx,gyy,gzz,gyx,gzx,gzy)
+      do imol_ = 1, nmol
+         if (nratmol(imol_) == 0) cycle
+         gxx_loc = 0.0_re_p
+         gyy_loc = 0.0_re_p
+         gzz_loc = 0.0_re_p
+         gyx_loc = 0.0_re_p
+         gzx_loc = 0.0_re_p
+         gzy_loc = 0.0_re_p
+!$acc loop seq
+         do niter = 1, maxiter
+           n_not_done=0
+!$acc loop seq
+           do ii = 1,nratmol(imol_)
+            i = iratmol(ii,imol_)
             ia = irat(1,i)
             ib = irat(2,i)
-            ialoc = loc(ia)
-            ibloc = loc(ib)
-            if (moved(ialoc) .or. moved(ibloc)) then
-               xr = x(ib) - x(ia)
-               yr = y(ib) - y(ia)
-               zr = z(ib) - z(ia)
-               if (ratimage(i))  call image (xr,yr,zr)
-               xv = v(1,ib) - v(1,ia)
-               yv = v(2,ib) - v(2,ia)
-               zv = v(3,ib) - v(3,ia)
-               dot = xr*xv + yr*yv + zr*zv
-               rma = 1.0_ti_p / mass(ia)
-               rmb = 1.0_ti_p / mass(ib)
-               term = -dot / ((rma+rmb) * krat(i)**2)
-               if (abs(term) .gt. eps) then
-                  done = .false.
-                  update(ialoc) = .true.
-                  update(ibloc) = .true.
-                  term = sor * term
-                  xterm = xr * term
-                  yterm = yr * term
-                  zterm = zr * term
-                  v(1,ia) = v(1,ia) - xterm*rma
-                  v(2,ia) = v(2,ia) - yterm*rma
-                  v(3,ia) = v(3,ia) - zterm*rma
-                  v(1,ib) = v(1,ib) + xterm*rmb
-                  v(2,ib) = v(2,ib) + yterm*rmb
-                  v(3,ib) = v(3,ib) + zterm*rmb
-                  displace(1,ialoc) =  displace(1,ialoc) - xterm*rma
-                  displace(2,ialoc) =  displace(2,ialoc) - yterm*rma
-                  displace(3,ialoc) =  displace(3,ialoc) - zterm*rma
-                  displace(1,ibloc) =  displace(1,ibloc) + xterm*rmb
-                  displace(2,ibloc) =  displace(2,ibloc) + yterm*rmb
-                  displace(3,ibloc) =  displace(3,ibloc) + zterm*rmb
+            if(.not.(use(ia) .or. use(ib))) cycle
+
+            xr = x(ib) - x(ia)
+            yr = y(ib) - y(ia)
+            zr = z(ib) - z(ia)
+            !if (ratimage(i))  call image (xr,yr,zr)
+            xv = v(1,ib) - v(1,ia)
+            yv = v(2,ib) - v(2,ia)
+            zv = v(3,ib) - v(3,ia)
+            dot = xr*xv + yr*yv + zr*zv
+            rma = 1.0_ti_p / mass(ia)
+            rmb = 1.0_ti_p / mass(ib)
+            term = -dot / ((rma+rmb) * krat(i)**2)
+            if (abs(term) <= eps) cycle
+
+            n_not_done = n_not_done + 1
+            term = sor * term
+            xterm = xr * term
+            yterm = yr * term
+            zterm = zr * term
+            v(1,ia) = v(1,ia) - xterm*rma
+            v(2,ia) = v(2,ia) - yterm*rma
+            v(3,ia) = v(3,ia) - zterm*rma
+            v(1,ib) = v(1,ib) + xterm*rmb
+            v(2,ib) = v(2,ib) + yterm*rmb
+            v(3,ib) = v(3,ib) + zterm*rmb
 c
 c     increment the internal virial tensor components
 c
-                  xterm = xterm * vterm
-                  yterm = yterm * vterm
-                  zterm = zterm * vterm
-                  vxx = xr * xterm
-                  vyx = yr * xterm
-                  vzx = zr * xterm
-                  vyy = yr * yterm
-                  vzy = zr * yterm
-                  vzz = zr * zterm
-                  virtemp(1,1) = virtemp(1,1) - vxx
-                  virtemp(2,1) = virtemp(2,1) - vyx
-                  virtemp(3,1) = virtemp(3,1) - vzx
-                  virtemp(1,2) = virtemp(1,2) - vyx
-                  virtemp(2,2) = virtemp(2,2) - vyy
-                  virtemp(3,2) = virtemp(3,2) - vzy
-                  virtemp(1,3) = virtemp(1,3) - vzx
-                  virtemp(2,3) = virtemp(2,3) - vzy
-                  virtemp(3,3) = virtemp(3,3) - vzz
-               end if
-            end if
+            xterm = xterm * vterm
+            yterm = yterm * vterm
+            zterm = zterm * vterm
+            vxx = xr * xterm
+            vyx = yr * xterm
+            vzx = zr * xterm
+            vyy = yr * yterm
+            vzy = zr * yterm
+            vzz = zr * zterm
+            gxx_loc = gxx_loc + vxx
+            gyy_loc = gyy_loc + vyy
+            gzz_loc = gzz_loc + vzz
+            gyx_loc = gyx_loc + vyx
+            gzx_loc = gzx_loc + vzx
+            gzy_loc = gzy_loc + vzy
+           end do
+           if (n_not_done == 0) exit
          end do
-         call MPI_ALLREDUCE(MPI_IN_PLACE,done,1,MPI_LOGICAL,MPI_LAND,
-     $    COMM_TINKER,ierr)
-c
-         do i = 1, nbloc
-            moved(i) = update(i)
-            update(i) = .false.
-         end do
+
+         gxx = gxx + gxx_loc
+         gyy = gyy + gyy_loc
+         gzz = gzz + gzz_loc
+         gyx = gyx + gyx_loc
+         gzx = gzx + gzx_loc
+         gzy = gzy + gzy_loc
       end do
-      call commrattleend
-      call MPI_ALLREDUCE(MPI_IN_PLACE,virtemp,9,MPI_TPREC,MPI_SUM,
-     $ COMM_TINKER,ierr)
-      vir = vir + virtemp
-!$acc update device(v) async
+c!$acc wait
+         !write(*,*) 'n_not_done 2 = ',n_not_done
+         ! done = (n_not_done == 0)
+c         call MPI_ALLREDUCE(MPI_IN_PLACE,done,1,MPI_LOGICAL,MPI_LAND,
+c     $    COMM_TINKER,ierr)
 c
-c     perform deallocation of some local arrays
-c
-      deallocate (moved)
-      deallocate (update)
+      ! end do
+c      call commrattleend
+c      call MPI_ALLREDUCE(MPI_IN_PLACE,virtemp,9,MPI_TPREC,MPI_SUM,
+c     $ COMM_TINKER,ierr)
+
+      if (use_virial) then
+!$acc serial async present(vir,gxx,gyy,gzz,gyx,gzx,gzy)
+         vir(1,1) = vir(1,1) - gxx
+         vir(2,1) = vir(2,1) - gyx
+         vir(3,1) = vir(3,1) - gzx
+         vir(1,2) = vir(1,2) - gyx
+         vir(2,2) = vir(2,2) - gyy
+         vir(3,2) = vir(3,2) - gzy
+         vir(1,3) = vir(1,3) - gzx
+         vir(2,3) = vir(2,3) - gzy
+         vir(3,3) = vir(3,3) - gzz
+         gxx = 0.0_re_p
+         gyy = 0.0_re_p
+         gzz = 0.0_re_p
+         gyx = 0.0_re_p
+         gzx = 0.0_re_p
+         gzy = 0.0_re_p
+!$acc end serial
+c!$acc update host(vir) async
+      endif
+
+
+
+
 c
 c     write information on the number of iterations needed
 c
-      if (niter .eq. maxiter) then
-         write (iout,10)
-   10    format (/,' RATTLE2  --  Warning, Velocity Constraints',
-     &              ' not Satisfied')
-         call fatal
-      else if (debug) then
-         write (iout,20)  niter
-   20    format (' RATTLE2  --  Velocity Constraints met at',i6,
-     &              ' Iterations')
-      end if
+c      if (niter .eq. maxiter) then
+c         write (iout,10)
+c   10    format (/,' RATTLE2  --  Warning, Velocity Constraints',
+c     &              ' not Satisfied')
+c         call fatal
+c      else if (debug) then
+c         write (iout,20)  niter
+c   20    format (' RATTLE2  --  Velocity Constraints met at',i6,
+c     &              ' Iterations')
+c      end if
 c
-!$acc wait
       return
       end
 c
@@ -381,7 +390,7 @@ c
 c
       subroutine initmpirattle
       use atmlst
-      use atoms
+      use atomsMirror
       use domdec
       use freeze
       use mpole

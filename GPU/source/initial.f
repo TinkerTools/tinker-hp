@@ -330,7 +330,8 @@ c
 c     Initialize GPU
 c
       subroutine initDevice
-      use deriv  ,only: delambdae,delambdav
+      use deriv  ,only: delambdae,delambdav,delambdaesave,
+     &    delambdavsave
       use domdec ,only: rank,ranktot,hostcomm
       use energi
       use inter  ,only: einter
@@ -394,7 +395,8 @@ c
 c     create energy data on device
 c
       call create_energi_on_device()
-!$acc enter data create(einter,delambdae,delambdav)
+!$acc enter data create(einter,delambdae,delambdav,delambdaesave,
+!$acc& delambdavsave)
 c
 c     set to zero reductions buffers for (action,energy and virial)
 c

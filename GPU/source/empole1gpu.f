@@ -43,11 +43,7 @@ c
 c
 c     choose the method for summing over multipole interactions
 c
-      if (use_lambdadyn) then
-         call elambdampole1cgpu
-      else
-         call empole1cgpu
-      end if
+      call empole1cgpu
 c
 c     zero out energy and derivative terms which are not in use
 c
@@ -170,6 +166,7 @@ c
       use math
       use mpole
       use mpi
+      use mutant
       use neigh
       use potent
       use shunt
@@ -212,11 +209,13 @@ c
       aewald = aeewald
 c
 c     zero out the atomic multipole energy and derivatives
+c     reset lambda elec forces for lambda dynamics
 c
-!$acc serial async present(emself,emrec,em)
+!$acc serial async present(emself,emrec,em,delambdae)
       em     = zero
       emself = 0
       emrec  = zero
+      delambdae = 0.0_re_p
 !$acc end serial
 c
 c     set the energy unit conversion factor
@@ -234,6 +233,14 @@ c
          call timer_enter( timer_real )
          if (use_mreal) then
             call emreal1c_p
+            if (use_lambdadyn.and.use_mpoleshortreal) then
+c
+c     save delambdae for short range computation
+c
+!$acc serial async(rec_queue) present(delambdae,delambdaesave)
+              delambdaesave = delambdae
+!$acc end serial
+            end if
          end if
 
          if (use_mself) then
@@ -244,8 +251,10 @@ c
          term  = two * aewald * aewald
          fterm = -f * aewald / sqrtpi
 !$acc parallel loop async(def_queue) default(present) present(emself)
+!$acc& present(delambdae)
          do i = 1, npoleloc
             iipole = poleglob(i)
+            iglob = ipole(iipole)
             ci     = rpole( 1,iipole)
             dix    = rpole( 2,iipole)
             diy    = rpole( 3,iipole)
@@ -263,6 +272,9 @@ c
             e      = fterm*(cii + term*(dii/three +
      &                                  two*term*qii/5.0_ti_p))
             emself = emself + tp2enr(e)
+            if (use_lambdadyn.and.mut(iglob).and.elambda.gt.0.0) then
+               delambdae = delambdae + 2.0*e/elambda
+            end if
             if (use_chgflx) pot(loc(ipole(iipole))) = 2.0 * fterm * ci
          end do
 c
@@ -414,427 +426,11 @@ c
       em = em + enr2en(emself + em_r) + emrec
 !$acc end serial
 c
+      if (use_lambdadyn) then
+!$acc update host(delambdae,delambdaesave) async(rec_queue)
+      end if
       end
 c
-c
-c     "elambdampole1c" calculates the multipole energy and derivatives
-c     with respect to Cartesian coordinates using particle mesh Ewald
-c     summation and a neighbor list during lambda dynamics
-c
-c
-      subroutine elambdampole1cgpu
-      use sizes
-      use atmlst
-      use atoms
-      use boxes
-      use chgpot
-      use cflux
-      use deriv
-      use domdec
-      use elec_wspace,only: trq=>r2Work4
-      use empole1gpu_inl
-      use energi
-      use ewald
-      use inform     ,only: deb_Path
-      use interfaces ,only: torquegpu,emreal1c_p
-      use mutant
-      use math
-      use mpole
-      use mpi
-      use neigh
-      use potent
-      use shunt
-      use timestat
-      use tinheader  ,only: ti_p,zerom,zeror
-      use tinMemory  ,only: prmem_request,mipk
-      use utilcomm
-      use utilgpu    ,pot=>ug_workS_r
-      use virial
-      implicit none
-      integer i,j,ii
-      integer iipole,iglob,ierr,altopt
-      integer(mipk) siz8
-      real(t_p) zero,one,two,three,half
-      real(t_p) e,f,elambdatemp
-      real(t_p) term,fterm
-      real(t_p) cii,dii,qii
-      real(t_p) xd,yd,zd,xdt,ydt,zdt
-      real(t_p) xq,yq,zq
-      real(t_p) xv,yv,zv,vterm
-      real(t_p) ci,dix,diy,diz
-      real(t_p) qixx,qixy,qixz
-      real(t_p) qiyy,qiyz,qizz
-      real(t_p) xdfield,ydfield
-      real(t_p) zdfield
-      real(t_p) time0,time1
-      real(r_p),allocatable:: delambdarec0(:,:),delambdarec1(:,:)
-      real(r_p) elambdarec0,elambdarec1
-      real(r_p) :: g_vxx_temp,g_vxy_temp,g_vxz_temp
-      real(r_p) :: g_vyy_temp,g_vyz_temp,g_vzz_temp
-      real(r_p) :: g_vxx_1,g_vxy_1,g_vxz_1
-      real(r_p) :: g_vyy_1,g_vyz_1,g_vzz_1
-      real(r_p) :: g_vxx_0,g_vxy_0,g_vxz_0
-      real(r_p) :: g_vyy_0,g_vyz_0,g_vzz_0
-      parameter(zero=0.0_ti_p,  one=1.0_ti_p
-     &         , two=2.0_ti_p,three=3.0_ti_p
-     &         ,half=0.5_ti_p
-#ifdef _OPENACC
-     &         ,altopt = 0
-#else
-     &         ,altopt = 1
-#endif
-     &         )
-c
-      if (npole .eq. 0)  return
-      if(deb_Path) write(*,*) 'elambdampole1cgpu'
-
-      if (em1c_fi) then
-         em1c_fi = .false.
-!$acc enter data create(emself)
-      end if
-c
-c     set Ewald coefficient
-c
-      aewald = aeewald
-
-      allocate (delambdarec0(3,nlocrec2))
-      allocate (delambdarec1(3,nlocrec2))
-!$acc enter data create(elambdarec0,elambdarec1
-!$acc&     ,delambdarec0,delambdarec1
-!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
-!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async(rec_queue)
-      elambdatemp = elambda  
-c
-c     zero out the atomic multipole energy and derivatives
-c
-!$acc serial async present(emself,emrec,em,delambdae)
-      em        = zero
-      emself     = 0
-      emrec     = zero
-      delambdae = 0
-!$acc end serial
-c
-c     set the energy unit conversion factor
-c
-      f = electric / dielec
-c
-c     Reset global data for electrostatic
-c
-      call elec_calc_reset
-c
-c     compute the reciprocal space part of the Ewald summation
-c
-      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
-     &   then
-         call timer_enter( timer_real )
-         if (use_mreal) then
-#ifdef _OPENACC
-            call emreal1c_p
-#else
-            if (use_chgpen) then
-               call emreal1c
-            else
-               call emreal1c_p
-            end if
-#endif
-         end if
-
-         if (use_mself) then
-            if(deb_Path) print*, 'emself'
-c
-c     compute the Ewald self-energy term over all the atoms
-c
-         term  = two * aewald * aewald
-         fterm = -f * aewald / sqrtpi
-!$acc parallel loop async(def_queue) default(present)
-!$acc&         present(emself,delambdae)
-!$acc&         reduction(+:emself,delambdae)
-         do i = 1, npoleloc
-            iipole = poleglob(i)
-             iglob = ipole(iipole)
-            ci     = rpole( 1,iipole)
-            dix    = rpole( 2,iipole)
-            diy    = rpole( 3,iipole)
-            diz    = rpole( 4,iipole)
-            qixx   = rpole( 5,iipole)
-            qixy   = rpole( 6,iipole)
-            qixz   = rpole( 7,iipole)
-            qiyy   = rpole( 9,iipole)
-            qiyz   = rpole(10,iipole)
-            qizz   = rpole(13,iipole)
-            cii    = ci*ci
-            dii    =       dix*dix  +  diy*diy  + diz*diz
-            qii    = two*(qixy*qixy + qixz*qixz + qiyz*qiyz)
-     &                  + qixx*qixx + qiyy*qiyy + qizz*qizz
-            e      = fterm*(cii + term*(dii/three +
-     &                                  two*term*qii/5.0_ti_p))
-            emself  = emself + tp2enr(e)
-            if (mut(iglob).and.elambda.gt.0.0) then
-               delambdae = delambdae + 2.0*e/elambda
-            end if
-            if (use_chgflx) pot(loc(iglob)) = 2.0 * fterm * ci
-         end do
-c
-c     modify gradient and virial for charge flux self-energy
-c
-         if (use_chgflx) then
-            call commDDd_add(pot,1,ucComm+ucBig)
-            call commDDd_ext(pot,1,ucComm+ucNeig)
-            call dcflux2(pot,de_ws1)
-            call adflux2(de_ws1,dem)
-            call mem_set(pot,zeror,int(nbloc,mipk),def_stream)
-         end if
-c
-c     compute the cell dipole boundary correction term
-c
-         if (boundary .eq. 'VACUUM') then
-            write(0,*) 'FATAL ERROR VACUUM boundary unavailable !!!'
-            __TINKER_FATAL__
-
-            call prmem_request(trq,3,npoleloc,queue=def_queue)
-c
-!$acc data create(trq)
-!$acc wait
-            xd  = zero
-            yd  = zero
-            zd  = zero
-            xdt = zero
-            ydt = zero
-            zdt = zero
-            !FIXME complete delambdae integration
-!$acc parallel loop async(def_queue) default(present)
-            do i = 1, npoleloc
-               iipole = poleglob(i)
-               iglob  = ipole(iipole)
-               xd = xd + rpole(2,iipole) + rpole(1,iipole)*x(iglob)
-               yd = yd + rpole(3,iipole) + rpole(1,iipole)*y(iglob)
-               zd = zd + rpole(4,iipole) + rpole(1,iipole)*z(iglob)
-               if (mut(iglob).and.elambda.gt.0) then
-                  xdt= xdt+ (rpole(2,iipole) + rpole(1,iipole)*x(iglob))
-     &                      /elambda
-                  ydt= ydt+ (rpole(3,iipole) + rpole(1,iipole)*x(iglob))
-     &                      /elambda
-                  zdt= zdt+ (rpole(4,iipole) + rpole(1,iipole)*x(iglob))
-     &                      /elambda
-               end if
-            end do
-!$acc wait(def_queue)
-            if (ndir.gt.1) then
-            call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,xdt,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,ydt,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,zdt,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            end if
-            if (rank.eq.0) then
-            term    = (two/3.0_ti_p) * f * (pi/volbox)
-!$acc serial async(def_queue) present(emself)
-            emself   = emself + tp2enr(term*(xd*xd+yd*yd+zd*zd))
-!$acc end serial
-            end if
-            xdfield = -two * term * xd
-            ydfield = -two * term * yd
-            zdfield = -two * term * zd
-!$acc parallel loop async(def_queue) default(present)
-            do ii = 1, npoleloc
-               iipole   = poleglob(ii)
-               iglob    = ipole(iipole)
-               i        = loc(iglob)
-               dem(1,i) = dem(1,i) + two*term*rpole(1,iipole)*xd
-               dem(2,i) = dem(2,i) + two*term*rpole(1,iipole)*yd
-               dem(3,i) = dem(3,i) + two*term*rpole(1,iipole)*zd
-
-               trq(1,ii)=rpole(3,iipole)*zdfield-rpole(4,iipole)*ydfield
-               trq(2,ii)=rpole(4,iipole)*xdfield-rpole(2,iipole)*zdfield
-               trq(3,ii)=rpole(2,iipole)*ydfield-rpole(3,iipole)*xdfield
-            end do
-            ! TODO Remove this comment 
-            ! ---( Trouble in fixed precision )---
-            !call torquegpu(npoleloc,nbloc,poleglob,loc,trq,dem,def_queue)
-c
-c     boundary correction to virial due to overall cell dipole
-c
-            xd = zero
-            yd = zero
-            zd = zero
-            xq = zero
-            yq = zero
-            zq = zero
-!$acc parallel loop async(def_queue) default(present)
-            do i = 1, npoleloc
-               iipole = poleglob(i)
-               iglob  = ipole(iipole)
-               xd     = xd + rpole(2,iipole)
-               yd     = yd + rpole(3,iipole)
-               zd     = zd + rpole(4,iipole)
-               xq     = xq + rpole(1,iipole)*x(iglob)
-               yq     = yq + rpole(1,iipole)*y(iglob)
-               zq     = zq + rpole(1,iipole)*z(iglob)
-            end do
-!$acc wait(def_queue)
-            if (ndir.gt.1) then
-            call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,xq,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,yq,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            call MPI_ALLREDUCE(MPI_IN_PLACE,zq,1,MPI_TPREC,MPI_SUM,
-     $         COMM_TINKER,ierr)
-            end if
-            if (rank.eq.0) then
-!$acc kernels default(present)
-            xv = xd * xq
-            yv = yd * yq
-            zv = zd * zq
-            vterm = term * (xd*xd + yd*yd + zd*zd + two*(xv+yv+zv)
-     &                    + xq*xq + yq*yq + zq*zq)
-            vir(1,1) = vir(1,1) + two*term*(xq*xq+xv) + vterm
-            vir(2,1) = vir(2,1) + two*term*(xq*yq+xv)
-            vir(3,1) = vir(3,1) + two*term*(xq*zq+xv)
-            vir(1,2) = vir(1,2) + two*term*(yq*xq+yv)
-            vir(2,2) = vir(2,2) + two*term*(yq*yq+yv) + vterm
-            vir(3,2) = vir(3,2) + two*term*(yq*zq+yv)
-            vir(1,3) = vir(1,3) + two*term*(zq*xq+zv)
-            vir(2,3) = vir(2,3) + two*term*(zq*yq+zv)
-            vir(3,3) = vir(3,3) + two*term*(zq*zq+zv) + vterm
-!$acc end kernels
-            end if
-!$acc wait
-!$acc end data
-c
-           end if !( boundary .eq. "VACUUM" )
-         end if !( use_mself )
-         call timer_exit( timer_real,quiet_timers )
-
-      end if !((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))
-c
-c     compute the reciprocal space part of the Ewald summation
-c
-      if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))
-     &   then
-         if (use_mrec) then
-         call timer_enter( timer_rec )
-c
-c        the reciprocal part is interpolated between 0 and 1
-c
-         elambda = 0.0
-         siz8    = 3*nlocrec2
-         call altelec(altopt)
-         call rotpolegpu
-!$acc serial async(rec_queue)
-!$acc& present(emrec,g_vxx_temp,g_vxy_temp,g_vxz_temp,
-!$acc&  g_vyy_temp,g_vyz_temp,g_vzz_temp,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-         emrec   = 0.0
-         g_vxx_temp = g_vxx
-         g_vxy_temp = g_vxy
-         g_vxz_temp = g_vxz
-         g_vyy_temp = g_vyy
-         g_vyz_temp = g_vyz
-         g_vzz_temp = g_vzz
-         g_vxx = 0.0
-         g_vxy = 0.0
-         g_vxz = 0.0
-         g_vyy = 0.0
-         g_vyz = 0.0
-         g_vzz = 0.0
-!$acc end serial
-         call mem_set(demrec,zerom,siz8,rec_stream)
-         call emrecip1gpu
-!$acc serial async(rec_queue) present(elambdarec0,emrec,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-         elambdarec0 = emrec
-         g_vxx_0 = g_vxx
-         g_vxy_0 = g_vxy
-         g_vxz_0 = g_vxz
-         g_vyy_0 = g_vyy
-         g_vyz_0 = g_vyz
-         g_vzz_0 = g_vzz
-         g_vxx = 0.0
-         g_vxy = 0.0
-         g_vxz = 0.0
-         g_vyy = 0.0
-         g_vyz = 0.0
-         g_vzz = 0.0
-         emrec       = 0.0
-!$acc end serial
-         call mem_move(delambdarec0,demrec,siz8,rec_stream)
-         call mem_set(demrec,zerom,siz8,rec_stream)
-
-         elambda = 1.0
-         call altelec(altopt)
-         call rotpolegpu
-         call emrecip1gpu
-!$acc serial async(rec_queue) present(elambdarec1,emrec,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-         elambdarec1 = emrec
-         g_vxx_1 = g_vxx
-         g_vxy_1 = g_vxy
-         g_vxz_1 = g_vxz
-         g_vyy_1 = g_vyy
-         g_vyz_1 = g_vyz
-         g_vzz_1 = g_vzz
-!$acc end serial
-         call mem_move(delambdarec1,demrec,siz8,rec_stream)
-
-         elambda = elambdatemp
-!$acc wait
-!$acc serial async(rec_queue)
-!$acc&       present(emrec,delambdae,elambdarec0,elambdarec1,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,g_vxx_temp,g_vxy_temp,
-!$acc& g_vxz_temp,g_vyy_temp,g_vyz_temp,g_vzz_temp)
-         emrec     = (1-elambda)*elambdarec0 + elambda*elambdarec1
-         g_vxx = g_vxx_temp + (1.0-elambda)*g_vxx_0+elambda*g_vxx_1
-         g_vxy = g_vxy_temp + (1.0-elambda)*g_vxy_0+elambda*g_vxy_1
-         g_vxz = g_vxz_temp + (1.0-elambda)*g_vxz_0+elambda*g_vxz_1
-         g_vyy = g_vyy_temp + (1.0-elambda)*g_vyy_0+elambda*g_vyy_1
-         g_vyz = g_vyz_temp + (1.0-elambda)*g_vyz_0+elambda*g_vyz_1
-         g_vzz = g_vzz_temp + (1.0-elambda)*g_vzz_0+elambda*g_vzz_1
-         delambdae = delambdae + elambdarec1-elambdarec0
-!$acc end serial
-!$acc parallel loop async(rec_queue) collapse(2) default(present)
-         do i = 1,nlocrec2; do j = 1,3
-            demrec(j,i) = (1-elambda)*delambdarec0(j,i)
-     &                  +    elambda *delambdarec1(j,i)
-         end do; end do
-
-         !reset lambda to initial value
-         call altelec(altopt)
-         call rotpolegpu
-!$acc update host(delambdae) async(rec_queue)
-
-         call timer_exit( timer_rec,quiet_timers )
-         end if
-      end if
-c
-#ifdef _OPENACC
-      !Finalize async overlapping
-      if (dir_queue.ne.rec_queue) call end_dir_stream_cover
-#endif
-c
-c     Add both contribution to the energy
-c
-!$acc serial async(rec_queue) present(em,emself,em_r,emrec,delambdae)
-      em = em + enr2en(emself + em_r) + emrec
-!$acc end serial
-c
-!$acc exit data delete(elambdarec0,elambdarec1
-!$acc&    ,delambdarec0,delambdarec1
-!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
-!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async(rec_queue)
-      end
 c
 c     #################################################################
 c     ##                                                             ##
@@ -1329,7 +925,7 @@ c
       use chgpen ,only:pcore,pval,palpha
       use chgpot ,only:electric,dielec
       use cell
-      use deriv  ,only:dem,delambdae
+      use deriv  ,only:dem,delambdae,delambdaesave
       use domdec ,only: xbegproc,ybegproc,zbegproc
      &           ,nproc,rank,xendproc,yendproc,zendproc
      &           ,nbloc,loc
@@ -2142,6 +1738,29 @@ c
          call mem_set(pot,zeror,int(nbloc,mipk),rec_stream)
          if (nproc.ne.1) call mem_set
      &      (potrec,zeror,int(nlocrec,mipk),rec_stream)
+      end if
+c
+c     get contribution of the reciprocal permanent electric field to delambdae
+c
+      if (use_lambdadyn) then
+!$acc parallel loop async(rec_queue) default(present) present(delambdae)
+!$acc& reduction(+:delambdae)
+        do i = 1, npolerecloc
+          iipole = polerecglob(i)
+          iglob = ipole(iipole)
+          if (mut(iglob).and.elambda.gt.0) then
+            delambdae = delambdae + (rpole(1,iipole)*cphirec(1,i) 
+     $ +          rpole(2,iipole)*cphirec(2,i)
+     $ +          rpole(3,iipole)*cphirec(3,i)
+     $ +          rpole(4,iipole)*cphirec(4,i)
+     $ +          rpole(5,iipole)*cphirec(5,i)
+     $ +          rpole(9,iipole)*cphirec(6,i)
+     $ +          rpole(13,iipole)*cphirec(7,i)
+     $ +          2d0*rpole(6,iipole)*cphirec(8,i)
+     $ +          2d0*rpole(7,iipole)*cphirec(9,i)
+     $ +          2d0*rpole(10,iipole)*cphirec(10,i))/elambda
+          end if
+        end do
       end if
 c
       call timer_exit(timer_emrecip,quiet_timers)

@@ -31,6 +31,7 @@ c
 
       subroutine ehal1gpu
 
+      use deriv      , only: delambdav,delambdavsave
       use domdec     ,only: ndir,rank
       use ehal1gpu_inl,only: elrc,vlrc
       use energi     ,only: ev
@@ -65,6 +66,18 @@ c
 !$acc end serial
       end if
 
+      if (use_lambdadyn) then
+         if (use_vdwshort) then
+c
+c     save delambdav for short range computation
+c
+!$acc serial async(def_queue) present(delambdav,delambdavsave)
+            delambdavsave = delambdav
+!$acc end serial
+         end if
+!$acc update host(delambdav,delambdavsave) async
+      end if
+
       end
 c
 c
@@ -85,7 +98,7 @@ c
       use atoms     ,only: x,y,z,n
       use couple    ,only: i12,n12
       use cutoff    ,only: vdwshortcut,shortheal
-      use deriv     ,only: dev=>de_ws2,delambdav
+      use deriv     ,only: dev=>de_ws2,delambdav,delambdavsave
       use domdec    ,only: loc,rank,nbloc
       use ehal1gpu_inl
       use energi    ,only: ev=>ev_r
@@ -738,10 +751,8 @@ c
       end do; end do;
       call vdw_gradient_reduce
 
-      if (use_lambdadyn) then
-         call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdav,def_queue)
-!$acc update host(delambdav) async(def_queue)
-      end if
+      if (use_lambdadyn)
+     &   call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdav,def_queue)
 
       end subroutine
 #endif

@@ -972,6 +972,137 @@ c
          fphirec(20,impi) = tuv111
       end do
       end
+c
+c
+c       "fphi_chg_site" extracts the permanent charge potential on the i-th site from
+c       the particle mesh Ewald grid
+c
+c
+      subroutine fphi_chg_sitegpu
+      use atmlst
+      use domdec
+      use fft
+      use inform ,only:deb_Path
+      use charge
+      use pme
+      use potent
+      use utilgpu
+      implicit none
+      integer istart,iend,jstart,jend,kstart,kend
+      integer istarti,iendi,jstarti,jendi,kstarti,kendi
+      integer i,j,k,impi,rankloc
+      integer iproc,proc
+      integer isite,iatm,iichg
+      integer i0,j0,k0
+      integer it1,it2,it3
+      integer igrd0,jgrd0,kgrd0
+      real(t_p) v0,v1
+      real(t_p) u0,u1
+      real(t_p) t0,t1,tq
+      real(t_p) tu00,tu10,tu01
+      real(t_p) tuv000,tuv100,tuv010,tuv001
+c
+      if (deb_Path) write(*,'(5x,a)') "fphi_chg_sitegpu"
+      if (use_pmecore) then
+        rankloc  = rank_bis
+      else
+        rankloc  = rank
+      end if
+      kstarti = kstart1(rankloc+1)
+      kendi   = kend1  (rankloc+1)
+      jstarti = jstart1(rankloc+1)
+      jendi   = jend1  (rankloc+1)
+      istarti = istart1(rankloc+1)
+      iendi   = iend1  (rankloc+1)
+c
+!$acc parallel loop gang vector async(rec_queue) 
+!$acc&         present(chgrecglob,iion,qgridin_2d,igrid,thetai1_p,
+!$acc&  thetai2_p,thetai3_p,kstart1,kend1,jstart1,jend1,kstart1,kend1,
+!$acc&  fphirec)
+      do impi = 1,nionrecloc
+         iichg = chgrecglob(impi)
+         isite  = iion(iichg)
+         igrd0  = igrid(1,isite)
+         jgrd0  = igrid(2,isite)
+         kgrd0  = igrid(3,isite)
+         tuv000 = 0.0_ti_p
+         tuv001 = 0.0_ti_p
+         tuv010 = 0.0_ti_p
+         tuv100 = 0.0_ti_p
+         k0     = kgrd0
+!$acc loop seq
+         do it3 = 1, bsorder
+            k0   = k0 + 1
+c           k   = k0 + 1 + (nfft3-isign(nfft3,k0))/2
+            k   = k0 + 1 + ishft(nfft3-isign(nfft3,k0),-1)
+            v0   = thetai3_p(1,it3,impi)
+            v1   = thetai3_p(2,it3,impi)
+            tu00 = 0.0_ti_p
+            tu10 = 0.0_ti_p
+            tu01 = 0.0_ti_p
+            j0   = jgrd0
+!$acc loop seq
+            do it2 = 1, bsorder
+               j0 = j0 + 1
+c              j  = j0 + 1 + (nfft2-isign(nfft2,j0))/2
+               j  = j0 + 1 + ishft(nfft2-isign(nfft2,j0),-1)
+               u0 = thetai2_p(1,it2,impi)
+               u1 = thetai2_p(2,it2,impi)
+               t0 = 0.0_ti_p
+               t1 = 0.0_ti_p
+               i0 = igrd0
+!$acc loop seq
+               do it1 = 1, bsorder
+                  i0 = i0 + 1
+c                 i = i0 + 1 + (nfft1-isign(nfft1,i0))/2
+                  i = i0 + 1 + ishft(nfft1-isign(nfft1,i0),-1)
+c
+                  tq     = 0.0_ti_p
+                  if (((k.ge.kstarti).and.(k.le.kendi)).and.
+     $                ((j.ge.jstarti).and.(j.le.jendi)).and.
+     $                ((i.ge.istarti).and.(i.le.iendi))) then
+                  tq = qgridin_2d(1,i-istarti+1,j-jstarti+1,
+     $                              k-kstarti+1,1)
+                    goto 10
+                  end if
+!$acc loop seq
+                  do iproc = 1, nrec_send
+                    proc   = prec_send(iproc)
+                    kstart = kstart1(proc+1)
+                    kend   = kend1  (proc+1)
+                    jstart = jstart1(proc+1)
+                    jend   = jend1  (proc+1)
+                    istart = istart1(proc+1)
+                    iend   = iend1  (proc+1)
+                    if (((k.ge.kstart).and.(k.le.kend)).and.
+     $                  ((j.ge.jstart).and.(j.le.jend)).and.
+     $                  ((i.ge.istart).and.(i.le.iend))) then
+                    tq  = qgridin_2d(1,i-istart+1,j-jstart+1,k-kstart+1,
+     $                 iproc+1)
+                      goto 10
+                    end if
+                  end do
+                  cycle
+c
+ 10               continue
+                  t0 = t0 + tq*thetai1_p(1,it1,impi)
+                  t1 = t1 + tq*thetai1_p(2,it1,impi)
+               end do
+               tu00 = tu00 + t0*u0
+               tu10 = tu10 + t1*u0
+               tu01 = tu01 + t0*u1
+            end do
+            tuv000 = tuv000 + tu00*v0
+            tuv100 = tuv100 + tu10*v0
+            tuv010 = tuv010 + tu01*v0
+            tuv001 = tuv001 + tu00*v1
+         end do
+         fphirec(1,impi) = tuv000
+         fphirec(2,impi) = tuv100
+         fphirec(3,impi) = tuv010
+         fphirec(4,impi) = tuv001
+      end do
+      end
 
       subroutine grid_disp_force
       write(0,*) " TINKER_ERROR !! Code Source Alteration !! "
@@ -2061,7 +2192,7 @@ c
      &     ,nlpts,twonlpts_1,twonlpts_12,nlptsit,grdoff
      &     ,bsorder,n1mpimax,n2mpimax,n3mpimax,nrec_send
      &     ,qgridin_2d,f_in)
-      call check_launch_kernel(" grid_uind_site_kcu1")
+      call check_launch_kernel(" grid_put_site_kcu1")
 !$acc end host_data
       else
          print*,'FATAL ERROR, grid_put_site_kcu1 is sequential specific'
@@ -2338,6 +2469,55 @@ c
 !$acc end host_data
 
       end subroutine
+c
+c
+c       "fphi_chg_sitecu" extracts the permanent charge potential on the i-th site from
+c       the particle mesh Ewald grid ( CUDA Fortran wrapper )
+c
+c
+      subroutine fphi_chg_sitecu
+      use atoms
+      use atmlst
+      use domdec
+      use fft
+      use inform ,only: deb_Path
+      use charge
+      use pme
+      use potent
+      use pmestuffcu ,only: fphi_chg_site_kcu
+      use utilcu ,only: PME_BLOCK_DIM,check_launch_kernel
+      use utilgpu
+      implicit none
+      integer istat,ied,jstat,jed,kstat,ked
+      integer iproc,proc,rankloc
+      integer,save:: gS
+      logical,save:: f_in=.true.
+c
+      if (deb_Path) write(*,'(5x,a)') "fphi_chg_sitecu"
+c
+      rankloc = merge(rank_bis,rank,use_pmecore)
+      kstat   = kstart1(rankloc+1)
+      ked     = kend1  (rankloc+1)
+      jstat   = jstart1(rankloc+1)
+      jed     = jend1  (rankloc+1)
+      istat   = istart1(rankloc+1)
+      ied     = iend1  (rankloc+1)
+c
+      if (f_in) then
+         call cudaMaxgridsize("fphi_chg_site_kcu",gS)
+         f_in=.false.
+      end if 
+      call set_pme_texture
+
+!$acc host_data use_device(chgrecglob,iion,igrid,fphirec)
+      call fphi_chg_site_kcu<<<gS,PME_BLOCK_DIM,0,rec_stream>>>
+     &     (chgrecglob,iion,igrid,kstat,ked,jstat,jed,istat,ied
+     &     ,nrec_send,nfft1,nfft2,nfft3,nionrecloc,n
+     &     ,fphirec)
+      call check_launch_kernel("fphi_chg_site_kcu")
+!$acc end host_data
+
+      end
 
       subroutine fphi_uind_sitecu2(fdip_phi1,fdip_phi2)
       use atoms
@@ -2683,6 +2863,12 @@ c
       else if (kernelname.eq."fphi_mpole_core") then
          ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
      &          (gS,fphi_mpole_core,PME_BLOCK_DIM,0)
+         if (ierr.ne.cudaSuccess)
+     &      print 200, ierr,cudageterrorstring(ierr)
+         gS   = gS*nSMP
+      else if (kernelname.eq."fphi_chg_site_kcu") then
+         ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
+     &          (gS,fphi_chg_site_kcu,PME_BLOCK_DIM,0)
          if (ierr.ne.cudaSuccess)
      &      print 200, ierr,cudageterrorstring(ierr)
          gS   = gS*nSMP

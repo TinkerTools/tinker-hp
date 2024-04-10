@@ -43,6 +43,7 @@ c
       integer ilist,next
 
       integer nprocloc,start,stop,im
+      integer :: maxratmol
       real(t_p) weigh,xmid,ymid,zmid
       real(t_p) rab,rbc,rac
       real(t_p) cosine
@@ -376,14 +377,51 @@ c
 c
 c       if no holonomic constraints are present, turn off their use
 c
-        if (nrat.eq.0 .and. nratx.eq.0)  use_rattle = .false.
+        if (nrat.eq.0 .and. nratx.eq.0)  then
+            use_rattle = .false.
+            return
+        end if
+
+        allocate(nratmol(nmol))
+        nratmol(:) = 0
+        do i = 1, nrat
+          ia = irat(1,i)
+          ib = irat(2,i)
+          if (molcule(ia).ne.molcule(ib)) then
+            write(*,*) 'RATTLE only compatible with constrains 
+     $    involving atoms inside the same molecule'
+            call fatal
+          end if
+          nratmol(molcule(ia)) = nratmol(molcule(ia)) + 1
+        enddo
+        maxratmol = maxval(nratmol)
+        allocate(iratmol(maxratmol,nmol))
+        iratmol(:,:) = -1
+        nratmol(:) = 0
+        do i = 1, nrat
+            ia = irat(1,i)
+            ib = irat(2,i)
+            nratmol(molcule(ia)) = nratmol(molcule(ia)) + 1
+            iratmol(nratmol(molcule(ia)),molcule(ia)) = i
+        enddo
+!$acc enter data copyin(iratx,kratx,irat,krat,ratimage,nratmol,iratmol)
+
       end if
 
       if (nrat.eq.0) return
+
+      if (nproc > 1) then
+         write (0,*) 'Error: RATTLE is not implemented for nproc>1'
+         call fatal
+      end if
+
+      return
+      !!! THE REMAINING CODE IS ONLY FOR MPI => we do not need it for now !!!
+      
 c
 c     get local constraints
 c
-      call prmem_request(ratglob,nrat,config=mhostonly)
+      call prmem_request(ratglob,nrat) !,config=mhostonly)
       nratloc = 0
 
       if (use_pmecore) then
@@ -533,11 +571,22 @@ c
       use tinMemory
       implicit none
       
-      if (associated(iratx).and.size(iratx).eq.n) return
+    !   if (associated(iratx).and.size(iratx).eq.n) return
+        if (allocated(iratx) .and. size(iratx).eq.n) return
 c
-      call shmem_request(iratx,winiratx,[n])
-      call shmem_request(kratx,winkratx,[n])
-      call shmem_request(irat,winirat,[2,n])
-      call shmem_request(krat,winkrat,[n])
-      call shmem_request(ratimage,winratimage,[n])
+    !   call shmem_request(iratx,winiratx,[n])
+    !   call shmem_request(kratx,winkratx,[n])
+    !   call shmem_request(irat,winirat,[2,n])
+    !   call shmem_request(krat,winkrat,[n])
+    !   call shmem_request(ratimage,winratimage,[n])
+        ! call prmem_request(iratx,n)
+        ! call prmem_request(kratx,n)
+        ! call prmem_request(irat,2,n)
+        ! call prmem_request(krat,n)
+        ! call prmem_request(ratimage,n)
+        allocate(iratx(n))
+        allocate(kratx(n))
+        allocate(irat(2,n))
+        allocate(krat(n))
+        allocate(ratimage(n))
       end

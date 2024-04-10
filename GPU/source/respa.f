@@ -101,7 +101,7 @@ c
          call integrate_pos(dta)
 
          if (use_rattle) then
-            call openacc_abort("Rattle not tested with openacc")
+            ! call openacc_abort("Rattle not tested with openacc")
             call rattle (dta)
          endif
 c
@@ -153,10 +153,10 @@ c     use Newtons second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion
 c
          if (use_rattle) then
-            call openacc_abort("Rattle2 not tested with openacc")
-            call rattle2 (dta)
+            ! call openacc_abort("Rattle2 not tested with openacc")
             call integrate_vel(aalt,dta_2)
-         end if
+            call rattle2 (dta)
+        end if
          if(deb_Atom)   call info_minmax_pva(1)
 c
 c     increment average virial from fast-evolving potential terms
@@ -255,7 +255,7 @@ c
 c     find the constraint-corrected full-step velocities
 c
       if (use_rattle) then
-         call openacc_abort("Rattle2 not tested with openacc")
+        !  call openacc_abort("Rattle2 not tested with openacc")
          call rattle2 (dt)
       end if
 c

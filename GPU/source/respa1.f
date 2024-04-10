@@ -379,6 +379,7 @@ c
       use inform
       use mdstuf1 ,only: ealt2,viralt2,derivs
       use moldyn
+      use mutant
       use potent
       use timestat
       use uprior  ,only: use_pred

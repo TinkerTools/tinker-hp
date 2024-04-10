@@ -41,21 +41,17 @@ c
 c
 c     choose the method for summing over polarization interactions
 c
-      if (use_lambdadyn) then
-        call elambdapolar1cgpu
-      else
-        if (use_polarshortreal) then
-          if (polalgshort.eq.3) then
-            !call epolar1tcggpu !FIXME
-          else
-            call epolar1cgpu
-          end if
+      if (use_polarshortreal) then
+        if (polalgshort.eq.3) then
+          !call epolar1tcggpu !FIXME
         else
-          if (polalg.eq.3) then
-            !call epolar1tcggpu
-          else
-            call epolar1cgpu
-          end if
+          call epolar1cgpu
+        end if
+      else
+        if (polalg.eq.3) then
+          !call epolar1tcggpu
+        else
+          call epolar1cgpu
         end if
       end if
       end
@@ -80,29 +76,30 @@ c
       use chgpot
       use deriv
       use domdec
+      use elec_wspace   ,only: trq=>r2Work4
       use energi
       use epolar1gpu_inl
       use ewald
-      use inform ,only: deb_Path,minmaxone
-      use interfaces,only:torquegpu,epreal1c_p
-     &              ,epreal1c_core3
+      use group
+      use inform        ,only: deb_Path,minmaxone
+      use interfaces    ,only:torquegpu,epreal1c_p
+     &                  ,epreal1c_core3
       use iounit
       use math
+      use mpi
       use mpole
-      use elec_wspace   ,only: trq=>r2Work4
+      use mutant
       use pme
       use polar
       use polpot
       use potent
       use precompute_pole,only:precompute_tmat,polar_precomp
-      use virial
-      use mpi
       use sizes
       use timestat
       use utils
       use utilgpu
       use vec
-      use group
+      use virial
 
       implicit none
       integer i,j,ii,iglob,iipole,ierr
@@ -132,7 +129,6 @@ c
 c     set Ewald coefficient
 c
       aewald = apewald
-
 c
 !$acc serial async(rec_queue) present(epself,ep,ep_r,eprec)
       epself= 0
@@ -148,6 +144,12 @@ c
 c     Reset global data for electrostatic
 c
       if (.not.use_mpole) call elec_calc_reset
+c
+      if (use_lambdadyn) then
+        call prmem_request(deflambda,3,2,max(npolebloc,1),
+     &    async=.true.)
+        call set_to_zero1(deflambda,3*2*npolebloc,rec_queue)
+      end if
 c
 c     compute the induced dipoles at each polarizable atom
 c
@@ -394,221 +396,29 @@ c
       ep = ep + enr2en( epself+ep_r ) + eprec
 !$acc end serial
 c
-      end
-c
-c
-c
-      subroutine elambdapolar1cgpu
-      use atmlst
-      use atoms
-      use boxes
-      use chgpot
-      use deriv
-      use domdec
-      use energi
-      use ewald
-      use epolar1gpu_inl
-      use iounit
-      use math
-      use mpi
-      use mpole
-      use mutant
-      use polar
-      use polpot
-      use potent
-      use tinheader,only: zerom,zeromd
-      use uprior
-      use utilgpu
-      use virial
-      implicit none
-      integer i,iipole,j,k,ierr,altopt
-      integer(mipk) sizd8, sizr8
-      real(r_p) elambdatemp,plambda,temp0
-      mdyn_rtyp, allocatable :: delambdap0(:,:),delambdap1(:,:)
-      real(r_p), allocatable :: delambdaprec0(:,:),delambdaprec1(:,:)
-      real(r_p) elambdap0,elambdap1
-      real(r_p) dplambdadelambdae,d2plambdad2elambdae
-      real(r_p) :: g_vxx_temp,g_vxy_temp,g_vxz_temp
-      real(r_p) :: g_vyy_temp,g_vyz_temp,g_vzz_temp
-      real(r_p) :: g_vxx_1,g_vxy_1,g_vxz_1
-      real(r_p) :: g_vyy_1,g_vyz_1,g_vzz_1
-      real(r_p) :: g_vxx_0,g_vxy_0,g_vxz_0
-      real(r_p) :: g_vyy_0,g_vyz_0,g_vzz_0
-      parameter(
-#ifdef _OPENACC
-     &          altopt = 0
-#else
-     &          altopt = 1
-#endif
-     &         )
-c
-      if (npole .eq. 0)  return
-      if (.not.(use_mpole)) then
-!$acc serial async(rec_queue) present(delambdae)
-        delambdae = 0.0
-!$acc end serial
-      end if
-c
-c     set Ewald coefficient
-c
-      aewald = apewald
-c
-      allocate (delambdaprec0(3,nlocrec2))
-      allocate (delambdaprec1(3,nlocrec2))
-      allocate (delambdap0(3,nbloc))
-      allocate (delambdap1(3,nbloc))
-!$acc enter data create(delambdaprec0,delambdaprec1,delambdap0
-!$acc&          ,delambdap1,elambdap0,elambdap1
-!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
-!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async(rec_queue)
-      elambdatemp = elambda  
-      sizd8  = 3*nbloc
-      sizr8  = 3*nlocrec2
-c
-c     polarization is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
-c     otherwise the value taken is for elambda=0
-c
-      if (elambda.gt.bplambda) then
-         elambda = 1.0
-!$acc serial async(rec_queue)
-!$acc& present(g_vxx_temp,g_vxy_temp,g_vxz_temp,
-!$acc&  g_vyy_temp,g_vyz_temp,g_vzz_temp,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-         g_vxx_temp = g_vxx
-         g_vxy_temp = g_vxy
-         g_vxz_temp = g_vxz
-         g_vyy_temp = g_vyy
-         g_vyz_temp = g_vyz
-         g_vzz_temp = g_vzz
-         g_vxx = 0.0
-         g_vxy = 0.0
-         g_vxz = 0.0
-         g_vyy = 0.0
-         g_vyz = 0.0
-         g_vzz = 0.0
-!$acc end serial
-         call altelec(altopt)
-         call rotpolegpu
-         call epolar1cgpu
-
-!$acc serial async(rec_queue) present(elambdap1,ep,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-         elambdap1  = ep
-         g_vxx_1 = g_vxx
-         g_vxy_1 = g_vxy
-         g_vxz_1 = g_vxz
-         g_vyy_1 = g_vyy
-         g_vyz_1 = g_vyz
-         g_vzz_1 = g_vzz
-         g_vxx = 0.0
-         g_vxy = 0.0
-         g_vxz = 0.0
-         g_vyy = 0.0
-         g_vyz = 0.0
-         g_vzz = 0.0
-         ep         = 0
-!$acc end serial
-         call mem_move(delambdap1,dep,sizd8,rec_stream)
-         call mem_move(delambdaprec1,deprec,sizr8,rec_stream)
-      else
-!$acc serial async(rec_queue) present(elambdap1,ep)
-         elambdap1 = 0.0
-         ep        = 0
-!$acc end serial
-         call mem_set(delambdap1,zeromd,sizd8,rec_stream)
-         call mem_set(delambdaprec1,zerom,sizr8,rec_stream)
-!$acc serial async(rec_queue)
-!$acc& present(g_vxx_temp,g_vxy_temp,g_vxz_temp,
-!$acc&  g_vyy_temp,g_vyz_temp,g_vzz_temp,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-         g_vxx_temp = g_vxx
-         g_vxy_temp = g_vxy
-         g_vxz_temp = g_vxz
-         g_vyy_temp = g_vyy
-         g_vyz_temp = g_vyz
-         g_vzz_temp = g_vzz
-         g_vxx = 0.0
-         g_vxy = 0.0
-         g_vxz = 0.0
-         g_vyy = 0.0
-         g_vyz = 0.0
-         g_vzz = 0.0
-!$acc end serial
-      end if
-
-      elambda = 0.0
-      call altelec(altopt)
-      call rotpolegpu
-      call mem_set(dep,zeromd,sizd8,rec_stream)
-      call mem_set(deprec,zerom,sizr8,rec_stream)
-      call epolar1cgpu
-!$acc serial async(rec_queue) present(elambdap0,ep,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
-      elambdap0  = ep
-      g_vxx_0 = g_vxx
-      g_vxy_0 = g_vxy
-      g_vxz_0 = g_vxz
-      g_vyy_0 = g_vyy
-      g_vyz_0 = g_vyz
-      g_vzz_0 = g_vzz
-!$acc end  serial
-      call mem_move(delambdap0,dep,sizd8,rec_stream)
-      call mem_move(delambdaprec0,deprec,sizr8,rec_stream)
- 
-      elambda = elambdatemp 
-c
-c     interpolation of "plambda" between bplambda and 1 as a function of
-c     elambda: 
-c       plambda = 0 for elambda.le.bplambda
-c       u = (elambda-bplambda)/(1-bplambda)
-c       plambda = u**3 for elambda.gt.plambda
-c       ep = (1-plambda)*ep0 +  plambda*ep1
-c
-      if (elambda.le.bplambda) then
-           plambda          = 0.0
-          dplambdadelambdae = 0.0
-        d2plambdad2elambdae = 0.0
-      else
-           plambda          =     ((elambda-bplambda)/(1-bplambda))**3
-          dplambdadelambdae =3.0*((elambda-bplambda)**2/(1-bplambda)**3)
-c        d2plambdad2elambdae = 6.0*((elambda-bplambda)/(1-bplambda))
-      end if
-
-!$acc serial async(rec_queue) present(elambdap0,elambdap1,ep,delambdae,
-!$acc& g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,g_vxx_temp,g_vxy_temp,
-!$acc& g_vxz_temp,g_vyy_temp,g_vyz_temp,g_vzz_temp)
-      ep        =  plambda*elambdap1 + (1-plambda)*elambdap0
-      g_vxx = g_vxx_temp + (1.0-plambda)*g_vxx_0+plambda*g_vxx_1
-      g_vxy = g_vxy_temp + (1.0-plambda)*g_vxy_0+plambda*g_vxy_1
-      g_vxz = g_vxz_temp + (1.0-plambda)*g_vxz_0+plambda*g_vxz_1
-      g_vyy = g_vyy_temp + (1.0-plambda)*g_vyy_0+plambda*g_vyy_1
-      g_vyz = g_vyz_temp + (1.0-plambda)*g_vyz_0+plambda*g_vyz_1
-      g_vzz = g_vzz_temp + (1.0-plambda)*g_vzz_0+plambda*g_vzz_1
-      delambdae = delambdae + (elambdap1-elambdap0)*dplambdadelambdae
-!$acc end serial
-!$acc parallel loop async(rec_queue) collapse(2) default(present)
-      do i = 1,nlocrec2; do j = 1,3
-      deprec(j,i) = (1-plambda)*delambdaprec0(j,i)
-     &            +    plambda *delambdaprec1(j,i)
-      end do; end do
-!$acc parallel loop async(rec_queue) collapse(2) default(present)
-      do i = 1,nbloc; do j = 1,3
-      temp0    = (1-plambda)*mdr2md(delambdap0(j,i))
-     &         +    plambda *mdr2md(delambdap1(j,i))
-      dep(j,i) = rp2mdr(temp0)      
-      end do; end do
+      if (use_lambdadyn) then
+c  
+!$acc parallel loop async(rec_queue) default(present) present(delambdae)
+!$acc& reduction(+:delambdae)
+        do i = 1, npoleloc
+          iipole = poleglob(i)
+          iglob = ipole(iipole)
+          if (mut(iglob).and.(elambda.gt.0)) then
+!$acc loop seq
+            do j = 1, 3
+            delambdae = delambdae-(1/(2d0*polarity(iipole)*elambda))*
+     $        uind(j,iipole)*uinp(j,iipole)*f
+            end do
+          end if
+!$acc loop seq
+          do j = 1, 3
+            delambdae = delambdae-0.5d0*(uind(j,iipole)*deflambda(j,2,i)
+     $         + uinp(j,iipole)*deflambda(j,1,i))*f
+          end do
+        end do
 !$acc update host(delambdae) async(rec_queue)
-c
-c     reset lambda to initial value
-c
-      call altelec(altopt)
-      call rotpolegpu
-!$acc exit data delete(delambdaprec0,delambdaprec1,delambdap0
-!$acc&         ,delambdap1,elambdap0,elambdap1
-!$acc&     ,g_vxx_temp,g_vxy_temp,g_vxz_temp
-!$acc&     ,g_vyy_temp,g_vyz_temp,g_vzz_temp) async(rec_queue)
+      end if
       end
-c
 c
 c
 c     #################################################################
@@ -2007,6 +1817,7 @@ c
       use math
       use mpi
       use mpole
+      use mutant, only: mut,elambda
       use pme
       use pme1
       use polar
@@ -2611,6 +2422,29 @@ c
          call mem_set(pot,zeror,int(nbloc,mipk),rec_stream)
          if (nproc.ne.1) call mem_set
      &      (potrec,zeror,int(nlocrec,mipk),rec_stream)
+      end if
+c
+c     get contribution of the reciprocal permanent electric field to delambdae
+c
+      if (use_lambdadyn) then
+!$acc parallel loop async(rec_queue) default(present) present(delambdae)
+!$acc& reduction(+:delambdae)
+         do i = 1, npolerecloc
+           iipole = polerecglob(i)
+           iglob = ipole(iipole)
+           if (mut(iglob).and.elambda.gt.0) then
+             delambdae = delambdae + (rpole(1,iipole)*cphirec(1,i) 
+     $+           rpole(2,iipole)*cphirec(2,i)
+     $+           rpole(3,iipole)*cphirec(3,i)
+     $+           rpole(4,iipole)*cphirec(4,i)
+     $+           rpole(5,iipole)*cphirec(5,i)
+     $+           rpole(9,iipole)*cphirec(6,i)
+     $+           rpole(13,iipole)*cphirec(7,i)
+     $+           2d0*rpole(6,iipole)*cphirec(8,i)
+     $+           2d0*rpole(7,iipole)*cphirec(9,i)
+     $+           2d0*rpole(10,iipole)*cphirec(10,i))/elambda
+           end if
+         end do
       end if
 
 c!$acc update host(vxx,vxy,vxz,eprec) async(rec_queue)

@@ -30,7 +30,7 @@ c
       use mdstate   ,only: track_mds,ms_back_p
       use moldyn    ,only: step_c,stepint
       use mpole
-      use mutant    ,only: nmut,elambda
+      use mutant    ,only: nmut,elambda,deflambda,mut
       use nvshmem
       use pme
       use polar
@@ -82,6 +82,10 @@ c
 c     allocate (mu   (3,nrhs,max(1,npolebloc)))
 c     allocate (murec(3,nrhs,max(1,npolerecloc)))
 c     allocate (ef   (3,nrhs,max(1,npolebloc)))
+
+      if (use_lambdadyn.and..not.(use_mpole)) then
+        delambdae = 0d0
+      end if
 c
       call prmem_request(mu,3,nrhs,max(npolebloc,1),async=.true.)
       call prmem_request(murec,3,nrhs,max(npolerecloc,1),
@@ -151,6 +155,9 @@ c
       end if
 c
       call commfieldgpu(nrhs,ef)
+      if (use_lambdadyn) then
+        call commfieldgpu(nrhs,deflambda)
+      end if
 #ifdef _OPENACC
       ! Prevent overlap between commfield and guess construct
       if (dir_queue.ne.rec_queue) call end_dir_stream_cover
@@ -169,6 +176,18 @@ c
          ef(k,j,i) = ef(k,j,i) + comp
       end do; end do; end do
       wtime1 = mpi_wtime()
+
+      if (use_lambdadyn.and.elambda.gt.0) then
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+        do i = 1, npoleloc; do j = 1, nrhs;do k = 1, 3
+          iipole = poleglob(i)
+          iglob = ipole(iipole)
+          if (mut(iglob)) then
+            deflambda(k,j,i) = deflambda(k,j,i) + 
+     &          term*rpole(k+1,iipole)/elambda
+          end if
+        end do;end do;end do
+      end if
 c
 c     Reset predictor if MD State Tracking is enabled 
 c

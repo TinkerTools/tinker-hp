@@ -262,9 +262,9 @@ c
             if      (mutik.eq.zero1.or.elambda.eq.0.0)  then
                delambdae = 0.0
             else if (mutik.eq.one1)  then
-               delambdae = e_/elambda 
+               delambdae = e_*s/elambda 
             else if (mutik.eq.two1)  then
-               delambdae = 2.0*e_/elambda 
+               delambdae = 2.0*e_*s/elambda 
             end if
          END IF
 c

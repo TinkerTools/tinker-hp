@@ -40,8 +40,10 @@ c
       module freeze
       implicit none
       integer nrat,nratx
-      integer, pointer :: irat(:,:),iratx(:)
-      integer, pointer ::  kratx(:)
+      !integer, pointer :: irat(:,:),iratx(:)
+      !integer, pointer ::  kratx(:)
+      integer,allocatable :: irat(:,:), iratx(:)
+      integer,allocatable ::  kratx(:)
       integer :: winirat,winiratx,winratx,winkratx
       !DIR$ ATTRIBUTES ALIGN:64:: buflenrat1,buflenrat2
       integer, allocatable :: buflenrat1(:),buflenrat2(:)
@@ -50,10 +52,13 @@ c
       !DIR$ ATTRIBUTES ALIGN:64:: bufrat1,bufrat2   
       integer, allocatable :: bufrat1(:),bufrat2(:)
       integer nratloc,nratbloc
-      real(t_p), pointer :: krat(:)
+    !   real(t_p), pointer :: krat(:)
+      real(t_p),allocatable :: krat(:)
       real(t_p) rateps
-      logical, pointer :: ratimage(:)
+    !   logical, pointer :: ratimage(:)
+      logical, allocatable :: ratimage(:)
       integer :: winkrat,winratimage
       logical use_rattle
+      integer,allocatable :: nratmol(:),iratmol(:,:)
       save
       end

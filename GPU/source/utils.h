@@ -152,6 +152,7 @@ const realm Halfm = 0.5;
 const realm onem  = 1.0;
 const realm twom  = 2.0;
 const int SCAL    = 1<<1;
+const int LAMBDADYN=1<<7;
 const int EWALD   = 1<<8;
 const int THOLE   = 1<<9;
 const int DIRDAMP = 1<<10;

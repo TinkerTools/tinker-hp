@@ -108,7 +108,11 @@ endif
 ## /### GNUROOT is supplied when sourcing ../ci/pgi_config.sh in the corresponding branch
 ## Don't forget to do so if rebuilding
 INC_CPP        = $(GNUROOT)
-LIB_CPP        = $(GNUROOT)/lib64 -lstdc++
+ifneq ($(LIB_STD_DIR),$(empty__))
+   LIB_CPP        = $(LIB_STDCPP_DIR) -lstdc++
+else
+   LIB_CPP        = $(GNUROOT)/lib64 -lstdc++
+endif
 
 inc_decompfft := include
 lib_decompfft := l2decomp_fft

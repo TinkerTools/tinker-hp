@@ -301,9 +301,10 @@ c
       use interfaces ,only: efld0_direct_correct_scaling
       use math    ,only: sqrtpi
       use mpole   ,only: npolebloc,ipole,rpole,poleloc,npolelocnl
+      use mutant  ,only: deflambda,elambda,mut
       use neigh   ,only: nelst,elst,shortelst,nshortelst
       use polar   ,only: pdamp,thole
-      use potent  , only : use_polarshortreal,use_chgpen
+      use potent  , only : use_polarshortreal,use_chgpen,use_lambdadyn
       !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
       use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
       use shunt   ,only: cut2
@@ -373,7 +374,7 @@ c
 !$acc parallel loop gang vector_length(32)
 !$acc&         present(ef)
 !$acc&         present(poleglobnl,ipole,loc,pdamp,
-!$acc&  thole,x,y,z,rpole,nelst,elst,poleloc)
+!$acc&  thole,x,y,z,rpole,nelst,elst,poleloc,mut,deflambda)
 !$acc&         private(ip)
 !$acc&         async(def_queue)
       MAINLOOP:
@@ -433,6 +434,51 @@ c
             call efld0_couple(d2,pos,ip,kp,alsq2,alsq2n,
      &                 aewald,damp,pgamma,1.0_ti_p,1.0_ti_p,
      &                 fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.false.)
+c
+c     get vector of derivative of direct field wrt lambda for lambda-dynamics
+c
+            if ((use_lambdadyn).and.(elambda.gt.0)) then
+              if (mut(kglob)) then
+!$acc atomic
+                deflambda(1,1,iploc) = deflambda(1,1,iploc)
+     $               + fid%x/elambda
+!$acc atomic
+                deflambda(2,1,iploc) = deflambda(2,1,iploc)
+     $               + fid%y/elambda
+!$acc atomic
+                deflambda(3,1,iploc) = deflambda(3,1,iploc)
+     $               + fid%z/elambda
+!$acc atomic
+                deflambda(1,2,iploc) = deflambda(1,2,iploc)
+     $               + fip%x/elambda
+!$acc atomic
+                deflambda(2,2,iploc) = deflambda(2,2,iploc)
+     $               + fip%y/elambda
+!$acc atomic
+                deflambda(3,2,iploc) = deflambda(3,2,iploc)
+     $               + fip%z/elambda
+              end if
+              if (mut(iglob)) then
+!$acc atomic
+                deflambda(1,1,kbis) = deflambda(1,1,kbis)
+     $               + fkd%x/elambda
+!$acc atomic
+                deflambda(2,1,kbis) = deflambda(2,1,kbis)
+     $               + fkd%y/elambda
+!$acc atomic
+                deflambda(3,1,kbis) = deflambda(3,1,kbis)
+     $               + fkd%z/elambda
+!$acc atomic
+                deflambda(1,2,kbis) = deflambda(1,2,kbis)
+     $               + fkp%x/elambda
+!$acc atomic
+                deflambda(2,2,kbis) = deflambda(2,2,kbis)
+     $               + fkp%y/elambda
+!$acc atomic
+                deflambda(3,2,kbis) = deflambda(3,2,kbis)
+     $               + fkp%z/elambda
+              end if
+            end if
 
 !$acc atomic
             ef(1,1,iploc) = ef(1,1,iploc) + fid%x
@@ -489,6 +535,7 @@ c
      &            , npolelocnlb_pair,npolelocnlb
      &            ,  npnlb2=>npolelocnlb2_pair
      &            , nspnlb2=>nshortpolelocnlb2_pair
+      use mutant  ,only: deflambda,elambda,mut,mutInt
       use neigh   , only : ipole_s=>celle_glob,pglob_s=>celle_pole
      &            , ploc_s=>celle_ploc, ieblst_s=>ieblst
      &            , iseblst_s=>ishorteblst, seblst_s=>shorteblst
@@ -496,7 +543,7 @@ c
      &            , z_s=>celle_z
       use polar   ,only: pdamp,thole,polarity,dirdamp
       use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
-      use potent  , only : use_polarshortreal,use_chgpen
+      use potent  , only : use_polarshortreal,use_chgpen,use_lambdadyn
       !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
       use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
      &            ,use_thole,use_dirdamp
@@ -516,7 +563,7 @@ c
       ! shape (ef) = (/3,nrhs,npolebloc/)
       real(t_p),intent(inout):: ef(:,:,:)
 
-      integer i,iglob,iploc,kk,start_lst,gS,idirdamp
+      integer i,j,k,iglob,iploc,kk,start_lst,gS,idirdamp
       integer(mipk) n_
       real(t_p) alsq2, alsq2n
       real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
@@ -561,30 +608,30 @@ c
          end if
 
       range0: if (use_polarshortreal) then
-!$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s
-!$acc&    ,x_s,y_s,z_s,pdamp,rpole,gamma,polarity,ef)
+!$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s,
+!$acc&    mutInt,x_s,y_s,z_s,pdamp,rpole,gamma,polarity,ef,deflambda)
 
       call cu_efld0_direct    !Find his interface inside MOD_inteface
-     &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(start_lst)
-     &     ,x_s,y_s,z_s,pdamp,gamma,polarity,rpole,ef
+     &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(start_lst),mutInt
+     &     ,x_s,y_s,z_s,pdamp,gamma,polarity,rpole,ef,deflambda
      &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc,idirdamp
-     &     ,.not.no_commdir
-     &     ,cut2,alsq2,alsq2n,aewald
+     &     ,use_lambdadyn,.not.no_commdir
+     &     ,cut2,alsq2,alsq2n,aewald,elambda
      &     ,xcell,ycell,zcell,xcell2,ycell2,zcell2
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
 
 !$acc end host_data
       else
-!$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s
-!$acc&    ,x_s,y_s,z_s,pdamp,rpole,gamma,polarity,ef)
+!$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s,
+!$acc&    mutInt,x_s,y_s,z_s,pdamp,rpole,gamma,polarity,ef,deflambda)
 
       call cu_efld0_direct    !Find his interface inside MOD_inteface
-     &     (ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(start_lst)
-     &     ,x_s,y_s,z_s,pdamp,gamma,polarity,rpole,ef
+     &     (ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(start_lst),mutInt
+     &     ,x_s,y_s,z_s,pdamp,gamma,polarity,rpole,ef,deflambda
      &     ,npolelocnlb,npnlb2,npolebloc,n,nproc,idirdamp
-     &     ,.not.no_commdir
-     &     ,cut2,alsq2,alsq2n,aewald
-     &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
+     &     ,use_lambdadyn,.not.no_commdir
+     &     ,cut2,alsq2,alsq2n,aewald,elambda
+     &     ,xcell,ycell,zcell,xcell2,ycell2,zcell2
      &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
 
 !$acc end host_data
@@ -593,11 +640,11 @@ c
       if (n_dpscale.gt.0) then
          gS = get_GridDim(n_dpscale,BLOCK_DIM,1)
 !$acc host_data use_device(dpcorrect_ik,dpcorrect_scale,poleloc,ipole
-!$acc&         ,pdamp,gamma,rpole,x,y,z,ef)
+!$acc&         ,mut,pdamp,gamma,rpole,x,y,z,ef,deflambda)
          call efld0_direct_scaling_cu<<<gS,BLOCK_DIM,0,def_stream>>>
-     &        (dpcorrect_ik,dpcorrect_scale,poleloc,ipole,pdamp,gamma
-     &        ,x,y,z,rpole,ef,n_dpscale,n,npolebloc,use_dirdamp
-     &        ,cut2,aewald,alsq2,alsq2n)
+     &       (dpcorrect_ik,dpcorrect_scale,poleloc,ipole,mut,pdamp,gamma
+     &       ,x,y,z,rpole,ef,deflambda,n_dpscale,n,npolebloc,use_dirdamp
+     &       ,use_lambdadyn,elambda,cut2,aewald,alsq2,alsq2n)
 !$acc end host_data
          call check_launch_kernel( 'efld0_direct_scaling_cu' )
       end if
@@ -635,6 +682,14 @@ c
       end if range1
 
       end if thole_cpen
+
+      if (use_lambdadyn.and.elambda.gt.0.0) then
+!$acc parallel loop async(def_queue) collapse(3) present(deflambda)
+         do i =1,npolebloc; do j=1,2; do k=1,3;
+         if (deflambda(k,j,i).ne.0.0)
+     &      deflambda(k,j,i) = deflambda(k,j,i)/elambda
+         end do; end do; end do
+      end if
 
       call timer_exit( timer_efld0_direct )
 #else
@@ -1065,8 +1120,9 @@ c""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
       use inform   ,only: deb_Path
       use math     ,only: sqrtpi
       use mpole    ,only: npolebloc,ipole,rpole,poleloc,npolelocnl
+      use mutant   ,only: deflambda,elambda,mut
       use neigh    ,only: nelst,elst
-      use potent  , only : use_polarshortreal
+      use potent  , only : use_polarshortreal,use_lambdadyn
       use polar    ,only: pdamp,thole
       use polpot   ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
       use shunt    ,only: cut2
@@ -1101,7 +1157,7 @@ c
 !$acc&         present(ef)
 !$acc&         present(poleglobnl,ipole,loc,pdamp,
 !$acc&  thole,x,y,z,rpole,nelst,elst,poleloc,
-!$acc&  dpcorrect_ik,dpcorrect_scale)
+!$acc&  dpcorrect_ik,dpcorrect_scale,mut,deflambda)
 !$acc&         private(fid,fip,fkd,fkp,pos,ip,kp)
 !$acc&         async(def_queue)
       do ii = 1, n_dpscale
@@ -1159,6 +1215,59 @@ c
          call efld0_couple(d2,pos,ip,kp,alsq2,alsq2n,
      &              aewald,damp,pgamma,dscale,pscale,
      &              fid,fip,fkd,fkp,d,bn1,bn2,sc3,sc5,.true.)
+c
+c     get vector of derivative of direct field wrt lambda for lambda-dynamics         
+c
+         if ((use_lambdadyn).and.(elambda.gt.0)) then
+              if (mut(kglob)) then
+                if (dscale.ne.0.0_ti_p) then
+!$acc atomic
+                  deflambda(1,1,iploc) = deflambda(1,1,iploc)
+     $               + fid%x/elambda
+!$acc atomic
+                  deflambda(2,1,iploc) = deflambda(2,1,iploc)
+     $               + fid%y/elambda
+!$acc atomic
+                  deflambda(3,1,iploc) = deflambda(3,1,iploc)
+     $               + fid%z/elambda
+                end if
+                if (pscale.ne.0.0_ti_p) then
+!$acc atomic
+                  deflambda(1,2,iploc) = deflambda(1,2,iploc)
+     $               + fip%x/elambda
+!$acc atomic
+                  deflambda(2,2,iploc) = deflambda(2,2,iploc)
+     $               + fip%y/elambda
+!$acc atomic
+                  deflambda(3,2,iploc) = deflambda(3,2,iploc)
+     $               + fip%z/elambda
+                end if
+              end if
+              if (mut(iglob)) then
+                if (dscale.ne.0.0_ti_p) then
+!$acc atomic
+                  deflambda(1,1,kbis) = deflambda(1,1,kbis)
+     $               + fkd%x/elambda
+!$acc atomic
+                  deflambda(2,1,kbis) = deflambda(2,1,kbis)
+     $               + fkd%y/elambda
+!$acc atomic
+                  deflambda(3,1,kbis) = deflambda(3,1,kbis)
+     $               + fkd%z/elambda
+                end if
+                if (pscale.ne.0.0_ti_p) then
+!$acc atomic
+                  deflambda(1,2,kbis) = deflambda(1,2,kbis)
+     $               + fkp%x/elambda
+!$acc atomic
+                  deflambda(2,2,kbis) = deflambda(2,2,kbis)
+     $               + fkp%y/elambda
+!$acc atomic
+                  deflambda(3,2,kbis) = deflambda(3,2,kbis)
+     $               + fkp%z/elambda
+                end if
+              end if
+         end if
 
          if (dscale.ne.0.0_ti_p) then
 !$acc atomic

@@ -41,6 +41,7 @@ c     winclass1    window object corresponding to class1
 c     mut        true if an atom is to be mutated, false otherwise
 c     mutInt        1 if an atom is to be mutated,     0 otherwise
 c     winmut    window object corresponding to mut
+c     deflambda derivative of direct permanent field wrt elambda
 c
 c
 #include "tinker_macro.h"
@@ -62,4 +63,5 @@ c
       real(t_p) bvlambda, belambda
       real(t_p) bplambda
       real(t_p) flambdabias
+      real(t_p), allocatable :: deflambda(:,:,:)
       end

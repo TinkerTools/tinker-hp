@@ -69,6 +69,11 @@ c
       call integrate_vel( a,dt_2 )
 c
       if (use_rattle) then
+         if (rank == 0) then
+           write(0,*) "Error: RATTLE not compatible with ",
+     &       "BAOAB integrator yet."
+           call fatal
+         endif
          call rattle2(dt)
          call save_atoms_pos
       end if
@@ -85,7 +90,7 @@ c
 c
       call apply_langevin_thermostat(dt)
 c
-      if (use_rattle) call rattle2(dt_2)
+      if (use_rattle) call rattle2(dt)
       if (use_rattle) call save_atoms_pos
 c
 c     find full step positions via BAOAB recursion

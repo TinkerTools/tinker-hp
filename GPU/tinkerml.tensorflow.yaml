@@ -1,0 +1,12 @@
+name: DeepHP-tf
+channels:
+  - conda-forge
+  - https://conda.deepmodeling.org
+  - defaults
+dependencies:
+  - pip
+  - cffi=1.15.0
+  - pycuda
+  - horovod
+  - deepmd-kit=*=*gpu
+  - libdeepmd=*=*gpu

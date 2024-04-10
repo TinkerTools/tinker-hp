@@ -1841,6 +1841,137 @@ c
         end do
       end subroutine
 
+      attributes(global) subroutine fphi_chg_site_kcu
+     &                  (kind_id,atom_id,igrid
+     &                  ,kstat,ked,jstat,jed,istat,ied
+     &                  ,nrec_send,nfft1,nfft2,nfft3,nionrecloc,n
+     &                  ,fphirec)
+      implicit none
+      integer  ,value,intent(in)::kstat,ked,jstat,jed,istat,ied
+     &         ,nrec_send,nfft1,nfft2,nfft3,nionrecloc,n
+      !real(t_p),value,intent(in)::
+      integer  ,device,intent(in)::kind_id(nionrecloc),atom_id(n)
+     &         ,igrid(3,n)
+      real(t_p),device:: fphirec(4,*)
+
+      integer   i,j,k,impi,rankloc,iglob,iatm,iichg,i0,j0,k0
+     &         ,it1,it2,it3,igrd0,jgrd0,kgrd0,proc
+     &         ,iproc,istart,iend,jstart,jend,kstart,kend
+      real(t_p) v0,v1,u0,u1,t0,t1,tq,tu00,tu10,tu01
+     &         ,tuv000,tuv100,tuv010,tuv001
+#if 1
+      integer ifr
+      real(t_p),xi,yi,zi,w,fr
+      real(t_p),dimension(2*bsorder):: theta1,theta2,theta3
+      real(t_p),shared::temp(bsorder*bsorder*PME_BLOCK_DIM)
+#endif
+      do impi = (blockIdx%x-1)*blockDim%x + threadIdx%x, nionrecloc,
+     &           blockDim%x*gridDim%x
+
+         iichg  = kind_id(impi)
+         iglob  = atom_id(iichg)
+#if 1
+c
+c       get the b-spline coefficients for the i-th atomic site
+c       it faster to recompute theta*
+c
+         xi     = x_t(iglob)
+         yi     = y_t(iglob)
+         zi     = z_t(iglob)
+         w      = xi*recip_c(1,1) + yi*recip_c(2,1) + zi*recip_c(3,1)
+         fr     = nfft1 * (w-anint(w)+0.5_ti_p)
+         ifr    = int(fr-pme_eps)
+         w      = fr - real(ifr,t_p)
+         igrd0  = ifr - bsorder
+         call ibsplgen_2 (w,theta1,temp((threadIdx%x-1)*bsorder**2+1))
+         w      = xi*recip_c(1,2) + yi*recip_c(2,2) + zi*recip_c(3,2)
+         fr     = nfft2 * (w-anint(w)+0.5_ti_p)
+         ifr    = int(fr-pme_eps)
+         w      = fr - real(ifr,t_p)
+         jgrd0  = ifr - bsorder
+         call ibsplgen_2 (w,theta2,temp((threadIdx%x-1)*bsorder**2+1))
+         w      = xi*recip_c(1,3) + yi*recip_c(2,3) + zi*recip_c(3,3)
+         fr     = nfft3 * (w-anint(w)+0.5_ti_p)
+         ifr    = int(fr-pme_eps)
+         w      = fr - real(ifr,t_p)
+         kgrd0  = ifr - bsorder
+         call ibsplgen_2 (w,theta3,temp((threadIdx%x-1)*bsorder**2+1))
+#else
+         igrd0  = igrid(1,iglob)
+         jgrd0  = igrid(2,iglob)
+         kgrd0  = igrid(3,iglob)
+#endif
+         tuv000 = 0.0_ti_p
+         tuv001 = 0.0_ti_p
+         tuv010 = 0.0_ti_p
+         tuv100 = 0.0_ti_p
+         k0     = kgrd0
+         do it3 = 1, bsorder
+            k0   = k0 + 1
+            k    = k0 + 1 + ishft(nfft3-isign(nfft3,k0),-1)
+            v0   = theta3(1+(it3-1)*level1)
+            v1   = theta3(2+(it3-1)*level1)
+            tu00 = 0.0_ti_p
+            tu10 = 0.0_ti_p
+            tu01 = 0.0_ti_p
+            j0   = jgrd0
+            do it2 = 1, bsorder
+               j0 = j0 + 1
+               j  = j0 + 1 + ishft(nfft2-isign(nfft2,j0),-1)
+               u0 = theta2(1+(it2-1)*level1)
+               u1 = theta2(2+(it2-1)*level1)
+               t0 = 0.0_ti_p
+               t1 = 0.0_ti_p
+               i0 = igrd0
+               do it1 = 1, bsorder
+                  i0 = i0 + 1
+                  i = i0 + 1 + ishft(nfft1-isign(nfft1,i0),-1)
+c
+                  tq     = 0.0_ti_p
+                  if (((k.ge.kstat).and.(k.le.ked)).and.
+     $                ((j.ge.jstat).and.(j.le.jed)).and.
+     $                ((i.ge.istat).and.(i.le.ied))) then
+                     tq = qgridin_t(1,i-istat+1,j-jstat+1,k-kstat+1,1)
+                     goto 10
+                  end if
+                  do iproc = 1, nrec_send
+                    proc   = prec_send_t(iproc)
+                    kstart = kstart1_t  (proc+1)
+                    kend   = kend1_t    (proc+1)
+                    jstart = jstart1_t  (proc+1)
+                    jend   = jend1_t    (proc+1)
+                    istart = istart1_t  (proc+1)
+                    iend   = iend1_t    (proc+1)
+                    if (((k.ge.kstart).and.(k.le.kend)).and.
+     $                  ((j.ge.jstart).and.(j.le.jend)).and.
+     $                  ((i.ge.istart).and.(i.le.iend))) then
+                       tq= qgridin_t(1,i-istart+1,j-jstart+1,k-kstart+1
+     $                             ,iproc+1)
+                       goto 10
+                    end if
+                  end do
+                  cycle
+c
+ 10               continue
+                  t0 = t0 + tq*theta1(1+(it1-1)*level1)
+                  t1 = t1 + tq*theta1(2+(it1-1)*level1)
+               end do
+               tu00 = tu00 + t0*u0
+               tu10 = tu10 + t1*u0
+               tu01 = tu01 + t0*u1
+            end do
+            tuv000 = tuv000 + tu00*v0
+            tuv100 = tuv100 + tu10*v0
+            tuv010 = tuv010 + tu01*v0
+            tuv001 = tuv001 + tu00*v1
+         end do
+         fphirec(1,impi) = tuv000
+         fphirec(2,impi) = tuv100
+         fphirec(3,impi) = tuv010
+         fphirec(4,impi) = tuv001
+      end do
+      end subroutine
+
       attributes(global) subroutine grid_calc_frc_kcu
      &                 (kind_id,atom_id,locrec,igrid
      &                 ,attrb,thetai1,thetai2,thetai3

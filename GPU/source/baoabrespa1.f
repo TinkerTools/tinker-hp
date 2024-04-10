@@ -229,6 +229,7 @@ c
       use inform
       use mdstuf1 ,only: derivs,ealt2,viralt2
       use moldyn
+      use mutant
       use potent
       use timestat
       use units

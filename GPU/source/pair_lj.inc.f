@@ -106,9 +106,15 @@ c
         IF (iand(fea,lgr).ne.0) THEN
            IF(iand(ver,grd).ne.0) de = -e*ds + (1.0-s)*de
            IF(iand(ver,ene).ne.0)  e = (1.0-s)*e
+           IF (iand(ver,grd).ne.0.and.ulamdyn) THEN
+             delambdav = delambdav*(1.0-s)
+           END IF
         ELSE if(iand(fea,shr).ne.0) THEN
            IF(iand(ver,grd).ne.0) de = e*ds + de*s
            IF(iand(ver,ene).ne.0) e  = e * s
+           IF (iand(ver,grd).ne.0.and.ulamdyn) THEN
+             delambdav = delambdav*s
+           END IF
         END IF
       end
 

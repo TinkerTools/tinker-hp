@@ -53,6 +53,8 @@ c
 c     delambda           hamiltonian derivative with respect to lambda (to be sent to colvar)
 c     delambdae          hamiltonian derivative with respect to elambda
 c     delambdav          hamiltonian derivative with respect to vlambda
+c     delambdaesave      stored hamiltonian derivative with respect to elambda
+c     delambdavsave      stored hamiltonian derivative with respect to vlambda
 c     dlambdaelambda     derivative of elambda with respect to lambda
 c     dlambdavlambda     derivative of vlambda with respect to lambda     
 c
@@ -144,6 +146,7 @@ c
       mdyn_rtyp,pointer ::desave(:,:)
 
       real(r_p) delambda,delambdae,delambdav
+      real(r_p) delambdaesave,delambdavsave
       real(r_p) d2edlambda2,d2edlambdae2,d2edlambdav2
       real(r_p) dlambdaelambda, dlambdavlambda
       real(r_p), allocatable :: dxdelambda(:,:)

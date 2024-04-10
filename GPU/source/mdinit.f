@@ -169,6 +169,11 @@ c
       startsavespec=25
       qtb_thermostat=.false.
       adaptive_qtb=.false.
+c
+c     set default values for lambda dynamic
+c
+c      use_lambdadyn = .false.
+      use_OSRW = .false.
       
       use_noselangevin = .FALSE.
       use_noselangevin_massive = .FALSE.
@@ -759,7 +764,10 @@ c
          siz_=3*nbloc
          call mem_set(derivs,zero,siz_,rec_stream)
          call allocsteprespa(.false.)
-
+#ifdef COLVARS
+         delambdaesave = 0d0
+         delambdavsave = 0d0
+#endif
          call gradfast(e,derivs)
          call comm_forces(derivs,cBond)
          if (ftot_l) call get_ftot (derivs,nbloc)

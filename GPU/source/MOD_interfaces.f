@@ -304,6 +304,7 @@ c
       end interface
 
       procedure(tinker_void_sub) :: fphi_mpole_sitegpu,fphi_mpole_sitecu
+     &                             ,fphi_chg_sitecu,fphi_chg_sitegpu
       procedure(fphi_uind_sitegpu2),pointer:: fphi_uind_site2_p
       procedure(fphi_uind_sitegpu1),pointer:: fphi_uind_site1_p
       procedure(grid_uind_sitegpu) ,pointer:: grid_uind_site_p
@@ -314,6 +315,7 @@ c
      &                             ,grid_disp_force_p
       procedure(pme_conv_gpu)      ,pointer:: pme_conv_p
       procedure(tinker_void_sub)   ,pointer:: fphi_mpole_site_p
+     &                             ,fphi_chg_site_p
 
 
 !  #############################################################################
@@ -579,7 +581,7 @@ c
      &            ,npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc
      &            ,balanced
      &            ,cut2,alsq2,alsq2n,aewald
-     &            , xcell, ycell, zcell,xcell2,ycell2,zcell2
+     &            ,xcell,ycell,zcell,xcell2,ycell2,zcell2
      &            ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
      &            ,stream)
      &            bind(C,name="cu_tmatxb_pme")
@@ -598,29 +600,30 @@ c
         end subroutine
       end interface
 
-      interface 
+      interface
         subroutine cu_efld0_direct
-     &            (ipole,pglob,ploc,ieblst,eblst,x,y,z
-     &            ,pdamp,thole,polarity,rpole,efi
+     &            (ipole,pglob,ploc,ieblst,eblst,mut,x,y,z
+     &            ,pdamp,thole,polarity,rpole,efi,defl
      &            ,npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc
-     &            ,dirdamp,balanced
-     &            ,cut2,alsq2,alsq2n,aewald
-     &            , xcell, ycell, zcell,xcell2,ycell2,zcell2
+     &            ,dirdamp,useLambdaDyn,balanced
+     &            ,cut2,alsq2,alsq2n,aewald,elambda
+     &            ,xcell,ycell,zcell,xcell2,ycell2,zcell2
      &            ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
      &            ,stream)
      &            bind(C,name="cu_efld0_direct")
         import cuda_stream_kind
         integer,value,intent(in)::npolelocnlb,npolebloc,n,nproc
      &         ,npolelocnlb_pair,dirdamp
-        logical,value,intent(in)::balanced
+        logical,value,intent(in)::balanced,useLambdaDyn
         integer(cuda_stream_kind),value::stream
         real(t_p),value:: p_xbeg,p_xend,p_ybeg,p_yend
      &           ,p_zbeg,p_zend,xcell,xcell2,ycell,ycell2,zcell,zcell2
-     &           ,cut2,alsq2,alsq2n,aewald
+     &           ,cut2,alsq2,alsq2n,aewald,elambda
         integer,device::ipole(*),pglob(*),ploc(*),ieblst(*),eblst(*)
+        integer(1),device::mut(*)
         real(t_p),device::pdamp(*),thole(*),polarity(*),x(*),y(*),z(*)
      &           ,rpole(13,*)
-        real(t_p),device:: efi(6,*)
+        real(t_p),device:: efi(6,*),defl(6,*)
         end subroutine
         subroutine cu_otfdc_efld0_direct
      &            (ipole,pglob,ploc,grplst,atmofst,npergrp,kofst
@@ -628,7 +631,7 @@ c
      &            ,efi,zmat
      &            ,npolelocnlb,npolelocnlb_pair,npolebloc,n,nproc
      &            ,cut2,alsq2,alsq2n,aewald
-     &            , xcell, ycell, zcell,xcell2,ycell2,zcell2
+     &            ,xcell,ycell,zcell,xcell2,ycell2,zcell2
      &            ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
      &            ,stream)
      &            bind(C,name="cu_otfdc_efld0_direct")
