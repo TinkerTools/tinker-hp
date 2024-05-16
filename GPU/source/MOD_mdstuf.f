@@ -29,6 +29,7 @@ c
       logical velsave
       logical frcsave
       logical uindsave
+      logical mts
       character*20 integrate
       save
       end

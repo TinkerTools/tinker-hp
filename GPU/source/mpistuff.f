@@ -906,13 +906,16 @@ c
         use potent,only : use_pmecore
         use timestat ,only: timer_enter,timer_exit,timer_eneig
      &               ,quiet_timers
-        use tinTypes ,only: real3
+        use tinTypes ,only: real3,real6
         use tinheader,only: ti_eps
         use tinMemory,only: prmem_request,debMem,mem_inc,extra_alloc
         use utilcomm ,only: buffMpi_i1,buffMpi_i2
         use mpi
         use sizes    ,only: tinkerdebug
         use qtb, only: qtb_thermostat, reassignqtb
+        use mdstuf, only: mts
+        use moldyn, only: aalt,aalt2
+        use colvars, only: use_colvars
         implicit none
         integer, intent(in) :: ialt, nalt
 
@@ -922,6 +925,7 @@ c
         type(t_elt),pointer :: d
         type(real3),pointer :: b
         type(real3),pointer :: old_send(:,:),old_recv(:,:)
+        type(real6),pointer :: aalt_send(:,:),aalt_recv(:,:),paa
         type(c_ptr) void_p
 
         integer  n_data_send(0:nneig_send),   n_data_recv(nneig_recep)
@@ -1262,7 +1266,73 @@ c
           end do
         end do
 
-        end if
+        end if  ! (use_rattle)
+        if (mts .and. use_colvars) then
+        !! send also aalt and aalt2 to have complete forces (including slow, int and fast) for ABF
+          
+           ! Recast workspace
+           void_p = c_loc(data_send)
+           call c_f_pointer(void_p,aalt_send,[max_atoms_send,
+     &        nneig_send])
+           void_p = c_loc(data_recv)
+           call c_f_pointer(void_p,aalt_recv,[max_atoms_recv,
+     &        nneig_recep])
+
+!$acc parallel loop present(iglob_send,aalt_send,aalt,aalt2) async 
+!$acc&         vector_length(512)
+           do ineighbor = 1, nneig_send  ! Gather Data for each neighbor domain
+!$acc loop vector
+             do i = 1, n_data_send(ineighbor)
+                iglob = iglob_send(2*(i-1)+1,ineighbor)
+                paa    =>   aalt_send(i,ineighbor)
+                paa%x  = real(aalt(1,iglob),t_p)
+                paa%y  = real(aalt(2,iglob),t_p)
+                paa%z  = real(aalt(3,iglob),t_p)
+                paa%xx  = real(aalt2(1,iglob),t_p)
+                paa%yy  = real(aalt2(2,iglob),t_p)
+                paa%zz  = real(aalt2(3,iglob),t_p)
+             end do
+           end do
+
+!$acc wait
+!$acc host_data use_device(aalt_send, aalt_recv)
+           do ineighbor = 1, nneig_send 
+             call MPI_Isend(aalt_send(1,ineighbor),
+     &          6*n_data_send (ineighbor),MPI_TPREC, 
+     &          pneig_send(ineighbor), 0, COMM_TINKER,
+     &          req_data_send(ineighbor), ierr)
+           end do
+           do ineighbor = 1, nneig_recep
+             call MPI_Irecv(aalt_recv(1,ineighbor),
+     &          6*n_data_recv (ineighbor),MPI_TPREC, 
+     &          pneig_recep(ineighbor), 0, COMM_TINKER,
+     &          req_data_recv(ineighbor), ierr)
+           end do
+!$acc end host_data
+
+       ! Wait all communications
+           call MPI_Waitall(nneig_recep,req_data_recv ,
+     &        MPI_STATUSES_IGNORE,ierr)
+           call MPI_Waitall(nneig_send ,req_data_send ,
+     &        MPI_STATUSES_IGNORE,ierr)
+
+!$acc parallel loop vector_length(512)
+!$acc&         present(iglob_recv) copyin(n_data_recv) copy(nloc)
+           do ineighbor = 1, nneig_recep
+!$acc loop vector
+             do i = 1, n_data_recv(ineighbor)
+                iglob   = iglob_recv(2*(i-1)+1,ineighbor)
+                paa       =>  aalt_recv(i,ineighbor)
+                aalt(1,iglob) = real(paa%x,t_p)
+                aalt(2,iglob) = real(paa%y,t_p)
+                aalt(3,iglob) = real(paa%z,t_p)
+                aalt2(1,iglob) = real(paa%xx,t_p)
+                aalt2(2,iglob) = real(paa%yy,t_p)
+                aalt2(3,iglob) = real(paa%zz,t_p)
+             end do
+          end do
+
+        end if ! (mts and use_colvars)
 
         if (btest(tinkerdebug,tindPath).and.
      &     max_data_recv.gt.max_data_recv_save) then

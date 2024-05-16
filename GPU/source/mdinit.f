@@ -141,6 +141,7 @@ c
         barostat   = 'BERENDSEN'
         thermostat = 'BUSSI'
       endif
+      mts        = .false.
       anisotrop  = .false.
       taupres    = 2.0_re_p
       compress   = 0.000046_re_p
@@ -309,10 +310,12 @@ c     default time steps for respa and respa1 integrators
 c
       if ((integrate.eq.'RESPA').or.(integrate.eq.'BAOABRESPA')) then
         dshort = 0.001
+        mts = .true.
       else if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1'))
      $  then
         dinter = 0.002
         dshort = 0.00025
+        mts = .true.
       end if
 
 c

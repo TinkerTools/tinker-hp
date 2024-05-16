@@ -395,6 +395,7 @@ c     the master gets all the cv positions and total forces
 c
       subroutine prepare_colvars(derivs)
       use atoms    ,only: pbcWrapIdx
+      use atmtyp   ,only: mass
       use atomsMirror
       use boxes
       use colvars
@@ -404,9 +405,12 @@ c
       use inform
       use mpi
       use potent
+      use moldyn
+      use units
+      use mdstuf
       implicit none
       integer i,j,k,idx,iglob,iloc,ilocrec,ierr,offr
-      real(r_p) derivs(3,nbloc)
+      real(r_p) derivs(3,nbloc),temp
 c
       if (deb_Path) write(*,*) 'prepare_colvars'
       decv     = 0d0
@@ -417,7 +421,7 @@ c
 !$acc parallel loop gang vector async copyin(cvatoms_ids)
 !$acc&         copy(decv_tot,cv_pos)
 !$acc& present(x,y,z,de_tot,derivs,de_buffr,repart,repartrec,loc,locrec
-!$acc&        ,pbcWrapIdx)
+!$acc&        ,pbcWrapIdx,aalt,aalt2,mass)
       do i = 1, ncvatoms
         iglob = cvatoms_ids(i)
         iloc = loc(iglob)
@@ -439,6 +443,15 @@ c
              decv_tot(3,i) = derivs(3,iloc)
            end if
         end if
+        if (mts .and. repart(iglob).eq.rank) then
+           temp = -mass(iglob)/convert
+           decv_tot(1,i) = decv_tot(1,i) + 
+     &                      temp*(aalt(1,iglob)+aalt2(1,iglob))
+           decv_tot(2,i) = decv_tot(2,i) +
+     &                      temp*(aalt(2,iglob)+aalt2(2,iglob))
+           decv_tot(3,i) = decv_tot(3,i) + 
+     &                      temp*(aalt(3,iglob)+aalt2(3,iglob))
+         end if
 c
 c       also add reciprocal part of the forces (in a separate array for now)
 c
@@ -498,6 +511,7 @@ c      end if
 
       subroutine prepare_colvars1(derivs)
       use atoms       ,only: pbcWrapIdx
+      use atmtyp      ,only: mass
       use atomsMirror
       use colvars
       use colvars_inl
@@ -508,9 +522,12 @@ c      end if
       use mpi
       use potent
       use mutant
+      use moldyn
+      use units
+      use mdstuf
       implicit none
       integer i,j,k,idx,iglob,iloc,ilocrec,ierr,offr
-      real(r_p) derivs(3,nbloc)
+      real(r_p) derivs(3,nbloc),temp
 c
       if (deb_Path) write(*,*) 'prepare_colvars1'
 
@@ -522,7 +539,8 @@ c
 
 !$acc parallel loop gang vector copyin(cvatoms_ids)
 !$acc&         copy(decv_tot,cv_pos)
-!$acc&         present(x,y,z,de_tot,derivs,de_buffr,pbcWrapIdx) async
+!$acc&         present(x,y,z,de_tot,derivs,de_buffr,pbcWrapIdx,
+!$acc&         mass,aalt,aalt2) async
       do i = 1, ncvatoms
         iglob = cvatoms_ids(i)
         cv_pos(1,i) = x(iglob) + pbcWrapIdx(4*(iglob-1)+1)*xcell
@@ -537,6 +555,16 @@ c
           decv_tot(2,i) = derivs(2,iglob)
           decv_tot(3,i) = derivs(3,iglob)
         end if
+
+        if (mts) then
+           temp = -mass(iglob)/convert
+           decv_tot(1,i) = decv_tot(1,i) + 
+     &                        temp*(aalt(1,iglob)+aalt2(1,iglob))
+           decv_tot(2,i) = decv_tot(2,i) + 
+     &                        temp*(aalt(2,iglob)+aalt2(2,iglob))
+           decv_tot(3,i) = decv_tot(3,i) + 
+     &                        temp*(aalt(3,iglob)+aalt2(3,iglob))
+         end if
         !also add reciprocal part of the forces 
         !     (in a separate array for now)
 !$acc loop seq
