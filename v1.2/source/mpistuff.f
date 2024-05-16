@@ -329,8 +329,12 @@ c
       use atoms
       use bound
       use cell
+#ifdef COLVARS
+      use colvars
+#endif
       use domdec
       use freeze
+      use mdstuf
       use moldyn
       use neigh
       use potent
@@ -587,6 +591,69 @@ c
         deallocate (buffer1)
         deallocate (buffers1)
       end if
+
+#ifdef COLVARS
+c
+c     if mts+colvars is used, also send aalt and aalt2 values
+c
+      if (mts.and.use_colvars) then
+
+        proc = pneig_send(nneig_send)
+        allocate (buffers1(7,bufbeg3(proc+1)+buflen3(proc+1)))
+        proc = pneig_recep(nneig_recep)
+        allocate (buffer1(7,bufbeg4(proc+1)+buflen4(proc+1)))
+c
+c     Begin reception 
+c
+        do i = 1, nneig_recep
+          proc = pneig_recep(i)
+          tag = nprocloc*rankloc + proc + 1
+          call MPI_IRECV(buffer1(1,bufbeg4(proc+1)),7*buflen4(proc+1),
+     $      MPI_REAL8,proc,tag,COMM_TINKER,reqrec(i),ierr)
+        end do
+        do i = 1, nneig_send
+          proc = pneig_send(i)
+          do j = 0, buflen3(proc+1)-1
+            jglob = buf3(bufbeg3(proc+1)+j)
+            buffers1(1,bufbeg3(proc+1)+j) = jglob
+            buffers1(2,bufbeg3(proc+1)+j) = aalt(1,jglob)
+            buffers1(3,bufbeg3(proc+1)+j) = aalt(2,jglob)
+            buffers1(4,bufbeg3(proc+1)+j) = aalt(3,jglob)
+            buffers1(5,bufbeg3(proc+1)+j) = aalt2(1,jglob)
+            buffers1(6,bufbeg3(proc+1)+j) = aalt2(2,jglob)
+            buffers1(7,bufbeg3(proc+1)+j) = aalt2(3,jglob)
+          end do
+        end do
+c
+c       send the old positions
+c
+        do i = 1, nneig_send
+          proc = pneig_send(i)
+          tag = nprocloc*proc + rankloc + 1
+          call MPI_ISEND(buffers1(1,bufbeg3(proc+1)),7*buflen3(proc+1),
+     $     MPI_REAL8,proc,tag,COMM_TINKER,reqsend(i),ierr)
+        end do
+        do i = 1, nneig_send
+          proc = pneig_send(i)
+          call MPI_WAIT(reqsend(i),status,ierr)
+        end do
+        do i = 1, nneig_recep
+          proc = pneig_recep(i)
+          call MPI_WAIT(reqrec(i),status,ierr)
+          do j = 0, buflen4(proc+1)-1
+            iglob = int(buffer1(1,bufbeg4(proc+1)+j))
+            aalt(1,iglob) = buffer1(2,bufbeg4(proc+1)+j)
+            aalt(2,iglob) = buffer1(3,bufbeg4(proc+1)+j)
+            aalt(3,iglob) = buffer1(4,bufbeg4(proc+1)+j)
+            aalt2(1,iglob) = buffer1(5,bufbeg4(proc+1)+j)
+            aalt2(2,iglob) = buffer1(6,bufbeg4(proc+1)+j)
+            aalt2(3,iglob) = buffer1(7,bufbeg4(proc+1)+j)
+          end do
+        end do
+        deallocate (buffer1)
+        deallocate (buffers1)
+      end if
+#endif
 
 c
 c     reorder indexes accordingly and build local repart array

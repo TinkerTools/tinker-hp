@@ -407,6 +407,8 @@ c
       use colvars
       use deriv
       use domdec
+      use inform
+      use iounit
       use mdstuf
       use moldyn
       use mpi
@@ -415,6 +417,8 @@ c
       implicit none
       integer i,iglob,iloc,ilocrec,ierr
       real*8 temp
+c
+      if (deb_Path) write(iout,*), 'prepare_colvars '
 c
 c
       decv =0d0
@@ -439,7 +443,7 @@ c
 c
 c   for RESPA(1) integrators, also add fast/intermediate forces (through aalt array)
 c
-          if (mts) then
+          if (mts .and. repart(iglob).eq.rank) then
             temp = -mass(iglob)/convert
             decv_tot(1,i) = decv_tot(1,i) +
      $                        temp*(aalt(1,iglob)+aalt2(1,iglob))
@@ -500,6 +504,8 @@ c
       use colvars
       use deriv
       use domdec
+      use inform
+      use iounit
       use mpi
       use mutant
       use potent
@@ -508,6 +514,9 @@ c
       real*8 derivs(3,*)
       real*8 vxx,vxy,vxz,vyy,vyz,vzz
       integer i,iglob,iloc,ierr
+c
+      if (deb_Path) write(iout,*), 'distrib_colvars '
+c
 c
       call MPI_BCAST(decv,3*ncvatoms,MPI_REAL8,0,COMM_TINKER,ierr)
 
