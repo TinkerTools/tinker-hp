@@ -63,6 +63,7 @@ c
         real(t_p) xk_,yk_,zk_,d2
         real(t_p) ep_,poti
         real(t_p) ipdp,ipgm,ipgm1,pdp,pgm,pgm1,rstat
+        real(t_p), parameter :: eps = 1.e-5
         type(real6) dpui
         type(real3) posi,pos
         type(real3) frc
@@ -217,7 +218,8 @@ c
               d2      = pos%x**2 + pos%y**2 + pos%z**2
               do_pair = merge(.true.,iglob.lt.kglob(klane)
      &                       ,same_block)
-              if (do_pair.and.d2<=off2.and.accept_mid) then
+              if (do_pair.and.d2<=off2.and.accept_mid
+     &          .and.d2.gt.eps) then
                  ! compute one interaction
                  call epolar1_couple(dpui,ip,dpuk(klane),kp_,d2,pos
      &                       ,aewald,alsq2,alsq2n,pgm,pgm1,pdp,f

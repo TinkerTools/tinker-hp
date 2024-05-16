@@ -28,6 +28,7 @@ c
       use mdstate   ,only: track_mds,ms_back_p
       use moldyn    ,only: step_c,stepint
       use mpole
+      use mutant, only: nmut,elambda
       use pme
       use polar
       use polpot
@@ -156,6 +157,13 @@ c
       else
          if (rank.eq.0) write(iout,1000) 
          call fatal
+      end if
+
+      if (nmut.gt.0.and.elambda.eq.0.0) then
+!$acc parallel loop collapse(3) async(def_queue) default(present)
+         do i = 1, npolebloc; do j = 1, nrhs; do k = 1,3
+            if (polarity(poleglob(i)).eq.0.0) mu(k,j,i) = 0.0
+         end do; end do; end do
       end if
 c
 !$acc parallel loop collapse(2) async(def_queue) default(present)

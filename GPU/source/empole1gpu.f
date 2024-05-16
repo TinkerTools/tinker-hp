@@ -505,11 +505,14 @@ c
 c
 c     calculate multipole potentials
 c
+c      call minmaxone(dem,3*84986,'dem 1')
       call emreal1ca_p(tem,vxx,vxy,vxz,vyy,vyz,vzz)
+c      call minmaxone(dem,3*84986,'dem 2')
 c
 c     resolve site torques then increment forces and virial
 c
       call torquegpu(tem,fix,fiy,fiz,dem,extract)
+c      call minmaxone(dem,3*84986,'dem 3')
 c
       if (use_virial) call torque_on_vir(fix,fiy,fiz)
 c
@@ -756,7 +759,8 @@ c
          poti = 0
          potk = 0
 
-         if (use_lambdadyn) mutik=mutInt(iglob)+mutInt(kglob)
+c         if (use_lambdadyn) mutik=mutInt(iglob)+mutInt(kglob)
+         mutik=mutInt(iglob)+mutInt(kglob)
 
 
          if (use_group)
@@ -864,7 +868,9 @@ c
             poti   = 0
             potk   = 0
 
-            if (use_lambdadyn) mutik=muti+mutInt(kglob)
+c            if (use_lambdadyn) mutik=muti+mutInt(kglob)
+            mutik=mutInt(iglob)+mutInt(kglob)
+            if (mutik.eq.1.and.elambda.eq.0) cycle
 
             if (use_group)
      &         call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)

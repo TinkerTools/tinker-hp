@@ -585,7 +585,7 @@ void cu_efld0_direct_core (EFLD0_PARAMS1){
          d2      = pos.x*pos.x + pos.y*pos.y + pos.z*pos.z;
          do_pair = (same_block)? (iglob < kglob_):1;
 
-         if (do_pair && d2<=cut2 && accept_mid) {
+         if (do_pair && d2<=cut2 && accept_mid && d2>=(real)0.00001) {
             //atomicAdd( &cont, 1);
             /* Compute one interaction
                Since the interaction is not symetrical we need to switch comput when necessary */

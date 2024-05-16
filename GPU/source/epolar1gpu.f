@@ -968,6 +968,7 @@ c
       use interfaces ,only: epreal1c_correct_scale
       use math    ,only: sqrtpi
       use mpole   ,only: npolelocnl,ipole,rpole,polelocnl
+      use mutant, only:mutInt,elambda
       use neigh   ,only: elst,nelst,nelstc,shortelst,nshortelst
       use polar   ,only: uind,uinp,thole,pdamp,dirdamp
       use potent  ,only: use_polarshortreal,use_chgflx
@@ -987,6 +988,7 @@ c
       integer nnelst
       integer ii,iipole
       integer kpole,kglob,kbis
+      integer(1) mutik
       integer,pointer,save :: lst(:,:),nlst(:)
       real(t_p) alsq2,alsq2n
       real(t_p) r2,pgamma,pgama1,damp
@@ -1024,7 +1026,7 @@ c
 !$acc parallel loop gang vector_length(32)
 !$acc&         present(trqvec,vxx,vxy,vxz,vyy,vyz,vzz,ep)
 !$acc&         present(poleglobnl,ipole,rpole,thole,pdamp,
-!$acc&  loc,x,y,z,uind,uinp,lst,nlst,pot,dep,vir,polelocnl)
+!$acc&  loc,x,y,z,uind,uinp,lst,nlst,pot,dep,vir,polelocnl,mutInt)
 !$acc&         private(ip,dpui,posi)
 !$acc&         async(def_queue)
       MAINLOOP:
@@ -1108,6 +1110,10 @@ c
              trqi%x=0.0; trqi%y=0.0; trqi%z=0.0;
              trqk%x=0.0; trqk%y=0.0; trqk%z=0.0;
              poti=0.0; potk=0.0
+
+            mutik=mutInt(iglob)+mutInt(kglob)
+            if (mutik.eq.1.and.elambda.eq.0) cycle
+
             call epolar1_couple(dpui,ip,dpuk,kp,r2,pos
      &                  ,aewald,alsq2,alsq2n,pgamma,pgama1,damp,f
      &                  ,1.0_ti_p,1.0_ti_p,1.0_ti_p,use_dirdamp
@@ -1268,6 +1274,7 @@ c
       end if
 
       call zero_evir_red_buffer(def_queue)
+c      call minmaxone(dep,3*nbloc,'dep 1')
 
       if (use_thole) then
 !$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s
@@ -1367,6 +1374,7 @@ c
          end if
 !$acc end host_data
       end if !(thole | chgpen)
+c      call minmaxone(dep,3*nbloc,'dep 2')
 
       call reduce_energy_virial(ep,vxx,vxy,vxz,vyy,vyz,vzz
      &                         ,ered_buff,def_queue)

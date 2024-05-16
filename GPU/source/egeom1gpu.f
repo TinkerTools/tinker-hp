@@ -118,7 +118,7 @@ c
 
 c
 !$acc data present(loc,x,y,z,use,deg)
-!$acc&     present(eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,einter)
+!$acc&     present(eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,einter) async
 
       if (npfix.ne.0) then
 

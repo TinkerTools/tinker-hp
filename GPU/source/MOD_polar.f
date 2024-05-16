@@ -33,7 +33,8 @@ c
       implicit none
       integer   npolar
       logical   npolar_ne_npole,use_mpolar_ker
-      real(t_p),parameter :: tinypol = 1d-5
+c      real(t_p),parameter :: tinypol = 1d-5
+      real(t_p),parameter :: tinypol = 1d-7
       real(t_p),allocatable,target :: uind(:,:),uinp(:,:)
       real(t_p),pointer :: polarity(:),polarity_orig(:),thole(:)
      &         ,pdamp(:),uind_p(:,:),uinp_p(:,:),dirdamp(:)

@@ -416,6 +416,7 @@ c
 
             d2     = pos%x**2 + pos%y**2 + pos%z**2
             if (d2.gt.cut2) cycle
+            if (d2.lt.1e-5) cycle
 
             kp%c   = rpole( 1, kpole)
             kp%dx  = rpole( 2, kpole)

@@ -208,9 +208,7 @@ c
            ip%qyy  = rpole( 9, iipole)
            ip%qyz  = rpole(10, iipole)
            ip%qzz  = rpole(13, iipole)
-#if __tfea__ & __use_lambdadyn__
            muti    = mut(iglob)
-#endif
            !  Load atom block k parameters
            kdx     = eblst( (ii-1)*WARP_SIZE+ ilane )
            kpole   = pglob(kdx)
@@ -229,9 +227,7 @@ c
            kp(threadIdx%x)%qyy  = rpole( 9, kpole)
            kp(threadIdx%x)%qyz  = rpole(10, kpole)
            kp(threadIdx%x)%qzz  = rpole(13, kpole)
-#if __tfea__ & __use_lambdadyn__
            mutk(threadIdx%x) = mut(kglob)
-#endif
            !* set compute Data to 0
 #if __tver__ & __use_ene__
            frc_i%x = 0;
@@ -310,9 +306,9 @@ c
                  if (ugrp)
      &              call groups2_inl(fgrp,iglob,kglob,ngrp,grplist,wgrp)
 #endif
-#if __tfea__ & __use_lambdadyn__
-                 if (ulamdyn) mutik = muti + mutk(klane)
-#endif
+                 mutik = muti + mutk(klane)
+                 if (.not.(mutik.eq.1.and.elambda.eq.0)) then
+
                  ! compute one interaction
                  call duo_mpole(d2,pos%x,pos%y,pos%z,ip,kp(klane),zeror
      &                   ,scut,shortheal,aewald,f,alsq2n,alsq2,ugrp,fgrp
@@ -342,7 +338,8 @@ c
                  vir_(5) = vir_(5) - pos%z * frc%y
                  vir_(6) = vir_(6) - pos%z * frc%z
 #endif
-              end if
+                 end if
+                end if
 
                 lot = iand(ilane,warpsize-1)+1
               kglob = __shfl(kglob, lot)
