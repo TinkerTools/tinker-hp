@@ -24,6 +24,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -51,6 +53,9 @@ c
       real*8, allocatable, dimension(:,:) :: buffermpi
 
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar3tcg1_2 '
+c
 
       if (rank.le.ndir-1) then
         allocate(res(3,2,max(1,npolebloc)),res2(3,nrhs,max(1,npoleloc)))
@@ -289,6 +294,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -315,6 +322,9 @@ c
       real*8, allocatable, dimension(:,:) :: buffermpi
 
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar3tcg2_2 '
+c
 
       if (rank.le.ndir-1) then
         allocate(res(3,2,max(1,npolebloc)),cphi(10, max(1,npoleloc)), 

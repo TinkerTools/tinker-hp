@@ -74,6 +74,9 @@ c
       real*8,save :: box_sum(3),box2_sum(3)
       real*8,save :: stress_sum(3,3),stress2_sum(3,3)
       real*8 :: lth 
+c
+      if (deb_Path) write(iout,*), 'mdstatpi '
+c
 
       if(ranktot/=0) return
 c

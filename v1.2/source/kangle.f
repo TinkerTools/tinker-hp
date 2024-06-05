@@ -21,6 +21,7 @@ c
       use couple
       use domdec
       use fields
+      use inform
       use kangs
       use keys
       use inform
@@ -47,6 +48,8 @@ c
       character*240 record
       character*240 string
       logical :: max_reach
+c
+      if (deb_Path) write(iout,*), 'kangle '
 c
 c
 c     process keywords containing angle bending parameters

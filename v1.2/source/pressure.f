@@ -17,12 +17,17 @@ c
 c
       subroutine stress_press(ekin,vir,pres,stress)
       use boxes
+      use inform
+      use iounit
       use units
       implicit none
       real*8, intent(in) :: ekin(3,3),vir(3,3)
       real*8, intent(out) :: pres,stress(3,3)
       real*8 factor
       integer i,j
+c
+      if (deb_Path) write(iout,*), 'stress_press '
+c
 
 c
 c     calculate the stress tensor for anisotropic systems
@@ -55,6 +60,8 @@ c
       use bound
       use boxes
       use domdec
+      use inform
+      use iounit
       use mdstuf
       use units
       use virial
@@ -64,6 +71,9 @@ c
       real*8 pres
       real*8 ekin(3,3)
       real*8 stress(3,3)
+c
+      if (deb_Path) write(iout,*), 'pressure '
+c
 c
 c
 c     only necessary if periodic boundaries are in use
@@ -94,11 +104,16 @@ c
       use bound
       use boxes
       use domdec
+      use inform
+      use iounit
       use units
       use virial
       implicit none
       real*8 epot
       real*8 temp
+c
+      if (deb_Path) write(iout,*), 'pressure2 '
+c
 c
 c     only necessary if periodic boundaries are in use
 c
@@ -150,6 +165,8 @@ c     subroutine pscale (dt,pres,stress,istep)
       use bath
       use boxes
       use domdec
+      use inform
+      use iounit
       use math
       use usage
       implicit none
@@ -158,6 +175,9 @@ c     subroutine pscale (dt,pres,stress,istep)
       real*8 dt,pres
 
       real*8 scale,third
+c
+      if (deb_Path) write(iout,*), 'pscale '
+c
 
 c
 c
@@ -203,6 +223,8 @@ c
       use boxes
       use mpi
       use domdec
+      use inform
+      use iounit
       use units, only: boltzmann
       implicit none
       integer ierr
@@ -213,6 +235,9 @@ c
        real*8 temper
        end function
       end interface
+c
+      if (deb_Path) write(iout,*), 'initialize_langevin_piston '
+c
       
       extvol = volbox
       extvolold = volbox
@@ -249,6 +274,7 @@ c
       use bound
       use boxes
       use domdec
+      use inform
       use iounit
       use units
       use virial
@@ -262,8 +288,8 @@ c
       real*8, allocatable :: xoldloc(:)
       real*8, allocatable :: yoldloc(:)
       real*8, allocatable :: zoldloc(:)
-
-      !write(*,*)'Im in'
+c
+      if (deb_Path) write(iout,*), 'dedvcalv '
 c
 c
 c     set relative volume change for finite-differences
@@ -396,6 +422,7 @@ c
       use bound
       use boxes
       use domdec
+      use inform
       use iounit
       use units
       use virial
@@ -411,6 +438,9 @@ c
       real*8, allocatable :: xoldloc(:)
       real*8, allocatable :: yoldloc(:)
       real*8, allocatable :: zoldloc(:)
+c
+      if (deb_Path) write(iout,*), 'ptest '
+c
 c
 c
 c     set relative volume change for finite-differences
@@ -549,6 +579,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use math
       use mdstuf
       use molcul
@@ -585,6 +617,9 @@ c
       logical isotropic
       real*8 random
       external random
+c
+      if (deb_Path) write(iout,*), 'pmonte '
+c
 c
 c
 c     decide whether to attempt a box size change at this step
@@ -792,11 +827,16 @@ c
       use bath
       use boxes
       use domdec
+      use inform
+      use iounit
       use moldyn
       use usage
       implicit none
       integer, intent(in) :: istep
       real*8, intent(in) :: scale(3)
+c
+      if (deb_Path) write(iout,*), 'rescale_box '
+c
 c
 c     modify the current periodic box dimension values
 c

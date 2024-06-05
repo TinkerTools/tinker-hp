@@ -23,6 +23,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use kgeoms
       use math
       use molcul
@@ -69,6 +71,8 @@ c
       real*8 a,b,buffer,term
       real*8 fgrp
       logical proceed,intermol
+c
+      if (deb_Path) write(iout,*), 'egeom '
 c
 c
 c     zero out the geometric restraint energy terms

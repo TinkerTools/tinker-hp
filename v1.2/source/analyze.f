@@ -70,10 +70,6 @@ c     setup for MPI
 c
       call drivermpi
       call kewald_2
-      call reinitnl(0)
-      call mechanic_init_para
-c
-      call nblist(0)
 c
 c     get the desired types of analysis to be performed
 c

@@ -40,6 +40,9 @@ c
       character*240 string
       logical max_reach
 c
+      if (deb_Path) write(iout,*), 'kurey '
+c
+c
       blank = '            '
 c
 c     process keywords containing Urey-Bradley parameters
@@ -309,6 +312,9 @@ c
       integer iangle,ureycount,nureyloc1
       character*4 pa,pb,pc
       character*12 blank,pt
+c
+      if (deb_Path) write(iout,*), 'kurey_update '
+c
 c
       blank = '            '
 

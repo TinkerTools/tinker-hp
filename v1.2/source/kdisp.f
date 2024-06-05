@@ -42,6 +42,9 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'kdisp '
+c
 c    
 c
 c     process keywords containing damped dispersion parameters
@@ -205,6 +208,9 @@ c
       integer dispcount
       integer modnl
       real*8 d
+c
+      if (deb_Path) write(iout,*), 'kdisp_update '
+c
 c
 c
 c     remove zero and undefined dispersion sites from the list

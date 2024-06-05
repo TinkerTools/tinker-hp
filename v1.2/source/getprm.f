@@ -17,6 +17,7 @@ c
       subroutine getprm
       use files
       use keys
+      use inform
       use iounit
       use params
       implicit none
@@ -29,6 +30,8 @@ c
       character*240 record
       character*240 string
       character*240 paramdir
+c
+      if (deb_Path) write(iout,*), 'getprm '
 c
 c
 c     set the default name for the parameter file

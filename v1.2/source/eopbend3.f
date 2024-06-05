@@ -54,6 +54,9 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'eopbend3 '
+c
+c
 c
 c     zero out the out-of-plane bend energy and partitioning
 c

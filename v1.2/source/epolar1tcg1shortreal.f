@@ -17,6 +17,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -46,6 +48,9 @@ c
      $        arr_dtr0
 
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg1shortreal '
+c
 
       allocate(adte(3,3,nrhs,npolebloc))
       allocate(denedt(3,3,npolebloc))

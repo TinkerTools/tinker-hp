@@ -34,6 +34,9 @@ c
   10  format('interactions between group',2x,i5,2x,'and group',2x,i5,
      $   2x,'scaled by ',f16.5)
 c
+      if (deb_Path) write(iout,*), 'switch_group_ene '
+c
+c
 c     return if more than 2 groups
 c
       if (ngrp.gt.2) then
@@ -176,6 +179,9 @@ c
       logical scaledinter
   10  format('interactions between group',2x,i5,2x,'and group',2x,i5,
      $   2x,'scaled by ',f16.5)
+c
+      if (deb_Path) write(iout,*), 'switch_group_grad '
+c
 c
 c     return if more than 2 groups
 c

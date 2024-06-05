@@ -10,9 +10,14 @@ c
       subroutine empole1
       use domdec
       use energi
+      use inform
+      use iounit
       use potent
       use mpi
       implicit none
+c
+      if (deb_Path) write(iout,*), 'empole1 '
+c
 c
 c     choose the method for summing over multipole interactions
 c
@@ -44,6 +49,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use mutant
@@ -80,6 +87,8 @@ c
       real*8, allocatable :: decfx(:)
       real*8, allocatable :: decfy(:)
       real*8, allocatable :: decfz(:)
+c
+      if (deb_Path) write(iout,*), 'empole1c '
 c
 c
 c     zero out the atomic multipole energy and derivatives
@@ -348,6 +357,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use pme
       use math
       use mpole
@@ -390,6 +401,9 @@ c
       integer nprocloc,commloc,rankloc,proc
       real*8 time0,time1
       time0 = mpi_wtime()
+c
+      if (deb_Path) write(iout,*), 'emrecip1 '
+c
 c
       if (use_pmecore) then
         nprocloc = nrec
@@ -868,6 +882,7 @@ c     if shortrange, calculates just the short range part
       use domdec
       use energi
       use group
+      use inform
       use iounit
       use math
       use mplpot
@@ -958,6 +973,9 @@ c     if shortrange, calculates just the short range part
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
      $   ' update, try lowering nlupdate')
+c
+      if (deb_Path) write(iout,*), 'emreal1c '
+c
 c     compute the short, long, or full real space part of the summation
       shortrange = use_mpoleshortreal
       longrange  = use_mpolelong

@@ -55,6 +55,9 @@ c
       integer :: iloc
       integer :: ibeadbeg
       logical :: only_long
+c
+      if (deb_Path) write(iout,*), 'baoabpi '
+c
 
       dt2=0.5d0*dt
       sqrtnu=sqrt(real(nbeads,8))

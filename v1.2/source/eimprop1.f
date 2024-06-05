@@ -24,6 +24,8 @@ c
       use energi
       use group
       use improp
+      use inform
+      use iounit
       use math
       use torpot
       use usage
@@ -60,6 +62,8 @@ c
       real*8 vyx,vzx,vzy
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eimprop1 '
 c
 c
 c     zero out energy and first derivative components

@@ -43,6 +43,8 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kangtor '
+c
 c
 c     process keywords containing angle-torsion parameters
 c
@@ -247,6 +249,9 @@ c
       character*4 pa,pb,pc,pd
       character*16 blank
       character*16 pt
+c
+      if (deb_Path) write(iout,*), 'kangtor_update '
+c
 c
       if (allocated(angtorglob)) deallocate(angtorglob)
       allocate (angtorglob(ntorsloc))

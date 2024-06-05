@@ -26,6 +26,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use math
       use usage
       use virial
@@ -76,6 +78,9 @@ c
       real*8 gaussterm, dgaussdrab, dgaussdrcb
       real*8 dedrab,dedrcb,dtermdrab,dtermdrcb
       real*8 rab,rcb
+c
+      if (deb_Path) write(iout,*), 'eangle1 '
+c
 c
 c
 c     zero out energy and first derivative components

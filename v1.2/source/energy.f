@@ -17,12 +17,16 @@ c
       function energy ()
       use sizes
       use energi
+      use inform
       use iounit
       use potent
       use vdwpot
       implicit none
       real*8 energy
       logical isnan
+c
+      if (deb_Path) write(iout,*), 'energy '
+c
 c
 c
 c     zero out each of the potential energy components

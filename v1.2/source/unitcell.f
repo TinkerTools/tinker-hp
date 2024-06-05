@@ -20,6 +20,7 @@ c
       use cutoff
       use domdec
       use keys
+      use inform
       use iounit
       implicit none
       integer i,next
@@ -28,6 +29,9 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'unitcell '
+c
 c
 c
 c     set the default values for periodic boundary conditions

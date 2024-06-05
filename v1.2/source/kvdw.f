@@ -52,6 +52,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kvdw '
+c
+c
       blank = '        '
 c
 c     process keywords containing van der Waals parameters
@@ -634,6 +637,9 @@ c
       integer i
       integer iglob,vdwcount,iproc
       real*8 d
+c
+      if (deb_Path) write(iout,*), 'kvdw_update '
+c
 
       if (allocated(vdwglob)) deallocate(vdwglob)
       allocate (vdwglob(nbloc))

@@ -20,6 +20,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -68,6 +70,9 @@ c
       real*8, allocatable, dimension(:,:) :: buffermpi
       real*8 :: xx(1)
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2_2 '
+c
 
       if (rank.le.ndir-1) then
         allocate(adte(3,3,nrhs,npolebloc))
@@ -520,6 +525,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -575,6 +582,9 @@ c
       real*8, allocatable, dimension(:,:) :: buffermpi
       real*8 :: xx(1)
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2bis_2 '
+c
 
       if (rank.le.ndir-1) then
         allocate(adte(3,3,nrhs, npolebloc))
@@ -1189,6 +1199,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -1253,6 +1265,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu
       real*8, allocatable, dimension(:,:) :: buffermpi
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2ter_2 '
+c
 
 
       if (rank.le.ndir-1) then
@@ -1974,6 +1989,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -2038,6 +2055,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu
       real*8, allocatable, dimension(:,:) :: buffermpi
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcgquat_2 '
+c
 
       if (rank.le.ndir-1) then
         allocate(adte(3,3,nrhs, npolebloc))
@@ -2776,6 +2796,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -2839,6 +2861,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu
       real*8, allocatable, dimension(:,:) :: buffermpi
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2cinq_2 '
+c
 
       if (rank.le.ndir-1) then
         allocate(adte(3,3,nrhs,npolebloc),denedt(3,3,npoleloc),

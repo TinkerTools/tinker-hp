@@ -16,9 +16,14 @@ c     and partitions the energy among the atoms
 c
       subroutine empole3
       use energi
+      use inform
+      use iounit
       use potent
       use mpi
       implicit none
+c
+      if (deb_Path) write(iout,*), 'empole3 '
+c
 c
 c     choose the method for summing over multipole interactions
 c
@@ -50,6 +55,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use potent
@@ -63,6 +70,8 @@ c
       real*8 ci,dix,diy,diz
       real*8 qixx,qixy,qixz
       real*8 qiyy,qiyz,qizz
+c
+      if (deb_Path) write(iout,*), 'empole3c '
 c
 c
 c     zero out the multipole and polarization energies
@@ -264,6 +273,9 @@ c     if shortrange, calculates just the short range part
       character*11 mode
       character*80 :: RoutineName
       external erfc
+c
+      if (deb_Path) write(iout,*), 'emreal3c '
+c
 
 
 c     compute the short, long, or full real space part of the summation

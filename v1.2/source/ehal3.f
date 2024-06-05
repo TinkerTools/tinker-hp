@@ -29,6 +29,9 @@ c
       real*8 elrc,aelrc
       character*11 mode
 c
+      if (deb_Path) write(iout,*), 'ehal3 '
+c
+c
 c     evaluate pairwise interactions
 c
       call ehal3c
@@ -113,7 +116,9 @@ c
       character*11 mode
       character*80 :: RoutineName
 c
-
+      if (deb_Path) write(iout,*), 'ehal3c '
+c
+c
 c     choose the method for summing over pairwise interactions
       shortrange = use_vdwshort
       longrange  = use_vdwlong

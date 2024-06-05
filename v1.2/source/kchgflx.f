@@ -51,6 +51,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kchgflx '
+c
+c
 c     deallocate global pointers if necessary
 c
       call dealloc_shared_chgflx

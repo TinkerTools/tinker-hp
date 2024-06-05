@@ -16,6 +16,7 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -61,7 +62,10 @@ c
 c
 c1000 format(' illegal polalg in newinduce.')
  1010 format(' time for the ',a,F14.5)
- 1020 format(' total elapsed time in newinduce: ',F14.5)
+ 1020 format(' total elapsed time in dcinduce_pme2: ',F14.5)
+c
+      if (deb_Path) write(iout,*), 'dcinduce_pme2 '
+c
 c
 c     allocate some memory and clear the arrays:
 c
@@ -291,6 +295,7 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -339,6 +344,9 @@ c
  1021 format(' Jacobi/DIIS solver: induced p-dipoles',/,
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
+c
+      if (deb_Path) write(iout,*), 'inducedc_pme2 '
+c
 c
       zero = 0.0d0
       one  = 1.0d0

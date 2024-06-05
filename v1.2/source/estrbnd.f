@@ -22,6 +22,8 @@ c
       use bound
       use energi
       use group
+      use inform
+      use iounit
       use math
       use strbnd
       use usage
@@ -41,6 +43,8 @@ c
       real*8 rcb,rcb2
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'estrbnd '
 c
 c
 c     zero out the stretch-bend cross term energy

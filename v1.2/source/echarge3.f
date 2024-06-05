@@ -15,7 +15,11 @@ c     and partitions the energy among the atoms
 c
 c
       subroutine echarge3
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'echarge3 '
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -65,6 +69,8 @@ c
       real*8 fs
       real*8 xd,yd,zd
       external erfc
+c
+      if (deb_Path) write(iout,*), 'echarge3c '
 c
 c
 c     zero out the Ewald summation energy and partitioning
@@ -207,6 +213,9 @@ c
       character*11 mode
       character*80 :: RoutineName
       external erfc
+c
+      if (deb_Path) write(iout,*), 'ecreal3d '
+c
 
 c     compute the short, long, or full real space part of the Ewald summation
       shortrange = use_cshortreal
@@ -392,6 +401,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use pme
       use potent
@@ -413,6 +424,9 @@ c
       real*8 r1,r2,r3
       integer, allocatable :: req(:),reqbcast(:)
       real*8, allocatable :: qgridmpi(:,:,:,:,:)
+c
+      if (deb_Path) write(iout,*), 'ecrecip '
+c
 c
       if (use_pmecore) then
         nprocloc = nrec

@@ -16,10 +16,14 @@ c
 c
       subroutine rotpole
       use atmlst
+      use inform
+      use iounit
       use mpole
       implicit none
       integer i,iipole,iglob
       real*8 a(3,3)
+c
+      if (deb_Path) write(iout,*), 'rotpole '
 c
 c
 c     rotate the atomic multipoles at each site in turn

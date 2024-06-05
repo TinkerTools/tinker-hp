@@ -45,6 +45,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kchgtrn '
+c
+c
 c
 c     deallocate global pointers if necessary
 c
@@ -235,6 +238,9 @@ c
       integer i
       integer iproc,iglob,polecount,iipole
       real*8 d
+c
+      if (deb_Path) write(iout,*), 'kchgtrn_update '
+c
 c
       if (.not. use_chgtrn) return
       npoleloc = 0

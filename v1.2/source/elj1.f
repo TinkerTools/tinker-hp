@@ -15,14 +15,18 @@ c     and its first derivatives with respect to Cartesian coordinates
 c
 c
       subroutine elj1
-
       use energi
+      use inform
+      use iounit
       use potent
       use virial
       use vdwpot
       implicit none
       real*8 elrc,vlrc
       character*11 mode
+c
+      if (deb_Path) write(iout,*), 'elj1 '
+c
 c
 c     evaluate pairwise interactions
 c
@@ -65,6 +69,7 @@ c
       use domdec
       use energi
       use group
+      use inform
       use inter
       use iounit
       use molcul
@@ -106,6 +111,9 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'elj1c '
+c
 c
  1000 format(' Warning, system moved too much since last neighbor list'
      $   ' update, try lowering nlupdate VDW')

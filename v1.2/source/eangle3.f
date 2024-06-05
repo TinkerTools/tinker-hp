@@ -64,6 +64,9 @@ c
       real*8 r_e,drab,drcb,x1,x2,x3
       real*8 gaussterm,term
 c
+      if (deb_Path) write(iout,*), 'eangle3 '
+c
+c
 c
 c     zero out the angle bending energy and partitioning terms
 c

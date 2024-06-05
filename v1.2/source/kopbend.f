@@ -46,6 +46,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kopbend '
+c
+c
       blank = '                '
       zero4 = '0000'
       zero8 = '00000000'
@@ -258,6 +261,9 @@ c
       character*8 zero8
       character*16 blank,pt
       character*16 pt0,pt1
+c
+      if (deb_Path) write(iout,*), 'kopbend_update '
+c
 c
       if (forcefield .eq. 'MMFF94') then
          call kopbendm_update

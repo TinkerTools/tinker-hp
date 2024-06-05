@@ -52,6 +52,7 @@ c
       logical, allocatable :: moved(:)
       logical, allocatable :: update(:)
 c
+      if (deb_Path) write(iout,*), 'rattle '
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -221,6 +222,7 @@ c
       logical, allocatable :: moved(:)
       logical, allocatable :: update(:)
 c
+      if (deb_Path) write(iout,*), 'rattle2 '
 c
 c     perform dynamic allocation of some local arrays
 c
@@ -369,6 +371,8 @@ c
       use atoms
       use domdec
       use freeze
+      use inform
+      use iounit
       use mpole
       use mpi
       implicit none
@@ -381,6 +385,9 @@ c
       allocate (count(nproc))
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
+c
+      if (deb_Path) write(iout,*), 'initmpirattle '
+c
 c
       count = 0 
 c
@@ -527,6 +534,8 @@ c
       use atoms
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use mpi
       implicit none
@@ -534,6 +543,8 @@ c
       integer tag,status(MPI_STATUS_SIZE)
       integer, allocatable :: reqrec(:),reqsend(:)
       real*8, allocatable :: buffermpi1(:,:),buffermpi2(:,:)
+c
+      if (deb_Path) write(iout,*), 'commrattleinit '
 c
       allocate (reqrec(nproc))
       allocate (reqsend(nproc))
@@ -632,6 +643,8 @@ c
       use atoms
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use mpi
       implicit none
@@ -639,6 +652,9 @@ c
       integer tag,status(MPI_STATUS_SIZE)
       integer, allocatable :: reqrec(:),reqsend(:)
       real*8, allocatable :: buffermpi1(:,:),buffermpi2(:,:)
+c
+      if (deb_Path) write(iout,*), 'commrattleend '
+c
 c
       allocate (reqrec(nproc))
       allocate (reqsend(nproc))
@@ -750,6 +766,8 @@ c
       use atoms
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use mpi
       implicit none
@@ -757,6 +775,9 @@ c
       integer tag,status(MPI_STATUS_SIZE)
       integer, allocatable :: reqrec(:),reqsend(:)
       real*8, allocatable :: buffermpi1(:,:),buffermpi2(:,:)
+c
+      if (deb_Path) write(iout,*), 'commrattleinit2 '
+c
 c
       allocate (reqrec(nproc))
       allocate (reqsend(nproc))
@@ -837,6 +858,8 @@ c
       use atoms
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use mpi
       implicit none
@@ -844,6 +867,9 @@ c
       integer tag,status(MPI_STATUS_SIZE)
       integer, allocatable :: reqrec(:),reqsend(:)
       real*8, allocatable :: buffermpi1(:,:),buffermpi2(:,:)
+c
+      if (deb_Path) write(iout,*), 'commrattleend2 '
+c
 c
       allocate (reqrec(nproc))
       allocate (reqsend(nproc))

@@ -15,7 +15,12 @@ c     partitions the energy among the atoms
 c
 c
       subroutine etors3
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'etors3 '
+c
       call etors3a
       return
       end
@@ -76,6 +81,8 @@ c
       real*8 fgrp
       logical proceed
       logical header,huge
+c
+      if (deb_Path) write(iout,*), 'etors3a '
 c
 c
 c     zero out the torsional energy and partitioning terms

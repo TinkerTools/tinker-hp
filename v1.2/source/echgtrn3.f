@@ -15,7 +15,11 @@ c     the energy among the atoms
 c
 c
       subroutine echgtrn3
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'echgtrn3 '
 c
 c
 c     choose method for summing over charge transfer interactions
@@ -84,6 +88,8 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'echgtrn3c '
 c
       shortrange = use_chgtrnshort
       longrange  = use_chgtrnlong

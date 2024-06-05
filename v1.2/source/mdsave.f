@@ -69,6 +69,9 @@ c
       character*240 exten
       type(dcdinfo_t), save :: dcdinfo
 c
+      if (deb_Path) write(iout,*), 'mdsave '
+c
+c
       moddump = mod(istep,iwrite)
       if (moddump .ne. 0)  return
 c

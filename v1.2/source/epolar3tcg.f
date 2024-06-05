@@ -17,12 +17,16 @@ c
 c
       subroutine epolar3tcg
       use domdec
+      use inform
       use iounit
       use polpot
       use potent
       implicit none
  1000 format(' illegal tcg order')
  1010 format(' charge penetration not compatible with tcg')
+c
+      if (deb_Path) write(iout,*), 'epolar3tcg '
+c
 c
 c     choose the method for summing over polarization interactions
 c
@@ -69,6 +73,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -96,6 +102,9 @@ c
       real*8, allocatable, dimension(:,:) :: buffermpi1,buffermpi2
 
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar3tcg1 '
+c
 
       allocate(
      $         
@@ -318,6 +327,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -344,6 +355,9 @@ c
       real*8, allocatable, dimension(:,:) :: buffermpi1,buffermpi2
 
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar3tcg2 '
+c
 
       allocate( 
      $         res(3,2,max(1,npolebloc)), resbis(3,2,npolerecloc),

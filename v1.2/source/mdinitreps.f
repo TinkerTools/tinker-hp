@@ -34,6 +34,9 @@ c
       character*240 string
       real*8, allocatable :: list(:)
 c
+      if (deb_Path) write(iout,*), 'mdinitreps '
+c
+c
       write(numberreps, '(i3.3)') rank_reploc
 c
 c     try to restart using prior velocities and accelerations

@@ -39,6 +39,9 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'ebond3 '
+c
+c
 c
 c     zero out the bond energy and partitioning terms
 c

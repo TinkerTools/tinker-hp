@@ -60,6 +60,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kmpole '
+c
+c
 c     allocate global arrays
 c
       if (allocated(rpole)) deallocate (rpole)
@@ -726,6 +729,9 @@ c
       integer i,iipole
       integer iproc,iglob,polecount
       real*8 d
+c
+      if (deb_Path) write(iout,*), 'kmpole_update '
+c
 c
 c       remove any zero or undefined atomic multipoles
 c

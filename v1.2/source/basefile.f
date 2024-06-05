@@ -17,10 +17,14 @@ c
       subroutine basefile (string)
       use ascii
       use files
+      use inform
+      use iounit
       implicit none
       integer i,k,trimtext
       character*1 letter
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'basefile '
 c
 c
 c     store the input filename and find its full length

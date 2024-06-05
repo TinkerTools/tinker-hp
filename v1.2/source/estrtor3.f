@@ -61,6 +61,9 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'estrotr3 '
+c
+c
 c
 c     zero out the stretch-torsion energy and partitioning terms
 c

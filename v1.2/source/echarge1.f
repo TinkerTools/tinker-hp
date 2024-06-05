@@ -15,8 +15,13 @@ c     and first derivatives with respect to Cartesian coordinates
 c
 c
       subroutine echarge1
+      use inform
+      use iounit
       use potent
       implicit none
+c
+      if (deb_Path) write(iout,*), 'echarge1 '
+c
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -38,8 +43,9 @@ c
       use energi
       use ewald
       use domdec
-      use iounit
+      use inform
       use inter
+      use iounit
       use math
       use mutant
       use pme
@@ -57,6 +63,8 @@ c
       real*8 xdtemp,ydtemp,zdtemp
       real*8 dedx,dedy,dedz
       real*8 time0,time1
+c
+      if (deb_Path) write(iout,*), 'echarge1c '
 c
 c
 c     zero out the Ewald summation energy and derivatives
@@ -182,6 +190,7 @@ c
       use energi
       use ewald
       use group
+      use inform
       use inter
       use iounit
       use math
@@ -220,6 +229,9 @@ c
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
      $ ' update, try lowering nlupdate')
+c
+      if (deb_Path) write(iout,*), 'ecreal1d '
+c
 
 c     compute the short, long, or full real space part of the Ewald summation
       shortrange = use_cshortreal
@@ -476,6 +488,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mutant
       use pme
@@ -513,6 +527,9 @@ c
       real*8, allocatable :: qgridmpi(:,:,:,:,:)
       real*8 time0,time1
       time0 = mpi_wtime()
+c
+      if (deb_Path) write(iout,*), 'ecrecip1 '
+c
 c
       if (use_pmecore) then
         nprocloc = nrec

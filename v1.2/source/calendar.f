@@ -23,7 +23,6 @@ c
       integer day,hour
       integer minute,second
 c
-c
 c     use the standard "date_and_time" intrinsic function
 c
       integer values(8)

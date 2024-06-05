@@ -39,6 +39,8 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'eurey3 '
+c
 c
 c     zero out the Urey-Bradley energy and partitioning terms
 c

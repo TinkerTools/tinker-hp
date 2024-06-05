@@ -37,6 +37,8 @@ c
       use atmtyp
       use atoms
       use domdec
+      use inform
+      use iounit
       use virial
       use mpi
       implicit none
@@ -60,6 +62,9 @@ c
 
 
       integer ib
+c
+      if (deb_Path) write(iout,*), 'esmd1 '
+c
 c
 c     SMD storage: initialization
 c

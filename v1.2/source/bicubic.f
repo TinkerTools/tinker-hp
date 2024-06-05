@@ -24,7 +24,6 @@ c
       real*8 y1(4),y2(4)
       real*8 c(4,4)
 c
-c
 c     get coefficients, then perform bicubic interpolation
 c
       call bcucof (y,y1,y2,y12,x1u-x1l,x2u-x2l,c)
@@ -66,7 +65,6 @@ c
       real*8 y(4),y12(4)
       real*8 y1(4),y2(4)
       real*8 c(4,4)
-c
 c
 c     get coefficients, then perform bicubic interpolation
 c

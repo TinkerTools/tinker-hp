@@ -22,7 +22,6 @@ c
       character*1 letter
       character*20 blank
 c
-c
 c     initialize command line arguments as blank strings
 c
       narg = 0

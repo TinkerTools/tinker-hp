@@ -22,6 +22,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use pitors
       use torpot
       use usage
@@ -72,6 +74,8 @@ c
       real*8 vyx,vzx,vzy
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'epitors1 '
 c
 c
 c     zero out the pi-orbital torsion energy and first derivatives

@@ -21,10 +21,14 @@ c
       use bitor
       use couple
       use domdec
+      use inform
       use iounit
       implicit none
       integer i,j,k
       integer ia,ib,ic,id,ie
+c
+      if (deb_Path) write(iout,*), 'bitors '
+c
 c
 c     loop over all angles, storing the atoms in each bitorsion
 c
@@ -94,9 +98,14 @@ c
       use bitor
       use couple
       use domdec
+      use inform
+      use iounit
       implicit none
       integer i,j,k,iangle,nbitorloc1,bitorscount
       integer ia,ib,ic,id,ie
+c
+      if (deb_Path) write(iout,*), 'bitors_update '
+c
 c
       if (allocated(bitorsglob)) deallocate(bitorsglob)
       allocate (bitorsglob(8*nbloc))

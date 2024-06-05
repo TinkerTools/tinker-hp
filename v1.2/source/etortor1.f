@@ -24,6 +24,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use ktrtor
       use math
       use torpot
@@ -82,6 +84,9 @@ c
       real*8 ft1(4),ft2(4)
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'etortor1 '
+c
 c
 c
 c     zero out the torsion-torsion energy and first derivatives

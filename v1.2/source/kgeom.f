@@ -22,6 +22,7 @@ c
       use couple
       use domdec
       use group
+      use inform
       use iounit
       use katoms
       use keys
@@ -51,6 +52,8 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'kgeom '
 c
 c
 c     deallocate global pointers if necessary
@@ -453,6 +456,7 @@ c
       use couple
       use domdec
       use group
+      use inform
       use iounit
       use katoms
       use keys
@@ -468,6 +472,9 @@ c
       real*8 xa,ya,za,xb,yb,zb
       real*8 pos(3,4)
       real*8, allocatable :: posgroup(:,:)
+c
+      if (deb_Path) write(iout,*), 'kgeom_update '
+c
 c
       if (allocated(npfixglob)) deallocate(npfixglob)
       allocate (npfixglob(nloc))

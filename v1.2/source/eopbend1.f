@@ -25,6 +25,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use math
       use opbend
       use usage
@@ -63,6 +65,9 @@ c
       real*8 vyx,vzx,vzy
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eopbend1 '
+c
 c
 c
 c     zero out out-of-plane energy and first derivatives

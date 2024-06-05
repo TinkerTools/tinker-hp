@@ -15,11 +15,15 @@ c
 c
       subroutine elj
       use energi
+      use inform
+      use iounit
       use potent
       use vdwpot
       implicit none
       real*8 elrc
       character*11 mode
+c
+      if (deb_Path) write(iout,*), 'elj '
 c
 c     Sum over pairwise interactions
 c
@@ -58,7 +62,9 @@ c
       use domdec
       use energi
       use group
+      use inform
       use inter
+      use iounit
       use molcul
       use mutant
       use neigh
@@ -90,6 +96,9 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'elj0c '
+c
 c
 c     choose the method for summing over pairwise interactions
       shortrange = use_vdwshort

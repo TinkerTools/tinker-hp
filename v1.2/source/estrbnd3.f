@@ -50,6 +50,9 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'estrbnd3 '
+c
+c
 c
 c     zero out the energy component and partitioning terms
 c

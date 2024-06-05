@@ -24,6 +24,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use opdist
       use usage
       use virial
@@ -51,6 +53,8 @@ c
       real*8 vyx,vzx,vzy
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eopdist1 '
 c
 c
 c     zero out out-of-plane energy and first derivatives

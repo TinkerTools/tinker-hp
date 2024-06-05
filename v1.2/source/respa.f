@@ -31,8 +31,11 @@ c
       use atmtyp
       use atoms
       use cutoff
+      use deriv
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use timestat
       use units
@@ -56,6 +59,9 @@ c
       real*8, allocatable :: derivs(:,:)
       real*8 dip(3,nalt),dipind(3,nalt)
       time0 = mpi_wtime()
+c
+      if (deb_Path) write(iout,*), 'respa '
+c
 c
 c     set some time values for the dynamics integration
 c
@@ -151,6 +157,12 @@ c
       time1 = mpi_wtime()
       timered = timered + time1 - time0
 c
+c     Debug print information
+c
+      if(deb_Energy) call info_energy(rank)
+      if(deb_Force)  call info_forces(cNBond)
+      if(deb_Atom)   call info_minmax_pva
+c
 c     make half-step temperature and pressure corrections
 c
       time0 = mpi_wtime()
@@ -235,6 +247,8 @@ c
 c
       subroutine gradfast (energy,derivs)
       use cutoff
+      use inform
+      use iounit
       use potent
 #ifdef COLVARS
       use colvars
@@ -256,7 +270,7 @@ c
       logical save_plumed
 #endif
 c
-c
+      if (deb_Path) write(iout,*), 'gradfast '
 c
 c
 c     save the original state of slow-evolving potentials
@@ -328,6 +342,8 @@ c     for the slow-evolving nonbonded potential energy terms
 c
 c
       subroutine gradslow (energy,derivs)
+      use inform
+      use iounit
       use potent
       implicit none
       real*8 energy
@@ -341,6 +357,9 @@ c
       logical save_angtor
       logical save_tortor,save_geom
       logical save_extra
+c
+      if (deb_Path) write(iout,*), 'gradslow '
+c
 c
 c
 c     save the original state of fast-evolving potentials
@@ -417,8 +436,11 @@ c
       use atmtyp
       use atoms
       use cutoff
+      use deriv
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use timestat
       use units
@@ -436,6 +458,9 @@ c
       real*8, allocatable :: derivs(:,:)
       real*8 viralt(3,3)
       time0 = mpi_wtime()
+c
+      if (deb_Path) write(iout,*), 'respafast '
+c
 
       dta_2 = 0.5d0 * dta
 c
@@ -468,6 +493,7 @@ c
         if (use_rattle)  call rattle (dta)
         time1 = mpi_wtime()
         timeinte = timeinte + time1-time0 
+        if(deb_Atom)   call info_minmax_pva(1)
 c
 c       Reassign the particules that have changed of domain
 c
@@ -519,6 +545,11 @@ c
         call reduceen(ealt)
         time1 = mpi_wtime()
         timered = timered + time1 - time0
+c
+c        Debug information
+c
+         if(deb_Energy) call info_energy(rank)
+         if(deb_Force)  call info_forces(cBond)
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion

@@ -15,8 +15,12 @@ c     and partitions the energy among atoms
 c
 c
       subroutine epolar3
+      use inform
+      use iounit
       use polpot
       implicit none
+c
+      if (deb_Path) write(iout,*), 'epolar3 '
 c
 c     choose the method for summing over polarization interactions
 c
@@ -51,6 +55,8 @@ c
       use energi
       use ewald
       use group
+      use inform
+      use iounit
       use math
       use mpole
       use polar
@@ -66,6 +72,8 @@ c
       real*8 uix,uiy,uiz,uii
       real*8 xd,yd,zd
       real*8 xu,yu,zu
+c
+      if (deb_Path) write(iout,*), 'epolar3c '
 c
 c
 c     zero out the dipole polarization energy and components
@@ -278,9 +286,9 @@ c
       logical header,huge
       character*11 mode
       character*80 :: RoutineName
-
-
-
+c
+      if (deb_Path) write(iout,*), 'epreal3d '
+c
 c     compute the short, or full real space part of the summation
       shortrange = use_polarshortreal
       longrange  = .false.
@@ -553,6 +561,7 @@ c
       use boxes
       use charge
       use domdec
+      use inform
       use iounit
       use mpole
       use polar
@@ -567,6 +576,9 @@ c
  1000 format(/'x dipolar moment : ',F14.5)
  1010 format(/'y dipolar moment : ',F14.5)
  1020 format(/'z dipolar moment : ',F14.5)
+c
+      if (deb_Path) write(iout,*), 'totaldipole '
+c
 c
       call compute_dipole(dip,dipind,.TRUE.)
 

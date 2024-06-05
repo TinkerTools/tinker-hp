@@ -15,9 +15,14 @@ c     dipole interactions
 c
 c
       subroutine epolar
+      use inform
+      use iounit
       use polpot
       use potent
       implicit none
+c
+      if (deb_Path) write(iout,*), 'epolar '
+c
 c
       if (polalg.eq.3) then
         call epolar3tcg
@@ -49,6 +54,8 @@ c
       use energi
       use ewald
       use group
+      use inform
+      use iounit
       use math
       use mpole
       use polar
@@ -62,6 +69,8 @@ c
       real*8 uix,uiy,uiz,uii
       real*8 xd,yd,zd
       real*8 xu,yu,zu
+c
+      if (deb_Path) write(iout,*), 'epolar0c '
 c
 c
 c     zero out the polarization energy and derivatives
@@ -207,6 +216,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use neigh
@@ -251,7 +262,9 @@ c
       character*11 mode
       character*80 :: RoutineName
       external erfc
-
+c
+      if (deb_Path) write(iout,*), 'epreal0c '
+c
 
 c     compute the short, or full real space part of the summation
       shortrange = use_polarshortreal
@@ -518,6 +531,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -536,6 +551,9 @@ c
       real*8 struc2
       real*8 a(3,3)
       real*8 fuind(3)
+c
+      if (deb_Path) write(iout,*), 'eprecip '
+c
 c
       if (use_pmecore) then
         nprocloc = nrec

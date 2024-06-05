@@ -10,6 +10,8 @@ c     ##                                                       ##
 c     ###########################################################
 c
       subroutine diis(ndsmax,n,xdiis,ediis,bmat,nmat,reqdiis,comm)
+      use inform
+      use iounit
       implicit none
 c
 c     driver to perform direct inversion in iterative subsspace
@@ -23,6 +25,9 @@ c
 c
  1000 format(' DIIS will restart the extrapolation.')
  1010 format(' Restarting from ',I4)
+c
+      if (deb_Path) write(iout,*), 'diis '
+c
 c
 c     if needed, resize the matrix and restart the extrapolation.
 c

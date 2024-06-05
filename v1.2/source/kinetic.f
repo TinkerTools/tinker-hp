@@ -20,6 +20,8 @@ c
       use bath
       use domdec
       use group
+      use inform
+      use iounit
       use mdstuf
       use moldyn
       use units
@@ -35,6 +37,9 @@ c
 
 
       real*8 ekin(3,3)
+c
+      if (deb_Path) write(iout,*), 'kinetic '
+c
 
 c
 c

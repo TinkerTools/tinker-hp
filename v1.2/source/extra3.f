@@ -21,8 +21,11 @@ c
       use atoms
       use domdec
       use energi
+      use inform
+      use iounit
       implicit none
-
+c
+      if (deb_Path) write(iout,*), 'extra3 '
 c
 c
 c     zero out the energy due to extra potential terms
@@ -42,7 +45,7 @@ c     for more explanations), it is therefore updated at each time step.
 c     The number of local atoms (belonging to the local process) is nloc, the number of
 c     local + neighboring atoms is nbloc. 
 c     It is possible to switch between the two indexes by using the arrays "loc" and
-c     "glob" that are in the 'openmp.i' common bloc.
+c     "glob" that are in the 'domdec' module.
 c     The forces arrays such as dex are in the local index.
 c      
 c     Many of the global parameters arrays such as the multipoles, the positions, the atom

@@ -20,7 +20,12 @@ c     Physics, 150, 084104 (2019)
 c
 c
       subroutine erepel
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'erepel '
+c
 c
 c
 c     choose the method for summing over pairwise interactions
@@ -96,6 +101,9 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'erepel0c '
+c
 
       shortrange = use_repulsshort
       longrange  = use_repulslong

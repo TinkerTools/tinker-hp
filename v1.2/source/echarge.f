@@ -15,7 +15,12 @@ c     and partitions the energy among the atoms
 c
 c
       subroutine echarge
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'echarge '
+c
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -65,6 +70,9 @@ c
       real*8 fs
       real*8 xd,yd,zd
       external erfc
+c
+      if (deb_Path) write(iout,*), 'echarge0c '
+c
 c
 c
 c     zero out the Ewald summation energy and partitioning
@@ -187,6 +195,9 @@ c
       character*11 mode
       character*80 :: RoutineName
       external erfc
+c
+      if (deb_Path) write(iout,*), 'ecreal0d '
+c
 
 c     compute the short, long, or full real space part of the Ewald summation
       shortrange = use_cshortreal

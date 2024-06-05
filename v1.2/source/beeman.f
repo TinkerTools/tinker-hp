@@ -28,9 +28,12 @@ c
       use atmtyp
       use atoms
       use cutoff
+      use deriv
       use domdec
       use energi
       use freeze
+      use inform
+      use iounit
       use mdstuf
       use moldyn
       use timestat
@@ -48,6 +51,9 @@ c
       real*8 time0,time1
       real*8, allocatable :: derivs(:,:)
       time0 = mpi_wtime()
+c
+      if (deb_Path) write(iout,*), 'beeman '
+c
 c
 c     set time values and coefficients for Beeman integration
 c
@@ -140,6 +146,12 @@ c
       call reduceen(epot)
       time1 = mpi_wtime()
       timered = timered + time1 - time0
+c
+c     Debug print information
+c
+      if (deb_Energy) call info_energy(rank)
+      if (deb_Force)  call info_forces(cDef)
+      if (deb_Atom)   call info_minmax_pva
 c
 c     make half-step temperature and pressure corrections
 c

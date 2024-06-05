@@ -20,12 +20,15 @@ c
       use bond
       use couple
       use domdec
+      use inform
       use iounit
       implicit none
       integer i,j,k,m
    10              format (/,' BONDS  --  Too many Bonds; Increase',
      &                        ' MAXBND')
 c
+c
+      if (deb_Path) write(iout,*), 'bonds '
 c
 c
 c     loop over all atoms, storing the atoms in each bond
@@ -82,10 +85,15 @@ c
       use bond
       use couple
       use domdec
+      use inform
+      use iounit
       implicit none
       integer i,j,k,iglob
       logical docompute
       real*8 xk,yk,zk,xi,yi,zi
+c
+      if (deb_Path) write(iout,*), 'bonds_update '
+c
 c
       if (allocated(bndglob)) deallocate(bndglob)
       allocate (bndglob(maxvalue*nbloc))

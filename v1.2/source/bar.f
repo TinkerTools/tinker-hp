@@ -155,6 +155,9 @@ c
       character*240, allocatable :: keys1(:)
       type(dcdinfo_t) :: dcdinfo
 c
+      if (deb_Path) write(iout,*), 'makebar '
+c
+c
 c
 c     get trajectory A archive and setup mechanics calculation
 c
@@ -681,6 +684,9 @@ c
       character*240 titleb
       character*240 barfile
       external random
+c
+      if (deb_Path) write(iout,*), 'bar_calc '
+c
 c
 c
 c     ask the user for file with potential energies and volumes

@@ -51,6 +51,8 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'ktors '
+c
 c
 c     process keywords containing torsional angle parameters
 c

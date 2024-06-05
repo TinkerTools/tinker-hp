@@ -22,6 +22,9 @@ c
       integer ixyz
       integer freeunit
       character*240 xyzfile
+c
+      if (deb_Path) write(iout,*), 'getxyz '
+c
 
       call get_xyz_filename(xyzfile)
 c

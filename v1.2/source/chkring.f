@@ -17,10 +17,14 @@ c
       subroutine chkring (iring,ia,ib,ic,id)
       use sizes
       use couple
+      use inform
+      use iounit
       implicit none
       integer i,j,k,m,p,q,r
       integer ia,ib,ic,id
       integer iring,nset
+c
+      if (deb_Path) write(iout,*), 'chkring '
 c
 c
 c     initialize the ring size and number of atoms to test

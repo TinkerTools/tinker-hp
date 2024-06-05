@@ -16,6 +16,7 @@ c
 c
       subroutine readprm
       use fields
+      use inform
       use iounit
       use kanang
       use kangs
@@ -102,6 +103,9 @@ c
       character*20 text
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'readprm '
+c
 c
 c
 c     initialize the counters for some parameter types

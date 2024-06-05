@@ -15,6 +15,7 @@ c
       use cutoff
       use domdec ,only: rank,ranktot,COMM_TINKER
      &           ,glob,nloc,nlocnl,nbloc,nproc
+      use freeze,only: use_rattle
       use moldyn ,only: v,a,aalt,aalt2
       use mpi
       use neigh  ,only: ineigup, lbuffer
@@ -35,7 +36,6 @@ c
       deb_Path    = .false.
       deb_Force   = .false.
       deb_Energy  = .false.
-      deb_Polar   = .false.
       tinkerdebug = 0
       sav         = 0
       dd_verbose  = .true.
@@ -58,12 +58,11 @@ c
          if (btest(sav,tindForce )) deb_Force  = .true.
          if (btest(sav,tindEnergy)) deb_Energy = .true.
          if (btest(sav,tindAtom  )) deb_Atom   = .true.
-         if (btest(sav,tindPolar )) deb_Polar  = .true.
       end if
-
       end subroutine
 
       module subroutine info_dyn()
+      use iounit
       implicit none
       integer i
 
@@ -73,29 +72,30 @@ c
  16   format(A20,5x,L4)
  17   format(A20,G15.4E1)
 
-      print 13, 'natoms', n
-      if (n.ne.nbloc) print 13, 'nbloc', nbloc
-      print 13, 'natoms loc/nl', nloc,nlocnl
-      print 13, 'nlupdate'     , ineigup
-      print 14, 'list buffer'  , lbuffer
+      write(iout,13) 'natoms', n
+      if (n.ne.nbloc) write(iout,13), 'nbloc', nbloc
+      write(iout,13), 'natoms loc/nl', nloc,nlocnl
+      write(iout,13), 'nlupdate'     , ineigup
+      write(iout,14), 'list buffer'  , lbuffer
       if (use_vdw) then
-         print 14, 'vdw cutoff'   , vdwcut
-         print 14, 'vdw short cutoff'   , vdwshortcut
-         print 14, 'vdw taper'    , vdwtaper
-         print 14, 'shortheal'    , shortheal
+         write(iout,14), 'vdw cutoff'   , vdwcut
+         write(iout,14), 'vdw short cutoff'   , vdwshortcut
+         write(iout,14), 'vdw taper'    , vdwtaper
+         write(iout,14), 'shortheal'    , shortheal
       end if
       if (use_mpole.or.use_polar) then
-         print 14, 'mpole cutoff' , mpolecut
-         print 14, 'mpole short cutoff' , mpoleshortcut
-         print 14, 'ewaldcut'     , ewaldcut
-         print 17, 'polar solver tol', poleps
+         write(iout,14), 'mpole cutoff' , mpolecut
+         write(iout,14), 'mpole short cutoff' , mpoleshortcut
+         write(iout,14), 'ewaldcut'     , ewaldcut
+         write(iout,17), 'polar solver tol', poleps
       end if
       if (use_charge) then
-         print 14, 'charge cutoff', mpolecut
-         print 14, 'chg taper'    , chgtaper
+         write(iout,14), 'charge cutoff', mpolecut
+         write(iout,14), 'chg taper'    , chgtaper
       end if
-      print 15, 'thermostat', thermostat
-      print 15, 'barostat', barostat
+      write(iout,15), 'thermostat', thermostat
+      write(iout,15), 'barostat', barostat
+      write(iout,16), 'rattle', use_rattle
       end subroutine
 
       subroutine lookfor(val,n,array,find,ind)

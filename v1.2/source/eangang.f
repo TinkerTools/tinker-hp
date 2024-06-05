@@ -48,6 +48,9 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'eangang '
+c
+c
 c
 c     zero out the angle-angle cross term energy
 c

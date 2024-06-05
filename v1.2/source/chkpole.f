@@ -19,6 +19,8 @@ c
       use atmlst
       use atoms
       use domdec
+      use inform
+      use iounit
       use mpole
       implicit none
       logical, intent(in) :: init
@@ -31,6 +33,9 @@ c
       real*8 c1,c2,c3,vol
       logical check
       integer :: ierr
+c
+      if (deb_Path) write(iout,*), 'chkpole '
+c
 c
       if (init) then
         nloop = npole

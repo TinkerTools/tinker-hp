@@ -49,6 +49,9 @@ c
       character*20 keyword,text
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'kpolar '
+c
       blank = '        '
 c
 c
@@ -458,6 +461,8 @@ c
       integer iproc,iglob,polecount,iipole
       real*8 d
 c
+      if (deb_Path) write(iout,*), 'kpolar_update '
+c
 
       if ((use_polar .or. use_repuls) .and. .not.use_chgtrn) then
 
@@ -612,6 +617,9 @@ c
       integer list(maxlist)
       integer, allocatable :: mask(:)
       logical done
+c
+      if (deb_Path) write(iout,*), 'polargrp '
+c
 c
 c
 c     find the directly connected group members for each atom

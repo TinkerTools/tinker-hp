@@ -44,6 +44,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kopdist '
+c
+c
       blank = '                '
       zeros = '000000000000'
 c
@@ -231,6 +234,9 @@ c
       character*12 zeros
       character*16 blank
       character*16 pt,pt0
+c
+      if (deb_Path) write(iout,*), 'kopdist_update '
+c
 c
       blank = '                '
       zeros = '000000000000'

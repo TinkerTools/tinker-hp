@@ -34,6 +34,8 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'active '
+c
 c     deallocate global pointers if necessary
 c
       call dealloc_shared_active

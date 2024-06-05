@@ -21,6 +21,8 @@ c
       use atmtyp
       use atoms
       use boxes
+      use inform
+      use iounit
       use molcul
 #ifdef COLVARS
       use colvars
@@ -33,6 +35,9 @@ c
       integer init,stop
       integer nlist
       integer, allocatable :: list(:)
+c
+      if (deb_Path) write(iout,*), 'bounds '
+c
 c
       if (allocated(list)) deallocate(list)
       allocate (list(n))
@@ -119,6 +124,8 @@ c
       use atmtyp
       use atoms
       use boxes
+      use inform
+      use iounit
       implicit none
       integer j,k
       integer, intent(in):: nlist,list(nlist)
@@ -126,6 +133,9 @@ c
       real*8 xmid,ymid,zmid
       real*8 dx,dy,dz
       integer :: xshift,yshift,zshift
+c
+      if (deb_Path) write(iout,*), 'boundslist '
+c
 c
 c
       xmid = 0.0d0

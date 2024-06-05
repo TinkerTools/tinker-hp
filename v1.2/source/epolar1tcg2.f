@@ -20,6 +20,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -70,6 +72,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu1,buffermpimu2
       real*8, allocatable, dimension(:,:) :: buffermpi1,buffermpi2
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2 '
+c
 
       allocate(adte(3,3,nrhs, npolebloc),adtebis(3,3,nlocrec))
       allocate(denedt(3,3,npolebloc),denedtbis(3,3,npolerecloc))
@@ -497,6 +502,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -551,6 +558,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu1,buffermpimu2
       real*8, allocatable, dimension(:,:) :: buffermpi1,buffermpi2
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2bis '
+c
 
 
       allocate(adte(3,3,nrhs, npolebloc))
@@ -1126,6 +1136,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -1189,6 +1201,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu1,buffermpimu2
       real*8, allocatable, dimension(:,:) :: buffermpi1,buffermpi2
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2ter '
+c
 
       allocate(adte(3,3,nrhs, npolebloc))
       allocate(adtebis(3,3,npolerecloc))
@@ -1982,6 +1997,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -2045,6 +2062,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu1,buffermpimu2
       real*8, allocatable, dimension(:,:) :: buffermpi1,buffermpi2
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2quat '
+c
 
       allocate(denedt(3,3,npolebloc), adtebis(3,3,npolerecloc))
       allocate(denedtbis(3,3,npolerecloc))
@@ -2791,6 +2811,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -2852,6 +2874,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu1,buffermpimu2
       real*8, allocatable, dimension(:,:) :: buffermpi1,buffermpi2
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2cinq '
+c
 
       allocate(adte(3,3,nrhs, npolebloc))
       allocate(denedt(3,3,npoleloc),adtebis(3,3,npolerecloc))

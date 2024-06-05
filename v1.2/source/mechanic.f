@@ -22,6 +22,9 @@ c
       use mpi
       implicit none
 c
+      if (deb_Path) write(iout,*), 'mechanic '
+c
+c
 c     set the bonded connectivity lists and active atoms
 c
       call attach
@@ -127,8 +130,13 @@ c     subroutine mechanic_init_para: initialize parallel parameters after domain
 c
 c
       subroutine mechanic_init_para
+      use inform
+      use iounit
       use potent
       implicit none
+c
+      if (deb_Path) write(iout,*), 'mechanic_init_para '
+c
 c
       call bonds_update
       call angles_update
@@ -175,9 +183,14 @@ c     subroutine mechanic_up_para: update parallel parameters
 c
 c
       subroutine mechanic_up_para(istep)
+      use inform
+      use iounit
       use potent
       implicit none
       integer istep
+c
+      if (deb_Path) write(iout,*), 'mechanic_up_para '
+c
 c
       call bonds_update
       call angles_update
@@ -225,10 +238,15 @@ c     subroutine mechanic_up_para_respa: update parallel parameters between two 
 c
 c
       subroutine mechanic_up_para_respa(istep,fast)
+      use inform
+      use iounit
       use potent
       implicit none
       logical fast
       integer istep
+c
+      if (deb_Path) write(iout,*), 'mechanic_up_para_respa '
+c
 c
       if (fast) then
         call bonds_update
@@ -268,11 +286,15 @@ c     subroutine mechanic_up_para_respa1: update parameters between two time ste
 c
       subroutine mechanic_up_para_respa1(istep,rule)
       use domdec
+      use inform
       use iounit
       use potent
       implicit none
       integer istep,rule
  1000 format(' illegal rule in mechanicsteprespa1.')
+c
+      if (deb_Path) write(iout,*), 'mechanic_up_para_respa1 '
+c
 c
 c     rule = 0: fast part of the forces
 c     rule = 1: intermediate part of the forces

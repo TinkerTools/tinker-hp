@@ -20,6 +20,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -51,6 +53,9 @@ c
      $            denedmu,denedr, arr_ded, arr_dep,adtb, arr_dtr0, 
      $            arr_dTTr0, arr_dTT2r0
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2shortreal '
+c
 
       allocate(adte(3,3,nrhs, npolebloc))
       allocate(denedt(3,3,npolebloc))
@@ -265,6 +270,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -309,6 +316,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: buffermpimu1,buffermpimu2
       real*8, allocatable, dimension(:,:) :: buffermpi1,buffermpi2
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2bisshortreal '
+c
 
 
       allocate(adte(3,3,nrhs, npolebloc))
@@ -599,6 +609,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -635,6 +647,9 @@ c
       real*8, allocatable, dimension(:,:) :: torq_t, torq_mu, grad_ene,
      $            denedmu, denedr, arr_ded, arr_dep, adtb
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2tershortreal '
+c
 
       allocate(adte(3,3,nrhs, npolebloc))
       allocate(denedt(3,3,npolebloc))
@@ -1027,6 +1042,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -1064,6 +1081,9 @@ c
      $            denedmu, denedr, arr_ded, arr_dep, adtb, 
      $            tmpsmall
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2quatshortreal '
+c
 
       allocate(adte(3,3,nrhs, npolebloc))
       allocate(denedt(3,3,npolebloc)) 
@@ -1427,6 +1447,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -1461,6 +1483,9 @@ c
      $            arr_dr0, arr_dTr0,arr_dTTr0, arr_dTT2r0, denedmu,
      $            denedr, arr_ded,arr_dep, adtb,tmpsmall
       parameter (nrhs=2)
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg2cinqshortreal '
+c
 
       allocate(adte(3,3,nrhs, npolebloc))
       allocate(denedt(3,3,npoleloc))

@@ -40,6 +40,7 @@ c
       use energi
       use freeze
       use inform
+      use iounit
       use mdstuf
       use moldyn
       use mpi
@@ -58,6 +59,9 @@ c
       real*8 dta,dta_2,dt_2
       real*8 time0,time1
       real*8 dip(3,nalt),dipind(3,nalt)
+c
+      if (deb_Path) write(iout,*), 'baoabrespa '
+c
 
       if (istep.eq.1) then
         pres=atmsph
@@ -153,6 +157,12 @@ c
 c
         if (use_rattle)  call rattle2 (dta_2)
 c
+c     Debug print information
+c
+        if (deb_Energy)call info_energy(rank)
+        if (deb_Force) call info_forces(cBond)
+        if (deb_Atom)  call info_minmax_pva
+c
 c     increment average virial from fast-evolving potential terms
         viralt(:,:)=viralt(:,:)+vir(:,:)/dshort
 
@@ -245,6 +255,12 @@ c
 c     find the constraint-corrected full-step velocities
 c
       if (use_rattle)  call rattle2 (dt)
+c
+c     Debug print information
+c
+      if (deb_Energy) call info_energy(rank)
+      if (deb_Force)  call info_forces(cNBond)
+      if (deb_Atom)   call info_minmax_pva
 c
 c     total potential and virial from sum of fast and slow parts
 c

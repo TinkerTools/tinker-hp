@@ -24,6 +24,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use math
       use opbend
       use usage
@@ -47,6 +49,9 @@ c
       real*8 cc,ee,bkk2
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eopbend '
+c
 c
 c
 c     zero out the out-of-plane bend energy

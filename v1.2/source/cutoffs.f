@@ -20,6 +20,7 @@ c
       use cutoff
       use domdec
       use keys
+      use inform
       use iounit
       use neigh
       use potent
@@ -30,6 +31,8 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'cutoffs '
 c
 c
 c     set defaults for spherical energy cutoff distances
@@ -261,10 +264,15 @@ c
       use argue
       use bath
       use cutoff
+      use inform
+      use iounit
       use neigh
       implicit none
       real*8,intent(in):: list_buff
       real*8 dt
+c
+      if (deb_Path) write(iout,*), 'update_lbuffer '
+c
 c
 c     set buffer region limits for pairwise neighbor lists
 c

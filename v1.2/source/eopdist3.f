@@ -47,6 +47,8 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'eopdist3 '
+c
 c
 c     zero out the out-of-plane distance energy and partitioning
 c

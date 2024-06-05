@@ -21,6 +21,8 @@ c
       use atmtyp
       use atoms
       use boxes
+      use inform
+      use iounit
       use molcul
       use beads
 #ifdef COLVARS
@@ -36,6 +38,9 @@ c
       integer init,stop
       integer nlist
       integer, allocatable :: list(:)
+c
+      if (deb_Path) write(iout,*), 'boundspi '
+c
       
 c
       if (allocated(list)) deallocate(list)
@@ -124,6 +129,8 @@ c
       use atoms
       use boxes
       use beads
+      use inform
+      use iounit
       implicit none
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
       integer, intent(in) :: ibead_beg,ibead_end
@@ -133,6 +140,9 @@ c
       real*8 xmid,ymid,zmid
       real*8 dx,dy,dz
       integer :: xshift,yshift,zshift
+c
+      if (deb_Path) write(iout,*), 'boundslistpi '
+c
 c
 c
       xmid = 0.0d0

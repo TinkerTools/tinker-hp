@@ -20,10 +20,13 @@ c
       use atoms
       use couple
       use domdec
+      use inform
       use iounit
       implicit none
       integer i,j,k,m
       integer jj,kk
+c
+      if (deb_Path) write(iout,*), 'attach '
 c
 c     deallocate global pointers if necessary
 c

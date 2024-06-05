@@ -38,6 +38,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kangang '
+c
+c
 c     process keywords containing angle-angle parameters
 c
       header = .true.
@@ -167,6 +170,9 @@ c
       integer iglob
       integer nang,jang,kang,nangangloc1,angangcount
       real*8 fa,faa
+c
+      if (deb_Path) write(iout,*), 'kangang_update '
+c
 c
       if (allocated(angangglob)) deallocate(angangglob)
       allocate (angangglob(15*nloc))

@@ -20,6 +20,8 @@ c
       use bound
       use energi
       use group
+      use inform
+      use iounit
       use ktrtor
       use math
       use torpot
@@ -55,6 +57,8 @@ c
       real*8 ft1(4),ft2(4)
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'etortor '
 c
 c
 c     zero out the torsion-torsion energy
@@ -251,7 +255,6 @@ c
       real*8 xbc,ybc,zbc
       real*8 xdc,ydc,zdc
       real*8 c1,c2,c3,vol
-c
 c
 c
 c     test for chirality at the central torsion-torsion site

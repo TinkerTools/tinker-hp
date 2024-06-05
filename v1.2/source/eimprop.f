@@ -21,6 +21,8 @@ c
       use energi
       use group
       use improp
+      use inform
+      use iounit
       use math
       use torpot
       use usage
@@ -44,6 +46,8 @@ c
       real*8 xdc,ydc,zdc
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eimprop '
 c
 c
 c     zero out improper dihedral energy

@@ -25,11 +25,15 @@ c
       use dsppot
       use energi
       use ewald
+      use inform
+      use iounit
       use potent
       use virial
       implicit none
       real*8 elrc,vlrc
       character*11 mode
+c
+      if (deb_Path) write(iout,*), 'edisp1 '
 c
 c
 c     choose the method for summing over pairwise interactions
@@ -79,6 +83,8 @@ c
       use dsppot
       use energi
       use group
+      use inform
+      use iounit
       use mutant
       use neigh
       use potent
@@ -115,6 +121,9 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'edisp1b '
+c
 c
 c     compute the short, long, or full real space part of the Ewald summation
       shortrange = use_dispshort
@@ -404,11 +413,15 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use pme
       use potent
       implicit none
       integer i,iidisp
       real*8 term
+c
+      if (deb_Path) write(iout,*), 'edisp1d '
 c
 c
 c     zero out the damped dispersion energy and derivatives
@@ -476,6 +489,8 @@ c
       use energi
       use ewald
       use group
+      use inform
+      use iounit
       use mutant
       use neigh
       use potent
@@ -513,6 +528,9 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'edreal1d '
+c
 
 c     choose the method for summing over pairwise interactions
       shortrange = use_dispshortreal
@@ -779,6 +797,8 @@ c
       use energi
       use ewald
       use fft
+      use iounit
+      use inform
       use math
       use mpi
       use pme
@@ -814,6 +834,8 @@ c
       integer status(MPI_STATUS_SIZE),tag,ierr,proc
       integer nprocloc,rankloc,commloc
       real*8, allocatable :: qgridmpi(:,:,:,:,:)
+c
+      if (deb_Path) write(iout,*), 'edrecip1 '
 c
       if (use_pmecore) then
         nprocloc = nrec

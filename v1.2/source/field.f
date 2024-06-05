@@ -15,11 +15,16 @@ c     a parameter file and modifications specified in a keyfile
 c
 c
       subroutine field
+      use inform
+      use iounit
       use keys
       use potent
       implicit none
       integer i
       character*240 record
+c
+c
+      if (deb_Path) write(iout,*), 'field '
 c
 c
 c     set the default values for the active potentials

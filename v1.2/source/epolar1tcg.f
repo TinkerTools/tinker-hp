@@ -15,12 +15,16 @@ c
 c
       subroutine epolar1tcg
       use domdec
+      use inform
       use iounit
       use polpot
       use potent
       implicit none
  1000 format(' illegal tcg order')
  1010 format(' charge penetration not compatible with tcg')
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg '
+c
 
       if (use_chgpen) then
         if (rank.eq.0) write(iout,1010) 
@@ -119,6 +123,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -257,6 +263,9 @@ c
       allocate (req2send(nproc))
       allocate (reqrecdirrec(nproc))
       allocate (reqrecdirsend(nproc))
+c
+      if (deb_Path) write(iout,*), 'epolar1tcg1 '
+c
 
       f = electric/dielec
 

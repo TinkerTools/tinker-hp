@@ -20,6 +20,8 @@ c
       use bound
       use energi
       use group
+      use inform
+      use iounit
       use strtor
       use torpot
       use tors
@@ -50,6 +52,8 @@ c
       real*8 xdc,ydc,zdc
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'estrtor '
 c
 c
 c     zero out the stretch-torsion energy

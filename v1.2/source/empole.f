@@ -34,6 +34,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -59,6 +61,9 @@ c
       integer, allocatable :: reqsend(:),reqrec(:)
       integer, allocatable :: req2send(:),req2rec(:)
       real*8, allocatable :: qgridmpi(:,:,:,:,:)
+c
+      if (deb_Path) write(iout,*), 'emrecip '
+c
 c
       if (use_pmecore) then
         nprocloc = nrec

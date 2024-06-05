@@ -24,6 +24,8 @@ c
       use domdec
       use energi
       use group
+      use iounit
+      use inform
       use math
       use torpot
       use tors
@@ -72,6 +74,9 @@ c
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eangtor1 '
+c
 c
 c
 c     zero out the angle-torsion energy and first derivatives

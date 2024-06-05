@@ -17,6 +17,7 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -60,6 +61,9 @@ c
 c1000 format(' illegal polalg in newinduce.')
  1010 format(' time for the ',a,F14.5)
  1020 format(' total elapsed time in newinduce: ',F14.5)
+c
+      if (deb_Path) write(iout,*), 'dcinduce_pme '
+c
 c
 c     allocate some memory and clear the arrays:
 c
@@ -322,6 +326,7 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -372,6 +377,9 @@ c
  1021 format(' Jacobi/DIIS solver: induced p-dipoles',/,
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
+c
+c
+      if (deb_Path) write(iout,*), 'inducedc_pme '
 c
 c
       zero   = 0.0d0
@@ -643,6 +651,7 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -699,6 +708,9 @@ c
 c
  1000 format(' Warning, system moved too much since last neighbor list
      $  update, try lowering nlupdate')
+c
+      if (deb_Path) write(iout,*), 'pc_dc_efld0_direct '
+c
 c
       shortrange = use_polarshortreal
       if (shortrange) then 
@@ -1264,6 +1276,8 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use neigh
@@ -1289,6 +1303,9 @@ c
       logical shortrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'pc_dc_tmatxb_pme '
+c
 
 
 
@@ -1443,6 +1460,8 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use neigh
@@ -1480,6 +1499,9 @@ c
       real*8  cutoff2
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'otf_dc_tmatxb_pme '
+c
 
       shortrange = use_polarshortreal
       if (shortrange) then 
@@ -1726,6 +1748,7 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -1782,6 +1805,9 @@ c
 c
  1000 format(' Warning, system moved too much since last neighbor list
      $  update, try lowering nlupdate')
+c
+      if (deb_Path) write(iout,*), 'otf_dc_efld0_direct '
+c
 c
       shortrange = use_polarshortreal
       if (shortrange) then 
@@ -2295,6 +2321,8 @@ c
       subroutine commfield2(nrhs,ef)
       use atoms
       use domdec
+      use inform
+      use iounit
       use mpole
       use potent
       use mpi
@@ -2304,6 +2332,9 @@ c
       integer, allocatable :: req(:)
       real*8 ef(3,nrhs,*)
       real*8, allocatable :: buffer(:,:,:,:)
+c
+      if (deb_Path) write(iout,*), 'commfield2 '
+c
 c
       if (use_pmecore) then
         commloc = comm_dir
@@ -2359,6 +2390,8 @@ c
       subroutine commfield2short(nrhs,ef)
       use atoms
       use domdec
+      use inform
+      use iounit
       use mpole
       use potent
       use mpi
@@ -2368,6 +2401,9 @@ c
       integer, allocatable :: req(:)
       real*8 ef(3,nrhs,*)
       real*8, allocatable :: buffer(:,:,:,:)
+c
+      if (deb_Path) write(iout,*), 'commfield2short '
+c
 c
       if (use_pmecore) then
         commloc = comm_dir

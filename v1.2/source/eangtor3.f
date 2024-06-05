@@ -62,6 +62,7 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'eangtor3 '
 c
 c     zero out the energy due to extra potential terms
 c

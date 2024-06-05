@@ -21,6 +21,8 @@ c
       use bound
       use energi
       use group
+      use inform
+      use iounit
       use math
       use torpot
       use tors
@@ -52,6 +54,9 @@ c
       real*8 xcb,ycb,zcb
       real*8 xdc,ydc,zdc
       logical proceed
+c
+c
+      if (deb_Path) write(iout,*), 'eangtor '
 c
 c
 c     zero out the energy due to extra potential terms

@@ -21,6 +21,8 @@ c
       use bound
       use energi
       use group
+      use inform
+      use iounit
       use opdist
       use usage
       implicit none
@@ -37,6 +39,8 @@ c
       real*8 xt,yt,zt,rt2
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eopdist '
 c
 c
 c     zero out the out-of-plane distance energy component

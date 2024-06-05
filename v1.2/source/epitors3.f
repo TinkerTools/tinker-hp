@@ -61,6 +61,9 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'epitors3 '
+c
+c
 c
 c     zero out the pi-orbital torsion energy and partitioning terms
 c

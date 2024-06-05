@@ -15,6 +15,7 @@ c
       subroutine drivermpi
       use atoms
       use domdec
+      use inform
       use iounit
       use potent
       use mpi
@@ -22,6 +23,9 @@ c
       integer iproc, ierr
       integer total_group, direct_group, rec_group
       integer, allocatable :: direct_rank(:)
+c
+      if (deb_Path) write(iout,*), 'drivermpi '
+c
 c
       ndir = nproc - nrec
 c
@@ -198,7 +202,12 @@ c
       subroutine allocstep
       use deriv
       use domdec
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'allocstep '
+c
 c
       if (allocated(desum)) deallocate (desum)
       allocate (desum(3,nbloc))
@@ -277,8 +286,13 @@ c
       subroutine allocsteprespa(fast)
       use deriv
       use domdec
+      use inform
+      use iounit
       implicit none
       logical fast
+c
+      if (deb_Path) write(iout,*), 'allocsteprespa '
+c
 c
       if (allocated(desum)) deallocate (desum)
       allocate (desum(3,nbloc))
@@ -1203,6 +1217,7 @@ c
       use cell
       use cutoff
       use domdec
+      use inform
       use iounit
       use keys
       use neigh
@@ -1237,6 +1252,9 @@ c
  1000 format(' Warning, less than 10 atoms on process number',I6,x,
      $   ' number of cores may be too high compared to the number of '
      $    'atoms')
+c
+      if (deb_Path) write(iout,*), 'ddpme3d '
+c
 c
       eps1 = 10d-10
       eps2 = 10d-8

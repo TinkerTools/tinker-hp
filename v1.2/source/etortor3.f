@@ -65,6 +65,9 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'etortor3 '
+c
+c
 c
 c     zero out the torsion-torsion energy and partitioning terms
 c

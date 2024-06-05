@@ -24,6 +24,7 @@ c
       use energi
       use ewald
       use group
+      use inform
       use iounit
       use math
       use mpole
@@ -35,6 +36,8 @@ c
       implicit none
       integer i,iglob,iipole,iglobgroup
       real*8 a(3,3)
+c
+      if (deb_Path) write(iout,*), 'epolar3_group '
 c
 c
 c     zero out the polarization energy and derivatives
@@ -138,6 +141,9 @@ c
       real*8 dmpik(7)
       real*8 scalek
       real*8, allocatable :: pscale(:)
+c
+      if (deb_Path) write(iout,*), 'epreal3_group '
+c
 c
 c     perform dynamic allocation of some local arrays
 c

@@ -25,7 +25,9 @@ c
       use domdec
       use energi
       use group
+      use inform
       use inter
+      use iounit
       use kgeoms
       use math
       use molcul
@@ -88,6 +90,8 @@ c
       real*8 xk,yk,zk
       real*8 fgrp
       logical proceed,intermol
+c
+      if (deb_Path) write(iout,*), 'egeom1 '
 c
 c
 c     zero out the restraint energy term and first derivatives

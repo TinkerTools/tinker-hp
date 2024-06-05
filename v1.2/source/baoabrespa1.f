@@ -50,6 +50,7 @@ c
       use energi
       use freeze
       use inform
+      use iounit
       use moldyn
       use mpi
       use timestat
@@ -65,6 +66,9 @@ c
       real*8 dt,dt_2
       real*8 dta,dta_2,dta2
       real*8    time0,time1
+c
+      if (deb_Path) write(iout,*), 'baoabrespa1 '
+c
 
       if(istep==1) then
         if(use_piston .and. rank==0) then
@@ -162,6 +166,12 @@ c
       time1 = mpi_wtime()
       timered = timered + time1 - time0
 c
+c     Debug print information
+c
+      if (deb_Energy) call info_energy(rank)
+      if (deb_Force) call info_forces(cNBond)
+      if (deb_Atom)   call info_minmax_pva
+c
 c     make half-step temperature and pressure corrections
 c
       time0 = mpi_wtime()
@@ -232,6 +242,7 @@ c
       use energi
       use freeze
       use inform
+      use iounit
       use moldyn
       use potent
       use timestat
@@ -246,6 +257,9 @@ c
       real*8 time0,time1
       time0 = mpi_wtime()
       dta_2 = 0.5d0 * dta
+c
+      if (deb_Path) write(iout,*), 'baoabrespaint1 '
+c
 c
 c     initialize virial from fast-evolving potential energy terms
 c
@@ -308,6 +322,12 @@ c
         time1 = mpi_wtime()
         timered = timered + time1 - time0
 c
+c     Debug print information
+c
+        if (deb_Energy) call info_energy(rank)
+        if (deb_Force)  call info_forces(cSNBond)
+        if (deb_Atom)   call info_minmax_pva
+c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the BAOAB recursion
 c
@@ -340,8 +360,6 @@ c
           delambdaesave = 0d0
           delambdavsave = 0d0
         end if
-        write(*,*) 'delambdaesave = ',delambdaesave
-        write(*,*) 'delambdavsave = ',delambdavsave
       end do
       end
 c
@@ -358,6 +376,7 @@ c
       use energi
       use freeze
       use inform
+      use iounit
       use moldyn
       use timestat
       use units
@@ -370,6 +389,9 @@ c
       integer i,j,iglob,stepfast
       real*8 dta,dta_2
       real*8 time0,time1
+c
+      if (deb_Path) write(iout,*), 'baoabrespafast1 '
+c
 
       time0 = mpi_wtime()
 c
@@ -453,6 +475,12 @@ c
         call reduceen(ealt2)
         time1 = mpi_wtime()
         timered = timered + time1 - time0
+c
+c     Debug print information
+c
+        if (deb_Energy) call info_energy(rank)
+        if (deb_Force)  call info_forces(cBond)
+        if (deb_Atom)   call info_minmax_pva
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the BAOAB recursion

@@ -15,10 +15,14 @@ c     and derivatives with respect to Cartesian coordinates
 c
 c
       subroutine epolar1
+      use inform
+      use iounit
       use polpot
       use potent
       use mpi
       implicit none
+c
+      if (deb_Path) write(iout,*), 'epolar1 '
 c
 c     choose the method for summing over polarization interactions
 c
@@ -60,6 +64,7 @@ c
       use energi
       use ewald
       use group
+      use inform
       use iounit
       use math
       use mpole
@@ -84,6 +89,8 @@ c
       real*8 zufield
       real*8 fix(3),fiy(3),fiz(3)
       real*8 trq(3)
+c
+      if (deb_Path) write(iout,*), 'epolar1c '
 c
 c
 c     zero out the polarization energy and derivatives
@@ -398,6 +405,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use mutant
@@ -448,6 +457,9 @@ c
       integer, allocatable :: reqsend(:),reqrec(:)
       integer, allocatable :: req2send(:),req2rec(:)
       integer nprocloc,commloc,rankloc
+c
+      if (deb_Path) write(iout,*), 'eprecip1 '
+c
 c
       if (use_pmecore) then
         nprocloc = nrec
@@ -1213,6 +1225,7 @@ c
       use energi
       use ewald
       use inter
+      use inform
       use iounit
       use math
       use molcul
@@ -1326,6 +1339,9 @@ c
       external erfc
  1000 format(' Warning, system moved too much since last neighbor list'
      $   ' update, try lowering nlupdate')
+c
+      if (deb_Path) write(iout,*), 'eprea1c '
+c
 
 c     compute the short, or full real space part of the summation
       shortrange = use_polarshortreal

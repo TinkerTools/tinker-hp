@@ -15,7 +15,11 @@ c     "echgtrn" calculates the charge transfer energy
 c
 c
       subroutine echgtrn
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'echgtrn '
 c
 c
 c     choose method for summing over charge transfer interactions
@@ -80,6 +84,8 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'echgtrn0c '
 c
       shortrange = use_chgtrnshort
       longrange  = use_chgtrnlong

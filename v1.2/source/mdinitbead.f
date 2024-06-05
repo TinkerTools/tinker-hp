@@ -54,6 +54,9 @@ c
          real*8 normal
          end function
       end interface
+c
+      if (deb_Path) write(iout,*), 'mdinitbead '
+c
      
 c
 c     try to restart using prior velocities and accelerations

@@ -26,7 +26,6 @@ c
 c     deb_Path   logical flag to print tinker Path
 c     deb_Force  logical flag to print Forces information
 c     deb_Energy logical flag to print Energy
-c     deb_Polar  logical flag for polarisation potent
 c
       module inform
       implicit none
@@ -43,18 +42,16 @@ c
         enumerator dynamic_a
         enumerator minimize_a
         enumerator testgrad_a
+        enumerator pimd_a
       end enum
       integer:: app_id=dynamic_a ! Only to be modifed inside a program
 
       ! Debug static counter
       enum,bind(C)
         enumerator tindPath,tindForce,tindEnergy,tindAtom
-        enumerator tinMem,tindGdb,tindPolar
       end enum
-      logical deb_Path,deb_Force,deb_Energy,deb_Atom,deb_Polar
+      logical deb_Path,deb_Force,deb_Energy,deb_Atom
 
-c      integer dint1,dint2
-c      integer,allocatable::dibuff(:)
 
       ! Inform separated Subroutines
       interface
@@ -73,16 +70,6 @@ c      integer,allocatable::dibuff(:)
       end interface
 
       interface minmaxone
-c#ifdef USE_DETERMINISTIC_REDUCTION
-c         module subroutine minmaxonef( vector,sz,name,mi_,ma_,on_ )
-c         implicit none
-c         integer sz
-c         mdyn_rtyp vector(*)
-c         character(*),optional,intent(in)::name
-c         real(8)     ,optional,intent(inout):: mi_,ma_,on_
-c!DIR$ ignore_tkr (r) vector
-c         end subroutine
-c#endif
          module subroutine minmaxonei( vector,sz,name )
          implicit none
          integer sz
@@ -95,15 +82,6 @@ c#endif
          real*8 vector(*)
          character(*),optional,intent(in)::name
          end subroutine
-c#if TINKER_MIXED_PREC
-c         module subroutine minmaxoner( vector,sz,name )
-c         implicit none
-c         integer sz
-c         real(r_p) vector(*)
-c         character(*),optional,intent(in)::name
-c!DIR$ ignore_tkr (r) vector
-c         end subroutine
-c#endif
       end interface
 
       interface normp
@@ -113,39 +91,5 @@ c#endif
          real*8 array(*)
          real*8 val
          end subroutine
-c#if TINKER_MIXED_PREC
-c         module subroutine normr( array,n,val,p )
-c         integer siz
-c         integer,optional::p
-c         real(r_p) array(*)
-c         real(r_p) val
-c         end subroutine
-c#endif
-cc#if USE_DETERMINISTIC_REDUCTION
-c         module subroutine normf( array,n,val,p )
-c         integer siz
-c         integer,optional::p
-c         mdyn_rtyp array(*)
-c         real(r_p) val
-c!DIR$ ignore_tkr (r) array
-c         end subroutine
-c#endif
       end interface
-
-c      interface
-c      module subroutine set_dumpdyn_freq
-c      end subroutine
-c      end interface
-c
-c      interface
-c      module subroutine check_loc(queue)
-c      integer queue
-c      end subroutine
-c      end interface
-c
-c      interface
-c      module subroutine check_loc1
-c      end subroutine
-c      end interface
-
       end

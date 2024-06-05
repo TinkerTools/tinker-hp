@@ -48,6 +48,9 @@ c
       character*240 string
 c 120  format('2d parallel FFT grid : ','Ngrid1 = ',I5,2x,'Ngrid2 = ',I5)
 c
+      if (deb_Path) write(iout,*), 'kewald '
+c
+c
       if (use_pmecore) then
         nprocloc = nrec
       else
@@ -386,6 +389,7 @@ c
       subroutine kewald_2
       use domdec
       use fft
+      use inform
       use iounit
       use mpi
       use pme
@@ -393,6 +397,9 @@ c
       implicit none
       integer iproc,ierr
  120  format('2d parallel FFT grid : ','Ngrid1 = ',I5,2x,'Ngrid2 = ',I5)
+c
+      if (deb_Path) write(iout,*), 'kewald_2 '
+c
 c
 c     initialize the PME arrays that can be precomputed
 c

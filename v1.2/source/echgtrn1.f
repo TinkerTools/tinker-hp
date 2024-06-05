@@ -15,7 +15,11 @@ c     derivatives with respect to Cartesian coordinates
 c
 c
       subroutine echgtrn1
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'echgtrn1 '
 c
 c
 c     choose method for summing over charge transfer interactions
@@ -50,6 +54,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use mplpot
       use mpole
       use neigh
@@ -81,6 +87,8 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'echgtrn1c '
 c
       shortrange = use_chgtrnshort
       longrange  = use_chgtrnlong

@@ -23,6 +23,8 @@ c     Mathematik, 7, 362-383 (1965)
 c
 c
       subroutine cholesky (nvar,a,b)
+      use inform
+      use iounit
       implicit none
       integer i,j,k,nvar
       integer ii,ij,ik,ki,kk
@@ -30,6 +32,8 @@ c
       real*8 r,s,t
       real*8 a(*)
       real*8 b(*)
+c
+      if (deb_Path) write(iout,*), 'cholesky '
 c
 c
 c     Cholesky factorization to reduce "A" to (L)(D)(L transpose)

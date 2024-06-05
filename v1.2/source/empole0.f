@@ -15,8 +15,13 @@ c     atomic multipole and dipole polarizability interactions
 c
 c
       subroutine empole0
+      use inform
+      use iounit
       use potent
       implicit none
+c
+      if (deb_Path) write(iout,*), 'empole0 '
+c
 c
 c     choose the method for summing over multipole interactions
 c
@@ -45,6 +50,8 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use potent
@@ -58,6 +65,9 @@ c
       real*8 ci,dix,diy,diz
       real*8 qixx,qixy,qixz
       real*8 qiyy,qiyz,qizz
+c
+      if (deb_Path) write(iout,*), 'empole0c '
+c
 c
 c
 c     zero out the total atomic multipole energy
@@ -189,6 +199,8 @@ c     if shortrange, calculates just the short range part
       use energi
       use ewald
       use group
+      use inform
+      use iounit
       use math
       use mplpot
       use mpole
@@ -239,6 +251,9 @@ c     if shortrange, calculates just the short range part
       real*8, allocatable :: mscale(:)
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'emreal0d '
+c
 
 
 c     compute the short, long, or full real space part of the summation

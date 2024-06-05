@@ -43,6 +43,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kcharge '
+c
+c
 c
 c     deallocate global pointers if necessary
 c
@@ -212,6 +215,9 @@ c
       integer istep,iproc
       integer modnl,ioncount
       real*8 d
+c
+      if (deb_Path) write(iout,*), 'kcharge_update '
+c
 c
       if (allocated(chgglob)) deallocate(chgglob)
       allocate (chgglob(nbloc))

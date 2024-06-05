@@ -16,6 +16,7 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -49,6 +50,9 @@ c     Get direct space induced field for divide and conquer methods
 c
       external pc_dc_tmatxb_pme
       external otf_dc_tmatxb_pme
+c
+      if (deb_Path) write(iout,*), 'dcinduce_shortreal '
+c
 c
       if (.not.use_polar) return
 c
@@ -197,6 +201,7 @@ c
       use divcon
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -240,6 +245,9 @@ c
  1021 format(' Jacobi/DIIS solver: induced p-dipoles',/,
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
+c
+      if (deb_Path) write(iout,*), 'inducedc_shortreal '
+c
 c
       zero = 0.0d0
       one  = 1.0d0

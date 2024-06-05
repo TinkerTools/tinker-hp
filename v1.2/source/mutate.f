@@ -37,6 +37,8 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'mutate '
+c
 c     deallocate global pointers if necessary
 c
       call dealloc_shared_mutate
@@ -240,6 +242,8 @@ c     on the lambda mutation parameter "tlambda"
 c
 c
       subroutine alttors (ntbnd,itbnd)
+      use inform
+      use iounit
       use mutant
       use potent
       use tors
@@ -250,6 +254,7 @@ c
       integer ntbnd
       integer itbnd(2,*)
 c
+      if (deb_Path) write(iout,*), 'alttors '
 c
 c     set torsional parameters across freely rotatable bonds
 c
@@ -299,6 +304,8 @@ c
       use chgtrn
       use cflux
       use domdec
+      use inform
+      use iounit
       use mpole
       use mutant
       use polar
@@ -306,6 +313,9 @@ c
       implicit none
       integer i,j,k
       integer ia,ib,ic
+c
+      if (deb_Path) write(iout,*), 'altelec '
+c
 c
 c
 c     set electrostatic parameters for partial charge models
@@ -396,6 +406,7 @@ c
 c     subroutine def_lambdadyn_init: lambda dynamics initialization
 c
       subroutine def_lambdadyn_init
+      use inform
       use iounit
       use keys
       use mutant
@@ -404,6 +415,8 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'def_lambdadyn_init '
 c
       bvlambda = 0.5d0
       belambda = 0.5d0
@@ -462,6 +475,9 @@ c
       use potent
       implicit none
       integer ierr
+c
+      if (deb_Path) write(iout,*), 'def_lambdadyn '
+c
 
 c     checks if the intervall bounds for vlambda and elambda are consistent
       if (rank.eq.0) then

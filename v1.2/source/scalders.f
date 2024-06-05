@@ -9,6 +9,7 @@
       use couple
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -92,6 +93,9 @@
  1000 format(' Warning, system moved too much since last neighbor list
      $   update, try lowering nlupdate')
 
+c
+      if (deb_Path) write(iout,*), 'scalderfieldzmat6 '
+c
       
 
       ade = 0d0
@@ -805,6 +809,7 @@ c
       use couple
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -881,6 +886,9 @@ c
 
  1000 format(' Warning, system moved too much since last neighbor list
      $   update, try lowering nlupdate')
+c
+      if (deb_Path) write(iout,*), 'scalderfieldzmat3 '
+c
 
       
       f = electric/dielec
@@ -1569,6 +1577,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -1612,6 +1622,9 @@ c
       data deriv1  / 2, 5,  8,  9, 11, 16, 18, 14, 15, 20 /
       data deriv2  / 3, 8,  6, 10, 14, 12, 19, 16, 20, 17 /
       data deriv3  / 4, 9, 10,  7, 15, 17, 13, 20, 18, 19 /
+c
+      if (deb_Path) write(iout,*), 'scalderfieldzmatrec6 '
+c
       derivi(1,:) = deriv1
       derivi(2,:) = deriv2
       derivi(3,:) = deriv3
@@ -1836,6 +1849,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -1874,6 +1889,9 @@ c
      $          frcdm, grc
       real*8, allocatable, dimension(:,:,:,:) :: frcdt
       
+c
+      if (deb_Path) write(iout,*), 'scalderfieldzmatrec8 '
+c
 
       rankloc = rank
 
@@ -2117,6 +2135,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -2153,6 +2173,9 @@ c
       real*8, allocatable, dimension(:,:,:) :: frc, 
      $          frcdm, grc
       real*8, allocatable, dimension(:,:,:,:) :: frcdt
+c
+      if (deb_Path) write(iout,*), 'scalderfieldzmatrec3 '
+c
 
 
       rankloc = rank
@@ -2375,6 +2398,8 @@ c
       use energi
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -2414,6 +2439,9 @@ c
       real*8, allocatable, dimension(:,:,:,:) :: frcdt
       real*8 :: vxx,vxy,vxz,vyy,vyz,vzz,f
       
+c
+      if (deb_Path) write(iout,*), 'scalderfieldzmatrec1 '
+c
 
       rankloc = rank
       f = electric/dielec
@@ -2609,6 +2637,7 @@ c
       use couple
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -2673,6 +2702,9 @@ c
 
  1000 format(' Warning, system moved too much since last neighbor list
      $   update, try lowering nlupdate')
+c
+      if (deb_Path) write(iout,*), 'scalderfieldzmat1 '
+c
 
       
 
@@ -3280,6 +3312,7 @@ c
       use couple
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -3380,6 +3413,9 @@ c
      $   update, try lowering nlupdate')
 
       
+c
+      if (deb_Path) write(iout,*), 'scalderfieldzmat8 '
+c
 
       ade = 0d0
       adme = 0d0

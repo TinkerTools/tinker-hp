@@ -22,10 +22,14 @@ c
       use atoms
       use couple
       use domdec
+      use inform
       use iounit
       implicit none
       integer i,j,k,m
       integer ia,ib,ic
+c
+      if (deb_Path) write(iout,*), 'angles '
+c
 c
 c     loop over all atoms, storing the atoms in each bond angle
 c
@@ -100,8 +104,13 @@ c
       use angle
       use couple
       use domdec
+      use inform
+      use iounit
       implicit none
       integer i,j,k,iglob,m
+c
+      if (deb_Path) write(iout,*), 'angles_update '
+c
 c
       if (allocated(angleglob)) deallocate(angleglob)
       allocate (angleglob(4*nbloc))

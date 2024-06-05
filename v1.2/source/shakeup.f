@@ -26,6 +26,7 @@ c
       use couple
       use domdec
       use freeze
+      use inform
       use iounit
       use keys
       use math
@@ -46,6 +47,8 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'shakeup '
 c
 c
 c     set defaults for constraints and convergence tolerance
@@ -396,6 +399,8 @@ c
       use couple
       use domdec
       use freeze
+      use inform
+      use iounit
       use keys
       use math
       use molcul
@@ -408,6 +413,9 @@ c
       integer nprocloc,start,stop,im
       real*8 weigh,xmid,ymid,zmid
       logical docompute
+c
+      if (deb_Path) write(iout,*), 'shakeup_update '
+c
 c
 c     get local constraints
 c

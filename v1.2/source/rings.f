@@ -38,6 +38,9 @@ c
       integer, allocatable :: list(:)
       logical reduce
 c
+      if (deb_Path) write(iout,*), 'rings '
+c
+c
 c
 c     zero out the number of small rings in the structure
 c

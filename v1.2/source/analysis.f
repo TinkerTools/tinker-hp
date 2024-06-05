@@ -20,6 +20,7 @@ c
       use analyz
       use domdec
       use energi
+      use inform
       use iounit
       use inter
       use potent
@@ -29,6 +30,9 @@ c
       integer ierr
       real*8 energy
       logical isnan
+c
+      if (deb_Path) write(iout,*), 'analysis '
+c
 c
 c     allocate arrays
 c

@@ -43,6 +43,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kstrtor '
+c
+c
       blank = '                '
       zeros = '0000'
 c
@@ -298,6 +301,9 @@ c
       character*4 zeros
       character*16 blank
       character*16 pt,pt0
+c
+      if (deb_Path) write(iout,*), 'kstrtor_update '
+c
 c
       blank = '                '
       zeros = '0000'

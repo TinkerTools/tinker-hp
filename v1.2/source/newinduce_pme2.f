@@ -17,6 +17,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -62,6 +63,8 @@ c
  1010 format(' time for the ',a,F14.5)
  1020 format(' total elapsed time in newinduce: ',F14.5)
  
+c
+      if (deb_Path) write(iout,*), 'newinduce_pme2 '
 c
 c     allocate some memory and clear the arrays:
 c
@@ -283,6 +286,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -334,6 +338,8 @@ c
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
  1040 format(' Using a diagonal preconditioner.')
+c
+      if (deb_Path) write(iout,*), 'inducepcg_pme2 '
 c
       allocate (buffermpi1(3,nrhs,max(npoleloc,1)))
       buffermpi1 = 0d0
@@ -633,6 +639,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -680,6 +687,9 @@ c
  1021 format(' Jacobi/DIIS solver: induced p-dipoles',/,
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
+c
+c
+      if (deb_Path) write(iout,*), 'inducejac_pme2 '
 c
 c
       zero  = 0.0d0
@@ -898,6 +908,8 @@ c     Journal of Chemical Physics, 123, 164107 (2005)
 c
 c
       subroutine ulspred
+      use inform
+      use iounit
       use mpole
       use uprior
       implicit none
@@ -911,6 +923,7 @@ c
       real*8 c(maxualt,maxualt)
       real*8 cp(maxualt,maxualt)
 c
+      if (deb_Path) write(iout,*), 'ulspred '
 c
 c     set the Gear predictor binomial coefficients
 c

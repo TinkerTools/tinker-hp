@@ -52,6 +52,8 @@ c
       logical proceed
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'eimprop3 '
+c
 c
 c     zero out improper dihedral energy and partitioning terms
 c

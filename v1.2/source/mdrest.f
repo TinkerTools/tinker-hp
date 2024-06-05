@@ -36,6 +36,8 @@ c
       real*8 mang(3),vang(3)
       real*8 vtot(3),tensor(3,3)
 c
+      if (deb_Path) write(iout,*), 'mdrest '
+c
 c
 c     check steps between center of mass motion removal
 c

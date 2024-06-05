@@ -23,6 +23,8 @@ c
       use ctrpot
       use divcon
       use fields
+      use inform
+      use iounit
       use kanang
       use kangs
       use kantor
@@ -69,6 +71,8 @@ c
       character*16 blank16
       character*20 blank20
       character*24 blank24
+c
+      if (deb_Path) write(iout,*), 'initprm '
 c
 c
 c     define blank character strings of various lengths

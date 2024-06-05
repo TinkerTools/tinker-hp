@@ -16,14 +16,19 @@ c
 c
       subroutine nblist(istep)
       use sizes
-      use domdec
       use cutoff
+      use domdec
+      use inform
+      use iounit
       use neigh
       use potent
       use mpi
       implicit none
       integer istep,modnl
       real*8 time0,time1
+c
+      if (deb_Path) write(iout,*), 'nblist '
+c
 c
 c
 c     check number of steps between nl updates
@@ -116,6 +121,7 @@ c
       use boxes
       use cutoff
       use domdec
+      use inform
       use iounit
       use mpole
       use neigh
@@ -138,6 +144,9 @@ c
      $   'buffer should be less than half one edge of the box')
  1010 format('Multipole cutoff = ',F14.3)
  1020 format('List buffer      = ',F14.3)
+c
+      if (deb_Path) write(iout,*), 'mlistcell '
+c
       boxedge2 = min(xbox2,ybox2,zbox2)
       if (mbuf2.gt.boxedge2*boxedge2) then
         if (rank.eq.0) then
@@ -248,6 +257,7 @@ c
       use boxes
       use cutoff
       use domdec
+      use inform
       use iounit
       use mpole
       use neigh
@@ -271,6 +281,9 @@ c
      $   'buffer should be less than half one edge of the box')
  1010 format('Multipole cutoff = ',F14.3)
  1020 format('List buffer      = ',F14.3)
+c
+      if (deb_Path) write(iout,*), 'mlistcell2 '
+c
       boxedge2 = min(xbox2,ybox2,zbox2)
       if (mbuf2.gt.boxedge2*boxedge2) then
         if (rank.eq.0) then
@@ -388,6 +401,8 @@ c
       subroutine initmpipme
       use atmlst
       use domdec
+      use inform
+      use iounit
       use mpole
       use pme
       use mpi
@@ -400,6 +415,9 @@ c
       allocate (req(nproc*nproc))
       allocate (req2(nproc*nproc))
       allocate (count(nproc))
+c
+      if (deb_Path) write(iout,*), 'initmpipme '
+c
 c
       count = 0 
 c
@@ -538,11 +556,16 @@ c
       subroutine reinitnl(istep)
       use atoms
       use domdec
+      use inform
+      use iounit
       use neigh
       implicit none
       real*8 d,mbuf,vbuf,torquebuf,bigbuf
       integer iproc,i,iglob,modnl
       integer iloc,istep
+c
+      if (deb_Path) write(iout,*), 'reinitnl '
+c
 c
       mbuf = sqrt(mbuf2)
       vbuf = sqrt(vbuf2) + 2.0d0
@@ -585,6 +608,8 @@ c
       use atoms
       use bound
       use domdec
+      use inform
+      use iounit
       use neigh
       use mpi
       implicit none
@@ -604,6 +629,9 @@ c
       real*8, allocatable :: xendcelltemp(:),yendcelltemp(:)
       real*8, allocatable :: zendcelltemp(:)
       integer, allocatable :: filledcell(:),indcelltemp(:)
+c
+      if (deb_Path) write(iout,*), 'build_cell_list '
+c
 
 c
       eps1 = 1.0d-10
@@ -848,6 +876,7 @@ c
       use charge
       use cutoff
       use domdec
+      use inform
       use iounit
       use neigh
       use mpi
@@ -869,6 +898,9 @@ c
      $   'buffer should be less than half one edge of the box')
  1010 format('Charge cutoff = ',F14.3)
  1020 format('List buffer      = ',F14.3)
+c
+      if (deb_Path) write(iout,*), 'clistcell '
+c
       boxedge2 = min(xbox2,ybox2,zbox2)
       if (cbuf2.gt.boxedge2*boxedge2) then
         if (rank.eq.0) then
@@ -977,6 +1009,7 @@ c
       use charge
       use cutoff
       use domdec
+      use inform
       use iounit
       use neigh
       use mpi
@@ -998,6 +1031,9 @@ c
      $   'buffer should be less than half one edge of the box')
  1010 format('Multipole cutoff = ',F14.3)
  1020 format('List buffer      = ',F14.3)
+c
+      if (deb_Path) write(iout,*), 'clistcell2 '
+c
       boxedge2 = min(xbox2,ybox2,zbox2)
       if (cbuf2.gt.boxedge2*boxedge2) then
         if (rank.eq.0) then
@@ -1116,6 +1152,7 @@ c
       use bound
       use cutoff
       use domdec
+      use inform
       use iounit
       use kvdws
       use neigh
@@ -1143,6 +1180,9 @@ c
      $   'buffer should be less than half one edge of the box')
  1010 format('VDW cutoff = ',F14.3)
  1020 format('List buffer      = ',F14.3)
+c
+      if (deb_Path) write(iout,*), 'vlistcell '
+c
       boxedge2 = min(xbox2,ybox2,zbox2)
       if (vbuf2.gt.boxedge2*boxedge2) then
         if (rank.eq.0) then
@@ -1275,6 +1315,7 @@ c
       use bound
       use cutoff
       use domdec
+      use inform
       use iounit
       use kvdws
       use neigh
@@ -1302,6 +1343,9 @@ c
      $   'buffer should be less than half one edge of the box')
  1010 format('VDW cutoff = ',F14.3)
  1020 format('List buffer      = ',F14.3)
+c
+      if (deb_Path) write(iout,*), 'vlistcell2 '
+c
       boxedge2 = min(xbox2,ybox2,zbox2)
       if (vbuf2.gt.boxedge2*boxedge2) then
         if (rank.eq.0) then
@@ -1442,6 +1486,7 @@ c
       use cutoff
       use disp
       use domdec
+      use inform
       use iounit
       use kvdws
       use neigh
@@ -1465,6 +1510,9 @@ c
      $   'buffer should be less than half one edge of the box')
  1010 format('Dispersion cutoff = ',F14.3)
  1020 format('List buffer      = ',F14.3)
+c
+      if (deb_Path) write(iout,*), 'dlistcell '
+c
       boxedge2 = min(xbox2,ybox2,zbox2)
       if (dbuf2.gt.boxedge2*boxedge2) then
         if (rank.eq.0) then
@@ -1569,6 +1617,7 @@ c
       use cutoff
       use disp
       use domdec
+      use inform
       use iounit
       use kvdws
       use neigh
@@ -1592,6 +1641,9 @@ c
      $   'buffer should be less than half one edge of the box')
  1010 format('Dispersion cutoff = ',F14.3)
  1020 format('List buffer      = ',F14.3)
+c
+      if (deb_Path) write(iout,*), 'dlistcell2 '
+c
       boxedge2 = min(xbox2,ybox2,zbox2)
       if (dbuf2.gt.boxedge2*boxedge2) then
         if (rank.eq.0) then

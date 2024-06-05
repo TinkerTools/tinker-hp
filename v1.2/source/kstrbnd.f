@@ -41,6 +41,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kstrbnd '
+c
+c
       blank = '            '
 c
 c     process keywords containing stretch-bend parameters
@@ -188,6 +191,9 @@ c
       character*4 pa,pb,pc
       character*12 blank,pt
 c
+      if (deb_Path) write(iout,*), 'kstrbnd_update '
+c
+c
       blank = '            '
 c
 c     use special stretch-bend parameter assignment method for MMFF
@@ -282,6 +288,8 @@ c
       use atmlst
       use atmtyp
       use couple
+      use inform
+      use iounit
       use merck
       use potent
       use ring
@@ -295,6 +303,9 @@ c
       integer nb1,nb2
       integer stbnt,ab,bc
       logical ring3,ring4
+c
+      if (deb_Path) write(iout,*), 'kstrbndm '
+c
 c
 c
 c     assign stretch-bend parameters for each angle
@@ -700,6 +711,8 @@ c
       use atmlst
       use atmtyp
       use couple
+      use inform
+      use iounit
       use merck
       use potent
       use ring
@@ -712,6 +725,9 @@ c
       integer stbnt,ab,bc
       integer iangle,strbndcount
       logical ring3,ring4
+c
+      if (deb_Path) write(iout,*), 'kstrbndm_update '
+c
 
       if (allocated(strbndglob)) deallocate(strbndglob)
       allocate (strbndglob(nangleloc))

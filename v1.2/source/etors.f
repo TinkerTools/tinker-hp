@@ -14,7 +14,12 @@ c     "etors" calculates the torsional potential energy
 c
 c
       subroutine etors
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'etors '
+c
       call etors0a
       return
       end
@@ -37,6 +42,8 @@ c
       use bound
       use energi
       use group
+      use inform
+      use iounit
       use torpot
       use tors
       use usage
@@ -66,6 +73,8 @@ c
       real*8 xcb,ycb,zcb
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'etors0a '
 c
 c
 c     zero out the torsional potential energy

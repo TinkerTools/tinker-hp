@@ -45,6 +45,9 @@ c
       character*240 string
       logical :: max_reach
 c
+      if (deb_Path) write(iout,*), 'kbond '
+c
+c
 c     process keywords containing bond stretch parameters
 c
       blank = '        '
@@ -500,6 +503,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'keneg '
+c
+c
 c
 c     process keywords containing electronegativity parameters
 c
@@ -675,6 +681,8 @@ c
       use sizes
       use atmtyp
       use bond
+      use inform
+      use iounit
       use keys
       use merck
       implicit none
@@ -688,6 +696,9 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'kbondm '
+c
 c
 c
 c     get single bonds that could be double (MMFF bond type=1)

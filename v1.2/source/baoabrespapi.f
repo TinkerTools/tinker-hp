@@ -71,6 +71,9 @@ c
           real*8 :: dip_(3,nsteps)
         end subroutine baoabrespapi_fast
       end interface
+c
+      if (deb_Path) write(iout,*), 'baoabrespapi '
+c
 
       dt2  = 0.5d0 * dt
       dta   = dt / dshort
@@ -277,6 +280,9 @@ c     &           , timepush/iprint, ' ( ',100*timepush/timefull,' %)'
       integer :: iloc
       real*8 :: rsteps   
       integer :: ibeadbeg
+c
+      if (deb_Path) write(iout,*), 'baoabrespapi_fast '
+c
 
       dta2 = 0.5d0*dta
       rsteps=real(nsteps,8)

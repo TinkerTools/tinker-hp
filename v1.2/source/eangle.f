@@ -23,6 +23,8 @@ c
       use bound
       use energi
       use group
+      use inform
+      use iounit
       use math
       use usage
       implicit none
@@ -53,6 +55,9 @@ c
       real*8 r_e,drab,drcb,x1,x2,x3
       real*8 gaussterm,term
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eangle '
+c
 c
 c
 c     zero out the angle bending energy component

@@ -36,8 +36,11 @@ c
       use atmtyp
       use atoms
       use cutoff
+      use deriv
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use timestat
       use units
@@ -59,6 +62,8 @@ c
       real*8 time0,time1
       real*8, allocatable :: derivs(:,:)
       time0 = mpi_wtime()
+c
+      if (deb_Path) write(iout,*), 'respa1 '
 c
 c     set some time values for the dynamics integration
 c
@@ -151,6 +156,12 @@ c
       time1 = mpi_wtime()
       timered = timered + time1 - time0
 c
+c     Debug print information
+c
+      if(deb_Energy) call info_energy(rank)
+      if(deb_Force)  call info_forces(cNBond)
+      if(deb_Atom)   call info_minmax_pva
+c
 c     make half-step temperature and pressure corrections
 c
       time0 = mpi_wtime()
@@ -229,6 +240,8 @@ c
 c
       subroutine gradfast1(energy,derivs)
       use cutoff
+      use inform
+      use iounit
       use potent
 #ifdef COLVARS
       use colvars
@@ -250,6 +263,7 @@ c
       logical save_plumed
 #endif
 c
+      if (deb_Path) write(iout,*), 'gradfast1 '
 c
 c     save the original state of slow-evolving potentials
 c
@@ -323,6 +337,8 @@ c
       use cutoff
       use deriv
       use energi
+      use inform
+      use iounit
       use polpot
       use potent
 #ifdef COLVARS
@@ -354,6 +370,8 @@ c
 #ifdef PLUMED
       logical save_plumed
 #endif
+c
+      if (deb_Path) write(iout,*), 'gradint1 '
 c
 c
 c     save the original state of fast-evolving potentials
@@ -513,6 +531,8 @@ c
       use deriv
       use domdec
       use energi
+      use inform
+      use iounit
       use moldyn
       use potent
       use virial
@@ -528,6 +548,8 @@ c
       logical save_angtor
       logical save_tortor,save_geom
       logical save_extra
+c
+      if (deb_Path) write(iout,*), 'gradslow1 '
 c
 c     save the original state of fast-evolving potentials
 c
@@ -628,6 +650,8 @@ c
       use deriv
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use potent
       use timestat
@@ -645,6 +669,9 @@ c
       real*8 viralt(3,3),viralt2(3,3)
       time0 = mpi_wtime()
       dta_2 = 0.5d0 * dta
+c
+      if (deb_Path) write(iout,*), 'respaint1 '
+c
 c
 c     initialize virial from fast-evolving potential energy terms
 c
@@ -708,6 +735,12 @@ c
         time1 = mpi_wtime()
         timered = timered + time1 - time0
 c
+c     Debug print information
+c
+        if(deb_Energy) call info_energy(rank)
+        if(deb_Force ) call info_forces(cSNBond)
+        if(deb_Atom  ) call info_minmax_pva
+c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion
 c
@@ -751,8 +784,11 @@ c
       use atmtyp
       use atoms
       use cutoff
+      use deriv
       use domdec
       use freeze
+      use inform
+      use iounit
       use moldyn
       use timestat
       use units
@@ -768,6 +804,9 @@ c
       real*8 viralt(3,3)
       time0 = mpi_wtime()
       dta_2 = 0.5d0 * dta
+c
+      if (deb_Path) write(iout,*), 'respafast1 '
+c
 c
 c     initialize virial from fast-evolving potential energy terms
 c
@@ -850,6 +889,12 @@ c
         call reduceen(ealt)
         time1 = mpi_wtime()
         timered = timered + time1 - time0
+c
+c     Debug print information
+c
+        if(deb_Energy) call info_energy(rank)
+        if(deb_Force)  call info_forces(cBond)
+        if(deb_Atom)   call info_minmax_pva
 c
 c     use Newton's second law to get fast-evolving accelerations;
 c     update fast-evolving velocities using the Verlet recursion

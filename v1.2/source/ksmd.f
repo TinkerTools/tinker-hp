@@ -32,6 +32,7 @@ c
       use energi
       use atoms
       use atmtyp
+      use inform
       use iounit
       use mdstuf
       use bond
@@ -68,6 +69,9 @@ c
       character*20 keyword
       character*240 record
       character*240 string      
+c
+      if (deb_Path) write(iout,*), 'ksmd '
+c
 c
 c     Check if initialization or not (LOOP1)
 c

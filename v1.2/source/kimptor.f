@@ -47,6 +47,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kimptor '
+c
+c
       blank = '                '
       zeros = '0000'
 c
@@ -362,6 +365,9 @@ c
       character*16 pt0,pt1
       character*16 pt2,pt3
       character*16 pt(6)
+c
+      if (deb_Path) write(iout,*), 'kimptor_update '
+c
 c
       blank = '                '
       zeros = '0000'

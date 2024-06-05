@@ -1306,6 +1306,8 @@ c
       use boxes
       use chunks
       use domdec
+      use inform
+      use iounit
       use fft
       use math
       use pme
@@ -1332,6 +1334,9 @@ c
       real*8 fr,xi,yi,zi,eps,w
       real*8 dist,xr,yr
       logical init
+c
+      if (deb_Path) write(iout,*), 'reassignpme '
+c
 c
       allocate (req(nproc*nproc))
       eps = 1.0d-8

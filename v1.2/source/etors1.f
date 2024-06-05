@@ -15,7 +15,12 @@ c     derivatives with respect to Cartesian coordinates
 c
 c
       subroutine etors1
+      use inform
+      use iounit
       implicit none
+c
+      if (deb_Path) write(iout,*), 'etors1 '
+c
       call etors1a
       return
       end
@@ -41,6 +46,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use torpot
       use tors
       use usage
@@ -84,6 +91,8 @@ c
       real*8 vyx,vzx,vzy
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'etors1a '
 c
 c
 c     zero out the torsional energy and first derivatives

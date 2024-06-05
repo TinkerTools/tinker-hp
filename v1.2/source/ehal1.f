@@ -15,8 +15,9 @@ c     and its first derivatives with respect to Cartesian coordinates
 c
 c
       subroutine ehal1
-
       use energi
+      use inform
+      use iounit
       use potent
       use virial
       use vdwpot
@@ -24,6 +25,9 @@ c
       real*8 elrc,vlrc
       character*11 mode
       logical shortrange,longrange,fullrange
+c
+      if (deb_Path) write(iout,*), 'ehal1 '
+c
 c
 c     evaluate pairwise interactions
 c
@@ -72,6 +76,7 @@ c
       use domdec
       use energi
       use group
+      use inform
       use inter
       use iounit
       use molcul
@@ -123,6 +128,9 @@ c
 c
  1000 format(' Warning, system moved too much since last neighbor list'
      $   ' update, try lowering nlupdate VDW')
+c
+      if (deb_Path) write(iout,*), 'ehal1c '
+c
 
 c     choose the method for summing over pairwise interactions
       shortrange = use_vdwshort

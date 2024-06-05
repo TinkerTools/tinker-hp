@@ -21,6 +21,8 @@ c
       use atoms
       use couple
       use domdec
+      use inform
+      use iounit
       use molcul
       use mpi
       implicit none
@@ -29,6 +31,9 @@ c
       integer iglob,jglob,ierr
       integer, allocatable :: list(:)
       logical init
+c
+      if (deb_Path) write(iout,*), 'molecule '
+c
 c
       if (init) then
 c

@@ -8,6 +8,7 @@
       use cutoff
       use domdec
       use divcon
+      use inform
       use iounit
       use math
       use mpole
@@ -21,6 +22,9 @@
       integer i,ii,k,iipole,iglob,tk,step
       integer curdim
       integer, allocatable :: tmp(:)
+c
+      if (deb_Path) write(iout,*), 'cluster1 '
+c
 
       if (.not. allocated(means))then
         if (use_pmecore) then
@@ -115,6 +119,7 @@ c
       use cutoff
       use divcon
       use domdec
+      use inform
       use iounit
       use math
       use mpole
@@ -130,6 +135,9 @@ c
       real*8  change,rad,reinit,xr,yr,zr,dist
       real*8  mindist,inc,xi,yi,zi
       real*8  xmin,ymin,zmin,xmax,ymax,zmax
+c
+      if (deb_Path) write(iout,*), 'kmeans '
+c
 
       xmin = xbegproc(rank+1)
       ymin = ybegproc(rank+1)
@@ -304,6 +312,7 @@ c
       use cutoff
       use divcon
       use domdec
+      use inform
       use iounit
       use math
       use mpole
@@ -320,6 +329,9 @@ c
       real*8  xmin,ymin,zmin,xmax,ymax,zmax
       real*8  xl,yl,zl,xs,ys,zs,pos
       real*8  xi,yi,zi
+c
+      if (deb_Path) write(iout,*), 'cluster2 '
+c
 
       xmin = xbegproc(rank+1)
       ymin = ybegproc(rank+1)
@@ -451,6 +463,7 @@ C      print*,"Zmat length",curdim
       use cutoff
       use divcon
       use domdec
+      use inform
       use iounit
       use math
       use mpole
@@ -464,6 +477,9 @@ C      print*,"Zmat length",curdim
       integer key(3),list2(3),list3(3),diff,nwdiff
       real*8 list1(3)
       integer i
+c
+      if (deb_Path) write(iout,*), 'pcluster '
+c
 
       xmin = xbegproc(rank+1)
       ymin = ybegproc(rank+1)
@@ -618,6 +634,9 @@ c
       character*20 keyword
       character*240 record
       character*240 string
+c
+      if (deb_Path) write(iout,*), 'cluster '
+c
 c
 c
 c     perform dynamic allocation of some global arrays

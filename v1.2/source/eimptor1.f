@@ -20,6 +20,8 @@ c
       use energi
       use group
       use imptor
+      use inform
+      use iounit
       use torpot
       use usage
       use virial
@@ -60,6 +62,9 @@ c
       real*8 vyx,vzx,vzy
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eimptor1 '
+c
 c
 c
 c     zero out energy and first derivative components

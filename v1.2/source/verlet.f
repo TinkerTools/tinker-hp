@@ -19,7 +19,10 @@ c
       use atoms
       use cutoff
       use domdec
+      use deriv
       use freeze
+      use inform
+      use iounit
       use moldyn
       use timestat
       use units
@@ -39,6 +42,9 @@ c
       real*8, allocatable :: derivs(:,:)
       real*8 dip(3),dipind(3)
       time0 = mpi_wtime()
+c
+      if (deb_Path) write(iout,*), 'verlet '
+c
 c
 c     set some time values for the dynamics integration
 c
@@ -143,6 +149,12 @@ c
       call commforces(derivs)
       time1 = mpi_wtime()
       timecommforces = timecommforces + time1-time0
+c
+c     Debug print information
+c
+      if (deb_Energy) call info_energy(rank)
+      if (deb_Force)  call info_forces(cDef)
+      if (deb_Atom)   call info_minmax_pva
 c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the Verlet recursion

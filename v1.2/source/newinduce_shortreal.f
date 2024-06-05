@@ -17,6 +17,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -52,6 +53,9 @@ c
  1000 format(' illegal polalg in newinduce.')
 c1010 format(' time for the ',a,F14.5)
 c1020 format(' total elapsed time in newinduce: ',F14.5)
+c
+      if (deb_Path) write(iout,*), 'newinduce_shortreal '
+c
  
 c
 c     allocate some memory and clear the arrays:
@@ -183,6 +187,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -230,6 +235,9 @@ c
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
  1040 format(' Using a diagonal preconditioner.')
+c
+c
+      if (deb_Path) write(iout,*), 'inducepcg_shortreal '
 c
       allocate (reqrec(nproc))
       allocate (reqsend(nproc))
@@ -420,6 +428,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -463,6 +472,9 @@ c
  1021 format(' Jacobi/DIIS solver: induced p-dipoles',/,
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
+c
+c
+      if (deb_Path) write(iout,*), 'inducejac_shortreal '
 c
 c
       zero  = 0.0d0
@@ -617,6 +629,8 @@ c
       use atoms
       use domdec
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use neigh
@@ -656,6 +670,9 @@ c
       character*80 :: RoutineName
 
       external erfc
+c
+      if (deb_Path) write(iout,*), 'dbletmatxb_pme '
+c
 
       zero = 0.0d0
       one  = 1.0d0

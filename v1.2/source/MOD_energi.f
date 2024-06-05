@@ -51,3 +51,46 @@ c
       real*8 ensmd
       save
       end
+
+      subroutine info_energy(rank)
+      use energi
+      use inform
+      use iounit
+      implicit none
+      integer,intent(in):: rank
+      real(8) ebonded
+
+      if (rank.eq.0) then
+ 20   format ( 40('-'))
+         print 20
+ 30   format (1x,A,F18.6)
+
+         ebonded = 
+     &   eb+ea+eba+eub+eaa+eid+eit+et+ept+ebt+ett+eat+eopb+eopd+eg+ex
+         if (eb   /=real(0,8)) write(iout,30) 'eb     = ',eb
+         if (ea   /=real(0,8)) write(iout,30) 'ea     = ',ea 
+         if (eba  /=real(0,8)) write(iout,30) 'eba    = ',eba
+         if (eub  /=real(0,8)) write(iout,30) 'eub    = ',eub
+         if (eaa  /=real(0,8)) write(iout,30) 'eaa    = ',eaa
+         if (eid  /=real(0,8)) write(iout,30) 'eid    = ',eid
+         if (eit  /=real(0,8)) write(iout,30) 'eit    = ',eit
+         if (et   /=real(0,8)) write(iout,30) 'et     = ',et
+         if (ept  /=real(0,8)) write(iout,30) 'ept    = ',ept
+         if (ebt  /=real(0,8)) write(iout,30) 'ebt    = ',ebt
+         if (ett  /=real(0,8)) write(iout,30) 'ett    = ',ett
+         if (eat  /=real(0,8)) write(iout,30) 'eat    = ',eat
+         if (eopb /=real(0,8)) write(iout,30) 'eopb   = ',eopb
+         if (eopd /=real(0,8)) write(iout,30) 'eopd   = ',eopd
+         if (eg   /=real(0,8)) write(iout,30) 'eg     = ',eg
+         if (ex   /=real(0,8)) write(iout,30) 'ex     = ',ex
+         if (ebonded/=real(0,8)) write(iout,30) 'ebonded =',ebonded
+         if (ec   /=real(0,8)) write(iout,30) 'ec     = ',ec
+         if (ev   /=real(0,8)) write(iout,30) 'ev     = ',ev
+         if (er   /=real(0,8)) write(iout,30) 'er     = ',er
+         if (edsp /=real(0,8)) write(iout,30) 'edsp   = ',edsp
+         if (em   /=real(0,8)) write(iout,30) 'em     = ',em
+         if (ep   /=real(0,8)) write(iout,30) 'ep     = ',ep
+         if (ect  /=real(0,8)) write(iout,30) 'ect    = ',ect
+         if (esum/=real(0,8)) write(iout,30) 'esum    = ',esum
+      end if
+      end subroutine

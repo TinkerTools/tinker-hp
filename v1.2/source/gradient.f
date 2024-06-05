@@ -20,6 +20,7 @@ c
       use domdec
       use energi
       use inter
+      use inform
       use iounit
       use mutant
       use potent
@@ -45,6 +46,9 @@ c
       real*8 time0,time1
       logical isnan
       time0 = mpi_wtime()
+c
+      if (deb_Path) write(iout,*), 'gradient '
+c
 c
 c
 c     zero out each of the potential energy components
@@ -109,6 +113,7 @@ c
 c     zero out the virial and the intermolecular energy
 c
       vir = 0d0
+c      virsave = 0d0
       einter = 0.0d0
       time1 = mpi_wtime()
       timecleargrad = timecleargrad + time1-time0

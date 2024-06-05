@@ -25,6 +25,8 @@ c
       use domdec
       use energi
       use group
+      use inform
+      use iounit
       use math
       use usage
       use virial
@@ -60,6 +62,9 @@ c
       real*8 vyx,vzx,vzy
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eangang1 '
+c
 c
 c
 c     zero out the angle-angle energy and first derivatives

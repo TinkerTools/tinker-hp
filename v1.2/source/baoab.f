@@ -30,6 +30,7 @@ c
       use freeze
       use deriv
       use inform
+      use iounit
       use mdstuf
       use moldyn
       use timestat
@@ -49,6 +50,9 @@ c
       real*8 :: time0,time1
       time0 = mpi_wtime()
 c
+      if (deb_Path) write(iout,*), 'baoab '
+c
+c
 c     set time values and coefficients for BAOAB integration
 c
       dt_2 = 0.5d0 * dt
@@ -65,6 +69,11 @@ c     find quarter step velocities and half step positions via BAOAB recursion
       end do
 c
       if (use_rattle) then
+         if (rank == 0) then
+           write(0,*) "Error: RATTLE not compatible with ",
+     &       "BAOAB integrator yet."
+           call fatal
+         endif
         call rattle2(dt)
       endif
 
@@ -151,6 +160,12 @@ c
       call commforces(derivs)
       time1 = mpi_wtime()
       timecommforces = timecommforces + time1-time0
+c
+c     Debug print information
+c
+      if (deb_Energy) call info_energy(rank)
+      if (deb_Force)  call info_forces(cDef)
+      if (deb_Atom)   call info_minmax_pva
 c
 c     use Newton's second law to get the next accelerations;
 c     find the full-step velocities using the BAOAB recursion

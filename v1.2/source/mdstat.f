@@ -74,6 +74,8 @@ c
       save vol_sum,vol2_sum
       save tpiston_sum,tpiston2_sum
 c
+      if (deb_Path) write(iout,*), 'mdstat '
+c
 c
 c     set number of steps for block averages of properties
 c

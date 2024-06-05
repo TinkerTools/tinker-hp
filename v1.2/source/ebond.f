@@ -21,6 +21,8 @@ c
       use bound
       use energi
       use group
+      use inform
+      use iounit
       use usage
       implicit none
       integer i,ia,ib,ibond
@@ -30,6 +32,8 @@ c
       real*8 xab,yab,zab,rab
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'ebond '
 c
 c
 c     zero out the bond stretching energy

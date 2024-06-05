@@ -40,6 +40,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'kpitors '
+c
+c
       blank = '        '
 c
 c     process keywords containing pi-orbital torsion parameters
@@ -172,6 +175,9 @@ c
       integer size
       character*4 pa,pb
       character*8 blank,pt
+c
+      if (deb_Path) write(iout,*), 'kpitors_update '
+c
 c
       blank = '        '
       npt = maxnpt

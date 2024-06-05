@@ -26,6 +26,8 @@ c
       use boxes
       use domdec
       use kdsp
+      use inform
+      use iounit
       use math
       use mutant
       use potent
@@ -48,6 +50,9 @@ c
       real*8 rho,tau,tau7
       real*8 expterm
       character*11 mode
+c
+      if (deb_Path) write(iout,*), 'evcorr '
+c
 c
 c
 c     zero out the long range van der Waals correction
@@ -197,6 +202,8 @@ c
       use boxes
       use domdec
       use kdsp
+      use inform
+      use iounit
       use math
       use mutant
       use potent
@@ -222,6 +229,8 @@ c
       real*8 dtau,gtau
       real*8 rvterm,expterm
       character*11 mode
+c
+      if (deb_Path) write(iout,*), 'evcorr1 '
 c
 c
 c     zero out the long range van der Waals corrections

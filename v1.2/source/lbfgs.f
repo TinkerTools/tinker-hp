@@ -87,6 +87,9 @@ c
       character*240 string
       external fgvalue,optsave
 c
+      if (deb_Path) write(iout,*), 'lbfgs '
+c
+c
 c
 c     initialize some values to be used below
 cc

@@ -17,6 +17,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -58,6 +59,8 @@ c
  1000 format(' illegal polalg in newinduce.')
  1010 format(' time for the ',a,F14.5)
  1020 format(' total elapsed time in newinduce: ',F14.5)
+c
+      if (deb_Path) write(iout,*), 'newinduce_pme '
 c
 c     allocate some memory and clear the arrays:
 c
@@ -290,6 +293,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -342,6 +346,9 @@ c
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
  1040 format(' Using a diagonal preconditioner.')
+c
+      if (deb_Path) write(iout,*), 'inducepcg_pme '
+c
 
       zero = 0.0d0
       one  = 1.0d0
@@ -670,6 +677,7 @@ c
       use atmlst
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -717,6 +725,9 @@ c
  1021 format(' Jacobi/DIIS solver: induced p-dipoles',/,
      $  ' ipole       mux         muy         muz')
  1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
+c
+c
+      if (deb_Path) write(iout,*), 'inducejac_pme '
 c
 c
       zero  = 0.0d0
@@ -948,6 +959,7 @@ c
       use cutoff
       use domdec
       use ewald
+      use inform
       use iounit
       use math
       use mpole
@@ -999,6 +1011,8 @@ c
 c
  1000 format(' Warning, system moved too much since last neighbor list
      $  update, try lowering nlupdate')
+c
+      if (deb_Path) write(iout,*), 'efld0_direct '
 c
       shortrange = use_polarshortreal
       if (shortrange) then 
@@ -1387,6 +1401,8 @@ c
       use couple
       use domdec
       use ewald
+      use inform
+      use iounit
       use math
       use mpole
       use neigh
@@ -1424,6 +1440,9 @@ c
       real*8  cutoff2
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'tmatxb_pme '
+c
 
       shortrange = use_polarshortreal
       if (shortrange) then 
@@ -1660,6 +1679,8 @@ c
       use domdec
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -1683,6 +1704,8 @@ c
       integer, allocatable :: reqrec(:),reqsend(:)
       integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
       integer nprocloc,commloc,rankloc
+c
+      if (deb_Path) write(iout,*), 'efld0_recip '
 c
       if (use_pmecore) then
         nprocloc = nrec
@@ -1892,95 +1915,6 @@ c
       deallocate (reqsend)
       return
       end
-cc
-cc     Compute the reciprocal space contribution to the electric field due to the permanent 
-cc     multipoles during lambda dynamics: interpolate it between lambdae=0 and lambdae=1
-cc
-c      subroutine efld0_recip_lambda(cphi)
-c      use domdec
-c      use mpi
-c      use mpole
-c      use mutant
-c      use pme
-c      implicit none
-c      real*8 :: cphi(10,max(1,npoleloc))
-cc      real*8, allocatable :: cphi0(:,:),cphirec0(:,:)
-cc      real*8, allocatable :: cphi1(:,:),cphirec1(:,:)
-c      real*8 :: elambdap0,elambdap1
-c      real*8 :: elambdatemp,plambda,dplambdadelambdae
-c      integer :: ierr,i
-cc
-cc      allocate (cphi1(10,max(1,npoleloc)))
-cc      cphi1 = 0.0d0
-ccc      allocate (cphirec1(10,max(npolerecloc,1)))
-ccc      cphirec1 = 0.0d0
-cc      allocate (cphi0(10,max(1,npoleloc)))
-cc      cphi0 = 0d0
-ccc      allocate (cphirec0(10,max(npolerecloc,1)))
-ccc      cphirec1 = 0.0d0
-c      elambdatemp = elambda  
-cc
-cc     recip field is interpolated between elambda=1 and elambda=0, for lambda.gt.plambda,
-cc     otherwise the value taken is for elambda=0
-cc
-c 
-c      if (elambda.gt.bplambda) then
-c        elambda = 1d0
-c        call MPI_BARRIER(hostcomm,ierr)
-c        if (hostrank.eq.0) call altelec
-c        call MPI_BARRIER(hostcomm,ierr)
-c        call rotpole
-c        cphi = 0d0
-c        cphirec = 0d0
-c        fphirec = 0d0
-c        call efld0_recip_orig(cphi)
-c        cphi1  = cphi
-c        cphirec1 = cphirec
-c        fphirec1 = fphirec
-c      end if
-c
-c      elambda = 0d0
-c      call MPI_BARRIER(hostcomm,ierr)
-c      if (hostrank.eq.0) call altelec
-c      call MPI_BARRIER(hostcomm,ierr)
-c      call rotpole
-c      cphi = 0d0
-c      cphirec = 0d0
-c      fphirec = 0d0
-c      call efld0_recip_orig(cphi)
-c      cphi0  = cphi
-c      cphirec0 = cphirec
-c      fphirec0 = fphirec
-cc
-c      elambda = elambdatemp 
-cc
-cc     interpolation of "plambda" between bplambda and 1 as a function of
-cc     elambda: 
-cc       plambda = 0 for elambda.le.bplambda
-cc       u = (elambda-bplambda)/(1-bplambda)
-cc       plambda = u**3 for elambda.gt.plambda
-cc       ep = (1-plambda)*ep0 +  plambda*ep1
-cc
-c      if (elambda.le.bplambda) then
-c        plambda = 0d0
-c        dplambdadelambdae = 0d0
-c      else
-c        plambda = ((elambda-bplambda)/(1d0-bplambda))**3
-c        dplambdadelambdae = 3d0*((elambda-bplambda)**2/(1-bplambda)**3)
-c      end if
-c      cphi = plambda*cphi1 + (1-plambda)*cphi0
-c      cphirec = (1-plambda)*cphirec0+plambda*cphirec1
-c      fphirec = (1-plambda)*fphirec0+plambda*fphirec1
-cc
-cc     reset lambda to initial value
-cc
-c      call MPI_BARRIER(hostcomm,ierr)
-c      if (hostrank.eq.0) call altelec
-c      call MPI_BARRIER(hostcomm,ierr)
-c      call rotpole
-c      return
-c      end
-c
 c
       subroutine tmatxbrecip(mu,murec,nrhs,dipfield,dipfieldbis)
 c
@@ -1992,6 +1926,8 @@ c
       use domdec
       use ewald
       use fft
+      use inform
+      use iounit
       use math
       use mpole
       use pme
@@ -2012,6 +1948,8 @@ c
       integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
       integer, allocatable :: reqrec(:),reqsend(:)
       integer nprocloc,commloc,rankloc
+c
+      if (deb_Path) write(iout,*), 'tmatxbrecip '
 c
       if (use_pmecore) then
         nprocloc = nrec

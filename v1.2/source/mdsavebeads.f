@@ -70,6 +70,9 @@ c
         end function random
       end interface
 c
+      if (deb_Path) write(iout,*), 'mdsavebeads '
+c
+c
       moddump = mod(istep,iwrite)
       if (moddump .ne. 0)  return
 

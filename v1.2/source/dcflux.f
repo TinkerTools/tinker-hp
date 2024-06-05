@@ -26,6 +26,8 @@ c
       use bound
       use cflux
       use domdec
+      use inform
+      use iounit
       implicit none
       integer i,ia,ib,ic
       integer ialoc,ibloc,icloc
@@ -57,6 +59,9 @@ c
       real*8 dcfx(*)
       real*8 dcfy(*)
       real*8 dcfz(*)
+c
+c
+      if (deb_Path) write(iout,*), 'dcflux '
 c
 c
 c     zero out the charge flux correction forces

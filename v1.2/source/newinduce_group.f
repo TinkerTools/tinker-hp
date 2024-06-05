@@ -20,6 +20,7 @@ c
       use atmlst
       use domdec
       use group
+      use inform
       use iounit
       use math
       use mpole
@@ -50,6 +51,9 @@ c
       if (.not.use_polar) return
 c
  1000 format(' illegal polalg in newinduce.')
+c
+      if (deb_Path) write(iout,*), 'newinduce_group '
+c
 c
 c
 c     allocate some memory and clear the arrays:

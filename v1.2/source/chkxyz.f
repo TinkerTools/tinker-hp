@@ -17,6 +17,7 @@ c
       subroutine chkxyz (clash)
       use sizes
       use atoms
+      use inform
       use iounit
       implicit none
       integer i,j
@@ -24,6 +25,8 @@ c
       real*8 eps,r2
       logical clash
       logical header
+c
+      if (deb_Path) write(iout,*), 'chkxyz '
 c
 c
 c     initialize atom collision flag and distance tolerance

@@ -35,6 +35,7 @@ c
       real*8, allocatable :: pdelta(:)
       logical header
 c
+      if (deb_Path) write(iout,*), 'alterchg '
 c
 c     perform dynamic allocation of some local arrays
 c

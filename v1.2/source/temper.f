@@ -31,6 +31,8 @@ c
       use bath
       use domdec
       use group
+      use inform
+      use iounit
       use mdstuf
       use molcul
       use moldyn
@@ -48,6 +50,9 @@ c
       real*8 c,d,r,s,si
       real*8 random,normal
       real*8 kt,rate,trial
+c
+      if (deb_Path) write(iout,*), 'temper '
+c
 c
       call kinetic (eksum,ekin,temp)
       if (.not. isothermal)  return

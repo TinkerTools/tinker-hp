@@ -18,12 +18,16 @@ c
       use boxes
       use cell
       use cutoff
+      use inform
+      use iounit
       use math
       implicit none
       real*8 alpha_cos
       real*8 ar1,ar2,ar3
       real*8 br1,br2,br3
       real*8 cr1,cr2,cr3
+c
+      if (deb_Path) write(iout,*), 'lattice '
 c
 c
 c     compute and store the half box length values

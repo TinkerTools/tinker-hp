@@ -20,11 +20,14 @@ c
       use bond
       use couple
       use domdec
+      use inform
       use iounit
       use tors
       implicit none
       integer i,j,k
       integer ia,ib,ic,id
+c
+      if (deb_Path) write(iout,*), 'torsions '
 c
 c
 c     loop over all bonds, storing the atoms in each torsion
@@ -92,11 +95,16 @@ c
       use bond
       use couple
       use domdec
+      use inform
+      use iounit
       use tors
       implicit none
       integer i,j,k
       integer ia,ib,ic,id
       integer ibond,torscount,ntorsloc1
+c
+      if (deb_Path) write(iout,*), 'torsions_update '
+c
 c      
       if (allocated(torsglob)) deallocate (torsglob)
       allocate (torsglob(8*nbloc))

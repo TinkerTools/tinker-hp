@@ -53,6 +53,9 @@ c
       character*240 record
       character*240 string
 c
+      if (deb_Path) write(iout,*), 'ktortor '
+c
+c
       blank = '                    '
 c
 c     process keywords containing torsion-torsion parameters
@@ -310,6 +313,9 @@ c
       character*4 pa,pb,pc,pd,pe
       character*20 blank
       character*20 pt1,pt2
+c
+      if (deb_Path) write(iout,*), 'ktortor_update '
+c
 c
       blank = '                    '
       ntt = maxntt

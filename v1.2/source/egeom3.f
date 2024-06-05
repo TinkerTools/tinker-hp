@@ -78,6 +78,8 @@ c
       logical proceed,intermol
       logical header,huge
 c
+      if (deb_Path) write(iout,*), 'egeom3 '
+c
 c
 c     zero out the restraint energy and partitioning terms
 c

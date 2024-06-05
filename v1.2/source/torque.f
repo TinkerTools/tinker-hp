@@ -49,7 +49,6 @@ c
       real*8 de(3,*)
       character*8 axetyp
 c
-c
 c     zero out force components on local frame-defining atoms
 c
       do j = 1, 3

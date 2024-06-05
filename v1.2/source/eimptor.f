@@ -21,6 +21,8 @@ c
       use energi
       use group
       use imptor
+      use inform
+      use iounit
       use torpot
       use usage
       implicit none
@@ -47,6 +49,8 @@ c
       real*8 xdc,ydc,zdc
       real*8 fgrp
       logical proceed
+c
+      if (deb_Path) write(iout,*), 'eimptor '
 c
 c
 c     zero out improper torsional energy

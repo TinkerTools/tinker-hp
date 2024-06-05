@@ -76,6 +76,8 @@ c
  1000 Format(' Time for 100 Steps: ',f15.4,/,
      $  ' Ave. Time per step: ',f15.4)
  1010 Format(' ns per day: ',f15.4)
+      ! Sign running program
+      app_id = pimd_a
 c
 c     set up the structure and molecular mechanics calculation
 c

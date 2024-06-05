@@ -35,6 +35,8 @@ c
       real*8 elrc,aelrc
       character*11 mode
 c
+      if (deb_Path) write(iout,*), 'edisp3 '
+c
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -135,6 +137,9 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'edisp3b '
+c
 c
 c     compute the short, long, or full real space part of the Ewald summation
       shortrange = use_dispshort
@@ -402,11 +407,15 @@ c
       use domdec
       use energi
       use ewald
+      use inform
+      use iounit
       use pme
       use potent
       implicit none
       integer i,ii,iidisp
       real*8 e
+c
+      if (deb_Path) write(iout,*), 'edisp3d '
 c
 c
 c     zero out the damped dispersion energy and partitioning terms
@@ -520,6 +529,9 @@ c
       logical testcut,shortrange,longrange,fullrange
       character*11 mode
       character*80 :: RoutineName
+c
+      if (deb_Path) write(iout,*), 'edreal3d '
+c
 
 c     compute the short, long, or full real space part of the Ewald summation
       shortrange = use_dispshortreal
