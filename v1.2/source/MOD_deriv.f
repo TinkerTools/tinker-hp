@@ -106,7 +106,9 @@ c
       ! Debug routine on Forces
       subroutine info_forces(rule)
       use atoms
+#ifdef COLVARS
       use colvars
+#endif
       use domdec
       use inform
       use iounit
@@ -287,12 +289,14 @@ c      else if (btest(rule,5)) then
 c
 c      end if
 
+#ifdef COLVARS
       if (use_colvars.and.ncvatoms.gt.0) then
       call minmaxone1(mmx(26),mmx(nf+26),mmx(2*nf+26),decv_tot
      &              ,3*ncvatoms,'decolv');
       call minmaxone1(mmx(27),mmx(nf+27),mmx(2*nf+27),decv
      &              ,3*ncvatoms,'decolv');
       end if
+#endif
 
       if (nproc.gt.1) then
       if (rank.eq.0) then
