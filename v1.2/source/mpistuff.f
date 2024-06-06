@@ -643,7 +643,7 @@ c
           end do
         end do
 c
-c       send the old positions
+c       send the aalt and aaalt2
 c
         do i = 1, nneig_send
           proc = pneig_send(i)

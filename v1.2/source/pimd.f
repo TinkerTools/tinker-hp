@@ -46,6 +46,12 @@ c
       use ascii, only: int_to_str
       use qtb, only: adaptive_qtb,piqtb
       use units
+      use potent
+      use mutant
+#ifdef COLVARS
+      use colvars
+      use utilbaoabpi, only: prepare_colvars_pi
+#endif
       implicit none
       integer istep,nstep,ierr
       integer mode
@@ -108,6 +114,7 @@ c
 c     get nprocforce to do correct allocation of MPI arrays
 c
       call drivermpi
+      call kewald_2
       call reinitnl(0)
       call mechanic_init_para
 c
@@ -308,6 +315,49 @@ c
 
       call mdinit(dt)    
       call mdinitbead(polymer)
+
+#ifdef COLVARS
+      dt_sim = dt*1000d0
+c
+c     only the master does colvars computations, but other ranks need to allocate coord arrays
+c
+      if (ranktot.eq.0) then
+         call allocate_colvars
+      end if
+      call MPI_BCAST(use_colvars,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+      if (use_colvars) then
+        call MPI_BCAST(ncvatoms,1,MPI_INT,0,MPI_COMM_WORLD,ierr)
+        if (ranktot.gt.0) then
+          allocate (cvatoms_ids(ncvatoms))
+        end if
+        call MPI_BCAST(cvatoms_ids,ncvatoms,MPI_INT,0,MPI_COMM_WORLD,
+     $       ierr)
+        if (ranktot.gt.0) then
+           allocate (cv_pos(3,ncvatoms))
+           allocate (decv(3,ncvatoms),decv_tot(3,ncvatoms))
+           cv_pos = 0d0
+           decv = 0d0
+           decv_tot = 0d0
+        end if
+c
+c       for lambda-dynamics, do a "blank" colvars computation to get restart value of lambda
+c
+        if (use_lambdadyn) then
+          call prepare_colvars_pi(polymer)
+          if (ranktot.eq.0) call compute_colvars_tinker()
+          call MPI_BCAST(lambda,1,MPI_REAL8,0,MPI_COMM_WORLD,ierr)
+          call def_lambdadyn(ranktot)
+        end if
+      end if
+#endif
+#ifndef COLVARS
+      if (use_lambdadyn) then
+        if (ranktot.eq.0) then
+          write(iout,*) 'cannot run lambda dynamics without colvars'
+        end if
+        call fatal
+      end if
+#endif
 
       !if(qtb_thermostat) then
       !  if(ranktot==0) then

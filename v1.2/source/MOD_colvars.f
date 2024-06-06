@@ -522,7 +522,7 @@ c
 
       if (use_lambdadyn) then
         call MPI_BCAST(lambda,1,MPI_REAL8,0,COMM_TINKER,ierr)
-        call def_lambdadyn
+        call def_lambdadyn(rank)
         if (use_osrw) then
           call MPI_BCAST(flambdabias,1,MPI_REAL8,0,COMM_TINKER,ierr)
           do i  = 1, nloc

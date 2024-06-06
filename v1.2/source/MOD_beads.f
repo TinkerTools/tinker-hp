@@ -57,6 +57,8 @@ c
       real*8 :: stresspi(3,3)
       real*8 :: dedvpi,dedvintrapi,dedvinterpi
       real*8 :: dippi(3), dipindpi(3)
+      real*8 :: delambdavpi=0.d0, delambdaepi=0.d0 ! lambda dynamics
+      
       logical :: pot_gathered=.TRUE.
 
       real(8), allocatable :: eigmat(:,:)

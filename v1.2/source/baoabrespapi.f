@@ -181,6 +181,7 @@ c
       endif
 
       call set_eigforces_pi(polymer,polymer%forces_slow)
+      call centroid_force_corrections(polymer)
       call apply_B_PI(polymer,dt2)
       if(PITIMER) call stopwatchpi(timeaoa,.false.,.false.)
 

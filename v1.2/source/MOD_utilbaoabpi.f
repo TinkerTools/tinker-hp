@@ -304,6 +304,15 @@ c       GRADIENT SUBROUTINES
       logical save_plumed
 #endif
 
+#ifdef COLVARS
+      save_colvars = use_colvars
+      use_colvars = .false.
+#endif
+#ifdef PLUMED
+      save_plumed = lplumed
+      lplumed = .false.
+#endif
+
       derivs_(:,:)=0.0d0
 c
 c     save the original state of fast-evolving potentials
@@ -364,12 +373,7 @@ c     FIRST PASS TO SUBSTRACT POLAR SHORTRANGE
       save_tcgguess = tcgguess
       save_tcgpeek = tcgpeek
       save_tcgomega = tcgomega
-#ifdef COLVARS
-      save_colvars = use_colvars
-#endif
-#ifdef PLUMED
-      save_plumed = lplumed
-#endif
+
 
       use_vdw = .false.
       use_charge = .false.
@@ -400,12 +404,7 @@ c     FIRST PASS TO SUBSTRACT POLAR SHORTRANGE
       tcgguess = tcgguessshort
       tcgpeek = tcgpeekshort
       tcgomega = tcgomegashort
-#ifdef COLVARS
-      use_colvars = .false.
-#endif
-#ifdef PLUMED
-      lplumed = .false.
-#endif
+
 
       call gradient(epshort,derivs_)
 
@@ -438,18 +437,19 @@ c     FIRST PASS TO SUBSTRACT POLAR SHORTRANGE
       tcgprec = save_tcgprec
       tcgguess = save_tcgguess
       tcgpeek = save_tcgpeek
-#ifdef COLVARS
-      use_colvars = save_colvars
-#endif
-#ifdef PLUMED
-      lplumed = save_plumed
-#endif
+
 
       DO i=1,nbloc; do j=1,3
         derivs_(j,i) = -dep(j,i)
       ENDDO ; ENDDO
       epshort = ep
       virshort(:,:) = vir(:,:) 
+#ifdef COLVARS
+      if (use_lambdadyn) then
+        delambdavpi = delambdavpi - delambdav
+        delambdaepi = delambdaepi - delambdae
+      endif
+#endif
 
       endif
 
@@ -474,10 +474,19 @@ c
         dipindpi=0
       endif
 
+#ifdef COLVARS
+      if (use_lambdadyn) then
+        delambdavpi = delambdavpi + delambdav
+        delambdaepi = delambdaepi + delambdae
+      endif
+#endif
+
       if(only_long .and. remove_polarshort) then
         epot = epot - epshort
         vir_(:,:) = vir_(:,:)-virshort(:,:)
       endif
+
+
 c
 c     restore the original state of fast-evolving potentials
 c
@@ -506,6 +515,13 @@ c
       use_displong = .false.
       use_chgtrnlong = .false.
       endif
+
+#ifdef COLVARS
+      use_colvars = save_colvars
+#endif
+#ifdef PLUMED
+          lplumed = save_plumed
+#endif
 
 
       end subroutine compute_gradslow_centroid
@@ -595,6 +611,14 @@ c
 c
 c     save the original state of fast-evolving potentials
 c
+#ifdef COLVARS
+        save_colvars = use_colvars
+        use_colvars = .false.
+#endif
+#ifdef PLUMED
+        save_plumed = lplumed
+        lplumed = .false.
+#endif
 
       if(.not.do_short)then
         ! deactivate bonded terms
@@ -645,12 +669,6 @@ c
         save_list = use_list
         save_smdvel = use_smd_velconst
         save_smdfor = use_smd_forconst
-#ifdef COLVARS
-        save_colvars = use_colvars
-#endif
-#ifdef PLUMED
-        save_plumed = lplumed
-#endif
 c
 c     turn off slow-evolving nonbonded potential energy terms
 c
@@ -665,12 +683,6 @@ c
         use_chgtrn = .false.
         use_smd_velconst = .false.
         use_smd_forconst = .false.
-#ifdef COLVARS
-        use_colvars = .false.
-#endif
-#ifdef PLUMED
-        lplumed = .false.
-#endif
 
       elseif(do_int .and.(.not. do_long)) then
         ! deactivate long-range terms (keep short-range non-bonded)
@@ -687,12 +699,6 @@ c
         save_smdvel = use_smd_velconst
         save_smdfor = use_smd_forconst
         save_polar = use_polar
-#ifdef COLVARS
-        save_colvars = use_colvars
-#endif
-#ifdef PLUMED
-        save_plumed = lplumed
-#endif
 c  
 c       turn off fast-evolving valence potential energy terms
 c  
@@ -723,12 +729,6 @@ c
         tcgomega   = tcgomegashort
         use_smd_velconst   = .false.
         use_smd_forconst   = .false.
-#ifdef COLVARS
-        use_colvars = .false.
-#endif
-#ifdef PLUMED
-        lplumed = .false.
-#endif
 
       endif
 
@@ -767,6 +767,12 @@ c
         epot = epot+polymer%epot(k)/nu
         polymer%vir(:,:,k)=vir(:,:)
         vir_(:,:)=vir_(:,:)+vir(:,:)/nu
+#ifdef COLVARS
+        if (use_lambdadyn .and. (.not. bonded_only)) then
+          delambdavpi = delambdavpi + delambdav/nu
+          delambdaepi = delambdaepi + delambdae/nu
+        endif
+#endif
       enddo
 
 c
@@ -803,12 +809,6 @@ c
         use_list = save_list
         use_smd_velconst = save_smdvel
         use_smd_forconst = save_smdfor
-#ifdef COLVARS
-        use_colvars = save_colvars
-#endif
-#ifdef PLUMED
-        lplumed = save_plumed
-#endif
 
       elseif(do_int .and.(.not. do_long)) then
 
@@ -836,15 +836,229 @@ c
         use_smd_velconst = save_smdvel
         use_smd_forconst = save_smdfor
         use_polar = save_polar
+      endif
+
 #ifdef COLVARS
         use_colvars = save_colvars
 #endif
 #ifdef PLUMED
         lplumed = save_plumed
 #endif
-      endif
 
       end subroutine compute_grad_beads
+
+
+      subroutine centroid_force_corrections(polymer)
+#ifdef COLVARS
+        use colvars
+#endif
+        use domdec
+        use deriv
+        use beads
+        implicit none
+        type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+  
+#ifdef COLVARS
+        if (use_colvars) then
+          call colvars_run_pi(polymer)
+        endif
+#endif
+      end subroutine centroid_force_corrections
+
+
+#ifdef COLVARS
+      subroutine colvars_run_pi(polymer)
+      use colvars
+      use domdec
+      use deriv
+      use beads
+      implicit none
+      type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+
+      call prepare_colvars_pi(polymer)
+ 
+      !only the master does colvars computations
+      if (ranktot.eq.0) call compute_colvars_tinker()
+
+      call distrib_colvars_pi(polymer)
+      
+      end subroutine colvars_run_pi
+
+      subroutine prepare_colvars_pi(polymer)
+      use atmtyp
+      use beads
+      use atoms
+      use boxes
+      use colvars
+      use deriv
+      use domdec
+      use mdstuf
+      use moldyn
+      use mpi
+      use potent
+      use units
+      implicit none
+      integer i,j,k,iglob,iloc,ilocrec,ierr,iproc
+      real*8 nuinv
+      integer :: maxloc,nbeadslocmax,nlocproc
+      type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+
+      decv     = 0d0
+      decv_tot = 0d0
+      cv_pos   = 0d0
+
+      maxloc=nlocpis(nproc_polymer)
+      nbeadslocmax=polymer%nbeadsloc(nproc_polymer)
+      nlocproc=int(nloc/nproc_polymer)
+
+      nuinv = 1.0d0/polymer%nbeads
+  
+      do i = 1, ncvatoms
+        iglob = cvatoms_ids(i)
+        iloc = loc(iglob)
+        if (repart(iglob) /= rank) cycle
+        iproc=min(nproc_polymer,int((iloc-1)/nlocproc)+1)
+        if (rank_polymer/=iproc-1) cycle
+
+        cv_pos(1,i) = polymer%eigpos(1,iglob,1) 
+     &       + pbcwrapindex(1,iglob)*xbox
+        cv_pos(2,i) = polymer%eigpos(2,iglob,1) 
+     &       + pbcwrapindex(2,iglob)*ybox
+        cv_pos(3,i) = polymer%eigpos(3,iglob,1) 
+     &       + pbcwrapindex(3,iglob)*zbox
+
+        do k=1,nbeads; do j=1,3
+          decv_tot(j,i) = decv_tot(j,i) 
+     &       - (polymer%forces(j,iglob,k) 
+     &           + polymer%forces_slow(j,iglob,k))*nuinv
+        enddo; enddo
+
+      end do
+
+      if (use_lambdadyn) then
+        delambdav = delambdavpi
+        delambdae = delambdaepi
+        delambdavpi = 0d0
+        delambdaepi = 0d0
+      endif
+c
+      if (nproctot == 1) return 
+
+      if (ranktot.eq.0) then
+        call MPI_REDUCE(MPI_IN_PLACE,cv_pos,3*ncvatoms,MPI_REAL8
+     $                 ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+        call MPI_REDUCE(MPI_IN_PLACE,decv_tot,3*ncvatoms,MPI_REAL8
+     $                 ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+      else
+        call MPI_REDUCE(cv_pos,cv_pos,3*ncvatoms,MPI_REAL8
+     $                 ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+        call MPI_REDUCE(decv_tot,decv_tot,3*ncvatoms,MPI_REAL8
+     $                 ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+      end if
+      if (use_lambdadyn) then
+        if (ranktot.eq.0) then
+          call MPI_REDUCE(MPI_IN_PLACE,delambdav,1,MPI_REAL8
+     $                   ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+          call MPI_REDUCE(MPI_IN_PLACE,delambdae,1,MPI_REAL8
+     $                   ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+        else
+          call MPI_REDUCE(delambdav,delambdav,1,MPI_REAL8
+     $                   ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+          call MPI_REDUCE(delambdae,delambdae,1,MPI_REAL8
+     $                   ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+        end if
+      end if
+      if (use_osrw) then
+        if (ranktot.eq.0) then
+          call MPI_REDUCE(MPI_IN_PLACE,d2edlambdav2,1,MPI_REAL8
+     $                   ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+          call MPI_REDUCE(MPI_IN_PLACE,d2edlambdae2,1,MPI_REAL8
+     $                   ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+        else
+          call MPI_REDUCE(d2edlambdav2,d2edlambdav2,1,MPI_REAL8
+     $                   ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+          call MPI_REDUCE(d2edlambdae2,d2edlambdae2,1,MPI_REAL8
+     $                   ,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+        end if
+      end if
+      end subroutine
+
+      subroutine distrib_colvars_pi(polymer)
+      use atoms
+      use beads
+      use colvars
+      use deriv
+      use domdec
+      use mpi
+      use mutant
+      use potent
+      use virial
+      implicit none
+      type(POLYMER_COMM_TYPE), intent(inout) :: polymer
+      integer :: ibeadbeg,ibeadend,nbeadsproc,iproc
+      integer :: maxloc,nbeadslocmax,nlocproc
+      real*8 vxx,vxy,vxz,vyy,vyz,vzz
+      integer   i,j,iglob,iloc,ierr
+
+      ibeadbeg=polymer%ibead_beg(rank_polymer+1)
+      ibeadend=polymer%ibead_end(rank_polymer+1)
+      nbeadsproc = ibeadend-ibeadbeg+1
+
+      maxloc=nlocpis(nproc_polymer)
+      nbeadslocmax=polymer%nbeadsloc(nproc_polymer)
+      nlocproc=int(nloc/nproc_polymer)
+c
+			call MPI_BCAST(decv,3*ncvatoms,MPI_REAL8,0,MPI_COMM_WORLD,ierr)
+
+			if (use_lambdadyn) then
+				call MPI_BCAST(lambda,1,MPI_REAL8,0,MPI_COMM_WORLD,ierr)
+				call def_lambdadyn(ranktot)
+				if (use_osrw) then
+					call MPI_BCAST(flambdabias,1,MPI_REAL8,0
+     $          ,MPI_COMM_WORLD,ierr)
+          do i = 1, nloc
+            dxdelambda(:,i)= ( dxdelambdae(:,i)+dxdelambdav(:,i) )
+     $                        *dlambdavlambda
+              !FIXME
+            polymer%eigforces(:,i,1) = polymer%eigforces(:,i,1)
+     $             - flambdabias*dxdelambda(:,i)
+          end do
+        end if
+      end if
+c
+
+      do i = 1, ncvatoms
+        iglob = cvatoms_ids(i)
+        iloc = loc(iglob)
+        if (repart(iglob) /= rank) cycle
+        iproc=min(nproc_polymer,int((iloc-1)/nlocproc)+1)
+        if (rank_polymer/=iproc-1) cycle
+
+        do j=1,3
+          polymer%eigforces(j,iglob,1) = polymer%eigforces(j,iglob,1)
+     &      - decv(j,i)
+        enddo
+c
+c         add virial contribution from colvars
+c
+        vxx =  polymer%eigpos(1,iglob,1)*decv(1,i)
+        vxy =  polymer%eigpos(2,iglob,1)*decv(1,i)
+        vxz =  polymer%eigpos(3,iglob,1)*decv(1,i)
+        vyy =  polymer%eigpos(2,iglob,1)*decv(2,i)
+        vyz =  polymer%eigpos(3,iglob,1)*decv(2,i)
+        vzz =  polymer%eigpos(3,iglob,1)*decv(3,i)
+        virpi(1,1) = virpi(1,1) + vxx
+        virpi(2,1) = virpi(2,1) + vxy
+        virpi(3,1) = virpi(3,1) + vxz
+        virpi(1,2) = virpi(1,2) + vxy
+        virpi(2,2) = virpi(2,2) + vyy
+        virpi(3,2) = virpi(3,2) + vyz
+        virpi(1,3) = virpi(1,3) + vxz
+        virpi(2,3) = virpi(2,3) + vyz
+        virpi(3,3) = virpi(3,3) + vzz
+      end do
+      end subroutine
+#endif
 
 c----------------------------------------------------------------------- 
 c     BAROSTAT SUBROUTINES

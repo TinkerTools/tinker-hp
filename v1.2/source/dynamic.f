@@ -299,7 +299,7 @@ c
           call prepare_colvars 
           if (rank.eq.0) call compute_colvars_tinker()
           call MPI_BCAST(lambda,1,MPI_REAL8,0,COMM_TINKER,ierr)
-          call def_lambdadyn
+          call def_lambdadyn(rank)
         end if
       end if
 #endif
