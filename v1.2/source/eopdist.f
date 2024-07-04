@@ -59,7 +59,7 @@ c
 c
 c     decide whether to compute the current interaction
 c
-         if (use_group)  call groups (proceed,fgrp,ia,ib,ic,id,0,0)
+         if (use_group)  call groups (fgrp,ia,ib,ic,id,0,0)
          proceed = (use(ia) .or. use(ib) .or.
      &                              use(ic) .or. use(id))
 c
