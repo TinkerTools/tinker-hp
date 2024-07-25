@@ -373,7 +373,7 @@ c
                      qktemp = pchg_orig(kkchg)
 c                     delambdae = delambdae + 
                      delambdaetemp = 
-     $    2d0*elambda*(f*qitemp*qktemp/rb)*(erfterm+scaleterm)*facts
+     $    2d0*elambda*(f*qitemp*qktemp/rb)*(erfterm+scaleterm)
                   else if ((mut(iglob).and..not.mut(kglob)).or.
      $                    (mut(kglob).and..not.mut(iglob))) then
                       fikbis = f*pchg_orig(iichg) * pchg_orig(kkchg)
@@ -616,7 +616,9 @@ c
       time0 = mpi_wtime()
       if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
      $   (kstart2(rankloc+1).eq.1)) then
-           qfac_2d(1,1,1) = 0.0d0
+         qgridout_2d(1,1,1,1) = 0.0d0
+         qgridout_2d(2,1,1,1) = 0.0d0
+         qfac_2d(1,1,1) = 0.0d0
       end if
       f = 0.5d0 * electric / dielec
       pterm = (pi/aewald)**2
@@ -705,6 +707,7 @@ c
      $ n3mpimax)
       time1 = mpi_wtime()
       timefft = timefft + time1-time0
+
 c
 c     MPI : Begin reception
 c
