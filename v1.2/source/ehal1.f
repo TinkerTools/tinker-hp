@@ -286,6 +286,7 @@ c
 c
 c     set use of lambda scaling for decoupling or annihilation
 c
+                  if (use_lambdadyn) delambdavtemp = 0d0
                   mutik = .false.
                   if (muti .or. mutk) then
                      if (vcouple .eq. 1) then

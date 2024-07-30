@@ -100,6 +100,7 @@ c
       real*8 vxx,vyy,vzz
       real*8 vyx,vzx,vzy
       real*8 s,ds,vdwshortcut2,facts,factds
+      real*8 delambdavtemp
       real*8 :: rho,rhok,rvk,lambdavt
       real*8 :: derho,gsc,dgscrho,dgsclambda
       real*8 :: galpha,glamb1,evdw,devdwgsc
@@ -268,6 +269,7 @@ c
 c
 c     set use of lambda scaling for decoupling or annihilation
 c
+               if (use_lambdadyn) delambdavtemp = 0d0
                mutik = .false.
                if (muti .or. mutk) then
                   if (vcouple .eq. 1) then
@@ -308,7 +310,7 @@ c
                  derho = lambdavt*dgscrho*devdwgsc
                  de = derho/rv
                  if (use_lambdadyn) then
-                 delambdav  = delambdav + sct*(vlambda**(sct-1d0))*
+                 delambdavtemp  = sct*(vlambda**(sct-1d0))*
      $                evdw+lambdavt*dgsclambda*devdwgsc
                   end if
                else
@@ -360,6 +362,15 @@ c
 
                de = de * facts + e * factds
                e  = e  * facts
+
+               if (use_lambdadyn) then
+                 delambdavtemp = facts*delambdavtemp
+                 if (shortrange) then
+                   delambdavsave = delambdavsave + delambdavtemp
+                 else
+                   delambdav = delambdav + delambdavtemp
+                 end if
+               end if
 
                ev = ev + e
 c
