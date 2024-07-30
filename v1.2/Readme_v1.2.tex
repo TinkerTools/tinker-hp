@@ -442,7 +442,7 @@ There are 3 different cases\footnote{Of course, you can match all three at the s
 You should now go in the main directory, where \texttt{configure.ac} resides, and type \texttt{autoconf} and \texttt{automake}. \texttt{autoconf} should not generate any message. \texttt{automake} will probably do, mainly because of a different version than the one we used to create the distribution. In this case, just type \texttt{aclocal} before running \texttt{automake} again. These 2 (or 3) commands will generate a new \config\ script that takes care of your new sources. You should then run \configp\footnote{Presumably with the \enadeb\ option flag.}, compile, install and enjoy debugging your code.
 
 \section{Executables}
-After having successfully compiled the code, five executable files should be present in the install directory: \analyze, \bar, \dynamic, \testgrad\ and \minimize\footnote{If you have ever compiled with \enadeb\ before, you should  have 5 more binaries.}, which are the analogous of the binaries of the Tinker-8.4 release and require similarly a geometry (given by a *.xyz file), a simulation setup (given by a *.key file) and possibly a restart (given by a *.dyn file) for the \dynamic\ program. 
+After having successfully compiled the code, five executable files should be present in the install directory: \analyze, \bar, \dynamic, \testgrad\ and \minimize\footnote{If you have ever compiled with \enadeb\ before, you should  have 5 more binaries.}, which are the analogous of the binaries of the Tinker-8 release and require similarly a geometry (given by a *.xyz file), a simulation setup (given by a *.key file) and possibly a restart (given by a *.dyn file) for the \dynamic\ program. 
 
 All these executables must run in the same environment you had during the compilation phase. That means the same set of modules, or the correct \texttt{LIBRARY\_PATH}. They should be launched with the \mpirun\texttt{ x} prefix in order to run in parallel with \texttt{x} \mpi\  processes. 
 
@@ -452,7 +452,7 @@ The only boundary conditions that are available in this release are periodic bou
 
 Classical force fields such as AMBER, CHARMM and OPLS are available in Tinker-HP as well as polarizable force fields such as AMOEBA.
 \subsection{\analyze\ } 
-The \analyze\ executable allows potential energy analysis. Compared to the Tinker-8.4 software, the only option compatible with this binary is "e".
+The \analyze\ executable allows potential energy analysis. Compared to the Tinker-8 software, the only option compatible with this binary is "e".
 
 For example the command line: 
 \begin{itemize}
@@ -460,7 +460,7 @@ For example the command line:
 will give you as an output the potential energy terms of the geometry given by a dhfr2.xyz file and with the simulation setup given by the dhfr2.key file. Furthermore, this computation will run on 16 \mpi\  processes.
 \end{itemize}
 \subsection{\dynamic\ }
-The \dynamic\ executable allows to run molecular dynamics simulation. As for Tinker-8.4, the command line used to run the MD should give first the number of MD steps to make, then the size of each time step (in femtoseconds), then the time between each writing of geometry (in picoseconds), then the statistical ensemble to sample : 1 is NVE, 2 is NVT, 4 is NPT. For NVT and NPT simulations, this number should be followed by the temperature (in Kelvin) of the simulation, and for NPT simulation by the pressure (in Atmosphere) of the simulation.
+The \dynamic\ executable allows to run molecular dynamics simulation. As for Tinker-8, the command line used to run the MD should give first the number of MD steps to make, then the size of each time step (in femtoseconds), then the time between each writing of geometry (in picoseconds), then the statistical ensemble to sample : 1 is NVE, 2 is NVT, 4 is NPT. For NVT and NPT simulations, this number should be followed by the temperature (in Kelvin) of the simulation, and for NPT simulation by the pressure (in Atmosphere) of the simulation.
 
 For example the command lines:
 \begin{itemize}
@@ -472,7 +472,7 @@ For example the command lines:
     will give you as an output 1000 MD steps in NPT at 300K and 1atm for the dhfr2 system, with a 1  {\em fs} time step and a 1  {\em ps} frequency output.
 \end{itemize}
 \subsection{\testgrad\ }
-The \testgrad\ program is absolutely equivalent to the one of the Tinker-8.4 release: it allows the output of the components of the analytical and/or numerical gradients of the different energy terms.
+The \testgrad\ program is absolutely equivalent to the one of the Tinker-8 release: it allows the output of the components of the analytical and/or numerical gradients of the different energy terms.
 
 For example, the command line:
 \begin{itemize}
@@ -480,7 +480,7 @@ For example, the command line:
 will give you as an output all the analytical and numerical gradients (computed with an increment of 0.0001 Angstroms for the positions of the atoms) of all the energy terms of the dhfr2 system.
 \end{itemize}
 \subsection{\minimize}
-The \minimize\ program computes energy minimization starting from a given structure, using a low memory quasi-newton BFGS algorithm as in Tinker-8.4. The command line used should give the numerical threshold for the convergence of the algorithm.
+The \minimize\ program computes energy minimization starting from a given structure, using a low memory quasi-newton BFGS algorithm as in Tinker-8. The command line used should give the numerical threshold for the convergence of the algorithm.
 
 For example, the command line:
 \begin{itemize}
@@ -488,7 +488,7 @@ For example, the command line:
 will compute energy minimization on the dhfr2 structure until the RMS on the gradient is inferior to 0.1. The new geometry will be written at each iteration of the algorithm in the file dhfr2.xyz\_2.
 \end{itemize}
 \section{Keywords}
-The main keywords of Tinker-8.4 are available in Tinker-HP. So, a description of these keywords can be found in the \href{https://dasher.wustl.edu/tinker/downloads/guide.pdf}{Tinker user guide}. Let us review a few of these and some new ones which are specific to  Tinker-HP.
+The main keywords of Tinker-8 are available in Tinker-HP. So, a description of these keywords can be found in the \href{https://dasher.wustl.edu/tinker/downloads/guide.pdf}{Tinker user guide}. Let us review a few of these and some new ones which are specific to  Tinker-HP.
 
 \settowidth{\mylen}{\baoabpiston}
 \subsection{Keywords specific to the \dynamic\  program}
@@ -507,24 +507,22 @@ As in Tinker, the integrator of a dynamic is imposed by the keyword \textbf{"int
 \baoabrespa & : & Bonded/non bonded respa-split for Langevin dynamics with a \baoab\ inner loop, the default time step for the inner loop is also 0.25 {\em fs}\\
 \respaone & : &(Bonded)/(short range non bonded)/(long range non bonded) three level respa1-split with a velocity verlet inner loop. The default timesteps are 0.25 {\em fs} for the inner loop and 2 {\em fs} for the intermediate one\\
 \baoabrespaone &: &(Bonded)/(short range non bonded)/(long range non bonded) three level respa1-split for Langevin dynamics with a \baoab\ inner loop. The default timesteps are 0.25 {\em fs} for the inner loop and 2 {\em fs} for the intermediate one\\
-\baoabpiston &:& Constant pressure \baoab\  Langevin dynamics with a Langevin Piston pressure control and a \baoab\  evolution of the volume extended variable. The default mass of the piston is 2e$^{-5}$ atomic units and the default friction for the piston is 20.0  {\em ps}$^{-1}$.\\
 \end{tabular}
 
 \vskip2.5mm
-For all the Langevin integrators (\bbk, \baoab, \baoabrespa, \baoabrespaone\ and \baoabpiston), the friction (in  {\em ps}$^{-1}$) can be controlled by the keyword \texttt{friction x}, the default being 1  {\em ps}$^{-1}$.
+For all the Langevin integrators (\bbk, \baoab, \baoabrespa, \baoabrespaone\), the friction (in  {\em ps}$^{-1}$) can be controlled by the keyword \texttt{friction x}, the default being 1  {\em ps}$^{-1}$.
 
 For \respa, \baoabrespa, \respaone\ and \baoabrespaone, the inner timestep can be imposed by the keyword \texttt{dshort x}, \texttt{x} being its desired value in  {\em ps}.
 
 For \respaone\ and \baoabrespaone, the intermediate timestep can be imposed by the keyword \texttt{dinter x}, \texttt{x} being its desired value in  {\em ps}.
 
-For \baoabpiston,  the mass of the piston (in atomic units) can be set by the keyword \texttt{masspiston x} and 
-the friction of the piston (in  {\em ps}$^{-1}$) can be set by the keyword \texttt{frictionpiston x}.
+
 
 \vskip5mm
-\item \textbf{Thermostats and barostats}: Aside from the Langevin integrators, the thermostats available in Tinker-HP are Berendsen, Bussi (which is the default one) and Andersen. Aside from the Langevin Piston, the barostats available in Tinker-HP are the Berendsen (which is the default one) and the Monte-Carlo one. These option can be set by putting the keywords: \texttt{thermostat berendsen}, \texttt{thermostat bussi}, \texttt{thermostat andersen}, \texttt{barostat berendsen} and \texttt{barostat montecarlo} in the key file.
+\item \textbf{Thermostats and barostats}: Aside from the Langevin integrators, the thermostats available in Tinker-HP are Berendsen, Bussi (which is the default one) and Andersen. The barostats available in Tinker-HP are the Berendsen (which is the default one), the Monte-Carlo one and the Langevin Piston one. These option can be set by putting the keywords: \texttt{thermostat berendsen}, \texttt{thermostat bussi}, \texttt{thermostat andersen}, \texttt{barostat berendsen} ,\texttt{barostat montecarlo} and \texttt{barostat langevin} in the key file. Note that the Langevin piston barostat is only compatible with BAOAB integrators. 
 \end{itemize}
 
-Tinker-HP deals with restart files for dynamic trajectories the same way as Tinker-8.4 does by creating a *.dyn file encompassing current positions, velocities and accelerations of the system.
+Tinker-HP deals with restart files for dynamic trajectories the same way as Tinker-8 does by creating a *.dyn file encompassing current positions, velocities and accelerations of the system.
 
 \subsection{New keywords specific to Tinker-HP}
 Some new keywords have been introduced in Tinker-HP. The first one concern the algorithm used to converge the polarization equations. 
@@ -588,7 +586,7 @@ During equilibration of a solvated protein it can be useful to impose positional
 Moreover, Tinker-HP now supports \textbf{CHARMM dcd format}: adding the line \textbf{dcdio} to the keyfile will print a trajectory with the dcd format. When running the analyze or the bar postprocessing programs, if \textbf{dcdio} is specified in the key file, then the programs will look for the associated *dcd file and process the frames it contains.
 
 \vskip5mm
-Unlike Tinker-8.4, the neighbor-lists for non bonded interactions are computed every x steps (x=20 being the default for a 2 {\em fs} time step) and not adjusted dynamically at each time step. This frequency of update can be modified by using the keywords \textbf{nlupdate x}, 1 corresponding to a neighbor-list update at each time step (which can be useful during equilibration for example).
+Unlike Tinker-8, the neighbor-lists for non bonded interactions are computed every x steps (x=20 being the default for a 2 {\em fs} time step) and not adjusted dynamically at each time step. This frequency of update can be modified by using the keywords \textbf{nlupdate x}, 1 corresponding to a neighbor-list update at each time step (which can be useful during equilibration for example).
 
 \vskip5mm
 Other keywords have been introduced to specify parallel options when running Tinker-HP.
@@ -613,6 +611,11 @@ Tinker-HP is now compatible with the \textbf{PLUMED} library that provides enhan
 \item[]\textbf{plumed input.dat output.dat}
 \end{itemize}
 to the Tinker-HP *.key file in order to run an MD coupled to \textbf{PLUMED} with the file \textbf{input.dat} as a \textbf{PLUMED} input. See \url{https://www.plumed.org/doc} for a detailed description of the \textbf{PLUMED} capabilities. Input files to compute the PMF associated to the distance between a Na+ and a Cl- ion with the amber99 force field and metadynamics are given: \textbf{nacl\_amber.xyz}, \textbf{nacl\_amber.key} and \textbf{plumed.dat}.
+
+\vskip5mm
+Tinker-HP is now also compatible with the \textbf{COLVARS} library that provides similar enhanced sampling algorithms, free-energy methods and, more generally, tools to analyze data coming from MD simulations. To run such a simulation, a COLVARS input with the same name as the Tinker-HP one and the *.colvars extension has to be added in the working directory.
+See \url{https://colvars.github.io/master/colvars-refman-tinkerhp.pdf} for a detailed description of the \textbf{COLVARS} capabilities in combination with Tinker-HP. Input files to compute the PMF associated to the distance between a Na+ and a Cl- ion with the amber99 force field and Adaptive Biasing Force (ABF) are given: \textbf{nacl\_amber.xyz}, \textbf{nacl\_amber.key} and \textbf{nacl\_amber.colvars}.
+
 \section{Examples}
 4 examples of systems with associated *.key files are given in the distribution: ubiquitin2, dhfr2, puddle and pond. The sizes of these systems are respectively: 9737, 23558, 96000 and 288000 atoms, making them good various benchmarks for the program. 
 
@@ -629,12 +632,14 @@ A fifth example is reserved for debug purposes. It's exactly the same as the fir
 
 
 \section{Tutorials}
-Three tutorials can be found in the directory \textbf{tutorials} of the release:
+Several tutorials can be found in the directory \textbf{tutorials} of the release:
 
 \begin{tabular}[t]{lcl}
     A general tutorial to prepare systems for Tinker/Tinker-HP&:& \textbf{Tinker\_preparation\_tutorial.pdf}\\
      A tutorial to use Umbrella Sampling with Tinker/Tinker-HP&:& \textbf{Umbrella\_sampling\_tutorial.pdf}\\
     A tutorial to use Steered MD with Tinker-HP&:& \textbf{SMD/SMD\_manual.pdf}\\
+    A tutorial to run simulations including nuclear quantum effects (with path integral techniques or approximate generalized langevin equations \textbf{Quantum-HP\_tutorial.md}\\
+    A tutorial to run alchemical free energy simulations with the Lambda-ABF method: \textbf{Lambda-ABF.md}
 \end{tabular}
 
 \section{Support}
