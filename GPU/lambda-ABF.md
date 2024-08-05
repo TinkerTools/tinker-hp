@@ -85,9 +85,8 @@ abf {
   sharedfreq 1000
 }
 ```
-To run Multiple-Walker (here with 4 walkers), one needs to add the following line to the keyfile:
-```replicas 4
-```
+To run Multiple-Walker (here with 4 walkers), one needs to add the following line to the keyfile: replicas 4
+
 As with any ABF simulation using Colvars, the estimated PMF as a function of $\lambda$ can be found in the ***.pmf** file that is regularly outputted by Colvars. For Multiple-Walker, it can be found in the ***.all.pmf** file.
 
 

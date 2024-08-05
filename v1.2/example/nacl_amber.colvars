@@ -1,0 +1,45 @@
+# In this example, the same set of atoms and reference coordinates
+# are used to restrain the position, orientation, and conformation
+# of a group of atoms, relative to a reference group.
+
+colvarsTrajFrequency 1000
+colvarsRestartFrequency 1000
+
+colvar {
+  name d
+  width 0.2
+  lowerboundary 2.5
+  upperboundary 8.0
+
+  # the position restraint is enforced as a distance to a fixed point
+  # defined by a dummy atom group.
+
+  distance {
+    group1 {
+      # group definition:
+#      atomNumbers 1    # explicit list of 1-based atom IDs
+#      dummy (0.0,0.0,0.0)
+      atomNumbers 643 
+      }
+    
+    group2 {
+      atomNumbers 644
+#      atomNumbers 2  # explicit list of 1-based atom IDs
+    }
+  }
+  outputTotalForce
+  outputAppliedforce
+}
+
+#harmonicWalls {
+#  name mywalls
+#  colvars d
+#  lowerWalls 2.5
+#  upperWalls 8.0
+#  forceConstant 10.0 
+#}
+
+ abf { 
+   colvars d 
+   fullSamples 100
+} 
