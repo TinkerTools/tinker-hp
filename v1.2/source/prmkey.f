@@ -163,6 +163,13 @@ c
          if (value .eq. 'NONE')  then
            use_mpole = .false.
          end if
+      else if (keyword(1:14) .eq. 'MULTIPOLETERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_mpole = .true.
+         if (value .eq. 'NONE')  then
+           use_mpole = .false.
+         end if
       else if (keyword(1:13) .eq. 'POLARIZETERM ') then
          call getword (record,value,next)
          if (value .eq. 'ONLY')  call potoff
