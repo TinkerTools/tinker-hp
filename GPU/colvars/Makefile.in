@@ -110,7 +110,8 @@ libcolvars_a_LIBADD =
 am_libcolvars_a_OBJECTS = colvar.$(OBJEXT) \
 	colvar_neuralnetworkcompute.$(OBJEXT) colvaratoms.$(OBJEXT) \
 	colvarbias.$(OBJEXT) colvarbias_abf.$(OBJEXT) \
-	colvarbias_alb.$(OBJEXT) colvarbias_histogram.$(OBJEXT) \
+	colvarbias_abmd.$(OBJEXT) colvarbias_alb.$(OBJEXT) \
+	colvarbias_histogram.$(OBJEXT) \
 	colvarbias_histogram_reweight_amd.$(OBJEXT) \
 	colvarbias_meta.$(OBJEXT) colvarbias_restraint.$(OBJEXT) \
 	colvarcomp.$(OBJEXT) colvarcomp_alchlambda.$(OBJEXT) \
@@ -322,9 +323,9 @@ AM_CXXFLAGS = $(LIB2DECOMP_INC) $(PLUMEDFLAG) $(LIBPLUMED_INC) $(LIBCOLVARS_INC)
 #
 libcolvars_a_SOURCES = colvar.cpp colvar_neuralnetworkcompute.cpp \
 	colvaratoms.cpp colvarbias.cpp colvarbias_abf.cpp \
-	colvarbias_alb.cpp colvarbias_histogram.cpp \
-	colvarbias_histogram_reweight_amd.cpp colvarbias_meta.cpp \
-	colvarbias_restraint.cpp colvarcomp.cpp \
+	colvarbias_abmd.cpp colvarbias_alb.cpp \
+	colvarbias_histogram.cpp colvarbias_histogram_reweight_amd.cpp \
+	colvarbias_meta.cpp colvarbias_restraint.cpp colvarcomp.cpp \
 	colvarcomp_alchlambda.cpp colvarcomp_angles.cpp \
 	colvarcomp_apath.cpp colvarcomp_combination.cpp \
 	colvarcomp_coordnums.cpp colvarcomp_distances.cpp \
@@ -392,6 +393,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvaratoms.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarbias.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarbias_abf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarbias_abmd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarbias_alb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarbias_histogram.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colvarbias_histogram_reweight_amd.Po@am__quote@

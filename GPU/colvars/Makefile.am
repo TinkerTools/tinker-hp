@@ -23,6 +23,7 @@ libcolvars_a_SOURCES += colvar_neuralnetworkcompute.cpp
 libcolvars_a_SOURCES += colvaratoms.cpp
 libcolvars_a_SOURCES += colvarbias.cpp
 libcolvars_a_SOURCES += colvarbias_abf.cpp
+libcolvars_a_SOURCES += colvarbias_abmd.cpp
 libcolvars_a_SOURCES += colvarbias_alb.cpp
 libcolvars_a_SOURCES += colvarbias_histogram.cpp
 libcolvars_a_SOURCES += colvarbias_histogram_reweight_amd.cpp

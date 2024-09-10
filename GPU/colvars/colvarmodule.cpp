@@ -18,6 +18,7 @@
 #include "colvar.h"
 #include "colvarbias.h"
 #include "colvarbias_abf.h"
+#include "colvarbias_abmd.h"
 #include "colvarbias_alb.h"
 #include "colvarbias_histogram.h"
 #include "colvarbias_histogram_reweight_amd.h"
@@ -100,8 +101,10 @@ colvarmodule::colvarmodule(colvarproxy *proxy_in)
   version_int = proxy->get_version_from_string(COLVARS_VERSION);
 
   cvm::log(cvm::line_marker);
-  cvm::log("Initializing the collective variables module, version "+
-           version()+".\n");
+  cvm::log(
+      "Initializing the collective variables module, version " + version() +
+      (patch_version_number() ? (" (patch " + cvm::to_str(patch_version_number()) + ")") : "") +
+      ".\n");
   cvm::log("Please cite Fiorin et al, Mol Phys 2013:\n"
            "  https://doi.org/10.1080/00268976.2013.813594\n"
            "as well as all other papers listed below for individual features used.\n");
@@ -559,6 +562,9 @@ int colvarmodule::parse_biases(std::string const &conf)
   /// initialize ABF instances
   parse_biases_type<colvarbias_abf>(conf, "abf");
 
+  /// initialize ABMD instances
+  parse_biases_type<colvarbias_abmd>(conf, "abmd");
+
   /// initialize adaptive linear biases
   parse_biases_type<colvarbias_alb>(conf, "ALB");
 
@@ -998,15 +1004,16 @@ int colvarmodule::calc_biases()
     }
   }
 
-  bool biases_need_io = false;
+  bool biases_need_main_thread = false;
   for (bi = biases_active()->begin(); bi != biases_active()->end(); bi++) {
-    if (((*bi)->replica_share_freq() > 0) && (step_absolute() % (*bi)->replica_share_freq() == 0)) {
-      biases_need_io = true;
+    if ((*bi)->replica_share_freq() > 0) {
+      // Biases that share data with replicas need read/write access to I/O or MPI
+      biases_need_main_thread = true;
     }
   }
 
   // If SMP support is available, split up the work (unless biases need to use main thread's memory)
-  if (proxy->check_smp_enabled() == COLVARS_OK && !biases_need_io) {
+  if (proxy->check_smp_enabled() == COLVARS_OK && !biases_need_main_thread) {
 
     if (use_scripted_forces && !scripting_after_biases) {
       // calculate biases and scripted forces in parallel
@@ -1090,7 +1097,7 @@ int colvarmodule::update_colvar_forces()
     cvm::log("Communicating forces from the colvars to the atoms.\n");
   cvm::increase_depth();
   for (cvi = variables_active()->begin(); cvi != variables_active()->end(); cvi++) {
-    if ((*cvi)->is_enabled(colvardeps::f_cv_apply_force)) {
+    if ((*cvi)->is_enabled(colvardeps::f_cv_gradient)) {
       (*cvi)->communicate_forces();
       if (cvm::get_error()) {
         return COLVARS_ERROR;
@@ -1822,7 +1829,7 @@ int colvarmodule::read_traj(char const *traj_filename,
       }
     }
   }
-  return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
+//  return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
 }
 
 
@@ -2144,15 +2151,6 @@ int colvarmodule::reset_index_groups()
 }
 
 
-int cvm::load_atoms(char const *file_name,
-                    cvm::atom_group &atoms,
-                    std::string const &pdb_field,
-                    double pdb_field_value)
-{
-  return proxy->load_atoms(file_name, atoms, pdb_field, pdb_field_value);
-}
-
-
 int cvm::load_coords(char const *file_name,
                      std::vector<cvm::rvector> *pos,
                      cvm::atom_group *atoms,
@@ -2167,7 +2165,7 @@ int cvm::load_coords(char const *file_name,
 
   atoms->create_sorted_ids();
 
-  std::vector<cvm::rvector> sorted_pos(atoms->size(), cvm::rvector(0.0));
+  std::vector<cvm::atom_pos> sorted_pos(atoms->size(), cvm::rvector(0.0));
 
   // Differentiate between PDB and XYZ files
   if (colvarparse::to_lower_cppstr(ext) == std::string(".xyz")) {
@@ -2179,10 +2177,10 @@ int cvm::load_coords(char const *file_name,
     error_code |= cvm::main()->load_coords_xyz(file_name, &sorted_pos, atoms);
   } else {
     // Otherwise, call proxy function for PDB
-    error_code |= proxy->load_coords(file_name,
-                                     sorted_pos, atoms->sorted_ids(),
-                                     pdb_field, pdb_field_value);
+    error_code |= proxy->load_coords_pdb(file_name, sorted_pos, atoms->sorted_ids(), pdb_field,
+                                         pdb_field_value);
   }
+
   if (error_code != COLVARS_OK) return error_code;
 
   std::vector<int> const &map = atoms->sorted_ids_map();

@@ -680,7 +680,6 @@ std::string colvarvalue::to_simple_string() const
   case colvarvalue::type_notset:
   default:
     undef_op();
-    break;
   }
   return std::string();
 }

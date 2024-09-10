@@ -175,7 +175,7 @@ std::string colvarscript::get_cmd_prefix(colvarscript::Object_type t)
   case use_colvar:
     return std::string("colvar_");
   case use_bias:
-    return std::string("bias_"); 
+    return std::string("bias_");
   default:
     cvm::error("Error: undefined colvarscript object type.", COLVARS_BUG_ERROR);
     return std::string("");

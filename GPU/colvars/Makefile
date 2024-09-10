@@ -120,6 +120,7 @@ libcolvars_a_LIBADD =
 am_libcolvars_a_OBJECTS = colvar.$(OBJEXT) \
 	colvar_neuralnetworkcompute.$(OBJEXT) colvaratoms.$(OBJEXT) \
 	colvarbias.$(OBJEXT) colvarbias_abf.$(OBJEXT) \
+	colvarbias_abmd.$(OBJEXT) \
 	colvarbias_alb.$(OBJEXT) colvarbias_histogram.$(OBJEXT) \
 	colvarbias_histogram_reweight_amd.$(OBJEXT) \
 	colvarbias_meta.$(OBJEXT) colvarbias_restraint.$(OBJEXT) \

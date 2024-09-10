@@ -380,16 +380,16 @@ inline size_t colvarvalue::size() const
   default:
     return 0; 
   case colvarvalue::type_scalar:
-    return 1;
+    return 1;;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
-    return 3;
+    return 3;;
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
-    return 4;
+    return 4;;
   case colvarvalue::type_vector:
-    return vector1d_value.size();
+    return vector1d_value.size();;
   }
 }
 
@@ -401,9 +401,9 @@ inline cvm::real colvarvalue::operator [] (int const i) const
   default:
     cvm::error("Error: trying to access a colvar value "
                "that is not initialized.\n", COLVARS_BUG_ERROR);
-    return 0.0; 
+    return 0.0;
   case colvarvalue::type_scalar:
-    return real_value; 
+    return real_value;
   case colvarvalue::type_3vector:
   case colvarvalue::type_unit3vector:
   case colvarvalue::type_unit3vectorderiv:
@@ -613,6 +613,7 @@ inline void colvarvalue::operator *= (cvm::real const &a)
   case colvarvalue::type_quaternion:
   case colvarvalue::type_quaternionderiv:
     quaternion_value *= a;
+    break;
   case colvarvalue::type_vector:
     this->vector1d_value *= a;
     break;
