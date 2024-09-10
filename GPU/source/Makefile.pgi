@@ -108,7 +108,7 @@ endif
 ## /### GNUROOT is supplied when sourcing ../ci/pgi_config.sh in the corresponding branch
 ## Don't forget to do so if rebuilding
 INC_CPP        = $(GNUROOT)
-ifneq ($(LIB_STD_DIR),$(empty__))
+ifneq ($(LIB_STDCPP_DIR),$(empty__))
    LIB_CPP        = $(LIB_STDCPP_DIR) -lstdc++
 else
    LIB_CPP        = $(GNUROOT)/lib64 -lstdc++
@@ -562,7 +562,7 @@ k%.o: k%.f
 %.o: %.F
 	$(RunF77) $(FFLAGS) -c $*.F
 %.o: %.f90
-	$(RunF77) $(FFLAGS) -I$(INC_FFTDECOMP) -c $*.f90
+	$(RunF77) $(GPUFLAGS) -I$(INC_FFTDECOMP) -c $*.f90
 
 # -- Build directories
 BUILD_DIR     ?= $(top_dir__)/build
