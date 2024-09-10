@@ -20,6 +20,8 @@
 
       integer   grd,ene,sca,grp,shr,lgr
       real(t_p) rik,rr1,expi,expk,chgik,alphaik,de
+      real(t_p) r,rr,r3,taper,dtaper
+      real(t_p) s,ds
       parameter(grd=__use_grd__,ene=__use_ene__,sca=__use_sca__
      &         ,grp=__use_groups__,shr=__use_shortRange__
      &         ,lgr=__use_longRange__
@@ -54,16 +56,15 @@ c     use energy switching if near the cutoff distance
 c
       IF (IAND(fea,shr).EQ.0) THEN
          if (r2 .gt. cut2) then
-            block
-            real(t_p) r,r2,r3,taper,dtaper
+            !block
             r      = (rik - off)*rinv
-            r2     = r  * r
-            r3     = r2 * r
-            taper  = r3 * (6*r2 - 15*r + 10)
+            rr     = r  * r
+            r3     = rr * r
+            taper  = r3 * (6*rr - 15*r + 10)
             dtaper = 30* (r*(1.0-r))*(r*(1.0-r)) *rinv;
             IF (IAND(ver,grd).NE.0) de = e*dtaper + de*taper
             IF (IAND(ver,ene).NE.0)  e = e * taper
-            end block
+            !end block
         end if
       END IF
 c
@@ -74,8 +75,7 @@ c
          IF (IAND(ver,grd).NE.0) de = de* fgrp
       end if
       IF (IAND(fea,shr+lgr).NE.0) THEN
-         block
-         real(t_p) s,ds
+         !block
          call switch_respa_inl(rik,ctrnscut,sheal,s,ds)
          IF (IAND(fea,shr).NE.0) THEN
             IF (IAND(ver,grd).NE.0) de = de*s + e*ds 
@@ -84,7 +84,7 @@ c
             IF (IAND(ver,grd).NE.0) de = de*(1.0-s) - e*ds 
             IF (IAND(ver,ene).NE.0)  e =  e*(1.0-s)
          END IF
-         end block
+         !end block
       END IF
 c
 c     compute the force components for this interaction
