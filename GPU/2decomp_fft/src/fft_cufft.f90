@@ -231,8 +231,8 @@ contains
 
   ! 3D FFT - complex to complex
   subroutine cufft_3d_c2c(in, out, isign)
-    complex(mytype), dimension(:,:,:), intent(INOUT) :: in
-    complex(mytype), dimension(:,:,:), intent(OUT) :: out
+    complex(mytype), dimension(:,:,:), intent(INOUT), contiguous :: in
+    complex(mytype), dimension(:,:,:), intent(OUT), contiguous :: out
     integer, intent(IN) :: isign
 
     if(format/=PHYSICAL_IN_X) &
