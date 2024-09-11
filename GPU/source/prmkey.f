@@ -288,7 +288,7 @@ c
            use_mlist = .false.
          end if
 !$acc update device(use_mpole)
-      else if (keyword(1:10) .eq. 'MPOLETERM ') then
+      else if (keyword(1:14) .eq. 'MULTIPOLETERM ') then
          call getword (record,value,next)
          if (value .eq. 'ONLY')  call potoff
          use_mpole = .true.
