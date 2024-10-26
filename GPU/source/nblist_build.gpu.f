@@ -157,7 +157,7 @@ c
       integer nx,ny,nz
       integer nxy_cell,icell_scan,kcell_scan
       integer posi,nGS,n_nbl
-      integer iter ,siztr,sizba,sizb2
+      integer iter ,siztr,sizba,sizb2,nb2p_old
       integer nkblock,complete_b,nb_pair,nneig
       integer(1) icell_len,kcell_len
       integer(mipk) i8_
@@ -238,6 +238,7 @@ c
         end if
 
         call pre_process_adjacency_matrix_ (nb,nb_pair)
+        nb2p_old = 2*nb2p_0 + 1
         nb2p_0 = nb2p_0 + nb_pair
 
         if (niterMatb.eq.1) then
@@ -246,7 +247,7 @@ c
            call prmem_mvrequest (bb_lst,2*nb2p_0,async=.true.)
         end if
 
-        call fill_adjacency_list_(nb,nb2p_0,bb_lst)
+        call fill_adjacency_list_(nb,nb_pair,bb_lst(nb2p_old:))
       end do
       l%nb2p_0 = nb2p_0  ! Set nb2p_0 to struct
  
