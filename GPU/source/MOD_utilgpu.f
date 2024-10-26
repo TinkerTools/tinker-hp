@@ -1140,6 +1140,8 @@ c
                cores_SMP = 64
          case(8)
                cores_SMP = 64
+         case(9)
+               cores_SMP = 128
          case default
                print*,'rank',rank,'Unknown device type',
      &         ' update getDeviceProp routine for compute capability'
