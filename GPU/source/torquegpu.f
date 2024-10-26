@@ -492,7 +492,6 @@ c
            call atomic_add(de(3,idloc),real(dw,md_p))
            call atomic_add(de(3,ibloc),real(dt,md_p))
            frcz(3,i)   = frcz(3,i)   + du
-           frcz(3,i)   = frcz(3,i)   + du
            frcx(3,i)   = frcx(3,i)   + dv
            frcy(3,i)   = frcy(3,i)   + dw
 
@@ -1019,7 +1018,6 @@ c
            call atomic_add(de(3,icloc),(dv))
            call atomic_add(de(3,idloc),(dw))
            call atomic_add(de(3,ibloc),(dt))
-           frcz(3,i)   = frcz(3,i)   + du
            frcz(3,i)   = frcz(3,i)   + du
            frcx(3,i)   = frcx(3,i)   + dv
            frcy(3,i)   = frcy(3,i)   + dw
@@ -2578,7 +2576,6 @@ c
            call atomic_add(de(3,icloc),real(dv,md_p))
            call atomic_add(de(3,idloc),real(dw,md_p))
            call atomic_add(de(3,ibloc),real(dt,md_p))
-           frcz(3,i)   = frcz(3,i)   + du
            frcz(3,i)   = frcz(3,i)   + du
            frcx(3,i)   = frcx(3,i)   + dv
            frcy(3,i)   = frcy(3,i)   + dw
