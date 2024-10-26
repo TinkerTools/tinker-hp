@@ -18,7 +18,7 @@ c
         use pme    ,only: maxorder
         use tinheader
         use utilcu ,only: PME_BLOCK_DIM,PME_GRID_BDIM,PME_FPHI_DIM1
-     &             , octahedron,use_virial
+     &             , octahedron,use_virial, all_lanes
         use utilgpu,only: RED_BUFF_SIZE
 
         integer,parameter ::  level=4
@@ -400,7 +400,8 @@ c
                  theta3(i) = thetai3(i,impi)
               end do
            end if
-           if (blockDim%x>warpsize) call syncthreads
+           if (blockDim%x>warpsize) then; call syncthreads
+           else;                   call syncwarp(all_lanes); endif
 c
 c       Three dimensional loop on the grid collapse by hand
 c
@@ -486,7 +487,8 @@ c
               theta2(i) = thetai2(i,impi)
               theta3(i) = thetai3(i,impi)
            end do
-           if (blockDim%x>warpsize) call syncthreads
+           if (blockDim%x>warpsize) then; call syncthreads
+           else;                   call syncwarp(all_lanes); endif
            q         = pchg(kind_id(impi))
            offsetx   = 1 - ( igrid1 + grdoff - nlpts )
            offsety   = 1 - ( igrid2 + grdoff - nlpts )
@@ -686,7 +688,8 @@ c
                  theta3(i) = thetai3(i,impi)
               end do
            end if
-           if (blockDim%x>warpsize) call syncthreads
+           if (blockDim%x>warpsize) then; call syncthreads
+           else;                   call syncwarp(all_lanes); endif
 c
 c       Three dimensional loop on the grid collapse by hand
 c
