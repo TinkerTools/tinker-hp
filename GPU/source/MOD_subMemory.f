@@ -1919,6 +1919,7 @@ c
               s_prmem = s_prmem - s_array
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               end if
               deallocate(array)
@@ -2005,6 +2006,7 @@ c
               s_prmem = s_prmem - s_array
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               end if
               deallocate(array)
@@ -2089,6 +2091,7 @@ c
               s_prmem = s_prmem - s_array
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               end if
               deallocate(array)
@@ -2298,6 +2301,7 @@ c
               s_prmem = s_prmem - s_array
               if (btest(cfg,memacc)) then
              sd_prmem =sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               end if
               deallocate(array)
@@ -2320,6 +2324,7 @@ c
               s_prmem = s_prmem - s_array
               if (btest(cfg,memacc)) then
              sd_prmem =sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               end if
               deallocate(array)
@@ -2377,6 +2382,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
               s_prmem = s_prmem - ashape(1)*ashape(2)*szoi1
              sd_prmem =sd_prmem - ashape(1)*ashape(2)*szoi1
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               deallocate(array)
               allocate(array(nl,s_alloc))
@@ -2446,6 +2452,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               s_array = ashape(1)*ashape(2)*szoi8
               s_prmem = s_prmem - s_array
              sd_prmem =sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               deallocate(array)
               allocate(array(nlstr:nl,ncstr:nc))
@@ -2662,6 +2669,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               s_array = size(array)*szoTp
               if (btest(cfg,memacc)) then
                  sd_prmem =sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               end if
               s_prmem = s_prmem - s_array
@@ -2739,6 +2747,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
                 s_array = size(array)*szoRp
                 s_prmem =  s_prmem - s_array
                sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
                deallocate(array)
                allocate(array(s_alloc))
@@ -2811,6 +2820,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
                 s_array = size(array)*szoRp
                 s_prmem =  s_prmem - s_array
                sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
                deallocate(array)
                allocate(array(s_alloc))
@@ -2872,6 +2882,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
                 s_array = size(array)*szoRp
                 s_prmem =  s_prmem - s_array
                sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
                deallocate(array)
                allocate(array(s_alloc))
@@ -2919,6 +2930,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
                 s_prmem = s_prmem - sizeof(array)
                sd_prmem = sd_prmem - sizeof(array)
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
                deallocate(array)
                nullify(array)
@@ -2997,6 +3009,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
 
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               end if
               s_prmem = s_prmem - s_array
@@ -3058,6 +3071,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               s_array  = ashape(1)*ashape(2)*szoRp
                s_prmem =  s_prmem - s_array
               sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               deallocate(array)
               allocate  (array(nl,s_alloc))
@@ -3115,6 +3129,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               s_array  = ashape(1)*ashape(2)*szoRp
                s_prmem =  s_prmem - s_array
               sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               deallocate(array)
               allocate  (array(nl,s_alloc))
@@ -3196,6 +3211,7 @@ c       if(size(array).eq.0) print*,'trouble prmem_int_req2',nl,nc,rank
               s_array = ashape(1)*ashape(2)*ashape(3)*szoTp
               if (btest(cfg,memacc)) then
               sd_prmem = sd_prmem - s_array
+!$acc wait(rec_queue)
 !$acc exit data delete(array) async( async_queue )
               end if
               s_prmem = s_prmem - s_array
