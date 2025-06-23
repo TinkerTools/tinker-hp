@@ -547,10 +547,14 @@ torsions.o: torsions.f
 	$(RunF77) $(GPUFLAGS) -c $<
 %cu.o: %cu.f
 	$(RunCUFC) $(CUFFLAGS) -c $*cu.f
+%cu.o: %cu.f90
+	$(RunCUFC) $(CUFFLAGS) -c $<
 %.o: %.cu
 	$(RunCUCC) $(CUCFLAGS) -c $*.cu
 %gpu.o: %gpu.f
 	$(RunF77) $(GPUFLAGS) -c $*gpu.f
+%gpu.o: %gpu.f90
+	$(RunF77) $(GPUFLAGS) -c $<
 e%.o: e%.f
 	$(RunF77) $(GPUFLAGS) -c e$*.f
 k%.o: k%.f
