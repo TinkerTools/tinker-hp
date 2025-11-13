@@ -21,6 +21,7 @@ c
       use bound
       use boxes
       use domdec
+      use mdstuf    ,only:stresave
       use tinheader ,only:ti_p,re_p
       use units
       use virial
@@ -34,14 +35,13 @@ c
       real(r_p) stres1,stres2,stres3
 c
 c     only necessary if periodic boundaries are in use
-c     and isobaric simulation
 c
       if (.not.(use_bounds.and.use_virial))  return
 c
 c     calculate the stress tensor for anisotropic systems
 c
       factor = prescon / volbox
-      if (anisotrop) then
+      if (anisotrop.or.stresave) then
 !$acc parallel loop collapse(2) default(present) async
         do i = 1, 3
            do j = 1, 3

@@ -227,6 +227,15 @@ c
                    write(iout,'(A)',advance="no") 
      &                         "       Pres"
                  endif
+                 if(stresave) then
+                   write(iout,'(A)',advance="no")
+     &                         "     Stress(xx)"
+     &                       //"     Stress(yy)"
+     &                       //"     Stress(zz)"
+     &                       //"     Stress(xy)"
+     &                       //"     Stress(yz)"
+     &                       //"     Stress(xz)"  
+                 endif      
 c                 if(isobaric) then
 c                   write(iout,'(A)',advance="no") 
 c     &                         "     Density"
@@ -242,6 +251,11 @@ c                 endif
      &             istep,etot,epot,ekin,temp
                if(use_virial) then
                  write(iout,'(f11.2)',advance="no") pres
+               endif
+               if(stresave) then
+                 write(iout,'(6f15.4)',advance="no") 
+     &                 stress(1,1),stress(2,2),stress(3,3),
+     &                 stress(1,2),stress(2,3),stress(1,3)
                endif
                !if(isobaric) then
                !  write(iout,'(f12.4,f12.2)',advance="no") dens,volbox
