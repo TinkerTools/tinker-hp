@@ -212,6 +212,13 @@ c         read (string,*,iostat=ios)  nfree
           frcsave = .true.
         case ('SAVE-INDUCED')
           uindsave = .true.
+        case ('SAVE-STRESS')
+          stresave = .true.
+          use_virial=.true.
+          verbose = .true.
+          write(*,*)
+     &    'SAVE-STRESS: The units of the stress tensor '// 
+     &    'components are Atmospheres'
         case ('THERMOSTAT')
           call getword (record,thermostat,next)
           call upcase (thermostat)
