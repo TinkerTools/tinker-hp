@@ -1,6 +1,6 @@
-# Tinker-HP: High-Performance Massively Parallel Evolution of Tinker on CPUs & GPUs {#mainpage}
+# Tinker-HP: High-Performance Massively Parallel Evolution of Tinker on CPUs & GPUs 
 
-## News {#news}
+## News
 ---
 * **Update 01/2026:** Further speedups for the FeNNix-Bio1 foundation machine learning model via Multiple Time Steps and Distillation (DMTS). Check the [DMTS paper](https://pubs.acs.org/doi/full/10.1021/acs.jpclett.5c03720) (J. Phys. Chem. Lett. 2026, DOI: 10.1021/acs.jpclett.5c03720)
 * **Update 05/2025:** Integration of the FeNNix-Bio1 foundation machine learning model for molecular dynamics simulations. Check the [FeNNix-Bio1 paper](https://doi.org/10.26434/chemrxiv-2025-f1hgn-v4) (ChemRxiv)
@@ -15,7 +15,7 @@
 
 ---
 
-## Versions {#versions}
+## Versions
 
 * **Current Github version:** [1.3 (CPUs)](v1.3/CPU) + [1.3 (multi)-GPUs](v1.3/GPU), [1.1v (enhanced AVX512 vectorized CPUs version)](v1.1v/)
 
@@ -25,7 +25,7 @@ In addition to GitHub, a GPUs container (quick install!) is available thanks to 
 
 ---
 
-## Description {#description}
+## Description
 
 **Tinker-HP** is a **CPUs and GPUs** based, multi-precision, **MPI** massively parallel package dedicated to long **polarizable molecular dynamics** simulations and to polarizable **QM/MM**. Tinker-HP is an evolution of the popular Tinker package that conserves its simplicity of use but brings new capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores. 
 
@@ -53,14 +53,14 @@ Various pages documenting the capabilities of the package as well as guidelines 
 
 A complete description of the sources following doxygen standard can also be found.
 
-## Licence {#licence}
+## Licence 
 
 Tinker-HP is available free of charge for ALL Academic Institutions, National Laboratories, and supercomputer centers through the global [Tinker license](https://dasher.wustl.edu/tinker/downloads/license.pdf).  
 Non-academic entities (e.g., companies, for-profit organizations) should contact the managing universities (see [license](license-Tinker.pdf)).
 
 ---
 
-## Please Cite {#citation}
+## Please Cite
 
 * If you use **Tinker-HP**, please cite:  
   [Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems with Advanced Polarizable Force Fields. L. Lagardère, L.-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-P. Piquemal, Chem. Sci., 2018, 9, 956-972 (Open Access)](https://doi.org/10.1039/C7SC04531J)
@@ -79,7 +79,7 @@ Tinker-HP is part of the Tinker distribution and uses the same tools as Tinker. 
 
 ---
 
-## Contact {#contact}
+## Contact
 
 We provide support to users:
 
