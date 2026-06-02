@@ -1,0 +1,210 @@
+\hypertarget{torque_8f90}{\section{torque.\-f90 File Reference}
+\label{torque_8f90}\index{torque.\-f90@{torque.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{torque_8f90_ad0853551d75960523dc952ce1a83b803}{torque} (i, trq, frcx, frcy, frcz, de)
+\begin{DoxyCompactList}\small\item\em compute torque contribution on atomistic site \end{DoxyCompactList}\item 
+subroutine \hyperlink{torque_8f90_ad7da2d7412b7fa01bf63851922587359}{torque\-\_\-rec} (i, trq, frcx, frcy, frcz, de)
+\begin{DoxyCompactList}\small\item\em compute torque contribution on atomistic site, reciprocal space \end{DoxyCompactList}\item 
+subroutine \hyperlink{torque_8f90_ad6842b478bcc2cd4338b2ebd5f7aa83c}{torque\-\_\-group} (i, trq, frcx, frcy, frcz, de)
+\begin{DoxyCompactList}\small\item\em compute torque contribution on atomistic site, groups \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{torque_8f90_ad0853551d75960523dc952ce1a83b803}{\index{torque.\-f90@{torque.\-f90}!torque@{torque}}
+\index{torque@{torque}!torque.f90@{torque.\-f90}}
+\subsubsection[{torque}]{\setlength{\rightskip}{0pt plus 5cm}subroutine torque (
+\begin{DoxyParamCaption}
+\item[{integer}]{i, }
+\item[{real$\ast$8, dimension(3)}]{trq, }
+\item[{real$\ast$8, dimension(3)}]{frcx, }
+\item[{real$\ast$8, dimension(3)}]{frcy, }
+\item[{real$\ast$8, dimension(3)}]{frcz, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{de}
+\end{DoxyParamCaption}
+)}}\label{torque_8f90_ad0853551d75960523dc952ce1a83b803}
+
+
+compute torque contribution on atomistic site 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em i,\-:} & atomic site \\
+\hline
+\mbox{\tt in}  & {\em trq,\-:} & 'torque' on the site \\
+\hline
+\mbox{\tt in}  & {\em frcx,\-:} & x-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em frcy,\-:} & y-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em frcz,\-:} & z-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em de,\-:} & overall array parameter \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 14 of file torque.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by empole1c(), emreal1c(), epolar1c(), epreal1c(), and erepel1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=212pt]{torque_8f90_ad0853551d75960523dc952ce1a83b803_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{torque_8f90_ad0853551d75960523dc952ce1a83b803_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{torque_8f90_ad6842b478bcc2cd4338b2ebd5f7aa83c}{\index{torque.\-f90@{torque.\-f90}!torque\-\_\-group@{torque\-\_\-group}}
+\index{torque\-\_\-group@{torque\-\_\-group}!torque.f90@{torque.\-f90}}
+\subsubsection[{torque\-\_\-group}]{\setlength{\rightskip}{0pt plus 5cm}subroutine torque\-\_\-group (
+\begin{DoxyParamCaption}
+\item[{integer}]{i, }
+\item[{real$\ast$8, dimension(3)}]{trq, }
+\item[{real$\ast$8, dimension(3)}]{frcx, }
+\item[{real$\ast$8, dimension(3)}]{frcy, }
+\item[{real$\ast$8, dimension(3)}]{frcz, }
+\item[{real$\ast$8, dimension(3,natgroup)}]{de}
+\end{DoxyParamCaption}
+)}}\label{torque_8f90_ad6842b478bcc2cd4338b2ebd5f7aa83c}
+
+
+compute torque contribution on atomistic site, groups 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em i,\-:} & atomic site \\
+\hline
+\mbox{\tt in}  & {\em trq,\-:} & 'torque' on the site \\
+\hline
+\mbox{\tt in}  & {\em frcx,\-:} & x-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em frcy,\-:} & y-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em frcz,\-:} & z-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em de,\-:} & overall array parameter \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 808 of file torque.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by epreal1\-\_\-group().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=246pt]{torque_8f90_ad6842b478bcc2cd4338b2ebd5f7aa83c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{torque_8f90_ad6842b478bcc2cd4338b2ebd5f7aa83c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{torque_8f90_ad7da2d7412b7fa01bf63851922587359}{\index{torque.\-f90@{torque.\-f90}!torque\-\_\-rec@{torque\-\_\-rec}}
+\index{torque\-\_\-rec@{torque\-\_\-rec}!torque.f90@{torque.\-f90}}
+\subsubsection[{torque\-\_\-rec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine torque\-\_\-rec (
+\begin{DoxyParamCaption}
+\item[{integer}]{i, }
+\item[{real$\ast$8, dimension(3)}]{trq, }
+\item[{real$\ast$8, dimension(3)}]{frcx, }
+\item[{real$\ast$8, dimension(3)}]{frcy, }
+\item[{real$\ast$8, dimension(3)}]{frcz, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{de}
+\end{DoxyParamCaption}
+)}}\label{torque_8f90_ad7da2d7412b7fa01bf63851922587359}
+
+
+compute torque contribution on atomistic site, reciprocal space 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em i,\-:} & atomic site \\
+\hline
+\mbox{\tt in}  & {\em trq,\-:} & 'torque' on the site \\
+\hline
+\mbox{\tt in}  & {\em frcx,\-:} & x-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em frcy,\-:} & y-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em frcz,\-:} & z-\/component of force contribution due to torque \\
+\hline
+\mbox{\tt in}  & {\em de,\-:} & overall array parameter \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 407 of file torque.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by emrecip1(), and eprecip1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=232pt]{torque_8f90_ad7da2d7412b7fa01bf63851922587359_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{torque_8f90_ad7da2d7412b7fa01bf63851922587359_icgraph}
+\end{center}
+\end{figure}
+
+

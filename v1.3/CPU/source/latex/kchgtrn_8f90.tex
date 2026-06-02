@@ -1,0 +1,168 @@
+\hypertarget{kchgtrn_8f90}{\section{kchgtrn.\-f90 File Reference}
+\label{kchgtrn_8f90}\index{kchgtrn.\-f90@{kchgtrn.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kchgtrn_8f90_a6e4c198838d9ad44d11a20c3ff23dbcc}{kchgtrn}
+\begin{DoxyCompactList}\small\item\em assigns charge magnitude and damping parameters for charge transfer interactions and processes any new or changed values for these parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kchgtrn_8f90_a42b4aafb71903ef86abb09bccee224a8}{kchgtrn\-\_\-update} (istep)
+\item 
+subroutine \hyperlink{kchgtrn_8f90_af2be4fb1684e7bb9c0cea3f57df272de}{dealloc\-\_\-shared\-\_\-chgct}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for charge transfer parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kchgtrn_8f90_a6c5c027a1bb66a0cd44a457c8aee43aa}{alloc\-\_\-shared\-\_\-chgct}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for charge transfer parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kchgtrn_8f90_a6c5c027a1bb66a0cd44a457c8aee43aa}{\index{kchgtrn.\-f90@{kchgtrn.\-f90}!alloc\-\_\-shared\-\_\-chgct@{alloc\-\_\-shared\-\_\-chgct}}
+\index{alloc\-\_\-shared\-\_\-chgct@{alloc\-\_\-shared\-\_\-chgct}!kchgtrn.f90@{kchgtrn.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-chgct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-chgct (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kchgtrn_8f90_a6c5c027a1bb66a0cd44a457c8aee43aa}
+
+
+allocate shared memory pointers for charge transfer parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 410 of file kchgtrn.\-f90.
+
+
+
+Referenced by kchgtrn().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kchgtrn_8f90_a6c5c027a1bb66a0cd44a457c8aee43aa_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kchgtrn_8f90_af2be4fb1684e7bb9c0cea3f57df272de}{\index{kchgtrn.\-f90@{kchgtrn.\-f90}!dealloc\-\_\-shared\-\_\-chgct@{dealloc\-\_\-shared\-\_\-chgct}}
+\index{dealloc\-\_\-shared\-\_\-chgct@{dealloc\-\_\-shared\-\_\-chgct}!kchgtrn.f90@{kchgtrn.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-chgct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-chgct (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kchgtrn_8f90_af2be4fb1684e7bb9c0cea3f57df272de}
+
+
+deallocate shared memory pointers for charge transfer parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 381 of file kchgtrn.\-f90.
+
+
+
+Referenced by final(), and kchgtrn().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kchgtrn_8f90_af2be4fb1684e7bb9c0cea3f57df272de_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kchgtrn_8f90_a6e4c198838d9ad44d11a20c3ff23dbcc}{\index{kchgtrn.\-f90@{kchgtrn.\-f90}!kchgtrn@{kchgtrn}}
+\index{kchgtrn@{kchgtrn}!kchgtrn.f90@{kchgtrn.\-f90}}
+\subsubsection[{kchgtrn}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kchgtrn (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kchgtrn_8f90_a6e4c198838d9ad44d11a20c3ff23dbcc}
+
+
+assigns charge magnitude and damping parameters for charge transfer interactions and processes any new or changed values for these parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file kchgtrn.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-chgct(), chkpole(), dealloc\-\_\-shared\-\_\-chgct(), getnumb(), gettext(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kchgtrn_8f90_a6e4c198838d9ad44d11a20c3ff23dbcc_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kchgtrn_8f90_a6e4c198838d9ad44d11a20c3ff23dbcc_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kchgtrn_8f90_a42b4aafb71903ef86abb09bccee224a8}{\index{kchgtrn.\-f90@{kchgtrn.\-f90}!kchgtrn\-\_\-update@{kchgtrn\-\_\-update}}
+\index{kchgtrn\-\_\-update@{kchgtrn\-\_\-update}!kchgtrn.f90@{kchgtrn.\-f90}}
+\subsubsection[{kchgtrn\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kchgtrn\-\_\-update (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{kchgtrn_8f90_a42b4aafb71903ef86abb09bccee224a8}
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 223 of file kchgtrn.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kchgtrn_8f90_a42b4aafb71903ef86abb09bccee224a8_icgraph}
+\end{center}
+\end{figure}
+
+

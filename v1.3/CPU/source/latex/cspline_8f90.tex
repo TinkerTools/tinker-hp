@@ -1,0 +1,264 @@
+\hypertarget{cspline_8f90}{\section{cspline.\-f90 File Reference}
+\label{cspline_8f90}\index{cspline.\-f90@{cspline.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{cspline_8f90_aa126df16eef00c1ff89721e8842bc50d}{cspline} (n, xn, fn, b, c, d, h, du, dm, rc, rs)
+\begin{DoxyCompactList}\small\item\em computes the coefficients for a periodic interpolating cubic spline \end{DoxyCompactList}\item 
+subroutine \hyperlink{cspline_8f90_ae71f605309ec2714e6fd01714ba03145}{cytsy} (n, dm, du, cr, rs, x, iflag)
+\item 
+subroutine \hyperlink{cspline_8f90_ac9b0a6151db99c878eb754f1587d0ee3}{cytsyp} (n, dm, du, cr, iflag)
+\begin{DoxyCompactList}\small\item\em finds the Cholesky factors of a cyclically tridiagonal symmetric, positive definite matrix given by two vectors \end{DoxyCompactList}\item 
+subroutine \hyperlink{cspline_8f90_a2d98707bbafe1e3af7aedbe3b5b412e9}{cytsys} (n, dm, du, cr, rs, x)
+\begin{DoxyCompactList}\small\item\em solves a cyclically tridiagonal linear system given the Cholesky factors \end{DoxyCompactList}\item 
+subroutine \hyperlink{cspline_8f90_a9738ad86267fcd52bd20d20b2f8f8b67}{cubic\-\_\-spline} (n, x, y, b, c, d)
+\begin{DoxyCompactList}\small\item\em build cubic interpolation spline \end{DoxyCompactList}\item 
+real $\ast$8 function \hyperlink{cspline_8f90_aec7a478fe945a484dab86fb915cb1185}{seval} (n, u, x, y, b, c, d)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{cspline_8f90_aa126df16eef00c1ff89721e8842bc50d}{\index{cspline.\-f90@{cspline.\-f90}!cspline@{cspline}}
+\index{cspline@{cspline}!cspline.f90@{cspline.\-f90}}
+\subsubsection[{cspline}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cspline (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{xn, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{fn, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{b, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{c, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{d, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{h, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{du, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{dm, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{rc, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{rs}
+\end{DoxyParamCaption}
+)}}\label{cspline_8f90_aa126df16eef00c1ff89721e8842bc50d}
+
+
+computes the coefficients for a periodic interpolating cubic spline 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 26 of file cspline.\-f90.
+
+
+
+References cytsy().
+
+
+
+Referenced by ktortor().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=298pt]{cspline_8f90_aa126df16eef00c1ff89721e8842bc50d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cspline_8f90_aa126df16eef00c1ff89721e8842bc50d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cspline_8f90_a9738ad86267fcd52bd20d20b2f8f8b67}{\index{cspline.\-f90@{cspline.\-f90}!cubic\-\_\-spline@{cubic\-\_\-spline}}
+\index{cubic\-\_\-spline@{cubic\-\_\-spline}!cspline.f90@{cspline.\-f90}}
+\subsubsection[{cubic\-\_\-spline}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cubic\-\_\-spline (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension(n)}]{x, }
+\item[{real$\ast$8, dimension(n)}]{y, }
+\item[{real$\ast$8, dimension(n)}]{b, }
+\item[{real$\ast$8, dimension(n)}]{c, }
+\item[{real$\ast$8, dimension(n)}]{d}
+\end{DoxyParamCaption}
+)}}\label{cspline_8f90_a9738ad86267fcd52bd20d20b2f8f8b67}
+
+
+build cubic interpolation spline 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 302 of file cspline.\-f90.
+
+
+
+Referenced by spectra\-::save\-\_\-dipole\-\_\-respa().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cspline_8f90_a9738ad86267fcd52bd20d20b2f8f8b67_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cspline_8f90_ae71f605309ec2714e6fd01714ba03145}{\index{cspline.\-f90@{cspline.\-f90}!cytsy@{cytsy}}
+\index{cytsy@{cytsy}!cspline.f90@{cspline.\-f90}}
+\subsubsection[{cytsy}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cytsy (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{dm, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{du, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{cr, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{rs, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{x, }
+\item[{integer}]{iflag}
+\end{DoxyParamCaption}
+)}}\label{cspline_8f90_ae71f605309ec2714e6fd01714ba03145}
+
+
+Definition at line 113 of file cspline.\-f90.
+
+
+
+References cytsyp(), and cytsys().
+
+
+
+Referenced by cspline().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=210pt]{cspline_8f90_ae71f605309ec2714e6fd01714ba03145_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cspline_8f90_ae71f605309ec2714e6fd01714ba03145_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cspline_8f90_ac9b0a6151db99c878eb754f1587d0ee3}{\index{cspline.\-f90@{cspline.\-f90}!cytsyp@{cytsyp}}
+\index{cytsyp@{cytsyp}!cspline.f90@{cspline.\-f90}}
+\subsubsection[{cytsyp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cytsyp (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{dm, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{du, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{cr, }
+\item[{integer}]{iflag}
+\end{DoxyParamCaption}
+)}}\label{cspline_8f90_ac9b0a6151db99c878eb754f1587d0ee3}
+
+
+finds the Cholesky factors of a cyclically tridiagonal symmetric, positive definite matrix given by two vectors 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 156 of file cspline.\-f90.
+
+
+
+Referenced by cytsy().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cspline_8f90_ac9b0a6151db99c878eb754f1587d0ee3_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cspline_8f90_a2d98707bbafe1e3af7aedbe3b5b412e9}{\index{cspline.\-f90@{cspline.\-f90}!cytsys@{cytsys}}
+\index{cytsys@{cytsys}!cspline.f90@{cspline.\-f90}}
+\subsubsection[{cytsys}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cytsys (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{dm, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{du, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{cr, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{rs, }
+\item[{real$\ast$8, dimension(0\-:$\ast$)}]{x}
+\end{DoxyParamCaption}
+)}}\label{cspline_8f90_a2d98707bbafe1e3af7aedbe3b5b412e9}
+
+
+solves a cyclically tridiagonal linear system given the Cholesky factors 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 262 of file cspline.\-f90.
+
+
+
+Referenced by cytsy().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cspline_8f90_a2d98707bbafe1e3af7aedbe3b5b412e9_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cspline_8f90_aec7a478fe945a484dab86fb915cb1185}{\index{cspline.\-f90@{cspline.\-f90}!seval@{seval}}
+\index{seval@{seval}!cspline.f90@{cspline.\-f90}}
+\subsubsection[{seval}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function seval (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8}]{u, }
+\item[{real$\ast$8, dimension(n)}]{x, }
+\item[{real$\ast$8, dimension(n)}]{y, }
+\item[{real$\ast$8, dimension(n)}]{b, }
+\item[{real$\ast$8, dimension(n)}]{c, }
+\item[{real$\ast$8, dimension(n)}]{d}
+\end{DoxyParamCaption}
+)}}\label{cspline_8f90_aec7a478fe945a484dab86fb915cb1185}
+
+
+Definition at line 407 of file cspline.\-f90.
+

@@ -1,0 +1,64 @@
+\hypertarget{version_8f90}{\section{version.\-f90 File Reference}
+\label{version_8f90}\index{version.\-f90@{version.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{version_8f90_af134ab83c9cbcc8c29d90ef40f081291}{version} (filename, status)
+\begin{DoxyCompactList}\small\item\em checks the name of a file about to be opened; if if \char`\"{}old\char`\"{} status is passed, the name of the highest current version is returned; if \char`\"{}new\char`\"{} status is passed the filename of the next available unused version is generated \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{version_8f90_af134ab83c9cbcc8c29d90ef40f081291}{\index{version.\-f90@{version.\-f90}!version@{version}}
+\index{version@{version}!version.f90@{version.\-f90}}
+\subsubsection[{version}]{\setlength{\rightskip}{0pt plus 5cm}subroutine version (
+\begin{DoxyParamCaption}
+\item[{character$\ast$240}]{filename, }
+\item[{character$\ast$3}]{status}
+\end{DoxyParamCaption}
+)}}\label{version_8f90_af134ab83c9cbcc8c29d90ef40f081291}
+
+
+checks the name of a file about to be opened; if if \char`\"{}old\char`\"{} status is passed, the name of the highest current version is returned; if \char`\"{}new\char`\"{} status is passed the filename of the next available unused version is generated 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em filename,\-:} & string name of file \\
+\hline
+\mbox{\tt in}  & {\em status,\-:} & status \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 26 of file version.\-f90.
+
+
+
+References lowcase(), nextarg(), and trimtext().
+
+
+
+Referenced by getkey(), makebar(), mdinit(), mdinitbead(), mdinitreps(), mdsave(), mdsavebeads(), minimize\-\_\-bis(), optsave(), prtxyz(), readdyn(), readxyz(), and suffix().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=226pt]{version_8f90_af134ab83c9cbcc8c29d90ef40f081291_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{version_8f90_af134ab83c9cbcc8c29d90ef40f081291_icgraph}
+\end{center}
+\end{figure}
+
+

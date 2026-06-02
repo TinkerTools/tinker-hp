@@ -1,0 +1,221 @@
+\hypertarget{structbeads_1_1polymer__comm__type}{\section{beads\-:\-:polymer\-\_\-comm\-\_\-type Type Reference}
+\label{structbeads_1_1polymer__comm__type}\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{structbeads_1_1polymer__comm__type_a8a6e8b05d395c41432e8a7cbd1440144}{nbeads}
+\item 
+integer \hyperlink{structbeads_1_1polymer__comm__type_a2a3e86e94cb6d06fb89efb01a40d037b}{nbeadsproc}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{structbeads_1_1polymer__comm__type_aca9098ebd87b65bc7b3837de908e63dd}{nbeadsloc}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{structbeads_1_1polymer__comm__type_afbd32d8fe85cad96e29f843d57d4643d}{ibead\-\_\-beg}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{structbeads_1_1polymer__comm__type_a6701e344be0e9be64425096c932711bb}{ibead\-\_\-end}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{structbeads_1_1polymer__comm__type_a99e35a43a52000029a3ab65dd2c93938}{iproc}
+\item 
+integer \hyperlink{structbeads_1_1polymer__comm__type_a6f34d90af9de91bc1ad5263dc564702f}{index}
+\item 
+logical \hyperlink{structbeads_1_1polymer__comm__type_a0bca96b549d7c6c1b7e204d70ad1c2e7}{allocated} =.F\-A\-L\-S\-E.
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_a23768f5c0d2642acaf4a39132b2c5c46}{pos}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_af163fba0b99d62e1bc398fd5ea0b1318}{vel}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_a48e8cc7efd08040fb11f7f4642fcbd3d}{eigpos}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_a5b453aa1870a35c3b1ce3e84b8e2c6cb}{eigvel}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_af9ab777fc9978966562ec6660fcf6eb3}{forces}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_a8443614cb5015e9983dd6a6a8b8d730c}{eigforces}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_a6614d7b1d87de7ddf82f98702d1d8e0c}{forces\-\_\-slow}
+\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{structbeads_1_1polymer__comm__type_a729bf32d1b120205275265920cd5b3f9}{epot}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_abf9384adaf528e1723461dd50d2a42ae}{vir}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_abec558e15b37fe016d649919a75efc26}{dip}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_a33b425bb71654a52b954f0771db35983}{dipind}
+\item 
+real $\ast$8 \hyperlink{structbeads_1_1polymer__comm__type_ae457aae2d6d4f839bb3edaad4cc13f58}{gyr}
+\item 
+type(dcdinfo\-\_\-t), dimension(\-:), \\*
+allocatable \hyperlink{structbeads_1_1polymer__comm__type_aad5160b3d2116dcc351479cdfded5955}{dcdinfo}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 69 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{structbeads_1_1polymer__comm__type_a0bca96b549d7c6c1b7e204d70ad1c2e7}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!allocated@{allocated}}
+\index{allocated@{allocated}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{allocated}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::polymer\-\_\-comm\-\_\-type\-::allocated =.F\-A\-L\-S\-E.}}\label{structbeads_1_1polymer__comm__type_a0bca96b549d7c6c1b7e204d70ad1c2e7}
+
+
+Definition at line 78 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_aad5160b3d2116dcc351479cdfded5955}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!dcdinfo@{dcdinfo}}
+\index{dcdinfo@{dcdinfo}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{dcdinfo}]{\setlength{\rightskip}{0pt plus 5cm}type(dcdinfo\-\_\-t), dimension(\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::dcdinfo}}\label{structbeads_1_1polymer__comm__type_aad5160b3d2116dcc351479cdfded5955}
+
+
+Definition at line 94 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_abec558e15b37fe016d649919a75efc26}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!dip@{dip}}
+\index{dip@{dip}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{dip}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::dip}}\label{structbeads_1_1polymer__comm__type_abec558e15b37fe016d649919a75efc26}
+
+
+Definition at line 89 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a33b425bb71654a52b954f0771db35983}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!dipind@{dipind}}
+\index{dipind@{dipind}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{dipind}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::dipind}}\label{structbeads_1_1polymer__comm__type_a33b425bb71654a52b954f0771db35983}
+
+
+Definition at line 90 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a8443614cb5015e9983dd6a6a8b8d730c}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!eigforces@{eigforces}}
+\index{eigforces@{eigforces}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{eigforces}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::eigforces}}\label{structbeads_1_1polymer__comm__type_a8443614cb5015e9983dd6a6a8b8d730c}
+
+
+Definition at line 83 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a48e8cc7efd08040fb11f7f4642fcbd3d}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!eigpos@{eigpos}}
+\index{eigpos@{eigpos}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{eigpos}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::eigpos}}\label{structbeads_1_1polymer__comm__type_a48e8cc7efd08040fb11f7f4642fcbd3d}
+
+
+Definition at line 81 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a5b453aa1870a35c3b1ce3e84b8e2c6cb}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!eigvel@{eigvel}}
+\index{eigvel@{eigvel}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{eigvel}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::eigvel}}\label{structbeads_1_1polymer__comm__type_a5b453aa1870a35c3b1ce3e84b8e2c6cb}
+
+
+Definition at line 81 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a729bf32d1b120205275265920cd5b3f9}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!epot@{epot}}
+\index{epot@{epot}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{epot}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::epot}}\label{structbeads_1_1polymer__comm__type_a729bf32d1b120205275265920cd5b3f9}
+
+
+Definition at line 86 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_af9ab777fc9978966562ec6660fcf6eb3}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!forces@{forces}}
+\index{forces@{forces}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{forces}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::forces}}\label{structbeads_1_1polymer__comm__type_af9ab777fc9978966562ec6660fcf6eb3}
+
+
+Definition at line 82 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a6614d7b1d87de7ddf82f98702d1d8e0c}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!forces\-\_\-slow@{forces\-\_\-slow}}
+\index{forces\-\_\-slow@{forces\-\_\-slow}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{forces\-\_\-slow}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::forces\-\_\-slow}}\label{structbeads_1_1polymer__comm__type_a6614d7b1d87de7ddf82f98702d1d8e0c}
+
+
+Definition at line 84 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_ae457aae2d6d4f839bb3edaad4cc13f58}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!gyr@{gyr}}
+\index{gyr@{gyr}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{gyr}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::polymer\-\_\-comm\-\_\-type\-::gyr}}\label{structbeads_1_1polymer__comm__type_ae457aae2d6d4f839bb3edaad4cc13f58}
+
+
+Definition at line 92 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_afbd32d8fe85cad96e29f843d57d4643d}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!ibead\-\_\-beg@{ibead\-\_\-beg}}
+\index{ibead\-\_\-beg@{ibead\-\_\-beg}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{ibead\-\_\-beg}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::ibead\-\_\-beg}}\label{structbeads_1_1polymer__comm__type_afbd32d8fe85cad96e29f843d57d4643d}
+
+
+Definition at line 73 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a6701e344be0e9be64425096c932711bb}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!ibead\-\_\-end@{ibead\-\_\-end}}
+\index{ibead\-\_\-end@{ibead\-\_\-end}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{ibead\-\_\-end}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::ibead\-\_\-end}}\label{structbeads_1_1polymer__comm__type_a6701e344be0e9be64425096c932711bb}
+
+
+Definition at line 74 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a6f34d90af9de91bc1ad5263dc564702f}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!index@{index}}
+\index{index@{index}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{index}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::polymer\-\_\-comm\-\_\-type\-::index}}\label{structbeads_1_1polymer__comm__type_a6f34d90af9de91bc1ad5263dc564702f}
+
+
+Definition at line 76 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a99e35a43a52000029a3ab65dd2c93938}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!iproc@{iproc}}
+\index{iproc@{iproc}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{iproc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::iproc}}\label{structbeads_1_1polymer__comm__type_a99e35a43a52000029a3ab65dd2c93938}
+
+
+Definition at line 75 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a8a6e8b05d395c41432e8a7cbd1440144}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!nbeads@{nbeads}}
+\index{nbeads@{nbeads}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{nbeads}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::polymer\-\_\-comm\-\_\-type\-::nbeads}}\label{structbeads_1_1polymer__comm__type_a8a6e8b05d395c41432e8a7cbd1440144}
+
+
+Definition at line 70 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_aca9098ebd87b65bc7b3837de908e63dd}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!nbeadsloc@{nbeadsloc}}
+\index{nbeadsloc@{nbeadsloc}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{nbeadsloc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::nbeadsloc}}\label{structbeads_1_1polymer__comm__type_aca9098ebd87b65bc7b3837de908e63dd}
+
+
+Definition at line 72 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a2a3e86e94cb6d06fb89efb01a40d037b}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!nbeadsproc@{nbeadsproc}}
+\index{nbeadsproc@{nbeadsproc}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{nbeadsproc}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::polymer\-\_\-comm\-\_\-type\-::nbeadsproc}}\label{structbeads_1_1polymer__comm__type_a2a3e86e94cb6d06fb89efb01a40d037b}
+
+
+Definition at line 71 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_a23768f5c0d2642acaf4a39132b2c5c46}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!pos@{pos}}
+\index{pos@{pos}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{pos}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::pos}}\label{structbeads_1_1polymer__comm__type_a23768f5c0d2642acaf4a39132b2c5c46}
+
+
+Definition at line 80 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_af163fba0b99d62e1bc398fd5ea0b1318}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!vel@{vel}}
+\index{vel@{vel}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{vel}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::vel}}\label{structbeads_1_1polymer__comm__type_af163fba0b99d62e1bc398fd5ea0b1318}
+
+
+Definition at line 80 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{structbeads_1_1polymer__comm__type_abf9384adaf528e1723461dd50d2a42ae}{\index{beads\-::polymer\-\_\-comm\-\_\-type@{beads\-::polymer\-\_\-comm\-\_\-type}!vir@{vir}}
+\index{vir@{vir}!beads::polymer_comm_type@{beads\-::polymer\-\_\-comm\-\_\-type}}
+\subsubsection[{vir}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable beads\-::polymer\-\_\-comm\-\_\-type\-::vir}}\label{structbeads_1_1polymer__comm__type_abf9384adaf528e1723461dd50d2a42ae}
+
+
+Definition at line 87 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+The documentation for this type was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__beads_8f90}{M\-O\-D\-\_\-beads.\-f90}\end{DoxyCompactItemize}

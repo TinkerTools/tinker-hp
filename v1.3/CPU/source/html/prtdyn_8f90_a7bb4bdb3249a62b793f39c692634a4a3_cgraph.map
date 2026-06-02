@@ -1,0 +1,9 @@
+<map id="prtdyn" name="prtdyn">
+<area shape="rect" id="node2" href="$freeunit_8f90.html#a582cb9a08f034fa31fdd59df3b304e0d" title="finds an unopened Fortran I/O unit and returns its numerical value from 1 to 99; the units already as..." alt="" coords="118,5,191,32"/>
+<area shape="rect" id="node4" href="$suffix_8f90.html#a0c56201abb4b5b464bf7fa9585d4a828" title="checks a filename for the presence of an extension, and appends an extension and version if none is f..." alt="" coords="125,56,184,83"/>
+<area shape="rect" id="node3" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="250,5,302,32"/>
+<area shape="rect" id="node5" href="$trimtext_8f90.html#ad83d9073f809c425ddf7ca256594b68a" title="finds and returns the location of the last non&#45;blank character before the first null character in an ..." alt="" coords="360,56,435,83"/>
+<area shape="rect" id="node6" href="$version_8f90.html#af134ab83c9cbcc8c29d90ef40f081291" title="checks the name of a file about to be opened; if if &quot;old&quot; status is passed, the name of the highest c..." alt="" coords="241,107,311,133"/>
+<area shape="rect" id="node7" href="$trimtext_8f90.html#a9ffb5587408536987060bfbffaecb110" title="converts a text string to all lower case letters " alt="" coords="360,107,435,133"/>
+<area shape="rect" id="node8" href="$nextarg_8f90.html#af29521271c4212b0dccb480e8a3d1389" title="&quot;nextarg&quot; finds the next unused command line argument and returns it in the input character string ..." alt="" coords="361,157,433,184"/>
+</map>

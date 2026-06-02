@@ -1,0 +1,369 @@
+\hypertarget{damping_8f90}{\section{damping.\-f90 File Reference}
+\label{damping_8f90}\index{damping.\-f90@{damping.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{damping_8f90_aea60b3e1f71fedad546f4c95df6edecf}{dampewald} (rorder, r, r2, scale, dmpe)
+\begin{DoxyCompactList}\small\item\em finds coefficients for error function damping used for Ewald real space interactions \end{DoxyCompactList}\item 
+subroutine \hyperlink{damping_8f90_a601c8ce9a4d211fbf2339130e5a0a493}{dampthole} (i, k, rorder, r, dmpik)
+\begin{DoxyCompactList}\small\item\em generates coefficients for the Thole damping function for powers of the interatomic distance \end{DoxyCompactList}\item 
+subroutine \hyperlink{damping_8f90_ae5b94a64d584c9369019b393bed45ba2}{damptholed} (i, k, rorder, r, dmpik)
+\begin{DoxyCompactList}\small\item\em finds coefficients for the original Thole damping function used by A\-M\-O\-E\-B\-A or for the alternate direct polarization damping used by A\-M\-O\-E\-B\-A+ \end{DoxyCompactList}\item 
+subroutine \hyperlink{damping_8f90_a180f37f2d839d1ede80e511e7ad39bfb}{dampthole2} (i, k, rorder, r, dmpik)
+\begin{DoxyCompactList}\small\item\em finds coefficients for the original Thole damping function used by A\-M\-O\-E\-B\-A and for mutual polarization by A\-M\-O\-E\-B\-A+ \end{DoxyCompactList}\item 
+subroutine \hyperlink{damping_8f90_af74a23218fd1cedee53319289856d835}{damppole} (r, rorder, alphai, alphak, dmpi, dmpk, dmpik)
+\begin{DoxyCompactList}\small\item\em \char`\"{}damppole\char`\"{} generates coefficients for the charge penetration damping function for powers of the interatomic distance \end{DoxyCompactList}\item 
+subroutine \hyperlink{damping_8f90_a4c033f89e5c4b571ee8e5a7aa724629c}{dampdir} (r, alphai, alphak, dmpi, dmpk)
+\begin{DoxyCompactList}\small\item\em generates coefficients for the direct field damping function for powers of the interatomic distance \end{DoxyCompactList}\item 
+subroutine \hyperlink{damping_8f90_a44ba65e94db9758e21b5032e4d2e6035}{dampmut} (r, alphai, alphak, dmpik)
+\begin{DoxyCompactList}\small\item\em generates coefficients for the mutual field damping function for powers of the interatomic distance \end{DoxyCompactList}\item 
+subroutine \hyperlink{damping_8f90_a2ecb4db929233ebe34809261de1e1cbe}{damppot} (r, alphak, dmpk)
+\begin{DoxyCompactList}\small\item\em generates coefficients for the charge penetration damping function used for the electrostatic potential \end{DoxyCompactList}\item 
+subroutine \hyperlink{damping_8f90_a74199d84868c34dd2d48e5938aedbef7}{damprep} (r, r2, rr1, rr3, rr5, rr7, rr9, rr11, rorder, dmpi, dmpk, dmpik)
+\begin{DoxyCompactList}\small\item\em generates coefficients for the Pauli repulsion damping function for powers of the interatomic distance \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{damping_8f90_a4c033f89e5c4b571ee8e5a7aa724629c}{\index{damping.\-f90@{damping.\-f90}!dampdir@{dampdir}}
+\index{dampdir@{dampdir}!damping.f90@{damping.\-f90}}
+\subsubsection[{dampdir}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dampdir (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8}]{alphai, }
+\item[{real$\ast$8}]{alphak, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpi, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpk}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_a4c033f89e5c4b571ee8e5a7aa724629c}
+
+
+generates coefficients for the direct field damping function for powers of the interatomic distance 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 581 of file damping.\-f90.
+
+
+
+Referenced by efld0\-\_\-direct(), efld0\-\_\-group(), epreal0c(), epreal1c(), epreal3\-\_\-group(), epreal3d(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), and pc\-\_\-dc\-\_\-efld0\-\_\-direct().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{damping_8f90_a4c033f89e5c4b571ee8e5a7aa724629c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{damping_8f90_aea60b3e1f71fedad546f4c95df6edecf}{\index{damping.\-f90@{damping.\-f90}!dampewald@{dampewald}}
+\index{dampewald@{dampewald}!damping.f90@{damping.\-f90}}
+\subsubsection[{dampewald}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dampewald (
+\begin{DoxyParamCaption}
+\item[{integer}]{rorder, }
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8}]{r2, }
+\item[{real$\ast$8}]{scale, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpe}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_aea60b3e1f71fedad546f4c95df6edecf}
+
+
+finds coefficients for error function damping used for Ewald real space interactions 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file damping.\-f90.
+
+
+
+References erfc().
+
+
+
+Referenced by efld0\-\_\-direct(), emreal0d(), emreal1c(), emreal3d(), epreal0c(), epreal1c(), epreal3d(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), otf\-\_\-dc\-\_\-tmatxb\-\_\-pme(), pc\-\_\-dc\-\_\-efld0\-\_\-direct(), and tmatxb\-\_\-pme().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=314pt]{damping_8f90_aea60b3e1f71fedad546f4c95df6edecf_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{damping_8f90_aea60b3e1f71fedad546f4c95df6edecf_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{damping_8f90_a44ba65e94db9758e21b5032e4d2e6035}{\index{damping.\-f90@{damping.\-f90}!dampmut@{dampmut}}
+\index{dampmut@{dampmut}!damping.f90@{damping.\-f90}}
+\subsubsection[{dampmut}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dampmut (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8}]{alphai, }
+\item[{real$\ast$8}]{alphak, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpik}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_a44ba65e94db9758e21b5032e4d2e6035}
+
+
+generates coefficients for the mutual field damping function for powers of the interatomic distance 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 671 of file damping.\-f90.
+
+
+
+Referenced by otf\-\_\-dc\-\_\-efld0\-\_\-direct(), otf\-\_\-dc\-\_\-tmatxb\-\_\-pme(), pc\-\_\-dc\-\_\-efld0\-\_\-direct(), tmatxb\-\_\-group(), and tmatxb\-\_\-pme().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{damping_8f90_a44ba65e94db9758e21b5032e4d2e6035_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{damping_8f90_af74a23218fd1cedee53319289856d835}{\index{damping.\-f90@{damping.\-f90}!damppole@{damppole}}
+\index{damppole@{damppole}!damping.f90@{damping.\-f90}}
+\subsubsection[{damppole}]{\setlength{\rightskip}{0pt plus 5cm}subroutine damppole (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{r, }
+\item[{integer}]{rorder, }
+\item[{real$\ast$8}]{alphai, }
+\item[{real$\ast$8}]{alphak, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpi, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpk, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpik}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_af74a23218fd1cedee53319289856d835}
+
+
+\char`\"{}damppole\char`\"{} generates coefficients for the charge penetration damping function for powers of the interatomic distance 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 321 of file damping.\-f90.
+
+
+
+Referenced by emreal0d(), emreal1c(), emreal3d(), and epreal1c().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{damping_8f90_af74a23218fd1cedee53319289856d835_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{damping_8f90_a2ecb4db929233ebe34809261de1e1cbe}{\index{damping.\-f90@{damping.\-f90}!damppot@{damppot}}
+\index{damppot@{damppot}!damping.f90@{damping.\-f90}}
+\subsubsection[{damppot}]{\setlength{\rightskip}{0pt plus 5cm}subroutine damppot (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8}]{alphak, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpk}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_a2ecb4db929233ebe34809261de1e1cbe}
+
+
+generates coefficients for the charge penetration damping function used for the electrostatic potential 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 773 of file damping.\-f90.
+
+\hypertarget{damping_8f90_a74199d84868c34dd2d48e5938aedbef7}{\index{damping.\-f90@{damping.\-f90}!damprep@{damprep}}
+\index{damprep@{damprep}!damping.f90@{damping.\-f90}}
+\subsubsection[{damprep}]{\setlength{\rightskip}{0pt plus 5cm}subroutine damprep (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8}]{r2, }
+\item[{real$\ast$8}]{rr1, }
+\item[{real$\ast$8}]{rr3, }
+\item[{real$\ast$8}]{rr5, }
+\item[{real$\ast$8}]{rr7, }
+\item[{real$\ast$8}]{rr9, }
+\item[{real$\ast$8}]{rr11, }
+\item[{integer}]{rorder, }
+\item[{real$\ast$8}]{dmpi, }
+\item[{real$\ast$8}]{dmpk, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpik}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_a74199d84868c34dd2d48e5938aedbef7}
+
+
+generates coefficients for the Pauli repulsion damping function for powers of the interatomic distance 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 830 of file damping.\-f90.
+
+
+
+Referenced by erepel0c(), erepel1c(), and erepel3c().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{damping_8f90_a74199d84868c34dd2d48e5938aedbef7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{damping_8f90_a601c8ce9a4d211fbf2339130e5a0a493}{\index{damping.\-f90@{damping.\-f90}!dampthole@{dampthole}}
+\index{dampthole@{dampthole}!damping.f90@{damping.\-f90}}
+\subsubsection[{dampthole}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dampthole (
+\begin{DoxyParamCaption}
+\item[{integer}]{i, }
+\item[{integer}]{k, }
+\item[{integer}]{rorder, }
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpik}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_a601c8ce9a4d211fbf2339130e5a0a493}
+
+
+generates coefficients for the Thole damping function for powers of the interatomic distance 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 82 of file damping.\-f90.
+
+
+
+Referenced by epreal3\-\_\-group(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), otf\-\_\-dc\-\_\-tmatxb\-\_\-pme(), pc\-\_\-dc\-\_\-efld0\-\_\-direct(), tmatxb\-\_\-group(), and tmatxb\-\_\-pme().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{damping_8f90_a601c8ce9a4d211fbf2339130e5a0a493_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{damping_8f90_a180f37f2d839d1ede80e511e7ad39bfb}{\index{damping.\-f90@{damping.\-f90}!dampthole2@{dampthole2}}
+\index{dampthole2@{dampthole2}!damping.f90@{damping.\-f90}}
+\subsubsection[{dampthole2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dampthole2 (
+\begin{DoxyParamCaption}
+\item[{integer}]{i, }
+\item[{integer}]{k, }
+\item[{integer}]{rorder, }
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpik}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_a180f37f2d839d1ede80e511e7ad39bfb}
+
+
+finds coefficients for the original Thole damping function used by A\-M\-O\-E\-B\-A and for mutual polarization by A\-M\-O\-E\-B\-A+ 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 249 of file damping.\-f90.
+
+\hypertarget{damping_8f90_ae5b94a64d584c9369019b393bed45ba2}{\index{damping.\-f90@{damping.\-f90}!damptholed@{damptholed}}
+\index{damptholed@{damptholed}!damping.f90@{damping.\-f90}}
+\subsubsection[{damptholed}]{\setlength{\rightskip}{0pt plus 5cm}subroutine damptholed (
+\begin{DoxyParamCaption}
+\item[{integer}]{i, }
+\item[{integer}]{k, }
+\item[{integer}]{rorder, }
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8, dimension($\ast$)}]{dmpik}
+\end{DoxyParamCaption}
+)}}\label{damping_8f90_ae5b94a64d584c9369019b393bed45ba2}
+
+
+finds coefficients for the original Thole damping function used by A\-M\-O\-E\-B\-A or for the alternate direct polarization damping used by A\-M\-O\-E\-B\-A+ 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 155 of file damping.\-f90.
+
+
+
+Referenced by efld0\-\_\-direct(), efld0\-\_\-group(), epreal0c(), epreal1c(), epreal3d(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), and pc\-\_\-dc\-\_\-efld0\-\_\-direct().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{damping_8f90_ae5b94a64d584c9369019b393bed45ba2_icgraph}
+\end{center}
+\end{figure}
+
+

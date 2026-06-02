@@ -1,0 +1,4 @@
+<map id="initmpi" name="initmpi">
+<area shape="rect" id="node2" href="$initial_8f90.html#a13c1f52465a1d35c39a622709b446b30" title="initialization of replicas&#45;based simulation: PIMD/multiple replicas " alt="" coords="123,5,208,32"/>
+<area shape="rect" id="node3" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="257,5,309,32"/>
+</map>

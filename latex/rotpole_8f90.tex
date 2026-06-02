@@ -1,0 +1,159 @@
+\hypertarget{rotpole_8f90}{\section{rotpole.\-f90 File Reference}
+\label{rotpole_8f90}\index{rotpole.\-f90@{rotpole.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{rotpole_8f90_affe592ead8d1555feffbd4221117fcc1}{rotpole}
+\begin{DoxyCompactList}\small\item\em constructs the set of atomic multipoles in the global frame by applying the correct rotation matrix for each site \end{DoxyCompactList}\item 
+subroutine \hyperlink{rotpole_8f90_a2b7cda969c0cbb7610e136ad122b0f09}{rotmat} (iipole, iglob, a)
+\begin{DoxyCompactList}\small\item\em finds the rotation matrix that converts from the local coordinate system to the global frame at a multipole site \end{DoxyCompactList}\item 
+subroutine \hyperlink{rotpole_8f90_a158470ed9a7097f74c1c7aeeb13c6289}{rotsite} (iipole, a)
+\begin{DoxyCompactList}\small\item\em computes the atomic multipoles at a specified site in the global coordinate frame by applying a rotation matrix \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{rotpole_8f90_a2b7cda969c0cbb7610e136ad122b0f09}{\index{rotpole.\-f90@{rotpole.\-f90}!rotmat@{rotmat}}
+\index{rotmat@{rotmat}!rotpole.f90@{rotpole.\-f90}}
+\subsubsection[{rotmat}]{\setlength{\rightskip}{0pt plus 5cm}subroutine rotmat (
+\begin{DoxyParamCaption}
+\item[{integer}]{iipole, }
+\item[{integer}]{iglob, }
+\item[{real$\ast$8, dimension(3,3)}]{a}
+\end{DoxyParamCaption}
+)}}\label{rotpole_8f90_a2b7cda969c0cbb7610e136ad122b0f09}
+
+
+finds the rotation matrix that converts from the local coordinate system to the global frame at a multipole site 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em iipole,\-:} & multipole index \\
+\hline
+\mbox{\tt in}  & {\em iglob,\-:} & atomic index \\
+\hline
+\mbox{\tt out}  & {\em a,\-:} & rotation matrix \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 68 of file rotpole.\-f90.
+
+
+
+References image(), and random().
+
+
+
+Referenced by epolar1\-\_\-group(), epolar3\-\_\-group(), and rotpole().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{rotpole_8f90_a2b7cda969c0cbb7610e136ad122b0f09_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rotpole_8f90_a2b7cda969c0cbb7610e136ad122b0f09_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rotpole_8f90_affe592ead8d1555feffbd4221117fcc1}{\index{rotpole.\-f90@{rotpole.\-f90}!rotpole@{rotpole}}
+\index{rotpole@{rotpole}!rotpole.f90@{rotpole.\-f90}}
+\subsubsection[{rotpole}]{\setlength{\rightskip}{0pt plus 5cm}subroutine rotpole (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{rotpole_8f90_affe592ead8d1555feffbd4221117fcc1}
+
+
+constructs the set of atomic multipoles in the global frame by applying the correct rotation matrix for each site 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file rotpole.\-f90.
+
+
+
+References rotmat(), and rotsite().
+
+
+
+Referenced by empole0c(), empole1c(), empole3c(), epolar0c(), epolar1c(), epolar3c(), erepel0c(), erepel1c(), and erepel3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rotpole_8f90_affe592ead8d1555feffbd4221117fcc1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rotpole_8f90_affe592ead8d1555feffbd4221117fcc1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rotpole_8f90_a158470ed9a7097f74c1c7aeeb13c6289}{\index{rotpole.\-f90@{rotpole.\-f90}!rotsite@{rotsite}}
+\index{rotsite@{rotsite}!rotpole.f90@{rotpole.\-f90}}
+\subsubsection[{rotsite}]{\setlength{\rightskip}{0pt plus 5cm}subroutine rotsite (
+\begin{DoxyParamCaption}
+\item[{integer}]{iipole, }
+\item[{real$\ast$8, dimension(3,3)}]{a}
+\end{DoxyParamCaption}
+)}}\label{rotpole_8f90_a158470ed9a7097f74c1c7aeeb13c6289}
+
+
+computes the atomic multipoles at a specified site in the global coordinate frame by applying a rotation matrix 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em iipole,\-:} & multipole index \\
+\hline
+\mbox{\tt in}  & {\em a,\-:} & rotation matrix \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 301 of file rotpole.\-f90.
+
+
+
+Referenced by epolar1\-\_\-group(), epolar3\-\_\-group(), and rotpole().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rotpole_8f90_a158470ed9a7097f74c1c7aeeb13c6289_icgraph}
+\end{center}
+\end{figure}
+
+

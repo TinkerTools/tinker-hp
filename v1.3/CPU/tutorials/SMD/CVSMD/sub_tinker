@@ -1,0 +1,42 @@
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=32:skylake
+##PBS -l vmem=8gb
+##PBS -l file=16gb
+#Request output and error output to be merged in one file 
+#PBS -j oe
+#Request environment variables to be exported to jobs
+#PBS -V
+#Request name of job to be demo_gaussian
+#PBS -N 181l_SMD1
+
+module purge
+#module load Core/Intel/2018
+#module load Libraries/impi/2018
+#export I_MPI_F90=ifort
+#module load Libraries/fftw/3.3.7/impi/2018
+module load Libraries/impi/2018
+module load Libraries/mkl/2018
+
+input1=system.xyz
+input2=system.key
+outputfile=system.out
+SCRATCHDIR=/scratch/celerse/$PBS_JOBID    # Tinker /scratch directory
+export SCRATCHDIR                       # export SCRATCHDIR for job
+mkdir $SCRATCHDIR
+cat $PBS_NODEFILE                       # Name of the node
+
+#cd $DIRECTORY                     # goes into DIRECTORY
+cp $PBS_O_WORKDIR/* $SCRATCHDIR
+cd $SCRATCHDIR 
+#. /usr/local/g09/bsd/g09.profile        # Gaussian09 initialisation (mandatory)
+mpirun -np 32 ./dynamic $input1 -k $input2 150000 10 10 4 300 1 > $outputfile
+cp * $PBS_O_WORKDIR
+cd ..
+qstat -f $PBS_JOBID
+# Suppression des fichiers temporaires
+/bin/rm -r $SCRATCHDIR
+exit 0
+
+#/usr/local/ip2ct/mpi/gcc/openmpi/bin/mpirun -np 8 /home/sehr/programmes/nwchem/nwchem-6.6/bin/LINUX64/nwchem $InputFile > $OutputFile
+

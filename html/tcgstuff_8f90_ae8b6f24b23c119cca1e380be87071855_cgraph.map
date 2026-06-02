@@ -1,0 +1,7 @@
+<map id="torquetcg_dir" name="torquetcg_dir">
+<area shape="rect" id="node2" href="$linalg_8f90.html#ac7aff19f71f4f84324d863180126cab3" title="given the index ii of a multipole, gives as output the indexes of the atoms used to define the local ..." alt="" coords="185,5,247,32"/>
+<area shape="rect" id="node4" href="$linalg_8f90.html#a4519f3a402e5e646e9cb5d17732df732" title="computes scalar product between two vectors " alt="" coords="187,56,245,83"/>
+<area shape="rect" id="node5" href="$tcgstuff_8f90.html#abe3f1179d9b7849d6d4ba517b657603b" title="torque_prods" alt="" coords="163,107,269,133"/>
+<area shape="rect" id="node3" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="323,5,375,32"/>
+<area shape="rect" id="node6" href="$linalg_8f90.html#a7551e9b2fc5f88fb6f5e2871dfbf6799" title="set values of a vector of reals to zero " alt="" coords="318,107,381,133"/>
+</map>

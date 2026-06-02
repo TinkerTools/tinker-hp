@@ -1,0 +1,19 @@
+<map id="potoff" name="potoff">
+<area shape="rect" id="node2" href="$prmkey_8f90.html#afb7c402170dc7737c359ecadf9c0786f" title="parses a text string to extract keywords related to force field potential energy functional forms and..." alt="" coords="115,132,187,159"/>
+<area shape="rect" id="node3" href="$field_8f90.html#a0f126e22988006c4e15903a67ecebc8f" title="sets the force field potential energy functions from a parameter file and modifications specified in ..." alt="" coords="477,132,528,159"/>
+<area shape="rect" id="node17" href="$readprm_8f90.html#a0d664ae439ffc4750de93f390c5ed5b2" title="processes the potential energy parameter file in order to define the default force field parameters ..." alt="" coords="235,157,312,184"/>
+<area shape="rect" id="node4" href="$mechanic_8f90.html#a378feb91f7b4c73a0abb3f0972a9aa79" title="sets up needed parameters for the potential energy calculation and reads in many of the user selectab..." alt="" coords="576,132,661,159"/>
+<area shape="rect" id="node5" href="$analyze_8f90.html#acce5eb003f35035aceaef44ca0b67e73" title="computes and displays the total potential energy " alt="" coords="715,5,813,32"/>
+<area shape="rect" id="node7" href="$dynamic_8f90.html#aeb80d6a062e834e3d35c714bfd45f5c5" title="computes a molecular dynamics trajectory " alt="" coords="712,56,816,83"/>
+<area shape="rect" id="node9" href="$bar_8f90.html#ab64094ed19dabc0a78cdd45b6ebccf03" title="store trajectory potential energy " alt="" coords="724,107,804,133"/>
+<area shape="rect" id="node12" href="$minimize_8f90.html#a56a35853a5075da6f7a7611d1443a8c1" title="performs energy minimization in Cartesian coordinate space using a low storage BFGS nonlinear optimiz..." alt="" coords="709,157,819,184"/>
+<area shape="rect" id="node14" href="$pimd_8f90.html#ac2e89750fecb396b82a079e7b9b6bf33" title="computes a molecular dynamics trajectory in one of the standard statistical mechanical ensembles and ..." alt="" coords="723,208,805,235"/>
+<area shape="rect" id="node16" href="$testgrad_8f90.html#a1dbdb154223054afbae074629e9bfd7f" title="computes and compares the analytical and numerical gradient vectors of the potential energy function ..." alt="" coords="726,259,802,285"/>
+<area shape="rect" id="node6" href="$analyze_8f90.html#ad0571e0cf34d424af56a4981e316f8eb" title="computes and displays the total potential energy " alt="" coords="871,5,945,32"/>
+<area shape="rect" id="node8" href="$dynamic_8f90.html#a242c646ad028ae81e8a4bed2193eae5d" title="computes a molecular dynamics trajectory " alt="" coords="869,56,947,83"/>
+<area shape="rect" id="node10" href="$bar_8f90.html#afb9174791664d35ad5bc00ec6654ef05" title="&quot;bar&quot; computes the free energy, enthalpy and entropy difference between two states via Zwanzig free e..." alt="" coords="873,107,943,133"/>
+<area shape="rect" id="node11" href="$bar_8f90.html#a75dfe3f0be9db5c03a0c04398460d0b5" title="&quot;bar&quot; computes the free energy, enthalpy and entropy difference between two states via Zwanzig free e..." alt="" coords="997,107,1040,133"/>
+<area shape="rect" id="node13" href="$minimize_8f90.html#a0ea869a84e4dbfc9951ec265abef5b8d" title="performs energy minimization in Cartesian coordinate space using a low storage BFGS nonlinear optimiz..." alt="" coords="867,157,949,184"/>
+<area shape="rect" id="node15" href="$pimd_8f90.html#afaefd022c8914d9e16a596dcd038638b" title="computes a molecular dynamics trajectory in one of the standard statistical mechanical ensembles and ..." alt="" coords="881,208,935,235"/>
+<area shape="rect" id="node18" href="$getprm_8f90.html#a0053a27ec3ea3291cc728e67a315824a" title="finds the potential energy parameter file and then opens and reads the parameters ..." alt="" coords="360,157,429,184"/>
+</map>

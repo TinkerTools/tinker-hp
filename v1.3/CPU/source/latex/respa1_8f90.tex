@@ -1,0 +1,348 @@
+\hypertarget{respa1_8f90}{\section{respa1.\-f90 File Reference}
+\label{respa1_8f90}\index{respa1.\-f90@{respa1.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{respa1_8f90_a1ae4fccc5053991f8f1fb792bf4c7cd7}{respa1} (istep, dt)
+\begin{DoxyCompactList}\small\item\em \char`\"{}respa1\char`\"{} performs a single multiple time step molecular dynamics step using the reversible reference system propagation algorithm (r-\/\-R\-E\-S\-P\-A) via a Verlet core with the potential split into fast-\/ intermediate and slow-\/evolving portions \end{DoxyCompactList}\item 
+subroutine \hyperlink{respa1_8f90_afe48b7bbfef9844120e69ecb6d8775e4}{gradfast1} (\hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy}, derivs)
+\begin{DoxyCompactList}\small\item\em calculates the potential energy and first derivatives for the fast-\/evolving local valence potential energy terms \end{DoxyCompactList}\item 
+subroutine \hyperlink{respa1_8f90_a4bfb59bd56b5264e417811d81a43b85a}{gradint1} (\hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy}, derivs)
+\begin{DoxyCompactList}\small\item\em calculates the potential energy and first derivatives for the intermediate-\/ potential energy terms \end{DoxyCompactList}\item 
+subroutine \hyperlink{respa1_8f90_a809f43e903eab8a6eb11da3cacadb53b}{gradslow1} (\hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy}, derivs)
+\begin{DoxyCompactList}\small\item\em calculates the potential energy and first derivatives for the slow-\/evolving nonbonded potential energy terms \end{DoxyCompactList}\item 
+subroutine \hyperlink{respa1_8f90_a1ee058432ecac2a22e73d0dd392e90df}{respaint1} (ealt, viralt, dta, dta2)
+\begin{DoxyCompactList}\small\item\em find intermediate-\/evolving velocities and positions via velocity Verlet recursion \end{DoxyCompactList}\item 
+subroutine \hyperlink{respa1_8f90_a0978ae92f6f6cad58b1fe014c28b0284}{respafast1} (ealt, viralt, dta)
+\begin{DoxyCompactList}\small\item\em find fast-\/evolving velocities and positions via velocity Verlet recursion \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{respa1_8f90_afe48b7bbfef9844120e69ecb6d8775e4}{\index{respa1.\-f90@{respa1.\-f90}!gradfast1@{gradfast1}}
+\index{gradfast1@{gradfast1}!respa1.f90@{respa1.\-f90}}
+\subsubsection[{gradfast1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine gradfast1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{energy, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{respa1_8f90_afe48b7bbfef9844120e69ecb6d8775e4}
+
+
+calculates the potential energy and first derivatives for the fast-\/evolving local valence potential energy terms 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em energy,\-:} & contribution of fast potentials to the potential energy \\
+\hline
+\mbox{\tt in}  & {\em derivs,\-:} & derivatives of contribution of fast potentials to the potential energy \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 253 of file respa1.\-f90.
+
+
+
+References energy(), and gradient().
+
+
+
+Referenced by baoabrespafast1(), mdinit(), and respafast1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa1_8f90_afe48b7bbfef9844120e69ecb6d8775e4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa1_8f90_afe48b7bbfef9844120e69ecb6d8775e4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{respa1_8f90_a4bfb59bd56b5264e417811d81a43b85a}{\index{respa1.\-f90@{respa1.\-f90}!gradint1@{gradint1}}
+\index{gradint1@{gradint1}!respa1.f90@{respa1.\-f90}}
+\subsubsection[{gradint1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine gradint1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{energy, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{respa1_8f90_a4bfb59bd56b5264e417811d81a43b85a}
+
+
+calculates the potential energy and first derivatives for the intermediate-\/ potential energy terms 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em energy,\-:} & contribution of intermediate potentials to the potential energy \\
+\hline
+\mbox{\tt in}  & {\em derivs,\-:} & derivatives of contribution of intermediate potentials to the potential energy \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 353 of file respa1.\-f90.
+
+
+
+References energy(), and gradient().
+
+
+
+Referenced by baoabrespaint1(), mdinit(), and respaint1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa1_8f90_a4bfb59bd56b5264e417811d81a43b85a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa1_8f90_a4bfb59bd56b5264e417811d81a43b85a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{respa1_8f90_a809f43e903eab8a6eb11da3cacadb53b}{\index{respa1.\-f90@{respa1.\-f90}!gradslow1@{gradslow1}}
+\index{gradslow1@{gradslow1}!respa1.f90@{respa1.\-f90}}
+\subsubsection[{gradslow1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine gradslow1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{energy, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{respa1_8f90_a809f43e903eab8a6eb11da3cacadb53b}
+
+
+calculates the potential energy and first derivatives for the slow-\/evolving nonbonded potential energy terms 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em energy,\-:} & contribution of slow potentials to the potential energy \\
+\hline
+\mbox{\tt in}  & {\em derivs,\-:} & derivatives of contribution of slow potentials to the potential energy \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 551 of file respa1.\-f90.
+
+
+
+References energy(), and gradient().
+
+
+
+Referenced by baoabrespa1(), mdinit(), and respa1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa1_8f90_a809f43e903eab8a6eb11da3cacadb53b_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa1_8f90_a809f43e903eab8a6eb11da3cacadb53b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{respa1_8f90_a1ae4fccc5053991f8f1fb792bf4c7cd7}{\index{respa1.\-f90@{respa1.\-f90}!respa1@{respa1}}
+\index{respa1@{respa1}!respa1.f90@{respa1.\-f90}}
+\subsubsection[{respa1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine respa1 (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{real$\ast$8}]{dt}
+\end{DoxyParamCaption}
+)}}\label{respa1_8f90_a1ae4fccc5053991f8f1fb792bf4c7cd7}
+
+
+\char`\"{}respa1\char`\"{} performs a single multiple time step molecular dynamics step using the reversible reference system propagation algorithm (r-\/\-R\-E\-S\-P\-A) via a Verlet core with the potential split into fast-\/ intermediate and slow-\/evolving portions 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 42 of file respa1.\-f90.
+
+
+
+References allocsteprespa(), commforcesrespa1(), commposrec(), colvarproxy\-\_\-tinkerhp\-::dt(), gradslow1(), info\-\_\-energy(), mdrest(), mdsave(), mdstat(), mechanic\-\_\-up\-\_\-para\-\_\-respa1(), nblist(), pressure(), rattle2(), reassignpme(), reduceen(), reinitnl(), respaint1(), temper(), and temper2().
+
+
+
+Referenced by dynamic\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa1_8f90_a1ae4fccc5053991f8f1fb792bf4c7cd7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=340pt]{respa1_8f90_a1ae4fccc5053991f8f1fb792bf4c7cd7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{respa1_8f90_a0978ae92f6f6cad58b1fe014c28b0284}{\index{respa1.\-f90@{respa1.\-f90}!respafast1@{respafast1}}
+\index{respafast1@{respafast1}!respa1.f90@{respa1.\-f90}}
+\subsubsection[{respafast1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine respafast1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{ealt, }
+\item[{real$\ast$8, dimension(3,3)}]{viralt, }
+\item[{real$\ast$8}]{dta}
+\end{DoxyParamCaption}
+)}}\label{respa1_8f90_a0978ae92f6f6cad58b1fe014c28b0284}
+
+
+find fast-\/evolving velocities and positions via velocity Verlet recursion 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ealt,\-:} & local potential energy contribution \\
+\hline
+\mbox{\tt in}  & {\em viralt,\-:} & local virial contribution \\
+\hline
+\mbox{\tt in}  & {\em dta,\-:} & small timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 815 of file respa1.\-f90.
+
+
+
+References allocsteprespa(), commforcesrespa1(), commposrespa(), gradfast1(), info\-\_\-energy(), mechanic\-\_\-up\-\_\-para\-\_\-respa1(), rattle(), rattle2(), reassignrespa(), and reduceen().
+
+
+
+Referenced by respaint1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa1_8f90_a0978ae92f6f6cad58b1fe014c28b0284_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa1_8f90_a0978ae92f6f6cad58b1fe014c28b0284_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{respa1_8f90_a1ee058432ecac2a22e73d0dd392e90df}{\index{respa1.\-f90@{respa1.\-f90}!respaint1@{respaint1}}
+\index{respaint1@{respaint1}!respa1.f90@{respa1.\-f90}}
+\subsubsection[{respaint1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine respaint1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{ealt, }
+\item[{real$\ast$8, dimension(3,3)}]{viralt, }
+\item[{real$\ast$8}]{dta, }
+\item[{real$\ast$8}]{dta2}
+\end{DoxyParamCaption}
+)}}\label{respa1_8f90_a1ee058432ecac2a22e73d0dd392e90df}
+
+
+find intermediate-\/evolving velocities and positions via velocity Verlet recursion 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ealt,\-:} & local potential energy \\
+\hline
+\mbox{\tt in}  & {\em viralt,\-:} & local virial \\
+\hline
+\mbox{\tt in}  & {\em dta,\-:} & intermediate timestep \\
+\hline
+\mbox{\tt in}  & {\em dta2,\-:} & small timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 674 of file respa1.\-f90.
+
+
+
+References commforcesrespa1(), gradint1(), info\-\_\-energy(), mechanic\-\_\-up\-\_\-para\-\_\-respa1(), rattle2(), reduceen(), and respafast1().
+
+
+
+Referenced by respa1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa1_8f90_a1ee058432ecac2a22e73d0dd392e90df_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa1_8f90_a1ee058432ecac2a22e73d0dd392e90df_icgraph}
+\end{center}
+\end{figure}
+
+

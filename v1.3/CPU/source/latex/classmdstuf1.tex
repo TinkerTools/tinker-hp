@@ -1,0 +1,204 @@
+\hypertarget{classmdstuf1}{\section{mdstuf1 Module Reference}
+\label{classmdstuf1}\index{mdstuf1@{mdstuf1}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8 \hyperlink{classmdstuf1_a93644d9bdb342db25a67fd8ecbd48a76}{etot}
+\begin{DoxyCompactList}\small\item\em holds the system total energy at current timestep \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmdstuf1_af9358d2e64b3367e7328433ec1f4112f}{epot}
+\begin{DoxyCompactList}\small\item\em holds the system potential energy at current timestep \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmdstuf1_a22e8389cd89cc777b27e371c623921eb}{eksum}
+\begin{DoxyCompactList}\small\item\em holds the system kinetic energy at current timestep \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmdstuf1_a016dbac1751502a1040045a7e90f1e22}{ealt}
+\begin{DoxyCompactList}\small\item\em holds the alt energy at current timestep (mts integrators) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmdstuf1_aa6bfc0bf5d1a33a2745ba6eb8b193eb7}{ealt2}
+\begin{DoxyCompactList}\small\item\em holds the alt2 energy at current timestep (mts integrators) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmdstuf1_a133be5118c4fa1b94112fe3edabc7490}{eml}
+\begin{DoxyCompactList}\small\item\em holds the system ml energy at current timestep \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmdstuf1_a1a70064e6eae90b20859e8432d8ae9d5}{ealtml}
+\begin{DoxyCompactList}\small\item\em holds the system alt ml energy at current timestep (mts integrators) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmdstuf1_a8dffc1a48b43cecdf7898a9d2915f64a}{temp}
+\begin{DoxyCompactList}\small\item\em current temperature \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmdstuf1_aa2b1ca9b0984aa24f64d346dc05b66f9}{pres}
+\begin{DoxyCompactList}\small\item\em current pressure \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classmdstuf1_aab46c7b16224602ecf8bf98020200d90}{ekin}
+\begin{DoxyCompactList}\small\item\em kinetic energy tensor \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classmdstuf1_a818a42a7bf46938e3866626a2d31124a}{stress}
+\begin{DoxyCompactList}\small\item\em stress tensor \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classmdstuf1_a9e1d656294d5f17e46669001257293e5}{viralt}
+\begin{DoxyCompactList}\small\item\em virial tensor \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classmdstuf1_a56e3e4e4eee11aee825348758863131e}{viralt2}
+\begin{DoxyCompactList}\small\item\em alt virial tensor (mts integrators) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classmdstuf1_a51707f5cb35150bb27d8d2e190a78dd8}{derivs}
+\begin{DoxyCompactList}\small\item\em stores forces computed by gradient routines \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classmdstuf1_a51707f5cb35150bb27d8d2e190a78dd8}{\index{mdstuf1@{mdstuf1}!derivs@{derivs}}
+\index{derivs@{derivs}!mdstuf1@{mdstuf1}}
+\subsubsection[{derivs}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable mdstuf1\-::derivs}}\label{classmdstuf1_a51707f5cb35150bb27d8d2e190a78dd8}
+
+
+stores forces computed by gradient routines 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a016dbac1751502a1040045a7e90f1e22}{\index{mdstuf1@{mdstuf1}!ealt@{ealt}}
+\index{ealt@{ealt}!mdstuf1@{mdstuf1}}
+\subsubsection[{ealt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::ealt}}\label{classmdstuf1_a016dbac1751502a1040045a7e90f1e22}
+
+
+holds the alt energy at current timestep (mts integrators) 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_aa6bfc0bf5d1a33a2745ba6eb8b193eb7}{\index{mdstuf1@{mdstuf1}!ealt2@{ealt2}}
+\index{ealt2@{ealt2}!mdstuf1@{mdstuf1}}
+\subsubsection[{ealt2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::ealt2}}\label{classmdstuf1_aa6bfc0bf5d1a33a2745ba6eb8b193eb7}
+
+
+holds the alt2 energy at current timestep (mts integrators) 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a1a70064e6eae90b20859e8432d8ae9d5}{\index{mdstuf1@{mdstuf1}!ealtml@{ealtml}}
+\index{ealtml@{ealtml}!mdstuf1@{mdstuf1}}
+\subsubsection[{ealtml}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::ealtml}}\label{classmdstuf1_a1a70064e6eae90b20859e8432d8ae9d5}
+
+
+holds the system alt ml energy at current timestep (mts integrators) 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_aab46c7b16224602ecf8bf98020200d90}{\index{mdstuf1@{mdstuf1}!ekin@{ekin}}
+\index{ekin@{ekin}!mdstuf1@{mdstuf1}}
+\subsubsection[{ekin}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) mdstuf1\-::ekin}}\label{classmdstuf1_aab46c7b16224602ecf8bf98020200d90}
+
+
+kinetic energy tensor 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a22e8389cd89cc777b27e371c623921eb}{\index{mdstuf1@{mdstuf1}!eksum@{eksum}}
+\index{eksum@{eksum}!mdstuf1@{mdstuf1}}
+\subsubsection[{eksum}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::eksum}}\label{classmdstuf1_a22e8389cd89cc777b27e371c623921eb}
+
+
+holds the system kinetic energy at current timestep 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a133be5118c4fa1b94112fe3edabc7490}{\index{mdstuf1@{mdstuf1}!eml@{eml}}
+\index{eml@{eml}!mdstuf1@{mdstuf1}}
+\subsubsection[{eml}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::eml}}\label{classmdstuf1_a133be5118c4fa1b94112fe3edabc7490}
+
+
+holds the system ml energy at current timestep 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_af9358d2e64b3367e7328433ec1f4112f}{\index{mdstuf1@{mdstuf1}!epot@{epot}}
+\index{epot@{epot}!mdstuf1@{mdstuf1}}
+\subsubsection[{epot}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::epot}}\label{classmdstuf1_af9358d2e64b3367e7328433ec1f4112f}
+
+
+holds the system potential energy at current timestep 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a93644d9bdb342db25a67fd8ecbd48a76}{\index{mdstuf1@{mdstuf1}!etot@{etot}}
+\index{etot@{etot}!mdstuf1@{mdstuf1}}
+\subsubsection[{etot}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::etot}}\label{classmdstuf1_a93644d9bdb342db25a67fd8ecbd48a76}
+
+
+holds the system total energy at current timestep 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_aa2b1ca9b0984aa24f64d346dc05b66f9}{\index{mdstuf1@{mdstuf1}!pres@{pres}}
+\index{pres@{pres}!mdstuf1@{mdstuf1}}
+\subsubsection[{pres}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::pres}}\label{classmdstuf1_aa2b1ca9b0984aa24f64d346dc05b66f9}
+
+
+current pressure 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a818a42a7bf46938e3866626a2d31124a}{\index{mdstuf1@{mdstuf1}!stress@{stress}}
+\index{stress@{stress}!mdstuf1@{mdstuf1}}
+\subsubsection[{stress}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) mdstuf1\-::stress}}\label{classmdstuf1_a818a42a7bf46938e3866626a2d31124a}
+
+
+stress tensor 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a8dffc1a48b43cecdf7898a9d2915f64a}{\index{mdstuf1@{mdstuf1}!temp@{temp}}
+\index{temp@{temp}!mdstuf1@{mdstuf1}}
+\subsubsection[{temp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mdstuf1\-::temp}}\label{classmdstuf1_a8dffc1a48b43cecdf7898a9d2915f64a}
+
+
+current temperature 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a9e1d656294d5f17e46669001257293e5}{\index{mdstuf1@{mdstuf1}!viralt@{viralt}}
+\index{viralt@{viralt}!mdstuf1@{mdstuf1}}
+\subsubsection[{viralt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) mdstuf1\-::viralt}}\label{classmdstuf1_a9e1d656294d5f17e46669001257293e5}
+
+
+virial tensor 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+\hypertarget{classmdstuf1_a56e3e4e4eee11aee825348758863131e}{\index{mdstuf1@{mdstuf1}!viralt2@{viralt2}}
+\index{viralt2@{viralt2}!mdstuf1@{mdstuf1}}
+\subsubsection[{viralt2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) mdstuf1\-::viralt2}}\label{classmdstuf1_a56e3e4e4eee11aee825348758863131e}
+
+
+alt virial tensor (mts integrators) 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-mdstuf1.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__mdstuf1_8f90}{M\-O\-D\-\_\-mdstuf1.\-f90}\end{DoxyCompactItemize}

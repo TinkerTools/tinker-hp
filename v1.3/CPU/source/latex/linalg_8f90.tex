@@ -1,0 +1,374 @@
+\hypertarget{linalg_8f90}{\section{linalg.\-f90 File Reference}
+\label{linalg_8f90}\index{linalg.\-f90@{linalg.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8 function \hyperlink{linalg_8f90_a4519f3a402e5e646e9cb5d17732df732}{sprod} (n, v, w)
+\begin{DoxyCompactList}\small\item\em computes scalar product between two vectors \end{DoxyCompactList}\item 
+subroutine \hyperlink{linalg_8f90_a96f21e274b6847b86d4f082dc8d2108c}{aadd} (n, a, b, c)
+\begin{DoxyCompactList}\small\item\em computes sum of two vectors \end{DoxyCompactList}\item 
+subroutine \hyperlink{linalg_8f90_a92c632765a18053db5815429cf5f3a8f}{amove} (n, a, b)
+\begin{DoxyCompactList}\small\item\em copy a vector of reals in an other one \end{DoxyCompactList}\item 
+subroutine \hyperlink{linalg_8f90_a5b462546d66226b534cd989ad86df2df}{imove} (n, a, b)
+\begin{DoxyCompactList}\small\item\em copy a vector of integer in an other one \end{DoxyCompactList}\item 
+subroutine \hyperlink{linalg_8f90_a7551e9b2fc5f88fb6f5e2871dfbf6799}{aclear} (n, a)
+\begin{DoxyCompactList}\small\item\em set values of a vector of reals to zero \end{DoxyCompactList}\item 
+subroutine \hyperlink{linalg_8f90_a840d05cdbd683364c878625448d5af70}{iclear} (n, a)
+\begin{DoxyCompactList}\small\item\em set values of a vector of integers to zero \end{DoxyCompactList}\item 
+subroutine \hyperlink{linalg_8f90_ac7aff19f71f4f84324d863180126cab3}{derrot} (ii, doder, i, iz, ix, iy, r, dri, driz, drix, driy)
+\begin{DoxyCompactList}\small\item\em given the index ii of a multipole, gives as output the indexes of the atoms used to define the local frame and the derivatives of the rotation matrix with respect to the position of such atoms. \end{DoxyCompactList}\item 
+logical function \hyperlink{linalg_8f90_a7768a3ad6dbf60dc8b4066b0ae89015f}{isnan} (x)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{linalg_8f90_a96f21e274b6847b86d4f082dc8d2108c}{\index{linalg.\-f90@{linalg.\-f90}!aadd@{aadd}}
+\index{aadd@{aadd}!linalg.f90@{linalg.\-f90}}
+\subsubsection[{aadd}]{\setlength{\rightskip}{0pt plus 5cm}subroutine aadd (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension($\ast$)}]{a, }
+\item[{real$\ast$8, dimension($\ast$)}]{b, }
+\item[{real$\ast$8, dimension($\ast$)}]{c}
+\end{DoxyParamCaption}
+)}}\label{linalg_8f90_a96f21e274b6847b86d4f082dc8d2108c}
+
+
+computes sum of two vectors 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em n,\-:} & dimension of the vectors \\
+\hline
+\mbox{\tt in}  & {\em a,\-:} & first vector \\
+\hline
+\mbox{\tt in}  & {\em b,\-:} & second vector \\
+\hline
+\mbox{\tt in}  & {\em c,\-:} & result of the sum \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 27 of file linalg.\-f90.
+
+
+
+Referenced by efld0\-\_\-recip(), tmatxbrecip(), and tmatxbrecipsave().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{linalg_8f90_a96f21e274b6847b86d4f082dc8d2108c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{linalg_8f90_a7551e9b2fc5f88fb6f5e2871dfbf6799}{\index{linalg.\-f90@{linalg.\-f90}!aclear@{aclear}}
+\index{aclear@{aclear}!linalg.f90@{linalg.\-f90}}
+\subsubsection[{aclear}]{\setlength{\rightskip}{0pt plus 5cm}subroutine aclear (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension($\ast$)}]{a}
+\end{DoxyParamCaption}
+)}}\label{linalg_8f90_a7551e9b2fc5f88fb6f5e2871dfbf6799}
+
+
+set values of a vector of reals to zero 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em n,\-:} & dimension of the vector \\
+\hline
+\mbox{\tt in}  & {\em a,\-:} & vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 69 of file linalg.\-f90.
+
+
+
+Referenced by cluster1(), cluster2(), and torque\-\_\-prods().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{linalg_8f90_a7551e9b2fc5f88fb6f5e2871dfbf6799_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{linalg_8f90_a92c632765a18053db5815429cf5f3a8f}{\index{linalg.\-f90@{linalg.\-f90}!amove@{amove}}
+\index{amove@{amove}!linalg.f90@{linalg.\-f90}}
+\subsubsection[{amove}]{\setlength{\rightskip}{0pt plus 5cm}subroutine amove (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension($\ast$)}]{a, }
+\item[{real$\ast$8, dimension($\ast$)}]{b}
+\end{DoxyParamCaption}
+)}}\label{linalg_8f90_a92c632765a18053db5815429cf5f3a8f}
+
+
+copy a vector of reals in an other one 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em n,\-:} & dimension of the vectors \\
+\hline
+\mbox{\tt in}  & {\em a,\-:} & first vector \\
+\hline
+\mbox{\tt in}  & {\em b,\-:} & second vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 42 of file linalg.\-f90.
+
+
+
+Referenced by commrecdirdip(), commrecdirfields(), commrecdirsolv(), diis(), efld0\-\_\-recip(), and no\-\_\-com\-\_\-diis().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{linalg_8f90_a92c632765a18053db5815429cf5f3a8f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{linalg_8f90_ac7aff19f71f4f84324d863180126cab3}{\index{linalg.\-f90@{linalg.\-f90}!derrot@{derrot}}
+\index{derrot@{derrot}!linalg.f90@{linalg.\-f90}}
+\subsubsection[{derrot}]{\setlength{\rightskip}{0pt plus 5cm}subroutine derrot (
+\begin{DoxyParamCaption}
+\item[{integer}]{ii, }
+\item[{logical}]{doder, }
+\item[{integer}]{i, }
+\item[{integer}]{iz, }
+\item[{integer}]{ix, }
+\item[{integer}]{iy, }
+\item[{real$\ast$8, dimension(3,3)}]{r, }
+\item[{real$\ast$8, dimension(3,3,3)}]{dri, }
+\item[{real$\ast$8, dimension(3,3,3)}]{driz, }
+\item[{real$\ast$8, dimension(3,3,3)}]{drix, }
+\item[{real$\ast$8, dimension(3,3,3)}]{driy}
+\end{DoxyParamCaption}
+)}}\label{linalg_8f90_ac7aff19f71f4f84324d863180126cab3}
+
+
+given the index ii of a multipole, gives as output the indexes of the atoms used to define the local frame and the derivatives of the rotation matrix with respect to the position of such atoms. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ii,\-:} & index of a multipole \\
+\hline
+\mbox{\tt in}  & {\em doder,\-:} & flag governing computation of derivatives \\
+\hline
+\mbox{\tt in}  & {\em i,\-:} & index of the atomic site \\
+\hline
+\mbox{\tt in}  & {\em iz,\-:} & index of the \char`\"{}iz\char`\"{} atom for local frame definition \\
+\hline
+\mbox{\tt in}  & {\em ix,\-:} & index of the \char`\"{}ix\char`\"{} atom for local frame definition \\
+\hline
+\mbox{\tt in}  & {\em iy,\-:} & index of the \char`\"{}iy\char`\"{} atom for local frame definition \\
+\hline
+\mbox{\tt in}  & {\em r,\-:} & rotation matrix \\
+\hline
+\mbox{\tt in}  & {\em dri,\-:} & derivatives of rotation matrix wrt i coordinates \\
+\hline
+\mbox{\tt in}  & {\em driz,\-:} & derivatives of rotation matrix wrt iz coordinates \\
+\hline
+\mbox{\tt in}  & {\em drix,\-:} & derivatives of rotation matrix wrt ix coordinates \\
+\hline
+\mbox{\tt in}  & {\em driy,\-:} & derivatives of rotation matrix wrt iy coordinates \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 114 of file linalg.\-f90.
+
+
+
+References fatal().
+
+
+
+Referenced by torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=202pt]{linalg_8f90_ac7aff19f71f4f84324d863180126cab3_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{linalg_8f90_ac7aff19f71f4f84324d863180126cab3_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{linalg_8f90_a840d05cdbd683364c878625448d5af70}{\index{linalg.\-f90@{linalg.\-f90}!iclear@{iclear}}
+\index{iclear@{iclear}!linalg.f90@{linalg.\-f90}}
+\subsubsection[{iclear}]{\setlength{\rightskip}{0pt plus 5cm}subroutine iclear (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{integer, dimension($\ast$)}]{a}
+\end{DoxyParamCaption}
+)}}\label{linalg_8f90_a840d05cdbd683364c878625448d5af70}
+
+
+set values of a vector of integers to zero 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em n,\-:} & dimension of the vector \\
+\hline
+\mbox{\tt in}  & {\em a,\-:} & vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 86 of file linalg.\-f90.
+
+
+
+Referenced by cluster1(), and cluster2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{linalg_8f90_a840d05cdbd683364c878625448d5af70_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{linalg_8f90_a5b462546d66226b534cd989ad86df2df}{\index{linalg.\-f90@{linalg.\-f90}!imove@{imove}}
+\index{imove@{imove}!linalg.f90@{linalg.\-f90}}
+\subsubsection[{imove}]{\setlength{\rightskip}{0pt plus 5cm}subroutine imove (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{integer, dimension($\ast$)}]{a, }
+\item[{integer, dimension($\ast$)}]{b}
+\end{DoxyParamCaption}
+)}}\label{linalg_8f90_a5b462546d66226b534cd989ad86df2df}
+
+
+copy a vector of integer in an other one 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em n,\-:} & dimension of the vectors \\
+\hline
+\mbox{\tt in}  & {\em a,\-:} & first vector \\
+\hline
+\mbox{\tt in}  & {\em b,\-:} & second vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 56 of file linalg.\-f90.
+
+
+
+Referenced by reassignpme().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{linalg_8f90_a5b462546d66226b534cd989ad86df2df_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{linalg_8f90_a7768a3ad6dbf60dc8b4066b0ae89015f}{\index{linalg.\-f90@{linalg.\-f90}!isnan@{isnan}}
+\index{isnan@{isnan}!linalg.f90@{linalg.\-f90}}
+\subsubsection[{isnan}]{\setlength{\rightskip}{0pt plus 5cm}logical function isnan (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{x}
+\end{DoxyParamCaption}
+)}}\label{linalg_8f90_a7768a3ad6dbf60dc8b4066b0ae89015f}
+
+
+Definition at line 451 of file linalg.\-f90.
+
+
+
+Referenced by analysis(), energy(), and gradient().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{linalg_8f90_a7768a3ad6dbf60dc8b4066b0ae89015f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{linalg_8f90_a4519f3a402e5e646e9cb5d17732df732}{\index{linalg.\-f90@{linalg.\-f90}!sprod@{sprod}}
+\index{sprod@{sprod}!linalg.f90@{linalg.\-f90}}
+\subsubsection[{sprod}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function sprod (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension($\ast$)}]{v, }
+\item[{real$\ast$8, dimension($\ast$)}]{w}
+\end{DoxyParamCaption}
+)}}\label{linalg_8f90_a4519f3a402e5e646e9cb5d17732df732}
+
+
+computes scalar product between two vectors 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em n,\-:} & dimension of the vectors \\
+\hline
+\mbox{\tt in}  & {\em v,\-:} & first vector \\
+\hline
+\mbox{\tt in}  & {\em w,\-:} & second vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 11 of file linalg.\-f90.
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg1shortreal(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2bisshortreal(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2cinqshortreal(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2quatshortreal(), epolar1tcg2shortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar1tcg2tershortreal(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), makeb(), no\-\_\-com\-\_\-makeb(), omegafit(), torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{linalg_8f90_a4519f3a402e5e646e9cb5d17732df732_icgraph}
+\end{center}
+\end{figure}
+
+

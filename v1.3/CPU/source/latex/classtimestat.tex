@@ -1,0 +1,333 @@
+\hypertarget{classtimestat}{\section{timestat Module Reference}
+\label{classtimestat}\index{timestat@{timestat}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8 \hyperlink{classtimestat_a4e45aa5368ee73cf0b5e0e181b56cf59}{timestep}
+\begin{DoxyCompactList}\small\item\em time spent for a complete time step \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a6ee83b4d368fd59cababfaabc46c0e20}{timeinte}
+\begin{DoxyCompactList}\small\item\em time spent to update positions/velocities/accelerations \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a598e9cddb7b3ec4852e8d74d42f4e06d}{timereneig}
+\begin{DoxyCompactList}\small\item\em time spent during \char`\"{}reneighboring\char`\"{} (deal with atoms crossing domains) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_adeaa27d83c5a9ed923fd9ad2332e1036}{timecommpos}
+\begin{DoxyCompactList}\small\item\em time spent to communicate positions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_aad771aed865444d4520ba31e4986427c}{timeparam}
+\begin{DoxyCompactList}\small\item\em time spent to regenerate local parameters \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a551bee3c78f6e422ca3e7ece6c0418b0}{timegrad}
+\begin{DoxyCompactList}\small\item\em time spent in gradient computation routines \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_aa435182a301d010879aba033cbe89ac6}{timered}
+\begin{DoxyCompactList}\small\item\em time spent in reduction operations to get energies \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a0a3587a62bcc9c03959a5b90642c3fc6}{timetp}
+\begin{DoxyCompactList}\small\item\em time spent in temperature/pressure control \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a399092aecbb684c6c75d4cf3a229b338}{timecommforces}
+\begin{DoxyCompactList}\small\item\em time spent to communicate forces \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a4d04195176078e0328c8005fe8356a7b}{timenl}
+\begin{DoxyCompactList}\small\item\em time spent in neighbor list routines \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_ae8564a39f5d612c7c0680539da171be3}{timebonded}
+\begin{DoxyCompactList}\small\item\em time spent in bonded forces routines \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a78ecc1df67b0a241c4dd8885dc25b6d2}{timevdw}
+\begin{DoxyCompactList}\small\item\em time spent in vdw forces routines \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a7a1804f574585aa42019ec284de7ec14}{timeelec}
+\begin{DoxyCompactList}\small\item\em time spent in electrostatic forces routines \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a745cff7d2b1bf3696c08cedec3d5c797}{timepolar}
+\begin{DoxyCompactList}\small\item\em time spent in polarization forces routines \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_aee23bffbb72e8e484b94e38148eb4a99}{timecleargrad}
+\begin{DoxyCompactList}\small\item\em time spent to zero/sum forces arrays \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a14c3974861622792ed151280bf66ddd7}{timereal}
+\begin{DoxyCompactList}\small\item\em time spent to compute real space interactions (permanent) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a11214b085ac634ed9c666d849eae5270}{timerec}
+\begin{DoxyCompactList}\small\item\em time spent to compute reciprocal space interactions (permanent) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a07c1ac80b0d1f0ca25e058e1cf36b33e}{timecommforcesrec}
+\begin{DoxyCompactList}\small\item\em time spent to communicate reciprocal forces \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a8d3910d1238b8bb3013c0e392c4ecea0}{timecommforcesreal}
+\begin{DoxyCompactList}\small\item\em time spent to communicate real space forces \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_af5098b97a125bfdf3477ad304323ab46}{timegrid}
+\begin{DoxyCompactList}\small\item\em time spent to fill pme grid (permanent) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_aeea025c909fbadaa04547e05c618e89e}{timefft}
+\begin{DoxyCompactList}\small\item\em time spent to do ffts (permanent) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a2223e0c223cbc29e77375d92ccf3e760}{timescalar}
+\begin{DoxyCompactList}\small\item\em time spent to do scalar product of pme (permanent) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a3ae3541e8b68065f98087c4f8a03c2bb}{timegrid2}
+\begin{DoxyCompactList}\small\item\em time spent to get reciprocal space potential (permanent) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classtimestat_a953a0208aa2c3e69c391ffc813b2cd8d}{timerecreccomm}
+\begin{DoxyCompactList}\small\item\em time spent in rec-\/rec communications \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 7 of file M\-O\-D\-\_\-timestat.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classtimestat_ae8564a39f5d612c7c0680539da171be3}{\index{timestat@{timestat}!timebonded@{timebonded}}
+\index{timebonded@{timebonded}!timestat@{timestat}}
+\subsubsection[{timebonded}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timebonded}}\label{classtimestat_ae8564a39f5d612c7c0680539da171be3}
+
+
+time spent in bonded forces routines 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_aee23bffbb72e8e484b94e38148eb4a99}{\index{timestat@{timestat}!timecleargrad@{timecleargrad}}
+\index{timecleargrad@{timecleargrad}!timestat@{timestat}}
+\subsubsection[{timecleargrad}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timecleargrad}}\label{classtimestat_aee23bffbb72e8e484b94e38148eb4a99}
+
+
+time spent to zero/sum forces arrays 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a399092aecbb684c6c75d4cf3a229b338}{\index{timestat@{timestat}!timecommforces@{timecommforces}}
+\index{timecommforces@{timecommforces}!timestat@{timestat}}
+\subsubsection[{timecommforces}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timecommforces}}\label{classtimestat_a399092aecbb684c6c75d4cf3a229b338}
+
+
+time spent to communicate forces 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a8d3910d1238b8bb3013c0e392c4ecea0}{\index{timestat@{timestat}!timecommforcesreal@{timecommforcesreal}}
+\index{timecommforcesreal@{timecommforcesreal}!timestat@{timestat}}
+\subsubsection[{timecommforcesreal}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timecommforcesreal}}\label{classtimestat_a8d3910d1238b8bb3013c0e392c4ecea0}
+
+
+time spent to communicate real space forces 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a07c1ac80b0d1f0ca25e058e1cf36b33e}{\index{timestat@{timestat}!timecommforcesrec@{timecommforcesrec}}
+\index{timecommforcesrec@{timecommforcesrec}!timestat@{timestat}}
+\subsubsection[{timecommforcesrec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timecommforcesrec}}\label{classtimestat_a07c1ac80b0d1f0ca25e058e1cf36b33e}
+
+
+time spent to communicate reciprocal forces 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_adeaa27d83c5a9ed923fd9ad2332e1036}{\index{timestat@{timestat}!timecommpos@{timecommpos}}
+\index{timecommpos@{timecommpos}!timestat@{timestat}}
+\subsubsection[{timecommpos}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timecommpos}}\label{classtimestat_adeaa27d83c5a9ed923fd9ad2332e1036}
+
+
+time spent to communicate positions 
+
+
+
+Definition at line 12 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a7a1804f574585aa42019ec284de7ec14}{\index{timestat@{timestat}!timeelec@{timeelec}}
+\index{timeelec@{timeelec}!timestat@{timestat}}
+\subsubsection[{timeelec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timeelec}}\label{classtimestat_a7a1804f574585aa42019ec284de7ec14}
+
+
+time spent in electrostatic forces routines 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_aeea025c909fbadaa04547e05c618e89e}{\index{timestat@{timestat}!timefft@{timefft}}
+\index{timefft@{timefft}!timestat@{timestat}}
+\subsubsection[{timefft}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timefft}}\label{classtimestat_aeea025c909fbadaa04547e05c618e89e}
+
+
+time spent to do ffts (permanent) 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a551bee3c78f6e422ca3e7ece6c0418b0}{\index{timestat@{timestat}!timegrad@{timegrad}}
+\index{timegrad@{timegrad}!timestat@{timestat}}
+\subsubsection[{timegrad}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timegrad}}\label{classtimestat_a551bee3c78f6e422ca3e7ece6c0418b0}
+
+
+time spent in gradient computation routines 
+
+
+
+Definition at line 14 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_af5098b97a125bfdf3477ad304323ab46}{\index{timestat@{timestat}!timegrid@{timegrid}}
+\index{timegrid@{timegrid}!timestat@{timestat}}
+\subsubsection[{timegrid}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timegrid}}\label{classtimestat_af5098b97a125bfdf3477ad304323ab46}
+
+
+time spent to fill pme grid (permanent) 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a3ae3541e8b68065f98087c4f8a03c2bb}{\index{timestat@{timestat}!timegrid2@{timegrid2}}
+\index{timegrid2@{timegrid2}!timestat@{timestat}}
+\subsubsection[{timegrid2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timegrid2}}\label{classtimestat_a3ae3541e8b68065f98087c4f8a03c2bb}
+
+
+time spent to get reciprocal space potential (permanent) 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a6ee83b4d368fd59cababfaabc46c0e20}{\index{timestat@{timestat}!timeinte@{timeinte}}
+\index{timeinte@{timeinte}!timestat@{timestat}}
+\subsubsection[{timeinte}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timeinte}}\label{classtimestat_a6ee83b4d368fd59cababfaabc46c0e20}
+
+
+time spent to update positions/velocities/accelerations 
+
+
+
+Definition at line 10 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a4d04195176078e0328c8005fe8356a7b}{\index{timestat@{timestat}!timenl@{timenl}}
+\index{timenl@{timenl}!timestat@{timestat}}
+\subsubsection[{timenl}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timenl}}\label{classtimestat_a4d04195176078e0328c8005fe8356a7b}
+
+
+time spent in neighbor list routines 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_aad771aed865444d4520ba31e4986427c}{\index{timestat@{timestat}!timeparam@{timeparam}}
+\index{timeparam@{timeparam}!timestat@{timestat}}
+\subsubsection[{timeparam}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timeparam}}\label{classtimestat_aad771aed865444d4520ba31e4986427c}
+
+
+time spent to regenerate local parameters 
+
+
+
+Definition at line 13 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a745cff7d2b1bf3696c08cedec3d5c797}{\index{timestat@{timestat}!timepolar@{timepolar}}
+\index{timepolar@{timepolar}!timestat@{timestat}}
+\subsubsection[{timepolar}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timepolar}}\label{classtimestat_a745cff7d2b1bf3696c08cedec3d5c797}
+
+
+time spent in polarization forces routines 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a14c3974861622792ed151280bf66ddd7}{\index{timestat@{timestat}!timereal@{timereal}}
+\index{timereal@{timereal}!timestat@{timestat}}
+\subsubsection[{timereal}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timereal}}\label{classtimestat_a14c3974861622792ed151280bf66ddd7}
+
+
+time spent to compute real space interactions (permanent) 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a11214b085ac634ed9c666d849eae5270}{\index{timestat@{timestat}!timerec@{timerec}}
+\index{timerec@{timerec}!timestat@{timestat}}
+\subsubsection[{timerec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timerec}}\label{classtimestat_a11214b085ac634ed9c666d849eae5270}
+
+
+time spent to compute reciprocal space interactions (permanent) 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a953a0208aa2c3e69c391ffc813b2cd8d}{\index{timestat@{timestat}!timerecreccomm@{timerecreccomm}}
+\index{timerecreccomm@{timerecreccomm}!timestat@{timestat}}
+\subsubsection[{timerecreccomm}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timerecreccomm}}\label{classtimestat_a953a0208aa2c3e69c391ffc813b2cd8d}
+
+
+time spent in rec-\/rec communications 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_aa435182a301d010879aba033cbe89ac6}{\index{timestat@{timestat}!timered@{timered}}
+\index{timered@{timered}!timestat@{timestat}}
+\subsubsection[{timered}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timered}}\label{classtimestat_aa435182a301d010879aba033cbe89ac6}
+
+
+time spent in reduction operations to get energies 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a598e9cddb7b3ec4852e8d74d42f4e06d}{\index{timestat@{timestat}!timereneig@{timereneig}}
+\index{timereneig@{timereneig}!timestat@{timestat}}
+\subsubsection[{timereneig}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timereneig}}\label{classtimestat_a598e9cddb7b3ec4852e8d74d42f4e06d}
+
+
+time spent during \char`\"{}reneighboring\char`\"{} (deal with atoms crossing domains) 
+
+
+
+Definition at line 11 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a2223e0c223cbc29e77375d92ccf3e760}{\index{timestat@{timestat}!timescalar@{timescalar}}
+\index{timescalar@{timescalar}!timestat@{timestat}}
+\subsubsection[{timescalar}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timescalar}}\label{classtimestat_a2223e0c223cbc29e77375d92ccf3e760}
+
+
+time spent to do scalar product of pme (permanent) 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a4e45aa5368ee73cf0b5e0e181b56cf59}{\index{timestat@{timestat}!timestep@{timestep}}
+\index{timestep@{timestep}!timestat@{timestat}}
+\subsubsection[{timestep}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timestep}}\label{classtimestat_a4e45aa5368ee73cf0b5e0e181b56cf59}
+
+
+time spent for a complete time step 
+
+
+
+Definition at line 9 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a0a3587a62bcc9c03959a5b90642c3fc6}{\index{timestat@{timestat}!timetp@{timetp}}
+\index{timetp@{timetp}!timestat@{timestat}}
+\subsubsection[{timetp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timetp}}\label{classtimestat_a0a3587a62bcc9c03959a5b90642c3fc6}
+
+
+time spent in temperature/pressure control 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-timestat.\-f90.
+
+\hypertarget{classtimestat_a78ecc1df67b0a241c4dd8885dc25b6d2}{\index{timestat@{timestat}!timevdw@{timevdw}}
+\index{timevdw@{timevdw}!timestat@{timestat}}
+\subsubsection[{timevdw}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 timestat\-::timevdw}}\label{classtimestat_a78ecc1df67b0a241c4dd8885dc25b6d2}
+
+
+time spent in vdw forces routines 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-timestat.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__timestat_8f90}{M\-O\-D\-\_\-timestat.\-f90}\end{DoxyCompactItemize}

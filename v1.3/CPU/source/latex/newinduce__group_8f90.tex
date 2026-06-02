@@ -1,0 +1,488 @@
+\hypertarget{newinduce__group_8f90}{\section{newinduce\-\_\-group.\-f90 File Reference}
+\label{newinduce__group_8f90}\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{newinduce__group_8f90_a3bef550067628ac344b171a34dde594f}{newinduce\-\_\-group}
+\begin{DoxyCompactList}\small\item\em evaluate induced dipole moments and the polarization energy of a group of atom without P\-B\-C using a (preconditioned) conjugate gradient algorithm or a J\-I/\-D\-I\-I\-S solver useful to define the polarization to be retrieved from the total one in \char`\"{}group-\/scaled\char`\"{} interactions \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__group_8f90_adeffcd38357ee16b4cb1359787fe08f9}{inducepcg\-\_\-group} (matvec, nrhs, precnd, ef, mu)
+\begin{DoxyCompactList}\small\item\em Preconditioned Conjugate Gradient Solver for \char`\"{}group\char`\"{} polarization. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__group_8f90_a8d07446ffd185bcbf3449a23963ab46b}{inducejac\-\_\-group} (matvec, nrhs, dodiis, ef, mu)
+\begin{DoxyCompactList}\small\item\em Jacobi/\-D\-I\-I\-S Solver for \char`\"{}group\char`\"{} polarization. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__group_8f90_a2bf8897cb57f2f2702b8014af010a796}{efld0\-\_\-group} (nrhs, ef)
+\begin{DoxyCompactList}\small\item\em Compute the direct space contribution to the permanent electric field. Also compute the \char`\"{}p\char`\"{} field, which is used to compute the energy according to the A\-M\-O\-E\-B\-A force field. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__group_8f90_a5f31a75136645906af5ee55bff7ee718}{tmatxb\-\_\-group} (nrhs, dodiag, mu, efi)
+\begin{DoxyCompactList}\small\item\em Compute the direct space contribution to the electric field due to the current value of the induced dipoles. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__group_8f90_a62705acb7eab61eccbeabc5fca41029a}{orderbuffergroup}
+\begin{DoxyCompactList}\small\item\em get sizes and indexes of all the domains \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__group_8f90_a91fdbc155425a64682eff199c78a47e2}{commfieldfull} (nrhs, ef)
+\begin{DoxyCompactList}\small\item\em communicate some direct fields (Newton's third law) \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__group_8f90_af48dcedaa60632c69eda5116bcf33d70}{commdirdirfull} (nrhs, rule, mu, reqrec, reqsend)
+\begin{DoxyCompactList}\small\item\em deal with communications of direct dipoles \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__group_8f90_a58d711757eaf29d93f59834af906379f}{commforcesgroup}
+\begin{DoxyCompactList}\small\item\em deal with communications of \char`\"{}polarization group\char`\"{} forces \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{newinduce__group_8f90_af48dcedaa60632c69eda5116bcf33d70}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!commdirdirfull@{commdirdirfull}}
+\index{commdirdirfull@{commdirdirfull}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{commdirdirfull}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commdirdirfull (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{integer}]{rule, }
+\item[{real$\ast$8, dimension(3,nrhs,npolegroup)}]{mu, }
+\item[{integer, dimension(nproc)}]{reqrec, }
+\item[{integer, dimension(nproc)}]{reqsend}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_af48dcedaa60632c69eda5116bcf33d70}
+
+
+deal with communications of direct dipoles 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & integer determining what to do\-:
+\begin{DoxyItemize}
+\item 0\-: start reception of direct dipoles
+\item 1\-: start sending of direct dipoles
+\item 2\-: wait for the communications to be done 
+\end{DoxyItemize}\\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em reqrec,\-:} & array of M\-P\-I request for reception \\
+\hline
+\mbox{\tt in}  & {\em reqsend,\-:} & array of M\-P\-I request for sending \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1462 of file newinduce\-\_\-group.\-f90.
+
+
+
+References fatal().
+
+
+
+Referenced by inducejac\-\_\-group(), inducepcg\-\_\-group(), and newinduce\-\_\-group().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=246pt]{newinduce__group_8f90_af48dcedaa60632c69eda5116bcf33d70_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_af48dcedaa60632c69eda5116bcf33d70_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__group_8f90_a91fdbc155425a64682eff199c78a47e2}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!commfieldfull@{commfieldfull}}
+\index{commfieldfull@{commfieldfull}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{commfieldfull}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commfieldfull (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_a91fdbc155425a64682eff199c78a47e2}
+
+
+communicate some direct fields (Newton's third law) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & electric field \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1373 of file newinduce\-\_\-group.\-f90.
+
+
+
+Referenced by inducejac\-\_\-group(), inducepcg\-\_\-group(), and newinduce\-\_\-group().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a91fdbc155425a64682eff199c78a47e2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__group_8f90_a58d711757eaf29d93f59834af906379f}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!commforcesgroup@{commforcesgroup}}
+\index{commforcesgroup@{commforcesgroup}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{commforcesgroup}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforcesgroup (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_a58d711757eaf29d93f59834af906379f}
+
+
+deal with communications of \char`\"{}polarization group\char`\"{} forces 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1521 of file newinduce\-\_\-group.\-f90.
+
+
+
+Referenced by epolar1\-\_\-group().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a58d711757eaf29d93f59834af906379f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__group_8f90_a2bf8897cb57f2f2702b8014af010a796}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!efld0\-\_\-group@{efld0\-\_\-group}}
+\index{efld0\-\_\-group@{efld0\-\_\-group}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{efld0\-\_\-group}]{\setlength{\rightskip}{0pt plus 5cm}subroutine efld0\-\_\-group (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,npolegroup)}]{ef}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_a2bf8897cb57f2f2702b8014af010a796}
+
+
+Compute the direct space contribution to the permanent electric field. Also compute the \char`\"{}p\char`\"{} field, which is used to compute the energy according to the A\-M\-O\-E\-B\-A force field. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt out}  & {\em ef,\-:} & electric field \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 579 of file newinduce\-\_\-group.\-f90.
+
+
+
+References dampdir(), damptholed(), and pscale().
+
+
+
+Referenced by newinduce\-\_\-group().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a2bf8897cb57f2f2702b8014af010a796_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a2bf8897cb57f2f2702b8014af010a796_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__group_8f90_a8d07446ffd185bcbf3449a23963ab46b}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!inducejac\-\_\-group@{inducejac\-\_\-group}}
+\index{inducejac\-\_\-group@{inducejac\-\_\-group}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{inducejac\-\_\-group}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducejac\-\_\-group (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiis, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_a8d07446ffd185bcbf3449a23963ab46b}
+
+
+Jacobi/\-D\-I\-I\-S Solver for \char`\"{}group\char`\"{} polarization. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em dodiis,\-:} & use of D\-I\-I\-S extrapolation or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & permanent electric field (right hand side) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles (guess at entry) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 383 of file newinduce\-\_\-group.\-f90.
+
+
+
+References commdirdirfull(), commfieldfull(), diis(), and extrap().
+
+
+
+Referenced by newinduce\-\_\-group().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a8d07446ffd185bcbf3449a23963ab46b_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a8d07446ffd185bcbf3449a23963ab46b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__group_8f90_adeffcd38357ee16b4cb1359787fe08f9}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!inducepcg\-\_\-group@{inducepcg\-\_\-group}}
+\index{inducepcg\-\_\-group@{inducepcg\-\_\-group}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{inducepcg\-\_\-group}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducepcg\-\_\-group (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{precnd, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_adeffcd38357ee16b4cb1359787fe08f9}
+
+
+Preconditioned Conjugate Gradient Solver for \char`\"{}group\char`\"{} polarization. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em precnd,\-:} & use of diagonal preconditioner or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & permanent electric field (right hand side) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles (guess at entry) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 147 of file newinduce\-\_\-group.\-f90.
+
+
+
+References commdirdirfull(), and commfieldfull().
+
+
+
+Referenced by newinduce\-\_\-group().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_adeffcd38357ee16b4cb1359787fe08f9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_adeffcd38357ee16b4cb1359787fe08f9_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__group_8f90_a3bef550067628ac344b171a34dde594f}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!newinduce\-\_\-group@{newinduce\-\_\-group}}
+\index{newinduce\-\_\-group@{newinduce\-\_\-group}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{newinduce\-\_\-group}]{\setlength{\rightskip}{0pt plus 5cm}subroutine newinduce\-\_\-group (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_a3bef550067628ac344b171a34dde594f}
+
+
+evaluate induced dipole moments and the polarization energy of a group of atom without P\-B\-C using a (preconditioned) conjugate gradient algorithm or a J\-I/\-D\-I\-I\-S solver useful to define the polarization to be retrieved from the total one in \char`\"{}group-\/scaled\char`\"{} interactions 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 27 of file newinduce\-\_\-group.\-f90.
+
+
+
+References commdirdirfull(), commfieldfull(), efld0\-\_\-group(), fatal(), inducejac\-\_\-group(), inducepcg\-\_\-group(), orderbuffergroup(), and tmatxb\-\_\-group().
+
+
+
+Referenced by epolar1\-\_\-group(), and epolar3\-\_\-group().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a3bef550067628ac344b171a34dde594f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a3bef550067628ac344b171a34dde594f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__group_8f90_a62705acb7eab61eccbeabc5fca41029a}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!orderbuffergroup@{orderbuffergroup}}
+\index{orderbuffergroup@{orderbuffergroup}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{orderbuffergroup}]{\setlength{\rightskip}{0pt plus 5cm}subroutine orderbuffergroup (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_a62705acb7eab61eccbeabc5fca41029a}
+
+
+get sizes and indexes of all the domains 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1191 of file newinduce\-\_\-group.\-f90.
+
+
+
+Referenced by newinduce\-\_\-group().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a62705acb7eab61eccbeabc5fca41029a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__group_8f90_a5f31a75136645906af5ee55bff7ee718}{\index{newinduce\-\_\-group.\-f90@{newinduce\-\_\-group.\-f90}!tmatxb\-\_\-group@{tmatxb\-\_\-group}}
+\index{tmatxb\-\_\-group@{tmatxb\-\_\-group}!newinduce_group.f90@{newinduce\-\_\-group.\-f90}}
+\subsubsection[{tmatxb\-\_\-group}]{\setlength{\rightskip}{0pt plus 5cm}subroutine tmatxb\-\_\-group (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiag, }
+\item[{real$\ast$8, dimension(3,nrhs,npolegroup)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,npolegroup)}]{efi}
+\end{DoxyParamCaption}
+)}}\label{newinduce__group_8f90_a5f31a75136645906af5ee55bff7ee718}
+
+
+Compute the direct space contribution to the electric field due to the current value of the induced dipoles. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em dodiag,\-:} & compute diagonal contribution of matrix-\/vector product or not \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles \\
+\hline
+\mbox{\tt out}  & {\em efi,\-:} & electrif field due to induced dipoles \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 946 of file newinduce\-\_\-group.\-f90.
+
+
+
+References dampmut(), and dampthole().
+
+
+
+Referenced by newinduce\-\_\-group().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=272pt]{newinduce__group_8f90_a5f31a75136645906af5ee55bff7ee718_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__group_8f90_a5f31a75136645906af5ee55bff7ee718_icgraph}
+\end{center}
+\end{figure}
+
+

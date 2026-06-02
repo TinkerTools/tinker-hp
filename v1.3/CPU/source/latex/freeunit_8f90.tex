@@ -1,0 +1,61 @@
+\hypertarget{freeunit_8f90}{\section{freeunit.\-f90 File Reference}
+\label{freeunit_8f90}\index{freeunit.\-f90@{freeunit.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+integer function \hyperlink{freeunit_8f90_a582cb9a08f034fa31fdd59df3b304e0d}{freeunit} ()
+\begin{DoxyCompactList}\small\item\em finds an unopened Fortran I/\-O unit and returns its numerical value from 1 to 99; the units already assigned to \char`\"{}input\char`\"{} and \char`\"{}iout\char`\"{} (usually 5 and 6) are skipped since they have special meaning as the default I/\-O units \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{freeunit_8f90_a582cb9a08f034fa31fdd59df3b304e0d}{\index{freeunit.\-f90@{freeunit.\-f90}!freeunit@{freeunit}}
+\index{freeunit@{freeunit}!freeunit.f90@{freeunit.\-f90}}
+\subsubsection[{freeunit}]{\setlength{\rightskip}{0pt plus 5cm}integer function freeunit (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{freeunit_8f90_a582cb9a08f034fa31fdd59df3b304e0d}
+
+
+finds an unopened Fortran I/\-O unit and returns its numerical value from 1 to 99; the units already assigned to \char`\"{}input\char`\"{} and \char`\"{}iout\char`\"{} (usually 5 and 6) are skipped since they have special meaning as the default I/\-O units 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 25 of file freeunit.\-f90.
+
+
+
+References fatal().
+
+
+
+Referenced by analyze\-\_\-bis(), barcalc(), check\-\_\-endfile(), getkey(), getprm(), getxyz(), makebar(), mdinit(), mdinitbead(), mdinitreps(), mdsave(), mdsavebeads(), minimize\-\_\-bis(), optsave(), prtdyn(), and prtdynbeads().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=212pt]{freeunit_8f90_a582cb9a08f034fa31fdd59df3b304e0d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{freeunit_8f90_a582cb9a08f034fa31fdd59df3b304e0d_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,132 @@
+\hypertarget{mdstat_8f90}{\section{mdstat.\-f90 File Reference}
+\label{mdstat_8f90}\index{mdstat.\-f90@{mdstat.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{mdstat_8f90_ac986353dcb6d54b5e5ba229e005efe18}{mdstat} (istep, dt, etot, epot, ekin, temp, pres)
+\begin{DoxyCompactList}\small\item\em \char`\"{}mdstat\char`\"{} is called at each molecular dynamics time step to form statistics on various average values and fluctuations, and to periodically save the state of the trajectory \end{DoxyCompactList}\item 
+subroutine \hyperlink{mdstat_8f90_af36bc93b842e9a4288efb4192460a558}{mdstattime} (istep, dt)
+\begin{DoxyCompactList}\small\item\em compute averages of various timings and output them if necessary \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{mdstat_8f90_ac986353dcb6d54b5e5ba229e005efe18}{\index{mdstat.\-f90@{mdstat.\-f90}!mdstat@{mdstat}}
+\index{mdstat@{mdstat}!mdstat.f90@{mdstat.\-f90}}
+\subsubsection[{mdstat}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mdstat (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{real$\ast$8}]{dt, }
+\item[{real$\ast$8}]{etot, }
+\item[{real$\ast$8}]{epot, }
+\item[{real$\ast$8}]{ekin, }
+\item[{real$\ast$8}]{temp, }
+\item[{real$\ast$8}]{pres}
+\end{DoxyParamCaption}
+)}}\label{mdstat_8f90_ac986353dcb6d54b5e5ba229e005efe18}
+
+
+\char`\"{}mdstat\char`\"{} is called at each molecular dynamics time step to form statistics on various average values and fluctuations, and to periodically save the state of the trajectory 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em etot,\-:} & total energy \\
+\hline
+\mbox{\tt in}  & {\em epot,\-:} & potential energy \\
+\hline
+\mbox{\tt in}  & {\em ekin,\-:} & kinetic energy \\
+\hline
+\mbox{\tt in}  & {\em temp,\-:} & instantaneous temperature \\
+\hline
+\mbox{\tt in}  & {\em pres,\-:} & instantaneous pressure \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 28 of file mdstat.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by baoab(), baoabrespa(), baoabrespa1(), beeman(), respa(), respa1(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=304pt]{mdstat_8f90_ac986353dcb6d54b5e5ba229e005efe18_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdstat_8f90_ac986353dcb6d54b5e5ba229e005efe18_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mdstat_8f90_af36bc93b842e9a4288efb4192460a558}{\index{mdstat.\-f90@{mdstat.\-f90}!mdstattime@{mdstattime}}
+\index{mdstattime@{mdstattime}!mdstat.f90@{mdstat.\-f90}}
+\subsubsection[{mdstattime}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mdstattime (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{real$\ast$8}]{dt}
+\end{DoxyParamCaption}
+)}}\label{mdstat_8f90_af36bc93b842e9a4288efb4192460a558}
+
+
+compute averages of various timings and output them if necessary 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 330 of file mdstat.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by dynamic\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=326pt]{mdstat_8f90_af36bc93b842e9a4288efb4192460a558_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdstat_8f90_af36bc93b842e9a4288efb4192460a558_icgraph}
+\end{center}
+\end{figure}
+
+

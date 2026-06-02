@@ -1,0 +1,229 @@
+\href{https://doi.org/10.1021/acs.jctc.2c01233}{\tt !\mbox{[}D\-O\-I\-:10.\-1021/acs.jctc.\-2c01233\mbox{]}(https\-://zenodo.\-org/badge/\-D\-O\-I/10.\-1021/acs.\-jctc.\-2c01233.\-svg)}
+
+Quantum-\/\-H\-P is an extension of the Tinker-\/\-H\-P molecular dynamics (M\-D) package that allows for the explicit inclusion of nuclear quantum effects (N\-Q\-Es) in large-\/scale simulations. Quantum-\/\-H\-P leverages both Ring-\/\-Polymer Molecular Dynamics (R\-P\-M\-D) and adaptive Quantum Thermal Bath (ad\-Q\-T\-B) simulation methods to efficiently incorporate N\-Q\-Es in M\-D simulations. This extension opens up new possibilities for studying the quantum nature of important interactions in biological matter and other condensed-\/phase systems. 
+
+
+
+Quantum-\/\-H\-P is a multi-\/\-C\-P\-U and multi-\/\-G\-P\-U massively parallel platform designed to incorporate nuclear quantum effects in Tinker-\/\-H\-P M\-D simulations. It utilizes two primary simulation strategies\-:
+
+
+\begin{DoxyEnumerate}
+\item {\bfseries Ring-\/\-Polymer Molecular Dynamics (R\-P\-M\-D)\-:} Based on Feynman's path integrals formalism, this approach provides exact structural properties of a quantum system by simulating an effective classical system composed of multiple replicas of the original system. R\-P\-M\-D is computationally expensive but highly accurate.
+\begin{DoxyItemize}
+\item {\itshape Further reading\-:} \href{https://doi.org/10.1146/annurev-physchem-040412-110122}{\tt https\-://doi.\-org/10.\-1146/annurev-\/physchem-\/040412-\/110122}
+\end{DoxyItemize}
+\item {\bfseries Adaptive Quantum Thermal Bath (ad\-Q\-T\-B)\-:} ad\-Q\-T\-B imposes the quantum distribution of energy on a classical system using a generalized Langevin thermostat. This strategy offers a computationally affordable (close to classical M\-D cost) and reasonably accurate (though approximate) treatment of N\-Q\-Es.
+\begin{DoxyItemize}
+\item {\itshape Further reading\-:} \href{https://doi.org/10.1021/acs.jctc.8b01164}{\tt https\-://doi.\-org/10.\-1021/acs.\-jctc.\-8b01164} 
+
+
+\end{DoxyItemize}
+\end{DoxyEnumerate}
+
+
+\begin{DoxyItemize}
+\item Explicit inclusion of nuclear quantum effects (N\-Q\-Es) in large-\/scale M\-D simulations.
+\item Utilizes both Ring-\/\-Polymer Molecular Dynamics (R\-P\-M\-D) and adaptive Quantum Thermal Bath (ad\-Q\-T\-B) simulation strategies.
+\item Efficient implementation with parallelization for multi-\/\-C\-P\-U and multi-\/\-G\-P\-U systems.
+\item Compatible with the B\-A\-O\-A\-B-\/\-R\-E\-S\-P\-A multi-\/timestep integrator.
+\item Multiple ring-\/polymer contraction schemes for efficient R\-P\-M\-D simulations.
+\item Compatible with all Tinker-\/\-H\-P's force fields, including the A\-M\-O\-E\-B\-A polarizable force field.
+\item Compatible with Tinker-\/\-H\-P's Deep-\/\-H\-P machine learning potentials module, enabling combined quantum and machine learning simulations.
+\item Allows for alchemical free energy estimation in conjunction with Tinker-\/\-H\-P.
+\item Capable of simulating systems with a significant number of atoms, making it suitable for studying large condensed-\/phase systems. 
+
+
+\end{DoxyItemize}
+
+To use Quantum-\/\-H\-P, follow these steps\-:
+
+
+\begin{DoxyEnumerate}
+\item {\bfseries Installation\-:} Quantum-\/\-H\-P is provided by default with Tinker-\/\-H\-P so you just need to install a recent version of Tinker-\/\-H\-P (later than 2023/08).
+\item {\bfseries Setting up the Input\-:} Prepare the input files for your M\-D simulation using Tinker-\/\-H\-P's standard input format. Include the necessary parameters to specify the use of Quantum-\/\-H\-P for nuclear quantum effects (see list of keywords and examples below).
+\item {\bfseries Selecting Simulation Strategy\-:} Choose between R\-P\-M\-D and ad\-Q\-T\-B based on the level of accuracy required and the computational resources available. R\-P\-M\-D provides exact results but is computationally more expensive than ad\-Q\-T\-B.
+\item {\bfseries Parallelization\-:} Quantum-\/\-H\-P is optimized for parallel computing. Make sure to take advantage of multi-\/\-C\-P\-U and (multi-\/)G\-P\-U systems to accelerate your simulations.
+\item {\bfseries Running the Simulation\-:}
+\begin{DoxyItemize}
+\item {\bfseries ad\-Q\-T\-B\-:} Running (ad)Q\-T\-B M\-D is very similar to running classical M\-D. Simply run the {\ttfamily dynamic} executable with the usual command line arguments. The Q\-T\-B or ad\-Q\-T\-B is activated by setting the {\ttfamily T\-H\-E\-R\-M\-O\-S\-T\-A\-T} keyword to {\ttfamily ad\-Q\-T\-B} in the {\ttfamily .key} file. Available integrators for ad\-Q\-T\-B are {\ttfamily B\-A\-O\-A\-B}, {\ttfamily B\-A\-O\-A\-B\-R\-E\-S\-P\-A}, and {\ttfamily B\-A\-O\-A\-B\-R\-E\-S\-P\-A1}.
+\item {\bfseries R\-P\-M\-D\-:} Path integrals simulations can be performed using the {\ttfamily pimd} executable. Command line arguments for {\ttfamily pimd} are the same as for {\ttfamily dynamic}. Available integrators for path-\/integrals simulations are {\ttfamily B\-A\-O\-A\-B} and {\ttfamily B\-A\-O\-A\-B\-R\-E\-S\-P\-A}. 
+
+
+\end{DoxyItemize}
+\end{DoxyEnumerate}
+
+The following examples show the basic usage of the Quantum-\/\-H\-P module. We will start from an R\-P\-M\-D simulation of a water box and check the convergence with an increasing number of replicas. Then, we will run a standard Q\-T\-B simulation and compare the results. We will then analyze the zero-\/point energy leakage (Z\-P\-E\-L) that is the main pitfall of the standard Q\-T\-B methodology. Finally, we will perform an ad\-Q\-T\-B simulation to see how it fixes the Z\-P\-E\-L by adjusting the parameters of the thermal bath.
+
+We will use the fixed-\/charge q-\/\-S\-P\-C/\-Fw force field as our water model in order to perform quick simulations. For polarizable A\-M\-O\-E\-B\-A simulations, you can use the parameter files {\ttfamily qwater22-\/\-Q\-T\-B.\-prm} and {\ttfamily qwater22-\/\-P\-I.\-prm} provided in the {\ttfamily params} directory.
+
+\subsubsection*{Example 1\-: R\-P\-M\-D simulation of a water box}
+
+In this example, we will run a standard R\-P\-M\-D simulation of a small water box with the q-\/\-S\-P\-C/\-Fw force field. The input files are provided in the {\ttfamily examples/\-N\-Q\-E/liquid\-\_\-water/\-R\-P\-M\-D} folder. To run the simulation, execute the following command (with the correct path to the {\ttfamily pimd} executable)\-:
+
+
+\begin{DoxyCode}
+mpirun -np 1 /path/to/\hyperlink{pimd_8f90_afaefd022c8914d9e16a596dcd038638b}{pimd} watersmall 10000 2 1 2 300
+\end{DoxyCode}
+
+
+This command will run a 10000 step simulation at 300\-K with 32 replicas. Notice that the estimated temperature is much larger than 300\-K ($\sim$900-\/1000\-K). This temperature is computed from the quantum kinetic energy estimator (centroid-\/virial) and thus includes zero-\/point energy effects! We can check that the simulation is indeed running at 300\-K by checking the average centroid temperature.
+
+To check the convergence of the R\-P\-M\-D simulation, you can vary the number of replicas with the {\ttfamily N\-B\-E\-A\-D\-S} keyword in {\ttfamily watersmall.\-key} from 1 replica (classical M\-D) to as many as your machine can handle! Note that 32 replicas are typically used for simulations containing light atoms (Hydrogen) at 300\-K. This number should increase at lower temperatures and convergence should always be checked when simulating a new system.
+
+For R\-P\-M\-D simulations, Tinker-\/\-H\-P saves a trajectory file for each replica (by default) here named {\ttfamily watersmall\-\_\-beads$\ast$.arc}. These files can be used independently to compute configurational observables (for example radial distribution functions) just like classical trajectories. Observables can then be averaged over the replicas.
+
+The provided script {\ttfamily examples/\-N\-Q\-E/liquid\-\_\-water/compute\-\_\-rdf.\-py} can be used to compute the radial distribution functions (R\-D\-Fs) of water from the trajectory files (python3 and numpy are required). To compute the R\-D\-Fs, run the following commands from the {\ttfamily examples/\-N\-Q\-E/liquid\-\_\-water/\-R\-P\-M\-D} directory\-:
+
+
+\begin{DoxyCode}
+cat watersmall\_beads*.arc > watersmall.arc
+python3 ../compute\_rdf.py watersmall.arc
+\end{DoxyCode}
+
+
+Which will generate the file {\ttfamily gr.\-dat} containing the O-\/\-O, O-\/\-H and H-\/\-H R\-D\-Fs. The files {\ttfamily gr\-\_\-32beads.\-ref} and {\ttfamily gr\-\_\-classical.\-ref} provide reference results for the radial distribution function of water computed from the 32-\/beads R\-P\-M\-D simulation and a classical M\-D simulation, respectively.
+
+\subsubsection*{Example 2\-: Standard Q\-T\-B simulation}
+
+We will now use the Quantum Thermal Bath to accelerate the simulation. The input files are provided in the {\ttfamily examples/\-N\-Q\-E/liquid\-\_\-water/\-Q\-T\-B} folder. To run the simulation, execute the following command\-:
+
+
+\begin{DoxyCode}
+mpirun -np 1 /path/to/\hyperlink{dynamic_8f90_a242c646ad028ae81e8a4bed2193eae5d}{dynamic} watersmall 100000 2 1 2 300
+\end{DoxyCode}
+
+
+This should run much faster than the 32-\/beads R\-P\-M\-D simulation. The kinetic energy should be very similar to the path integrals one and potential energy should be slightly overestimated. One can then compute radial distribution functions (R\-D\-F) from the trajectory file {\ttfamily watersmall.\-arc} and compare them to the reference results in {\ttfamily gr\-\_\-\-Q\-T\-B.\-ref} and to the results from the previous example. If you visualize the R\-D\-Fs, you will see that the peaks are broader in Q\-T\-B than in R\-P\-M\-D and classical M\-D. This is a typical indication of zero-\/point energy leakage effects.
+
+We can analyze more in detail this effect using the {\ttfamily Q\-T\-B\-\_\-spectra\-\_\-$\ast$.out} file that has been generated by the dynamics. Columns 2 and 3 of this file contain the velocity-\/velocity and velocity-\/random force correlation spectra estimated during the dynamics that are used to quantify the Z\-P\-E\-L. Their difference (column 4) is a measure of where (in the frequency domain) energy is missing or overflowing. In this example, one can see a dip at $\sim$3600 cm$^\wedge$\{-\/1\} indicating that energy is missing in the O-\/\-H stretching mode. Indeed, this mode contains a large amount of zero-\/point energy that \char`\"{}leaks\char`\"{} into the lower-\/frequency modes during the Q\-T\-B simulation.
+
+\subsubsection*{Example 3\-: ad\-Q\-T\-B simulation}
+
+We will now run an ad\-Q\-T\-B simulation of the same water box. The input files are provided in the {\ttfamily examples/\-N\-Q\-E/liquid\-\_\-water/ad\-Q\-T\-B} folder. To run the simulation, execute the following command\-:
+
+
+\begin{DoxyCode}
+mpirun -np 1 /path/to/\hyperlink{dynamic_8f90_a242c646ad028ae81e8a4bed2193eae5d}{dynamic} watersmall 100000 2 1 2 300
+\end{DoxyCode}
+
+
+During the simulation, Tinker-\/\-H\-P should periodically print \char`\"{}\-Adapting gammar for ad\-Q\-T\-B\char`\"{}, which indicates that the parameters of the thermal bath are iteratively adapted to fix the Z\-P\-E\-L. The file {\ttfamily gamma\-\_\-restart.\-out} contains the values of the current parameters for each atom type, as a function of frequency. The base value should be 20 ps$^\wedge$\{-\/1\} and you should see a decrease at low frequencies and an increase at higher frequencies.
+
+When the parameters converge and start fluctuating around a fixed value, this means that the adaptation procedure compensated the Z\-P\-E\-L. You can check that the difference between the two spectra is now very small (column 4 of {\ttfamily Q\-T\-B\-\_\-spectra\-\_\-$\ast$.out}) compared to the previous Q\-T\-B calculation.
+
+You can now compute the R\-D\-F from the trajectory file {\ttfamily watersmall.\-arc} and compare it to the reference results in {\ttfamily gr\-\_\-ad\-Q\-T\-B.\-ref} and to the results in the previous examples. You should see that the peaks are now sharper than in the Q\-T\-B simulation and very close to the R\-P\-M\-D results.
+
+\subsubsection*{Example 4\-: ad\-Q\-T\-B simulation of solvated Benzene}
+
+In ad\-Q\-T\-B a set of adjustable parameters ({\ttfamily gamma\-\_\-restart.\-out}) is associated with each atom type. The corresponding spectra {\ttfamily Q\-T\-B\-\_\-spectra\-\_\-$\ast$.out} are then averaged over all equivalent degrees of freedom. Spectra for types that have lots of representative atoms are then estimated much quicker than for types with a few representative atoms. This situation is typical of a small molecule solvated in a box of water. In this case, one can adjust the parameters for the solvent much more aggressively than that of the solute which require slower tuning.
+
+Tinker-\/\-H\-P thus provides keywords for specifying the adaptation scheme for specific atom types, as can be seen in {\ttfamily examples/\-N\-Q\-E/solvated\-\_\-benzene/ad\-Q\-T\-B/benzenebox.\-key}. 
+
+
+
+This section provides a list and a brief explanation of the keywords specific to Quantum-\/\-H\-P.
+
+\subsubsection*{(ad)Q\-T\-B\-:}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily F\-R\-I\-C\-T\-I\-O\-N} (real)\-: The friction coefficient of the Langevin thermostat (default\-: 1., unit\-: ps$^\wedge$\{-\/1\}). Typical values for (ad)Q\-T\-B are 10-\/20 ps$^\wedge$\{-\/1\} (default value is set for classical M\-D).
+\item {\ttfamily O\-M\-E\-G\-A\-C\-U\-T} (real)\-: The cutoff frequency for computing spectra and beyond which the Q\-T\-B power spectrum is zero (default\-: 15000, unit\-:cm$^\wedge$\{-\/1\}).
+\item {\ttfamily T\-S\-E\-G} (real)\-: The duration of a trajectory segment on which to compute spectra (default\-: 1., unit\-: ps).
+\item {\ttfamily Q\-T\-B\-\_\-\-V\-E\-R\-B\-O\-S\-E} (logical)\-: Print to standard output when refreshing the Q\-T\-B noise and updating the ad\-Q\-T\-B parameters.
+\item {\ttfamily Q\-T\-B\-\_\-\-B\-A\-T\-C\-H\-\_\-\-S\-I\-Z\-E} (int)\-: Number of atoms on which to generate the colored noise simultaneously (only for the G\-P\-U version). Allows reduction of memory requirements for large systems but might be slower when using small batch sizes. Defaults to all the local atoms (i.\-e., no batches).
+\item {\ttfamily C\-O\-R\-R\-\_\-\-F\-A\-C\-T\-\_\-\-Q\-T\-B} (real)\-: Set the value of the kinetic energy correction. If not present, the correction is automatically estimated along the dynamics.
+\item {\ttfamily N\-O\-\_\-\-C\-O\-R\-R\-\_\-\-P\-O\-T} (logical)\-: Disables the potential energy correction.
+\item {\ttfamily R\-E\-G\-I\-S\-T\-E\-R\-\_\-\-S\-P\-E\-C\-T\-R\-A} (logical)\-: Save spectra for the zero-\/point energy leakage diagnostic (Cvv, Cvf, Delta\-\_\-\-F\-D\-T). Automatically O\-N when performing ad\-Q\-T\-B simulation.
+\item {\ttfamily S\-K\-I\-P\-S\-E\-G} (int)\-: Skip the first {\ttfamily S\-K\-I\-P\-S\-E\-G} segments before starting the adaptation (default\-: 3).
+\item {\ttfamily S\-T\-A\-R\-T\-S\-A\-V\-E\-S\-P\-E\-C} (int)\-: Segment from which spectra start to be averaged. Allows saving spectra only after an equilibration/adaptation period (default\-: 25).
+\item {\ttfamily G\-A\-M\-M\-A\-\_\-\-H\-I\-S\-T\-O\-R\-Y} (logical)\-: Saves the evolution of the gamma coefficients at each segment (warning\-: may produce large files for long dynamics).
+\item {\ttfamily N\-O\-Q\-T\-B} (logical)\-: Use the Q\-T\-B noise generation with a white noise kernel to perform classical M\-D. Mostly for debug or testing purposes.
+\item {\ttfamily A\-D\-Q\-T\-B\-\_\-\-O\-P\-T\-I\-M\-I\-Z\-E\-R} (string)\-: The adaptation method to use (possible values\-: {\ttfamily S\-I\-M\-P\-L\-E}, {\ttfamily R\-A\-T\-I\-O}).
+\item {\ttfamily A\-\_\-\-G\-A\-M\-M\-A} (real)\-: Coefficient that controls the adaptation speed in the {\ttfamily S\-I\-M\-P\-L\-E} adaptation mode (default\-: 0.\-5).
+\item {\ttfamily A\-D\-Q\-T\-B\-\_\-\-T\-A\-U\-\_\-\-A\-V\-G} (real)\-: Coefficient that controls the adaptation speed in the {\ttfamily R\-A\-T\-I\-O} adaptation mode (default\-: 10$\ast${\ttfamily T\-S\-E\-G}, unit\-: ps).
+\item {\ttfamily A\-D\-Q\-T\-B\-\_\-\-T\-A\-U\-\_\-\-A\-D\-A\-P\-T} (real)\-:
+\begin{DoxyItemize}
+\item For the {\ttfamily S\-I\-M\-P\-L\-E} method\-: Typical time of window averaging of Delta\-\_\-\-F\-D\-T. Allows in principle to improve the adaptation, similarly to stochastic gradient descent with momentum (default\-: 0, unit\-: ps).
+\item For the {\ttfamily R\-A\-T\-I\-O} method\-: Typical time of window averaging of the gamma coefficients. Smoothens gamma but slows down the adaptation (default\-: 0, unit\-: ps).
+\end{DoxyItemize}
+\item {\ttfamily A\-D\-Q\-T\-B\-\_\-\-S\-M\-O\-O\-T\-H} (real)\-: Smoothens the adaptation by window-\/averaging the spectra with an exponentially decaying window of size of {\ttfamily A\-D\-Q\-T\-B\-\_\-\-S\-M\-O\-O\-T\-H} cm$^\wedge$\{-\/1\} (default\-: 0, unit\-: cm$^\wedge$\{-\/1\}).
+\item {\ttfamily A\-D\-Q\-T\-B\-\_\-\-M\-O\-D\-I\-F\-I\-E\-R} (int,string,real,real)\-: Specify adaptation method ({\ttfamily R\-A\-T\-I\-O} or {\ttfamily S\-I\-M\-P\-L\-E}), associated parameter ({\ttfamily A\-D\-Q\-T\-B\-\_\-\-T\-A\-U\-\_\-\-A\-V\-G} or {\ttfamily A\-\_\-\-G\-A\-M\-M\-A}) and {\ttfamily A\-D\-Q\-T\-B\-\_\-\-S\-M\-O\-O\-T\-H} for a specific type. The atom type is specified by the first integer argument. The second argument is the adaptation method. The third and fourth arguments are the associated parameter ({\ttfamily A\-D\-Q\-T\-B\-\_\-\-T\-A\-U\-\_\-\-A\-V\-G} or {\ttfamily A\-\_\-\-G\-A\-M\-M\-A}) and {\ttfamily A\-D\-Q\-T\-B\-\_\-\-S\-M\-O\-O\-T\-H} (the default parameter is obtained by setting to a negative value).
+\end{DoxyItemize}
+
+\subsubsection*{R\-P\-M\-D\-:}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily N\-B\-E\-A\-D\-S} (int)\-: Number of beads to use in the simulation (default\-: 1).
+\item {\ttfamily N\-B\-E\-A\-D\-S\-\_\-\-C\-T\-R} (int)\-: Number of beads of the contracted ring polymer (default\-: 0=not used).
+\item {\ttfamily C\-E\-N\-T\-R\-O\-I\-D\-\_\-\-L\-O\-N\-G\-R\-A\-N\-G\-E} (logical)\-: Compute long-\/range forces on the centroid only.
+\item {\ttfamily P\-O\-L\-A\-R\-\_\-\-C\-E\-N\-T\-R\-O\-I\-D} (logical)\-: Compute the full polarization interactions on the centroid only. Only used if {\ttfamily C\-E\-N\-T\-R\-O\-I\-D\-\_\-\-L\-O\-N\-G\-R\-A\-N\-G\-E} is activated. If not present while {\ttfamily C\-E\-N\-T\-R\-O\-I\-D\-\_\-\-L\-O\-N\-G\-R\-A\-N\-G\-E} is present, long-\/range polarization is calculated on the centroid and short-\/range polarization on the beads (or contracted beads if {\ttfamily N\-B\-E\-A\-D\-S\-\_\-\-C\-T\-R}$>$1).
+\item {\ttfamily L\-A\-M\-B\-D\-A\-\_\-\-T\-R\-P\-M\-D}\-: Lambda value for the T\-R\-P\-M\-D friction coefficient. Note that there is a factor 2 between the definition in Quantum-\/\-H\-P and the reference paper\-: {\ttfamily L\-A\-M\-B\-D\-A\-\_\-\-T\-R\-P\-M\-D}=1 corresponds to lambda=0.\-5 in the article. The default behavior is the optimally thermostatted T\-R\-P\-M\-D ({\ttfamily L\-A\-M\-B\-D\-A\-\_\-\-T\-R\-P\-M\-D}=1), standard R\-P\-M\-D can be obtained with {\ttfamily L\-A\-M\-B\-D\-A\-\_\-\-T\-R\-P\-M\-D}=0.
+\item {\ttfamily C\-A\-Y\-\_\-\-C\-O\-R\-R} (logical)\-: Activates the Cayleigh correction to use the B\-C\-O\-C\-B integrator. Allows in principle to use larger time steps when a large number of beads are required.
+\item {\ttfamily A\-D\-D\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-P\-I} (logical)\-: Add a buffer to the neighbor lists that accounts for the delocalization of the ring polymer. Might be useful at low temperatures when delocalization is larger than default buffers.
+\item {\ttfamily P\-I\-\_\-\-S\-T\-A\-R\-T\-\_\-\-I\-S\-O\-B\-A\-R\-I\-C}\-: Time at which to activate the barostat. Allows to thermalize the ring polymer in N\-V\-T (to have unbiased pressure estimator) before performing the N\-P\-T simulation (default\-: 0, unit\-: ps).
+\item {\ttfamily P\-I\-T\-I\-M\-E\-R}\-: Display timers specific to the path-\/integral simulation.
+\item {\ttfamily S\-A\-V\-E\-\_\-\-B\-E\-A\-D\-S} (string)\-: Controls which beads trajectories are saved. Possible values\-: {\ttfamily A\-L\-L} (default), {\ttfamily R\-A\-N\-D\-O\-M} and {\ttfamily O\-N\-E}.
+\begin{DoxyItemize}
+\item {\ttfamily A\-L\-L}\-: Save all the beads trajectories.
+\item {\ttfamily R\-A\-N\-D\-O\-M}\-: Save the trajectory of a random bead (sampled at each frame).
+\item {\ttfamily O\-N\-E}\-: Save the trajectory of the first bead only. 
+
+
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily Q\-T\-B\-\_\-spectra\-\_\-$\ast$.out}\-: Spectra for the zero-\/point energy leakage diagnostic (m\-Cvv, Cvf/gamma, Delta\-\_\-\-F\-D\-T, gamma) for each atom type.
+\item {\ttfamily corr\-\_\-pot.\-dat}\-: Potential energy correction (used at the beginning of the dynamics if present or generated automatically if not present).
+\item {\ttfamily corr\-\_\-fact\-\_\-qtb\-\_\-restart.\-out}\-: Kinetic energy correction (used at the beginning of the dynamics if present or generated automatically if {\ttfamily C\-O\-R\-R\-\_\-\-F\-A\-C\-T\-\_\-\-Q\-T\-B} is not set).
+\item {\ttfamily gamma\-\_\-restart.\-out}\-: Gamma coefficients for all the atom types (used at the beginning of the dynamics to restart from previous simulation). 
+
+
+\end{DoxyItemize}
+
+\subsubsection*{Path-\/\-Integral Bennett Acceptance Ratio (P\-I-\/\-B\-A\-R)}
+
+P\-I-\/\-B\-A\-R free energy estimation can be performed using the {\ttfamily pibar} executable. As for the standard {\ttfamily bar} executable, two modes are available from the command line\-:
+\begin{DoxyEnumerate}
+\item The first mode creates the {\ttfamily .bar} file by computing the potential in the two thermodynamical states for each frame in both trajectories. The potential is averaged over the beads to be able to compute the P\-I-\/\-B\-A\-R estimator. If the {\ttfamily .key} file defines a contracted ring polymer, the average potential is also computed on the contracted ring-\/polymer and saved in a {\ttfamily .bar.\-ctr} file.
+\item The second mode computes the free energy from the {\ttfamily .bar} file. If a {\ttfamily .bar.\-ctr} file is present, the user is prompted to enter if they want to use it or do the estimation from the full ring polymer.
+\end{DoxyEnumerate}
+
+\subsubsection*{On-\/the-\/fly calculation of infrared spectra}
+
+Infrared spectra can be computed from the total dipole moment (defined by the multipoles or charges). To activate the calculation of I\-R spectra, add the {\ttfamily I\-R\-\_\-\-S\-P\-E\-C\-T\-R\-A} keyword to the {\ttfamily .key} file.
+
+The I\-R spectra are computed in segments as defined for Q\-T\-B dynamics and are thus influenced by the {\ttfamily O\-M\-E\-G\-A\-C\-U\-T} and {\ttfamily T\-S\-E\-G} keywords. Frequencies and I\-R spectra are saved in cm$^\wedge$\{-\/1\}.
+
+In the case of multipoles, the dipole moment can be approximated using charges only with the keyword {\ttfamily I\-R\-\_\-\-L\-I\-N\-E\-A\-R\-\_\-\-D\-I\-P\-O\-L\-E}. The spectra can be deconvoluted to remove the influence of the friction coefficient in a Langevin simulation with the keyword {\ttfamily I\-R\-\_\-\-D\-E\-C\-O\-N\-V\-O\-L\-U\-T\-I\-O\-N} (\href{https://doi.org/10.1063/1.4990536}{\tt https\-://doi.\-org/10.\-1063/1.\-4990536}). 
+
+
+
+For any bug report, technical question or feature request, contact us at\-:
+\begin{DoxyItemize}
+\item \href{mailto:thomas.ple@sorbonne-universite.fr}{\tt thomas.\-ple@sorbonne-\/universite.\-fr}
+\item \href{mailto:louis.lagardere@sorbonne-universite.fr}{\tt louis.\-lagardere@sorbonne-\/universite.\-fr}
+\item \href{mailto:jean-philip.piquemal@sorbonne-universite.fr}{\tt jean-\/philip.\-piquemal@sorbonne-\/universite.\-fr} 
+
+
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+@article\{https:\textcolor{comment}{//doi.org/10.1021/acs.jctc.2c01233,}
+  title=\{Routine molecular dynamics simulations including nuclear quantum effects: from force 
+      \hyperlink{classfields}{fields} to machine learning potentials\},
+  author=\{Pl\{\(\backslash\)\textcolor{stringliteral}{'e\}, Thomas and Mauger, Nastasia and Adjoua, Olivier and Inizan, Th\{\(\backslash\)'e\}o Jaffrelot and
+       Lagard\{\(\backslash\)`e\}re, Louis and Huppert, Simon and Piquemal, Jean-Philip\},}
+\textcolor{stringliteral}{  journal=\{Journal of Chemical Theory and Computation\},}
+\textcolor{stringliteral}{  volume=\{19\},}
+\textcolor{stringliteral}{  number=\{5\},}
+\textcolor{stringliteral}{  pages=\{1432--1445\},}
+\textcolor{stringliteral}{  year=\{2023\},}
+\textcolor{stringliteral}{  publisher=\{ACS Publications\}}
+\textcolor{stringliteral}{\}}
+\end{DoxyCode}
+ 

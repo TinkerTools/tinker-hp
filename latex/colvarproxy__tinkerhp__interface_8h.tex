@@ -1,0 +1,528 @@
+\hypertarget{colvarproxy__tinkerhp__interface_8h}{\section{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h File Reference}
+\label{colvarproxy__tinkerhp__interface_8h}\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+}
+{\ttfamily \#include $<$mpi.\-h$>$}\\*
+Include dependency graph for colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=200pt]{colvarproxy__tinkerhp__interface_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=208pt]{colvarproxy__tinkerhp__interface_8h__dep__incl}
+\end{center}
+\end{figure}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void $\ast$ \hyperlink{colvarproxy__tinkerhp__interface_8h_ac195b1343a058dfbe5eee7176ddbfc61}{allocate\-\_\-colvars} ()
+\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_ae93f7093d8575f77e8acd4b8c89d8b9c}{compute\-\_\-colvars} ()
+\begin{DoxyCompactList}\small\item\em Called from Tinker\-: run the Colvars computation. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a52d15b32d19f392c33aacefc0ad08f19}{delete\-\_\-colvars} ()
+\begin{DoxyCompactList}\small\item\em Called from Tinker\-: delete the Colvars proxy object, triggering post-\/run. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_aa3f6329fe911357f2b71e76e0b0da41f}{init\-\_\-lambda} ()
+\begin{DoxyCompactList}\small\item\em Called from Tinker\-: get value of lambda from Colvars. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_aae2aa279c4e84d65ad6501512c1ba5e8}{get\-\_\-mpi\-\_\-} (int $\ast$communicator, int $\ast$rank, int $\ast$nproc)
+\begin{DoxyCompactList}\small\item\em Get M\-P\-I communicator info from Tinker. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_ac14fd47c44288fc3d8eab5fc4782c7d3}{get\-\_\-sim\-\_\-temp\-\_\-} (cvm\-::real $\ast$)
+\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a476aa5bb0d10dc63f4988ffd1c58a663}{get\-\_\-sim\-\_\-boltzmann\-\_\-} (cvm\-::real $\ast$)
+\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_ae90f32757ff1dba05d52a87c2f0f8086}{get\-\_\-sim\-\_\-dt\-\_\-} (cvm\-::real $\ast$)
+\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a4eb683378d5bec070832f72c9266ec2c}{rand\-\_\-colvars\-\_\-} (cvm\-::real $\ast$)
+\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a0790d493eaf31916d20c11ac1e113aeb}{get\-\_\-system\-\_\-size\-\_\-} (int $\ast$size)
+\begin{DoxyCompactList}\small\item\em Number of atoms. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a150f42c74cc5333867d475f871bb1659}{set\-\_\-cvatoms\-\_\-ids\-\_\-} (int $\ast$ncvatoms, int $\ast$cvatoms\-\_\-ids)
+\begin{DoxyCompactList}\small\item\em Send I\-Ds of Colvars atoms to Tinker. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a7afbf22df034e286a9534b3894017f32}{get\-\_\-mass\-\_\-atom\-\_\-} (int $\ast$atom\-\_\-number, double $\ast$mass)
+\begin{DoxyCompactList}\small\item\em Get mass of given atom from Tinker. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_ae0a5cbbea86fadac79679e4a7e4afcfc}{get\-\_\-pos\-\_\-atom\-\_\-} (int $\ast$atom\-\_\-number, double $\ast$xr, double $\ast$yr, double $\ast$zr)
+\begin{DoxyCompactList}\small\item\em Get position of given atom from Tinker. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_abb8bb3a04d23e0fcdfb5d947e1b66798}{get\-\_\-forces\-\_\-tot\-\_\-} (int $\ast$atom\-\_\-number, double $\ast$fx, double $\ast$fy, double $\ast$fz)
+\begin{DoxyCompactList}\small\item\em Get total forces from Tinker. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_adf0b6fa63d81dba900d63d6c7047b490}{add\-\_\-energy\-\_\-tinker\-\_\-} (double $\ast$\hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy})
+\begin{DoxyCompactList}\small\item\em Add Specified energy to Tinker. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a46e4ed3d4a5496c2294cfca6866855b2}{add\-\_\-forces\-\_\-tinker\-\_\-} (int $\ast$index, cvm\-::rvector $\ast$force)
+\begin{DoxyCompactList}\small\item\em Send given forces to Tinker on specified atoms. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a7e9988797a6bf40e62b36c15938f36ba}{pbc\-\_\-image\-\_\-} (cvm\-::rvector $\ast$r1, cvm\-::rvector $\ast$r2, cvm\-::rvector $\ast$dr)
+\begin{DoxyCompactList}\small\item\em Apply minimum image convention using Tinker's P\-B\-C to a distance vector. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_aff41000284711aabf59743195885aee8}{get\-\_\-input\-\_\-filename\-\_\-} (char $\ast$$\ast$input\-\_\-name, int $\ast$len\-\_\-name)
+\begin{DoxyCompactList}\small\item\em Get the filename of the Tinker input. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a2b4370c33140a7aaf42cb4c18e8a202d}{get\-\_\-output\-\_\-filename\-\_\-} (char $\ast$$\ast$output\-\_\-name, int $\ast$len\-\_\-name)
+\begin{DoxyCompactList}\small\item\em Get the filename of the colvars output. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_ae3ee0e458a9d316bf638f1a297d0b7e7}{get\-\_\-restart\-\_\-filename\-\_\-} (char $\ast$$\ast$input\-\_\-name, int $\ast$len\-\_\-name)
+\begin{DoxyCompactList}\small\item\em Check the existence of the colvars restart file through tinker. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_aca236f9c48341f6f9e3c146709a4aaf0}{get\-\_\-pbc\-\_\-} (double $\ast$a, double $\ast$b, double $\ast$c)
+\begin{DoxyCompactList}\small\item\em Get P\-B\-C box dimensions, assuming orthorhombic cell. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a5c3040fda95150764ce68d938798f0c1}{fatal\-\_\-error\-\_\-} (void)
+\begin{DoxyCompactList}\small\item\em Handle fatal error. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a93c823cb5ca31938ed2076d572c20088}{set\-\_\-use\-\_\-colvars\-\_\-} (bool $\ast$use\-\_\-colvars)
+\begin{DoxyCompactList}\small\item\em Handle colvars flag. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a820b4c7cfcc379a558d0e9ff4c3de5c6}{get\-\_\-alch\-\_\-lambda\-\_\-} (double $\ast$lambda)
+\begin{DoxyCompactList}\small\item\em Get value of alchemical lambda parameter from back-\/end. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_ac51a3a7cf15db9ebcb6ab963bdafcb55}{set\-\_\-alch\-\_\-lambda\-\_\-} (double $\ast$lambda)
+\begin{DoxyCompactList}\small\item\em Set value of alchemical lambda parameter in back-\/end. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a550eb70013cfcdb84e437d86ca4ee927}{get\-\_\-delambda\-\_\-} (double $\ast$d\-E\-\_\-dlambda)
+\begin{DoxyCompactList}\small\item\em Get (unbiased force field) energy derivative with respect to lambda. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_afc94f9e1cf679629e056c508b952fcd0}{apply\-\_\-force\-\_\-delambda\-\_\-} (double $\ast$force)
+\begin{DoxyCompactList}\small\item\em Apply a scalar force on d\-E\-\_\-dlambda (back-\/end distributes it onto atoms) \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a0c800136e4eaaf5fa5e94c24d5567112}{get\-\_\-d2edlambda2\-\_\-} (double $\ast$d2\-E\-\_\-dlambda2)
+\begin{DoxyCompactList}\small\item\em Get second derivative of the (unbiased force field) energy with respect to lambda. \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a9315e17cbcd3aecfe7c7ad4f5ba99076}{get\-\_\-use\-\_\-reps\-\_\-} (bool $\ast$doreplica)
+\begin{DoxyCompactList}\small\item\em get use of replicas \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_ab3d05cc0b9930a89615e5204126fb994}{get\-\_\-index\-\_\-rep\-\_\-} (int $\ast$index)
+\begin{DoxyCompactList}\small\item\em get index of local replica \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a61984250bf8e297dd354278251bfa7e0}{get\-\_\-num\-\_\-rep\-\_\-} (int $\ast$inter\-\_\-num)
+\begin{DoxyCompactList}\small\item\em get number of replicas \end{DoxyCompactList}\item 
+void \hyperlink{colvarproxy__tinkerhp__interface_8h_a18f446fbdd2060fba22274c01ac74244}{get\-\_\-root2root\-\_\-} (int $\ast$inter\-\_\-comm)
+\begin{DoxyCompactList}\small\item\em get root2root communicator \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{colvarproxy__tinkerhp__interface_8h_adf0b6fa63d81dba900d63d6c7047b490}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!add\-\_\-energy\-\_\-tinker\-\_\-@{add\-\_\-energy\-\_\-tinker\-\_\-}}
+\index{add\-\_\-energy\-\_\-tinker\-\_\-@{add\-\_\-energy\-\_\-tinker\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{add\-\_\-energy\-\_\-tinker\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void add\-\_\-energy\-\_\-tinker\-\_\- (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{energy}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_adf0b6fa63d81dba900d63d6c7047b490}
+
+
+Add Specified energy to Tinker. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a46e4ed3d4a5496c2294cfca6866855b2}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!add\-\_\-forces\-\_\-tinker\-\_\-@{add\-\_\-forces\-\_\-tinker\-\_\-}}
+\index{add\-\_\-forces\-\_\-tinker\-\_\-@{add\-\_\-forces\-\_\-tinker\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{add\-\_\-forces\-\_\-tinker\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void add\-\_\-forces\-\_\-tinker\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{index, }
+\item[{cvm\-::rvector $\ast$}]{force}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a46e4ed3d4a5496c2294cfca6866855b2}
+
+
+Send given forces to Tinker on specified atoms. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_ac195b1343a058dfbe5eee7176ddbfc61}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!allocate\-\_\-colvars@{allocate\-\_\-colvars}}
+\index{allocate\-\_\-colvars@{allocate\-\_\-colvars}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{allocate\-\_\-colvars}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ allocate\-\_\-colvars (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_ac195b1343a058dfbe5eee7176ddbfc61}
+\hypertarget{colvarproxy__tinkerhp__interface_8h_afc94f9e1cf679629e056c508b952fcd0}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!apply\-\_\-force\-\_\-delambda\-\_\-@{apply\-\_\-force\-\_\-delambda\-\_\-}}
+\index{apply\-\_\-force\-\_\-delambda\-\_\-@{apply\-\_\-force\-\_\-delambda\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{apply\-\_\-force\-\_\-delambda\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void apply\-\_\-force\-\_\-delambda\-\_\- (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{force}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_afc94f9e1cf679629e056c508b952fcd0}
+
+
+Apply a scalar force on d\-E\-\_\-dlambda (back-\/end distributes it onto atoms) 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_ae93f7093d8575f77e8acd4b8c89d8b9c}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!compute\-\_\-colvars@{compute\-\_\-colvars}}
+\index{compute\-\_\-colvars@{compute\-\_\-colvars}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{compute\-\_\-colvars}]{\setlength{\rightskip}{0pt plus 5cm}void compute\-\_\-colvars (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_ae93f7093d8575f77e8acd4b8c89d8b9c}
+
+
+Called from Tinker\-: run the Colvars computation. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a52d15b32d19f392c33aacefc0ad08f19}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!delete\-\_\-colvars@{delete\-\_\-colvars}}
+\index{delete\-\_\-colvars@{delete\-\_\-colvars}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{delete\-\_\-colvars}]{\setlength{\rightskip}{0pt plus 5cm}void delete\-\_\-colvars (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a52d15b32d19f392c33aacefc0ad08f19}
+
+
+Called from Tinker\-: delete the Colvars proxy object, triggering post-\/run. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a5c3040fda95150764ce68d938798f0c1}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!fatal\-\_\-error\-\_\-@{fatal\-\_\-error\-\_\-}}
+\index{fatal\-\_\-error\-\_\-@{fatal\-\_\-error\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{fatal\-\_\-error\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void fatal\-\_\-error\-\_\- (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a5c3040fda95150764ce68d938798f0c1}
+
+
+Handle fatal error. 
+
+
+
+Referenced by colvarproxy\-\_\-tinkerhp\-::error(), and colvarproxy\-\_\-tinkerhp\-::fatal\-\_\-error().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=310pt]{colvarproxy__tinkerhp__interface_8h_a5c3040fda95150764ce68d938798f0c1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a820b4c7cfcc379a558d0e9ff4c3de5c6}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-alch\-\_\-lambda\-\_\-@{get\-\_\-alch\-\_\-lambda\-\_\-}}
+\index{get\-\_\-alch\-\_\-lambda\-\_\-@{get\-\_\-alch\-\_\-lambda\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-alch\-\_\-lambda\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-alch\-\_\-lambda\-\_\- (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{lambda}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a820b4c7cfcc379a558d0e9ff4c3de5c6}
+
+
+Get value of alchemical lambda parameter from back-\/end. 
+
+If lambda-\/dynamics enabled in back-\/end, special keyword in colvar config Then the following is not necessary -\/ Tinker doesn't need to know about the mass Create special colvar tied to lambda with given mass and initial value 
+
+Referenced by colvarproxy\-\_\-tinkerhp\-::get\-\_\-alch\-\_\-lambda().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=342pt]{colvarproxy__tinkerhp__interface_8h_a820b4c7cfcc379a558d0e9ff4c3de5c6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a0c800136e4eaaf5fa5e94c24d5567112}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-d2edlambda2\-\_\-@{get\-\_\-d2edlambda2\-\_\-}}
+\index{get\-\_\-d2edlambda2\-\_\-@{get\-\_\-d2edlambda2\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-d2edlambda2\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-d2edlambda2\-\_\- (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{d2\-E\-\_\-dlambda2}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a0c800136e4eaaf5fa5e94c24d5567112}
+
+
+Get second derivative of the (unbiased force field) energy with respect to lambda. 
+
+
+
+Referenced by colvarproxy\-\_\-tinkerhp\-::get\-\_\-d2\-E\-\_\-dlambda2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=346pt]{colvarproxy__tinkerhp__interface_8h_a0c800136e4eaaf5fa5e94c24d5567112_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a550eb70013cfcdb84e437d86ca4ee927}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-delambda\-\_\-@{get\-\_\-delambda\-\_\-}}
+\index{get\-\_\-delambda\-\_\-@{get\-\_\-delambda\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-delambda\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-delambda\-\_\- (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{d\-E\-\_\-dlambda}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a550eb70013cfcdb84e437d86ca4ee927}
+
+
+Get (unbiased force field) energy derivative with respect to lambda. 
+
+
+
+Referenced by colvarproxy\-\_\-tinkerhp\-::get\-\_\-d\-E\-\_\-dlambda().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=328pt]{colvarproxy__tinkerhp__interface_8h_a550eb70013cfcdb84e437d86ca4ee927_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_abb8bb3a04d23e0fcdfb5d947e1b66798}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-forces\-\_\-tot\-\_\-@{get\-\_\-forces\-\_\-tot\-\_\-}}
+\index{get\-\_\-forces\-\_\-tot\-\_\-@{get\-\_\-forces\-\_\-tot\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-forces\-\_\-tot\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-forces\-\_\-tot\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{atom\-\_\-number, }
+\item[{double $\ast$}]{fx, }
+\item[{double $\ast$}]{fy, }
+\item[{double $\ast$}]{fz}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_abb8bb3a04d23e0fcdfb5d947e1b66798}
+
+
+Get total forces from Tinker. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_ab3d05cc0b9930a89615e5204126fb994}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-index\-\_\-rep\-\_\-@{get\-\_\-index\-\_\-rep\-\_\-}}
+\index{get\-\_\-index\-\_\-rep\-\_\-@{get\-\_\-index\-\_\-rep\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-index\-\_\-rep\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-index\-\_\-rep\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{index}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_ab3d05cc0b9930a89615e5204126fb994}
+
+
+get index of local replica 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_aff41000284711aabf59743195885aee8}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-input\-\_\-filename\-\_\-@{get\-\_\-input\-\_\-filename\-\_\-}}
+\index{get\-\_\-input\-\_\-filename\-\_\-@{get\-\_\-input\-\_\-filename\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-input\-\_\-filename\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-input\-\_\-filename\-\_\- (
+\begin{DoxyParamCaption}
+\item[{char $\ast$$\ast$}]{input\-\_\-name, }
+\item[{int $\ast$}]{len\-\_\-name}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_aff41000284711aabf59743195885aee8}
+
+
+Get the filename of the Tinker input. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a7afbf22df034e286a9534b3894017f32}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-mass\-\_\-atom\-\_\-@{get\-\_\-mass\-\_\-atom\-\_\-}}
+\index{get\-\_\-mass\-\_\-atom\-\_\-@{get\-\_\-mass\-\_\-atom\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-mass\-\_\-atom\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-mass\-\_\-atom\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{atom\-\_\-number, }
+\item[{double $\ast$}]{mass}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a7afbf22df034e286a9534b3894017f32}
+
+
+Get mass of given atom from Tinker. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_aae2aa279c4e84d65ad6501512c1ba5e8}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-mpi\-\_\-@{get\-\_\-mpi\-\_\-}}
+\index{get\-\_\-mpi\-\_\-@{get\-\_\-mpi\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-mpi\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-mpi\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{communicator, }
+\item[{int $\ast$}]{rank, }
+\item[{int $\ast$}]{nproc}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_aae2aa279c4e84d65ad6501512c1ba5e8}
+
+
+Get M\-P\-I communicator info from Tinker. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a61984250bf8e297dd354278251bfa7e0}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-num\-\_\-rep\-\_\-@{get\-\_\-num\-\_\-rep\-\_\-}}
+\index{get\-\_\-num\-\_\-rep\-\_\-@{get\-\_\-num\-\_\-rep\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-num\-\_\-rep\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-num\-\_\-rep\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{inter\-\_\-num}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a61984250bf8e297dd354278251bfa7e0}
+
+
+get number of replicas 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a2b4370c33140a7aaf42cb4c18e8a202d}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-output\-\_\-filename\-\_\-@{get\-\_\-output\-\_\-filename\-\_\-}}
+\index{get\-\_\-output\-\_\-filename\-\_\-@{get\-\_\-output\-\_\-filename\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-output\-\_\-filename\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-output\-\_\-filename\-\_\- (
+\begin{DoxyParamCaption}
+\item[{char $\ast$$\ast$}]{output\-\_\-name, }
+\item[{int $\ast$}]{len\-\_\-name}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a2b4370c33140a7aaf42cb4c18e8a202d}
+
+
+Get the filename of the colvars output. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_aca236f9c48341f6f9e3c146709a4aaf0}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-pbc\-\_\-@{get\-\_\-pbc\-\_\-}}
+\index{get\-\_\-pbc\-\_\-@{get\-\_\-pbc\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-pbc\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-pbc\-\_\- (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{a, }
+\item[{double $\ast$}]{b, }
+\item[{double $\ast$}]{c}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_aca236f9c48341f6f9e3c146709a4aaf0}
+
+
+Get P\-B\-C box dimensions, assuming orthorhombic cell. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_ae0a5cbbea86fadac79679e4a7e4afcfc}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-pos\-\_\-atom\-\_\-@{get\-\_\-pos\-\_\-atom\-\_\-}}
+\index{get\-\_\-pos\-\_\-atom\-\_\-@{get\-\_\-pos\-\_\-atom\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-pos\-\_\-atom\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-pos\-\_\-atom\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{atom\-\_\-number, }
+\item[{double $\ast$}]{xr, }
+\item[{double $\ast$}]{yr, }
+\item[{double $\ast$}]{zr}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_ae0a5cbbea86fadac79679e4a7e4afcfc}
+
+
+Get position of given atom from Tinker. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_ae3ee0e458a9d316bf638f1a297d0b7e7}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-restart\-\_\-filename\-\_\-@{get\-\_\-restart\-\_\-filename\-\_\-}}
+\index{get\-\_\-restart\-\_\-filename\-\_\-@{get\-\_\-restart\-\_\-filename\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-restart\-\_\-filename\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-restart\-\_\-filename\-\_\- (
+\begin{DoxyParamCaption}
+\item[{char $\ast$$\ast$}]{input\-\_\-name, }
+\item[{int $\ast$}]{len\-\_\-name}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_ae3ee0e458a9d316bf638f1a297d0b7e7}
+
+
+Check the existence of the colvars restart file through tinker. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a18f446fbdd2060fba22274c01ac74244}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-root2root\-\_\-@{get\-\_\-root2root\-\_\-}}
+\index{get\-\_\-root2root\-\_\-@{get\-\_\-root2root\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-root2root\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-root2root\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{inter\-\_\-comm}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a18f446fbdd2060fba22274c01ac74244}
+
+
+get root2root communicator 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a476aa5bb0d10dc63f4988ffd1c58a663}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-sim\-\_\-boltzmann\-\_\-@{get\-\_\-sim\-\_\-boltzmann\-\_\-}}
+\index{get\-\_\-sim\-\_\-boltzmann\-\_\-@{get\-\_\-sim\-\_\-boltzmann\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-sim\-\_\-boltzmann\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-sim\-\_\-boltzmann\-\_\- (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real $\ast$}]{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a476aa5bb0d10dc63f4988ffd1c58a663}
+\hypertarget{colvarproxy__tinkerhp__interface_8h_ae90f32757ff1dba05d52a87c2f0f8086}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-sim\-\_\-dt\-\_\-@{get\-\_\-sim\-\_\-dt\-\_\-}}
+\index{get\-\_\-sim\-\_\-dt\-\_\-@{get\-\_\-sim\-\_\-dt\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-sim\-\_\-dt\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-sim\-\_\-dt\-\_\- (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real $\ast$}]{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_ae90f32757ff1dba05d52a87c2f0f8086}
+\hypertarget{colvarproxy__tinkerhp__interface_8h_ac14fd47c44288fc3d8eab5fc4782c7d3}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-sim\-\_\-temp\-\_\-@{get\-\_\-sim\-\_\-temp\-\_\-}}
+\index{get\-\_\-sim\-\_\-temp\-\_\-@{get\-\_\-sim\-\_\-temp\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-sim\-\_\-temp\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-sim\-\_\-temp\-\_\- (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real $\ast$}]{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_ac14fd47c44288fc3d8eab5fc4782c7d3}
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a0790d493eaf31916d20c11ac1e113aeb}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-system\-\_\-size\-\_\-@{get\-\_\-system\-\_\-size\-\_\-}}
+\index{get\-\_\-system\-\_\-size\-\_\-@{get\-\_\-system\-\_\-size\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-system\-\_\-size\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-system\-\_\-size\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{size}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a0790d493eaf31916d20c11ac1e113aeb}
+
+
+Number of atoms. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a9315e17cbcd3aecfe7c7ad4f5ba99076}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!get\-\_\-use\-\_\-reps\-\_\-@{get\-\_\-use\-\_\-reps\-\_\-}}
+\index{get\-\_\-use\-\_\-reps\-\_\-@{get\-\_\-use\-\_\-reps\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{get\-\_\-use\-\_\-reps\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void get\-\_\-use\-\_\-reps\-\_\- (
+\begin{DoxyParamCaption}
+\item[{bool $\ast$}]{doreplica}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a9315e17cbcd3aecfe7c7ad4f5ba99076}
+
+
+get use of replicas 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_aa3f6329fe911357f2b71e76e0b0da41f}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!init\-\_\-lambda@{init\-\_\-lambda}}
+\index{init\-\_\-lambda@{init\-\_\-lambda}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{init\-\_\-lambda}]{\setlength{\rightskip}{0pt plus 5cm}void init\-\_\-lambda (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_aa3f6329fe911357f2b71e76e0b0da41f}
+
+
+Called from Tinker\-: get value of lambda from Colvars. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a7e9988797a6bf40e62b36c15938f36ba}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!pbc\-\_\-image\-\_\-@{pbc\-\_\-image\-\_\-}}
+\index{pbc\-\_\-image\-\_\-@{pbc\-\_\-image\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{pbc\-\_\-image\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void pbc\-\_\-image\-\_\- (
+\begin{DoxyParamCaption}
+\item[{cvm\-::rvector $\ast$}]{r1, }
+\item[{cvm\-::rvector $\ast$}]{r2, }
+\item[{cvm\-::rvector $\ast$}]{dr}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a7e9988797a6bf40e62b36c15938f36ba}
+
+
+Apply minimum image convention using Tinker's P\-B\-C to a distance vector. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a4eb683378d5bec070832f72c9266ec2c}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!rand\-\_\-colvars\-\_\-@{rand\-\_\-colvars\-\_\-}}
+\index{rand\-\_\-colvars\-\_\-@{rand\-\_\-colvars\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{rand\-\_\-colvars\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void rand\-\_\-colvars\-\_\- (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real $\ast$}]{}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a4eb683378d5bec070832f72c9266ec2c}
+
+
+Referenced by colvarproxy\-\_\-tinkerhp\-::rand\-\_\-gaussian().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=320pt]{colvarproxy__tinkerhp__interface_8h_a4eb683378d5bec070832f72c9266ec2c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_ac51a3a7cf15db9ebcb6ab963bdafcb55}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!set\-\_\-alch\-\_\-lambda\-\_\-@{set\-\_\-alch\-\_\-lambda\-\_\-}}
+\index{set\-\_\-alch\-\_\-lambda\-\_\-@{set\-\_\-alch\-\_\-lambda\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{set\-\_\-alch\-\_\-lambda\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void set\-\_\-alch\-\_\-lambda\-\_\- (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{lambda}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_ac51a3a7cf15db9ebcb6ab963bdafcb55}
+
+
+Set value of alchemical lambda parameter in back-\/end. 
+
+
+
+Referenced by colvarproxy\-\_\-tinkerhp\-::send\-\_\-alch\-\_\-lambda().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=340pt]{colvarproxy__tinkerhp__interface_8h_ac51a3a7cf15db9ebcb6ab963bdafcb55_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a150f42c74cc5333867d475f871bb1659}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!set\-\_\-cvatoms\-\_\-ids\-\_\-@{set\-\_\-cvatoms\-\_\-ids\-\_\-}}
+\index{set\-\_\-cvatoms\-\_\-ids\-\_\-@{set\-\_\-cvatoms\-\_\-ids\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{set\-\_\-cvatoms\-\_\-ids\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void set\-\_\-cvatoms\-\_\-ids\-\_\- (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{ncvatoms, }
+\item[{int $\ast$}]{cvatoms\-\_\-ids}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a150f42c74cc5333867d475f871bb1659}
+
+
+Send I\-Ds of Colvars atoms to Tinker. 
+
+\hypertarget{colvarproxy__tinkerhp__interface_8h_a93c823cb5ca31938ed2076d572c20088}{\index{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}!set\-\_\-use\-\_\-colvars\-\_\-@{set\-\_\-use\-\_\-colvars\-\_\-}}
+\index{set\-\_\-use\-\_\-colvars\-\_\-@{set\-\_\-use\-\_\-colvars\-\_\-}!colvarproxy_tinkerhp_interface.h@{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h}}
+\subsubsection[{set\-\_\-use\-\_\-colvars\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}void set\-\_\-use\-\_\-colvars\-\_\- (
+\begin{DoxyParamCaption}
+\item[{bool $\ast$}]{use\-\_\-colvars}
+\end{DoxyParamCaption}
+)}}\label{colvarproxy__tinkerhp__interface_8h_a93c823cb5ca31938ed2076d572c20088}
+
+
+Handle colvars flag. 
+

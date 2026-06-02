@@ -1,0 +1,70 @@
+\hypertarget{dcflux_8f90}{\section{dcflux.\-f90 File Reference}
+\label{dcflux_8f90}\index{dcflux.\-f90@{dcflux.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{dcflux_8f90_a99a43f1406bde4ababdc3cf497751592}{dcflux} (pot, dcfx, dcfy, dcfz)
+\begin{DoxyCompactList}\small\item\em takes as input the electrostatic potential at each atomic site and calculates gradient chain rule terms due to charge flux coupling with bond stretching and angle bending \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{dcflux_8f90_a99a43f1406bde4ababdc3cf497751592}{\index{dcflux.\-f90@{dcflux.\-f90}!dcflux@{dcflux}}
+\index{dcflux@{dcflux}!dcflux.f90@{dcflux.\-f90}}
+\subsubsection[{dcflux}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dcflux (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{pot, }
+\item[{real$\ast$8, dimension($\ast$)}]{dcfx, }
+\item[{real$\ast$8, dimension($\ast$)}]{dcfy, }
+\item[{real$\ast$8, dimension($\ast$)}]{dcfz}
+\end{DoxyParamCaption}
+)}}\label{dcflux_8f90_a99a43f1406bde4ababdc3cf497751592}
+
+
+takes as input the electrostatic potential at each atomic site and calculates gradient chain rule terms due to charge flux coupling with bond stretching and angle bending 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em pot,\-:} & electrostatic potential at each site \\
+\hline
+\mbox{\tt in}  & {\em dcfx,\-:} & derivative contribution on x coordinate \\
+\hline
+\mbox{\tt in}  & {\em dcfy,\-:} & derivative contribution on y coordinate \\
+\hline
+\mbox{\tt in}  & {\em dcfz,\-:} & derivative contribution on z coordinate \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 28 of file dcflux.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by empole1c(), emreal1c(), emrecip1(), epreal1c(), and eprecip1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=210pt]{dcflux_8f90_a99a43f1406bde4ababdc3cf497751592_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dcflux_8f90_a99a43f1406bde4ababdc3cf497751592_icgraph}
+\end{center}
+\end{figure}
+
+

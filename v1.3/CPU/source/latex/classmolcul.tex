@@ -1,0 +1,164 @@
+\hypertarget{classmolcul}{\section{molcul Module Reference}
+\label{classmolcul}\index{molcul@{molcul}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classmolcul_a56c256c5f7cdbf7b7a267b5003c776ec}{nmol}
+\begin{DoxyCompactList}\small\item\em total number of separate molecules in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classmolcul_a7f367e6c4c29a8349ee56c6a9a57f627}{nmoleloc}
+\begin{DoxyCompactList}\small\item\em local number of separate molecules in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classmolcul_a9d2b904765f02dba80da18d3649983d8}{winmolcule}
+\begin{DoxyCompactList}\small\item\em window object corresponding to molcule \end{DoxyCompactList}\item 
+integer \hyperlink{classmolcul_a3d4317cc7eda6c46c437b0a7ebf01903}{winkmol}
+\begin{DoxyCompactList}\small\item\em window object corresponding to kmol \end{DoxyCompactList}\item 
+integer \hyperlink{classmolcul_a7f2c0c497b9a26ac237be07ca2b484f7}{winimol}
+\begin{DoxyCompactList}\small\item\em window object corresponding to imol \end{DoxyCompactList}\item 
+integer \hyperlink{classmolcul_a9a1c4cd5046394b3cadb077ff1eb2469}{winmolmass}
+\begin{DoxyCompactList}\small\item\em window object corresponding to molmass \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmolcul_a392adc76fde1d59a6a1e83c5df1c579e}{molcule}
+\begin{DoxyCompactList}\small\item\em number of the molecule to which each atom belongs \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmolcul_a68ecb576dc71334e7f535677a9dc3c76}{kmol}
+\begin{DoxyCompactList}\small\item\em contiguous list of the atoms in each molecule \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), pointer \hyperlink{classmolcul_a41c6859685f9066e79f213be0050aaa8}{imol}
+\begin{DoxyCompactList}\small\item\em first and last atom of each molecule in the list \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmolcul_a76ebf02e788b2fc31b96c58c63d07222}{totmass}
+\begin{DoxyCompactList}\small\item\em total weight of all the molecules in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classmolcul_a7e75c1830e47e428055595f4c8772207}{molmass}
+\begin{DoxyCompactList}\small\item\em molecular weight for each molecule in the system \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-molcul.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classmolcul_a41c6859685f9066e79f213be0050aaa8}{\index{molcul@{molcul}!imol@{imol}}
+\index{imol@{imol}!molcul@{molcul}}
+\subsubsection[{imol}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), pointer molcul\-::imol}}\label{classmolcul_a41c6859685f9066e79f213be0050aaa8}
+
+
+first and last atom of each molecule in the list 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a68ecb576dc71334e7f535677a9dc3c76}{\index{molcul@{molcul}!kmol@{kmol}}
+\index{kmol@{kmol}!molcul@{molcul}}
+\subsubsection[{kmol}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer molcul\-::kmol}}\label{classmolcul_a68ecb576dc71334e7f535677a9dc3c76}
+
+
+contiguous list of the atoms in each molecule 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a392adc76fde1d59a6a1e83c5df1c579e}{\index{molcul@{molcul}!molcule@{molcule}}
+\index{molcule@{molcule}!molcul@{molcul}}
+\subsubsection[{molcule}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer molcul\-::molcule}}\label{classmolcul_a392adc76fde1d59a6a1e83c5df1c579e}
+
+
+number of the molecule to which each atom belongs 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a7e75c1830e47e428055595f4c8772207}{\index{molcul@{molcul}!molmass@{molmass}}
+\index{molmass@{molmass}!molcul@{molcul}}
+\subsubsection[{molmass}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer molcul\-::molmass}}\label{classmolcul_a7e75c1830e47e428055595f4c8772207}
+
+
+molecular weight for each molecule in the system 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a56c256c5f7cdbf7b7a267b5003c776ec}{\index{molcul@{molcul}!nmol@{nmol}}
+\index{nmol@{nmol}!molcul@{molcul}}
+\subsubsection[{nmol}]{\setlength{\rightskip}{0pt plus 5cm}integer molcul\-::nmol}}\label{classmolcul_a56c256c5f7cdbf7b7a267b5003c776ec}
+
+
+total number of separate molecules in the system 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a7f367e6c4c29a8349ee56c6a9a57f627}{\index{molcul@{molcul}!nmoleloc@{nmoleloc}}
+\index{nmoleloc@{nmoleloc}!molcul@{molcul}}
+\subsubsection[{nmoleloc}]{\setlength{\rightskip}{0pt plus 5cm}integer molcul\-::nmoleloc}}\label{classmolcul_a7f367e6c4c29a8349ee56c6a9a57f627}
+
+
+local number of separate molecules in the system 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a76ebf02e788b2fc31b96c58c63d07222}{\index{molcul@{molcul}!totmass@{totmass}}
+\index{totmass@{totmass}!molcul@{molcul}}
+\subsubsection[{totmass}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 molcul\-::totmass}}\label{classmolcul_a76ebf02e788b2fc31b96c58c63d07222}
+
+
+total weight of all the molecules in the system 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a7f2c0c497b9a26ac237be07ca2b484f7}{\index{molcul@{molcul}!winimol@{winimol}}
+\index{winimol@{winimol}!molcul@{molcul}}
+\subsubsection[{winimol}]{\setlength{\rightskip}{0pt plus 5cm}integer molcul\-::winimol}}\label{classmolcul_a7f2c0c497b9a26ac237be07ca2b484f7}
+
+
+window object corresponding to imol 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a3d4317cc7eda6c46c437b0a7ebf01903}{\index{molcul@{molcul}!winkmol@{winkmol}}
+\index{winkmol@{winkmol}!molcul@{molcul}}
+\subsubsection[{winkmol}]{\setlength{\rightskip}{0pt plus 5cm}integer molcul\-::winkmol}}\label{classmolcul_a3d4317cc7eda6c46c437b0a7ebf01903}
+
+
+window object corresponding to kmol 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a9d2b904765f02dba80da18d3649983d8}{\index{molcul@{molcul}!winmolcule@{winmolcule}}
+\index{winmolcule@{winmolcule}!molcul@{molcul}}
+\subsubsection[{winmolcule}]{\setlength{\rightskip}{0pt plus 5cm}integer molcul\-::winmolcule}}\label{classmolcul_a9d2b904765f02dba80da18d3649983d8}
+
+
+window object corresponding to molcule 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-molcul.\-f90.
+
+\hypertarget{classmolcul_a9a1c4cd5046394b3cadb077ff1eb2469}{\index{molcul@{molcul}!winmolmass@{winmolmass}}
+\index{winmolmass@{winmolmass}!molcul@{molcul}}
+\subsubsection[{winmolmass}]{\setlength{\rightskip}{0pt plus 5cm}integer molcul\-::winmolmass}}\label{classmolcul_a9a1c4cd5046394b3cadb077ff1eb2469}
+
+
+window object corresponding to molmass 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-molcul.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__molcul_8f90}{M\-O\-D\-\_\-molcul.\-f90}\end{DoxyCompactItemize}

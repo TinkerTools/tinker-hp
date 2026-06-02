@@ -1,0 +1,149 @@
+Deep-\/\-H\-P is a multi-\/\-G\-P\-U deep learning potential platform, part of the Tinker-\/\-H\-P molecular dynamics package and aims to couple deep learning with force fields for biological simulations.
+
+\section*{What is Deep-\/\-H\-P?}
+
+Deep-\/\-H\-P aims to democratize the use of deep learning in biological simulations. \par
+ More precisely, Deep-\/\-H\-P aims at scaling up {\bfseries deep learning potential code from laptop to hexascale and from quantum chemistry to biophysics}. Deep-\/\-H\-P ultimate goal is the unification within a reactive molecular dynamics many-\/body interaction potential of the short-\/range quantum mechanical accuracy and of long-\/range classical effects, at force field computational cost. Application of Deep-\/\-H\-P span from drug-\/like molecule to proteins and D\-N\-A.
+
+What can I do? Here's a few examples\-:
+\begin{DoxyItemize}
+\item Combine trained machine learning potential with force fields (long-\/range interactions, polarization effects ...)
+\item Compute solvation free energies of drug-\/like molecules.
+\item Compute binding free energies.
+\item Conformational sampling with state-\/of-\/the-\/art enhanced sampling techniques (Colvars, Plumed).
+\item ...
+\item Everything than before but with machine learning and faster
+\item For more check-\/out \href{https://tinkertools.org/}{\tt Tinker\-Tools}, \href{https://tinker-hp.org/}{\tt Tinker-\/\-H\-P}
+\end{DoxyItemize}
+
+\section*{Key features}
+
+
+\begin{DoxyItemize}
+\item {\bfseries Compatible with Tensor\-Flow and Pytorch}, among the most popular and efficient machine learning libraries that encompass almost all possible deep learning architectures.
+\item {\bfseries Easy combination with Torch\-A\-N\-I and Dee\-P\-M\-D models}
+\item {\bfseries Performing highly efficient classical molecular dynamics with your deep learning model} thanks to the highly optimized G\-P\-U-\/resident Tinker-\/\-H\-P code. Tinker-\/\-H\-P and Tinker9 are the fastest code for many-\/body polarizable force fields.
+\item {\bfseries And also ... quantum molecular dynamics} with our new extension, coming soon, with path-\/integral, adaptive quantum thermal bath, ...
+\item {\bfseries Combine molecular dynamics with state-\/of-\/the-\/art enhanced sampling techniques} through the recent coupling with P\-L\-U\-M\-E\-D and Colvars.
+\end{DoxyItemize}
+
+\section*{Run Deep-\/\-H\-P}
+
+Deep-\/\-H\-P has only two {\bfseries K\-E\-Y\-W\-O\-R\-D\-S}\-: {\ttfamily M\-L\-P\-O\-T} and {\ttfamily M\-L-\/\-M\-O\-D\-E\-L}.
+
+{\ttfamily M\-L\-P\-O\-T} sets the type of simulation\-:
+\begin{DoxyItemize}
+\item {\ttfamily M\-L\-P\-O\-T N\-O\-N\-E} deactivates the machine learning potential evaluation
+\item {\ttfamily M\-L\-P\-O\-T O\-N\-L\-Y} activates only the machine learning potential (Example 1, 3, 6)
+\item {\ttfamily M\-L\-P\-O\-T} activates the machine learning potential but also the force field. As both are evaluated at each time step don't forget to disable the terms of the forcefield you don't want to use (Example 2)
+\item {\ttfamily M\-L\-P\-O\-T E\-M\-B\-E\-D\-D\-I\-N\-G} actives the machine learning potential on a group of atoms, like a Q\-M/\-M\-M embedding. (Example 4, 5)
+\end{DoxyItemize}
+
+{\ttfamily M\-L-\/\-M\-O\-D\-E\-L} sets the machine learning model. For Tinker-\/\-H\-P native machine learning model, \href{https://pubs.rsc.org/en/content/articlehtml/2017/sc/c6sc05720a}{\tt A\-N\-I1\-X}, \href{https://www.nature.com/articles/s41467-019-10827-4}{\tt A\-N\-I1\-C\-C\-X}, \href{https://pubs.acs.org/doi/full/10.1021/acs.jctc.0c00121}{\tt A\-N\-I2\-X} and \href{https://pubs.acs.org/doi/full/10.1021/acs.jpclett.2c00936}{\tt M\-L\-\_\-\-M\-B\-D}, {\bfseries K\-E\-Y\-W\-O\-R\-D\-S} are explicit\-:
+\begin{DoxyItemize}
+\item {\ttfamily M\-L-\/\-M\-O\-D\-E\-L A\-N\-I2\-X} uses A\-N\-I2\-X as machine learning potential. Same for A\-N\-I1\-X, A\-N\-I1\-C\-X\-X and M\-L\-\_\-\-M\-B\-D. (Example 1, 2, 4, 5, 6)
+\end{DoxyItemize}
+
+For non native machine learning models, things work similarly. You should put your machine learning potential model inside your simulation directory (with your .xyz and .key files) and write explicity the name, including extension, of your model. \par
+ The begining of the {\bfseries K\-E\-Y\-W\-O\-R\-D\-S} depends of whether the model was built with Torch\-A\-N\-I or \href{https://docs.deepmodeling.com/projects/deepmd/en/master/index.html}{\tt Dee\-P\-M\-D}\-:
+\begin{DoxyItemize}
+\item {\ttfamily M\-L-\/\-M\-O\-D\-E\-L A\-N\-I\-\_\-\-G\-E\-N\-E\-R\-I\-C my\-\_\-mlp\-\_\-model.\-pt \# my\-\_\-mlp\-\_\-model.\-json my\-\_\-mlp\-\_\-model.\-pkl my\-\_\-mlp\-\_\-model.\-yaml}
+\item {\ttfamily M\-L-\/\-M\-O\-D\-E\-L D\-E\-E\-P\-M\-D my\-\_\-mlp\-\_\-model.\-pb} (Example 3)
+\end{DoxyItemize}
+
+Warning\-: Almost all Tinker-\/\-H\-P features are compatible with Deep-\/\-H\-P such as R\-E\-S\-P\-A and R\-E\-S\-P\-A1 integrators {\bfseries B\-U\-T} the splitting used is a bit different from A\-M\-O\-E\-B\-A and is {\bfseries only available when using the embedding scheme} {\ttfamily M\-L\-P\-O\-T E\-M\-B\-E\-D\-D\-I\-N\-G}. To understand why, have a look in section 2.\-3.\-5 of \href{https://arxiv.org/pdf/2207.14276.pdf}{\tt our paper}
+
+\subsection*{Torch\-A\-N\-I format}
+
+If your {\ttfamily model} was trained with Torch\-A\-N\-I, you don't have to do anything in particular but make sure that \-:warning\-: {\bfseries your predicted energies is in Hartree and atomic coordinates is in Angstrom} \-:warning\-: (default units in Torch\-A\-N\-I). Tinker-\/\-H\-P will convert it to kcal/mol. \par
+ For more informations have a look at \href{https://aiqm.github.io/torchani/examples/energy_force.html}{\tt Torch\-A\-N\-I} or directly in our source code extension located in your tinkerml environment {\ttfamily /home/user/.../anaconda3/envs/tinkerml/lib/python3.9/site-\/packages/torchani}. \par
+ Our Torch\-A\-N\-I extension has also functions that convert your {\ttfamily model} in {\ttfamily pkl}, {\ttfamily yaml} and {\ttfamily json} formats. These formats are more compact and readable than Torch\-A\-N\-I's {\ttfamily jit} format. \par
+ But more importantly, when you are saving a {\ttfamily model} in {\ttfamily jit} format you are saving the whole code and you will not be able to use Tinker-\/\-H\-P's full capabilities for example its highly efficient neighbor list and thus use multi-\/\-G\-P\-U, Particle Mesh Ewald,... \par
+ We recommend to save your model in {\ttfamily pkl}, {\ttfamily yaml} or {\ttfamily json} formats. Here is a python code that explain how to do it, starting from this \href{https://aiqm.github.io/torchani/examples/nnp_training.html}{\tt Example} of Torch\-A\-N\-I\-:
+
+
+\begin{DoxyCode}
+1 \textcolor{comment}{# ...}
+2 \textcolor{comment}{# once you have trained your model:}
+3 model = torchani.nn.Sequential(aev\_computer, nn).to(device)
+4 \textcolor{comment}{# ...}
+5 \_, predicted\_energies = model((species, coordinates))
+6 \textcolor{comment}{# ...}
+7 \textcolor{comment}{# you can save it with:}
+8 model.to\_json(\textcolor{stringliteral}{"my\_mlp\_model.json"})
+9 model.to\_pickle(\textcolor{stringliteral}{"my\_mlp\_model.pkl"})
+10 model.to\_yaml(\textcolor{stringliteral}{"my\_mlp\_model.yaml"})
+\end{DoxyCode}
+
+
+\subsection*{Dee\-P\-M\-D}
+
+For Dee\-P\-M\-D it is similar but we don't provide other formats than the original {\ttfamily pb}. \par
+ \-:warning\-: {\bfseries In Dee\-P\-M\-D the predicted energies are in e\-V and atomic coordinates are in Angstrom} (default units in Dee\-P\-M\-D). Tinker-\/\-H\-P will convert it to kcal/mol.
+
+\section*{Example}
+
+We provide 6 examples that encompass the basics of Deep-\/\-H\-P inputs with which you can cover a wide range of applications. They are located in {\ttfamily /home/user/.../tinker-\/hp/\-G\-P\-U/examples/}. Some toy machine learning potential models are located in {\ttfamily /home/user/.../tinker-\/hp/\-G\-P\-U/ml\-\_\-models/}.
+
+
+\begin{DoxyItemize}
+\item {\bfseries Example 1\-:} \par
+ {\itshape Objective}\-: Perform machine learning potential simulation -\/ on the full system. \par
+ Simulation parameter\-: N\-P\-T with montecarlo barostat, velocity-\/verlet integrator and A\-N\-I2\-X potential. \par
+ Command\-: -\/$>$\-: {\ttfamily mpirun -\/np 1 ../bin/dynamic\-\_\-$<$ext$>$ Deep-\/\-H\-P\-\_\-example1 1000 0.\-2 100 4 300 1} \par
+
+\item {\bfseries Example 2\-:} \par
+ {\itshape Objective}\-: Perform hybrid machine learning potential/\-M\-M simulation -\/ on the full system.\par
+ Simulation parameter\-: N\-P\-T with montecarlo barostat, velocity-\/verlet integrator and hybrid A\-N\-I2\-X/\-A\-M\-O\-E\-B\-A Vd\-W energy.\par
+ Command\-: -\/$>$\-: {\ttfamily mpirun -\/np 1 ../bin/dynamic\-\_\-$<$ext$>$ Deep-\/\-H\-P\-\_\-example2 1000 0.\-2 100 4 300 1}\par
+
+\item {\bfseries Example 3\-:}\par
+ {\itshape Objective}\-: Perform Dee\-P\-M\-D machine learning potential simulation -\/ on the full system.\par
+ Simulation parameter\-: N\-P\-T with montecarlo barostat, velocity-\/verlet integrator and a simple trained Dee\-P\-M\-D potential. \par
+ Command\-: -\/$>$ {\ttfamily mpirun -\/np 1 ../bin/dynamic\-\_\-$<$ext$>$ Deep-\/\-H\-P\-\_\-example3 1000 0.\-2 100 4 300 1}\par
+
+\item {\bfseries Example 4\-:}\par
+ {\itshape Objective}\-: Perform hybrid machine learning potential/\-M\-M simulation -\/ on a ligand of the S\-A\-M\-P\-L4 challenge.\par
+ Simulation parameter\-: N\-P\-T with montecarlo barostat, R\-E\-S\-P\-A integrator with 0.\-2fs inner time-\/step/ 2fs outer time-\/step and A\-N\-I2\-X potential applied only to ligand-\/ligand interactions (atoms 1 to 24), ligand-\/water and water-\/water interactions use A\-M\-O\-E\-B\-A.\par
+ Note\-: You can try with the {\ttfamily integrator respa1} with the following settings {\ttfamily dshort 0.\-0002} (0.\-2fs), {\ttfamily dinter 0.\-001} (1fs) and use 3fs as outer time-\/step. It is safer for the dynamics stability to also enable {\ttfamily heavy-\/hydrogen}. Command -\/$>$ {\ttfamily mpirun -\/np 1 ../bin/dynamic\-\_\-$<$ext$>$ Deep-\/\-H\-P\-\_\-example4 1000 2.\-0 100 4 300 1}\par
+
+\item {\bfseries Example 5\-:}\par
+ {\itshape Objective}\-: Perform hybrid machine learning potential/\-M\-M simulation -\/ on a host-\/guest complex of the S\-A\-M\-P\-L4 challenge.\par
+ Simulation parameter\-: N\-P\-T with montecarlo barostat, R\-E\-S\-P\-A integrator with 0.\-2fs inner time-\/step/ 2fs outer time-\/step and A\-N\-I2\-X potential applied only to ligand-\/ligand interactions (atoms 1 to 24), the rest of the interactions use A\-M\-O\-E\-B\-A.\par
+ Note\-: You can try with the {\ttfamily integrator respa1} with the following setting {\ttfamily dshort 0.\-0002} (0.\-2fs), {\ttfamily dinter 0.\-001} (1fs) and use 3fs as outer time-\/step. It is safer for the dynamics stability to also enable {\ttfamily heavy-\/hydrogen}. Command -\/$>$ {\ttfamily mpirun -\/np 1 ../bin/dynamic\-\_\-$<$ext$>$ Deep-\/\-H\-P\-\_\-example5 1000 2.\-0 100 4 300 1}\par
+
+\item {\bfseries Example 6\-:}\par
+ {\itshape Objective\-:} Perform machine learning potential simulation -\/ on the full system (100000 atoms) with 2 G\-P\-Us.\par
+ Simulation parameter\-: N\-P\-T with montecarlo barostat, velocity-\/verlet integrator and A\-N\-I2\-X potential.\par
+ Command\-: -\/$>$ {\ttfamily mpirun -\/np 2 ../bin/dynamic\-\_\-$<$ext$>$ Deep-\/\-H\-P\-\_\-example5 1000 0.\-2 100 4 300 1}\par
+
+\end{DoxyItemize}
+
+\section*{Contact}
+
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.\par
+
+
+If you want to add your favorite machine learning potential code inside Deep-\/\-H\-P, Contact us\-:
+\begin{DoxyItemize}
+\item \href{mailto:jean-philip.piquemal@sorbonne-universite.fr}{\tt jean-\/philip.\-piquemal@sorbonne-\/universite.\-fr}
+\end{DoxyItemize}
+
+\section*{Please Cite}
+
+
+\begin{DoxyCode}
+@misc\{https:\textcolor{comment}{//doi.org/10.48550/arxiv.2207.14276,}
+  doi = \{10.48550/ARXIV.2207.14276\},
+  url = \{https:\textcolor{comment}{//arxiv.org/abs/2207.14276\},}
+  author = \{Jaffrelot Inizan, Théo and Plé, Thomas and Adjoua, Olivier and Ren, Pengyu and Gökcan, Hattice 
+      and Isayev, Olexandr and Lagardère, Louis and Piquemal, Jean-Philip\},
+  keywords = \{Chemical Physics (physics.chem-ph), FOS: Physical sciences, FOS: Physical sciences\},
+  title = \{Scalable Hybrid Deep Neural Networks/Polarizable Potentials Biomolecular Simulations including \textcolor{keywordtype}{
+      long}-range effects\},
+  publisher = \{arXiv\},
+  year = \{2022\},
+  copyright = \{Creative Commons Attribution 4.0 International\}
+\}
+\end{DoxyCode}
+ 

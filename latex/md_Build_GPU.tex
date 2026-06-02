@@ -1,0 +1,123 @@
+\subsection*{Direct Build}
+
+For most users, we recommend this relatively accessible method which lies on a bash installation script named {\ttfamily /tinker-\/hp/\-G\-P\-U/ci/install/sh}. After setting your environment according to the Prerequisites, change directory to the G\-P\-U folder, edit the configuration section of the installation script to select your build and proceed with the commands below.
+
+
+\begin{DoxyCode}
+$> pwd
+\textcolor{preprocessor}{#> /home/$user/.../tinker-hp/GPU}
+\textcolor{preprocessor}{$> ./ci/install.sh}
+\end{DoxyCode}
+
+
+This script will create and install two types of binaries for every applications. Double and mixed precision program will be available by the end of the installation, in the installdir. As long as you stand for one configuration at the time, The installation script will serve as an ideal build assistant. In the event of the installation script failure, we recommend to follow one the procedures given below.
+
+\subsubsection*{Configuration}
+
+The configuration section of {\ttfamily ci/install.\-sh} lists some variables which are passed to the Makefile during the compiling stage. Edit this part according to your need, before executing the script. We keep this section updated as the development progresses.
+\begin{DoxyItemize}
+\item {\ttfamily dbuild} for out-\/of-\/source build. If interested in an other configuration without losing the previous object files, you may use a different value like {\ttfamily \$tinkerdir/build1}
+\item {\ttfamily target\-\_\-arch} control the target platform architecture. Decide whether the build should target C\-P\-Us or G\-P\-Us
+\item {\ttfamily c\-\_\-c} Stand for compute capability. It is specific to the G\-P\-U device. Default option target every Nvidia G\-P\-U from Pascal architecture to Ampere.
+\item {\ttfamily build\-\_\-plumed} (switch) enables/disables {\itshape P\-L\-U\-M\-E\-D} interface. P\-L\-U\-M\-E\-D is automatically built
+\item {\ttfamily build\-\_\-colvars} (switch) enables/disables {\itshape C\-O\-L\-V\-A\-R\-S} interface. C\-O\-L\-V\-A\-R is automatically built
+\item {\ttfamily N\-N} (switch) enables/disables Neural Network python interface.
+\item {\ttfamily F\-P\-A} (switch) enables/disables fixed precision arithmetic in mixed precision (enabled by default)
+\end{DoxyItemize}
+
+\begin{DoxyWarning}{Warning}
+Requires a C\-U\-D\-A python environment consistent with the installation one before building.
+\end{DoxyWarning}
+\subsection*{Using Makefile}
+
+This part concerns every developers or anyone familiar enough with source code compilation. {\ttfamily G\-P\-U/source/\-Makefile.\-pgi} allows every type of build. By editing configurations variables you can change default compilers, adapts flags, rename libraries, and so on. Here is the description of the useful variables need to configure your own build's.
+
+\subsubsection*{Configuration variables}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily N\-V\-T\-X\-\_\-\-S\-U\-P\-P\-O\-R\-T} enables N\-V\-T\-X markers during profiling if set to 1. This option is not useful in release construct.
+\item {\ttfamily N\-V\-S\-H\-M\-E\-M\-\_\-\-S\-U\-P\-P\-O\-R\-T} enables build with nvshmem library if set to 1. This option requires {\ttfamily N\-V\-S\-H\-M\-E\-M\-\_\-\-H\-O\-M\-E} variable to be set on nvshmem install directory. It has not been tested with recent Nvidia H\-P\-C package.
+\item {\ttfamily N\-O\-\_\-\-M\-U\-T\-A\-T\-I\-O\-N} disables soft-\/core computation if set to 1
+\item {\ttfamily F\-P\-A\-\_\-\-S\-U\-P\-P\-O\-R\-T} enables fixed point arithmetic in non-\/\-Bonded Forces and energy reduction if set to 1. It requires mixed precision to be enabled through the Makefile precision variable.
+\item {\ttfamily P\-L\-U\-M\-E\-D\-\_\-\-S\-U\-P\-P\-O\-R\-T} builds and link both Tinker-\/\-H\-P and Plumed Package supplied next to it.
+\item {\ttfamily N\-N\-\_\-\-S\-U\-P\-P\-O\-R\-T} builds, interfaces and links Tinker-\/\-H\-P with machine learning code
+\item {\ttfamily arch=(host$|$\mbox{[}device\mbox{]}) .or. (cpu$|$\mbox{[}gpu\mbox{]})} allows you to select target architecture
+\item {\ttfamily prec=(single$|$mixed$|$\mbox{[}double\mbox{]}) .or. (s$|$m$|$\mbox{[}d\mbox{]})} changes the precision build
+\item {\ttfamily prefix=(path/$|$\mbox{[}../bin\mbox{]})} controls the installation directory
+\item {\ttfamily prog\-\_\-suffix=(any\-\_\-string$|$\mbox{[}\mbox{]})} append suffix to install binary. This variable may allow you to have multiple binaries in the installation directory. For instance {\ttfamily analyze} or {\ttfamily analyze.\-gpu}
+\item {\ttfamily compute\-\_\-capability=(list$|$\mbox{[}60,70\mbox{]})} selects the device's compute capability for the construct. this variable shall accept a list of compute capability separated by a comma. e.\-g. {\ttfamily compute\-\_\-capability=35,60,75,80}
+\item {\ttfamily cuda\-\_\-version=(\mbox{[}10.\-1\mbox{]})} contains the cuda version to be used for construct. {\itshape P\-G\-I 19.\-10} compilers only supports {\itshape cuda 9.\-2 10.\-0 and 10.\-1} for Open\-A\-C\-C. To be consistent with the construct, we strongly recommend to use the same version of C\-U\-D\-A compiler as your Open\-A\-C\-C compiler.
+\item {\ttfamily opt=(debug$|$debug+$|$\mbox{[}release\mbox{]})} decides the optimization level of the compilation
+\end{DoxyItemize}
+
+\subsubsection*{Some targets}
+
+
+\begin{DoxyItemize}
+\item {\ttfamily create\-\_\-build} ; Used In association with B\-U\-I\-L\-D\-\_\-\-D\-I\-R will create a new build directory with links to source files and {\itshape source/\-Makefile.\-pgi}. When B\-U\-I\-L\-D\-\_\-\-D\-I\-R is not specified, the default directory is {\ttfamily build/}. This target become useful when you want to keep object's files from a different build.
+
+\begin{DoxyNote}{Note}
+Depending on the precision you might have to rebuild the {\ttfamily 2decomp\-\_\-fft} library. e.\-g. {\ttfamily make create\-\_\-build B\-U\-I\-L\-\_\-\-D\-I\-R=../build-\/mix}
+\end{DoxyNote}
+
+\item {\ttfamily 2decomp\-\_\-fft\-\_\-rebuild} ; This phony target allow you to rebuild 2decomp\-\_\-fft library in double precision Since the compilation uses the same directory for 2decomp\-\_\-fft, you might want to be sure that your library is being compiled into the correct precision
+\item {\ttfamily 2decomp\-\_\-fft\-\_\-rebuild\-\_\-single} ; Same as previous target but except from the precision's construct which happen here to in single. There is only two precision modes for 2decomp\-\_\-fft Library. Tinker mixed precision building requires 2decomp\-\_\-fft single precision library.
+\item {\ttfamily thrust} ; Build the wrapper on C\-U\-D\-A thrust library
+\item {\ttfamily thrust\-\_\-lib\-\_\-rebuild} ; \mbox{[}Re\mbox{]}Build the wrapper on C\-U\-D\-A thrust library
+\item {\ttfamily plumed} ; Build and Install Plumed Libraries required by Tinker-\/\-H\-P
+\item {\ttfamily libtinker} builds {\ttfamily libtinker.\-a}
+\item {\ttfamily all} $\ast$(default target)$\ast$ ; compile link and install {\ttfamily bin/analyze} {\ttfamily bin/bar} {\ttfamily bin/dynamic} and {\ttfamily bin/minimize}. If you just want one program to be build just enter {\ttfamily make $<$program$>$}. e.\-g. {\ttfamily make analyze dynamic}
+\item {\ttfamily \mbox{[}dynamic$|$analyze$|$minimize\mbox{]}.mixed} ; deprecated compiles link and install analyze$|$dynamic$|$minimize.mixed $\ast$(mixed precision)$\ast$. Those specific targets call behind {\ttfamily make} on their main target. Only used one at the time to avoid over building. e.\-g. {\ttfamily make analyze.\-mixed -\/j4} is fine
+\item {\ttfamily \mbox{[}dynamic$|$analyze$|$minimize\mbox{]}.single} ; deprecated compiles link and install analyze$|$dynamic$|$minimize.single $\ast$(full single precision executables)$\ast$.
+\item {\ttfamily \mbox{[}dynamic$|$analyze$|$minimize\mbox{]}.cpu} ; deprecated compiles link and install analyze$|$dynamic$|$minimize.cpu. C\-P\-U binaries
+\end{DoxyItemize}
+
+\subsection*{Custom Build}
+
+Let suggest that we want C\-P\-U binaries in double precision combined with an out-\/of-\/source build by hand. After linking {\ttfamily source/\-Makefile.\-pgi} to {\ttfamily source/\-Makefile}, we should follow the next script for an out-\/of-\/source build \-:
+
+
+\begin{DoxyCode}
+$> pwd
+\textcolor{preprocessor}{#> /home/$user/.../tinker-hp/GPU}
+\textcolor{preprocessor}{}$> mkdir -p bin
+$> cd source
+$> make arch=cpu 2decomp\_fft\_rebuild          # build lib2decompfft.a
+$> make thrust\_lib\_rebuild                    # build libwapper.a
+$> make create\_build BUILD\_DIR=../build\_CPU   # create build directory
+$> cd ../build\_CPU
+$> make arch=cpu all -j6                      # build Tinker\textcolor{stringliteral}{'s program for CPU}
+\textcolor{stringliteral}{$> ls ../bin                                  # list binaries}
+\textcolor{stringliteral}{#> analyze dynamic minimize bar pimd}
+\end{DoxyCode}
+
+
+or the following one for an in-\/source build\-:
+
+
+\begin{DoxyCode}
+$> cd source
+$> make arch=cpu prog\_suffix=.cpu all -j4
+$> ls ../bin
+\textcolor{preprocessor}{#> analyze.cpu dynamic.cpu minimize.cpu bar.cpu}
+\end{DoxyCode}
+
+
+You can also create a configuration bash file that store your configuration and run it with your desire targets.
+
+
+\begin{DoxyCode}
+$> cat << EOF >Tconf.sh
+\textcolor{preprocessor}{#!/bin/bash}
+\textcolor{preprocessor}{}make FPA\_SUPPORT=1 COLVARS\_SUPPORT=1 prec=mixed arch=device compute\_capability=60 cuda\_version=11.3 
+      prog\_suffix=.gmix $@
+EOF
+$> chmod 740 Tconf.sh
+$> cd source
+$> ln -s ../Tconf.sh T
+$> ./T 2decomp\_fft\_rebuild\_single  # Rebuild 2decomp\_fft library in single precision
+$> ./T -j8                         # Build binaries (*.gfix) for 70 compute\_capability device using fixed 
+      precision
+\end{DoxyCode}
+ 

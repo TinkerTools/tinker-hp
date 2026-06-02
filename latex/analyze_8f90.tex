@@ -1,0 +1,239 @@
+\hypertarget{analyze_8f90}{\section{analyze.\-f90 File Reference}
+\label{analyze_8f90}\index{analyze.\-f90@{analyze.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+program \hyperlink{analyze_8f90_ad0571e0cf34d424af56a4981e316f8eb}{analyze}
+\begin{DoxyCompactList}\small\item\em computes and displays the total potential energy \end{DoxyCompactList}\item 
+subroutine \hyperlink{analyze_8f90_acce5eb003f35035aceaef44ca0b67e73}{analyze\-\_\-bis}
+\begin{DoxyCompactList}\small\item\em computes and displays the total potential energy \end{DoxyCompactList}\item 
+subroutine \hyperlink{analyze_8f90_a770ce3bad62e0a46d6df1a6176b244de}{enrgyze}
+\begin{DoxyCompactList}\small\item\em auxiliary routine for the analyze program that performs the energy analysis and prints the total and intermolecular energies \end{DoxyCompactList}\item 
+subroutine \hyperlink{analyze_8f90_a4211a1bfe52847f742c337d72507a093}{partyze}
+\begin{DoxyCompactList}\small\item\em prints the energy component and number of interactions for each of the potential energy terms \end{DoxyCompactList}\item 
+subroutine \hyperlink{analyze_8f90_a2b1e6b693ec6b1594a8408a0cf537daa}{dipolemol}
+\begin{DoxyCompactList}\small\item\em computes the total dipole moment of the molecules of the system (permanent+induced) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{analyze_8f90_ad0571e0cf34d424af56a4981e316f8eb}{\index{analyze.\-f90@{analyze.\-f90}!analyze@{analyze}}
+\index{analyze@{analyze}!analyze.f90@{analyze.\-f90}}
+\subsubsection[{analyze}]{\setlength{\rightskip}{0pt plus 5cm}program analyze (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{analyze_8f90_ad0571e0cf34d424af56a4981e316f8eb}
+
+
+computes and displays the total potential energy 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 19 of file analyze.\-f90.
+
+
+
+References analyze\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{analyze_8f90_ad0571e0cf34d424af56a4981e316f8eb_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{analyze_8f90_acce5eb003f35035aceaef44ca0b67e73}{\index{analyze.\-f90@{analyze.\-f90}!analyze\-\_\-bis@{analyze\-\_\-bis}}
+\index{analyze\-\_\-bis@{analyze\-\_\-bis}!analyze.f90@{analyze.\-f90}}
+\subsubsection[{analyze\-\_\-bis}]{\setlength{\rightskip}{0pt plus 5cm}subroutine analyze\-\_\-bis (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{analyze_8f90_acce5eb003f35035aceaef44ca0b67e73}
+
+
+computes and displays the total potential energy 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 32 of file analyze.\-f90.
+
+
+
+References analysis(), cutoffs(), ddpme3d(), dipolemol(), drivermpi(), energy(), enrgyze(), fatal(), final(), freeunit(), getxyz(), initial(), initmpi(), kewald\-\_\-2(), lattice(), mechanic(), mechanic\-\_\-up\-\_\-para(), nblist(), nextarg(), partyze(), readxyz(), reassignpme(), reinitnl(), suffix(), totaldipole(), trimtext(), unitcell(), and upcase().
+
+
+
+Referenced by analyze().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{analyze_8f90_acce5eb003f35035aceaef44ca0b67e73_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=246pt]{analyze_8f90_acce5eb003f35035aceaef44ca0b67e73_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{analyze_8f90_a2b1e6b693ec6b1594a8408a0cf537daa}{\index{analyze.\-f90@{analyze.\-f90}!dipolemol@{dipolemol}}
+\index{dipolemol@{dipolemol}!analyze.f90@{analyze.\-f90}}
+\subsubsection[{dipolemol}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dipolemol (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{analyze_8f90_a2b1e6b693ec6b1594a8408a0cf537daa}
+
+
+computes the total dipole moment of the molecules of the system (permanent+induced) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 416 of file analyze.\-f90.
+
+
+
+References molecule().
+
+
+
+Referenced by analyze\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{analyze_8f90_a2b1e6b693ec6b1594a8408a0cf537daa_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=348pt]{analyze_8f90_a2b1e6b693ec6b1594a8408a0cf537daa_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{analyze_8f90_a770ce3bad62e0a46d6df1a6176b244de}{\index{analyze.\-f90@{analyze.\-f90}!enrgyze@{enrgyze}}
+\index{enrgyze@{enrgyze}!analyze.f90@{analyze.\-f90}}
+\subsubsection[{enrgyze}]{\setlength{\rightskip}{0pt plus 5cm}subroutine enrgyze (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{analyze_8f90_a770ce3bad62e0a46d6df1a6176b244de}
+
+
+auxiliary routine for the analyze program that performs the energy analysis and prints the total and intermolecular energies 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 219 of file analyze.\-f90.
+
+
+
+References analysis(), and energy().
+
+
+
+Referenced by analyze\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{analyze_8f90_a770ce3bad62e0a46d6df1a6176b244de_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=338pt]{analyze_8f90_a770ce3bad62e0a46d6df1a6176b244de_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{analyze_8f90_a4211a1bfe52847f742c337d72507a093}{\index{analyze.\-f90@{analyze.\-f90}!partyze@{partyze}}
+\index{partyze@{partyze}!analyze.f90@{analyze.\-f90}}
+\subsubsection[{partyze}]{\setlength{\rightskip}{0pt plus 5cm}subroutine partyze (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{analyze_8f90_a4211a1bfe52847f742c337d72507a093}
+
+
+prints the energy component and number of interactions for each of the potential energy terms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 272 of file analyze.\-f90.
+
+
+
+Referenced by analyze\-\_\-bis().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=336pt]{analyze_8f90_a4211a1bfe52847f742c337d72507a093_icgraph}
+\end{center}
+\end{figure}
+
+

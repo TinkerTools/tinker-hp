@@ -1,0 +1,6 @@
+<map id="kewald_2" name="kewald_2">
+<area shape="rect" id="node2" href="$fft__mpi_8f90.html#a934fb02c61186fea25814faf4e8ff019" title="setup the arrays for the computations of 3d ffts with 2decomp&amp;FFT " alt="" coords="139,5,218,32"/>
+<area shape="rect" id="node3" href="$kewald_8f90.html#abca796cdd6ef9c39457169094d79e430" title="sets the moduli of the inverse discrete Fourier transform of the B&#45;splines " alt="" coords="145,56,212,83"/>
+<area shape="rect" id="node4" href="$kewald_8f90.html#a97fff5631e454624f06a44c57bb087f8" title="calculates the coefficients for an n&#45;th order B&#45;spline approximation " alt="" coords="267,31,336,57"/>
+<area shape="rect" id="node5" href="$kewald_8f90.html#aebf361a6855927c65ba04af9f29e22ad" title="computes the modulus of the discrete Fourier transform of &quot;bsarray&quot; and stores it in &quot;bsmod&quot; ..." alt="" coords="267,81,336,108"/>
+</map>

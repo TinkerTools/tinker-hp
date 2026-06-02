@@ -1,0 +1,67 @@
+\hypertarget{numeral_8f90}{\section{numeral.\-f90 File Reference}
+\label{numeral_8f90}\index{numeral.\-f90@{numeral.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{numeral_8f90_a02f02abcc21a0359f7ef69ae411c78b5}{numeral} (\hyperlink{number_8f90_a133da88aea76390c3f91db1e3a8a4f4b}{number}, string, size)
+\begin{DoxyCompactList}\small\item\em converts an input integer number into the corresponding right-\/ or left-\/justified text numeral \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{numeral_8f90_a02f02abcc21a0359f7ef69ae411c78b5}{\index{numeral.\-f90@{numeral.\-f90}!numeral@{numeral}}
+\index{numeral@{numeral}!numeral.f90@{numeral.\-f90}}
+\subsubsection[{numeral}]{\setlength{\rightskip}{0pt plus 5cm}subroutine numeral (
+\begin{DoxyParamCaption}
+\item[{integer}]{number, }
+\item[{character$\ast$($\ast$)}]{string, }
+\item[{integer}]{size}
+\end{DoxyParamCaption}
+)}}\label{numeral_8f90_a02f02abcc21a0359f7ef69ae411c78b5}
+
+
+converts an input integer number into the corresponding right-\/ or left-\/justified text numeral 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em number,\-:} & integer value of the number to be transformed \\
+\hline
+\mbox{\tt in}  & {\em string,\-:} & text string to be filled with corresponding numeral \\
+\hline
+\mbox{\tt in}  & {\em size,\-:} & on input, the minimal acceptable numeral length, if zero then output will be right justified, if nonzero then numeral is left-\/justified and padded with leading zeros as necessary; upon output, the number of non-\/blank characters in the numeral \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 37 of file numeral.\-f90.
+
+
+
+References number().
+
+
+
+Referenced by getnumb(), kangle(), kangtor(), kangtor\-\_\-update(), kbond(), kchgflx(), keneg(), kimprop(), kimprop\-\_\-update(), kimptor(), kimptor\-\_\-update(), kmpole(), kopbend(), kopbend\-\_\-update(), kopbendm(), kopbendm\-\_\-update(), kopdist(), kopdist\-\_\-update(), kpitors(), kpitors\-\_\-update(), kpolar(), kstrbnd(), kstrbnd\-\_\-update(), kstrtor(), kstrtor\-\_\-update(), ktors(), ktorsm(), ktortor(), ktortor\-\_\-update(), kurey(), kurey\-\_\-update(), kvdw(), mdinit(), mdinitbead(), mdsave(), mdsavebeads(), optsave(), prtxyz(), and readprm().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=320pt]{numeral_8f90_a02f02abcc21a0359f7ef69ae411c78b5_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{numeral_8f90_a02f02abcc21a0359f7ef69ae411c78b5_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,165 @@
+\hypertarget{initial_8f90}{\section{initial.\-f90 File Reference}
+\label{initial_8f90}\index{initial.\-f90@{initial.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{initial_8f90_a8cdfda82b81e31ea3d28d910bb60fb00}{initial}
+\begin{DoxyCompactList}\small\item\em sets up original values for some parameters and variables that might not otherwise get initialized \end{DoxyCompactList}\item 
+subroutine \hyperlink{initial_8f90_a13c1f52465a1d35c39a622709b446b30}{set\-\_\-nproc} ()
+\begin{DoxyCompactList}\small\item\em initialization of replicas-\/based simulation\-: P\-I\-M\-D/multiple replicas \end{DoxyCompactList}\item 
+subroutine \hyperlink{initial_8f90_a4a045e94e283abe101f2a09693afa775}{initmpi}
+\begin{DoxyCompactList}\small\item\em M\-P\-I initialization. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{initial_8f90_a8cdfda82b81e31ea3d28d910bb60fb00}{\index{initial.\-f90@{initial.\-f90}!initial@{initial}}
+\index{initial@{initial}!initial.f90@{initial.\-f90}}
+\subsubsection[{initial}]{\setlength{\rightskip}{0pt plus 5cm}subroutine initial (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{initial_8f90_a8cdfda82b81e31ea3d28d910bb60fb00}
+
+
+sets up original values for some parameters and variables that might not otherwise get initialized 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file initial.\-f90.
+
+
+
+References command(), initatom(), initres(), precise(), and promo().
+
+
+
+Referenced by analyze\-\_\-bis(), bar\-\_\-bis(), dynamic\-\_\-bis(), getnumb(), getstring(), gettext(), getword(), minimize\-\_\-bis(), pimd\-\_\-bis(), and testgrad().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=314pt]{initial_8f90_a8cdfda82b81e31ea3d28d910bb60fb00_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{initial_8f90_a8cdfda82b81e31ea3d28d910bb60fb00_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{initial_8f90_a4a045e94e283abe101f2a09693afa775}{\index{initial.\-f90@{initial.\-f90}!initmpi@{initmpi}}
+\index{initmpi@{initmpi}!initial.f90@{initial.\-f90}}
+\subsubsection[{initmpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine initmpi (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{initial_8f90_a4a045e94e283abe101f2a09693afa775}
+
+
+M\-P\-I initialization. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 274 of file initial.\-f90.
+
+
+
+References set\-\_\-nproc().
+
+
+
+Referenced by analyze\-\_\-bis(), bar\-\_\-bis(), dynamic\-\_\-bis(), minimize\-\_\-bis(), pimd\-\_\-bis(), and testgrad().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=308pt]{initial_8f90_a4a045e94e283abe101f2a09693afa775_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=348pt]{initial_8f90_a4a045e94e283abe101f2a09693afa775_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{initial_8f90_a13c1f52465a1d35c39a622709b446b30}{\index{initial.\-f90@{initial.\-f90}!set\-\_\-nproc@{set\-\_\-nproc}}
+\index{set\-\_\-nproc@{set\-\_\-nproc}!initial.f90@{initial.\-f90}}
+\subsubsection[{set\-\_\-nproc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine set\-\_\-nproc (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{initial_8f90_a13c1f52465a1d35c39a622709b446b30}
+
+
+initialization of replicas-\/based simulation\-: P\-I\-M\-D/multiple replicas 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 181 of file initial.\-f90.
+
+
+
+References fatal().
+
+
+
+Referenced by initmpi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=220pt]{initial_8f90_a13c1f52465a1d35c39a622709b446b30_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{initial_8f90_a13c1f52465a1d35c39a622709b446b30_icgraph}
+\end{center}
+\end{figure}
+
+

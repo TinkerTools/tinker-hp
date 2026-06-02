@@ -1,0 +1,508 @@
+\hypertarget{tcgstuff_8f90}{\section{tcgstuff.\-f90 File Reference}
+\label{tcgstuff_8f90}\index{tcgstuff.\-f90@{tcgstuff.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{tcgstuff_8f90_ad71830f307e9d1dee9fbbdfa5e08f0f0}{diagvec2} (nrhs, A, c, b, d)
+\begin{DoxyCompactList}\small\item\em Performs product of vector a with polarisabilities B\-Ut now on two vectors at once ! \end{DoxyCompactList}\item 
+subroutine \hyperlink{tcgstuff_8f90_a6a284f7e67cb89c05d74e78ed202df0c}{diagvec3} (nrhs, A1, a2, a3, b1, b2, b3)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_a794c752c12924c34a5a35ed71bd9acb5}{tmatxbrecipsave} (mu, murec, nrhs, dipfield, dipfieldbis, fphivec)
+\begin{DoxyCompactList}\small\item\em Compute the reciprocal space contribution to the electric field due to the current value of the induced dipoles. Saves the potential and subsequent derivatives in a fphi(20,n) vector. \end{DoxyCompactList}\item 
+subroutine \hyperlink{tcgstuff_8f90_a9fe966fe3fbd40574bc9b419652d13a2}{fftthatplz2} (vec, vecbis, fphivec)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_ae3902cb1590da7ce74ec8490f93c77d0}{fftthatplz} (vec, vecbis, fphivec)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_a1263dde85bf01f8c62f8e42bb52d99df}{cart\-\_\-to\-\_\-frac\-\_\-vec} (a\-\_\-in, a\-\_\-out)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_aeee46c6ce00e36c7d98ae8432709e865}{fphi\-\_\-uind\-\_\-big} (isite, impi, fdip\-\_\-phi1, fdip\-\_\-phi2)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_a3f36c3e3c446662eb2ec5e8737829919}{fphi\-\_\-dervec\-\_\-site2} (isite, impi, grid, fdervec)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_a56b20b19e92506a335fe0ff780d96b01}{fphi\-\_\-dervec\-\_\-site} (isite, impi, grid, fdervec)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_abe3f1179d9b7849d6d4ba517b657603b}{torque\-\_\-prods} (d, q2, rmat, dri, di, qi)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_ae8b6f24b23c119cca1e380be87071855}{torquetcg\-\_\-dir} (torq\-\_\-mu, torq\-\_\-t, denedmu, denedt)
+\item 
+subroutine \hyperlink{tcgstuff_8f90_a28871a2190f2c03c8e36f53767276849}{torquetcg\-\_\-rec} (torq\-\_\-mu, torq\-\_\-t, denedmu, denedt)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{tcgstuff_8f90_a1263dde85bf01f8c62f8e42bb52d99df}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!cart\-\_\-to\-\_\-frac\-\_\-vec@{cart\-\_\-to\-\_\-frac\-\_\-vec}}
+\index{cart\-\_\-to\-\_\-frac\-\_\-vec@{cart\-\_\-to\-\_\-frac\-\_\-vec}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{cart\-\_\-to\-\_\-frac\-\_\-vec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cart\-\_\-to\-\_\-frac\-\_\-vec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3), intent(in)}]{a\-\_\-in, }
+\item[{real$\ast$8, dimension(3)}]{a\-\_\-out}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_a1263dde85bf01f8c62f8e42bb52d99df}
+
+
+Definition at line 708 of file tcgstuff.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac().
+
+
+
+Referenced by fftthatplz(), fftthatplz2(), scalderfieldzmatrec1(), scalderfieldzmatrec3(), scalderfieldzmatrec6(), and scalderfieldzmatrec8().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=288pt]{tcgstuff_8f90_a1263dde85bf01f8c62f8e42bb52d99df_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a1263dde85bf01f8c62f8e42bb52d99df_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_ad71830f307e9d1dee9fbbdfa5e08f0f0}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!diagvec2@{diagvec2}}
+\index{diagvec2@{diagvec2}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{diagvec2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine diagvec2 (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{A, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{c, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{b, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{d}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_ad71830f307e9d1dee9fbbdfa5e08f0f0}
+
+
+Performs product of vector a with polarisabilities B\-Ut now on two vectors at once ! 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 13 of file tcgstuff.\-f90.
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg1shortreal(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), and epolar1tcg2bisshortreal().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_ad71830f307e9d1dee9fbbdfa5e08f0f0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_a6a284f7e67cb89c05d74e78ed202df0c}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!diagvec3@{diagvec3}}
+\index{diagvec3@{diagvec3}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{diagvec3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine diagvec3 (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{A1, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{a2, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{a3, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{b1, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{b2, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{b3}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_a6a284f7e67cb89c05d74e78ed202df0c}
+
+
+Definition at line 45 of file tcgstuff.\-f90.
+
+
+
+Referenced by epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2quatshortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), and epolar1tcg2tershortreal().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a6a284f7e67cb89c05d74e78ed202df0c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_ae3902cb1590da7ce74ec8490f93c77d0}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!fftthatplz@{fftthatplz}}
+\index{fftthatplz@{fftthatplz}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{fftthatplz}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fftthatplz (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npoleloc), intent(in)}]{vec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{vecbis, }
+\item[{real$\ast$8, dimension(20, npolerecloc), intent(out)}]{fphivec}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_ae3902cb1590da7ce74ec8490f93c77d0}
+
+
+Definition at line 509 of file tcgstuff.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac\-\_\-vec(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), fphi\-\_\-dervec\-\_\-site(), and grid\-\_\-uind\-\_\-site().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2bis(), and epolar1tcg2bis\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_ae3902cb1590da7ce74ec8490f93c77d0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_ae3902cb1590da7ce74ec8490f93c77d0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_a9fe966fe3fbd40574bc9b419652d13a2}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!fftthatplz2@{fftthatplz2}}
+\index{fftthatplz2@{fftthatplz2}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{fftthatplz2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fftthatplz2 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3, 2,npoleloc), intent(in)}]{vec, }
+\item[{real$\ast$8, dimension(3, 2,npolerecloc), intent(in)}]{vecbis, }
+\item[{real$\ast$8, dimension(20,2, npolerecloc), intent(out)}]{fphivec}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_a9fe966fe3fbd40574bc9b419652d13a2}
+
+
+Definition at line 305 of file tcgstuff.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac\-\_\-vec(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), fphi\-\_\-dervec\-\_\-site2(), and grid\-\_\-uind\-\_\-site().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), and epolar1tcg2ter\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a9fe966fe3fbd40574bc9b419652d13a2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a9fe966fe3fbd40574bc9b419652d13a2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_a56b20b19e92506a335fe0ff780d96b01}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!fphi\-\_\-dervec\-\_\-site@{fphi\-\_\-dervec\-\_\-site}}
+\index{fphi\-\_\-dervec\-\_\-site@{fphi\-\_\-dervec\-\_\-site}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{fphi\-\_\-dervec\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fphi\-\_\-dervec\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi, }
+\item[{real$\ast$8, dimension(2,n1mpimax,n2mpimax,n3mpimax,nrec\-\_\-send+1)}]{grid, }
+\item[{real$\ast$8, dimension(20)}]{fdervec}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_a56b20b19e92506a335fe0ff780d96b01}
+
+
+Definition at line 1327 of file tcgstuff.\-f90.
+
+
+
+Referenced by fftthatplz().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a56b20b19e92506a335fe0ff780d96b01_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_a3f36c3e3c446662eb2ec5e8737829919}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!fphi\-\_\-dervec\-\_\-site2@{fphi\-\_\-dervec\-\_\-site2}}
+\index{fphi\-\_\-dervec\-\_\-site2@{fphi\-\_\-dervec\-\_\-site2}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{fphi\-\_\-dervec\-\_\-site2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fphi\-\_\-dervec\-\_\-site2 (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi, }
+\item[{real$\ast$8, dimension(2,n1mpimax,n2mpimax,n3mpimax,nrec\-\_\-send+1)}]{grid, }
+\item[{real$\ast$8, dimension(20,2)}]{fdervec}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_a3f36c3e3c446662eb2ec5e8737829919}
+
+
+Definition at line 1036 of file tcgstuff.\-f90.
+
+
+
+Referenced by fftthatplz2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a3f36c3e3c446662eb2ec5e8737829919_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_aeee46c6ce00e36c7d98ae8432709e865}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!fphi\-\_\-uind\-\_\-big@{fphi\-\_\-uind\-\_\-big}}
+\index{fphi\-\_\-uind\-\_\-big@{fphi\-\_\-uind\-\_\-big}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{fphi\-\_\-uind\-\_\-big}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fphi\-\_\-uind\-\_\-big (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi, }
+\item[{real$\ast$8, dimension(20)}]{fdip\-\_\-phi1, }
+\item[{real$\ast$8, dimension(20)}]{fdip\-\_\-phi2}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_aeee46c6ce00e36c7d98ae8432709e865}
+
+
+Definition at line 738 of file tcgstuff.\-f90.
+
+
+
+Referenced by tmatxbrecipsave().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_aeee46c6ce00e36c7d98ae8432709e865_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_a794c752c12924c34a5a35ed71bd9acb5}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!tmatxbrecipsave@{tmatxbrecipsave}}
+\index{tmatxbrecipsave@{tmatxbrecipsave}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{tmatxbrecipsave}]{\setlength{\rightskip}{0pt plus 5cm}subroutine tmatxbrecipsave (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{murec, }
+\item[{integer}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{dipfield, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{dipfieldbis, }
+\item[{real$\ast$8, dimension(20, 2, max(1,npolerecloc))}]{fphivec}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_a794c752c12924c34a5a35ed71bd9acb5}
+
+
+Compute the reciprocal space contribution to the electric field due to the current value of the induced dipoles. Saves the potential and subsequent derivatives in a fphi(20,n) vector. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 75 of file tcgstuff.\-f90.
+
+
+
+References aadd(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), fphi\-\_\-uind\-\_\-big(), and grid\-\_\-uind\-\_\-site().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), and epolar1tcg2ter\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a794c752c12924c34a5a35ed71bd9acb5_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a794c752c12924c34a5a35ed71bd9acb5_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_abe3f1179d9b7849d6d4ba517b657603b}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!torque\-\_\-prods@{torque\-\_\-prods}}
+\index{torque\-\_\-prods@{torque\-\_\-prods}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{torque\-\_\-prods}]{\setlength{\rightskip}{0pt plus 5cm}subroutine torque\-\_\-prods (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3)}]{d, }
+\item[{real$\ast$8, dimension(3,3)}]{q2, }
+\item[{real$\ast$8, dimension(3,3)}]{rmat, }
+\item[{real$\ast$8, dimension(3,3,3)}]{dri, }
+\item[{real$\ast$8, dimension(3,3)}]{di, }
+\item[{real$\ast$8, dimension(3,3,3)}]{qi}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_abe3f1179d9b7849d6d4ba517b657603b}
+
+
+Definition at line 1536 of file tcgstuff.\-f90.
+
+
+
+References aclear().
+
+
+
+Referenced by torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=244pt]{tcgstuff_8f90_abe3f1179d9b7849d6d4ba517b657603b_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_abe3f1179d9b7849d6d4ba517b657603b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_ae8b6f24b23c119cca1e380be87071855}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!torquetcg\-\_\-dir@{torquetcg\-\_\-dir}}
+\index{torquetcg\-\_\-dir@{torquetcg\-\_\-dir}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{torquetcg\-\_\-dir}]{\setlength{\rightskip}{0pt plus 5cm}subroutine torquetcg\-\_\-dir (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nbloc)}]{torq\-\_\-mu, }
+\item[{real$\ast$8, dimension(3,nbloc)}]{torq\-\_\-t, }
+\item[{real$\ast$8, dimension(3,npolebloc)}]{denedmu, }
+\item[{real$\ast$8, dimension(3,3,npolebloc)}]{denedt}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_ae8b6f24b23c119cca1e380be87071855}
+
+
+Definition at line 1570 of file tcgstuff.\-f90.
+
+
+
+References derrot(), sprod(), and torque\-\_\-prods().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg1shortreal(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2bisshortreal(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2cinqshortreal(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2quatshortreal(), epolar1tcg2shortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), and epolar1tcg2tershortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_ae8b6f24b23c119cca1e380be87071855_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_ae8b6f24b23c119cca1e380be87071855_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{tcgstuff_8f90_a28871a2190f2c03c8e36f53767276849}{\index{tcgstuff.\-f90@{tcgstuff.\-f90}!torquetcg\-\_\-rec@{torquetcg\-\_\-rec}}
+\index{torquetcg\-\_\-rec@{torquetcg\-\_\-rec}!tcgstuff.f90@{tcgstuff.\-f90}}
+\subsubsection[{torquetcg\-\_\-rec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine torquetcg\-\_\-rec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nlocrec2)}]{torq\-\_\-mu, }
+\item[{real$\ast$8, dimension(3,nlocrec2)}]{torq\-\_\-t, }
+\item[{real$\ast$8, dimension(3,nlocrec)}]{denedmu, }
+\item[{real$\ast$8, dimension(3,3,nlocrec)}]{denedt}
+\end{DoxyParamCaption}
+)}}\label{tcgstuff_8f90_a28871a2190f2c03c8e36f53767276849}
+
+
+Definition at line 1698 of file tcgstuff.\-f90.
+
+
+
+References derrot(), sprod(), and torque\-\_\-prods().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), and epolar1tcg2ter\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a28871a2190f2c03c8e36f53767276849_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{tcgstuff_8f90_a28871a2190f2c03c8e36f53767276849_icgraph}
+\end{center}
+\end{figure}
+
+

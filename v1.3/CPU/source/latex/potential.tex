@@ -1,0 +1,158 @@
+Various bonded and non-\/bonded energy terms are implemented with analytical gradients in Tinker-\/\-H\-P.
+\begin{DoxyItemize}
+\item name of potential energy term, short description, types
+\item files in the codebase
+\item keywords\-: -\/activate or deactivate -\/cutoffs -\/others
+\item Bond Stretching\-: -\/description\-: -\/standard bond-\/stretching wrt to an equilibrium distance, function of distances between bonded atoms. -\/can be H\-A\-R\-M\-O\-N\-I\-C as Taylor expansion of Morse potential through the 4th power of the bond length deviation -\/can be M\-O\-R\-S\-E or Morse potential expanded to the 4th order (M\-O\-R\-S\-E4)
+
+-\/keywords\-: -\/\-B\-O\-N\-D\-T\-E\-R\-M only to restrict the potential to bond-\/stretching, none to remove all bond-\/stretching interactions -\/\-B\-O\-N\-D\-T\-Y\-P\-: -\/\-B\-O\-N\-D\-U\-N\-I\-T\-: -\/\-B\-O\-N\-D-\/\-C\-U\-B\-I\-C\-: -\/\-B\-O\-N\-D-\/\-Q\-U\-A\-R\-T\-I\-C\-:
+\begin{DoxyItemize}
+\item files\-: \hyperlink{kbond_8f90}{kbond.\-f90}, \hyperlink{ebond_8f90}{ebond.\-f90}, \hyperlink{ebond1_8f90}{ebond1.\-f90}, \hyperlink{ebond3_8f90}{ebond3.\-f90}
+\end{DoxyItemize}
+\item Angle Bending\-:
+
+-\/description\-: -\/standard angle-\/bending wrt to an equilibrium angle, function of angles between bonded atoms. -\/can be in-\/plane, or not. For in-\/plane, can be harmonic, linear, fourier or gaussian
+
+-\/keywords\-: -\/\-A\-N\-G\-L\-E\-T\-E\-R\-M only to restrict the potential to angle-\/bending, none to remove all angle-\/bending interactions -\/\-A\-N\-G\-L\-E\-U\-N\-I\-T\-: -\/\-A\-N\-G\-L\-E-\/\-C\-U\-B\-I\-C\-: -\/\-A\-N\-G\-L\-E-\/\-Q\-U\-A\-R\-T\-I\-C\-: -\/\-A\-N\-G\-L\-E-\/\-P\-E\-N\-T\-I\-C\-: -\/\-A\-N\-G\-L\-E-\/\-S\-E\-X\-T\-I\-C\-:
+
+-\/files\-: \hyperlink{kangle_8f90}{kangle.\-f90}, \hyperlink{eangle_8f90}{eangle.\-f90}, \hyperlink{eangle1_8f90}{eangle1.\-f90}, \hyperlink{eangle3_8f90}{eangle3.\-f90}
+\item Stretch-\/\-Bending\-:
+
+-\/description\-:
+
+-\/given 3 bonded atoms, coupling between the harmonic energy of the distances wrt to their equilibrium and the harmonic energy of the angle wrt to its equilibrium
+
+-\/keywords\-: -\/\-S\-T\-R\-B\-N\-D\-T\-E\-R\-M only to restrict the potential to strech-\/bend coupling, none to remove all the associated interactions -\/\-S\-T\-R\-B\-N\-D\-U\-N\-I\-T\-:
+
+-\/files\-: \hyperlink{kstrbnd_8f90}{kstrbnd.\-f90}, \hyperlink{estrbnd_8f90}{estrbnd.\-f90}, \hyperlink{estrbnd1_8f90}{estrbnd1.\-f90}, \hyperlink{estrbnd3_8f90}{estrbnd3.\-f90}
+\item Urey-\/\-Bradley\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item standard Urey-\/\-Bradley term, potential on distances between outer atoms of bonded angles
+\item can be repulsive (exponential), quartic or harmonic with taylor expansion up to quartic
+\end{DoxyItemize}
+\item keywords -\/\-U\-R\-E\-Y\-T\-E\-R\-M only to restrict the potential to urey-\/bradley, none to remove all urey-\/bradley interactions -\/\-U\-R\-E\-Y\-U\-N\-I\-T\-: -\/\-U\-R\-E\-Y-\/\-C\-U\-B\-I\-C\-: -\/\-U\-R\-E\-Y-\/\-Q\-U\-A\-R\-T\-I\-C\-:
+\item files\-: \hyperlink{kurey_8f90}{kurey.\-f90}, \hyperlink{eurey_8f90}{eurey.\-f90}, \hyperlink{eurey1_8f90}{eurey1.\-f90}, \hyperlink{eurey3_8f90}{eurey3.\-f90}
+\end{DoxyItemize}
+\item Angle-\/\-Angle\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item given two angles, coupling between harmonic energy of angles wrt to their equilibrium
+\end{DoxyItemize}
+\item keywords\-: -\/\-A\-N\-G\-A\-N\-G\-T\-E\-R\-M\-: only to restrict the potential to angle-\/angle coupling, none to remove all the associated interactions -\/\-A\-N\-G\-A\-N\-G\-U\-N\-I\-T\-:
+\item files\-: \hyperlink{kangang_8f90}{kangang.\-f90}, \hyperlink{eangang_8f90}{eangang.\-f90}, \hyperlink{eangang3_8f90}{eangang3.\-f90}, \hyperlink{eangang1_8f90}{eangang1.\-f90}
+\end{DoxyItemize}
+\item Out-\/of-\/plane bending\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item out-\/of-\/plane bend at trigonal centers via Wilson-\/\-Decius-\/\-Cross or Allinger angles
+\end{DoxyItemize}
+\item keywords\-: -\/\-O\-P\-B\-E\-N\-D\-T\-E\-R\-M\-: only to restrict the potential to angle-\/angle coupling, none to remove all the associated interactions -\/\-O\-P\-B\-E\-N\-D\-T\-Y\-P\-E\-: -\/\-O\-P\-B\-E\-N\-D\-U\-N\-I\-T\-: -\/\-O\-P\-B\-E\-N\-D-\/\-C\-U\-B\-I\-C\-: -\/\-O\-P\-B\-E\-N\-D-\/\-Q\-U\-A\-R\-T\-I\-C\-: -\/\-O\-P\-B\-E\-N\-D-\/\-P\-E\-N\-T\-I\-C\-: -\/\-O\-P\-B\-E\-N\-D-\/\-S\-E\-X\-T\-I\-C\-:
+\item files\-: \hyperlink{kopbend_8f90}{kopbend.\-f90}, \hyperlink{eopbend_8f90}{eopbend.\-f90}, \hyperlink{eopbend1_8f90}{eopbend1.\-f90}, \hyperlink{eopbend3_8f90}{eopbend3.\-f90}
+\end{DoxyItemize}
+\item Out-\/of-\/plane distance\-:
+\begin{DoxyItemize}
+\item description\-: potential at trigonal center via the central atom height
+\item keywords\-: -\/\-O\-P\-D\-I\-S\-T\-T\-E\-R\-M only to restrict the potential to out-\/of-\/plane distance coupling, none to remove all the associated interactions -\/\-O\-P\-D\-I\-S\-T\-U\-N\-I\-T -\/\-O\-P\-D\-I\-S\-T-\/\-C\-U\-B\-I\-C -\/\-O\-P\-D\-I\-S\-T-\/\-Q\-U\-A\-R\-T\-I\-C -\/\-O\-P\-D\-I\-S\-T-\/\-P\-E\-N\-T\-I\-C -\/\-O\-P\-D\-I\-S\-T-\/\-S\-E\-X\-T\-I\-C
+\end{DoxyItemize}
+\item Improper Dihedral\-:
+\begin{DoxyItemize}
+\item description\-: standard harmonic potential on improper dihedrals
+\item keywords\-: -\/\-I\-M\-P\-R\-O\-P\-T\-E\-R\-M only to restrict the potential to improper dihedral term, none to remove all the associated interactions -\/\-I\-M\-P\-R\-O\-P\-U\-N\-I\-T\-: -\/files\-: \hyperlink{kimprop_8f90}{kimprop.\-f90}, \hyperlink{eimprop_8f90}{eimprop.\-f90}, \hyperlink{eimprop1_8f90}{eimprop1.\-f90}, \hyperlink{eimprop3_8f90}{eimprop3.\-f90}
+\end{DoxyItemize}
+\item Improper Torsion\-:
+\begin{DoxyItemize}
+\item description\-: periodic improper torsion potential
+\item keywords\-: -\/\-I\-M\-P\-T\-O\-R\-T\-E\-R\-M\-: -\/\-I\-M\-P\-T\-O\-R\-U\-N\-I\-T\-:
+\item files\-: \hyperlink{kimptor_8f90}{kimptor.\-f90}, \hyperlink{eimptor_8f90}{eimptor.\-f90}, \hyperlink{eimptor1_8f90}{eimptor1.\-f90}, \hyperlink{eimptor3_8f90}{eimptor3.\-f90}
+\end{DoxyItemize}
+\item Torsions\-:
+\begin{DoxyItemize}
+\item standard periodic torsion potential
+\item keywords\-: -\/\-T\-O\-R\-S\-I\-O\-N\-T\-E\-R\-M only to restrict the potential to torsion term, none to remove all the associated interactions -\/\-T\-O\-R\-S\-I\-O\-N\-U\-N\-I\-T -\/files\-: \hyperlink{torsions_8f90}{torsions.\-f90}, \hyperlink{ktors_8f90}{ktors.\-f90}, \hyperlink{etors_8f90}{etors.\-f90}, \hyperlink{etors1_8f90}{etors1.\-f90}, \hyperlink{etors3_8f90}{etors3.\-f90}
+\end{DoxyItemize}
+\item Pi-\/\-Torsions\-:
+\begin{DoxyItemize}
+\item description\-: Pi-\/\-Orbital torsion potential
+\item keywords\-:
+\begin{DoxyItemize}
+\item P\-I\-T\-O\-R\-S\-T\-E\-R\-M\-:
+\item P\-I\-T\-O\-R\-S\-U\-N\-I\-T\-:
+\end{DoxyItemize}
+\item files\-: \hyperlink{kpitors_8f90}{kpitors.\-f90}, \hyperlink{epitors_8f90}{epitors.\-f90}, \hyperlink{epitors1_8f90}{epitors1.\-f90}, \hyperlink{epitors3_8f90}{epitors3.\-f90}
+\end{DoxyItemize}
+\item Strech-\/\-Torsion\-:
+\begin{DoxyItemize}
+\item description\-: given 4 atoms involved in a torsion, Stretch-\/\-Torsion coupling between the first distance and the torsion
+\item keywords\-: -\/\-S\-T\-R\-T\-O\-R\-T\-E\-R\-M\-: -\/\-S\-T\-R\-T\-O\-R\-U\-N\-I\-T
+\item files\-: \hyperlink{kstrtor_8f90}{kstrtor.\-f90}, \hyperlink{estrtor_8f90}{estrtor.\-f90}, \hyperlink{estrtor1_8f90}{estrtor1.\-f90}, \hyperlink{estrtor3_8f90}{estrtor3.\-f90}
+\end{DoxyItemize}
+\item Angle-\/\-Torsion\-:
+\begin{DoxyItemize}
+\item description\-: given 4 atoms involved in a torsion, Angle-\/\-Torsion coupling between the first angle and the torsion
+\item keywords\-: -\/\-A\-N\-G\-T\-O\-R\-T\-E\-R\-M\-: -\/\-A\-N\-G\-T\-O\-R\-U\-N\-I\-T\-:
+\item files\-: \hyperlink{kangtor_8f90}{kangtor.\-f90}, \hyperlink{eangtor_8f90}{eangtor.\-f90}, \hyperlink{eangtor1_8f90}{eangtor1.\-f90}, \hyperlink{eangtor3_8f90}{eangtor3.\-f90}
+\end{DoxyItemize}
+\item Torsion-\/\-Torsion\-:
+\begin{DoxyItemize}
+\item description\-: coupling between two torsions
+\item keywords\-: -\/\-T\-O\-R\-T\-O\-R\-T\-E\-R\-M\-: -\/\-T\-O\-R\-T\-O\-R\-U\-N\-I\-T\-:
+\item files\-: \hyperlink{ktortor_8f90}{ktortor.\-f90}, \hyperlink{etortor_8f90}{etortor.\-f90}, \hyperlink{etortor1_8f90}{etortor1.\-f90}, \hyperlink{etortor3_8f90}{etortor3.\-f90}
+\end{DoxyItemize}
+\item Lennard-\/\-Jones\-:
+\begin{DoxyItemize}
+\item description\-: standard 6-\/12 Lennard-\/\-Jones van der Waals energy
+\item keywords\-:
+\begin{DoxyItemize}
+\item V\-D\-W\-T\-E\-R\-M\-:
+\item V\-D\-W\-T\-Y\-P\-:
+\item R\-A\-D\-I\-U\-S\-T\-Y\-P\-E\-:
+\item R\-A\-D\-I\-U\-S\-S\-I\-Z\-E\-:
+\item R\-A\-D\-I\-U\-S\-R\-U\-L\-E\-:
+\item E\-P\-S\-I\-L\-O\-N\-R\-U\-L\-E\-:
+\item V\-D\-W-\/12-\/\-S\-C\-A\-L\-E\-:
+\item V\-D\-W-\/13-\/\-S\-C\-A\-L\-E\-:
+\item V\-D\-W-\/14-\/\-S\-C\-A\-L\-E\-:
+\item V\-D\-W-\/15-\/\-S\-C\-A\-L\-E\-:
+\item V\-D\-W-\/\-C\-O\-R\-R\-E\-C\-T\-I\-O\-N\-:
+\end{DoxyItemize}
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+files\-: \hyperlink{kvdw_8f90}{kvdw.\-f90}, \hyperlink{elj_8f90}{elj.\-f90}, \hyperlink{elj1_8f90}{elj1.\-f90}, \hyperlink{elj3_8f90}{elj3.\-f90}
+
+
+\begin{DoxyItemize}
+\item Halgren\-:
+\begin{DoxyItemize}
+\item description\-: buffered 7-\/14 Halgren van der Waals energy
+\item keywords\-:
+\begin{DoxyItemize}
+\item V\-D\-W\-T\-E\-R\-M\-:
+\item V\-D\-W\-T\-Y\-P\-:
+\item G\-A\-M\-M\-A-\/\-H\-A\-L\-G\-R\-E\-N\-:
+\item D\-E\-L\-T\-A-\/\-H\-A\-L\-G\-R\-E\-N\-:
+\item V\-D\-W-\/12-\/\-S\-C\-A\-L\-E\-:
+\item V\-D\-W-\/13-\/\-S\-C\-A\-L\-E\-:
+\item V\-D\-W-\/14-\/\-S\-C\-A\-L\-E\-:
+\item V\-D\-W-\/15-\/\-S\-C\-A\-L\-E\-:
+\item V\-D\-W-\/\-C\-O\-R\-R\-E\-C\-T\-I\-O\-N\-:
+\end{DoxyItemize}
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+files\-: \hyperlink{kvdw_8f90}{kvdw.\-f90}, \hyperlink{ehal_8f90}{ehal.\-f90}, \hyperlink{ehal1_8f90}{ehal1.\-f90}, \hyperlink{ehal3_8f90}{ehal3.\-f90}
+
+
+\begin{DoxyItemize}
+\item Repulsion\-:
+\item Dispersion\-:
+\item Charge\-:
+\item Multipole\-:
+\item Polarization\-:
+\item Charge-\/\-Transfer\-:
+\item Restraints\-: 
+\end{DoxyItemize}

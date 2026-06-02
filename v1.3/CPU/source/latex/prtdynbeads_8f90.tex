@@ -1,0 +1,67 @@
+\hypertarget{prtdynbeads_8f90}{\section{prtdynbeads.\-f90 File Reference}
+\label{prtdynbeads_8f90}\index{prtdynbeads.\-f90@{prtdynbeads.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{prtdynbeads_8f90_aed0bed914adcbcdd52b87f013ab8d329}{prtdynbeads} (polymer, ibead\-\_\-beg, ibead\-\_\-end)
+\begin{DoxyCompactList}\small\item\em writes out the information needed to restart a P\-I\-M\-D trajectory to an external disk file while using P\-I\-M\-D \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{prtdynbeads_8f90_aed0bed914adcbcdd52b87f013ab8d329}{\index{prtdynbeads.\-f90@{prtdynbeads.\-f90}!prtdynbeads@{prtdynbeads}}
+\index{prtdynbeads@{prtdynbeads}!prtdynbeads.f90@{prtdynbeads.\-f90}}
+\subsubsection[{prtdynbeads}]{\setlength{\rightskip}{0pt plus 5cm}subroutine prtdynbeads (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(in)}]{polymer, }
+\item[{integer, intent(in)}]{ibead\-\_\-beg, }
+\item[{integer, intent(in)}]{ibead\-\_\-end}
+\end{DoxyParamCaption}
+)}}\label{prtdynbeads_8f90_aed0bed914adcbcdd52b87f013ab8d329}
+
+
+writes out the information needed to restart a P\-I\-M\-D trajectory to an external disk file while using P\-I\-M\-D 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em polymer,\-:} & current polymer \\
+\hline
+\mbox{\tt in}  & {\em ibead\-\_\-beg,\-:} & first index of the local beads \\
+\hline
+\mbox{\tt in}  & {\em ibead\-\_\-end,\-:} & last index of the local beads \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 25 of file prtdynbeads.\-f90.
+
+
+
+References freeunit().
+
+
+
+Referenced by mdsavebeads().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=326pt]{prtdynbeads_8f90_aed0bed914adcbcdd52b87f013ab8d329_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{prtdynbeads_8f90_aed0bed914adcbcdd52b87f013ab8d329_icgraph}
+\end{center}
+\end{figure}
+
+

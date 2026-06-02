@@ -1,0 +1,788 @@
+\hypertarget{classpotent}{\section{potent Module Reference}
+\label{classpotent}\index{potent@{potent}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+logical \hyperlink{classpotent_a901c84bd1620b837b397b5a27333183f}{use\-\_\-bond}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of bond stretch potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a23350abb90bb736d08920da956e9eef1}{use\-\_\-angle}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of angle bend potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a75d75048b13b8eaf16d15061071a2baf}{use\-\_\-strbnd}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of stretch-\/bend potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a18c9c260e77b68f309216aad1b51e04e}{use\-\_\-urey}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of Urey-\/\-Bradley potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a77de48b809f305bc091a799a5c724c04}{use\-\_\-angang}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of angle-\/angle cross term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a54b92cefe4749a50e302156f63ed7219}{use\-\_\-opbend}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of out-\/of-\/plane bend term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a73b391b2ac5c8ca035e989745c1d4778}{use\-\_\-opdist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of out-\/of-\/plane distance \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_affab2bb5c07b079cb2f5b167baa6a994}{use\-\_\-improp}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of improper dihedral term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a66a1f57b71ad896ee516a52931946dd5}{use\-\_\-imptor}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of improper torsion term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a858f360374fa731c40259fb25072a2b8}{use\-\_\-tors}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of torsional potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_add03f56b6452a9d6109285d8b9c41baa}{use\-\_\-pitors}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of pi-\/orbital torsion term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a16df509b867b4c670a70473bd651ca73}{use\-\_\-strtor}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of stretch-\/torsion term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_aaf54bf6c5c9dd0284fb25717484e92ee}{use\-\_\-angtor}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of angle-\/torsion potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_ac4ebdce0af0c3ba163b8862cc3bb9fb9}{use\-\_\-tortor}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of torsion-\/torsion term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a1cba9006f347c796cd3d2be4eba3d5da}{use\-\_\-vdw}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of vdw der Waals potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a8f222bf9cf2bda7af98a4ea15d0cd6cf}{use\-\_\-charge}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of charge-\/charge potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a3378eb96a0d00f5db14bef5c7b5e8a65}{use\-\_\-mpole}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of multipole potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a0117aacb8fad6e63b030bda76b51784e}{use\-\_\-polar}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of polarization term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_ad939cbd8d4c142586515412465220ee8}{use\-\_\-solv}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of implicit solvation \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a61dd7cbf1cf0f3b97223b23fe7711a19}{use\-\_\-geom}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of geometric restraints \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_adb62b9a41bba5ee8b80057a1d68a499b}{use\-\_\-extra}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of extra potential term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a43e7f1f94b7cf392cd75a697c69136c0}{use\-\_\-pmecore}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of separate cores for pme \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a46397d2d8b4246feb7b51ccfc311fc83}{use\-\_\-grad}
+\begin{DoxyCompactList}\small\item\em logical flag being true only if the main is \char`\"{}dynamic\char`\"{} \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a05e2d1fb2c7f8b1830a81783b56c5dc5}{use\-\_\-mreal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of real space multipolar potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_abf144fe64e3ac4d546a4e9a6c95c4c8a}{use\-\_\-mrec}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of reciprocal space multipolar potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_ad8fc08dbc413d1d6c9b637c1825d2571}{use\-\_\-preal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of real space polarization potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a7dc24934e4ea98ba3cdfc54ab99b2d13}{use\-\_\-prec}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of reciprocal space polarization potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a9cacbd79d7d6710802eb97d9fe33b3b7}{use\-\_\-creal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of real space charge potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a97859e184e6246ff5b45c4563f7d6a75}{use\-\_\-crec}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of reciprocal space charge potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a7ac9d4ba1a8f68a8c11f952cd7985dab}{use\-\_\-cself}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of self charge potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a5ab904b7150799c7cd354d07fc5d4d43}{use\-\_\-polarshortreal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range real space polarization term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a9860e6d722e3fabc21fdc89fe55d6fd4}{use\-\_\-mself}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of self multipolar potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_aff1309d0a0e73e73c68e82900de2d4d4}{use\-\_\-pself}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of self polarization potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a37a7b683869b844b2129bf9d14848171}{use\-\_\-mpoleshortreal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range real space multipole potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a06a4cfb9960a168b860e50c0c70b0cf3}{use\-\_\-cshortreal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range real space charge potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_aeb5672c3b82da40d633872040c58b376}{use\-\_\-clong}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of long range real space charge potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a767fd97701d5ddfcce6bf907c43832d7}{use\-\_\-vdwshort}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range vdw potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_ab70fe3ec7b82b9065c25f4f051395663}{use\-\_\-vdwlong}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of long range vdw potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_ab25ad95c8d922a447b35fe4f4d582a1d}{use\-\_\-mpolelong}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of long range real space multipole potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a82a41d34836bbf30d7e5f88ee70101b1}{use\-\_\-smd\-\_\-velconst}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of C\-V\-S\-M\-D \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a5ef3f724b2f1d64056187c24b7e9b223}{use\-\_\-smd\-\_\-forconst}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of C\-F\-S\-M\-D \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_ad6d0ca7f83b5d630f4fed9837bf01d72}{use\-\_\-repuls}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of Pauli repulsion term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_aada9db6176ba5bf4284f84a4b9b182e3}{use\-\_\-disp}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of dispersion potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a427a66d48203d10bc98f3975007b9a49}{use\-\_\-chgtrn}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of charge transfer term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_affe1988d7557036700e8d5c8315e3431}{use\-\_\-chgflx}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of charge flux term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a426f1334f3ae39238baec57dd741390c}{use\-\_\-dispreal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of real space polarization potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a920b5aeadf8360f86eaad6ba489ad8f6}{use\-\_\-dispself}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of self polarization potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a54fc293e78c17bbe7755967bbc392b40}{use\-\_\-disprec}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of reciprocal space polarization potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_aa509648794c36f8ebfd31d28635f55b4}{use\-\_\-repulsshort}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range vdw potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a3013529f621b1298195625556f78a72d}{use\-\_\-dispshort}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range dispersion potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a7583e8a20be4db641d1dcbfdce8d9fbf}{use\-\_\-dispshortreal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range real space dispersion potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a8f475cebafbcffbafc52b364968fca6e}{use\-\_\-chgtrnshort}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range charge transfer term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a3fc5cb2919b1f79f6d28865ee64941dd}{use\-\_\-repulslong}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of long range vdw potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a30c7aa564a7e6e64aadea0a17c50fcb7}{use\-\_\-displong}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of long range dispersion potential \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a40eee4d6a2e9b4621245a29d4d0e073b}{use\-\_\-chgtrnlong}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of long range charge transfer term \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_af98f8da51858efb89951f38aface351c}{use\-\_\-dewald}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of P\-M\-E for dispersion \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a32e153c24445f68492ea39778aa11b25}{use\-\_\-chgpen}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of charge penetration \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a208bb4052d3f534fae41d09bf30f9cca}{use\-\_\-lambdadyn}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of lambda dynamic (with colvar module) \end{DoxyCompactList}\item 
+logical \hyperlink{classpotent_a6ff9ada206ae29ab9d2dfa369165fbb9}{use\-\_\-osrw}
+\begin{DoxyCompactList}\small\item\em logical flag governing us of Orthogonal Space Random Walk sampling (with colvar module) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-potent.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classpotent_a77de48b809f305bc091a799a5c724c04}{\index{potent@{potent}!use\-\_\-angang@{use\-\_\-angang}}
+\index{use\-\_\-angang@{use\-\_\-angang}!potent@{potent}}
+\subsubsection[{use\-\_\-angang}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-angang}}\label{classpotent_a77de48b809f305bc091a799a5c724c04}
+
+
+logical flag governing use of angle-\/angle cross term 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a23350abb90bb736d08920da956e9eef1}{\index{potent@{potent}!use\-\_\-angle@{use\-\_\-angle}}
+\index{use\-\_\-angle@{use\-\_\-angle}!potent@{potent}}
+\subsubsection[{use\-\_\-angle}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-angle}}\label{classpotent_a23350abb90bb736d08920da956e9eef1}
+
+
+logical flag governing use of angle bend potential 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_aaf54bf6c5c9dd0284fb25717484e92ee}{\index{potent@{potent}!use\-\_\-angtor@{use\-\_\-angtor}}
+\index{use\-\_\-angtor@{use\-\_\-angtor}!potent@{potent}}
+\subsubsection[{use\-\_\-angtor}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-angtor}}\label{classpotent_aaf54bf6c5c9dd0284fb25717484e92ee}
+
+
+logical flag governing use of angle-\/torsion potential 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a901c84bd1620b837b397b5a27333183f}{\index{potent@{potent}!use\-\_\-bond@{use\-\_\-bond}}
+\index{use\-\_\-bond@{use\-\_\-bond}!potent@{potent}}
+\subsubsection[{use\-\_\-bond}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-bond}}\label{classpotent_a901c84bd1620b837b397b5a27333183f}
+
+
+logical flag governing use of bond stretch potential 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a8f222bf9cf2bda7af98a4ea15d0cd6cf}{\index{potent@{potent}!use\-\_\-charge@{use\-\_\-charge}}
+\index{use\-\_\-charge@{use\-\_\-charge}!potent@{potent}}
+\subsubsection[{use\-\_\-charge}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-charge}}\label{classpotent_a8f222bf9cf2bda7af98a4ea15d0cd6cf}
+
+
+logical flag governing use of charge-\/charge potential 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_affe1988d7557036700e8d5c8315e3431}{\index{potent@{potent}!use\-\_\-chgflx@{use\-\_\-chgflx}}
+\index{use\-\_\-chgflx@{use\-\_\-chgflx}!potent@{potent}}
+\subsubsection[{use\-\_\-chgflx}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-chgflx}}\label{classpotent_affe1988d7557036700e8d5c8315e3431}
+
+
+logical flag governing use of charge flux term 
+
+
+
+Definition at line 59 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a32e153c24445f68492ea39778aa11b25}{\index{potent@{potent}!use\-\_\-chgpen@{use\-\_\-chgpen}}
+\index{use\-\_\-chgpen@{use\-\_\-chgpen}!potent@{potent}}
+\subsubsection[{use\-\_\-chgpen}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-chgpen}}\label{classpotent_a32e153c24445f68492ea39778aa11b25}
+
+
+logical flag governing use of charge penetration 
+
+
+
+Definition at line 71 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a427a66d48203d10bc98f3975007b9a49}{\index{potent@{potent}!use\-\_\-chgtrn@{use\-\_\-chgtrn}}
+\index{use\-\_\-chgtrn@{use\-\_\-chgtrn}!potent@{potent}}
+\subsubsection[{use\-\_\-chgtrn}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-chgtrn}}\label{classpotent_a427a66d48203d10bc98f3975007b9a49}
+
+
+logical flag governing use of charge transfer term 
+
+
+
+Definition at line 58 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a40eee4d6a2e9b4621245a29d4d0e073b}{\index{potent@{potent}!use\-\_\-chgtrnlong@{use\-\_\-chgtrnlong}}
+\index{use\-\_\-chgtrnlong@{use\-\_\-chgtrnlong}!potent@{potent}}
+\subsubsection[{use\-\_\-chgtrnlong}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-chgtrnlong}}\label{classpotent_a40eee4d6a2e9b4621245a29d4d0e073b}
+
+
+logical flag governing use of long range charge transfer term 
+
+
+
+Definition at line 69 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a8f475cebafbcffbafc52b364968fca6e}{\index{potent@{potent}!use\-\_\-chgtrnshort@{use\-\_\-chgtrnshort}}
+\index{use\-\_\-chgtrnshort@{use\-\_\-chgtrnshort}!potent@{potent}}
+\subsubsection[{use\-\_\-chgtrnshort}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-chgtrnshort}}\label{classpotent_a8f475cebafbcffbafc52b364968fca6e}
+
+
+logical flag governing use of short range charge transfer term 
+
+
+
+Definition at line 66 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_aeb5672c3b82da40d633872040c58b376}{\index{potent@{potent}!use\-\_\-clong@{use\-\_\-clong}}
+\index{use\-\_\-clong@{use\-\_\-clong}!potent@{potent}}
+\subsubsection[{use\-\_\-clong}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-clong}}\label{classpotent_aeb5672c3b82da40d633872040c58b376}
+
+
+logical flag governing use of long range real space charge potential 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a9cacbd79d7d6710802eb97d9fe33b3b7}{\index{potent@{potent}!use\-\_\-creal@{use\-\_\-creal}}
+\index{use\-\_\-creal@{use\-\_\-creal}!potent@{potent}}
+\subsubsection[{use\-\_\-creal}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-creal}}\label{classpotent_a9cacbd79d7d6710802eb97d9fe33b3b7}
+
+
+logical flag governing use of real space charge potential 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a97859e184e6246ff5b45c4563f7d6a75}{\index{potent@{potent}!use\-\_\-crec@{use\-\_\-crec}}
+\index{use\-\_\-crec@{use\-\_\-crec}!potent@{potent}}
+\subsubsection[{use\-\_\-crec}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-crec}}\label{classpotent_a97859e184e6246ff5b45c4563f7d6a75}
+
+
+logical flag governing use of reciprocal space charge potential 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a7ac9d4ba1a8f68a8c11f952cd7985dab}{\index{potent@{potent}!use\-\_\-cself@{use\-\_\-cself}}
+\index{use\-\_\-cself@{use\-\_\-cself}!potent@{potent}}
+\subsubsection[{use\-\_\-cself}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-cself}}\label{classpotent_a7ac9d4ba1a8f68a8c11f952cd7985dab}
+
+
+logical flag governing use of self charge potential 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a06a4cfb9960a168b860e50c0c70b0cf3}{\index{potent@{potent}!use\-\_\-cshortreal@{use\-\_\-cshortreal}}
+\index{use\-\_\-cshortreal@{use\-\_\-cshortreal}!potent@{potent}}
+\subsubsection[{use\-\_\-cshortreal}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-cshortreal}}\label{classpotent_a06a4cfb9960a168b860e50c0c70b0cf3}
+
+
+logical flag governing use of short range real space charge potential 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_af98f8da51858efb89951f38aface351c}{\index{potent@{potent}!use\-\_\-dewald@{use\-\_\-dewald}}
+\index{use\-\_\-dewald@{use\-\_\-dewald}!potent@{potent}}
+\subsubsection[{use\-\_\-dewald}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-dewald}}\label{classpotent_af98f8da51858efb89951f38aface351c}
+
+
+logical flag governing use of P\-M\-E for dispersion 
+
+
+
+Definition at line 70 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_aada9db6176ba5bf4284f84a4b9b182e3}{\index{potent@{potent}!use\-\_\-disp@{use\-\_\-disp}}
+\index{use\-\_\-disp@{use\-\_\-disp}!potent@{potent}}
+\subsubsection[{use\-\_\-disp}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-disp}}\label{classpotent_aada9db6176ba5bf4284f84a4b9b182e3}
+
+
+logical flag governing use of dispersion potential 
+
+
+
+Definition at line 57 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a30c7aa564a7e6e64aadea0a17c50fcb7}{\index{potent@{potent}!use\-\_\-displong@{use\-\_\-displong}}
+\index{use\-\_\-displong@{use\-\_\-displong}!potent@{potent}}
+\subsubsection[{use\-\_\-displong}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-displong}}\label{classpotent_a30c7aa564a7e6e64aadea0a17c50fcb7}
+
+
+logical flag governing use of long range dispersion potential 
+
+
+
+Definition at line 68 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a426f1334f3ae39238baec57dd741390c}{\index{potent@{potent}!use\-\_\-dispreal@{use\-\_\-dispreal}}
+\index{use\-\_\-dispreal@{use\-\_\-dispreal}!potent@{potent}}
+\subsubsection[{use\-\_\-dispreal}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-dispreal}}\label{classpotent_a426f1334f3ae39238baec57dd741390c}
+
+
+logical flag governing use of real space polarization potential 
+
+
+
+Definition at line 60 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a54fc293e78c17bbe7755967bbc392b40}{\index{potent@{potent}!use\-\_\-disprec@{use\-\_\-disprec}}
+\index{use\-\_\-disprec@{use\-\_\-disprec}!potent@{potent}}
+\subsubsection[{use\-\_\-disprec}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-disprec}}\label{classpotent_a54fc293e78c17bbe7755967bbc392b40}
+
+
+logical flag governing use of reciprocal space polarization potential 
+
+
+
+Definition at line 62 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a920b5aeadf8360f86eaad6ba489ad8f6}{\index{potent@{potent}!use\-\_\-dispself@{use\-\_\-dispself}}
+\index{use\-\_\-dispself@{use\-\_\-dispself}!potent@{potent}}
+\subsubsection[{use\-\_\-dispself}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-dispself}}\label{classpotent_a920b5aeadf8360f86eaad6ba489ad8f6}
+
+
+logical flag governing use of self polarization potential 
+
+
+
+Definition at line 61 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a3013529f621b1298195625556f78a72d}{\index{potent@{potent}!use\-\_\-dispshort@{use\-\_\-dispshort}}
+\index{use\-\_\-dispshort@{use\-\_\-dispshort}!potent@{potent}}
+\subsubsection[{use\-\_\-dispshort}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-dispshort}}\label{classpotent_a3013529f621b1298195625556f78a72d}
+
+
+logical flag governing use of short range dispersion potential 
+
+
+
+Definition at line 64 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a7583e8a20be4db641d1dcbfdce8d9fbf}{\index{potent@{potent}!use\-\_\-dispshortreal@{use\-\_\-dispshortreal}}
+\index{use\-\_\-dispshortreal@{use\-\_\-dispshortreal}!potent@{potent}}
+\subsubsection[{use\-\_\-dispshortreal}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-dispshortreal}}\label{classpotent_a7583e8a20be4db641d1dcbfdce8d9fbf}
+
+
+logical flag governing use of short range real space dispersion potential 
+
+
+
+Definition at line 65 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_adb62b9a41bba5ee8b80057a1d68a499b}{\index{potent@{potent}!use\-\_\-extra@{use\-\_\-extra}}
+\index{use\-\_\-extra@{use\-\_\-extra}!potent@{potent}}
+\subsubsection[{use\-\_\-extra}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-extra}}\label{classpotent_adb62b9a41bba5ee8b80057a1d68a499b}
+
+
+logical flag governing use of extra potential term 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a61dd7cbf1cf0f3b97223b23fe7711a19}{\index{potent@{potent}!use\-\_\-geom@{use\-\_\-geom}}
+\index{use\-\_\-geom@{use\-\_\-geom}!potent@{potent}}
+\subsubsection[{use\-\_\-geom}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-geom}}\label{classpotent_a61dd7cbf1cf0f3b97223b23fe7711a19}
+
+
+logical flag governing use of geometric restraints 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a46397d2d8b4246feb7b51ccfc311fc83}{\index{potent@{potent}!use\-\_\-grad@{use\-\_\-grad}}
+\index{use\-\_\-grad@{use\-\_\-grad}!potent@{potent}}
+\subsubsection[{use\-\_\-grad}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-grad}}\label{classpotent_a46397d2d8b4246feb7b51ccfc311fc83}
+
+
+logical flag being true only if the main is \char`\"{}dynamic\char`\"{} 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_affab2bb5c07b079cb2f5b167baa6a994}{\index{potent@{potent}!use\-\_\-improp@{use\-\_\-improp}}
+\index{use\-\_\-improp@{use\-\_\-improp}!potent@{potent}}
+\subsubsection[{use\-\_\-improp}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-improp}}\label{classpotent_affab2bb5c07b079cb2f5b167baa6a994}
+
+
+logical flag governing use of improper dihedral term 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a66a1f57b71ad896ee516a52931946dd5}{\index{potent@{potent}!use\-\_\-imptor@{use\-\_\-imptor}}
+\index{use\-\_\-imptor@{use\-\_\-imptor}!potent@{potent}}
+\subsubsection[{use\-\_\-imptor}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-imptor}}\label{classpotent_a66a1f57b71ad896ee516a52931946dd5}
+
+
+logical flag governing use of improper torsion term 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a208bb4052d3f534fae41d09bf30f9cca}{\index{potent@{potent}!use\-\_\-lambdadyn@{use\-\_\-lambdadyn}}
+\index{use\-\_\-lambdadyn@{use\-\_\-lambdadyn}!potent@{potent}}
+\subsubsection[{use\-\_\-lambdadyn}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-lambdadyn}}\label{classpotent_a208bb4052d3f534fae41d09bf30f9cca}
+
+
+logical flag governing use of lambda dynamic (with colvar module) 
+
+
+
+Definition at line 72 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a3378eb96a0d00f5db14bef5c7b5e8a65}{\index{potent@{potent}!use\-\_\-mpole@{use\-\_\-mpole}}
+\index{use\-\_\-mpole@{use\-\_\-mpole}!potent@{potent}}
+\subsubsection[{use\-\_\-mpole}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-mpole}}\label{classpotent_a3378eb96a0d00f5db14bef5c7b5e8a65}
+
+
+logical flag governing use of multipole potential 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_ab25ad95c8d922a447b35fe4f4d582a1d}{\index{potent@{potent}!use\-\_\-mpolelong@{use\-\_\-mpolelong}}
+\index{use\-\_\-mpolelong@{use\-\_\-mpolelong}!potent@{potent}}
+\subsubsection[{use\-\_\-mpolelong}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-mpolelong}}\label{classpotent_ab25ad95c8d922a447b35fe4f4d582a1d}
+
+
+logical flag governing use of long range real space multipole potential 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a37a7b683869b844b2129bf9d14848171}{\index{potent@{potent}!use\-\_\-mpoleshortreal@{use\-\_\-mpoleshortreal}}
+\index{use\-\_\-mpoleshortreal@{use\-\_\-mpoleshortreal}!potent@{potent}}
+\subsubsection[{use\-\_\-mpoleshortreal}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-mpoleshortreal}}\label{classpotent_a37a7b683869b844b2129bf9d14848171}
+
+
+logical flag governing use of short range real space multipole potential 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a05e2d1fb2c7f8b1830a81783b56c5dc5}{\index{potent@{potent}!use\-\_\-mreal@{use\-\_\-mreal}}
+\index{use\-\_\-mreal@{use\-\_\-mreal}!potent@{potent}}
+\subsubsection[{use\-\_\-mreal}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-mreal}}\label{classpotent_a05e2d1fb2c7f8b1830a81783b56c5dc5}
+
+
+logical flag governing use of real space multipolar potential 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_abf144fe64e3ac4d546a4e9a6c95c4c8a}{\index{potent@{potent}!use\-\_\-mrec@{use\-\_\-mrec}}
+\index{use\-\_\-mrec@{use\-\_\-mrec}!potent@{potent}}
+\subsubsection[{use\-\_\-mrec}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-mrec}}\label{classpotent_abf144fe64e3ac4d546a4e9a6c95c4c8a}
+
+
+logical flag governing use of reciprocal space multipolar potential 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a9860e6d722e3fabc21fdc89fe55d6fd4}{\index{potent@{potent}!use\-\_\-mself@{use\-\_\-mself}}
+\index{use\-\_\-mself@{use\-\_\-mself}!potent@{potent}}
+\subsubsection[{use\-\_\-mself}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-mself}}\label{classpotent_a9860e6d722e3fabc21fdc89fe55d6fd4}
+
+
+logical flag governing use of self multipolar potential 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a54b92cefe4749a50e302156f63ed7219}{\index{potent@{potent}!use\-\_\-opbend@{use\-\_\-opbend}}
+\index{use\-\_\-opbend@{use\-\_\-opbend}!potent@{potent}}
+\subsubsection[{use\-\_\-opbend}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-opbend}}\label{classpotent_a54b92cefe4749a50e302156f63ed7219}
+
+
+logical flag governing use of out-\/of-\/plane bend term 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a73b391b2ac5c8ca035e989745c1d4778}{\index{potent@{potent}!use\-\_\-opdist@{use\-\_\-opdist}}
+\index{use\-\_\-opdist@{use\-\_\-opdist}!potent@{potent}}
+\subsubsection[{use\-\_\-opdist}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-opdist}}\label{classpotent_a73b391b2ac5c8ca035e989745c1d4778}
+
+
+logical flag governing use of out-\/of-\/plane distance 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a6ff9ada206ae29ab9d2dfa369165fbb9}{\index{potent@{potent}!use\-\_\-osrw@{use\-\_\-osrw}}
+\index{use\-\_\-osrw@{use\-\_\-osrw}!potent@{potent}}
+\subsubsection[{use\-\_\-osrw}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-osrw}}\label{classpotent_a6ff9ada206ae29ab9d2dfa369165fbb9}
+
+
+logical flag governing us of Orthogonal Space Random Walk sampling (with colvar module) 
+
+
+
+Definition at line 73 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_add03f56b6452a9d6109285d8b9c41baa}{\index{potent@{potent}!use\-\_\-pitors@{use\-\_\-pitors}}
+\index{use\-\_\-pitors@{use\-\_\-pitors}!potent@{potent}}
+\subsubsection[{use\-\_\-pitors}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-pitors}}\label{classpotent_add03f56b6452a9d6109285d8b9c41baa}
+
+
+logical flag governing use of pi-\/orbital torsion term 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a43e7f1f94b7cf392cd75a697c69136c0}{\index{potent@{potent}!use\-\_\-pmecore@{use\-\_\-pmecore}}
+\index{use\-\_\-pmecore@{use\-\_\-pmecore}!potent@{potent}}
+\subsubsection[{use\-\_\-pmecore}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-pmecore}}\label{classpotent_a43e7f1f94b7cf392cd75a697c69136c0}
+
+
+logical flag governing use of separate cores for pme 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a0117aacb8fad6e63b030bda76b51784e}{\index{potent@{potent}!use\-\_\-polar@{use\-\_\-polar}}
+\index{use\-\_\-polar@{use\-\_\-polar}!potent@{potent}}
+\subsubsection[{use\-\_\-polar}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-polar}}\label{classpotent_a0117aacb8fad6e63b030bda76b51784e}
+
+
+logical flag governing use of polarization term 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a5ab904b7150799c7cd354d07fc5d4d43}{\index{potent@{potent}!use\-\_\-polarshortreal@{use\-\_\-polarshortreal}}
+\index{use\-\_\-polarshortreal@{use\-\_\-polarshortreal}!potent@{potent}}
+\subsubsection[{use\-\_\-polarshortreal}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-polarshortreal}}\label{classpotent_a5ab904b7150799c7cd354d07fc5d4d43}
+
+
+logical flag governing use of short range real space polarization term 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_ad8fc08dbc413d1d6c9b637c1825d2571}{\index{potent@{potent}!use\-\_\-preal@{use\-\_\-preal}}
+\index{use\-\_\-preal@{use\-\_\-preal}!potent@{potent}}
+\subsubsection[{use\-\_\-preal}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-preal}}\label{classpotent_ad8fc08dbc413d1d6c9b637c1825d2571}
+
+
+logical flag governing use of real space polarization potential 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a7dc24934e4ea98ba3cdfc54ab99b2d13}{\index{potent@{potent}!use\-\_\-prec@{use\-\_\-prec}}
+\index{use\-\_\-prec@{use\-\_\-prec}!potent@{potent}}
+\subsubsection[{use\-\_\-prec}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-prec}}\label{classpotent_a7dc24934e4ea98ba3cdfc54ab99b2d13}
+
+
+logical flag governing use of reciprocal space polarization potential 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_aff1309d0a0e73e73c68e82900de2d4d4}{\index{potent@{potent}!use\-\_\-pself@{use\-\_\-pself}}
+\index{use\-\_\-pself@{use\-\_\-pself}!potent@{potent}}
+\subsubsection[{use\-\_\-pself}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-pself}}\label{classpotent_aff1309d0a0e73e73c68e82900de2d4d4}
+
+
+logical flag governing use of self polarization potential 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_ad6d0ca7f83b5d630f4fed9837bf01d72}{\index{potent@{potent}!use\-\_\-repuls@{use\-\_\-repuls}}
+\index{use\-\_\-repuls@{use\-\_\-repuls}!potent@{potent}}
+\subsubsection[{use\-\_\-repuls}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-repuls}}\label{classpotent_ad6d0ca7f83b5d630f4fed9837bf01d72}
+
+
+logical flag governing use of Pauli repulsion term 
+
+
+
+Definition at line 56 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a3fc5cb2919b1f79f6d28865ee64941dd}{\index{potent@{potent}!use\-\_\-repulslong@{use\-\_\-repulslong}}
+\index{use\-\_\-repulslong@{use\-\_\-repulslong}!potent@{potent}}
+\subsubsection[{use\-\_\-repulslong}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-repulslong}}\label{classpotent_a3fc5cb2919b1f79f6d28865ee64941dd}
+
+
+logical flag governing use of long range vdw potential 
+
+
+
+Definition at line 67 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_aa509648794c36f8ebfd31d28635f55b4}{\index{potent@{potent}!use\-\_\-repulsshort@{use\-\_\-repulsshort}}
+\index{use\-\_\-repulsshort@{use\-\_\-repulsshort}!potent@{potent}}
+\subsubsection[{use\-\_\-repulsshort}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-repulsshort}}\label{classpotent_aa509648794c36f8ebfd31d28635f55b4}
+
+
+logical flag governing use of short range vdw potential 
+
+
+
+Definition at line 63 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a5ef3f724b2f1d64056187c24b7e9b223}{\index{potent@{potent}!use\-\_\-smd\-\_\-forconst@{use\-\_\-smd\-\_\-forconst}}
+\index{use\-\_\-smd\-\_\-forconst@{use\-\_\-smd\-\_\-forconst}!potent@{potent}}
+\subsubsection[{use\-\_\-smd\-\_\-forconst}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-smd\-\_\-forconst}}\label{classpotent_a5ef3f724b2f1d64056187c24b7e9b223}
+
+
+logical flag governing use of C\-F\-S\-M\-D 
+
+
+
+Definition at line 55 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a82a41d34836bbf30d7e5f88ee70101b1}{\index{potent@{potent}!use\-\_\-smd\-\_\-velconst@{use\-\_\-smd\-\_\-velconst}}
+\index{use\-\_\-smd\-\_\-velconst@{use\-\_\-smd\-\_\-velconst}!potent@{potent}}
+\subsubsection[{use\-\_\-smd\-\_\-velconst}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-smd\-\_\-velconst}}\label{classpotent_a82a41d34836bbf30d7e5f88ee70101b1}
+
+
+logical flag governing use of C\-V\-S\-M\-D 
+
+
+
+Definition at line 54 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_ad939cbd8d4c142586515412465220ee8}{\index{potent@{potent}!use\-\_\-solv@{use\-\_\-solv}}
+\index{use\-\_\-solv@{use\-\_\-solv}!potent@{potent}}
+\subsubsection[{use\-\_\-solv}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-solv}}\label{classpotent_ad939cbd8d4c142586515412465220ee8}
+
+
+logical flag governing use of implicit solvation 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a75d75048b13b8eaf16d15061071a2baf}{\index{potent@{potent}!use\-\_\-strbnd@{use\-\_\-strbnd}}
+\index{use\-\_\-strbnd@{use\-\_\-strbnd}!potent@{potent}}
+\subsubsection[{use\-\_\-strbnd}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-strbnd}}\label{classpotent_a75d75048b13b8eaf16d15061071a2baf}
+
+
+logical flag governing use of stretch-\/bend potential 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a16df509b867b4c670a70473bd651ca73}{\index{potent@{potent}!use\-\_\-strtor@{use\-\_\-strtor}}
+\index{use\-\_\-strtor@{use\-\_\-strtor}!potent@{potent}}
+\subsubsection[{use\-\_\-strtor}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-strtor}}\label{classpotent_a16df509b867b4c670a70473bd651ca73}
+
+
+logical flag governing use of stretch-\/torsion term 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a858f360374fa731c40259fb25072a2b8}{\index{potent@{potent}!use\-\_\-tors@{use\-\_\-tors}}
+\index{use\-\_\-tors@{use\-\_\-tors}!potent@{potent}}
+\subsubsection[{use\-\_\-tors}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-tors}}\label{classpotent_a858f360374fa731c40259fb25072a2b8}
+
+
+logical flag governing use of torsional potential 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_ac4ebdce0af0c3ba163b8862cc3bb9fb9}{\index{potent@{potent}!use\-\_\-tortor@{use\-\_\-tortor}}
+\index{use\-\_\-tortor@{use\-\_\-tortor}!potent@{potent}}
+\subsubsection[{use\-\_\-tortor}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-tortor}}\label{classpotent_ac4ebdce0af0c3ba163b8862cc3bb9fb9}
+
+
+logical flag governing use of torsion-\/torsion term 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a18c9c260e77b68f309216aad1b51e04e}{\index{potent@{potent}!use\-\_\-urey@{use\-\_\-urey}}
+\index{use\-\_\-urey@{use\-\_\-urey}!potent@{potent}}
+\subsubsection[{use\-\_\-urey}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-urey}}\label{classpotent_a18c9c260e77b68f309216aad1b51e04e}
+
+
+logical flag governing use of Urey-\/\-Bradley potential 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a1cba9006f347c796cd3d2be4eba3d5da}{\index{potent@{potent}!use\-\_\-vdw@{use\-\_\-vdw}}
+\index{use\-\_\-vdw@{use\-\_\-vdw}!potent@{potent}}
+\subsubsection[{use\-\_\-vdw}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-vdw}}\label{classpotent_a1cba9006f347c796cd3d2be4eba3d5da}
+
+
+logical flag governing use of vdw der Waals potential 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_ab70fe3ec7b82b9065c25f4f051395663}{\index{potent@{potent}!use\-\_\-vdwlong@{use\-\_\-vdwlong}}
+\index{use\-\_\-vdwlong@{use\-\_\-vdwlong}!potent@{potent}}
+\subsubsection[{use\-\_\-vdwlong}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-vdwlong}}\label{classpotent_ab70fe3ec7b82b9065c25f4f051395663}
+
+
+logical flag governing use of long range vdw potential 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-potent.\-f90.
+
+\hypertarget{classpotent_a767fd97701d5ddfcce6bf907c43832d7}{\index{potent@{potent}!use\-\_\-vdwshort@{use\-\_\-vdwshort}}
+\index{use\-\_\-vdwshort@{use\-\_\-vdwshort}!potent@{potent}}
+\subsubsection[{use\-\_\-vdwshort}]{\setlength{\rightskip}{0pt plus 5cm}logical potent\-::use\-\_\-vdwshort}}\label{classpotent_a767fd97701d5ddfcce6bf907c43832d7}
+
+
+logical flag governing use of short range vdw potential 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-potent.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__potent_8f90}{M\-O\-D\-\_\-potent.\-f90}\end{DoxyCompactItemize}

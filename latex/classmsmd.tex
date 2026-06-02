@@ -1,0 +1,567 @@
+\hypertarget{classmsmd}{\section{msmd Module Reference}
+\label{classmsmd}\index{msmd@{msmd}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+logical \hyperlink{classmsmd_a8394605ebe4793bedcc802719a1e0183}{use\-\_\-smdk2}
+\begin{DoxyCompactList}\small\item\em Use or not of a second k constant. \end{DoxyCompactList}\item 
+logical \hyperlink{classmsmd_aca46d500e14101f21a92d03f2a41d76e}{use\-\_\-atfol}
+\begin{DoxyCompactList}\small\item\em Print or not specific informations about S\-M\-D atoms. \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_a3e8ffd20ee86a6e8fc6a0f028ad70495}{smdoutputfreq}
+\begin{DoxyCompactList}\small\item\em Correspond to the frequency in timestseps with which the current S\-M\-D data values of printed out. \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_a3d7ff9b73382ccebdf42c0c5a01e673c}{ismdout}
+\begin{DoxyCompactList}\small\item\em unit of the smd output file (default = 3) \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_a2d12edd4b10d02323b29a0deb6e1547f}{ismdsave}
+\begin{DoxyCompactList}\small\item\em unit of the smd save file (default = 40) \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_afc4ebe744a30fd19f67574e691308829}{ncsmd}
+\begin{DoxyCompactList}\small\item\em Number of S\-M\-D atoms assigned to the center of mass of S\-M\-D. \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_a227412ce8c92691533ff296b74dfde92}{atfol}
+\begin{DoxyCompactList}\small\item\em atom to use with use\-\_\-atfol during the simulation \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_ac03367ffce116ce017105ef8fae32422}{tpass}
+\begin{DoxyCompactList}\small\item\em number of passage in the routine esmd1.\-f (usefull for the use of S\-M\-Doutput\-Freq) \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_ac6ff7790f7826383a90213add5efe1ff}{ismd}
+\begin{DoxyCompactList}\small\item\em temporary S\-M\-D atom number during the processors distrubution \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_a3d82fa00829c2cca7bfff321c83f579b}{nsmdloc}
+\begin{DoxyCompactList}\small\item\em number of allocated S\-M\-D atoms per processors \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_a8f356834ac2c3a70a860a4e993eb3b1d}{smdprocprint}
+\begin{DoxyCompactList}\small\item\em Decide which proc has to send the information to the master. \end{DoxyCompactList}\item 
+integer \hyperlink{classmsmd_acbf4807f1ce56dff3f6e6b1f60642586}{naltsmd}
+\begin{DoxyCompactList}\small\item\em Useful to adapt the timestep for multitimestep procedure. \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmsmd_a904292a72123ef4d6f6bc89188e84553}{nsmdglob}
+\begin{DoxyCompactList}\small\item\em 1\-D table corresponded to the number of each S\-M\-D atoms \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmsmd_acd0d6c7087206d9032bb505cc1ddb03a}{tabatfol}
+\begin{DoxyCompactList}\small\item\em Table containing index of atoms specified with atfol. \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmsmd_aed5f2109d5aea9e984f03f12175bc47b}{tcsmd}
+\begin{DoxyCompactList}\small\item\em Index of each atoms assigned to the S\-M\-D C\-O\-M. \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a00a3fbfb67f2675eef2955590ca83a72}{smdk}
+\begin{DoxyCompactList}\small\item\em Elastic constant (in Kcal/mol/\-A$^\wedge$2) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_ac7b1d430b9652f2e07695a4ca5310b7f}{smdk2}
+\begin{DoxyCompactList}\small\item\em Transverse elastic constant (in Kcal/mol/\-A$^\wedge$2) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a1c3a1848e4d98289076e603fab46105a}{smdvel}
+\begin{DoxyCompactList}\small\item\em Correspond to the velocity of the S\-M\-D center of mass in case of constant velocity S\-M\-D study. \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a0cfec7a2408289c6345e02f9be8ed9ef}{smdfor}
+\begin{DoxyCompactList}\small\item\em Correspond to the force of the S\-M\-D center of mass in case of constant force S\-M\-D study. \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_adece962187d68486034a4eafca72632c}{xdir}
+\begin{DoxyCompactList}\small\item\em x direction of the center of mass \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a093de4aa2e9c0ee9bddec7c9d664f53f}{ydir}
+\begin{DoxyCompactList}\small\item\em y direction of the center of mass \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a03065d009523da9f2881234a34921999}{zdir}
+\begin{DoxyCompactList}\small\item\em z direction of the center of mass \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_aeae9f59cff9e8a4b11066ba325492d92}{xcom}
+\begin{DoxyCompactList}\small\item\em x coordinate of the initial S\-M\-D C\-O\-M \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_ae92757e8de6f57ff77289f5220eda460}{ycom}
+\begin{DoxyCompactList}\small\item\em y coordinate of the initial S\-M\-D C\-O\-M \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_abe66459722303008741f916ed003751a}{zcom}
+\begin{DoxyCompactList}\small\item\em z coordinate of the initial S\-M\-D C\-O\-M \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a9b24104b4d00119969ff95f03e0a68f9}{cur\-\_\-xcom}
+\begin{DoxyCompactList}\small\item\em x coordinate of the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_aef410996fee34e772a7840d5cdb7ab1c}{cur\-\_\-ycom}
+\begin{DoxyCompactList}\small\item\em y coordinate of the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_ae554a126168530ae9e10a604cccf37ea}{cur\-\_\-zcom}
+\begin{DoxyCompactList}\small\item\em z coordinate of the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a52bb0011757c20b7d8f11c546beeb021}{mtotcom}
+\begin{DoxyCompactList}\small\item\em initial total mass of the center of mass \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a6d28f460b2fadec4e174e9c79639f7cd}{curmtotcom}
+\begin{DoxyCompactList}\small\item\em current total mass of the center of mass during calculations \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a732bc76cad0c25d269baab2d99fec305}{tsmd}
+\begin{DoxyCompactList}\small\item\em time used in the forces calculations (incrmented by 1 at each time step (in ps) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a36703a894904f14db8c7d5c321a5818f}{smddt}
+\begin{DoxyCompactList}\small\item\em time step incrementation during the force calculations \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a3b682348e3dcf462e291ec488e2462e2}{com\-\_\-dedx}
+\begin{DoxyCompactList}\small\item\em x force contribution on the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_acc40a2acdeb9d72fdaa66c077c28e0b3}{com\-\_\-dedy}
+\begin{DoxyCompactList}\small\item\em y force contribution on the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a724443889995ab799ac4d2f5aee9b63e}{com\-\_\-dedz}
+\begin{DoxyCompactList}\small\item\em z force contribution on the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_aff62c6bfe1f5b69ec9b8c2c4362c5dfa}{stock\-\_\-dedx}
+\begin{DoxyCompactList}\small\item\em storage of the x force contribution on the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_a4b2d1c318a4e2326b9cccdba264cc363}{stock\-\_\-dedy}
+\begin{DoxyCompactList}\small\item\em storage of the y force contribution on the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_ab701a51c1aa7c929d6086f4d2550e55f}{stock\-\_\-dedz}
+\begin{DoxyCompactList}\small\item\em storage of the z force contribution on the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmsmd_ad2f343580b4cf844e2c9a84fea789100}{stock\-\_\-ensmd}
+\begin{DoxyCompactList}\small\item\em storage of the S\-M\-D energy contribution on the S\-M\-D C\-O\-M at timestep t \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classmsmd_a9343c86fbd3756f350b7f0f9b9b224a4}{dedx}
+\begin{DoxyCompactList}\small\item\em 1\-D table of x force contribution \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classmsmd_a7926ca2df6f47e20454581e3b619f8d3}{dedy}
+\begin{DoxyCompactList}\small\item\em 1\-D table of y force contribution \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classmsmd_a20266d06c8fd7a1b7ded88962bc59339}{dedz}
+\begin{DoxyCompactList}\small\item\em 1\-D table of z force contribution \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 23 of file M\-O\-D\-\_\-msmd.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classmsmd_a227412ce8c92691533ff296b74dfde92}{\index{msmd@{msmd}!atfol@{atfol}}
+\index{atfol@{atfol}!msmd@{msmd}}
+\subsubsection[{atfol}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::atfol}}\label{classmsmd_a227412ce8c92691533ff296b74dfde92}
+
+
+atom to use with use\-\_\-atfol during the simulation 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a3b682348e3dcf462e291ec488e2462e2}{\index{msmd@{msmd}!com\-\_\-dedx@{com\-\_\-dedx}}
+\index{com\-\_\-dedx@{com\-\_\-dedx}!msmd@{msmd}}
+\subsubsection[{com\-\_\-dedx}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::com\-\_\-dedx}}\label{classmsmd_a3b682348e3dcf462e291ec488e2462e2}
+
+
+x force contribution on the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 57 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_acc40a2acdeb9d72fdaa66c077c28e0b3}{\index{msmd@{msmd}!com\-\_\-dedy@{com\-\_\-dedy}}
+\index{com\-\_\-dedy@{com\-\_\-dedy}!msmd@{msmd}}
+\subsubsection[{com\-\_\-dedy}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::com\-\_\-dedy}}\label{classmsmd_acc40a2acdeb9d72fdaa66c077c28e0b3}
+
+
+y force contribution on the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 58 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a724443889995ab799ac4d2f5aee9b63e}{\index{msmd@{msmd}!com\-\_\-dedz@{com\-\_\-dedz}}
+\index{com\-\_\-dedz@{com\-\_\-dedz}!msmd@{msmd}}
+\subsubsection[{com\-\_\-dedz}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::com\-\_\-dedz}}\label{classmsmd_a724443889995ab799ac4d2f5aee9b63e}
+
+
+z force contribution on the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 59 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a9b24104b4d00119969ff95f03e0a68f9}{\index{msmd@{msmd}!cur\-\_\-xcom@{cur\-\_\-xcom}}
+\index{cur\-\_\-xcom@{cur\-\_\-xcom}!msmd@{msmd}}
+\subsubsection[{cur\-\_\-xcom}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::cur\-\_\-xcom}}\label{classmsmd_a9b24104b4d00119969ff95f03e0a68f9}
+
+
+x coordinate of the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_aef410996fee34e772a7840d5cdb7ab1c}{\index{msmd@{msmd}!cur\-\_\-ycom@{cur\-\_\-ycom}}
+\index{cur\-\_\-ycom@{cur\-\_\-ycom}!msmd@{msmd}}
+\subsubsection[{cur\-\_\-ycom}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::cur\-\_\-ycom}}\label{classmsmd_aef410996fee34e772a7840d5cdb7ab1c}
+
+
+y coordinate of the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_ae554a126168530ae9e10a604cccf37ea}{\index{msmd@{msmd}!cur\-\_\-zcom@{cur\-\_\-zcom}}
+\index{cur\-\_\-zcom@{cur\-\_\-zcom}!msmd@{msmd}}
+\subsubsection[{cur\-\_\-zcom}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::cur\-\_\-zcom}}\label{classmsmd_ae554a126168530ae9e10a604cccf37ea}
+
+
+z coordinate of the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a6d28f460b2fadec4e174e9c79639f7cd}{\index{msmd@{msmd}!curmtotcom@{curmtotcom}}
+\index{curmtotcom@{curmtotcom}!msmd@{msmd}}
+\subsubsection[{curmtotcom}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::curmtotcom}}\label{classmsmd_a6d28f460b2fadec4e174e9c79639f7cd}
+
+
+current total mass of the center of mass during calculations 
+
+
+
+Definition at line 54 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a9343c86fbd3756f350b7f0f9b9b224a4}{\index{msmd@{msmd}!dedx@{dedx}}
+\index{dedx@{dedx}!msmd@{msmd}}
+\subsubsection[{dedx}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer msmd\-::dedx}}\label{classmsmd_a9343c86fbd3756f350b7f0f9b9b224a4}
+
+
+1\-D table of x force contribution 
+
+
+
+Definition at line 64 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a7926ca2df6f47e20454581e3b619f8d3}{\index{msmd@{msmd}!dedy@{dedy}}
+\index{dedy@{dedy}!msmd@{msmd}}
+\subsubsection[{dedy}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer msmd\-::dedy}}\label{classmsmd_a7926ca2df6f47e20454581e3b619f8d3}
+
+
+1\-D table of y force contribution 
+
+
+
+Definition at line 65 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a20266d06c8fd7a1b7ded88962bc59339}{\index{msmd@{msmd}!dedz@{dedz}}
+\index{dedz@{dedz}!msmd@{msmd}}
+\subsubsection[{dedz}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer msmd\-::dedz}}\label{classmsmd_a20266d06c8fd7a1b7ded88962bc59339}
+
+
+1\-D table of z force contribution 
+
+
+
+Definition at line 66 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_ac6ff7790f7826383a90213add5efe1ff}{\index{msmd@{msmd}!ismd@{ismd}}
+\index{ismd@{ismd}!msmd@{msmd}}
+\subsubsection[{ismd}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::ismd}}\label{classmsmd_ac6ff7790f7826383a90213add5efe1ff}
+
+
+temporary S\-M\-D atom number during the processors distrubution 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a3d7ff9b73382ccebdf42c0c5a01e673c}{\index{msmd@{msmd}!ismdout@{ismdout}}
+\index{ismdout@{ismdout}!msmd@{msmd}}
+\subsubsection[{ismdout}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::ismdout}}\label{classmsmd_a3d7ff9b73382ccebdf42c0c5a01e673c}
+
+
+unit of the smd output file (default = 3) 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a2d12edd4b10d02323b29a0deb6e1547f}{\index{msmd@{msmd}!ismdsave@{ismdsave}}
+\index{ismdsave@{ismdsave}!msmd@{msmd}}
+\subsubsection[{ismdsave}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::ismdsave}}\label{classmsmd_a2d12edd4b10d02323b29a0deb6e1547f}
+
+
+unit of the smd save file (default = 40) 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a52bb0011757c20b7d8f11c546beeb021}{\index{msmd@{msmd}!mtotcom@{mtotcom}}
+\index{mtotcom@{mtotcom}!msmd@{msmd}}
+\subsubsection[{mtotcom}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::mtotcom}}\label{classmsmd_a52bb0011757c20b7d8f11c546beeb021}
+
+
+initial total mass of the center of mass 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_acbf4807f1ce56dff3f6e6b1f60642586}{\index{msmd@{msmd}!naltsmd@{naltsmd}}
+\index{naltsmd@{naltsmd}!msmd@{msmd}}
+\subsubsection[{naltsmd}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::naltsmd}}\label{classmsmd_acbf4807f1ce56dff3f6e6b1f60642586}
+
+
+Useful to adapt the timestep for multitimestep procedure. 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_afc4ebe744a30fd19f67574e691308829}{\index{msmd@{msmd}!ncsmd@{ncsmd}}
+\index{ncsmd@{ncsmd}!msmd@{msmd}}
+\subsubsection[{ncsmd}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::ncsmd}}\label{classmsmd_afc4ebe744a30fd19f67574e691308829}
+
+
+Number of S\-M\-D atoms assigned to the center of mass of S\-M\-D. 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a904292a72123ef4d6f6bc89188e84553}{\index{msmd@{msmd}!nsmdglob@{nsmdglob}}
+\index{nsmdglob@{nsmdglob}!msmd@{msmd}}
+\subsubsection[{nsmdglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer msmd\-::nsmdglob}}\label{classmsmd_a904292a72123ef4d6f6bc89188e84553}
+
+
+1\-D table corresponded to the number of each S\-M\-D atoms 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a3d82fa00829c2cca7bfff321c83f579b}{\index{msmd@{msmd}!nsmdloc@{nsmdloc}}
+\index{nsmdloc@{nsmdloc}!msmd@{msmd}}
+\subsubsection[{nsmdloc}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::nsmdloc}}\label{classmsmd_a3d82fa00829c2cca7bfff321c83f579b}
+
+
+number of allocated S\-M\-D atoms per processors 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a36703a894904f14db8c7d5c321a5818f}{\index{msmd@{msmd}!smddt@{smddt}}
+\index{smddt@{smddt}!msmd@{msmd}}
+\subsubsection[{smddt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::smddt}}\label{classmsmd_a36703a894904f14db8c7d5c321a5818f}
+
+
+time step incrementation during the force calculations 
+
+
+
+Definition at line 56 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a0cfec7a2408289c6345e02f9be8ed9ef}{\index{msmd@{msmd}!smdfor@{smdfor}}
+\index{smdfor@{smdfor}!msmd@{msmd}}
+\subsubsection[{smdfor}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::smdfor}}\label{classmsmd_a0cfec7a2408289c6345e02f9be8ed9ef}
+
+
+Correspond to the force of the S\-M\-D center of mass in case of constant force S\-M\-D study. 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a00a3fbfb67f2675eef2955590ca83a72}{\index{msmd@{msmd}!smdk@{smdk}}
+\index{smdk@{smdk}!msmd@{msmd}}
+\subsubsection[{smdk}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::smdk}}\label{classmsmd_a00a3fbfb67f2675eef2955590ca83a72}
+
+
+Elastic constant (in Kcal/mol/\-A$^\wedge$2) 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_ac7b1d430b9652f2e07695a4ca5310b7f}{\index{msmd@{msmd}!smdk2@{smdk2}}
+\index{smdk2@{smdk2}!msmd@{msmd}}
+\subsubsection[{smdk2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::smdk2}}\label{classmsmd_ac7b1d430b9652f2e07695a4ca5310b7f}
+
+
+Transverse elastic constant (in Kcal/mol/\-A$^\wedge$2) 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a3e8ffd20ee86a6e8fc6a0f028ad70495}{\index{msmd@{msmd}!smdoutputfreq@{smdoutputfreq}}
+\index{smdoutputfreq@{smdoutputfreq}!msmd@{msmd}}
+\subsubsection[{smdoutputfreq}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::smdoutputfreq}}\label{classmsmd_a3e8ffd20ee86a6e8fc6a0f028ad70495}
+
+
+Correspond to the frequency in timestseps with which the current S\-M\-D data values of printed out. 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a8f356834ac2c3a70a860a4e993eb3b1d}{\index{msmd@{msmd}!smdprocprint@{smdprocprint}}
+\index{smdprocprint@{smdprocprint}!msmd@{msmd}}
+\subsubsection[{smdprocprint}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::smdprocprint}}\label{classmsmd_a8f356834ac2c3a70a860a4e993eb3b1d}
+
+
+Decide which proc has to send the information to the master. 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a1c3a1848e4d98289076e603fab46105a}{\index{msmd@{msmd}!smdvel@{smdvel}}
+\index{smdvel@{smdvel}!msmd@{msmd}}
+\subsubsection[{smdvel}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::smdvel}}\label{classmsmd_a1c3a1848e4d98289076e603fab46105a}
+
+
+Correspond to the velocity of the S\-M\-D center of mass in case of constant velocity S\-M\-D study. 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_aff62c6bfe1f5b69ec9b8c2c4362c5dfa}{\index{msmd@{msmd}!stock\-\_\-dedx@{stock\-\_\-dedx}}
+\index{stock\-\_\-dedx@{stock\-\_\-dedx}!msmd@{msmd}}
+\subsubsection[{stock\-\_\-dedx}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::stock\-\_\-dedx}}\label{classmsmd_aff62c6bfe1f5b69ec9b8c2c4362c5dfa}
+
+
+storage of the x force contribution on the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 60 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a4b2d1c318a4e2326b9cccdba264cc363}{\index{msmd@{msmd}!stock\-\_\-dedy@{stock\-\_\-dedy}}
+\index{stock\-\_\-dedy@{stock\-\_\-dedy}!msmd@{msmd}}
+\subsubsection[{stock\-\_\-dedy}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::stock\-\_\-dedy}}\label{classmsmd_a4b2d1c318a4e2326b9cccdba264cc363}
+
+
+storage of the y force contribution on the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 61 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_ab701a51c1aa7c929d6086f4d2550e55f}{\index{msmd@{msmd}!stock\-\_\-dedz@{stock\-\_\-dedz}}
+\index{stock\-\_\-dedz@{stock\-\_\-dedz}!msmd@{msmd}}
+\subsubsection[{stock\-\_\-dedz}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::stock\-\_\-dedz}}\label{classmsmd_ab701a51c1aa7c929d6086f4d2550e55f}
+
+
+storage of the z force contribution on the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 62 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_ad2f343580b4cf844e2c9a84fea789100}{\index{msmd@{msmd}!stock\-\_\-ensmd@{stock\-\_\-ensmd}}
+\index{stock\-\_\-ensmd@{stock\-\_\-ensmd}!msmd@{msmd}}
+\subsubsection[{stock\-\_\-ensmd}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::stock\-\_\-ensmd}}\label{classmsmd_ad2f343580b4cf844e2c9a84fea789100}
+
+
+storage of the S\-M\-D energy contribution on the S\-M\-D C\-O\-M at timestep t 
+
+
+
+Definition at line 63 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_acd0d6c7087206d9032bb505cc1ddb03a}{\index{msmd@{msmd}!tabatfol@{tabatfol}}
+\index{tabatfol@{tabatfol}!msmd@{msmd}}
+\subsubsection[{tabatfol}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer msmd\-::tabatfol}}\label{classmsmd_acd0d6c7087206d9032bb505cc1ddb03a}
+
+
+Table containing index of atoms specified with atfol. 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_aed5f2109d5aea9e984f03f12175bc47b}{\index{msmd@{msmd}!tcsmd@{tcsmd}}
+\index{tcsmd@{tcsmd}!msmd@{msmd}}
+\subsubsection[{tcsmd}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer msmd\-::tcsmd}}\label{classmsmd_aed5f2109d5aea9e984f03f12175bc47b}
+
+
+Index of each atoms assigned to the S\-M\-D C\-O\-M. 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_ac03367ffce116ce017105ef8fae32422}{\index{msmd@{msmd}!tpass@{tpass}}
+\index{tpass@{tpass}!msmd@{msmd}}
+\subsubsection[{tpass}]{\setlength{\rightskip}{0pt plus 5cm}integer msmd\-::tpass}}\label{classmsmd_ac03367ffce116ce017105ef8fae32422}
+
+
+number of passage in the routine esmd1.\-f (usefull for the use of S\-M\-Doutput\-Freq) 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a732bc76cad0c25d269baab2d99fec305}{\index{msmd@{msmd}!tsmd@{tsmd}}
+\index{tsmd@{tsmd}!msmd@{msmd}}
+\subsubsection[{tsmd}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::tsmd}}\label{classmsmd_a732bc76cad0c25d269baab2d99fec305}
+
+
+time used in the forces calculations (incrmented by 1 at each time step (in ps) 
+
+
+
+Definition at line 55 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_aca46d500e14101f21a92d03f2a41d76e}{\index{msmd@{msmd}!use\-\_\-atfol@{use\-\_\-atfol}}
+\index{use\-\_\-atfol@{use\-\_\-atfol}!msmd@{msmd}}
+\subsubsection[{use\-\_\-atfol}]{\setlength{\rightskip}{0pt plus 5cm}logical msmd\-::use\-\_\-atfol}}\label{classmsmd_aca46d500e14101f21a92d03f2a41d76e}
+
+
+Print or not specific informations about S\-M\-D atoms. 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a8394605ebe4793bedcc802719a1e0183}{\index{msmd@{msmd}!use\-\_\-smdk2@{use\-\_\-smdk2}}
+\index{use\-\_\-smdk2@{use\-\_\-smdk2}!msmd@{msmd}}
+\subsubsection[{use\-\_\-smdk2}]{\setlength{\rightskip}{0pt plus 5cm}logical msmd\-::use\-\_\-smdk2}}\label{classmsmd_a8394605ebe4793bedcc802719a1e0183}
+
+
+Use or not of a second k constant. 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_aeae9f59cff9e8a4b11066ba325492d92}{\index{msmd@{msmd}!xcom@{xcom}}
+\index{xcom@{xcom}!msmd@{msmd}}
+\subsubsection[{xcom}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::xcom}}\label{classmsmd_aeae9f59cff9e8a4b11066ba325492d92}
+
+
+x coordinate of the initial S\-M\-D C\-O\-M 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_adece962187d68486034a4eafca72632c}{\index{msmd@{msmd}!xdir@{xdir}}
+\index{xdir@{xdir}!msmd@{msmd}}
+\subsubsection[{xdir}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::xdir}}\label{classmsmd_adece962187d68486034a4eafca72632c}
+
+
+x direction of the center of mass 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_ae92757e8de6f57ff77289f5220eda460}{\index{msmd@{msmd}!ycom@{ycom}}
+\index{ycom@{ycom}!msmd@{msmd}}
+\subsubsection[{ycom}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::ycom}}\label{classmsmd_ae92757e8de6f57ff77289f5220eda460}
+
+
+y coordinate of the initial S\-M\-D C\-O\-M 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a093de4aa2e9c0ee9bddec7c9d664f53f}{\index{msmd@{msmd}!ydir@{ydir}}
+\index{ydir@{ydir}!msmd@{msmd}}
+\subsubsection[{ydir}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::ydir}}\label{classmsmd_a093de4aa2e9c0ee9bddec7c9d664f53f}
+
+
+y direction of the center of mass 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_abe66459722303008741f916ed003751a}{\index{msmd@{msmd}!zcom@{zcom}}
+\index{zcom@{zcom}!msmd@{msmd}}
+\subsubsection[{zcom}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::zcom}}\label{classmsmd_abe66459722303008741f916ed003751a}
+
+
+z coordinate of the initial S\-M\-D C\-O\-M 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-msmd.\-f90.
+
+\hypertarget{classmsmd_a03065d009523da9f2881234a34921999}{\index{msmd@{msmd}!zdir@{zdir}}
+\index{zdir@{zdir}!msmd@{msmd}}
+\subsubsection[{zdir}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 msmd\-::zdir}}\label{classmsmd_a03065d009523da9f2881234a34921999}
+
+
+z direction of the center of mass 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-msmd.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__msmd_8f90}{M\-O\-D\-\_\-msmd.\-f90}\end{DoxyCompactItemize}

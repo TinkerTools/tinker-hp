@@ -1,0 +1,1372 @@
+\hypertarget{classqtb}{\section{qtb Module Reference}
+\label{classqtb}\index{qtb@{qtb}}
+}
+
+
+Collaboration diagram for qtb\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=274pt]{classqtb__coll__graph}
+\end{center}
+\end{figure}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+interface \hyperlink{interfaceqtb_1_1qtb__optimizer__type}{qtb\-\_\-optimizer\-\_\-type}
+\item 
+type \hyperlink{structqtb_1_1qtbdat__t}{qtbdat\-\_\-t}
+\item 
+type \hyperlink{structqtb_1_1qtbopt__t}{qtbopt\-\_\-t}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine, public \hyperlink{classqtb_ae6f7f437061f1fb54111f71541551610}{qtbinit} (dt)
+\item 
+subroutine \hyperlink{classqtb_ad311bf99780817a99d85d8dc60b2f0f8}{initialize\-\_\-adaptation\-\_\-parameters} ()
+\item 
+subroutine \hyperlink{classqtb_ad75e237b959399de40ff9770628cc9e2}{allocate\-\_\-qtbdata} (iglob)
+\item 
+subroutine \hyperlink{classqtb_afc438bdbd7f915d2f29c36dc9a41e500}{deallocate\-\_\-qtbdata} (iglob)
+\item 
+subroutine \hyperlink{classqtb_ab833c16191b0a4ab56314b04f9ba808e}{convolseg} ()
+\item 
+subroutine, public \hyperlink{classqtb_a93f0e167c4980bd190a1a2dcb6ecfa19}{qtbrandom} ()
+\item 
+integer function, public \hyperlink{classqtb_aa62774b816b6b39df364ba19503768e9}{get\-\_\-qtb\-\_\-compteur} ()
+\item 
+subroutine, public \hyperlink{classqtb_a6cca410de146cb9f472943484be133fb}{qtb\-\_\-update\-\_\-state} ()
+\item 
+subroutine \hyperlink{classqtb_aff51e8e681c6042f045a9803ec35fd77}{qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma} ()
+\item 
+subroutine \hyperlink{classqtb_ab80d433a778590bea099c2b40f1aa08c}{write\-\_\-frequency\-\_\-type\-\_\-header} (unit)
+\item 
+subroutine, public \hyperlink{classqtb_a1127e6bd0d1afbc20d0b0387617ef816}{reassignqtb} (nloc\-\_\-save, max\-\_\-data\-\_\-recv, nneig\-\_\-recep, n\-\_\-data\-\_\-recv, iglob\-\_\-recv, pneig\-\_\-recep, nneig\-\_\-send, n\-\_\-data\-\_\-send, iglob\-\_\-send, pneig\-\_\-send, max\-\_\-atoms\-\_\-recv, max\-\_\-atoms\-\_\-send)
+\item 
+subroutine \hyperlink{classqtb_a8fbfafdc7282eaf23a02db91984d7a99}{reduce\-\_\-qtb\-\_\-spectrum} (spectrum, size, comm, rank, allreduce)
+\item 
+subroutine \hyperlink{classqtb_a9913767a9077cb7c9b0141413a55bf8d}{cleanup\-\_\-qtbdata} ()
+\item 
+subroutine \hyperlink{classqtb_ab102bd090bf1ab3aa9d0013e16cacf16}{generate\-\_\-corr\-\_\-pot} ()
+\item 
+subroutine \hyperlink{classqtb_ae3f6764883242093e065a6c9d2fb8a85}{compute\-\_\-corr\-\_\-fact} (m\-Cvv\-\_\-in)
+\item 
+subroutine \hyperlink{classqtb_a234b339ddfd78c77dcc89f09c5897639}{adapt\-\_\-gamma\-\_\-simple} (itype, m\-Cvv, Cvf, d\-F\-D\-R, qtb\-\_\-therm)
+\item 
+subroutine \hyperlink{classqtb_a97afb234fbbd9e9466431147e998ec33}{adapt\-\_\-gamma\-\_\-ratio} (itype, m\-Cvv, Cvf, d\-F\-D\-R, qtb\-\_\-therm)
+\item 
+subroutine \hyperlink{classqtb_a51e5e38dbbb20343cadccb3de9705903}{window\-\_\-smooth\-\_\-spectrum} (s, dw)
+\item 
+subroutine \hyperlink{classqtb_aa22488ea9a65a1c8fe9c6caff9e9c99c}{broadcast\-\_\-piqtb\-\_\-noise} ()
+\item 
+subroutine \hyperlink{classqtb_afa830ad0bf6560491dbb417d0517998b}{reduce\-\_\-piqtb\-\_\-vad} ()
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer, public \hyperlink{classqtb_adc59c8806c7ede038b1845fc9f8147bb}{skipseg}
+\item 
+real $\ast$8 \hyperlink{classqtb_a848130400b3dc59232a882616d9beec0}{omegasmear}
+\item 
+real $\ast$8 \hyperlink{classqtb_af53ecd68e28f6a8f53d49a5882061c03}{gammar\-\_\-min}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_ac36637763a01844c4f1f18d5035c9977}{htilde}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classqtb_aa29c1c8fec4a13230ea627fbd6962a10}{corr\-\_\-pot\-\_\-ratio}
+\item 
+logical, public \hyperlink{classqtb_aa28fc5f309cb469a62634069b2d16444}{noqtb}
+\item 
+logical, public \hyperlink{classqtb_a617a1a716e7599e62eca164178f38df2}{corr\-\_\-pot}
+\item 
+logical, public \hyperlink{classqtb_a872fe2905adbcf616ccc4c285220d0d2}{register\-\_\-spectra}
+\item 
+logical, public \hyperlink{classqtb_a9f30b1695ddee28edb2158790d43b14f}{qtb\-\_\-thermostat} =.F\-A\-L\-S\-E.
+\item 
+type(compteur\-\_\-type) \hyperlink{classqtb_ab733e1c72aab6e2efbb6f73fe66a9bde}{compteur}
+\item 
+type(compteur\-\_\-type) \hyperlink{classqtb_a02996b871c2484af286eac8a88a9bcbc}{compteur\-\_\-bis}
+\item 
+integer \hyperlink{classqtb_ab621da1de10f5405f43fac11e3e7c180}{plan\-\_\-qtb}
+\item 
+integer \hyperlink{classqtb_ae7544bfdc2b805f539c32e20bfabf0f1}{nloc\-\_\-plan} =-\/1
+\item 
+logical, public \hyperlink{classqtb_a01848b620e9b24836a371122c84a71f2}{qtb\-\_\-verbose} =.F\-A\-L\-S\-E.
+\item 
+logical, public \hyperlink{classqtb_a2bb4d73d947c3d5e3fb0c00dca3bfd26}{piqtb}
+\item 
+character $\ast$11, public \hyperlink{classqtb_a5fa4fc71571ec956dd7c4f935e755c4f}{adqtb\-\_\-optimizer}
+\item 
+character $\ast$11, dimension(\-:), \\*
+allocatable \hyperlink{classqtb_a794923263a7ad95cc051d7aff5d1f351}{adqtb\-\_\-optimizer\-\_\-type}
+\item 
+integer, public \hyperlink{classqtb_a3061f570614f506a5d914fc862275c0c}{adqtb\-\_\-avg\-\_\-adapt} =1
+\item 
+real $\ast$8, public \hyperlink{classqtb_a1905ac2f72584412e56fc1037a57641e}{adqtb\-\_\-tau\-\_\-avg\-\_\-default}
+\item 
+real $\ast$8, public \hyperlink{classqtb_ae57c1be5fd10880bcbb8452412682dd1}{adqtb\-\_\-tau\-\_\-adapt}
+\item 
+logical, public \hyperlink{classqtb_a6ee3dbfa7ec54c120520bb6f65eda7ac}{adqtb\-\_\-correct\-\_\-bias}
+\item 
+logical, public \hyperlink{classqtb_a5b41caa8ef3066475460c3190920f295}{adqtb\-\_\-win\-\_\-corr}
+\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classqtb_a2ecb6eb3b6006ebb6238554d82b65f4f}{adqtb\-\_\-tau\-\_\-avg}
+\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classqtb_a4acaca753cf07460ef6c20e7ebf01914}{a\-\_\-gamma}
+\item 
+logical, public \hyperlink{classqtb_af03b69a3cd5c3be7a38b14ebeed3550e}{adaptive\-\_\-qtb}
+\item 
+real $\ast$8, public \hyperlink{classqtb_a79aff6e248ffd04b723fd51ef4ef4089}{a\-\_\-gamma\-\_\-default}
+\item 
+real $\ast$8, dimension(3), public \hyperlink{classqtb_a8d99876f7c7cb5436adea57579d89f7d}{corr\-\_\-fact\-\_\-qtb} =1.d0
+\item 
+logical, public \hyperlink{classqtb_adb33338a5d19000dc58db2e4829ae74b}{use\-\_\-corr\-\_\-fact\-\_\-qtb}
+\item 
+logical \hyperlink{classqtb_ac8edcb982290fc47e3bf05877f2b0ecc}{corr\-\_\-fact\-\_\-converged} =.F\-A\-L\-S\-E.
+\item 
+logical, public \hyperlink{classqtb_a98327ca14b7917a2e422f898e0b57eb7}{corr\-\_\-pot\-\_\-corr\-\_\-fact} =.T\-R\-U\-E.
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_a7cf4ab603940c782b2a24dfbbdedc7c1}{gamma\-\_\-type}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_a22c9890359a07b802b2965b97ffee55f}{gamma\-\_\-type\-\_\-init}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_a30c387f210847d0817a3db9f94a2f80d}{mcvv\-\_\-average\-\_\-type}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_a476677a09383c56bbe3028b6dab3eea7}{mcvv\-\_\-average\-\_\-sum}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_a036c37b3c6b63524318c5965fa33c003}{cvf\-\_\-average\-\_\-type}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_ae65a01ddbd5ca81d368d7150200b4a51}{mcvv\-\_\-mean}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_a46ac722f370f3b929e706228051801f4}{cvf\-\_\-mean}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_a4f973bc50caab8bd82ffbe4acb07dca9}{dfdr\-\_\-mean}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classqtb_a56c736b040cf072d7ec1e444bf685fb1}{dfdr\-\_\-average\-\_\-type}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classqtb_aa9083781ffe9503478089cd26645b88d}{adqtb\-\_\-type}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classqtb_a381e32b5b6088fc1c209199abedc5129}{n\-\_\-of\-\_\-type}
+\item 
+character $\ast$3, dimension(\-:), \\*
+allocatable \hyperlink{classqtb_a1a0c930c48a8f13fbff54e36894caa9c}{adqtb\-\_\-name}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classqtb_a1080eac758b439ed2aeaf49ef5e92f5e}{adqtb\-\_\-type\-\_\-map}
+\item 
+integer \hyperlink{classqtb_a21744b9331333113a6c7a3f401c67047}{ntype}
+\item 
+logical, public \hyperlink{classqtb_a691e4a6864b758a6e2cba49e0dbf2088}{save\-\_\-gamma\-\_\-history} =.F\-A\-L\-S\-E.
+\item 
+logical, public \hyperlink{classqtb_a34e96ac736106bc3f7d5bd460e293bc8}{adqtb\-\_\-start\-\_\-classical} =.F\-A\-L\-S\-E.
+\item 
+real $\ast$8, public \hyperlink{classqtb_a777a3ecfccb537a2e3b6bb5c43a49d70}{adqtb\-\_\-smooth\-\_\-default}
+\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classqtb_a0f377d6b63265e4e7d79114e82047458}{adqtb\-\_\-smooth\-\_\-type}
+\item 
+type(\hyperlink{structqtb_1_1qtbdat__t}{qtbdat\-\_\-t}), dimension(\-:), \\*
+allocatable, public \hyperlink{classqtb_a29928faed9e005ea9609cd4c55f4ada8}{qtbdata}
+\item 
+logical, dimension(\-:), allocatable \hyperlink{classqtb_a6e5a1730bb8b5493f5205922093a3fdc}{qtbdata\-\_\-allocated}
+\item 
+type(\hyperlink{structqtb_1_1qtbopt__t}{qtbopt\-\_\-t}), dimension(\-:), \\*
+allocatable \hyperlink{classqtb_a175b26fb3570a3faedd3c49a5d8bd3e6}{adapt\-\_\-gamma}
+\end{DoxyCompactItemize}
+\subsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{classqtb_ae50e4340ff156901b63157ff686b0438}{read\-\_\-qtb\-\_\-keys} ()
+\item 
+subroutine \hyperlink{classqtb_a79eca7ca16cc3a49f3f3303415a1ee73}{adhnoise} (write\-\_\-kernel)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 24 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+\subsection{Member Function/\-Subroutine Documentation}
+\hypertarget{classqtb_a97afb234fbbd9e9466431147e998ec33}{\index{qtb@{qtb}!adapt\-\_\-gamma\-\_\-ratio@{adapt\-\_\-gamma\-\_\-ratio}}
+\index{adapt\-\_\-gamma\-\_\-ratio@{adapt\-\_\-gamma\-\_\-ratio}!qtb@{qtb}}
+\subsubsection[{adapt\-\_\-gamma\-\_\-ratio}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::adapt\-\_\-gamma\-\_\-ratio (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{itype, }
+\item[{real$\ast$8, dimension(\-:,\-:), intent(in)}]{m\-Cvv, }
+\item[{real$\ast$8, dimension(\-:,\-:), intent(in)}]{Cvf, }
+\item[{real$\ast$8, dimension(\-:,\-:), intent(in)}]{d\-F\-D\-R, }
+\item[{logical, intent(in)}]{qtb\-\_\-therm}
+\end{DoxyParamCaption}
+)}}\label{classqtb_a97afb234fbbd9e9466431147e998ec33}
+
+
+Definition at line 1634 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References ascii\-::int\-\_\-to\-\_\-str(), and window\-\_\-smooth\-\_\-spectrum().
+
+
+
+Referenced by qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a97afb234fbbd9e9466431147e998ec33_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a97afb234fbbd9e9466431147e998ec33_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_a234b339ddfd78c77dcc89f09c5897639}{\index{qtb@{qtb}!adapt\-\_\-gamma\-\_\-simple@{adapt\-\_\-gamma\-\_\-simple}}
+\index{adapt\-\_\-gamma\-\_\-simple@{adapt\-\_\-gamma\-\_\-simple}!qtb@{qtb}}
+\subsubsection[{adapt\-\_\-gamma\-\_\-simple}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::adapt\-\_\-gamma\-\_\-simple (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{itype, }
+\item[{real$\ast$8, dimension(\-:,\-:), intent(in)}]{m\-Cvv, }
+\item[{real$\ast$8, dimension(\-:,\-:), intent(in)}]{Cvf, }
+\item[{real$\ast$8, dimension(\-:,\-:), intent(in)}]{d\-F\-D\-R, }
+\item[{logical, intent(in)}]{qtb\-\_\-therm}
+\end{DoxyParamCaption}
+)}}\label{classqtb_a234b339ddfd78c77dcc89f09c5897639}
+
+
+Definition at line 1563 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References ascii\-::int\-\_\-to\-\_\-str(), and window\-\_\-smooth\-\_\-spectrum().
+
+
+
+Referenced by qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a234b339ddfd78c77dcc89f09c5897639_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a234b339ddfd78c77dcc89f09c5897639_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_a79eca7ca16cc3a49f3f3303415a1ee73}{\index{qtb@{qtb}!adhnoise@{adhnoise}}
+\index{adhnoise@{adhnoise}!qtb@{qtb}}
+\subsubsection[{adhnoise}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::adhnoise (
+\begin{DoxyParamCaption}
+\item[{logical, intent(in)}]{write\-\_\-kernel}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classqtb_a79eca7ca16cc3a49f3f3303415a1ee73}
+
+
+Definition at line 617 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann(), and spectra\-::qtb\-\_\-kernel().
+
+
+
+Referenced by qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma(), and qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a79eca7ca16cc3a49f3f3303415a1ee73_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a79eca7ca16cc3a49f3f3303415a1ee73_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_ad75e237b959399de40ff9770628cc9e2}{\index{qtb@{qtb}!allocate\-\_\-qtbdata@{allocate\-\_\-qtbdata}}
+\index{allocate\-\_\-qtbdata@{allocate\-\_\-qtbdata}!qtb@{qtb}}
+\subsubsection[{allocate\-\_\-qtbdata}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::allocate\-\_\-qtbdata (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{iglob}
+\end{DoxyParamCaption}
+)}}\label{classqtb_ad75e237b959399de40ff9770628cc9e2}
+
+
+Definition at line 580 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+Referenced by qtbinit(), and reassignqtb().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ad75e237b959399de40ff9770628cc9e2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_aa22488ea9a65a1c8fe9c6caff9e9c99c}{\index{qtb@{qtb}!broadcast\-\_\-piqtb\-\_\-noise@{broadcast\-\_\-piqtb\-\_\-noise}}
+\index{broadcast\-\_\-piqtb\-\_\-noise@{broadcast\-\_\-piqtb\-\_\-noise}!qtb@{qtb}}
+\subsubsection[{broadcast\-\_\-piqtb\-\_\-noise}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::broadcast\-\_\-piqtb\-\_\-noise (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_aa22488ea9a65a1c8fe9c6caff9e9c99c}
+
+
+Definition at line 1796 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+Referenced by convolseg().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_aa22488ea9a65a1c8fe9c6caff9e9c99c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_a9913767a9077cb7c9b0141413a55bf8d}{\index{qtb@{qtb}!cleanup\-\_\-qtbdata@{cleanup\-\_\-qtbdata}}
+\index{cleanup\-\_\-qtbdata@{cleanup\-\_\-qtbdata}!qtb@{qtb}}
+\subsubsection[{cleanup\-\_\-qtbdata}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::cleanup\-\_\-qtbdata (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_a9913767a9077cb7c9b0141413a55bf8d}
+
+
+Definition at line 1366 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+Referenced by qtb\-\_\-update\-\_\-state().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a9913767a9077cb7c9b0141413a55bf8d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_ae3f6764883242093e065a6c9d2fb8a85}{\index{qtb@{qtb}!compute\-\_\-corr\-\_\-fact@{compute\-\_\-corr\-\_\-fact}}
+\index{compute\-\_\-corr\-\_\-fact@{compute\-\_\-corr\-\_\-fact}!qtb@{qtb}}
+\subsubsection[{compute\-\_\-corr\-\_\-fact}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::compute\-\_\-corr\-\_\-fact (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(\-:,\-:,\-:), intent(in)}]{m\-Cvv\-\_\-in}
+\end{DoxyParamCaption}
+)}}\label{classqtb_ae3f6764883242093e065a6c9d2fb8a85}
+
+
+Definition at line 1457 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann(), deconvolution\-::deconvolute\-\_\-spectrum(), and deconvolution\-::kernel\-\_\-lorentz().
+
+
+
+Referenced by qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ae3f6764883242093e065a6c9d2fb8a85_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ae3f6764883242093e065a6c9d2fb8a85_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_ab833c16191b0a4ab56314b04f9ba808e}{\index{qtb@{qtb}!convolseg@{convolseg}}
+\index{convolseg@{convolseg}!qtb@{qtb}}
+\subsubsection[{convolseg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::convolseg (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_ab833c16191b0a4ab56314b04f9ba808e}
+
+
+Definition at line 697 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References broadcast\-\_\-piqtb\-\_\-noise(), normal(), and spectra\-::spcfft().
+
+
+
+Referenced by qtb\-\_\-update\-\_\-state(), and qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ab833c16191b0a4ab56314b04f9ba808e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ab833c16191b0a4ab56314b04f9ba808e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_afc438bdbd7f915d2f29c36dc9a41e500}{\index{qtb@{qtb}!deallocate\-\_\-qtbdata@{deallocate\-\_\-qtbdata}}
+\index{deallocate\-\_\-qtbdata@{deallocate\-\_\-qtbdata}!qtb@{qtb}}
+\subsubsection[{deallocate\-\_\-qtbdata}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::deallocate\-\_\-qtbdata (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{iglob}
+\end{DoxyParamCaption}
+)}}\label{classqtb_afc438bdbd7f915d2f29c36dc9a41e500}
+
+
+Definition at line 600 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+Referenced by reassignqtb().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_afc438bdbd7f915d2f29c36dc9a41e500_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_ab102bd090bf1ab3aa9d0013e16cacf16}{\index{qtb@{qtb}!generate\-\_\-corr\-\_\-pot@{generate\-\_\-corr\-\_\-pot}}
+\index{generate\-\_\-corr\-\_\-pot@{generate\-\_\-corr\-\_\-pot}!qtb@{qtb}}
+\subsubsection[{generate\-\_\-corr\-\_\-pot}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::generate\-\_\-corr\-\_\-pot (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_ab102bd090bf1ab3aa9d0013e16cacf16}
+
+
+Definition at line 1402 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann(), deconvolution\-::deconvolute\-\_\-spectrum(), ascii\-::int\-\_\-to\-\_\-str(), deconvolution\-::kernel\-\_\-lorentz\-\_\-pot(), and spectra\-::qtb\-\_\-kernel().
+
+
+
+Referenced by qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ab102bd090bf1ab3aa9d0013e16cacf16_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ab102bd090bf1ab3aa9d0013e16cacf16_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_aa62774b816b6b39df364ba19503768e9}{\index{qtb@{qtb}!get\-\_\-qtb\-\_\-compteur@{get\-\_\-qtb\-\_\-compteur}}
+\index{get\-\_\-qtb\-\_\-compteur@{get\-\_\-qtb\-\_\-compteur}!qtb@{qtb}}
+\subsubsection[{get\-\_\-qtb\-\_\-compteur}]{\setlength{\rightskip}{0pt plus 5cm}integer function, public qtb\-::get\-\_\-qtb\-\_\-compteur (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_aa62774b816b6b39df364ba19503768e9}
+
+
+Definition at line 833 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+Referenced by utilbaoabpi\-::apply\-\_\-aoa\-\_\-pi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_aa62774b816b6b39df364ba19503768e9_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_ad311bf99780817a99d85d8dc60b2f0f8}{\index{qtb@{qtb}!initialize\-\_\-adaptation\-\_\-parameters@{initialize\-\_\-adaptation\-\_\-parameters}}
+\index{initialize\-\_\-adaptation\-\_\-parameters@{initialize\-\_\-adaptation\-\_\-parameters}!qtb@{qtb}}
+\subsubsection[{initialize\-\_\-adaptation\-\_\-parameters}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::initialize\-\_\-adaptation\-\_\-parameters (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_ad311bf99780817a99d85d8dc60b2f0f8}
+
+
+Definition at line 515 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References fatal(), gettext(), and upcase().
+
+
+
+Referenced by qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{classqtb_ad311bf99780817a99d85d8dc60b2f0f8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ad311bf99780817a99d85d8dc60b2f0f8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_aff51e8e681c6042f045a9803ec35fd77}{\index{qtb@{qtb}!qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma@{qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma}}
+\index{qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma@{qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma}!qtb@{qtb}}
+\subsubsection[{qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_aff51e8e681c6042f045a9803ec35fd77}
+
+
+Definition at line 880 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References adhnoise(), compute\-\_\-corr\-\_\-fact(), spectra\-::correct\-\_\-window\-\_\-spectrum(), ascii\-::int\-\_\-to\-\_\-str(), reduce\-\_\-piqtb\-\_\-vad(), reduce\-\_\-qtb\-\_\-spectrum(), spectra\-::spcfft(), and write\-\_\-frequency\-\_\-type\-\_\-header().
+
+
+
+Referenced by qtb\-\_\-update\-\_\-state().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_aff51e8e681c6042f045a9803ec35fd77_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_aff51e8e681c6042f045a9803ec35fd77_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_a6cca410de146cb9f472943484be133fb}{\index{qtb@{qtb}!qtb\-\_\-update\-\_\-state@{qtb\-\_\-update\-\_\-state}}
+\index{qtb\-\_\-update\-\_\-state@{qtb\-\_\-update\-\_\-state}!qtb@{qtb}}
+\subsubsection[{qtb\-\_\-update\-\_\-state}]{\setlength{\rightskip}{0pt plus 5cm}subroutine, public qtb\-::qtb\-\_\-update\-\_\-state (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_a6cca410de146cb9f472943484be133fb}
+
+
+Definition at line 839 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References cleanup\-\_\-qtbdata(), convolseg(), and qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma().
+
+
+
+Referenced by utilbaoabpi\-::apply\-\_\-aoa\-\_\-pi(), and qtbrandom().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a6cca410de146cb9f472943484be133fb_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a6cca410de146cb9f472943484be133fb_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_ae6f7f437061f1fb54111f71541551610}{\index{qtb@{qtb}!qtbinit@{qtbinit}}
+\index{qtbinit@{qtbinit}!qtb@{qtb}}
+\subsubsection[{qtbinit}]{\setlength{\rightskip}{0pt plus 5cm}subroutine, public qtb\-::qtbinit (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classqtb_ae6f7f437061f1fb54111f71541551610}
+
+
+Definition at line 134 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References adapt\-\_\-gamma\-\_\-ratio(), adapt\-\_\-gamma\-\_\-simple(), adhnoise(), allocate\-\_\-qtbdata(), convolseg(), colvarproxy\-\_\-tinkerhp\-::dt(), fatal(), generate\-\_\-corr\-\_\-pot(), initialize\-\_\-adaptation\-\_\-parameters(), spectra\-::initialize\-\_\-spectra(), normal(), read\-\_\-qtb\-\_\-keys(), and spectra\-::set\-\_\-kubo().
+
+
+
+Referenced by mdinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ae6f7f437061f1fb54111f71541551610_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ae6f7f437061f1fb54111f71541551610_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_a93f0e167c4980bd190a1a2dcb6ecfa19}{\index{qtb@{qtb}!qtbrandom@{qtbrandom}}
+\index{qtbrandom@{qtbrandom}!qtb@{qtb}}
+\subsubsection[{qtbrandom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine, public qtb\-::qtbrandom (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_a93f0e167c4980bd190a1a2dcb6ecfa19}
+
+
+Definition at line 786 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References fatal(), and qtb\-\_\-update\-\_\-state().
+
+
+
+Referenced by utilbaoab\-::apply\-\_\-o\-\_\-block().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a93f0e167c4980bd190a1a2dcb6ecfa19_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a93f0e167c4980bd190a1a2dcb6ecfa19_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_ae50e4340ff156901b63157ff686b0438}{\index{qtb@{qtb}!read\-\_\-qtb\-\_\-keys@{read\-\_\-qtb\-\_\-keys}}
+\index{read\-\_\-qtb\-\_\-keys@{read\-\_\-qtb\-\_\-keys}!qtb@{qtb}}
+\subsubsection[{read\-\_\-qtb\-\_\-keys}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::read\-\_\-qtb\-\_\-keys (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classqtb_ae50e4340ff156901b63157ff686b0438}
+
+
+Definition at line 418 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References gettext(), getword(), and upcase().
+
+
+
+Referenced by qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{classqtb_ae50e4340ff156901b63157ff686b0438_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ae50e4340ff156901b63157ff686b0438_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_a1127e6bd0d1afbc20d0b0387617ef816}{\index{qtb@{qtb}!reassignqtb@{reassignqtb}}
+\index{reassignqtb@{reassignqtb}!qtb@{qtb}}
+\subsubsection[{reassignqtb}]{\setlength{\rightskip}{0pt plus 5cm}subroutine, public qtb\-::reassignqtb (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{nloc\-\_\-save, }
+\item[{integer, intent(in)}]{max\-\_\-data\-\_\-recv, }
+\item[{integer, intent(in)}]{nneig\-\_\-recep, }
+\item[{integer, dimension(nneig\-\_\-recep), intent(in)}]{n\-\_\-data\-\_\-recv, }
+\item[{integer, dimension(max\-\_\-data\-\_\-recv,nneig\-\_\-recep), intent(in)}]{iglob\-\_\-recv, }
+\item[{integer, dimension(\-:), intent(in)}]{pneig\-\_\-recep, }
+\item[{integer, intent(in)}]{nneig\-\_\-send, }
+\item[{integer, dimension(0\-:nneig\-\_\-send), intent(in)}]{n\-\_\-data\-\_\-send, }
+\item[{integer, dimension(1\-:nloc\-\_\-save,0\-:nneig\-\_\-send), intent(in)}]{iglob\-\_\-send, }
+\item[{integer, dimension(\-:), intent(in)}]{pneig\-\_\-send, }
+\item[{integer, intent(in)}]{max\-\_\-atoms\-\_\-recv, }
+\item[{integer, intent(in)}]{max\-\_\-atoms\-\_\-send}
+\end{DoxyParamCaption}
+)}}\label{classqtb_a1127e6bd0d1afbc20d0b0387617ef816}
+
+
+Definition at line 1142 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References allocate\-\_\-qtbdata(), and deallocate\-\_\-qtbdata().
+
+
+
+Referenced by reassign(), and commstuffpi\-::reassignpi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=344pt]{classqtb_a1127e6bd0d1afbc20d0b0387617ef816_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a1127e6bd0d1afbc20d0b0387617ef816_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_afa830ad0bf6560491dbb417d0517998b}{\index{qtb@{qtb}!reduce\-\_\-piqtb\-\_\-vad@{reduce\-\_\-piqtb\-\_\-vad}}
+\index{reduce\-\_\-piqtb\-\_\-vad@{reduce\-\_\-piqtb\-\_\-vad}!qtb@{qtb}}
+\subsubsection[{reduce\-\_\-piqtb\-\_\-vad}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::reduce\-\_\-piqtb\-\_\-vad (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classqtb_afa830ad0bf6560491dbb417d0517998b}
+
+
+Definition at line 1877 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+Referenced by qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_afa830ad0bf6560491dbb417d0517998b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_a8fbfafdc7282eaf23a02db91984d7a99}{\index{qtb@{qtb}!reduce\-\_\-qtb\-\_\-spectrum@{reduce\-\_\-qtb\-\_\-spectrum}}
+\index{reduce\-\_\-qtb\-\_\-spectrum@{reduce\-\_\-qtb\-\_\-spectrum}!qtb@{qtb}}
+\subsubsection[{reduce\-\_\-qtb\-\_\-spectrum}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::reduce\-\_\-qtb\-\_\-spectrum (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$), intent(inout)}]{spectrum, }
+\item[{integer, intent(in)}]{size, }
+\item[{integer, intent(in)}]{comm, }
+\item[{integer, intent(in)}]{rank, }
+\item[{logical, intent(in)}]{allreduce}
+\end{DoxyParamCaption}
+)}}\label{classqtb_a8fbfafdc7282eaf23a02db91984d7a99}
+
+
+Definition at line 1340 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+Referenced by qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a8fbfafdc7282eaf23a02db91984d7a99_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_a51e5e38dbbb20343cadccb3de9705903}{\index{qtb@{qtb}!window\-\_\-smooth\-\_\-spectrum@{window\-\_\-smooth\-\_\-spectrum}}
+\index{window\-\_\-smooth\-\_\-spectrum@{window\-\_\-smooth\-\_\-spectrum}!qtb@{qtb}}
+\subsubsection[{window\-\_\-smooth\-\_\-spectrum}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::window\-\_\-smooth\-\_\-spectrum (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(\-:), intent(inout)}]{s, }
+\item[{real$\ast$8, intent(in)}]{dw}
+\end{DoxyParamCaption}
+)}}\label{classqtb_a51e5e38dbbb20343cadccb3de9705903}
+
+
+Definition at line 1764 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+Referenced by adapt\-\_\-gamma\-\_\-ratio(), and adapt\-\_\-gamma\-\_\-simple().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_a51e5e38dbbb20343cadccb3de9705903_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classqtb_ab80d433a778590bea099c2b40f1aa08c}{\index{qtb@{qtb}!write\-\_\-frequency\-\_\-type\-\_\-header@{write\-\_\-frequency\-\_\-type\-\_\-header}}
+\index{write\-\_\-frequency\-\_\-type\-\_\-header@{write\-\_\-frequency\-\_\-type\-\_\-header}!qtb@{qtb}}
+\subsubsection[{write\-\_\-frequency\-\_\-type\-\_\-header}]{\setlength{\rightskip}{0pt plus 5cm}subroutine qtb\-::write\-\_\-frequency\-\_\-type\-\_\-header (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{unit}
+\end{DoxyParamCaption}
+)}}\label{classqtb_ab80d433a778590bea099c2b40f1aa08c}
+
+
+Definition at line 1125 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+References ascii\-::int\-\_\-to\-\_\-str().
+
+
+
+Referenced by qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=326pt]{classqtb_ab80d433a778590bea099c2b40f1aa08c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classqtb_ab80d433a778590bea099c2b40f1aa08c_icgraph}
+\end{center}
+\end{figure}
+
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classqtb_a4acaca753cf07460ef6c20e7ebf01914}{\index{qtb@{qtb}!a\-\_\-gamma@{a\-\_\-gamma}}
+\index{a\-\_\-gamma@{a\-\_\-gamma}!qtb@{qtb}}
+\subsubsection[{a\-\_\-gamma}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable qtb\-::a\-\_\-gamma}}\label{classqtb_a4acaca753cf07460ef6c20e7ebf01914}
+
+
+Definition at line 54 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a79aff6e248ffd04b723fd51ef4ef4089}{\index{qtb@{qtb}!a\-\_\-gamma\-\_\-default@{a\-\_\-gamma\-\_\-default}}
+\index{a\-\_\-gamma\-\_\-default@{a\-\_\-gamma\-\_\-default}!qtb@{qtb}}
+\subsubsection[{a\-\_\-gamma\-\_\-default}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, public qtb\-::a\-\_\-gamma\-\_\-default}}\label{classqtb_a79aff6e248ffd04b723fd51ef4ef4089}
+
+
+Definition at line 57 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a175b26fb3570a3faedd3c49a5d8bd3e6}{\index{qtb@{qtb}!adapt\-\_\-gamma@{adapt\-\_\-gamma}}
+\index{adapt\-\_\-gamma@{adapt\-\_\-gamma}!qtb@{qtb}}
+\subsubsection[{adapt\-\_\-gamma}]{\setlength{\rightskip}{0pt plus 5cm}type({\bf qtbopt\-\_\-t}), dimension(\-:), allocatable qtb\-::adapt\-\_\-gamma}}\label{classqtb_a175b26fb3570a3faedd3c49a5d8bd3e6}
+
+
+Definition at line 109 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_af03b69a3cd5c3be7a38b14ebeed3550e}{\index{qtb@{qtb}!adaptive\-\_\-qtb@{adaptive\-\_\-qtb}}
+\index{adaptive\-\_\-qtb@{adaptive\-\_\-qtb}!qtb@{qtb}}
+\subsubsection[{adaptive\-\_\-qtb}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::adaptive\-\_\-qtb}}\label{classqtb_af03b69a3cd5c3be7a38b14ebeed3550e}
+
+
+Definition at line 56 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a3061f570614f506a5d914fc862275c0c}{\index{qtb@{qtb}!adqtb\-\_\-avg\-\_\-adapt@{adqtb\-\_\-avg\-\_\-adapt}}
+\index{adqtb\-\_\-avg\-\_\-adapt@{adqtb\-\_\-avg\-\_\-adapt}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-avg\-\_\-adapt}]{\setlength{\rightskip}{0pt plus 5cm}integer, public qtb\-::adqtb\-\_\-avg\-\_\-adapt =1}}\label{classqtb_a3061f570614f506a5d914fc862275c0c}
+
+
+Definition at line 48 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a6ee3dbfa7ec54c120520bb6f65eda7ac}{\index{qtb@{qtb}!adqtb\-\_\-correct\-\_\-bias@{adqtb\-\_\-correct\-\_\-bias}}
+\index{adqtb\-\_\-correct\-\_\-bias@{adqtb\-\_\-correct\-\_\-bias}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-correct\-\_\-bias}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::adqtb\-\_\-correct\-\_\-bias}}\label{classqtb_a6ee3dbfa7ec54c120520bb6f65eda7ac}
+
+
+Definition at line 51 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a1a0c930c48a8f13fbff54e36894caa9c}{\index{qtb@{qtb}!adqtb\-\_\-name@{adqtb\-\_\-name}}
+\index{adqtb\-\_\-name@{adqtb\-\_\-name}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-name}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$3, dimension(\-:), allocatable qtb\-::adqtb\-\_\-name}}\label{classqtb_a1a0c930c48a8f13fbff54e36894caa9c}
+
+
+Definition at line 73 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a5fa4fc71571ec956dd7c4f935e755c4f}{\index{qtb@{qtb}!adqtb\-\_\-optimizer@{adqtb\-\_\-optimizer}}
+\index{adqtb\-\_\-optimizer@{adqtb\-\_\-optimizer}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-optimizer}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$11, public qtb\-::adqtb\-\_\-optimizer}}\label{classqtb_a5fa4fc71571ec956dd7c4f935e755c4f}
+
+
+Definition at line 45 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a794923263a7ad95cc051d7aff5d1f351}{\index{qtb@{qtb}!adqtb\-\_\-optimizer\-\_\-type@{adqtb\-\_\-optimizer\-\_\-type}}
+\index{adqtb\-\_\-optimizer\-\_\-type@{adqtb\-\_\-optimizer\-\_\-type}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-optimizer\-\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$11, dimension(\-:), allocatable qtb\-::adqtb\-\_\-optimizer\-\_\-type}}\label{classqtb_a794923263a7ad95cc051d7aff5d1f351}
+
+
+Definition at line 46 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a777a3ecfccb537a2e3b6bb5c43a49d70}{\index{qtb@{qtb}!adqtb\-\_\-smooth\-\_\-default@{adqtb\-\_\-smooth\-\_\-default}}
+\index{adqtb\-\_\-smooth\-\_\-default@{adqtb\-\_\-smooth\-\_\-default}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-smooth\-\_\-default}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, public qtb\-::adqtb\-\_\-smooth\-\_\-default}}\label{classqtb_a777a3ecfccb537a2e3b6bb5c43a49d70}
+
+
+Definition at line 80 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a0f377d6b63265e4e7d79114e82047458}{\index{qtb@{qtb}!adqtb\-\_\-smooth\-\_\-type@{adqtb\-\_\-smooth\-\_\-type}}
+\index{adqtb\-\_\-smooth\-\_\-type@{adqtb\-\_\-smooth\-\_\-type}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-smooth\-\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable qtb\-::adqtb\-\_\-smooth\-\_\-type}}\label{classqtb_a0f377d6b63265e4e7d79114e82047458}
+
+
+Definition at line 81 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a34e96ac736106bc3f7d5bd460e293bc8}{\index{qtb@{qtb}!adqtb\-\_\-start\-\_\-classical@{adqtb\-\_\-start\-\_\-classical}}
+\index{adqtb\-\_\-start\-\_\-classical@{adqtb\-\_\-start\-\_\-classical}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-start\-\_\-classical}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::adqtb\-\_\-start\-\_\-classical =.F\-A\-L\-S\-E.}}\label{classqtb_a34e96ac736106bc3f7d5bd460e293bc8}
+
+
+Definition at line 78 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_ae57c1be5fd10880bcbb8452412682dd1}{\index{qtb@{qtb}!adqtb\-\_\-tau\-\_\-adapt@{adqtb\-\_\-tau\-\_\-adapt}}
+\index{adqtb\-\_\-tau\-\_\-adapt@{adqtb\-\_\-tau\-\_\-adapt}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-tau\-\_\-adapt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, public qtb\-::adqtb\-\_\-tau\-\_\-adapt}}\label{classqtb_ae57c1be5fd10880bcbb8452412682dd1}
+
+
+Definition at line 50 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a2ecb6eb3b6006ebb6238554d82b65f4f}{\index{qtb@{qtb}!adqtb\-\_\-tau\-\_\-avg@{adqtb\-\_\-tau\-\_\-avg}}
+\index{adqtb\-\_\-tau\-\_\-avg@{adqtb\-\_\-tau\-\_\-avg}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-tau\-\_\-avg}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable qtb\-::adqtb\-\_\-tau\-\_\-avg}}\label{classqtb_a2ecb6eb3b6006ebb6238554d82b65f4f}
+
+
+Definition at line 53 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a1905ac2f72584412e56fc1037a57641e}{\index{qtb@{qtb}!adqtb\-\_\-tau\-\_\-avg\-\_\-default@{adqtb\-\_\-tau\-\_\-avg\-\_\-default}}
+\index{adqtb\-\_\-tau\-\_\-avg\-\_\-default@{adqtb\-\_\-tau\-\_\-avg\-\_\-default}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-tau\-\_\-avg\-\_\-default}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, public qtb\-::adqtb\-\_\-tau\-\_\-avg\-\_\-default}}\label{classqtb_a1905ac2f72584412e56fc1037a57641e}
+
+
+Definition at line 49 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_aa9083781ffe9503478089cd26645b88d}{\index{qtb@{qtb}!adqtb\-\_\-type@{adqtb\-\_\-type}}
+\index{adqtb\-\_\-type@{adqtb\-\_\-type}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable qtb\-::adqtb\-\_\-type}}\label{classqtb_aa9083781ffe9503478089cd26645b88d}
+
+
+Definition at line 71 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a1080eac758b439ed2aeaf49ef5e92f5e}{\index{qtb@{qtb}!adqtb\-\_\-type\-\_\-map@{adqtb\-\_\-type\-\_\-map}}
+\index{adqtb\-\_\-type\-\_\-map@{adqtb\-\_\-type\-\_\-map}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-type\-\_\-map}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable qtb\-::adqtb\-\_\-type\-\_\-map}}\label{classqtb_a1080eac758b439ed2aeaf49ef5e92f5e}
+
+
+Definition at line 74 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a5b41caa8ef3066475460c3190920f295}{\index{qtb@{qtb}!adqtb\-\_\-win\-\_\-corr@{adqtb\-\_\-win\-\_\-corr}}
+\index{adqtb\-\_\-win\-\_\-corr@{adqtb\-\_\-win\-\_\-corr}!qtb@{qtb}}
+\subsubsection[{adqtb\-\_\-win\-\_\-corr}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::adqtb\-\_\-win\-\_\-corr}}\label{classqtb_a5b41caa8ef3066475460c3190920f295}
+
+
+Definition at line 52 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_ab733e1c72aab6e2efbb6f73fe66a9bde}{\index{qtb@{qtb}!compteur@{compteur}}
+\index{compteur@{compteur}!qtb@{qtb}}
+\subsubsection[{compteur}]{\setlength{\rightskip}{0pt plus 5cm}type(compteur\-\_\-type) qtb\-::compteur}}\label{classqtb_ab733e1c72aab6e2efbb6f73fe66a9bde}
+
+
+Definition at line 36 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a02996b871c2484af286eac8a88a9bcbc}{\index{qtb@{qtb}!compteur\-\_\-bis@{compteur\-\_\-bis}}
+\index{compteur\-\_\-bis@{compteur\-\_\-bis}!qtb@{qtb}}
+\subsubsection[{compteur\-\_\-bis}]{\setlength{\rightskip}{0pt plus 5cm}type(compteur\-\_\-type) qtb\-::compteur\-\_\-bis}}\label{classqtb_a02996b871c2484af286eac8a88a9bcbc}
+
+
+Definition at line 37 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_ac8edcb982290fc47e3bf05877f2b0ecc}{\index{qtb@{qtb}!corr\-\_\-fact\-\_\-converged@{corr\-\_\-fact\-\_\-converged}}
+\index{corr\-\_\-fact\-\_\-converged@{corr\-\_\-fact\-\_\-converged}!qtb@{qtb}}
+\subsubsection[{corr\-\_\-fact\-\_\-converged}]{\setlength{\rightskip}{0pt plus 5cm}logical qtb\-::corr\-\_\-fact\-\_\-converged =.F\-A\-L\-S\-E.}}\label{classqtb_ac8edcb982290fc47e3bf05877f2b0ecc}
+
+
+Definition at line 60 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a8d99876f7c7cb5436adea57579d89f7d}{\index{qtb@{qtb}!corr\-\_\-fact\-\_\-qtb@{corr\-\_\-fact\-\_\-qtb}}
+\index{corr\-\_\-fact\-\_\-qtb@{corr\-\_\-fact\-\_\-qtb}!qtb@{qtb}}
+\subsubsection[{corr\-\_\-fact\-\_\-qtb}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3), public qtb\-::corr\-\_\-fact\-\_\-qtb =1.d0}}\label{classqtb_a8d99876f7c7cb5436adea57579d89f7d}
+
+
+Definition at line 58 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a617a1a716e7599e62eca164178f38df2}{\index{qtb@{qtb}!corr\-\_\-pot@{corr\-\_\-pot}}
+\index{corr\-\_\-pot@{corr\-\_\-pot}!qtb@{qtb}}
+\subsubsection[{corr\-\_\-pot}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::corr\-\_\-pot}}\label{classqtb_a617a1a716e7599e62eca164178f38df2}
+
+
+Definition at line 33 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a98327ca14b7917a2e422f898e0b57eb7}{\index{qtb@{qtb}!corr\-\_\-pot\-\_\-corr\-\_\-fact@{corr\-\_\-pot\-\_\-corr\-\_\-fact}}
+\index{corr\-\_\-pot\-\_\-corr\-\_\-fact@{corr\-\_\-pot\-\_\-corr\-\_\-fact}!qtb@{qtb}}
+\subsubsection[{corr\-\_\-pot\-\_\-corr\-\_\-fact}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::corr\-\_\-pot\-\_\-corr\-\_\-fact =.T\-R\-U\-E.}}\label{classqtb_a98327ca14b7917a2e422f898e0b57eb7}
+
+
+Definition at line 61 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_aa29c1c8fec4a13230ea627fbd6962a10}{\index{qtb@{qtb}!corr\-\_\-pot\-\_\-ratio@{corr\-\_\-pot\-\_\-ratio}}
+\index{corr\-\_\-pot\-\_\-ratio@{corr\-\_\-pot\-\_\-ratio}!qtb@{qtb}}
+\subsubsection[{corr\-\_\-pot\-\_\-ratio}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable qtb\-::corr\-\_\-pot\-\_\-ratio}}\label{classqtb_aa29c1c8fec4a13230ea627fbd6962a10}
+
+
+Definition at line 31 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a036c37b3c6b63524318c5965fa33c003}{\index{qtb@{qtb}!cvf\-\_\-average\-\_\-type@{cvf\-\_\-average\-\_\-type}}
+\index{cvf\-\_\-average\-\_\-type@{cvf\-\_\-average\-\_\-type}!qtb@{qtb}}
+\subsubsection[{cvf\-\_\-average\-\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::cvf\-\_\-average\-\_\-type}}\label{classqtb_a036c37b3c6b63524318c5965fa33c003}
+
+
+Definition at line 66 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a46ac722f370f3b929e706228051801f4}{\index{qtb@{qtb}!cvf\-\_\-mean@{cvf\-\_\-mean}}
+\index{cvf\-\_\-mean@{cvf\-\_\-mean}!qtb@{qtb}}
+\subsubsection[{cvf\-\_\-mean}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::cvf\-\_\-mean}}\label{classqtb_a46ac722f370f3b929e706228051801f4}
+
+
+Definition at line 68 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a56c736b040cf072d7ec1e444bf685fb1}{\index{qtb@{qtb}!dfdr\-\_\-average\-\_\-type@{dfdr\-\_\-average\-\_\-type}}
+\index{dfdr\-\_\-average\-\_\-type@{dfdr\-\_\-average\-\_\-type}!qtb@{qtb}}
+\subsubsection[{dfdr\-\_\-average\-\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::dfdr\-\_\-average\-\_\-type}}\label{classqtb_a56c736b040cf072d7ec1e444bf685fb1}
+
+
+Definition at line 70 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a4f973bc50caab8bd82ffbe4acb07dca9}{\index{qtb@{qtb}!dfdr\-\_\-mean@{dfdr\-\_\-mean}}
+\index{dfdr\-\_\-mean@{dfdr\-\_\-mean}!qtb@{qtb}}
+\subsubsection[{dfdr\-\_\-mean}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::dfdr\-\_\-mean}}\label{classqtb_a4f973bc50caab8bd82ffbe4acb07dca9}
+
+
+Definition at line 69 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a7cf4ab603940c782b2a24dfbbdedc7c1}{\index{qtb@{qtb}!gamma\-\_\-type@{gamma\-\_\-type}}
+\index{gamma\-\_\-type@{gamma\-\_\-type}!qtb@{qtb}}
+\subsubsection[{gamma\-\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::gamma\-\_\-type}}\label{classqtb_a7cf4ab603940c782b2a24dfbbdedc7c1}
+
+
+Definition at line 62 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a22c9890359a07b802b2965b97ffee55f}{\index{qtb@{qtb}!gamma\-\_\-type\-\_\-init@{gamma\-\_\-type\-\_\-init}}
+\index{gamma\-\_\-type\-\_\-init@{gamma\-\_\-type\-\_\-init}!qtb@{qtb}}
+\subsubsection[{gamma\-\_\-type\-\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::gamma\-\_\-type\-\_\-init}}\label{classqtb_a22c9890359a07b802b2965b97ffee55f}
+
+
+Definition at line 63 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_af53ecd68e28f6a8f53d49a5882061c03}{\index{qtb@{qtb}!gammar\-\_\-min@{gammar\-\_\-min}}
+\index{gammar\-\_\-min@{gammar\-\_\-min}!qtb@{qtb}}
+\subsubsection[{gammar\-\_\-min}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 qtb\-::gammar\-\_\-min}}\label{classqtb_af53ecd68e28f6a8f53d49a5882061c03}
+
+
+Definition at line 29 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_ac36637763a01844c4f1f18d5035c9977}{\index{qtb@{qtb}!htilde@{htilde}}
+\index{htilde@{htilde}!qtb@{qtb}}
+\subsubsection[{htilde}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::htilde}}\label{classqtb_ac36637763a01844c4f1f18d5035c9977}
+
+
+Definition at line 30 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a476677a09383c56bbe3028b6dab3eea7}{\index{qtb@{qtb}!mcvv\-\_\-average\-\_\-sum@{mcvv\-\_\-average\-\_\-sum}}
+\index{mcvv\-\_\-average\-\_\-sum@{mcvv\-\_\-average\-\_\-sum}!qtb@{qtb}}
+\subsubsection[{mcvv\-\_\-average\-\_\-sum}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::mcvv\-\_\-average\-\_\-sum}}\label{classqtb_a476677a09383c56bbe3028b6dab3eea7}
+
+
+Definition at line 65 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a30c387f210847d0817a3db9f94a2f80d}{\index{qtb@{qtb}!mcvv\-\_\-average\-\_\-type@{mcvv\-\_\-average\-\_\-type}}
+\index{mcvv\-\_\-average\-\_\-type@{mcvv\-\_\-average\-\_\-type}!qtb@{qtb}}
+\subsubsection[{mcvv\-\_\-average\-\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::mcvv\-\_\-average\-\_\-type}}\label{classqtb_a30c387f210847d0817a3db9f94a2f80d}
+
+
+Definition at line 64 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_ae65a01ddbd5ca81d368d7150200b4a51}{\index{qtb@{qtb}!mcvv\-\_\-mean@{mcvv\-\_\-mean}}
+\index{mcvv\-\_\-mean@{mcvv\-\_\-mean}!qtb@{qtb}}
+\subsubsection[{mcvv\-\_\-mean}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable qtb\-::mcvv\-\_\-mean}}\label{classqtb_ae65a01ddbd5ca81d368d7150200b4a51}
+
+
+Definition at line 67 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a381e32b5b6088fc1c209199abedc5129}{\index{qtb@{qtb}!n\-\_\-of\-\_\-type@{n\-\_\-of\-\_\-type}}
+\index{n\-\_\-of\-\_\-type@{n\-\_\-of\-\_\-type}!qtb@{qtb}}
+\subsubsection[{n\-\_\-of\-\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable qtb\-::n\-\_\-of\-\_\-type}}\label{classqtb_a381e32b5b6088fc1c209199abedc5129}
+
+
+Definition at line 72 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_ae7544bfdc2b805f539c32e20bfabf0f1}{\index{qtb@{qtb}!nloc\-\_\-plan@{nloc\-\_\-plan}}
+\index{nloc\-\_\-plan@{nloc\-\_\-plan}!qtb@{qtb}}
+\subsubsection[{nloc\-\_\-plan}]{\setlength{\rightskip}{0pt plus 5cm}integer qtb\-::nloc\-\_\-plan =-\/1}}\label{classqtb_ae7544bfdc2b805f539c32e20bfabf0f1}
+
+
+Definition at line 39 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_aa28fc5f309cb469a62634069b2d16444}{\index{qtb@{qtb}!noqtb@{noqtb}}
+\index{noqtb@{noqtb}!qtb@{qtb}}
+\subsubsection[{noqtb}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::noqtb}}\label{classqtb_aa28fc5f309cb469a62634069b2d16444}
+
+
+Definition at line 32 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a21744b9331333113a6c7a3f401c67047}{\index{qtb@{qtb}!ntype@{ntype}}
+\index{ntype@{ntype}!qtb@{qtb}}
+\subsubsection[{ntype}]{\setlength{\rightskip}{0pt plus 5cm}integer qtb\-::ntype}}\label{classqtb_a21744b9331333113a6c7a3f401c67047}
+
+
+Definition at line 75 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a848130400b3dc59232a882616d9beec0}{\index{qtb@{qtb}!omegasmear@{omegasmear}}
+\index{omegasmear@{omegasmear}!qtb@{qtb}}
+\subsubsection[{omegasmear}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 qtb\-::omegasmear}}\label{classqtb_a848130400b3dc59232a882616d9beec0}
+
+
+Definition at line 28 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a2bb4d73d947c3d5e3fb0c00dca3bfd26}{\index{qtb@{qtb}!piqtb@{piqtb}}
+\index{piqtb@{piqtb}!qtb@{qtb}}
+\subsubsection[{piqtb}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::piqtb}}\label{classqtb_a2bb4d73d947c3d5e3fb0c00dca3bfd26}
+
+
+Definition at line 41 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_ab621da1de10f5405f43fac11e3e7c180}{\index{qtb@{qtb}!plan\-\_\-qtb@{plan\-\_\-qtb}}
+\index{plan\-\_\-qtb@{plan\-\_\-qtb}!qtb@{qtb}}
+\subsubsection[{plan\-\_\-qtb}]{\setlength{\rightskip}{0pt plus 5cm}integer qtb\-::plan\-\_\-qtb}}\label{classqtb_ab621da1de10f5405f43fac11e3e7c180}
+
+
+Definition at line 38 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a9f30b1695ddee28edb2158790d43b14f}{\index{qtb@{qtb}!qtb\-\_\-thermostat@{qtb\-\_\-thermostat}}
+\index{qtb\-\_\-thermostat@{qtb\-\_\-thermostat}!qtb@{qtb}}
+\subsubsection[{qtb\-\_\-thermostat}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::qtb\-\_\-thermostat =.F\-A\-L\-S\-E.}}\label{classqtb_a9f30b1695ddee28edb2158790d43b14f}
+
+
+Definition at line 35 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a01848b620e9b24836a371122c84a71f2}{\index{qtb@{qtb}!qtb\-\_\-verbose@{qtb\-\_\-verbose}}
+\index{qtb\-\_\-verbose@{qtb\-\_\-verbose}!qtb@{qtb}}
+\subsubsection[{qtb\-\_\-verbose}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::qtb\-\_\-verbose =.F\-A\-L\-S\-E.}}\label{classqtb_a01848b620e9b24836a371122c84a71f2}
+
+
+Definition at line 40 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a29928faed9e005ea9609cd4c55f4ada8}{\index{qtb@{qtb}!qtbdata@{qtbdata}}
+\index{qtbdata@{qtbdata}!qtb@{qtb}}
+\subsubsection[{qtbdata}]{\setlength{\rightskip}{0pt plus 5cm}type({\bf qtbdat\-\_\-t}), dimension(\-:), allocatable, public qtb\-::qtbdata}}\label{classqtb_a29928faed9e005ea9609cd4c55f4ada8}
+
+
+Definition at line 107 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a6e5a1730bb8b5493f5205922093a3fdc}{\index{qtb@{qtb}!qtbdata\-\_\-allocated@{qtbdata\-\_\-allocated}}
+\index{qtbdata\-\_\-allocated@{qtbdata\-\_\-allocated}!qtb@{qtb}}
+\subsubsection[{qtbdata\-\_\-allocated}]{\setlength{\rightskip}{0pt plus 5cm}logical, dimension(\-:), allocatable qtb\-::qtbdata\-\_\-allocated}}\label{classqtb_a6e5a1730bb8b5493f5205922093a3fdc}
+
+
+Definition at line 108 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a872fe2905adbcf616ccc4c285220d0d2}{\index{qtb@{qtb}!register\-\_\-spectra@{register\-\_\-spectra}}
+\index{register\-\_\-spectra@{register\-\_\-spectra}!qtb@{qtb}}
+\subsubsection[{register\-\_\-spectra}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::register\-\_\-spectra}}\label{classqtb_a872fe2905adbcf616ccc4c285220d0d2}
+
+
+Definition at line 34 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_a691e4a6864b758a6e2cba49e0dbf2088}{\index{qtb@{qtb}!save\-\_\-gamma\-\_\-history@{save\-\_\-gamma\-\_\-history}}
+\index{save\-\_\-gamma\-\_\-history@{save\-\_\-gamma\-\_\-history}!qtb@{qtb}}
+\subsubsection[{save\-\_\-gamma\-\_\-history}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::save\-\_\-gamma\-\_\-history =.F\-A\-L\-S\-E.}}\label{classqtb_a691e4a6864b758a6e2cba49e0dbf2088}
+
+
+Definition at line 76 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_adc59c8806c7ede038b1845fc9f8147bb}{\index{qtb@{qtb}!skipseg@{skipseg}}
+\index{skipseg@{skipseg}!qtb@{qtb}}
+\subsubsection[{skipseg}]{\setlength{\rightskip}{0pt plus 5cm}integer, public qtb\-::skipseg}}\label{classqtb_adc59c8806c7ede038b1845fc9f8147bb}
+
+
+Definition at line 27 of file M\-O\-D\-\_\-qtb.\-f90.
+
+\hypertarget{classqtb_adb33338a5d19000dc58db2e4829ae74b}{\index{qtb@{qtb}!use\-\_\-corr\-\_\-fact\-\_\-qtb@{use\-\_\-corr\-\_\-fact\-\_\-qtb}}
+\index{use\-\_\-corr\-\_\-fact\-\_\-qtb@{use\-\_\-corr\-\_\-fact\-\_\-qtb}!qtb@{qtb}}
+\subsubsection[{use\-\_\-corr\-\_\-fact\-\_\-qtb}]{\setlength{\rightskip}{0pt plus 5cm}logical, public qtb\-::use\-\_\-corr\-\_\-fact\-\_\-qtb}}\label{classqtb_adb33338a5d19000dc58db2e4829ae74b}
+
+
+Definition at line 59 of file M\-O\-D\-\_\-qtb.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__qtb_8f90}{M\-O\-D\-\_\-qtb.\-f90}\end{DoxyCompactItemize}

@@ -1,0 +1,113 @@
+\hypertarget{elj1_8f90}{\section{elj1.\-f90 File Reference}
+\label{elj1_8f90}\index{elj1.\-f90@{elj1.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{elj1_8f90_aee0fdff688f67be7d42a381007bd9fca}{elj1}
+\begin{DoxyCompactList}\small\item\em calculates the Lennard-\/\-Jones 6-\/12 van der Waals energy and its first derivatives with respect to Cartesian coordinates \end{DoxyCompactList}\item 
+subroutine \hyperlink{elj1_8f90_a2a36381a11b49ef1e44098707cef421d}{elj1c}
+\begin{DoxyCompactList}\small\item\em calculates the Lennard Jones 12-\/6 van der Waals energy and its first derivatives using a pairwise neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{elj1_8f90_aee0fdff688f67be7d42a381007bd9fca}{\index{elj1.\-f90@{elj1.\-f90}!elj1@{elj1}}
+\index{elj1@{elj1}!elj1.f90@{elj1.\-f90}}
+\subsubsection[{elj1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine elj1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{elj1_8f90_aee0fdff688f67be7d42a381007bd9fca}
+
+
+calculates the Lennard-\/\-Jones 6-\/12 van der Waals energy and its first derivatives with respect to Cartesian coordinates 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file elj1.\-f90.
+
+
+
+References elj1c(), and evcorr1().
+
+
+
+Referenced by gradient().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=322pt]{elj1_8f90_aee0fdff688f67be7d42a381007bd9fca_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{elj1_8f90_aee0fdff688f67be7d42a381007bd9fca_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{elj1_8f90_a2a36381a11b49ef1e44098707cef421d}{\index{elj1.\-f90@{elj1.\-f90}!elj1c@{elj1c}}
+\index{elj1c@{elj1c}!elj1.f90@{elj1.\-f90}}
+\subsubsection[{elj1c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine elj1c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{elj1_8f90_a2a36381a11b49ef1e44098707cef421d}
+
+
+calculates the Lennard Jones 12-\/6 van der Waals energy and its first derivatives using a pairwise neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 70 of file elj1.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by elj1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=236pt]{elj1_8f90_a2a36381a11b49ef1e44098707cef421d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{elj1_8f90_a2a36381a11b49ef1e44098707cef421d_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,764 @@
+\hypertarget{classderiv}{\section{deriv Module Reference}
+\label{classderiv}\index{deriv@{deriv}}
+}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{classderiv_abd1159fb3bf608089b480ee145ee2a0d}{resetforcesrec}
+\begin{DoxyCompactList}\small\item\em reset all the arrays of reciprocal forces \end{DoxyCompactList}\item 
+subroutine \hyperlink{classderiv_a17ac13399fdc8964fe2243fb5f3b40aa}{minmaxone1} (mi, ma, on, vector, sz, name)
+\begin{DoxyCompactList}\small\item\em get the min, the max and the L1 norm of a vector \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_ad23bdcc166a23b3529b9daef17b14260}{desum}
+\begin{DoxyCompactList}\small\item\em total energy Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_adf3de30efcc38f11639ab87980898c1d}{deb}
+\begin{DoxyCompactList}\small\item\em bond stretch Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_af26650de96064a2ee29f2892416d4994}{dea}
+\begin{DoxyCompactList}\small\item\em angle bend Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a479a8850d2549252355482a1a3b50894}{deba}
+\begin{DoxyCompactList}\small\item\em stretch-\/bend Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_aba3704a824a9def0252571907bc6d11e}{deub}
+\begin{DoxyCompactList}\small\item\em Urey-\/\-Bradley Cartesian coordinate derivatives. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a179dc2259c330cf6181548c2d2ceee83}{deaa}
+\begin{DoxyCompactList}\small\item\em angle-\/angle Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a9c79f676fc042450c0d757ca7fcc90d4}{deopb}
+\begin{DoxyCompactList}\small\item\em out-\/of-\/plane bend Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_aa8eae10f8664832413974a490f939ebb}{deopd}
+\begin{DoxyCompactList}\small\item\em out-\/of-\/plane distance Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_ab0687390c082d71e1256dee35ba0e02d}{deid}
+\begin{DoxyCompactList}\small\item\em improper dihedral Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a6080bc7632418716603f5fe338fffd26}{det}
+\begin{DoxyCompactList}\small\item\em torsional Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_ac3d9dddf5a57575b5fa0a8668554cc0b}{dept}
+\begin{DoxyCompactList}\small\item\em pi-\/orbital torsion Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a8fe01550c44dc68a07ef1be166c5f10e}{deit}
+\begin{DoxyCompactList}\small\item\em improper torsion Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a45a3db97ce3e3b1c26c10d4231cb7081}{deat}
+\begin{DoxyCompactList}\small\item\em angle-\/torsion Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_abe7c91d2bc97033c899941792db7828a}{debt}
+\begin{DoxyCompactList}\small\item\em stretch-\/torsion Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_ae4cc6fb1e2dc67a34d2b42b76478ddcb}{dett}
+\begin{DoxyCompactList}\small\item\em torsion-\/torsion Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a5702b7756c4db2eaac0a462ea67fa477}{dev}
+\begin{DoxyCompactList}\small\item\em van der Waals Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a2ad8ee0f9e05642b554dffbabaea5cdf}{dec}
+\begin{DoxyCompactList}\small\item\em charge-\/charge Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a78988c04c9c26c2471a265d2e4793726}{der}
+\begin{DoxyCompactList}\small\item\em repulsion Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a16062b367c27ed1b00bd4fe6900797ea}{dedsp}
+\begin{DoxyCompactList}\small\item\em dispersion Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a7b4ac4c0cf2f11b15f089149b9755df8}{dect}
+\begin{DoxyCompactList}\small\item\em charge transfer Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a6ed62d8cabbb1cf18f30cf10c6aa287c}{dedsprec}
+\begin{DoxyCompactList}\small\item\em reciprocal dispersion Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_af6b4f5f648a769701a0accf5b8c0a49a}{dem}
+\begin{DoxyCompactList}\small\item\em multipole Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a3d8bf98f85539e47c4fda4f9d0fd9d13}{dep}
+\begin{DoxyCompactList}\small\item\em polarization Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a48f5d63eb5bf79b3cc10e774b18bf06b}{deg}
+\begin{DoxyCompactList}\small\item\em geometric restraint Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a1151a4b1b1f0c054ae48e2c629cdd22a}{dex}
+\begin{DoxyCompactList}\small\item\em extra energy term Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a95c38bb809e639ed11a368c565cf8627}{decrec}
+\begin{DoxyCompactList}\small\item\em reciprocal charge-\/charge Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a43a2a9492e8d05870a46581134371eac}{demrec}
+\begin{DoxyCompactList}\small\item\em reciprocal multipole Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_ab2d4c03ab52a5e5facc97ac8cf9abac7}{deprec}
+\begin{DoxyCompactList}\small\item\em reciprocal polarization Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_aebc93b62282db8e737081b270eeb18ca}{debond}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a725a18c2a6db9a96ba1b2e4b86256617}{desave}
+\begin{DoxyCompactList}\small\item\em stored Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a64aef9d688475a6de56080c342300aa2}{desmd}
+\begin{DoxyCompactList}\small\item\em extra smd energy term Cartesian coordinate derivatives \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_a3b2dad59531deb6bf5982e8a48e970c7}{delambda}
+\begin{DoxyCompactList}\small\item\em hamiltonian derivative with respect to lambda (to be sent to colvar) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_a492abed147ecbc1c1a0714b6de99d570}{delambdae}
+\begin{DoxyCompactList}\small\item\em hamiltonian derivative with respect to elambda \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_ad4e8728a9503b786c371e81cbf1948ca}{delambdav}
+\begin{DoxyCompactList}\small\item\em hamiltonian derivative with respect to vlambda \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_aa0f0b04326cf8dd8725cee1829c52340}{delambdaesave}
+\begin{DoxyCompactList}\small\item\em stored hamiltonian derivative with respect to elambda \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_a80f5ce711443744988b4cb3dd1f563d0}{delambdavsave}
+\begin{DoxyCompactList}\small\item\em stored hamiltonian derivative with respect to vlambda \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_affaa0b9e69d073a2e87bdf2af4e87d1b}{d2edlambda2}
+\begin{DoxyCompactList}\small\item\em hamiltonian double derivative with respect to lambda (to be sent to colvar) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_ade349a1c2864830e3ed301aa15f22b1e}{d2edlambdae2}
+\begin{DoxyCompactList}\small\item\em hamiltonian double derivative with respect to elambda (electrostatic interactions) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_aa177d2f37dcb5778b286ddf812d2c3bc}{d2edlambdav2}
+\begin{DoxyCompactList}\small\item\em hamiltonian double derivative with respect to vlambda (vdw interactions) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_a0122c85565ea213dfaaee75053d1d14f}{dlambdaelambda}
+\begin{DoxyCompactList}\small\item\em derivative of elambda with respect to lambda \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classderiv_a8a01f4e537a4ec3b2fb825517bfccf42}{dlambdavlambda}
+\begin{DoxyCompactList}\small\item\em derivative of vlambda with respect to lambda \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a61835c05c9b422286679e70d540c6f4a}{dxdelambda}
+\begin{DoxyCompactList}\small\item\em hamiltonian double derivative with respect to x and lambda (to be sent to colvar) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a3205c0909e4a054b12d6b5f2366e182e}{dxdelambdae}
+\begin{DoxyCompactList}\small\item\em hamiltonian double derivative with respect to x and elambda (electrostatic interactions) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classderiv_a883c736eaa7d19c7c1cf277d532660b7}{dxdelambdav}
+\begin{DoxyCompactList}\small\item\em hamiltonian double derivative with respect to x and vlambda (vdw interactions) \end{DoxyCompactList}\item 
+logical \hyperlink{classderiv_af350f0fc69097554ec61246320c44a11}{dotstgrad}
+\begin{DoxyCompactList}\small\item\em flag when the main program is testgrad (communication of the forces one by one) \end{DoxyCompactList}\item 
+logical \hyperlink{classderiv_a9e661c0d552c41a0f149cdfd42ba923f}{abortall}
+\begin{DoxyCompactList}\small\item\em flag when all the processes receive abort instruction \end{DoxyCompactList}\item 
+integer, dimension(2) \hyperlink{classderiv_acf56b2c91f35dd1d9a7186aab5fe5059}{inte}
+\item 
+integer \hyperlink{classderiv_a0b8a51deb62686afaf894dc2771d3f96}{cbond}
+\item 
+integer \hyperlink{classderiv_ad5a3f700aabda87e1aaf6a909fb302b0}{cnbond}
+\item 
+integer \hyperlink{classderiv_abd64d215e4270616603172d7e59a2044}{csnbond}
+\item 
+integer \hyperlink{classderiv_a98f20bbbc3420f6e39561ff8359236a3}{cdef}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-deriv.\-f90.
+
+
+
+\subsection{Member Function/\-Subroutine Documentation}
+\hypertarget{classderiv_a17ac13399fdc8964fe2243fb5f3b40aa}{\index{deriv@{deriv}!minmaxone1@{minmaxone1}}
+\index{minmaxone1@{minmaxone1}!deriv@{deriv}}
+\subsubsection[{minmaxone1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine deriv\-::minmaxone1 (
+\begin{DoxyParamCaption}
+\item[{real(8)}]{mi, }
+\item[{real(8)}]{ma, }
+\item[{real(8)}]{on, }
+\item[{real$\ast$8, dimension($\ast$)}]{vector, }
+\item[{integer}]{sz, }
+\item[{character($\ast$), intent(in), optional}]{name}
+\end{DoxyParamCaption}
+)}}\label{classderiv_a17ac13399fdc8964fe2243fb5f3b40aa}
+
+
+get the min, the max and the L1 norm of a vector 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 91 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_abd1159fb3bf608089b480ee145ee2a0d}{\index{deriv@{deriv}!resetforcesrec@{resetforcesrec}}
+\index{resetforcesrec@{resetforcesrec}!deriv@{deriv}}
+\subsubsection[{resetforcesrec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine deriv\-::resetforcesrec (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classderiv_abd1159fb3bf608089b480ee145ee2a0d}
+
+
+reset all the arrays of reciprocal forces 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 79 of file M\-O\-D\-\_\-deriv.\-f90.
+
+
+
+Referenced by utilbaoabpi\-::compute\-\_\-grad\-\_\-beads().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classderiv_abd1159fb3bf608089b480ee145ee2a0d_icgraph}
+\end{center}
+\end{figure}
+
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classderiv_a9e661c0d552c41a0f149cdfd42ba923f}{\index{deriv@{deriv}!abortall@{abortall}}
+\index{abortall@{abortall}!deriv@{deriv}}
+\subsubsection[{abortall}]{\setlength{\rightskip}{0pt plus 5cm}logical deriv\-::abortall}}\label{classderiv_a9e661c0d552c41a0f149cdfd42ba923f}
+
+
+flag when all the processes receive abort instruction 
+
+
+
+Definition at line 62 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a0b8a51deb62686afaf894dc2771d3f96}{\index{deriv@{deriv}!cbond@{cbond}}
+\index{cbond@{cbond}!deriv@{deriv}}
+\subsubsection[{cbond}]{\setlength{\rightskip}{0pt plus 5cm}integer deriv\-::cbond}}\label{classderiv_a0b8a51deb62686afaf894dc2771d3f96}
+
+
+Definition at line 64 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a98f20bbbc3420f6e39561ff8359236a3}{\index{deriv@{deriv}!cdef@{cdef}}
+\index{cdef@{cdef}!deriv@{deriv}}
+\subsubsection[{cdef}]{\setlength{\rightskip}{0pt plus 5cm}integer deriv\-::cdef}}\label{classderiv_a98f20bbbc3420f6e39561ff8359236a3}
+
+
+Definition at line 67 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_ad5a3f700aabda87e1aaf6a909fb302b0}{\index{deriv@{deriv}!cnbond@{cnbond}}
+\index{cnbond@{cnbond}!deriv@{deriv}}
+\subsubsection[{cnbond}]{\setlength{\rightskip}{0pt plus 5cm}integer deriv\-::cnbond}}\label{classderiv_ad5a3f700aabda87e1aaf6a909fb302b0}
+
+
+Definition at line 65 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_abd64d215e4270616603172d7e59a2044}{\index{deriv@{deriv}!csnbond@{csnbond}}
+\index{csnbond@{csnbond}!deriv@{deriv}}
+\subsubsection[{csnbond}]{\setlength{\rightskip}{0pt plus 5cm}integer deriv\-::csnbond}}\label{classderiv_abd64d215e4270616603172d7e59a2044}
+
+
+Definition at line 66 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_affaa0b9e69d073a2e87bdf2af4e87d1b}{\index{deriv@{deriv}!d2edlambda2@{d2edlambda2}}
+\index{d2edlambda2@{d2edlambda2}!deriv@{deriv}}
+\subsubsection[{d2edlambda2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::d2edlambda2}}\label{classderiv_affaa0b9e69d073a2e87bdf2af4e87d1b}
+
+
+hamiltonian double derivative with respect to lambda (to be sent to colvar) 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_ade349a1c2864830e3ed301aa15f22b1e}{\index{deriv@{deriv}!d2edlambdae2@{d2edlambdae2}}
+\index{d2edlambdae2@{d2edlambdae2}!deriv@{deriv}}
+\subsubsection[{d2edlambdae2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::d2edlambdae2}}\label{classderiv_ade349a1c2864830e3ed301aa15f22b1e}
+
+
+hamiltonian double derivative with respect to elambda (electrostatic interactions) 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_aa177d2f37dcb5778b286ddf812d2c3bc}{\index{deriv@{deriv}!d2edlambdav2@{d2edlambdav2}}
+\index{d2edlambdav2@{d2edlambdav2}!deriv@{deriv}}
+\subsubsection[{d2edlambdav2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::d2edlambdav2}}\label{classderiv_aa177d2f37dcb5778b286ddf812d2c3bc}
+
+
+hamiltonian double derivative with respect to vlambda (vdw interactions) 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_af26650de96064a2ee29f2892416d4994}{\index{deriv@{deriv}!dea@{dea}}
+\index{dea@{dea}!deriv@{deriv}}
+\subsubsection[{dea}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dea}}\label{classderiv_af26650de96064a2ee29f2892416d4994}
+
+
+angle bend Cartesian coordinate derivatives 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a179dc2259c330cf6181548c2d2ceee83}{\index{deriv@{deriv}!deaa@{deaa}}
+\index{deaa@{deaa}!deriv@{deriv}}
+\subsubsection[{deaa}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deaa}}\label{classderiv_a179dc2259c330cf6181548c2d2ceee83}
+
+
+angle-\/angle Cartesian coordinate derivatives 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a45a3db97ce3e3b1c26c10d4231cb7081}{\index{deriv@{deriv}!deat@{deat}}
+\index{deat@{deat}!deriv@{deriv}}
+\subsubsection[{deat}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deat}}\label{classderiv_a45a3db97ce3e3b1c26c10d4231cb7081}
+
+
+angle-\/torsion Cartesian coordinate derivatives 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_adf3de30efcc38f11639ab87980898c1d}{\index{deriv@{deriv}!deb@{deb}}
+\index{deb@{deb}!deriv@{deriv}}
+\subsubsection[{deb}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deb}}\label{classderiv_adf3de30efcc38f11639ab87980898c1d}
+
+
+bond stretch Cartesian coordinate derivatives 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a479a8850d2549252355482a1a3b50894}{\index{deriv@{deriv}!deba@{deba}}
+\index{deba@{deba}!deriv@{deriv}}
+\subsubsection[{deba}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deba}}\label{classderiv_a479a8850d2549252355482a1a3b50894}
+
+
+stretch-\/bend Cartesian coordinate derivatives 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_aebc93b62282db8e737081b270eeb18ca}{\index{deriv@{deriv}!debond@{debond}}
+\index{debond@{debond}!deriv@{deriv}}
+\subsubsection[{debond}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::debond}}\label{classderiv_aebc93b62282db8e737081b270eeb18ca}
+
+
+Definition at line 43 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_abe7c91d2bc97033c899941792db7828a}{\index{deriv@{deriv}!debt@{debt}}
+\index{debt@{debt}!deriv@{deriv}}
+\subsubsection[{debt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::debt}}\label{classderiv_abe7c91d2bc97033c899941792db7828a}
+
+
+stretch-\/torsion Cartesian coordinate derivatives 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a2ad8ee0f9e05642b554dffbabaea5cdf}{\index{deriv@{deriv}!dec@{dec}}
+\index{dec@{dec}!deriv@{deriv}}
+\subsubsection[{dec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dec}}\label{classderiv_a2ad8ee0f9e05642b554dffbabaea5cdf}
+
+
+charge-\/charge Cartesian coordinate derivatives 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a95c38bb809e639ed11a368c565cf8627}{\index{deriv@{deriv}!decrec@{decrec}}
+\index{decrec@{decrec}!deriv@{deriv}}
+\subsubsection[{decrec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::decrec}}\label{classderiv_a95c38bb809e639ed11a368c565cf8627}
+
+
+reciprocal charge-\/charge Cartesian coordinate derivatives 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a7b4ac4c0cf2f11b15f089149b9755df8}{\index{deriv@{deriv}!dect@{dect}}
+\index{dect@{dect}!deriv@{deriv}}
+\subsubsection[{dect}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dect}}\label{classderiv_a7b4ac4c0cf2f11b15f089149b9755df8}
+
+
+charge transfer Cartesian coordinate derivatives 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a16062b367c27ed1b00bd4fe6900797ea}{\index{deriv@{deriv}!dedsp@{dedsp}}
+\index{dedsp@{dedsp}!deriv@{deriv}}
+\subsubsection[{dedsp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dedsp}}\label{classderiv_a16062b367c27ed1b00bd4fe6900797ea}
+
+
+dispersion Cartesian coordinate derivatives 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a6ed62d8cabbb1cf18f30cf10c6aa287c}{\index{deriv@{deriv}!dedsprec@{dedsprec}}
+\index{dedsprec@{dedsprec}!deriv@{deriv}}
+\subsubsection[{dedsprec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dedsprec}}\label{classderiv_a6ed62d8cabbb1cf18f30cf10c6aa287c}
+
+
+reciprocal dispersion Cartesian coordinate derivatives 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a48f5d63eb5bf79b3cc10e774b18bf06b}{\index{deriv@{deriv}!deg@{deg}}
+\index{deg@{deg}!deriv@{deriv}}
+\subsubsection[{deg}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deg}}\label{classderiv_a48f5d63eb5bf79b3cc10e774b18bf06b}
+
+
+geometric restraint Cartesian coordinate derivatives 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_ab0687390c082d71e1256dee35ba0e02d}{\index{deriv@{deriv}!deid@{deid}}
+\index{deid@{deid}!deriv@{deriv}}
+\subsubsection[{deid}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deid}}\label{classderiv_ab0687390c082d71e1256dee35ba0e02d}
+
+
+improper dihedral Cartesian coordinate derivatives 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a8fe01550c44dc68a07ef1be166c5f10e}{\index{deriv@{deriv}!deit@{deit}}
+\index{deit@{deit}!deriv@{deriv}}
+\subsubsection[{deit}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deit}}\label{classderiv_a8fe01550c44dc68a07ef1be166c5f10e}
+
+
+improper torsion Cartesian coordinate derivatives 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a3b2dad59531deb6bf5982e8a48e970c7}{\index{deriv@{deriv}!delambda@{delambda}}
+\index{delambda@{delambda}!deriv@{deriv}}
+\subsubsection[{delambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::delambda}}\label{classderiv_a3b2dad59531deb6bf5982e8a48e970c7}
+
+
+hamiltonian derivative with respect to lambda (to be sent to colvar) 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a492abed147ecbc1c1a0714b6de99d570}{\index{deriv@{deriv}!delambdae@{delambdae}}
+\index{delambdae@{delambdae}!deriv@{deriv}}
+\subsubsection[{delambdae}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::delambdae}}\label{classderiv_a492abed147ecbc1c1a0714b6de99d570}
+
+
+hamiltonian derivative with respect to elambda 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_aa0f0b04326cf8dd8725cee1829c52340}{\index{deriv@{deriv}!delambdaesave@{delambdaesave}}
+\index{delambdaesave@{delambdaesave}!deriv@{deriv}}
+\subsubsection[{delambdaesave}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::delambdaesave}}\label{classderiv_aa0f0b04326cf8dd8725cee1829c52340}
+
+
+stored hamiltonian derivative with respect to elambda 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_ad4e8728a9503b786c371e81cbf1948ca}{\index{deriv@{deriv}!delambdav@{delambdav}}
+\index{delambdav@{delambdav}!deriv@{deriv}}
+\subsubsection[{delambdav}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::delambdav}}\label{classderiv_ad4e8728a9503b786c371e81cbf1948ca}
+
+
+hamiltonian derivative with respect to vlambda 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a80f5ce711443744988b4cb3dd1f563d0}{\index{deriv@{deriv}!delambdavsave@{delambdavsave}}
+\index{delambdavsave@{delambdavsave}!deriv@{deriv}}
+\subsubsection[{delambdavsave}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::delambdavsave}}\label{classderiv_a80f5ce711443744988b4cb3dd1f563d0}
+
+
+stored hamiltonian derivative with respect to vlambda 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_af6b4f5f648a769701a0accf5b8c0a49a}{\index{deriv@{deriv}!dem@{dem}}
+\index{dem@{dem}!deriv@{deriv}}
+\subsubsection[{dem}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dem}}\label{classderiv_af6b4f5f648a769701a0accf5b8c0a49a}
+
+
+multipole Cartesian coordinate derivatives 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a43a2a9492e8d05870a46581134371eac}{\index{deriv@{deriv}!demrec@{demrec}}
+\index{demrec@{demrec}!deriv@{deriv}}
+\subsubsection[{demrec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::demrec}}\label{classderiv_a43a2a9492e8d05870a46581134371eac}
+
+
+reciprocal multipole Cartesian coordinate derivatives 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a9c79f676fc042450c0d757ca7fcc90d4}{\index{deriv@{deriv}!deopb@{deopb}}
+\index{deopb@{deopb}!deriv@{deriv}}
+\subsubsection[{deopb}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deopb}}\label{classderiv_a9c79f676fc042450c0d757ca7fcc90d4}
+
+
+out-\/of-\/plane bend Cartesian coordinate derivatives 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_aa8eae10f8664832413974a490f939ebb}{\index{deriv@{deriv}!deopd@{deopd}}
+\index{deopd@{deopd}!deriv@{deriv}}
+\subsubsection[{deopd}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deopd}}\label{classderiv_aa8eae10f8664832413974a490f939ebb}
+
+
+out-\/of-\/plane distance Cartesian coordinate derivatives 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a3d8bf98f85539e47c4fda4f9d0fd9d13}{\index{deriv@{deriv}!dep@{dep}}
+\index{dep@{dep}!deriv@{deriv}}
+\subsubsection[{dep}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dep}}\label{classderiv_a3d8bf98f85539e47c4fda4f9d0fd9d13}
+
+
+polarization Cartesian coordinate derivatives 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_ab2d4c03ab52a5e5facc97ac8cf9abac7}{\index{deriv@{deriv}!deprec@{deprec}}
+\index{deprec@{deprec}!deriv@{deriv}}
+\subsubsection[{deprec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deprec}}\label{classderiv_ab2d4c03ab52a5e5facc97ac8cf9abac7}
+
+
+reciprocal polarization Cartesian coordinate derivatives 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_ac3d9dddf5a57575b5fa0a8668554cc0b}{\index{deriv@{deriv}!dept@{dept}}
+\index{dept@{dept}!deriv@{deriv}}
+\subsubsection[{dept}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dept}}\label{classderiv_ac3d9dddf5a57575b5fa0a8668554cc0b}
+
+
+pi-\/orbital torsion Cartesian coordinate derivatives 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a78988c04c9c26c2471a265d2e4793726}{\index{deriv@{deriv}!der@{der}}
+\index{der@{der}!deriv@{deriv}}
+\subsubsection[{der}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::der}}\label{classderiv_a78988c04c9c26c2471a265d2e4793726}
+
+
+repulsion Cartesian coordinate derivatives 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a725a18c2a6db9a96ba1b2e4b86256617}{\index{deriv@{deriv}!desave@{desave}}
+\index{desave@{desave}!deriv@{deriv}}
+\subsubsection[{desave}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::desave}}\label{classderiv_a725a18c2a6db9a96ba1b2e4b86256617}
+
+
+stored Cartesian coordinate derivatives 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a64aef9d688475a6de56080c342300aa2}{\index{deriv@{deriv}!desmd@{desmd}}
+\index{desmd@{desmd}!deriv@{deriv}}
+\subsubsection[{desmd}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::desmd}}\label{classderiv_a64aef9d688475a6de56080c342300aa2}
+
+
+extra smd energy term Cartesian coordinate derivatives 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_ad23bdcc166a23b3529b9daef17b14260}{\index{deriv@{deriv}!desum@{desum}}
+\index{desum@{desum}!deriv@{deriv}}
+\subsubsection[{desum}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::desum}}\label{classderiv_ad23bdcc166a23b3529b9daef17b14260}
+
+
+total energy Cartesian coordinate derivatives 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a6080bc7632418716603f5fe338fffd26}{\index{deriv@{deriv}!det@{det}}
+\index{det@{det}!deriv@{deriv}}
+\subsubsection[{det}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::det}}\label{classderiv_a6080bc7632418716603f5fe338fffd26}
+
+
+torsional Cartesian coordinate derivatives 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_ae4cc6fb1e2dc67a34d2b42b76478ddcb}{\index{deriv@{deriv}!dett@{dett}}
+\index{dett@{dett}!deriv@{deriv}}
+\subsubsection[{dett}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dett}}\label{classderiv_ae4cc6fb1e2dc67a34d2b42b76478ddcb}
+
+
+torsion-\/torsion Cartesian coordinate derivatives 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_aba3704a824a9def0252571907bc6d11e}{\index{deriv@{deriv}!deub@{deub}}
+\index{deub@{deub}!deriv@{deriv}}
+\subsubsection[{deub}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::deub}}\label{classderiv_aba3704a824a9def0252571907bc6d11e}
+
+
+Urey-\/\-Bradley Cartesian coordinate derivatives. 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a5702b7756c4db2eaac0a462ea67fa477}{\index{deriv@{deriv}!dev@{dev}}
+\index{dev@{dev}!deriv@{deriv}}
+\subsubsection[{dev}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dev}}\label{classderiv_a5702b7756c4db2eaac0a462ea67fa477}
+
+
+van der Waals Cartesian coordinate derivatives 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a1151a4b1b1f0c054ae48e2c629cdd22a}{\index{deriv@{deriv}!dex@{dex}}
+\index{dex@{dex}!deriv@{deriv}}
+\subsubsection[{dex}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dex}}\label{classderiv_a1151a4b1b1f0c054ae48e2c629cdd22a}
+
+
+extra energy term Cartesian coordinate derivatives 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a0122c85565ea213dfaaee75053d1d14f}{\index{deriv@{deriv}!dlambdaelambda@{dlambdaelambda}}
+\index{dlambdaelambda@{dlambdaelambda}!deriv@{deriv}}
+\subsubsection[{dlambdaelambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::dlambdaelambda}}\label{classderiv_a0122c85565ea213dfaaee75053d1d14f}
+
+
+derivative of elambda with respect to lambda 
+
+
+
+Definition at line 55 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a8a01f4e537a4ec3b2fb825517bfccf42}{\index{deriv@{deriv}!dlambdavlambda@{dlambdavlambda}}
+\index{dlambdavlambda@{dlambdavlambda}!deriv@{deriv}}
+\subsubsection[{dlambdavlambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 deriv\-::dlambdavlambda}}\label{classderiv_a8a01f4e537a4ec3b2fb825517bfccf42}
+
+
+derivative of vlambda with respect to lambda 
+
+
+
+Definition at line 56 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_af350f0fc69097554ec61246320c44a11}{\index{deriv@{deriv}!dotstgrad@{dotstgrad}}
+\index{dotstgrad@{dotstgrad}!deriv@{deriv}}
+\subsubsection[{dotstgrad}]{\setlength{\rightskip}{0pt plus 5cm}logical deriv\-::dotstgrad}}\label{classderiv_af350f0fc69097554ec61246320c44a11}
+
+
+flag when the main program is testgrad (communication of the forces one by one) 
+
+
+
+Definition at line 60 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a61835c05c9b422286679e70d540c6f4a}{\index{deriv@{deriv}!dxdelambda@{dxdelambda}}
+\index{dxdelambda@{dxdelambda}!deriv@{deriv}}
+\subsubsection[{dxdelambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dxdelambda}}\label{classderiv_a61835c05c9b422286679e70d540c6f4a}
+
+
+hamiltonian double derivative with respect to x and lambda (to be sent to colvar) 
+
+
+
+Definition at line 57 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a3205c0909e4a054b12d6b5f2366e182e}{\index{deriv@{deriv}!dxdelambdae@{dxdelambdae}}
+\index{dxdelambdae@{dxdelambdae}!deriv@{deriv}}
+\subsubsection[{dxdelambdae}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dxdelambdae}}\label{classderiv_a3205c0909e4a054b12d6b5f2366e182e}
+
+
+hamiltonian double derivative with respect to x and elambda (electrostatic interactions) 
+
+
+
+Definition at line 58 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_a883c736eaa7d19c7c1cf277d532660b7}{\index{deriv@{deriv}!dxdelambdav@{dxdelambdav}}
+\index{dxdelambdav@{dxdelambdav}!deriv@{deriv}}
+\subsubsection[{dxdelambdav}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable deriv\-::dxdelambdav}}\label{classderiv_a883c736eaa7d19c7c1cf277d532660b7}
+
+
+hamiltonian double derivative with respect to x and vlambda (vdw interactions) 
+
+
+
+Definition at line 59 of file M\-O\-D\-\_\-deriv.\-f90.
+
+\hypertarget{classderiv_acf56b2c91f35dd1d9a7186aab5fe5059}{\index{deriv@{deriv}!inte@{inte}}
+\index{inte@{inte}!deriv@{deriv}}
+\subsubsection[{inte}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(2) deriv\-::inte}}\label{classderiv_acf56b2c91f35dd1d9a7186aab5fe5059}
+
+
+Definition at line 63 of file M\-O\-D\-\_\-deriv.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__deriv_8f90}{M\-O\-D\-\_\-deriv.\-f90}\end{DoxyCompactItemize}

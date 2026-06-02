@@ -1,0 +1,269 @@
+\hypertarget{edisp_8f90}{\section{edisp.\-f90 File Reference}
+\label{edisp_8f90}\index{edisp.\-f90@{edisp.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{edisp_8f90_a60070c5442af727eca7b351275d3e3d0}{edisp}
+\begin{DoxyCompactList}\small\item\em \char`\"{}edisp\char`\"{} calculates the dispersion energy; also partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{edisp_8f90_a45f7cbb71d61111c623f67ee14e6f7a1}{edisp0b}
+\begin{DoxyCompactList}\small\item\em calculates the damped dispersion potential energy using a pairwise neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{edisp_8f90_afd134ef30ac904bef54889aaacf40ec4}{edisp0d}
+\begin{DoxyCompactList}\small\item\em calculates the dispersion interaction energy using particle mesh Ewald summation and a double loop \end{DoxyCompactList}\item 
+subroutine \hyperlink{edisp_8f90_a3907858fd149d29843d7ebb7a8817ed8}{edrecip}
+\begin{DoxyCompactList}\small\item\em evaluates the reciprocal space portion of the particle mesh Ewald energy due to damped dispersion \end{DoxyCompactList}\item 
+subroutine \hyperlink{edisp_8f90_aba41eabe423af5968162589bb51a5f6f}{edreal0d}
+\begin{DoxyCompactList}\small\item\em \char`\"{}edreal0d\char`\"{} evaluated the real space portion of the damped dispersion energy using Ewald and a neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{edisp_8f90_a60070c5442af727eca7b351275d3e3d0}{\index{edisp.\-f90@{edisp.\-f90}!edisp@{edisp}}
+\index{edisp@{edisp}!edisp.f90@{edisp.\-f90}}
+\subsubsection[{edisp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edisp (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp_8f90_a60070c5442af727eca7b351275d3e3d0}
+
+
+\char`\"{}edisp\char`\"{} calculates the dispersion energy; also partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 27 of file edisp.\-f90.
+
+
+
+References edisp0b(), edisp0d(), and evcorr().
+
+
+
+Referenced by energy().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp_8f90_a60070c5442af727eca7b351275d3e3d0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp_8f90_a60070c5442af727eca7b351275d3e3d0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{edisp_8f90_a45f7cbb71d61111c623f67ee14e6f7a1}{\index{edisp.\-f90@{edisp.\-f90}!edisp0b@{edisp0b}}
+\index{edisp0b@{edisp0b}!edisp.f90@{edisp.\-f90}}
+\subsubsection[{edisp0b}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edisp0b (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp_8f90_a45f7cbb71d61111c623f67ee14e6f7a1}
+
+
+calculates the damped dispersion potential energy using a pairwise neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 89 of file edisp.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by edisp().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=252pt]{edisp_8f90_a45f7cbb71d61111c623f67ee14e6f7a1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp_8f90_a45f7cbb71d61111c623f67ee14e6f7a1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{edisp_8f90_afd134ef30ac904bef54889aaacf40ec4}{\index{edisp.\-f90@{edisp.\-f90}!edisp0d@{edisp0d}}
+\index{edisp0d@{edisp0d}!edisp.f90@{edisp.\-f90}}
+\subsubsection[{edisp0d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edisp0d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp_8f90_afd134ef30ac904bef54889aaacf40ec4}
+
+
+calculates the dispersion interaction energy using particle mesh Ewald summation and a double loop 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 395 of file edisp.\-f90.
+
+
+
+References edreal0d(), and edrecip().
+
+
+
+Referenced by edisp().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp_8f90_afd134ef30ac904bef54889aaacf40ec4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp_8f90_afd134ef30ac904bef54889aaacf40ec4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{edisp_8f90_aba41eabe423af5968162589bb51a5f6f}{\index{edisp.\-f90@{edisp.\-f90}!edreal0d@{edreal0d}}
+\index{edreal0d@{edreal0d}!edisp.f90@{edisp.\-f90}}
+\subsubsection[{edreal0d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edreal0d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp_8f90_aba41eabe423af5968162589bb51a5f6f}
+
+
+\char`\"{}edreal0d\char`\"{} evaluated the real space portion of the damped dispersion energy using Ewald and a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 673 of file edisp.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by edisp0d().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=256pt]{edisp_8f90_aba41eabe423af5968162589bb51a5f6f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp_8f90_aba41eabe423af5968162589bb51a5f6f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{edisp_8f90_a3907858fd149d29843d7ebb7a8817ed8}{\index{edisp.\-f90@{edisp.\-f90}!edrecip@{edrecip}}
+\index{edrecip@{edrecip}!edisp.f90@{edisp.\-f90}}
+\subsubsection[{edrecip}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edrecip (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp_8f90_a3907858fd149d29843d7ebb7a8817ed8}
+
+
+evaluates the reciprocal space portion of the particle mesh Ewald energy due to damped dispersion 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 470 of file edisp.\-f90.
+
+
+
+References bspline\-\_\-fill\-\_\-site(), erfc(), fft2d\-\_\-frontmpi(), and grid\-\_\-disp\-\_\-site().
+
+
+
+Referenced by edisp0d(), and edisp3d().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp_8f90_a3907858fd149d29843d7ebb7a8817ed8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp_8f90_a3907858fd149d29843d7ebb7a8817ed8_icgraph}
+\end{center}
+\end{figure}
+
+

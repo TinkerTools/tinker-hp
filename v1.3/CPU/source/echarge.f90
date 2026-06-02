@@ -1,0 +1,366 @@
+!
+!     Sorbonne University
+!     Washington University in Saint Louis
+!     University of Texas at Austin
+!
+!     ################################################################
+!     ##                                                            ##
+!     ##  subroutine echarge  --  charge-charge energy & analysis   ##
+!     ##                                                            ##
+!     ################################################################
+!
+!
+!     "echarge" calculates the charge-charge interaction energy
+!     and partitions the energy among the atoms
+!
+!
+!> @brief 
+!> "echarge" calculates the charge-charge interaction energy
+!> and partitions the energy among the atoms
+!> @param no params
+subroutine echarge
+   use inform
+   use iounit
+   implicit none
+!
+   if (deb_Path) write(iout,*), 'echarge '
+!
+!
+!     choose the method for summing over pairwise interactions
+!
+   call echarge0c
+!
+   return
+end
+!
+!     ################################################################
+!     ##                                                            ##
+!     ##  subroutine echarge0c  --  Ewald charge analysis via list  ##
+!     ##                                                            ##
+!     ################################################################
+!
+!
+!     "echarge0c" calculates the charge-charge interaction energy
+!     and partitions the energy among the atoms using a particle
+!     mesh Ewald summation
+!
+!
+!> @brief 
+!> calculates the charge-charge interaction energy
+!> and partitions the energy among the atoms using a particle
+!> mesh Ewald summation
+!> @param no params
+subroutine echarge0c
+   use atmlst
+   use atoms
+   use bound
+   use boxes
+   use charge
+   use chgpot
+   use couple
+   use domdec
+   use energi
+   use ewald
+   use inform
+   use inter
+   use iounit
+   use math
+   use molcul
+   use neigh
+   use potent
+   use shunt
+   use usage
+   use mpi
+   implicit none
+   integer i,iglob,iichg
+   integer ii,ierr
+   real*8 e
+   real*8 f
+   real*8 fs
+   real*8 xd,yd,zd
+   external erfc
+!
+   if (deb_Path) write(iout,*), 'echarge0c '
+!
+!
+!
+!     zero out the Ewald summation energy and partitioning
+!
+   ec = 0.0d0
+!
+   if (nion .eq. 0)  return
+!
+!     set Ewald coefficient
+!
+   aewald = aeewald
+!
+!     compute the reciprocal space part of the Ewald summation
+!
+   if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))&
+   &then
+      if (use_crec) then
+         call ecrecip
+      end if
+      if (use_pmecore) return
+   end if
+
+   if (use_cself) then
+!
+!     compute the Ewald self-energy term over all the atoms
+!
+      f = electric / dielec
+      fs = -f * aewald / sqrtpi
+      do ii = 1, nionloc
+         iichg = chgglob(ii)
+         iglob = iion(iichg)
+         i = loc(iglob)
+         e = fs * pchg(iichg)**2
+         ec = ec + e
+      end do
+!
+!     compute the cell dipole boundary correction term
+!
+      if (boundary .eq. 'VACUUM') then
+         xd = 0.0d0
+         yd = 0.0d0
+         zd = 0.0d0
+         do ii = 1, nionloc
+            iichg = chgglob(ii)
+            iglob = iion(iichg)
+            i = loc(iglob)
+            xd = xd + pchg(iichg)*x(iglob)
+            yd = yd + pchg(iichg)*y(iglob)
+            zd = zd + pchg(iichg)*z(iglob)
+         end do
+         call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,&
+         &COMM_TINKER,ierr)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,&
+         &COMM_TINKER,ierr)
+         call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,&
+         &COMM_TINKER,ierr)
+         e = (2.0d0/3.0d0) * f * (pi/volbox) * (xd*xd+yd*yd+zd*zd)
+         if (rank.eq.0) then
+            ec = ec + e
+         end if
+      end if
+   end if
+!
+!     compute the real space part of the Ewald summation
+!
+   if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))&
+   &then
+      if (use_creal) then
+         call ecreal0d
+      end if
+   end if
+   return
+end
+!
+!     "ecreal0d" evaluates the real space portion of the Ewald sum
+!     energy due to atomic charge interactions,
+!     using a pairwise neighbor list
+!
+!     if longrange, calculates just the long range part
+!     if shortrange, calculates just the short range part
+!
+!> @brief 
+!>     "ecreal0d" evaluates the real space portion of the Ewald sum
+!>     energy due to atomic charge interactions,
+!>     using a pairwise neighbor list
+!>
+!>     if longrange, calculates just the long range part
+!>     if shortrange, calculates just the short range part
+!> @param no params
+subroutine ecreal0d
+   use atmlst
+   use atoms
+   use bound
+   use boxes
+   use charge
+   use chgpot
+   use couple
+   use cutoff
+   use domdec
+   use energi
+   use ewald
+   use group
+   use inform
+   use inter
+   use iounit
+   use math
+   use molcul
+   use neigh
+   use potent
+   use shunt
+   use usage
+   use mpi
+   implicit none
+   integer i,j,k,iglob,iichg,nnelst
+   integer ii,kkk,kglob,kkchg
+   real*8 e,efull
+   real*8 f,fi,fik
+   real*8 r,r2,rb,rew
+   real*8 xi,yi,zi
+   real*8 xr,yr,zr
+   real*8 erfc,erfterm
+   real*8 scale,scaleterm
+   real*8 fgrp
+   real*8, allocatable :: cscale(:)
+   real*8 s,ds,cshortcut2,facts
+   logical usei,proceed
+   logical testcut,shortrange,longrange,fullrange
+   character*11 mode
+   character*80 :: RoutineName
+   external erfc
+!
+   if (deb_Path) write(iout,*), 'ecreal0d '
+!
+
+!     compute the short, long, or full real space part of the Ewald summation
+   shortrange = use_cshortreal
+   longrange  = use_clong
+   fullrange  = .not.(shortrange.or.longrange)
+
+   if (shortrange) then
+      RoutineName = 'ecrealshort0d'
+      mode        = 'SHORTEWALD'
+   else if (longrange) then
+      RoutineName = 'ecreallong0d'
+      mode        = 'EWALD'
+   else
+      RoutineName = 'ecreal0d'
+      mode        = 'EWALD'
+   endif
+
+!
+!     perform dynamic allocation of some local arrays
+!
+   allocate (cscale(n))
+!
+!     initialize connected atom exclusion coefficients
+!
+   cscale = 1.0d0
+!
+!     set conversion factor, cutoff and switching coefficients
+!
+   f = electric / dielec
+   call switch (mode)
+   cshortcut2 = (chgshortcut - shortheal) ** 2
+
+!
+!     compute the real space portion of the Ewald summation
+!
+   MAINLOOP:&
+   &do ii = 1, nionlocnl
+      iichg = chgglobnl(ii)
+      iglob = iion(iichg)
+      i = loc(iglob)
+      xi = x(iglob)
+      yi = y(iglob)
+      zi = z(iglob)
+      fi = f * pchg(iichg)
+      usei = use(iglob)
+!
+!     set exclusion coefficients for connected atoms
+!
+      do j = 1, n12(iglob)
+         cscale(i12(j,iglob)) = c2scale
+      end do
+      do j = 1, n13(iglob)
+         cscale(i13(j,iglob)) = c3scale
+      end do
+      do j = 1, n14(iglob)
+         cscale(i14(j,iglob)) = c4scale
+      end do
+      do j = 1, n15(iglob)
+         cscale(i15(j,iglob)) = c5scale
+      end do
+      if (shortrange) then
+         nnelst = nshortelst(ii)
+      else
+         nnelst = nelst(ii)
+      end if
+      do kkk = 1, nnelst
+         if (shortrange) then
+            kkchg = shortelst(kkk,ii)
+         else
+            kkchg = elst(kkk,ii)
+         end if
+         if (kkchg.eq.0) cycle
+         kglob = iion(kkchg)
+         if (use_group)  call groups (fgrp,iglob,kglob,0,0,0,0)
+         k = loc(kglob)
+         proceed = (usei .or. use(kglob))
+         if (.not.proceed) cycle
+!
+!     compute the energy contribution for this interaction
+!
+         xr = xi - x(kglob)
+         yr = yi - y(kglob)
+         zr = zi - z(kglob)
+!
+!     find energy for interactions within real space cutoff
+!
+         call image (xr,yr,zr)
+         r2 = xr*xr + yr*yr + zr*zr
+         testcut = merge(r2 .le. off2.and.r2.ge.cshortcut2,&
+         &r2 .le. off2,&
+         &longrange&
+         &)
+         if (testcut) then
+            r = sqrt(r2)
+            rb = r + ebuffer
+            fik = fi * pchg(kkchg)
+            rew = aewald * r
+            erfterm = erfc (rew)
+            scale = cscale(kglob)
+            if (use_group)  scale = scale * fgrp
+            scaleterm = scale - 1.0d0
+            e = (fik/rb) * (erfterm+scaleterm)
+!
+!     use energy switching if near the cutoff distance
+!     at short or long range
+!
+            if(shortrange .or. longrange)&
+            &call switch_respa(r,chgshortcut,shortheal,s,ds)
+
+            if(shortrange) then
+               facts =         s
+            else if(longrange) then
+               facts = 1.0d0 - s
+            else
+               facts  = 1.0d0
+            endif
+            ec = ec + e * facts
+!
+!     increment the overall charge-charge energy component
+!
+            efull = (fik/rb) * scale
+            if (efull .ne. 0.0d0) then
+               if (molcule(iglob) .ne. molcule(kglob))&
+               &einter = einter + efull
+            end if
+         end if
+      end do
+!
+!     reset exclusion coefficients for connected atoms
+!
+      do j = 1, n12(iglob)
+         cscale(i12(j,iglob)) = 1.0d0
+      end do
+      do j = 1, n13(iglob)
+         cscale(i13(j,iglob)) = 1.0d0
+      end do
+      do j = 1, n14(iglob)
+         cscale(i14(j,iglob)) = 1.0d0
+      end do
+      do j = 1, n15(iglob)
+         cscale(i15(j,iglob)) = 1.0d0
+      end do
+   end do MAINLOOP
+!
+!     perform deallocation of some local arrays
+!
+   deallocate (cscale)
+   return
+end

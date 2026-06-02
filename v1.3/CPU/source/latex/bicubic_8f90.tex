@@ -1,0 +1,221 @@
+\hypertarget{bicubic_8f90}{\section{bicubic.\-f90 File Reference}
+\label{bicubic_8f90}\index{bicubic.\-f90@{bicubic.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{bicubic_8f90_aca7f463d4376acdf92e26b46628f1023}{bcuint} (y, y1, y2, y12, x1l, x1u, x2l, x2u, x1, x2, ansy)
+\begin{DoxyCompactList}\small\item\em \char`\"{}bcuint\char`\"{} performs a bicubic interpolation of the function value on a 2\-D spline grid \end{DoxyCompactList}\item 
+subroutine \hyperlink{bicubic_8f90_a8ed3e992a2eb55b129ff40b7b86f2130}{bcuint1} (y, y1, y2, y12, x1l, x1u, x2l, x2u, x1, x2, ansy, ansy1, ansy2)
+\item 
+subroutine \hyperlink{bicubic_8f90_a787ddf3b204bc6fbb15c1595e6c82caf}{bcuint2} (y, y1, y2, y12, x1l, x1u, x2l, x2u, x1, x2, ansy, ansy1, ansy2, ansy12, ansy11, ansy22)
+\begin{DoxyCompactList}\small\item\em \char`\"{}bcuint2\char`\"{} performs a bicubic interpolation of the function value, gradient and Hessian along the directions of a 2\-D spline grid \end{DoxyCompactList}\item 
+subroutine \hyperlink{bicubic_8f90_a8c9afc23680c8b8f0e5c90476d2cb2f6}{bcucof} (y, y1, y2, y12, d1, d2, c)
+\begin{DoxyCompactList}\small\item\em \char`\"{}bcucof\char`\"{} determines the coefficient matrix needed for bicubic interpolation of a function, gradients and cross derivatives \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{bicubic_8f90_a8c9afc23680c8b8f0e5c90476d2cb2f6}{\index{bicubic.\-f90@{bicubic.\-f90}!bcucof@{bcucof}}
+\index{bcucof@{bcucof}!bicubic.f90@{bicubic.\-f90}}
+\subsubsection[{bcucof}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bcucof (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(4)}]{y, }
+\item[{real$\ast$8, dimension(4)}]{y1, }
+\item[{real$\ast$8, dimension(4)}]{y2, }
+\item[{real$\ast$8, dimension(4)}]{y12, }
+\item[{real$\ast$8}]{d1, }
+\item[{real$\ast$8}]{d2, }
+\item[{real$\ast$8, dimension(4,4)}]{c}
+\end{DoxyParamCaption}
+)}}\label{bicubic_8f90_a8c9afc23680c8b8f0e5c90476d2cb2f6}
+
+
+\char`\"{}bcucof\char`\"{} determines the coefficient matrix needed for bicubic interpolation of a function, gradients and cross derivatives 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 169 of file bicubic.\-f90.
+
+
+
+Referenced by bcuint(), bcuint1(), and bcuint2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bicubic_8f90_a8c9afc23680c8b8f0e5c90476d2cb2f6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bicubic_8f90_aca7f463d4376acdf92e26b46628f1023}{\index{bicubic.\-f90@{bicubic.\-f90}!bcuint@{bcuint}}
+\index{bcuint@{bcuint}!bicubic.f90@{bicubic.\-f90}}
+\subsubsection[{bcuint}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bcuint (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(4)}]{y, }
+\item[{real$\ast$8, dimension(4)}]{y1, }
+\item[{real$\ast$8, dimension(4)}]{y2, }
+\item[{real$\ast$8, dimension(4)}]{y12, }
+\item[{real$\ast$8}]{x1l, }
+\item[{real$\ast$8}]{x1u, }
+\item[{real$\ast$8}]{x2l, }
+\item[{real$\ast$8}]{x2u, }
+\item[{real$\ast$8}]{x1, }
+\item[{real$\ast$8}]{x2, }
+\item[{real$\ast$8}]{ansy}
+\end{DoxyParamCaption}
+)}}\label{bicubic_8f90_aca7f463d4376acdf92e26b46628f1023}
+
+
+\char`\"{}bcuint\char`\"{} performs a bicubic interpolation of the function value on a 2\-D spline grid 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 19 of file bicubic.\-f90.
+
+
+
+References bcucof().
+
+
+
+Referenced by etortor(), and etortor3().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=214pt]{bicubic_8f90_aca7f463d4376acdf92e26b46628f1023_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bicubic_8f90_aca7f463d4376acdf92e26b46628f1023_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bicubic_8f90_a8ed3e992a2eb55b129ff40b7b86f2130}{\index{bicubic.\-f90@{bicubic.\-f90}!bcuint1@{bcuint1}}
+\index{bcuint1@{bcuint1}!bicubic.f90@{bicubic.\-f90}}
+\subsubsection[{bcuint1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bcuint1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(4)}]{y, }
+\item[{real$\ast$8, dimension(4)}]{y1, }
+\item[{real$\ast$8, dimension(4)}]{y2, }
+\item[{real$\ast$8, dimension(4)}]{y12, }
+\item[{real$\ast$8}]{x1l, }
+\item[{real$\ast$8}]{x1u, }
+\item[{real$\ast$8}]{x2l, }
+\item[{real$\ast$8}]{x2u, }
+\item[{real$\ast$8}]{x1, }
+\item[{real$\ast$8}]{x2, }
+\item[{real$\ast$8}]{ansy, }
+\item[{real$\ast$8}]{ansy1, }
+\item[{real$\ast$8}]{ansy2}
+\end{DoxyParamCaption}
+)}}\label{bicubic_8f90_a8ed3e992a2eb55b129ff40b7b86f2130}
+
+
+Definition at line 62 of file bicubic.\-f90.
+
+
+
+References bcucof().
+
+
+
+Referenced by etortor1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=220pt]{bicubic_8f90_a8ed3e992a2eb55b129ff40b7b86f2130_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bicubic_8f90_a8ed3e992a2eb55b129ff40b7b86f2130_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bicubic_8f90_a787ddf3b204bc6fbb15c1595e6c82caf}{\index{bicubic.\-f90@{bicubic.\-f90}!bcuint2@{bcuint2}}
+\index{bcuint2@{bcuint2}!bicubic.f90@{bicubic.\-f90}}
+\subsubsection[{bcuint2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bcuint2 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(4)}]{y, }
+\item[{real$\ast$8, dimension(4)}]{y1, }
+\item[{real$\ast$8, dimension(4)}]{y2, }
+\item[{real$\ast$8, dimension(4)}]{y12, }
+\item[{real$\ast$8}]{x1l, }
+\item[{real$\ast$8}]{x1u, }
+\item[{real$\ast$8}]{x2l, }
+\item[{real$\ast$8}]{x2u, }
+\item[{real$\ast$8}]{x1, }
+\item[{real$\ast$8}]{x2, }
+\item[{real$\ast$8}]{ansy, }
+\item[{real$\ast$8}]{ansy1, }
+\item[{real$\ast$8}]{ansy2, }
+\item[{real$\ast$8}]{ansy12, }
+\item[{real$\ast$8}]{ansy11, }
+\item[{real$\ast$8}]{ansy22}
+\end{DoxyParamCaption}
+)}}\label{bicubic_8f90_a787ddf3b204bc6fbb15c1595e6c82caf}
+
+
+\char`\"{}bcuint2\char`\"{} performs a bicubic interpolation of the function value, gradient and Hessian along the directions of a 2\-D spline grid 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 108 of file bicubic.\-f90.
+
+
+
+References bcucof().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=220pt]{bicubic_8f90_a787ddf3b204bc6fbb15c1595e6c82caf_cgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,11 @@
+<map id="emrecip" name="emrecip">
+<area shape="rect" id="node2" href="$pmestuff_8f90.html#a2c281b5e322fe3f6933feeb58f5d133e" title="finds B&#45;spline coefficients and derivatives for PME i&#45;th atomic sites along the fractional coordinate..." alt="" coords="135,5,257,32"/>
+<area shape="rect" id="node4" href="$pmestuff_8f90.html#a5efd8955803838b82fa81b021a32cf5e" title="transforms the atomic multipoles from Cartesian to fractional coordinates " alt="" coords="129,56,263,83"/>
+<area shape="rect" id="node6" href="$fft__mpi_8f90.html#abdd07940aee4c823edb5b931186bed23" title="compute backward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="139,107,253,133"/>
+<area shape="rect" id="node7" href="$fft__mpi_8f90.html#a9e24205ee630a80792dd5d179c5f8429" title="compute forward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="139,157,253,184"/>
+<area shape="rect" id="node8" href="$pmestuff_8f90.html#a75e54e1a670bd08b048f69a9940abe4c" title="&quot;fphi_mpole_site&quot; extracts the permanent multipole potential on the i&#45;th site from the particle mesh ..." alt="" coords="133,208,259,235"/>
+<area shape="rect" id="node9" href="$pmestuff_8f90.html#a4495f1975376db6546014d7ab27b9d62" title="places the i&#45;th fractional atomic multipole onto the particle mesh Ewald grid " alt="" coords="133,259,259,285"/>
+<area shape="rect" id="node3" href="$pmestuff_8f90.html#ab60c473185b72a82ef174c5fcdf24cc7" title="&quot;bsplgen&quot; gets B&#45;spline coefficients and derivatives for a single PME atomic site along a particular ..." alt="" coords="325,5,398,32"/>
+<area shape="rect" id="node5" href="$pmestuff_8f90.html#ab3a9c64aac2f01b68893073aa3221161" title="&quot;cart_to_frac&quot; computes a transformation matrix to convert a multipole object in Cartesian coordinate..." alt="" coords="312,56,411,83"/>
+<area shape="rect" id="node10" href="$pmestuff_8f90.html#ac4aafef365cd8b32ba802ba270739607" title="modifies site bounds on the PME grid and returns an offset into the B&#45;spline coefficient arrays ..." alt="" coords="330,259,393,285"/>
+</map>

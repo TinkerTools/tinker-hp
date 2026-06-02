@@ -1,0 +1,51 @@
+<map id="epolar1tcg" name="epolar1tcg">
+<area shape="rect" id="node2" href="$epolar1tcg_8f90.html#acf5fe6436c5a9ab31886ea036ec48508" title="calculates the induced dipole polarization gradients with the tcg1 method " alt="" coords="188,1083,287,1109"/>
+<area shape="rect" id="node26" href="$epolar1tcg__2_8f90.html#a36a7bfd85684d33a7b9f176970b8ac69" title="calculates the induced dipole polarization gradients with the tcg1 method whith separate cores for PM..." alt="" coords="180,1133,295,1160"/>
+<area shape="rect" id="node27" href="$epolar1tcg1shortreal_8f90.html#af9d6b9ab86376603c740812118c7dbec" title="calculates the induced dipole polarization gradients with the tcg1 method " alt="" coords="159,1437,316,1464"/>
+<area shape="rect" id="node30" href="$epolar1tcg2_8f90.html#a9dce67b59bd26f20886878588e668334" title="epolar1tcg2" alt="" coords="188,576,287,603"/>
+<area shape="rect" id="node33" href="$epolar1tcg2__2_8f90.html#ae4a858c79ec3ba3c1c6ebba03978211a" title="Computes TCG2 dipoles with NO refinement (except the preconditioner if &quot;precond&quot; is TRUE) ..." alt="" coords="180,627,295,653"/>
+<area shape="rect" id="node34" href="$epolar1tcg2_8f90.html#a01ec6564436a3f56ee78b38bc1dfe5e9" title="epolar1tcg2bis" alt="" coords="178,981,297,1008"/>
+<area shape="rect" id="node37" href="$epolar1tcg2__2_8f90.html#a445cdc4ac4f10739f7a3de9c5df4a0de" title="Computes TCG2 dipoles Only guess is available (+ prec via &#39;precond&#39;) " alt="" coords="171,1032,304,1059"/>
+<area shape="rect" id="node38" href="$epolar1tcg2shortreal_8f90.html#a1eb916cb8879209362c4d7dba46eaebf" title="epolar1tcg2bisshortreal" alt="" coords="149,1387,325,1413"/>
+<area shape="rect" id="node39" href="$epolar1tcg2_8f90.html#ab44110158a66578e04b88b789cb1e7b8" title="epolar1tcg2cinq" alt="" coords="174,880,301,907"/>
+<area shape="rect" id="node40" href="$epolar1tcg2__2_8f90.html#a63164484dbfb28c497dd47e738876749" title="Computes TCG2 dipoles with NO refinement TCG2 with fastgrad, fully optimized, all options aboard..." alt="" coords="167,931,308,957"/>
+<area shape="rect" id="node41" href="$epolar1tcg2shortreal_8f90.html#ace8e5686cf622ef07e7e7a73baf55d56" title="epolar1tcg2cinqshortreal" alt="" coords="145,1336,329,1363"/>
+<area shape="rect" id="node42" href="$epolar1tcg2_8f90.html#ab522ff8df9934c1cdfff839455a081fd" title="epolar1tcg2quat" alt="" coords="173,779,301,805"/>
+<area shape="rect" id="node44" href="$epolar1tcg2__2_8f90.html#ac14c35b41a5a0b5a30427df291e9975e" title="Computes TCG2 dipoles with NO refinement TCG2 with guess AND peek&#45;step, NO preconditioner. " alt="" coords="166,829,309,856"/>
+<area shape="rect" id="node45" href="$epolar1tcg2shortreal_8f90.html#a59698b6d81992f92de88fd71c05503f9" title="epolar1tcg2quatshortreal" alt="" coords="144,1285,331,1312"/>
+<area shape="rect" id="node46" href="$epolar1tcg2shortreal_8f90.html#a71b737a234269beb4ebcc7facefa0a72" title="Computes TCG2 dipoles with NO refinement (except the preconditioner if &quot;precond&quot; is TRUE) ..." alt="" coords="159,1235,316,1261"/>
+<area shape="rect" id="node47" href="$epolar1tcg2_8f90.html#a1fda977e9f76a5a1cd2d18ecb7b80b6e" title="epolar1tcg2ter" alt="" coords="179,677,296,704"/>
+<area shape="rect" id="node48" href="$epolar1tcg2__2_8f90.html#a73d800dcf4002045b5d0b08d50301b1b" title="Computes TCG2 dipoles Obj : tcg2 with peek only, preconditioner available if &#39;precond&#39; is..." alt="" coords="171,728,303,755"/>
+<area shape="rect" id="node49" href="$epolar1tcg2shortreal_8f90.html#a5b0da854cf773d9e52de9ce847c915de" title="epolar1tcg2tershortreal" alt="" coords="150,1184,325,1211"/>
+<area shape="rect" id="node5" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="590,500,642,527"/>
+<area shape="rect" id="node50" href="$kpolar_8f90.html#a6d6cbf00b0d96b9ab6f2194e7277a933" title="finds the best omega parameter for TCG polarization with peak step " alt="" coords="197,1488,277,1515"/>
+<area shape="rect" id="node3" href="$newinduce__pme_8f90.html#aa9f29ac0881536f169292ee175237cea" title="Compute the reciprocal space contribution to the electric field due to the permanent multipoles..." alt="" coords="412,373,505,400"/>
+<area shape="rect" id="node4" href="$mpistuff_8f90.html#a40c8a6ddd87fab6ae74279d480e529f7" title="deal with communications of reciprocal fields " alt="" coords="391,424,526,451"/>
+<area shape="rect" id="node6" href="$newinduce__pme_8f90.html#addbd31b05c25931afaca7a556c13ec79" title="Compute the direct space contribution to the permanent electric field. Also compute the &quot;p&quot; field..." alt="" coords="409,1133,508,1160"/>
+<area shape="rect" id="node7" href="$mpistuff_8f90.html#a50dba030f2bb47194b1210696b79e209" title="communicate some direct fields (Newton&#39;s third law) " alt="" coords="413,880,504,907"/>
+<area shape="rect" id="node8" href="$mpistuff_8f90.html#acc69651cda59fbbb9f85f4ed992103c2" title="deal with communications of direct dipoles " alt="" coords="410,475,507,501"/>
+<area shape="rect" id="node9" href="$mpistuff_8f90.html#a6891ab58868da4b7a79b2b654c4d2d62" title="deal with communications of dipoles for PME " alt="" coords="399,525,519,552"/>
+<area shape="rect" id="node10" href="$newinduce__pme_8f90.html#aef7c31d8ed9e8c7faf9036240c7a1bfd" title="Compute the direct space contribution to the electric field due to the current value of the induced d..." alt="" coords="406,1184,511,1211"/>
+<area shape="rect" id="node11" href="$tcgstuff_8f90.html#a794c752c12924c34a5a35ed71bd9acb5" title="Compute the reciprocal space contribution to the electric field due to the current value of the induc..." alt="" coords="393,728,525,755"/>
+<area shape="rect" id="node12" href="$mpistuff_8f90.html#ab2b79ef662d77d082d501656695d4d1f" title="deal with communications of reciprocal fields in the solver " alt="" coords="395,576,522,603"/>
+<area shape="rect" id="node13" href="$tcgstuff_8f90.html#a9fe966fe3fbd40574bc9b419652d13a2" title="fftthatplz2" alt="" coords="414,829,503,856"/>
+<area shape="rect" id="node14" href="$newinduce__pme2_8f90.html#a172b83c52adea069361b25066abe9ea0" title="Performs product of vector a with polarisabilities. " alt="" coords="422,1285,495,1312"/>
+<area shape="rect" id="node15" href="$newinduce__shortreal_8f90.html#a38e10e399e49e4c1601a82291ddab784" title="Compute the direct space contribution to the electric field due to the current value of the induced d..." alt="" coords="392,1336,525,1363"/>
+<area shape="rect" id="node16" href="$tcgstuff_8f90.html#ad71830f307e9d1dee9fbbdfa5e08f0f0" title="Performs product of vector a with polarisabilities BUt now on two vectors at once ! ..." alt="" coords="418,1741,499,1768"/>
+<area shape="rect" id="node17" href="$linalg_8f90.html#a4519f3a402e5e646e9cb5d17732df732" title="computes scalar product between two vectors " alt="" coords="587,1235,645,1261"/>
+<area shape="rect" id="node18" href="$newinduce__pme_8f90.html#aa28dd2d89d34d2934d4a27cf0163519a" title="Compute the reciprocal space contribution to the electric field due to the current value of the induc..." alt="" coords="408,1488,509,1515"/>
+<area shape="rect" id="node19" href="$tcgstuff_8f90.html#ae3902cb1590da7ce74ec8490f93c77d0" title="fftthatplz" alt="" coords="418,1539,499,1565"/>
+<area shape="rect" id="node20" href="$scalders_8f90.html#a8f869c2eb469941c305e4a7e9ae1022f" title="scalderfieldzmat3" alt="" coords="389,1843,528,1869"/>
+<area shape="rect" id="node21" href="$scalders_8f90.html#a977cf40e1afa0827381bdea03797b68e" title="scalderfieldzmatrec3" alt="" coords="379,1640,538,1667"/>
+<area shape="rect" id="node22" href="$scalders_8f90.html#a290379d65727f406e20df8c9d7dbd5b8" title="scalderfieldzmat1" alt="" coords="389,1893,528,1920"/>
+<area shape="rect" id="node23" href="$scalders_8f90.html#a7fb93afb05d26cc86a8a534b1cfba800" title="scalderfieldzmatrec1" alt="" coords="379,1691,538,1717"/>
+<area shape="rect" id="node24" href="$tcgstuff_8f90.html#ae8b6f24b23c119cca1e380be87071855" title="torquetcg_dir" alt="" coords="405,1235,513,1261"/>
+<area shape="rect" id="node25" href="$tcgstuff_8f90.html#a28871a2190f2c03c8e36f53767276849" title="torquetcg_rec" alt="" coords="403,779,514,805"/>
+<area shape="rect" id="node28" href="$mpistuff_8f90.html#a169604d25f0a9f409a1640817b9c8869" title="communicate some short range direct fields (Newton&#39;s third law) " alt="" coords="397,2147,521,2173"/>
+<area shape="rect" id="node29" href="$mpistuff_8f90.html#a9c9d1b0468cbe5ca9cb9882c172a93a6" title="deal with communications of short range direct dipoles " alt="" coords="393,2045,524,2072"/>
+<area shape="rect" id="node31" href="$scalders_8f90.html#a2ce7bff63b18a942f3260383a0479a64" title="scalderfieldzmat6" alt="" coords="389,221,528,248"/>
+<area shape="rect" id="node32" href="$scalders_8f90.html#ac30348550dc87577f2ac03d074633947" title="scalderfieldzmatrec6" alt="" coords="379,120,538,147"/>
+<area shape="rect" id="node35" href="$scalders_8f90.html#a8a17b1ec1d964cb09371f5c3e7ccb362" title="scalderfieldzmatrec8" alt="" coords="379,981,538,1008"/>
+<area shape="rect" id="node36" href="$scalders_8f90.html#a561c8792a0f925c93e337110eb49bce9" title="scalderfieldzmat8" alt="" coords="389,1387,528,1413"/>
+<area shape="rect" id="node43" href="$tcgstuff_8f90.html#a6a284f7e67cb89c05d74e78ed202df0c" title="diagvec3" alt="" coords="418,627,499,653"/>
+</map>

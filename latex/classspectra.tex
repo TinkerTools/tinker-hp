@@ -1,0 +1,845 @@
+\hypertarget{classspectra}{\section{spectra Module Reference}
+\label{classspectra}\index{spectra@{spectra}}
+}
+
+
+Collaboration diagram for spectra\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=212pt]{classspectra__coll__graph}
+\end{center}
+\end{figure}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{structspectra_1_1compteur__type}{compteur\-\_\-type}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{classspectra_a4a17d005e7b8dbe1580a0f7d51e37d65}{initialize\-\_\-spectra} (dt)
+\item 
+subroutine \hyperlink{classspectra_a10513029c1c86dea5af09f8ce496db3d}{set\-\_\-kubo} (piqtb)
+\item 
+real $\ast$8 function \hyperlink{classspectra_a27d2053c9090bc63d7ae14d7edc29abd}{qtb\-\_\-kernel} (omega, piqtb, ibead)
+\item 
+real $\ast$8 function \hyperlink{classspectra_a23922ac2fd96129f594aa533edc82fc7}{piqtb\-\_\-kernel} (omega, ibead)
+\item 
+real $\ast$8 function \hyperlink{classspectra_aa68c292c3f1ec44529916b6e6c9ed807}{piqtb\-\_\-kernel\-\_\-brieuc} (omega, ibead)
+\item 
+real $\ast$8 function \hyperlink{classspectra_ab056deac13281e59def28844beb05a26}{linear\-\_\-interpolation} (x, x\-\_\-ref, y\-\_\-ref, left, right)
+\item 
+subroutine \hyperlink{classspectra_a9b1f0d6d3c04ba1863190784780751d4}{save\-\_\-dipole\-\_\-respa} (dip, dipind)
+\item 
+subroutine \hyperlink{classspectra_a1ad1abce235eaddeec0c196eb507653e}{save\-\_\-dipole\-\_\-traj} (dip, dipind)
+\item 
+subroutine \hyperlink{classspectra_a3e969bc7b33a5b61ecf93296815e8bb2}{irspectra} ()
+\item 
+subroutine \hyperlink{classspectra_ac2c09ba2810302183a13063cfbf7befe}{update\-\_\-compteur} (this)
+\item 
+subroutine \hyperlink{classspectra_a09f515460d74e0244dfe51890780af40}{initialize\-\_\-compteur} (this, \hyperlink{classspectra_ac0e35bcddedb3fbda30b8a359da97b94}{nseg}, startsave)
+\item 
+subroutine \hyperlink{classspectra_abf83fa40a337b0987dae16f9880e4170}{spcfft} (U, N, I\-S\-I\-G\-N, W\-O\-R\-K)
+\item 
+subroutine \hyperlink{classspectra_a2db6c8f0d284eccd5ae058b715e4f0f2}{spcpft} (A, B, C, U\-I\-N, U\-O\-U\-T, I\-S\-I\-G\-N)
+\item 
+subroutine \hyperlink{classspectra_a4e7bb730a7f2a0d12befe53d282f4f5a}{correct\-\_\-window\-\_\-spectrum} (spec)
+\item 
+subroutine \hyperlink{classspectra_a1beaa2ea2ce39b67a6a240d6a439b379}{compute\-\_\-dipole} (dip, dipind, full)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classspectra_ac0e35bcddedb3fbda30b8a359da97b94}{nseg}
+\item 
+integer \hyperlink{classspectra_a45c919da29d33cfaf80a704aa631b346}{nad}
+\item 
+integer \hyperlink{classspectra_abfab3c8bd49f7558f03c92c031b7721a}{startsavespec}
+\item 
+integer, parameter \hyperlink{classspectra_ac089e26587f369f12bc46f1c90f87f3a}{fft1d\-\_\-s} =4
+\item 
+real $\ast$8 \hyperlink{classspectra_a464f70f16d24c366c5421572d902496f}{omegacut}
+\item 
+real $\ast$8 \hyperlink{classspectra_a0e698cb9fa5f3ddcccaf55304c393c33}{domega}
+\item 
+real $\ast$8 \hyperlink{classspectra_a1cd3434363a2e5083b4366b0295dd6b4}{tseg}
+\item 
+real $\ast$8 \hyperlink{classspectra_aca97470f841ed23ff62294903133449f}{dt\-\_\-spec}
+\item 
+real $\ast$8 \hyperlink{classspectra_a569f0a00a8335165b556f9d9a2199e5c}{u\-\_\-fact}
+\item 
+integer \hyperlink{classspectra_a995a9e3efec5854dc763bccdc424d47e}{plan\-\_\-ir}
+\item 
+logical \hyperlink{classspectra_a5adb3da0fc3d13e07cc600138acab1a8}{ir} =.F\-A\-L\-S\-E.
+\item 
+logical \hyperlink{classspectra_a4f6272434253b12d66be37f65b81b054}{spectra\-\_\-initialized} = .F\-A\-L\-S\-E.
+\item 
+logical \hyperlink{classspectra_a4fa256bf10ebce828d63f4b324c55116}{spectra\-\_\-cm1} =.F\-A\-L\-S\-E.
+\item 
+logical \hyperlink{classspectra_a3f9dbddf10012921dcfcf5e327d305c2}{kubo} =.F\-A\-L\-S\-E.
+\item 
+logical \hyperlink{classspectra_a4212b9178886dd58ea98493c47fd2105}{full\-\_\-dipole} =.T\-R\-U\-E.
+\item 
+logical \hyperlink{classspectra_a2a068eb1a4906b0bc46cc04329cd5963}{deconvolute\-\_\-ir} = .F\-A\-L\-S\-E.
+\item 
+integer \hyperlink{classspectra_a1aee53bf91686489408eeb9419bc706e}{niter\-\_\-deconvolution} = 20
+\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classspectra_a4b67bf04ee3bd6e5e2e9298513fc7ce2}{kubo\-\_\-fact}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classspectra_a4641a93b8f40f9249290064866db7b00}{mudot}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classspectra_a2c569f11438589abdd22a1880e191a9f}{cmumu\-\_\-average}
+\item 
+logical \hyperlink{classspectra_ac6c092d4d7a7bd27589cb143b726cbb6}{piqtb\-\_\-classical\-\_\-centroid} =.F\-A\-L\-S\-E.
+\item 
+logical \hyperlink{classspectra_a1a79c120745091f45558461cd281ed79}{brieuc\-\_\-piqtb} =.F\-A\-L\-S\-E.
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+type(\hyperlink{structspectra_1_1compteur__type}{compteur\-\_\-type}), private \hyperlink{classspectra_a2a602789c821d42e1a18c695e8547edf}{compteur}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+\subsection{Member Function/\-Subroutine Documentation}
+\hypertarget{classspectra_a1beaa2ea2ce39b67a6a240d6a439b379}{\index{spectra@{spectra}!compute\-\_\-dipole@{compute\-\_\-dipole}}
+\index{compute\-\_\-dipole@{compute\-\_\-dipole}!spectra@{spectra}}
+\subsubsection[{compute\-\_\-dipole}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::compute\-\_\-dipole (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3), intent(inout)}]{dip, }
+\item[{real$\ast$8, dimension(3), intent(inout)}]{dipind, }
+\item[{logical, intent(in)}]{full}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a1beaa2ea2ce39b67a6a240d6a439b379}
+
+
+Definition at line 718 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+Referenced by baoab(), baoabrespa(), utilbaoabpi\-::compute\-\_\-grad\-\_\-beads(), utilbaoabpi\-::compute\-\_\-gradslow\-\_\-centroid(), respa(), respafast(), totaldipole(), and verlet().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a1beaa2ea2ce39b67a6a240d6a439b379_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a4e7bb730a7f2a0d12befe53d282f4f5a}{\index{spectra@{spectra}!correct\-\_\-window\-\_\-spectrum@{correct\-\_\-window\-\_\-spectrum}}
+\index{correct\-\_\-window\-\_\-spectrum@{correct\-\_\-window\-\_\-spectrum}!spectra@{spectra}}
+\subsubsection[{correct\-\_\-window\-\_\-spectrum}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::correct\-\_\-window\-\_\-spectrum (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3$\ast${\bf nseg}), intent(inout)}]{spec}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a4e7bb730a7f2a0d12befe53d282f4f5a}
+
+
+Definition at line 685 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References spcfft().
+
+
+
+Referenced by irspectra(), and qtb\-::qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a4e7bb730a7f2a0d12befe53d282f4f5a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a4e7bb730a7f2a0d12befe53d282f4f5a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a09f515460d74e0244dfe51890780af40}{\index{spectra@{spectra}!initialize\-\_\-compteur@{initialize\-\_\-compteur}}
+\index{initialize\-\_\-compteur@{initialize\-\_\-compteur}!spectra@{spectra}}
+\subsubsection[{initialize\-\_\-compteur}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::initialize\-\_\-compteur (
+\begin{DoxyParamCaption}
+\item[{class({\bf compteur\-\_\-type}), intent(inout)}]{this, }
+\item[{integer, intent(in)}]{nseg, }
+\item[{integer, intent(in)}]{startsave}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a09f515460d74e0244dfe51890780af40}
+
+
+Definition at line 582 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+Referenced by spectra\-::compteur\-\_\-type\-::initialize().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a09f515460d74e0244dfe51890780af40_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a4a17d005e7b8dbe1580a0f7d51e37d65}{\index{spectra@{spectra}!initialize\-\_\-spectra@{initialize\-\_\-spectra}}
+\index{initialize\-\_\-spectra@{initialize\-\_\-spectra}!spectra@{spectra}}
+\subsubsection[{initialize\-\_\-spectra}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::initialize\-\_\-spectra (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a4a17d005e7b8dbe1580a0f7d51e37d65}
+
+
+Definition at line 58 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann(), and colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by mdinit(), and qtb\-::qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a4a17d005e7b8dbe1580a0f7d51e37d65_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a4a17d005e7b8dbe1580a0f7d51e37d65_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a3e969bc7b33a5b61ecf93296815e8bb2}{\index{spectra@{spectra}!irspectra@{irspectra}}
+\index{irspectra@{irspectra}!spectra@{spectra}}
+\subsubsection[{irspectra}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::irspectra (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a3e969bc7b33a5b61ecf93296815e8bb2}
+
+
+Definition at line 473 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann(), correct\-\_\-window\-\_\-spectrum(), deconvolution\-::deconvolute\-\_\-spectrum\-\_\-symmetrize(), and spcfft().
+
+
+
+Referenced by save\-\_\-dipole\-\_\-traj().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a3e969bc7b33a5b61ecf93296815e8bb2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a3e969bc7b33a5b61ecf93296815e8bb2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_ab056deac13281e59def28844beb05a26}{\index{spectra@{spectra}!linear\-\_\-interpolation@{linear\-\_\-interpolation}}
+\index{linear\-\_\-interpolation@{linear\-\_\-interpolation}!spectra@{spectra}}
+\subsubsection[{linear\-\_\-interpolation}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function spectra\-::linear\-\_\-interpolation (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{x, }
+\item[{real$\ast$8, dimension(\-:), intent(in)}]{x\-\_\-ref, }
+\item[{real$\ast$8, dimension(\-:), intent(in)}]{y\-\_\-ref, }
+\item[{real$\ast$8, intent(in)}]{left, }
+\item[{real$\ast$8, intent(in)}]{right}
+\end{DoxyParamCaption}
+)}}\label{classspectra_ab056deac13281e59def28844beb05a26}
+
+
+Definition at line 347 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+Referenced by piqtb\-\_\-kernel\-\_\-brieuc().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_ab056deac13281e59def28844beb05a26_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a23922ac2fd96129f594aa533edc82fc7}{\index{spectra@{spectra}!piqtb\-\_\-kernel@{piqtb\-\_\-kernel}}
+\index{piqtb\-\_\-kernel@{piqtb\-\_\-kernel}!spectra@{spectra}}
+\subsubsection[{piqtb\-\_\-kernel}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function spectra\-::piqtb\-\_\-kernel (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{omega, }
+\item[{integer, intent(in)}]{ibead}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a23922ac2fd96129f594aa533edc82fc7}
+
+
+Definition at line 150 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References piqtb\-\_\-kernel\-\_\-brieuc().
+
+
+
+Referenced by qtb\-\_\-kernel().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a23922ac2fd96129f594aa533edc82fc7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a23922ac2fd96129f594aa533edc82fc7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_aa68c292c3f1ec44529916b6e6c9ed807}{\index{spectra@{spectra}!piqtb\-\_\-kernel\-\_\-brieuc@{piqtb\-\_\-kernel\-\_\-brieuc}}
+\index{piqtb\-\_\-kernel\-\_\-brieuc@{piqtb\-\_\-kernel\-\_\-brieuc}!spectra@{spectra}}
+\subsubsection[{piqtb\-\_\-kernel\-\_\-brieuc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function spectra\-::piqtb\-\_\-kernel\-\_\-brieuc (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{omega, }
+\item[{integer, intent(in)}]{ibead}
+\end{DoxyParamCaption}
+)}}\label{classspectra_aa68c292c3f1ec44529916b6e6c9ed807}
+
+
+Definition at line 210 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References fatal(), and linear\-\_\-interpolation().
+
+
+
+Referenced by piqtb\-\_\-kernel().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_aa68c292c3f1ec44529916b6e6c9ed807_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_aa68c292c3f1ec44529916b6e6c9ed807_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a27d2053c9090bc63d7ae14d7edc29abd}{\index{spectra@{spectra}!qtb\-\_\-kernel@{qtb\-\_\-kernel}}
+\index{qtb\-\_\-kernel@{qtb\-\_\-kernel}!spectra@{spectra}}
+\subsubsection[{qtb\-\_\-kernel}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function spectra\-::qtb\-\_\-kernel (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{omega, }
+\item[{logical, intent(in)}]{piqtb, }
+\item[{integer, intent(in)}]{ibead}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a27d2053c9090bc63d7ae14d7edc29abd}
+
+
+Definition at line 130 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References piqtb\-\_\-kernel().
+
+
+
+Referenced by qtb\-::adhnoise(), qtb\-::generate\-\_\-corr\-\_\-pot(), and set\-\_\-kubo().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a27d2053c9090bc63d7ae14d7edc29abd_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a27d2053c9090bc63d7ae14d7edc29abd_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a9b1f0d6d3c04ba1863190784780751d4}{\index{spectra@{spectra}!save\-\_\-dipole\-\_\-respa@{save\-\_\-dipole\-\_\-respa}}
+\index{save\-\_\-dipole\-\_\-respa@{save\-\_\-dipole\-\_\-respa}!spectra@{spectra}}
+\subsubsection[{save\-\_\-dipole\-\_\-respa}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::save\-\_\-dipole\-\_\-respa (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nalt), intent(in)}]{dip, }
+\item[{real$\ast$8, dimension(3,nalt), intent(in)}]{dipind}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a9b1f0d6d3c04ba1863190784780751d4}
+
+
+Definition at line 374 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References cubic\-\_\-spline(), and save\-\_\-dipole\-\_\-traj().
+
+
+
+Referenced by baoabrespa(), baoabrespapi(), and respa().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a9b1f0d6d3c04ba1863190784780751d4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a9b1f0d6d3c04ba1863190784780751d4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a1ad1abce235eaddeec0c196eb507653e}{\index{spectra@{spectra}!save\-\_\-dipole\-\_\-traj@{save\-\_\-dipole\-\_\-traj}}
+\index{save\-\_\-dipole\-\_\-traj@{save\-\_\-dipole\-\_\-traj}!spectra@{spectra}}
+\subsubsection[{save\-\_\-dipole\-\_\-traj}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::save\-\_\-dipole\-\_\-traj (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3), intent(in)}]{dip, }
+\item[{real$\ast$8, dimension(3), intent(in)}]{dipind}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a1ad1abce235eaddeec0c196eb507653e}
+
+
+Definition at line 436 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References irspectra().
+
+
+
+Referenced by baoab(), baoabpi(), save\-\_\-dipole\-\_\-respa(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a1ad1abce235eaddeec0c196eb507653e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a1ad1abce235eaddeec0c196eb507653e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a10513029c1c86dea5af09f8ce496db3d}{\index{spectra@{spectra}!set\-\_\-kubo@{set\-\_\-kubo}}
+\index{set\-\_\-kubo@{set\-\_\-kubo}!spectra@{spectra}}
+\subsubsection[{set\-\_\-kubo}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::set\-\_\-kubo (
+\begin{DoxyParamCaption}
+\item[{logical, intent(in)}]{piqtb}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a10513029c1c86dea5af09f8ce496db3d}
+
+
+Definition at line 101 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References fatal(), and qtb\-\_\-kernel().
+
+
+
+Referenced by qtb\-::qtbinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a10513029c1c86dea5af09f8ce496db3d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a10513029c1c86dea5af09f8ce496db3d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_abf83fa40a337b0987dae16f9880e4170}{\index{spectra@{spectra}!spcfft@{spcfft}}
+\index{spcfft@{spcfft}!spectra@{spectra}}
+\subsubsection[{spcfft}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::spcfft (
+\begin{DoxyParamCaption}
+\item[{complex({\bf fft1d\-\_\-s}), dimension($\ast$)}]{U, }
+\item[{integer}]{N, }
+\item[{integer}]{I\-S\-I\-G\-N, }
+\item[{complex({\bf fft1d\-\_\-s}), dimension($\ast$)}]{W\-O\-R\-K}
+\end{DoxyParamCaption}
+)}}\label{classspectra_abf83fa40a337b0987dae16f9880e4170}
+
+
+Definition at line 611 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+References spcpft().
+
+
+
+Referenced by qtb\-::convolseg(), correct\-\_\-window\-\_\-spectrum(), irspectra(), and qtb\-::qtb\-\_\-spectra\-\_\-adaptation\-\_\-gamma().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=292pt]{classspectra_abf83fa40a337b0987dae16f9880e4170_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_abf83fa40a337b0987dae16f9880e4170_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_a2db6c8f0d284eccd5ae058b715e4f0f2}{\index{spectra@{spectra}!spcpft@{spcpft}}
+\index{spcpft@{spcpft}!spectra@{spectra}}
+\subsubsection[{spcpft}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::spcpft (
+\begin{DoxyParamCaption}
+\item[{integer}]{A, }
+\item[{integer}]{B, }
+\item[{integer}]{C, }
+\item[{complex({\bf fft1d\-\_\-s}), dimension(b,c,a)}]{U\-I\-N, }
+\item[{complex({\bf fft1d\-\_\-s}), dimension(b,a,c)}]{U\-O\-U\-T, }
+\item[{integer}]{I\-S\-I\-G\-N}
+\end{DoxyParamCaption}
+)}}\label{classspectra_a2db6c8f0d284eccd5ae058b715e4f0f2}
+
+
+Definition at line 649 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+Referenced by spcfft().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_a2db6c8f0d284eccd5ae058b715e4f0f2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classspectra_ac2c09ba2810302183a13063cfbf7befe}{\index{spectra@{spectra}!update\-\_\-compteur@{update\-\_\-compteur}}
+\index{update\-\_\-compteur@{update\-\_\-compteur}!spectra@{spectra}}
+\subsubsection[{update\-\_\-compteur}]{\setlength{\rightskip}{0pt plus 5cm}subroutine spectra\-::update\-\_\-compteur (
+\begin{DoxyParamCaption}
+\item[{class({\bf compteur\-\_\-type}), intent(inout)}]{this}
+\end{DoxyParamCaption}
+)}}\label{classspectra_ac2c09ba2810302183a13063cfbf7befe}
+
+
+Definition at line 566 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+Referenced by spectra\-::compteur\-\_\-type\-::update().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classspectra_ac2c09ba2810302183a13063cfbf7befe_icgraph}
+\end{center}
+\end{figure}
+
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classspectra_a1a79c120745091f45558461cd281ed79}{\index{spectra@{spectra}!brieuc\-\_\-piqtb@{brieuc\-\_\-piqtb}}
+\index{brieuc\-\_\-piqtb@{brieuc\-\_\-piqtb}!spectra@{spectra}}
+\subsubsection[{brieuc\-\_\-piqtb}]{\setlength{\rightskip}{0pt plus 5cm}logical spectra\-::brieuc\-\_\-piqtb =.F\-A\-L\-S\-E.}}\label{classspectra_a1a79c120745091f45558461cd281ed79}
+
+
+Definition at line 38 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a2c569f11438589abdd22a1880e191a9f}{\index{spectra@{spectra}!cmumu\-\_\-average@{cmumu\-\_\-average}}
+\index{cmumu\-\_\-average@{cmumu\-\_\-average}!spectra@{spectra}}
+\subsubsection[{cmumu\-\_\-average}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable spectra\-::cmumu\-\_\-average}}\label{classspectra_a2c569f11438589abdd22a1880e191a9f}
+
+
+Definition at line 35 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a2a602789c821d42e1a18c695e8547edf}{\index{spectra@{spectra}!compteur@{compteur}}
+\index{compteur@{compteur}!spectra@{spectra}}
+\subsubsection[{compteur}]{\setlength{\rightskip}{0pt plus 5cm}type({\bf compteur\-\_\-type}), private spectra\-::compteur\hspace{0.3cm}{\ttfamily [private]}}}\label{classspectra_a2a602789c821d42e1a18c695e8547edf}
+
+
+Definition at line 52 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a2a068eb1a4906b0bc46cc04329cd5963}{\index{spectra@{spectra}!deconvolute\-\_\-ir@{deconvolute\-\_\-ir}}
+\index{deconvolute\-\_\-ir@{deconvolute\-\_\-ir}!spectra@{spectra}}
+\subsubsection[{deconvolute\-\_\-ir}]{\setlength{\rightskip}{0pt plus 5cm}logical spectra\-::deconvolute\-\_\-ir = .F\-A\-L\-S\-E.}}\label{classspectra_a2a068eb1a4906b0bc46cc04329cd5963}
+
+
+Definition at line 30 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a0e698cb9fa5f3ddcccaf55304c393c33}{\index{spectra@{spectra}!domega@{domega}}
+\index{domega@{domega}!spectra@{spectra}}
+\subsubsection[{domega}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 spectra\-::domega}}\label{classspectra_a0e698cb9fa5f3ddcccaf55304c393c33}
+
+
+Definition at line 20 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_aca97470f841ed23ff62294903133449f}{\index{spectra@{spectra}!dt\-\_\-spec@{dt\-\_\-spec}}
+\index{dt\-\_\-spec@{dt\-\_\-spec}!spectra@{spectra}}
+\subsubsection[{dt\-\_\-spec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 spectra\-::dt\-\_\-spec}}\label{classspectra_aca97470f841ed23ff62294903133449f}
+
+
+Definition at line 22 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_ac089e26587f369f12bc46f1c90f87f3a}{\index{spectra@{spectra}!fft1d\-\_\-s@{fft1d\-\_\-s}}
+\index{fft1d\-\_\-s@{fft1d\-\_\-s}!spectra@{spectra}}
+\subsubsection[{fft1d\-\_\-s}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter spectra\-::fft1d\-\_\-s =4}}\label{classspectra_ac089e26587f369f12bc46f1c90f87f3a}
+
+
+Definition at line 18 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a4212b9178886dd58ea98493c47fd2105}{\index{spectra@{spectra}!full\-\_\-dipole@{full\-\_\-dipole}}
+\index{full\-\_\-dipole@{full\-\_\-dipole}!spectra@{spectra}}
+\subsubsection[{full\-\_\-dipole}]{\setlength{\rightskip}{0pt plus 5cm}logical spectra\-::full\-\_\-dipole =.T\-R\-U\-E.}}\label{classspectra_a4212b9178886dd58ea98493c47fd2105}
+
+
+Definition at line 29 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a5adb3da0fc3d13e07cc600138acab1a8}{\index{spectra@{spectra}!ir@{ir}}
+\index{ir@{ir}!spectra@{spectra}}
+\subsubsection[{ir}]{\setlength{\rightskip}{0pt plus 5cm}logical spectra\-::ir =.F\-A\-L\-S\-E.}}\label{classspectra_a5adb3da0fc3d13e07cc600138acab1a8}
+
+
+Definition at line 25 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a3f9dbddf10012921dcfcf5e327d305c2}{\index{spectra@{spectra}!kubo@{kubo}}
+\index{kubo@{kubo}!spectra@{spectra}}
+\subsubsection[{kubo}]{\setlength{\rightskip}{0pt plus 5cm}logical spectra\-::kubo =.F\-A\-L\-S\-E.}}\label{classspectra_a3f9dbddf10012921dcfcf5e327d305c2}
+
+
+Definition at line 28 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a4b67bf04ee3bd6e5e2e9298513fc7ce2}{\index{spectra@{spectra}!kubo\-\_\-fact@{kubo\-\_\-fact}}
+\index{kubo\-\_\-fact@{kubo\-\_\-fact}!spectra@{spectra}}
+\subsubsection[{kubo\-\_\-fact}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable spectra\-::kubo\-\_\-fact}}\label{classspectra_a4b67bf04ee3bd6e5e2e9298513fc7ce2}
+
+
+Definition at line 32 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a4641a93b8f40f9249290064866db7b00}{\index{spectra@{spectra}!mudot@{mudot}}
+\index{mudot@{mudot}!spectra@{spectra}}
+\subsubsection[{mudot}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable spectra\-::mudot}}\label{classspectra_a4641a93b8f40f9249290064866db7b00}
+
+
+Definition at line 34 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a45c919da29d33cfaf80a704aa631b346}{\index{spectra@{spectra}!nad@{nad}}
+\index{nad@{nad}!spectra@{spectra}}
+\subsubsection[{nad}]{\setlength{\rightskip}{0pt plus 5cm}integer spectra\-::nad}}\label{classspectra_a45c919da29d33cfaf80a704aa631b346}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a1aee53bf91686489408eeb9419bc706e}{\index{spectra@{spectra}!niter\-\_\-deconvolution@{niter\-\_\-deconvolution}}
+\index{niter\-\_\-deconvolution@{niter\-\_\-deconvolution}!spectra@{spectra}}
+\subsubsection[{niter\-\_\-deconvolution}]{\setlength{\rightskip}{0pt plus 5cm}integer spectra\-::niter\-\_\-deconvolution = 20}}\label{classspectra_a1aee53bf91686489408eeb9419bc706e}
+
+
+Definition at line 31 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_ac0e35bcddedb3fbda30b8a359da97b94}{\index{spectra@{spectra}!nseg@{nseg}}
+\index{nseg@{nseg}!spectra@{spectra}}
+\subsubsection[{nseg}]{\setlength{\rightskip}{0pt plus 5cm}integer spectra\-::nseg}}\label{classspectra_ac0e35bcddedb3fbda30b8a359da97b94}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a464f70f16d24c366c5421572d902496f}{\index{spectra@{spectra}!omegacut@{omegacut}}
+\index{omegacut@{omegacut}!spectra@{spectra}}
+\subsubsection[{omegacut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 spectra\-::omegacut}}\label{classspectra_a464f70f16d24c366c5421572d902496f}
+
+
+Definition at line 19 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_ac6c092d4d7a7bd27589cb143b726cbb6}{\index{spectra@{spectra}!piqtb\-\_\-classical\-\_\-centroid@{piqtb\-\_\-classical\-\_\-centroid}}
+\index{piqtb\-\_\-classical\-\_\-centroid@{piqtb\-\_\-classical\-\_\-centroid}!spectra@{spectra}}
+\subsubsection[{piqtb\-\_\-classical\-\_\-centroid}]{\setlength{\rightskip}{0pt plus 5cm}logical spectra\-::piqtb\-\_\-classical\-\_\-centroid =.F\-A\-L\-S\-E.}}\label{classspectra_ac6c092d4d7a7bd27589cb143b726cbb6}
+
+
+Definition at line 37 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a995a9e3efec5854dc763bccdc424d47e}{\index{spectra@{spectra}!plan\-\_\-ir@{plan\-\_\-ir}}
+\index{plan\-\_\-ir@{plan\-\_\-ir}!spectra@{spectra}}
+\subsubsection[{plan\-\_\-ir}]{\setlength{\rightskip}{0pt plus 5cm}integer spectra\-::plan\-\_\-ir}}\label{classspectra_a995a9e3efec5854dc763bccdc424d47e}
+
+
+Definition at line 24 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a4fa256bf10ebce828d63f4b324c55116}{\index{spectra@{spectra}!spectra\-\_\-cm1@{spectra\-\_\-cm1}}
+\index{spectra\-\_\-cm1@{spectra\-\_\-cm1}!spectra@{spectra}}
+\subsubsection[{spectra\-\_\-cm1}]{\setlength{\rightskip}{0pt plus 5cm}logical spectra\-::spectra\-\_\-cm1 =.F\-A\-L\-S\-E.}}\label{classspectra_a4fa256bf10ebce828d63f4b324c55116}
+
+
+Definition at line 27 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a4f6272434253b12d66be37f65b81b054}{\index{spectra@{spectra}!spectra\-\_\-initialized@{spectra\-\_\-initialized}}
+\index{spectra\-\_\-initialized@{spectra\-\_\-initialized}!spectra@{spectra}}
+\subsubsection[{spectra\-\_\-initialized}]{\setlength{\rightskip}{0pt plus 5cm}logical spectra\-::spectra\-\_\-initialized = .F\-A\-L\-S\-E.}}\label{classspectra_a4f6272434253b12d66be37f65b81b054}
+
+
+Definition at line 26 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_abfab3c8bd49f7558f03c92c031b7721a}{\index{spectra@{spectra}!startsavespec@{startsavespec}}
+\index{startsavespec@{startsavespec}!spectra@{spectra}}
+\subsubsection[{startsavespec}]{\setlength{\rightskip}{0pt plus 5cm}integer spectra\-::startsavespec}}\label{classspectra_abfab3c8bd49f7558f03c92c031b7721a}
+
+
+Definition at line 17 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a1cd3434363a2e5083b4366b0295dd6b4}{\index{spectra@{spectra}!tseg@{tseg}}
+\index{tseg@{tseg}!spectra@{spectra}}
+\subsubsection[{tseg}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 spectra\-::tseg}}\label{classspectra_a1cd3434363a2e5083b4366b0295dd6b4}
+
+
+Definition at line 21 of file M\-O\-D\-\_\-spectra.\-f90.
+
+\hypertarget{classspectra_a569f0a00a8335165b556f9d9a2199e5c}{\index{spectra@{spectra}!u\-\_\-fact@{u\-\_\-fact}}
+\index{u\-\_\-fact@{u\-\_\-fact}!spectra@{spectra}}
+\subsubsection[{u\-\_\-fact}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 spectra\-::u\-\_\-fact}}\label{classspectra_a569f0a00a8335165b556f9d9a2199e5c}
+
+
+Definition at line 23 of file M\-O\-D\-\_\-spectra.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__spectra_8f90}{M\-O\-D\-\_\-spectra.\-f90}\end{DoxyCompactItemize}

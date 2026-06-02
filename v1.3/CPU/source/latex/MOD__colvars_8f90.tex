@@ -1,0 +1,837 @@
+\hypertarget{MOD__colvars_8f90}{\section{M\-O\-D\-\_\-colvars.\-f90 File Reference}
+\label{MOD__colvars_8f90}\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{classcolvars}{colvars}
+\item 
+interface \hyperlink{interfacecolvars_1_1allocate__colvars}{colvars\-::allocate\-\_\-colvars}
+\item 
+interface \hyperlink{interfacecolvars_1_1compute__colvars__tinker}{colvars\-::compute\-\_\-colvars\-\_\-tinker}
+\item 
+interface \hyperlink{interfacecolvars_1_1delete__colvars}{colvars\-::delete\-\_\-colvars}
+\end{DoxyCompactItemize}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{MOD__colvars_8f90_a76a1b8118cd78c445a6e7288a8cffafb}{set\-\_\-cvatoms\-\_\-ids} (ncvatoms\-\_\-in, cvatoms\-\_\-ids\-\_\-in)
+\begin{DoxyCompactList}\small\item\em set the list of atoms involved in Collective variables \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a1f86db35dd45f2e41a1d94e8f5d44106}{get\-\_\-mpi} (commcv, rankcv, nproccv)
+\begin{DoxyCompactList}\small\item\em Colvars get info about M\-P\-I from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_aef0008c8ec9f56ddb9bc7d229902186e}{get\-\_\-sim\-\_\-temp} (res)
+\begin{DoxyCompactList}\small\item\em Colvars get info about temperature from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a77c8658d492b8ca19a774de6f2453954}{get\-\_\-sim\-\_\-boltzmann} (res)
+\begin{DoxyCompactList}\small\item\em Colvars get info about boltzmann constant from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a48f9b008992bab14a5917d6363246827}{get\-\_\-sim\-\_\-dt} (res)
+\begin{DoxyCompactList}\small\item\em Colvars get info about timestep from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_ab6bf8d79bf25cc8f3f2b542769caf9a5}{rand\-\_\-colvars} (res)
+\begin{DoxyCompactList}\small\item\em Colvars get info about random number generator from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a37270764f8aaa064a94d33f14a781301}{get\-\_\-system\-\_\-size} (system\-\_\-size)
+\begin{DoxyCompactList}\small\item\em Colvars get info about number of atoms in the simulation from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a7190f55bfadbd459141053335fdc1618}{get\-\_\-mass\-\_\-atom} (atom\-\_\-number, atom\-\_\-mass)
+\begin{DoxyCompactList}\small\item\em Colvars get info about mass of atoms in the simulation from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a550ca5ceb669a6edc2c1e953a264816a}{get\-\_\-pos\-\_\-atom} (atom\-\_\-number, xr, yr, zr)
+\begin{DoxyCompactList}\small\item\em Colvars get info about position of atoms in the simulation from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a8444d376a2352cba5567b6531370bfe9}{get\-\_\-forces\-\_\-tot} (atom\-\_\-number, fx, fy, fz)
+\begin{DoxyCompactList}\small\item\em Colvars get info about forces on atoms in the simulation from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a4a512acda1bb40d347d9c1ad2e60c9d6}{get\-\_\-input\-\_\-filename} (input\-\_\-name, len\-\_\-name)
+\begin{DoxyCompactList}\small\item\em Colvars get info about input name from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a6f06809d988e61f9ad47ee4f2cf52c82}{get\-\_\-output\-\_\-filename} (output\-\_\-name, len\-\_\-name)
+\begin{DoxyCompactList}\small\item\em Colvars get info about output name from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a83538702927aba667f8a5eeb62591621}{get\-\_\-restart\-\_\-filename} (input\-\_\-name, len\-\_\-name)
+\begin{DoxyCompactList}\small\item\em Colvars get info about restart file name from Tinker-\/\-H\-P. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_ae227b4df03c8f84f0b86ccfdc8909154}{add\-\_\-energy\-\_\-tinker} (\hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy})
+\begin{DoxyCompactList}\small\item\em add biasing energy from Colvars to the total potential energy of Tinker-\/\-H\-P \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_acf84fe7983737cb52ab061e713cf3768}{add\-\_\-forces\-\_\-tinker} (iatom, forces)
+\begin{DoxyCompactList}\small\item\em add forces from Colvars to the total forces of Tinker-\/\-H\-P \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a45e608998392ca07400b1f1022ad761f}{pbc\-\_\-image} (r1, r2, dr)
+\begin{DoxyCompactList}\small\item\em compute minimum image on distance between two vectors \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_aa97e34eac867be2cdf6da50a20c93d06}{get\-\_\-pbc} (a, b, c)
+\begin{DoxyCompactList}\small\item\em Colvars get info about output periodic boundary conditions. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a4e63dc48a79b628e4d57009199a13ad0}{fatal\-\_\-error} ()
+\begin{DoxyCompactList}\small\item\em fatal routine from Tinker-\/\-H\-P \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_ac681b112205a4ab6fccd8ea5fbea4083}{set\-\_\-use\-\_\-colvars} (use\-\_\-colvars\-\_\-in)
+\begin{DoxyCompactList}\small\item\em Colvars get info about use of Colvars. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_aaa1875980bf1dcc7c8953875008c5bcd}{get\-\_\-alch\-\_\-lambda} (res)
+\begin{DoxyCompactList}\small\item\em Colvars get value about alchemical parameter during alchemical simulations. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a9d44226acc791e7f4822a4eae70a722d}{set\-\_\-alch\-\_\-lambda} (lambda\-\_\-in)
+\begin{DoxyCompactList}\small\item\em Tinker-\/\-H\-P gets value of alchemical parameter from Colvars during alchemical simulations. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_aed95a8cbdc22006152c0536ad76a3d54}{get\-\_\-delambda} (res)
+\begin{DoxyCompactList}\small\item\em Colvars get value about force on alchemical parameter during alchemical simulations. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_aa74e00e707842c40f9c520a941d50ae6}{get\-\_\-d2edlambda2} (res)
+\begin{DoxyCompactList}\small\item\em Colvars get value about derivative of force on alchemical parameter during alchemical simulations. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_ab44b2e15a5a4b2d6fdebf9b9465aa0ff}{apply\-\_\-force\-\_\-delambda} (force)
+\begin{DoxyCompactList}\small\item\em Apply force on delambda. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a87b3953d6201c56b5f582e437023d9fd}{prepare\-\_\-colvars}
+\begin{DoxyCompactList}\small\item\em Prepare all the information necessary to compute and monitor C\-V-\/related quantities. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_af0e5b1e6b1dac7dea513744d77045234}{distrib\-\_\-colvars} (derivs)
+\begin{DoxyCompactList}\small\item\em Retrieve all the C\-V-\/related information (forces due to biases) coming from Colvars. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_acb3352962fbe119ff185e202de564241}{get\-\_\-use\-\_\-reps} (doreplica)
+\begin{DoxyCompactList}\small\item\em Colvars get information about use of replicas. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a88d3b0e16083dc7d410846eb01b5c5c2}{get\-\_\-index\-\_\-rep} (index)
+\begin{DoxyCompactList}\small\item\em Colvars get information about indexes of local replicas. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_a51cab3f9e8c3df1152b3e26fdac65bf7}{get\-\_\-num\-\_\-rep} (inter\-\_\-num)
+\begin{DoxyCompactList}\small\item\em Colvars get information about number of replicas. \end{DoxyCompactList}\item 
+subroutine \hyperlink{MOD__colvars_8f90_ae1f41027bb7562d480ceacac67a57ab5}{get\-\_\-root2root} (intercomm)
+\begin{DoxyCompactList}\small\item\em Colvars get information about root to root M\-P\-I communicator. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{MOD__colvars_8f90_ae227b4df03c8f84f0b86ccfdc8909154}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!add\-\_\-energy\-\_\-tinker@{add\-\_\-energy\-\_\-tinker}}
+\index{add\-\_\-energy\-\_\-tinker@{add\-\_\-energy\-\_\-tinker}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{add\-\_\-energy\-\_\-tinker}]{\setlength{\rightskip}{0pt plus 5cm}subroutine add\-\_\-energy\-\_\-tinker (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{energy}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_ae227b4df03c8f84f0b86ccfdc8909154}
+
+
+add biasing energy from Colvars to the total potential energy of Tinker-\/\-H\-P 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em energy} & double\-: energy from Colvars to be added \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 324 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+References energy().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{MOD__colvars_8f90_ae227b4df03c8f84f0b86ccfdc8909154_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{MOD__colvars_8f90_acf84fe7983737cb52ab061e713cf3768}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!add\-\_\-forces\-\_\-tinker@{add\-\_\-forces\-\_\-tinker}}
+\index{add\-\_\-forces\-\_\-tinker@{add\-\_\-forces\-\_\-tinker}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{add\-\_\-forces\-\_\-tinker}]{\setlength{\rightskip}{0pt plus 5cm}subroutine add\-\_\-forces\-\_\-tinker (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{iatom, }
+\item[{real(c\-\_\-double), dimension(3)}]{forces}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_acf84fe7983737cb52ab061e713cf3768}
+
+
+add forces from Colvars to the total forces of Tinker-\/\-H\-P 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em iatom} & integer\-: atom on which from Colvars are to be added \\
+\hline
+\mbox{\tt in}  & {\em forces} & double\-: forces from Colvars to be added \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 336 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_ab44b2e15a5a4b2d6fdebf9b9465aa0ff}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!apply\-\_\-force\-\_\-delambda@{apply\-\_\-force\-\_\-delambda}}
+\index{apply\-\_\-force\-\_\-delambda@{apply\-\_\-force\-\_\-delambda}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{apply\-\_\-force\-\_\-delambda}]{\setlength{\rightskip}{0pt plus 5cm}subroutine apply\-\_\-force\-\_\-delambda (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{force}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_ab44b2e15a5a4b2d6fdebf9b9465aa0ff}
+
+
+Apply force on delambda. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em force} & double\-: value of derivative of force on alchemical parameter \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 478 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_af0e5b1e6b1dac7dea513744d77045234}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!distrib\-\_\-colvars@{distrib\-\_\-colvars}}
+\index{distrib\-\_\-colvars@{distrib\-\_\-colvars}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{distrib\-\_\-colvars}]{\setlength{\rightskip}{0pt plus 5cm}subroutine distrib\-\_\-colvars (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_af0e5b1e6b1dac7dea513744d77045234}
+
+
+Retrieve all the C\-V-\/related information (forces due to biases) coming from Colvars. 
+
+
+
+Definition at line 587 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+References def\-\_\-lambdadyn().
+
+
+
+Referenced by gradient().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{MOD__colvars_8f90_af0e5b1e6b1dac7dea513744d77045234_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{MOD__colvars_8f90_af0e5b1e6b1dac7dea513744d77045234_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{MOD__colvars_8f90_a4e63dc48a79b628e4d57009199a13ad0}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!fatal\-\_\-error@{fatal\-\_\-error}}
+\index{fatal\-\_\-error@{fatal\-\_\-error}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{fatal\-\_\-error}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fatal\-\_\-error (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a4e63dc48a79b628e4d57009199a13ad0}
+
+
+fatal routine from Tinker-\/\-H\-P 
+
+
+
+Definition at line 380 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+References fatal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=224pt]{MOD__colvars_8f90_a4e63dc48a79b628e4d57009199a13ad0_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{MOD__colvars_8f90_aaa1875980bf1dcc7c8953875008c5bcd}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-alch\-\_\-lambda@{get\-\_\-alch\-\_\-lambda}}
+\index{get\-\_\-alch\-\_\-lambda@{get\-\_\-alch\-\_\-lambda}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-alch\-\_\-lambda}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-alch\-\_\-lambda (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{res}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_aaa1875980bf1dcc7c8953875008c5bcd}
+
+
+Colvars get value about alchemical parameter during alchemical simulations. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em res} & double\-: value of alchemical parameter \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 400 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_aa74e00e707842c40f9c520a941d50ae6}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-d2edlambda2@{get\-\_\-d2edlambda2}}
+\index{get\-\_\-d2edlambda2@{get\-\_\-d2edlambda2}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-d2edlambda2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-d2edlambda2 (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{res}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_aa74e00e707842c40f9c520a941d50ae6}
+
+
+Colvars get value about derivative of force on alchemical parameter during alchemical simulations. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em res} & double\-: value of derivative of force on alchemical parameter \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 453 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_aed95a8cbdc22006152c0536ad76a3d54}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-delambda@{get\-\_\-delambda}}
+\index{get\-\_\-delambda@{get\-\_\-delambda}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-delambda}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-delambda (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{res}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_aed95a8cbdc22006152c0536ad76a3d54}
+
+
+Colvars get value about force on alchemical parameter during alchemical simulations. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em res} & double\-: value of force on alchemical parameter \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 422 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a8444d376a2352cba5567b6531370bfe9}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-forces\-\_\-tot@{get\-\_\-forces\-\_\-tot}}
+\index{get\-\_\-forces\-\_\-tot@{get\-\_\-forces\-\_\-tot}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-forces\-\_\-tot}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-forces\-\_\-tot (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{atom\-\_\-number, }
+\item[{real(c\-\_\-double)}]{fx, }
+\item[{real(c\-\_\-double)}]{fy, }
+\item[{real(c\-\_\-double)}]{fz}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a8444d376a2352cba5567b6531370bfe9}
+
+
+Colvars get info about forces on atoms in the simulation from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em atom\-\_\-number} & integer\-: number of atoms in the simulation \\
+\hline
+\mbox{\tt in}  & {\em fx} & double\-: first coordinate of forces on atoms in the simulation \\
+\hline
+\mbox{\tt in}  & {\em fy} & double\-: second coordinate of forces on atoms in the simulation \\
+\hline
+\mbox{\tt in}  & {\em fz} & double\-: third coordinate of forces on atoms in the simulation \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 222 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a88d3b0e16083dc7d410846eb01b5c5c2}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-index\-\_\-rep@{get\-\_\-index\-\_\-rep}}
+\index{get\-\_\-index\-\_\-rep@{get\-\_\-index\-\_\-rep}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-index\-\_\-rep}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-index\-\_\-rep (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{index}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a88d3b0e16083dc7d410846eb01b5c5c2}
+
+
+Colvars get information about indexes of local replicas. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em index} & integer\-: index of local replica \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 665 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a4a512acda1bb40d347d9c1ad2e60c9d6}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-input\-\_\-filename@{get\-\_\-input\-\_\-filename}}
+\index{get\-\_\-input\-\_\-filename@{get\-\_\-input\-\_\-filename}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-input\-\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-input\-\_\-filename (
+\begin{DoxyParamCaption}
+\item[{type(c\-\_\-ptr)}]{input\-\_\-name, }
+\item[{integer(c\-\_\-int)}]{len\-\_\-name}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a4a512acda1bb40d347d9c1ad2e60c9d6}
+
+
+Colvars get info about input name from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em input\-\_\-name} & pointer\-: pointer on colvars input name \\
+\hline
+\mbox{\tt in}  & {\em len\-\_\-name} & integer\-: length of input name \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 240 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a7190f55bfadbd459141053335fdc1618}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-mass\-\_\-atom@{get\-\_\-mass\-\_\-atom}}
+\index{get\-\_\-mass\-\_\-atom@{get\-\_\-mass\-\_\-atom}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-mass\-\_\-atom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-mass\-\_\-atom (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{atom\-\_\-number, }
+\item[{real(c\-\_\-double)}]{atom\-\_\-mass}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a7190f55bfadbd459141053335fdc1618}
+
+
+Colvars get info about mass of atoms in the simulation from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em atom\-\_\-mass} & double\-: mass of atoms in the simulation \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 190 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a1f86db35dd45f2e41a1d94e8f5d44106}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-mpi@{get\-\_\-mpi}}
+\index{get\-\_\-mpi@{get\-\_\-mpi}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-mpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-mpi (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{commcv, }
+\item[{integer(c\-\_\-int)}]{rankcv, }
+\item[{integer(c\-\_\-int)}]{nproccv}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a1f86db35dd45f2e41a1d94e8f5d44106}
+
+
+Colvars get info about M\-P\-I from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em commcv} & integer\-: Tinker-\/\-H\-P main M\-P\-I communicator \\
+\hline
+\mbox{\tt in}  & {\em rankcv} & integer\-: Tinker-\/\-H\-P rank within the main communicator \\
+\hline
+\mbox{\tt in}  & {\em nprocv} & integer\-: number of processes within Tinker-\/\-H\-P main communicator \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 112 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a51cab3f9e8c3df1152b3e26fdac65bf7}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-num\-\_\-rep@{get\-\_\-num\-\_\-rep}}
+\index{get\-\_\-num\-\_\-rep@{get\-\_\-num\-\_\-rep}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-num\-\_\-rep}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-num\-\_\-rep (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{inter\-\_\-num}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a51cab3f9e8c3df1152b3e26fdac65bf7}
+
+
+Colvars get information about number of replicas. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em inter\-\_\-num} & integer\-: number of replicas \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 676 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a6f06809d988e61f9ad47ee4f2cf52c82}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-output\-\_\-filename@{get\-\_\-output\-\_\-filename}}
+\index{get\-\_\-output\-\_\-filename@{get\-\_\-output\-\_\-filename}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-output\-\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-output\-\_\-filename (
+\begin{DoxyParamCaption}
+\item[{type(c\-\_\-ptr)}]{output\-\_\-name, }
+\item[{integer(c\-\_\-int)}]{len\-\_\-name}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a6f06809d988e61f9ad47ee4f2cf52c82}
+
+
+Colvars get info about output name from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em output\-\_\-name} & pointer\-: pointer on colvars output name \\
+\hline
+\mbox{\tt in}  & {\em len\-\_\-name} & integer\-: length of output name \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 264 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_aa97e34eac867be2cdf6da50a20c93d06}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-pbc@{get\-\_\-pbc}}
+\index{get\-\_\-pbc@{get\-\_\-pbc}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-pbc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-pbc (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{a, }
+\item[{real(c\-\_\-double)}]{b, }
+\item[{real(c\-\_\-double)}]{c}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_aa97e34eac867be2cdf6da50a20c93d06}
+
+
+Colvars get info about output periodic boundary conditions. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em a} & double\-: length of first P\-B\-C vector \\
+\hline
+\mbox{\tt in}  & {\em b} & double\-: length of second P\-B\-C vector \\
+\hline
+\mbox{\tt in}  & {\em c} & double\-: length of third P\-B\-C vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 368 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a550ca5ceb669a6edc2c1e953a264816a}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-pos\-\_\-atom@{get\-\_\-pos\-\_\-atom}}
+\index{get\-\_\-pos\-\_\-atom@{get\-\_\-pos\-\_\-atom}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-pos\-\_\-atom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-pos\-\_\-atom (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{atom\-\_\-number, }
+\item[{real(c\-\_\-double)}]{xr, }
+\item[{real(c\-\_\-double)}]{yr, }
+\item[{real(c\-\_\-double)}]{zr}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a550ca5ceb669a6edc2c1e953a264816a}
+
+
+Colvars get info about position of atoms in the simulation from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em atom\-\_\-number} & integer\-: number of atoms in the simulation \\
+\hline
+\mbox{\tt in}  & {\em xr} & double\-: first coordinate of atoms in the simulation \\
+\hline
+\mbox{\tt in}  & {\em yr} & double\-: second coordinate of atoms in the simulation \\
+\hline
+\mbox{\tt in}  & {\em zr} & double\-: third coordinate of atoms in the simulation \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 205 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a83538702927aba667f8a5eeb62591621}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-restart\-\_\-filename@{get\-\_\-restart\-\_\-filename}}
+\index{get\-\_\-restart\-\_\-filename@{get\-\_\-restart\-\_\-filename}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-restart\-\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-restart\-\_\-filename (
+\begin{DoxyParamCaption}
+\item[{type(c\-\_\-ptr)}]{input\-\_\-name, }
+\item[{integer(c\-\_\-int)}]{len\-\_\-name}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a83538702927aba667f8a5eeb62591621}
+
+
+Colvars get info about restart file name from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em input\-\_\-name} & pointer\-: pointer on colvars input name \\
+\hline
+\mbox{\tt in}  & {\em len\-\_\-name} & integer\-: length of input name \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 291 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_ae1f41027bb7562d480ceacac67a57ab5}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-root2root@{get\-\_\-root2root}}
+\index{get\-\_\-root2root@{get\-\_\-root2root}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-root2root}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-root2root (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{intercomm}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_ae1f41027bb7562d480ceacac67a57ab5}
+
+
+Colvars get information about root to root M\-P\-I communicator. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em intercomm} & integer\-: root to root M\-P\-I communicator \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 687 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a77c8658d492b8ca19a774de6f2453954}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-sim\-\_\-boltzmann@{get\-\_\-sim\-\_\-boltzmann}}
+\index{get\-\_\-sim\-\_\-boltzmann@{get\-\_\-sim\-\_\-boltzmann}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-sim\-\_\-boltzmann}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-sim\-\_\-boltzmann (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{res}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a77c8658d492b8ca19a774de6f2453954}
+
+
+Colvars get info about boltzmann constant from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em res} & double\-: boltzmann constant \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 139 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a48f9b008992bab14a5917d6363246827}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-sim\-\_\-dt@{get\-\_\-sim\-\_\-dt}}
+\index{get\-\_\-sim\-\_\-dt@{get\-\_\-sim\-\_\-dt}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-sim\-\_\-dt}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-sim\-\_\-dt (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{res}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a48f9b008992bab14a5917d6363246827}
+
+
+Colvars get info about timestep from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em res} & double\-: timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 151 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_aef0008c8ec9f56ddb9bc7d229902186e}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-sim\-\_\-temp@{get\-\_\-sim\-\_\-temp}}
+\index{get\-\_\-sim\-\_\-temp@{get\-\_\-sim\-\_\-temp}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-sim\-\_\-temp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-sim\-\_\-temp (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{res}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_aef0008c8ec9f56ddb9bc7d229902186e}
+
+
+Colvars get info about temperature from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em res} & double\-: temperature \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 127 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a37270764f8aaa064a94d33f14a781301}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-system\-\_\-size@{get\-\_\-system\-\_\-size}}
+\index{get\-\_\-system\-\_\-size@{get\-\_\-system\-\_\-size}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-system\-\_\-size}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-system\-\_\-size (
+\begin{DoxyParamCaption}
+\item[{integer(c\-\_\-int)}]{system\-\_\-size}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a37270764f8aaa064a94d33f14a781301}
+
+
+Colvars get info about number of atoms in the simulation from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em res} & integer\-: number of atoms in the simulation \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 179 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_acb3352962fbe119ff185e202de564241}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!get\-\_\-use\-\_\-reps@{get\-\_\-use\-\_\-reps}}
+\index{get\-\_\-use\-\_\-reps@{get\-\_\-use\-\_\-reps}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{get\-\_\-use\-\_\-reps}]{\setlength{\rightskip}{0pt plus 5cm}subroutine get\-\_\-use\-\_\-reps (
+\begin{DoxyParamCaption}
+\item[{logical(c\-\_\-bool)}]{doreplica}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_acb3352962fbe119ff185e202de564241}
+
+
+Colvars get information about use of replicas. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em doreplica} & logical\-: flag governing use of replicas \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 654 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a45e608998392ca07400b1f1022ad761f}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!pbc\-\_\-image@{pbc\-\_\-image}}
+\index{pbc\-\_\-image@{pbc\-\_\-image}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{pbc\-\_\-image}]{\setlength{\rightskip}{0pt plus 5cm}subroutine pbc\-\_\-image (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double), dimension(3)}]{r1, }
+\item[{real(c\-\_\-double), dimension(3)}]{r2, }
+\item[{real(c\-\_\-double), dimension(3)}]{dr}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a45e608998392ca07400b1f1022ad761f}
+
+
+compute minimum image on distance between two vectors 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em r1} & double\-: first position vector \\
+\hline
+\mbox{\tt in}  & {\em r2} & double\-: second position vector \\
+\hline
+\mbox{\tt in}  & {\em dr} & double\-: result from minimum image on the difference \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 353 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+References image().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=234pt]{MOD__colvars_8f90_a45e608998392ca07400b1f1022ad761f_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{MOD__colvars_8f90_a87b3953d6201c56b5f582e437023d9fd}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!prepare\-\_\-colvars@{prepare\-\_\-colvars}}
+\index{prepare\-\_\-colvars@{prepare\-\_\-colvars}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{prepare\-\_\-colvars}]{\setlength{\rightskip}{0pt plus 5cm}subroutine prepare\-\_\-colvars (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a87b3953d6201c56b5f582e437023d9fd}
+
+
+Prepare all the information necessary to compute and monitor C\-V-\/related quantities. 
+
+
+
+Definition at line 491 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+Referenced by dynamic\-\_\-bis(), and gradient().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{MOD__colvars_8f90_a87b3953d6201c56b5f582e437023d9fd_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{MOD__colvars_8f90_ab6bf8d79bf25cc8f3f2b542769caf9a5}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!rand\-\_\-colvars@{rand\-\_\-colvars}}
+\index{rand\-\_\-colvars@{rand\-\_\-colvars}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{rand\-\_\-colvars}]{\setlength{\rightskip}{0pt plus 5cm}subroutine rand\-\_\-colvars (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{res}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_ab6bf8d79bf25cc8f3f2b542769caf9a5}
+
+
+Colvars get info about random number generator from Tinker-\/\-H\-P. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em res} & double\-: random number \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 166 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+References normal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{MOD__colvars_8f90_ab6bf8d79bf25cc8f3f2b542769caf9a5_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{MOD__colvars_8f90_a9d44226acc791e7f4822a4eae70a722d}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!set\-\_\-alch\-\_\-lambda@{set\-\_\-alch\-\_\-lambda}}
+\index{set\-\_\-alch\-\_\-lambda@{set\-\_\-alch\-\_\-lambda}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{set\-\_\-alch\-\_\-lambda}]{\setlength{\rightskip}{0pt plus 5cm}subroutine set\-\_\-alch\-\_\-lambda (
+\begin{DoxyParamCaption}
+\item[{real(c\-\_\-double)}]{lambda\-\_\-in}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a9d44226acc791e7f4822a4eae70a722d}
+
+
+Tinker-\/\-H\-P gets value of alchemical parameter from Colvars during alchemical simulations. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em lamgda\-\_\-in} & double\-: value of alchemical parameter \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 411 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{MOD__colvars_8f90_a76a1b8118cd78c445a6e7288a8cffafb}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!set\-\_\-cvatoms\-\_\-ids@{set\-\_\-cvatoms\-\_\-ids}}
+\index{set\-\_\-cvatoms\-\_\-ids@{set\-\_\-cvatoms\-\_\-ids}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{set\-\_\-cvatoms\-\_\-ids}]{\setlength{\rightskip}{0pt plus 5cm}subroutine set\-\_\-cvatoms\-\_\-ids (
+\begin{DoxyParamCaption}
+\item[{integer}]{ncvatoms\-\_\-in, }
+\item[{integer, dimension(ncvatoms\-\_\-in)}]{cvatoms\-\_\-ids\-\_\-in}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_a76a1b8118cd78c445a6e7288a8cffafb}
+
+
+set the list of atoms involved in Collective variables 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ncvatoms\-\_\-in,\-:} & number of atoms involved in cvs \\
+\hline
+\mbox{\tt in}  & {\em cvatoms\-\_\-ids\-\_\-in,\-:} & list of atoms involved in cvs \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 52 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::init().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=334pt]{MOD__colvars_8f90_a76a1b8118cd78c445a6e7288a8cffafb_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{MOD__colvars_8f90_ac681b112205a4ab6fccd8ea5fbea4083}{\index{M\-O\-D\-\_\-colvars.\-f90@{M\-O\-D\-\_\-colvars.\-f90}!set\-\_\-use\-\_\-colvars@{set\-\_\-use\-\_\-colvars}}
+\index{set\-\_\-use\-\_\-colvars@{set\-\_\-use\-\_\-colvars}!MOD_colvars.f90@{M\-O\-D\-\_\-colvars.\-f90}}
+\subsubsection[{set\-\_\-use\-\_\-colvars}]{\setlength{\rightskip}{0pt plus 5cm}subroutine set\-\_\-use\-\_\-colvars (
+\begin{DoxyParamCaption}
+\item[{logical(c\-\_\-bool)}]{use\-\_\-colvars\-\_\-in}
+\end{DoxyParamCaption}
+)}}\label{MOD__colvars_8f90_ac681b112205a4ab6fccd8ea5fbea4083}
+
+
+Colvars get info about use of Colvars. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em use\-\_\-colvars\-\_\-in} & logical\-: flag governing use of Colvars \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 389 of file M\-O\-D\-\_\-colvars.\-f90.
+

@@ -1,0 +1,346 @@
+\hypertarget{classkbonds}{\section{kbonds Module Reference}
+\label{classkbonds}\index{kbonds@{kbonds}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classkbonds_ae14cb6057f6b902041d325f442bb4eb4}{maxnb}
+\begin{DoxyCompactList}\small\item\em maximum number of bond stretch parameter entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkbonds_ac0a19701e66f2ba2a514010e46f3e21f}{maxnb5}
+\begin{DoxyCompactList}\small\item\em maximum number of 5-\/membered ring bond stretch entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkbonds_a1146d8cd8643971889024141fc7b1278}{maxnb4}
+\begin{DoxyCompactList}\small\item\em maximum number of 4-\/membered ring bond stretch entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkbonds_aa8e2e75495d2bb801b4ee3410c933ba1}{maxnb3}
+\begin{DoxyCompactList}\small\item\em maximum number of 3-\/membered ring bond stretch entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkbonds_a6db85c30f12f7ced42381f0176090d23}{maxnel}
+\begin{DoxyCompactList}\small\item\em maximum number of electronegativity bond corrections \end{DoxyCompactList}\item 
+integer \hyperlink{classkbonds_a479b8df9e16642b87303fc1f3bd06d26}{maxnbm}
+\begin{DoxyCompactList}\small\item\em maximum number of morse paramter entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkbonds_a7722f5df93f05ffe051844b4b14fa9de}{maxnbm4}
+\begin{DoxyCompactList}\small\item\em maximum number of morse4 paramter entries \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_ae14cb6057f6b902041d325f442bb4eb4}{maxnb}) \hyperlink{classkbonds_a5e6c3530241df6ea86379188ff398ace}{bcon}
+\begin{DoxyCompactList}\small\item\em force constant parameters for harmonic bond stretch \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_ae14cb6057f6b902041d325f442bb4eb4}{maxnb}) \hyperlink{classkbonds_af87c02461c2ee0ac0f82aeefa447ee38}{blen}
+\begin{DoxyCompactList}\small\item\em bond length parameters for harmonic bond stretch \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, \hyperlink{classkbonds_a479b8df9e16642b87303fc1f3bd06d26}{maxnbm}) \hyperlink{classkbonds_a177252a3554425a3c0e0ba3032adead6}{bmor}
+\begin{DoxyCompactList}\small\item\em morse parameters for morse potential \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, \hyperlink{classkbonds_a7722f5df93f05ffe051844b4b14fa9de}{maxnbm4}) \hyperlink{classkbonds_aa21c00518a1013918014dcba5f0e6798}{bmor4}
+\begin{DoxyCompactList}\small\item\em morse4 parameters for morse4 potential \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_ac0a19701e66f2ba2a514010e46f3e21f}{maxnb5}) \hyperlink{classkbonds_af68f430fbe6e2899f8fbf5ed22a89b3d}{bcon5}
+\begin{DoxyCompactList}\small\item\em force constant parameters for 5-\/ring bond stretch \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_ac0a19701e66f2ba2a514010e46f3e21f}{maxnb5}) \hyperlink{classkbonds_a5feaf96447df676481cc06acb221c02f}{blen5}
+\begin{DoxyCompactList}\small\item\em bond length parameters for 5-\/ring bond stretch \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_a1146d8cd8643971889024141fc7b1278}{maxnb4}) \hyperlink{classkbonds_abd26bb67713fa4f4f0b92b9e2ec76ce7}{bcon4}
+\begin{DoxyCompactList}\small\item\em force constant parameters for 4-\/ring bond stretch \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_a1146d8cd8643971889024141fc7b1278}{maxnb4}) \hyperlink{classkbonds_ad18f49c893ecbd07b6ceaf640eb8bb5c}{blen4}
+\begin{DoxyCompactList}\small\item\em bond length parameters for 4-\/ring bond stretch \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_aa8e2e75495d2bb801b4ee3410c933ba1}{maxnb3}) \hyperlink{classkbonds_a8f800b1634aef288ebc94c6e9273cf22}{bcon3}
+\begin{DoxyCompactList}\small\item\em force constant parameters for 3-\/ring bond stretch \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_aa8e2e75495d2bb801b4ee3410c933ba1}{maxnb3}) \hyperlink{classkbonds_ae67999ffcbf08c7bbf51e16fe88f9a35}{blen3}
+\begin{DoxyCompactList}\small\item\em bond length parameters for 3-\/ring bond stretch \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkbonds_a6db85c30f12f7ced42381f0176090d23}{maxnel}) \hyperlink{classkbonds_a045e5974050bfb0a5fc0cffa235150b8}{dlen}
+\begin{DoxyCompactList}\small\item\em electronegativity bond length correction parameters \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\hyperlink{classkbonds_ae14cb6057f6b902041d325f442bb4eb4}{maxnb}) \hyperlink{classkbonds_ab73fca798f003a8ca65b167648b1aaa8}{kb}
+\begin{DoxyCompactList}\small\item\em string of atom classes for harmonic bond stretch \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\hyperlink{classkbonds_ac0a19701e66f2ba2a514010e46f3e21f}{maxnb5}) \hyperlink{classkbonds_a36d4806e8cea51b4ee028732e8b0fe49}{kb5}
+\begin{DoxyCompactList}\small\item\em string of atom classes for 5-\/ring bond stretch \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\hyperlink{classkbonds_a1146d8cd8643971889024141fc7b1278}{maxnb4}) \hyperlink{classkbonds_ab434179eab14e342f2414151414e63b7}{kb4}
+\begin{DoxyCompactList}\small\item\em string of atom classes for 4-\/ring bond stretch \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\hyperlink{classkbonds_aa8e2e75495d2bb801b4ee3410c933ba1}{maxnb3}) \hyperlink{classkbonds_ad70e37dfe5398cf66dfaa94a974270c5}{kb3}
+\begin{DoxyCompactList}\small\item\em string of atom classes for 3-\/ring bond stretch \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\hyperlink{classkbonds_a479b8df9e16642b87303fc1f3bd06d26}{maxnbm}) \hyperlink{classkbonds_ad0be67fdca802054468f33bcf5a0e7cd}{kbm}
+\begin{DoxyCompactList}\small\item\em string of atom classes for morse \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\hyperlink{classkbonds_a7722f5df93f05ffe051844b4b14fa9de}{maxnbm4}) \hyperlink{classkbonds_a492d22e1290bde1d49114a7d3813342d}{kbm4}
+\begin{DoxyCompactList}\small\item\em string of atom classes for morse4 \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkbonds_a6db85c30f12f7ced42381f0176090d23}{maxnel}) \hyperlink{classkbonds_a0a98345c9da9fa5108362b927e79036c}{kel}
+\begin{DoxyCompactList}\small\item\em string of atom classes for electronegativity corrections \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classkbonds_a5e6c3530241df6ea86379188ff398ace}{\index{kbonds@{kbonds}!bcon@{bcon}}
+\index{bcon@{bcon}!kbonds@{kbonds}}
+\subsubsection[{bcon}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnb}) kbonds\-::bcon}}\label{classkbonds_a5e6c3530241df6ea86379188ff398ace}
+
+
+force constant parameters for harmonic bond stretch 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a8f800b1634aef288ebc94c6e9273cf22}{\index{kbonds@{kbonds}!bcon3@{bcon3}}
+\index{bcon3@{bcon3}!kbonds@{kbonds}}
+\subsubsection[{bcon3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnb3}) kbonds\-::bcon3}}\label{classkbonds_a8f800b1634aef288ebc94c6e9273cf22}
+
+
+force constant parameters for 3-\/ring bond stretch 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_abd26bb67713fa4f4f0b92b9e2ec76ce7}{\index{kbonds@{kbonds}!bcon4@{bcon4}}
+\index{bcon4@{bcon4}!kbonds@{kbonds}}
+\subsubsection[{bcon4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnb4}) kbonds\-::bcon4}}\label{classkbonds_abd26bb67713fa4f4f0b92b9e2ec76ce7}
+
+
+force constant parameters for 4-\/ring bond stretch 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_af68f430fbe6e2899f8fbf5ed22a89b3d}{\index{kbonds@{kbonds}!bcon5@{bcon5}}
+\index{bcon5@{bcon5}!kbonds@{kbonds}}
+\subsubsection[{bcon5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnb5}) kbonds\-::bcon5}}\label{classkbonds_af68f430fbe6e2899f8fbf5ed22a89b3d}
+
+
+force constant parameters for 5-\/ring bond stretch 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_af87c02461c2ee0ac0f82aeefa447ee38}{\index{kbonds@{kbonds}!blen@{blen}}
+\index{blen@{blen}!kbonds@{kbonds}}
+\subsubsection[{blen}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnb}) kbonds\-::blen}}\label{classkbonds_af87c02461c2ee0ac0f82aeefa447ee38}
+
+
+bond length parameters for harmonic bond stretch 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_ae67999ffcbf08c7bbf51e16fe88f9a35}{\index{kbonds@{kbonds}!blen3@{blen3}}
+\index{blen3@{blen3}!kbonds@{kbonds}}
+\subsubsection[{blen3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnb3}) kbonds\-::blen3}}\label{classkbonds_ae67999ffcbf08c7bbf51e16fe88f9a35}
+
+
+bond length parameters for 3-\/ring bond stretch 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_ad18f49c893ecbd07b6ceaf640eb8bb5c}{\index{kbonds@{kbonds}!blen4@{blen4}}
+\index{blen4@{blen4}!kbonds@{kbonds}}
+\subsubsection[{blen4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnb4}) kbonds\-::blen4}}\label{classkbonds_ad18f49c893ecbd07b6ceaf640eb8bb5c}
+
+
+bond length parameters for 4-\/ring bond stretch 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a5feaf96447df676481cc06acb221c02f}{\index{kbonds@{kbonds}!blen5@{blen5}}
+\index{blen5@{blen5}!kbonds@{kbonds}}
+\subsubsection[{blen5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnb5}) kbonds\-::blen5}}\label{classkbonds_a5feaf96447df676481cc06acb221c02f}
+
+
+bond length parameters for 5-\/ring bond stretch 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a177252a3554425a3c0e0ba3032adead6}{\index{kbonds@{kbonds}!bmor@{bmor}}
+\index{bmor@{bmor}!kbonds@{kbonds}}
+\subsubsection[{bmor}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,{\bf maxnbm}) kbonds\-::bmor}}\label{classkbonds_a177252a3554425a3c0e0ba3032adead6}
+
+
+morse parameters for morse potential 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_aa21c00518a1013918014dcba5f0e6798}{\index{kbonds@{kbonds}!bmor4@{bmor4}}
+\index{bmor4@{bmor4}!kbonds@{kbonds}}
+\subsubsection[{bmor4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,{\bf maxnbm4}) kbonds\-::bmor4}}\label{classkbonds_aa21c00518a1013918014dcba5f0e6798}
+
+
+morse4 parameters for morse4 potential 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a045e5974050bfb0a5fc0cffa235150b8}{\index{kbonds@{kbonds}!dlen@{dlen}}
+\index{dlen@{dlen}!kbonds@{kbonds}}
+\subsubsection[{dlen}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnel}) kbonds\-::dlen}}\label{classkbonds_a045e5974050bfb0a5fc0cffa235150b8}
+
+
+electronegativity bond length correction parameters 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_ab73fca798f003a8ca65b167648b1aaa8}{\index{kbonds@{kbonds}!kb@{kb}}
+\index{kb@{kb}!kbonds@{kbonds}}
+\subsubsection[{kb}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension({\bf maxnb}) kbonds\-::kb}}\label{classkbonds_ab73fca798f003a8ca65b167648b1aaa8}
+
+
+string of atom classes for harmonic bond stretch 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_ad70e37dfe5398cf66dfaa94a974270c5}{\index{kbonds@{kbonds}!kb3@{kb3}}
+\index{kb3@{kb3}!kbonds@{kbonds}}
+\subsubsection[{kb3}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension({\bf maxnb3}) kbonds\-::kb3}}\label{classkbonds_ad70e37dfe5398cf66dfaa94a974270c5}
+
+
+string of atom classes for 3-\/ring bond stretch 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_ab434179eab14e342f2414151414e63b7}{\index{kbonds@{kbonds}!kb4@{kb4}}
+\index{kb4@{kb4}!kbonds@{kbonds}}
+\subsubsection[{kb4}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension({\bf maxnb4}) kbonds\-::kb4}}\label{classkbonds_ab434179eab14e342f2414151414e63b7}
+
+
+string of atom classes for 4-\/ring bond stretch 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a36d4806e8cea51b4ee028732e8b0fe49}{\index{kbonds@{kbonds}!kb5@{kb5}}
+\index{kb5@{kb5}!kbonds@{kbonds}}
+\subsubsection[{kb5}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension({\bf maxnb5}) kbonds\-::kb5}}\label{classkbonds_a36d4806e8cea51b4ee028732e8b0fe49}
+
+
+string of atom classes for 5-\/ring bond stretch 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_ad0be67fdca802054468f33bcf5a0e7cd}{\index{kbonds@{kbonds}!kbm@{kbm}}
+\index{kbm@{kbm}!kbonds@{kbonds}}
+\subsubsection[{kbm}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension({\bf maxnbm}) kbonds\-::kbm}}\label{classkbonds_ad0be67fdca802054468f33bcf5a0e7cd}
+
+
+string of atom classes for morse 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a492d22e1290bde1d49114a7d3813342d}{\index{kbonds@{kbonds}!kbm4@{kbm4}}
+\index{kbm4@{kbm4}!kbonds@{kbonds}}
+\subsubsection[{kbm4}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension({\bf maxnbm4}) kbonds\-::kbm4}}\label{classkbonds_a492d22e1290bde1d49114a7d3813342d}
+
+
+string of atom classes for morse4 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a0a98345c9da9fa5108362b927e79036c}{\index{kbonds@{kbonds}!kel@{kel}}
+\index{kel@{kel}!kbonds@{kbonds}}
+\subsubsection[{kel}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxnel}) kbonds\-::kel}}\label{classkbonds_a0a98345c9da9fa5108362b927e79036c}
+
+
+string of atom classes for electronegativity corrections 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_ae14cb6057f6b902041d325f442bb4eb4}{\index{kbonds@{kbonds}!maxnb@{maxnb}}
+\index{maxnb@{maxnb}!kbonds@{kbonds}}
+\subsubsection[{maxnb}]{\setlength{\rightskip}{0pt plus 5cm}integer kbonds\-::maxnb}}\label{classkbonds_ae14cb6057f6b902041d325f442bb4eb4}
+
+
+maximum number of bond stretch parameter entries 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_aa8e2e75495d2bb801b4ee3410c933ba1}{\index{kbonds@{kbonds}!maxnb3@{maxnb3}}
+\index{maxnb3@{maxnb3}!kbonds@{kbonds}}
+\subsubsection[{maxnb3}]{\setlength{\rightskip}{0pt plus 5cm}integer kbonds\-::maxnb3}}\label{classkbonds_aa8e2e75495d2bb801b4ee3410c933ba1}
+
+
+maximum number of 3-\/membered ring bond stretch entries 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a1146d8cd8643971889024141fc7b1278}{\index{kbonds@{kbonds}!maxnb4@{maxnb4}}
+\index{maxnb4@{maxnb4}!kbonds@{kbonds}}
+\subsubsection[{maxnb4}]{\setlength{\rightskip}{0pt plus 5cm}integer kbonds\-::maxnb4}}\label{classkbonds_a1146d8cd8643971889024141fc7b1278}
+
+
+maximum number of 4-\/membered ring bond stretch entries 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_ac0a19701e66f2ba2a514010e46f3e21f}{\index{kbonds@{kbonds}!maxnb5@{maxnb5}}
+\index{maxnb5@{maxnb5}!kbonds@{kbonds}}
+\subsubsection[{maxnb5}]{\setlength{\rightskip}{0pt plus 5cm}integer kbonds\-::maxnb5}}\label{classkbonds_ac0a19701e66f2ba2a514010e46f3e21f}
+
+
+maximum number of 5-\/membered ring bond stretch entries 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a479b8df9e16642b87303fc1f3bd06d26}{\index{kbonds@{kbonds}!maxnbm@{maxnbm}}
+\index{maxnbm@{maxnbm}!kbonds@{kbonds}}
+\subsubsection[{maxnbm}]{\setlength{\rightskip}{0pt plus 5cm}integer kbonds\-::maxnbm}}\label{classkbonds_a479b8df9e16642b87303fc1f3bd06d26}
+
+
+maximum number of morse paramter entries 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a7722f5df93f05ffe051844b4b14fa9de}{\index{kbonds@{kbonds}!maxnbm4@{maxnbm4}}
+\index{maxnbm4@{maxnbm4}!kbonds@{kbonds}}
+\subsubsection[{maxnbm4}]{\setlength{\rightskip}{0pt plus 5cm}integer kbonds\-::maxnbm4}}\label{classkbonds_a7722f5df93f05ffe051844b4b14fa9de}
+
+
+maximum number of morse4 paramter entries 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+\hypertarget{classkbonds_a6db85c30f12f7ced42381f0176090d23}{\index{kbonds@{kbonds}!maxnel@{maxnel}}
+\index{maxnel@{maxnel}!kbonds@{kbonds}}
+\subsubsection[{maxnel}]{\setlength{\rightskip}{0pt plus 5cm}integer kbonds\-::maxnel}}\label{classkbonds_a6db85c30f12f7ced42381f0176090d23}
+
+
+maximum number of electronegativity bond corrections 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-kbonds.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__kbonds_8f90}{M\-O\-D\-\_\-kbonds.\-f90}\end{DoxyCompactItemize}

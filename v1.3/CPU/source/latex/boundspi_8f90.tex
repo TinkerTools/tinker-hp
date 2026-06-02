@@ -1,0 +1,119 @@
+\hypertarget{boundspi_8f90}{\section{boundspi.\-f90 File Reference}
+\label{boundspi_8f90}\index{boundspi.\-f90@{boundspi.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{boundspi_8f90_a01ae5496f348e3aeb2a576314de37ff8}{boundspi} (polymer, ibead\-\_\-beg, ibead\-\_\-end)
+\begin{DoxyCompactList}\small\item\em finds the center of mass of each molecule and translates any stray molecules back into the periodic box atoms involved in a C\-V (through colvars or plumed) are dealt with separately \end{DoxyCompactList}\item 
+subroutine \hyperlink{boundspi_8f90_a657eb5d405878c391879e9f5e384ffc6}{boundslistpi} (polymer, ibead\-\_\-beg, ibead\-\_\-end, nlist, list)
+\begin{DoxyCompactList}\small\item\em computes and displays the total potential energy finds the center of mass of a list of atoms translates any stray atoms back into the periodic box \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{boundspi_8f90_a657eb5d405878c391879e9f5e384ffc6}{\index{boundspi.\-f90@{boundspi.\-f90}!boundslistpi@{boundslistpi}}
+\index{boundslistpi@{boundslistpi}!boundspi.f90@{boundspi.\-f90}}
+\subsubsection[{boundslistpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine boundslistpi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{integer, intent(in)}]{ibead\-\_\-beg, }
+\item[{integer, intent(in)}]{ibead\-\_\-end, }
+\item[{integer, intent(in)}]{nlist, }
+\item[{integer, dimension(nlist), intent(in)}]{list}
+\end{DoxyParamCaption}
+)}}\label{boundspi_8f90_a657eb5d405878c391879e9f5e384ffc6}
+
+
+computes and displays the total potential energy finds the center of mass of a list of atoms translates any stray atoms back into the periodic box 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 137 of file boundspi.\-f90.
+
+
+
+References compute\-\_\-wrap\-\_\-shifts().
+
+
+
+Referenced by boundspi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=314pt]{boundspi_8f90_a657eb5d405878c391879e9f5e384ffc6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{boundspi_8f90_a657eb5d405878c391879e9f5e384ffc6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{boundspi_8f90_a01ae5496f348e3aeb2a576314de37ff8}{\index{boundspi.\-f90@{boundspi.\-f90}!boundspi@{boundspi}}
+\index{boundspi@{boundspi}!boundspi.f90@{boundspi.\-f90}}
+\subsubsection[{boundspi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine boundspi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{integer, intent(in)}]{ibead\-\_\-beg, }
+\item[{integer, intent(in)}]{ibead\-\_\-end}
+\end{DoxyParamCaption}
+)}}\label{boundspi_8f90_a01ae5496f348e3aeb2a576314de37ff8}
+
+
+finds the center of mass of each molecule and translates any stray molecules back into the periodic box atoms involved in a C\-V (through colvars or plumed) are dealt with separately 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 25 of file boundspi.\-f90.
+
+
+
+References boundslistpi(), and colvarproxy\-\_\-tinkerhp\-::init().
+
+
+
+Referenced by mdsavebeads().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{boundspi_8f90_a01ae5496f348e3aeb2a576314de37ff8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{boundspi_8f90_a01ae5496f348e3aeb2a576314de37ff8_icgraph}
+\end{center}
+\end{figure}
+
+

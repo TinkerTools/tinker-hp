@@ -1,0 +1,335 @@
+\hypertarget{rattle_8f90}{\section{rattle.\-f90 File Reference}
+\label{rattle_8f90}\index{rattle.\-f90@{rattle.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{rattle_8f90_a9f934b1ddf0ac5516efd2a23be73722c}{rattle} (dt)
+\begin{DoxyCompactList}\small\item\em implements the first portion of the R\-A\-T\-T\-L\-E algorithm by correcting atomic positions and half-\/step velocities to maintain interatomic distance and absolute spatial constraints \end{DoxyCompactList}\item 
+subroutine \hyperlink{rattle_8f90_aff356ce357db8823af8ee87f905e53ec}{rattle2} (dt)
+\begin{DoxyCompactList}\small\item\em implements the second portion of the R\-A\-T\-T\-L\-E algorithm by correcting the full-\/step velocities in order to maintain interatomic distance constraints \end{DoxyCompactList}\item 
+subroutine \hyperlink{rattle_8f90_a9c4ba35c7fb23f7c96eca2b3f8cf447d}{initmpirattle}
+\begin{DoxyCompactList}\small\item\em build the arrays to communicate positions of atoms during the calculation of the constrains using the rattle algorithm \end{DoxyCompactList}\item 
+subroutine \hyperlink{rattle_8f90_a05f49af301e0b95ac6ef7d9565e0d66f}{commrattleinit}
+\begin{DoxyCompactList}\small\item\em deal with necessary comms before rattle iterations computes and displays the total potential energy \end{DoxyCompactList}\item 
+subroutine \hyperlink{rattle_8f90_a139ff37e3a4d7bad93ea575ba3b16d16}{commrattleend}
+\begin{DoxyCompactList}\small\item\em deal with necessary comms after rattle iterations \end{DoxyCompactList}\item 
+subroutine \hyperlink{rattle_8f90_aa9c32e2c4e4ffd2880683d4e38d47a9a}{save\-\_\-atoms\-\_\-pos}
+\begin{DoxyCompactList}\small\item\em store current atomic positions in $\ast$old arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{rattle_8f90_a75cd687d51177d5ef346402f3dceafcd}{commrattleinit2}
+\begin{DoxyCompactList}\small\item\em deal with necessary comms before rattle2 iterations \end{DoxyCompactList}\item 
+subroutine \hyperlink{rattle_8f90_a44b8949cf98914487529afea30c5cd18}{commrattleend2}
+\begin{DoxyCompactList}\small\item\em deal with necessary comms after rattle2 iterations \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{rattle_8f90_a139ff37e3a4d7bad93ea575ba3b16d16}{\index{rattle.\-f90@{rattle.\-f90}!commrattleend@{commrattleend}}
+\index{commrattleend@{commrattleend}!rattle.f90@{rattle.\-f90}}
+\subsubsection[{commrattleend}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commrattleend (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{rattle_8f90_a139ff37e3a4d7bad93ea575ba3b16d16}
+
+
+deal with necessary comms after rattle iterations 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 663 of file rattle.\-f90.
+
+
+
+Referenced by rattle().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_a139ff37e3a4d7bad93ea575ba3b16d16_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rattle_8f90_a44b8949cf98914487529afea30c5cd18}{\index{rattle.\-f90@{rattle.\-f90}!commrattleend2@{commrattleend2}}
+\index{commrattleend2@{commrattleend2}!rattle.f90@{rattle.\-f90}}
+\subsubsection[{commrattleend2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commrattleend2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{rattle_8f90_a44b8949cf98914487529afea30c5cd18}
+
+
+deal with necessary comms after rattle2 iterations 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 887 of file rattle.\-f90.
+
+
+
+Referenced by rattle2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_a44b8949cf98914487529afea30c5cd18_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rattle_8f90_a05f49af301e0b95ac6ef7d9565e0d66f}{\index{rattle.\-f90@{rattle.\-f90}!commrattleinit@{commrattleinit}}
+\index{commrattleinit@{commrattleinit}!rattle.f90@{rattle.\-f90}}
+\subsubsection[{commrattleinit}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commrattleinit (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{rattle_8f90_a05f49af301e0b95ac6ef7d9565e0d66f}
+
+
+deal with necessary comms before rattle iterations computes and displays the total potential energy 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 551 of file rattle.\-f90.
+
+
+
+Referenced by rattle().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_a05f49af301e0b95ac6ef7d9565e0d66f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rattle_8f90_a75cd687d51177d5ef346402f3dceafcd}{\index{rattle.\-f90@{rattle.\-f90}!commrattleinit2@{commrattleinit2}}
+\index{commrattleinit2@{commrattleinit2}!rattle.f90@{rattle.\-f90}}
+\subsubsection[{commrattleinit2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commrattleinit2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{rattle_8f90_a75cd687d51177d5ef346402f3dceafcd}
+
+
+deal with necessary comms before rattle2 iterations 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 792 of file rattle.\-f90.
+
+
+
+Referenced by rattle2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_a75cd687d51177d5ef346402f3dceafcd_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rattle_8f90_a9c4ba35c7fb23f7c96eca2b3f8cf447d}{\index{rattle.\-f90@{rattle.\-f90}!initmpirattle@{initmpirattle}}
+\index{initmpirattle@{initmpirattle}!rattle.f90@{rattle.\-f90}}
+\subsubsection[{initmpirattle}]{\setlength{\rightskip}{0pt plus 5cm}subroutine initmpirattle (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{rattle_8f90_a9c4ba35c7fb23f7c96eca2b3f8cf447d}
+
+
+build the arrays to communicate positions of atoms during the calculation of the constrains using the rattle algorithm 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 383 of file rattle.\-f90.
+
+
+
+Referenced by rattle(), and rattle2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_a9c4ba35c7fb23f7c96eca2b3f8cf447d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rattle_8f90_a9f934b1ddf0ac5516efd2a23be73722c}{\index{rattle.\-f90@{rattle.\-f90}!rattle@{rattle}}
+\index{rattle@{rattle}!rattle.f90@{rattle.\-f90}}
+\subsubsection[{rattle}]{\setlength{\rightskip}{0pt plus 5cm}subroutine rattle (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{dt}
+\end{DoxyParamCaption}
+)}}\label{rattle_8f90_a9f934b1ddf0ac5516efd2a23be73722c}
+
+
+implements the first portion of the R\-A\-T\-T\-L\-E algorithm by correcting atomic positions and half-\/step velocities to maintain interatomic distance and absolute spatial constraints 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 31 of file rattle.\-f90.
+
+
+
+References commrattleend(), commrattleinit(), colvarproxy\-\_\-tinkerhp\-::dt(), fatal(), image(), initmpirattle(), and spectra\-::compteur\-\_\-type\-::update().
+
+
+
+Referenced by utilbaoab\-::apply\-\_\-a\-\_\-block(), utilbaoab\-::apply\-\_\-a\-\_\-piston(), beeman(), respafast(), respafast1(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_a9f934b1ddf0ac5516efd2a23be73722c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_a9f934b1ddf0ac5516efd2a23be73722c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rattle_8f90_aff356ce357db8823af8ee87f905e53ec}{\index{rattle.\-f90@{rattle.\-f90}!rattle2@{rattle2}}
+\index{rattle2@{rattle2}!rattle.f90@{rattle.\-f90}}
+\subsubsection[{rattle2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine rattle2 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{dt}
+\end{DoxyParamCaption}
+)}}\label{rattle_8f90_aff356ce357db8823af8ee87f905e53ec}
+
+
+implements the second portion of the R\-A\-T\-T\-L\-E algorithm by correcting the full-\/step velocities in order to maintain interatomic distance constraints 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 202 of file rattle.\-f90.
+
+
+
+References commrattleend2(), commrattleinit2(), colvarproxy\-\_\-tinkerhp\-::dt(), fatal(), image(), initmpirattle(), and spectra\-::compteur\-\_\-type\-::update().
+
+
+
+Referenced by utilbaoab\-::apply\-\_\-a\-\_\-block(), utilbaoab\-::apply\-\_\-a\-\_\-piston(), utilbaoab\-::apply\-\_\-o\-\_\-block(), baoab(), baoabrespa(), baoabrespa1(), baoabrespafast1(), baoabrespaint1(), beeman(), respa(), respa1(), respafast(), respafast1(), respaint1(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_aff356ce357db8823af8ee87f905e53ec_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_aff356ce357db8823af8ee87f905e53ec_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{rattle_8f90_aa9c32e2c4e4ffd2880683d4e38d47a9a}{\index{rattle.\-f90@{rattle.\-f90}!save\-\_\-atoms\-\_\-pos@{save\-\_\-atoms\-\_\-pos}}
+\index{save\-\_\-atoms\-\_\-pos@{save\-\_\-atoms\-\_\-pos}!rattle.f90@{rattle.\-f90}}
+\subsubsection[{save\-\_\-atoms\-\_\-pos}]{\setlength{\rightskip}{0pt plus 5cm}subroutine save\-\_\-atoms\-\_\-pos (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{rattle_8f90_aa9c32e2c4e4ffd2880683d4e38d47a9a}
+
+
+store current atomic positions in $\ast$old arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 774 of file rattle.\-f90.
+
+
+
+Referenced by utilbaoab\-::apply\-\_\-a\-\_\-block(), and utilbaoab\-::apply\-\_\-a\-\_\-piston().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rattle_8f90_aa9c32e2c4e4ffd2880683d4e38d47a9a_icgraph}
+\end{center}
+\end{figure}
+
+

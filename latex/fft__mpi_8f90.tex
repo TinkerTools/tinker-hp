@@ -1,0 +1,210 @@
+\hypertarget{fft__mpi_8f90}{\section{fft\-\_\-mpi.\-f90 File Reference}
+\label{fft__mpi_8f90}\index{fft\-\_\-mpi.\-f90@{fft\-\_\-mpi.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{fft__mpi_8f90_a934fb02c61186fea25814faf4e8ff019}{fft\-\_\-setup} (nrec, rank\-\_\-bis, istart1, iend1, isize1, jstart1, jend1, jsize1, kstart1, kend1, ksize1, istart2, iend2, isize2, jstart2, jend2, jsize2, kstart2, kend2, ksize2, nx, ny, nz, comm\-\_\-loc, ngrid1, ngrid2)
+\begin{DoxyCompactList}\small\item\em setup the arrays for the computations of 3d ffts with 2decomp\&F\-F\-T \end{DoxyCompactList}\item 
+subroutine \hyperlink{fft__mpi_8f90_a9e24205ee630a80792dd5d179c5f8429}{fft2d\-\_\-frontmpi} (qgridin, qgridout, n1mpimax, n2mpimax, n3mpimax)
+\begin{DoxyCompactList}\small\item\em compute forward 3d\-F\-F\-T in parallel with 2decomp\&F\-F\-T \end{DoxyCompactList}\item 
+subroutine \hyperlink{fft__mpi_8f90_abdd07940aee4c823edb5b931186bed23}{fft2d\-\_\-backmpi} (qgridin, qgridout, n1mpimax, n2mpimax, n3mpimax)
+\begin{DoxyCompactList}\small\item\em compute backward 3d\-F\-F\-T in parallel with 2decomp\&F\-F\-T \end{DoxyCompactList}\item 
+subroutine \hyperlink{fft__mpi_8f90_a2e23970fc146e5a0a89083e8d0cf81be}{fft\-\_\-final}
+\begin{DoxyCompactList}\small\item\em finalize F\-F\-T simulation with 2decomp\-F\-F\-T library \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{fft__mpi_8f90_abdd07940aee4c823edb5b931186bed23}{\index{fft\-\_\-mpi.\-f90@{fft\-\_\-mpi.\-f90}!fft2d\-\_\-backmpi@{fft2d\-\_\-backmpi}}
+\index{fft2d\-\_\-backmpi@{fft2d\-\_\-backmpi}!fft_mpi.f90@{fft\-\_\-mpi.\-f90}}
+\subsubsection[{fft2d\-\_\-backmpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fft2d\-\_\-backmpi (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(2,n1mpimax,n2mpimax,n3mpimax,$\ast$)}]{qgridin, }
+\item[{real$\ast$8, dimension(2,zsize(1),zsize(2),zsize(3))}]{qgridout, }
+\item[{integer}]{n1mpimax, }
+\item[{integer}]{n2mpimax, }
+\item[{integer}]{n3mpimax}
+\end{DoxyParamCaption}
+)}}\label{fft__mpi_8f90_abdd07940aee4c823edb5b931186bed23}
+
+
+compute backward 3d\-F\-F\-T in parallel with 2decomp\&F\-F\-T 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em qgridin,\-:} & F\-F\-T grid taken (input) \\
+\hline
+\mbox{\tt in}  & {\em qgridin,\-:} & transposed F\-F\-T grid (output) \\
+\hline
+\mbox{\tt in}  & {\em n$\ast$mpimax,\-:} & dimensions of the grid \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 135 of file fft\-\_\-mpi.\-f90.
+
+
+
+Referenced by ecrecip1(), edrecip1(), efld0\-\_\-recip(), emrecip(), emrecip1(), eprecip1(), fftthatplz(), fftthatplz2(), tmatxbrecip(), and tmatxbrecipsave().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{fft__mpi_8f90_abdd07940aee4c823edb5b931186bed23_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{fft__mpi_8f90_a9e24205ee630a80792dd5d179c5f8429}{\index{fft\-\_\-mpi.\-f90@{fft\-\_\-mpi.\-f90}!fft2d\-\_\-frontmpi@{fft2d\-\_\-frontmpi}}
+\index{fft2d\-\_\-frontmpi@{fft2d\-\_\-frontmpi}!fft_mpi.f90@{fft\-\_\-mpi.\-f90}}
+\subsubsection[{fft2d\-\_\-frontmpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fft2d\-\_\-frontmpi (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(2,n1mpimax,n2mpimax,n3mpimax,$\ast$)}]{qgridin, }
+\item[{real$\ast$8, dimension(2,zsize(1),zsize(2),zsize(3))}]{qgridout, }
+\item[{integer}]{n1mpimax, }
+\item[{integer}]{n2mpimax, }
+\item[{integer}]{n3mpimax}
+\end{DoxyParamCaption}
+)}}\label{fft__mpi_8f90_a9e24205ee630a80792dd5d179c5f8429}
+
+
+compute forward 3d\-F\-F\-T in parallel with 2decomp\&F\-F\-T 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em qgridin,\-:} & F\-F\-T grid taken (input) \\
+\hline
+\mbox{\tt in}  & {\em qgridin,\-:} & transposed F\-F\-T grid (output) \\
+\hline
+\mbox{\tt in}  & {\em n$\ast$mpimax,\-:} & dimensions of the grid \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 80 of file fft\-\_\-mpi.\-f90.
+
+
+
+Referenced by ecrecip(), ecrecip1(), edrecip(), edrecip1(), efld0\-\_\-recip(), emrecip(), emrecip1(), eprecip1(), fftthatplz(), fftthatplz2(), tmatxbrecip(), and tmatxbrecipsave().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{fft__mpi_8f90_a9e24205ee630a80792dd5d179c5f8429_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{fft__mpi_8f90_a2e23970fc146e5a0a89083e8d0cf81be}{\index{fft\-\_\-mpi.\-f90@{fft\-\_\-mpi.\-f90}!fft\-\_\-final@{fft\-\_\-final}}
+\index{fft\-\_\-final@{fft\-\_\-final}!fft_mpi.f90@{fft\-\_\-mpi.\-f90}}
+\subsubsection[{fft\-\_\-final}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fft\-\_\-final (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{fft__mpi_8f90_a2e23970fc146e5a0a89083e8d0cf81be}
+
+
+finalize F\-F\-T simulation with 2decomp\-F\-F\-T library 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 185 of file fft\-\_\-mpi.\-f90.
+
+
+
+Referenced by kewald().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{fft__mpi_8f90_a2e23970fc146e5a0a89083e8d0cf81be_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{fft__mpi_8f90_a934fb02c61186fea25814faf4e8ff019}{\index{fft\-\_\-mpi.\-f90@{fft\-\_\-mpi.\-f90}!fft\-\_\-setup@{fft\-\_\-setup}}
+\index{fft\-\_\-setup@{fft\-\_\-setup}!fft_mpi.f90@{fft\-\_\-mpi.\-f90}}
+\subsubsection[{fft\-\_\-setup}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fft\-\_\-setup (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrec, }
+\item[{integer}]{rank\-\_\-bis, }
+\item[{integer, dimension($\ast$)}]{istart1, }
+\item[{integer, dimension($\ast$)}]{iend1, }
+\item[{integer, dimension($\ast$)}]{isize1, }
+\item[{integer, dimension($\ast$)}]{jstart1, }
+\item[{integer, dimension($\ast$)}]{jend1, }
+\item[{integer, dimension($\ast$)}]{jsize1, }
+\item[{integer, dimension($\ast$)}]{kstart1, }
+\item[{integer, dimension($\ast$)}]{kend1, }
+\item[{integer, dimension($\ast$)}]{ksize1, }
+\item[{integer, dimension($\ast$)}]{istart2, }
+\item[{integer, dimension($\ast$)}]{iend2, }
+\item[{integer, dimension($\ast$)}]{isize2, }
+\item[{integer, dimension($\ast$)}]{jstart2, }
+\item[{integer, dimension($\ast$)}]{jend2, }
+\item[{integer, dimension($\ast$)}]{jsize2, }
+\item[{integer, dimension($\ast$)}]{kstart2, }
+\item[{integer, dimension($\ast$)}]{kend2, }
+\item[{integer, dimension($\ast$)}]{ksize2, }
+\item[{integer}]{nx, }
+\item[{integer}]{ny, }
+\item[{integer}]{nz, }
+\item[{integer}]{comm\-\_\-loc, }
+\item[{integer}]{ngrid1, }
+\item[{integer}]{ngrid2}
+\end{DoxyParamCaption}
+)}}\label{fft__mpi_8f90_a934fb02c61186fea25814faf4e8ff019}
+
+
+setup the arrays for the computations of 3d ffts with 2decomp\&F\-F\-T 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrec,\-:} & number of cores dedicated to reciprocal space \\
+\hline
+\mbox{\tt in}  & {\em rank\-\_\-bis,\-:} & rank of the local process \\
+\hline
+\mbox{\tt in}  & {\em $<$em$>$start$<$/em$>$,\-:} & starting indexes of the grid along the 3 directions \\
+\hline
+\mbox{\tt in}  & {\em $<$em$>$end$<$/em$>$,\-:} & endig indexes of the grid along the 3 directions \\
+\hline
+\mbox{\tt in}  & {\em nx,ny,nz,\-:} & dimension of the grid along the 3 directions \\
+\hline
+\mbox{\tt in}  & {\em comm\-\_\-loc,\-:} & local M\-P\-I communicator \\
+\hline
+\mbox{\tt in}  & {\em ngrid1,ngrid2,\-:} & 2d processor grid for M\-P\-I parallelism 2d processor grid for M\-P\-I parallelism \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 20 of file fft\-\_\-mpi.\-f90.
+
+
+
+Referenced by kewald\-\_\-2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{fft__mpi_8f90_a934fb02c61186fea25814faf4e8ff019_icgraph}
+\end{center}
+\end{figure}
+
+

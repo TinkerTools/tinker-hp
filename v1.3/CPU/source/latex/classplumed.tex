@@ -1,0 +1,188 @@
+\hypertarget{classplumed}{\section{plumed Module Reference}
+\label{classplumed}\index{plumed@{plumed}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classplumed_a48a97baaf97158b7283ced58dc4642b1}{ncount}
+\begin{DoxyCompactList}\small\item\em counter of calls to P\-L\-U\-M\-E\-D \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classplumed_a4f45b852b65341ea5c02adc73a3e5858}{pl\-\_\-glob}
+\item 
+logical \hyperlink{classplumed_ac1262f9bab62ea649ff431d0623adcdc}{lplumed} = .false.
+\begin{DoxyCompactList}\small\item\em flag governing use of P\-L\-U\-M\-E\-D \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classplumed_a65158efb6a21a8b9c6de94dbd23376ab}{energyunits}
+\begin{DoxyCompactList}\small\item\em unit of energies \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classplumed_a6373fbd65916ce8d4398fea166a10674}{lengthunits}
+\begin{DoxyCompactList}\small\item\em unit of lengths \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classplumed_acc5066451b15cf08b371e5384f5ca7ff}{timeunits}
+\begin{DoxyCompactList}\small\item\em unit of time \end{DoxyCompactList}\item 
+character(len=100) \hyperlink{classplumed_aedc087d82d6aa6aa260cd90dfd428051}{pl\-\_\-input}
+\begin{DoxyCompactList}\small\item\em name of P\-L\-U\-M\-E\-D input \end{DoxyCompactList}\item 
+character(len=100) \hyperlink{classplumed_a2318a38b3aa942f80ae7dbe6b2c3f240}{pl\-\_\-output}
+\begin{DoxyCompactList}\small\item\em name of P\-L\-U\-M\-E\-D output \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classplumed_a12c6013d273e295dc9e85bd9521256be}{pl\-\_\-pos}
+\begin{DoxyCompactList}\small\item\em array of positions \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classplumed_a9df9be4d1fe11d88a9dcf400d3c43b7a}{pl\-\_\-force}
+\begin{DoxyCompactList}\small\item\em array of forces \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classplumed_aa02a55eef8aee0ddceb17c8b9dcf40c2}{pl\-\_\-mass}
+\begin{DoxyCompactList}\small\item\em array of masses \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classplumed_a96e7d3b44d60f89f9d46d3c51c4c2ecf}{pl\-\_\-virial}
+\begin{DoxyCompactList}\small\item\em virial contribution from P\-L\-U\-M\-E\-D \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classplumed_a22629a6612c2ebc50f88c7ef94bdd525}{pl\-\_\-epot}
+\begin{DoxyCompactList}\small\item\em energy contribution from P\-L\-U\-M\-E\-D \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 8 of file M\-O\-D\-\_\-plumed.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classplumed_a65158efb6a21a8b9c6de94dbd23376ab}{\index{plumed@{plumed}!energyunits@{energyunits}}
+\index{energyunits@{energyunits}!plumed@{plumed}}
+\subsubsection[{energyunits}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 plumed\-::energyunits}}\label{classplumed_a65158efb6a21a8b9c6de94dbd23376ab}
+
+
+unit of energies 
+
+
+
+Definition at line 14 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_a6373fbd65916ce8d4398fea166a10674}{\index{plumed@{plumed}!lengthunits@{lengthunits}}
+\index{lengthunits@{lengthunits}!plumed@{plumed}}
+\subsubsection[{lengthunits}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 plumed\-::lengthunits}}\label{classplumed_a6373fbd65916ce8d4398fea166a10674}
+
+
+unit of lengths 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_ac1262f9bab62ea649ff431d0623adcdc}{\index{plumed@{plumed}!lplumed@{lplumed}}
+\index{lplumed@{lplumed}!plumed@{plumed}}
+\subsubsection[{lplumed}]{\setlength{\rightskip}{0pt plus 5cm}logical plumed\-::lplumed = .false.}}\label{classplumed_ac1262f9bab62ea649ff431d0623adcdc}
+
+
+flag governing use of P\-L\-U\-M\-E\-D 
+
+
+
+Definition at line 13 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_a48a97baaf97158b7283ced58dc4642b1}{\index{plumed@{plumed}!ncount@{ncount}}
+\index{ncount@{ncount}!plumed@{plumed}}
+\subsubsection[{ncount}]{\setlength{\rightskip}{0pt plus 5cm}integer plumed\-::ncount}}\label{classplumed_a48a97baaf97158b7283ced58dc4642b1}
+
+
+counter of calls to P\-L\-U\-M\-E\-D 
+
+
+
+Definition at line 11 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_a22629a6612c2ebc50f88c7ef94bdd525}{\index{plumed@{plumed}!pl\-\_\-epot@{pl\-\_\-epot}}
+\index{pl\-\_\-epot@{pl\-\_\-epot}!plumed@{plumed}}
+\subsubsection[{pl\-\_\-epot}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 plumed\-::pl\-\_\-epot}}\label{classplumed_a22629a6612c2ebc50f88c7ef94bdd525}
+
+
+energy contribution from P\-L\-U\-M\-E\-D 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_a9df9be4d1fe11d88a9dcf400d3c43b7a}{\index{plumed@{plumed}!pl\-\_\-force@{pl\-\_\-force}}
+\index{pl\-\_\-force@{pl\-\_\-force}!plumed@{plumed}}
+\subsubsection[{pl\-\_\-force}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable plumed\-::pl\-\_\-force}}\label{classplumed_a9df9be4d1fe11d88a9dcf400d3c43b7a}
+
+
+array of forces 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_a4f45b852b65341ea5c02adc73a3e5858}{\index{plumed@{plumed}!pl\-\_\-glob@{pl\-\_\-glob}}
+\index{pl\-\_\-glob@{pl\-\_\-glob}!plumed@{plumed}}
+\subsubsection[{pl\-\_\-glob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable plumed\-::pl\-\_\-glob}}\label{classplumed_a4f45b852b65341ea5c02adc73a3e5858}
+
+
+Definition at line 12 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_aedc087d82d6aa6aa260cd90dfd428051}{\index{plumed@{plumed}!pl\-\_\-input@{pl\-\_\-input}}
+\index{pl\-\_\-input@{pl\-\_\-input}!plumed@{plumed}}
+\subsubsection[{pl\-\_\-input}]{\setlength{\rightskip}{0pt plus 5cm}character(len=100) plumed\-::pl\-\_\-input}}\label{classplumed_aedc087d82d6aa6aa260cd90dfd428051}
+
+
+name of P\-L\-U\-M\-E\-D input 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_aa02a55eef8aee0ddceb17c8b9dcf40c2}{\index{plumed@{plumed}!pl\-\_\-mass@{pl\-\_\-mass}}
+\index{pl\-\_\-mass@{pl\-\_\-mass}!plumed@{plumed}}
+\subsubsection[{pl\-\_\-mass}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable plumed\-::pl\-\_\-mass}}\label{classplumed_aa02a55eef8aee0ddceb17c8b9dcf40c2}
+
+
+array of masses 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_a2318a38b3aa942f80ae7dbe6b2c3f240}{\index{plumed@{plumed}!pl\-\_\-output@{pl\-\_\-output}}
+\index{pl\-\_\-output@{pl\-\_\-output}!plumed@{plumed}}
+\subsubsection[{pl\-\_\-output}]{\setlength{\rightskip}{0pt plus 5cm}character(len=100) plumed\-::pl\-\_\-output}}\label{classplumed_a2318a38b3aa942f80ae7dbe6b2c3f240}
+
+
+name of P\-L\-U\-M\-E\-D output 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_a12c6013d273e295dc9e85bd9521256be}{\index{plumed@{plumed}!pl\-\_\-pos@{pl\-\_\-pos}}
+\index{pl\-\_\-pos@{pl\-\_\-pos}!plumed@{plumed}}
+\subsubsection[{pl\-\_\-pos}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable plumed\-::pl\-\_\-pos}}\label{classplumed_a12c6013d273e295dc9e85bd9521256be}
+
+
+array of positions 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_a96e7d3b44d60f89f9d46d3c51c4c2ecf}{\index{plumed@{plumed}!pl\-\_\-virial@{pl\-\_\-virial}}
+\index{pl\-\_\-virial@{pl\-\_\-virial}!plumed@{plumed}}
+\subsubsection[{pl\-\_\-virial}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) plumed\-::pl\-\_\-virial}}\label{classplumed_a96e7d3b44d60f89f9d46d3c51c4c2ecf}
+
+
+virial contribution from P\-L\-U\-M\-E\-D 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-plumed.\-f90.
+
+\hypertarget{classplumed_acc5066451b15cf08b371e5384f5ca7ff}{\index{plumed@{plumed}!timeunits@{timeunits}}
+\index{timeunits@{timeunits}!plumed@{plumed}}
+\subsubsection[{timeunits}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 plumed\-::timeunits}}\label{classplumed_acc5066451b15cf08b371e5384f5ca7ff}
+
+
+unit of time 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-plumed.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__plumed_8f90}{M\-O\-D\-\_\-plumed.\-f90}\end{DoxyCompactItemize}

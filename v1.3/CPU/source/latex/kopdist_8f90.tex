@@ -1,0 +1,187 @@
+\hypertarget{kopdist_8f90}{\section{kopdist.\-f90 File Reference}
+\label{kopdist_8f90}\index{kopdist.\-f90@{kopdist.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kopdist_8f90_aa385e4ebc0d0bec011ecfec506944a85}{kopdist}
+\begin{DoxyCompactList}\small\item\em assigns the force constants for out-\/of-\/plane distance at trigonal centers via the central atom height; also processes any new or changed parameter values \end{DoxyCompactList}\item 
+subroutine \hyperlink{kopdist_8f90_a5ac82d850dce01d6448f5febc32fb607}{kopdist\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local opdist parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kopdist_8f90_aa3a74ccb1b3f92db25ac34d3db66ba67}{dealloc\-\_\-shared\-\_\-opdist}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for opdist parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kopdist_8f90_a3e773b0a33e12cb99f149516ad56c9a2}{alloc\-\_\-shared\-\_\-opdist}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for opdist parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kopdist_8f90_a3e773b0a33e12cb99f149516ad56c9a2}{\index{kopdist.\-f90@{kopdist.\-f90}!alloc\-\_\-shared\-\_\-opdist@{alloc\-\_\-shared\-\_\-opdist}}
+\index{alloc\-\_\-shared\-\_\-opdist@{alloc\-\_\-shared\-\_\-opdist}!kopdist.f90@{kopdist.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-opdist}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-opdist (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopdist_8f90_a3e773b0a33e12cb99f149516ad56c9a2}
+
+
+allocate shared memory pointers for opdist parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 360 of file kopdist.\-f90.
+
+
+
+Referenced by kopdist().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopdist_8f90_a3e773b0a33e12cb99f149516ad56c9a2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kopdist_8f90_aa3a74ccb1b3f92db25ac34d3db66ba67}{\index{kopdist.\-f90@{kopdist.\-f90}!dealloc\-\_\-shared\-\_\-opdist@{dealloc\-\_\-shared\-\_\-opdist}}
+\index{dealloc\-\_\-shared\-\_\-opdist@{dealloc\-\_\-shared\-\_\-opdist}!kopdist.f90@{kopdist.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-opdist}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-opdist (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopdist_8f90_aa3a74ccb1b3f92db25ac34d3db66ba67}
+
+
+deallocate shared memory pointers for opdist parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 331 of file kopdist.\-f90.
+
+
+
+Referenced by final(), and kopdist().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kopdist_8f90_aa3a74ccb1b3f92db25ac34d3db66ba67_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kopdist_8f90_aa385e4ebc0d0bec011ecfec506944a85}{\index{kopdist.\-f90@{kopdist.\-f90}!kopdist@{kopdist}}
+\index{kopdist@{kopdist}!kopdist.f90@{kopdist.\-f90}}
+\subsubsection[{kopdist}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kopdist (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopdist_8f90_aa385e4ebc0d0bec011ecfec506944a85}
+
+
+assigns the force constants for out-\/of-\/plane distance at trigonal centers via the central atom height; also processes any new or changed parameter values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file kopdist.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-opdist(), dealloc\-\_\-shared\-\_\-opdist(), gettext(), numeral(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kopdist_8f90_aa385e4ebc0d0bec011ecfec506944a85_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopdist_8f90_aa385e4ebc0d0bec011ecfec506944a85_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kopdist_8f90_a5ac82d850dce01d6448f5febc32fb607}{\index{kopdist.\-f90@{kopdist.\-f90}!kopdist\-\_\-update@{kopdist\-\_\-update}}
+\index{kopdist\-\_\-update@{kopdist\-\_\-update}!kopdist.f90@{kopdist.\-f90}}
+\subsubsection[{kopdist\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kopdist\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopdist_8f90_a5ac82d850dce01d6448f5febc32fb607}
+
+
+update local opdist parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 221 of file kopdist.\-f90.
+
+
+
+References numeral().
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopdist_8f90_a5ac82d850dce01d6448f5febc32fb607_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopdist_8f90_a5ac82d850dce01d6448f5febc32fb607_icgraph}
+\end{center}
+\end{figure}
+
+

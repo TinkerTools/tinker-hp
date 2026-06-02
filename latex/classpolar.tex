@@ -1,0 +1,259 @@
+\hypertarget{classpolar}{\section{polar Module Reference}
+\label{classpolar}\index{polar@{polar}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classpolar_a4dab8cc73459eae728463049cf92dd4f}{npolar}
+\begin{DoxyCompactList}\small\item\em total number of polarizable sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classpolar_a1d19caa1ebe353c09cab00e519cd3c56}{winpolarity}
+\begin{DoxyCompactList}\small\item\em window object corresponding to polariy \end{DoxyCompactList}\item 
+integer \hyperlink{classpolar_ad46b7c78e0b9c2c437c0a53dd330bfba}{winpolarity\-\_\-orig}
+\begin{DoxyCompactList}\small\item\em window object corresponding to polariy\-\_\-orig \end{DoxyCompactList}\item 
+integer \hyperlink{classpolar_abab52250380dd4bd332ad37ed36ac192}{winthole}
+\begin{DoxyCompactList}\small\item\em window object corresponding to thole \end{DoxyCompactList}\item 
+integer \hyperlink{classpolar_a4e3cb4e1ba57dc785e0dd710f69356aa}{winpdamp}
+\begin{DoxyCompactList}\small\item\em window object corresponding to pdamp \end{DoxyCompactList}\item 
+integer \hyperlink{classpolar_af5af16a26a1e990d4e28a1ce5c491178}{wintholed}
+\begin{DoxyCompactList}\small\item\em window object corresponding to tholed \end{DoxyCompactList}\item 
+integer \hyperlink{classpolar_aa5a482c70037e55aa86b48cfd025a2b4}{winjpolar}
+\begin{DoxyCompactList}\small\item\em window object corresponding to jpolar \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classpolar_acb04e27fba4c3f599042c07f6f5c280e}{jpolar}
+\begin{DoxyCompactList}\small\item\em index into polarization parameter matrix for each atom \end{DoxyCompactList}\item 
+real $\ast$8, parameter \hyperlink{classpolar_ac76c3b5b686c0cdb26312751ef275b31}{tinypol} = 1e-\/5
+\begin{DoxyCompactList}\small\item\em negligeable polarisability to allow convergence \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classpolar_a81e82044b89e2acb286689700555d226}{polarity}
+\begin{DoxyCompactList}\small\item\em dipole polarizability for each multipole site (Ang$\ast$$\ast$3) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classpolar_a23a334fc3e13f4c7405f4542ce8926e0}{polarity\-\_\-orig}
+\begin{DoxyCompactList}\small\item\em original dipole polarizability for each multipole site (Ang$\ast$$\ast$3) (lambdadyn) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classpolar_af6a74c3444e3a1608e79dfc5dc17d15a}{thole}
+\begin{DoxyCompactList}\small\item\em Thole polarizability damping value for each site. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classpolar_a55d7218490afd5619f6ae489efa8d659}{pdamp}
+\begin{DoxyCompactList}\small\item\em value of polarizability scale factor for each site \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classpolar_a1f36ef991cd55ae13502480f6b4fd3e4}{tholed}
+\begin{DoxyCompactList}\small\item\em Thole direct polarization damping value for each atom. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpolar_a14c2aa74b13c1c6313c7efb2400c2959}{uind}
+\begin{DoxyCompactList}\small\item\em induced dipole components at each multipole site \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpolar_ab5ed650307b23a70ff6800e88ea64395}{uinp}
+\begin{DoxyCompactList}\small\item\em induced dipoles in field used for energy interactions \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpolar_a3aac24400014242cf0ce82229938a499}{thlval}
+\begin{DoxyCompactList}\small\item\em Thole damping parameter value for each atom type pair. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpolar_a1e698423d3f909c74679eedcb706b3a0}{thdval}
+\begin{DoxyCompactList}\small\item\em alternate Thole direct damping value for atom type pair \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-polar.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classpolar_acb04e27fba4c3f599042c07f6f5c280e}{\index{polar@{polar}!jpolar@{jpolar}}
+\index{jpolar@{jpolar}!polar@{polar}}
+\subsubsection[{jpolar}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer polar\-::jpolar}}\label{classpolar_acb04e27fba4c3f599042c07f6f5c280e}
+
+
+index into polarization parameter matrix for each atom 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a4dab8cc73459eae728463049cf92dd4f}{\index{polar@{polar}!npolar@{npolar}}
+\index{npolar@{npolar}!polar@{polar}}
+\subsubsection[{npolar}]{\setlength{\rightskip}{0pt plus 5cm}integer polar\-::npolar}}\label{classpolar_a4dab8cc73459eae728463049cf92dd4f}
+
+
+total number of polarizable sites in the system 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a55d7218490afd5619f6ae489efa8d659}{\index{polar@{polar}!pdamp@{pdamp}}
+\index{pdamp@{pdamp}!polar@{polar}}
+\subsubsection[{pdamp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer polar\-::pdamp}}\label{classpolar_a55d7218490afd5619f6ae489efa8d659}
+
+
+value of polarizability scale factor for each site 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a81e82044b89e2acb286689700555d226}{\index{polar@{polar}!polarity@{polarity}}
+\index{polarity@{polarity}!polar@{polar}}
+\subsubsection[{polarity}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer polar\-::polarity}}\label{classpolar_a81e82044b89e2acb286689700555d226}
+
+
+dipole polarizability for each multipole site (Ang$\ast$$\ast$3) 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a23a334fc3e13f4c7405f4542ce8926e0}{\index{polar@{polar}!polarity\-\_\-orig@{polarity\-\_\-orig}}
+\index{polarity\-\_\-orig@{polarity\-\_\-orig}!polar@{polar}}
+\subsubsection[{polarity\-\_\-orig}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer polar\-::polarity\-\_\-orig}}\label{classpolar_a23a334fc3e13f4c7405f4542ce8926e0}
+
+
+original dipole polarizability for each multipole site (Ang$\ast$$\ast$3) (lambdadyn) 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a1e698423d3f909c74679eedcb706b3a0}{\index{polar@{polar}!thdval@{thdval}}
+\index{thdval@{thdval}!polar@{polar}}
+\subsubsection[{thdval}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable polar\-::thdval}}\label{classpolar_a1e698423d3f909c74679eedcb706b3a0}
+
+
+alternate Thole direct damping value for atom type pair 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a3aac24400014242cf0ce82229938a499}{\index{polar@{polar}!thlval@{thlval}}
+\index{thlval@{thlval}!polar@{polar}}
+\subsubsection[{thlval}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable polar\-::thlval}}\label{classpolar_a3aac24400014242cf0ce82229938a499}
+
+
+Thole damping parameter value for each atom type pair. 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_af6a74c3444e3a1608e79dfc5dc17d15a}{\index{polar@{polar}!thole@{thole}}
+\index{thole@{thole}!polar@{polar}}
+\subsubsection[{thole}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer polar\-::thole}}\label{classpolar_af6a74c3444e3a1608e79dfc5dc17d15a}
+
+
+Thole polarizability damping value for each site. 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a1f36ef991cd55ae13502480f6b4fd3e4}{\index{polar@{polar}!tholed@{tholed}}
+\index{tholed@{tholed}!polar@{polar}}
+\subsubsection[{tholed}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer polar\-::tholed}}\label{classpolar_a1f36ef991cd55ae13502480f6b4fd3e4}
+
+
+Thole direct polarization damping value for each atom. 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_ac76c3b5b686c0cdb26312751ef275b31}{\index{polar@{polar}!tinypol@{tinypol}}
+\index{tinypol@{tinypol}!polar@{polar}}
+\subsubsection[{tinypol}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, parameter polar\-::tinypol = 1e-\/5}}\label{classpolar_ac76c3b5b686c0cdb26312751ef275b31}
+
+
+negligeable polarisability to allow convergence 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a14c2aa74b13c1c6313c7efb2400c2959}{\index{polar@{polar}!uind@{uind}}
+\index{uind@{uind}!polar@{polar}}
+\subsubsection[{uind}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable polar\-::uind}}\label{classpolar_a14c2aa74b13c1c6313c7efb2400c2959}
+
+
+induced dipole components at each multipole site 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_ab5ed650307b23a70ff6800e88ea64395}{\index{polar@{polar}!uinp@{uinp}}
+\index{uinp@{uinp}!polar@{polar}}
+\subsubsection[{uinp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable polar\-::uinp}}\label{classpolar_ab5ed650307b23a70ff6800e88ea64395}
+
+
+induced dipoles in field used for energy interactions 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_aa5a482c70037e55aa86b48cfd025a2b4}{\index{polar@{polar}!winjpolar@{winjpolar}}
+\index{winjpolar@{winjpolar}!polar@{polar}}
+\subsubsection[{winjpolar}]{\setlength{\rightskip}{0pt plus 5cm}integer polar\-::winjpolar}}\label{classpolar_aa5a482c70037e55aa86b48cfd025a2b4}
+
+
+window object corresponding to jpolar 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a4e3cb4e1ba57dc785e0dd710f69356aa}{\index{polar@{polar}!winpdamp@{winpdamp}}
+\index{winpdamp@{winpdamp}!polar@{polar}}
+\subsubsection[{winpdamp}]{\setlength{\rightskip}{0pt plus 5cm}integer polar\-::winpdamp}}\label{classpolar_a4e3cb4e1ba57dc785e0dd710f69356aa}
+
+
+window object corresponding to pdamp 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_a1d19caa1ebe353c09cab00e519cd3c56}{\index{polar@{polar}!winpolarity@{winpolarity}}
+\index{winpolarity@{winpolarity}!polar@{polar}}
+\subsubsection[{winpolarity}]{\setlength{\rightskip}{0pt plus 5cm}integer polar\-::winpolarity}}\label{classpolar_a1d19caa1ebe353c09cab00e519cd3c56}
+
+
+window object corresponding to polariy 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_ad46b7c78e0b9c2c437c0a53dd330bfba}{\index{polar@{polar}!winpolarity\-\_\-orig@{winpolarity\-\_\-orig}}
+\index{winpolarity\-\_\-orig@{winpolarity\-\_\-orig}!polar@{polar}}
+\subsubsection[{winpolarity\-\_\-orig}]{\setlength{\rightskip}{0pt plus 5cm}integer polar\-::winpolarity\-\_\-orig}}\label{classpolar_ad46b7c78e0b9c2c437c0a53dd330bfba}
+
+
+window object corresponding to polariy\-\_\-orig 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_abab52250380dd4bd332ad37ed36ac192}{\index{polar@{polar}!winthole@{winthole}}
+\index{winthole@{winthole}!polar@{polar}}
+\subsubsection[{winthole}]{\setlength{\rightskip}{0pt plus 5cm}integer polar\-::winthole}}\label{classpolar_abab52250380dd4bd332ad37ed36ac192}
+
+
+window object corresponding to thole 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-polar.\-f90.
+
+\hypertarget{classpolar_af5af16a26a1e990d4e28a1ce5c491178}{\index{polar@{polar}!wintholed@{wintholed}}
+\index{wintholed@{wintholed}!polar@{polar}}
+\subsubsection[{wintholed}]{\setlength{\rightskip}{0pt plus 5cm}integer polar\-::wintholed}}\label{classpolar_af5af16a26a1e990d4e28a1ce5c491178}
+
+
+window object corresponding to tholed 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-polar.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__polar_8f90}{M\-O\-D\-\_\-polar.\-f90}\end{DoxyCompactItemize}

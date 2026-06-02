@@ -1,0 +1,255 @@
+\hypertarget{classdisp}{\section{disp Module Reference}
+\label{classdisp}\index{disp@{disp}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classdisp_a8bb0c7e5f4a883db33504183c37029c2}{ndisp}
+\begin{DoxyCompactList}\small\item\em total number of dispersion sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_aba0f5019751df13bd9365c07af9072ff}{ndisploc}
+\begin{DoxyCompactList}\small\item\em local number of dispersion sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_a2db13494e3d4f5d8b8868a4ad7f36cca}{ndispbloc}
+\begin{DoxyCompactList}\small\item\em local+neighbor number of dispersion sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_a84ad104bb3cd00368e6dce2c46a6443b}{ndisplocnl}
+\begin{DoxyCompactList}\small\item\em localnl number of dispersion sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_a5db554a09f47094dd69a4ff7b4bc2061}{ndisprecloc}
+\begin{DoxyCompactList}\small\item\em local reciprocal number of dispersion sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_a3645c6bd2911d105ae4dd5712b9b44dc}{winidisp}
+\begin{DoxyCompactList}\small\item\em window object corresponding to idisp \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_aa37195cc4b48e320220322d2ce2cf5e5}{wincsix}
+\begin{DoxyCompactList}\small\item\em window object corresponding to csix \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_a496a52cc2d07a7b14d8febbd3975567b}{winadisp}
+\begin{DoxyCompactList}\small\item\em window object corresponding to adisp \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_a020abc5d4a3b714acb851b69b931668e}{windisplist}
+\begin{DoxyCompactList}\small\item\em window object corresponding to displist \end{DoxyCompactList}\item 
+integer \hyperlink{classdisp_ade4be59b02f8bc365b1af045f304bf87}{winnbdisp}
+\begin{DoxyCompactList}\small\item\em window object corresponding to nbdisp \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classdisp_ad3a93472ef6cc24709220caea547db6f}{idisp}
+\begin{DoxyCompactList}\small\item\em number of the atom for each dispersion site \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classdisp_a5e4e29125e6b9523897ffbf9a812fb2c}{displist}
+\begin{DoxyCompactList}\small\item\em number of the dispersion site for each atom \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classdisp_a37d2da77942166e101d189c2ee6b4f8d}{nbdisp}
+\begin{DoxyCompactList}\small\item\em number of dispersion sites before each atom \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classdisp_a4ecfe2ba143fd63d6c823145aa81da9d}{displocnl}
+\begin{DoxyCompactList}\small\item\em glob-\/locnl dispersion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classdisp_a0866d52611a6e50459bf96953cc78fb4}{disprecloc}
+\begin{DoxyCompactList}\small\item\em global-\/local reciprocal dispersion correspondance \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classdisp_a5f79cf27d59c5a6b9f791a5e12e3e9d8}{csixpr}
+\begin{DoxyCompactList}\small\item\em pairwise sum of C6 dispersion coefficients \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classdisp_aa5d199a19305f4f88c604197115716cc}{csix}
+\begin{DoxyCompactList}\small\item\em C6 dispersion coefficient value at each site. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classdisp_a00becba43be1b805d2b819b787fd256b}{adisp}
+\begin{DoxyCompactList}\small\item\em alpha dispersion damping value at each site \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-disp.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classdisp_a00becba43be1b805d2b819b787fd256b}{\index{disp@{disp}!adisp@{adisp}}
+\index{adisp@{adisp}!disp@{disp}}
+\subsubsection[{adisp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer disp\-::adisp}}\label{classdisp_a00becba43be1b805d2b819b787fd256b}
+
+
+alpha dispersion damping value at each site 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_aa5d199a19305f4f88c604197115716cc}{\index{disp@{disp}!csix@{csix}}
+\index{csix@{csix}!disp@{disp}}
+\subsubsection[{csix}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer disp\-::csix}}\label{classdisp_aa5d199a19305f4f88c604197115716cc}
+
+
+C6 dispersion coefficient value at each site. 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a5f79cf27d59c5a6b9f791a5e12e3e9d8}{\index{disp@{disp}!csixpr@{csixpr}}
+\index{csixpr@{csixpr}!disp@{disp}}
+\subsubsection[{csixpr}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 disp\-::csixpr}}\label{classdisp_a5f79cf27d59c5a6b9f791a5e12e3e9d8}
+
+
+pairwise sum of C6 dispersion coefficients 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a5e4e29125e6b9523897ffbf9a812fb2c}{\index{disp@{disp}!displist@{displist}}
+\index{displist@{displist}!disp@{disp}}
+\subsubsection[{displist}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer disp\-::displist}}\label{classdisp_a5e4e29125e6b9523897ffbf9a812fb2c}
+
+
+number of the dispersion site for each atom 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a4ecfe2ba143fd63d6c823145aa81da9d}{\index{disp@{disp}!displocnl@{displocnl}}
+\index{displocnl@{displocnl}!disp@{disp}}
+\subsubsection[{displocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable disp\-::displocnl}}\label{classdisp_a4ecfe2ba143fd63d6c823145aa81da9d}
+
+
+glob-\/locnl dispersion correspondance 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a0866d52611a6e50459bf96953cc78fb4}{\index{disp@{disp}!disprecloc@{disprecloc}}
+\index{disprecloc@{disprecloc}!disp@{disp}}
+\subsubsection[{disprecloc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable disp\-::disprecloc}}\label{classdisp_a0866d52611a6e50459bf96953cc78fb4}
+
+
+global-\/local reciprocal dispersion correspondance 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_ad3a93472ef6cc24709220caea547db6f}{\index{disp@{disp}!idisp@{idisp}}
+\index{idisp@{idisp}!disp@{disp}}
+\subsubsection[{idisp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer disp\-::idisp}}\label{classdisp_ad3a93472ef6cc24709220caea547db6f}
+
+
+number of the atom for each dispersion site 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a37d2da77942166e101d189c2ee6b4f8d}{\index{disp@{disp}!nbdisp@{nbdisp}}
+\index{nbdisp@{nbdisp}!disp@{disp}}
+\subsubsection[{nbdisp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer disp\-::nbdisp}}\label{classdisp_a37d2da77942166e101d189c2ee6b4f8d}
+
+
+number of dispersion sites before each atom 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a8bb0c7e5f4a883db33504183c37029c2}{\index{disp@{disp}!ndisp@{ndisp}}
+\index{ndisp@{ndisp}!disp@{disp}}
+\subsubsection[{ndisp}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::ndisp}}\label{classdisp_a8bb0c7e5f4a883db33504183c37029c2}
+
+
+total number of dispersion sites in the system 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a2db13494e3d4f5d8b8868a4ad7f36cca}{\index{disp@{disp}!ndispbloc@{ndispbloc}}
+\index{ndispbloc@{ndispbloc}!disp@{disp}}
+\subsubsection[{ndispbloc}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::ndispbloc}}\label{classdisp_a2db13494e3d4f5d8b8868a4ad7f36cca}
+
+
+local+neighbor number of dispersion sites in the system 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_aba0f5019751df13bd9365c07af9072ff}{\index{disp@{disp}!ndisploc@{ndisploc}}
+\index{ndisploc@{ndisploc}!disp@{disp}}
+\subsubsection[{ndisploc}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::ndisploc}}\label{classdisp_aba0f5019751df13bd9365c07af9072ff}
+
+
+local number of dispersion sites in the system 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a84ad104bb3cd00368e6dce2c46a6443b}{\index{disp@{disp}!ndisplocnl@{ndisplocnl}}
+\index{ndisplocnl@{ndisplocnl}!disp@{disp}}
+\subsubsection[{ndisplocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::ndisplocnl}}\label{classdisp_a84ad104bb3cd00368e6dce2c46a6443b}
+
+
+localnl number of dispersion sites in the system 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a5db554a09f47094dd69a4ff7b4bc2061}{\index{disp@{disp}!ndisprecloc@{ndisprecloc}}
+\index{ndisprecloc@{ndisprecloc}!disp@{disp}}
+\subsubsection[{ndisprecloc}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::ndisprecloc}}\label{classdisp_a5db554a09f47094dd69a4ff7b4bc2061}
+
+
+local reciprocal number of dispersion sites in the system 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a496a52cc2d07a7b14d8febbd3975567b}{\index{disp@{disp}!winadisp@{winadisp}}
+\index{winadisp@{winadisp}!disp@{disp}}
+\subsubsection[{winadisp}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::winadisp}}\label{classdisp_a496a52cc2d07a7b14d8febbd3975567b}
+
+
+window object corresponding to adisp 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_aa37195cc4b48e320220322d2ce2cf5e5}{\index{disp@{disp}!wincsix@{wincsix}}
+\index{wincsix@{wincsix}!disp@{disp}}
+\subsubsection[{wincsix}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::wincsix}}\label{classdisp_aa37195cc4b48e320220322d2ce2cf5e5}
+
+
+window object corresponding to csix 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a020abc5d4a3b714acb851b69b931668e}{\index{disp@{disp}!windisplist@{windisplist}}
+\index{windisplist@{windisplist}!disp@{disp}}
+\subsubsection[{windisplist}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::windisplist}}\label{classdisp_a020abc5d4a3b714acb851b69b931668e}
+
+
+window object corresponding to displist 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_a3645c6bd2911d105ae4dd5712b9b44dc}{\index{disp@{disp}!winidisp@{winidisp}}
+\index{winidisp@{winidisp}!disp@{disp}}
+\subsubsection[{winidisp}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::winidisp}}\label{classdisp_a3645c6bd2911d105ae4dd5712b9b44dc}
+
+
+window object corresponding to idisp 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-disp.\-f90.
+
+\hypertarget{classdisp_ade4be59b02f8bc365b1af045f304bf87}{\index{disp@{disp}!winnbdisp@{winnbdisp}}
+\index{winnbdisp@{winnbdisp}!disp@{disp}}
+\subsubsection[{winnbdisp}]{\setlength{\rightskip}{0pt plus 5cm}integer disp\-::winnbdisp}}\label{classdisp_ade4be59b02f8bc365b1af045f304bf87}
+
+
+window object corresponding to nbdisp 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-disp.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__disp_8f90}{M\-O\-D\-\_\-disp.\-f90}\end{DoxyCompactItemize}

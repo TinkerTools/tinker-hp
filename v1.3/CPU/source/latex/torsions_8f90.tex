@@ -1,0 +1,172 @@
+\hypertarget{torsions_8f90}{\section{torsions.\-f90 File Reference}
+\label{torsions_8f90}\index{torsions.\-f90@{torsions.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{torsions_8f90_a8037befc59b4f187ddb66aed8b6f44a4}{torsions}
+\begin{DoxyCompactList}\small\item\em finds the total number of dihedral angles and the numbers of the four atoms defining each dihedral angle \end{DoxyCompactList}\item 
+subroutine \hyperlink{torsions_8f90_abda699427afb6a65d214e0bace311f0b}{torsions\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local torsions parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{torsions_8f90_aefb7874b98ffd16aaa3cf626725754cc}{dealloc\-\_\-shared\-\_\-torsions}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for torsions parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{torsions_8f90_a7301543b5e8b8b07d8435835edddc2fb}{alloc\-\_\-shared\-\_\-torsions}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for torsions parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{torsions_8f90_a7301543b5e8b8b07d8435835edddc2fb}{\index{torsions.\-f90@{torsions.\-f90}!alloc\-\_\-shared\-\_\-torsions@{alloc\-\_\-shared\-\_\-torsions}}
+\index{alloc\-\_\-shared\-\_\-torsions@{alloc\-\_\-shared\-\_\-torsions}!torsions.f90@{torsions.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-torsions}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-torsions (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{torsions_8f90_a7301543b5e8b8b07d8435835edddc2fb}
+
+
+allocate shared memory pointers for torsions parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 284 of file torsions.\-f90.
+
+
+
+Referenced by torsions().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{torsions_8f90_a7301543b5e8b8b07d8435835edddc2fb_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{torsions_8f90_aefb7874b98ffd16aaa3cf626725754cc}{\index{torsions.\-f90@{torsions.\-f90}!dealloc\-\_\-shared\-\_\-torsions@{dealloc\-\_\-shared\-\_\-torsions}}
+\index{dealloc\-\_\-shared\-\_\-torsions@{dealloc\-\_\-shared\-\_\-torsions}!torsions.f90@{torsions.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-torsions}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-torsions (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{torsions_8f90_aefb7874b98ffd16aaa3cf626725754cc}
+
+
+deallocate shared memory pointers for torsions parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 149 of file torsions.\-f90.
+
+
+
+Referenced by final(), and torsions().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{torsions_8f90_aefb7874b98ffd16aaa3cf626725754cc_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{torsions_8f90_a8037befc59b4f187ddb66aed8b6f44a4}{\index{torsions.\-f90@{torsions.\-f90}!torsions@{torsions}}
+\index{torsions@{torsions}!torsions.f90@{torsions.\-f90}}
+\subsubsection[{torsions}]{\setlength{\rightskip}{0pt plus 5cm}subroutine torsions (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{torsions_8f90_a8037befc59b4f187ddb66aed8b6f44a4}
+
+
+finds the total number of dihedral angles and the numbers of the four atoms defining each dihedral angle 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file torsions.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-torsions(), dealloc\-\_\-shared\-\_\-torsions(), and fatal().
+
+
+
+Referenced by mechanic(), and rings().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=306pt]{torsions_8f90_a8037befc59b4f187ddb66aed8b6f44a4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{torsions_8f90_a8037befc59b4f187ddb66aed8b6f44a4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{torsions_8f90_abda699427afb6a65d214e0bace311f0b}{\index{torsions.\-f90@{torsions.\-f90}!torsions\-\_\-update@{torsions\-\_\-update}}
+\index{torsions\-\_\-update@{torsions\-\_\-update}!torsions.f90@{torsions.\-f90}}
+\subsubsection[{torsions\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine torsions\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{torsions_8f90_abda699427afb6a65d214e0bace311f0b}
+
+
+update local torsions parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 99 of file torsions.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{torsions_8f90_abda699427afb6a65d214e0bace311f0b_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,8 @@
+<map id="prtxyz" name="prtxyz">
+<area shape="rect" id="node2" href="$numeral_8f90.html#a02f02abcc21a0359f7ef69ae411c78b5" title="converts an input integer number into the corresponding right&#45; or left&#45;justified text numeral ..." alt="" coords="118,19,194,45"/>
+<area shape="rect" id="node5" href="$version_8f90.html#af134ab83c9cbcc8c29d90ef40f081291" title="checks the name of a file about to be opened; if if &quot;old&quot; status is passed, the name of the highest c..." alt="" coords="121,95,191,121"/>
+<area shape="rect" id="node3" href="$number_8f90.html#a133da88aea76390c3f91db1e3a8a4f4b" title="&quot;number&quot; converts a text numeral into an integer value; the input string must contain only numeric ch..." alt="" coords="244,5,316,32"/>
+<area shape="rect" id="node4" href="$trimtext_8f90.html#ad83d9073f809c425ddf7ca256594b68a" title="finds and returns the location of the last non&#45;blank character before the first null character in an ..." alt="" coords="365,56,440,83"/>
+<area shape="rect" id="node6" href="$trimtext_8f90.html#a9ffb5587408536987060bfbffaecb110" title="converts a text string to all lower case letters " alt="" coords="243,56,317,83"/>
+<area shape="rect" id="node7" href="$nextarg_8f90.html#af29521271c4212b0dccb480e8a3d1389" title="&quot;nextarg&quot; finds the next unused command line argument and returns it in the input character string ..." alt="" coords="244,157,316,184"/>
+</map>

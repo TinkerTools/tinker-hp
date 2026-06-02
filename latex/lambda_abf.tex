@@ -1,0 +1,243 @@
+\href{https://doi.org/10.1021/acs.jctc.3c01249}{\tt }
+
+Lambda-\/\-A\-B\-F is an alchemical free-\/energy method, based on lambda-\/dynamics, that consists of the following attributes\-:
+
+
+\begin{DoxyEnumerate}
+\item $ \lambda $ propagation under strongly damped Langevin dynamics with a large mass.
+\item Adaptively biased dynamics in $ \lambda $ through an A\-B\-F (Adaptive Biasing Force) scheme.
+\item Efficient sampling (with minimal computational overhead) of orthogonal space with a multiple walker strategy.
+\item Free-\/energy calculation through the T\-I estimator (in its A\-B\-F version).
+\end{DoxyEnumerate}
+
+The main benefits of this method lie in its user-\/friendliness and sampling efficiency. The user protocol for obtaining free-\/energy estimates is straightforward. The method is supported by the open-\/source Colvars library, where the alchemical parameter is implemented as a new extended variable. This enables the practical manipulation of this coordinate with all the pre-\/existing functionalities of Colvars, including seamless biasing of this and other coordinates. For Absolute Free Energies of Binding, it can be a distance to bound configuration (D\-B\-C) collective variable, which facilitates the definition of the bound state and its sampling. \href{#ref1}{\tt \mbox{[}1,2\mbox{]}} 
+
+
+
+In order to run Lambda-\/\-A\-B\-F simulations with Tinker-\/\-H\-P, the user has to add specific lines to their Keyfile ({\ttfamily $\ast$.key} extension)\-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily lambdadyn}\-: Run a lambda-\/dynamics simulation.
+\item {\ttfamily ligand -\/1 5}\-: Define the list of atoms whose interactions with the environment will be scaled (typically a ligand). Here it will concern the atoms of index (in the {\ttfamily $\ast$.xyz} file) 1 to 5.
+\item {\ttfamily ligand 1 2 3 4 5}\-: Same thing but with an explicit list of atoms.
+\end{DoxyItemize}
+
+If one wants to start a simulation from a predefined $ \lambda $ value {\ttfamily x}, one can add\-: 
+\begin{DoxyCode}
+lambda x
+\end{DoxyCode}
+
+
+By default, Tinker-\/\-H\-P uses van der Waals {\bfseries decoupling} (without modifying the intramolecular vdw interactions). To resort to van der Waals {\bfseries annihilation} (where intramolecular interactions are also scaled down), as done in the Lambda-\/\-A\-B\-F paper, the following line has to be added to the keyfile\-: 
+\begin{DoxyCode}
+\hyperlink{classvdw}{vdw}-annihilate
+\end{DoxyCode}
+
+
+\subsubsection*{Lambda-\/\-Path}
+
+The code offers the possibility to scale down the interactions between the \char`\"{}ligand\char`\"{} and the rest of the system by distinguishing between van der Waals and electrostatics (and polarization) interactions.
+
+It is done by introducing specific $ \lambda $ parameters for each\-: $ \lambda_v $ for van der Waals and $ \lambda_e $ for electrostatics. Each takes a value between 0 and 1 and are functions of the \char`\"{}global\char`\"{} $ \lambda $ parameter following the definition illustrated below.
+
+
+
+The value (of $ \lambda $ ) at which $ \lambda_v $ reaches 1 can be modified by adding the following to the keyfile (here with a value of 0.\-5)\-: 
+\begin{DoxyCode}
+\hyperlink{classbound}{bound}-\hyperlink{classvdw}{vdw}-lambda 0.5
+\end{DoxyCode}
+
+
+The value (of $ \lambda $ ) at which $ \lambda_e $ reaches 0 can be modified by adding the following to the keyfile (here with a value of 0.\-5)\-: 
+\begin{DoxyCode}
+\hyperlink{classbound}{bound}-ele-lambda 0.5
+\end{DoxyCode}
+
+
+\begin{quotation}
+{\bfseries Note\-:} {\ttfamily 0.\-5} is the default value for both of these parameters.
+
+\end{quotation}
+
+
+
+
+For lambda-\/\-A\-B\-F simulations, the user needs to have Colvars linked with Tinker-\/\-H\-P (see Installation), and thus a {\ttfamily $\ast$.colvars} file with the same prefix as the one used for the simulation.
+
+The $ \lambda $ alchemical variable is then defined as an extended variable by putting the following lines in the {\ttfamily $\ast$.colvars} file\-:
+
+
+\begin{DoxyCode}
+1 colvar \{
+2   name l 
+3   extendedLagrangian on
+4   extendedLangevinDamping 1000
+5   extendedtemp 300
+6   extendedmass  150000
+7   lowerBoundary 0.0
+8   upperBoundary 0.5
+9   #lowerBoundary 0.5
+10   #upperBoundary 1.0
+11   reflectingLowerBoundary
+12   reflectingUpperBoundary
+13   width 0.01
+14   alchLambda \{
+15   \}
+16   outputTotalForce
+17   outputAppliedforce
+18   subtractAppliedForce
+19 \}
+\end{DoxyCode}
+
+
+Here, the alchemical variable is named {\ttfamily l} and takes values between 0.\-0 and 0.\-5, which would be the van der Waals leg given the default lambda-\/path (see previous section). Taking values between 0.\-5 and 1.\-0 (two commented lines) would then yield the electrostatics leg in the same setup. The damping and the mass should not be changed (they have been found to give accurate results for a wide range of systems), as well as the width.
+
+The temperature should be the target one in Kelvin (here {\ttfamily 300}).
+
+As an extended collective variable, $ \lambda $ (named {\ttfamily l} in the previous Colvars input) can be used as such in combination with all the features from Colvars (adaptive and fixed bias, combination with other C\-Vs...). \href{#ref3}{\tt \mbox{[}3\mbox{]}} The time-\/evolution of $ \lambda $ will be printed in the {\ttfamily $\ast$.colvars.\-traj} file.
+
+To run a Lambda-\/\-A\-B\-F simulation, one then simply needs to add\-: 
+\begin{DoxyCode}
+1 abf \{
+2   colvars l
+3   fullSamples 5000
+4 \}
+\end{DoxyCode}
+
+
+To run a Lambda-\/\-A\-B\-F-\/\-O\-P\-E\-S simulation, one then simply needs to add\-: 
+\begin{DoxyCode}
+1 opes\_metad \{
+2   name opes\_l
+3   colvars l
+4   newHillFrequency 300
+5   barrier 5
+6   adaptiveSigma on
+7   neighborList on
+8   printTrajectoryFrequency 1000
+9   pmf on
+10   pmfColvars l
+11   pmfHistoryFrequency 1000
+12   outputEnergy on
+13   explore on
+14 \}
+\end{DoxyCode}
+
+
+To run Multiple-\/\-Walker, this becomes\-: 
+\begin{DoxyCode}
+1 abf \{
+2   colvars l
+3   fullSamples 5000
+4   shared
+5   sharedfreq 1000
+6 \}
+\end{DoxyCode}
+
+
+To run Multiple-\/\-Walker (here with 4 walkers), one needs to add the following line to the keyfile\-: 
+\begin{DoxyCode}
+\hyperlink{classreplicas}{replicas} 4
+\end{DoxyCode}
+
+
+As with any A\-B\-F simulation using Colvars, the estimated P\-M\-F as a function of $ \lambda $ can be found in the {\ttfamily $\ast$.pmf} file that is regularly outputted by Colvars. For Multiple-\/\-Walker, it can be found in the {\ttfamily $\ast$.all.\-pmf} file. 
+
+
+
+As a collective variable handled by Colvars, the alchemical variable and any (fixed or adaptive) biased simulation involving it can be restarted using standard {\ttfamily $\ast$.state} files regularly outputted by Colvars. $\ast$(If a state file exists with a $ \lambda $ value, it will have priority over any $ \lambda $ value defined in the key file.)$\ast$
+
+Note that the restarted $ \lambda $ must be in accordance with the configuration, taken from a {\ttfamily $\ast$.dyn} Tinker-\/\-H\-P restart file (when present) or {\ttfamily $\ast$.xyz} file. For this reason, care must be taken when choosing the frequency of restart output for Tinker-\/\-H\-P (in the command line) and in Colvars ({\ttfamily colvars\-Restart\-Frequency} parameter).
+
+\begin{quotation}
+{\bfseries Remark for Multiple-\/\-Walker simulations\-:} When restarting Multiple-\/\-Walker simulations of a \char`\"{}system\char`\"{} with, for example, 3 walkers, you may have both a global restart ({\ttfamily system.\-dyn}) and restarts specific to the walkers ({\ttfamily system\-\_\-reps000.\-dyn}, {\ttfamily system\-\_\-reps001.\-dyn}, {\ttfamily system\-\_\-reps002.\-dyn}). The global one always has priority over the others, and if it exists all the walkers will start from it. Make sure to remove it if you want to use the other ones.
+
+\end{quotation}
+
+
+
+
+For Absolute Free Energies of Binding, one needs to add restraints on the disappearing ligand in order to define a binding mode and to make the simulation converge in the weakly coupled regime. Colvars can be used to define all the existing schemes (such as \char`\"{}\-Boresch\char`\"{} restraints), and also D\-B\-C (Distance to Bound Configuration) as done in the Lambda-\/\-A\-B\-F paper.
+
+A D\-B\-C collective variable is the R\-M\-S\-D of (a subset of atoms of) the ligand in the moving frame of the binding site. A nice feature of D\-B\-C is that it can be defined easily by monitoring a regular M\-D of the complex with the Colvars Dashboard \href{#ref4}{\tt \mbox{[}4\mbox{]}}, and its free energy contribution can be computed numerically in the gas phase as is done in the S\-A\-F\-E\-P approach \href{#ref5}{\tt \mbox{[}5\mbox{]}}.
+
+The definition of a D\-B\-C variable within Colvars typically looks like this (to be added to the Colvars input)\-:
+
+
+\begin{DoxyCode}
+1 colvar \{
+2     name DBC
+3 
+4     rmsd \{
+5         # Reference coordinates (for ligand RMSD computation)
+6         refPositionsFile alchemy\_site.pdb
+7 
+8         atoms \{
+9             atomNumbers 1 3 5 7 9 11 12
+10 
+11             centerReference  yes
+12             rotateReference  yes
+13             fittingGroup \{
+14                 atomNumbers 1207 1315 1370 1386 1556 1566 1599 1616 1730 1827
+15             \}
+16             # Reference coordinates for binding site atoms
+17             refPositionsFile alchemy\_site.pdb
+18         \}
+19     \}
+20 \}
+\end{DoxyCode}
+ 
+
+
+
+All the inputs necessary to run the solvent phase (decoupling in bulk water) of a water molecule (with the A\-M\-O\-E\-B\-A polarizable force field and with the T\-I\-P3\-P rigid water model), as well as the decoupling of a small guest molecule from a host, can be found in the following archive\-:
+
+\href{https://github.com/TinkerTools/tinker-hp/tree/master/v1.2/tutorials/lambda-ABF-example.tar.gz}{\tt lambda-\/\-A\-B\-F-\/example} 
+
+
+
+For any bug report, technical question, or feature request, contact us at\-:
+\begin{DoxyItemize}
+\item \href{mailto:louis.lagardere@sorbonne-universite.fr}{\tt louis.\-lagardere@sorbonne-\/universite.\-fr}
+\item \href{mailto:jerome.henin@cnrs.fr}{\tt jerome.\-henin@cnrs.\-fr}
+\item \href{mailto:jean-philip.piquemal@sorbonne-universite.fr}{\tt jean-\/philip.\-piquemal@sorbonne-\/universite.\-fr} 
+
+
+\end{DoxyItemize}
+
+
+\begin{DoxyCode}
+@article\{lagardere2024lambda,
+  title=\{Lambda-ABF: Simplified, Portable, Accurate, and Cost-Effective Alchemical Free-Energy Computation\}
+      ,
+  author=\{Lagard\{\(\backslash\)`e\}re, Louis and Maurin, Lise and Adjoua, Olivier and El Hage, Krystel and Monmarch\{\(\backslash\)\textcolor{stringliteral}{'e\},
+       Pierre and Piquemal, Jean-Philip and H\{\(\backslash\)'e\}nin, J\{\(\backslash\)'e\}r\{\(\backslash\)^o\}me\},}
+\textcolor{stringliteral}{  journal=\{Journal of Chemical Theory and Computation\},}
+\textcolor{stringliteral}{  year=\{2024\},}
+\textcolor{stringliteral}{  publisher=\{ACS Publications\}}
+\textcolor{stringliteral}{\}}
+\end{DoxyCode}
+ 
+
+
+
+\label{lambda_abf_ref1}%
+\hypertarget{lambda_abf_ref1}{}%
+$\ast$$\ast$\mbox{[}1\mbox{]}$\ast$$\ast$ \href{https://doi.org/10.1021/acs.jctc.3c01249}{\tt Lambda-\/\-A\-B\-F\-: Simplified, Portable, Accurate, and Cost-\/\-Effective Alchemical Free-\/\-Energy Computation} Louis Lagardère, Lise Maurin, Olivier Adjoua, Krystel El Hage, Pierre Monmarché, Jean-\/\-Philip Piquemal, and Jérôme Hénin. {\itshape Journal of Chemical Theory and Computation} 2024 20 (11), 4481-\/4498. D\-O\-I\-: 10.\-1021/acs.jctc.\-3c01249
+
+\label{lambda_abf_ref2}%
+\hypertarget{lambda_abf_ref2}{}%
+$\ast$$\ast$\mbox{[}2\mbox{]}$\ast$$\ast$ \href{https://doi.org/10.1021/acs.jctc.8b00447}{\tt A Streamlined, General Approach for Computing Ligand Binding Free Energies and Its Application to G\-P\-C\-R-\/\-Bound Cholesterol} Reza Salari, Thomas Joseph, Ruchi Lohia, Jérôme Hénin, and Grace Brannigan. {\itshape Journal of Chemical Theory and Computation} 2018 14 (12), 6560-\/6573. D\-O\-I\-: 10.\-1021/acs.jctc.\-8b0044
+
+\label{lambda_abf_ref3}%
+\hypertarget{lambda_abf_ref3}{}%
+$\ast$$\ast$\mbox{[}3\mbox{]}$\ast$$\ast$ \href{https://colvars.github.io/master/colvars-refman-tinkerhp.pdf}{\tt C\-O\-L\-L\-E\-C\-T\-I\-V\-E V\-A\-R\-I\-A\-B\-L\-E\-S M\-O\-D\-U\-L\-E Reference manual for Tinker-\/\-H\-P}
+
+\label{lambda_abf_ref4}%
+\hypertarget{lambda_abf_ref4}{}%
+$\ast$$\ast$\mbox{[}4\mbox{]}$\ast$$\ast$ \href{https://pubs.acs.org/doi/abs/10.1021/acs.jctc.1c01081}{\tt Human Learning for Molecular Simulations\-: The Collective Variables Dashboard in V\-M\-D} Jérôme Hénin, Laura J. S. Lopes, and Giacomo Fiorin. {\itshape Journal of Chemical Theory and Computation} 2022 18 (3), 1945-\/1956. D\-O\-I\-: 10.\-1021/acs.jctc.\-1c01081
+
+\label{lambda_abf_ref5}%
+\hypertarget{lambda_abf_ref5}{}%
+$\ast$$\ast$\mbox{[}5\mbox{]}$\ast$$\ast$ \href{https://livecomsjournal.org/index.php/livecoms/article/view/v5i1e2067}{\tt Computing Absolute Binding Affinities by Streamlined Alchemical Free Energy Perturbation (S\-A\-F\-E\-P)} Santiago-\/\-Mc\-Rae, E., Ebrahimi, M., Sandberg, J. W., Brannigan, G., \& Hénin, J. (2023). \mbox{[}Article v1.\-0\mbox{]}. {\itshape Living Journal of Computational Molecular Science}, 5(1), 2067. \href{https://doi.org/10.33011/livecoms.5.1.2067}{\tt https\-://doi.\-org/10.\-33011/livecoms.\-5.\-1.\-2067} 

@@ -1,0 +1,5 @@
+<map id="etors" name="etors">
+<area shape="rect" id="node2" href="$etors_8f90.html#a9e87f06a367331db8fba351126f1c76a" title="calculates the torsional potential energy using a standard sum of Fourier terms " alt="" coords="110,31,181,57"/>
+<area shape="rect" id="node3" href="$groups_8f90.html#a0c44c6bc5cd8f73c39ef08ac00b0f0ab" title="tests a set of atoms to see if all are members of a single atom group or a pair of atom groups; if so..." alt="" coords="229,5,296,32"/>
+<area shape="rect" id="node4" href="$image_8f90.html#afafb2542d1faa53dbba8933a21da60fa" title="takes the components of pairwise distance between two points in a periodic box and converts to the co..." alt="" coords="231,56,294,83"/>
+</map>

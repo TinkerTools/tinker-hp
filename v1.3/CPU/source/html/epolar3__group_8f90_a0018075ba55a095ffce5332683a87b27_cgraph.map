@@ -1,0 +1,12 @@
+<map id="epreal3_group" name="epreal3_group">
+<area shape="rect" id="node2" href="$damping_8f90.html#a4c033f89e5c4b571ee8e5a7aa724629c" title="generates coefficients for the direct field damping function for powers of the interatomic distance ..." alt="" coords="177,5,253,32"/>
+<area shape="rect" id="node3" href="$damping_8f90.html#a601c8ce9a4d211fbf2339130e5a0a493" title="generates coefficients for the Thole damping function for powers of the interatomic distance ..." alt="" coords="169,56,261,83"/>
+<area shape="rect" id="node4" href="$pressure_8f90.html#a310e39d7ba965f458d4878c4ddd396f6" title="implements a Berendsen barostat by scaling the coordinates and box dimensions via coupling to an exte..." alt="" coords="183,107,247,133"/>
+<area shape="rect" id="node5" href="$classcolvarproxy__tinkerhp.html#a6c0fad6b6be3ac94b260262f5f06ce1b" title="Time step of the simulation (fs) " alt="" coords="309,81,491,108"/>
+<area shape="rect" id="node6" href="$pressure_8f90.html#a2b3badccd64da7ef9ef039b8f8822c8d" title="rescale simulation box (isotropic) " alt="" coords="350,132,450,159"/>
+<area shape="rect" id="node7" href="$lattice_8f90.html#aa8da83134ab24b7028d9e0b5672df9a1" title="stores the periodic box dimensions and sets angle values to be used in computing fractional coordinat..." alt="" coords="577,107,639,133"/>
+<area shape="rect" id="node8" href="$domdecstuff_8f90.html#a4f40c6b2d33a8db818f35420042b1935" title="update of domain decomposition after rescaling of volume due to barostat " alt="" coords="539,157,677,184"/>
+<area shape="rect" id="node9" href="$mpistuff_8f90.html#a9a604af594c58f25234f3ae8c4b47844" title="get the indexes of the particules in the neighboring processes " alt="" coords="735,132,830,159"/>
+<area shape="rect" id="node11" href="$mpistuff_8f90.html#a0bf418e3df3f76e4c5a4e8f9d423353a" title="get the indexes of the particules in the reciprocal processes " alt="" coords="725,183,840,209"/>
+<area shape="rect" id="node10" href="$classcolvarproxy__tinkerhp.html#a9fde421f92cd67c85475a6e68d593038" title="initialization " alt="" coords="888,125,1048,166"/>
+</map>

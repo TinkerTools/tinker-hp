@@ -1,0 +1,10 @@
+<map id="spectra::irspectra" name="spectra::irspectra">
+<area shape="rect" id="node2" href="$classcolvarproxy__tinkerhp.html#a7acc624104cbe9ef60cb90fe5f51018b" title="colvarproxy_tinkerhp\l::boltzmann" alt="" coords="211,5,371,46"/>
+<area shape="rect" id="node3" href="$classspectra.html#a4e7bb730a7f2a0d12befe53d282f4f5a" title="spectra::correct_window\l_spectrum" alt="" coords="201,70,381,111"/>
+<area shape="rect" id="node6" href="$classdeconvolution.html#a0e309ef87c6e2a604bf58bcf2c3a9557" title="deconvolution::deconvolute\l_spectrum_symmetrize" alt="" coords="189,187,392,229"/>
+<area shape="rect" id="node4" href="$classspectra.html#abf83fa40a337b0987dae16f9880e4170" title="spectra::spcfft" alt="" coords="484,92,599,119"/>
+<area shape="rect" id="node5" href="$classspectra.html#a2db6c8f0d284eccd5ae058b715e4f0f2" title="spectra::spcpft" alt="" coords="721,92,839,119"/>
+<area shape="rect" id="node7" href="$classdeconvolution.html#aebbb7f3c86c0fb2e772ad75c4797f494" title="deconvolution::deconvolute\l_spectrum" alt="" coords="440,187,643,229"/>
+<area shape="rect" id="node8" href="$classdeconvolution.html#ab0555563a13a1f0f4a5784d8bd04630e" title="deconvolution::compute\l_rn_ln" alt="" coords="691,173,869,214"/>
+<area shape="rect" id="node9" href="$classdeconvolution.html#afa72e3081738c9001b04859834b4b09b" title="deconvolution::convolution" alt="" coords="918,209,1117,236"/>
+</map>

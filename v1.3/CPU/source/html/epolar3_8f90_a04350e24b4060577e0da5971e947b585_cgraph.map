@@ -1,0 +1,17 @@
+<map id="epreal3d" name="epreal3d">
+<area shape="rect" id="node2" href="$damping_8f90.html#a4c033f89e5c4b571ee8e5a7aa724629c" title="generates coefficients for the direct field damping function for powers of the interatomic distance ..." alt="" coords="146,5,222,32"/>
+<area shape="rect" id="node3" href="$damping_8f90.html#aea60b3e1f71fedad546f4c95df6edecf" title="finds coefficients for error function damping used for Ewald real space interactions ..." alt="" coords="135,56,233,83"/>
+<area shape="rect" id="node6" href="$damping_8f90.html#ae5b94a64d584c9369019b393bed45ba2" title="finds coefficients for the original Thole damping function used by AMOEBA or for the alternate direct..." alt="" coords="134,107,234,133"/>
+<area shape="rect" id="node7" href="$image_8f90.html#afafb2542d1faa53dbba8933a21da60fa" title="takes the components of pairwise distance between two points in a periodic box and converts to the co..." alt="" coords="153,157,215,184"/>
+<area shape="rect" id="node8" href="$pressure_8f90.html#a310e39d7ba965f458d4878c4ddd396f6" title="implements a Berendsen barostat by scaling the coordinates and box dimensions via coupling to an exte..." alt="" coords="152,208,216,235"/>
+<area shape="rect" id="node16" href="$switch_8f90.html#a49f27020ffd762e86d09bbd7bbb5222e" title="sets the coeffcients used by the fifth and seventh order polynomial switching functions for spherical..." alt="" coords="152,259,216,285"/>
+<area shape="rect" id="node4" href="$erf_8f90.html#a562bafa2a6bbcdf9d5034bb87c3a6190" title="computes a numerical approximation to the value of the complementary error function via a Chebyshev a..." alt="" coords="350,56,397,83"/>
+<area shape="rect" id="node5" href="$erf_8f90.html#a3db66269539046169e1596d5b4490fc2" title="&quot;erfcore&quot; evaluates erf(x) or erfc(x) for a real argument x; when called with mode set to 0 it return..." alt="" coords="547,56,615,83"/>
+<area shape="rect" id="node9" href="$classcolvarproxy__tinkerhp.html#a6c0fad6b6be3ac94b260262f5f06ce1b" title="Time step of the simulation (fs) " alt="" coords="283,183,464,209"/>
+<area shape="rect" id="node10" href="$pressure_8f90.html#a2b3badccd64da7ef9ef039b8f8822c8d" title="rescale simulation box (isotropic) " alt="" coords="323,233,423,260"/>
+<area shape="rect" id="node11" href="$lattice_8f90.html#aa8da83134ab24b7028d9e0b5672df9a1" title="stores the periodic box dimensions and sets angle values to be used in computing fractional coordinat..." alt="" coords="550,208,613,235"/>
+<area shape="rect" id="node12" href="$domdecstuff_8f90.html#a4f40c6b2d33a8db818f35420042b1935" title="update of domain decomposition after rescaling of volume due to barostat " alt="" coords="512,259,651,285"/>
+<area shape="rect" id="node13" href="$mpistuff_8f90.html#a9a604af594c58f25234f3ae8c4b47844" title="get the indexes of the particules in the neighboring processes " alt="" coords="709,233,803,260"/>
+<area shape="rect" id="node15" href="$mpistuff_8f90.html#a0bf418e3df3f76e4c5a4e8f9d423353a" title="get the indexes of the particules in the reciprocal processes " alt="" coords="699,284,813,311"/>
+<area shape="rect" id="node14" href="$classcolvarproxy__tinkerhp.html#a9fde421f92cd67c85475a6e68d593038" title="initialization " alt="" coords="861,226,1021,267"/>
+</map>

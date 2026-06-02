@@ -1,0 +1,5 @@
+<map id="distrib_colvars" name="distrib_colvars">
+<area shape="rect" id="node2" href="$mutate_8f90.html#a8a8cb37784baa7e9e5bda6dae37df036" title="constructs the state weighting values vlambda and elambda for the van der Waals and electrostatic int..." alt="" coords="171,31,293,57"/>
+<area shape="rect" id="node3" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="349,5,401,32"/>
+<area shape="rect" id="node4" href="$mutate_8f90.html#a8a0c3ee7abe7f5d00402933102f15a81" title="&quot;altelec&quot; constructs the mutated electrostatic parameters based on the lambda mutation parameter &quot;elm..." alt="" coords="341,56,408,83"/>
+</map>

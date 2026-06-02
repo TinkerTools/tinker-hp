@@ -1,0 +1,128 @@
+\hypertarget{dcinduce__pme2_8f90}{\section{dcinduce\-\_\-pme2.\-f90 File Reference}
+\label{dcinduce__pme2_8f90}\index{dcinduce\-\_\-pme2.\-f90@{dcinduce\-\_\-pme2.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{dcinduce__pme2_8f90_aff76d9b52aa205bda0bef686b8ec5d74}{dcinduce\-\_\-pme2}
+\begin{DoxyCompactList}\small\item\em solve the polarization equations with a D\-C/\-J\-I-\/\-D\-I\-I\-S algorithm, driver \end{DoxyCompactList}\item 
+subroutine \hyperlink{dcinduce__pme2_8f90_a79222b6a72dea1065e9f1731028e965f}{inducedc\-\_\-pme2} (matvec, nrhs, dodiis, ef, mu, murec)
+\begin{DoxyCompactList}\small\item\em solve the polarization equations with a D\-C/\-J\-I-\/\-D\-I\-I\-S algorithm, solver itself \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{dcinduce__pme2_8f90_aff76d9b52aa205bda0bef686b8ec5d74}{\index{dcinduce\-\_\-pme2.\-f90@{dcinduce\-\_\-pme2.\-f90}!dcinduce\-\_\-pme2@{dcinduce\-\_\-pme2}}
+\index{dcinduce\-\_\-pme2@{dcinduce\-\_\-pme2}!dcinduce_pme2.f90@{dcinduce\-\_\-pme2.\-f90}}
+\subsubsection[{dcinduce\-\_\-pme2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dcinduce\-\_\-pme2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{dcinduce__pme2_8f90_aff76d9b52aa205bda0bef686b8ec5d74}
+
+
+solve the polarization equations with a D\-C/\-J\-I-\/\-D\-I\-I\-S algorithm, driver 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 17 of file dcinduce\-\_\-pme2.\-f90.
+
+
+
+References cluster1(), cluster2(), commdirdir(), commfield(), commfield2(), commrecdirdip(), commrecdirfields(), efld0\-\_\-recip(), inducedc\-\_\-pme2(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), otf\-\_\-dc\-\_\-tmatxb\-\_\-pme(), pc\-\_\-dc\-\_\-efld0\-\_\-direct(), pc\-\_\-dc\-\_\-tmatxb\-\_\-pme(), and ulspred().
+
+
+
+Referenced by epolar0c(), epolar1c(), and epolar3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{dcinduce__pme2_8f90_aff76d9b52aa205bda0bef686b8ec5d74_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dcinduce__pme2_8f90_aff76d9b52aa205bda0bef686b8ec5d74_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{dcinduce__pme2_8f90_a79222b6a72dea1065e9f1731028e965f}{\index{dcinduce\-\_\-pme2.\-f90@{dcinduce\-\_\-pme2.\-f90}!inducedc\-\_\-pme2@{inducedc\-\_\-pme2}}
+\index{inducedc\-\_\-pme2@{inducedc\-\_\-pme2}!dcinduce_pme2.f90@{dcinduce\-\_\-pme2.\-f90}}
+\subsubsection[{inducedc\-\_\-pme2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducedc\-\_\-pme2 (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiis, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{murec}
+\end{DoxyParamCaption}
+)}}\label{dcinduce__pme2_8f90_a79222b6a72dea1065e9f1731028e965f}
+
+
+solve the polarization equations with a D\-C/\-J\-I-\/\-D\-I\-I\-S algorithm, solver itself 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side vectors \\
+\hline
+\mbox{\tt in}  & {\em dodiis,\-:} & use D\-I\-I\-S extrapolation or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & right hand side (permanent electric field) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & solution vector (part corresponding to local domain in direct space) \\
+\hline
+\mbox{\tt in}  & {\em murec,\-:} & solution vector (part corresponding to local domain in recip space) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 303 of file dcinduce\-\_\-pme2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirsolv(), diis(), extrap(), no\-\_\-com\-\_\-diis(), and tmatxbrecip().
+
+
+
+Referenced by dcinduce\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dcinduce__pme2_8f90_a79222b6a72dea1065e9f1731028e965f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dcinduce__pme2_8f90_a79222b6a72dea1065e9f1731028e965f_icgraph}
+\end{center}
+\end{figure}
+
+

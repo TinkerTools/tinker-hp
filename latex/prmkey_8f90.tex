@@ -1,0 +1,98 @@
+\hypertarget{prmkey_8f90}{\section{prmkey.\-f90 File Reference}
+\label{prmkey_8f90}\index{prmkey.\-f90@{prmkey.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{prmkey_8f90_afb7c402170dc7737c359ecadf9c0786f}{prmkey} (text)
+\begin{DoxyCompactList}\small\item\em parses a text string to extract keywords related to force field potential energy functional forms and constants \end{DoxyCompactList}\item 
+subroutine \hyperlink{prmkey_8f90_abc93d08d00406a823bbae3eb8007a585}{potoff}
+\begin{DoxyCompactList}\small\item\em clears the forcefield definition by turning off the use of each of the potential energy functions \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{prmkey_8f90_abc93d08d00406a823bbae3eb8007a585}{\index{prmkey.\-f90@{prmkey.\-f90}!potoff@{potoff}}
+\index{potoff@{potoff}!prmkey.f90@{prmkey.\-f90}}
+\subsubsection[{potoff}]{\setlength{\rightskip}{0pt plus 5cm}subroutine potoff (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{prmkey_8f90_abc93d08d00406a823bbae3eb8007a585}
+
+
+clears the forcefield definition by turning off the use of each of the potential energy functions 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 546 of file prmkey.\-f90.
+
+
+
+Referenced by prmkey().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{prmkey_8f90_abc93d08d00406a823bbae3eb8007a585_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{prmkey_8f90_afb7c402170dc7737c359ecadf9c0786f}{\index{prmkey.\-f90@{prmkey.\-f90}!prmkey@{prmkey}}
+\index{prmkey@{prmkey}!prmkey.f90@{prmkey.\-f90}}
+\subsubsection[{prmkey}]{\setlength{\rightskip}{0pt plus 5cm}subroutine prmkey (
+\begin{DoxyParamCaption}
+\item[{character$\ast$240}]{text}
+\end{DoxyParamCaption}
+)}}\label{prmkey_8f90_afb7c402170dc7737c359ecadf9c0786f}
+
+
+parses a text string to extract keywords related to force field potential energy functional forms and constants 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em text,\-:} & string to be parsed \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file prmkey.\-f90.
+
+
+
+References gettext(), getword(), potoff(), and upcase().
+
+
+
+Referenced by field(), and readprm().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{prmkey_8f90_afb7c402170dc7737c359ecadf9c0786f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{prmkey_8f90_afb7c402170dc7737c359ecadf9c0786f_icgraph}
+\end{center}
+\end{figure}
+
+

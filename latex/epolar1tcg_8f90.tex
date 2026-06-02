@@ -1,0 +1,113 @@
+\hypertarget{epolar1tcg_8f90}{\section{epolar1tcg.\-f90 File Reference}
+\label{epolar1tcg_8f90}\index{epolar1tcg.\-f90@{epolar1tcg.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{epolar1tcg_8f90_af93fcca23bb305c4a7152c5fca45088b}{epolar1tcg}
+\begin{DoxyCompactList}\small\item\em calculates the induced dipole polarization energy and gradients with the tcg method \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1tcg_8f90_acf5fe6436c5a9ab31886ea036ec48508}{epolar1tcg1}
+\begin{DoxyCompactList}\small\item\em calculates the induced dipole polarization gradients with the tcg1 method \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{epolar1tcg_8f90_af93fcca23bb305c4a7152c5fca45088b}{\index{epolar1tcg.\-f90@{epolar1tcg.\-f90}!epolar1tcg@{epolar1tcg}}
+\index{epolar1tcg@{epolar1tcg}!epolar1tcg.f90@{epolar1tcg.\-f90}}
+\subsubsection[{epolar1tcg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg_8f90_af93fcca23bb305c4a7152c5fca45088b}
+
+
+calculates the induced dipole polarization energy and gradients with the tcg method 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 19 of file epolar1tcg.\-f90.
+
+
+
+References epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg1shortreal(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2bisshortreal(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2cinqshortreal(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2quatshortreal(), epolar1tcg2shortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar1tcg2tershortreal(), fatal(), and omegafit().
+
+
+
+Referenced by epolar1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1tcg_8f90_af93fcca23bb305c4a7152c5fca45088b_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg_8f90_af93fcca23bb305c4a7152c5fca45088b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg_8f90_acf5fe6436c5a9ab31886ea036ec48508}{\index{epolar1tcg.\-f90@{epolar1tcg.\-f90}!epolar1tcg1@{epolar1tcg1}}
+\index{epolar1tcg1@{epolar1tcg1}!epolar1tcg.f90@{epolar1tcg.\-f90}}
+\subsubsection[{epolar1tcg1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg_8f90_acf5fe6436c5a9ab31886ea036ec48508}
+
+
+calculates the induced dipole polarization gradients with the tcg1 method 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 125 of file epolar1tcg.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), commrecdirsolv(), dbletmatxb\-\_\-pme(), diagvec(), diagvec2(), efld0\-\_\-direct(), efld0\-\_\-recip(), fftthatplz(), fftthatplz2(), scalderfieldzmat1(), scalderfieldzmat3(), scalderfieldzmatrec1(), scalderfieldzmatrec3(), sprod(), tmatxb\-\_\-pme(), tmatxbrecip(), tmatxbrecipsave(), torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1tcg_8f90_acf5fe6436c5a9ab31886ea036ec48508_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg_8f90_acf5fe6436c5a9ab31886ea036ec48508_icgraph}
+\end{center}
+\end{figure}
+
+

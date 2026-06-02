@@ -1,0 +1,168 @@
+\hypertarget{angles_8f90}{\section{angles.\-f90 File Reference}
+\label{angles_8f90}\index{angles.\-f90@{angles.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{angles_8f90_a9009a57a33d9f6f31944a675e22e5f38}{angles}
+\begin{DoxyCompactList}\small\item\em \char`\"{}angles\char`\"{} finds the total number of bond angles and stores the atom numbers of the atoms defining each angle; for each angle to a trivalent central atom, the third bonded atom is stored for use in out-\/of-\/plane bending \end{DoxyCompactList}\item 
+subroutine \hyperlink{angles_8f90_acd35182a451b0bd3f6f489bc0bd6ebd3}{angles\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local angles \end{DoxyCompactList}\item 
+subroutine \hyperlink{angles_8f90_a18cbf3a18661418d0c41a53a33afae7a}{dealloc\-\_\-shared\-\_\-angles}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for angles parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{angles_8f90_ae80cb65ea022564aec5e6cdfa23a1b45}{alloc\-\_\-shared\-\_\-angles}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{angles_8f90_ae80cb65ea022564aec5e6cdfa23a1b45}{\index{angles.\-f90@{angles.\-f90}!alloc\-\_\-shared\-\_\-angles@{alloc\-\_\-shared\-\_\-angles}}
+\index{alloc\-\_\-shared\-\_\-angles@{alloc\-\_\-shared\-\_\-angles}!angles.f90@{angles.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-angles}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-angles (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{angles_8f90_ae80cb65ea022564aec5e6cdfa23a1b45}
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 285 of file angles.\-f90.
+
+
+
+Referenced by angles().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{angles_8f90_ae80cb65ea022564aec5e6cdfa23a1b45_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{angles_8f90_a9009a57a33d9f6f31944a675e22e5f38}{\index{angles.\-f90@{angles.\-f90}!angles@{angles}}
+\index{angles@{angles}!angles.f90@{angles.\-f90}}
+\subsubsection[{angles}]{\setlength{\rightskip}{0pt plus 5cm}subroutine angles (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{angles_8f90_a9009a57a33d9f6f31944a675e22e5f38}
+
+
+\char`\"{}angles\char`\"{} finds the total number of bond angles and stores the atom numbers of the atoms defining each angle; for each angle to a trivalent central atom, the third bonded atom is stored for use in out-\/of-\/plane bending 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 25 of file angles.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-angles(), dealloc\-\_\-shared\-\_\-angles(), and fatal().
+
+
+
+Referenced by mechanic(), and rings().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=294pt]{angles_8f90_a9009a57a33d9f6f31944a675e22e5f38_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{angles_8f90_a9009a57a33d9f6f31944a675e22e5f38_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{angles_8f90_acd35182a451b0bd3f6f489bc0bd6ebd3}{\index{angles.\-f90@{angles.\-f90}!angles\-\_\-update@{angles\-\_\-update}}
+\index{angles\-\_\-update@{angles\-\_\-update}!angles.f90@{angles.\-f90}}
+\subsubsection[{angles\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine angles\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{angles_8f90_acd35182a451b0bd3f6f489bc0bd6ebd3}
+
+
+update local angles 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 110 of file angles.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{angles_8f90_acd35182a451b0bd3f6f489bc0bd6ebd3_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{angles_8f90_a18cbf3a18661418d0c41a53a33afae7a}{\index{angles.\-f90@{angles.\-f90}!dealloc\-\_\-shared\-\_\-angles@{dealloc\-\_\-shared\-\_\-angles}}
+\index{dealloc\-\_\-shared\-\_\-angles@{dealloc\-\_\-shared\-\_\-angles}!angles.f90@{angles.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-angles}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-angles (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{angles_8f90_a18cbf3a18661418d0c41a53a33afae7a}
+
+
+deallocate shared memory pointers for angles parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 149 of file angles.\-f90.
+
+
+
+Referenced by angles(), and final().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{angles_8f90_a18cbf3a18661418d0c41a53a33afae7a_icgraph}
+\end{center}
+\end{figure}
+
+

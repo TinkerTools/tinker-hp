@@ -1,0 +1,200 @@
+\hypertarget{shakeup_8f90}{\section{shakeup.\-f90 File Reference}
+\label{shakeup_8f90}\index{shakeup.\-f90@{shakeup.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{shakeup_8f90_a31acd11cea25519cd3686c92296a70c3}{shakeup}
+\begin{DoxyCompactList}\small\item\em initializes any holonomic constraints for use with the R\-A\-T\-T\-L\-E algorithm during molecular dynamics \end{DoxyCompactList}\item 
+subroutine \hyperlink{shakeup_8f90_a1f3c3f2c1f30c2484a354bdfe9430549}{shakeup\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local shakeup parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{shakeup_8f90_a095c1b44548c59261cf1acb588a4ea0c}{chkangle} (ia, ib, ic)
+\begin{DoxyCompactList}\small\item\em tests angles to be constrained for their presence in small rings and removes constraints that are redundant \end{DoxyCompactList}\item 
+subroutine \hyperlink{shakeup_8f90_ae0508af519165261c68531719e5c2803}{dealloc\-\_\-shared\-\_\-shake}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for rattle parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{shakeup_8f90_a18eb5d657764060c65b5c427d0646be1}{alloc\-\_\-shared\-\_\-shake}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for rattle parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{shakeup_8f90_a18eb5d657764060c65b5c427d0646be1}{\index{shakeup.\-f90@{shakeup.\-f90}!alloc\-\_\-shared\-\_\-shake@{alloc\-\_\-shared\-\_\-shake}}
+\index{alloc\-\_\-shared\-\_\-shake@{alloc\-\_\-shared\-\_\-shake}!shakeup.f90@{shakeup.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-shake}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-shake (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{shakeup_8f90_a18eb5d657764060c65b5c427d0646be1}
+
+
+allocate shared memory pointers for rattle parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 602 of file shakeup.\-f90.
+
+\hypertarget{shakeup_8f90_a095c1b44548c59261cf1acb588a4ea0c}{\index{shakeup.\-f90@{shakeup.\-f90}!chkangle@{chkangle}}
+\index{chkangle@{chkangle}!shakeup.f90@{shakeup.\-f90}}
+\subsubsection[{chkangle}]{\setlength{\rightskip}{0pt plus 5cm}subroutine chkangle (
+\begin{DoxyParamCaption}
+\item[{integer}]{ia, }
+\item[{integer}]{ib, }
+\item[{integer}]{ic}
+\end{DoxyParamCaption}
+)}}\label{shakeup_8f90_a095c1b44548c59261cf1acb588a4ea0c}
+
+
+tests angles to be constrained for their presence in small rings and removes constraints that are redundant 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ia,\-:} & index of the first atom \\
+\hline
+\mbox{\tt in}  & {\em ib,\-:} & index of the second atom \\
+\hline
+\mbox{\tt in}  & {\em ic,\-:} & index of the third atom \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 485 of file shakeup.\-f90.
+
+
+
+Referenced by shakeup().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{shakeup_8f90_a095c1b44548c59261cf1acb588a4ea0c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{shakeup_8f90_ae0508af519165261c68531719e5c2803}{\index{shakeup.\-f90@{shakeup.\-f90}!dealloc\-\_\-shared\-\_\-shake@{dealloc\-\_\-shared\-\_\-shake}}
+\index{dealloc\-\_\-shared\-\_\-shake@{dealloc\-\_\-shared\-\_\-shake}!shakeup.f90@{shakeup.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-shake}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-shake (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{shakeup_8f90_ae0508af519165261c68531719e5c2803}
+
+
+deallocate shared memory pointers for rattle parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 558 of file shakeup.\-f90.
+
+\hypertarget{shakeup_8f90_a31acd11cea25519cd3686c92296a70c3}{\index{shakeup.\-f90@{shakeup.\-f90}!shakeup@{shakeup}}
+\index{shakeup@{shakeup}!shakeup.f90@{shakeup.\-f90}}
+\subsubsection[{shakeup}]{\setlength{\rightskip}{0pt plus 5cm}subroutine shakeup (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{shakeup_8f90_a31acd11cea25519cd3686c92296a70c3}
+
+
+initializes any holonomic constraints for use with the R\-A\-T\-T\-L\-E algorithm during molecular dynamics 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file shakeup.\-f90.
+
+
+
+References chkangle(), getnumb(), gettext(), getword(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{shakeup_8f90_a31acd11cea25519cd3686c92296a70c3_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{shakeup_8f90_a31acd11cea25519cd3686c92296a70c3_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{shakeup_8f90_a1f3c3f2c1f30c2484a354bdfe9430549}{\index{shakeup.\-f90@{shakeup.\-f90}!shakeup\-\_\-update@{shakeup\-\_\-update}}
+\index{shakeup\-\_\-update@{shakeup\-\_\-update}!shakeup.f90@{shakeup.\-f90}}
+\subsubsection[{shakeup\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine shakeup\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{shakeup_8f90_a1f3c3f2c1f30c2484a354bdfe9430549}
+
+
+update local shakeup parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 371 of file shakeup.\-f90.
+
+
+
+References ctfvec(), fatal(), and image().
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=262pt]{shakeup_8f90_a1f3c3f2c1f30c2484a354bdfe9430549_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{shakeup_8f90_a1f3c3f2c1f30c2484a354bdfe9430549_icgraph}
+\end{center}
+\end{figure}
+
+

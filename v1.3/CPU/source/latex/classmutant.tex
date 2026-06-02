@@ -1,0 +1,373 @@
+\hypertarget{classmutant}{\section{mutant Module Reference}
+\label{classmutant}\index{mutant@{mutant}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classmutant_a3d601d8dbb74b427005f7a8ffade0b8b}{nmut}
+\begin{DoxyCompactList}\small\item\em number of atoms mutated from initial to final state \end{DoxyCompactList}\item 
+integer \hyperlink{classmutant_a15145ccb3bf4a6c9120785ac8a2f42b0}{vcouple}
+\begin{DoxyCompactList}\small\item\em van der Waals lambda type (0=decouple, 1=annihilate) \end{DoxyCompactList}\item 
+integer \hyperlink{classmutant_a01da112336651cd662fc2199857d9a2f}{winimut}
+\begin{DoxyCompactList}\small\item\em window object corresponding to imut \end{DoxyCompactList}\item 
+integer \hyperlink{classmutant_ad540d3dcb17e0e3dcd4674743672942b}{wintype0}
+\begin{DoxyCompactList}\small\item\em window object corresponding to type0 \end{DoxyCompactList}\item 
+integer \hyperlink{classmutant_aea9b816b3d0450deccd506db35f6824a}{winclass0}
+\begin{DoxyCompactList}\small\item\em window object corresponding to class0 \end{DoxyCompactList}\item 
+integer \hyperlink{classmutant_a210d11cc8e127e58049730c9383c3e01}{wintype1}
+\begin{DoxyCompactList}\small\item\em window object corresponding to type1 \end{DoxyCompactList}\item 
+integer \hyperlink{classmutant_af2055950a249a214a70d10531d910860}{winclass1}
+\begin{DoxyCompactList}\small\item\em window object corresponding to class1 \end{DoxyCompactList}\item 
+integer \hyperlink{classmutant_ae48640c836c4fc4f4c88cece6491e98c}{winmut}
+\begin{DoxyCompactList}\small\item\em window object corresponding to mut \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmutant_a32601bca144d0e52789fc6ea96a7767a}{type1}
+\begin{DoxyCompactList}\small\item\em atom type of each atom in the final state system \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmutant_ac7c18bbd9d33ced2a6f0aee1097b927f}{class1}
+\begin{DoxyCompactList}\small\item\em atom class of each atom in the final state system \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmutant_a4757b139279f9001d6119ef90302f77e}{imut}
+\begin{DoxyCompactList}\small\item\em atomic sites differing in initial and final state \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmutant_a6fc403c4284262ec13d260154dc672be}{type0}
+\begin{DoxyCompactList}\small\item\em atom type of each atom in the initial state system \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmutant_a1d5964a9c3f4e954ed53b36f8fc119cd}{class0}
+\begin{DoxyCompactList}\small\item\em atom class of each atom in the initial state system \end{DoxyCompactList}\item 
+logical, dimension(\-:), pointer \hyperlink{classmutant_ae0c38ddd61deb335a7d9e16315c7e4c7}{mut}
+\begin{DoxyCompactList}\small\item\em true if an atom is to be mutated, false otherwise \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_adee687e0840c070a419397c427a8af9a}{lambda}
+\begin{DoxyCompactList}\small\item\em generic weighting between initial and final states \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_a36e3043de18b146a6010b9a3fbf02136}{vlambda}
+\begin{DoxyCompactList}\small\item\em state weighting value for electrostatic potentials \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_a2ff148e7bea3c2bd798ac5b5d1b82077}{elambda}
+\begin{DoxyCompactList}\small\item\em state weighting value for van der Waals potentials \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_ad09b1660ee7cf2b19032e29646050709}{tlambda}
+\begin{DoxyCompactList}\small\item\em state weighting value for torsional potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_abfb067bfd2af142a9515f2cc61fc35b1}{scexp}
+\begin{DoxyCompactList}\small\item\em softcore vdw parameter for vdw Halgren potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_abad0ffe3a5429d56f8ea16467ad1268d}{scalpha}
+\begin{DoxyCompactList}\small\item\em softcore vdw parameter for vdw Halgren and L\-J potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_ac9c6937ee255a5b25c9faa8d1ba4467e}{sck}
+\begin{DoxyCompactList}\small\item\em softcore main exponent \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_a2832686319ff2d15ef7f57c25b0e52f5}{sct}
+\begin{DoxyCompactList}\small\item\em softcore external lambda exponent \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_a1ba7a9ba70c79b70c1b56e81810237c6}{scs}
+\begin{DoxyCompactList}\small\item\em softcore internal lambda exponent \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_a2fc9516c774c42c250c40ea663059747}{bvlambda}
+\begin{DoxyCompactList}\small\item\em intervall bound for state weighting value vlambda \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_a6e1ac466a4ab5d849a19af6216765580}{belambda}
+\begin{DoxyCompactList}\small\item\em intervall bound for state weighting value elambda \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmutant_a5497c64fcddcac4e3da0f8aca807d3ed}{flambdabias}
+\begin{DoxyCompactList}\small\item\em scalar bias to be applied to flambda (osrw) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classmutant_a649a0a7d93f9794e9bcd1ce69926cef9}{deflambda}
+\begin{DoxyCompactList}\small\item\em derivative of direct permanent field wrt elambda \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-mutant.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classmutant_a6e1ac466a4ab5d849a19af6216765580}{\index{mutant@{mutant}!belambda@{belambda}}
+\index{belambda@{belambda}!mutant@{mutant}}
+\subsubsection[{belambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::belambda}}\label{classmutant_a6e1ac466a4ab5d849a19af6216765580}
+
+
+intervall bound for state weighting value elambda 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a2fc9516c774c42c250c40ea663059747}{\index{mutant@{mutant}!bvlambda@{bvlambda}}
+\index{bvlambda@{bvlambda}!mutant@{mutant}}
+\subsubsection[{bvlambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::bvlambda}}\label{classmutant_a2fc9516c774c42c250c40ea663059747}
+
+
+intervall bound for state weighting value vlambda 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a1d5964a9c3f4e954ed53b36f8fc119cd}{\index{mutant@{mutant}!class0@{class0}}
+\index{class0@{class0}!mutant@{mutant}}
+\subsubsection[{class0}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mutant\-::class0}}\label{classmutant_a1d5964a9c3f4e954ed53b36f8fc119cd}
+
+
+atom class of each atom in the initial state system 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_ac7c18bbd9d33ced2a6f0aee1097b927f}{\index{mutant@{mutant}!class1@{class1}}
+\index{class1@{class1}!mutant@{mutant}}
+\subsubsection[{class1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mutant\-::class1}}\label{classmutant_ac7c18bbd9d33ced2a6f0aee1097b927f}
+
+
+atom class of each atom in the final state system 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a649a0a7d93f9794e9bcd1ce69926cef9}{\index{mutant@{mutant}!deflambda@{deflambda}}
+\index{deflambda@{deflambda}!mutant@{mutant}}
+\subsubsection[{deflambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable mutant\-::deflambda}}\label{classmutant_a649a0a7d93f9794e9bcd1ce69926cef9}
+
+
+derivative of direct permanent field wrt elambda 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a2ff148e7bea3c2bd798ac5b5d1b82077}{\index{mutant@{mutant}!elambda@{elambda}}
+\index{elambda@{elambda}!mutant@{mutant}}
+\subsubsection[{elambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::elambda}}\label{classmutant_a2ff148e7bea3c2bd798ac5b5d1b82077}
+
+
+state weighting value for van der Waals potentials 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a5497c64fcddcac4e3da0f8aca807d3ed}{\index{mutant@{mutant}!flambdabias@{flambdabias}}
+\index{flambdabias@{flambdabias}!mutant@{mutant}}
+\subsubsection[{flambdabias}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::flambdabias}}\label{classmutant_a5497c64fcddcac4e3da0f8aca807d3ed}
+
+
+scalar bias to be applied to flambda (osrw) 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a4757b139279f9001d6119ef90302f77e}{\index{mutant@{mutant}!imut@{imut}}
+\index{imut@{imut}!mutant@{mutant}}
+\subsubsection[{imut}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mutant\-::imut}}\label{classmutant_a4757b139279f9001d6119ef90302f77e}
+
+
+atomic sites differing in initial and final state 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_adee687e0840c070a419397c427a8af9a}{\index{mutant@{mutant}!lambda@{lambda}}
+\index{lambda@{lambda}!mutant@{mutant}}
+\subsubsection[{lambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::lambda}}\label{classmutant_adee687e0840c070a419397c427a8af9a}
+
+
+generic weighting between initial and final states 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_ae0c38ddd61deb335a7d9e16315c7e4c7}{\index{mutant@{mutant}!mut@{mut}}
+\index{mut@{mut}!mutant@{mutant}}
+\subsubsection[{mut}]{\setlength{\rightskip}{0pt plus 5cm}logical, dimension(\-:), pointer mutant\-::mut}}\label{classmutant_ae0c38ddd61deb335a7d9e16315c7e4c7}
+
+
+true if an atom is to be mutated, false otherwise 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a3d601d8dbb74b427005f7a8ffade0b8b}{\index{mutant@{mutant}!nmut@{nmut}}
+\index{nmut@{nmut}!mutant@{mutant}}
+\subsubsection[{nmut}]{\setlength{\rightskip}{0pt plus 5cm}integer mutant\-::nmut}}\label{classmutant_a3d601d8dbb74b427005f7a8ffade0b8b}
+
+
+number of atoms mutated from initial to final state 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_abad0ffe3a5429d56f8ea16467ad1268d}{\index{mutant@{mutant}!scalpha@{scalpha}}
+\index{scalpha@{scalpha}!mutant@{mutant}}
+\subsubsection[{scalpha}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::scalpha}}\label{classmutant_abad0ffe3a5429d56f8ea16467ad1268d}
+
+
+softcore vdw parameter for vdw Halgren and L\-J potential 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_abfb067bfd2af142a9515f2cc61fc35b1}{\index{mutant@{mutant}!scexp@{scexp}}
+\index{scexp@{scexp}!mutant@{mutant}}
+\subsubsection[{scexp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::scexp}}\label{classmutant_abfb067bfd2af142a9515f2cc61fc35b1}
+
+
+softcore vdw parameter for vdw Halgren potential 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_ac9c6937ee255a5b25c9faa8d1ba4467e}{\index{mutant@{mutant}!sck@{sck}}
+\index{sck@{sck}!mutant@{mutant}}
+\subsubsection[{sck}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::sck}}\label{classmutant_ac9c6937ee255a5b25c9faa8d1ba4467e}
+
+
+softcore main exponent 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a1ba7a9ba70c79b70c1b56e81810237c6}{\index{mutant@{mutant}!scs@{scs}}
+\index{scs@{scs}!mutant@{mutant}}
+\subsubsection[{scs}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::scs}}\label{classmutant_a1ba7a9ba70c79b70c1b56e81810237c6}
+
+
+softcore internal lambda exponent 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a2832686319ff2d15ef7f57c25b0e52f5}{\index{mutant@{mutant}!sct@{sct}}
+\index{sct@{sct}!mutant@{mutant}}
+\subsubsection[{sct}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::sct}}\label{classmutant_a2832686319ff2d15ef7f57c25b0e52f5}
+
+
+softcore external lambda exponent 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_ad09b1660ee7cf2b19032e29646050709}{\index{mutant@{mutant}!tlambda@{tlambda}}
+\index{tlambda@{tlambda}!mutant@{mutant}}
+\subsubsection[{tlambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::tlambda}}\label{classmutant_ad09b1660ee7cf2b19032e29646050709}
+
+
+state weighting value for torsional potential 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a6fc403c4284262ec13d260154dc672be}{\index{mutant@{mutant}!type0@{type0}}
+\index{type0@{type0}!mutant@{mutant}}
+\subsubsection[{type0}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mutant\-::type0}}\label{classmutant_a6fc403c4284262ec13d260154dc672be}
+
+
+atom type of each atom in the initial state system 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a32601bca144d0e52789fc6ea96a7767a}{\index{mutant@{mutant}!type1@{type1}}
+\index{type1@{type1}!mutant@{mutant}}
+\subsubsection[{type1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mutant\-::type1}}\label{classmutant_a32601bca144d0e52789fc6ea96a7767a}
+
+
+atom type of each atom in the final state system 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a15145ccb3bf4a6c9120785ac8a2f42b0}{\index{mutant@{mutant}!vcouple@{vcouple}}
+\index{vcouple@{vcouple}!mutant@{mutant}}
+\subsubsection[{vcouple}]{\setlength{\rightskip}{0pt plus 5cm}integer mutant\-::vcouple}}\label{classmutant_a15145ccb3bf4a6c9120785ac8a2f42b0}
+
+
+van der Waals lambda type (0=decouple, 1=annihilate) 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a36e3043de18b146a6010b9a3fbf02136}{\index{mutant@{mutant}!vlambda@{vlambda}}
+\index{vlambda@{vlambda}!mutant@{mutant}}
+\subsubsection[{vlambda}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mutant\-::vlambda}}\label{classmutant_a36e3043de18b146a6010b9a3fbf02136}
+
+
+state weighting value for electrostatic potentials 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_aea9b816b3d0450deccd506db35f6824a}{\index{mutant@{mutant}!winclass0@{winclass0}}
+\index{winclass0@{winclass0}!mutant@{mutant}}
+\subsubsection[{winclass0}]{\setlength{\rightskip}{0pt plus 5cm}integer mutant\-::winclass0}}\label{classmutant_aea9b816b3d0450deccd506db35f6824a}
+
+
+window object corresponding to class0 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_af2055950a249a214a70d10531d910860}{\index{mutant@{mutant}!winclass1@{winclass1}}
+\index{winclass1@{winclass1}!mutant@{mutant}}
+\subsubsection[{winclass1}]{\setlength{\rightskip}{0pt plus 5cm}integer mutant\-::winclass1}}\label{classmutant_af2055950a249a214a70d10531d910860}
+
+
+window object corresponding to class1 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a01da112336651cd662fc2199857d9a2f}{\index{mutant@{mutant}!winimut@{winimut}}
+\index{winimut@{winimut}!mutant@{mutant}}
+\subsubsection[{winimut}]{\setlength{\rightskip}{0pt plus 5cm}integer mutant\-::winimut}}\label{classmutant_a01da112336651cd662fc2199857d9a2f}
+
+
+window object corresponding to imut 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_ae48640c836c4fc4f4c88cece6491e98c}{\index{mutant@{mutant}!winmut@{winmut}}
+\index{winmut@{winmut}!mutant@{mutant}}
+\subsubsection[{winmut}]{\setlength{\rightskip}{0pt plus 5cm}integer mutant\-::winmut}}\label{classmutant_ae48640c836c4fc4f4c88cece6491e98c}
+
+
+window object corresponding to mut 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_ad540d3dcb17e0e3dcd4674743672942b}{\index{mutant@{mutant}!wintype0@{wintype0}}
+\index{wintype0@{wintype0}!mutant@{mutant}}
+\subsubsection[{wintype0}]{\setlength{\rightskip}{0pt plus 5cm}integer mutant\-::wintype0}}\label{classmutant_ad540d3dcb17e0e3dcd4674743672942b}
+
+
+window object corresponding to type0 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-mutant.\-f90.
+
+\hypertarget{classmutant_a210d11cc8e127e58049730c9383c3e01}{\index{mutant@{mutant}!wintype1@{wintype1}}
+\index{wintype1@{wintype1}!mutant@{mutant}}
+\subsubsection[{wintype1}]{\setlength{\rightskip}{0pt plus 5cm}integer mutant\-::wintype1}}\label{classmutant_a210d11cc8e127e58049730c9383c3e01}
+
+
+window object corresponding to type1 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-mutant.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__mutant_8f90}{M\-O\-D\-\_\-mutant.\-f90}\end{DoxyCompactItemize}

@@ -1,0 +1,557 @@
+\hypertarget{nblist_8f90}{\section{nblist.\-f90 File Reference}
+\label{nblist_8f90}\index{nblist.\-f90@{nblist.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{nblist_8f90_a54d14b4bd44060d9cfa616ab89d1d723}{nblist} (istep)
+\begin{DoxyCompactList}\small\item\em constructs and maintains nonbonded pair neighbor lists for vdw and electrostatic interactions \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_aac11d281d4fe2b395e56c26f4f6fb938}{mlistcell}
+\begin{DoxyCompactList}\small\item\em \char`\"{}mlistcell\char`\"{} performs a complete rebuild of the electrostatic neighbor lists for multipoles using linked cells method \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_a520d12b44534e180bb851b0b3e6c3c89}{mlistcell2}
+\begin{DoxyCompactList}\small\item\em performs a complete rebuild of the short range and regular electrostatic neighbor lists for multipoles using linked cells method \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_af3eb198334f3bbc5cfc70080b4b254d1}{initmpipme}
+\begin{DoxyCompactList}\small\item\em build the arrays to communicate direct and reciprocal fields during the calculation of the induced dipoles \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_a1998698bfd65eb0e19836c89143e0b2c}{reinitnl} (istep)
+\begin{DoxyCompactList}\small\item\em get the number of particules whose nl has to be computed and the associated indexes \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_a7ecdd55bf7bb90d3317f841e9c7aecab}{clistcell}
+\begin{DoxyCompactList}\small\item\em performs a complete rebuild of the electrostatic neighbor lists for charges using linked cells method \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_a28bbb96a7701996ad2c2c55343885868}{clistcell2}
+\begin{DoxyCompactList}\small\item\em performs a complete rebuild of the electrostatic short range and regular neighbor lists for charges using linked cells method \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_aa00fc79e22f2780064cd297d93020255}{vlistcell}
+\begin{DoxyCompactList}\small\item\em \char`\"{}vlistcell\char`\"{} performs a complete rebuild of the vdw neighbor lists for charges using linked cells method \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_a63b97da477dbb808921524d107be183f}{vlistcell2}
+\begin{DoxyCompactList}\small\item\em \char`\"{}vlistcell2\char`\"{} performs a complete rebuild of the short range and regular vdw neighbor lists for charges using linked cells method \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_aa7e4cfbc56d2faec2b489ee2c98bb4eb}{dlistcell}
+\begin{DoxyCompactList}\small\item\em \char`\"{}dlistcell\char`\"{} performs a complete rebuild of the dispersion neighbor lists using linked cells method \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_a09e052cf559bb7500727a656dacd2acb}{dlistcell2}
+\begin{DoxyCompactList}\small\item\em \char`\"{}dlistcell2\char`\"{} performs a complete rebuild of the dispersion neighbor lists using linked cells method \end{DoxyCompactList}\item 
+subroutine \hyperlink{nblist_8f90_a505da35963bd483400cb13ecf7180681}{imagevec3} (imageout, pos, n, i)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{nblist_8f90_a7ecdd55bf7bb90d3317f841e9c7aecab}{\index{nblist.\-f90@{nblist.\-f90}!clistcell@{clistcell}}
+\index{clistcell@{clistcell}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{clistcell}]{\setlength{\rightskip}{0pt plus 5cm}subroutine clistcell (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_a7ecdd55bf7bb90d3317f841e9c7aecab}
+
+
+performs a complete rebuild of the electrostatic neighbor lists for charges using linked cells method 
+
+
+
+Definition at line 612 of file nblist.\-f90.
+
+
+
+References fatal(), and midpointimage().
+
+
+
+Referenced by nblist().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=346pt]{nblist_8f90_a7ecdd55bf7bb90d3317f841e9c7aecab_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a7ecdd55bf7bb90d3317f841e9c7aecab_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_a28bbb96a7701996ad2c2c55343885868}{\index{nblist.\-f90@{nblist.\-f90}!clistcell2@{clistcell2}}
+\index{clistcell2@{clistcell2}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{clistcell2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine clistcell2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_a28bbb96a7701996ad2c2c55343885868}
+
+
+performs a complete rebuild of the electrostatic short range and regular neighbor lists for charges using linked cells method 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 750 of file nblist.\-f90.
+
+
+
+References fatal(), and midpointimage().
+
+
+
+Referenced by nblist().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a28bbb96a7701996ad2c2c55343885868_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a28bbb96a7701996ad2c2c55343885868_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_aa7e4cfbc56d2faec2b489ee2c98bb4eb}{\index{nblist.\-f90@{nblist.\-f90}!dlistcell@{dlistcell}}
+\index{dlistcell@{dlistcell}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{dlistcell}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dlistcell (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_aa7e4cfbc56d2faec2b489ee2c98bb4eb}
+
+
+\char`\"{}dlistcell\char`\"{} performs a complete rebuild of the dispersion neighbor lists using linked cells method 
+
+
+
+Definition at line 1235 of file nblist.\-f90.
+
+
+
+References fatal(), and midpointimagetriclinic().
+
+
+
+Referenced by nblist().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_aa7e4cfbc56d2faec2b489ee2c98bb4eb_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_aa7e4cfbc56d2faec2b489ee2c98bb4eb_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_a09e052cf559bb7500727a656dacd2acb}{\index{nblist.\-f90@{nblist.\-f90}!dlistcell2@{dlistcell2}}
+\index{dlistcell2@{dlistcell2}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{dlistcell2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dlistcell2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_a09e052cf559bb7500727a656dacd2acb}
+
+
+\char`\"{}dlistcell2\char`\"{} performs a complete rebuild of the dispersion neighbor lists using linked cells method 
+
+
+
+Definition at line 1372 of file nblist.\-f90.
+
+
+
+References fatal(), and midpointimage().
+
+
+
+Referenced by nblist().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a09e052cf559bb7500727a656dacd2acb_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a09e052cf559bb7500727a656dacd2acb_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_a505da35963bd483400cb13ecf7180681}{\index{nblist.\-f90@{nblist.\-f90}!imagevec3@{imagevec3}}
+\index{imagevec3@{imagevec3}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{imagevec3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine imagevec3 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(n), intent(out)}]{imageout, }
+\item[{real$\ast$8, dimension(n), intent(in)}]{pos, }
+\item[{integer, intent(in)}]{n, }
+\item[{integer, intent(in)}]{i}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_a505da35963bd483400cb13ecf7180681}
+
+
+Definition at line 1528 of file nblist.\-f90.
+
+\hypertarget{nblist_8f90_af3eb198334f3bbc5cfc70080b4b254d1}{\index{nblist.\-f90@{nblist.\-f90}!initmpipme@{initmpipme}}
+\index{initmpipme@{initmpipme}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{initmpipme}]{\setlength{\rightskip}{0pt plus 5cm}subroutine initmpipme (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_af3eb198334f3bbc5cfc70080b4b254d1}
+
+
+build the arrays to communicate direct and reciprocal fields during the calculation of the induced dipoles 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 418 of file nblist.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_af3eb198334f3bbc5cfc70080b4b254d1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_aac11d281d4fe2b395e56c26f4f6fb938}{\index{nblist.\-f90@{nblist.\-f90}!mlistcell@{mlistcell}}
+\index{mlistcell@{mlistcell}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{mlistcell}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mlistcell (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_aac11d281d4fe2b395e56c26f4f6fb938}
+
+
+\char`\"{}mlistcell\char`\"{} performs a complete rebuild of the electrostatic neighbor lists for multipoles using linked cells method 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 122 of file nblist.\-f90.
+
+
+
+References fatal(), and midpointimagetriclinic().
+
+
+
+Referenced by nblist().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_aac11d281d4fe2b395e56c26f4f6fb938_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_aac11d281d4fe2b395e56c26f4f6fb938_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_a520d12b44534e180bb851b0b3e6c3c89}{\index{nblist.\-f90@{nblist.\-f90}!mlistcell2@{mlistcell2}}
+\index{mlistcell2@{mlistcell2}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{mlistcell2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mlistcell2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_a520d12b44534e180bb851b0b3e6c3c89}
+
+
+performs a complete rebuild of the short range and regular electrostatic neighbor lists for multipoles using linked cells method 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 266 of file nblist.\-f90.
+
+
+
+References fatal(), and midpointimage().
+
+
+
+Referenced by nblist().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a520d12b44534e180bb851b0b3e6c3c89_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a520d12b44534e180bb851b0b3e6c3c89_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_a54d14b4bd44060d9cfa616ab89d1d723}{\index{nblist.\-f90@{nblist.\-f90}!nblist@{nblist}}
+\index{nblist@{nblist}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{nblist}]{\setlength{\rightskip}{0pt plus 5cm}subroutine nblist (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_a54d14b4bd44060d9cfa616ab89d1d723}
+
+
+constructs and maintains nonbonded pair neighbor lists for vdw and electrostatic interactions 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file nblist.\-f90.
+
+
+
+References clistcell(), clistcell2(), dlistcell(), dlistcell2(), mlistcell(), mlistcell2(), vlistcell(), and vlistcell2().
+
+
+
+Referenced by analyze\-\_\-bis(), baoab(), baoabrespa(), baoabrespa1(), beeman(), dynamic\-\_\-bis(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), makebar(), mdinit(), mdinitbead(), mdinitreps(), minimiz1(), minimize\-\_\-bis(), pimd\-\_\-bis(), respa(), respa1(), testgrad(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a54d14b4bd44060d9cfa616ab89d1d723_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a54d14b4bd44060d9cfa616ab89d1d723_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_a1998698bfd65eb0e19836c89143e0b2c}{\index{nblist.\-f90@{nblist.\-f90}!reinitnl@{reinitnl}}
+\index{reinitnl@{reinitnl}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{reinitnl}]{\setlength{\rightskip}{0pt plus 5cm}subroutine reinitnl (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_a1998698bfd65eb0e19836c89143e0b2c}
+
+
+get the number of particules whose nl has to be computed and the associated indexes 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 577 of file nblist.\-f90.
+
+
+
+References ddbuild().
+
+
+
+Referenced by analyze\-\_\-bis(), baoab(), baoabrespa(), baoabrespa1(), beeman(), dynamic\-\_\-bis(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), makebar(), mdinit(), mdinitbead(), mdinitreps(), minimiz1(), minimize\-\_\-bis(), pimd\-\_\-bis(), respa(), respa1(), testgrad(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a1998698bfd65eb0e19836c89143e0b2c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a1998698bfd65eb0e19836c89143e0b2c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_aa00fc79e22f2780064cd297d93020255}{\index{nblist.\-f90@{nblist.\-f90}!vlistcell@{vlistcell}}
+\index{vlistcell@{vlistcell}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{vlistcell}]{\setlength{\rightskip}{0pt plus 5cm}subroutine vlistcell (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_aa00fc79e22f2780064cd297d93020255}
+
+
+\char`\"{}vlistcell\char`\"{} performs a complete rebuild of the vdw neighbor lists for charges using linked cells method 
+
+
+
+Definition at line 897 of file nblist.\-f90.
+
+
+
+References fatal(), image(), and midpointimagetriclinic().
+
+
+
+Referenced by nblist().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_aa00fc79e22f2780064cd297d93020255_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_aa00fc79e22f2780064cd297d93020255_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{nblist_8f90_a63b97da477dbb808921524d107be183f}{\index{nblist.\-f90@{nblist.\-f90}!vlistcell2@{vlistcell2}}
+\index{vlistcell2@{vlistcell2}!nblist.f90@{nblist.\-f90}}
+\subsubsection[{vlistcell2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine vlistcell2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{nblist_8f90_a63b97da477dbb808921524d107be183f}
+
+
+\char`\"{}vlistcell2\char`\"{} performs a complete rebuild of the short range and regular vdw neighbor lists for charges using linked cells method 
+
+
+
+Definition at line 1061 of file nblist.\-f90.
+
+
+
+References fatal(), image(), and midpointimage().
+
+
+
+Referenced by nblist().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a63b97da477dbb808921524d107be183f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{nblist_8f90_a63b97da477dbb808921524d107be183f_icgraph}
+\end{center}
+\end{figure}
+
+

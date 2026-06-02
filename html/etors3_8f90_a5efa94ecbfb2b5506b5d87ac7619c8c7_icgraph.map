@@ -1,0 +1,7 @@
+<map id="etors3a" name="etors3a">
+<area shape="rect" id="node2" href="$etors3_8f90.html#a2e8a76eb7c6883ee33271c437e3cba5f" title="calculates the torsional potential energy; also partitions the energy among the atoms ..." alt="" coords="126,5,189,32"/>
+<area shape="rect" id="node3" href="$analysis_8f90.html#ae127889458682e50ca6c0789300710c6" title="calls the series of routines needed to calculate the potential energy and " alt="" coords="238,5,314,32"/>
+<area shape="rect" id="node4" href="$analyze_8f90.html#acce5eb003f35035aceaef44ca0b67e73" title="computes and displays the total potential energy " alt="" coords="485,5,584,32"/>
+<area shape="rect" id="node6" href="$analyze_8f90.html#a770ce3bad62e0a46d6df1a6176b244de" title="auxiliary routine for the analyze program that performs the energy analysis and prints the total and ..." alt="" coords="363,31,437,57"/>
+<area shape="rect" id="node5" href="$analyze_8f90.html#ad0571e0cf34d424af56a4981e316f8eb" title="computes and displays the total potential energy " alt="" coords="633,5,706,32"/>
+</map>

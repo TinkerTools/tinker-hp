@@ -1,0 +1,1557 @@
+\hypertarget{mpistuff_8f90}{\section{mpistuff.\-f90 File Reference}
+\label{mpistuff_8f90}\index{mpistuff.\-f90@{mpistuff.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{mpistuff_8f90_a42f224f96229ba3fd381eaad0cb34aab}{commposrec}
+\begin{DoxyCompactList}\small\item\em communicate positions for reciprocal space computation \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_ac39921abd416740a5df1fc61a4812225}{commpos}
+\begin{DoxyCompactList}\small\item\em communicate positions to neighboring processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_ace4e2ff17d7280286a327d17668b3503}{commposshort}
+\begin{DoxyCompactList}\small\item\em communicate positions to short range neighboring processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_ad588a0b841f6206b8cc5b13da18adaef}{reassign}
+\begin{DoxyCompactList}\small\item\em deal with particles changing of domain between two time steps \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a6ed1b35d7433270bdc77772828f1d1bf}{sendall}
+\begin{DoxyCompactList}\small\item\em sends all the positions, speed and accel of the system to all processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_ae42481d71653637f187f91bdb09468d7}{reassignrespa} (ialt, naltloc)
+\begin{DoxyCompactList}\small\item\em deal with particles changing of domain between two time steps, respa integrator \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a79baf1e708004c1496d81d071000f6dc}{commposrespa} (fast)
+\begin{DoxyCompactList}\small\item\em deal with communications of positions between two time steps with respa integrator \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a0127816c8600b62744df28c7d36fc288}{sendallpos}
+\begin{DoxyCompactList}\small\item\em sends all the positions to all processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_ab30e2903d42184126cc5b095668ecf31}{sendvecmin} (xx)
+\begin{DoxyCompactList}\small\item\em deal with communications during minimization routine \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a796b3470d8a1bbba2e89551334366de4}{commforces} (derivs)
+\begin{DoxyCompactList}\small\item\em communicate forces between processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a2cfc5b90a01eb9ee30bcfa6a46b00d77}{commforcesrespa} (derivs, fast)
+\begin{DoxyCompactList}\small\item\em communicate some forces between processes when respa integrator is used \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_aac6b485f4f510ce7355365d0292661b4}{commforcesrespa1} (derivs, rule)
+\begin{DoxyCompactList}\small\item\em communicate some forces between processes when respa1 integrator is used \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_ab6aa7f6aa468b17cf44590a9eb028eea}{reduceen} (epot)
+\begin{DoxyCompactList}\small\item\em make the necessary reductions over the processes to get the total values of the energies \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a95d69f0524ae2c5840dc50c09290401c}{commforcesbonded} (derivs)
+\begin{DoxyCompactList}\small\item\em deal with communications of the bonded forces \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_aa40e25e26f6f34c971b1bcda983c120a}{commforcesbloc} (derivs)
+\begin{DoxyCompactList}\small\item\em deal with communications of forces by bloc between two time steps \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a38837bdca80b6de2820a18dac6262983}{commforcesshortbloc} (derivs)
+\begin{DoxyCompactList}\small\item\em deal with communications of short range forces by bloc between two time steps \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a6da09800136d5661479e302d21b7dd51}{commforcesrec} (derivs)
+\begin{DoxyCompactList}\small\item\em deal with communications of reciprocal forces by bloc between two time steps \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a825a356f92615025c875756153db8b1f}{commforceststgrad} (detot)
+\begin{DoxyCompactList}\small\item\em deal with communications of forces one by one for testgrad \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a9617d597ce2426a85504db38fdccaf2c}{allreduceen} (epot)
+\begin{DoxyCompactList}\small\item\em make the necessary allreductions over the processes to get the total values of the energies \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a9a604af594c58f25234f3ae8c4b47844}{orderbuffer} (init)
+\begin{DoxyCompactList}\small\item\em get the indexes of the particules in the neighboring processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a0bf418e3df3f76e4c5a4e8f9d423353a}{orderbufferrec}
+\begin{DoxyCompactList}\small\item\em get the indexes of the particules in the reciprocal processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_acc69651cda59fbbb9f85f4ed992103c2}{commdirdir} (nrhs, rule, mu, reqrec, reqsend)
+\begin{DoxyCompactList}\small\item\em deal with communications of direct dipoles \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a9c9d1b0468cbe5ca9cb9882c172a93a6}{commdirdirshort} (nrhs, rule, mu, reqrec, reqsend)
+\begin{DoxyCompactList}\small\item\em deal with communications of short range direct dipoles \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a40c8a6ddd87fab6ae74279d480e529f7}{commrecdirfields} (rule, efrec, ef, buffermpi1, buffermpi2, reqrecdirrec, reqrecdirsend)
+\begin{DoxyCompactList}\small\item\em deal with communications of reciprocal fields \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_ab2b79ef662d77d082d501656695d4d1f}{commrecdirsolv} (nrhs, rule, dipfieldbis, dipfield, buffermpi1, buffermpi2, reqrecdirrec, reqrecdirsend)
+\begin{DoxyCompactList}\small\item\em deal with communications of reciprocal fields in the solver \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a6891ab58868da4b7a79b2b654c4d2d62}{commrecdirdip} (nrhs, rule, diprec, dip, buffermpimu1, buffermpimu2, req2rec, req2send)
+\begin{DoxyCompactList}\small\item\em deal with communications of dipoles for P\-M\-E \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a50dba030f2bb47194b1210696b79e209}{commfield} (nrhs, ef)
+\begin{DoxyCompactList}\small\item\em communicate some direct fields (Newton's third law) \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a169604d25f0a9f409a1640817b9c8869}{commfieldshort} (nrhs, ef)
+\begin{DoxyCompactList}\small\item\em communicate some short range direct fields (Newton's third law) \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_af654cd86aea515c8f2fa049d35add490}{commchgflx} (pdelta)
+\begin{DoxyCompactList}\small\item\em communicate increment to modify charges to neighboring processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a577359ca425dbc13ed910a17d1f26618}{commpot} (pot, rule)
+\begin{DoxyCompactList}\small\item\em communicate potential to neighboring processes (chgflux) \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_aae5ab8cb5f11581ff41f4e791bef0ec7}{commpotsum} (pot, rule)
+\begin{DoxyCompactList}\small\item\em communicate and sum potential to neighboring processes (chgflux) \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a0fd1f56f03b8f3e81283d77bc46559ef}{commpotrec} (pot, potrec)
+\begin{DoxyCompactList}\small\item\em communicate reciprocal pot to local \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_a1641f128629251cd7963d8d2ff9d2e9c}{commpbcwrapindex} (bufbeg3, buf3, buflen3, bufbeg4, buflen4)
+\begin{DoxyCompactList}\small\item\em communicate local pbcwrap index during reassign \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_aeaeb5e1951bf006ddd815662f6b576a5}{comm\-\_\-forces\-\_\-dd} (derivs, opt)
+\begin{DoxyCompactList}\small\item\em communicate forces between processes \end{DoxyCompactList}\item 
+subroutine \hyperlink{mpistuff_8f90_ae72f8c9ae955d67b1057c4f240edcfce}{commforcesrec1} (rule)
+\begin{DoxyCompactList}\small\item\em deal with communications of reciprocal forces \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{mpistuff_8f90_a9617d597ce2426a85504db38fdccaf2c}{\index{mpistuff.\-f90@{mpistuff.\-f90}!allreduceen@{allreduceen}}
+\index{allreduceen@{allreduceen}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{allreduceen}]{\setlength{\rightskip}{0pt plus 5cm}subroutine allreduceen (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{epot}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a9617d597ce2426a85504db38fdccaf2c}
+
+
+make the necessary allreductions over the processes to get the total values of the energies 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em epot,\-:} & potential energy \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 3419 of file mpistuff.\-f90.
+
+
+
+Referenced by dedvcalc(), minimiz1(), pmonte(), ptest(), and testgrad().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a9617d597ce2426a85504db38fdccaf2c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_aeaeb5e1951bf006ddd815662f6b576a5}{\index{mpistuff.\-f90@{mpistuff.\-f90}!comm\-\_\-forces\-\_\-dd@{comm\-\_\-forces\-\_\-dd}}
+\index{comm\-\_\-forces\-\_\-dd@{comm\-\_\-forces\-\_\-dd}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{comm\-\_\-forces\-\_\-dd}]{\setlength{\rightskip}{0pt plus 5cm}subroutine comm\-\_\-forces\-\_\-dd (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs, }
+\item[{integer, optional}]{opt}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_aeaeb5e1951bf006ddd815662f6b576a5}
+
+
+communicate forces between processes 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em derivs,\-:} & derivatives to be communicated \\
+\hline
+\mbox{\tt in}  & {\em opt,\-:} & determines what list of processes to send/receive to/from \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4928 of file mpistuff.\-f90.
+
+
+
+References fatal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=256pt]{mpistuff_8f90_aeaeb5e1951bf006ddd815662f6b576a5_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_af654cd86aea515c8f2fa049d35add490}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commchgflx@{commchgflx}}
+\index{commchgflx@{commchgflx}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commchgflx}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commchgflx (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{pdelta}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_af654cd86aea515c8f2fa049d35add490}
+
+
+communicate increment to modify charges to neighboring processes 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em pdelta,\-:} & increment of charge \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4404 of file mpistuff.\-f90.
+
+
+
+Referenced by alterchg().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_af654cd86aea515c8f2fa049d35add490_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_acc69651cda59fbbb9f85f4ed992103c2}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commdirdir@{commdirdir}}
+\index{commdirdir@{commdirdir}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commdirdir}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commdirdir (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{integer}]{rule, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{mu, }
+\item[{integer, dimension(nproc)}]{reqrec, }
+\item[{integer, dimension(nproc)}]{reqsend}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_acc69651cda59fbbb9f85f4ed992103c2}
+
+
+deal with communications of direct dipoles 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & 
+\begin{DoxyItemize}
+\item 0\-: start reception of direct dipoles
+\item 1\-: start sending of direct dipoles
+\item 2\-: wait for the communications to be done 
+\end{DoxyItemize}\\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & vector of induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em reqrec,\-:} & array of \char`\"{}reception\char`\"{} request for M\-P\-I comms \\
+\hline
+\mbox{\tt in}  & {\em reqsend,\-:} & array of \char`\"{}send\char`\"{} request for M\-P\-I comms \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 3855 of file mpistuff.\-f90.
+
+
+
+References fatal().
+
+
+
+Referenced by dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), inducedc\-\_\-pme(), inducedc\-\_\-pme2(), inducejac\-\_\-pme(), inducejac\-\_\-pme2(), inducepcg\-\_\-pme(), inducepcg\-\_\-pme2(), newinduce\-\_\-pme(), and newinduce\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=230pt]{mpistuff_8f90_acc69651cda59fbbb9f85f4ed992103c2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_acc69651cda59fbbb9f85f4ed992103c2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a9c9d1b0468cbe5ca9cb9882c172a93a6}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commdirdirshort@{commdirdirshort}}
+\index{commdirdirshort@{commdirdirshort}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commdirdirshort}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commdirdirshort (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{integer}]{rule, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{mu, }
+\item[{integer, dimension(nproc)}]{reqrec, }
+\item[{integer, dimension(nproc)}]{reqsend}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a9c9d1b0468cbe5ca9cb9882c172a93a6}
+
+
+deal with communications of short range direct dipoles 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & 
+\begin{DoxyItemize}
+\item 0\-: start reception of direct dipoles
+\item 1\-: start sending of direct dipoles
+\item 2\-: wait for the communications to be done 
+\end{DoxyItemize}\\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & vector of induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em reqrec,\-:} & array of \char`\"{}reception\char`\"{} request for M\-P\-I comms \\
+\hline
+\mbox{\tt in}  & {\em reqsend,\-:} & array of \char`\"{}send\char`\"{} request for M\-P\-I comms \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 3920 of file mpistuff.\-f90.
+
+
+
+References fatal().
+
+
+
+Referenced by dcinduce\-\_\-shortreal(), epolar1tcg1shortreal(), epolar1tcg2bisshortreal(), epolar1tcg2cinqshortreal(), epolar1tcg2quatshortreal(), epolar1tcg2shortreal(), epolar1tcg2tershortreal(), inducedc\-\_\-shortreal(), inducejac\-\_\-shortreal(), inducepcg\-\_\-shortreal(), and newinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=254pt]{mpistuff_8f90_a9c9d1b0468cbe5ca9cb9882c172a93a6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a9c9d1b0468cbe5ca9cb9882c172a93a6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a50dba030f2bb47194b1210696b79e209}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commfield@{commfield}}
+\index{commfield@{commfield}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commfield}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commfield (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a50dba030f2bb47194b1210696b79e209}
+
+
+communicate some direct fields (Newton's third law) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & electrif field \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4261 of file mpistuff.\-f90.
+
+
+
+Referenced by dcinduce\-\_\-pme2(), epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar1tcg2tershortreal(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), inducedc\-\_\-pme(), inducedc\-\_\-pme2(), inducejac\-\_\-pme(), inducejac\-\_\-pme2(), inducepcg\-\_\-pme(), inducepcg\-\_\-pme2(), newinduce\-\_\-pme(), and newinduce\-\_\-pme2().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a50dba030f2bb47194b1210696b79e209_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a169604d25f0a9f409a1640817b9c8869}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commfieldshort@{commfieldshort}}
+\index{commfieldshort@{commfieldshort}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commfieldshort}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commfieldshort (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a169604d25f0a9f409a1640817b9c8869}
+
+
+communicate some short range direct fields (Newton's third law) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & electrif field \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4333 of file mpistuff.\-f90.
+
+
+
+Referenced by epolar1tcg1shortreal(), epolar1tcg2bisshortreal(), epolar1tcg2cinqshortreal(), epolar1tcg2quatshortreal(), epolar1tcg2shortreal(), epolar1tcg2tershortreal(), inducedc\-\_\-shortreal(), inducejac\-\_\-shortreal(), inducepcg\-\_\-shortreal(), and newinduce\-\_\-shortreal().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a169604d25f0a9f409a1640817b9c8869_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a796b3470d8a1bbba2e89551334366de4}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforces@{commforces}}
+\index{commforces@{commforces}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforces}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforces (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a796b3470d8a1bbba2e89551334366de4}
+
+
+communicate forces between processes 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em derivs,\-:} & array of derivatives to be communicated \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1308 of file mpistuff.\-f90.
+
+
+
+References commforcesbloc(), and commforcesrec().
+
+
+
+Referenced by baoab(), beeman(), mdinit(), minimiz1(), minimize\-\_\-bis(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=292pt]{mpistuff_8f90_a796b3470d8a1bbba2e89551334366de4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a796b3470d8a1bbba2e89551334366de4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_aa40e25e26f6f34c971b1bcda983c120a}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforcesbloc@{commforcesbloc}}
+\index{commforcesbloc@{commforcesbloc}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforcesbloc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforcesbloc (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nbloc)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_aa40e25e26f6f34c971b1bcda983c120a}
+
+
+deal with communications of forces by bloc between two time steps 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em derivatives,\-:} & array of derivatives to be communicated \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1643 of file mpistuff.\-f90.
+
+
+
+Referenced by commforces(), commforcesrespa(), and commforcesrespa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_aa40e25e26f6f34c971b1bcda983c120a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a95d69f0524ae2c5840dc50c09290401c}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforcesbonded@{commforcesbonded}}
+\index{commforcesbonded@{commforcesbonded}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforcesbonded}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforcesbonded (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nbloc)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a95d69f0524ae2c5840dc50c09290401c}
+
+
+deal with communications of the bonded forces 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em derivs,\-:} & array of derivatives to be communicated \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1549 of file mpistuff.\-f90.
+
+
+
+Referenced by commforcesrespa(), and commforcesrespa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a95d69f0524ae2c5840dc50c09290401c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a6da09800136d5661479e302d21b7dd51}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforcesrec@{commforcesrec}}
+\index{commforcesrec@{commforcesrec}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforcesrec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforcesrec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a6da09800136d5661479e302d21b7dd51}
+
+
+deal with communications of reciprocal forces by bloc between two time steps 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em derivatives,\-:} & array of derivatives to be communicated \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1806 of file mpistuff.\-f90.
+
+
+
+Referenced by commforces(), commforcesrespa(), commforcesrespa1(), and testgrad().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a6da09800136d5661479e302d21b7dd51_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_ae72f8c9ae955d67b1057c4f240edcfce}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforcesrec1@{commforcesrec1}}
+\index{commforcesrec1@{commforcesrec1}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforcesrec1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforcesrec1 (
+\begin{DoxyParamCaption}
+\item[{integer}]{rule}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_ae72f8c9ae955d67b1057c4f240edcfce}
+
+
+deal with communications of reciprocal forces 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em rule,\-:} & integer to determine what to do\-: 1\-: reciprocal multipole communications 2\-: reciprocal polarization communications 3\-: reciprocal dispersion communications \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 5030 of file mpistuff.\-f90.
+
+\hypertarget{mpistuff_8f90_a2cfc5b90a01eb9ee30bcfa6a46b00d77}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforcesrespa@{commforcesrespa}}
+\index{commforcesrespa@{commforcesrespa}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforcesrespa}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforcesrespa (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs, }
+\item[{logical}]{fast}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a2cfc5b90a01eb9ee30bcfa6a46b00d77}
+
+
+communicate some forces between processes when respa integrator is used 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em derivs,\-:} & derivates to be communicated \\
+\hline
+\mbox{\tt in}  & {\em fast,\-:} & true for fast forces, false for slow ones \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1339 of file mpistuff.\-f90.
+
+
+
+References commforcesbloc(), commforcesbonded(), and commforcesrec().
+
+
+
+Referenced by baoabrespa(), mdinit(), respa(), and respafast().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=334pt]{mpistuff_8f90_a2cfc5b90a01eb9ee30bcfa6a46b00d77_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a2cfc5b90a01eb9ee30bcfa6a46b00d77_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_aac6b485f4f510ce7355365d0292661b4}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforcesrespa1@{commforcesrespa1}}
+\index{commforcesrespa1@{commforcesrespa1}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforcesrespa1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforcesrespa1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs, }
+\item[{integer}]{rule}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_aac6b485f4f510ce7355365d0292661b4}
+
+
+communicate some forces between processes when respa1 integrator is used 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em derivs,\-:} & derivates to be communicated \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & integer governing fast, intermediate and slow forces \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1378 of file mpistuff.\-f90.
+
+
+
+References commforcesbloc(), commforcesbonded(), commforcesrec(), and commforcesshortbloc().
+
+
+
+Referenced by baoabpi(), baoabrespa1(), baoabrespafast1(), baoabrespaint1(), baoabrespapi(), mdinit(), respa1(), respafast1(), and respaint1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=348pt]{mpistuff_8f90_aac6b485f4f510ce7355365d0292661b4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_aac6b485f4f510ce7355365d0292661b4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a38837bdca80b6de2820a18dac6262983}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforcesshortbloc@{commforcesshortbloc}}
+\index{commforcesshortbloc@{commforcesshortbloc}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforcesshortbloc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforcesshortbloc (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nbloc)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a38837bdca80b6de2820a18dac6262983}
+
+
+deal with communications of short range forces by bloc between two time steps 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em derivatives,\-:} & array of derivatives to be communicated \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1725 of file mpistuff.\-f90.
+
+
+
+Referenced by commforcesrespa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a38837bdca80b6de2820a18dac6262983_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a825a356f92615025c875756153db8b1f}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commforceststgrad@{commforceststgrad}}
+\index{commforceststgrad@{commforceststgrad}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commforceststgrad}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commforceststgrad (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,$\ast$)}]{detot}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a825a356f92615025c875756153db8b1f}
+
+
+deal with communications of forces one by one for testgrad 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em detot,\-:} & array of derivatives to be communicated \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 2455 of file mpistuff.\-f90.
+
+
+
+Referenced by testgrad().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=286pt]{mpistuff_8f90_a825a356f92615025c875756153db8b1f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a1641f128629251cd7963d8d2ff9d2e9c}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commpbcwrapindex@{commpbcwrapindex}}
+\index{commpbcwrapindex@{commpbcwrapindex}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commpbcwrapindex}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commpbcwrapindex (
+\begin{DoxyParamCaption}
+\item[{integer, dimension ($\ast$)}]{bufbeg3, }
+\item[{integer, dimension ($\ast$)}]{buf3, }
+\item[{integer, dimension ($\ast$)}]{buflen3, }
+\item[{integer, dimension ($\ast$)}]{bufbeg4, }
+\item[{integer, dimension ($\ast$)}]{buflen4}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a1641f128629251cd7963d8d2ff9d2e9c}
+
+
+communicate local pbcwrap index during reassign 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em bufbeg3,\-:} & starting index for sending \\
+\hline
+\mbox{\tt in}  & {\em buf3,\-:} & index for sending \\
+\hline
+\mbox{\tt in}  & {\em buflen3,\-:} & sizes for sending \\
+\hline
+\mbox{\tt in}  & {\em bufbeg4,\-:} & starting index for reception \\
+\hline
+\mbox{\tt in}  & {\em buf4,\-:} & index for reception \\
+\hline
+\mbox{\tt in}  & {\em buflen4,\-:} & sizes for reception \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4837 of file mpistuff.\-f90.
+
+\hypertarget{mpistuff_8f90_ac39921abd416740a5df1fc61a4812225}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commpos@{commpos}}
+\index{commpos@{commpos}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commpos}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commpos (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_ac39921abd416740a5df1fc61a4812225}
+
+
+communicate positions to neighboring processes 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 176 of file mpistuff.\-f90.
+
+
+
+Referenced by baoab(), beeman(), and verlet().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_ac39921abd416740a5df1fc61a4812225_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a42f224f96229ba3fd381eaad0cb34aab}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commposrec@{commposrec}}
+\index{commposrec@{commposrec}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commposrec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commposrec (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a42f224f96229ba3fd381eaad0cb34aab}
+
+
+communicate positions for reciprocal space computation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 12 of file mpistuff.\-f90.
+
+
+
+Referenced by baoab(), baoabrespa(), baoabrespa1(), beeman(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), respa(), respa1(), and verlet().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a42f224f96229ba3fd381eaad0cb34aab_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a79baf1e708004c1496d81d071000f6dc}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commposrespa@{commposrespa}}
+\index{commposrespa@{commposrespa}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commposrespa}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commposrespa (
+\begin{DoxyParamCaption}
+\item[{logical}]{fast}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a79baf1e708004c1496d81d071000f6dc}
+
+
+deal with communications of positions between two time steps with respa integrator 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em fast,\-:} & true for fast forces computations, false for slow ones \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 924 of file mpistuff.\-f90.
+
+
+
+Referenced by baoabrespa(), baoabrespafast1(), respa(), respafast(), and respafast1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a79baf1e708004c1496d81d071000f6dc_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_ace4e2ff17d7280286a327d17668b3503}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commposshort@{commposshort}}
+\index{commposshort@{commposshort}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commposshort}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commposshort (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_ace4e2ff17d7280286a327d17668b3503}
+
+
+communicate positions to short range neighboring processes 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 265 of file mpistuff.\-f90.
+
+\hypertarget{mpistuff_8f90_a577359ca425dbc13ed910a17d1f26618}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commpot@{commpot}}
+\index{commpot@{commpot}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commpot}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commpot (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{pot, }
+\item[{integer}]{rule}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a577359ca425dbc13ed910a17d1f26618}
+
+
+communicate potential to neighboring processes (chgflux) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em pot,\-:} & potential \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & integer to determine what to do\-: rule = 0\-: communicate to pbig\-\_\-$\ast$ list of processes rule = 1\-: communicate to pneig\-\_\-$\ast$ list of processes \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4541 of file mpistuff.\-f90.
+
+
+
+Referenced by empole1c(), emreal1c(), emrecip1(), epreal1c(), and eprecip1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a577359ca425dbc13ed910a17d1f26618_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a0fd1f56f03b8f3e81283d77bc46559ef}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commpotrec@{commpotrec}}
+\index{commpotrec@{commpotrec}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commpotrec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commpotrec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{pot, }
+\item[{real$\ast$8, dimension($\ast$)}]{potrec}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a0fd1f56f03b8f3e81283d77bc46559ef}
+
+
+communicate reciprocal pot to local 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em pot,\-:} & potential \\
+\hline
+\mbox{\tt in}  & {\em potrec,\-:} & reciprocal potential \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4750 of file mpistuff.\-f90.
+
+
+
+Referenced by emrecip1(), and eprecip1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a0fd1f56f03b8f3e81283d77bc46559ef_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_aae5ab8cb5f11581ff41f4e791bef0ec7}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commpotsum@{commpotsum}}
+\index{commpotsum@{commpotsum}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commpotsum}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commpotsum (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{pot, }
+\item[{integer}]{rule}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_aae5ab8cb5f11581ff41f4e791bef0ec7}
+
+
+communicate and sum potential to neighboring processes (chgflux) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em pot,\-:} & potential \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & integer to determine what to do\-: rule = 0\-: communicate to pbig\-\_\-$\ast$ list of processes rule = 1\-: communicate to pneig\-\_\-$\ast$ list of processes \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4652 of file mpistuff.\-f90.
+
+
+
+Referenced by emreal1c(), and epreal1c().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_aae5ab8cb5f11581ff41f4e791bef0ec7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a6891ab58868da4b7a79b2b654c4d2d62}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commrecdirdip@{commrecdirdip}}
+\index{commrecdirdip@{commrecdirdip}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commrecdirdip}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commrecdirdip (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{integer}]{rule, }
+\item[{real$\ast$8, dimension(3,nrhs,max(1,npolerecloc))}]{diprec, }
+\item[{real$\ast$8, dimension(3,nrhs,max(1,npoleloc))}]{dip, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{buffermpimu1, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{buffermpimu2, }
+\item[{integer, dimension(nproc)}]{req2rec, }
+\item[{integer, dimension(nproc)}]{req2send}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a6891ab58868da4b7a79b2b654c4d2d62}
+
+
+deal with communications of dipoles for P\-M\-E 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & 
+\begin{DoxyItemize}
+\item 0\-: start reception of dipoles
+\item 1\-: start sending of dipoles
+\item 2\-: wait for the communications to be done 
+\end{DoxyItemize}\\
+\hline
+\mbox{\tt in}  & {\em diprrec,\-:} & reciprocal induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em dip,\-:} & total induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em buffermpimu1,\-:} & buffer for communication (reception) \\
+\hline
+\mbox{\tt in}  & {\em buffermpimu2,\-:} & buffer for communication (sending) \\
+\hline
+\mbox{\tt in}  & {\em req2rec,\-:} & array of \char`\"{}reception\char`\"{} request for M\-P\-I comms \\
+\hline
+\mbox{\tt in}  & {\em req2send,\-:} & array of \char`\"{}send\char`\"{} request for M\-P\-I comms \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4179 of file mpistuff.\-f90.
+
+
+
+References amove(), and fatal().
+
+
+
+Referenced by dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), inducedc\-\_\-pme(), inducedc\-\_\-pme2(), inducejac\-\_\-pme(), inducejac\-\_\-pme2(), inducepcg\-\_\-pme(), inducepcg\-\_\-pme2(), newinduce\-\_\-pme(), and newinduce\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=256pt]{mpistuff_8f90_a6891ab58868da4b7a79b2b654c4d2d62_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a6891ab58868da4b7a79b2b654c4d2d62_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a40c8a6ddd87fab6ae74279d480e529f7}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commrecdirfields@{commrecdirfields}}
+\index{commrecdirfields@{commrecdirfields}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commrecdirfields}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commrecdirfields (
+\begin{DoxyParamCaption}
+\item[{integer}]{rule, }
+\item[{real$\ast$8, dimension(10,max(1,npolerecloc))}]{efrec, }
+\item[{real$\ast$8, dimension(10,max(1,npoleloc))}]{ef, }
+\item[{real$\ast$8, dimension(10,max(npoleloc,1))}]{buffermpi1, }
+\item[{real$\ast$8, dimension(10,max(1,npolerecloc))}]{buffermpi2, }
+\item[{integer, dimension(nproc)}]{reqrecdirrec, }
+\item[{integer, dimension(nproc)}]{reqrecdirsend}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a40c8a6ddd87fab6ae74279d480e529f7}
+
+
+deal with communications of reciprocal fields 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em rule,\-:} & 
+\begin{DoxyItemize}
+\item 0\-: start reception of reciprocal fields
+\item 1\-: start sending of reciprocal fields
+\item 2\-: wait for the communications to be done 
+\end{DoxyItemize}\\
+\hline
+\mbox{\tt in}  & {\em efrec,\-:} & reciprocal field \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & total field \\
+\hline
+\mbox{\tt in}  & {\em buffermpi1,\-:} & buffer for communication (reception) \\
+\hline
+\mbox{\tt in}  & {\em buffermpi2,\-:} & buffer for communication (sending) \\
+\hline
+\mbox{\tt in}  & {\em reqrecdirrec,\-:} & array of \char`\"{}reception\char`\"{} request for M\-P\-I comms \\
+\hline
+\mbox{\tt in}  & {\em reqrecdirsend,\-:} & array of \char`\"{}send\char`\"{} request for M\-P\-I comms \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 3989 of file mpistuff.\-f90.
+
+
+
+References amove(), and fatal().
+
+
+
+Referenced by dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), newinduce\-\_\-pme(), and newinduce\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=268pt]{mpistuff_8f90_a40c8a6ddd87fab6ae74279d480e529f7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a40c8a6ddd87fab6ae74279d480e529f7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_ab2b79ef662d77d082d501656695d4d1f}{\index{mpistuff.\-f90@{mpistuff.\-f90}!commrecdirsolv@{commrecdirsolv}}
+\index{commrecdirsolv@{commrecdirsolv}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{commrecdirsolv}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commrecdirsolv (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{integer}]{rule, }
+\item[{real$\ast$8, dimension(3,nrhs,max(1,npolerecloc))}]{dipfieldbis, }
+\item[{real$\ast$8, dimension(3,nrhs,max(1,npoleloc))}]{dipfield, }
+\item[{real$\ast$8, dimension(3,nrhs,max(npoleloc,1))}]{buffermpi1, }
+\item[{real$\ast$8, dimension(3,nrhs,max(1,npolerecloc))}]{buffermpi2, }
+\item[{integer, dimension(nproc)}]{reqrecdirrec, }
+\item[{integer, dimension(nproc)}]{reqrecdirsend}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_ab2b79ef662d77d082d501656695d4d1f}
+
+
+deal with communications of reciprocal fields in the solver 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & 
+\begin{DoxyItemize}
+\item 0\-: start reception of reciprocal fields
+\item 1\-: start sending of reciprocal fields
+\item 2\-: wait for the communications to be done 
+\end{DoxyItemize}\\
+\hline
+\mbox{\tt in}  & {\em dipfieldbis,\-:} & reciprocal induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & total induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em buffermpi1,\-:} & buffer for communication (reception) \\
+\hline
+\mbox{\tt in}  & {\em buffermpi2,\-:} & buffer for communication (sending) \\
+\hline
+\mbox{\tt in}  & {\em reqrecdirrec,\-:} & array of \char`\"{}reception\char`\"{} request for M\-P\-I comms \\
+\hline
+\mbox{\tt in}  & {\em reqrecdirsend,\-:} & array of \char`\"{}send\char`\"{} request for M\-P\-I comms \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4084 of file mpistuff.\-f90.
+
+
+
+References amove(), and fatal().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), inducedc\-\_\-pme(), inducedc\-\_\-pme2(), inducejac\-\_\-pme(), inducejac\-\_\-pme2(), inducepcg\-\_\-pme(), and inducepcg\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=262pt]{mpistuff_8f90_ab2b79ef662d77d082d501656695d4d1f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_ab2b79ef662d77d082d501656695d4d1f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a9a604af594c58f25234f3ae8c4b47844}{\index{mpistuff.\-f90@{mpistuff.\-f90}!orderbuffer@{orderbuffer}}
+\index{orderbuffer@{orderbuffer}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{orderbuffer}]{\setlength{\rightskip}{0pt plus 5cm}subroutine orderbuffer (
+\begin{DoxyParamCaption}
+\item[{logical}]{init}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a9a604af594c58f25234f3ae8c4b47844}
+
+
+get the indexes of the particules in the neighboring processes 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em init,\-:} & logical corresponding first call to the routine \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 3493 of file mpistuff.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::init().
+
+
+
+Referenced by ddpme3d(), ddpme3dnptaniso(), reassign(), commstuffpi\-::reassignpi(), and reassignpme().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=308pt]{mpistuff_8f90_a9a604af594c58f25234f3ae8c4b47844_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a9a604af594c58f25234f3ae8c4b47844_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a0bf418e3df3f76e4c5a4e8f9d423353a}{\index{mpistuff.\-f90@{mpistuff.\-f90}!orderbufferrec@{orderbufferrec}}
+\index{orderbufferrec@{orderbufferrec}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{orderbufferrec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine orderbufferrec (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a0bf418e3df3f76e4c5a4e8f9d423353a}
+
+
+get the indexes of the particules in the reciprocal processes 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 3689 of file mpistuff.\-f90.
+
+
+
+Referenced by ddpme3dnptaniso(), and reassignpme().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a0bf418e3df3f76e4c5a4e8f9d423353a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_ad588a0b841f6206b8cc5b13da18adaef}{\index{mpistuff.\-f90@{mpistuff.\-f90}!reassign@{reassign}}
+\index{reassign@{reassign}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{reassign}]{\setlength{\rightskip}{0pt plus 5cm}subroutine reassign (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_ad588a0b841f6206b8cc5b13da18adaef}
+
+
+deal with particles changing of domain between two time steps 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 353 of file mpistuff.\-f90.
+
+
+
+References ctfvec(), imagefrac(), orderbuffer(), and qtb\-::reassignqtb().
+
+
+
+Referenced by baoab(), beeman(), reassignrespa(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_ad588a0b841f6206b8cc5b13da18adaef_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_ad588a0b841f6206b8cc5b13da18adaef_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_ae42481d71653637f187f91bdb09468d7}{\index{mpistuff.\-f90@{mpistuff.\-f90}!reassignrespa@{reassignrespa}}
+\index{reassignrespa@{reassignrespa}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{reassignrespa}]{\setlength{\rightskip}{0pt plus 5cm}subroutine reassignrespa (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{ialt, }
+\item[{integer, intent(in)}]{naltloc}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_ae42481d71653637f187f91bdb09468d7}
+
+
+deal with particles changing of domain between two time steps, respa integrator 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 902 of file mpistuff.\-f90.
+
+
+
+References reassign().
+
+
+
+Referenced by baoabrespa(), baoabrespafast1(), respa(), respafast(), and respafast1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_ae42481d71653637f187f91bdb09468d7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_ae42481d71653637f187f91bdb09468d7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_ab6aa7f6aa468b17cf44590a9eb028eea}{\index{mpistuff.\-f90@{mpistuff.\-f90}!reduceen@{reduceen}}
+\index{reduceen@{reduceen}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{reduceen}]{\setlength{\rightskip}{0pt plus 5cm}subroutine reduceen (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{epot}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_ab6aa7f6aa468b17cf44590a9eb028eea}
+
+
+make the necessary reductions over the processes to get the total values of the energies 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em epot,\-:} & potential energy \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1428 of file mpistuff.\-f90.
+
+
+
+Referenced by baoab(), baoabrespa(), baoabrespa1(), baoabrespafast1(), baoabrespaint1(), beeman(), makebar(), respa(), respa1(), respafast(), respafast1(), respaint1(), testgrad(), and verlet().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_ab6aa7f6aa468b17cf44590a9eb028eea_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_a6ed1b35d7433270bdc77772828f1d1bf}{\index{mpistuff.\-f90@{mpistuff.\-f90}!sendall@{sendall}}
+\index{sendall@{sendall}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{sendall}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sendall (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a6ed1b35d7433270bdc77772828f1d1bf}
+
+
+sends all the positions, speed and accel of the system to all processes 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 757 of file mpistuff.\-f90.
+
+\hypertarget{mpistuff_8f90_a0127816c8600b62744df28c7d36fc288}{\index{mpistuff.\-f90@{mpistuff.\-f90}!sendallpos@{sendallpos}}
+\index{sendallpos@{sendallpos}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{sendallpos}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sendallpos (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_a0127816c8600b62744df28c7d36fc288}
+
+
+sends all the positions to all processes 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1034 of file mpistuff.\-f90.
+
+
+
+Referenced by minimiz1(), and minimize\-\_\-bis().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_a0127816c8600b62744df28c7d36fc288_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mpistuff_8f90_ab30e2903d42184126cc5b095668ecf31}{\index{mpistuff.\-f90@{mpistuff.\-f90}!sendvecmin@{sendvecmin}}
+\index{sendvecmin@{sendvecmin}!mpistuff.f90@{mpistuff.\-f90}}
+\subsubsection[{sendvecmin}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sendvecmin (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3$\ast$n)}]{xx}
+\end{DoxyParamCaption}
+)}}\label{mpistuff_8f90_ab30e2903d42184126cc5b095668ecf31}
+
+
+deal with communications during minimization routine 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em xx,\-:} & vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1172 of file mpistuff.\-f90.
+
+
+
+Referenced by lbfgs(), and search().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mpistuff_8f90_ab30e2903d42184126cc5b095668ecf31_icgraph}
+\end{center}
+\end{figure}
+
+

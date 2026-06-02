@@ -1,0 +1,113 @@
+\hypertarget{ehal_8f90}{\section{ehal.\-f90 File Reference}
+\label{ehal_8f90}\index{ehal.\-f90@{ehal.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{ehal_8f90_a9e526a7e14da634c1aaf78462df37a51}{ehal}
+\begin{DoxyCompactList}\small\item\em calculates the buffered 14-\/7 van der Waals energy and partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{ehal_8f90_affdd081117fcfa26e1f67722c6b847e1}{ehal0c}
+\begin{DoxyCompactList}\small\item\em \char`\"{}ehal0c\char`\"{} calculates the buffered 14-\/7 van der Waals energy using a pairwise neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{ehal_8f90_a9e526a7e14da634c1aaf78462df37a51}{\index{ehal.\-f90@{ehal.\-f90}!ehal@{ehal}}
+\index{ehal@{ehal}!ehal.f90@{ehal.\-f90}}
+\subsubsection[{ehal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ehal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{ehal_8f90_a9e526a7e14da634c1aaf78462df37a51}
+
+
+calculates the buffered 14-\/7 van der Waals energy and partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file ehal.\-f90.
+
+
+
+References ehal0c(), and evcorr().
+
+
+
+Referenced by energy().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=320pt]{ehal_8f90_a9e526a7e14da634c1aaf78462df37a51_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ehal_8f90_a9e526a7e14da634c1aaf78462df37a51_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{ehal_8f90_affdd081117fcfa26e1f67722c6b847e1}{\index{ehal.\-f90@{ehal.\-f90}!ehal0c@{ehal0c}}
+\index{ehal0c@{ehal0c}!ehal.f90@{ehal.\-f90}}
+\subsubsection[{ehal0c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ehal0c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{ehal_8f90_affdd081117fcfa26e1f67722c6b847e1}
+
+
+\char`\"{}ehal0c\char`\"{} calculates the buffered 14-\/7 van der Waals energy using a pairwise neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 66 of file ehal.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by ehal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=246pt]{ehal_8f90_affdd081117fcfa26e1f67722c6b847e1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ehal_8f90_affdd081117fcfa26e1f67722c6b847e1_icgraph}
+\end{center}
+\end{figure}
+
+

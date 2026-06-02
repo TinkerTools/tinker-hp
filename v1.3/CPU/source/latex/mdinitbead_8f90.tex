@@ -1,0 +1,61 @@
+\hypertarget{mdinitbead_8f90}{\section{mdinitbead.\-f90 File Reference}
+\label{mdinitbead_8f90}\index{mdinitbead.\-f90@{mdinitbead.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{mdinitbead_8f90_a0e1a36a70da9d8670a9600b793f41026}{mdinitbead} (polymer)
+\begin{DoxyCompactList}\small\item\em initializes the velocities and positions for a molecular pimd trajectory, including restarts \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{mdinitbead_8f90_a0e1a36a70da9d8670a9600b793f41026}{\index{mdinitbead.\-f90@{mdinitbead.\-f90}!mdinitbead@{mdinitbead}}
+\index{mdinitbead@{mdinitbead}!mdinitbead.f90@{mdinitbead.\-f90}}
+\subsubsection[{mdinitbead}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mdinitbead (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{mdinitbead_8f90_a0e1a36a70da9d8670a9600b793f41026}
+
+
+initializes the velocities and positions for a molecular pimd trajectory, including restarts 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em polymer,\-:} & current ring polymer \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file mdinitbead.\-f90.
+
+
+
+References allocstep(), colvarproxy\-\_\-tinkerhp\-::boltzmann(), commstuffpi\-::comm\-\_\-for\-\_\-normal\-\_\-modes(), ddpme3d(), fatal(), freeunit(), mechanic\-\_\-init\-\_\-para(), nblist(), normal(), numeral(), readdyn(), reassignpme(), reinitnl(), beads\-::set\-\_\-eigforces\-\_\-pi(), beads\-::update\-\_\-nlocpi(), beads\-::update\-\_\-normal\-\_\-modes\-\_\-pi(), and version().
+
+
+
+Referenced by pimd\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{mdinitbead_8f90_a0e1a36a70da9d8670a9600b793f41026_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=328pt]{mdinitbead_8f90_a0e1a36a70da9d8670a9600b793f41026_icgraph}
+\end{center}
+\end{figure}
+
+

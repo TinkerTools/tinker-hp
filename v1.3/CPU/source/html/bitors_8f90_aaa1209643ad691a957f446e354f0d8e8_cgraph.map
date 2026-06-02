@@ -1,0 +1,5 @@
+<map id="bitors" name="bitors">
+<area shape="rect" id="node2" href="$bitors_8f90.html#afc994a855c852d4417087e4f43274ffa" title="allocate shared memory pointers for bitors parameter arrays " alt="" coords="121,5,269,32"/>
+<area shape="rect" id="node3" href="$bitors_8f90.html#ac7dd2d6ea67ec8953262a906ae99afbe" title="deallocate shared memory pointers for bitors parameter arrays " alt="" coords="113,56,277,83"/>
+<area shape="rect" id="node4" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="169,107,221,133"/>
+</map>

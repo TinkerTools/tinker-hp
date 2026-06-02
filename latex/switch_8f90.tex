@@ -1,0 +1,114 @@
+\hypertarget{switch_8f90}{\section{switch.\-f90 File Reference}
+\label{switch_8f90}\index{switch.\-f90@{switch.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{switch_8f90_a49f27020ffd762e86d09bbd7bbb5222e}{switch} (mode)
+\begin{DoxyCompactList}\small\item\em sets the coeffcients used by the fifth and seventh order polynomial switching functions for spherical cutoffs \end{DoxyCompactList}\item 
+subroutine \hyperlink{switch_8f90_ae09fcf380737f7ecbcd47a121c77eb71}{switch\-\_\-emtp} (doder, r, rin, rout, s, ds)
+\begin{DoxyCompactList}\small\item\em sets the coeffcients used for S\-I\-B\-F\-A-\/like charge penetration \end{DoxyCompactList}\item 
+subroutine \hyperlink{switch_8f90_a5d2160eee4dacede050955bf54205d91}{switch\-\_\-respa} (r, rc, lambda, s, ds)
+\begin{DoxyCompactList}\small\item\em sets the coeffcients used for short-\/long switching function \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{switch_8f90_a49f27020ffd762e86d09bbd7bbb5222e}{\index{switch.\-f90@{switch.\-f90}!switch@{switch}}
+\index{switch@{switch}!switch.f90@{switch.\-f90}}
+\subsubsection[{switch}]{\setlength{\rightskip}{0pt plus 5cm}subroutine switch (
+\begin{DoxyParamCaption}
+\item[{character$\ast$11}]{mode}
+\end{DoxyParamCaption}
+)}}\label{switch_8f90_a49f27020ffd762e86d09bbd7bbb5222e}
+
+
+sets the coeffcients used by the fifth and seventh order polynomial switching functions for spherical cutoffs 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em mode,\-:} & which non bonded interaction is being computed \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file switch.\-f90.
+
+
+
+Referenced by dbletmatxb\-\_\-pme(), echgtrn0c(), echgtrn1c(), echgtrn3c(), ecreal0d(), ecreal1d(), ecreal3d(), edisp0b(), edisp1b(), edisp3b(), edreal0d(), edreal1d(), edreal3d(), efld0\-\_\-direct(), ehal0c(), ehal1c(), ehal3c(), elj0c(), elj1c(), elj3c(), emreal0d(), emreal1c(), emreal3d(), epreal0c(), epreal1c(), epreal3d(), erepel0c(), erepel1c(), erepel3c(), evcorr(), evcorr1(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), otf\-\_\-dc\-\_\-tmatxb\-\_\-pme(), pc\-\_\-dc\-\_\-efld0\-\_\-direct(), pc\-\_\-dc\-\_\-tmatxb\-\_\-pme(), scalderfieldzmat1(), scalderfieldzmat3(), scalderfieldzmat6(), scalderfieldzmat8(), and tmatxb\-\_\-pme().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{switch_8f90_a49f27020ffd762e86d09bbd7bbb5222e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{switch_8f90_ae09fcf380737f7ecbcd47a121c77eb71}{\index{switch.\-f90@{switch.\-f90}!switch\-\_\-emtp@{switch\-\_\-emtp}}
+\index{switch\-\_\-emtp@{switch\-\_\-emtp}!switch.f90@{switch.\-f90}}
+\subsubsection[{switch\-\_\-emtp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine switch\-\_\-emtp (
+\begin{DoxyParamCaption}
+\item[{logical}]{doder, }
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8}]{rin, }
+\item[{real$\ast$8}]{rout, }
+\item[{real$\ast$8}]{s, }
+\item[{real$\ast$8}]{ds}
+\end{DoxyParamCaption}
+)}}\label{switch_8f90_ae09fcf380737f7ecbcd47a121c77eb71}
+
+
+sets the coeffcients used for S\-I\-B\-F\-A-\/like charge penetration 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 156 of file switch.\-f90.
+
+\hypertarget{switch_8f90_a5d2160eee4dacede050955bf54205d91}{\index{switch.\-f90@{switch.\-f90}!switch\-\_\-respa@{switch\-\_\-respa}}
+\index{switch\-\_\-respa@{switch\-\_\-respa}!switch.f90@{switch.\-f90}}
+\subsubsection[{switch\-\_\-respa}]{\setlength{\rightskip}{0pt plus 5cm}subroutine switch\-\_\-respa (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{r, }
+\item[{real$\ast$8}]{rc, }
+\item[{real$\ast$8}]{lambda, }
+\item[{real$\ast$8}]{s, }
+\item[{real$\ast$8}]{ds}
+\end{DoxyParamCaption}
+)}}\label{switch_8f90_a5d2160eee4dacede050955bf54205d91}
+
+
+sets the coeffcients used for short-\/long switching function 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 187 of file switch.\-f90.
+
+
+
+Referenced by echgtrn0c(), echgtrn1c(), echgtrn3c(), ecreal0d(), ecreal1d(), ecreal3d(), edisp0b(), edisp1b(), edisp3b(), edreal0d(), edreal1d(), edreal3d(), ehal0c(), ehal1c(), ehal3c(), elj0c(), elj1c(), elj3c(), emreal0d(), emreal1c(), emreal3d(), erepel0c(), erepel1c(), and erepel3c().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{switch_8f90_a5d2160eee4dacede050955bf54205d91_icgraph}
+\end{center}
+\end{figure}
+
+

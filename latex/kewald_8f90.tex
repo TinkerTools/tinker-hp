@@ -1,0 +1,394 @@
+\hypertarget{kewald_8f90}{\section{kewald.\-f90 File Reference}
+\label{kewald_8f90}\index{kewald.\-f90@{kewald.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kewald_8f90_a99d092c73b96aeeeb2375f3394cf0d23}{kewald}
+\begin{DoxyCompactList}\small\item\em assigns particle mesh Ewald parameters and options for a periodic system \end{DoxyCompactList}\item 
+subroutine \hyperlink{kewald_8f90_a3c35ea7b8a215d2b1432381cbdf76665}{kewald\-\_\-2}
+\begin{DoxyCompactList}\small\item\em initialization of P\-M\-E related quantities, after (potential) initialization of comm\-\_\-rec communicator \end{DoxyCompactList}\item 
+subroutine \hyperlink{kewald_8f90_a1b7a2a5b5e34b21f5ede1ea05da23cbf}{kewald\-\_\-dd\-\_\-init}
+\begin{DoxyCompactList}\small\item\em initialization of ewald related dd quantities \end{DoxyCompactList}\item 
+subroutine \hyperlink{kewald_8f90_a8fbba57fab0ff687d063dd5ff6551407}{ewaldcof} (alpha, \hyperlink{classcutoff}{cutoff})
+\begin{DoxyCompactList}\small\item\em finds an Ewald coefficient such that all terms beyond the specified cutoff distance will have a value less than a specified tolerance \end{DoxyCompactList}\item 
+subroutine \hyperlink{kewald_8f90_ac76eaab5e7eea01f0c1f678d7f7a65ad}{extent} (rmax)
+\begin{DoxyCompactList}\small\item\em finds the largest interatomic distance in a system \end{DoxyCompactList}\item 
+subroutine \hyperlink{kewald_8f90_abca796cdd6ef9c39457169094d79e430}{moduli}
+\begin{DoxyCompactList}\small\item\em sets the moduli of the inverse discrete Fourier transform of the B-\/splines \end{DoxyCompactList}\item 
+subroutine \hyperlink{kewald_8f90_a97fff5631e454624f06a44c57bb087f8}{bspline} (x, n, c)
+\begin{DoxyCompactList}\small\item\em calculates the coefficients for an n-\/th order B-\/spline approximation \end{DoxyCompactList}\item 
+subroutine \hyperlink{kewald_8f90_aebf361a6855927c65ba04af9f29e22ad}{dftmod} (bsmod, bsarray, nfft, order)
+\begin{DoxyCompactList}\small\item\em computes the modulus of the discrete Fourier transform of \char`\"{}bsarray\char`\"{} and stores it in \char`\"{}bsmod\char`\"{} \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kewald_8f90_a97fff5631e454624f06a44c57bb087f8}{\index{kewald.\-f90@{kewald.\-f90}!bspline@{bspline}}
+\index{bspline@{bspline}!kewald.f90@{kewald.\-f90}}
+\subsubsection[{bspline}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bspline (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{x, }
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension($\ast$)}]{c}
+\end{DoxyParamCaption}
+)}}\label{kewald_8f90_a97fff5631e454624f06a44c57bb087f8}
+
+
+calculates the coefficients for an n-\/th order B-\/spline approximation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 737 of file kewald.\-f90.
+
+
+
+Referenced by moduli().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_a97fff5631e454624f06a44c57bb087f8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kewald_8f90_aebf361a6855927c65ba04af9f29e22ad}{\index{kewald.\-f90@{kewald.\-f90}!dftmod@{dftmod}}
+\index{dftmod@{dftmod}!kewald.f90@{kewald.\-f90}}
+\subsubsection[{dftmod}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dftmod (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{bsmod, }
+\item[{real$\ast$8, dimension($\ast$)}]{bsarray, }
+\item[{integer}]{nfft, }
+\item[{integer}]{order}
+\end{DoxyParamCaption}
+)}}\label{kewald_8f90_aebf361a6855927c65ba04af9f29e22ad}
+
+
+computes the modulus of the discrete Fourier transform of \char`\"{}bsarray\char`\"{} and stores it in \char`\"{}bsmod\char`\"{} 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em bsmod,\-:} & modulus of D\-F\-T of bsarray \\
+\hline
+\mbox{\tt in}  & {\em bsarray,\-:} & values from which the D\-F\-T of the modulus will be computed \\
+\hline
+\mbox{\tt in}  & {\em nfft,\-:} & dimension of the D\-F\-T grid \\
+\hline
+\mbox{\tt in}  & {\em order,\-:} & order of the B-\/spline \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 782 of file kewald.\-f90.
+
+
+
+Referenced by moduli().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_aebf361a6855927c65ba04af9f29e22ad_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kewald_8f90_a8fbba57fab0ff687d063dd5ff6551407}{\index{kewald.\-f90@{kewald.\-f90}!ewaldcof@{ewaldcof}}
+\index{ewaldcof@{ewaldcof}!kewald.f90@{kewald.\-f90}}
+\subsubsection[{ewaldcof}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ewaldcof (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{alpha, }
+\item[{real$\ast$8}]{cutoff}
+\end{DoxyParamCaption}
+)}}\label{kewald_8f90_a8fbba57fab0ff687d063dd5ff6551407}
+
+
+finds an Ewald coefficient such that all terms beyond the specified cutoff distance will have a value less than a specified tolerance 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em alpha,\-:} & ewald coefficient to be found \\
+\hline
+\mbox{\tt in}  & {\em cutoff,\-:} & cutoff distance \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 592 of file kewald.\-f90.
+
+
+
+References erfc().
+
+
+
+Referenced by kewald().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=302pt]{kewald_8f90_a8fbba57fab0ff687d063dd5ff6551407_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_a8fbba57fab0ff687d063dd5ff6551407_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kewald_8f90_ac76eaab5e7eea01f0c1f678d7f7a65ad}{\index{kewald.\-f90@{kewald.\-f90}!extent@{extent}}
+\index{extent@{extent}!kewald.f90@{kewald.\-f90}}
+\subsubsection[{extent}]{\setlength{\rightskip}{0pt plus 5cm}subroutine extent (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{rmax}
+\end{DoxyParamCaption}
+)}}\label{kewald_8f90_ac76eaab5e7eea01f0c1f678d7f7a65ad}
+
+
+finds the largest interatomic distance in a system 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 651 of file kewald.\-f90.
+
+
+
+Referenced by getstring(), gettext(), getword(), kewald(), and unitcell().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kewald_8f90_ac76eaab5e7eea01f0c1f678d7f7a65ad_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kewald_8f90_a99d092c73b96aeeeb2375f3394cf0d23}{\index{kewald.\-f90@{kewald.\-f90}!kewald@{kewald}}
+\index{kewald@{kewald}!kewald.f90@{kewald.\-f90}}
+\subsubsection[{kewald}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kewald (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kewald_8f90_a99d092c73b96aeeeb2375f3394cf0d23}
+
+
+assigns particle mesh Ewald parameters and options for a periodic system 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file kewald.\-f90.
+
+
+
+References drivermpi(), ewaldcof(), extent(), fatal(), fft\-\_\-final(), gettext(), lattice(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_a99d092c73b96aeeeb2375f3394cf0d23_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_a99d092c73b96aeeeb2375f3394cf0d23_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kewald_8f90_a3c35ea7b8a215d2b1432381cbdf76665}{\index{kewald.\-f90@{kewald.\-f90}!kewald\-\_\-2@{kewald\-\_\-2}}
+\index{kewald\-\_\-2@{kewald\-\_\-2}!kewald.f90@{kewald.\-f90}}
+\subsubsection[{kewald\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kewald\-\_\-2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kewald_8f90_a3c35ea7b8a215d2b1432381cbdf76665}
+
+
+initialization of P\-M\-E related quantities, after (potential) initialization of comm\-\_\-rec communicator 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 397 of file kewald.\-f90.
+
+
+
+References fft\-\_\-setup(), and moduli().
+
+
+
+Referenced by analyze\-\_\-bis(), dynamic\-\_\-bis(), makebar(), minimize\-\_\-bis(), pimd\-\_\-bis(), and testgrad().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=328pt]{kewald_8f90_a3c35ea7b8a215d2b1432381cbdf76665_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_a3c35ea7b8a215d2b1432381cbdf76665_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kewald_8f90_a1b7a2a5b5e34b21f5ede1ea05da23cbf}{\index{kewald.\-f90@{kewald.\-f90}!kewald\-\_\-dd\-\_\-init@{kewald\-\_\-dd\-\_\-init}}
+\index{kewald\-\_\-dd\-\_\-init@{kewald\-\_\-dd\-\_\-init}!kewald.f90@{kewald.\-f90}}
+\subsubsection[{kewald\-\_\-dd\-\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kewald\-\_\-dd\-\_\-init (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kewald_8f90_a1b7a2a5b5e34b21f5ede1ea05da23cbf}
+
+
+initialization of ewald related dd quantities 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 562 of file kewald.\-f90.
+
+
+
+References drivermpi(), and reassignpme().
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_a1b7a2a5b5e34b21f5ede1ea05da23cbf_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_a1b7a2a5b5e34b21f5ede1ea05da23cbf_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kewald_8f90_abca796cdd6ef9c39457169094d79e430}{\index{kewald.\-f90@{kewald.\-f90}!moduli@{moduli}}
+\index{moduli@{moduli}!kewald.f90@{kewald.\-f90}}
+\subsubsection[{moduli}]{\setlength{\rightskip}{0pt plus 5cm}subroutine moduli (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kewald_8f90_abca796cdd6ef9c39457169094d79e430}
+
+
+sets the moduli of the inverse discrete Fourier transform of the B-\/splines 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 696 of file kewald.\-f90.
+
+
+
+References bspline(), and dftmod().
+
+
+
+Referenced by kewald\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=218pt]{kewald_8f90_abca796cdd6ef9c39457169094d79e430_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kewald_8f90_abca796cdd6ef9c39457169094d79e430_icgraph}
+\end{center}
+\end{figure}
+
+

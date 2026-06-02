@@ -1,0 +1,135 @@
+\hypertarget{katom_8f90}{\section{katom.\-f90 File Reference}
+\label{katom_8f90}\index{katom.\-f90@{katom.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{katom_8f90_ad0c3a9168898b18e5ba2f3b830501bba}{katom}
+\begin{DoxyCompactList}\small\item\em assigns an atom type definitions to each atom in the structure and processes any new or changed values \end{DoxyCompactList}\item 
+subroutine \hyperlink{katom_8f90_afb7e300429562d4bc88c821d3a9aa434}{dealloc\-\_\-shared\-\_\-katom}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for katom parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{katom_8f90_a4d8367c1f5c913bdb02f12319aa1f91a}{alloc\-\_\-shared\-\_\-katom}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for katom parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{katom_8f90_a4d8367c1f5c913bdb02f12319aa1f91a}{\index{katom.\-f90@{katom.\-f90}!alloc\-\_\-shared\-\_\-katom@{alloc\-\_\-shared\-\_\-katom}}
+\index{alloc\-\_\-shared\-\_\-katom@{alloc\-\_\-shared\-\_\-katom}!katom.f90@{katom.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-katom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-katom (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{katom_8f90_a4d8367c1f5c913bdb02f12319aa1f91a}
+
+
+allocate shared memory pointers for katom parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 339 of file katom.\-f90.
+
+
+
+Referenced by katom().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{katom_8f90_a4d8367c1f5c913bdb02f12319aa1f91a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{katom_8f90_afb7e300429562d4bc88c821d3a9aa434}{\index{katom.\-f90@{katom.\-f90}!dealloc\-\_\-shared\-\_\-katom@{dealloc\-\_\-shared\-\_\-katom}}
+\index{dealloc\-\_\-shared\-\_\-katom@{dealloc\-\_\-shared\-\_\-katom}!katom.f90@{katom.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-katom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-katom (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{katom_8f90_afb7e300429562d4bc88c821d3a9aa434}
+
+
+deallocate shared memory pointers for katom parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 294 of file katom.\-f90.
+
+
+
+Referenced by final(), and katom().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{katom_8f90_afb7e300429562d4bc88c821d3a9aa434_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{katom_8f90_ad0c3a9168898b18e5ba2f3b830501bba}{\index{katom.\-f90@{katom.\-f90}!katom@{katom}}
+\index{katom@{katom}!katom.f90@{katom.\-f90}}
+\subsubsection[{katom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine katom (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{katom_8f90_ad0c3a9168898b18e5ba2f3b830501bba}
+
+
+assigns an atom type definitions to each atom in the structure and processes any new or changed values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 27 of file katom.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-katom(), dealloc\-\_\-shared\-\_\-katom(), getnumb(), getstring(), gettext(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{katom_8f90_ad0c3a9168898b18e5ba2f3b830501bba_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{katom_8f90_ad0c3a9168898b18e5ba2f3b830501bba_icgraph}
+\end{center}
+\end{figure}
+
+

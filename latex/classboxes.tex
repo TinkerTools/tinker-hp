@@ -1,0 +1,372 @@
+\hypertarget{classboxes}{\section{boxes Module Reference}
+\label{classboxes}\index{boxes@{boxes}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8 \hyperlink{classboxes_ae4dfe3914f47ce2bafd49eedbb1c740a}{xbox}
+\begin{DoxyCompactList}\small\item\em length of a-\/axis of periodic box in Angstroms \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_afe5321269ac54818115405d3424f39ab}{ybox}
+\begin{DoxyCompactList}\small\item\em length of b-\/axis of periodic box in Angstroms \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_aa2b953bb3bba616ffc87f57e29cfdf6c}{zbox}
+\begin{DoxyCompactList}\small\item\em length of c-\/axis of periodic box in Angstroms \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_a6c476981aef5058cb9f12ce309ca043b}{alpha}
+\begin{DoxyCompactList}\small\item\em angle between b-\/ and c-\/axes of box in degrees \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_af8ca3edf3656e0bb9681c3e0a38bc1df}{beta}
+\begin{DoxyCompactList}\small\item\em angle between a-\/ and c-\/axes of box in degrees \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_a2b56941f0a6ab84834791d9db89af298}{gamma}
+\begin{DoxyCompactList}\small\item\em angle between a-\/ and b-\/axes of box in degrees \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_a41afebf3094fba2eaec4f035140fc3ac}{xbox2}
+\begin{DoxyCompactList}\small\item\em half of the a-\/axis length of periodic box \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_a88205d54fca966a21525295d45d0bf87}{ybox2}
+\begin{DoxyCompactList}\small\item\em half of the b-\/axis length of periodic box \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_afee188c0e895d2a9ba865dff4f81dcc5}{zbox2}
+\begin{DoxyCompactList}\small\item\em half of the c-\/axis length of periodic box \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_a397afd9820df0a90accac5cb22327e0d}{box34}
+\begin{DoxyCompactList}\small\item\em three-\/fourths axis length of truncated octahedron \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_aca6fdacea9feeb56829de94a10b36e4c}{volbox}
+\begin{DoxyCompactList}\small\item\em volume in Ang$\ast$$\ast$3 of the periodic box \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classboxes_a3594e3020185258991c3e1d4e3875f68}{lvec}
+\begin{DoxyCompactList}\small\item\em real space lattice vectors as matrix rows \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classboxes_a0c87c5b0b386dcdd53ab94c59b07f5a8}{recip}
+\begin{DoxyCompactList}\small\item\em reciprocal lattice vectors as matrix columns \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_ae19ef077f562e95e2055473c08fa5476}{beta\-\_\-sin}
+\begin{DoxyCompactList}\small\item\em sine of the beta periodic box angle \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_aee0f306c8bcf447b74d6e054c4696f10}{beta\-\_\-cos}
+\begin{DoxyCompactList}\small\item\em cosine of the beta periodic box angle \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_a789f912c3cff1d590a6a9aa6a3073080}{gamma\-\_\-sin}
+\begin{DoxyCompactList}\small\item\em sine of the gamma periodic box angle \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_ad5eefe83d23d93b1de5e4370bda74194}{gamma\-\_\-cos}
+\begin{DoxyCompactList}\small\item\em cosine of the gamma periodic box angle \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_a6e45e0501eda9170b0c3c2774708b14f}{beta\-\_\-term}
+\begin{DoxyCompactList}\small\item\em term used in generating triclinic box \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classboxes_ac208c73a5a2e30d60bd4707832bf360a}{gamma\-\_\-term}
+\begin{DoxyCompactList}\small\item\em term used in generating triclinic box \end{DoxyCompactList}\item 
+real $\ast$8, dimension(10, 10) \hyperlink{classboxes_af71918207c18b840f87869b1c5b465ad}{ftc}
+\begin{DoxyCompactList}\small\item\em fractional to cartesian transformation matrix \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classboxes_a653e24c554b7b1a243c964602dabfb56}{ctfmat}
+\begin{DoxyCompactList}\small\item\em 3$\ast$3 cartesian to fractional transformation matrix \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classboxes_a3e2991c39a7c6f6578cdf7a5ee49d1c4}{ftcmat}
+\begin{DoxyCompactList}\small\item\em 3$\ast$3 fractional to cartesian transformation matrix \end{DoxyCompactList}\item 
+logical \hyperlink{classboxes_a504790714b65897e53bbf86bdffd8ef2}{orthogonal}
+\begin{DoxyCompactList}\small\item\em flag to mark periodic box as orthogonal \end{DoxyCompactList}\item 
+logical \hyperlink{classboxes_a5b089e02ceadb0f2e89c8deec0d87491}{monoclinic}
+\begin{DoxyCompactList}\small\item\em flag to mark periodic box as monoclinic \end{DoxyCompactList}\item 
+logical \hyperlink{classboxes_ab96dd924f424ba92884f3a7adf3623a6}{triclinic}
+\begin{DoxyCompactList}\small\item\em flag to mark periodic box as triclinic \end{DoxyCompactList}\item 
+logical \hyperlink{classboxes_ae928df89d1aa69fc06a8e8ba5db3b9a6}{octahedron}
+\begin{DoxyCompactList}\small\item\em flag to mark box as truncated octahedron \end{DoxyCompactList}\item 
+character $\ast$10 \hyperlink{classboxes_a156da4dc49d38d44e617030b4118e37d}{spacegrp}
+\begin{DoxyCompactList}\small\item\em space group symbol for the unitcell type \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-boxes.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classboxes_a6c476981aef5058cb9f12ce309ca043b}{\index{boxes@{boxes}!alpha@{alpha}}
+\index{alpha@{alpha}!boxes@{boxes}}
+\subsubsection[{alpha}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::alpha}}\label{classboxes_a6c476981aef5058cb9f12ce309ca043b}
+
+
+angle between b-\/ and c-\/axes of box in degrees 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_af8ca3edf3656e0bb9681c3e0a38bc1df}{\index{boxes@{boxes}!beta@{beta}}
+\index{beta@{beta}!boxes@{boxes}}
+\subsubsection[{beta}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::beta}}\label{classboxes_af8ca3edf3656e0bb9681c3e0a38bc1df}
+
+
+angle between a-\/ and c-\/axes of box in degrees 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_aee0f306c8bcf447b74d6e054c4696f10}{\index{boxes@{boxes}!beta\-\_\-cos@{beta\-\_\-cos}}
+\index{beta\-\_\-cos@{beta\-\_\-cos}!boxes@{boxes}}
+\subsubsection[{beta\-\_\-cos}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::beta\-\_\-cos}}\label{classboxes_aee0f306c8bcf447b74d6e054c4696f10}
+
+
+cosine of the beta periodic box angle 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_ae19ef077f562e95e2055473c08fa5476}{\index{boxes@{boxes}!beta\-\_\-sin@{beta\-\_\-sin}}
+\index{beta\-\_\-sin@{beta\-\_\-sin}!boxes@{boxes}}
+\subsubsection[{beta\-\_\-sin}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::beta\-\_\-sin}}\label{classboxes_ae19ef077f562e95e2055473c08fa5476}
+
+
+sine of the beta periodic box angle 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a6e45e0501eda9170b0c3c2774708b14f}{\index{boxes@{boxes}!beta\-\_\-term@{beta\-\_\-term}}
+\index{beta\-\_\-term@{beta\-\_\-term}!boxes@{boxes}}
+\subsubsection[{beta\-\_\-term}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::beta\-\_\-term}}\label{classboxes_a6e45e0501eda9170b0c3c2774708b14f}
+
+
+term used in generating triclinic box 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a397afd9820df0a90accac5cb22327e0d}{\index{boxes@{boxes}!box34@{box34}}
+\index{box34@{box34}!boxes@{boxes}}
+\subsubsection[{box34}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::box34}}\label{classboxes_a397afd9820df0a90accac5cb22327e0d}
+
+
+three-\/fourths axis length of truncated octahedron 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a653e24c554b7b1a243c964602dabfb56}{\index{boxes@{boxes}!ctfmat@{ctfmat}}
+\index{ctfmat@{ctfmat}!boxes@{boxes}}
+\subsubsection[{ctfmat}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) boxes\-::ctfmat}}\label{classboxes_a653e24c554b7b1a243c964602dabfb56}
+
+
+3$\ast$3 cartesian to fractional transformation matrix 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_af71918207c18b840f87869b1c5b465ad}{\index{boxes@{boxes}!ftc@{ftc}}
+\index{ftc@{ftc}!boxes@{boxes}}
+\subsubsection[{ftc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(10,10) boxes\-::ftc}}\label{classboxes_af71918207c18b840f87869b1c5b465ad}
+
+
+fractional to cartesian transformation matrix 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a3e2991c39a7c6f6578cdf7a5ee49d1c4}{\index{boxes@{boxes}!ftcmat@{ftcmat}}
+\index{ftcmat@{ftcmat}!boxes@{boxes}}
+\subsubsection[{ftcmat}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) boxes\-::ftcmat}}\label{classboxes_a3e2991c39a7c6f6578cdf7a5ee49d1c4}
+
+
+3$\ast$3 fractional to cartesian transformation matrix 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a2b56941f0a6ab84834791d9db89af298}{\index{boxes@{boxes}!gamma@{gamma}}
+\index{gamma@{gamma}!boxes@{boxes}}
+\subsubsection[{gamma}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::gamma}}\label{classboxes_a2b56941f0a6ab84834791d9db89af298}
+
+
+angle between a-\/ and b-\/axes of box in degrees 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_ad5eefe83d23d93b1de5e4370bda74194}{\index{boxes@{boxes}!gamma\-\_\-cos@{gamma\-\_\-cos}}
+\index{gamma\-\_\-cos@{gamma\-\_\-cos}!boxes@{boxes}}
+\subsubsection[{gamma\-\_\-cos}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::gamma\-\_\-cos}}\label{classboxes_ad5eefe83d23d93b1de5e4370bda74194}
+
+
+cosine of the gamma periodic box angle 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a789f912c3cff1d590a6a9aa6a3073080}{\index{boxes@{boxes}!gamma\-\_\-sin@{gamma\-\_\-sin}}
+\index{gamma\-\_\-sin@{gamma\-\_\-sin}!boxes@{boxes}}
+\subsubsection[{gamma\-\_\-sin}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::gamma\-\_\-sin}}\label{classboxes_a789f912c3cff1d590a6a9aa6a3073080}
+
+
+sine of the gamma periodic box angle 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_ac208c73a5a2e30d60bd4707832bf360a}{\index{boxes@{boxes}!gamma\-\_\-term@{gamma\-\_\-term}}
+\index{gamma\-\_\-term@{gamma\-\_\-term}!boxes@{boxes}}
+\subsubsection[{gamma\-\_\-term}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::gamma\-\_\-term}}\label{classboxes_ac208c73a5a2e30d60bd4707832bf360a}
+
+
+term used in generating triclinic box 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a3594e3020185258991c3e1d4e3875f68}{\index{boxes@{boxes}!lvec@{lvec}}
+\index{lvec@{lvec}!boxes@{boxes}}
+\subsubsection[{lvec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) boxes\-::lvec}}\label{classboxes_a3594e3020185258991c3e1d4e3875f68}
+
+
+real space lattice vectors as matrix rows 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a5b089e02ceadb0f2e89c8deec0d87491}{\index{boxes@{boxes}!monoclinic@{monoclinic}}
+\index{monoclinic@{monoclinic}!boxes@{boxes}}
+\subsubsection[{monoclinic}]{\setlength{\rightskip}{0pt plus 5cm}logical boxes\-::monoclinic}}\label{classboxes_a5b089e02ceadb0f2e89c8deec0d87491}
+
+
+flag to mark periodic box as monoclinic 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_ae928df89d1aa69fc06a8e8ba5db3b9a6}{\index{boxes@{boxes}!octahedron@{octahedron}}
+\index{octahedron@{octahedron}!boxes@{boxes}}
+\subsubsection[{octahedron}]{\setlength{\rightskip}{0pt plus 5cm}logical boxes\-::octahedron}}\label{classboxes_ae928df89d1aa69fc06a8e8ba5db3b9a6}
+
+
+flag to mark box as truncated octahedron 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a504790714b65897e53bbf86bdffd8ef2}{\index{boxes@{boxes}!orthogonal@{orthogonal}}
+\index{orthogonal@{orthogonal}!boxes@{boxes}}
+\subsubsection[{orthogonal}]{\setlength{\rightskip}{0pt plus 5cm}logical boxes\-::orthogonal}}\label{classboxes_a504790714b65897e53bbf86bdffd8ef2}
+
+
+flag to mark periodic box as orthogonal 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a0c87c5b0b386dcdd53ab94c59b07f5a8}{\index{boxes@{boxes}!recip@{recip}}
+\index{recip@{recip}!boxes@{boxes}}
+\subsubsection[{recip}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) boxes\-::recip}}\label{classboxes_a0c87c5b0b386dcdd53ab94c59b07f5a8}
+
+
+reciprocal lattice vectors as matrix columns 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a156da4dc49d38d44e617030b4118e37d}{\index{boxes@{boxes}!spacegrp@{spacegrp}}
+\index{spacegrp@{spacegrp}!boxes@{boxes}}
+\subsubsection[{spacegrp}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$10 boxes\-::spacegrp}}\label{classboxes_a156da4dc49d38d44e617030b4118e37d}
+
+
+space group symbol for the unitcell type 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_ab96dd924f424ba92884f3a7adf3623a6}{\index{boxes@{boxes}!triclinic@{triclinic}}
+\index{triclinic@{triclinic}!boxes@{boxes}}
+\subsubsection[{triclinic}]{\setlength{\rightskip}{0pt plus 5cm}logical boxes\-::triclinic}}\label{classboxes_ab96dd924f424ba92884f3a7adf3623a6}
+
+
+flag to mark periodic box as triclinic 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_aca6fdacea9feeb56829de94a10b36e4c}{\index{boxes@{boxes}!volbox@{volbox}}
+\index{volbox@{volbox}!boxes@{boxes}}
+\subsubsection[{volbox}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::volbox}}\label{classboxes_aca6fdacea9feeb56829de94a10b36e4c}
+
+
+volume in Ang$\ast$$\ast$3 of the periodic box 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_ae4dfe3914f47ce2bafd49eedbb1c740a}{\index{boxes@{boxes}!xbox@{xbox}}
+\index{xbox@{xbox}!boxes@{boxes}}
+\subsubsection[{xbox}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::xbox}}\label{classboxes_ae4dfe3914f47ce2bafd49eedbb1c740a}
+
+
+length of a-\/axis of periodic box in Angstroms 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a41afebf3094fba2eaec4f035140fc3ac}{\index{boxes@{boxes}!xbox2@{xbox2}}
+\index{xbox2@{xbox2}!boxes@{boxes}}
+\subsubsection[{xbox2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::xbox2}}\label{classboxes_a41afebf3094fba2eaec4f035140fc3ac}
+
+
+half of the a-\/axis length of periodic box 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_afe5321269ac54818115405d3424f39ab}{\index{boxes@{boxes}!ybox@{ybox}}
+\index{ybox@{ybox}!boxes@{boxes}}
+\subsubsection[{ybox}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::ybox}}\label{classboxes_afe5321269ac54818115405d3424f39ab}
+
+
+length of b-\/axis of periodic box in Angstroms 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_a88205d54fca966a21525295d45d0bf87}{\index{boxes@{boxes}!ybox2@{ybox2}}
+\index{ybox2@{ybox2}!boxes@{boxes}}
+\subsubsection[{ybox2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::ybox2}}\label{classboxes_a88205d54fca966a21525295d45d0bf87}
+
+
+half of the b-\/axis length of periodic box 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_aa2b953bb3bba616ffc87f57e29cfdf6c}{\index{boxes@{boxes}!zbox@{zbox}}
+\index{zbox@{zbox}!boxes@{boxes}}
+\subsubsection[{zbox}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::zbox}}\label{classboxes_aa2b953bb3bba616ffc87f57e29cfdf6c}
+
+
+length of c-\/axis of periodic box in Angstroms 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-boxes.\-f90.
+
+\hypertarget{classboxes_afee188c0e895d2a9ba865dff4f81dcc5}{\index{boxes@{boxes}!zbox2@{zbox2}}
+\index{zbox2@{zbox2}!boxes@{boxes}}
+\subsubsection[{zbox2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 boxes\-::zbox2}}\label{classboxes_afee188c0e895d2a9ba865dff4f81dcc5}
+
+
+half of the c-\/axis length of periodic box 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-boxes.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__boxes_8f90}{M\-O\-D\-\_\-boxes.\-f90}\end{DoxyCompactItemize}

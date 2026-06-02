@@ -1,0 +1,8 @@
+<map id="readdyn" name="readdyn">
+<area shape="rect" id="node2" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="138,5,190,32"/>
+<area shape="rect" id="node3" href="$lattice_8f90.html#aa8da83134ab24b7028d9e0b5672df9a1" title="stores the periodic box dimensions and sets angle values to be used in computing fractional coordinat..." alt="" coords="133,56,195,83"/>
+<area shape="rect" id="node4" href="$version_8f90.html#af134ab83c9cbcc8c29d90ef40f081291" title="checks the name of a file about to be opened; if if &quot;old&quot; status is passed, the name of the highest c..." alt="" coords="129,107,199,133"/>
+<area shape="rect" id="node5" href="$trimtext_8f90.html#a9ffb5587408536987060bfbffaecb110" title="converts a text string to all lower case letters " alt="" coords="248,56,323,83"/>
+<area shape="rect" id="node6" href="$trimtext_8f90.html#ad83d9073f809c425ddf7ca256594b68a" title="finds and returns the location of the last non&#45;blank character before the first null character in an ..." alt="" coords="248,107,323,133"/>
+<area shape="rect" id="node7" href="$nextarg_8f90.html#af29521271c4212b0dccb480e8a3d1389" title="&quot;nextarg&quot; finds the next unused command line argument and returns it in the input character string ..." alt="" coords="249,157,321,184"/>
+</map>

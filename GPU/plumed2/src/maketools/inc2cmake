@@ -1,9 +1,0 @@
-#! /bin/sh
-
-awk '{
-  if(match($1,"[A-Z_]=")){
-    sub("="," ")
-    $0="set("$0")"
-  }
-  print 
-}'

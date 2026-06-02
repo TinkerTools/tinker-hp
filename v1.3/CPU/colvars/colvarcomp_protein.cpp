@@ -1,0 +1,1 @@
+src/colvarcomp_protein.cpp

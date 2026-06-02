@@ -1,0 +1,398 @@
+\hypertarget{classbath}{\section{bath Module Reference}
+\label{classbath}\index{bath@{bath}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classbath_af2527ee0ddc6dbab83c329ff48a28b49}{voltrial}
+\begin{DoxyCompactList}\small\item\em mean number of steps between Monte Carlo moves \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_ac7ba8921357427e956ddb761956aeee6}{kelvin}
+\begin{DoxyCompactList}\small\item\em target value for the system temperature (K) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_af51ab3bffc1008a8d519372e3a3b29f0}{atmsph}
+\begin{DoxyCompactList}\small\item\em target value for the system pressure (atm) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a2c37bd76a8c3687874959925eb5b73ef}{tautemp}
+\begin{DoxyCompactList}\small\item\em time constant for Berendsen thermostat (psec) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a4d9c5934953a1047212e5280cf4135d3}{taupres}
+\begin{DoxyCompactList}\small\item\em time constant for Berendsen barostat (psec) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a97576d3970570db82ab1f8c50aaff73f}{compress}
+\begin{DoxyCompactList}\small\item\em isothermal compressibility of medium (atm-\/1) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a911ccc561fe5c658057896f4017a1e85}{collide}
+\begin{DoxyCompactList}\small\item\em collision frequency for Andersen thermostat \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a8b478b12a863eb9d056a1195f737df5d}{eta}
+\begin{DoxyCompactList}\small\item\em eta parameter for B\-U\-S\-S\-I barostat \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_aa2403c502d6b8f67a5ebf3f1010f6aa4}{volmove}
+\begin{DoxyCompactList}\small\item\em maximum volume move for Monte Carlo barostat (Ang$\ast$$\ast$3) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a7b3b6c32c51e4405e4c4948d2aa3d8b9}{gammapiston}
+\begin{DoxyCompactList}\small\item\em friction for the Langevin Piston barostat \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_aa9f430eecd1545822ec94aab78e0536b}{masspiston}
+\begin{DoxyCompactList}\small\item\em mass of the piston for the Langevin Piston barostat \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a4024f294b8428f4eae1cdaf3a06ddf7e}{extvolold}
+\begin{DoxyCompactList}\small\item\em last value of the Volume as an extended variable for the Langevin Piston barostat \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a354d5cdd8a7c243a018af69e9532456d}{temppiston}
+\begin{DoxyCompactList}\small\item\em temperature of the piston extended variable (Langevin barostat) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a962ae932f22d93aaa3d48d2bb5b0c914}{extvol}
+\begin{DoxyCompactList}\small\item\em Volume as an extended variable for the Langevin Piston barostat. \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_ab58c842917f47d058ccc454f2d86d26e}{vextvol}
+\begin{DoxyCompactList}\small\item\em Velocity of the Volume extended variable for the Langevin Piston barostat. \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classbath_a8e3c36b77876c501d390f5d4cd5e3214}{aextvol}
+\begin{DoxyCompactList}\small\item\em acceleration of the Volume extended variable for the Langevin Piston barostat \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3) \hyperlink{classbath_ae29a0bf200662ddefdf2f9abbe0f0497}{extbox}
+\begin{DoxyCompactList}\small\item\em sizes of the box as extended variables for the anisotropic Langevin barostat \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3) \hyperlink{classbath_abf4f3dff07da5314ccca397e0915b461}{vextbox}
+\begin{DoxyCompactList}\small\item\em velocities of the sizes of the boxes for the anisotropic Langevin barostat \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3) \hyperlink{classbath_ad443bea48f49b46247715f8a9b556897}{aextbox}
+\begin{DoxyCompactList}\small\item\em accelerations of the sizes of the box for the anisotropic Langevin barostat \end{DoxyCompactList}\item 
+logical \hyperlink{classbath_a319ca259bea972503f4a8c2ecf7b46e1}{isothermal}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of temperature control \end{DoxyCompactList}\item 
+logical \hyperlink{classbath_aaa4b05e6c14f0448c7d434cb61a31f41}{isobaric}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of pressure control \end{DoxyCompactList}\item 
+logical \hyperlink{classbath_adf1ab4c8599e36e94daa6c168a50dc42}{anisotrop}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of anisotropic pressure \end{DoxyCompactList}\item 
+logical \hyperlink{classbath_a587fc21d72bea065a8b3bdd07d016bed}{use\-\_\-piston}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of Langevin Piston barostat \end{DoxyCompactList}\item 
+logical, dimension(3) \hyperlink{classbath_a47529a9a6ecd22b03c1b236ea7a7acd9}{freeze\-\_\-axis} =.F\-A\-L\-S\-E.
+\begin{DoxyCompactList}\small\item\em info about axis to freeze during volume fluctuations (semi-\/isotropic barostat) \end{DoxyCompactList}\item 
+logical \hyperlink{classbath_a2a95f8a0816cbcbab171445abb24a216}{isobaric\-\_\-save} =.F\-A\-L\-S\-E.
+\begin{DoxyCompactList}\small\item\em logical flag governing use of Langevin Piston barostat with Q\-T\-B \end{DoxyCompactList}\item 
+logical \hyperlink{classbath_a95eb9a1e66e1b135ed1a51b1f2f590f2}{use\-\_\-piston\-\_\-save} =.F\-A\-L\-S\-E.
+\begin{DoxyCompactList}\small\item\em logical flag governing monitoring of stat about Langevin piston \end{DoxyCompactList}\item 
+character $\ast$9 \hyperlink{classbath_a91d816721d0a28155db7384add3bd4a6}{volscale}
+\begin{DoxyCompactList}\small\item\em choice of scaling method for Monte Carlo barostat \end{DoxyCompactList}\item 
+character $\ast$11 \hyperlink{classbath_a1f37229303acc7597c01ca348b462709}{barostat}
+\begin{DoxyCompactList}\small\item\em choice of pressure control method to be used \end{DoxyCompactList}\item 
+character $\ast$11 \hyperlink{classbath_aa9a2b3b2f92760da86d3c52fb3d9a3d6}{thermostat}
+\begin{DoxyCompactList}\small\item\em choice of temperature control method to be used \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-bath.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classbath_ad443bea48f49b46247715f8a9b556897}{\index{bath@{bath}!aextbox@{aextbox}}
+\index{aextbox@{aextbox}!bath@{bath}}
+\subsubsection[{aextbox}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3) bath\-::aextbox}}\label{classbath_ad443bea48f49b46247715f8a9b556897}
+
+
+accelerations of the sizes of the box for the anisotropic Langevin barostat 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a8e3c36b77876c501d390f5d4cd5e3214}{\index{bath@{bath}!aextvol@{aextvol}}
+\index{aextvol@{aextvol}!bath@{bath}}
+\subsubsection[{aextvol}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::aextvol}}\label{classbath_a8e3c36b77876c501d390f5d4cd5e3214}
+
+
+acceleration of the Volume extended variable for the Langevin Piston barostat 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_adf1ab4c8599e36e94daa6c168a50dc42}{\index{bath@{bath}!anisotrop@{anisotrop}}
+\index{anisotrop@{anisotrop}!bath@{bath}}
+\subsubsection[{anisotrop}]{\setlength{\rightskip}{0pt plus 5cm}logical bath\-::anisotrop}}\label{classbath_adf1ab4c8599e36e94daa6c168a50dc42}
+
+
+logical flag governing use of anisotropic pressure 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_af51ab3bffc1008a8d519372e3a3b29f0}{\index{bath@{bath}!atmsph@{atmsph}}
+\index{atmsph@{atmsph}!bath@{bath}}
+\subsubsection[{atmsph}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::atmsph}}\label{classbath_af51ab3bffc1008a8d519372e3a3b29f0}
+
+
+target value for the system pressure (atm) 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a1f37229303acc7597c01ca348b462709}{\index{bath@{bath}!barostat@{barostat}}
+\index{barostat@{barostat}!bath@{bath}}
+\subsubsection[{barostat}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$11 bath\-::barostat}}\label{classbath_a1f37229303acc7597c01ca348b462709}
+
+
+choice of pressure control method to be used 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a911ccc561fe5c658057896f4017a1e85}{\index{bath@{bath}!collide@{collide}}
+\index{collide@{collide}!bath@{bath}}
+\subsubsection[{collide}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::collide}}\label{classbath_a911ccc561fe5c658057896f4017a1e85}
+
+
+collision frequency for Andersen thermostat 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a97576d3970570db82ab1f8c50aaff73f}{\index{bath@{bath}!compress@{compress}}
+\index{compress@{compress}!bath@{bath}}
+\subsubsection[{compress}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::compress}}\label{classbath_a97576d3970570db82ab1f8c50aaff73f}
+
+
+isothermal compressibility of medium (atm-\/1) 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a8b478b12a863eb9d056a1195f737df5d}{\index{bath@{bath}!eta@{eta}}
+\index{eta@{eta}!bath@{bath}}
+\subsubsection[{eta}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::eta}}\label{classbath_a8b478b12a863eb9d056a1195f737df5d}
+
+
+eta parameter for B\-U\-S\-S\-I barostat 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_ae29a0bf200662ddefdf2f9abbe0f0497}{\index{bath@{bath}!extbox@{extbox}}
+\index{extbox@{extbox}!bath@{bath}}
+\subsubsection[{extbox}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3) bath\-::extbox}}\label{classbath_ae29a0bf200662ddefdf2f9abbe0f0497}
+
+
+sizes of the box as extended variables for the anisotropic Langevin barostat 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a962ae932f22d93aaa3d48d2bb5b0c914}{\index{bath@{bath}!extvol@{extvol}}
+\index{extvol@{extvol}!bath@{bath}}
+\subsubsection[{extvol}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::extvol}}\label{classbath_a962ae932f22d93aaa3d48d2bb5b0c914}
+
+
+Volume as an extended variable for the Langevin Piston barostat. 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a4024f294b8428f4eae1cdaf3a06ddf7e}{\index{bath@{bath}!extvolold@{extvolold}}
+\index{extvolold@{extvolold}!bath@{bath}}
+\subsubsection[{extvolold}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::extvolold}}\label{classbath_a4024f294b8428f4eae1cdaf3a06ddf7e}
+
+
+last value of the Volume as an extended variable for the Langevin Piston barostat 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a47529a9a6ecd22b03c1b236ea7a7acd9}{\index{bath@{bath}!freeze\-\_\-axis@{freeze\-\_\-axis}}
+\index{freeze\-\_\-axis@{freeze\-\_\-axis}!bath@{bath}}
+\subsubsection[{freeze\-\_\-axis}]{\setlength{\rightskip}{0pt plus 5cm}logical, dimension(3) bath\-::freeze\-\_\-axis =.F\-A\-L\-S\-E.}}\label{classbath_a47529a9a6ecd22b03c1b236ea7a7acd9}
+
+
+info about axis to freeze during volume fluctuations (semi-\/isotropic barostat) 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a7b3b6c32c51e4405e4c4948d2aa3d8b9}{\index{bath@{bath}!gammapiston@{gammapiston}}
+\index{gammapiston@{gammapiston}!bath@{bath}}
+\subsubsection[{gammapiston}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::gammapiston}}\label{classbath_a7b3b6c32c51e4405e4c4948d2aa3d8b9}
+
+
+friction for the Langevin Piston barostat 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_aaa4b05e6c14f0448c7d434cb61a31f41}{\index{bath@{bath}!isobaric@{isobaric}}
+\index{isobaric@{isobaric}!bath@{bath}}
+\subsubsection[{isobaric}]{\setlength{\rightskip}{0pt plus 5cm}logical bath\-::isobaric}}\label{classbath_aaa4b05e6c14f0448c7d434cb61a31f41}
+
+
+logical flag governing use of pressure control 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a2a95f8a0816cbcbab171445abb24a216}{\index{bath@{bath}!isobaric\-\_\-save@{isobaric\-\_\-save}}
+\index{isobaric\-\_\-save@{isobaric\-\_\-save}!bath@{bath}}
+\subsubsection[{isobaric\-\_\-save}]{\setlength{\rightskip}{0pt plus 5cm}logical bath\-::isobaric\-\_\-save =.F\-A\-L\-S\-E.}}\label{classbath_a2a95f8a0816cbcbab171445abb24a216}
+
+
+logical flag governing use of Langevin Piston barostat with Q\-T\-B 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a319ca259bea972503f4a8c2ecf7b46e1}{\index{bath@{bath}!isothermal@{isothermal}}
+\index{isothermal@{isothermal}!bath@{bath}}
+\subsubsection[{isothermal}]{\setlength{\rightskip}{0pt plus 5cm}logical bath\-::isothermal}}\label{classbath_a319ca259bea972503f4a8c2ecf7b46e1}
+
+
+logical flag governing use of temperature control 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_ac7ba8921357427e956ddb761956aeee6}{\index{bath@{bath}!kelvin@{kelvin}}
+\index{kelvin@{kelvin}!bath@{bath}}
+\subsubsection[{kelvin}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::kelvin}}\label{classbath_ac7ba8921357427e956ddb761956aeee6}
+
+
+target value for the system temperature (K) 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_aa9f430eecd1545822ec94aab78e0536b}{\index{bath@{bath}!masspiston@{masspiston}}
+\index{masspiston@{masspiston}!bath@{bath}}
+\subsubsection[{masspiston}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::masspiston}}\label{classbath_aa9f430eecd1545822ec94aab78e0536b}
+
+
+mass of the piston for the Langevin Piston barostat 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a4d9c5934953a1047212e5280cf4135d3}{\index{bath@{bath}!taupres@{taupres}}
+\index{taupres@{taupres}!bath@{bath}}
+\subsubsection[{taupres}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::taupres}}\label{classbath_a4d9c5934953a1047212e5280cf4135d3}
+
+
+time constant for Berendsen barostat (psec) 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a2c37bd76a8c3687874959925eb5b73ef}{\index{bath@{bath}!tautemp@{tautemp}}
+\index{tautemp@{tautemp}!bath@{bath}}
+\subsubsection[{tautemp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::tautemp}}\label{classbath_a2c37bd76a8c3687874959925eb5b73ef}
+
+
+time constant for Berendsen thermostat (psec) 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a354d5cdd8a7c243a018af69e9532456d}{\index{bath@{bath}!temppiston@{temppiston}}
+\index{temppiston@{temppiston}!bath@{bath}}
+\subsubsection[{temppiston}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::temppiston}}\label{classbath_a354d5cdd8a7c243a018af69e9532456d}
+
+
+temperature of the piston extended variable (Langevin barostat) 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_aa9a2b3b2f92760da86d3c52fb3d9a3d6}{\index{bath@{bath}!thermostat@{thermostat}}
+\index{thermostat@{thermostat}!bath@{bath}}
+\subsubsection[{thermostat}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$11 bath\-::thermostat}}\label{classbath_aa9a2b3b2f92760da86d3c52fb3d9a3d6}
+
+
+choice of temperature control method to be used 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a587fc21d72bea065a8b3bdd07d016bed}{\index{bath@{bath}!use\-\_\-piston@{use\-\_\-piston}}
+\index{use\-\_\-piston@{use\-\_\-piston}!bath@{bath}}
+\subsubsection[{use\-\_\-piston}]{\setlength{\rightskip}{0pt plus 5cm}logical bath\-::use\-\_\-piston}}\label{classbath_a587fc21d72bea065a8b3bdd07d016bed}
+
+
+logical flag governing use of Langevin Piston barostat 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a95eb9a1e66e1b135ed1a51b1f2f590f2}{\index{bath@{bath}!use\-\_\-piston\-\_\-save@{use\-\_\-piston\-\_\-save}}
+\index{use\-\_\-piston\-\_\-save@{use\-\_\-piston\-\_\-save}!bath@{bath}}
+\subsubsection[{use\-\_\-piston\-\_\-save}]{\setlength{\rightskip}{0pt plus 5cm}logical bath\-::use\-\_\-piston\-\_\-save =.F\-A\-L\-S\-E.}}\label{classbath_a95eb9a1e66e1b135ed1a51b1f2f590f2}
+
+
+logical flag governing monitoring of stat about Langevin piston 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_abf4f3dff07da5314ccca397e0915b461}{\index{bath@{bath}!vextbox@{vextbox}}
+\index{vextbox@{vextbox}!bath@{bath}}
+\subsubsection[{vextbox}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3) bath\-::vextbox}}\label{classbath_abf4f3dff07da5314ccca397e0915b461}
+
+
+velocities of the sizes of the boxes for the anisotropic Langevin barostat 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_ab58c842917f47d058ccc454f2d86d26e}{\index{bath@{bath}!vextvol@{vextvol}}
+\index{vextvol@{vextvol}!bath@{bath}}
+\subsubsection[{vextvol}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::vextvol}}\label{classbath_ab58c842917f47d058ccc454f2d86d26e}
+
+
+Velocity of the Volume extended variable for the Langevin Piston barostat. 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_aa2403c502d6b8f67a5ebf3f1010f6aa4}{\index{bath@{bath}!volmove@{volmove}}
+\index{volmove@{volmove}!bath@{bath}}
+\subsubsection[{volmove}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 bath\-::volmove}}\label{classbath_aa2403c502d6b8f67a5ebf3f1010f6aa4}
+
+
+maximum volume move for Monte Carlo barostat (Ang$\ast$$\ast$3) 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_a91d816721d0a28155db7384add3bd4a6}{\index{bath@{bath}!volscale@{volscale}}
+\index{volscale@{volscale}!bath@{bath}}
+\subsubsection[{volscale}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$9 bath\-::volscale}}\label{classbath_a91d816721d0a28155db7384add3bd4a6}
+
+
+choice of scaling method for Monte Carlo barostat 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-bath.\-f90.
+
+\hypertarget{classbath_af2527ee0ddc6dbab83c329ff48a28b49}{\index{bath@{bath}!voltrial@{voltrial}}
+\index{voltrial@{voltrial}!bath@{bath}}
+\subsubsection[{voltrial}]{\setlength{\rightskip}{0pt plus 5cm}integer bath\-::voltrial}}\label{classbath_af2527ee0ddc6dbab83c329ff48a28b49}
+
+
+mean number of steps between Monte Carlo moves 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-bath.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__bath_8f90}{M\-O\-D\-\_\-bath.\-f90}\end{DoxyCompactItemize}

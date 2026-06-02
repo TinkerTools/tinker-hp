@@ -1,0 +1,289 @@
+\hypertarget{classutilbaoab}{\section{utilbaoab Module Reference}
+\label{classutilbaoab}\index{utilbaoab@{utilbaoab}}
+}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{classutilbaoab_a7b1f23a5d26445f55e3b90d0674a2d0d}{apply\-\_\-a\-\_\-block} (dt)
+\begin{DoxyCompactList}\small\item\em apply the A-\/block of the B\-A\-O\-A\-B integrator\-: update of positions given velocities \end{DoxyCompactList}\item 
+subroutine \hyperlink{classutilbaoab_a4d37fc94de119ad221561c0bb1aa272f}{apply\-\_\-o\-\_\-block} (dt)
+\begin{DoxyCompactList}\small\item\em apply the O-\/block of the B\-A\-O\-A\-B integrator\-: analytical integration of Orstein-\/\-Uhlenbeck process to update velocities \end{DoxyCompactList}\item 
+subroutine \hyperlink{classutilbaoab_a3d5c863e74be709865803d204c1c2bf2}{apply\-\_\-b\-\_\-piston} (dt, pres, stress)
+\begin{DoxyCompactList}\small\item\em apply the B-\/block of the B\-A\-O\-A\-B integrator for Langevin Piston\-: update of velocities given acceleration (forces) \end{DoxyCompactList}\item 
+subroutine \hyperlink{classutilbaoab_af550cf0d3589884d811a1dbee44d10f7}{apply\-\_\-o\-\_\-piston} (dt)
+\begin{DoxyCompactList}\small\item\em apply the O-\/block of the B\-A\-O\-A\-B integrator for the Langevin-\/\-Piston\-: analytical integration of Orstein-\/\-Uhlenbeck process to update velocities \end{DoxyCompactList}\item 
+subroutine \hyperlink{classutilbaoab_a0e3aa519dcd9477a64fae230aeac9742}{apply\-\_\-a\-\_\-piston} (dt, istep, A\-\_\-full)
+\begin{DoxyCompactList}\small\item\em apply the A-\/block of the B\-A\-O\-A\-B integrator for the Langevin-\/\-Piston\-: update of positions given velocities \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 1 of file M\-O\-D\-\_\-utilbaoab.\-f90.
+
+
+
+\subsection{Member Function/\-Subroutine Documentation}
+\hypertarget{classutilbaoab_a7b1f23a5d26445f55e3b90d0674a2d0d}{\index{utilbaoab@{utilbaoab}!apply\-\_\-a\-\_\-block@{apply\-\_\-a\-\_\-block}}
+\index{apply\-\_\-a\-\_\-block@{apply\-\_\-a\-\_\-block}!utilbaoab@{utilbaoab}}
+\subsubsection[{apply\-\_\-a\-\_\-block}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoab\-::apply\-\_\-a\-\_\-block (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoab_a7b1f23a5d26445f55e3b90d0674a2d0d}
+
+
+apply the A-\/block of the B\-A\-O\-A\-B integrator\-: update of positions given velocities 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & time step \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 9 of file M\-O\-D\-\_\-utilbaoab.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt(), rattle(), rattle2(), and save\-\_\-atoms\-\_\-pos().
+
+
+
+Referenced by baoab(), baoabrespa(), and baoabrespafast1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_a7b1f23a5d26445f55e3b90d0674a2d0d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_a7b1f23a5d26445f55e3b90d0674a2d0d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoab_a0e3aa519dcd9477a64fae230aeac9742}{\index{utilbaoab@{utilbaoab}!apply\-\_\-a\-\_\-piston@{apply\-\_\-a\-\_\-piston}}
+\index{apply\-\_\-a\-\_\-piston@{apply\-\_\-a\-\_\-piston}!utilbaoab@{utilbaoab}}
+\subsubsection[{apply\-\_\-a\-\_\-piston}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoab\-::apply\-\_\-a\-\_\-piston (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{dt, }
+\item[{integer, intent(in)}]{istep, }
+\item[{logical, intent(in)}]{A\-\_\-full}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoab_a0e3aa519dcd9477a64fae230aeac9742}
+
+
+apply the A-\/block of the B\-A\-O\-A\-B integrator for the Langevin-\/\-Piston\-: update of positions given velocities 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & time step \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 189 of file M\-O\-D\-\_\-utilbaoab.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt(), rattle(), rattle2(), rescale\-\_\-box(), and save\-\_\-atoms\-\_\-pos().
+
+
+
+Referenced by baoab(), and baoabrespa().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_a0e3aa519dcd9477a64fae230aeac9742_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_a0e3aa519dcd9477a64fae230aeac9742_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoab_a3d5c863e74be709865803d204c1c2bf2}{\index{utilbaoab@{utilbaoab}!apply\-\_\-b\-\_\-piston@{apply\-\_\-b\-\_\-piston}}
+\index{apply\-\_\-b\-\_\-piston@{apply\-\_\-b\-\_\-piston}!utilbaoab@{utilbaoab}}
+\subsubsection[{apply\-\_\-b\-\_\-piston}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoab\-::apply\-\_\-b\-\_\-piston (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{dt, }
+\item[{real$\ast$8, intent(in)}]{pres, }
+\item[{real$\ast$8, dimension(3,3), intent(in)}]{stress}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoab_a3d5c863e74be709865803d204c1c2bf2}
+
+
+apply the B-\/block of the B\-A\-O\-A\-B integrator for Langevin Piston\-: update of velocities given acceleration (forces) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & time step \\
+\hline
+\mbox{\tt in}  & {\em pres,\-:} & current pressure \\
+\hline
+\mbox{\tt in}  & {\em stress,\-:} & current stress tensor \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 101 of file M\-O\-D\-\_\-utilbaoab.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by baoab(), and baoabrespa().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_a3d5c863e74be709865803d204c1c2bf2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_a3d5c863e74be709865803d204c1c2bf2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoab_a4d37fc94de119ad221561c0bb1aa272f}{\index{utilbaoab@{utilbaoab}!apply\-\_\-o\-\_\-block@{apply\-\_\-o\-\_\-block}}
+\index{apply\-\_\-o\-\_\-block@{apply\-\_\-o\-\_\-block}!utilbaoab@{utilbaoab}}
+\subsubsection[{apply\-\_\-o\-\_\-block}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoab\-::apply\-\_\-o\-\_\-block (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoab_a4d37fc94de119ad221561c0bb1aa272f}
+
+
+apply the O-\/block of the B\-A\-O\-A\-B integrator\-: analytical integration of Orstein-\/\-Uhlenbeck process to update velocities 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & time step \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 47 of file M\-O\-D\-\_\-utilbaoab.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt(), normal(), qtb\-::qtbrandom(), and rattle2().
+
+
+
+Referenced by baoab(), baoabrespa(), and baoabrespafast1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_a4d37fc94de119ad221561c0bb1aa272f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_a4d37fc94de119ad221561c0bb1aa272f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoab_af550cf0d3589884d811a1dbee44d10f7}{\index{utilbaoab@{utilbaoab}!apply\-\_\-o\-\_\-piston@{apply\-\_\-o\-\_\-piston}}
+\index{apply\-\_\-o\-\_\-piston@{apply\-\_\-o\-\_\-piston}!utilbaoab@{utilbaoab}}
+\subsubsection[{apply\-\_\-o\-\_\-piston}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoab\-::apply\-\_\-o\-\_\-piston (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoab_af550cf0d3589884d811a1dbee44d10f7}
+
+
+apply the O-\/block of the B\-A\-O\-A\-B integrator for the Langevin-\/\-Piston\-: analytical integration of Orstein-\/\-Uhlenbeck process to update velocities 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & time step \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 131 of file M\-O\-D\-\_\-utilbaoab.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt(), and normal().
+
+
+
+Referenced by baoab(), and baoabrespa().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_af550cf0d3589884d811a1dbee44d10f7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoab_af550cf0d3589884d811a1dbee44d10f7_icgraph}
+\end{center}
+\end{figure}
+
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__utilbaoab_8f90}{M\-O\-D\-\_\-utilbaoab.\-f90}\end{DoxyCompactItemize}

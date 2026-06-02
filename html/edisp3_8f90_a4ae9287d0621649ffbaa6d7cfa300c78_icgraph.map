@@ -1,0 +1,7 @@
+<map id="edisp3b" name="edisp3b">
+<area shape="rect" id="node2" href="$edisp3_8f90.html#a33facff28e562c155e365162d58970b4" title="calculates the dispersion energy; also partitions the energy among the atoms " alt="" coords="129,5,194,32"/>
+<area shape="rect" id="node3" href="$analysis_8f90.html#ae127889458682e50ca6c0789300710c6" title="calls the series of routines needed to calculate the potential energy and " alt="" coords="243,5,319,32"/>
+<area shape="rect" id="node4" href="$analyze_8f90.html#acce5eb003f35035aceaef44ca0b67e73" title="computes and displays the total potential energy " alt="" coords="491,5,589,32"/>
+<area shape="rect" id="node6" href="$analyze_8f90.html#a770ce3bad62e0a46d6df1a6176b244de" title="auxiliary routine for the analyze program that performs the energy analysis and prints the total and ..." alt="" coords="368,31,443,57"/>
+<area shape="rect" id="node5" href="$analyze_8f90.html#ad0571e0cf34d424af56a4981e316f8eb" title="computes and displays the total potential energy " alt="" coords="638,5,711,32"/>
+</map>

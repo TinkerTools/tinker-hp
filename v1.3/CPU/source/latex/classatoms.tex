@@ -1,0 +1,187 @@
+\hypertarget{classatoms}{\section{atoms Module Reference}
+\label{classatoms}\index{atoms@{atoms}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classatoms_a0d62a0e654e2857f8d2a1ce12b6f6eb6}{n}
+\begin{DoxyCompactList}\small\item\em total number of atoms in the current system \end{DoxyCompactList}\item 
+logical \hyperlink{classatoms_abce3ab126f34592ae695a7216a3d7ebf}{pbcunwrap}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classatoms_a6394bcb06c217b3bd239a0b2a1514418}{type}
+\begin{DoxyCompactList}\small\item\em atom type number for each atom in the system \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classatoms_a80a7224531ab022e4b4fd8712abc17ea}{pbcwrapindex}
+\begin{DoxyCompactList}\small\item\em array containing the indexes (n1,n2,n3) of the \char`\"{}real\char`\"{} cell of each atom \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_a9a9b5b4434a7f3b293a6d30a4f3bd0da}{x}
+\begin{DoxyCompactList}\small\item\em current x-\/coordinate for each atom in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_acb7a284510ae51efb81ef1e3307a8323}{y}
+\begin{DoxyCompactList}\small\item\em current y-\/coordinate for each atom in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_ad56d525716f84f1dd47a450c903adab7}{z}
+\begin{DoxyCompactList}\small\item\em current z-\/coordinate for each atom in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_a85f7d7d7038edcecede7d6e99dfaccb3}{xwrite}
+\begin{DoxyCompactList}\small\item\em x-\/coordinate to be printed (potentially unwrapped) for each atom in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_aa14fc2e014bdadb63756ec374906e009}{ywrite}
+\begin{DoxyCompactList}\small\item\em y-\/coordinate to be printed (potentially unwrapped) for each atom in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_a9653bdbdc3d996894be437900f1361f3}{zwrite}
+\begin{DoxyCompactList}\small\item\em z-\/coordinate to be printed (potentially unwrapped) for each atom in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_a730121d9d8d50fa1cd0726b94a4036cd}{xold}
+\begin{DoxyCompactList}\small\item\em last x-\/coordinate for each atom in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_af308f9cc36eba4e61c6e0a24d53a65fc}{yold}
+\begin{DoxyCompactList}\small\item\em last y-\/coordinate for each atom in the system \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classatoms_a88cfaf892614a84f207c1b54225a04dc}{zold}
+\begin{DoxyCompactList}\small\item\em last z-\/coordinate for each atom in the system \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-atoms.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classatoms_a0d62a0e654e2857f8d2a1ce12b6f6eb6}{\index{atoms@{atoms}!n@{n}}
+\index{n@{n}!atoms@{atoms}}
+\subsubsection[{n}]{\setlength{\rightskip}{0pt plus 5cm}integer atoms\-::n}}\label{classatoms_a0d62a0e654e2857f8d2a1ce12b6f6eb6}
+
+
+total number of atoms in the current system 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_abce3ab126f34592ae695a7216a3d7ebf}{\index{atoms@{atoms}!pbcunwrap@{pbcunwrap}}
+\index{pbcunwrap@{pbcunwrap}!atoms@{atoms}}
+\subsubsection[{pbcunwrap}]{\setlength{\rightskip}{0pt plus 5cm}logical atoms\-::pbcunwrap}}\label{classatoms_abce3ab126f34592ae695a7216a3d7ebf}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_a80a7224531ab022e4b4fd8712abc17ea}{\index{atoms@{atoms}!pbcwrapindex@{pbcwrapindex}}
+\index{pbcwrapindex@{pbcwrapindex}!atoms@{atoms}}
+\subsubsection[{pbcwrapindex}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), allocatable atoms\-::pbcwrapindex}}\label{classatoms_a80a7224531ab022e4b4fd8712abc17ea}
+
+
+array containing the indexes (n1,n2,n3) of the \char`\"{}real\char`\"{} cell of each atom 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_a6394bcb06c217b3bd239a0b2a1514418}{\index{atoms@{atoms}!type@{type}}
+\index{type@{type}!atoms@{atoms}}
+\subsubsection[{type}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atoms\-::type}}\label{classatoms_a6394bcb06c217b3bd239a0b2a1514418}
+
+
+atom type number for each atom in the system 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_a9a9b5b4434a7f3b293a6d30a4f3bd0da}{\index{atoms@{atoms}!x@{x}}
+\index{x@{x}!atoms@{atoms}}
+\subsubsection[{x}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::x}}\label{classatoms_a9a9b5b4434a7f3b293a6d30a4f3bd0da}
+
+
+current x-\/coordinate for each atom in the system 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_a730121d9d8d50fa1cd0726b94a4036cd}{\index{atoms@{atoms}!xold@{xold}}
+\index{xold@{xold}!atoms@{atoms}}
+\subsubsection[{xold}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::xold}}\label{classatoms_a730121d9d8d50fa1cd0726b94a4036cd}
+
+
+last x-\/coordinate for each atom in the system 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_a85f7d7d7038edcecede7d6e99dfaccb3}{\index{atoms@{atoms}!xwrite@{xwrite}}
+\index{xwrite@{xwrite}!atoms@{atoms}}
+\subsubsection[{xwrite}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::xwrite}}\label{classatoms_a85f7d7d7038edcecede7d6e99dfaccb3}
+
+
+x-\/coordinate to be printed (potentially unwrapped) for each atom in the system 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_acb7a284510ae51efb81ef1e3307a8323}{\index{atoms@{atoms}!y@{y}}
+\index{y@{y}!atoms@{atoms}}
+\subsubsection[{y}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::y}}\label{classatoms_acb7a284510ae51efb81ef1e3307a8323}
+
+
+current y-\/coordinate for each atom in the system 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_af308f9cc36eba4e61c6e0a24d53a65fc}{\index{atoms@{atoms}!yold@{yold}}
+\index{yold@{yold}!atoms@{atoms}}
+\subsubsection[{yold}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::yold}}\label{classatoms_af308f9cc36eba4e61c6e0a24d53a65fc}
+
+
+last y-\/coordinate for each atom in the system 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_aa14fc2e014bdadb63756ec374906e009}{\index{atoms@{atoms}!ywrite@{ywrite}}
+\index{ywrite@{ywrite}!atoms@{atoms}}
+\subsubsection[{ywrite}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::ywrite}}\label{classatoms_aa14fc2e014bdadb63756ec374906e009}
+
+
+y-\/coordinate to be printed (potentially unwrapped) for each atom in the system 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_ad56d525716f84f1dd47a450c903adab7}{\index{atoms@{atoms}!z@{z}}
+\index{z@{z}!atoms@{atoms}}
+\subsubsection[{z}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::z}}\label{classatoms_ad56d525716f84f1dd47a450c903adab7}
+
+
+current z-\/coordinate for each atom in the system 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_a88cfaf892614a84f207c1b54225a04dc}{\index{atoms@{atoms}!zold@{zold}}
+\index{zold@{zold}!atoms@{atoms}}
+\subsubsection[{zold}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::zold}}\label{classatoms_a88cfaf892614a84f207c1b54225a04dc}
+
+
+last z-\/coordinate for each atom in the system 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-atoms.\-f90.
+
+\hypertarget{classatoms_a9653bdbdc3d996894be437900f1361f3}{\index{atoms@{atoms}!zwrite@{zwrite}}
+\index{zwrite@{zwrite}!atoms@{atoms}}
+\subsubsection[{zwrite}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable atoms\-::zwrite}}\label{classatoms_a9653bdbdc3d996894be437900f1361f3}
+
+
+z-\/coordinate to be printed (potentially unwrapped) for each atom in the system 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-atoms.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__atoms_8f90}{M\-O\-D\-\_\-atoms.\-f90}\end{DoxyCompactItemize}

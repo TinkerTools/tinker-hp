@@ -1,0 +1,135 @@
+\hypertarget{attach_8f90}{\section{attach.\-f90 File Reference}
+\label{attach_8f90}\index{attach.\-f90@{attach.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{attach_8f90_a3675553b410aca30c267295a7228e1b5}{attach}
+\begin{DoxyCompactList}\small\item\em generates lists of 1-\/3, 1-\/4 and 1-\/5 connectivities starting from the previously determined list of attached atoms (ie, 1-\/2 connectivity) \end{DoxyCompactList}\item 
+subroutine \hyperlink{attach_8f90_a732194890bf2b5efa4f972e7ae2fa8c1}{dealloc\-\_\-shared\-\_\-attach}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for attach parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{attach_8f90_a75cc39fedd797d6d0205526695d04199}{alloc\-\_\-shared\-\_\-attach}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for active parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{attach_8f90_a75cc39fedd797d6d0205526695d04199}{\index{attach.\-f90@{attach.\-f90}!alloc\-\_\-shared\-\_\-attach@{alloc\-\_\-shared\-\_\-attach}}
+\index{alloc\-\_\-shared\-\_\-attach@{alloc\-\_\-shared\-\_\-attach}!attach.f90@{attach.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-attach}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-attach (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{attach_8f90_a75cc39fedd797d6d0205526695d04199}
+
+
+allocate shared memory pointers for active parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 199 of file attach.\-f90.
+
+
+
+Referenced by attach().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{attach_8f90_a75cc39fedd797d6d0205526695d04199_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{attach_8f90_a3675553b410aca30c267295a7228e1b5}{\index{attach.\-f90@{attach.\-f90}!attach@{attach}}
+\index{attach@{attach}!attach.f90@{attach.\-f90}}
+\subsubsection[{attach}]{\setlength{\rightskip}{0pt plus 5cm}subroutine attach (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{attach_8f90_a3675553b410aca30c267295a7228e1b5}
+
+
+generates lists of 1-\/3, 1-\/4 and 1-\/5 connectivities starting from the previously determined list of attached atoms (ie, 1-\/2 connectivity) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file attach.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-attach(), dealloc\-\_\-shared\-\_\-attach(), fatal(), and sort().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=290pt]{attach_8f90_a3675553b410aca30c267295a7228e1b5_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{attach_8f90_a3675553b410aca30c267295a7228e1b5_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{attach_8f90_a732194890bf2b5efa4f972e7ae2fa8c1}{\index{attach.\-f90@{attach.\-f90}!dealloc\-\_\-shared\-\_\-attach@{dealloc\-\_\-shared\-\_\-attach}}
+\index{dealloc\-\_\-shared\-\_\-attach@{dealloc\-\_\-shared\-\_\-attach}!attach.f90@{attach.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-attach}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-attach (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{attach_8f90_a732194890bf2b5efa4f972e7ae2fa8c1}
+
+
+deallocate shared memory pointers for attach parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 151 of file attach.\-f90.
+
+
+
+Referenced by attach(), and final().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{attach_8f90_a732194890bf2b5efa4f972e7ae2fa8c1_icgraph}
+\end{center}
+\end{figure}
+
+

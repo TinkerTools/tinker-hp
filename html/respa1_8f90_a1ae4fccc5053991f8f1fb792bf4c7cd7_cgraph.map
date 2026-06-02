@@ -1,0 +1,51 @@
+<map id="respa1" name="respa1">
+<area shape="rect" id="node2" href="$domdecstuff_8f90.html#af44472a279ad05de93d1100779b57c43" title="subroutine allocstepsrespa: deallocate arrays and reallocate them with proper size (memory distributi..." alt="" coords="120,141,237,168"/>
+<area shape="rect" id="node3" href="$mpistuff_8f90.html#aac6b485f4f510ce7355365d0292661b4" title="communicate some forces between processes when respa1 integrator is used " alt="" coords="309,1051,456,1077"/>
+<area shape="rect" id="node8" href="$mpistuff_8f90.html#a42f224f96229ba3fd381eaad0cb34aab" title="communicate positions for reciprocal space computation " alt="" coords="125,369,232,396"/>
+<area shape="rect" id="node9" href="$classcolvarproxy__tinkerhp.html#a6c0fad6b6be3ac94b260262f5f06ce1b" title="Time step of the simulation (fs) " alt="" coords="528,787,709,813"/>
+<area shape="rect" id="node10" href="$respa1_8f90.html#a809f43e903eab8a6eb11da3cacadb53b" title="calculates the potential energy and first derivatives for the slow&#45;evolving nonbonded potential energ..." alt="" coords="134,192,223,219"/>
+<area shape="rect" id="node14" href="$MOD__energi_8f90.html#a8d6b385b0d7964fc275032f538e85875" title="outputs the components of the current energy " alt="" coords="333,1000,432,1027"/>
+<area shape="rect" id="node15" href="$mdrest_8f90.html#ae5afe1c6fb292e94a2c4630097b2a947" title="finds and removes any translational or rotational kinetic energy of the overall system center of mass..." alt="" coords="145,420,213,447"/>
+<area shape="rect" id="node17" href="$mdsave_8f90.html#a66117ee581d744421127d25fed43b306" title="writes molecular dynamics trajectory snapshots and auxiliary files with velocity, force or induced di..." alt="" coords="141,471,216,497"/>
+<area shape="rect" id="node27" href="$mdstat_8f90.html#ac986353dcb6d54b5e5ba229e005efe18" title="&quot;mdstat&quot; is called at each molecular dynamics time step to form statistics on various average values ..." alt="" coords="349,724,417,751"/>
+<area shape="rect" id="node28" href="$mechanic_8f90.html#a55553e62ec26b47755d4dab69f070691" title="update parameters between two time steps of respa1 integrator " alt="" coords="285,1348,480,1375"/>
+<area shape="rect" id="node42" href="$nblist_8f90.html#a54d14b4bd44060d9cfa616ab89d1d723" title="constructs and maintains nonbonded pair neighbor lists for vdw and electrostatic interactions ..." alt="" coords="149,975,208,1001"/>
+<area shape="rect" id="node43" href="$pressure_8f90.html#a7d8bdf32501e58b7bf9d4570151536cc" title="uses the internal virial to find the pressure in a periodic box and maintains a constant desired pres..." alt="" coords="343,775,422,801"/>
+<area shape="rect" id="node44" href="$rattle_8f90.html#aff356ce357db8823af8ee87f905e53ec" title="implements the second portion of the RATTLE algorithm by correcting the full&#45;step velocities in order..." alt="" coords="350,927,415,953"/>
+<area shape="rect" id="node45" href="$pmestuff_8f90.html#a678ca0cec4d103cb489a1ef6dfbe5fe3" title="initialize arrays to compute reciprocal part of electrostatic and polarization interactions, also reassign atoms on &#39;reciprocal cores&#39; between time steps " alt="" coords="125,1127,232,1153"/>
+<area shape="rect" id="node46" href="$mpistuff_8f90.html#ab6aa7f6aa468b17cf44590a9eb028eea" title="make the necessary reductions over the processes to get the total values of the energies ..." alt="" coords="341,1191,424,1217"/>
+<area shape="rect" id="node47" href="$nblist_8f90.html#a1998698bfd65eb0e19836c89143e0b2c" title="get the number of particules whose nl has to be computed and the associated indexes ..." alt="" coords="145,1228,213,1255"/>
+<area shape="rect" id="node48" href="$respa1_8f90.html#a1ee058432ecac2a22e73d0dd392e90df" title="find intermediate&#45;evolving velocities and positions via velocity Verlet recursion ..." alt="" coords="137,1076,220,1103"/>
+<area shape="rect" id="node49" href="$temper_8f90.html#ae7cc510ecf8b4fd57b2a8efd58a0c7de" title="computes and displays the total potential energy " alt="" coords="144,823,213,849"/>
+<area shape="rect" id="node50" href="$temper_8f90.html#ac13b262b18b33efd528672154047cac9" title="computes the instantaneous temperature and applies a thermostat via Berendsen or Bussi&#45;Parrinello vel..." alt="" coords="140,1380,217,1407"/>
+<area shape="rect" id="node4" href="$mpistuff_8f90.html#aa40e25e26f6f34c971b1bcda983c120a" title="deal with communications of forces by bloc between two time steps " alt="" coords="553,993,684,1020"/>
+<area shape="rect" id="node5" href="$mpistuff_8f90.html#a95d69f0524ae2c5840dc50c09290401c" title="deal with communications of the bonded forces " alt="" coords="543,1044,694,1071"/>
+<area shape="rect" id="node6" href="$mpistuff_8f90.html#a6da09800136d5661479e302d21b7dd51" title="deal with communications of reciprocal forces by bloc between two time steps " alt="" coords="557,892,680,919"/>
+<area shape="rect" id="node7" href="$mpistuff_8f90.html#a38837bdca80b6de2820a18dac6262983" title="deal with communications of short range forces by bloc between two time steps " alt="" coords="537,943,700,969"/>
+<area shape="rect" id="node11" href="$energy_8f90.html#a1aa8c625eb0a3eea79ed1a8047707c94" title="calls the subroutines to calculate the potential energy terms and sums up to form the total energy ..." alt="" coords="585,15,652,41"/>
+<area shape="rect" id="node13" href="$gradient_8f90.html#a8665411aa7f5050b7002b6723044274d" title="calls subroutines to calculate the potential energy and first derivatives with respect to Cartesian c..." alt="" coords="345,65,421,92"/>
+<area shape="rect" id="node12" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="770,141,822,168"/>
+<area shape="rect" id="node16" href="$invert_8f90.html#ad6032532b2c3b78a25379e8a497507d6" title="inverts a matrix using the Gauss&#45;Jordan method " alt="" coords="353,116,413,143"/>
+<area shape="rect" id="node18" href="$bounds_8f90.html#a36668b850047ca69a0c5714bbe42e6e4" title="finds the center of mass of each molecule and translates any stray molecules back into the periodic b..." alt="" coords="348,369,417,396"/>
+<area shape="rect" id="node19" href="$freeunit_8f90.html#a582cb9a08f034fa31fdd59df3b304e0d" title="finds an unopened Fortran I/O unit and returns its numerical value from 1 to 99; the units already as..." alt="" coords="582,217,655,244"/>
+<area shape="rect" id="node20" href="$numeral_8f90.html#a02f02abcc21a0359f7ef69ae411c78b5" title="converts an input integer number into the corresponding right&#45; or left&#45;justified text numeral ..." alt="" coords="758,1247,834,1273"/>
+<area shape="rect" id="node21" href="$openend_8f90.html#a4f250c7b64d8b47f136268313551242a" title="opens a file on a Fortran unit such that the position is set to the bottom for appending to the end o..." alt="" coords="343,471,422,497"/>
+<area shape="rect" id="node22" href="$prtdyn_8f90.html#a7bb4bdb3249a62b793f39c692634a4a3" title="writes out the information needed to restart a molecular dynamics trajectory to an external disk file..." alt="" coords="351,268,415,295"/>
+<area shape="rect" id="node26" href="$prtxyz_8f90.html#a2c3fce0673136314e40afb50f2be4145" title="writes out a set of Cartesian coordinates to an external disk file " alt="" coords="587,521,650,548"/>
+<area shape="rect" id="node23" href="$suffix_8f90.html#a0c56201abb4b5b464bf7fa9585d4a828" title="checks a filename for the presence of an extension, and appends an extension and version if none is f..." alt="" coords="589,344,648,371"/>
+<area shape="rect" id="node24" href="$trimtext_8f90.html#ad83d9073f809c425ddf7ca256594b68a" title="finds and returns the location of the last non&#45;blank character before the first null character in an ..." alt="" coords="883,420,957,447"/>
+<area shape="rect" id="node25" href="$version_8f90.html#af134ab83c9cbcc8c29d90ef40f081291" title="checks the name of a file about to be opened; if if &quot;old&quot; status is passed, the name of the highest c..." alt="" coords="761,420,831,447"/>
+<area shape="rect" id="node29" href="$angles_8f90.html#acd35182a451b0bd3f6f489bc0bd6ebd3" title="update local angles " alt="" coords="560,1652,677,1679"/>
+<area shape="rect" id="node30" href="$bitors_8f90.html#aebdc9a600e6ec7a5abf34bd13e36d135" title="update local bitors " alt="" coords="563,1703,674,1729"/>
+<area shape="rect" id="node31" href="$bonds_8f90.html#ac616eb6680c0e8c2443058c95f12540c" title="update local bonds " alt="" coords="562,1095,675,1121"/>
+<area shape="rect" id="node32" href="$nblist_8f90.html#af3eb198334f3bbc5cfc70080b4b254d1" title="build the arrays to communicate direct and reciprocal fields during the calculation of the induced di..." alt="" coords="570,1145,667,1172"/>
+<area shape="rect" id="node33" href="$kangang_8f90.html#a00f90e9cba0445559a17b00690534ebe" title="update local angang parameters " alt="" coords="553,1196,684,1223"/>
+<area shape="rect" id="node34" href="$kangtor_8f90.html#ab10b233822f95968c612c84e8f717ebc" title="local update of angtor parameters " alt="" coords="557,1551,681,1577"/>
+<area shape="rect" id="node35" href="$kcharge_8f90.html#a8acf8eceb78ec6488c2bfff2a7009761" title="update local charges paramters " alt="" coords="555,1297,682,1324"/>
+<area shape="rect" id="node36" href="$kchgtrn_8f90.html#a42b4aafb71903ef86abb09bccee224a8" title="kchgtrn_update" alt="" coords="557,1348,680,1375"/>
+<area shape="rect" id="node37" href="$kdisp_8f90.html#ad22caf90f700a19726bbcff9cb547a27" title="update kdisp parameters " alt="" coords="564,1399,673,1425"/>
+<area shape="rect" id="node38" href="$kgeom_8f90.html#a8d87d305daf2da692315511bae23b5d9" title="computes and displays the total potential energy update local geom parameters " alt="" coords="559,1449,678,1476"/>
+<area shape="rect" id="node39" href="$kimprop_8f90.html#a77b4229be0de8ebfcfd21f1174a3a27f" title="kimprop_update" alt="" coords="555,1247,683,1273"/>
+<area shape="rect" id="node40" href="$kimptor_8f90.html#a5e404cd1533ab0722f5696c4da0d397c" title="update local imptor parameters " alt="" coords="556,1500,681,1527"/>
+<area shape="rect" id="node41" href="$kmpole_8f90.html#a81f63457c17b981616c780477b7bf1e7" title="update local mpole parameters " alt="" coords="557,1601,680,1628"/>
+</map>

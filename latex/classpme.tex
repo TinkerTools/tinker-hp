@@ -1,0 +1,424 @@
+\hypertarget{classpme}{\section{pme Module Reference}
+\label{classpme}\index{pme@{pme}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classpme_a52bd2839e2a18ce15733259a32c2bc3f}{maxorder}
+\begin{DoxyCompactList}\small\item\em maximum order of the B-\/spline approximation \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a1bd77907007725e4328b4ab7cae55b17}{nfft1}
+\begin{DoxyCompactList}\small\item\em number of grid points along the a-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_aee11b314910706a89f58d6fb117898be}{nfft2}
+\begin{DoxyCompactList}\small\item\em number of grid points along the b-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a8c9bd1d93a04978d16457ee89f7251e8}{nfft3}
+\begin{DoxyCompactList}\small\item\em number of grid points along the c-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a05ad6177dd8e91c37251408d2a71560c}{nefft1}
+\begin{DoxyCompactList}\small\item\em number of grid points (ele) along the a-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a53bdcfb369bad0a725232ec54866515e}{nefft2}
+\begin{DoxyCompactList}\small\item\em number of grid points (ele) along the b-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a6ddd10f469bb8e4b9f97f365df4f4a35}{nefft3}
+\begin{DoxyCompactList}\small\item\em number of grid points (ele) along the c-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a31ece1a3fdb29bfd7938214ae845faa5}{ndfft1}
+\begin{DoxyCompactList}\small\item\em number of grid points (disp) along the a-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a60c15d25258b6995199da60e0f7c61f9}{ndfft2}
+\begin{DoxyCompactList}\small\item\em number of grid points (disp) along the b-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a6d6685c3953c5c0755e6351a367c1a6a}{ndfft3}
+\begin{DoxyCompactList}\small\item\em number of grid points (disp) along the c-\/axis direction \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a99388aa40eb079175f21e1661c522736}{bsorder}
+\begin{DoxyCompactList}\small\item\em order of the P\-M\-E B-\/spline approximation \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_ac9f3d5f19c70ddc7c4c3bb922e176832}{bseorder}
+\begin{DoxyCompactList}\small\item\em order of the P\-M\-E B-\/spline approximation (ele) \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_adfaef23ac8fb63bc55ee5618da503a2b}{bsporder}
+\begin{DoxyCompactList}\small\item\em order of the P\-M\-E B-\/spline approximation (polar) \end{DoxyCompactList}\item 
+integer \hyperlink{classpme_a186cf8382a7089c487f26bd6fda0e1a6}{bsdorder}
+\begin{DoxyCompactList}\small\item\em order of the P\-M\-E B-\/spline approximation (disp) \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpme_abb9eb9e37b058bcbce7c025c3c7ae206}{igrid}
+\begin{DoxyCompactList}\small\item\em initial Ewald charge grid values for B-\/spline \end{DoxyCompactList}\item 
+real $\ast$8, dimension(maxfft) \hyperlink{classpme_a3d0155a6c5f49786b2a71081d6862121}{bsmod1}
+\begin{DoxyCompactList}\small\item\em B-\/spline moduli along the a-\/axis direction. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(maxfft) \hyperlink{classpme_a0ebaead01665855789c376258ec2ca3d}{bsmod2}
+\begin{DoxyCompactList}\small\item\em B-\/spline moduli along the b-\/axis direction. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(maxfft) \hyperlink{classpme_a5a6a1eff12e64abc65b3a5f38f2a4cc8}{bsmod3}
+\begin{DoxyCompactList}\small\item\em B-\/spline moduli along the c-\/axis direction. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classpme_a8310f8e14534feef7810430c5398214b}{thetai1}
+\begin{DoxyCompactList}\small\item\em B-\/spline coefficients along the a-\/axis. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classpme_a8f1f382bf6f1d281ee730f2d28592011}{thetai2}
+\begin{DoxyCompactList}\small\item\em B-\/spline coefficients along the b-\/axis. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classpme_a4a9242f547e1368bfcf75f6e89da2127}{thetai3}
+\begin{DoxyCompactList}\small\item\em B-\/spline coefficients along the c-\/axis. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:,\-:,\-:), \\*
+allocatable \hyperlink{classpme_ab9bda6ccbc8e57a3a5a0959234b511d3}{qgridin\-\_\-2d}
+\begin{DoxyCompactList}\small\item\em values on the particle mesh Ewald charge grid, permanent multipoles \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:,\-:), \\*
+allocatable \hyperlink{classpme_a5aee9bc96e7fac94aa9f0773f1fadea1}{qgridout\-\_\-2d}
+\begin{DoxyCompactList}\small\item\em values on the transposed particle mesh Ewald charge grid, permanent multipoles \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:,\-:,\-:), \\*
+allocatable \hyperlink{classpme_a12be952cd0b3e3fddb1e38a9272c2898}{qgrid2in\-\_\-2d}
+\begin{DoxyCompactList}\small\item\em values on the particle mesh Ewald charge grid, induced dipoles \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:,\-:), \\*
+allocatable \hyperlink{classpme_a41e685e4c0f36238cb3abf670331f0c6}{qgrid2out\-\_\-2d}
+\begin{DoxyCompactList}\small\item\em values on the transposed particle mesh Ewald charge grid, induced dipoles \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classpme_a91c3f31f171829c8b5e2ad267040b047}{qfac\-\_\-2d}
+\begin{DoxyCompactList}\small\item\em prefactors for particle mesh Ewald charge grid \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpme_a670f4635124f83619157e837135deb8c}{cphirec}
+\begin{DoxyCompactList}\small\item\em permanent electric fields, cartesian coordinates \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpme_a3c1e3e7a8d7e5a22e4c8bed26520f761}{fphirec}
+\begin{DoxyCompactList}\small\item\em permanent electric fields, fractional coordinates \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpme_a312266776211f48232fff6d6366c1744}{cphidprec}
+\begin{DoxyCompactList}\small\item\em dipolar electric fields, cartesian coordinates \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpme_a78223e8e44ba3091095218d421ed4c61}{fphidprec}
+\begin{DoxyCompactList}\small\item\em dipolar electric fields, fractional coordinates \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-pme.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classpme_a186cf8382a7089c487f26bd6fda0e1a6}{\index{pme@{pme}!bsdorder@{bsdorder}}
+\index{bsdorder@{bsdorder}!pme@{pme}}
+\subsubsection[{bsdorder}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::bsdorder}}\label{classpme_a186cf8382a7089c487f26bd6fda0e1a6}
+
+
+order of the P\-M\-E B-\/spline approximation (disp) 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_ac9f3d5f19c70ddc7c4c3bb922e176832}{\index{pme@{pme}!bseorder@{bseorder}}
+\index{bseorder@{bseorder}!pme@{pme}}
+\subsubsection[{bseorder}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::bseorder}}\label{classpme_ac9f3d5f19c70ddc7c4c3bb922e176832}
+
+
+order of the P\-M\-E B-\/spline approximation (ele) 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a3d0155a6c5f49786b2a71081d6862121}{\index{pme@{pme}!bsmod1@{bsmod1}}
+\index{bsmod1@{bsmod1}!pme@{pme}}
+\subsubsection[{bsmod1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(maxfft) pme\-::bsmod1}}\label{classpme_a3d0155a6c5f49786b2a71081d6862121}
+
+
+B-\/spline moduli along the a-\/axis direction. 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a0ebaead01665855789c376258ec2ca3d}{\index{pme@{pme}!bsmod2@{bsmod2}}
+\index{bsmod2@{bsmod2}!pme@{pme}}
+\subsubsection[{bsmod2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(maxfft) pme\-::bsmod2}}\label{classpme_a0ebaead01665855789c376258ec2ca3d}
+
+
+B-\/spline moduli along the b-\/axis direction. 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a5a6a1eff12e64abc65b3a5f38f2a4cc8}{\index{pme@{pme}!bsmod3@{bsmod3}}
+\index{bsmod3@{bsmod3}!pme@{pme}}
+\subsubsection[{bsmod3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(maxfft) pme\-::bsmod3}}\label{classpme_a5a6a1eff12e64abc65b3a5f38f2a4cc8}
+
+
+B-\/spline moduli along the c-\/axis direction. 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a99388aa40eb079175f21e1661c522736}{\index{pme@{pme}!bsorder@{bsorder}}
+\index{bsorder@{bsorder}!pme@{pme}}
+\subsubsection[{bsorder}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::bsorder}}\label{classpme_a99388aa40eb079175f21e1661c522736}
+
+
+order of the P\-M\-E B-\/spline approximation 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_adfaef23ac8fb63bc55ee5618da503a2b}{\index{pme@{pme}!bsporder@{bsporder}}
+\index{bsporder@{bsporder}!pme@{pme}}
+\subsubsection[{bsporder}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::bsporder}}\label{classpme_adfaef23ac8fb63bc55ee5618da503a2b}
+
+
+order of the P\-M\-E B-\/spline approximation (polar) 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a312266776211f48232fff6d6366c1744}{\index{pme@{pme}!cphidprec@{cphidprec}}
+\index{cphidprec@{cphidprec}!pme@{pme}}
+\subsubsection[{cphidprec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable pme\-::cphidprec}}\label{classpme_a312266776211f48232fff6d6366c1744}
+
+
+dipolar electric fields, cartesian coordinates 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a670f4635124f83619157e837135deb8c}{\index{pme@{pme}!cphirec@{cphirec}}
+\index{cphirec@{cphirec}!pme@{pme}}
+\subsubsection[{cphirec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable pme\-::cphirec}}\label{classpme_a670f4635124f83619157e837135deb8c}
+
+
+permanent electric fields, cartesian coordinates 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a78223e8e44ba3091095218d421ed4c61}{\index{pme@{pme}!fphidprec@{fphidprec}}
+\index{fphidprec@{fphidprec}!pme@{pme}}
+\subsubsection[{fphidprec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable pme\-::fphidprec}}\label{classpme_a78223e8e44ba3091095218d421ed4c61}
+
+
+dipolar electric fields, fractional coordinates 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a3c1e3e7a8d7e5a22e4c8bed26520f761}{\index{pme@{pme}!fphirec@{fphirec}}
+\index{fphirec@{fphirec}!pme@{pme}}
+\subsubsection[{fphirec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable pme\-::fphirec}}\label{classpme_a3c1e3e7a8d7e5a22e4c8bed26520f761}
+
+
+permanent electric fields, fractional coordinates 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_abb9eb9e37b058bcbce7c025c3c7ae206}{\index{pme@{pme}!igrid@{igrid}}
+\index{igrid@{igrid}!pme@{pme}}
+\subsubsection[{igrid}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), allocatable pme\-::igrid}}\label{classpme_abb9eb9e37b058bcbce7c025c3c7ae206}
+
+
+initial Ewald charge grid values for B-\/spline 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a52bd2839e2a18ce15733259a32c2bc3f}{\index{pme@{pme}!maxorder@{maxorder}}
+\index{maxorder@{maxorder}!pme@{pme}}
+\subsubsection[{maxorder}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::maxorder}}\label{classpme_a52bd2839e2a18ce15733259a32c2bc3f}
+
+
+maximum order of the B-\/spline approximation 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a31ece1a3fdb29bfd7938214ae845faa5}{\index{pme@{pme}!ndfft1@{ndfft1}}
+\index{ndfft1@{ndfft1}!pme@{pme}}
+\subsubsection[{ndfft1}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::ndfft1}}\label{classpme_a31ece1a3fdb29bfd7938214ae845faa5}
+
+
+number of grid points (disp) along the a-\/axis direction 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a60c15d25258b6995199da60e0f7c61f9}{\index{pme@{pme}!ndfft2@{ndfft2}}
+\index{ndfft2@{ndfft2}!pme@{pme}}
+\subsubsection[{ndfft2}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::ndfft2}}\label{classpme_a60c15d25258b6995199da60e0f7c61f9}
+
+
+number of grid points (disp) along the b-\/axis direction 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a6d6685c3953c5c0755e6351a367c1a6a}{\index{pme@{pme}!ndfft3@{ndfft3}}
+\index{ndfft3@{ndfft3}!pme@{pme}}
+\subsubsection[{ndfft3}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::ndfft3}}\label{classpme_a6d6685c3953c5c0755e6351a367c1a6a}
+
+
+number of grid points (disp) along the c-\/axis direction 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a05ad6177dd8e91c37251408d2a71560c}{\index{pme@{pme}!nefft1@{nefft1}}
+\index{nefft1@{nefft1}!pme@{pme}}
+\subsubsection[{nefft1}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::nefft1}}\label{classpme_a05ad6177dd8e91c37251408d2a71560c}
+
+
+number of grid points (ele) along the a-\/axis direction 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a53bdcfb369bad0a725232ec54866515e}{\index{pme@{pme}!nefft2@{nefft2}}
+\index{nefft2@{nefft2}!pme@{pme}}
+\subsubsection[{nefft2}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::nefft2}}\label{classpme_a53bdcfb369bad0a725232ec54866515e}
+
+
+number of grid points (ele) along the b-\/axis direction 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a6ddd10f469bb8e4b9f97f365df4f4a35}{\index{pme@{pme}!nefft3@{nefft3}}
+\index{nefft3@{nefft3}!pme@{pme}}
+\subsubsection[{nefft3}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::nefft3}}\label{classpme_a6ddd10f469bb8e4b9f97f365df4f4a35}
+
+
+number of grid points (ele) along the c-\/axis direction 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a1bd77907007725e4328b4ab7cae55b17}{\index{pme@{pme}!nfft1@{nfft1}}
+\index{nfft1@{nfft1}!pme@{pme}}
+\subsubsection[{nfft1}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::nfft1}}\label{classpme_a1bd77907007725e4328b4ab7cae55b17}
+
+
+number of grid points along the a-\/axis direction 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_aee11b314910706a89f58d6fb117898be}{\index{pme@{pme}!nfft2@{nfft2}}
+\index{nfft2@{nfft2}!pme@{pme}}
+\subsubsection[{nfft2}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::nfft2}}\label{classpme_aee11b314910706a89f58d6fb117898be}
+
+
+number of grid points along the b-\/axis direction 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a8c9bd1d93a04978d16457ee89f7251e8}{\index{pme@{pme}!nfft3@{nfft3}}
+\index{nfft3@{nfft3}!pme@{pme}}
+\subsubsection[{nfft3}]{\setlength{\rightskip}{0pt plus 5cm}integer pme\-::nfft3}}\label{classpme_a8c9bd1d93a04978d16457ee89f7251e8}
+
+
+number of grid points along the c-\/axis direction 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a91c3f31f171829c8b5e2ad267040b047}{\index{pme@{pme}!qfac\-\_\-2d@{qfac\-\_\-2d}}
+\index{qfac\-\_\-2d@{qfac\-\_\-2d}!pme@{pme}}
+\subsubsection[{qfac\-\_\-2d}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable pme\-::qfac\-\_\-2d}}\label{classpme_a91c3f31f171829c8b5e2ad267040b047}
+
+
+prefactors for particle mesh Ewald charge grid 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a12be952cd0b3e3fddb1e38a9272c2898}{\index{pme@{pme}!qgrid2in\-\_\-2d@{qgrid2in\-\_\-2d}}
+\index{qgrid2in\-\_\-2d@{qgrid2in\-\_\-2d}!pme@{pme}}
+\subsubsection[{qgrid2in\-\_\-2d}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:,\-:,\-:), allocatable pme\-::qgrid2in\-\_\-2d}}\label{classpme_a12be952cd0b3e3fddb1e38a9272c2898}
+
+
+values on the particle mesh Ewald charge grid, induced dipoles 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a41e685e4c0f36238cb3abf670331f0c6}{\index{pme@{pme}!qgrid2out\-\_\-2d@{qgrid2out\-\_\-2d}}
+\index{qgrid2out\-\_\-2d@{qgrid2out\-\_\-2d}!pme@{pme}}
+\subsubsection[{qgrid2out\-\_\-2d}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:,\-:), allocatable pme\-::qgrid2out\-\_\-2d}}\label{classpme_a41e685e4c0f36238cb3abf670331f0c6}
+
+
+values on the transposed particle mesh Ewald charge grid, induced dipoles 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_ab9bda6ccbc8e57a3a5a0959234b511d3}{\index{pme@{pme}!qgridin\-\_\-2d@{qgridin\-\_\-2d}}
+\index{qgridin\-\_\-2d@{qgridin\-\_\-2d}!pme@{pme}}
+\subsubsection[{qgridin\-\_\-2d}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:,\-:,\-:), allocatable pme\-::qgridin\-\_\-2d}}\label{classpme_ab9bda6ccbc8e57a3a5a0959234b511d3}
+
+
+values on the particle mesh Ewald charge grid, permanent multipoles 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a5aee9bc96e7fac94aa9f0773f1fadea1}{\index{pme@{pme}!qgridout\-\_\-2d@{qgridout\-\_\-2d}}
+\index{qgridout\-\_\-2d@{qgridout\-\_\-2d}!pme@{pme}}
+\subsubsection[{qgridout\-\_\-2d}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:,\-:), allocatable pme\-::qgridout\-\_\-2d}}\label{classpme_a5aee9bc96e7fac94aa9f0773f1fadea1}
+
+
+values on the transposed particle mesh Ewald charge grid, permanent multipoles 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a8310f8e14534feef7810430c5398214b}{\index{pme@{pme}!thetai1@{thetai1}}
+\index{thetai1@{thetai1}!pme@{pme}}
+\subsubsection[{thetai1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable pme\-::thetai1}}\label{classpme_a8310f8e14534feef7810430c5398214b}
+
+
+B-\/spline coefficients along the a-\/axis. 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a8f1f382bf6f1d281ee730f2d28592011}{\index{pme@{pme}!thetai2@{thetai2}}
+\index{thetai2@{thetai2}!pme@{pme}}
+\subsubsection[{thetai2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable pme\-::thetai2}}\label{classpme_a8f1f382bf6f1d281ee730f2d28592011}
+
+
+B-\/spline coefficients along the b-\/axis. 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-pme.\-f90.
+
+\hypertarget{classpme_a4a9242f547e1368bfcf75f6e89da2127}{\index{pme@{pme}!thetai3@{thetai3}}
+\index{thetai3@{thetai3}!pme@{pme}}
+\subsubsection[{thetai3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable pme\-::thetai3}}\label{classpme_a4a9242f547e1368bfcf75f6e89da2127}
+
+
+B-\/spline coefficients along the c-\/axis. 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-pme.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__pme_8f90}{M\-O\-D\-\_\-pme.\-f90}\end{DoxyCompactItemize}

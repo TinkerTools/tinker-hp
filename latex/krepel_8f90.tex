@@ -1,0 +1,135 @@
+\hypertarget{krepel_8f90}{\section{krepel.\-f90 File Reference}
+\label{krepel_8f90}\index{krepel.\-f90@{krepel.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{krepel_8f90_ac2a00080095611c74ef2020bf513e0a4}{krepel}
+\begin{DoxyCompactList}\small\item\em assigns the size values, exponential parameter and number of valence electrons for Pauli repulsion interactions and processes any new or changed values for these parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{krepel_8f90_a6ed819f1f5f3fffde4d96bb9b7a531e1}{dealloc\-\_\-shared\-\_\-rep}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for repulsion parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{krepel_8f90_a1d79774aae2ed6e3d6aeff83f9876fa5}{alloc\-\_\-shared\-\_\-rep}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for repulsion parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{krepel_8f90_a1d79774aae2ed6e3d6aeff83f9876fa5}{\index{krepel.\-f90@{krepel.\-f90}!alloc\-\_\-shared\-\_\-rep@{alloc\-\_\-shared\-\_\-rep}}
+\index{alloc\-\_\-shared\-\_\-rep@{alloc\-\_\-shared\-\_\-rep}!krepel.f90@{krepel.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-rep}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-rep (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{krepel_8f90_a1d79774aae2ed6e3d6aeff83f9876fa5}
+
+
+allocate shared memory pointers for repulsion parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 201 of file krepel.\-f90.
+
+
+
+Referenced by krepel().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{krepel_8f90_a1d79774aae2ed6e3d6aeff83f9876fa5_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{krepel_8f90_a6ed819f1f5f3fffde4d96bb9b7a531e1}{\index{krepel.\-f90@{krepel.\-f90}!dealloc\-\_\-shared\-\_\-rep@{dealloc\-\_\-shared\-\_\-rep}}
+\index{dealloc\-\_\-shared\-\_\-rep@{dealloc\-\_\-shared\-\_\-rep}!krepel.f90@{krepel.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-rep}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-rep (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{krepel_8f90_a6ed819f1f5f3fffde4d96bb9b7a531e1}
+
+
+deallocate shared memory pointers for repulsion parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 167 of file krepel.\-f90.
+
+
+
+Referenced by final(), and krepel().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{krepel_8f90_a6ed819f1f5f3fffde4d96bb9b7a531e1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{krepel_8f90_ac2a00080095611c74ef2020bf513e0a4}{\index{krepel.\-f90@{krepel.\-f90}!krepel@{krepel}}
+\index{krepel@{krepel}!krepel.f90@{krepel.\-f90}}
+\subsubsection[{krepel}]{\setlength{\rightskip}{0pt plus 5cm}subroutine krepel (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{krepel_8f90_ac2a00080095611c74ef2020bf513e0a4}
+
+
+assigns the size values, exponential parameter and number of valence electrons for Pauli repulsion interactions and processes any new or changed values for these parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file krepel.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-rep(), dealloc\-\_\-shared\-\_\-rep(), getnumb(), gettext(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{krepel_8f90_ac2a00080095611c74ef2020bf513e0a4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{krepel_8f90_ac2a00080095611c74ef2020bf513e0a4_icgraph}
+\end{center}
+\end{figure}
+
+

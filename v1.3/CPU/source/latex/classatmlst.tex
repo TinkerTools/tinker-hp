@@ -1,0 +1,541 @@
+\hypertarget{classatmlst}{\section{atmlst Module Reference}
+\label{classatmlst}\index{atmlst@{atmlst}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classatmlst_a960c43f79324985305533ec872e970d4}{winbndlist}
+\begin{DoxyCompactList}\small\item\em window object corresponding to bndlist \end{DoxyCompactList}\item 
+integer \hyperlink{classatmlst_ad4e86e855fb683fa5fc99d128e30b344}{winanglist}
+\begin{DoxyCompactList}\small\item\em window object corresponding to anglist \end{DoxyCompactList}\item 
+integer \hyperlink{classatmlst_ab14088e45057cf6a5761d15903693729}{winbalist}
+\begin{DoxyCompactList}\small\item\em window object corresponding to balist \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), pointer \hyperlink{classatmlst_a9137df3d6e7537ac04cb92835864b79d}{bndlist}
+\begin{DoxyCompactList}\small\item\em list of the bond numbers involving each atom \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), pointer \hyperlink{classatmlst_ad232b9a788fe93379e9d80d30d8666ff}{anglist}
+\begin{DoxyCompactList}\small\item\em list of the angle numbers centered on each atom \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), pointer \hyperlink{classatmlst_a7a0a8658bb6a68244435c4cbb82b34f2}{balist}
+\begin{DoxyCompactList}\small\item\em numbers of the bonds comprising each angle \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a0b08d7cce39564c92ee3bfda3ef116b1}{bndglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global bond correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a45a7db0334c1ba50359a2d19c05e9dbb}{angleglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global angle correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a497e40aa26b6dad9191cbaef531576bb}{torsglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global torsion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a03c51dbd08b70e4f7a2c697a4caf07e2}{bitorsglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global bitorsion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a1291aa016a7d1f33b0f9ddbee54fcb02}{strbndglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global strech bending correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a3cf834b0b557782383f2506e1e0ea625}{ureyglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global urey bradley correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a6cb31850632c949a1f23b9502ee85d9f}{angangglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global angle correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_aaf241c6055a6a6dbc04af10bb6a84920}{opbendglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global out of plane bending correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_afebb2d4622ffb13863ddb9ab6cbfc88a}{opdistglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global out of plane distance correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a7792a201a52700c101604e529b23a0d1}{impropglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global improper dihedral correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a12c060f14f9efccb685084b1143e93b2}{imptorglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global improper torsion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_acc3c988cbf469a7032d0f8ab6659a5fa}{pitorsglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global pi torsion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a988c3d46cbd1e50d1777e843505f22ca}{strtorglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global strech torsion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_adb9f9daf04328071793845dfe16c57b6}{angtorglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global angle-\/torsion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_aef68f98ee043765bf13b795a34506911}{tortorglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global torsion torsion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_aa81ad6da528fd26372d8173d7c5ff4a7}{vdwglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global vdw correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a03688f66de3d996cffdac3d71f2d184b}{poleglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global direct multipole correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a6aa66bdf6ac0461505594cd330c53eba}{polerecglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global reciprocal multipole correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a342dc8a9cffba913ea2e51e8669730e7}{dispglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global dispersion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_accb07e02e31c6d75821dfd39b36b3f55}{disprecglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global reciprocal dispersion correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_aeed78d19132d1dee9d0d1f85bf32d6ce}{chgglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global direct charge correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_aa383c916e50489948eb0f39c2156b4ed}{chgrecglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global reciprocal charge correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_ad62b00f425a04aeb43f31558243bf87b}{molculeglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global molecule correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a6efb0a7f8849ad799c89682d66e81b9c}{npfixglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global position restrains correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a935be70be3408495e70f3e1e8cf16469}{ndfixglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global distance restrains correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a6f1fe2ddf10ff4af2dac1d47f65f66e0}{nafixglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global angle restrains correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a8f4e19f6b70e85447e97344a64e5e99c}{ntfixglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global torsion restrains correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a5f17c711f128e6273d752685aee21446}{ngfixglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global group restrains correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a8fea084e4438f63e3205464b04ffd146}{nchirglob}
+\begin{DoxyCompactList}\small\item\em local -\/ global chiral restrains correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a3ee68ae20a26265fc2ce8eed93f5cbec}{ratglob}
+\begin{DoxyCompactList}\small\item\em local -\/ $<$global constrains correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a82002ff33f394239f8587334aa1533b3}{chgglobnl}
+\begin{DoxyCompactList}\small\item\em localnl -\/ global direct charge correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_ab9b4d4c497ef4f8f710514366b06cd8f}{vdwglobnl}
+\begin{DoxyCompactList}\small\item\em localnl -\/ global vdw correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a1d0ed805ac493ce6f1157f6c2c2dc4ea}{poleglobnl}
+\begin{DoxyCompactList}\small\item\em localnl -\/ global direct multipole correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classatmlst_a8f2f229104f82c885138a2f8afe9c761}{dispglobnl}
+\begin{DoxyCompactList}\small\item\em localnl -\/ global dispersion correspondance \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classatmlst_a6cb31850632c949a1f23b9502ee85d9f}{\index{atmlst@{atmlst}!angangglob@{angangglob}}
+\index{angangglob@{angangglob}!atmlst@{atmlst}}
+\subsubsection[{angangglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::angangglob}}\label{classatmlst_a6cb31850632c949a1f23b9502ee85d9f}
+
+
+local -\/ global angle correspondance 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a45a7db0334c1ba50359a2d19c05e9dbb}{\index{atmlst@{atmlst}!angleglob@{angleglob}}
+\index{angleglob@{angleglob}!atmlst@{atmlst}}
+\subsubsection[{angleglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::angleglob}}\label{classatmlst_a45a7db0334c1ba50359a2d19c05e9dbb}
+
+
+local -\/ global angle correspondance 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_ad232b9a788fe93379e9d80d30d8666ff}{\index{atmlst@{atmlst}!anglist@{anglist}}
+\index{anglist@{anglist}!atmlst@{atmlst}}
+\subsubsection[{anglist}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), pointer atmlst\-::anglist}}\label{classatmlst_ad232b9a788fe93379e9d80d30d8666ff}
+
+
+list of the angle numbers centered on each atom 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_adb9f9daf04328071793845dfe16c57b6}{\index{atmlst@{atmlst}!angtorglob@{angtorglob}}
+\index{angtorglob@{angtorglob}!atmlst@{atmlst}}
+\subsubsection[{angtorglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::angtorglob}}\label{classatmlst_adb9f9daf04328071793845dfe16c57b6}
+
+
+local -\/ global angle-\/torsion correspondance 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a7a0a8658bb6a68244435c4cbb82b34f2}{\index{atmlst@{atmlst}!balist@{balist}}
+\index{balist@{balist}!atmlst@{atmlst}}
+\subsubsection[{balist}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), pointer atmlst\-::balist}}\label{classatmlst_a7a0a8658bb6a68244435c4cbb82b34f2}
+
+
+numbers of the bonds comprising each angle 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a03c51dbd08b70e4f7a2c697a4caf07e2}{\index{atmlst@{atmlst}!bitorsglob@{bitorsglob}}
+\index{bitorsglob@{bitorsglob}!atmlst@{atmlst}}
+\subsubsection[{bitorsglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::bitorsglob}}\label{classatmlst_a03c51dbd08b70e4f7a2c697a4caf07e2}
+
+
+local -\/ global bitorsion correspondance 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a0b08d7cce39564c92ee3bfda3ef116b1}{\index{atmlst@{atmlst}!bndglob@{bndglob}}
+\index{bndglob@{bndglob}!atmlst@{atmlst}}
+\subsubsection[{bndglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::bndglob}}\label{classatmlst_a0b08d7cce39564c92ee3bfda3ef116b1}
+
+
+local -\/ global bond correspondance 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a9137df3d6e7537ac04cb92835864b79d}{\index{atmlst@{atmlst}!bndlist@{bndlist}}
+\index{bndlist@{bndlist}!atmlst@{atmlst}}
+\subsubsection[{bndlist}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), pointer atmlst\-::bndlist}}\label{classatmlst_a9137df3d6e7537ac04cb92835864b79d}
+
+
+list of the bond numbers involving each atom 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_aeed78d19132d1dee9d0d1f85bf32d6ce}{\index{atmlst@{atmlst}!chgglob@{chgglob}}
+\index{chgglob@{chgglob}!atmlst@{atmlst}}
+\subsubsection[{chgglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::chgglob}}\label{classatmlst_aeed78d19132d1dee9d0d1f85bf32d6ce}
+
+
+local -\/ global direct charge correspondance 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a82002ff33f394239f8587334aa1533b3}{\index{atmlst@{atmlst}!chgglobnl@{chgglobnl}}
+\index{chgglobnl@{chgglobnl}!atmlst@{atmlst}}
+\subsubsection[{chgglobnl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::chgglobnl}}\label{classatmlst_a82002ff33f394239f8587334aa1533b3}
+
+
+localnl -\/ global direct charge correspondance 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_aa383c916e50489948eb0f39c2156b4ed}{\index{atmlst@{atmlst}!chgrecglob@{chgrecglob}}
+\index{chgrecglob@{chgrecglob}!atmlst@{atmlst}}
+\subsubsection[{chgrecglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::chgrecglob}}\label{classatmlst_aa383c916e50489948eb0f39c2156b4ed}
+
+
+local -\/ global reciprocal charge correspondance 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a342dc8a9cffba913ea2e51e8669730e7}{\index{atmlst@{atmlst}!dispglob@{dispglob}}
+\index{dispglob@{dispglob}!atmlst@{atmlst}}
+\subsubsection[{dispglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::dispglob}}\label{classatmlst_a342dc8a9cffba913ea2e51e8669730e7}
+
+
+local -\/ global dispersion correspondance 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a8f2f229104f82c885138a2f8afe9c761}{\index{atmlst@{atmlst}!dispglobnl@{dispglobnl}}
+\index{dispglobnl@{dispglobnl}!atmlst@{atmlst}}
+\subsubsection[{dispglobnl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::dispglobnl}}\label{classatmlst_a8f2f229104f82c885138a2f8afe9c761}
+
+
+localnl -\/ global dispersion correspondance 
+
+
+
+Definition at line 54 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_accb07e02e31c6d75821dfd39b36b3f55}{\index{atmlst@{atmlst}!disprecglob@{disprecglob}}
+\index{disprecglob@{disprecglob}!atmlst@{atmlst}}
+\subsubsection[{disprecglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::disprecglob}}\label{classatmlst_accb07e02e31c6d75821dfd39b36b3f55}
+
+
+local -\/ global reciprocal dispersion correspondance 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a7792a201a52700c101604e529b23a0d1}{\index{atmlst@{atmlst}!impropglob@{impropglob}}
+\index{impropglob@{impropglob}!atmlst@{atmlst}}
+\subsubsection[{impropglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::impropglob}}\label{classatmlst_a7792a201a52700c101604e529b23a0d1}
+
+
+local -\/ global improper dihedral correspondance 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a12c060f14f9efccb685084b1143e93b2}{\index{atmlst@{atmlst}!imptorglob@{imptorglob}}
+\index{imptorglob@{imptorglob}!atmlst@{atmlst}}
+\subsubsection[{imptorglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::imptorglob}}\label{classatmlst_a12c060f14f9efccb685084b1143e93b2}
+
+
+local -\/ global improper torsion correspondance 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_ad62b00f425a04aeb43f31558243bf87b}{\index{atmlst@{atmlst}!molculeglob@{molculeglob}}
+\index{molculeglob@{molculeglob}!atmlst@{atmlst}}
+\subsubsection[{molculeglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::molculeglob}}\label{classatmlst_ad62b00f425a04aeb43f31558243bf87b}
+
+
+local -\/ global molecule correspondance 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a6f1fe2ddf10ff4af2dac1d47f65f66e0}{\index{atmlst@{atmlst}!nafixglob@{nafixglob}}
+\index{nafixglob@{nafixglob}!atmlst@{atmlst}}
+\subsubsection[{nafixglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::nafixglob}}\label{classatmlst_a6f1fe2ddf10ff4af2dac1d47f65f66e0}
+
+
+local -\/ global angle restrains correspondance 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a8fea084e4438f63e3205464b04ffd146}{\index{atmlst@{atmlst}!nchirglob@{nchirglob}}
+\index{nchirglob@{nchirglob}!atmlst@{atmlst}}
+\subsubsection[{nchirglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::nchirglob}}\label{classatmlst_a8fea084e4438f63e3205464b04ffd146}
+
+
+local -\/ global chiral restrains correspondance 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a935be70be3408495e70f3e1e8cf16469}{\index{atmlst@{atmlst}!ndfixglob@{ndfixglob}}
+\index{ndfixglob@{ndfixglob}!atmlst@{atmlst}}
+\subsubsection[{ndfixglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::ndfixglob}}\label{classatmlst_a935be70be3408495e70f3e1e8cf16469}
+
+
+local -\/ global distance restrains correspondance 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a5f17c711f128e6273d752685aee21446}{\index{atmlst@{atmlst}!ngfixglob@{ngfixglob}}
+\index{ngfixglob@{ngfixglob}!atmlst@{atmlst}}
+\subsubsection[{ngfixglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::ngfixglob}}\label{classatmlst_a5f17c711f128e6273d752685aee21446}
+
+
+local -\/ global group restrains correspondance 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a6efb0a7f8849ad799c89682d66e81b9c}{\index{atmlst@{atmlst}!npfixglob@{npfixglob}}
+\index{npfixglob@{npfixglob}!atmlst@{atmlst}}
+\subsubsection[{npfixglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::npfixglob}}\label{classatmlst_a6efb0a7f8849ad799c89682d66e81b9c}
+
+
+local -\/ global position restrains correspondance 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a8f4e19f6b70e85447e97344a64e5e99c}{\index{atmlst@{atmlst}!ntfixglob@{ntfixglob}}
+\index{ntfixglob@{ntfixglob}!atmlst@{atmlst}}
+\subsubsection[{ntfixglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::ntfixglob}}\label{classatmlst_a8f4e19f6b70e85447e97344a64e5e99c}
+
+
+local -\/ global torsion restrains correspondance 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_aaf241c6055a6a6dbc04af10bb6a84920}{\index{atmlst@{atmlst}!opbendglob@{opbendglob}}
+\index{opbendglob@{opbendglob}!atmlst@{atmlst}}
+\subsubsection[{opbendglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::opbendglob}}\label{classatmlst_aaf241c6055a6a6dbc04af10bb6a84920}
+
+
+local -\/ global out of plane bending correspondance 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_afebb2d4622ffb13863ddb9ab6cbfc88a}{\index{atmlst@{atmlst}!opdistglob@{opdistglob}}
+\index{opdistglob@{opdistglob}!atmlst@{atmlst}}
+\subsubsection[{opdistglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::opdistglob}}\label{classatmlst_afebb2d4622ffb13863ddb9ab6cbfc88a}
+
+
+local -\/ global out of plane distance correspondance 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_acc3c988cbf469a7032d0f8ab6659a5fa}{\index{atmlst@{atmlst}!pitorsglob@{pitorsglob}}
+\index{pitorsglob@{pitorsglob}!atmlst@{atmlst}}
+\subsubsection[{pitorsglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::pitorsglob}}\label{classatmlst_acc3c988cbf469a7032d0f8ab6659a5fa}
+
+
+local -\/ global pi torsion correspondance 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a03688f66de3d996cffdac3d71f2d184b}{\index{atmlst@{atmlst}!poleglob@{poleglob}}
+\index{poleglob@{poleglob}!atmlst@{atmlst}}
+\subsubsection[{poleglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::poleglob}}\label{classatmlst_a03688f66de3d996cffdac3d71f2d184b}
+
+
+local -\/ global direct multipole correspondance 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a1d0ed805ac493ce6f1157f6c2c2dc4ea}{\index{atmlst@{atmlst}!poleglobnl@{poleglobnl}}
+\index{poleglobnl@{poleglobnl}!atmlst@{atmlst}}
+\subsubsection[{poleglobnl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::poleglobnl}}\label{classatmlst_a1d0ed805ac493ce6f1157f6c2c2dc4ea}
+
+
+localnl -\/ global direct multipole correspondance 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a6aa66bdf6ac0461505594cd330c53eba}{\index{atmlst@{atmlst}!polerecglob@{polerecglob}}
+\index{polerecglob@{polerecglob}!atmlst@{atmlst}}
+\subsubsection[{polerecglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::polerecglob}}\label{classatmlst_a6aa66bdf6ac0461505594cd330c53eba}
+
+
+local -\/ global reciprocal multipole correspondance 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a3ee68ae20a26265fc2ce8eed93f5cbec}{\index{atmlst@{atmlst}!ratglob@{ratglob}}
+\index{ratglob@{ratglob}!atmlst@{atmlst}}
+\subsubsection[{ratglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::ratglob}}\label{classatmlst_a3ee68ae20a26265fc2ce8eed93f5cbec}
+
+
+local -\/ $<$global constrains correspondance 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a1291aa016a7d1f33b0f9ddbee54fcb02}{\index{atmlst@{atmlst}!strbndglob@{strbndglob}}
+\index{strbndglob@{strbndglob}!atmlst@{atmlst}}
+\subsubsection[{strbndglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::strbndglob}}\label{classatmlst_a1291aa016a7d1f33b0f9ddbee54fcb02}
+
+
+local -\/ global strech bending correspondance 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a988c3d46cbd1e50d1777e843505f22ca}{\index{atmlst@{atmlst}!strtorglob@{strtorglob}}
+\index{strtorglob@{strtorglob}!atmlst@{atmlst}}
+\subsubsection[{strtorglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::strtorglob}}\label{classatmlst_a988c3d46cbd1e50d1777e843505f22ca}
+
+
+local -\/ global strech torsion correspondance 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a497e40aa26b6dad9191cbaef531576bb}{\index{atmlst@{atmlst}!torsglob@{torsglob}}
+\index{torsglob@{torsglob}!atmlst@{atmlst}}
+\subsubsection[{torsglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::torsglob}}\label{classatmlst_a497e40aa26b6dad9191cbaef531576bb}
+
+
+local -\/ global torsion correspondance 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_aef68f98ee043765bf13b795a34506911}{\index{atmlst@{atmlst}!tortorglob@{tortorglob}}
+\index{tortorglob@{tortorglob}!atmlst@{atmlst}}
+\subsubsection[{tortorglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::tortorglob}}\label{classatmlst_aef68f98ee043765bf13b795a34506911}
+
+
+local -\/ global torsion torsion correspondance 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a3cf834b0b557782383f2506e1e0ea625}{\index{atmlst@{atmlst}!ureyglob@{ureyglob}}
+\index{ureyglob@{ureyglob}!atmlst@{atmlst}}
+\subsubsection[{ureyglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::ureyglob}}\label{classatmlst_a3cf834b0b557782383f2506e1e0ea625}
+
+
+local -\/ global urey bradley correspondance 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_aa81ad6da528fd26372d8173d7c5ff4a7}{\index{atmlst@{atmlst}!vdwglob@{vdwglob}}
+\index{vdwglob@{vdwglob}!atmlst@{atmlst}}
+\subsubsection[{vdwglob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::vdwglob}}\label{classatmlst_aa81ad6da528fd26372d8173d7c5ff4a7}
+
+
+local -\/ global vdw correspondance 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_ab9b4d4c497ef4f8f710514366b06cd8f}{\index{atmlst@{atmlst}!vdwglobnl@{vdwglobnl}}
+\index{vdwglobnl@{vdwglobnl}!atmlst@{atmlst}}
+\subsubsection[{vdwglobnl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable atmlst\-::vdwglobnl}}\label{classatmlst_ab9b4d4c497ef4f8f710514366b06cd8f}
+
+
+localnl -\/ global vdw correspondance 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_ad4e86e855fb683fa5fc99d128e30b344}{\index{atmlst@{atmlst}!winanglist@{winanglist}}
+\index{winanglist@{winanglist}!atmlst@{atmlst}}
+\subsubsection[{winanglist}]{\setlength{\rightskip}{0pt plus 5cm}integer atmlst\-::winanglist}}\label{classatmlst_ad4e86e855fb683fa5fc99d128e30b344}
+
+
+window object corresponding to anglist 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_ab14088e45057cf6a5761d15903693729}{\index{atmlst@{atmlst}!winbalist@{winbalist}}
+\index{winbalist@{winbalist}!atmlst@{atmlst}}
+\subsubsection[{winbalist}]{\setlength{\rightskip}{0pt plus 5cm}integer atmlst\-::winbalist}}\label{classatmlst_ab14088e45057cf6a5761d15903693729}
+
+
+window object corresponding to balist 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+\hypertarget{classatmlst_a960c43f79324985305533ec872e970d4}{\index{atmlst@{atmlst}!winbndlist@{winbndlist}}
+\index{winbndlist@{winbndlist}!atmlst@{atmlst}}
+\subsubsection[{winbndlist}]{\setlength{\rightskip}{0pt plus 5cm}integer atmlst\-::winbndlist}}\label{classatmlst_a960c43f79324985305533ec872e970d4}
+
+
+window object corresponding to bndlist 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-atmlst.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__atmlst_8f90}{M\-O\-D\-\_\-atmlst.\-f90}\end{DoxyCompactItemize}

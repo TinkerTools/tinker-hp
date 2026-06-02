@@ -1,0 +1,291 @@
+\hypertarget{kopbend_8f90}{\section{kopbend.\-f90 File Reference}
+\label{kopbend_8f90}\index{kopbend.\-f90@{kopbend.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kopbend_8f90_a0dcf36f40311e091ebd6983475b2330d}{kopbend}
+\begin{DoxyCompactList}\small\item\em assigns the force constants for out-\/of-\/plane bends at trigonal centers via Wilson-\/\-Decius-\/\-Cross or Allinger angles; also processes any new or changed parameter values \end{DoxyCompactList}\item 
+subroutine \hyperlink{kopbend_8f90_a08ea37d5a4ce33ee9ffe59669c57e2df}{kopbend\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local opbend parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kopbend_8f90_a41069e0febae2b090184a573fc16388b}{kopbendm}
+\begin{DoxyCompactList}\small\item\em assigns the force constants for out-\/of-\/plane bends according to the Merck Molecular Force Field (M\-M\-F\-F) \end{DoxyCompactList}\item 
+subroutine \hyperlink{kopbend_8f90_afa93cf521dcd85cfd7629adbe31ef9f9}{kopbendm\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local opbendm parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kopbend_8f90_aaecffff0d28e7deed42f72bc5515d6f1}{dealloc\-\_\-shared\-\_\-opbend}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for opbend parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kopbend_8f90_a370476ecaaa69aeec0cce91e5cf208e2}{alloc\-\_\-shared\-\_\-opbend}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for opbend parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kopbend_8f90_a370476ecaaa69aeec0cce91e5cf208e2}{\index{kopbend.\-f90@{kopbend.\-f90}!alloc\-\_\-shared\-\_\-opbend@{alloc\-\_\-shared\-\_\-opbend}}
+\index{alloc\-\_\-shared\-\_\-opbend@{alloc\-\_\-shared\-\_\-opbend}!kopbend.f90@{kopbend.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-opbend}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-opbend (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopbend_8f90_a370476ecaaa69aeec0cce91e5cf208e2}
+
+
+allocate shared memory pointers for opbend parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 660 of file kopbend.\-f90.
+
+
+
+Referenced by kopbend().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopbend_8f90_a370476ecaaa69aeec0cce91e5cf208e2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kopbend_8f90_aaecffff0d28e7deed42f72bc5515d6f1}{\index{kopbend.\-f90@{kopbend.\-f90}!dealloc\-\_\-shared\-\_\-opbend@{dealloc\-\_\-shared\-\_\-opbend}}
+\index{dealloc\-\_\-shared\-\_\-opbend@{dealloc\-\_\-shared\-\_\-opbend}!kopbend.f90@{kopbend.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-opbend}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-opbend (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopbend_8f90_aaecffff0d28e7deed42f72bc5515d6f1}
+
+
+deallocate shared memory pointers for opbend parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 632 of file kopbend.\-f90.
+
+
+
+Referenced by final(), and kopbend().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kopbend_8f90_aaecffff0d28e7deed42f72bc5515d6f1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kopbend_8f90_a0dcf36f40311e091ebd6983475b2330d}{\index{kopbend.\-f90@{kopbend.\-f90}!kopbend@{kopbend}}
+\index{kopbend@{kopbend}!kopbend.f90@{kopbend.\-f90}}
+\subsubsection[{kopbend}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kopbend (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopbend_8f90_a0dcf36f40311e091ebd6983475b2330d}
+
+
+assigns the force constants for out-\/of-\/plane bends at trigonal centers via Wilson-\/\-Decius-\/\-Cross or Allinger angles; also processes any new or changed parameter values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 22 of file kopbend.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-opbend(), dealloc\-\_\-shared\-\_\-opbend(), gettext(), kopbendm(), number(), numeral(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kopbend_8f90_a0dcf36f40311e091ebd6983475b2330d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopbend_8f90_a0dcf36f40311e091ebd6983475b2330d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kopbend_8f90_a08ea37d5a4ce33ee9ffe59669c57e2df}{\index{kopbend.\-f90@{kopbend.\-f90}!kopbend\-\_\-update@{kopbend\-\_\-update}}
+\index{kopbend\-\_\-update@{kopbend\-\_\-update}!kopbend.f90@{kopbend.\-f90}}
+\subsubsection[{kopbend\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kopbend\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopbend_8f90_a08ea37d5a4ce33ee9ffe59669c57e2df}
+
+
+update local opbend parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 245 of file kopbend.\-f90.
+
+
+
+References kopbendm\-\_\-update(), and numeral().
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopbend_8f90_a08ea37d5a4ce33ee9ffe59669c57e2df_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopbend_8f90_a08ea37d5a4ce33ee9ffe59669c57e2df_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kopbend_8f90_a41069e0febae2b090184a573fc16388b}{\index{kopbend.\-f90@{kopbend.\-f90}!kopbendm@{kopbendm}}
+\index{kopbendm@{kopbendm}!kopbend.f90@{kopbend.\-f90}}
+\subsubsection[{kopbendm}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kopbendm (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopbend_8f90_a41069e0febae2b090184a573fc16388b}
+
+
+assigns the force constants for out-\/of-\/plane bends according to the Merck Molecular Force Field (M\-M\-F\-F) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 368 of file kopbend.\-f90.
+
+
+
+References numeral().
+
+
+
+Referenced by kopbend().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopbend_8f90_a41069e0febae2b090184a573fc16388b_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopbend_8f90_a41069e0febae2b090184a573fc16388b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kopbend_8f90_afa93cf521dcd85cfd7629adbe31ef9f9}{\index{kopbend.\-f90@{kopbend.\-f90}!kopbendm\-\_\-update@{kopbendm\-\_\-update}}
+\index{kopbendm\-\_\-update@{kopbendm\-\_\-update}!kopbend.f90@{kopbend.\-f90}}
+\subsubsection[{kopbendm\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kopbendm\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kopbend_8f90_afa93cf521dcd85cfd7629adbe31ef9f9}
+
+
+update local opbendm parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 504 of file kopbend.\-f90.
+
+
+
+References numeral().
+
+
+
+Referenced by kopbend\-\_\-update().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopbend_8f90_afa93cf521dcd85cfd7629adbe31ef9f9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kopbend_8f90_afa93cf521dcd85cfd7629adbe31ef9f9_icgraph}
+\end{center}
+\end{figure}
+
+

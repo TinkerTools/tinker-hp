@@ -1,0 +1,111 @@
+\hypertarget{etortor_8f90}{\section{etortor.\-f90 File Reference}
+\label{etortor_8f90}\index{etortor.\-f90@{etortor.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{etortor_8f90_ab148b845856927fa40acd727f8b53e84}{etortor}
+\begin{DoxyCompactList}\small\item\em calculates the torsion-\/torsion potential energy \end{DoxyCompactList}\item 
+subroutine \hyperlink{etortor_8f90_a1b923403b45d0dbc7b5eb9c4c75097e0}{chkttor} (ib, ic, id, sign, value1, value2)
+\begin{DoxyCompactList}\small\item\em tests the attached atoms at a torsion-\/torsion central site and inverts the angle values if the site is chiral \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{etortor_8f90_a1b923403b45d0dbc7b5eb9c4c75097e0}{\index{etortor.\-f90@{etortor.\-f90}!chkttor@{chkttor}}
+\index{chkttor@{chkttor}!etortor.f90@{etortor.\-f90}}
+\subsubsection[{chkttor}]{\setlength{\rightskip}{0pt plus 5cm}subroutine chkttor (
+\begin{DoxyParamCaption}
+\item[{integer}]{ib, }
+\item[{integer}]{ic, }
+\item[{integer}]{id, }
+\item[{real$\ast$8}]{sign, }
+\item[{real$\ast$8}]{value1, }
+\item[{real$\ast$8}]{value2}
+\end{DoxyParamCaption}
+)}}\label{etortor_8f90_a1b923403b45d0dbc7b5eb9c4c75097e0}
+
+
+tests the attached atoms at a torsion-\/torsion central site and inverts the angle values if the site is chiral 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ib,\-:} & first atom involved in the angle \\
+\hline
+\mbox{\tt in}  & {\em ic,\-:} & second atom involved in the angle \\
+\hline
+\mbox{\tt in}  & {\em id,\-:} & third atom involved in the angle \\
+\hline
+\mbox{\tt in}  & {\em value1,\-:} & value of the first angle \\
+\hline
+\mbox{\tt in}  & {\em value2,\-:} & value of the second angle \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 254 of file etortor.\-f90.
+
+
+
+Referenced by etortor(), etortor1(), and etortor3().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{etortor_8f90_a1b923403b45d0dbc7b5eb9c4c75097e0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{etortor_8f90_ab148b845856927fa40acd727f8b53e84}{\index{etortor.\-f90@{etortor.\-f90}!etortor@{etortor}}
+\index{etortor@{etortor}!etortor.f90@{etortor.\-f90}}
+\subsubsection[{etortor}]{\setlength{\rightskip}{0pt plus 5cm}subroutine etortor (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{etortor_8f90_ab148b845856927fa40acd727f8b53e84}
+
+
+calculates the torsion-\/torsion potential energy 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 19 of file etortor.\-f90.
+
+
+
+References bcuint(), chkttor(), groups(), and image().
+
+
+
+Referenced by energy().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=304pt]{etortor_8f90_ab148b845856927fa40acd727f8b53e84_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{etortor_8f90_ab148b845856927fa40acd727f8b53e84_icgraph}
+\end{center}
+\end{figure}
+
+

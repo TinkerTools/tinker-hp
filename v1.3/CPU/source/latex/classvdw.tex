@@ -1,0 +1,446 @@
+\hypertarget{classvdw}{\section{vdw Module Reference}
+\label{classvdw}\index{vdw@{vdw}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classvdw_ab188e58125273df95e334decf7db12f3}{nvdw}
+\begin{DoxyCompactList}\small\item\em total number van der Waals active sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a6d9a7d303d6bab7238b14f89965de887}{nvt}
+\begin{DoxyCompactList}\small\item\em number of distinct vdw types/classes in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a53b9f8a5df5936b34ec6e5eef165f7d8}{nvdwloc}
+\begin{DoxyCompactList}\small\item\em local number van der Waals active sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_ade4cf6b2078920c6220e9dbe93fc597c}{nvdwbloc}
+\begin{DoxyCompactList}\small\item\em local+neighbors number van der Waals active sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_ad9fb8b87e6260d7940ff961e4014ccda}{nvdwlocnl}
+\begin{DoxyCompactList}\small\item\em localnl number van der Waals active sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_af57e0531d67b1526fbcff2a6873c9667}{winjvdw}
+\begin{DoxyCompactList}\small\item\em window object corresponding to jvdw \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_ab3382a5da536eaf9c75c72b23234c438}{winivdw}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ivdw \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_aab00860bd4307394370977abffd67b50}{winired}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ired \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a56c4d404eab08a1617766f8fde8b75cb}{winivt}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ivt \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a9402b47403482ddf1e425de0a0ba6d9c}{winjvt}
+\begin{DoxyCompactList}\small\item\em window object corresponding to jvt \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_adbe248422d32ce2af00ba24891cf41b3}{winnbvdw}
+\begin{DoxyCompactList}\small\item\em window object corresponding to nbvdw \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classvdw_a313a6e8af39ceff2753ec10da53ccde9}{jvdw}
+\begin{DoxyCompactList}\small\item\em type or class index into vdw parameters for each atom \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classvdw_abb457d49a4b465ca67c7f2611dd88331}{ivdw}
+\begin{DoxyCompactList}\small\item\em number of the atom for each van der Waals active site \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classvdw_ae2633d0f849d0257b457b77aff4b7fbd}{ired}
+\begin{DoxyCompactList}\small\item\em attached atom from which reduction factor is applied \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classvdw_a7820644a836b2f500bd9ca9a209b8618}{ivt}
+\begin{DoxyCompactList}\small\item\em type/class index for each distinct vdw type or class \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classvdw_a6ea1e02bcc0603c5869ca4da25ddc75c}{jvt}
+\begin{DoxyCompactList}\small\item\em frequency of each vdw type or class in the system \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classvdw_a1682072bec44b47fdbeb05fe438b1167}{nbvdw}
+\begin{DoxyCompactList}\small\item\em number of 'vdw' atoms before each atom \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a4dc5326b78b01b48d1ed5a4ae869faa0}{winradmin}
+\begin{DoxyCompactList}\small\item\em window object corresponding to radmin \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_af61591d1fb9c9a51bc99f386b70d5aa3}{winepsilon}
+\begin{DoxyCompactList}\small\item\em window object corresponding to epsilon \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a5d28e96374dca3938469367477be14ab}{winradmin4}
+\begin{DoxyCompactList}\small\item\em window object corresponding to radmin4 \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_aa83424a9fd661a24af2a7f3398752043}{winepsilon4}
+\begin{DoxyCompactList}\small\item\em window object corresponding to epsilon4 \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a489e8cba15f756d8ca2a9543e253fab8}{winradhbnd}
+\begin{DoxyCompactList}\small\item\em window object corresponding to radhbnd \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_af2f988f5bda479a9434fd55813e86f1f}{winepshbnd}
+\begin{DoxyCompactList}\small\item\em window object corresponding to epshbnd \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a41d847388846c64c9b93a49d3af33ce5}{winkred}
+\begin{DoxyCompactList}\small\item\em window object corresponding to kred \end{DoxyCompactList}\item 
+integer \hyperlink{classvdw_a743bd22f09805770b61b2fccc4a7f0ac}{nvdwblocloop}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classvdw_a00f7569676b7321ddce0cbd95bd9194a}{vdwlocnl}
+\begin{DoxyCompactList}\small\item\em glob-\/locnl vdw correspondance \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classvdw_a481ad3e2f4a49e4955944495e0e7618e}{radmin}
+\begin{DoxyCompactList}\small\item\em minimum energy distance for each atom class pair \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classvdw_a429fafea5721eb9044615b9d14c6c652}{epsilon}
+\begin{DoxyCompactList}\small\item\em well depth parameter for each atom class pair \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classvdw_a6b56f2ac675c5d7c8c776c2d6588a902}{radmin4}
+\begin{DoxyCompactList}\small\item\em minimum energy distance for 1-\/4 interaction pairs \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classvdw_a10411acf35a5a3fdec626d2784b45f51}{epsilon4}
+\begin{DoxyCompactList}\small\item\em well depth parameter for 1-\/4 interaction pairs \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classvdw_ab306f3aa073b7317272454203b2dc5e7}{radhbnd}
+\begin{DoxyCompactList}\small\item\em minimum energy distance for hydrogen bonding pairs \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classvdw_a9cb813f75d80f7bd7d0569e1ad7d92ad}{epshbnd}
+\begin{DoxyCompactList}\small\item\em minimum energy distance for hydrogen bonding pairs \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classvdw_ad85a1ffa2bf6310e38c7a3fd6ac8256b}{kred}
+\begin{DoxyCompactList}\small\item\em value of reduction factor parameter for each atom \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-vdw.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classvdw_a9cb813f75d80f7bd7d0569e1ad7d92ad}{\index{vdw@{vdw}!epshbnd@{epshbnd}}
+\index{epshbnd@{epshbnd}!vdw@{vdw}}
+\subsubsection[{epshbnd}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer vdw\-::epshbnd}}\label{classvdw_a9cb813f75d80f7bd7d0569e1ad7d92ad}
+
+
+minimum energy distance for hydrogen bonding pairs 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a429fafea5721eb9044615b9d14c6c652}{\index{vdw@{vdw}!epsilon@{epsilon}}
+\index{epsilon@{epsilon}!vdw@{vdw}}
+\subsubsection[{epsilon}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer vdw\-::epsilon}}\label{classvdw_a429fafea5721eb9044615b9d14c6c652}
+
+
+well depth parameter for each atom class pair 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a10411acf35a5a3fdec626d2784b45f51}{\index{vdw@{vdw}!epsilon4@{epsilon4}}
+\index{epsilon4@{epsilon4}!vdw@{vdw}}
+\subsubsection[{epsilon4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer vdw\-::epsilon4}}\label{classvdw_a10411acf35a5a3fdec626d2784b45f51}
+
+
+well depth parameter for 1-\/4 interaction pairs 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_ae2633d0f849d0257b457b77aff4b7fbd}{\index{vdw@{vdw}!ired@{ired}}
+\index{ired@{ired}!vdw@{vdw}}
+\subsubsection[{ired}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer vdw\-::ired}}\label{classvdw_ae2633d0f849d0257b457b77aff4b7fbd}
+
+
+attached atom from which reduction factor is applied 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_abb457d49a4b465ca67c7f2611dd88331}{\index{vdw@{vdw}!ivdw@{ivdw}}
+\index{ivdw@{ivdw}!vdw@{vdw}}
+\subsubsection[{ivdw}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer vdw\-::ivdw}}\label{classvdw_abb457d49a4b465ca67c7f2611dd88331}
+
+
+number of the atom for each van der Waals active site 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a7820644a836b2f500bd9ca9a209b8618}{\index{vdw@{vdw}!ivt@{ivt}}
+\index{ivt@{ivt}!vdw@{vdw}}
+\subsubsection[{ivt}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer vdw\-::ivt}}\label{classvdw_a7820644a836b2f500bd9ca9a209b8618}
+
+
+type/class index for each distinct vdw type or class 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a313a6e8af39ceff2753ec10da53ccde9}{\index{vdw@{vdw}!jvdw@{jvdw}}
+\index{jvdw@{jvdw}!vdw@{vdw}}
+\subsubsection[{jvdw}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer vdw\-::jvdw}}\label{classvdw_a313a6e8af39ceff2753ec10da53ccde9}
+
+
+type or class index into vdw parameters for each atom 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a6ea1e02bcc0603c5869ca4da25ddc75c}{\index{vdw@{vdw}!jvt@{jvt}}
+\index{jvt@{jvt}!vdw@{vdw}}
+\subsubsection[{jvt}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer vdw\-::jvt}}\label{classvdw_a6ea1e02bcc0603c5869ca4da25ddc75c}
+
+
+frequency of each vdw type or class in the system 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_ad85a1ffa2bf6310e38c7a3fd6ac8256b}{\index{vdw@{vdw}!kred@{kred}}
+\index{kred@{kred}!vdw@{vdw}}
+\subsubsection[{kred}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer vdw\-::kred}}\label{classvdw_ad85a1ffa2bf6310e38c7a3fd6ac8256b}
+
+
+value of reduction factor parameter for each atom 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a1682072bec44b47fdbeb05fe438b1167}{\index{vdw@{vdw}!nbvdw@{nbvdw}}
+\index{nbvdw@{nbvdw}!vdw@{vdw}}
+\subsubsection[{nbvdw}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer vdw\-::nbvdw}}\label{classvdw_a1682072bec44b47fdbeb05fe438b1167}
+
+
+number of 'vdw' atoms before each atom 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_ab188e58125273df95e334decf7db12f3}{\index{vdw@{vdw}!nvdw@{nvdw}}
+\index{nvdw@{nvdw}!vdw@{vdw}}
+\subsubsection[{nvdw}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::nvdw}}\label{classvdw_ab188e58125273df95e334decf7db12f3}
+
+
+total number van der Waals active sites in the system 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_ade4cf6b2078920c6220e9dbe93fc597c}{\index{vdw@{vdw}!nvdwbloc@{nvdwbloc}}
+\index{nvdwbloc@{nvdwbloc}!vdw@{vdw}}
+\subsubsection[{nvdwbloc}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::nvdwbloc}}\label{classvdw_ade4cf6b2078920c6220e9dbe93fc597c}
+
+
+local+neighbors number van der Waals active sites in the system 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a743bd22f09805770b61b2fccc4a7f0ac}{\index{vdw@{vdw}!nvdwblocloop@{nvdwblocloop}}
+\index{nvdwblocloop@{nvdwblocloop}!vdw@{vdw}}
+\subsubsection[{nvdwblocloop}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::nvdwblocloop}}\label{classvdw_a743bd22f09805770b61b2fccc4a7f0ac}
+
+
+Definition at line 40 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a53b9f8a5df5936b34ec6e5eef165f7d8}{\index{vdw@{vdw}!nvdwloc@{nvdwloc}}
+\index{nvdwloc@{nvdwloc}!vdw@{vdw}}
+\subsubsection[{nvdwloc}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::nvdwloc}}\label{classvdw_a53b9f8a5df5936b34ec6e5eef165f7d8}
+
+
+local number van der Waals active sites in the system 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_ad9fb8b87e6260d7940ff961e4014ccda}{\index{vdw@{vdw}!nvdwlocnl@{nvdwlocnl}}
+\index{nvdwlocnl@{nvdwlocnl}!vdw@{vdw}}
+\subsubsection[{nvdwlocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::nvdwlocnl}}\label{classvdw_ad9fb8b87e6260d7940ff961e4014ccda}
+
+
+localnl number van der Waals active sites in the system 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a6d9a7d303d6bab7238b14f89965de887}{\index{vdw@{vdw}!nvt@{nvt}}
+\index{nvt@{nvt}!vdw@{vdw}}
+\subsubsection[{nvt}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::nvt}}\label{classvdw_a6d9a7d303d6bab7238b14f89965de887}
+
+
+number of distinct vdw types/classes in the system 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_ab306f3aa073b7317272454203b2dc5e7}{\index{vdw@{vdw}!radhbnd@{radhbnd}}
+\index{radhbnd@{radhbnd}!vdw@{vdw}}
+\subsubsection[{radhbnd}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer vdw\-::radhbnd}}\label{classvdw_ab306f3aa073b7317272454203b2dc5e7}
+
+
+minimum energy distance for hydrogen bonding pairs 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a481ad3e2f4a49e4955944495e0e7618e}{\index{vdw@{vdw}!radmin@{radmin}}
+\index{radmin@{radmin}!vdw@{vdw}}
+\subsubsection[{radmin}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer vdw\-::radmin}}\label{classvdw_a481ad3e2f4a49e4955944495e0e7618e}
+
+
+minimum energy distance for each atom class pair 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a6b56f2ac675c5d7c8c776c2d6588a902}{\index{vdw@{vdw}!radmin4@{radmin4}}
+\index{radmin4@{radmin4}!vdw@{vdw}}
+\subsubsection[{radmin4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer vdw\-::radmin4}}\label{classvdw_a6b56f2ac675c5d7c8c776c2d6588a902}
+
+
+minimum energy distance for 1-\/4 interaction pairs 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a00f7569676b7321ddce0cbd95bd9194a}{\index{vdw@{vdw}!vdwlocnl@{vdwlocnl}}
+\index{vdwlocnl@{vdwlocnl}!vdw@{vdw}}
+\subsubsection[{vdwlocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable vdw\-::vdwlocnl}}\label{classvdw_a00f7569676b7321ddce0cbd95bd9194a}
+
+
+glob-\/locnl vdw correspondance 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_af2f988f5bda479a9434fd55813e86f1f}{\index{vdw@{vdw}!winepshbnd@{winepshbnd}}
+\index{winepshbnd@{winepshbnd}!vdw@{vdw}}
+\subsubsection[{winepshbnd}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winepshbnd}}\label{classvdw_af2f988f5bda479a9434fd55813e86f1f}
+
+
+window object corresponding to epshbnd 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_af61591d1fb9c9a51bc99f386b70d5aa3}{\index{vdw@{vdw}!winepsilon@{winepsilon}}
+\index{winepsilon@{winepsilon}!vdw@{vdw}}
+\subsubsection[{winepsilon}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winepsilon}}\label{classvdw_af61591d1fb9c9a51bc99f386b70d5aa3}
+
+
+window object corresponding to epsilon 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_aa83424a9fd661a24af2a7f3398752043}{\index{vdw@{vdw}!winepsilon4@{winepsilon4}}
+\index{winepsilon4@{winepsilon4}!vdw@{vdw}}
+\subsubsection[{winepsilon4}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winepsilon4}}\label{classvdw_aa83424a9fd661a24af2a7f3398752043}
+
+
+window object corresponding to epsilon4 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_aab00860bd4307394370977abffd67b50}{\index{vdw@{vdw}!winired@{winired}}
+\index{winired@{winired}!vdw@{vdw}}
+\subsubsection[{winired}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winired}}\label{classvdw_aab00860bd4307394370977abffd67b50}
+
+
+window object corresponding to ired 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_ab3382a5da536eaf9c75c72b23234c438}{\index{vdw@{vdw}!winivdw@{winivdw}}
+\index{winivdw@{winivdw}!vdw@{vdw}}
+\subsubsection[{winivdw}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winivdw}}\label{classvdw_ab3382a5da536eaf9c75c72b23234c438}
+
+
+window object corresponding to ivdw 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a56c4d404eab08a1617766f8fde8b75cb}{\index{vdw@{vdw}!winivt@{winivt}}
+\index{winivt@{winivt}!vdw@{vdw}}
+\subsubsection[{winivt}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winivt}}\label{classvdw_a56c4d404eab08a1617766f8fde8b75cb}
+
+
+window object corresponding to ivt 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_af57e0531d67b1526fbcff2a6873c9667}{\index{vdw@{vdw}!winjvdw@{winjvdw}}
+\index{winjvdw@{winjvdw}!vdw@{vdw}}
+\subsubsection[{winjvdw}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winjvdw}}\label{classvdw_af57e0531d67b1526fbcff2a6873c9667}
+
+
+window object corresponding to jvdw 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a9402b47403482ddf1e425de0a0ba6d9c}{\index{vdw@{vdw}!winjvt@{winjvt}}
+\index{winjvt@{winjvt}!vdw@{vdw}}
+\subsubsection[{winjvt}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winjvt}}\label{classvdw_a9402b47403482ddf1e425de0a0ba6d9c}
+
+
+window object corresponding to jvt 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a41d847388846c64c9b93a49d3af33ce5}{\index{vdw@{vdw}!winkred@{winkred}}
+\index{winkred@{winkred}!vdw@{vdw}}
+\subsubsection[{winkred}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winkred}}\label{classvdw_a41d847388846c64c9b93a49d3af33ce5}
+
+
+window object corresponding to kred 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_adbe248422d32ce2af00ba24891cf41b3}{\index{vdw@{vdw}!winnbvdw@{winnbvdw}}
+\index{winnbvdw@{winnbvdw}!vdw@{vdw}}
+\subsubsection[{winnbvdw}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winnbvdw}}\label{classvdw_adbe248422d32ce2af00ba24891cf41b3}
+
+
+window object corresponding to nbvdw 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a489e8cba15f756d8ca2a9543e253fab8}{\index{vdw@{vdw}!winradhbnd@{winradhbnd}}
+\index{winradhbnd@{winradhbnd}!vdw@{vdw}}
+\subsubsection[{winradhbnd}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winradhbnd}}\label{classvdw_a489e8cba15f756d8ca2a9543e253fab8}
+
+
+window object corresponding to radhbnd 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a4dc5326b78b01b48d1ed5a4ae869faa0}{\index{vdw@{vdw}!winradmin@{winradmin}}
+\index{winradmin@{winradmin}!vdw@{vdw}}
+\subsubsection[{winradmin}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winradmin}}\label{classvdw_a4dc5326b78b01b48d1ed5a4ae869faa0}
+
+
+window object corresponding to radmin 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-vdw.\-f90.
+
+\hypertarget{classvdw_a5d28e96374dca3938469367477be14ab}{\index{vdw@{vdw}!winradmin4@{winradmin4}}
+\index{winradmin4@{winradmin4}!vdw@{vdw}}
+\subsubsection[{winradmin4}]{\setlength{\rightskip}{0pt plus 5cm}integer vdw\-::winradmin4}}\label{classvdw_a5d28e96374dca3938469367477be14ab}
+
+
+window object corresponding to radmin4 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-vdw.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__vdw_8f90}{M\-O\-D\-\_\-vdw.\-f90}\end{DoxyCompactItemize}

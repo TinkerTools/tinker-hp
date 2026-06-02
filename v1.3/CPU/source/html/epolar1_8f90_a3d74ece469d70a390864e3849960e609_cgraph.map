@@ -1,0 +1,17 @@
+<map id="eprecip1" name="eprecip1">
+<area shape="rect" id="node2" href="$pmestuff_8f90.html#a5efd8955803838b82fa81b021a32cf5e" title="transforms the atomic multipoles from Cartesian to fractional coordinates " alt="" coords="134,5,269,32"/>
+<area shape="rect" id="node4" href="$mpistuff_8f90.html#a577359ca425dbc13ed910a17d1f26618" title="communicate potential to neighboring processes (chgflux) " alt="" coords="159,56,243,83"/>
+<area shape="rect" id="node5" href="$mpistuff_8f90.html#a0fd1f56f03b8f3e81283d77bc46559ef" title="communicate reciprocal pot to local " alt="" coords="149,107,253,133"/>
+<area shape="rect" id="node6" href="$dcflux_8f90.html#a99a43f1406bde4ababdc3cf497751592" title="takes as input the electrostatic potential at each atomic site and calculates gradient chain rule ter..." alt="" coords="171,309,232,336"/>
+<area shape="rect" id="node8" href="$fft__mpi_8f90.html#abdd07940aee4c823edb5b931186bed23" title="compute backward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="144,208,259,235"/>
+<area shape="rect" id="node9" href="$fft__mpi_8f90.html#a9e24205ee630a80792dd5d179c5f8429" title="compute forward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="144,259,259,285"/>
+<area shape="rect" id="node10" href="$pmestuff_8f90.html#acac006e94420d1c20f607ffcc78de99d" title="transform electrostatic potential (and derivatives) from cartesian to " alt="" coords="135,411,267,437"/>
+<area shape="rect" id="node12" href="$pmestuff_8f90.html#a7a5e0594cbf56a62ac01c2d370fadd74" title="extracts the induced dipole potential at the i&#45;th site from the particle mesh Ewald grid finds B&#45;spli..." alt="" coords="145,360,258,387"/>
+<area shape="rect" id="node13" href="$pmestuff_8f90.html#a4495f1975376db6546014d7ab27b9d62" title="places the i&#45;th fractional atomic multipole onto the particle mesh Ewald grid " alt="" coords="138,512,265,539"/>
+<area shape="rect" id="node15" href="$pmestuff_8f90.html#a926f0702082531ece71364b60a89cc8e" title="places the fractional induced dipoles onto the particle mesh Ewald grid the particle mesh Ewald grid ..." alt="" coords="145,461,258,488"/>
+<area shape="rect" id="node16" href="$torque_8f90.html#ad7da2d7412b7fa01bf63851922587359" title="compute torque contribution on atomistic site, reciprocal space " alt="" coords="156,157,247,184"/>
+<area shape="rect" id="node3" href="$pmestuff_8f90.html#ab3a9c64aac2f01b68893073aa3221161" title="&quot;cart_to_frac&quot; computes a transformation matrix to convert a multipole object in Cartesian coordinate..." alt="" coords="317,5,416,32"/>
+<area shape="rect" id="node7" href="$image_8f90.html#afafb2542d1faa53dbba8933a21da60fa" title="takes the components of pairwise distance between two points in a periodic box and converts to the co..." alt="" coords="335,233,398,260"/>
+<area shape="rect" id="node11" href="$pmestuff_8f90.html#a1350ef38c71785ec4079a23e4cb7c9ca" title="computes a transformation matrix to convert a multipole object in fractional coordinates to cartesian..." alt="" coords="317,411,416,437"/>
+<area shape="rect" id="node14" href="$pmestuff_8f90.html#ac4aafef365cd8b32ba802ba270739607" title="modifies site bounds on the PME grid and returns an offset into the B&#45;spline coefficient arrays ..." alt="" coords="335,487,398,513"/>
+</map>

@@ -1,0 +1,256 @@
+\hypertarget{newinduce__shortreal_8f90}{\section{newinduce\-\_\-shortreal.\-f90 File Reference}
+\label{newinduce__shortreal_8f90}\index{newinduce\-\_\-shortreal.\-f90@{newinduce\-\_\-shortreal.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{newinduce__shortreal_8f90_a3d01ff79142c61b9e7b9e04c8fcc48a2}{newinduce\-\_\-shortreal}
+\begin{DoxyCompactList}\small\item\em evaluate induced dipole moments and the polarization energy using either a (preconditioned) conjugate gradient algorithm or Jacobi iterations coupled with D\-I\-I\-S extrapolation. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__shortreal_8f90_a41d7b71f3f49b4f99db271cf53ba6ea4}{inducepcg\-\_\-shortreal} (matvec, nrhs, precnd, ef, mu)
+\begin{DoxyCompactList}\small\item\em Preconditioned Conjugate Gradient Solver for short range polarization. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__shortreal_8f90_a49fd4302db21c05b5d376203d08e8f53}{inducejac\-\_\-shortreal} (matvec, nrhs, dodiis, ef, mu)
+\begin{DoxyCompactList}\small\item\em Jacobi/\-D\-I\-I\-S Solver for short range polarization. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__shortreal_8f90_a38e10e399e49e4c1601a82291ddab784}{dbletmatxb\-\_\-pme} (nrhs, dodiag, mu, mu2, efi, efi2)
+\begin{DoxyCompactList}\small\item\em Compute the direct space contribution to the electric field due to the current value of the induced dipoles, for two input vectors mu and mu2. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{newinduce__shortreal_8f90_a38e10e399e49e4c1601a82291ddab784}{\index{newinduce\-\_\-shortreal.\-f90@{newinduce\-\_\-shortreal.\-f90}!dbletmatxb\-\_\-pme@{dbletmatxb\-\_\-pme}}
+\index{dbletmatxb\-\_\-pme@{dbletmatxb\-\_\-pme}!newinduce_shortreal.f90@{newinduce\-\_\-shortreal.\-f90}}
+\subsubsection[{dbletmatxb\-\_\-pme}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dbletmatxb\-\_\-pme (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiag, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu2, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{efi, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{efi2}
+\end{DoxyParamCaption}
+)}}\label{newinduce__shortreal_8f90_a38e10e399e49e4c1601a82291ddab784}
+
+
+Compute the direct space contribution to the electric field due to the current value of the induced dipoles, for two input vectors mu and mu2. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em dodiag,\-:} & compute diagonal contribution of matrix-\/vector product or not \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & first set of induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em mu2,\-:} & second set of induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em efi,\-:} & electrif field due to the first set of induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em efi2,\-:} & electrif field due to the second set of induced dipoles \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 652 of file newinduce\-\_\-shortreal.\-f90.
+
+
+
+References erfc(), image(), and switch().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg1shortreal(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2bisshortreal(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2cinqshortreal(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2quatshortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), and epolar1tcg2tershortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__shortreal_8f90_a38e10e399e49e4c1601a82291ddab784_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__shortreal_8f90_a38e10e399e49e4c1601a82291ddab784_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__shortreal_8f90_a49fd4302db21c05b5d376203d08e8f53}{\index{newinduce\-\_\-shortreal.\-f90@{newinduce\-\_\-shortreal.\-f90}!inducejac\-\_\-shortreal@{inducejac\-\_\-shortreal}}
+\index{inducejac\-\_\-shortreal@{inducejac\-\_\-shortreal}!newinduce_shortreal.f90@{newinduce\-\_\-shortreal.\-f90}}
+\subsubsection[{inducejac\-\_\-shortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducejac\-\_\-shortreal (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiis, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu}
+\end{DoxyParamCaption}
+)}}\label{newinduce__shortreal_8f90_a49fd4302db21c05b5d376203d08e8f53}
+
+
+Jacobi/\-D\-I\-I\-S Solver for short range polarization. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em dodiis,\-:} & use of D\-I\-I\-S extrapolation or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & permanent electric field (right hand side) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles (guess at entry) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 450 of file newinduce\-\_\-shortreal.\-f90.
+
+
+
+References commdirdirshort(), commfieldshort(), diis(), and extrap().
+
+
+
+Referenced by newinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__shortreal_8f90_a49fd4302db21c05b5d376203d08e8f53_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__shortreal_8f90_a49fd4302db21c05b5d376203d08e8f53_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__shortreal_8f90_a41d7b71f3f49b4f99db271cf53ba6ea4}{\index{newinduce\-\_\-shortreal.\-f90@{newinduce\-\_\-shortreal.\-f90}!inducepcg\-\_\-shortreal@{inducepcg\-\_\-shortreal}}
+\index{inducepcg\-\_\-shortreal@{inducepcg\-\_\-shortreal}!newinduce_shortreal.f90@{newinduce\-\_\-shortreal.\-f90}}
+\subsubsection[{inducepcg\-\_\-shortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducepcg\-\_\-shortreal (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{precnd, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu}
+\end{DoxyParamCaption}
+)}}\label{newinduce__shortreal_8f90_a41d7b71f3f49b4f99db271cf53ba6ea4}
+
+
+Preconditioned Conjugate Gradient Solver for short range polarization. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em precnd,\-:} & use of diagonal preconditioner or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & permanent electric field (right hand side) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles (guess at entry) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 202 of file newinduce\-\_\-shortreal.\-f90.
+
+
+
+References commdirdirshort(), and commfieldshort().
+
+
+
+Referenced by newinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__shortreal_8f90_a41d7b71f3f49b4f99db271cf53ba6ea4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__shortreal_8f90_a41d7b71f3f49b4f99db271cf53ba6ea4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__shortreal_8f90_a3d01ff79142c61b9e7b9e04c8fcc48a2}{\index{newinduce\-\_\-shortreal.\-f90@{newinduce\-\_\-shortreal.\-f90}!newinduce\-\_\-shortreal@{newinduce\-\_\-shortreal}}
+\index{newinduce\-\_\-shortreal@{newinduce\-\_\-shortreal}!newinduce_shortreal.f90@{newinduce\-\_\-shortreal.\-f90}}
+\subsubsection[{newinduce\-\_\-shortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine newinduce\-\_\-shortreal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{newinduce__shortreal_8f90_a3d01ff79142c61b9e7b9e04c8fcc48a2}
+
+
+evaluate induced dipole moments and the polarization energy using either a (preconditioned) conjugate gradient algorithm or Jacobi iterations coupled with D\-I\-I\-S extrapolation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file newinduce\-\_\-shortreal.\-f90.
+
+
+
+References commdirdirshort(), commfieldshort(), efld0\-\_\-direct(), fatal(), inducejac\-\_\-shortreal(), inducepcg\-\_\-shortreal(), tmatxb\-\_\-pme(), and ulspred().
+
+
+
+Referenced by epolar0c(), epolar1c(), and epolar3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__shortreal_8f90_a3d01ff79142c61b9e7b9e04c8fcc48a2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__shortreal_8f90_a3d01ff79142c61b9e7b9e04c8fcc48a2_icgraph}
+\end{center}
+\end{figure}
+
+

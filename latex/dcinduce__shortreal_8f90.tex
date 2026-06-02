@@ -1,0 +1,127 @@
+\hypertarget{dcinduce__shortreal_8f90}{\section{dcinduce\-\_\-shortreal.\-f90 File Reference}
+\label{dcinduce__shortreal_8f90}\index{dcinduce\-\_\-shortreal.\-f90@{dcinduce\-\_\-shortreal.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{dcinduce__shortreal_8f90_ad9829e43792862b97c56bc25674be5ae}{dcinduce\-\_\-shortreal}
+\begin{DoxyCompactList}\small\item\em solve the polarization equations with a D\-C/\-J\-I-\/\-D\-I\-I\-S algorithm, driver \end{DoxyCompactList}\item 
+subroutine \hyperlink{dcinduce__shortreal_8f90_a2c42e8ca86bb6236346e69d5772b70e4}{inducedc\-\_\-shortreal} (matvec, nrhs, dodiis, ef, mu)
+\begin{DoxyCompactList}\small\item\em solve the polarization equations with a D\-C/\-J\-I-\/\-D\-I\-I\-S algorithm, solver itself \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{dcinduce__shortreal_8f90_ad9829e43792862b97c56bc25674be5ae}{\index{dcinduce\-\_\-shortreal.\-f90@{dcinduce\-\_\-shortreal.\-f90}!dcinduce\-\_\-shortreal@{dcinduce\-\_\-shortreal}}
+\index{dcinduce\-\_\-shortreal@{dcinduce\-\_\-shortreal}!dcinduce_shortreal.f90@{dcinduce\-\_\-shortreal.\-f90}}
+\subsubsection[{dcinduce\-\_\-shortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dcinduce\-\_\-shortreal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{dcinduce__shortreal_8f90_ad9829e43792862b97c56bc25674be5ae}
+
+
+solve the polarization equations with a D\-C/\-J\-I-\/\-D\-I\-I\-S algorithm, driver 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 17 of file dcinduce\-\_\-shortreal.\-f90.
+
+
+
+References cluster1(), cluster2(), commdirdirshort(), commfield2short(), inducedc\-\_\-shortreal(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), otf\-\_\-dc\-\_\-tmatxb\-\_\-pme(), pc\-\_\-dc\-\_\-efld0\-\_\-direct(), pc\-\_\-dc\-\_\-tmatxb\-\_\-pme(), and ulspred().
+
+
+
+Referenced by epolar1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dcinduce__shortreal_8f90_ad9829e43792862b97c56bc25674be5ae_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dcinduce__shortreal_8f90_ad9829e43792862b97c56bc25674be5ae_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{dcinduce__shortreal_8f90_a2c42e8ca86bb6236346e69d5772b70e4}{\index{dcinduce\-\_\-shortreal.\-f90@{dcinduce\-\_\-shortreal.\-f90}!inducedc\-\_\-shortreal@{inducedc\-\_\-shortreal}}
+\index{inducedc\-\_\-shortreal@{inducedc\-\_\-shortreal}!dcinduce_shortreal.f90@{dcinduce\-\_\-shortreal.\-f90}}
+\subsubsection[{inducedc\-\_\-shortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducedc\-\_\-shortreal (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiis, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu}
+\end{DoxyParamCaption}
+)}}\label{dcinduce__shortreal_8f90_a2c42e8ca86bb6236346e69d5772b70e4}
+
+
+solve the polarization equations with a D\-C/\-J\-I-\/\-D\-I\-I\-S algorithm, solver itself 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side vectors \\
+\hline
+\mbox{\tt in}  & {\em dodiis,\-:} & use D\-I\-I\-S extrapolation or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & right hand side (permanent electric field) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & solution vector (part corresponding to local domain in direct space) \\
+\hline
+\mbox{\tt in}  & {\em murec,\-:} & solution vector (part corresponding to local domain in recip space) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 210 of file dcinduce\-\_\-shortreal.\-f90.
+
+
+
+References commdirdirshort(), commfieldshort(), diis(), extrap(), and no\-\_\-com\-\_\-diis().
+
+
+
+Referenced by dcinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dcinduce__shortreal_8f90_a2c42e8ca86bb6236346e69d5772b70e4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dcinduce__shortreal_8f90_a2c42e8ca86bb6236346e69d5772b70e4_icgraph}
+\end{center}
+\end{figure}
+
+

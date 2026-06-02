@@ -1,0 +1,70 @@
+\hypertarget{baoabpi_8f90}{\section{baoabpi.\-f90 File Reference}
+\label{baoabpi_8f90}\index{baoabpi.\-f90@{baoabpi.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{baoabpi_8f90_a960f906f690f4698c8782b23097764d9}{baoabpi} (polymer, polymer\-\_\-ctr, istep, dt)
+\begin{DoxyCompactList}\small\item\em \char`\"{}baoabpi\char`\"{} performs a single P\-I\-M\-D time step via the B\-A\-O\-A\-B recursion formula \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{baoabpi_8f90_a960f906f690f4698c8782b23097764d9}{\index{baoabpi.\-f90@{baoabpi.\-f90}!baoabpi@{baoabpi}}
+\index{baoabpi@{baoabpi}!baoabpi.f90@{baoabpi.\-f90}}
+\subsubsection[{baoabpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine baoabpi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer\-\_\-ctr, }
+\item[{integer, intent(in)}]{istep, }
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{baoabpi_8f90_a960f906f690f4698c8782b23097764d9}
+
+
+\char`\"{}baoabpi\char`\"{} performs a single P\-I\-M\-D time step via the B\-A\-O\-A\-B recursion formula 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em polymer,\-:} & polymer \\
+\hline
+\mbox{\tt in}  & {\em polymer\-\_\-ctr,\-:} & contracted polymer \\
+\hline
+\mbox{\tt in}  & {\em istep,\-:} & number of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & length of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 30 of file baoabpi.\-f90.
+
+
+
+References utilbaoabpi\-::apply\-\_\-aoa\-\_\-pi(), utilbaoabpi\-::apply\-\_\-b\-\_\-pi(), utilbaoabpi\-::centroid\-\_\-force\-\_\-corrections(), commstuffpi\-::comm\-\_\-for\-\_\-normal\-\_\-modes(), commstuffpi\-::commforces\-\_\-ctr(), commstuffpi\-::commforcesblocpi(), commstuffpi\-::commforcesrecpi(), commforcesrespa1(), utilbaoabpi\-::compute\-\_\-grad\-\_\-beads(), utilbaoabpi\-::compute\-\_\-gradslow\-\_\-centroid(), colvarproxy\-\_\-tinkerhp\-::dt(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), beads\-::kinetic\-\_\-pi(), beads\-::load\-\_\-bead(), mdsavebeads(), mdstatpi(), utilbaoabpi\-::plangevinpi(), beads\-::project\-\_\-forces\-\_\-ctr(), beads\-::reduce\-\_\-observables\-\_\-pi(), spectra\-::save\-\_\-dipole\-\_\-traj(), beads\-::set\-\_\-eigforces\-\_\-pi(), and beads\-::stopwatchpi().
+
+
+
+Referenced by pimd\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{baoabpi_8f90_a960f906f690f4698c8782b23097764d9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=312pt]{baoabpi_8f90_a960f906f690f4698c8782b23097764d9_icgraph}
+\end{center}
+\end{figure}
+
+

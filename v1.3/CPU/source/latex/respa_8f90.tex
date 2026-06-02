@@ -1,0 +1,241 @@
+\hypertarget{respa_8f90}{\section{respa.\-f90 File Reference}
+\label{respa_8f90}\index{respa.\-f90@{respa.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{respa_8f90_a9973bf6f030df2aeeef2a2c0fd9079dc}{respa} (istep, dt)
+\begin{DoxyCompactList}\small\item\em \char`\"{}respa\char`\"{} performs a single multiple time step molecular dynamics step using the reversible reference system propagation algorithm (r-\/\-R\-E\-S\-P\-A) via a Verlet core with the potential split into fast-\/ and slow-\/evolving portions \end{DoxyCompactList}\item 
+subroutine \hyperlink{respa_8f90_a5ae7d0bb58a941bd4812ec2ad6ebf91c}{gradfast} (\hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy}, derivs)
+\begin{DoxyCompactList}\small\item\em calculates the potential energy and first derivatives for the fast-\/evolving local valence potential energy terms \end{DoxyCompactList}\item 
+subroutine \hyperlink{respa_8f90_a1636f8739527997ef2cb65bd0449ef35}{gradslow} (\hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy}, derivs)
+\begin{DoxyCompactList}\small\item\em calculates the potential energy and first derivatives for the slow-\/evolving nonbonded potential energy terms \end{DoxyCompactList}\item 
+subroutine \hyperlink{respa_8f90_ad5e596e0b5eb147c8a8112b41e2a0cf7}{respafast} (ealt, viralt, dta, istep, dip, dipind)
+\begin{DoxyCompactList}\small\item\em find fast-\/evolving velocities and positions via velocity Verlet recursion computes and displays the total potential energy \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{respa_8f90_a5ae7d0bb58a941bd4812ec2ad6ebf91c}{\index{respa.\-f90@{respa.\-f90}!gradfast@{gradfast}}
+\index{gradfast@{gradfast}!respa.f90@{respa.\-f90}}
+\subsubsection[{gradfast}]{\setlength{\rightskip}{0pt plus 5cm}subroutine gradfast (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{energy, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{respa_8f90_a5ae7d0bb58a941bd4812ec2ad6ebf91c}
+
+
+calculates the potential energy and first derivatives for the fast-\/evolving local valence potential energy terms 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em energy,\-:} & potential energy associated to fast potential terms \\
+\hline
+\mbox{\tt in}  & {\em energy,\-:} & derivatives of potential energy associated to fast potential terms \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 260 of file respa.\-f90.
+
+
+
+References energy(), and gradient().
+
+
+
+Referenced by baoabrespa(), mdinit(), and respafast().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa_8f90_a5ae7d0bb58a941bd4812ec2ad6ebf91c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa_8f90_a5ae7d0bb58a941bd4812ec2ad6ebf91c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{respa_8f90_a1636f8739527997ef2cb65bd0449ef35}{\index{respa.\-f90@{respa.\-f90}!gradslow@{gradslow}}
+\index{gradslow@{gradslow}!respa.f90@{respa.\-f90}}
+\subsubsection[{gradslow}]{\setlength{\rightskip}{0pt plus 5cm}subroutine gradslow (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{energy, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{respa_8f90_a1636f8739527997ef2cb65bd0449ef35}
+
+
+calculates the potential energy and first derivatives for the slow-\/evolving nonbonded potential energy terms 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em energy,\-:} & potential energy associated to slow potential terms \\
+\hline
+\mbox{\tt in}  & {\em energy,\-:} & derivatives of potential energy associated to slow potential terms \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 361 of file respa.\-f90.
+
+
+
+References energy(), and gradient().
+
+
+
+Referenced by baoabrespa(), mdinit(), and respa().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa_8f90_a1636f8739527997ef2cb65bd0449ef35_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa_8f90_a1636f8739527997ef2cb65bd0449ef35_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{respa_8f90_a9973bf6f030df2aeeef2a2c0fd9079dc}{\index{respa.\-f90@{respa.\-f90}!respa@{respa}}
+\index{respa@{respa}!respa.f90@{respa.\-f90}}
+\subsubsection[{respa}]{\setlength{\rightskip}{0pt plus 5cm}subroutine respa (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{real$\ast$8}]{dt}
+\end{DoxyParamCaption}
+)}}\label{respa_8f90_a9973bf6f030df2aeeef2a2c0fd9079dc}
+
+
+\char`\"{}respa\char`\"{} performs a single multiple time step molecular dynamics step using the reversible reference system propagation algorithm (r-\/\-R\-E\-S\-P\-A) via a Verlet core with the potential split into fast-\/ and slow-\/evolving portions 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 37 of file respa.\-f90.
+
+
+
+References allocsteprespa(), commforcesrespa(), commposrec(), commposrespa(), spectra\-::compute\-\_\-dipole(), colvarproxy\-\_\-tinkerhp\-::dt(), gradslow(), info\-\_\-energy(), mdrest(), mdsave(), mdstat(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), nblist(), pressure(), pressure2(), rattle2(), reassignpme(), reassignrespa(), reduceen(), reinitnl(), respafast(), spectra\-::save\-\_\-dipole\-\_\-respa(), temper(), and temper2().
+
+
+
+Referenced by dynamic\-\_\-bis(), and commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{respa_8f90_a9973bf6f030df2aeeef2a2c0fd9079dc_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa_8f90_a9973bf6f030df2aeeef2a2c0fd9079dc_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{respa_8f90_ad5e596e0b5eb147c8a8112b41e2a0cf7}{\index{respa.\-f90@{respa.\-f90}!respafast@{respafast}}
+\index{respafast@{respafast}!respa.f90@{respa.\-f90}}
+\subsubsection[{respafast}]{\setlength{\rightskip}{0pt plus 5cm}subroutine respafast (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{ealt, }
+\item[{real$\ast$8, dimension(3,3)}]{viralt, }
+\item[{real$\ast$8}]{dta, }
+\item[{integer}]{istep, }
+\item[{real$\ast$8, dimension(3,nalt)}]{dip, }
+\item[{real$\ast$8, dimension(3,nalt)}]{dipind}
+\end{DoxyParamCaption}
+)}}\label{respa_8f90_ad5e596e0b5eb147c8a8112b41e2a0cf7}
+
+
+find fast-\/evolving velocities and positions via velocity Verlet recursion computes and displays the total potential energy 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ealt,\-:} & local potential energy \\
+\hline
+\mbox{\tt in}  & {\em viralt,\-:} & local virial \\
+\hline
+\mbox{\tt in}  & {\em dta,\-:} & intermediate timestep \\
+\hline
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dip,\-:} & dipole moment \\
+\hline
+\mbox{\tt in}  & {\em dipind,\-:} & induced dipole moment \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 461 of file respa.\-f90.
+
+
+
+References allocsteprespa(), commforcesrespa(), commposrespa(), spectra\-::compute\-\_\-dipole(), gradfast(), info\-\_\-energy(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), rattle(), rattle2(), reassignrespa(), and reduceen().
+
+
+
+Referenced by respa().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa_8f90_ad5e596e0b5eb147c8a8112b41e2a0cf7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{respa_8f90_ad5e596e0b5eb147c8a8112b41e2a0cf7_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,209 @@
+\hypertarget{kcharge_8f90}{\section{kcharge.\-f90 File Reference}
+\label{kcharge_8f90}\index{kcharge.\-f90@{kcharge.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kcharge_8f90_a12856ab5c59d27d019b5309504b960d0}{kcharge}
+\begin{DoxyCompactList}\small\item\em assigns partial charges to the atoms within the structure and processes any new or changed values \end{DoxyCompactList}\item 
+subroutine \hyperlink{kcharge_8f90_a8acf8eceb78ec6488c2bfff2a7009761}{kcharge\-\_\-update} (istep)
+\begin{DoxyCompactList}\small\item\em update local charges paramters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kcharge_8f90_a0e74762005202bfa98105408ee374e66}{kchargem}
+\begin{DoxyCompactList}\small\item\em assigns partial charges to the atoms according to the Merck Molecular Force Field (M\-M\-F\-F) \end{DoxyCompactList}\item 
+subroutine \hyperlink{kcharge_8f90_ab7bf95215bd2aa286b3682380d588fe3}{dealloc\-\_\-shared\-\_\-chg}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for chg parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kcharge_8f90_a32d5633479c0f3b4ccf38837a96ce2e1}{alloc\-\_\-shared\-\_\-chg}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for chg parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kcharge_8f90_a32d5633479c0f3b4ccf38837a96ce2e1}{\index{kcharge.\-f90@{kcharge.\-f90}!alloc\-\_\-shared\-\_\-chg@{alloc\-\_\-shared\-\_\-chg}}
+\index{alloc\-\_\-shared\-\_\-chg@{alloc\-\_\-shared\-\_\-chg}!kcharge.f90@{kcharge.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-chg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-chg (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kcharge_8f90_a32d5633479c0f3b4ccf38837a96ce2e1}
+
+
+allocate shared memory pointers for chg parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 566 of file kcharge.\-f90.
+
+
+
+Referenced by kcharge().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kcharge_8f90_a32d5633479c0f3b4ccf38837a96ce2e1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kcharge_8f90_ab7bf95215bd2aa286b3682380d588fe3}{\index{kcharge.\-f90@{kcharge.\-f90}!dealloc\-\_\-shared\-\_\-chg@{dealloc\-\_\-shared\-\_\-chg}}
+\index{dealloc\-\_\-shared\-\_\-chg@{dealloc\-\_\-shared\-\_\-chg}!kcharge.f90@{kcharge.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-chg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-chg (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kcharge_8f90_ab7bf95215bd2aa286b3682380d588fe3}
+
+
+deallocate shared memory pointers for chg parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 507 of file kcharge.\-f90.
+
+
+
+Referenced by final(), and kcharge().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kcharge_8f90_ab7bf95215bd2aa286b3682380d588fe3_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kcharge_8f90_a12856ab5c59d27d019b5309504b960d0}{\index{kcharge.\-f90@{kcharge.\-f90}!kcharge@{kcharge}}
+\index{kcharge@{kcharge}!kcharge.f90@{kcharge.\-f90}}
+\subsubsection[{kcharge}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kcharge (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kcharge_8f90_a12856ab5c59d27d019b5309504b960d0}
+
+
+assigns partial charges to the atoms within the structure and processes any new or changed values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file kcharge.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-chg(), dealloc\-\_\-shared\-\_\-chg(), gettext(), kchargem(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kcharge_8f90_a12856ab5c59d27d019b5309504b960d0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kcharge_8f90_a12856ab5c59d27d019b5309504b960d0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kcharge_8f90_a8acf8eceb78ec6488c2bfff2a7009761}{\index{kcharge.\-f90@{kcharge.\-f90}!kcharge\-\_\-update@{kcharge\-\_\-update}}
+\index{kcharge\-\_\-update@{kcharge\-\_\-update}!kcharge.f90@{kcharge.\-f90}}
+\subsubsection[{kcharge\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kcharge\-\_\-update (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{kcharge_8f90_a8acf8eceb78ec6488c2bfff2a7009761}
+
+
+update local charges paramters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 202 of file kcharge.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kcharge_8f90_a8acf8eceb78ec6488c2bfff2a7009761_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kcharge_8f90_a0e74762005202bfa98105408ee374e66}{\index{kcharge.\-f90@{kcharge.\-f90}!kchargem@{kchargem}}
+\index{kchargem@{kchargem}!kcharge.f90@{kcharge.\-f90}}
+\subsubsection[{kchargem}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kchargem (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kcharge_8f90_a0e74762005202bfa98105408ee374e66}
+
+
+assigns partial charges to the atoms according to the Merck Molecular Force Field (M\-M\-F\-F) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 332 of file kcharge.\-f90.
+
+
+
+Referenced by kcharge().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kcharge_8f90_a0e74762005202bfa98105408ee374e66_icgraph}
+\end{center}
+\end{figure}
+
+

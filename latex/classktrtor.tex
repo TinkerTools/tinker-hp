@@ -1,0 +1,181 @@
+\hypertarget{classktrtor}{\section{ktrtor Module Reference}
+\label{classktrtor}\index{ktrtor@{ktrtor}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}
+\begin{DoxyCompactList}\small\item\em maximum number of torsion-\/torsion parameter entries \end{DoxyCompactList}\item 
+integer \hyperlink{classktrtor_a5c2d655cdc848a5d23532dc079e23cc5}{maxtgrd}
+\begin{DoxyCompactList}\small\item\em maximum dimension of torsion-\/torsion spline grid \end{DoxyCompactList}\item 
+integer \hyperlink{classktrtor_a83f65d5a672e0c8e0cf9db285915243b}{maxtgrd2}
+\begin{DoxyCompactList}\small\item\em maximum dimension of torsion-\/torsion spline grid points \end{DoxyCompactList}\item 
+integer, dimension(\hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_a33f01d9cd25678eee34804747d565ea0}{tnx}
+\begin{DoxyCompactList}\small\item\em number of columns in torsion-\/torsion spline grid \end{DoxyCompactList}\item 
+integer, dimension(\hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_a56e9a9a959e5d5dddf9ba1ab5291238b}{tny}
+\begin{DoxyCompactList}\small\item\em number of rows in torsion-\/torsion spline grid \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classktrtor_a5c2d655cdc848a5d23532dc079e23cc5}{maxtgrd}, \hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_ad5663a5bb938d0665ee40737ac9e49b8}{ttx}
+\begin{DoxyCompactList}\small\item\em angle values for first torsion of spline grid \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classktrtor_a5c2d655cdc848a5d23532dc079e23cc5}{maxtgrd}, \hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_aed5da189159d6c5dbba622a8e859e839}{tty}
+\begin{DoxyCompactList}\small\item\em angle values for second torsion of spline grid \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classktrtor_a83f65d5a672e0c8e0cf9db285915243b}{maxtgrd2}, \\*
+\hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_a3e7fd2e1979b5b7e0f05fdddb5429b03}{tbf}
+\begin{DoxyCompactList}\small\item\em function values at points on spline grid \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classktrtor_a83f65d5a672e0c8e0cf9db285915243b}{maxtgrd2}, \\*
+\hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_ad90617cead2c03c1b215f81cd359e88d}{tbx}
+\begin{DoxyCompactList}\small\item\em gradient over first torsion of spline grid \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classktrtor_a83f65d5a672e0c8e0cf9db285915243b}{maxtgrd2}, \\*
+\hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_afb5202fc5a804c1a2fc32e0c6b6f1dec}{tby}
+\begin{DoxyCompactList}\small\item\em gradient over second torsion of spline grid \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classktrtor_a83f65d5a672e0c8e0cf9db285915243b}{maxtgrd2}, \\*
+\hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_a766d3639dce77480684252b6be8f5b7c}{tbxy}
+\begin{DoxyCompactList}\small\item\em Hessian cross components over spline grid. \end{DoxyCompactList}\item 
+character $\ast$20, dimension(\hyperlink{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{maxntt}) \hyperlink{classktrtor_a2ae91e0137595c4e306b09bbe8ed345f}{ktt}
+\begin{DoxyCompactList}\small\item\em string of torsion-\/torsion atom classes \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classktrtor_a2ae91e0137595c4e306b09bbe8ed345f}{\index{ktrtor@{ktrtor}!ktt@{ktt}}
+\index{ktt@{ktt}!ktrtor@{ktrtor}}
+\subsubsection[{ktt}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$20, dimension({\bf maxntt}) ktrtor\-::ktt}}\label{classktrtor_a2ae91e0137595c4e306b09bbe8ed345f}
+
+
+string of torsion-\/torsion atom classes 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}{\index{ktrtor@{ktrtor}!maxntt@{maxntt}}
+\index{maxntt@{maxntt}!ktrtor@{ktrtor}}
+\subsubsection[{maxntt}]{\setlength{\rightskip}{0pt plus 5cm}integer ktrtor\-::maxntt}}\label{classktrtor_a3ec5934a4d1ffdfbc4f1bfbc33b1b836}
+
+
+maximum number of torsion-\/torsion parameter entries 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_a5c2d655cdc848a5d23532dc079e23cc5}{\index{ktrtor@{ktrtor}!maxtgrd@{maxtgrd}}
+\index{maxtgrd@{maxtgrd}!ktrtor@{ktrtor}}
+\subsubsection[{maxtgrd}]{\setlength{\rightskip}{0pt plus 5cm}integer ktrtor\-::maxtgrd}}\label{classktrtor_a5c2d655cdc848a5d23532dc079e23cc5}
+
+
+maximum dimension of torsion-\/torsion spline grid 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_a83f65d5a672e0c8e0cf9db285915243b}{\index{ktrtor@{ktrtor}!maxtgrd2@{maxtgrd2}}
+\index{maxtgrd2@{maxtgrd2}!ktrtor@{ktrtor}}
+\subsubsection[{maxtgrd2}]{\setlength{\rightskip}{0pt plus 5cm}integer ktrtor\-::maxtgrd2}}\label{classktrtor_a83f65d5a672e0c8e0cf9db285915243b}
+
+
+maximum dimension of torsion-\/torsion spline grid points 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_a3e7fd2e1979b5b7e0f05fdddb5429b03}{\index{ktrtor@{ktrtor}!tbf@{tbf}}
+\index{tbf@{tbf}!ktrtor@{ktrtor}}
+\subsubsection[{tbf}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxtgrd2},{\bf maxntt}) ktrtor\-::tbf}}\label{classktrtor_a3e7fd2e1979b5b7e0f05fdddb5429b03}
+
+
+function values at points on spline grid 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_ad90617cead2c03c1b215f81cd359e88d}{\index{ktrtor@{ktrtor}!tbx@{tbx}}
+\index{tbx@{tbx}!ktrtor@{ktrtor}}
+\subsubsection[{tbx}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxtgrd2},{\bf maxntt}) ktrtor\-::tbx}}\label{classktrtor_ad90617cead2c03c1b215f81cd359e88d}
+
+
+gradient over first torsion of spline grid 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_a766d3639dce77480684252b6be8f5b7c}{\index{ktrtor@{ktrtor}!tbxy@{tbxy}}
+\index{tbxy@{tbxy}!ktrtor@{ktrtor}}
+\subsubsection[{tbxy}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxtgrd2},{\bf maxntt}) ktrtor\-::tbxy}}\label{classktrtor_a766d3639dce77480684252b6be8f5b7c}
+
+
+Hessian cross components over spline grid. 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_afb5202fc5a804c1a2fc32e0c6b6f1dec}{\index{ktrtor@{ktrtor}!tby@{tby}}
+\index{tby@{tby}!ktrtor@{ktrtor}}
+\subsubsection[{tby}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxtgrd2},{\bf maxntt}) ktrtor\-::tby}}\label{classktrtor_afb5202fc5a804c1a2fc32e0c6b6f1dec}
+
+
+gradient over second torsion of spline grid 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_a33f01d9cd25678eee34804747d565ea0}{\index{ktrtor@{ktrtor}!tnx@{tnx}}
+\index{tnx@{tnx}!ktrtor@{ktrtor}}
+\subsubsection[{tnx}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension({\bf maxntt}) ktrtor\-::tnx}}\label{classktrtor_a33f01d9cd25678eee34804747d565ea0}
+
+
+number of columns in torsion-\/torsion spline grid 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_a56e9a9a959e5d5dddf9ba1ab5291238b}{\index{ktrtor@{ktrtor}!tny@{tny}}
+\index{tny@{tny}!ktrtor@{ktrtor}}
+\subsubsection[{tny}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension({\bf maxntt}) ktrtor\-::tny}}\label{classktrtor_a56e9a9a959e5d5dddf9ba1ab5291238b}
+
+
+number of rows in torsion-\/torsion spline grid 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_ad5663a5bb938d0665ee40737ac9e49b8}{\index{ktrtor@{ktrtor}!ttx@{ttx}}
+\index{ttx@{ttx}!ktrtor@{ktrtor}}
+\subsubsection[{ttx}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxtgrd},{\bf maxntt}) ktrtor\-::ttx}}\label{classktrtor_ad5663a5bb938d0665ee40737ac9e49b8}
+
+
+angle values for first torsion of spline grid 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+\hypertarget{classktrtor_aed5da189159d6c5dbba622a8e859e839}{\index{ktrtor@{ktrtor}!tty@{tty}}
+\index{tty@{tty}!ktrtor@{ktrtor}}
+\subsubsection[{tty}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxtgrd},{\bf maxntt}) ktrtor\-::tty}}\label{classktrtor_aed5da189159d6c5dbba622a8e859e839}
+
+
+angle values for second torsion of spline grid 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-ktrtor.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__ktrtor_8f90}{M\-O\-D\-\_\-ktrtor.\-f90}\end{DoxyCompactItemize}

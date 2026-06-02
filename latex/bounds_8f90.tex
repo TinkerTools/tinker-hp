@@ -1,0 +1,159 @@
+\hypertarget{bounds_8f90}{\section{bounds.\-f90 File Reference}
+\label{bounds_8f90}\index{bounds.\-f90@{bounds.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{bounds_8f90_a36668b850047ca69a0c5714bbe42e6e4}{bounds}
+\begin{DoxyCompactList}\small\item\em finds the center of mass of each molecule and translates any stray molecules back into the periodic box atoms involved in a C\-V (through colvars or plumed) are dealt with separately \end{DoxyCompactList}\item 
+subroutine \hyperlink{bounds_8f90_a69655c4183c98787f10539ead5c0d3c0}{boundslist} (nlist, list)
+\begin{DoxyCompactList}\small\item\em computes and displays the total potential energy finds the center of mass of a list of atoms translates any stray atoms back into the periodic box \end{DoxyCompactList}\item 
+subroutine \hyperlink{bounds_8f90_ad503ac348e868db74103f3f6d77b6524}{compute\-\_\-wrap\-\_\-shifts} (xmid, ymid, zmid, dx, dy, dz, xshift, yshift, zshift)
+\begin{DoxyCompactList}\small\item\em computes the shifts along each directions based on wrapping \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{bounds_8f90_a36668b850047ca69a0c5714bbe42e6e4}{\index{bounds.\-f90@{bounds.\-f90}!bounds@{bounds}}
+\index{bounds@{bounds}!bounds.f90@{bounds.\-f90}}
+\subsubsection[{bounds}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bounds (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bounds_8f90_a36668b850047ca69a0c5714bbe42e6e4}
+
+
+finds the center of mass of each molecule and translates any stray molecules back into the periodic box atoms involved in a C\-V (through colvars or plumed) are dealt with separately 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 25 of file bounds.\-f90.
+
+
+
+References boundslist(), and colvarproxy\-\_\-tinkerhp\-::init().
+
+
+
+Referenced by mdsave().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bounds_8f90_a36668b850047ca69a0c5714bbe42e6e4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bounds_8f90_a36668b850047ca69a0c5714bbe42e6e4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bounds_8f90_a69655c4183c98787f10539ead5c0d3c0}{\index{bounds.\-f90@{bounds.\-f90}!boundslist@{boundslist}}
+\index{boundslist@{boundslist}!bounds.f90@{bounds.\-f90}}
+\subsubsection[{boundslist}]{\setlength{\rightskip}{0pt plus 5cm}subroutine boundslist (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{nlist, }
+\item[{integer, dimension(nlist), intent(in)}]{list}
+\end{DoxyParamCaption}
+)}}\label{bounds_8f90_a69655c4183c98787f10539ead5c0d3c0}
+
+
+computes and displays the total potential energy finds the center of mass of a list of atoms translates any stray atoms back into the periodic box 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 133 of file bounds.\-f90.
+
+
+
+References compute\-\_\-wrap\-\_\-shifts().
+
+
+
+Referenced by bounds().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=306pt]{bounds_8f90_a69655c4183c98787f10539ead5c0d3c0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bounds_8f90_a69655c4183c98787f10539ead5c0d3c0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bounds_8f90_ad503ac348e868db74103f3f6d77b6524}{\index{bounds.\-f90@{bounds.\-f90}!compute\-\_\-wrap\-\_\-shifts@{compute\-\_\-wrap\-\_\-shifts}}
+\index{compute\-\_\-wrap\-\_\-shifts@{compute\-\_\-wrap\-\_\-shifts}!bounds.f90@{bounds.\-f90}}
+\subsubsection[{compute\-\_\-wrap\-\_\-shifts}]{\setlength{\rightskip}{0pt plus 5cm}subroutine compute\-\_\-wrap\-\_\-shifts (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{xmid, }
+\item[{real$\ast$8, intent(in)}]{ymid, }
+\item[{real$\ast$8, intent(in)}]{zmid, }
+\item[{real$\ast$8, intent(out)}]{dx, }
+\item[{real$\ast$8, intent(out)}]{dy, }
+\item[{real$\ast$8, intent(out)}]{dz, }
+\item[{integer, intent(out)}]{xshift, }
+\item[{integer, intent(out)}]{yshift, }
+\item[{integer, intent(out)}]{zshift}
+\end{DoxyParamCaption}
+)}}\label{bounds_8f90_ad503ac348e868db74103f3f6d77b6524}
+
+
+computes the shifts along each directions based on wrapping 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 188 of file bounds.\-f90.
+
+
+
+Referenced by boundslist(), and boundslistpi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bounds_8f90_ad503ac348e868db74103f3f6d77b6524_icgraph}
+\end{center}
+\end{figure}
+
+

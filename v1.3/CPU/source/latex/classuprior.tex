@@ -1,0 +1,207 @@
+\hypertarget{classuprior}{\section{uprior Module Reference}
+\label{classuprior}\index{uprior@{uprior}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classuprior_a5d9038d2473c8075c0636977eafb4d57}{maxualt}
+\begin{DoxyCompactList}\small\item\em maximum number of sets of induced dipoles to save \end{DoxyCompactList}\item 
+integer \hyperlink{classuprior_acc513c3b29d6e948f29333fa668adff3}{nualt}
+\begin{DoxyCompactList}\small\item\em number of prior sets of induced dipoles in storage \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classuprior_a5d9038d2473c8075c0636977eafb4d57}{maxualt}) \hyperlink{classuprior_a2dadbbbb706a9081bda32406b6fdd75c}{gear}
+\begin{DoxyCompactList}\small\item\em coefficients for Gear predictor binomial method \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classuprior_a5d9038d2473c8075c0636977eafb4d57}{maxualt}) \hyperlink{classuprior_a41ee89e59357405b080d883f3c4383b6}{aspc}
+\begin{DoxyCompactList}\small\item\em coefficients for always stable predictor-\/corrector \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classuprior_a5d9038d2473c8075c0636977eafb4d57}{maxualt}) \hyperlink{classuprior_a701f83e155c86aa0b227727803852c91}{bpred}
+\begin{DoxyCompactList}\small\item\em coefficients for induced dipole predictor polynomial \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classuprior_a5d9038d2473c8075c0636977eafb4d57}{maxualt}) \hyperlink{classuprior_aa87db88e9448f50c7a59391771b47fe8}{bpredp}
+\begin{DoxyCompactList}\small\item\em coefficients for predictor polynomial in energy field \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classuprior_a5d9038d2473c8075c0636977eafb4d57}{maxualt}) \hyperlink{classuprior_aa5e518724a69cbdc67f466c84a0f6035}{bpreds}
+\begin{DoxyCompactList}\small\item\em coefficients for predictor for P\-B/\-G\-K solvation \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classuprior_a5d9038d2473c8075c0636977eafb4d57}{maxualt}) \hyperlink{classuprior_a324305285c84b20f97d84c2b5d11da11}{bpredps}
+\begin{DoxyCompactList}\small\item\em coefficients for predictor in P\-B/\-G\-K energy field \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classuprior_ab7223a6643ed089c1e8126acc4a1dc80}{udalt}
+\begin{DoxyCompactList}\small\item\em prior values for induced dipoles at each site \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classuprior_a63f7d61fa4654ee2cd7460514deb2040}{udshortalt}
+\begin{DoxyCompactList}\small\item\em prior values for short range induced dipoles at each site \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classuprior_ae50156ff52a0b156355471f9935a3e21}{upalt}
+\begin{DoxyCompactList}\small\item\em prior values for induced dipoles in energy field \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable \hyperlink{classuprior_ab1763d53b72fde72ed327e0f3f639f7a}{upshortalt}
+\begin{DoxyCompactList}\small\item\em prior values for short range induced dipoles in energy field \end{DoxyCompactList}\item 
+logical \hyperlink{classuprior_a368331c2d6701085f91aefbec9f727d8}{use\-\_\-pred}
+\begin{DoxyCompactList}\small\item\em flag to control use of induced dipole prediction \end{DoxyCompactList}\item 
+character $\ast$4 \hyperlink{classuprior_af700e3d1134904cd27e3a631b0af018f}{polpred}
+\begin{DoxyCompactList}\small\item\em type of predictor polynomial (Gear, A\-S\-P\-C or L\-S\-Q\-R) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-uprior.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classuprior_a41ee89e59357405b080d883f3c4383b6}{\index{uprior@{uprior}!aspc@{aspc}}
+\index{aspc@{aspc}!uprior@{uprior}}
+\subsubsection[{aspc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxualt}) uprior\-::aspc}}\label{classuprior_a41ee89e59357405b080d883f3c4383b6}
+
+
+coefficients for always stable predictor-\/corrector 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_a701f83e155c86aa0b227727803852c91}{\index{uprior@{uprior}!bpred@{bpred}}
+\index{bpred@{bpred}!uprior@{uprior}}
+\subsubsection[{bpred}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxualt}) uprior\-::bpred}}\label{classuprior_a701f83e155c86aa0b227727803852c91}
+
+
+coefficients for induced dipole predictor polynomial 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_aa87db88e9448f50c7a59391771b47fe8}{\index{uprior@{uprior}!bpredp@{bpredp}}
+\index{bpredp@{bpredp}!uprior@{uprior}}
+\subsubsection[{bpredp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxualt}) uprior\-::bpredp}}\label{classuprior_aa87db88e9448f50c7a59391771b47fe8}
+
+
+coefficients for predictor polynomial in energy field 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_a324305285c84b20f97d84c2b5d11da11}{\index{uprior@{uprior}!bpredps@{bpredps}}
+\index{bpredps@{bpredps}!uprior@{uprior}}
+\subsubsection[{bpredps}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxualt}) uprior\-::bpredps}}\label{classuprior_a324305285c84b20f97d84c2b5d11da11}
+
+
+coefficients for predictor in P\-B/\-G\-K energy field 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_aa5e518724a69cbdc67f466c84a0f6035}{\index{uprior@{uprior}!bpreds@{bpreds}}
+\index{bpreds@{bpreds}!uprior@{uprior}}
+\subsubsection[{bpreds}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxualt}) uprior\-::bpreds}}\label{classuprior_aa5e518724a69cbdc67f466c84a0f6035}
+
+
+coefficients for predictor for P\-B/\-G\-K solvation 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_a2dadbbbb706a9081bda32406b6fdd75c}{\index{uprior@{uprior}!gear@{gear}}
+\index{gear@{gear}!uprior@{uprior}}
+\subsubsection[{gear}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxualt}) uprior\-::gear}}\label{classuprior_a2dadbbbb706a9081bda32406b6fdd75c}
+
+
+coefficients for Gear predictor binomial method 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_a5d9038d2473c8075c0636977eafb4d57}{\index{uprior@{uprior}!maxualt@{maxualt}}
+\index{maxualt@{maxualt}!uprior@{uprior}}
+\subsubsection[{maxualt}]{\setlength{\rightskip}{0pt plus 5cm}integer uprior\-::maxualt}}\label{classuprior_a5d9038d2473c8075c0636977eafb4d57}
+
+
+maximum number of sets of induced dipoles to save 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_acc513c3b29d6e948f29333fa668adff3}{\index{uprior@{uprior}!nualt@{nualt}}
+\index{nualt@{nualt}!uprior@{uprior}}
+\subsubsection[{nualt}]{\setlength{\rightskip}{0pt plus 5cm}integer uprior\-::nualt}}\label{classuprior_acc513c3b29d6e948f29333fa668adff3}
+
+
+number of prior sets of induced dipoles in storage 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_af700e3d1134904cd27e3a631b0af018f}{\index{uprior@{uprior}!polpred@{polpred}}
+\index{polpred@{polpred}!uprior@{uprior}}
+\subsubsection[{polpred}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$4 uprior\-::polpred}}\label{classuprior_af700e3d1134904cd27e3a631b0af018f}
+
+
+type of predictor polynomial (Gear, A\-S\-P\-C or L\-S\-Q\-R) 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_ab7223a6643ed089c1e8126acc4a1dc80}{\index{uprior@{uprior}!udalt@{udalt}}
+\index{udalt@{udalt}!uprior@{uprior}}
+\subsubsection[{udalt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable uprior\-::udalt}}\label{classuprior_ab7223a6643ed089c1e8126acc4a1dc80}
+
+
+prior values for induced dipoles at each site 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_a63f7d61fa4654ee2cd7460514deb2040}{\index{uprior@{uprior}!udshortalt@{udshortalt}}
+\index{udshortalt@{udshortalt}!uprior@{uprior}}
+\subsubsection[{udshortalt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable uprior\-::udshortalt}}\label{classuprior_a63f7d61fa4654ee2cd7460514deb2040}
+
+
+prior values for short range induced dipoles at each site 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_ae50156ff52a0b156355471f9935a3e21}{\index{uprior@{uprior}!upalt@{upalt}}
+\index{upalt@{upalt}!uprior@{uprior}}
+\subsubsection[{upalt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable uprior\-::upalt}}\label{classuprior_ae50156ff52a0b156355471f9935a3e21}
+
+
+prior values for induced dipoles in energy field 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_ab1763d53b72fde72ed327e0f3f639f7a}{\index{uprior@{uprior}!upshortalt@{upshortalt}}
+\index{upshortalt@{upshortalt}!uprior@{uprior}}
+\subsubsection[{upshortalt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable uprior\-::upshortalt}}\label{classuprior_ab1763d53b72fde72ed327e0f3f639f7a}
+
+
+prior values for short range induced dipoles in energy field 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-uprior.\-f90.
+
+\hypertarget{classuprior_a368331c2d6701085f91aefbec9f727d8}{\index{uprior@{uprior}!use\-\_\-pred@{use\-\_\-pred}}
+\index{use\-\_\-pred@{use\-\_\-pred}!uprior@{uprior}}
+\subsubsection[{use\-\_\-pred}]{\setlength{\rightskip}{0pt plus 5cm}logical uprior\-::use\-\_\-pred}}\label{classuprior_a368331c2d6701085f91aefbec9f727d8}
+
+
+flag to control use of induced dipole prediction 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-uprior.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__uprior_8f90}{M\-O\-D\-\_\-uprior.\-f90}\end{DoxyCompactItemize}

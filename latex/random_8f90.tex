@@ -1,0 +1,198 @@
+\hypertarget{random_8f90}{\section{random.\-f90 File Reference}
+\label{random_8f90}\index{random.\-f90@{random.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8 function \hyperlink{random_8f90_aa081a5a87e8f0d37bda00ccaac7cf89f}{random} ()
+\begin{DoxyCompactList}\small\item\em generates a random number on \mbox{[}0,1\mbox{]} via a long period generator due to L'Ecuyer with Bays-\/\-Durham shuffle \end{DoxyCompactList}\item 
+real $\ast$8 function \hyperlink{random_8f90_a44b4308acbb3ae9d274fff321fd4ceae}{normal} ()
+\item 
+real $\ast$8 function \hyperlink{random_8f90_a80c256021ac1a8d912b64a8501ff2e2b}{rademacher} ()
+\item 
+subroutine \hyperlink{random_8f90_a75b42dfbfee43d557893697e78e439d7}{ranvec} (vector)
+\begin{DoxyCompactList}\small\item\em \char`\"{}ranvec\char`\"{} generates a unit vector in 3-\/dimensional space with uniformly distributed random orientation \end{DoxyCompactList}\item 
+subroutine \hyperlink{random_8f90_a61fc65fb86f32ba1039b4c7b03ccff91}{sphere} (ndot, dot)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{random_8f90_a44b4308acbb3ae9d274fff321fd4ceae}{\index{random.\-f90@{random.\-f90}!normal@{normal}}
+\index{normal@{normal}!random.f90@{random.\-f90}}
+\subsubsection[{normal}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function normal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{random_8f90_a44b4308acbb3ae9d274fff321fd4ceae}
+
+
+Definition at line 152 of file random.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::compute(), colvarproxy\-\_\-tinkerhp\-::log(), and random().
+
+
+
+Referenced by utilbaoabpi\-::apply\-\_\-aoa\-\_\-pi(), utilbaoab\-::apply\-\_\-o\-\_\-block(), utilbaoab\-::apply\-\_\-o\-\_\-piston(), qtb\-::convolseg(), mdinit(), mdinitbead(), utilbaoabpi\-::plangevinpi(), qtb\-::qtbinit(), rand\-\_\-colvars(), and temper().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{random_8f90_a44b4308acbb3ae9d274fff321fd4ceae_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{random_8f90_a44b4308acbb3ae9d274fff321fd4ceae_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{random_8f90_a80c256021ac1a8d912b64a8501ff2e2b}{\index{random.\-f90@{random.\-f90}!rademacher@{rademacher}}
+\index{rademacher@{rademacher}!random.f90@{random.\-f90}}
+\subsubsection[{rademacher}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function rademacher (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{random_8f90_a80c256021ac1a8d912b64a8501ff2e2b}
+
+
+Definition at line 203 of file random.\-f90.
+
+
+
+References random().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{random_8f90_a80c256021ac1a8d912b64a8501ff2e2b_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{random_8f90_aa081a5a87e8f0d37bda00ccaac7cf89f}{\index{random.\-f90@{random.\-f90}!random@{random}}
+\index{random@{random}!random.f90@{random.\-f90}}
+\subsubsection[{random}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function random (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{random_8f90_aa081a5a87e8f0d37bda00ccaac7cf89f}
+
+
+generates a random number on \mbox{[}0,1\mbox{]} via a long period generator due to L'Ecuyer with Bays-\/\-Durham shuffle 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 29 of file random.\-f90.
+
+
+
+References calendar(), gettext(), and upcase().
+
+
+
+Referenced by barcalc(), maxwell(), mdsavebeads(), normal(), pmonte(), rademacher(), ranvec(), rotmat(), and temper().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{random_8f90_aa081a5a87e8f0d37bda00ccaac7cf89f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{random_8f90_aa081a5a87e8f0d37bda00ccaac7cf89f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{random_8f90_a75b42dfbfee43d557893697e78e439d7}{\index{random.\-f90@{random.\-f90}!ranvec@{ranvec}}
+\index{ranvec@{ranvec}!random.f90@{random.\-f90}}
+\subsubsection[{ranvec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ranvec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3)}]{vector}
+\end{DoxyParamCaption}
+)}}\label{random_8f90_a75b42dfbfee43d557893697e78e439d7}
+
+
+\char`\"{}ranvec\char`\"{} generates a unit vector in 3-\/dimensional space with uniformly distributed random orientation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 251 of file random.\-f90.
+
+
+
+References random().
+
+
+
+Referenced by mdinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{random_8f90_a75b42dfbfee43d557893697e78e439d7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{random_8f90_a75b42dfbfee43d557893697e78e439d7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{random_8f90_a61fc65fb86f32ba1039b4c7b03ccff91}{\index{random.\-f90@{random.\-f90}!sphere@{sphere}}
+\index{sphere@{sphere}!random.f90@{random.\-f90}}
+\subsubsection[{sphere}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sphere (
+\begin{DoxyParamCaption}
+\item[{integer}]{ndot, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{dot}
+\end{DoxyParamCaption}
+)}}\label{random_8f90_a61fc65fb86f32ba1039b4c7b03ccff91}
+
+
+Definition at line 301 of file random.\-f90.
+

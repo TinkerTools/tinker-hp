@@ -1,0 +1,113 @@
+\hypertarget{elj3_8f90}{\section{elj3.\-f90 File Reference}
+\label{elj3_8f90}\index{elj3.\-f90@{elj3.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{elj3_8f90_a1636fb77f51c6ff98731ca0279c409d6}{elj3}
+\begin{DoxyCompactList}\small\item\em calculates the Lennard-\/\-Jones 6-\/12 van der Waals energy and also partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{elj3_8f90_ad85f0d8660274c9ec356bd53b5f6c2f6}{elj3c}
+\begin{DoxyCompactList}\small\item\em calculates the Lennard-\/\-Jones van der Waals energy with respect to Cartesian coordinates using a paiwise neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{elj3_8f90_a1636fb77f51c6ff98731ca0279c409d6}{\index{elj3.\-f90@{elj3.\-f90}!elj3@{elj3}}
+\index{elj3@{elj3}!elj3.f90@{elj3.\-f90}}
+\subsubsection[{elj3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine elj3 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{elj3_8f90_a1636fb77f51c6ff98731ca0279c409d6}
+
+
+calculates the Lennard-\/\-Jones 6-\/12 van der Waals energy and also partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file elj3.\-f90.
+
+
+
+References elj3c(), and evcorr().
+
+
+
+Referenced by analysis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=316pt]{elj3_8f90_a1636fb77f51c6ff98731ca0279c409d6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{elj3_8f90_a1636fb77f51c6ff98731ca0279c409d6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{elj3_8f90_ad85f0d8660274c9ec356bd53b5f6c2f6}{\index{elj3.\-f90@{elj3.\-f90}!elj3c@{elj3c}}
+\index{elj3c@{elj3c}!elj3.f90@{elj3.\-f90}}
+\subsubsection[{elj3c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine elj3c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{elj3_8f90_ad85f0d8660274c9ec356bd53b5f6c2f6}
+
+
+calculates the Lennard-\/\-Jones van der Waals energy with respect to Cartesian coordinates using a paiwise neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 77 of file elj3.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by elj3().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=236pt]{elj3_8f90_ad85f0d8660274c9ec356bd53b5f6c2f6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{elj3_8f90_ad85f0d8660274c9ec356bd53b5f6c2f6_icgraph}
+\end{center}
+\end{figure}
+
+

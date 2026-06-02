@@ -1,0 +1,165 @@
+\hypertarget{alterchg_8f90}{\section{alterchg.\-f90 File Reference}
+\label{alterchg_8f90}\index{alterchg.\-f90@{alterchg.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{alterchg_8f90_a9997fbb61c798a7b3c4228c87c8f0a60}{alterchg}
+\begin{DoxyCompactList}\small\item\em calculates the change in atomic partial charge or monopole values due to bond and angle charge flux coupling \end{DoxyCompactList}\item 
+subroutine \hyperlink{alterchg_8f90_aacd208c8da693269f031d65b670a36ce}{bndchg} (pdelta)
+\begin{DoxyCompactList}\small\item\em \char`\"{}bndchg\char`\"{} computes modifications to atomic partial charges or monopoles due to bond stretch using a charge flux formulation \end{DoxyCompactList}\item 
+subroutine \hyperlink{alterchg_8f90_a54d1627d9869b27547697494e0a5177d}{angchg} (pdelta)
+\begin{DoxyCompactList}\small\item\em \char`\"{}angchg\char`\"{} computes modifications to atomic partial charges or monopoles due to angle bending using a charge flux formulation \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{alterchg_8f90_a9997fbb61c798a7b3c4228c87c8f0a60}{\index{alterchg.\-f90@{alterchg.\-f90}!alterchg@{alterchg}}
+\index{alterchg@{alterchg}!alterchg.f90@{alterchg.\-f90}}
+\subsubsection[{alterchg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alterchg (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{alterchg_8f90_a9997fbb61c798a7b3c4228c87c8f0a60}
+
+
+calculates the change in atomic partial charge or monopole values due to bond and angle charge flux coupling 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 24 of file alterchg.\-f90.
+
+
+
+References angchg(), bndchg(), and commchgflx().
+
+
+
+Referenced by analysis(), energy(), and gradient().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=334pt]{alterchg_8f90_a9997fbb61c798a7b3c4228c87c8f0a60_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{alterchg_8f90_a9997fbb61c798a7b3c4228c87c8f0a60_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{alterchg_8f90_a54d1627d9869b27547697494e0a5177d}{\index{alterchg.\-f90@{alterchg.\-f90}!angchg@{angchg}}
+\index{angchg@{angchg}!alterchg.f90@{alterchg.\-f90}}
+\subsubsection[{angchg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine angchg (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{pdelta}
+\end{DoxyParamCaption}
+)}}\label{alterchg_8f90_a54d1627d9869b27547697494e0a5177d}
+
+
+\char`\"{}angchg\char`\"{} computes modifications to atomic partial charges or monopoles due to angle bending using a charge flux formulation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 184 of file alterchg.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by alterchg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=216pt]{alterchg_8f90_a54d1627d9869b27547697494e0a5177d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{alterchg_8f90_a54d1627d9869b27547697494e0a5177d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{alterchg_8f90_aacd208c8da693269f031d65b670a36ce}{\index{alterchg.\-f90@{alterchg.\-f90}!bndchg@{bndchg}}
+\index{bndchg@{bndchg}!alterchg.f90@{alterchg.\-f90}}
+\subsubsection[{bndchg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bndchg (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{pdelta}
+\end{DoxyParamCaption}
+)}}\label{alterchg_8f90_aacd208c8da693269f031d65b670a36ce}
+
+
+\char`\"{}bndchg\char`\"{} computes modifications to atomic partial charges or monopoles due to bond stretch using a charge flux formulation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 126 of file alterchg.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by alterchg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=216pt]{alterchg_8f90_aacd208c8da693269f031d65b670a36ce_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{alterchg_8f90_aacd208c8da693269f031d65b670a36ce_icgraph}
+\end{center}
+\end{figure}
+
+

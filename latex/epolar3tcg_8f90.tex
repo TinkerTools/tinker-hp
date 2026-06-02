@@ -1,0 +1,165 @@
+\hypertarget{epolar3tcg_8f90}{\section{epolar3tcg.\-f90 File Reference}
+\label{epolar3tcg_8f90}\index{epolar3tcg.\-f90@{epolar3tcg.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{epolar3tcg_8f90_a49f2c6bc116ff71f8820a7f6631c37ee}{epolar3tcg}
+\begin{DoxyCompactList}\small\item\em calculates the induced dipole polarization energy with the tcg method, and partitions the energy among atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar3tcg_8f90_a6434760458582ec22504e6b5969423df}{epolar3tcg1}
+\begin{DoxyCompactList}\small\item\em calculates the induced dipole polarization energy with the tcg1 method, and partitions the energy among atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar3tcg_8f90_aa77b20c13bdeb68ab6a3ed1b5f80df18}{epolar3tcg2}
+\begin{DoxyCompactList}\small\item\em calculates the induced dipole polarization energy with the tcg2 method, and partitions the energy among atoms \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{epolar3tcg_8f90_a49f2c6bc116ff71f8820a7f6631c37ee}{\index{epolar3tcg.\-f90@{epolar3tcg.\-f90}!epolar3tcg@{epolar3tcg}}
+\index{epolar3tcg@{epolar3tcg}!epolar3tcg.f90@{epolar3tcg.\-f90}}
+\subsubsection[{epolar3tcg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar3tcg (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar3tcg_8f90_a49f2c6bc116ff71f8820a7f6631c37ee}
+
+
+calculates the induced dipole polarization energy with the tcg method, and partitions the energy among atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 22 of file epolar3tcg.\-f90.
+
+
+
+References epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), and fatal().
+
+
+
+Referenced by epolar(), and epolar3().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar3tcg_8f90_a49f2c6bc116ff71f8820a7f6631c37ee_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar3tcg_8f90_a49f2c6bc116ff71f8820a7f6631c37ee_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar3tcg_8f90_a6434760458582ec22504e6b5969423df}{\index{epolar3tcg.\-f90@{epolar3tcg.\-f90}!epolar3tcg1@{epolar3tcg1}}
+\index{epolar3tcg1@{epolar3tcg1}!epolar3tcg.f90@{epolar3tcg.\-f90}}
+\subsubsection[{epolar3tcg1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar3tcg1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar3tcg_8f90_a6434760458582ec22504e6b5969423df}
+
+
+calculates the induced dipole polarization energy with the tcg1 method, and partitions the energy among atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 74 of file epolar3tcg.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), commrecdirsolv(), diagvec(), efld0\-\_\-direct(), efld0\-\_\-recip(), sprod(), tmatxb\-\_\-pme(), and tmatxbrecip().
+
+
+
+Referenced by epolar3tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar3tcg_8f90_a6434760458582ec22504e6b5969423df_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar3tcg_8f90_a6434760458582ec22504e6b5969423df_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar3tcg_8f90_aa77b20c13bdeb68ab6a3ed1b5f80df18}{\index{epolar3tcg.\-f90@{epolar3tcg.\-f90}!epolar3tcg2@{epolar3tcg2}}
+\index{epolar3tcg2@{epolar3tcg2}!epolar3tcg.f90@{epolar3tcg.\-f90}}
+\subsubsection[{epolar3tcg2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar3tcg2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar3tcg_8f90_aa77b20c13bdeb68ab6a3ed1b5f80df18}
+
+
+calculates the induced dipole polarization energy with the tcg2 method, and partitions the energy among atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 331 of file epolar3tcg.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), commrecdirsolv(), diagvec(), efld0\-\_\-direct(), efld0\-\_\-recip(), sprod(), tmatxb\-\_\-pme(), and tmatxbrecip().
+
+
+
+Referenced by epolar3tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar3tcg_8f90_aa77b20c13bdeb68ab6a3ed1b5f80df18_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar3tcg_8f90_aa77b20c13bdeb68ab6a3ed1b5f80df18_icgraph}
+\end{center}
+\end{figure}
+
+

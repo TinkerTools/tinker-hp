@@ -1,0 +1,94 @@
+The {\ttfamily dynamic} executable allows to run molecular dynamics simulation. As for Tinker-\/8, the command line used to run the M\-D should give first the number of M\-D steps to make, then the size of each time step (in femtoseconds), then the time between each writing of geometry (in picoseconds), then the statistical ensemble to sample \-: 1 is N\-V\-E, 2 is N\-V\-T, 4 is N\-P\-T. For N\-V\-T and N\-P\-T simulations, this number should be followed by the temperature (in Kelvin) of the simulation, and for N\-P\-T simulation by the pressure (in Atmosphere) of the simulation.
+
+For example the command lines\-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily mpirun -\/np 16 ../bin/dynamic dhfr2 1000 1 1 1} will give you as an output 1000 M\-D steps in N\-V\-E for the dhfr2 system, with a 1 {\itshape fs} time step and a 1 {\itshape ps} frequency output.
+\item {\ttfamily mpirun -\/np 16 ./dynamic dhfr2 1000 1 1 2 300} will give you as an output 1000 M\-D steps in N\-V\-T at 300\-K for the dhfr2 system, with a 1 {\itshape fs} time step and a 1 {\itshape ps} frequency output.
+\item {\ttfamily mpirun -\/np 16 ./dynamic dhfr2 1000 1 1 4 300 1} will give you as an output 1000 M\-D steps in N\-P\-T at 300\-K and 1atm for the dhfr2 system, with a 1 {\itshape fs} time step and a 1 {\itshape ps} frequency output.
+\end{DoxyItemize}
+
+Various keywords to be included in the simulation keyfile are specific to the 'dynamic' program such as the description of integrators, thermostats, barostats or free-\/energies. Here is the list of these keywords with a description of their impact on the simulation.
+
+{\bfseries Integrators}\-: Similar to Tinker-\/8, default integrator is 'Beeman'. Various integrators are available including some multiple-\/timestep ones.
+\begin{DoxyItemize}
+\item B\-E\-E\-M\-A\-N\-: beeman integrator (variation of velocity verlet integrator)
+\item V\-E\-R\-L\-E\-T\-: velocity verlet integrator
+\item B\-A\-O\-A\-B\-: Langevin dynamics with B\-A\-O\-A\-B discretization, already includes the Langevin theromstat
+\item R\-E\-S\-P\-A\-: Respa-\/like two-\/level multiple timestep integrator with a velocity verlet inner loop. The inner loop evaluates the bonded potential energy terms and the outer one the non-\/bonded ones.
+\item B\-A\-O\-A\-B\-R\-E\-S\-P\-A\-: similar as R\-E\-S\-P\-A with a B\-A\-O\-A\-B inner loop.
+\item R\-E\-S\-P\-A1\-: Respa1-\/like three-\/level multiple timestep integrator with a velocity verlet inner loop. The inner loop evaluates the bonded potential energy terms, the intermediate one the short-\/range non-\/bonded ones and the outer one the long-\/range non-\/bonded ones.
+\item B\-A\-O\-A\-B\-R\-E\-S\-P\-A1\-: same as R\-E\-S\-P\-A1 with a B\-A\-O\-A\-B inner loop.
+\end{DoxyItemize}
+
+Multiple timestep integrators can have their shorter (and intermediate for three-\/level integrators) timesteps controled with the following keywords\-:
+\begin{DoxyItemize}
+\item D\-S\-H\-O\-R\-T\-: shorter timestep in picoseconds, default 0.\-00025 (0.\-25 fs)
+\item D\-I\-N\-T\-E\-R\-: intermediate timestep in picoseconds, default 0.\-002 (2 fs)
+\end{DoxyItemize}
+
+All of these integrators are associated with a stability limit (maximum timestep) that can be increased by distributing the mass of heavy atoms on the hydrogens their are bound to, without compromising accuracy of computed observables, this is done with the keyword\-:
+\begin{DoxyItemize}
+\item H\-E\-A\-V\-Y-\/\-H\-Y\-D\-R\-O\-G\-E\-N
+\end{DoxyItemize}
+
+{\bfseries Thermostats}\-: Aside from Langevin dynamics, temperature controlled can be made through the 'thermostat' keyword with the following arguments\-:
+\begin{DoxyItemize}
+\item B\-U\-S\-S\-I\-: Bussi thermostat, default.
+\item B\-E\-R\-E\-N\-D\-S\-E\-N\-: Berendsen thermostat.
+\item T\-A\-U-\/\-T\-E\-M\-P\-E\-R\-A\-T\-U\-R\-E\-: characteristic time of thermostat in 1/ps, default 0.\-2
+\item A\-N\-D\-E\-R\-S\-E\-N\-: Andersen thermostat. Regarding Langevin dynamics, the friction can be controllod with the keyword\-:
+\item F\-R\-I\-C\-T\-I\-O\-N\-: friction of Langevin dynamics in 1/ps, default 1.
+\end{DoxyItemize}
+
+{\bfseries Barostats}\-: Pressure can be controlled can be made through the 'barostat' keyword with the following arguments\-:
+\begin{DoxyItemize}
+\item B\-E\-R\-E\-N\-D\-S\-E\-N\-: Berendsen barostat, default.
+\item T\-A\-U-\/\-P\-R\-E\-S\-S\-U\-R\-E\-: characteristic time of barostat in ps, default 2.
+\item M\-O\-N\-T\-E\-C\-A\-R\-L\-O\-: Monte-\/carlo barostat
+\item L\-A\-N\-G\-E\-V\-I\-N\-: Langevin barostat, extended dynamics of the volume, requires a mass and a friction than can be controlled with the following keywords\-:
+\begin{DoxyItemize}
+\item F\-R\-I\-C\-T\-I\-O\-N\-P\-I\-S\-T\-O\-N\-: friction of Langevin barostat in 1/ps, default 20.
+\item M\-A\-S\-S\-P\-I\-S\-T\-O\-N\-: mass of the piston for Langevin barostat, default 1e5 Semi-\/isotropic pressure can be imposed by freezing some axis of the simulation box with the following keyword\-:
+\end{DoxyItemize}
+\item F\-R\-E\-E\-Z\-E-\/\-A-\/\-A\-X\-I\-S
+\item F\-R\-E\-E\-Z\-E-\/\-B-\/\-A\-X\-I\-S
+\item F\-R\-E\-E\-Z\-E-\/\-C-\/\-A\-X\-I\-S
+\end{DoxyItemize}
+
+{\bfseries C\-O\-N\-S\-T\-R\-A\-I\-N\-E\-D D\-Y\-N\-A\-M\-I\-C}\-: Constrained M\-D can be run thanks to the R\-A\-T\-T\-L\-E algorithm in combination with the non-\/\-Langevin integrators, the constrains can can be controlled with the following keywords\-:
+\begin{DoxyItemize}
+\item R\-A\-T\-T\-L\-E-\/\-E\-P\-S\-: convergence criterion of R\-A\-T\-T\-L\-E, default 1e-\/6
+\item R\-A\-T\-T\-L\-E W\-A\-T\-E\-R\-: fix all distances and angles of water molecules to their equilibrium
+\item R\-A\-T\-T\-L\-E B\-O\-N\-D\-S\-: fix all bonds to their equilibrium
+\item R\-A\-T\-T\-L\-E A\-N\-G\-L\-E\-S\-: fix all angles to their equilibrium
+\item R\-A\-T\-T\-L\-E D\-I\-A\-T\-O\-M\-I\-C\-: takes two connected atom indexes in argument, fix the corresponding distance to its equilibrium
+\item R\-A\-T\-T\-L\-E T\-R\-I\-A\-T\-O\-M\-I\-C\-: takes three connected atom indexes in argument, fix the corresponding bonds ang angles to their equilibrium
+\item R\-A\-T\-T\-L\-E-\/\-D\-I\-S\-T\-A\-N\-C\-E\-: takes two atom indexes and a distance in argument, fix the corresponding distance to this value
+\end{DoxyItemize}
+
+{\bfseries N\-E\-I\-G\-H\-B\-O\-R-\/\-L\-I\-S\-T\-S}\-: The non-\/bonded potential energy terms evaluation relies on neighbor lists built with a cell-\/list algorithm every 'x' timestep with a skin of a few Angstroms. This be modified with the keywords\-:
+\begin{DoxyItemize}
+\item N\-L\-U\-P\-D\-A\-T\-E\-: number of timesteps between each neighbor list update, default 20 for a 2fs integration.
+\item L\-I\-S\-T-\/\-B\-U\-F\-F\-E\-R\-: skin (margin) taken to build neighbor lists, default 2 Angstroms.
+\end{DoxyItemize}
+
+{\bfseries parallelism}\-:
+\begin{DoxyItemize}
+\item dd-\/cutoff\-: additional cutoff for communication between domain for 3d spatial decompostion, can be larger than the largest non-\/bonded cutoff As the reciprocal space interactions are known to have a less efficient parallel scaling (because of F\-F\-Ts) it is possible to specify a lower number of mpi processes that will be dedicated to these computations for both the computation of electrostatic and polarization interactions. This can be done by using the keyword {\bfseries pme-\/procs} {\ttfamily x}, corresponding to {\ttfamily x} mpi processes dedicated to reciprocal space computations.
+\end{DoxyItemize}
+
+To find the ideal {\ttfamily x} value of {\bfseries pme-\/procs}, a good starting point, when a large number of cores is used, is usually to dedicate about $\frac{1}{4}$ of the total cores to reciprocal space computations. But this parameter depends greatly on the machine used and on the setup of your simulation so it should be adjusted manually by comparing the timings obtained with different values for {\bfseries pme-\/procs}. During a dynamic, detailed timings are written when the {\bfseries verbose} keyword is in the $\ast$.key file. In the future, the parameter {\bfseries pme-\/procs} will be adapted heuristically by the program as it is done in popular M\-D packages.
+
+{\bfseries O\-T\-H\-E\-R\-S}\-:
+\begin{DoxyItemize}
+\item R\-E\-M\-O\-V\-E-\/\-I\-N\-E\-R\-T\-I\-A\-: number of timesteps between removal of center of mass translation and rotational kinetic energy, default 0 (no such removal)
+\item C\-O\-M\-P\-R\-E\-S\-S\-: isothermal compressibility of medium in 1/\-Atm
+\item V\-O\-L\-U\-M\-E-\/\-M\-O\-V\-E\-: maximum volume move for monte-\/carlo barostat
+\item V\-I\-R\-N\-U\-M\-: compute numerical virial (with finite differences)
+\item I\-R\-\_\-\-S\-P\-E\-C\-T\-R\-A\-: compute infrared spectra
+\item I\-R\-\_\-\-L\-I\-N\-E\-A\-R\-\_\-\-D\-I\-P\-O\-L\-E\-: include only permanent dipole for I\-R spectra computation (no induced dipoles)
+\item I\-R\-\_\-\-D\-E\-C\-O\-N\-V\-O\-L\-U\-T\-I\-O\-N\-: use deconvolution procedure to compute I\-R spectra with Langevin dynamics
+\item N\-I\-T\-E\-R\-\_\-\-D\-E\-C\-O\-N\-V\-: number of iteration for the deconvolution procedure 
+\end{DoxyItemize}

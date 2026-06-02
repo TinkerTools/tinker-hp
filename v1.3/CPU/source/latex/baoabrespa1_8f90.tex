@@ -1,0 +1,171 @@
+\hypertarget{baoabrespa1_8f90}{\section{baoabrespa1.\-f90 File Reference}
+\label{baoabrespa1_8f90}\index{baoabrespa1.\-f90@{baoabrespa1.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{baoabrespa1_8f90_a4bd414a0d274df3acecd0dda7646e1ce}{baoabrespa1} (istep, dt)
+\begin{DoxyCompactList}\small\item\em \char`\"{}baoabrespa1\char`\"{} performs a single P\-I\-M\-D time step via the B\-A\-O\-A\-B-\/\-R\-E\-S\-P\-A1 recursion formula \end{DoxyCompactList}\item 
+subroutine \hyperlink{baoabrespa1_8f90_a3391a7aeef7fb510da4f890b3ccc4e03}{baoabrespaint1} (dta, dta2)
+\begin{DoxyCompactList}\small\item\em \char`\"{}baoabrespaint1\char`\"{} performs a single time step of the intermediate forces via the B\-A\-O\-A\-B-\/\-R\-E\-S\-P\-A recursion formula \end{DoxyCompactList}\item 
+subroutine \hyperlink{baoabrespa1_8f90_ad2b1dae8a29fee04bbbbc91608e7ffa8}{baoabrespafast1} (dta)
+\begin{DoxyCompactList}\small\item\em \char`\"{}baoabrespafast1\char`\"{} performs a single time step of the bonded forces via the B\-A\-O\-A\-B-\/\-R\-E\-S\-P\-A recursion formula \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{baoabrespa1_8f90_a4bd414a0d274df3acecd0dda7646e1ce}{\index{baoabrespa1.\-f90@{baoabrespa1.\-f90}!baoabrespa1@{baoabrespa1}}
+\index{baoabrespa1@{baoabrespa1}!baoabrespa1.f90@{baoabrespa1.\-f90}}
+\subsubsection[{baoabrespa1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine baoabrespa1 (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{real$\ast$8}]{dt}
+\end{DoxyParamCaption}
+)}}\label{baoabrespa1_8f90_a4bd414a0d274df3acecd0dda7646e1ce}
+
+
+\char`\"{}baoabrespa1\char`\"{} performs a single P\-I\-M\-D time step via the B\-A\-O\-A\-B-\/\-R\-E\-S\-P\-A1 recursion formula 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & number of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & length of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 49 of file baoabrespa1.\-f90.
+
+
+
+References allocsteprespa(), baoabrespaint1(), commforcesrespa1(), commposrec(), colvarproxy\-\_\-tinkerhp\-::dt(), fatal(), gradslow1(), info\-\_\-energy(), mdrest(), mdsave(), mdstat(), mechanic\-\_\-up\-\_\-para\-\_\-respa1(), nblist(), pressure(), pressure2(), rattle2(), reassignpme(), reduceen(), reinitnl(), temper(), and temper2().
+
+
+
+Referenced by dynamic\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{baoabrespa1_8f90_a4bd414a0d274df3acecd0dda7646e1ce_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{baoabrespa1_8f90_a4bd414a0d274df3acecd0dda7646e1ce_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{baoabrespa1_8f90_ad2b1dae8a29fee04bbbbc91608e7ffa8}{\index{baoabrespa1.\-f90@{baoabrespa1.\-f90}!baoabrespafast1@{baoabrespafast1}}
+\index{baoabrespafast1@{baoabrespafast1}!baoabrespa1.f90@{baoabrespa1.\-f90}}
+\subsubsection[{baoabrespafast1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine baoabrespafast1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{dta}
+\end{DoxyParamCaption}
+)}}\label{baoabrespa1_8f90_ad2b1dae8a29fee04bbbbc91608e7ffa8}
+
+
+\char`\"{}baoabrespafast1\char`\"{} performs a single time step of the bonded forces via the B\-A\-O\-A\-B-\/\-R\-E\-S\-P\-A recursion formula 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dta,\-:} & short timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 383 of file baoabrespa1.\-f90.
+
+
+
+References allocsteprespa(), utilbaoab\-::apply\-\_\-a\-\_\-block(), utilbaoab\-::apply\-\_\-o\-\_\-block(), commforcesrespa1(), commposrespa(), gradfast1(), info\-\_\-energy(), mechanic\-\_\-up\-\_\-para\-\_\-respa1(), rattle2(), reassignrespa(), and reduceen().
+
+
+
+Referenced by baoabrespaint1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{baoabrespa1_8f90_ad2b1dae8a29fee04bbbbc91608e7ffa8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{baoabrespa1_8f90_ad2b1dae8a29fee04bbbbc91608e7ffa8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{baoabrespa1_8f90_a3391a7aeef7fb510da4f890b3ccc4e03}{\index{baoabrespa1.\-f90@{baoabrespa1.\-f90}!baoabrespaint1@{baoabrespaint1}}
+\index{baoabrespaint1@{baoabrespaint1}!baoabrespa1.f90@{baoabrespa1.\-f90}}
+\subsubsection[{baoabrespaint1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine baoabrespaint1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{dta, }
+\item[{real$\ast$8}]{dta2}
+\end{DoxyParamCaption}
+)}}\label{baoabrespa1_8f90_a3391a7aeef7fb510da4f890b3ccc4e03}
+
+
+\char`\"{}baoabrespaint1\char`\"{} performs a single time step of the intermediate forces via the B\-A\-O\-A\-B-\/\-R\-E\-S\-P\-A recursion formula 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dta,\-:} & intermediate timestep \\
+\hline
+\mbox{\tt in}  & {\em dta2,\-:} & short timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 246 of file baoabrespa1.\-f90.
+
+
+
+References allocsteprespa(), baoabrespafast1(), commforcesrespa1(), gradint1(), info\-\_\-energy(), mechanic\-\_\-up\-\_\-para\-\_\-respa1(), rattle2(), and reduceen().
+
+
+
+Referenced by baoabrespa1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{baoabrespa1_8f90_a3391a7aeef7fb510da4f890b3ccc4e03_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{baoabrespa1_8f90_a3391a7aeef7fb510da4f890b3ccc4e03_icgraph}
+\end{center}
+\end{figure}
+
+

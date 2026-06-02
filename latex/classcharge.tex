@@ -1,0 +1,372 @@
+\hypertarget{classcharge}{\section{charge Module Reference}
+\label{classcharge}\index{charge@{charge}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classcharge_aa31b8a0b3ed9d9e9598e20aedd38296f}{nion}
+\begin{DoxyCompactList}\small\item\em total number of partial charges in system \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_ae382bb967e8910bbad52c6091552c8ac}{nionloc}
+\begin{DoxyCompactList}\small\item\em local number of partial charges in system \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_a6f6fa8912d66b22787fc2369269b086d}{nionbloc}
+\begin{DoxyCompactList}\small\item\em local+neighbors number of partial charges in system \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_a2e77c500ea21416745665d34ec7e1f2a}{nionlocnl}
+\begin{DoxyCompactList}\small\item\em localnl number of partial charges in system \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_ae85bc7226e0921d2a5d04ad05cc58768}{nionrecloc}
+\begin{DoxyCompactList}\small\item\em local reciprocal number of partial charges in system \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_a3ff6e830154e3960da488de190bce8eb}{winiion}
+\begin{DoxyCompactList}\small\item\em window object corresponding to iion \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_a8faac0f42a8281206457a781be89d809}{winjion}
+\begin{DoxyCompactList}\small\item\em window object corresponding to jion \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_a54101485f254fd685c6f6d2ca96cfe86}{winkion}
+\begin{DoxyCompactList}\small\item\em cutoff switching site for each partial charge \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_aec7304bdb32da675589efb079cc02942}{winchglist}
+\begin{DoxyCompactList}\small\item\em window object corresponding to chglist \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_aeb8f3f6cb0def0ec0d81b6140b5042e6}{winnbchg}
+\begin{DoxyCompactList}\small\item\em window object corresponding to nbchg \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_affdd1b084d1cf6c440913d7428e91151}{winchgloc}
+\begin{DoxyCompactList}\small\item\em window object corresponding to chgloc \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_a1df5f2b5c1339473ca4cfc6d80f6272d}{winchglocnl}
+\begin{DoxyCompactList}\small\item\em window object corresponding to chglocnl \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_a7c092558e98218116613e7117e819534}{winchgrecloc}
+\begin{DoxyCompactList}\small\item\em window object corresponding to chgrecloc \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_a9d412813e3be3dba41d38953d88afa3a}{winpchg}
+\begin{DoxyCompactList}\small\item\em window object corresponding to pchg \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_aeef19bc488f8f88f255511cc1699a3bc}{winpchg0}
+\begin{DoxyCompactList}\small\item\em window object corresponding to pchg0 \end{DoxyCompactList}\item 
+integer \hyperlink{classcharge_af6924f1402ad3a9218fc27ba425ef6e0}{winpchg\-\_\-orig}
+\begin{DoxyCompactList}\small\item\em window object corresponding to pchg\-\_\-orig \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classcharge_a45283ea4c54a0b8599a90c578a64c52d}{chgloc}
+\begin{DoxyCompactList}\small\item\em global-\/local charge correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classcharge_a169a510a227dd75073a027063bb6557f}{chglocnl}
+\begin{DoxyCompactList}\small\item\em global-\/localnl charge correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classcharge_a8a9599984bf2ac50e7cdd59700c7524e}{chgrecloc}
+\begin{DoxyCompactList}\small\item\em global-\/local reciprocal charge correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classcharge_aa135b867d77f87fcb396cb435a6bb71d}{chglist}
+\begin{DoxyCompactList}\small\item\em partial charge site for each atom (0=no charge) \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classcharge_ab3b8a9ef8a12e1eaff80d57d1d026aa4}{iion}
+\begin{DoxyCompactList}\small\item\em number of the atom site for each partial charge \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classcharge_a9b1fceb97f6b88a76a894859d0f50b96}{jion}
+\begin{DoxyCompactList}\small\item\em neighbor generation site for each partial charge \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classcharge_a62a899e430e111e31269a1768dd2a31c}{kion}
+\begin{DoxyCompactList}\small\item\em cutoff switching site for each partial charge \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classcharge_ab1c421b1f72e702793c941110a7d7bb0}{nbchg}
+\begin{DoxyCompactList}\small\item\em number of charges before each index \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classcharge_a2cb76937e7223fd4b2e2e99ae6631975}{pchg}
+\begin{DoxyCompactList}\small\item\em magnitude of the partial charges (e-\/) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classcharge_aa39cba77554acd7c00e2aec7c234a2d5}{pchg0}
+\begin{DoxyCompactList}\small\item\em original partial charge values for charge flux \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classcharge_aabdfa076eef62682b69ee6cc1ec5dda2}{pchg\-\_\-orig}
+\begin{DoxyCompactList}\small\item\em original magnitude of the partial charges (e-\/) (lambda dyn) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 26 of file M\-O\-D\-\_\-charge.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classcharge_aa135b867d77f87fcb396cb435a6bb71d}{\index{charge@{charge}!chglist@{chglist}}
+\index{chglist@{chglist}!charge@{charge}}
+\subsubsection[{chglist}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer charge\-::chglist}}\label{classcharge_aa135b867d77f87fcb396cb435a6bb71d}
+
+
+partial charge site for each atom (0=no charge) 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a45283ea4c54a0b8599a90c578a64c52d}{\index{charge@{charge}!chgloc@{chgloc}}
+\index{chgloc@{chgloc}!charge@{charge}}
+\subsubsection[{chgloc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable charge\-::chgloc}}\label{classcharge_a45283ea4c54a0b8599a90c578a64c52d}
+
+
+global-\/local charge correspondance 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a169a510a227dd75073a027063bb6557f}{\index{charge@{charge}!chglocnl@{chglocnl}}
+\index{chglocnl@{chglocnl}!charge@{charge}}
+\subsubsection[{chglocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable charge\-::chglocnl}}\label{classcharge_a169a510a227dd75073a027063bb6557f}
+
+
+global-\/localnl charge correspondance 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a8a9599984bf2ac50e7cdd59700c7524e}{\index{charge@{charge}!chgrecloc@{chgrecloc}}
+\index{chgrecloc@{chgrecloc}!charge@{charge}}
+\subsubsection[{chgrecloc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable charge\-::chgrecloc}}\label{classcharge_a8a9599984bf2ac50e7cdd59700c7524e}
+
+
+global-\/local reciprocal charge correspondance 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_ab3b8a9ef8a12e1eaff80d57d1d026aa4}{\index{charge@{charge}!iion@{iion}}
+\index{iion@{iion}!charge@{charge}}
+\subsubsection[{iion}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer charge\-::iion}}\label{classcharge_ab3b8a9ef8a12e1eaff80d57d1d026aa4}
+
+
+number of the atom site for each partial charge 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a9b1fceb97f6b88a76a894859d0f50b96}{\index{charge@{charge}!jion@{jion}}
+\index{jion@{jion}!charge@{charge}}
+\subsubsection[{jion}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer charge\-::jion}}\label{classcharge_a9b1fceb97f6b88a76a894859d0f50b96}
+
+
+neighbor generation site for each partial charge 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a62a899e430e111e31269a1768dd2a31c}{\index{charge@{charge}!kion@{kion}}
+\index{kion@{kion}!charge@{charge}}
+\subsubsection[{kion}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer charge\-::kion}}\label{classcharge_a62a899e430e111e31269a1768dd2a31c}
+
+
+cutoff switching site for each partial charge 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_ab1c421b1f72e702793c941110a7d7bb0}{\index{charge@{charge}!nbchg@{nbchg}}
+\index{nbchg@{nbchg}!charge@{charge}}
+\subsubsection[{nbchg}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer charge\-::nbchg}}\label{classcharge_ab1c421b1f72e702793c941110a7d7bb0}
+
+
+number of charges before each index 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_aa31b8a0b3ed9d9e9598e20aedd38296f}{\index{charge@{charge}!nion@{nion}}
+\index{nion@{nion}!charge@{charge}}
+\subsubsection[{nion}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::nion}}\label{classcharge_aa31b8a0b3ed9d9e9598e20aedd38296f}
+
+
+total number of partial charges in system 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a6f6fa8912d66b22787fc2369269b086d}{\index{charge@{charge}!nionbloc@{nionbloc}}
+\index{nionbloc@{nionbloc}!charge@{charge}}
+\subsubsection[{nionbloc}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::nionbloc}}\label{classcharge_a6f6fa8912d66b22787fc2369269b086d}
+
+
+local+neighbors number of partial charges in system 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_ae382bb967e8910bbad52c6091552c8ac}{\index{charge@{charge}!nionloc@{nionloc}}
+\index{nionloc@{nionloc}!charge@{charge}}
+\subsubsection[{nionloc}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::nionloc}}\label{classcharge_ae382bb967e8910bbad52c6091552c8ac}
+
+
+local number of partial charges in system 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a2e77c500ea21416745665d34ec7e1f2a}{\index{charge@{charge}!nionlocnl@{nionlocnl}}
+\index{nionlocnl@{nionlocnl}!charge@{charge}}
+\subsubsection[{nionlocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::nionlocnl}}\label{classcharge_a2e77c500ea21416745665d34ec7e1f2a}
+
+
+localnl number of partial charges in system 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_ae85bc7226e0921d2a5d04ad05cc58768}{\index{charge@{charge}!nionrecloc@{nionrecloc}}
+\index{nionrecloc@{nionrecloc}!charge@{charge}}
+\subsubsection[{nionrecloc}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::nionrecloc}}\label{classcharge_ae85bc7226e0921d2a5d04ad05cc58768}
+
+
+local reciprocal number of partial charges in system 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a2cb76937e7223fd4b2e2e99ae6631975}{\index{charge@{charge}!pchg@{pchg}}
+\index{pchg@{pchg}!charge@{charge}}
+\subsubsection[{pchg}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer charge\-::pchg}}\label{classcharge_a2cb76937e7223fd4b2e2e99ae6631975}
+
+
+magnitude of the partial charges (e-\/) 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_aa39cba77554acd7c00e2aec7c234a2d5}{\index{charge@{charge}!pchg0@{pchg0}}
+\index{pchg0@{pchg0}!charge@{charge}}
+\subsubsection[{pchg0}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer charge\-::pchg0}}\label{classcharge_aa39cba77554acd7c00e2aec7c234a2d5}
+
+
+original partial charge values for charge flux 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_aabdfa076eef62682b69ee6cc1ec5dda2}{\index{charge@{charge}!pchg\-\_\-orig@{pchg\-\_\-orig}}
+\index{pchg\-\_\-orig@{pchg\-\_\-orig}!charge@{charge}}
+\subsubsection[{pchg\-\_\-orig}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer charge\-::pchg\-\_\-orig}}\label{classcharge_aabdfa076eef62682b69ee6cc1ec5dda2}
+
+
+original magnitude of the partial charges (e-\/) (lambda dyn) 
+
+
+
+Definition at line 54 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_aec7304bdb32da675589efb079cc02942}{\index{charge@{charge}!winchglist@{winchglist}}
+\index{winchglist@{winchglist}!charge@{charge}}
+\subsubsection[{winchglist}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winchglist}}\label{classcharge_aec7304bdb32da675589efb079cc02942}
+
+
+window object corresponding to chglist 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_affdd1b084d1cf6c440913d7428e91151}{\index{charge@{charge}!winchgloc@{winchgloc}}
+\index{winchgloc@{winchgloc}!charge@{charge}}
+\subsubsection[{winchgloc}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winchgloc}}\label{classcharge_affdd1b084d1cf6c440913d7428e91151}
+
+
+window object corresponding to chgloc 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a1df5f2b5c1339473ca4cfc6d80f6272d}{\index{charge@{charge}!winchglocnl@{winchglocnl}}
+\index{winchglocnl@{winchglocnl}!charge@{charge}}
+\subsubsection[{winchglocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winchglocnl}}\label{classcharge_a1df5f2b5c1339473ca4cfc6d80f6272d}
+
+
+window object corresponding to chglocnl 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a7c092558e98218116613e7117e819534}{\index{charge@{charge}!winchgrecloc@{winchgrecloc}}
+\index{winchgrecloc@{winchgrecloc}!charge@{charge}}
+\subsubsection[{winchgrecloc}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winchgrecloc}}\label{classcharge_a7c092558e98218116613e7117e819534}
+
+
+window object corresponding to chgrecloc 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a3ff6e830154e3960da488de190bce8eb}{\index{charge@{charge}!winiion@{winiion}}
+\index{winiion@{winiion}!charge@{charge}}
+\subsubsection[{winiion}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winiion}}\label{classcharge_a3ff6e830154e3960da488de190bce8eb}
+
+
+window object corresponding to iion 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a8faac0f42a8281206457a781be89d809}{\index{charge@{charge}!winjion@{winjion}}
+\index{winjion@{winjion}!charge@{charge}}
+\subsubsection[{winjion}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winjion}}\label{classcharge_a8faac0f42a8281206457a781be89d809}
+
+
+window object corresponding to jion 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a54101485f254fd685c6f6d2ca96cfe86}{\index{charge@{charge}!winkion@{winkion}}
+\index{winkion@{winkion}!charge@{charge}}
+\subsubsection[{winkion}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winkion}}\label{classcharge_a54101485f254fd685c6f6d2ca96cfe86}
+
+
+cutoff switching site for each partial charge 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_aeb8f3f6cb0def0ec0d81b6140b5042e6}{\index{charge@{charge}!winnbchg@{winnbchg}}
+\index{winnbchg@{winnbchg}!charge@{charge}}
+\subsubsection[{winnbchg}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winnbchg}}\label{classcharge_aeb8f3f6cb0def0ec0d81b6140b5042e6}
+
+
+window object corresponding to nbchg 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_a9d412813e3be3dba41d38953d88afa3a}{\index{charge@{charge}!winpchg@{winpchg}}
+\index{winpchg@{winpchg}!charge@{charge}}
+\subsubsection[{winpchg}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winpchg}}\label{classcharge_a9d412813e3be3dba41d38953d88afa3a}
+
+
+window object corresponding to pchg 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_aeef19bc488f8f88f255511cc1699a3bc}{\index{charge@{charge}!winpchg0@{winpchg0}}
+\index{winpchg0@{winpchg0}!charge@{charge}}
+\subsubsection[{winpchg0}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winpchg0}}\label{classcharge_aeef19bc488f8f88f255511cc1699a3bc}
+
+
+window object corresponding to pchg0 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-charge.\-f90.
+
+\hypertarget{classcharge_af6924f1402ad3a9218fc27ba425ef6e0}{\index{charge@{charge}!winpchg\-\_\-orig@{winpchg\-\_\-orig}}
+\index{winpchg\-\_\-orig@{winpchg\-\_\-orig}!charge@{charge}}
+\subsubsection[{winpchg\-\_\-orig}]{\setlength{\rightskip}{0pt plus 5cm}integer charge\-::winpchg\-\_\-orig}}\label{classcharge_af6924f1402ad3a9218fc27ba425ef6e0}
+
+
+window object corresponding to pchg\-\_\-orig 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-charge.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__charge_8f90}{M\-O\-D\-\_\-charge.\-f90}\end{DoxyCompactItemize}

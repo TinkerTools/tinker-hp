@@ -1,0 +1,5 @@
+<map id="torsions" name="torsions">
+<area shape="rect" id="node2" href="$torsions_8f90.html#a7301543b5e8b8b07d8435835edddc2fb" title="allocate shared memory pointers for torsions parameter arrays " alt="" coords="136,5,299,32"/>
+<area shape="rect" id="node3" href="$torsions_8f90.html#aefb7874b98ffd16aaa3cf626725754cc" title="deallocate shared memory pointers for torsions parameter arrays " alt="" coords="128,56,307,83"/>
+<area shape="rect" id="node4" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="191,107,243,133"/>
+</map>

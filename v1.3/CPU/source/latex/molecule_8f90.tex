@@ -1,0 +1,135 @@
+\hypertarget{molecule_8f90}{\section{molecule.\-f90 File Reference}
+\label{molecule_8f90}\index{molecule.\-f90@{molecule.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{molecule_8f90_a701987c0c8bf20ea738d618bdb0a9517}{molecule} (init)
+\begin{DoxyCompactList}\small\item\em counts the molecules, assigns each atom to its molecule and computes the mass of each molecule \end{DoxyCompactList}\item 
+subroutine \hyperlink{molecule_8f90_a4b0144c2b32f83b10aac95940488f644}{dealloc\-\_\-shared\-\_\-mol}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for molecule parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{molecule_8f90_a06021979034792e99f70448546a9531c}{alloc\-\_\-shared\-\_\-mol}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for molecule parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{molecule_8f90_a06021979034792e99f70448546a9531c}{\index{molecule.\-f90@{molecule.\-f90}!alloc\-\_\-shared\-\_\-mol@{alloc\-\_\-shared\-\_\-mol}}
+\index{alloc\-\_\-shared\-\_\-mol@{alloc\-\_\-shared\-\_\-mol}!molecule.f90@{molecule.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-mol}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-mol (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{molecule_8f90_a06021979034792e99f70448546a9531c}
+
+
+allocate shared memory pointers for molecule parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 227 of file molecule.\-f90.
+
+
+
+Referenced by molecule().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{molecule_8f90_a06021979034792e99f70448546a9531c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{molecule_8f90_a4b0144c2b32f83b10aac95940488f644}{\index{molecule.\-f90@{molecule.\-f90}!dealloc\-\_\-shared\-\_\-mol@{dealloc\-\_\-shared\-\_\-mol}}
+\index{dealloc\-\_\-shared\-\_\-mol@{dealloc\-\_\-shared\-\_\-mol}!molecule.f90@{molecule.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-mol}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-mol (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{molecule_8f90_a4b0144c2b32f83b10aac95940488f644}
+
+
+deallocate shared memory pointers for molecule parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 188 of file molecule.\-f90.
+
+
+
+Referenced by final(), and molecule().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{molecule_8f90_a4b0144c2b32f83b10aac95940488f644_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{molecule_8f90_a701987c0c8bf20ea738d618bdb0a9517}{\index{molecule.\-f90@{molecule.\-f90}!molecule@{molecule}}
+\index{molecule@{molecule}!molecule.f90@{molecule.\-f90}}
+\subsubsection[{molecule}]{\setlength{\rightskip}{0pt plus 5cm}subroutine molecule (
+\begin{DoxyParamCaption}
+\item[{logical}]{init}
+\end{DoxyParamCaption}
+)}}\label{molecule_8f90_a701987c0c8bf20ea738d618bdb0a9517}
+
+
+counts the molecules, assigns each atom to its molecule and computes the mass of each molecule 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em init,\-:} & flag true if first call \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file molecule.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-mol(), dealloc\-\_\-shared\-\_\-mol(), colvarproxy\-\_\-tinkerhp\-::init(), sort(), and sort3().
+
+
+
+Referenced by dipolemol(), mechanic(), pmonte(), and temper().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=298pt]{molecule_8f90_a701987c0c8bf20ea738d618bdb0a9517_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{molecule_8f90_a701987c0c8bf20ea738d618bdb0a9517_icgraph}
+\end{center}
+\end{figure}
+
+

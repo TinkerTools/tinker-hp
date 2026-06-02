@@ -1,0 +1,217 @@
+\hypertarget{echarge3_8f90}{\section{echarge3.\-f90 File Reference}
+\label{echarge3_8f90}\index{echarge3.\-f90@{echarge3.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{echarge3_8f90_a485853545f4ae50ded36308b81c2fe81}{echarge3}
+\begin{DoxyCompactList}\small\item\em calculates the charge-\/charge interaction energy and partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{echarge3_8f90_a2b5de9cd95af1b6e41a677ea482bbd88}{echarge3c}
+\begin{DoxyCompactList}\small\item\em calculates the charge-\/charge interaction energy and partitions the energy among the atoms using a particle mesh Ewald summation \end{DoxyCompactList}\item 
+subroutine \hyperlink{echarge3_8f90_ab55fc570e58d097b39416db30b9d4370}{ecreal3d}
+\begin{DoxyCompactList}\small\item\em \char`\"{}ecreal3d\char`\"{} evaluates the real space portion of the Ewald sum energy due to atomic charge interactions, and partitions the energy among the atoms using a pairwise neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{echarge3_8f90_aa6fd4c7922896c7cdb5d4a3231becb39}{ecrecip}
+\begin{DoxyCompactList}\small\item\em evaluates the reciprocal space portion of the particle mesh Ewald energy due to partial charges \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{echarge3_8f90_a485853545f4ae50ded36308b81c2fe81}{\index{echarge3.\-f90@{echarge3.\-f90}!echarge3@{echarge3}}
+\index{echarge3@{echarge3}!echarge3.f90@{echarge3.\-f90}}
+\subsubsection[{echarge3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine echarge3 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge3_8f90_a485853545f4ae50ded36308b81c2fe81}
+
+
+calculates the charge-\/charge interaction energy and partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file echarge3.\-f90.
+
+
+
+References echarge3c().
+
+
+
+Referenced by analysis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge3_8f90_a485853545f4ae50ded36308b81c2fe81_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge3_8f90_a485853545f4ae50ded36308b81c2fe81_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echarge3_8f90_a2b5de9cd95af1b6e41a677ea482bbd88}{\index{echarge3.\-f90@{echarge3.\-f90}!echarge3c@{echarge3c}}
+\index{echarge3c@{echarge3c}!echarge3.f90@{echarge3.\-f90}}
+\subsubsection[{echarge3c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine echarge3c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge3_8f90_a2b5de9cd95af1b6e41a677ea482bbd88}
+
+
+calculates the charge-\/charge interaction energy and partitions the energy among the atoms using a particle mesh Ewald summation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 53 of file echarge3.\-f90.
+
+
+
+References ecreal3d(), ecrecip(), and erfc().
+
+
+
+Referenced by echarge3().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge3_8f90_a2b5de9cd95af1b6e41a677ea482bbd88_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge3_8f90_a2b5de9cd95af1b6e41a677ea482bbd88_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echarge3_8f90_ab55fc570e58d097b39416db30b9d4370}{\index{echarge3.\-f90@{echarge3.\-f90}!ecreal3d@{ecreal3d}}
+\index{ecreal3d@{ecreal3d}!echarge3.f90@{echarge3.\-f90}}
+\subsubsection[{ecreal3d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ecreal3d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge3_8f90_ab55fc570e58d097b39416db30b9d4370}
+
+
+\char`\"{}ecreal3d\char`\"{} evaluates the real space portion of the Ewald sum energy due to atomic charge interactions, and partitions the energy among the atoms using a pairwise neighbor list 
+
+if longrange, calculates just the long range part if shortrange, calculates just the short range part 
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 190 of file echarge3.\-f90.
+
+
+
+References erfc(), groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by echarge3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=344pt]{echarge3_8f90_ab55fc570e58d097b39416db30b9d4370_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge3_8f90_ab55fc570e58d097b39416db30b9d4370_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echarge3_8f90_aa6fd4c7922896c7cdb5d4a3231becb39}{\index{echarge3.\-f90@{echarge3.\-f90}!ecrecip@{ecrecip}}
+\index{ecrecip@{ecrecip}!echarge3.f90@{echarge3.\-f90}}
+\subsubsection[{ecrecip}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ecrecip (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge3_8f90_aa6fd4c7922896c7cdb5d4a3231becb39}
+
+
+evaluates the reciprocal space portion of the particle mesh Ewald energy due to partial charges 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 415 of file echarge3.\-f90.
+
+
+
+References bspline\-\_\-fill\-\_\-site(), fft2d\-\_\-frontmpi(), and grid\-\_\-pchg\-\_\-site().
+
+
+
+Referenced by echarge0c(), and echarge3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge3_8f90_aa6fd4c7922896c7cdb5d4a3231becb39_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge3_8f90_aa6fd4c7922896c7cdb5d4a3231becb39_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,555 @@
+\hypertarget{classmpole}{\section{mpole Module Reference}
+\label{classmpole}\index{mpole@{mpole}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classmpole_ac849d8c6e66420ca0d2e57def5e90d99}{maxpole}
+\begin{DoxyCompactList}\small\item\em max components (monopole=1,dipole=4,quadrupole=13) \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a1fb8ee54aa5e7d374e2ed5115ed2c1fe}{npole}
+\begin{DoxyCompactList}\small\item\em total number of multipole sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a72e8bbbeb09748396f126b5c0feceda2}{npoleloc}
+\begin{DoxyCompactList}\small\item\em local number of multipole sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_ade12dc4b50a1b89aa7b9010a9e553e44}{npolebloc}
+\begin{DoxyCompactList}\small\item\em local+neighbor number of multipole sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a3cf245cf7c3576d5360159dbe1d09c44}{npolerecloc}
+\begin{DoxyCompactList}\small\item\em local number of reciprocal multipole sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a155cba3d52800902729811ecd85d6980}{npolelocnl}
+\begin{DoxyCompactList}\small\item\em localnl number of multipole sites in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a0603a7e979963e0aa76806b59dc99034}{winipole}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ipole \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a5c13bec4bb98474b3cd944ae2ee6c7db}{winpolsiz}
+\begin{DoxyCompactList}\small\item\em window object corresponding to polsiz \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a81b851a05f8ad3f4bc977aa67ef5fdb9}{winpollist}
+\begin{DoxyCompactList}\small\item\em window object corresponding to pollist \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_acf42619768b96f86ff59c29e25bce1f3}{winnbpole}
+\begin{DoxyCompactList}\small\item\em window object corresponding to nbpole \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_ad85303f58e12c2fccac8d9f029e0425b}{winmono0}
+\begin{DoxyCompactList}\small\item\em window object corresponding to mono0 \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a83c9e5735e6ad5cdc89a646eeec3e672}{winpole}
+\begin{DoxyCompactList}\small\item\em window object corresponding to pole \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a3242ee253cbec968b60c695113094204}{winpole\-\_\-orig}
+\begin{DoxyCompactList}\small\item\em window object corresponding to pole\-\_\-orig \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a691729318941f457d1a53afec3ed5e1a}{winalphapen}
+\begin{DoxyCompactList}\small\item\em window object corresponding to alphapen \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a4b4c29022b12253618b54b274326304f}{winbetapen}
+\begin{DoxyCompactList}\small\item\em window object corresponding to betapen \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a13089e182e3859dc141ef2d18574c565}{wingammapen}
+\begin{DoxyCompactList}\small\item\em window object corresponding to gammapen \end{DoxyCompactList}\item 
+integer \hyperlink{classmpole_a5fc1b199dda9790624e9889904207c3f}{winpolaxe}
+\begin{DoxyCompactList}\small\item\em window object corresponding to polaxe \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmpole_ac184bff54a099006de6a7772285eb9f8}{ipole}
+\begin{DoxyCompactList}\small\item\em number of the atom for each multipole site \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmpole_ad313a6af232574f7c741e2c9f75037de}{polsiz}
+\begin{DoxyCompactList}\small\item\em number of multipole components at each atom \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmpole_a51c9cde82264984e146d7e12f305f94d}{pollist}
+\begin{DoxyCompactList}\small\item\em multipole site for each atom (0=no multipole) \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classmpole_a34c84581392243bd5d97966a6354d030}{nbpole}
+\begin{DoxyCompactList}\small\item\em number of multipoles before each atom \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classmpole_ae846a620754e15482da112bf82192018}{poleloc}
+\begin{DoxyCompactList}\small\item\em global-\/local correspondance for multipoles \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classmpole_a6e9bb6e7c48dd3b2622a3a3ed88f0cb9}{polelocnl}
+\begin{DoxyCompactList}\small\item\em global-\/localnl correspondance for multipoles \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classmpole_a782e3c5c7f9957625e165e5cf1fe70c0}{polerecloc}
+\begin{DoxyCompactList}\small\item\em global-\/local correspondance for reciprocal multipoles \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classmpole_acc3be383ead6de1c43b0406211e74582}{zaxis}
+\begin{DoxyCompactList}\small\item\em number of the z-\/axis defining atom for each site \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classmpole_a4b8e5a845d51a21ac98e83e1b7e2becb}{xaxis}
+\begin{DoxyCompactList}\small\item\em number of the x-\/axis defining atom for each site \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classmpole_a794e9bdc1e6b42890a05233beb552613}{yaxis}
+\begin{DoxyCompactList}\small\item\em number of the y-\/axis defining atom for each site \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmpole_a5125a1d93c843fb12e7e93c2d0db9a22}{vmxx}
+\begin{DoxyCompactList}\small\item\em temporary virial component \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmpole_ab856a6193585e78195db20ad8237f1d0}{vmyy}
+\begin{DoxyCompactList}\small\item\em temporary virial component \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmpole_affa102e85a9871ed8ffd4988cec33ee8}{vmzz}
+\begin{DoxyCompactList}\small\item\em temporary virial component \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmpole_a0b4e139e326dd548da6641c550f5b9cd}{vmxy}
+\begin{DoxyCompactList}\small\item\em temporary virial component \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmpole_ab6d3d975fb3b36405048af1afc811a8f}{vmxz}
+\begin{DoxyCompactList}\small\item\em temporary virial component \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmpole_a2622f06370ae8e02ba34594ad55e93e0}{vmyz}
+\begin{DoxyCompactList}\small\item\em temporary virial component \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classmpole_a7931c73e67f6769c759412d25e58fc58}{mono0}
+\begin{DoxyCompactList}\small\item\em original atomic monopole values for charge flux \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classmpole_ab3bb649ea8ab60b38951d7ca48d75402}{pole}
+\begin{DoxyCompactList}\small\item\em multipole values for each site in the local frame \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classmpole_a3079f5a8f75081a85977a93e0a98f038}{pole\-\_\-orig}
+\begin{DoxyCompactList}\small\item\em original multipole values for each site in the local frame (lambdadyn) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classmpole_a6156571b658a3a6b485563bcb7bf2ed7}{alphapen}
+\begin{DoxyCompactList}\small\item\em alpha parameters for sibfa like charge penetration \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classmpole_afd6e52b962e22a1a1045be134346a2c5}{betapen}
+\begin{DoxyCompactList}\small\item\em beta parameters for sibfa like charge penetration \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classmpole_a8f5c183cec3da1ccc232c2eb1c442f55}{gammapen}
+\begin{DoxyCompactList}\small\item\em gamma parameters for sibfa like charge penetration \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classmpole_ac883646ae13de31cf116db8163b674f6}{rpole}
+\begin{DoxyCompactList}\small\item\em multipoles rotated to the global coordinate system \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\-:), pointer \hyperlink{classmpole_ad235afbac90e53a4a5d504375546f3d8}{polaxe}
+\begin{DoxyCompactList}\small\item\em local axis type for each multipole site \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-mpole.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classmpole_a6156571b658a3a6b485563bcb7bf2ed7}{\index{mpole@{mpole}!alphapen@{alphapen}}
+\index{alphapen@{alphapen}!mpole@{mpole}}
+\subsubsection[{alphapen}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer mpole\-::alphapen}}\label{classmpole_a6156571b658a3a6b485563bcb7bf2ed7}
+
+
+alpha parameters for sibfa like charge penetration 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_afd6e52b962e22a1a1045be134346a2c5}{\index{mpole@{mpole}!betapen@{betapen}}
+\index{betapen@{betapen}!mpole@{mpole}}
+\subsubsection[{betapen}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer mpole\-::betapen}}\label{classmpole_afd6e52b962e22a1a1045be134346a2c5}
+
+
+beta parameters for sibfa like charge penetration 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a8f5c183cec3da1ccc232c2eb1c442f55}{\index{mpole@{mpole}!gammapen@{gammapen}}
+\index{gammapen@{gammapen}!mpole@{mpole}}
+\subsubsection[{gammapen}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer mpole\-::gammapen}}\label{classmpole_a8f5c183cec3da1ccc232c2eb1c442f55}
+
+
+gamma parameters for sibfa like charge penetration 
+
+
+
+Definition at line 54 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ac184bff54a099006de6a7772285eb9f8}{\index{mpole@{mpole}!ipole@{ipole}}
+\index{ipole@{ipole}!mpole@{mpole}}
+\subsubsection[{ipole}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mpole\-::ipole}}\label{classmpole_ac184bff54a099006de6a7772285eb9f8}
+
+
+number of the atom for each multipole site 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ac849d8c6e66420ca0d2e57def5e90d99}{\index{mpole@{mpole}!maxpole@{maxpole}}
+\index{maxpole@{maxpole}!mpole@{mpole}}
+\subsubsection[{maxpole}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::maxpole}}\label{classmpole_ac849d8c6e66420ca0d2e57def5e90d99}
+
+
+max components (monopole=1,dipole=4,quadrupole=13) 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a7931c73e67f6769c759412d25e58fc58}{\index{mpole@{mpole}!mono0@{mono0}}
+\index{mono0@{mono0}!mpole@{mpole}}
+\subsubsection[{mono0}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer mpole\-::mono0}}\label{classmpole_a7931c73e67f6769c759412d25e58fc58}
+
+
+original atomic monopole values for charge flux 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a34c84581392243bd5d97966a6354d030}{\index{mpole@{mpole}!nbpole@{nbpole}}
+\index{nbpole@{nbpole}!mpole@{mpole}}
+\subsubsection[{nbpole}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mpole\-::nbpole}}\label{classmpole_a34c84581392243bd5d97966a6354d030}
+
+
+number of multipoles before each atom 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a1fb8ee54aa5e7d374e2ed5115ed2c1fe}{\index{mpole@{mpole}!npole@{npole}}
+\index{npole@{npole}!mpole@{mpole}}
+\subsubsection[{npole}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::npole}}\label{classmpole_a1fb8ee54aa5e7d374e2ed5115ed2c1fe}
+
+
+total number of multipole sites in the system 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ade12dc4b50a1b89aa7b9010a9e553e44}{\index{mpole@{mpole}!npolebloc@{npolebloc}}
+\index{npolebloc@{npolebloc}!mpole@{mpole}}
+\subsubsection[{npolebloc}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::npolebloc}}\label{classmpole_ade12dc4b50a1b89aa7b9010a9e553e44}
+
+
+local+neighbor number of multipole sites in the system 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a72e8bbbeb09748396f126b5c0feceda2}{\index{mpole@{mpole}!npoleloc@{npoleloc}}
+\index{npoleloc@{npoleloc}!mpole@{mpole}}
+\subsubsection[{npoleloc}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::npoleloc}}\label{classmpole_a72e8bbbeb09748396f126b5c0feceda2}
+
+
+local number of multipole sites in the system 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a155cba3d52800902729811ecd85d6980}{\index{mpole@{mpole}!npolelocnl@{npolelocnl}}
+\index{npolelocnl@{npolelocnl}!mpole@{mpole}}
+\subsubsection[{npolelocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::npolelocnl}}\label{classmpole_a155cba3d52800902729811ecd85d6980}
+
+
+localnl number of multipole sites in the system 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a3cf245cf7c3576d5360159dbe1d09c44}{\index{mpole@{mpole}!npolerecloc@{npolerecloc}}
+\index{npolerecloc@{npolerecloc}!mpole@{mpole}}
+\subsubsection[{npolerecloc}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::npolerecloc}}\label{classmpole_a3cf245cf7c3576d5360159dbe1d09c44}
+
+
+local number of reciprocal multipole sites in the system 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ad235afbac90e53a4a5d504375546f3d8}{\index{mpole@{mpole}!polaxe@{polaxe}}
+\index{polaxe@{polaxe}!mpole@{mpole}}
+\subsubsection[{polaxe}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension(\-:), pointer mpole\-::polaxe}}\label{classmpole_ad235afbac90e53a4a5d504375546f3d8}
+
+
+local axis type for each multipole site 
+
+
+
+Definition at line 56 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ab3bb649ea8ab60b38951d7ca48d75402}{\index{mpole@{mpole}!pole@{pole}}
+\index{pole@{pole}!mpole@{mpole}}
+\subsubsection[{pole}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer mpole\-::pole}}\label{classmpole_ab3bb649ea8ab60b38951d7ca48d75402}
+
+
+multipole values for each site in the local frame 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a3079f5a8f75081a85977a93e0a98f038}{\index{mpole@{mpole}!pole\-\_\-orig@{pole\-\_\-orig}}
+\index{pole\-\_\-orig@{pole\-\_\-orig}!mpole@{mpole}}
+\subsubsection[{pole\-\_\-orig}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer mpole\-::pole\-\_\-orig}}\label{classmpole_a3079f5a8f75081a85977a93e0a98f038}
+
+
+original multipole values for each site in the local frame (lambdadyn) 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ae846a620754e15482da112bf82192018}{\index{mpole@{mpole}!poleloc@{poleloc}}
+\index{poleloc@{poleloc}!mpole@{mpole}}
+\subsubsection[{poleloc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable mpole\-::poleloc}}\label{classmpole_ae846a620754e15482da112bf82192018}
+
+
+global-\/local correspondance for multipoles 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a6e9bb6e7c48dd3b2622a3a3ed88f0cb9}{\index{mpole@{mpole}!polelocnl@{polelocnl}}
+\index{polelocnl@{polelocnl}!mpole@{mpole}}
+\subsubsection[{polelocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable mpole\-::polelocnl}}\label{classmpole_a6e9bb6e7c48dd3b2622a3a3ed88f0cb9}
+
+
+global-\/localnl correspondance for multipoles 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a782e3c5c7f9957625e165e5cf1fe70c0}{\index{mpole@{mpole}!polerecloc@{polerecloc}}
+\index{polerecloc@{polerecloc}!mpole@{mpole}}
+\subsubsection[{polerecloc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable mpole\-::polerecloc}}\label{classmpole_a782e3c5c7f9957625e165e5cf1fe70c0}
+
+
+global-\/local correspondance for reciprocal multipoles 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a51c9cde82264984e146d7e12f305f94d}{\index{mpole@{mpole}!pollist@{pollist}}
+\index{pollist@{pollist}!mpole@{mpole}}
+\subsubsection[{pollist}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mpole\-::pollist}}\label{classmpole_a51c9cde82264984e146d7e12f305f94d}
+
+
+multipole site for each atom (0=no multipole) 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ad313a6af232574f7c741e2c9f75037de}{\index{mpole@{mpole}!polsiz@{polsiz}}
+\index{polsiz@{polsiz}!mpole@{mpole}}
+\subsubsection[{polsiz}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer mpole\-::polsiz}}\label{classmpole_ad313a6af232574f7c741e2c9f75037de}
+
+
+number of multipole components at each atom 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ac883646ae13de31cf116db8163b674f6}{\index{mpole@{mpole}!rpole@{rpole}}
+\index{rpole@{rpole}!mpole@{mpole}}
+\subsubsection[{rpole}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable mpole\-::rpole}}\label{classmpole_ac883646ae13de31cf116db8163b674f6}
+
+
+multipoles rotated to the global coordinate system 
+
+
+
+Definition at line 55 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a5125a1d93c843fb12e7e93c2d0db9a22}{\index{mpole@{mpole}!vmxx@{vmxx}}
+\index{vmxx@{vmxx}!mpole@{mpole}}
+\subsubsection[{vmxx}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mpole\-::vmxx}}\label{classmpole_a5125a1d93c843fb12e7e93c2d0db9a22}
+
+
+temporary virial component 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a0b4e139e326dd548da6641c550f5b9cd}{\index{mpole@{mpole}!vmxy@{vmxy}}
+\index{vmxy@{vmxy}!mpole@{mpole}}
+\subsubsection[{vmxy}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mpole\-::vmxy}}\label{classmpole_a0b4e139e326dd548da6641c550f5b9cd}
+
+
+temporary virial component 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ab6d3d975fb3b36405048af1afc811a8f}{\index{mpole@{mpole}!vmxz@{vmxz}}
+\index{vmxz@{vmxz}!mpole@{mpole}}
+\subsubsection[{vmxz}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mpole\-::vmxz}}\label{classmpole_ab6d3d975fb3b36405048af1afc811a8f}
+
+
+temporary virial component 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ab856a6193585e78195db20ad8237f1d0}{\index{mpole@{mpole}!vmyy@{vmyy}}
+\index{vmyy@{vmyy}!mpole@{mpole}}
+\subsubsection[{vmyy}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mpole\-::vmyy}}\label{classmpole_ab856a6193585e78195db20ad8237f1d0}
+
+
+temporary virial component 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a2622f06370ae8e02ba34594ad55e93e0}{\index{mpole@{mpole}!vmyz@{vmyz}}
+\index{vmyz@{vmyz}!mpole@{mpole}}
+\subsubsection[{vmyz}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mpole\-::vmyz}}\label{classmpole_a2622f06370ae8e02ba34594ad55e93e0}
+
+
+temporary virial component 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_affa102e85a9871ed8ffd4988cec33ee8}{\index{mpole@{mpole}!vmzz@{vmzz}}
+\index{vmzz@{vmzz}!mpole@{mpole}}
+\subsubsection[{vmzz}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 mpole\-::vmzz}}\label{classmpole_affa102e85a9871ed8ffd4988cec33ee8}
+
+
+temporary virial component 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a691729318941f457d1a53afec3ed5e1a}{\index{mpole@{mpole}!winalphapen@{winalphapen}}
+\index{winalphapen@{winalphapen}!mpole@{mpole}}
+\subsubsection[{winalphapen}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winalphapen}}\label{classmpole_a691729318941f457d1a53afec3ed5e1a}
+
+
+window object corresponding to alphapen 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a4b4c29022b12253618b54b274326304f}{\index{mpole@{mpole}!winbetapen@{winbetapen}}
+\index{winbetapen@{winbetapen}!mpole@{mpole}}
+\subsubsection[{winbetapen}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winbetapen}}\label{classmpole_a4b4c29022b12253618b54b274326304f}
+
+
+window object corresponding to betapen 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a13089e182e3859dc141ef2d18574c565}{\index{mpole@{mpole}!wingammapen@{wingammapen}}
+\index{wingammapen@{wingammapen}!mpole@{mpole}}
+\subsubsection[{wingammapen}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::wingammapen}}\label{classmpole_a13089e182e3859dc141ef2d18574c565}
+
+
+window object corresponding to gammapen 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a0603a7e979963e0aa76806b59dc99034}{\index{mpole@{mpole}!winipole@{winipole}}
+\index{winipole@{winipole}!mpole@{mpole}}
+\subsubsection[{winipole}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winipole}}\label{classmpole_a0603a7e979963e0aa76806b59dc99034}
+
+
+window object corresponding to ipole 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_ad85303f58e12c2fccac8d9f029e0425b}{\index{mpole@{mpole}!winmono0@{winmono0}}
+\index{winmono0@{winmono0}!mpole@{mpole}}
+\subsubsection[{winmono0}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winmono0}}\label{classmpole_ad85303f58e12c2fccac8d9f029e0425b}
+
+
+window object corresponding to mono0 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_acf42619768b96f86ff59c29e25bce1f3}{\index{mpole@{mpole}!winnbpole@{winnbpole}}
+\index{winnbpole@{winnbpole}!mpole@{mpole}}
+\subsubsection[{winnbpole}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winnbpole}}\label{classmpole_acf42619768b96f86ff59c29e25bce1f3}
+
+
+window object corresponding to nbpole 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a5fc1b199dda9790624e9889904207c3f}{\index{mpole@{mpole}!winpolaxe@{winpolaxe}}
+\index{winpolaxe@{winpolaxe}!mpole@{mpole}}
+\subsubsection[{winpolaxe}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winpolaxe}}\label{classmpole_a5fc1b199dda9790624e9889904207c3f}
+
+
+window object corresponding to polaxe 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a83c9e5735e6ad5cdc89a646eeec3e672}{\index{mpole@{mpole}!winpole@{winpole}}
+\index{winpole@{winpole}!mpole@{mpole}}
+\subsubsection[{winpole}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winpole}}\label{classmpole_a83c9e5735e6ad5cdc89a646eeec3e672}
+
+
+window object corresponding to pole 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a3242ee253cbec968b60c695113094204}{\index{mpole@{mpole}!winpole\-\_\-orig@{winpole\-\_\-orig}}
+\index{winpole\-\_\-orig@{winpole\-\_\-orig}!mpole@{mpole}}
+\subsubsection[{winpole\-\_\-orig}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winpole\-\_\-orig}}\label{classmpole_a3242ee253cbec968b60c695113094204}
+
+
+window object corresponding to pole\-\_\-orig 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a81b851a05f8ad3f4bc977aa67ef5fdb9}{\index{mpole@{mpole}!winpollist@{winpollist}}
+\index{winpollist@{winpollist}!mpole@{mpole}}
+\subsubsection[{winpollist}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winpollist}}\label{classmpole_a81b851a05f8ad3f4bc977aa67ef5fdb9}
+
+
+window object corresponding to pollist 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a5c13bec4bb98474b3cd944ae2ee6c7db}{\index{mpole@{mpole}!winpolsiz@{winpolsiz}}
+\index{winpolsiz@{winpolsiz}!mpole@{mpole}}
+\subsubsection[{winpolsiz}]{\setlength{\rightskip}{0pt plus 5cm}integer mpole\-::winpolsiz}}\label{classmpole_a5c13bec4bb98474b3cd944ae2ee6c7db}
+
+
+window object corresponding to polsiz 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a4b8e5a845d51a21ac98e83e1b7e2becb}{\index{mpole@{mpole}!xaxis@{xaxis}}
+\index{xaxis@{xaxis}!mpole@{mpole}}
+\subsubsection[{xaxis}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable mpole\-::xaxis}}\label{classmpole_a4b8e5a845d51a21ac98e83e1b7e2becb}
+
+
+number of the x-\/axis defining atom for each site 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_a794e9bdc1e6b42890a05233beb552613}{\index{mpole@{mpole}!yaxis@{yaxis}}
+\index{yaxis@{yaxis}!mpole@{mpole}}
+\subsubsection[{yaxis}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable mpole\-::yaxis}}\label{classmpole_a794e9bdc1e6b42890a05233beb552613}
+
+
+number of the y-\/axis defining atom for each site 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-mpole.\-f90.
+
+\hypertarget{classmpole_acc3be383ead6de1c43b0406211e74582}{\index{mpole@{mpole}!zaxis@{zaxis}}
+\index{zaxis@{zaxis}!mpole@{mpole}}
+\subsubsection[{zaxis}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable mpole\-::zaxis}}\label{classmpole_acc3be383ead6de1c43b0406211e74582}
+
+
+number of the z-\/axis defining atom for each site 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-mpole.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__mpole_8f90}{M\-O\-D\-\_\-mpole.\-f90}\end{DoxyCompactItemize}

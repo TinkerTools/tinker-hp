@@ -1,0 +1,165 @@
+\hypertarget{empole3_8f90}{\section{empole3.\-f90 File Reference}
+\label{empole3_8f90}\index{empole3.\-f90@{empole3.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{empole3_8f90_a236c6d2d1da8f0b1b13ec710418b52a9}{empole3}
+\begin{DoxyCompactList}\small\item\em calculates the electrostatic energy due to atomic multipole and dipole polarizability interactions, and partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{empole3_8f90_a649f8d43e2b3a4592f5870d6822872f2}{empole3c}
+\begin{DoxyCompactList}\small\item\em calculates the atomic multipole interaction energy using particle mesh Ewald summation and a neighbor list, and partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{empole3_8f90_a54c1f7f66eb963710b1bb4b713f4bb7f}{emreal3d}
+\begin{DoxyCompactList}\small\item\em evaluates the real space portion of the Ewald sum energy due to atomic multipole interactions, and partitions the energy among the atoms using a pairwise neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{empole3_8f90_a236c6d2d1da8f0b1b13ec710418b52a9}{\index{empole3.\-f90@{empole3.\-f90}!empole3@{empole3}}
+\index{empole3@{empole3}!empole3.f90@{empole3.\-f90}}
+\subsubsection[{empole3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine empole3 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole3_8f90_a236c6d2d1da8f0b1b13ec710418b52a9}
+
+
+calculates the electrostatic energy due to atomic multipole and dipole polarizability interactions, and partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 22 of file empole3.\-f90.
+
+
+
+References empole3c().
+
+
+
+Referenced by analysis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole3_8f90_a236c6d2d1da8f0b1b13ec710418b52a9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole3_8f90_a236c6d2d1da8f0b1b13ec710418b52a9_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{empole3_8f90_a649f8d43e2b3a4592f5870d6822872f2}{\index{empole3.\-f90@{empole3.\-f90}!empole3c@{empole3c}}
+\index{empole3c@{empole3c}!empole3.f90@{empole3.\-f90}}
+\subsubsection[{empole3c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine empole3c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole3_8f90_a649f8d43e2b3a4592f5870d6822872f2}
+
+
+calculates the atomic multipole interaction energy using particle mesh Ewald summation and a neighbor list, and partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 57 of file empole3.\-f90.
+
+
+
+References chkpole(), emreal3d(), emrecip(), and rotpole().
+
+
+
+Referenced by empole3().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole3_8f90_a649f8d43e2b3a4592f5870d6822872f2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole3_8f90_a649f8d43e2b3a4592f5870d6822872f2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{empole3_8f90_a54c1f7f66eb963710b1bb4b713f4bb7f}{\index{empole3.\-f90@{empole3.\-f90}!emreal3d@{emreal3d}}
+\index{emreal3d@{emreal3d}!empole3.f90@{empole3.\-f90}}
+\subsubsection[{emreal3d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine emreal3d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole3_8f90_a54c1f7f66eb963710b1bb4b713f4bb7f}
+
+
+evaluates the real space portion of the Ewald sum energy due to atomic multipole interactions, and partitions the energy among the atoms using a pairwise neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 220 of file empole3.\-f90.
+
+
+
+References dampewald(), damppole(), erfc(), groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by empole3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole3_8f90_a54c1f7f66eb963710b1bb4b713f4bb7f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole3_8f90_a54c1f7f66eb963710b1bb4b713f4bb7f_icgraph}
+\end{center}
+\end{figure}
+
+

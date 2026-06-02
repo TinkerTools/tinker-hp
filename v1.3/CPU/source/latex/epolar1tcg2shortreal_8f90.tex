@@ -1,0 +1,233 @@
+\hypertarget{epolar1tcg2shortreal_8f90}{\section{epolar1tcg2shortreal.\-f90 File Reference}
+\label{epolar1tcg2shortreal_8f90}\index{epolar1tcg2shortreal.\-f90@{epolar1tcg2shortreal.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{epolar1tcg2shortreal_8f90_a71b737a234269beb4ebcc7facefa0a72}{epolar1tcg2shortreal}
+\begin{DoxyCompactList}\small\item\em Computes T\-C\-G2 dipoles with N\-O refinement (except the preconditioner if \char`\"{}precond\char`\"{} is T\-R\-U\-E) \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1tcg2shortreal_8f90_a1eb916cb8879209362c4d7dba46eaebf}{epolar1tcg2bisshortreal}
+\item 
+subroutine \hyperlink{epolar1tcg2shortreal_8f90_a5b0da854cf773d9e52de9ce847c915de}{epolar1tcg2tershortreal}
+\item 
+subroutine \hyperlink{epolar1tcg2shortreal_8f90_a59698b6d81992f92de88fd71c05503f9}{epolar1tcg2quatshortreal}
+\item 
+subroutine \hyperlink{epolar1tcg2shortreal_8f90_ace8e5686cf622ef07e7e7a73baf55d56}{epolar1tcg2cinqshortreal}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{epolar1tcg2shortreal_8f90_a1eb916cb8879209362c4d7dba46eaebf}{\index{epolar1tcg2shortreal.\-f90@{epolar1tcg2shortreal.\-f90}!epolar1tcg2bisshortreal@{epolar1tcg2bisshortreal}}
+\index{epolar1tcg2bisshortreal@{epolar1tcg2bisshortreal}!epolar1tcg2shortreal.f90@{epolar1tcg2shortreal.\-f90}}
+\subsubsection[{epolar1tcg2bisshortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2bisshortreal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2shortreal_8f90_a1eb916cb8879209362c4d7dba46eaebf}
+
+
+Definition at line 270 of file epolar1tcg2shortreal.\-f90.
+
+
+
+References commdirdirshort(), commfieldshort(), dbletmatxb\-\_\-pme(), diagvec(), diagvec2(), efld0\-\_\-direct(), scalderfieldzmat8(), sprod(), tmatxb\-\_\-pme(), and torquetcg\-\_\-dir().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_a1eb916cb8879209362c4d7dba46eaebf_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_a1eb916cb8879209362c4d7dba46eaebf_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg2shortreal_8f90_ace8e5686cf622ef07e7e7a73baf55d56}{\index{epolar1tcg2shortreal.\-f90@{epolar1tcg2shortreal.\-f90}!epolar1tcg2cinqshortreal@{epolar1tcg2cinqshortreal}}
+\index{epolar1tcg2cinqshortreal@{epolar1tcg2cinqshortreal}!epolar1tcg2shortreal.f90@{epolar1tcg2shortreal.\-f90}}
+\subsubsection[{epolar1tcg2cinqshortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2cinqshortreal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2shortreal_8f90_ace8e5686cf622ef07e7e7a73baf55d56}
+
+
+Definition at line 1447 of file epolar1tcg2shortreal.\-f90.
+
+
+
+References commdirdirshort(), commfieldshort(), dbletmatxb\-\_\-pme(), diagvec(), efld0\-\_\-direct(), scalderfieldzmat8(), sprod(), tmatxb\-\_\-pme(), and torquetcg\-\_\-dir().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_ace8e5686cf622ef07e7e7a73baf55d56_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_ace8e5686cf622ef07e7e7a73baf55d56_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg2shortreal_8f90_a59698b6d81992f92de88fd71c05503f9}{\index{epolar1tcg2shortreal.\-f90@{epolar1tcg2shortreal.\-f90}!epolar1tcg2quatshortreal@{epolar1tcg2quatshortreal}}
+\index{epolar1tcg2quatshortreal@{epolar1tcg2quatshortreal}!epolar1tcg2shortreal.f90@{epolar1tcg2shortreal.\-f90}}
+\subsubsection[{epolar1tcg2quatshortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2quatshortreal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2shortreal_8f90_a59698b6d81992f92de88fd71c05503f9}
+
+
+Definition at line 1042 of file epolar1tcg2shortreal.\-f90.
+
+
+
+References commdirdirshort(), commfieldshort(), dbletmatxb\-\_\-pme(), diagvec(), diagvec3(), efld0\-\_\-direct(), scalderfieldzmat8(), sprod(), tmatxb\-\_\-pme(), and torquetcg\-\_\-dir().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_a59698b6d81992f92de88fd71c05503f9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_a59698b6d81992f92de88fd71c05503f9_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg2shortreal_8f90_a71b737a234269beb4ebcc7facefa0a72}{\index{epolar1tcg2shortreal.\-f90@{epolar1tcg2shortreal.\-f90}!epolar1tcg2shortreal@{epolar1tcg2shortreal}}
+\index{epolar1tcg2shortreal@{epolar1tcg2shortreal}!epolar1tcg2shortreal.f90@{epolar1tcg2shortreal.\-f90}}
+\subsubsection[{epolar1tcg2shortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2shortreal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2shortreal_8f90_a71b737a234269beb4ebcc7facefa0a72}
+
+
+Computes T\-C\-G2 dipoles with N\-O refinement (except the preconditioner if \char`\"{}precond\char`\"{} is T\-R\-U\-E) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 20 of file epolar1tcg2shortreal.\-f90.
+
+
+
+References commdirdirshort(), commfieldshort(), diagvec(), efld0\-\_\-direct(), scalderfieldzmat6(), sprod(), tmatxb\-\_\-pme(), and torquetcg\-\_\-dir().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_a71b737a234269beb4ebcc7facefa0a72_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_a71b737a234269beb4ebcc7facefa0a72_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg2shortreal_8f90_a5b0da854cf773d9e52de9ce847c915de}{\index{epolar1tcg2shortreal.\-f90@{epolar1tcg2shortreal.\-f90}!epolar1tcg2tershortreal@{epolar1tcg2tershortreal}}
+\index{epolar1tcg2tershortreal@{epolar1tcg2tershortreal}!epolar1tcg2shortreal.f90@{epolar1tcg2shortreal.\-f90}}
+\subsubsection[{epolar1tcg2tershortreal}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2tershortreal (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2shortreal_8f90_a5b0da854cf773d9e52de9ce847c915de}
+
+
+Definition at line 609 of file epolar1tcg2shortreal.\-f90.
+
+
+
+References commdirdirshort(), commfield(), commfieldshort(), dbletmatxb\-\_\-pme(), diagvec(), diagvec3(), efld0\-\_\-direct(), scalderfieldzmat6(), sprod(), tmatxb\-\_\-pme(), and torquetcg\-\_\-dir().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_a5b0da854cf773d9e52de9ce847c915de_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2shortreal_8f90_a5b0da854cf773d9e52de9ce847c915de_icgraph}
+\end{center}
+\end{figure}
+
+

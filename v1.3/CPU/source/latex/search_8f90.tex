@@ -1,0 +1,70 @@
+\hypertarget{search_8f90}{\section{search.\-f90 File Reference}
+\label{search_8f90}\index{search.\-f90@{search.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{search_8f90_a1675b3d9f8b24357e8cad104452c1ba5}{search} (n, f, g, x, p, f\-\_\-move, \hyperlink{classangle}{angle}, ncalls, fgvalue, status)
+\begin{DoxyCompactList}\small\item\em is a unidimensional line search based upon parabolic extrapolation and cubic interpolation using both function and gradient values \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{search_8f90_a1675b3d9f8b24357e8cad104452c1ba5}{\index{search.\-f90@{search.\-f90}!search@{search}}
+\index{search@{search}!search.f90@{search.\-f90}}
+\subsubsection[{search}]{\setlength{\rightskip}{0pt plus 5cm}subroutine search (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8}]{f, }
+\item[{real$\ast$8, dimension($\ast$)}]{g, }
+\item[{real$\ast$8, dimension($\ast$)}]{x, }
+\item[{real$\ast$8, dimension($\ast$)}]{p, }
+\item[{real$\ast$8}]{f\-\_\-move, }
+\item[{real$\ast$8}]{angle, }
+\item[{integer}]{ncalls, }
+\item[{real$\ast$8, external}]{fgvalue, }
+\item[{character$\ast$9}]{status}
+\end{DoxyParamCaption}
+)}}\label{search_8f90_a1675b3d9f8b24357e8cad104452c1ba5}
+
+
+is a unidimensional line search based upon parabolic extrapolation and cubic interpolation using both function and gradient values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \mbox{[}in\mbox{]} f\-: function value at the best line search point \mbox{[}in\mbox{]} x\-: current values of variables during line search \mbox{[}in\mbox{]} g\-: gradient at the current point during line search \mbox{[}in\mbox{]} p\-: initial search vector, unchanged by this routine \mbox{[}in\mbox{]} s\-: scaled search vector at current line search point \mbox{[}in\mbox{]} angle\-: angle between search and negative gradient vector \mbox{[}in\mbox{]} ncalls\-: number of calls to the routine \mbox{[}in\mbox{]} fgvalue\-: current value of the energy and gradients \mbox{[}in\mbox{]} status\-: status of the line search \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 59 of file search.\-f90.
+
+
+
+References sendvecmin().
+
+
+
+Referenced by lbfgs().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=242pt]{search_8f90_a1675b3d9f8b24357e8cad104452c1ba5_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{search_8f90_a1675b3d9f8b24357e8cad104452c1ba5_icgraph}
+\end{center}
+\end{figure}
+
+

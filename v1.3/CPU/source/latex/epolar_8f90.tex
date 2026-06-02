@@ -1,0 +1,202 @@
+\hypertarget{epolar_8f90}{\section{epolar.\-f90 File Reference}
+\label{epolar_8f90}\index{epolar.\-f90@{epolar.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{epolar_8f90_a6ea3c1dcbc8f641da7272d0d39a3bbba}{epolar}
+\begin{DoxyCompactList}\small\item\em calculates the polarization energy due to induced dipole interactions \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar_8f90_a4011cc9b3963a4d59a08f6ed0788cfa1}{epolar0c}
+\begin{DoxyCompactList}\small\item\em calculates the dipole polarization energy with respect to Cartesian coordinates using particle mesh Ewald summation and a neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar_8f90_a97704284432357b47a5af4b9463f3e30}{epreal0c}
+\begin{DoxyCompactList}\small\item\em calculates the induced dipole polarization energy using particle mesh Ewald summation and a neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar_8f90_a5eb5d6229e43c22b9b799d52edeed009}{eprecip}
+\begin{DoxyCompactList}\small\item\em evaluates the reciprocal space portion of particle mesh Ewald summation energy due to dipole polarization \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{epolar_8f90_a6ea3c1dcbc8f641da7272d0d39a3bbba}{\index{epolar.\-f90@{epolar.\-f90}!epolar@{epolar}}
+\index{epolar@{epolar}!epolar.f90@{epolar.\-f90}}
+\subsubsection[{epolar}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar_8f90_a6ea3c1dcbc8f641da7272d0d39a3bbba}
+
+
+calculates the polarization energy due to induced dipole interactions 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file epolar.\-f90.
+
+
+
+References epolar0c(), and epolar3tcg().
+
+
+
+Referenced by energy(), and omegafit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar_8f90_a6ea3c1dcbc8f641da7272d0d39a3bbba_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar_8f90_a6ea3c1dcbc8f641da7272d0d39a3bbba_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar_8f90_a4011cc9b3963a4d59a08f6ed0788cfa1}{\index{epolar.\-f90@{epolar.\-f90}!epolar0c@{epolar0c}}
+\index{epolar0c@{epolar0c}!epolar.f90@{epolar.\-f90}}
+\subsubsection[{epolar0c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar0c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar_8f90_a4011cc9b3963a4d59a08f6ed0788cfa1}
+
+
+calculates the dipole polarization energy with respect to Cartesian coordinates using particle mesh Ewald summation and a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 56 of file epolar.\-f90.
+
+
+
+References chkpole(), dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), epreal0c(), eprecip(), newinduce\-\_\-pme(), newinduce\-\_\-pme2(), newinduce\-\_\-shortreal(), rotpole(), and switch\-\_\-group\-\_\-ene().
+
+
+
+Referenced by epolar().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar_8f90_a4011cc9b3963a4d59a08f6ed0788cfa1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar_8f90_a4011cc9b3963a4d59a08f6ed0788cfa1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar_8f90_a97704284432357b47a5af4b9463f3e30}{\index{epolar.\-f90@{epolar.\-f90}!epreal0c@{epreal0c}}
+\index{epreal0c@{epreal0c}!epolar.f90@{epolar.\-f90}}
+\subsubsection[{epreal0c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epreal0c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar_8f90_a97704284432357b47a5af4b9463f3e30}
+
+
+calculates the induced dipole polarization energy using particle mesh Ewald summation and a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 220 of file epolar.\-f90.
+
+
+
+References dampdir(), dampewald(), damptholed(), erfc(), image(), pscale(), and switch().
+
+
+
+Referenced by epolar0c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar_8f90_a97704284432357b47a5af4b9463f3e30_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar_8f90_a97704284432357b47a5af4b9463f3e30_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar_8f90_a5eb5d6229e43c22b9b799d52edeed009}{\index{epolar.\-f90@{epolar.\-f90}!eprecip@{eprecip}}
+\index{eprecip@{eprecip}!epolar.f90@{epolar.\-f90}}
+\subsubsection[{eprecip}]{\setlength{\rightskip}{0pt plus 5cm}subroutine eprecip (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar_8f90_a5eb5d6229e43c22b9b799d52edeed009}
+
+
+evaluates the reciprocal space portion of particle mesh Ewald summation energy due to dipole polarization 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 541 of file epolar.\-f90.
+
+
+
+Referenced by epolar0c(), and epolar3c().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar_8f90_a5eb5d6229e43c22b9b799d52edeed009_icgraph}
+\end{center}
+\end{figure}
+
+

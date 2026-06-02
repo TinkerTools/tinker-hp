@@ -1,0 +1,269 @@
+\hypertarget{edisp1_8f90}{\section{edisp1.\-f90 File Reference}
+\label{edisp1_8f90}\index{edisp1.\-f90@{edisp1.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{edisp1_8f90_a362bfb76e819dd66099097d589cffd63}{edisp1}
+\begin{DoxyCompactList}\small\item\em calculates the damped dispersion energy and first derivatives with respect to Cartesian coordinates \end{DoxyCompactList}\item 
+subroutine \hyperlink{edisp1_8f90_a11a15d00e54ed80d9c94ceed28e4e6d1}{edisp1b}
+\begin{DoxyCompactList}\small\item\em calculates the damped dispersion energy and derivatives with respect to Cartesian coordinates using a pairwise neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{edisp1_8f90_a21f09fb15e0b1bcee5dbaf7271192c84}{edisp1d}
+\begin{DoxyCompactList}\small\item\em calculates the damped dispersion energy and derivatives with respect to Cartesian coordinates using particle mesh Ewald summation and a neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{edisp1_8f90_a75ddebb0567efea1d05ef437cc0ac8cf}{edreal1d}
+\begin{DoxyCompactList}\small\item\em evaluates the real space portion of the Ewald summation energy and gradient due to damped dispersion interactions via a neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{edisp1_8f90_af1b7c7f1e402b913402fe9519f1a2548}{edrecip1}
+\begin{DoxyCompactList}\small\item\em evaluates the reciprocal space portion of particle mesh Ewald energy and gradient due to damped dispersion \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{edisp1_8f90_a362bfb76e819dd66099097d589cffd63}{\index{edisp1.\-f90@{edisp1.\-f90}!edisp1@{edisp1}}
+\index{edisp1@{edisp1}!edisp1.f90@{edisp1.\-f90}}
+\subsubsection[{edisp1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edisp1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp1_8f90_a362bfb76e819dd66099097d589cffd63}
+
+
+calculates the damped dispersion energy and first derivatives with respect to Cartesian coordinates 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 28 of file edisp1.\-f90.
+
+
+
+References edisp1b(), edisp1d(), and evcorr1().
+
+
+
+Referenced by gradient().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp1_8f90_a362bfb76e819dd66099097d589cffd63_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp1_8f90_a362bfb76e819dd66099097d589cffd63_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{edisp1_8f90_a11a15d00e54ed80d9c94ceed28e4e6d1}{\index{edisp1.\-f90@{edisp1.\-f90}!edisp1b@{edisp1b}}
+\index{edisp1b@{edisp1b}!edisp1.f90@{edisp1.\-f90}}
+\subsubsection[{edisp1b}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edisp1b (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp1_8f90_a11a15d00e54ed80d9c94ceed28e4e6d1}
+
+
+calculates the damped dispersion energy and derivatives with respect to Cartesian coordinates using a pairwise neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 82 of file edisp1.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by edisp1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=252pt]{edisp1_8f90_a11a15d00e54ed80d9c94ceed28e4e6d1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp1_8f90_a11a15d00e54ed80d9c94ceed28e4e6d1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{edisp1_8f90_a21f09fb15e0b1bcee5dbaf7271192c84}{\index{edisp1.\-f90@{edisp1.\-f90}!edisp1d@{edisp1d}}
+\index{edisp1d@{edisp1d}!edisp1.f90@{edisp1.\-f90}}
+\subsubsection[{edisp1d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edisp1d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp1_8f90_a21f09fb15e0b1bcee5dbaf7271192c84}
+
+
+calculates the damped dispersion energy and derivatives with respect to Cartesian coordinates using particle mesh Ewald summation and a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 445 of file edisp1.\-f90.
+
+
+
+References edreal1d(), and edrecip1().
+
+
+
+Referenced by edisp1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp1_8f90_a21f09fb15e0b1bcee5dbaf7271192c84_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp1_8f90_a21f09fb15e0b1bcee5dbaf7271192c84_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{edisp1_8f90_a75ddebb0567efea1d05ef437cc0ac8cf}{\index{edisp1.\-f90@{edisp1.\-f90}!edreal1d@{edreal1d}}
+\index{edreal1d@{edreal1d}!edisp1.f90@{edisp1.\-f90}}
+\subsubsection[{edreal1d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edreal1d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp1_8f90_a75ddebb0567efea1d05ef437cc0ac8cf}
+
+
+evaluates the real space portion of the Ewald summation energy and gradient due to damped dispersion interactions via a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 519 of file edisp1.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by edisp1d().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=256pt]{edisp1_8f90_a75ddebb0567efea1d05ef437cc0ac8cf_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp1_8f90_a75ddebb0567efea1d05ef437cc0ac8cf_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{edisp1_8f90_af1b7c7f1e402b913402fe9519f1a2548}{\index{edisp1.\-f90@{edisp1.\-f90}!edrecip1@{edrecip1}}
+\index{edrecip1@{edrecip1}!edisp1.f90@{edisp1.\-f90}}
+\subsubsection[{edrecip1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine edrecip1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{edisp1_8f90_af1b7c7f1e402b913402fe9519f1a2548}
+
+
+evaluates the reciprocal space portion of particle mesh Ewald energy and gradient due to damped dispersion 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 851 of file edisp1.\-f90.
+
+
+
+References bspline\-\_\-fill\-\_\-site(), erfc(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), and grid\-\_\-disp\-\_\-site().
+
+
+
+Referenced by edisp1d().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp1_8f90_af1b7c7f1e402b913402fe9519f1a2548_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{edisp1_8f90_af1b7c7f1e402b913402fe9519f1a2548_icgraph}
+\end{center}
+\end{figure}
+
+

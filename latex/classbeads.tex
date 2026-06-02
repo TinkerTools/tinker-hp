@@ -1,0 +1,1154 @@
+\hypertarget{classbeads}{\section{beads Module Reference}
+\label{classbeads}\index{beads@{beads}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{structbeads_1_1polymer__comm__type}{polymer\-\_\-comm\-\_\-type}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{classbeads_a2c832b111c1927ac08f1ad3fcc183f41}{allocate\-\_\-polymer} (polymer, nu, allocate\-\_\-vel, allocate\-\_\-forces, allocate\-\_\-slow)
+\item 
+subroutine \hyperlink{classbeads_a4ecb45fa6d8b5818c3fb23ac2d28a625}{deallocate\-\_\-polymer} (polymer)
+\item 
+subroutine \hyperlink{classbeads_aff4e6a4e0f39e934a27fbb328dd10528}{initialize\-\_\-normal\-\_\-modes} (polymer, verbose)
+\item 
+subroutine \hyperlink{classbeads_a5f3e1c77b8ee4e8c1798aa78dd0ee764}{update\-\_\-nlocpi} (nloc)
+\item 
+subroutine \hyperlink{classbeads_aa5bad6293ab24d32ee9cdbd9205eef37}{allocpi} (polymer, polymer\-\_\-ctr)
+\item 
+subroutine \hyperlink{classbeads_ae029bda525facbe5609e7de9f99aa81e}{update\-\_\-normal\-\_\-modes\-\_\-pi} (polymer)
+\item 
+subroutine \hyperlink{classbeads_a88c6edcc7757ced8d0f4afc4c72f33bb}{set\-\_\-eigforces\-\_\-pi} (polymer, forces)
+\item 
+subroutine \hyperlink{classbeads_a92abf26b9c7bce34f7c67a8fbc44f2ab}{update\-\_\-direct\-\_\-space\-\_\-pi} (polymer)
+\item 
+subroutine \hyperlink{classbeads_a29cc348995807889f54007bb1408f3b6}{contract\-\_\-polymer} (polymer, polymer\-\_\-ctr)
+\item 
+subroutine \hyperlink{classbeads_aec0c611a5b6c29e6271679ec65b5b986}{project\-\_\-forces\-\_\-ctr} (polymer, polymer\-\_\-ctr, slow)
+\item 
+subroutine \hyperlink{classbeads_a41bfbd88fbe8dc2a853f56aa7b492f23}{load\-\_\-bead} (polymer, ibead, force\-\_\-load)
+\item 
+subroutine \hyperlink{classbeads_aec37c819dd72e2a6d56274cc66052a72}{stopwatchpi} (timer, barrier, reset)
+\item 
+subroutine \hyperlink{classbeads_a7313420a5e576d14a013197f0e944748}{kinetic\-\_\-pi\-\_\-fast} (polymer)
+\item 
+subroutine \hyperlink{classbeads_a90a4bfa6583728f8b3684af06e92ef27}{kinetic\-\_\-pi} (polymer)
+\item 
+subroutine \hyperlink{classbeads_a9f3793d3bc6e5d6808cfb243b258fce5}{reduce\-\_\-observables\-\_\-pi} (polymer)
+\item 
+subroutine \hyperlink{classbeads_a19b32a373c49cdb8c808c5f6dcad7c39}{reset\-\_\-observables} (init)
+\item 
+subroutine \hyperlink{classbeads_a12331e6cd784de69a2c754c1c78be763}{read\-\_\-bead\-\_\-config} ()
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+logical \hyperlink{classbeads_a73d340bf9e10cc72a21f4efe65667093}{path\-\_\-integral\-\_\-md} =.F\-A\-L\-S\-E.
+\item 
+integer \hyperlink{classbeads_af2080ec4bc7bbcf0c79ecec326e1d09c}{nbeads}
+\item 
+integer \hyperlink{classbeads_a249177398ee35c3836f0abb82eab8edd}{nbeadsloc}
+\item 
+character(len=80) \hyperlink{classbeads_a7f5dc8a98fd4571afd6cff2250578f83}{save\-\_\-beads}
+\item 
+logical \hyperlink{classbeads_afcca94caf03fb392889db93cd120504f}{contract}
+\item 
+logical \hyperlink{classbeads_a93834d2ff15b4fb83ec6772666a2f521}{centroid\-\_\-longrange}
+\item 
+logical \hyperlink{classbeads_a51794c51cf3c21074decc3ba51ee435c}{centroid\-\_\-recip}
+\item 
+logical \hyperlink{classbeads_adad817f105ba6e27f7f279166873ebf6}{polar\-\_\-allbeads}
+\item 
+logical \hyperlink{classbeads_a08ceabf65355ea75dacc54a1cc1613bb}{cay\-\_\-correction}
+\item 
+integer \hyperlink{classbeads_a44efdcee98e53b88242fb574bf7a3fe1}{nbeads\-\_\-ctr}
+\item 
+integer \hyperlink{classbeads_ac980eb32841995e3c9bbd1aec69704fe}{nbeadsloc\-\_\-ctr}
+\item 
+logical \hyperlink{classbeads_a0d974936f1ea3d107942bc5c6a0ccffb}{pi\-\_\-comm\-\_\-report}
+\item 
+integer \hyperlink{classbeads_a1101fc1a583313a5a1d66a43d80e6c3f}{pi\-\_\-comm\-\_\-unit}
+\item 
+logical \hyperlink{classbeads_a7347e75d7715131be1ef685b82104fe5}{pitimer}
+\item 
+integer \hyperlink{classbeads_a5f339ae3ed13a47d482c85a859c6abef}{max\-\_\-polymer\-\_\-index} =0
+\item 
+integer \hyperlink{classbeads_ac483e5724b9ae3832d38222a33f15557}{ipolymer\-\_\-loaded} =-\/1
+\item 
+integer \hyperlink{classbeads_abb845f8ec585fbfc83b865944e087f39}{ibead\-\_\-loaded} =-\/1
+\item 
+logical \hyperlink{classbeads_a40dd4afa94e57ef66b7ba70a56704450}{add\-\_\-buffer\-\_\-pi}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classbeads_a901a3bc633365aca7062d140a758bed2}{ilocpi\-\_\-beg}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classbeads_a1c58398ef2bd90b96fbfbe11a26c7b00}{ilocpi\-\_\-end}
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classbeads_a10684bb3dabed29b62dd83a49c559e1f}{nlocpis}
+\item 
+integer \hyperlink{classbeads_abbd73555d2a46563cbb9c68d402dc8cf}{nlocpi}
+\item 
+integer \hyperlink{classbeads_a8d39e6ac2200cc21168d9e751abef466}{nlocpiproc}
+\item 
+real $\ast$8 \hyperlink{classbeads_a59d4fa81e053b17dd0c14e73973ccb3a}{pi\-\_\-start\-\_\-isobaric}
+\item 
+real $\ast$8 \hyperlink{classbeads_a2aa911564d0335b29226af2e3e3aac96}{lambda\-\_\-trpmd}
+\item 
+logical \hyperlink{classbeads_ab1c00af7003e00651eff48ddce18c3a8}{default\-\_\-lambda\-\_\-trpmd} =.T\-R\-U\-E.
+\item 
+real $\ast$8 \hyperlink{classbeads_a4dbbfebe3132090b108afcbb993f7a3f}{gyrpi}
+\item 
+real $\ast$8 \hyperlink{classbeads_a3621607c4b66d4e86c3ec09d83120d48}{temppi}
+\item 
+real $\ast$8 \hyperlink{classbeads_a42ae02a4bcc859289b24ad8674222326}{temppi\-\_\-cl}
+\item 
+real $\ast$8 \hyperlink{classbeads_adf180574f60cfa67b5fec031adb6971f}{temppi\-\_\-centroid}
+\item 
+real $\ast$8 \hyperlink{classbeads_abee4a239842256634947102c46707ff0}{epotpi\-\_\-loc}
+\item 
+real $\ast$8 \hyperlink{classbeads_a87c74fb99bcb48d84020dc5754a8b64f}{etotpi\-\_\-loc}
+\item 
+real $\ast$8 \hyperlink{classbeads_a8045634dfdc1798472461ae15ea811ec}{eksumpi\-\_\-loc}
+\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classbeads_ab3b44f3e5218d7874219829843f98a88}{ekinpi\-\_\-loc}
+\item 
+real $\ast$8 \hyperlink{classbeads_a798e7f2de2d5bedb88e9111689df62e5}{ekdynpi}
+\item 
+real $\ast$8 \hyperlink{classbeads_a2d5c492895271591b3cffae5d91a797e}{epotpi}
+\item 
+real $\ast$8 \hyperlink{classbeads_a034d51d3942be932ca93b029134bddbe}{eintrapi}
+\item 
+real $\ast$8 \hyperlink{classbeads_ab3aabcdb848dcaeabe218d7d520ee2b1}{einterpi}
+\item 
+real $\ast$8 \hyperlink{classbeads_ae8d29aeba531bd7ef1c9f36bd8974c6d}{ekprim}
+\item 
+real $\ast$8 \hyperlink{classbeads_a64469ad6a8fb631a971525a333d77020}{ekvir}
+\item 
+real $\ast$8 \hyperlink{classbeads_a8eadc4b834c6fa3a55d3e6d8f7338165}{presvir}
+\item 
+real $\ast$8 \hyperlink{classbeads_aff38b015c1cc6a0ff0bf455ebcdcc7f7}{ekvir\-\_\-fast}
+\item 
+real $\ast$8 \hyperlink{classbeads_a4d358a2a18572045af499cebdfc02f1d}{ekcentroid}
+\item 
+real $\ast$8 \hyperlink{classbeads_a26edcda9f89396d8942be0ffed0a15ab}{eintrapi\-\_\-loc}
+\item 
+real $\ast$8 \hyperlink{classbeads_a8c633b8679d1f8d066adcd2261e62e4a}{einterpi\-\_\-loc}
+\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classbeads_a2e963637c44512cc2e0401584593c071}{virpi}
+\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classbeads_a4ef4d946c3f5e1797f46087f8bb6a1b0}{ekinpi}
+\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classbeads_ae29240de23b637b74b7a3ebb4beed1ef}{ekinpi\-\_\-fast}
+\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classbeads_a03a9eebd00567c9725d71b8ad2b4d379}{stresspi}
+\item 
+real $\ast$8 \hyperlink{classbeads_a9af03c4ca66930f0df7a0a7724b74be4}{dedvpi}
+\item 
+real $\ast$8 \hyperlink{classbeads_ac0412d751986be2a18361d16c4f3b632}{dedvintrapi}
+\item 
+real $\ast$8 \hyperlink{classbeads_a407bf78d2a253686a7e1b6f37f559107}{dedvinterpi}
+\item 
+real $\ast$8, dimension(3) \hyperlink{classbeads_a8724cd55cbbb19fd54e4794fc1d99690}{dippi}
+\item 
+real $\ast$8, dimension(3) \hyperlink{classbeads_a4766861f20d2423d705ad485ab88d60a}{dipindpi}
+\item 
+real $\ast$8 \hyperlink{classbeads_ac3035b58557831f8b99b5790841f66ba}{delambdavpi} =0.d0
+\item 
+real $\ast$8 \hyperlink{classbeads_a5c71ffc8c3220de7714385d1e40b5842}{delambdaepi} =0.d0
+\item 
+logical \hyperlink{classbeads_aab5d9071ceb4efc44ff75a705a3e0ec5}{pot\-\_\-gathered} =.T\-R\-U\-E.
+\item 
+real(8), dimension(\-:,\-:), \\*
+allocatable \hyperlink{classbeads_a1a1ae0b7a858c5d1568204d3c7db7980}{eigmat}
+\item 
+real(8), dimension(\-:), allocatable \hyperlink{classbeads_a6b2283331985cfc64992d31d7ede9b4d}{omkpi}
+\item 
+real(8), dimension(\-:,\-:), \\*
+allocatable \hyperlink{classbeads_a9020a7560a1b66c7a74572df622d7f3e}{contractor\-\_\-mat}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+\subsection{Member Function/\-Subroutine Documentation}
+\hypertarget{classbeads_a2c832b111c1927ac08f1ad3fcc183f41}{\index{beads@{beads}!allocate\-\_\-polymer@{allocate\-\_\-polymer}}
+\index{allocate\-\_\-polymer@{allocate\-\_\-polymer}!beads@{beads}}
+\subsubsection[{allocate\-\_\-polymer}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::allocate\-\_\-polymer (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer, }
+\item[{integer, intent(in)}]{nu, }
+\item[{logical, intent(in)}]{allocate\-\_\-vel, }
+\item[{logical, intent(in)}]{allocate\-\_\-forces, }
+\item[{logical, intent(in)}]{allocate\-\_\-slow}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a2c832b111c1927ac08f1ad3fcc183f41}
+
+
+Definition at line 101 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+References deallocate\-\_\-polymer().
+
+
+
+Referenced by allocpi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a2c832b111c1927ac08f1ad3fcc183f41_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a2c832b111c1927ac08f1ad3fcc183f41_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_aa5bad6293ab24d32ee9cdbd9205eef37}{\index{beads@{beads}!allocpi@{allocpi}}
+\index{allocpi@{allocpi}!beads@{beads}}
+\subsubsection[{allocpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::allocpi (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer, }
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer\-\_\-ctr}
+\end{DoxyParamCaption}
+)}}\label{classbeads_aa5bad6293ab24d32ee9cdbd9205eef37}
+
+
+Definition at line 279 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+References allocate\-\_\-polymer(), colvarproxy\-\_\-tinkerhp\-::boltzmann(), initialize\-\_\-normal\-\_\-modes(), and update\-\_\-nlocpi().
+
+
+
+Referenced by pimd\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_aa5bad6293ab24d32ee9cdbd9205eef37_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=340pt]{classbeads_aa5bad6293ab24d32ee9cdbd9205eef37_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a29cc348995807889f54007bb1408f3b6}{\index{beads@{beads}!contract\-\_\-polymer@{contract\-\_\-polymer}}
+\index{contract\-\_\-polymer@{contract\-\_\-polymer}!beads@{beads}}
+\subsubsection[{contract\-\_\-polymer}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::contract\-\_\-polymer (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(in)}]{polymer, }
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer\-\_\-ctr}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a29cc348995807889f54007bb1408f3b6}
+
+
+Definition at line 472 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a29cc348995807889f54007bb1408f3b6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a4ecb45fa6d8b5818c3fb23ac2d28a625}{\index{beads@{beads}!deallocate\-\_\-polymer@{deallocate\-\_\-polymer}}
+\index{deallocate\-\_\-polymer@{deallocate\-\_\-polymer}!beads@{beads}}
+\subsubsection[{deallocate\-\_\-polymer}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::deallocate\-\_\-polymer (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a4ecb45fa6d8b5818c3fb23ac2d28a625}
+
+
+Definition at line 158 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by allocate\-\_\-polymer().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a4ecb45fa6d8b5818c3fb23ac2d28a625_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_aff4e6a4e0f39e934a27fbb328dd10528}{\index{beads@{beads}!initialize\-\_\-normal\-\_\-modes@{initialize\-\_\-normal\-\_\-modes}}
+\index{initialize\-\_\-normal\-\_\-modes@{initialize\-\_\-normal\-\_\-modes}!beads@{beads}}
+\subsubsection[{initialize\-\_\-normal\-\_\-modes}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::initialize\-\_\-normal\-\_\-modes (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer, }
+\item[{logical, intent(in)}]{verbose}
+\end{DoxyParamCaption}
+)}}\label{classbeads_aff4e6a4e0f39e934a27fbb328dd10528}
+
+
+Definition at line 222 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+References ascii\-::int\-\_\-to\-\_\-str().
+
+
+
+Referenced by allocpi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=342pt]{classbeads_aff4e6a4e0f39e934a27fbb328dd10528_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_aff4e6a4e0f39e934a27fbb328dd10528_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a90a4bfa6583728f8b3684af06e92ef27}{\index{beads@{beads}!kinetic\-\_\-pi@{kinetic\-\_\-pi}}
+\index{kinetic\-\_\-pi@{kinetic\-\_\-pi}!beads@{beads}}
+\subsubsection[{kinetic\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::kinetic\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a90a4bfa6583728f8b3684af06e92ef27}
+
+
+Definition at line 626 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann().
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=336pt]{classbeads_a90a4bfa6583728f8b3684af06e92ef27_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a90a4bfa6583728f8b3684af06e92ef27_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a7313420a5e576d14a013197f0e944748}{\index{beads@{beads}!kinetic\-\_\-pi\-\_\-fast@{kinetic\-\_\-pi\-\_\-fast}}
+\index{kinetic\-\_\-pi\-\_\-fast@{kinetic\-\_\-pi\-\_\-fast}!beads@{beads}}
+\subsubsection[{kinetic\-\_\-pi\-\_\-fast}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::kinetic\-\_\-pi\-\_\-fast (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a7313420a5e576d14a013197f0e944748}
+
+
+Definition at line 587 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann().
+
+
+
+Referenced by baoabrespapi\-\_\-fast().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a7313420a5e576d14a013197f0e944748_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a7313420a5e576d14a013197f0e944748_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a41bfbd88fbe8dc2a853f56aa7b492f23}{\index{beads@{beads}!load\-\_\-bead@{load\-\_\-bead}}
+\index{load\-\_\-bead@{load\-\_\-bead}!beads@{beads}}
+\subsubsection[{load\-\_\-bead}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::load\-\_\-bead (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(in)}]{polymer, }
+\item[{integer, intent(in)}]{ibead, }
+\item[{logical, intent(in), optional}]{force\-\_\-load}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a41bfbd88fbe8dc2a853f56aa7b492f23}
+
+
+Definition at line 530 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by baoabpi(), baoabrespapi(), utilbaoabpi\-::compute\-\_\-grad\-\_\-beads(), commstuffpi\-::fast\-\_\-gradient\-\_\-prepare\-\_\-pi(), and commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a41bfbd88fbe8dc2a853f56aa7b492f23_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_aec0c611a5b6c29e6271679ec65b5b986}{\index{beads@{beads}!project\-\_\-forces\-\_\-ctr@{project\-\_\-forces\-\_\-ctr}}
+\index{project\-\_\-forces\-\_\-ctr@{project\-\_\-forces\-\_\-ctr}!beads@{beads}}
+\subsubsection[{project\-\_\-forces\-\_\-ctr}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::project\-\_\-forces\-\_\-ctr (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer, }
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer\-\_\-ctr, }
+\item[{logical, intent(in), optional}]{slow}
+\end{DoxyParamCaption}
+)}}\label{classbeads_aec0c611a5b6c29e6271679ec65b5b986}
+
+
+Definition at line 494 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_aec0c611a5b6c29e6271679ec65b5b986_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a12331e6cd784de69a2c754c1c78be763}{\index{beads@{beads}!read\-\_\-bead\-\_\-config@{read\-\_\-bead\-\_\-config}}
+\index{read\-\_\-bead\-\_\-config@{read\-\_\-bead\-\_\-config}!beads@{beads}}
+\subsubsection[{read\-\_\-bead\-\_\-config}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::read\-\_\-bead\-\_\-config (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a12331e6cd784de69a2c754c1c78be763}
+
+
+Definition at line 829 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+References fatal(), gettext(), getword(), and upcase().
+
+
+
+Referenced by pimd\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{classbeads_a12331e6cd784de69a2c754c1c78be763_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a12331e6cd784de69a2c754c1c78be763_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a9f3793d3bc6e5d6808cfb243b258fce5}{\index{beads@{beads}!reduce\-\_\-observables\-\_\-pi@{reduce\-\_\-observables\-\_\-pi}}
+\index{reduce\-\_\-observables\-\_\-pi@{reduce\-\_\-observables\-\_\-pi}!beads@{beads}}
+\subsubsection[{reduce\-\_\-observables\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::reduce\-\_\-observables\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(in)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a9f3793d3bc6e5d6808cfb243b258fce5}
+
+
+Definition at line 713 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a9f3793d3bc6e5d6808cfb243b258fce5_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a19b32a373c49cdb8c808c5f6dcad7c39}{\index{beads@{beads}!reset\-\_\-observables@{reset\-\_\-observables}}
+\index{reset\-\_\-observables@{reset\-\_\-observables}!beads@{beads}}
+\subsubsection[{reset\-\_\-observables}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::reset\-\_\-observables (
+\begin{DoxyParamCaption}
+\item[{logical, intent(in)}]{init}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a19b32a373c49cdb8c808c5f6dcad7c39}
+
+
+Definition at line 796 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by pimd\-\_\-bis().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a19b32a373c49cdb8c808c5f6dcad7c39_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a88c6edcc7757ced8d0f4afc4c72f33bb}{\index{beads@{beads}!set\-\_\-eigforces\-\_\-pi@{set\-\_\-eigforces\-\_\-pi}}
+\index{set\-\_\-eigforces\-\_\-pi@{set\-\_\-eigforces\-\_\-pi}!beads@{beads}}
+\subsubsection[{set\-\_\-eigforces\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::set\-\_\-eigforces\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer, }
+\item[{real$\ast$8, dimension(\-:,\-:,\-:), intent(in)}]{forces}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a88c6edcc7757ced8d0f4afc4c72f33bb}
+
+
+Definition at line 420 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by baoabpi(), baoabrespapi(), baoabrespapi\-\_\-fast(), and mdinitbead().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a88c6edcc7757ced8d0f4afc4c72f33bb_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_aec37c819dd72e2a6d56274cc66052a72}{\index{beads@{beads}!stopwatchpi@{stopwatchpi}}
+\index{stopwatchpi@{stopwatchpi}!beads@{beads}}
+\subsubsection[{stopwatchpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::stopwatchpi (
+\begin{DoxyParamCaption}
+\item[{real(8), intent(inout)}]{timer, }
+\item[{logical, intent(in)}]{barrier, }
+\item[{logical, intent(in)}]{reset}
+\end{DoxyParamCaption}
+)}}\label{classbeads_aec37c819dd72e2a6d56274cc66052a72}
+
+
+Definition at line 567 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by baoabpi(), baoabrespapi(), and baoabrespapi\-\_\-fast().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_aec37c819dd72e2a6d56274cc66052a72_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a92abf26b9c7bce34f7c67a8fbc44f2ab}{\index{beads@{beads}!update\-\_\-direct\-\_\-space\-\_\-pi@{update\-\_\-direct\-\_\-space\-\_\-pi}}
+\index{update\-\_\-direct\-\_\-space\-\_\-pi@{update\-\_\-direct\-\_\-space\-\_\-pi}!beads@{beads}}
+\subsubsection[{update\-\_\-direct\-\_\-space\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::update\-\_\-direct\-\_\-space\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a92abf26b9c7bce34f7c67a8fbc44f2ab}
+
+
+Definition at line 443 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by commstuffpi\-::fast\-\_\-gradient\-\_\-prepare\-\_\-pi(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), and mdsavebeads().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a92abf26b9c7bce34f7c67a8fbc44f2ab_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_a5f3e1c77b8ee4e8c1798aa78dd0ee764}{\index{beads@{beads}!update\-\_\-nlocpi@{update\-\_\-nlocpi}}
+\index{update\-\_\-nlocpi@{update\-\_\-nlocpi}!beads@{beads}}
+\subsubsection[{update\-\_\-nlocpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::update\-\_\-nlocpi (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{nloc}
+\end{DoxyParamCaption}
+)}}\label{classbeads_a5f3e1c77b8ee4e8c1798aa78dd0ee764}
+
+
+Definition at line 254 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by allocpi(), mdinitbead(), and commstuffpi\-::reassignpi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_a5f3e1c77b8ee4e8c1798aa78dd0ee764_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classbeads_ae029bda525facbe5609e7de9f99aa81e}{\index{beads@{beads}!update\-\_\-normal\-\_\-modes\-\_\-pi@{update\-\_\-normal\-\_\-modes\-\_\-pi}}
+\index{update\-\_\-normal\-\_\-modes\-\_\-pi@{update\-\_\-normal\-\_\-modes\-\_\-pi}!beads@{beads}}
+\subsubsection[{update\-\_\-normal\-\_\-modes\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine beads\-::update\-\_\-normal\-\_\-modes\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type({\bf polymer\-\_\-comm\-\_\-type}), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classbeads_ae029bda525facbe5609e7de9f99aa81e}
+
+
+Definition at line 390 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+Referenced by commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), and mdinitbead().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classbeads_ae029bda525facbe5609e7de9f99aa81e_icgraph}
+\end{center}
+\end{figure}
+
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classbeads_a40dd4afa94e57ef66b7ba70a56704450}{\index{beads@{beads}!add\-\_\-buffer\-\_\-pi@{add\-\_\-buffer\-\_\-pi}}
+\index{add\-\_\-buffer\-\_\-pi@{add\-\_\-buffer\-\_\-pi}!beads@{beads}}
+\subsubsection[{add\-\_\-buffer\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::add\-\_\-buffer\-\_\-pi}}\label{classbeads_a40dd4afa94e57ef66b7ba70a56704450}
+
+
+Definition at line 35 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a08ceabf65355ea75dacc54a1cc1613bb}{\index{beads@{beads}!cay\-\_\-correction@{cay\-\_\-correction}}
+\index{cay\-\_\-correction@{cay\-\_\-correction}!beads@{beads}}
+\subsubsection[{cay\-\_\-correction}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::cay\-\_\-correction}}\label{classbeads_a08ceabf65355ea75dacc54a1cc1613bb}
+
+
+Definition at line 25 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a93834d2ff15b4fb83ec6772666a2f521}{\index{beads@{beads}!centroid\-\_\-longrange@{centroid\-\_\-longrange}}
+\index{centroid\-\_\-longrange@{centroid\-\_\-longrange}!beads@{beads}}
+\subsubsection[{centroid\-\_\-longrange}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::centroid\-\_\-longrange}}\label{classbeads_a93834d2ff15b4fb83ec6772666a2f521}
+
+
+Definition at line 22 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a51794c51cf3c21074decc3ba51ee435c}{\index{beads@{beads}!centroid\-\_\-recip@{centroid\-\_\-recip}}
+\index{centroid\-\_\-recip@{centroid\-\_\-recip}!beads@{beads}}
+\subsubsection[{centroid\-\_\-recip}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::centroid\-\_\-recip}}\label{classbeads_a51794c51cf3c21074decc3ba51ee435c}
+
+
+Definition at line 23 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_afcca94caf03fb392889db93cd120504f}{\index{beads@{beads}!contract@{contract}}
+\index{contract@{contract}!beads@{beads}}
+\subsubsection[{contract}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::contract}}\label{classbeads_afcca94caf03fb392889db93cd120504f}
+
+
+Definition at line 21 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a9020a7560a1b66c7a74572df622d7f3e}{\index{beads@{beads}!contractor\-\_\-mat@{contractor\-\_\-mat}}
+\index{contractor\-\_\-mat@{contractor\-\_\-mat}!beads@{beads}}
+\subsubsection[{contractor\-\_\-mat}]{\setlength{\rightskip}{0pt plus 5cm}real(8), dimension(\-:,\-:), allocatable beads\-::contractor\-\_\-mat}}\label{classbeads_a9020a7560a1b66c7a74572df622d7f3e}
+
+
+Definition at line 67 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a407bf78d2a253686a7e1b6f37f559107}{\index{beads@{beads}!dedvinterpi@{dedvinterpi}}
+\index{dedvinterpi@{dedvinterpi}!beads@{beads}}
+\subsubsection[{dedvinterpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::dedvinterpi}}\label{classbeads_a407bf78d2a253686a7e1b6f37f559107}
+
+
+Definition at line 58 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ac0412d751986be2a18361d16c4f3b632}{\index{beads@{beads}!dedvintrapi@{dedvintrapi}}
+\index{dedvintrapi@{dedvintrapi}!beads@{beads}}
+\subsubsection[{dedvintrapi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::dedvintrapi}}\label{classbeads_ac0412d751986be2a18361d16c4f3b632}
+
+
+Definition at line 58 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a9af03c4ca66930f0df7a0a7724b74be4}{\index{beads@{beads}!dedvpi@{dedvpi}}
+\index{dedvpi@{dedvpi}!beads@{beads}}
+\subsubsection[{dedvpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::dedvpi}}\label{classbeads_a9af03c4ca66930f0df7a0a7724b74be4}
+
+
+Definition at line 58 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ab1c00af7003e00651eff48ddce18c3a8}{\index{beads@{beads}!default\-\_\-lambda\-\_\-trpmd@{default\-\_\-lambda\-\_\-trpmd}}
+\index{default\-\_\-lambda\-\_\-trpmd@{default\-\_\-lambda\-\_\-trpmd}!beads@{beads}}
+\subsubsection[{default\-\_\-lambda\-\_\-trpmd}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::default\-\_\-lambda\-\_\-trpmd =.T\-R\-U\-E.}}\label{classbeads_ab1c00af7003e00651eff48ddce18c3a8}
+
+
+Definition at line 45 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a5c71ffc8c3220de7714385d1e40b5842}{\index{beads@{beads}!delambdaepi@{delambdaepi}}
+\index{delambdaepi@{delambdaepi}!beads@{beads}}
+\subsubsection[{delambdaepi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::delambdaepi =0.d0}}\label{classbeads_a5c71ffc8c3220de7714385d1e40b5842}
+
+
+Definition at line 60 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ac3035b58557831f8b99b5790841f66ba}{\index{beads@{beads}!delambdavpi@{delambdavpi}}
+\index{delambdavpi@{delambdavpi}!beads@{beads}}
+\subsubsection[{delambdavpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::delambdavpi =0.d0}}\label{classbeads_ac3035b58557831f8b99b5790841f66ba}
+
+
+Definition at line 60 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a4766861f20d2423d705ad485ab88d60a}{\index{beads@{beads}!dipindpi@{dipindpi}}
+\index{dipindpi@{dipindpi}!beads@{beads}}
+\subsubsection[{dipindpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3) beads\-::dipindpi}}\label{classbeads_a4766861f20d2423d705ad485ab88d60a}
+
+
+Definition at line 59 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a8724cd55cbbb19fd54e4794fc1d99690}{\index{beads@{beads}!dippi@{dippi}}
+\index{dippi@{dippi}!beads@{beads}}
+\subsubsection[{dippi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3) beads\-::dippi}}\label{classbeads_a8724cd55cbbb19fd54e4794fc1d99690}
+
+
+Definition at line 59 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a1a1ae0b7a858c5d1568204d3c7db7980}{\index{beads@{beads}!eigmat@{eigmat}}
+\index{eigmat@{eigmat}!beads@{beads}}
+\subsubsection[{eigmat}]{\setlength{\rightskip}{0pt plus 5cm}real(8), dimension(\-:,\-:), allocatable beads\-::eigmat}}\label{classbeads_a1a1ae0b7a858c5d1568204d3c7db7980}
+
+
+Definition at line 64 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ab3aabcdb848dcaeabe218d7d520ee2b1}{\index{beads@{beads}!einterpi@{einterpi}}
+\index{einterpi@{einterpi}!beads@{beads}}
+\subsubsection[{einterpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::einterpi}}\label{classbeads_ab3aabcdb848dcaeabe218d7d520ee2b1}
+
+
+Definition at line 50 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a8c633b8679d1f8d066adcd2261e62e4a}{\index{beads@{beads}!einterpi\-\_\-loc@{einterpi\-\_\-loc}}
+\index{einterpi\-\_\-loc@{einterpi\-\_\-loc}!beads@{beads}}
+\subsubsection[{einterpi\-\_\-loc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::einterpi\-\_\-loc}}\label{classbeads_a8c633b8679d1f8d066adcd2261e62e4a}
+
+
+Definition at line 55 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a034d51d3942be932ca93b029134bddbe}{\index{beads@{beads}!eintrapi@{eintrapi}}
+\index{eintrapi@{eintrapi}!beads@{beads}}
+\subsubsection[{eintrapi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::eintrapi}}\label{classbeads_a034d51d3942be932ca93b029134bddbe}
+
+
+Definition at line 50 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a26edcda9f89396d8942be0ffed0a15ab}{\index{beads@{beads}!eintrapi\-\_\-loc@{eintrapi\-\_\-loc}}
+\index{eintrapi\-\_\-loc@{eintrapi\-\_\-loc}!beads@{beads}}
+\subsubsection[{eintrapi\-\_\-loc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::eintrapi\-\_\-loc}}\label{classbeads_a26edcda9f89396d8942be0ffed0a15ab}
+
+
+Definition at line 54 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a4d358a2a18572045af499cebdfc02f1d}{\index{beads@{beads}!ekcentroid@{ekcentroid}}
+\index{ekcentroid@{ekcentroid}!beads@{beads}}
+\subsubsection[{ekcentroid}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::ekcentroid}}\label{classbeads_a4d358a2a18572045af499cebdfc02f1d}
+
+
+Definition at line 53 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a798e7f2de2d5bedb88e9111689df62e5}{\index{beads@{beads}!ekdynpi@{ekdynpi}}
+\index{ekdynpi@{ekdynpi}!beads@{beads}}
+\subsubsection[{ekdynpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::ekdynpi}}\label{classbeads_a798e7f2de2d5bedb88e9111689df62e5}
+
+
+Definition at line 50 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a4ef4d946c3f5e1797f46087f8bb6a1b0}{\index{beads@{beads}!ekinpi@{ekinpi}}
+\index{ekinpi@{ekinpi}!beads@{beads}}
+\subsubsection[{ekinpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) beads\-::ekinpi}}\label{classbeads_a4ef4d946c3f5e1797f46087f8bb6a1b0}
+
+
+Definition at line 56 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ae29240de23b637b74b7a3ebb4beed1ef}{\index{beads@{beads}!ekinpi\-\_\-fast@{ekinpi\-\_\-fast}}
+\index{ekinpi\-\_\-fast@{ekinpi\-\_\-fast}!beads@{beads}}
+\subsubsection[{ekinpi\-\_\-fast}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) beads\-::ekinpi\-\_\-fast}}\label{classbeads_ae29240de23b637b74b7a3ebb4beed1ef}
+
+
+Definition at line 56 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ab3b44f3e5218d7874219829843f98a88}{\index{beads@{beads}!ekinpi\-\_\-loc@{ekinpi\-\_\-loc}}
+\index{ekinpi\-\_\-loc@{ekinpi\-\_\-loc}!beads@{beads}}
+\subsubsection[{ekinpi\-\_\-loc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) beads\-::ekinpi\-\_\-loc}}\label{classbeads_ab3b44f3e5218d7874219829843f98a88}
+
+
+Definition at line 49 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ae8d29aeba531bd7ef1c9f36bd8974c6d}{\index{beads@{beads}!ekprim@{ekprim}}
+\index{ekprim@{ekprim}!beads@{beads}}
+\subsubsection[{ekprim}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::ekprim}}\label{classbeads_ae8d29aeba531bd7ef1c9f36bd8974c6d}
+
+
+Definition at line 51 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a8045634dfdc1798472461ae15ea811ec}{\index{beads@{beads}!eksumpi\-\_\-loc@{eksumpi\-\_\-loc}}
+\index{eksumpi\-\_\-loc@{eksumpi\-\_\-loc}!beads@{beads}}
+\subsubsection[{eksumpi\-\_\-loc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::eksumpi\-\_\-loc}}\label{classbeads_a8045634dfdc1798472461ae15ea811ec}
+
+
+Definition at line 49 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a64469ad6a8fb631a971525a333d77020}{\index{beads@{beads}!ekvir@{ekvir}}
+\index{ekvir@{ekvir}!beads@{beads}}
+\subsubsection[{ekvir}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::ekvir}}\label{classbeads_a64469ad6a8fb631a971525a333d77020}
+
+
+Definition at line 51 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_aff38b015c1cc6a0ff0bf455ebcdcc7f7}{\index{beads@{beads}!ekvir\-\_\-fast@{ekvir\-\_\-fast}}
+\index{ekvir\-\_\-fast@{ekvir\-\_\-fast}!beads@{beads}}
+\subsubsection[{ekvir\-\_\-fast}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::ekvir\-\_\-fast}}\label{classbeads_aff38b015c1cc6a0ff0bf455ebcdcc7f7}
+
+
+Definition at line 52 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a2d5c492895271591b3cffae5d91a797e}{\index{beads@{beads}!epotpi@{epotpi}}
+\index{epotpi@{epotpi}!beads@{beads}}
+\subsubsection[{epotpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::epotpi}}\label{classbeads_a2d5c492895271591b3cffae5d91a797e}
+
+
+Definition at line 50 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_abee4a239842256634947102c46707ff0}{\index{beads@{beads}!epotpi\-\_\-loc@{epotpi\-\_\-loc}}
+\index{epotpi\-\_\-loc@{epotpi\-\_\-loc}!beads@{beads}}
+\subsubsection[{epotpi\-\_\-loc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::epotpi\-\_\-loc}}\label{classbeads_abee4a239842256634947102c46707ff0}
+
+
+Definition at line 48 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a87c74fb99bcb48d84020dc5754a8b64f}{\index{beads@{beads}!etotpi\-\_\-loc@{etotpi\-\_\-loc}}
+\index{etotpi\-\_\-loc@{etotpi\-\_\-loc}!beads@{beads}}
+\subsubsection[{etotpi\-\_\-loc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::etotpi\-\_\-loc}}\label{classbeads_a87c74fb99bcb48d84020dc5754a8b64f}
+
+
+Definition at line 48 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a4dbbfebe3132090b108afcbb993f7a3f}{\index{beads@{beads}!gyrpi@{gyrpi}}
+\index{gyrpi@{gyrpi}!beads@{beads}}
+\subsubsection[{gyrpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::gyrpi}}\label{classbeads_a4dbbfebe3132090b108afcbb993f7a3f}
+
+
+Definition at line 46 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_abb845f8ec585fbfc83b865944e087f39}{\index{beads@{beads}!ibead\-\_\-loaded@{ibead\-\_\-loaded}}
+\index{ibead\-\_\-loaded@{ibead\-\_\-loaded}!beads@{beads}}
+\subsubsection[{ibead\-\_\-loaded}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::ibead\-\_\-loaded =-\/1}}\label{classbeads_abb845f8ec585fbfc83b865944e087f39}
+
+
+Definition at line 34 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a901a3bc633365aca7062d140a758bed2}{\index{beads@{beads}!ilocpi\-\_\-beg@{ilocpi\-\_\-beg}}
+\index{ilocpi\-\_\-beg@{ilocpi\-\_\-beg}!beads@{beads}}
+\subsubsection[{ilocpi\-\_\-beg}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable beads\-::ilocpi\-\_\-beg}}\label{classbeads_a901a3bc633365aca7062d140a758bed2}
+
+
+Definition at line 38 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a1c58398ef2bd90b96fbfbe11a26c7b00}{\index{beads@{beads}!ilocpi\-\_\-end@{ilocpi\-\_\-end}}
+\index{ilocpi\-\_\-end@{ilocpi\-\_\-end}!beads@{beads}}
+\subsubsection[{ilocpi\-\_\-end}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable beads\-::ilocpi\-\_\-end}}\label{classbeads_a1c58398ef2bd90b96fbfbe11a26c7b00}
+
+
+Definition at line 39 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ac483e5724b9ae3832d38222a33f15557}{\index{beads@{beads}!ipolymer\-\_\-loaded@{ipolymer\-\_\-loaded}}
+\index{ipolymer\-\_\-loaded@{ipolymer\-\_\-loaded}!beads@{beads}}
+\subsubsection[{ipolymer\-\_\-loaded}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::ipolymer\-\_\-loaded =-\/1}}\label{classbeads_ac483e5724b9ae3832d38222a33f15557}
+
+
+Definition at line 33 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a2aa911564d0335b29226af2e3e3aac96}{\index{beads@{beads}!lambda\-\_\-trpmd@{lambda\-\_\-trpmd}}
+\index{lambda\-\_\-trpmd@{lambda\-\_\-trpmd}!beads@{beads}}
+\subsubsection[{lambda\-\_\-trpmd}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::lambda\-\_\-trpmd}}\label{classbeads_a2aa911564d0335b29226af2e3e3aac96}
+
+
+Definition at line 44 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a5f339ae3ed13a47d482c85a859c6abef}{\index{beads@{beads}!max\-\_\-polymer\-\_\-index@{max\-\_\-polymer\-\_\-index}}
+\index{max\-\_\-polymer\-\_\-index@{max\-\_\-polymer\-\_\-index}!beads@{beads}}
+\subsubsection[{max\-\_\-polymer\-\_\-index}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::max\-\_\-polymer\-\_\-index =0}}\label{classbeads_a5f339ae3ed13a47d482c85a859c6abef}
+
+
+Definition at line 32 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_af2080ec4bc7bbcf0c79ecec326e1d09c}{\index{beads@{beads}!nbeads@{nbeads}}
+\index{nbeads@{nbeads}!beads@{beads}}
+\subsubsection[{nbeads}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::nbeads}}\label{classbeads_af2080ec4bc7bbcf0c79ecec326e1d09c}
+
+
+Definition at line 17 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a44efdcee98e53b88242fb574bf7a3fe1}{\index{beads@{beads}!nbeads\-\_\-ctr@{nbeads\-\_\-ctr}}
+\index{nbeads\-\_\-ctr@{nbeads\-\_\-ctr}!beads@{beads}}
+\subsubsection[{nbeads\-\_\-ctr}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::nbeads\-\_\-ctr}}\label{classbeads_a44efdcee98e53b88242fb574bf7a3fe1}
+
+
+Definition at line 26 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a249177398ee35c3836f0abb82eab8edd}{\index{beads@{beads}!nbeadsloc@{nbeadsloc}}
+\index{nbeadsloc@{nbeadsloc}!beads@{beads}}
+\subsubsection[{nbeadsloc}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::nbeadsloc}}\label{classbeads_a249177398ee35c3836f0abb82eab8edd}
+
+
+Definition at line 17 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_ac980eb32841995e3c9bbd1aec69704fe}{\index{beads@{beads}!nbeadsloc\-\_\-ctr@{nbeadsloc\-\_\-ctr}}
+\index{nbeadsloc\-\_\-ctr@{nbeadsloc\-\_\-ctr}!beads@{beads}}
+\subsubsection[{nbeadsloc\-\_\-ctr}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::nbeadsloc\-\_\-ctr}}\label{classbeads_ac980eb32841995e3c9bbd1aec69704fe}
+
+
+Definition at line 26 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_abbd73555d2a46563cbb9c68d402dc8cf}{\index{beads@{beads}!nlocpi@{nlocpi}}
+\index{nlocpi@{nlocpi}!beads@{beads}}
+\subsubsection[{nlocpi}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::nlocpi}}\label{classbeads_abbd73555d2a46563cbb9c68d402dc8cf}
+
+
+Definition at line 41 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a8d39e6ac2200cc21168d9e751abef466}{\index{beads@{beads}!nlocpiproc@{nlocpiproc}}
+\index{nlocpiproc@{nlocpiproc}!beads@{beads}}
+\subsubsection[{nlocpiproc}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::nlocpiproc}}\label{classbeads_a8d39e6ac2200cc21168d9e751abef466}
+
+
+Definition at line 41 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a10684bb3dabed29b62dd83a49c559e1f}{\index{beads@{beads}!nlocpis@{nlocpis}}
+\index{nlocpis@{nlocpis}!beads@{beads}}
+\subsubsection[{nlocpis}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable beads\-::nlocpis}}\label{classbeads_a10684bb3dabed29b62dd83a49c559e1f}
+
+
+Definition at line 40 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a6b2283331985cfc64992d31d7ede9b4d}{\index{beads@{beads}!omkpi@{omkpi}}
+\index{omkpi@{omkpi}!beads@{beads}}
+\subsubsection[{omkpi}]{\setlength{\rightskip}{0pt plus 5cm}real(8), dimension(\-:), allocatable beads\-::omkpi}}\label{classbeads_a6b2283331985cfc64992d31d7ede9b4d}
+
+
+Definition at line 65 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a73d340bf9e10cc72a21f4efe65667093}{\index{beads@{beads}!path\-\_\-integral\-\_\-md@{path\-\_\-integral\-\_\-md}}
+\index{path\-\_\-integral\-\_\-md@{path\-\_\-integral\-\_\-md}!beads@{beads}}
+\subsubsection[{path\-\_\-integral\-\_\-md}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::path\-\_\-integral\-\_\-md =.F\-A\-L\-S\-E.}}\label{classbeads_a73d340bf9e10cc72a21f4efe65667093}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a0d974936f1ea3d107942bc5c6a0ccffb}{\index{beads@{beads}!pi\-\_\-comm\-\_\-report@{pi\-\_\-comm\-\_\-report}}
+\index{pi\-\_\-comm\-\_\-report@{pi\-\_\-comm\-\_\-report}!beads@{beads}}
+\subsubsection[{pi\-\_\-comm\-\_\-report}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::pi\-\_\-comm\-\_\-report}}\label{classbeads_a0d974936f1ea3d107942bc5c6a0ccffb}
+
+
+Definition at line 28 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a1101fc1a583313a5a1d66a43d80e6c3f}{\index{beads@{beads}!pi\-\_\-comm\-\_\-unit@{pi\-\_\-comm\-\_\-unit}}
+\index{pi\-\_\-comm\-\_\-unit@{pi\-\_\-comm\-\_\-unit}!beads@{beads}}
+\subsubsection[{pi\-\_\-comm\-\_\-unit}]{\setlength{\rightskip}{0pt plus 5cm}integer beads\-::pi\-\_\-comm\-\_\-unit}}\label{classbeads_a1101fc1a583313a5a1d66a43d80e6c3f}
+
+
+Definition at line 29 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a59d4fa81e053b17dd0c14e73973ccb3a}{\index{beads@{beads}!pi\-\_\-start\-\_\-isobaric@{pi\-\_\-start\-\_\-isobaric}}
+\index{pi\-\_\-start\-\_\-isobaric@{pi\-\_\-start\-\_\-isobaric}!beads@{beads}}
+\subsubsection[{pi\-\_\-start\-\_\-isobaric}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::pi\-\_\-start\-\_\-isobaric}}\label{classbeads_a59d4fa81e053b17dd0c14e73973ccb3a}
+
+
+Definition at line 43 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a7347e75d7715131be1ef685b82104fe5}{\index{beads@{beads}!pitimer@{pitimer}}
+\index{pitimer@{pitimer}!beads@{beads}}
+\subsubsection[{pitimer}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::pitimer}}\label{classbeads_a7347e75d7715131be1ef685b82104fe5}
+
+
+Definition at line 30 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_adad817f105ba6e27f7f279166873ebf6}{\index{beads@{beads}!polar\-\_\-allbeads@{polar\-\_\-allbeads}}
+\index{polar\-\_\-allbeads@{polar\-\_\-allbeads}!beads@{beads}}
+\subsubsection[{polar\-\_\-allbeads}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::polar\-\_\-allbeads}}\label{classbeads_adad817f105ba6e27f7f279166873ebf6}
+
+
+Definition at line 24 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_aab5d9071ceb4efc44ff75a705a3e0ec5}{\index{beads@{beads}!pot\-\_\-gathered@{pot\-\_\-gathered}}
+\index{pot\-\_\-gathered@{pot\-\_\-gathered}!beads@{beads}}
+\subsubsection[{pot\-\_\-gathered}]{\setlength{\rightskip}{0pt plus 5cm}logical beads\-::pot\-\_\-gathered =.T\-R\-U\-E.}}\label{classbeads_aab5d9071ceb4efc44ff75a705a3e0ec5}
+
+
+Definition at line 62 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a8eadc4b834c6fa3a55d3e6d8f7338165}{\index{beads@{beads}!presvir@{presvir}}
+\index{presvir@{presvir}!beads@{beads}}
+\subsubsection[{presvir}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::presvir}}\label{classbeads_a8eadc4b834c6fa3a55d3e6d8f7338165}
+
+
+Definition at line 51 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a7f5dc8a98fd4571afd6cff2250578f83}{\index{beads@{beads}!save\-\_\-beads@{save\-\_\-beads}}
+\index{save\-\_\-beads@{save\-\_\-beads}!beads@{beads}}
+\subsubsection[{save\-\_\-beads}]{\setlength{\rightskip}{0pt plus 5cm}character(len=80) beads\-::save\-\_\-beads}}\label{classbeads_a7f5dc8a98fd4571afd6cff2250578f83}
+
+
+Definition at line 19 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a03a9eebd00567c9725d71b8ad2b4d379}{\index{beads@{beads}!stresspi@{stresspi}}
+\index{stresspi@{stresspi}!beads@{beads}}
+\subsubsection[{stresspi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) beads\-::stresspi}}\label{classbeads_a03a9eebd00567c9725d71b8ad2b4d379}
+
+
+Definition at line 57 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a3621607c4b66d4e86c3ec09d83120d48}{\index{beads@{beads}!temppi@{temppi}}
+\index{temppi@{temppi}!beads@{beads}}
+\subsubsection[{temppi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::temppi}}\label{classbeads_a3621607c4b66d4e86c3ec09d83120d48}
+
+
+Definition at line 47 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_adf180574f60cfa67b5fec031adb6971f}{\index{beads@{beads}!temppi\-\_\-centroid@{temppi\-\_\-centroid}}
+\index{temppi\-\_\-centroid@{temppi\-\_\-centroid}!beads@{beads}}
+\subsubsection[{temppi\-\_\-centroid}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::temppi\-\_\-centroid}}\label{classbeads_adf180574f60cfa67b5fec031adb6971f}
+
+
+Definition at line 47 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a42ae02a4bcc859289b24ad8674222326}{\index{beads@{beads}!temppi\-\_\-cl@{temppi\-\_\-cl}}
+\index{temppi\-\_\-cl@{temppi\-\_\-cl}!beads@{beads}}
+\subsubsection[{temppi\-\_\-cl}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 beads\-::temppi\-\_\-cl}}\label{classbeads_a42ae02a4bcc859289b24ad8674222326}
+
+
+Definition at line 47 of file M\-O\-D\-\_\-beads.\-f90.
+
+\hypertarget{classbeads_a2e963637c44512cc2e0401584593c071}{\index{beads@{beads}!virpi@{virpi}}
+\index{virpi@{virpi}!beads@{beads}}
+\subsubsection[{virpi}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) beads\-::virpi}}\label{classbeads_a2e963637c44512cc2e0401584593c071}
+
+
+Definition at line 56 of file M\-O\-D\-\_\-beads.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__beads_8f90}{M\-O\-D\-\_\-beads.\-f90}\end{DoxyCompactItemize}

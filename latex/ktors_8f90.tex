@@ -1,0 +1,113 @@
+\hypertarget{ktors_8f90}{\section{ktors.\-f90 File Reference}
+\label{ktors_8f90}\index{ktors.\-f90@{ktors.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{ktors_8f90_adb0f0a7a2a992c761d9059565fb08ad4}{ktors}
+\begin{DoxyCompactList}\small\item\em assigns torsional parameters to each torsion in the structure and processes any new or changed values \end{DoxyCompactList}\item 
+subroutine \hyperlink{ktors_8f90_a7f6beaa9c12ef4ec00bfebcdc814a069}{ktorsm}
+\begin{DoxyCompactList}\small\item\em assigns torsional parameters to each torsion according to the Merck Molecular Force Field (M\-M\-F\-F) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{ktors_8f90_adb0f0a7a2a992c761d9059565fb08ad4}{\index{ktors.\-f90@{ktors.\-f90}!ktors@{ktors}}
+\index{ktors@{ktors}!ktors.f90@{ktors.\-f90}}
+\subsubsection[{ktors}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ktors (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{ktors_8f90_adb0f0a7a2a992c761d9059565fb08ad4}
+
+
+assigns torsional parameters to each torsion in the structure and processes any new or changed values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file ktors.\-f90.
+
+
+
+References chkring(), gettext(), ktorsm(), numeral(), torphase(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{ktors_8f90_adb0f0a7a2a992c761d9059565fb08ad4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ktors_8f90_adb0f0a7a2a992c761d9059565fb08ad4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{ktors_8f90_a7f6beaa9c12ef4ec00bfebcdc814a069}{\index{ktors.\-f90@{ktors.\-f90}!ktorsm@{ktorsm}}
+\index{ktorsm@{ktorsm}!ktors.f90@{ktors.\-f90}}
+\subsubsection[{ktorsm}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ktorsm (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{ktors_8f90_a7f6beaa9c12ef4ec00bfebcdc814a069}
+
+
+assigns torsional parameters to each torsion according to the Merck Molecular Force Field (M\-M\-F\-F) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 569 of file ktors.\-f90.
+
+
+
+References numeral().
+
+
+
+Referenced by ktors().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ktors_8f90_a7f6beaa9c12ef4ec00bfebcdc814a069_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ktors_8f90_a7f6beaa9c12ef4ec00bfebcdc814a069_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,21 @@
+<map id="qtb::qtb_spectra_adaptation_gamma" name="qtb::qtb_spectra_adaptation_gamma">
+<area shape="rect" id="node2" href="$classqtb.html#a79eca7ca16cc3a49f3f3303415a1ee73" title="qtb::adhnoise" alt="" coords="299,89,410,116"/>
+<area shape="rect" id="node9" href="$classqtb.html#ae3f6764883242093e065a6c9d2fb8a85" title="qtb::compute_corr_fact" alt="" coords="269,157,441,184"/>
+<area shape="rect" id="node14" href="$classspectra.html#a4e7bb730a7f2a0d12befe53d282f4f5a" title="spectra::correct_window\l_spectrum" alt="" coords="265,210,445,251"/>
+<area shape="rect" id="node17" href="$classascii.html#ac1af533da26d2edb9b152ec358a01b98" title="converts integer to strings " alt="" coords="539,465,661,492"/>
+<area shape="rect" id="node18" href="$classqtb.html#afa830ad0bf6560491dbb417d0517998b" title="qtb::reduce_piqtb_vad" alt="" coords="271,327,438,353"/>
+<area shape="rect" id="node19" href="$classqtb.html#a8fbfafdc7282eaf23a02db91984d7a99" title="qtb::reduce_qtb_spectrum" alt="" coords="259,377,450,404"/>
+<area shape="rect" id="node15" href="$classspectra.html#abf83fa40a337b0987dae16f9880e4170" title="spectra::spcfft" alt="" coords="543,279,657,305"/>
+<area shape="rect" id="node20" href="$classqtb.html#ab80d433a778590bea099c2b40f1aa08c" title="qtb::write_frequency\l_type_header" alt="" coords="277,429,433,470"/>
+<area shape="rect" id="node3" href="$classcolvarproxy__tinkerhp.html#a7acc624104cbe9ef60cb90fe5f51018b" title="colvarproxy_tinkerhp\l::boltzmann" alt="" coords="520,82,680,123"/>
+<area shape="rect" id="node4" href="$classspectra.html#a27d2053c9090bc63d7ae14d7edc29abd" title="spectra::qtb_kernel" alt="" coords="527,31,673,57"/>
+<area shape="rect" id="node5" href="$classspectra.html#a23922ac2fd96129f594aa533edc82fc7" title="spectra::piqtb_kernel" alt="" coords="759,31,918,57"/>
+<area shape="rect" id="node6" href="$classspectra.html#aa68c292c3f1ec44529916b6e6c9ed807" title="spectra::piqtb_kernel\l_brieuc" alt="" coords="997,23,1155,65"/>
+<area shape="rect" id="node7" href="$classspectra.html#ab056deac13281e59def28844beb05a26" title="spectra::linear_interpolation" alt="" coords="1224,5,1429,32"/>
+<area shape="rect" id="node8" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="1301,56,1353,83"/>
+<area shape="rect" id="node10" href="$classdeconvolution.html#aebbb7f3c86c0fb2e772ad75c4797f494" title="deconvolution::deconvolute\l_spectrum" alt="" coords="499,147,701,189"/>
+<area shape="rect" id="node13" href="$classdeconvolution.html#a0cc97e555b69a5d094ec95767b1cc738" title="deconvolution::kernel\l_lorentz" alt="" coords="519,213,681,254"/>
+<area shape="rect" id="node11" href="$classdeconvolution.html#ab0555563a13a1f0f4a5784d8bd04630e" title="deconvolution::compute\l_rn_ln" alt="" coords="749,118,928,159"/>
+<area shape="rect" id="node12" href="$classdeconvolution.html#afa72e3081738c9001b04859834b4b09b" title="deconvolution::convolution" alt="" coords="977,155,1175,181"/>
+<area shape="rect" id="node16" href="$classspectra.html#a2db6c8f0d284eccd5ae058b715e4f0f2" title="spectra::spcpft" alt="" coords="779,279,898,305"/>
+</map>

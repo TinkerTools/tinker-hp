@@ -1,0 +1,164 @@
+\hypertarget{classangle}{\section{angle Module Reference}
+\label{classangle}\index{angle@{angle}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classangle_a401aae16b66326a502f845b4697902b1}{nangle}
+\begin{DoxyCompactList}\small\item\em total number of bond angles in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classangle_a4707c3874420f6c094c961bd2d798f11}{nangleloc}
+\begin{DoxyCompactList}\small\item\em numbers of bond angles in the local domain \end{DoxyCompactList}\item 
+integer \hyperlink{classangle_a68986d70390a9e829c333cc9abfb035b}{winiang}
+\begin{DoxyCompactList}\small\item\em window object corresponding to iang \end{DoxyCompactList}\item 
+integer \hyperlink{classangle_a4d5150f5ef2c908ca41d79ffa47bef99}{winak}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ak \end{DoxyCompactList}\item 
+integer \hyperlink{classangle_a29408b2de55b5b467872218f68b45bf6}{winanat}
+\begin{DoxyCompactList}\small\item\em window object corresponding to anat \end{DoxyCompactList}\item 
+integer \hyperlink{classangle_a5d36413fbeccef4bfce525004cb0ce6e}{winafld}
+\begin{DoxyCompactList}\small\item\em window object corresponding to afld \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classangle_aba2bc32b2b8c849f07359000e638b674}{angleloc}
+\begin{DoxyCompactList}\small\item\em correspondance between global and local bond angles \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), pointer \hyperlink{classangle_a43ce792d42ab6ec0953d3b0385e48710}{iang}
+\begin{DoxyCompactList}\small\item\em numbers of the atoms in each bond angle \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classangle_a87407ebe9a2d1916f37c0c6278f4778e}{ak}
+\begin{DoxyCompactList}\small\item\em harmonic angle force constant (kcal/mole/rad$\ast$$\ast$2) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classangle_ac2eed7a08f383a7d650b4e7ff7ed9bff}{anat}
+\begin{DoxyCompactList}\small\item\em ideal bond angle or phase shift angle (degrees) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classangle_a5aac80b1ad70e4f4b35797bf329f9e92}{afld}
+\begin{DoxyCompactList}\small\item\em periodicity for Fourier bond angle term \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-angle.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classangle_a5aac80b1ad70e4f4b35797bf329f9e92}{\index{angle@{angle}!afld@{afld}}
+\index{afld@{afld}!angle@{angle}}
+\subsubsection[{afld}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer angle\-::afld}}\label{classangle_a5aac80b1ad70e4f4b35797bf329f9e92}
+
+
+periodicity for Fourier bond angle term 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_a87407ebe9a2d1916f37c0c6278f4778e}{\index{angle@{angle}!ak@{ak}}
+\index{ak@{ak}!angle@{angle}}
+\subsubsection[{ak}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer angle\-::ak}}\label{classangle_a87407ebe9a2d1916f37c0c6278f4778e}
+
+
+harmonic angle force constant (kcal/mole/rad$\ast$$\ast$2) 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_ac2eed7a08f383a7d650b4e7ff7ed9bff}{\index{angle@{angle}!anat@{anat}}
+\index{anat@{anat}!angle@{angle}}
+\subsubsection[{anat}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer angle\-::anat}}\label{classangle_ac2eed7a08f383a7d650b4e7ff7ed9bff}
+
+
+ideal bond angle or phase shift angle (degrees) 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_aba2bc32b2b8c849f07359000e638b674}{\index{angle@{angle}!angleloc@{angleloc}}
+\index{angleloc@{angleloc}!angle@{angle}}
+\subsubsection[{angleloc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable angle\-::angleloc}}\label{classangle_aba2bc32b2b8c849f07359000e638b674}
+
+
+correspondance between global and local bond angles 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_a43ce792d42ab6ec0953d3b0385e48710}{\index{angle@{angle}!iang@{iang}}
+\index{iang@{iang}!angle@{angle}}
+\subsubsection[{iang}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), pointer angle\-::iang}}\label{classangle_a43ce792d42ab6ec0953d3b0385e48710}
+
+
+numbers of the atoms in each bond angle 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_a401aae16b66326a502f845b4697902b1}{\index{angle@{angle}!nangle@{nangle}}
+\index{nangle@{nangle}!angle@{angle}}
+\subsubsection[{nangle}]{\setlength{\rightskip}{0pt plus 5cm}integer angle\-::nangle}}\label{classangle_a401aae16b66326a502f845b4697902b1}
+
+
+total number of bond angles in the system 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_a4707c3874420f6c094c961bd2d798f11}{\index{angle@{angle}!nangleloc@{nangleloc}}
+\index{nangleloc@{nangleloc}!angle@{angle}}
+\subsubsection[{nangleloc}]{\setlength{\rightskip}{0pt plus 5cm}integer angle\-::nangleloc}}\label{classangle_a4707c3874420f6c094c961bd2d798f11}
+
+
+numbers of bond angles in the local domain 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_a5d36413fbeccef4bfce525004cb0ce6e}{\index{angle@{angle}!winafld@{winafld}}
+\index{winafld@{winafld}!angle@{angle}}
+\subsubsection[{winafld}]{\setlength{\rightskip}{0pt plus 5cm}integer angle\-::winafld}}\label{classangle_a5d36413fbeccef4bfce525004cb0ce6e}
+
+
+window object corresponding to afld 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_a4d5150f5ef2c908ca41d79ffa47bef99}{\index{angle@{angle}!winak@{winak}}
+\index{winak@{winak}!angle@{angle}}
+\subsubsection[{winak}]{\setlength{\rightskip}{0pt plus 5cm}integer angle\-::winak}}\label{classangle_a4d5150f5ef2c908ca41d79ffa47bef99}
+
+
+window object corresponding to ak 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_a29408b2de55b5b467872218f68b45bf6}{\index{angle@{angle}!winanat@{winanat}}
+\index{winanat@{winanat}!angle@{angle}}
+\subsubsection[{winanat}]{\setlength{\rightskip}{0pt plus 5cm}integer angle\-::winanat}}\label{classangle_a29408b2de55b5b467872218f68b45bf6}
+
+
+window object corresponding to anat 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-angle.\-f90.
+
+\hypertarget{classangle_a68986d70390a9e829c333cc9abfb035b}{\index{angle@{angle}!winiang@{winiang}}
+\index{winiang@{winiang}!angle@{angle}}
+\subsubsection[{winiang}]{\setlength{\rightskip}{0pt plus 5cm}integer angle\-::winiang}}\label{classangle_a68986d70390a9e829c333cc9abfb035b}
+
+
+window object corresponding to iang 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-angle.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__angle_8f90}{M\-O\-D\-\_\-angle.\-f90}\end{DoxyCompactItemize}

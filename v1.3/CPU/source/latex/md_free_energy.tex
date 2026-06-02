@@ -1,0 +1,57 @@
+Tinker-\/\-H\-P supports various free-\/energy techniques, mainly through the support of the external C\-O\-L\-V\-A\-R\-S and P\-L\-U\-M\-E\-D libraries, if these are linked as described in the documentation concerning building of the package.
+
+Regarding P\-L\-U\-M\-E\-D, the line\-:
+\begin{DoxyItemize}
+\item plumed input.\-dat output.\-dat, has to be added to the keyfile, with input.\-dat the P\-L\-U\-M\-E\-D input file and output.\-dat the output file.
+\end{DoxyItemize}
+
+Regarding C\-O\-L\-V\-A\-R\-S, a C\-O\-L\-V\-A\-R\-S configuration file with the same prefix as the keyfile and the extension .colvars has to be added. All the necessary information about coupling of Tinker-\/\-H\-P and Colvars can be found in the dedicated \href{http://colvars.github.io/master/colvars-refman-tinkerhp.pdf}{\tt manual}.
+
+Tinker-\/\-H\-P also handles alchemical free energy simulations where a list of 'alchemical' atoms has to be provided to the keyfile with the line\-:
+\begin{DoxyItemize}
+\item L\-I\-G\-A\-N\-D
+\end{DoxyItemize}
+
+'Fixed lambda' trajectories can be produced by providing information about atoms included in the alchemical region and providing alchemical lambda values for van der Waals and electrostatics (with polarization for A\-M\-O\-E\-B\-A-\/like force fields). The two lambda values can be modified with the keywords\-:
+\begin{DoxyItemize}
+\item ele-\/lambda
+\item vdw-\/lambda
+\end{DoxyItemize}
+
+One can also control a global lambda parameters of which the two specific lambdas above are a function. By default vdw-\/lambda grows linearly wrt lambda from 0 to 0.\-5 and similarly ele-\/lambda grows linearly from 0.\-5 to 1.
+
+The value of lambda where vdw-\/lambda is 1 can be controlled by the keyword\-:
+\begin{DoxyItemize}
+\item B\-O\-U\-N\-D-\/\-V\-D\-W-\/\-L\-A\-M\-B\-D\-A , default 0.\-5
+\end{DoxyItemize}
+
+The value of lambda where ele-\/lambda is 0 can be controlled by the keyword\-:
+\begin{DoxyItemize}
+\item B\-O\-U\-N\-D-\/\-E\-L\-E-\/\-L\-A\-M\-B\-D\-A , default 0.\-5
+\end{DoxyItemize}
+
+Furthermore, softcore potential for van der Waals interactions are implemented and the associated parameters can be modified with the following keywords\-:
+
+For Lennard-\/\-Jones interactions\-:
+\begin{DoxyItemize}
+\item V\-D\-W-\/\-S\-C-\/\-A\-L\-P\-H\-A , default 0.\-7
+\item V\-D\-W-\/\-S\-C-\/\-E\-X\-P, default 5
+\item V\-D\-W-\/\-S\-C-\/\-K , default 6
+\item V\-D\-W-\/\-S\-C-\/\-S , default 2
+\item V\-D\-W-\/\-S\-C-\/\-T , default 1
+\end{DoxyItemize}
+
+For Halgren buffered 14-\/7 potential\-:
+\begin{DoxyItemize}
+\item V\-D\-W-\/\-S\-C-\/\-A\-L\-P\-H\-A , default 0.\-7
+\item V\-D\-W-\/\-S\-C-\/\-E\-X\-P, default 5
+\end{DoxyItemize}
+
+By default, scaled van der Waals interactions are \char`\"{}decoupled\char`\"{} meaning that intramolecular interactions are kept intact, but one can also progressively scale down intramolecular van der Waals interactions, by using the keyword\-:
+\begin{DoxyItemize}
+\item V\-D\-W-\/\-A\-N\-N\-I\-H\-I\-L\-A\-T\-E
+\end{DoxyItemize}
+
+More advanded and efficient alchemical free-\/energy simulations can be run by leveraging the Lambda-\/\-A\-B\-F methodology as described in the \href{md_lambda-abf_doxygen.html}{\tt dedicated page}.
+
+Note that both P\-L\-U\-M\-E\-D and C\-O\-L\-V\-A\-R\-S based simulations are compatible with all multi-\/timestep integrators, are these external libraries are called at the outer timestep in this case. 

@@ -1,0 +1,122 @@
+\hypertarget{temper_8f90}{\section{temper.\-f90 File Reference}
+\label{temper_8f90}\index{temper.\-f90@{temper.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{temper_8f90_ae7cc510ecf8b4fd57b2a8efd58a0c7de}{temper} (dt, eksum, ekin, temp)
+\begin{DoxyCompactList}\small\item\em computes and displays the total potential energy \end{DoxyCompactList}\item 
+subroutine \hyperlink{temper_8f90_ac13b262b18b33efd528672154047cac9}{temper2} (temp)
+\begin{DoxyCompactList}\small\item\em computes the instantaneous temperature and applies a thermostat via Berendsen or Bussi-\/\-Parrinello velocity scaling, Andersen stochastic collisions or Nose-\/\-Hoover extended system \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{temper_8f90_ae7cc510ecf8b4fd57b2a8efd58a0c7de}{\index{temper.\-f90@{temper.\-f90}!temper@{temper}}
+\index{temper@{temper}!temper.f90@{temper.\-f90}}
+\subsubsection[{temper}]{\setlength{\rightskip}{0pt plus 5cm}subroutine temper (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{dt, }
+\item[{real$\ast$8}]{eksum, }
+\item[{real$\ast$8, dimension(3,3)}]{ekin, }
+\item[{real$\ast$8}]{temp}
+\end{DoxyParamCaption}
+)}}\label{temper_8f90_ae7cc510ecf8b4fd57b2a8efd58a0c7de}
+
+
+computes and displays the total potential energy 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & duration of a timestep \\
+\hline
+\mbox{\tt in}  & {\em eksum,\-:} & kinetic energy \\
+\hline
+\mbox{\tt in}  & {\em ekin,\-:} & kinetic energy tensor \\
+\hline
+\mbox{\tt in}  & {\em temp,\-:} & instantaneous temperature \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 34 of file temper.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt(), kinetic(), molecule(), normal(), and random().
+
+
+
+Referenced by baoab(), baoabrespa(), baoabrespa1(), beeman(), maxwell(), respa(), respa1(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{temper_8f90_ae7cc510ecf8b4fd57b2a8efd58a0c7de_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{temper_8f90_ae7cc510ecf8b4fd57b2a8efd58a0c7de_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{temper_8f90_ac13b262b18b33efd528672154047cac9}{\index{temper.\-f90@{temper.\-f90}!temper2@{temper2}}
+\index{temper2@{temper2}!temper.f90@{temper.\-f90}}
+\subsubsection[{temper2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine temper2 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{temp}
+\end{DoxyParamCaption}
+)}}\label{temper_8f90_ac13b262b18b33efd528672154047cac9}
+
+
+computes the instantaneous temperature and applies a thermostat via Berendsen or Bussi-\/\-Parrinello velocity scaling, Andersen stochastic collisions or Nose-\/\-Hoover extended system 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em temp,\-:} & instaneous temperature \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 191 of file temper.\-f90.
+
+
+
+References kinetic().
+
+
+
+Referenced by baoabrespa1(), beeman(), respa(), respa1(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=224pt]{temper_8f90_ac13b262b18b33efd528672154047cac9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{temper_8f90_ac13b262b18b33efd528672154047cac9_icgraph}
+\end{center}
+\end{figure}
+
+

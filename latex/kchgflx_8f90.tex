@@ -1,0 +1,135 @@
+\hypertarget{kchgflx_8f90}{\section{kchgflx.\-f90 File Reference}
+\label{kchgflx_8f90}\index{kchgflx.\-f90@{kchgflx.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kchgflx_8f90_a79ce9daafa3ccc1b91787c86e917ff74}{kchgflx}
+\begin{DoxyCompactList}\small\item\em assigns bond stretch and angle bend charge flux correction values and processes any new or changed values for these parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kchgflx_8f90_a2a5e33d00e921d9f01ffc86ae876d4e7}{dealloc\-\_\-shared\-\_\-chgflx}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for chgflx parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kchgflx_8f90_a8d6dbbdd13f51b1bc611007869ad192e}{alloc\-\_\-shared\-\_\-chgflx}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for chgflx parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kchgflx_8f90_a8d6dbbdd13f51b1bc611007869ad192e}{\index{kchgflx.\-f90@{kchgflx.\-f90}!alloc\-\_\-shared\-\_\-chgflx@{alloc\-\_\-shared\-\_\-chgflx}}
+\index{alloc\-\_\-shared\-\_\-chgflx@{alloc\-\_\-shared\-\_\-chgflx}!kchgflx.f90@{kchgflx.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-chgflx}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-chgflx (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kchgflx_8f90_a8d6dbbdd13f51b1bc611007869ad192e}
+
+
+allocate shared memory pointers for chgflx parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 309 of file kchgflx.\-f90.
+
+
+
+Referenced by kchgflx().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kchgflx_8f90_a8d6dbbdd13f51b1bc611007869ad192e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kchgflx_8f90_a2a5e33d00e921d9f01ffc86ae876d4e7}{\index{kchgflx.\-f90@{kchgflx.\-f90}!dealloc\-\_\-shared\-\_\-chgflx@{dealloc\-\_\-shared\-\_\-chgflx}}
+\index{dealloc\-\_\-shared\-\_\-chgflx@{dealloc\-\_\-shared\-\_\-chgflx}!kchgflx.f90@{kchgflx.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-chgflx}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-chgflx (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kchgflx_8f90_a2a5e33d00e921d9f01ffc86ae876d4e7}
+
+
+deallocate shared memory pointers for chgflx parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 275 of file kchgflx.\-f90.
+
+
+
+Referenced by final(), and kchgflx().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kchgflx_8f90_a2a5e33d00e921d9f01ffc86ae876d4e7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kchgflx_8f90_a79ce9daafa3ccc1b91787c86e917ff74}{\index{kchgflx.\-f90@{kchgflx.\-f90}!kchgflx@{kchgflx}}
+\index{kchgflx@{kchgflx}!kchgflx.f90@{kchgflx.\-f90}}
+\subsubsection[{kchgflx}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kchgflx (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kchgflx_8f90_a79ce9daafa3ccc1b91787c86e917ff74}
+
+
+assigns bond stretch and angle bend charge flux correction values and processes any new or changed values for these parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 19 of file kchgflx.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-chgflx(), dealloc\-\_\-shared\-\_\-chgflx(), fatal(), gettext(), numeral(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kchgflx_8f90_a79ce9daafa3ccc1b91787c86e917ff74_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kchgflx_8f90_a79ce9daafa3ccc1b91787c86e917ff74_icgraph}
+\end{center}
+\end{figure}
+
+

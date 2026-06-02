@@ -1,0 +1,269 @@
+\hypertarget{epolar1tcg2__2_8f90}{\section{epolar1tcg2\-\_\-2.\-f90 File Reference}
+\label{epolar1tcg2__2_8f90}\index{epolar1tcg2\-\_\-2.\-f90@{epolar1tcg2\-\_\-2.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{epolar1tcg2__2_8f90_ae4a858c79ec3ba3c1c6ebba03978211a}{epolar1tcg2\-\_\-2}
+\begin{DoxyCompactList}\small\item\em Computes T\-C\-G2 dipoles with N\-O refinement (except the preconditioner if \char`\"{}precond\char`\"{} is T\-R\-U\-E) \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1tcg2__2_8f90_a445cdc4ac4f10739f7a3de9c5df4a0de}{epolar1tcg2bis\-\_\-2}
+\begin{DoxyCompactList}\small\item\em Computes T\-C\-G2 dipoles Only guess is available (+ prec via 'precond') \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1tcg2__2_8f90_a73d800dcf4002045b5d0b08d50301b1b}{epolar1tcg2ter\-\_\-2}
+\begin{DoxyCompactList}\small\item\em Computes T\-C\-G2 dipoles Obj \-: tcg2 with peek only, preconditioner available if 'precond' is. \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1tcg2__2_8f90_ac14c35b41a5a0b5a30427df291e9975e}{epolar1tcg2quat\-\_\-2}
+\begin{DoxyCompactList}\small\item\em Computes T\-C\-G2 dipoles with N\-O refinement T\-C\-G2 with guess A\-N\-D peek-\/step, N\-O preconditioner. \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1tcg2__2_8f90_a63164484dbfb28c497dd47e738876749}{epolar1tcg2cinq\-\_\-2}
+\begin{DoxyCompactList}\small\item\em Computes T\-C\-G2 dipoles with N\-O refinement T\-C\-G2 with fastgrad, fully optimized, all options aboard. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{epolar1tcg2__2_8f90_ae4a858c79ec3ba3c1c6ebba03978211a}{\index{epolar1tcg2\-\_\-2.\-f90@{epolar1tcg2\-\_\-2.\-f90}!epolar1tcg2\-\_\-2@{epolar1tcg2\-\_\-2}}
+\index{epolar1tcg2\-\_\-2@{epolar1tcg2\-\_\-2}!epolar1tcg2_2.f90@{epolar1tcg2\-\_\-2.\-f90}}
+\subsubsection[{epolar1tcg2\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2\-\_\-2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2__2_8f90_ae4a858c79ec3ba3c1c6ebba03978211a}
+
+
+Computes T\-C\-G2 dipoles with N\-O refinement (except the preconditioner if \char`\"{}precond\char`\"{} is T\-R\-U\-E) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 20 of file epolar1tcg2\-\_\-2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), commrecdirsolv(), diagvec(), efld0\-\_\-direct(), efld0\-\_\-recip(), fftthatplz2(), scalderfieldzmat6(), scalderfieldzmatrec6(), sprod(), tmatxb\-\_\-pme(), tmatxbrecipsave(), torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1tcg2__2_8f90_ae4a858c79ec3ba3c1c6ebba03978211a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2__2_8f90_ae4a858c79ec3ba3c1c6ebba03978211a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg2__2_8f90_a445cdc4ac4f10739f7a3de9c5df4a0de}{\index{epolar1tcg2\-\_\-2.\-f90@{epolar1tcg2\-\_\-2.\-f90}!epolar1tcg2bis\-\_\-2@{epolar1tcg2bis\-\_\-2}}
+\index{epolar1tcg2bis\-\_\-2@{epolar1tcg2bis\-\_\-2}!epolar1tcg2_2.f90@{epolar1tcg2\-\_\-2.\-f90}}
+\subsubsection[{epolar1tcg2bis\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2bis\-\_\-2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2__2_8f90_a445cdc4ac4f10739f7a3de9c5df4a0de}
+
+
+Computes T\-C\-G2 dipoles Only guess is available (+ prec via 'precond') 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 529 of file epolar1tcg2\-\_\-2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), commrecdirsolv(), dbletmatxb\-\_\-pme(), diagvec(), diagvec2(), efld0\-\_\-direct(), efld0\-\_\-recip(), fftthatplz(), fftthatplz2(), scalderfieldzmat8(), scalderfieldzmatrec8(), sprod(), tmatxb\-\_\-pme(), tmatxbrecip(), tmatxbrecipsave(), torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1tcg2__2_8f90_a445cdc4ac4f10739f7a3de9c5df4a0de_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2__2_8f90_a445cdc4ac4f10739f7a3de9c5df4a0de_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg2__2_8f90_a63164484dbfb28c497dd47e738876749}{\index{epolar1tcg2\-\_\-2.\-f90@{epolar1tcg2\-\_\-2.\-f90}!epolar1tcg2cinq\-\_\-2@{epolar1tcg2cinq\-\_\-2}}
+\index{epolar1tcg2cinq\-\_\-2@{epolar1tcg2cinq\-\_\-2}!epolar1tcg2_2.f90@{epolar1tcg2\-\_\-2.\-f90}}
+\subsubsection[{epolar1tcg2cinq\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2cinq\-\_\-2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2__2_8f90_a63164484dbfb28c497dd47e738876749}
+
+
+Computes T\-C\-G2 dipoles with N\-O refinement T\-C\-G2 with fastgrad, fully optimized, all options aboard. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 2813 of file epolar1tcg2\-\_\-2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), commrecdirsolv(), dbletmatxb\-\_\-pme(), diagvec(), efld0\-\_\-direct(), efld0\-\_\-recip(), fftthatplz2(), scalderfieldzmat8(), scalderfieldzmatrec8(), sprod(), tmatxb\-\_\-pme(), tmatxbrecipsave(), torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1tcg2__2_8f90_a63164484dbfb28c497dd47e738876749_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2__2_8f90_a63164484dbfb28c497dd47e738876749_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg2__2_8f90_ac14c35b41a5a0b5a30427df291e9975e}{\index{epolar1tcg2\-\_\-2.\-f90@{epolar1tcg2\-\_\-2.\-f90}!epolar1tcg2quat\-\_\-2@{epolar1tcg2quat\-\_\-2}}
+\index{epolar1tcg2quat\-\_\-2@{epolar1tcg2quat\-\_\-2}!epolar1tcg2_2.f90@{epolar1tcg2\-\_\-2.\-f90}}
+\subsubsection[{epolar1tcg2quat\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2quat\-\_\-2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2__2_8f90_ac14c35b41a5a0b5a30427df291e9975e}
+
+
+Computes T\-C\-G2 dipoles with N\-O refinement T\-C\-G2 with guess A\-N\-D peek-\/step, N\-O preconditioner. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 2000 of file epolar1tcg2\-\_\-2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), commrecdirsolv(), dbletmatxb\-\_\-pme(), diagvec(), diagvec3(), efld0\-\_\-direct(), efld0\-\_\-recip(), fftthatplz2(), scalderfieldzmat8(), scalderfieldzmatrec8(), sprod(), tmatxb\-\_\-pme(), tmatxbrecipsave(), torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1tcg2__2_8f90_ac14c35b41a5a0b5a30427df291e9975e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2__2_8f90_ac14c35b41a5a0b5a30427df291e9975e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1tcg2__2_8f90_a73d800dcf4002045b5d0b08d50301b1b}{\index{epolar1tcg2\-\_\-2.\-f90@{epolar1tcg2\-\_\-2.\-f90}!epolar1tcg2ter\-\_\-2@{epolar1tcg2ter\-\_\-2}}
+\index{epolar1tcg2ter\-\_\-2@{epolar1tcg2ter\-\_\-2}!epolar1tcg2_2.f90@{epolar1tcg2\-\_\-2.\-f90}}
+\subsubsection[{epolar1tcg2ter\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1tcg2ter\-\_\-2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1tcg2__2_8f90_a73d800dcf4002045b5d0b08d50301b1b}
+
+
+Computes T\-C\-G2 dipoles Obj \-: tcg2 with peek only, preconditioner available if 'precond' is. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1207 of file epolar1tcg2\-\_\-2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), commrecdirsolv(), dbletmatxb\-\_\-pme(), diagvec(), diagvec3(), efld0\-\_\-direct(), efld0\-\_\-recip(), fftthatplz2(), scalderfieldzmat6(), scalderfieldzmatrec6(), sprod(), tmatxb\-\_\-pme(), tmatxbrecipsave(), torquetcg\-\_\-dir(), and torquetcg\-\_\-rec().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1tcg2__2_8f90_a73d800dcf4002045b5d0b08d50301b1b_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1tcg2__2_8f90_a73d800dcf4002045b5d0b08d50301b1b_icgraph}
+\end{center}
+\end{figure}
+
+

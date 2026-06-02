@@ -1,0 +1,64 @@
+\hypertarget{maxwell_8f90}{\section{maxwell.\-f90 File Reference}
+\label{maxwell_8f90}\index{maxwell.\-f90@{maxwell.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8 function \hyperlink{maxwell_8f90_a9b15c39195421cae3df95d1583a0d657}{maxwell} (mass, \hyperlink{temper_8f90_ae7cc510ecf8b4fd57b2a8efd58a0c7de}{temper})
+\begin{DoxyCompactList}\small\item\em returns a speed in Angstroms/picosecond randomly selected from a 3-\/\-D Maxwell-\/\-Boltzmann distribution for the specified particle mass and system temperature \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{maxwell_8f90_a9b15c39195421cae3df95d1583a0d657}{\index{maxwell.\-f90@{maxwell.\-f90}!maxwell@{maxwell}}
+\index{maxwell@{maxwell}!maxwell.f90@{maxwell.\-f90}}
+\subsubsection[{maxwell}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function maxwell (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{mass, }
+\item[{real$\ast$8}]{temper}
+\end{DoxyParamCaption}
+)}}\label{maxwell_8f90_a9b15c39195421cae3df95d1583a0d657}
+
+
+returns a speed in Angstroms/picosecond randomly selected from a 3-\/\-D Maxwell-\/\-Boltzmann distribution for the specified particle mass and system temperature 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em mass,\-:} & mass \\
+\hline
+\mbox{\tt in}  & {\em temperature,\-:} & temperature in K \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 29 of file maxwell.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann(), erfinv(), random(), and temper().
+
+
+
+Referenced by initialize\-\_\-langevin\-\_\-piston(), and mdinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{maxwell_8f90_a9b15c39195421cae3df95d1583a0d657_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{maxwell_8f90_a9b15c39195421cae3df95d1583a0d657_icgraph}
+\end{center}
+\end{figure}
+
+

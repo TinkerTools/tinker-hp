@@ -1,1 +1,0 @@
-colvarbias_abmd.o: colvarbias_abmd.cpp

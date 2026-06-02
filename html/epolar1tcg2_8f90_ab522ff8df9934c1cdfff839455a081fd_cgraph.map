@@ -1,0 +1,51 @@
+<map id="epolar1tcg2quat" name="epolar1tcg2quat">
+<area shape="rect" id="node2" href="$mpistuff_8f90.html#acc69651cda59fbbb9f85f4ed992103c2" title="deal with communications of direct dipoles " alt="" coords="213,5,310,32"/>
+<area shape="rect" id="node4" href="$mpistuff_8f90.html#a50dba030f2bb47194b1210696b79e209" title="communicate some direct fields (Newton&#39;s third law) " alt="" coords="216,1348,307,1375"/>
+<area shape="rect" id="node5" href="$mpistuff_8f90.html#a6891ab58868da4b7a79b2b654c4d2d62" title="deal with communications of dipoles for PME " alt="" coords="201,81,321,108"/>
+<area shape="rect" id="node7" href="$mpistuff_8f90.html#a40c8a6ddd87fab6ae74279d480e529f7" title="deal with communications of reciprocal fields " alt="" coords="194,132,329,159"/>
+<area shape="rect" id="node8" href="$mpistuff_8f90.html#ab2b79ef662d77d082d501656695d4d1f" title="deal with communications of reciprocal fields in the solver " alt="" coords="198,183,325,209"/>
+<area shape="rect" id="node9" href="$newinduce__shortreal_8f90.html#a38e10e399e49e4c1601a82291ddab784" title="Compute the direct space contribution to the electric field due to the current value of the induced d..." alt="" coords="195,1247,328,1273"/>
+<area shape="rect" id="node14" href="$newinduce__pme2_8f90.html#a172b83c52adea069361b25066abe9ea0" title="Performs product of vector a with polarisabilities. " alt="" coords="225,1399,298,1425"/>
+<area shape="rect" id="node15" href="$tcgstuff_8f90.html#a6a284f7e67cb89c05d74e78ed202df0c" title="diagvec3" alt="" coords="221,1449,302,1476"/>
+<area shape="rect" id="node16" href="$newinduce__pme_8f90.html#addbd31b05c25931afaca7a556c13ec79" title="Compute the direct space contribution to the permanent electric field. Also compute the &quot;p&quot; field..." alt="" coords="212,1145,311,1172"/>
+<area shape="rect" id="node23" href="$newinduce__pme_8f90.html#aa9f29ac0881536f169292ee175237cea" title="Compute the reciprocal space contribution to the electric field due to the permanent multipoles..." alt="" coords="215,436,308,463"/>
+<area shape="rect" id="node35" href="$tcgstuff_8f90.html#a9fe966fe3fbd40574bc9b419652d13a2" title="fftthatplz2" alt="" coords="217,639,306,665"/>
+<area shape="rect" id="node39" href="$scalders_8f90.html#a561c8792a0f925c93e337110eb49bce9" title="scalderfieldzmat8" alt="" coords="192,1196,331,1223"/>
+<area shape="rect" id="node40" href="$scalders_8f90.html#a8a17b1ec1d964cb09371f5c3e7ccb362" title="scalderfieldzmatrec8" alt="" coords="182,791,341,817"/>
+<area shape="rect" id="node41" href="$linalg_8f90.html#a4519f3a402e5e646e9cb5d17732df732" title="computes scalar product between two vectors " alt="" coords="429,993,488,1020"/>
+<area shape="rect" id="node42" href="$newinduce__pme_8f90.html#aef7c31d8ed9e8c7faf9036240c7a1bfd" title="Compute the direct space contribution to the electric field due to the current value of the induced d..." alt="" coords="209,1297,314,1324"/>
+<area shape="rect" id="node45" href="$tcgstuff_8f90.html#a794c752c12924c34a5a35ed71bd9acb5" title="Compute the reciprocal space contribution to the electric field due to the current value of the induc..." alt="" coords="195,512,327,539"/>
+<area shape="rect" id="node47" href="$tcgstuff_8f90.html#ae8b6f24b23c119cca1e380be87071855" title="torquetcg_dir" alt="" coords="207,943,315,969"/>
+<area shape="rect" id="node50" href="$tcgstuff_8f90.html#a28871a2190f2c03c8e36f53767276849" title="torquetcg_rec" alt="" coords="206,892,317,919"/>
+<area shape="rect" id="node3" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="641,81,693,108"/>
+<area shape="rect" id="node6" href="$linalg_8f90.html#a92c632765a18053db5815429cf5f3a8f" title="copy a vector of reals in an other one " alt="" coords="425,132,492,159"/>
+<area shape="rect" id="node10" href="$erf_8f90.html#a562bafa2a6bbcdf9d5034bb87c3a6190" title="computes a numerical approximation to the value of the complementary error function via a Chebyshev a..." alt="" coords="643,1348,690,1375"/>
+<area shape="rect" id="node12" href="$switch_8f90.html#a49f27020ffd762e86d09bbd7bbb5222e" title="sets the coeffcients used by the fifth and seventh order polynomial switching functions for spherical..." alt="" coords="427,1297,491,1324"/>
+<area shape="rect" id="node13" href="$image_8f90.html#afafb2542d1faa53dbba8933a21da60fa" title="takes the components of pairwise distance between two points in a periodic box and converts to the co..." alt="" coords="427,1247,490,1273"/>
+<area shape="rect" id="node11" href="$erf_8f90.html#a3db66269539046169e1596d5b4490fc2" title="&quot;erfcore&quot; evaluates erf(x) or erfc(x) for a real argument x; when called with mode set to 0 it return..." alt="" coords="806,1348,874,1375"/>
+<area shape="rect" id="node17" href="$pressure_8f90.html#a310e39d7ba965f458d4878c4ddd396f6" title="implements a Berendsen barostat by scaling the coordinates and box dimensions via coupling to an exte..." alt="" coords="427,1145,491,1172"/>
+<area shape="rect" id="node20" href="$damping_8f90.html#aea60b3e1f71fedad546f4c95df6edecf" title="finds coefficients for error function damping used for Ewald real space interactions ..." alt="" coords="409,1399,508,1425"/>
+<area shape="rect" id="node21" href="$damping_8f90.html#ae5b94a64d584c9369019b393bed45ba2" title="finds coefficients for the original Thole damping function used by AMOEBA or for the alternate direct..." alt="" coords="409,1095,509,1121"/>
+<area shape="rect" id="node22" href="$damping_8f90.html#a4c033f89e5c4b571ee8e5a7aa724629c" title="generates coefficients for the direct field damping function for powers of the interatomic distance ..." alt="" coords="421,1044,497,1071"/>
+<area shape="rect" id="node18" href="$classcolvarproxy__tinkerhp.html#a6c0fad6b6be3ac94b260262f5f06ce1b" title="Time step of the simulation (fs) " alt="" coords="576,943,757,969"/>
+<area shape="rect" id="node19" href="$pressure_8f90.html#a2b3badccd64da7ef9ef039b8f8822c8d" title="rescale simulation box (isotropic) " alt="" coords="617,1145,717,1172"/>
+<area shape="rect" id="node24" href="$pmestuff_8f90.html#a2c281b5e322fe3f6933feeb58f5d133e" title="finds B&#45;spline coefficients and derivatives for PME i&#45;th atomic sites along the fractional coordinate..." alt="" coords="397,284,520,311"/>
+<area shape="rect" id="node26" href="$pmestuff_8f90.html#a5efd8955803838b82fa81b021a32cf5e" title="transforms the atomic multipoles from Cartesian to fractional coordinates " alt="" coords="391,740,526,767"/>
+<area shape="rect" id="node28" href="$pmestuff_8f90.html#a4495f1975376db6546014d7ab27b9d62" title="places the i&#45;th fractional atomic multipole onto the particle mesh Ewald grid " alt="" coords="395,335,522,361"/>
+<area shape="rect" id="node30" href="$linalg_8f90.html#a96f21e274b6847b86d4f082dc8d2108c" title="computes sum of two vectors " alt="" coords="431,385,486,412"/>
+<area shape="rect" id="node31" href="$fft__mpi_8f90.html#a9e24205ee630a80792dd5d179c5f8429" title="compute forward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="401,487,516,513"/>
+<area shape="rect" id="node32" href="$fft__mpi_8f90.html#abdd07940aee4c823edb5b931186bed23" title="compute backward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="401,537,516,564"/>
+<area shape="rect" id="node33" href="$pmestuff_8f90.html#a75e54e1a670bd08b048f69a9940abe4c" title="&quot;fphi_mpole_site&quot; extracts the permanent multipole potential on the i&#45;th site from the particle mesh ..." alt="" coords="395,233,522,260"/>
+<area shape="rect" id="node34" href="$pmestuff_8f90.html#acac006e94420d1c20f607ffcc78de99d" title="transform electrostatic potential (and derivatives) from cartesian to " alt="" coords="393,639,525,665"/>
+<area shape="rect" id="node25" href="$pmestuff_8f90.html#ab60c473185b72a82ef174c5fcdf24cc7" title="&quot;bsplgen&quot; gets B&#45;spline coefficients and derivatives for a single PME atomic site along a particular ..." alt="" coords="630,284,703,311"/>
+<area shape="rect" id="node27" href="$pmestuff_8f90.html#ab3a9c64aac2f01b68893073aa3221161" title="&quot;cart_to_frac&quot; computes a transformation matrix to convert a multipole object in Cartesian coordinate..." alt="" coords="617,765,716,792"/>
+<area shape="rect" id="node29" href="$pmestuff_8f90.html#ac4aafef365cd8b32ba802ba270739607" title="modifies site bounds on the PME grid and returns an offset into the B&#45;spline coefficient arrays ..." alt="" coords="635,461,698,488"/>
+<area shape="rect" id="node36" href="$tcgstuff_8f90.html#a1263dde85bf01f8c62f8e42bb52d99df" title="cart_to_frac_vec" alt="" coords="394,791,523,817"/>
+<area shape="rect" id="node37" href="$pmestuff_8f90.html#a926f0702082531ece71364b60a89cc8e" title="places the fractional induced dipoles onto the particle mesh Ewald grid the particle mesh Ewald grid ..." alt="" coords="402,588,515,615"/>
+<area shape="rect" id="node38" href="$tcgstuff_8f90.html#a3f36c3e3c446662eb2ec5e8737829919" title="fphi_dervec_site2" alt="" coords="390,689,527,716"/>
+<area shape="rect" id="node43" href="$damping_8f90.html#a601c8ce9a4d211fbf2339130e5a0a493" title="generates coefficients for the Thole damping function for powers of the interatomic distance ..." alt="" coords="413,1500,505,1527"/>
+<area shape="rect" id="node44" href="$damping_8f90.html#a44ba65e94db9758e21b5032e4d2e6035" title="generates coefficients for the mutual field damping function for powers of the interatomic distance ..." alt="" coords="416,1449,501,1476"/>
+<area shape="rect" id="node46" href="$tcgstuff_8f90.html#aeee46c6ce00e36c7d98ae8432709e865" title="fphi_uind_big" alt="" coords="404,436,513,463"/>
+<area shape="rect" id="node48" href="$linalg_8f90.html#ac7aff19f71f4f84324d863180126cab3" title="given the index ii of a multipole, gives as output the indexes of the atoms used to define the local ..." alt="" coords="428,892,489,919"/>
+<area shape="rect" id="node49" href="$tcgstuff_8f90.html#abe3f1179d9b7849d6d4ba517b657603b" title="torque_prods" alt="" coords="405,943,512,969"/>
+</map>

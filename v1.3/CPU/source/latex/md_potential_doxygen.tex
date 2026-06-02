@@ -1,0 +1,373 @@
+Various bonded and non-\/bonded energy terms are implemented with analytical gradients in Tinker-\/\-H\-P. Parameter files associated to well established force fields such as charmm22, ambers99 or amoeba can be found in the parameters directory of the repository.
+
+Information about coupling of the G\-P\-U version of Tinker-\/\-H\-P with machine-\/learning libraries in order to run simulations leveraging machine learning potentials can be found \href{md_Deep-HP.html}{\tt here}.
+
+
+\begin{DoxyItemize}
+\item {\bfseries Bond Stretching}\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item standard bond-\/stretching wrt to an equilibrium distance, function of distances between bonded atoms.
+\item can be H\-A\-R\-M\-O\-N\-I\-C as Taylor expansion of Morse potential through the 4th power of the bond length deviation
+\item can be M\-O\-R\-S\-E or Morse potential expanded to the 4th order (M\-O\-R\-S\-E4)
+\end{DoxyItemize}
+\item keywords\-:
+\begin{DoxyItemize}
+\item B\-O\-N\-D\-T\-E\-R\-M only to restrict the potential to bond-\/stretching, none to remove all bond-\/stretching interactions
+\item B\-O\-N\-D\-T\-Y\-P\-: type of bond-\/stretching interactions, can be {\bfseries H\-A\-R\-M\-O\-N\-I\-C}, {\bfseries M\-O\-R\-S\-E} or {\bfseries M\-O\-R\-S\-E4}
+\item B\-O\-N\-D\-U\-N\-I\-T\-: conversion factor of bond stretch energy to kcal/mole
+\item B\-O\-N\-D-\/\-C\-U\-B\-I\-C\-: cubic coefficient in bond stretch potential
+\item B\-O\-N\-D-\/\-Q\-U\-A\-R\-T\-I\-C\-: quartic coefficient in bond stretch potential
+\end{DoxyItemize}
+\item files\-: \hyperlink{kbond_8f90}{kbond.\-f90}, \hyperlink{ebond_8f90}{ebond.\-f90}, \hyperlink{ebond1_8f90}{ebond1.\-f90}, \hyperlink{ebond3_8f90}{ebond3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Angle Bending}\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item standard angle-\/bending wrt to an equilibrium angle, function of angles between bonded atoms.
+\item can be in-\/plane, or not. For in-\/plane, can be harmonic, linear, fourier or gaussian
+\end{DoxyItemize}
+\item keywords\-:
+\begin{DoxyItemize}
+\item A\-N\-G\-L\-E\-T\-E\-R\-M only to restrict the potential to angle-\/bending, none to remove all angle-\/bending interactions
+\item A\-N\-G\-L\-E\-U\-N\-I\-T\-: conversion factor of angle bending energy to kcal/mole
+\item A\-N\-G\-L\-E-\/\-C\-U\-B\-I\-C\-: cubic coefficient in angle bending potential
+\item A\-N\-G\-L\-E-\/\-Q\-U\-A\-R\-T\-I\-C\-: quartic coefficient in angle bending potential
+\item A\-N\-G\-L\-E-\/\-P\-E\-N\-T\-I\-C\-: pentic coefficient in angle bending potential
+\item A\-N\-G\-L\-E-\/\-S\-E\-X\-T\-I\-C\-: sextic coefficient in angle bending potential
+\end{DoxyItemize}
+\item files\-: \hyperlink{kangle_8f90}{kangle.\-f90}, \hyperlink{eangle_8f90}{eangle.\-f90}, \hyperlink{eangle1_8f90}{eangle1.\-f90}, \hyperlink{eangle3_8f90}{eangle3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Stretch-\/\-Bending}\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item given 3 bonded atoms, coupling between the harmonic energy of the distances wrt to their equilibrium and the harmonic energy of the angle wrt to its equilibrium
+\end{DoxyItemize}
+\item keywords\-:
+\begin{DoxyItemize}
+\item S\-T\-R\-B\-N\-D\-T\-E\-R\-M only to restrict the potential to strech-\/bend coupling, none to remove all the associated interactions
+\item S\-T\-R\-B\-N\-D\-U\-N\-I\-T\-: conversion factor of stretch bending energy to kcal/mole
+\end{DoxyItemize}
+\item files\-: \hyperlink{kstrbnd_8f90}{kstrbnd.\-f90}, \hyperlink{estrbnd_8f90}{estrbnd.\-f90}, \hyperlink{estrbnd1_8f90}{estrbnd1.\-f90}, \hyperlink{estrbnd3_8f90}{estrbnd3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Urey-\/\-Bradley}\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item standard Urey-\/\-Bradley term, potential on distances between outer atoms of bonded angles
+\item can be repulsive (exponential), quartic or harmonic with taylor expansion up to quartic
+\end{DoxyItemize}
+\item keywords
+\begin{DoxyItemize}
+\item U\-R\-E\-Y\-T\-E\-R\-M only to restrict the potential to urey-\/bradley, none to remove all urey-\/bradley interactions
+\item U\-R\-E\-Y\-U\-N\-I\-T\-: conversion factor of Urey-\/\-Bradley energy to kcal/mole
+\item U\-R\-E\-Y-\/\-C\-U\-B\-I\-C\-: cubic coefficient in Urey-\/\-Bradley potential
+\item U\-R\-E\-Y-\/\-Q\-U\-A\-R\-T\-I\-C\-: quartic coefficient in Urey-\/\-Bradley potential
+\end{DoxyItemize}
+\item files\-: \hyperlink{kurey_8f90}{kurey.\-f90}, \hyperlink{eurey_8f90}{eurey.\-f90}, \hyperlink{eurey1_8f90}{eurey1.\-f90}, \hyperlink{eurey3_8f90}{eurey3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Angle-\/\-Angle}\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item given two angles, coupling between harmonic energy of angles wrt to their equilibrium
+\end{DoxyItemize}
+\item keywords\-:
+\begin{DoxyItemize}
+\item A\-N\-G\-A\-N\-G\-T\-E\-R\-M\-: only to restrict the potential to angle-\/angle coupling, none to remove all the associated interactions
+\item A\-N\-G\-A\-N\-G\-U\-N\-I\-T\-: conversion factor of angle-\/angle energy to kcal/mole
+\end{DoxyItemize}
+\item files\-: \hyperlink{kangang_8f90}{kangang.\-f90}, \hyperlink{eangang_8f90}{eangang.\-f90}, \hyperlink{eangang3_8f90}{eangang3.\-f90}, \hyperlink{eangang1_8f90}{eangang1.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Out-\/of-\/plane bending}\-:
+\begin{DoxyItemize}
+\item description\-:
+\begin{DoxyItemize}
+\item out-\/of-\/plane bend at trigonal centers via Wilson-\/\-Decius-\/\-Cross or Allinger angles
+\end{DoxyItemize}
+\item keywords\-:
+\begin{DoxyItemize}
+\item O\-P\-B\-E\-N\-D\-T\-E\-R\-M\-: only to restrict the potential to angle-\/angle coupling, none to remove all the associated interactions
+\item O\-P\-B\-E\-N\-D\-T\-Y\-P\-E\-: type of out-\/of-\/plane bending, can be {\bfseries W-\/\-D-\/\-C} or {\bfseries A\-L\-L\-I\-N\-G\-E\-R}
+\item O\-P\-B\-E\-N\-D\-U\-N\-I\-T\-: conversion of out-\/of-\/plane bending energy to kcal/mole
+\item O\-P\-B\-E\-N\-D-\/\-C\-U\-B\-I\-C\-: cubic coefficient in out-\/of-\/plane bending potential
+\item O\-P\-B\-E\-N\-D-\/\-Q\-U\-A\-R\-T\-I\-C\-: quartic coefficient in out-\/of-\/plane bending potential
+\item O\-P\-B\-E\-N\-D-\/\-P\-E\-N\-T\-I\-C\-: pentic coefficient in out-\/of-\/plane bending potential
+\item O\-P\-B\-E\-N\-D-\/\-S\-E\-X\-T\-I\-C\-: sextic coefficient in out-\/of-\/plane bending potential
+\end{DoxyItemize}
+\item files\-: \hyperlink{kopbend_8f90}{kopbend.\-f90}, \hyperlink{eopbend_8f90}{eopbend.\-f90}, \hyperlink{eopbend1_8f90}{eopbend1.\-f90}, \hyperlink{eopbend3_8f90}{eopbend3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Out-\/of-\/plane distance}\-:
+\begin{DoxyItemize}
+\item description\-: potential at trigonal center via the central atom height
+\item keywords\-:
+\begin{DoxyItemize}
+\item O\-P\-D\-I\-S\-T\-T\-E\-R\-M only to restrict the potential to out-\/of-\/plane distance coupling, none to remove all the associated interactions
+\item O\-P\-D\-I\-S\-T\-U\-N\-I\-T\-: conversion of out-\/of-\/plane distance potential to kcal/mole
+\item O\-P\-D\-I\-S\-T-\/\-C\-U\-B\-I\-C\-: cubic coefficient in out-\/of-\/plane-\/distance potential
+\item O\-P\-D\-I\-S\-T-\/\-Q\-U\-A\-R\-T\-I\-C\-: quartic coefficient in out-\/of-\/plane-\/distance potential
+\item O\-P\-D\-I\-S\-T-\/\-P\-E\-N\-T\-I\-C\-: pentic coefficient in out-\/of-\/plane-\/distance potential
+\item O\-P\-D\-I\-S\-T-\/\-S\-E\-X\-T\-I\-C\-: sextic coefficient in out-\/of-\/plane-\/distance potential
+\end{DoxyItemize}
+\end{DoxyItemize}
+\item {\bfseries Improper Dihedral}\-:
+\begin{DoxyItemize}
+\item description\-: standard harmonic potential on improper dihedrals
+\item keywords\-:
+\begin{DoxyItemize}
+\item I\-M\-P\-R\-O\-P\-T\-E\-R\-M\-: only to restrict the potential to improper dihedral term, none to remove all the associated interactions
+\item I\-M\-P\-R\-O\-P\-U\-N\-I\-T\-: conversion factor of improper dihedrals energy to kcal/mole
+\end{DoxyItemize}
+\item files\-: \hyperlink{kimprop_8f90}{kimprop.\-f90}, \hyperlink{eimprop_8f90}{eimprop.\-f90}, \hyperlink{eimprop1_8f90}{eimprop1.\-f90}, \hyperlink{eimprop3_8f90}{eimprop3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Improper Torsion}\-:
+\begin{DoxyItemize}
+\item description\-: periodic improper torsion potential
+\item keywords\-: -\/\-I\-M\-P\-T\-O\-R\-T\-E\-R\-M\-: only to restrict the potential to improper torsion term, none to remove all the associated interactions
+
+-\/\-I\-M\-P\-T\-O\-R\-U\-N\-I\-T\-: conversion factor of improper torsions energy to kcal/mole
+\item files\-: \hyperlink{kimptor_8f90}{kimptor.\-f90}, \hyperlink{eimptor_8f90}{eimptor.\-f90}, \hyperlink{eimptor1_8f90}{eimptor1.\-f90}, \hyperlink{eimptor3_8f90}{eimptor3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Torsions}\-:
+\begin{DoxyItemize}
+\item standard periodic torsion potential
+\item keywords\-:
+\begin{DoxyItemize}
+\item T\-O\-R\-S\-I\-O\-N\-T\-E\-R\-M\-: only to restrict the potential to torsion term, none to remove all the associated interactions
+\item T\-O\-R\-S\-I\-O\-N\-U\-N\-I\-T\-: conversion factor of torsion energy to kcal/mole
+\end{DoxyItemize}
+\item files\-: \hyperlink{torsions_8f90}{torsions.\-f90}, \hyperlink{ktors_8f90}{ktors.\-f90}, \hyperlink{etors_8f90}{etors.\-f90}, \hyperlink{etors1_8f90}{etors1.\-f90}, \hyperlink{etors3_8f90}{etors3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Pi-\/\-Torsions}\-:
+\begin{DoxyItemize}
+\item description\-: Pi-\/\-Orbital torsion potential
+\item keywords\-:
+\begin{DoxyItemize}
+\item P\-I\-T\-O\-R\-S\-T\-E\-R\-M\-: only to restrict the potential to Pi-\/torsion term, none to remove all the associated interactions
+\item P\-I\-T\-O\-R\-S\-U\-N\-I\-T\-: conversion factor of Pi-\/torsion energy to kcal/mole
+\end{DoxyItemize}
+\item files\-: \hyperlink{kpitors_8f90}{kpitors.\-f90}, \hyperlink{epitors_8f90}{epitors.\-f90}, \hyperlink{epitors1_8f90}{epitors1.\-f90}, \hyperlink{epitors3_8f90}{epitors3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Strech-\/\-Torsion}\-:
+\begin{DoxyItemize}
+\item description\-: given 4 atoms involved in a torsion, Stretch-\/\-Torsion coupling between the first distance and the torsion
+\item keywords\-:
+\begin{DoxyItemize}
+\item S\-T\-R\-T\-O\-R\-T\-E\-R\-M\-: only to restrict the potential to Stretch-\/torsion term, none to remove all the associated interactions
+\item S\-T\-R\-T\-O\-R\-U\-N\-I\-T\-: conversion factor of stretch-\/torsion energy to kcal/mole
+\end{DoxyItemize}
+\item files\-: \hyperlink{kstrtor_8f90}{kstrtor.\-f90}, \hyperlink{estrtor_8f90}{estrtor.\-f90}, \hyperlink{estrtor1_8f90}{estrtor1.\-f90}, \hyperlink{estrtor3_8f90}{estrtor3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Angle-\/\-Torsion}\-:
+\begin{DoxyItemize}
+\item description\-: given 4 atoms involved in a torsion, Angle-\/\-Torsion coupling between the first angle and the torsion
+\item keywords\-: -\/\-A\-N\-G\-T\-O\-R\-T\-E\-R\-M\-: only to restrict the potential to angle-\/torsion term, none to remove all the associated interactions -\/\-A\-N\-G\-T\-O\-R\-U\-N\-I\-T\-: conversion factor of angle-\/torsion energy to kcal/mole
+\item files\-: \hyperlink{kangtor_8f90}{kangtor.\-f90}, \hyperlink{eangtor_8f90}{eangtor.\-f90}, \hyperlink{eangtor1_8f90}{eangtor1.\-f90}, \hyperlink{eangtor3_8f90}{eangtor3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Torsion-\/\-Torsion}\-:
+\begin{DoxyItemize}
+\item description\-: coupling between two torsions
+\item keywords\-:
+\begin{DoxyItemize}
+\item T\-O\-R\-T\-O\-R\-T\-E\-R\-M\-: only to restrict the potential to torsion-\/torsion term, none to remove all the associated interactions
+\item T\-O\-R\-T\-O\-R\-U\-N\-I\-T\-: conversion factor of torsion-\/torsion energy to kcal/mole
+\end{DoxyItemize}
+\item files\-: \hyperlink{ktortor_8f90}{ktortor.\-f90}, \hyperlink{etortor_8f90}{etortor.\-f90}, \hyperlink{etortor1_8f90}{etortor1.\-f90}, \hyperlink{etortor3_8f90}{etortor3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Lennard-\/\-Jones}\-:
+\begin{DoxyItemize}
+\item description\-: standard 6-\/12 Lennard-\/\-Jones van der Waals energy
+\item keywords\-:
+\begin{DoxyItemize}
+\item V\-D\-W\-T\-E\-R\-M\-: only to restrict the potential to van der Waals term, none to remove all the associated interactions
+\item V\-D\-W\-T\-Y\-P\-: type of van der Waals interactions, can be {\bfseries L\-E\-N\-N\-A\-R\-D-\/\-J\-O\-N\-E\-S} or {\bfseries B\-U\-F\-F\-E\-R\-E\-D-\/14-\/7} (Halgren)
+\item R\-A\-D\-I\-U\-S\-T\-Y\-P\-E\-: type of radius for L\-J interactions, can be {\bfseries S\-I\-G\-M\-A} or {\bfseries R-\/\-M\-I\-N} (default)
+\item R\-A\-D\-I\-U\-S\-S\-I\-Z\-E\-: size of radius for L\-J interactions, can be {\bfseries D\-I\-A\-M\-T\-E\-R} or {\bfseries R\-A\-D\-I\-U\-S} (default)
+\item R\-A\-D\-I\-U\-S\-R\-U\-L\-E\-: combination rule for radius, can be {\bfseries A\-R\-I\-T\-H\-M\-E\-T\-I\-C} (default), {\bfseries G\-E\-O\-M\-E\-T\-R\-I\-C} or {\bfseries C\-U\-B\-I\-C-\/\-M\-E\-A\-N}
+\item E\-P\-S\-I\-L\-O\-N\-R\-U\-L\-E\-: combination rule for epsilon, can be {\bfseries A\-R\-I\-T\-H\-M\-E\-T\-I\-C}, {\bfseries G\-E\-O\-M\-E\-T\-R\-I\-C} (default), {\bfseries H\-A\-R\-M\-O\-N\-I\-C}, {\bfseries H\-H\-G} or {\bfseries W\-H}
+\item V\-D\-W-\/12-\/\-S\-C\-A\-L\-E\-: scaling factor for van der Waals interactions between 1-\/2 connected atoms (default 0)
+\item V\-D\-W-\/13-\/\-S\-C\-A\-L\-E\-: scaling factor for van der Waals interactions between 1-\/3 connected atoms (default 0)
+\item V\-D\-W-\/14-\/\-S\-C\-A\-L\-E\-: scaling factor for van der Waals interactions between 1-\/4 connected atoms (default 1)
+\item V\-D\-W-\/15-\/\-S\-C\-A\-L\-E\-: scaling factor for van der Waals interactions between 1-\/5 connected atoms (default 1)
+\item V\-D\-W-\/\-C\-O\-R\-R\-E\-C\-T\-I\-O\-N\-: apply long range van der Waals correction
+\item V\-D\-W-\/\-T\-A\-P\-E\-R\-: proportion of the cutoff after which to apply tapering for van der Waals interactions (default 0.\-9)
+\item V\-D\-W-\/\-C\-U\-T\-O\-F\-F\-: cutoff for van der Waals interactions (default 9 Angstroms)
+\item V\-D\-W\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: cutoff for short range van der Waals interactions (default 7 Angstroms)
+\end{DoxyItemize}
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+files\-: \hyperlink{kvdw_8f90}{kvdw.\-f90}, \hyperlink{elj_8f90}{elj.\-f90}, \hyperlink{elj1_8f90}{elj1.\-f90}, \hyperlink{elj3_8f90}{elj3.\-f90}
+
+
+\begin{DoxyItemize}
+\item {\bfseries Halgren}\-:
+\begin{DoxyItemize}
+\item description\-: buffered 7-\/14 Halgren van der Waals energy
+\item keywords\-:
+\begin{DoxyItemize}
+\item V\-D\-W\-T\-E\-R\-M\-: only to restrict the potential to van der Waals term, none to remove all the associated interactions
+\item G\-A\-M\-M\-A-\/\-H\-A\-L\-G\-R\-E\-N\-: gamma parameter for Halgren potential (default 0.\-12, A\-M\-O\-E\-B\-A force field value)
+\item D\-E\-L\-T\-A-\/\-H\-A\-L\-G\-R\-E\-N\-: delta parameter for Halgren potential (defulat 0.\-07, A\-M\-O\-E\-B\-A force field value)
+\item V\-D\-W-\/12-\/\-S\-C\-A\-L\-E\-: same as L-\/\-J
+\item V\-D\-W-\/13-\/\-S\-C\-A\-L\-E\-: same as L-\/\-J
+\item V\-D\-W-\/14-\/\-S\-C\-A\-L\-E\-: same as L-\/\-J
+\item V\-D\-W-\/15-\/\-S\-C\-A\-L\-E\-: same as L-\/\-J
+\item V\-D\-W-\/\-C\-O\-R\-R\-E\-C\-T\-I\-O\-N\-: same as L-\/\-J
+\item V\-D\-W-\/\-T\-A\-P\-E\-R\-: same as L-\/\-J
+\item V\-D\-W-\/\-C\-U\-T\-O\-F\-F\-: same as L-\/\-J
+\item V\-D\-W\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: same as L-\/\-J
+\end{DoxyItemize}
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+files\-: \hyperlink{kvdw_8f90}{kvdw.\-f90}, \hyperlink{ehal_8f90}{ehal.\-f90}, \hyperlink{ehal1_8f90}{ehal1.\-f90}, \hyperlink{ehal3_8f90}{ehal3.\-f90}
+
+
+\begin{DoxyItemize}
+\item {\bfseries Repulsion}\-:
+\begin{DoxyItemize}
+\item description\-: 'classical' Pauli repulsion energy based on multipolar expansion
+\item keywords\-:
+\begin{DoxyItemize}
+\item R\-E\-P\-U\-L\-S\-I\-O\-N\-T\-E\-R\-M\-: only to restrict the potential to repulsion term, none to remove all the associated interactions
+\item R\-E\-P-\/12-\/\-S\-C\-A\-L\-E\-: scaling factor for repulsion interactions between 1-\/2 connected atoms
+\item R\-E\-P-\/13-\/\-S\-C\-A\-L\-E\-: scaling factor for repulsion interactions between 1-\/3 connected atoms
+\item R\-E\-P-\/14-\/\-S\-C\-A\-L\-E\-: scaling factor for repulsion interactions between 1-\/4 connected atoms
+\item R\-E\-P-\/15-\/\-S\-C\-A\-L\-E\-: scaling factor for repulsion interactions between 1-\/5 connected atoms
+\item R\-E\-P\-U\-L\-S-\/\-T\-A\-P\-E\-R\-: proportion of the cutoff after which to apply tapering for repulsion interactions (default 0.\-9)
+\item R\-E\-P\-U\-L\-S-\/\-C\-U\-T\-O\-F\-F\-: cutoff for repulsion interactions (default 9 Angstroms)
+\item R\-E\-P\-U\-L\-S\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: cutoff for short range repulsion interactions (default 7 Angstroms)
+\end{DoxyItemize}
+\item files\-: \hyperlink{krepel_8f90}{krepel.\-f90}, \hyperlink{erepel_8f90}{erepel.\-f90}, \hyperlink{erepel1_8f90}{erepel1.\-f90}, \hyperlink{erepel3_8f90}{erepel3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Dispersion}\-:
+\begin{DoxyItemize}
+\item description\-: damped dispersion energy
+\item keywords\-:
+\begin{DoxyItemize}
+\item D\-I\-S\-P\-T\-E\-R\-M\-: only to restrict the potential to dispersion term, none to remove all the associated interactions
+\item D\-I\-S\-P-\/\-T\-A\-P\-E\-R\-: proportion of the cutoff after which to apply tapering for dispersion interactions (default 0.\-9)
+\item D\-I\-S\-P-\/\-C\-U\-T\-O\-F\-F\-: cutoff for dispersion interactions (default 9 Angstroms)
+\item D\-I\-S\-P\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: cutoff for short-\/range dispersion interactions (default 7 Angstroms)
+\end{DoxyItemize}
+\item files\-: \hyperlink{kdisp_8f90}{kdisp.\-f90}, \hyperlink{edisp_8f90}{edisp.\-f90}, \hyperlink{edisp1_8f90}{edisp1.\-f90}, \hyperlink{edisp3_8f90}{edisp3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Charge}\-:
+\begin{DoxyItemize}
+\item description\-: charge-\/charge permanent electrostatics, only S\-P\-M\-E available
+\item keywords\-:
+\begin{DoxyItemize}
+\item C\-H\-A\-R\-G\-E\-T\-E\-R\-M\-: only to restrict the potential to charge term, none to remove all the associated interactions
+\item E\-L\-E\-C\-T\-R\-I\-C\-: energy factor in kcal/mol for current force field
+\item D\-I\-E\-L\-E\-C\-T\-R\-I\-C\-: dielectric constant for electrostatic interactions
+\item C\-H\-G-\/12-\/\-S\-C\-A\-L\-E\-: scaling factor for charge interactions between 1-\/2 connected atoms
+\item C\-H\-G-\/13-\/\-S\-C\-A\-L\-E\-: scaling factor for charge interactions between 1-\/3 connected atoms
+\item C\-H\-G-\/14-\/\-S\-C\-A\-L\-E\-: scaling factor for charge interactions between 1-\/4 connected atoms
+\item C\-H\-G-\/15-\/\-S\-C\-A\-L\-E\-: scaling factor for charge interactions between 1-\/5 connected atoms
+\item C\-H\-G-\/\-C\-U\-T\-O\-F\-F\-: cutoff for charge interactions (default 7 Angstroms with P\-M\-E)
+\item C\-H\-G\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: cutoff for short-\/range charge interactions (default 5 Angstroms)
+\end{DoxyItemize}
+\end{DoxyItemize}
+\item {\bfseries Multipole}\-:
+\begin{DoxyItemize}
+\item description\-: multipole-\/multipole (up to quadrupoles) permanent electrostatics, only S\-P\-M\-E available
+\item keywords\-:
+\begin{DoxyItemize}
+\item M\-U\-L\-T\-I\-P\-O\-L\-E\-T\-E\-R\-M\-: only to restrict the potential to multipole term, none to remove all the associated interactions
+\item M\-P\-O\-L\-E\-T\-E\-R\-M\-: same as 'M\-U\-L\-T\-I\-P\-O\-L\-E\-T\-E\-R\-M'
+\item E\-L\-E\-C\-T\-R\-I\-C\-: energy factor in kcal/mol for current force field
+\item D\-I\-E\-L\-E\-C\-T\-R\-I\-C\-: dielectric constant for electrostatic interactions
+\item P\-E\-N\-E\-T\-R\-A\-T\-I\-O\-N\-: type of charge-\/penetration, can be 'N\-O\-N\-E', 'G\-O\-R\-D\-O\-N1' or 'G\-O\-R\-D\-O\-N2'
+\item M\-P\-O\-L\-E-\/12-\/\-S\-C\-A\-L\-E\-: scaling factor for multipole interactions between 1-\/2 connected atoms
+\item M\-P\-O\-L\-E-\/13-\/\-S\-C\-A\-L\-E\-: scaling factor for multipole interactions between 1-\/3 connected atoms
+\item M\-P\-O\-L\-E-\/14-\/\-S\-C\-A\-L\-E\-: scaling factor for multipole interactions between 1-\/4 connected atoms
+\item M\-P\-O\-L\-E-\/15-\/\-S\-C\-A\-L\-E\-: scaling factor for multipole interactions between 1-\/5 connected atoms
+\item M\-P\-O\-L\-E-\/\-C\-U\-T\-O\-F\-F\-: cutoff for mulipole interactions (with P\-M\-E, default 7 Angstroms)
+\item M\-P\-O\-L\-E\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: cutoff for short-\/range multipole interactions (default 5 Angstroms)
+\end{DoxyItemize}
+\end{DoxyItemize}
+\item {\bfseries Polarization}\-:
+\begin{DoxyItemize}
+\item description\-: polarization through induced dipoles
+\item keywords\-:
+\begin{DoxyItemize}
+\item P\-O\-L\-A\-R\-I\-Z\-E\-T\-E\-R\-M\-: only to restrict the potential to polarization term, none to remove all the associated interactions
+\item P\-O\-L\-A\-R-\/12-\/\-S\-C\-A\-L\-E\-: scaling factor for permanent electric fields of polarization between 1-\/2 connected atoms (scaling factor for 'p' permanent electric field, 'p-\/induced dipoles')
+\item P\-O\-L\-A\-R-\/13-\/\-S\-C\-A\-L\-E\-: scaling factor for permanent electric fields of polarization between 1-\/3 connected atoms (scaling factor for 'p' permanent electric field, 'p-\/induced dipoles')
+\item P\-O\-L\-A\-R-\/14-\/\-S\-C\-A\-L\-E\-: scaling factor for permanent electric fields of polarization between 1-\/4 connected atoms (scaling factor for 'p' permanent electric field, 'p-\/induced dipoles')
+\item P\-O\-L\-A\-R-\/15-\/\-S\-C\-A\-L\-E\-: scaling factor for permanent electric fields of polarization between 1-\/5 connected atoms (scaling factor for 'p' permanent electric field, 'p-\/induced dipoles')
+\item P\-O\-L\-A\-R-\/12-\/\-I\-N\-T\-R\-A\-: scaling factor for permanent electric fields of polarization between 1-\/2 connected atoms (scaling factor for 'p' permanent electric field, 'p-\/induced dipoles'), within polarization group
+\item P\-O\-L\-A\-R-\/13-\/\-I\-N\-T\-R\-A\-: scaling factor for permanent electric fields of polarization between 1-\/3 connected atoms (scaling factor for 'p' permanent electric field, 'p-\/induced dipoles'), within polarization group
+\item P\-O\-L\-A\-R-\/14-\/\-I\-N\-T\-R\-A\-: scaling factor for permanent electric fields of polarization between 1-\/4 connected atoms (scaling factor for 'p' permanent electric field, 'p-\/induced dipoles'), within polarization group
+\item P\-O\-L\-A\-R-\/15-\/\-I\-N\-T\-R\-A\-: scaling factor for permanent electric fields of polarization between 1-\/5 connected atoms (scaling factor for 'p' permanent electric field, 'p-\/induced dipoles'), within polarization group
+\item D\-I\-R\-E\-C\-T-\/11-\/\-S\-C\-A\-L\-E\-: scaling factor for permanent electric fields of polarization between 1-\/2 connected atoms (scaling factor for 'd' permanent electric field, 'd-\/induced dipoles')
+\item D\-I\-R\-E\-C\-T-\/12-\/\-S\-C\-A\-L\-E\-: scaling factor for permanent electric fields of polarization between 1-\/3 connected atoms (scaling factor for 'd' permanent electric field, 'd-\/induced dipoles')
+\item D\-I\-R\-E\-C\-T-\/13-\/\-S\-C\-A\-L\-E\-: scaling factor for permanent electric fields of polarization between 1-\/4 connected atoms (scaling factor for 'd' permanent electric field, 'd-\/induced dipoles')
+\item D\-I\-R\-E\-C\-T-\/14-\/\-S\-C\-A\-L\-E\-: scaling factor for permanent electric fields of polarization between 1-\/5 connected atoms (scaling factor for 'd' permanent electric field, 'd-\/induced dipoles')
+\item M\-U\-T\-U\-A\-L-\/11-\/\-S\-C\-A\-L\-E\-: scaling factor for electric fields of current induced dipoles between 1-\/2 connected atoms
+\item M\-U\-T\-U\-A\-L-\/12-\/\-S\-C\-A\-L\-E\-: scaling factor for electric fields of current induced dipoles between 1-\/3 connected atoms
+\item M\-U\-T\-U\-A\-L-\/13-\/\-S\-C\-A\-L\-E\-: scaling factor for electric fields of current induced dipoles between 1-\/4 connected atoms
+\item M\-U\-T\-U\-A\-L-\/14-\/\-S\-C\-A\-L\-E\-: scaling factor for electric fields of current induced dipoles between 1-\/5 connected atoms
+\item I\-N\-D\-U\-C\-E-\/12-\/\-S\-C\-A\-L\-E\-: scaling factor for electric fields of current induced dipoles between 1-\/2 connected atoms, with charge penetration
+\item I\-N\-D\-U\-C\-E-\/13-\/\-S\-C\-A\-L\-E\-: scaling factor for electric fields of current induced dipoles between 1-\/3 connected atoms, with charge penetration
+\item I\-N\-D\-U\-C\-E-\/14-\/\-S\-C\-A\-L\-E\-: scaling factor for electric fields of current induced dipoles between 1-\/4 connected atoms, with charge penetration
+\item I\-N\-D\-U\-C\-E-\/15-\/\-S\-C\-A\-L\-E\-: scaling factor for electric fields of current induced dipoles between 1-\/5 connected atoms, with charge penetration
+\item P\-O\-L\-A\-R-\/\-A\-L\-G\-: iterative algorithm to solve the polarization equations, 1\-: P\-C\-G (default), 2\-: Jacobi/\-D\-I\-I\-S, 3\-: T\-C\-G, 5\-: D\-C-\/\-Jacobi/\-D\-I\-I\-S
+\item P\-O\-L\-A\-R-\/\-A\-L\-G\-S\-H\-O\-R\-T\-: iterative algorithm to solve the short-\/range polarization equations, 1\-: P\-C\-G (default), 2\-: Jacobi/\-D\-I\-I\-S, 3\-: T\-C\-G, 5\-: D\-C-\/\-Jacobi/\-D\-I\-I\-S
+\item P\-O\-L\-A\-R-\/\-E\-P\-S\-: convergence threshold for polarization equations
+\item P\-O\-L\-A\-R-\/\-P\-R\-T\-: printing level of the polarization solver
+\item T\-C\-G\-O\-R\-D\-E\-R\-: order of T\-C\-G (default 2)
+\item T\-C\-G\-G\-U\-E\-S\-S\-: direct guess for T\-C\-G (default 0, false)
+\item T\-C\-G\-P\-E\-E\-K\-: peek step for T\-C\-G (default 1, true)
+\end{DoxyItemize}
+\end{DoxyItemize}
+\item {\bfseries Charge-\/\-Transfer}\-:
+\begin{DoxyItemize}
+\item description\-: exponential-\/based charge transfer between multipole sites
+\item keywords\-:
+\begin{DoxyItemize}
+\item C\-H\-G\-T\-R\-N\-T\-E\-R\-M\-: only to restrict the potential to charge-\/transfer term, none to remove all the associated interactions
+\item C\-H\-G\-T\-R\-N-\/\-C\-U\-T\-O\-F\-F\-: cutoff for charge-\/transfer interactions
+\item C\-H\-G\-T\-R\-N\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: cutoff for short-\/range charge-\/transfer interactions
+\end{DoxyItemize}
+\end{DoxyItemize}
+\item {\bfseries Restraints}\-:
+\begin{DoxyItemize}
+\item description\-: harmonic restraints on various geometric quantities (positions of atoms, distances between atoms...). Note that a wide variety of harmonic restraints can be designed through the Colvars interface when this library is linked with Tinker-\/\-H\-P.
+\item keywords\-:
+\begin{DoxyItemize}
+\item R\-E\-S\-T\-R\-A\-I\-N\-T\-E\-R\-M\-: only to restrict the potential to geometrical restrain term, none to remove all the associated interactions
+\item R\-E\-S\-T\-R\-A\-I\-N-\/\-P\-O\-S\-I\-T\-I\-O\-N\-: positional restraints, takes an atom or a list of atoms (-\/a b for a list of atoms between index a and b) as an argument. Without further indication the atoms are restrained to their original position with a force constant of 100 kcal/mol/\-A$\ast$$\ast$2
+\item R\-E\-S\-T\-R\-A\-I\-N-\/\-B\-A\-C\-K\-B\-O\-N\-E\-: restrain all atoms whose name is 'C\-A' to their original position with a force constant of 100 kcal/mol/\-A$\ast$$\ast$2
+\item R\-E\-S\-T\-R\-A\-I\-N-\/\-D\-I\-S\-T\-A\-N\-C\-E\-: takes to atom indexes as an argument and 2 values, the first is the value of the spring constant in kcal/mol/\-A$\ast$$\ast$2 and the other is the distances after which a flat bottom harmonic restraint starts
+\item R\-E\-S\-T\-R\-A\-I\-N-\/\-A\-N\-G\-L\-E\-: takes 3 atom indexes defining an angle as an argument and 2 values, same logic as for distances
+\item R\-E\-S\-T\-R\-A\-I\-N-\/\-T\-O\-R\-S\-I\-O\-N\-: takes 4 atom indexes defining a dihedral as an argument and 2 values, same logic as for distances
+\end{DoxyItemize}
+\item files\-: \hyperlink{kgeom_8f90}{kgeom.\-f90}, \hyperlink{egeom_8f90}{egeom.\-f90}, \hyperlink{egeom1_8f90}{egeom1.\-f90}, \hyperlink{egeom3_8f90}{egeom3.\-f90}
+\end{DoxyItemize}
+\item {\bfseries Long-\/range electrostatics with Smooth Particle Mesh Ewald}\-:
+\begin{DoxyItemize}
+\item description\-: Tinker-\/\-H\-P only handles Periodic Boundary Conditions where electrostatics interactions are handled through Smooth Particle-\/\-Mesh Ewald. This concerns charge-\/charge and multipole-\/multipole interactions as well as polarization and dispersion with ewald summation. Long-\/range intercations require 3d-\/fft computations that are handled in parallel within the 2decomp\-\_\-fft library.
+\item keywords\-:
+\begin{DoxyItemize}
+\item E\-W\-A\-L\-D\-: use ewald summation for electrostatics (only option available to deal with electrostatics)
+\item E\-W\-A\-L\-D-\/\-C\-U\-T\-O\-F\-F\-: cutoff for real space Ewald (default 7 Angstroms)
+\item E\-W\-A\-L\-D-\/\-A\-L\-P\-H\-A\-: alpha parameter for Ewald summation, default corresponds to an error of 10d-\/8 for real space with the real space cutoff
+\item E\-W\-A\-L\-D\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: cutoff for short range real space Ewald (default 5 Angstroms)
+\item E\-W\-A\-L\-D-\/\-B\-O\-U\-N\-D\-A\-R\-Y\-: type of boundary for Ewald summation, can be 'T\-I\-N\-F\-O\-I\-L' (default) or 'V\-A\-C\-U\-U\-M'
+\item P\-M\-E-\/\-G\-R\-I\-D\-: number of points in each axis of the 3d P\-M\-E grid, chosen by default so that the density of the grid corresponds to a low error of Ewald summation with a 7 Angstroms real space cutoff
+\item P\-M\-E-\/\-O\-R\-D\-E\-R\-: order of the splines for reciprocal part of Ewald summation with S\-P\-M\-E, default 5
+\item D\-E\-W\-A\-L\-D\-: use ewald summation for dispersion
+\item D\-E\-W\-A\-L\-D-\/\-C\-U\-T\-O\-F\-F\-: cutoff for real space ewald summation for dispersion
+\item D\-E\-W\-A\-L\-D\-S\-H\-O\-R\-T-\/\-C\-U\-T\-O\-F\-F\-: cutoff for short-\/range real space ewald summation for dispersion
+\item D\-E\-W\-A\-L\-D-\/\-A\-L\-P\-H\-A\-: alpha parameter for Ewald summation for dispersion
+\item D\-P\-M\-E-\/\-G\-R\-I\-D\-: same as P\-M\-E-\/\-G\-R\-I\-D but for dispersion
+\item D\-P\-M\-E-\/\-O\-R\-D\-E\-R\-: same as P\-M\-E-\/\-O\-R\-D\-E\-R but for dispersion
+\end{DoxyItemize}
+\item files\-: \hyperlink{kewald_8f90}{kewald.\-f90}, \hyperlink{pmestuff_8f90}{pmestuff.\-f90}, \hyperlink{fft__mpi_8f90}{fft\-\_\-mpi.\-f90}, 2decomp\-\_\-fft routines 
+\end{DoxyItemize}
+\end{DoxyItemize}

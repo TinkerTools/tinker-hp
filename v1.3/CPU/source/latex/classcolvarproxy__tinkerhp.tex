@@ -1,0 +1,728 @@
+\hypertarget{classcolvarproxy__tinkerhp}{\section{colvarproxy\-\_\-tinkerhp Class Reference}
+\label{classcolvarproxy__tinkerhp}\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+}
+
+
+Communication between colvars and T\-I\-N\-K\-E\-R (implementation of \hyperlink{}{colvarproxy})  
+
+
+
+
+{\ttfamily \#include $<$colvarproxy\-\_\-tinkerhp.\-h$>$}
+
+
+
+Inheritance diagram for colvarproxy\-\_\-tinkerhp\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=200pt]{classcolvarproxy__tinkerhp__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for colvarproxy\-\_\-tinkerhp\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=200pt]{classcolvarproxy__tinkerhp__coll__graph}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classcolvarproxy__tinkerhp_aa8fd79a4f9b4069faf26235ba34b1f3f}{colvarproxy\-\_\-tinkerhp} ()
+\item 
+\hyperlink{classcolvarproxy__tinkerhp_a7d6af11be0ca01b2cff7d3f70758aa7b}{$\sim$colvarproxy\-\_\-tinkerhp} ()
+\item 
+double \hyperlink{classcolvarproxy__tinkerhp_a87a45aa5dd51b63a49c00ad543d08998}{compute} ()
+\item 
+void \hyperlink{classcolvarproxy__tinkerhp_a2a56a4f3e1cc006a047b2398e0a34fc3}{log} (std\-::string const \&message)
+\begin{DoxyCompactList}\small\item\em Print a message to the main log. \end{DoxyCompactList}\item 
+bool \hyperlink{classcolvarproxy__tinkerhp_a048dd1fd2d50aa84333f42717b7b6f63}{total\-\_\-forces\-\_\-enabled} () const 
+\end{DoxyCompactItemize}
+\subsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classcolvarproxy__tinkerhp_a9fde421f92cd67c85475a6e68d593038}{init} ()
+\begin{DoxyCompactList}\small\item\em initialization \end{DoxyCompactList}\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a35cb6f66cad3f185fbe97486e440a978}{set\-\_\-unit\-\_\-system} (std\-::string const \&units\-\_\-in, bool check\-\_\-only)
+\item 
+cvm\-::real \hyperlink{classcolvarproxy__tinkerhp_a7acc624104cbe9ef60cb90fe5f51018b}{boltzmann} ()
+\item 
+cvm\-::real \hyperlink{classcolvarproxy__tinkerhp_a6c0fad6b6be3ac94b260262f5f06ce1b}{dt} ()
+\begin{DoxyCompactList}\small\item\em Time step of the simulation (fs) \end{DoxyCompactList}\item 
+cvm\-::real \hyperlink{classcolvarproxy__tinkerhp_a4dee5e31ac36857de98adfa6c74b1108}{rand\-\_\-gaussian} ()
+\begin{DoxyCompactList}\small\item\em Pseudo-\/random number with Gaussian distribution. \end{DoxyCompactList}\item 
+void \hyperlink{classcolvarproxy__tinkerhp_a7c99283bbb740b56e2df094a2f275e51}{add\-\_\-energy} (cvm\-::real \hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy})
+\begin{DoxyCompactList}\small\item\em Pass restraint energy value for current timestep to M\-D engine. \end{DoxyCompactList}\item 
+void \hyperlink{classcolvarproxy__tinkerhp_a3e0476b655966559d37a4fba21f6834a}{request\-\_\-total\-\_\-force} (bool yesno)
+\item 
+bool \hyperlink{classcolvarproxy__tinkerhp_ae9eb563f25bac7c76e358e5ce46620d5}{total\-\_\-forces\-\_\-same\-\_\-step} () const 
+\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a68dccac4bb2fd917f2d3b5212aa627e2}{init\-\_\-atom} (int atom\-\_\-number)
+\begin{DoxyCompactList}\small\item\em numeric index (1-\/based) \end{DoxyCompactList}\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a874d7f30175aef8986cac6cbecb34156}{check\-\_\-atom\-\_\-id} (int atom\-\_\-number)
+\item 
+cvm\-::rvector \hyperlink{classcolvarproxy__tinkerhp_a0f151e4bdc0dd039ef1e6c700ebab212}{position\-\_\-distance} (cvm\-::atom\-\_\-pos const \&pos1, cvm\-::atom\-\_\-pos const \&pos2) const 
+\item 
+void \hyperlink{classcolvarproxy__tinkerhp_a1a60dbdb7a558bf9dda77facc7f34bd0}{error} (std\-::string const \&message)
+\item 
+void \hyperlink{classcolvarproxy__tinkerhp_a18099807345d593ce923503d8317dc1c}{fatal\-\_\-error} (std\-::string const \&message)
+\begin{DoxyCompactList}\small\item\em Print a message to the main log and exit with error code. \end{DoxyCompactList}\item 
+virtual int \hyperlink{classcolvarproxy__tinkerhp_adee00c6273b7f5335663ca88fac5c7dc}{run\-\_\-force\-\_\-callback} ()
+\item 
+virtual int \hyperlink{classcolvarproxy__tinkerhp_a60607b6aacf91cc9d7157c3f07520fc0}{run\-\_\-colvar\-\_\-callback} (std\-::string const \&name, std\-::vector$<$ const colvarvalue $\ast$ $>$ const \&cvcs, colvarvalue \&value)
+\item 
+virtual int \hyperlink{classcolvarproxy__tinkerhp_aad55d13f4d72d49591aedd03595e61e8}{run\-\_\-colvar\-\_\-gradient\-\_\-callback} (std\-::string const \&name, std\-::vector$<$ const colvarvalue $\ast$ $>$ const \&cvc\-\_\-values, std\-::vector$<$ cvm\-::matrix2d$<$ cvm\-::real $>$ $>$ \&\hyperlink{gradient_8f90_a8665411aa7f5050b7002b6723044274d}{gradient})
+\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a7a63f714db1a75fb4dd9368ca90d2c47}{get\-\_\-alch\-\_\-lambda} (cvm\-::real $\ast$lambda)
+\begin{DoxyCompactList}\small\item\em Get value of alchemical lambda parameter from back-\/end. \end{DoxyCompactList}\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a179fb699574b714e4786fa6b8cedefa5}{send\-\_\-alch\-\_\-lambda} ()
+\begin{DoxyCompactList}\small\item\em Set value of alchemical lambda parameter in back-\/end. \end{DoxyCompactList}\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a09fa23027d00551790910f4b482e0296}{get\-\_\-d\-E\-\_\-dlambda} (cvm\-::real $\ast$d\-E\-\_\-dlambda)
+\begin{DoxyCompactList}\small\item\em Get energy derivative with respect to lambda. \end{DoxyCompactList}\item 
+int \hyperlink{classcolvarproxy__tinkerhp_ae56d9c40717b6d4669230adc9260b9ac}{apply\-\_\-force\-\_\-d\-E\-\_\-dlambda} (cvm\-::real $\ast$force)
+\begin{DoxyCompactList}\small\item\em Get energy derivative with respect to lambda. \end{DoxyCompactList}\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a6ec771bb6f0ce3b0f48b04e68509864a}{get\-\_\-d2\-E\-\_\-dlambda2} (cvm\-::real $\ast$d2\-E\-\_\-dlambda2)
+\begin{DoxyCompactList}\small\item\em Get energy derivative with respect to lambda. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\-::string \hyperlink{classcolvarproxy__tinkerhp_a34ebcc6f4b694166fe32fb0ea331ba78}{config\-\_\-file}
+\item 
+bool \hyperlink{classcolvarproxy__tinkerhp_a46e10d9afd59cffa031381605e6bf986}{total\-\_\-force\-\_\-requested}
+\item 
+bool \hyperlink{classcolvarproxy__tinkerhp_ada013faba57ea5b6e37f40f737593a7f}{colvars\-\_\-restart}
+\item 
+double \hyperlink{classcolvarproxy__tinkerhp_a6fb1b3de3b126782968dc7146a031ff4}{bias\-\_\-energy}
+\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a211e5eea0626d40e351455601f116c21}{n}
+\begin{DoxyCompactList}\small\item\em size of the system \end{DoxyCompactList}\item 
+cvm\-::real \hyperlink{classcolvarproxy__tinkerhp_a0bd848796b227c5518d18e4e92595b1f}{sim\-\_\-boltzmann}
+\begin{DoxyCompactList}\small\item\em target Boltzmann constant \end{DoxyCompactList}\item 
+cvm\-::real \hyperlink{classcolvarproxy__tinkerhp_a29bb1f101010fea6079b4d0045b93389}{sim\-\_\-dt}
+\begin{DoxyCompactList}\small\item\em Target Time step of the simulation (fs) \end{DoxyCompactList}\item 
+int \hyperlink{classcolvarproxy__tinkerhp_ac0ce2e771bc43eacc450f68d07c6a6b2}{commcv}
+\begin{DoxyCompactList}\small\item\em mpi communicator, associated rank and number of procs \end{DoxyCompactList}\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a5db0b78cc2d62920b9969b3e6bee8f6a}{rankcv}
+\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a9d7fa46ab2c701068dcbe1d17521a0c1}{nproccv}
+\item 
+M\-P\-I\-\_\-\-Comm \hyperlink{classcolvarproxy__tinkerhp_af95a5d16bb33e00c0b5c55fb470af8df}{inter\-\_\-comm}
+\item 
+int \hyperlink{classcolvarproxy__tinkerhp_aeb08de923f57cf20ab17684d8a21146d}{inter\-\_\-me}
+\item 
+int \hyperlink{classcolvarproxy__tinkerhp_a3d7cc5da0cad26eae4e25b3186b380bb}{inter\-\_\-num}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Communication between colvars and T\-I\-N\-K\-E\-R (implementation of \hyperlink{}{colvarproxy}) 
+
+Implementation of the colvarproxy class for Tinker-\/\-H\-P Interfaces to Fortran via C functions declared in \hyperlink{colvarproxy__tinkerhp__interface_8h}{colvarproxy\-\_\-tinkerhp\-\_\-interface.\-h} 
+
+Definition at line 13 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classcolvarproxy__tinkerhp_aa8fd79a4f9b4069faf26235ba34b1f3f}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{colvarproxy\-\_\-tinkerhp}]{\setlength{\rightskip}{0pt plus 5cm}colvarproxy\-\_\-tinkerhp\-::colvarproxy\-\_\-tinkerhp (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classcolvarproxy__tinkerhp_aa8fd79a4f9b4069faf26235ba34b1f3f}
+\hypertarget{classcolvarproxy__tinkerhp_a7d6af11be0ca01b2cff7d3f70758aa7b}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!$\sim$colvarproxy\-\_\-tinkerhp@{$\sim$colvarproxy\-\_\-tinkerhp}}
+\index{$\sim$colvarproxy\-\_\-tinkerhp@{$\sim$colvarproxy\-\_\-tinkerhp}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{$\sim$colvarproxy\-\_\-tinkerhp}]{\setlength{\rightskip}{0pt plus 5cm}colvarproxy\-\_\-tinkerhp\-::$\sim$colvarproxy\-\_\-tinkerhp (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classcolvarproxy__tinkerhp_a7d6af11be0ca01b2cff7d3f70758aa7b}
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classcolvarproxy__tinkerhp_a7c99283bbb740b56e2df094a2f275e51}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!add\-\_\-energy@{add\-\_\-energy}}
+\index{add\-\_\-energy@{add\-\_\-energy}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{add\-\_\-energy}]{\setlength{\rightskip}{0pt plus 5cm}void colvarproxy\-\_\-tinkerhp\-::add\-\_\-energy (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real}]{energy}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a7c99283bbb740b56e2df094a2f275e51}
+
+
+Pass restraint energy value for current timestep to M\-D engine. 
+
+\hypertarget{classcolvarproxy__tinkerhp_ae56d9c40717b6d4669230adc9260b9ac}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!apply\-\_\-force\-\_\-d\-E\-\_\-dlambda@{apply\-\_\-force\-\_\-d\-E\-\_\-dlambda}}
+\index{apply\-\_\-force\-\_\-d\-E\-\_\-dlambda@{apply\-\_\-force\-\_\-d\-E\-\_\-dlambda}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{apply\-\_\-force\-\_\-d\-E\-\_\-dlambda}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::apply\-\_\-force\-\_\-d\-E\-\_\-dlambda (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real $\ast$}]{force}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_ae56d9c40717b6d4669230adc9260b9ac}
+
+
+Get energy derivative with respect to lambda. 
+
+
+
+Definition at line 125 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_a7acc624104cbe9ef60cb90fe5f51018b}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!boltzmann@{boltzmann}}
+\index{boltzmann@{boltzmann}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{boltzmann}]{\setlength{\rightskip}{0pt plus 5cm}cvm\-::real colvarproxy\-\_\-tinkerhp\-::boltzmann (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a7acc624104cbe9ef60cb90fe5f51018b}
+
+
+Definition at line 41 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References sim\-\_\-boltzmann.
+
+
+
+Referenced by qtb\-::adhnoise(), beads\-::allocpi(), qtb\-::compute\-\_\-corr\-\_\-fact(), qtb\-::generate\-\_\-corr\-\_\-pot(), spectra\-::initialize\-\_\-spectra(), spectra\-::irspectra(), beads\-::kinetic\-\_\-pi(), beads\-::kinetic\-\_\-pi\-\_\-fast(), maxwell(), mdinitbead(), and mdstatpi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcolvarproxy__tinkerhp_a7acc624104cbe9ef60cb90fe5f51018b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a874d7f30175aef8986cac6cbecb34156}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!check\-\_\-atom\-\_\-id@{check\-\_\-atom\-\_\-id}}
+\index{check\-\_\-atom\-\_\-id@{check\-\_\-atom\-\_\-id}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{check\-\_\-atom\-\_\-id}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::check\-\_\-atom\-\_\-id (
+\begin{DoxyParamCaption}
+\item[{int}]{atom\-\_\-number}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a874d7f30175aef8986cac6cbecb34156}
+Check that this atom number is valid, but do not initialize the corresponding atom yet \hypertarget{classcolvarproxy__tinkerhp_a87a45aa5dd51b63a49c00ad543d08998}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!compute@{compute}}
+\index{compute@{compute}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{compute}]{\setlength{\rightskip}{0pt plus 5cm}double colvarproxy\-\_\-tinkerhp\-::compute (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classcolvarproxy__tinkerhp_a87a45aa5dd51b63a49c00ad543d08998}
+
+
+Referenced by normal().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcolvarproxy__tinkerhp_a87a45aa5dd51b63a49c00ad543d08998_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a6c0fad6b6be3ac94b260262f5f06ce1b}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!dt@{dt}}
+\index{dt@{dt}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{dt}]{\setlength{\rightskip}{0pt plus 5cm}cvm\-::real colvarproxy\-\_\-tinkerhp\-::dt (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a6c0fad6b6be3ac94b260262f5f06ce1b}
+
+
+Time step of the simulation (fs) 
+
+
+
+Definition at line 48 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References sim\-\_\-dt.
+
+
+
+Referenced by utilbaoab\-::apply\-\_\-a\-\_\-block(), utilbaoabpi\-::apply\-\_\-a\-\_\-cayhalf(), utilbaoabpi\-::apply\-\_\-a\-\_\-fluct(), utilbaoab\-::apply\-\_\-a\-\_\-piston(), utilbaoabpi\-::apply\-\_\-aoa\-\_\-pi(), utilbaoabpi\-::apply\-\_\-b\-\_\-pi(), utilbaoab\-::apply\-\_\-b\-\_\-piston(), utilbaoab\-::apply\-\_\-o\-\_\-block(), utilbaoab\-::apply\-\_\-o\-\_\-piston(), baoab(), baoabpi(), baoabrespa(), baoabrespa1(), baoabrespapi(), beeman(), dynamic\-\_\-bis(), eangle(), eangle1(), eangle3(), eangtor(), eangtor1(), eangtor3(), ebond(), ebond1(), ebond3(), egeom(), egeom1(), egeom3(), eimprop(), eimprop1(), eimprop3(), eopbend(), eopbend1(), eopbend3(), eopdist(), eopdist1(), eopdist3(), estrbnd(), estrbnd1(), estrbnd3(), eurey(), eurey1(), eurey3(), spectra\-::initialize\-\_\-spectra(), mdinit(), mdsave(), mdsavebeads(), mdstat(), mdstatpi(), mdstattime(), pimd\-\_\-bis(), utilbaoabpi\-::plangevinpi(), pressure(), pscale(), utilbaoabpi\-::pscalepi(), qtb\-::qtbinit(), rattle(), rattle2(), respa(), respa1(), scalderfieldzmatrec1(), scalderfieldzmatrec3(), scalderfieldzmatrec6(), scalderfieldzmatrec8(), temper(), update\-\_\-lbuffer(), and verlet().
+
+\hypertarget{classcolvarproxy__tinkerhp_a1a60dbdb7a558bf9dda77facc7f34bd0}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!error@{error}}
+\index{error@{error}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{error}]{\setlength{\rightskip}{0pt plus 5cm}void colvarproxy\-\_\-tinkerhp\-::error (
+\begin{DoxyParamCaption}
+\item[{std\-::string const \&}]{message}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a1a60dbdb7a558bf9dda77facc7f34bd0}
+Print a message to the main log and let the rest of the program handle the error In Tinker-\/\-H\-P we consider all errors as fatal 
+
+Definition at line 88 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References fatal\-\_\-error\-\_\-().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=310pt]{classcolvarproxy__tinkerhp_a1a60dbdb7a558bf9dda77facc7f34bd0_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a18099807345d593ce923503d8317dc1c}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!fatal\-\_\-error@{fatal\-\_\-error}}
+\index{fatal\-\_\-error@{fatal\-\_\-error}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{fatal\-\_\-error}]{\setlength{\rightskip}{0pt plus 5cm}void colvarproxy\-\_\-tinkerhp\-::fatal\-\_\-error (
+\begin{DoxyParamCaption}
+\item[{std\-::string const \&}]{message}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a18099807345d593ce923503d8317dc1c}
+
+
+Print a message to the main log and exit with error code. 
+
+
+
+Definition at line 91 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References fatal\-\_\-error\-\_\-().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=310pt]{classcolvarproxy__tinkerhp_a18099807345d593ce923503d8317dc1c_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a7a63f714db1a75fb4dd9368ca90d2c47}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!get\-\_\-alch\-\_\-lambda@{get\-\_\-alch\-\_\-lambda}}
+\index{get\-\_\-alch\-\_\-lambda@{get\-\_\-alch\-\_\-lambda}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{get\-\_\-alch\-\_\-lambda}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::get\-\_\-alch\-\_\-lambda (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real $\ast$}]{lambda}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a7a63f714db1a75fb4dd9368ca90d2c47}
+
+
+Get value of alchemical lambda parameter from back-\/end. 
+
+
+
+Definition at line 104 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References get\-\_\-alch\-\_\-lambda\-\_\-().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=342pt]{classcolvarproxy__tinkerhp_a7a63f714db1a75fb4dd9368ca90d2c47_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a6ec771bb6f0ce3b0f48b04e68509864a}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!get\-\_\-d2\-E\-\_\-dlambda2@{get\-\_\-d2\-E\-\_\-dlambda2}}
+\index{get\-\_\-d2\-E\-\_\-dlambda2@{get\-\_\-d2\-E\-\_\-dlambda2}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{get\-\_\-d2\-E\-\_\-dlambda2}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::get\-\_\-d2\-E\-\_\-dlambda2 (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real $\ast$}]{d2\-E\-\_\-dlambda2}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a6ec771bb6f0ce3b0f48b04e68509864a}
+
+
+Get energy derivative with respect to lambda. 
+
+
+
+Definition at line 130 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References get\-\_\-d2edlambda2\-\_\-().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=346pt]{classcolvarproxy__tinkerhp_a6ec771bb6f0ce3b0f48b04e68509864a_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a09fa23027d00551790910f4b482e0296}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!get\-\_\-d\-E\-\_\-dlambda@{get\-\_\-d\-E\-\_\-dlambda}}
+\index{get\-\_\-d\-E\-\_\-dlambda@{get\-\_\-d\-E\-\_\-dlambda}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{get\-\_\-d\-E\-\_\-dlambda}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::get\-\_\-d\-E\-\_\-dlambda (
+\begin{DoxyParamCaption}
+\item[{cvm\-::real $\ast$}]{d\-E\-\_\-dlambda}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a09fa23027d00551790910f4b482e0296}
+
+
+Get energy derivative with respect to lambda. 
+
+
+
+Definition at line 118 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References get\-\_\-delambda\-\_\-().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=328pt]{classcolvarproxy__tinkerhp_a09fa23027d00551790910f4b482e0296_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a9fde421f92cd67c85475a6e68d593038}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!init@{init}}
+\index{init@{init}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{init}]{\setlength{\rightskip}{0pt plus 5cm}void colvarproxy\-\_\-tinkerhp\-::init (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a9fde421f92cd67c85475a6e68d593038}
+
+
+initialization 
+
+
+
+Referenced by bounds(), boundspi(), chkpole(), ddbuild(), ksmd(), molecule(), orderbuffer(), reassignpme(), and set\-\_\-cvatoms\-\_\-ids().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcolvarproxy__tinkerhp_a9fde421f92cd67c85475a6e68d593038_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a68dccac4bb2fd917f2d3b5212aa627e2}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!init\-\_\-atom@{init\-\_\-atom}}
+\index{init\-\_\-atom@{init\-\_\-atom}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{init\-\_\-atom}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::init\-\_\-atom (
+\begin{DoxyParamCaption}
+\item[{int}]{atom\-\_\-number}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a68dccac4bb2fd917f2d3b5212aa627e2}
+
+
+numeric index (1-\/based) 
+
+\hypertarget{classcolvarproxy__tinkerhp_a2a56a4f3e1cc006a047b2398e0a34fc3}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!log@{log}}
+\index{log@{log}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{log}]{\setlength{\rightskip}{0pt plus 5cm}void colvarproxy\-\_\-tinkerhp\-::log (
+\begin{DoxyParamCaption}
+\item[{std\-::string const \&}]{message}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}}\label{classcolvarproxy__tinkerhp_a2a56a4f3e1cc006a047b2398e0a34fc3}
+
+
+Print a message to the main log. 
+
+
+
+Definition at line 21 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+Referenced by barcalc(), erfinv(), normal(), and pmonte().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcolvarproxy__tinkerhp_a2a56a4f3e1cc006a047b2398e0a34fc3_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a0f151e4bdc0dd039ef1e6c700ebab212}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!position\-\_\-distance@{position\-\_\-distance}}
+\index{position\-\_\-distance@{position\-\_\-distance}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{position\-\_\-distance}]{\setlength{\rightskip}{0pt plus 5cm}cvm\-::rvector colvarproxy\-\_\-tinkerhp\-::position\-\_\-distance (
+\begin{DoxyParamCaption}
+\item[{cvm\-::atom\-\_\-pos const \&}]{pos1, }
+\item[{cvm\-::atom\-\_\-pos const \&}]{pos2}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a0f151e4bdc0dd039ef1e6c700ebab212}
+\hypertarget{classcolvarproxy__tinkerhp_a4dee5e31ac36857de98adfa6c74b1108}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!rand\-\_\-gaussian@{rand\-\_\-gaussian}}
+\index{rand\-\_\-gaussian@{rand\-\_\-gaussian}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{rand\-\_\-gaussian}]{\setlength{\rightskip}{0pt plus 5cm}cvm\-::real colvarproxy\-\_\-tinkerhp\-::rand\-\_\-gaussian (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a4dee5e31ac36857de98adfa6c74b1108}
+
+
+Pseudo-\/random number with Gaussian distribution. 
+
+
+
+Definition at line 60 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References rand\-\_\-colvars\-\_\-().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=320pt]{classcolvarproxy__tinkerhp_a4dee5e31ac36857de98adfa6c74b1108_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a3e0476b655966559d37a4fba21f6834a}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!request\-\_\-total\-\_\-force@{request\-\_\-total\-\_\-force}}
+\index{request\-\_\-total\-\_\-force@{request\-\_\-total\-\_\-force}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{request\-\_\-total\-\_\-force}]{\setlength{\rightskip}{0pt plus 5cm}void colvarproxy\-\_\-tinkerhp\-::request\-\_\-total\-\_\-force (
+\begin{DoxyParamCaption}
+\item[{bool}]{yesno}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a3e0476b655966559d37a4fba21f6834a}
+\hypertarget{classcolvarproxy__tinkerhp_a60607b6aacf91cc9d7157c3f07520fc0}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!run\-\_\-colvar\-\_\-callback@{run\-\_\-colvar\-\_\-callback}}
+\index{run\-\_\-colvar\-\_\-callback@{run\-\_\-colvar\-\_\-callback}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{run\-\_\-colvar\-\_\-callback}]{\setlength{\rightskip}{0pt plus 5cm}virtual int colvarproxy\-\_\-tinkerhp\-::run\-\_\-colvar\-\_\-callback (
+\begin{DoxyParamCaption}
+\item[{std\-::string const \&}]{name, }
+\item[{std\-::vector$<$ const colvarvalue $\ast$ $>$ const \&}]{cvcs, }
+\item[{colvarvalue \&}]{value}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [virtual]}}}\label{classcolvarproxy__tinkerhp_a60607b6aacf91cc9d7157c3f07520fc0}
+\hypertarget{classcolvarproxy__tinkerhp_aad55d13f4d72d49591aedd03595e61e8}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!run\-\_\-colvar\-\_\-gradient\-\_\-callback@{run\-\_\-colvar\-\_\-gradient\-\_\-callback}}
+\index{run\-\_\-colvar\-\_\-gradient\-\_\-callback@{run\-\_\-colvar\-\_\-gradient\-\_\-callback}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{run\-\_\-colvar\-\_\-gradient\-\_\-callback}]{\setlength{\rightskip}{0pt plus 5cm}virtual int colvarproxy\-\_\-tinkerhp\-::run\-\_\-colvar\-\_\-gradient\-\_\-callback (
+\begin{DoxyParamCaption}
+\item[{std\-::string const \&}]{name, }
+\item[{std\-::vector$<$ const colvarvalue $\ast$ $>$ const \&}]{cvc\-\_\-values, }
+\item[{std\-::vector$<$ cvm\-::matrix2d$<$ cvm\-::real $>$ $>$ \&}]{gradient}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [virtual]}}}\label{classcolvarproxy__tinkerhp_aad55d13f4d72d49591aedd03595e61e8}
+\hypertarget{classcolvarproxy__tinkerhp_adee00c6273b7f5335663ca88fac5c7dc}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!run\-\_\-force\-\_\-callback@{run\-\_\-force\-\_\-callback}}
+\index{run\-\_\-force\-\_\-callback@{run\-\_\-force\-\_\-callback}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{run\-\_\-force\-\_\-callback}]{\setlength{\rightskip}{0pt plus 5cm}virtual int colvarproxy\-\_\-tinkerhp\-::run\-\_\-force\-\_\-callback (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [virtual]}}}\label{classcolvarproxy__tinkerhp_adee00c6273b7f5335663ca88fac5c7dc}
+\hypertarget{classcolvarproxy__tinkerhp_a179fb699574b714e4786fa6b8cedefa5}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!send\-\_\-alch\-\_\-lambda@{send\-\_\-alch\-\_\-lambda}}
+\index{send\-\_\-alch\-\_\-lambda@{send\-\_\-alch\-\_\-lambda}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{send\-\_\-alch\-\_\-lambda}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::send\-\_\-alch\-\_\-lambda (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a179fb699574b714e4786fa6b8cedefa5}
+
+
+Set value of alchemical lambda parameter in back-\/end. 
+
+
+
+Definition at line 111 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References set\-\_\-alch\-\_\-lambda\-\_\-().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=340pt]{classcolvarproxy__tinkerhp_a179fb699574b714e4786fa6b8cedefa5_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcolvarproxy__tinkerhp_a35cb6f66cad3f185fbe97486e440a978}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!set\-\_\-unit\-\_\-system@{set\-\_\-unit\-\_\-system}}
+\index{set\-\_\-unit\-\_\-system@{set\-\_\-unit\-\_\-system}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{set\-\_\-unit\-\_\-system}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::set\-\_\-unit\-\_\-system (
+\begin{DoxyParamCaption}
+\item[{std\-::string const \&}]{units\-\_\-in, }
+\item[{bool}]{check\-\_\-only}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a35cb6f66cad3f185fbe97486e440a978}
+\hypertarget{classcolvarproxy__tinkerhp_a048dd1fd2d50aa84333f42717b7b6f63}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!total\-\_\-forces\-\_\-enabled@{total\-\_\-forces\-\_\-enabled}}
+\index{total\-\_\-forces\-\_\-enabled@{total\-\_\-forces\-\_\-enabled}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{total\-\_\-forces\-\_\-enabled}]{\setlength{\rightskip}{0pt plus 5cm}bool colvarproxy\-\_\-tinkerhp\-::total\-\_\-forces\-\_\-enabled (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}}}\label{classcolvarproxy__tinkerhp_a048dd1fd2d50aa84333f42717b7b6f63}
+
+
+Definition at line 24 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+References total\-\_\-force\-\_\-requested.
+
+\hypertarget{classcolvarproxy__tinkerhp_ae9eb563f25bac7c76e358e5ce46620d5}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!total\-\_\-forces\-\_\-same\-\_\-step@{total\-\_\-forces\-\_\-same\-\_\-step}}
+\index{total\-\_\-forces\-\_\-same\-\_\-step@{total\-\_\-forces\-\_\-same\-\_\-step}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{total\-\_\-forces\-\_\-same\-\_\-step}]{\setlength{\rightskip}{0pt plus 5cm}bool colvarproxy\-\_\-tinkerhp\-::total\-\_\-forces\-\_\-same\-\_\-step (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_ae9eb563f25bac7c76e358e5ce46620d5}
+
+
+Definition at line 70 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classcolvarproxy__tinkerhp_a6fb1b3de3b126782968dc7146a031ff4}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!bias\-\_\-energy@{bias\-\_\-energy}}
+\index{bias\-\_\-energy@{bias\-\_\-energy}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{bias\-\_\-energy}]{\setlength{\rightskip}{0pt plus 5cm}double colvarproxy\-\_\-tinkerhp\-::bias\-\_\-energy\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a6fb1b3de3b126782968dc7146a031ff4}
+
+
+Definition at line 31 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_ada013faba57ea5b6e37f40f737593a7f}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!colvars\-\_\-restart@{colvars\-\_\-restart}}
+\index{colvars\-\_\-restart@{colvars\-\_\-restart}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{colvars\-\_\-restart}]{\setlength{\rightskip}{0pt plus 5cm}bool colvarproxy\-\_\-tinkerhp\-::colvars\-\_\-restart\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_ada013faba57ea5b6e37f40f737593a7f}
+
+
+Definition at line 30 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_ac0ce2e771bc43eacc450f68d07c6a6b2}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!commcv@{commcv}}
+\index{commcv@{commcv}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{commcv}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::commcv\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_ac0ce2e771bc43eacc450f68d07c6a6b2}
+
+
+mpi communicator, associated rank and number of procs 
+
+
+
+Definition at line 51 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_a34ebcc6f4b694166fe32fb0ea331ba78}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!config\-\_\-file@{config\-\_\-file}}
+\index{config\-\_\-file@{config\-\_\-file}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{config\-\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}std\-::string colvarproxy\-\_\-tinkerhp\-::config\-\_\-file\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a34ebcc6f4b694166fe32fb0ea331ba78}
+
+
+Definition at line 24 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_af95a5d16bb33e00c0b5c55fb470af8df}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!inter\-\_\-comm@{inter\-\_\-comm}}
+\index{inter\-\_\-comm@{inter\-\_\-comm}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{inter\-\_\-comm}]{\setlength{\rightskip}{0pt plus 5cm}M\-P\-I\-\_\-\-Comm colvarproxy\-\_\-tinkerhp\-::inter\-\_\-comm\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_af95a5d16bb33e00c0b5c55fb470af8df}
+
+
+Definition at line 55 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_aeb08de923f57cf20ab17684d8a21146d}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!inter\-\_\-me@{inter\-\_\-me}}
+\index{inter\-\_\-me@{inter\-\_\-me}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{inter\-\_\-me}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::inter\-\_\-me\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_aeb08de923f57cf20ab17684d8a21146d}
+
+
+Definition at line 57 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_a3d7cc5da0cad26eae4e25b3186b380bb}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!inter\-\_\-num@{inter\-\_\-num}}
+\index{inter\-\_\-num@{inter\-\_\-num}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{inter\-\_\-num}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::inter\-\_\-num\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a3d7cc5da0cad26eae4e25b3186b380bb}
+
+
+Definition at line 57 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_a211e5eea0626d40e351455601f116c21}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!n@{n}}
+\index{n@{n}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{n}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::n\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a211e5eea0626d40e351455601f116c21}
+
+
+size of the system 
+
+
+
+Definition at line 36 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_a9d7fa46ab2c701068dcbe1d17521a0c1}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!nproccv@{nproccv}}
+\index{nproccv@{nproccv}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{nproccv}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::nproccv\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a9d7fa46ab2c701068dcbe1d17521a0c1}
+
+
+Definition at line 53 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_a5db0b78cc2d62920b9969b3e6bee8f6a}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!rankcv@{rankcv}}
+\index{rankcv@{rankcv}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{rankcv}]{\setlength{\rightskip}{0pt plus 5cm}int colvarproxy\-\_\-tinkerhp\-::rankcv\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a5db0b78cc2d62920b9969b3e6bee8f6a}
+
+
+Definition at line 52 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+\hypertarget{classcolvarproxy__tinkerhp_a0bd848796b227c5518d18e4e92595b1f}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!sim\-\_\-boltzmann@{sim\-\_\-boltzmann}}
+\index{sim\-\_\-boltzmann@{sim\-\_\-boltzmann}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{sim\-\_\-boltzmann}]{\setlength{\rightskip}{0pt plus 5cm}cvm\-::real colvarproxy\-\_\-tinkerhp\-::sim\-\_\-boltzmann\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a0bd848796b227c5518d18e4e92595b1f}
+
+
+target Boltzmann constant 
+
+
+
+Definition at line 40 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+Referenced by boltzmann().
+
+\hypertarget{classcolvarproxy__tinkerhp_a29bb1f101010fea6079b4d0045b93389}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!sim\-\_\-dt@{sim\-\_\-dt}}
+\index{sim\-\_\-dt@{sim\-\_\-dt}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{sim\-\_\-dt}]{\setlength{\rightskip}{0pt plus 5cm}cvm\-::real colvarproxy\-\_\-tinkerhp\-::sim\-\_\-dt\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a29bb1f101010fea6079b4d0045b93389}
+
+
+Target Time step of the simulation (fs) 
+
+
+
+Definition at line 45 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+Referenced by dt().
+
+\hypertarget{classcolvarproxy__tinkerhp_a46e10d9afd59cffa031381605e6bf986}{\index{colvarproxy\-\_\-tinkerhp@{colvarproxy\-\_\-tinkerhp}!total\-\_\-force\-\_\-requested@{total\-\_\-force\-\_\-requested}}
+\index{total\-\_\-force\-\_\-requested@{total\-\_\-force\-\_\-requested}!colvarproxy_tinkerhp@{colvarproxy\-\_\-tinkerhp}}
+\subsubsection[{total\-\_\-force\-\_\-requested}]{\setlength{\rightskip}{0pt plus 5cm}bool colvarproxy\-\_\-tinkerhp\-::total\-\_\-force\-\_\-requested\hspace{0.3cm}{\ttfamily [private]}}}\label{classcolvarproxy__tinkerhp_a46e10d9afd59cffa031381605e6bf986}
+
+
+Definition at line 29 of file colvarproxy\-\_\-tinkerhp.\-h.
+
+
+
+Referenced by total\-\_\-forces\-\_\-enabled().
+
+
+
+The documentation for this class was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{colvarproxy__tinkerhp_8h}{colvarproxy\-\_\-tinkerhp.\-h}\end{DoxyCompactItemize}

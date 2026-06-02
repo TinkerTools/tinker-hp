@@ -1,0 +1,113 @@
+\hypertarget{elj_8f90}{\section{elj.\-f90 File Reference}
+\label{elj_8f90}\index{elj.\-f90@{elj.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{elj_8f90_ae9cd8f842f187f85b7e6668b5009cca8}{elj}
+\begin{DoxyCompactList}\small\item\em calculates the Lennard-\/\-Jones 6-\/12 van der Waals energy \end{DoxyCompactList}\item 
+subroutine \hyperlink{elj_8f90_a4e95d827461056756f69180675605403}{elj0c}
+\begin{DoxyCompactList}\small\item\em calculates the Lennard-\/\-Jones 6-\/12 van der Waals energy using a pairwise neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{elj_8f90_ae9cd8f842f187f85b7e6668b5009cca8}{\index{elj.\-f90@{elj.\-f90}!elj@{elj}}
+\index{elj@{elj}!elj.f90@{elj.\-f90}}
+\subsubsection[{elj}]{\setlength{\rightskip}{0pt plus 5cm}subroutine elj (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{elj_8f90_ae9cd8f842f187f85b7e6668b5009cca8}
+
+
+calculates the Lennard-\/\-Jones 6-\/12 van der Waals energy 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 19 of file elj.\-f90.
+
+
+
+References elj0c(), and evcorr().
+
+
+
+Referenced by energy().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=310pt]{elj_8f90_ae9cd8f842f187f85b7e6668b5009cca8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{elj_8f90_ae9cd8f842f187f85b7e6668b5009cca8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{elj_8f90_a4e95d827461056756f69180675605403}{\index{elj.\-f90@{elj.\-f90}!elj0c@{elj0c}}
+\index{elj0c@{elj0c}!elj.f90@{elj.\-f90}}
+\subsubsection[{elj0c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine elj0c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{elj_8f90_a4e95d827461056756f69180675605403}
+
+
+calculates the Lennard-\/\-Jones 6-\/12 van der Waals energy using a pairwise neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 63 of file elj.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by elj().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=236pt]{elj_8f90_a4e95d827461056756f69180675605403_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{elj_8f90_a4e95d827461056756f69180675605403_icgraph}
+\end{center}
+\end{figure}
+
+

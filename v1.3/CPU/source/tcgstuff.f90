@@ -1,0 +1,1819 @@
+
+
+!===================================================
+!     sub diagvec2
+!===================================================
+! Performs product of vector a with polarisabilities
+! BUt now on two vectors at once !
+
+!> @brief 
+!> Performs product of vector a with polarisabilities
+!> BUt now on two vectors at once !
+!> @param no params
+subroutine diagvec2(nrhs, A,  c, b, d)
+   use atmlst
+   use mpole
+   use polar
+   implicit none
+
+   integer, intent(in) :: nrhs
+   real*8, dimension(3,nrhs,npolebloc) :: A, c
+   real*8, dimension(3,nrhs,npolebloc) :: B, d
+   integer :: i,iipole, irhs, j
+
+   do i = 1, npolebloc
+      iipole = poleglob(i)
+      do irhs = 1, nrhs
+         do j = 1,3
+            B(j,irhs,i) = A(j,irhs,i)*polarity(iipole)
+            D(j,irhs,i) = C(j,irhs,i)*polarity(iipole)
+         end do
+      end do
+   end do
+
+   return
+end
+
+!===================================================
+!     sub diagvec3
+!===================================================
+! Performs product of vector a with polarisabilities
+! Why not three vecs
+! Why not three vecs
+! Why not three vecs
+
+subroutine diagvec3(nrhs, A1, a2, a3, b1, b2, b3)
+   use atmlst
+   use mpole
+   use polar
+   implicit none
+
+   integer, intent(in) :: nrhs
+   real*8, dimension(3,nrhs,npolebloc) :: A1, a2, a3
+   real*8, dimension(3,nrhs,npolebloc) :: b1, b2, b3
+   integer :: i,iipole, irhs, j
+
+   do i = 1, npolebloc
+      iipole = poleglob(i)
+      do irhs = 1, nrhs
+         do j = 1,3
+            B1(j,irhs,i) = A1(j,irhs,i)*polarity(iipole)
+            B2(j,irhs,i) = A2(j,irhs,i)*polarity(iipole)
+            B3(j,irhs,i) = A3(j,irhs,i)*polarity(iipole)
+         end do
+      end do
+   end do
+
+   return
+end
+
+!> @brief 
+!> Compute the reciprocal space contribution to the electric field due to the current
+!> value of the induced dipoles. Saves the potential and subsequent
+!> derivatives in a fphi(20,n) vector.
+!> @param no params
+subroutine tmatxbrecipsave(mu,murec,nrhs,dipfield,dipfieldbis,&
+&fphivec)
+!
+!     Compute the reciprocal space contribution to the electric field due to the current
+!     value of the induced dipoles. Saves the potential and subsequent
+!     derivatives in a fphi(20,n) vector.
+!
+   use atmlst
+   use boxes
+   use domdec
+   use ewald
+   use fft
+   use math
+   use mpole
+   use pme
+   use potent
+   use mpi
+   implicit none
+   integer ierr,iglob,iloc
+   integer status(MPI_STATUS_SIZE),tag
+   integer nrhs,iipole
+
+   integer i,j,k
+
+
+   real*8 fuind(3),fuinp(3)
+   real*8 term
+   real*8 a(3,3)
+   real*8 fdip_phi1(20), fdip_phi2(20)
+   real*8 dipfield(3,nrhs,*),dipfieldbis(3,nrhs,*)
+   real*8 mu(3,nrhs,*),murec(3,nrhs,*)
+   integer, allocatable :: reqbcastrec(:),reqbcastsend(:)
+   integer, allocatable :: reqrec(:),reqsend(:)
+   real*8, allocatable :: qgridmpi(:,:,:,:,:)
+   integer nprocloc,commloc,rankloc,proc
+   real*8  :: fphivec(20, 2, max(1,npolerecloc))
+!
+   if (use_pmecore) then
+      nprocloc = nrec
+      commloc  = comm_rec
+      rankloc  = rank_bis
+   else
+      nprocloc = nproc
+      commloc  = COMM_TINKER
+      rankloc  = rank
+   end if
+
+   !(F.A.)
+
+   allocate (qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,nrec_recep))
+   allocate (reqbcastrec(nprocloc))
+   allocate (reqbcastsend(nprocloc))
+   allocate (reqrec(nprocloc))
+   allocate (reqsend(nprocloc))
+!
+!     return if the Ewald coefficient is zero
+!
+   if (aewald .lt. 1.0d-6)  return
+!
+!     zero out the PME charge grid
+!
+   qgrid2in_2d = 0d0
+!     fill the pme grid, loop over the induced dipoles sites
+   do j = 1, 3
+      a(1,j) = dble(nfft1) * recip(j,1)
+      a(2,j) = dble(nfft2) * recip(j,2)
+      a(3,j) = dble(nfft3) * recip(j,3)
+   end do
+!
+   do i = 1, npolerecloc
+      iipole = polerecglob(i)
+      iglob = ipole(iipole)
+      iloc  = poleloc(iipole)
+!
+!       Convert cartesian dipoles to fractional coordinates
+!
+      if (repart(iglob).ne.rank) then
+         do k = 1, 3
+            fuind(k) = a(k,1)*murec(1,1,i) + a(k,2)*murec(2,1,i)&
+            &+ a(k,3)*murec(3,1,i)
+            fuinp(k) = a(k,1)*murec(1,2,i) + a(k,2)*murec(2,2,i)&
+            &+ a(k,3)*murec(3,2,i)
+         end do
+      else
+         do k = 1, 3
+            fuind(k) = a(k,1)*mu(1,1,iloc) + a(k,2)*mu(2,1,iloc)&
+            &+ a(k,3)*mu(3,1,iloc)
+            fuinp(k) = a(k,1)*mu(1,2,iloc) + a(k,2)*mu(2,2,iloc)&
+            &+ a(k,3)*mu(3,2,iloc)
+         end do
+      end if
+!
+!     assign PME grid
+!
+      call grid_uind_site(iglob,i,fuind,fuinp,qgrid2in_2d)
+   end do
+!
+!     MPI : Begin reception
+!
+   do i = 1, nrec_recep
+      tag = nprocloc*rankloc + prec_recep(i) + 1
+      call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*n3mpimax,&
+      &MPI_REAL8,prec_recep(i),tag,commloc,reqrec(i),ierr)
+   end do
+!
+!     MPI : begin sending
+!
+   do i = 1, nrec_send
+      proc = prec_send(i)
+      tag = nprocloc*prec_send(i) + rankloc + 1
+      call MPI_ISEND(qgrid2in_2d(1,1,1,1,i+1),&
+      &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,proc,tag,commloc,&
+      &reqsend(i),ierr)
+   end do
+!
+   do i = 1, nrec_recep
+      call MPI_WAIT(reqrec(i),status,ierr)
+   end do
+   do i = 1, nrec_send
+      call MPI_WAIT(reqsend(i),status,ierr)
+   end do
+!
+!     do the reduction 'by hand'
+!
+   do i = 1, nrec_recep
+      call aadd(2*n1mpimax*n2mpimax*n3mpimax,&
+      &qgrid2in_2d(1,1,1,1,1),qgridmpi(1,1,1,1,i),&
+      &qgrid2in_2d(1,1,1,1,1))
+   end do
+!
+!     Perform 3-D FFT forward transform
+!
+   call fft2d_frontmpi(qgrid2in_2d,qgrid2out_2d,n1mpimax,n2mpimax,&
+   &n3mpimax)
+!
+!     complete the transformation of the charge grid
+!
+   do k = 1, ksize2(rankloc+1)
+      do j = 1, jsize2(rankloc+1)
+         do i = 1, isize2(rankloc+1)
+            term = qfac_2d(i,j,k)
+            qgrid2out_2d(1,i,j,k) = term*qgrid2out_2d(1,i,j,k)
+            qgrid2out_2d(2,i,j,k) = term*qgrid2out_2d(2,i,j,k)
+         end do
+      end do
+   end do
+!
+!     perform 3-D FFT backward transform
+!
+   call fft2d_backmpi(qgrid2in_2d,qgrid2out_2d,n1mpimax,n2mpimax,&
+   &n3mpimax)
+!
+!     MPI : Begin reception
+!
+   do i = 1, nrec_send
+      proc = prec_send(i)
+      tag = nprocloc*rankloc + prec_send(i) + 1
+      call MPI_IRECV(qgrid2in_2d(1,1,1,1,i+1),&
+      &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
+      &prec_send(i),tag,commloc,reqbcastrec(i),ierr)
+   end do
+!
+!     MPI : begin sending
+!
+   do i = 1, nrec_recep
+      tag = nprocloc*prec_recep(i) + rankloc + 1
+      call MPI_ISEND(qgrid2in_2d,&
+      &2*n1mpimax*n2mpimax*n3mpimax,&
+      &MPI_REAL8,prec_recep(i),tag,commloc,reqbcastsend(i),ierr)
+   end do
+!
+   do i = 1, nrec_send
+      call MPI_WAIT(reqbcastrec(i),status,ierr)
+   end do
+   do i = 1, nrec_recep
+      call MPI_WAIT(reqbcastsend(i),status,ierr)
+   end do
+!
+!     get fields
+!
+   do i = 1, npolerecloc
+      iipole = polerecglob(i)
+      iglob = ipole(iipole)
+      iloc  = poleloc(iipole)
+      call fphi_uind_big(iglob,i,fdip_phi1,fdip_phi2)
+
+      !(F.A.)
+      fphivec(:,1,i) = fdip_phi1
+      fphivec(:,2,i) = fdip_phi2
+
+      if (repart(iglob).ne.rank) then
+!
+!     convert the dipole fields from fractional to Cartesian
+!
+         do k = 1, 3
+            dipfieldbis(k,1,i) = a(k,1)*fdip_phi1(2)&
+            &+ a(k,2)*fdip_phi1(3)&
+            &+ a(k,3)*fdip_phi1(4)
+            dipfieldbis(k,2,i) = a(k,1)*fdip_phi2(2)&
+            &+ a(k,2)*fdip_phi2(3)&
+            &+ a(k,3)*fdip_phi2(4)
+         end do
+      else
+         do k = 1, 3
+            dipfield(k,1,iloc) = a(k,1)*fdip_phi1(2)&
+            &+ a(k,2)*fdip_phi1(3)&
+            &+ a(k,3)*fdip_phi1(4)
+            dipfield(k,2,iloc) = a(k,1)*fdip_phi2(2)&
+            &+ a(k,2)*fdip_phi2(3)&
+            &+ a(k,3)*fdip_phi2(4)
+         end do
+      end if
+   end do
+!
+   deallocate (qgridmpi)
+   deallocate (reqrec)
+   deallocate (reqsend)
+   deallocate (reqbcastsend)
+   deallocate (reqbcastrec)
+   return
+end
+
+
+
+!===================================================
+!     sub fftthatplz2(vec,vecbis,fphivec)
+! Quite self-explanatory, really. Puts vec on the grid,
+! returns the potential and successive derivatives in
+! fphivec.
+!===================================================
+subroutine fftthatplz2(vec,vecbis,fphivec)
+   use atmlst
+   use bound
+   use boxes
+   use chgpot
+   use domdec
+   use ewald
+   use fft
+   use math
+   use mpole
+   use pme
+   use potent
+   use mpi
+   implicit none
+
+   real*8, intent(in), dimension(3, 2,npoleloc) :: vec
+   real*8, intent(in), dimension(3, 2,npolerecloc) :: vecbis
+   real*8, intent(out), dimension(20,2, npolerecloc) :: fphivec
+
+   integer :: i, iipole, iglob,&
+   &k, j , rankloc, ierr, tag, iloc
+   integer :: status(MPI_STATUS_SIZE), commloc, nprocloc
+   real*8 :: term
+
+   real*8, allocatable, dimension(:,:) :: vec_frac1, vec_frac2
+   real*8, allocatable, dimension(:,:,:,:) :: qgridout2
+   real*8, allocatable, dimension(:,:,:,:,:) :: qgridin2
+   real*8, allocatable :: qgridmpi(:,:,:,:,:)
+   integer, allocatable :: reqsend(:),reqrec(:)
+   integer, allocatable :: req2send(:),req2rec(:)
+
+   if (use_pmecore) then
+      nprocloc = nrec
+      commloc  = comm_rec
+      rankloc  = rank_bis
+   else
+      nprocloc = nproc
+      commloc  = COMM_TINKER
+      rankloc  = rank
+   end if
+
+   allocate(vec_frac1(3,npolerecloc), vec_frac2(3,npolerecloc))
+   allocate(qgridin2(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1))
+!               qgridin3(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1))
+   allocate(qgridout2(2,isize2(rankloc+1), jsize2(rankloc+1),&
+   &ksize2(rankloc+1)))
+   allocate (qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,nrec_recep))
+!               qgridout3(2,isize2(rankloc+1), jsize2(rankloc+1),
+!     $          ksize2(rankloc+1)))
+   allocate (reqsend(nproc))
+   allocate (reqrec(nproc))
+   allocate (req2send(nproc))
+   allocate (req2rec(nproc))
+
+
+   qgridin2 = 0d0
+!      qgridin3 = 0d0
+   fphivec = 0d0
+
+   do i = 1 , npolerecloc
+      iipole = polerecglob(i)
+      iglob = ipole(iipole)
+      iloc  = poleloc(iipole)
+
+      if (repart(iglob).ne.rank) then
+         call cart_to_frac_vec(vecbis(:,1,i), vec_frac1(:,i))
+         call cart_to_frac_vec(vecbis(:,2,i), vec_frac2(:,i))
+      else
+         call cart_to_frac_vec(vec(:,1,iloc), vec_frac1(:,i))
+         call cart_to_frac_vec(vec(:,2,iloc), vec_frac2(:,i))
+      end if
+      call grid_uind_site(iglob,i, vec_frac1(:,i), vec_frac2(:,i),&
+      &qgridin2)
+   end do
+!
+!     MPI : begin reception
+!
+   do i = 1, nrec_recep
+      tag = nprocloc*rankloc + prec_recep(i) + 1
+      call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
+      &n3mpimax,MPI_REAL8,prec_recep(i),tag,&
+      &commloc,reqrec(i),ierr)
+   end do
+!
+!     MPI : begin sending
+!
+   do i = 1, nrec_send
+      tag = nprocloc*prec_send(i) + rankloc + 1
+      call MPI_ISEND(qgridin2(1,1,1,1,i+1),&
+      &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
+      &prec_send(i),tag,commloc,reqsend(i),ierr)
+   end do
+!
+   do i = 1, nrec_recep
+      call MPI_WAIT(reqrec(i),status,ierr)
+   end do
+   do i = 1, nrec_send
+      call MPI_WAIT(reqsend(i),status,ierr)
+   end do
+!
+!     do the reduction 'by hand'
+!
+   do i = 1, nrec_recep
+      qgridin2(:,:,:,:,1) = qgridin2(:,:,:,:,1)+&
+      &qgridmpi(:,:,:,:,i)
+   end do
+   call fft2d_frontmpi(qgridin2,qgridout2,n1mpimax,n2mpimax,&
+   &n3mpimax)
+!      ntot = nfft1*nfft2*nfft3
+!      if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
+!     $   (kstart2(rankloc+1).eq.1)) then
+!           qfac_2d(1,1,1) = 0.0d0
+!      end if
+!      pterm = (pi/aewald)**2
+!      volterm = pi * volbox
+!      nf1 = (nfft1+1) / 2
+!      nf2 = (nfft2+1) / 2
+!      nf3 = (nfft3+1) / 2
+!      do k3 = kstart2(rankloc+1),kend2(rankloc+1)
+!         do k2 = jstart2(rankloc+1),jend2(rankloc+1)
+!            do k1 = istart2(rankloc+1),iend2(rankloc+1)
+!               m1 = k1 - 1
+!               m2 = k2 - 1
+!               m3 = k3 - 1
+!               if (k1 .gt. nf1)  m1 = m1 - nfft1
+!               if (k2 .gt. nf2)  m2 = m2 - nfft2
+!               if (k3 .gt. nf3)  m3 = m3 - nfft3
+!               if ((m1.eq.0).and.(m2.eq.0).and.(m3.eq.0)) goto 10
+!               r1 = dble(m1)
+!               r2 = dble(m2)
+!               r3 = dble(m3)
+!               h1 = recip(1,1)*r1 + recip(1,2)*r2 + recip(1,3)*r3
+!               h2 = recip(2,1)*r1 + recip(2,2)*r2 + recip(2,3)*r3
+!               h3 = recip(3,1)*r1 + recip(3,2)*r2 + recip(3,3)*r3
+!               hsq = h1*h1 + h2*h2 + h3*h3
+!               term = -pterm * hsq
+!               expterm = 0.0d0
+!               if ((term .gt. -50.0d0)) then
+!                   denom = volterm*hsq*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
+!                   expterm = exp(term) / denom
+!                   if (.not. use_bounds) then
+!                      expterm = expterm * (1.0d0-cos(pi*xbox*sqrt(hsq)))
+!                   else if (octahedron) then
+!                      if (mod(m1+m2+m3,2) .ne. 0)  expterm = 0.0d0
+!                   end if
+!                   qfac_2d(k1-istart2(rankloc+1)+1,k2-jstart2(rankloc+1)
+!     $                     +1,k3-kstart2(rankloc+1)+1) = expterm
+!               end if
+! 10            continue
+!            end do
+!         end do
+!      end do
+   do k = 1, ksize2(rankloc+1)
+      do j = 1, jsize2(rankloc+1)
+         do i = 1, isize2(rankloc+1)
+            term = qfac_2d(i,j,k)
+            qgridout2(1,i,j,k) = term*qgridout2(1,i,j,k)
+            qgridout2(2,i,j,k) = term*qgridout2(2,i,j,k)
+         end do
+      end do
+   end do
+
+   call fft2d_backmpi(qgridin2,qgridout2,n1mpimax,n2mpimax,&
+   &n3mpimax)
+!
+!     MPI : Begin reception
+!
+   do i = 1, nrec_send
+      tag = nprocloc*rankloc + prec_send(i) + 1
+      call MPI_IRECV(qgridin2(1,1,1,1,i+1),&
+      &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
+      &prec_recep(i),tag,commloc,req2rec(i),ierr)
+   end do
+!
+!     MPI : begin sending
+!
+   do i = 1, nrec_recep
+      tag = nprocloc*prec_recep(i) + rankloc + 1
+      call MPI_ISEND(qgridin2(1,1,1,1,1),&
+      &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
+      &prec_send(i),tag,commloc,req2send(i),ierr)
+   end do
+!
+   do i = 1, nrec_send
+      call MPI_WAIT(req2rec(i),status,ierr)
+   end do
+   do i = 1, nrec_recep
+      call MPI_WAIT(req2send(i),status,ierr)
+   end do
+
+   do i = 1, npolerecloc
+      iipole = polerecglob(i)
+      iglob = ipole(iipole)
+      call fphi_dervec_site2(iglob,i,qgridin2, fphivec(:,:,i))
+   end do
+   return
+end
+
+!===================================================
+!     sub fftthatplz(vec, fphivec)
+! Quite self-explanatory, really. Puts vec on the grid,
+! returns the potential and successive derivatives in
+! fphivec.
+!===================================================
+subroutine fftthatplz(vec,vecbis,fphivec)
+   use atmlst
+   use bound
+   use boxes
+   use chgpot
+   use domdec
+   use ewald
+   use fft
+   use math
+   use mpole
+   use pme
+   use potent
+   use mpi
+   implicit none
+
+   real*8, intent(in), dimension(3,npoleloc) :: vec
+   real*8, intent(in), dimension(3,npolerecloc) :: vecbis
+   real*8, intent(out), dimension(20, npolerecloc) :: fphivec
+
+   integer :: i, iipole, iglob,&
+   &k, j , rankloc, ierr, tag, iloc
+   integer :: status(MPI_STATUS_SIZE), commloc, nprocloc
+   real*8 :: term
+
+   real*8, allocatable, dimension(:,:) :: vec_frac
+   real*8, allocatable, dimension(:,:,:,:) :: qgridout2
+   real*8, allocatable, dimension(:,:,:,:,:) :: qgridin2
+   real*8, allocatable :: qgridmpi(:,:,:,:,:)
+   integer, allocatable :: reqsend(:),reqrec(:)
+   integer, allocatable :: req2send(:),req2rec(:)
+
+   if (use_pmecore) then
+      nprocloc = nrec
+      commloc  = comm_rec
+      rankloc  = rank_bis
+   else
+      nprocloc = nproc
+      commloc  = COMM_TINKER
+      rankloc  = rank
+   end if
+
+   allocate(vec_frac(3,npolerecloc))
+   allocate(qgridin2(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1))
+!               qgridin3(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1))
+   allocate(qgridout2(2,isize2(rankloc+1), jsize2(rankloc+1),&
+   &ksize2(rankloc+1)))
+   allocate (qgridmpi(2,n1mpimax,n2mpimax,n3mpimax,nrec_recep))
+!               qgridout3(2,isize2(rankloc+1), jsize2(rankloc+1),
+!     $          ksize2(rankloc+1)))
+   allocate (reqsend(nproc))
+   allocate (reqrec(nproc))
+   allocate (req2send(nproc))
+   allocate (req2rec(nproc))
+
+
+   qgridin2 = 0d0
+!      qgridin3 = 0d0
+   fphivec = 0d0
+
+   do i = 1 , npolerecloc
+      iipole = polerecglob(i)
+      iglob = ipole(iipole)
+      iloc  = poleloc(iipole)
+
+      if (repart(iglob).ne.rank) then
+         call cart_to_frac_vec(vecbis(:,i), vec_frac(:,i))
+      else
+         call cart_to_frac_vec(vec(:,iloc), vec_frac(:,i))
+      end if
+      call grid_uind_site(iglob,i, vec_frac(:,i), vec_frac(:,i),&
+      &qgridin2)
+   end do
+!
+!     MPI : begin reception
+!
+   do i = 1, nrec_recep
+      tag = nprocloc*rankloc + prec_recep(i) + 1
+      call MPI_IRECV(qgridmpi(1,1,1,1,i),2*n1mpimax*n2mpimax*&
+      &n3mpimax,MPI_REAL8,prec_recep(i),tag,&
+      &commloc,reqrec(i),ierr)
+   end do
+!
+!     MPI : begin sending
+!
+   do i = 1, nrec_send
+      tag = nprocloc*prec_send(i) + rankloc + 1
+      call MPI_ISEND(qgridin2(1,1,1,1,i+1),&
+      &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
+      &prec_send(i),tag,commloc,reqsend(i),ierr)
+   end do
+!
+   do i = 1, nrec_recep
+      call MPI_WAIT(reqrec(i),status,ierr)
+   end do
+   do i = 1, nrec_send
+      call MPI_WAIT(reqsend(i),status,ierr)
+   end do
+!
+!     do the reduction 'by hand'
+!
+   do i = 1, nrec_recep
+      qgridin2(:,:,:,:,1) = qgridin2(:,:,:,:,1)+&
+      &qgridmpi(:,:,:,:,i)
+   end do
+   call fft2d_frontmpi(qgridin2,qgridout2,n1mpimax,n2mpimax,&
+   &n3mpimax)
+!      ntot = nfft1*nfft2*nfft3
+!      if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.
+!     $   (kstart2(rankloc+1).eq.1)) then
+!           qfac_2d(1,1,1) = 0.0d0
+!      end if
+!      pterm = (pi/aewald)**2
+!      volterm = pi * volbox
+!      nf1 = (nfft1+1) / 2
+!      nf2 = (nfft2+1) / 2
+!      nf3 = (nfft3+1) / 2
+!      do k3 = kstart2(rankloc+1),kend2(rankloc+1)
+!         do k2 = jstart2(rankloc+1),jend2(rankloc+1)
+!            do k1 = istart2(rankloc+1),iend2(rankloc+1)
+!               m1 = k1 - 1
+!               m2 = k2 - 1
+!               m3 = k3 - 1
+!               if (k1 .gt. nf1)  m1 = m1 - nfft1
+!               if (k2 .gt. nf2)  m2 = m2 - nfft2
+!               if (k3 .gt. nf3)  m3 = m3 - nfft3
+!               if ((m1.eq.0).and.(m2.eq.0).and.(m3.eq.0)) goto 10
+!               r1 = dble(m1)
+!               r2 = dble(m2)
+!               r3 = dble(m3)
+!               h1 = recip(1,1)*r1 + recip(1,2)*r2 + recip(1,3)*r3
+!               h2 = recip(2,1)*r1 + recip(2,2)*r2 + recip(2,3)*r3
+!               h3 = recip(3,1)*r1 + recip(3,2)*r2 + recip(3,3)*r3
+!               hsq = h1*h1 + h2*h2 + h3*h3
+!               term = -pterm * hsq
+!               expterm = 0.0d0
+!               if ((term .gt. -50.0d0)) then
+!                   denom = volterm*hsq*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
+!                   expterm = exp(term) / denom
+!                   if (.not. use_bounds) then
+!                      expterm = expterm * (1.0d0-cos(pi*xbox*sqrt(hsq)))
+!                   else if (octahedron) then
+!                      if (mod(m1+m2+m3,2) .ne. 0)  expterm = 0.0d0
+!                   end if
+!                   qfac_2d(k1-istart2(rankloc+1)+1,k2-jstart2(rankloc+1)
+!     $                     +1,k3-kstart2(rankloc+1)+1) = expterm
+!               end if
+! 10            continue
+!            end do
+!         end do
+!      end do
+   do k = 1, ksize2(rankloc+1)
+      do j = 1, jsize2(rankloc+1)
+         do i = 1, isize2(rankloc+1)
+            term = qfac_2d(i,j,k)
+            qgridout2(1,i,j,k) = term*qgridout2(1,i,j,k)
+            qgridout2(2,i,j,k) = term*qgridout2(2,i,j,k)
+         end do
+      end do
+   end do
+
+   call fft2d_backmpi(qgridin2,qgridout2,n1mpimax,n2mpimax,&
+   &n3mpimax)
+!
+!     MPI : Begin reception
+!
+   do i = 1, nrec_send
+      tag = nprocloc*rankloc + prec_send(i) + 1
+      call MPI_IRECV(qgridin2(1,1,1,1,i+1),&
+      &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
+      &prec_recep(i),tag,commloc,req2rec(i),ierr)
+   end do
+!
+!     MPI : begin sending
+!
+   do i = 1, nrec_recep
+      tag = nprocloc*prec_recep(i) + rankloc + 1
+      call MPI_ISEND(qgridin2(1,1,1,1,1),&
+      &2*n1mpimax*n2mpimax*n3mpimax,MPI_REAL8,&
+      &prec_send(i),tag,commloc,req2send(i),ierr)
+   end do
+!
+   do i = 1, nrec_send
+      call MPI_WAIT(req2rec(i),status,ierr)
+   end do
+   do i = 1, nrec_recep
+      call MPI_WAIT(req2send(i),status,ierr)
+   end do
+
+   do i = 1, npolerecloc
+      iipole = polerecglob(i)
+      iglob = ipole(iipole)
+      call fphi_dervec_site(iglob,i,qgridin2, fphivec(:,i))
+   end do
+   return
+end
+
+ ! sub cart_to_frac_vec
+ ! given a vector a_in, returns the vector in fractional coords
+
+subroutine cart_to_frac_vec(a_in,a_out)
+   implicit none
+   integer j,k
+   real*8 ctf(10,10)
+   real*8,intent(in) :: a_in(3)
+   real*8 ::  a_out(3)
+!
+!
+!     find the matrix to convert Cartesian to fractional
+!
+   call cart_to_frac (ctf)
+!
+!     apply the transformation to get the fractional multipoles
+!
+   !a_out(1) = ctf(1,1) * a_in(1)
+   do j = 1, 3
+      a_out(j) = 0.0d0
+      do k = 1, 3
+         a_out(j) = a_out(j) + ctf(j+1,k+1)*a_in(k)
+      end do
+   end do
+
+end
+
+
+!===================================================
+!     sub fphi_uind_big
+!===================================================
+! Returns the pot and successive derivatives of it...
+!  ... up to 3rd order !
+subroutine fphi_uind_big(isite,impi,fdip_phi1,fdip_phi2)
+   use domdec
+   use fft
+   use pme
+   use potent
+   use mpi
+   implicit none
+   integer istart,iend,jstart,jend,kstart,kend
+   integer i,j,k,impi
+   integer iproc,proc
+   integer isite,iatm
+   integer i0,j0,k0
+   integer it1,it2,it3
+   integer igrd0,jgrd0,kgrd0
+   real*8 v0,v1,v2,v3
+   real*8 u0,u1,u2,u3
+   real*8 t0_1,t0_2,t1_1,t1_2, t3_1, t3_2
+   real*8 t2_1,t2_2,tq_1,tq_2
+   real*8 tu00_1,tu01_1,tu10_1
+   real*8 tu00_2,tu01_2,tu10_2
+   real*8 tu20_1,tu11_1,tu02_1
+   real*8 tu20_2,tu11_2,tu02_2
+   real*8 tu30_1,tu21_1,tu12_1,tu03_1
+   real*8 tu30_2,tu21_2,tu12_2,tu03_2
+   real*8 :: tuv000_1, tuv000_2
+   real*8 tuv100_1,tuv010_1,tuv001_1
+   real*8 tuv100_2,tuv010_2,tuv001_2
+   real*8 tuv200_1,tuv020_1,tuv002_1
+   real*8 tuv110_1,tuv101_1,tuv011_1
+   real*8 tuv200_2,tuv020_2,tuv002_2
+   real*8 tuv110_2,tuv101_2,tuv011_2
+   real*8 tuv300_1,tuv030_1
+   real*8 tuv003_1,tuv210_1,tuv201_1,tuv120_1
+   real*8 tuv021_1,tuv102_1,tuv012_1,tuv111_1
+   real*8 tuv300_2,tuv030_2
+   real*8 tuv003_2,tuv210_2,tuv201_2,tuv120_2
+   real*8 tuv021_2,tuv102_2,tuv012_2,tuv111_2
+   real*8 fdip_phi1(20)
+   real*8 fdip_phi2(20)
+!
+   iatm = isite
+   igrd0 = igrid(1,iatm)
+   jgrd0 = igrid(2,iatm)
+   kgrd0 = igrid(3,iatm)
+   tuv000_1 = 0.0d0
+   tuv100_1 = 0.0d0
+   tuv010_1 = 0.0d0
+   tuv001_1 = 0.0d0
+   tuv200_1 = 0.0d0
+   tuv020_1 = 0.0d0
+   tuv002_1 = 0.0d0
+   tuv110_1 = 0.0d0
+   tuv101_1 = 0.0d0
+   tuv011_1 = 0.0d0
+   tuv300_1 = 0.0d0
+   tuv030_1 = 0.0d0
+   tuv003_1 = 0.0d0
+   tuv210_1 = 0.0d0
+   tuv201_1 = 0.0d0
+   tuv120_1 = 0.0d0
+   tuv021_1 = 0.0d0
+   tuv102_1 = 0.0d0
+   tuv012_1 = 0.0d0
+   tuv111_1 = 0.0d0
+   tuv000_2 = 0.0d0
+   tuv100_2 = 0.0d0
+   tuv010_2 = 0.0d0
+   tuv001_2 = 0.0d0
+   tuv200_2 = 0.0d0
+   tuv020_2 = 0.0d0
+   tuv002_2 = 0.0d0
+   tuv110_2 = 0.0d0
+   tuv101_2 = 0.0d0
+   tuv011_2 = 0.0d0
+   tuv300_2 = 0.0d0
+   tuv030_2 = 0.0d0
+   tuv003_2 = 0.0d0
+   tuv210_2 = 0.0d0
+   tuv201_2 = 0.0d0
+   tuv120_2 = 0.0d0
+   tuv021_2 = 0.0d0
+   tuv102_2 = 0.0d0
+   tuv012_2 = 0.0d0
+   tuv111_2 = 0.0d0
+   k0 = kgrd0
+   do it3 = 1, bsorder
+      k0 = k0 + 1
+      k = k0 + 1 + (nfft3-isign(nfft3,k0))/2
+      v0 = thetai3(1,it3,impi)
+      v1 = thetai3(2,it3,impi)
+      v2 = thetai3(3,it3,impi)
+      v3 = thetai3(4,it3,impi)
+      tu00_1 = 0.0d0
+      tu01_1 = 0.0d0
+      tu10_1 = 0.0d0
+      tu20_1 = 0.0d0
+      tu11_1 = 0.0d0
+      tu02_1 = 0.0d0
+      tu30_1 = 0.0d0
+      tu21_1 = 0.0d0
+      tu12_1 = 0.0d0
+      tu03_1 = 0.0d0
+      tu00_2 = 0.0d0
+      tu01_2 = 0.0d0
+      tu10_2 = 0.0d0
+      tu20_2 = 0.0d0
+      tu11_2 = 0.0d0
+      tu02_2 = 0.0d0
+      tu30_2 = 0.0d0
+      tu21_2 = 0.0d0
+      tu12_2 = 0.0d0
+      tu03_2 = 0.0d0
+      j0 = jgrd0
+      do it2 = 1, bsorder
+         j0 = j0 + 1
+         j = j0 + 1 + (nfft2-isign(nfft2,j0))/2
+         u0 = thetai2(1,it2,impi)
+         u1 = thetai2(2,it2,impi)
+         u2 = thetai2(3,it2,impi)
+         u3 = thetai2(4,it2,impi)
+         t0_1 = 0.0d0
+         t1_1 = 0.0d0
+         t2_1 = 0.0d0
+         t3_1 = 0.0d0
+         t0_2 = 0.0d0
+         t1_2 = 0.0d0
+         t2_2 = 0.0d0
+         t3_2 = 0.0d0
+         i0 = igrd0
+         do it1 = 1, bsorder
+            i0 = i0 + 1
+            i = i0 + 1 + (nfft1-isign(nfft1,i0))/2
+!
+            if (use_pmecore) then
+               kstart = kstart1(rank_bis+1)
+               kend = kend1(rank_bis+1)
+               jstart = jstart1(rank_bis+1)
+               jend = jend1(rank_bis+1)
+               istart = istart1(rank_bis+1)
+               iend = iend1(rank_bis+1)
+            else
+               kstart = kstart1(rank+1)
+               kend = kend1(rank+1)
+               jstart = jstart1(rank+1)
+               jend = jend1(rank+1)
+               istart = istart1(rank+1)
+               iend = iend1(rank+1)
+            end if
+            if (((k.ge.kstart).and.(k.le.kend)).and.&
+            &((j.ge.jstart).and.(j.le.jend)).and.&
+            &((i.ge.istart).and.(i.le.iend))) then
+               tq_1  = qgrid2in_2d(1,i-istart+1,j-jstart+1,k-kstart+1,&
+               &1)
+               tq_2  = qgrid2in_2d(2,i-istart+1,j-jstart+1,k-kstart+1,&
+               &1)
+               goto 10
+            end if
+            do iproc = 1, nrec_send
+               proc = prec_send(iproc)
+               kstart = kstart1(proc+1)
+               kend = kend1(proc+1)
+               jstart = jstart1(proc+1)
+               jend = jend1(proc+1)
+               istart = istart1(proc+1)
+               iend = iend1(proc+1)
+               if (((k.ge.kstart).and.(k.le.kend)).and.&
+               &((j.ge.jstart).and.(j.le.jend)).and.&
+               &((i.ge.istart).and.(i.le.iend))) then
+                  tq_1  = qgrid2in_2d(1,i-istart+1,j-jstart+1,&
+                  &k-kstart+1,iproc+1)
+                  tq_2  = qgrid2in_2d(2,i-istart+1,j-jstart+1,&
+                  &k-kstart+1,iproc+1)
+                  goto 10
+               end if
+            end do
+10          continue
+!
+            t0_1 = t0_1 + tq_1*thetai1(1,it1,impi)
+            t1_1 = t1_1 + tq_1*thetai1(2,it1,impi)
+            t2_1 = t2_1 + tq_1*thetai1(3,it1,impi)
+            t3_1 = t3_1 + tq_1*thetai1(4,it1,impi)
+            t0_2 = t0_2 + tq_2*thetai1(1,it1,impi)
+            t1_2 = t1_2 + tq_2*thetai1(2,it1,impi)
+            t2_2 = t2_2 + tq_2*thetai1(3,it1,impi)
+            t3_2 = t3_2 + tq_2*thetai1(4,it1,impi)
+         end do
+         tu00_1 = tu00_1 + t0_1*u0
+         tu10_1 = tu10_1 + t1_1*u0
+         tu01_1 = tu01_1 + t0_1*u1
+         tu20_1 = tu20_1 + t2_1*u0
+         tu11_1 = tu11_1 + t1_1*u1
+         tu02_1 = tu02_1 + t0_1*u2
+         tu30_1 = tu30_1 + t3_1*u0
+         tu21_1 = tu21_1 + t2_1*u1
+         tu12_1 = tu12_1 + t1_1*u2
+         tu03_1 = tu03_1 + t0_1*u3
+         tu00_2 = tu00_2 + t0_2*u0
+         tu10_2 = tu10_2 + t1_2*u0
+         tu01_2 = tu01_2 + t0_2*u1
+         tu20_2 = tu20_2 + t2_2*u0
+         tu11_2 = tu11_2 + t1_2*u1
+         tu02_2 = tu02_2 + t0_2*u2
+         tu30_2 = tu30_2 + t3_2*u0
+         tu21_2 = tu21_2 + t2_2*u1
+         tu12_2 = tu12_2 + t1_2*u2
+         tu03_2 = tu03_2 + t0_2*u3
+      end do
+      tuv000_1 = tuv000_1 + tu00_1*v0
+      tuv100_1 = tuv100_1 + tu10_1*v0
+      tuv010_1 = tuv010_1 + tu01_1*v0
+      tuv001_1 = tuv001_1 + tu00_1*v1
+      tuv200_1 = tuv200_1 + tu20_1*v0
+      tuv020_1 = tuv020_1 + tu02_1*v0
+      tuv002_1 = tuv002_1 + tu00_1*v2
+      tuv110_1 = tuv110_1 + tu11_1*v0
+      tuv101_1 = tuv101_1 + tu10_1*v1
+      tuv011_1 = tuv011_1 + tu01_1*v1
+      tuv300_1 = tuv300_1 + tu30_1*v0
+      tuv030_1 = tuv030_1 + tu03_1*v0
+      tuv003_1 = tuv003_1 + tu00_1*v3
+      tuv210_1 = tuv210_1 + tu21_1*v0
+      tuv201_1 = tuv201_1 + tu20_1*v1
+      tuv120_1 = tuv120_1 + tu12_1*v0
+      tuv021_1 = tuv021_1 + tu02_1*v1
+      tuv102_1 = tuv102_1 + tu10_1*v2
+      tuv012_1 = tuv012_1 + tu01_1*v2
+      tuv111_1 = tuv111_1 + tu11_1*v1
+      tuv000_2 = tuv000_2 + tu00_2*v0
+      tuv100_2 = tuv100_2 + tu10_2*v0
+      tuv010_2 = tuv010_2 + tu01_2*v0
+      tuv001_2 = tuv001_2 + tu00_2*v1
+      tuv200_2 = tuv200_2 + tu20_2*v0
+      tuv020_2 = tuv020_2 + tu02_2*v0
+      tuv002_2 = tuv002_2 + tu00_2*v2
+      tuv110_2 = tuv110_2 + tu11_2*v0
+      tuv101_2 = tuv101_2 + tu10_2*v1
+      tuv011_2 = tuv011_2 + tu01_2*v1
+      tuv300_2 = tuv300_2 + tu30_2*v0
+      tuv030_2 = tuv030_2 + tu03_2*v0
+      tuv003_2 = tuv003_2 + tu00_2*v3
+      tuv210_2 = tuv210_2 + tu21_2*v0
+      tuv201_2 = tuv201_2 + tu20_2*v1
+      tuv120_2 = tuv120_2 + tu12_2*v0
+      tuv021_2 = tuv021_2 + tu02_2*v1
+      tuv102_2 = tuv102_2 + tu10_2*v2
+      tuv012_2 = tuv012_2 + tu01_2*v2
+      tuv111_2 = tuv111_2 + tu11_2*v1
+   end do
+   fdip_phi1(1)  = tuv000_1
+   fdip_phi1(2)  = tuv100_1
+   fdip_phi1(3)  = tuv010_1
+   fdip_phi1(4)  = tuv001_1
+   fdip_phi1(5)  = tuv200_1
+   fdip_phi1(6)  = tuv020_1
+   fdip_phi1(7)  = tuv002_1
+   fdip_phi1(8)  = tuv110_1
+   fdip_phi1(9)  = tuv101_1
+   fdip_phi1(10) = tuv011_1
+   fdip_phi1(11) = tuv300_1
+   fdip_phi1(12) = tuv030_1
+   fdip_phi1(13) = tuv003_1
+   fdip_phi1(14) = tuv210_1
+   fdip_phi1(15) = tuv201_1
+   fdip_phi1(16) = tuv120_1
+   fdip_phi1(17) = tuv021_1
+   fdip_phi1(18) = tuv102_1
+   fdip_phi1(19) = tuv012_1
+   fdip_phi1(20) = tuv111_1
+   fdip_phi2(1)  = tuv000_2
+   fdip_phi2(2)  = tuv100_2
+   fdip_phi2(3)  = tuv010_2
+   fdip_phi2(4)  = tuv001_2
+   fdip_phi2(5)  = tuv200_2
+   fdip_phi2(6)  = tuv020_2
+   fdip_phi2(7)  = tuv002_2
+   fdip_phi2(8)  = tuv110_2
+   fdip_phi2(9)  = tuv101_2
+   fdip_phi2(10) = tuv011_2
+   fdip_phi2(11) = tuv300_2
+   fdip_phi2(12) = tuv030_2
+   fdip_phi2(13) = tuv003_2
+   fdip_phi2(14) = tuv210_2
+   fdip_phi2(15) = tuv201_2
+   fdip_phi2(16) = tuv120_2
+   fdip_phi2(17) = tuv021_2
+   fdip_phi2(18) = tuv102_2
+   fdip_phi2(19) = tuv012_2
+   fdip_phi2(20) = tuv111_2
+!
+   return
+end
+
+
+!
+!       "fphi_dervec_site2" extracts the "equivalent" potential on the i-th site from
+!       the given particle mesh Ewald grid for both scalings p and d
+!
+!
+subroutine fphi_dervec_site2(isite,impi, grid, fdervec)
+   use domdec
+   use fft
+   use mpole
+   use pme
+   use potent
+   use mpi
+   implicit none
+   integer istart,iend,jstart,jend,kstart,kend
+   integer i,j,k,impi,rankloc
+   integer iproc,proc
+   integer isite,iatm
+   integer i0,j0,k0
+   integer it1,it2,it3
+   integer igrd0,jgrd0,kgrd0
+   real*8 v0,v1,v2,v3
+   real*8 u0,u1,u2,u3
+   real*8 t0,t1,t2,t3,tq
+   real*8 t0_2,t1_2,t2_2,t3_2,tq_2
+   real*8 tu00,tu10,tu01,tu20,tu11
+   real*8 tu02,tu21,tu12,tu30,tu03
+   real*8 tu00_2,tu10_2,tu01_2,tu20_2,tu11_2
+   real*8 tu02_2,tu21_2,tu12_2,tu30_2,tu03_2
+   real*8 tuv000,tuv100,tuv010,tuv001
+   real*8 tuv200,tuv020,tuv002,tuv110
+   real*8 tuv101,tuv011,tuv300,tuv030
+   real*8 tuv003,tuv210,tuv201,tuv120
+   real*8 tuv021,tuv102,tuv012,tuv111
+   real*8 tuv000_2,tuv100_2,tuv010_2,tuv001_2
+   real*8 tuv200_2,tuv020_2,tuv002_2,tuv110_2
+   real*8 tuv101_2,tuv011_2,tuv300_2,tuv030_2
+   real*8 tuv003_2,tuv210_2,tuv201_2,tuv120_2
+   real*8 tuv021_2,tuv102_2,tuv012_2,tuv111_2
+!      real*8 fphi(20)
+
+   real*8, dimension(20,2) :: fdervec
+   real*8, dimension(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1) ::&
+   &grid
+!
+   if (use_pmecore) then
+      rankloc  = rank_bis
+   else
+      rankloc  = rank
+   end if
+!
+   iatm = isite
+   igrd0 = igrid(1,iatm)
+   jgrd0 = igrid(2,iatm)
+   kgrd0 = igrid(3,iatm)
+   tuv000 = 0.0d0
+   tuv001 = 0.0d0
+   tuv010 = 0.0d0
+   tuv100 = 0.0d0
+   tuv200 = 0.0d0
+   tuv020 = 0.0d0
+   tuv002 = 0.0d0
+   tuv110 = 0.0d0
+   tuv101 = 0.0d0
+   tuv011 = 0.0d0
+   tuv300 = 0.0d0
+   tuv030 = 0.0d0
+   tuv003 = 0.0d0
+   tuv210 = 0.0d0
+   tuv201 = 0.0d0
+   tuv120 = 0.0d0
+   tuv021 = 0.0d0
+   tuv102 = 0.0d0
+   tuv012 = 0.0d0
+   tuv111 = 0.0d0
+   tuv000_2 = 0.0d0
+   tuv001_2 = 0.0d0
+   tuv010_2 = 0.0d0
+   tuv100_2 = 0.0d0
+   tuv200_2 = 0.0d0
+   tuv020_2 = 0.0d0
+   tuv002_2 = 0.0d0
+   tuv110_2 = 0.0d0
+   tuv101_2 = 0.0d0
+   tuv011_2 = 0.0d0
+   tuv300_2 = 0.0d0
+   tuv030_2 = 0.0d0
+   tuv003_2 = 0.0d0
+   tuv210_2 = 0.0d0
+   tuv201_2 = 0.0d0
+   tuv120_2 = 0.0d0
+   tuv021_2 = 0.0d0
+   tuv102_2 = 0.0d0
+   tuv012_2 = 0.0d0
+   tuv111_2 = 0.0d0
+   k0 = kgrd0
+   do it3 = 1, bsorder
+      k0 = k0 + 1
+      k = k0 + 1 + (nfft3-isign(nfft3,k0))/2
+      v0 = thetai3(1,it3,impi)
+      v1 = thetai3(2,it3,impi)
+      v2 = thetai3(3,it3,impi)
+      v3 = thetai3(4,it3,impi)
+      tu00 = 0.0d0
+      tu10 = 0.0d0
+      tu01 = 0.0d0
+      tu20 = 0.0d0
+      tu11 = 0.0d0
+      tu02 = 0.0d0
+      tu30 = 0.0d0
+      tu21 = 0.0d0
+      tu12 = 0.0d0
+      tu03 = 0.0d0
+      tu00_2 = 0.0d0
+      tu10_2 = 0.0d0
+      tu01_2 = 0.0d0
+      tu20_2 = 0.0d0
+      tu11_2 = 0.0d0
+      tu02_2 = 0.0d0
+      tu30_2 = 0.0d0
+      tu21_2 = 0.0d0
+      tu12_2 = 0.0d0
+      tu03_2 = 0.0d0
+      j0 = jgrd0
+      do it2 = 1, bsorder
+         j0 = j0 + 1
+         j = j0 + 1 + (nfft2-isign(nfft2,j0))/2
+         u0 = thetai2(1,it2,impi)
+         u1 = thetai2(2,it2,impi)
+         u2 = thetai2(3,it2,impi)
+         u3 = thetai2(4,it2,impi)
+         t0 = 0.0d0
+         t1 = 0.0d0
+         t2 = 0.0d0
+         t3 = 0.0d0
+         t0_2 = 0.0d0
+         t1_2 = 0.0d0
+         t2_2 = 0.0d0
+         t3_2 = 0.0d0
+         i0 = igrd0
+         do it1 = 1, bsorder
+            i0 = i0 + 1
+            i = i0 + 1 + (nfft1-isign(nfft1,i0))/2
+!
+            tq = 0.0d0
+            kstart = kstart1(rankloc+1)
+            kend = kend1(rankloc+1)
+            jstart = jstart1(rankloc+1)
+            jend = jend1(rankloc+1)
+            istart = istart1(rankloc+1)
+            iend = iend1(rankloc+1)
+            if (((k.ge.kstart).and.(k.le.kend)).and.&
+            &((j.ge.jstart).and.(j.le.jend)).and.&
+            &((i.ge.istart).and.(i.le.iend))) then
+               tq  = grid(1,i-istart+1,j-jstart+1,k-kstart+1,1)
+               tq_2  = grid(2,i-istart+1,j-jstart+1,k-kstart+1,1)
+               goto 10
+            end if
+            do iproc = 1, nrec_send
+               proc = prec_send(iproc)
+               kstart = kstart1(proc+1)
+               kend = kend1(proc+1)
+               jstart = jstart1(proc+1)
+               jend = jend1(proc+1)
+               istart = istart1(proc+1)
+               iend = iend1(proc+1)
+               if (((k.ge.kstart).and.(k.le.kend)).and.&
+               &((j.ge.jstart).and.(j.le.jend)).and.&
+               &((i.ge.istart).and.(i.le.iend))) then
+                  tq  = grid(1,i-istart+1,j-jstart+1,k-kstart+1,&
+                  &iproc+1)
+                  tq_2 =grid(2,i-istart+1,j-jstart+1,k-kstart+1,&
+                  &iproc+1)
+                  goto 10
+               end if
+            end do
+10          continue
+!
+            t0 = t0 + tq*thetai1(1,it1,impi)
+            t1 = t1 + tq*thetai1(2,it1,impi)
+            t2 = t2 + tq*thetai1(3,it1,impi)
+            t3 = t3 + tq*thetai1(4,it1,impi)
+            t0_2 = t0_2 + tq_2*thetai1(1,it1,impi)
+            t1_2 = t1_2 + tq_2*thetai1(2,it1,impi)
+            t2_2 = t2_2 + tq_2*thetai1(3,it1,impi)
+            t3_2 = t3_2 + tq_2*thetai1(4,it1,impi)
+         end do
+         tu00 = tu00 + t0*u0
+         tu10 = tu10 + t1*u0
+         tu01 = tu01 + t0*u1
+         tu20 = tu20 + t2*u0
+         tu11 = tu11 + t1*u1
+         tu02 = tu02 + t0*u2
+         tu30 = tu30 + t3*u0
+         tu21 = tu21 + t2*u1
+         tu12 = tu12 + t1*u2
+         tu03 = tu03 + t0*u3
+         tu00_2 = tu00_2 + t0_2*u0
+         tu10_2 = tu10_2 + t1_2*u0
+         tu01_2 = tu01_2 + t0_2*u1
+         tu20_2 = tu20_2 + t2_2*u0
+         tu11_2 = tu11_2 + t1_2*u1
+         tu02_2 = tu02_2 + t0_2*u2
+         tu30_2 = tu30_2 + t3_2*u0
+         tu21_2 = tu21_2 + t2_2*u1
+         tu12_2 = tu12_2 + t1_2*u2
+         tu03_2 = tu03_2 + t0_2*u3
+      end do
+      tuv000 = tuv000 + tu00*v0
+      tuv100 = tuv100 + tu10*v0
+      tuv010 = tuv010 + tu01*v0
+      tuv001 = tuv001 + tu00*v1
+      tuv200 = tuv200 + tu20*v0
+      tuv020 = tuv020 + tu02*v0
+      tuv002 = tuv002 + tu00*v2
+      tuv110 = tuv110 + tu11*v0
+      tuv101 = tuv101 + tu10*v1
+      tuv011 = tuv011 + tu01*v1
+      tuv300 = tuv300 + tu30*v0
+      tuv030 = tuv030 + tu03*v0
+      tuv003 = tuv003 + tu00*v3
+      tuv210 = tuv210 + tu21*v0
+      tuv201 = tuv201 + tu20*v1
+      tuv120 = tuv120 + tu12*v0
+      tuv021 = tuv021 + tu02*v1
+      tuv102 = tuv102 + tu10*v2
+      tuv012 = tuv012 + tu01*v2
+      tuv111 = tuv111 + tu11*v1
+      tuv000_2 = tuv000_2 + tu00_2*v0
+      tuv100_2 = tuv100_2 + tu10_2*v0
+      tuv010_2 = tuv010_2 + tu01_2*v0
+      tuv001_2 = tuv001_2 + tu00_2*v1
+      tuv200_2 = tuv200_2 + tu20_2*v0
+      tuv020_2 = tuv020_2 + tu02_2*v0
+      tuv002_2 = tuv002_2 + tu00_2*v2
+      tuv110_2 = tuv110_2 + tu11_2*v0
+      tuv101_2 = tuv101_2 + tu10_2*v1
+      tuv011_2 = tuv011_2 + tu01_2*v1
+      tuv300_2 = tuv300_2 + tu30_2*v0
+      tuv030_2 = tuv030_2 + tu03_2*v0
+      tuv003_2 = tuv003_2 + tu00_2*v3
+      tuv210_2 = tuv210_2 + tu21_2*v0
+      tuv201_2 = tuv201_2 + tu20_2*v1
+      tuv120_2 = tuv120_2 + tu12_2*v0
+      tuv021_2 = tuv021_2 + tu02_2*v1
+      tuv102_2 = tuv102_2 + tu10_2*v2
+      tuv012_2 = tuv012_2 + tu01_2*v2
+      tuv111_2 = tuv111_2 + tu11_2*v1
+   end do
+   fdervec( 1,1) = tuv000
+   fdervec( 2,1) = tuv100
+   fdervec( 3,1) = tuv010
+   fdervec( 4,1) = tuv001
+   fdervec( 5,1) = tuv200
+   fdervec( 6,1) = tuv020
+   fdervec( 7,1) = tuv002
+   fdervec( 8,1) = tuv110
+   fdervec( 9,1) = tuv101
+   fdervec(10,1) = tuv011
+   fdervec(11,1) = tuv300
+   fdervec(12,1) = tuv030
+   fdervec(13,1) = tuv003
+   fdervec(14,1) = tuv210
+   fdervec(15,1) = tuv201
+   fdervec(16,1) = tuv120
+   fdervec(17,1) = tuv021
+   fdervec(18,1) = tuv102
+   fdervec(19,1) = tuv012
+   fdervec(20,1) = tuv111
+   fdervec( 1,2) = tuv000_2
+   fdervec( 2,2) = tuv100_2
+   fdervec( 3,2) = tuv010_2
+   fdervec( 4,2) = tuv001_2
+   fdervec( 5,2) = tuv200_2
+   fdervec( 6,2) = tuv020_2
+   fdervec( 7,2) = tuv002_2
+   fdervec( 8,2) = tuv110_2
+   fdervec( 9,2) = tuv101_2
+   fdervec(10,2) = tuv011_2
+   fdervec(11,2) = tuv300_2
+   fdervec(12,2) = tuv030_2
+   fdervec(13,2) = tuv003_2
+   fdervec(14,2) = tuv210_2
+   fdervec(15,2) = tuv201_2
+   fdervec(16,2) = tuv120_2
+   fdervec(17,2) = tuv021_2
+   fdervec(18,2) = tuv102_2
+   fdervec(19,2) = tuv012_2
+   fdervec(20,2) = tuv111_2
+   return
+end
+
+!
+!       "fphi_dervec_site" extracts the "equivalent" potential on the i-th site from
+!       the given particle mesh Ewald grid
+!
+!
+subroutine fphi_dervec_site(isite,impi, grid, fdervec)
+   use domdec
+   use fft
+   use mpole
+   use pme
+   use potent
+   use mpi
+   implicit none
+   integer istart,iend,jstart,jend,kstart,kend
+   integer i,j,k,impi,rankloc
+   integer iproc,proc
+   integer isite,iatm
+   integer i0,j0,k0
+   integer it1,it2,it3
+   integer igrd0,jgrd0,kgrd0
+   real*8 v0,v1,v2,v3
+   real*8 u0,u1,u2,u3
+   real*8 t0,t1,t2,t3,tq
+
+   real*8 tu00,tu10,tu01,tu20,tu11
+   real*8 tu02,tu21,tu12,tu30,tu03
+
+
+   real*8 tuv000,tuv100,tuv010,tuv001
+   real*8 tuv200,tuv020,tuv002,tuv110
+   real*8 tuv101,tuv011,tuv300,tuv030
+   real*8 tuv003,tuv210,tuv201,tuv120
+   real*8 tuv021,tuv102,tuv012,tuv111
+
+
+
+
+
+!      real*8 fphi(20)
+
+   real*8, dimension(20) :: fdervec
+   real*8, dimension(2,n1mpimax,n2mpimax,n3mpimax,nrec_send+1) ::&
+   &grid
+!
+   if (use_pmecore) then
+      rankloc  = rank_bis
+   else
+      rankloc  = rank
+   end if
+!
+   iatm = isite
+   igrd0 = igrid(1,iatm)
+   jgrd0 = igrid(2,iatm)
+   kgrd0 = igrid(3,iatm)
+   tuv000 = 0.0d0
+   tuv001 = 0.0d0
+   tuv010 = 0.0d0
+   tuv100 = 0.0d0
+   tuv200 = 0.0d0
+   tuv020 = 0.0d0
+   tuv002 = 0.0d0
+   tuv110 = 0.0d0
+   tuv101 = 0.0d0
+   tuv011 = 0.0d0
+   tuv300 = 0.0d0
+   tuv030 = 0.0d0
+   tuv003 = 0.0d0
+   tuv210 = 0.0d0
+   tuv201 = 0.0d0
+   tuv120 = 0.0d0
+   tuv021 = 0.0d0
+   tuv102 = 0.0d0
+   tuv012 = 0.0d0
+   tuv111 = 0.0d0
+   k0 = kgrd0
+   do it3 = 1, bsorder
+      k0 = k0 + 1
+      k = k0 + 1 + (nfft3-isign(nfft3,k0))/2
+      v0 = thetai3(1,it3,impi)
+      v1 = thetai3(2,it3,impi)
+      v2 = thetai3(3,it3,impi)
+      v3 = thetai3(4,it3,impi)
+      tu00 = 0.0d0
+      tu10 = 0.0d0
+      tu01 = 0.0d0
+      tu20 = 0.0d0
+      tu11 = 0.0d0
+      tu02 = 0.0d0
+      tu30 = 0.0d0
+      tu21 = 0.0d0
+      tu12 = 0.0d0
+      tu03 = 0.0d0
+      j0 = jgrd0
+      do it2 = 1, bsorder
+         j0 = j0 + 1
+         j = j0 + 1 + (nfft2-isign(nfft2,j0))/2
+         u0 = thetai2(1,it2,impi)
+         u1 = thetai2(2,it2,impi)
+         u2 = thetai2(3,it2,impi)
+         u3 = thetai2(4,it2,impi)
+         t0 = 0.0d0
+         t1 = 0.0d0
+         t2 = 0.0d0
+         t3 = 0.0d0
+         i0 = igrd0
+         do it1 = 1, bsorder
+            i0 = i0 + 1
+            i = i0 + 1 + (nfft1-isign(nfft1,i0))/2
+!
+            tq = 0.0d0
+            kstart = kstart1(rankloc+1)
+            kend = kend1(rankloc+1)
+            jstart = jstart1(rankloc+1)
+            jend = jend1(rankloc+1)
+            istart = istart1(rankloc+1)
+            iend = iend1(rankloc+1)
+            if (((k.ge.kstart).and.(k.le.kend)).and.&
+            &((j.ge.jstart).and.(j.le.jend)).and.&
+            &((i.ge.istart).and.(i.le.iend))) then
+               tq  = grid(1,i-istart+1,j-jstart+1,k-kstart+1,1)
+               goto 10
+            end if
+            do iproc = 1, nrec_send
+               proc = prec_send(iproc)
+               kstart = kstart1(proc+1)
+               kend = kend1(proc+1)
+               jstart = jstart1(proc+1)
+               jend = jend1(proc+1)
+               istart = istart1(proc+1)
+               iend = iend1(proc+1)
+               if (((k.ge.kstart).and.(k.le.kend)).and.&
+               &((j.ge.jstart).and.(j.le.jend)).and.&
+               &((i.ge.istart).and.(i.le.iend))) then
+                  tq  = grid(1,i-istart+1,j-jstart+1,k-kstart+1,&
+                  &iproc+1)
+                  goto 10
+               end if
+            end do
+10          continue
+!
+            t0 = t0 + tq*thetai1(1,it1,impi)
+            t1 = t1 + tq*thetai1(2,it1,impi)
+            t2 = t2 + tq*thetai1(3,it1,impi)
+            t3 = t3 + tq*thetai1(4,it1,impi)
+         end do
+         tu00 = tu00 + t0*u0
+         tu10 = tu10 + t1*u0
+         tu01 = tu01 + t0*u1
+         tu20 = tu20 + t2*u0
+         tu11 = tu11 + t1*u1
+         tu02 = tu02 + t0*u2
+         tu30 = tu30 + t3*u0
+         tu21 = tu21 + t2*u1
+         tu12 = tu12 + t1*u2
+         tu03 = tu03 + t0*u3
+      end do
+      tuv000 = tuv000 + tu00*v0
+      tuv100 = tuv100 + tu10*v0
+      tuv010 = tuv010 + tu01*v0
+      tuv001 = tuv001 + tu00*v1
+      tuv200 = tuv200 + tu20*v0
+      tuv020 = tuv020 + tu02*v0
+      tuv002 = tuv002 + tu00*v2
+      tuv110 = tuv110 + tu11*v0
+      tuv101 = tuv101 + tu10*v1
+      tuv011 = tuv011 + tu01*v1
+      tuv300 = tuv300 + tu30*v0
+      tuv030 = tuv030 + tu03*v0
+      tuv003 = tuv003 + tu00*v3
+      tuv210 = tuv210 + tu21*v0
+      tuv201 = tuv201 + tu20*v1
+      tuv120 = tuv120 + tu12*v0
+      tuv021 = tuv021 + tu02*v1
+      tuv102 = tuv102 + tu10*v2
+      tuv012 = tuv012 + tu01*v2
+      tuv111 = tuv111 + tu11*v1
+   end do
+   fdervec(1) = tuv000
+   fdervec(2) = tuv100
+   fdervec(3) = tuv010
+   fdervec(4) = tuv001
+   fdervec(5) = tuv200
+   fdervec(6) = tuv020
+   fdervec(7) = tuv002
+   fdervec(8) = tuv110
+   fdervec(9) = tuv101
+   fdervec(10) = tuv011
+   fdervec(11) = tuv300
+   fdervec(12) = tuv030
+   fdervec(13) = tuv003
+   fdervec(14) = tuv210
+   fdervec(15) = tuv201
+   fdervec(16) = tuv120
+   fdervec(17) = tuv021
+   fdervec(18) = tuv102
+   fdervec(19) = tuv012
+   fdervec(20) = tuv111
+   return
+end
+
+! ================================================================
+!   subroutine torque_prods
+! ================================================================
+! A small utility sub to generate the products (well especially to
+! lighten the main sub)
+!
+! d(in)(3) : dipole (unrot)
+! q2(in)(3,3) : quad (local, unrotated) to be derivated
+! rmat(in)(3,3) : rotation matrix
+! dri(in)(3,3,3) : deriv. of rotation matrix w.r. to i
+! di(out) (3,3)  : derrotated d
+! qi(out) (3,3,3): derrotated q2
+!
+
+subroutine torque_prods(d, q2, rmat, dri,di, qi )
+   implicit none
+
+   integer :: l1, l2, l3, n1, n2
+   real*8, dimension(3)   :: d
+   real*8, dimension(3,3) :: di, q2, rmat
+   real*8, dimension(3,3,3) :: qi, dri
+
+   call aclear(9,di)
+   call aclear(27,qi)
+   do l1 = 1,3
+      do l2 = 1,3
+         do l3 = 1,3
+            di(l3,l1) = di(l3,l1)&
+            &+ dri(l3,l1,l2)*d(l2)
+         end do
+         do n1 = 1,3
+            do n2 = 1,3
+               do l3 = 1,3
+                  qi(l3,l1,l2) = qi(l3,l1,l2)&
+                  &+ q2(n1,n2)*(dri(l3,l1,n1)&
+                  &*rmat(l2,n2)&
+                  &+ dri(l3,l2,n2)*rmat(l1,n1))
+               end do
+            end do
+         end do
+      end do
+   end do
+   return
+end subroutine
+!
+!     subroutine torque_dir: computes contribution of torques to derivatives of
+!      polarization energy with tcg (direct part)
+!
+subroutine torquetcg_dir(torq_mu,torq_t,denedmu,denedt)
+   use atmlst
+   use domdec
+   use mpole
+   implicit none
+   integer i,ii,iipole,iglob,iz,ix,iy
+   integer jj,jjpole,jglob,jloc,jpoleloc
+   integer jx,jy,jz,alphac,betac,jxloc,jyloc,jzloc
+   logical doi,doix,doiy,doiz
+   real*8 :: torq_mu(3,nbloc),torq_t(3,nbloc)
+   real*8 :: denedmu(3,npolebloc),denedt(3,3,npolebloc)
+   real*8, allocatable :: dtorquemu(:,:,:,:),dtorquetheta(:,:,:,:,:)
+   real*8 sprod
+   real*8, dimension(3) :: d
+   real*8, dimension(3,3) :: q2, qr, di, rmat
+   real*8, dimension(3,3,3) :: qi, dri, drix, driy, driz
+!
+   allocate (dtorquemu(3,4,3,nbloc))
+   allocate (dtorquetheta(3,4,3,3,nbloc))
+!
+   torq_mu = 0d0
+   torq_t = 0d0
+   dtorquemu = 0d0
+   dtorquetheta = 0d0
+
+   do ii = 1, npolelocnl
+      iipole = poleglobnl(ii)
+      iglob = ipole(iipole)
+      i = loc(iglob)
+      iz = zaxis(iipole)
+      ix = xaxis(iipole)
+      iy = yaxis(iipole)
+      do alphac = 1,3
+         d(alphac) = pole(alphac + 1,iipole)
+         q2(1,alphac) = pole(4+alphac,iipole)
+         q2(2,alphac) = pole(7+alphac, iipole)
+         q2(3,alphac) = pole(10+alphac, iipole)
+         qr(1,alphac) = rpole(4+alphac,iipole)
+         qr(2,alphac) = rpole(7+alphac, iipole)
+         qr(3,alphac) = rpole(10+alphac, iipole)
+      end do
+
+      call derrot(iipole,.true.,iglob,iz,ix,iy,rmat,dri,&
+      &driz,drix,driy)
+      doi = .true.
+      doix = .false.
+      doiy = .false.
+      doiz = .false.
+      if (iz.gt.0) doiz = .true.
+      if (ix.gt.0) doix = .true.
+      if (iy.gt.0) doiy = .true.
+
+      if (doi) then
+         call torque_prods(d,q2,rmat,dri,di,qi)
+         dtorquemu(:,1,:,i) = di
+         dtorquetheta(:,1,:,:,i) = qi
+
+      end if
+      if (doix) then
+         call torque_prods(d,q2,rmat,drix,di,qi)
+         dtorquemu(:,2,:,i) = di
+         dtorquetheta(:,2,:,:,i) = qi
+
+      end if
+      if (doiy) then
+         call torque_prods(d,q2,rmat,driy,di,qi)
+         dtorquemu(:,3,:,i) = di
+         dtorquetheta(:,3,:,:,i) = qi
+
+      end if
+      if (doiz) then
+         call torque_prods(d,q2,rmat,driz,di,qi)
+         dtorquemu(:,4,:,i) = di
+         dtorquetheta(:,4,:,:,i) = qi
+
+      end if
+   end do ! ii
+
+   do jj = 1, npolelocnl
+      jjpole  = poleglobnl(jj)
+      jglob = ipole(jjpole)
+      jloc  = loc(jglob)
+      jpoleloc = poleloc(jjpole)
+      jx = xaxis(jjpole)
+      if (jx.gt.0) jxloc = loc(jx)
+      jy = yaxis(jjpole)
+      if (jy.gt.0) jyloc = loc(jy)
+      jz = zaxis(jjpole)
+      if (jz.gt.0) jzloc = loc(jz)
+      do betac = 1,3
+         torq_mu(betac,jloc) = torq_mu(betac,jloc)&
+         &+ sprod(3,dEnedmu(:,jpoleloc),dtorquemu(betac,1,:,jloc))
+
+         torq_t(betac,jloc) = torq_t(betac,jloc)&
+         &+ sprod(9,dEnedt(:,:,jpoleloc),&
+         &dtorquetheta(betac,1,:,:,jloc))
+
+         if (jx .gt. 0) then
+            torq_mu(betac,jxloc) = torq_mu(betac,jxloc)&
+            &+ sprod(3,dEnedmu(:,jpoleloc), dtorquemu(betac,2,:,jloc))
+            torq_t(betac,jxloc) = torq_t(betac,jxloc)&
+            &+ sprod(9,dEnedt(:,:,jpoleloc),&
+            &dtorquetheta(betac,2,:,:,jloc))
+         end if
+         if (jy .gt. 0) then
+            torq_mu(betac,jyloc) = torq_mu(betac,jyloc)&
+            &+ sprod(3,dEnedmu(:,jpoleloc), dtorquemu(betac,3,:,jloc))
+            torq_t(betac,jyloc) = torq_t(betac,jyloc)&
+            &+ sprod(9,dEnedt(:,:,jpoleloc),&
+            &dtorquetheta(betac,3,:,:,jloc))
+         end if
+         if (jz .gt. 0) then
+            torq_mu(betac,jzloc) = torq_mu(betac,jzloc)&
+            &+ sprod(3,dEnedmu(:,jpoleloc), dtorquemu(betac,4,:,jloc))
+            torq_t(betac,jzloc) = torq_t(betac,jzloc)&
+            &+ sprod(9,dEnedt(:,:,jpoleloc),&
+            &dtorquetheta(betac,4,:,:,jloc))
+         end if
+      end do
+   end do
+!
+   deallocate (dtorquemu,dtorquetheta)
+   return
+end subroutine
+!
+!     subroutine torque_rec: computes contribution of torques to derivatives of
+!      polarization energy with tcg (reciprocal part)
+!
+subroutine torquetcg_rec(torq_mu,torq_t,denedmu,denedt)
+   use atmlst
+   use domdec
+   use mpole
+   implicit none
+   integer ii,iipole,iglob,iz,ix,iy
+   integer jj,jjj,jjpole,jglob
+   integer jx,jy,jz,alphac,betac,jxloc,jyloc,jzloc
+   logical doi,doix,doiy,doiz
+   real*8 :: torq_mu(3,nlocrec2),torq_t(3,nlocrec2)
+   real*8 :: denedmu(3,nlocrec),denedt(3,3,nlocrec)
+   real*8, allocatable :: dtorquemu(:,:,:,:),dtorquetheta(:,:,:,:,:)
+   real*8 sprod
+   real*8, dimension(3) :: d
+   real*8, dimension(3,3) :: q2, qr, di, rmat
+   real*8, dimension(3,3,3) :: qi, dri, drix, driy, driz
+!
+   allocate (dtorquemu(3,4,3,npolerecloc))
+   allocate (dtorquetheta(3,4,3,3,npolerecloc))
+!
+   torq_mu = 0d0
+   torq_t = 0d0
+   dtorquemu = 0d0
+   dtorquetheta = 0d0
+
+   do ii = 1, npolerecloc
+      iipole = polerecglob(ii)
+      iglob = ipole(iipole)
+      iz = zaxis(iipole)
+      ix = xaxis(iipole)
+      iy = yaxis(iipole)
+      do alphac = 1,3
+         d(alphac) = pole(alphac + 1,iipole)
+         q2(1,alphac) = pole(4+alphac,iipole)
+         q2(2,alphac) = pole(7+alphac, iipole)
+         q2(3,alphac) = pole(10+alphac, iipole)
+         qr(1,alphac) = rpole(4+alphac,iipole)
+         qr(2,alphac) = rpole(7+alphac, iipole)
+         qr(3,alphac) = rpole(10+alphac, iipole)
+      end do
+
+      call derrot(iipole,.true.,iglob,iz,ix,iy,rmat,dri,&
+      &driz,drix,driy)
+      doi = .true.
+      doix = .false.
+      doiy = .false.
+      doiz = .false.
+      if (iz.gt.0) doiz = .true.
+      if (ix.gt.0) doix = .true.
+      if (iy.gt.0) doiy = .true.
+
+      if (doi) then
+         call torque_prods(d,q2,rmat,dri,di,qi)
+         dtorquemu(:,1,:,ii) = di
+         dtorquetheta(:,1,:,:,ii) = qi
+
+      end if
+      if (doix) then
+         call torque_prods(d,q2,rmat,drix,di,qi)
+         dtorquemu(:,2,:,ii) = di
+         dtorquetheta(:,2,:,:,ii) = qi
+
+      end if
+      if (doiy) then
+         call torque_prods(d,q2,rmat,driy,di,qi)
+         dtorquemu(:,3,:,ii) = di
+         dtorquetheta(:,3,:,:,ii) = qi
+
+      end if
+      if (doiz) then
+         call torque_prods(d,q2,rmat,driz,di,qi)
+         dtorquemu(:,4,:,ii) = di
+         dtorquetheta(:,4,:,:,ii) = qi
+
+      end if
+   end do ! ii
+
+   do jj = 1, npolerecloc
+      jjpole  = polerecglob(jj)
+      jglob = ipole(jjpole)
+      jjj = locrec(jglob)
+      jx = xaxis(jjpole)
+      if (jx.gt.0) jxloc = locrec(jx)
+      jy = yaxis(jjpole)
+      if (jy.gt.0) jyloc = locrec(jy)
+      jz = zaxis(jjpole)
+      if (jz.gt.0) jzloc = locrec(jz)
+      do betac = 1,3
+         torq_mu(betac,jjj) = torq_mu(betac,jjj)&
+         &+ sprod(3,dEnedmu(:,jj),dtorquemu(betac,1,:,jj))
+
+         torq_t(betac,jjj) = torq_t(betac,jjj)&
+         &+ sprod(9,dEnedt(:,:,jj),&
+         &dtorquetheta(betac,1,:,:,jj))
+
+         if (jx .gt. 0) then
+            torq_mu(betac,jxloc) = torq_mu(betac,jxloc)&
+            &+ sprod(3,dEnedmu(:,jj), dtorquemu(betac,2,:,jj))
+            torq_t(betac,jxloc) = torq_t(betac,jxloc)&
+            &+ sprod(9,dEnedt(:,:,jj),&
+            &dtorquetheta(betac,2,:,:,jj))
+         end if
+         if (jy .gt. 0) then
+            torq_mu(betac,jyloc) = torq_mu(betac,jyloc)&
+            &+ sprod(3,dEnedmu(:,jj), dtorquemu(betac,3,:,jj))
+            torq_t(betac,jyloc) = torq_t(betac,jyloc)&
+            &+ sprod(9,dEnedt(:,:,jj),&
+            &dtorquetheta(betac,3,:,:,jj))
+         end if
+         if (jz .gt. 0) then
+            torq_mu(betac,jzloc) = torq_mu(betac,jzloc)&
+            &+ sprod(3,dEnedmu(:,jj), dtorquemu(betac,4,:,jj))
+            torq_t(betac,jzloc) = torq_t(betac,jzloc)&
+            &+ sprod(9,dEnedt(:,:,jj),&
+            &dtorquetheta(betac,4,:,:,jj))
+         end if
+      end do
+   end do
+!
+   deallocate (dtorquemu,dtorquetheta)
+   return
+end subroutine

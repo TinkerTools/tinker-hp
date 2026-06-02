@@ -1,0 +1,429 @@
+\hypertarget{classneigh}{\section{neigh Module Reference}
+\label{classneigh}\index{neigh@{neigh}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classneigh_a91014fd28ce5849e5f8665c6b4d6f100}{ineigup}
+\begin{DoxyCompactList}\small\item\em number of time steps between each neighbor list update \end{DoxyCompactList}\item 
+integer \hyperlink{classneigh_a207a01b850afbc2b58c02b480cb7018e}{ncell\-\_\-tot}
+\begin{DoxyCompactList}\small\item\em number of cells corresponding to the unit cell\-: cell-\/list method \end{DoxyCompactList}\item 
+integer \hyperlink{classneigh_a26e26aed27268acd9f2dc587f89a4bcc}{ncell\-\_\-nl}
+\begin{DoxyCompactList}\small\item\em number of cells to be included for neighbor search, cell-\/list method \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_ab1ecf3ee54d3ed5950574b699190e028}{nvlst}
+\begin{DoxyCompactList}\small\item\em number of sites in list for each vdw site \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classneigh_adecf1389089b0ed25f60e40cefba27fd}{vlst}
+\begin{DoxyCompactList}\small\item\em site numbers in neighbor list of each vdw site \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_af262864038c308dd317cf32e78609ecd}{nelst}
+\begin{DoxyCompactList}\small\item\em number of sites in list for each electrostatic site \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classneigh_ab05aa2b85614fd0d577bedd72c64317f}{elst}
+\begin{DoxyCompactList}\small\item\em site numbers in list of each electrostatic site \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_a3d0ef9d60a1a7083ee02308853aa164b}{nshortvlst}
+\begin{DoxyCompactList}\small\item\em number of sites in list for each short vdw site \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classneigh_ab62999202e9b876b405ddc2463ed38bc}{shortvlst}
+\begin{DoxyCompactList}\small\item\em site numbers in neighbor list of each short vdw site) \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_a1a4c1aa7767a563fd0c9566eefccd545}{nshortelst}
+\begin{DoxyCompactList}\small\item\em number of sites in list for each short electrostatic site \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classneigh_a24094fcb31131c89f6818c5667e6252f}{shortelst}
+\begin{DoxyCompactList}\small\item\em site numbers in list of each short electrostatic site ) \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_aea3521da43e6d88ae7b00dba06240210}{ineignl}
+\begin{DoxyCompactList}\small\item\em localnl-\/global correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classneigh_ae3aefdb55a54810d0a4c7d9001957752}{neigcell}
+\begin{DoxyCompactList}\small\item\em neighboring cells, cell-\/list method \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_a6ecf67821627bc917720dcf2dcd703a6}{numneigcell}
+\begin{DoxyCompactList}\small\item\em number of neighboring cells, cell-\/list method \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_afdbbe58473ef898932aab7d864ac620d}{repartcell}
+\begin{DoxyCompactList}\small\item\em index of the cell corresponding to each atom, cell-\/list method \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_abc2a753a0d9494a2e66da45157c9874c}{cell\-\_\-len}
+\begin{DoxyCompactList}\small\item\em number of atoms in each cell, cell-\/list method \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_a428039ca05098106f98a9b60f506b247}{indcell}
+\begin{DoxyCompactList}\small\item\em localcell-\/global correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_ad81f20d0ff46ad1b2ec20f56da6928f7}{bufbegcell}
+\begin{DoxyCompactList}\small\item\em localcell-\/global correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classneigh_a99c01d6af3f1b175846fa65ca70f7d9b}{lcell\-\_\-nl}
+\begin{DoxyCompactList}\small\item\em list of cells to be included for neighbor search, cell-\/list method \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_a66df6ef3bac2d5562b59b6883a6ae4da}{lbuffer}
+\begin{DoxyCompactList}\small\item\em width of the neighbor list buffer region \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_aee6d4c42a6432bbfb95bd9eae5c696a7}{lbuf2}
+\begin{DoxyCompactList}\small\item\em square of half the neighbor list buffer width \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_af1b5dc4cada84bd65f6b215bcbf8a344}{vbuf2}
+\begin{DoxyCompactList}\small\item\em square of vdw cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_a510e225bf421ef9c1de15bece3739532}{cbuf2}
+\begin{DoxyCompactList}\small\item\em square of short range charge cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_ad76c9a558fd93db7cba1761d4580c929}{mbuf2}
+\begin{DoxyCompactList}\small\item\em square of multipole cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_a6054edfe32412b415a10516845d2403e}{torquebuf2}
+\begin{DoxyCompactList}\small\item\em square of torque cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_a55976e0ec479b7cb47341b0b382018ba}{dbuf2}
+\begin{DoxyCompactList}\small\item\em square of dispersion cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_a2f24e9959d5d21f7677ab4f702359f4e}{vshortbuf2}
+\begin{DoxyCompactList}\small\item\em square of short range vdw cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_a8b4d64898ca057d264af5504faf124c7}{cshortbuf2}
+\begin{DoxyCompactList}\small\item\em square of charge cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_a8dca5facfaf57e4868e61d23956eafed}{mshortbuf2}
+\begin{DoxyCompactList}\small\item\em square of short range multipole cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_abc30fecff32f4c08aa624fe00db9f4bb}{torqueshortbuf2}
+\begin{DoxyCompactList}\small\item\em square of short range torque cutoff plus neighbor list buffer \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classneigh_a1fda85cc92ca9462671291bce775e41b}{dshortbuf2}
+\begin{DoxyCompactList}\small\item\em square of short range dispersion cutoff plus neighbor list buffer \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 45 of file M\-O\-D\-\_\-neigh.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classneigh_ad81f20d0ff46ad1b2ec20f56da6928f7}{\index{neigh@{neigh}!bufbegcell@{bufbegcell}}
+\index{bufbegcell@{bufbegcell}!neigh@{neigh}}
+\subsubsection[{bufbegcell}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::bufbegcell}}\label{classneigh_ad81f20d0ff46ad1b2ec20f56da6928f7}
+
+
+localcell-\/global correspondance 
+
+
+
+Definition at line 64 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a510e225bf421ef9c1de15bece3739532}{\index{neigh@{neigh}!cbuf2@{cbuf2}}
+\index{cbuf2@{cbuf2}!neigh@{neigh}}
+\subsubsection[{cbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::cbuf2}}\label{classneigh_a510e225bf421ef9c1de15bece3739532}
+
+
+square of short range charge cutoff plus neighbor list buffer 
+
+
+
+Definition at line 69 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_abc2a753a0d9494a2e66da45157c9874c}{\index{neigh@{neigh}!cell\-\_\-len@{cell\-\_\-len}}
+\index{cell\-\_\-len@{cell\-\_\-len}!neigh@{neigh}}
+\subsubsection[{cell\-\_\-len}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::cell\-\_\-len}}\label{classneigh_abc2a753a0d9494a2e66da45157c9874c}
+
+
+number of atoms in each cell, cell-\/list method 
+
+
+
+Definition at line 62 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a8b4d64898ca057d264af5504faf124c7}{\index{neigh@{neigh}!cshortbuf2@{cshortbuf2}}
+\index{cshortbuf2@{cshortbuf2}!neigh@{neigh}}
+\subsubsection[{cshortbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::cshortbuf2}}\label{classneigh_a8b4d64898ca057d264af5504faf124c7}
+
+
+square of charge cutoff plus neighbor list buffer 
+
+
+
+Definition at line 74 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a55976e0ec479b7cb47341b0b382018ba}{\index{neigh@{neigh}!dbuf2@{dbuf2}}
+\index{dbuf2@{dbuf2}!neigh@{neigh}}
+\subsubsection[{dbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::dbuf2}}\label{classneigh_a55976e0ec479b7cb47341b0b382018ba}
+
+
+square of dispersion cutoff plus neighbor list buffer 
+
+
+
+Definition at line 72 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a1fda85cc92ca9462671291bce775e41b}{\index{neigh@{neigh}!dshortbuf2@{dshortbuf2}}
+\index{dshortbuf2@{dshortbuf2}!neigh@{neigh}}
+\subsubsection[{dshortbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::dshortbuf2}}\label{classneigh_a1fda85cc92ca9462671291bce775e41b}
+
+
+square of short range dispersion cutoff plus neighbor list buffer 
+
+
+
+Definition at line 77 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_ab05aa2b85614fd0d577bedd72c64317f}{\index{neigh@{neigh}!elst@{elst}}
+\index{elst@{elst}!neigh@{neigh}}
+\subsubsection[{elst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), allocatable neigh\-::elst}}\label{classneigh_ab05aa2b85614fd0d577bedd72c64317f}
+
+
+site numbers in list of each electrostatic site 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a428039ca05098106f98a9b60f506b247}{\index{neigh@{neigh}!indcell@{indcell}}
+\index{indcell@{indcell}!neigh@{neigh}}
+\subsubsection[{indcell}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::indcell}}\label{classneigh_a428039ca05098106f98a9b60f506b247}
+
+
+localcell-\/global correspondance 
+
+
+
+Definition at line 63 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_aea3521da43e6d88ae7b00dba06240210}{\index{neigh@{neigh}!ineignl@{ineignl}}
+\index{ineignl@{ineignl}!neigh@{neigh}}
+\subsubsection[{ineignl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::ineignl}}\label{classneigh_aea3521da43e6d88ae7b00dba06240210}
+
+
+localnl-\/global correspondance 
+
+
+
+Definition at line 58 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a91014fd28ce5849e5f8665c6b4d6f100}{\index{neigh@{neigh}!ineigup@{ineigup}}
+\index{ineigup@{ineigup}!neigh@{neigh}}
+\subsubsection[{ineigup}]{\setlength{\rightskip}{0pt plus 5cm}integer neigh\-::ineigup}}\label{classneigh_a91014fd28ce5849e5f8665c6b4d6f100}
+
+
+number of time steps between each neighbor list update 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_aee6d4c42a6432bbfb95bd9eae5c696a7}{\index{neigh@{neigh}!lbuf2@{lbuf2}}
+\index{lbuf2@{lbuf2}!neigh@{neigh}}
+\subsubsection[{lbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::lbuf2}}\label{classneigh_aee6d4c42a6432bbfb95bd9eae5c696a7}
+
+
+square of half the neighbor list buffer width 
+
+
+
+Definition at line 67 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a66df6ef3bac2d5562b59b6883a6ae4da}{\index{neigh@{neigh}!lbuffer@{lbuffer}}
+\index{lbuffer@{lbuffer}!neigh@{neigh}}
+\subsubsection[{lbuffer}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::lbuffer}}\label{classneigh_a66df6ef3bac2d5562b59b6883a6ae4da}
+
+
+width of the neighbor list buffer region 
+
+
+
+Definition at line 66 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a99c01d6af3f1b175846fa65ca70f7d9b}{\index{neigh@{neigh}!lcell\-\_\-nl@{lcell\-\_\-nl}}
+\index{lcell\-\_\-nl@{lcell\-\_\-nl}!neigh@{neigh}}
+\subsubsection[{lcell\-\_\-nl}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::lcell\-\_\-nl}}\label{classneigh_a99c01d6af3f1b175846fa65ca70f7d9b}
+
+
+list of cells to be included for neighbor search, cell-\/list method 
+
+
+
+Definition at line 65 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_ad76c9a558fd93db7cba1761d4580c929}{\index{neigh@{neigh}!mbuf2@{mbuf2}}
+\index{mbuf2@{mbuf2}!neigh@{neigh}}
+\subsubsection[{mbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::mbuf2}}\label{classneigh_ad76c9a558fd93db7cba1761d4580c929}
+
+
+square of multipole cutoff plus neighbor list buffer 
+
+
+
+Definition at line 70 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a8dca5facfaf57e4868e61d23956eafed}{\index{neigh@{neigh}!mshortbuf2@{mshortbuf2}}
+\index{mshortbuf2@{mshortbuf2}!neigh@{neigh}}
+\subsubsection[{mshortbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::mshortbuf2}}\label{classneigh_a8dca5facfaf57e4868e61d23956eafed}
+
+
+square of short range multipole cutoff plus neighbor list buffer 
+
+
+
+Definition at line 75 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a26e26aed27268acd9f2dc587f89a4bcc}{\index{neigh@{neigh}!ncell\-\_\-nl@{ncell\-\_\-nl}}
+\index{ncell\-\_\-nl@{ncell\-\_\-nl}!neigh@{neigh}}
+\subsubsection[{ncell\-\_\-nl}]{\setlength{\rightskip}{0pt plus 5cm}integer neigh\-::ncell\-\_\-nl}}\label{classneigh_a26e26aed27268acd9f2dc587f89a4bcc}
+
+
+number of cells to be included for neighbor search, cell-\/list method 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a207a01b850afbc2b58c02b480cb7018e}{\index{neigh@{neigh}!ncell\-\_\-tot@{ncell\-\_\-tot}}
+\index{ncell\-\_\-tot@{ncell\-\_\-tot}!neigh@{neigh}}
+\subsubsection[{ncell\-\_\-tot}]{\setlength{\rightskip}{0pt plus 5cm}integer neigh\-::ncell\-\_\-tot}}\label{classneigh_a207a01b850afbc2b58c02b480cb7018e}
+
+
+number of cells corresponding to the unit cell\-: cell-\/list method 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_ae3aefdb55a54810d0a4c7d9001957752}{\index{neigh@{neigh}!neigcell@{neigcell}}
+\index{neigcell@{neigcell}!neigh@{neigh}}
+\subsubsection[{neigcell}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), allocatable neigh\-::neigcell}}\label{classneigh_ae3aefdb55a54810d0a4c7d9001957752}
+
+
+neighboring cells, cell-\/list method 
+
+
+
+Definition at line 59 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_af262864038c308dd317cf32e78609ecd}{\index{neigh@{neigh}!nelst@{nelst}}
+\index{nelst@{nelst}!neigh@{neigh}}
+\subsubsection[{nelst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::nelst}}\label{classneigh_af262864038c308dd317cf32e78609ecd}
+
+
+number of sites in list for each electrostatic site 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a1a4c1aa7767a563fd0c9566eefccd545}{\index{neigh@{neigh}!nshortelst@{nshortelst}}
+\index{nshortelst@{nshortelst}!neigh@{neigh}}
+\subsubsection[{nshortelst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::nshortelst}}\label{classneigh_a1a4c1aa7767a563fd0c9566eefccd545}
+
+
+number of sites in list for each short electrostatic site 
+
+
+
+Definition at line 56 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a3d0ef9d60a1a7083ee02308853aa164b}{\index{neigh@{neigh}!nshortvlst@{nshortvlst}}
+\index{nshortvlst@{nshortvlst}!neigh@{neigh}}
+\subsubsection[{nshortvlst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::nshortvlst}}\label{classneigh_a3d0ef9d60a1a7083ee02308853aa164b}
+
+
+number of sites in list for each short vdw site 
+
+
+
+Definition at line 54 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a6ecf67821627bc917720dcf2dcd703a6}{\index{neigh@{neigh}!numneigcell@{numneigcell}}
+\index{numneigcell@{numneigcell}!neigh@{neigh}}
+\subsubsection[{numneigcell}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::numneigcell}}\label{classneigh_a6ecf67821627bc917720dcf2dcd703a6}
+
+
+number of neighboring cells, cell-\/list method 
+
+
+
+Definition at line 60 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_ab1ecf3ee54d3ed5950574b699190e028}{\index{neigh@{neigh}!nvlst@{nvlst}}
+\index{nvlst@{nvlst}!neigh@{neigh}}
+\subsubsection[{nvlst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::nvlst}}\label{classneigh_ab1ecf3ee54d3ed5950574b699190e028}
+
+
+number of sites in list for each vdw site 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_afdbbe58473ef898932aab7d864ac620d}{\index{neigh@{neigh}!repartcell@{repartcell}}
+\index{repartcell@{repartcell}!neigh@{neigh}}
+\subsubsection[{repartcell}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable neigh\-::repartcell}}\label{classneigh_afdbbe58473ef898932aab7d864ac620d}
+
+
+index of the cell corresponding to each atom, cell-\/list method 
+
+
+
+Definition at line 61 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a24094fcb31131c89f6818c5667e6252f}{\index{neigh@{neigh}!shortelst@{shortelst}}
+\index{shortelst@{shortelst}!neigh@{neigh}}
+\subsubsection[{shortelst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), allocatable neigh\-::shortelst}}\label{classneigh_a24094fcb31131c89f6818c5667e6252f}
+
+
+site numbers in list of each short electrostatic site ) 
+
+
+
+Definition at line 57 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_ab62999202e9b876b405ddc2463ed38bc}{\index{neigh@{neigh}!shortvlst@{shortvlst}}
+\index{shortvlst@{shortvlst}!neigh@{neigh}}
+\subsubsection[{shortvlst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), allocatable neigh\-::shortvlst}}\label{classneigh_ab62999202e9b876b405ddc2463ed38bc}
+
+
+site numbers in neighbor list of each short vdw site) 
+
+
+
+Definition at line 55 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a6054edfe32412b415a10516845d2403e}{\index{neigh@{neigh}!torquebuf2@{torquebuf2}}
+\index{torquebuf2@{torquebuf2}!neigh@{neigh}}
+\subsubsection[{torquebuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::torquebuf2}}\label{classneigh_a6054edfe32412b415a10516845d2403e}
+
+
+square of torque cutoff plus neighbor list buffer 
+
+
+
+Definition at line 71 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_abc30fecff32f4c08aa624fe00db9f4bb}{\index{neigh@{neigh}!torqueshortbuf2@{torqueshortbuf2}}
+\index{torqueshortbuf2@{torqueshortbuf2}!neigh@{neigh}}
+\subsubsection[{torqueshortbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::torqueshortbuf2}}\label{classneigh_abc30fecff32f4c08aa624fe00db9f4bb}
+
+
+square of short range torque cutoff plus neighbor list buffer 
+
+
+
+Definition at line 76 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_af1b5dc4cada84bd65f6b215bcbf8a344}{\index{neigh@{neigh}!vbuf2@{vbuf2}}
+\index{vbuf2@{vbuf2}!neigh@{neigh}}
+\subsubsection[{vbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::vbuf2}}\label{classneigh_af1b5dc4cada84bd65f6b215bcbf8a344}
+
+
+square of vdw cutoff plus neighbor list buffer 
+
+
+
+Definition at line 68 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_adecf1389089b0ed25f60e40cefba27fd}{\index{neigh@{neigh}!vlst@{vlst}}
+\index{vlst@{vlst}!neigh@{neigh}}
+\subsubsection[{vlst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), allocatable neigh\-::vlst}}\label{classneigh_adecf1389089b0ed25f60e40cefba27fd}
+
+
+site numbers in neighbor list of each vdw site 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-neigh.\-f90.
+
+\hypertarget{classneigh_a2f24e9959d5d21f7677ab4f702359f4e}{\index{neigh@{neigh}!vshortbuf2@{vshortbuf2}}
+\index{vshortbuf2@{vshortbuf2}!neigh@{neigh}}
+\subsubsection[{vshortbuf2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 neigh\-::vshortbuf2}}\label{classneigh_a2f24e9959d5d21f7677ab4f702359f4e}
+
+
+square of short range vdw cutoff plus neighbor list buffer 
+
+
+
+Definition at line 73 of file M\-O\-D\-\_\-neigh.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__neigh_8f90}{M\-O\-D\-\_\-neigh.\-f90}\end{DoxyCompactItemize}

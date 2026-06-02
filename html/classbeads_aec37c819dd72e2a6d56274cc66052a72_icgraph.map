@@ -1,0 +1,7 @@
+<map id="beads::stopwatchpi" name="beads::stopwatchpi">
+<area shape="rect" id="node2" href="$baoabpi_8f90.html#a960f906f690f4698c8782b23097764d9" title="&quot;baoabpi&quot; performs a single PIMD time step via the BAOAB recursion formula " alt="" coords="413,5,488,32"/>
+<area shape="rect" id="node5" href="$baoabrespapi_8f90.html#acdebcdd1be237bc37e6be77f42020ccb" title="performs a single PIMD time step via the BAOAB&#45;respa recursion formula " alt="" coords="395,56,506,83"/>
+<area shape="rect" id="node6" href="$baoabrespapi_8f90.html#a6e7a0085bed4a815f070c9a7e9b7205c" title="performs a single PIMD time step of the fast forces via the BAOAB&#45;respa recursion formula ..." alt="" coords="203,107,346,133"/>
+<area shape="rect" id="node3" href="$pimd_8f90.html#ac2e89750fecb396b82a079e7b9b6bf33" title="computes a molecular dynamics trajectory in one of the standard statistical mechanical ensembles and ..." alt="" coords="555,31,637,57"/>
+<area shape="rect" id="node4" href="$pimd_8f90.html#afaefd022c8914d9e16a596dcd038638b" title="computes a molecular dynamics trajectory in one of the standard statistical mechanical ensembles and ..." alt="" coords="686,31,741,57"/>
+</map>

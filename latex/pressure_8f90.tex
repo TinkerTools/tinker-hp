@@ -1,0 +1,471 @@
+\hypertarget{pressure_8f90}{\section{pressure.\-f90 File Reference}
+\label{pressure_8f90}\index{pressure.\-f90@{pressure.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{pressure_8f90_abbdbe34d36763af8d4b83b836a60c3af}{stress\-\_\-press} (ekin, vir, pres, stress)
+\begin{DoxyCompactList}\small\item\em uses the internal virial to find the pressure in a periodic box and maintains a constant desired pressure via a barostat method \end{DoxyCompactList}\item 
+subroutine \hyperlink{pressure_8f90_a7d8bdf32501e58b7bf9d4570151536cc}{pressure} (dt, ekin, pres, stress, istep)
+\begin{DoxyCompactList}\small\item\em uses the internal virial to find the pressure in a periodic box and maintains a constant desired pressure via a barostat method \end{DoxyCompactList}\item 
+subroutine \hyperlink{pressure_8f90_a75fe7016013b0eab5cf778f05aa90315}{pressure2} (epot, temp)
+\begin{DoxyCompactList}\small\item\em applies a box size and velocity correction at the half time step as needed for the Monte Carlo barostat \end{DoxyCompactList}\item 
+subroutine \hyperlink{pressure_8f90_a310e39d7ba965f458d4878c4ddd396f6}{pscale} (dt, pres, stress, istep)
+\begin{DoxyCompactList}\small\item\em implements a Berendsen barostat by scaling the coordinates and box dimensions via coupling to an external constant pressure bath \end{DoxyCompactList}\item 
+subroutine \hyperlink{pressure_8f90_a089c0bbf234000e116e0cc5918f94ef0}{initialize\-\_\-langevin\-\_\-piston} ()
+\begin{DoxyCompactList}\small\item\em initialization of Langevin piston \end{DoxyCompactList}\item 
+subroutine \hyperlink{pressure_8f90_ace5efaa2c56037783f31af25d1965a58}{dedvcalc} ()
+\begin{DoxyCompactList}\small\item\em find virial tensor via finite differences \end{DoxyCompactList}\item 
+subroutine \hyperlink{pressure_8f90_a022337e7b06db674af1685099979d60e}{ptest}
+\begin{DoxyCompactList}\small\item\em \char`\"{}ptest\char`\"{} compares the virial-\/based value of d\-E/d\-V to an estimate from finite-\/difference volume changes; also finds the isotropic pressure via finite-\/differences \end{DoxyCompactList}\item 
+subroutine \hyperlink{pressure_8f90_a0115dd6053b87578d330cf54a958e962}{pmonte} (epot, temp)
+\begin{DoxyCompactList}\small\item\em applies monte-\/carlo barostat \end{DoxyCompactList}\item 
+subroutine \hyperlink{pressure_8f90_a2b3badccd64da7ef9ef039b8f8822c8d}{rescale\-\_\-box} (istep, scale)
+\begin{DoxyCompactList}\small\item\em rescale simulation box (isotropic) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{pressure_8f90_ace5efaa2c56037783f31af25d1965a58}{\index{pressure.\-f90@{pressure.\-f90}!dedvcalc@{dedvcalc}}
+\index{dedvcalc@{dedvcalc}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{dedvcalc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dedvcalc (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_ace5efaa2c56037783f31af25d1965a58}
+
+
+find virial tensor via finite differences 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 300 of file pressure.\-f90.
+
+
+
+References allreduceen(), energy(), and lattice().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pressure_8f90_ace5efaa2c56037783f31af25d1965a58_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pressure_8f90_a089c0bbf234000e116e0cc5918f94ef0}{\index{pressure.\-f90@{pressure.\-f90}!initialize\-\_\-langevin\-\_\-piston@{initialize\-\_\-langevin\-\_\-piston}}
+\index{initialize\-\_\-langevin\-\_\-piston@{initialize\-\_\-langevin\-\_\-piston}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{initialize\-\_\-langevin\-\_\-piston}]{\setlength{\rightskip}{0pt plus 5cm}subroutine initialize\-\_\-langevin\-\_\-piston (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_a089c0bbf234000e116e0cc5918f94ef0}
+
+
+initialization of Langevin piston 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 247 of file pressure.\-f90.
+
+
+
+References maxwell().
+
+
+
+Referenced by mdinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_a089c0bbf234000e116e0cc5918f94ef0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_a089c0bbf234000e116e0cc5918f94ef0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pressure_8f90_a0115dd6053b87578d330cf54a958e962}{\index{pressure.\-f90@{pressure.\-f90}!pmonte@{pmonte}}
+\index{pmonte@{pmonte}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{pmonte}]{\setlength{\rightskip}{0pt plus 5cm}subroutine pmonte (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{epot, }
+\item[{real$\ast$8}]{temp}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_a0115dd6053b87578d330cf54a958e962}
+
+
+applies monte-\/carlo barostat 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em epot,\-:} & potential energy \\
+\hline
+\mbox{\tt in}  & {\em temp,\-:} & temperature \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 611 of file pressure.\-f90.
+
+
+
+References allreduceen(), ddpme3dnpt(), energy(), lattice(), colvarproxy\-\_\-tinkerhp\-::log(), molecule(), and random().
+
+
+
+Referenced by pressure2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pressure_8f90_a0115dd6053b87578d330cf54a958e962_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_a0115dd6053b87578d330cf54a958e962_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pressure_8f90_a7d8bdf32501e58b7bf9d4570151536cc}{\index{pressure.\-f90@{pressure.\-f90}!pressure@{pressure}}
+\index{pressure@{pressure}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{pressure}]{\setlength{\rightskip}{0pt plus 5cm}subroutine pressure (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{dt, }
+\item[{real$\ast$8, dimension(3,3)}]{ekin, }
+\item[{real$\ast$8}]{pres, }
+\item[{real$\ast$8, dimension(3,3)}]{stress, }
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_a7d8bdf32501e58b7bf9d4570151536cc}
+
+
+uses the internal virial to find the pressure in a periodic box and maintains a constant desired pressure via a barostat method 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\mbox{\tt in}  & {\em ekin,\-:} & kinetic energy \\
+\hline
+\mbox{\tt in}  & {\em vir,\-:} & virial \\
+\hline
+\mbox{\tt in}  & {\em pres,\-:} & instataneous pressure \\
+\hline
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 75 of file pressure.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt(), pscale(), and stress\-\_\-press().
+
+
+
+Referenced by baoab(), baoabrespa(), baoabrespa1(), beeman(), respa(), respa1(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_a7d8bdf32501e58b7bf9d4570151536cc_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_a7d8bdf32501e58b7bf9d4570151536cc_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pressure_8f90_a75fe7016013b0eab5cf778f05aa90315}{\index{pressure.\-f90@{pressure.\-f90}!pressure2@{pressure2}}
+\index{pressure2@{pressure2}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{pressure2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine pressure2 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{epot, }
+\item[{real$\ast$8}]{temp}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_a75fe7016013b0eab5cf778f05aa90315}
+
+
+applies a box size and velocity correction at the half time step as needed for the Monte Carlo barostat 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em epot,\-:} & potential energy \\
+\hline
+\mbox{\tt in}  & {\em temp,\-:} & temperature in K \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 123 of file pressure.\-f90.
+
+
+
+References pmonte().
+
+
+
+Referenced by baoab(), baoabrespa(), baoabrespa1(), beeman(), respa(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pressure_8f90_a75fe7016013b0eab5cf778f05aa90315_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_a75fe7016013b0eab5cf778f05aa90315_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pressure_8f90_a310e39d7ba965f458d4878c4ddd396f6}{\index{pressure.\-f90@{pressure.\-f90}!pscale@{pscale}}
+\index{pscale@{pscale}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{pscale}]{\setlength{\rightskip}{0pt plus 5cm}subroutine pscale (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{dt, }
+\item[{real$\ast$8}]{pres, }
+\item[{real$\ast$8, dimension(3,3)}]{stress, }
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_a310e39d7ba965f458d4878c4ddd396f6}
+
+
+implements a Berendsen barostat by scaling the coordinates and box dimensions via coupling to an external constant pressure bath 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em dt,\-:} & value of timestep \\
+\hline
+\mbox{\tt in}  & {\em pres,\-:} & instantaneous pressure \\
+\hline
+\mbox{\tt in}  & {\em stress,\-:} & stress tensor \\
+\hline
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 191 of file pressure.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt(), and rescale\-\_\-box().
+
+
+
+Referenced by efld0\-\_\-direct(), efld0\-\_\-group(), epreal0c(), epreal1\-\_\-group(), epreal1c(), epreal3\-\_\-group(), epreal3d(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), pc\-\_\-dc\-\_\-efld0\-\_\-direct(), pressure(), scalderfieldzmat1(), scalderfieldzmat3(), scalderfieldzmat6(), and scalderfieldzmat8().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_a310e39d7ba965f458d4878c4ddd396f6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pressure_8f90_a310e39d7ba965f458d4878c4ddd396f6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pressure_8f90_a022337e7b06db674af1685099979d60e}{\index{pressure.\-f90@{pressure.\-f90}!ptest@{ptest}}
+\index{ptest@{ptest}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{ptest}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ptest (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_a022337e7b06db674af1685099979d60e}
+
+
+\char`\"{}ptest\char`\"{} compares the virial-\/based value of d\-E/d\-V to an estimate from finite-\/difference volume changes; also finds the isotropic pressure via finite-\/differences 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 453 of file pressure.\-f90.
+
+
+
+References allreduceen(), energy(), and lattice().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pressure_8f90_a022337e7b06db674af1685099979d60e_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pressure_8f90_a2b3badccd64da7ef9ef039b8f8822c8d}{\index{pressure.\-f90@{pressure.\-f90}!rescale\-\_\-box@{rescale\-\_\-box}}
+\index{rescale\-\_\-box@{rescale\-\_\-box}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{rescale\-\_\-box}]{\setlength{\rightskip}{0pt plus 5cm}subroutine rescale\-\_\-box (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{istep, }
+\item[{real$\ast$8, dimension(3), intent(in)}]{scale}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_a2b3badccd64da7ef9ef039b8f8822c8d}
+
+
+rescale simulation box (isotropic) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em scale,\-:} & scaling factor \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 867 of file pressure.\-f90.
+
+
+
+References ddpme3dnptaniso(), and lattice().
+
+
+
+Referenced by utilbaoab\-::apply\-\_\-a\-\_\-piston(), utilbaoabpi\-::plangevinpi(), and pscale().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_a2b3badccd64da7ef9ef039b8f8822c8d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pressure_8f90_a2b3badccd64da7ef9ef039b8f8822c8d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pressure_8f90_abbdbe34d36763af8d4b83b836a60c3af}{\index{pressure.\-f90@{pressure.\-f90}!stress\-\_\-press@{stress\-\_\-press}}
+\index{stress\-\_\-press@{stress\-\_\-press}!pressure.f90@{pressure.\-f90}}
+\subsubsection[{stress\-\_\-press}]{\setlength{\rightskip}{0pt plus 5cm}subroutine stress\-\_\-press (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,3), intent(in)}]{ekin, }
+\item[{real$\ast$8, dimension(3,3), intent(in)}]{vir, }
+\item[{real$\ast$8, intent(out)}]{pres, }
+\item[{real$\ast$8, dimension(3,3), intent(out)}]{stress}
+\end{DoxyParamCaption}
+)}}\label{pressure_8f90_abbdbe34d36763af8d4b83b836a60c3af}
+
+
+uses the internal virial to find the pressure in a periodic box and maintains a constant desired pressure via a barostat method 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ekin,\-:} & kinetic energy \\
+\hline
+\mbox{\tt in}  & {\em vir,\-:} & virial \\
+\hline
+\mbox{\tt in}  & {\em pres,\-:} & instataneous pressure \\
+\hline
+\mbox{\tt in}  & {\em stress,\-:} & stress tensor \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 26 of file pressure.\-f90.
+
+
+
+Referenced by pressure().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pressure_8f90_abbdbe34d36763af8d4b83b836a60c3af_icgraph}
+\end{center}
+\end{figure}
+
+

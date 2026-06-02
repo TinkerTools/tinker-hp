@@ -1,0 +1,33 @@
+<map id="epolar1tcg2quatshortreal" name="epolar1tcg2quatshortreal">
+<area shape="rect" id="node2" href="$mpistuff_8f90.html#a9c9d1b0468cbe5ca9cb9882c172a93a6" title="deal with communications of short range direct dipoles " alt="" coords="244,12,375,39"/>
+<area shape="rect" id="node4" href="$mpistuff_8f90.html#a169604d25f0a9f409a1640817b9c8869" title="communicate some short range direct fields (Newton&#39;s third law) " alt="" coords="247,233,371,260"/>
+<area shape="rect" id="node5" href="$newinduce__shortreal_8f90.html#a38e10e399e49e4c1601a82291ddab784" title="Compute the direct space contribution to the electric field due to the current value of the induced d..." alt="" coords="243,335,376,361"/>
+<area shape="rect" id="node10" href="$newinduce__pme2_8f90.html#a172b83c52adea069361b25066abe9ea0" title="Performs product of vector a with polarisabilities. " alt="" coords="273,487,346,513"/>
+<area shape="rect" id="node11" href="$tcgstuff_8f90.html#a6a284f7e67cb89c05d74e78ed202df0c" title="diagvec3" alt="" coords="269,537,350,564"/>
+<area shape="rect" id="node12" href="$newinduce__pme_8f90.html#addbd31b05c25931afaca7a556c13ec79" title="Compute the direct space contribution to the permanent electric field. Also compute the &quot;p&quot; field..." alt="" coords="260,385,359,412"/>
+<area shape="rect" id="node24" href="$scalders_8f90.html#a561c8792a0f925c93e337110eb49bce9" title="scalderfieldzmat8" alt="" coords="240,284,379,311"/>
+<area shape="rect" id="node25" href="$linalg_8f90.html#a4519f3a402e5e646e9cb5d17732df732" title="computes scalar product between two vectors " alt="" coords="451,132,509,159"/>
+<area shape="rect" id="node26" href="$newinduce__pme_8f90.html#aef7c31d8ed9e8c7faf9036240c7a1bfd" title="Compute the direct space contribution to the electric field due to the current value of the induced d..." alt="" coords="257,436,362,463"/>
+<area shape="rect" id="node29" href="$tcgstuff_8f90.html#ae8b6f24b23c119cca1e380be87071855" title="torquetcg_dir" alt="" coords="255,95,363,121"/>
+<area shape="rect" id="node3" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="646,5,698,32"/>
+<area shape="rect" id="node6" href="$erf_8f90.html#a562bafa2a6bbcdf9d5034bb87c3a6190" title="computes a numerical approximation to the value of the complementary error function via a Chebyshev a..." alt="" coords="649,233,695,260"/>
+<area shape="rect" id="node8" href="$switch_8f90.html#a49f27020ffd762e86d09bbd7bbb5222e" title="sets the coeffcients used by the fifth and seventh order polynomial switching functions for spherical..." alt="" coords="448,335,512,361"/>
+<area shape="rect" id="node9" href="$image_8f90.html#afafb2542d1faa53dbba8933a21da60fa" title="takes the components of pairwise distance between two points in a periodic box and converts to the co..." alt="" coords="449,385,511,412"/>
+<area shape="rect" id="node7" href="$erf_8f90.html#a3db66269539046169e1596d5b4490fc2" title="&quot;erfcore&quot; evaluates erf(x) or erfc(x) for a real argument x; when called with mode set to 0 it return..." alt="" coords="846,233,914,260"/>
+<area shape="rect" id="node13" href="$pressure_8f90.html#a310e39d7ba965f458d4878c4ddd396f6" title="implements a Berendsen barostat by scaling the coordinates and box dimensions via coupling to an exte..." alt="" coords="448,284,512,311"/>
+<area shape="rect" id="node21" href="$damping_8f90.html#aea60b3e1f71fedad546f4c95df6edecf" title="finds coefficients for error function damping used for Ewald real space interactions ..." alt="" coords="431,537,529,564"/>
+<area shape="rect" id="node22" href="$damping_8f90.html#ae5b94a64d584c9369019b393bed45ba2" title="finds coefficients for the original Thole damping function used by AMOEBA or for the alternate direct..." alt="" coords="430,436,530,463"/>
+<area shape="rect" id="node23" href="$damping_8f90.html#a4c033f89e5c4b571ee8e5a7aa724629c" title="generates coefficients for the direct field damping function for powers of the interatomic distance ..." alt="" coords="442,487,518,513"/>
+<area shape="rect" id="node14" href="$classcolvarproxy__tinkerhp.html#a6c0fad6b6be3ac94b260262f5f06ce1b" title="Time step of the simulation (fs) " alt="" coords="581,335,763,361"/>
+<area shape="rect" id="node15" href="$pressure_8f90.html#a2b3badccd64da7ef9ef039b8f8822c8d" title="rescale simulation box (isotropic) " alt="" coords="622,284,722,311"/>
+<area shape="rect" id="node16" href="$lattice_8f90.html#aa8da83134ab24b7028d9e0b5672df9a1" title="stores the periodic box dimensions and sets angle values to be used in computing fractional coordinat..." alt="" coords="849,335,911,361"/>
+<area shape="rect" id="node17" href="$domdecstuff_8f90.html#a4f40c6b2d33a8db818f35420042b1935" title="update of domain decomposition after rescaling of volume due to barostat " alt="" coords="811,284,949,311"/>
+<area shape="rect" id="node18" href="$mpistuff_8f90.html#a9a604af594c58f25234f3ae8c4b47844" title="get the indexes of the particules in the neighboring processes " alt="" coords="1007,259,1102,285"/>
+<area shape="rect" id="node20" href="$mpistuff_8f90.html#a0bf418e3df3f76e4c5a4e8f9d423353a" title="get the indexes of the particules in the reciprocal processes " alt="" coords="997,309,1112,336"/>
+<area shape="rect" id="node19" href="$classcolvarproxy__tinkerhp.html#a9fde421f92cd67c85475a6e68d593038" title="initialization " alt="" coords="1160,251,1320,293"/>
+<area shape="rect" id="node27" href="$damping_8f90.html#a601c8ce9a4d211fbf2339130e5a0a493" title="generates coefficients for the Thole damping function for powers of the interatomic distance ..." alt="" coords="434,588,526,615"/>
+<area shape="rect" id="node28" href="$damping_8f90.html#a44ba65e94db9758e21b5032e4d2e6035" title="generates coefficients for the mutual field damping function for powers of the interatomic distance ..." alt="" coords="437,639,523,665"/>
+<area shape="rect" id="node30" href="$linalg_8f90.html#ac7aff19f71f4f84324d863180126cab3" title="given the index ii of a multipole, gives as output the indexes of the atoms used to define the local ..." alt="" coords="449,31,511,57"/>
+<area shape="rect" id="node31" href="$tcgstuff_8f90.html#abe3f1179d9b7849d6d4ba517b657603b" title="torque_prods" alt="" coords="427,81,533,108"/>
+<area shape="rect" id="node32" href="$linalg_8f90.html#a7551e9b2fc5f88fb6f5e2871dfbf6799" title="set values of a vector of reals to zero " alt="" coords="641,81,703,108"/>
+</map>

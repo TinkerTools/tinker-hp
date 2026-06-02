@@ -1,0 +1,729 @@
+!
+!     Sorbonne University
+!     Washington University in Saint Louis
+!     University of Texas at Austin
+!
+!     #################################################################
+!     ##                                                             ##
+!     ##  subroutine epolar  --  induced dipole polarization energy  ##
+!     ##                                                             ##
+!     #################################################################
+!
+!
+!     "epolar" calculates the polarization energy due to induced
+!     dipole interactions
+!
+!
+!> @brief 
+!> calculates the polarization energy due to induced
+!> dipole interactions
+!> @param no params
+subroutine epolar
+   use inform
+   use iounit
+   use polpot
+   use potent
+   implicit none
+!
+   if (deb_Path) write(iout,*), 'epolar '
+!
+!
+   if (polalg.eq.3) then
+      call epolar3tcg
+   else
+      call epolar0c
+   end if
+   return
+end
+!
+!     ###################################################################
+!     ##                                                               ##
+!     ##  subroutine epolar0c  --  Ewald polarization derivs via list  ##
+!     ##                                                               ##
+!     ###################################################################
+!
+!
+!     "epolar0c" calculates the dipole polarization energy with respect
+!     to Cartesian coordinates using particle mesh Ewald summation and
+!     a neighbor list
+!
+!
+!> @brief 
+!> calculates the dipole polarization energy with respect
+!> to Cartesian coordinates using particle mesh Ewald summation and
+!> a neighbor list
+!> @param no params
+subroutine epolar0c
+   use sizes
+   use atmlst
+   use atoms
+   use boxes
+   use chgpot
+   use domdec
+   use energi
+   use ewald
+   use group
+   use inform
+   use iounit
+   use math
+   use mpole
+   use polar
+   use polpot
+   use potent
+   use mpi
+   implicit none
+   integer ii,iglob,iipole,ierr
+   real*8 e,f,term,fterm
+   real*8 dix,diy,diz
+   real*8 uix,uiy,uiz,uii
+   real*8 xd,yd,zd
+   real*8 xu,yu,zu
+!
+   if (deb_Path) write(iout,*), 'epolar0c '
+!
+!
+!     zero out the polarization energy and derivatives
+!
+   ep = 0.0d0
+   if (npole .eq. 0)  return
+   aewald = apewald
+!
+!     set the energy unit conversion factor
+!
+   f = electric / dielec
+!
+!     check the sign of multipole components at chiral sites
+!
+   if (.not. use_mpole)  call chkpole(.false.)
+!
+!     rotate the multipole components into the global frame
+!
+   if (.not. use_mpole)  call rotpole
+!
+!     compute the induced dipoles at each polarizable atom
+!
+   if (use_polarshortreal) then
+      call newinduce_shortreal
+   else if (use_pmecore) then
+      if (polalg.eq.5) then
+         call dcinduce_pme
+      else
+         call newinduce_pme
+      end if
+   else
+      if (polalg.eq.5) then
+         call dcinduce_pme2
+      else
+         call newinduce_pme2
+      end if
+   end if
+!
+!     compute the reciprocal space part of the Ewald summation
+!
+   if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.gt.ndir-1))&
+   &then
+      if (use_prec) then
+         call eprecip
+      end if
+   end if
+!
+!     compute the real space part of the Ewald summation
+!
+   if ((.not.(use_pmecore)).or.(use_pmecore).and.(rank.le.ndir-1))&
+   &then
+      if (use_preal) then
+         call epreal0c
+      end if
+
+      if (use_pself) then
+!
+!     compute the Ewald self-energy term over all the atoms
+!
+         term = 2.0d0 * aewald * aewald
+         fterm = -f * aewald / sqrtpi
+         do ii = 1, npoleloc
+            iipole = poleglob(ii)
+            dix = rpole(2,iipole)
+            diy = rpole(3,iipole)
+            diz = rpole(4,iipole)
+            uix = uind(1,iipole)
+            uiy = uind(2,iipole)
+            uiz = uind(3,iipole)
+            uii = dix*uix + diy*uiy + diz*uiz
+            e = fterm * term * uii / 3.0d0
+            ep = ep + e
+         end do
+!
+!       compute the cell dipole boundary correction term
+!
+         if (boundary .eq. 'VACUUM') then
+            xd = 0.0d0
+            yd = 0.0d0
+            zd = 0.0d0
+            xu = 0.0d0
+            yu = 0.0d0
+            zu = 0.0d0
+            do ii = 1, npoleloc
+               iipole = poleglob(ii)
+               iglob = ipole(iipole)
+               xd = xd + rpole(2,iipole) + rpole(1,iipole)*x(iglob)
+               yd = yd + rpole(3,iipole) + rpole(1,iipole)*y(iglob)
+               zd = zd + rpole(4,iipole) + rpole(1,iipole)*z(iglob)
+               xu = xu + uind(1,iipole)
+               yu = yu + uind(2,iipole)
+               zu = zu + uind(3,iipole)
+            end do
+            call MPI_ALLREDUCE(MPI_IN_PLACE,xd,1,MPI_REAL8,MPI_SUM,&
+            &COMM_TINKER,ierr)
+            call MPI_ALLREDUCE(MPI_IN_PLACE,yd,1,MPI_REAL8,MPI_SUM,&
+            &COMM_TINKER,ierr)
+            call MPI_ALLREDUCE(MPI_IN_PLACE,zd,1,MPI_REAL8,MPI_SUM,&
+            &COMM_TINKER,ierr)
+            call MPI_ALLREDUCE(MPI_IN_PLACE,xu,1,MPI_REAL8,MPI_SUM,&
+            &COMM_TINKER,ierr)
+            call MPI_ALLREDUCE(MPI_IN_PLACE,yu,1,MPI_REAL8,MPI_SUM,&
+            &COMM_TINKER,ierr)
+            call MPI_ALLREDUCE(MPI_IN_PLACE,zu,1,MPI_REAL8,MPI_SUM,&
+            &COMM_TINKER,ierr)
+            if (rank.eq.0) then
+               term = (2.0d0/3.0d0) * f * (pi/volbox)
+               ep = ep + term*(xd*xu+yd*yu+zd*zu)
+            end if
+         end if
+      end if
+   end if
+!
+!     get group polarization if necessary
+!
+   if (use_group) call switch_group_ene
+   return
+end
+!
+!
+!     #################################################################
+!     ##                                                             ##
+!     ##  subroutine epreal0c  --  real space polar energy via list  ##
+!     ##                                                             ##
+!     #################################################################
+!
+!
+!     "epreal0c" calculates the induced dipole polarization energy
+!     using particle mesh Ewald summation and a neighbor list
+!
+!
+!     if shortrange, calculates just the short range part
+!
+!> @brief 
+!> calculates the induced dipole polarization energy
+!> using particle mesh Ewald summation and a neighbor list
+!> @param no params
+subroutine epreal0c
+   use sizes
+   use atmlst
+   use atoms
+   use bound
+   use chgpen
+   use chgpot
+   use couple
+   use cutoff
+   use domdec
+   use energi
+   use ewald
+   use inform
+   use iounit
+   use math
+   use mpole
+   use neigh
+   use polar
+   use polgrp
+   use polpot
+   use potent
+   use shunt
+   use usage
+   use mpi
+   implicit none
+   integer i,j,k,iglob,kglob,kbis,nnelst
+   integer ii,kkk,iipole,kkpole
+   real*8 e,f
+   real*8 xi,yi,zi
+   real*8 xr,yr,zr
+   real*8 sr3,sr5,sr7
+   real*8 r,r2,rr3,rr5,rr7
+   real*8 rr3i,rr5i,rr7i
+   real*8 rr3k,rr5k,rr7k
+   real*8 ci,dix,diy,diz
+   real*8 qixx,qixy,qixz
+   real*8 qiyy,qiyz,qizz
+   real*8 uix,uiy,uiz
+   real*8 ck,dkx,dky,dkz
+   real*8 qkxx,qkxy,qkxz
+   real*8 qkyy,qkyz,qkzz
+   real*8 ukx,uky,ukz
+   real*8 dir,diu,qiu,uir
+   real*8 dkr,dku,qku,ukr
+   real*8 qix,qiy,qiz,qir
+   real*8 qkx,qky,qkz,qkr
+   real*8 corei,corek
+   real*8 vali,valk
+   real*8 alphai,alphak
+   real*8 term1,term2,term3
+   real*8 dmpi(7),dmpk(7)
+   real*8 dmpik(7),dmpe(7)
+   real*8 scalek
+   logical shortrange,longrange,fullrange
+   real*8, allocatable :: pscale(:)
+   character*11 mode
+   character*80 :: RoutineName
+   external erfc
+!
+   if (deb_Path) write(iout,*), 'epreal0c '
+!
+
+!     compute the short, or full real space part of the summation
+   shortrange = use_polarshortreal
+   longrange  = .false.
+   fullrange  = .not.(shortrange.or.longrange)
+
+   if (shortrange) then
+      RoutineName = 'eprealshort0c'
+      mode        = 'SHORTEWALD'
+   else if (longrange) then
+      RoutineName = 'epreallong0c'
+      mode        = 'EWALD'
+   else
+      RoutineName = 'epreal0c'
+      mode        = 'MPOLE'
+   endif
+!
+!
+!     perform dynamic allocation of some local arrays
+!
+   allocate (pscale(n))
+!
+!     initialize connected atom exclusion coefficients
+!
+   pscale = 1.0d0
+!
+!     set conversion factor, cutoff and switching coefficients
+!
+   f = 0.5d0 * electric / dielec
+   call switch (mode)
+!
+!     compute the dipole polarization energy component
+!
+   do ii = 1, npolelocnl
+      iipole = poleglobnl(ii)
+      iglob = ipole(iipole)
+      i = loc(iglob)
+      xi = x(iglob)
+      yi = y(iglob)
+      zi = z(iglob)
+      ci = rpole(1,iipole)
+      dix = rpole(2,iipole)
+      diy = rpole(3,iipole)
+      diz = rpole(4,iipole)
+      qixx = rpole(5,iipole)
+      qixy = rpole(6,iipole)
+      qixz = rpole(7,iipole)
+      qiyy = rpole(9,iipole)
+      qiyz = rpole(10,iipole)
+      qizz = rpole(13,iipole)
+      uix = uind(1,iipole)
+      uiy = uind(2,iipole)
+      uiz = uind(3,iipole)
+      if (use_chgpen) then
+         corei = pcore(iipole)
+         vali = pval(iipole)
+         alphai = palpha(iipole)
+      end if
+!
+!     set exclusion coefficients for connected atoms
+!
+      do j = 1, n12(iglob)
+         pscale(i12(j,iglob)) = p2scale
+         do k = 1, np11(iglob)
+            if (i12(j,iglob) .eq. ip11(k,iglob))&
+            &pscale(i12(j,iglob)) = p2iscale
+         end do
+      end do
+      do j = 1, n13(iglob)
+         pscale(i13(j,iglob)) = p3scale
+         do k = 1, np11(iglob)
+            if (i13(j,iglob) .eq. ip11(k,iglob))&
+            &pscale(i13(j,iglob)) = p3iscale
+         end do
+      end do
+      do j = 1, n14(iglob)
+         pscale(i14(j,iglob)) = p4scale
+         do k = 1, np11(iglob)
+            if (i14(j,iglob) .eq. ip11(k,iglob))&
+            &pscale(i14(j,iglob)) = p4iscale
+         end do
+      end do
+      do j = 1, n15(iglob)
+         pscale(i15(j,iglob)) = p5scale
+         do k = 1, np11(iglob)
+            if (i15(j,iglob) .eq. ip11(k,iglob))&
+            &pscale(i15(j,iglob)) = p5iscale
+         end do
+      end do
+!
+!     evaluate all sites within the cutoff distance
+!
+      if (shortrange) then
+         nnelst = nshortelst(ii)
+      else
+         nnelst = nelst(ii)
+      end if
+      do kkk = 1, nnelst
+         if (shortrange) then
+            kkpole = shortelst(kkk,ii)
+         else
+            kkpole = elst(kkk,ii)
+         end if
+         kglob = ipole(kkpole)
+         kbis = loc(kglob)
+         xr = x(kglob) - xi
+         yr = y(kglob) - yi
+         zr = z(kglob) - zi
+         if (use_bounds)  call image (xr,yr,zr)
+         r2 = xr*xr + yr*yr + zr*zr
+         if (r2 .le. off2) then
+            r = sqrt(r2)
+            ck = rpole(1,kkpole)
+            dkx = rpole(2,kkpole)
+            dky = rpole(3,kkpole)
+            dkz = rpole(4,kkpole)
+            qkxx = rpole(5,kkpole)
+            qkxy = rpole(6,kkpole)
+            qkxz = rpole(7,kkpole)
+            qkyy = rpole(9,kkpole)
+            qkyz = rpole(10,kkpole)
+            qkzz = rpole(13,kkpole)
+            ukx = uind(1,kkpole)
+            uky = uind(2,kkpole)
+            ukz = uind(3,kkpole)
+!
+!     intermediates involving moments and separation distance
+!
+            dir = dix*xr + diy*yr + diz*zr
+            qix = qixx*xr + qixy*yr + qixz*zr
+            qiy = qixy*xr + qiyy*yr + qiyz*zr
+            qiz = qixz*xr + qiyz*yr + qizz*zr
+            qir = qix*xr + qiy*yr + qiz*zr
+            dkr = dkx*xr + dky*yr + dkz*zr
+            qkx = qkxx*xr + qkxy*yr + qkxz*zr
+            qky = qkxy*xr + qkyy*yr + qkyz*zr
+            qkz = qkxz*xr + qkyz*yr + qkzz*zr
+            qkr = qkx*xr + qky*yr + qkz*zr
+            diu = dix*ukx + diy*uky + diz*ukz
+            qiu = qix*ukx + qiy*uky + qiz*ukz
+            uir = uix*xr + uiy*yr + uiz*zr
+            dku = dkx*uix + dky*uiy + dkz*uiz
+            qku = qkx*uix + qky*uiy + qkz*uiz
+            ukr = ukx*xr + uky*yr + ukz*zr
+!
+!     calculate real space Ewald error function damping
+!
+            call dampewald (7,r,r2,f,dmpe)
+!
+!     find the energy value for Thole polarization damping
+!
+            if (use_thole) then
+               call damptholed (iipole,kkpole,7,r,dmpik)
+               scalek = pscale(kglob)
+               rr3 = f/ (r*r2)
+               rr5 = 3.0d0 * rr3 / r2
+               rr7 = 5.0d0 * rr5 / r2
+               sr3 = scalek*dmpik(3) * rr3
+               sr5 = scalek*dmpik(5) * rr5
+               sr7 = scalek*dmpik(7) * rr7
+               sr3 = dmpe(3) - rr3 + sr3
+               sr5 = dmpe(5) - rr5 + sr5
+               sr7 = dmpe(7) - rr7 + sr7
+               term1 = ck*uir - ci*ukr + diu + dku
+               term2 = 2.0d0*(qiu-qku) - uir*dkr - dir*ukr
+               term3 = uir*qkr - ukr*qir
+               e = term1*sr3 + term2*sr5 + term3*sr7
+!
+!     find the energy value for charge penetration damping
+!
+            else if (use_chgpen) then
+               corek = pcore(kkpole)
+               valk = pval(kkpole)
+               alphak = palpha(kkpole)
+               call dampdir (r,alphai,alphak,dmpi,dmpk)
+               scalek = pscale(kglob)
+               rr3 = f * scalek / (r*r2)
+               rr5 = 3.0d0 * rr3 / r2
+               rr7 = 5.0d0 * rr5 / r2
+               rr3i = dmpi(3) * rr3
+               rr5i = dmpi(5) * rr5
+               rr7i = dmpi(7) * rr7
+               rr3k = dmpk(3) * rr3
+               rr5k = dmpk(5) * rr5
+               rr7k = dmpk(7) * rr7
+               rr3 = f / (r*r2)
+               rr5 = 3.0d0 * rr3 / r2
+               rr7 = 5.0d0 * rr5 / r2
+               rr3i = dmpe(3) - rr3 + rr3i
+               rr5i = dmpe(5) - rr5 + rr5i
+               rr7i = dmpe(7) - rr7 + rr7i
+               rr3k = dmpe(3) - rr3 + rr3k
+               rr5k = dmpe(5) - rr5 + rr5k
+               rr7k = dmpe(7) - rr7 + rr7k
+               rr3 = dmpe(3) - (1.0d0-scalek)*rr3
+               e = uir*(corek*rr3+valk*rr3k)&
+               &- ukr*(corei*rr3+vali*rr3i)&
+               &+ diu*rr3i + dku*rr3k&
+               &+ 2.0d0*(qiu*rr5i-qku*rr5k)&
+               &- dkr*uir*rr5k - dir*ukr*rr5i&
+               &+ qkr*uir*rr7k - qir*ukr*rr7i
+            end if
+!
+!     compute the energy contribution for this interaction
+!
+            ep = ep + e
+         end if
+      end do
+!
+!     reset exclusion coefficients for connected atoms
+!
+      do j = 1, n12(iglob)
+         pscale(i12(j,iglob)) = 1.0d0
+      end do
+      do j = 1, n13(iglob)
+         pscale(i13(j,iglob)) = 1.0d0
+      end do
+      do j = 1, n14(iglob)
+         pscale(i14(j,iglob)) = 1.0d0
+      end do
+      do j = 1, n15(iglob)
+         pscale(i15(j,iglob)) = 1.0d0
+      end do
+   end do
+!
+!     perform deallocation of some local arrays
+!
+   deallocate (pscale)
+   return
+end
+!
+!
+!
+!
+!     ###################################################################
+!     ##                                                               ##
+!     ##  subroutine eprecip  --  PME recip space polarization energy  ##
+!     ##                                                               ##
+!     ###################################################################
+!
+!
+!     "eprecip" evaluates the reciprocal space portion of particle
+!     mesh Ewald summation energy due to dipole polarization
+!
+!     literature reference:
+!
+!     C. Sagui, L. G. Pedersen and T. A. Darden, "Towards an Accurate
+!     Representation of Electrostatics in Classical Force Fields:
+!     Efficient Implementation of Multipolar Interactions in
+!     Biomolecular Simulations", Journal of Chemical Physics, 120,
+!     73-87 (2004)
+!
+!     modifications for nonperiodic systems suggested by Tom Darden
+!     during May 2007
+!
+!
+!> @brief 
+!> evaluates the reciprocal space portion of particle
+!> mesh Ewald summation energy due to dipole polarization
+!> @param no params
+subroutine eprecip
+   use atmlst
+   use atoms
+   use bound
+   use boxes
+   use chgpot
+   use domdec
+   use energi
+   use ewald
+   use fft
+   use inform
+   use iounit
+   use math
+   use mpole
+   use pme
+   use polar
+   use polpot
+   use potent
+   use mpi
+   implicit none
+   integer iipole
+   integer commloc
+   integer nprocloc,rankloc
+   integer i,j,k,iglob
+   real*8 e
+   real*8 f
+   real*8 expterm
+   real*8 struc2
+   real*8 a(3,3)
+   real*8 fuind(3)
+!
+   if (deb_Path) write(iout,*), 'eprecip '
+!
+!
+   if (use_pmecore) then
+      nprocloc = nrec
+      rankloc = rank_bis
+      commloc =  comm_rec
+   else
+      nprocloc = nproc
+      rankloc = rank
+      commloc = COMM_TINKER
+   end if
+!
+!     set Ewald coefficient
+!
+   aewald = apewald
+!
+!     return if the Ewald coefficient is zero
+!
+   if (aewald .lt. 1.0d-6)  return
+   f = electric / dielec
+!cc
+!cc     get the fractional to Cartesian transformation matrix
+!cc
+!      call frac_to_cart (ftc)
+!c
+!c     initialize variables required for the scalar summation
+!c
+!      pterm = (pi/aewald)**2
+!      volterm = pi * volbox
+!      nff = nfft1 * nfft2
+!      nf1 = (nfft1+1) / 2
+!      nf2 = (nfft2+1) / 2
+!      nf3 = (nfft3+1) / 2
+!c
+!c     remove scalar sum virial from prior multipole 3-D FFT
+!c
+!      if (.not. use_mpole) then
+!         call bspline_fill
+!         call table_fill
+!c
+!c     assign only the permanent multipoles to the PME grid
+!c     and perform the 3-D FFT forward transformation
+!c
+!         do i = 1, npole
+!            cmp(1,i) = rpole(1,i)
+!            cmp(2,i) = rpole(2,i)
+!            cmp(3,i) = rpole(3,i)
+!            cmp(4,i) = rpole(4,i)
+!            cmp(5,i) = rpole(5,i)
+!            cmp(6,i) = rpole(9,i)
+!            cmp(7,i) = rpole(13,i)
+!            cmp(8,i) = 2.0d0 * rpole(6,i)
+!            cmp(9,i) = 2.0d0 * rpole(7,i)
+!            cmp(10,i) = 2.0d0 * rpole(10,i)
+!         end do
+!         call cmp_to_fmp (cmp,fmp)
+!         call grid_mpole (fmp)
+!         call fftfront
+!c
+!c     make the scalar summation over reciprocal lattice
+!c
+!         do i = 1, ntot-1
+!            k3 = i/nff + 1
+!            j = i - (k3-1)*nff
+!            k2 = j/nfft1 + 1
+!            k1 = j - (k2-1)*nfft1 + 1
+!            m1 = k1 - 1
+!            m2 = k2 - 1
+!            m3 = k3 - 1
+!            if (k1 .gt. nf1)  m1 = m1 - nfft1
+!            if (k2 .gt. nf2)  m2 = m2 - nfft2
+!            if (k3 .gt. nf3)  m3 = m3 - nfft3
+!            r1 = dble(m1)
+!            r2 = dble(m2)
+!            r3 = dble(m3)
+!            h1 = recip(1,1)*r1 + recip(1,2)*r2 + recip(1,3)*r3
+!            h2 = recip(2,1)*r1 + recip(2,2)*r2 + recip(2,3)*r3
+!            h3 = recip(3,1)*r1 + recip(3,2)*r2 + recip(3,3)*r3
+!            hsq = h1*h1 + h2*h2 + h3*h3
+!            term = -pterm * hsq
+!            expterm = 0.0d0
+!            if (term .gt. -50.0d0) then
+!               denom = volterm*hsq*bsmod1(k1)*bsmod2(k2)*bsmod3(k3)
+!               expterm = exp(term) / denom
+!               if (.not. use_bounds) then
+!                  expterm = expterm * (1.0d0-cos(pi*xbox*sqrt(hsq)))
+!               else if (octahedron) then
+!                  if (mod(m1+m2+m3,2) .ne. 0)  expterm = 0.0d0
+!               end if
+!            end if
+!            qfac(k1,k2,k3) = expterm
+!         end do
+!c
+!c     account for zeroth grid point for nonperiodic system
+!c
+!         qfac(1,1,1) = 0.0d0
+!         if (.not. use_bounds) then
+!            expterm = 0.5d0 * pi / xbox
+!            qfac(1,1,1) = expterm
+!         end if
+!c
+!c     complete the transformation of the PME grid
+!c
+!         do k = 1, nfft3
+!            do j = 1, nfft2
+!               do i = 1, nfft1
+!                  term = qfac(i,j,k)
+!                  qgrid(1,i,j,k) = term * qgrid(1,i,j,k)
+!                  qgrid(2,i,j,k) = term * qgrid(2,i,j,k)
+!               end do
+!            end do
+!         end do
+!c
+!c     perform 3-D FFT backward transform and get potential
+!c
+!         call fftback
+!         call fphi_mpole (fphi)
+!      end if
+!
+!     convert Cartesian induced dipoles to fractional coordinates
+!
+   do i = 1, 3
+      a(1,i) = dble(nfft1) * recip(i,1)
+      a(2,i) = dble(nfft2) * recip(i,2)
+      a(3,i) = dble(nfft3) * recip(i,3)
+   end do
+   e = 0d0
+   do i = 1, npolerecloc
+      iipole = polerecglob(i)
+      iglob = ipole(iipole)
+      fuind = 0d0
+      do j = 1, 3
+         fuind(j) = a(j,1)*uind(1,iipole) + a(j,2)*uind(2,iipole)&
+         &+ a(j,3)*uind(3,iipole)
+      end do
+      do k = 1, 3
+         e = e + fuind(k)*fphirec(k+1,i)
+      end do
+   end do
+   e = 0.5d0 * electric*  e
+   ep = ep + e
+!
+!     account for zeroth grid point for nonperiodic system
+!
+   if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1)&
+   &.and.(kstart2(rankloc+1).eq.1)) then
+      if (.not. use_bounds) then
+         expterm = 0.5d0 * pi / xbox
+         struc2 = qgrid2in_2d(1,1,1,1,1)**2 +&
+         &qgrid2in_2d(2,1,1,1,1)**2
+         e = f * expterm * struc2
+         ep = ep + e
+      end if
+   end if
+!
+   return
+end

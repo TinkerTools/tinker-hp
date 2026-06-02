@@ -1,0 +1,296 @@
+\hypertarget{diis_8f90}{\section{diis.\-f90 File Reference}
+\label{diis_8f90}\index{diis.\-f90@{diis.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{diis_8f90_ab231bbf854814230199af4a711427572}{diis} (ndsmax, n, xdiis, ediis, bmat, nmat, reqdiis, comm)
+\begin{DoxyCompactList}\small\item\em compute quantities to run diis extrapolation \end{DoxyCompactList}\item 
+subroutine \hyperlink{diis_8f90_a9eda4fabc1d3437173b7fbd57d0a9f31}{extrap} (n, nmat, x, cex, xex)
+\begin{DoxyCompactList}\small\item\em compute run diis extrapolation \end{DoxyCompactList}\item 
+subroutine \hyperlink{diis_8f90_a3a59b0eadeebf1401ff4f7fb1a9ac000}{makeb} (ndsmax, n, nvec, e, b, reqdiis, comm)
+\begin{DoxyCompactList}\small\item\em compute b matrix for diis extrapolation \end{DoxyCompactList}\item 
+subroutine \hyperlink{diis_8f90_a8638a3fca90207c530ca3e51d0831e0d}{no\-\_\-com\-\_\-diis} (ndsmax, n, xdiis, ediis, bmat, nmat)
+\item 
+subroutine \hyperlink{diis_8f90_a05d140f5611054c6d15fd63197257209}{no\-\_\-com\-\_\-makeb} (ndsmax, n, nvec, e, b)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{diis_8f90_ab231bbf854814230199af4a711427572}{\index{diis.\-f90@{diis.\-f90}!diis@{diis}}
+\index{diis@{diis}!diis.f90@{diis.\-f90}}
+\subsubsection[{diis}]{\setlength{\rightskip}{0pt plus 5cm}subroutine diis (
+\begin{DoxyParamCaption}
+\item[{integer}]{ndsmax, }
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension(n,ndsmax)}]{xdiis, }
+\item[{real$\ast$8, dimension(n,ndsmax)}]{ediis, }
+\item[{real$\ast$8, dimension(ndsmax+1,ndsmax+1)}]{bmat, }
+\item[{integer}]{nmat, }
+\item[{integer, dimension($\ast$)}]{reqdiis, }
+\item[{integer}]{comm}
+\end{DoxyParamCaption}
+)}}\label{diis_8f90_ab231bbf854814230199af4a711427572}
+
+
+compute quantities to run diis extrapolation 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ndsmax,\-:} & max number of iterations to extrapolate on \\
+\hline
+\mbox{\tt in}  & {\em n,\-:} & size of matrix \\
+\hline
+\mbox{\tt in}  & {\em xdiis,\-:} & matrix of previous solutions \\
+\hline
+\mbox{\tt in}  & {\em ediis,\-:} & matrix of previous errors \\
+\hline
+\mbox{\tt in}  & {\em bmat,\-:} & B diis matrix \\
+\hline
+\mbox{\tt in}  & {\em nmat,\-:} & current number of iterations to extrapolate on \\
+\hline
+\mbox{\tt in}  & {\em reqdiis,\-:} & array of request (M\-P\-I) \\
+\hline
+\mbox{\tt in}  & {\em comm,\-:} & M\-P\-I communicator \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 22 of file diis.\-f90.
+
+
+
+References amove(), and makeb().
+
+
+
+Referenced by inducedc\-\_\-pme(), inducedc\-\_\-pme2(), inducedc\-\_\-shortreal(), inducejac\-\_\-group(), inducejac\-\_\-pme(), inducejac\-\_\-pme2(), and inducejac\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=280pt]{diis_8f90_ab231bbf854814230199af4a711427572_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{diis_8f90_ab231bbf854814230199af4a711427572_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{diis_8f90_a9eda4fabc1d3437173b7fbd57d0a9f31}{\index{diis.\-f90@{diis.\-f90}!extrap@{extrap}}
+\index{extrap@{extrap}!diis.f90@{diis.\-f90}}
+\subsubsection[{extrap}]{\setlength{\rightskip}{0pt plus 5cm}subroutine extrap (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{integer}]{nmat, }
+\item[{real$\ast$8, dimension(n,$\ast$)}]{x, }
+\item[{real$\ast$8, dimension($\ast$)}]{cex, }
+\item[{real$\ast$8, dimension($\ast$)}]{xex}
+\end{DoxyParamCaption}
+)}}\label{diis_8f90_a9eda4fabc1d3437173b7fbd57d0a9f31}
+
+
+compute run diis extrapolation 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em n,\-:} & size of matrix \\
+\hline
+\mbox{\tt in}  & {\em nmat,\-:} & number of iterations to extrapolate on \\
+\hline
+\mbox{\tt in}  & {\em x,\-:} & vector of previous solutions \\
+\hline
+\mbox{\tt in}  & {\em cex,\-:} & extrapolation coefficients \\
+\hline
+\mbox{\tt in}  & {\em xex,\-:} & extrapolated solution \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 73 of file diis.\-f90.
+
+
+
+Referenced by inducedc\-\_\-pme(), inducedc\-\_\-pme2(), inducedc\-\_\-shortreal(), inducejac\-\_\-group(), inducejac\-\_\-pme(), inducejac\-\_\-pme2(), and inducejac\-\_\-shortreal().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{diis_8f90_a9eda4fabc1d3437173b7fbd57d0a9f31_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{diis_8f90_a3a59b0eadeebf1401ff4f7fb1a9ac000}{\index{diis.\-f90@{diis.\-f90}!makeb@{makeb}}
+\index{makeb@{makeb}!diis.f90@{diis.\-f90}}
+\subsubsection[{makeb}]{\setlength{\rightskip}{0pt plus 5cm}subroutine makeb (
+\begin{DoxyParamCaption}
+\item[{integer}]{ndsmax, }
+\item[{integer}]{n, }
+\item[{integer}]{nvec, }
+\item[{real$\ast$8, dimension(n,$\ast$)}]{e, }
+\item[{real$\ast$8, dimension(ndsmax+1,$\ast$)}]{b, }
+\item[{integer, dimension($\ast$)}]{reqdiis, }
+\item[{integer}]{comm}
+\end{DoxyParamCaption}
+)}}\label{diis_8f90_a3a59b0eadeebf1401ff4f7fb1a9ac000}
+
+
+compute b matrix for diis extrapolation 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ndsmax,\-:} & max number of iterations to extrapolate on \\
+\hline
+\mbox{\tt in}  & {\em n,\-:} & size of matrix \\
+\hline
+\mbox{\tt in}  & {\em nvec,\-:} & current number of iterations to extrapolate on \\
+\hline
+\mbox{\tt in}  & {\em e,\-:} & matrix of previous errors \\
+\hline
+\mbox{\tt in}  & {\em b,\-:} & B diis matrix \\
+\hline
+\mbox{\tt in}  & {\em reqdiis,\-:} & array of request (M\-P\-I) \\
+\hline
+\mbox{\tt in}  & {\em comm,\-:} & M\-P\-I communicator \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 98 of file diis.\-f90.
+
+
+
+References sprod().
+
+
+
+Referenced by diis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=210pt]{diis_8f90_a3a59b0eadeebf1401ff4f7fb1a9ac000_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{diis_8f90_a3a59b0eadeebf1401ff4f7fb1a9ac000_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{diis_8f90_a8638a3fca90207c530ca3e51d0831e0d}{\index{diis.\-f90@{diis.\-f90}!no\-\_\-com\-\_\-diis@{no\-\_\-com\-\_\-diis}}
+\index{no\-\_\-com\-\_\-diis@{no\-\_\-com\-\_\-diis}!diis.f90@{diis.\-f90}}
+\subsubsection[{no\-\_\-com\-\_\-diis}]{\setlength{\rightskip}{0pt plus 5cm}subroutine no\-\_\-com\-\_\-diis (
+\begin{DoxyParamCaption}
+\item[{integer}]{ndsmax, }
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension(n,ndsmax)}]{xdiis, }
+\item[{real$\ast$8, dimension(n,ndsmax)}]{ediis, }
+\item[{real$\ast$8, dimension(ndsmax+1,ndsmax+1)}]{bmat, }
+\item[{integer}]{nmat}
+\end{DoxyParamCaption}
+)}}\label{diis_8f90_a8638a3fca90207c530ca3e51d0831e0d}
+
+
+Definition at line 145 of file diis.\-f90.
+
+
+
+References amove(), and no\-\_\-com\-\_\-makeb().
+
+
+
+Referenced by inducedc\-\_\-pme(), inducedc\-\_\-pme2(), and inducedc\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{diis_8f90_a8638a3fca90207c530ca3e51d0831e0d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{diis_8f90_a8638a3fca90207c530ca3e51d0831e0d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{diis_8f90_a05d140f5611054c6d15fd63197257209}{\index{diis.\-f90@{diis.\-f90}!no\-\_\-com\-\_\-makeb@{no\-\_\-com\-\_\-makeb}}
+\index{no\-\_\-com\-\_\-makeb@{no\-\_\-com\-\_\-makeb}!diis.f90@{diis.\-f90}}
+\subsubsection[{no\-\_\-com\-\_\-makeb}]{\setlength{\rightskip}{0pt plus 5cm}subroutine no\-\_\-com\-\_\-makeb (
+\begin{DoxyParamCaption}
+\item[{integer}]{ndsmax, }
+\item[{integer}]{n, }
+\item[{integer}]{nvec, }
+\item[{real$\ast$8, dimension(n,$\ast$)}]{e, }
+\item[{real$\ast$8, dimension(ndsmax+1,$\ast$)}]{b}
+\end{DoxyParamCaption}
+)}}\label{diis_8f90_a05d140f5611054c6d15fd63197257209}
+
+
+Definition at line 185 of file diis.\-f90.
+
+
+
+References sprod().
+
+
+
+Referenced by no\-\_\-com\-\_\-diis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=254pt]{diis_8f90_a05d140f5611054c6d15fd63197257209_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{diis_8f90_a05d140f5611054c6d15fd63197257209_icgraph}
+\end{center}
+\end{figure}
+
+

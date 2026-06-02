@@ -1,0 +1,425 @@
+\hypertarget{newinduce__pme_8f90}{\section{newinduce\-\_\-pme.\-f90 File Reference}
+\label{newinduce__pme_8f90}\index{newinduce\-\_\-pme.\-f90@{newinduce\-\_\-pme.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{newinduce__pme_8f90_a0d93814010a7e9b25d82ea5c274a62e0}{newinduce\-\_\-pme}
+\begin{DoxyCompactList}\small\item\em evaluate induced dipole moments and the polarization energy using either a (preconditioned) conjugate gradient algorithm or Jacobi iterations coupled with D\-I\-I\-S extrapolation. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme_8f90_a0f89235a4790585db560535c1ee812cc}{inducepcg\-\_\-pme} (matvec, nrhs, precnd, ef, mu, murec)
+\begin{DoxyCompactList}\small\item\em Preconditioned Conjugate Gradient Solver for \char`\"{}group\char`\"{} polarization. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme_8f90_a675d786b69d807fbcf8e02f75f2762ca}{inducejac\-\_\-pme} (matvec, nrhs, dodiis, ef, mu, murec)
+\begin{DoxyCompactList}\small\item\em Jacobi/\-D\-I\-I\-S Solver for polarization. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme_8f90_addbd31b05c25931afaca7a556c13ec79}{efld0\-\_\-direct} (nrhs, ef)
+\begin{DoxyCompactList}\small\item\em Compute the direct space contribution to the permanent electric field. Also compute the \char`\"{}p\char`\"{} field, which is used to compute the energy according to the A\-M\-O\-E\-B\-A force field. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme_8f90_aef7c31d8ed9e8c7faf9036240c7a1bfd}{tmatxb\-\_\-pme} (nrhs, dodiag, mu, efi)
+\begin{DoxyCompactList}\small\item\em Compute the direct space contribution to the electric field due to the current value of the induced dipoles. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme_8f90_aa9f29ac0881536f169292ee175237cea}{efld0\-\_\-recip} (cphi)
+\begin{DoxyCompactList}\small\item\em Compute the reciprocal space contribution to the electric field due to the permanent multipoles. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme_8f90_aa28dd2d89d34d2934d4a27cf0163519a}{tmatxbrecip} (mu, murec, nrhs, dipfield, dipfieldbis)
+\begin{DoxyCompactList}\small\item\em Compute the reciprocal space contribution to the electric field due to the current value of the induced dipoles. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{newinduce__pme_8f90_addbd31b05c25931afaca7a556c13ec79}{\index{newinduce\-\_\-pme.\-f90@{newinduce\-\_\-pme.\-f90}!efld0\-\_\-direct@{efld0\-\_\-direct}}
+\index{efld0\-\_\-direct@{efld0\-\_\-direct}!newinduce_pme.f90@{newinduce\-\_\-pme.\-f90}}
+\subsubsection[{efld0\-\_\-direct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine efld0\-\_\-direct (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{ef}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme_8f90_addbd31b05c25931afaca7a556c13ec79}
+
+
+Compute the direct space contribution to the permanent electric field. Also compute the \char`\"{}p\char`\"{} field, which is used to compute the energy according to the A\-M\-O\-E\-B\-A force field. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt out}  & {\em ef,\-:} & electric field computed \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 982 of file newinduce\-\_\-pme.\-f90.
+
+
+
+References dampdir(), dampewald(), damptholed(), image(), pscale(), and switch().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg1shortreal(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2bisshortreal(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2cinqshortreal(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2quatshortreal(), epolar1tcg2shortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar1tcg2tershortreal(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), newinduce\-\_\-pme(), newinduce\-\_\-pme2(), and newinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_addbd31b05c25931afaca7a556c13ec79_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_addbd31b05c25931afaca7a556c13ec79_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme_8f90_aa9f29ac0881536f169292ee175237cea}{\index{newinduce\-\_\-pme.\-f90@{newinduce\-\_\-pme.\-f90}!efld0\-\_\-recip@{efld0\-\_\-recip}}
+\index{efld0\-\_\-recip@{efld0\-\_\-recip}!newinduce_pme.f90@{newinduce\-\_\-pme.\-f90}}
+\subsubsection[{efld0\-\_\-recip}]{\setlength{\rightskip}{0pt plus 5cm}subroutine efld0\-\_\-recip (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(10,$\ast$)}]{cphi}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme_8f90_aa9f29ac0881536f169292ee175237cea}
+
+
+Compute the reciprocal space contribution to the electric field due to the permanent multipoles. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt out}  & {\em cphi,\-:} & reciprocal potential \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1708 of file newinduce\-\_\-pme.\-f90.
+
+
+
+References aadd(), amove(), bspline\-\_\-fill\-\_\-site(), cmp\-\_\-to\-\_\-fmp\-\_\-site(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), fphi\-\_\-mpole\-\_\-site(), fphi\-\_\-to\-\_\-cphi\-\_\-site(), and grid\-\_\-mpole\-\_\-site().
+
+
+
+Referenced by dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), newinduce\-\_\-pme(), and newinduce\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_aa9f29ac0881536f169292ee175237cea_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_aa9f29ac0881536f169292ee175237cea_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme_8f90_a675d786b69d807fbcf8e02f75f2762ca}{\index{newinduce\-\_\-pme.\-f90@{newinduce\-\_\-pme.\-f90}!inducejac\-\_\-pme@{inducejac\-\_\-pme}}
+\index{inducejac\-\_\-pme@{inducejac\-\_\-pme}!newinduce_pme.f90@{newinduce\-\_\-pme.\-f90}}
+\subsubsection[{inducejac\-\_\-pme}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducejac\-\_\-pme (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiis, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{murec}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme_8f90_a675d786b69d807fbcf8e02f75f2762ca}
+
+
+Jacobi/\-D\-I\-I\-S Solver for polarization. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em dodiis,\-:} & use of D\-I\-I\-S extrapolation or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & permanent electric field (right hand side) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles (guess at entry) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 704 of file newinduce\-\_\-pme.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirsolv(), diis(), extrap(), and tmatxbrecip().
+
+
+
+Referenced by newinduce\-\_\-pme().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_a675d786b69d807fbcf8e02f75f2762ca_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_a675d786b69d807fbcf8e02f75f2762ca_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme_8f90_a0f89235a4790585db560535c1ee812cc}{\index{newinduce\-\_\-pme.\-f90@{newinduce\-\_\-pme.\-f90}!inducepcg\-\_\-pme@{inducepcg\-\_\-pme}}
+\index{inducepcg\-\_\-pme@{inducepcg\-\_\-pme}!newinduce_pme.f90@{newinduce\-\_\-pme.\-f90}}
+\subsubsection[{inducepcg\-\_\-pme}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducepcg\-\_\-pme (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{precnd, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{murec}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme_8f90_a0f89235a4790585db560535c1ee812cc}
+
+
+Preconditioned Conjugate Gradient Solver for \char`\"{}group\char`\"{} polarization. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em precnd,\-:} & use of diagonal preconditioner or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & permanent electric field (right hand side) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles (guess at entry) \\
+\hline
+\mbox{\tt in}  & {\em murec,\-:} & induced dipoles (guess at entry) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 313 of file newinduce\-\_\-pme.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirsolv(), and tmatxbrecip().
+
+
+
+Referenced by newinduce\-\_\-pme().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_a0f89235a4790585db560535c1ee812cc_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_a0f89235a4790585db560535c1ee812cc_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme_8f90_a0d93814010a7e9b25d82ea5c274a62e0}{\index{newinduce\-\_\-pme.\-f90@{newinduce\-\_\-pme.\-f90}!newinduce\-\_\-pme@{newinduce\-\_\-pme}}
+\index{newinduce\-\_\-pme@{newinduce\-\_\-pme}!newinduce_pme.f90@{newinduce\-\_\-pme.\-f90}}
+\subsubsection[{newinduce\-\_\-pme}]{\setlength{\rightskip}{0pt plus 5cm}subroutine newinduce\-\_\-pme (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme_8f90_a0d93814010a7e9b25d82ea5c274a62e0}
+
+
+evaluate induced dipole moments and the polarization energy using either a (preconditioned) conjugate gradient algorithm or Jacobi iterations coupled with D\-I\-I\-S extrapolation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file newinduce\-\_\-pme.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), efld0\-\_\-direct(), efld0\-\_\-recip(), fatal(), inducejac\-\_\-pme(), inducepcg\-\_\-pme(), tmatxb\-\_\-pme(), and ulspred().
+
+
+
+Referenced by epolar0c(), epolar1c(), and epolar3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_a0d93814010a7e9b25d82ea5c274a62e0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_a0d93814010a7e9b25d82ea5c274a62e0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme_8f90_aef7c31d8ed9e8c7faf9036240c7a1bfd}{\index{newinduce\-\_\-pme.\-f90@{newinduce\-\_\-pme.\-f90}!tmatxb\-\_\-pme@{tmatxb\-\_\-pme}}
+\index{tmatxb\-\_\-pme@{tmatxb\-\_\-pme}!newinduce_pme.f90@{newinduce\-\_\-pme.\-f90}}
+\subsubsection[{tmatxb\-\_\-pme}]{\setlength{\rightskip}{0pt plus 5cm}subroutine tmatxb\-\_\-pme (
+\begin{DoxyParamCaption}
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiag, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{efi}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme_8f90_aef7c31d8ed9e8c7faf9036240c7a1bfd}
+
+
+Compute the direct space contribution to the electric field due to the current value of the induced dipoles. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em dodiag,\-:} & compute diagonal contribution or not \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & current induced dipoles \\
+\hline
+\mbox{\tt out}  & {\em efi,\-:} & electrif field \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1425 of file newinduce\-\_\-pme.\-f90.
+
+
+
+References dampewald(), dampmut(), dampthole(), image(), and switch().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg1shortreal(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2bisshortreal(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2cinqshortreal(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2quatshortreal(), epolar1tcg2shortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar1tcg2tershortreal(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), newinduce\-\_\-pme(), newinduce\-\_\-pme2(), and newinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_aef7c31d8ed9e8c7faf9036240c7a1bfd_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_aef7c31d8ed9e8c7faf9036240c7a1bfd_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme_8f90_aa28dd2d89d34d2934d4a27cf0163519a}{\index{newinduce\-\_\-pme.\-f90@{newinduce\-\_\-pme.\-f90}!tmatxbrecip@{tmatxbrecip}}
+\index{tmatxbrecip@{tmatxbrecip}!newinduce_pme.f90@{newinduce\-\_\-pme.\-f90}}
+\subsubsection[{tmatxbrecip}]{\setlength{\rightskip}{0pt plus 5cm}subroutine tmatxbrecip (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{murec, }
+\item[{integer}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{dipfield, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{dipfieldbis}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme_8f90_aa28dd2d89d34d2934d4a27cf0163519a}
+
+
+Compute the reciprocal space contribution to the electric field due to the current value of the induced dipoles. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em mu,\-:} & current induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em murec,\-:} & current induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em dipfield,\-:} & electric field \\
+\hline
+\mbox{\tt out}  & {\em dipfieldbis,\-:} & electric field \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1965 of file newinduce\-\_\-pme.\-f90.
+
+
+
+References aadd(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), fphi\-\_\-uind\-\_\-site(), and grid\-\_\-uind\-\_\-site().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), inducedc\-\_\-pme(), inducedc\-\_\-pme2(), inducejac\-\_\-pme(), inducejac\-\_\-pme2(), inducepcg\-\_\-pme(), and inducepcg\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_aa28dd2d89d34d2934d4a27cf0163519a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme_8f90_aa28dd2d89d34d2934d4a27cf0163519a_icgraph}
+\end{center}
+\end{figure}
+
+

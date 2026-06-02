@@ -1,0 +1,172 @@
+\hypertarget{kdisp_8f90}{\section{kdisp.\-f90 File Reference}
+\label{kdisp_8f90}\index{kdisp.\-f90@{kdisp.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kdisp_8f90_af2148fe9c14541d0b9c48c2353ef2a65}{kdisp}
+\begin{DoxyCompactList}\small\item\em assigns C6 coefficients and damping parameters for dispersion interactions and processes any new or changed values for these parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kdisp_8f90_ad22caf90f700a19726bbcff9cb547a27}{kdisp\-\_\-update} (istep)
+\begin{DoxyCompactList}\small\item\em update kdisp parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kdisp_8f90_a580424f455c078fb6087d89ddb1cdf82}{dealloc\-\_\-shared\-\_\-disp}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for dispersion parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kdisp_8f90_aff0e9d2757147b22820a456306a153d6}{alloc\-\_\-shared\-\_\-disp}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for dispersion parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kdisp_8f90_aff0e9d2757147b22820a456306a153d6}{\index{kdisp.\-f90@{kdisp.\-f90}!alloc\-\_\-shared\-\_\-disp@{alloc\-\_\-shared\-\_\-disp}}
+\index{alloc\-\_\-shared\-\_\-disp@{alloc\-\_\-shared\-\_\-disp}!kdisp.f90@{kdisp.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-disp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-disp (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kdisp_8f90_aff0e9d2757147b22820a456306a153d6}
+
+
+allocate shared memory pointers for dispersion parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 332 of file kdisp.\-f90.
+
+
+
+Referenced by kdisp().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kdisp_8f90_aff0e9d2757147b22820a456306a153d6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kdisp_8f90_a580424f455c078fb6087d89ddb1cdf82}{\index{kdisp.\-f90@{kdisp.\-f90}!dealloc\-\_\-shared\-\_\-disp@{dealloc\-\_\-shared\-\_\-disp}}
+\index{dealloc\-\_\-shared\-\_\-disp@{dealloc\-\_\-shared\-\_\-disp}!kdisp.f90@{kdisp.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-disp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-disp (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kdisp_8f90_a580424f455c078fb6087d89ddb1cdf82}
+
+
+deallocate shared memory pointers for dispersion parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 288 of file kdisp.\-f90.
+
+
+
+Referenced by final(), and kdisp().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kdisp_8f90_a580424f455c078fb6087d89ddb1cdf82_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kdisp_8f90_af2148fe9c14541d0b9c48c2353ef2a65}{\index{kdisp.\-f90@{kdisp.\-f90}!kdisp@{kdisp}}
+\index{kdisp@{kdisp}!kdisp.f90@{kdisp.\-f90}}
+\subsubsection[{kdisp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kdisp (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kdisp_8f90_af2148fe9c14541d0b9c48c2353ef2a65}
+
+
+assigns C6 coefficients and damping parameters for dispersion interactions and processes any new or changed values for these parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 25 of file kdisp.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-disp(), dealloc\-\_\-shared\-\_\-disp(), getnumb(), gettext(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kdisp_8f90_af2148fe9c14541d0b9c48c2353ef2a65_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kdisp_8f90_af2148fe9c14541d0b9c48c2353ef2a65_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kdisp_8f90_ad22caf90f700a19726bbcff9cb547a27}{\index{kdisp.\-f90@{kdisp.\-f90}!kdisp\-\_\-update@{kdisp\-\_\-update}}
+\index{kdisp\-\_\-update@{kdisp\-\_\-update}!kdisp.f90@{kdisp.\-f90}}
+\subsubsection[{kdisp\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kdisp\-\_\-update (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{kdisp_8f90_ad22caf90f700a19726bbcff9cb547a27}
+
+
+update kdisp parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 196 of file kdisp.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kdisp_8f90_ad22caf90f700a19726bbcff9cb547a27_icgraph}
+\end{center}
+\end{figure}
+
+

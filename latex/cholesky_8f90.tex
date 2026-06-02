@@ -1,0 +1,52 @@
+\hypertarget{cholesky_8f90}{\section{cholesky.\-f90 File Reference}
+\label{cholesky_8f90}\index{cholesky.\-f90@{cholesky.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{cholesky_8f90_a5a5f2717986f3dbe78eecda450512745}{cholesky} (nvar, a, b)
+\begin{DoxyCompactList}\small\item\em \char`\"{}cholesky\char`\"{} uses a modified Cholesky method to solve the linear system Ax = b, returning \char`\"{}x\char`\"{} in \char`\"{}b\char`\"{}; \char`\"{}\-A\char`\"{} is a real symmetric positive definite matrix with its upper triangle (including the diagonal) stored by rows \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{cholesky_8f90_a5a5f2717986f3dbe78eecda450512745}{\index{cholesky.\-f90@{cholesky.\-f90}!cholesky@{cholesky}}
+\index{cholesky@{cholesky}!cholesky.f90@{cholesky.\-f90}}
+\subsubsection[{cholesky}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cholesky (
+\begin{DoxyParamCaption}
+\item[{integer}]{nvar, }
+\item[{real$\ast$8, dimension($\ast$)}]{a, }
+\item[{real$\ast$8, dimension($\ast$)}]{b}
+\end{DoxyParamCaption}
+)}}\label{cholesky_8f90_a5a5f2717986f3dbe78eecda450512745}
+
+
+\char`\"{}cholesky\char`\"{} uses a modified Cholesky method to solve the linear system Ax = b, returning \char`\"{}x\char`\"{} in \char`\"{}b\char`\"{}; \char`\"{}\-A\char`\"{} is a real symmetric positive definite matrix with its upper triangle (including the diagonal) stored by rows 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nvar,\-:} & dimension of matrix \\
+\hline
+\mbox{\tt in}  & {\em a,\-:} & matrix \\
+\hline
+\mbox{\tt in}  & {\em b,\-:} & right hand side \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 33 of file cholesky.\-f90.
+
+
+
+Referenced by ulspred().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cholesky_8f90_a5a5f2717986f3dbe78eecda450512745_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,448 @@
+\hypertarget{classcommstuffpi}{\section{commstuffpi Module Reference}
+\label{classcommstuffpi}\index{commstuffpi@{commstuffpi}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{structcommstuffpi_1_1real3}{real3}
+\item 
+type \hyperlink{structcommstuffpi_1_1t__elt}{t\-\_\-elt}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{classcommstuffpi_a16cff35454e936d788925c3546e2ebb6}{full\-\_\-gradient\-\_\-prepare\-\_\-pi} (polymer, polymer\-\_\-ctr, istep, \hyperlink{respa_8f90_a9973bf6f030df2aeeef2a2c0fd9079dc}{respa})
+\item 
+subroutine \hyperlink{classcommstuffpi_ab9176f8de5cba7fc13e7f47335672e62}{fast\-\_\-gradient\-\_\-prepare\-\_\-pi} (polymer, istep)
+\item 
+subroutine \hyperlink{classcommstuffpi_acf6a40330e2ee2ef22abaf26800da5a9}{reassignpi} (polymer, polymer\-\_\-ctr)
+\item 
+subroutine \hyperlink{classcommstuffpi_acff2de85dc043120a83b35206ccdd941}{commpospi} (polymer, send\-\_\-centroid, fast)
+\item 
+subroutine \hyperlink{classcommstuffpi_a00bc8e52d9c14e0398976a17a43cac45}{commposrecpi} (polymer, send\-\_\-centroid)
+\item 
+subroutine \hyperlink{classcommstuffpi_aafc86594dc2de9b20ac0bcbbb043ec8a}{commforcesblocpi} (derivs, nbeadsproc, fast)
+\item 
+subroutine \hyperlink{classcommstuffpi_afc06456e4b65d919d669fae9c4623729}{comm\-\_\-for\-\_\-gradient} (polymer, send\-\_\-centroid, send\-\_\-vel)
+\item 
+subroutine \hyperlink{classcommstuffpi_a8e8bbcfecee03d3d2a98821bbc61b58f}{comm\-\_\-for\-\_\-normal\-\_\-modes} (polymer, array1, array2, array3, array4)
+\item 
+subroutine \hyperlink{classcommstuffpi_aac04141710087d41025d561ce29c7b4b}{save\-\_\-deriv\-\_\-rec} (temprec)
+\item 
+subroutine \hyperlink{classcommstuffpi_a5e1481d2895cd682bddb3e2b8e232ef5}{commforcesrecpi} (derivs, temprec, nbeadsproc)
+\item 
+subroutine \hyperlink{classcommstuffpi_a526ebb0cb7646b9a009968b8e3060fe5}{commforces\-\_\-ctr} (polymer\-\_\-ctr, derivs\-\_\-ctr)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classcommstuffpi_a0bef763ac1a5d3157ae962df1a565ff3}{max\-\_\-atoms\-\_\-send} =0
+\item 
+integer \hyperlink{classcommstuffpi_a16adc021090614145f2e1a5ebfea814c}{max\-\_\-atoms\-\_\-recv} =0
+\item 
+integer, dimension(\-:), allocatable \hyperlink{classcommstuffpi_a01eab2a4a4cdaa4f1694d2334e5cef33}{loc\-\_\-save}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 6 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+\subsection{Member Function/\-Subroutine Documentation}
+\hypertarget{classcommstuffpi_afc06456e4b65d919d669fae9c4623729}{\index{commstuffpi@{commstuffpi}!comm\-\_\-for\-\_\-gradient@{comm\-\_\-for\-\_\-gradient}}
+\index{comm\-\_\-for\-\_\-gradient@{comm\-\_\-for\-\_\-gradient}!commstuffpi@{commstuffpi}}
+\subsubsection[{comm\-\_\-for\-\_\-gradient}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::comm\-\_\-for\-\_\-gradient (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{logical, intent(in)}]{send\-\_\-centroid, }
+\item[{logical, intent(in), optional}]{send\-\_\-vel}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_afc06456e4b65d919d669fae9c4623729}
+
+
+Definition at line 856 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+Referenced by fast\-\_\-gradient\-\_\-prepare\-\_\-pi(), and full\-\_\-gradient\-\_\-prepare\-\_\-pi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_afc06456e4b65d919d669fae9c4623729_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_a8e8bbcfecee03d3d2a98821bbc61b58f}{\index{commstuffpi@{commstuffpi}!comm\-\_\-for\-\_\-normal\-\_\-modes@{comm\-\_\-for\-\_\-normal\-\_\-modes}}
+\index{comm\-\_\-for\-\_\-normal\-\_\-modes@{comm\-\_\-for\-\_\-normal\-\_\-modes}!commstuffpi@{commstuffpi}}
+\subsubsection[{comm\-\_\-for\-\_\-normal\-\_\-modes}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::comm\-\_\-for\-\_\-normal\-\_\-modes (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{real$\ast$8, dimension(\-:,\-:,\-:), intent(inout)}]{array1, }
+\item[{real$\ast$8, dimension(\-:,\-:,\-:), intent(inout), optional}]{array2, }
+\item[{real$\ast$8, dimension(\-:,\-:,\-:), intent(inout), optional}]{array3, }
+\item[{real$\ast$8, dimension(\-:,\-:,\-:), intent(inout), optional}]{array4}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_a8e8bbcfecee03d3d2a98821bbc61b58f}
+
+
+Definition at line 1035 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+References fatal().
+
+
+
+Referenced by baoabpi(), baoabrespapi(), baoabrespapi\-\_\-fast(), full\-\_\-gradient\-\_\-prepare\-\_\-pi(), and mdinitbead().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=290pt]{classcommstuffpi_a8e8bbcfecee03d3d2a98821bbc61b58f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_a8e8bbcfecee03d3d2a98821bbc61b58f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_a526ebb0cb7646b9a009968b8e3060fe5}{\index{commstuffpi@{commstuffpi}!commforces\-\_\-ctr@{commforces\-\_\-ctr}}
+\index{commforces\-\_\-ctr@{commforces\-\_\-ctr}!commstuffpi@{commstuffpi}}
+\subsubsection[{commforces\-\_\-ctr}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::commforces\-\_\-ctr (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer\-\_\-ctr, }
+\item[{real$\ast$8, dimension(3,nbloc,$\ast$), intent(inout)}]{derivs\-\_\-ctr}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_a526ebb0cb7646b9a009968b8e3060fe5}
+
+
+Definition at line 1390 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_a526ebb0cb7646b9a009968b8e3060fe5_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_aafc86594dc2de9b20ac0bcbbb043ec8a}{\index{commstuffpi@{commstuffpi}!commforcesblocpi@{commforcesblocpi}}
+\index{commforcesblocpi@{commforcesblocpi}!commstuffpi@{commstuffpi}}
+\subsubsection[{commforcesblocpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::commforcesblocpi (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nbloc,$\ast$), intent(inout)}]{derivs, }
+\item[{integer, intent(in)}]{nbeadsproc, }
+\item[{logical, intent(in)}]{fast}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_aafc86594dc2de9b20ac0bcbbb043ec8a}
+
+
+Definition at line 771 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+Referenced by baoabpi(), baoabrespapi(), and baoabrespapi\-\_\-fast().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_aafc86594dc2de9b20ac0bcbbb043ec8a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_a5e1481d2895cd682bddb3e2b8e232ef5}{\index{commstuffpi@{commstuffpi}!commforcesrecpi@{commforcesrecpi}}
+\index{commforcesrecpi@{commforcesrecpi}!commstuffpi@{commstuffpi}}
+\subsubsection[{commforcesrecpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::commforcesrecpi (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nbloc,$\ast$), intent(inout)}]{derivs, }
+\item[{real$\ast$8, dimension(3,nlocrec2,$\ast$), intent(inout)}]{temprec, }
+\item[{integer, intent(in)}]{nbeadsproc}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_a5e1481d2895cd682bddb3e2b8e232ef5}
+
+
+Definition at line 1225 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_a5e1481d2895cd682bddb3e2b8e232ef5_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_acff2de85dc043120a83b35206ccdd941}{\index{commstuffpi@{commstuffpi}!commpospi@{commpospi}}
+\index{commpospi@{commpospi}!commstuffpi@{commstuffpi}}
+\subsubsection[{commpospi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::commpospi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{logical, intent(in)}]{send\-\_\-centroid, }
+\item[{logical, intent(in)}]{fast}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_acff2de85dc043120a83b35206ccdd941}
+
+
+Definition at line 461 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+Referenced by fast\-\_\-gradient\-\_\-prepare\-\_\-pi(), and full\-\_\-gradient\-\_\-prepare\-\_\-pi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_acff2de85dc043120a83b35206ccdd941_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_a00bc8e52d9c14e0398976a17a43cac45}{\index{commstuffpi@{commstuffpi}!commposrecpi@{commposrecpi}}
+\index{commposrecpi@{commposrecpi}!commstuffpi@{commstuffpi}}
+\subsubsection[{commposrecpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::commposrecpi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{logical, intent(in)}]{send\-\_\-centroid}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_a00bc8e52d9c14e0398976a17a43cac45}
+
+
+Definition at line 581 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+Referenced by full\-\_\-gradient\-\_\-prepare\-\_\-pi().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_a00bc8e52d9c14e0398976a17a43cac45_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_ab9176f8de5cba7fc13e7f47335672e62}{\index{commstuffpi@{commstuffpi}!fast\-\_\-gradient\-\_\-prepare\-\_\-pi@{fast\-\_\-gradient\-\_\-prepare\-\_\-pi}}
+\index{fast\-\_\-gradient\-\_\-prepare\-\_\-pi@{fast\-\_\-gradient\-\_\-prepare\-\_\-pi}!commstuffpi@{commstuffpi}}
+\subsubsection[{fast\-\_\-gradient\-\_\-prepare\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::fast\-\_\-gradient\-\_\-prepare\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{integer, intent(in)}]{istep}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_ab9176f8de5cba7fc13e7f47335672e62}
+
+
+Definition at line 103 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+References allocsteprespa(), comm\-\_\-for\-\_\-gradient(), commpospi(), beads\-::load\-\_\-bead(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and beads\-::update\-\_\-direct\-\_\-space\-\_\-pi().
+
+
+
+Referenced by baoabrespapi\-\_\-fast().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_ab9176f8de5cba7fc13e7f47335672e62_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_ab9176f8de5cba7fc13e7f47335672e62_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_a16cff35454e936d788925c3546e2ebb6}{\index{commstuffpi@{commstuffpi}!full\-\_\-gradient\-\_\-prepare\-\_\-pi@{full\-\_\-gradient\-\_\-prepare\-\_\-pi}}
+\index{full\-\_\-gradient\-\_\-prepare\-\_\-pi@{full\-\_\-gradient\-\_\-prepare\-\_\-pi}!commstuffpi@{commstuffpi}}
+\subsubsection[{full\-\_\-gradient\-\_\-prepare\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer\-\_\-ctr, }
+\item[{integer, intent(in)}]{istep, }
+\item[{logical, intent(in)}]{respa}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_a16cff35454e936d788925c3546e2ebb6}
+
+
+Definition at line 22 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+References allocstep(), allocsteprespa(), comm\-\_\-for\-\_\-gradient(), comm\-\_\-for\-\_\-normal\-\_\-modes(), commpospi(), commposrec(), commposrecpi(), beads\-::contract\-\_\-polymer(), beads\-::load\-\_\-bead(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), nblist(), reassignpi(), reassignpme(), reinitnl(), respa(), beads\-::update\-\_\-direct\-\_\-space\-\_\-pi(), and beads\-::update\-\_\-normal\-\_\-modes\-\_\-pi().
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_a16cff35454e936d788925c3546e2ebb6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_a16cff35454e936d788925c3546e2ebb6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_acf6a40330e2ee2ef22abaf26800da5a9}{\index{commstuffpi@{commstuffpi}!reassignpi@{reassignpi}}
+\index{reassignpi@{reassignpi}!commstuffpi@{commstuffpi}}
+\subsubsection[{reassignpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::reassignpi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout), optional}]{polymer\-\_\-ctr}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_acf6a40330e2ee2ef22abaf26800da5a9}
+
+
+Definition at line 128 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+References image(), orderbuffer(), qtb\-::reassignqtb(), and beads\-::update\-\_\-nlocpi().
+
+
+
+Referenced by full\-\_\-gradient\-\_\-prepare\-\_\-pi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_acf6a40330e2ee2ef22abaf26800da5a9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_acf6a40330e2ee2ef22abaf26800da5a9_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classcommstuffpi_aac04141710087d41025d561ce29c7b4b}{\index{commstuffpi@{commstuffpi}!save\-\_\-deriv\-\_\-rec@{save\-\_\-deriv\-\_\-rec}}
+\index{save\-\_\-deriv\-\_\-rec@{save\-\_\-deriv\-\_\-rec}!commstuffpi@{commstuffpi}}
+\subsubsection[{save\-\_\-deriv\-\_\-rec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine commstuffpi\-::save\-\_\-deriv\-\_\-rec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nlocrec2), intent(inout)}]{temprec}
+\end{DoxyParamCaption}
+)}}\label{classcommstuffpi_aac04141710087d41025d561ce29c7b4b}
+
+
+Definition at line 1202 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+Referenced by utilbaoabpi\-::compute\-\_\-grad\-\_\-beads().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classcommstuffpi_aac04141710087d41025d561ce29c7b4b_icgraph}
+\end{center}
+\end{figure}
+
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classcommstuffpi_a01eab2a4a4cdaa4f1694d2334e5cef33}{\index{commstuffpi@{commstuffpi}!loc\-\_\-save@{loc\-\_\-save}}
+\index{loc\-\_\-save@{loc\-\_\-save}!commstuffpi@{commstuffpi}}
+\subsubsection[{loc\-\_\-save}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable commstuffpi\-::loc\-\_\-save}}\label{classcommstuffpi_a01eab2a4a4cdaa4f1694d2334e5cef33}
+
+
+Definition at line 17 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+\hypertarget{classcommstuffpi_a16adc021090614145f2e1a5ebfea814c}{\index{commstuffpi@{commstuffpi}!max\-\_\-atoms\-\_\-recv@{max\-\_\-atoms\-\_\-recv}}
+\index{max\-\_\-atoms\-\_\-recv@{max\-\_\-atoms\-\_\-recv}!commstuffpi@{commstuffpi}}
+\subsubsection[{max\-\_\-atoms\-\_\-recv}]{\setlength{\rightskip}{0pt plus 5cm}integer commstuffpi\-::max\-\_\-atoms\-\_\-recv =0}}\label{classcommstuffpi_a16adc021090614145f2e1a5ebfea814c}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+\hypertarget{classcommstuffpi_a0bef763ac1a5d3157ae962df1a565ff3}{\index{commstuffpi@{commstuffpi}!max\-\_\-atoms\-\_\-send@{max\-\_\-atoms\-\_\-send}}
+\index{max\-\_\-atoms\-\_\-send@{max\-\_\-atoms\-\_\-send}!commstuffpi@{commstuffpi}}
+\subsubsection[{max\-\_\-atoms\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer commstuffpi\-::max\-\_\-atoms\-\_\-send =0}}\label{classcommstuffpi_a0bef763ac1a5d3157ae962df1a565ff3}
+
+
+Definition at line 15 of file M\-O\-D\-\_\-commstuffpi.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__commstuffpi_8f90}{M\-O\-D\-\_\-commstuffpi.\-f90}\end{DoxyCompactItemize}

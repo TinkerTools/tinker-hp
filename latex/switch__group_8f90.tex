@@ -1,0 +1,113 @@
+\hypertarget{switch__group_8f90}{\section{switch\-\_\-group.\-f90 File Reference}
+\label{switch__group_8f90}\index{switch\-\_\-group.\-f90@{switch\-\_\-group.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{switch__group_8f90_a4228c0674d3a230b3fdd71f2aed4fa76}{switch\-\_\-group\-\_\-ene}
+\begin{DoxyCompactList}\small\item\em calculates the group induced dipole polarization energy\-: if A and B are two groups and their interactions are scaled by alpha, then the Epol(A-\/\-B) = alpha$\ast$(Epol(A+\-B) -\/ Epol(\-A) -\/ Epol(\-B)) st\-: Epol(A+\-B) = alpha$\ast$\-Epol(A+\-B) + (1-\/alpha)$\ast$(Epol(\-A) + Epol(\-B)) \end{DoxyCompactList}\item 
+subroutine \hyperlink{switch__group_8f90_a41630cf6e1b7d6543ea1f48f79b47b85}{switch\-\_\-group\-\_\-grad}
+\begin{DoxyCompactList}\small\item\em calculates the group induced dipole polarization energy and forces\-: if A and B are two groups and their interactions are scaled by alpha, then the Epol(A-\/\-B) = alpha$\ast$(Epol(A+\-B) -\/ Epol(\-A) -\/ Epol(\-B)) st\-: Epol(A+\-B) = alpha$\ast$\-Epol(A+\-B) + (1-\/alpha)$\ast$(Epol(\-A) + Epol(\-B)) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{switch__group_8f90_a4228c0674d3a230b3fdd71f2aed4fa76}{\index{switch\-\_\-group.\-f90@{switch\-\_\-group.\-f90}!switch\-\_\-group\-\_\-ene@{switch\-\_\-group\-\_\-ene}}
+\index{switch\-\_\-group\-\_\-ene@{switch\-\_\-group\-\_\-ene}!switch_group.f90@{switch\-\_\-group.\-f90}}
+\subsubsection[{switch\-\_\-group\-\_\-ene}]{\setlength{\rightskip}{0pt plus 5cm}subroutine switch\-\_\-group\-\_\-ene (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{switch__group_8f90_a4228c0674d3a230b3fdd71f2aed4fa76}
+
+
+calculates the group induced dipole polarization energy\-: if A and B are two groups and their interactions are scaled by alpha, then the Epol(A-\/\-B) = alpha$\ast$(Epol(A+\-B) -\/ Epol(\-A) -\/ Epol(\-B)) st\-: Epol(A+\-B) = alpha$\ast$\-Epol(A+\-B) + (1-\/alpha)$\ast$(Epol(\-A) + Epol(\-B)) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 26 of file switch\-\_\-group.\-f90.
+
+
+
+References epolar3\-\_\-group().
+
+
+
+Referenced by epolar0c(), and epolar3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{switch__group_8f90_a4228c0674d3a230b3fdd71f2aed4fa76_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{switch__group_8f90_a4228c0674d3a230b3fdd71f2aed4fa76_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{switch__group_8f90_a41630cf6e1b7d6543ea1f48f79b47b85}{\index{switch\-\_\-group.\-f90@{switch\-\_\-group.\-f90}!switch\-\_\-group\-\_\-grad@{switch\-\_\-group\-\_\-grad}}
+\index{switch\-\_\-group\-\_\-grad@{switch\-\_\-group\-\_\-grad}!switch_group.f90@{switch\-\_\-group.\-f90}}
+\subsubsection[{switch\-\_\-group\-\_\-grad}]{\setlength{\rightskip}{0pt plus 5cm}subroutine switch\-\_\-group\-\_\-grad (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{switch__group_8f90_a41630cf6e1b7d6543ea1f48f79b47b85}
+
+
+calculates the group induced dipole polarization energy and forces\-: if A and B are two groups and their interactions are scaled by alpha, then the Epol(A-\/\-B) = alpha$\ast$(Epol(A+\-B) -\/ Epol(\-A) -\/ Epol(\-B)) st\-: Epol(A+\-B) = alpha$\ast$\-Epol(A+\-B) + (1-\/alpha)$\ast$(Epol(\-A) + Epol(\-B)) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 176 of file switch\-\_\-group.\-f90.
+
+
+
+References epolar1\-\_\-group().
+
+
+
+Referenced by epolar1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{switch__group_8f90_a41630cf6e1b7d6543ea1f48f79b47b85_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{switch__group_8f90_a41630cf6e1b7d6543ea1f48f79b47b85_icgraph}
+\end{center}
+\end{figure}
+
+

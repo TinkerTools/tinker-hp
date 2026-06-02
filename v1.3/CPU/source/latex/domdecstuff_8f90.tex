@@ -1,0 +1,703 @@
+\hypertarget{domdecstuff_8f90}{\section{domdecstuff.\-f90 File Reference}
+\label{domdecstuff_8f90}\index{domdecstuff.\-f90@{domdecstuff.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{domdecstuff_8f90_a6ffc4a7b5c0a99afa65d7da532bf610d}{drivermpi}
+\begin{DoxyCompactList}\small\item\em driver to initialize 3d domain decomposition \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_ad0ae22cce4cf8e637999746588be7c17}{allocstep}
+\begin{DoxyCompactList}\small\item\em subroutine allocstep\-: deallocate arrays and reallocate them with proper size (memory distribution) \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_af44472a279ad05de93d1100779b57c43}{allocsteprespa} (fast)
+\begin{DoxyCompactList}\small\item\em subroutine allocstepsrespa\-: deallocate arrays and reallocate them with proper size (memory distribution) \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_a292e801ea699d1f460f0b64391ce4a91}{ddnumber} (num, istep)
+\begin{DoxyCompactList}\small\item\em get the number of subdivision along each axis for 3d spatial decomposition \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_a0e8cba98e7c282a05eae1741d9d752fc}{ddpme3d}
+\begin{DoxyCompactList}\small\item\em 3d domain decomposition \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_ad84d76d62fd57e48e82cd729578a92e9}{halfcell} (xi, yi, zi, xj, yj, zj, docompute)
+\begin{DoxyCompactList}\small\item\em routine that says whether an interaction between two particules has to be computed within the current domain or not (dd half cell method, Newton's 3rd law) \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_ad6637fa81fdeee14641ef4b130e4c2fb}{midpoint} (xi, yi, zi, xk, yk, zk, docompute)
+\begin{DoxyCompactList}\small\item\em routine that says whether an interaction between two particules has to be computed within the current domain or not (dd midpoint method) \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_abfb09818a0d039af1191ef6f01d072dd}{ddbuild} (cut, nrecep, precep, init)
+\begin{DoxyCompactList}\small\item\em build lists of cells for a given cutoff (cell-\/list method) and also nlocnl build lists of neighbors for a given cutoff \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_aea7b5c162ab0b349208e09aba98c022e}{midpointimage} (xi, yi, zi, xk, yk, zk, xr, yr, zr, docompute)
+\begin{DoxyCompactList}\small\item\em routine that says whether an interaction between two particules has to be computed within the current domain or not (dd midpoint method), also returns minimum image of the distance vector \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_aa4bbdfb87b938140e0237028b1d76457}{midpointimagetriclinic} (xi, yi, zi, xk, yk, zk, xr, yr, zr, docompute)
+\begin{DoxyCompactList}\small\item\em routine that says whether an interaction between two particules has to be computed within the current domain or not (dd midpoint method), also returns minimum image of the distance vector \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_a62803650b9f49aab84f4be179de1cb7e}{midpointgroup} (pos, nb, docompute)
+\begin{DoxyCompactList}\small\item\em routine that says whether an interaction between a group of particules has to be computed within the current domain or not (dd midpoint method, Newton's 3rd law) \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_aa15b2c697f0868443cf07876f65dfb03}{ddpme3dnpt} (scaleiso, istep)
+\begin{DoxyCompactList}\small\item\em driver for update of domain decomposition after rescaling of volume due to barostat \end{DoxyCompactList}\item 
+subroutine \hyperlink{domdecstuff_8f90_a4f40c6b2d33a8db818f35420042b1935}{ddpme3dnptaniso} (scale, istep)
+\begin{DoxyCompactList}\small\item\em update of domain decomposition after rescaling of volume due to barostat \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{domdecstuff_8f90_ad0ae22cce4cf8e637999746588be7c17}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!allocstep@{allocstep}}
+\index{allocstep@{allocstep}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{allocstep}]{\setlength{\rightskip}{0pt plus 5cm}subroutine allocstep (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_ad0ae22cce4cf8e637999746588be7c17}
+
+
+subroutine allocstep\-: deallocate arrays and reallocate them with proper size (memory distribution) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 227 of file domdecstuff.\-f90.
+
+
+
+Referenced by baoab(), beeman(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), mdinit(), mdinitbead(), mdinitreps(), minimiz1(), minimize\-\_\-bis(), testgrad(), and verlet().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_ad0ae22cce4cf8e637999746588be7c17_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_af44472a279ad05de93d1100779b57c43}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!allocsteprespa@{allocsteprespa}}
+\index{allocsteprespa@{allocsteprespa}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{allocsteprespa}]{\setlength{\rightskip}{0pt plus 5cm}subroutine allocsteprespa (
+\begin{DoxyParamCaption}
+\item[{logical}]{fast}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_af44472a279ad05de93d1100779b57c43}
+
+
+subroutine allocstepsrespa\-: deallocate arrays and reallocate them with proper size (memory distribution) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 314 of file domdecstuff.\-f90.
+
+
+
+Referenced by baoabrespa(), baoabrespa1(), baoabrespafast1(), baoabrespaint1(), commstuffpi\-::fast\-\_\-gradient\-\_\-prepare\-\_\-pi(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), mdinit(), respa(), respa1(), respafast(), and respafast1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_af44472a279ad05de93d1100779b57c43_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_abfb09818a0d039af1191ef6f01d072dd}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!ddbuild@{ddbuild}}
+\index{ddbuild@{ddbuild}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{ddbuild}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ddbuild (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{cut, }
+\item[{integer}]{nrecep, }
+\item[{integer, dimension(nproc)}]{precep, }
+\item[{logical}]{init}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_abfb09818a0d039af1191ef6f01d072dd}
+
+
+build lists of cells for a given cutoff (cell-\/list method) and also nlocnl build lists of neighbors for a given cutoff 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em cut,\-:} & cutoff \\
+\hline
+\mbox{\tt in}  & {\em nrecep,\-:} & number of neighboring procs \\
+\hline
+\mbox{\tt in}  & {\em precep,\-:} & list of neighboring procs \\
+\hline
+\mbox{\tt in}  & {\em init,\-:} & logical true if first call \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1297 of file domdecstuff.\-f90.
+
+
+
+References ctfvec(), imagefrac(), and colvarproxy\-\_\-tinkerhp\-::init().
+
+
+
+Referenced by reinitnl().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=290pt]{domdecstuff_8f90_abfb09818a0d039af1191ef6f01d072dd_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_abfb09818a0d039af1191ef6f01d072dd_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_a292e801ea699d1f460f0b64391ce4a91}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!ddnumber@{ddnumber}}
+\index{ddnumber@{ddnumber}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{ddnumber}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ddnumber (
+\begin{DoxyParamCaption}
+\item[{integer}]{num, }
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_a292e801ea699d1f460f0b64391ce4a91}
+
+
+get the number of subdivision along each axis for 3d spatial decomposition 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 404 of file domdecstuff.\-f90.
+
+
+
+References gettext(), prime(), sort(), sort2(), and upcase().
+
+
+
+Referenced by ddpme3d().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{domdecstuff_8f90_a292e801ea699d1f460f0b64391ce4a91_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_a292e801ea699d1f460f0b64391ce4a91_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_a0e8cba98e7c282a05eae1741d9d752fc}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!ddpme3d@{ddpme3d}}
+\index{ddpme3d@{ddpme3d}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{ddpme3d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ddpme3d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_a0e8cba98e7c282a05eae1741d9d752fc}
+
+
+3d domain decomposition 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 604 of file domdecstuff.\-f90.
+
+
+
+References ctfvec(), ddnumber(), ftcvec(), imagefrac(), and orderbuffer().
+
+
+
+Referenced by analyze\-\_\-bis(), drivermpi(), makebar(), mdinit(), mdinitbead(), mdinitreps(), minimiz1(), minimize\-\_\-bis(), and testgrad().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_a0e8cba98e7c282a05eae1741d9d752fc_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_a0e8cba98e7c282a05eae1741d9d752fc_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_aa15b2c697f0868443cf07876f65dfb03}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!ddpme3dnpt@{ddpme3dnpt}}
+\index{ddpme3dnpt@{ddpme3dnpt}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{ddpme3dnpt}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ddpme3dnpt (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{scaleiso, }
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_aa15b2c697f0868443cf07876f65dfb03}
+
+
+driver for update of domain decomposition after rescaling of volume due to barostat 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em scaleiso,\-:} & scaling factor of every direction \\
+\hline
+\mbox{\tt in}  & {\em istep,\-:} & timestep number \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1709 of file domdecstuff.\-f90.
+
+
+
+References ddpme3dnptaniso().
+
+
+
+Referenced by baoab(), pmonte(), and utilbaoabpi\-::pscalepi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_aa15b2c697f0868443cf07876f65dfb03_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_aa15b2c697f0868443cf07876f65dfb03_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_a4f40c6b2d33a8db818f35420042b1935}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!ddpme3dnptaniso@{ddpme3dnptaniso}}
+\index{ddpme3dnptaniso@{ddpme3dnptaniso}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{ddpme3dnptaniso}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ddpme3dnptaniso (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3)}]{scale, }
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_a4f40c6b2d33a8db818f35420042b1935}
+
+
+update of domain decomposition after rescaling of volume due to barostat 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em scale,\-:} & scaling factor of every direction \\
+\hline
+\mbox{\tt in}  & {\em istep,\-:} & timestep number \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1724 of file domdecstuff.\-f90.
+
+
+
+References orderbuffer(), and orderbufferrec().
+
+
+
+Referenced by ddpme3dnpt(), and rescale\-\_\-box().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_a4f40c6b2d33a8db818f35420042b1935_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_a4f40c6b2d33a8db818f35420042b1935_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_a6ffc4a7b5c0a99afa65d7da532bf610d}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!drivermpi@{drivermpi}}
+\index{drivermpi@{drivermpi}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{drivermpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine drivermpi (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_a6ffc4a7b5c0a99afa65d7da532bf610d}
+
+
+driver to initialize 3d domain decomposition 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 18 of file domdecstuff.\-f90.
+
+
+
+References ddpme3d(), and fatal().
+
+
+
+Referenced by analyze\-\_\-bis(), dynamic\-\_\-bis(), kewald(), kewald\-\_\-dd\-\_\-init(), makebar(), minimize\-\_\-bis(), pimd\-\_\-bis(), and testgrad().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_a6ffc4a7b5c0a99afa65d7da532bf610d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_a6ffc4a7b5c0a99afa65d7da532bf610d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_ad84d76d62fd57e48e82cd729578a92e9}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!halfcell@{halfcell}}
+\index{halfcell@{halfcell}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{halfcell}]{\setlength{\rightskip}{0pt plus 5cm}subroutine halfcell (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{xi, }
+\item[{real$\ast$8}]{yi, }
+\item[{real$\ast$8}]{zi, }
+\item[{real$\ast$8}]{xj, }
+\item[{real$\ast$8}]{yj, }
+\item[{real$\ast$8}]{zj, }
+\item[{logical}]{docompute}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_ad84d76d62fd57e48e82cd729578a92e9}
+
+
+routine that says whether an interaction between two particules has to be computed within the current domain or not (dd half cell method, Newton's 3rd law) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1212 of file domdecstuff.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by bonds\-\_\-update().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=218pt]{domdecstuff_8f90_ad84d76d62fd57e48e82cd729578a92e9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_ad84d76d62fd57e48e82cd729578a92e9_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_ad6637fa81fdeee14641ef4b130e4c2fb}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!midpoint@{midpoint}}
+\index{midpoint@{midpoint}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{midpoint}]{\setlength{\rightskip}{0pt plus 5cm}subroutine midpoint (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{xi, }
+\item[{real$\ast$8}]{yi, }
+\item[{real$\ast$8}]{zi, }
+\item[{real$\ast$8}]{xk, }
+\item[{real$\ast$8}]{yk, }
+\item[{real$\ast$8}]{zk, }
+\item[{logical}]{docompute}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_ad6637fa81fdeee14641ef4b130e4c2fb}
+
+
+routine that says whether an interaction between two particules has to be computed within the current domain or not (dd midpoint method) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1245 of file domdecstuff.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by egeom(), egeom1(), and kgeom\-\_\-update().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=224pt]{domdecstuff_8f90_ad6637fa81fdeee14641ef4b130e4c2fb_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_ad6637fa81fdeee14641ef4b130e4c2fb_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_a62803650b9f49aab84f4be179de1cb7e}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!midpointgroup@{midpointgroup}}
+\index{midpointgroup@{midpointgroup}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{midpointgroup}]{\setlength{\rightskip}{0pt plus 5cm}subroutine midpointgroup (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,nb)}]{pos, }
+\item[{integer}]{nb, }
+\item[{logical}]{docompute}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_a62803650b9f49aab84f4be179de1cb7e}
+
+
+routine that says whether an interaction between a group of particules has to be computed within the current domain or not (dd midpoint method, Newton's 3rd law) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1662 of file domdecstuff.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by kgeom\-\_\-update().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=252pt]{domdecstuff_8f90_a62803650b9f49aab84f4be179de1cb7e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_a62803650b9f49aab84f4be179de1cb7e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_aea7b5c162ab0b349208e09aba98c022e}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!midpointimage@{midpointimage}}
+\index{midpointimage@{midpointimage}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{midpointimage}]{\setlength{\rightskip}{0pt plus 5cm}subroutine midpointimage (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{xi, }
+\item[{real$\ast$8}]{yi, }
+\item[{real$\ast$8}]{zi, }
+\item[{real$\ast$8}]{xk, }
+\item[{real$\ast$8}]{yk, }
+\item[{real$\ast$8}]{zk, }
+\item[{real$\ast$8}]{xr, }
+\item[{real$\ast$8}]{yr, }
+\item[{real$\ast$8}]{zr, }
+\item[{logical}]{docompute}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_aea7b5c162ab0b349208e09aba98c022e}
+
+
+routine that says whether an interaction between two particules has to be computed within the current domain or not (dd midpoint method), also returns minimum image of the distance vector 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1557 of file domdecstuff.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by clistcell(), clistcell2(), dlistcell2(), egeom3(), mlistcell2(), and vlistcell2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=256pt]{domdecstuff_8f90_aea7b5c162ab0b349208e09aba98c022e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_aea7b5c162ab0b349208e09aba98c022e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{domdecstuff_8f90_aa4bbdfb87b938140e0237028b1d76457}{\index{domdecstuff.\-f90@{domdecstuff.\-f90}!midpointimagetriclinic@{midpointimagetriclinic}}
+\index{midpointimagetriclinic@{midpointimagetriclinic}!domdecstuff.f90@{domdecstuff.\-f90}}
+\subsubsection[{midpointimagetriclinic}]{\setlength{\rightskip}{0pt plus 5cm}subroutine midpointimagetriclinic (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{xi, }
+\item[{real$\ast$8}]{yi, }
+\item[{real$\ast$8}]{zi, }
+\item[{real$\ast$8}]{xk, }
+\item[{real$\ast$8}]{yk, }
+\item[{real$\ast$8}]{zk, }
+\item[{real$\ast$8}]{xr, }
+\item[{real$\ast$8}]{yr, }
+\item[{real$\ast$8}]{zr, }
+\item[{logical}]{docompute}
+\end{DoxyParamCaption}
+)}}\label{domdecstuff_8f90_aa4bbdfb87b938140e0237028b1d76457}
+
+
+routine that says whether an interaction between two particules has to be computed within the current domain or not (dd midpoint method), also returns minimum image of the distance vector 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1601 of file domdecstuff.\-f90.
+
+
+
+References ctfvec(), ftcvec(), and imagefrac().
+
+
+
+Referenced by dlistcell(), mlistcell(), and vlistcell().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=310pt]{domdecstuff_8f90_aa4bbdfb87b938140e0237028b1d76457_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{domdecstuff_8f90_aa4bbdfb87b938140e0237028b1d76457_icgraph}
+\end{center}
+\end{figure}
+
+

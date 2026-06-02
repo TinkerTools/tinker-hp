@@ -1,0 +1,13 @@
+<map id="spectra::save_dipole_respa" name="spectra::save_dipole_respa">
+<area shape="rect" id="node2" href="$cspline_8f90.html#a9738ad86267fcd52bd20d20b2f8f8b67" title="build cubic interpolation spline " alt="" coords="253,56,355,83"/>
+<area shape="rect" id="node3" href="$classspectra.html#a1ad1abce235eaddeec0c196eb507653e" title="spectra::save_dipole_traj" alt="" coords="211,107,397,133"/>
+<area shape="rect" id="node4" href="$classspectra.html#a3e969bc7b33a5b61ecf93296815e8bb2" title="spectra::irspectra" alt="" coords="446,107,581,133"/>
+<area shape="rect" id="node5" href="$classcolvarproxy__tinkerhp.html#a7acc624104cbe9ef60cb90fe5f51018b" title="colvarproxy_tinkerhp\l::boltzmann" alt="" coords="651,5,811,46"/>
+<area shape="rect" id="node6" href="$classspectra.html#a4e7bb730a7f2a0d12befe53d282f4f5a" title="spectra::correct_window\l_spectrum" alt="" coords="641,70,821,111"/>
+<area shape="rect" id="node9" href="$classdeconvolution.html#a0e309ef87c6e2a604bf58bcf2c3a9557" title="deconvolution::deconvolute\l_spectrum_symmetrize" alt="" coords="629,187,832,229"/>
+<area shape="rect" id="node7" href="$classspectra.html#abf83fa40a337b0987dae16f9880e4170" title="spectra::spcfft" alt="" coords="924,92,1039,119"/>
+<area shape="rect" id="node8" href="$classspectra.html#a2db6c8f0d284eccd5ae058b715e4f0f2" title="spectra::spcpft" alt="" coords="1161,92,1279,119"/>
+<area shape="rect" id="node10" href="$classdeconvolution.html#aebbb7f3c86c0fb2e772ad75c4797f494" title="deconvolution::deconvolute\l_spectrum" alt="" coords="880,187,1083,229"/>
+<area shape="rect" id="node11" href="$classdeconvolution.html#ab0555563a13a1f0f4a5784d8bd04630e" title="deconvolution::compute\l_rn_ln" alt="" coords="1131,173,1309,214"/>
+<area shape="rect" id="node12" href="$classdeconvolution.html#afa72e3081738c9001b04859834b4b09b" title="deconvolution::convolution" alt="" coords="1358,209,1557,236"/>
+</map>

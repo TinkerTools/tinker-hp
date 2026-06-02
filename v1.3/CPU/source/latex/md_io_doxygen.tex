@@ -1,0 +1,13 @@
+{\bfseries I/\-O of trajectories} works as in Tinker 8\-: if no keyword is specified then frames will printed individually at the selected frequency. By adding the keyword {\bfseries archive} then the frames will be directly appended in an $\ast$.arc file.
+
+Moreover, Tinker-\/\-H\-P also supports {\bfseries C\-H\-A\-R\-M\-M dcd format}\-: adding the line {\bfseries dcdio} to the keyfile will print a trajectory with the dcd format. When running the analyze or the bar postprocessing programs, if {\bfseries dcdio} is specified in the key file, then the programs will look for the associated $\ast$dcd file and process the frames it contains.
+
+Other keywords control the writing of some quantities during a molecular dynamics trajectory\-:
+\begin{DoxyItemize}
+\item S\-A\-V\-E-\/\-V\-E\-L\-O\-C\-I\-T\-Y\-: print velocities in a separate file
+\item S\-A\-V\-E-\/\-F\-O\-R\-C\-E\-S\-: print forces in a separate file
+\item S\-A\-V\-E-\/\-I\-N\-D\-U\-C\-E\-D\-: print induced dipoles in a separate file
+\item P\-B\-C-\/\-U\-N\-W\-R\-A\-P\-: print unwrappped trajectory, without this keywords atoms are wrapped by molecules
+\end{DoxyItemize}
+
+Tinker-\/\-H\-P deals with restart files for dynamic trajectories the same way as Tinker-\/8 does by creating a $\ast$.dyn file encompassing current positions, velocities and accelerations of the system. 

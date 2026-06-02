@@ -1,0 +1,489 @@
+\hypertarget{scalders_8f90}{\section{scalders.\-f90 File Reference}
+\label{scalders_8f90}\index{scalders.\-f90@{scalders.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{scalders_8f90_a2ce7bff63b18a942f3260383a0479a64}{scalderfieldzmat6} (a1, a2, d1, e1, d2, e2, d3, e3, ade, adme, adte, adtb)
+\item 
+subroutine \hyperlink{scalders_8f90_a8f869c2eb469941c305e4a7e9ae1022f}{scalderfieldzmat3} (a1, a2, d1, e1, d2, e2, ade, adme, adte, adtb)
+\item 
+subroutine \hyperlink{scalders_8f90_ac30348550dc87577f2ac03d074633947}{scalderfieldzmatrec6} (a, abis, fphia, b, bbis, fphib, d1, d1bis, fphid1, e1, e1bis, fphie1, d2, d2bis, fphid2, e2, e2bis, fphie2, d3, d3bis, fphid3, e3, e3bis, fphie3, aderec, admerec, adterec, adtb)
+\item 
+subroutine \hyperlink{scalders_8f90_a8a17b1ec1d964cb09371f5c3e7ccb362}{scalderfieldzmatrec8} (a, abis, fphia, b, bbis, fphib, d1, d1bis, fphid1, e1, e1bis, fphie1, d2, d2bis, fphid2, e2, e2bis, fphie2, d3, d3bis, fphid3, e3, e3bis, fphie3, d4, d4bis, fphid4, e4, e4bis, fphie4, aderec, admerec, adterec, adtb)
+\item 
+subroutine \hyperlink{scalders_8f90_a977cf40e1afa0827381bdea03797b68e}{scalderfieldzmatrec3} (a, abis, fphia, b, bbis, fphib, d1, d1bis, fphid1, e1, e1bis, fphie1, d2, d2bis, fphid2, e2, e2bis, fphie2, aderec, admerec, adterec, adtb)
+\item 
+subroutine \hyperlink{scalders_8f90_a7fb93afb05d26cc86a8a534b1cfba800}{scalderfieldzmatrec1} (a, abis, fphia, b, bbis, fphib, d1, d1bis, fphid1, e1, e1bis, fphie1, aderec, admerec, adterec, adtb)
+\item 
+subroutine \hyperlink{scalders_8f90_a290379d65727f406e20df8c9d7dbd5b8}{scalderfieldzmat1} (a1, a2, d1, e1, ade, adme, adte, adtb)
+\item 
+subroutine \hyperlink{scalders_8f90_a561c8792a0f925c93e337110eb49bce9}{scalderfieldzmat8} (a1, a2, d1, e1, d2, e2, d3, e3, d4, e4, ade, adme, adte, adtb)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{scalders_8f90_a290379d65727f406e20df8c9d7dbd5b8}{\index{scalders.\-f90@{scalders.\-f90}!scalderfieldzmat1@{scalderfieldzmat1}}
+\index{scalderfieldzmat1@{scalderfieldzmat1}!scalders.f90@{scalders.\-f90}}
+\subsubsection[{scalderfieldzmat1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine scalderfieldzmat1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e1, }
+\item[{real$\ast$8, dimension(3,2,npolebloc), intent(out)}]{ade, }
+\item[{real$\ast$8, dimension(3,2,npolebloc), intent(out)}]{adme, }
+\item[{real$\ast$8, dimension(3,3,2,npolebloc), intent(out)}]{adte, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(out)}]{adtb}
+\end{DoxyParamCaption}
+)}}\label{scalders_8f90_a290379d65727f406e20df8c9d7dbd5b8}
+
+
+Definition at line 2631 of file scalders.\-f90.
+
+
+
+References erfc(), image(), pscale(), and switch().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), and epolar1tcg1shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a290379d65727f406e20df8c9d7dbd5b8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a290379d65727f406e20df8c9d7dbd5b8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{scalders_8f90_a8f869c2eb469941c305e4a7e9ae1022f}{\index{scalders.\-f90@{scalders.\-f90}!scalderfieldzmat3@{scalderfieldzmat3}}
+\index{scalderfieldzmat3@{scalderfieldzmat3}!scalders.f90@{scalders.\-f90}}
+\subsubsection[{scalderfieldzmat3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine scalderfieldzmat3 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e2, }
+\item[{real$\ast$8, dimension(3,2,npolebloc), intent(out)}]{ade, }
+\item[{real$\ast$8, dimension(3,2,npolebloc), intent(out)}]{adme, }
+\item[{real$\ast$8, dimension(3,3,2,npolebloc), intent(out)}]{adte, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(out)}]{adtb}
+\end{DoxyParamCaption}
+)}}\label{scalders_8f90_a8f869c2eb469941c305e4a7e9ae1022f}
+
+
+Definition at line 802 of file scalders.\-f90.
+
+
+
+References erfc(), image(), pscale(), and switch().
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), and epolar1tcg1shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a8f869c2eb469941c305e4a7e9ae1022f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a8f869c2eb469941c305e4a7e9ae1022f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{scalders_8f90_a2ce7bff63b18a942f3260383a0479a64}{\index{scalders.\-f90@{scalders.\-f90}!scalderfieldzmat6@{scalderfieldzmat6}}
+\index{scalderfieldzmat6@{scalderfieldzmat6}!scalders.f90@{scalders.\-f90}}
+\subsubsection[{scalderfieldzmat6}]{\setlength{\rightskip}{0pt plus 5cm}subroutine scalderfieldzmat6 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d3, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e3, }
+\item[{real$\ast$8, dimension(3,2,npolebloc), intent(out)}]{ade, }
+\item[{real$\ast$8, dimension(3,2,npolebloc), intent(out)}]{adme, }
+\item[{real$\ast$8, dimension(3,3,2,npolebloc), intent(out)}]{adte, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(out)}]{adtb}
+\end{DoxyParamCaption}
+)}}\label{scalders_8f90_a2ce7bff63b18a942f3260383a0479a64}
+
+
+Definition at line 2 of file scalders.\-f90.
+
+
+
+References erfc(), image(), pscale(), and switch().
+
+
+
+Referenced by epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2shortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), and epolar1tcg2tershortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a2ce7bff63b18a942f3260383a0479a64_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a2ce7bff63b18a942f3260383a0479a64_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{scalders_8f90_a561c8792a0f925c93e337110eb49bce9}{\index{scalders.\-f90@{scalders.\-f90}!scalderfieldzmat8@{scalderfieldzmat8}}
+\index{scalderfieldzmat8@{scalderfieldzmat8}!scalders.f90@{scalders.\-f90}}
+\subsubsection[{scalderfieldzmat8}]{\setlength{\rightskip}{0pt plus 5cm}subroutine scalderfieldzmat8 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d3, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e3, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d4, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e4, }
+\item[{real$\ast$8, dimension(3,2,npolebloc), intent(out)}]{ade, }
+\item[{real$\ast$8, dimension(3,2,npolebloc), intent(out)}]{adme, }
+\item[{real$\ast$8, dimension(3,3,2,npolebloc), intent(out)}]{adte, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(out)}]{adtb}
+\end{DoxyParamCaption}
+)}}\label{scalders_8f90_a561c8792a0f925c93e337110eb49bce9}
+
+
+Definition at line 3307 of file scalders.\-f90.
+
+
+
+References erfc(), image(), pscale(), and switch().
+
+
+
+Referenced by epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2bisshortreal(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2cinqshortreal(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), and epolar1tcg2quatshortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a561c8792a0f925c93e337110eb49bce9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a561c8792a0f925c93e337110eb49bce9_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{scalders_8f90_a7fb93afb05d26cc86a8a534b1cfba800}{\index{scalders.\-f90@{scalders.\-f90}!scalderfieldzmatrec1@{scalderfieldzmatrec1}}
+\index{scalderfieldzmatrec1@{scalderfieldzmatrec1}!scalders.f90@{scalders.\-f90}}
+\subsubsection[{scalderfieldzmatrec1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine scalderfieldzmatrec1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npoleloc), intent(in)}]{a, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{abis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphia, }
+\item[{real$\ast$8, dimension(3,npoleloc), intent(in)}]{b, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{bbis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphib, }
+\item[{real$\ast$8, dimension(3,npoleloc), intent(in)}]{d1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d1bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid1, }
+\item[{real$\ast$8, dimension(3,npoleloc), intent(in)}]{e1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e1bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{aderec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{admerec, }
+\item[{real$\ast$8, dimension(3,3,npolerecloc), intent(out)}]{adterec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{adtb}
+\end{DoxyParamCaption}
+)}}\label{scalders_8f90_a7fb93afb05d26cc86a8a534b1cfba800}
+
+
+Definition at line 2390 of file scalders.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac\-\_\-vec(), cmp\-\_\-to\-\_\-fmp\-\_\-site(), colvarproxy\-\_\-tinkerhp\-::dt(), and fphi\-\_\-to\-\_\-cphi\-\_\-site().
+
+
+
+Referenced by epolar1tcg1(), and epolar1tcg1\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a7fb93afb05d26cc86a8a534b1cfba800_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a7fb93afb05d26cc86a8a534b1cfba800_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{scalders_8f90_a977cf40e1afa0827381bdea03797b68e}{\index{scalders.\-f90@{scalders.\-f90}!scalderfieldzmatrec3@{scalderfieldzmatrec3}}
+\index{scalderfieldzmatrec3@{scalderfieldzmatrec3}!scalders.f90@{scalders.\-f90}}
+\subsubsection[{scalderfieldzmatrec3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine scalderfieldzmatrec3 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{abis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphia, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{b, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{bbis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphib, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d1bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e1bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d2, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d2bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e2, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e2bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie2, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{aderec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{admerec, }
+\item[{real$\ast$8, dimension(3,3,npolerecloc), intent(out)}]{adterec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{adtb}
+\end{DoxyParamCaption}
+)}}\label{scalders_8f90_a977cf40e1afa0827381bdea03797b68e}
+
+
+Definition at line 2125 of file scalders.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac\-\_\-vec(), cmp\-\_\-to\-\_\-fmp\-\_\-site(), colvarproxy\-\_\-tinkerhp\-::dt(), and fphi\-\_\-to\-\_\-cphi\-\_\-site().
+
+
+
+Referenced by epolar1tcg1(), and epolar1tcg1\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a977cf40e1afa0827381bdea03797b68e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a977cf40e1afa0827381bdea03797b68e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{scalders_8f90_ac30348550dc87577f2ac03d074633947}{\index{scalders.\-f90@{scalders.\-f90}!scalderfieldzmatrec6@{scalderfieldzmatrec6}}
+\index{scalderfieldzmatrec6@{scalderfieldzmatrec6}!scalders.f90@{scalders.\-f90}}
+\subsubsection[{scalderfieldzmatrec6}]{\setlength{\rightskip}{0pt plus 5cm}subroutine scalderfieldzmatrec6 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{abis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphia, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{b, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{bbis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphib, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d1bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e1bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d2, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d2bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e2, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e2bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d3, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d3bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid3, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e3, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e3bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie3, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{aderec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{admerec, }
+\item[{real$\ast$8, dimension(3,3,npolerecloc), intent(out)}]{adterec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{adtb}
+\end{DoxyParamCaption}
+)}}\label{scalders_8f90_ac30348550dc87577f2ac03d074633947}
+
+
+Definition at line 1568 of file scalders.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac\-\_\-vec(), cmp\-\_\-to\-\_\-fmp\-\_\-site(), colvarproxy\-\_\-tinkerhp\-::dt(), and fphi\-\_\-to\-\_\-cphi\-\_\-site().
+
+
+
+Referenced by epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2ter(), and epolar1tcg2ter\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_ac30348550dc87577f2ac03d074633947_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_ac30348550dc87577f2ac03d074633947_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{scalders_8f90_a8a17b1ec1d964cb09371f5c3e7ccb362}{\index{scalders.\-f90@{scalders.\-f90}!scalderfieldzmatrec8@{scalderfieldzmatrec8}}
+\index{scalderfieldzmatrec8@{scalderfieldzmatrec8}!scalders.f90@{scalders.\-f90}}
+\subsubsection[{scalderfieldzmatrec8}]{\setlength{\rightskip}{0pt plus 5cm}subroutine scalderfieldzmatrec8 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{a, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{abis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphia, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{b, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{bbis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphib, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d1bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e1, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e1bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie1, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d2, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d2bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e2, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e2bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie2, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d3, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d3bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid3, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e3, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e3bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie3, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{d4, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{d4bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphid4, }
+\item[{real$\ast$8, dimension(3,npolebloc), intent(in)}]{e4, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(in)}]{e4bis, }
+\item[{real$\ast$8, dimension(20,npolerecloc), intent(in)}]{fphie4, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{aderec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{admerec, }
+\item[{real$\ast$8, dimension(3,3,npolerecloc), intent(out)}]{adterec, }
+\item[{real$\ast$8, dimension(3,npolerecloc), intent(out)}]{adtb}
+\end{DoxyParamCaption}
+)}}\label{scalders_8f90_a8a17b1ec1d964cb09371f5c3e7ccb362}
+
+
+Definition at line 1839 of file scalders.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac\-\_\-vec(), cmp\-\_\-to\-\_\-fmp\-\_\-site(), colvarproxy\-\_\-tinkerhp\-::dt(), and fphi\-\_\-to\-\_\-cphi\-\_\-site().
+
+
+
+Referenced by epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2quat(), and epolar1tcg2quat\-\_\-2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a8a17b1ec1d964cb09371f5c3e7ccb362_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{scalders_8f90_a8a17b1ec1d964cb09371f5c3e7ccb362_icgraph}
+\end{center}
+\end{figure}
+
+

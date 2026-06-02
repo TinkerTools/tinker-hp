@@ -1,0 +1,255 @@
+\hypertarget{classvdwpot}{\section{vdwpot Module Reference}
+\label{classvdwpot}\index{vdwpot@{vdwpot}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classvdwpot_a3681327bb2cd375923afb9a39eab5d94}{ngauss}
+\begin{DoxyCompactList}\small\item\em number of Gaussians used in fit to vdw potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_a325b92aabfa7050cb0c9288d9ef2e1dc}{abuck}
+\begin{DoxyCompactList}\small\item\em value of \char`\"{}\-A\char`\"{} constant in Buckingham vdw potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_a34541a06361b2acf417096350278d297}{bbuck}
+\begin{DoxyCompactList}\small\item\em value of \char`\"{}\-B\char`\"{} constant in Buckingham vdw potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_a845eb8eaafc343c1d47fcdb0714d697f}{cbuck}
+\begin{DoxyCompactList}\small\item\em value of \char`\"{}\-C\char`\"{} constant in Buckingham vdw potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_a98afcf4416d7bab06175cf40fc553500}{ghal}
+\begin{DoxyCompactList}\small\item\em value of \char`\"{}gamma\char`\"{} in buffered 14-\/7 vdw potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_aa08419cc1dd5ce7068ae0d3064e0edff}{dhal}
+\begin{DoxyCompactList}\small\item\em value of \char`\"{}delta\char`\"{} in buffered 14-\/7 vdw potential \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_a571a8d4ecd0f85976b361c08cb999e18}{v2scale}
+\begin{DoxyCompactList}\small\item\em factor by which 1-\/2 vdw interactions are scaled \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_aaa31f7b4139ddd393d12932d89e63c32}{v3scale}
+\begin{DoxyCompactList}\small\item\em factor by which 1-\/3 vdw interactions are scaled \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_aa8a0d70d0b0a4d7aca0f8ac9fc33e62d}{v4scale}
+\begin{DoxyCompactList}\small\item\em factor by which 1-\/4 vdw interactions are scaled \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classvdwpot_a7c49d57b6764a554052c00b221c88640}{v5scale}
+\begin{DoxyCompactList}\small\item\em factor by which 1-\/5 vdw interactions are scaled \end{DoxyCompactList}\item 
+logical \hyperlink{classvdwpot_af974466e0dc234aa8a97ab288eb69c73}{use\-\_\-vcorr}
+\begin{DoxyCompactList}\small\item\em flag to use long range vdw der Waals correction \end{DoxyCompactList}\item 
+character $\ast$5 \hyperlink{classvdwpot_a82c07ae824098ad7dcab3a4b36470f4c}{vdwindex}
+\begin{DoxyCompactList}\small\item\em indexing mode (atom type or class) for vdw parameters \end{DoxyCompactList}\item 
+character $\ast$5 \hyperlink{classvdwpot_a976399d6ca4204cc92e4e5210f3a6e7a}{radtyp}
+\begin{DoxyCompactList}\small\item\em type of parameter (sigma or R-\/min) for atomic size \end{DoxyCompactList}\item 
+character $\ast$8 \hyperlink{classvdwpot_a3049138d7e172d8f06fece6c7640eb75}{radsiz}
+\begin{DoxyCompactList}\small\item\em atomic size provided as radius or diameter \end{DoxyCompactList}\item 
+character $\ast$8 \hyperlink{classvdwpot_addaae4b84133342d8e313d122abd00f0}{gausstyp}
+\begin{DoxyCompactList}\small\item\em type of Gaussian fit to van der Waals potential \end{DoxyCompactList}\item 
+character $\ast$10 \hyperlink{classvdwpot_a9c63ba4f7b83e74e3064442adcaa8890}{radrule}
+\begin{DoxyCompactList}\small\item\em combining rule for atomic size parameters \end{DoxyCompactList}\item 
+character $\ast$10 \hyperlink{classvdwpot_ade451daaf049f4de024a0877e12545ce}{epsrule}
+\begin{DoxyCompactList}\small\item\em combining rule for vdw well depth parameters \end{DoxyCompactList}\item 
+character $\ast$13 \hyperlink{classvdwpot_a932f417f3d7a4ecc44b17bcb3d24b9fb}{vdwtyp}
+\begin{DoxyCompactList}\small\item\em type of van der Waals potential energy function \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classvdwpot_a325b92aabfa7050cb0c9288d9ef2e1dc}{\index{vdwpot@{vdwpot}!abuck@{abuck}}
+\index{abuck@{abuck}!vdwpot@{vdwpot}}
+\subsubsection[{abuck}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::abuck}}\label{classvdwpot_a325b92aabfa7050cb0c9288d9ef2e1dc}
+
+
+value of \char`\"{}\-A\char`\"{} constant in Buckingham vdw potential 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a34541a06361b2acf417096350278d297}{\index{vdwpot@{vdwpot}!bbuck@{bbuck}}
+\index{bbuck@{bbuck}!vdwpot@{vdwpot}}
+\subsubsection[{bbuck}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::bbuck}}\label{classvdwpot_a34541a06361b2acf417096350278d297}
+
+
+value of \char`\"{}\-B\char`\"{} constant in Buckingham vdw potential 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a845eb8eaafc343c1d47fcdb0714d697f}{\index{vdwpot@{vdwpot}!cbuck@{cbuck}}
+\index{cbuck@{cbuck}!vdwpot@{vdwpot}}
+\subsubsection[{cbuck}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::cbuck}}\label{classvdwpot_a845eb8eaafc343c1d47fcdb0714d697f}
+
+
+value of \char`\"{}\-C\char`\"{} constant in Buckingham vdw potential 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_aa08419cc1dd5ce7068ae0d3064e0edff}{\index{vdwpot@{vdwpot}!dhal@{dhal}}
+\index{dhal@{dhal}!vdwpot@{vdwpot}}
+\subsubsection[{dhal}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::dhal}}\label{classvdwpot_aa08419cc1dd5ce7068ae0d3064e0edff}
+
+
+value of \char`\"{}delta\char`\"{} in buffered 14-\/7 vdw potential 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_ade451daaf049f4de024a0877e12545ce}{\index{vdwpot@{vdwpot}!epsrule@{epsrule}}
+\index{epsrule@{epsrule}!vdwpot@{vdwpot}}
+\subsubsection[{epsrule}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$10 vdwpot\-::epsrule}}\label{classvdwpot_ade451daaf049f4de024a0877e12545ce}
+
+
+combining rule for vdw well depth parameters 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_addaae4b84133342d8e313d122abd00f0}{\index{vdwpot@{vdwpot}!gausstyp@{gausstyp}}
+\index{gausstyp@{gausstyp}!vdwpot@{vdwpot}}
+\subsubsection[{gausstyp}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8 vdwpot\-::gausstyp}}\label{classvdwpot_addaae4b84133342d8e313d122abd00f0}
+
+
+type of Gaussian fit to van der Waals potential 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a98afcf4416d7bab06175cf40fc553500}{\index{vdwpot@{vdwpot}!ghal@{ghal}}
+\index{ghal@{ghal}!vdwpot@{vdwpot}}
+\subsubsection[{ghal}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::ghal}}\label{classvdwpot_a98afcf4416d7bab06175cf40fc553500}
+
+
+value of \char`\"{}gamma\char`\"{} in buffered 14-\/7 vdw potential 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a3681327bb2cd375923afb9a39eab5d94}{\index{vdwpot@{vdwpot}!ngauss@{ngauss}}
+\index{ngauss@{ngauss}!vdwpot@{vdwpot}}
+\subsubsection[{ngauss}]{\setlength{\rightskip}{0pt plus 5cm}integer vdwpot\-::ngauss}}\label{classvdwpot_a3681327bb2cd375923afb9a39eab5d94}
+
+
+number of Gaussians used in fit to vdw potential 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a9c63ba4f7b83e74e3064442adcaa8890}{\index{vdwpot@{vdwpot}!radrule@{radrule}}
+\index{radrule@{radrule}!vdwpot@{vdwpot}}
+\subsubsection[{radrule}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$10 vdwpot\-::radrule}}\label{classvdwpot_a9c63ba4f7b83e74e3064442adcaa8890}
+
+
+combining rule for atomic size parameters 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a3049138d7e172d8f06fece6c7640eb75}{\index{vdwpot@{vdwpot}!radsiz@{radsiz}}
+\index{radsiz@{radsiz}!vdwpot@{vdwpot}}
+\subsubsection[{radsiz}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8 vdwpot\-::radsiz}}\label{classvdwpot_a3049138d7e172d8f06fece6c7640eb75}
+
+
+atomic size provided as radius or diameter 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a976399d6ca4204cc92e4e5210f3a6e7a}{\index{vdwpot@{vdwpot}!radtyp@{radtyp}}
+\index{radtyp@{radtyp}!vdwpot@{vdwpot}}
+\subsubsection[{radtyp}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$5 vdwpot\-::radtyp}}\label{classvdwpot_a976399d6ca4204cc92e4e5210f3a6e7a}
+
+
+type of parameter (sigma or R-\/min) for atomic size 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_af974466e0dc234aa8a97ab288eb69c73}{\index{vdwpot@{vdwpot}!use\-\_\-vcorr@{use\-\_\-vcorr}}
+\index{use\-\_\-vcorr@{use\-\_\-vcorr}!vdwpot@{vdwpot}}
+\subsubsection[{use\-\_\-vcorr}]{\setlength{\rightskip}{0pt plus 5cm}logical vdwpot\-::use\-\_\-vcorr}}\label{classvdwpot_af974466e0dc234aa8a97ab288eb69c73}
+
+
+flag to use long range vdw der Waals correction 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a571a8d4ecd0f85976b361c08cb999e18}{\index{vdwpot@{vdwpot}!v2scale@{v2scale}}
+\index{v2scale@{v2scale}!vdwpot@{vdwpot}}
+\subsubsection[{v2scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::v2scale}}\label{classvdwpot_a571a8d4ecd0f85976b361c08cb999e18}
+
+
+factor by which 1-\/2 vdw interactions are scaled 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_aaa31f7b4139ddd393d12932d89e63c32}{\index{vdwpot@{vdwpot}!v3scale@{v3scale}}
+\index{v3scale@{v3scale}!vdwpot@{vdwpot}}
+\subsubsection[{v3scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::v3scale}}\label{classvdwpot_aaa31f7b4139ddd393d12932d89e63c32}
+
+
+factor by which 1-\/3 vdw interactions are scaled 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_aa8a0d70d0b0a4d7aca0f8ac9fc33e62d}{\index{vdwpot@{vdwpot}!v4scale@{v4scale}}
+\index{v4scale@{v4scale}!vdwpot@{vdwpot}}
+\subsubsection[{v4scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::v4scale}}\label{classvdwpot_aa8a0d70d0b0a4d7aca0f8ac9fc33e62d}
+
+
+factor by which 1-\/4 vdw interactions are scaled 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a7c49d57b6764a554052c00b221c88640}{\index{vdwpot@{vdwpot}!v5scale@{v5scale}}
+\index{v5scale@{v5scale}!vdwpot@{vdwpot}}
+\subsubsection[{v5scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 vdwpot\-::v5scale}}\label{classvdwpot_a7c49d57b6764a554052c00b221c88640}
+
+
+factor by which 1-\/5 vdw interactions are scaled 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a82c07ae824098ad7dcab3a4b36470f4c}{\index{vdwpot@{vdwpot}!vdwindex@{vdwindex}}
+\index{vdwindex@{vdwindex}!vdwpot@{vdwpot}}
+\subsubsection[{vdwindex}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$5 vdwpot\-::vdwindex}}\label{classvdwpot_a82c07ae824098ad7dcab3a4b36470f4c}
+
+
+indexing mode (atom type or class) for vdw parameters 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+\hypertarget{classvdwpot_a932f417f3d7a4ecc44b17bcb3d24b9fb}{\index{vdwpot@{vdwpot}!vdwtyp@{vdwtyp}}
+\index{vdwtyp@{vdwtyp}!vdwpot@{vdwpot}}
+\subsubsection[{vdwtyp}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$13 vdwpot\-::vdwtyp}}\label{classvdwpot_a932f417f3d7a4ecc44b17bcb3d24b9fb}
+
+
+type of van der Waals potential energy function 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-vdwpot.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__vdwpot_8f90}{M\-O\-D\-\_\-vdwpot.\-f90}\end{DoxyCompactItemize}

@@ -1,0 +1,135 @@
+\hypertarget{kangle_8f90}{\section{kangle.\-f90 File Reference}
+\label{kangle_8f90}\index{kangle.\-f90@{kangle.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kangle_8f90_ab49a42aab5959722211d271c6b62cfab}{kangle}
+\begin{DoxyCompactList}\small\item\em assigns the force constants and ideal angles for the bond angles; also processes new or changed parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kangle_8f90_a932804ec766d9a197eddfcb305a496b1}{kanglem}
+\begin{DoxyCompactList}\small\item\em assigns the force constants and ideal angles for bond angles according to the Merck Molecular Force Field (M\-M\-F\-F) \end{DoxyCompactList}\item 
+subroutine \hyperlink{kangle_8f90_a81cf3c7a69ab0bdbb075e104fa90fd74}{initialize\-\_\-angleps} ()
+\begin{DoxyCompactList}\small\item\em Initialize parameters for Partridge-\/\-Scwhenke angle terms. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kangle_8f90_a81cf3c7a69ab0bdbb075e104fa90fd74}{\index{kangle.\-f90@{kangle.\-f90}!initialize\-\_\-angleps@{initialize\-\_\-angleps}}
+\index{initialize\-\_\-angleps@{initialize\-\_\-angleps}!kangle.f90@{kangle.\-f90}}
+\subsubsection[{initialize\-\_\-angleps}]{\setlength{\rightskip}{0pt plus 5cm}subroutine initialize\-\_\-angleps (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kangle_8f90_a81cf3c7a69ab0bdbb075e104fa90fd74}
+
+
+Initialize parameters for Partridge-\/\-Scwhenke angle terms. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 956 of file kangle.\-f90.
+
+
+
+Referenced by kangle().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kangle_8f90_a81cf3c7a69ab0bdbb075e104fa90fd74_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kangle_8f90_ab49a42aab5959722211d271c6b62cfab}{\index{kangle.\-f90@{kangle.\-f90}!kangle@{kangle}}
+\index{kangle@{kangle}!kangle.f90@{kangle.\-f90}}
+\subsubsection[{kangle}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kangle (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kangle_8f90_ab49a42aab5959722211d271c6b62cfab}
+
+
+assigns the force constants and ideal angles for the bond angles; also processes new or changed parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file kangle.\-f90.
+
+
+
+References chkring(), gettext(), initialize\-\_\-angleps(), kanglem(), numeral(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kangle_8f90_ab49a42aab5959722211d271c6b62cfab_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kangle_8f90_ab49a42aab5959722211d271c6b62cfab_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kangle_8f90_a932804ec766d9a197eddfcb305a496b1}{\index{kangle.\-f90@{kangle.\-f90}!kanglem@{kanglem}}
+\index{kanglem@{kanglem}!kangle.f90@{kangle.\-f90}}
+\subsubsection[{kanglem}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kanglem (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kangle_8f90_a932804ec766d9a197eddfcb305a496b1}
+
+
+assigns the force constants and ideal angles for bond angles according to the Merck Molecular Force Field (M\-M\-F\-F) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 658 of file kangle.\-f90.
+
+
+
+Referenced by kangle().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kangle_8f90_a932804ec766d9a197eddfcb305a496b1_icgraph}
+\end{center}
+\end{figure}
+
+

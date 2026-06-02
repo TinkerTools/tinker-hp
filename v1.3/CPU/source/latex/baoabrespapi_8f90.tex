@@ -1,0 +1,138 @@
+\hypertarget{baoabrespapi_8f90}{\section{baoabrespapi.\-f90 File Reference}
+\label{baoabrespapi_8f90}\index{baoabrespapi.\-f90@{baoabrespapi.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{baoabrespapi_8f90_acdebcdd1be237bc37e6be77f42020ccb}{baoabrespapi} (polymer, polymer\-\_\-ctr, istep, dt)
+\begin{DoxyCompactList}\small\item\em performs a single P\-I\-M\-D time step via the B\-A\-O\-A\-B-\/respa recursion formula \end{DoxyCompactList}\item 
+subroutine \hyperlink{baoabrespapi_8f90_a6e7a0085bed4a815f070c9a7e9b7205c}{baoabrespapi\-\_\-fast} (polymer, istep, dta, nsteps, epot, vir\-\_\-, dip)
+\begin{DoxyCompactList}\small\item\em performs a single P\-I\-M\-D time step of the fast forces via the B\-A\-O\-A\-B-\/respa recursion formula \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{baoabrespapi_8f90_acdebcdd1be237bc37e6be77f42020ccb}{\index{baoabrespapi.\-f90@{baoabrespapi.\-f90}!baoabrespapi@{baoabrespapi}}
+\index{baoabrespapi@{baoabrespapi}!baoabrespapi.f90@{baoabrespapi.\-f90}}
+\subsubsection[{baoabrespapi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine baoabrespapi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer\-\_\-ctr, }
+\item[{integer, intent(in)}]{istep, }
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{baoabrespapi_8f90_acdebcdd1be237bc37e6be77f42020ccb}
+
+
+performs a single P\-I\-M\-D time step via the B\-A\-O\-A\-B-\/respa recursion formula 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em polymer,\-:} & polymer \\
+\hline
+\mbox{\tt in}  & {\em polymer\-\_\-ctr,\-:} & contracted polymer \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & length of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 30 of file baoabrespapi.\-f90.
+
+
+
+References utilbaoabpi\-::apply\-\_\-b\-\_\-pi(), baoabrespapi\-\_\-fast(), utilbaoabpi\-::centroid\-\_\-force\-\_\-corrections(), commstuffpi\-::comm\-\_\-for\-\_\-normal\-\_\-modes(), commstuffpi\-::commforces\-\_\-ctr(), commstuffpi\-::commforcesblocpi(), commstuffpi\-::commforcesrecpi(), commforcesrespa1(), utilbaoabpi\-::compute\-\_\-grad\-\_\-beads(), utilbaoabpi\-::compute\-\_\-gradslow\-\_\-centroid(), colvarproxy\-\_\-tinkerhp\-::dt(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), beads\-::kinetic\-\_\-pi(), beads\-::load\-\_\-bead(), mdsavebeads(), mdstatpi(), utilbaoabpi\-::plangevinpi(), beads\-::project\-\_\-forces\-\_\-ctr(), beads\-::reduce\-\_\-observables\-\_\-pi(), spectra\-::save\-\_\-dipole\-\_\-respa(), beads\-::set\-\_\-eigforces\-\_\-pi(), and beads\-::stopwatchpi().
+
+
+
+Referenced by pimd\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{baoabrespapi_8f90_acdebcdd1be237bc37e6be77f42020ccb_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=340pt]{baoabrespapi_8f90_acdebcdd1be237bc37e6be77f42020ccb_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{baoabrespapi_8f90_a6e7a0085bed4a815f070c9a7e9b7205c}{\index{baoabrespapi.\-f90@{baoabrespapi.\-f90}!baoabrespapi\-\_\-fast@{baoabrespapi\-\_\-fast}}
+\index{baoabrespapi\-\_\-fast@{baoabrespapi\-\_\-fast}!baoabrespapi.f90@{baoabrespapi.\-f90}}
+\subsubsection[{baoabrespapi\-\_\-fast}]{\setlength{\rightskip}{0pt plus 5cm}subroutine baoabrespapi\-\_\-fast (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{integer, intent(in)}]{istep, }
+\item[{real$\ast$8, intent(in)}]{dta, }
+\item[{integer, intent(in)}]{nsteps, }
+\item[{real$\ast$8, intent(inout)}]{epot, }
+\item[{real$\ast$8, dimension(3,3), intent(inout)}]{vir\-\_\-, }
+\item[{real$\ast$8, dimension(3,nsteps), intent(inout)}]{dip}
+\end{DoxyParamCaption}
+)}}\label{baoabrespapi_8f90_a6e7a0085bed4a815f070c9a7e9b7205c}
+
+
+performs a single P\-I\-M\-D time step of the fast forces via the B\-A\-O\-A\-B-\/respa recursion formula 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em polymer,\-:} & polymer \\
+\hline
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & length of timestep \\
+\hline
+\mbox{\tt in}  & {\em dta,\-:} & length of timestep short timestep \\
+\hline
+\mbox{\tt in}  & {\em nsteps,\-:} & number of fast timesteps \\
+\hline
+\mbox{\tt in}  & {\em epot,\-:} & contribution to the potential energy of fast terms \\
+\hline
+\mbox{\tt in}  & {\em vir\-\_\-,\-:} & contribution to the virial energy of fast terms \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 263 of file baoabrespapi.\-f90.
+
+
+
+References utilbaoabpi\-::apply\-\_\-aoa\-\_\-pi(), utilbaoabpi\-::apply\-\_\-b\-\_\-pi(), commstuffpi\-::comm\-\_\-for\-\_\-normal\-\_\-modes(), commstuffpi\-::commforcesblocpi(), utilbaoabpi\-::compute\-\_\-grad\-\_\-beads(), commstuffpi\-::fast\-\_\-gradient\-\_\-prepare\-\_\-pi(), beads\-::kinetic\-\_\-pi\-\_\-fast(), beads\-::set\-\_\-eigforces\-\_\-pi(), and beads\-::stopwatchpi().
+
+
+
+Referenced by baoabrespapi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{baoabrespapi_8f90_a6e7a0085bed4a815f070c9a7e9b7205c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{baoabrespapi_8f90_a6e7a0085bed4a815f070c9a7e9b7205c_icgraph}
+\end{center}
+\end{figure}
+
+

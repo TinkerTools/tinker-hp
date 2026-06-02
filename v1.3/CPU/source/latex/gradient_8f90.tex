@@ -1,0 +1,64 @@
+\hypertarget{gradient_8f90}{\section{gradient.\-f90 File Reference}
+\label{gradient_8f90}\index{gradient.\-f90@{gradient.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{gradient_8f90_a8665411aa7f5050b7002b6723044274d}{gradient} (\hyperlink{energy_8f90_a1aa8c625eb0a3eea79ed1a8047707c94}{energy}, derivs)
+\begin{DoxyCompactList}\small\item\em calls subroutines to calculate the potential energy and first derivatives with respect to Cartesian coordinates \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{gradient_8f90_a8665411aa7f5050b7002b6723044274d}{\index{gradient.\-f90@{gradient.\-f90}!gradient@{gradient}}
+\index{gradient@{gradient}!gradient.f90@{gradient.\-f90}}
+\subsubsection[{gradient}]{\setlength{\rightskip}{0pt plus 5cm}subroutine gradient (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{energy, }
+\item[{real$\ast$8, dimension(3,nbloc)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{gradient_8f90_a8665411aa7f5050b7002b6723044274d}
+
+
+calls subroutines to calculate the potential energy and first derivatives with respect to Cartesian coordinates 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em energy,\-:} & total potential energy value \\
+\hline
+\mbox{\tt in}  & {\em derivs,\-:} & array of derivatives of the total potential energy \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 22 of file gradient.\-f90.
+
+
+
+References alterchg(), distrib\-\_\-colvars(), eangang1(), eangle1(), eangtor1(), ebond1(), echarge1(), echgtrn1(), edisp1(), egeom1(), ehal1(), eimprop1(), eimptor1(), elj1(), empole1(), energy(), eopbend1(), eopdist1(), epitors1(), epolar1(), erepel1(), esmd1(), estrbnd1(), estrtor1(), etors1(), etortor1(), eurey1(), extra1(), fatal(), isnan(), and prepare\-\_\-colvars().
+
+
+
+Referenced by baoab(), beeman(), utilbaoabpi\-::compute\-\_\-grad\-\_\-beads(), utilbaoabpi\-::compute\-\_\-gradslow\-\_\-centroid(), gradfast(), gradfast1(), gradint1(), gradslow(), gradslow1(), mdinit(), minimiz1(), minimize\-\_\-bis(), testgrad(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{gradient_8f90_a8665411aa7f5050b7002b6723044274d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{gradient_8f90_a8665411aa7f5050b7002b6723044274d_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,417 @@
+\subsection*{Calculation Libraries}
+
+Tinker-\/\-H\-P requires the mkl library, a F\-F\-T library (such as fftw) and a slightly modified 2decomp\-\_\-fft library (shipped with Tinker-\/\-H\-P) in order to run. The 2decomp\-\_\-fft library enables parallel 3\-D fft computations based on 2d-\/pencils data distribution (see \href{http://www.2decomp.org}{\tt 2decomp\-\_\-fft site}) based on a sequential implementation of F\-F\-Ts such as the one provided by the fftw library.
+
+\subsection*{Parallel library}
+
+Tinker-\/\-H\-P also requires a recent enough mpi library supporting mpi 3.\-x standards such as non blocking collectives. The code has been extensively tested with recent Intelmpi versions (such as intel mpi 5.1) and better performances have been observed with this family of mpi implementation compared to other ones such as Openmpi .
+
+\section*{Installation}
+
+As Tinker-\/\-H\-P is shipped in source form, you need to compile it. This was not always an easy task in the previous releases. Tinker-\/\-H\-P now uses a {\ttfamily configure} script built with autotools packages from Gnu to ease the compilation and installation process. The first thing you should do is to type \-:
+
+{\ttfamily autoconf ; automake}
+
+in the main directory. This will generate the {\ttfamily configure} file. Apart from the usual options available with all {\ttfamily configure} scripts, there are specific options for Tinker-\/\-H\-P. \begin{DoxyVerb}Usage: ./configure [OPTION]... [VAR=VALUE]...
+
+Optional Features:
+  --enable-debug                Enable debug mode (check array bounds, implicit
+                                none, etc...). Should not be active in normal
+                                operations [default is no]
+  --enable-skylake              Enable AVX512 Optimization for Skylake Processors
+                                [default is no]
+  --enable-knl                  Enable AVX512 Optimization for KNL (Xeon Phi)
+                                Processors [default is no]
+  --enable-fft-generic          Enable generic FFT mode [default is yes]
+  --enable-fft-mkl              Enable MKL   FFT mode [default is no]
+  --enable-fft-fftw3            Enable fftw3 FFT mode [default is no]
+  --enable-fft-fftw3_f03        Enable fftw3_f03 FFT mode [default is no]
+  --enable-plumed               Enable plumed interface [default is no]
+  --enable-colvars              Enable Colvars interface [default is no]
+Optional Packages:
+  --with-blaslib=<BLAS LIB>     Specify BLAS library [mkl, lapack or 
+                                /absolute/path/to/BLAS_library]
+  --with-fftlib=<FFT LIB>       Specify a library for FFT called by 2decomp [mkl or
+                                fftw3 or /absolute/path/to/FFTW_library]
+\end{DoxyVerb}
+
+
+The ultimate goal of this script is to let you type \begin{DoxyVerb}    ./configure ; make ; make install ; cd example ; ./ubiquitin2.run
+\end{DoxyVerb}
+
+
+and have everything compiled, installed and running.
+
+\subsection*{List of Options}
+
+As for all the {\ttfamily configure} scripts, you can choose the directory in which the binaries will be copied. So, {\ttfamily configure} has {\ttfamily -\/-\/prefix=$<$D\-I\-R$>$}.
+
+Tinker-\/\-H\-P has a special interest to know if it will run on A\-V\-X-\/512 capable processors. So, {\ttfamily configure} has options for that\-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/-\/enable-\/slylake}
+\item {\ttfamily -\/-\/enable-\/knl}
+\end{DoxyItemize}
+
+Recall that Tinker-\/\-H\-P needs to make a fft decomposition with a modified version of the 2decomp\-\_\-fft library, which in turn needs a working fftw library. This is why you can find {\ttfamily configure} options about fft interface and library\-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/-\/enable-\/fft-\/generic}
+\item {\ttfamily -\/-\/enable-\/fft-\/mkl}
+\item {\ttfamily -\/-\/enable-\/fft-\/fftw3}
+\item {\ttfamily -\/-\/enable-\/fft-\/fftw3\-\_\-f03}
+\item {\ttfamily -\/-\/with-\/fftlib=}{\ttfamily $<$F\-F\-T L\-I\-B$>$}
+\end{DoxyItemize}
+
+Tinker-\/\-H\-P also needs some functions that resides in a working blas library. So, there is an option for that\-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/-\/with-\/blaslib=}{\ttfamily $<$B\-L\-A\-S L\-I\-B$>$}
+\end{DoxyItemize}
+
+Tinker-\/\-H\-P is now able to be interfaced with Plumed. So, there is an option for that \-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/-\/enable-\/plumed}
+\end{DoxyItemize}
+
+Tinker-\/\-H\-P is now able to be interfaced with Colvars. So, there is an option for that \-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily -\/-\/enable-\/colvars}
+\end{DoxyItemize}
+
+Finally, as there might be some execution problems, or compilation problems for the users who develop code, Tinker-\/\-H\-P has an {\ttfamily -\/-\/enable-\/debug} option.
+
+{\ttfamily configure} tries to find its path to reach a valid mpi compiler and a valid Fortran compiler by unsetting the environment variables {\ttfamily \$\-F\-C} and {\ttfamily \$\-F77}, and reading the environment variable {\ttfamily \$\-P\-A\-T\-H}. It also tries to find valid fft and blas libraries by reading {\ttfamily \$\-F\-F\-T\-W} and {\ttfamily \$\-M\-K\-L\-R\-O\-O\-T} or {\ttfamily \$\-L\-A\-P\-A\-C\-K} respectively. Most of the time, these environment variables are defined through the {\ttfamily module} framework. As a try, do a \begin{DoxyVerb}    module available 2>&1 | less
+\end{DoxyVerb}
+
+
+to see if you have the {\ttfamily module} framework installed on your machine, and to know what {\ttfamily module} you can load. {\ttfamily configure} then figures out how to build the correct Makefiles.
+
+By default, {\ttfamily configure} chooses the mkl library from Intel as the blas and fftw3 libraries, sets the {\ttfamily -\/-\/enable-\/fft-\/mkl} option, does not make any processor optimization, and disables debugging. Thus, typing {\ttfamily ./}{\ttfamily configure} give the same result as if you have typed {\ttfamily ./}{\ttfamily configure} {\ttfamily -\/-\/enable-\/fft-\/mkl} {\ttfamily -\/-\/with-\/blaslib=}{\ttfamily mkl} {\ttfamily -\/-\/with-\/fftlib=}{\ttfamily mkl}.
+
+\subsection*{Using {\ttfamily configure}}
+
+If you want to have different settings than those used by default, you’ll have to give {\ttfamily configure} more information. Be aware that {\ttfamily configure} cannot magically guess anything. So, the information you give must be precise and complete.
+
+\subsubsection*{Install Directory}
+
+By default, this is where you have unzipped and untarred the distribution. If you want another place, use {\ttfamily -\/-\/prefix=$<$D\-I\-R$>$}. You can choose any directory you want, providing that you have permission to create this directory and/or write in it.
+
+\subsubsection*{Processor optimization}
+
+The machine on which you compile is not always the one on which Tinker-\/\-H\-P will run. If you know that Tinker-\/\-H\-P is going to run on A\-V\-X-\/512 capable processors, you are strongly encouraged to use one of \-:
+
+
+\begin{DoxyItemize}
+\item for K\-N\-L processors (also known as Xeon-\/\-Phi)
+\item for Skylake processors.
+\end{DoxyItemize}
+
+as this will dramatically improve the execution speed. Otherwise, the optimization will be done using the capabilities of the compilation machine, as determined by the compiler.
+
+\subsubsection*{F\-F\-T interface}
+
+You can choose the interface of fftw you want to use. This has an effect on the 2decomp\-\_\-fft library. So \-:
+
+
+\begin{DoxyItemize}
+\item gives the generic fft, with no call to fftw library
+\item gives the mkl fft. It also automatically selects the mkl library as the fftw library.
+\item gives the fftw3 interface, and is designed to work with an external fftw library.
+\item gives the fftw3 Fortran2003 interface, and is designed to work with an external fftw library
+\end{DoxyItemize}
+
+\subsubsection*{F\-F\-T Library}
+
+You can choose the fftw library you want to use. It can come from the mkl suite, or some fftw3 package (either system installed, or compiled by you). So \-:
+
+
+\begin{DoxyItemize}
+\item \-: 
+
+ selects the mkl library, but needs the variable {\ttfamily \$\-M\-K\-L\-R\-O\-O\-T} to be set to the absolute path of the mkl library 
+\item \-:  selects the mkl library by giving the absolute path of the mkl library 
+\item \-:  selects the fftw3 library, but needs the variable {\ttfamily \$\-F\-F\-T\-W} to be set to the absolute path of the fftw3 library 
+\item \-:  selects the fftw3 library by giving the absolute path of the fftw3 library 
+\end{DoxyItemize}
+
+Here are typical commands you can type. If {\ttfamily \$\-M\-K\-L\-R\-O\-O\-T} has been correctly set \-: \begin{DoxyVerb}    ./configure --enable-fft-mkl --with-fftlib=mkl
+\end{DoxyVerb}
+
+
+If you wish to give the absolute path of the library \-: \begin{DoxyVerb}    ./configure --enable-fft-mkl   --with-fftlib=/path/to/mkl/library
+    ./configure --enable-fft-fftw3 --with-fftlib=/path/to/fftw3/library
+\end{DoxyVerb}
+
+
+These last commands can also be written this way \-: \begin{DoxyVerb}    MKLROOT=/path/to/mkl/library ./configure --enable-fft-mkl   --with-fftlib=mkl
+    FFTW=/path/to/fftw3/library  ./configure --enable-fft-fftw3 --with-fftlib=fftw3
+\end{DoxyVerb}
+
+
+\subsubsection*{B\-L\-A\-S library}
+
+You can choose the blas library you want to use. It can come from the mkl suite or some lapack package (either system installed, or compiled by you). So \-:
+
+
+\begin{DoxyItemize}
+\item \-:  selects the mkl library, but needs the variable {\ttfamily \$\-M\-K\-L\-R\-O\-O\-T} to be set to the absolute path of the mkl library 
+\item \-:  selects the mkl library, by giving the absolute path of the mkl library 
+\item \-:  selects the lapack library, but needs the variable {\ttfamily \$\-L\-A\-P\-A\-C\-K}to be set to the absolute path of the lapack library 
+\item  \-:  selects the lapack library, by giving the absolute path of the lapack library. 
+\end{DoxyItemize}
+
+Here are typical commands you can type. If {\ttfamily \$\-M\-K\-L\-R\-O\-O\-T} has been correctly set \-: \begin{DoxyVerb}    ./configure --enable-fft-mkl --with-blas=mkl
+\end{DoxyVerb}
+
+
+If you wish to give the absolute path of the library \-: \begin{DoxyVerb}    ./configure --enable-fft-mkl --with-blas=/path/to/mkl/library
+    ./configure --enable-fft-mkl --with-blas=/path/to/lapack/library
+\end{DoxyVerb}
+
+
+These last commands can also be written this way \-: \begin{DoxyVerb}    MKLROOT=/path/to/mkl/library    ./configure --enable-fft-mkl --with-blas=mkl
+    LAPACK=/path/to/lapack/library  ./configure --enable-fft-mkl --with-blas=lapack
+\end{DoxyVerb}
+
+
+\subsubsection*{D\-E\-B\-U\-G mode}
+
+This mode is primarily intended for developers, but can also be useful if you experience errors while running Tinker-\/\-H\-P. Adding {\ttfamily -\/-\/enable-\/debug} to the {\ttfamily configure} command turns on {\bfseries boundary checking}, forces {\bfseries implicit none}, sets the optimization level to {\bfseries 0} (the lowest value) and enables {\bfseries backtracing} and {\bfseries all warnings}. The compilation produces all the binaries and gives them the {\ttfamily .debug} extension, so that you know that these binaries are not optimized.
+
+\subsection*{Output of configure}
+
+{\ttfamily configure} produces a final log to resume what will be done. It displays using colors (if available) all the information you gave, and everything it has been able to catch from the environment.
+
+Here is the result of a successful run of the {\ttfamily configure} command \-: \begin{DoxyVerb}FFTW=/usr/local/fftw-3.3.7/Intel/2018/impi/
+./configure --enable-debug --enable-fft-fftw3 --enable-plumed --with-fftlib=fftw3
+--with-blaslib=lapack
+\end{DoxyVerb}
+
+
+where we give the absolute path of the fftw3 library in the {\ttfamily \$\-F\-F\-T\-W} variable, ask for the D\-E\-B\-U\-G mode, enable the fftw3 interface, ask for the Plumed interface, use the fftw3 library and want the lapack library for blas, assuming that the {\ttfamily \$\-L\-A\-P\-A\-C\-K} variable is already set. \begin{DoxyVerb}configure:
+configure: **********************************************************************
+configure: **
+configure: ** Running Mode         : PLUMED DEBUG (binaries'extension is '.debug')
+configure: ** MPI Fortran Wrapper  : mpiifort
+configure: ** Fortran Compiler     : ifort
+configure: ** Fortran flags        : -fpp -DPLUMED -O0 -g -u -warn all -check bounds  
+configure: **                      : -no-ipo -no-prec-div -inline -heap-arrays 
+configure: **                      : -traceback
+configure: ** 2decomp Library      : -L ../2decomp_fft/src/ -l2decomp_fft
+configure: ** PLUMED  Library      : -L ../plumed/Intel/lib/ -lplumed -lplumedKernel
+configure: ** PLUMED  Includes     : -I ../plumed/Intel/include
+configure: ** FFTW3 Interface      : fftw3 of the FFTW3 library
+configure: ** FFTW3 Path           : /usr/local/fftw-3.3.7/Intel/2018/impi//lib
+configure: ** FFTW3 Includes       : -I /usr/local/fftw-3.3.7/Intel/2018/impi//include
+configure: ** FFTW3 Library        : -lfftw3
+configure: ** BLAS Type            : LAPACK
+configure: ** BLAS Path            : /usr/local/Libraries/lapack-3.8.0/Intel/2018
+configure: ** Prefix installation  : /home/lhj/neutron/Tinker/REL/PME/v1.2
+configure: ** Binaries location    : /home/lhj/neutron/Tinker/REL/PME/v1.2/bin
+configure: **
+configure: **********************************************************************
+configure:
+\end{DoxyVerb}
+
+
+This log confirms that we are in D\-E\-B\-U\-G mode and that we use the Intel compiler {\ttfamily ifort} and the {\ttfamily mpiifort} wrapper from Intelmpi. As The Plumed interface has been selected, the configure script shows the Plumed settings. The installation directory where all binaries (with {\ttfamily .debug} extension) will be installed is shown as well.
+
+In the case of the Plumed or the Colvars interface, the {\ttfamily configure} command will configure the plumed or the Colvars library as well.
+
+\subsection*{Making binaries}
+
+Once you are happy with the option you selected, it’s time to run the {\ttfamily make} command, or even the {\ttfamily make install} command, which will compile and install all at once.
+
+As the compilation process takes care of the dependencies between subroutines and modules, you can safely use the {\ttfamily -\/j} flag of the {\ttfamily make} command to do parallel compilation. This would dramatically speedup the compilation process.
+
+Anyway, on modern machines, the compilation is not very long, except for 2 or 3 subroutines that can take up to 5(!) minutes to compile, depending on the compiler you use and even on the fastest machines. Everything should compile and link gracefully.
+
+Using {\ttfamily make install} will copy the binaries into the directory you selected with the {\ttfamily -\/-\/prefix=$<$D\-I\-R$>$} option. The binaries produced will have the following extension \-:
+
+
+
+\begin{TabularC}{2}
+\hline
+\rowcolor{lightgray}{\bf Mode }&{\bf Extension  }\\\cline{1-2}
+{\ttfamily N\-O\-R\-M\-A\-L} &.prod \\\cline{1-2}
+{\ttfamily P\-L\-U\-M\-E\-D N\-O\-R\-M\-A\-L} &\-\_\-plumed.\-prod \\\cline{1-2}
+{\ttfamily C\-O\-L\-V\-A\-R\-S N\-O\-R\-M\-A\-L} &\-\_\-colvars.\-prod \\\cline{1-2}
+{\ttfamily D\-E\-B\-U\-G} &.debug \\\cline{1-2}
+{\ttfamily P\-L\-U\-M\-E\-D D\-E\-B\-U\-G} &\-\_\-plumed.\-debug \\\cline{1-2}
+{\ttfamily C\-O\-L\-V\-A\-R\-S D\-E\-B\-U\-G} &\-\_\-colvars.\-debug \\\cline{1-2}
+\end{TabularC}
+
+
+the {\ttfamily make install} command will also create 5 shell scripts, named after the binaries, to setup the proper running environment. Don’t forget to install the binaries you created, or you will not be able to run the examples.
+
+\section*{Note for developers}
+
+\subsection*{Writing new sources}
+
+We don’t want to impose you a unique style of writing. Indeed, we don’t have one. But we just want to give you some rules we believe are important for the consistency of Tinker-\/\-H\-P’s code.
+
+\paragraph*{File format}
+
+We use Fixed Form format throughout all the code, even though the code is written in Fortran90. This is mandatory. The compilation process would not work otherwise.
+
+\paragraph*{Editing}
+
+We always use lowercase letters for code (except for printing purposes). We indent all lines embedded in {\ttfamily do.....enddo}, {\ttfamily do.....while}, etc... statements, or in {\ttfamily if...else...endif} constructs.
+
+\paragraph*{Variable declarations}
+
+You are required to use {\ttfamily implicit none}. If you compile in debug mode, that will be enforced by the compiler.
+
+The order we use to declare variables is\-:
+
+
+\begin{DoxyEnumerate}
+\item {\ttfamily integer} (4 bytes sized)
+\item {\ttfamily real} (8 bytes sized)
+\item {\ttfamily logical}
+\item {\ttfamily array} (in the same order)
+\item {\ttfamily character} (single string or array)
+\end{DoxyEnumerate}
+
+We always try not to mix different types of variables in the same declaration line. This is not just because it is easier to read. That is also because it is more memory efficient, particularly for vectorization, where alignment in memory is crucial. {\ttfamily character} variables should be put at the very end, since they can have arbitrary lengths and almost never align to a memory boundary. We also try to choose significant names for the variables.
+
+\paragraph*{Comments}
+
+We always begin a comment line by the {\ttfamily c} character. The {\ttfamily !} character should only appear in the middle of a line. This is because the {\ttfamily !} character at the beginning is reserved to introduce compiler directives.
+
+If ever you create modules, please comment all the new variables you create, like \-: \begin{DoxyVerb}   c     maxvalue        atoms directly bonded to an atom
+   c     maxgrp          user-defined groups of atoms
+   c     maxtyp          force field atom type definitions
+   c     maxclass        force field atom class definitions
+\end{DoxyVerb}
+
+
+In subroutines or functions, give as many comments as you believe is needed to understand what your code is doing. That would be precious for you, and for us as well.
+
+\subsection*{Compiling new sources}
+
+If you make development on Tinker-\/\-H\-P, it is likely that you would need to add subroutines and modules in the source directory.
+
+All modules should be put in files named {\ttfamily M\-O\-D\-\_\-xxxxx.\-f}, even though they are written in Fortran90. All functions and routines should be put in files with names beginning by a lowercase letter and with {\ttfamily .f} extension. Please, try to find significant names ( {\ttfamily epolar1tcg2shortreal.\-f} is far better than {\ttfamily ep1tc2shre.\-f}). You are required to follow this scheme as much as possible.
+
+To compile your new sources, you should add them in the {\ttfamily Makefile.\-am} file of the {\ttfamily source} directory. We’ve put some comments in this file, to help you know where to put things. Search for the string {\ttfamily Add} in the file.
+
+There are 3 different cases\mbox{[}$^\wedge$1\mbox{]}\-:
+
+
+\begin{DoxyEnumerate}
+\item You created a new main program (like {\ttfamily analyze} or {\ttfamily dynamic}). Add a line
+
+{\ttfamily bin\-\_\-\-P\-R\-O\-G\-R\-A\-M\-S += yourmain}
+
+(with no extension) below the line {\ttfamily bin\-\_\-\-P\-R\-O\-G\-R\-A\-M\-S += testgrad}. Then, add the lines
+
+{\ttfamily yourmain\-\_\-\-S\-O\-U\-R\-C\-E\-S = yourmain.\-f}
+
+and
+
+{\ttfamily yourmain\-\_\-\-D\-E\-P\-E\-N\-D\-E\-N\-C\-I\-E\-S = libtinkermod.\-a libtinkercalc.\-a}
+
+after the similar lines concerning {\ttfamily testgrad}.
+
+In the {\ttfamily Makefile.\-am} file of the {\ttfamily scripts} directory, you should also add the line \-:
+
+{\ttfamily -\/(cd \$}{\ttfamily bindir}{\ttfamily ;  -\/f  yourmain )}
+
+in the {\ttfamily install-\/exec-\/hook\-:} section, and add {\ttfamily yourmain} at the end of the {\ttfamily uninstall-\/bin\-S\-C\-R\-I\-P\-T\-S\-:} section.
+\item You created new module(s). Add lines
+
+{\ttfamily libtinkermod\-\_\-a\-\_\-\-S\-O\-U\-R\-C\-E\-S += M\-O\-D\-\_\-xxxxx.\-f}
+
+just below\mbox{[}$^\wedge$2\mbox{]} {\ttfamily libtinkermod\-\_\-a\-\_\-\-S\-O\-U\-R\-C\-E\-S += M\-O\-D\-\_\-virial.\-f}
+\item You created functions and subroutines. Add lines like
+
+{\ttfamily libtinkercalc\-\_\-a\-\_\-\-S\-O\-U\-R\-C\-E\-S += yourexplicitfilename.\-f}
+
+just below\mbox{[}$^\wedge$3\mbox{]} the line {\ttfamily libtinkercalc\-\_\-a\-\_\-\-S\-O\-U\-R\-C\-E\-S += version.\-f}
+\end{DoxyEnumerate}
+
+You should now go in the main directory, where {\ttfamily configure.\-ac} resides, and type {\ttfamily autoconf} and {\ttfamily automake}. {\ttfamily autoconf} should not generate any message. {\ttfamily automake} will probably do, mainly because of a different version than the one we used to create the distribution. In this case, just type {\ttfamily aclocal} before running {\ttfamily automake} again. These 2 (or 3) commands will generate a new {\ttfamily configure} script that takes care of your new sources. You should then run {\ttfamily ./}{\ttfamily configure}\mbox{[}$^\wedge$4\mbox{]}, compile, install and enjoy debugging your code.
+
+\section*{Executables}
+
+After having successfully compiled the code, five executable files should be present in the install directory\-: {\ttfamily analyze}, {\ttfamily bar}, {\ttfamily dynamic}, {\ttfamily testgrad} and {\ttfamily minimize}\mbox{[}$^\wedge$5\mbox{]}, which are the analogous of the binaries of the Tinker-\/8.\-4 release and require similarly a geometry (given by a $\ast$.xyz file), a simulation setup (given by a $\ast$.key file) and possibly a restart (given by a $\ast$.dyn file) for the {\ttfamily dynamic} program.
+
+All these executables must run in the same environment you had during the compilation phase. That means the same set of modules, or the correct {\ttfamily L\-I\-B\-R\-A\-R\-Y\-\_\-\-P\-A\-T\-H}. They should be launched with the {\ttfamily mpirun -\/np}{\ttfamily x} prefix in order to run in parallel with {\ttfamily x} mpi processes.
+
+\subsection*{General remarks}
+
+The only boundary conditions that are available in this release are periodic boundary conditions treated with Particle Mesh Ewald. General triclinic unit cells can be used.
+
+Classical force fields such as A\-M\-B\-E\-R, C\-H\-A\-R\-M\-M and O\-P\-L\-S are available in Tinker-\/\-H\-P as well as polarizable force fields such as A\-M\-O\-E\-B\-A, A\-M\-O\-E\-B\-A+ and H\-I\-P\-P\-O.
+
+\subsection*{{\ttfamily analyze} }
+
+The {\ttfamily analyze} executable allows potential energy analysis. Compared to the Tinker-\/8.\-4 software, the only option compatible with this binary is \char`\"{}e\char`\"{}.
+
+For example the command line\-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily mpirun -\/np}{\ttfamily 16 ../bin/analyze dhfr2 e}\textbackslash{} will give you as an output the potential energy terms of the geometry given by a dhfr2.\-xyz file and with the simulation setup given by the dhfr2.\-key file. Furthermore, this computation will run on 16 mpi processes.
+\end{DoxyItemize}
+
+\subsection*{{\ttfamily testgrad} }
+
+The {\ttfamily testgrad} program is absolutely equivalent to the one of the Tinker-\/8.\-4 release\-: it allows the output of the components of the analytical and/or numerical gradients of the different energy terms.
+
+For example, the command line\-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily mpirun -\/np}{\ttfamily 16 ../bin/testgrad dhfr2 Y Y 0.\-0001 Y}\textbackslash{} will give you as an output all the analytical and numerical gradients (computed with an increment of 0.\-0001 Angstroms for the positions of the atoms) of all the energy terms of the dhfr2 system.
+\end{DoxyItemize}
+
+\subsection*{{\ttfamily minimize}}
+
+The {\ttfamily minimize} program computes energy minimization starting from a given structure, using a low memory quasi-\/newton B\-F\-G\-S algorithm as in Tinker-\/8.\-4. The command line used should give the numerical threshold for the convergence of the algorithm.
+
+For example, the command line\-:
+
+
+\begin{DoxyItemize}
+\item {\ttfamily mpirun -\/np}{\ttfamily 16 ../bin/minimize dhfr2 0.\-1}\textbackslash{} will compute energy minimization on the dhfr2 structure until the R\-M\-S on the gradient is inferior to 0.\-1. The new geometry will be written at each iteration of the algorithm in the file dhfr2.\-xyz\-\_\-2.
+\end{DoxyItemize}
+
+\section*{Examples}
+
+4 examples of systems with associated $\ast$.key files are given in the distribution\-: ubiquitin2, dhfr2, puddle and pond. The sizes of these systems are respectively\-: 9737, 23558, 96000 and 288000 atoms, making them good various benchmarks for the program.
+
+4 different setups are given for the ubiquitin system with 4 different key files\-:
+
+\begin{TabularC}{4}
+\hline
+\rowcolor{lightgray}{\bf }&{\bf }&{\bf }&{\bf }\\\cline{1-4}
+1) &{\bfseries ubiquitin2.\-key} &\-: &regular (langevin with B\-A\-O\-A\-B integration based) 2 {\itshape fs} respa (bonded/non-\/bonded split) computations with D\-C-\/\-J\-I/\-D\-I\-I\-S as a polarization solver \\\cline{1-4}
+2) &{\bfseries ubiquitin2tcg.\-key} &\-: &2 {\itshape fs} respa computations with T\-C\-G2 (with a diagonal preconditioner, no guess and a peek step with \${\ttfamily \textbackslash{}omega=1}\$ as a polarization solver \\\cline{1-4}
+3) &{\bfseries ubiquitin2respa1.\-key} &\-: &6 {\itshape fs} respa1 (bonded/short range non-\/bonded/long range non-\/bonded split) langevin with B\-A\-O\-A\-B integration computations with D\-C-\/\-J\-I/\-D\-I\-I\-S as a short and total polarization solver \\\cline{1-4}
+4) &{\bfseries ubiquitin2respa1tcg.\-key} &\-: &10 {\itshape fs} respa1 langevin with B\-A\-O\-A\-B integration computations with heavy hydrogen, T\-C\-G1 (with a diagonal preconditioner, no guess and no peek step) as a short range polarization solver and D\-C-\/\-J\-I/\-D\-I\-I\-S as a total polarization solver \\\cline{1-4}
+\end{TabularC}
+A fifth example is reserved for debug purposes. It’s exactly the same as the first one. {\ttfamily ./ubiquitin2.debug.\-run} runs the {\ttfamily dynamic}.{\ttfamily debug} binary.
+
+\section*{Support}
+
+Tinker-\/\-H\-P is maintained by few people. That means we cannot promise you to answer in a minute to your requests. Anyway, if you have any question or need any support for Tinker-\/\-H\-P, feel free to send a mail to our team at {\ttfamily Tinker\-H\-P\-\_\-\-Support@ip2ct.\-upmc.\-fr}. We will answer as soon as we can, providing that we can !
+
+\mbox{[}$^\wedge$1\mbox{]}\-: Of course, you can match all three at the same time!
+
+\mbox{[}$^\wedge$2\mbox{]}\-: As the compilation process takes care of all the dependencies, the positions of the lines you add are not really significant. But putting the new lines at the end is just a way of remembering they are – well – new.
+
+\mbox{[}$^\wedge$3\mbox{]}\-: Same remark as above.
+
+\mbox{[}$^\wedge$4\mbox{]}\-: Presumably with the {\ttfamily -\/-\/enable-\/debug} option flag.
+
+\mbox{[}$^\wedge$5\mbox{]}\-: If you have ever compiled with {\ttfamily -\/-\/enable-\/debug} before, you should have 5 more binaries. 

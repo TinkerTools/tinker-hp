@@ -1,0 +1,213 @@
+\hypertarget{image_8f90}{\section{image.\-f90 File Reference}
+\label{image_8f90}\index{image.\-f90@{image.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{image_8f90_afafb2542d1faa53dbba8933a21da60fa}{image} (xr, yr, zr)
+\begin{DoxyCompactList}\small\item\em takes the components of pairwise distance between two points in a periodic box and converts to the components of the minimum image distance \end{DoxyCompactList}\item 
+subroutine \hyperlink{image_8f90_aa8b5ff6b3c80a1787b7437cf847eb5a4}{imagevec} (pos, n)
+\begin{DoxyCompactList}\small\item\em takes the components of pairwise distance between two vector of points in a periodic box and converts to the components of the minimum image distance \end{DoxyCompactList}\item 
+subroutine \hyperlink{image_8f90_aa029860a01e2c9067a39c86cbdd5159e}{imagefrac} (ar, br, cr)
+\begin{DoxyCompactList}\small\item\em takes a vector in fractional coordinate and get the associated minimum image convention vector in fractional coordinate \end{DoxyCompactList}\item 
+subroutine \hyperlink{image_8f90_af7d96ecbc9bda09adc405dfaf51fbb1b}{ctfvec} (xr, yr, zr, ar, br, cr)
+\begin{DoxyCompactList}\small\item\em takes a vector in cartesian coordinates and put it in fractional coordinates \end{DoxyCompactList}\item 
+subroutine \hyperlink{image_8f90_a8a481b32f403e99e68cfebb1d9f1d98f}{ftcvec} (ar, br, cr, xr, yr, zr)
+\begin{DoxyCompactList}\small\item\em takes a vector in fractional coordinates and put it in cartesian coordinates \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{image_8f90_af7d96ecbc9bda09adc405dfaf51fbb1b}{\index{image.\-f90@{image.\-f90}!ctfvec@{ctfvec}}
+\index{ctfvec@{ctfvec}!image.f90@{image.\-f90}}
+\subsubsection[{ctfvec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ctfvec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{xr, }
+\item[{real$\ast$8}]{yr, }
+\item[{real$\ast$8}]{zr, }
+\item[{real$\ast$8}]{ar, }
+\item[{real$\ast$8}]{br, }
+\item[{real$\ast$8}]{cr}
+\end{DoxyParamCaption}
+)}}\label{image_8f90_af7d96ecbc9bda09adc405dfaf51fbb1b}
+
+
+takes a vector in cartesian coordinates and put it in fractional coordinates 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em xr,\-:} & first cartesian component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em yr,\-:} & second cartesian component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em zr,\-:} & third cartesian component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em ar,\-:} & first fractional component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em br,\-:} & second fractional component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em cr,\-:} & third fractional component of the distance vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 251 of file image.\-f90.
+
+
+
+Referenced by ddbuild(), ddpme3d(), midpointimagetriclinic(), reassign(), and shakeup\-\_\-update().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{image_8f90_af7d96ecbc9bda09adc405dfaf51fbb1b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{image_8f90_a8a481b32f403e99e68cfebb1d9f1d98f}{\index{image.\-f90@{image.\-f90}!ftcvec@{ftcvec}}
+\index{ftcvec@{ftcvec}!image.f90@{image.\-f90}}
+\subsubsection[{ftcvec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ftcvec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{ar, }
+\item[{real$\ast$8}]{br, }
+\item[{real$\ast$8}]{cr, }
+\item[{real$\ast$8}]{xr, }
+\item[{real$\ast$8}]{yr, }
+\item[{real$\ast$8}]{zr}
+\end{DoxyParamCaption}
+)}}\label{image_8f90_a8a481b32f403e99e68cfebb1d9f1d98f}
+
+
+takes a vector in fractional coordinates and put it in cartesian coordinates 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em xr,\-:} & first cartesian component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em yr,\-:} & second cartesian component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em zr,\-:} & third cartesian component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em ar,\-:} & first fractional component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em br,\-:} & second fractional component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em cr,\-:} & third fractional component of the distance vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 276 of file image.\-f90.
+
+
+
+Referenced by ddpme3d(), and midpointimagetriclinic().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{image_8f90_a8a481b32f403e99e68cfebb1d9f1d98f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{image_8f90_afafb2542d1faa53dbba8933a21da60fa}{\index{image.\-f90@{image.\-f90}!image@{image}}
+\index{image@{image}!image.f90@{image.\-f90}}
+\subsubsection[{image}]{\setlength{\rightskip}{0pt plus 5cm}subroutine image (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{xr, }
+\item[{real$\ast$8}]{yr, }
+\item[{real$\ast$8}]{zr}
+\end{DoxyParamCaption}
+)}}\label{image_8f90_afafb2542d1faa53dbba8933a21da60fa}
+
+
+takes the components of pairwise distance between two points in a periodic box and converts to the components of the minimum image distance 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em xr,\-:} & first component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em yr,\-:} & second component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em zr,\-:} & third component of the distance vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 24 of file image.\-f90.
+
+
+
+Referenced by angchg(), bndchg(), cluster2(), dbletmatxb\-\_\-pme(), dcflux(), eangang(), eangang1(), eangang3(), eangle(), eangle1(), eangle3(), eangtor(), eangtor1(), eangtor3(), ebond(), ebond1(), ebond3(), echgtrn0c(), echgtrn1c(), echgtrn3c(), ecreal0d(), ecreal1d(), ecreal3d(), edisp0b(), edisp1b(), edisp3b(), edreal0d(), edreal1d(), edreal3d(), efld0\-\_\-direct(), egeom(), egeom1(), egeom3(), ehal0c(), ehal1c(), ehal3c(), eimprop(), eimprop1(), eimprop3(), eimptor(), eimptor1(), eimptor3(), elj0c(), elj1c(), elj3c(), emreal0d(), emreal1c(), emreal3d(), eopbend(), eopbend1(), eopbend3(), eopdist(), eopdist1(), eopdist3(), epitors(), epitors1(), epitors3(), epreal0c(), epreal1c(), epreal3d(), erepel0c(), erepel1c(), erepel3c(), estrbnd(), estrbnd1(), estrbnd3(), estrtor(), estrtor1(), estrtor3(), etors0a(), etors1a(), etors3a(), etortor(), etortor1(), etortor3(), eurey(), eurey1(), eurey3(), halfcell(), kgeom(), kmeans(), midpoint(), midpointgroup(), midpointimage(), otf\-\_\-dc\-\_\-efld0\-\_\-direct(), otf\-\_\-dc\-\_\-tmatxb\-\_\-pme(), pbc\-\_\-image(), pc\-\_\-dc\-\_\-efld0\-\_\-direct(), pc\-\_\-dc\-\_\-tmatxb\-\_\-pme(), rattle(), rattle2(), commstuffpi\-::reassignpi(), rotmat(), scalderfieldzmat1(), scalderfieldzmat3(), scalderfieldzmat6(), scalderfieldzmat8(), shakeup\-\_\-update(), tmatxb\-\_\-pme(), torque(), torque\-\_\-group(), torque\-\_\-rec(), vlistcell(), and vlistcell2().
+
+\hypertarget{image_8f90_aa029860a01e2c9067a39c86cbdd5159e}{\index{image.\-f90@{image.\-f90}!imagefrac@{imagefrac}}
+\index{imagefrac@{imagefrac}!image.f90@{image.\-f90}}
+\subsubsection[{imagefrac}]{\setlength{\rightskip}{0pt plus 5cm}subroutine imagefrac (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{ar, }
+\item[{real$\ast$8}]{br, }
+\item[{real$\ast$8}]{cr}
+\end{DoxyParamCaption}
+)}}\label{image_8f90_aa029860a01e2c9067a39c86cbdd5159e}
+
+
+takes a vector in fractional coordinate and get the associated minimum image convention vector in fractional coordinate 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ar,\-:} & first component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em br,\-:} & second component of the distance vector \\
+\hline
+\mbox{\tt in}  & {\em cr,\-:} & third component of the distance vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 213 of file image.\-f90.
+
+
+
+Referenced by ddbuild(), ddpme3d(), midpointimagetriclinic(), and reassign().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{image_8f90_aa029860a01e2c9067a39c86cbdd5159e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{image_8f90_aa8b5ff6b3c80a1787b7437cf847eb5a4}{\index{image.\-f90@{image.\-f90}!imagevec@{imagevec}}
+\index{imagevec@{imagevec}!image.f90@{image.\-f90}}
+\subsubsection[{imagevec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine imagevec (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(3,n)}]{pos, }
+\item[{integer}]{n}
+\end{DoxyParamCaption}
+)}}\label{image_8f90_aa8b5ff6b3c80a1787b7437cf847eb5a4}
+
+
+takes the components of pairwise distance between two vector of points in a periodic box and converts to the components of the minimum image distance 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em pos,\-:} & vector of pairwise distance \\
+\hline
+\mbox{\tt in}  & {\em n,\-:} & size of the vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 155 of file image.\-f90.
+

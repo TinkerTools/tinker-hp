@@ -1,0 +1,11 @@
+<map id="ecrecip1" name="ecrecip1">
+<area shape="rect" id="node2" href="$pmestuff_8f90.html#a2c281b5e322fe3f6933feeb58f5d133e" title="finds B&#45;spline coefficients and derivatives for PME i&#45;th atomic sites along the fractional coordinate..." alt="" coords="136,5,259,32"/>
+<area shape="rect" id="node4" href="$fft__mpi_8f90.html#abdd07940aee4c823edb5b931186bed23" title="compute backward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="140,56,255,83"/>
+<area shape="rect" id="node5" href="$fft__mpi_8f90.html#a9e24205ee630a80792dd5d179c5f8429" title="compute forward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="140,107,255,133"/>
+<area shape="rect" id="node6" href="$pmestuff_8f90.html#a804d1244cfafe8311d48bfceb77fdde6" title="&quot;fphi_chg_site&quot; extracts the permanent fixed charge potential on the i&#45;th site from the particle mesh..." alt="" coords="143,157,251,184"/>
+<area shape="rect" id="node7" href="$pmestuff_8f90.html#acac006e94420d1c20f607ffcc78de99d" title="transform electrostatic potential (and derivatives) from cartesian to " alt="" coords="131,208,263,235"/>
+<area shape="rect" id="node9" href="$pmestuff_8f90.html#add1c28a3b5a4b53264960d7fb9231164" title="places the i&#45;th fractional atomic charge onto the particle mesh Ewald grid " alt="" coords="139,259,255,285"/>
+<area shape="rect" id="node3" href="$pmestuff_8f90.html#ab60c473185b72a82ef174c5fcdf24cc7" title="&quot;bsplgen&quot; gets B&#45;spline coefficients and derivatives for a single PME atomic site along a particular ..." alt="" coords="325,5,398,32"/>
+<area shape="rect" id="node8" href="$pmestuff_8f90.html#a1350ef38c71785ec4079a23e4cb7c9ca" title="computes a transformation matrix to convert a multipole object in fractional coordinates to cartesian..." alt="" coords="312,208,411,235"/>
+<area shape="rect" id="node10" href="$pmestuff_8f90.html#ac4aafef365cd8b32ba802ba270739607" title="modifies site bounds on the PME grid and returns an offset into the B&#45;spline coefficient arrays ..." alt="" coords="330,259,393,285"/>
+</map>

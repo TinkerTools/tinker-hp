@@ -1,0 +1,269 @@
+\hypertarget{cluster_8f90}{\section{cluster.\-f90 File Reference}
+\label{cluster_8f90}\index{cluster.\-f90@{cluster.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{cluster_8f90_ac538db6000fe62721998f58168e73529}{cluster1}
+\begin{DoxyCompactList}\small\item\em build blocks for D\-C-\/\-J\-I/\-D\-I\-I\-S polarization \end{DoxyCompactList}\item 
+subroutine \hyperlink{cluster_8f90_a77cc20ffc418982e9ff3b18a392beb4d}{kmeans}
+\begin{DoxyCompactList}\small\item\em build kmeans clusters \end{DoxyCompactList}\item 
+subroutine \hyperlink{cluster_8f90_afd8bb4cc5a2fcec289154043f141401a}{cluster2}
+\begin{DoxyCompactList}\small\item\em build segmentation clusters \end{DoxyCompactList}\item 
+subroutine \hyperlink{cluster_8f90_a34c5697165f7f023132b7f90bb6db974}{pcluster}
+\begin{DoxyCompactList}\small\item\em intermediate routine to build clusters \end{DoxyCompactList}\item 
+subroutine \hyperlink{cluster_8f90_a837936105c7f6de530ff4f0aaca48cf6}{cluster}
+\begin{DoxyCompactList}\small\item\em gets the partitioning of the system into groups and stores a list of the group to which each atom belongs \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{cluster_8f90_a837936105c7f6de530ff4f0aaca48cf6}{\index{cluster.\-f90@{cluster.\-f90}!cluster@{cluster}}
+\index{cluster@{cluster}!cluster.f90@{cluster.\-f90}}
+\subsubsection[{cluster}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cluster (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{cluster_8f90_a837936105c7f6de530ff4f0aaca48cf6}
+
+
+gets the partitioning of the system into groups and stores a list of the group to which each atom belongs 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 638 of file cluster.\-f90.
+
+
+
+References fatal(), getnumb(), gettext(), sort(), sort3(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{cluster_8f90_a837936105c7f6de530ff4f0aaca48cf6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cluster_8f90_a837936105c7f6de530ff4f0aaca48cf6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cluster_8f90_ac538db6000fe62721998f58168e73529}{\index{cluster.\-f90@{cluster.\-f90}!cluster1@{cluster1}}
+\index{cluster1@{cluster1}!cluster.f90@{cluster.\-f90}}
+\subsubsection[{cluster1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cluster1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{cluster_8f90_ac538db6000fe62721998f58168e73529}
+
+
+build blocks for D\-C-\/\-J\-I/\-D\-I\-I\-S polarization 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 10 of file cluster.\-f90.
+
+
+
+References aclear(), iclear(), and kmeans().
+
+
+
+Referenced by dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), and dcinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=312pt]{cluster_8f90_ac538db6000fe62721998f58168e73529_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cluster_8f90_ac538db6000fe62721998f58168e73529_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cluster_8f90_afd8bb4cc5a2fcec289154043f141401a}{\index{cluster.\-f90@{cluster.\-f90}!cluster2@{cluster2}}
+\index{cluster2@{cluster2}!cluster.f90@{cluster.\-f90}}
+\subsubsection[{cluster2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cluster2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{cluster_8f90_afd8bb4cc5a2fcec289154043f141401a}
+
+
+build segmentation clusters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 320 of file cluster.\-f90.
+
+
+
+References aclear(), iclear(), image(), and pcluster().
+
+
+
+Referenced by dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), and dcinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=306pt]{cluster_8f90_afd8bb4cc5a2fcec289154043f141401a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cluster_8f90_afd8bb4cc5a2fcec289154043f141401a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cluster_8f90_a77cc20ffc418982e9ff3b18a392beb4d}{\index{cluster.\-f90@{cluster.\-f90}!kmeans@{kmeans}}
+\index{kmeans@{kmeans}!cluster.f90@{cluster.\-f90}}
+\subsubsection[{kmeans}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kmeans (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{cluster_8f90_a77cc20ffc418982e9ff3b18a392beb4d}
+
+
+build kmeans clusters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 124 of file cluster.\-f90.
+
+
+
+References image().
+
+
+
+Referenced by cluster1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=220pt]{cluster_8f90_a77cc20ffc418982e9ff3b18a392beb4d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cluster_8f90_a77cc20ffc418982e9ff3b18a392beb4d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cluster_8f90_a34c5697165f7f023132b7f90bb6db974}{\index{cluster.\-f90@{cluster.\-f90}!pcluster@{pcluster}}
+\index{pcluster@{pcluster}!cluster.f90@{cluster.\-f90}}
+\subsubsection[{pcluster}]{\setlength{\rightskip}{0pt plus 5cm}subroutine pcluster (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{cluster_8f90_a34c5697165f7f023132b7f90bb6db974}
+
+
+intermediate routine to build clusters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 473 of file cluster.\-f90.
+
+
+
+References sort2().
+
+
+
+Referenced by cluster2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=214pt]{cluster_8f90_a34c5697165f7f023132b7f90bb6db974_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cluster_8f90_a34c5697165f7f023132b7f90bb6db974_icgraph}
+\end{center}
+\end{figure}
+
+

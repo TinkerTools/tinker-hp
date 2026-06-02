@@ -1,0 +1,62 @@
+\hypertarget{optsave_8f90}{\section{optsave.\-f90 File Reference}
+\label{optsave_8f90}\index{optsave.\-f90@{optsave.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{optsave_8f90_a0943582e8735a11dc2f6db2d8af03e06}{optsave} (ncycle, xx)
+\begin{DoxyCompactList}\small\item\em \char`\"{}optsave\char`\"{} is used by the optimizers to write imtermediate coordinates and other relevant information; also checks for user requested termination of an optimization \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{optsave_8f90_a0943582e8735a11dc2f6db2d8af03e06}{\index{optsave.\-f90@{optsave.\-f90}!optsave@{optsave}}
+\index{optsave@{optsave}!optsave.f90@{optsave.\-f90}}
+\subsubsection[{optsave}]{\setlength{\rightskip}{0pt plus 5cm}subroutine optsave (
+\begin{DoxyParamCaption}
+\item[{integer}]{ncycle, }
+\item[{real$\ast$8, dimension($\ast$)}]{xx}
+\end{DoxyParamCaption}
+)}}\label{optsave_8f90_a0943582e8735a11dc2f6db2d8af03e06}
+
+
+\char`\"{}optsave\char`\"{} is used by the optimizers to write imtermediate coordinates and other relevant information; also checks for user requested termination of an optimization 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 24 of file optsave.\-f90.
+
+
+
+References fatal(), freeunit(), numeral(), openend(), prtxyz(), suffix(), and version().
+
+
+
+Referenced by lbfgs(), and minimize\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{optsave_8f90_a0943582e8735a11dc2f6db2d8af03e06_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{optsave_8f90_a0943582e8735a11dc2f6db2d8af03e06_icgraph}
+\end{center}
+\end{figure}
+
+

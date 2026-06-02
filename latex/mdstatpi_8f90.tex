@@ -1,0 +1,64 @@
+\hypertarget{mdstatpi_8f90}{\section{mdstatpi.\-f90 File Reference}
+\label{mdstatpi_8f90}\index{mdstatpi.\-f90@{mdstatpi.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{mdstatpi_8f90_ac0e7a388ab3042e3262b8400878feb67}{mdstatpi} (istep, dt)
+\begin{DoxyCompactList}\small\item\em \char`\"{}mdstatpi\char`\"{} is called at each molecular dynamics time step to form statistics on various average values and fluctuations, and to periodically save the state of the trajectory \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{mdstatpi_8f90_ac0e7a388ab3042e3262b8400878feb67}{\index{mdstatpi.\-f90@{mdstatpi.\-f90}!mdstatpi@{mdstatpi}}
+\index{mdstatpi@{mdstatpi}!mdstatpi.f90@{mdstatpi.\-f90}}
+\subsubsection[{mdstatpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mdstatpi (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{istep, }
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{mdstatpi_8f90_ac0e7a388ab3042e3262b8400878feb67}
+
+
+\char`\"{}mdstatpi\char`\"{} is called at each molecular dynamics time step to form statistics on various average values and fluctuations, and to periodically save the state of the trajectory 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 24 of file mdstatpi.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::boltzmann(), and colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=312pt]{mdstatpi_8f90_ac0e7a388ab3042e3262b8400878feb67_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdstatpi_8f90_ac0e7a388ab3042e3262b8400878feb67_icgraph}
+\end{center}
+\end{figure}
+
+

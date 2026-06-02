@@ -1,0 +1,30 @@
+<map id="spectra::spcpft" name="spectra::spcpft">
+<area shape="rect" id="node2" href="$classspectra.html#abf83fa40a337b0987dae16f9880e4170" title="spectra::spcfft" alt="" coords="173,286,288,313"/>
+<area shape="rect" id="node3" href="$classqtb.html#ab833c16191b0a4ab56314b04f9ba808e" title="qtb::convolseg" alt="" coords="609,366,727,393"/>
+<area shape="rect" id="node22" href="$classspectra.html#a4e7bb730a7f2a0d12befe53d282f4f5a" title="spectra::correct_window\l_spectrum" alt="" coords="337,249,517,291"/>
+<area shape="rect" id="node23" href="$classspectra.html#a3e969bc7b33a5b61ecf93296815e8bb2" title="spectra::irspectra" alt="" coords="601,205,735,231"/>
+<area shape="rect" id="node29" href="$classqtb.html#aff51e8e681c6042f045a9803ec35fd77" title="qtb::qtb_spectra_adaptation\l_gamma" alt="" coords="566,300,770,341"/>
+<area shape="rect" id="node4" href="$classqtb.html#a6cca410de146cb9f472943484be133fb" title="qtb::qtb_update_state" alt="" coords="819,311,983,338"/>
+<area shape="rect" id="node20" href="$classqtb.html#ae6f7f437061f1fb54111f71541551610" title="qtb::qtbinit" alt="" coords="855,366,948,393"/>
+<area shape="rect" id="node5" href="$classutilbaoabpi.html#a4d075e6d26d3a08b49958c8db2bb3c71" title="utilbaoabpi::apply\l_aoa_pi" alt="" coords="1472,417,1611,459"/>
+<area shape="rect" id="node11" href="$classqtb.html#a93f0e167c4980bd190a1a2dcb6ecfa19" title="qtb::qtbrandom" alt="" coords="1064,259,1187,286"/>
+<area shape="rect" id="node6" href="$baoabpi_8f90.html#a960f906f690f4698c8782b23097764d9" title="&quot;baoabpi&quot; performs a single PIMD time step via the BAOAB recursion formula " alt="" coords="1920,454,1995,481"/>
+<area shape="rect" id="node9" href="$baoabrespapi_8f90.html#a6e7a0085bed4a815f070c9a7e9b7205c" title="performs a single PIMD time step of the fast forces via the BAOAB&#45;respa recursion formula ..." alt="" coords="1685,366,1827,393"/>
+<area shape="rect" id="node7" href="$pimd_8f90.html#ac2e89750fecb396b82a079e7b9b6bf33" title="computes a molecular dynamics trajectory in one of the standard statistical mechanical ensembles and ..." alt="" coords="2073,366,2154,393"/>
+<area shape="rect" id="node8" href="$pimd_8f90.html#afaefd022c8914d9e16a596dcd038638b" title="computes a molecular dynamics trajectory in one of the standard statistical mechanical ensembles and ..." alt="" coords="2226,366,2281,393"/>
+<area shape="rect" id="node10" href="$baoabrespapi_8f90.html#acdebcdd1be237bc37e6be77f42020ccb" title="performs a single PIMD time step via the BAOAB&#45;respa recursion formula " alt="" coords="1902,366,2013,393"/>
+<area shape="rect" id="node12" href="$classutilbaoab.html#a4d37fc94de119ad221561c0bb1aa272f" title="apply the O&#45;block of the BAOAB integrator: analytical integration of Orstein&#45;Uhlenbeck process to upd..." alt="" coords="1274,127,1417,168"/>
+<area shape="rect" id="node13" href="$baoab_8f90.html#a5584ed174f71e188e2a1bc013ba3509b" title="&quot;baoab&quot; performs a single molecular dynamics time step via the BAOAB recursion formula ..." alt="" coords="1510,62,1573,89"/>
+<area shape="rect" id="node16" href="$baoabrespa_8f90.html#a4c36887b0d9852f1fa0f009ece3f8e7b" title="&quot;baoabrespa&quot; performs a single PIMD time step via the BAOAB&#45;RESPA recursion formula ..." alt="" coords="1492,163,1591,190"/>
+<area shape="rect" id="node17" href="$baoabrespa1_8f90.html#ad2b1dae8a29fee04bbbbc91608e7ffa8" title="&quot;baoabrespafast1&quot; performs a single time step of the bonded forces via the BAOAB&#45;RESPA recursion form..." alt="" coords="1476,113,1607,139"/>
+<area shape="rect" id="node14" href="$dynamic_8f90.html#aeb80d6a062e834e3d35c714bfd45f5c5" title="computes a molecular dynamics trajectory " alt="" coords="2061,138,2165,165"/>
+<area shape="rect" id="node15" href="$dynamic_8f90.html#a242c646ad028ae81e8a4bed2193eae5d" title="computes a molecular dynamics trajectory " alt="" coords="2214,138,2293,165"/>
+<area shape="rect" id="node18" href="$baoabrespa1_8f90.html#a3391a7aeef7fb510da4f890b3ccc4e03" title="&quot;baoabrespaint1&quot; performs a single time step of the intermediate forces via the BAOAB&#45;RESPA recursion..." alt="" coords="1695,113,1817,139"/>
+<area shape="rect" id="node19" href="$baoabrespa1_8f90.html#a4bd414a0d274df3acecd0dda7646e1ce" title="&quot;baoabrespa1&quot; performs a single PIMD time step via the BAOAB&#45;RESPA1 recursion formula ..." alt="" coords="1904,113,2011,139"/>
+<area shape="rect" id="node21" href="$mdinit_8f90.html#a3be4d1e2d64073aa0f9d179f7ea55286" title="initializes the velocities and accelerations for a molecular dynamics trajectory, including restarts ..." alt="" coords="1925,315,1989,342"/>
+<area shape="rect" id="node24" href="$classspectra.html#a1ad1abce235eaddeec0c196eb507653e" title="spectra::save_dipole_traj" alt="" coords="1033,205,1218,231"/>
+<area shape="rect" id="node25" href="$classspectra.html#a9b1f0d6d3c04ba1863190784780751d4" title="spectra::save_dipole\l_respa" alt="" coords="1267,205,1423,247"/>
+<area shape="rect" id="node28" href="$verlet_8f90.html#adc85925ca8af0efc52d80fe31a74bfaa" title="performs a single molecular dynamics time step via the velocity Verlet multistep recursion formula ..." alt="" coords="1315,14,1375,41"/>
+<area shape="rect" id="node26" href="$respa_8f90.html#a9973bf6f030df2aeeef2a2c0fd9079dc" title="&quot;respa&quot; performs a single multiple time step molecular dynamics step using the reversible reference s..." alt="" coords="1512,265,1571,291"/>
+<area shape="rect" id="node27" href="$classcommstuffpi.html#a16cff35454e936d788925c3546e2ebb6" title="commstuffpi::full_gradient\l_prepare_pi" alt="" coords="1659,417,1853,459"/>
+</map>

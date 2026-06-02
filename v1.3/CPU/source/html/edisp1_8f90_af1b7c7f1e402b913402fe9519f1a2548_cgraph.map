@@ -1,0 +1,10 @@
+<map id="edrecip1" name="edrecip1">
+<area shape="rect" id="node2" href="$pmestuff_8f90.html#a2c281b5e322fe3f6933feeb58f5d133e" title="finds B&#45;spline coefficients and derivatives for PME i&#45;th atomic sites along the fractional coordinate..." alt="" coords="133,5,256,32"/>
+<area shape="rect" id="node4" href="$erf_8f90.html#a562bafa2a6bbcdf9d5034bb87c3a6190" title="computes a numerical approximation to the value of the complementary error function via a Chebyshev a..." alt="" coords="171,56,218,83"/>
+<area shape="rect" id="node6" href="$fft__mpi_8f90.html#abdd07940aee4c823edb5b931186bed23" title="compute backward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="137,107,252,133"/>
+<area shape="rect" id="node7" href="$fft__mpi_8f90.html#a9e24205ee630a80792dd5d179c5f8429" title="compute forward 3dFFT in parallel with 2decomp&amp;FFT " alt="" coords="137,157,252,184"/>
+<area shape="rect" id="node8" href="$pmestuff_8f90.html#a0b37f12d67a29828eeb0566a84e761fa" title="places the i&#45;th damped dispersion coefficients onto the particle mesh Ewald grid " alt="" coords="139,208,251,235"/>
+<area shape="rect" id="node3" href="$pmestuff_8f90.html#ab60c473185b72a82ef174c5fcdf24cc7" title="&quot;bsplgen&quot; gets B&#45;spline coefficients and derivatives for a single PME atomic site along a particular ..." alt="" coords="305,5,378,32"/>
+<area shape="rect" id="node5" href="$erf_8f90.html#a3db66269539046169e1596d5b4490fc2" title="&quot;erfcore&quot; evaluates erf(x) or erfc(x) for a real argument x; when called with mode set to 0 it return..." alt="" coords="307,56,375,83"/>
+<area shape="rect" id="node9" href="$pmestuff_8f90.html#ac4aafef365cd8b32ba802ba270739607" title="modifies site bounds on the PME grid and returns an offset into the B&#45;spline coefficient arrays ..." alt="" coords="310,208,373,235"/>
+</map>

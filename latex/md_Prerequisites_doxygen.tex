@@ -1,0 +1,104 @@
+\subsection*{Hardware}
+
+A relatively recent Nvidia G\-P\-U is mandatory for the G\-P\-U code. One with at least a compute capability above 5.\-0.
+
+Nothing special is needed for the C\-P\-U code.
+
+\subsection*{Compilers, Operating Systems}
+
+
+\begin{DoxyItemize}
+\item A G\-N\-U or Intel F\-O\-R\-T\-R\-A\-N compiler for the C\-P\-U code (Not recommended at this point)
+\item The most recent \href{https://www.pgroup.com/products/community.htm}{\tt P\-G\-I compiler}.
+\item The nvidia C\-U\-D\-A C/\-C++ compiler for C\-U\-D\-A Files in G\-P\-U code
+\item M\-P\-I Fortran wrapper on the selected compiler and compiled to be C\-U\-D\-A-\/\-Aware for device communications during multi-\/\-G\-P\-Us execution.
+\item Linux or Windows 10 (Windows Subsystem for Linux) are preferred
+\end{DoxyItemize}
+
+\begin{DoxyNote}{Note}
+P\-G\-I compiler does not support the G\-P\-U code on mac\-O\-S.
+\end{DoxyNote}
+
+\begin{DoxyItemize}
+\item \href{https://developer.nvidia.com/nvidia-hpc-sdk-releases}{\tt Nvidia H\-P\-C Package} Any version under {\bfseries 22.\-7 !} is operational. An issue involving \char`\"{}atomic operations\char`\"{} has been discovered with versions of the package (21.\mbox{[}3-\/9\mbox{]}). Luckily it is possible to bypass it by adding a compiler flag during the build step. Look for {\ttfamily add\-\_\-options\-\_\-f} variable configuration inside {\ttfamily ci/install.\-sh} to be revert to the old behavior and fix the problem. However be aware that this is just a temporary fix. Starting from version 22.\-X\-X, the previously described issue has been solved by the developers, and the Open\-A\-C\-C compiler bug lately detected within 22.\-X\-X version has also been fixed. It involves an ambiguous Open\-A\-C\-C compilation when calling an acc device subroutine compiled in an other translation unit. This package contains everything you need to build Tinker-\/\-H\-P (G\-P\-U code). Previously listed items are already available within it. However, we need to make sure the installation has been correctly done and the environment variables (P\-A\-T\-H; C\-P\-A\-T\-H \& N\-V\-H\-P\-C) are set and updated. Follow instructions described in {\ttfamily \$\-P\-R\-E\-F\-I\-X/modulefiles} with {\ttfamily \$\-P\-R\-E\-F\-I\-X} the installation directory of your package.
+\end{DoxyItemize}
+
+\subsection*{Issues}
+
+\subsubsection*{S\-D\-K version}
+
+Lately, we have been reporting some unexpected behaviors on binaries generated with Compiler versions strictly above 22.\-7. Depending on the machine, some programs may or may not crash at start. Discussions are initiated in order to identify and resolve the issue. Meanwhile, here are some stable setup able to run Tinker-\/\-H\-P\-:
+
+
+\begin{DoxyItemize}
+\item H\-P\-C-\/\-S\-D\-K 22.\-7 + cuda11.\-7 + G\-N\-U-\/11.\-x.\-x
+\item H\-P\-C-\/\-S\-D\-K 22.\-7 + cuda11.\-0 + G\-N\-U-\/9.\-x.\-x
+\item H\-P\-C-\/\-S\-D\-K 22.\-2 + cuda11.\-6 + G\-N\-U-\/9.\-x.\-x
+\item H\-P\-C-\/\-S\-D\-K 22.\-2 + cuda11.\-0 + G\-N\-U-\/9.\-x.\-x
+\item H\-P\-C-\/\-S\-D\-K 21.\-9 + cuda11.\-4 + G\-N\-U-\/8.\-x.\-x
+\item H\-P\-C-\/\-S\-D\-K 21.\-2 + cuda11.\-2 + G\-N\-U-\/8.\-x.\-x
+\end{DoxyItemize}
+
+If you have a multi-\/\-C\-U\-D\-A H\-P\-C-\/\-S\-D\-K installation, you can reconfigure the compilers to use the desired version of C\-U\-D\-A by editing/creating the {\ttfamily localrc} file inside the {\ttfamily nvfortran} compiler directory. Fill or complete the file with the instruction\-:
+
+
+\begin{DoxyCode}
+set CUDAVERSION=11.x;
+\end{DoxyCode}
+
+
+In the case where you do not have write access in the directory, you can also edit a local file and {\itshape export} an env variable named {\ttfamily N\-V\-L\-O\-C\-A\-L\-R\-C} to hold the file path.
+
+\subsection*{Python Environment}
+
+If you plan to combine machine learning with M\-D, we provide environment files {\ttfamily tinker-\/hp/\-G\-P\-U/tinkerml.\mbox{[}torch$|$tensorflow\mbox{]}.yaml} which installs python modules for machine learning. First one install the pytorch module and Torch\-Ani model whereas the second focuses on Deep\-M\-D-\/kit over Tensorflow module. Those specific python environments require \href{https://www.anaconda.com/products/distribution}{\tt Anaconda} or \href{https://docs.conda.io/en/latest/miniconda.html}{\tt Miniconda} to be installed on the host machine. Install the environment of your choice according to your M\-L Model by following the next instructions. Of course this step has to be carried out before moving to Tinker-\/\-H\-P.
+
+To create the pytorch environment, run in your shell\-:
+
+
+\begin{DoxyCode}
+conda env create -f tinkerml.torch.yaml
+conda activate DeepHP-torch 
+\textcolor{preprocessor}{# or conda deactivate}
+\end{DoxyCode}
+
+
+Composition of the environment\-:
+\begin{DoxyItemize}
+\item \href{https://pytorch.org/}{\tt Pytorch}, \href{https://www.tensorflow.org/}{\tt Tensor\-Flow} are the building block of most of machine learning potential libraries.
+\item Deepmd-\/kit and libdeepmd are used for \href{https://docs.deepmodeling.com/projects/deepmd/en/master/index.html}{\tt Dee\-P\-M\-D} models.
+\item Our \href{https://aiqm.github.io/torchani/}{\tt Torch\-A\-N\-I}-\/based library composed of lot of new features, more coming soon!
+\end{DoxyItemize}
+
+\subsection*{Mandatory Libraries}
+
+
+\begin{DoxyItemize}
+\item F\-Ft libraries
+\begin{DoxyItemize}
+\item {\ttfamily libfftw3} or {\ttfamily libfftw3f} in single or mixed precision mode. You will need to provide in that case F\-F\-T\-W install directory to both Tinker's and 2decompfft's Makefile. Setting {\ttfamily F\-F\-T\-W=/path\-\_\-to\-\_\-fftw3} as an environment variable should be enough to make.
+\item It is also possible to use the generic fft provided with your compiler (Default behavior).
+\end{DoxyItemize}
+\item Intel M\-K\-L Library (Only for host/\-C\-P\-U build!)
+\begin{DoxyItemize}
+\item Set {\ttfamily M\-K\-L\-R\-O\-O\-T=/path\-\_\-to\-\_\-mkl\-\_\-library} inside your shell environment
+\item {\ttfamily libmkl\-\_\-intel\-\_\-lp64 libmkl\-\_\-sequential libmkl\-\_\-core} are required
+\end{DoxyItemize}
+\item {\ttfamily 2decomp\-\_\-fft} library already provided inside the repository.
+\item Standard C++ library
+\begin{DoxyItemize}
+\item Set {\ttfamily G\-N\-U\-R\-O\-O\-T=/path\-\_\-to\-\_\-gnu}. This is not mandatory for a first and unique installation with {\ttfamily ci/install.\-sh} but it is required for developers or when you need to recompile in an other configuration. e.\-g. {\ttfamily export G\-N\-U\-R\-O\-O\-T=/usr} for conventional Linux systems. The aim is to fetch {\ttfamily libstdc++} from {\ttfamily \$\{G\-N\-U\-R\-O\-O\-T\}/lib64}
+\end{DoxyItemize}
+\item {\ttfamily C\-U\-D\-A} (Toolkit and libraries)
+\begin{DoxyItemize}
+\item Cuda(C/\-C++) compiler {\ttfamily nvcc}
+\item Recent C\-U\-D\-A libraries are required by the G\-P\-U code. Every C\-U\-D\-A version since 9.\-1 has been tested. From now on, C\-U\-D\-A Toolkit is a part of N\-V\-I\-D\-I\-A H\-P\-C-\/\-S\-D\-K package.
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+\begin{DoxyWarning}{Warning}
+If you are building with the machine learning interface, please ensure the consistency of your environment between the one of Tinker-\/\-H\-P (H\-P\-C-\/\-S\-D\-K) and python; especially the installed version of C\-U\-D\-A. Default python environment comes with cuda11.\-3 version {\ttfamily (tinkerml.\-yaml)}. Therefore, it is mandatory to use an N\-V\-I\-D\-I\-A H\-P\-C-\/\-S\-D\-K package which contains cuda11.\-3. Should that instruction be discarded, unexpected behaviors may occur while running Tinker-\/\-H\-P.
+\end{DoxyWarning}
+\subsection*{Notes}
+
+It is necessary to make sure that your environments (both build and run) are version consistent. In most cases, we have to pay attention, our native C\-U\-D\-A version does not differ from P\-G\-I provided C\-U\-D\-A and, is compatible with N\-V\-I\-D\-I\-A installed driver. Naturally, this issue will not occur with Nvidia H\-P\-C-\/\-S\-D\-K Package. 

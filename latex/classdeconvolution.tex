@@ -1,0 +1,277 @@
+\hypertarget{classdeconvolution}{\section{deconvolution Module Reference}
+\label{classdeconvolution}\index{deconvolution@{deconvolution}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+interface \hyperlink{interfacedeconvolution_1_1convolution__kernel}{convolution\-\_\-kernel}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine, public \hyperlink{classdeconvolution_a0e309ef87c6e2a604bf58bcf2c3a9557}{deconvolute\-\_\-spectrum\-\_\-symmetrize} (s\-\_\-in, domega, n\-Iterations, trans, thr, gamma, k\-T, kernel, s\-\_\-out, s\-\_\-rec, verbose)
+\item 
+subroutine, public \hyperlink{classdeconvolution_aebbb7f3c86c0fb2e772ad75c4797f494}{deconvolute\-\_\-spectrum} (s\-\_\-in, omega, n\-Iterations, trans, thr, gamma, k\-T, kernel, s\-\_\-out, s\-\_\-rec, verbose)
+\item 
+real $\ast$8 function, public \hyperlink{classdeconvolution_a0cc97e555b69a5d094ec95767b1cc738}{kernel\-\_\-lorentz} (omega, omega0, gamma, k\-T)
+\item 
+real $\ast$8 function, public \hyperlink{classdeconvolution_a3d66d542fdad4d406e2bc1cd48e21835}{kernel\-\_\-lorentz\-\_\-pot} (omega, omega0, gamma, k\-T)
+\end{DoxyCompactItemize}
+\subsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{classdeconvolution_afa72e3081738c9001b04859834b4b09b}{convolution} (kernel, s\-\_\-in, domega, s\-\_\-out, op)
+\item 
+subroutine \hyperlink{classdeconvolution_ab0555563a13a1f0f4a5784d8bd04630e}{compute\-\_\-rn\-\_\-ln} (s0, sn, K, domega, rn, ln)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 1 of file M\-O\-D\-\_\-deconvolution.\-f90.
+
+
+
+\subsection{Member Function/\-Subroutine Documentation}
+\hypertarget{classdeconvolution_ab0555563a13a1f0f4a5784d8bd04630e}{\index{deconvolution@{deconvolution}!compute\-\_\-rn\-\_\-ln@{compute\-\_\-rn\-\_\-ln}}
+\index{compute\-\_\-rn\-\_\-ln@{compute\-\_\-rn\-\_\-ln}!deconvolution@{deconvolution}}
+\subsubsection[{compute\-\_\-rn\-\_\-ln}]{\setlength{\rightskip}{0pt plus 5cm}subroutine deconvolution\-::compute\-\_\-rn\-\_\-ln (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(\-:), intent(in)}]{s0, }
+\item[{real$\ast$8, dimension(\-:), intent(in)}]{sn, }
+\item[{real$\ast$8, dimension(\-:,\-:), intent(in)}]{K, }
+\item[{real$\ast$8, intent(in)}]{domega, }
+\item[{real$\ast$8, intent(out)}]{rn, }
+\item[{real$\ast$8, intent(out)}]{ln}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classdeconvolution_ab0555563a13a1f0f4a5784d8bd04630e}
+
+
+Definition at line 202 of file M\-O\-D\-\_\-deconvolution.\-f90.
+
+
+
+References convolution().
+
+
+
+Referenced by deconvolute\-\_\-spectrum().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_ab0555563a13a1f0f4a5784d8bd04630e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_ab0555563a13a1f0f4a5784d8bd04630e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classdeconvolution_afa72e3081738c9001b04859834b4b09b}{\index{deconvolution@{deconvolution}!convolution@{convolution}}
+\index{convolution@{convolution}!deconvolution@{deconvolution}}
+\subsubsection[{convolution}]{\setlength{\rightskip}{0pt plus 5cm}subroutine deconvolution\-::convolution (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(\-:,\-:), intent(in)}]{kernel, }
+\item[{real$\ast$8, dimension(\-:), intent(in)}]{s\-\_\-in, }
+\item[{real$\ast$8, intent(in)}]{domega, }
+\item[{real$\ast$8, dimension(\-:), intent(inout)}]{s\-\_\-out, }
+\item[{character(1), intent(in)}]{op}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}}\label{classdeconvolution_afa72e3081738c9001b04859834b4b09b}
+
+
+Definition at line 190 of file M\-O\-D\-\_\-deconvolution.\-f90.
+
+
+
+Referenced by compute\-\_\-rn\-\_\-ln(), and deconvolute\-\_\-spectrum().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_afa72e3081738c9001b04859834b4b09b_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classdeconvolution_aebbb7f3c86c0fb2e772ad75c4797f494}{\index{deconvolution@{deconvolution}!deconvolute\-\_\-spectrum@{deconvolute\-\_\-spectrum}}
+\index{deconvolute\-\_\-spectrum@{deconvolute\-\_\-spectrum}!deconvolution@{deconvolution}}
+\subsubsection[{deconvolute\-\_\-spectrum}]{\setlength{\rightskip}{0pt plus 5cm}subroutine, public deconvolution\-::deconvolute\-\_\-spectrum (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(\-:), intent(in)}]{s\-\_\-in, }
+\item[{real$\ast$8, dimension(\-:), intent(in)}]{omega, }
+\item[{integer, intent(in)}]{n\-Iterations, }
+\item[{logical, intent(in)}]{trans, }
+\item[{real$\ast$8, intent(in)}]{thr, }
+\item[{real$\ast$8, intent(in)}]{gamma, }
+\item[{real$\ast$8, intent(in)}]{k\-T, }
+\item[{procedure({\bf convolution\-\_\-kernel})}]{kernel, }
+\item[{real$\ast$8, dimension(\-:), intent(inout)}]{s\-\_\-out, }
+\item[{real$\ast$8, dimension(\-:), intent(inout), optional}]{s\-\_\-rec, }
+\item[{logical, intent(in), optional}]{verbose}
+\end{DoxyParamCaption}
+)}}\label{classdeconvolution_aebbb7f3c86c0fb2e772ad75c4797f494}
+
+
+Definition at line 59 of file M\-O\-D\-\_\-deconvolution.\-f90.
+
+
+
+References compute\-\_\-rn\-\_\-ln(), and convolution().
+
+
+
+Referenced by qtb\-::compute\-\_\-corr\-\_\-fact(), deconvolution\-::convolution\-\_\-kernel\-::convolution\-\_\-kernel(), deconvolute\-\_\-spectrum\-\_\-symmetrize(), and qtb\-::generate\-\_\-corr\-\_\-pot().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_aebbb7f3c86c0fb2e772ad75c4797f494_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_aebbb7f3c86c0fb2e772ad75c4797f494_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classdeconvolution_a0e309ef87c6e2a604bf58bcf2c3a9557}{\index{deconvolution@{deconvolution}!deconvolute\-\_\-spectrum\-\_\-symmetrize@{deconvolute\-\_\-spectrum\-\_\-symmetrize}}
+\index{deconvolute\-\_\-spectrum\-\_\-symmetrize@{deconvolute\-\_\-spectrum\-\_\-symmetrize}!deconvolution@{deconvolution}}
+\subsubsection[{deconvolute\-\_\-spectrum\-\_\-symmetrize}]{\setlength{\rightskip}{0pt plus 5cm}subroutine, public deconvolution\-::deconvolute\-\_\-spectrum\-\_\-symmetrize (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(\-:), intent(in)}]{s\-\_\-in, }
+\item[{real$\ast$8, intent(in)}]{domega, }
+\item[{integer, intent(in)}]{n\-Iterations, }
+\item[{logical, intent(in)}]{trans, }
+\item[{real$\ast$8, intent(in)}]{thr, }
+\item[{real$\ast$8, intent(in)}]{gamma, }
+\item[{real$\ast$8, intent(in)}]{k\-T, }
+\item[{procedure({\bf convolution\-\_\-kernel})}]{kernel, }
+\item[{real$\ast$8, dimension(\-:), intent(inout)}]{s\-\_\-out, }
+\item[{real$\ast$8, dimension(\-:), intent(inout), optional}]{s\-\_\-rec, }
+\item[{logical, intent(in), optional}]{verbose}
+\end{DoxyParamCaption}
+)}}\label{classdeconvolution_a0e309ef87c6e2a604bf58bcf2c3a9557}
+
+
+Definition at line 18 of file M\-O\-D\-\_\-deconvolution.\-f90.
+
+
+
+References deconvolute\-\_\-spectrum().
+
+
+
+Referenced by deconvolution\-::convolution\-\_\-kernel\-::convolution\-\_\-kernel(), and spectra\-::irspectra().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_a0e309ef87c6e2a604bf58bcf2c3a9557_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_a0e309ef87c6e2a604bf58bcf2c3a9557_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classdeconvolution_a0cc97e555b69a5d094ec95767b1cc738}{\index{deconvolution@{deconvolution}!kernel\-\_\-lorentz@{kernel\-\_\-lorentz}}
+\index{kernel\-\_\-lorentz@{kernel\-\_\-lorentz}!deconvolution@{deconvolution}}
+\subsubsection[{kernel\-\_\-lorentz}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function, public deconvolution\-::kernel\-\_\-lorentz (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{omega, }
+\item[{real$\ast$8, intent(in)}]{omega0, }
+\item[{real$\ast$8, intent(in)}]{gamma, }
+\item[{real$\ast$8, intent(in)}]{k\-T}
+\end{DoxyParamCaption}
+)}}\label{classdeconvolution_a0cc97e555b69a5d094ec95767b1cc738}
+
+
+Definition at line 228 of file M\-O\-D\-\_\-deconvolution.\-f90.
+
+
+
+Referenced by qtb\-::compute\-\_\-corr\-\_\-fact(), and deconvolution\-::convolution\-\_\-kernel\-::convolution\-\_\-kernel().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_a0cc97e555b69a5d094ec95767b1cc738_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classdeconvolution_a3d66d542fdad4d406e2bc1cd48e21835}{\index{deconvolution@{deconvolution}!kernel\-\_\-lorentz\-\_\-pot@{kernel\-\_\-lorentz\-\_\-pot}}
+\index{kernel\-\_\-lorentz\-\_\-pot@{kernel\-\_\-lorentz\-\_\-pot}!deconvolution@{deconvolution}}
+\subsubsection[{kernel\-\_\-lorentz\-\_\-pot}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function, public deconvolution\-::kernel\-\_\-lorentz\-\_\-pot (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{omega, }
+\item[{real$\ast$8, intent(in)}]{omega0, }
+\item[{real$\ast$8, intent(in)}]{gamma, }
+\item[{real$\ast$8, intent(in)}]{k\-T}
+\end{DoxyParamCaption}
+)}}\label{classdeconvolution_a3d66d542fdad4d406e2bc1cd48e21835}
+
+
+Definition at line 247 of file M\-O\-D\-\_\-deconvolution.\-f90.
+
+
+
+Referenced by deconvolution\-::convolution\-\_\-kernel\-::convolution\-\_\-kernel(), and qtb\-::generate\-\_\-corr\-\_\-pot().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classdeconvolution_a3d66d542fdad4d406e2bc1cd48e21835_icgraph}
+\end{center}
+\end{figure}
+
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__deconvolution_8f90}{M\-O\-D\-\_\-deconvolution.\-f90}\end{DoxyCompactItemize}

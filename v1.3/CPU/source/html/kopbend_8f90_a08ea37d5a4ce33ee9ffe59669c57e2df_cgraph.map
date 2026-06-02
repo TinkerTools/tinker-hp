@@ -1,0 +1,6 @@
+<map id="kopbend_update" name="kopbend_update">
+<area shape="rect" id="node2" href="$kopbend_8f90.html#afa93cf521dcd85cfd7629adbe31ef9f9" title="update local opbendm parameters " alt="" coords="185,5,327,32"/>
+<area shape="rect" id="node3" href="$numeral_8f90.html#a02f02abcc21a0359f7ef69ae411c78b5" title="converts an input integer number into the corresponding right&#45; or left&#45;justified text numeral ..." alt="" coords="377,31,453,57"/>
+<area shape="rect" id="node4" href="$number_8f90.html#a133da88aea76390c3f91db1e3a8a4f4b" title="&quot;number&quot; converts a text numeral into an integer value; the input string must contain only numeric ch..." alt="" coords="501,31,573,57"/>
+<area shape="rect" id="node5" href="$trimtext_8f90.html#ad83d9073f809c425ddf7ca256594b68a" title="finds and returns the location of the last non&#45;blank character before the first null character in an ..." alt="" coords="621,31,696,57"/>
+</map>

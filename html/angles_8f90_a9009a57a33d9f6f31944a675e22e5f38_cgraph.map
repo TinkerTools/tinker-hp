@@ -1,0 +1,5 @@
+<map id="angles" name="angles">
+<area shape="rect" id="node2" href="$angles_8f90.html#ae80cb65ea022564aec5e6cdfa23a1b45" title="alloc_shared_angles" alt="" coords="128,5,283,32"/>
+<area shape="rect" id="node3" href="$angles_8f90.html#a18cbf3a18661418d0c41a53a33afae7a" title="deallocate shared memory pointers for angles parameter arrays " alt="" coords="120,56,291,83"/>
+<area shape="rect" id="node4" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="179,107,231,133"/>
+</map>

@@ -1,0 +1,113 @@
+\hypertarget{echgtrn3_8f90}{\section{echgtrn3.\-f90 File Reference}
+\label{echgtrn3_8f90}\index{echgtrn3.\-f90@{echgtrn3.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{echgtrn3_8f90_a31b1fc9908d7f7b475ee7cec6f32a923}{echgtrn3}
+\begin{DoxyCompactList}\small\item\em calculates the charge transfer energy; also partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{echgtrn3_8f90_aa8b2a531ef76b6597e9d4db504bf791a}{echgtrn3c}
+\begin{DoxyCompactList}\small\item\em calculates the charge transfer interaction energy and also partitions the energy among the atoms using a pairwise neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{echgtrn3_8f90_a31b1fc9908d7f7b475ee7cec6f32a923}{\index{echgtrn3.\-f90@{echgtrn3.\-f90}!echgtrn3@{echgtrn3}}
+\index{echgtrn3@{echgtrn3}!echgtrn3.f90@{echgtrn3.\-f90}}
+\subsubsection[{echgtrn3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine echgtrn3 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echgtrn3_8f90_a31b1fc9908d7f7b475ee7cec6f32a923}
+
+
+calculates the charge transfer energy; also partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file echgtrn3.\-f90.
+
+
+
+References echgtrn3c().
+
+
+
+Referenced by analysis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echgtrn3_8f90_a31b1fc9908d7f7b475ee7cec6f32a923_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echgtrn3_8f90_a31b1fc9908d7f7b475ee7cec6f32a923_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echgtrn3_8f90_aa8b2a531ef76b6597e9d4db504bf791a}{\index{echgtrn3.\-f90@{echgtrn3.\-f90}!echgtrn3c@{echgtrn3c}}
+\index{echgtrn3c@{echgtrn3c}!echgtrn3.f90@{echgtrn3.\-f90}}
+\subsubsection[{echgtrn3c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine echgtrn3c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echgtrn3_8f90_aa8b2a531ef76b6597e9d4db504bf791a}
+
+
+calculates the charge transfer interaction energy and also partitions the energy among the atoms using a pairwise neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 53 of file echgtrn3.\-f90.
+
+
+
+References groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by echgtrn3().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=262pt]{echgtrn3_8f90_aa8b2a531ef76b6597e9d4db504bf791a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echgtrn3_8f90_aa8b2a531ef76b6597e9d4db504bf791a_icgraph}
+\end{center}
+\end{figure}
+
+

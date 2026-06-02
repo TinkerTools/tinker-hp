@@ -1,0 +1,217 @@
+\hypertarget{empole1_8f90}{\section{empole1.\-f90 File Reference}
+\label{empole1_8f90}\index{empole1.\-f90@{empole1.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{empole1_8f90_aa5f2d4929ffdc8f3b0a8fcf08f997570}{empole1}
+\begin{DoxyCompactList}\small\item\em driver for calculation of the multipole and dipole polarization energy and derivatives with respect to Cartesian coordinates \end{DoxyCompactList}\item 
+subroutine \hyperlink{empole1_8f90_ae7f837789300e2a5a0cad9d0afaa329d}{empole1c}
+\begin{DoxyCompactList}\small\item\em calculates the multipole energy and derivatives with respect to Cartesian coordinates using particle mesh Ewald summation and a neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{empole1_8f90_a2da14ed6ab7d07726bd8f9cb4f63253c}{emrecip1}
+\begin{DoxyCompactList}\small\item\em evaluates the reciprocal space portion of the particle mesh Ewald summation energy and gradient due to multipoles \end{DoxyCompactList}\item 
+subroutine \hyperlink{empole1_8f90_a9fba221d73c4fd36cac4feba4ce9caca}{emreal1c}
+\begin{DoxyCompactList}\small\item\em evaluates the real space portion of the Ewald summation energy and gradient due to multipole interactions via a neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{empole1_8f90_aa5f2d4929ffdc8f3b0a8fcf08f997570}{\index{empole1.\-f90@{empole1.\-f90}!empole1@{empole1}}
+\index{empole1@{empole1}!empole1.f90@{empole1.\-f90}}
+\subsubsection[{empole1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine empole1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole1_8f90_aa5f2d4929ffdc8f3b0a8fcf08f997570}
+
+
+driver for calculation of the multipole and dipole polarization energy and derivatives with respect to Cartesian coordinates 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 14 of file empole1.\-f90.
+
+
+
+References empole1c().
+
+
+
+Referenced by gradient().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole1_8f90_aa5f2d4929ffdc8f3b0a8fcf08f997570_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole1_8f90_aa5f2d4929ffdc8f3b0a8fcf08f997570_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{empole1_8f90_ae7f837789300e2a5a0cad9d0afaa329d}{\index{empole1.\-f90@{empole1.\-f90}!empole1c@{empole1c}}
+\index{empole1c@{empole1c}!empole1.f90@{empole1.\-f90}}
+\subsubsection[{empole1c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine empole1c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole1_8f90_ae7f837789300e2a5a0cad9d0afaa329d}
+
+
+calculates the multipole energy and derivatives with respect to Cartesian coordinates using particle mesh Ewald summation and a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 51 of file empole1.\-f90.
+
+
+
+References chkpole(), commpot(), dcflux(), emreal1c(), emrecip1(), rotpole(), and torque().
+
+
+
+Referenced by empole1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole1_8f90_ae7f837789300e2a5a0cad9d0afaa329d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole1_8f90_ae7f837789300e2a5a0cad9d0afaa329d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{empole1_8f90_a9fba221d73c4fd36cac4feba4ce9caca}{\index{empole1.\-f90@{empole1.\-f90}!emreal1c@{emreal1c}}
+\index{emreal1c@{emreal1c}!empole1.f90@{empole1.\-f90}}
+\subsubsection[{emreal1c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine emreal1c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole1_8f90_a9fba221d73c4fd36cac4feba4ce9caca}
+
+
+evaluates the real space portion of the Ewald summation energy and gradient due to multipole interactions via a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 893 of file empole1.\-f90.
+
+
+
+References commpot(), commpotsum(), dampewald(), damppole(), dcflux(), erfc(), groups(), image(), switch(), switch\-\_\-respa(), and torque().
+
+
+
+Referenced by empole1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole1_8f90_a9fba221d73c4fd36cac4feba4ce9caca_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole1_8f90_a9fba221d73c4fd36cac4feba4ce9caca_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{empole1_8f90_a2da14ed6ab7d07726bd8f9cb4f63253c}{\index{empole1.\-f90@{empole1.\-f90}!emrecip1@{emrecip1}}
+\index{emrecip1@{emrecip1}!empole1.f90@{empole1.\-f90}}
+\subsubsection[{emrecip1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine emrecip1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole1_8f90_a2da14ed6ab7d07726bd8f9cb4f63253c}
+
+
+evaluates the reciprocal space portion of the particle mesh Ewald summation energy and gradient due to multipoles 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 362 of file empole1.\-f90.
+
+
+
+References bspline\-\_\-fill\-\_\-site(), cmp\-\_\-to\-\_\-fmp\-\_\-site(), commpot(), commpotrec(), dcflux(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), fphi\-\_\-mpole\-\_\-site(), fphi\-\_\-to\-\_\-cphi\-\_\-site(), grid\-\_\-mpole\-\_\-site(), and torque\-\_\-rec().
+
+
+
+Referenced by empole1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole1_8f90_a2da14ed6ab7d07726bd8f9cb4f63253c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole1_8f90_a2da14ed6ab7d07726bd8f9cb4f63253c_icgraph}
+\end{center}
+\end{figure}
+
+

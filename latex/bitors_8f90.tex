@@ -1,0 +1,172 @@
+\hypertarget{bitors_8f90}{\section{bitors.\-f90 File Reference}
+\label{bitors_8f90}\index{bitors.\-f90@{bitors.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{bitors_8f90_aaa1209643ad691a957f446e354f0d8e8}{bitors}
+\begin{DoxyCompactList}\small\item\em \char`\"{}bitors\char`\"{} finds the total number of bitorsions, pairs of overlapping dihedral angles, and the numbers of the five atoms defining each bitorsion \end{DoxyCompactList}\item 
+subroutine \hyperlink{bitors_8f90_aebdc9a600e6ec7a5abf34bd13e36d135}{bitors\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local bitors \end{DoxyCompactList}\item 
+subroutine \hyperlink{bitors_8f90_ac7dd2d6ea67ec8953262a906ae99afbe}{dealloc\-\_\-shared\-\_\-bitors}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for bitors parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{bitors_8f90_afc994a855c852d4417087e4f43274ffa}{alloc\-\_\-shared\-\_\-bitors}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for bitors parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{bitors_8f90_afc994a855c852d4417087e4f43274ffa}{\index{bitors.\-f90@{bitors.\-f90}!alloc\-\_\-shared\-\_\-bitors@{alloc\-\_\-shared\-\_\-bitors}}
+\index{alloc\-\_\-shared\-\_\-bitors@{alloc\-\_\-shared\-\_\-bitors}!bitors.f90@{bitors.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-bitors}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-bitors (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bitors_8f90_afc994a855c852d4417087e4f43274ffa}
+
+
+allocate shared memory pointers for bitors parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 187 of file bitors.\-f90.
+
+
+
+Referenced by bitors().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bitors_8f90_afc994a855c852d4417087e4f43274ffa_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bitors_8f90_aaa1209643ad691a957f446e354f0d8e8}{\index{bitors.\-f90@{bitors.\-f90}!bitors@{bitors}}
+\index{bitors@{bitors}!bitors.f90@{bitors.\-f90}}
+\subsubsection[{bitors}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bitors (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bitors_8f90_aaa1209643ad691a957f446e354f0d8e8}
+
+
+\char`\"{}bitors\char`\"{} finds the total number of bitorsions, pairs of overlapping dihedral angles, and the numbers of the five atoms defining each bitorsion 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file bitors.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-bitors(), dealloc\-\_\-shared\-\_\-bitors(), and fatal().
+
+
+
+Referenced by mechanic(), and rings().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=284pt]{bitors_8f90_aaa1209643ad691a957f446e354f0d8e8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bitors_8f90_aaa1209643ad691a957f446e354f0d8e8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bitors_8f90_aebdc9a600e6ec7a5abf34bd13e36d135}{\index{bitors.\-f90@{bitors.\-f90}!bitors\-\_\-update@{bitors\-\_\-update}}
+\index{bitors\-\_\-update@{bitors\-\_\-update}!bitors.f90@{bitors.\-f90}}
+\subsubsection[{bitors\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bitors\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bitors_8f90_aebdc9a600e6ec7a5abf34bd13e36d135}
+
+
+update local bitors 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 103 of file bitors.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bitors_8f90_aebdc9a600e6ec7a5abf34bd13e36d135_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bitors_8f90_ac7dd2d6ea67ec8953262a906ae99afbe}{\index{bitors.\-f90@{bitors.\-f90}!dealloc\-\_\-shared\-\_\-bitors@{dealloc\-\_\-shared\-\_\-bitors}}
+\index{dealloc\-\_\-shared\-\_\-bitors@{dealloc\-\_\-shared\-\_\-bitors}!bitors.f90@{bitors.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-bitors}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-bitors (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bitors_8f90_ac7dd2d6ea67ec8953262a906ae99afbe}
+
+
+deallocate shared memory pointers for bitors parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 152 of file bitors.\-f90.
+
+
+
+Referenced by bitors(), and final().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{bitors_8f90_ac7dd2d6ea67ec8953262a906ae99afbe_icgraph}
+\end{center}
+\end{figure}
+
+

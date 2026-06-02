@@ -1,0 +1,307 @@
+\hypertarget{classfreeze}{\section{freeze Module Reference}
+\label{classfreeze}\index{freeze@{freeze}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classfreeze_a9e857107771fcd2a9f3daebff0b73e98}{nrat}
+\begin{DoxyCompactList}\small\item\em number of holonomic distance constraints to apply \end{DoxyCompactList}\item 
+integer \hyperlink{classfreeze_ad3fc5db048f9d03dbe422ebd1c656f40}{nratloc}
+\begin{DoxyCompactList}\small\item\em number of local constraints \end{DoxyCompactList}\item 
+integer \hyperlink{classfreeze_a1afad11947f026c8f2d2203203f4adf5}{nratbloc}
+\begin{DoxyCompactList}\small\item\em number of local constraints + neighboring constraints \end{DoxyCompactList}\item 
+integer \hyperlink{classfreeze_af6cca7e43f620ad05cae4791a3217687}{winirat}
+\begin{DoxyCompactList}\small\item\em window object corresponding to irat \end{DoxyCompactList}\item 
+integer \hyperlink{classfreeze_ab2fccc00f356918f860e43c2d1ce75d1}{winiratx}
+\begin{DoxyCompactList}\small\item\em window object corresponding to iratx \end{DoxyCompactList}\item 
+integer \hyperlink{classfreeze_aa3149a0168a82518be41d200192edcdb}{winratx}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ratx \end{DoxyCompactList}\item 
+integer \hyperlink{classfreeze_a6d6f5dce334fa4a1acea8252e22392d1}{winkratx}
+\begin{DoxyCompactList}\small\item\em window object corresponding to kratx \end{DoxyCompactList}\item 
+integer \hyperlink{classfreeze_ae8561a49dbd4f2ca81de976fe32e20d0}{winkrat}
+\begin{DoxyCompactList}\small\item\em window object corresponding to krat \end{DoxyCompactList}\item 
+integer \hyperlink{classfreeze_aa821a95ce853304c4fa818234dc51d22}{winratimage}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ratimage \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), pointer \hyperlink{classfreeze_a9443d6b563ebf61724437362386a6a16}{irat}
+\begin{DoxyCompactList}\small\item\em atom numbers of atoms in a holonomic constraint \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classfreeze_af92fddc0d1311be14c0235f71949701c}{iratx}
+\begin{DoxyCompactList}\small\item\em group number of group in a holonomic constraint \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classfreeze_a9e149f0f2792e501695dc2e1e1680eaf}{kratx}
+\begin{DoxyCompactList}\small\item\em spatial constraint type (1=plane, 2=line, 3=point) \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfreeze_a03593d28905d3b9be544fe1ff812476c}{buflenrat1}
+\begin{DoxyCompactList}\small\item\em length of buffer of constraints to send at each rattle iteration \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfreeze_a499d4830e088de939ad8fdb230bfe30c}{buflenrat2}
+\begin{DoxyCompactList}\small\item\em length of buffer of constraints to receive at each rattle iteration \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfreeze_abf03e0ad8c7616beb64a0246d4ff5f27}{bufbegrat1}
+\begin{DoxyCompactList}\small\item\em first indexes of buffer of constraints to send at each rattle iteration \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfreeze_abae423316a32486c4f872f881ee1159e}{bufbegrat2}
+\begin{DoxyCompactList}\small\item\em first indexes of buffer of constraints to receive at each rattle iteration \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfreeze_aee10fb1491d873aef4531b069c5736a1}{bufrat1}
+\begin{DoxyCompactList}\small\item\em list of indexes of buffer of constraints to send at each rattle iteration \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfreeze_a5a0cbbf569f96d7c28eaa7990e99b858}{bufrat2}
+\begin{DoxyCompactList}\small\item\em list of indexes of buffer of constraints to receive at each rattle iteration \end{DoxyCompactList}\item 
+logical, dimension(\-:), pointer \hyperlink{classfreeze_a07586f65c5462b97a2f1b6a9ff6a0616}{ratimage}
+\begin{DoxyCompactList}\small\item\em flag to use minimum image for holonomic constraint \end{DoxyCompactList}\item 
+logical \hyperlink{classfreeze_a2f54ed0af4a00111bc9bebd6f458247f}{use\-\_\-rattle}
+\begin{DoxyCompactList}\small\item\em logical flag to set use of holonomic contraints \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classfreeze_a04f100032ce74e94a2c4845299dc9f6b}{krat}
+\begin{DoxyCompactList}\small\item\em ideal distance value for holonomic constraint \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classfreeze_aa4d3247ab1f305e1059bd93bbb33e394}{rateps}
+\begin{DoxyCompactList}\small\item\em convergence tolerance for holonomic constraints \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-freeze.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classfreeze_abf03e0ad8c7616beb64a0246d4ff5f27}{\index{freeze@{freeze}!bufbegrat1@{bufbegrat1}}
+\index{bufbegrat1@{bufbegrat1}!freeze@{freeze}}
+\subsubsection[{bufbegrat1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable freeze\-::bufbegrat1}}\label{classfreeze_abf03e0ad8c7616beb64a0246d4ff5f27}
+
+
+first indexes of buffer of constraints to send at each rattle iteration 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_abae423316a32486c4f872f881ee1159e}{\index{freeze@{freeze}!bufbegrat2@{bufbegrat2}}
+\index{bufbegrat2@{bufbegrat2}!freeze@{freeze}}
+\subsubsection[{bufbegrat2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable freeze\-::bufbegrat2}}\label{classfreeze_abae423316a32486c4f872f881ee1159e}
+
+
+first indexes of buffer of constraints to receive at each rattle iteration 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a03593d28905d3b9be544fe1ff812476c}{\index{freeze@{freeze}!buflenrat1@{buflenrat1}}
+\index{buflenrat1@{buflenrat1}!freeze@{freeze}}
+\subsubsection[{buflenrat1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable freeze\-::buflenrat1}}\label{classfreeze_a03593d28905d3b9be544fe1ff812476c}
+
+
+length of buffer of constraints to send at each rattle iteration 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a499d4830e088de939ad8fdb230bfe30c}{\index{freeze@{freeze}!buflenrat2@{buflenrat2}}
+\index{buflenrat2@{buflenrat2}!freeze@{freeze}}
+\subsubsection[{buflenrat2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable freeze\-::buflenrat2}}\label{classfreeze_a499d4830e088de939ad8fdb230bfe30c}
+
+
+length of buffer of constraints to receive at each rattle iteration 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_aee10fb1491d873aef4531b069c5736a1}{\index{freeze@{freeze}!bufrat1@{bufrat1}}
+\index{bufrat1@{bufrat1}!freeze@{freeze}}
+\subsubsection[{bufrat1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable freeze\-::bufrat1}}\label{classfreeze_aee10fb1491d873aef4531b069c5736a1}
+
+
+list of indexes of buffer of constraints to send at each rattle iteration 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a5a0cbbf569f96d7c28eaa7990e99b858}{\index{freeze@{freeze}!bufrat2@{bufrat2}}
+\index{bufrat2@{bufrat2}!freeze@{freeze}}
+\subsubsection[{bufrat2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable freeze\-::bufrat2}}\label{classfreeze_a5a0cbbf569f96d7c28eaa7990e99b858}
+
+
+list of indexes of buffer of constraints to receive at each rattle iteration 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a9443d6b563ebf61724437362386a6a16}{\index{freeze@{freeze}!irat@{irat}}
+\index{irat@{irat}!freeze@{freeze}}
+\subsubsection[{irat}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), pointer freeze\-::irat}}\label{classfreeze_a9443d6b563ebf61724437362386a6a16}
+
+
+atom numbers of atoms in a holonomic constraint 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_af92fddc0d1311be14c0235f71949701c}{\index{freeze@{freeze}!iratx@{iratx}}
+\index{iratx@{iratx}!freeze@{freeze}}
+\subsubsection[{iratx}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer freeze\-::iratx}}\label{classfreeze_af92fddc0d1311be14c0235f71949701c}
+
+
+group number of group in a holonomic constraint 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a04f100032ce74e94a2c4845299dc9f6b}{\index{freeze@{freeze}!krat@{krat}}
+\index{krat@{krat}!freeze@{freeze}}
+\subsubsection[{krat}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer freeze\-::krat}}\label{classfreeze_a04f100032ce74e94a2c4845299dc9f6b}
+
+
+ideal distance value for holonomic constraint 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a9e149f0f2792e501695dc2e1e1680eaf}{\index{freeze@{freeze}!kratx@{kratx}}
+\index{kratx@{kratx}!freeze@{freeze}}
+\subsubsection[{kratx}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer freeze\-::kratx}}\label{classfreeze_a9e149f0f2792e501695dc2e1e1680eaf}
+
+
+spatial constraint type (1=plane, 2=line, 3=point) 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a9e857107771fcd2a9f3daebff0b73e98}{\index{freeze@{freeze}!nrat@{nrat}}
+\index{nrat@{nrat}!freeze@{freeze}}
+\subsubsection[{nrat}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::nrat}}\label{classfreeze_a9e857107771fcd2a9f3daebff0b73e98}
+
+
+number of holonomic distance constraints to apply 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a1afad11947f026c8f2d2203203f4adf5}{\index{freeze@{freeze}!nratbloc@{nratbloc}}
+\index{nratbloc@{nratbloc}!freeze@{freeze}}
+\subsubsection[{nratbloc}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::nratbloc}}\label{classfreeze_a1afad11947f026c8f2d2203203f4adf5}
+
+
+number of local constraints + neighboring constraints 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_ad3fc5db048f9d03dbe422ebd1c656f40}{\index{freeze@{freeze}!nratloc@{nratloc}}
+\index{nratloc@{nratloc}!freeze@{freeze}}
+\subsubsection[{nratloc}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::nratloc}}\label{classfreeze_ad3fc5db048f9d03dbe422ebd1c656f40}
+
+
+number of local constraints 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_aa4d3247ab1f305e1059bd93bbb33e394}{\index{freeze@{freeze}!rateps@{rateps}}
+\index{rateps@{rateps}!freeze@{freeze}}
+\subsubsection[{rateps}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 freeze\-::rateps}}\label{classfreeze_aa4d3247ab1f305e1059bd93bbb33e394}
+
+
+convergence tolerance for holonomic constraints 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a07586f65c5462b97a2f1b6a9ff6a0616}{\index{freeze@{freeze}!ratimage@{ratimage}}
+\index{ratimage@{ratimage}!freeze@{freeze}}
+\subsubsection[{ratimage}]{\setlength{\rightskip}{0pt plus 5cm}logical, dimension(\-:), pointer freeze\-::ratimage}}\label{classfreeze_a07586f65c5462b97a2f1b6a9ff6a0616}
+
+
+flag to use minimum image for holonomic constraint 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a2f54ed0af4a00111bc9bebd6f458247f}{\index{freeze@{freeze}!use\-\_\-rattle@{use\-\_\-rattle}}
+\index{use\-\_\-rattle@{use\-\_\-rattle}!freeze@{freeze}}
+\subsubsection[{use\-\_\-rattle}]{\setlength{\rightskip}{0pt plus 5cm}logical freeze\-::use\-\_\-rattle}}\label{classfreeze_a2f54ed0af4a00111bc9bebd6f458247f}
+
+
+logical flag to set use of holonomic contraints 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_af6cca7e43f620ad05cae4791a3217687}{\index{freeze@{freeze}!winirat@{winirat}}
+\index{winirat@{winirat}!freeze@{freeze}}
+\subsubsection[{winirat}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::winirat}}\label{classfreeze_af6cca7e43f620ad05cae4791a3217687}
+
+
+window object corresponding to irat 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_ab2fccc00f356918f860e43c2d1ce75d1}{\index{freeze@{freeze}!winiratx@{winiratx}}
+\index{winiratx@{winiratx}!freeze@{freeze}}
+\subsubsection[{winiratx}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::winiratx}}\label{classfreeze_ab2fccc00f356918f860e43c2d1ce75d1}
+
+
+window object corresponding to iratx 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_ae8561a49dbd4f2ca81de976fe32e20d0}{\index{freeze@{freeze}!winkrat@{winkrat}}
+\index{winkrat@{winkrat}!freeze@{freeze}}
+\subsubsection[{winkrat}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::winkrat}}\label{classfreeze_ae8561a49dbd4f2ca81de976fe32e20d0}
+
+
+window object corresponding to krat 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_a6d6f5dce334fa4a1acea8252e22392d1}{\index{freeze@{freeze}!winkratx@{winkratx}}
+\index{winkratx@{winkratx}!freeze@{freeze}}
+\subsubsection[{winkratx}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::winkratx}}\label{classfreeze_a6d6f5dce334fa4a1acea8252e22392d1}
+
+
+window object corresponding to kratx 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_aa821a95ce853304c4fa818234dc51d22}{\index{freeze@{freeze}!winratimage@{winratimage}}
+\index{winratimage@{winratimage}!freeze@{freeze}}
+\subsubsection[{winratimage}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::winratimage}}\label{classfreeze_aa821a95ce853304c4fa818234dc51d22}
+
+
+window object corresponding to ratimage 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-freeze.\-f90.
+
+\hypertarget{classfreeze_aa3149a0168a82518be41d200192edcdb}{\index{freeze@{freeze}!winratx@{winratx}}
+\index{winratx@{winratx}!freeze@{freeze}}
+\subsubsection[{winratx}]{\setlength{\rightskip}{0pt plus 5cm}integer freeze\-::winratx}}\label{classfreeze_aa3149a0168a82518be41d200192edcdb}
+
+
+window object corresponding to ratx 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-freeze.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__freeze_8f90}{M\-O\-D\-\_\-freeze.\-f90}\end{DoxyCompactItemize}

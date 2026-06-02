@@ -1,0 +1,165 @@
+\hypertarget{kbond_8f90}{\section{kbond.\-f90 File Reference}
+\label{kbond_8f90}\index{kbond.\-f90@{kbond.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kbond_8f90_aa5a1eb544c5915e55ad3b22c7d89cbbc}{kbond}
+\begin{DoxyCompactList}\small\item\em assigns a force constant and ideal bond length to each bond in the structure and processes any new or changed parameter values \end{DoxyCompactList}\item 
+subroutine \hyperlink{kbond_8f90_a80debef48c6174e56761ee9d79e7f183}{keneg}
+\begin{DoxyCompactList}\small\item\em applies primary and secondary electronegativity bond length corrections to applicable bond parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kbond_8f90_a7a483b129ab3a6e5363fdc6d0c5a331d}{kbondm}
+\begin{DoxyCompactList}\small\item\em assigns a force constant and ideal bond length to each bond according to the Merck Molecular Force Field (M\-M\-F\-F) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kbond_8f90_aa5a1eb544c5915e55ad3b22c7d89cbbc}{\index{kbond.\-f90@{kbond.\-f90}!kbond@{kbond}}
+\index{kbond@{kbond}!kbond.f90@{kbond.\-f90}}
+\subsubsection[{kbond}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kbond (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kbond_8f90_aa5a1eb544c5915e55ad3b22c7d89cbbc}
+
+
+assigns a force constant and ideal bond length to each bond in the structure and processes any new or changed parameter values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file kbond.\-f90.
+
+
+
+References chkring(), gettext(), kbondm(), keneg(), numeral(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kbond_8f90_aa5a1eb544c5915e55ad3b22c7d89cbbc_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kbond_8f90_aa5a1eb544c5915e55ad3b22c7d89cbbc_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kbond_8f90_a7a483b129ab3a6e5363fdc6d0c5a331d}{\index{kbond.\-f90@{kbond.\-f90}!kbondm@{kbondm}}
+\index{kbondm@{kbondm}!kbond.f90@{kbond.\-f90}}
+\subsubsection[{kbondm}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kbondm (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kbond_8f90_a7a483b129ab3a6e5363fdc6d0c5a331d}
+
+
+assigns a force constant and ideal bond length to each bond according to the Merck Molecular Force Field (M\-M\-F\-F) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 693 of file kbond.\-f90.
+
+
+
+References gettext(), and upcase().
+
+
+
+Referenced by kbond().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kbond_8f90_a7a483b129ab3a6e5363fdc6d0c5a331d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kbond_8f90_a7a483b129ab3a6e5363fdc6d0c5a331d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kbond_8f90_a80debef48c6174e56761ee9d79e7f183}{\index{kbond.\-f90@{kbond.\-f90}!keneg@{keneg}}
+\index{keneg@{keneg}!kbond.f90@{kbond.\-f90}}
+\subsubsection[{keneg}]{\setlength{\rightskip}{0pt plus 5cm}subroutine keneg (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kbond_8f90_a80debef48c6174e56761ee9d79e7f183}
+
+
+applies primary and secondary electronegativity bond length corrections to applicable bond parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 490 of file kbond.\-f90.
+
+
+
+References gettext(), numeral(), and upcase().
+
+
+
+Referenced by kbond().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kbond_8f90_a80debef48c6174e56761ee9d79e7f183_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kbond_8f90_a80debef48c6174e56761ee9d79e7f183_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,64 @@
+\hypertarget{verlet_8f90}{\section{verlet.\-f90 File Reference}
+\label{verlet_8f90}\index{verlet.\-f90@{verlet.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{verlet_8f90_adc85925ca8af0efc52d80fe31a74bfaa}{verlet} (istep, dt)
+\begin{DoxyCompactList}\small\item\em performs a single molecular dynamics time step via the velocity Verlet multistep recursion formula \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{verlet_8f90_adc85925ca8af0efc52d80fe31a74bfaa}{\index{verlet.\-f90@{verlet.\-f90}!verlet@{verlet}}
+\index{verlet@{verlet}!verlet.f90@{verlet.\-f90}}
+\subsubsection[{verlet}]{\setlength{\rightskip}{0pt plus 5cm}subroutine verlet (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{real$\ast$8}]{dt}
+\end{DoxyParamCaption}
+)}}\label{verlet_8f90_adc85925ca8af0efc52d80fe31a74bfaa}
+
+
+performs a single molecular dynamics time step via the velocity Verlet multistep recursion formula 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & length of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 22 of file verlet.\-f90.
+
+
+
+References allocstep(), commforces(), commpos(), commposrec(), spectra\-::compute\-\_\-dipole(), colvarproxy\-\_\-tinkerhp\-::dt(), gradient(), info\-\_\-energy(), mdrest(), mdsave(), mdstat(), mechanic\-\_\-up\-\_\-para(), nblist(), pressure(), pressure2(), rattle(), rattle2(), reassign(), reassignpme(), reduceen(), reinitnl(), spectra\-::save\-\_\-dipole\-\_\-traj(), temper(), and temper2().
+
+
+
+Referenced by dynamic\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{verlet_8f90_adc85925ca8af0efc52d80fe31a74bfaa_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=336pt]{verlet_8f90_adc85925ca8af0efc52d80fe31a74bfaa_icgraph}
+\end{center}
+\end{figure}
+
+

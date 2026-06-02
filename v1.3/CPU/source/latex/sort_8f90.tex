@@ -1,0 +1,318 @@
+\hypertarget{sort_8f90}{\section{sort.\-f90 File Reference}
+\label{sort_8f90}\index{sort.\-f90@{sort.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{sort_8f90_ac872b907d2d2229369115872f5c65c17}{sort} (n, list)
+\begin{DoxyCompactList}\small\item\em takes an input list of integers and sorts it into ascending order using the Heapsort algorithm \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_a3ca4528b5255d3b3d99ec6721d77ec5d}{sort2} (n, list, key)
+\begin{DoxyCompactList}\small\item\em takes an input list of reals and sorts it into ascending order using the Heapsort algorithm; it also returns a key into the original ordering \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_a4b2d0e93ed9d5e3481d5123a3a0af0cf}{sort3} (n, list, key)
+\begin{DoxyCompactList}\small\item\em takes an input list of integers and sorts it into ascending order using the Heapsort algorithm; it also returns a key into the original ordering \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_ac8f2b651f06c72ef68145ef0c3b91d20}{sort4} (n, list)
+\begin{DoxyCompactList}\small\item\em takes an input list of integers and sorts it into ascending absolute value using the Heapsort algorithm \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_aec31183a09aca5cf127a21a753b44c14}{sort5} (n, list, m)
+\begin{DoxyCompactList}\small\item\em takes an input list of integers and sorts it into ascending order based on each value modulo \char`\"{}m\char`\"{} \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_adc7e677a402e152c5483ea60c65c196a}{sort6} (n, list)
+\begin{DoxyCompactList}\small\item\em takes an input list of character strings and sorts it into alphabetical order using the Heapsort algorithm \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_aa252d15b818ba60d1fe6dee8c84772db}{sort7} (n, list, key)
+\begin{DoxyCompactList}\small\item\em takes an input list of character strings and sorts it into alphabetical order using the Heapsort algorithm; it also returns a key into the original ordering \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_aa1b8489b571bffe84c62542ebf6503e8}{sort8} (n, list)
+\begin{DoxyCompactList}\small\item\em takes an input list of integers and sorts it into ascending order using the Heapsort algorithm, duplicate values are removed from the final sorted list \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_a492c70572a53ffe08e238501008c78f1}{sort9} (n, list)
+\begin{DoxyCompactList}\small\item\em takes an input list of reals and sorts it into ascending order using the Heapsort algorithm, duplicate values are removed from the final sorted list \end{DoxyCompactList}\item 
+subroutine \hyperlink{sort_8f90_a42df4ff0f3d85f8878a4376b7be57391}{sort10} (n, list)
+\begin{DoxyCompactList}\small\item\em takes an input list of character strings and sorts it into alphabetical order using the Heapsort algorithm, duplicate values are removed from the final sorted list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{sort_8f90_ac872b907d2d2229369115872f5c65c17}{\index{sort.\-f90@{sort.\-f90}!sort@{sort}}
+\index{sort@{sort}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{integer, dimension($\ast$)}]{list}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_ac872b907d2d2229369115872f5c65c17}
+
+
+takes an input list of integers and sorts it into ascending order using the Heapsort algorithm 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file sort.\-f90.
+
+
+
+Referenced by attach(), cluster(), ddnumber(), molecule(), polargrp(), and readxyz().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{sort_8f90_ac872b907d2d2229369115872f5c65c17_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{sort_8f90_a42df4ff0f3d85f8878a4376b7be57391}{\index{sort.\-f90@{sort.\-f90}!sort10@{sort10}}
+\index{sort10@{sort10}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort10}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort10 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{character$\ast$($\ast$), dimension($\ast$)}]{list}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_a42df4ff0f3d85f8878a4376b7be57391}
+
+
+takes an input list of character strings and sorts it into alphabetical order using the Heapsort algorithm, duplicate values are removed from the final sorted list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 648 of file sort.\-f90.
+
+\hypertarget{sort_8f90_a3ca4528b5255d3b3d99ec6721d77ec5d}{\index{sort.\-f90@{sort.\-f90}!sort2@{sort2}}
+\index{sort2@{sort2}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort2 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension($\ast$)}]{list, }
+\item[{integer, dimension($\ast$)}]{key}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_a3ca4528b5255d3b3d99ec6721d77ec5d}
+
+
+takes an input list of reals and sorts it into ascending order using the Heapsort algorithm; it also returns a key into the original ordering 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 82 of file sort.\-f90.
+
+
+
+Referenced by ddnumber(), and pcluster().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{sort_8f90_a3ca4528b5255d3b3d99ec6721d77ec5d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{sort_8f90_a4b2d0e93ed9d5e3481d5123a3a0af0cf}{\index{sort.\-f90@{sort.\-f90}!sort3@{sort3}}
+\index{sort3@{sort3}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort3 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{integer, dimension($\ast$)}]{list, }
+\item[{integer, dimension($\ast$)}]{key}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_a4b2d0e93ed9d5e3481d5123a3a0af0cf}
+
+
+takes an input list of integers and sorts it into ascending order using the Heapsort algorithm; it also returns a key into the original ordering 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 157 of file sort.\-f90.
+
+
+
+Referenced by cluster(), and molecule().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{sort_8f90_a4b2d0e93ed9d5e3481d5123a3a0af0cf_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{sort_8f90_ac8f2b651f06c72ef68145ef0c3b91d20}{\index{sort.\-f90@{sort.\-f90}!sort4@{sort4}}
+\index{sort4@{sort4}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort4}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort4 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{integer, dimension($\ast$)}]{list}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_ac8f2b651f06c72ef68145ef0c3b91d20}
+
+
+takes an input list of integers and sorts it into ascending absolute value using the Heapsort algorithm 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 231 of file sort.\-f90.
+
+\hypertarget{sort_8f90_aec31183a09aca5cf127a21a753b44c14}{\index{sort.\-f90@{sort.\-f90}!sort5@{sort5}}
+\index{sort5@{sort5}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort5}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort5 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{integer, dimension($\ast$)}]{list, }
+\item[{integer}]{m}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_aec31183a09aca5cf127a21a753b44c14}
+
+
+takes an input list of integers and sorts it into ascending order based on each value modulo \char`\"{}m\char`\"{} 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 291 of file sort.\-f90.
+
+\hypertarget{sort_8f90_adc7e677a402e152c5483ea60c65c196a}{\index{sort.\-f90@{sort.\-f90}!sort6@{sort6}}
+\index{sort6@{sort6}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort6}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort6 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{character$\ast$($\ast$), dimension($\ast$)}]{list}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_adc7e677a402e152c5483ea60c65c196a}
+
+
+takes an input list of character strings and sorts it into alphabetical order using the Heapsort algorithm 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 364 of file sort.\-f90.
+
+\hypertarget{sort_8f90_aa252d15b818ba60d1fe6dee8c84772db}{\index{sort.\-f90@{sort.\-f90}!sort7@{sort7}}
+\index{sort7@{sort7}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort7}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort7 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{character$\ast$($\ast$), dimension($\ast$)}]{list, }
+\item[{integer, dimension($\ast$)}]{key}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_aa252d15b818ba60d1fe6dee8c84772db}
+
+
+takes an input list of character strings and sorts it into alphabetical order using the Heapsort algorithm; it also returns a key into the original ordering 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 426 of file sort.\-f90.
+
+\hypertarget{sort_8f90_aa1b8489b571bffe84c62542ebf6503e8}{\index{sort.\-f90@{sort.\-f90}!sort8@{sort8}}
+\index{sort8@{sort8}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort8}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort8 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{integer, dimension($\ast$)}]{list}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_aa1b8489b571bffe84c62542ebf6503e8}
+
+
+takes an input list of integers and sorts it into ascending order using the Heapsort algorithm, duplicate values are removed from the final sorted list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 502 of file sort.\-f90.
+
+
+
+Referenced by kpolar(), and polargrp().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{sort_8f90_aa1b8489b571bffe84c62542ebf6503e8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{sort_8f90_a492c70572a53ffe08e238501008c78f1}{\index{sort.\-f90@{sort.\-f90}!sort9@{sort9}}
+\index{sort9@{sort9}!sort.f90@{sort.\-f90}}
+\subsubsection[{sort9}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sort9 (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension($\ast$)}]{list}
+\end{DoxyParamCaption}
+)}}\label{sort_8f90_a492c70572a53ffe08e238501008c78f1}
+
+
+takes an input list of reals and sorts it into ascending order using the Heapsort algorithm, duplicate values are removed from the final sorted list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 575 of file sort.\-f90.
+
+
+
+Referenced by ktortor(), and readprm().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{sort_8f90_a492c70572a53ffe08e238501008c78f1_icgraph}
+\end{center}
+\end{figure}
+
+

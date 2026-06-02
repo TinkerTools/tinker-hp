@@ -1,0 +1,681 @@
+\hypertarget{classutilbaoabpi}{\section{utilbaoabpi Module Reference}
+\label{classutilbaoabpi}\index{utilbaoabpi@{utilbaoabpi}}
+}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{classutilbaoabpi_ace686c3ddc4f4b073ac6dc55a5ea8383}{apply\-\_\-b\-\_\-pi} (polymer, dt)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a4d075e6d26d3a08b49958c8db2bb3c71}{apply\-\_\-aoa\-\_\-pi} (polymer, dt)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a71915f5453c7ad7db3deda6b5f77ed18}{apply\-\_\-a\-\_\-cayhalf} (polymer, dt)
+\item 
+subroutine \hyperlink{classutilbaoabpi_ad601ff511430837292a9a3eb3e121aa7}{apply\-\_\-a\-\_\-fluct} (polymer, dt)
+\item 
+subroutine \hyperlink{classutilbaoabpi_aa0e6732f79e06a0a1c70795a3a748b70}{compute\-\_\-gradslow\-\_\-centroid} (epot, derivs\-\_\-, vir\-\_\-, only\-\_\-long, remove\-\_\-polarshort)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a38104b3d22cd8ea3f7510b8a678b1bb6}{compute\-\_\-grad\-\_\-beads} (epot, derivs\-\_\-, vir\-\_\-, polymer, do\-\_\-long, do\-\_\-int, do\-\_\-short, compute\-\_\-polar)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a5f8850d944b008537872cb2f777f207a}{centroid\-\_\-force\-\_\-corrections} (polymer)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a9e785f8d8522eb29bf90a658729fbf1e}{colvars\-\_\-run\-\_\-pi} (polymer)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a4407ec4cbd0f80a26c05e6d96b888e20}{prepare\-\_\-colvars\-\_\-pi} (polymer)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a499bdce266930ac702dc09e25521901c}{distrib\-\_\-colvars\-\_\-pi} (polymer)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a6413bbe678f95995e6f2ff62da6fab27}{plangevinpi} (polymer, dt, istep, bloc)
+\item 
+subroutine \hyperlink{classutilbaoabpi_a5856b428adb9701f3e105adf702160a3}{pscalepi} (polymer, dt, istep)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable, save \hyperlink{classutilbaoabpi_adac13aaebc59c9f65c4db8be552657ba}{derivs}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable, save \hyperlink{classutilbaoabpi_aa4c57851112377f82b13361a27277120}{derivs\-\_\-ctr}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable, save \hyperlink{classutilbaoabpi_a67505f362b7c39accc88c2eac1933519}{derivs\-\_\-centroid}
+\item 
+real $\ast$8, dimension(\-:,\-:,\-:), \\*
+allocatable, save \hyperlink{classutilbaoabpi_a33c76ac8241feb8e9c8669731a605d65}{derivsrec}
+\item 
+real $\ast$8 \hyperlink{classutilbaoabpi_a9caab6874b7ea252f61f3a9ff137854a}{eslow}
+\item 
+real $\ast$8, dimension(3, 3) \hyperlink{classutilbaoabpi_a0771b4015356ff89c136bdbe85d441c4}{vir\-\_\-ctr}
+\item 
+real(8), save \hyperlink{classutilbaoabpi_af5bf31b45a8a5e575131e62483250ffb}{timepush} =0.d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_a6914943535cb774d1fdecae40d657e86}{timeinit} =0.d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_a18904bbe7e1c94539761412da71d7f29}{timereass} =0.d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_a5c70fdf8f4327a097c87c582900e7c4b}{timegradpi} =0.d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_a22e7f67ae4c1ea38f973f74a6630d52a}{timesavenl} =0.d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_a50d3e390c7aa386e779ebdf2f3594903}{timecom} =0.d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_a53b19fe49bb28da1a1e5b8c6661f4cc7}{timecontract} =0d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_ad957e98b45d393c84c8e00a86887d2b7}{timegradfastpi} =0.d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_afe30853c7b0c348013c9d7ea86aa53e0}{timeobs} =0d0
+\item 
+real(8), save \hyperlink{classutilbaoabpi_a2852b9f4bf70cdfb023ae00de30fb391}{timeaoa} =0d0
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 23 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+\subsection{Member Function/\-Subroutine Documentation}
+\hypertarget{classutilbaoabpi_a71915f5453c7ad7db3deda6b5f77ed18}{\index{utilbaoabpi@{utilbaoabpi}!apply\-\_\-a\-\_\-cayhalf@{apply\-\_\-a\-\_\-cayhalf}}
+\index{apply\-\_\-a\-\_\-cayhalf@{apply\-\_\-a\-\_\-cayhalf}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{apply\-\_\-a\-\_\-cayhalf}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::apply\-\_\-a\-\_\-cayhalf (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a71915f5453c7ad7db3deda6b5f77ed18}
+
+
+Definition at line 181 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by apply\-\_\-aoa\-\_\-pi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a71915f5453c7ad7db3deda6b5f77ed18_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a71915f5453c7ad7db3deda6b5f77ed18_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_ad601ff511430837292a9a3eb3e121aa7}{\index{utilbaoabpi@{utilbaoabpi}!apply\-\_\-a\-\_\-fluct@{apply\-\_\-a\-\_\-fluct}}
+\index{apply\-\_\-a\-\_\-fluct@{apply\-\_\-a\-\_\-fluct}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{apply\-\_\-a\-\_\-fluct}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::apply\-\_\-a\-\_\-fluct (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_ad601ff511430837292a9a3eb3e121aa7}
+
+
+Definition at line 216 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by apply\-\_\-aoa\-\_\-pi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_ad601ff511430837292a9a3eb3e121aa7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_ad601ff511430837292a9a3eb3e121aa7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_a4d075e6d26d3a08b49958c8db2bb3c71}{\index{utilbaoabpi@{utilbaoabpi}!apply\-\_\-aoa\-\_\-pi@{apply\-\_\-aoa\-\_\-pi}}
+\index{apply\-\_\-aoa\-\_\-pi@{apply\-\_\-aoa\-\_\-pi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{apply\-\_\-aoa\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::apply\-\_\-aoa\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a4d075e6d26d3a08b49958c8db2bb3c71}
+
+
+Definition at line 60 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References apply\-\_\-a\-\_\-cayhalf(), apply\-\_\-a\-\_\-fluct(), colvarproxy\-\_\-tinkerhp\-::dt(), qtb\-::get\-\_\-qtb\-\_\-compteur(), normal(), and qtb\-::qtb\-\_\-update\-\_\-state().
+
+
+
+Referenced by baoabpi(), and baoabrespapi\-\_\-fast().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a4d075e6d26d3a08b49958c8db2bb3c71_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a4d075e6d26d3a08b49958c8db2bb3c71_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_ace686c3ddc4f4b073ac6dc55a5ea8383}{\index{utilbaoabpi@{utilbaoabpi}!apply\-\_\-b\-\_\-pi@{apply\-\_\-b\-\_\-pi}}
+\index{apply\-\_\-b\-\_\-pi@{apply\-\_\-b\-\_\-pi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{apply\-\_\-b\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::apply\-\_\-b\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_ace686c3ddc4f4b073ac6dc55a5ea8383}
+
+
+Definition at line 40 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by baoabpi(), baoabrespapi(), and baoabrespapi\-\_\-fast().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_ace686c3ddc4f4b073ac6dc55a5ea8383_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_ace686c3ddc4f4b073ac6dc55a5ea8383_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_a5f8850d944b008537872cb2f777f207a}{\index{utilbaoabpi@{utilbaoabpi}!centroid\-\_\-force\-\_\-corrections@{centroid\-\_\-force\-\_\-corrections}}
+\index{centroid\-\_\-force\-\_\-corrections@{centroid\-\_\-force\-\_\-corrections}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{centroid\-\_\-force\-\_\-corrections}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::centroid\-\_\-force\-\_\-corrections (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a5f8850d944b008537872cb2f777f207a}
+
+
+Definition at line 851 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References colvars\-\_\-run\-\_\-pi().
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a5f8850d944b008537872cb2f777f207a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a5f8850d944b008537872cb2f777f207a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_a9e785f8d8522eb29bf90a658729fbf1e}{\index{utilbaoabpi@{utilbaoabpi}!colvars\-\_\-run\-\_\-pi@{colvars\-\_\-run\-\_\-pi}}
+\index{colvars\-\_\-run\-\_\-pi@{colvars\-\_\-run\-\_\-pi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{colvars\-\_\-run\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::colvars\-\_\-run\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a9e785f8d8522eb29bf90a658729fbf1e}
+
+
+Definition at line 870 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References distrib\-\_\-colvars\-\_\-pi(), and prepare\-\_\-colvars\-\_\-pi().
+
+
+
+Referenced by centroid\-\_\-force\-\_\-corrections().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a9e785f8d8522eb29bf90a658729fbf1e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a9e785f8d8522eb29bf90a658729fbf1e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_a38104b3d22cd8ea3f7510b8a678b1bb6}{\index{utilbaoabpi@{utilbaoabpi}!compute\-\_\-grad\-\_\-beads@{compute\-\_\-grad\-\_\-beads}}
+\index{compute\-\_\-grad\-\_\-beads@{compute\-\_\-grad\-\_\-beads}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{compute\-\_\-grad\-\_\-beads}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::compute\-\_\-grad\-\_\-beads (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(inout)}]{epot, }
+\item[{real$\ast$8, dimension(\-:,\-:,\-:), intent(inout)}]{derivs\-\_\-, }
+\item[{real$\ast$8, dimension(3,3), intent(inout)}]{vir\-\_\-, }
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{logical, intent(in)}]{do\-\_\-long, }
+\item[{logical, intent(in)}]{do\-\_\-int, }
+\item[{logical, intent(in)}]{do\-\_\-short, }
+\item[{logical, intent(in)}]{compute\-\_\-polar}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a38104b3d22cd8ea3f7510b8a678b1bb6}
+
+
+Definition at line 529 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References spectra\-::compute\-\_\-dipole(), fatal(), gradient(), beads\-::load\-\_\-bead(), deriv\-::resetforcesrec(), and commstuffpi\-::save\-\_\-deriv\-\_\-rec().
+
+
+
+Referenced by baoabpi(), baoabrespapi(), and baoabrespapi\-\_\-fast().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a38104b3d22cd8ea3f7510b8a678b1bb6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a38104b3d22cd8ea3f7510b8a678b1bb6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_aa0e6732f79e06a0a1c70795a3a748b70}{\index{utilbaoabpi@{utilbaoabpi}!compute\-\_\-gradslow\-\_\-centroid@{compute\-\_\-gradslow\-\_\-centroid}}
+\index{compute\-\_\-gradslow\-\_\-centroid@{compute\-\_\-gradslow\-\_\-centroid}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{compute\-\_\-gradslow\-\_\-centroid}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::compute\-\_\-gradslow\-\_\-centroid (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(inout)}]{epot, }
+\item[{real$\ast$8, dimension(3,nbloc), intent(inout)}]{derivs\-\_\-, }
+\item[{real$\ast$8, dimension(3,3), intent(inout)}]{vir\-\_\-, }
+\item[{logical, intent(in)}]{only\-\_\-long, }
+\item[{logical, intent(in)}]{remove\-\_\-polarshort}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_aa0e6732f79e06a0a1c70795a3a748b70}
+
+
+Definition at line 255 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References spectra\-::compute\-\_\-dipole(), and gradient().
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_aa0e6732f79e06a0a1c70795a3a748b70_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_aa0e6732f79e06a0a1c70795a3a748b70_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_a499bdce266930ac702dc09e25521901c}{\index{utilbaoabpi@{utilbaoabpi}!distrib\-\_\-colvars\-\_\-pi@{distrib\-\_\-colvars\-\_\-pi}}
+\index{distrib\-\_\-colvars\-\_\-pi@{distrib\-\_\-colvars\-\_\-pi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{distrib\-\_\-colvars\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::distrib\-\_\-colvars\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a499bdce266930ac702dc09e25521901c}
+
+
+Definition at line 986 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References def\-\_\-lambdadyn().
+
+
+
+Referenced by colvars\-\_\-run\-\_\-pi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a499bdce266930ac702dc09e25521901c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a499bdce266930ac702dc09e25521901c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_a6413bbe678f95995e6f2ff62da6fab27}{\index{utilbaoabpi@{utilbaoabpi}!plangevinpi@{plangevinpi}}
+\index{plangevinpi@{plangevinpi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{plangevinpi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::plangevinpi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{real$\ast$8, intent(in)}]{dt, }
+\item[{integer, intent(in)}]{istep, }
+\item[{character, intent(in)}]{bloc}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a6413bbe678f95995e6f2ff62da6fab27}
+
+
+Definition at line 1066 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt(), fatal(), normal(), and rescale\-\_\-box().
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a6413bbe678f95995e6f2ff62da6fab27_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a6413bbe678f95995e6f2ff62da6fab27_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_a4407ec4cbd0f80a26c05e6d96b888e20}{\index{utilbaoabpi@{utilbaoabpi}!prepare\-\_\-colvars\-\_\-pi@{prepare\-\_\-colvars\-\_\-pi}}
+\index{prepare\-\_\-colvars\-\_\-pi@{prepare\-\_\-colvars\-\_\-pi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{prepare\-\_\-colvars\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::prepare\-\_\-colvars\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a4407ec4cbd0f80a26c05e6d96b888e20}
+
+
+Definition at line 887 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+Referenced by colvars\-\_\-run\-\_\-pi(), and pimd\-\_\-bis().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a4407ec4cbd0f80a26c05e6d96b888e20_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{classutilbaoabpi_a5856b428adb9701f3e105adf702160a3}{\index{utilbaoabpi@{utilbaoabpi}!pscalepi@{pscalepi}}
+\index{pscalepi@{pscalepi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{pscalepi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine utilbaoabpi\-::pscalepi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{real$\ast$8, intent(in)}]{dt, }
+\item[{integer, intent(in)}]{istep}
+\end{DoxyParamCaption}
+)}}\label{classutilbaoabpi_a5856b428adb9701f3e105adf702160a3}
+
+
+Definition at line 1141 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+References ddpme3dnpt(), colvarproxy\-\_\-tinkerhp\-::dt(), and lattice().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classutilbaoabpi_a5856b428adb9701f3e105adf702160a3_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classutilbaoabpi_adac13aaebc59c9f65c4db8be552657ba}{\index{utilbaoabpi@{utilbaoabpi}!derivs@{derivs}}
+\index{derivs@{derivs}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{derivs}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable, save utilbaoabpi\-::derivs}}\label{classutilbaoabpi_adac13aaebc59c9f65c4db8be552657ba}
+
+
+Definition at line 26 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a67505f362b7c39accc88c2eac1933519}{\index{utilbaoabpi@{utilbaoabpi}!derivs\-\_\-centroid@{derivs\-\_\-centroid}}
+\index{derivs\-\_\-centroid@{derivs\-\_\-centroid}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{derivs\-\_\-centroid}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable, save utilbaoabpi\-::derivs\-\_\-centroid}}\label{classutilbaoabpi_a67505f362b7c39accc88c2eac1933519}
+
+
+Definition at line 28 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_aa4c57851112377f82b13361a27277120}{\index{utilbaoabpi@{utilbaoabpi}!derivs\-\_\-ctr@{derivs\-\_\-ctr}}
+\index{derivs\-\_\-ctr@{derivs\-\_\-ctr}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{derivs\-\_\-ctr}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable, save utilbaoabpi\-::derivs\-\_\-ctr}}\label{classutilbaoabpi_aa4c57851112377f82b13361a27277120}
+
+
+Definition at line 27 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a33c76ac8241feb8e9c8669731a605d65}{\index{utilbaoabpi@{utilbaoabpi}!derivsrec@{derivsrec}}
+\index{derivsrec@{derivsrec}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{derivsrec}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:,\-:), allocatable, save utilbaoabpi\-::derivsrec}}\label{classutilbaoabpi_a33c76ac8241feb8e9c8669731a605d65}
+
+
+Definition at line 29 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a9caab6874b7ea252f61f3a9ff137854a}{\index{utilbaoabpi@{utilbaoabpi}!eslow@{eslow}}
+\index{eslow@{eslow}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{eslow}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 utilbaoabpi\-::eslow}}\label{classutilbaoabpi_a9caab6874b7ea252f61f3a9ff137854a}
+
+
+Definition at line 30 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a2852b9f4bf70cdfb023ae00de30fb391}{\index{utilbaoabpi@{utilbaoabpi}!timeaoa@{timeaoa}}
+\index{timeaoa@{timeaoa}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timeaoa}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timeaoa =0d0}}\label{classutilbaoabpi_a2852b9f4bf70cdfb023ae00de30fb391}
+
+
+Definition at line 36 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a50d3e390c7aa386e779ebdf2f3594903}{\index{utilbaoabpi@{utilbaoabpi}!timecom@{timecom}}
+\index{timecom@{timecom}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timecom}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timecom =0.d0}}\label{classutilbaoabpi_a50d3e390c7aa386e779ebdf2f3594903}
+
+
+Definition at line 34 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a53b19fe49bb28da1a1e5b8c6661f4cc7}{\index{utilbaoabpi@{utilbaoabpi}!timecontract@{timecontract}}
+\index{timecontract@{timecontract}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timecontract}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timecontract =0d0}}\label{classutilbaoabpi_a53b19fe49bb28da1a1e5b8c6661f4cc7}
+
+
+Definition at line 35 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_ad957e98b45d393c84c8e00a86887d2b7}{\index{utilbaoabpi@{utilbaoabpi}!timegradfastpi@{timegradfastpi}}
+\index{timegradfastpi@{timegradfastpi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timegradfastpi}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timegradfastpi =0.d0}}\label{classutilbaoabpi_ad957e98b45d393c84c8e00a86887d2b7}
+
+
+Definition at line 35 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a5c70fdf8f4327a097c87c582900e7c4b}{\index{utilbaoabpi@{utilbaoabpi}!timegradpi@{timegradpi}}
+\index{timegradpi@{timegradpi}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timegradpi}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timegradpi =0.d0}}\label{classutilbaoabpi_a5c70fdf8f4327a097c87c582900e7c4b}
+
+
+Definition at line 33 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a6914943535cb774d1fdecae40d657e86}{\index{utilbaoabpi@{utilbaoabpi}!timeinit@{timeinit}}
+\index{timeinit@{timeinit}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timeinit}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timeinit =0.d0}}\label{classutilbaoabpi_a6914943535cb774d1fdecae40d657e86}
+
+
+Definition at line 32 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_afe30853c7b0c348013c9d7ea86aa53e0}{\index{utilbaoabpi@{utilbaoabpi}!timeobs@{timeobs}}
+\index{timeobs@{timeobs}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timeobs}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timeobs =0d0}}\label{classutilbaoabpi_afe30853c7b0c348013c9d7ea86aa53e0}
+
+
+Definition at line 36 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_af5bf31b45a8a5e575131e62483250ffb}{\index{utilbaoabpi@{utilbaoabpi}!timepush@{timepush}}
+\index{timepush@{timepush}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timepush}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timepush =0.d0}}\label{classutilbaoabpi_af5bf31b45a8a5e575131e62483250ffb}
+
+
+Definition at line 32 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a18904bbe7e1c94539761412da71d7f29}{\index{utilbaoabpi@{utilbaoabpi}!timereass@{timereass}}
+\index{timereass@{timereass}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timereass}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timereass =0.d0}}\label{classutilbaoabpi_a18904bbe7e1c94539761412da71d7f29}
+
+
+Definition at line 33 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a22e7f67ae4c1ea38f973f74a6630d52a}{\index{utilbaoabpi@{utilbaoabpi}!timesavenl@{timesavenl}}
+\index{timesavenl@{timesavenl}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{timesavenl}]{\setlength{\rightskip}{0pt plus 5cm}real(8), save utilbaoabpi\-::timesavenl =0.d0}}\label{classutilbaoabpi_a22e7f67ae4c1ea38f973f74a6630d52a}
+
+
+Definition at line 34 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+\hypertarget{classutilbaoabpi_a0771b4015356ff89c136bdbe85d441c4}{\index{utilbaoabpi@{utilbaoabpi}!vir\-\_\-ctr@{vir\-\_\-ctr}}
+\index{vir\-\_\-ctr@{vir\-\_\-ctr}!utilbaoabpi@{utilbaoabpi}}
+\subsubsection[{vir\-\_\-ctr}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,3) utilbaoabpi\-::vir\-\_\-ctr}}\label{classutilbaoabpi_a0771b4015356ff89c136bdbe85d441c4}
+
+
+Definition at line 30 of file M\-O\-D\-\_\-utilbaoabpi.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__utilbaoabpi_8f90}{M\-O\-D\-\_\-utilbaoabpi.\-f90}\end{DoxyCompactItemize}

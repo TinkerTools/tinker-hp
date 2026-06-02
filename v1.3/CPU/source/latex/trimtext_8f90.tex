@@ -1,0 +1,168 @@
+\hypertarget{trimtext_8f90}{\section{trimtext.\-f90 File Reference}
+\label{trimtext_8f90}\index{trimtext.\-f90@{trimtext.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+integer function \hyperlink{trimtext_8f90_ad83d9073f809c425ddf7ca256594b68a}{trimtext} (string)
+\begin{DoxyCompactList}\small\item\em finds and returns the location of the last non-\/blank character before the first null character in an input text string; the function returns zero if no computes and displays the total potential energy \end{DoxyCompactList}\item 
+subroutine \hyperlink{trimtext_8f90_a380c0c00389ddf381acb4f3b98cc6965}{trimhead} (string)
+\begin{DoxyCompactList}\small\item\em removes blank spaces before the first non-\/blank character in a text string by shifting the string to the left \end{DoxyCompactList}\item 
+subroutine \hyperlink{trimtext_8f90_ab4c928ff94770c14ed517ce92300e2b5}{justify} (string)
+\begin{DoxyCompactList}\small\item\em converts a text string to right justified format with leading blank spaces \end{DoxyCompactList}\item 
+subroutine \hyperlink{trimtext_8f90_ac85c1610cf6186365e8b9104254d54a0}{upcase} (string)
+\begin{DoxyCompactList}\small\item\em converts a text string to all upper case letters with leading blank spaces \end{DoxyCompactList}\item 
+subroutine \hyperlink{trimtext_8f90_a9ffb5587408536987060bfbffaecb110}{lowcase} (string)
+\begin{DoxyCompactList}\small\item\em converts a text string to all lower case letters \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{trimtext_8f90_ab4c928ff94770c14ed517ce92300e2b5}{\index{trimtext.\-f90@{trimtext.\-f90}!justify@{justify}}
+\index{justify@{justify}!trimtext.f90@{trimtext.\-f90}}
+\subsubsection[{justify}]{\setlength{\rightskip}{0pt plus 5cm}subroutine justify (
+\begin{DoxyParamCaption}
+\item[{character$\ast$($\ast$)}]{string}
+\end{DoxyParamCaption}
+)}}\label{trimtext_8f90_ab4c928ff94770c14ed517ce92300e2b5}
+
+
+converts a text string to right justified format with leading blank spaces 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input text string \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 123 of file trimtext.\-f90.
+
+\hypertarget{trimtext_8f90_a9ffb5587408536987060bfbffaecb110}{\index{trimtext.\-f90@{trimtext.\-f90}!lowcase@{lowcase}}
+\index{lowcase@{lowcase}!trimtext.f90@{trimtext.\-f90}}
+\subsubsection[{lowcase}]{\setlength{\rightskip}{0pt plus 5cm}subroutine lowcase (
+\begin{DoxyParamCaption}
+\item[{character$\ast$($\ast$)}]{string}
+\end{DoxyParamCaption}
+)}}\label{trimtext_8f90_a9ffb5587408536987060bfbffaecb110}
+
+
+converts a text string to all lower case letters 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input text string \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 210 of file trimtext.\-f90.
+
+
+
+Referenced by version().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{trimtext_8f90_a9ffb5587408536987060bfbffaecb110_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{trimtext_8f90_a380c0c00389ddf381acb4f3b98cc6965}{\index{trimtext.\-f90@{trimtext.\-f90}!trimhead@{trimhead}}
+\index{trimhead@{trimhead}!trimtext.f90@{trimtext.\-f90}}
+\subsubsection[{trimhead}]{\setlength{\rightskip}{0pt plus 5cm}subroutine trimhead (
+\begin{DoxyParamCaption}
+\item[{character$\ast$240}]{string}
+\end{DoxyParamCaption}
+)}}\label{trimtext_8f90_a380c0c00389ddf381acb4f3b98cc6965}
+
+
+removes blank spaces before the first non-\/blank character in a text string by shifting the string to the left 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input text string \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 80 of file trimtext.\-f90.
+
+
+
+Referenced by barcalc().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{trimtext_8f90_a380c0c00389ddf381acb4f3b98cc6965_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{trimtext_8f90_ad83d9073f809c425ddf7ca256594b68a}{\index{trimtext.\-f90@{trimtext.\-f90}!trimtext@{trimtext}}
+\index{trimtext@{trimtext}!trimtext.f90@{trimtext.\-f90}}
+\subsubsection[{trimtext}]{\setlength{\rightskip}{0pt plus 5cm}integer function trimtext (
+\begin{DoxyParamCaption}
+\item[{character$\ast$($\ast$)}]{string}
+\end{DoxyParamCaption}
+)}}\label{trimtext_8f90_ad83d9073f809c425ddf7ca256594b68a}
+
+
+finds and returns the location of the last non-\/blank character before the first null character in an input text string; the function returns zero if no computes and displays the total potential energy 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input text string \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 27 of file trimtext.\-f90.
+
+
+
+Referenced by analyze\-\_\-bis(), barcalc(), basefile(), getkey(), getnumb(), makebar(), mdsave(), mdsavebeads(), number(), readprm(), readxyz(), suffix(), and version().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{trimtext_8f90_ad83d9073f809c425ddf7ca256594b68a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{trimtext_8f90_ac85c1610cf6186365e8b9104254d54a0}{\index{trimtext.\-f90@{trimtext.\-f90}!upcase@{upcase}}
+\index{upcase@{upcase}!trimtext.f90@{trimtext.\-f90}}
+\subsubsection[{upcase}]{\setlength{\rightskip}{0pt plus 5cm}subroutine upcase (
+\begin{DoxyParamCaption}
+\item[{character$\ast$($\ast$)}]{string}
+\end{DoxyParamCaption}
+)}}\label{trimtext_8f90_ac85c1610cf6186365e8b9104254d54a0}
+
+
+converts a text string to all upper case letters with leading blank spaces 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input text string \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 175 of file trimtext.\-f90.
+
+
+
+Referenced by active(), analyze\-\_\-bis(), cluster(), command(), control(), cutoffs(), ddnumber(), def\-\_\-lambdadyn\-\_\-init(), dynamic\-\_\-bis(), getkey(), getprm(), qtb\-::initialize\-\_\-adaptation\-\_\-parameters(), kangang(), kangle(), kangtor(), katom(), kbond(), kbondm(), kcharge(), kchgflx(), kchgtrn(), kdisp(), keneg(), kewald(), kgeom(), kimprop(), kimptor(), kmpole(), kopbend(), kopdist(), kpitors(), kpolar(), krepel(), ksmd(), kstrbnd(), kstrtor(), ktors(), ktortor(), kurey(), kvdw(), lbfgs(), mdinit(), mdinitreps(), minimize\-\_\-bis(), mutate(), prmkey(), random(), beads\-::read\-\_\-bead\-\_\-config(), qtb\-::read\-\_\-qtb\-\_\-keys(), readprm(), shakeup(), testgrad(), and unitcell().
+

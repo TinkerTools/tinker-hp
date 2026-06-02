@@ -1,0 +1,648 @@
+\hypertarget{classpolpot}{\section{polpot Module Reference}
+\label{classpolpot}\index{polpot@{polpot}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classpolpot_a2f2e089f358cca82ea56802e31055b19}{politer}
+\begin{DoxyCompactList}\small\item\em maximum number of induced dipole S\-C\-F iterations \end{DoxyCompactList}\item 
+integer \hyperlink{classpolpot_a89d0f4d40cd0dbced9858fee7c3ad13b}{polalg}
+\begin{DoxyCompactList}\small\item\em algorithm to be used to solve the induced dipoles 1) Preconditioned Conjugate Gradient 2) Jacobi/\-D\-I\-I\-S 3) T\-C\-G 5) D\-C-\/\-Jacobi/\-D\-I\-I\-S \end{DoxyCompactList}\item 
+integer \hyperlink{classpolpot_a1aa897b603b5d8dfe804e35c572d9994}{polprt}
+\begin{DoxyCompactList}\small\item\em printing flag for induce. 1) Print convergence information after the final iteration 2) Print convergence information at each iteration 3) Print the converged induced dipoles 4) Also print the auxiliary dipoles (uinp, uint) \end{DoxyCompactList}\item 
+integer \hyperlink{classpolpot_a238b33cf218bd1e049b7a88b714f9861}{polgsf}
+\begin{DoxyCompactList}\small\item\em whether to use dipoles from a previous iteration as a guess (1) or to use direct field dipoles (0) \end{DoxyCompactList}\item 
+integer \hyperlink{classpolpot_ad3b3a2ad74be9d5a62eda7d1ac6445b9}{tcgorder}
+\begin{DoxyCompactList}\small\item\em tcgorder \-: order (1 or 2) of T\-C\-G solver \end{DoxyCompactList}\item 
+integer \hyperlink{classpolpot_ab80e82f537a8a27d27007ece284e55bd}{polalgshort}
+\begin{DoxyCompactList}\small\item\em algorithm to be used to solve the short range induced dipoles in respa1 integrators 1) Preconditioned Conjugate Gradient 2) Jacobi/\-D\-I\-I\-S 3) T\-C\-G 5) D\-C-\/\-Jacobi/\-D\-I\-I\-S \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_aa152fca51bc59dec7f07c1c7a19b1e00}{tcgprec}
+\begin{DoxyCompactList}\small\item\em tcgprec \-: use a (diagonal) preconditioner \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_a5454003eb94f118081671ff0d09104a5}{tcgguess}
+\begin{DoxyCompactList}\small\item\em tcgguess \-: use 'alpha$\ast$\-E' as a guess \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_a72bed485465ab67c11d0767d90af8d8d}{tcgpeek}
+\begin{DoxyCompactList}\small\item\em tcgpeek \-: use a peek-\/step \end{DoxyCompactList}\item 
+integer \hyperlink{classpolpot_a1af31eaa1c21a3f380709b6088aff0ff}{tcgordershort}
+\begin{DoxyCompactList}\small\item\em tcgorder \-: order (1 or 2) of short range T\-C\-G solver \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_a4edaa232655246d6e72f41f4be85b606}{tcgprecshort}
+\begin{DoxyCompactList}\small\item\em tcgprec \-: use a (diagonal) preconditioner for short range T\-C\-G solver \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_a7b7f20d7e1f0d670a5044c576dc48915}{tcgguessshort}
+\begin{DoxyCompactList}\small\item\em tcgguess \-: use 'alpha$\ast$\-E' as a guess for short range T\-C\-G solver \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_a73af9eaecbba722071b6c0041d2ba4f5}{tcgpeekshort}
+\begin{DoxyCompactList}\small\item\em tcgpeek \-: use a peek-\/step for short range T\-C\-G solver \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a9fe6988d34a71ea38554d7050313b34a}{poleps}
+\begin{DoxyCompactList}\small\item\em induced dipole convergence criterion (rms Debyes/atom) \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_aa8be13777bcaf7e8588e213a1314b4b1}{p2scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/2 polarization energy interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a9acb74d6d1ab628d38abe5e78eb3e085}{p3scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/3 polarization energy interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a88cbeff943a0696443b4d2da069b65cc}{p4scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/4 polarization energy interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a9e34898b348ec7377b3e659b00cfbd36}{p5scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/5 polarization energy interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a597b6d994d068ea202fba93510f45ed3}{p41scale}
+\begin{DoxyCompactList}\small\item\em additional factor for 1-\/4 intragroup polarization e \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a2ee10885cf2d88a471e57d26820ea244}{p2iscale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/2 intragroup polarization energy \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_ae7adb835efeba4114c37590e29930704}{p3iscale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/3 intragroup polarization energy \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a2a48e35fedd82d2565eb7ec90e2f6997}{p4iscale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/4 intragroup polarization energy \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_ac2002e97127817d06b0dad560e78be87}{p5iscale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/5 intragroup polarization energy \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a1afa5b69e7d08623c60ec582b49497b9}{d1scale}
+\begin{DoxyCompactList}\small\item\em scale factor for intra-\/group direct induction \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a09dbcc2f2fc3ff7e247b06a89671c00e}{d2scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/2 group direct induction \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_ae8e0a808dea2c739dcff65342f4c22e7}{d3scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/3 group direct induction \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_aa5806bec776eadd0b1f3c68e7fddc71f}{d4scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/4 group direct induction \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a6ad8c7d8432e1c8dacacec8be9664184}{u1scale}
+\begin{DoxyCompactList}\small\item\em scale factor for intra-\/group mutual induction \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a85b778aeb8f3d8700297b7eab1118f47}{u2scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/2 group mutual induction \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a86ef52add4f615bf1a016c23ffd89cee}{u3scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/3 group mutual induction \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_ac0bfb27f34b9fb631293409ff61214d2}{u4scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/4 group mutual induction \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a35266232ef5bad9fdab31aede7f54a3a}{w2scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/2 induced dipole interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_ad0a29e94706d0210a94ac7897716f987}{w3scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/3 induced dipole interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a80642be89424de1fa5eaf796a215c251}{w4scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/4 induced dipole interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_ad036ebb7c31962e9aae5014aac94e41c}{w5scale}
+\begin{DoxyCompactList}\small\item\em scale factor for 1-\/5 induced dipole interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a2fe3943424bc94f38076ba1856914a0b}{tcgomega}
+\begin{DoxyCompactList}\small\item\em tcgomega \-: omega value for the peek-\/step \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a459f9e1fbebf2abc6e657cf1db12669e}{tcgomegashort}
+\begin{DoxyCompactList}\small\item\em tcgomega \-: omega value for the peek-\/step (short range) \end{DoxyCompactList}\item 
+character $\ast$6 \hyperlink{classpolpot_a06e16babc1553350168df1b66dcc2f3e}{poltyp}
+\begin{DoxyCompactList}\small\item\em type of polarization (only M\-U\-T\-U\-A\-L implemented) \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_ae78e1a279ab2c444684065b7ee886d27}{omegafitstep}
+\begin{DoxyCompactList}\small\item\em if T\-R\-U\-E, tcgomega has to be refitted at the current step \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_afd293680c0d460cc93c98b0440c8996b}{tcgomegafit}
+\begin{DoxyCompactList}\small\item\em true if omega has to be fitted \end{DoxyCompactList}\item 
+integer \hyperlink{classpolpot_a4aaa630ebb2190fb76d5dca094d15472}{omegafitfreq}
+\begin{DoxyCompactList}\small\item\em each 'omegafitfreq', refit the peek-\/step's omega to the energy from a C\-G \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpolpot_a370c16f371afeaa70933a018b220beb4}{residue}
+\begin{DoxyCompactList}\small\item\em 3,N vector; contains residue of the previous tcg iteration \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpolpot_a0d42cffaacfef58c15d8404101cf8112}{munp}
+\begin{DoxyCompactList}\small\item\em T\-C\-G induced dipoles without the peek step part. Useful for omega refitting. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classpolpot_a6f222d16444d165478dfb371302763a4}{efres}
+\begin{DoxyCompactList}\small\item\em electric field used to compute E\-\_\-\-T\-C\-G, used for omega refitting. \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classpolpot_a0038c68de694ddc7dbb7dc781aa2c845}{epcg}
+\begin{DoxyCompactList}\small\item\em polarization energy issued from C\-G \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_aa3cbfbce679dad4d09161d303fd3e4ab}{use\-\_\-thole}
+\begin{DoxyCompactList}\small\item\em flag governing use of thole damping \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_ae13276c9ed18e0b57964b4d9dbb8280a}{use\-\_\-tholed}
+\begin{DoxyCompactList}\small\item\em flag governing use of direct thole damping \end{DoxyCompactList}\item 
+logical \hyperlink{classpolpot_a1798b6de41bb676fcde778df28be9810}{dpequal}
+\begin{DoxyCompactList}\small\item\em flag governing single set of induced dipoles (d and p are equal) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 12 of file M\-O\-D\-\_\-polpot.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classpolpot_a1afa5b69e7d08623c60ec582b49497b9}{\index{polpot@{polpot}!d1scale@{d1scale}}
+\index{d1scale@{d1scale}!polpot@{polpot}}
+\subsubsection[{d1scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::d1scale}}\label{classpolpot_a1afa5b69e7d08623c60ec582b49497b9}
+
+
+scale factor for intra-\/group direct induction 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a09dbcc2f2fc3ff7e247b06a89671c00e}{\index{polpot@{polpot}!d2scale@{d2scale}}
+\index{d2scale@{d2scale}!polpot@{polpot}}
+\subsubsection[{d2scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::d2scale}}\label{classpolpot_a09dbcc2f2fc3ff7e247b06a89671c00e}
+
+
+scale factor for 1-\/2 group direct induction 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ae8e0a808dea2c739dcff65342f4c22e7}{\index{polpot@{polpot}!d3scale@{d3scale}}
+\index{d3scale@{d3scale}!polpot@{polpot}}
+\subsubsection[{d3scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::d3scale}}\label{classpolpot_ae8e0a808dea2c739dcff65342f4c22e7}
+
+
+scale factor for 1-\/3 group direct induction 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_aa5806bec776eadd0b1f3c68e7fddc71f}{\index{polpot@{polpot}!d4scale@{d4scale}}
+\index{d4scale@{d4scale}!polpot@{polpot}}
+\subsubsection[{d4scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::d4scale}}\label{classpolpot_aa5806bec776eadd0b1f3c68e7fddc71f}
+
+
+scale factor for 1-\/4 group direct induction 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a1798b6de41bb676fcde778df28be9810}{\index{polpot@{polpot}!dpequal@{dpequal}}
+\index{dpequal@{dpequal}!polpot@{polpot}}
+\subsubsection[{dpequal}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::dpequal}}\label{classpolpot_a1798b6de41bb676fcde778df28be9810}
+
+
+flag governing single set of induced dipoles (d and p are equal) 
+
+
+
+Definition at line 73 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a6f222d16444d165478dfb371302763a4}{\index{polpot@{polpot}!efres@{efres}}
+\index{efres@{efres}!polpot@{polpot}}
+\subsubsection[{efres}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable polpot\-::efres}}\label{classpolpot_a6f222d16444d165478dfb371302763a4}
+
+
+electric field used to compute E\-\_\-\-T\-C\-G, used for omega refitting. 
+
+
+
+Definition at line 69 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a0038c68de694ddc7dbb7dc781aa2c845}{\index{polpot@{polpot}!epcg@{epcg}}
+\index{epcg@{epcg}!polpot@{polpot}}
+\subsubsection[{epcg}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::epcg}}\label{classpolpot_a0038c68de694ddc7dbb7dc781aa2c845}
+
+
+polarization energy issued from C\-G 
+
+
+
+Definition at line 70 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a0d42cffaacfef58c15d8404101cf8112}{\index{polpot@{polpot}!munp@{munp}}
+\index{munp@{munp}!polpot@{polpot}}
+\subsubsection[{munp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable polpot\-::munp}}\label{classpolpot_a0d42cffaacfef58c15d8404101cf8112}
+
+
+T\-C\-G induced dipoles without the peek step part. Useful for omega refitting. 
+
+
+
+Definition at line 68 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a4aaa630ebb2190fb76d5dca094d15472}{\index{polpot@{polpot}!omegafitfreq@{omegafitfreq}}
+\index{omegafitfreq@{omegafitfreq}!polpot@{polpot}}
+\subsubsection[{omegafitfreq}]{\setlength{\rightskip}{0pt plus 5cm}integer polpot\-::omegafitfreq}}\label{classpolpot_a4aaa630ebb2190fb76d5dca094d15472}
+
+
+each 'omegafitfreq', refit the peek-\/step's omega to the energy from a C\-G 
+
+
+
+Definition at line 66 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ae78e1a279ab2c444684065b7ee886d27}{\index{polpot@{polpot}!omegafitstep@{omegafitstep}}
+\index{omegafitstep@{omegafitstep}!polpot@{polpot}}
+\subsubsection[{omegafitstep}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::omegafitstep}}\label{classpolpot_ae78e1a279ab2c444684065b7ee886d27}
+
+
+if T\-R\-U\-E, tcgomega has to be refitted at the current step 
+
+
+
+Definition at line 64 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a2ee10885cf2d88a471e57d26820ea244}{\index{polpot@{polpot}!p2iscale@{p2iscale}}
+\index{p2iscale@{p2iscale}!polpot@{polpot}}
+\subsubsection[{p2iscale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p2iscale}}\label{classpolpot_a2ee10885cf2d88a471e57d26820ea244}
+
+
+scale factor for 1-\/2 intragroup polarization energy 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_aa8be13777bcaf7e8588e213a1314b4b1}{\index{polpot@{polpot}!p2scale@{p2scale}}
+\index{p2scale@{p2scale}!polpot@{polpot}}
+\subsubsection[{p2scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p2scale}}\label{classpolpot_aa8be13777bcaf7e8588e213a1314b4b1}
+
+
+scale factor for 1-\/2 polarization energy interactions 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ae7adb835efeba4114c37590e29930704}{\index{polpot@{polpot}!p3iscale@{p3iscale}}
+\index{p3iscale@{p3iscale}!polpot@{polpot}}
+\subsubsection[{p3iscale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p3iscale}}\label{classpolpot_ae7adb835efeba4114c37590e29930704}
+
+
+scale factor for 1-\/3 intragroup polarization energy 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a9acb74d6d1ab628d38abe5e78eb3e085}{\index{polpot@{polpot}!p3scale@{p3scale}}
+\index{p3scale@{p3scale}!polpot@{polpot}}
+\subsubsection[{p3scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p3scale}}\label{classpolpot_a9acb74d6d1ab628d38abe5e78eb3e085}
+
+
+scale factor for 1-\/3 polarization energy interactions 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a597b6d994d068ea202fba93510f45ed3}{\index{polpot@{polpot}!p41scale@{p41scale}}
+\index{p41scale@{p41scale}!polpot@{polpot}}
+\subsubsection[{p41scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p41scale}}\label{classpolpot_a597b6d994d068ea202fba93510f45ed3}
+
+
+additional factor for 1-\/4 intragroup polarization e 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a2a48e35fedd82d2565eb7ec90e2f6997}{\index{polpot@{polpot}!p4iscale@{p4iscale}}
+\index{p4iscale@{p4iscale}!polpot@{polpot}}
+\subsubsection[{p4iscale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p4iscale}}\label{classpolpot_a2a48e35fedd82d2565eb7ec90e2f6997}
+
+
+scale factor for 1-\/4 intragroup polarization energy 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a88cbeff943a0696443b4d2da069b65cc}{\index{polpot@{polpot}!p4scale@{p4scale}}
+\index{p4scale@{p4scale}!polpot@{polpot}}
+\subsubsection[{p4scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p4scale}}\label{classpolpot_a88cbeff943a0696443b4d2da069b65cc}
+
+
+scale factor for 1-\/4 polarization energy interactions 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ac2002e97127817d06b0dad560e78be87}{\index{polpot@{polpot}!p5iscale@{p5iscale}}
+\index{p5iscale@{p5iscale}!polpot@{polpot}}
+\subsubsection[{p5iscale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p5iscale}}\label{classpolpot_ac2002e97127817d06b0dad560e78be87}
+
+
+scale factor for 1-\/5 intragroup polarization energy 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a9e34898b348ec7377b3e659b00cfbd36}{\index{polpot@{polpot}!p5scale@{p5scale}}
+\index{p5scale@{p5scale}!polpot@{polpot}}
+\subsubsection[{p5scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::p5scale}}\label{classpolpot_a9e34898b348ec7377b3e659b00cfbd36}
+
+
+scale factor for 1-\/5 polarization energy interactions 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a89d0f4d40cd0dbced9858fee7c3ad13b}{\index{polpot@{polpot}!polalg@{polalg}}
+\index{polalg@{polalg}!polpot@{polpot}}
+\subsubsection[{polalg}]{\setlength{\rightskip}{0pt plus 5cm}integer polpot\-::polalg}}\label{classpolpot_a89d0f4d40cd0dbced9858fee7c3ad13b}
+
+
+algorithm to be used to solve the induced dipoles 1) Preconditioned Conjugate Gradient 2) Jacobi/\-D\-I\-I\-S 3) T\-C\-G 5) D\-C-\/\-Jacobi/\-D\-I\-I\-S 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ab80e82f537a8a27d27007ece284e55bd}{\index{polpot@{polpot}!polalgshort@{polalgshort}}
+\index{polalgshort@{polalgshort}!polpot@{polpot}}
+\subsubsection[{polalgshort}]{\setlength{\rightskip}{0pt plus 5cm}integer polpot\-::polalgshort}}\label{classpolpot_ab80e82f537a8a27d27007ece284e55bd}
+
+
+algorithm to be used to solve the short range induced dipoles in respa1 integrators 1) Preconditioned Conjugate Gradient 2) Jacobi/\-D\-I\-I\-S 3) T\-C\-G 5) D\-C-\/\-Jacobi/\-D\-I\-I\-S 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a9fe6988d34a71ea38554d7050313b34a}{\index{polpot@{polpot}!poleps@{poleps}}
+\index{poleps@{poleps}!polpot@{polpot}}
+\subsubsection[{poleps}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::poleps}}\label{classpolpot_a9fe6988d34a71ea38554d7050313b34a}
+
+
+induced dipole convergence criterion (rms Debyes/atom) 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a238b33cf218bd1e049b7a88b714f9861}{\index{polpot@{polpot}!polgsf@{polgsf}}
+\index{polgsf@{polgsf}!polpot@{polpot}}
+\subsubsection[{polgsf}]{\setlength{\rightskip}{0pt plus 5cm}integer polpot\-::polgsf}}\label{classpolpot_a238b33cf218bd1e049b7a88b714f9861}
+
+
+whether to use dipoles from a previous iteration as a guess (1) or to use direct field dipoles (0) 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a2f2e089f358cca82ea56802e31055b19}{\index{polpot@{polpot}!politer@{politer}}
+\index{politer@{politer}!polpot@{polpot}}
+\subsubsection[{politer}]{\setlength{\rightskip}{0pt plus 5cm}integer polpot\-::politer}}\label{classpolpot_a2f2e089f358cca82ea56802e31055b19}
+
+
+maximum number of induced dipole S\-C\-F iterations 
+
+
+
+Definition at line 14 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a1aa897b603b5d8dfe804e35c572d9994}{\index{polpot@{polpot}!polprt@{polprt}}
+\index{polprt@{polprt}!polpot@{polpot}}
+\subsubsection[{polprt}]{\setlength{\rightskip}{0pt plus 5cm}integer polpot\-::polprt}}\label{classpolpot_a1aa897b603b5d8dfe804e35c572d9994}
+
+
+printing flag for induce. 1) Print convergence information after the final iteration 2) Print convergence information at each iteration 3) Print the converged induced dipoles 4) Also print the auxiliary dipoles (uinp, uint) 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a06e16babc1553350168df1b66dcc2f3e}{\index{polpot@{polpot}!poltyp@{poltyp}}
+\index{poltyp@{poltyp}!polpot@{polpot}}
+\subsubsection[{poltyp}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$6 polpot\-::poltyp}}\label{classpolpot_a06e16babc1553350168df1b66dcc2f3e}
+
+
+type of polarization (only M\-U\-T\-U\-A\-L implemented) 
+
+
+
+Definition at line 63 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a370c16f371afeaa70933a018b220beb4}{\index{polpot@{polpot}!residue@{residue}}
+\index{residue@{residue}!polpot@{polpot}}
+\subsubsection[{residue}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable polpot\-::residue}}\label{classpolpot_a370c16f371afeaa70933a018b220beb4}
+
+
+3,N vector; contains residue of the previous tcg iteration 
+
+
+
+Definition at line 67 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a5454003eb94f118081671ff0d09104a5}{\index{polpot@{polpot}!tcgguess@{tcgguess}}
+\index{tcgguess@{tcgguess}!polpot@{polpot}}
+\subsubsection[{tcgguess}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::tcgguess}}\label{classpolpot_a5454003eb94f118081671ff0d09104a5}
+
+
+tcgguess \-: use 'alpha$\ast$\-E' as a guess 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a7b7f20d7e1f0d670a5044c576dc48915}{\index{polpot@{polpot}!tcgguessshort@{tcgguessshort}}
+\index{tcgguessshort@{tcgguessshort}!polpot@{polpot}}
+\subsubsection[{tcgguessshort}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::tcgguessshort}}\label{classpolpot_a7b7f20d7e1f0d670a5044c576dc48915}
+
+
+tcgguess \-: use 'alpha$\ast$\-E' as a guess for short range T\-C\-G solver 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a2fe3943424bc94f38076ba1856914a0b}{\index{polpot@{polpot}!tcgomega@{tcgomega}}
+\index{tcgomega@{tcgomega}!polpot@{polpot}}
+\subsubsection[{tcgomega}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::tcgomega}}\label{classpolpot_a2fe3943424bc94f38076ba1856914a0b}
+
+
+tcgomega \-: omega value for the peek-\/step 
+
+
+
+Definition at line 61 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_afd293680c0d460cc93c98b0440c8996b}{\index{polpot@{polpot}!tcgomegafit@{tcgomegafit}}
+\index{tcgomegafit@{tcgomegafit}!polpot@{polpot}}
+\subsubsection[{tcgomegafit}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::tcgomegafit}}\label{classpolpot_afd293680c0d460cc93c98b0440c8996b}
+
+
+true if omega has to be fitted 
+
+
+
+Definition at line 65 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a459f9e1fbebf2abc6e657cf1db12669e}{\index{polpot@{polpot}!tcgomegashort@{tcgomegashort}}
+\index{tcgomegashort@{tcgomegashort}!polpot@{polpot}}
+\subsubsection[{tcgomegashort}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::tcgomegashort}}\label{classpolpot_a459f9e1fbebf2abc6e657cf1db12669e}
+
+
+tcgomega \-: omega value for the peek-\/step (short range) 
+
+
+
+Definition at line 62 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ad3b3a2ad74be9d5a62eda7d1ac6445b9}{\index{polpot@{polpot}!tcgorder@{tcgorder}}
+\index{tcgorder@{tcgorder}!polpot@{polpot}}
+\subsubsection[{tcgorder}]{\setlength{\rightskip}{0pt plus 5cm}integer polpot\-::tcgorder}}\label{classpolpot_ad3b3a2ad74be9d5a62eda7d1ac6445b9}
+
+
+tcgorder \-: order (1 or 2) of T\-C\-G solver 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a1af31eaa1c21a3f380709b6088aff0ff}{\index{polpot@{polpot}!tcgordershort@{tcgordershort}}
+\index{tcgordershort@{tcgordershort}!polpot@{polpot}}
+\subsubsection[{tcgordershort}]{\setlength{\rightskip}{0pt plus 5cm}integer polpot\-::tcgordershort}}\label{classpolpot_a1af31eaa1c21a3f380709b6088aff0ff}
+
+
+tcgorder \-: order (1 or 2) of short range T\-C\-G solver 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a72bed485465ab67c11d0767d90af8d8d}{\index{polpot@{polpot}!tcgpeek@{tcgpeek}}
+\index{tcgpeek@{tcgpeek}!polpot@{polpot}}
+\subsubsection[{tcgpeek}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::tcgpeek}}\label{classpolpot_a72bed485465ab67c11d0767d90af8d8d}
+
+
+tcgpeek \-: use a peek-\/step 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a73af9eaecbba722071b6c0041d2ba4f5}{\index{polpot@{polpot}!tcgpeekshort@{tcgpeekshort}}
+\index{tcgpeekshort@{tcgpeekshort}!polpot@{polpot}}
+\subsubsection[{tcgpeekshort}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::tcgpeekshort}}\label{classpolpot_a73af9eaecbba722071b6c0041d2ba4f5}
+
+
+tcgpeek \-: use a peek-\/step for short range T\-C\-G solver 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_aa152fca51bc59dec7f07c1c7a19b1e00}{\index{polpot@{polpot}!tcgprec@{tcgprec}}
+\index{tcgprec@{tcgprec}!polpot@{polpot}}
+\subsubsection[{tcgprec}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::tcgprec}}\label{classpolpot_aa152fca51bc59dec7f07c1c7a19b1e00}
+
+
+tcgprec \-: use a (diagonal) preconditioner 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a4edaa232655246d6e72f41f4be85b606}{\index{polpot@{polpot}!tcgprecshort@{tcgprecshort}}
+\index{tcgprecshort@{tcgprecshort}!polpot@{polpot}}
+\subsubsection[{tcgprecshort}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::tcgprecshort}}\label{classpolpot_a4edaa232655246d6e72f41f4be85b606}
+
+
+tcgprec \-: use a (diagonal) preconditioner for short range T\-C\-G solver 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a6ad8c7d8432e1c8dacacec8be9664184}{\index{polpot@{polpot}!u1scale@{u1scale}}
+\index{u1scale@{u1scale}!polpot@{polpot}}
+\subsubsection[{u1scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::u1scale}}\label{classpolpot_a6ad8c7d8432e1c8dacacec8be9664184}
+
+
+scale factor for intra-\/group mutual induction 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a85b778aeb8f3d8700297b7eab1118f47}{\index{polpot@{polpot}!u2scale@{u2scale}}
+\index{u2scale@{u2scale}!polpot@{polpot}}
+\subsubsection[{u2scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::u2scale}}\label{classpolpot_a85b778aeb8f3d8700297b7eab1118f47}
+
+
+scale factor for 1-\/2 group mutual induction 
+
+
+
+Definition at line 54 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a86ef52add4f615bf1a016c23ffd89cee}{\index{polpot@{polpot}!u3scale@{u3scale}}
+\index{u3scale@{u3scale}!polpot@{polpot}}
+\subsubsection[{u3scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::u3scale}}\label{classpolpot_a86ef52add4f615bf1a016c23ffd89cee}
+
+
+scale factor for 1-\/3 group mutual induction 
+
+
+
+Definition at line 55 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ac0bfb27f34b9fb631293409ff61214d2}{\index{polpot@{polpot}!u4scale@{u4scale}}
+\index{u4scale@{u4scale}!polpot@{polpot}}
+\subsubsection[{u4scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::u4scale}}\label{classpolpot_ac0bfb27f34b9fb631293409ff61214d2}
+
+
+scale factor for 1-\/4 group mutual induction 
+
+
+
+Definition at line 56 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_aa3cbfbce679dad4d09161d303fd3e4ab}{\index{polpot@{polpot}!use\-\_\-thole@{use\-\_\-thole}}
+\index{use\-\_\-thole@{use\-\_\-thole}!polpot@{polpot}}
+\subsubsection[{use\-\_\-thole}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::use\-\_\-thole}}\label{classpolpot_aa3cbfbce679dad4d09161d303fd3e4ab}
+
+
+flag governing use of thole damping 
+
+
+
+Definition at line 71 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ae13276c9ed18e0b57964b4d9dbb8280a}{\index{polpot@{polpot}!use\-\_\-tholed@{use\-\_\-tholed}}
+\index{use\-\_\-tholed@{use\-\_\-tholed}!polpot@{polpot}}
+\subsubsection[{use\-\_\-tholed}]{\setlength{\rightskip}{0pt plus 5cm}logical polpot\-::use\-\_\-tholed}}\label{classpolpot_ae13276c9ed18e0b57964b4d9dbb8280a}
+
+
+flag governing use of direct thole damping 
+
+
+
+Definition at line 72 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a35266232ef5bad9fdab31aede7f54a3a}{\index{polpot@{polpot}!w2scale@{w2scale}}
+\index{w2scale@{w2scale}!polpot@{polpot}}
+\subsubsection[{w2scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::w2scale}}\label{classpolpot_a35266232ef5bad9fdab31aede7f54a3a}
+
+
+scale factor for 1-\/2 induced dipole interactions 
+
+
+
+Definition at line 57 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ad0a29e94706d0210a94ac7897716f987}{\index{polpot@{polpot}!w3scale@{w3scale}}
+\index{w3scale@{w3scale}!polpot@{polpot}}
+\subsubsection[{w3scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::w3scale}}\label{classpolpot_ad0a29e94706d0210a94ac7897716f987}
+
+
+scale factor for 1-\/3 induced dipole interactions 
+
+
+
+Definition at line 58 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_a80642be89424de1fa5eaf796a215c251}{\index{polpot@{polpot}!w4scale@{w4scale}}
+\index{w4scale@{w4scale}!polpot@{polpot}}
+\subsubsection[{w4scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::w4scale}}\label{classpolpot_a80642be89424de1fa5eaf796a215c251}
+
+
+scale factor for 1-\/4 induced dipole interactions 
+
+
+
+Definition at line 59 of file M\-O\-D\-\_\-polpot.\-f90.
+
+\hypertarget{classpolpot_ad036ebb7c31962e9aae5014aac94e41c}{\index{polpot@{polpot}!w5scale@{w5scale}}
+\index{w5scale@{w5scale}!polpot@{polpot}}
+\subsubsection[{w5scale}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 polpot\-::w5scale}}\label{classpolpot_ad036ebb7c31962e9aae5014aac94e41c}
+
+
+scale factor for 1-\/5 induced dipole interactions 
+
+
+
+Definition at line 60 of file M\-O\-D\-\_\-polpot.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__polpot_8f90}{M\-O\-D\-\_\-polpot.\-f90}\end{DoxyCompactItemize}

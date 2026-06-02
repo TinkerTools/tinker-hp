@@ -1,0 +1,787 @@
+\hypertarget{pmestuff_8f90}{\section{pmestuff.\-f90 File Reference}
+\label{pmestuff_8f90}\index{pmestuff.\-f90@{pmestuff.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{pmestuff_8f90_a2c281b5e322fe3f6933feeb58f5d133e}{bspline\-\_\-fill\-\_\-site} (i, impi)
+\begin{DoxyCompactList}\small\item\em finds B-\/spline coefficients and derivatives for P\-M\-E i-\/th atomic sites along the fractional coordinate axes \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_ab60c473185b72a82ef174c5fcdf24cc7}{bsplgen} (w, thetai)
+\begin{DoxyCompactList}\small\item\em \char`\"{}bsplgen\char`\"{} gets B-\/spline coefficients and derivatives for a single P\-M\-E atomic site along a particular direction for P\-M\-E i-\/th atomic sites along the fractional coordinate axes \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a4495f1975376db6546014d7ab27b9d62}{grid\-\_\-mpole\-\_\-site} (isite, impi, fmp)
+\begin{DoxyCompactList}\small\item\em places the i-\/th fractional atomic multipole onto the particle mesh Ewald grid \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a926f0702082531ece71364b60a89cc8e}{grid\-\_\-uind\-\_\-site} (isite, impi, fuind, fuinp, qgrid2loc)
+\begin{DoxyCompactList}\small\item\em places the fractional induced dipoles onto the particle mesh Ewald grid the particle mesh Ewald grid \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_ac4aafef365cd8b32ba802ba270739607}{adjust} (offset, nfft, nchk, amin, amax, cmin, cmax)
+\begin{DoxyCompactList}\small\item\em modifies site bounds on the P\-M\-E grid and returns an offset into the B-\/spline coefficient arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a75e54e1a670bd08b048f69a9940abe4c}{fphi\-\_\-mpole\-\_\-site} (isite, impi)
+\begin{DoxyCompactList}\small\item\em \char`\"{}fphi\-\_\-mpole\-\_\-site\char`\"{} extracts the permanent multipole potential on the i-\/th site from the particle mesh Ewald grid \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a804d1244cfafe8311d48bfceb77fdde6}{fphi\-\_\-chg\-\_\-site} (isite, impi)
+\begin{DoxyCompactList}\small\item\em \char`\"{}fphi\-\_\-chg\-\_\-site\char`\"{} extracts the permanent fixed charge potential on the i-\/th site from the particle mesh Ewald grid \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a7a5e0594cbf56a62ac01c2d370fadd74}{fphi\-\_\-uind\-\_\-site} (isite, impi, fdip\-\_\-phi1, fdip\-\_\-phi2, fdip\-\_\-sum\-\_\-phi)
+\begin{DoxyCompactList}\small\item\em extracts the induced dipole potential at the i-\/th site from the particle mesh Ewald grid finds B-\/spline coefficients and derivatives for P\-M\-E i-\/th atomic sites along the fractional coordinate axes \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a906ed69296071ce5f3674694f9b98d9b}{cmp\-\_\-to\-\_\-fmp} (cmp, fmp)
+\begin{DoxyCompactList}\small\item\em transforms the atomic multipoles from Cartesian to fractional coordinates \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a5efd8955803838b82fa81b021a32cf5e}{cmp\-\_\-to\-\_\-fmp\-\_\-site} (cmp, fmp)
+\begin{DoxyCompactList}\small\item\em transforms the atomic multipoles from Cartesian to fractional coordinates \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_ab3a9c64aac2f01b68893073aa3221161}{cart\-\_\-to\-\_\-frac} (ctf)
+\begin{DoxyCompactList}\small\item\em \char`\"{}cart\-\_\-to\-\_\-frac\char`\"{} computes a transformation matrix to convert a multipole object in Cartesian coordinates to fractional note the multipole components are stored in the condensed order (m,dx,dy,dz,qxx,qyy,qzz,qxy,qxz,qyz) \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_acac006e94420d1c20f607ffcc78de99d}{fphi\-\_\-to\-\_\-cphi\-\_\-site} (fphi, cphi)
+\begin{DoxyCompactList}\small\item\em transform electrostatic potential (and derivatives) from cartesian to \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a1350ef38c71785ec4079a23e4cb7c9ca}{frac\-\_\-to\-\_\-cart}
+\begin{DoxyCompactList}\small\item\em computes a transformation matrix to convert a multipole object in fractional coordinates to cartesian note the multipole components are stored in the condensed order (m,dx,dy,dz,qxx,qyy,qzz,qxy,qxz,qyz) \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a678ca0cec4d103cb489a1ef6dfbe5fe3}{reassignpme} (init)
+\begin{DoxyCompactList}\small\item\em initialize arrays to compute reciprocal part of electrostatic and polarization interactions, also reassign atoms on 'reciprocal cores' between time steps \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_add1c28a3b5a4b53264960d7fb9231164}{grid\-\_\-pchg\-\_\-site} (isite, impi, q)
+\begin{DoxyCompactList}\small\item\em places the i-\/th fractional atomic charge onto the particle mesh Ewald grid \end{DoxyCompactList}\item 
+subroutine \hyperlink{pmestuff_8f90_a0b37f12d67a29828eeb0566a84e761fa}{grid\-\_\-disp\-\_\-site} (isite, impi)
+\begin{DoxyCompactList}\small\item\em places the i-\/th damped dispersion coefficients onto the particle mesh Ewald grid \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{pmestuff_8f90_ac4aafef365cd8b32ba802ba270739607}{\index{pmestuff.\-f90@{pmestuff.\-f90}!adjust@{adjust}}
+\index{adjust@{adjust}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{adjust}]{\setlength{\rightskip}{0pt plus 5cm}subroutine adjust (
+\begin{DoxyParamCaption}
+\item[{integer}]{offset, }
+\item[{integer}]{nfft, }
+\item[{integer}]{nchk, }
+\item[{integer}]{amin, }
+\item[{integer}]{amax, }
+\item[{integer}]{cmin, }
+\item[{integer}]{cmax}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_ac4aafef365cd8b32ba802ba270739607}
+
+
+modifies site bounds on the P\-M\-E grid and returns an offset into the B-\/spline coefficient arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 443 of file pmestuff.\-f90.
+
+
+
+Referenced by grid\-\_\-disp\-\_\-site(), grid\-\_\-mpole\-\_\-site(), grid\-\_\-pchg\-\_\-site(), and grid\-\_\-uind\-\_\-site().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pmestuff_8f90_ac4aafef365cd8b32ba802ba270739607_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_ab60c473185b72a82ef174c5fcdf24cc7}{\index{pmestuff.\-f90@{pmestuff.\-f90}!bsplgen@{bsplgen}}
+\index{bsplgen@{bsplgen}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{bsplgen}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bsplgen (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{w, }
+\item[{real$\ast$8, dimension(4,$\ast$)}]{thetai}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_ab60c473185b72a82ef174c5fcdf24cc7}
+
+
+\char`\"{}bsplgen\char`\"{} gets B-\/spline coefficients and derivatives for a single P\-M\-E atomic site along a particular direction for P\-M\-E i-\/th atomic sites along the fractional coordinate axes 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em w,\-:} & offset \\
+\hline
+\mbox{\tt in}  & {\em thetai,\-:} & B-\/spline value \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 75 of file pmestuff.\-f90.
+
+
+
+Referenced by bspline\-\_\-fill\-\_\-site().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pmestuff_8f90_ab60c473185b72a82ef174c5fcdf24cc7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a2c281b5e322fe3f6933feeb58f5d133e}{\index{pmestuff.\-f90@{pmestuff.\-f90}!bspline\-\_\-fill\-\_\-site@{bspline\-\_\-fill\-\_\-site}}
+\index{bspline\-\_\-fill\-\_\-site@{bspline\-\_\-fill\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{bspline\-\_\-fill\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bspline\-\_\-fill\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{i, }
+\item[{integer}]{impi}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a2c281b5e322fe3f6933feeb58f5d133e}
+
+
+finds B-\/spline coefficients and derivatives for P\-M\-E i-\/th atomic sites along the fractional coordinate axes 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em i,\-:} & atomic index \\
+\hline
+\mbox{\tt in}  & {\em impi,\-:} & atomic index in the \char`\"{}parallel index\char`\"{} \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 18 of file pmestuff.\-f90.
+
+
+
+References bsplgen().
+
+
+
+Referenced by ecrecip(), ecrecip1(), edrecip(), edrecip1(), efld0\-\_\-recip(), emrecip(), and emrecip1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=264pt]{pmestuff_8f90_a2c281b5e322fe3f6933feeb58f5d133e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{pmestuff_8f90_a2c281b5e322fe3f6933feeb58f5d133e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_ab3a9c64aac2f01b68893073aa3221161}{\index{pmestuff.\-f90@{pmestuff.\-f90}!cart\-\_\-to\-\_\-frac@{cart\-\_\-to\-\_\-frac}}
+\index{cart\-\_\-to\-\_\-frac@{cart\-\_\-to\-\_\-frac}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{cart\-\_\-to\-\_\-frac}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cart\-\_\-to\-\_\-frac (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(10,10)}]{ctf}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_ab3a9c64aac2f01b68893073aa3221161}
+
+
+\char`\"{}cart\-\_\-to\-\_\-frac\char`\"{} computes a transformation matrix to convert a multipole object in Cartesian coordinates to fractional note the multipole components are stored in the condensed order (m,dx,dy,dz,qxx,qyy,qzz,qxy,qxz,qyz) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt out}  & {\em ctf,\-:} & transformation matrix \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1200 of file pmestuff.\-f90.
+
+
+
+Referenced by cart\-\_\-to\-\_\-frac\-\_\-vec(), cmp\-\_\-to\-\_\-fmp(), and cmp\-\_\-to\-\_\-fmp\-\_\-site().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_ab3a9c64aac2f01b68893073aa3221161_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a906ed69296071ce5f3674694f9b98d9b}{\index{pmestuff.\-f90@{pmestuff.\-f90}!cmp\-\_\-to\-\_\-fmp@{cmp\-\_\-to\-\_\-fmp}}
+\index{cmp\-\_\-to\-\_\-fmp@{cmp\-\_\-to\-\_\-fmp}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{cmp\-\_\-to\-\_\-fmp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cmp\-\_\-to\-\_\-fmp (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(10,$\ast$)}]{cmp, }
+\item[{real$\ast$8, dimension(10,$\ast$)}]{fmp}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a906ed69296071ce5f3674694f9b98d9b}
+
+
+transforms the atomic multipoles from Cartesian to fractional coordinates 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em cmp,\-:} & atomic multipoles in cartesian coordinates \\
+\hline
+\mbox{\tt in}  & {\em fmp,\-:} & atomic multipoles in fractional coordinates \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1106 of file pmestuff.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=268pt]{pmestuff_8f90_a906ed69296071ce5f3674694f9b98d9b_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a5efd8955803838b82fa81b021a32cf5e}{\index{pmestuff.\-f90@{pmestuff.\-f90}!cmp\-\_\-to\-\_\-fmp\-\_\-site@{cmp\-\_\-to\-\_\-fmp\-\_\-site}}
+\index{cmp\-\_\-to\-\_\-fmp\-\_\-site@{cmp\-\_\-to\-\_\-fmp\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{cmp\-\_\-to\-\_\-fmp\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cmp\-\_\-to\-\_\-fmp\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{cmp, }
+\item[{real$\ast$8, dimension($\ast$)}]{fmp}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a5efd8955803838b82fa81b021a32cf5e}
+
+
+transforms the atomic multipoles from Cartesian to fractional coordinates 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em cmp,\-:} & atomic multipoles in cartesian coordinates \\
+\hline
+\mbox{\tt in}  & {\em fmp,\-:} & atomic multipoles in fractional coordinates \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1148 of file pmestuff.\-f90.
+
+
+
+References cart\-\_\-to\-\_\-frac().
+
+
+
+Referenced by efld0\-\_\-recip(), emrecip(), emrecip1(), eprecip1(), scalderfieldzmatrec1(), scalderfieldzmatrec3(), scalderfieldzmatrec6(), and scalderfieldzmatrec8().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=292pt]{pmestuff_8f90_a5efd8955803838b82fa81b021a32cf5e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a5efd8955803838b82fa81b021a32cf5e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a804d1244cfafe8311d48bfceb77fdde6}{\index{pmestuff.\-f90@{pmestuff.\-f90}!fphi\-\_\-chg\-\_\-site@{fphi\-\_\-chg\-\_\-site}}
+\index{fphi\-\_\-chg\-\_\-site@{fphi\-\_\-chg\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{fphi\-\_\-chg\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fphi\-\_\-chg\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a804d1244cfafe8311d48bfceb77fdde6}
+
+
+\char`\"{}fphi\-\_\-chg\-\_\-site\char`\"{} extracts the permanent fixed charge potential on the i-\/th site from the particle mesh Ewald grid 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em isite,\-:} & atomic index \\
+\hline
+\mbox{\tt in}  & {\em impi,\-:} & atomic index in the \char`\"{}parallel index\char`\"{} \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 677 of file pmestuff.\-f90.
+
+
+
+Referenced by ecrecip1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a804d1244cfafe8311d48bfceb77fdde6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a75e54e1a670bd08b048f69a9940abe4c}{\index{pmestuff.\-f90@{pmestuff.\-f90}!fphi\-\_\-mpole\-\_\-site@{fphi\-\_\-mpole\-\_\-site}}
+\index{fphi\-\_\-mpole\-\_\-site@{fphi\-\_\-mpole\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{fphi\-\_\-mpole\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fphi\-\_\-mpole\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a75e54e1a670bd08b048f69a9940abe4c}
+
+
+\char`\"{}fphi\-\_\-mpole\-\_\-site\char`\"{} extracts the permanent multipole potential on the i-\/th site from the particle mesh Ewald grid 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em i,\-:} & atomic index \\
+\hline
+\mbox{\tt in}  & {\em impi,\-:} & atomic index in the \char`\"{}parallel index\char`\"{} \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 488 of file pmestuff.\-f90.
+
+
+
+Referenced by efld0\-\_\-recip(), emrecip(), and emrecip1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a75e54e1a670bd08b048f69a9940abe4c_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_acac006e94420d1c20f607ffcc78de99d}{\index{pmestuff.\-f90@{pmestuff.\-f90}!fphi\-\_\-to\-\_\-cphi\-\_\-site@{fphi\-\_\-to\-\_\-cphi\-\_\-site}}
+\index{fphi\-\_\-to\-\_\-cphi\-\_\-site@{fphi\-\_\-to\-\_\-cphi\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{fphi\-\_\-to\-\_\-cphi\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fphi\-\_\-to\-\_\-cphi\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension(20)}]{fphi, }
+\item[{real$\ast$8, dimension(10)}]{cphi}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_acac006e94420d1c20f607ffcc78de99d}
+
+
+transform electrostatic potential (and derivatives) from cartesian to 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em fphi,\-:} & potential in fractional coordinates \\
+\hline
+\mbox{\tt in}  & {\em cphi,\-:} & potential in cartesian coordinates \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1261 of file pmestuff.\-f90.
+
+
+
+References frac\-\_\-to\-\_\-cart().
+
+
+
+Referenced by ecrecip1(), efld0\-\_\-recip(), emrecip1(), eprecip1(), scalderfieldzmatrec1(), scalderfieldzmatrec3(), scalderfieldzmatrec6(), and scalderfieldzmatrec8().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=290pt]{pmestuff_8f90_acac006e94420d1c20f607ffcc78de99d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_acac006e94420d1c20f607ffcc78de99d_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a7a5e0594cbf56a62ac01c2d370fadd74}{\index{pmestuff.\-f90@{pmestuff.\-f90}!fphi\-\_\-uind\-\_\-site@{fphi\-\_\-uind\-\_\-site}}
+\index{fphi\-\_\-uind\-\_\-site@{fphi\-\_\-uind\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{fphi\-\_\-uind\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fphi\-\_\-uind\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi, }
+\item[{real$\ast$8, dimension(10)}]{fdip\-\_\-phi1, }
+\item[{real$\ast$8, dimension(10)}]{fdip\-\_\-phi2, }
+\item[{real$\ast$8, dimension(20)}]{fdip\-\_\-sum\-\_\-phi}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a7a5e0594cbf56a62ac01c2d370fadd74}
+
+
+extracts the induced dipole potential at the i-\/th site from the particle mesh Ewald grid finds B-\/spline coefficients and derivatives for P\-M\-E i-\/th atomic sites along the fractional coordinate axes 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em isite,\-:} & atomic index \\
+\hline
+\mbox{\tt in}  & {\em impi,\-:} & atomic index in the \char`\"{}parallel index\char`\"{} \\
+\hline
+\mbox{\tt in}  & {\em fdip\-\_\-phi1,\-:} & fractional coordinates of d induced fields \\
+\hline
+\mbox{\tt in}  & {\em fdip\-\_\-phi2,\-:} & fractional coordinates of p induced fields \\
+\hline
+\mbox{\tt in}  & {\em fdip\-\_\-phi2,\-:} & fractional coordinates of total induced fields \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 796 of file pmestuff.\-f90.
+
+
+
+Referenced by eprecip1(), and tmatxbrecip().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a7a5e0594cbf56a62ac01c2d370fadd74_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a1350ef38c71785ec4079a23e4cb7c9ca}{\index{pmestuff.\-f90@{pmestuff.\-f90}!frac\-\_\-to\-\_\-cart@{frac\-\_\-to\-\_\-cart}}
+\index{frac\-\_\-to\-\_\-cart@{frac\-\_\-to\-\_\-cart}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{frac\-\_\-to\-\_\-cart}]{\setlength{\rightskip}{0pt plus 5cm}subroutine frac\-\_\-to\-\_\-cart (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a1350ef38c71785ec4079a23e4cb7c9ca}
+
+
+computes a transformation matrix to convert a multipole object in fractional coordinates to cartesian note the multipole components are stored in the condensed order (m,dx,dy,dz,qxx,qyy,qzz,qxy,qxz,qyz) 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt out}  & {\em ctf,\-:} & transformation matrix \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1314 of file pmestuff.\-f90.
+
+
+
+Referenced by fphi\-\_\-to\-\_\-cphi\-\_\-site().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a1350ef38c71785ec4079a23e4cb7c9ca_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a0b37f12d67a29828eeb0566a84e761fa}{\index{pmestuff.\-f90@{pmestuff.\-f90}!grid\-\_\-disp\-\_\-site@{grid\-\_\-disp\-\_\-site}}
+\index{grid\-\_\-disp\-\_\-site@{grid\-\_\-disp\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{grid\-\_\-disp\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine grid\-\_\-disp\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a0b37f12d67a29828eeb0566a84e761fa}
+
+
+places the i-\/th damped dispersion coefficients onto the particle mesh Ewald grid 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em i,\-:} & atomic index \\
+\hline
+\mbox{\tt in}  & {\em impi,\-:} & atomic index in the \char`\"{}parallel index\char`\"{} \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 2034 of file pmestuff.\-f90.
+
+
+
+References adjust().
+
+
+
+Referenced by edrecip(), and edrecip1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=248pt]{pmestuff_8f90_a0b37f12d67a29828eeb0566a84e761fa_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a0b37f12d67a29828eeb0566a84e761fa_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a4495f1975376db6546014d7ab27b9d62}{\index{pmestuff.\-f90@{pmestuff.\-f90}!grid\-\_\-mpole\-\_\-site@{grid\-\_\-mpole\-\_\-site}}
+\index{grid\-\_\-mpole\-\_\-site@{grid\-\_\-mpole\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{grid\-\_\-mpole\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine grid\-\_\-mpole\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi, }
+\item[{real$\ast$8, dimension(10)}]{fmp}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a4495f1975376db6546014d7ab27b9d62}
+
+
+places the i-\/th fractional atomic multipole onto the particle mesh Ewald grid 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em isite,\-:} & atomic index \\
+\hline
+\mbox{\tt in}  & {\em impi,\-:} & atomic index in the \char`\"{}parallel index\char`\"{} \\
+\hline
+\mbox{\tt in}  & {\em fmp,\-:} & fractional atomic multipole \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 180 of file pmestuff.\-f90.
+
+
+
+References adjust().
+
+
+
+Referenced by efld0\-\_\-recip(), emrecip(), emrecip1(), and eprecip1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=260pt]{pmestuff_8f90_a4495f1975376db6546014d7ab27b9d62_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a4495f1975376db6546014d7ab27b9d62_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_add1c28a3b5a4b53264960d7fb9231164}{\index{pmestuff.\-f90@{pmestuff.\-f90}!grid\-\_\-pchg\-\_\-site@{grid\-\_\-pchg\-\_\-site}}
+\index{grid\-\_\-pchg\-\_\-site@{grid\-\_\-pchg\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{grid\-\_\-pchg\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine grid\-\_\-pchg\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi, }
+\item[{real$\ast$8}]{q}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_add1c28a3b5a4b53264960d7fb9231164}
+
+
+places the i-\/th fractional atomic charge onto the particle mesh Ewald grid 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em isite,\-:} & atomic index \\
+\hline
+\mbox{\tt in}  & {\em impi,\-:} & atomic index in the \char`\"{}parallel index\char`\"{} \\
+\hline
+\mbox{\tt in}  & {\em q,\-:} & charge \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1919 of file pmestuff.\-f90.
+
+
+
+References adjust().
+
+
+
+Referenced by ecrecip(), and ecrecip1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=252pt]{pmestuff_8f90_add1c28a3b5a4b53264960d7fb9231164_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_add1c28a3b5a4b53264960d7fb9231164_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a926f0702082531ece71364b60a89cc8e}{\index{pmestuff.\-f90@{pmestuff.\-f90}!grid\-\_\-uind\-\_\-site@{grid\-\_\-uind\-\_\-site}}
+\index{grid\-\_\-uind\-\_\-site@{grid\-\_\-uind\-\_\-site}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{grid\-\_\-uind\-\_\-site}]{\setlength{\rightskip}{0pt plus 5cm}subroutine grid\-\_\-uind\-\_\-site (
+\begin{DoxyParamCaption}
+\item[{integer}]{isite, }
+\item[{integer}]{impi, }
+\item[{real$\ast$8, dimension(3)}]{fuind, }
+\item[{real$\ast$8, dimension(3)}]{fuinp, }
+\item[{real$\ast$8, dimension(2,n1mpimax,n2mpimax,n3mpimax,nrec\-\_\-send+1)}]{qgrid2loc}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a926f0702082531ece71364b60a89cc8e}
+
+
+places the fractional induced dipoles onto the particle mesh Ewald grid the particle mesh Ewald grid 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em isite,\-:} & atomic index \\
+\hline
+\mbox{\tt in}  & {\em impi,\-:} & atomic index in the \char`\"{}parallel index\char`\"{} \\
+\hline
+\mbox{\tt in}  & {\em fuind,\-:} & fractional d induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em fuind,\-:} & fractional p induced dipoles \\
+\hline
+\mbox{\tt in}  & {\em qgrid2loc,\-:} & P\-M\-E grid \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 306 of file pmestuff.\-f90.
+
+
+
+References adjust().
+
+
+
+Referenced by eprecip1(), fftthatplz(), fftthatplz2(), tmatxbrecip(), and tmatxbrecipsave().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=250pt]{pmestuff_8f90_a926f0702082531ece71364b60a89cc8e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a926f0702082531ece71364b60a89cc8e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{pmestuff_8f90_a678ca0cec4d103cb489a1ef6dfbe5fe3}{\index{pmestuff.\-f90@{pmestuff.\-f90}!reassignpme@{reassignpme}}
+\index{reassignpme@{reassignpme}!pmestuff.f90@{pmestuff.\-f90}}
+\subsubsection[{reassignpme}]{\setlength{\rightskip}{0pt plus 5cm}subroutine reassignpme (
+\begin{DoxyParamCaption}
+\item[{logical}]{init}
+\end{DoxyParamCaption}
+)}}\label{pmestuff_8f90_a678ca0cec4d103cb489a1ef6dfbe5fe3}
+
+
+initialize arrays to compute reciprocal part of electrostatic and polarization interactions, also reassign atoms on 'reciprocal cores' between time steps 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em init,\-:} & first call to the routine \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1386 of file pmestuff.\-f90.
+
+
+
+References imove(), colvarproxy\-\_\-tinkerhp\-::init(), orderbuffer(), and orderbufferrec().
+
+
+
+Referenced by analyze\-\_\-bis(), baoab(), baoabrespa(), baoabrespa1(), beeman(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), kewald\-\_\-dd\-\_\-init(), makebar(), mdinit(), mdinitbead(), mdinitreps(), minimiz1(), minimize\-\_\-bis(), respa(), respa1(), testgrad(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a678ca0cec4d103cb489a1ef6dfbe5fe3_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{pmestuff_8f90_a678ca0cec4d103cb489a1ef6dfbe5fe3_icgraph}
+\end{center}
+\end{figure}
+
+

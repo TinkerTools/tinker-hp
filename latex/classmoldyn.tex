@@ -1,0 +1,129 @@
+\hypertarget{classmoldyn}{\section{moldyn Module Reference}
+\label{classmoldyn}\index{moldyn@{moldyn}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classmoldyn_a9b6e981d143cad48fcc41f194e8b826d}{v}
+\begin{DoxyCompactList}\small\item\em current velocity of each atom along the x,y,z-\/axes \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classmoldyn_ae8b981427504a1afaa1a90aeb47d29d3}{a}
+\begin{DoxyCompactList}\small\item\em current acceleration of each atom along x,y,z-\/axes \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classmoldyn_ac63436eccf763211939d5388e0803f24}{aalt}
+\begin{DoxyCompactList}\small\item\em alternate acceleration of each atom along x,y,z-\/axes \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classmoldyn_a02162eed7467865a18a4b4aec93f7029}{aalt2}
+\begin{DoxyCompactList}\small\item\em alternate 2 acceleration of each atom along x,y,z-\/axes \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmoldyn_ac40f2c232407c85a02169ad2692ab755}{dshort}
+\begin{DoxyCompactList}\small\item\em short range (bonded) forces time step for respa and respa1 integrator \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classmoldyn_a1cd6fdf3c020c12a8195c47b37fa62d3}{dinter}
+\begin{DoxyCompactList}\small\item\em intermediate range forces time step for respa1 integrator \end{DoxyCompactList}\item 
+integer \hyperlink{classmoldyn_aab13fe54485a53ad7bb8219186aff2e8}{nalt}
+\begin{DoxyCompactList}\small\item\em number of inner short range time steps for respa integrator and intermediate for respa1 \end{DoxyCompactList}\item 
+integer \hyperlink{classmoldyn_ad6964022cb98874d3ce9b7db35f12ad4}{nalt2}
+\begin{DoxyCompactList}\small\item\em number of inner short range time steps for respa1 integrator \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classmoldyn_ae8b981427504a1afaa1a90aeb47d29d3}{\index{moldyn@{moldyn}!a@{a}}
+\index{a@{a}!moldyn@{moldyn}}
+\subsubsection[{a}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable moldyn\-::a}}\label{classmoldyn_ae8b981427504a1afaa1a90aeb47d29d3}
+
+
+current acceleration of each atom along x,y,z-\/axes 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+\hypertarget{classmoldyn_ac63436eccf763211939d5388e0803f24}{\index{moldyn@{moldyn}!aalt@{aalt}}
+\index{aalt@{aalt}!moldyn@{moldyn}}
+\subsubsection[{aalt}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable moldyn\-::aalt}}\label{classmoldyn_ac63436eccf763211939d5388e0803f24}
+
+
+alternate acceleration of each atom along x,y,z-\/axes 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+\hypertarget{classmoldyn_a02162eed7467865a18a4b4aec93f7029}{\index{moldyn@{moldyn}!aalt2@{aalt2}}
+\index{aalt2@{aalt2}!moldyn@{moldyn}}
+\subsubsection[{aalt2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable moldyn\-::aalt2}}\label{classmoldyn_a02162eed7467865a18a4b4aec93f7029}
+
+
+alternate 2 acceleration of each atom along x,y,z-\/axes 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+\hypertarget{classmoldyn_a1cd6fdf3c020c12a8195c47b37fa62d3}{\index{moldyn@{moldyn}!dinter@{dinter}}
+\index{dinter@{dinter}!moldyn@{moldyn}}
+\subsubsection[{dinter}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 moldyn\-::dinter}}\label{classmoldyn_a1cd6fdf3c020c12a8195c47b37fa62d3}
+
+
+intermediate range forces time step for respa1 integrator 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+\hypertarget{classmoldyn_ac40f2c232407c85a02169ad2692ab755}{\index{moldyn@{moldyn}!dshort@{dshort}}
+\index{dshort@{dshort}!moldyn@{moldyn}}
+\subsubsection[{dshort}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 moldyn\-::dshort}}\label{classmoldyn_ac40f2c232407c85a02169ad2692ab755}
+
+
+short range (bonded) forces time step for respa and respa1 integrator 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+\hypertarget{classmoldyn_aab13fe54485a53ad7bb8219186aff2e8}{\index{moldyn@{moldyn}!nalt@{nalt}}
+\index{nalt@{nalt}!moldyn@{moldyn}}
+\subsubsection[{nalt}]{\setlength{\rightskip}{0pt plus 5cm}integer moldyn\-::nalt}}\label{classmoldyn_aab13fe54485a53ad7bb8219186aff2e8}
+
+
+number of inner short range time steps for respa integrator and intermediate for respa1 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+\hypertarget{classmoldyn_ad6964022cb98874d3ce9b7db35f12ad4}{\index{moldyn@{moldyn}!nalt2@{nalt2}}
+\index{nalt2@{nalt2}!moldyn@{moldyn}}
+\subsubsection[{nalt2}]{\setlength{\rightskip}{0pt plus 5cm}integer moldyn\-::nalt2}}\label{classmoldyn_ad6964022cb98874d3ce9b7db35f12ad4}
+
+
+number of inner short range time steps for respa1 integrator 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+\hypertarget{classmoldyn_a9b6e981d143cad48fcc41f194e8b826d}{\index{moldyn@{moldyn}!v@{v}}
+\index{v@{v}!moldyn@{moldyn}}
+\subsubsection[{v}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable moldyn\-::v}}\label{classmoldyn_a9b6e981d143cad48fcc41f194e8b826d}
+
+
+current velocity of each atom along the x,y,z-\/axes 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-moldyn.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__moldyn_8f90}{M\-O\-D\-\_\-moldyn.\-f90}\end{DoxyCompactItemize}

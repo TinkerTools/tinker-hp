@@ -1,0 +1,255 @@
+\hypertarget{classtors}{\section{tors Module Reference}
+\label{classtors}\index{tors@{tors}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classtors_aa883bf512b1cd4a01eb09910fc3c72cc}{ntors}
+\begin{DoxyCompactList}\small\item\em total number of torsional angles in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_a83adafb5bf95a63da4cb0fa82209eb42}{ntorsloc}
+\begin{DoxyCompactList}\small\item\em local number of torsional angles in the system \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classtors_ae485dde8e89b669d1fdb5c91c0ae4777}{nbtors}
+\begin{DoxyCompactList}\small\item\em number of torsional angles before each atom \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), pointer \hyperlink{classtors_a603c1a2d6e0a48c34c461c682ccbf2b4}{itors}
+\begin{DoxyCompactList}\small\item\em numbers of the atoms in each torsional angle \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_a556d53e79c9d029d13359b1e5059c3f1}{winnbtors}
+\begin{DoxyCompactList}\small\item\em window object corresponding to nbtors \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_a4dd43f0fddaea87e391cb9579dc3c474}{winitors}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ibtors \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_ae73f518b14ddfb4f52d4a837d7cd19b5}{wintors1}
+\begin{DoxyCompactList}\small\item\em window object corresponding to tors1 \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_afd9aa88d6043185e43f36a3756b88f04}{wintors2}
+\begin{DoxyCompactList}\small\item\em window object corresponding to tors2 \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_a40da6c430e1053b805d3a5462c800ddb}{wintors3}
+\begin{DoxyCompactList}\small\item\em window object corresponding to tors3 \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_aab4285963a388f604971379adb71aa94}{wintors4}
+\begin{DoxyCompactList}\small\item\em window object corresponding to tors4 \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_aa77b9602856958a909ba63c480269d53}{wintors5}
+\begin{DoxyCompactList}\small\item\em window object corresponding to tors5 \end{DoxyCompactList}\item 
+integer \hyperlink{classtors_a1f3c7a1dc9da4c4ea78cdfc6d72a0e33}{wintors6}
+\begin{DoxyCompactList}\small\item\em window object corresponding to tors6 \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classtors_a0034d1f878239d3eb1438edde95aec03}{tors1}
+\begin{DoxyCompactList}\small\item\em 1-\/fold amplitude and phase for each torsional angle \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classtors_a6690f8463e3e2a846d7f58761fc911ad}{tors2}
+\begin{DoxyCompactList}\small\item\em 2-\/fold amplitude and phase for each torsional angle \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classtors_a98589f236939f86f0aec2b1b1542dc9c}{tors3}
+\begin{DoxyCompactList}\small\item\em 3-\/fold amplitude and phase for each torsional angle \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classtors_a664bbbab92d62df9a1d67b1e47a467d0}{tors4}
+\begin{DoxyCompactList}\small\item\em 4-\/fold amplitude and phase for each torsional angle \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classtors_a021bb0ab8d8f43957a38462ce7ce95fb}{tors5}
+\begin{DoxyCompactList}\small\item\em 5-\/fold amplitude and phase for each torsional angle \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), pointer \hyperlink{classtors_a814ae2dad20ccab069451bd283eedcf9}{tors6}
+\begin{DoxyCompactList}\small\item\em 6-\/fold amplitude and phase for each torsional angle \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 33 of file M\-O\-D\-\_\-tors.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classtors_a603c1a2d6e0a48c34c461c682ccbf2b4}{\index{tors@{tors}!itors@{itors}}
+\index{itors@{itors}!tors@{tors}}
+\subsubsection[{itors}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), pointer tors\-::itors}}\label{classtors_a603c1a2d6e0a48c34c461c682ccbf2b4}
+
+
+numbers of the atoms in each torsional angle 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_ae485dde8e89b669d1fdb5c91c0ae4777}{\index{tors@{tors}!nbtors@{nbtors}}
+\index{nbtors@{nbtors}!tors@{tors}}
+\subsubsection[{nbtors}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer tors\-::nbtors}}\label{classtors_ae485dde8e89b669d1fdb5c91c0ae4777}
+
+
+number of torsional angles before each atom 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_aa883bf512b1cd4a01eb09910fc3c72cc}{\index{tors@{tors}!ntors@{ntors}}
+\index{ntors@{ntors}!tors@{tors}}
+\subsubsection[{ntors}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::ntors}}\label{classtors_aa883bf512b1cd4a01eb09910fc3c72cc}
+
+
+total number of torsional angles in the system 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a83adafb5bf95a63da4cb0fa82209eb42}{\index{tors@{tors}!ntorsloc@{ntorsloc}}
+\index{ntorsloc@{ntorsloc}!tors@{tors}}
+\subsubsection[{ntorsloc}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::ntorsloc}}\label{classtors_a83adafb5bf95a63da4cb0fa82209eb42}
+
+
+local number of torsional angles in the system 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a0034d1f878239d3eb1438edde95aec03}{\index{tors@{tors}!tors1@{tors1}}
+\index{tors1@{tors1}!tors@{tors}}
+\subsubsection[{tors1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer tors\-::tors1}}\label{classtors_a0034d1f878239d3eb1438edde95aec03}
+
+
+1-\/fold amplitude and phase for each torsional angle 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a6690f8463e3e2a846d7f58761fc911ad}{\index{tors@{tors}!tors2@{tors2}}
+\index{tors2@{tors2}!tors@{tors}}
+\subsubsection[{tors2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer tors\-::tors2}}\label{classtors_a6690f8463e3e2a846d7f58761fc911ad}
+
+
+2-\/fold amplitude and phase for each torsional angle 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a98589f236939f86f0aec2b1b1542dc9c}{\index{tors@{tors}!tors3@{tors3}}
+\index{tors3@{tors3}!tors@{tors}}
+\subsubsection[{tors3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer tors\-::tors3}}\label{classtors_a98589f236939f86f0aec2b1b1542dc9c}
+
+
+3-\/fold amplitude and phase for each torsional angle 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a664bbbab92d62df9a1d67b1e47a467d0}{\index{tors@{tors}!tors4@{tors4}}
+\index{tors4@{tors4}!tors@{tors}}
+\subsubsection[{tors4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer tors\-::tors4}}\label{classtors_a664bbbab92d62df9a1d67b1e47a467d0}
+
+
+4-\/fold amplitude and phase for each torsional angle 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a021bb0ab8d8f43957a38462ce7ce95fb}{\index{tors@{tors}!tors5@{tors5}}
+\index{tors5@{tors5}!tors@{tors}}
+\subsubsection[{tors5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer tors\-::tors5}}\label{classtors_a021bb0ab8d8f43957a38462ce7ce95fb}
+
+
+5-\/fold amplitude and phase for each torsional angle 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a814ae2dad20ccab069451bd283eedcf9}{\index{tors@{tors}!tors6@{tors6}}
+\index{tors6@{tors6}!tors@{tors}}
+\subsubsection[{tors6}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), pointer tors\-::tors6}}\label{classtors_a814ae2dad20ccab069451bd283eedcf9}
+
+
+6-\/fold amplitude and phase for each torsional angle 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a4dd43f0fddaea87e391cb9579dc3c474}{\index{tors@{tors}!winitors@{winitors}}
+\index{winitors@{winitors}!tors@{tors}}
+\subsubsection[{winitors}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::winitors}}\label{classtors_a4dd43f0fddaea87e391cb9579dc3c474}
+
+
+window object corresponding to ibtors 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a556d53e79c9d029d13359b1e5059c3f1}{\index{tors@{tors}!winnbtors@{winnbtors}}
+\index{winnbtors@{winnbtors}!tors@{tors}}
+\subsubsection[{winnbtors}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::winnbtors}}\label{classtors_a556d53e79c9d029d13359b1e5059c3f1}
+
+
+window object corresponding to nbtors 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_ae73f518b14ddfb4f52d4a837d7cd19b5}{\index{tors@{tors}!wintors1@{wintors1}}
+\index{wintors1@{wintors1}!tors@{tors}}
+\subsubsection[{wintors1}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::wintors1}}\label{classtors_ae73f518b14ddfb4f52d4a837d7cd19b5}
+
+
+window object corresponding to tors1 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_afd9aa88d6043185e43f36a3756b88f04}{\index{tors@{tors}!wintors2@{wintors2}}
+\index{wintors2@{wintors2}!tors@{tors}}
+\subsubsection[{wintors2}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::wintors2}}\label{classtors_afd9aa88d6043185e43f36a3756b88f04}
+
+
+window object corresponding to tors2 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a40da6c430e1053b805d3a5462c800ddb}{\index{tors@{tors}!wintors3@{wintors3}}
+\index{wintors3@{wintors3}!tors@{tors}}
+\subsubsection[{wintors3}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::wintors3}}\label{classtors_a40da6c430e1053b805d3a5462c800ddb}
+
+
+window object corresponding to tors3 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_aab4285963a388f604971379adb71aa94}{\index{tors@{tors}!wintors4@{wintors4}}
+\index{wintors4@{wintors4}!tors@{tors}}
+\subsubsection[{wintors4}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::wintors4}}\label{classtors_aab4285963a388f604971379adb71aa94}
+
+
+window object corresponding to tors4 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_aa77b9602856958a909ba63c480269d53}{\index{tors@{tors}!wintors5@{wintors5}}
+\index{wintors5@{wintors5}!tors@{tors}}
+\subsubsection[{wintors5}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::wintors5}}\label{classtors_aa77b9602856958a909ba63c480269d53}
+
+
+window object corresponding to tors5 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-tors.\-f90.
+
+\hypertarget{classtors_a1f3c7a1dc9da4c4ea78cdfc6d72a0e33}{\index{tors@{tors}!wintors6@{wintors6}}
+\index{wintors6@{wintors6}!tors@{tors}}
+\subsubsection[{wintors6}]{\setlength{\rightskip}{0pt plus 5cm}integer tors\-::wintors6}}\label{classtors_a1f3c7a1dc9da4c4ea78cdfc6d72a0e33}
+
+
+window object corresponding to tors6 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-tors.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__tors_8f90}{M\-O\-D\-\_\-tors.\-f90}\end{DoxyCompactItemize}

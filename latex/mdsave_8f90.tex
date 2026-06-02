@@ -1,0 +1,70 @@
+\hypertarget{mdsave_8f90}{\section{mdsave.\-f90 File Reference}
+\label{mdsave_8f90}\index{mdsave.\-f90@{mdsave.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{mdsave_8f90_a66117ee581d744421127d25fed43b306}{mdsave} (istep, dt, epot, derivs)
+\begin{DoxyCompactList}\small\item\em writes molecular dynamics trajectory snapshots and auxiliary files with velocity, force or induced dipole data; also checks for user requested termination of a simulation \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{mdsave_8f90_a66117ee581d744421127d25fed43b306}{\index{mdsave.\-f90@{mdsave.\-f90}!mdsave@{mdsave}}
+\index{mdsave@{mdsave}!mdsave.f90@{mdsave.\-f90}}
+\subsubsection[{mdsave}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mdsave (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{real$\ast$8}]{dt, }
+\item[{real$\ast$8}]{epot, }
+\item[{real$\ast$8, dimension(3,$\ast$)}]{derivs}
+\end{DoxyParamCaption}
+)}}\label{mdsave_8f90_a66117ee581d744421127d25fed43b306}
+
+
+writes molecular dynamics trajectory snapshots and auxiliary files with velocity, force or induced dipole data; also checks for user requested termination of a simulation 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\mbox{\tt in}  & {\em epot,\-:} & value of potential energy \\
+\hline
+\mbox{\tt in}  & {\em derivs,\-:} & derivatives of potential energy wrt cartesian coordinates \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 26 of file mdsave.\-f90.
+
+
+
+References bounds(), colvarproxy\-\_\-tinkerhp\-::dt(), fatal(), freeunit(), numeral(), openend(), prtdyn(), prtxyz(), suffix(), trimtext(), and version().
+
+
+
+Referenced by baoab(), baoabrespa(), baoabrespa1(), beeman(), respa(), respa1(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdsave_8f90_a66117ee581d744421127d25fed43b306_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdsave_8f90_a66117ee581d744421127d25fed43b306_icgraph}
+\end{center}
+\end{figure}
+
+

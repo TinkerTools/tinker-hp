@@ -1,0 +1,188 @@
+\hypertarget{mdsavebeads_8f90}{\section{mdsavebeads.\-f90 File Reference}
+\label{mdsavebeads_8f90}\index{mdsavebeads.\-f90@{mdsavebeads.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{mdsavebeads_8f90_a575ff5a134d065e6ecf33365c96df8e7}{mdsavebeads} (istep, dt, polymer)
+\begin{DoxyCompactList}\small\item\em writes molecular dynamics trajectory snapshots and auxiliary files with velocity, force or induced dipole data; also checks for user requested termination of a simulation while using path pimd \end{DoxyCompactList}\item 
+subroutine \hyperlink{mdsavebeads_8f90_aedd122cf09a273caa911942d774111b4}{check\-\_\-endfile} ()
+\item 
+subroutine \hyperlink{mdsavebeads_8f90_a6ce6536dbe84c22e614ac7cc1ba05070}{comm\-\_\-for\-\_\-write\-\_\-pi} (polymer, nproc\-\_\-write, ibead\-\_\-beg\-\_\-r, ibead\-\_\-end\-\_\-r)
+\begin{DoxyCompactList}\small\item\em necessary communications for output of P\-I\-M\-D simulation \end{DoxyCompactList}\item 
+subroutine \hyperlink{mdsavebeads_8f90_a411cd7110222675109c4d9c516ff7455}{comm\-\_\-after\-\_\-boundspi} (polymer, nproc\-\_\-write)
+\begin{DoxyCompactList}\small\item\em necessary communications after calls to boundspi \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{mdsavebeads_8f90_aedd122cf09a273caa911942d774111b4}{\index{mdsavebeads.\-f90@{mdsavebeads.\-f90}!check\-\_\-endfile@{check\-\_\-endfile}}
+\index{check\-\_\-endfile@{check\-\_\-endfile}!mdsavebeads.f90@{mdsavebeads.\-f90}}
+\subsubsection[{check\-\_\-endfile}]{\setlength{\rightskip}{0pt plus 5cm}subroutine check\-\_\-endfile (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mdsavebeads_8f90_aedd122cf09a273caa911942d774111b4}
+
+
+Definition at line 300 of file mdsavebeads.\-f90.
+
+
+
+References fatal(), and freeunit().
+
+
+
+Referenced by mdsavebeads().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=332pt]{mdsavebeads_8f90_aedd122cf09a273caa911942d774111b4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdsavebeads_8f90_aedd122cf09a273caa911942d774111b4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mdsavebeads_8f90_a411cd7110222675109c4d9c516ff7455}{\index{mdsavebeads.\-f90@{mdsavebeads.\-f90}!comm\-\_\-after\-\_\-boundspi@{comm\-\_\-after\-\_\-boundspi}}
+\index{comm\-\_\-after\-\_\-boundspi@{comm\-\_\-after\-\_\-boundspi}!mdsavebeads.f90@{mdsavebeads.\-f90}}
+\subsubsection[{comm\-\_\-after\-\_\-boundspi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine comm\-\_\-after\-\_\-boundspi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{integer, intent(in)}]{nproc\-\_\-write}
+\end{DoxyParamCaption}
+)}}\label{mdsavebeads_8f90_a411cd7110222675109c4d9c516ff7455}
+
+
+necessary communications after calls to boundspi 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 506 of file mdsavebeads.\-f90.
+
+
+
+Referenced by mdsavebeads().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdsavebeads_8f90_a411cd7110222675109c4d9c516ff7455_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mdsavebeads_8f90_a6ce6536dbe84c22e614ac7cc1ba05070}{\index{mdsavebeads.\-f90@{mdsavebeads.\-f90}!comm\-\_\-for\-\_\-write\-\_\-pi@{comm\-\_\-for\-\_\-write\-\_\-pi}}
+\index{comm\-\_\-for\-\_\-write\-\_\-pi@{comm\-\_\-for\-\_\-write\-\_\-pi}!mdsavebeads.f90@{mdsavebeads.\-f90}}
+\subsubsection[{comm\-\_\-for\-\_\-write\-\_\-pi}]{\setlength{\rightskip}{0pt plus 5cm}subroutine comm\-\_\-for\-\_\-write\-\_\-pi (
+\begin{DoxyParamCaption}
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer, }
+\item[{integer, intent(in)}]{nproc\-\_\-write, }
+\item[{integer, intent(out)}]{ibead\-\_\-beg\-\_\-r, }
+\item[{integer, intent(out)}]{ibead\-\_\-end\-\_\-r}
+\end{DoxyParamCaption}
+)}}\label{mdsavebeads_8f90_a6ce6536dbe84c22e614ac7cc1ba05070}
+
+
+necessary communications for output of P\-I\-M\-D simulation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 340 of file mdsavebeads.\-f90.
+
+
+
+Referenced by mdsavebeads().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdsavebeads_8f90_a6ce6536dbe84c22e614ac7cc1ba05070_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mdsavebeads_8f90_a575ff5a134d065e6ecf33365c96df8e7}{\index{mdsavebeads.\-f90@{mdsavebeads.\-f90}!mdsavebeads@{mdsavebeads}}
+\index{mdsavebeads@{mdsavebeads}!mdsavebeads.f90@{mdsavebeads.\-f90}}
+\subsubsection[{mdsavebeads}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mdsavebeads (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{istep, }
+\item[{real$\ast$8, intent(in)}]{dt, }
+\item[{type(polymer\-\_\-comm\-\_\-type), intent(inout)}]{polymer}
+\end{DoxyParamCaption}
+)}}\label{mdsavebeads_8f90_a575ff5a134d065e6ecf33365c96df8e7}
+
+
+writes molecular dynamics trajectory snapshots and auxiliary files with velocity, force or induced dipole data; also checks for user requested termination of a simulation while using path pimd 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & timestep \\
+\hline
+\mbox{\tt in}  & {\em poymer,\-:} & current polymer \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 27 of file mdsavebeads.\-f90.
+
+
+
+References boundspi(), check\-\_\-endfile(), comm\-\_\-after\-\_\-boundspi(), comm\-\_\-for\-\_\-write\-\_\-pi(), colvarproxy\-\_\-tinkerhp\-::dt(), freeunit(), numeral(), openend(), prtdynbeads(), prtxyz(), random(), suffix(), trimtext(), beads\-::update\-\_\-direct\-\_\-space\-\_\-pi(), and version().
+
+
+
+Referenced by baoabpi(), and baoabrespapi().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdsavebeads_8f90_a575ff5a134d065e6ecf33365c96df8e7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mdsavebeads_8f90_a575ff5a134d065e6ecf33365c96df8e7_icgraph}
+\end{center}
+\end{figure}
+
+

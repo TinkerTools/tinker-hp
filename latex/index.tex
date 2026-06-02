@@ -1,0 +1,77 @@
+
+\begin{DoxyItemize}
+\item {\bfseries Update 01/2026\-:} Further speedups for the Fe\-N\-Nix-\/\-Bio1 foundation machine learning model via Multiple Time Steps and Distillation (D\-M\-T\-S). Check the \href{https://pubs.acs.org/doi/full/10.1021/acs.jpclett.5c03720}{\tt D\-M\-T\-S paper} (J. Phys. Chem. Lett. 2026, D\-O\-I\-: 10.\-1021/acs.jpclett.\-5c03720)
+\item {\bfseries Update 05/2025\-:} Integration of the Fe\-N\-Nix-\/\-Bio1 foundation machine learning model for molecular dynamics simulations. Check the \href{https://doi.org/10.26434/chemrxiv-2025-f1hgn-v4}{\tt Fe\-N\-Nix-\/\-Bio1 paper} (Chem\-Rxiv)
+\item {\bfseries Update 07/2024\-:} Integration of the Lambda-\/\-A\-B\-F method for alchemical free energy simulations. Check the \href{https://doi.org/10.1021/acs.jctc.3c01249}{\tt Lambda-\/\-A\-B\-F paper} (J. Chem. Theory Comput. 2024, 20, 11, 4481–4498)
+\item {\bfseries Update 08/2023\-:} Integration of Quantum-\/\-H\-P for Nuclear Quantum Effects (N\-Q\-E) through R\-P\-M\-D and (ad)Q\-T\-B methods. Check the \href{https://doi.org/10.1021/acs.jctc.2c01233}{\tt Quantum-\/\-H\-P paper} (J. Chem. Theory Comput. 2023, 19, 5, 1432–1445)
+\item {\bfseries Update 02/2023\-:} Support for neural networks potentials (A\-N\-I-\/2\-X, Deep\-M\-D etc...) is available. Check the \href{https://doi.org/10.1039/D2SC04815A}{\tt Deep-\/\-H\-P module paper} (Chem. Sci., 2023,14, 5438-\/5452)
+\item {\bfseries Update 02/2023\-:} Support for the {\bfseries A\-M\-O\-E\-B\-A+$\ast$$\ast$ potential now available.}
+\item {\bfseries $\ast$$\ast$\-Update 10/2022\-:} {\bfseries New website for Tinker-\/\-H\-P}, check it out! \href{https://tinker-hp.org}{\tt https\-://tinker-\/hp.\-org}
+\item {\bfseries Update 02/2021\-:} {\bfseries P\-L\-U\-M\-E\-D} Support for version 1.\-2 G\-P\-Us
+\item {\bfseries Update 11/2021\-:} {\bfseries P\-L\-U\-M\-E\-D} Support for version 1.\-2 (C\-P\-Us)
+\item {\bfseries Update 24/2020\-:} All versions have been pushed to Git\-Hub. 
+
+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item {\bfseries Current Github version\-:} 1.\-1v (enhanced A\-V\-X512 vectorized C\-P\-Us version), 1.\-2 (C\-P\-Us) + 1.\-2 (multi)-\/\-G\-P\-Us
+\item {\bfseries Current Development version\-:} 1.\-3 (C\-P\-Us + multi-\/\-G\-P\-Us)
+\end{DoxyItemize}
+
+All releases of the Tinker-\/\-H\-P code are now being performed on Github. For news, benchmarks, and additional tutorials, please visit the \href{https://tinker-hp.org/}{\tt Tinker-\/\-H\-P website} and follow us on \href{https://twitter.com/TINKERtoolsMD}{\tt Twitter}.
+
+In addition to Git\-Hub, a G\-P\-Us container (quick install!) is available thanks to N\-V\-I\-D\-I\-A on the \href{https://ngc.nvidia.com/catalog/containers/hpc:tinkerhp}{\tt N\-V\-I\-D\-I\-A N\-G\-C's website.} 
+
+
+
+{\bfseries Tinker-\/\-H\-P} is a {\bfseries C\-P\-Us and G\-P\-Us} based, multi-\/precision, {\bfseries M\-P\-I} massively parallel package dedicated to long {\bfseries polarizable molecular dynamics} simulations and to polarizable {\bfseries Q\-M/\-M\-M}. Tinker-\/\-H\-P is an evolution of the popular Tinker package that conserves its simplicity of use but brings new capabilities allowing performing very long molecular dynamics simulations on modern supercomputers that use thousands of cores.
+
+The Tinker-\/\-H\-P approach offers various strategies using domain decomposition techniques for periodic boundary conditions in the framework of the $\ast$(n)log(n) Smooth Particle Mesh Ewald$\ast$.
+
+Tinker-\/\-H\-P proposes a high-\/performance scalable computing environment for polarizable $\ast$$\ast$(A\-M\-O\-E\-B\-A, A\-M\-O\-E\-B\-A+, H\-I\-P\-P\-O...)$\ast$$\ast$ and classical $\ast$$\ast$(Amber, Charmm, O\-P\-L\-S...) force fields$\ast$$\ast$ giving access to large systems up to {\bfseries millions of atoms}. It can be used on supercomputers as well as on lab clusters. Tinker-\/\-H\-P supports {\bfseries Intel} ({\bfseries A\-V\-X-\/512} enhanced version) and A\-M\-D C\-P\-Us platforms as well as {\bfseries N\-V\-I\-D\-I\-A G\-P\-Us} $\ast$(G\-T\-X-\/10xx, R\-T\-X-\/20xx, 30xx, 40xx, P100, V100, A100)$\ast$. 
+
+
+
+\subsection*{Documentation}
+
+Various pages documenting the capabilities of the package as well as guidelines to use it are given in the \href{pages.html}{\tt Related Pages} section, you will find\-:
+\begin{DoxyItemize}
+\item \href{md_binaries_doxygen.html}{\tt an overview of the suite detailing the programs and their cabapibilites}
+\item \href{md_Build_CPU.html}{\tt prerequisites and a guide to compile the C\-P\-U version}
+\item \href{md_Prerequisites_doxygen.html}{\tt prerequisites for the G\-P\-U version} and a \href{md_Build_GPU.html}{\tt guide to build it}
+\item \href{md_dynamic_doxygen.html}{\tt detailed information about the dynamic program to run molecular dynamics}
+\item \href{md_potential_doxygen.html}{\tt a list of the potential energy functions available}
+\item \href{md_io_doxygen.html}{\tt information about I/\-O}
+\item \href{md_free_energy.html}{\tt general information about free energy calculations}
+\item \href{md_lambda-abf_doxygen.html}{\tt detailed information about the Lambda-\/abf method for free energy simulation}
+\item \href{md_Deep-HP.html}{\tt a guide to use the Deep-\/\-H\-P interface to use Machine Learning Potentials}
+\item \href{md_Quantum-HP_doxygen.html}{\tt a guide to use Quantum-\/\-H\-P to include Nuclear Quantum Effects in molecular dynamics}
+\end{DoxyItemize}
+
+A complete description of the sources following doxygen standard can also be found.
+
+Tinker-\/\-H\-P is available free of charge for A\-L\-L Academic Institutions, National Laboratories, and supercomputer centers through the global \href{https://dasher.wustl.edu/tinker/downloads/license.pdf}{\tt Tinker license}. Non-\/academic entities (e.\-g., companies, for-\/profit organizations) should contact the managing universities (see \href{license-Tinker.pdf}{\tt license}). 
+
+
+
+
+\begin{DoxyItemize}
+\item If you use {\bfseries Tinker-\/\-H\-P}, please cite\-: \href{https://doi.org/10.1039/C7SC04531J}{\tt Tinker-\/\-H\-P\-: a Massively Parallel Molecular Dynamics Package for Multiscale Simulations of Large Complex Systems with Advanced Polarizable Force Fields. L. Lagardère, L.-\/\-H. Jolly, F. Lipparini, F. Aviat, B. Stamm, Z. F. Jing, M. Harger, H. Torabifard, G. A. Cisneros, M. J. Schnieders, N. Gresh, Y. Maday, P. Ren, J. W. Ponder, J.-\/\-P. Piquemal, Chem. Sci., 2018, 9, 956-\/972 (Open Access)}
+\item If you use the {\bfseries G\-P\-Us version}, please also cite\-: \href{https://doi.org/10.1021/acs.jctc.0c01164}{\tt Tinker-\/\-H\-P \-: Accelerating Molecular Dynamics Simulations of Large Complex Systems with Advanced Point Dipole Polarizable Force Fields using G\-P\-Us and Multi-\/\-G\-P\-Us systems Olivier Adjoua, Louis Lagardère, Luc-\/\-Henri Jolly, Arnaud Durocher, Thibaut Very, Isabelle Dupays, Zhi Wang, Théo Jaffrelot Inizan, Frédéric Célerse, Pengyu Ren, Jay W. Ponder, Jean-\/\-Philip Piquemal, J. Chem. Theory. Comput., 2021, 17 (4), 2034–2053 (Open Access)}
+\item For the {\bfseries A\-V\-X512 vectorized version} dedicated to Intel's C\-P\-Us (Skylake, Cascade\-Lake etc...), please also cite\-: \href{https://doi.org/10.33011/livecoms.1.2.10409}{\tt Raising the Performance of the Tinker-\/\-H\-P Molecular Modeling Package \mbox{[}Article v1.\-0\mbox{]}. L. H. Jolly, A. Duran, L. Lagardère, J. W. Ponder, P. Y. Ren, J.-\/\-P. Piquemal, Live\-Co\-M\-S, 2019, 1 (2), 10409 (Open Access)}
+\end{DoxyItemize}
+
+Tinker-\/\-H\-P is part of the Tinker distribution and uses the same tools as Tinker. These tools can be found \href{https://github.com/TinkerTools/tinker}{\tt here}.
+
+
+\begin{DoxyItemize}
+\item If you use the Tinkertools please cite\-: \href{http://dx.doi.org/10.1021/acs.jctc.8b00529}{\tt Tinker 8\-: Software Tools for Molecular Design. J. A. Rackers, Z. Wang, C. Lu, M. L. Maury, L. Lagardère, M. J. Schnieders, J.-\/\-P. Piquemal, P. Ren, J. W. Ponder, J. Chem. Theory. Comput., 2018, 14 (10), 5273–5289} P\-M\-C free text\-: \href{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6335969/}{\tt https\-://www.\-ncbi.\-nlm.\-nih.\-gov/pmc/articles/\-P\-M\-C6335969/} 
+
+
+\end{DoxyItemize}
+
+We provide support to users\-:
+
+{\bfseries Email\-:} \href{mailto:TinkerHP_Support@ip2ct.upmc.fr}{\tt Tinker\-H\-P\-\_\-\-Support@ip2ct.\-upmc.\-fr} 

@@ -1,0 +1,204 @@
+\hypertarget{structdcdmod_1_1dcdinfo__t}{\section{dcdmod\-:\-:dcdinfo\-\_\-t Type Reference}
+\label{structdcdmod_1_1dcdinfo__t}\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer(kind=4) \hyperlink{structdcdmod_1_1dcdinfo__t_ab9f61d86ef4bf3d09888abddaa3c1fd7}{idcd}
+\begin{DoxyCompactList}\small\item\em dcd file unit \end{DoxyCompactList}\item 
+integer(kind=4) \hyperlink{structdcdmod_1_1dcdinfo__t_a2d3ab18a0c6c096cdf2391597303ed7f}{nframes}
+\begin{DoxyCompactList}\small\item\em number of frames in the file \end{DoxyCompactList}\item 
+integer(kind=4) \hyperlink{structdcdmod_1_1dcdinfo__t_a6f7b40c99890fd6bfc38a9dde608bec2}{istart}
+\begin{DoxyCompactList}\small\item\em timestep of last snapshot \end{DoxyCompactList}\item 
+integer(kind=4) \hyperlink{structdcdmod_1_1dcdinfo__t_acf96acb569660c2986d1956f4cc7b1df}{iend}
+\begin{DoxyCompactList}\small\item\em timestep of last snapshot \end{DoxyCompactList}\item 
+integer(kind=4) \hyperlink{structdcdmod_1_1dcdinfo__t_a6637e3bbb65e0d530e2893bec42a78c1}{nevery}
+\begin{DoxyCompactList}\small\item\em number of steps between outputs \end{DoxyCompactList}\item 
+integer(kind=8) \hyperlink{structdcdmod_1_1dcdinfo__t_a5ec4a2f171f3cb7b8eec4b8ea8a22411}{nframes\-\_\-pos}
+\begin{DoxyCompactList}\small\item\em current number of frames \end{DoxyCompactList}\item 
+integer(kind=8) \hyperlink{structdcdmod_1_1dcdinfo__t_a7418326b53ddd20d067949c817b3b03d}{iend\-\_\-pos}
+\begin{DoxyCompactList}\small\item\em position of the end of the file \end{DoxyCompactList}\item 
+integer(kind=8) \hyperlink{structdcdmod_1_1dcdinfo__t_aea02e6390d9b31e54095730d994b249f}{curr\-\_\-pos}
+\begin{DoxyCompactList}\small\item\em current position in the file \end{DoxyCompactList}\item 
+integer(kind=8) \hyperlink{structdcdmod_1_1dcdinfo__t_a46621c35e11573a47ddc4e9633192322}{filesize}
+\begin{DoxyCompactList}\small\item\em size of the dcd file to be read \end{DoxyCompactList}\item 
+integer(kind=8) \hyperlink{structdcdmod_1_1dcdinfo__t_a605b9b04ee4d7576c261a19c9d6ed54d}{framesize}
+\begin{DoxyCompactList}\small\item\em size of a frame \end{DoxyCompactList}\item 
+integer(kind=4) \hyperlink{structdcdmod_1_1dcdinfo__t_a49fecacd96f7fad5558ee7f16a81b4d8}{natoms}
+\begin{DoxyCompactList}\small\item\em number of atoms in the trajectory \end{DoxyCompactList}\item 
+real(kind=4) \hyperlink{structdcdmod_1_1dcdinfo__t_a02d43fa6b812b5613e723f119d48887d}{timestep}
+\begin{DoxyCompactList}\small\item\em timestep of the trajectory \end{DoxyCompactList}\item 
+character(len=80), dimension(\-:), \\*
+allocatable \hyperlink{structdcdmod_1_1dcdinfo__t_a520fe3a7b3b6f96d0c0c0221a92f521a}{titlesdcd}
+\begin{DoxyCompactList}\small\item\em titles of the trajectory \end{DoxyCompactList}\item 
+character(\-:), allocatable \hyperlink{structdcdmod_1_1dcdinfo__t_a2fc640f68774b801c8390ee12830a410}{filename}
+\begin{DoxyCompactList}\small\item\em title of the file \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 34 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{structdcdmod_1_1dcdinfo__t_aea02e6390d9b31e54095730d994b249f}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!curr\-\_\-pos@{curr\-\_\-pos}}
+\index{curr\-\_\-pos@{curr\-\_\-pos}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{curr\-\_\-pos}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=8) dcdmod\-::dcdinfo\-\_\-t\-::curr\-\_\-pos}}\label{structdcdmod_1_1dcdinfo__t_aea02e6390d9b31e54095730d994b249f}
+
+
+current position in the file 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a2fc640f68774b801c8390ee12830a410}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!filename@{filename}}
+\index{filename@{filename}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{filename}]{\setlength{\rightskip}{0pt plus 5cm}character(\-:), allocatable dcdmod\-::dcdinfo\-\_\-t\-::filename}}\label{structdcdmod_1_1dcdinfo__t_a2fc640f68774b801c8390ee12830a410}
+
+
+title of the file 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a46621c35e11573a47ddc4e9633192322}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!filesize@{filesize}}
+\index{filesize@{filesize}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{filesize}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=8) dcdmod\-::dcdinfo\-\_\-t\-::filesize}}\label{structdcdmod_1_1dcdinfo__t_a46621c35e11573a47ddc4e9633192322}
+
+
+size of the dcd file to be read 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a605b9b04ee4d7576c261a19c9d6ed54d}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!framesize@{framesize}}
+\index{framesize@{framesize}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{framesize}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=8) dcdmod\-::dcdinfo\-\_\-t\-::framesize}}\label{structdcdmod_1_1dcdinfo__t_a605b9b04ee4d7576c261a19c9d6ed54d}
+
+
+size of a frame 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_ab9f61d86ef4bf3d09888abddaa3c1fd7}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!idcd@{idcd}}
+\index{idcd@{idcd}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{idcd}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=4) dcdmod\-::dcdinfo\-\_\-t\-::idcd}}\label{structdcdmod_1_1dcdinfo__t_ab9f61d86ef4bf3d09888abddaa3c1fd7}
+
+
+dcd file unit 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_acf96acb569660c2986d1956f4cc7b1df}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!iend@{iend}}
+\index{iend@{iend}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{iend}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=4) dcdmod\-::dcdinfo\-\_\-t\-::iend}}\label{structdcdmod_1_1dcdinfo__t_acf96acb569660c2986d1956f4cc7b1df}
+
+
+timestep of last snapshot 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a7418326b53ddd20d067949c817b3b03d}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!iend\-\_\-pos@{iend\-\_\-pos}}
+\index{iend\-\_\-pos@{iend\-\_\-pos}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{iend\-\_\-pos}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=8) dcdmod\-::dcdinfo\-\_\-t\-::iend\-\_\-pos}}\label{structdcdmod_1_1dcdinfo__t_a7418326b53ddd20d067949c817b3b03d}
+
+
+position of the end of the file 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a6f7b40c99890fd6bfc38a9dde608bec2}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!istart@{istart}}
+\index{istart@{istart}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{istart}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=4) dcdmod\-::dcdinfo\-\_\-t\-::istart}}\label{structdcdmod_1_1dcdinfo__t_a6f7b40c99890fd6bfc38a9dde608bec2}
+
+
+timestep of last snapshot 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a49fecacd96f7fad5558ee7f16a81b4d8}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!natoms@{natoms}}
+\index{natoms@{natoms}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{natoms}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=4) dcdmod\-::dcdinfo\-\_\-t\-::natoms}}\label{structdcdmod_1_1dcdinfo__t_a49fecacd96f7fad5558ee7f16a81b4d8}
+
+
+number of atoms in the trajectory 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a6637e3bbb65e0d530e2893bec42a78c1}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!nevery@{nevery}}
+\index{nevery@{nevery}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{nevery}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=4) dcdmod\-::dcdinfo\-\_\-t\-::nevery}}\label{structdcdmod_1_1dcdinfo__t_a6637e3bbb65e0d530e2893bec42a78c1}
+
+
+number of steps between outputs 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a2d3ab18a0c6c096cdf2391597303ed7f}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!nframes@{nframes}}
+\index{nframes@{nframes}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{nframes}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=4) dcdmod\-::dcdinfo\-\_\-t\-::nframes}}\label{structdcdmod_1_1dcdinfo__t_a2d3ab18a0c6c096cdf2391597303ed7f}
+
+
+number of frames in the file 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a5ec4a2f171f3cb7b8eec4b8ea8a22411}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!nframes\-\_\-pos@{nframes\-\_\-pos}}
+\index{nframes\-\_\-pos@{nframes\-\_\-pos}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{nframes\-\_\-pos}]{\setlength{\rightskip}{0pt plus 5cm}integer(kind=8) dcdmod\-::dcdinfo\-\_\-t\-::nframes\-\_\-pos}}\label{structdcdmod_1_1dcdinfo__t_a5ec4a2f171f3cb7b8eec4b8ea8a22411}
+
+
+current number of frames 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a02d43fa6b812b5613e723f119d48887d}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!timestep@{timestep}}
+\index{timestep@{timestep}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{timestep}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) dcdmod\-::dcdinfo\-\_\-t\-::timestep}}\label{structdcdmod_1_1dcdinfo__t_a02d43fa6b812b5613e723f119d48887d}
+
+
+timestep of the trajectory 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+\hypertarget{structdcdmod_1_1dcdinfo__t_a520fe3a7b3b6f96d0c0c0221a92f521a}{\index{dcdmod\-::dcdinfo\-\_\-t@{dcdmod\-::dcdinfo\-\_\-t}!titlesdcd@{titlesdcd}}
+\index{titlesdcd@{titlesdcd}!dcdmod::dcdinfo_t@{dcdmod\-::dcdinfo\-\_\-t}}
+\subsubsection[{titlesdcd}]{\setlength{\rightskip}{0pt plus 5cm}character(len=80), dimension(\-:), allocatable dcdmod\-::dcdinfo\-\_\-t\-::titlesdcd}}\label{structdcdmod_1_1dcdinfo__t_a520fe3a7b3b6f96d0c0c0221a92f521a}
+
+
+titles of the trajectory 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-dcdmod.\-f90.
+
+
+
+The documentation for this type was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__dcdmod_8f90}{M\-O\-D\-\_\-dcdmod.\-f90}\end{DoxyCompactItemize}

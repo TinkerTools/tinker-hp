@@ -1,0 +1,113 @@
+\hypertarget{erepel3_8f90}{\section{erepel3.\-f90 File Reference}
+\label{erepel3_8f90}\index{erepel3.\-f90@{erepel3.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{erepel3_8f90_a08526ac1b6852ff292bec13731c02e83}{erepel3}
+\begin{DoxyCompactList}\small\item\em calculates the Pauli repulsion energy and partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{erepel3_8f90_aa4505a05525c3f1208510daba6856873}{erepel3c}
+\begin{DoxyCompactList}\small\item\em calculates the Pauli repulsion energy and also partitions the energy among the atoms using a neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{erepel3_8f90_a08526ac1b6852ff292bec13731c02e83}{\index{erepel3.\-f90@{erepel3.\-f90}!erepel3@{erepel3}}
+\index{erepel3@{erepel3}!erepel3.f90@{erepel3.\-f90}}
+\subsubsection[{erepel3}]{\setlength{\rightskip}{0pt plus 5cm}subroutine erepel3 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{erepel3_8f90_a08526ac1b6852ff292bec13731c02e83}
+
+
+calculates the Pauli repulsion energy and partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 27 of file erepel3.\-f90.
+
+
+
+References erepel3c().
+
+
+
+Referenced by analysis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{erepel3_8f90_a08526ac1b6852ff292bec13731c02e83_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{erepel3_8f90_a08526ac1b6852ff292bec13731c02e83_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{erepel3_8f90_aa4505a05525c3f1208510daba6856873}{\index{erepel3.\-f90@{erepel3.\-f90}!erepel3c@{erepel3c}}
+\index{erepel3c@{erepel3c}!erepel3.f90@{erepel3.\-f90}}
+\subsubsection[{erepel3c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine erepel3c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{erepel3_8f90_aa4505a05525c3f1208510daba6856873}
+
+
+calculates the Pauli repulsion energy and also partitions the energy among the atoms using a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 57 of file erepel3.\-f90.
+
+
+
+References chkpole(), damprep(), groups(), image(), rotpole(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by erepel3().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{erepel3_8f90_aa4505a05525c3f1208510daba6856873_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{erepel3_8f90_aa4505a05525c3f1208510daba6856873_icgraph}
+\end{center}
+\end{figure}
+
+

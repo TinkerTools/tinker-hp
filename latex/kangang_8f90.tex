@@ -1,0 +1,172 @@
+\hypertarget{kangang_8f90}{\section{kangang.\-f90 File Reference}
+\label{kangang_8f90}\index{kangang.\-f90@{kangang.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kangang_8f90_a4e90d866e46e882d84df72555ef8ad58}{kangang}
+\begin{DoxyCompactList}\small\item\em assigns the parameters for angle-\/angle cross term interactions and processes new or changed parameter values \end{DoxyCompactList}\item 
+subroutine \hyperlink{kangang_8f90_a00f90e9cba0445559a17b00690534ebe}{kangang\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local angang parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kangang_8f90_a2d1d052cedb144b9275389670f8f3f81}{dealloc\-\_\-shared\-\_\-angang}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for angang parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kangang_8f90_a1c80ded8ac82c508eebaccd62058faee}{alloc\-\_\-shared\-\_\-angang}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for angang parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kangang_8f90_a1c80ded8ac82c508eebaccd62058faee}{\index{kangang.\-f90@{kangang.\-f90}!alloc\-\_\-shared\-\_\-angang@{alloc\-\_\-shared\-\_\-angang}}
+\index{alloc\-\_\-shared\-\_\-angang@{alloc\-\_\-shared\-\_\-angang}!kangang.f90@{kangang.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-angang}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-angang (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kangang_8f90_a1c80ded8ac82c508eebaccd62058faee}
+
+
+allocate shared memory pointers for angang parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 257 of file kangang.\-f90.
+
+
+
+Referenced by kangang().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kangang_8f90_a1c80ded8ac82c508eebaccd62058faee_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kangang_8f90_a2d1d052cedb144b9275389670f8f3f81}{\index{kangang.\-f90@{kangang.\-f90}!dealloc\-\_\-shared\-\_\-angang@{dealloc\-\_\-shared\-\_\-angang}}
+\index{dealloc\-\_\-shared\-\_\-angang@{dealloc\-\_\-shared\-\_\-angang}!kangang.f90@{kangang.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-angang}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-angang (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kangang_8f90_a2d1d052cedb144b9275389670f8f3f81}
+
+
+deallocate shared memory pointers for angang parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 228 of file kangang.\-f90.
+
+
+
+Referenced by final(), and kangang().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kangang_8f90_a2d1d052cedb144b9275389670f8f3f81_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kangang_8f90_a4e90d866e46e882d84df72555ef8ad58}{\index{kangang.\-f90@{kangang.\-f90}!kangang@{kangang}}
+\index{kangang@{kangang}!kangang.f90@{kangang.\-f90}}
+\subsubsection[{kangang}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kangang (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kangang_8f90_a4e90d866e46e882d84df72555ef8ad58}
+
+
+assigns the parameters for angle-\/angle cross term interactions and processes new or changed parameter values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file kangang.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-angang(), dealloc\-\_\-shared\-\_\-angang(), gettext(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kangang_8f90_a4e90d866e46e882d84df72555ef8ad58_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kangang_8f90_a4e90d866e46e882d84df72555ef8ad58_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kangang_8f90_a00f90e9cba0445559a17b00690534ebe}{\index{kangang.\-f90@{kangang.\-f90}!kangang\-\_\-update@{kangang\-\_\-update}}
+\index{kangang\-\_\-update@{kangang\-\_\-update}!kangang.f90@{kangang.\-f90}}
+\subsubsection[{kangang\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kangang\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kangang_8f90_a00f90e9cba0445559a17b00690534ebe}
+
+
+update local angang parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 160 of file kangang.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kangang_8f90_a00f90e9cba0445559a17b00690534ebe_icgraph}
+\end{center}
+\end{figure}
+
+

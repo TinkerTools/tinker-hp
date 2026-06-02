@@ -1,0 +1,316 @@
+\hypertarget{mutate_8f90}{\section{mutate.\-f90 File Reference}
+\label{mutate_8f90}\index{mutate.\-f90@{mutate.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{mutate_8f90_a8dde235f5fdcedb8cd883819512bd603}{mutate}
+\begin{DoxyCompactList}\small\item\em constructs the hybrid hamiltonian for a specified initial state, final state and mutation parameter \char`\"{}lambda\char`\"{} \end{DoxyCompactList}\item 
+subroutine \hyperlink{mutate_8f90_a72bb5139e5d6b4dcde377c98583dcbd0}{alttors} (ntbnd, itbnd)
+\begin{DoxyCompactList}\small\item\em constructs mutated torsional parameters based on the lambda mutation parameter \char`\"{}tlambda\char`\"{} \end{DoxyCompactList}\item 
+subroutine \hyperlink{mutate_8f90_a8a0c3ee7abe7f5d00402933102f15a81}{altelec}
+\begin{DoxyCompactList}\small\item\em \char`\"{}altelec\char`\"{} constructs the mutated electrostatic parameters based on the lambda mutation parameter \char`\"{}elmd\char`\"{} \end{DoxyCompactList}\item 
+subroutine \hyperlink{mutate_8f90_a8be1b330945fbe05be53c8ef7834d6bd}{def\-\_\-lambdadyn\-\_\-init} (rank\-\_\-)
+\begin{DoxyCompactList}\small\item\em lambda dynamics initialization \end{DoxyCompactList}\item 
+subroutine \hyperlink{mutate_8f90_a8a8cb37784baa7e9e5bda6dae37df036}{def\-\_\-lambdadyn} (rank\-\_\-)
+\begin{DoxyCompactList}\small\item\em constructs the state weighting values vlambda and elambda for the van der Waals and electrostatic interactions respectively, defining them as functions of the generic state weighting value lambda \end{DoxyCompactList}\item 
+subroutine \hyperlink{mutate_8f90_a09364e3a2898edf2de9c9576a25b9965}{dealloc\-\_\-shared\-\_\-mutate}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for mutate parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{mutate_8f90_a833f2676bc5a6d74214ed345f968e43f}{alloc\-\_\-shared\-\_\-mutate}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for mutate parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{mutate_8f90_a833f2676bc5a6d74214ed345f968e43f}{\index{mutate.\-f90@{mutate.\-f90}!alloc\-\_\-shared\-\_\-mutate@{alloc\-\_\-shared\-\_\-mutate}}
+\index{alloc\-\_\-shared\-\_\-mutate@{alloc\-\_\-shared\-\_\-mutate}!mutate.f90@{mutate.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-mutate}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-mutate (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mutate_8f90_a833f2676bc5a6d74214ed345f968e43f}
+
+
+allocate shared memory pointers for mutate parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 628 of file mutate.\-f90.
+
+
+
+Referenced by mutate().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mutate_8f90_a833f2676bc5a6d74214ed345f968e43f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mutate_8f90_a8a0c3ee7abe7f5d00402933102f15a81}{\index{mutate.\-f90@{mutate.\-f90}!altelec@{altelec}}
+\index{altelec@{altelec}!mutate.f90@{mutate.\-f90}}
+\subsubsection[{altelec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine altelec (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mutate_8f90_a8a0c3ee7abe7f5d00402933102f15a81}
+
+
+\char`\"{}altelec\char`\"{} constructs the mutated electrostatic parameters based on the lambda mutation parameter \char`\"{}elmd\char`\"{} 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 309 of file mutate.\-f90.
+
+
+
+Referenced by def\-\_\-lambdadyn(), and mutate().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mutate_8f90_a8a0c3ee7abe7f5d00402933102f15a81_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mutate_8f90_a72bb5139e5d6b4dcde377c98583dcbd0}{\index{mutate.\-f90@{mutate.\-f90}!alttors@{alttors}}
+\index{alttors@{alttors}!mutate.f90@{mutate.\-f90}}
+\subsubsection[{alttors}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alttors (
+\begin{DoxyParamCaption}
+\item[{integer}]{ntbnd, }
+\item[{integer, dimension(2,$\ast$)}]{itbnd}
+\end{DoxyParamCaption}
+)}}\label{mutate_8f90_a72bb5139e5d6b4dcde377c98583dcbd0}
+
+
+constructs mutated torsional parameters based on the lambda mutation parameter \char`\"{}tlambda\char`\"{} 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em ntbnd,\-:} & number of rotatable bonds \\
+\hline
+\mbox{\tt in}  & {\em itbnd,\-:} & rotatable bonds \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 250 of file mutate.\-f90.
+
+
+
+Referenced by mutate().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mutate_8f90_a72bb5139e5d6b4dcde377c98583dcbd0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mutate_8f90_a09364e3a2898edf2de9c9576a25b9965}{\index{mutate.\-f90@{mutate.\-f90}!dealloc\-\_\-shared\-\_\-mutate@{dealloc\-\_\-shared\-\_\-mutate}}
+\index{dealloc\-\_\-shared\-\_\-mutate@{dealloc\-\_\-shared\-\_\-mutate}!mutate.f90@{mutate.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-mutate}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-mutate (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mutate_8f90_a09364e3a2898edf2de9c9576a25b9965}
+
+
+deallocate shared memory pointers for mutate parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 579 of file mutate.\-f90.
+
+
+
+Referenced by final(), and mutate().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{mutate_8f90_a09364e3a2898edf2de9c9576a25b9965_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mutate_8f90_a8a8cb37784baa7e9e5bda6dae37df036}{\index{mutate.\-f90@{mutate.\-f90}!def\-\_\-lambdadyn@{def\-\_\-lambdadyn}}
+\index{def\-\_\-lambdadyn@{def\-\_\-lambdadyn}!mutate.f90@{mutate.\-f90}}
+\subsubsection[{def\-\_\-lambdadyn}]{\setlength{\rightskip}{0pt plus 5cm}subroutine def\-\_\-lambdadyn (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{rank\-\_\-}
+\end{DoxyParamCaption}
+)}}\label{mutate_8f90_a8a8cb37784baa7e9e5bda6dae37df036}
+
+
+constructs the state weighting values vlambda and elambda for the van der Waals and electrostatic interactions respectively, defining them as functions of the generic state weighting value lambda 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em rank\-\_\-,\-:} & M\-P\-I rank \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 480 of file mutate.\-f90.
+
+
+
+References altelec(), and fatal().
+
+
+
+Referenced by def\-\_\-lambdadyn\-\_\-init(), distrib\-\_\-colvars(), utilbaoabpi\-::distrib\-\_\-colvars\-\_\-pi(), dynamic\-\_\-bis(), and pimd\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=258pt]{mutate_8f90_a8a8cb37784baa7e9e5bda6dae37df036_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mutate_8f90_a8a8cb37784baa7e9e5bda6dae37df036_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mutate_8f90_a8be1b330945fbe05be53c8ef7834d6bd}{\index{mutate.\-f90@{mutate.\-f90}!def\-\_\-lambdadyn\-\_\-init@{def\-\_\-lambdadyn\-\_\-init}}
+\index{def\-\_\-lambdadyn\-\_\-init@{def\-\_\-lambdadyn\-\_\-init}!mutate.f90@{mutate.\-f90}}
+\subsubsection[{def\-\_\-lambdadyn\-\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}subroutine def\-\_\-lambdadyn\-\_\-init (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{rank\-\_\-}
+\end{DoxyParamCaption}
+)}}\label{mutate_8f90_a8be1b330945fbe05be53c8ef7834d6bd}
+
+
+lambda dynamics initialization 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em rank\-\_\-,\-:} & M\-P\-I rank \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 421 of file mutate.\-f90.
+
+
+
+References def\-\_\-lambdadyn(), gettext(), and upcase().
+
+
+
+Referenced by mdinit().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{mutate_8f90_a8be1b330945fbe05be53c8ef7834d6bd_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mutate_8f90_a8be1b330945fbe05be53c8ef7834d6bd_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mutate_8f90_a8dde235f5fdcedb8cd883819512bd603}{\index{mutate.\-f90@{mutate.\-f90}!mutate@{mutate}}
+\index{mutate@{mutate}!mutate.f90@{mutate.\-f90}}
+\subsubsection[{mutate}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mutate (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mutate_8f90_a8dde235f5fdcedb8cd883819512bd603}
+
+
+constructs the hybrid hamiltonian for a specified initial state, final state and mutation parameter \char`\"{}lambda\char`\"{} 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file mutate.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-mutate(), altelec(), alttors(), dealloc\-\_\-shared\-\_\-mutate(), gettext(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{mutate_8f90_a8dde235f5fdcedb8cd883819512bd603_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mutate_8f90_a8dde235f5fdcedb8cd883819512bd603_icgraph}
+\end{center}
+\end{figure}
+
+

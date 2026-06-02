@@ -1,0 +1,177 @@
+\hypertarget{classkurybr}{\section{kurybr Module Reference}
+\label{classkurybr}\index{kurybr@{kurybr}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classkurybr_aaf30bd9a13addd363c837108f12933ca}{maxnu}
+\begin{DoxyCompactList}\small\item\em maximum number of Urey-\/\-Bradley parameter entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkurybr_a0985b078f790810fc48fafe9ae7732df}{maxnups}
+\begin{DoxyCompactList}\small\item\em maximum number of angle repulsion parameter entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkurybr_a3e8676e31b4829ad722f50e1130d3744}{maxnuq}
+\begin{DoxyCompactList}\small\item\em maximum number of quartic urey parameter entries \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkurybr_aaf30bd9a13addd363c837108f12933ca}{maxnu}) \hyperlink{classkurybr_ad5d1c061d42d5c928e1963e4d7ada287}{ucon}
+\begin{DoxyCompactList}\small\item\em force constant parameters for Urey-\/\-Bradley terms \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkurybr_aaf30bd9a13addd363c837108f12933ca}{maxnu}) \hyperlink{classkurybr_ad04267e2ab89ff58d358e0c438293a9c}{dst13}
+\begin{DoxyCompactList}\small\item\em ideal 1-\/3 distance parameters for Urey-\/\-Bradley terms \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkurybr_a0985b078f790810fc48fafe9ae7732df}{maxnups}) \hyperlink{classkurybr_af7890bc737d1d919995652c218c7979a}{uconps}
+\begin{DoxyCompactList}\small\item\em force constant parameters for angle repulsion terms \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkurybr_a0985b078f790810fc48fafe9ae7732df}{maxnups}) \hyperlink{classkurybr_a9ac144f5e89f0ff12d278007608b9d0f}{dst13ps}
+\begin{DoxyCompactList}\small\item\em ideal 1-\/3 distance parameters for angle repulsion terms \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkurybr_a3e8676e31b4829ad722f50e1130d3744}{maxnuq}) \hyperlink{classkurybr_a24fb0fa1a77c3ee4a9f23aab35600e6b}{uconq}
+\begin{DoxyCompactList}\small\item\em force constant parameters for quartic urey terms \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkurybr_a3e8676e31b4829ad722f50e1130d3744}{maxnuq}) \hyperlink{classkurybr_a87b9e3e0c32664e7aa531fef6e7cd9bc}{dst13q}
+\begin{DoxyCompactList}\small\item\em ideal 1-\/3 distance parameters for quartic urey terms \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkurybr_aaf30bd9a13addd363c837108f12933ca}{maxnu}) \hyperlink{classkurybr_aaa5a733bacfbc38d5ca68d0064489972}{ku}
+\begin{DoxyCompactList}\small\item\em string of atom classes for Urey-\/\-Bradley terms \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkurybr_a0985b078f790810fc48fafe9ae7732df}{maxnups}) \hyperlink{classkurybr_a457e33eaa69a2a95cfeeb92376337664}{kups}
+\begin{DoxyCompactList}\small\item\em string of atom classes for angle repulsion terms \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkurybr_a3e8676e31b4829ad722f50e1130d3744}{maxnuq}) \hyperlink{classkurybr_ac999bd33462bae0efb881aa11f53abee}{kuq}
+\begin{DoxyCompactList}\small\item\em string of atom classes for quartic urey terms \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 20 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classkurybr_ad04267e2ab89ff58d358e0c438293a9c}{\index{kurybr@{kurybr}!dst13@{dst13}}
+\index{dst13@{dst13}!kurybr@{kurybr}}
+\subsubsection[{dst13}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnu}) kurybr\-::dst13}}\label{classkurybr_ad04267e2ab89ff58d358e0c438293a9c}
+
+
+ideal 1-\/3 distance parameters for Urey-\/\-Bradley terms 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_a9ac144f5e89f0ff12d278007608b9d0f}{\index{kurybr@{kurybr}!dst13ps@{dst13ps}}
+\index{dst13ps@{dst13ps}!kurybr@{kurybr}}
+\subsubsection[{dst13ps}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnups}) kurybr\-::dst13ps}}\label{classkurybr_a9ac144f5e89f0ff12d278007608b9d0f}
+
+
+ideal 1-\/3 distance parameters for angle repulsion terms 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_a87b9e3e0c32664e7aa531fef6e7cd9bc}{\index{kurybr@{kurybr}!dst13q@{dst13q}}
+\index{dst13q@{dst13q}!kurybr@{kurybr}}
+\subsubsection[{dst13q}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnuq}) kurybr\-::dst13q}}\label{classkurybr_a87b9e3e0c32664e7aa531fef6e7cd9bc}
+
+
+ideal 1-\/3 distance parameters for quartic urey terms 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_aaa5a733bacfbc38d5ca68d0064489972}{\index{kurybr@{kurybr}!ku@{ku}}
+\index{ku@{ku}!kurybr@{kurybr}}
+\subsubsection[{ku}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxnu}) kurybr\-::ku}}\label{classkurybr_aaa5a733bacfbc38d5ca68d0064489972}
+
+
+string of atom classes for Urey-\/\-Bradley terms 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_a457e33eaa69a2a95cfeeb92376337664}{\index{kurybr@{kurybr}!kups@{kups}}
+\index{kups@{kups}!kurybr@{kurybr}}
+\subsubsection[{kups}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxnups}) kurybr\-::kups}}\label{classkurybr_a457e33eaa69a2a95cfeeb92376337664}
+
+
+string of atom classes for angle repulsion terms 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_ac999bd33462bae0efb881aa11f53abee}{\index{kurybr@{kurybr}!kuq@{kuq}}
+\index{kuq@{kuq}!kurybr@{kurybr}}
+\subsubsection[{kuq}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxnuq}) kurybr\-::kuq}}\label{classkurybr_ac999bd33462bae0efb881aa11f53abee}
+
+
+string of atom classes for quartic urey terms 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_aaf30bd9a13addd363c837108f12933ca}{\index{kurybr@{kurybr}!maxnu@{maxnu}}
+\index{maxnu@{maxnu}!kurybr@{kurybr}}
+\subsubsection[{maxnu}]{\setlength{\rightskip}{0pt plus 5cm}integer kurybr\-::maxnu}}\label{classkurybr_aaf30bd9a13addd363c837108f12933ca}
+
+
+maximum number of Urey-\/\-Bradley parameter entries 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_a0985b078f790810fc48fafe9ae7732df}{\index{kurybr@{kurybr}!maxnups@{maxnups}}
+\index{maxnups@{maxnups}!kurybr@{kurybr}}
+\subsubsection[{maxnups}]{\setlength{\rightskip}{0pt plus 5cm}integer kurybr\-::maxnups}}\label{classkurybr_a0985b078f790810fc48fafe9ae7732df}
+
+
+maximum number of angle repulsion parameter entries 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_a3e8676e31b4829ad722f50e1130d3744}{\index{kurybr@{kurybr}!maxnuq@{maxnuq}}
+\index{maxnuq@{maxnuq}!kurybr@{kurybr}}
+\subsubsection[{maxnuq}]{\setlength{\rightskip}{0pt plus 5cm}integer kurybr\-::maxnuq}}\label{classkurybr_a3e8676e31b4829ad722f50e1130d3744}
+
+
+maximum number of quartic urey parameter entries 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_ad5d1c061d42d5c928e1963e4d7ada287}{\index{kurybr@{kurybr}!ucon@{ucon}}
+\index{ucon@{ucon}!kurybr@{kurybr}}
+\subsubsection[{ucon}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnu}) kurybr\-::ucon}}\label{classkurybr_ad5d1c061d42d5c928e1963e4d7ada287}
+
+
+force constant parameters for Urey-\/\-Bradley terms 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_af7890bc737d1d919995652c218c7979a}{\index{kurybr@{kurybr}!uconps@{uconps}}
+\index{uconps@{uconps}!kurybr@{kurybr}}
+\subsubsection[{uconps}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnups}) kurybr\-::uconps}}\label{classkurybr_af7890bc737d1d919995652c218c7979a}
+
+
+force constant parameters for angle repulsion terms 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+\hypertarget{classkurybr_a24fb0fa1a77c3ee4a9f23aab35600e6b}{\index{kurybr@{kurybr}!uconq@{uconq}}
+\index{uconq@{uconq}!kurybr@{kurybr}}
+\subsubsection[{uconq}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnuq}) kurybr\-::uconq}}\label{classkurybr_a24fb0fa1a77c3ee4a9f23aab35600e6b}
+
+
+force constant parameters for quartic urey terms 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-kurybr.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__kurybr_8f90}{M\-O\-D\-\_\-kurybr.\-f90}\end{DoxyCompactItemize}

@@ -1,0 +1,308 @@
+\hypertarget{classfft}{\section{fft Module Reference}
+\label{classfft}\index{fft@{fft}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classfft_afe626585dd8cb0ac36fab5947a9d2521}{n1mpimax}
+\item 
+integer \hyperlink{classfft_a97762b74c5d11ea405cdb20a7d3a7106}{n2mpimax}
+\item 
+integer \hyperlink{classfft_aee4e8f13c1938be27c7a25e76c81e461}{n3mpimax}
+\item 
+integer \hyperlink{classfft_a94ef6ff65cf001df13131230f327e00c}{ngrid1}
+\begin{DoxyCompactList}\small\item\em maximum number of points along the divided first dimension of the fft grid \end{DoxyCompactList}\item 
+integer \hyperlink{classfft_a527c2e6b62c23d5b9499656757866ff6}{ngrid2}
+\begin{DoxyCompactList}\small\item\em maximum number of points along the divided second dimension of the fft grid \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a0f2de67487b3b9ef7ab687ea7aa6f789}{istart1}
+\begin{DoxyCompactList}\small\item\em list of beginning indexes of the first axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_af7c211bc5279a97bd104e261d7c42909}{iend1}
+\begin{DoxyCompactList}\small\item\em list of ending indexes of the first axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_ab253fc8733e246ba7dcb5f806ef1c439}{jstart1}
+\begin{DoxyCompactList}\small\item\em list of beginning indexes of the second axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a36b50ebfb01d553c2d6f1376d57639a8}{jend1}
+\begin{DoxyCompactList}\small\item\em list of ending indexes of the second axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a1f4fe9a28b16da2c529fac36e0396d4c}{kstart1}
+\begin{DoxyCompactList}\small\item\em list of beginning indexes of the third axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_ae7e4ffb85ebf62ef0f2ef10f04e2f0de}{kend1}
+\begin{DoxyCompactList}\small\item\em list of ending indexes of the third axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a8b6be0b5847c18ae92ab7e4cdc6797ae}{isize1}
+\begin{DoxyCompactList}\small\item\em list of size of the first axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_aff713d4158514d9c4471f31c97884d52}{jsize1}
+\begin{DoxyCompactList}\small\item\em list of size of the second axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a737d6288ef056a8d5626686622b05a2e}{ksize1}
+\begin{DoxyCompactList}\small\item\em list of size of the third axis of the grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_ab0ad37b8471978ecdeff1a3aca768f39}{istart2}
+\begin{DoxyCompactList}\small\item\em list of beginning indexes of the first axis of the grid among the procs for the transposed grid \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a8b21d9cc8827918443dc2864780d0b8e}{iend2}
+\begin{DoxyCompactList}\small\item\em list of ending indexes of the first axis of the grid among the procs for the transposed grid \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a78b149c52f191d1999bc349321c63c8f}{jstart2}
+\begin{DoxyCompactList}\small\item\em list of beginning indexes of the second axis of the grid among the procs for the transposed grid \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_adf475ffd3fdc36883f33b56407809a4a}{jend2}
+\begin{DoxyCompactList}\small\item\em list of ending indexes of the second axis of the grid among the procs for the transposed grid \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a70dc33801ee2d6b2ee67d09d28bd6110}{kstart2}
+\begin{DoxyCompactList}\small\item\em list of beginning indexes of the third axis of the grid among the procs for the transposed grid \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a0f6315961060541f8c050b2fa944f28a}{kend2}
+\begin{DoxyCompactList}\small\item\em list of ending indexes of the third axis of the grid among the procs for the transposed grid \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_ac1c3bf32077bd22969d9e5092ec0a87c}{isize2}
+\begin{DoxyCompactList}\small\item\em list of size of the first axis of the transposed grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_a8f1f76f94641eff9c7ab779c8e04e49c}{jsize2}
+\begin{DoxyCompactList}\small\item\em list of size of the second axis of the transposed grid among the procs \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classfft_ab61609735e4d327559a6a90691a0561b}{ksize2}
+\begin{DoxyCompactList}\small\item\em list of size of the third axis of the transposed grid among the procs \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 13 of file M\-O\-D\-\_\-fft.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classfft_af7c211bc5279a97bd104e261d7c42909}{\index{fft@{fft}!iend1@{iend1}}
+\index{iend1@{iend1}!fft@{fft}}
+\subsubsection[{iend1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::iend1}}\label{classfft_af7c211bc5279a97bd104e261d7c42909}
+
+
+list of ending indexes of the first axis of the grid among the procs 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a8b21d9cc8827918443dc2864780d0b8e}{\index{fft@{fft}!iend2@{iend2}}
+\index{iend2@{iend2}!fft@{fft}}
+\subsubsection[{iend2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::iend2}}\label{classfft_a8b21d9cc8827918443dc2864780d0b8e}
+
+
+list of ending indexes of the first axis of the grid among the procs for the transposed grid 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a8b6be0b5847c18ae92ab7e4cdc6797ae}{\index{fft@{fft}!isize1@{isize1}}
+\index{isize1@{isize1}!fft@{fft}}
+\subsubsection[{isize1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::isize1}}\label{classfft_a8b6be0b5847c18ae92ab7e4cdc6797ae}
+
+
+list of size of the first axis of the grid among the procs 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_ac1c3bf32077bd22969d9e5092ec0a87c}{\index{fft@{fft}!isize2@{isize2}}
+\index{isize2@{isize2}!fft@{fft}}
+\subsubsection[{isize2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::isize2}}\label{classfft_ac1c3bf32077bd22969d9e5092ec0a87c}
+
+
+list of size of the first axis of the transposed grid among the procs 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a0f2de67487b3b9ef7ab687ea7aa6f789}{\index{fft@{fft}!istart1@{istart1}}
+\index{istart1@{istart1}!fft@{fft}}
+\subsubsection[{istart1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::istart1}}\label{classfft_a0f2de67487b3b9ef7ab687ea7aa6f789}
+
+
+list of beginning indexes of the first axis of the grid among the procs 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_ab0ad37b8471978ecdeff1a3aca768f39}{\index{fft@{fft}!istart2@{istart2}}
+\index{istart2@{istart2}!fft@{fft}}
+\subsubsection[{istart2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::istart2}}\label{classfft_ab0ad37b8471978ecdeff1a3aca768f39}
+
+
+list of beginning indexes of the first axis of the grid among the procs for the transposed grid 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a36b50ebfb01d553c2d6f1376d57639a8}{\index{fft@{fft}!jend1@{jend1}}
+\index{jend1@{jend1}!fft@{fft}}
+\subsubsection[{jend1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::jend1}}\label{classfft_a36b50ebfb01d553c2d6f1376d57639a8}
+
+
+list of ending indexes of the second axis of the grid among the procs 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_adf475ffd3fdc36883f33b56407809a4a}{\index{fft@{fft}!jend2@{jend2}}
+\index{jend2@{jend2}!fft@{fft}}
+\subsubsection[{jend2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::jend2}}\label{classfft_adf475ffd3fdc36883f33b56407809a4a}
+
+
+list of ending indexes of the second axis of the grid among the procs for the transposed grid 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_aff713d4158514d9c4471f31c97884d52}{\index{fft@{fft}!jsize1@{jsize1}}
+\index{jsize1@{jsize1}!fft@{fft}}
+\subsubsection[{jsize1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::jsize1}}\label{classfft_aff713d4158514d9c4471f31c97884d52}
+
+
+list of size of the second axis of the grid among the procs 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a8f1f76f94641eff9c7ab779c8e04e49c}{\index{fft@{fft}!jsize2@{jsize2}}
+\index{jsize2@{jsize2}!fft@{fft}}
+\subsubsection[{jsize2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::jsize2}}\label{classfft_a8f1f76f94641eff9c7ab779c8e04e49c}
+
+
+list of size of the second axis of the transposed grid among the procs 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_ab253fc8733e246ba7dcb5f806ef1c439}{\index{fft@{fft}!jstart1@{jstart1}}
+\index{jstart1@{jstart1}!fft@{fft}}
+\subsubsection[{jstart1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::jstart1}}\label{classfft_ab253fc8733e246ba7dcb5f806ef1c439}
+
+
+list of beginning indexes of the second axis of the grid among the procs 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a78b149c52f191d1999bc349321c63c8f}{\index{fft@{fft}!jstart2@{jstart2}}
+\index{jstart2@{jstart2}!fft@{fft}}
+\subsubsection[{jstart2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::jstart2}}\label{classfft_a78b149c52f191d1999bc349321c63c8f}
+
+
+list of beginning indexes of the second axis of the grid among the procs for the transposed grid 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_ae7e4ffb85ebf62ef0f2ef10f04e2f0de}{\index{fft@{fft}!kend1@{kend1}}
+\index{kend1@{kend1}!fft@{fft}}
+\subsubsection[{kend1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::kend1}}\label{classfft_ae7e4ffb85ebf62ef0f2ef10f04e2f0de}
+
+
+list of ending indexes of the third axis of the grid among the procs 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a0f6315961060541f8c050b2fa944f28a}{\index{fft@{fft}!kend2@{kend2}}
+\index{kend2@{kend2}!fft@{fft}}
+\subsubsection[{kend2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::kend2}}\label{classfft_a0f6315961060541f8c050b2fa944f28a}
+
+
+list of ending indexes of the third axis of the grid among the procs for the transposed grid 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a737d6288ef056a8d5626686622b05a2e}{\index{fft@{fft}!ksize1@{ksize1}}
+\index{ksize1@{ksize1}!fft@{fft}}
+\subsubsection[{ksize1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::ksize1}}\label{classfft_a737d6288ef056a8d5626686622b05a2e}
+
+
+list of size of the third axis of the grid among the procs 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_ab61609735e4d327559a6a90691a0561b}{\index{fft@{fft}!ksize2@{ksize2}}
+\index{ksize2@{ksize2}!fft@{fft}}
+\subsubsection[{ksize2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::ksize2}}\label{classfft_ab61609735e4d327559a6a90691a0561b}
+
+
+list of size of the third axis of the transposed grid among the procs 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a1f4fe9a28b16da2c529fac36e0396d4c}{\index{fft@{fft}!kstart1@{kstart1}}
+\index{kstart1@{kstart1}!fft@{fft}}
+\subsubsection[{kstart1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::kstart1}}\label{classfft_a1f4fe9a28b16da2c529fac36e0396d4c}
+
+
+list of beginning indexes of the third axis of the grid among the procs 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a70dc33801ee2d6b2ee67d09d28bd6110}{\index{fft@{fft}!kstart2@{kstart2}}
+\index{kstart2@{kstart2}!fft@{fft}}
+\subsubsection[{kstart2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable fft\-::kstart2}}\label{classfft_a70dc33801ee2d6b2ee67d09d28bd6110}
+
+
+list of beginning indexes of the third axis of the grid among the procs for the transposed grid 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_afe626585dd8cb0ac36fab5947a9d2521}{\index{fft@{fft}!n1mpimax@{n1mpimax}}
+\index{n1mpimax@{n1mpimax}!fft@{fft}}
+\subsubsection[{n1mpimax}]{\setlength{\rightskip}{0pt plus 5cm}integer fft\-::n1mpimax}}\label{classfft_afe626585dd8cb0ac36fab5947a9d2521}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a97762b74c5d11ea405cdb20a7d3a7106}{\index{fft@{fft}!n2mpimax@{n2mpimax}}
+\index{n2mpimax@{n2mpimax}!fft@{fft}}
+\subsubsection[{n2mpimax}]{\setlength{\rightskip}{0pt plus 5cm}integer fft\-::n2mpimax}}\label{classfft_a97762b74c5d11ea405cdb20a7d3a7106}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_aee4e8f13c1938be27c7a25e76c81e461}{\index{fft@{fft}!n3mpimax@{n3mpimax}}
+\index{n3mpimax@{n3mpimax}!fft@{fft}}
+\subsubsection[{n3mpimax}]{\setlength{\rightskip}{0pt plus 5cm}integer fft\-::n3mpimax}}\label{classfft_aee4e8f13c1938be27c7a25e76c81e461}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a94ef6ff65cf001df13131230f327e00c}{\index{fft@{fft}!ngrid1@{ngrid1}}
+\index{ngrid1@{ngrid1}!fft@{fft}}
+\subsubsection[{ngrid1}]{\setlength{\rightskip}{0pt plus 5cm}integer fft\-::ngrid1}}\label{classfft_a94ef6ff65cf001df13131230f327e00c}
+
+
+maximum number of points along the divided first dimension of the fft grid 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-fft.\-f90.
+
+\hypertarget{classfft_a527c2e6b62c23d5b9499656757866ff6}{\index{fft@{fft}!ngrid2@{ngrid2}}
+\index{ngrid2@{ngrid2}!fft@{fft}}
+\subsubsection[{ngrid2}]{\setlength{\rightskip}{0pt plus 5cm}integer fft\-::ngrid2}}\label{classfft_a527c2e6b62c23d5b9499656757866ff6}
+
+
+maximum number of points along the divided second dimension of the fft grid 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-fft.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__fft_8f90}{M\-O\-D\-\_\-fft.\-f90}\end{DoxyCompactItemize}

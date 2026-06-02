@@ -1,0 +1,463 @@
+\hypertarget{classcutoff}{\section{cutoff Module Reference}
+\label{classcutoff}\index{cutoff@{cutoff}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8 \hyperlink{classcutoff_a931958c0426a4246d73339c2b249bdcc}{vdwcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for van der Waals interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_abe0483dfbdbe284cc5914fe66e689711}{chgcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for charge-\/charge interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a976eaa95d9a6a3f903ada6930d43617b}{mpolecut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for atomic multipole interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a807a24c28103ec7547be8bd3b5ec9314}{vdwtaper}
+\begin{DoxyCompactList}\small\item\em distance at which van der Waals switching begins \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a9f17980720278e5796449a35477f55ee}{shortheal}
+\begin{DoxyCompactList}\small\item\em healing length for switching short range van der Waals and mpole terms \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a806d1743b0716c7f476bd199bb829ac5}{chgtaper}
+\begin{DoxyCompactList}\small\item\em distance at which charge-\/charge switching begins \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_ac0a584dd1ffef51acf707a06832a162a}{mpoletaper}
+\begin{DoxyCompactList}\small\item\em distance at which atomic multipole switching begins \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a74f0ed5f2cad112e7fe50f24904d9e89}{disptaper}
+\begin{DoxyCompactList}\small\item\em distance at which dispersion switching begins \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a1c579ced91600e8e2a6fce114f29f34c}{ctrntaper}
+\begin{DoxyCompactList}\small\item\em distance at which charge transfer switching begins \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a9b8b3c87cffb3131d08ddccc32c52699}{reptaper}
+\begin{DoxyCompactList}\small\item\em distance at which repulsion switching begins \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a5130b26d222b11d50434f8479f00cf6a}{ewaldcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for direct space Ewald summation \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a117f3f3df84668290ed7eb7abe941030}{ewaldshortcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for short range direct space Ewald summation \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_abf62f41b2e876715123765edd145d64b}{vdwshortcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for short range van der Waals interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_ab982e131198b9a6e6b13aecf3c2e479f}{mpoleshortcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for short range atomic multipole interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a405df19c5de05489ea9b130835e7837e}{chgshortcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for short range charge-\/charge interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_ad5f03f16e01399362bd1106c6780cb71}{ctrncut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for charge transfer interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a7e03361a39f7572ebf5c29e5ecad9206}{dispcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for dispersions interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_abf68fbdf5f3b85f07958f7c6aca2f50f}{repcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for Pauli repulsions interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a1fbf47f5127967bd55285825743c33f0}{ctrnshortcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for short range charge transfer interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a0f4daf222ec1e5bac9d2906f645a802c}{dispshortcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for short range dispersions interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_a4d74fd4860bdb3b1665921c730e16681}{repshortcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for short range Pauli repulsions interactions \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_ab63d9aaa66f502a6018bf46e4581393a}{dewaldcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for real space Ewald dispersion \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_ada4ff7525cda0e4f6d2dd37e31d5afbc}{dewaldshortcut}
+\begin{DoxyCompactList}\small\item\em cutoff distance for short range real space Ewald dispersion \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classcutoff_aa9e3ae613ef354550d4e154605757e63}{ddcut}
+\begin{DoxyCompactList}\small\item\em additional cutoff for domain decomposition \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_a68e2445b2a53329020d82edaa66e6f8c}{use\-\_\-ewald}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of Ewald summation \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_a0c1a72d650799c1818c677874db443a8}{use\-\_\-list}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of any neighbor lists \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_a6e39a257df09552614d105bf3adfd0b2}{use\-\_\-vlist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of vdw neighbor list \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_a78501eaa9effc92e56a52d0651abb70c}{use\-\_\-mlist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of multipole neighbor list \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_a1a4728afeb2081464ffc6ec1d0b210e0}{use\-\_\-clist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of charge neighbor list \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_a8f39dc744b728faec4b715520f090fa2}{use\-\_\-dlist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of dispersion neighbor list \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_a98b34e44f9906503e22e8e709639b943}{use\-\_\-shortmlist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range mulitpole neighbor list \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_a7f60ea68482e53cd6aeaa473aa5df2f7}{use\-\_\-shortclist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range charge neighbor list \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_ac023f2c34db51f8df3d3cfb95315adcf}{use\-\_\-shortvlist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range van der Waals neighbor list \end{DoxyCompactList}\item 
+logical \hyperlink{classcutoff_afe3f26d96ac426c3ef7c8d2c4304538c}{use\-\_\-shortdlist}
+\begin{DoxyCompactList}\small\item\em logical flag governing use of short range dispersion neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classcutoff_abe0483dfbdbe284cc5914fe66e689711}{\index{cutoff@{cutoff}!chgcut@{chgcut}}
+\index{chgcut@{chgcut}!cutoff@{cutoff}}
+\subsubsection[{chgcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::chgcut}}\label{classcutoff_abe0483dfbdbe284cc5914fe66e689711}
+
+
+cutoff distance for charge-\/charge interactions 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a405df19c5de05489ea9b130835e7837e}{\index{cutoff@{cutoff}!chgshortcut@{chgshortcut}}
+\index{chgshortcut@{chgshortcut}!cutoff@{cutoff}}
+\subsubsection[{chgshortcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::chgshortcut}}\label{classcutoff_a405df19c5de05489ea9b130835e7837e}
+
+
+cutoff distance for short range charge-\/charge interactions 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a806d1743b0716c7f476bd199bb829ac5}{\index{cutoff@{cutoff}!chgtaper@{chgtaper}}
+\index{chgtaper@{chgtaper}!cutoff@{cutoff}}
+\subsubsection[{chgtaper}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::chgtaper}}\label{classcutoff_a806d1743b0716c7f476bd199bb829ac5}
+
+
+distance at which charge-\/charge switching begins 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_ad5f03f16e01399362bd1106c6780cb71}{\index{cutoff@{cutoff}!ctrncut@{ctrncut}}
+\index{ctrncut@{ctrncut}!cutoff@{cutoff}}
+\subsubsection[{ctrncut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::ctrncut}}\label{classcutoff_ad5f03f16e01399362bd1106c6780cb71}
+
+
+cutoff distance for charge transfer interactions 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a1fbf47f5127967bd55285825743c33f0}{\index{cutoff@{cutoff}!ctrnshortcut@{ctrnshortcut}}
+\index{ctrnshortcut@{ctrnshortcut}!cutoff@{cutoff}}
+\subsubsection[{ctrnshortcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::ctrnshortcut}}\label{classcutoff_a1fbf47f5127967bd55285825743c33f0}
+
+
+cutoff distance for short range charge transfer interactions 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a1c579ced91600e8e2a6fce114f29f34c}{\index{cutoff@{cutoff}!ctrntaper@{ctrntaper}}
+\index{ctrntaper@{ctrntaper}!cutoff@{cutoff}}
+\subsubsection[{ctrntaper}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::ctrntaper}}\label{classcutoff_a1c579ced91600e8e2a6fce114f29f34c}
+
+
+distance at which charge transfer switching begins 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_aa9e3ae613ef354550d4e154605757e63}{\index{cutoff@{cutoff}!ddcut@{ddcut}}
+\index{ddcut@{ddcut}!cutoff@{cutoff}}
+\subsubsection[{ddcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::ddcut}}\label{classcutoff_aa9e3ae613ef354550d4e154605757e63}
+
+
+additional cutoff for domain decomposition 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_ab63d9aaa66f502a6018bf46e4581393a}{\index{cutoff@{cutoff}!dewaldcut@{dewaldcut}}
+\index{dewaldcut@{dewaldcut}!cutoff@{cutoff}}
+\subsubsection[{dewaldcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::dewaldcut}}\label{classcutoff_ab63d9aaa66f502a6018bf46e4581393a}
+
+
+cutoff distance for real space Ewald dispersion 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_ada4ff7525cda0e4f6d2dd37e31d5afbc}{\index{cutoff@{cutoff}!dewaldshortcut@{dewaldshortcut}}
+\index{dewaldshortcut@{dewaldshortcut}!cutoff@{cutoff}}
+\subsubsection[{dewaldshortcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::dewaldshortcut}}\label{classcutoff_ada4ff7525cda0e4f6d2dd37e31d5afbc}
+
+
+cutoff distance for short range real space Ewald dispersion 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a7e03361a39f7572ebf5c29e5ecad9206}{\index{cutoff@{cutoff}!dispcut@{dispcut}}
+\index{dispcut@{dispcut}!cutoff@{cutoff}}
+\subsubsection[{dispcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::dispcut}}\label{classcutoff_a7e03361a39f7572ebf5c29e5ecad9206}
+
+
+cutoff distance for dispersions interactions 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a0f4daf222ec1e5bac9d2906f645a802c}{\index{cutoff@{cutoff}!dispshortcut@{dispshortcut}}
+\index{dispshortcut@{dispshortcut}!cutoff@{cutoff}}
+\subsubsection[{dispshortcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::dispshortcut}}\label{classcutoff_a0f4daf222ec1e5bac9d2906f645a802c}
+
+
+cutoff distance for short range dispersions interactions 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a74f0ed5f2cad112e7fe50f24904d9e89}{\index{cutoff@{cutoff}!disptaper@{disptaper}}
+\index{disptaper@{disptaper}!cutoff@{cutoff}}
+\subsubsection[{disptaper}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::disptaper}}\label{classcutoff_a74f0ed5f2cad112e7fe50f24904d9e89}
+
+
+distance at which dispersion switching begins 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a5130b26d222b11d50434f8479f00cf6a}{\index{cutoff@{cutoff}!ewaldcut@{ewaldcut}}
+\index{ewaldcut@{ewaldcut}!cutoff@{cutoff}}
+\subsubsection[{ewaldcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::ewaldcut}}\label{classcutoff_a5130b26d222b11d50434f8479f00cf6a}
+
+
+cutoff distance for direct space Ewald summation 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a117f3f3df84668290ed7eb7abe941030}{\index{cutoff@{cutoff}!ewaldshortcut@{ewaldshortcut}}
+\index{ewaldshortcut@{ewaldshortcut}!cutoff@{cutoff}}
+\subsubsection[{ewaldshortcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::ewaldshortcut}}\label{classcutoff_a117f3f3df84668290ed7eb7abe941030}
+
+
+cutoff distance for short range direct space Ewald summation 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a976eaa95d9a6a3f903ada6930d43617b}{\index{cutoff@{cutoff}!mpolecut@{mpolecut}}
+\index{mpolecut@{mpolecut}!cutoff@{cutoff}}
+\subsubsection[{mpolecut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::mpolecut}}\label{classcutoff_a976eaa95d9a6a3f903ada6930d43617b}
+
+
+cutoff distance for atomic multipole interactions 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_ab982e131198b9a6e6b13aecf3c2e479f}{\index{cutoff@{cutoff}!mpoleshortcut@{mpoleshortcut}}
+\index{mpoleshortcut@{mpoleshortcut}!cutoff@{cutoff}}
+\subsubsection[{mpoleshortcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::mpoleshortcut}}\label{classcutoff_ab982e131198b9a6e6b13aecf3c2e479f}
+
+
+cutoff distance for short range atomic multipole interactions 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_ac0a584dd1ffef51acf707a06832a162a}{\index{cutoff@{cutoff}!mpoletaper@{mpoletaper}}
+\index{mpoletaper@{mpoletaper}!cutoff@{cutoff}}
+\subsubsection[{mpoletaper}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::mpoletaper}}\label{classcutoff_ac0a584dd1ffef51acf707a06832a162a}
+
+
+distance at which atomic multipole switching begins 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_abf68fbdf5f3b85f07958f7c6aca2f50f}{\index{cutoff@{cutoff}!repcut@{repcut}}
+\index{repcut@{repcut}!cutoff@{cutoff}}
+\subsubsection[{repcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::repcut}}\label{classcutoff_abf68fbdf5f3b85f07958f7c6aca2f50f}
+
+
+cutoff distance for Pauli repulsions interactions 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a4d74fd4860bdb3b1665921c730e16681}{\index{cutoff@{cutoff}!repshortcut@{repshortcut}}
+\index{repshortcut@{repshortcut}!cutoff@{cutoff}}
+\subsubsection[{repshortcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::repshortcut}}\label{classcutoff_a4d74fd4860bdb3b1665921c730e16681}
+
+
+cutoff distance for short range Pauli repulsions interactions 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a9b8b3c87cffb3131d08ddccc32c52699}{\index{cutoff@{cutoff}!reptaper@{reptaper}}
+\index{reptaper@{reptaper}!cutoff@{cutoff}}
+\subsubsection[{reptaper}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::reptaper}}\label{classcutoff_a9b8b3c87cffb3131d08ddccc32c52699}
+
+
+distance at which repulsion switching begins 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a9f17980720278e5796449a35477f55ee}{\index{cutoff@{cutoff}!shortheal@{shortheal}}
+\index{shortheal@{shortheal}!cutoff@{cutoff}}
+\subsubsection[{shortheal}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::shortheal}}\label{classcutoff_a9f17980720278e5796449a35477f55ee}
+
+
+healing length for switching short range van der Waals and mpole terms 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a1a4728afeb2081464ffc6ec1d0b210e0}{\index{cutoff@{cutoff}!use\-\_\-clist@{use\-\_\-clist}}
+\index{use\-\_\-clist@{use\-\_\-clist}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-clist}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-clist}}\label{classcutoff_a1a4728afeb2081464ffc6ec1d0b210e0}
+
+
+logical flag governing use of charge neighbor list 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a8f39dc744b728faec4b715520f090fa2}{\index{cutoff@{cutoff}!use\-\_\-dlist@{use\-\_\-dlist}}
+\index{use\-\_\-dlist@{use\-\_\-dlist}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-dlist}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-dlist}}\label{classcutoff_a8f39dc744b728faec4b715520f090fa2}
+
+
+logical flag governing use of dispersion neighbor list 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a68e2445b2a53329020d82edaa66e6f8c}{\index{cutoff@{cutoff}!use\-\_\-ewald@{use\-\_\-ewald}}
+\index{use\-\_\-ewald@{use\-\_\-ewald}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-ewald}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-ewald}}\label{classcutoff_a68e2445b2a53329020d82edaa66e6f8c}
+
+
+logical flag governing use of Ewald summation 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a0c1a72d650799c1818c677874db443a8}{\index{cutoff@{cutoff}!use\-\_\-list@{use\-\_\-list}}
+\index{use\-\_\-list@{use\-\_\-list}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-list}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-list}}\label{classcutoff_a0c1a72d650799c1818c677874db443a8}
+
+
+logical flag governing use of any neighbor lists 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a78501eaa9effc92e56a52d0651abb70c}{\index{cutoff@{cutoff}!use\-\_\-mlist@{use\-\_\-mlist}}
+\index{use\-\_\-mlist@{use\-\_\-mlist}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-mlist}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-mlist}}\label{classcutoff_a78501eaa9effc92e56a52d0651abb70c}
+
+
+logical flag governing use of multipole neighbor list 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a7f60ea68482e53cd6aeaa473aa5df2f7}{\index{cutoff@{cutoff}!use\-\_\-shortclist@{use\-\_\-shortclist}}
+\index{use\-\_\-shortclist@{use\-\_\-shortclist}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-shortclist}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-shortclist}}\label{classcutoff_a7f60ea68482e53cd6aeaa473aa5df2f7}
+
+
+logical flag governing use of short range charge neighbor list 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_afe3f26d96ac426c3ef7c8d2c4304538c}{\index{cutoff@{cutoff}!use\-\_\-shortdlist@{use\-\_\-shortdlist}}
+\index{use\-\_\-shortdlist@{use\-\_\-shortdlist}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-shortdlist}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-shortdlist}}\label{classcutoff_afe3f26d96ac426c3ef7c8d2c4304538c}
+
+
+logical flag governing use of short range dispersion neighbor list 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a98b34e44f9906503e22e8e709639b943}{\index{cutoff@{cutoff}!use\-\_\-shortmlist@{use\-\_\-shortmlist}}
+\index{use\-\_\-shortmlist@{use\-\_\-shortmlist}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-shortmlist}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-shortmlist}}\label{classcutoff_a98b34e44f9906503e22e8e709639b943}
+
+
+logical flag governing use of short range mulitpole neighbor list 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_ac023f2c34db51f8df3d3cfb95315adcf}{\index{cutoff@{cutoff}!use\-\_\-shortvlist@{use\-\_\-shortvlist}}
+\index{use\-\_\-shortvlist@{use\-\_\-shortvlist}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-shortvlist}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-shortvlist}}\label{classcutoff_ac023f2c34db51f8df3d3cfb95315adcf}
+
+
+logical flag governing use of short range van der Waals neighbor list 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a6e39a257df09552614d105bf3adfd0b2}{\index{cutoff@{cutoff}!use\-\_\-vlist@{use\-\_\-vlist}}
+\index{use\-\_\-vlist@{use\-\_\-vlist}!cutoff@{cutoff}}
+\subsubsection[{use\-\_\-vlist}]{\setlength{\rightskip}{0pt plus 5cm}logical cutoff\-::use\-\_\-vlist}}\label{classcutoff_a6e39a257df09552614d105bf3adfd0b2}
+
+
+logical flag governing use of vdw neighbor list 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a931958c0426a4246d73339c2b249bdcc}{\index{cutoff@{cutoff}!vdwcut@{vdwcut}}
+\index{vdwcut@{vdwcut}!cutoff@{cutoff}}
+\subsubsection[{vdwcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::vdwcut}}\label{classcutoff_a931958c0426a4246d73339c2b249bdcc}
+
+
+cutoff distance for van der Waals interactions 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_abf62f41b2e876715123765edd145d64b}{\index{cutoff@{cutoff}!vdwshortcut@{vdwshortcut}}
+\index{vdwshortcut@{vdwshortcut}!cutoff@{cutoff}}
+\subsubsection[{vdwshortcut}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::vdwshortcut}}\label{classcutoff_abf62f41b2e876715123765edd145d64b}
+
+
+cutoff distance for short range van der Waals interactions 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+\hypertarget{classcutoff_a807a24c28103ec7547be8bd3b5ec9314}{\index{cutoff@{cutoff}!vdwtaper@{vdwtaper}}
+\index{vdwtaper@{vdwtaper}!cutoff@{cutoff}}
+\subsubsection[{vdwtaper}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 cutoff\-::vdwtaper}}\label{classcutoff_a807a24c28103ec7547be8bd3b5ec9314}
+
+
+distance at which van der Waals switching begins 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-cutoff.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__cutoff_8f90}{M\-O\-D\-\_\-cutoff.\-f90}\end{DoxyCompactItemize}

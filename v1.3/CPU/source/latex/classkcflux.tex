@@ -1,0 +1,112 @@
+\hypertarget{classkcflux}{\section{kcflux Module Reference}
+\label{classkcflux}\index{kcflux@{kcflux}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classkcflux_a46f26e9cd59b945af602a5b971d2ec86}{maxncfb}
+\begin{DoxyCompactList}\small\item\em maximum number of bond stretch charge flux entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkcflux_aed5026e7c442e2d8adc07418913e4b23}{maxncfa}
+\begin{DoxyCompactList}\small\item\em maximum number of angle bend charge flux entries \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkcflux_a46f26e9cd59b945af602a5b971d2ec86}{maxncfb}) \hyperlink{classkcflux_a4d5f1952541c88e9d14138a352e4ae77}{cflb}
+\begin{DoxyCompactList}\small\item\em charge flux over stretching of a bond length \end{DoxyCompactList}\item 
+real $\ast$8, dimension(2, \hyperlink{classkcflux_aed5026e7c442e2d8adc07418913e4b23}{maxncfa}) \hyperlink{classkcflux_a067a33e9e311bc7aa28ba929ba7b4798}{cfla}
+\begin{DoxyCompactList}\small\item\em charge flux over bending of a bond angle \end{DoxyCompactList}\item 
+real $\ast$8, dimension(2, \hyperlink{classkcflux_aed5026e7c442e2d8adc07418913e4b23}{maxncfa}) \hyperlink{classkcflux_ad9c316648b712054ed06b3a6e5b4fbd9}{cflab}
+\begin{DoxyCompactList}\small\item\em charge flux over asymmetric bond within an angle \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\hyperlink{classkcflux_a46f26e9cd59b945af602a5b971d2ec86}{maxncfb}) \hyperlink{classkcflux_aaa22ec05a2e498ed74e13845c7f1fef7}{kcfb}
+\begin{DoxyCompactList}\small\item\em string of atom classes for bond stretch charge flux \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkcflux_aed5026e7c442e2d8adc07418913e4b23}{maxncfa}) \hyperlink{classkcflux_ae44315660c09ff5741e75037d0a29ee1}{kcfa}
+\begin{DoxyCompactList}\small\item\em string of atom classes for angle bend charge flux \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-kcflux.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classkcflux_a067a33e9e311bc7aa28ba929ba7b4798}{\index{kcflux@{kcflux}!cfla@{cfla}}
+\index{cfla@{cfla}!kcflux@{kcflux}}
+\subsubsection[{cfla}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,{\bf maxncfa}) kcflux\-::cfla}}\label{classkcflux_a067a33e9e311bc7aa28ba929ba7b4798}
+
+
+charge flux over bending of a bond angle 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-kcflux.\-f90.
+
+\hypertarget{classkcflux_ad9c316648b712054ed06b3a6e5b4fbd9}{\index{kcflux@{kcflux}!cflab@{cflab}}
+\index{cflab@{cflab}!kcflux@{kcflux}}
+\subsubsection[{cflab}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,{\bf maxncfa}) kcflux\-::cflab}}\label{classkcflux_ad9c316648b712054ed06b3a6e5b4fbd9}
+
+
+charge flux over asymmetric bond within an angle 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-kcflux.\-f90.
+
+\hypertarget{classkcflux_a4d5f1952541c88e9d14138a352e4ae77}{\index{kcflux@{kcflux}!cflb@{cflb}}
+\index{cflb@{cflb}!kcflux@{kcflux}}
+\subsubsection[{cflb}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxncfb}) kcflux\-::cflb}}\label{classkcflux_a4d5f1952541c88e9d14138a352e4ae77}
+
+
+charge flux over stretching of a bond length 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-kcflux.\-f90.
+
+\hypertarget{classkcflux_ae44315660c09ff5741e75037d0a29ee1}{\index{kcflux@{kcflux}!kcfa@{kcfa}}
+\index{kcfa@{kcfa}!kcflux@{kcflux}}
+\subsubsection[{kcfa}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxncfa}) kcflux\-::kcfa}}\label{classkcflux_ae44315660c09ff5741e75037d0a29ee1}
+
+
+string of atom classes for angle bend charge flux 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-kcflux.\-f90.
+
+\hypertarget{classkcflux_aaa22ec05a2e498ed74e13845c7f1fef7}{\index{kcflux@{kcflux}!kcfb@{kcfb}}
+\index{kcfb@{kcfb}!kcflux@{kcflux}}
+\subsubsection[{kcfb}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension({\bf maxncfb}) kcflux\-::kcfb}}\label{classkcflux_aaa22ec05a2e498ed74e13845c7f1fef7}
+
+
+string of atom classes for bond stretch charge flux 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-kcflux.\-f90.
+
+\hypertarget{classkcflux_aed5026e7c442e2d8adc07418913e4b23}{\index{kcflux@{kcflux}!maxncfa@{maxncfa}}
+\index{maxncfa@{maxncfa}!kcflux@{kcflux}}
+\subsubsection[{maxncfa}]{\setlength{\rightskip}{0pt plus 5cm}integer kcflux\-::maxncfa}}\label{classkcflux_aed5026e7c442e2d8adc07418913e4b23}
+
+
+maximum number of angle bend charge flux entries 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-kcflux.\-f90.
+
+\hypertarget{classkcflux_a46f26e9cd59b945af602a5b971d2ec86}{\index{kcflux@{kcflux}!maxncfb@{maxncfb}}
+\index{maxncfb@{maxncfb}!kcflux@{kcflux}}
+\subsubsection[{maxncfb}]{\setlength{\rightskip}{0pt plus 5cm}integer kcflux\-::maxncfb}}\label{classkcflux_a46f26e9cd59b945af602a5b971d2ec86}
+
+
+maximum number of bond stretch charge flux entries 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-kcflux.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__kcflux_8f90}{M\-O\-D\-\_\-kcflux.\-f90}\end{DoxyCompactItemize}

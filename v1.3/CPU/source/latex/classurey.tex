@@ -1,0 +1,177 @@
+\hypertarget{classurey}{\section{urey Module Reference}
+\label{classurey}\index{urey@{urey}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classurey_a69eb177891f8ef35b6291841f723b5da}{nurey}
+\begin{DoxyCompactList}\small\item\em total number of Urey-\/\-Bradley terms in the system \end{DoxyCompactList}\item 
+integer \hyperlink{classurey_a026499b4e231a038a6e81b20c7a1ef2d}{nureyloc}
+\begin{DoxyCompactList}\small\item\em local number of Urey-\/\-Bradley terms in the system \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), pointer \hyperlink{classurey_ac0be6030887dcc7b4b10c65e237e7bc9}{iury}
+\begin{DoxyCompactList}\small\item\em numbers of the atoms in each Urey-\/\-Bradley interaction \end{DoxyCompactList}\item 
+integer, dimension(\-:), pointer \hyperlink{classurey_a4f87085046f2d60d39c4fd1ad75184ba}{nburey}
+\begin{DoxyCompactList}\small\item\em numbers of Urey-\/\-Bradley interactions before each atom \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classurey_aebf3f1a2659249aa71a3e9e051dfe5fe}{uk}
+\begin{DoxyCompactList}\small\item\em Urey-\/\-Bradley force constants (kcal/mole/\-Ang$\ast$$\ast$2) \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), pointer \hyperlink{classurey_a25d40d37004ea0056782407850a7f9e6}{ul}
+\begin{DoxyCompactList}\small\item\em ideal 1-\/3 distance values in Angstroms \end{DoxyCompactList}\item 
+integer \hyperlink{classurey_a06f6e3c501f1deefacf31961bcdf92ad}{winiury}
+\begin{DoxyCompactList}\small\item\em window object corresponding to iury \end{DoxyCompactList}\item 
+integer \hyperlink{classurey_a6e00dbd3a8fa551480df4387a3395bea}{winnburey}
+\begin{DoxyCompactList}\small\item\em window object corresponding to nburey \end{DoxyCompactList}\item 
+integer \hyperlink{classurey_afac1bdac5167e22bc6e0bc1fbbca90c0}{winuk}
+\begin{DoxyCompactList}\small\item\em window object corresponding to uk \end{DoxyCompactList}\item 
+integer \hyperlink{classurey_a3699f6c0c0f84cfdc816f511699961e3}{winul}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ul \end{DoxyCompactList}\item 
+integer \hyperlink{classurey_aa2711b5e01d4e98e57eefd8b8d3e2104}{winureytyp}
+\begin{DoxyCompactList}\small\item\em window object corresponding to ureytyp \end{DoxyCompactList}\item 
+character $\ast$8, dimension(\-:), pointer \hyperlink{classurey_a2b42e1fe25c411e3bf60b0fbba5471c0}{ureytyp}
+\begin{DoxyCompactList}\small\item\em type of urey-\/bradley interaction \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-urey.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classurey_ac0be6030887dcc7b4b10c65e237e7bc9}{\index{urey@{urey}!iury@{iury}}
+\index{iury@{iury}!urey@{urey}}
+\subsubsection[{iury}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), pointer urey\-::iury}}\label{classurey_ac0be6030887dcc7b4b10c65e237e7bc9}
+
+
+numbers of the atoms in each Urey-\/\-Bradley interaction 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_a4f87085046f2d60d39c4fd1ad75184ba}{\index{urey@{urey}!nburey@{nburey}}
+\index{nburey@{nburey}!urey@{urey}}
+\subsubsection[{nburey}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), pointer urey\-::nburey}}\label{classurey_a4f87085046f2d60d39c4fd1ad75184ba}
+
+
+numbers of Urey-\/\-Bradley interactions before each atom 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_a69eb177891f8ef35b6291841f723b5da}{\index{urey@{urey}!nurey@{nurey}}
+\index{nurey@{nurey}!urey@{urey}}
+\subsubsection[{nurey}]{\setlength{\rightskip}{0pt plus 5cm}integer urey\-::nurey}}\label{classurey_a69eb177891f8ef35b6291841f723b5da}
+
+
+total number of Urey-\/\-Bradley terms in the system 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_a026499b4e231a038a6e81b20c7a1ef2d}{\index{urey@{urey}!nureyloc@{nureyloc}}
+\index{nureyloc@{nureyloc}!urey@{urey}}
+\subsubsection[{nureyloc}]{\setlength{\rightskip}{0pt plus 5cm}integer urey\-::nureyloc}}\label{classurey_a026499b4e231a038a6e81b20c7a1ef2d}
+
+
+local number of Urey-\/\-Bradley terms in the system 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_aebf3f1a2659249aa71a3e9e051dfe5fe}{\index{urey@{urey}!uk@{uk}}
+\index{uk@{uk}!urey@{urey}}
+\subsubsection[{uk}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer urey\-::uk}}\label{classurey_aebf3f1a2659249aa71a3e9e051dfe5fe}
+
+
+Urey-\/\-Bradley force constants (kcal/mole/\-Ang$\ast$$\ast$2) 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_a25d40d37004ea0056782407850a7f9e6}{\index{urey@{urey}!ul@{ul}}
+\index{ul@{ul}!urey@{urey}}
+\subsubsection[{ul}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), pointer urey\-::ul}}\label{classurey_a25d40d37004ea0056782407850a7f9e6}
+
+
+ideal 1-\/3 distance values in Angstroms 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_a2b42e1fe25c411e3bf60b0fbba5471c0}{\index{urey@{urey}!ureytyp@{ureytyp}}
+\index{ureytyp@{ureytyp}!urey@{urey}}
+\subsubsection[{ureytyp}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$8, dimension(\-:), pointer urey\-::ureytyp}}\label{classurey_a2b42e1fe25c411e3bf60b0fbba5471c0}
+
+
+type of urey-\/bradley interaction 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_a06f6e3c501f1deefacf31961bcdf92ad}{\index{urey@{urey}!winiury@{winiury}}
+\index{winiury@{winiury}!urey@{urey}}
+\subsubsection[{winiury}]{\setlength{\rightskip}{0pt plus 5cm}integer urey\-::winiury}}\label{classurey_a06f6e3c501f1deefacf31961bcdf92ad}
+
+
+window object corresponding to iury 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_a6e00dbd3a8fa551480df4387a3395bea}{\index{urey@{urey}!winnburey@{winnburey}}
+\index{winnburey@{winnburey}!urey@{urey}}
+\subsubsection[{winnburey}]{\setlength{\rightskip}{0pt plus 5cm}integer urey\-::winnburey}}\label{classurey_a6e00dbd3a8fa551480df4387a3395bea}
+
+
+window object corresponding to nburey 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_afac1bdac5167e22bc6e0bc1fbbca90c0}{\index{urey@{urey}!winuk@{winuk}}
+\index{winuk@{winuk}!urey@{urey}}
+\subsubsection[{winuk}]{\setlength{\rightskip}{0pt plus 5cm}integer urey\-::winuk}}\label{classurey_afac1bdac5167e22bc6e0bc1fbbca90c0}
+
+
+window object corresponding to uk 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_a3699f6c0c0f84cfdc816f511699961e3}{\index{urey@{urey}!winul@{winul}}
+\index{winul@{winul}!urey@{urey}}
+\subsubsection[{winul}]{\setlength{\rightskip}{0pt plus 5cm}integer urey\-::winul}}\label{classurey_a3699f6c0c0f84cfdc816f511699961e3}
+
+
+window object corresponding to ul 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-urey.\-f90.
+
+\hypertarget{classurey_aa2711b5e01d4e98e57eefd8b8d3e2104}{\index{urey@{urey}!winureytyp@{winureytyp}}
+\index{winureytyp@{winureytyp}!urey@{urey}}
+\subsubsection[{winureytyp}]{\setlength{\rightskip}{0pt plus 5cm}integer urey\-::winureytyp}}\label{classurey_aa2711b5e01d4e98e57eefd8b8d3e2104}
+
+
+window object corresponding to ureytyp 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-urey.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__urey_8f90}{M\-O\-D\-\_\-urey.\-f90}\end{DoxyCompactItemize}

@@ -1,0 +1,78 @@
+\hypertarget{lbfgs_8f90}{\section{lbfgs.\-f90 File Reference}
+\label{lbfgs_8f90}\index{lbfgs.\-f90@{lbfgs.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{lbfgs_8f90_a5364602079561f5cc9816d13c57c8bf9}{lbfgs} (n, x0, minimum, grdmin, fgvalue, \hyperlink{optsave_8f90_a0943582e8735a11dc2f6db2d8af03e06}{optsave})
+\begin{DoxyCompactList}\small\item\em limited memory B\-F\-G\-S quasi-\/newton nonlinear optimization routine \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{lbfgs_8f90_a5364602079561f5cc9816d13c57c8bf9}{\index{lbfgs.\-f90@{lbfgs.\-f90}!lbfgs@{lbfgs}}
+\index{lbfgs@{lbfgs}!lbfgs.f90@{lbfgs.\-f90}}
+\subsubsection[{lbfgs}]{\setlength{\rightskip}{0pt plus 5cm}subroutine lbfgs (
+\begin{DoxyParamCaption}
+\item[{integer}]{n, }
+\item[{real$\ast$8, dimension($\ast$)}]{x0, }
+\item[{real$\ast$8}]{minimum, }
+\item[{real$\ast$8}]{grdmin, }
+\item[{real$\ast$8, external}]{fgvalue, }
+\item[{external}]{optsave}
+\end{DoxyParamCaption}
+)}}\label{lbfgs_8f90_a5364602079561f5cc9816d13c57c8bf9}
+
+
+limited memory B\-F\-G\-S quasi-\/newton nonlinear optimization routine 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em n,\-:} & number of parameters in the objective function \\
+\hline
+\mbox{\tt in}  & {\em x0,\-:} & starting point upon input, upon return best point found \\
+\hline
+\mbox{\tt in}  & {\em minimum,\-:} & during optimization contains best current function value; returns final best function value \\
+\hline
+\mbox{\tt in}  & {\em grdmin,\-:} & normal exit if rms gradient gets below this value \\
+\hline
+\mbox{\tt in}  & {\em ncalls,\-:} & total number of function/gradient evaluations \\
+\hline
+\mbox{\tt in}  & {\em fgvalue,\-:} & function to evaluate function and gradient values \\
+\hline
+\mbox{\tt in}  & {\em optsave,\-:} & subroutine to write out info about current status \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 54 of file lbfgs.\-f90.
+
+
+
+References gettext(), optsave(), search(), sendvecmin(), and upcase().
+
+
+
+Referenced by minimize\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{lbfgs_8f90_a5364602079561f5cc9816d13c57c8bf9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=338pt]{lbfgs_8f90_a5364602079561f5cc9816d13c57c8bf9_icgraph}
+\end{center}
+\end{figure}
+
+

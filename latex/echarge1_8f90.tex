@@ -1,0 +1,220 @@
+\hypertarget{echarge1_8f90}{\section{echarge1.\-f90 File Reference}
+\label{echarge1_8f90}\index{echarge1.\-f90@{echarge1.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{echarge1_8f90_af51e2237ed9d385906b7e4d0f344c5ee}{echarge1}
+\begin{DoxyCompactList}\small\item\em \char`\"{}echarge1\char`\"{} calculates the charge-\/charge interaction energy and first derivatives with respect to Cartesian coordinates \end{DoxyCompactList}\item 
+subroutine \hyperlink{echarge1_8f90_a14bf168ba737b8dc9ed17325c22e6c90}{echarge1c}
+\begin{DoxyCompactList}\small\item\em charge electrostatic interactions \end{DoxyCompactList}\item 
+subroutine \hyperlink{echarge1_8f90_a651725220491e55cb0dbf22f30340d13}{ecreal1d}
+\begin{DoxyCompactList}\small\item\em \char`\"{}ecreal1d\char`\"{} evaluates the real space portion of the Ewald sum energy and first derivative due to atomic charge interactions using a pairwise neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{echarge1_8f90_a43a3a064f150b79afd168acacddcc0af}{ecrecip1}
+\begin{DoxyCompactList}\small\item\em evaluates the reciprocal space portion of the particle mesh Ewald summation energy and gradient due to partial charges \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{echarge1_8f90_af51e2237ed9d385906b7e4d0f344c5ee}{\index{echarge1.\-f90@{echarge1.\-f90}!echarge1@{echarge1}}
+\index{echarge1@{echarge1}!echarge1.f90@{echarge1.\-f90}}
+\subsubsection[{echarge1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine echarge1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge1_8f90_af51e2237ed9d385906b7e4d0f344c5ee}
+
+
+\char`\"{}echarge1\char`\"{} calculates the charge-\/charge interaction energy and first derivatives with respect to Cartesian coordinates 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file echarge1.\-f90.
+
+
+
+References echarge1c().
+
+
+
+Referenced by gradient().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge1_8f90_af51e2237ed9d385906b7e4d0f344c5ee_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge1_8f90_af51e2237ed9d385906b7e4d0f344c5ee_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echarge1_8f90_a14bf168ba737b8dc9ed17325c22e6c90}{\index{echarge1.\-f90@{echarge1.\-f90}!echarge1c@{echarge1c}}
+\index{echarge1c@{echarge1c}!echarge1.f90@{echarge1.\-f90}}
+\subsubsection[{echarge1c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine echarge1c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge1_8f90_a14bf168ba737b8dc9ed17325c22e6c90}
+
+
+charge electrostatic interactions 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 42 of file echarge1.\-f90.
+
+
+
+References ecreal1d(), and ecrecip1().
+
+
+
+Referenced by echarge1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge1_8f90_a14bf168ba737b8dc9ed17325c22e6c90_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge1_8f90_a14bf168ba737b8dc9ed17325c22e6c90_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echarge1_8f90_a651725220491e55cb0dbf22f30340d13}{\index{echarge1.\-f90@{echarge1.\-f90}!ecreal1d@{ecreal1d}}
+\index{ecreal1d@{ecreal1d}!echarge1.f90@{echarge1.\-f90}}
+\subsubsection[{ecreal1d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ecreal1d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge1_8f90_a651725220491e55cb0dbf22f30340d13}
+
+
+\char`\"{}ecreal1d\char`\"{} evaluates the real space portion of the Ewald sum energy and first derivative due to atomic charge interactions using a pairwise neighbor list 
+
+\begin{DoxyVerb}if longrange, calculates just the long range part
+if shortrange, calculates just the short range part
+\end{DoxyVerb}
+ 
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 194 of file echarge1.\-f90.
+
+
+
+References erfc(), groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by echarge1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=344pt]{echarge1_8f90_a651725220491e55cb0dbf22f30340d13_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge1_8f90_a651725220491e55cb0dbf22f30340d13_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echarge1_8f90_a43a3a064f150b79afd168acacddcc0af}{\index{echarge1.\-f90@{echarge1.\-f90}!ecrecip1@{ecrecip1}}
+\index{ecrecip1@{ecrecip1}!echarge1.f90@{echarge1.\-f90}}
+\subsubsection[{ecrecip1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ecrecip1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge1_8f90_a43a3a064f150b79afd168acacddcc0af}
+
+
+evaluates the reciprocal space portion of the particle mesh Ewald summation energy and gradient due to partial charges 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 495 of file echarge1.\-f90.
+
+
+
+References bspline\-\_\-fill\-\_\-site(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), fphi\-\_\-chg\-\_\-site(), fphi\-\_\-to\-\_\-cphi\-\_\-site(), and grid\-\_\-pchg\-\_\-site().
+
+
+
+Referenced by echarge1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge1_8f90_a43a3a064f150b79afd168acacddcc0af_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge1_8f90_a43a3a064f150b79afd168acacddcc0af_icgraph}
+\end{center}
+\end{figure}
+
+

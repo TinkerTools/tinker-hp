@@ -1,0 +1,8 @@
+<map id="qtb::adhnoise" name="qtb::adhnoise">
+<area shape="rect" id="node2" href="$classcolvarproxy__tinkerhp.html#a7acc624104cbe9ef60cb90fe5f51018b" title="colvarproxy_tinkerhp\l::boltzmann" alt="" coords="165,5,325,46"/>
+<area shape="rect" id="node3" href="$classspectra.html#a27d2053c9090bc63d7ae14d7edc29abd" title="spectra::qtb_kernel" alt="" coords="172,71,319,97"/>
+<area shape="rect" id="node4" href="$classspectra.html#a23922ac2fd96129f594aa533edc82fc7" title="spectra::piqtb_kernel" alt="" coords="374,71,533,97"/>
+<area shape="rect" id="node5" href="$classspectra.html#aa68c292c3f1ec44529916b6e6c9ed807" title="spectra::piqtb_kernel\l_brieuc" alt="" coords="582,63,741,105"/>
+<area shape="rect" id="node6" href="$classspectra.html#ab056deac13281e59def28844beb05a26" title="spectra::linear_interpolation" alt="" coords="789,45,995,72"/>
+<area shape="rect" id="node7" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="866,96,918,123"/>
+</map>

@@ -1,0 +1,67 @@
+\hypertarget{getnumb_8f90}{\section{getnumb.\-f90 File Reference}
+\label{getnumb_8f90}\index{getnumb.\-f90@{getnumb.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{getnumb_8f90_acfecd64724fb1c6594658693745dcc13}{getnumb} (string, \hyperlink{number_8f90_a133da88aea76390c3f91db1e3a8a4f4b}{number}, next)
+\begin{DoxyCompactList}\small\item\em searches an input string from left to right for an integer and puts the numeric value in \char`\"{}number\char`\"{}; returns zero with \char`\"{}next\char`\"{} unchanged if no integer value is found \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{getnumb_8f90_acfecd64724fb1c6594658693745dcc13}{\index{getnumb.\-f90@{getnumb.\-f90}!getnumb@{getnumb}}
+\index{getnumb@{getnumb}!getnumb.f90@{getnumb.\-f90}}
+\subsubsection[{getnumb}]{\setlength{\rightskip}{0pt plus 5cm}subroutine getnumb (
+\begin{DoxyParamCaption}
+\item[{character$\ast$($\ast$)}]{string, }
+\item[{integer}]{number, }
+\item[{integer}]{next}
+\end{DoxyParamCaption}
+)}}\label{getnumb_8f90_acfecd64724fb1c6594658693745dcc13}
+
+
+searches an input string from left to right for an integer and puts the numeric value in \char`\"{}number\char`\"{}; returns zero with \char`\"{}next\char`\"{} unchanged if no integer value is found 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input character string to be searched \\
+\hline
+\mbox{\tt in}  & {\em number,\-:} & output with the first integer in the string \\
+\hline
+\mbox{\tt in}  & {\em next,\-:} & input with first position of search string; output with the position following the number \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 33 of file getnumb.\-f90.
+
+
+
+References final(), initial(), number(), numeral(), and trimtext().
+
+
+
+Referenced by cluster(), katom(), kchgtrn(), kdisp(), kgeom(), kpolar(), krepel(), kvdw(), readprm(), and shakeup().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{getnumb_8f90_acfecd64724fb1c6594658693745dcc13_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{getnumb_8f90_acfecd64724fb1c6594658693745dcc13_icgraph}
+\end{center}
+\end{figure}
+
+

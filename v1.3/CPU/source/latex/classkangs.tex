@@ -1,0 +1,372 @@
+\hypertarget{classkangs}{\section{kangs Module Reference}
+\label{classkangs}\index{kangs@{kangs}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classkangs_a219b9491df85352c42fb06b082f1fce2}{maxna}
+\begin{DoxyCompactList}\small\item\em maximum number of harmonic angle bend parameter entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkangs_af188b59476d50504dd8aa39359285894}{maxna5}
+\begin{DoxyCompactList}\small\item\em maximum number of 5-\/membered ring angle bend entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkangs_a65b59f16cd39d33f1686bf32e362e6c9}{maxna4}
+\begin{DoxyCompactList}\small\item\em maximum number of 4-\/membered ring angle bend entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkangs_a121c0c19e92533f59e8c9b276e200da5}{maxna3}
+\begin{DoxyCompactList}\small\item\em maximum number of 3-\/membered ring angle bend entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkangs_aaa36915cbec793691849f7f04c409e24}{maxnap}
+\begin{DoxyCompactList}\small\item\em maximum number of in-\/plane angle bend parameter entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkangs_a3f749f34ae8245564a10206341a2dbdd}{maxnaf}
+\begin{DoxyCompactList}\small\item\em maximum number of Fourier angle bend parameter entries \end{DoxyCompactList}\item 
+integer \hyperlink{classkangs_a6646c9ed34bc273addaebe53e7ece288}{maxnaps}
+\begin{DoxyCompactList}\small\item\em maximum number of in-\/plane angle bend parameter entries \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkangs_a219b9491df85352c42fb06b082f1fce2}{maxna}) \hyperlink{classkangs_a2fb695824cd8ddcc728928f17bd3a849}{acon}
+\begin{DoxyCompactList}\small\item\em force constant parameters for harmonic angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkangs_af188b59476d50504dd8aa39359285894}{maxna5}) \hyperlink{classkangs_a0d230fc1b45ed6bd51f256e0eb019288}{acon5}
+\begin{DoxyCompactList}\small\item\em force constant parameters for 5-\/ring angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkangs_a65b59f16cd39d33f1686bf32e362e6c9}{maxna4}) \hyperlink{classkangs_a4ec467bca16ca8dfc4257b00c1b5960e}{acon4}
+\begin{DoxyCompactList}\small\item\em force constant parameters for 4-\/ring angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkangs_a121c0c19e92533f59e8c9b276e200da5}{maxna3}) \hyperlink{classkangs_a8da9a28628dad91da237adc26d9241f6}{acon3}
+\begin{DoxyCompactList}\small\item\em force constant parameters for 3-\/ring angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkangs_a3f749f34ae8245564a10206341a2dbdd}{maxnaf}) \hyperlink{classkangs_a70fc76818cea5d69e8cab06e440f79ca}{aconf}
+\begin{DoxyCompactList}\small\item\em force constant parameters for Fourier angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\hyperlink{classkangs_aaa36915cbec793691849f7f04c409e24}{maxnap}) \hyperlink{classkangs_ad4cfec56d1a070afa1a9e0dc8d2bea9a}{aconp}
+\begin{DoxyCompactList}\small\item\em force constant parameters for in-\/plane angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, \hyperlink{classkangs_a219b9491df85352c42fb06b082f1fce2}{maxna}) \hyperlink{classkangs_a23c8d00fd92495d816a68a4a1d952282}{ang}
+\begin{DoxyCompactList}\small\item\em bond angle parameters for harmonic angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, \hyperlink{classkangs_af188b59476d50504dd8aa39359285894}{maxna5}) \hyperlink{classkangs_a4577e70383dba9f6dd8ab2d98463f2b1}{ang5}
+\begin{DoxyCompactList}\small\item\em bond angle parameters for 5-\/ring angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, \hyperlink{classkangs_a65b59f16cd39d33f1686bf32e362e6c9}{maxna4}) \hyperlink{classkangs_a88c492e1327f859f7873b031372b16fe}{ang4}
+\begin{DoxyCompactList}\small\item\em bond angle parameters for 4-\/ring angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, \hyperlink{classkangs_a121c0c19e92533f59e8c9b276e200da5}{maxna3}) \hyperlink{classkangs_a8eeaafcb58d09511629476c3cd84baaa}{ang3}
+\begin{DoxyCompactList}\small\item\em bond angle parameters for 3-\/ring angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(2, \hyperlink{classkangs_a3f749f34ae8245564a10206341a2dbdd}{maxnaf}) \hyperlink{classkangs_a5b22b5bf50f74dcdacb6d24965ef5a33}{angf}
+\begin{DoxyCompactList}\small\item\em phase shift angle and periodicity for Fourier bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(2, \hyperlink{classkangs_aaa36915cbec793691849f7f04c409e24}{maxnap}) \hyperlink{classkangs_a58286983ac9fbb4b1b314d852757211f}{angp}
+\begin{DoxyCompactList}\small\item\em bond angle parameters for in-\/plane angle bends \end{DoxyCompactList}\item 
+real $\ast$8, dimension(3, \hyperlink{classkangs_a6646c9ed34bc273addaebe53e7ece288}{maxnaps}) \hyperlink{classkangs_a9ff1f1899f2b1a3fed39948f73c9cb60}{angps}
+\begin{DoxyCompactList}\small\item\em bond angle parameters for in-\/plane angle bends \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkangs_a219b9491df85352c42fb06b082f1fce2}{maxna}) \hyperlink{classkangs_a804ce0bed5df2597765f5bdef9ec926c}{ka}
+\begin{DoxyCompactList}\small\item\em string of atom classes for harmonic angle bends \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkangs_af188b59476d50504dd8aa39359285894}{maxna5}) \hyperlink{classkangs_a5dbf7fa314a6017c799bfe2f3acb1a4b}{ka5}
+\begin{DoxyCompactList}\small\item\em string of atom classes for 5-\/ring angle bends \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkangs_a65b59f16cd39d33f1686bf32e362e6c9}{maxna4}) \hyperlink{classkangs_a7bb1f15f3487d97419dced289b6236c1}{ka4}
+\begin{DoxyCompactList}\small\item\em string of atom classes for 4-\/ring angle bends \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkangs_a121c0c19e92533f59e8c9b276e200da5}{maxna3}) \hyperlink{classkangs_a0a22676237c9ea47b00f2bcbd8dd55cc}{ka3}
+\begin{DoxyCompactList}\small\item\em string of atom classes for 3-\/ring angle bends \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkangs_a3f749f34ae8245564a10206341a2dbdd}{maxnaf}) \hyperlink{classkangs_a33688ec74ecb124818ee49caddc6d717}{kaf}
+\begin{DoxyCompactList}\small\item\em string of atom classes for Fourier angle bends \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkangs_aaa36915cbec793691849f7f04c409e24}{maxnap}) \hyperlink{classkangs_ac7bbbd307bb29d3b700975bdb4be82f8}{kap}
+\begin{DoxyCompactList}\small\item\em string of atom classes for in-\/plane angle bends \end{DoxyCompactList}\item 
+character $\ast$12, dimension(\hyperlink{classkangs_a6646c9ed34bc273addaebe53e7ece288}{maxnaps}) \hyperlink{classkangs_a38e37031d21fcaad9c9d41214393bb4b}{kaps}
+\begin{DoxyCompactList}\small\item\em string of atom classes for in-\/plane angle bends \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 40 of file M\-O\-D\-\_\-kangs.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classkangs_a2fb695824cd8ddcc728928f17bd3a849}{\index{kangs@{kangs}!acon@{acon}}
+\index{acon@{acon}!kangs@{kangs}}
+\subsubsection[{acon}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxna}) kangs\-::acon}}\label{classkangs_a2fb695824cd8ddcc728928f17bd3a849}
+
+
+force constant parameters for harmonic angle bends 
+
+
+
+Definition at line 56 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a8da9a28628dad91da237adc26d9241f6}{\index{kangs@{kangs}!acon3@{acon3}}
+\index{acon3@{acon3}!kangs@{kangs}}
+\subsubsection[{acon3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxna3}) kangs\-::acon3}}\label{classkangs_a8da9a28628dad91da237adc26d9241f6}
+
+
+force constant parameters for 3-\/ring angle bends 
+
+
+
+Definition at line 59 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a4ec467bca16ca8dfc4257b00c1b5960e}{\index{kangs@{kangs}!acon4@{acon4}}
+\index{acon4@{acon4}!kangs@{kangs}}
+\subsubsection[{acon4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxna4}) kangs\-::acon4}}\label{classkangs_a4ec467bca16ca8dfc4257b00c1b5960e}
+
+
+force constant parameters for 4-\/ring angle bends 
+
+
+
+Definition at line 58 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a0d230fc1b45ed6bd51f256e0eb019288}{\index{kangs@{kangs}!acon5@{acon5}}
+\index{acon5@{acon5}!kangs@{kangs}}
+\subsubsection[{acon5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxna5}) kangs\-::acon5}}\label{classkangs_a0d230fc1b45ed6bd51f256e0eb019288}
+
+
+force constant parameters for 5-\/ring angle bends 
+
+
+
+Definition at line 57 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a70fc76818cea5d69e8cab06e440f79ca}{\index{kangs@{kangs}!aconf@{aconf}}
+\index{aconf@{aconf}!kangs@{kangs}}
+\subsubsection[{aconf}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnaf}) kangs\-::aconf}}\label{classkangs_a70fc76818cea5d69e8cab06e440f79ca}
+
+
+force constant parameters for Fourier angle bends 
+
+
+
+Definition at line 60 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_ad4cfec56d1a070afa1a9e0dc8d2bea9a}{\index{kangs@{kangs}!aconp@{aconp}}
+\index{aconp@{aconp}!kangs@{kangs}}
+\subsubsection[{aconp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension({\bf maxnap}) kangs\-::aconp}}\label{classkangs_ad4cfec56d1a070afa1a9e0dc8d2bea9a}
+
+
+force constant parameters for in-\/plane angle bends 
+
+
+
+Definition at line 61 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a23c8d00fd92495d816a68a4a1d952282}{\index{kangs@{kangs}!ang@{ang}}
+\index{ang@{ang}!kangs@{kangs}}
+\subsubsection[{ang}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,{\bf maxna}) kangs\-::ang}}\label{classkangs_a23c8d00fd92495d816a68a4a1d952282}
+
+
+bond angle parameters for harmonic angle bends 
+
+
+
+Definition at line 62 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a8eeaafcb58d09511629476c3cd84baaa}{\index{kangs@{kangs}!ang3@{ang3}}
+\index{ang3@{ang3}!kangs@{kangs}}
+\subsubsection[{ang3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,{\bf maxna3}) kangs\-::ang3}}\label{classkangs_a8eeaafcb58d09511629476c3cd84baaa}
+
+
+bond angle parameters for 3-\/ring angle bends 
+
+
+
+Definition at line 65 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a88c492e1327f859f7873b031372b16fe}{\index{kangs@{kangs}!ang4@{ang4}}
+\index{ang4@{ang4}!kangs@{kangs}}
+\subsubsection[{ang4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,{\bf maxna4}) kangs\-::ang4}}\label{classkangs_a88c492e1327f859f7873b031372b16fe}
+
+
+bond angle parameters for 4-\/ring angle bends 
+
+
+
+Definition at line 64 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a4577e70383dba9f6dd8ab2d98463f2b1}{\index{kangs@{kangs}!ang5@{ang5}}
+\index{ang5@{ang5}!kangs@{kangs}}
+\subsubsection[{ang5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,{\bf maxna5}) kangs\-::ang5}}\label{classkangs_a4577e70383dba9f6dd8ab2d98463f2b1}
+
+
+bond angle parameters for 5-\/ring angle bends 
+
+
+
+Definition at line 63 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a5b22b5bf50f74dcdacb6d24965ef5a33}{\index{kangs@{kangs}!angf@{angf}}
+\index{angf@{angf}!kangs@{kangs}}
+\subsubsection[{angf}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,{\bf maxnaf}) kangs\-::angf}}\label{classkangs_a5b22b5bf50f74dcdacb6d24965ef5a33}
+
+
+phase shift angle and periodicity for Fourier bends 
+
+
+
+Definition at line 66 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a58286983ac9fbb4b1b314d852757211f}{\index{kangs@{kangs}!angp@{angp}}
+\index{angp@{angp}!kangs@{kangs}}
+\subsubsection[{angp}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,{\bf maxnap}) kangs\-::angp}}\label{classkangs_a58286983ac9fbb4b1b314d852757211f}
+
+
+bond angle parameters for in-\/plane angle bends 
+
+
+
+Definition at line 67 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a9ff1f1899f2b1a3fed39948f73c9cb60}{\index{kangs@{kangs}!angps@{angps}}
+\index{angps@{angps}!kangs@{kangs}}
+\subsubsection[{angps}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(3,{\bf maxnaps}) kangs\-::angps}}\label{classkangs_a9ff1f1899f2b1a3fed39948f73c9cb60}
+
+
+bond angle parameters for in-\/plane angle bends 
+
+
+
+Definition at line 68 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a804ce0bed5df2597765f5bdef9ec926c}{\index{kangs@{kangs}!ka@{ka}}
+\index{ka@{ka}!kangs@{kangs}}
+\subsubsection[{ka}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxna}) kangs\-::ka}}\label{classkangs_a804ce0bed5df2597765f5bdef9ec926c}
+
+
+string of atom classes for harmonic angle bends 
+
+
+
+Definition at line 69 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a0a22676237c9ea47b00f2bcbd8dd55cc}{\index{kangs@{kangs}!ka3@{ka3}}
+\index{ka3@{ka3}!kangs@{kangs}}
+\subsubsection[{ka3}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxna3}) kangs\-::ka3}}\label{classkangs_a0a22676237c9ea47b00f2bcbd8dd55cc}
+
+
+string of atom classes for 3-\/ring angle bends 
+
+
+
+Definition at line 72 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a7bb1f15f3487d97419dced289b6236c1}{\index{kangs@{kangs}!ka4@{ka4}}
+\index{ka4@{ka4}!kangs@{kangs}}
+\subsubsection[{ka4}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxna4}) kangs\-::ka4}}\label{classkangs_a7bb1f15f3487d97419dced289b6236c1}
+
+
+string of atom classes for 4-\/ring angle bends 
+
+
+
+Definition at line 71 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a5dbf7fa314a6017c799bfe2f3acb1a4b}{\index{kangs@{kangs}!ka5@{ka5}}
+\index{ka5@{ka5}!kangs@{kangs}}
+\subsubsection[{ka5}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxna5}) kangs\-::ka5}}\label{classkangs_a5dbf7fa314a6017c799bfe2f3acb1a4b}
+
+
+string of atom classes for 5-\/ring angle bends 
+
+
+
+Definition at line 70 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a33688ec74ecb124818ee49caddc6d717}{\index{kangs@{kangs}!kaf@{kaf}}
+\index{kaf@{kaf}!kangs@{kangs}}
+\subsubsection[{kaf}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxnaf}) kangs\-::kaf}}\label{classkangs_a33688ec74ecb124818ee49caddc6d717}
+
+
+string of atom classes for Fourier angle bends 
+
+
+
+Definition at line 73 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_ac7bbbd307bb29d3b700975bdb4be82f8}{\index{kangs@{kangs}!kap@{kap}}
+\index{kap@{kap}!kangs@{kangs}}
+\subsubsection[{kap}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxnap}) kangs\-::kap}}\label{classkangs_ac7bbbd307bb29d3b700975bdb4be82f8}
+
+
+string of atom classes for in-\/plane angle bends 
+
+
+
+Definition at line 74 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a38e37031d21fcaad9c9d41214393bb4b}{\index{kangs@{kangs}!kaps@{kaps}}
+\index{kaps@{kaps}!kangs@{kangs}}
+\subsubsection[{kaps}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$12, dimension({\bf maxnaps}) kangs\-::kaps}}\label{classkangs_a38e37031d21fcaad9c9d41214393bb4b}
+
+
+string of atom classes for in-\/plane angle bends 
+
+
+
+Definition at line 75 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a219b9491df85352c42fb06b082f1fce2}{\index{kangs@{kangs}!maxna@{maxna}}
+\index{maxna@{maxna}!kangs@{kangs}}
+\subsubsection[{maxna}]{\setlength{\rightskip}{0pt plus 5cm}integer kangs\-::maxna}}\label{classkangs_a219b9491df85352c42fb06b082f1fce2}
+
+
+maximum number of harmonic angle bend parameter entries 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a121c0c19e92533f59e8c9b276e200da5}{\index{kangs@{kangs}!maxna3@{maxna3}}
+\index{maxna3@{maxna3}!kangs@{kangs}}
+\subsubsection[{maxna3}]{\setlength{\rightskip}{0pt plus 5cm}integer kangs\-::maxna3}}\label{classkangs_a121c0c19e92533f59e8c9b276e200da5}
+
+
+maximum number of 3-\/membered ring angle bend entries 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a65b59f16cd39d33f1686bf32e362e6c9}{\index{kangs@{kangs}!maxna4@{maxna4}}
+\index{maxna4@{maxna4}!kangs@{kangs}}
+\subsubsection[{maxna4}]{\setlength{\rightskip}{0pt plus 5cm}integer kangs\-::maxna4}}\label{classkangs_a65b59f16cd39d33f1686bf32e362e6c9}
+
+
+maximum number of 4-\/membered ring angle bend entries 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_af188b59476d50504dd8aa39359285894}{\index{kangs@{kangs}!maxna5@{maxna5}}
+\index{maxna5@{maxna5}!kangs@{kangs}}
+\subsubsection[{maxna5}]{\setlength{\rightskip}{0pt plus 5cm}integer kangs\-::maxna5}}\label{classkangs_af188b59476d50504dd8aa39359285894}
+
+
+maximum number of 5-\/membered ring angle bend entries 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a3f749f34ae8245564a10206341a2dbdd}{\index{kangs@{kangs}!maxnaf@{maxnaf}}
+\index{maxnaf@{maxnaf}!kangs@{kangs}}
+\subsubsection[{maxnaf}]{\setlength{\rightskip}{0pt plus 5cm}integer kangs\-::maxnaf}}\label{classkangs_a3f749f34ae8245564a10206341a2dbdd}
+
+
+maximum number of Fourier angle bend parameter entries 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_aaa36915cbec793691849f7f04c409e24}{\index{kangs@{kangs}!maxnap@{maxnap}}
+\index{maxnap@{maxnap}!kangs@{kangs}}
+\subsubsection[{maxnap}]{\setlength{\rightskip}{0pt plus 5cm}integer kangs\-::maxnap}}\label{classkangs_aaa36915cbec793691849f7f04c409e24}
+
+
+maximum number of in-\/plane angle bend parameter entries 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-kangs.\-f90.
+
+\hypertarget{classkangs_a6646c9ed34bc273addaebe53e7ece288}{\index{kangs@{kangs}!maxnaps@{maxnaps}}
+\index{maxnaps@{maxnaps}!kangs@{kangs}}
+\subsubsection[{maxnaps}]{\setlength{\rightskip}{0pt plus 5cm}integer kangs\-::maxnaps}}\label{classkangs_a6646c9ed34bc273addaebe53e7ece288}
+
+
+maximum number of in-\/plane angle bend parameter entries 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-kangs.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__kangs_8f90}{M\-O\-D\-\_\-kangs.\-f90}\end{DoxyCompactItemize}

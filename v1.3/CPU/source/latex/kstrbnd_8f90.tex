@@ -1,0 +1,187 @@
+\hypertarget{kstrbnd_8f90}{\section{kstrbnd.\-f90 File Reference}
+\label{kstrbnd_8f90}\index{kstrbnd.\-f90@{kstrbnd.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kstrbnd_8f90_a5a721dea282cc5f7fd07c2302d228c19}{kstrbnd}
+\begin{DoxyCompactList}\small\item\em assigns parameters for stretch-\/bend interactions and processes new or changed parameter values \end{DoxyCompactList}\item 
+subroutine \hyperlink{kstrbnd_8f90_a42f3c1b1cae58664072aeaba9d576c6a}{kstrbnd\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update local strbend parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kstrbnd_8f90_a4026cd2037b9e0d0b6d023bdb3c10fc5}{kstrbndm}
+\begin{DoxyCompactList}\small\item\em assigns parameters for stretch-\/bend interactions according to the Merck Molecular Force Field (M\-M\-F\-F) \end{DoxyCompactList}\item 
+subroutine \hyperlink{kstrbnd_8f90_ad7f19612782b6192e7323f9a18917695}{kstrbndm\-\_\-update}
+\begin{DoxyCompactList}\small\item\em update parameters for stretch-\/bend interactions according to the Merck Molecular Force Field (M\-M\-F\-F) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kstrbnd_8f90_a5a721dea282cc5f7fd07c2302d228c19}{\index{kstrbnd.\-f90@{kstrbnd.\-f90}!kstrbnd@{kstrbnd}}
+\index{kstrbnd@{kstrbnd}!kstrbnd.f90@{kstrbnd.\-f90}}
+\subsubsection[{kstrbnd}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kstrbnd (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kstrbnd_8f90_a5a721dea282cc5f7fd07c2302d228c19}
+
+
+assigns parameters for stretch-\/bend interactions and processes new or changed parameter values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file kstrbnd.\-f90.
+
+
+
+References gettext(), kstrbndm(), numeral(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kstrbnd_8f90_a5a721dea282cc5f7fd07c2302d228c19_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kstrbnd_8f90_a5a721dea282cc5f7fd07c2302d228c19_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kstrbnd_8f90_a42f3c1b1cae58664072aeaba9d576c6a}{\index{kstrbnd.\-f90@{kstrbnd.\-f90}!kstrbnd\-\_\-update@{kstrbnd\-\_\-update}}
+\index{kstrbnd\-\_\-update@{kstrbnd\-\_\-update}!kstrbnd.f90@{kstrbnd.\-f90}}
+\subsubsection[{kstrbnd\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kstrbnd\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kstrbnd_8f90_a42f3c1b1cae58664072aeaba9d576c6a}
+
+
+update local strbend parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 179 of file kstrbnd.\-f90.
+
+
+
+References kstrbndm\-\_\-update(), and numeral().
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kstrbnd_8f90_a42f3c1b1cae58664072aeaba9d576c6a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kstrbnd_8f90_a42f3c1b1cae58664072aeaba9d576c6a_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kstrbnd_8f90_a4026cd2037b9e0d0b6d023bdb3c10fc5}{\index{kstrbnd.\-f90@{kstrbnd.\-f90}!kstrbndm@{kstrbndm}}
+\index{kstrbndm@{kstrbndm}!kstrbnd.f90@{kstrbnd.\-f90}}
+\subsubsection[{kstrbndm}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kstrbndm (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kstrbnd_8f90_a4026cd2037b9e0d0b6d023bdb3c10fc5}
+
+
+assigns parameters for stretch-\/bend interactions according to the Merck Molecular Force Field (M\-M\-F\-F) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 296 of file kstrbnd.\-f90.
+
+
+
+Referenced by kstrbnd().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kstrbnd_8f90_a4026cd2037b9e0d0b6d023bdb3c10fc5_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kstrbnd_8f90_ad7f19612782b6192e7323f9a18917695}{\index{kstrbnd.\-f90@{kstrbnd.\-f90}!kstrbndm\-\_\-update@{kstrbndm\-\_\-update}}
+\index{kstrbndm\-\_\-update@{kstrbndm\-\_\-update}!kstrbnd.f90@{kstrbnd.\-f90}}
+\subsubsection[{kstrbndm\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kstrbndm\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kstrbnd_8f90_ad7f19612782b6192e7323f9a18917695}
+
+
+update parameters for stretch-\/bend interactions according to the Merck Molecular Force Field (M\-M\-F\-F) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 723 of file kstrbnd.\-f90.
+
+
+
+Referenced by kstrbnd\-\_\-update().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kstrbnd_8f90_ad7f19612782b6192e7323f9a18917695_icgraph}
+\end{center}
+\end{figure}
+
+

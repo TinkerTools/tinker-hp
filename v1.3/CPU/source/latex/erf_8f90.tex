@@ -1,0 +1,208 @@
+\hypertarget{erf_8f90}{\section{erf.\-f90 File Reference}
+\label{erf_8f90}\index{erf.\-f90@{erf.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+real $\ast$8 function \hyperlink{erf_8f90_aec01c4a7b1dbfd12041e88a6e49435f8}{erf} (x)
+\begin{DoxyCompactList}\small\item\em computes a numerical approximation to the value of the error function via a Chebyshev approximation \end{DoxyCompactList}\item 
+real $\ast$8 function \hyperlink{erf_8f90_a562bafa2a6bbcdf9d5034bb87c3a6190}{erfc} (x)
+\begin{DoxyCompactList}\small\item\em computes a numerical approximation to the value of the complementary error function via a Chebyshev approximation \end{DoxyCompactList}\item 
+subroutine \hyperlink{erf_8f90_a3db66269539046169e1596d5b4490fc2}{erfcore} (arg, result, mode)
+\begin{DoxyCompactList}\small\item\em \char`\"{}erfcore\char`\"{} evaluates erf(x) or erfc(x) for a real argument x; when called with mode set to 0 it returns erf, a mode of 1 returns erfc; uses rational functions that approximate erf(x) and erfc(x) to at least 18 significant decimal digits \end{DoxyCompactList}\item 
+real $\ast$8 function \hyperlink{erf_8f90_aaed58d47c1f06be9b47492e1f6a57710}{erfinv} (x)
+\begin{DoxyCompactList}\small\item\em \char`\"{}erfinv\char`\"{} evaluates the inverse of the error function for an argument in the range (-\/1,1) using a rational function approximation followed by cycles of Newton-\/\-Raphson correction \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{erf_8f90_aec01c4a7b1dbfd12041e88a6e49435f8}{\index{erf.\-f90@{erf.\-f90}!erf@{erf}}
+\index{erf@{erf}!erf.f90@{erf.\-f90}}
+\subsubsection[{erf}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function erf (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{x}
+\end{DoxyParamCaption}
+)}}\label{erf_8f90_aec01c4a7b1dbfd12041e88a6e49435f8}
+
+
+computes a numerical approximation to the value of the error function via a Chebyshev approximation 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em x,\-:} & value to compute erf on \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file erf.\-f90.
+
+
+
+References erfcore().
+
+
+
+Referenced by erfinv().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=198pt]{erf_8f90_aec01c4a7b1dbfd12041e88a6e49435f8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{erf_8f90_aec01c4a7b1dbfd12041e88a6e49435f8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{erf_8f90_a562bafa2a6bbcdf9d5034bb87c3a6190}{\index{erf.\-f90@{erf.\-f90}!erfc@{erfc}}
+\index{erfc@{erfc}!erf.f90@{erf.\-f90}}
+\subsubsection[{erfc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function erfc (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{x}
+\end{DoxyParamCaption}
+)}}\label{erf_8f90_a562bafa2a6bbcdf9d5034bb87c3a6190}
+
+
+computes a numerical approximation to the value of the complementary error function via a Chebyshev approximation 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em x,\-:} & value to compute erf on \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 52 of file erf.\-f90.
+
+
+
+References erfcore().
+
+
+
+Referenced by dampewald(), dbletmatxb\-\_\-pme(), echarge0c(), echarge3c(), ecreal0d(), ecreal1d(), ecreal3d(), edrecip(), edrecip1(), emreal1c(), emreal3d(), epreal0c(), epreal1c(), ewaldcof(), scalderfieldzmat1(), scalderfieldzmat3(), scalderfieldzmat6(), and scalderfieldzmat8().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=204pt]{erf_8f90_a562bafa2a6bbcdf9d5034bb87c3a6190_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{erf_8f90_a562bafa2a6bbcdf9d5034bb87c3a6190_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{erf_8f90_a3db66269539046169e1596d5b4490fc2}{\index{erf.\-f90@{erf.\-f90}!erfcore@{erfcore}}
+\index{erfcore@{erfcore}!erf.f90@{erf.\-f90}}
+\subsubsection[{erfcore}]{\setlength{\rightskip}{0pt plus 5cm}subroutine erfcore (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{arg, }
+\item[{real$\ast$8}]{result, }
+\item[{integer}]{mode}
+\end{DoxyParamCaption}
+)}}\label{erf_8f90_a3db66269539046169e1596d5b4490fc2}
+
+
+\char`\"{}erfcore\char`\"{} evaluates erf(x) or erfc(x) for a real argument x; when called with mode set to 0 it returns erf, a mode of 1 returns erfc; uses rational functions that approximate erf(x) and erfc(x) to at least 18 significant decimal digits 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em arg,\-:} & value to compute the function on \\
+\hline
+\mbox{\tt in}  & {\em result,\-:} & result of the evaluation \\
+\hline
+\mbox{\tt in}  & {\em mode,\-:} & use erf or erfc \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 109 of file erf.\-f90.
+
+
+
+Referenced by erf(), and erfc().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{erf_8f90_a3db66269539046169e1596d5b4490fc2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{erf_8f90_aaed58d47c1f06be9b47492e1f6a57710}{\index{erf.\-f90@{erf.\-f90}!erfinv@{erfinv}}
+\index{erfinv@{erfinv}!erf.f90@{erf.\-f90}}
+\subsubsection[{erfinv}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function erfinv (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8}]{x}
+\end{DoxyParamCaption}
+)}}\label{erf_8f90_aaed58d47c1f06be9b47492e1f6a57710}
+
+
+\char`\"{}erfinv\char`\"{} evaluates the inverse of the error function for an argument in the range (-\/1,1) using a rational function approximation followed by cycles of Newton-\/\-Raphson correction 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em x,\-:} & value to evaluate function on \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 247 of file erf.\-f90.
+
+
+
+References erf(), fatal(), and colvarproxy\-\_\-tinkerhp\-::log().
+
+
+
+Referenced by maxwell().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{erf_8f90_aaed58d47c1f06be9b47492e1f6a57710_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{erf_8f90_aaed58d47c1f06be9b47492e1f6a57710_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,8 @@
+<map id="initial" name="initial">
+<area shape="rect" id="node2" href="$command_8f90.html#ac18072297d38b31a20e396db819024a4" title="uses the standard Unix&#45;like iargc/getarg routines to get the number and values of arguments specified..." alt="" coords="113,5,199,32"/>
+<area shape="rect" id="node4" href="$initatom_8f90.html#ae959a689b9f51e9d207e25781cd79549" title="sets the atomic symbol for each element in the periodic table " alt="" coords="117,56,195,83"/>
+<area shape="rect" id="node5" href="$initres_8f90.html#a9e8e790b6a6290fe1a3461d4bc20cf54" title="&quot;initres&quot; sets biopolymer residue names and biotype codes used in PDB file conversion and automated g..." alt="" coords="125,107,187,133"/>
+<area shape="rect" id="node6" href="$precise_8f90.html#ab642a78dc05a1c13e17f07130f026c46" title="&quot;precise&quot; finds a machine precision value as selected by the input argument: (1) the smallest positiv..." alt="" coords="121,157,191,184"/>
+<area shape="rect" id="node7" href="$promo_8f90.html#aea1b6122aefba21acc755f98e214ebc2" title="writes a short message containing information about the Tinker&#45;HP version number and the copyright no..." alt="" coords="124,208,188,235"/>
+<area shape="rect" id="node3" href="$trimtext_8f90.html#ac85c1610cf6186365e8b9104254d54a0" title="converts a text string to all upper case letters with leading blank spaces " alt="" coords="249,5,317,32"/>
+</map>

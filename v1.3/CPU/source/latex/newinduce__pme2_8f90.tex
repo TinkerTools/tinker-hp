@@ -1,0 +1,288 @@
+\hypertarget{newinduce__pme2_8f90}{\section{newinduce\-\_\-pme2.\-f90 File Reference}
+\label{newinduce__pme2_8f90}\index{newinduce\-\_\-pme2.\-f90@{newinduce\-\_\-pme2.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{newinduce__pme2_8f90_ae757a3b314bc0d9126b3668db3309253}{newinduce\-\_\-pme2}
+\begin{DoxyCompactList}\small\item\em evaluate induced dipole moments and the polarization energy using either a (preconditioned) conjugate gradient algorithm or Jacobi iterations coupled with D\-I\-I\-S extrapolation. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme2_8f90_ae1dbbe18cb7dad8b9cb81391b6788ef0}{inducepcg\-\_\-pme2} (matvec, nrhs, precnd, ef, mu, murec)
+\begin{DoxyCompactList}\small\item\em Preconditioned Conjugate Gradient Solver for \char`\"{}group\char`\"{} polarization. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme2_8f90_a1dbaec7ece61f121519f875a324a7ff2}{inducejac\-\_\-pme2} (matvec, nrhs, dodiis, ef, mu, murec)
+\begin{DoxyCompactList}\small\item\em Jacobi/\-D\-I\-I\-S Solver for polarization. \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme2_8f90_a8e991faf62fbdefe7db2a4937e02468d}{ulspred}
+\begin{DoxyCompactList}\small\item\em uses standard extrapolation or a least squares fit to set coefficients of an induced dipole predictor polynomial \end{DoxyCompactList}\item 
+subroutine \hyperlink{newinduce__pme2_8f90_a172b83c52adea069361b25066abe9ea0}{diagvec} (nrhs, A, B)
+\begin{DoxyCompactList}\small\item\em Performs product of vector a with polarisabilities. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{newinduce__pme2_8f90_a172b83c52adea069361b25066abe9ea0}{\index{newinduce\-\_\-pme2.\-f90@{newinduce\-\_\-pme2.\-f90}!diagvec@{diagvec}}
+\index{diagvec@{diagvec}!newinduce_pme2.f90@{newinduce\-\_\-pme2.\-f90}}
+\subsubsection[{diagvec}]{\setlength{\rightskip}{0pt plus 5cm}subroutine diagvec (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{nrhs, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{A, }
+\item[{real$\ast$8, dimension(3,nrhs,npolebloc)}]{B}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme2_8f90_a172b83c52adea069361b25066abe9ea0}
+
+
+Performs product of vector a with polarisabilities. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand sides \\
+\hline
+\mbox{\tt in}  & {\em A,\-:} & entry vector \\
+\hline
+\mbox{\tt out}  & {\em B,\-:} & result vector \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1053 of file newinduce\-\_\-pme2.\-f90.
+
+
+
+Referenced by epolar1tcg1(), epolar1tcg1\-\_\-2(), epolar1tcg1shortreal(), epolar1tcg2(), epolar1tcg2\-\_\-2(), epolar1tcg2bis(), epolar1tcg2bis\-\_\-2(), epolar1tcg2bisshortreal(), epolar1tcg2cinq(), epolar1tcg2cinq\-\_\-2(), epolar1tcg2cinqshortreal(), epolar1tcg2quat(), epolar1tcg2quat\-\_\-2(), epolar1tcg2quatshortreal(), epolar1tcg2shortreal(), epolar1tcg2ter(), epolar1tcg2ter\-\_\-2(), epolar1tcg2tershortreal(), epolar3tcg1(), epolar3tcg1\-\_\-2(), epolar3tcg2(), epolar3tcg2\-\_\-2(), and omegafit().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme2_8f90_a172b83c52adea069361b25066abe9ea0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme2_8f90_a1dbaec7ece61f121519f875a324a7ff2}{\index{newinduce\-\_\-pme2.\-f90@{newinduce\-\_\-pme2.\-f90}!inducejac\-\_\-pme2@{inducejac\-\_\-pme2}}
+\index{inducejac\-\_\-pme2@{inducejac\-\_\-pme2}!newinduce_pme2.f90@{newinduce\-\_\-pme2.\-f90}}
+\subsubsection[{inducejac\-\_\-pme2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducejac\-\_\-pme2 (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{dodiis, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{murec}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme2_8f90_a1dbaec7ece61f121519f875a324a7ff2}
+
+
+Jacobi/\-D\-I\-I\-S Solver for polarization. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em dodiis,\-:} & use of D\-I\-I\-S extrapolation or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & permanent electric field (right hand side) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles (guess at entry) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 665 of file newinduce\-\_\-pme2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirsolv(), diis(), extrap(), and tmatxbrecip().
+
+
+
+Referenced by newinduce\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme2_8f90_a1dbaec7ece61f121519f875a324a7ff2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme2_8f90_a1dbaec7ece61f121519f875a324a7ff2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme2_8f90_ae1dbbe18cb7dad8b9cb81391b6788ef0}{\index{newinduce\-\_\-pme2.\-f90@{newinduce\-\_\-pme2.\-f90}!inducepcg\-\_\-pme2@{inducepcg\-\_\-pme2}}
+\index{inducepcg\-\_\-pme2@{inducepcg\-\_\-pme2}!newinduce_pme2.f90@{newinduce\-\_\-pme2.\-f90}}
+\subsubsection[{inducepcg\-\_\-pme2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine inducepcg\-\_\-pme2 (
+\begin{DoxyParamCaption}
+\item[{external}]{matvec, }
+\item[{integer}]{nrhs, }
+\item[{logical}]{precnd, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{ef, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{mu, }
+\item[{real$\ast$8, dimension(3,nrhs,$\ast$)}]{murec}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme2_8f90_ae1dbbe18cb7dad8b9cb81391b6788ef0}
+
+
+Preconditioned Conjugate Gradient Solver for \char`\"{}group\char`\"{} polarization. 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em matvec,\-:} & matrix-\/vector product routine \\
+\hline
+\mbox{\tt in}  & {\em nrhs,\-:} & number of right hand side \\
+\hline
+\mbox{\tt in}  & {\em precnd,\-:} & use of diagonal preconditioner or not \\
+\hline
+\mbox{\tt in}  & {\em ef,\-:} & permanent electric field (right hand side) \\
+\hline
+\mbox{\tt in}  & {\em mu,\-:} & induced dipoles (guess at entry) \\
+\hline
+\mbox{\tt in}  & {\em murec,\-:} & induced dipoles (guess at entry) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 305 of file newinduce\-\_\-pme2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirsolv(), and tmatxbrecip().
+
+
+
+Referenced by newinduce\-\_\-pme2().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme2_8f90_ae1dbbe18cb7dad8b9cb81391b6788ef0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme2_8f90_ae1dbbe18cb7dad8b9cb81391b6788ef0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme2_8f90_ae757a3b314bc0d9126b3668db3309253}{\index{newinduce\-\_\-pme2.\-f90@{newinduce\-\_\-pme2.\-f90}!newinduce\-\_\-pme2@{newinduce\-\_\-pme2}}
+\index{newinduce\-\_\-pme2@{newinduce\-\_\-pme2}!newinduce_pme2.f90@{newinduce\-\_\-pme2.\-f90}}
+\subsubsection[{newinduce\-\_\-pme2}]{\setlength{\rightskip}{0pt plus 5cm}subroutine newinduce\-\_\-pme2 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme2_8f90_ae757a3b314bc0d9126b3668db3309253}
+
+
+evaluate induced dipole moments and the polarization energy using either a (preconditioned) conjugate gradient algorithm or Jacobi iterations coupled with D\-I\-I\-S extrapolation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file newinduce\-\_\-pme2.\-f90.
+
+
+
+References commdirdir(), commfield(), commrecdirdip(), commrecdirfields(), efld0\-\_\-direct(), efld0\-\_\-recip(), fatal(), inducejac\-\_\-pme2(), inducepcg\-\_\-pme2(), tmatxb\-\_\-pme(), and ulspred().
+
+
+
+Referenced by epolar0c(), epolar1c(), and epolar3c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme2_8f90_ae757a3b314bc0d9126b3668db3309253_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme2_8f90_ae757a3b314bc0d9126b3668db3309253_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{newinduce__pme2_8f90_a8e991faf62fbdefe7db2a4937e02468d}{\index{newinduce\-\_\-pme2.\-f90@{newinduce\-\_\-pme2.\-f90}!ulspred@{ulspred}}
+\index{ulspred@{ulspred}!newinduce_pme2.f90@{newinduce\-\_\-pme2.\-f90}}
+\subsubsection[{ulspred}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ulspred (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{newinduce__pme2_8f90_a8e991faf62fbdefe7db2a4937e02468d}
+
+
+uses standard extrapolation or a least squares fit to set coefficients of an induced dipole predictor polynomial 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 941 of file newinduce\-\_\-pme2.\-f90.
+
+
+
+References cholesky().
+
+
+
+Referenced by dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), dcinduce\-\_\-shortreal(), newinduce\-\_\-pme(), newinduce\-\_\-pme2(), and newinduce\-\_\-shortreal().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=230pt]{newinduce__pme2_8f90_a8e991faf62fbdefe7db2a4937e02468d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{newinduce__pme2_8f90_a8e991faf62fbdefe7db2a4937e02468d_icgraph}
+\end{center}
+\end{figure}
+
+

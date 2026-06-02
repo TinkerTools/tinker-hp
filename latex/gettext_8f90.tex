@@ -1,0 +1,56 @@
+\hypertarget{gettext_8f90}{\section{gettext.\-f90 File Reference}
+\label{gettext_8f90}\index{gettext.\-f90@{gettext.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{gettext_8f90_a7e584e3b67e4a914db788ebf7117adde}{gettext} (string, text, next)
+\begin{DoxyCompactList}\small\item\em searches an input string for the first string of non-\/blank characters; the region from a non-\/blank character to the first space or tab is returned as \char`\"{}text\char`\"{}; if the actual text is too long, only the first part is returned \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{gettext_8f90_a7e584e3b67e4a914db788ebf7117adde}{\index{gettext.\-f90@{gettext.\-f90}!gettext@{gettext}}
+\index{gettext@{gettext}!gettext.f90@{gettext.\-f90}}
+\subsubsection[{gettext}]{\setlength{\rightskip}{0pt plus 5cm}subroutine gettext (
+\begin{DoxyParamCaption}
+\item[{character$\ast$($\ast$)}]{string, }
+\item[{character$\ast$($\ast$)}]{text, }
+\item[{integer}]{next}
+\end{DoxyParamCaption}
+)}}\label{gettext_8f90_a7e584e3b67e4a914db788ebf7117adde}
+
+
+searches an input string for the first string of non-\/blank characters; the region from a non-\/blank character to the first space or tab is returned as \char`\"{}text\char`\"{}; if the actual text is too long, only the first part is returned 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input character string to be searched \\
+\hline
+\mbox{\tt in}  & {\em text,\-:} & output with the first text string found \\
+\hline
+\mbox{\tt in}  & {\em next,\-:} & input with first position of search string; \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 35 of file gettext.\-f90.
+
+
+
+References extent(), final(), and initial().
+
+
+
+Referenced by active(), barcalc(), cluster(), control(), cutoffs(), ddnumber(), def\-\_\-lambdadyn\-\_\-init(), dynamic\-\_\-bis(), getkey(), getprm(), qtb\-::initialize\-\_\-adaptation\-\_\-parameters(), kangang(), kangle(), kangtor(), katom(), kbond(), kbondm(), kcharge(), kchgflx(), kchgtrn(), kdisp(), keneg(), kewald(), kgeom(), kimprop(), kimptor(), kmpole(), kopbend(), kopdist(), kpitors(), kpolar(), krepel(), ksmd(), kstrbnd(), kstrtor(), ktors(), ktortor(), kurey(), kvdw(), lbfgs(), mdinit(), mdinitreps(), minimize\-\_\-bis(), mutate(), prmkey(), random(), beads\-::read\-\_\-bead\-\_\-config(), qtb\-::read\-\_\-qtb\-\_\-keys(), readprm(), readxyz(), shakeup(), and unitcell().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{gettext_8f90_a7e584e3b67e4a914db788ebf7117adde_cgraph}
+\end{center}
+\end{figure}
+
+

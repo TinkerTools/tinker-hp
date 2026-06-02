@@ -1,0 +1,127 @@
+# Tinker-HP Suite Overview  {#tinker_hp_suite}
+
+The Tinker-HP suite is made of 5 main programs that have been designed to run in a High Performance Computing (HPC) context, on GPUs and CPUs, leveraging MPI to run with multiple processes. All of these run based on various **input files** and a **command line**.
+
+@subsection common_inputs Common Input Files
+
+Some input files are common to all the binaries:
+
+- An **xyz** file in the Tinker format representing a **geometry** (through cartesian coordinates), **atom types** of the atoms of the systems as well as their **connectivity**.
+
+   *Below is an example of an xyz file for a two water molecule system, oxygens are of atom type 101, hydrogens of type 88.*
+
+@code{.unparsed}
+     1  O      8.679662    7.087692   -0.696862    101     2     3
+     2  H      7.809455    6.755792   -0.382259     88     1
+     3  H      8.722232    6.814243   -1.617561     88     1
+     4  O     -0.117313    8.244447    6.837616    101     5     6
+     5  H      0.216892    7.895445    6.050027     88     4
+     6  H      0.444268    7.826013    7.530196     88     4
+@endcode
+
+- A **keyfile** containing various keywords describing the simulation such as the size of the box, the cutoffs on non-bonded simulations, the integrator for Molecular Dynamics, and also the **parameter file**.
+
+   *Below is an example of a keyfile for a system using the charmm22 parameter file, with a cubic box size of edge 18.643 Angstroms and the verlet integrator.*
+
+@code{.unparsed}
+parameters        charmm22
+verbose
+a-axis            18.643
+integrator verlet
+@endcode
+
+- A **parameter file** listing the parameters, for each atom type, of the force field used for the simulation.
+
+
+@section running_the_programs Running the Programs
+
+For all programs of the Tinker-HP suite, the geometry needs to be included in the command line.
+To further indicate to the programs that the simulation needs to take into account a specific keyfile, the keyfile needs to have the same prefix as the geometry or can be explicitly given in the command line with the prefix `-k keyfile`.
+
+*Example of a command line for the analyze binary involving the `watersmall.xyz` geometry and the `watersmall.key` keyfile, on a single MPI process:*
+
+@code{.bash}
+mpirun -np 1 /path/to/analyze watersmall.xyz -k watersmall.key e
+@endcode
+
+The 5 programs are listed below with a description of the command line necessary to run them. In the case of an incomplete command line or a missing input file, an error message describing the missing point will be printed.
+
+@section program_analyze analyze
+Run a single point energy given a trajectory file or a single frame.
+- **Command line:** `E` as in "Energy decomposition analysis" (see example above)
+
+@section program_dynamic dynamic
+Runs a molecular dynamics trajectory.
+- **Command line:** A list of arguments has to be passed directly through the command line, respectively:
+  - Number of steps of the desired trajectory
+  - Duration of a timestep (in femtoseconds)
+  - Frequency of output of frames (in picoseconds)
+  - Integer corresponding to the statistical ensemble to be sampled:
+    - `1`: NVE ensemble
+    - `2`: NVT ensemble
+    - `4`: NPT ensemble
+  - Temperature (in Kelvin) for NVT and NPT ensembles
+  - Pressure (in Atmosphere) for NPT ensemble
+
+*Example of a command line for the dynamic binary corresponding to 10000 time steps of 1fs in the NPT ensemble at 300K and 1 Atm, with frames printed out every picosecond:*
+
+@code{.bash}
+mpirun -np 1 /path/to/dynamic watersmall.xyz 10000 1 1 4 300 1
+@endcode
+
+> **Note:** More information about the features available with the **dynamic** program, such as integrators, thermostats and barostats, can be found [here](md_dynamic_doxygen.html).
+
+@section program_minimize minimize
+Runs a minimization of the potential energy of a system, starting from a geometry.
+- **Command line:** Convergence criteria of the minimization algorithm
+
+*Example of a command line for the minimize binary corresponding to a convergence threshold of 1 for RMS gradient:*
+
+@code{.bash}
+mpirun -np 1 /path/to/minimize watersmall.xyz 1
+@endcode
+
+> **Note:** The only optimizer is the limited memory BFGS algorithm so no information about the optimizer has to be written in the keyfile. Starting from a *.xyz file, the program will output an addition *.xyz_2 file corresponding to the minimized geometry.
+
+@section program_pimd PIMD
+Runs a Path Integral Molecular Dynamics trajectory to include nuclear quantum effects in the statistics.
+- **Command line:** The exact same inputs as the one of the **dynamic** programs are necessary in the command line as described above. Several features specific to Path Integral such as the number of beads, as well as other implemented techniques to include nuclear quantum effects (the adaptive Quantum Thermal Bath) can be found in `Quantum-HP.md`.
+
+@section program_bar bar
+Compute free energy differences through the Bennett Acceptance Ratio estimator. In Tinker-HP, free energy differences are obtained in a post-processing step, in two stages. Given two keyfiles and two trajectories associated to two hamiltonians, first a `.bar` file is produced with, for each trajectory, the potential energies associated to the two hamiltonians. Then, given the `.bar` file, one can run the self-consistent procedure to get the final free energy difference through the bar estimator.
+
+- **Command line:**
+  - `1` to generate the `.bar` file, `2` to post-process it to get the bar estimation.
+  - For generation of the bar file, one has to indicate the two geometries with their keyfiles and the two temperatures.
+
+*Example of a command line for the bar binary to generate the `.bar` file corresponding to systema at temperature tempa and systemb at temperature tempb:*
+
+@code{.bash}
+mpirun -np 1 /path/to/bar 1 systema.xyz -k systema.key 300 systemb.xyz -k systemb.key 300
+@endcode
+
+- For estimation of the free energy difference, one has to indicate the bar file.
+
+*Example of a command line for the bar binary to get the free energy estimation based on the `system.bar` file:*
+
+@code{.bash}
+mpirun -np 1 /path/to/bar 2 system.bar
+@endcode
+
+@section program_testgrad testgrad
+Compute gradients associated with a geometry. One can compute analytical gradients of the potential energy terms or numerical ones, on all the cartesian degrees of freedom.
+- **Command line:**
+  - `Y` to compute analytical gradients, `N` if it is not the case
+  - `Y` to compute numerical gradients (through finite differences), `N` if not
+  - When numerical gradients are requested, size of the step displacement in Angstroms
+  - `Y` if breakdown by component is requested, `N` if not
+
+---
+
+@section general_information General Information
+
+- Tinker-HP is compatible with numerous bonded and non-bonded potential energy terms. For each of them, energies and analyticals gradients can be computed by running the programs described above.
+  Each of them is associated with a number of features that can be modified by some keywords to be added to the keyfile. 
+  A list of these potential energy terms with associated keywords can be found [here](md_potential_doxygen.html).
+- Informations about I/O can be found [here](md_io_doxygen.html)
+- Info about free energy simulations can be found [here](md_free_energy.html), with specifics about alchemical ones through Lambda-ABF and related methodologies [here](md_lambda-abf_doxygen.html)

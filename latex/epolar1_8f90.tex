@@ -1,0 +1,217 @@
+\hypertarget{epolar1_8f90}{\section{epolar1.\-f90 File Reference}
+\label{epolar1_8f90}\index{epolar1.\-f90@{epolar1.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{epolar1_8f90_a09d7de500d8ba93948b15563d6274018}{epolar1}
+\begin{DoxyCompactList}\small\item\em calculates the induced dipole polarization energy and derivatives with respect to Cartesian coordinates \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1_8f90_aaac3c54c654c6f95e1f7cd85b591fadb}{epolar1c}
+\begin{DoxyCompactList}\small\item\em calculates the dipole polarization energy and derivatives with respect to Cartesian coordinates using particle mesh Ewald summation and a neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1_8f90_a3d74ece469d70a390864e3849960e609}{eprecip1}
+\begin{DoxyCompactList}\small\item\em evaluates the reciprocal space portion of the particle mesh Ewald summation energy and gradient due to dipole polarization \end{DoxyCompactList}\item 
+subroutine \hyperlink{epolar1_8f90_a468bcf190839b19c0fef3406025304f1}{epreal1c}
+\begin{DoxyCompactList}\small\item\em evaluates the real space portion of the Ewald summation energy and gradient due to dipole polarization via a neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{epolar1_8f90_a09d7de500d8ba93948b15563d6274018}{\index{epolar1.\-f90@{epolar1.\-f90}!epolar1@{epolar1}}
+\index{epolar1@{epolar1}!epolar1.f90@{epolar1.\-f90}}
+\subsubsection[{epolar1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1_8f90_a09d7de500d8ba93948b15563d6274018}
+
+
+calculates the induced dipole polarization energy and derivatives with respect to Cartesian coordinates 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file epolar1.\-f90.
+
+
+
+References epolar1c(), and epolar1tcg().
+
+
+
+Referenced by gradient().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1_8f90_a09d7de500d8ba93948b15563d6274018_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1_8f90_a09d7de500d8ba93948b15563d6274018_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1_8f90_aaac3c54c654c6f95e1f7cd85b591fadb}{\index{epolar1.\-f90@{epolar1.\-f90}!epolar1c@{epolar1c}}
+\index{epolar1c@{epolar1c}!epolar1.f90@{epolar1.\-f90}}
+\subsubsection[{epolar1c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epolar1c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1_8f90_aaac3c54c654c6f95e1f7cd85b591fadb}
+
+
+calculates the dipole polarization energy and derivatives with respect to Cartesian coordinates using particle mesh Ewald summation and a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 66 of file epolar1.\-f90.
+
+
+
+References chkpole(), dcinduce\-\_\-pme(), dcinduce\-\_\-pme2(), dcinduce\-\_\-shortreal(), epreal1c(), eprecip1(), newinduce\-\_\-pme(), newinduce\-\_\-pme2(), newinduce\-\_\-shortreal(), rotpole(), switch\-\_\-group\-\_\-grad(), and torque().
+
+
+
+Referenced by epolar1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{epolar1_8f90_aaac3c54c654c6f95e1f7cd85b591fadb_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1_8f90_aaac3c54c654c6f95e1f7cd85b591fadb_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1_8f90_a468bcf190839b19c0fef3406025304f1}{\index{epolar1.\-f90@{epolar1.\-f90}!epreal1c@{epreal1c}}
+\index{epreal1c@{epreal1c}!epolar1.f90@{epolar1.\-f90}}
+\subsubsection[{epreal1c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine epreal1c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1_8f90_a468bcf190839b19c0fef3406025304f1}
+
+
+evaluates the real space portion of the Ewald summation energy and gradient due to dipole polarization via a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1233 of file epolar1.\-f90.
+
+
+
+References commpot(), commpotsum(), dampdir(), dampewald(), damppole(), damptholed(), dcflux(), erfc(), image(), pscale(), switch(), and torque().
+
+
+
+Referenced by epolar1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1_8f90_a468bcf190839b19c0fef3406025304f1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1_8f90_a468bcf190839b19c0fef3406025304f1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{epolar1_8f90_a3d74ece469d70a390864e3849960e609}{\index{epolar1.\-f90@{epolar1.\-f90}!eprecip1@{eprecip1}}
+\index{eprecip1@{eprecip1}!epolar1.f90@{epolar1.\-f90}}
+\subsubsection[{eprecip1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine eprecip1 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{epolar1_8f90_a3d74ece469d70a390864e3849960e609}
+
+
+evaluates the reciprocal space portion of the particle mesh Ewald summation energy and gradient due to dipole polarization 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 410 of file epolar1.\-f90.
+
+
+
+References cmp\-\_\-to\-\_\-fmp\-\_\-site(), commpot(), commpotrec(), dcflux(), fft2d\-\_\-backmpi(), fft2d\-\_\-frontmpi(), fphi\-\_\-to\-\_\-cphi\-\_\-site(), fphi\-\_\-uind\-\_\-site(), grid\-\_\-mpole\-\_\-site(), grid\-\_\-uind\-\_\-site(), and torque\-\_\-rec().
+
+
+
+Referenced by epolar1c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1_8f90_a3d74ece469d70a390864e3849960e609_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{epolar1_8f90_a3d74ece469d70a390864e3849960e609_icgraph}
+\end{center}
+\end{figure}
+
+

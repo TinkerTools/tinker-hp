@@ -1,0 +1,64 @@
+\hypertarget{baoab_8f90}{\section{baoab.\-f90 File Reference}
+\label{baoab_8f90}\index{baoab.\-f90@{baoab.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{baoab_8f90_a5584ed174f71e188e2a1bc013ba3509b}{baoab} (istep, dt)
+\begin{DoxyCompactList}\small\item\em \char`\"{}baoab\char`\"{} performs a single molecular dynamics time step via the B\-A\-O\-A\-B recursion formula \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{baoab_8f90_a5584ed174f71e188e2a1bc013ba3509b}{\index{baoab.\-f90@{baoab.\-f90}!baoab@{baoab}}
+\index{baoab@{baoab}!baoab.f90@{baoab.\-f90}}
+\subsubsection[{baoab}]{\setlength{\rightskip}{0pt plus 5cm}subroutine baoab (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{istep, }
+\item[{real$\ast$8, intent(in)}]{dt}
+\end{DoxyParamCaption}
+)}}\label{baoab_8f90_a5584ed174f71e188e2a1bc013ba3509b}
+
+
+\char`\"{}baoab\char`\"{} performs a single molecular dynamics time step via the B\-A\-O\-A\-B recursion formula 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & number of timestep \\
+\hline
+\mbox{\tt in}  & {\em dt,\-:} & length of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 28 of file baoab.\-f90.
+
+
+
+References allocstep(), utilbaoab\-::apply\-\_\-a\-\_\-block(), utilbaoab\-::apply\-\_\-a\-\_\-piston(), utilbaoab\-::apply\-\_\-b\-\_\-piston(), utilbaoab\-::apply\-\_\-o\-\_\-block(), utilbaoab\-::apply\-\_\-o\-\_\-piston(), commforces(), commpos(), commposrec(), spectra\-::compute\-\_\-dipole(), ddpme3dnpt(), colvarproxy\-\_\-tinkerhp\-::dt(), fatal(), gradient(), info\-\_\-energy(), mdrest(), mdsave(), mdstat(), mechanic\-\_\-up\-\_\-para(), nblist(), pressure(), pressure2(), rattle2(), reassign(), reassignpme(), reduceen(), reinitnl(), spectra\-::save\-\_\-dipole\-\_\-traj(), and temper().
+
+
+
+Referenced by dynamic\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{baoab_8f90_a5584ed174f71e188e2a1bc013ba3509b_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=338pt]{baoab_8f90_a5584ed174f71e188e2a1bc013ba3509b_icgraph}
+\end{center}
+\end{figure}
+
+

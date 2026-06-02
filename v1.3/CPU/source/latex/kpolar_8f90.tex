@@ -1,0 +1,276 @@
+\hypertarget{kpolar_8f90}{\section{kpolar.\-f90 File Reference}
+\label{kpolar_8f90}\index{kpolar.\-f90@{kpolar.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kpolar_8f90_a5675fdfc94b9192a3362d602ebf89053}{kpolar}
+\begin{DoxyCompactList}\small\item\em assigns atomic dipole polarizabilities to the atoms within the structure and processes any new or changed values \end{DoxyCompactList}\item 
+subroutine \hyperlink{kpolar_8f90_a980c06bee05e0f583df9794278c5cac8}{kpolar\-\_\-update} (istep)
+\begin{DoxyCompactList}\small\item\em subroutine update local polar parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kpolar_8f90_a03d6e12672716c7e6be7227f66809779}{polargrp}
+\begin{DoxyCompactList}\small\item\em generates members of the polarization group of each atom and separate lists of the 1-\/2, 1-\/3 and 1-\/4 group connectivities \end{DoxyCompactList}\item 
+subroutine \hyperlink{kpolar_8f90_a2cc59daf2f863e63dfc3bb6362c1e719}{dealloc\-\_\-shared\-\_\-polar}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for polar parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kpolar_8f90_a4f7f43d1c8a11695a6114a61192d3027}{alloc\-\_\-shared\-\_\-polar}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for polar parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kpolar_8f90_a6d6cbf00b0d96b9ab6f2194e7277a933}{omegafit}
+\begin{DoxyCompactList}\small\item\em finds the best omega parameter for T\-C\-G polarization with peak step \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kpolar_8f90_a4f7f43d1c8a11695a6114a61192d3027}{\index{kpolar.\-f90@{kpolar.\-f90}!alloc\-\_\-shared\-\_\-polar@{alloc\-\_\-shared\-\_\-polar}}
+\index{alloc\-\_\-shared\-\_\-polar@{alloc\-\_\-shared\-\_\-polar}!kpolar.f90@{kpolar.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-polar}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-polar (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kpolar_8f90_a4f7f43d1c8a11695a6114a61192d3027}
+
+
+allocate shared memory pointers for polar parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 930 of file kpolar.\-f90.
+
+
+
+Referenced by kpolar().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kpolar_8f90_a4f7f43d1c8a11695a6114a61192d3027_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kpolar_8f90_a2cc59daf2f863e63dfc3bb6362c1e719}{\index{kpolar.\-f90@{kpolar.\-f90}!dealloc\-\_\-shared\-\_\-polar@{dealloc\-\_\-shared\-\_\-polar}}
+\index{dealloc\-\_\-shared\-\_\-polar@{dealloc\-\_\-shared\-\_\-polar}!kpolar.f90@{kpolar.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-polar}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-polar (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kpolar_8f90_a2cc59daf2f863e63dfc3bb6362c1e719}
+
+
+deallocate shared memory pointers for polar parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 881 of file kpolar.\-f90.
+
+
+
+Referenced by final(), and kpolar().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kpolar_8f90_a2cc59daf2f863e63dfc3bb6362c1e719_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kpolar_8f90_a5675fdfc94b9192a3362d602ebf89053}{\index{kpolar.\-f90@{kpolar.\-f90}!kpolar@{kpolar}}
+\index{kpolar@{kpolar}!kpolar.f90@{kpolar.\-f90}}
+\subsubsection[{kpolar}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kpolar (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kpolar_8f90_a5675fdfc94b9192a3362d602ebf89053}
+
+
+assigns atomic dipole polarizabilities to the atoms within the structure and processes any new or changed values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file kpolar.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-polar(), chkpole(), dealloc\-\_\-shared\-\_\-polar(), getnumb(), gettext(), number(), numeral(), polargrp(), sort8(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kpolar_8f90_a5675fdfc94b9192a3362d602ebf89053_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kpolar_8f90_a5675fdfc94b9192a3362d602ebf89053_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kpolar_8f90_a980c06bee05e0f583df9794278c5cac8}{\index{kpolar.\-f90@{kpolar.\-f90}!kpolar\-\_\-update@{kpolar\-\_\-update}}
+\index{kpolar\-\_\-update@{kpolar\-\_\-update}!kpolar.f90@{kpolar.\-f90}}
+\subsubsection[{kpolar\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kpolar\-\_\-update (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{kpolar_8f90_a980c06bee05e0f583df9794278c5cac8}
+
+
+subroutine update local polar parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 447 of file kpolar.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kpolar_8f90_a980c06bee05e0f583df9794278c5cac8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kpolar_8f90_a6d6cbf00b0d96b9ab6f2194e7277a933}{\index{kpolar.\-f90@{kpolar.\-f90}!omegafit@{omegafit}}
+\index{omegafit@{omegafit}!kpolar.f90@{kpolar.\-f90}}
+\subsubsection[{omegafit}]{\setlength{\rightskip}{0pt plus 5cm}subroutine omegafit (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kpolar_8f90_a6d6cbf00b0d96b9ab6f2194e7277a933}
+
+
+finds the best omega parameter for T\-C\-G polarization with peak step 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 1095 of file kpolar.\-f90.
+
+
+
+References diagvec(), epolar(), and sprod().
+
+
+
+Referenced by epolar1tcg().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kpolar_8f90_a6d6cbf00b0d96b9ab6f2194e7277a933_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kpolar_8f90_a6d6cbf00b0d96b9ab6f2194e7277a933_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kpolar_8f90_a03d6e12672716c7e6be7227f66809779}{\index{kpolar.\-f90@{kpolar.\-f90}!polargrp@{polargrp}}
+\index{polargrp@{polargrp}!kpolar.f90@{kpolar.\-f90}}
+\subsubsection[{polargrp}]{\setlength{\rightskip}{0pt plus 5cm}subroutine polargrp (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kpolar_8f90_a03d6e12672716c7e6be7227f66809779}
+
+
+generates members of the polarization group of each atom and separate lists of the 1-\/2, 1-\/3 and 1-\/4 group connectivities 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 623 of file kpolar.\-f90.
+
+
+
+References sort(), and sort8().
+
+
+
+Referenced by kpolar().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=216pt]{kpolar_8f90_a03d6e12672716c7e6be7227f66809779_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kpolar_8f90_a03d6e12672716c7e6be7227f66809779_icgraph}
+\end{center}
+\end{figure}
+
+

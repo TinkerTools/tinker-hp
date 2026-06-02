@@ -1,0 +1,428 @@
+!
+!     Sorbonne University
+!     Washington University in Saint Louis
+!     University of Texas at Austin
+!
+!     #################################################################
+!     ##                                                             ##
+!     ##  program dynamic  --  run molecular or stochastic dynamics  ##
+!     ##                                                             ##
+!     #################################################################
+!
+!
+!     "dynamic" computes a molecular dynamics trajectory
+!     in one of the standard statistical mechanical ensembles and using
+!     any of several possible integration methods
+!
+!
+!> @brief 
+!> computes a molecular dynamics trajectory
+!> @param no params
+program dynamic
+   use mpi
+   implicit none
+   integer ierr
+   call MPI_INIT(ierr)
+   call dynamic_bis
+   call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+   call MPI_FINALIZE(ierr)
+end
+!
+!> @brief 
+!> computes a molecular dynamics trajectory
+!> @param no params
+subroutine dynamic_bis
+   use atoms
+   use bath
+   use bound
+   use domdec
+   use keys
+   use inform
+   use iounit
+   use mdstuf
+   use moldyn
+   use mpi
+   use mutant
+   use qtb, only: qtb_thermostat,adaptive_qtb
+   use potent
+   use timestat
+#ifdef COLVARS
+   use colvars
+#endif
+   implicit none
+   integer i,istep,nstep,ierr
+   integer mode,next
+   real*8 dt,dtdump,time0,time1
+   logical exist,query,use_colvars_
+   character*20 keyword
+   character*240 record
+   character*240 string
+!
+!
+1000 Format(' Time for 100 Steps: ',f15.4,/,&
+   &' Ave. Time per step: ',f15.4)
+1010 Format(' ns per day: ',f15.4)
+   ! Sign running program
+   app_id = dynamic_a
+!
+!     set up the structure and molecular mechanics calculation
+!
+   call initial
+   call getxyz
+   call initmpi
+   call unitcell
+   call cutoffs
+   call lattice
+!
+!     get parameters
+!
+   call mechanic
+!
+!     setup for MPI
+!
+   call drivermpi
+   call kewald_2
+   call reinitnl(0)
+   call mechanic_init_para
+!
+!     allocate some arrays
+!
+   if (allocated(v)) deallocate (v)
+   allocate (v(3,n))
+   if (allocated(a)) deallocate (a)
+   allocate (a(3,n))
+   if (allocated(aalt)) deallocate (aalt)
+   allocate (aalt(3,n))
+   if (allocated(aalt2)) deallocate (aalt2)
+   allocate (aalt2(3,n))
+!
+   a = 0d0
+   v = 0d0
+   aalt = 0d0
+   aalt2 = 0d0
+!
+   call nblist(0)
+!
+!     initialize the temperature, pressure and coupling baths
+!
+   kelvin = 0.0d0
+   atmsph = 0.0d0
+   isothermal = .false.
+   isobaric = .false.
+!
+!     check for keywords containing any altered parameters
+!
+   integrate = 'BEEMAN'
+   do i = 1, nkey
+      next = 1
+      record = keyline(i)
+      call gettext (record,keyword,next)
+      call upcase (keyword)
+      string = record(next:240)
+      if (keyword(1:11) .eq. 'INTEGRATOR ') then
+         call getword (record,integrate,next)
+         call upcase (integrate)
+      end if
+   end do
+!
+!     initialize the simulation length as number of time steps
+!
+   query = .true.
+   call nextarg (string,exist)
+   if (.not.exist)  then
+     if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Number of Steps'
+     call MPI_BARRIER(COMM_TINKER,ierr)
+     call fatal
+   else
+!   if (exist) then
+      read (string,*,err=10,end=10)  nstep
+      query = .false.
+   end if
+10 continue
+!   if (query) then
+!      write (iout,20)
+!20    format (/,' Enter the Number of Dynamics Steps to be',&
+!      &' Taken :  ',$)
+!      read (input,30)  nstep
+!30    format (i10)
+!   end if
+!
+!     get the length of the dynamics time step in picoseconds
+!
+   dt = -1.0d0
+   call nextarg (string,exist)
+   if (.not.exist)  then
+     if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Time Step Length in Femtoseconds'
+     call MPI_BARRIER(COMM_TINKER,ierr)
+     call fatal
+   else
+     read (string,*,err=40,end=40)  dt
+   end if
+40 continue
+!   do while (dt .lt. 0.0d0)
+!      write (iout,50)
+!50    format (/,' Enter the Time Step Length in Femtoseconds',&
+!      &' [1.0] :  ',$)
+!      read (input,60,err=70)  dt
+!60    format (f20.0)
+!      if (dt .le. 0.0d0)  dt = 1.0d0
+!70    continue
+!   end do
+   dt = 0.001d0 * dt
+!
+!     enforce bounds on thermostat and barostat coupling times
+!
+   tautemp = max(tautemp,dt)
+   taupres = max(taupres,dt)
+!
+!     set the time between trajectory snapshot coordinate dumps
+!
+   dtdump = -1.0d0
+   call nextarg (string,exist)
+   if (.not.exist) then
+     if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Time Between Dumps in Picoseconds'
+     call MPI_BARRIER(COMM_TINKER,ierr)
+     call fatal
+   else
+     read (string,*,err=80,end=80)  dtdump
+   end if
+80 continue
+!   do while (dtdump .lt. 0.0d0)
+!      write (iout,90)
+!90    format (/,' Enter Time between Dumps in Picoseconds',&
+!      &' [0.1] :  ',$)
+!      read (input,100,err=110)  dtdump
+!100   format (f20.0)
+!      if (dtdump .le. 0.0d0)  dtdump = 0.1d0
+!110   continue
+!   end do
+   iwrite = nint(dtdump/dt)
+!
+!     get choice of statistical ensemble for periodic system
+!
+   if (use_bounds) then
+      mode = -1
+      call nextarg (string,exist)
+      if (.not.exist) then
+        if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Statistical Ensemble:'
+        if (ranktot.eq.0) write (iout,130)
+130      format (/,' Available Statistical Mechanical Ensembles :',&
+         &//,4x,'(1) Microcanonical (NVE)',&
+         &/,4x,'(2) Canonical (NVT)',&
+         &/,4x,'(4) Isothermal-Isobaric (NPT)')
+        call MPI_BARRIER(COMM_TINKER,ierr)
+        call fatal
+      else
+        read (string,*,err=120,end=120)  mode
+      end if
+120   continue
+!      do while (mode.lt.1 .or. mode.gt.4)
+!         write (iout,130)
+!130      format (/,' Available Statistical Mechanical Ensembles :',&
+!         &//,4x,'(1) Microcanonical (NVE)',&
+!         &/,4x,'(2) Canonical (NVT)',&
+!         &/,4x,'(3) Isoenthalpic-Isobaric (NPH)',&
+!         &/,4x,'(4) Isothermal-Isobaric (NPT)',&
+!         &//,' Enter the Number of the Desired Choice',&
+!         &' [1] :  ',$)
+!         read (input,140,err=150)  mode
+!140      format (i10)
+         if (mode .le. 0)  mode = 1
+!150      continue
+!      end do
+      if (mode.eq.2 .or. mode.eq.4) then
+         isothermal = .true.
+         kelvin = -1.0d0
+         call nextarg (string,exist)
+         if (.not.exist) then
+           if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Temperature in Kelvin'
+           call MPI_BARRIER(COMM_TINKER,ierr)
+           call fatal
+         else
+           read (string,*,err=170,end=170)  kelvin
+         end if
+170      continue
+!         do while (kelvin .lt. 0.0d0)
+!            write (iout,180)
+!180         format (/,' Enter the Desired Temperature in Degrees',&
+!            &' K [298] :  ',$)
+!            read (input,190,err=200)  kelvin
+!190         format (f20.0)
+            if (kelvin .le. 0.0d0)  kelvin = 298.0d0
+!200         continue
+!         end do
+      end if
+      if (mode.eq.4) then
+         isobaric = .true.
+         atmsph = -1.0d0
+         call nextarg (string,exist)
+         if (.not.exist) then
+           if (ranktot.eq.0) write (iout,*) 'You Need To Enter the Pressure in Atm'
+           call MPI_BARRIER(COMM_TINKER,ierr)
+           call fatal
+         else 
+           read (string,*,err=210,end=210)  atmsph
+         end if
+210      continue
+!         do while (atmsph .lt. 0.0d0)
+!            write (iout,220)
+!220         format (/,' Enter the Desired Pressure in Atm',&
+!            &' [1.0] :  ',$)
+!            read (input,230,err=240)  atmsph
+!230         format (f20.0)
+            if (atmsph .le. 0.0d0)  atmsph = 1.0d0
+!240         continue
+!         end do
+      end if
+   end if
+!!
+!!     use constant energy or temperature for nonperiodic system
+!!
+!   if (.not. use_bounds) then
+!      mode = -1
+!      call nextarg (string,exist)
+!      if (exist)  read (string,*,err=250,end=250)  mode
+!250   continue
+!      do while (mode.lt.1 .or. mode.gt.2)
+!         write (iout,260)
+!260      format (/,' Available Simulation Control Modes :',&
+!         &//,4x,'(1) Constant Total Energy Value (E)',&
+!         &/,4x,'(2) Constant Temperature via Thermostat (T)',&
+!         &//,' Enter the Number of the Desired Choice',&
+!         &' [1] :  ',$)
+!         read (input,270,err=280)  mode
+!270      format (i10)
+!         if (mode .le. 0)  mode = 1
+!280      continue
+!      end do
+!      if (mode .eq. 2) then
+!         isothermal = .true.
+!         kelvin = -1.0d0
+!         call nextarg (string,exist)
+!         if (exist)  read (string,*,err=290,end=290)  kelvin
+!290      continue
+!         do while (kelvin .lt. 0.0d0)
+!            write (iout,300)
+!300         format (/,' Enter the Desired Temperature in Degrees',&
+!            &' K [298] :  ',$)
+!            read (input,310,err=320)  kelvin
+!310         format (f20.0)
+!            if (kelvin .le. 0.0d0)  kelvin = 298.0d0
+!320         continue
+!         end do
+!      end if
+!   end if
+!
+   call mdinit(dt)
+
+#ifdef COLVARS
+   dt_sim = dt*1000d0
+!
+!     only the master does colvars computations, but other ranks need to allocate coord arrays
+!
+   if (rank.eq.0) then
+      call allocate_colvars
+   end if
+   call MPI_BCAST(use_colvars,1,MPI_LOGICAL,0,COMM_TINKER,ierr)
+   if (use_colvars) then
+      call MPI_BCAST(ncvatoms,1,MPI_INT,0,COMM_TINKER,ierr)
+      if (rank.gt.0) then
+         allocate (cvatoms_ids(ncvatoms))
+      end if
+      call MPI_BCAST(cvatoms_ids,ncvatoms,MPI_INT,0,COMM_TINKER,&
+      &ierr)
+      if (rank.gt.0) then
+         allocate (cv_pos(3,ncvatoms))
+         allocate (decv(3,ncvatoms),decv_tot(3,ncvatoms))
+         cv_pos = 0d0
+         decv = 0d0
+         decv_tot = 0d0
+      end if
+!
+!       for lambda-dynamics, do a "blank" colvars computation to get restart value of lambda
+!
+      if (use_lambdadyn) then
+         call prepare_colvars
+         if (rank.eq.0) call compute_colvars_tinker()
+         call MPI_BCAST(lambda,1,MPI_REAL8,0,COMM_TINKER,ierr)
+         call def_lambdadyn(rank)
+      end if
+   end if
+#endif
+#ifndef COLVARS
+   if (use_lambdadyn) then
+      if (rank.eq.0) then
+         write(iout,*) 'cannot run lambda dynamics without colvars'
+      end if
+      call fatal
+   end if
+#endif
+!
+!     print out a header line for the dynamics computation
+!
+   if (integrate .eq. 'VERLET') then
+      if (rank.eq.0) write (iout,330)
+330   format (/,' Molecular Dynamics Trajectory via',&
+      &' Velocity Verlet Algorithm')
+   else if (integrate .eq. 'RESPA') then
+      if (rank.eq.0) write (iout,390)
+390   format (/,' Molecular Dynamics Trajectory via',&
+      &' r-RESPA MTS Algorithm')
+   else if (integrate .eq. 'BAOAB') then
+      if (rank.eq.0) write (iout,410)
+410   format (/,' Langevin Molecular Dynamics Trajectory via',&
+      &' BAOAB Algorithm')
+   else if (integrate .eq. 'BAOABRESPA') then
+      if (rank.eq.0) write (iout,420)
+420   format (/,' Langevin Molecular Dynamics Trajectory via',&
+      &' BAOAB-RESPA Algorithm')
+   else if (integrate .eq. 'BAOABRESPA1') then
+      if (rank.eq.0) write (iout,430)
+430   format (/,' Langevin Molecular Dynamics Trajectory via',&
+      &' BAOAB-RESPA-1 Algorithm')
+   else if (integrate .eq. 'RESPA1') then
+      if (rank.eq.0) write (iout,440)
+440   format (/,' Molecular Dynamics Trajectory via',&
+      &' r-RESPA-1 MTS Algorithm')
+   else
+      if (rank.eq.0) write (iout,480)
+480   format (/,' Molecular Dynamics Trajectory via',&
+      &' Modified Beeman Algorithm')
+   end if
+
+   if(qtb_thermostat .and. rank==0) then
+      if(adaptive_qtb) then
+         write(iout,*) " using adaptive QTB thermostat"
+      else
+         write(iout,*) " using standard QTB thermostat"
+      endif
+   endif
+!
+!     integrate equations of motion to take a time step
+!
+   do istep = 1, nstep
+      time0 = mpi_wtime()
+      if (integrate .eq. 'VERLET') then
+         call verlet (istep,dt)
+      else if (integrate .eq. 'RESPA') then
+         call respa (istep,dt)
+      else if (integrate .eq. 'BAOAB') then
+         call baoab(istep,dt)
+      else if (integrate .eq. 'BAOABRESPA') then
+         call baoabrespa(istep,dt)
+      else if (integrate .eq. 'BAOABRESPA1') then
+         call baoabrespa1(istep,dt)
+      else if (integrate .eq. 'RESPA1') then
+         call respa1(istep,dt)
+      else
+         call beeman (istep,dt)
+      end if
+      time1 = mpi_wtime()
+      timestep = timestep + time1-time0
+      call mdstattime(istep,dt)
+   end do
+!
+!     perform any final tasks before program exit
+!
+   call final
+end

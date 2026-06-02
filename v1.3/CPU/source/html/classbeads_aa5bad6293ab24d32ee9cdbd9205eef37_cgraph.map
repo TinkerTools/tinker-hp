@@ -1,0 +1,8 @@
+<map id="beads::allocpi" name="beads::allocpi">
+<area shape="rect" id="node2" href="$classbeads.html#a2c832b111c1927ac08f1ad3fcc183f41" title="beads::allocate_polymer" alt="" coords="166,5,349,32"/>
+<area shape="rect" id="node4" href="$classcolvarproxy__tinkerhp.html#a7acc624104cbe9ef60cb90fe5f51018b" title="colvarproxy_tinkerhp\l::boltzmann" alt="" coords="177,57,337,98"/>
+<area shape="rect" id="node5" href="$classbeads.html#aff4e6a4e0f39e934a27fbb328dd10528" title="beads::initialize_normal\l_modes" alt="" coords="168,122,347,163"/>
+<area shape="rect" id="node7" href="$classbeads.html#a5f3e1c77b8ee4e8c1798aa78dd0ee764" title="beads::update_nlocpi" alt="" coords="177,188,337,215"/>
+<area shape="rect" id="node3" href="$classbeads.html#a4ecb45fa6d8b5818c3fb23ac2d28a625" title="beads::deallocate_polymer" alt="" coords="398,5,597,32"/>
+<area shape="rect" id="node6" href="$classascii.html#ac1af533da26d2edb9b152ec358a01b98" title="converts integer to strings " alt="" coords="437,129,558,156"/>
+</map>

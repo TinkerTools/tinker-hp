@@ -1,0 +1,8 @@
+<map id="ehal3" name="ehal3">
+<area shape="rect" id="node2" href="$ehal3_8f90.html#a59cab00af44976f3c183d238db27a1da" title="calculates the buffered 14&#45;7 van der Waals energy with respect to Cartesian coordinates using a paiwi..." alt="" coords="113,56,178,83"/>
+<area shape="rect" id="node7" href="$evcorr_8f90.html#a11dc6866f6c6deeed6eafd0b8b8c1ab2" title="computes the long range van der Waals correction to the energy via numerical integration ..." alt="" coords="114,5,177,32"/>
+<area shape="rect" id="node3" href="$switch_8f90.html#a49f27020ffd762e86d09bbd7bbb5222e" title="sets the coeffcients used by the fifth and seventh order polynomial switching functions for spherical..." alt="" coords="248,5,312,32"/>
+<area shape="rect" id="node4" href="$image_8f90.html#afafb2542d1faa53dbba8933a21da60fa" title="takes the components of pairwise distance between two points in a periodic box and converts to the co..." alt="" coords="249,56,311,83"/>
+<area shape="rect" id="node5" href="$groups_8f90.html#a0c44c6bc5cd8f73c39ef08ac00b0f0ab" title="tests a set of atoms to see if all are members of a single atom group or a pair of atom groups; if so..." alt="" coords="247,107,313,133"/>
+<area shape="rect" id="node6" href="$switch_8f90.html#a5d2160eee4dacede050955bf54205d91" title="sets the coeffcients used for short&#45;long switching function " alt="" coords="227,157,333,184"/>
+</map>

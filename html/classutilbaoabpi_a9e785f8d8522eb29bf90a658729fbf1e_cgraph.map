@@ -1,0 +1,7 @@
+<map id="utilbaoabpi::colvars_run_pi" name="utilbaoabpi::colvars_run_pi">
+<area shape="rect" id="node2" href="$classutilbaoabpi.html#a499bdce266930ac702dc09e25521901c" title="utilbaoabpi::distrib\l_colvars_pi" alt="" coords="211,23,355,65"/>
+<area shape="rect" id="node6" href="$classutilbaoabpi.html#a4407ec4cbd0f80a26c05e6d96b888e20" title="utilbaoabpi::prepare\l_colvars_pi" alt="" coords="206,89,359,130"/>
+<area shape="rect" id="node3" href="$mutate_8f90.html#a8a8cb37784baa7e9e5bda6dae37df036" title="constructs the state weighting values vlambda and elambda for the van der Waals and electrostatic int..." alt="" coords="408,31,531,57"/>
+<area shape="rect" id="node4" href="$mutate_8f90.html#a8a0c3ee7abe7f5d00402933102f15a81" title="&quot;altelec&quot; constructs the mutated electrostatic parameters based on the lambda mutation parameter &quot;elm..." alt="" coords="579,5,645,32"/>
+<area shape="rect" id="node5" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="586,56,638,83"/>
+</map>

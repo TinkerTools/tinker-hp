@@ -1,0 +1,273 @@
+\hypertarget{mechanic_8f90}{\section{mechanic.\-f90 File Reference}
+\label{mechanic_8f90}\index{mechanic.\-f90@{mechanic.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{mechanic_8f90_a378feb91f7b4c73a0abb3f0972a9aa79}{mechanic}
+\begin{DoxyCompactList}\small\item\em sets up needed parameters for the potential energy calculation and reads in many of the user selectable options \end{DoxyCompactList}\item 
+subroutine \hyperlink{mechanic_8f90_aa9f886abb39ff1b2ac317a3211c6f079}{mechanic\-\_\-init\-\_\-para}
+\begin{DoxyCompactList}\small\item\em initialize parallel parameters after domain decomposition \end{DoxyCompactList}\item 
+subroutine \hyperlink{mechanic_8f90_acaf8551e812eeac7b265a258e0c86609}{mechanic\-\_\-up\-\_\-para} (istep)
+\begin{DoxyCompactList}\small\item\em update parallel parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{mechanic_8f90_a556247c717f6fe5510709e7a17a4a31e}{mechanic\-\_\-up\-\_\-para\-\_\-respa} (istep, fast)
+\begin{DoxyCompactList}\small\item\em update parallel parameters between two respa steps \end{DoxyCompactList}\item 
+subroutine \hyperlink{mechanic_8f90_a55553e62ec26b47755d4dab69f070691}{mechanic\-\_\-up\-\_\-para\-\_\-respa1} (istep, rule)
+\begin{DoxyCompactList}\small\item\em update parameters between two time steps of respa1 integrator \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{mechanic_8f90_a378feb91f7b4c73a0abb3f0972a9aa79}{\index{mechanic.\-f90@{mechanic.\-f90}!mechanic@{mechanic}}
+\index{mechanic@{mechanic}!mechanic.f90@{mechanic.\-f90}}
+\subsubsection[{mechanic}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mechanic (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mechanic_8f90_a378feb91f7b4c73a0abb3f0972a9aa79}
+
+
+sets up needed parameters for the potential energy calculation and reads in many of the user selectable options 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file mechanic.\-f90.
+
+
+
+References active(), angles(), attach(), bitors(), bonds(), cluster(), fatal(), field(), kangang(), kangle(), kangtor(), katom(), kbond(), kcharge(), kchgflx(), kchgtrn(), kdisp(), kewald(), kgeom(), kimprop(), kimptor(), kmpole(), kopbend(), kopdist(), kpitors(), kpolar(), krepel(), ksmd(), kstrbnd(), kstrtor(), ktors(), ktortor(), kurey(), kvdw(), molecule(), mutate(), rings(), shakeup(), and torsions().
+
+
+
+Referenced by analyze\-\_\-bis(), dynamic\-\_\-bis(), makebar(), minimize\-\_\-bis(), pimd\-\_\-bis(), and testgrad().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{mechanic_8f90_a378feb91f7b4c73a0abb3f0972a9aa79_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_a378feb91f7b4c73a0abb3f0972a9aa79_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mechanic_8f90_aa9f886abb39ff1b2ac317a3211c6f079}{\index{mechanic.\-f90@{mechanic.\-f90}!mechanic\-\_\-init\-\_\-para@{mechanic\-\_\-init\-\_\-para}}
+\index{mechanic\-\_\-init\-\_\-para@{mechanic\-\_\-init\-\_\-para}!mechanic.f90@{mechanic.\-f90}}
+\subsubsection[{mechanic\-\_\-init\-\_\-para}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mechanic\-\_\-init\-\_\-para (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{mechanic_8f90_aa9f886abb39ff1b2ac317a3211c6f079}
+
+
+initialize parallel parameters after domain decomposition 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 139 of file mechanic.\-f90.
+
+
+
+References angles\-\_\-update(), bitors\-\_\-update(), bonds\-\_\-update(), initmpipme(), kangang\-\_\-update(), kangtor\-\_\-update(), kcharge\-\_\-update(), kchgtrn\-\_\-update(), kdisp\-\_\-update(), kewald\-\_\-dd\-\_\-init(), kgeom\-\_\-update(), kimprop\-\_\-update(), kimptor\-\_\-update(), kmpole\-\_\-update(), kopbend\-\_\-update(), kopdist\-\_\-update(), kpitors\-\_\-update(), kpolar\-\_\-update(), ksmd(), kstrbnd\-\_\-update(), kstrtor\-\_\-update(), ktortor\-\_\-update(), kurey\-\_\-update(), kvdw\-\_\-update(), shakeup\-\_\-update(), and torsions\-\_\-update().
+
+
+
+Referenced by dynamic\-\_\-bis(), makebar(), mdinit(), mdinitbead(), minimize\-\_\-bis(), pimd\-\_\-bis(), and testgrad().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_aa9f886abb39ff1b2ac317a3211c6f079_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_aa9f886abb39ff1b2ac317a3211c6f079_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mechanic_8f90_acaf8551e812eeac7b265a258e0c86609}{\index{mechanic.\-f90@{mechanic.\-f90}!mechanic\-\_\-up\-\_\-para@{mechanic\-\_\-up\-\_\-para}}
+\index{mechanic\-\_\-up\-\_\-para@{mechanic\-\_\-up\-\_\-para}!mechanic.f90@{mechanic.\-f90}}
+\subsubsection[{mechanic\-\_\-up\-\_\-para}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mechanic\-\_\-up\-\_\-para (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{mechanic_8f90_acaf8551e812eeac7b265a258e0c86609}
+
+
+update parallel parameters 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 195 of file mechanic.\-f90.
+
+
+
+References angles\-\_\-update(), bitors\-\_\-update(), bonds\-\_\-update(), initmpipme(), kangang\-\_\-update(), kangtor\-\_\-update(), kcharge\-\_\-update(), kchgtrn\-\_\-update(), kdisp\-\_\-update(), kgeom\-\_\-update(), kimprop\-\_\-update(), kimptor\-\_\-update(), kmpole\-\_\-update(), kopbend\-\_\-update(), kopdist\-\_\-update(), kpitors\-\_\-update(), kpolar\-\_\-update(), ksmd(), kstrbnd\-\_\-update(), kstrtor\-\_\-update(), ktortor\-\_\-update(), kurey\-\_\-update(), kvdw\-\_\-update(), shakeup\-\_\-update(), and torsions\-\_\-update().
+
+
+
+Referenced by analyze\-\_\-bis(), baoab(), beeman(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), mdinitreps(), minimiz1(), minimize\-\_\-bis(), testgrad(), and verlet().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_acaf8551e812eeac7b265a258e0c86609_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_acaf8551e812eeac7b265a258e0c86609_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mechanic_8f90_a556247c717f6fe5510709e7a17a4a31e}{\index{mechanic.\-f90@{mechanic.\-f90}!mechanic\-\_\-up\-\_\-para\-\_\-respa@{mechanic\-\_\-up\-\_\-para\-\_\-respa}}
+\index{mechanic\-\_\-up\-\_\-para\-\_\-respa@{mechanic\-\_\-up\-\_\-para\-\_\-respa}!mechanic.f90@{mechanic.\-f90}}
+\subsubsection[{mechanic\-\_\-up\-\_\-para\-\_\-respa}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mechanic\-\_\-up\-\_\-para\-\_\-respa (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{logical}]{fast}
+\end{DoxyParamCaption}
+)}}\label{mechanic_8f90_a556247c717f6fe5510709e7a17a4a31e}
+
+
+update parallel parameters between two respa steps 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 253 of file mechanic.\-f90.
+
+
+
+References angles\-\_\-update(), bitors\-\_\-update(), bonds\-\_\-update(), initmpipme(), kangang\-\_\-update(), kangtor\-\_\-update(), kcharge\-\_\-update(), kchgtrn\-\_\-update(), kdisp\-\_\-update(), kgeom\-\_\-update(), kimprop\-\_\-update(), kimptor\-\_\-update(), kmpole\-\_\-update(), kopbend\-\_\-update(), kopdist\-\_\-update(), kpitors\-\_\-update(), kpolar\-\_\-update(), ksmd(), kstrbnd\-\_\-update(), kstrtor\-\_\-update(), ktortor\-\_\-update(), kurey\-\_\-update(), kvdw\-\_\-update(), shakeup\-\_\-update(), and torsions\-\_\-update().
+
+
+
+Referenced by baoabrespa(), commstuffpi\-::fast\-\_\-gradient\-\_\-prepare\-\_\-pi(), commstuffpi\-::full\-\_\-gradient\-\_\-prepare\-\_\-pi(), respa(), and respafast().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_a556247c717f6fe5510709e7a17a4a31e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_a556247c717f6fe5510709e7a17a4a31e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{mechanic_8f90_a55553e62ec26b47755d4dab69f070691}{\index{mechanic.\-f90@{mechanic.\-f90}!mechanic\-\_\-up\-\_\-para\-\_\-respa1@{mechanic\-\_\-up\-\_\-para\-\_\-respa1}}
+\index{mechanic\-\_\-up\-\_\-para\-\_\-respa1@{mechanic\-\_\-up\-\_\-para\-\_\-respa1}!mechanic.f90@{mechanic.\-f90}}
+\subsubsection[{mechanic\-\_\-up\-\_\-para\-\_\-respa1}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mechanic\-\_\-up\-\_\-para\-\_\-respa1 (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep, }
+\item[{integer}]{rule}
+\end{DoxyParamCaption}
+)}}\label{mechanic_8f90_a55553e62ec26b47755d4dab69f070691}
+
+
+update parameters between two time steps of respa1 integrator 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em istep,\-:} & index of timestep \\
+\hline
+\mbox{\tt in}  & {\em rule,\-:} & rule depending on short, intermediate or large timestep \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 304 of file mechanic.\-f90.
+
+
+
+References angles\-\_\-update(), bitors\-\_\-update(), bonds\-\_\-update(), initmpipme(), kangang\-\_\-update(), kangtor\-\_\-update(), kcharge\-\_\-update(), kchgtrn\-\_\-update(), kdisp\-\_\-update(), kgeom\-\_\-update(), kimprop\-\_\-update(), kimptor\-\_\-update(), kmpole\-\_\-update(), kopbend\-\_\-update(), kopdist\-\_\-update(), kpitors\-\_\-update(), kpolar\-\_\-update(), ksmd(), kstrbnd\-\_\-update(), kstrtor\-\_\-update(), ktortor\-\_\-update(), kurey\-\_\-update(), kvdw\-\_\-update(), shakeup\-\_\-update(), and torsions\-\_\-update().
+
+
+
+Referenced by baoabrespa1(), baoabrespafast1(), baoabrespaint1(), respa1(), respafast1(), and respaint1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_a55553e62ec26b47755d4dab69f070691_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{mechanic_8f90_a55553e62ec26b47755d4dab69f070691_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,1453 @@
+\hypertarget{classdomdec}{\section{domdec Module Reference}
+\label{classdomdec}\index{domdec@{domdec}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classdomdec_a867d499309342702baee7bd2f4dd72ae}{nxdd}
+\begin{DoxyCompactList}\small\item\em number of subdivisions along the x axis \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a6811e1e01bd9ca743778b5dd16be7675}{nydd}
+\begin{DoxyCompactList}\small\item\em number of subdivisions along the y axis \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_ae136589c89f0840e0c70674031d3b777}{nzdd}
+\begin{DoxyCompactList}\small\item\em number of subdivisions along the z axis \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a77ce93de77d93f248287dfd4f89e64cc}{nproctot}
+\begin{DoxyCompactList}\small\item\em total number of M\-P\-I process (within M\-P\-I\-\_\-\-C\-O\-M\-M\-\_\-\-W\-O\-R\-L\-D) \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a003bab60bea2de6201a9182da660c5c8}{ranktot}
+\begin{DoxyCompactList}\small\item\em total rank of the M\-P\-I process within M\-P\-I\-\_\-\-C\-O\-M\-M\-\_\-\-W\-O\-R\-L\-D \end{DoxyCompactList}\item 
+integer, target \hyperlink{classdomdec_a1c86489abc12bf273ebe35d2e95e5a97}{comm\-\_\-tinker}
+\begin{DoxyCompactList}\small\item\em local M\-P\-I communicator in which a dynamic, analyze, testgrad or minimize run will take place \end{DoxyCompactList}\item 
+integer, target \hyperlink{classdomdec_ad386ac278e357dd9bc1034b2b3cc04fc}{nproc}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I processes during a dynamic, analyze, testgrad or minimize run \end{DoxyCompactList}\item 
+integer, target \hyperlink{classdomdec_a146ec15c8422fd2670da75c3e0e0dfe9}{rank}
+\begin{DoxyCompactList}\small\item\em rank of the current M\-P\-I process within C\-O\-M\-M\-\_\-\-T\-I\-N\-K\-E\-R \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_aebba4360c9e42de2ed494d4167a63a99}{rank\-\_\-bis}
+\begin{DoxyCompactList}\small\item\em rank of the current M\-P\-I process within comm\-\_\-dir or comm\-\_\-rec \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_ad51e73bb1764f6f3e48bce4c4b6636ff}{nthread}
+\begin{DoxyCompactList}\small\item\em number of threads to be used with Open\-M\-P \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a70bead05b01696a0ee6be95ecd7fd9ea}{nrec}
+\begin{DoxyCompactList}\small\item\em number of processes assigned to the computation of reciprocal space contribution \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_ae5edf3757894f9397d3d4f603eb2d076}{ndir}
+\begin{DoxyCompactList}\small\item\em number of processes assigned to the computation of direct space contribution \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a046ed439b4f62f80be0e38736896da25}{comm\-\_\-rec}
+\begin{DoxyCompactList}\small\item\em M\-P\-I group communicator associated to the reciprocal space. \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a383993116087900b4f889f3f077dc01d}{comm\-\_\-dir}
+\begin{DoxyCompactList}\small\item\em M\-P\-I group communicator associated to the direct space. \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_ad5faf93f8356aea734a9ed5012fb597b}{comm\-\_\-polymer}
+\begin{DoxyCompactList}\small\item\em M\-P\-I group communicator associated to the P\-I\-M\-D parallelism. \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_aa41e5fcea13c9f7a65a84836b19537ff}{rank\-\_\-polymer}
+\begin{DoxyCompactList}\small\item\em M\-P\-I rank associated to C\-O\-M\-M\-\_\-\-P\-O\-L\-Y\-M\-E\-R. \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a26e164f3a2e4deb7d3019cca4530085b}{nproc\-\_\-polymer}
+\begin{DoxyCompactList}\small\item\em number of procs within C\-O\-M\-M\-\_\-\-P\-O\-L\-Y\-M\-E\-R \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_ad66c1bf2823b5f06138088c6bee198be}{hostrank}
+\begin{DoxyCompactList}\small\item\em M\-P\-I rank within each node. \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a006e80bdb6f5a7397a372768683257b2}{hostcomm}
+\begin{DoxyCompactList}\small\item\em M\-P\-I communicator within each node. \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_acd38a6940b147be68ded2ad9b20370f2}{n\-\_\-recep1}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute electrostatic interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_aa8487a458ef4e84212822190663db9a8}{n\-\_\-send1}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute electrostatic interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a5f5bedc0c1ff6f221a8d5962dacd02ca}{nrec\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute reciprocal interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a241ed59d98796089944cc13db0db566b}{nrec\-\_\-send}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute reciprocal interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_abe55b19e68b835314f58393f920e9272}{n\-\_\-recep2}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute vdw interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a0f486e85808300fa8cc875848802e6bb}{n\-\_\-send2}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute vdw interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a5aeb41a854f8678a4751145d51b6c3ab}{nrecdir\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute reciprocal interactions (recip-\/direct communications) \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_ae3f9a9d0cf25f3d07550dd79ad9c84f8}{nrecdir\-\_\-send}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute reciprocal interactions (recip-\/direct communications) \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_aa19f1045696509fac6e8b872424a332f}{nrecdir\-\_\-recep2}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute reciprocal interactions, without proc already in precdir\-\_\-recep1 \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a399f832dbe50a87ea3cfd222b65eabfb}{nrecdir\-\_\-send2}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute reciprocal interactions, without proc already in precdir\-\_\-send1 \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a88b84c15a29f8f4e25738fffb5027497}{n\-\_\-recepshort1}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute short range electrostatic interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a10cc7f1b63fcc120ac78969e44d907fa}{n\-\_\-sendshort1}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute short range electrostatic interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_afdbf4a84ec151ba26b0b1112fc28b811}{n\-\_\-recepshort2}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute short range vdw interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a2a12a88a8fa8070ba62c13604c01a8b7}{n\-\_\-sendshort2}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute short range vdw interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a364fed03b8d34d58abb5a2b4708ea05f}{nneig\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute bonded interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_afa246e161fb21768b484c151b3866631}{nneig\-\_\-send}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute bonded interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a542f5d5bbc9198e5190417cf45390b81}{nrecdir\-\_\-recep1}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute reciprocal interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a4dffa155fb7b24a0e90c0c94e7d4fdeb}{nrecdir\-\_\-send1}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute reciprocal interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_ab07069ab2af1699dc506c4cd10c24a83}{nbig\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute largest non bonded interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a259cec691f627989c92b56e625e5dc79}{nbig\-\_\-send}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute largest non bonded interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_ad95084fcf28a5965b0e5ad423ee0697f}{nbigshort\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to receive positions from to compute largest short range non bonded interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a7b930faf1e5cfbfc5f71442a81f49dbb}{nbigshort\-\_\-send}
+\begin{DoxyCompactList}\small\item\em number of M\-P\-I process to send positions to to compute largest short range non bonded interactions \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_aa10da3a10adb24dfdbcb8ce13d4d3883}{nbloc}
+\begin{DoxyCompactList}\small\item\em local + neighbors number of atoms \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a9ce080b6f61843bfcf7f9a11a90a7ba5}{nloc}
+\begin{DoxyCompactList}\small\item\em local number of atoms \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a15d118ab39f277c8787003cda8a222d2}{nlocrec}
+\begin{DoxyCompactList}\small\item\em local reciprocal number of atoms \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a611d883dfaae5395b468ac03b000e572}{nlocrec2}
+\begin{DoxyCompactList}\small\item\em local + reciprocal neighbors number of atoms \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a7b54734f2525070176f359438cc508fa}{nlocnl}
+\begin{DoxyCompactList}\small\item\em local nl number of atoms \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_aba62c8c31213bb0025d171e5e2adb210}{nblocrecdir}
+\begin{DoxyCompactList}\small\item\em local + neighbors direct+reciprocal number of atoms \end{DoxyCompactList}\item 
+integer \hyperlink{classdomdec_a597fdf38e68a3e3e120320f814fcc12e}{nblocloop}
+\begin{DoxyCompactList}\small\item\em variable number of atoms \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a558b181b6a0bbd65a74c4525ff5de2de}{domlen}
+\begin{DoxyCompactList}\small\item\em number of atoms in the domains \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_aa797f77d936208ae42bc625d8a581f9f}{domlenrec}
+\begin{DoxyCompactList}\small\item\em number of reciprocal atoms in the reciprocal domains \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_af2817bfda7f51346104df393ac0549a7}{domlenpole}
+\begin{DoxyCompactList}\small\item\em number of multipoles in the domains \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a44f522e557be333b75aac44b3ec5b28b}{domlenpolerec}
+\begin{DoxyCompactList}\small\item\em number of multipoles in the reciprocal domains \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_aecd0d700c25dd92b90c3aff9ef2675d7}{p\-\_\-recep1}
+\begin{DoxyCompactList}\small\item\em list of processes associated with n\-\_\-recep1 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a1d393373b27051c32983ecf341da6163}{p\-\_\-send1}
+\begin{DoxyCompactList}\small\item\em list of processes associated with n\-\_\-send1 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a713d6b0f5bb76b694b14d466e89e29dd}{p\-\_\-recep2}
+\begin{DoxyCompactList}\small\item\em list of processes associated with n\-\_\-recep2 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a8323226a166ccbe0958fcb23e40e8ea3}{p\-\_\-send2}
+\begin{DoxyCompactList}\small\item\em list of processes associated with n\-\_\-send2 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a1dfc2e20e70c2f2071d5426210da1ed8}{p\-\_\-recepshort1}
+\begin{DoxyCompactList}\small\item\em list of processes associated with n\-\_\-recepshort1 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a1160480c1dedc45c50370302ac8df4cb}{p\-\_\-sendshort1}
+\begin{DoxyCompactList}\small\item\em list of processes associated with n\-\_\-sendshort1 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a1ca125848ba21ab0b69170dbb7b55a06}{p\-\_\-recepshort2}
+\begin{DoxyCompactList}\small\item\em list of processes associated with n\-\_\-recepshort2 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a4307c5b3e7ed134c6ff12f02074a1841}{p\-\_\-sendshort2}
+\begin{DoxyCompactList}\small\item\em list of processes associated with n\-\_\-sendshort2 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a720905850ac4cc7d180e0b6eb9a32c5d}{pneig\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nneig\-\_\-recep \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a2b90bf1f406fc3b495a131fb93aae791}{pneig\-\_\-send}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nneig\-\_\-send \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a9d4ef203aab7fcb23853f1094862b4da}{precdir\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nrecdir\-\_\-recep \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a197dc0ce20dbc808eecabcf74df5960c}{precdir\-\_\-send}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nrecdir\-\_\-send \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_abd7674f40dc278e85d7a97360a487819}{precdir\-\_\-recep1}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nrecdir\-\_\-recep1 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a7d3fe3da2fd8976c2169e00a21944c50}{precdir\-\_\-send1}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nrecdir\-\_\-send1 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a851d5a5f2c7eb233e9e3e54770d57f0f}{precdir\-\_\-recep2}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nrecdir\-\_\-recep2 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a44484ba004f950136be30521a36c5946}{precdir\-\_\-send2}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nrecdir\-\_\-send2 \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a2d8dc7137683aeffdb639b128de9a68a}{pbig\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nbig\-\_\-recep \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_acb406c89cb7b4240f2e81ba5ecbed7e2}{pbig\-\_\-send}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nbig\-\_\-send \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a588c3664b18e8576817604627f1b8aef}{pbigshort\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nbigshort\-\_\-recep \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a3de9da3bc58ffb96711e59d730a60f28}{pbigshort\-\_\-send}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nbigshort\-\_\-send \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a911e9f8522f16f4a96ca6b9ced522ea2}{glob}
+\begin{DoxyCompactList}\small\item\em local-\/global correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_aab28c270e201c2fea1dae1fe969ef66f}{loc}
+\begin{DoxyCompactList}\small\item\em global-\/local correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a38e7d056926314b002bd5a212584ff11}{globrec}
+\begin{DoxyCompactList}\small\item\em local-\/global reciprocal correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a881232db39ab98dcfb865d753170a69e}{locrec}
+\begin{DoxyCompactList}\small\item\em global-\/local reciprocal correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_ad353099c77cb5a206fbcd6fbca9cea8f}{prec\-\_\-send}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nrec\-\_\-send \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a567096a53173ef0bbf5ab415f6ba4e70}{prec\-\_\-recep}
+\begin{DoxyCompactList}\small\item\em list of processes associated with nrec\-\_\-recep \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_aeabaca57aab399a825da41e1915339ab}{repartrec}
+\begin{DoxyCompactList}\small\item\em global index-\/domain reciprocal correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_aeab8c3ef2b14a507aa871f5e49d4a5f6}{repart}
+\begin{DoxyCompactList}\small\item\em global index-\/domain correspondance \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_ae9894e09bab77f6e5c9bd85833d955b9}{bufbeg}
+\begin{DoxyCompactList}\small\item\em index of the first atom concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_ade41bd5550ac0d2a5a7af786b4a7607e}{bufbegpole}
+\begin{DoxyCompactList}\small\item\em index of the first multipole concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_af1a239b39d8aba8af456077bf0fe2eb9}{bufbegrec}
+\begin{DoxyCompactList}\small\item\em index of the first reciprocal multipole concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a8ad5403cf1da77b23f0dc43e220a8f1d}{buflen1}
+\begin{DoxyCompactList}\small\item\em number of atoms concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_adde65e323deb64b0d4531cf1d930b4a9}{buflen2}
+\begin{DoxyCompactList}\small\item\em number of atoms concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a0da0b0f870e5a272cd7af8a6a7b8d393}{bufbeg1}
+\begin{DoxyCompactList}\small\item\em index of the first atom concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a00263858ce6582864a5ed17d590b8e7a}{bufbeg2}
+\begin{DoxyCompactList}\small\item\em index of the first atom concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a7d90558349e9925b91eb336db7059b8d}{buf1}
+\begin{DoxyCompactList}\small\item\em list of atoms concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+integer, dimension(\-:), \\*
+allocatable, target \hyperlink{classdomdec_a0defed117c2c62aa11dd777d8748b6de}{buf2}
+\begin{DoxyCompactList}\small\item\em list of atoms concerned by each process for direct reciprocal atomic correspondance for polarization solvers \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classdomdec_a6fbb2670015481430ce47e763a530408}{na\-\_\-box}
+\begin{DoxyCompactList}\small\item\em size of each subdomain along the a-\/axis \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classdomdec_a8f096ca3b8d296c40a28eb015490f11c}{nb\-\_\-box}
+\begin{DoxyCompactList}\small\item\em size of each subdomain along the b-\/axis \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classdomdec_a9fd61bdb5b4eba47980730d881363787}{nc\-\_\-box}
+\begin{DoxyCompactList}\small\item\em size of each subdomain along the c-\/axis \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classdomdec_a1faa8e227097e532c46ee84194d04b47}{scala}
+\begin{DoxyCompactList}\small\item\em factor for triclinic domain decomposition along the a-\/axis \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classdomdec_a23f02d2e4ca2feba1b70a3d4d5c15f2b}{scalb}
+\begin{DoxyCompactList}\small\item\em factor for triclinic domain decomposition along the b-\/axis \end{DoxyCompactList}\item 
+real $\ast$8 \hyperlink{classdomdec_a5176236515e982fadc86d9efe2b8782f}{scalc}
+\begin{DoxyCompactList}\small\item\em factor for triclinic domain decomposition along the c-\/axis \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_aa8643c5e6b0645ac75284c7efe4f34d1}{zbegproc}
+\begin{DoxyCompactList}\small\item\em z coordinate of the beginning of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_abe04500dc8986693d1cf4aea49441a39}{zendproc}
+\begin{DoxyCompactList}\small\item\em z coordinate of the end of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_a263ad8d8a74766cf8e38f798d814b1d2}{ybegproc}
+\begin{DoxyCompactList}\small\item\em y coordinate of the beginning of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_ae0cd9f6b6f40a123f8332cccae7d4cc1}{yendproc}
+\begin{DoxyCompactList}\small\item\em y coordinate of the end of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_acf6c7964e86a91e7727f69aa2e00df61}{xbegproc}
+\begin{DoxyCompactList}\small\item\em x coordinate of the beginning of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_a2a7289d6a16677c917c732f0eddf76f1}{xendproc}
+\begin{DoxyCompactList}\small\item\em x coordinate of the end of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_a46373c0f7de529f851998ff815e9668b}{abegproc}
+\begin{DoxyCompactList}\small\item\em a coordinate of the beginning of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_a2ea87a3cfae5a30a0bc8c6bfc5df1d3d}{aendproc}
+\begin{DoxyCompactList}\small\item\em a coordinate of the end of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_aef7dcbfb9b97d34a3a5120ef84a43202}{bbegproc}
+\begin{DoxyCompactList}\small\item\em b coordinate of the beginning of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_a91b8366b4147ad59a1bb1f2f3ac2b193}{bendproc}
+\begin{DoxyCompactList}\small\item\em b coordinate of the end of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_a2e88f8020b2ae7a7a37fded2d39153a3}{cbegproc}
+\begin{DoxyCompactList}\small\item\em c coordinate of the beginning of each domain \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdomdec_a50ae6442cb7d2c0f772f728601e5efbc}{cendproc}
+\begin{DoxyCompactList}\small\item\em c coordinate of the end of each domain \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 119 of file M\-O\-D\-\_\-domdec.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classdomdec_a46373c0f7de529f851998ff815e9668b}{\index{domdec@{domdec}!abegproc@{abegproc}}
+\index{abegproc@{abegproc}!domdec@{domdec}}
+\subsubsection[{abegproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::abegproc}}\label{classdomdec_a46373c0f7de529f851998ff815e9668b}
+
+
+a coordinate of the beginning of each domain 
+
+
+
+Definition at line 222 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a2ea87a3cfae5a30a0bc8c6bfc5df1d3d}{\index{domdec@{domdec}!aendproc@{aendproc}}
+\index{aendproc@{aendproc}!domdec@{domdec}}
+\subsubsection[{aendproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::aendproc}}\label{classdomdec_a2ea87a3cfae5a30a0bc8c6bfc5df1d3d}
+
+
+a coordinate of the end of each domain 
+
+
+
+Definition at line 223 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aef7dcbfb9b97d34a3a5120ef84a43202}{\index{domdec@{domdec}!bbegproc@{bbegproc}}
+\index{bbegproc@{bbegproc}!domdec@{domdec}}
+\subsubsection[{bbegproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::bbegproc}}\label{classdomdec_aef7dcbfb9b97d34a3a5120ef84a43202}
+
+
+b coordinate of the beginning of each domain 
+
+
+
+Definition at line 224 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a91b8366b4147ad59a1bb1f2f3ac2b193}{\index{domdec@{domdec}!bendproc@{bendproc}}
+\index{bendproc@{bendproc}!domdec@{domdec}}
+\subsubsection[{bendproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::bendproc}}\label{classdomdec_a91b8366b4147ad59a1bb1f2f3ac2b193}
+
+
+b coordinate of the end of each domain 
+
+
+
+Definition at line 225 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a7d90558349e9925b91eb336db7059b8d}{\index{domdec@{domdec}!buf1@{buf1}}
+\index{buf1@{buf1}!domdec@{domdec}}
+\subsubsection[{buf1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::buf1}}\label{classdomdec_a7d90558349e9925b91eb336db7059b8d}
+
+
+list of atoms concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 208 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a0defed117c2c62aa11dd777d8748b6de}{\index{domdec@{domdec}!buf2@{buf2}}
+\index{buf2@{buf2}!domdec@{domdec}}
+\subsubsection[{buf2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::buf2}}\label{classdomdec_a0defed117c2c62aa11dd777d8748b6de}
+
+
+list of atoms concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 209 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ae9894e09bab77f6e5c9bd85833d955b9}{\index{domdec@{domdec}!bufbeg@{bufbeg}}
+\index{bufbeg@{bufbeg}!domdec@{domdec}}
+\subsubsection[{bufbeg}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::bufbeg}}\label{classdomdec_ae9894e09bab77f6e5c9bd85833d955b9}
+
+
+index of the first atom concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 201 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a0da0b0f870e5a272cd7af8a6a7b8d393}{\index{domdec@{domdec}!bufbeg1@{bufbeg1}}
+\index{bufbeg1@{bufbeg1}!domdec@{domdec}}
+\subsubsection[{bufbeg1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::bufbeg1}}\label{classdomdec_a0da0b0f870e5a272cd7af8a6a7b8d393}
+
+
+index of the first atom concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 206 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a00263858ce6582864a5ed17d590b8e7a}{\index{domdec@{domdec}!bufbeg2@{bufbeg2}}
+\index{bufbeg2@{bufbeg2}!domdec@{domdec}}
+\subsubsection[{bufbeg2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::bufbeg2}}\label{classdomdec_a00263858ce6582864a5ed17d590b8e7a}
+
+
+index of the first atom concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 207 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ade41bd5550ac0d2a5a7af786b4a7607e}{\index{domdec@{domdec}!bufbegpole@{bufbegpole}}
+\index{bufbegpole@{bufbegpole}!domdec@{domdec}}
+\subsubsection[{bufbegpole}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::bufbegpole}}\label{classdomdec_ade41bd5550ac0d2a5a7af786b4a7607e}
+
+
+index of the first multipole concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 202 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_af1a239b39d8aba8af456077bf0fe2eb9}{\index{domdec@{domdec}!bufbegrec@{bufbegrec}}
+\index{bufbegrec@{bufbegrec}!domdec@{domdec}}
+\subsubsection[{bufbegrec}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::bufbegrec}}\label{classdomdec_af1a239b39d8aba8af456077bf0fe2eb9}
+
+
+index of the first reciprocal multipole concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 203 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a8ad5403cf1da77b23f0dc43e220a8f1d}{\index{domdec@{domdec}!buflen1@{buflen1}}
+\index{buflen1@{buflen1}!domdec@{domdec}}
+\subsubsection[{buflen1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::buflen1}}\label{classdomdec_a8ad5403cf1da77b23f0dc43e220a8f1d}
+
+
+number of atoms concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 204 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_adde65e323deb64b0d4531cf1d930b4a9}{\index{domdec@{domdec}!buflen2@{buflen2}}
+\index{buflen2@{buflen2}!domdec@{domdec}}
+\subsubsection[{buflen2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::buflen2}}\label{classdomdec_adde65e323deb64b0d4531cf1d930b4a9}
+
+
+number of atoms concerned by each process for direct reciprocal atomic correspondance for polarization solvers 
+
+
+
+Definition at line 205 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a2e88f8020b2ae7a7a37fded2d39153a3}{\index{domdec@{domdec}!cbegproc@{cbegproc}}
+\index{cbegproc@{cbegproc}!domdec@{domdec}}
+\subsubsection[{cbegproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::cbegproc}}\label{classdomdec_a2e88f8020b2ae7a7a37fded2d39153a3}
+
+
+c coordinate of the beginning of each domain 
+
+
+
+Definition at line 226 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a50ae6442cb7d2c0f772f728601e5efbc}{\index{domdec@{domdec}!cendproc@{cendproc}}
+\index{cendproc@{cendproc}!domdec@{domdec}}
+\subsubsection[{cendproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::cendproc}}\label{classdomdec_a50ae6442cb7d2c0f772f728601e5efbc}
+
+
+c coordinate of the end of each domain 
+
+
+
+Definition at line 227 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a383993116087900b4f889f3f077dc01d}{\index{domdec@{domdec}!comm\-\_\-dir@{comm\-\_\-dir}}
+\index{comm\-\_\-dir@{comm\-\_\-dir}!domdec@{domdec}}
+\subsubsection[{comm\-\_\-dir}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::comm\-\_\-dir}}\label{classdomdec_a383993116087900b4f889f3f077dc01d}
+
+
+M\-P\-I group communicator associated to the direct space. 
+
+
+
+Definition at line 134 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ad5faf93f8356aea734a9ed5012fb597b}{\index{domdec@{domdec}!comm\-\_\-polymer@{comm\-\_\-polymer}}
+\index{comm\-\_\-polymer@{comm\-\_\-polymer}!domdec@{domdec}}
+\subsubsection[{comm\-\_\-polymer}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::comm\-\_\-polymer}}\label{classdomdec_ad5faf93f8356aea734a9ed5012fb597b}
+
+
+M\-P\-I group communicator associated to the P\-I\-M\-D parallelism. 
+
+
+
+Definition at line 135 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a046ed439b4f62f80be0e38736896da25}{\index{domdec@{domdec}!comm\-\_\-rec@{comm\-\_\-rec}}
+\index{comm\-\_\-rec@{comm\-\_\-rec}!domdec@{domdec}}
+\subsubsection[{comm\-\_\-rec}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::comm\-\_\-rec}}\label{classdomdec_a046ed439b4f62f80be0e38736896da25}
+
+
+M\-P\-I group communicator associated to the reciprocal space. 
+
+
+
+Definition at line 133 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a1c86489abc12bf273ebe35d2e95e5a97}{\index{domdec@{domdec}!comm\-\_\-tinker@{comm\-\_\-tinker}}
+\index{comm\-\_\-tinker@{comm\-\_\-tinker}!domdec@{domdec}}
+\subsubsection[{comm\-\_\-tinker}]{\setlength{\rightskip}{0pt plus 5cm}integer, target domdec\-::comm\-\_\-tinker}}\label{classdomdec_a1c86489abc12bf273ebe35d2e95e5a97}
+
+
+local M\-P\-I communicator in which a dynamic, analyze, testgrad or minimize run will take place 
+
+
+
+Definition at line 126 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a558b181b6a0bbd65a74c4525ff5de2de}{\index{domdec@{domdec}!domlen@{domlen}}
+\index{domlen@{domlen}!domdec@{domdec}}
+\subsubsection[{domlen}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::domlen}}\label{classdomdec_a558b181b6a0bbd65a74c4525ff5de2de}
+
+
+number of atoms in the domains 
+
+
+
+Definition at line 169 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_af2817bfda7f51346104df393ac0549a7}{\index{domdec@{domdec}!domlenpole@{domlenpole}}
+\index{domlenpole@{domlenpole}!domdec@{domdec}}
+\subsubsection[{domlenpole}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::domlenpole}}\label{classdomdec_af2817bfda7f51346104df393ac0549a7}
+
+
+number of multipoles in the domains 
+
+
+
+Definition at line 171 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a44f522e557be333b75aac44b3ec5b28b}{\index{domdec@{domdec}!domlenpolerec@{domlenpolerec}}
+\index{domlenpolerec@{domlenpolerec}!domdec@{domdec}}
+\subsubsection[{domlenpolerec}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::domlenpolerec}}\label{classdomdec_a44f522e557be333b75aac44b3ec5b28b}
+
+
+number of multipoles in the reciprocal domains 
+
+
+
+Definition at line 172 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aa797f77d936208ae42bc625d8a581f9f}{\index{domdec@{domdec}!domlenrec@{domlenrec}}
+\index{domlenrec@{domlenrec}!domdec@{domdec}}
+\subsubsection[{domlenrec}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::domlenrec}}\label{classdomdec_aa797f77d936208ae42bc625d8a581f9f}
+
+
+number of reciprocal atoms in the reciprocal domains 
+
+
+
+Definition at line 170 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a911e9f8522f16f4a96ca6b9ced522ea2}{\index{domdec@{domdec}!glob@{glob}}
+\index{glob@{glob}!domdec@{domdec}}
+\subsubsection[{glob}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::glob}}\label{classdomdec_a911e9f8522f16f4a96ca6b9ced522ea2}
+
+
+local-\/global correspondance 
+
+
+
+Definition at line 193 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a38e7d056926314b002bd5a212584ff11}{\index{domdec@{domdec}!globrec@{globrec}}
+\index{globrec@{globrec}!domdec@{domdec}}
+\subsubsection[{globrec}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::globrec}}\label{classdomdec_a38e7d056926314b002bd5a212584ff11}
+
+
+local-\/global reciprocal correspondance 
+
+
+
+Definition at line 195 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a006e80bdb6f5a7397a372768683257b2}{\index{domdec@{domdec}!hostcomm@{hostcomm}}
+\index{hostcomm@{hostcomm}!domdec@{domdec}}
+\subsubsection[{hostcomm}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::hostcomm}}\label{classdomdec_a006e80bdb6f5a7397a372768683257b2}
+
+
+M\-P\-I communicator within each node. 
+
+
+
+Definition at line 139 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ad66c1bf2823b5f06138088c6bee198be}{\index{domdec@{domdec}!hostrank@{hostrank}}
+\index{hostrank@{hostrank}!domdec@{domdec}}
+\subsubsection[{hostrank}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::hostrank}}\label{classdomdec_ad66c1bf2823b5f06138088c6bee198be}
+
+
+M\-P\-I rank within each node. 
+
+
+
+Definition at line 138 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aab28c270e201c2fea1dae1fe969ef66f}{\index{domdec@{domdec}!loc@{loc}}
+\index{loc@{loc}!domdec@{domdec}}
+\subsubsection[{loc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::loc}}\label{classdomdec_aab28c270e201c2fea1dae1fe969ef66f}
+
+
+global-\/local correspondance 
+
+
+
+Definition at line 194 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a881232db39ab98dcfb865d753170a69e}{\index{domdec@{domdec}!locrec@{locrec}}
+\index{locrec@{locrec}!domdec@{domdec}}
+\subsubsection[{locrec}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::locrec}}\label{classdomdec_a881232db39ab98dcfb865d753170a69e}
+
+
+global-\/local reciprocal correspondance 
+
+
+
+Definition at line 196 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_acd38a6940b147be68ded2ad9b20370f2}{\index{domdec@{domdec}!n\-\_\-recep1@{n\-\_\-recep1}}
+\index{n\-\_\-recep1@{n\-\_\-recep1}!domdec@{domdec}}
+\subsubsection[{n\-\_\-recep1}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::n\-\_\-recep1}}\label{classdomdec_acd38a6940b147be68ded2ad9b20370f2}
+
+
+number of M\-P\-I process to receive positions from to compute electrostatic interactions 
+
+
+
+Definition at line 140 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_abe55b19e68b835314f58393f920e9272}{\index{domdec@{domdec}!n\-\_\-recep2@{n\-\_\-recep2}}
+\index{n\-\_\-recep2@{n\-\_\-recep2}!domdec@{domdec}}
+\subsubsection[{n\-\_\-recep2}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::n\-\_\-recep2}}\label{classdomdec_abe55b19e68b835314f58393f920e9272}
+
+
+number of M\-P\-I process to receive positions from to compute vdw interactions 
+
+
+
+Definition at line 144 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a88b84c15a29f8f4e25738fffb5027497}{\index{domdec@{domdec}!n\-\_\-recepshort1@{n\-\_\-recepshort1}}
+\index{n\-\_\-recepshort1@{n\-\_\-recepshort1}!domdec@{domdec}}
+\subsubsection[{n\-\_\-recepshort1}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::n\-\_\-recepshort1}}\label{classdomdec_a88b84c15a29f8f4e25738fffb5027497}
+
+
+number of M\-P\-I process to receive positions from to compute short range electrostatic interactions 
+
+
+
+Definition at line 150 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_afdbf4a84ec151ba26b0b1112fc28b811}{\index{domdec@{domdec}!n\-\_\-recepshort2@{n\-\_\-recepshort2}}
+\index{n\-\_\-recepshort2@{n\-\_\-recepshort2}!domdec@{domdec}}
+\subsubsection[{n\-\_\-recepshort2}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::n\-\_\-recepshort2}}\label{classdomdec_afdbf4a84ec151ba26b0b1112fc28b811}
+
+
+number of M\-P\-I process to receive positions from to compute short range vdw interactions 
+
+
+
+Definition at line 152 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aa8487a458ef4e84212822190663db9a8}{\index{domdec@{domdec}!n\-\_\-send1@{n\-\_\-send1}}
+\index{n\-\_\-send1@{n\-\_\-send1}!domdec@{domdec}}
+\subsubsection[{n\-\_\-send1}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::n\-\_\-send1}}\label{classdomdec_aa8487a458ef4e84212822190663db9a8}
+
+
+number of M\-P\-I process to send positions to to compute electrostatic interactions 
+
+
+
+Definition at line 141 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a0f486e85808300fa8cc875848802e6bb}{\index{domdec@{domdec}!n\-\_\-send2@{n\-\_\-send2}}
+\index{n\-\_\-send2@{n\-\_\-send2}!domdec@{domdec}}
+\subsubsection[{n\-\_\-send2}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::n\-\_\-send2}}\label{classdomdec_a0f486e85808300fa8cc875848802e6bb}
+
+
+number of M\-P\-I process to send positions to to compute vdw interactions 
+
+
+
+Definition at line 145 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a10cc7f1b63fcc120ac78969e44d907fa}{\index{domdec@{domdec}!n\-\_\-sendshort1@{n\-\_\-sendshort1}}
+\index{n\-\_\-sendshort1@{n\-\_\-sendshort1}!domdec@{domdec}}
+\subsubsection[{n\-\_\-sendshort1}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::n\-\_\-sendshort1}}\label{classdomdec_a10cc7f1b63fcc120ac78969e44d907fa}
+
+
+number of M\-P\-I process to send positions to to compute short range electrostatic interactions 
+
+
+
+Definition at line 151 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a2a12a88a8fa8070ba62c13604c01a8b7}{\index{domdec@{domdec}!n\-\_\-sendshort2@{n\-\_\-sendshort2}}
+\index{n\-\_\-sendshort2@{n\-\_\-sendshort2}!domdec@{domdec}}
+\subsubsection[{n\-\_\-sendshort2}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::n\-\_\-sendshort2}}\label{classdomdec_a2a12a88a8fa8070ba62c13604c01a8b7}
+
+
+number of M\-P\-I process to send positions to to compute short range vdw interactions 
+
+
+
+Definition at line 153 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a6fbb2670015481430ce47e763a530408}{\index{domdec@{domdec}!na\-\_\-box@{na\-\_\-box}}
+\index{na\-\_\-box@{na\-\_\-box}!domdec@{domdec}}
+\subsubsection[{na\-\_\-box}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 domdec\-::na\-\_\-box}}\label{classdomdec_a6fbb2670015481430ce47e763a530408}
+
+
+size of each subdomain along the a-\/axis 
+
+
+
+Definition at line 210 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a8f096ca3b8d296c40a28eb015490f11c}{\index{domdec@{domdec}!nb\-\_\-box@{nb\-\_\-box}}
+\index{nb\-\_\-box@{nb\-\_\-box}!domdec@{domdec}}
+\subsubsection[{nb\-\_\-box}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 domdec\-::nb\-\_\-box}}\label{classdomdec_a8f096ca3b8d296c40a28eb015490f11c}
+
+
+size of each subdomain along the b-\/axis 
+
+
+
+Definition at line 211 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ab07069ab2af1699dc506c4cd10c24a83}{\index{domdec@{domdec}!nbig\-\_\-recep@{nbig\-\_\-recep}}
+\index{nbig\-\_\-recep@{nbig\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{nbig\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nbig\-\_\-recep}}\label{classdomdec_ab07069ab2af1699dc506c4cd10c24a83}
+
+
+number of M\-P\-I process to receive positions from to compute largest non bonded interactions 
+
+
+
+Definition at line 158 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a259cec691f627989c92b56e625e5dc79}{\index{domdec@{domdec}!nbig\-\_\-send@{nbig\-\_\-send}}
+\index{nbig\-\_\-send@{nbig\-\_\-send}!domdec@{domdec}}
+\subsubsection[{nbig\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nbig\-\_\-send}}\label{classdomdec_a259cec691f627989c92b56e625e5dc79}
+
+
+number of M\-P\-I process to send positions to to compute largest non bonded interactions 
+
+
+
+Definition at line 159 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ad95084fcf28a5965b0e5ad423ee0697f}{\index{domdec@{domdec}!nbigshort\-\_\-recep@{nbigshort\-\_\-recep}}
+\index{nbigshort\-\_\-recep@{nbigshort\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{nbigshort\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nbigshort\-\_\-recep}}\label{classdomdec_ad95084fcf28a5965b0e5ad423ee0697f}
+
+
+number of M\-P\-I process to receive positions from to compute largest short range non bonded interactions 
+
+
+
+Definition at line 160 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a7b930faf1e5cfbfc5f71442a81f49dbb}{\index{domdec@{domdec}!nbigshort\-\_\-send@{nbigshort\-\_\-send}}
+\index{nbigshort\-\_\-send@{nbigshort\-\_\-send}!domdec@{domdec}}
+\subsubsection[{nbigshort\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nbigshort\-\_\-send}}\label{classdomdec_a7b930faf1e5cfbfc5f71442a81f49dbb}
+
+
+number of M\-P\-I process to send positions to to compute largest short range non bonded interactions 
+
+
+
+Definition at line 161 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aa10da3a10adb24dfdbcb8ce13d4d3883}{\index{domdec@{domdec}!nbloc@{nbloc}}
+\index{nbloc@{nbloc}!domdec@{domdec}}
+\subsubsection[{nbloc}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nbloc}}\label{classdomdec_aa10da3a10adb24dfdbcb8ce13d4d3883}
+
+
+local + neighbors number of atoms 
+
+
+
+Definition at line 162 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a597fdf38e68a3e3e120320f814fcc12e}{\index{domdec@{domdec}!nblocloop@{nblocloop}}
+\index{nblocloop@{nblocloop}!domdec@{domdec}}
+\subsubsection[{nblocloop}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nblocloop}}\label{classdomdec_a597fdf38e68a3e3e120320f814fcc12e}
+
+
+variable number of atoms 
+
+
+
+Definition at line 168 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aba62c8c31213bb0025d171e5e2adb210}{\index{domdec@{domdec}!nblocrecdir@{nblocrecdir}}
+\index{nblocrecdir@{nblocrecdir}!domdec@{domdec}}
+\subsubsection[{nblocrecdir}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nblocrecdir}}\label{classdomdec_aba62c8c31213bb0025d171e5e2adb210}
+
+
+local + neighbors direct+reciprocal number of atoms 
+
+
+
+Definition at line 167 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a9fd61bdb5b4eba47980730d881363787}{\index{domdec@{domdec}!nc\-\_\-box@{nc\-\_\-box}}
+\index{nc\-\_\-box@{nc\-\_\-box}!domdec@{domdec}}
+\subsubsection[{nc\-\_\-box}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 domdec\-::nc\-\_\-box}}\label{classdomdec_a9fd61bdb5b4eba47980730d881363787}
+
+
+size of each subdomain along the c-\/axis 
+
+
+
+Definition at line 212 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ae5edf3757894f9397d3d4f603eb2d076}{\index{domdec@{domdec}!ndir@{ndir}}
+\index{ndir@{ndir}!domdec@{domdec}}
+\subsubsection[{ndir}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::ndir}}\label{classdomdec_ae5edf3757894f9397d3d4f603eb2d076}
+
+
+number of processes assigned to the computation of direct space contribution 
+
+
+
+Definition at line 132 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a9ce080b6f61843bfcf7f9a11a90a7ba5}{\index{domdec@{domdec}!nloc@{nloc}}
+\index{nloc@{nloc}!domdec@{domdec}}
+\subsubsection[{nloc}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nloc}}\label{classdomdec_a9ce080b6f61843bfcf7f9a11a90a7ba5}
+
+
+local number of atoms 
+
+
+
+Definition at line 163 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a7b54734f2525070176f359438cc508fa}{\index{domdec@{domdec}!nlocnl@{nlocnl}}
+\index{nlocnl@{nlocnl}!domdec@{domdec}}
+\subsubsection[{nlocnl}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nlocnl}}\label{classdomdec_a7b54734f2525070176f359438cc508fa}
+
+
+local nl number of atoms 
+
+
+
+Definition at line 166 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a15d118ab39f277c8787003cda8a222d2}{\index{domdec@{domdec}!nlocrec@{nlocrec}}
+\index{nlocrec@{nlocrec}!domdec@{domdec}}
+\subsubsection[{nlocrec}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nlocrec}}\label{classdomdec_a15d118ab39f277c8787003cda8a222d2}
+
+
+local reciprocal number of atoms 
+
+
+
+Definition at line 164 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a611d883dfaae5395b468ac03b000e572}{\index{domdec@{domdec}!nlocrec2@{nlocrec2}}
+\index{nlocrec2@{nlocrec2}!domdec@{domdec}}
+\subsubsection[{nlocrec2}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nlocrec2}}\label{classdomdec_a611d883dfaae5395b468ac03b000e572}
+
+
+local + reciprocal neighbors number of atoms 
+
+
+
+Definition at line 165 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a364fed03b8d34d58abb5a2b4708ea05f}{\index{domdec@{domdec}!nneig\-\_\-recep@{nneig\-\_\-recep}}
+\index{nneig\-\_\-recep@{nneig\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{nneig\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nneig\-\_\-recep}}\label{classdomdec_a364fed03b8d34d58abb5a2b4708ea05f}
+
+
+number of M\-P\-I process to receive positions from to compute bonded interactions 
+
+
+
+Definition at line 154 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_afa246e161fb21768b484c151b3866631}{\index{domdec@{domdec}!nneig\-\_\-send@{nneig\-\_\-send}}
+\index{nneig\-\_\-send@{nneig\-\_\-send}!domdec@{domdec}}
+\subsubsection[{nneig\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nneig\-\_\-send}}\label{classdomdec_afa246e161fb21768b484c151b3866631}
+
+
+number of M\-P\-I process to send positions to to compute bonded interactions 
+
+
+
+Definition at line 155 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ad386ac278e357dd9bc1034b2b3cc04fc}{\index{domdec@{domdec}!nproc@{nproc}}
+\index{nproc@{nproc}!domdec@{domdec}}
+\subsubsection[{nproc}]{\setlength{\rightskip}{0pt plus 5cm}integer, target domdec\-::nproc}}\label{classdomdec_ad386ac278e357dd9bc1034b2b3cc04fc}
+
+
+number of M\-P\-I processes during a dynamic, analyze, testgrad or minimize run 
+
+
+
+Definition at line 127 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a26e164f3a2e4deb7d3019cca4530085b}{\index{domdec@{domdec}!nproc\-\_\-polymer@{nproc\-\_\-polymer}}
+\index{nproc\-\_\-polymer@{nproc\-\_\-polymer}!domdec@{domdec}}
+\subsubsection[{nproc\-\_\-polymer}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nproc\-\_\-polymer}}\label{classdomdec_a26e164f3a2e4deb7d3019cca4530085b}
+
+
+number of procs within C\-O\-M\-M\-\_\-\-P\-O\-L\-Y\-M\-E\-R 
+
+
+
+Definition at line 137 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a77ce93de77d93f248287dfd4f89e64cc}{\index{domdec@{domdec}!nproctot@{nproctot}}
+\index{nproctot@{nproctot}!domdec@{domdec}}
+\subsubsection[{nproctot}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nproctot}}\label{classdomdec_a77ce93de77d93f248287dfd4f89e64cc}
+
+
+total number of M\-P\-I process (within M\-P\-I\-\_\-\-C\-O\-M\-M\-\_\-\-W\-O\-R\-L\-D) 
+
+
+
+Definition at line 124 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a70bead05b01696a0ee6be95ecd7fd9ea}{\index{domdec@{domdec}!nrec@{nrec}}
+\index{nrec@{nrec}!domdec@{domdec}}
+\subsubsection[{nrec}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrec}}\label{classdomdec_a70bead05b01696a0ee6be95ecd7fd9ea}
+
+
+number of processes assigned to the computation of reciprocal space contribution 
+
+
+
+Definition at line 131 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a5f5bedc0c1ff6f221a8d5962dacd02ca}{\index{domdec@{domdec}!nrec\-\_\-recep@{nrec\-\_\-recep}}
+\index{nrec\-\_\-recep@{nrec\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{nrec\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrec\-\_\-recep}}\label{classdomdec_a5f5bedc0c1ff6f221a8d5962dacd02ca}
+
+
+number of M\-P\-I process to receive positions from to compute reciprocal interactions 
+
+
+
+Definition at line 142 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a241ed59d98796089944cc13db0db566b}{\index{domdec@{domdec}!nrec\-\_\-send@{nrec\-\_\-send}}
+\index{nrec\-\_\-send@{nrec\-\_\-send}!domdec@{domdec}}
+\subsubsection[{nrec\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrec\-\_\-send}}\label{classdomdec_a241ed59d98796089944cc13db0db566b}
+
+
+number of M\-P\-I process to send positions to to compute reciprocal interactions 
+
+
+
+Definition at line 143 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a5aeb41a854f8678a4751145d51b6c3ab}{\index{domdec@{domdec}!nrecdir\-\_\-recep@{nrecdir\-\_\-recep}}
+\index{nrecdir\-\_\-recep@{nrecdir\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{nrecdir\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrecdir\-\_\-recep}}\label{classdomdec_a5aeb41a854f8678a4751145d51b6c3ab}
+
+
+number of M\-P\-I process to receive positions from to compute reciprocal interactions (recip-\/direct communications) 
+
+
+
+Definition at line 146 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a542f5d5bbc9198e5190417cf45390b81}{\index{domdec@{domdec}!nrecdir\-\_\-recep1@{nrecdir\-\_\-recep1}}
+\index{nrecdir\-\_\-recep1@{nrecdir\-\_\-recep1}!domdec@{domdec}}
+\subsubsection[{nrecdir\-\_\-recep1}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrecdir\-\_\-recep1}}\label{classdomdec_a542f5d5bbc9198e5190417cf45390b81}
+
+
+number of M\-P\-I process to receive positions from to compute reciprocal interactions 
+
+
+
+Definition at line 156 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aa19f1045696509fac6e8b872424a332f}{\index{domdec@{domdec}!nrecdir\-\_\-recep2@{nrecdir\-\_\-recep2}}
+\index{nrecdir\-\_\-recep2@{nrecdir\-\_\-recep2}!domdec@{domdec}}
+\subsubsection[{nrecdir\-\_\-recep2}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrecdir\-\_\-recep2}}\label{classdomdec_aa19f1045696509fac6e8b872424a332f}
+
+
+number of M\-P\-I process to receive positions from to compute reciprocal interactions, without proc already in precdir\-\_\-recep1 
+
+
+
+Definition at line 148 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ae3f9a9d0cf25f3d07550dd79ad9c84f8}{\index{domdec@{domdec}!nrecdir\-\_\-send@{nrecdir\-\_\-send}}
+\index{nrecdir\-\_\-send@{nrecdir\-\_\-send}!domdec@{domdec}}
+\subsubsection[{nrecdir\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrecdir\-\_\-send}}\label{classdomdec_ae3f9a9d0cf25f3d07550dd79ad9c84f8}
+
+
+number of M\-P\-I process to send positions to to compute reciprocal interactions (recip-\/direct communications) 
+
+
+
+Definition at line 147 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a4dffa155fb7b24a0e90c0c94e7d4fdeb}{\index{domdec@{domdec}!nrecdir\-\_\-send1@{nrecdir\-\_\-send1}}
+\index{nrecdir\-\_\-send1@{nrecdir\-\_\-send1}!domdec@{domdec}}
+\subsubsection[{nrecdir\-\_\-send1}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrecdir\-\_\-send1}}\label{classdomdec_a4dffa155fb7b24a0e90c0c94e7d4fdeb}
+
+
+number of M\-P\-I process to send positions to to compute reciprocal interactions 
+
+
+
+Definition at line 157 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a399f832dbe50a87ea3cfd222b65eabfb}{\index{domdec@{domdec}!nrecdir\-\_\-send2@{nrecdir\-\_\-send2}}
+\index{nrecdir\-\_\-send2@{nrecdir\-\_\-send2}!domdec@{domdec}}
+\subsubsection[{nrecdir\-\_\-send2}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nrecdir\-\_\-send2}}\label{classdomdec_a399f832dbe50a87ea3cfd222b65eabfb}
+
+
+number of M\-P\-I process to send positions to to compute reciprocal interactions, without proc already in precdir\-\_\-send1 
+
+
+
+Definition at line 149 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ad51e73bb1764f6f3e48bce4c4b6636ff}{\index{domdec@{domdec}!nthread@{nthread}}
+\index{nthread@{nthread}!domdec@{domdec}}
+\subsubsection[{nthread}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nthread}}\label{classdomdec_ad51e73bb1764f6f3e48bce4c4b6636ff}
+
+
+number of threads to be used with Open\-M\-P 
+
+
+
+Definition at line 130 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a867d499309342702baee7bd2f4dd72ae}{\index{domdec@{domdec}!nxdd@{nxdd}}
+\index{nxdd@{nxdd}!domdec@{domdec}}
+\subsubsection[{nxdd}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nxdd}}\label{classdomdec_a867d499309342702baee7bd2f4dd72ae}
+
+
+number of subdivisions along the x axis 
+
+
+
+Definition at line 121 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a6811e1e01bd9ca743778b5dd16be7675}{\index{domdec@{domdec}!nydd@{nydd}}
+\index{nydd@{nydd}!domdec@{domdec}}
+\subsubsection[{nydd}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nydd}}\label{classdomdec_a6811e1e01bd9ca743778b5dd16be7675}
+
+
+number of subdivisions along the y axis 
+
+
+
+Definition at line 122 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ae136589c89f0840e0c70674031d3b777}{\index{domdec@{domdec}!nzdd@{nzdd}}
+\index{nzdd@{nzdd}!domdec@{domdec}}
+\subsubsection[{nzdd}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::nzdd}}\label{classdomdec_ae136589c89f0840e0c70674031d3b777}
+
+
+number of subdivisions along the z axis 
+
+
+
+Definition at line 123 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aecd0d700c25dd92b90c3aff9ef2675d7}{\index{domdec@{domdec}!p\-\_\-recep1@{p\-\_\-recep1}}
+\index{p\-\_\-recep1@{p\-\_\-recep1}!domdec@{domdec}}
+\subsubsection[{p\-\_\-recep1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::p\-\_\-recep1}}\label{classdomdec_aecd0d700c25dd92b90c3aff9ef2675d7}
+
+
+list of processes associated with n\-\_\-recep1 
+
+
+
+Definition at line 173 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a713d6b0f5bb76b694b14d466e89e29dd}{\index{domdec@{domdec}!p\-\_\-recep2@{p\-\_\-recep2}}
+\index{p\-\_\-recep2@{p\-\_\-recep2}!domdec@{domdec}}
+\subsubsection[{p\-\_\-recep2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::p\-\_\-recep2}}\label{classdomdec_a713d6b0f5bb76b694b14d466e89e29dd}
+
+
+list of processes associated with n\-\_\-recep2 
+
+
+
+Definition at line 175 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a1dfc2e20e70c2f2071d5426210da1ed8}{\index{domdec@{domdec}!p\-\_\-recepshort1@{p\-\_\-recepshort1}}
+\index{p\-\_\-recepshort1@{p\-\_\-recepshort1}!domdec@{domdec}}
+\subsubsection[{p\-\_\-recepshort1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::p\-\_\-recepshort1}}\label{classdomdec_a1dfc2e20e70c2f2071d5426210da1ed8}
+
+
+list of processes associated with n\-\_\-recepshort1 
+
+
+
+Definition at line 177 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a1ca125848ba21ab0b69170dbb7b55a06}{\index{domdec@{domdec}!p\-\_\-recepshort2@{p\-\_\-recepshort2}}
+\index{p\-\_\-recepshort2@{p\-\_\-recepshort2}!domdec@{domdec}}
+\subsubsection[{p\-\_\-recepshort2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::p\-\_\-recepshort2}}\label{classdomdec_a1ca125848ba21ab0b69170dbb7b55a06}
+
+
+list of processes associated with n\-\_\-recepshort2 
+
+
+
+Definition at line 179 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a1d393373b27051c32983ecf341da6163}{\index{domdec@{domdec}!p\-\_\-send1@{p\-\_\-send1}}
+\index{p\-\_\-send1@{p\-\_\-send1}!domdec@{domdec}}
+\subsubsection[{p\-\_\-send1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::p\-\_\-send1}}\label{classdomdec_a1d393373b27051c32983ecf341da6163}
+
+
+list of processes associated with n\-\_\-send1 
+
+
+
+Definition at line 174 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a8323226a166ccbe0958fcb23e40e8ea3}{\index{domdec@{domdec}!p\-\_\-send2@{p\-\_\-send2}}
+\index{p\-\_\-send2@{p\-\_\-send2}!domdec@{domdec}}
+\subsubsection[{p\-\_\-send2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::p\-\_\-send2}}\label{classdomdec_a8323226a166ccbe0958fcb23e40e8ea3}
+
+
+list of processes associated with n\-\_\-send2 
+
+
+
+Definition at line 176 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a1160480c1dedc45c50370302ac8df4cb}{\index{domdec@{domdec}!p\-\_\-sendshort1@{p\-\_\-sendshort1}}
+\index{p\-\_\-sendshort1@{p\-\_\-sendshort1}!domdec@{domdec}}
+\subsubsection[{p\-\_\-sendshort1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::p\-\_\-sendshort1}}\label{classdomdec_a1160480c1dedc45c50370302ac8df4cb}
+
+
+list of processes associated with n\-\_\-sendshort1 
+
+
+
+Definition at line 178 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a4307c5b3e7ed134c6ff12f02074a1841}{\index{domdec@{domdec}!p\-\_\-sendshort2@{p\-\_\-sendshort2}}
+\index{p\-\_\-sendshort2@{p\-\_\-sendshort2}!domdec@{domdec}}
+\subsubsection[{p\-\_\-sendshort2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::p\-\_\-sendshort2}}\label{classdomdec_a4307c5b3e7ed134c6ff12f02074a1841}
+
+
+list of processes associated with n\-\_\-sendshort2 
+
+
+
+Definition at line 180 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a2d8dc7137683aeffdb639b128de9a68a}{\index{domdec@{domdec}!pbig\-\_\-recep@{pbig\-\_\-recep}}
+\index{pbig\-\_\-recep@{pbig\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{pbig\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::pbig\-\_\-recep}}\label{classdomdec_a2d8dc7137683aeffdb639b128de9a68a}
+
+
+list of processes associated with nbig\-\_\-recep 
+
+
+
+Definition at line 189 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_acb406c89cb7b4240f2e81ba5ecbed7e2}{\index{domdec@{domdec}!pbig\-\_\-send@{pbig\-\_\-send}}
+\index{pbig\-\_\-send@{pbig\-\_\-send}!domdec@{domdec}}
+\subsubsection[{pbig\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::pbig\-\_\-send}}\label{classdomdec_acb406c89cb7b4240f2e81ba5ecbed7e2}
+
+
+list of processes associated with nbig\-\_\-send 
+
+
+
+Definition at line 190 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a588c3664b18e8576817604627f1b8aef}{\index{domdec@{domdec}!pbigshort\-\_\-recep@{pbigshort\-\_\-recep}}
+\index{pbigshort\-\_\-recep@{pbigshort\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{pbigshort\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::pbigshort\-\_\-recep}}\label{classdomdec_a588c3664b18e8576817604627f1b8aef}
+
+
+list of processes associated with nbigshort\-\_\-recep 
+
+
+
+Definition at line 191 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a3de9da3bc58ffb96711e59d730a60f28}{\index{domdec@{domdec}!pbigshort\-\_\-send@{pbigshort\-\_\-send}}
+\index{pbigshort\-\_\-send@{pbigshort\-\_\-send}!domdec@{domdec}}
+\subsubsection[{pbigshort\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::pbigshort\-\_\-send}}\label{classdomdec_a3de9da3bc58ffb96711e59d730a60f28}
+
+
+list of processes associated with nbigshort\-\_\-send 
+
+
+
+Definition at line 192 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a720905850ac4cc7d180e0b6eb9a32c5d}{\index{domdec@{domdec}!pneig\-\_\-recep@{pneig\-\_\-recep}}
+\index{pneig\-\_\-recep@{pneig\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{pneig\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::pneig\-\_\-recep}}\label{classdomdec_a720905850ac4cc7d180e0b6eb9a32c5d}
+
+
+list of processes associated with nneig\-\_\-recep 
+
+
+
+Definition at line 181 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a2b90bf1f406fc3b495a131fb93aae791}{\index{domdec@{domdec}!pneig\-\_\-send@{pneig\-\_\-send}}
+\index{pneig\-\_\-send@{pneig\-\_\-send}!domdec@{domdec}}
+\subsubsection[{pneig\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::pneig\-\_\-send}}\label{classdomdec_a2b90bf1f406fc3b495a131fb93aae791}
+
+
+list of processes associated with nneig\-\_\-send 
+
+
+
+Definition at line 182 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a567096a53173ef0bbf5ab415f6ba4e70}{\index{domdec@{domdec}!prec\-\_\-recep@{prec\-\_\-recep}}
+\index{prec\-\_\-recep@{prec\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{prec\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::prec\-\_\-recep}}\label{classdomdec_a567096a53173ef0bbf5ab415f6ba4e70}
+
+
+list of processes associated with nrec\-\_\-recep 
+
+
+
+Definition at line 198 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ad353099c77cb5a206fbcd6fbca9cea8f}{\index{domdec@{domdec}!prec\-\_\-send@{prec\-\_\-send}}
+\index{prec\-\_\-send@{prec\-\_\-send}!domdec@{domdec}}
+\subsubsection[{prec\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::prec\-\_\-send}}\label{classdomdec_ad353099c77cb5a206fbcd6fbca9cea8f}
+
+
+list of processes associated with nrec\-\_\-send 
+
+
+
+Definition at line 197 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a9d4ef203aab7fcb23853f1094862b4da}{\index{domdec@{domdec}!precdir\-\_\-recep@{precdir\-\_\-recep}}
+\index{precdir\-\_\-recep@{precdir\-\_\-recep}!domdec@{domdec}}
+\subsubsection[{precdir\-\_\-recep}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::precdir\-\_\-recep}}\label{classdomdec_a9d4ef203aab7fcb23853f1094862b4da}
+
+
+list of processes associated with nrecdir\-\_\-recep 
+
+
+
+Definition at line 183 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_abd7674f40dc278e85d7a97360a487819}{\index{domdec@{domdec}!precdir\-\_\-recep1@{precdir\-\_\-recep1}}
+\index{precdir\-\_\-recep1@{precdir\-\_\-recep1}!domdec@{domdec}}
+\subsubsection[{precdir\-\_\-recep1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::precdir\-\_\-recep1}}\label{classdomdec_abd7674f40dc278e85d7a97360a487819}
+
+
+list of processes associated with nrecdir\-\_\-recep1 
+
+
+
+Definition at line 185 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a851d5a5f2c7eb233e9e3e54770d57f0f}{\index{domdec@{domdec}!precdir\-\_\-recep2@{precdir\-\_\-recep2}}
+\index{precdir\-\_\-recep2@{precdir\-\_\-recep2}!domdec@{domdec}}
+\subsubsection[{precdir\-\_\-recep2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::precdir\-\_\-recep2}}\label{classdomdec_a851d5a5f2c7eb233e9e3e54770d57f0f}
+
+
+list of processes associated with nrecdir\-\_\-recep2 
+
+
+
+Definition at line 187 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a197dc0ce20dbc808eecabcf74df5960c}{\index{domdec@{domdec}!precdir\-\_\-send@{precdir\-\_\-send}}
+\index{precdir\-\_\-send@{precdir\-\_\-send}!domdec@{domdec}}
+\subsubsection[{precdir\-\_\-send}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::precdir\-\_\-send}}\label{classdomdec_a197dc0ce20dbc808eecabcf74df5960c}
+
+
+list of processes associated with nrecdir\-\_\-send 
+
+
+
+Definition at line 184 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a7d3fe3da2fd8976c2169e00a21944c50}{\index{domdec@{domdec}!precdir\-\_\-send1@{precdir\-\_\-send1}}
+\index{precdir\-\_\-send1@{precdir\-\_\-send1}!domdec@{domdec}}
+\subsubsection[{precdir\-\_\-send1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::precdir\-\_\-send1}}\label{classdomdec_a7d3fe3da2fd8976c2169e00a21944c50}
+
+
+list of processes associated with nrecdir\-\_\-send1 
+
+
+
+Definition at line 186 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a44484ba004f950136be30521a36c5946}{\index{domdec@{domdec}!precdir\-\_\-send2@{precdir\-\_\-send2}}
+\index{precdir\-\_\-send2@{precdir\-\_\-send2}!domdec@{domdec}}
+\subsubsection[{precdir\-\_\-send2}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::precdir\-\_\-send2}}\label{classdomdec_a44484ba004f950136be30521a36c5946}
+
+
+list of processes associated with nrecdir\-\_\-send2 
+
+
+
+Definition at line 188 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a146ec15c8422fd2670da75c3e0e0dfe9}{\index{domdec@{domdec}!rank@{rank}}
+\index{rank@{rank}!domdec@{domdec}}
+\subsubsection[{rank}]{\setlength{\rightskip}{0pt plus 5cm}integer, target domdec\-::rank}}\label{classdomdec_a146ec15c8422fd2670da75c3e0e0dfe9}
+
+
+rank of the current M\-P\-I process within C\-O\-M\-M\-\_\-\-T\-I\-N\-K\-E\-R 
+
+
+
+Definition at line 128 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aebba4360c9e42de2ed494d4167a63a99}{\index{domdec@{domdec}!rank\-\_\-bis@{rank\-\_\-bis}}
+\index{rank\-\_\-bis@{rank\-\_\-bis}!domdec@{domdec}}
+\subsubsection[{rank\-\_\-bis}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::rank\-\_\-bis}}\label{classdomdec_aebba4360c9e42de2ed494d4167a63a99}
+
+
+rank of the current M\-P\-I process within comm\-\_\-dir or comm\-\_\-rec 
+
+
+
+Definition at line 129 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aa41e5fcea13c9f7a65a84836b19537ff}{\index{domdec@{domdec}!rank\-\_\-polymer@{rank\-\_\-polymer}}
+\index{rank\-\_\-polymer@{rank\-\_\-polymer}!domdec@{domdec}}
+\subsubsection[{rank\-\_\-polymer}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::rank\-\_\-polymer}}\label{classdomdec_aa41e5fcea13c9f7a65a84836b19537ff}
+
+
+M\-P\-I rank associated to C\-O\-M\-M\-\_\-\-P\-O\-L\-Y\-M\-E\-R. 
+
+
+
+Definition at line 136 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a003bab60bea2de6201a9182da660c5c8}{\index{domdec@{domdec}!ranktot@{ranktot}}
+\index{ranktot@{ranktot}!domdec@{domdec}}
+\subsubsection[{ranktot}]{\setlength{\rightskip}{0pt plus 5cm}integer domdec\-::ranktot}}\label{classdomdec_a003bab60bea2de6201a9182da660c5c8}
+
+
+total rank of the M\-P\-I process within M\-P\-I\-\_\-\-C\-O\-M\-M\-\_\-\-W\-O\-R\-L\-D 
+
+
+
+Definition at line 125 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aeab8c3ef2b14a507aa871f5e49d4a5f6}{\index{domdec@{domdec}!repart@{repart}}
+\index{repart@{repart}!domdec@{domdec}}
+\subsubsection[{repart}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::repart}}\label{classdomdec_aeab8c3ef2b14a507aa871f5e49d4a5f6}
+
+
+global index-\/domain correspondance 
+
+
+
+Definition at line 200 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aeabaca57aab399a825da41e1915339ab}{\index{domdec@{domdec}!repartrec@{repartrec}}
+\index{repartrec@{repartrec}!domdec@{domdec}}
+\subsubsection[{repartrec}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable, target domdec\-::repartrec}}\label{classdomdec_aeabaca57aab399a825da41e1915339ab}
+
+
+global index-\/domain reciprocal correspondance 
+
+
+
+Definition at line 199 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a1faa8e227097e532c46ee84194d04b47}{\index{domdec@{domdec}!scala@{scala}}
+\index{scala@{scala}!domdec@{domdec}}
+\subsubsection[{scala}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 domdec\-::scala}}\label{classdomdec_a1faa8e227097e532c46ee84194d04b47}
+
+
+factor for triclinic domain decomposition along the a-\/axis 
+
+
+
+Definition at line 213 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a23f02d2e4ca2feba1b70a3d4d5c15f2b}{\index{domdec@{domdec}!scalb@{scalb}}
+\index{scalb@{scalb}!domdec@{domdec}}
+\subsubsection[{scalb}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 domdec\-::scalb}}\label{classdomdec_a23f02d2e4ca2feba1b70a3d4d5c15f2b}
+
+
+factor for triclinic domain decomposition along the b-\/axis 
+
+
+
+Definition at line 214 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a5176236515e982fadc86d9efe2b8782f}{\index{domdec@{domdec}!scalc@{scalc}}
+\index{scalc@{scalc}!domdec@{domdec}}
+\subsubsection[{scalc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 domdec\-::scalc}}\label{classdomdec_a5176236515e982fadc86d9efe2b8782f}
+
+
+factor for triclinic domain decomposition along the c-\/axis 
+
+
+
+Definition at line 215 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_acf6c7964e86a91e7727f69aa2e00df61}{\index{domdec@{domdec}!xbegproc@{xbegproc}}
+\index{xbegproc@{xbegproc}!domdec@{domdec}}
+\subsubsection[{xbegproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::xbegproc}}\label{classdomdec_acf6c7964e86a91e7727f69aa2e00df61}
+
+
+x coordinate of the beginning of each domain 
+
+
+
+Definition at line 220 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a2a7289d6a16677c917c732f0eddf76f1}{\index{domdec@{domdec}!xendproc@{xendproc}}
+\index{xendproc@{xendproc}!domdec@{domdec}}
+\subsubsection[{xendproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::xendproc}}\label{classdomdec_a2a7289d6a16677c917c732f0eddf76f1}
+
+
+x coordinate of the end of each domain 
+
+
+
+Definition at line 221 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_a263ad8d8a74766cf8e38f798d814b1d2}{\index{domdec@{domdec}!ybegproc@{ybegproc}}
+\index{ybegproc@{ybegproc}!domdec@{domdec}}
+\subsubsection[{ybegproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::ybegproc}}\label{classdomdec_a263ad8d8a74766cf8e38f798d814b1d2}
+
+
+y coordinate of the beginning of each domain 
+
+
+
+Definition at line 218 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_ae0cd9f6b6f40a123f8332cccae7d4cc1}{\index{domdec@{domdec}!yendproc@{yendproc}}
+\index{yendproc@{yendproc}!domdec@{domdec}}
+\subsubsection[{yendproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::yendproc}}\label{classdomdec_ae0cd9f6b6f40a123f8332cccae7d4cc1}
+
+
+y coordinate of the end of each domain 
+
+
+
+Definition at line 219 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_aa8643c5e6b0645ac75284c7efe4f34d1}{\index{domdec@{domdec}!zbegproc@{zbegproc}}
+\index{zbegproc@{zbegproc}!domdec@{domdec}}
+\subsubsection[{zbegproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::zbegproc}}\label{classdomdec_aa8643c5e6b0645ac75284c7efe4f34d1}
+
+
+z coordinate of the beginning of each domain 
+
+
+
+Definition at line 216 of file M\-O\-D\-\_\-domdec.\-f90.
+
+\hypertarget{classdomdec_abe04500dc8986693d1cf4aea49441a39}{\index{domdec@{domdec}!zendproc@{zendproc}}
+\index{zendproc@{zendproc}!domdec@{domdec}}
+\subsubsection[{zendproc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable domdec\-::zendproc}}\label{classdomdec_abe04500dc8986693d1cf4aea49441a39}
+
+
+z coordinate of the end of each domain 
+
+
+
+Definition at line 217 of file M\-O\-D\-\_\-domdec.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__domdec_8f90}{M\-O\-D\-\_\-domdec.\-f90}\end{DoxyCompactItemize}

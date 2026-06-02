@@ -1,0 +1,67 @@
+\hypertarget{getstring_8f90}{\section{getstring.\-f90 File Reference}
+\label{getstring_8f90}\index{getstring.\-f90@{getstring.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{getstring_8f90_a7573dec4982474d193e55365a05416f0}{getstring} (string, text, next)
+\begin{DoxyCompactList}\small\item\em searches for a quoted text string within an input character string; the region between the first and second quotes is returned as the \char`\"{}text\char`\"{}; if the actual text is too long, only the first part is returned \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{getstring_8f90_a7573dec4982474d193e55365a05416f0}{\index{getstring.\-f90@{getstring.\-f90}!getstring@{getstring}}
+\index{getstring@{getstring}!getstring.f90@{getstring.\-f90}}
+\subsubsection[{getstring}]{\setlength{\rightskip}{0pt plus 5cm}subroutine getstring (
+\begin{DoxyParamCaption}
+\item[{character$\ast$($\ast$)}]{string, }
+\item[{character$\ast$($\ast$)}]{text, }
+\item[{integer}]{next}
+\end{DoxyParamCaption}
+)}}\label{getstring_8f90_a7573dec4982474d193e55365a05416f0}
+
+
+searches for a quoted text string within an input character string; the region between the first and second quotes is returned as the \char`\"{}text\char`\"{}; if the actual text is too long, only the first part is returned 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input character string to be searched \\
+\hline
+\mbox{\tt in}  & {\em text,\-:} & the quoted text found in the input string \\
+\hline
+\mbox{\tt in}  & {\em next,\-:} & input with first position of search string; \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 36 of file getstring.\-f90.
+
+
+
+References extent(), final(), and initial().
+
+
+
+Referenced by getprm(), katom(), and readprm().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{getstring_8f90_a7573dec4982474d193e55365a05416f0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{getstring_8f90_a7573dec4982474d193e55365a05416f0_icgraph}
+\end{center}
+\end{figure}
+
+

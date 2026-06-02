@@ -1,0 +1,51 @@
+<map id="baoabrespapi" name="baoabrespapi">
+<area shape="rect" id="node2" href="$classutilbaoabpi.html#ace686c3ddc4f4b073ac6dc55a5ea8383" title="utilbaoabpi::apply_b_pi" alt="" coords="469,175,643,202"/>
+<area shape="rect" id="node4" href="$baoabrespapi_8f90.html#a6e7a0085bed4a815f070c9a7e9b7205c" title="performs a single PIMD time step of the fast forces via the BAOAB&#45;respa recursion formula ..." alt="" coords="207,494,350,521"/>
+<area shape="rect" id="node24" href="$classutilbaoabpi.html#a5f8850d944b008537872cb2f777f207a" title="utilbaoabpi::centroid\l_force_corrections" alt="" coords="201,1589,357,1631"/>
+<area shape="rect" id="node21" href="$classcommstuffpi.html#a8e8bbcfecee03d3d2a98821bbc61b58f" title="commstuffpi::comm_for\l_normal_modes" alt="" coords="467,547,645,588"/>
+<area shape="rect" id="node26" href="$classcommstuffpi.html#a526ebb0cb7646b9a009968b8e3060fe5" title="commstuffpi::commforces_ctr" alt="" coords="170,1655,387,1682"/>
+<area shape="rect" id="node20" href="$classcommstuffpi.html#aafc86594dc2de9b20ac0bcbbb043ec8a" title="commstuffpi::commforcesblocpi" alt="" coords="440,327,672,354"/>
+<area shape="rect" id="node27" href="$classcommstuffpi.html#a5e1481d2895cd682bddb3e2b8e232ef5" title="commstuffpi::commforcesrecpi" alt="" coords="166,1706,391,1733"/>
+<area shape="rect" id="node28" href="$mpistuff_8f90.html#aac6b485f4f510ce7355365d0292661b4" title="communicate some forces between processes when respa1 integrator is used " alt="" coords="205,1757,352,1783"/>
+<area shape="rect" id="node14" href="$classutilbaoabpi.html#a38104b3d22cd8ea3f7510b8a678b1bb6" title="utilbaoabpi::compute\l_grad_beads" alt="" coords="476,664,636,705"/>
+<area shape="rect" id="node33" href="$classutilbaoabpi.html#aa0e6732f79e06a0a1c70795a3a748b70" title="utilbaoabpi::compute\l_gradslow_centroid" alt="" coords="476,781,636,823"/>
+<area shape="rect" id="node3" href="$classcolvarproxy__tinkerhp.html#a6c0fad6b6be3ac94b260262f5f06ce1b" title="Time step of the simulation (fs) " alt="" coords="735,175,916,202"/>
+<area shape="rect" id="node34" href="$classcommstuffpi.html#a16cff35454e936d788925c3546e2ebb6" title="commstuffpi::full_gradient\l_prepare_pi" alt="" coords="181,1160,376,1201"/>
+<area shape="rect" id="node45" href="$classbeads.html#a90a4bfa6583728f8b3684af06e92ef27" title="beads::kinetic_pi" alt="" coords="213,1807,345,1834"/>
+<area shape="rect" id="node11" href="$classbeads.html#a41bfbd88fbe8dc2a853f56aa7b492f23" title="beads::load_bead" alt="" coords="757,823,893,850"/>
+<area shape="rect" id="node46" href="$mdsavebeads_8f90.html#a575ff5a134d065e6ecf33365c96df8e7" title="writes molecular dynamics trajectory snapshots and auxiliary files with velocity, force or induced di..." alt="" coords="499,226,613,253"/>
+<area shape="rect" id="node47" href="$mdstatpi_8f90.html#ac0e7a388ab3042e3262b8400878feb67" title="&quot;mdstatpi&quot; is called at each molecular dynamics time step to form statistics on various average value..." alt="" coords="239,129,319,155"/>
+<area shape="rect" id="node48" href="$classutilbaoabpi.html#a6413bbe678f95995e6f2ff62da6fab27" title="utilbaoabpi::plangevinpi" alt="" coords="467,23,645,50"/>
+<area shape="rect" id="node49" href="$classbeads.html#aec0c611a5b6c29e6271679ec65b5b986" title="beads::project_forces_ctr" alt="" coords="186,1858,371,1885"/>
+<area shape="rect" id="node50" href="$classbeads.html#a9f3793d3bc6e5d6808cfb243b258fce5" title="beads::reduce_observables_pi" alt="" coords="169,1909,388,1935"/>
+<area shape="rect" id="node39" href="$classspectra.html#a9b1f0d6d3c04ba1863190784780751d4" title="spectra::save_dipole\l_respa" alt="" coords="747,1609,903,1651"/>
+<area shape="rect" id="node22" href="$classbeads.html#a88c6edcc7757ced8d0f4afc4c72f33bb" title="beads::set_eigforces_pi" alt="" coords="469,495,643,522"/>
+<area shape="rect" id="node6" href="$classbeads.html#aec37c819dd72e2a6d56274cc66052a72" title="beads::stopwatchpi" alt="" coords="482,277,630,303"/>
+<area shape="rect" id="node5" href="$classutilbaoabpi.html#a4d075e6d26d3a08b49958c8db2bb3c71" title="utilbaoabpi::apply\l_aoa_pi" alt="" coords="487,379,625,420"/>
+<area shape="rect" id="node7" href="$classcommstuffpi.html#ab9176f8de5cba7fc13e7f47335672e62" title="commstuffpi::fast_gradient\l_prepare_pi" alt="" coords="457,899,655,940"/>
+<area shape="rect" id="node23" href="$classbeads.html#a7313420a5e576d14a013197f0e944748" title="beads::kinetic_pi_fast" alt="" coords="474,445,638,471"/>
+<area shape="rect" id="node8" href="$classbeads.html#a92abf26b9c7bce34f7c67a8fbc44f2ab" title="beads::update_direct\l_space_pi" alt="" coords="746,555,905,596"/>
+<area shape="rect" id="node9" href="$classcommstuffpi.html#afc06456e4b65d919d669fae9c4623729" title="commstuffpi::comm_for\l_gradient" alt="" coords="736,1013,915,1055"/>
+<area shape="rect" id="node10" href="$classcommstuffpi.html#acff2de85dc043120a83b35206ccdd941" title="commstuffpi::commpospi" alt="" coords="731,945,919,971"/>
+<area shape="rect" id="node12" href="$mechanic_8f90.html#a556247c717f6fe5510709e7a17a4a31e" title="update parallel parameters between two respa steps " alt="" coords="732,1117,919,1143"/>
+<area shape="rect" id="node13" href="$domdecstuff_8f90.html#af44472a279ad05de93d1100779b57c43" title="subroutine allocstepsrespa: deallocate arrays and reallocate them with proper size (memory distributi..." alt="" coords="767,1167,884,1194"/>
+<area shape="rect" id="node15" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="979,613,1031,639"/>
+<area shape="rect" id="node16" href="$classderiv.html#abd1159fb3bf608089b480ee145ee2a0d" title="reset all the arrays of reciprocal forces " alt="" coords="748,621,903,647"/>
+<area shape="rect" id="node17" href="$gradient_8f90.html#a8665411aa7f5050b7002b6723044274d" title="calls subroutines to calculate the potential energy and first derivatives with respect to Cartesian c..." alt="" coords="787,773,863,799"/>
+<area shape="rect" id="node18" href="$classcommstuffpi.html#aac04141710087d41025d561ce29c7b4b" title="commstuffpi::save_deriv_rec" alt="" coords="720,671,931,698"/>
+<area shape="rect" id="node19" href="$classspectra.html#a1beaa2ea2ce39b67a6a240d6a439b379" title="spectra::compute_dipole" alt="" coords="734,874,917,901"/>
+<area shape="rect" id="node25" href="$classutilbaoabpi.html#a9e785f8d8522eb29bf90a658729fbf1e" title="utilbaoabpi::colvars\l_run_pi" alt="" coords="481,1691,631,1732"/>
+<area shape="rect" id="node29" href="$mpistuff_8f90.html#a95d69f0524ae2c5840dc50c09290401c" title="deal with communications of the bonded forces " alt="" coords="481,1757,631,1783"/>
+<area shape="rect" id="node30" href="$mpistuff_8f90.html#a38837bdca80b6de2820a18dac6262983" title="deal with communications of short range forces by bloc between two time steps " alt="" coords="475,1807,637,1834"/>
+<area shape="rect" id="node31" href="$mpistuff_8f90.html#a6da09800136d5661479e302d21b7dd51" title="deal with communications of reciprocal forces by bloc between two time steps " alt="" coords="495,1858,617,1885"/>
+<area shape="rect" id="node32" href="$mpistuff_8f90.html#aa40e25e26f6f34c971b1bcda983c120a" title="deal with communications of forces by bloc between two time steps " alt="" coords="491,1909,621,1935"/>
+<area shape="rect" id="node35" href="$respa_8f90.html#a9973bf6f030df2aeeef2a2c0fd9079dc" title="&quot;respa&quot; performs a single multiple time step molecular dynamics step using the reversible reference s..." alt="" coords="527,1386,585,1413"/>
+<area shape="rect" id="node40" href="$classbeads.html#a29cc348995807889f54007bb1408f3b6" title="beads::contract_polymer" alt="" coords="465,1538,647,1565"/>
+<area shape="rect" id="node41" href="$classcommstuffpi.html#acf6a40330e2ee2ef22abaf26800da5a9" title="commstuffpi::reassignpi" alt="" coords="467,1015,645,1042"/>
+<area shape="rect" id="node36" href="$pmestuff_8f90.html#a678ca0cec4d103cb489a1ef6dfbe5fe3" title="initialize arrays to compute reciprocal part of electrostatic and polarization interactions, also reassign atoms on &#39;reciprocal cores&#39; between time steps " alt="" coords="772,1411,879,1438"/>
+<area shape="rect" id="node37" href="$mpistuff_8f90.html#a42f224f96229ba3fd381eaad0cb34aab" title="communicate positions for reciprocal space computation " alt="" coords="772,1475,879,1502"/>
+<area shape="rect" id="node42" href="$classbeads.html#ae029bda525facbe5609e7de9f99aa81e" title="beads::update_normal\l_modes_pi" alt="" coords="473,1219,639,1260"/>
+<area shape="rect" id="node43" href="$classcommstuffpi.html#a00bc8e52d9c14e0398976a17a43cac45" title="commstuffpi::commposrecpi" alt="" coords="452,1285,660,1311"/>
+<area shape="rect" id="node38" href="$nblist_8f90.html#a1998698bfd65eb0e19836c89143e0b2c" title="get the number of particules whose nl has to be computed and the associated indexes ..." alt="" coords="791,1537,859,1563"/>
+<area shape="rect" id="node44" href="$mechanic_8f90.html#acaf8551e812eeac7b265a258e0c86609" title="update parallel parameters " alt="" coords="484,1335,628,1362"/>
+</map>

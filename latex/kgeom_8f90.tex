@@ -1,0 +1,187 @@
+\hypertarget{kgeom_8f90}{\section{kgeom.\-f90 File Reference}
+\label{kgeom_8f90}\index{kgeom.\-f90@{kgeom.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kgeom_8f90_aa534468141ee5840dc7e7e385db6dee2}{kgeom}
+\begin{DoxyCompactList}\small\item\em assigns parameters for geometric restraint terms to be included in the potential energy calculation \end{DoxyCompactList}\item 
+subroutine \hyperlink{kgeom_8f90_a8d87d305daf2da692315511bae23b5d9}{kgeom\-\_\-update}
+\begin{DoxyCompactList}\small\item\em computes and displays the total potential energy update local geom parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kgeom_8f90_a2c860282d4829d750b6ac0d8cdf1e2be}{dealloc\-\_\-shared\-\_\-geom}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for geometric restraint parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kgeom_8f90_ae03dd8578fc69228f1dbaf58aa4ba959}{alloc\-\_\-shared\-\_\-geom}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for geometric restraint parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kgeom_8f90_ae03dd8578fc69228f1dbaf58aa4ba959}{\index{kgeom.\-f90@{kgeom.\-f90}!alloc\-\_\-shared\-\_\-geom@{alloc\-\_\-shared\-\_\-geom}}
+\index{alloc\-\_\-shared\-\_\-geom@{alloc\-\_\-shared\-\_\-geom}!kgeom.f90@{kgeom.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-geom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-geom (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kgeom_8f90_ae03dd8578fc69228f1dbaf58aa4ba959}
+
+
+allocate shared memory pointers for geometric restraint parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 726 of file kgeom.\-f90.
+
+
+
+Referenced by kgeom().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kgeom_8f90_ae03dd8578fc69228f1dbaf58aa4ba959_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kgeom_8f90_a2c860282d4829d750b6ac0d8cdf1e2be}{\index{kgeom.\-f90@{kgeom.\-f90}!dealloc\-\_\-shared\-\_\-geom@{dealloc\-\_\-shared\-\_\-geom}}
+\index{dealloc\-\_\-shared\-\_\-geom@{dealloc\-\_\-shared\-\_\-geom}!kgeom.f90@{kgeom.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-geom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-geom (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kgeom_8f90_a2c860282d4829d750b6ac0d8cdf1e2be}
+
+
+deallocate shared memory pointers for geometric restraint parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 627 of file kgeom.\-f90.
+
+
+
+Referenced by final(), and kgeom().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kgeom_8f90_a2c860282d4829d750b6ac0d8cdf1e2be_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kgeom_8f90_aa534468141ee5840dc7e7e385db6dee2}{\index{kgeom.\-f90@{kgeom.\-f90}!kgeom@{kgeom}}
+\index{kgeom@{kgeom}!kgeom.f90@{kgeom.\-f90}}
+\subsubsection[{kgeom}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kgeom (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kgeom_8f90_aa534468141ee5840dc7e7e385db6dee2}
+
+
+assigns parameters for geometric restraint terms to be included in the potential energy calculation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file kgeom.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-geom(), dealloc\-\_\-shared\-\_\-geom(), geometry(), getnumb(), gettext(), getword(), image(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kgeom_8f90_aa534468141ee5840dc7e7e385db6dee2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kgeom_8f90_aa534468141ee5840dc7e7e385db6dee2_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kgeom_8f90_a8d87d305daf2da692315511bae23b5d9}{\index{kgeom.\-f90@{kgeom.\-f90}!kgeom\-\_\-update@{kgeom\-\_\-update}}
+\index{kgeom\-\_\-update@{kgeom\-\_\-update}!kgeom.f90@{kgeom.\-f90}}
+\subsubsection[{kgeom\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kgeom\-\_\-update (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kgeom_8f90_a8d87d305daf2da692315511bae23b5d9}
+
+
+computes and displays the total potential energy update local geom parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 459 of file kgeom.\-f90.
+
+
+
+References midpoint(), and midpointgroup().
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kgeom_8f90_a8d87d305daf2da692315511bae23b5d9_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kgeom_8f90_a8d87d305daf2da692315511bae23b5d9_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,202 @@
+\hypertarget{classcolvars}{\section{colvars Module Reference}
+\label{classcolvars}\index{colvars@{colvars}}
+}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+interface \hyperlink{interfacecolvars_1_1allocate__colvars}{allocate\-\_\-colvars}
+\item 
+interface \hyperlink{interfacecolvars_1_1compute__colvars__tinker}{compute\-\_\-colvars\-\_\-tinker}
+\item 
+interface \hyperlink{interfacecolvars_1_1delete__colvars}{delete\-\_\-colvars}
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+logical \hyperlink{classcolvars_ae0f77ac6f6f4c0af1a1f09458e30c145}{use\-\_\-colvars}
+\begin{DoxyCompactList}\small\item\em flag governing use of Colvars \end{DoxyCompactList}\item 
+integer \hyperlink{classcolvars_ac61dbb2d19dcefc1fbe755db1f35b688}{ncvatoms}
+\begin{DoxyCompactList}\small\item\em number of atoms involved in collective variables during simulation \end{DoxyCompactList}\item 
+integer \hyperlink{classcolvars_add268966bff91c6c344e0c05452249ae}{ncvatomsmol}
+\begin{DoxyCompactList}\small\item\em number of atoms belonging to molecules involved in C\-Vs during simulation \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classcolvars_a0ced678acae8973d2d446efd19dbbd9f}{cvatoms\-\_\-ids}
+\begin{DoxyCompactList}\small\item\em list of atoms involved in C\-Vs during simulation \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classcolvars_a47f5647f261368e31a172ea3f2f629af}{cvatomsmol}
+\begin{DoxyCompactList}\small\item\em list of atoms belonging to molecules involved in C\-Vs during simulation \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classcolvars_a5c87abb4eb394e48d2cbd47413dc8179}{cv\-\_\-pos}
+\begin{DoxyCompactList}\small\item\em coordinates of atoms involved in C\-Vs \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classcolvars_aae9ea8e5b352351931e03775fc3971e2}{decv}
+\begin{DoxyCompactList}\small\item\em biasing forces on atoms involved in C\-Vs \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classcolvars_a40f16d6e6e70120635372cfb5e81d4be}{decv\-\_\-tot}
+\begin{DoxyCompactList}\small\item\em total forces on atoms involved in C\-Vs \end{DoxyCompactList}\item 
+real $\ast$8, target \hyperlink{classcolvars_a5354676077248821a35dee43812d4eee}{dt\-\_\-sim}
+\begin{DoxyCompactList}\small\item\em timestep length \end{DoxyCompactList}\item 
+real $\ast$8, target \hyperlink{classcolvars_a68f638ce8e5d585bbcf7d5c80887c3d2}{temp\-\_\-rand}
+\begin{DoxyCompactList}\small\item\em output of random generator for Colvars \end{DoxyCompactList}\item 
+character $\ast$240, target \hyperlink{classcolvars_ac0a4109a01ca0d085e554c69b680bae6}{colvarsinput}
+\begin{DoxyCompactList}\small\item\em Colvars input file name. \end{DoxyCompactList}\item 
+character $\ast$240, target \hyperlink{classcolvars_ace5f8d0a42a5abb1c7323ea9bdf02d1c}{colvarsoutput}
+\begin{DoxyCompactList}\small\item\em Colvars output file name. \end{DoxyCompactList}\item 
+character $\ast$240, target \hyperlink{classcolvars_a5e868c0de4c9369d799f9dda1dbcb738}{colvarsrestart}
+\begin{DoxyCompactList}\small\item\em flag indicating presence of a Colvars restart file \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classcolvars_ac0a4109a01ca0d085e554c69b680bae6}{\index{colvars@{colvars}!colvarsinput@{colvarsinput}}
+\index{colvarsinput@{colvarsinput}!colvars@{colvars}}
+\subsubsection[{colvarsinput}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$240, target colvars\-::colvarsinput}}\label{classcolvars_ac0a4109a01ca0d085e554c69b680bae6}
+
+
+Colvars input file name. 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_ace5f8d0a42a5abb1c7323ea9bdf02d1c}{\index{colvars@{colvars}!colvarsoutput@{colvarsoutput}}
+\index{colvarsoutput@{colvarsoutput}!colvars@{colvars}}
+\subsubsection[{colvarsoutput}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$240, target colvars\-::colvarsoutput}}\label{classcolvars_ace5f8d0a42a5abb1c7323ea9bdf02d1c}
+
+
+Colvars output file name. 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_a5e868c0de4c9369d799f9dda1dbcb738}{\index{colvars@{colvars}!colvarsrestart@{colvarsrestart}}
+\index{colvarsrestart@{colvarsrestart}!colvars@{colvars}}
+\subsubsection[{colvarsrestart}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$240, target colvars\-::colvarsrestart}}\label{classcolvars_a5e868c0de4c9369d799f9dda1dbcb738}
+
+
+flag indicating presence of a Colvars restart file 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_a5c87abb4eb394e48d2cbd47413dc8179}{\index{colvars@{colvars}!cv\-\_\-pos@{cv\-\_\-pos}}
+\index{cv\-\_\-pos@{cv\-\_\-pos}!colvars@{colvars}}
+\subsubsection[{cv\-\_\-pos}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable colvars\-::cv\-\_\-pos}}\label{classcolvars_a5c87abb4eb394e48d2cbd47413dc8179}
+
+
+coordinates of atoms involved in C\-Vs 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_a0ced678acae8973d2d446efd19dbbd9f}{\index{colvars@{colvars}!cvatoms\-\_\-ids@{cvatoms\-\_\-ids}}
+\index{cvatoms\-\_\-ids@{cvatoms\-\_\-ids}!colvars@{colvars}}
+\subsubsection[{cvatoms\-\_\-ids}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable colvars\-::cvatoms\-\_\-ids}}\label{classcolvars_a0ced678acae8973d2d446efd19dbbd9f}
+
+
+list of atoms involved in C\-Vs during simulation 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_a47f5647f261368e31a172ea3f2f629af}{\index{colvars@{colvars}!cvatomsmol@{cvatomsmol}}
+\index{cvatomsmol@{cvatomsmol}!colvars@{colvars}}
+\subsubsection[{cvatomsmol}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable colvars\-::cvatomsmol}}\label{classcolvars_a47f5647f261368e31a172ea3f2f629af}
+
+
+list of atoms belonging to molecules involved in C\-Vs during simulation 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_aae9ea8e5b352351931e03775fc3971e2}{\index{colvars@{colvars}!decv@{decv}}
+\index{decv@{decv}!colvars@{colvars}}
+\subsubsection[{decv}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable colvars\-::decv}}\label{classcolvars_aae9ea8e5b352351931e03775fc3971e2}
+
+
+biasing forces on atoms involved in C\-Vs 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_a40f16d6e6e70120635372cfb5e81d4be}{\index{colvars@{colvars}!decv\-\_\-tot@{decv\-\_\-tot}}
+\index{decv\-\_\-tot@{decv\-\_\-tot}!colvars@{colvars}}
+\subsubsection[{decv\-\_\-tot}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable colvars\-::decv\-\_\-tot}}\label{classcolvars_a40f16d6e6e70120635372cfb5e81d4be}
+
+
+total forces on atoms involved in C\-Vs 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_a5354676077248821a35dee43812d4eee}{\index{colvars@{colvars}!dt\-\_\-sim@{dt\-\_\-sim}}
+\index{dt\-\_\-sim@{dt\-\_\-sim}!colvars@{colvars}}
+\subsubsection[{dt\-\_\-sim}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, target colvars\-::dt\-\_\-sim}}\label{classcolvars_a5354676077248821a35dee43812d4eee}
+
+
+timestep length 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_ac61dbb2d19dcefc1fbe755db1f35b688}{\index{colvars@{colvars}!ncvatoms@{ncvatoms}}
+\index{ncvatoms@{ncvatoms}!colvars@{colvars}}
+\subsubsection[{ncvatoms}]{\setlength{\rightskip}{0pt plus 5cm}integer colvars\-::ncvatoms}}\label{classcolvars_ac61dbb2d19dcefc1fbe755db1f35b688}
+
+
+number of atoms involved in collective variables during simulation 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_add268966bff91c6c344e0c05452249ae}{\index{colvars@{colvars}!ncvatomsmol@{ncvatomsmol}}
+\index{ncvatomsmol@{ncvatomsmol}!colvars@{colvars}}
+\subsubsection[{ncvatomsmol}]{\setlength{\rightskip}{0pt plus 5cm}integer colvars\-::ncvatomsmol}}\label{classcolvars_add268966bff91c6c344e0c05452249ae}
+
+
+number of atoms belonging to molecules involved in C\-Vs during simulation 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_a68f638ce8e5d585bbcf7d5c80887c3d2}{\index{colvars@{colvars}!temp\-\_\-rand@{temp\-\_\-rand}}
+\index{temp\-\_\-rand@{temp\-\_\-rand}!colvars@{colvars}}
+\subsubsection[{temp\-\_\-rand}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, target colvars\-::temp\-\_\-rand}}\label{classcolvars_a68f638ce8e5d585bbcf7d5c80887c3d2}
+
+
+output of random generator for Colvars 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-colvars.\-f90.
+
+\hypertarget{classcolvars_ae0f77ac6f6f4c0af1a1f09458e30c145}{\index{colvars@{colvars}!use\-\_\-colvars@{use\-\_\-colvars}}
+\index{use\-\_\-colvars@{use\-\_\-colvars}!colvars@{colvars}}
+\subsubsection[{use\-\_\-colvars}]{\setlength{\rightskip}{0pt plus 5cm}logical colvars\-::use\-\_\-colvars}}\label{classcolvars_ae0f77ac6f6f4c0af1a1f09458e30c145}
+
+
+flag governing use of Colvars 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-colvars.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__colvars_8f90}{M\-O\-D\-\_\-colvars.\-f90}\end{DoxyCompactItemize}

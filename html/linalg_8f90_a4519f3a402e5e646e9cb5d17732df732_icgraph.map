@@ -1,0 +1,51 @@
+<map id="sprod" name="sprod">
+<area shape="rect" id="node2" href="$epolar1tcg_8f90.html#acf5fe6436c5a9ab31886ea036ec48508" title="calculates the induced dipole polarization gradients with the tcg1 method " alt="" coords="329,524,428,550"/>
+<area shape="rect" id="node6" href="$epolar1tcg__2_8f90.html#a36a7bfd85684d33a7b9f176970b8ac69" title="calculates the induced dipole polarization gradients with the tcg1 method whith separate cores for PM..." alt="" coords="321,625,436,652"/>
+<area shape="rect" id="node7" href="$epolar1tcg1shortreal_8f90.html#af9d6b9ab86376603c740812118c7dbec" title="calculates the induced dipole polarization gradients with the tcg1 method " alt="" coords="300,220,457,246"/>
+<area shape="rect" id="node8" href="$epolar1tcg2_8f90.html#a9dce67b59bd26f20886878588e668334" title="epolar1tcg2" alt="" coords="329,270,428,297"/>
+<area shape="rect" id="node9" href="$epolar1tcg2__2_8f90.html#ae4a858c79ec3ba3c1c6ebba03978211a" title="Computes TCG2 dipoles with NO refinement (except the preconditioner if &quot;precond&quot; is TRUE) ..." alt="" coords="321,321,436,348"/>
+<area shape="rect" id="node10" href="$epolar1tcg2_8f90.html#a01ec6564436a3f56ee78b38bc1dfe5e9" title="epolar1tcg2bis" alt="" coords="319,473,438,500"/>
+<area shape="rect" id="node11" href="$epolar1tcg2__2_8f90.html#a445cdc4ac4f10739f7a3de9c5df4a0de" title="Computes TCG2 dipoles Only guess is available (+ prec via &#39;precond&#39;) " alt="" coords="312,676,445,702"/>
+<area shape="rect" id="node12" href="$epolar1tcg2shortreal_8f90.html#a1eb916cb8879209362c4d7dba46eaebf" title="epolar1tcg2bisshortreal" alt="" coords="291,726,467,753"/>
+<area shape="rect" id="node13" href="$epolar1tcg2_8f90.html#ab44110158a66578e04b88b789cb1e7b8" title="epolar1tcg2cinq" alt="" coords="315,777,442,804"/>
+<area shape="rect" id="node14" href="$epolar1tcg2__2_8f90.html#a63164484dbfb28c497dd47e738876749" title="Computes TCG2 dipoles with NO refinement TCG2 with fastgrad, fully optimized, all options aboard..." alt="" coords="308,574,449,601"/>
+<area shape="rect" id="node15" href="$epolar1tcg2shortreal_8f90.html#ace8e5686cf622ef07e7e7a73baf55d56" title="epolar1tcg2cinqshortreal" alt="" coords="287,17,471,44"/>
+<area shape="rect" id="node16" href="$epolar1tcg2_8f90.html#ab522ff8df9934c1cdfff839455a081fd" title="epolar1tcg2quat" alt="" coords="315,372,443,398"/>
+<area shape="rect" id="node17" href="$epolar1tcg2__2_8f90.html#ac14c35b41a5a0b5a30427df291e9975e" title="Computes TCG2 dipoles with NO refinement TCG2 with guess AND peek&#45;step, NO preconditioner. " alt="" coords="307,422,450,449"/>
+<area shape="rect" id="node18" href="$epolar1tcg2shortreal_8f90.html#a59698b6d81992f92de88fd71c05503f9" title="epolar1tcg2quatshortreal" alt="" coords="285,68,472,94"/>
+<area shape="rect" id="node19" href="$epolar1tcg2shortreal_8f90.html#a71b737a234269beb4ebcc7facefa0a72" title="Computes TCG2 dipoles with NO refinement (except the preconditioner if &quot;precond&quot; is TRUE) ..." alt="" coords="300,118,457,145"/>
+<area shape="rect" id="node20" href="$epolar1tcg2_8f90.html#a1fda977e9f76a5a1cd2d18ecb7b80b6e" title="epolar1tcg2ter" alt="" coords="320,828,437,854"/>
+<area shape="rect" id="node21" href="$epolar1tcg2__2_8f90.html#a73d800dcf4002045b5d0b08d50301b1b" title="Computes TCG2 dipoles Obj : tcg2 with peek only, preconditioner available if &#39;precond&#39; is..." alt="" coords="313,878,445,905"/>
+<area shape="rect" id="node22" href="$epolar1tcg2shortreal_8f90.html#a5b0da854cf773d9e52de9ce847c915de" title="epolar1tcg2tershortreal" alt="" coords="291,169,466,196"/>
+<area shape="rect" id="node23" href="$epolar3tcg_8f90.html#a6434760458582ec22504e6b5969423df" title="calculates the induced dipole polarization energy with the tcg1 method, and partitions the energy amo..." alt="" coords="125,1182,224,1209"/>
+<area shape="rect" id="node30" href="$epolar3tcg__2_8f90.html#a5b07a1f19f121a3e9611af5807cce461" title="calculates the induced dipole polarization energy with the tcg1 method, and partitions the energy amo..." alt="" coords="117,1030,232,1057"/>
+<area shape="rect" id="node31" href="$epolar3tcg_8f90.html#aa77b20c13bdeb68ab6a3ed1b5f80df18" title="calculates the induced dipole polarization energy with the tcg2 method, and partitions the energy amo..." alt="" coords="125,1081,224,1108"/>
+<area shape="rect" id="node32" href="$epolar3tcg__2_8f90.html#ace555b25b44dd4e153c4902ab03eb72a" title="calculates the induced dipole polarization energy with the tcg2 method, and partitions the energy amo..." alt="" coords="117,1132,232,1158"/>
+<area shape="rect" id="node33" href="$diis_8f90.html#a3a59b0eadeebf1401ff4f7fb1a9ac000" title="compute b matrix for diis extrapolation " alt="" coords="141,1290,208,1317"/>
+<area shape="rect" id="node47" href="$diis_8f90.html#a05d140f5611054c6d15fd63197257209" title="no_com_makeb" alt="" coords="112,1233,237,1260"/>
+<area shape="rect" id="node28" href="$kpolar_8f90.html#a6d6cbf00b0d96b9ab6f2194e7277a933" title="finds the best omega parameter for TCG polarization with peak step " alt="" coords="751,980,831,1006"/>
+<area shape="rect" id="node49" href="$tcgstuff_8f90.html#ae8b6f24b23c119cca1e380be87071855" title="torquetcg_dir" alt="" coords="121,422,229,449"/>
+<area shape="rect" id="node50" href="$tcgstuff_8f90.html#a28871a2190f2c03c8e36f53767276849" title="torquetcg_rec" alt="" coords="119,574,230,601"/>
+<area shape="rect" id="node3" href="$epolar1tcg_8f90.html#af93fcca23bb305c4a7152c5fca45088b" title="calculates the induced dipole polarization energy and gradients with the tcg method ..." alt="" coords="912,498,1003,525"/>
+<area shape="rect" id="node4" href="$epolar1_8f90.html#a09d7de500d8ba93948b15563d6274018" title="calculates the induced dipole polarization energy and derivatives with respect to Cartesian coordinat..." alt="" coords="1051,638,1122,665"/>
+<area shape="rect" id="node5" href="$gradient_8f90.html#a8665411aa7f5050b7002b6723044274d" title="calls subroutines to calculate the potential energy and first derivatives with respect to Cartesian c..." alt="" coords="1171,778,1247,805"/>
+<area shape="rect" id="node24" href="$epolar3tcg_8f90.html#a49f2c6bc116ff71f8820a7f6631c37ee" title="calculates the induced dipole polarization energy with the tcg method, and partitions the energy amon..." alt="" coords="333,1081,424,1108"/>
+<area shape="rect" id="node25" href="$epolar_8f90.html#a6ea3c1dcbc8f641da7272d0d39a3bbba" title="calculates the polarization energy due to induced dipole interactions " alt="" coords="563,1030,626,1057"/>
+<area shape="rect" id="node29" href="$epolar3_8f90.html#a8e6c14fdb937553ce7133bf2d9af4415" title="calculates the induced dipole polarization energy, and partitions the energy among atoms ..." alt="" coords="755,1081,826,1108"/>
+<area shape="rect" id="node26" href="$energy_8f90.html#a1aa8c625eb0a3eea79ed1a8047707c94" title="calls the subroutines to calculate the potential energy terms and sums up to form the total energy ..." alt="" coords="757,1030,824,1057"/>
+<area shape="rect" id="node27" href="$analysis_8f90.html#ae127889458682e50ca6c0789300710c6" title="calls the series of routines needed to calculate the potential energy and " alt="" coords="919,1081,995,1108"/>
+<area shape="rect" id="node34" href="$diis_8f90.html#ab231bbf854814230199af4a711427572" title="compute quantities to run diis extrapolation " alt="" coords="356,1302,401,1329"/>
+<area shape="rect" id="node35" href="$dcinduce__pme_8f90.html#ace35c7c65a1eb765cba113147ed9eff6" title="solve the polarization equations with a DC/JI&#45;DIIS algorithm, solver itself " alt="" coords="537,1258,653,1285"/>
+<area shape="rect" id="node37" href="$dcinduce__pme2_8f90.html#a79222b6a72dea1065e9f1731028e965f" title="solve the polarization equations with a DC/JI&#45;DIIS algorithm, solver itself " alt="" coords="533,1157,657,1184"/>
+<area shape="rect" id="node39" href="$dcinduce__shortreal_8f90.html#a2c42e8ca86bb6236346e69d5772b70e4" title="solve the polarization equations with a DC/JI&#45;DIIS algorithm, solver itself " alt="" coords="522,1208,667,1234"/>
+<area shape="rect" id="node41" href="$newinduce__group_8f90.html#a8d07446ffd185bcbf3449a23963ab46b" title="Jacobi/DIIS Solver for &quot;group&quot; polarization. " alt="" coords="531,1309,659,1336"/>
+<area shape="rect" id="node43" href="$newinduce__pme_8f90.html#a675d786b69d807fbcf8e02f75f2762ca" title="Jacobi/DIIS Solver for polarization. " alt="" coords="535,1360,655,1386"/>
+<area shape="rect" id="node45" href="$newinduce__pme2_8f90.html#a1dbaec7ece61f121519f875a324a7ff2" title="Jacobi/DIIS Solver for polarization. " alt="" coords="531,1410,659,1437"/>
+<area shape="rect" id="node46" href="$newinduce__shortreal_8f90.html#a49fd4302db21c05b5d376203d08e8f53" title="Jacobi/DIIS Solver for short range polarization. " alt="" coords="520,1461,669,1488"/>
+<area shape="rect" id="node36" href="$dcinduce__pme_8f90.html#aa2aeb9307863b96b375f958764a9eceb" title="solve the polarization equations with a DC/JI&#45;DIIS algorithm, driver " alt="" coords="733,1258,849,1285"/>
+<area shape="rect" id="node38" href="$dcinduce__pme2_8f90.html#aff76d9b52aa205bda0bef686b8ec5d74" title="solve the polarization equations with a DC/JI&#45;DIIS algorithm, driver " alt="" coords="729,1157,853,1184"/>
+<area shape="rect" id="node40" href="$dcinduce__shortreal_8f90.html#ad9829e43792862b97c56bc25674be5ae" title="solve the polarization equations with a DC/JI&#45;DIIS algorithm, driver " alt="" coords="718,1208,863,1234"/>
+<area shape="rect" id="node42" href="$newinduce__group_8f90.html#a3bef550067628ac344b171a34dde594f" title="evaluate induced dipole moments and the polarization energy of a group of atom without PBC using a (p..." alt="" coords="723,1309,859,1336"/>
+<area shape="rect" id="node44" href="$newinduce__pme_8f90.html#a0d93814010a7e9b25d82ea5c274a62e0" title="evaluate induced dipole moments and the polarization energy using either a (preconditioned) conjugate..." alt="" coords="727,1360,855,1386"/>
+<area shape="rect" id="node48" href="$diis_8f90.html#a8638a3fca90207c530ca3e51d0831e0d" title="no_com_diis" alt="" coords="327,1220,430,1246"/>
+</map>

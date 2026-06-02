@@ -1,0 +1,113 @@
+\hypertarget{cutoffs_8f90}{\section{cutoffs.\-f90 File Reference}
+\label{cutoffs_8f90}\index{cutoffs.\-f90@{cutoffs.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{cutoffs_8f90_a4da1f7ebfbf844f17da9a1d3285be663}{cutoffs}
+\begin{DoxyCompactList}\small\item\em initializes and stores spherical energy cutoff distance windows and Ewald sum cutoffs, and the pairwise neighbor generation method \end{DoxyCompactList}\item 
+subroutine \hyperlink{cutoffs_8f90_a172a656fe5ad757e6be4b1a085ef2b45}{update\-\_\-lbuffer} (list\-\_\-buff)
+\begin{DoxyCompactList}\small\item\em updates cutoffs which take buffer into account \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{cutoffs_8f90_a4da1f7ebfbf844f17da9a1d3285be663}{\index{cutoffs.\-f90@{cutoffs.\-f90}!cutoffs@{cutoffs}}
+\index{cutoffs@{cutoffs}!cutoffs.f90@{cutoffs.\-f90}}
+\subsubsection[{cutoffs}]{\setlength{\rightskip}{0pt plus 5cm}subroutine cutoffs (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{cutoffs_8f90_a4da1f7ebfbf844f17da9a1d3285be663}
+
+
+initializes and stores spherical energy cutoff distance windows and Ewald sum cutoffs, and the pairwise neighbor generation method 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file cutoffs.\-f90.
+
+
+
+References fatal(), gettext(), upcase(), and update\-\_\-lbuffer().
+
+
+
+Referenced by analyze\-\_\-bis(), dynamic\-\_\-bis(), makebar(), minimize\-\_\-bis(), pimd\-\_\-bis(), and testgrad().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{cutoffs_8f90_a4da1f7ebfbf844f17da9a1d3285be663_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cutoffs_8f90_a4da1f7ebfbf844f17da9a1d3285be663_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{cutoffs_8f90_a172a656fe5ad757e6be4b1a085ef2b45}{\index{cutoffs.\-f90@{cutoffs.\-f90}!update\-\_\-lbuffer@{update\-\_\-lbuffer}}
+\index{update\-\_\-lbuffer@{update\-\_\-lbuffer}!cutoffs.f90@{cutoffs.\-f90}}
+\subsubsection[{update\-\_\-lbuffer}]{\setlength{\rightskip}{0pt plus 5cm}subroutine update\-\_\-lbuffer (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, intent(in)}]{list\-\_\-buff}
+\end{DoxyParamCaption}
+)}}\label{cutoffs_8f90_a172a656fe5ad757e6be4b1a085ef2b45}
+
+
+updates cutoffs which take buffer into account 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 271 of file cutoffs.\-f90.
+
+
+
+References colvarproxy\-\_\-tinkerhp\-::dt().
+
+
+
+Referenced by cutoffs(), and pimd\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=340pt]{cutoffs_8f90_a172a656fe5ad757e6be4b1a085ef2b45_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{cutoffs_8f90_a172a656fe5ad757e6be4b1a085ef2b45_icgraph}
+\end{center}
+\end{figure}
+
+

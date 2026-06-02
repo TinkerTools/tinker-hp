@@ -1,0 +1,172 @@
+\hypertarget{kvdw_8f90}{\section{kvdw.\-f90 File Reference}
+\label{kvdw_8f90}\index{kvdw.\-f90@{kvdw.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kvdw_8f90_a7691ab9580b27ff3b8e4070d39af73b6}{kvdw}
+\begin{DoxyCompactList}\small\item\em assigns the parameters to be used in computing the van der Waals interactions and processes any new or changed values for these parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kvdw_8f90_a3c7d361025deb6a25569d2128cc8de93}{kvdw\-\_\-update} (istep)
+\begin{DoxyCompactList}\small\item\em update local vdw parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kvdw_8f90_ae389d517287a9d31cbc543aff515c47f}{dealloc\-\_\-shared\-\_\-vdw}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for vdw parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kvdw_8f90_a3211c3ae72bc0c325edadb6cb21b519e}{alloc\-\_\-shared\-\_\-vdw}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for vdw parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kvdw_8f90_a3211c3ae72bc0c325edadb6cb21b519e}{\index{kvdw.\-f90@{kvdw.\-f90}!alloc\-\_\-shared\-\_\-vdw@{alloc\-\_\-shared\-\_\-vdw}}
+\index{alloc\-\_\-shared\-\_\-vdw@{alloc\-\_\-shared\-\_\-vdw}!kvdw.f90@{kvdw.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-vdw}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-vdw (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kvdw_8f90_a3211c3ae72bc0c325edadb6cb21b519e}
+
+
+allocate shared memory pointers for vdw parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 799 of file kvdw.\-f90.
+
+
+
+Referenced by kvdw().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kvdw_8f90_a3211c3ae72bc0c325edadb6cb21b519e_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kvdw_8f90_ae389d517287a9d31cbc543aff515c47f}{\index{kvdw.\-f90@{kvdw.\-f90}!dealloc\-\_\-shared\-\_\-vdw@{dealloc\-\_\-shared\-\_\-vdw}}
+\index{dealloc\-\_\-shared\-\_\-vdw@{dealloc\-\_\-shared\-\_\-vdw}!kvdw.f90@{kvdw.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-vdw}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-vdw (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kvdw_8f90_ae389d517287a9d31cbc543aff515c47f}
+
+
+deallocate shared memory pointers for vdw parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 715 of file kvdw.\-f90.
+
+
+
+Referenced by final(), and kvdw().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kvdw_8f90_ae389d517287a9d31cbc543aff515c47f_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kvdw_8f90_a7691ab9580b27ff3b8e4070d39af73b6}{\index{kvdw.\-f90@{kvdw.\-f90}!kvdw@{kvdw}}
+\index{kvdw@{kvdw}!kvdw.f90@{kvdw.\-f90}}
+\subsubsection[{kvdw}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kvdw (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kvdw_8f90_a7691ab9580b27ff3b8e4070d39af73b6}
+
+
+assigns the parameters to be used in computing the van der Waals interactions and processes any new or changed values for these parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 23 of file kvdw.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-vdw(), dealloc\-\_\-shared\-\_\-vdw(), getnumb(), gettext(), number(), numeral(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kvdw_8f90_a7691ab9580b27ff3b8e4070d39af73b6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kvdw_8f90_a7691ab9580b27ff3b8e4070d39af73b6_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kvdw_8f90_a3c7d361025deb6a25569d2128cc8de93}{\index{kvdw.\-f90@{kvdw.\-f90}!kvdw\-\_\-update@{kvdw\-\_\-update}}
+\index{kvdw\-\_\-update@{kvdw\-\_\-update}!kvdw.f90@{kvdw.\-f90}}
+\subsubsection[{kvdw\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kvdw\-\_\-update (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{kvdw_8f90_a3c7d361025deb6a25569d2128cc8de93}
+
+
+update local vdw parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 623 of file kvdw.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kvdw_8f90_a3c7d361025deb6a25569d2128cc8de93_icgraph}
+\end{center}
+\end{figure}
+
+

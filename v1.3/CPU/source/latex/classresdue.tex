@@ -1,0 +1,580 @@
+\hypertarget{classresdue}{\section{resdue Module Reference}
+\label{classresdue}\index{resdue@{resdue}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer, dimension(maxamino) \hyperlink{classresdue_ad2f7d43bb9fa7978c52b73d49772f424}{ntyp}
+\begin{DoxyCompactList}\small\item\em biotypes for mid-\/chain peptide backbone N atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a25240da745223ff18029bc5158e49254}{catyp}
+\begin{DoxyCompactList}\small\item\em biotypes for mid-\/chain peptide backbone C\-A atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_ab12245fc7d0a317c3184c5711ed6261d}{ctyp}
+\begin{DoxyCompactList}\small\item\em biotypes for mid-\/chain peptide backbone C atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a91612d9e842c867e9eb542ca7934ed77}{hntyp}
+\begin{DoxyCompactList}\small\item\em biotypes for mid-\/chain peptide backbone H\-N atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_ae43a84a521235c9e35ba02a293139a96}{otyp}
+\begin{DoxyCompactList}\small\item\em biotypes for mid-\/chain peptide backbone O atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a3d33a8ca66e1895d0e6bbe4d393613bb}{hatyp}
+\begin{DoxyCompactList}\small\item\em biotypes for mid-\/chain peptide backbone H\-A atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a5c7194799b5b4c659a3e08ccf6a07a82}{cbtyp}
+\begin{DoxyCompactList}\small\item\em biotypes for mid-\/chain peptide backbone C\-B atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a82db5e55499ed18ed1d2f58bdf8e7312}{nntyp}
+\begin{DoxyCompactList}\small\item\em biotypes for N-\/terminal peptide backbone N atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a127824bfd508340fba9a479d0e23444e}{cantyp}
+\begin{DoxyCompactList}\small\item\em biotypes for N-\/terminal peptide backbone C\-A atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a61b1e7c7163ff480275984e367a3dffa}{cntyp}
+\begin{DoxyCompactList}\small\item\em biotypes for N-\/terminal peptide backbone C atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a186dccbe7c92c66436d7a74365ae8269}{hnntyp}
+\begin{DoxyCompactList}\small\item\em biotypes for N-\/terminal peptide backbone H\-N atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a2170a9a55ac22ff0c519b4026bb15fe6}{ontyp}
+\begin{DoxyCompactList}\small\item\em biotypes for N-\/terminal peptide backbone O atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a8b657c92c1c4475acb2dc5a11234653f}{hantyp}
+\begin{DoxyCompactList}\small\item\em biotypes for N-\/terminal peptide backbone H\-A atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a70d0e2e9c1996d537b7753aec59e0c8d}{nctyp}
+\begin{DoxyCompactList}\small\item\em biotypes for C-\/terminal peptide backbone N atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a7800b2083dda453b03ca0b1518245bb0}{cactyp}
+\begin{DoxyCompactList}\small\item\em biotypes for C-\/terminal peptide backbone C\-A atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a9693e50a65750bbb7dec2cdae61254d3}{cctyp}
+\begin{DoxyCompactList}\small\item\em biotypes for C-\/terminal peptide backbone C atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_a35d2eabf774d188c40965ae2b6f74d82}{hnctyp}
+\begin{DoxyCompactList}\small\item\em biotypes for C-\/terminal peptide backbone H\-N atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_ad241d88a4adc78b939a86353ebf03140}{octyp}
+\begin{DoxyCompactList}\small\item\em biotypes for C-\/terminal peptide backbone O atoms \end{DoxyCompactList}\item 
+integer, dimension(maxamino) \hyperlink{classresdue_ae87374ba5c19bd0b66fe871dbbdcc26e}{hactyp}
+\begin{DoxyCompactList}\small\item\em biotypes for C-\/terminal peptide backbone H\-A atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a6a04dafa45afb5a8adf89f18467afb4a}{o5typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar O5' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a6643ae3326878cc4594ab3133a514951}{c5typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar C5' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a9736062e8c8c235ef06de2f4b279d327}{h51typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H5' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a8d8b285ff85ed1830b08e4b3288334b5}{h52typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H5'' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_ac55d40734d1d1447f6563a917f496afc}{c4typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar C4' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_aaeadfe458580a8c49cd4f5e145281242}{h4typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H4' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a88a1df13143a4d2b4e252e4f25d3f1dc}{o4typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar O4' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a3c4a2a9aa6358a0182a34342206ee5ac}{c1typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar C1' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_abfce73e98bff9796dcd0952e096b336a}{h1typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H1' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a82523120c873c647aa84cbc82d9c49b4}{c3typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar C3' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a5c59bc8e2a978ecd0112210b0cb0f23a}{h3typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H3' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a65adf7bd2d2ac998e7765e55bad0890b}{c2typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar C2' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a8b5a106a65951bc071a5bfc7c20a070a}{h21typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H2' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a59687c403572e1626b6d69b8738ed6a6}{o2typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar O2' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a75f6e2e38296c7b1427e911d97fbcba4}{h22typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H2'' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a95d0afec50d06f37606365889c369461}{o3typ}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar O3' atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a40674f05ab57e66b0176b1f62b3e9af1}{ptyp}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar P atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a6286d8a51141e8261fe20877c7910220}{optyp}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar O\-P atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_ada509c4f4faf38d11b7074364318f24f}{h5ttyp}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H5\-T atoms \end{DoxyCompactList}\item 
+integer, dimension(maxnuc) \hyperlink{classresdue_a6002cb84b9ca25f2776d1020ca1fbb5c}{h3ttyp}
+\begin{DoxyCompactList}\small\item\em biotypes for nucleotide backbone and sugar H3\-T atoms \end{DoxyCompactList}\item 
+character $\ast$1, dimension(maxamino) \hyperlink{classresdue_ad1edc9b99c91a6e19f753eb94b674bb2}{amino1}
+\begin{DoxyCompactList}\small\item\em three-\/letter abbreviations for amino acids types \end{DoxyCompactList}\item 
+character $\ast$1, dimension(maxnuc) \hyperlink{classresdue_a01035bf726114e5ebe4baa0703e0b030}{nuclz1}
+\begin{DoxyCompactList}\small\item\em three-\/letter abbreviations for nucleic acids types \end{DoxyCompactList}\item 
+character $\ast$3, dimension(maxamino) \hyperlink{classresdue_acea85674eb542d6e47f7d003f5a61db0}{amino}
+\begin{DoxyCompactList}\small\item\em one-\/letter abbreviations for amino acids types \end{DoxyCompactList}\item 
+character $\ast$3, dimension(maxnuc) \hyperlink{classresdue_acb729218ac3b4c499e444a8aa0019071}{nuclz}
+\begin{DoxyCompactList}\small\item\em one-\/letter abbreviations for nucleic acids types \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 14 of file M\-O\-D\-\_\-resdue.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classresdue_acea85674eb542d6e47f7d003f5a61db0}{\index{resdue@{resdue}!amino@{amino}}
+\index{amino@{amino}!resdue@{resdue}}
+\subsubsection[{amino}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$3, dimension(maxamino) resdue\-::amino}}\label{classresdue_acea85674eb542d6e47f7d003f5a61db0}
+
+
+one-\/letter abbreviations for amino acids types 
+
+
+
+Definition at line 58 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_ad1edc9b99c91a6e19f753eb94b674bb2}{\index{resdue@{resdue}!amino1@{amino1}}
+\index{amino1@{amino1}!resdue@{resdue}}
+\subsubsection[{amino1}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$1, dimension(maxamino) resdue\-::amino1}}\label{classresdue_ad1edc9b99c91a6e19f753eb94b674bb2}
+
+
+three-\/letter abbreviations for amino acids types 
+
+
+
+Definition at line 56 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a3c4a2a9aa6358a0182a34342206ee5ac}{\index{resdue@{resdue}!c1typ@{c1typ}}
+\index{c1typ@{c1typ}!resdue@{resdue}}
+\subsubsection[{c1typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::c1typ}}\label{classresdue_a3c4a2a9aa6358a0182a34342206ee5ac}
+
+
+biotypes for nucleotide backbone and sugar C1' atoms 
+
+
+
+Definition at line 43 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a65adf7bd2d2ac998e7765e55bad0890b}{\index{resdue@{resdue}!c2typ@{c2typ}}
+\index{c2typ@{c2typ}!resdue@{resdue}}
+\subsubsection[{c2typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::c2typ}}\label{classresdue_a65adf7bd2d2ac998e7765e55bad0890b}
+
+
+biotypes for nucleotide backbone and sugar C2' atoms 
+
+
+
+Definition at line 47 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a82523120c873c647aa84cbc82d9c49b4}{\index{resdue@{resdue}!c3typ@{c3typ}}
+\index{c3typ@{c3typ}!resdue@{resdue}}
+\subsubsection[{c3typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::c3typ}}\label{classresdue_a82523120c873c647aa84cbc82d9c49b4}
+
+
+biotypes for nucleotide backbone and sugar C3' atoms 
+
+
+
+Definition at line 45 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_ac55d40734d1d1447f6563a917f496afc}{\index{resdue@{resdue}!c4typ@{c4typ}}
+\index{c4typ@{c4typ}!resdue@{resdue}}
+\subsubsection[{c4typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::c4typ}}\label{classresdue_ac55d40734d1d1447f6563a917f496afc}
+
+
+biotypes for nucleotide backbone and sugar C4' atoms 
+
+
+
+Definition at line 40 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a6643ae3326878cc4594ab3133a514951}{\index{resdue@{resdue}!c5typ@{c5typ}}
+\index{c5typ@{c5typ}!resdue@{resdue}}
+\subsubsection[{c5typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::c5typ}}\label{classresdue_a6643ae3326878cc4594ab3133a514951}
+
+
+biotypes for nucleotide backbone and sugar C5' atoms 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a7800b2083dda453b03ca0b1518245bb0}{\index{resdue@{resdue}!cactyp@{cactyp}}
+\index{cactyp@{cactyp}!resdue@{resdue}}
+\subsubsection[{cactyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::cactyp}}\label{classresdue_a7800b2083dda453b03ca0b1518245bb0}
+
+
+biotypes for C-\/terminal peptide backbone C\-A atoms 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a127824bfd508340fba9a479d0e23444e}{\index{resdue@{resdue}!cantyp@{cantyp}}
+\index{cantyp@{cantyp}!resdue@{resdue}}
+\subsubsection[{cantyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::cantyp}}\label{classresdue_a127824bfd508340fba9a479d0e23444e}
+
+
+biotypes for N-\/terminal peptide backbone C\-A atoms 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a25240da745223ff18029bc5158e49254}{\index{resdue@{resdue}!catyp@{catyp}}
+\index{catyp@{catyp}!resdue@{resdue}}
+\subsubsection[{catyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::catyp}}\label{classresdue_a25240da745223ff18029bc5158e49254}
+
+
+biotypes for mid-\/chain peptide backbone C\-A atoms 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a5c7194799b5b4c659a3e08ccf6a07a82}{\index{resdue@{resdue}!cbtyp@{cbtyp}}
+\index{cbtyp@{cbtyp}!resdue@{resdue}}
+\subsubsection[{cbtyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::cbtyp}}\label{classresdue_a5c7194799b5b4c659a3e08ccf6a07a82}
+
+
+biotypes for mid-\/chain peptide backbone C\-B atoms 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a9693e50a65750bbb7dec2cdae61254d3}{\index{resdue@{resdue}!cctyp@{cctyp}}
+\index{cctyp@{cctyp}!resdue@{resdue}}
+\subsubsection[{cctyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::cctyp}}\label{classresdue_a9693e50a65750bbb7dec2cdae61254d3}
+
+
+biotypes for C-\/terminal peptide backbone C atoms 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a61b1e7c7163ff480275984e367a3dffa}{\index{resdue@{resdue}!cntyp@{cntyp}}
+\index{cntyp@{cntyp}!resdue@{resdue}}
+\subsubsection[{cntyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::cntyp}}\label{classresdue_a61b1e7c7163ff480275984e367a3dffa}
+
+
+biotypes for N-\/terminal peptide backbone C atoms 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_ab12245fc7d0a317c3184c5711ed6261d}{\index{resdue@{resdue}!ctyp@{ctyp}}
+\index{ctyp@{ctyp}!resdue@{resdue}}
+\subsubsection[{ctyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::ctyp}}\label{classresdue_ab12245fc7d0a317c3184c5711ed6261d}
+
+
+biotypes for mid-\/chain peptide backbone C atoms 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_abfce73e98bff9796dcd0952e096b336a}{\index{resdue@{resdue}!h1typ@{h1typ}}
+\index{h1typ@{h1typ}!resdue@{resdue}}
+\subsubsection[{h1typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h1typ}}\label{classresdue_abfce73e98bff9796dcd0952e096b336a}
+
+
+biotypes for nucleotide backbone and sugar H1' atoms 
+
+
+
+Definition at line 44 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a8b5a106a65951bc071a5bfc7c20a070a}{\index{resdue@{resdue}!h21typ@{h21typ}}
+\index{h21typ@{h21typ}!resdue@{resdue}}
+\subsubsection[{h21typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h21typ}}\label{classresdue_a8b5a106a65951bc071a5bfc7c20a070a}
+
+
+biotypes for nucleotide backbone and sugar H2' atoms 
+
+
+
+Definition at line 48 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a75f6e2e38296c7b1427e911d97fbcba4}{\index{resdue@{resdue}!h22typ@{h22typ}}
+\index{h22typ@{h22typ}!resdue@{resdue}}
+\subsubsection[{h22typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h22typ}}\label{classresdue_a75f6e2e38296c7b1427e911d97fbcba4}
+
+
+biotypes for nucleotide backbone and sugar H2'' atoms 
+
+
+
+Definition at line 50 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a6002cb84b9ca25f2776d1020ca1fbb5c}{\index{resdue@{resdue}!h3ttyp@{h3ttyp}}
+\index{h3ttyp@{h3ttyp}!resdue@{resdue}}
+\subsubsection[{h3ttyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h3ttyp}}\label{classresdue_a6002cb84b9ca25f2776d1020ca1fbb5c}
+
+
+biotypes for nucleotide backbone and sugar H3\-T atoms 
+
+
+
+Definition at line 55 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a5c59bc8e2a978ecd0112210b0cb0f23a}{\index{resdue@{resdue}!h3typ@{h3typ}}
+\index{h3typ@{h3typ}!resdue@{resdue}}
+\subsubsection[{h3typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h3typ}}\label{classresdue_a5c59bc8e2a978ecd0112210b0cb0f23a}
+
+
+biotypes for nucleotide backbone and sugar H3' atoms 
+
+
+
+Definition at line 46 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_aaeadfe458580a8c49cd4f5e145281242}{\index{resdue@{resdue}!h4typ@{h4typ}}
+\index{h4typ@{h4typ}!resdue@{resdue}}
+\subsubsection[{h4typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h4typ}}\label{classresdue_aaeadfe458580a8c49cd4f5e145281242}
+
+
+biotypes for nucleotide backbone and sugar H4' atoms 
+
+
+
+Definition at line 41 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a9736062e8c8c235ef06de2f4b279d327}{\index{resdue@{resdue}!h51typ@{h51typ}}
+\index{h51typ@{h51typ}!resdue@{resdue}}
+\subsubsection[{h51typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h51typ}}\label{classresdue_a9736062e8c8c235ef06de2f4b279d327}
+
+
+biotypes for nucleotide backbone and sugar H5' atoms 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a8d8b285ff85ed1830b08e4b3288334b5}{\index{resdue@{resdue}!h52typ@{h52typ}}
+\index{h52typ@{h52typ}!resdue@{resdue}}
+\subsubsection[{h52typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h52typ}}\label{classresdue_a8d8b285ff85ed1830b08e4b3288334b5}
+
+
+biotypes for nucleotide backbone and sugar H5'' atoms 
+
+
+
+Definition at line 39 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_ada509c4f4faf38d11b7074364318f24f}{\index{resdue@{resdue}!h5ttyp@{h5ttyp}}
+\index{h5ttyp@{h5ttyp}!resdue@{resdue}}
+\subsubsection[{h5ttyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::h5ttyp}}\label{classresdue_ada509c4f4faf38d11b7074364318f24f}
+
+
+biotypes for nucleotide backbone and sugar H5\-T atoms 
+
+
+
+Definition at line 54 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_ae87374ba5c19bd0b66fe871dbbdcc26e}{\index{resdue@{resdue}!hactyp@{hactyp}}
+\index{hactyp@{hactyp}!resdue@{resdue}}
+\subsubsection[{hactyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::hactyp}}\label{classresdue_ae87374ba5c19bd0b66fe871dbbdcc26e}
+
+
+biotypes for C-\/terminal peptide backbone H\-A atoms 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a8b657c92c1c4475acb2dc5a11234653f}{\index{resdue@{resdue}!hantyp@{hantyp}}
+\index{hantyp@{hantyp}!resdue@{resdue}}
+\subsubsection[{hantyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::hantyp}}\label{classresdue_a8b657c92c1c4475acb2dc5a11234653f}
+
+
+biotypes for N-\/terminal peptide backbone H\-A atoms 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a3d33a8ca66e1895d0e6bbe4d393613bb}{\index{resdue@{resdue}!hatyp@{hatyp}}
+\index{hatyp@{hatyp}!resdue@{resdue}}
+\subsubsection[{hatyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::hatyp}}\label{classresdue_a3d33a8ca66e1895d0e6bbe4d393613bb}
+
+
+biotypes for mid-\/chain peptide backbone H\-A atoms 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a35d2eabf774d188c40965ae2b6f74d82}{\index{resdue@{resdue}!hnctyp@{hnctyp}}
+\index{hnctyp@{hnctyp}!resdue@{resdue}}
+\subsubsection[{hnctyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::hnctyp}}\label{classresdue_a35d2eabf774d188c40965ae2b6f74d82}
+
+
+biotypes for C-\/terminal peptide backbone H\-N atoms 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a186dccbe7c92c66436d7a74365ae8269}{\index{resdue@{resdue}!hnntyp@{hnntyp}}
+\index{hnntyp@{hnntyp}!resdue@{resdue}}
+\subsubsection[{hnntyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::hnntyp}}\label{classresdue_a186dccbe7c92c66436d7a74365ae8269}
+
+
+biotypes for N-\/terminal peptide backbone H\-N atoms 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a91612d9e842c867e9eb542ca7934ed77}{\index{resdue@{resdue}!hntyp@{hntyp}}
+\index{hntyp@{hntyp}!resdue@{resdue}}
+\subsubsection[{hntyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::hntyp}}\label{classresdue_a91612d9e842c867e9eb542ca7934ed77}
+
+
+biotypes for mid-\/chain peptide backbone H\-N atoms 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a70d0e2e9c1996d537b7753aec59e0c8d}{\index{resdue@{resdue}!nctyp@{nctyp}}
+\index{nctyp@{nctyp}!resdue@{resdue}}
+\subsubsection[{nctyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::nctyp}}\label{classresdue_a70d0e2e9c1996d537b7753aec59e0c8d}
+
+
+biotypes for C-\/terminal peptide backbone N atoms 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a82db5e55499ed18ed1d2f58bdf8e7312}{\index{resdue@{resdue}!nntyp@{nntyp}}
+\index{nntyp@{nntyp}!resdue@{resdue}}
+\subsubsection[{nntyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::nntyp}}\label{classresdue_a82db5e55499ed18ed1d2f58bdf8e7312}
+
+
+biotypes for N-\/terminal peptide backbone N atoms 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_ad2f7d43bb9fa7978c52b73d49772f424}{\index{resdue@{resdue}!ntyp@{ntyp}}
+\index{ntyp@{ntyp}!resdue@{resdue}}
+\subsubsection[{ntyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::ntyp}}\label{classresdue_ad2f7d43bb9fa7978c52b73d49772f424}
+
+
+biotypes for mid-\/chain peptide backbone N atoms 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_acb729218ac3b4c499e444a8aa0019071}{\index{resdue@{resdue}!nuclz@{nuclz}}
+\index{nuclz@{nuclz}!resdue@{resdue}}
+\subsubsection[{nuclz}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$3, dimension(maxnuc) resdue\-::nuclz}}\label{classresdue_acb729218ac3b4c499e444a8aa0019071}
+
+
+one-\/letter abbreviations for nucleic acids types 
+
+
+
+Definition at line 59 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a01035bf726114e5ebe4baa0703e0b030}{\index{resdue@{resdue}!nuclz1@{nuclz1}}
+\index{nuclz1@{nuclz1}!resdue@{resdue}}
+\subsubsection[{nuclz1}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$1, dimension(maxnuc) resdue\-::nuclz1}}\label{classresdue_a01035bf726114e5ebe4baa0703e0b030}
+
+
+three-\/letter abbreviations for nucleic acids types 
+
+
+
+Definition at line 57 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a59687c403572e1626b6d69b8738ed6a6}{\index{resdue@{resdue}!o2typ@{o2typ}}
+\index{o2typ@{o2typ}!resdue@{resdue}}
+\subsubsection[{o2typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::o2typ}}\label{classresdue_a59687c403572e1626b6d69b8738ed6a6}
+
+
+biotypes for nucleotide backbone and sugar O2' atoms 
+
+
+
+Definition at line 49 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a95d0afec50d06f37606365889c369461}{\index{resdue@{resdue}!o3typ@{o3typ}}
+\index{o3typ@{o3typ}!resdue@{resdue}}
+\subsubsection[{o3typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::o3typ}}\label{classresdue_a95d0afec50d06f37606365889c369461}
+
+
+biotypes for nucleotide backbone and sugar O3' atoms 
+
+
+
+Definition at line 51 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a88a1df13143a4d2b4e252e4f25d3f1dc}{\index{resdue@{resdue}!o4typ@{o4typ}}
+\index{o4typ@{o4typ}!resdue@{resdue}}
+\subsubsection[{o4typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::o4typ}}\label{classresdue_a88a1df13143a4d2b4e252e4f25d3f1dc}
+
+
+biotypes for nucleotide backbone and sugar O4' atoms 
+
+
+
+Definition at line 42 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a6a04dafa45afb5a8adf89f18467afb4a}{\index{resdue@{resdue}!o5typ@{o5typ}}
+\index{o5typ@{o5typ}!resdue@{resdue}}
+\subsubsection[{o5typ}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::o5typ}}\label{classresdue_a6a04dafa45afb5a8adf89f18467afb4a}
+
+
+biotypes for nucleotide backbone and sugar O5' atoms 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_ad241d88a4adc78b939a86353ebf03140}{\index{resdue@{resdue}!octyp@{octyp}}
+\index{octyp@{octyp}!resdue@{resdue}}
+\subsubsection[{octyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::octyp}}\label{classresdue_ad241d88a4adc78b939a86353ebf03140}
+
+
+biotypes for C-\/terminal peptide backbone O atoms 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a2170a9a55ac22ff0c519b4026bb15fe6}{\index{resdue@{resdue}!ontyp@{ontyp}}
+\index{ontyp@{ontyp}!resdue@{resdue}}
+\subsubsection[{ontyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::ontyp}}\label{classresdue_a2170a9a55ac22ff0c519b4026bb15fe6}
+
+
+biotypes for N-\/terminal peptide backbone O atoms 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a6286d8a51141e8261fe20877c7910220}{\index{resdue@{resdue}!optyp@{optyp}}
+\index{optyp@{optyp}!resdue@{resdue}}
+\subsubsection[{optyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::optyp}}\label{classresdue_a6286d8a51141e8261fe20877c7910220}
+
+
+biotypes for nucleotide backbone and sugar O\-P atoms 
+
+
+
+Definition at line 53 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_ae43a84a521235c9e35ba02a293139a96}{\index{resdue@{resdue}!otyp@{otyp}}
+\index{otyp@{otyp}!resdue@{resdue}}
+\subsubsection[{otyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxamino) resdue\-::otyp}}\label{classresdue_ae43a84a521235c9e35ba02a293139a96}
+
+
+biotypes for mid-\/chain peptide backbone O atoms 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-resdue.\-f90.
+
+\hypertarget{classresdue_a40674f05ab57e66b0176b1f62b3e9af1}{\index{resdue@{resdue}!ptyp@{ptyp}}
+\index{ptyp@{ptyp}!resdue@{resdue}}
+\subsubsection[{ptyp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxnuc) resdue\-::ptyp}}\label{classresdue_a40674f05ab57e66b0176b1f62b3e9af1}
+
+
+biotypes for nucleotide backbone and sugar P atoms 
+
+
+
+Definition at line 52 of file M\-O\-D\-\_\-resdue.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__resdue_8f90}{M\-O\-D\-\_\-resdue.\-f90}\end{DoxyCompactItemize}

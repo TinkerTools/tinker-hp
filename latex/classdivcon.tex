@@ -1,0 +1,281 @@
+\hypertarget{classdivcon}{\section{divcon Module Reference}
+\label{classdivcon}\index{divcon@{divcon}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer \hyperlink{classdivcon_ad02ff9537429bbaeb6361a9d36339c86}{maxdim}
+\begin{DoxyCompactList}\small\item\em max number of atoms per block \end{DoxyCompactList}\item 
+integer \hyperlink{classdivcon_ab4439f8aee99be1a5ba1f14c1e228616}{km}
+\begin{DoxyCompactList}\small\item\em number of blocks \end{DoxyCompactList}\item 
+integer \hyperlink{classdivcon_a6e44fc423e7b02b063c883e0e4f964ff}{zdim}
+\item 
+integer \hyperlink{classdivcon_a56d6b8747f40bfa7bf92740878cf7b50}{natprblk}
+\begin{DoxyCompactList}\small\item\em block size \end{DoxyCompactList}\item 
+integer \hyperlink{classdivcon_ae45ec52c665839ab4eb37dd153149e30}{clsttype}
+\begin{DoxyCompactList}\small\item\em cluster algorithm \end{DoxyCompactList}\item 
+integer \hyperlink{classdivcon_a6a2fe3c40a79e9864b137eae55c5f687}{dcx}
+\item 
+integer \hyperlink{classdivcon_addaa1eb83cb76de9e77d18be1572e1bc}{dcy}
+\item 
+integer \hyperlink{classdivcon_a57e33b1ad8fb8c9cd294d6ebb7be1733}{dcz}
+\item 
+integer \hyperlink{classdivcon_a558a265882b7e0d8303f780148834195}{precomp}
+\begin{DoxyCompactList}\small\item\em rely on precomputation \end{DoxyCompactList}\item 
+integer \hyperlink{classdivcon_adc6683167f9989d9804a65ec3cac7909}{nocomdiis}
+\begin{DoxyCompactList}\small\item\em diis extrapolation without M\-P\-I communications \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classdivcon_a3a01a2319abc05a8446408112da13898}{grplst}
+\begin{DoxyCompactList}\small\item\em group list \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classdivcon_afe6c08bc2376eec7662edfe9cc98de07}{atmofst}
+\begin{DoxyCompactList}\small\item\em atom offset \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classdivcon_a323999e4a5bd8e8ea2d277eb52ee66ad}{kofst}
+\begin{DoxyCompactList}\small\item\em where each Zmat begins in the array \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classdivcon_aaec5fcd38debfd444315b3f4eaaf901c}{npergrp}
+\begin{DoxyCompactList}\small\item\em number of atoms per group \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classdivcon_a946b1a91ab9c1ee815dbbc9f5773677a}{knblist}
+\begin{DoxyCompactList}\small\item\em neighbor list indexing \end{DoxyCompactList}\item 
+integer, dimension(\-:), allocatable \hyperlink{classdivcon_af984aacb47c91db0642bacadd4a7369b}{point}
+\begin{DoxyCompactList}\small\item\em neighbor list indexing \end{DoxyCompactList}\item 
+integer, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classdivcon_ab2af8e112e7ff97134538cc3c57a932e}{klst}
+\begin{DoxyCompactList}\small\item\em neighbor list \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdivcon_a938a321986541d17214d4e59cab4ea34}{zmat}
+\begin{DoxyCompactList}\small\item\em Z matrix. \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classdivcon_a496460c2cb95e37ebd638af57e4cc0b2}{means}
+\begin{DoxyCompactList}\small\item\em mean values in blocks \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:,\-:), \\*
+allocatable \hyperlink{classdivcon_ae489384938cb29894a602cbf5579eab9}{oldmeans}
+\begin{DoxyCompactList}\small\item\em old mean values \end{DoxyCompactList}\item 
+real $\ast$8, dimension(\-:), allocatable \hyperlink{classdivcon_a1ba68250378b2f3d3274028c30a0c365}{ytab}
+\begin{DoxyCompactList}\small\item\em induced dipole eletric field \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 16 of file M\-O\-D\-\_\-divcon.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classdivcon_afe6c08bc2376eec7662edfe9cc98de07}{\index{divcon@{divcon}!atmofst@{atmofst}}
+\index{atmofst@{atmofst}!divcon@{divcon}}
+\subsubsection[{atmofst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable divcon\-::atmofst}}\label{classdivcon_afe6c08bc2376eec7662edfe9cc98de07}
+
+
+atom offset 
+
+
+
+Definition at line 29 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_ae45ec52c665839ab4eb37dd153149e30}{\index{divcon@{divcon}!clsttype@{clsttype}}
+\index{clsttype@{clsttype}!divcon@{divcon}}
+\subsubsection[{clsttype}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::clsttype}}\label{classdivcon_ae45ec52c665839ab4eb37dd153149e30}
+
+
+cluster algorithm 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a6a2fe3c40a79e9864b137eae55c5f687}{\index{divcon@{divcon}!dcx@{dcx}}
+\index{dcx@{dcx}!divcon@{divcon}}
+\subsubsection[{dcx}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::dcx}}\label{classdivcon_a6a2fe3c40a79e9864b137eae55c5f687}
+
+
+Definition at line 23 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_addaa1eb83cb76de9e77d18be1572e1bc}{\index{divcon@{divcon}!dcy@{dcy}}
+\index{dcy@{dcy}!divcon@{divcon}}
+\subsubsection[{dcy}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::dcy}}\label{classdivcon_addaa1eb83cb76de9e77d18be1572e1bc}
+
+
+Definition at line 24 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a57e33b1ad8fb8c9cd294d6ebb7be1733}{\index{divcon@{divcon}!dcz@{dcz}}
+\index{dcz@{dcz}!divcon@{divcon}}
+\subsubsection[{dcz}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::dcz}}\label{classdivcon_a57e33b1ad8fb8c9cd294d6ebb7be1733}
+
+
+Definition at line 25 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a3a01a2319abc05a8446408112da13898}{\index{divcon@{divcon}!grplst@{grplst}}
+\index{grplst@{grplst}!divcon@{divcon}}
+\subsubsection[{grplst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable divcon\-::grplst}}\label{classdivcon_a3a01a2319abc05a8446408112da13898}
+
+
+group list 
+
+
+
+Definition at line 28 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_ab2af8e112e7ff97134538cc3c57a932e}{\index{divcon@{divcon}!klst@{klst}}
+\index{klst@{klst}!divcon@{divcon}}
+\subsubsection[{klst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:,\-:), allocatable divcon\-::klst}}\label{classdivcon_ab2af8e112e7ff97134538cc3c57a932e}
+
+
+neighbor list 
+
+
+
+Definition at line 34 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_ab4439f8aee99be1a5ba1f14c1e228616}{\index{divcon@{divcon}!km@{km}}
+\index{km@{km}!divcon@{divcon}}
+\subsubsection[{km}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::km}}\label{classdivcon_ab4439f8aee99be1a5ba1f14c1e228616}
+
+
+number of blocks 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a946b1a91ab9c1ee815dbbc9f5773677a}{\index{divcon@{divcon}!knblist@{knblist}}
+\index{knblist@{knblist}!divcon@{divcon}}
+\subsubsection[{knblist}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable divcon\-::knblist}}\label{classdivcon_a946b1a91ab9c1ee815dbbc9f5773677a}
+
+
+neighbor list indexing 
+
+
+
+Definition at line 32 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a323999e4a5bd8e8ea2d277eb52ee66ad}{\index{divcon@{divcon}!kofst@{kofst}}
+\index{kofst@{kofst}!divcon@{divcon}}
+\subsubsection[{kofst}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable divcon\-::kofst}}\label{classdivcon_a323999e4a5bd8e8ea2d277eb52ee66ad}
+
+
+where each Zmat begins in the array 
+
+
+
+Definition at line 30 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_ad02ff9537429bbaeb6361a9d36339c86}{\index{divcon@{divcon}!maxdim@{maxdim}}
+\index{maxdim@{maxdim}!divcon@{divcon}}
+\subsubsection[{maxdim}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::maxdim}}\label{classdivcon_ad02ff9537429bbaeb6361a9d36339c86}
+
+
+max number of atoms per block 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a496460c2cb95e37ebd638af57e4cc0b2}{\index{divcon@{divcon}!means@{means}}
+\index{means@{means}!divcon@{divcon}}
+\subsubsection[{means}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable divcon\-::means}}\label{classdivcon_a496460c2cb95e37ebd638af57e4cc0b2}
+
+
+mean values in blocks 
+
+
+
+Definition at line 36 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a56d6b8747f40bfa7bf92740878cf7b50}{\index{divcon@{divcon}!natprblk@{natprblk}}
+\index{natprblk@{natprblk}!divcon@{divcon}}
+\subsubsection[{natprblk}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::natprblk}}\label{classdivcon_a56d6b8747f40bfa7bf92740878cf7b50}
+
+
+block size 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_adc6683167f9989d9804a65ec3cac7909}{\index{divcon@{divcon}!nocomdiis@{nocomdiis}}
+\index{nocomdiis@{nocomdiis}!divcon@{divcon}}
+\subsubsection[{nocomdiis}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::nocomdiis}}\label{classdivcon_adc6683167f9989d9804a65ec3cac7909}
+
+
+diis extrapolation without M\-P\-I communications 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_aaec5fcd38debfd444315b3f4eaaf901c}{\index{divcon@{divcon}!npergrp@{npergrp}}
+\index{npergrp@{npergrp}!divcon@{divcon}}
+\subsubsection[{npergrp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable divcon\-::npergrp}}\label{classdivcon_aaec5fcd38debfd444315b3f4eaaf901c}
+
+
+number of atoms per group 
+
+
+
+Definition at line 31 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_ae489384938cb29894a602cbf5579eab9}{\index{divcon@{divcon}!oldmeans@{oldmeans}}
+\index{oldmeans@{oldmeans}!divcon@{divcon}}
+\subsubsection[{oldmeans}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:,\-:), allocatable divcon\-::oldmeans}}\label{classdivcon_ae489384938cb29894a602cbf5579eab9}
+
+
+old mean values 
+
+
+
+Definition at line 37 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_af984aacb47c91db0642bacadd4a7369b}{\index{divcon@{divcon}!point@{point}}
+\index{point@{point}!divcon@{divcon}}
+\subsubsection[{point}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\-:), allocatable divcon\-::point}}\label{classdivcon_af984aacb47c91db0642bacadd4a7369b}
+
+
+neighbor list indexing 
+
+
+
+Definition at line 33 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a558a265882b7e0d8303f780148834195}{\index{divcon@{divcon}!precomp@{precomp}}
+\index{precomp@{precomp}!divcon@{divcon}}
+\subsubsection[{precomp}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::precomp}}\label{classdivcon_a558a265882b7e0d8303f780148834195}
+
+
+rely on precomputation 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a1ba68250378b2f3d3274028c30a0c365}{\index{divcon@{divcon}!ytab@{ytab}}
+\index{ytab@{ytab}!divcon@{divcon}}
+\subsubsection[{ytab}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable divcon\-::ytab}}\label{classdivcon_a1ba68250378b2f3d3274028c30a0c365}
+
+
+induced dipole eletric field 
+
+
+
+Definition at line 38 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a6e44fc423e7b02b063c883e0e4f964ff}{\index{divcon@{divcon}!zdim@{zdim}}
+\index{zdim@{zdim}!divcon@{divcon}}
+\subsubsection[{zdim}]{\setlength{\rightskip}{0pt plus 5cm}integer divcon\-::zdim}}\label{classdivcon_a6e44fc423e7b02b063c883e0e4f964ff}
+
+
+Definition at line 20 of file M\-O\-D\-\_\-divcon.\-f90.
+
+\hypertarget{classdivcon_a938a321986541d17214d4e59cab4ea34}{\index{divcon@{divcon}!zmat@{zmat}}
+\index{zmat@{zmat}!divcon@{divcon}}
+\subsubsection[{zmat}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(\-:), allocatable divcon\-::zmat}}\label{classdivcon_a938a321986541d17214d4e59cab4ea34}
+
+
+Z matrix. 
+
+
+
+Definition at line 35 of file M\-O\-D\-\_\-divcon.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__divcon_8f90}{M\-O\-D\-\_\-divcon.\-f90}\end{DoxyCompactItemize}

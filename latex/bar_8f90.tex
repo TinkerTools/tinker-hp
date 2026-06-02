@@ -1,0 +1,202 @@
+\hypertarget{bar_8f90}{\section{bar.\-f90 File Reference}
+\label{bar_8f90}\index{bar.\-f90@{bar.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+program \hyperlink{bar_8f90_a75dfe3f0be9db5c03a0c04398460d0b5}{bar}
+\begin{DoxyCompactList}\small\item\em \char`\"{}bar\char`\"{} computes the free energy, enthalpy and entropy difference between two states via Zwanzig free energy perturbation (F\-E\-P) and Bennett acceptance ratio (B\-A\-R) methods \end{DoxyCompactList}\item 
+subroutine \hyperlink{bar_8f90_afb9174791664d35ad5bc00ec6654ef05}{bar\-\_\-bis}
+\begin{DoxyCompactList}\small\item\em \char`\"{}bar\char`\"{} computes the free energy, enthalpy and entropy difference between two states via Zwanzig free energy perturbation (F\-E\-P) and Bennett acceptance ratio (B\-A\-R) methods \end{DoxyCompactList}\item 
+subroutine \hyperlink{bar_8f90_ab64094ed19dabc0a78cdd45b6ebccf03}{makebar}
+\begin{DoxyCompactList}\small\item\em store trajectory potential energy \end{DoxyCompactList}\item 
+subroutine \hyperlink{bar_8f90_a3b85cf3135ef4ebaa9d841ddfca2eaf1}{barcalc}
+\begin{DoxyCompactList}\small\item\em get thermodynamics via F\-E\-P \& B\-A\-R \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{bar_8f90_a75dfe3f0be9db5c03a0c04398460d0b5}{\index{bar.\-f90@{bar.\-f90}!bar@{bar}}
+\index{bar@{bar}!bar.f90@{bar.\-f90}}
+\subsubsection[{bar}]{\setlength{\rightskip}{0pt plus 5cm}program bar (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bar_8f90_a75dfe3f0be9db5c03a0c04398460d0b5}
+
+
+\char`\"{}bar\char`\"{} computes the free energy, enthalpy and entropy difference between two states via Zwanzig free energy perturbation (F\-E\-P) and Bennett acceptance ratio (B\-A\-R) methods 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 52 of file bar.\-f90.
+
+
+
+References bar\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bar_8f90_a75dfe3f0be9db5c03a0c04398460d0b5_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bar_8f90_afb9174791664d35ad5bc00ec6654ef05}{\index{bar.\-f90@{bar.\-f90}!bar\-\_\-bis@{bar\-\_\-bis}}
+\index{bar\-\_\-bis@{bar\-\_\-bis}!bar.f90@{bar.\-f90}}
+\subsubsection[{bar\-\_\-bis}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bar\-\_\-bis (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bar_8f90_afb9174791664d35ad5bc00ec6654ef05}
+
+
+\char`\"{}bar\char`\"{} computes the free energy, enthalpy and entropy difference between two states via Zwanzig free energy perturbation (F\-E\-P) and Bennett acceptance ratio (B\-A\-R) methods 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 67 of file bar.\-f90.
+
+
+
+References barcalc(), final(), initial(), initmpi(), makebar(), and nextarg().
+
+
+
+Referenced by bar().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bar_8f90_afb9174791664d35ad5bc00ec6654ef05_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=200pt]{bar_8f90_afb9174791664d35ad5bc00ec6654ef05_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bar_8f90_a3b85cf3135ef4ebaa9d841ddfca2eaf1}{\index{bar.\-f90@{bar.\-f90}!barcalc@{barcalc}}
+\index{barcalc@{barcalc}!bar.f90@{bar.\-f90}}
+\subsubsection[{barcalc}]{\setlength{\rightskip}{0pt plus 5cm}subroutine barcalc (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bar_8f90_a3b85cf3135ef4ebaa9d841ddfca2eaf1}
+
+
+get thermodynamics via F\-E\-P \& B\-A\-R 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 626 of file bar.\-f90.
+
+
+
+References basefile(), fatal(), freeunit(), gettext(), colvarproxy\-\_\-tinkerhp\-::log(), nextarg(), random(), suffix(), trimhead(), and trimtext().
+
+
+
+Referenced by bar\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{bar_8f90_a3b85cf3135ef4ebaa9d841ddfca2eaf1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=288pt]{bar_8f90_a3b85cf3135ef4ebaa9d841ddfca2eaf1_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{bar_8f90_ab64094ed19dabc0a78cdd45b6ebccf03}{\index{bar.\-f90@{bar.\-f90}!makebar@{makebar}}
+\index{makebar@{makebar}!bar.f90@{bar.\-f90}}
+\subsubsection[{makebar}]{\setlength{\rightskip}{0pt plus 5cm}subroutine makebar (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{bar_8f90_ab64094ed19dabc0a78cdd45b6ebccf03}
+
+
+store trajectory potential energy 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 128 of file bar.\-f90.
+
+
+
+References cutoffs(), ddpme3d(), drivermpi(), energy(), fatal(), freeunit(), getxyz(), kewald\-\_\-2(), lattice(), mechanic(), mechanic\-\_\-init\-\_\-para(), nblist(), nextarg(), readxyz(), reassignpme(), reduceen(), reinitnl(), suffix(), trimtext(), unitcell(), and version().
+
+
+
+Referenced by bar\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{bar_8f90_ab64094ed19dabc0a78cdd45b6ebccf03_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=296pt]{bar_8f90_ab64094ed19dabc0a78cdd45b6ebccf03_icgraph}
+\end{center}
+\end{figure}
+
+

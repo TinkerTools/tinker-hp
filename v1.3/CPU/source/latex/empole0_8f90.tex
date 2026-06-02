@@ -1,0 +1,165 @@
+\hypertarget{empole0_8f90}{\section{empole0.\-f90 File Reference}
+\label{empole0_8f90}\index{empole0.\-f90@{empole0.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{empole0_8f90_a132931e9350ea41ee604f989475d97b8}{empole0}
+\begin{DoxyCompactList}\small\item\em calculates the electrostatic energy due to atomic multipole and dipole polarizability interactions \end{DoxyCompactList}\item 
+subroutine \hyperlink{empole0_8f90_aa0ceb9200f0d5572af38326488199dc7}{empole0c}
+\begin{DoxyCompactList}\small\item\em calculates the atomic multipole interaction energy using particle mesh Ewald summation and a neighbor list \end{DoxyCompactList}\item 
+subroutine \hyperlink{empole0_8f90_ab36085435af077487277efc3549e0549}{emreal0d}
+\begin{DoxyCompactList}\small\item\em evaluates the real space portion of the Ewald sum energy due to atomic multipoles using a neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{empole0_8f90_a132931e9350ea41ee604f989475d97b8}{\index{empole0.\-f90@{empole0.\-f90}!empole0@{empole0}}
+\index{empole0@{empole0}!empole0.f90@{empole0.\-f90}}
+\subsubsection[{empole0}]{\setlength{\rightskip}{0pt plus 5cm}subroutine empole0 (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole0_8f90_a132931e9350ea41ee604f989475d97b8}
+
+
+calculates the electrostatic energy due to atomic multipole and dipole polarizability interactions 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file empole0.\-f90.
+
+
+
+References empole0c().
+
+
+
+Referenced by energy().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole0_8f90_a132931e9350ea41ee604f989475d97b8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole0_8f90_a132931e9350ea41ee604f989475d97b8_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{empole0_8f90_aa0ceb9200f0d5572af38326488199dc7}{\index{empole0.\-f90@{empole0.\-f90}!empole0c@{empole0c}}
+\index{empole0c@{empole0c}!empole0.f90@{empole0.\-f90}}
+\subsubsection[{empole0c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine empole0c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole0_8f90_aa0ceb9200f0d5572af38326488199dc7}
+
+
+calculates the atomic multipole interaction energy using particle mesh Ewald summation and a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 52 of file empole0.\-f90.
+
+
+
+References chkpole(), emreal0d(), emrecip(), and rotpole().
+
+
+
+Referenced by empole0().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole0_8f90_aa0ceb9200f0d5572af38326488199dc7_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole0_8f90_aa0ceb9200f0d5572af38326488199dc7_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{empole0_8f90_ab36085435af077487277efc3549e0549}{\index{empole0.\-f90@{empole0.\-f90}!emreal0d@{emreal0d}}
+\index{emreal0d@{emreal0d}!empole0.f90@{empole0.\-f90}}
+\subsubsection[{emreal0d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine emreal0d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{empole0_8f90_ab36085435af077487277efc3549e0549}
+
+
+evaluates the real space portion of the Ewald sum energy due to atomic multipoles using a neighbor list 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 201 of file empole0.\-f90.
+
+
+
+References dampewald(), damppole(), groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by empole0c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole0_8f90_ab36085435af077487277efc3549e0549_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{empole0_8f90_ab36085435af077487277efc3549e0549_icgraph}
+\end{center}
+\end{figure}
+
+

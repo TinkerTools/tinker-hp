@@ -1,0 +1,38 @@
+<map id="kchgflx" name="kchgflx">
+<area shape="rect" id="node2" href="$kchgflx_8f90.html#a8d6dbbdd13f51b1bc611007869ad192e" title="allocate shared memory pointers for chgflx parameter arrays " alt="" coords="123,411,274,437"/>
+<area shape="rect" id="node3" href="$kchgflx_8f90.html#a2a5e33d00e921d9f01ffc86ae876d4e7" title="deallocate shared memory pointers for chgflx parameter arrays " alt="" coords="449,5,615,32"/>
+<area shape="rect" id="node4" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="173,512,225,539"/>
+<area shape="rect" id="node5" href="$gettext_8f90.html#a7e584e3b67e4a914db788ebf7117adde" title="searches an input string for the first string of non&#45;blank characters; the region from a non&#45;blank ch..." alt="" coords="164,563,233,589"/>
+<area shape="rect" id="node35" href="$numeral_8f90.html#a02f02abcc21a0359f7ef69ae411c78b5" title="converts an input integer number into the corresponding right&#45; or left&#45;justified text numeral ..." alt="" coords="161,956,237,983"/>
+<area shape="rect" id="node30" href="$trimtext_8f90.html#ac85c1610cf6186365e8b9104254d54a0" title="converts a text string to all upper case letters with leading blank spaces " alt="" coords="670,1221,738,1248"/>
+<area shape="rect" id="node6" href="$kewald_8f90.html#ac76eaab5e7eea01f0c1f678d7f7a65ad" title="finds the largest interatomic distance in a system " alt="" coords="327,512,391,539"/>
+<area shape="rect" id="node7" href="$final_8f90.html#aa7a1e2e331315549ce63863cf969bfd7" title="performs any final program actions, prints a status message, and then pauses if necessary to avoid cl..." alt="" coords="333,563,384,589"/>
+<area shape="rect" id="node28" href="$initial_8f90.html#a8cdfda82b81e31ea3d28d910bb60fb00" title="sets up original values for some parameters and variables that might not otherwise get initialized ..." alt="" coords="329,1145,388,1172"/>
+<area shape="rect" id="node8" href="$active_8f90.html#af0dcab31cfcc7bc4be46dcd9d816c3bf" title="deallocate shared memory pointers for active parameter arrays " alt="" coords="449,56,615,83"/>
+<area shape="rect" id="node9" href="$kangang_8f90.html#a2d1d052cedb144b9275389670f8f3f81" title="deallocate shared memory pointers for angang parameter arrays " alt="" coords="445,107,619,133"/>
+<area shape="rect" id="node10" href="$angles_8f90.html#a18cbf3a18661418d0c41a53a33afae7a" title="deallocate shared memory pointers for angles parameter arrays " alt="" coords="447,157,617,184"/>
+<area shape="rect" id="node11" href="$attach_8f90.html#a732194890bf2b5efa4f972e7ae2fa8c1" title="deallocate shared memory pointers for attach parameter arrays " alt="" coords="448,208,616,235"/>
+<area shape="rect" id="node12" href="$bitors_8f90.html#ac7dd2d6ea67ec8953262a906ae99afbe" title="deallocate shared memory pointers for bitors parameter arrays " alt="" coords="450,259,614,285"/>
+<area shape="rect" id="node13" href="$bonds_8f90.html#ad5545b80115e0fbedaef9727db7ee081" title="deallocate shared memory pointers for bond arameter arrays " alt="" coords="453,309,611,336"/>
+<area shape="rect" id="node14" href="$kcharge_8f90.html#ab7bf95215bd2aa286b3682380d588fe3" title="deallocate shared memory pointers for chg parameter arrays " alt="" coords="457,360,607,387"/>
+<area shape="rect" id="node15" href="$kchgtrn_8f90.html#af2be4fb1684e7bb9c0cea3f57df272de" title="deallocate shared memory pointers for charge transfer parameter arrays " alt="" coords="451,411,613,437"/>
+<area shape="rect" id="node16" href="$kdisp_8f90.html#a580424f455c078fb6087d89ddb1cdf82" title="deallocate shared memory pointers for dispersion parameter arrays " alt="" coords="455,461,609,488"/>
+<area shape="rect" id="node17" href="$kgeom_8f90.html#a2c860282d4829d750b6ac0d8cdf1e2be" title="deallocate shared memory pointers for geometric restraint parameter arrays " alt="" coords="450,512,614,539"/>
+<area shape="rect" id="node18" href="$katom_8f90.html#afb7e300429562d4bc88c821d3a9aa434" title="deallocate shared memory pointers for katom parameter arrays " alt="" coords="447,563,617,589"/>
+<area shape="rect" id="node19" href="$molecule_8f90.html#a4b0144c2b32f83b10aac95940488f644" title="deallocate shared memory pointers for molecule parameter arrays " alt="" coords="456,613,608,640"/>
+<area shape="rect" id="node20" href="$kmpole_8f90.html#a63fc1c3adcd113227228e36c133ece32" title="deallocate shared memory pointers for mpole parameter arrays " alt="" coords="448,664,616,691"/>
+<area shape="rect" id="node21" href="$mutate_8f90.html#a09364e3a2898edf2de9c9576a25b9965" title="deallocate shared memory pointers for mutate parameter arrays " alt="" coords="445,715,619,741"/>
+<area shape="rect" id="node22" href="$kopbend_8f90.html#aaecffff0d28e7deed42f72bc5515d6f1" title="deallocate shared memory pointers for opbend parameter arrays " alt="" coords="445,765,619,792"/>
+<area shape="rect" id="node23" href="$kopdist_8f90.html#aa3a74ccb1b3f92db25ac34d3db66ba67" title="deallocate shared memory pointers for opdist parameter arrays " alt="" coords="449,816,615,843"/>
+<area shape="rect" id="node24" href="$kpolar_8f90.html#a2cc59daf2f863e63dfc3bb6362c1e719" title="deallocate shared memory pointers for polar parameter arrays " alt="" coords="452,867,612,893"/>
+<area shape="rect" id="node25" href="$krepel_8f90.html#a6ed819f1f5f3fffde4d96bb9b7a531e1" title="deallocate shared memory pointers for repulsion parameter arrays " alt="" coords="458,917,606,944"/>
+<area shape="rect" id="node26" href="$torsions_8f90.html#aefb7874b98ffd16aaa3cf626725754cc" title="deallocate shared memory pointers for torsions parameter arrays " alt="" coords="443,968,621,995"/>
+<area shape="rect" id="node27" href="$kvdw_8f90.html#ae389d517287a9d31cbc543aff515c47f" title="deallocate shared memory pointers for vdw parameter arrays " alt="" coords="455,1019,609,1045"/>
+<area shape="rect" id="node29" href="$command_8f90.html#ac18072297d38b31a20e396db819024a4" title="uses the standard Unix&#45;like iargc/getarg routines to get the number and values of arguments specified..." alt="" coords="489,1069,575,1096"/>
+<area shape="rect" id="node31" href="$initatom_8f90.html#ae959a689b9f51e9d207e25781cd79549" title="sets the atomic symbol for each element in the periodic table " alt="" coords="493,1120,571,1147"/>
+<area shape="rect" id="node32" href="$initres_8f90.html#a9e8e790b6a6290fe1a3461d4bc20cf54" title="&quot;initres&quot; sets biopolymer residue names and biotype codes used in PDB file conversion and automated g..." alt="" coords="501,1171,563,1197"/>
+<area shape="rect" id="node33" href="$precise_8f90.html#ab642a78dc05a1c13e17f07130f026c46" title="&quot;precise&quot; finds a machine precision value as selected by the input argument: (1) the smallest positiv..." alt="" coords="497,1221,567,1248"/>
+<area shape="rect" id="node34" href="$promo_8f90.html#aea1b6122aefba21acc755f98e214ebc2" title="writes a short message containing information about the Tinker&#45;HP version number and the copyright no..." alt="" coords="500,1272,564,1299"/>
+<area shape="rect" id="node36" href="$number_8f90.html#a133da88aea76390c3f91db1e3a8a4f4b" title="&quot;number&quot; converts a text numeral into an integer value; the input string must contain only numeric ch..." alt="" coords="323,1272,395,1299"/>
+<area shape="rect" id="node37" href="$trimtext_8f90.html#ad83d9073f809c425ddf7ca256594b68a" title="finds and returns the location of the last non&#45;blank character before the first null character in an ..." alt="" coords="495,1323,569,1349"/>
+</map>

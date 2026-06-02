@@ -1,0 +1,172 @@
+\hypertarget{kmpole_8f90}{\section{kmpole.\-f90 File Reference}
+\label{kmpole_8f90}\index{kmpole.\-f90@{kmpole.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{kmpole_8f90_ad7ac6d365c82a4750a84dd86e70e23e0}{kmpole}
+\begin{DoxyCompactList}\small\item\em assigns atomic multipole moments to the atoms of the structure and processes any new or changed values \end{DoxyCompactList}\item 
+subroutine \hyperlink{kmpole_8f90_a81f63457c17b981616c780477b7bf1e7}{kmpole\-\_\-update} (istep)
+\begin{DoxyCompactList}\small\item\em update local mpole parameters \end{DoxyCompactList}\item 
+subroutine \hyperlink{kmpole_8f90_a63fc1c3adcd113227228e36c133ece32}{dealloc\-\_\-shared\-\_\-mpole}
+\begin{DoxyCompactList}\small\item\em deallocate shared memory pointers for mpole parameter arrays \end{DoxyCompactList}\item 
+subroutine \hyperlink{kmpole_8f90_a76f757a60f6924561c576c025c0fc897}{alloc\-\_\-shared\-\_\-mpole}
+\begin{DoxyCompactList}\small\item\em allocate shared memory pointers for mpole parameter arrays \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{kmpole_8f90_a76f757a60f6924561c576c025c0fc897}{\index{kmpole.\-f90@{kmpole.\-f90}!alloc\-\_\-shared\-\_\-mpole@{alloc\-\_\-shared\-\_\-mpole}}
+\index{alloc\-\_\-shared\-\_\-mpole@{alloc\-\_\-shared\-\_\-mpole}!kmpole.f90@{kmpole.\-f90}}
+\subsubsection[{alloc\-\_\-shared\-\_\-mpole}]{\setlength{\rightskip}{0pt plus 5cm}subroutine alloc\-\_\-shared\-\_\-mpole (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kmpole_8f90_a76f757a60f6924561c576c025c0fc897}
+
+
+allocate shared memory pointers for mpole parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 992 of file kmpole.\-f90.
+
+
+
+Referenced by kmpole().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kmpole_8f90_a76f757a60f6924561c576c025c0fc897_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kmpole_8f90_a63fc1c3adcd113227228e36c133ece32}{\index{kmpole.\-f90@{kmpole.\-f90}!dealloc\-\_\-shared\-\_\-mpole@{dealloc\-\_\-shared\-\_\-mpole}}
+\index{dealloc\-\_\-shared\-\_\-mpole@{dealloc\-\_\-shared\-\_\-mpole}!kmpole.f90@{kmpole.\-f90}}
+\subsubsection[{dealloc\-\_\-shared\-\_\-mpole}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dealloc\-\_\-shared\-\_\-mpole (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kmpole_8f90_a63fc1c3adcd113227228e36c133ece32}
+
+
+deallocate shared memory pointers for mpole parameter arrays 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 871 of file kmpole.\-f90.
+
+
+
+Referenced by final(), and kmpole().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kmpole_8f90_a63fc1c3adcd113227228e36c133ece32_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kmpole_8f90_ad7ac6d365c82a4750a84dd86e70e23e0}{\index{kmpole.\-f90@{kmpole.\-f90}!kmpole@{kmpole}}
+\index{kmpole@{kmpole}!kmpole.f90@{kmpole.\-f90}}
+\subsubsection[{kmpole}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kmpole (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{kmpole_8f90_ad7ac6d365c82a4750a84dd86e70e23e0}
+
+
+assigns atomic multipole moments to the atoms of the structure and processes any new or changed values 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file kmpole.\-f90.
+
+
+
+References alloc\-\_\-shared\-\_\-mpole(), chkpole(), dealloc\-\_\-shared\-\_\-mpole(), gettext(), number(), numeral(), and upcase().
+
+
+
+Referenced by mechanic().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{kmpole_8f90_ad7ac6d365c82a4750a84dd86e70e23e0_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kmpole_8f90_ad7ac6d365c82a4750a84dd86e70e23e0_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{kmpole_8f90_a81f63457c17b981616c780477b7bf1e7}{\index{kmpole.\-f90@{kmpole.\-f90}!kmpole\-\_\-update@{kmpole\-\_\-update}}
+\index{kmpole\-\_\-update@{kmpole\-\_\-update}!kmpole.f90@{kmpole.\-f90}}
+\subsubsection[{kmpole\-\_\-update}]{\setlength{\rightskip}{0pt plus 5cm}subroutine kmpole\-\_\-update (
+\begin{DoxyParamCaption}
+\item[{integer}]{istep}
+\end{DoxyParamCaption}
+)}}\label{kmpole_8f90_a81f63457c17b981616c780477b7bf1e7}
+
+
+update local mpole parameters 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 711 of file kmpole.\-f90.
+
+
+
+Referenced by mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), mechanic\-\_\-up\-\_\-para\-\_\-respa(), and mechanic\-\_\-up\-\_\-para\-\_\-respa1().
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{kmpole_8f90_a81f63457c17b981616c780477b7bf1e7_icgraph}
+\end{center}
+\end{figure}
+
+

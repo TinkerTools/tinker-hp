@@ -1,0 +1,67 @@
+\hypertarget{getword_8f90}{\section{getword.\-f90 File Reference}
+\label{getword_8f90}\index{getword.\-f90@{getword.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{getword_8f90_a38f3e592977d5068c5e329f1963ba3f2}{getword} (string, word, next)
+\begin{DoxyCompactList}\small\item\em searches an input string for the first alphabetic character (A-\/\-Z or a-\/z); the region from this first character to the first blank space or separator is returned as a \char`\"{}word\char`\"{}; if the actual word is too long, only the first part is returned \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{getword_8f90_a38f3e592977d5068c5e329f1963ba3f2}{\index{getword.\-f90@{getword.\-f90}!getword@{getword}}
+\index{getword@{getword}!getword.f90@{getword.\-f90}}
+\subsubsection[{getword}]{\setlength{\rightskip}{0pt plus 5cm}subroutine getword (
+\begin{DoxyParamCaption}
+\item[{character$\ast$($\ast$)}]{string, }
+\item[{character$\ast$($\ast$)}]{word, }
+\item[{integer}]{next}
+\end{DoxyParamCaption}
+)}}\label{getword_8f90_a38f3e592977d5068c5e329f1963ba3f2}
+
+
+searches an input string for the first alphabetic character (A-\/\-Z or a-\/z); the region from this first character to the first blank space or separator is returned as a \char`\"{}word\char`\"{}; if the actual word is too long, only the first part is returned 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em string,\-:} & input character string to be searched \\
+\hline
+\mbox{\tt in}  & {\em word,\-:} & output with the first word in the string \\
+\hline
+\mbox{\tt in}  & {\em next,\-:} & input with first position of search string; output with the position following word \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 33 of file getword.\-f90.
+
+
+
+References extent(), final(), and initial().
+
+
+
+Referenced by dynamic\-\_\-bis(), kgeom(), ksmd(), mdinit(), prmkey(), beads\-::read\-\_\-bead\-\_\-config(), qtb\-::read\-\_\-qtb\-\_\-keys(), readprm(), readxyz(), shakeup(), and unitcell().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{getword_8f90_a38f3e592977d5068c5e329f1963ba3f2_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{getword_8f90_a38f3e592977d5068c5e329f1963ba3f2_icgraph}
+\end{center}
+\end{figure}
+
+

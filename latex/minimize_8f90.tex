@@ -1,0 +1,153 @@
+\hypertarget{minimize_8f90}{\section{minimize.\-f90 File Reference}
+\label{minimize_8f90}\index{minimize.\-f90@{minimize.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+program \hyperlink{minimize_8f90_a0ea869a84e4dbfc9951ec265abef5b8d}{minimize}
+\begin{DoxyCompactList}\small\item\em performs energy minimization in Cartesian coordinate space using a low storage B\-F\-G\-S nonlinear optimization \end{DoxyCompactList}\item 
+subroutine \hyperlink{minimize_8f90_a56a35853a5075da6f7a7611d1443a8c1}{minimize\-\_\-bis}
+\begin{DoxyCompactList}\small\item\em performs energy minimization in Cartesian coordinate space using a low storage B\-F\-G\-S nonlinear optimization \end{DoxyCompactList}\item 
+real $\ast$8 function \hyperlink{minimize_8f90_adefc10274518d02974a331156c3bd382}{minimiz1} (xx, g)
+\begin{DoxyCompactList}\small\item\em service routine that computes the energy and gradient for a low storage B\-F\-G\-S optimization in Cartesian coordinate space \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{minimize_8f90_adefc10274518d02974a331156c3bd382}{\index{minimize.\-f90@{minimize.\-f90}!minimiz1@{minimiz1}}
+\index{minimiz1@{minimiz1}!minimize.f90@{minimize.\-f90}}
+\subsubsection[{minimiz1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8 function minimiz1 (
+\begin{DoxyParamCaption}
+\item[{real$\ast$8, dimension($\ast$)}]{xx, }
+\item[{real$\ast$8, dimension($\ast$)}]{g}
+\end{DoxyParamCaption}
+)}}\label{minimize_8f90_adefc10274518d02974a331156c3bd382}
+
+
+service routine that computes the energy and gradient for a low storage B\-F\-G\-S optimization in Cartesian coordinate space 
+
+
+\begin{DoxyParams}[1]{Parameters}
+\mbox{\tt in}  & {\em xx,\-:} & cartesian coordinates \\
+\hline
+\mbox{\tt in}  & {\em g,\-:} & gradients wrt to cartesian coordinates \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 327 of file minimize.\-f90.
+
+
+
+References allocstep(), allreduceen(), commforces(), ddpme3d(), energy(), gradient(), mechanic\-\_\-up\-\_\-para(), nblist(), reassignpme(), reinitnl(), and sendallpos().
+
+
+
+Referenced by minimize\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{minimize_8f90_adefc10274518d02974a331156c3bd382_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{minimize_8f90_adefc10274518d02974a331156c3bd382_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{minimize_8f90_a0ea869a84e4dbfc9951ec265abef5b8d}{\index{minimize.\-f90@{minimize.\-f90}!minimize@{minimize}}
+\index{minimize@{minimize}!minimize.f90@{minimize.\-f90}}
+\subsubsection[{minimize}]{\setlength{\rightskip}{0pt plus 5cm}program minimize (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{minimize_8f90_a0ea869a84e4dbfc9951ec265abef5b8d}
+
+
+performs energy minimization in Cartesian coordinate space using a low storage B\-F\-G\-S nonlinear optimization 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file minimize.\-f90.
+
+
+
+References minimize\-\_\-bis().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{minimize_8f90_a0ea869a84e4dbfc9951ec265abef5b8d_cgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{minimize_8f90_a56a35853a5075da6f7a7611d1443a8c1}{\index{minimize.\-f90@{minimize.\-f90}!minimize\-\_\-bis@{minimize\-\_\-bis}}
+\index{minimize\-\_\-bis@{minimize\-\_\-bis}!minimize.f90@{minimize.\-f90}}
+\subsubsection[{minimize\-\_\-bis}]{\setlength{\rightskip}{0pt plus 5cm}subroutine minimize\-\_\-bis (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{minimize_8f90_a56a35853a5075da6f7a7611d1443a8c1}
+
+
+performs energy minimization in Cartesian coordinate space using a low storage B\-F\-G\-S nonlinear optimization 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 35 of file minimize.\-f90.
+
+
+
+References allocstep(), commforces(), cutoffs(), ddpme3d(), drivermpi(), energy(), fatal(), final(), freeunit(), gettext(), getxyz(), gradient(), initial(), initmpi(), kewald\-\_\-2(), lattice(), lbfgs(), mechanic(), mechanic\-\_\-init\-\_\-para(), mechanic\-\_\-up\-\_\-para(), minimiz1(), nblist(), nextarg(), optsave(), prtxyz(), reassignpme(), reinitnl(), sendallpos(), unitcell(), upcase(), and version().
+
+
+
+Referenced by minimize().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{minimize_8f90_a56a35853a5075da6f7a7611d1443a8c1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=260pt]{minimize_8f90_a56a35853a5075da6f7a7611d1443a8c1_icgraph}
+\end{center}
+\end{figure}
+
+

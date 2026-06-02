@@ -1,0 +1,121 @@
+!
+!     Sorbonne University
+!     Washington University in Saint Louis
+!     University of Texas at Austin
+!
+!     ################################################################
+!     ##                                                            ##
+!     ##  subroutine cholesky  --  modified Cholesky linear solver  ##
+!     ##                                                            ##
+!     ################################################################
+!
+!
+!     "cholesky" uses a modified Cholesky method to solve the linear
+!     system Ax = b, returning "x" in "b"; "A" is a real symmetric
+!     positive definite matrix with its upper triangle (including the
+!     diagonal) stored by rows
+!
+!     literature reference:
+!
+!     R. S. Martin, G. Peters and J. H. Wilkinson, "Symmetric
+!     Decomposition of a Positive Definite Matrix", Numerische
+!     Mathematik, 7, 362-383 (1965)
+!
+!
+!> @brief 
+!> "cholesky" uses a modified Cholesky method to solve the linear
+!> system Ax = b, returning "x" in "b"; "A" is a real symmetric
+!> positive definite matrix with its upper triangle (including the
+!> diagonal) stored by rows
+!> @param[in] nvar: dimension of matrix
+!> @param[in] a: matrix
+!> @param[in] b: right hand side
+subroutine cholesky (nvar,a,b)
+   use inform
+   use iounit
+   implicit none
+   integer i,j,k,nvar
+   integer ii,ij,ik,ki,kk
+   integer im,jk,jm
+   real*8 r,s,t
+   real*8 a(*)
+   real*8 b(*)
+!
+   if (deb_Path) write(iout,*), 'cholesky '
+!
+!
+!     Cholesky factorization to reduce "A" to (L)(D)(L transpose)
+!     "L" has a unit diagonal; store 1.0/D on the diagonal of "A"
+!
+   ii = 1
+   do i = 1, nvar
+      im = i - 1
+      if (i .ne. 1) then
+         ij = i
+         do j = 1, im
+            r = a(ij)
+            if (j .ne. 1) then
+               ik = i
+               jk = j
+               jm = j - 1
+               do k = 1, jm
+                  r = r - a(ik)*a(jk)
+                  ik = nvar - k + ik
+                  jk = nvar - k + jk
+               end do
+            end if
+            a(ij) = r
+            ij = nvar - j + ij
+         end do
+      end if
+      r = a(ii)
+      if (i .ne. 1) then
+         kk = 1
+         ik = i
+         do k = 1, im
+            s = a(ik)
+            t = s * a(kk)
+            a(ik) = t
+            r = r - s*t
+            ik = nvar - k + ik
+            kk = nvar - k + 1 + kk
+         end do
+      end if
+      a(ii) = 1.0d0 / r
+      ii = nvar - i + 1 + ii
+   end do
+!
+!     solve linear equations; first solve Ly = b for y
+!
+   do i = 1, nvar
+      if (i .ne. 1) then
+         ik = i
+         im = i - 1
+         r = b(i)
+         do k = 1, im
+            r = r - b(k)*a(ik)
+            ik = nvar - k + ik
+         end do
+         b(i) = r
+      end if
+   end do
+!
+!     finally, solve (D)(L transpose)(x) = y for x
+!
+   ii = nvar*(nvar+1)/2
+   do j = 1, nvar
+      i = nvar + 1 - j
+      r = b(i) * a(ii)
+      if (j .ne. 1) then
+         im = i + 1
+         ki = ii + 1
+         do k = im, nvar
+            r = r - a(ki)*b(k)
+            ki = ki + 1
+         end do
+      end if
+      b(i) = r
+      ii = ii - j - 1
+   end do
+   return
+end

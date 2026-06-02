@@ -1,0 +1,802 @@
+\hypertarget{classmerck}{\section{merck Module Reference}
+\label{classmerck}\index{merck@{merck}}
+}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+integer, dimension(500, 2) \hyperlink{classmerck_a7aa21a7d8bb06595bc78236550c401c8}{bt\-\_\-1}
+\begin{DoxyCompactList}\small\item\em atom pairs having M\-M\-F\-F Bond Type 1 \end{DoxyCompactList}\item 
+integer \hyperlink{classmerck_acec340287dd736c720d96b5328c4d2c9}{nlignes}
+\begin{DoxyCompactList}\small\item\em number of atom pairs having M\-M\-F\-F Bond Type 1 \end{DoxyCompactList}\item 
+integer, dimension(500, 5) \hyperlink{classmerck_a8eadf59b7bbaa44a94d888299dcb8e35}{eqclass}
+\begin{DoxyCompactList}\small\item\em table of atom class equivalencies used to find default parameters if explicit values are missing (see J. Comput. Chem., 17, 490-\/519, '95, Table I\-V) \end{DoxyCompactList}\item 
+integer, dimension(100) \hyperlink{classmerck_ad5b47a826f521beb8f04587afe2368da}{crd}
+\begin{DoxyCompactList}\small\item\em number of attached neighbors \end{DoxyCompactList}\item 
+integer, dimension(100) \hyperlink{classmerck_a0bc0ef340bd3d358ede6d66a415952a3}{val}
+\begin{DoxyCompactList}\small\item\em valency value $|$ see T. A. Halgren, \end{DoxyCompactList}\item 
+integer, dimension(100) \hyperlink{classmerck_ac3a6272c62f8f3e04549ad11b9ee9033}{pilp}
+\begin{DoxyCompactList}\small\item\em if 0, no lone pair $|$ J. Comput. Chem., if 1, one or more lone pair(s) $|$ 17, 616-\/645 (1995) \end{DoxyCompactList}\item 
+integer, dimension(100) \hyperlink{classmerck_a43f295aa5639b7b29334db20fdffd179}{mltb}
+\begin{DoxyCompactList}\small\item\em multibond indicator $|$ \end{DoxyCompactList}\item 
+integer, dimension(100) \hyperlink{classmerck_aeaa92f814f841125913ead1e6f367fed}{arom}
+\begin{DoxyCompactList}\small\item\em aromaticity indicator $|$ \end{DoxyCompactList}\item 
+integer, dimension(100) \hyperlink{classmerck_a1dc58cb2ea7c9c13a58dbb8649038a69}{lin}
+\begin{DoxyCompactList}\small\item\em linearity indicator $|$ \end{DoxyCompactList}\item 
+integer, dimension(100) \hyperlink{classmerck_a58cfa6e65d0d4dad206baafcf012474e}{sbmb}
+\begin{DoxyCompactList}\small\item\em single-\/ vs multiple-\/bond flag $|$ \end{DoxyCompactList}\item 
+integer, dimension(maxtyp, 6) \hyperlink{classmerck_a8368ed01140ca93e9b201ebe3019ff45}{mmffarom}
+\begin{DoxyCompactList}\small\item\em aromatic rings parameters \end{DoxyCompactList}\item 
+integer, dimension(maxtyp, 6) \hyperlink{classmerck_a7c40e12504115bebc849894e41dabcec}{mmffaromc}
+\begin{DoxyCompactList}\small\item\em cationic aromatic rings parameters \end{DoxyCompactList}\item 
+integer, dimension(maxtyp, 6) \hyperlink{classmerck_a9f269cbd52aea1f1401f71c1ec9b3f3f}{mmffaroma}
+\begin{DoxyCompactList}\small\item\em anionic aromatic rings parameters \end{DoxyCompactList}\item 
+real $\ast$8, dimension(100, 100) \hyperlink{classmerck_ade44b2ba3b64e8afbedcc8872060e9b1}{mmff\-\_\-kb}
+\item 
+real $\ast$8, dimension(100, 100) \hyperlink{classmerck_a98eafd9057663a6cdfd35d4342e18601}{mmff\-\_\-kb1}
+\item 
+real $\ast$8, dimension(100, 100) \hyperlink{classmerck_ae69e878a1f3cb3cbb3d6daae813627dd}{mmff\-\_\-b0}
+\item 
+real $\ast$8, dimension(100, 100) \hyperlink{classmerck_aa90ea277f5b16112bf0affb6a613206e}{mmff\-\_\-b1}
+\item 
+real $\ast$8, dimension(100) \hyperlink{classmerck_a0d1de87ac7a02686e788c3d0bc717928}{rad0}
+\item 
+real $\ast$8, dimension(100, 100) \hyperlink{classmerck_a74fb8d2edab6da02dff237cadce84dc1}{r0ref}
+\item 
+real $\ast$8, dimension(100, 100) \hyperlink{classmerck_ae5cbcf22c0de8f2db0f3f0861da0a0c0}{kbref}
+\item 
+real $\ast$8, dimension(100) \hyperlink{classmerck_ad13da23eb43bf51f1ba2c113f2b808ba}{paulel}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a8fa0ce7da7f6b22c4f17f7d3c34740fd}{mmff\-\_\-ka}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a2cfea46a3328ecb5361185efa845173f}{mmff\-\_\-ka1}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a2638860ef441294586104f06567d3d86}{mmff\-\_\-ka2}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_ada5eeb62ef38993fe50aa8a6deef0efb}{mmff\-\_\-ka3}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_ae724496a18c156c3d42e779c5a9090a0}{mmff\-\_\-ka4}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a2a3aaed35edbf54ad9f93fc1efc3ed31}{mmff\-\_\-ka5}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a1f8811f68739a037f88c704f17379501}{mmff\-\_\-ka6}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a674c2b487209fdd0745881cab7d6c516}{mmff\-\_\-ka7}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a7302e61e27f36aad1c7545fb79f3b5c3}{mmff\-\_\-ka8}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a7559877141f1b4be50c6856d173ea031}{mmff\-\_\-ang0}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a2ab0358d1ee3adc246ee70ba552fe348}{mmff\-\_\-ang1}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a3fa27d9ab1c59c628afb8e59f653ac43}{mmff\-\_\-ang2}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a5fd32c39132b64c5d1a171dd6496bca6}{mmff\-\_\-ang3}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_ae7864fd083808a80c93f10ff6b2ca903}{mmff\-\_\-ang4}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a4ec8957742f39e580dede849a1cded9d}{mmff\-\_\-ang5}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_abe0cc32fc24620297c23877495b7c851}{mmff\-\_\-ang6}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_adbca68738b40baa8b5c799253076db2f}{mmff\-\_\-ang7}
+\item 
+real $\ast$8, dimension(0\-:100, 100, 0\-:100) \hyperlink{classmerck_a8669ff02d8bb48b952f4022ebfb40465}{mmff\-\_\-ang8}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a026dca81a6c307c641bba56cfd4302f3}{stbn\-\_\-abc}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a424fc725470a2afe10ec6a2ba8392ea7}{stbn\-\_\-cba}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a34a229bbafcaa423bb5733b21c50517c}{stbn\-\_\-abc1}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a0f41d68964ee35708b21207d39b37b74}{stbn\-\_\-cba1}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a78e5ceb735bb8919ea1340cde70d39fb}{stbn\-\_\-abc2}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a8ce0bd0a66cc17246fd5b41f993a3ffb}{stbn\-\_\-cba2}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_aba98d0393b91fcf3e9afe92f053bd534}{stbn\-\_\-abc3}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a622e2393fd9bd1a8832e51ecdc90ed01}{stbn\-\_\-cba3}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_ad3d061d53e6814d08576d8984c9bcfc3}{stbn\-\_\-abc4}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a0a003faf5f47dd975b8f0799de808088}{stbn\-\_\-cba4}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_ac1cdfb5eb8152a98b0f7e19ccde5ad4d}{stbn\-\_\-abc5}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_aff2385fd8c779536ba4916db21315237}{stbn\-\_\-cba5}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a90a3118b94446f5d2523da9d4460b6b6}{stbn\-\_\-abc6}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a8768196f4b41bfc312ca8a0f5829da3e}{stbn\-\_\-cba6}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a4e518aa4974e3e9a4a181e3469ec0727}{stbn\-\_\-abc7}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a9f9997b9bb4d573760adc189f3fe7926}{stbn\-\_\-cba7}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a01e392d546665c27adb268047d288cef}{stbn\-\_\-abc8}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a6cba162dae532979a56bbfcc27ead348}{stbn\-\_\-cba8}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_aa2388ec2aea5655e7e303755395d1be0}{stbn\-\_\-abc9}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a729100fe8948bce8c2e25f4433c3f69f}{stbn\-\_\-cba9}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a90e51b1533b85851367dfea162630500}{stbn\-\_\-abc10}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_ad68a5cfd0ac42b5cbff684365a1f96a5}{stbn\-\_\-cba10}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_ac5d13aa927a01400abfe91d6d6104f6c}{stbn\-\_\-abc11}
+\item 
+real $\ast$8, dimension(100, 100, 100) \hyperlink{classmerck_a599ef328ccf7e65f4f6217c7e80b902c}{stbn\-\_\-cba11}
+\item 
+real $\ast$8, dimension(0\-:4, 0\-:4, 0\-:4) \hyperlink{classmerck_a1c4ad28622b856dd11f51ffe05e6c324}{defstbn\-\_\-abc}
+\item 
+real $\ast$8, dimension(0\-:4, 0\-:4, 0\-:4) \hyperlink{classmerck_a9738fd062edaa9f9d1d1330938269a2f}{defstbn\-\_\-cba}
+\item 
+real $\ast$8, dimension(2, 0\-:2000) \hyperlink{classmerck_a5077f091d33060cb8ffc6a427f0f25cd}{t1\-\_\-1}
+\item 
+real $\ast$8, dimension(2, 0\-:2000) \hyperlink{classmerck_a6dc3f447e2e06723a00ab70628bc0366}{t2\-\_\-1}
+\item 
+real $\ast$8, dimension(2, 0\-:2000) \hyperlink{classmerck_a7e6fcfd46a21e8ae8c9a624e91648249}{t3\-\_\-1}
+\item 
+real $\ast$8, dimension(2, 0\-:2000) \hyperlink{classmerck_a8bc86e67b70d3bf5f64dd42af649b029}{t1\-\_\-2}
+\item 
+real $\ast$8, dimension(2, 0\-:2000) \hyperlink{classmerck_a6b3c6efb5313d650b4f54c20adfa9277}{t2\-\_\-2}
+\item 
+real $\ast$8, dimension(2, 0\-:2000) \hyperlink{classmerck_af1f812e006b64ca36df99613700e9142}{t3\-\_\-2}
+\item 
+character $\ast$16, dimension(0\-:2000) \hyperlink{classmerck_aa10f016eb3a7d8312a304167064f3a99}{kt\-\_\-1}
+\item 
+character $\ast$16, dimension(0\-:2000) \hyperlink{classmerck_ad41bd760bdd60d655b559de57d6c958e}{kt\-\_\-2}
+\item 
+real $\ast$8, dimension(maxclass) \hyperlink{classmerck_a890725e06686aca0d658cd9def7c604a}{g}
+\item 
+real $\ast$8, dimension(maxclass) \hyperlink{classmerck_a294bc9b22bc804b6c906db9ca65dc054}{alph}
+\item 
+real $\ast$8, dimension(maxclass) \hyperlink{classmerck_a7ae1bbbe81c44501bf843c48a81ef02f}{nn}
+\item 
+character $\ast$1, dimension(maxclass) \hyperlink{classmerck_a73afea490eec3b3fb2a36dd86a533d4a}{da}
+\item 
+real $\ast$8, dimension(100, 100) \hyperlink{classmerck_a5ab2ebf1fd4e8497680601f27f9dfc4f}{bci}
+\item 
+real $\ast$8, dimension(100, 100) \hyperlink{classmerck_a4ec458165a6cf8835583b406de9a3dae}{bci\-\_\-1}
+\item 
+real $\ast$8, dimension(maxclass) \hyperlink{classmerck_aa1c153c0ae05993c88c4ea273ad5650e}{pbci}
+\item 
+real $\ast$8, dimension(maxclass) \hyperlink{classmerck_a101cae3abb5ea422f3baccff3e448ad6}{fcadj}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+
+
+Definition at line 12 of file M\-O\-D\-\_\-merck.\-f90.
+
+
+
+\subsection{Member Data Documentation}
+\hypertarget{classmerck_a294bc9b22bc804b6c906db9ca65dc054}{\index{merck@{merck}!alph@{alph}}
+\index{alph@{alph}!merck@{merck}}
+\subsubsection[{alph}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(maxclass) merck\-::alph}}\label{classmerck_a294bc9b22bc804b6c906db9ca65dc054}
+
+
+Definition at line 60 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_aeaa92f814f841125913ead1e6f367fed}{\index{merck@{merck}!arom@{arom}}
+\index{arom@{arom}!merck@{merck}}
+\subsubsection[{arom}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(100) merck\-::arom}}\label{classmerck_aeaa92f814f841125913ead1e6f367fed}
+
+
+aromaticity indicator $|$ 
+
+
+
+Definition at line 22 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a5ab2ebf1fd4e8497680601f27f9dfc4f}{\index{merck@{merck}!bci@{bci}}
+\index{bci@{bci}!merck@{merck}}
+\subsubsection[{bci}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100) merck\-::bci}}\label{classmerck_a5ab2ebf1fd4e8497680601f27f9dfc4f}
+
+
+Definition at line 62 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a4ec458165a6cf8835583b406de9a3dae}{\index{merck@{merck}!bci\-\_\-1@{bci\-\_\-1}}
+\index{bci\-\_\-1@{bci\-\_\-1}!merck@{merck}}
+\subsubsection[{bci\-\_\-1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100) merck\-::bci\-\_\-1}}\label{classmerck_a4ec458165a6cf8835583b406de9a3dae}
+
+
+Definition at line 62 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a7aa21a7d8bb06595bc78236550c401c8}{\index{merck@{merck}!bt\-\_\-1@{bt\-\_\-1}}
+\index{bt\-\_\-1@{bt\-\_\-1}!merck@{merck}}
+\subsubsection[{bt\-\_\-1}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(500,2) merck\-::bt\-\_\-1}}\label{classmerck_a7aa21a7d8bb06595bc78236550c401c8}
+
+
+atom pairs having M\-M\-F\-F Bond Type 1 
+
+
+
+Definition at line 15 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ad5b47a826f521beb8f04587afe2368da}{\index{merck@{merck}!crd@{crd}}
+\index{crd@{crd}!merck@{merck}}
+\subsubsection[{crd}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(100) merck\-::crd}}\label{classmerck_ad5b47a826f521beb8f04587afe2368da}
+
+
+number of attached neighbors 
+
+
+
+Definition at line 18 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a73afea490eec3b3fb2a36dd86a533d4a}{\index{merck@{merck}!da@{da}}
+\index{da@{da}!merck@{merck}}
+\subsubsection[{da}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$1, dimension(maxclass) merck\-::da}}\label{classmerck_a73afea490eec3b3fb2a36dd86a533d4a}
+
+
+Definition at line 61 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a1c4ad28622b856dd11f51ffe05e6c324}{\index{merck@{merck}!defstbn\-\_\-abc@{defstbn\-\_\-abc}}
+\index{defstbn\-\_\-abc@{defstbn\-\_\-abc}!merck@{merck}}
+\subsubsection[{defstbn\-\_\-abc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:4,0\-:4,0\-:4) merck\-::defstbn\-\_\-abc}}\label{classmerck_a1c4ad28622b856dd11f51ffe05e6c324}
+
+
+Definition at line 56 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a9738fd062edaa9f9d1d1330938269a2f}{\index{merck@{merck}!defstbn\-\_\-cba@{defstbn\-\_\-cba}}
+\index{defstbn\-\_\-cba@{defstbn\-\_\-cba}!merck@{merck}}
+\subsubsection[{defstbn\-\_\-cba}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:4,0\-:4,0\-:4) merck\-::defstbn\-\_\-cba}}\label{classmerck_a9738fd062edaa9f9d1d1330938269a2f}
+
+
+Definition at line 56 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a8eadf59b7bbaa44a94d888299dcb8e35}{\index{merck@{merck}!eqclass@{eqclass}}
+\index{eqclass@{eqclass}!merck@{merck}}
+\subsubsection[{eqclass}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(500,5) merck\-::eqclass}}\label{classmerck_a8eadf59b7bbaa44a94d888299dcb8e35}
+
+
+table of atom class equivalencies used to find default parameters if explicit values are missing (see J. Comput. Chem., 17, 490-\/519, '95, Table I\-V) 
+
+
+
+Definition at line 17 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a101cae3abb5ea422f3baccff3e448ad6}{\index{merck@{merck}!fcadj@{fcadj}}
+\index{fcadj@{fcadj}!merck@{merck}}
+\subsubsection[{fcadj}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(maxclass) merck\-::fcadj}}\label{classmerck_a101cae3abb5ea422f3baccff3e448ad6}
+
+
+Definition at line 63 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a890725e06686aca0d658cd9def7c604a}{\index{merck@{merck}!g@{g}}
+\index{g@{g}!merck@{merck}}
+\subsubsection[{g}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(maxclass) merck\-::g}}\label{classmerck_a890725e06686aca0d658cd9def7c604a}
+
+
+Definition at line 60 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ae5cbcf22c0de8f2db0f3f0861da0a0c0}{\index{merck@{merck}!kbref@{kbref}}
+\index{kbref@{kbref}!merck@{merck}}
+\subsubsection[{kbref}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100) merck\-::kbref}}\label{classmerck_ae5cbcf22c0de8f2db0f3f0861da0a0c0}
+
+
+Definition at line 31 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_aa10f016eb3a7d8312a304167064f3a99}{\index{merck@{merck}!kt\-\_\-1@{kt\-\_\-1}}
+\index{kt\-\_\-1@{kt\-\_\-1}!merck@{merck}}
+\subsubsection[{kt\-\_\-1}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$16, dimension(0\-:2000) merck\-::kt\-\_\-1}}\label{classmerck_aa10f016eb3a7d8312a304167064f3a99}
+
+
+Definition at line 59 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ad41bd760bdd60d655b559de57d6c958e}{\index{merck@{merck}!kt\-\_\-2@{kt\-\_\-2}}
+\index{kt\-\_\-2@{kt\-\_\-2}!merck@{merck}}
+\subsubsection[{kt\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}character$\ast$16, dimension(0\-:2000) merck\-::kt\-\_\-2}}\label{classmerck_ad41bd760bdd60d655b559de57d6c958e}
+
+
+Definition at line 59 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a1dc58cb2ea7c9c13a58dbb8649038a69}{\index{merck@{merck}!lin@{lin}}
+\index{lin@{lin}!merck@{merck}}
+\subsubsection[{lin}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(100) merck\-::lin}}\label{classmerck_a1dc58cb2ea7c9c13a58dbb8649038a69}
+
+
+linearity indicator $|$ 
+
+
+
+Definition at line 23 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a43f295aa5639b7b29334db20fdffd179}{\index{merck@{merck}!mltb@{mltb}}
+\index{mltb@{mltb}!merck@{merck}}
+\subsubsection[{mltb}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(100) merck\-::mltb}}\label{classmerck_a43f295aa5639b7b29334db20fdffd179}
+
+
+multibond indicator $|$ 
+
+
+
+Definition at line 21 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a7559877141f1b4be50c6856d173ea031}{\index{merck@{merck}!mmff\-\_\-ang0@{mmff\-\_\-ang0}}
+\index{mmff\-\_\-ang0@{mmff\-\_\-ang0}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang0}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang0}}\label{classmerck_a7559877141f1b4be50c6856d173ea031}
+
+
+Definition at line 38 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a2ab0358d1ee3adc246ee70ba552fe348}{\index{merck@{merck}!mmff\-\_\-ang1@{mmff\-\_\-ang1}}
+\index{mmff\-\_\-ang1@{mmff\-\_\-ang1}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang1}}\label{classmerck_a2ab0358d1ee3adc246ee70ba552fe348}
+
+
+Definition at line 38 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a3fa27d9ab1c59c628afb8e59f653ac43}{\index{merck@{merck}!mmff\-\_\-ang2@{mmff\-\_\-ang2}}
+\index{mmff\-\_\-ang2@{mmff\-\_\-ang2}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang2}}\label{classmerck_a3fa27d9ab1c59c628afb8e59f653ac43}
+
+
+Definition at line 39 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a5fd32c39132b64c5d1a171dd6496bca6}{\index{merck@{merck}!mmff\-\_\-ang3@{mmff\-\_\-ang3}}
+\index{mmff\-\_\-ang3@{mmff\-\_\-ang3}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang3}}\label{classmerck_a5fd32c39132b64c5d1a171dd6496bca6}
+
+
+Definition at line 40 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ae7864fd083808a80c93f10ff6b2ca903}{\index{merck@{merck}!mmff\-\_\-ang4@{mmff\-\_\-ang4}}
+\index{mmff\-\_\-ang4@{mmff\-\_\-ang4}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang4}}\label{classmerck_ae7864fd083808a80c93f10ff6b2ca903}
+
+
+Definition at line 40 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a4ec8957742f39e580dede849a1cded9d}{\index{merck@{merck}!mmff\-\_\-ang5@{mmff\-\_\-ang5}}
+\index{mmff\-\_\-ang5@{mmff\-\_\-ang5}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang5}}\label{classmerck_a4ec8957742f39e580dede849a1cded9d}
+
+
+Definition at line 41 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_abe0cc32fc24620297c23877495b7c851}{\index{merck@{merck}!mmff\-\_\-ang6@{mmff\-\_\-ang6}}
+\index{mmff\-\_\-ang6@{mmff\-\_\-ang6}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang6}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang6}}\label{classmerck_abe0cc32fc24620297c23877495b7c851}
+
+
+Definition at line 42 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_adbca68738b40baa8b5c799253076db2f}{\index{merck@{merck}!mmff\-\_\-ang7@{mmff\-\_\-ang7}}
+\index{mmff\-\_\-ang7@{mmff\-\_\-ang7}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang7}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang7}}\label{classmerck_adbca68738b40baa8b5c799253076db2f}
+
+
+Definition at line 42 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a8669ff02d8bb48b952f4022ebfb40465}{\index{merck@{merck}!mmff\-\_\-ang8@{mmff\-\_\-ang8}}
+\index{mmff\-\_\-ang8@{mmff\-\_\-ang8}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ang8}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ang8}}\label{classmerck_a8669ff02d8bb48b952f4022ebfb40465}
+
+
+Definition at line 43 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ae69e878a1f3cb3cbb3d6daae813627dd}{\index{merck@{merck}!mmff\-\_\-b0@{mmff\-\_\-b0}}
+\index{mmff\-\_\-b0@{mmff\-\_\-b0}!merck@{merck}}
+\subsubsection[{mmff\-\_\-b0}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100) merck\-::mmff\-\_\-b0}}\label{classmerck_ae69e878a1f3cb3cbb3d6daae813627dd}
+
+
+Definition at line 29 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_aa90ea277f5b16112bf0affb6a613206e}{\index{merck@{merck}!mmff\-\_\-b1@{mmff\-\_\-b1}}
+\index{mmff\-\_\-b1@{mmff\-\_\-b1}!merck@{merck}}
+\subsubsection[{mmff\-\_\-b1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100) merck\-::mmff\-\_\-b1}}\label{classmerck_aa90ea277f5b16112bf0affb6a613206e}
+
+
+Definition at line 29 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a8fa0ce7da7f6b22c4f17f7d3c34740fd}{\index{merck@{merck}!mmff\-\_\-ka@{mmff\-\_\-ka}}
+\index{mmff\-\_\-ka@{mmff\-\_\-ka}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka}}\label{classmerck_a8fa0ce7da7f6b22c4f17f7d3c34740fd}
+
+
+Definition at line 32 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a2cfea46a3328ecb5361185efa845173f}{\index{merck@{merck}!mmff\-\_\-ka1@{mmff\-\_\-ka1}}
+\index{mmff\-\_\-ka1@{mmff\-\_\-ka1}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka1}}\label{classmerck_a2cfea46a3328ecb5361185efa845173f}
+
+
+Definition at line 32 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a2638860ef441294586104f06567d3d86}{\index{merck@{merck}!mmff\-\_\-ka2@{mmff\-\_\-ka2}}
+\index{mmff\-\_\-ka2@{mmff\-\_\-ka2}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka2}}\label{classmerck_a2638860ef441294586104f06567d3d86}
+
+
+Definition at line 33 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ada5eeb62ef38993fe50aa8a6deef0efb}{\index{merck@{merck}!mmff\-\_\-ka3@{mmff\-\_\-ka3}}
+\index{mmff\-\_\-ka3@{mmff\-\_\-ka3}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka3}}\label{classmerck_ada5eeb62ef38993fe50aa8a6deef0efb}
+
+
+Definition at line 34 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ae724496a18c156c3d42e779c5a9090a0}{\index{merck@{merck}!mmff\-\_\-ka4@{mmff\-\_\-ka4}}
+\index{mmff\-\_\-ka4@{mmff\-\_\-ka4}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka4}}\label{classmerck_ae724496a18c156c3d42e779c5a9090a0}
+
+
+Definition at line 34 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a2a3aaed35edbf54ad9f93fc1efc3ed31}{\index{merck@{merck}!mmff\-\_\-ka5@{mmff\-\_\-ka5}}
+\index{mmff\-\_\-ka5@{mmff\-\_\-ka5}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka5}}\label{classmerck_a2a3aaed35edbf54ad9f93fc1efc3ed31}
+
+
+Definition at line 35 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a1f8811f68739a037f88c704f17379501}{\index{merck@{merck}!mmff\-\_\-ka6@{mmff\-\_\-ka6}}
+\index{mmff\-\_\-ka6@{mmff\-\_\-ka6}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka6}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka6}}\label{classmerck_a1f8811f68739a037f88c704f17379501}
+
+
+Definition at line 36 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a674c2b487209fdd0745881cab7d6c516}{\index{merck@{merck}!mmff\-\_\-ka7@{mmff\-\_\-ka7}}
+\index{mmff\-\_\-ka7@{mmff\-\_\-ka7}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka7}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka7}}\label{classmerck_a674c2b487209fdd0745881cab7d6c516}
+
+
+Definition at line 36 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a7302e61e27f36aad1c7545fb79f3b5c3}{\index{merck@{merck}!mmff\-\_\-ka8@{mmff\-\_\-ka8}}
+\index{mmff\-\_\-ka8@{mmff\-\_\-ka8}!merck@{merck}}
+\subsubsection[{mmff\-\_\-ka8}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(0\-:100,100,0\-:100) merck\-::mmff\-\_\-ka8}}\label{classmerck_a7302e61e27f36aad1c7545fb79f3b5c3}
+
+
+Definition at line 37 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ade44b2ba3b64e8afbedcc8872060e9b1}{\index{merck@{merck}!mmff\-\_\-kb@{mmff\-\_\-kb}}
+\index{mmff\-\_\-kb@{mmff\-\_\-kb}!merck@{merck}}
+\subsubsection[{mmff\-\_\-kb}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100) merck\-::mmff\-\_\-kb}}\label{classmerck_ade44b2ba3b64e8afbedcc8872060e9b1}
+
+
+Definition at line 28 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a98eafd9057663a6cdfd35d4342e18601}{\index{merck@{merck}!mmff\-\_\-kb1@{mmff\-\_\-kb1}}
+\index{mmff\-\_\-kb1@{mmff\-\_\-kb1}!merck@{merck}}
+\subsubsection[{mmff\-\_\-kb1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100) merck\-::mmff\-\_\-kb1}}\label{classmerck_a98eafd9057663a6cdfd35d4342e18601}
+
+
+Definition at line 28 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a8368ed01140ca93e9b201ebe3019ff45}{\index{merck@{merck}!mmffarom@{mmffarom}}
+\index{mmffarom@{mmffarom}!merck@{merck}}
+\subsubsection[{mmffarom}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxtyp,6) merck\-::mmffarom}}\label{classmerck_a8368ed01140ca93e9b201ebe3019ff45}
+
+
+aromatic rings parameters 
+
+
+
+Definition at line 25 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a9f269cbd52aea1f1401f71c1ec9b3f3f}{\index{merck@{merck}!mmffaroma@{mmffaroma}}
+\index{mmffaroma@{mmffaroma}!merck@{merck}}
+\subsubsection[{mmffaroma}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxtyp,6) merck\-::mmffaroma}}\label{classmerck_a9f269cbd52aea1f1401f71c1ec9b3f3f}
+
+
+anionic aromatic rings parameters 
+
+
+
+Definition at line 27 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a7c40e12504115bebc849894e41dabcec}{\index{merck@{merck}!mmffaromc@{mmffaromc}}
+\index{mmffaromc@{mmffaromc}!merck@{merck}}
+\subsubsection[{mmffaromc}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxtyp,6) merck\-::mmffaromc}}\label{classmerck_a7c40e12504115bebc849894e41dabcec}
+
+
+cationic aromatic rings parameters 
+
+
+
+Definition at line 26 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_acec340287dd736c720d96b5328c4d2c9}{\index{merck@{merck}!nlignes@{nlignes}}
+\index{nlignes@{nlignes}!merck@{merck}}
+\subsubsection[{nlignes}]{\setlength{\rightskip}{0pt plus 5cm}integer merck\-::nlignes}}\label{classmerck_acec340287dd736c720d96b5328c4d2c9}
+
+
+number of atom pairs having M\-M\-F\-F Bond Type 1 
+
+
+
+Definition at line 16 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a7ae1bbbe81c44501bf843c48a81ef02f}{\index{merck@{merck}!nn@{nn}}
+\index{nn@{nn}!merck@{merck}}
+\subsubsection[{nn}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(maxclass) merck\-::nn}}\label{classmerck_a7ae1bbbe81c44501bf843c48a81ef02f}
+
+
+Definition at line 60 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ad13da23eb43bf51f1ba2c113f2b808ba}{\index{merck@{merck}!paulel@{paulel}}
+\index{paulel@{paulel}!merck@{merck}}
+\subsubsection[{paulel}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100) merck\-::paulel}}\label{classmerck_ad13da23eb43bf51f1ba2c113f2b808ba}
+
+
+Definition at line 31 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_aa1c153c0ae05993c88c4ea273ad5650e}{\index{merck@{merck}!pbci@{pbci}}
+\index{pbci@{pbci}!merck@{merck}}
+\subsubsection[{pbci}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(maxclass) merck\-::pbci}}\label{classmerck_aa1c153c0ae05993c88c4ea273ad5650e}
+
+
+Definition at line 63 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ac3a6272c62f8f3e04549ad11b9ee9033}{\index{merck@{merck}!pilp@{pilp}}
+\index{pilp@{pilp}!merck@{merck}}
+\subsubsection[{pilp}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(100) merck\-::pilp}}\label{classmerck_ac3a6272c62f8f3e04549ad11b9ee9033}
+
+
+if 0, no lone pair $|$ J. Comput. Chem., if 1, one or more lone pair(s) $|$ 17, 616-\/645 (1995) 
+
+
+
+Definition at line 20 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a74fb8d2edab6da02dff237cadce84dc1}{\index{merck@{merck}!r0ref@{r0ref}}
+\index{r0ref@{r0ref}!merck@{merck}}
+\subsubsection[{r0ref}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100) merck\-::r0ref}}\label{classmerck_a74fb8d2edab6da02dff237cadce84dc1}
+
+
+Definition at line 30 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a0d1de87ac7a02686e788c3d0bc717928}{\index{merck@{merck}!rad0@{rad0}}
+\index{rad0@{rad0}!merck@{merck}}
+\subsubsection[{rad0}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100) merck\-::rad0}}\label{classmerck_a0d1de87ac7a02686e788c3d0bc717928}
+
+
+Definition at line 30 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a58cfa6e65d0d4dad206baafcf012474e}{\index{merck@{merck}!sbmb@{sbmb}}
+\index{sbmb@{sbmb}!merck@{merck}}
+\subsubsection[{sbmb}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(100) merck\-::sbmb}}\label{classmerck_a58cfa6e65d0d4dad206baafcf012474e}
+
+
+single-\/ vs multiple-\/bond flag $|$ 
+
+
+
+Definition at line 24 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a026dca81a6c307c641bba56cfd4302f3}{\index{merck@{merck}!stbn\-\_\-abc@{stbn\-\_\-abc}}
+\index{stbn\-\_\-abc@{stbn\-\_\-abc}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc}}\label{classmerck_a026dca81a6c307c641bba56cfd4302f3}
+
+
+Definition at line 44 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a34a229bbafcaa423bb5733b21c50517c}{\index{merck@{merck}!stbn\-\_\-abc1@{stbn\-\_\-abc1}}
+\index{stbn\-\_\-abc1@{stbn\-\_\-abc1}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc1}}\label{classmerck_a34a229bbafcaa423bb5733b21c50517c}
+
+
+Definition at line 45 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a90e51b1533b85851367dfea162630500}{\index{merck@{merck}!stbn\-\_\-abc10@{stbn\-\_\-abc10}}
+\index{stbn\-\_\-abc10@{stbn\-\_\-abc10}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc10}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc10}}\label{classmerck_a90e51b1533b85851367dfea162630500}
+
+
+Definition at line 54 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ac5d13aa927a01400abfe91d6d6104f6c}{\index{merck@{merck}!stbn\-\_\-abc11@{stbn\-\_\-abc11}}
+\index{stbn\-\_\-abc11@{stbn\-\_\-abc11}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc11}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc11}}\label{classmerck_ac5d13aa927a01400abfe91d6d6104f6c}
+
+
+Definition at line 55 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a78e5ceb735bb8919ea1340cde70d39fb}{\index{merck@{merck}!stbn\-\_\-abc2@{stbn\-\_\-abc2}}
+\index{stbn\-\_\-abc2@{stbn\-\_\-abc2}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc2}}\label{classmerck_a78e5ceb735bb8919ea1340cde70d39fb}
+
+
+Definition at line 46 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_aba98d0393b91fcf3e9afe92f053bd534}{\index{merck@{merck}!stbn\-\_\-abc3@{stbn\-\_\-abc3}}
+\index{stbn\-\_\-abc3@{stbn\-\_\-abc3}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc3}}\label{classmerck_aba98d0393b91fcf3e9afe92f053bd534}
+
+
+Definition at line 47 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ad3d061d53e6814d08576d8984c9bcfc3}{\index{merck@{merck}!stbn\-\_\-abc4@{stbn\-\_\-abc4}}
+\index{stbn\-\_\-abc4@{stbn\-\_\-abc4}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc4}}\label{classmerck_ad3d061d53e6814d08576d8984c9bcfc3}
+
+
+Definition at line 48 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ac1cdfb5eb8152a98b0f7e19ccde5ad4d}{\index{merck@{merck}!stbn\-\_\-abc5@{stbn\-\_\-abc5}}
+\index{stbn\-\_\-abc5@{stbn\-\_\-abc5}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc5}}\label{classmerck_ac1cdfb5eb8152a98b0f7e19ccde5ad4d}
+
+
+Definition at line 49 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a90a3118b94446f5d2523da9d4460b6b6}{\index{merck@{merck}!stbn\-\_\-abc6@{stbn\-\_\-abc6}}
+\index{stbn\-\_\-abc6@{stbn\-\_\-abc6}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc6}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc6}}\label{classmerck_a90a3118b94446f5d2523da9d4460b6b6}
+
+
+Definition at line 50 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a4e518aa4974e3e9a4a181e3469ec0727}{\index{merck@{merck}!stbn\-\_\-abc7@{stbn\-\_\-abc7}}
+\index{stbn\-\_\-abc7@{stbn\-\_\-abc7}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc7}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc7}}\label{classmerck_a4e518aa4974e3e9a4a181e3469ec0727}
+
+
+Definition at line 51 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a01e392d546665c27adb268047d288cef}{\index{merck@{merck}!stbn\-\_\-abc8@{stbn\-\_\-abc8}}
+\index{stbn\-\_\-abc8@{stbn\-\_\-abc8}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc8}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc8}}\label{classmerck_a01e392d546665c27adb268047d288cef}
+
+
+Definition at line 52 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_aa2388ec2aea5655e7e303755395d1be0}{\index{merck@{merck}!stbn\-\_\-abc9@{stbn\-\_\-abc9}}
+\index{stbn\-\_\-abc9@{stbn\-\_\-abc9}!merck@{merck}}
+\subsubsection[{stbn\-\_\-abc9}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-abc9}}\label{classmerck_aa2388ec2aea5655e7e303755395d1be0}
+
+
+Definition at line 53 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a424fc725470a2afe10ec6a2ba8392ea7}{\index{merck@{merck}!stbn\-\_\-cba@{stbn\-\_\-cba}}
+\index{stbn\-\_\-cba@{stbn\-\_\-cba}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba}}\label{classmerck_a424fc725470a2afe10ec6a2ba8392ea7}
+
+
+Definition at line 44 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a0f41d68964ee35708b21207d39b37b74}{\index{merck@{merck}!stbn\-\_\-cba1@{stbn\-\_\-cba1}}
+\index{stbn\-\_\-cba1@{stbn\-\_\-cba1}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba1}}\label{classmerck_a0f41d68964ee35708b21207d39b37b74}
+
+
+Definition at line 45 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_ad68a5cfd0ac42b5cbff684365a1f96a5}{\index{merck@{merck}!stbn\-\_\-cba10@{stbn\-\_\-cba10}}
+\index{stbn\-\_\-cba10@{stbn\-\_\-cba10}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba10}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba10}}\label{classmerck_ad68a5cfd0ac42b5cbff684365a1f96a5}
+
+
+Definition at line 54 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a599ef328ccf7e65f4f6217c7e80b902c}{\index{merck@{merck}!stbn\-\_\-cba11@{stbn\-\_\-cba11}}
+\index{stbn\-\_\-cba11@{stbn\-\_\-cba11}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba11}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba11}}\label{classmerck_a599ef328ccf7e65f4f6217c7e80b902c}
+
+
+Definition at line 55 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a8ce0bd0a66cc17246fd5b41f993a3ffb}{\index{merck@{merck}!stbn\-\_\-cba2@{stbn\-\_\-cba2}}
+\index{stbn\-\_\-cba2@{stbn\-\_\-cba2}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba2}}\label{classmerck_a8ce0bd0a66cc17246fd5b41f993a3ffb}
+
+
+Definition at line 46 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a622e2393fd9bd1a8832e51ecdc90ed01}{\index{merck@{merck}!stbn\-\_\-cba3@{stbn\-\_\-cba3}}
+\index{stbn\-\_\-cba3@{stbn\-\_\-cba3}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba3}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba3}}\label{classmerck_a622e2393fd9bd1a8832e51ecdc90ed01}
+
+
+Definition at line 47 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a0a003faf5f47dd975b8f0799de808088}{\index{merck@{merck}!stbn\-\_\-cba4@{stbn\-\_\-cba4}}
+\index{stbn\-\_\-cba4@{stbn\-\_\-cba4}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba4}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba4}}\label{classmerck_a0a003faf5f47dd975b8f0799de808088}
+
+
+Definition at line 48 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_aff2385fd8c779536ba4916db21315237}{\index{merck@{merck}!stbn\-\_\-cba5@{stbn\-\_\-cba5}}
+\index{stbn\-\_\-cba5@{stbn\-\_\-cba5}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba5}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba5}}\label{classmerck_aff2385fd8c779536ba4916db21315237}
+
+
+Definition at line 49 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a8768196f4b41bfc312ca8a0f5829da3e}{\index{merck@{merck}!stbn\-\_\-cba6@{stbn\-\_\-cba6}}
+\index{stbn\-\_\-cba6@{stbn\-\_\-cba6}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba6}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba6}}\label{classmerck_a8768196f4b41bfc312ca8a0f5829da3e}
+
+
+Definition at line 50 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a9f9997b9bb4d573760adc189f3fe7926}{\index{merck@{merck}!stbn\-\_\-cba7@{stbn\-\_\-cba7}}
+\index{stbn\-\_\-cba7@{stbn\-\_\-cba7}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba7}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba7}}\label{classmerck_a9f9997b9bb4d573760adc189f3fe7926}
+
+
+Definition at line 51 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a6cba162dae532979a56bbfcc27ead348}{\index{merck@{merck}!stbn\-\_\-cba8@{stbn\-\_\-cba8}}
+\index{stbn\-\_\-cba8@{stbn\-\_\-cba8}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba8}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba8}}\label{classmerck_a6cba162dae532979a56bbfcc27ead348}
+
+
+Definition at line 52 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a729100fe8948bce8c2e25f4433c3f69f}{\index{merck@{merck}!stbn\-\_\-cba9@{stbn\-\_\-cba9}}
+\index{stbn\-\_\-cba9@{stbn\-\_\-cba9}!merck@{merck}}
+\subsubsection[{stbn\-\_\-cba9}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(100,100,100) merck\-::stbn\-\_\-cba9}}\label{classmerck_a729100fe8948bce8c2e25f4433c3f69f}
+
+
+Definition at line 53 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a5077f091d33060cb8ffc6a427f0f25cd}{\index{merck@{merck}!t1\-\_\-1@{t1\-\_\-1}}
+\index{t1\-\_\-1@{t1\-\_\-1}!merck@{merck}}
+\subsubsection[{t1\-\_\-1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,0\-:2000) merck\-::t1\-\_\-1}}\label{classmerck_a5077f091d33060cb8ffc6a427f0f25cd}
+
+
+Definition at line 57 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a8bc86e67b70d3bf5f64dd42af649b029}{\index{merck@{merck}!t1\-\_\-2@{t1\-\_\-2}}
+\index{t1\-\_\-2@{t1\-\_\-2}!merck@{merck}}
+\subsubsection[{t1\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,0\-:2000) merck\-::t1\-\_\-2}}\label{classmerck_a8bc86e67b70d3bf5f64dd42af649b029}
+
+
+Definition at line 58 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a6dc3f447e2e06723a00ab70628bc0366}{\index{merck@{merck}!t2\-\_\-1@{t2\-\_\-1}}
+\index{t2\-\_\-1@{t2\-\_\-1}!merck@{merck}}
+\subsubsection[{t2\-\_\-1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,0\-:2000) merck\-::t2\-\_\-1}}\label{classmerck_a6dc3f447e2e06723a00ab70628bc0366}
+
+
+Definition at line 57 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a6b3c6efb5313d650b4f54c20adfa9277}{\index{merck@{merck}!t2\-\_\-2@{t2\-\_\-2}}
+\index{t2\-\_\-2@{t2\-\_\-2}!merck@{merck}}
+\subsubsection[{t2\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,0\-:2000) merck\-::t2\-\_\-2}}\label{classmerck_a6b3c6efb5313d650b4f54c20adfa9277}
+
+
+Definition at line 58 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a7e6fcfd46a21e8ae8c9a624e91648249}{\index{merck@{merck}!t3\-\_\-1@{t3\-\_\-1}}
+\index{t3\-\_\-1@{t3\-\_\-1}!merck@{merck}}
+\subsubsection[{t3\-\_\-1}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,0\-:2000) merck\-::t3\-\_\-1}}\label{classmerck_a7e6fcfd46a21e8ae8c9a624e91648249}
+
+
+Definition at line 57 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_af1f812e006b64ca36df99613700e9142}{\index{merck@{merck}!t3\-\_\-2@{t3\-\_\-2}}
+\index{t3\-\_\-2@{t3\-\_\-2}!merck@{merck}}
+\subsubsection[{t3\-\_\-2}]{\setlength{\rightskip}{0pt plus 5cm}real$\ast$8, dimension(2,0\-:2000) merck\-::t3\-\_\-2}}\label{classmerck_af1f812e006b64ca36df99613700e9142}
+
+
+Definition at line 58 of file M\-O\-D\-\_\-merck.\-f90.
+
+\hypertarget{classmerck_a0bc0ef340bd3d358ede6d66a415952a3}{\index{merck@{merck}!val@{val}}
+\index{val@{val}!merck@{merck}}
+\subsubsection[{val}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(100) merck\-::val}}\label{classmerck_a0bc0ef340bd3d358ede6d66a415952a3}
+
+
+valency value $|$ see T. A. Halgren, 
+
+
+
+Definition at line 19 of file M\-O\-D\-\_\-merck.\-f90.
+
+
+
+The documentation for this module was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{MOD__merck_8f90}{M\-O\-D\-\_\-merck.\-f90}\end{DoxyCompactItemize}

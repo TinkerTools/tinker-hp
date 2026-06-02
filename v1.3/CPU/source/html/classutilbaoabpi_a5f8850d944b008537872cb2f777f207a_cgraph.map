@@ -1,0 +1,8 @@
+<map id="utilbaoabpi::centroid_force_corrections" name="utilbaoabpi::centroid_force_corrections">
+<area shape="rect" id="node2" href="$classutilbaoabpi.html#a9e785f8d8522eb29bf90a658729fbf1e" title="utilbaoabpi::colvars\l_run_pi" alt="" coords="211,38,362,79"/>
+<area shape="rect" id="node3" href="$classutilbaoabpi.html#a4407ec4cbd0f80a26c05e6d96b888e20" title="utilbaoabpi::prepare\l_colvars_pi" alt="" coords="411,5,565,46"/>
+<area shape="rect" id="node4" href="$classutilbaoabpi.html#a499bdce266930ac702dc09e25521901c" title="utilbaoabpi::distrib\l_colvars_pi" alt="" coords="416,70,560,111"/>
+<area shape="rect" id="node5" href="$mutate_8f90.html#a8a8cb37784baa7e9e5bda6dae37df036" title="constructs the state weighting values vlambda and elambda for the van der Waals and electrostatic int..." alt="" coords="613,77,736,104"/>
+<area shape="rect" id="node6" href="$mutate_8f90.html#a8a0c3ee7abe7f5d00402933102f15a81" title="&quot;altelec&quot; constructs the mutated electrostatic parameters based on the lambda mutation parameter &quot;elm..." alt="" coords="784,52,851,79"/>
+<area shape="rect" id="node7" href="$fatal_8f90.html#ac98a3b0f777d58a970a98be6d90d7162" title="terminates execution due to a user request, a severe error or some other nonstandard condition ..." alt="" coords="791,103,843,129"/>
+</map>

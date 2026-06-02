@@ -1,0 +1,5 @@
+<map id="ktorsm" name="ktorsm">
+<area shape="rect" id="node2" href="$numeral_8f90.html#a02f02abcc21a0359f7ef69ae411c78b5" title="converts an input integer number into the corresponding right&#45; or left&#45;justified text numeral ..." alt="" coords="123,5,199,32"/>
+<area shape="rect" id="node3" href="$number_8f90.html#a133da88aea76390c3f91db1e3a8a4f4b" title="&quot;number&quot; converts a text numeral into an integer value; the input string must contain only numeric ch..." alt="" coords="248,5,320,32"/>
+<area shape="rect" id="node4" href="$trimtext_8f90.html#ad83d9073f809c425ddf7ca256594b68a" title="finds and returns the location of the last non&#45;blank character before the first null character in an ..." alt="" coords="368,5,443,32"/>
+</map>

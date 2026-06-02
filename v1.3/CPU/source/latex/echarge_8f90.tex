@@ -1,0 +1,168 @@
+\hypertarget{echarge_8f90}{\section{echarge.\-f90 File Reference}
+\label{echarge_8f90}\index{echarge.\-f90@{echarge.\-f90}}
+}
+\subsection*{Functions/\-Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{echarge_8f90_a226917d828e99a8c480dddce568f20f4}{echarge}
+\begin{DoxyCompactList}\small\item\em \char`\"{}echarge\char`\"{} calculates the charge-\/charge interaction energy and partitions the energy among the atoms \end{DoxyCompactList}\item 
+subroutine \hyperlink{echarge_8f90_a86fee8201f93b2406029ea6ff81483d5}{echarge0c}
+\begin{DoxyCompactList}\small\item\em calculates the charge-\/charge interaction energy and partitions the energy among the atoms using a particle mesh Ewald summation \end{DoxyCompactList}\item 
+subroutine \hyperlink{echarge_8f90_ad2c1c21ac15ef80eb259ae571896bbd6}{ecreal0d}
+\begin{DoxyCompactList}\small\item\em \char`\"{}ecreal0d\char`\"{} evaluates the real space portion of the Ewald sum energy due to atomic charge interactions, using a pairwise neighbor list \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Function/\-Subroutine Documentation}
+\hypertarget{echarge_8f90_a226917d828e99a8c480dddce568f20f4}{\index{echarge.\-f90@{echarge.\-f90}!echarge@{echarge}}
+\index{echarge@{echarge}!echarge.f90@{echarge.\-f90}}
+\subsubsection[{echarge}]{\setlength{\rightskip}{0pt plus 5cm}subroutine echarge (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge_8f90_a226917d828e99a8c480dddce568f20f4}
+
+
+\char`\"{}echarge\char`\"{} calculates the charge-\/charge interaction energy and partitions the energy among the atoms 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 21 of file echarge.\-f90.
+
+
+
+References echarge0c().
+
+
+
+Referenced by energy().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge_8f90_a226917d828e99a8c480dddce568f20f4_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge_8f90_a226917d828e99a8c480dddce568f20f4_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echarge_8f90_a86fee8201f93b2406029ea6ff81483d5}{\index{echarge.\-f90@{echarge.\-f90}!echarge0c@{echarge0c}}
+\index{echarge0c@{echarge0c}!echarge.f90@{echarge.\-f90}}
+\subsubsection[{echarge0c}]{\setlength{\rightskip}{0pt plus 5cm}subroutine echarge0c (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge_8f90_a86fee8201f93b2406029ea6ff81483d5}
+
+
+calculates the charge-\/charge interaction energy and partitions the energy among the atoms using a particle mesh Ewald summation 
+
+
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 53 of file echarge.\-f90.
+
+
+
+References ecreal0d(), ecrecip(), and erfc().
+
+
+
+Referenced by echarge().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge_8f90_a86fee8201f93b2406029ea6ff81483d5_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge_8f90_a86fee8201f93b2406029ea6ff81483d5_icgraph}
+\end{center}
+\end{figure}
+
+
+\hypertarget{echarge_8f90_ad2c1c21ac15ef80eb259ae571896bbd6}{\index{echarge.\-f90@{echarge.\-f90}!ecreal0d@{ecreal0d}}
+\index{ecreal0d@{ecreal0d}!echarge.f90@{echarge.\-f90}}
+\subsubsection[{ecreal0d}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ecreal0d (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{echarge_8f90_ad2c1c21ac15ef80eb259ae571896bbd6}
+
+
+\char`\"{}ecreal0d\char`\"{} evaluates the real space portion of the Ewald sum energy due to atomic charge interactions, using a pairwise neighbor list 
+
+\begin{DoxyVerb}if longrange, calculates just the long range part
+if shortrange, calculates just the short range part
+\end{DoxyVerb}
+ 
+\begin{DoxyParams}{Parameters}
+{\em no} & params \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 174 of file echarge.\-f90.
+
+
+
+References erfc(), groups(), image(), switch(), and switch\-\_\-respa().
+
+
+
+Referenced by echarge0c().
+
+
+
+Here is the call graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=344pt]{echarge_8f90_ad2c1c21ac15ef80eb259ae571896bbd6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\-:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{echarge_8f90_ad2c1c21ac15ef80eb259ae571896bbd6_icgraph}
+\end{center}
+\end{figure}
+
+
