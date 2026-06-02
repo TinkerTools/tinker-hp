@@ -39,7 +39,7 @@ Tinker-HP proposes a high-performance scalable computing environment for polariz
 
 ## Documentation
 
-Various pages documenting the capabilities of the package as well as guidelines to use it are given in the [doxygen documentation](html/pages.html), you will find:
+Various pages documenting the capabilities of the package as well as guidelines to use it are given in the [doxygen documentation](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/pages.html), you will find:
   - [an overview of the suite detailing the programs and their cabapibilites](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_binaries_doxygen.html)
   - [prerequisites and a guide to compile the CPU version](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_Build_CPU.html)
   - [prerequisites for the GPU version](html/md_Prerequisites_doxygen.html) and a [guide to build it](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_Build_GPU.html)
