@@ -1,0 +1,101 @@
+#
+# This is a generic makefile which will work for any
+# subpackage which just depends on config/
+# It just compiles objects locally
+# 
+
+# include the machine dependent configuration
+ifneq ($(MAKECMDGOALS),clean)
+  -include ../../Makefile.conf
+endif
+
+# if machine dependent configuration has been found:
+ifdef GCCDEP
+
+# source for plumed kernel
+SRC=$(wildcard *.cpp)
+
+# corresponding objects:
+OBJ=$(SRC:.cpp=.o)
+
+# dependency files for all c++ sources
+DEP=$(addprefix deps/,$(SRC:.cpp=.d))
+
+.PHONY: all dirslinks obj lib install
+
+# default target:
+# update all links then build this module
+all: dirslinks
+	@echo Preparing for make
+	$(PREMAKE)
+	@echo "*** Compile local objects ***"
+	$(MAKE) obj
+
+
+# build links for all modules
+dirslinks:
+	make -C ../lib dirslinks
+
+# buils objects in this module
+obj: $(OBJ)
+
+# build everything
+lib:
+	cd ../lib ; make
+
+.PHONY: install
+install:
+	cd ../lib ; make install
+
+ifneq ($(disable_dependency_tracking),yes)
+-include $(DEP)
+endif
+
+# if machine dependent configuration has not been found:
+else
+
+.PHONY: error
+error:
+	@echo No configuration available
+	@echo First run ./configure in the root directory
+endif
+
+# this target is available anyway
+
+.PHONY: clean links
+clean:
+	@echo Clean $(CURDIR)
+	../maketools/cleanlinks.sh
+	rm -fr deps links
+	rm -f $(CLEANLIST)
+
+# build links for this module
+links: Makefile
+	@echo Verify modules and create links in $(CURDIR)
+	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ; ../maketools/makelinks.sh $$dir ;  done
+
+.PHONY: cppcheck
+cppcheck:
+	../maketools/codecheck --cppcheck --local
+
+.PHONY: plumedcheck
+plumedcheck:
+	../maketools/codecheck --plumedcheck --local
+
+.PHONY: codecheck
+codecheck:
+	../maketools/codecheck --local
+
+.PHONY: astyle
+astyle:
+	cd ../ ; ./astyle.sh $(CURDIR)
+
+.PHONY: show_used_modules
+show_used_modules:
+	@echo used_modules $(USE)
+
+
+
+# generic makefile rules
+include ../maketools/make.rules
+

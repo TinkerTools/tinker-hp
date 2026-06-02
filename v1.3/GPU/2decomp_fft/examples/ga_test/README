@@ -1,0 +1,11 @@
+ga_test
+-------
+
+This folder contains an applications using the Global Arrays toolkit (GA) to 
+implement a 3D FFT. While the data is still distributed via 2DECOMP&FFT's 
+decomposition library, there are no global transpositions. All comminications 
+are done via GA, who encapsulated the communications and gives a shared-memory 
+view of the global data.
+
+To build this application, GA has to be installed first, and its path given in 
+the Makefile.

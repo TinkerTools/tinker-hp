@@ -1,0 +1,942 @@
+#
+#   Makefile for Tinker-HP using PGI compilers
+#
+
+#
+#   Compiler
+#
+RunF77       = mpif90
+RunCXX       = mpic++
+RunCUFC      = mpif90
+RunCUCC     := nvcc
+RunCUHC     := mpic++
+
+# Comma and space characters
+comma__     := ,
+empty__     :=
+space__     := $(empty__) $(empty__)
+
+# top-level directory
+makefile_path__ := $(abspath $(lastword $(MAKEFILE_LIST)))
+makefile_dir__  := $(dir $(makefile_path__))
+# `make' will not complain if file `top_dir.mk' does not exist
+-include top_dir.mk
+ifeq (,$(top_dir__))
+   top_dir__ := $(realpath $(makefile_dir__)/..)
+endif
+
+# Source relative directory
+src_dir     :=../source
+# Installation directory and programm suffix
+prefix      :=../bin
+# Suffix on executables
+prog_suffix :=
+# Compilation optimisation (release|debug)
+opt         := release
+# Precision of floating point numbers and options (double|[m]ixed|[s]ingle)
+prec        := double
+
+arch        := device
+main_prec   := d
+
+install_libdir      := $(top_dir__)/lib
+mlplugin_installdir := $(top_dir__)/lib
+mlplugin_name       := mlinterface
+
+config_file__  ?= config.nvidia.mk
+
+#
+#  OPTIONS
+# ________
+
+# HIP Compilation
+HIP_SUPPORT ?= 0
+# Device OpenMP Support
+OPENMP_SUPPORT ?= 0
+# Wether to build with NVSHMEM
+NVSHMEM_SUPPORT ?= 0
+# Wether to build with NVTX
+NVTX_SUPPORT ?= 0
+# Select FFTW (0=generic; 1=other)
+FFTW_SUPPORT ?= 0
+# Force Othrogonal box shape
+ORTHO_BOX_ONLY_SUPPORT ?= 0
+# Remove Soft core computation
+NO_MUTATION ?= 0
+# Fixed Precision Arithmetic
+FPA_SUPPORT ?= 0
+# Plumed Feature
+PLUMED_SUPPORT ?= 0
+# Colvar Feature
+COLVARS_SUPPORT ?= 0
+# Tcl Feature within colvar library
+TCL_SUPPORT ?= 0
+# NN Feature
+NN_SUPPORT  ?= 0
+# Verbosity
+VERBOSE     ?= 0
+# Release Build
+REL_BUILD   ?= 0
+
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir := $(dir $(mkfile_path))
+
+#  librarie's directory (MKL, FFT, 2DECOMP, CUDA, std C++, Thrust Wrapper)
+#  ___________________________________________________________
+
+MKLROOT       ?= /opt/intel/mkl
+FFTW_DIR      ?= $(FFTW)
+FFTDECOMPDIR  ?= ../2decomp_fft
+CUDA_HOME     ?= /usr/local/cuda
+#  For regular linux system
+GNUROOT       ?= /usr
+THRUST_WRAP   ?= ../wrappers
+NVSHMEM_HOME  ?= /usr/local/nvshmem
+PLUMED_HOME   ?= ../plumed/Portland
+COLVARS_HOME  ?= $(top_dir__)/colvars
+TCL_HOME      ?= $(top_dir__)/tcl8.6.13/unix
+TCL_HOME__    := $(top_dir__)/tcl8.6.13/unix
+
+# MKL
+INC_MKL      = $(MKLROOT)/include
+LIB_MKL      = $(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+# LAPACK
+LIB_LAPACK   = -llapack -llapack_lp64 -lblas
+# FFTW
+ifeq ($(FFTW_SUPPORT), 1)
+  INC_FFT        = $(FFTW_DIR)/include
+  LIB_FFT        = $(FFTW_DIR)/lib -lfftw3 -lfftw3f
+endif
+#  Path to gcc library on Jean Zay Cluster
+## /### GNUROOT is supplied when sourcing ../ci/pgi_config.sh in the corresponding branch
+## Don't forget to do so if rebuilding
+INC_CPP        = $(GNUROOT)
+ifneq ($(LIB_STDCPP_DIR),$(empty__))
+   LIB_CPP        = $(LIB_STDCPP_DIR) -lstdc++
+else
+   LIB_CPP        = $(GNUROOT)/lib64 -lstdc++
+endif
+
+inc_decompfft := include
+lib_decompfft := l2decomp_fft
+conf_decompfft:= Makefile.inc.pgi
+INC_FFTDECOMP  = $(FFTDECOMPDIR)/$(inc_decompfft)
+LIB_FFTDECOMP  = $(FFTDECOMPDIR)/lib -$(lib_decompfft)
+
+INC_CUDA       = $(CUDA_HOME)/include
+LIB_CUDA       = $(CUDA_HOME)/lib64
+LIB_CUDA_DRIVER= $(CUDA_HOME)/lib64/stubs -lcuda
+
+INC_WRAP       = $(THRUST_WRAP)
+LIB_WRAP       = $(THRUST_WRAP) -lwrapper
+
+INC_NVSHMEM    = $(NVSHMEM_HOME)/include
+LIB_NVSHMEM    = $(NVSHMEM_HOME)/lib -lnvshmem
+
+INC_PLUMED     = $(PLUMED_HOME)/include
+LIB_PLUMED     = $(PLUMED_HOME)/lib -lplumed -lplumedKernel
+plumed_config_file = Makefile.conf.nvhpc
+
+INC_COLVARS    = $(COLVARS_HOME)
+LIB_COLVARS    = $(COLVARS_HOME) -lcolvars -lmpi_cxx
+
+ifeq ($(COLVARS_SUPPORT),1)
+   TCL_SUPPORT := 1
+endif
+ifeq ($(TCL_HOME),$(TCL_HOME__))
+   INC_TCL        = $(TCL_HOME)/../generic
+   LIB_TCL        = $(install_libdir) -ltcl8.6
+else
+   INC_TCL        = $(TCL_HOME)/include
+   LIB_TCL        = $(TCL_HOME)/lib -ltcl8.6
+endif
+
+library_link__ := static
+lib_dir__      := $(HOME)/local/lib
+
+-include $(src_dir)/$(config_file__)
+
+#  -----------------  #
+## List Source Files ##
+#  -----------------  #
+MOD_SRCS  = MOD_tinheader.o
+MOD_SRCS += MOD_sizes.o
+MOD_SRCS += MOD_action.f90
+MOD_SRCS += MOD_analyz.f90
+MOD_SRCS += MOD_angang.f90
+MOD_SRCS += MOD_angle.f90
+MOD_SRCS += MOD_angpot.f90
+MOD_SRCS += MOD_angtor.f90
+MOD_SRCS += MOD_argue.f90
+MOD_SRCS += MOD_ascii.f90
+MOD_SRCS += MOD_atmlst.f90
+MOD_SRCS += MOD_atoms.f90
+MOD_SRCS += MOD_atmtyp.f90
+MOD_SRCS += MOD_bath.f90
+MOD_SRCS += MOD_bitor.f90
+MOD_SRCS += MOD_beads.f90
+MOD_SRCS += MOD_bndpot.f90
+MOD_SRCS += MOD_bond.f90
+MOD_SRCS += MOD_bound.f90
+MOD_SRCS += MOD_boxes.f90
+MOD_SRCS += MOD_cell.f90
+MOD_SRCS += MOD_cflux.f90
+MOD_SRCS += MOD_charge.f90
+MOD_SRCS += MOD_chgpen.f90
+MOD_SRCS += MOD_chgpot.f90
+MOD_SRCS += MOD_chgtrn.f90
+MOD_SRCS += MOD_chunks.f90
+MOD_SRCS += MOD_colvars.f90
+MOD_SRCS += MOD_couple.f90
+MOD_SRCS += MOD_commstuffpi.f90
+MOD_SRCS += MOD_ctrpot.f90
+MOD_SRCS += MOD_cutoff.f90
+MOD_SRCS += MOD_dcdio.f90
+MOD_SRCS += MOD_deconvolution.f90
+MOD_SRCS += MOD_deriv.f90
+MOD_SRCS += MOD_disp.f90
+MOD_SRCS += MOD_divcon.f90
+MOD_SRCS += MOD_domdec.f90
+MOD_SRCS += MOD_dsppot.f90
+MOD_SRCS += MOD_energi.f90
+MOD_SRCS += MOD_erf.f90
+MOD_SRCS += MOD_ewald.f90
+MOD_SRCS += MOD_fft.f90
+MOD_SRCS += MOD_fields.f90
+MOD_SRCS += MOD_files.f90
+MOD_SRCS += MOD_freeze.f90
+MOD_SRCS += MOD_group.f90
+MOD_SRCS += MOD_improp.f90
+MOD_SRCS += MOD_imptor.f90
+MOD_SRCS += MOD_inform.f90
+MOD_SRCS += MOD_inter.f90 MOD_interfaces.f90
+MOD_SRCS += MOD_iounit.f90
+MOD_SRCS += MOD_kanang.f90
+MOD_SRCS += MOD_kangs.f90
+MOD_SRCS += MOD_kantor.f90
+MOD_SRCS += MOD_katoms.f90
+MOD_SRCS += MOD_kbonds.f90
+MOD_SRCS += MOD_kcflux.f90
+MOD_SRCS += MOD_kchrge.f90
+MOD_SRCS += MOD_kcpen.f90
+MOD_SRCS += MOD_kctrn.f90
+MOD_SRCS += MOD_kdsp.f90
+MOD_SRCS += MOD_keys.f90
+MOD_SRCS += MOD_khbond.f90
+MOD_SRCS += MOD_kiprop.f90
+MOD_SRCS += MOD_kgeoms.f90
+MOD_SRCS += MOD_kitors.f90
+MOD_SRCS += MOD_kmulti.f90
+MOD_SRCS += MOD_kopbnd.f90
+MOD_SRCS += MOD_kopdst.f90
+MOD_SRCS += MOD_kpitor.f90
+MOD_SRCS += MOD_kpolr.f90
+MOD_SRCS += MOD_kpolpr.f90
+MOD_SRCS += MOD_krepl.f90
+MOD_SRCS += MOD_kstbnd.f90
+MOD_SRCS += MOD_ksttor.f90 
+MOD_SRCS += MOD_ktorsn.f90
+MOD_SRCS += MOD_ktrtor.f90
+MOD_SRCS += MOD_kurybr.f90
+MOD_SRCS += MOD_kvdwpr.f90
+MOD_SRCS += MOD_kvdws.f90
+MOD_SRCS += MOD_langevin.f90
+MOD_SRCS += MOD_linmin.f90
+MOD_SRCS += MOD_memory.o
+MOD_SRCS += MOD_math.o
+MOD_SRCS += MOD_mamd.f90
+MOD_SRCS += MOD_msmd.f90 
+MOD_SRCS += MOD_mdstate.f90
+MOD_SRCS += MOD_merck.f90
+MOD_SRCS += MOD_mpole.f90
+MOD_SRCS += MOD_mdstuf.f90 
+MOD_SRCS += MOD_mlpot.f90
+MOD_SRCS += MOD_minima.f90
+MOD_SRCS += MOD_molcul.f90
+MOD_SRCS += MOD_moldyn.f90
+MOD_SRCS += MOD_mplpot.f90
+MOD_SRCS += MOD_mutant.f90
+MOD_SRCS += MOD_neigh.f90
+MOD_SRCS += MOD_nvtx.o
+MOD_SRCS += MOD_opbend.f90
+MOD_SRCS += MOD_opdist.f90
+MOD_SRCS += MOD_output.f90
+MOD_SRCS += MOD_orthogonalize.f90
+MOD_SRCS += MOD_params.f90
+MOD_SRCS += MOD_pitors.f90
+MOD_SRCS += MOD_plumed.f90
+MOD_SRCS += MOD_pme.f90
+MOD_SRCS += MOD_polar.f90
+MOD_SRCS += MOD_polgrp.f90
+MOD_SRCS += MOD_polpot.f90
+MOD_SRCS += MOD_potent.f90
+MOD_SRCS += MOD_precis.f90
+MOD_SRCS += MOD_ptable.f90
+MOD_SRCS += MOD_precompute_polegpu.f90
+MOD_SRCS += MOD_qtb.f90
+MOD_SRCS += MOD_random.f90
+MOD_SRCS += MOD_repel.f90 
+MOD_SRCS += MOD_replicas.f90
+MOD_SRCS += MOD_reppot.f90
+MOD_SRCS += MOD_resdue.f90
+MOD_SRCS += MOD_ring.f90
+MOD_SRCS += MOD_scales.f90
+MOD_SRCS += MOD_shunt.f90
+MOD_SRCS += MOD_spectra.f90
+MOD_SRCS += MOD_strbnd.f90
+MOD_SRCS += MOD_strtor.f90
+MOD_SRCS += MOD_subDeriv.f90
+MOD_SRCS += MOD_subMemory.f90
+MOD_SRCS += MOD_subInform.f90
+MOD_SRCS += MOD_subAtoms.f90
+MOD_SRCS += MOD_timestat.f90
+MOD_SRCS += MOD_titles.f90
+MOD_SRCS += MOD_torpot.f90
+MOD_SRCS += MOD_tors.f90
+MOD_SRCS += MOD_tortor.f90
+MOD_SRCS += MOD_units.f90
+MOD_SRCS += MOD_uprior.f90
+MOD_SRCS += MOD_urey.f90
+MOD_SRCS += MOD_urypot.f90
+MOD_SRCS += MOD_usage.f90
+MOD_SRCS += MOD_utils.f90
+MOD_SRCS += MOD_utilbaoab.f90
+MOD_SRCS += MOD_utilcomm.f90
+MOD_SRCS += MOD_utilbaoabpi.f90
+MOD_SRCS += MOD_utilvec.f90
+MOD_SRCS += MOD_utilgpu.f90
+MOD_SRCS += MOD_USampling.f90
+MOD_SRCS += MOD_vec.f90
+MOD_SRCS += MOD_vdwpot.f90
+MOD_SRCS += MOD_vdw.f90
+MOD_SRCS += MOD_virial.f90
+
+##   Fortran
+##   -------
+F_SRCS    = active.f90
+F_SRCS   += analysis.f90
+F_SRCS   += angles.f90
+F_SRCS   += alterchg.f90
+F_SRCS   += alterchg.gpu.f90
+F_SRCS   += attach.f90
+F_SRCS   += basefile.f90
+F_SRCS   += beeman.f90
+F_SRCS   += bicubic.f90
+F_SRCS   += beads.f90
+F_SRCS   += baoab.f90 baoab_util.f90
+F_SRCS   += baoabrespa.f90 baoabrespa1.f90
+F_SRCS   += baoabpi.f90 baoabrespapi.f90
+F_SRCS   += bbk.f90
+F_SRCS   += bitors.f90
+F_SRCS   += bonds.f90 bounds.f90 boundspi.f90
+F_SRCS   += calendar.f90
+F_SRCS   += chkpole.f90 chkpolegpu.f90
+F_SRCS   += chkring.f90 chkxyz.f90
+F_SRCS   += cholesky.f90
+F_SRCS   += cluster.f90
+F_SRCS   += colvars.f90
+F_SRCS   += command.f90
+F_SRCS   += control.f90
+F_SRCS   += cspline.f90
+F_SRCS   += cutoffs.f90
+F_SRCS   += damping.f90
+F_SRCS   += dcdio.f90
+F_SRCS   += dcflux.f90 dcflux.gpu.f90
+F_SRCS   += diis.f90
+F_SRCS   += domdecstuff.f90
+F_SRCS   += dcinduce_pme.f90 dcinduce_pmegpu.f90
+F_SRCS   += dcinduce_pme2.f90 dcinduce_pme2gpu.f90
+F_SRCS   += dcinduce_shortreal.f90 dcinduce_shortrealgpu.f90
+F_SRCS   += eamd1.f90
+F_SRCS   += eangang.f90 eangang1.f90 eangang3.f90
+F_SRCS   += eangle.f90 eangle1.f90 eangle1gpu.f90
+F_SRCS   += eangle3.f90 eangle3gpu.f90
+F_SRCS   += eangtor.f90 eangtor1.f90 eangtor3.f90
+F_SRCS   += ebond.f90 ebond1.f90 ebond1gpu.f90 ebond3.f90 ebond3gpu.f90
+F_SRCS   += echarge1gpu.f90 echarge3.f90 echarge3gpu.f90
+F_SRCS   += echgtrn.f90 echgtrn1.f90 echgtrn1gpu.f90
+F_SRCS   += echgtrn3.f90 echgtrn3gpu.f90
+F_SRCS   += edisp.f90 edisp1.f90 edisp3.f90
+F_SRCS   += efld0_direct.f90 efld0_directgpu.f90
+F_SRCS   += egeom.f90 egeom1.f90 egeom1gpu.f90
+F_SRCS   += egeom3.f90 egeom3gpu.f90
+F_SRCS   += ehal.f90 ehal1.f90 ehal1gpu.f90
+F_SRCS   += ehal3.f90 ehal3gpu.f90
+F_SRCS   += eimprop.f90 eimprop1.f90 eimprop1gpu.f90
+F_SRCS   += eimprop3.f90
+F_SRCS   += eimptor.f90 eimptor1.f90 eimptor1gpu.f90
+F_SRCS   += eimptor3.f90
+F_SRCS   += elj.f90 elj1.f90 elj1gpu.f90
+F_SRCS   += elj3.f90 elj3gpu.f90
+F_SRCS   += eliaison1gpu.f90
+F_SRCS   += empole.f90 empole1.f90 empole1_group.f90
+F_SRCS   += empole3.f90 empole3_group.f90
+F_SRCS   += empole1gpu.f90 empole3gpu.f90
+F_SRCS   += energy.f90
+F_SRCS   += eopbend.f90 eopbend1.f90 eopbend1gpu.f90
+F_SRCS   += eopbend3.f90 eopbend3gpu.f90
+F_SRCS   += eopdist.f90 eopdist1.f90 eopdist3.f90
+F_SRCS   += epitors.f90 epitors1.f90 epitors1gpu.f90 epitors3.f90
+F_SRCS   += epolar.f90 epolar1gpu.f90 epolar1_group.f90
+F_SRCS   += epolar3.f90 epolar3gpu.f90 epolar3_group.f90
+F_SRCS   += erepel.f90 erepel1.f90 erepel3.f90
+F_SRCS   += esmd1.f90
+F_SRCS   += estrbnd.f90 estrbnd1.f90 estrbnd1gpu.f90 estrbnd3.f90
+F_SRCS   += estrtor.f90 estrtor1.f90 estrtor1gpu.f90 estrtor3.f90
+F_SRCS   += etors.f90 etors1.f90 etors1gpu.f90 etors3.f90
+F_SRCS   += etortor.f90 etortor1.f90 etortor1gpu.f90 etortor3.f90
+F_SRCS   += eurey.f90 eurey1.f90 eurey1gpu.f90
+F_SRCS   += eurey3.f90  eurey3gpu.f90
+F_SRCS   += evcorr.f90 extra.f90 extra1.f90 extra3.f90
+F_SRCS   += fatal.f90
+F_SRCS   += fft_mpi.f90
+F_SRCS   += field.f90
+F_SRCS   += final.f90
+F_SRCS   += freeunit.f90
+F_SRCS   += geometry.f90
+F_SRCS   += getkey.f90
+F_SRCS   += getnumb.f90
+F_SRCS   += getprm.f90
+F_SRCS   += getstring.f90
+F_SRCS   += gettext.f90
+F_SRCS   += getword.f90
+F_SRCS   += getxyz.f90
+F_SRCS   += gradient.f90
+F_SRCS   += groups.f90
+F_SRCS   += image.f90
+F_SRCS   += initatom.f90 initial.f90 initprm.f90 initres.f90
+F_SRCS   += invert.f90
+F_SRCS   += kangang.f90
+F_SRCS   += kangle.f90
+F_SRCS   += kamd.f90
+F_SRCS   += katom.f90
+F_SRCS   += kangtor.f90
+F_SRCS   += kbond.f90
+F_SRCS   += kcharge.f90
+F_SRCS   += kchgflx.f90
+F_SRCS   += kchgtrn.f90
+F_SRCS   += kdisp.f90
+F_SRCS   += kewald.f90
+F_SRCS   += kgeom.f90
+F_SRCS   += kimprop.f90
+F_SRCS   += kimptor.f90
+F_SRCS   += kinetic.f90
+F_SRCS   += kmlpot.f90
+F_SRCS   += kmpole.f90
+F_SRCS   += kopbend.f90
+F_SRCS   += kopdist.f90
+F_SRCS   += kpitors.f90
+F_SRCS   += kpolar.f90
+F_SRCS   += krepel.f90
+F_SRCS   += kstrbnd.f90
+F_SRCS   += kstrtor.f90
+F_SRCS   += kscalfactor.f90
+F_SRCS   += ksmd.f90
+F_SRCS   += ktors.f90
+F_SRCS   += ktortor.f90
+F_SRCS   += kurey.f90
+F_SRCS   += kvdw.f90
+F_SRCS   += lattice.f90
+F_SRCS   += lbfgs.f90
+F_SRCS   += linalg.f90
+F_SRCS   += maxwell.f90
+F_SRCS   += mdinit.f90 mdinitbead.f90 mdinitreps.f90
+F_SRCS   += mdrest.f90
+F_SRCS   += mdsave.f90
+F_SRCS   += mdsavebeads.f90
+F_SRCS   += mdstat.f90
+F_SRCS   += mdstatpi.f90
+F_SRCS   += mdstate.gpu.f90
+F_SRCS   += mechanic.f90
+F_SRCS   += mlpot.f90 
+F_SRCS   += molecule.f90
+F_SRCS   += mpistuff.f90 mpiUtils.gpu.f90
+F_SRCS   += mutate.f90
+F_SRCS   += nblist.f90 nblistgpu.f90
+F_SRCS   += nblist_build.gpu.f90
+F_SRCS   += newinduce_pme.f90
+F_SRCS   += newinduce_pme2.f90
+F_SRCS   += newinduce_group.f90
+F_SRCS   += newinduce_shortreal.f90
+F_SRCS   += newinduce_pmegpu.f90
+F_SRCS   += newinduce_pme2gpu.f90
+F_SRCS   += newinduce_shortrealgpu.f90
+F_SRCS   += nextarg.f90
+F_SRCS   += nexttext.f90
+F_SRCS   += nspline.f90
+F_SRCS   += number.f90
+F_SRCS   += numeral.f90
+F_SRCS   += orthogonalize.f90
+F_SRCS   += openend.f90
+F_SRCS   += optsave.f90
+F_SRCS   += plumed.f90
+F_SRCS   += pmestuff.f90 pmestuffgpu.f90
+F_SRCS   += precise.f90
+F_SRCS   += pressure.f90
+F_SRCS   += prime.f90
+F_SRCS   += promo.f90 promoamd.f90 promosmd.f90
+F_SRCS   += prmkey.f90
+F_SRCS   += prtdynbeads.f90 prtdyn.f90 prtxyz.f90
+F_SRCS   += readdyn.f90 readprm.f90 readxyz.f90
+F_SRCS   += respa.f90 respa1.f90
+F_SRCS   += rings.f90
+F_SRCS   += rotpole.f90 rotpolegpu.f90
+F_SRCS   += search.f90
+F_SRCS   += sort.f90
+F_SRCS   += rattle.f90 shakeup.f90
+F_SRCS   += suffix.f90
+F_SRCS   += switch.f90 switch_group.f90
+F_SRCS   += temper.f90
+F_SRCS   += tmatxb_pme.f90 tmatxb_pmegpu.f90
+F_SRCS   += torphase.f90
+F_SRCS   += torque.f90 torquegpu.f90
+F_SRCS   += torsions.f90
+F_SRCS   += trimtext.f90
+F_SRCS   += unitcell.f90
+F_SRCS   += verlet.f90
+F_SRCS   += version.f90
+
+
+##   Device  Fortran
+##   ---------------
+DEV_F_SRCS   = MOD_util.cu.f90
+DEV_F_SRCS  += echarge.cu.f90
+DEV_F_SRCS  += echglj.cu.f90
+DEV_F_SRCS  += echgtrn.cu.f90
+DEV_F_SRCS  += efld0_cpen.cu.f90
+DEV_F_SRCS  += ehal1.cu.f90
+DEV_F_SRCS  += elj.cu.f90
+DEV_F_SRCS  += eliaison1.cu.f90
+DEV_F_SRCS  += empole1.cu.f90
+DEV_F_SRCS  += empole_cpen.cu.f90
+DEV_F_SRCS  += epolar1.cu.f90
+DEV_F_SRCS  += epolar_cpen.cu.f90
+DEV_F_SRCS  += nblist.cu.f90
+DEV_F_SRCS  += pmestuff.cu.f90
+DEV_F_SRCS  += tmatxb_pme.cu.f90
+DEV_F_SRCS  += tmatxb_pme_cpen.cu.f90
+
+
+##   C++
+##   ---
+CC_SRCS      = image.cpp
+ifeq ($(COLVARS_SUPPORT),1)
+   CC_SRCS  += colvarproxy_tinkerhp.cpp
+endif
+
+##   Device C++
+##   ----------
+DEV_CC_SRCS  = CholeskySolver.cu
+DEV_CC_SRCS += nblist.cu
+DEV_CC_SRCS += tmatxb_pme.cu
+DEV_CC_SRCS += mpole1.cu
+ifeq ($(NVSHMEM_SUPPORT),1)
+   DEV_CC_SRCS += nvshmem_wrap.cu
+else ifeq ($(findstring NVSHMEM, $(OPTIONS)),NVSHMEM)
+   DEV_CC_SRCS += nvshmem_wrap.cu
+endif
+
+
+# Tinker main programs object files
+PROGOBJ   = analyze.o
+PROGOBJ  += analyze_beads.o
+PROGOBJ  += bar.o
+PROGOBJ  += dynamic.o
+PROGOBJ  += minimize.o
+PROGOBJ  += testgrad.o
+PROGOBJ  += pibar.o
+PROGOBJ  += pimd.o
+PROGOBJ  += radial.o
+
+
+## Translate Filenames into objects
+#
+OBJS_MOD_F  = $(patsubst %.f90,%.o,$(MOD_SRCS))
+OBJS_F      = $(patsubst %.f90,%.o,$(F_SRCS))
+OBJS_CC     = $(patsubst %.cpp,cc.%.o,$(CC_SRCS))
+OBJS_DEV_F  = $(patsubst %.cu.f90,cuf.%.o,$(DEV_F_SRCS))
+OBJS_DEV_CC = $(patsubst %.cu,cu.%.o,$(DEV_CC_SRCS))
+
+
+#  -----------------  #
+## List Object Files ##
+#  -----------------  #
+
+
+# Cuda-C object Files
+
+ifeq ($(arch),$(filter $(arch),device gpu))
+   ifeq ($(HIP_SUPPORT),0)
+      MODS = $(OBJS_MOD_F) $(OBJS_DEV_F)
+      OBJS = $(OBJS_F) $(OBJS_CC) $(OBJS_DEV_CC)
+   else
+      MODS = $(OBJS_MOD_F)
+      OBJS = $(OBJS_F) $(OBJS_CC)
+   endif
+   library = library.make
+else ifeq ($(arch),$(filter $(arch),host cpu))
+   MODS    = $(OBJS_MOD_F)
+   OBJS    = $(OBJS_F) $(OBJS_CC)
+   library = library_host.make
+endif
+
+
+   ############################
+###----------------------------###
+#  LIST AND TARGETS DESCRIPTION  #
+###----------------------------###
+   ############################
+
+all: analyze bar pibar dynamic minimize pimd radial analyze_beads
+
+everything: analyze bar pibar dynamic minimize pimd radial testgrad analyze_beads
+
+#
+analyze: libtinker $(mlplugin_name)
+	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv $@.x $(prefix)/$@$(bin_sufx)
+#
+analyze_beads: libtinker $(mlplugin_name)
+	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv $@.x $(prefix)/$@$(bin_sufx)
+#
+dynamic: libtinker $(mlplugin_name)
+	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv $@.x $(prefix)/$@$(bin_sufx)
+	@[ $(PLUMED_SUPPORT) -eq 1 ] && echo && \
+	echo '                         !!!    ATTENTION    !!!' && \
+	echo '-----------------------------------------------------------------------------------' && \
+	echo ' Please update <LD_LIBRARY_PATH> environment variable using' && \
+	echo " the following command in order to locate Plumed library at runtime " && \
+	echo && \
+	echo ' &> export LD_LIBRARY_PATH=$(top_dir__)/plumed/Portland/lib:$$LD_LIBRARY_PATH' && \
+	echo && \
+	echo '-----------------------------------------------------------------------------------' || :
+	@ if [ $(NN_SUPPORT) -eq 1 ] || [ $(TCL_SUPPORT) -eq 1 ]; then \
+	echo && \
+	echo '                         !!!    ATTENTION    !!!' && \
+	echo '-----------------------------------------------------------------------------------' && \
+	echo ' Please update <LD_LIBRARY_PATH> environment variable using' && \
+	echo " the following command in order to expose dynamic libraries at runtime " && \
+	echo && \
+	echo ' &> export LD_LIBRARY_PATH=$(install_libdir):$$LD_LIBRARY_PATH' && \
+	echo && \
+	echo '-----------------------------------------------------------------------------------'; \
+	fi
+#
+dynamic1:
+	$(RunF77) $(FFLAGS2) -o dynamic.x dynamic.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv dynamic.x $(prefix)/$@$(bin_sufx)
+#
+.PHONY: dynamic.cpu
+dynamic.cpu:
+	@$(MAKE) arch=host prog_suffix=.cpu dynamic
+#
+.PHONY: dynamic.single
+dynamic.single:
+	@$(MAKE) prec=single prog_suffix=.single dynamic
+#
+.PHONY: dynamic.mixed
+dynamic.mixed:
+	@$(MAKE) prec=mixed prog_suffix=.mixed dynamic
+#
+.PHONY: dynamic.gpu
+dynamic.gpu:
+	@$(MAKE) prog_suffix=.gpu dynamic
+#
+.PHONY: dynamic.cpuh
+dynamic.cpuh: build_mod $(OBJS)
+	@$(MAKE) cleanobjhost
+	@$(MAKE) compilehost
+	@$(MAKE) link_dynamic.cpu
+	@$(MAKE) cleanobjhost
+	@$(MAKE) dynamic
+#
+link_dynamic.cpu: libtinker
+	$(RunF77) $(FFLAGS2) -o $(prefix)/dynamic.cpuh dynamic.o $(LIBS) $(LDLIBS)
+	@echo "**"
+	@echo "**  dynamic.cpu hybrid binary is successfully made "
+	@echo "**"
+#
+pimd: libtinker $(mlplugin_name)
+	$(RunF77) $(FFLAGS2) -o pimd.x pimd.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv pimd.x $(prefix)/$@$(bin_sufx)
+#
+radial: libtinker
+	$(RunF77) $(FFLAGS2) -o radial.x radial.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv radial.x $(prefix)/$@$(bin_sufx)
+
+# --  Building modules files
+build_mod: FFLAGS=$(GPUFLAGS)
+build_mod: $(MODS)
+#
+# --  Building object files
+build_obj: $(OBJS) $(PROGOBJ)
+#
+testgrad: libtinker
+	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv $@.x $(prefix)/$@$(bin_sufx)
+#
+minimize: libtinker
+	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv $@.x $(prefix)/$@$(bin_sufx)
+#
+.PHONY: bar
+bar: libtinker
+	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv $@.x $(prefix)/$@$(bin_sufx)
+#
+.PHONY: pibar
+pibar: libtinker $(mlplugin_name)
+	$(RunF77) $(FFLAGS2) -o $@.x $@.$(fobj_lext__) $(LIBS) $(LDLIBS)
+	mv $@.x $(prefix)/$@$(bin_sufx)
+#
+
+libtinker: $(depend_targets)
+	@ $(MAKE) build_mod
+	@ $(MAKE) build_obj
+ifeq ($(library_link__),static)
+	@echo
+	@echo "***** Making libtinker.a *****"
+	@ar -crs $@.a ${MODS} ${OBJS}
+else
+	@echo
+	@echo "***** Making libtinker.so *****"
+	@$(RunF77) -fPIC -shared -o $@.so ${MODS} ${OBJS}
+	@cp $@.so $(lib_dir__)
+endif
+
+
+#  ----------------------  #
+## Neural Network Package ##
+#  ----------------------  #
+.PHONY: $(mlplugin_name)
+ifeq ($(NN_SUPPORT),1)
+
+$(mlplugin_name): lib$(mlplugin_name).dylib $(mlplugin_installdir)/lib$(mlplugin_name).dylib
+
+lib$(mlplugin_name).dylib: mlbuilder.py $(mlplugin_name).py $(mlplugin_name).h
+	$(AT) python mlbuilder.py
+
+$(mlplugin_installdir)/lib$(mlplugin_name).dylib: lib$(mlplugin_name).dylib
+	$(AT) mkdir -p $(mlplugin_installdir) && \
+	cp $< $@
+
+else
+
+$(mlplugin_name):
+
+endif
+
+#  --------------  #
+## Plumed Package ##
+#  --------------  #
+.PHONY: plumed
+plumed:
+	$(AT) (cd $(top_dir__)/plumed2 && ln -sf $(plumed_config_file) Makefile.conf && \
+	  $(MAKE) install VERBOSE=1)
+
+#  ---------------  #
+## TCL Package ##
+#  ---------------  #
+.PHONY: tcl
+tcl:
+	$(AT) if [ ! -d $(install_libdir) ]; then mkdir -p $(install_libdir); fi
+	$(AT) cd $(TCL_HOME) && $(MAKE) VERBOSE=0 EXTRA_CFLAGS="$(TCL_CXX_F)" && mv $(TCL_HOME)/libtcl8.6.so $(install_libdir)
+#  ---------------  #
+## Colvars Package ##
+#  ---------------  #
+.PHONY: colvars
+colvars:
+	@cd $(COLVARS_HOME) &&\
+	$(MAKE) TCL_SUPPORT=$(TCL_SUPPORT) TCL_HOME=$(TCL_HOME) CXXFLAGS="$(COLVARS_CXX_F)" libcolvars.a
+
+# Include source code dependencies file
+include ./depend.mk
+
+#  --------------  #
+## Generics rules ##
+#  --------------  #
+#%.vinl: %.f
+#	@touch $@
+# Scpecific Objects
+promoamd.o: $(src_dir)/promoamd.f90
+	$(RunF77) $(FFLAGS) -Mbackslash -c $<
+promosmd.o: $(src_dir)/promosmd.f90
+	$(RunF77) $(FFLAGS) -Mbackslash -c $<
+active.o: $(src_dir)/active.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+attach.o: $(src_dir)/attach.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+angles.o: $(src_dir)/angles.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+bonds.o: $(src_dir)/bonds.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+bitors.o: $(src_dir)/bitors.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+cluster.o: $(src_dir)/cluster.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+domdecstuff.o: $(src_dir)/domdecstuff.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+lattice.o: $(src_dir)/lattice.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+torsions.o: $(src_dir)/torsions.f90
+	$(RunF77) $(GPUFLAGS) -c $<
+
+.SUFFIXES:
+
+# C++ Objects
+cc.%.o: $(src_dir)/%.cpp
+	$(RunCXX) $(CXXFLAGS) -I$(src_dir) -c $< -o $@
+cu.%.o: $(src_dir)/%.cu
+	$(RunCUCC) $(CUCFLAGS) -I$(src_dir) -c $< -o $@
+
+# Fortran Objects (OpenACC, etc...)
+cuf.%.o: $(src_dir)/%.cu.f90
+	$(RunCUFC) $(CUFFLAGS) -I$(src_dir) -c $< -o $@
+%gpu.o: $(src_dir)/%gpu.f90
+	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $<
+e%.o: $(src_dir)/e%.f90
+	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $<
+k%.o: $(src_dir)/k%.f90
+	$(RunF77) $(GPUFLAGS) -I$(src_dir) -c $<
+%.o: $(src_dir)/%.f
+	$(RunF77) $(FFLAGS) -c $<
+%.o: $(src_dir)/%.f90
+	$(RunF77) $(FFLAGS) -I$(src_dir) -I$(INC_FFTDECOMP) -c $< -o $@
+
+# -- Build directories
+BUILD_DIR     ?= build
+TINKER_SOURCE  = $(top_dir__)/source
+.PHONY: create_build
+create_build:
+	mkdir -p ../$(BUILD_DIR)
+	@echo "Linking Tinker-HP source files and Makefile.pgi to ../$(BUILD_DIR)"
+	@cd ../$(BUILD_DIR) &&\
+	   ln -s $(TINKER_SOURCE)/Makefile.pgi Makefile &&\
+	   $(TINKER_SOURCE)/depend.py $(arch)
+	@echo "--- done ---"
+
+#update_build:
+#	@echo "Update Tinker-HP source files and Makefile.pgi"
+#	@ln -s $(TINKER_SOURCE)/*.f . 2>/dev/null; ln -s $(TINKER_SOURCE)/*.f90 . 2>/dev/null;\
+#	 ln -s $(TINKER_SOURCE)/*.h . 2>/dev/null; ln -s $(TINKER_SOURCE)/*.cpp .; ln -s $(TINKER_SOURCE)/*.cu . 2>/dev/null;\
+#	 ln -s $(TINKER_SOURCE)/*.make .; ln -s $(TINKER_SOURCE)/*.mk .;\
+#	 ln -s $(TINKER_SOURCE)/*.py . 2>/dev/null;\
+#	 ln -s $(TINKER_SOURCE)/Makefile.pgi Makefile;
+#	@echo "--- done ---"
+
+
+
+#  ------------------  #
+## Debug informations ##
+#  ------------------  #
+infos:
+	@echo "Repo Dir           " $(top_dir__)
+	@echo "architecture       " $(arch) $(REL_BUILD)
+	@echo "precision          " $(prec)
+	@echo "OPTIONS            " $(pp_flags_f_)
+	@echo "CUDA fortan flags  " $(cuda_flags_f_)
+	@echo "ACC config         " $(oacc_flags_f_)
+	@echo "CUDA config        " $(cuda_flags_c_)
+	@echo "FORTRAN config     " $(FFLAGS)
+	@echo "CUDA libraries     " $(dev_ldlibs)
+	@echo "Programs suffix    " $(bin_sufx)
+	@echo -----------------------------------------------------------------------------------
+	@[ '$(add_mkl__)' = 'yes' ]   && echo "    MKL Libraries    " $(LIB_MKL) || :
+	@[ $(FPA_SUPPORT) -eq 1 ]     && echo "  Fixed Precision Arithmetic Support enabled" || :
+	@[ $(PLUMED_SUPPORT) -eq 1 ]  && echo " PLUMED interface enabled" || :
+	@[ $(NVTX_SUPPORT) -eq 1 ]    && echo "   NVTX Markers enabled" || :
+	@[ $(NVSHMEM_SUPPORT) -eq 1 ] && echo "NVSHMEM feature enabled" || :
+	@[ $(TCL_SUPPORT) -eq 1 ]     && echo "    TCL interface enabled" || :
+	@[ $(COLVARS_SUPPORT) -eq 1 ] && echo "COLVARS interface enabled" || :
+	@[ $(NN_SUPPORT) -eq 1 ]      && echo "NEURAL Network plugin enabled" || :
+
+infos1:
+	@echo "FFLAGS     " $(FFLAGS)
+	@echo "GPUFLAGS   " $(GPUFLAGS)
+	@echo "CUFFLAGS   " $(CUFFLAGS)
+	@echo "CXXFLAGS   " $(CXXFLAGS)
+	@echo "CUCFLAGS   " $(CUCFLAGS)
+	@echo "FFLAGS2    " $(FFLAGS2)
+
+#  --------------  #
+## Cleaning rules ##
+#  --------------  #
+clean:
+	@echo
+	@echo "*****  Removing Object library and module files  *****"
+	@echo
+	$(AT)rm -fr $(MODS) $(OBJS) $(PROGOBJ) *.exe *.mod
+	$(AT)rm -f libtinker.a *.so
+ifeq ($(NN_SUPPORT),1)
+	$(AT)rm -f lib$(mlplugin_name).dylib $(mlplugin_installdir)/lib$(mlplugin_name).dylib
+endif
+
+distclean:
+	$(AT)$(MAKE) clean
+	$(AT)cd $(top_dir__)/2decomp_fft && $(MAKE) clean
+ifeq ($(arch), $(filter $(arch),device gpu))
+	$(AT)cd $(top_dir__)/wrappers    && $(MAKE) clean
+endif
+ifeq ($(PLUMED_SUPPORT),1)
+	$(AT)cd $(top_dir__)/plumed2     && $(MAKE) clean
+endif
+ifeq ($(TCL_SUPPORT),1)
+	$(AT)cd $(top_dir__)/tcl8.6.13/unix  && $(MAKE) clean
+endif
+ifeq ($(COLVARS_SUPPORT),1)
+	$(AT)cd $(top_dir__)/colvars     && $(MAKE) clean
+endif
+
+#  -------------------------  #
+## 2decomp_fft library rules ##
+#  -------------------------  #
+2decomp_fft:
+ifeq ($(main_prec),s)
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(DECOMP_FFLAGS)" "OPTIONS=-DOVERWRITE"
+else
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) "OPTIM=$(DECOMP_FFLAGS)"
+endif
+2decomp_fft_rebuild:
+ifeq ($(main_prec),s)
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(DECOMP_FFLAGS)" "OPTIONS=-DOVERWRITE"
+else
+	@cd $(FFTDECOMPDIR); ln -sf $(conf_decompfft) src/Makefile.inc ;$(MAKE) clean; $(MAKE) "OPTIM=$(DECOMP_FFLAGS)"
+endif
+2decomp_fft_single:
+	@echo "This target is deprecated; Please enter the following command"
+	@echo "$(MAKE) prec=m 2decomp_fft"
+2decomp_fft_rebuild_single:
+	@echo "This target is deprecated; Please enter the following command"
+	@echo "$(MAKE) prec=m 2decomp_fft_rebuild"
+2decomp_fft_clean:
+	@cd $(FFTDECOMPDIR); $(MAKE) clean
+
+#  ---------------------  #
+## Thrust wrapper target ##
+#  ---------------------  #
+.PHONY: thrust thrust_clean thrust_lib_rebuild
+#
+thrust:
+	@cd ../wrappers; $(MAKE) "CUDACC=$(RunCUCC)" "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)" "AT=$(AT)"
+#
+thrust_clean:
+	@cd ../wrappers; $(MAKE) clean
+#
+thrust_lib_rebuild:
+	@cd ../wrappers; $(MAKE) clean; $(MAKE) "CUDACC=$(RunCUCC)" "FCFLAGS=$(CUFFLAGS)" "CUFLAGS=$(CUCFLAGS)" "AT=$(AT)"
+#
+tags: tags-mark
+	-'rm' -f tags
+	ctags *.f
+	-'rm' -f tags-mark
+#
+tags-mark:
+	touch tags-mark
+#
+debug:
+	cat *.f > xxx.f
+	ftnchek xxx.f
+	rm xxx.f
+

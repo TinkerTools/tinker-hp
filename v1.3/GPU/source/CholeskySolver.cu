@@ -1,0 +1,426 @@
+#include "utils.h"
+#include <cublas_v2.h>
+
+#ifdef SINGLE
+#   define cuPOTRF_buffSize cusolverDnSpotrf_bufferSize
+//#   if (CUDART_VERSION>10010)
+#   if 0
+#     define cuGESV_buffSize  cusolverDnSSgesv_bufferSize
+#     define cuGESV           cusolverDnSSgesv
+#     define cuGESVm_buffSize cusolverDnSSgesv_bufferSize
+#     define cuGESVm          cusolverDnSSgesv
+#   else
+#     define cuGETRF_buffsize  cusolverDnSgetrf_bufferSize
+#     define cuGETRF           cusolverDnSgetrf
+#     define cuGETRS           cusolverDnSgetrs
+#     define cuGETRFm_buffsize cusolverDnSgetrf_bufferSize
+#     define cuGETRFm          cusolverDnSgetrf
+#     define cuGETRSm          cusolverDnSgetrs
+#   endif
+#   define cuPOTRF_buffSize cusolverDnSpotrf_bufferSize
+#   define cuPOTRF          cusolverDnSpotrf
+#   define cuPOTRS          cusolverDnSpotrs
+#   define cuPOTRI_buffSize cusolverDnSpotri_bufferSize
+#   define cuPOTRI          cusolverDnSpotri
+#   define cusolvDnXgesvd_bufferSize cusolverDnSgesvd_bufferSize
+#   define cusolvDnXgesvd            cusolverDnSgesvd
+#   define cublasXgemm         cublasSgemm
+#elif defined(MIXED)
+//#   if (CUDART_VERSION>10010)
+#   if 0
+#     define cuGESV_buffSize  cusolverDnSSgesv_bufferSize
+#     define cuGESV           cusolverDnSSgesv
+#     define cuGESVm_buffSize cusolverDnDDgesv_bufferSize
+#     define cuGESVm          cusolverDnDDgesv
+#   else
+#     define cuGETRF_buffsize  cusolverDnSgetrf_bufferSize
+#     define cuGETRF           cusolverDnSgetrf
+#     define cuGETRS           cusolverDnSgetrs
+#     define cuGETRFm_buffsize cusolverDnDgetrf_bufferSize
+#     define cuGETRFm          cusolverDnDgetrf
+#     define cuGETRSm          cusolverDnDgetrs
+#   endif
+#   define cuPOTRF_buffSize    cusolverDnSpotrf_bufferSize
+#   define cuPOTRF             cusolverDnSpotrf
+#   define cuPOTRS             cusolverDnSpotrs
+#   define cuPOTRFm_buffSize   cusolverDnDpotrf_bufferSize
+#   define cuPOTRFm            cusolverDnDpotrf
+#   define cuPOTRSm            cusolverDnDpotrs
+#   define cuPOTRI_buffSize    cusolverDnSpotri_bufferSize
+#   define cuPOTRI             cusolverDnSpotri
+#   define cuPOTRIm_buffSize   cusolverDnDpotri_bufferSize
+#   define cuPOTRIm            cusolverDnDpotri
+#   define cusolvDnXgesvd_bufferSize cusolverDnSgesvd_bufferSize
+#   define cusolvDnXgesvd            cusolverDnSgesvd
+#   define cublasXgemm         cublasSgemm
+#else
+#   define cuPOTRF_buffSize cusolverDnDpotrf_bufferSize
+//#   if (CUDART_VERSION>10010)
+#   if 0
+#     define cuGESV_buffSize  cusolverDnDDgesv_bufferSize
+#     define cuGESV           cusolverDnDDgesv
+#     define cuGESVm_buffSize cusolverDnDDgesv_bufferSize
+#     define cuGESVm          cusolverDnDDgesv
+#   else
+#     define cuGETRF_buffsize  cusolverDnDgetrf_bufferSize
+#     define cuGETRF           cusolverDnDgetrf
+#     define cuGETRS           cusolverDnDgetrs
+#     define cuGETRFm_buffsize cusolverDnDgetrf_bufferSize
+#     define cuGETRFm          cusolverDnDgetrf
+#     define cuGETRSm          cusolverDnDgetrs
+#   endif
+#   define cuPOTRF_buffSize    cusolverDnDpotrf_bufferSize
+#   define cuPOTRF             cusolverDnDpotrf
+#   define cuPOTRS             cusolverDnDpotrs
+#   define cuPOTRI_buffSize    cusolverDnDpotri_bufferSize
+#   define cuPOTRI             cusolverDnDpotri
+#   define cusolvDnXgesvd_bufferSize cusolverDnDgesvd_bufferSize
+#   define cusolvDnXgesvd            cusolverDnDgesvd
+#   define cublasXgemm         cublasDgemm
+#endif
+
+extern const int rank;
+extern const int tinkerdebug;
+
+/* ---------
+   Cu Solver global environnement
+   ---------
+*/
+cusolverDnHandle_t cuCholHandle = NULL;
+const cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
+real* d_workSpace=NULL;
+realm* dm_workSpace=NULL;
+real* d_inB=NULL;
+realm* dm_inB=NULL;
+size_t s_workSpaceSize=0,sm_workSpaceSize=0;
+size_t s_inB=0,sm_inB=0;
+int info;
+int* d_info;
+
+// Variables
+cublasHandle_t cublasH;
+
+__global__ void CheckcuSolverInfo (int* d_info, int line, int rank) {
+  if (*d_info != 0) printf (" Error info %d with cuSolver in " __FILE__ " :%d \n", *d_info, line);
+}
+
+__global__ void ge_invDm( const int m, const int n, const real* restrict const D, int ldD, real* restrict M, int ldM ){
+
+    for (int col= blockIdx.y*blockDim.y+threadIdx.y; col<m; col+=blockDim.y*gridDim.y){
+        for (int row= blockIdx.x*blockDim.x+threadIdx.x; row<n; row+=blockDim.x*gridDim.x){
+            M[col*ldM +row] /=  D[row];
+        }
+    }
+}
+
+EXTERN_C_BEG
+
+void initcuSolverHandle(cudaStream_t stream){
+
+   if (cuCholHandle) {
+      printf("\n WARNING ! CuSolver Handle has already been initialized\n");
+      return;
+   }
+
+   gpuErrchkSolver( cusolverDnCreate(&cuCholHandle) )
+   gpuErrchkSolver( cusolverDnSetStream(cuCholHandle, stream) )
+
+   // Init blas Handle
+   gpuErrchkBlas  ( cublasCreate(&cublasH) );
+   gpuErrchkBlas  ( cublasSetStream(cublasH, stream) );
+
+   gpuErrchk( cudaMalloc (&d_info, sizeof(int)) )
+   if (rank==0) printf ("\n *** Using CuSolver Library ***\n\n" );
+}
+
+/* ----------------
+   Reallocation procedure based on MOD_utilgpu.f reallocate_acc
+   ---------------- */
+void device_reallocate(void** array, const size_t bytesSize, size_t& PrevSize, cudaStream_t stream){
+   if ( !(*array) ){
+      gpuErrchk( cudaMalloc(array,bytesSize) )
+      PrevSize = bytesSize;
+      if(tinkerdebug) printf(" device_allocate size %lf Kb\n", PrevSize/1024.0);
+   }  else if (bytesSize==0) {
+      gpuErrchk( cudaFree(*array) )
+      *array = NULL;
+      PrevSize = 0;
+      if(tinkerdebug) printf(" device_free\n");
+   }  else {
+      if (bytesSize > PrevSize) {
+         gpuErrchk( cudaStreamSynchronize( stream ) )
+         gpuErrchk( cudaFree( *array ) )
+         gpuErrchk( cudaMalloc(array,bytesSize) )
+         PrevSize = bytesSize;
+         if(tinkerdebug) printf(" device_reallocate size %lf Kb\n", PrevSize/1024.0);
+      }
+   }
+}
+
+void p_pointer(void* ptr){
+   printf(" %p \n", ptr);
+}
+
+void cuPOTRF_Wrapper(const int n, real* A, const int lda, cudaStream_t stream){
+   int Lwork=0;
+   cusolverStatus_t status1;
+
+   gpuErrchk( cuPOTRF_buffSize(cuCholHandle, uplo, n, A, lda, &Lwork) )
+
+   device_reallocate((void**)&d_workSpace, (size_t)Lwork*sizeof(real), s_workSpaceSize, stream);
+
+   status1 = cuPOTRF(cuCholHandle,uplo, n, A, lda, d_workSpace, Lwork, d_info);
+   if (status1!=CUSOLVER_STATUS_SUCCESS) printf( "Cholesky Factorisation on device failed with Error %d \n",status1 );
+
+   if (tinkerdebug) {
+      CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);
+      gpuErrchk( cudaGetLastError() )
+   }
+
+}
+
+#ifdef MIXED
+void cuPOTRFm_Wrapper(const int n, realm* A, const int lda, cudaStream_t stream){
+   int Lwork=0;
+   cusolverStatus_t status1;
+
+   gpuErrchk( cuPOTRFm_buffSize(cuCholHandle, uplo, n, A, lda, &Lwork) )
+
+   device_reallocate((void**)&dm_workSpace, (size_t)Lwork*sizeof(realm), sm_workSpaceSize, stream);
+
+   status1 = cuPOTRFm(cuCholHandle,uplo, n, A, lda, dm_workSpace, Lwork, d_info);
+   if (status1!=CUSOLVER_STATUS_SUCCESS) printf( "Cholesky Factorisation on device failed with Error %d \n",status1 );
+
+   if (tinkerdebug) {
+      CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);
+      gpuErrchk( cudaGetLastError() )
+   }
+
+}
+#endif
+
+void cuPOTRI_Wrapper(const int n, real* A, const int lda, cudaStream_t stream){
+   int Lwork=0;
+   cusolverStatus_t status1;
+
+   gpuErrchk( cuPOTRI_buffSize(cuCholHandle, uplo, n, A, lda, &Lwork) )
+
+   device_reallocate((void**)&d_workSpace, (size_t)Lwork*sizeof(real), s_workSpaceSize, stream);
+
+   status1 = cuPOTRI(cuCholHandle, uplo, n, A, lda, d_workSpace, Lwork, d_info);
+   if (status1!=CUSOLVER_STATUS_SUCCESS) printf( "Cholesky Inversion on device failed with Error %d \n",status1 );
+
+   if (tinkerdebug) {
+      CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);
+      gpuErrchk( cudaGetLastError() )
+   }
+}
+
+#ifdef MIXED
+void cuPOTRIm_Wrapper(const int n, realm* A, const int lda, cudaStream_t stream){
+   int Lwork=0;
+   cusolverStatus_t status1;
+
+   gpuErrchk( cuPOTRIm_buffSize(cuCholHandle, uplo, n, A, lda, &Lwork) )
+
+   device_reallocate((void**)&dm_workSpace, (size_t)Lwork*sizeof(realm), sm_workSpaceSize, stream);
+
+   status1 = cuPOTRIm(cuCholHandle, uplo, n, A, lda, dm_workSpace, Lwork, d_info);
+   if (status1!=CUSOLVER_STATUS_SUCCESS) printf( "Cholesky Inversion on device failed with Error %d \n",status1 );
+
+   if (tinkerdebug) {
+      CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);
+      gpuErrchk( cudaGetLastError() )
+   }
+}
+#endif
+
+void cuPOTRS_Wrapper(const int n, real* A, const int lda, real* B, const int ldb, cudaStream_t stream){
+   cusolverStatus_t status1;
+
+   status1 = cuPOTRS(cuCholHandle, uplo, n, 1, A, lda, B, ldb, d_info);
+   if (status1!=CUSOLVER_STATUS_SUCCESS) printf( "Error %d solving Linear system \n",status1);
+
+   if (tinkerdebug) {
+      CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);
+      gpuErrchk( cudaGetLastError() )
+   }
+}
+
+__global__ void printAB( real* A, real* B , int nrhs, int lwork_bytes, int n){
+   printf(" cuGESV_Wrapper wsSize(%d) nrhs(%d) n(%d)\n",lwork_bytes,nrhs,n);
+   printf(" Mat");
+   for (int i=0; i<4; i++) printf(" %f ", A[i]);
+   printf("\n");
+   printf(" Vec");
+   for (int i=0; i<2*nrhs; i++) printf(" %f ", B[i]);
+   printf("\n");
+}
+
+__global__ void printS( real* A, real* B , int nrhs, int iter){
+// printf(" Mat"); for (int i=0; i<4; i++) printf(" %f ", A[i]);
+// printf("\n");
+   printf(" Sol"); for (int i=0; i<2*nrhs; i++) printf(" %f ", B[i]);
+   printf(" iter(%d)\n",iter);
+}
+
+void cuGESV_Wrapper(const int n, const int nrhs, real* A, const int lda, int* Ipiv, real* B, const int ldb, cudaStream_t stream){
+#if 0
+//#   if (CUDART_VERSION>10010)
+   size_t lwork_bytes=0;
+   int iter=0;
+   size_t Bsize=nrhs*n*sizeof(real);
+   gpuErrchkSolver( cuGESV_buffSize(cuCholHandle, n, nrhs, A, lda, Ipiv, d_inB, ldb, B, ldb, d_workSpace, &lwork_bytes) )
+   device_reallocate((void**)&d_workSpace, (size_t)lwork_bytes, s_workSpaceSize, stream);
+   device_reallocate((void**)&d_inB, Bsize, s_inB, stream);
+
+   gpuErrchk( cudaMemcpyAsync( d_inB,B,Bsize,cudaMemcpyDeviceToDevice,stream ) )
+   //printAB<<<1,1,0,stream>>>(A,B,nrhs,lwork_bytes,n);
+   gpuErrchkSolver( cuGESV(cuCholHandle, n, nrhs, A, lda, Ipiv, d_inB, ldb, B, ldb, d_workSpace, lwork_bytes, &iter, d_info) )
+   //printS <<<1,1,0,stream>>>(A,B,nrhs,iter);
+#else
+   int Lwork=0;
+   gpuErrchkSolver( cuGETRF_buffsize(cuCholHandle, n, n, A, lda, &Lwork) )
+   //printf(" LU solve n %d nrhs %d lda %d ldb %d Lwork %d\n",n,nrhs,lda,ldb, Lwork);
+   device_reallocate((void**)&d_workSpace, (size_t)Lwork*sizeof(real), s_workSpaceSize, stream);
+
+   gpuErrchkSolver( cuGETRF(cuCholHandle, n, n, A, lda, d_workSpace, Ipiv, d_info) )
+   gpuErrchkSolver( cuGETRS(cuCholHandle, CUBLAS_OP_N, n, nrhs, A, lda, Ipiv, B, ldb, d_info) )
+#endif
+   if (tinkerdebug) {
+      CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);
+      gpuErrchk( cudaGetLastError() )
+   }
+}
+
+void cuGESVm_Wrapper(const int n, const int nrhs, realm* A, const int lda, int* Ipiv, realm* B, const int ldb, cudaStream_t stream){
+#if 0
+//#   if (CUDART_VERSION>10010)
+   size_t lwork_bytes=0;
+   int iter=0;
+   size_t Bsize=nrhs*n*sizeof(realm);
+   gpuErrchkSolver( cuGESVm_buffSize(cuCholHandle, n, nrhs, A, lda, Ipiv, dm_inB, ldb, B, ldb, dm_workSpace, &lwork_bytes) )
+   device_reallocate((void**)&dm_workSpace, (size_t)lwork_bytes, sm_workSpaceSize, stream);
+   device_reallocate((void**)&dm_inB, Bsize, sm_inB, stream);
+
+   gpuErrchk( cudaMemcpyAsync( dm_inB,B,Bsize,cudaMemcpyDeviceToDevice,stream ) )
+   //printAB<<<1,1,0,stream>>>(A,B,nrhs,lwork_bytes,n);
+   gpuErrchkSolver( cuGESVm(cuCholHandle, n, nrhs, A, lda, Ipiv, dm_inB, ldb, B, ldb, dm_workSpace, lwork_bytes, &iter, d_info) )
+   //printS <<<1,1,0,stream>>>(A,B,nrhs,iter);
+#else
+   int Lwork=0;
+   gpuErrchkSolver( cuGETRFm_buffsize(cuCholHandle, n, n, A, lda, &Lwork) )
+   //printf(" LU solve n %d nrhs %d lda %d ldb %d Lwork %d\n",n,nrhs,lda,ldb, Lwork);
+   device_reallocate((void**)&dm_workSpace, (size_t)Lwork*sizeof(realm), sm_workSpaceSize, stream);
+
+   gpuErrchkSolver( cuGETRFm(cuCholHandle, n, n, A, lda, dm_workSpace, Ipiv, d_info) )
+   gpuErrchkSolver( cuGETRSm(cuCholHandle, CUBLAS_OP_N, n, nrhs, A, lda, Ipiv, B, ldb, d_info) )
+#endif
+   if (tinkerdebug) {
+      CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__, rank);
+      gpuErrchk( cudaGetLastError() )
+   }
+}
+
+
+void svd_decomp( const int m, const int n, real *d_A, const int ldA, real* d_S, real* d_U, const int ldU, real* d_Vt, const int ldVt, void** work, uint64_t& workSize, cudaStream_t stream, const int algo, const char* tag, const realm tol, const int deb ){
+    //const int econ = 1;
+    if ( algo==0 ) {
+        assert(m>=n);
+        int Lwork;
+        gpuErrchkSolver(cusolvDnXgesvd_bufferSize( cuCholHandle, m, n, &Lwork ))
+
+        device_reallocate( work, Lwork*sizeof(real)+n*sizeof(real)+sizeof(real), workSize, stream);
+        real* const Dwork = (real*) *work;
+        real* const rwork =  (real*) ((char*)*work + (Lwork*sizeof(real)));
+        d_info = (int*) ((char*)*work + (Lwork*sizeof(real)+n*sizeof(real)));
+
+        gpuErrchkSolver(cusolvDnXgesvd( cuCholHandle,'O','S',m,n,d_A,ldA,d_S,d_U,ldU,d_Vt,ldVt,Dwork,Lwork,rwork,d_info ))
+        if (tinkerdebug) { CheckcuSolverInfo<<<1,1,0,stream>>>(d_info, __LINE__,rank); gpuErrchk(cudaGetLastError()) }
+
+    } else {
+       fprintf(stderr," ERROR: svd_decomp-  algo %d arg not allowed \n", algo);
+       exit(1);
+
+    }
+}
+
+int truncate (const real* sig, int k, real tol) {
+    if (tol==0.0){
+        return k;
+    } else {
+        int kk=0, len=0;
+        const real error = 1e-14;
+        real weight=0.0;
+        double norm2=0.0;
+
+        while (len<k && sig[len]>error) {
+            norm2 += sig[len]*sig[len];
+            len +=1;
+        }
+        assert(norm2!=0.0);
+        while (kk < len && weight < tol*tol * (real)norm2) {
+            weight += sig[len-kk-1]*sig[len-kk-1];
+            kk += 1;
+        }
+        return len-kk+1;
+    }
+}
+
+int solve_polguess_svd_ls( int m, int n, real* AQ, const real* B, real* Sig, real* Vt, real* z, cudaStream_t stream){
+   if (!cuCholHandle) initcuSolverHandle(stream);
+   if (tinkerdebug&1&&rank==0) printf("  solve_polguess_svd_ls -m %d -n %d -Sig %p -Vt %p -z %p \n",m,n, Sig, Vt, z);
+
+   const int maxN=2048;
+   assert(n<maxN);
+   const int algo=0; const int deb=0;
+   const real tol = 1e-12;
+   real sig[maxN];
+   const real alpha =1.0;
+   const real beta  =0.0;
+
+   svd_decomp( m, n, AQ, m, Sig, AQ, m, Vt, n, (void**)&d_workSpace, s_workSpaceSize, stream, algo, "svd:solv", tol, deb);
+
+   gpuErrchk( cudaMemcpyAsync(sig, Sig, n*sizeof(real), cudaMemcpyDeviceToHost, stream))
+   gpuErrchk( cudaStreamSynchronize(stream))
+
+   int k = truncate( sig, n, 1e-5 );
+   if (tinkerdebug&&rank==0) {
+      printf(" --- Singular Values :");
+      for (int i=0; i<n; i++) printf(" %10.3e",sig[i]); printf(" -k %d\n",k);
+   }
+
+   const dim3 block(16,16,1); const dim3 grid((n-1)/block.x+1,(n-1)/block.y+1);
+   ge_invDm<<<grid,block,0,stream>>>(n,n,Sig,n,Vt,n); gpuErrchk(cudaGetLastError())
+
+   gpuErrchkBlas(cublasXgemm( cublasH,CUBLAS_OP_T,CUBLAS_OP_N,k,1,m,&alpha,AQ,m,B,m,&beta,d_workSpace,k ))   //   U^t * b -> z
+   gpuErrchkBlas(cublasXgemm( cublasH,CUBLAS_OP_T,CUBLAS_OP_N,n,1,k,&alpha,Vt,n,d_workSpace,k,&beta,z,n ))     // (Sig^-1 V^T)^T * z -> z
+   gpuErrchk( cudaStreamSynchronize(stream) )
+
+   if (tinkerdebug&&rank==0) {
+      gpuErrchk( cudaMemcpy(sig, z, n*sizeof(real), cudaMemcpyDeviceToHost) )
+      printf(" --- Least Square :");
+      for (int i=0; i<n; i++) printf(" %10.7f",sig[i]); printf("\n");
+   }
+
+   return k;
+}
+
+void compute_pol_guess( int m, int n, const real* Q, const real* z, real* guess ){
+   const real alpha =1.0;
+   const real beta  =0.0;
+   gpuErrchkBlas(cublasXgemm(cublasH,CUBLAS_OP_N,CUBLAS_OP_N,m,1,n,&alpha,Q,m,z,n,&beta,guess,m))   //   U^t * b -> z
+}
+
+void destroycuSolverHandle(){
+   // Destroy cuBlas Handle
+   if (cublasH) { gpuErrchkBlas( cublasDestroy(cublasH) ) cublasH=NULL; }
+
+   if (d_workSpace ) { gpuErrchk(cudaFree( d_workSpace))   d_workSpace=NULL;  s_workSpaceSize=0; }
+   if (dm_workSpace) { gpuErrchk(cudaFree(dm_workSpace))  dm_workSpace=NULL; sm_workSpaceSize=0; }
+
+   // Destroy cuSolver Handle
+   if (cuCholHandle) { gpuErrchkSolver( cusolverDnDestroy(cuCholHandle) ) cuCholHandle=NULL; }
+
+}
+EXTERN_C_END

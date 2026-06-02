@@ -1,0 +1,1 @@
+src/colvarproxy_volmaps.cpp

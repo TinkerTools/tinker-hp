@@ -1,0 +1,1 @@
+src/colvarscript_commands_colvar.cpp

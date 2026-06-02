@@ -1,0 +1,16 @@
+name: DeepHP-torch
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - git
+  - cffi=1.15.0
+  - pycuda
+  - pytorch
+  - pytorch-cuda=11.8
+  - pip:
+    - git+https://github.com/thomasple/torchani.git

@@ -1,0 +1,1 @@
+src/colvars_version.h

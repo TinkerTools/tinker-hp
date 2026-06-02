@@ -1,0 +1,1 @@
+src/colvarscript.h
