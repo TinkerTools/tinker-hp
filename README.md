@@ -40,16 +40,16 @@ Tinker-HP proposes a high-performance scalable computing environment for polariz
 ## Documentation
 
 Various pages documenting the capabilities of the package as well as guidelines to use it are given in the [doxygen documentation](html/pages.html), you will find:
-  - [an overview of the suite detailing the programs and their cabapibilites](html/md_binaries_doxygen.html)
-  - [prerequisites and a guide to compile the CPU version](html/md_Build_CPU.html)
-  - [prerequisites for the GPU version](html/md_Prerequisites_doxygen.html) and a [guide to build it](html/md_Build_GPU.html)
-  - [detailed information about the dynamic program to run molecular dynamics](html/md_dynamic_doxygen.html)
-  - [a list of the potential energy functions available](html/md_potential_doxygen.html)
-  - [information about I/O](html/md_io_doxygen.html)
-  - [general information about free energy calculations](html/md_free_energy.html)
-  - [detailed information about the Lambda-abf method for free energy simulation](html/md_lambda-abf_doxygen.html)
-  - [a guide to use the Deep-HP interface to use Machine Learning Potentials](html/md_Deep-HP.html)
-  - [a guide to use Quantum-HP to include Nuclear Quantum Effects in molecular dynamics](html/md_Quantum-HP_doxygen.html)
+  - [an overview of the suite detailing the programs and their cabapibilites](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_binaries_doxygen.html)
+  - [prerequisites and a guide to compile the CPU version](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_Build_CPU.html)
+  - [prerequisites for the GPU version](html/md_Prerequisites_doxygen.html) and a [guide to build it](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_Build_GPU.html)
+  - [detailed information about the dynamic program to run molecular dynamics](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_dynamic_doxygen.html)
+  - [a list of the potential energy functions available](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_potential_doxygen.html)
+  - [information about I/O](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_io_doxygen.html)
+  - [general information about free energy calculations](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_free_energy.html)
+  - [detailed information about the Lambda-abf method for free energy simulation](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_lambda-abf_doxygen.html)
+  - [a guide to use the Deep-HP interface to use Machine Learning Potentials](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_Deep-HP.html)
+  - [a guide to use Quantum-HP to include Nuclear Quantum Effects in molecular dynamics](https://htmlpreview.github.io/?https://github.com/TinkerTools/tinker-hp/blob/master/html/md_Quantum-HP_doxygen.html)
 
 A complete description of the sources following doxygen standard can also be found.
 
