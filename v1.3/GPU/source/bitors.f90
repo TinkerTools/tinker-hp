@@ -24,7 +24,7 @@ subroutine bitors(init)
    use domdec
    use inform ,only: deb_Path
    use iounit
-   use utilgpu
+   use tinMemory, only: prmem_request
    use sizes
    implicit none
    integer i,j,k,iangle,nbitorloc1,bitorscount
@@ -183,4 +183,15 @@ subroutine alloc_shared_bitors
    call shmem_request(ibitor,  winibitor,[5,nbitor],config=mhostacc)
    call shmem_request(itt,     winitt,   [3,nbitor],config=mhostacc)
    call shmem_request(nbtortor,winnbtortor,[nbitor],config=mhostacc)
+end
+
+subroutine dealloc_shared_bitors
+   use bitor
+   use tortor
+   use tinMemory
+   implicit none
+
+   call shmem_request(ibitor,  winibitor,  [0,0], config=mhostacc)
+   call shmem_request(itt,     winitt,     [0,0], config=mhostacc)
+   call shmem_request(nbtortor,winnbtortor,[0], config=mhostacc)
 end

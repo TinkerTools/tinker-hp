@@ -35,28 +35,29 @@ subroutine baoabrespa (istep,dt)
    use atmtyp
    use atomsMirror
    use bath
-   use boxes,only: volbox
+   use boxes    , only: volbox
    use cutoff
    use domdec
-   use deriv,only:info_forces,cBond,cNBond,ftot_l,comm_forces&
-      &, zero_forces_rec
+   use deriv    , only:info_forces,cBond,cNBond,ftot_l,comm_forces,zero_forces_rec
    use energi
    use freeze
    use group
    use inform
    use mdstuf
    use mdstuf1
+   use mdevice  , only: reciprocal_work
    use moldyn
+   use parallel, only: commpos, commposrec, commposrespa, reassign_respa
    use mpi
    use potent
    use random_mod
    use timestat
+   use tinMemory, only: prmem_requestm
    use tortor
    use units
-   use uprior ,only: use_pred
+   use uprior   , only: use_pred
    use usage
-   use utils,only: set_to_zero1m
-   use utilgpu
+   use utils    , only: set_to_zero1m
    use utilbaoab
    use virial
    use spectra
@@ -132,7 +133,7 @@ subroutine baoabrespa (istep,dt)
 !       Reassign the particules that have changed of domain
 !
 !       -> real space
-      call reassignrespa(stepfast,nalt)
+      call reassign_respa(stepfast,nalt)
 !
 !       communicate positions
 !
@@ -140,7 +141,7 @@ subroutine baoabrespa (istep,dt)
 !
       if (.not.ftot_l) then
          call prmem_requestm(derivs,3,nbloc,async=.true.)
-         call set_to_zero1m(derivs,3*nbloc,rec_queue)
+         call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
       end if
 !
       call mechanicsteprespa(istep,.true.)
@@ -197,7 +198,7 @@ subroutine baoabrespa (istep,dt)
 !     Reassign the particules that have changed of domain
 !
 !     -> real space
-   call reassignrespa(nalt,nalt)
+   call reassign_respa(nalt,nalt)
 !
 !     -> reciprocal space
    call reassignpme(.false.)
@@ -219,7 +220,7 @@ subroutine baoabrespa (istep,dt)
 !
    if (.not.ftot_l) then
       call prmem_requestm(derivs,3,nbloc,async=.true.)
-      call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
    end if
 !
 !     get the slow-evolving potential energy and atomic forces

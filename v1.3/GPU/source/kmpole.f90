@@ -36,8 +36,8 @@ subroutine kmpole(init,istep)
    use polgrp
    use potent
    use units
-   use utilgpu
    use tinMemory
+   use tinheader, only: ti_p
    use mpi
    implicit none
    integer istep,modnl,ierr

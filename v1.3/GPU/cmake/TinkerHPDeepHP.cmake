@@ -13,6 +13,7 @@ function(tinkerhp_configure_deep_hp)
   set(TINKERHP_DEEPHP_PYTHON "" PARENT_SCOPE)
   set(TINKERHP_DEEPHP_PYTHON_VERSION "" PARENT_SCOPE)
   set(TINKERHP_DEEPHP_PYTHON_LIBRARY "" PARENT_SCOPE)
+  set(TINKERHP_DEEPHP_PYTHON_LIBRARY_DIR "" PARENT_SCOPE)
   set(TINKERHP_DEEPHP_CUDA_PROFILE "" PARENT_SCOPE)
 
   if(NOT TINKERHP_ENABLE_NN)
@@ -100,7 +101,7 @@ function(tinkerhp_configure_deep_hp)
   # resolve the plugin's Python symbols instead of relying on an unfindable
   # indirect dependency.
   execute_process(
-    COMMAND "${_python}" -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR') or ''); print(sysconfig.get_config_var('LDLIBRARY') or '')"
+    COMMAND "${_python}" -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR') or ''); print(sysconfig.get_config_var('LDLIBRARY') or sysconfig.get_config_var('LIBRARY') or '')"
     RESULT_VARIABLE _python_library_result
     OUTPUT_VARIABLE _python_library_details
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -116,6 +117,12 @@ function(tinkerhp_configure_deep_hp)
       endif()
     endif()
   endif()
+  if(NOT _python_library OR NOT EXISTS "${_python_library}" OR _python_library MATCHES "\\.(a|lib)$")
+    message(FATAL_ERROR
+      "Selected Deep-HP interpreter does not provide a usable shared libpython: ${_python}\n"
+      "sysconfig reported library '${_python_library}'. Set DEEPHP_PYTHON_INTERPRETER to a Python installation with a shared native library."
+    )
+  endif()
 
   if(NOT DEFINED _profile)
     set(_profile "external")
@@ -124,6 +131,7 @@ function(tinkerhp_configure_deep_hp)
   set(TINKERHP_DEEPHP_PYTHON "${_python}" PARENT_SCOPE)
   set(TINKERHP_DEEPHP_PYTHON_VERSION "${_version}" PARENT_SCOPE)
   set(TINKERHP_DEEPHP_PYTHON_LIBRARY "${_python_library}" PARENT_SCOPE)
+  set(TINKERHP_DEEPHP_PYTHON_LIBRARY_DIR "${_python_library_dir}" PARENT_SCOPE)
   set(TINKERHP_DEEPHP_CUDA_PROFILE "${_profile}" PARENT_SCOPE)
 endfunction()
 
@@ -143,7 +151,7 @@ function(tinkerhp_add_deep_hp_plugin)
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_SOURCE_DIR}/source/mlinterface.py" "${_module}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_SOURCE_DIR}/source/mlinterface.h" "${_header}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_SOURCE_DIR}/source/mlbuilder.py" "${_builder}"
-    COMMAND "${TINKERHP_DEEPHP_PYTHON}" "${_builder}" --module "${_module}" --header "${_header}" --output "${_plugin}"
+    COMMAND "${TINKERHP_DEEPHP_PYTHON}" "${_builder}" --module "${_module}" --header "${_header}" --output "${_plugin}" --python-library-dir "${TINKERHP_DEEPHP_PYTHON_LIBRARY_DIR}"
     DEPENDS "${CMAKE_SOURCE_DIR}/source/mlbuilder.py" "${CMAKE_SOURCE_DIR}/source/mlinterface.py" "${CMAKE_SOURCE_DIR}/source/mlinterface.h"
     VERBATIM
     COMMENT "Generating Deep-HP CFFI mlinterface plugin"
@@ -151,18 +159,11 @@ function(tinkerhp_add_deep_hp_plugin)
   add_custom_target(tinkerhp_mlinterface_build DEPENDS "${_plugin}")
   add_library(tinkerhp_mlinterface SHARED IMPORTED GLOBAL)
   set_target_properties(tinkerhp_mlinterface PROPERTIES IMPORTED_LOCATION "${_plugin}")
-  if(TINKERHP_DEEPHP_PYTHON_LIBRARY)
-    add_library(tinkerhp_deephp_python SHARED IMPORTED GLOBAL)
-    set_target_properties(tinkerhp_deephp_python PROPERTIES
-      IMPORTED_LOCATION "${TINKERHP_DEEPHP_PYTHON_LIBRARY}"
-    )
-    target_link_libraries(tinkerhp_mlinterface INTERFACE tinkerhp_deephp_python)
-  else()
-    message(WARNING
-      "Could not determine the libpython path for ${TINKERHP_DEEPHP_PYTHON}; "
-      "the generated Deep-HP CFFI plugin will not contribute an explicit Python link dependency."
-    )
-  endif()
+  add_library(tinkerhp_deephp_python SHARED IMPORTED GLOBAL)
+  set_target_properties(tinkerhp_deephp_python PROPERTIES
+    IMPORTED_LOCATION "${TINKERHP_DEEPHP_PYTHON_LIBRARY}"
+  )
+  target_link_libraries(tinkerhp_mlinterface INTERFACE tinkerhp_deephp_python)
   add_dependencies(tinkerhp_mlinterface tinkerhp_mlinterface_build)
   set(TINKERHP_DEEPHP_PLUGIN "${_plugin}" PARENT_SCOPE)
 endfunction()

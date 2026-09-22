@@ -687,7 +687,7 @@ subroutine def_lambdadyn
 #else
    disp = rank_.eq.0.and.verbose
 #endif
-   if (disp) then
+   if (disp.and.nmut.ne.0) then
       write(iout,20) vlambda, dlambdavlambda
 20    format('Values of vlambda/dlambdavlambda are ', 2F15.3)
       write(iout,25) elambda, dlambdaelambda
@@ -722,6 +722,7 @@ subroutine upload_device_mutate
 #endif
    implicit none
 #ifdef _OPENACC
+   logical invalid_vcouple
 12 format(2x,'upload_device_mutate')
    if(deb_Path) print 12
 #endif
@@ -729,11 +730,7 @@ subroutine upload_device_mutate
 
    if (use_vdw) then
 #ifdef _OPENACC
-   if (vcouple.ne.0.and.vcouple.ne.1) then
-      write(*,*) " WARNING !! Unusual value of vcouple",vcouple
-      write(*,*) " Disabling van der Waals coupling method"
-      vcouple = 0
-   end if
+   call normalize_vcouple(vcouple,invalid_vcouple)
 #endif
    end if
    if (use_charge) then

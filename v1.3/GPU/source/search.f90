@@ -48,7 +48,7 @@ subroutine search (n,f,g,x,p,f_move,angle,ncalls,&
    use domdec
    use linmin
    use inform    ,only: deb_Path
-   use interfaces,only:sendvecmin
+   use parallel, only: sendvecmin
    use math
    use mpi
    use sizes     ,only:tinkerdebug

@@ -70,7 +70,8 @@ contains
 #ifdef _OPENACC
       use cufft
 #endif
-      use utilgpu, only: prmem_requestm,prmem_request,rec_queue
+      use mdevice, only: reciprocal_work
+      use tinMemory, only: prmem_requestm,prmem_request
       use utils, only: set_to_zero1m
       implicit none
       real(r_p), intent(in) ::  dt
@@ -95,7 +96,7 @@ contains
 
       if(ir) then
          call prmem_requestm(mudot,3,nseg, async=.TRUE.)
-         call set_to_zero1m(mudot,3*nseg,rec_queue)
+         call set_to_zero1m(mudot,3*nseg,reciprocal_work%queue)
          if(ranktot==0) then
             if (allocated(Cmumu_average)) deallocate (Cmumu_average)
             allocate(Cmumu_average(3*nseg,3))
@@ -502,7 +503,7 @@ contains
 #else
       use glassman
 #endif
-      use utilgpu, only: rec_queue
+      use mdevice, only: reciprocal_work
       use utils, only: set_to_zero1m
       use mpi
       implicit none
@@ -529,7 +530,7 @@ contains
 !$acc end host_data
 
       if(ranktot/=0) then
-         call set_to_zero1m(mudot,3*nseg,rec_queue)
+         call set_to_zero1m(mudot,3*nseg,reciprocal_work%queue)
          return
       endif
 

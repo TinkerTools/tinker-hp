@@ -733,7 +733,7 @@ M_subroutine&
    &off,shortheal,pscale,e,use_short,do_correct)
 !$acc routine
 use tinheader ,only: ti_p
-use utilgpu   ,only: rpole_elt,real3,real6,real3_red
+use tinTypes  ,only: rpole_elt,real3,real6,real3_red
 #ifdef TINKER_CUF
 use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)

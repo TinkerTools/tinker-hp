@@ -22,7 +22,7 @@ subroutine mdinit(dt)
    use bath
    use beads, only: path_integral_md
    use bound
-   use boxes      ,only:xbox,ybox,zbox,alpha,beta,gamma
+   use boxes      ,only:xbox,ybox,zbox,alpha,beta,b_gamma=>gamma
    use colvars
    use couple
    use cutoff
@@ -50,7 +50,6 @@ subroutine mdinit(dt)
    use polar
    use random_mod
    use replicas
-   use tinMemory ,only: mipk
    use units
    use uprior
    use utils
@@ -59,7 +58,8 @@ subroutine mdinit(dt)
    use qtb
 #ifdef _OPENACC
 #endif
-   use utilgpu ,only: prmem_requestm,rec_queue,rec_stream,mem_set
+   use tinMemory ,only: mipk,prmem_requestm
+   use mdevice, only: reciprocal_work
    use usage
    use virial
    use math, only:pi
@@ -642,7 +642,7 @@ subroutine mdinit(dt)
             write(*,32) filename(1:leng)
          end if
       end if
-      call read_restart(trim(dynfile),n,xbox,ybox,zbox,alpha,beta,gamma,&
+      call read_restart(trim(dynfile),n,xbox,ybox,zbox,alpha,beta,b_gamma,&
          &x,y,z,v,a,aalt,aalt2,aalt2_present,restart_status)
       if (failed(restart_status)) then
          write (iout,'(/,a)') trim(restart_status%message)
@@ -699,14 +699,14 @@ subroutine mdinit(dt)
 !$acc     present(glob,mass,v,a,samplevec) async
 !
       siz_=3*nbloc
-      call mem_set(derivs,zero,siz_,rec_stream)
+      call set_to_zero1m(derivs,int(siz_),reciprocal_work%queue)
       call allocsteprespa(.false.)
       call gradslow (e,derivs)
       call comm_forces(derivs,cNBond)
       if (ftot_l) then
          call get_ftot (derivs,nbloc)
          siz_ = dr_stride3
-         call mem_set( de_tot,zero_md,siz_,rec_stream)
+         call set_to_zero1_md(de_tot, int(siz_), reciprocal_work%queue)
       end if
 
       if(deb_Force) call info_forces(cNBond)
@@ -759,14 +759,14 @@ subroutine mdinit(dt)
 !$acc update device(v,a,aalt) async
       end if
       siz_=3*nbloc
-      call mem_set(derivs,zero,siz_,rec_stream)
+      call set_to_zero1m(derivs,int(siz_),reciprocal_work%queue)
       call allocsteprespa(.true.)
       call gradfast (e,derivs)
       call comm_forces(derivs,cBond)
       if (ftot_l) then
          call get_ftot (derivs,nbloc)
          siz_ = dr_stride3
-         call mem_set( de_tot,zero_md,siz_,rec_stream)
+         call set_to_zero1_md(de_tot, int(siz_), reciprocal_work%queue)
       end if
 
       !Debug Info
@@ -810,7 +810,7 @@ subroutine mdinit(dt)
 !$acc data create(derivs,e) async &
 !$acc     present(aalt2,mass,aalt,glob,v,a)
       siz_=3*nbloc
-      call mem_set(derivs,zero,siz_,rec_stream)
+      call set_to_zero1m(derivs,int(siz_),reciprocal_work%queue)
       call allocsteprespa(.false.)
 #ifdef COLVARS
       delambdaesave = 0d0
@@ -835,7 +835,7 @@ subroutine mdinit(dt)
          end do
       end do
 
-      call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
       call gradint(e,derivs)
       call comm_forces(derivs,cSNBond)
       if (ftot_l) call get_ftot (derivs,nbloc)
@@ -856,13 +856,13 @@ subroutine mdinit(dt)
          end do
       end do
 
-      call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
       call gradslow(e,derivs)
       call comm_forces(derivs,cNBond)
       if (ftot_l) then
          call get_ftot (derivs,nbloc)
          siz_ = dr_stride3
-         call mem_set( de_tot,zero_md,siz_,rec_stream)
+         call set_to_zero1_md(de_tot, int(siz_), reciprocal_work%queue)
       end if
 
       if(deb_Force) call info_forces(cNBond)
@@ -935,14 +935,14 @@ subroutine mdinit(dt)
 !$acc     present(glob,mass,v,a,samplevec)
 !
       siz_=3*nbloc
-      call mem_set(derivs,zero,siz_,rec_stream)
+      call set_to_zero1m(derivs,int(siz_),reciprocal_work%queue)
       call allocstep
       call gradient (e,derivs)
       call comm_forces(derivs,cNBond)
       if (ftot_l) then
          call get_ftot (derivs,nbloc)
          siz_ = dr_stride3
-         call mem_set( de_tot,zero_md,siz_,rec_stream)
+         call set_to_zero1_md(de_tot, int(siz_), reciprocal_work%queue)
       end if
 
       ! Debug informations

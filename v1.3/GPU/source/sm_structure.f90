@@ -312,8 +312,13 @@ contains
 !$acc update device(pbcWrap)
       end if
 
-      use_bounds = structure_value%has_bounds
       if (structure_value%has_bounds) then
+         !     A coordinate frame without a box must not erase periodic
+         !     boundaries established by the KEY file or an earlier frame.
+         !     unitcell resolves KEY-file boundaries after the initial load;
+         !     later analyze/read_frame calls publish coordinates again.
+         use_bounds = .true.
+!$acc update device(use_bounds)
          xbox = structure_value%box_length(1)
          ybox = structure_value%box_length(2)
          zbox = structure_value%box_length(3)

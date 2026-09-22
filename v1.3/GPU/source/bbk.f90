@@ -33,13 +33,13 @@ subroutine bbk (istep,dt)
    use bbk_inl
    use cutoff
    use domdec
-   use parallel, only: migrate_atoms
-   use deriv    ,only:info_forces,cBond,cNBond,comm_forces,tdes_l&
-      &,dr_stride,de_tot,derivx
+   use deriv   ,only:info_forces,cBond,cNBond,comm_forces,tdes_l&
+               ,dr_stride,de_tot,derivx
    use energi
    use freeze
    use inform
    use langevin
+   use parallel,only: commpos,commposrec,migrate_atoms
    use mdstuf
    use mdstuf1
    use moldyn
@@ -47,9 +47,9 @@ subroutine bbk (istep,dt)
    use random_mod
    use timestat
    use tinheader
+   use tinMemory
    use units
    use usage
-   use utilgpu
    implicit none
    integer i,j,istep,iglob
    real(r_p) dt,dt_2

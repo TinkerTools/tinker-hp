@@ -304,6 +304,7 @@ subroutine delete_data_kopdist
 
    call shmem_request(opdk,winopdk,[0])
    call shmem_request(iopd,winiopd,[0,0])
+   call shmem_request(nbopdist,winnbopdist,[0])
 end subroutine
 !
 !     subroutine alloc_shared_opdist : allocate shared memory pointers for opdist

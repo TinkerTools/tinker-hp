@@ -334,10 +334,7 @@ subroutine cluster2
    use tinheader
    use tinMemory
    use utils
-   use utilgpu ,only: rec_queue
-#ifdef _OPENACC
-   use utilgpu ,only:  rec_stream
-#endif
+   use mdevice, only: reciprocal_work
    implicit none
    integer km1,km2
    integer i,ii,xp,yp,zp,k
@@ -348,6 +345,7 @@ subroutine cluster2
    real(t_p)  xi,yi,zi
    integer,allocatable:: Trigrp(:)
    logical,save:: first_in=.true.
+
 
    if (first_in) then
       if (allocated(grplst).or.allocated(npergrp).or.&
@@ -364,7 +362,7 @@ subroutine cluster2
       end if
       call pcluster
 #ifdef _OPENACC
-      call initcuSolver(rec_stream)
+      call initcuSolver(reciprocal_work%stream)
 #endif
 12    format(1x,"Cluster2: Iproc",I5,3x,"K grid",3I6,3x,"km",I6)
       if (tinkerdebug.gt.0) print 12 ,rank,dcx,dcy,dcz,km
@@ -392,7 +390,7 @@ subroutine cluster2
    maxdim = 0
 
    !npergrp = 0
-   call set_to_zero1_int(npergrp,km,rec_queue)
+   call set_to_zero1_int(npergrp,km,reciprocal_work%queue)
 !$acc parallel loop default(present) async
    do i = 1, n
       grplst(i) = -1
@@ -458,10 +456,10 @@ subroutine cluster2
 !     end do
 
    !call iclear(n,atmofst)
-   call set_to_zero1_int(atmofst,n,rec_queue)
+   call set_to_zero1_int(atmofst,n,reciprocal_work%queue)
    call prmem_request(klst,maxdim,km,async=.true.)
 
-   call set_to_zero1_int(npergrp,km,rec_queue)
+   call set_to_zero1_int(npergrp,km,reciprocal_work%queue)
 !
 !     intra kblock list
 !
@@ -482,7 +480,7 @@ subroutine cluster2
       call prmem_request(kofst,km,async=.true.)
    end if
    !call iclear(km,kofst)
-   call set_to_zero1_int(kofst,km,rec_queue)
+   call set_to_zero1_int(kofst,km,reciprocal_work%queue)
 
 #ifdef _OPENACC
    allocate(Trigrp(km))
@@ -493,7 +491,7 @@ subroutine cluster2
       Trigrp(i) = mdim*(mdim+1)/2
    end do
 !$acc host_data use_device(Trigrp,kofst)
-   call thrust_exclusive_scan(Trigrp,km,kofst,rec_stream)
+   call thrust_exclusive_scan(Trigrp,km,kofst,reciprocal_work%stream)
 !$acc end host_data
 !$acc update host(kofst,npergrp) async
 !$acc exit data delete(Trigrp) async
@@ -518,7 +516,7 @@ subroutine cluster2
       call prmem_request(zmat,curdim,async=.true.)
       zdim = curdim
    end if
-   call set_to_zero1(zmat,curdim,rec_queue)
+   call set_to_zero1(zmat,curdim,reciprocal_work%queue)
 
 end
 

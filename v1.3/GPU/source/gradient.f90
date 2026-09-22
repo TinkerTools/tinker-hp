@@ -44,11 +44,11 @@ subroutine gradient (energy,derivs)
    use plumed
    use potent
    use strbnd
-   use tinheader ,only:ti_p,re_p
+   use tinheader ,only:ti_p,re_p,inf_r => Infinity_r
    use timestat
    use tors
    use tortor
-   use utilgpu   ,only:rec_queue,def_queue,inf_r
+   use mdevice   ,only:reciprocal_work
    use reduction ,only:zero_mdred_buffers
    use sizes
    use vdwpot
@@ -86,7 +86,7 @@ subroutine gradient (energy,derivs)
 !$acc      ,edsp,edsprec,er,ect,emlpot &
 !$acc      ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz &
 !$acc      ,ev_r,ec_r,em_r,ep_r,eb_r &
-!$acc      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(rec_queue)
+!$acc      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(reciprocal_work%queue)
       eb       = 0.0_re_p  ! ebond
       eb_r     = 0
       eba      = 0.0_re_p  ! estrbnd
@@ -145,7 +145,7 @@ subroutine gradient (energy,derivs)
       vir(3,3) = 0.0_re_p
 !$acc end serial
 !$acc end host_data
-      call zero_mdred_buffers(rec_queue)
+      call zero_mdred_buffers(reciprocal_work%queue)
    end if  ! Energy and virial computation
 
    !zero out each of the first derivative components
@@ -274,7 +274,7 @@ subroutine gradient (energy,derivs)
 !$acc      ,edsp,edsprec,er,ect,emlpot &
 !$acc      ,eg,ex,esum,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz &
 !$acc      ,ev_r,ec_r,em_r,ep_r,eb_r &
-!$acc      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(rec_queue)
+!$acc      ,ensmd,einter,ePaMD,eDaMD,eW1aMD) async(reciprocal_work%queue)
 !
 !     sum up the virial component
 !
@@ -312,7 +312,7 @@ subroutine gradient (energy,derivs)
 !     check for an illegal value for the total energy
 !
    if (tinkerdebug.gt.0.and.calc_e) then
-!$acc update host(esum) async(rec_queue)
+!$acc update host(esum) async(reciprocal_work%queue)
 !$acc wait
       if (tinker_isnan_m(esum).or.esum.eq.inf_r) then
          write  (0,10) esum

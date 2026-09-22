@@ -733,9 +733,9 @@ subroutine kvdw_reset(istep)
       &nbloc,nloc,bufbeg,nbig_recep
    use kvdws  ,only : rad
    use neigh  ,only : ineigup,vbuf2,ineignl
-   use utilgpu,only : prmem_request,rec_queue
+   use tinMemory ,only: prmem_request
+   use mdevice,only : reciprocal_work
 #ifdef _OPENACC
-   use utilgpu,only : rec_stream
    use thrust
 #endif
    use vdw    ,only : nbvdw,jvdw,nvdwbloc,nvdwloc,nvdwlocnl,&
@@ -749,15 +749,15 @@ subroutine kvdw_reset(istep)
 
    call prmem_request(vdwglob,nbloc,async=.true.)
 !$acc data present(vdwglob,glob,nbvdw,rad,jvdw) present(nvdwbloc,nvdwloc)&
-!$acc      async(rec_queue)
+!$acc      async(reciprocal_work%queue)
 !
 !     remove zero-sized atoms from the list of vdw sites
 !
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    nvdwloc = 0
 !$acc end serial
 !
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1, nloc
       iglob = glob(i)
       vdwcount = nbvdw(iglob)
@@ -770,14 +770,14 @@ subroutine kvdw_reset(istep)
       end if
    end do
 !
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    nvdwbloc = nvdwloc
 !$acc end serial
 !
    do iproc = 1, nbig_recep
       ipr2    = pbig_recep(iproc)+1
       ibufbeg = bufbeg(ipr2)
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
       do i = 1, domlen(ipr2)
          iglob = glob(ibufbeg+i-1)
          vdwcount = nbvdw(iglob)
@@ -790,7 +790,7 @@ subroutine kvdw_reset(istep)
          end if
       end do
    end do
-!$acc update host(nvdwloc,nvdwbloc) async(rec_queue)
+!$acc update host(nvdwloc,nvdwbloc) async(reciprocal_work%queue)
 !
 !$acc end data
    modnl = mod(istep,ineigup)
@@ -798,11 +798,11 @@ subroutine kvdw_reset(istep)
 
    call prmem_request(vdwglobnl,nlocnl,async=.true.)
 
-!$acc serial async(rec_queue) present(nvdwlocnl)
+!$acc serial async(reciprocal_work%queue) present(nvdwlocnl)
    nvdwlocnl = 0
 !$acc end serial
 !
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc present(ineignl,nbvdw,rad,jvdw,vdwglobnl,vdwlocnl,nvdwlocnl)
    do i = 1, nlocnl
       iglob    = ineignl(i)
@@ -816,7 +816,7 @@ subroutine kvdw_reset(istep)
          vdwlocnl(vdwcount+1) = nvdw_cap
       end if
    end do
-!$acc update host(nvdwlocnl) async(rec_queue)
+!$acc update host(nvdwlocnl) async(reciprocal_work%queue)
 
 end
 !
@@ -957,6 +957,11 @@ subroutine dealloc_shared_vdw
    call shmem_request(epsilon4,winepsilon4,[0,0], config=mhostacc)
    call shmem_request(radhbnd, winradhbnd, [0,0])
    call shmem_request(epshbnd, winepshbnd, [0,0])
+   call shmem_request(jvdw_c, winjvdw_c, [0], config=mhostacc)
+   call shmem_request(radmin_c, winradmin_c, [0], config=mhostacc)
+   call shmem_request(radmin4_c, winradmin4_c, [0], config=mhostacc)
+   call shmem_request(epsilon_c, winepsilon_c, [0], config=mhostacc)
+   call shmem_request(epsilon4_c, winepsilon4_c, [0], config=mhostacc)
 
 end subroutine
 !

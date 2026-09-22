@@ -39,11 +39,12 @@ subroutine aaddgpu(n,a,b,c)
 end
 !
 subroutine aaddgpuAsync(n,a,b,c)
-   use utilgpu, only : rec_queue
+   use mdevice, only: reciprocal_work
    implicit real(t_p) (a-h,o-z)
    dimension a(*),b(*),c(*)
+
 !$acc parallel loop &
-!$acc  present(a(1:n),b(1:n),c(1:n)) async(rec_queue)
+!$acc  present(a(1:n),b(1:n),c(1:n)) async(reciprocal_work%queue)
    do j = 1, n
       c(j) = a(j) + b(j)
    enddo

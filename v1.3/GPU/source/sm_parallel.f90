@@ -259,8 +259,9 @@ contains
       integer :: first_error
 
       first_error = MPI_SUCCESS
+      call release_migration_workspace()
       call deactivate_domain(platform)
-      call release_halo_layout(platform%domain)
+      call release_halo_layout(platform%domain, first_error)
       call free_communicator(platform%root_exchange%communicator, first_error)
       call free_communicator(platform%replica%communicator, first_error)
       call free_communicator(platform%host%communicator, first_error)
@@ -395,10 +396,10 @@ contains
 
    module subroutine reject_polar_ticket_copy(lhs, rhs)
       implicit none
-      type(polar_ticket_t), intent(out) :: lhs
-      type(polar_ticket_t), intent(in) :: rhs
+      type(polar_comm_t), intent(out) :: lhs
+      type(polar_comm_t), intent(in) :: rhs
 
-      error stop 'polar_ticket_t is noncopyable'
+      error stop 'polar_comm_t is noncopyable'
    end subroutine reject_polar_ticket_copy
 
    subroutine publish_legacy_topology(platform, configuration)

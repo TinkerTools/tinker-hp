@@ -345,3 +345,27 @@ subroutine alloc_shared_katom
    CALL C_F_POINTER(baseptr,story,arrayshape)
    s_shmem = s_shmem + sizeof(story)
 end
+
+subroutine dealloc_shared_katom
+   use, intrinsic :: iso_c_binding, only: c_ptr
+   use atmtyp
+   use domdec
+   use katoms
+   use mpi
+   use tinMemory
+   implicit none
+   integer(kind=MPI_ADDRESS_KIND) :: windowsize
+   integer :: disp_unit, ierr
+   type(c_ptr) :: baseptr
+
+   call shmem_request(class,winclass,[0],config=mhostacc)
+   call shmem_request(atomic,winatomic,[0],config=mhostacc)
+   call shmem_requestm(mass,winmass,[0],config=mhostacc)
+   call shmem_request(valence,winvalence,[0])
+   if (associated(story)) then
+      s_shmem = s_shmem - sizeof(story)
+      call MPI_Win_shared_query(winstory,0,windowsize,disp_unit,baseptr,ierr)
+      call MPI_Win_free(winstory,ierr)
+      nullify(story)
+   end if
+end

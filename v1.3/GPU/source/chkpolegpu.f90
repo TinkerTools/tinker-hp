@@ -15,12 +15,13 @@
 !
 !
 #include "tinker_precision.h"
+#include "tinker_macro.h"
 subroutine chkpolegpu(init)
    use sizes
    use atmlst
    use atoms
    use mpole
-   use utilgpu,only:openacc_abort,rec_queue
+   use mdevice,only:reciprocal_work
    use tinheader,only: ti_p
    implicit none
    integer k,ii,iipole
@@ -32,14 +33,13 @@ subroutine chkpolegpu(init)
    logical check
    logical,intent(in):: init
 
-   if (init) call openacc_abort(" init is not supposed to be true"//&
-      &" in chkpolegpu routine")
+   if (init) __TINKER_FATAL__
 !
 !
 !     loop over multipole sites testing for chirality inversion
 !
 !$acc parallel loop present(poleglobnl,ipole,xaxis,yaxis,zaxis,pole) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do ii = 1, npolelocnl
       iipole = poleglobnl(ii)
       check  = .true.
@@ -89,7 +89,7 @@ subroutine chkpolegpu_group()
    use atoms
    use mpole
    use group
-   use utilgpu  ,only:openacc_abort,rec_queue
+   use mdevice,only:reciprocal_work
    use tinheader,only: ti_p
    implicit none
    integer k,ii,iipole
@@ -104,7 +104,7 @@ subroutine chkpolegpu_group()
 !     loop over multipole sites testing for chirality inversion
 !
 !$acc parallel loop present(globpolegroup,ipole,xaxis,yaxis,zaxis,pole) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do ii = 1, npolegroup
       iipole = globpolegroup(ii)
       check  = .true.
@@ -147,4 +147,3 @@ subroutine chkpolegpu_group()
       end if
    end do
 end
-

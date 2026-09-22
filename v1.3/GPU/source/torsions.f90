@@ -25,7 +25,7 @@ subroutine torsions(init)
    use iounit
    use nvshmem
    use tors
-   use utilgpu
+   use tinMemory, only: prmem_request
    implicit none
    integer i,j,k
    integer ia,ib,ic,id
@@ -259,4 +259,48 @@ subroutine alloc_shared_torsions
    call shmem_request( iat,       winiat, [4,ntors],config=mhostacc)
    call shmem_request(kant,      winkant, [6,ntors],config=mhostacc)
    call shmem_request(nbangtor,winnbangtor, [ntors],config=mhostacc)
+end
+
+subroutine dealloc_shared_torsions
+   use angtor
+   use improp
+   use imptor
+   use pitors
+   use strtor
+   use tinMemory
+   use tors
+   implicit none
+
+#ifdef USE_NVSHMEM_CUDA
+   call shmem_request(itors,winitors,[0,0],c_itors,d_itors,config=mhostnvsh)
+   call shmem_request(tors1,wintors1,[0,0],c_tors1,d_tors1,config=mhostnvsh)
+   call shmem_request(tors2,wintors2,[0,0],c_tors2,d_tors2,config=mhostnvsh)
+   call shmem_request(tors3,wintors3,[0,0],c_tors3,d_tors3,config=mhostnvsh)
+   call shmem_request(tors4,wintors4,[0,0],c_tors4,d_tors4,config=mhostnvsh)
+   call shmem_request(tors5,wintors5,[0,0],c_tors5,d_tors5,config=mhostnvsh)
+   call shmem_request(tors6,wintors6,[0,0],c_tors6,d_tors6,config=mhostnvsh)
+#else
+   call shmem_request(itors,winitors,[0,0],config=mhostacc)
+   call shmem_request(tors1,wintors1,[0,0],config=mhostacc)
+   call shmem_request(tors2,wintors2,[0,0],config=mhostacc)
+   call shmem_request(tors3,wintors3,[0,0],config=mhostacc)
+   call shmem_request(tors4,wintors4,[0,0],config=mhostacc)
+   call shmem_request(tors5,wintors5,[0,0],config=mhostacc)
+   call shmem_request(tors6,wintors6,[0,0],config=mhostacc)
+#endif
+   call shmem_request(kprop,winkprop,[0],config=mhostacc)
+   call shmem_request(vprop,winvprop,[0],config=mhostacc)
+   call shmem_request(iiprop,winiiprop,[0,0],config=mhostacc)
+   call shmem_request(itors1,winitors1,[0,0],config=mhostacc)
+   call shmem_request(itors2,winitors2,[0,0],config=mhostacc)
+   call shmem_request(itors3,winitors3,[0,0],config=mhostacc)
+   call shmem_request(iitors,winiitors,[0,0],config=mhostacc)
+   call shmem_request(kpit,winkpit,[0],config=mhostacc)
+   call shmem_request(ipit,winipit,[0,0],config=mhostacc)
+   call shmem_request(ist,winist,[0,0],config=mhostacc)
+   call shmem_request(kst,winkst,[0,0],config=mhostacc)
+   call shmem_request(nbstrtor,winnbstrtor,[0],config=mhostacc)
+   call shmem_request(iat,winiat,[0,0],config=mhostacc)
+   call shmem_request(kant,winkant,[0,0],config=mhostacc)
+   call shmem_request(nbangtor,winnbangtor,[0],config=mhostacc)
 end

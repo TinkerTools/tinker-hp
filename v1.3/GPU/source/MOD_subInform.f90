@@ -26,13 +26,63 @@ submodule(inform) subInform
    use tinMemory,only: deb_Mem=>debMem
    use usage  ,only: muse=>use
    use uprior ,only: polpred,maxualt
-   use utilgpu,only: Tinker_shellEnv
    use vdw    ,only: skipvdw12
    use sizes  ,only: tinkerdebug
 
 contains
 
 #include "convert.inc.f90"
+
+   module subroutine Tinker_shellEnv_i(envName,envValue,defVal)
+      implicit none
+      character(*),intent(in):: envName
+      integer,intent(in) :: defVal
+      integer,intent(out):: envValue
+      character*64 value
+      integer length,status
+
+      call get_environment_variable('TINKER_'//envName,value,&
+         &length,status)
+      envValue = defVal
+      if (status.eq.0) read(value,*) envValue
+   end subroutine Tinker_shellEnv_i
+
+   module subroutine Tinker_shellEnv_f8(envName,envValue,defVal)
+      implicit none
+      character(*),intent(in):: envName
+      real(8),intent(in) :: defVal
+      real(8),intent(out):: envValue
+      character*64 value
+      integer length,status
+
+      call get_environment_variable('TINKER_'//envName,value,&
+         &length,status)
+      envValue = defVal
+      if (status.eq.0) read(value,*) envValue
+   end subroutine Tinker_shellEnv_f8
+
+   module subroutine Tinker_shellEnv_f4(envName,envValue,defVal)
+      implicit none
+      character(*),intent(in):: envName
+      real(4),intent(in) :: defVal
+      real(4),intent(out):: envValue
+      character*64 value
+      integer length,status
+
+      call get_environment_variable('TINKER_'//envName,value,&
+         &length,status)
+      envValue = defVal
+      if (status.eq.0) read(value,*) envValue
+   end subroutine Tinker_shellEnv_f4
+
+   module subroutine set_warning
+      implicit none
+
+      warning ='Warning, system moved too much since last neighbor list'&
+         &//'update, try lowering nlupdate '
+      sugest_vdw = 'VDW'
+!$acc enter data copyin(warning,sugest_vdw)
+   end subroutine set_warning
 
    module subroutine initDebugEnv()
       implicit none
@@ -160,19 +210,16 @@ contains
 12    format(A6,2F20.8,1x,F21.5,I5)
 13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
       if (nproc.gt.1) then
-         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8&
-            &,MPI_SUM,COMM_TINKER,i)
-         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8&
-            &,MPI_MIN,COMM_TINKER,i)
-         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8&
-            &,MPI_MAX,COMM_TINKER,i)
+         call MPI_ALLREDUCE(on,on1,1,MPI_RPREC,MPI_SUM,COMM_TINKER,i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_RPREC,MPI_MIN,COMM_TINKER,i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_RPREC,MPI_MAX,COMM_TINKER,i)
       end if
       !on1 = sqrt(on1)
       !on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
          write(*,13) name,mi1,ma1,on,rank,on1
-      else
-         !write(*,12) name,mi,ma,on,rank
+      else if (rank.eq.0) then
+         write(*,12) name,mi,ma,on
       end if
    end subroutine
 #endif
@@ -199,14 +246,13 @@ contains
 12    format(A6,2I8,1x,I12,I5)
 13    format(A6,2I8,1x,I12,I5,I0)
       if (nproc.gt.1) then
-         call MPI_ALLREDUCE(on,on1,1,MPI_INTEGER&
-            &,MPI_SUM,COMM_TINKER,i)
+         call MPI_ALLREDUCE(on,on1,1,MPI_INTEGER8,MPI_SUM,COMM_TINKER,i)
       end if
       !on1 = sqrt(on1)
       !on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
          write(*,13) name,mi,ma,on,rank,on1
-      else
+      else if (rank.eq.0) then
          write(*,12) name,mi,ma,on,rank
       end if
    end subroutine
@@ -232,18 +278,15 @@ contains
 12    format(A6,2F20.8,1x,F21.5,I5)
 13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
       if (nproc.gt.1) then
-         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8&
-            &,MPI_SUM,COMM_TINKER,i)
-         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8&
-            &,MPI_MIN,COMM_TINKER,i)
-         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8&
-            &,MPI_MAX,COMM_TINKER,i)
+         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8,MPI_SUM,COMM_TINKER,i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8,MPI_MIN,COMM_TINKER,i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8,MPI_MAX,COMM_TINKER,i)
       end if
       !on1 = sqrt(on1)
       !on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
          write(*,13) name,mi1,ma1,on,rank,on1
-      else
+      else if (rank.eq.0) then
          write(*,12) name,mi,ma,on,rank
       end if
    end subroutine
@@ -270,18 +313,15 @@ contains
 12    format(A6,2F20.8,1x,F21.5,I5)
 13    format(A6,2F20.8,1x,F21.5,I5,F19.5)
       if (nproc.gt.1) then
-         call MPI_ALLREDUCE(on,on1,1,MPI_REAL8&
-            &,MPI_SUM,COMM_TINKER,i)
-         call MPI_ALLREDUCE(mi,mi1,1,MPI_REAL8&
-            &,MPI_MIN,COMM_TINKER,i)
-         call MPI_ALLREDUCE(ma,ma1,1,MPI_REAL8&
-            &,MPI_MAX,COMM_TINKER,i)
+         call MPI_ALLREDUCE(on,on1,1,MPI_RPREC,MPI_SUM,COMM_TINKER,i)
+         call MPI_ALLREDUCE(mi,mi1,1,MPI_RPREC,MPI_MIN,COMM_TINKER,i)
+         call MPI_ALLREDUCE(ma,ma1,1,MPI_RPREC,MPI_MAX,COMM_TINKER,i)
       end if
       on1 = sqrt(on1)
       on  = sqrt(on )
       if (rank.eq.0.and.nproc.gt.1) then
          write(*,13) name,mi1,ma1,on,rank,on1
-      else
+      else if (rank.eq.0) then
          write(*,12) name,mi,ma,on,rank
       end if
    end subroutine

@@ -29,9 +29,9 @@ subroutine kpitors(init)
    use pitors
    use potent
    use tinheader
+   use tinMemory, only: prmem_request
    use tors
    use utils
-   use utilgpu
    implicit none
    integer i,j,npt
    integer ia,ib

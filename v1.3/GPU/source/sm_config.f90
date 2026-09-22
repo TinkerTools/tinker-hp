@@ -7,6 +7,7 @@
 
 submodule (config) config_cli
    use ascii,     only: backslash
+   use iounit,    only: iout
    use tinheader ,only: re_p
    use status    ,only: status_t, status_missing_argument, status_invalid_argument &
                  ,clear_status, set_status, failed
@@ -244,6 +245,7 @@ contains
       if (exists) then
          call read_key_file(configuration, status_value)
          if (failed(status_value)) return
+         call echo_key_comments(configuration)
          call discover_early_key_values(configuration, status_value)
          if (failed(status_value)) return
       end if
@@ -345,7 +347,7 @@ contains
       end if
       call validate_ndir_keywords(configuration, status_value)
       if (failed(status_value)) return
-      call field(.true.)
+      call set_potential_defaults()
       call initprm
       nprm = configuration%prm_count
       prmline = ''
@@ -357,6 +359,93 @@ contains
 !$acc update device(use_mpole,use_polar)
       configuration%complete = .true.
    end subroutine apply_defaults_prm_key
+
+   module subroutine set_potential_defaults()
+      use potent
+      implicit none
+
+      use_bond       = .true.
+      use_angle      = .true.
+      use_strbnd     = .true.
+      use_urey       = .true.
+      use_angang     = .true.
+      use_opbend     = .true.
+      use_opdist     = .true.
+      use_improp     = .true.
+      use_imptor     = .true.
+      use_tors       = .true.
+      use_pitors     = .true.
+      use_angtor     = .true.
+      use_strtor     = .true.
+      use_tortor     = .true.
+      use_vdw        = .true.
+      use_vdwshort   = .false.
+      use_vdwlong    = .false.
+      use_charge     = .true.
+      use_cshortreal = .false.
+      use_clong      = .false.
+      use_creal      = .true.
+      use_crec       = .true.
+      use_cself      = .true.
+      use_mpole      = .true.
+      use_mpoleshortreal = .false.
+      use_mpolelong      = .false.
+      use_mreal      = .true.
+      use_mrec       = .true.
+      use_mself      = .true.
+      use_polar      = .true.
+      use_preal      = .true.
+      use_prec       = .true.
+      use_pself      = .true.
+      use_polarshortreal = .false.
+      use_solv       = .false.
+      use_geom       = .true.
+      use_extra      = .false.
+      use_emtp       = .false.
+      use_repulsshort    = .false.
+      use_repulslong     = .false.
+      use_repuls         = .true.
+      use_disp           = .true.
+      use_dispshortreal  = .false.
+      use_displong   = .false.
+      use_dispreal   = .true.
+      use_disprec    = .true.
+      use_dispself   = .true.
+      use_chgtrn      = .true.
+      use_chgflx      = .true.
+      use_lambdadyn   = .false.
+      use_OSRW        = .false.
+      fuse_chglj      = .false.
+      fuse_bonded     = .false.
+      use_mlpot       = .false.
+
+      use_mlpot_only    = .false.
+      use_ml_embedding  = .false.
+      use_embd_potoff   = .false.
+      use_embd_bond     = .true.
+      use_embd_angle    = .true.
+      use_embd_strbnd   = .true.
+      use_embd_urey     = .true.
+      use_embd_angang   = .true.
+      use_embd_opbend   = .true.
+      use_embd_opdist   = .true.
+      use_embd_improp   = .true.
+      use_embd_imptor   = .true.
+      use_embd_tors     = .true.
+      use_embd_pitors   = .true.
+      use_embd_strtor   = .true.
+      use_embd_tortor   = .true.
+
+      bonded_l             = .true.
+      shortnonbonded_l     = .false.
+      nonbonded_l          = .true.
+      PotentialAll         = .true.
+      PotentialAmoeba      = .false.
+      PotentialAmoeba18    = .false.
+      PotentialWaterAmoeba = .false.
+      PotentialWaterCharmm = .false.
+      PotentialCharmm      = .false.
+   end subroutine set_potential_defaults
 
    module subroutine parse_dynamic_cli(raw_cli, periodic, nstep, timestep_fs, &
          dump_interval_ps, ensemble, temperature, pressure, status_value)
@@ -567,6 +656,36 @@ contains
       end do
       close(key_unit)
    end subroutine read_key_file
+
+   subroutine echo_key_comments(configuration)
+      implicit none
+      type(config_t), intent(in) :: configuration
+      character(len=240) :: record, keyword, comment
+      integer :: i, next, length, trimtext
+      logical :: header
+
+      header = .true.
+      do i = 1, configuration%key_count
+         next = 1
+         record = configuration%key_line(i)
+         call gettext(record, keyword, next)
+         call upcase(keyword)
+         if (keyword(1:5) /= 'ECHO ') cycle
+         comment = record(next:240)
+         length = trimtext(comment)
+         if (header) then
+            header = .false.
+            write (iout, 10)
+10          format ()
+         end if
+         if (length == 0) then
+            write (iout, 20)
+20          format ()
+         else
+            write (iout, '(a)') comment(1:length)
+         end if
+      end do
+   end subroutine echo_key_comments
 
    subroutine read_prm_file(configuration, status_value)
       implicit none

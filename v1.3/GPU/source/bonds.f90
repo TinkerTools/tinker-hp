@@ -49,7 +49,6 @@ subroutine bonds(init)
    use iounit
    use inform  ,only: deb_Path
    use nvshmem
-   use utilgpu
    use tinMemory
    use bound_internal
    implicit none
@@ -212,7 +211,8 @@ subroutine dev_sort_global_buffers(istep)
    use strtor  ,only: nstrtorloc
    use tors    ,only: ntorsloc
    use tortor  ,only: ntortorloc
-   use utilgpu
+   use thrust   ,only: thrust_sort
+   use mdevice  ,only: reciprocal_work
    use urey    ,only: nureyloc
    use vdw     ,only: nvdwloc,nvdwlocnl,nvdwbloc&
       &,vdwlocnl
@@ -226,10 +226,20 @@ subroutine dev_sort_global_buffers(istep)
 10 format('dev_sort_global_buffers',I8)
    if (deb_Path) write(*,10) istep
 
-   if(use_bond) call dev_sort(nbondloc,bndglob,rec_stream)
-   if(use_urey) call dev_sort(nureyloc,ureyglob,rec_stream)
+   if(use_bond) then
+!$acc host_data use_device(bndglob)
+      call thrust_sort(bndglob,nbondloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
+   if(use_urey) then
+!$acc host_data use_device(ureyglob)
+      call thrust_sort(ureyglob,nureyloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
    if(use_angle) then
-      call dev_sort(nangleloc,angleglob,rec_stream)
+!$acc host_data use_device(angleglob)
+      call thrust_sort(angleglob,nangleloc,reciprocal_work%stream)
+!$acc end host_data
       ! 'angleloc' never used across the code
 !!$acc parallel loop present(angleglob,angleloc) async
 !         do i = 1,nangleloc
@@ -237,61 +247,113 @@ subroutine dev_sort_global_buffers(istep)
 !         end do
    end if
 
-   if(use_opbend) call dev_sort(nopbendloc,opbendglob,rec_stream)
-   if(use_strbnd) call dev_sort(nstrbndloc,strbndglob,rec_stream)
+   if(use_opbend) then
+!$acc host_data use_device(opbendglob)
+      call thrust_sort(opbendglob,nopbendloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
+   if(use_strbnd) then
+!$acc host_data use_device(strbndglob)
+      call thrust_sort(strbndglob,nstrbndloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
 
-   if(use_improp) call dev_sort( niproploc,impropglob,rec_stream)
-   if(use_imptor) call dev_sort( nitorsloc,imptorglob,rec_stream)
+   if(use_improp) then
+!$acc host_data use_device(impropglob)
+      call thrust_sort(impropglob,niproploc,reciprocal_work%stream)
+!$acc end host_data
+   end if
+   if(use_imptor) then
+!$acc host_data use_device(imptorglob)
+      call thrust_sort(imptorglob,nitorsloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
 
-   if(use_tors  ) call dev_sort(  ntorsloc,  torsglob,rec_stream)
-   if(use_pitors) call dev_sort(npitorsloc,pitorsglob,rec_stream)
-   if(use_tortor) call dev_sort(ntortorloc,tortorglob,rec_stream)
-   if(use_strtor) call dev_sort(nstrtorloc,strtorglob,rec_stream)
-   if(use_angtor) call dev_sort(nangtorloc,angtorglob,rec_stream)
+   if(use_tors) then
+!$acc host_data use_device(torsglob)
+      call thrust_sort(torsglob,ntorsloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
+   if(use_pitors) then
+!$acc host_data use_device(pitorsglob)
+      call thrust_sort(pitorsglob,npitorsloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
+   if(use_tortor) then
+!$acc host_data use_device(tortorglob)
+      call thrust_sort(tortorglob,ntortorloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
+   if(use_strtor) then
+!$acc host_data use_device(strtorglob)
+      call thrust_sort(strtorglob,nstrtorloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
+   if(use_angtor) then
+!$acc host_data use_device(angtorglob)
+      call thrust_sort(angtorglob,nangtorloc,reciprocal_work%stream)
+!$acc end host_data
+   end if
 
 20 continue
    rebuildnl =merge(.true.,.false.&
       &,mod(istep,ineigup).eq.0.and.istep.ge.0)
 
    if (use_vdw.And.rebuildnl) then
-      !call dev_sort(nvdwloc  ,vdwglob  ,rec_stream)
-      call dev_sort(nvdwlocnl,vdwglobnl,rec_stream)
-!$acc parallel loop present(vdwglobnl,vdwlocnl) async(rec_queue)
+      !call thrust_sort(nvdwloc  ,vdwglob  ,reciprocal_work%stream)
+!$acc host_data use_device(vdwglobnl)
+      call thrust_sort(vdwglobnl,nvdwlocnl,reciprocal_work%stream)
+!$acc end host_data
+!$acc parallel loop present(vdwglobnl,vdwlocnl) async(reciprocal_work%queue)
       do i =1, nvdwlocnl
          vdwlocnl(vdwglobnl(i)) = i
       end do
    end if
 
    if (use_disp.and.rebuildnl) then
-      call dev_sort(ndisplocnl,dispglobnl,rec_stream)
-!$acc parallel loop present(dispglobnl,displocnl) async(rec_queue)
+!$acc host_data use_device(dispglobnl)
+      call thrust_sort(dispglobnl,ndisplocnl,reciprocal_work%stream)
+!$acc end host_data
+!$acc parallel loop present(dispglobnl,displocnl) async(reciprocal_work%queue)
       do i =1, ndisplocnl
          displocnl(dispglobnl(i)) = i
       end do
    end if
 
    if (use_charge) then
-      !call dev_sort(nionloc   ,chgglob   ,rec_stream)
-      call dev_sort(nionrecloc,chgrecglob,rec_stream)
-      if(rebuildnl) call dev_sort(nionlocnl ,chgglobnl ,rec_stream)
+      !call thrust_sort(nionloc   ,chgglob   ,reciprocal_work%stream)
+!$acc host_data use_device(chgrecglob)
+      call thrust_sort(chgrecglob,nionrecloc,reciprocal_work%stream)
+!$acc end host_data
+      if(rebuildnl) then
+!$acc host_data use_device(chgglobnl)
+         call thrust_sort(chgglobnl,nionlocnl,reciprocal_work%stream)
+!$acc end host_data
+      end if
       !chgloc & chglocnl appears to be unused
    end if
 
    if (use_mpole.or.use_polar) then
-!         call dev_sort(npoleloc   ,poleglob   ,rec_stream)
-      call dev_sort(npolerecloc,polerecglob,rec_stream)
-      if(rebuildnl) call dev_sort(npolelocnl,poleglobnl,rec_stream)
+!         call thrust_sort(npoleloc   ,poleglob   ,reciprocal_work%stream)
+!$acc host_data use_device(polerecglob)
+      call thrust_sort(polerecglob,npolerecloc,reciprocal_work%stream)
+!$acc end host_data
+      if(rebuildnl) then
+!$acc host_data use_device(poleglobnl)
+         call thrust_sort(poleglobnl,npolelocnl,reciprocal_work%stream)
+!$acc end host_data
+      end if
 
-!!$acc parallel loop async(rec_queue)
+!!$acc parallel loop async(reciprocal_work%queue)
 !         do i = 1,npolebloc
 !            poleloc(poleglob(i)) = i
 !         end do
-!$acc parallel loop present(polerecloc,polerecglob) async(rec_queue)
+!$acc parallel loop present(polerecloc,polerecglob) async(reciprocal_work%queue)
       do i = 1,npolerecloc
          polerecloc(polerecglob(i)) = i
       end do
       if (rebuildnl) then
-!$acc parallel loop present(polelocnl,poleglobnl) async(rec_queue)
+!$acc parallel loop present(polelocnl,poleglobnl) async(reciprocal_work%queue)
          do i = 1,npolelocnl
             polelocnl(poleglobnl(i)) = i
          end do
@@ -303,9 +365,32 @@ end subroutine
 subroutine delete_data_bonds
    use atmlst
    use bond
+   use bndpot
    use domdec
+   use pitors
    use sizes
+   use tinMemory
+   use tors
    implicit none
+
+#ifdef USE_NVSHMEM_CUDA
+   call shmem_request(bk,      winbk,      [0], c_bk, d_bk, config=mhostnvsh)
+   call shmem_request(bl,      winbl,      [0], c_bl, d_bl, config=mhostnvsh)
+   call shmem_request(ba,      winba,      [0], c_ba, d_ba, config=mhostnvsh)
+   call shmem_request(bndlist, winbndlist, [0], c_bndlist, d_bndlist, config=mhostnvsh)
+   call shmem_request(ibnd,    winibnd,    [0], c_ibnd, d_ibnd, config=mhostnvsh)
+   call shmem_request(nbtors,  winnbtors,  [0], c_nbtors, d_nbtors, config=mhostnvsh)
+   call shmem_request(nbpitors,winnbpitors,[0], c_nbpitors, d_nbpitors, config=mhostnvsh)
+#else
+   call shmem_request(bk,      winbk,      [0], config=mhostacc)
+   call shmem_request(bl,      winbl,      [0], config=mhostacc)
+   call shmem_request(ba,      winba,      [0], config=mhostacc)
+   call shmem_request(bndlist, winbndlist, [0], config=mhostacc)
+   call shmem_request(ibnd,    winibnd,    [0], config=mhostacc)
+   call shmem_request(nbtors,  winnbtors,  [0], config=mhostacc)
+   call shmem_request(nbpitors,winnbpitors,[0], config=mhostacc)
+#endif
+   call shmem_request(bndtypI, winbndtypI, [0], config=mhostacc)
 end subroutine
 !
 !     subroutine alloc_shared_bond : allocate shared memory pointers for bond

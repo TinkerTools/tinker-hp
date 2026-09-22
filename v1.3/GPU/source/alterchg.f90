@@ -28,9 +28,9 @@ subroutine alterchg
    use iounit
    use mplpot
    use mpole
+   use parallel, only: commchgflx
    use potent
    use tinMemory
-   use utilgpu
    implicit none
    integer i,k,ii
    integer iloc

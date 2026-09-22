@@ -37,12 +37,14 @@ subroutine epolar3_group
    use inform
    use math
    use mpole
+   use tinMemory
    use polar
    use polpot
    use potent
    use virial
    use mpi
-   use utilgpu
+   use tinheader, only: ti_p, re_p
+   use mdevice, only: default_work
    implicit none
    integer i,iglob,iipole,iglobgroup
    real*8 a(3,3)
@@ -119,7 +121,9 @@ subroutine epreal3_group
    use potent
    use shunt
    use mpi
-   use utilgpu
+   use tinheader, only: ti_p, re_p
+   use mdevice, only: default_work
+   use tinTypes, only: rpole_elt,real3,real3_red,real6
    use timestat
    use group
    implicit none
@@ -150,7 +154,7 @@ subroutine epreal3_group
 !$acc   ,rpole,thole,pdamp, &
 !$acc  loc,x,y,z,uindgroup,uinpgroup,pollist,epgroup) &
 !$acc         private(ip,dpui,posi) &
-!$acc         async(def_queue)
+!$acc         async(default_work%queue)
    do ii = 1, npolelocgroup
       iipolegroup = poleglobgroup(ii)
       iglobgroup = ipolegroup(iipolegroup)
@@ -253,7 +257,8 @@ subroutine epreal3c_correct_scale_group
    use potent  ,only: use_polarshortreal
    use shunt   ,only: off2,off
    use tinheader,only: ti_p
-   use utilgpu ,only: def_queue,real3,real6,real3_red,rpole_elt
+   use mdevice ,only: default_work
+   use tinTypes, only: real3,real6,real3_red,rpole_elt
    use atoms   ,only: x,y,z
    use group
 
@@ -293,7 +298,7 @@ subroutine epreal3c_correct_scale_group
 !$acc     x,y,z,uindgroup,uinpgroup,dpucorrect_ik_group, &
 !$acc     dpucorrect_scale_group,epgroup) &
 !$acc     private(pos,ip,kp,dpui,dpuk) &
-!$acc         async(def_queue)
+!$acc         async(default_work%queue)
    do ii = 1, n_dpuscale_group
       iipole   = dpucorrect_ik_group(2*(ii-1)+1)
       kpole    = dpucorrect_ik_group(2*(ii-1)+2)

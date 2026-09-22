@@ -48,20 +48,22 @@ subroutine baoabrespa1(istep,dt)
    use atomsMirror
    use cutoff
    use domdec
+   use parallel, only: commposrec
    use deriv
    use energi
    use freeze
    use group
    use inform
    use mdstuf1
+   use mdevice  , only: reciprocal_work
    use moldyn
    use mpi
    use potent
    use timestat
+   use tinMemory
    use units
    use uprior  ,only: use_pred
    use usage
-   use utilgpu
    use utilbaoab
    use utils
    use virial
@@ -119,7 +121,7 @@ subroutine baoabrespa1(istep,dt)
 !
    if (.not.ftot_l) then
       call prmem_requestm(derivs,3,nbloc,async=.true.)
-      call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
    end if
 !
 !     get the slow-evolving potential energy and atomic forces
@@ -227,16 +229,17 @@ subroutine baoabrespaint1(ealt,viralt,dta,dts)
    use energi
    use freeze
    use inform
-   use mdstuf1 ,only: derivs,ealt2,viralt2
+   use mdstuf1 , only: derivs,ealt2,viralt2
+   use mdevice , only: reciprocal_work
    use moldyn
    use mutant
    use potent
    use timestat
+   use tinMemory
    use units
-   use uprior  ,only: use_pred
+   use uprior  , only: use_pred
    use usage
    use utils
-   use utilgpu
    use virial
    use mpi
    implicit none
@@ -275,7 +278,7 @@ subroutine baoabrespaint1(ealt,viralt,dta,dts)
 !
       if (.not.ftot_l) then
          call prmem_requestm(derivs,3,nbloc,async=.true.)
-         call set_to_zero1m (derivs,3*nbloc,rec_queue)
+         call set_to_zero1m (derivs,3*nbloc,reciprocal_work%queue)
       end if
 !
 !     get the fast-evolving potential energy and atomic forces
@@ -357,13 +360,15 @@ subroutine baoabrespafast1(ealt,viralt,dta)
    use freeze
    use inform
    use langevin
-   use mdstuf1  ,only: derivs
+   use mdstuf1 , only: derivs
+   use mdevice , only: reciprocal_work
    use moldyn
    use random_mod
+   use parallel, only: commposrespa, reassign_respa
    use timestat
+   use tinMemory
    use units
    use utils
-   use utilgpu
    use usage
    use virial
    use mpi
@@ -408,7 +413,7 @@ subroutine baoabrespafast1(ealt,viralt,dta)
 !
 !        Reassign the particules that have changed of domain
 !        -> real space
-      call reassignrespa(stepfast,nalt2)
+      call reassign_respa(stepfast,nalt2)
 !
 !        communicate positions
 !
@@ -416,7 +421,7 @@ subroutine baoabrespafast1(ealt,viralt,dta)
 !
       if (.not.ftot_l) then
          call prmem_requestm(derivs,3,nbloc,async=.true.)
-         call set_to_zero1m (derivs,3*nbloc,rec_queue)
+         call set_to_zero1m (derivs,3*nbloc,reciprocal_work%queue)
       end if
 !
       if (stepfast.eq.nalt2) call mechanicsteprespa1(-1,0)

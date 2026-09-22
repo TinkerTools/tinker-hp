@@ -16,7 +16,22 @@
 !
 #include "tinker_macro.h"
 module nblist_b_inl
+   use mdevice  ,only: reciprocal_work,default_work
+   use tinheader,only: ti_p
+   integer   ,parameter :: BLOCK_SIZE=32
+   real(t_p) ,parameter :: inf=4*huge(0.0_ti_p)
 contains
+   subroutine get_atom_glob_id(a_kind,a_id,glob,ntyp,natom)
+      integer,intent(in):: natom,ntyp
+      integer,intent(in):: a_kind(ntyp),a_id(natom)
+      integer,intent(inout):: glob(ntyp)
+      integer i
+!$acc parallel loop async(reciprocal_work%queue) default(present)
+      do i=1,ntyp
+         glob(i)=a_id(a_kind(i))
+      end do
+   end subroutine
+
 #include "image.inc.f90"
 #include "midpointimage.inc.f90"
 end module
@@ -30,7 +45,8 @@ subroutine set_VdwData_CellOrder
    use domdec
    use kvdws  ,only: rad,eps,radv,epsv
    use neigh
-   use utilgpu
+   use nblist_b_inl
+   use tinMemory, only: prmem_request
    use vdw
    implicit none
    integer i,it,iglob,nab_,na_
@@ -42,7 +58,7 @@ subroutine set_VdwData_CellOrder
    call prmem_request(radv      ,nab_,async=.true.)
    call prmem_request(epsv      ,nab_,async=.true.)
 
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(default_work%queue) &
 !$acc         present(sgl_id,slc_id,cellv_jvdw, &
 !$acc   s_key,loc,jvdw_c,jvdw,vdwglobnl,rad,eps,radv,epsv)
    do i = 1, nab_
@@ -66,13 +82,12 @@ subroutine spatialOrder_pos
    use domdec
    use neigh
    use nblist_b_inl
-   use utilgpu
    use vdw
    implicit none
    integer i,iglob
    real(t_p) xr,yr,zr
 
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(default_work%queue) default(present)
    do i = 1, nab
       if (i.le.na) then
          iglob     = sgl_id(i)
@@ -100,7 +115,7 @@ subroutine vdw_nblist_build1
    use cutoff  ,only: use_shortvlist,vdwcut,vdwshortcut,shortheal
    use inform  ,only: deb_Path
    use neigh   ,only: vdw_nbl,vdwl_id,lbuffer,init_nbl,nblist_build1
-   use utilgpu ,only: BLOCK_SIZE
+   use nblist_b_inl,only: BLOCK_SIZE
    use vdw     ,only: nvdwlocnl,ired,kred&
       &,nvdwlocnlb_pair,nvdwlocnlb_pair1,nvdwlocnlb2_pair&
       &,nshortvdwlocnlb2_pair,nvdw,ivdw
@@ -129,7 +144,7 @@ subroutine nblist_build1(l)
       &,v_bP,b2pl,b2pl_1,bapl,bapl_1,abpl,abpl_1&
       &,b_stat,b_rmid,trackb=>ngh_workS_i,cellv_jvdw&
       &,so_x,so_y,so_z
-   use utils   ,only: set_to_zero1_int1,set_to_zero1_int&
+   use utils   ,only: set_to_zero1_int1,set_to_zero1_int,set_to_zero1_int8&
       &,associate_ptr
    use inform  ,only: deb_Path, app_id,pimd_a,analyze_beads_a,pibar_a
    use nblist_b_inl
@@ -139,15 +154,12 @@ subroutine nblist_build1(l)
    use thrust  ,only: thrust_exclusive_scan
    use nblistcu,only: sztb,filter_lst_sparse,filter_lsts_sparse&
       &,blocksat_kcu,InMID_BS
-   use utilcu  ,only: check_launch_kernel,mem_download_i&
-      &,prdmem_request,dmem_set,chk_cuAPI_O
+   use mdevice  ,only: check_launch_kernel
    use cudafor
 #endif
 
    use tinheader,only: ti_p
    use tinMemory,only: prmem_mvrequest,prmem_request,szoi,mipk
-   use utilgpu ,only: rec_queue,BLOCK_SIZE,inf,mem_set&
-      &,rec_stream,mem_move_i4,get_atom_glob_id
    implicit none
    type(nblst_t),intent(inout),target :: l
    integer i,iblock,inblock,icell
@@ -164,6 +176,7 @@ subroutine nblist_build1(l)
    integer,pointer:: atomk(:),atomgid(:)
    real(t_p) l_xcell,l_ycell,l_zcell,rdn,rdn1
    real(t_p) ctbuf,ctbuf2,ctbuf2_1,ctbuf2_b
+
 
 !     real(t_p) xi,yi,zi
 !     integer j,ibl,iblv(32)
@@ -278,8 +291,8 @@ subroutine nblist_build1(l)
       write(0,17) i8_,sizba
       call fatal
    end if
-   call mem_set(bapl,0,i8_,rec_stream)
-   call mem_set(trackb,0,int(siztr,mipk),rec_stream)
+   call set_to_zero1_int8(bapl,i8_,reciprocal_work%queue)
+   call set_to_zero1_int8(trackb,int(siztr,mipk),reciprocal_work%queue)
 
    ! Debug info
    if (deb_Path) then
@@ -309,7 +322,7 @@ subroutine nblist_build1(l)
 !$acc    ,so_x,so_y,so_z,b_stat,b_rmid)
 
    ! Build block satellite data ( middle point and locality )
-   call blocksat_kcu<<<nGS,128,0,rec_stream>>>&
+   call blocksat_kcu<<<nGS,128,0,reciprocal_work%stream>>>&
         (atomk,atomgid,s_key,x,y,z,nb,na,nab,n,ctbuf&
         ,l_xcell,l_ycell,l_zcell,eps_cell&
         ,slc_id,sgl_id,so_x,so_y,so_z,b_stat,b_rmid)
@@ -319,13 +332,12 @@ subroutine nblist_build1(l)
    !TODO Lambda : Set to true
    if (app_id==pimd_a .or. app_id==analyze_beads_a.or. app_id==pibar_a&
       .or.l%use2lists.or..not.orthogonal ) then
-!$acc parallel loop async(rec_queue) deviceptr(b_stat)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(b_stat)
       do i = 1,nb
          b_stat(i)=disc_block
       end do
    else if (3*ctbuf.gt.xcell) then
-      !  call dmem_set(b_stat,disc_block,int(nb,8),rec_stream)
-!$acc parallel loop async(rec_queue) deviceptr(b_stat)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(b_stat)
       do i = 1,nb
          if (b_stat(i).ne.inside_block) b_stat(i)=disc_block
       end do
@@ -335,7 +347,7 @@ subroutine nblist_build1(l)
 !
    if (l%use2lists) then
 !$acc host_data use_device(abpl_1)
-      call filter_lsts_sparse <<<*,128,0,rec_stream>>>&
+   call filter_lsts_sparse <<<*,128,0,reciprocal_work%stream>>>&
          &(sgl_id,cell_scan,so_x,so_y,so_z,b_stat,b_rmid,matb_lst&
          &,nab,nb,szMatb,nb2p_0&
          &,ctbuf2_1,ctbuf2_b,ctbuf2&
@@ -346,7 +358,7 @@ subroutine nblist_build1(l)
 !$acc end host_data
    else
 
-      call filter_lst_sparse <<<*,128,0,rec_stream>>>&
+   call filter_lst_sparse <<<*,128,0,reciprocal_work%stream>>>&
          &(sgl_id,cell_scan,so_x,so_y,so_z,b_stat,b_rmid,matb_lst&
          &,nab,nb,szMatb,nb2p_0,ctbuf2&
          &,bb_lst,bapl,abpl,trackb(1),b2pl,trackb(3)&
@@ -356,7 +368,7 @@ subroutine nblist_build1(l)
    end if
 
 !$acc end host_data
-!$acc update host(trackb(1:16)) async(rec_queue)
+!$acc update host(trackb(1:16)) async(reciprocal_work%queue)
 #else
    !TODO Add an OpenACC version of this kernel
 #endif
@@ -367,7 +379,7 @@ subroutine nblist_build1(l)
          if (b_stat(i).eq.2) it1=it1+1;
          if (b_stat(i).eq.1) it2=it2+1;
       end do
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
       print '(2A,3I6)', 'number of disc/irregular & '&
          &,'internal & normal blocks'&
          &,it1,it2,nb-(it1+it2)
@@ -411,23 +423,26 @@ subroutine get_vdw_nblst_sizes
 end subroutine
 !
 subroutine nblst_alter_bstat
-   use neigh   ,only: vdw_nbl,disp_nbl,elec_nbl,d_bl=>disc_block
-   use utilgpu ,only: mem_set,rec_stream
+   use neigh    ,only: vdw_nbl,disp_nbl,elec_nbl,d_bl=>disc_block
+   use tinMemory,only: mem_set
+   use nblist_b_inl
    implicit none
    integer i
    integer(ipk_) nb_
+   integer,pointer :: b_stat(:)
+
 
    if (allocated(vdw_nbl%b_stat)) then
       nb_ = vdw_nbl%nb
-      call mem_set(vdw_nbl%b_stat,d_bl,nb_,rec_stream)
+      call mem_set(vdw_nbl%b_stat,d_bl,nb_,reciprocal_work%stream)
    end if
    if (allocated(disp_nbl%b_stat)) then
       nb_ = disp_nbl%nb
-      call mem_set(disp_nbl%b_stat,d_bl,nb_,rec_stream)
+      call mem_set(disp_nbl%b_stat,d_bl,nb_,reciprocal_work%stream)
    end if
    if (allocated(elec_nbl%b_stat)) then
       nb_ = elec_nbl%nb
-      call mem_set(elec_nbl%b_stat,d_bl,nb_,rec_stream)
+      call mem_set(elec_nbl%b_stat,d_bl,nb_,reciprocal_work%stream)
    end if
 end subroutine
 
@@ -455,11 +470,10 @@ subroutine mlist_block
    use interfaces,only:cu_filter_lst_sparse
    use thrust  ,only: thrust_exclusive_scan
    use nblistcu,only: filter_lst_sparse
-   use utilcu  ,only: check_launch_kernel
-   use utilgpu ,only: rec_stream
+   use mdevice  ,only: check_launch_kernel
    use cudafor
 #endif
-   use utilgpu ,only: rec_queue,BLOCK_SIZE,inf
+   use nblist_b_inl
    use tinheader,only: ti_p
    use tinMemory,only: prmem_request,prmem_mvrequest,mipk,szoi
    implicit none
@@ -532,8 +546,8 @@ subroutine mlist_block
 
    ! zero list and ilist
    call set_to_zero1_int(eblst(npolelocnlb_pair*2+1),&
-      &npolelocnlb_pair*(BLOCK_SIZE),rec_queue)
-   call set_to_zero1_int(ieblst,npolelocnlb_pair,rec_queue)
+      &npolelocnlb_pair*(BLOCK_SIZE),reciprocal_work%queue)
+   call set_to_zero1_int(ieblst,npolelocnlb_pair,reciprocal_work%queue)
 
    if (use_shortmlist) then
       call prmem_request (shorteblst,npolelocnlb_pair*&
@@ -541,9 +555,9 @@ subroutine mlist_block
       call prmem_request (ishorteblst,npolelocnlb_pair,&
          &async=.true.)
       call set_to_zero1_int(shorteblst,npolelocnlb_pair*&
-         &(2+BLOCK_SIZE),rec_queue)
+         &(2+BLOCK_SIZE),reciprocal_work%queue)
       call set_to_zero1_int(ishorteblst,npolelocnlb_pair,&
-         &rec_queue)
+         &reciprocal_work%queue)
    end if
 
    call Init_blocklen(nblock)
@@ -574,7 +588,7 @@ subroutine mlist_block
 !$acc host_data use_device(celle_glob,cell_scan,cell_len,cell_lenr, &
 !$acc    celle_x,celle_y,celle_z,matb_lst,eblst,shorteblst, &
 !$acc    cell_len2,cell_len2r)
-      call filter_shortlst_sparse1 <<<*,128,0,rec_stream>>>&
+   call filter_shortlst_sparse1 <<<*,128,0,reciprocal_work%stream>>>&
          &(celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,&
          &npolelocnlb,nblock,szMatb,npolelocnlb_pair,&
          &mshortbuf2,0.0_ti_p,mbuf2,&
@@ -589,12 +603,12 @@ subroutine mlist_block
 !    &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
 !    &      npolelocnlb,nblock,szMatb,npolelocnlb_pair,mbuf2,
 !    &      eblst,cell_len,xcell,ycell,zcell,xcell2,ycell2,zcell2,
-!    &      rec_stream)
-!     call filter_lst_sparse<<<*,128,0,rec_stream>>>
+!    &      reciprocal_work%stream)
+!     call filter_lst_sparse<<<*,128,0,reciprocal_work%stream>>>
 !    &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
 !    &      npolelocnlb,nblock,szMatb,npolelocnlb_pair,mbuf2,
 !    &      eblst,cell_len)
-      call filter_lst_sparse1<<<*,128,0,rec_stream>>>&
+      call filter_lst_sparse1<<<*,128,0,reciprocal_work%stream>>>&
          &(celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,&
          &npolelocnlb,nblock,szMatb,npolelocnlb_pair,mbuf2,&
          &eblst,cell_len,cell_lenr)
@@ -646,12 +660,11 @@ subroutine clist_block
    use interfaces,only:cu_filter_lst_sparse
    use thrust  ,only: thrust_exclusive_scan
    use nblistcu,only: filter_lst_sparse
-   use utilcu  ,only: check_launch_kernel
-   use utilgpu ,only: rec_stream
+   use mdevice  ,only: check_launch_kernel
    use cudafor
 #endif
    use potent  ,only: fuse_chglj
-   use utilgpu ,only: rec_queue,BLOCK_SIZE,inf
+   use nblist_b_inl
    use tinheader,only: ti_p
    use tinMemory,only: prmem_request,prmem_mvrequest,mipk,szoi
    implicit none
@@ -692,7 +705,7 @@ subroutine clist_block
          &sqrt(cutb2),c_bP)
    else
       call prmem_request(celle_glob,nionlocnlb,async=.true.)
-!$acc    parallel loop async(rec_queue) default(present)
+!$acc    parallel loop async(reciprocal_work%queue) default(present)
       do i = 1,nionlocnl
          celle_glob(i) = iion(chgglobnl(i))
       end do
@@ -728,8 +741,8 @@ subroutine clist_block
 
    ! zero list and ilist
    call set_to_zero1_int(eblst(nionlocnlb_pair*2+1),&
-      &nionlocnlb_pair*(BLOCK_SIZE),rec_queue)
-   call set_to_zero1_int(ieblst,nionlocnlb_pair,rec_queue)
+      &nionlocnlb_pair*(BLOCK_SIZE),reciprocal_work%queue)
+   call set_to_zero1_int(ieblst,nionlocnlb_pair,reciprocal_work%queue)
 
    if (use_shortclist) then
       call prmem_request (shorteblst,nionlocnlb_pair*&
@@ -737,9 +750,9 @@ subroutine clist_block
       call prmem_request (ishorteblst,nionlocnlb_pair,&
          &async=.true.)
       call set_to_zero1_int(shorteblst,nionlocnlb_pair*&
-         &(2+BLOCK_SIZE),rec_queue)
+         &(2+BLOCK_SIZE),reciprocal_work%queue)
       call set_to_zero1_int(ishorteblst,nionlocnlb_pair,&
-         &rec_queue)
+         &reciprocal_work%queue)
    end if
 
    call Init_blocklen(nblock)
@@ -769,7 +782,7 @@ subroutine clist_block
 !$acc host_data use_device(celle_glob,cell_scan,cell_len,cell_lenr, &
 !$acc    celle_x,celle_y,celle_z,matb_lst,eblst,shorteblst, &
 !$acc    cell_len2,cell_len2r)
-      call filter_shortlst_sparse1 <<<*,128,0,rec_stream>>>&
+      call filter_shortlst_sparse1 <<<*,128,0,reciprocal_work%stream>>>&
          &(celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,&
          &nionlocnlb,nblock,szMatb,nionlocnlb_pair,&
          &cshortbuf2,0.0_ti_p,cutb2,&
@@ -784,12 +797,12 @@ subroutine clist_block
 !    &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
 !    &      nionlocnlb,nblock,szMatb,nionlocnlb_pair,cutb2,
 !    &      eblst,cell_len,xcell,ycell,zcell,xcell2,ycell2,zcell2,
-!    &      rec_stream)
-!     call filter_lst_sparse<<<*,128,0,rec_stream>>>
+!    &      reciprocal_work%stream)
+!     call filter_lst_sparse<<<*,128,0,reciprocal_work%stream>>>
 !    &     (celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,
 !    &      nionlocnlb,nblock,szMatb,nionlocnlb_pair,mbuf2,
 !    &      eblst,cell_len)
-      call filter_lst_sparse1<<<*,128,0,rec_stream>>>&
+      call filter_lst_sparse1<<<*,128,0,reciprocal_work%stream>>>&
          &(celle_glob,cell_scan,celle_x,celle_y,celle_z,matb_lst,&
          &nionlocnlb,nblock,szMatb,nionlocnlb_pair,cutb2,&
          &eblst,cell_len,cell_lenr)
@@ -827,7 +840,6 @@ subroutine vlistcellgpu
    use nblist_b_inl
    use neigh
    use vdw
-   use utilgpu
    use mpi
    implicit none
    integer iglob,iloc
@@ -851,7 +863,7 @@ subroutine vlistcellgpu
 !$acc     present(vdwglob,vdwglobnl,ivdw,jvdw,x,y,z, &
 !$acc  vlst,nvlst,ired,kred,loc,rad,indcell,neigcell, &
 !$acc  cell_len,bufbegcell,numneigcell,repartcell) &
-!$acc     async(rec_queue)
+!$acc     async(reciprocal_work%queue)
 
    zbeg = zbegproc(rank+1)
    zend = zendproc(rank+1)
@@ -863,7 +875,7 @@ subroutine vlistcellgpu
 !     apply reduction factors to find coordinates for each site
 !
 
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do ii = 1, nvdwbloc
       iivdw   = vdwglob(ii)
       iglob   = ivdw(iivdw)
@@ -877,7 +889,7 @@ subroutine vlistcellgpu
 !
 !     perform a complete list build
 !
-!$acc parallel loop vector_length(32) private(j) async(rec_queue)
+!$acc parallel loop vector_length(32) private(j) async(reciprocal_work%queue)
    do i = 1, nvdwlocnl
       iivdw    = vdwglobnl(i)
       iglob    = ivdw(iivdw)
@@ -963,7 +975,6 @@ subroutine vlistcell2gpu
    use nblist_b_inl
    use neigh
    use vdw
-   use utilgpu
    use mpi
    implicit none
    integer iglob,iloc
@@ -989,7 +1000,7 @@ subroutine vlistcell2gpu
 !$acc  vlst,nvlst,ired,kred,loc,rad,indcell,neigcell, &
 !$acc  cell_len,bufbegcell,numneigcell,repartcell, &
 !$acc  shortvlst,nshortvlst) &
-!$acc     async(rec_queue)
+!$acc     async(reciprocal_work%queue)
 
    zbeg = zbegproc(rank+1)
    zend = zendproc(rank+1)
@@ -1004,7 +1015,7 @@ subroutine vlistcell2gpu
 !
 !     apply reduction factors to find coordinates for each site
 !
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do ii = 1, nvdwbloc
       iivdw   = vdwglob(ii)
       iglob   = ivdw(iivdw)
@@ -1018,7 +1029,7 @@ subroutine vlistcell2gpu
 !
 !     perform a complete list build
 !
-!$acc parallel loop vector_length(32) private(j,k) async(rec_queue)
+!$acc parallel loop vector_length(32) private(j,k) async(reciprocal_work%queue)
    do i = 1, nvdwlocnl
       iivdw    = vdwglobnl(i)
       iglob    = ivdw(iivdw)
@@ -1115,7 +1126,6 @@ subroutine mlistcellgpu
    use nblist_b_inl
    use neigh
    use mpi
-   use utilgpu
    implicit none
    integer iglob
    integer i,ii,j,jj,k,icell,nneigloc
@@ -1144,7 +1154,7 @@ subroutine mlistcellgpu
 !     perform a complete list build
 !
 !     print*,'mean cell_len ',sum(cell_len)/size(cell_len)
-!$acc parallel loop vector_length(32) private(j) async(rec_queue)
+!$acc parallel loop vector_length(32) private(j) async(reciprocal_work%queue)
    do i = 1, npolelocnl
       iipole    = poleglobnl(i)
       iglob     = ipole(iipole)
@@ -1233,7 +1243,6 @@ subroutine mlistcell2gpu
    use nblist_b_inl
    use neigh
    use mpi
-   use utilgpu
    implicit none
    integer iglob
    integer i,ii,j,cap,k,kk,icell,nneigloc
@@ -1264,7 +1273,7 @@ subroutine mlistcell2gpu
 !     perform a complete list build
 !
 !     print*,'mean cell_len ',sum(cell_len)/size(cell_len)
-!$acc parallel loop vector_length(32) private(j,k) async(rec_queue)
+!$acc parallel loop vector_length(32) private(j,k) async(reciprocal_work%queue)
    do i = 1, npolelocnl
       iipole    = poleglobnl(i)
       iglob     = ipole(iipole)
@@ -1359,7 +1368,6 @@ subroutine clistcellgpu
    use iounit
    use nblist_b_inl
    use neigh
-   use utilgpu
    use mpi
    implicit none
    integer iglob
@@ -1384,7 +1392,7 @@ subroutine clistcellgpu
 !
 !     perform a complete list build
 !
-!$acc parallel loop vector_length(32) private(j) async(rec_queue) &
+!$acc parallel loop vector_length(32) private(j) async(reciprocal_work%queue) &
 !$acc         present(chgglobnl,chglist,repartcell,cell_len &
 !$acc  ,bufbegcell,numneigcell,neigcell,indcell,elst,nelst,x,y,z)
    do i = 1, nionlocnl
@@ -1467,7 +1475,6 @@ subroutine clistcell2gpu
    use iounit
    use nblist_b_inl
    use neigh
-   use utilgpu
    use mpi
    implicit none
    integer iglob
@@ -1497,7 +1504,7 @@ subroutine clistcell2gpu
 !
 !     perform a complete list build
 !
-!$acc parallel loop vector_length(32) private(j,k) async(rec_queue) &
+!$acc parallel loop vector_length(32) private(j,k) async(reciprocal_work%queue) &
 !$acc         present(chgglobnl,chglist,repartcell,cell_len,bufbegcell, &
 !$acc  numneigcell,neigcell,indcell,elst,nelst,nshortelst, &
 !$acc  shortelst,x,y,z)

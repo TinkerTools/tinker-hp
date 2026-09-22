@@ -33,10 +33,10 @@ subroutine kcharge(init,istep)
    use neigh
    use potent
    use tinMemory
+   use tinheader, only: ti_p
 #ifdef _OPENACC
    use thrust
 #endif
-   use utilgpu
    implicit none
    integer i,j,k,m,iglob,ionloc
    integer ia,next,ierr,istep,iproc

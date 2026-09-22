@@ -19,7 +19,7 @@ submodule(deriv) subderiv
    use domdec
    use dcdmod   ,only:dcdio
    use inform   ,only:deb_Path,deb_Force,abort,n_fwriten&
-      &,dint1,dint2,mmo=>minmaxone,app_id,pimd_a
+                ,dint1,dint2,mmo=>minmaxone,app_id,pimd_a,Tinker_shellEnv
    use,intrinsic:: iso_c_binding ,only: c_ptr,c_f_pointer,c_loc
    use mpi
    use mdstuf   ,only:integrate
@@ -32,10 +32,9 @@ submodule(deriv) subderiv
    use timestat
    use tinheader,only:ti_p,re_p
    use tinMemory,only:prmem_request,prmem_requestm,mipk&
-      &,prmem_int8_req1,prmemGetAllocSize,extra_alloc
-   use utilgpu  ,only:mem_move,mem_set,rec_stream,rec_queue&
-      &,Tinker_shellEnv
-   use utilcomm
+                ,prmem_int8_req1,prmemGetAllocSize,extra_alloc,mem_set,mem_move
+   use mdevice  ,only:reciprocal_work
+   use parallel ,only:accumulate,domain_workspace_rp,halo_large,halo_neighbour,halo_short
    implicit none
    logical abortall
    integer inte(2)
@@ -213,8 +212,6 @@ contains
          dr_nb0 = dr_nb0 + merge(1,0,use_angtor.and.OK)
          dr_nb0 = dr_nb0 + merge(1,0,use_tortor.and.OK)
          dr_nb0 = dr_nb0 + merge(1,0,use_geom.and.OK)
-         dr_nb0 = dr_nb0 + merge(1,0,(use_mlpot.or.use_ml_embedding)&
-            &.and.OK)
          dr_nb0 = dr_nb0 + merge(1,0,fdebs_l)
          dr_nbb = dr_nb0
 
@@ -227,6 +224,7 @@ contains
          dr_nbnbr = dr_nbnbr + merge(1,0,use_disp  )  !( dedsprec )
 
          dr_nb1 = dr_nb1 + merge(1,0,use_vdw   )
+         dr_nb1 = dr_nb1 + merge(1,0,(use_mlpot.or.use_ml_embedding))
          dr_nb1 = dr_nb1 + merge(1,0,use_disp  )
          dr_nb1 = dr_nb1 + merge(1,0,use_repuls)
          dr_nb1 = dr_nb1 + merge(1,0,use_charge)
@@ -293,8 +291,8 @@ contains
       call prmem_requestm(de_buff1,siz1,async=.false.)
       extra_alloc   = save_ex_alloc
 
-      call mem_set( de_buff0,zero_rp,siz0,rec_stream )
-      call mem_set( de_buff1,zero_md,siz1,rec_stream )
+      call mem_set( de_buff0,zero_rp,siz0,reciprocal_work%stream )
+      call mem_set( de_buff1,zero_md,siz1,reciprocal_work%stream )
 
       dr_obb = of0
       if (use_bond) then
@@ -353,10 +351,6 @@ contains
          deat(1:3,1:dr_stride) => de_buff0(of0+1:of0+dr_stride3)
          of0 = of0 + merge(dr_stride3,0,OK)
       end if
-      if (use_mlpot.or.use_ml_embedding) then
-         dmlpot(1:3,1:dr_stride) => de_buff0(of0+1:of0+dr_stride3)
-         of0 = of0 + merge(dr_stride3,0,OK)
-      end if
       if (use_geom) then
          deg(1:3,1:dr_stride) => de_buff0(of0+1:of0+dr_stride3)
          of0 = of0 + merge(dr_stride3,0,OK)
@@ -391,6 +385,10 @@ contains
          devx(1:dr_stride)=> de_buff1(of1+0*dr_stride+1:of1+1*dr_stride)
          devy(1:dr_stride)=> de_buff1(of1+1*dr_stride+1:of1+2*dr_stride)
          devz(1:dr_stride)=> de_buff1(of1+2*dr_stride+1:of1+3*dr_stride)
+         of1 = of1 + dr_stride3
+      end if
+      if (use_mlpot.or.use_ml_embedding) then
+         dmlpot(1:3,1:dr_stride) => de_buff1(of1+1:of1+dr_stride3)
          of1 = of1 + dr_stride3
       end if
       if (use_disp) then
@@ -473,7 +471,7 @@ contains
       extra_alloc   = .false.
       call prmem_requestm(de_buffr,sizr,async=.false.)
       extra_alloc   = save_ex_alloc
-      call mem_set( de_buffr,zero_rp,sizr,rec_stream )
+      call mem_set( de_buffr,zero_rp,sizr,reciprocal_work%stream )
 
       if (use_charge) then
          decrec(1:3,1:dr_strider) => de_buffr(ofr+1:ofr+dr_strider3)
@@ -554,9 +552,9 @@ contains
       siz0 = dr_nb0  *int(dr_stride3 ,mipk)
       siz1 = merge(dr_nb1-1,dr_nb1,respa1_l)  *int(dr_stride3 ,mipk)
       sizr = dr_nbnbr*int(dr_strider3,mipk)
-      call mem_set( de_buff0,zero_rp,siz0,rec_stream )
-      call mem_set( de_buff1,zero_md,siz1,rec_stream )
-      if (sizr.ne.0) call mem_set( de_buffr,zero_rp,sizr,rec_stream )
+      call mem_set( de_buff0,zero_rp,siz0,reciprocal_work%stream )
+      call mem_set( de_buff1,zero_md,siz1,reciprocal_work%stream )
+      if (sizr.ne.0) call mem_set( de_buffr,zero_rp,sizr,reciprocal_work%stream )
 
    end subroutine
 
@@ -602,8 +600,8 @@ contains
       offset = dr_stride3
       siz0   = dr_nb0  *int(dr_stride3 ,mipk)
       siz1   = merge(dr_nb1-1,dr_nb1,respa1_l)  *int(dr_stride3 ,mipk)
-      call mem_set( de_buff0,zero_rp,siz0,rec_stream )
-      call mem_set( de_buff1,zero_md,siz1-offset,rec_stream,offset )
+      call mem_set( de_buff0,zero_rp,siz0,reciprocal_work%stream )
+      call mem_set( de_buff1,zero_md,siz1-offset,reciprocal_work%stream,offset )
 
    end subroutine
 
@@ -611,7 +609,7 @@ contains
       integer(mipk) sizr
 
       sizr = dr_nbnbr*int(dr_strider3,mipk)
-      if (sizr.ne.0) call mem_set( de_buffr,zero_rp,sizr,rec_stream )
+      if (sizr.ne.0) call mem_set( de_buffr,zero_rp,sizr,reciprocal_work%stream )
 
    end subroutine
 
@@ -635,6 +633,20 @@ contains
       end if
    end subroutine
 
+   subroutine save_forces( d_save, d_in, size, stream)
+      implicit none
+      mdyn_rtyp :: d_save(:)
+      real(r_p),intent(in) :: d_in(:)
+      integer ,intent(in):: size
+      integer(mipk),intent(in):: stream
+      integer i
+
+      !$acc parallel loop async(stream) default(present)
+      do i = 1, size
+         d_save(i) = rp2mdr( d_in(i) )
+      end do
+   end subroutine
+
    ! Perform on mdyn_rtyp
    module subroutine add_forces(deadd)
       implicit none
@@ -649,7 +661,7 @@ contains
 
       !save the values of the short range real space polarizable forces
       if (shortnonbonded_l.and.stepint.eq.nalt.and.use_polar)&
-         &call mem_move(desave,dep,stride,rec_stream)
+         &call mem_move(desave(1:stride,1),dep(1:stride,1),stride,reciprocal_work%stream)
 
       if (tdes_l) then  ! (n,3) buffer format
 
@@ -657,7 +669,7 @@ contains
          if (bonded_l.and..not.nonbonded_l) then
             if (.not.fdebs_l) then ! Check merge and transposition
                if(deb_Path) write(*,*) "   add_forces bonded"
-!$acc parallel loop async(rec_queue) deviceptr(de_buff0,deadd)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff0,deadd)
                do i = 1,3*nbloc
                   tot_ = 0
 !$acc loop seq
@@ -674,7 +686,7 @@ contains
             end if
          else if (nonbonded_l.and..not.bonded_l) then
             if(deb_Path) write(*,*) "   add_forces non bonded"
-!$acc parallel loop async(rec_queue) deviceptr(de_buff1,deadd)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff1,deadd)
             do i = 1,3*nbloc
                totr = 0
 !$acc loop seq
@@ -690,7 +702,7 @@ contains
             end do
          else
             if(deb_Path) write(*,*) "   add_forces"
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         deviceptr(de_buff0,de_buff1,deadd)
             do i = 1,3*nbloc
                tot_ = 0
@@ -720,7 +732,7 @@ contains
 !$acc host_data use_device(deadd,de_buff0,de_buff1)
          if (bonded_l.and..not.nonbonded_l) then
             if(deb_Path) write(*,*) "   add_forces bonded"
-!$acc parallel loop async(rec_queue) deviceptr(de_buff0,deadd)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff0,deadd)
             do i = 1,3*nbloc
                tot_ = 0
 !$acc loop seq
@@ -733,7 +745,7 @@ contains
             end do
          else if (nonbonded_l.and..not.bonded_l) then
             if(deb_Path) write(*,*) "   add_forces non bonded"
-!$acc parallel loop async(rec_queue) deviceptr(de_buff1,deadd)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff1,deadd)
             do i = 1,3*nbloc
                totr = 0
 !$acc loop seq
@@ -746,7 +758,7 @@ contains
             end do
          else
             if(deb_Path) write(*,*) "   add_forces"
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         deviceptr(de_buff0,de_buff1,deadd)
             do i = 1,3*nbloc
                tot_ = 0
@@ -783,11 +795,11 @@ contains
 
       !save the values of the short range real space polarizable forces
       if (shortnonbonded_l.and.stepint.eq.nalt)&
-         &call mem_move(desave,dep,stride,rec_stream)
+         &call mem_move(desave(1:stride,1),dep(1:stride,1),stride,reciprocal_work%stream)
 
 !$acc host_data use_device(de_buff0,de_buff1,deadd)
       if (bonded_l.and..not.nonbonded_l) then
-!$acc parallel loop async(rec_queue) deviceptr(de_buff0,deadd)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff0,deadd)
          do i = 1,3*nbloc
             tot_ = 0
 !$acc loop seq
@@ -799,7 +811,7 @@ contains
             deadd(i) = (tot_)
          end do
       else if (nonbonded_l.and..not.bonded_l) then
-!$acc parallel loop async(rec_queue) deviceptr(de_buff1,deadd)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff1,deadd)
          do i = 1,3*nbloc
             totr = 0
 !$acc loop seq
@@ -811,7 +823,7 @@ contains
             deadd(i) = mdr2md(totr)
          end do
       else
-!$acc parallel loop async(rec_queue) deviceptr(de_buff0,de_buff1,deadd)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(de_buff0,de_buff1,deadd)
          do i = 1,3*nbloc
             tot_ = 0
             totr = 0
@@ -849,7 +861,7 @@ contains
 !$acc host_data use_device(deadd,de_buffr)
       if (tdes_l) then
 
-!$acc parallel loop async(rec_queue) deviceptr(deadd,de_buffr)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(deadd,de_buffr)
          do i = 1,3*nlocrec2
             tot_ = 0
 !$acc loop seq
@@ -866,7 +878,7 @@ contains
 
       else
 
-!$acc parallel loop async(rec_queue) deviceptr(deadd,de_buffr)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(deadd,de_buffr)
          do i = 1,3*nlocrec2
             tot_ = 0
 !$acc loop seq
@@ -895,7 +907,7 @@ contains
 
       stride = dr_strider3
 !$acc host_data use_device(deadd,de_buffr)
-!$acc parallel loop async(rec_queue) deviceptr(deadd,de_buffr)
+!$acc parallel loop async(reciprocal_work%queue) deviceptr(deadd,de_buffr)
       do i = 1,3*nlocrec2
          tot_ = 0
 !$acc loop seq
@@ -920,7 +932,7 @@ contains
       if (deb_Path) write(*,*) "   sum_add_forces_rec1"
 
       stride = dr_strider3
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
       do i = 1,3*nlocrec2
          tot_ = 0
 !$acc loop seq
@@ -947,7 +959,7 @@ contains
 
       if (tdes_l) then
 
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
          do i = 0,3*nbloc-1
             tot_    = 0
             i1      = mod(i,3)
@@ -966,7 +978,7 @@ contains
 
       else
 
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
          do i = 1,3*nbloc
             tot_    = 0
             i1      = mod(i-1,3) +1
@@ -999,7 +1011,7 @@ contains
 
       if (tdes_l) then
 
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
          do i = 0,3*nbloc-1
             i1      = mod(i,3)
             i2      = i/3 + 1
@@ -1012,7 +1024,7 @@ contains
 
       else
 
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
          do i = 1,3*nbloc
             i1      = mod(i-1,3) +1
             ilocrec = locrec(glob((i-1)/3+1)) -1
@@ -1035,7 +1047,7 @@ contains
       if(deb_Path) write(*,*) "    add_forces_rec1_1d1"
 
       stride = dr_strider3
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
       do i = 1,3*nbloc
          tot_    = 0
          i1      = mod(i-1,3) +1
@@ -1062,7 +1074,7 @@ contains
       if(deb_Path) write(*,*) "    add_forces_rec1_1d1"
 
       stride = dr_strider3
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
       do i = 1,3*nbloc
          i1       = mod(i-1,3) +1
          ilocrec  = locrec(glob((i-1)/3+1)) -1
@@ -1156,206 +1168,53 @@ contains
    ! communicate forces between processes
    module subroutine comm_forces_dd(derivs,opt)
       implicit none
-      mdyn_rtyp derivs(3,*)
-      integer,optional:: opt
-      integer i,j,k,tag,ierr,siz,opt_
-      integer nsend,nrecv,psend,precv,pbeg,dlen
-      integer commloc,reqsend(nproc),reqrecv(nproc)
-      integer status(MPI_STATUS_SIZE)
-      parameter(tag=0)
+      mdyn_rtyp, target :: derivs(3,*)
+      integer, optional :: opt
+      integer :: opt_, halo
+      mdyn_rtyp, pointer :: flat(:)
 
-      integer  ,pointer:: p_send(:),p_recv(:),p_beg(:),d_len(:)
-      mdyn_rtyp,pointer:: buffer(:,:,:)
-!
       if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
-!
       opt_ = cNBond
-      if (present(opt)) opt_=opt
-!
-      commloc = COMM_TINKER
-      if      (opt_.eq.cBond) then
-         nsend     =  nneig_send
-         nrecv     =  nneig_recep
-         p_send(1:nproc) => pneig_send (:)
-         p_recv(1:nproc) => pneig_recep(:)
-         p_beg (1:nproc) => bufbeg(:)
-         d_len (1:nproc) => domlen(:)
-      else if (opt_.eq.cSNBond) then
-         nsend     =  nbigshort_send
-         nrecv     =  nbigshort_recep
-         p_send(1:nproc) => pbigshort_send (:)
-         p_recv(1:nproc) => pbigshort_recep(:)
-         p_beg (1:nproc) => bufbeg(:)
-         d_len (1:nproc) => domlen(:)
-      else if (opt_.eq.cNBond) then
-         nsend     =  nbig_send
-         nrecv     =  nbig_recep
-         p_send(1:nproc) => pbig_send (:)
-         p_recv(1:nproc) => pbig_recep(:)
-         p_beg (1:nproc) => bufbeg(:)
-         d_len (1:nproc) => domlen(:)
-      else
-16       format(' ERROR! routine comm_forces_dd'&
-            &,/,' --- Available options ',3I3&
-            &,/,' ---   UNKNOWN OPTION  ',I3   )
-         write(0,16) cBond,cSNBond,cNBond,opt_
+      if (present(opt)) opt_ = opt
+      select case (opt_)
+      case (cBond)
+         halo = halo_neighbour
+      case (cSNBond)
+         halo = halo_short
+      case (cNBond)
+         halo = halo_large
+      case default
+         write(0,*) ' ERROR! routine comm_forces_dd: unknown option',opt_
          call fatal
-      end if
-
-      if (nsend.eq.0.and.nrecv.eq.0) return
-
-      if (deb_Path) write(*,*) '   >> comm_forces_dd',opt_
-      call timer_enter( timer_dirbondfcomm )
-
-      ! Create exchange buffer
-      siz = 3*max(1,nloc)*nsend
-      call prmem_requestm(buffMpi_p1,siz,async=.false.)
-
-      ! Required, for buffMpi_p1 is real(r_p) and buffer mdyn_rtyp 
-      call c_f_pointer(c_loc(buffMpi_p1),buffer,[3,max(1,nloc),nsend])
-      !buffer(1:3,1:max(1,nloc),1:nsend) => buffMpi_p1(1:siz)
-
-!$acc wait(rec_queue)
-      ! We wait here for two reasons:
-      !   - derivs must be ready before sending
-      !   - buffer must be associated through c_f_pointer before reception
-
-!$acc host_data use_device(buffer,derivs)
-      !MPI : Start sending
-      do i = 1, nrecv
-         precv = p_recv(i)
-         pbeg  = p_beg ( precv+1 )
-         dlen  = d_len ( precv+1 )*3
-         call MPI_ISEND(derivs(1,pbeg),dlen,MPI_MDTYP,precv,tag&
-            &,COMM_TINKER,reqsend(i),ierr)
-      end do
-
-      !MPI : Start reception in buffer
-      do i = 1, nsend
-         psend = p_send(i)
-         dlen  = 3*nloc
-         call MPI_IRECV(buffer(1,1,i),dlen,MPI_MDTYP,psend,tag&
-            &,COMM_TINKER,reqrecv(i),ierr)
-      end do
-!$acc end host_data
-
-      ! Wait for Exchanges to end
-      do i = 1,nsend; call MPI_WAIT(reqrecv(i),status,ierr); end do;
-      do i = 1,nrecv; call MPI_WAIT(reqsend(i),status,ierr); end do;
-!
-!     MPI : move in global arrays
-!
-!$acc parallel loop gang vector collapse(2) async &
-!$acc         present(derivs,buffer)
-      do j = 1, nloc; do k = 1, 3; do i = 1, nsend;
-         derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-      end do; end do; end do
-!
-      nullify(buffer)
-
-      if (deb_Path) write(*,*) '   << comm_forces_dd',opt_
-20    continue
-      call timer_exit( timer_dirbondfcomm,quiet_timers )
+      end select
+      flat(1:3*nloc) => derivs(1:3,1:nloc)
+      call accumulate(flat,3,halo,channel=reciprocal_work)
    end subroutine comm_forces_dd
 
    ! communicate forces between processes
    module subroutine comm_forces_dd1(derivs,opt)
       implicit none
-      real(r_p) derivs(3,*)
-      integer,optional:: opt
-      integer i,j,k,tag,ierr,siz,opt_
-      integer nsend,nrecv,psend,precv,pbeg,dlen
-      integer commloc,reqsend(nproc),reqrecv(nproc)
-      integer status(MPI_STATUS_SIZE)
-      parameter(tag=0)
+      real(r_p), target :: derivs(3,*)
+      integer, optional :: opt
+      integer :: opt_, halo
+      real(r_p), pointer :: flat(:)
 
-      integer  ,pointer:: p_send(:),p_recv(:),p_beg(:),d_len(:)
-      real(r_p),pointer:: buffer(:,:,:)
-!
       if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
-!
       opt_ = cNBond
-      if (present(opt)) opt_=opt
-!
-      commloc = COMM_TINKER
-      if      (opt_.eq.cBond) then
-         nsend     =  nneig_send
-         nrecv     =  nneig_recep
-         p_send(1:nproc) => pneig_send (:)
-         p_recv(1:nproc) => pneig_recep(:)
-         p_beg (1:nproc) => bufbeg(:)
-         d_len (1:nproc) => domlen(:)
-      else if (opt_.eq.cSNBond) then
-         nsend     =  nbigshort_send
-         nrecv     =  nbigshort_recep
-         p_send(1:nproc) => pbigshort_send (:)
-         p_recv(1:nproc) => pbigshort_recep(:)
-         p_beg (1:nproc) => bufbeg(:)
-         d_len (1:nproc) => domlen(:)
-      else if (opt_.eq.cNBond) then
-         nsend     =  nbig_send
-         nrecv     =  nbig_recep
-         p_send(1:nproc) => pbig_send (:)
-         p_recv(1:nproc) => pbig_recep(:)
-         p_beg (1:nproc) => bufbeg(:)
-         d_len (1:nproc) => domlen(:)
-      else
-16       format(' ERROR! routine comm_forces_dd1'&
-            &,/,' --- Available options ',3I3&
-            &,/,' ---   UNKNOWN OPTION  ',I3   )
-         write(0,16) cBond,cSNBond,cNBond,opt_
+      if (present(opt)) opt_ = opt
+      select case (opt_)
+      case (cBond)
+         halo = halo_neighbour
+      case (cSNBond)
+         halo = halo_short
+      case (cNBond)
+         halo = halo_large
+      case default
+         write(0,*) ' ERROR! routine comm_forces_dd1: unknown option',opt_
          call fatal
-      end if
-!
-      if (nsend.eq.0.and.nrecv.eq.0) return
-!
-      if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-      if (deb_Path) write(*,*) '   >> comm_forces_dd1',opt_
-      call timer_enter( timer_dirbondfcomm )
-!
-      ! Create exchange buffer
-      siz = 3*max(1,nloc)*nsend
-      call prmem_requestm(buffMpi_p1,siz,async=.false.)
-      buffer(1:3,1:max(1,nloc),1:nsend) => buffMpi_p1(1:siz)
-!
-      !MPI : Start reception in buffer
-!$acc host_data use_device(buffer,derivs)
-      do i = 1, nsend
-         psend = p_send(i)
-         dlen  = 3*nloc
-         call MPI_IRECV(buffer(1,1,i),dlen,MPI_RPREC,psend,tag&
-            &,COMM_TINKER,reqrecv(i),ierr)
-      end do
-!
-      !MPI : Start sending
-!$acc wait(rec_queue)
-      do i = 1, nrecv
-         precv = p_recv(i)
-         pbeg  = p_beg ( precv+1 )
-         dlen  = d_len ( precv+1 )*3
-         call MPI_ISEND(derivs(1,pbeg),dlen,MPI_RPREC,precv,tag&
-            &,COMM_TINKER,reqsend(i),ierr)
-      end do
-!$acc end host_data
-!
-      ! Wait for Exchanges to end
-      do i = 1,nsend; call MPI_WAIT(reqrecv(i),status,ierr); end do;
-      do i = 1,nrecv; call MPI_WAIT(reqsend(i),status,ierr); end do;
-!
-!     MPI : move in global arrays
-!
-!$acc parallel loop gang vector collapse(2) async(rec_queue) &
-!$acc         present(derivs,buffer)
-      do j = 1, nloc; do k = 1, 3; do i = 1, nsend;
-               derivs(k,j) = derivs(k,j) + buffer(k,j,i)
-      end do; end do; end do
-!
-      nullify(buffer)
-
-      if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-      if (deb_Path) write(*,*) '   << comm_forces_dd1',opt_
-20    continue
-      call timer_exit( timer_dirbondfcomm,quiet_timers )
+      end select
+      flat(1:3*nloc) => derivs(1:3,1:nloc)
+      call accumulate(flat,3,halo,channel=reciprocal_work)
    end subroutine comm_forces_dd1
 
    ! Communicate reciprocal forces between processes
@@ -1370,7 +1229,7 @@ contains
       parameter(tag=0)
 
       integer  ,pointer:: p_send(:),p_recv(:),p_beg(:),d_len(:)
-      real(r_p),pointer:: buffer(:,:,:)
+      real(r_p),pointer:: buffer(:,:,:),pool1(:)
 !
       if (nproc.eq.1.or.dr_nbnbr.eq.0) return
 !
@@ -1381,6 +1240,7 @@ contains
       if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,ierr)
       if (deb_Path) write(*,*) '   >> comm_forces_rec'
       call timer_enter( timer_dirreccomm )
+!$acc wait
 !
       p_send(1:nproc) => prec_send (:)
       p_recv(1:nproc) => prec_recep(:)
@@ -1389,9 +1249,9 @@ contains
       commloc = merge(comm_rec,COMM_TINKER,use_pmecore)
 !
       ! Create exchange buffer
-      siz = max(size(buffMpi_p1), 3*max(1,nlocrec)*nsend)
-      call prmem_requestm(buffMpi_p1,siz,async=.false.)
-      buffer(1:3,1:max(1,nlocrec),1:nsend) => buffMpi_p1(1:siz)
+      siz = 3*max(1,nlocrec)*nsend
+      call domain_workspace_rp(1,siz,pool1)
+      buffer(1:3,1:max(1,nlocrec),1:nsend) => pool1(1:siz)
 !
       !MPI : Start reception in buffer
 !$acc host_data use_device(buffer,de_rec)
@@ -1403,7 +1263,7 @@ contains
       end do
 !
       !MPI : Start sending
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
       do i = 1, nrecv
          precv = p_recv(i)
          pbeg  = p_beg ( precv+1 )
@@ -1444,21 +1304,22 @@ contains
       integer i,iglob,j,k,iloc,jloc,jlocrec,jglob&
          &,iproc,ibufbeg,idlen,sz1,sz2,opt_,&
          &rankloc,tag,ierr,status(MPI_STATUS_SIZE)
-      real(r_p),pointer:: buffer(:,:,:),buffers(:,:)
+      real(r_p),pointer:: buffer(:,:,:),buffers(:,:),pool1(:),pool2(:)
       parameter(tag=0)
 
       if (nproc.eq.1.or.dr_nbnbr.eq.0) return
       call timer_enter( timer_dirreccomm )
       if (deb_Path) write(*,*) '   << comm_forces_recdir'
+!$acc wait
 
       ! Reserve buffers space
       rankloc =   merge(rank_bis,rank,use_pmecore)
       sz1     = 3*max(1,nloc)*nrecdir_send1
       sz2     = 3*max(1,nblocrecdir)
-      call prmem_requestm(buffMpi_p1,max(size(buffMpi_p1),sz1))
-      call prmem_requestm(buffMpi_p2,max(size(buffMpi_p2),sz2))
-      buffer(1:3,1:max(1,nloc),1:nrecdir_send1) => buffMpi_p1(1:sz1)
-      buffers(1:3,1:max(1,nblocrecdir))         => buffMpi_p2(1:sz2)
+      call domain_workspace_rp(1,sz1,pool1)
+      call domain_workspace_rp(2,sz2,pool2)
+      buffer(1:3,1:max(1,nloc),1:nrecdir_send1) => pool1(1:sz1)
+      buffers(1:3,1:max(1,nblocrecdir))         => pool2(1:sz2)
 
       !MPI : begin reception in buffer
 !$acc host_data use_device(buffer)
@@ -1476,7 +1337,7 @@ contains
          if (precdir_recep1(i).ne.rank) then
             ibufbeg = bufbeg(precdir_recep1(i)+1)-1
             idlen   = domlen(precdir_recep1(i)+1)
-!$acc parallel loop collapse(2) async(rec_queue) &
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) &
 !$acc    present(repartrec,locrec,glob,de_rec,buffers)
             do j = 1, idlen
                do k = 1,3
@@ -1494,7 +1355,7 @@ contains
       end do
 !
       ! MPI : Start Sending
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc host_data use_device(buffers)
       do i = 1, nrecdir_recep1
          if (precdir_recep1(i).ne.rank) then
@@ -1517,13 +1378,13 @@ contains
 
          do i = 1, nrecdir_send1
             if (precdir_send1(i).ne.rank) then
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
                do k = 0,2; do j = 1,nloc;
                      derivs(j+k*dr_stride) =&
                         &derivs(j+k*dr_stride) + rp2mdr(buffer(k+1,j,i))
                   end do; end do
             else
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
                do k = 0,2; do j = 1,nlocrec;
                      iglob = globrec(j)
                      iloc  = loc(iglob)
@@ -1539,13 +1400,13 @@ contains
 
          do i = 1, nrecdir_send1
             if (precdir_send1(i).ne.rank) then
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
                do j = 1,nloc; do k = 1,3
                      derivs(k+(j-1)*3) = derivs(k+(j-1)*3)&
                         &+ rp2mdr(buffer(k,j,i))
                   end do; end do
             else
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
                do j = 1, nlocrec; do k = 1,3
                      iglob = globrec(j)
                      iloc  = loc(iglob)
@@ -1582,22 +1443,23 @@ contains
       integer i,iglob,j,k,iloc,jloc,jlocrec,jglob&
          &,iproc,ibufbeg,idlen,sz1,sz2,opt_,&
          &rankloc,tag,ierr,status(MPI_STATUS_SIZE)
-      real(r_p),pointer:: buffer(:,:,:),buffers(:,:)
+      real(r_p),pointer:: buffer(:,:,:),buffers(:,:),pool1(:),pool2(:)
       parameter(tag=0)
 
       if (nproc.eq.1.or.dr_nbnbr.eq.0) return
       call timer_enter( timer_dirreccomm )
       if (tinkerdebug.gt.0) call MPI_Barrier(MPI_COMM_WORLD,ierr)
       if (deb_Path) write(*,*) '   << comm_forces_recdir1'
+!$acc wait
 
       ! Reserve buffers space
       rankloc =   merge(rank_bis,rank,use_pmecore)
       sz1     = 3*max(1,nloc)*nrecdir_send1
       sz2     = 3*max(1,nblocrecdir)
-      call prmem_requestm(buffMpi_p1,max(size(buffMpi_p1),sz1))
-      call prmem_requestm(buffMpi_p2,max(size(buffMpi_p2),sz2))
-      buffer(1:3,1:max(1,nloc),1:nrecdir_send1) => buffMpi_p1(1:sz1)
-      buffers(1:3,1:max(1,nblocrecdir))         => buffMpi_p2(1:sz2)
+      call domain_workspace_rp(1,sz1,pool1)
+      call domain_workspace_rp(2,sz2,pool2)
+      buffer(1:3,1:max(1,nloc),1:nrecdir_send1) => pool1(1:sz1)
+      buffers(1:3,1:max(1,nblocrecdir))         => pool2(1:sz2)
 
       !MPI : begin reception in buffer
 !$acc host_data use_device(buffer)
@@ -1615,7 +1477,7 @@ contains
          if (precdir_recep1(i).ne.rank) then
             ibufbeg = bufbeg(precdir_recep1(i)+1)-1
             idlen   = domlen(precdir_recep1(i)+1)
-!$acc parallel loop collapse(2) async(rec_queue) &
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) &
 !$acc    present(repartrec,locrec,glob,de_rec,buffers)
             do j = 1, idlen
                do k = 1,3
@@ -1633,7 +1495,7 @@ contains
       end do
 !
       ! MPI : Start Sending
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc host_data use_device(buffers)
       do i = 1, nrecdir_recep1
          if (precdir_recep1(i).ne.rank) then
@@ -1695,7 +1557,7 @@ contains
       call timer_enter( timer_fcomm )
 
       if (opt_.eq.cNBond.and.dr_nbnbr.gt.0)&
-         call commforcesrec(derivs,opt_)
+         call commforcesrec(derivs)
 
       if (ftot_l) then
          call load_mpi_buffer(0)
@@ -1708,6 +1570,595 @@ contains
       call timer_exit( timer_fcomm,quiet_timers )
    end subroutine
 
+!     subroutine commforcesrespa1 : communicate some forces between processes
+!     when respa1 integrator is used
+!
+module subroutine commforcesrespa1(derivs,rule)
+   use domdec
+   use iounit
+   use timestat
+   implicit none
+   integer, intent(in) :: rule
+   real(r_p), intent(inout) :: derivs(:,:)
+1000 format(' illegal rule in commforcesrespa1.')
+!
+!     rule = 0: fast part of the forces
+!     rule = 1: intermediate part of the forces
+!     rule = 2: slow part of the forces
+!
+   call timer_enter( timer_fcomm )
+   if (rule.eq.0) then
+      call commforcesbonded(derivs)
+   else if (rule.eq.1) then
+      call commforcesshortbloc(derivs)
+   else if (rule.eq.2) then
+      call commforcesrec(derivs)
+      call commforcesbloc(derivs)
+   else
+      if (rank.eq.0) write(iout,1000)
+   end if
+   call timer_exit( timer_fcomm,quiet_timers )
+end
+!
+!
+!     subroutine commforcesbonded : deal with communications of some
+!     bonded forces modifier avec nlocnl ?
+!
+module subroutine commforcesbonded(derivs)
+   use domdec
+   use inform    ,only: deb_Path
+   use mdevice  ,only: direct_work
+#ifdef _OPENACC
+   use mdevice  ,only: after,default_work
+   use status   ,only: failed,status_t
+#endif
+   use potent   ,only: use_pmecore
+   use timestat
+   use parallel  ,only: accumulate,halo_neighbour
+   implicit none
+#if TINKER_MIXED_PREC
+   real(r_p), intent(inout), target, contiguous :: derivs(:,:)
+#else
+   real(t_p), intent(inout), target, contiguous :: derivs(:,:)
+#endif
+#if TINKER_MIXED_PREC
+   real(r_p), pointer :: flat(:)
+#else
+   real(t_p), pointer :: flat(:)
+#endif
+#ifdef _OPENACC
+   type(status_t) :: dep_status
+#endif
+!
+   if ((nproc.eq.1).or.(use_pmecore.and.rank.gt.ndir-1)) return
+   if (deb_Path) write(*,*) '   >> commforcesbonded'
+   call timer_enter ( timer_dirbondfcomm )
+!
+   flat(1:3*nbloc) => derivs
+   call accumulate(flat,3,halo_neighbour,channel=direct_work)
+#ifdef _OPENACC
+   call after(default_work,direct_work,dep_status)
+   if (failed(dep_status)) __TINKER_FATAL__
+#endif
+
+   if (deb_Path) write(*,*) '   << commforcesbonded'
+   call timer_exit( timer_dirbondfcomm,quiet_timers )
+end
+!
+!
+!     subroutine commforcesbloc : deal with communications of forces by bloc
+!     between two time steps
+!
+module subroutine commforcesbloc(derivs)
+   use domdec
+   use inform,only: deb_Path
+   use timestat
+   use mdevice  ,only: direct_work
+#ifdef _OPENACC
+   use mdevice  ,only: after,default_work
+   use status   ,only: failed,status_t
+#endif
+   use potent  ,only: use_pmecore
+   use parallel ,only: accumulate,halo_large
+   implicit none
+#if TINKER_MIXED_PREC
+   real(r_p), intent(inout), target, contiguous :: derivs(:,:)
+#else
+   real(t_p), intent(inout), target, contiguous :: derivs(:,:)
+#endif
+#if TINKER_MIXED_PREC
+   real(r_p), pointer :: flat(:)
+#else
+   real(t_p), pointer :: flat(:)
+#endif
+#ifdef _OPENACC
+   type(status_t) :: dep_status
+#endif
+!
+   if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
+   call timer_enter( timer_dirbondfcomm )
+   if (deb_Path) write(*,*) '   >> commforcesbloc'
+!
+   flat(1:3*nbloc) => derivs
+   call accumulate(flat,3,halo_large,channel=direct_work)
+#ifdef _OPENACC
+   call after(default_work,direct_work,dep_status)
+   if (failed(dep_status)) __TINKER_FATAL__
+#endif
+
+   if (deb_Path) write(*,*) '   << commforcesbloc'
+   call timer_exit( timer_dirbondfcomm,quiet_timers )
+end
+!
+!     subroutine commforcesshortbloc : deal with communications of short range forces by bloc
+!     between two time steps
+!
+module subroutine commforcesshortbloc(derivs)
+   use domdec
+   use inform,only: deb_Path
+   use timestat
+   use mdevice  ,only: direct_work
+#ifdef _OPENACC
+   use mdevice  ,only: after,default_work
+   use status   ,only: failed,status_t
+#endif
+   use potent  ,only: use_pmecore
+   use parallel ,only: accumulate,halo_short
+   implicit none
+#if TINKER_MIXED_PREC
+   real(r_p), intent(inout), target, contiguous :: derivs(:,:)
+#else
+   real(t_p), intent(inout), target, contiguous :: derivs(:,:)
+#endif
+#if TINKER_MIXED_PREC
+   real(r_p), pointer :: flat(:)
+#else
+   real(t_p), pointer :: flat(:)
+#endif
+#ifdef _OPENACC
+   type(status_t) :: dep_status
+#endif
+!
+   if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
+   if (deb_Path) write(*,*) '   >> commforcesshortbloc'
+   call timer_enter( timer_dirbondfcomm )
+!
+   flat(1:3*nbloc) => derivs
+   call accumulate(flat,3,halo_short,channel=direct_work)
+#ifdef _OPENACC
+   call after(default_work,direct_work,dep_status)
+   if (failed(dep_status)) __TINKER_FATAL__
+#endif
+
+   if (deb_Path) write(*,*) '   << commforcesshortbloc'
+   call timer_exit( timer_dirbondfcomm,quiet_timers )
+end
+!
+!
+!     subroutine commforce_one : deal with communications of forces by bloc
+!     between two time steps
+!
+module subroutine commforce_one(force,rule)
+   use domdec
+   use potent
+   implicit none
+   integer rule_
+!
+   integer, intent(in), optional :: rule
+   real(r_p),intent(inout):: force(:,:)
+!
+   rule_ = cNBond
+   if (present(rule)) rule_ = rule
+   if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
+!
+!     allocate some arrays
+!
+   if      (rule_.eq.0) then
+      call commforcesbonded(force)
+   else if (rule_.eq.1) then
+      call commforcesshortbloc(force)
+   else if (rule_.eq.2) then
+      call commforcesbloc(force)
+   else
+12    format('   WARNING  !!!'&
+         &,/,'--- Unknown config for commforce_one routine ---')
+      print 12
+   end if
+end
+!
+!     subroutine commforcesrec : deal with communications of reciprocal forces
+!
+module subroutine commforcesrec(derivs)
+   use domdec
+   use mdevice  ,only: reciprocal_work
+   use potent   ,only: use_mpole,use_polar,use_charge,use_disp
+   use inform   ,only: deb_Force
+   use timestat ,only: timer_enter,timer_exit,quiet_timers&
+                ,timer_dirreccomm,timer_fmanage
+   use tinMemory,only: mem_set,mipk
+   use parallel ,only: domain_workspace_rp
+   implicit none
+   integer sz3
+   real(r_p), intent(inout) :: derivs(3,*)
+   real(r_p),pointer:: temprec(:,:),pool3(:)
+
+   !case sequential
+   if (nproc.eq.1) then
+      call timer_enter( timer_fmanage )
+      if (ftot_l) then
+         call add_forces_rec( de_tot )
+      else
+         call add_forces_rec1( derivs )
+      end if
+      call timer_exit ( timer_fmanage,quiet_timers )
+      if (.not.dotstgrad) return
+      goto 100
+   end if
+
+
+   call timer_enter( timer_dirreccomm )
+
+   !allocate temporary buffer
+   sz3 = 3*max(1,nlocrec2)
+   call domain_workspace_rp(3,sz3,pool3)
+   temprec(1:3,1:max(1,nlocrec2))           => pool3(1:sz3)
+
+   call sum_forces_rec1( temprec )
+   call timer_exit( timer_dirreccomm,quiet_timers )
+
+   call comm_forces_rec( temprec )
+
+   if (ftot_l) then
+      call comm_forces_recdir( de_tot,temprec )
+   else
+      call comm_forces_recdir1( derivs,temprec )
+   end if
+
+   nullify(temprec)
+
+100 continue
+!
+!     Communicate separately the direct and reciprocal torques if testgrad is
+!     being used
+!
+   if (dotstgrad) then
+      if (nproc.eq.1) return ! case sequential
+!
+      if (use_mpole ) call commforcesrec1(dem,demrec)
+      if (use_polar ) call commforcesrec1(dep,deprec)
+      if (use_charge) call commforcesrec1(dec,decrec)
+      if (use_disp  ) call commforcesrec1(dedsp,dedsprec)
+   end if
+
+   block  ! Zero reciprocal forces buffer
+      integer(mipk) lenr,offr
+      real(r_p),parameter::zer=0
+      lenr = dr_nbnbr*dr_strider3; offr=dr_obnbr
+      if(.not.deb_Force) call mem_set(de_buffr,zer,lenr,reciprocal_work%stream,offr)
+   end block
+
+end
+!
+!     Second version of commforcesrec
+!
+module subroutine commforcesrec1(derivs,derivrec)
+   use domdec
+   use timestat ,only: timer_enter,timer_exit,quiet_timers&
+      &,timer_fmanage
+   implicit none
+   integer i,j
+   mdyn_rtyp, intent(inout) :: derivs(3,*)
+   real(r_p), intent(in) :: derivrec(3,*)
+
+   !case sequential
+   if (nproc.eq.1) then
+      call timer_enter( timer_fmanage )
+!$acc parallel loop collapse(2) default(present) async
+      do i = 1,nloc; do j = 1,3
+            derivs(j,i) = derivs(j,i) + rp2mdr(derivrec(j,i))
+         end do; end do
+      call timer_exit ( timer_fmanage,quiet_timers )
+      return
+   end if
+!
+!      FIXME
+!      if (GridDecomp1d.and.Bdecomp1d.and..not.use_pmecore) then
+!         call comm_forces_rec ( derivrec )
+!         call timer_enter( timer_dirreccomm )
+!!$acc parallel loop collapse(2) default(present) async
+!         do i = 1,nbloc; do j = 1,3
+!            ilocrec = locrec(glob(i))
+!            if (ilocrec.eq.0) cycle
+!            derivs(j,i) = derivs(j,i) + rp2mdr(derivrec(j,ilocrec))
+!         end do; end do
+!         call timer_exit( timer_dirreccomm,quiet_timers )
+!         return
+!      end if
+
+   call comm_forces_rec ( derivrec )
+   call comm_forces_recdir ( derivs,derivrec )
+
+end subroutine
+!
+!     testgrad force exchange helpers
+!
+subroutine comm_testgrad_md(detot,de,buffer,buffers,&
+   &reqrec,reqsend)
+   use domdec
+   use mpi
+   implicit none
+   real(r_p),intent(inout)::detot(3,*)
+   mdyn_rtyp,intent(inout)::de(3,*)
+   real(r_p),intent(  out)::buffer(3,max(1,nloc),nbig_send)
+   real(r_p),intent(  out)::buffers(3,nbloc)
+   integer,  intent(  out)::reqsend(nproc),reqrec(nproc)
+   integer i,j,k,tag,ierr
+   integer status(MPI_STATUS_SIZE)
+!
+!     communicate forces
+!
+!     MPI : begin reception in buffer
+!
+!$acc data present(detot,de,buffer,buffers)
+   do i = 1, nbig_send
+      tag = nproc*rank + pbig_send(i) + 1
+!$acc host_data use_device(buffer)
+      call MPI_IRECV(buffer(1,1,i),3*nloc,&
+         &MPI_RPREC,pbig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+!$acc end host_data
+   end do
+!
+!     MPI : move in buffer
+!
+!$acc parallel loop collapse(2)
+   do i = nloc+1,nbloc
+      do j = 1, 3
+         buffers(j,i) = de(j,i)
+      end do
+   end do
+!
+   do i = 1, nbig_recep
+      tag = nproc*pbig_recep(i) + rank + 1
+!$acc host_data use_device(buffers)
+      call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),&
+         &3*domlen(pbig_recep(i)+1),&
+         &MPI_RPREC,pbig_recep(i),tag,COMM_TINKER,&
+         &reqsend(i),ierr)
+!$acc end host_data
+   end do
+!
+   do i = 1, nbig_send
+      call MPI_WAIT(reqrec(i),status,ierr)
+   end do
+   do i = 1, nbig_recep
+      call MPI_WAIT(reqsend(i),status,ierr)
+   end do
+!
+!     MPI : move in global arrays
+!
+   do i = 1, nbig_send
+!$acc parallel loop collapse(2)
+      do j = 1, nloc
+         do k = 1, 3
+            de   (k,j) = de   (k,j) + rp2mdr(buffer(k,j,i))
+            detot(k,j) = detot(k,j) + buffer(k,j,i)
+         end do
+      end do
+   end do
+!$acc end data
+end subroutine
+
+!
+!     real-valued testgrad force exchange
+!                                     one force (de) for testgrad
+!
+subroutine comm_testgrad_rp(detot,de,buffer,buffers,&
+   &reqrec,reqsend)
+   use domdec
+   use mpi
+   implicit none
+   real(r_p),intent(inout)::detot(3,*)
+   real(r_p),intent(inout)::de(3,*)
+   real(r_p),intent(  out)::buffer(3,max(1,nloc),nbig_send)
+   real(r_p),intent(  out)::buffers(3,nbloc)
+   integer,  intent(  out)::reqsend(nproc),reqrec(nproc)
+   integer i,j,k,tag,ierr
+   integer status(MPI_STATUS_SIZE)
+!
+!     communicate forces
+!
+!     MPI : begin reception in buffer
+!
+!$acc data present(detot,de,buffer,buffers)
+   do i = 1, nbig_send
+      tag = nproc*rank + pbig_send(i) + 1
+!$acc host_data use_device(buffer)
+      call MPI_IRECV(buffer(1,1,i),3*nloc,&
+         &MPI_RPREC,pbig_send(i),tag,COMM_TINKER,reqrec(i),ierr)
+!$acc end host_data
+   end do
+!
+!     MPI : move in buffer
+!
+!$acc parallel loop collapse(2)
+   do i = nloc+1,nbloc
+      do j = 1, 3
+         buffers(j,i) = de(j,i)
+      end do
+   end do
+!
+   do i = 1, nbig_recep
+      tag = nproc*pbig_recep(i) + rank + 1
+!$acc host_data use_device(buffers)
+      call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),&
+         &3*domlen(pbig_recep(i)+1),&
+         &MPI_RPREC,pbig_recep(i),tag,COMM_TINKER,&
+         &reqsend(i),ierr)
+!$acc end host_data
+   end do
+!
+   do i = 1, nbig_send
+      call MPI_WAIT(reqrec(i),status,ierr)
+   end do
+   do i = 1, nbig_recep
+      call MPI_WAIT(reqsend(i),status,ierr)
+   end do
+!
+!     MPI : move in global arrays
+!
+   do i = 1, nbig_send
+!$acc parallel loop collapse(2)
+      do j = 1, nloc
+         do k = 1, 3
+            de   (k,j) = de   (k,j) + buffer(k,j,i)
+            detot(k,j) = detot(k,j) + buffer(k,j,i)
+         end do
+      end do
+   end do
+!$acc end data
+end subroutine
+
+!
+!
+!     Diagnostic-only compatibility path for testgrad, owned by deriv because
+!     it exchanges derivative-owned force components; production force
+!     communication uses comm_forces and the commforces* family above.
+!     subroutine commforceststgrad : deal with communications of forces one by one
+!     for testgrad
+!
+module subroutine commforceststgrad(detot)
+   use domdec
+   use mpi
+   use tinheader
+   implicit none
+   integer i,j,k,tag,ierr
+   integer, allocatable :: reqsend(:),reqrec(:)
+   real(r_p), allocatable :: buffer(:,:,:)
+   real(r_p), allocatable :: buffers(:,:)
+   real(r_p), intent(inout) :: detot(3,*)
+   integer status(MPI_STATUS_SIZE)
+!     FIXME portage en cours
+!
+!     allocate some arrays
+!
+!      allocate (req(nproc*nproc))
+   allocate (reqsend(nproc))
+   allocate (reqrec(nproc))
+!
+   allocate (buffer(3,max(1,nloc),nbig_send))
+   allocate (buffers(3,nbloc))
+!$acc data present(detot) &
+!$acc     present(deb) &
+!$acc     create(buffer,buffers)
+
+!$acc kernels
+   buffer(1:3,1:nloc,1:nbig_send) = 0.0_ti_p
+   buffers(1:3,1:nbloc)  = 0.0_ti_p
+!$acc end kernels
+!
+!     communicate forces
+!
+!     MPI : begin reception in buffer
+!
+   do i = 1, nbig_send
+      tag = nproc*rank + pbig_send(i) + 1
+!$acc host_data use_device(buffer)
+      call MPI_IRECV(buffer(1,1,i),3*nloc,&
+         &MPI_RPREC,pbig_send(i),tag,&
+         &COMM_TINKER,reqrec(i),ierr)
+!$acc end host_data
+   end do
+!
+!     MPI : move in buffer
+!
+!$acc parallel loop collapse(2)
+   do i = nloc+1,nbloc
+      do j = 1, 3
+         buffers(j,i) = deb(j,i)
+      end do
+   end do
+!
+   do i = 1, nbig_recep
+      tag = nproc*pbig_recep(i) + rank + 1
+!$acc host_data use_device(buffers)
+      call MPI_ISEND(buffers(1,bufbeg(pbig_recep(i)+1)),&
+         &3*domlen(pbig_recep(i)+1),&
+         &MPI_RPREC,pbig_recep(i),tag,COMM_TINKER,&
+         &reqsend(i),ierr)
+!$acc end host_data
+   end do
+!
+   do i = 1, nbig_send
+      call MPI_WAIT(reqrec(i),status,ierr)
+   end do
+   do i = 1, nbig_recep
+      call MPI_WAIT(reqsend(i),status,ierr)
+   end do
+!
+!     MPI : move in global arrays
+!
+   do i = 1, nbig_send
+!$acc parallel loop collapse(2)
+      do j = 1, nloc
+         do k = 1, 3
+            deb  (k,j) = deb  (k,j) + buffer(k,j,i)
+            detot(k,j) = detot(k,j) + buffer(k,j,i)
+         end do
+      end do
+   end do
+
+   call comm_testgrad_rp(detot,dea  ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deba ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deub ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deaa ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deopb,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deopd,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deid ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deit ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,det  ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,dept ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,debt ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deat ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,dett ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_md(detot,dev  ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_md(detot,der  ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_md(detot,dedsp,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_md(detot,dec  ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_md(detot,dect ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_md(detot,dem  ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_md(detot,dep  ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,deg  ,buffer,buffers,&
+      &reqrec,reqsend)
+   call comm_testgrad_rp(detot,dex  ,buffer,buffers,&
+      &reqrec,reqsend)
+
+!$acc update host(detot(1:3,1:nbloc))
+!$acc end data
+   deallocate (reqrec)
+   deallocate (reqsend)
+   deallocate (buffer)
+   deallocate (buffers)
+end
    subroutine info_Forces_one( array,name )
       implicit none
       character(*),intent(in) :: name
@@ -1973,7 +2424,7 @@ contains
                &call minmaxone(mmx(15),mmx(nf+15),mmx(2*nf+15),dex&
                &,sze,'dex');
             if(use_mlpot.or.use_ml_embedding)&
-               &call minmaxone(mmx(29),mmx(nf+29),mmx(2*nf+29),dmlpot&
+               &call minmaxone1(mmx(29),mmx(nf+29),mmx(2*nf+29),dmlpot&
                &,sze,'dmlpot');
 
          else
@@ -2259,5 +2710,59 @@ contains
          ma = max( ma,val )
          on = on + abs(val)
       end do
+   end subroutine
+
+   module subroutine transpose_az_l3(src,dst,loc,sloc,siz,queue)
+      implicit none
+      integer(8),intent(inout) :: src(siz*3)
+      integer(8),intent(inout) :: dst(3*siz)
+      integer,intent(in) :: loc(sloc),sloc,siz,queue
+      integer :: i,j,idxd,idxs
+
+!$acc host_data use_device(src,dst,loc)
+!$acc parallel loop collapse(2) deviceptr(src,dst,loc) async(queue)
+      do i = 1,sloc; do j = 0,2
+         idxd = (loc(i)-1)*3+j+1
+         idxs = j*siz+i
+         dst(idxd) = dst(idxd) + src(idxs)
+         src(idxs) = 0
+      end do; end do
+!$acc end host_data
+   end subroutine
+
+   module subroutine transpose_az_d3(src,dst,loc,sloc,siz,queue)
+      implicit none
+      real(8),intent(inout) :: src(siz*3)
+      real(8),intent(inout) :: dst(3*siz)
+      integer,intent(in) :: loc(sloc),sloc,siz,queue
+      integer :: i,j,idxd,idxs
+
+!$acc host_data use_device(src,dst,loc)
+!$acc parallel loop collapse(2) deviceptr(src,dst,loc) async(queue)
+      do i = 1,sloc; do j = 0,2
+         idxd = (loc(i)-1)*3+j+1
+         idxs = j*siz+i
+         dst(idxd) = dst(idxd) + src(idxs)
+         src(idxs) = 0
+      end do; end do
+!$acc end host_data
+   end subroutine
+
+   module subroutine transpose_az_f3(src,dst,loc,sloc,siz,queue)
+      implicit none
+      real(4),intent(inout) :: src(siz*3)
+      real(4),intent(inout) :: dst(3*siz)
+      integer,intent(in) :: loc(sloc),sloc,siz,queue
+      integer :: i,j,idxd,idxs
+
+!$acc host_data use_device(src,dst,loc)
+!$acc parallel loop collapse(2) deviceptr(src,dst,loc) async(queue)
+      do i = 1,sloc; do j = 0,2
+         idxd = (loc(i)-1)*3+j+1
+         idxs = j*siz+i
+         dst(idxd) = dst(idxd) + src(idxs)
+         src(idxs) = 0
+      end do; end do
+!$acc end host_data
    end subroutine
 end submodule

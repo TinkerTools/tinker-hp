@@ -15,25 +15,234 @@
 #include "tinker_macro.h"
 
 submodule(tinMemory) subMemory
-   use atoms  ,only: natoms=>n
-   use domdec ,only: rank,hostrank,hostcomm,nproc&
-      &,nbloc,nrec_recep
-   use fft    ,only: n1mpimax,n2mpimax,n3mpimax
+   use atoms     ,only: natoms=>n
+   use domdec    ,only: rank,hostrank,hostcomm,nproc&
+                 ,nbloc,nrec_recep
+   use fft       ,only: n1mpimax,n2mpimax,n3mpimax
    use,intrinsic:: iso_c_binding
    use mpi
-   use mpole  ,only: npolelocnl,npoleloc,npolerecloc&
-      &,npolebloc
+   use mpole     ,only: npolelocnl,npoleloc,npolerecloc&
+                 ,npolebloc
    use nvshmem
 #ifdef _OPENACC
    use openacc
 #endif
-   use utilgpu,only: mem_set,rec_stream,rec_queue
+   use mdevice   ,only: reciprocal_work,sync_work
    use tinheader ,only: ti_p,re_p
-   use vdw    ,only: nvdwlocnl
+   use vdw       ,only: nvdwlocnl
+   implicit none
    integer(4) :: mv_realloc_i=0
+   integer(mipk),parameter:: zero8=0_8
+
 
 contains
 
+   !---------------------------------------
+   ! memory Set routines
+   !---------------------------------------
+   module subroutine mem_set_i4(dst,val,n,stream,offset)
+      integer(4) dst(n)
+      integer(4),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14    format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+      !$acc host_data use_device(dst)
+      ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
+      if (stream.eq.sync_work%stream) ierr = ierr + cudaStreamSynchronize(stream)
+         !$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in memory_mem_set_i4'&
+            &,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i) = val
+      end do
+#endif
+   end subroutine
+   module subroutine mem_set_i8(dst,val,n,stream,offset)
+      integer(8) dst(n)
+      integer(8),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14    format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+      !$acc host_data use_device(dst)
+      ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
+      if (stream.eq.sync_work%stream) ierr = ierr + cudaStreamSynchronize(stream)
+      !$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in memory_mem_set_i8'&
+            &,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i) = val
+      end do
+#endif
+   end subroutine
+   module subroutine mem_set_r4(dst,val,n,stream,offset)
+      real(4) dst(n)
+      real(4),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14    format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+      !$acc host_data use_device(dst)
+      ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
+      if (stream.eq.sync_work%stream) ierr = ierr + cudaStreamSynchronize(stream)
+         !$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in memory_mem_set_r4'&
+            &,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i) = val
+      end do
+#endif
+   end subroutine
+   module subroutine mem_set_r8(dst,val,n,stream,offset)
+      real(8) dst(n)
+      real(8),intent(in):: val
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer(mipk),optional:: offset
+      integer ierr
+      integer(mipk) i,offset_
+   14    format(A,I4,A,/,4X,A)
+
+      offset_ = zero8
+      if (present(offset)) offset_=offset
+#ifdef _OPENACC
+      !$acc host_data use_device(dst)
+      ierr = cudaMemsetAsync(dst(offset_+1),val,n,stream)
+      if (stream.eq.sync_work%stream) ierr = ierr + cudaStreamSynchronize(stream)
+      !$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,14) 'error',ierr,'detected in memory_mem_set_r8'&
+            &,cudageterrorstring(ierr)
+      end if
+#else
+      do i = offset_+1,offset_+n
+         dst(i) = val
+      end do
+#endif
+   end subroutine
+
+   !---------------------------------------
+   ! memory Copy routines
+   !---------------------------------------
+   module subroutine mem_move_i4(dst,src,n,stream)
+      integer(4) src(n),dst(n)
+      integer(mipk),intent(in):: n
+      integer(mipk),intent(in):: stream
+      integer ierr
+#ifdef _OPENACC
+      !$acc host_data use_device(dst,src)
+      ierr = cudaMemCpyAsync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.sync_work%stream) ierr = ierr + cudaStreamSynchronize(stream)
+      !$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in memory_mem_move_i4'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      integer(mipk) i
+      do i = 1,n
+         dst(i) = src(i)
+      end do
+#endif
+   end subroutine
+
+   module subroutine mem_move_i8(dst,src,n,stream)
+      integer(8) src(n),dst(n)
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+#ifdef _OPENACC
+      !$acc host_data use_device(dst,src)
+      ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.sync_work%stream) ierr = ierr + cudaStreamSynchronize(stream)
+      !$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in memory_mem_move_i8'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      integer(mipk) i
+      do i = 1,n
+         dst(i) = src(i)
+      end do
+#endif
+   end subroutine
+
+   module subroutine mem_move_r4(dst,src,n,stream)
+      real(4) src(n),dst(n)
+      integer(mipk),intent(in):: n
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+#ifdef _OPENACC
+      !$acc host_data use_device(dst,src)
+      ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.sync_work%stream) ierr = ierr + cudaStreamSynchronize(stream)
+      !$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in memory_mem_move_r4'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      integer(mipk) i
+      do i = 1,n
+         dst(i) = src(i)
+      end do
+#endif
+   end subroutine
+
+   module subroutine mem_move_r8(dst,src,n,stream)
+      integer(mipk),intent(in):: n
+      real(8) src(n),dst(n)
+      integer(cuda_stream_kind),intent(in):: stream
+      integer ierr
+#ifdef _OPENACC
+      !$acc host_data use_device(dst,src)
+      ierr = cudamemcpyasync(dst,src,n,cudaMemcpyDeviceToDevice,stream)
+      if(stream.eq.sync_work%stream) ierr = ierr + cudaStreamSynchronize(stream)
+      !$acc end host_data
+      if (ierr.ne.cudasuccess) then
+         write(*,*) 'error',ierr,'detected in memory_mem_move_r8'
+         write(*,*) cudageterrorstring(ierr)
+      end if
+#else
+      integer(mipk) i
+      do i = 1,n
+         dst(i) = src(i)
+      end do
+#endif
+   end subroutine
+
+   !---------------------------------------
+   ! Shared memory managment routine
+   !---------------------------------------
    module subroutine shmem_int_req&
       &(shArray,winarray,request_shape,&
 #ifdef USE_NVSHMEM_CUDA
@@ -65,7 +274,6 @@ contains
       else
          configure = mhostonly
       end if
-
 !
 !     Deallocation
 !
@@ -1754,7 +1962,7 @@ module subroutine prmem_int_req( array, n, async, queue, config )
          s_prmem = s_prmem - s_array
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          deallocate(array)
@@ -1848,7 +2056,7 @@ module subroutine prmem_int8_req( array, n, async, queue, config )
          s_prmem = s_prmem - s_array
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          deallocate(array)
@@ -1921,7 +2129,7 @@ module subroutine prmem_int8_req1(array, n, async, queue, config)
          s_prmem = s_prmem - s_array
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          deallocate(array)
@@ -2008,7 +2216,7 @@ module subroutine prmem_int_req1( array, sz_array, n,&
          s_prmem = s_prmem - s_array
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          deallocate(array)
@@ -2155,7 +2363,7 @@ module subroutine prmem_pint_req( array, n, async, config )
          s_array = size(array)*szoi
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          s_prmem = s_prmem - s_array
@@ -2204,7 +2412,7 @@ module subroutine prmem_int1_req( array, n, async )
          s_array = size(array)*szoi1
          s_prmem =  s_prmem - s_array
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          deallocate(array)
          allocate(array(n))
@@ -2304,7 +2512,7 @@ module subroutine prmem_int_req2( array, nl, nc, async, queue,&
          s_prmem = s_prmem - s_array
          if (btest(cfg,memacc)) then
             sd_prmem =sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          deallocate(array)
@@ -2327,7 +2535,7 @@ module subroutine prmem_int_req2( array, nl, nc, async, queue,&
          s_prmem = s_prmem - s_array
          if (btest(cfg,memacc)) then
             sd_prmem =sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          deallocate(array)
@@ -2385,7 +2593,7 @@ module subroutine prmem_int1_req2( array, nl, nc, async )
 
          s_prmem = s_prmem - ashape(1)*ashape(2)*szoi1
          sd_prmem =sd_prmem - ashape(1)*ashape(2)*szoi1
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array) async( async_queue )
          deallocate(array)
          allocate(array(nl,s_alloc))
@@ -2455,7 +2663,7 @@ module subroutine prmem_int8_req2( array, nl, nc, async, queue,&
          s_array = ashape(1)*ashape(2)*szoi8
          s_prmem = s_prmem - s_array
          sd_prmem =sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array) async( async_queue )
          deallocate(array)
          allocate(array(nlstr:nl,ncstr:nc))
@@ -2526,7 +2734,7 @@ module subroutine prmem_8int2p_req( array, nl, nc, async, queue,&
          s_array = ashape(1)*ashape(2)*szoi8
          s_prmem = s_prmem - s_array
          sd_prmem =sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array) async( async_queue )
          deallocate(array)
          allocate(array(nlstr:nl,ncstr:nc))
@@ -2589,7 +2797,7 @@ module subroutine prmem_logi_req( array, n, async, queue, config )
          s_prmem = s_prmem - sizeof(array)
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - sizeof(array)
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array) async( async_queue )
          end if
          deallocate(array)
@@ -2648,11 +2856,11 @@ module subroutine prmem_real_req( array, n, async, queue, config,&
 #ifdef _OPENACC
          if ( async_queue.ne.acc_async_sync ) then
             call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)&
-               &,rec_stream)
+               &,reciprocal_work%stream)
          else
 #endif
             call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)&
-               &,int(0,mipk))
+               &,sync_work%stream)
 #ifdef _OPENACC
          end if
 #endif
@@ -2674,7 +2882,7 @@ module subroutine prmem_real_req( array, n, async, queue, config,&
          s_array = size(array)*szoTp
          if (btest(cfg,memacc)) then
             sd_prmem =sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          s_prmem = s_prmem - s_array
@@ -2688,11 +2896,11 @@ module subroutine prmem_real_req( array, n, async, queue, config,&
 #ifdef _OPENACC
             if ( async_queue.ne.acc_async_sync ) then
                call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)&
-                  &,rec_stream)
+                  &,reciprocal_work%stream)
             else
 #endif
                call mem_set(array,0.0_ti_p,int(s_alloc-nstr+1,mipk)&
-                  &,int(0,mipk))
+                  &,sync_work%stream)
 #ifdef _OPENACC
             end if
 #endif
@@ -2720,6 +2928,7 @@ module subroutine prmem_realm_req( array, n, async )
 14 format(A13,L3,2I10,I4)
 
    if(.not. allocated(array)) then
+      if (n.eq.0) return
       s_alloc = merge(n+int(real(n,t_p)*mem_inc),n&
          &,extra_alloc.and.n.ne.natoms)
       allocate(array(s_alloc))
@@ -2728,17 +2937,23 @@ module subroutine prmem_realm_req( array, n, async )
 #ifdef _OPENACC
       if ( async_queue.ne.acc_async_sync ) then
          call mem_set(array,0.0_re_p,int(s_alloc,mipk)&
-            &,rec_stream)
+            &,reciprocal_work%stream)
       else
 #endif
-         call mem_set(array,0.0_re_p,int(s_alloc,mipk)&
-            &,int(0,mipk))
+         call mem_set(array,0.0_re_p,int(s_alloc,mipk),sync_work%stream)
 #ifdef _OPENACC
       end if
 #endif
       s_prmem =  s_prmem + s_array
       sd_prmem = sd_prmem + s_array
       if(debMem.ne.0) print*,'alloc rm ',n,s_alloc
+   else if (allocated(array).and.n.eq.0) then
+      s_array = size(array)*szoRp
+      s_prmem = s_prmem - s_array
+      sd_prmem = sd_prmem - s_array
+!$acc wait(reciprocal_work%queue)
+!$acc exit data delete(array)
+      deallocate(array)
    else
       if( n > size(array) ) then
 
@@ -2752,7 +2967,7 @@ module subroutine prmem_realm_req( array, n, async )
          s_array = size(array)*szoRp
          s_prmem =  s_prmem - s_array
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          deallocate(array)
          allocate(array(s_alloc))
@@ -2760,12 +2975,10 @@ module subroutine prmem_realm_req( array, n, async )
 !$acc enter data create(array) async( async_queue )
 #ifdef _OPENACC
          if ( async_queue.ne.acc_async_sync ) then
-            call mem_set(array,0.0_re_p,int(s_alloc,mipk)&
-               &,rec_stream)
+            call mem_set(array,0.0_re_p,int(s_alloc,mipk),reciprocal_work%stream)
          else
 #endif
-            call mem_set(array,0.0_re_p,int(s_alloc,mipk)&
-               &,int(0,mipk))
+            call mem_set(array,0.0_re_p,int(s_alloc,mipk),sync_work%stream)
 #ifdef _OPENACC
          end if
 #endif
@@ -2801,11 +3014,10 @@ module subroutine prmem_realm_req1( array, n, async )
 #ifdef _OPENACC
       if ( async_queue.ne.acc_async_sync ) then
          call mem_set(array,0.0_re_p,int(s_alloc,mipk)&
-            &,rec_stream)
+            &,reciprocal_work%stream)
       else
 #endif
-         call mem_set(array,0.0_re_p,int(s_alloc,mipk)&
-            &,int(0,mipk))
+         call mem_set(array,0.0_re_p,int(s_alloc,mipk),sync_work%stream)
 #ifdef _OPENACC
       end if
 #endif
@@ -2825,7 +3037,7 @@ module subroutine prmem_realm_req1( array, n, async )
          s_array = size(array)*szoRp
          s_prmem =  s_prmem - s_array
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          deallocate(array)
          allocate(array(s_alloc))
@@ -2833,12 +3045,10 @@ module subroutine prmem_realm_req1( array, n, async )
 !$acc enter data create(array) async( async_queue )
 #ifdef _OPENACC
          if ( async_queue.ne.acc_async_sync ) then
-            call mem_set(array,0.0_re_p,int(s_alloc,mipk)&
-               &,rec_stream)
+            call mem_set(array,0.0_re_p,int(s_alloc,mipk),reciprocal_work%stream)
          else
 #endif
-            call mem_set(array,0.0_re_p,int(s_alloc,mipk)&
-               &,int(0,mipk))
+            call mem_set(array,0.0_re_p,int(s_alloc,mipk),sync_work%stream)
 #ifdef _OPENACC
          end if
 #endif
@@ -2887,7 +3097,7 @@ module subroutine prmem_prealm_req( array, n, async )
          s_array = size(array)*szoRp
          s_prmem =  s_prmem - s_array
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          deallocate(array)
          allocate(array(s_alloc))
@@ -2935,7 +3145,7 @@ module subroutine prmem_preal_req( array, n, async )
 
          s_prmem = s_prmem - sizeof(array)
          sd_prmem = sd_prmem - sizeof(array)
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          deallocate(array)
          nullify(array)
@@ -3001,7 +3211,7 @@ module subroutine prmem_real_req2( array, nl, nc, async, queue,&
       s_array = ashape(1)*ashape(2)*szoTp
       if (btest(cfg,memacc)) then
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
       end if
       s_prmem = s_prmem - s_array
@@ -3024,7 +3234,7 @@ module subroutine prmem_real_req2( array, nl, nc, async, queue,&
 
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          s_prmem = s_prmem - s_array
@@ -3061,6 +3271,7 @@ module subroutine prmem_realm_req2( array, nl, nc, async )
       &'cannot procede to reallocation ')
 
    if (.not.allocated(array)) then
+      if (nl*nc.eq.0) return
       s_alloc = merge(nc+int(real(nc,t_p)*mem_inc),nc&
          &,extra_alloc.and.nc.ne.natoms)
       allocate(array(nl,s_alloc))
@@ -3069,6 +3280,14 @@ module subroutine prmem_realm_req2( array, nl, nc, async )
       s_prmem =  s_prmem + s_array
       sd_prmem = sd_prmem + s_array
       if(debMem.ne.0) print*,'alloc rm 2',nc.ne.s_alloc,nl,nc
+   else if (allocated(array).and.nl*nc.eq.0) then
+      ashape = shape(array)
+      s_array = ashape(1)*ashape(2)*szoRp
+      s_prmem = s_prmem - s_array
+      sd_prmem = sd_prmem - s_array
+!$acc wait(reciprocal_work%queue)
+!$acc exit data delete(array)
+      deallocate(array)
    else
       ashape = shape(array)
       if (nl.ne.ashape(1)) then
@@ -3086,7 +3305,7 @@ module subroutine prmem_realm_req2( array, nl, nc, async )
          s_array  = ashape(1)*ashape(2)*szoRp
          s_prmem =  s_prmem - s_array
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          deallocate(array)
          allocate  (array(nl,s_alloc))
@@ -3144,7 +3363,7 @@ module subroutine prmem_realpm_req2( array, nl, nc, async )
          s_array  = ashape(1)*ashape(2)*szoRp
          s_prmem =  s_prmem - s_array
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          deallocate(array)
          allocate  (array(nl,s_alloc))
@@ -3203,7 +3422,7 @@ module subroutine prmem_real_req3(array, nx,ny,nz, async, queue_,&
       s_array= ashape(1)*ashape(2)*ashape(3)*szoTp
       if (btest(cfg,memacc)) then
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array) async( async_queue )
       end if
       s_prmem = s_prmem - s_array
@@ -3227,7 +3446,7 @@ module subroutine prmem_real_req3(array, nx,ny,nz, async, queue_,&
          s_array = ashape(1)*ashape(2)*ashape(3)*szoTp
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          s_prmem = s_prmem - s_array
@@ -3310,7 +3529,7 @@ module subroutine prmem_realm_req3(array, nx,ny,nz, async, queue_,&
 
          if (btest(cfg,memacc)) then
             sd_prmem = sd_prmem - so_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          end if
          s_prmem = s_prmem - so_array
@@ -3350,11 +3569,17 @@ module subroutine prmem_real_req4(array, nx, ny, nz, nc, async)
       s_alloc = merge(nz+int(real(nz,t_p)*mem_inc),nz&
          &,extra_alloc.and.nz.ne.natoms)
       allocate(array(nx,ny,s_alloc,nc))
-!$acc enter data create(array) async( async_queue )
+      !$acc enter data create(array) async( async_queue )
       s_array  = nx*ny*s_alloc*nc*szoTp
       s_prmem =  s_prmem + s_array
       sd_prmem = sd_prmem + s_array
       if(debMem.ne.0) print*,'alloc r 4',nx,ny,nz,nc,rank
+   else if ( allocated(array) .and. nz==0) then
+      s_array  = size(array)*szoTp
+      s_prmem  =  s_prmem - s_array
+      sd_prmem = sd_prmem - s_array
+      !$acc exit data delete(array) async( async_queue )
+      deallocate(array)
    else
       ashape = shape(array)
       if (nx.ne.ashape(1) .or. ny.ne.ashape(2) .or.&
@@ -3378,7 +3603,7 @@ module subroutine prmem_real_req4(array, nx, ny, nz, nc, async)
          s_array = ashape(1)*ashape(2)*ashape(3)*ashape(4)*szoTp
          s_prmem =  s_prmem - s_array
          sd_prmem = sd_prmem - s_array
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc exit data delete(array)
          deallocate(array)
          allocate(array(nx,ny,s_alloc,nc))

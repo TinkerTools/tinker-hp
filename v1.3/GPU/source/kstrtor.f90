@@ -39,7 +39,6 @@ subroutine kstrtor(init)
    use tinMemory,only:prmem_request
 #ifdef _OPENACC
    use thrust
-   use utilgpu  ,only:rec_stream
 #endif
    use utils    ,only:is_find8
    use sizes    ,only:tinkerdebug

@@ -30,6 +30,7 @@
 !
 #include "tinker_precision.h"
 module dcdmod
+   use status, only: status_t
    implicit none
 
    type dcdinfo_t
@@ -47,13 +48,28 @@ module dcdmod
 
    interface
       module subroutine dcdio_write(dcdinfo,trajectory_file,istep,dt,append,&
-         &x_frame,y_frame,z_frame)
+         &x_frame,y_frame,z_frame,status_value)
          type(dcdinfo_t), intent(inout) :: dcdinfo
          character(*), intent(in) :: trajectory_file
          integer, intent(in) :: istep
          real(r_p), intent(in) :: dt
          logical, intent(in) :: append
          real(r_p), intent(in) :: x_frame(:),y_frame(:),z_frame(:)
+         type(status_t), intent(out) :: status_value
+      end subroutine
+   end interface
+
+   interface
+      module subroutine dcdio_read_header(dcdinfo,status_value)
+         type(dcdinfo_t), intent(inout) :: dcdinfo
+         type(status_t), intent(out) :: status_value
+      end subroutine
+   end interface
+
+   interface
+      module subroutine dcdio_close(dcdinfo,status_value)
+         type(dcdinfo_t), intent(inout) :: dcdinfo
+         type(status_t), intent(out) :: status_value
       end subroutine
    end interface
 

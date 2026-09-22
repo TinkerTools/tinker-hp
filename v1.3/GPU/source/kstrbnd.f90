@@ -29,8 +29,8 @@ subroutine kstrbnd(init)
    use potent
    use strbnd
    use tinheader
+   use tinMemory, only: prmem_request
    use utils
-   use utilgpu
    implicit none
    integer i,j,k,nsb
    integer ia,ib,ic

@@ -28,7 +28,8 @@ subroutine molecule(init)
 #ifdef _OPENACC
    !use thrust
 #endif
-   use utilgpu
+   use tinMemory, only: prmem_request
+   use tinheader, only: ti_p
    implicit none
    integer i,j,k,ii
    integer mi,mj,mk
@@ -271,4 +272,15 @@ subroutine alloc_shared_mol
    call shmem_request(imol,winimol,[2,n],config=mhostacc)
    call shmem_request(molmass,winmolmass,[n],config=mhostacc)
 
+end
+
+subroutine dealloc_shared_mol
+   use molcul
+   use tinMemory
+   implicit none
+
+   call shmem_request(molcule,winmolcule,[0],config=mhostacc)
+   call shmem_request(kmol,winkmol,[0],config=mhostacc)
+   call shmem_request(imol,winimol,[0,0],config=mhostacc)
+   call shmem_request(molmass,winmolmass,[0],config=mhostacc)
 end

@@ -41,7 +41,8 @@ program dynamic
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      __TINKER_FATAL__
+      call MPI_FINALIZE(ierr)
+      stop 1
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
@@ -62,8 +63,8 @@ subroutine dynamic_bis(raw_cli,status_value)
    use mpi
    use potent  ,only: use_ml_embedding
    use parallel, only: parallel_t, release
+   use tinheader, only: re_p
    use utils
-   use utilgpu ,only: ti_p,re_p
    use mdevice, only: channel_t, finalize_device
    use initialization, only: dynamic_application, initialize
    use timestat
@@ -249,7 +250,7 @@ subroutine dynamic_bis(raw_cli,status_value)
 !
 !     perform any final tasks before program exit
 !
-   call final
+   call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) status_value = cleanup_status

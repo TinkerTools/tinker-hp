@@ -16,6 +16,11 @@
 !
 #include "tinker_macro.h"
 module nblistgpu_inl
+   use mdevice, only: direct_work,reciprocal_work
+   use tinheader, only: ti_p
+   implicit none
+   integer, parameter :: BLOCK_SIZE=32
+   real(t_p), parameter :: inf=4*huge(0.0_ti_p)
 contains
 #include "image.inc.f90"
 #include "midpointimage.inc.f90"
@@ -103,7 +108,7 @@ subroutine reorder_nblist(nblist,nneig,nneig_cut,nloc,cutoff2,&
    use atoms
    use inform ,only: deb_Path
    use nblistgpu_inl
-   use utilgpu,only:rank,dir_queue
+   use domdec,only: rank
    use sizes  ,only: tinkerdebug
 
    implicit none
@@ -126,13 +131,14 @@ subroutine reorder_nblist(nblist,nneig,nneig_cut,nloc,cutoff2,&
    real(t_p) xi,yi,zi,xk,yk,zk
    logical restart
 
+
    if (deb_Path) write(*,'(2x,a)') "reorder_nblist"
    nneig_interact = 0
    write_index    = 0
 !$acc parallel loop gang private(read_index,read_nei,read_pos, &
 !$acc  read_posl) &
 !$acc         present(nblist,nneig,nneig_cut,glob,ktype,x,y,z) &
-!$acc         vector_length(32) async(dir_queue)
+!$acc         vector_length(32) async(direct_work%queue)
    do i = 1,nloc
       nnneig     = nneig(i)
       iglob      = ktype(glob(i))
@@ -256,7 +262,7 @@ subroutine reorder_nblist(nblist,nneig,nneig_cut,nloc,cutoff2,&
 
    if (tinkerdebug.gt.0) then
       read_index =0
-!$acc parallel loop vector_length(32) async(dir_queue) &
+!$acc parallel loop vector_length(32) async(direct_work%queue) &
 !$acc         present(nblist,nneig,nneig_cut) private(read_index)
       do i = 1,nloc
 !$acc loop vector
@@ -293,7 +299,7 @@ subroutine initmpipmegpu
    use potent  ,only: use_mlpot_only,use_charge
    use mpi
    use tinMemory
-   use utilgpu ,only: rec_queue
+   use nblistgpu_inl
    implicit none
    integer ierr,iipole
    integer i,k,j,iproc,tag,iglob
@@ -303,6 +309,7 @@ subroutine initmpipmegpu
    integer count1,count_cap
    integer status(MPI_STATUS_SIZE)
    integer, allocatable :: req(:),req2(:),count(:)
+
 
    if (use_mlpot_only) return
 
@@ -331,7 +338,7 @@ subroutine initmpipmegpu
 !$acc  bufbeg1,bufbeg2,buflen2) &
 !$acc     copyin(precdir_recep1,count)
 
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1,nproc
       buflen2(i) = 0
       bufbeg2(i) = 0
@@ -339,7 +346,7 @@ subroutine initmpipmegpu
    buflen1 = 0
    bufbeg1 = 0
 
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1, npolerecloc
       iipole  = polerecglob(i)
       iglob   = ipole(iipole)
@@ -351,7 +358,7 @@ subroutine initmpipmegpu
    end do
 
    count1 = 0
-!$acc serial loop async(rec_queue)
+!$acc serial loop async(reciprocal_work%queue)
    do iproc = 1, nrecdir_recep1
       ipre_rec1 = precdir_recep1(iproc)
       if (ipre_rec1.ne.rank) then
@@ -363,9 +370,9 @@ subroutine initmpipmegpu
          count1 = count1 + buflen2(ipre_rec1+1)
       end if
    end do
-!$acc update host(bufbeg2,buflen2) async(rec_queue)
+!$acc update host(bufbeg2,buflen2) async(reciprocal_work%queue)
 !
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1, npolerecloc
       iipole  = polerecglob(i)
       iglob   = ipole(iipole)
@@ -421,7 +428,7 @@ subroutine initmpipmegpu
          count1 = count1 + buflen1(precdir_send1(iproc)+1)
       end if
    end do
-!$acc update device(bufbeg1) async(rec_queue)
+!$acc update device(bufbeg1) async(reciprocal_work%queue)
 !
 !     send and receive list of corresponding indexes
 !
@@ -518,14 +525,15 @@ end
 subroutine check_atoms_inboxing(cell_len,ncell_tot,nlocnl)
    use domdec ,only: rank
    use sizes  ,only: tinkerdebug
-   use utilgpu,only: rec_queue
+   use nblistgpu_inl
    implicit none
    integer ncell_tot,nlocnl
    integer,intent(in)::cell_len(ncell_tot)
    integer i, k
 
+
    k = 0
-!$acc parallel loop default(present) async(rec_queue)
+!$acc parallel loop default(present) async(reciprocal_work%queue)
    do i = 1,ncell_tot
       k = k + cell_len(i)
    end do
@@ -555,11 +563,9 @@ subroutine ddbuild_gpu(dcut)
    use iso_c_binding
    use tinheader
    use tinMemory ,only:prmem_request
-   use utilgpu   ,only: nSMP, cores_SMP, openacc_abort&
-                 ,rec_queue,rec_stream
 #ifdef _CUDA
    use nblistcu  ,only: atoms_in_cell
-   use utilcu    ,only: check_launch_kernel
+   use mdevice   ,only: check_launch_kernel
 #endif
    use utils     ,only: set_to_zero1_int8
    use sizes     ,only: tinkerdebug
@@ -575,6 +581,7 @@ subroutine ddbuild_gpu(dcut)
    integer(8) numa,numb,numc,dena,denb,denc
    real(t_p) mbuf,vbuf,bigbufx,bigbufy,bigbufz
    real(t_p) lenx_cell,leny_cell,lenz_cell
+
    real(t_p) xr,yr,zr,d
    real(t_p) cellXmin,cellXmax,cellYmin,cellYmax,cellZmin,cellZmax,&
              cellXin,cellYin,cellZin
@@ -639,14 +646,14 @@ subroutine ddbuild_gpu(dcut)
       write(*,36) ' -ddbuild_gpu Cells x y z',nx_cell,ny_cell,nz_cell,' -dcut',dcut,' -ncell2buff ',ncell2buffa,ncell2buffb,ncell2buffc
    !write(*,'(A,7I7)') ' -ddbuild_gpu edge',rank,abeg_c,aend_c,bbeg_c,bend_c,cbeg_c,cend_c
 
-   !$acc parallel loop async(rec_queue) default(present)
+   !$acc parallel loop async(reciprocal_work%queue) default(present)
    do i = 1,nloc
       ineignl(i)=glob(i)
    end do
 
    if (nbloc>nloc) then
 
-!$acc parallel loop copy(nlocnl) async(rec_queue)
+!$acc parallel loop copy(nlocnl) async(reciprocal_work%queue)
    do i = nloc+1,nbloc
       iglob = glob(i)
       xr    = x(iglob)
@@ -726,12 +733,9 @@ subroutine build_cell_listgpu(istep)
    use mpi
    use tinheader
    use tinMemory ,only: prmem_request
-   use utilgpu   ,only: nSMP,cores_SMP&
-                 ,openacc_abort,rec_queue,rec_stream
 #ifdef _CUDA
    use nblistcu  ,only: atoms_in_cell
-   use utilcu    ,only: check_launch_kernel
-   use thrust    ,only: thrust_exclusive_scan_int_async
+   use mdevice   ,only: check_launch_kernel
 #endif
    use utils     ,only: set_to_zero1_int8
    use sizes     ,only: tinkerdebug
@@ -740,6 +744,7 @@ subroutine build_cell_listgpu(istep)
    integer count,iloc
    integer,parameter:: ncell2buff=2
    integer ncell2buffb
+
    integer num_neigcell
    integer Nblock,Nrest,kstart,kend,buffersize,bufloc
    integer temp_x,temp_y,temp_z,locat
@@ -853,7 +858,7 @@ subroutine build_cell_listgpu(istep)
 !
    if (.not.allocated(repartcell)) then
       allocate(repartcell(n))
-!$acc enter data create(repartcell) async(rec_queue)
+!$acc enter data create(repartcell) async(reciprocal_work%queue)
    end if
    call prmem_request(bufbegcell,ncell_tot,async=.true.)
    call prmem_request(cell_len,ncell_tot,async=.true.)
@@ -861,20 +866,20 @@ subroutine build_cell_listgpu(istep)
    allocate (indcelltemp(n))
 !$acc data create(indcelltemp) &
 !$acc     present(cell_len,indcell,bufbegcell,repartcell, &
-!$acc  use_bounds) async(rec_queue)
+!$acc  use_bounds) async(reciprocal_work%queue)
 
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1,ncell_tot
       cell_len(i) = 0
    end do
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1,n
       indcelltemp(i) = 0
    end do
 
 #ifdef _CUDA
 !$acc host_data use_device(ineignl,x,y,z,repartcell,cell_len,indcelltemp)
-   call atoms_in_cell<<<(nlocnl/128)+1,128,0,rec_stream>>>&
+   call atoms_in_cell<<<(nlocnl/128)+1,128,0,reciprocal_work%stream>>>&
    (nlocnl,n,ncell_tot,nx_cell,ny_cell,ineignl&
    ,x,y,z,xmin,ymin,zmin,eps_cell,lenx_cell,leny_cell,lenz_cell&
    ,repartcell,cell_len,indcelltemp&
@@ -884,7 +889,7 @@ subroutine build_cell_listgpu(istep)
 #else
    ! FIXME  Atomic Capture on Integer Bugged from 24.XX SDK 
    ! FIXME  Report To Nvidia
-!$acc parallel loop default(present) async(rec_queue)
+!$acc parallel loop default(present) async(reciprocal_work%queue)
    do i = 1,nlocnl
       iglob = ineignl(i)
       xr    = x(iglob)
@@ -916,7 +921,7 @@ subroutine build_cell_listgpu(istep)
 #endif
    end do
 #endif
-!$acc update host(cell_len) async(rec_queue)
+!$acc update host(cell_len) async(reciprocal_work%queue)
 
    if (tinkerdebug.gt.0)&
       call check_atoms_inboxing(cell_len,ncell_tot,nlocnl)
@@ -932,10 +937,10 @@ subroutine build_cell_listgpu(istep)
       nbMatb  = max(1,ncell_tot)
       call prmem_request (matb_lst,szMatb*nbMatb,async=.true.)
       call set_to_zero1_int8(matb_lst(1),int(szMatb,8)*nbMatb,&
-         &rec_queue)
+         &reciprocal_work%queue)
 
       ! loop on every cell
-!$acc parallel loop async(rec_queue) private(locat) &
+!$acc parallel loop async(reciprocal_work%queue) private(locat) &
 !$acc         vector_length(32) &
 !$acc         present(matb_lst,neigcell,numneigcell)
       do ii = 1,ncell_tot
@@ -1079,7 +1084,7 @@ subroutine build_cell_listgpu(istep)
 !
 !     From Adjacency matrix to neighbor cells list
 !
-!$acc parallel loop gang vector collapse(2) async(rec_queue) &
+!$acc parallel loop gang vector collapse(2) async(reciprocal_work%queue) &
 !$acc         present(matb_lst,neigcell,numneigcell) private(locat)
       do i = 1, ncell_tot
          do j = 0, ncell_tot-1
@@ -1107,7 +1112,7 @@ subroutine build_cell_listgpu(istep)
 !
 !     Find neighbor cells for cubic box
 !
-!$acc parallel loop async(rec_queue) private(locat) &
+!$acc parallel loop async(reciprocal_work%queue) private(locat) &
 !$acc         vector_length(32) &
 !$acc         present(neigcell,numneigcell)
       do ii = 1, ncell_tot
@@ -1152,6 +1157,8 @@ subroutine build_cell_listgpu(istep)
                   locat = locat +1
                   count = locat
 !$acc end atomic
+                  if ( count<1.or.count>num_neigcell.or. ii>ncell_tot.or.ii<1 ) &
+                     print*, 'ISSUE', count, ii
                   neigcell (count,ii) = tempcell
                end do
             end do
@@ -1165,7 +1172,7 @@ subroutine build_cell_listgpu(istep)
 !
    if (.not.allocated(indcell)) then
       allocate(indcell(n))
-!$acc enter data create(indcell) async(rec_queue)
+!$acc enter data create(indcell) async(reciprocal_work%queue)
    end if
 !
 !$acc wait
@@ -1179,9 +1186,9 @@ subroutine build_cell_listgpu(istep)
       end if
       count = count + cell_len(icell)
    end do
-!$acc update device(bufbegcell) async(rec_queue)
+!$acc update device(bufbegcell) async(reciprocal_work%queue)
 !
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1, nlocnl
       iglob = ineignl(i)
       icell = repartcell(iglob)
@@ -1216,11 +1223,6 @@ subroutine build_cell_list2(ineignl,cell_order,&
    use tinMemory,only: prmem_request
    use sizes    ,only: tinkerdebug
    use utils    ,only: set_to_zero1_int
-   use utilgpu  ,only: nSMP,cores_SMP&
-      &,rec_queue,BLOCK_SIZE
-#ifdef _OPENACC
-   use utilgpu  ,only:rec_stream
-#endif
    implicit none
 
    integer  ,intent(in)   :: nlocnl
@@ -1379,8 +1381,8 @@ subroutine build_cell_list2(ineignl,cell_order,&
       call prmem_request(cell_len1,save_ncell,async=.false.)
       call prmem_request(cell_scan,save_ncell,async=.false.)
 
-      call set_to_zero1_int(cell_len,size(cell_len),rec_queue)
-!$acc parallel loop async(rec_queue) &
+      call set_to_zero1_int(cell_len,size(cell_len),reciprocal_work%queue)
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         default(present)
       do i = 1,nlocnl
          iglob = ineignl(i)
@@ -1414,7 +1416,7 @@ subroutine build_cell_list2(ineignl,cell_order,&
       end do
 
       if (btest(tinkerdebug,tindPath)) then
-!$acc parallel loop async(rec_queue) present(cell_len)
+!$acc parallel loop async(reciprocal_work%queue) present(cell_len)
          do i = 1,ncell_tot
             min_cell_len  = min(min_cell_len,cell_len(i))
          end do
@@ -1458,9 +1460,9 @@ subroutine build_cell_list2(ineignl,cell_order,&
 !$acc wait
 !$acc host_data use_device(repartcell,cell_order,cell_len,cell_scan)
    call thrust_stable_sort_by_key(repartcell,nlocnl,cell_order&
-      &,rec_stream)
+   &,reciprocal_work%stream)
    call thrust_exclusive_scan(cell_len,ncell_tot,cell_scan&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    call sort3 (nlocnl,repartcell,cell_order)
@@ -1470,7 +1472,7 @@ subroutine build_cell_list2(ineignl,cell_order,&
    end do
 #endif
 
-!$acc parallel loop present(cell_len1,cell_len) async(rec_queue)
+!$acc parallel loop present(cell_len1,cell_len) async(reciprocal_work%queue)
    do i = 1,ncell_tot
       !cell_len1(i) = int(cell_len(i),1)  !unsupported by pgi
       cell_len1(i) = cell_len(i)
@@ -1483,7 +1485,8 @@ subroutine set_pairlist_Cellorder(atList,a_plist,buildnl)
    use atoms  ,only: n,x,y,z
    use domdec
    use neigh
-   use utilgpu
+   use nblistgpu_inl
+   use tinMemory, only: prmem_request
    use mpole
    implicit none
    integer atList(*)
@@ -1494,6 +1497,7 @@ subroutine set_pairlist_Cellorder(atList,a_plist,buildnl)
    integer natmnlb,natmnl
    integer  ,pointer::c_glob(:),c_key(:)
    real(t_p),pointer::cell_x(:),cell_y(:),cell_z(:)
+
 
    ! Fetch a_plist attributes
    natmnlb =  a_plist%natmnlb
@@ -1511,7 +1515,7 @@ subroutine set_pairlist_Cellorder(atList,a_plist,buildnl)
       cell_y  => a_plist%cell_y
       cell_z  => a_plist%cell_z
 
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(atList,x,y,z &
 !$acc   ,c_glob,c_key,cell_x,cell_y,cell_z)
       do i = 1, natmnlb
@@ -1534,7 +1538,7 @@ subroutine set_pairlist_Cellorder(atList,a_plist,buildnl)
       cell_x  => a_plist%cell_x
       cell_y  => a_plist%cell_y
       cell_z  => a_plist%cell_z
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(c_glob &
 !$acc   ,cell_x,cell_y,cell_z,x,y,z)
       do i = 1, natmnlb
@@ -1559,11 +1563,13 @@ subroutine set_ElecData_CellOrder(rebuild_nl)
    use atmlst ,only: poleglobnl
    use domdec
    use neigh
-   use utilgpu
+   use nblistgpu_inl
+   use tinMemory, only: prmem_request
    use mpole
    implicit none
    logical,intent(in):: rebuild_nl
    integer i,iglob,iipole,iploc
+
 
    if (rebuild_nl) then
 
@@ -1576,7 +1582,7 @@ subroutine set_ElecData_CellOrder(rebuild_nl)
       call prmem_request(celle_y   ,npolelocnlb,async=.true.)
       call prmem_request(celle_z   ,npolelocnlb,async=.true.)
 
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(celle_glob,celle_pole,celle_key, &
 !$acc   poleglobnl,celle_x,celle_y,celle_z,celle_plocnl,polelocnl)
       do i = 1, npolelocnlb
@@ -1601,7 +1607,7 @@ subroutine set_ElecData_CellOrder(rebuild_nl)
 
    else
 
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(celle_glob,celle_pole,celle_key, &
 !$acc   celle_loc,celle_ploc,celle_x,celle_y,celle_z,x,y,z, &
 !$acc   loc,poleloc)
@@ -1633,11 +1639,13 @@ subroutine set_ChgData_CellOrder(rebuild_nl)
    use kvdws  ,only: rad,eps,radv,epsv
    use neigh
    use potent ,only: fuse_chglj
-   use utilgpu
+   use nblistgpu_inl
+   use tinMemory, only: prmem_request
    use vdw
    implicit none
    logical,intent(in):: rebuild_nl
    integer i,iglob,iichg
+
 
    if (rebuild_nl) then
 
@@ -1657,7 +1665,7 @@ subroutine set_ChgData_CellOrder(rebuild_nl)
       end if
 
       if (fuse_chglj) then
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(celle_glob,celle_chg,celle_key, &
 !$acc   chgglobnl,celle_x,celle_y,celle_z,celle_plocnl,chglocnl)
          do i = 1, nionlocnlb
@@ -1687,7 +1695,7 @@ subroutine set_ChgData_CellOrder(rebuild_nl)
          end do
 
       else
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(celle_glob,celle_chg,celle_key, &
 !$acc   chgglobnl,celle_x,celle_y,celle_z,celle_plocnl,chglocnl)
          do i = 1, nionlocnlb
@@ -1714,7 +1722,7 @@ subroutine set_ChgData_CellOrder(rebuild_nl)
 
    else
 
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(celle_glob,celle_chg,celle_key, &
 !$acc   celle_loc,celle_ploc,celle_x,celle_y,celle_z,x,y,z, &
 !$acc   loc)
@@ -1751,9 +1759,9 @@ subroutine build_adjacency_matrix&
       &, offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb&
       &, ncell_tot,nx_cell,ny_cell,nz_cell&
       &, bit_si,bit_sh,cell_lenr,cell_len2r
-   use nblistgpu_inl ,only: midpointimage_inl
+   use nblistgpu_inl
    use utils   ,only: set_to_zero1_int1,set_to_zero1_int8
-   use utilgpu ,only: prmem_request,rec_queue,BLOCK_SIZE
+   use tinMemory,only: prmem_request
    implicit none
    integer      ,intent(in):: nlocnl
    type(boxPart),intent(in):: bP
@@ -1773,6 +1781,7 @@ subroutine build_adjacency_matrix&
    real(t_p) xbeg,xend,ybeg,yend,zbeg,zend
    real(t_p) xmid_ik,ymid_ik,zmid_ik
    real(t_p) xbi,ybi,zbi,xbk,ybk,zbk,posx,posy,posz
+
 
    xmin = -xcell2
    xmax =  xcell2
@@ -1808,11 +1817,11 @@ subroutine build_adjacency_matrix&
       call prmem_request (cell_len2r,nblock,async=.true.)
    end if
    call set_to_zero1_int8(matb_lst(1),int(szMatb,8)*nbMatb,&
-      &rec_queue)
+      &reciprocal_work%queue)
 
    ! Find bocks to compute interactions with
 !$acc parallel loop present(cell_len1,cell_scan,matb_lst) &
-!$acc              async(rec_queue)
+!$acc              async(reciprocal_work%queue)
    do icell = 1,ncell_tot
       icell_len = cell_len1(icell)
       if (icell_len.eq.0) cycle
@@ -1931,7 +1940,7 @@ subroutine build_adjacency_matrix_octahedron&
       &, bit_si,bit_sh,cell_lenr,cell_len2r
    use nblistgpu_inl
    use utils   ,only: set_to_zero1_int1,set_to_zero1_int8
-   use utilgpu ,only: prmem_request,rec_queue,BLOCK_SIZE
+   use tinMemory,only: prmem_request
    implicit none
    integer      ,intent(in):: nlocnl
    type(boxPart),intent(in):: bP
@@ -1996,11 +2005,11 @@ subroutine build_adjacency_matrix_octahedron&
       call prmem_request (cell_len2r,nblock,async=.true.)
    end if
    call set_to_zero1_int8(matb_lst(1),int(szMatb,8)*nbMatb,&
-      &rec_queue)
+      &reciprocal_work%queue)
 
    ! Find bocks to compute interactions with
 !$acc parallel loop present(cell_len1,cell_scan,matb_lst) &
-!$acc              async(rec_queue)
+!$acc              async(reciprocal_work%queue)
    do icell = 1,ncell_tot
       icell_len = cell_len1(icell)
       if (icell_len.eq.0) cycle
@@ -2156,23 +2165,24 @@ subroutine pre_process_adjacency_matrix&
       &,offl=>offsetlMb,szMatb,nbMatb,cell_scan1&
       &,bit_si,bit_sh
    use utils   ,only: set_to_zero1_int
-   use utilgpu ,only: rec_queue,prmem_request
+   use nblistgpu_inl
+   use tinMemory,only: prmem_request
 #ifdef _OPENACC
-   use thrust  ,only: thrust_exclusive_scan_int_async
-   use utilgpu ,only: rec_stream
+   use thrust  ,only: thrust_exclusive_scan
 #endif
    implicit none
    integer,intent(in):: nblock
    integer,intent(out):: nlocnlb_pair
    integer it1,it2,pos2,bit2
 
+
    !Re use cell_len & cell_scan1 for neighbor blocks
    call prmem_request(cell_scan1,nblock,async=.true.)
-   call set_to_zero1_int(cell_len(offl+1),nbMatb,rec_queue)
+   call set_to_zero1_int(cell_len(offl+1),nbMatb,reciprocal_work%queue)
 
    nlocnlb_pair = 0
 
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc    present(cell_len,matb_lst)
    do it1 = 0,nbMatb-1
 !$acc loop vector
@@ -2187,16 +2197,16 @@ subroutine pre_process_adjacency_matrix&
    end do
    ! Non blocking reduction with pgi-20
 
-!$acc parallel loop async(rec_queue) present(cell_len)
+!$acc parallel loop async(reciprocal_work%queue) present(cell_len)
    do it1 = 1,nbMatb
       nlocnlb_pair=nlocnlb_pair+cell_len(offl+it1)
    end do
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
    ! Apply partial sum to cell_scan1
 #ifdef _OPENACC
 !$acc host_data use_device(cell_len,cell_scan1)
-   call thrust_exclusive_scan_int_async(cell_len(offl+1),nbMatb,&
-      &cell_scan1(offl+1),rec_stream)
+   call thrust_exclusive_scan(cell_len(offl+1),nbMatb,&
+   &cell_scan1(offl+1),reciprocal_work%stream)
 !$acc end host_data
 #else
    cell_scan1(offl+1) = 0
@@ -2210,7 +2220,7 @@ subroutine pre_process_adjacency_matrix&
 
    ! Complete scan when useful
    if (nbMatb.ne.nblock.and.offl.ne.0) then
-!$acc parallel loop async(rec_queue) present(cell_scan1,cell_len)
+!$acc parallel loop async(reciprocal_work%queue) present(cell_scan1,cell_len)
       do it1 = 1, nbMatb
          cell_scan1(offl+it1) = cell_scan1(offl+it1) +&
             &cell_scan1(offl) + cell_len(offl)
@@ -2226,23 +2236,24 @@ subroutine pre_process_adjacency_matrix_&
       &,offl=>offsetlMb,szMatb,nbMatb,cell_scan1&
       &,bit_si,bit_sh
    use utils   ,only: set_to_zero1_int
-   use utilgpu ,only: rec_queue,prmem_request
+   use nblistgpu_inl
+   use tinMemory,only: prmem_request
 #ifdef _OPENACC
-   use thrust  ,only: thrust_exclusive_scan_int_async
-   use utilgpu ,only: rec_stream
+   use thrust  ,only: thrust_exclusive_scan
 #endif
    implicit none
    integer,intent(in):: nblock
    integer,intent(out):: nlocnlb_pair
    integer it1,it2,pos2,bit2
 
+
    !Re use cell_len & cell_scan1 for neighbor blocks
    !call prmem_request(cell_scan1,nblock,async=.true.)
-   !call set_to_zero1_int(cell_len(offl+1),nbMatb,rec_queue)
+   !call set_to_zero1_int(cell_len(offl+1),nbMatb,reciprocal_work%queue)
 
    nlocnlb_pair = 0
 
-!$acc parallel loop async(rec_queue) reduction(+:nlocnlb_pair) &
+!$acc parallel loop async(reciprocal_work%queue) reduction(+:nlocnlb_pair) &
 !$acc         present(matb_lst)
    do it1 = 0,nbMatb-1
 !$acc loop vector
@@ -2255,7 +2266,7 @@ subroutine pre_process_adjacency_matrix_&
       end do
    end do
    ! Non blocking reduction with pgi-20
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 end subroutine
 !
 !     Build nblist with optimal space according to matb_lst
@@ -2266,13 +2277,14 @@ subroutine fill_adjacency_list&
    use neigh  ,only: cell_len,cell_lenr,cell_scan1,matb_lst&
       &,offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb&
       &,bit_si,bit_sh,cell_len2,cell_len2r
-   use utilgpu,only: BLOCK_SIZE,rec_queue
+   use nblistgpu_inl
    implicit none
    integer,intent(in)   :: nblock,nlocnlb_pair
    integer,intent(inout):: lst(2*nlocnlb_pair)
    integer k,i,iblock,it1,it2,pos2,bit2
 
-!$acc parallel loop async(rec_queue) private(k) &
+
+!$acc parallel loop async(reciprocal_work%queue) private(k) &
 !$acc         present(cell_scan1,matb_lst,lst)
    do it1 = 0,nbMatb-1
       iblock = cell_scan1(offl+it1+1)
@@ -2297,14 +2309,15 @@ subroutine fill_adjacency_list_&
    use neigh  ,only: cell_len,cell_lenr,cell_scan1,matb_lst&
       &,offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb&
       &,bit_si,bit_sh,cell_len2,cell_len2r
-   use utilgpu,only: BLOCK_SIZE,rec_queue
+   use nblistgpu_inl
    implicit none
    integer,intent(in)   :: nblock,nlocnlb_pair
    integer,intent(inout):: lst(2*nlocnlb_pair)
    integer k,i,iblock,it1,it2,pos2,bit2
 
+
    k = 0
-!$acc parallel loop async(rec_queue) copyin(k) &
+!$acc parallel loop async(reciprocal_work%queue) copyin(k) &
 !$acc         present(cell_scan1,matb_lst,lst)
    do it1 = 0,nbMatb-1
 !$acc loop vector
@@ -2332,13 +2345,14 @@ subroutine Init_blocklen(nblock)
    use neigh  ,only: cell_len,cell_lenr,cell_scan,cell_scan1&
       &,offl=>offsetlMb,offr=>offsetrMb,szMatb,nbMatb&
       &,bit_si,bit_sh,cell_len2,cell_len2r,matb_lst
-   use utilgpu,only: BLOCK_SIZE,rec_queue
+   use nblistgpu_inl
    implicit none
    integer,intent(in)::nblock
    integer i
 
+
    if (use_shortvlist.or.use_shortmlist.or.use_shortclist) then
-!$acc parallel loop async(rec_queue) present(cell_len,cell_lenr, &
+!$acc parallel loop async(reciprocal_work%queue) present(cell_len,cell_lenr, &
 !$acc         cell_len2,cell_len2r,cell_scan,cell_scan1)
       do i = 1,nblock
          cell_len  (i) = BLOCK_SIZE
@@ -2348,7 +2362,7 @@ subroutine Init_blocklen(nblock)
          cell_scan (i) = cell_scan1(i)
       end do
    else
-!$acc parallel loop async(rec_queue) present(cell_len,cell_lenr, &
+!$acc parallel loop async(reciprocal_work%queue) present(cell_len,cell_lenr, &
 !$acc         cell_scan,cell_scan1)
       do i = 1,nblock
          cell_len (i) = BLOCK_SIZE
@@ -2368,9 +2382,9 @@ subroutine finalize_list_C2 (nblock,nlocnlb_pair,nlocnlb&
    use domdec ,only: rank
    use inform ,only: deb_Path
    use neigh  ,only: cell_scan1
-   use utilgpu,only: BLOCK_SIZE,rec_queue,prmem_request
+   use nblistgpu_inl
+   use tinMemory,only: prmem_request
 #ifdef _OPENACC
-   use utilgpu,only: rec_stream
    use thrust
 #endif
    implicit none
@@ -2384,10 +2398,11 @@ subroutine finalize_list_C2 (nblock,nlocnlb_pair,nlocnlb&
    integer kcell_scanr,kcell_scan
    integer buff_i
 
+
    call prmem_request(cell_scan1,nblock,async=.true.)
 
    nlocnlb2_pair=0
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(ilst,cell_scan,lst,cell_len,cell_lenr) &
 !$acc         vector_length(BLOCK_SIZE)
 !!$acc        private(buff)
@@ -2416,17 +2431,17 @@ subroutine finalize_list_C2 (nblock,nlocnlb_pair,nlocnlb&
    end do
 ! Wait for nlocnl_pair
 ! Implicit wait removed with PGI-20.4
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 
 #ifdef _OPENACC
 !$acc host_data use_device(cell_len,cell_scan1,lst)
-   call thrust_exclusive_scan(cell_len,nblock,cell_scan1,rec_stream)
-   call thrust_remove_zero_async_int(lst(2*nlocnlb_pair+1)&
-      &,nlocnlb_pair*(BLOCK_SIZE),rec_stream)
+   call thrust_exclusive_scan(cell_len,nblock,cell_scan1,reciprocal_work%stream)
+   call thrust_remove_zero(lst(2*nlocnlb_pair+1)&
+   &,nlocnlb_pair*(BLOCK_SIZE),reciprocal_work%stream)
 !$acc end host_data
 #endif
 
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(cell_len,cell_scan1,ilst)
    do i = 1, nblock
       iv = cell_len(i)
@@ -2447,9 +2462,9 @@ subroutine finalize_list2_C2 (nblock,nlocnlb_pair,nlocnlb&
    use domdec ,only: rank
    use inform ,only: deb_Path
    use neigh  ,only: cell_scan1
-   use utilgpu,only: BLOCK_SIZE,rec_queue,prmem_request
+   use nblistgpu_inl
+   use tinMemory,only: prmem_request
 #ifdef _OPENACC
-   use utilgpu,only: rec_stream
    use thrust
 #endif
    implicit none
@@ -2463,10 +2478,11 @@ subroutine finalize_list2_C2 (nblock,nlocnlb_pair,nlocnlb&
    integer kcell_scanr,kcell_scan
    integer buff_i
 
+
    call prmem_request(cell_scan1,nblock,async=.true.)
 
    nlocnlb2_pair=0
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(ilst,cell_scan,lst,cell_len,cell_lenr) &
 !$acc         vector_length(BLOCK_SIZE)
 !!$acc        private(buff)
@@ -2495,17 +2511,17 @@ subroutine finalize_list2_C2 (nblock,nlocnlb_pair,nlocnlb&
    end do
 ! Wait for nlocnl_pair
 ! Implicit wait removed with PGI-20.4
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 
 #ifdef _OPENACC
 !$acc host_data use_device(cell_len,cell_scan1,lst)
-   call thrust_exclusive_scan(cell_len,nblock,cell_scan1,rec_stream)
-   call thrust_remove_zero_async_int(lst,nlocnlb_pair*(BLOCK_SIZE)&
-      &,rec_stream)
+   call thrust_exclusive_scan(cell_len,nblock,cell_scan1,reciprocal_work%stream)
+   call thrust_remove_zero(lst,nlocnlb_pair*(BLOCK_SIZE)&
+      &,reciprocal_work%stream)
 !$acc end host_data
 #endif
 
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(cell_len,cell_scan1,ilst)
    do i = 1, nblock
       iv = cell_len(i)
@@ -2536,7 +2552,8 @@ subroutine SpatialReorder
 #endif
    use neigh
    use potent,only: use_pmecore,use_mpole,use_charge
-   use utilgpu
+   use nblistgpu_inl
+   use tinMemory, only: prmem_request
    implicit none
    integer i,iipole,iichg,iglob
    integer num
@@ -2657,11 +2674,10 @@ subroutine build_pairwise_list(atList,natmnl,cut2,a_plist)
    use interfaces,only:cu_filter_lst_sparse
    use thrust  ,only: thrust_exclusive_scan,thrust_remove
    use nblistcu,only: filter_pairwise_atom_lst
-   use utilcu  ,only: check_launch_kernel
-   use utilgpu ,only: rec_stream
+   use mdevice ,only: check_launch_kernel
    use cudafor
 #endif
-   use utilgpu ,only: rec_queue,BLOCK_SIZE,inf
+   use nblistgpu_inl
    use tinheader,only: ti_p
    use tinMemory,only: prmem_request,prmem_mvrequest,mipk,szoi
    implicit none
@@ -2688,6 +2704,7 @@ subroutine build_pairwise_list(atList,natmnl,cut2,a_plist)
          logical,intent(in):: buildnl
       end subroutine
    end interface
+
 
    if (deb_Path) print*, 'build_pairwise_list'
 
@@ -2787,7 +2804,7 @@ subroutine build_pairwise_list(atList,natmnl,cut2,a_plist)
 !$acc    cell_x,cell_y,cell_z, &
 !$acc    matb_lst,list,blist)
 
-   call filter_pairwise_atom_lst<<<*,128,0,rec_stream>>>&
+   call filter_pairwise_atom_lst<<<*,128,0,reciprocal_work%stream>>>&
       &(c_glob,cell_scan,cell_x,cell_y,cell_z,matb_lst,&
       &n,natmnlb,nblock,szMatb,nbpairs,cut2,&
       &list,blist,xbeg,xend,ybeg,yend,zbeg,zend)
@@ -2799,9 +2816,9 @@ subroutine build_pairwise_list(atList,natmnl,cut2,a_plist)
 #endif
 
 #ifdef _OPENACC
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc host_data use_device(list)
-   call thrust_remove(list,szlist,-1,nb_pair,rec_stream)
+   call thrust_remove(list,szlist,-1,nb_pair,reciprocal_work%stream)
 !$acc end host_data
 #endif
 

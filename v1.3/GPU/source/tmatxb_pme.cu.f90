@@ -9,13 +9,16 @@
 #include "tinker_cudart.h"
 
 module tmatxb_pmecu
-   use utilcu  ,only: BLOCK_DIM,ALL_LANES,f_min,f_max
-   use utilgpu ,only: BLOCK_SIZE
+   use utilcu  ,only: ALL_LANES,f_min,f_max
+   use tinheader,only: ti_p
    use tintypes,only: rpole_elt,real3,real6,real7
    use neigh   ,only: i_bl=>inside_block,d_bl=>disc_block
    private
+   integer,parameter :: BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32,WARP_SHFT=5
+   integer,parameter :: maxBlock=ishft(1,16)
    public :: tmatxb_pme_core_cu, tmatxb_pme_core_v4_cu&
       &, otfdc_tmatxb_pme_core_cu, efld0_direct_scaling_cu
+   public :: BLOCK_DIM,BLOCK_SIZE,WARP_SIZE,WARP_SHFT,maxBlock
 
 contains
 

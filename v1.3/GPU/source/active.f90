@@ -251,3 +251,14 @@ subroutine alloc_shared_active
    call shmem_request( use,  winuse, [n+1], config=mhostacc, start=0)
    call shmem_request(iuse, winiuse,   [n], config=mhostacc)
 end
+
+!     subroutine dealloc_shared_active : release active-atom shared windows
+!
+subroutine dealloc_shared_active
+   use tinMemory, only: mhostacc, shmem_request
+   use usage, only: use, iuse, winuse, winiuse
+   implicit none
+
+   call shmem_request(use, winuse, [0], config=mhostacc, start=0)
+   call shmem_request(iuse, winiuse, [0], config=mhostacc)
+end

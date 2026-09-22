@@ -16,14 +16,15 @@ module echgtrncu
    use sizes    ,only: maxgrp
    use tinheader,only: zeror,oner
    use tinTypes ,only: real3,mdyn3_r
-   use utilcu   ,only: BLOCK_DIM,f_abs
+   use utilcu   ,only: f_abs
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
    use utilcu   ,only: f_sqrt,f_exp
 #endif
-   use utilgpu  ,only: WARP_SIZE
    use reduction,only: RED_BUFF_SIZE
    private
+   integer,parameter :: BLOCK_DIM=128,WARP_SIZE=32,WARP_SHFT=5
    public :: echgtrn1_kcu
+   public :: BLOCK_DIM,WARP_SIZE,WARP_SHFT
 contains
 #include "image.inc.f90"
 #include "midpointimage.inc.f90"

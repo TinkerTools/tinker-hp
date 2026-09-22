@@ -28,7 +28,8 @@ subroutine kurey(init)
    use potent
    use utils
    use urey
-   use utilgpu
+   use tinMemory, only: prmem_request
+   use tinheader, only: ti_p
    use urypot
    implicit none
    integer i,j,nu,nups,nutot,nuq

@@ -22,15 +22,21 @@ subroutine dcinduce_pme2gpu
    use interfaces,only: otf_dc_efld0_directgpu_p
    use math
    use mpole
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm, domain_workspace_tp2d, &
+      &domain_workspace_tp3d
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use pme
    use polar
    use polpot
    use potent
+   use tinMemory ,only: prmem_request
    use units
    use uprior
-   use utilcomm ,buffermpi1=>buffermpi2d,buffermpi2=>buffermpi2d1
    use utils
-   use utilgpu
+   use mdevice, only: after, direct_work, reciprocal_work, record_platform_error
+   use status, only: failed, status_t
    use mpi
    implicit none
 !
@@ -42,15 +48,17 @@ subroutine dcinduce_pme2gpu
 !
    integer iglob, ierr, iipole
    integer, allocatable :: reqrecdirsend(:),reqrecdirrec(:)
-   integer, allocatable :: reqsend(:),reqrec(:)
-   integer, allocatable :: req2send(:),req2rec(:)
+   type(polar_comm_t) :: comm_ticket
    real(t_p) time0,time1
+   type(status_t) :: dep_status
 !
    parameter (nrhs=2)
    real(t_p)  wtime0, wtime1, wtime2, udsum, upsum
    real(t_p)  term
    real(t_p), allocatable :: ef(:,:,:), mu(:,:,:),&
       &cphi(:,:), murec(:,:,:)
+   real(t_p), pointer :: buffermpi1(:,:),buffermpi2(:,:)
+   real(t_p), pointer :: buffermpimu1(:,:,:),buffermpimu2(:,:,:)
 !
 !     Get direct space induced field for divide and conquer methods
 !
@@ -60,6 +68,16 @@ subroutine dcinduce_pme2gpu
    if (deb_Path)&
       &write(*,'(2x,a)') 'dcinduce_pme2gpu'
    if (.not.use_polar) return
+#ifdef _OPENACC
+   if (clsttype .eq. 1) then
+      call record_platform_error(-9, 'kmean clustering is not supported with OpenACC')
+      return
+   end if
+   if (precomp .eq. 1) then
+      call record_platform_error(-9, 'dcinduce pc_dc is not supported with OpenACC')
+      return
+   end if
+#endif
 !
 1000 format(' illegal polalg in newinduce.')
 1010 format(' time for the ',a,F14.5)
@@ -67,14 +85,10 @@ subroutine dcinduce_pme2gpu
 !
 !     allocate some memory and clear the arrays:
 !
-   call prmem_request(buffermpimu1,3,nrhs,max(npoleloc,1),&
-      &async=.true.)
-   call prmem_request(buffermpimu2,3,nrhs,max(npolerecloc,1),&
-      &async=.true.)
-   call prmem_request(buffermpi1,10,max(npoleloc,1),&
-      &async=.true.)
-   call prmem_request(buffermpi2,10,max(npolerecloc,1),&
-      &async=.true.)
+   call domain_workspace_tp3d(1,3,nrhs,max(npoleloc,1),buffermpimu1)
+   call domain_workspace_tp3d(2,3,nrhs,max(npolerecloc,1),buffermpimu2)
+   call domain_workspace_tp2d(1,10,max(npoleloc,1),buffermpi1)
+   call domain_workspace_tp2d(2,10,max(npolerecloc,1),buffermpi2)
 !
    allocate (mu   (3,nrhs,max(1,npolebloc)))
    allocate (murec(3,nrhs,max(1,npolerecloc)))
@@ -94,19 +108,15 @@ subroutine dcinduce_pme2gpu
 
    allocate (reqrecdirsend(nproc))
    allocate (reqrecdirrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (reqrec(nproc))
-   allocate (req2send(nproc))
-   allocate (req2rec(nproc))
 
    ! set arrays to zero
-   call set_to_zero2(mu,ef       ,3*nrhs*npolebloc,rec_queue)
-   call set_to_zero1(buffermpimu1,3*nrhs*npoleloc ,rec_queue)
+   call set_to_zero2(mu,ef       ,3*nrhs*npolebloc,reciprocal_work%queue)
+   call set_to_zero1(buffermpimu1,3*nrhs*npoleloc ,reciprocal_work%queue)
    call set_to_zero2(murec,buffermpimu2,3*nrhs*npolerecloc,&
-      &rec_queue)
-   call set_to_zero2(cphi   ,buffermpi1,10*npoleloc   ,rec_queue)
-   call set_to_zero2(cphirec,buffermpi2,10*npolerecloc,rec_queue)
-   call set_to_zero1(fphirec,           20*npolerecloc,rec_queue)
+      &reciprocal_work%queue)
+   call set_to_zero2(cphi   ,buffermpi1,10*npoleloc   ,reciprocal_work%queue)
+   call set_to_zero2(cphirec,buffermpi2,10*npolerecloc,reciprocal_work%queue)
+   call set_to_zero1(fphirec,           20*npolerecloc,reciprocal_work%queue)
 !
 !     compute the electric fields:
 !
@@ -114,10 +124,6 @@ subroutine dcinduce_pme2gpu
 !
    if(clsttype .eq. 1) then
       !kmeans clustering
-#ifdef _OPENACC
-      call openacc_abort("kmean clustering not yet supported with"&
-         &//" OpenAcc !!")
-#endif
       call cluster1
    else if(clsttype .eq. 2) then
       !segmentation clustering
@@ -125,14 +131,12 @@ subroutine dcinduce_pme2gpu
    end if
 
 #ifdef _OPENACC
-   if (dir_queue.ne.rec_queue)& !Start dir_stream cover
-      &call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue)& !Start direct_work%stream cover
+      &call after(direct_work,reciprocal_work,dep_status)
+      if (failed(dep_status)) __TINKER_FATAL__
 #endif
 
    if(precomp .eq. 1) then
-#ifdef _OPENACC
-      call openacc_abort("dcinduce pc_dc not supported with OpenAcc")
-#endif
       call pc_dc_efld0_direct(nrhs,ef)
    else
       call otf_dc_efld0_directgpu_p(nrhs,ef)
@@ -155,18 +159,18 @@ subroutine dcinduce_pme2gpu
    call commrecdirfieldsgpu(2,cphirec,cphi,buffermpi1,buffermpi2,&
       &reqrecdirrec,reqrecdirsend)
 !
-   call commdirdirgpu(nrhs,0,mu,reqrec,reqsend)
+   ! Direct exchange is posted after the initial field is ready.
 !
 !     Add direct and reciprocal fields
 !
    term = (4.0_ti_p/3.0_ti_p) * aewald**3 / sqrtpi
-   def_queue = rec_queue
 #ifdef _OPENACC
-   if (dir_queue.ne.rec_queue) then !close 'dir_stream' recover
-      call stream_wait_async(dir_stream,rec_stream,dir_event)
+   if (direct_work%queue.ne.reciprocal_work%queue) then !close 'direct_work%stream' recover
+      call after(reciprocal_work,direct_work,dep_status)
+      if (failed(dep_status)) __TINKER_FATAL__
    end if
 #endif
-!$acc parallel loop collapse(3) async(def_queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
    do i = 1,npoleloc
       do j = 1,nrhs
          do k = 1,3
@@ -186,7 +190,7 @@ subroutine dcinduce_pme2gpu
    if (use_pred .and. nualt.eq.maxualt) then
       call pred_InitField(mu)
    else if (polgsf.eq.0) then
-!$acc parallel loop collapse(3) async(def_queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
       do i = 1, npoleloc
          do k = 1, nrhs
             do j = 1, 3
@@ -196,7 +200,7 @@ subroutine dcinduce_pme2gpu
          end do
       end do
    else
-!$acc parallel loop collapse(3) async(def_queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
       do i = 1, npoleloc
          do j = 1,nrhs
             do k = 1, 3
@@ -211,14 +215,10 @@ subroutine dcinduce_pme2gpu
       end do
    end if
 
-   call commdirdirgpu(nrhs,1,mu,reqrec,reqsend)
-   call commdirdirgpu(nrhs,2,mu,reqrec,reqsend)
-   call commrecdirdipgpu(nrhs,0,murec,mu,buffermpimu1,buffermpimu2,&
-      &req2rec,req2send)
-   call commrecdirdipgpu(nrhs,1,murec,mu,buffermpimu1,buffermpimu2,&
-      &req2rec,req2send)
-   call commrecdirdipgpu(nrhs,2,murec,mu,buffermpimu1,buffermpimu2,&
-      &req2rec,req2send)
+   call polar_post_comm(comm_ticket,nrhs,mu)
+   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_dip_comm(comm_ticket,nrhs,murec,mu,buffermpimu1,buffermpimu2)
+   call polar_finish_dip_comm(comm_ticket,nrhs,murec,mu,buffermpimu1,buffermpimu2)
 !
 !     now, call the proper solver.
 !
@@ -242,7 +242,7 @@ subroutine dcinduce_pme2gpu
 !
 !     move the computed dipoles in the common block.
 !
-!$acc parallel loop collapse(2) async(def_queue)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue)
    do i = 1, npolebloc
       do j = 1, 3
          iipole = poleglob(i)
@@ -250,7 +250,7 @@ subroutine dcinduce_pme2gpu
          uinp(j,iipole) = mu(j,2,i)
       end do
    end do
-!$acc parallel loop collapse(2) async(def_queue)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue)
    do i = 1, npolerecloc
       do j = 1, 3
          iipole = polerecglob(i)
@@ -270,10 +270,6 @@ subroutine dcinduce_pme2gpu
 !
    if (use_pred) call pred_SetAlt
 
-   deallocate (reqrec)
-   deallocate (reqsend)
-   deallocate (req2rec)
-   deallocate (req2send)
    deallocate (reqrecdirrec)
    deallocate (reqrecdirsend)
    deallocate (ef)
@@ -292,14 +288,19 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
    use interfaces
    use math
    use mpole
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm, domain_workspace_tp3d
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use polar
    use polpot
    use timestat
+   use tinMemory  ,only: prmem_request
    use mpi
    use sizes
    use utils
-   use utilcomm ,buffermpi1=>buffermpi3d,buffermpi2=>buffermpi3d1
-   use utilgpu
+   use mdevice, only: after, direct_work, reciprocal_work
+   use status, only: failed, status_t
    implicit none
 !
 !     solves the polarizable dipoles linear equations by jacobi
@@ -321,6 +322,7 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
    real(t_p) term
    real(t_p) time0,time1,time2,time3
    parameter (ndismx=25,zero=0,one=1)
+   type(status_t) :: dep_status
 
    integer ipiv(ndismx+1)
    real(t_p), allocatable :: munew(:,:,:),h(:,:,:), cex(:)&
@@ -328,14 +330,15 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
    real(t_p), allocatable :: dcfield1(:),dcfield2(:)
    real(t_p), allocatable :: dipfield(:,:,:)&
       &, dipfieldbis(:,:,:)
+   real(t_p), pointer :: buffermpi1(:,:,:),buffermpi2(:,:,:)
+   real(t_p), pointer :: buffermpimu1(:,:,:),buffermpimu2(:,:,:)
 !
 !     MPI
 !
    integer reqnorm,reqdiis(2*ndismx+1)
    integer status(MPI_STATUS_SIZE)
    integer,allocatable :: reqrecdirrec(:),reqrecdirsend(:)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
+   type(polar_comm_t) :: comm_ticket, dip_ticket
 !
 !
 1000 format(' itsolv converged after ',I3,' iterations.',/,&
@@ -350,14 +353,10 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
    if (deb_Path)&
       &write(*,'(3x,a)') 'inducedc_pme2gpu'
 
-   call prmem_request(buffermpi1,3,nrhs,max(npoleloc,1),&
-      &async=.true.)
-   call prmem_request(buffermpimu1,3,nrhs,max(npoleloc,1),&
-      &async=.true.)
-   call prmem_request(buffermpi2,3,nrhs,max(npolerecloc,1),&
-      &async=.true.)
-   call prmem_request(buffermpimu2,3,nrhs,max(npolerecloc,1),&
-      &async=.true.)
+   call domain_workspace_tp3d(1,3,nrhs,max(npoleloc,1),buffermpi1)
+   call domain_workspace_tp3d(2,3,nrhs,max(npoleloc,1),buffermpimu1)
+   call domain_workspace_tp3d(3,3,nrhs,max(npolerecloc,1),buffermpi2)
+   call domain_workspace_tp3d(4,3,nrhs,max(npolerecloc,1),buffermpimu2)
 !
    allocate (munew      (3,nrhs,max(1,npolebloc  )))
    allocate (h          (3,nrhs,max(1,npolebloc  )))
@@ -367,10 +366,6 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
    allocate (dcfield2   (maxdim))
    allocate (reqrecdirsend(nproc))
    allocate (reqrecdirrec (nproc))
-   allocate (reqrec       (nproc))
-   allocate (reqsend      (nproc))
-   allocate (req2rec      (nproc))
-   allocate (req2send     (nproc))
 !$acc enter data create(munew,h,dipfield,dipfieldbis,dcfield1,dcfield2, &
 !$acc    rnorm1,rnorm2,ipiv)  async
 !
@@ -387,20 +382,21 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
       allocate (bloc(lenb,lenb))
       allocate (cex(lenb))
 !$acc enter data create(xdiis,ediis,bmat,bloc,cex) async
-      call set_to_zero1(bmat,lenb*lenb,rec_queue)
+      call set_to_zero1(bmat,lenb*lenb,reciprocal_work%queue)
    end if
 
    !Initiate arrays
    call set_to_zero3(buffermpi1,buffermpimu1,dipfield&
-      &,size(dipfield),rec_queue)
+      &,size(dipfield),reciprocal_work%queue)
    call set_to_zero3(buffermpi2,buffermpimu2,dipfieldbis&
-      &,size(dipfieldbis),rec_queue)
-   call set_to_zero2(munew,h,size(h),rec_queue)
-   call set_to_zero2(dcfield2,dcfield2,size(dcfield2),rec_queue)
+      &,size(dipfieldbis),reciprocal_work%queue)
+   call set_to_zero2(munew,h,size(h),reciprocal_work%queue)
+   call set_to_zero2(dcfield2,dcfield2,size(dcfield2),reciprocal_work%queue)
 #ifdef _OPENACC
    !start Async overlapping with matvec
-   if (dir_queue.ne.rec_queue)&
-      &call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue)&
+      &call after(direct_work,reciprocal_work,dep_status)
+      if (failed(dep_status)) __TINKER_FATAL__
 #endif
 !$acc data present(klst,mu,poleglob,ipole,atmofst,dipfield,dipfieldbis, &
 !$acc   dcfield2,dcfield1,munew,ediis,xdiis) async
@@ -427,12 +423,9 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
       call commrecdirsolvgpu(nrhs,0,dipfieldbis,dipfield,buffermpi1,&
          &buffermpi2,reqrecdirrec,reqrecdirsend)
 !
-      call commdirdirgpu(nrhs,0,mu,reqrec,reqsend)
       call commrecdirsolvgpu(nrhs,1,dipfieldbis,dipfield,buffermpi1,&
          &buffermpi2,reqrecdirrec,reqrecdirsend)
 !
-      call commrecdirdipgpu(nrhs,0,murec,munew,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
 !
 !     jacobi step:
 !
@@ -483,8 +476,8 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
                end do
             end do
 !$acc host_data use_device(zmatDn,dcfield1,dcfield2)
-            call cuPOTRS(mdim,zmatDn,mdim,dcfield1,mdim,rec_stream)
-            call cuPOTRS(mdim,zmatDn,mdim,dcfield2,mdim,rec_stream)
+            call cuPOTRS(mdim,zmatDn,mdim,dcfield1,mdim,reciprocal_work%stream)
+            call cuPOTRS(mdim,zmatDn,mdim,dcfield2,mdim,reciprocal_work%stream)
 !$acc end host_data
 #else
             call M_PPTRS("L",mdim,1,zmat(kofst(k)+1:knd),&
@@ -553,16 +546,16 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
             end do
          end if
 
-         call utils_amove(lenb*lenb,bmat,bloc,rec_queue)  !copy bmat in bloc
-         call set_to_zero1(cex,lenb,rec_queue)
-         call set_to_zero1(munew,size(munew),rec_queue)
+         call utils_amove(lenb*lenb,bmat,bloc,reciprocal_work%queue)  !copy bmat in bloc
+         call set_to_zero1(cex,lenb,reciprocal_work%queue)
+         call set_to_zero1(munew,size(munew),reciprocal_work%queue)
 !$acc serial async
          cex(1) = one
 !$acc end serial
 
 #ifdef _OPENACC
 !$acc host_data use_device(bloc,ipiv,cex)
-         call cuGESV(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,rec_stream)
+         call cuGESV(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,reciprocal_work%stream)
 !$acc end host_data
 #else
          call M_gesv(nmat,1,bloc,ndismx+1,ipiv,cex,nmat,info)
@@ -572,13 +565,11 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
       end if
       time2 = mpi_wtime()
 !
-      call commdirdirgpu(nrhs,1,munew,reqrec,reqsend)
-      call commrecdirdipgpu(nrhs,1,murec,munew,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
-      call commdirdirgpu(nrhs,2,mu,reqrec,reqsend)
-      call commrecdirdipgpu(nrhs,2,murec,munew,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
-      call utils_amove(3*nrhs*npoleloc,munew,mu,rec_queue)   !copy munew in mu
+      call polar_post_comm(comm_ticket,nrhs,mu,.false.,munew)
+      call polar_finish(comm_ticket,nrhs,mu)
+      call polar_post_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu1,buffermpimu2)
+      call polar_finish_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu1,buffermpimu2)
+      call utils_amove(3*nrhs*npoleloc,munew,mu,reciprocal_work%queue)   !copy munew in mu
 !
 !     compute the norm of the increment.
 !
@@ -629,10 +620,6 @@ subroutine inducedc_pme2gpu(matvec,nrhs,dodiis,ef,mu,murec)
 !
 !$acc exit data delete(munew,dipfield,dipfieldbis,dcfield1,dcfield2,h) &
 !$acc     async
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (req2send)
-   deallocate (req2rec)
    deallocate (reqrecdirsend)
    deallocate (reqrecdirrec)
    deallocate (munew)

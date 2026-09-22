@@ -280,6 +280,7 @@ MOD_SRCS += MOD_polpot.f90
 MOD_SRCS += MOD_potent.f90
 MOD_SRCS += MOD_precis.f90
 MOD_SRCS += MOD_ptable.f90
+MOD_SRCS += MOD_scaling.f90
 MOD_SRCS += MOD_precompute_polegpu.f90
 MOD_SRCS += MOD_qtb.f90
 MOD_SRCS += MOD_reduction.f90
@@ -311,10 +312,8 @@ MOD_SRCS += MOD_urypot.f90
 MOD_SRCS += MOD_usage.f90
 MOD_SRCS += MOD_utils.f90
 MOD_SRCS += MOD_utilbaoab.f90
-MOD_SRCS += MOD_utilcomm.f90
 MOD_SRCS += MOD_utilbaoabpi.f90
 MOD_SRCS += MOD_utilvec.f90
-MOD_SRCS += MOD_utilgpu.f90
 MOD_SRCS += MOD_USampling.f90
 MOD_SRCS += MOD_vec.f90
 MOD_SRCS += MOD_vdwpot.f90
@@ -334,7 +333,6 @@ F_SRCS   += angles.f90
 F_SRCS   += alterchg.f90
 F_SRCS   += alterchg.gpu.f90
 F_SRCS   += attach.f90
-F_SRCS   += basefile.f90
 F_SRCS   += beeman.f90
 F_SRCS   += bicubic.f90
 F_SRCS   += beads.f90
@@ -405,17 +403,13 @@ F_SRCS   += eurey3.f90  eurey3gpu.f90
 F_SRCS   += evcorr.f90 extra.f90 extra1.f90 extra3.f90
 F_SRCS   += fatal.f90
 F_SRCS   += fft_mpi.f90
-F_SRCS   += field.f90
 F_SRCS   += final.f90
 F_SRCS   += freeunit.f90
 F_SRCS   += geometry.f90
-F_SRCS   += getkey.f90
 F_SRCS   += getnumb.f90
-F_SRCS   += getprm.f90
 F_SRCS   += getstring.f90
 F_SRCS   += gettext.f90
 F_SRCS   += getword.f90
-F_SRCS   += getxyz.f90
 F_SRCS   += gradient.f90
 F_SRCS   += groups.f90
 F_SRCS   += image.f90
@@ -465,7 +459,6 @@ F_SRCS   += mdstate.gpu.f90
 F_SRCS   += mechanic.f90
 F_SRCS   += mlpot.f90 
 F_SRCS   += molecule.f90
-F_SRCS   += mpistuff.f90 mpiUtils.gpu.f90
 F_SRCS   += mutate.f90
 F_SRCS   += nblist.f90 nblistgpu.f90
 F_SRCS   += nblist_build.gpu.f90
@@ -491,8 +484,7 @@ F_SRCS   += pressure.f90
 F_SRCS   += prime.f90
 F_SRCS   += promo.f90 promoamd.f90 promosmd.f90
 F_SRCS   += prmkey.f90
-F_SRCS   += prtdynbeads.f90 prtdyn.f90 prtxyz.f90
-F_SRCS   += readdyn.f90 readprm.f90 readxyz.f90
+F_SRCS   += readprm.f90
 F_SRCS   += respa.f90 respa1.f90
 F_SRCS   += rings.f90
 F_SRCS   += rotpole.f90 rotpolegpu.f90
@@ -594,7 +586,6 @@ ifeq ($(arch),$(filter $(arch),device gpu))
 else ifeq ($(arch),$(filter $(arch),host cpu))
    MODS    = $(OBJS_MOD_F)
    OBJS    = $(OBJS_F) $(OBJS_CC)
-   library = library_host.make
 endif
 
 
@@ -768,8 +759,8 @@ colvars:
 	@cd $(COLVARS_HOME) &&\
 	$(MAKE) TCL_SUPPORT=$(TCL_SUPPORT) TCL_HOME=$(TCL_HOME) CXXFLAGS="$(COLVARS_CXX_F)" libcolvars.a
 
-# Include source code dependencies file
-include ./depend.mk
+# Include generated source dependencies when create_build has produced them.
+-include ./depend.mk
 
 #  --------------  #
 ## Generics rules ##

@@ -8,8 +8,8 @@
   "configurePresets": [
     {
       "name": "gpu-double",
-      "displayName": "GPU Double",
-      "description": "NVHPC + MPI wrapper + nvcc baseline CMake preset for the maintained GPU path.",
+      "displayName": "GPU Native Arch double Static Core Ninja",
+      "description": "GPU Native Arch double Static Core Ninja",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/gpu-double",
       "cacheVariables": {
@@ -32,13 +32,40 @@
         "TINKERHP_ENABLE_HIP": "OFF",
         "TINKERHP_ENABLE_NO_MUTATION": "OFF",
         "TINKERHP_ENABLE_NVSHMEM": "OFF",
+        "BUILD_TESTING": "OFF",
         "TINKERHP_GPU_ARCHITECTURES": "native"
       }
     },
     {
+      "name": "gpu-double-make",
+      "displayName": "GPU Native Arch double Static Core Makefile",
+      "description": "GPU Native Arch double Static Core Makefile",
+      "inherits": "gpu-double",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-double-make"
+    },
+    {
+      "name": "gpu-all-double",
+      "displayName": "GPU All Arch double Static Core Ninja",
+      "description": "GPU All Arch double Static Core Ninja",
+      "inherits": "gpu-double",
+      "binaryDir": "${sourceDir}/build/gpu-all-double",
+      "cacheVariables": {
+        "TINKERHP_GPU_ARCHITECTURES": "all"
+      }
+    },
+    {
+      "name": "gpu-all-double-make",
+      "displayName": "GPU All Arch double Static Core Makefile",
+      "description": "GPU All Arch double Static Core Makefile",
+      "inherits": "gpu-all-double",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-all-double-make"
+    },
+    {
       "name": "gpu-fpa",
-      "displayName": "GPU Mixed FPA",
-      "description": "GPU mixed-precision build with Fixed Precision Arithmetic enabled.",
+      "displayName": "GPU Native Arch fpa Static Core Ninja",
+      "description": "GPU Native Arch fpa Static Core Ninja",
       "inherits": "gpu-double",
       "binaryDir": "${sourceDir}/build/gpu-fpa",
       "cacheVariables": {
@@ -47,9 +74,71 @@
       }
     },
     {
+      "name": "gpu-fpa-make",
+      "displayName": "GPU Native Arch fpa Static Core Makefile",
+      "description": "GPU Native Arch fpa Static Core Makefile",
+      "inherits": "gpu-fpa",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-make"
+    },
+    {
+      "name": "gpu-all-fpa",
+      "displayName": "GPU All Arch fpa Static Core Ninja",
+      "description": "GPU All Arch fpa Static Core Ninja",
+      "inherits": "gpu-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa",
+      "cacheVariables": {
+        "TINKERHP_GPU_ARCHITECTURES": "all"
+      }
+    },
+    {
+      "name": "gpu-all-fpa-make",
+      "displayName": "GPU All Arch fpa Static Core Makefile",
+      "description": "GPU All Arch fpa Static Core Makefile",
+      "inherits": "gpu-all-fpa",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa-make"
+    },
+    {
+      "name": "gpu-double-colvars",
+      "displayName": "GPU Native Arch double Colvars Static Core Ninja",
+      "description": "GPU Native Arch double Colvars Static Core Ninja",
+      "inherits": "gpu-double",
+      "binaryDir": "${sourceDir}/build/gpu-double-colvars",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_COLVARS": "ON"
+      }
+    },
+    {
+      "name": "gpu-double-colvars-make",
+      "displayName": "GPU Native Arch double Colvars Static Core Makefile",
+      "description": "GPU Native Arch double Colvars Static Core Makefile",
+      "inherits": "gpu-double-colvars",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-double-colvars-make"
+    },
+    {
+      "name": "gpu-all-double-colvars",
+      "displayName": "GPU All Arch double Colvars Static Core Ninja",
+      "description": "GPU All Arch double Colvars Static Core Ninja",
+      "inherits": "gpu-all-double",
+      "binaryDir": "${sourceDir}/build/gpu-all-double-colvars",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_COLVARS": "ON"
+      }
+    },
+    {
+      "name": "gpu-all-double-colvars-make",
+      "displayName": "GPU All Arch double Colvars Static Core Makefile",
+      "description": "GPU All Arch double Colvars Static Core Makefile",
+      "inherits": "gpu-all-double-colvars",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-all-double-colvars-make"
+    },
+    {
       "name": "gpu-fpa-colvars",
-      "displayName": "GPU Mixed FPA Colvars",
-      "description": "GPU mixed-precision FPA build with the external Colvars integration enabled.",
+      "displayName": "GPU Native Arch fpa Colvars Static Core Ninja",
+      "description": "GPU Native Arch fpa Colvars Static Core Ninja",
       "inherits": "gpu-fpa",
       "binaryDir": "${sourceDir}/build/gpu-fpa-colvars",
       "cacheVariables": {
@@ -57,29 +146,71 @@
       }
     },
     {
-      "name": "gpu-fpa-shared",
-      "displayName": "GPU Mixed FPA Shared Core",
-      "description": "GPU mixed-precision FPA build with the aggregate Tinker-HP core shared.",
-      "inherits": "gpu-fpa",
-      "binaryDir": "${sourceDir}/build/gpu-fpa-shared",
-      "cacheVariables": {
-        "TINKERHP_LINK_MODE": "SHARED"
-      }
+      "name": "gpu-fpa-colvars-make",
+      "displayName": "GPU Native Arch fpa Colvars Static Core Makefile",
+      "description": "GPU Native Arch fpa Colvars Static Core Makefile",
+      "inherits": "gpu-fpa-colvars",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-colvars-make"
     },
     {
-      "name": "gpu-fpa-shared-colvars",
-      "displayName": "GPU Mixed FPA Shared Core Colvars",
-      "description": "GPU mixed-precision FPA shared-core build with the static Colvars archive enabled.",
-      "inherits": "gpu-fpa-shared",
-      "binaryDir": "${sourceDir}/build/gpu-fpa-shared-colvars",
+      "name": "gpu-all-fpa-colvars",
+      "displayName": "GPU All Arch fpa Colvars Static Core Ninja",
+      "description": "GPU All Arch fpa Colvars Static Core Ninja",
+      "inherits": "gpu-all-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa-colvars",
       "cacheVariables": {
         "TINKERHP_ENABLE_COLVARS": "ON"
       }
     },
     {
+      "name": "gpu-all-fpa-colvars-make",
+      "displayName": "GPU All Arch fpa Colvars Static Core Makefile",
+      "description": "GPU All Arch fpa Colvars Static Core Makefile",
+      "inherits": "gpu-all-fpa-colvars",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa-colvars-make"
+    },
+    {
+      "name": "gpu-double-nn",
+      "displayName": "GPU Native Arch double Deep-HP Static Core Ninja",
+      "description": "GPU Native Arch double Deep-HP Static Core Ninja",
+      "inherits": "gpu-double",
+      "binaryDir": "${sourceDir}/build/gpu-double-nn",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_NN": "ON"
+      }
+    },
+    {
+      "name": "gpu-double-nn-make",
+      "displayName": "GPU Native Arch double Deep-HP Static Core Makefile",
+      "description": "GPU Native Arch double Deep-HP Static Core Makefile",
+      "inherits": "gpu-double-nn",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-double-nn-make"
+    },
+    {
+      "name": "gpu-all-double-nn",
+      "displayName": "GPU All Arch double Deep-HP Static Core Ninja",
+      "description": "GPU All Arch double Deep-HP Static Core Ninja",
+      "inherits": "gpu-all-double",
+      "binaryDir": "${sourceDir}/build/gpu-all-double-nn",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_NN": "ON"
+      }
+    },
+    {
+      "name": "gpu-all-double-nn-make",
+      "displayName": "GPU All Arch double Deep-HP Static Core Makefile",
+      "description": "GPU All Arch double Deep-HP Static Core Makefile",
+      "inherits": "gpu-all-double-nn",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-all-double-nn-make"
+    },
+    {
       "name": "gpu-fpa-nn",
-      "displayName": "GPU Mixed FPA Deep-HP",
-      "description": "GPU mixed-precision FPA build with the managed Deep-HP CFFI interface enabled.",
+      "displayName": "GPU Native Arch fpa Deep-HP Static Core Ninja",
+      "description": "GPU Native Arch fpa Deep-HP Static Core Ninja",
       "inherits": "gpu-fpa",
       "binaryDir": "${sourceDir}/build/gpu-fpa-nn",
       "cacheVariables": {
@@ -88,43 +219,120 @@
     },
     {
       "name": "gpu-fpa-nn-make",
-      "displayName": "GPU Mixed FPA Deep-HP",
-      "description": "GPU mixed-precision FPA build with the managed Deep-HP CFFI interface enabled.",
-      "inherits": "gpu-fpa",
+      "displayName": "GPU Native Arch fpa Deep-HP Static Core Makefile",
+      "description": "GPU Native Arch fpa Deep-HP Static Core Makefile",
+      "inherits": "gpu-fpa-nn",
       "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/build/gpu-fpa-nn-make",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-nn-make"
+    },
+    {
+      "name": "gpu-all-fpa-nn",
+      "displayName": "GPU All Arch fpa Deep-HP Static Core Ninja",
+      "description": "GPU All Arch fpa Deep-HP Static Core Ninja",
+      "inherits": "gpu-all-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa-nn",
       "cacheVariables": {
         "TINKERHP_ENABLE_NN": "ON"
       }
     },
     {
-      "name": "gpu-fpa-nn-colvars",
-      "displayName": "GPU Mixed FPA Deep-HP Colvars",
-      "description": "GPU mixed-precision FPA Deep-HP build with the external Colvars integration enabled.",
-      "inherits": "gpu-fpa-nn",
-      "binaryDir": "${sourceDir}/build/gpu-fpa-nn-colvars",
-      "cacheVariables": {
-        "TINKERHP_ENABLE_COLVARS": "ON"
-      }
-    },
-    {
-      "name": "gpu-double-colvars",
-      "displayName": "GPU Double Colvars",
-      "description": "GPU double precision build with the external Colvars integration enabled.",
-      "inherits": "gpu-double",
-      "binaryDir": "${sourceDir}/build/gpu-double-colvars",
-      "cacheVariables": {
-        "TINKERHP_ENABLE_COLVARS": "ON"
-      }
+      "name": "gpu-all-fpa-nn-make",
+      "displayName": "GPU All Arch fpa Deep-HP Static Core Makefile",
+      "description": "GPU All Arch fpa Deep-HP Static Core Makefile",
+      "inherits": "gpu-all-fpa-nn",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa-nn-make"
     },
     {
       "name": "gpu-double-plumed",
-      "displayName": "GPU Double PLUMED",
-      "description": "GPU double precision build that configures, installs, and links the external PLUMED package.",
+      "displayName": "GPU Native Arch double Plumed Static Core Ninja",
+      "description": "GPU Native Arch double Plumed Static Core Ninja",
       "inherits": "gpu-double",
       "binaryDir": "${sourceDir}/build/gpu-double-plumed",
       "cacheVariables": {
         "TINKERHP_ENABLE_PLUMED": "ON"
+      }
+    },
+    {
+      "name": "gpu-double-plumed-make",
+      "displayName": "GPU Native Arch double Plumed Static Core Makefile",
+      "description": "GPU Native Arch double Plumed Static Core Makefile",
+      "inherits": "gpu-double-plumed",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-double-plumed-make"
+    },
+    {
+      "name": "gpu-all-double-plumed",
+      "displayName": "GPU All Arch double Plumed Static Core Ninja",
+      "description": "GPU All Arch double Plumed Static Core Ninja",
+      "inherits": "gpu-all-double",
+      "binaryDir": "${sourceDir}/build/gpu-all-double-plumed",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_PLUMED": "ON"
+      }
+    },
+    {
+      "name": "gpu-all-double-plumed-make",
+      "displayName": "GPU All Arch double Plumed Static Core Makefile",
+      "description": "GPU All Arch double Plumed Static Core Makefile",
+      "inherits": "gpu-all-double-plumed",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-all-double-plumed-make"
+    },
+    {
+      "name": "gpu-fpa-plumed",
+      "displayName": "GPU Native Arch fpa Plumed Static Core Ninja",
+      "description": "GPU Native Arch fpa Plumed Static Core Ninja",
+      "inherits": "gpu-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-plumed",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_PLUMED": "ON"
+      }
+    },
+    {
+      "name": "gpu-fpa-plumed-make",
+      "displayName": "GPU Native Arch fpa Plumed Static Core Makefile",
+      "description": "GPU Native Arch fpa Plumed Static Core Makefile",
+      "inherits": "gpu-fpa-plumed",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-fpa-plumed-make"
+    },
+    {
+      "name": "gpu-all-fpa-plumed",
+      "displayName": "GPU All Arch fpa Plumed Static Core Ninja",
+      "description": "GPU All Arch fpa Plumed Static Core Ninja",
+      "inherits": "gpu-all-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa-plumed",
+      "cacheVariables": {
+        "TINKERHP_ENABLE_PLUMED": "ON"
+      }
+    },
+    {
+      "name": "gpu-all-fpa-plumed-make",
+      "displayName": "GPU All Arch fpa Plumed Static Core Makefile",
+      "description": "GPU All Arch fpa Plumed Static Core Makefile",
+      "inherits": "gpu-all-fpa-plumed",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa-plumed-make"
+    },
+    {
+      "name": "gpu-all-double-shared",
+      "displayName": "GPU All Arch double Shared Core Ninja",
+      "description": "GPU All Arch double Shared Core Ninja",
+      "inherits": "gpu-all-double",
+      "binaryDir": "${sourceDir}/build/gpu-all-double-shared",
+      "cacheVariables": {
+        "TINKERHP_LINK_MODE": "SHARED"
+      }
+    },
+    {
+      "name": "gpu-all-fpa-shared",
+      "displayName": "GPU All Arch fpa Shared Core Ninja",
+      "description": "GPU All Arch fpa Shared Core Ninja",
+      "inherits": "gpu-all-fpa",
+      "binaryDir": "${sourceDir}/build/gpu-all-fpa-shared",
+      "cacheVariables": {
+        "TINKERHP_LINK_MODE": "SHARED"
       }
     }
   ],
@@ -134,20 +342,80 @@
       "configurePreset": "gpu-double"
     },
     {
+      "name": "gpu-double-make",
+      "configurePreset": "gpu-double-make"
+    },
+    {
+      "name": "gpu-all-double",
+      "configurePreset": "gpu-all-double"
+    },
+    {
+      "name": "gpu-all-double-make",
+      "configurePreset": "gpu-all-double-make"
+    },
+    {
       "name": "gpu-fpa",
       "configurePreset": "gpu-fpa"
+    },
+    {
+      "name": "gpu-fpa-make",
+      "configurePreset": "gpu-fpa-make"
+    },
+    {
+      "name": "gpu-all-fpa",
+      "configurePreset": "gpu-all-fpa"
+    },
+    {
+      "name": "gpu-all-fpa-make",
+      "configurePreset": "gpu-all-fpa-make"
+    },
+    {
+      "name": "gpu-double-colvars",
+      "configurePreset": "gpu-double-colvars"
+    },
+    {
+      "name": "gpu-double-colvars-make",
+      "configurePreset": "gpu-double-colvars-make"
+    },
+    {
+      "name": "gpu-all-double-colvars",
+      "configurePreset": "gpu-all-double-colvars"
+    },
+    {
+      "name": "gpu-all-double-colvars-make",
+      "configurePreset": "gpu-all-double-colvars-make"
     },
     {
       "name": "gpu-fpa-colvars",
       "configurePreset": "gpu-fpa-colvars"
     },
     {
-      "name": "gpu-fpa-shared",
-      "configurePreset": "gpu-fpa-shared"
+      "name": "gpu-fpa-colvars-make",
+      "configurePreset": "gpu-fpa-colvars-make"
     },
     {
-      "name": "gpu-fpa-shared-colvars",
-      "configurePreset": "gpu-fpa-shared-colvars"
+      "name": "gpu-all-fpa-colvars",
+      "configurePreset": "gpu-all-fpa-colvars"
+    },
+    {
+      "name": "gpu-all-fpa-colvars-make",
+      "configurePreset": "gpu-all-fpa-colvars-make"
+    },
+    {
+      "name": "gpu-double-nn",
+      "configurePreset": "gpu-double-nn"
+    },
+    {
+      "name": "gpu-double-nn-make",
+      "configurePreset": "gpu-double-nn-make"
+    },
+    {
+      "name": "gpu-all-double-nn",
+      "configurePreset": "gpu-all-double-nn"
+    },
+    {
+      "name": "gpu-all-double-nn-make",
+      "configurePreset": "gpu-all-double-nn-make"
     },
     {
       "name": "gpu-fpa-nn",
@@ -158,16 +426,52 @@
       "configurePreset": "gpu-fpa-nn-make"
     },
     {
-      "name": "gpu-fpa-nn-colvars",
-      "configurePreset": "gpu-fpa-nn-colvars"
+      "name": "gpu-all-fpa-nn",
+      "configurePreset": "gpu-all-fpa-nn"
     },
     {
-      "name": "gpu-double-colvars",
-      "configurePreset": "gpu-double-colvars"
+      "name": "gpu-all-fpa-nn-make",
+      "configurePreset": "gpu-all-fpa-nn-make"
     },
     {
       "name": "gpu-double-plumed",
       "configurePreset": "gpu-double-plumed"
+    },
+    {
+      "name": "gpu-double-plumed-make",
+      "configurePreset": "gpu-double-plumed-make"
+    },
+    {
+      "name": "gpu-all-double-plumed",
+      "configurePreset": "gpu-all-double-plumed"
+    },
+    {
+      "name": "gpu-all-double-plumed-make",
+      "configurePreset": "gpu-all-double-plumed-make"
+    },
+    {
+      "name": "gpu-fpa-plumed",
+      "configurePreset": "gpu-fpa-plumed"
+    },
+    {
+      "name": "gpu-fpa-plumed-make",
+      "configurePreset": "gpu-fpa-plumed-make"
+    },
+    {
+      "name": "gpu-all-fpa-plumed",
+      "configurePreset": "gpu-all-fpa-plumed"
+    },
+    {
+      "name": "gpu-all-fpa-plumed-make",
+      "configurePreset": "gpu-all-fpa-plumed-make"
+    },
+    {
+      "name": "gpu-all-double-shared",
+      "configurePreset": "gpu-all-double-shared"
+    },
+    {
+      "name": "gpu-all-fpa-shared",
+      "configurePreset": "gpu-all-fpa-shared"
     }
   ],
   "testPresets": [
@@ -202,13 +506,6 @@
     {
       "name": "gpu-fpa-nn-make",
       "configurePreset": "gpu-fpa-nn-make",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "gpu-fpa-nn-colvars",
-      "configurePreset": "gpu-fpa-nn-colvars",
       "output": {
         "outputOnFailure": true
       }

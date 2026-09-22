@@ -23,18 +23,19 @@ subroutine verlet (istep,dt)
    use domdec
    use deriv   ,only: info_forces,prtEForces,cDef,zero_forces_rec&
                ,ftot_l,comm_forces
-   use energi  ,only: info_energy,calc_e,chk_energy_fluct
+   use energi  ,only: info_energy,calc_e,chk_energy_fluct,reduceen
    use freeze
    use inform
+   use mdevice, only: reciprocal_work
    use mdstuf1
    use moldyn
-   use parallel,only: migrate_atoms
+   use parallel,only: commpos,commposrec,migrate_atoms
    use potent
    use timestat
    use units
    use usage
    use utils    ,only:set_to_zero1m
-   use utilgpu  ,only:prmem_requestm,rec_queue
+   use tinMemory, only: prmem_requestm
    use mpi
    use sizes
    use spectra
@@ -74,7 +75,7 @@ subroutine verlet (istep,dt)
 !
    if (.not.ftot_l) then
       call prmem_requestm(derivs,3,nbloc,async=.true.)
-      call set_to_zero1m (derivs,3*nbloc,rec_queue)
+      call set_to_zero1m (derivs,3*nbloc,reciprocal_work%queue)
    end if
 !
    call reinitnl(istep)

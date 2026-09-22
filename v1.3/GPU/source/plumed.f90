@@ -89,6 +89,23 @@ contains
 #endif
    end subroutine
 
+   module subroutine plumed_finalize()
+      implicit none
+#ifdef PLUMED
+!$acc wait
+      if (lplumed) then
+         call plumed_f_gfinalize()
+!$acc exit data delete(pl_virial)
+      end if
+#endif
+      call prmem_requestm(pl_force,0,0,async=.false.)
+      call prmem_requestm(pl_pos,0,0,async=.false.)
+      call prmem_requestm(pl_mass,0,async=.false.)
+      call prmem_request(pl_glob,0,async=.false.)
+      lplumed = .false.
+      ncount = 0
+   end subroutine
+
    module subroutine eplumed(energy,derivs)
       implicit none
       real(r_p) ,intent(in)   :: energy

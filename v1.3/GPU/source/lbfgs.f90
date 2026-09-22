@@ -50,7 +50,8 @@ subroutine lbfgs (n,x0,minimum,grdmin,fgvalue,optsave)
    use linmin
    use math
    use minima
-   use interfaces,only: search,sendvecmin
+   use interfaces,only: search
+   use parallel, only: sendvecmin
    use output
    use scales
    use usage

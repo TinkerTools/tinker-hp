@@ -66,8 +66,9 @@ subroutine echgtrn3c_cu
    use shunt
    use tinheader
    use usage
-   use utilcu ,only: BLOCK_DIM,check_launch_kernel
-   use utilgpu
+   use mdevice, only: check_launch_kernel, reciprocal_work, default_work, grid_dim
+   use reduction, only: ered_buf1,lam_buff,vred_buff,nred_buff,&
+      &reduce_energy_action
    use virial
    implicit none
    integer   i,st,gS,elsI
@@ -109,9 +110,7 @@ subroutine echgtrn3c_cu
    !set kernel ressources
    elsI   = merge(nshortpolelocnlb2_pair,npolelocnlb2_pair&
       &,use_chgtrnshort)
-   gs     = get_GridDim(elsI,BLOCK_DIM)
-   def_stream = rec_stream
-   def_queue  = rec_queue
+   gs     = grid_dim(elsI,BLOCK_DIM)
 
    if      (use_chgtrnshort) then
       __TINKER_FATAL__
@@ -120,7 +119,7 @@ subroutine echgtrn3c_cu
 !!$acc    ,x_s,y_s,z_s
 !!$acc    ,chgct,dmpct,grplist,wgrp,dect,ered_buf1,vred_buff,nred_buff
 !!$acc    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z)
-!      call echgtrn3l_kcu<<<gS,BLOCK_DIM,0,def_stream>>>
+!      call echgtrn3l_kcu<<<gS,BLOCK_DIM,0,default_work%stream>>>
 !           ( ipole_s,pglob_s,loc_s,ieblst,eblst,x_s,y_s,z_s,chgct&
 !           , dmpct,mutInt,grplist,wgrp&
 !           , dect,ered_buf1,lam_buff,vred_buff,nred_buff&
@@ -138,7 +137,7 @@ subroutine echgtrn3c_cu
 !$acc    ,x_s,y_s,z_s &
 !$acc    ,chgct,dmpct,grplist,wgrp,mutInt,dect,ered_buf1,lam_buff,vred_buff,nred_buff &
 !$acc    ,mcorrect_ik,mcorrect_scale,ipole,loc,x,y,z)
-      call echgtrn3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+      call echgtrn3_kcu<<<gS,BLOCK_DIM,0,default_work%stream>>>&
           ( ipole_s,pglob_s,loc_s,ieblst,eblst(st),x_s,y_s,z_s&
           , chgct,dmpct,mutInt,grplist,wgrp&
           , dect,ered_buf1,lam_buff,vred_buff,nred_buff&
@@ -153,7 +152,7 @@ subroutine echgtrn3c_cu
 !$acc end host_data
    end if
 
-   call reduce_energy_action(ect,nect,ered_buf1,def_queue)
+   call reduce_energy_action(ect,nect,ered_buf1,default_work%queue)
 #else
    __TINKER_FATAL__
 #endif

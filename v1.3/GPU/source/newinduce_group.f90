@@ -26,7 +26,6 @@ end module
 
 subroutine newinduce_group
    use atoms     ,only: n,n_pe
-   use atomsmirror
    use atmlst
    use domdec
    use deriv
@@ -36,7 +35,7 @@ subroutine newinduce_group
    use interfaces,only: inducepcg_pme2gpu,tmatxb_p&
       &, inducestepcg_pme2gpu, efld0_group&
       &, efld0_directgpu2, efld0_directgpu_p&
-      &, commfieldfull, commdirdirfull&
+      &, commfieldfull&
       &, inducepcg_group
    use math
    use mpole
@@ -49,8 +48,9 @@ subroutine newinduce_group
    use units
    use uprior
    use utils
-   use utilcomm ,buffermpi1=>buffermpi2d,buffermpi2=>buffermpi2d1
-   use utilgpu
+   use tinMemory,only: prmem_request
+   use mdevice  ,only: default_work
+   use parallel ,only: polar_comm_t,polar_post_group_comm,polar_finish
    use timestat
    use mpi
    use group
@@ -63,8 +63,7 @@ subroutine newinduce_group
 !     MPI
 !
    integer iipole
-   integer, allocatable :: reqsend(:),reqrec(:)
-   integer, allocatable :: req2send(:),req2rec(:)
+   type(polar_comm_t) :: comm_ticket
 !
 !
    if (.not.use_polar) return
@@ -79,13 +78,8 @@ subroutine newinduce_group
 !
    call prmem_request(mu,3,nrhs,npolegroup,async=.true.)
    call prmem_request(ef,3,nrhs,npolegroup,async=.true.)
-   call set_to_zero2(mu,ef,3*nrhs*npolegroup,def_queue)
+   call set_to_zero2(mu,ef,3*nrhs*npolegroup,default_work%queue)
 !
-   allocate (reqsend(nproc))
-   allocate (reqrec(nproc))
-   allocate (req2send(nproc))
-   allocate (req2rec(nproc))
-
    !call orderbuffergroup
 !
 !     compute the electric fields:
@@ -103,7 +97,7 @@ subroutine newinduce_group
 !
 !     predicted values for always stable predictor-corrector method
 !
-!$acc parallel loop async default(present) collapse(3)
+!$acc parallel loop async(default_work%queue) default(present) collapse(3)
    do i = 1, npolelocgroup; do k = 1, nrhs; do j = 1, 3
             iglobgroup = ipolegroup(poleglobgroup(i))
             iglob = globglobgroup(iglobgroup)
@@ -111,9 +105,9 @@ subroutine newinduce_group
             mu(j,k,i) = polarity(iipole)*ef(j,k,i)
          enddo; enddo; enddo
 !
-   call commdirdirfull(nrhs,0,mu,reqrec,reqsend)
-   call commdirdirfull(nrhs,1,mu,reqrec,reqsend)
-   call commdirdirfull(nrhs,2,mu,reqrec,reqsend)
+!$acc wait(default_work%queue)
+   call polar_post_group_comm(comm_ticket,nrhs,mu)
+   call polar_finish(comm_ticket,nrhs,mu)
 !
 
 !
@@ -129,7 +123,7 @@ subroutine newinduce_group
 !
 !     move the computed dipoles in the module.
 !
-!$acc parallel loop async default(present) collapse(2)
+!$acc parallel loop async(default_work%queue) default(present) collapse(2)
    do i = 1, npolelocgroup; do j=1,3
          iipolegroup = poleglobgroup(i)
          uindgroup(j,iipolegroup) = mu(j,1,i)
@@ -137,10 +131,6 @@ subroutine newinduce_group
       end do; end do
 
 
-   deallocate (reqrec)
-   deallocate (reqsend)
-   deallocate (req2rec)
-   deallocate (req2send)
    return
 end
 !
@@ -149,7 +139,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    use domdec
    use ewald
    use inform     ,only: deb_Path,abort,minmaxone
-   use interfaces ,only: commfieldfull, commdirdirfull, tmatxb_group
+   use interfaces ,only: commfieldfull, tmatxb_group
    use iounit
    use math
    use mpole
@@ -162,8 +152,8 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    use sizes
    use units
    use utils
-   use utilcomm   ,only: skpPcomm
-   use utilgpu
+   use mdevice    ,only: default_work
+   use parallel   ,only: polar_comm_t,polar_post_group_comm,polar_finish
    use mpi
    use group
    implicit none
@@ -186,6 +176,8 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    real(t_p),save:: ggold1,ggold2
    real(r_p),save:: ggnew1,ggnew2
    real(t_p),save:: ggdev1,ggdev2
+   integer default_q
+
    real(r_p),save:: gnorm1,gnorm2
    real(r_p),save:: gg1,gg2
    real(r_p),save:: ene1,ene2
@@ -205,10 +197,9 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    integer iglobgroup
    integer req1, req2, req3, req4
    integer status(MPI_STATUS_SIZE)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
-   integer,allocatable :: reqendrec(:),reqendsend(:)
-   integer,allocatable :: req2endrec(:),req2endsend(:)
+   type(polar_comm_t) :: comm_ticket
+
+   default_q = default_work%queue
 !
 1000 format(' cgiter shortreal converged after ',I3,' iterations.',/,&
       &' final energy        = ',2D14.7,/,&
@@ -226,15 +217,6 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
    if (deb_Path)&
       &write(*,'(3x,a)') 'inducepcg_group'
 !
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (req2rec(nproc))
-   allocate (req2send(nproc))
-   allocate (reqendsend(nproc))
-   allocate (reqendrec(nproc))
-   allocate (req2endsend(nproc))
-   allocate (req2endrec(nproc))
-
 !
 !     allocate some memory and setup the preconditioner:
 !
@@ -277,8 +259,8 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
 !
 !     initialize
 !
-   call set_to_zero2(res,zr,3*nrhs*npolelocgroup,def_queue)
-   call set_to_zero2( pp, h,3*nrhs*npolegroup ,def_queue)
+   call set_to_zero2(res,zr,3*nrhs*npolelocgroup,default_q)
+   call set_to_zero2( pp, h,3*nrhs*npolegroup ,default_q)
 !
 !     now, compute the initial direction
 !
@@ -312,9 +294,8 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
       call MPI_IALLREDUCE(MPI_IN_PLACE,ggold(1),nrhs,MPI_TPREC,&
          &MPI_SUM,COMM_TINKER,req1,ierr)
 !
-      call commdirdirfull(nrhs,0,pp,reqrec,reqsend)
-      call commdirdirfull(nrhs,1,pp,reqrec,reqsend)
-      call commdirdirfull(nrhs,2,pp,reqrec,reqsend)
+      call polar_post_group_comm(comm_ticket,nrhs,pp)
+      call polar_finish(comm_ticket,nrhs,pp)
       call MPI_WAIT(req1,status,ierr)
    endif
 !
@@ -328,7 +309,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
       gg1=zerom; gg2=zerom
 !$acc end serial
 !
-!$acc parallel loop collapse(3) async(def_queue)
+!$acc parallel loop collapse(3) async(default_q)
       do i = 1,npolelocgroup
          do j = 1,nrhs
             do k = 1, 3
@@ -340,7 +321,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
             end do
          end do
       end do
-!$acc update host(gg1,gg2) async(def_queue)
+!$acc update host(gg1,gg2) async(default_q)
 !$acc wait
       gg(1)=gg1; gg(2)=gg2
       if(nproc>1) then
@@ -348,7 +329,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
             &COMM_TINKER,req2,ierr)
          call MPI_WAIT(req2,status,ierr)
          gg1 = gg(1); gg2 = gg(2)
-!$acc update device(gg1,gg2) async(def_queue)
+!$acc update device(gg1,gg2) async(default_q)
       endif
       do k = 1, nrhs
          if (gg(k).eq.zero) goto 30
@@ -360,7 +341,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
       ene1   = zerom; ene2   = zerom;
       ggdev1 = ggold1/gg1; ggdev2 = ggold2/gg2
 
-!$acc parallel loop collapse(3) async(def_queue)
+!$acc parallel loop collapse(3) async(default_q)
       do k=1,npolelocgroup; do j=1,nrhs; do i=1,3
                if (btest(j,0)) then
                   mu (i,j,k) = mu (i,j,k) + ggdev1*pp(i,j,k)
@@ -376,7 +357,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
                   ene2    = ene2 + (mu(i,j,k)*(res(i,j,k)+ef(i,j,k)))
                end if
             end do; end do; end do
-!$acc wait(def_queue)
+!$acc wait(default_q)
       ene2 = -pt5*ene2; ene1 = -pt5*ene1
       ggnew(1)=ggnew1; ggnew(2)=ggnew2
       ene(1)=  ene1;   ene(2)=  ene2
@@ -411,7 +392,7 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
          goto 10
       end if
 
-!$acc parallel loop collapse(3) async(def_queue)
+!$acc parallel loop collapse(3) async(default_q)
       do k = 1,npolelocgroup; do j = 1,nrhs; do i = 1, 3
                if (btest(j,0)) then
                   pp(i,j,k) = zr(i,j,k) + ggdev1*pp(i,j,k)
@@ -420,16 +401,14 @@ subroutine inducepcg_group(nrhs,precnd,ef,mu)
                end if
             end do; end do; end do
 !
-      call commdirdirfull(nrhs,0,pp,reqrec,reqsend)
-      call commdirdirfull(nrhs,1,pp,reqrec,reqsend)
-      call commdirdirfull(nrhs,2,pp,reqrec,reqsend)
+      call polar_post_group_comm(comm_ticket,nrhs,pp)
+      call polar_finish(comm_ticket,nrhs,pp)
 
    end do
 10 continue
 !
-   call commdirdirfull(nrhs,0,mu,reqendrec,reqendsend)
-   call commdirdirfull(nrhs,1,mu,reqendrec,reqendsend)
-   call commdirdirfull(nrhs,2,mu,reqendrec,reqendsend)
+   call polar_post_group_comm(comm_ticket,nrhs,mu)
+   call polar_finish(comm_ticket,nrhs,mu)
 !
 !     finalize and debug printing:
 !
@@ -481,11 +460,7 @@ subroutine efld0_group(nrhs,ef)
    use potent  , only : use_polarshortreal
    !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
    use shunt   ,only: cut2
-   use utilgpu ,only: dir_queue,rec_queue,def_queue
-#ifdef _OPENACC
-   use utilgpu ,only: dir_stream,stream_wait_async,&
-      &rec_stream,rec_event
-#endif
+   use mdevice ,only: default_work
    use timestat   ,only: timer_enter,timer_exit,timer_efld0_direct
    use tinheader  ,only: ti_p,re_p
    use group
@@ -506,6 +481,7 @@ subroutine efld0_group(nrhs,ef)
    real(t_p) d,bn1,bn2,sc3,sc5
    type(rpole_elt) ip,kp
    type(real3) fid,fip,fkd,fkp,pos
+
 !
 !
    if (deb_Path) then
@@ -519,7 +495,7 @@ subroutine efld0_group(nrhs,ef)
 !$acc  pollist ,locgroup,pdamp,polelocgroup, &
 !$acc  thole,x,y,z,rpole) &
 !$acc         private(ip) &
-!$acc         async(def_queue)
+!$acc         async(default_work%queue)
    do ii = 1, npolelocgroup
       iipolegroup = poleglobgroup(ii)
       iglobgroup = ipolegroup(iipolegroup)
@@ -621,10 +597,10 @@ subroutine efld0_group_correct_scaling(nrhs,ef)
    use math     ,only: sqrtpi
    use mpole    ,only: npolebloc,ipole,rpole,poleloc,npolelocnl
    use neigh    ,only: nelst,elst
-   use potent  , only : use_polarshortreal
+   use potent   ,only: use_polarshortreal
    use polar    ,only: pdamp,thole
    use shunt    ,only: cut2
-   use utilgpu  ,only: dir_queue,def_queue
+   use mdevice  ,only: default_work
    use timestat ,only: timer_enter,timer_exit,timer_efld0_direct
    use tinheader,only: ti_p
    implicit none
@@ -645,9 +621,8 @@ subroutine efld0_group_correct_scaling(nrhs,ef)
    type(real3) fid,fip,fkd,fkp,pos
    type(rpole_elt) ip,kp
    real(t_p) fgrp
-   integer iga,igb
-
    parameter(one =1.0_ti_p)
+   integer iga,igb
 !
    if (deb_Path) write(*,'(4x,a)') 'efld0_group_correct_scaling'
 
@@ -658,7 +633,7 @@ subroutine efld0_group_correct_scaling(nrhs,ef)
 !$acc  pdamp,thole,x,y,z,rpole,nelst,elst,poleloc, &
 !$acc  dpcorrect_ik_group,dpcorrect_scale_group) &
 !$acc         private(fid,fip,fkd,fkp,pos,ip,kp) &
-!$acc         async(def_queue)
+!$acc         async(default_work%queue)
    do ii = 1, n_dpscale_group
       iipole = dpcorrect_ik_group(2*(ii-1)+1)
       kpole  = dpcorrect_ik_group(2*(ii-1)+2)
@@ -767,7 +742,9 @@ subroutine tmatxb_group(nrhs,dodiag,mu,efi)
    use polar   , only : polarity, thole, pdamp,tinypol
    use shunt   , only : cut2
    use utils   , only : set_to_zero1
-   use utilgpu , only : maxscaling1, def_queue, dir_queue,real3,real6
+   use mdevice , only : direct_work
+   use tinTypes , only : real3,real6
+   use scaling  , only : maxscaling1
    use domdec  , only : rank, loc
    use polgrp  , only : np11, np12, np13, np14, ip11, ip12, ip13,ip14
    use polpot  , only : u1scale, u2scale, u3scale, u4scale
@@ -799,12 +776,13 @@ subroutine tmatxb_group(nrhs,dodiag,mu,efi)
    real(t_p) uscale,fgrp ! Scaling factor for interaction
    integer :: iga,igb
 
+
    if (deb_Path) print '(2X,A)','tmatxbgroup'
 
 !
 !     initialize the result vector
 !
-   call set_to_zero1(efi,3*nrhs*npolegroup,def_queue)
+   call set_to_zero1(efi,3*nrhs*npolegroup,direct_work%queue)
 !$acc wait
    if (deb_Path) print '(2X,A)','tmatxbgroup start'
 !
@@ -815,7 +793,7 @@ subroutine tmatxb_group(nrhs,dodiag,mu,efi)
 !$acc         present(mu,efi,polarity,pollist,ipolegroup,polelocgroup, &
 !$acc  loc,x,y,z,pdamp,thole,poleglobgroup,globglobgroup) &
 !$acc         private(posi,dpui) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do ii = 1, npolelocgroup
       iipolegroup =  poleglobgroup(ii)
       iglobgroup = ipolegroup(iipolegroup)
@@ -898,7 +876,7 @@ subroutine tmatxb_group(nrhs,dodiag,mu,efi)
 !     if dodiag is true, also compute the "self-induced" field,
 !     i.e., the diagonal portion of the matrix/vector product.
 !
-!$acc  parallel loop collapse(3) async(def_queue) &
+!$acc  parallel loop collapse(3) async(direct_work%queue) &
 !$acc          default(present)
       do i = 1, npolelocgroup; do irhs = 1, nrhs; do j = 1, 3
                iglobgroup = ipolegroup(poleglobgroup(i))
@@ -929,8 +907,9 @@ subroutine tmatxb_correct_interactions_group(nrhs,mu,efi)
    use mpole   , only : ipole,poleloc,npolelocnl,npolebloc
    use polar   , only : polarity, thole, pdamp
    use shunt   , only : cut2
-   use utilgpu , only : def_queue, dir_queue,real3,real6
-   use utilcomm, only : no_commdir
+   use mdevice , only : direct_work
+   use tinTypes , only : real3,real6
+   use parallel, only : comm_opt
    use domdec  , only : loc
    use polpot  , only : n_uscale,ucorrect_ik,ucorrect_scale
    use tinheader ,only: ti_p
@@ -956,6 +935,7 @@ subroutine tmatxb_correct_interactions_group(nrhs,mu,efi)
    integer :: iga,igb
    real(t_p) uscale,fgrp ! Scaling factor for interaction
 
+
    if (n_uscale_group.eq.0) return
 
    if (deb_Path) print '(2X,A)','tmatxb_correct_interactions_group'
@@ -963,7 +943,7 @@ subroutine tmatxb_correct_interactions_group(nrhs,mu,efi)
    ! Scaling corrections loop
 !$acc parallel loop default(present) &
 !$acc         private(dpui,dpuk,dist,fid,fip,fkd,fkp) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do ii = 1,n_uscale_group
       iipole   = ucorrect_ik_group(2*(ii-1)+1)
       kpole    = ucorrect_ik_group(2*(ii-1)+2)
@@ -1246,14 +1226,15 @@ subroutine commfieldfull(nrhs,ef)
    use mpole
    use potent
    use mpi
-   use utilgpu ,only: prmem_request,dir_queue
-   use utilcomm,only: buff_field
+   use mdevice  ,only: default_work
+   use tinMemory,only: prmem_request
    implicit none
    integer, intent(in) :: nrhs
    real(t_p), intent(inout) ::  ef(:,:,:)
    integer i,j,k,l,tag,status(MPI_STATUS_SIZE),c
    integer ierr,commloc
    integer, allocatable :: reqrec(:), reqsend(:)
+   real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
 
@@ -1263,19 +1244,19 @@ subroutine commfieldfull(nrhs,ef)
       commloc = COMM_TINKER
    end if
 !
-   call prmem_request(buff_field,3,nrhs,&
+   call prmem_request(buffer,3,nrhs,&
       &max(npolelocgroup,1),nproc,async=.true.)
    allocate (reqrec(nproc))
    allocate (reqsend(nproc))
 !
 !$acc wait
-!$acc host_data use_device(buff_field)
+!$acc host_data use_device(buffer)
    c=0
    do i = 1, nproc
       if (i.ne.(rank+1)) then
          c=c+1
          tag = nproc*rank + i
-         call MPI_IRECV(buff_field(1,1,1,c)&
+         call MPI_IRECV(buffer(1,1,1,c)&
             &,3*nrhs*npolelocgroup,MPI_TPREC,&
             &i-1,0,commloc,reqrec(i),ierr)
       end if
@@ -1306,98 +1287,21 @@ subroutine commfieldfull(nrhs,ef)
       end if
    end do
 !
-!$acc parallel loop collapse(3) present(ef,buff_field) async
+!$acc parallel loop collapse(3) present(ef,buffer) async(default_work%queue)
    do j = 1, npolelocgroup; do k = 1, nrhs; do l=1,3
 !$acc loop seq
             do c = 1, nproc-1
-               ef(l,k,j) = ef(l,k,j) + buff_field(l,k,j,c)
+               ef(l,k,j) = ef(l,k,j) + buffer(l,k,j,c)
             enddo
          end do; enddo; enddo
 !
    deallocate (reqrec)
    deallocate (reqsend)
+!$acc wait(default_work%queue)
+   if (allocated(buffer)) &
+      &call prmem_request(buffer,0,0,0,0,async=.false.)
    return
 end
-!
-!    subroutine commdirdirfull : deal with communications of direct dipoles
-!
-!    rule determines what to do:
-!        - 0: start reception of direct dipoles
-!        - 1: start sending of direct dipoles
-!        - 2: wait for the communications to be done
-!
-subroutine commdirdirfull(nrhs,rule,mu,reqrec,reqsend)
-   use domdec
-   use group
-   use iounit
-   use mpole
-   use potent
-   use mpi
-   use inform  , only : deb_Path
-   implicit none
-   integer, intent(in) :: nrhs,rule
-   integer, intent(inout) :: reqrec(nproc),reqsend(nproc)
-   real(t_p), intent(inout) ::  mu(:,:,:)
-   integer ierr,status(MPI_STATUS_SIZE),tag,i
-1000 format(' illegal rule in commdirdirfull.')
-41 format(7x,'>> ',A20,   3x,'recv')
-42 format(7x,   3x,A20,' >>','send')
-43 format(7x,'<< ',A20,   3x,'wait')
-
-   if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
-
-   if (rule.eq.0) then
-      if (deb_Path) write(*,41) 'commdirdirfull       '
-!
-!     MPI : begin reception
-!
-!$acc host_data use_device(mu)
-      do i = 1, nproc
-         if (i.ne.(rank+1)) then
-            tag = nproc*rank + i
-            call MPI_IRECV(mu(1,1,bufbegpolegroup(i)),&
-               &3*nrhs*domlenpolegroup(i),MPI_TPREC,i-1,tag,&
-               &COMM_TINKER,reqrec(i),ierr)
-         end if
-      end do
-!$acc end host_data
-
-   else if (rule.eq.1) then
-      if (deb_Path) write(*,42) 'commdirdirfull       '
-!
-!$acc host_data use_device(mu)
-      do i = 1, nproc
-         if (i.ne.(rank+1)) then
-            tag = nproc*(i-1) + rank + 1
-            call MPI_ISEND(mu,3*nrhs*npolelocgroup,&
-               &MPI_TPREC,i-1,tag,COMM_TINKER,&
-               &reqsend(i),ierr)
-         end if
-      end do
-!$acc end host_data
-      if (tinkerdebug.gt.0) call MPI_BARRIER(hostcomm,ierr)
-
-   else if (rule.eq.2) then
-
-      do i = 1, nproc
-         if (i.ne.(rank+1)) then
-            call MPI_WAIT(reqrec(i),status,ierr)
-         end if
-      end do
-      do i = 1, nproc
-         if (i.ne.(rank+1)) then
-            call MPI_WAIT(reqsend(i),status,ierr)
-         end if
-      end do
-
-   else
-      if (rank.eq.0) write(iout,1000)
-      call fatal
-   end if
-
-   return
-end
-!
 !     subroutine commforcesgroup : deal with communications of "polarization group" forces
 !
 subroutine commforcesgroup
@@ -1408,13 +1312,22 @@ subroutine commforcesgroup
    use group
    use potent
    use mpi
-   use tinMemory ,only: prmem_requestm
-   use utilcomm  ,only: buffMpi_f1
+#ifdef USE_DETERMINISTIC_REDUCTION
+   use parallel  ,only: domain_workspace_md
+#else
+   use parallel  ,only: domain_workspace_rp
+#endif
+   use iso_c_binding,only: c_loc,c_f_pointer
    use inform  , only : deb_Path
    implicit none
    integer i,j,k,tag,ierr,sz,c
    integer  , allocatable:: reqsend(:),reqrec(:)
    mdyn_rtyp, pointer:: buffer(:,:,:)
+#ifdef USE_DETERMINISTIC_REDUCTION
+   mdyn_rtyp, pointer :: pool3(:)
+#else
+   real(r_p), pointer :: pool3(:)
+#endif
    integer status(MPI_STATUS_SIZE)
 
    if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
@@ -1426,8 +1339,12 @@ subroutine commforcesgroup
    allocate (reqrec(nproc))
 
    sz = 3*max(1,nlocatgroup)*nproc
-   call prmem_requestm(buffMpi_f1,sz,async=.false.)
-   buffer(1:3,1:max(1,nlocatgroup),1:nproc) => buffMpi_f1(1:sz)
+#ifdef USE_DETERMINISTIC_REDUCTION
+   call domain_workspace_md(sz,pool3)
+#else
+   call domain_workspace_rp(3,sz,pool3)
+#endif
+   call c_f_pointer(c_loc(pool3),buffer,[3,max(1,nlocatgroup),nproc])
 !$acc enter data attach(buffer)
 
 !

@@ -263,6 +263,7 @@ subroutine bounds
    use boxes ,box34_p=>box34
    use colvars     ,only: use_colvars,ncvatomsmol,cvatomsmol
    use plumed      ,only: lplumed
+   use parallel    ,only: gather_positions
    use molcul
    implicit none
    integer i,j,k,l,lglob
@@ -270,7 +271,7 @@ subroutine bounds
    integer nlist
    integer, allocatable :: list(:)
 
-   call allgather_pos
+   call gather_positions
    if (use_colvars.or.lplumed) then
 !$acc wait
 !$acc update host(x,y,z,pbcWrapIdx)

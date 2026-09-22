@@ -17,22 +17,58 @@
 !
 #include "tinker_macro.h"
 program testgrad
+   use config, only: raw_cli_t, capture_raw_cli
+   use domdec, only: rank
+   use iounit, only: iout
+   use mdevice, only: bind_device
+   use mpi
+   use status, only: failed, status_t
+   implicit none
+   integer ierr,world_rank
+   type(raw_cli_t) raw_cli
+   type(status_t) status_value
+   call bind_device(status_value)
+   if (failed(status_value)) stop 1
+   call capture_raw_cli(raw_cli)
+   call MPI_INIT(ierr)
+   call MPI_COMM_RANK(MPI_COMM_WORLD,world_rank,ierr)
+   iout = 6
+   rank = world_rank
+   call testgrad_bis(raw_cli,status_value)
+   if (failed(status_value)) then
+      if (world_rank.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      call MPI_FINALIZE(ierr)
+      stop 1
+   end if
+   call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+   call MPI_FINALIZE(ierr)
+end
+
+subroutine testgrad_bis(raw_cli,status_value)
    use atomsMirror
    use cell
+   use config, only: config_t, max_raw_cli_args, parse_common_cli, raw_cli_length, raw_cli_t
    use deriv
    use domdec
    use energi
    use sizes
    use inform
-   use interfaces, only: getxyz, initial, mechanic
+   use initialization, only: initialize, testgrad_application
    use iounit
+   use mdevice, only: channel_t, finalize_device
    use mpole
+   use parallel, only: parallel_t, release, assign_direct
+   use status, only: failed, status_t
+   use structure, only: structure_t
    use tinheader ,only: ti_p,re_p
    use usage
    use mpi
    implicit none
+   type(raw_cli_t), intent(in) :: raw_cli
+   type(status_t), intent(out) :: status_value
    integer i,j,next,iglob,ierr
-   integer iloc
+   integer iloc,value_count,value_index
    real(r_p) etot,f,f0,eps,eps0,old,energy
    real(r_p) eb0,ea0,eba0,eub0,eaa0,eopb0
    real(r_p) eopd0,eid0,eit0,et0,ept0,eat0,ebt0
@@ -72,54 +108,66 @@ program testgrad
    character*1 axis(3)
    character*240 record
    character*240 string
+   character(raw_cli_length) :: values(max_raw_cli_args)
+   character(raw_cli_length) :: xyz_path
+   type(config_t) configuration
+   type(structure_t) molecular_structure
+   type(parallel_t) platform
+   type(channel_t) reciprocal_work
+   type(status_t) cleanup_status
    data axis  / 'X','Y','Z' /
-!
-   ! Sign running program
-   app_id = testgrad_a
-!
-   call MPI_INIT(ierr)
 !
 !     set up the structure and mechanics calculation
 !
-   call initial
-   call getxyz
-   nproc = nproctot
-   call initmpi
-   call unitcell
-   call cutoffs
-   call lattice
-   call drivermpi
-   call reinitnl(0)
+   call initialize(testgrad_application, raw_cli, configuration, molecular_structure, &
+      &platform, reciprocal_work, status_value)
+   if (failed(status_value)) then
+      if (ranktot.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      __TINKER_FATAL__
+   end if
 !
    dotstgrad = .true.
 !
-   call mechanic
    call nblist(0)
    call allocstep
+!
+!     parse the gradient controls after Configuration consumes the structure
+!     argument and any option/value pairs
+!
+   call parse_common_cli(raw_cli,xyz_path,values,value_count,status_value)
+   if (failed(status_value)) then
+      if (ranktot.eq.0) write(iout,*) trim(status_value%message)
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      __TINKER_FATAL__
+   end if
+   value_index = 1
 !
 !     decide whether to do an analytical gradient calculation
 !
    doanalyt = .true.
-   call nextarg (answer,exist)
-   if (.not. exist) then
+   if (value_index.gt.value_count) then
       if(ranktot.eq.0) write (iout,10)
 10    format (/,' You Need To Enter if You want to Compute the Analytical Gradient Vector Y or N')
       call MPI_BARRIER(COMM_TINKER,ierr)
       __TINKER_FATAL__ 
    end if
+   answer = values(value_index)
+   value_index = value_index + 1
    call upcase (answer)
    if (answer .eq. 'N')  doanalyt = .false.
 !
-!     decide whether to do a numerical gradient calculation
+   !     decide whether to do a numerical gradient calculation
 !
    donumer = .true.
-   call nextarg (answer,exist)
-   if (.not. exist) then
+   if (value_index.gt.value_count) then
       if (ranktot.eq.0) write (iout,30)
 30    format (/,' You Need To Enter if You want to Compute the Numerical Gradient Vector: Y or N')
       call MPI_BARRIER(COMM_TINKER,ierr)
       __TINKER_FATAL__
    end if
+   answer = values(value_index)
+   value_index = value_index + 1
    call upcase (answer)
    if (answer .eq. 'N')  donumer = .false.
 !
@@ -129,13 +177,13 @@ program testgrad
       eps = -1.0_ti_p
       eps0 = 1.0d-5
       query = .true.
-      call nextarg (string,exist)
-      if (.not.exist) then
+      if (value_index.gt.value_count) then
          if (ranktot.eq.0) write (iout,60)  eps0
 60       format (/,' You Need To Enter a Numerical Stepsize')
          __TINKER_FATAL__
       else
-         read (string,*,err=50,end=50)  eps
+         read (values(value_index),*,err=50,end=50)  eps
+         value_index = value_index + 1
       end if
 50    continue
       if (eps .le. 0.0_ti_p)  eps = eps0
@@ -146,13 +194,14 @@ program testgrad
    dofull = .true.
    if (n .gt. 100) then
       dofull = .false.
-      call nextarg (answer,exist)
-      if (.not. exist) then
+      if (value_index.gt.value_count) then
          if (ranktot.eq.0) write (iout,80)
 80       format (/,' You Need To Enter If You Want The Output Breakdown by Gradient Component [Y|N]')
          call MPI_BARRIER(COMM_TINKER,ierr)
          __TINKER_FATAL__
       end if
+      answer = values(value_index)
+      value_index = value_index + 1
       call upcase (answer)
       if (answer .eq. 'Y')  dofull = .true.
    end if
@@ -161,7 +210,7 @@ program testgrad
 !
    allocate (detot(3,nbloc))
    detot = 0_ti_p
-   call AllDirAssign
+   call assign_direct
    call reassignpme(.false.)
    call reinitnl(0)
    call mechanicstep(0)
@@ -174,6 +223,7 @@ program testgrad
 !
 !    MPI : communicate analytical forces and torques
 !
+      ! Diagnostic consumer; the exchange remains owned by deriv.
       call commforceststgrad(detot)
       call commforcesrec(detot)
 !
@@ -698,6 +748,8 @@ program testgrad
 !
 !     perform any final tasks before program exit
 !
-   call final
-   call MPI_FINALIZE(ierr)
-end
+   call final(status_value)
+   call finalize_device(cleanup_status)
+   call release(platform, cleanup_status)
+   if (failed(cleanup_status)) status_value = cleanup_status
+end subroutine testgrad_bis

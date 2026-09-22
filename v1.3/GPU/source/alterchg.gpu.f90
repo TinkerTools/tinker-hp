@@ -43,7 +43,7 @@ subroutine alterchg1
    use tinheader
    use tinMemory
    use parallel, only: accumulate, extend, halo_large
-   use utilgpu
+   use mdevice, only: reciprocal_work
    implicit none
    integer i,k,ii
    integer iloc
@@ -51,18 +51,17 @@ subroutine alterchg1
 !
    if (deb_Path) write(*,*) ' alterchg1'
 
-   def_queue = rec_queue
+
    ! Request Memory
    call prmem_request(pdelta,nbloc,async=.false.)
    !zero out the change in charge value at each site
-   call mem_set(pdelta,zeror,int(nbloc,mipk),rec_stream)
+   call mem_set(pdelta,zeror,int(nbloc,mipk),reciprocal_work%stream)
 !
 !     Order poleglob and update npolebloc
 !
    if (use_mpole.or.use_polar.or.use_chgtrn)&
       &call orderPole
 
-   def_queue = rec_queue
 !
 !     find charge modifications due to charge flux
 !
@@ -71,14 +70,14 @@ subroutine alterchg1
 !
 !     communicate neighboring values of delta to modify charges
 !
-   call accumulate(pdelta,1,halo_large)
-   call extend(pdelta,1,halo_large)
+   call accumulate(pdelta,1,halo_large,channel=reciprocal_work)
+   call extend(pdelta,1,halo_large,channel=reciprocal_work)
 !
 !     alter atomic partial charge values for charge flux
 !
    if (use_charge) then
       header = .true.
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
       do iloc = 1, nionbloc
          i = chgglob(iloc)
          k = loc(iion(i))
@@ -103,7 +102,7 @@ subroutine alterchg1
 !
    if (npoleloc.ne.0) then
       header = .true.
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
       do ii = 1, npolebloc
          i = poleglob(ii)
          k = loc(ipole(i))
@@ -149,7 +148,7 @@ subroutine bndchg1 (pdelta)
    use cflux
    use domdec  ,only: loc,nproc
    use sizes
-   use utilgpu ,only: def_queue
+   use mdevice  ,only: default_work
    implicit none
    integer i,ia,ib
    integer ibond
@@ -161,7 +160,7 @@ subroutine bndchg1 (pdelta)
 !
 !     loop over all the bond distances in the system
 !
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(default_work%queue) default(present)
    do ibond = 1, nbondloc
       i   = bndglob(ibond)
       ia  = ibnd(1,i)
@@ -212,7 +211,7 @@ subroutine angchg1 (pdelta)
    use domdec  ,only: loc,nproc
    use math
    use sizes
-   use utilgpu ,only: def_queue
+   use mdevice  ,only: default_work
    implicit none
    integer i,ia,ib,ic
    integer iangle
@@ -235,7 +234,7 @@ subroutine angchg1 (pdelta)
 !
 !     loop over all the bond angles in the system
 !
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(default_work%queue) default(present)
    do iangle = 1, nangleloc
       i   = angleglob(iangle)
       ia  = iang(1,i)

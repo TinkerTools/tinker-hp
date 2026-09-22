@@ -13,6 +13,8 @@
 #include "tinker_precision.h"
 module beads
    use dcdmod
+   use mdtraj, only: trajectory_t
+   use status, only: status_t
    implicit none
    logical :: path_integral_md=.FALSE.
    integer :: nbeads,nbeadsloc
@@ -95,6 +97,7 @@ module beads
       real(r_p) :: gyr
 
       type(dcdinfo_t),allocatable :: dcdinfo(:)
+      type(trajectory_t),allocatable :: dcd_trajectory(:)
    END TYPE
 
    TYPE(POLYMER_COMM_TYPE) :: polymer_main,polymer_ctr
@@ -104,18 +107,26 @@ module beads
    interface
 
       module subroutine allocate_polymer(polymer,nu,allocate_vel&
-         &,allocate_forces,allocate_slow)
+         &,allocate_forces,allocate_slow,status_value)
          implicit none
          TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
          integer, intent(in) :: nu
          LOGICAL, intent(in) :: allocate_vel, allocate_slow
          LOGICAL, intent(in) :: allocate_forces
+         type(status_t), intent(out) :: status_value
       end subroutine allocate_polymer
 
-      module subroutine deallocate_polymer(polymer)
+      module subroutine deallocate_polymer(polymer,status_result)
          implicit none
          TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
+         type(status_t), intent(out), optional :: status_result
       end subroutine deallocate_polymer
+
+      module subroutine close_polymer_trajectories(polymer,status_value)
+         implicit none
+         TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
+         type(status_t), intent(out) :: status_value
+      end subroutine close_polymer_trajectories
 
       module subroutine initialize_normal_modes(polymer,verbose)
          implicit none
@@ -128,8 +139,9 @@ module beads
          integer, intent(in) :: nloc
       end subroutine update_nlocpi
 
-      module subroutine allocpi()
+      module subroutine allocpi(status_value)
          implicit none
+         type(status_t), intent(out) :: status_value
       end subroutine allocpi
 
       module subroutine update_normal_modes_pi(polymer)

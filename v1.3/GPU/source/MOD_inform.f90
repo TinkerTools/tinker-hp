@@ -63,6 +63,8 @@ module inform
       enumerator tinMem,tindGdb,tindPolar
    end enum
    logical deb_Path,deb_Force,deb_Energy,deb_Atom,deb_Polar
+   character*128 warning,sugest_vdw
+!$acc declare create(warning,sugest_vdw)
 
    integer dint1,dint2
    integer,allocatable::dibuff(:)
@@ -70,6 +72,29 @@ module inform
    ! Inform separated Subroutines
    interface
       module subroutine initDebugEnv
+      end subroutine
+   end interface
+
+   interface Tinker_shellEnv
+      module subroutine Tinker_shellEnv_i(envName,envValue,defVal)
+         character(*),intent(in):: envName
+         integer,intent(in) :: defVal
+         integer,intent(out):: envValue
+      end subroutine
+      module subroutine Tinker_shellEnv_f4(envName,envValue,defVal)
+         character(*),intent(in):: envName
+         real(4),intent(in) :: defVal
+         real(4),intent(out):: envValue
+      end subroutine
+      module subroutine Tinker_shellEnv_f8(envName,envValue,defVal)
+         character(*),intent(in):: envName
+         real(8),intent(in) :: defVal
+         real(8),intent(out):: envValue
+      end subroutine
+   end interface
+
+   interface
+      module subroutine set_warning
       end subroutine
    end interface
 

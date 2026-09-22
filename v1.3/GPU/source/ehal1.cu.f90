@@ -23,15 +23,16 @@ module ehal1cu
       &,d_bl=>disc_block
    use sizes    ,only: maxvalue,maxclass,maxgrp
    use tinheader,only: ti_p
-   use utilcu   ,only: all_lanes,VDW_BLOCK_DIM,f_abs
+   use utilcu   ,only: all_lanes,f_abs
    use cellcu   ,only: xcell2,ycell2,zcell2
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
    use utilcu   ,only: f_sqrt
 #endif
-   use utilgpu  ,only: BLOCK_SIZE
    use reduction,only: RED_BUFF_SIZE
    use vdwpot   ,only: ARITHMETIC_RL,GEOMETRIC_RL,CUBIC_MEAN_RL&
       &,HARMONIC_RL,HHG_RL
+   integer,parameter :: VDW_BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32
+   public :: VDW_BLOCK_DIM,BLOCK_SIZE,WARP_SIZE
 
    integer(1),private:: one1,two1
    integer  ,pointer,device::ired_t(:)&

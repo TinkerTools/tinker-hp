@@ -37,11 +37,12 @@ subroutine prmkey (text)
    use precompute_pole,only: polar_precomp
    use urypot
    use USampling ,only: US_enable
-   use utilgpu
+   use mdevice, only: set_gpu_config
    use uprior
    use vdwpot
    implicit none
    integer next,ivalue
+   logical lvalue
    character*4 value
    character*25 keyword
    character*240 text
@@ -698,21 +699,21 @@ subroutine prmkey (text)
       !if (polpred .eq. 'ENAB') use_pred = .true.
       !GPU Tools
    else if (keyword(1:10) .eq. 'GPU-GANGS ')       then
-      read (string,*,err=10,end=10)   gpu_gangs
-!$acc update device(gpu_gangs)
-      mod_gangs = .false.
+      read (string,*,err=10,end=10)   ivalue
+      call set_gpu_config(gangs=ivalue,modulo=.false.)
    else if (keyword(1:10) .eq. 'MOD-GANGS ')       then
-      read (string,*,err=10,end=10)   mod_gangs
+      read (string,*,err=10,end=10)   lvalue
+      call set_gpu_config(modulo=lvalue)
    else if (keyword(1:11) .eq. 'NDIR-BLOCK ')       then
       read (string,*,err=10,end=10)   ivalue
    else if (keyword(1:16) .eq. 'NDIR-ASYNC-BLOCK ')       then
       read (string,*,err=10,end=10)   ivalue
    else if (keyword(1:12) .eq. 'GPU-WORKERS ')     then
-      read (string,*,err=10,end=10)   gpu_workers
-!$acc update device(gpu_workers)
+      read (string,*,err=10,end=10)   ivalue
+      call set_gpu_config(workers=ivalue)
    else if (keyword(1:11) .eq. 'GPU-VECTOR ')      then
-      read (string,*,err=10,end=10)   gpu_vector
-!$acc update device(gpu_vector)
+      read (string,*,err=10,end=10)   ivalue
+      call set_gpu_config(vector=ivalue)
 #ifdef _OPENACC
    else if (keyword(1:21) .eq. 'HOST-RANDOM-PLATFORM ') then
       host_rand_platform = .true.

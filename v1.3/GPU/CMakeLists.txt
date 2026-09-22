@@ -14,6 +14,9 @@ foreach(_lang CXX Fortran CUDA)
   set(_release_flags "${CMAKE_${_lang}_FLAGS_RELEASE}")
   if(_release_flags)
     string(REGEX REPLACE "(^| )-O[0-9s]([ ]|$)" " " _release_flags "${_release_flags}")
+    if(_lang STREQUAL "Fortran")
+      string(REGEX REPLACE "(^| )-fast([ ]|$)" " " _release_flags "${_release_flags}")
+    endif()
     string(STRIP "${_release_flags}" _release_flags)
     set(CMAKE_${_lang}_FLAGS_RELEASE "${_release_flags}" CACHE STRING "Release flags for ${_lang}" FORCE)
   endif()
@@ -72,6 +75,23 @@ option(TINKERHP_ENABLE_NVSHMEM "Enable NVSHMEM support." OFF)
 
 option(TINKERHP_ENABLE_NVIDIA_21X_WORKAROUND "Apply the NVHPC 21.3-21.9 workaround automatically." ON)
 set(TINKERHP_NVIDIA_21X_WORKAROUND_FLAG "-Mnollvm" CACHE STRING "Compiler flag used for NVHPC 21.3-21.9.")
+set(TINKERHP_NVFORTRAN_OPT_LEVEL "FAST" CACHE STRING
+  "NVFORTRAN Fortran optimization level (FAST, O1, or O0).")
+set_property(CACHE TINKERHP_NVFORTRAN_OPT_LEVEL PROPERTY STRINGS FAST O1 O0)
+string(TOUPPER "${TINKERHP_NVFORTRAN_OPT_LEVEL}" TINKERHP_NVFORTRAN_OPT_LEVEL_NORMALIZED)
+if(TINKERHP_NVFORTRAN_OPT_LEVEL_NORMALIZED STREQUAL "FAST")
+  set(TINKERHP_NVFORTRAN_OPT_FLAG -fast)
+elseif(TINKERHP_NVFORTRAN_OPT_LEVEL_NORMALIZED STREQUAL "O1")
+  set(TINKERHP_NVFORTRAN_OPT_FLAG -O1)
+elseif(TINKERHP_NVFORTRAN_OPT_LEVEL_NORMALIZED STREQUAL "O0")
+  set(TINKERHP_NVFORTRAN_OPT_FLAG -O0)
+else()
+  message(FATAL_ERROR
+    "TINKERHP_NVFORTRAN_OPT_LEVEL must be FAST, O1, or O0; got "
+    "${TINKERHP_NVFORTRAN_OPT_LEVEL}")
+endif()
+option(TINKERHP_ENABLE_NVFORTRAN_NOINLINE
+  "Disable NVFORTRAN inlining for all Fortran targets." OFF)
 
 tinkerhp_validate_requested_configuration()
 if(TINKERHP_LINK_MODE STREQUAL "SHARED")
@@ -163,7 +183,7 @@ endif()
 set(TINKERHP_COMMON_FORTRAN_FLAGS
   -traceback
   -g
-  -fast
+  ${TINKERHP_NVFORTRAN_OPT_FLAG}
   -Mdalign
   ${TINKERHP_FORTRAN_REAL_FLAG}
   -acc
@@ -171,20 +191,24 @@ set(TINKERHP_COMMON_FORTRAN_FLAGS
   ${TINKERHP_WORKAROUND_FLAGS}
 )
 
+set(TINKERHP_GPU_INLINING_FLAGS)
+if(NOT TINKERHP_ENABLE_NVFORTRAN_NOINLINE)
+  list(APPEND TINKERHP_GPU_INLINING_FLAGS -Minline=maxsize:340)
+endif()
 set(TINKERHP_GPU_FORTRAN_EXTRA_FLAGS
-  -Minline=maxsize:340
   -cuda
+  ${TINKERHP_GPU_INLINING_FLAGS}
 )
 
 set(TINKERHP_CUDA_FORTRAN_FLAGS
   -traceback
   -g
-  -fast
+  ${TINKERHP_NVFORTRAN_OPT_FLAG}
   -Mdalign
-  -Minline=maxsize:340
   ${TINKERHP_FORTRAN_REAL_FLAG}
   -cuda
   "${TINKERHP_NVIDIA_GPU_FLAG}"
+  ${TINKERHP_GPU_INLINING_FLAGS}
   ${TINKERHP_WORKAROUND_FLAGS}
 )
 
@@ -359,6 +383,19 @@ endforeach()
 list(REMOVE_ITEM MOD_SRCS ${TINKERHP_SUBMODULE_SRCS})
 list(APPEND TINKERHP_FORTRAN_GPU_SRCS ${TINKERHP_SUBMODULE_SRCS})
 
+if(TINKERHP_ENABLE_NVFORTRAN_NOINLINE)
+  set(_tinkerhp_nvhpc_noinline_sources
+    ${MOD_SRCS}
+    ${TINKERHP_FORTRAN_COMMON_SRCS}
+    ${TINKERHP_FORTRAN_GPU_SRCS}
+    ${DEV_F_SRCS}
+  )
+  list(REMOVE_DUPLICATES _tinkerhp_nvhpc_noinline_sources)
+  set_property(SOURCE ${_tinkerhp_nvhpc_noinline_sources}
+    APPEND PROPERTY COMPILE_OPTIONS "-Mnoinline"
+  )
+endif()
+
 set(TINKERHP_DIRECT_FORTRAN_PREPROCESS_SRCS
   ${MOD_SRCS}
   ${TINKERHP_FORTRAN_COMMON_SRCS}
@@ -382,6 +419,7 @@ function(tinkerhp_configure_fortran_target target_name module_dir extra_flags)
     $<$<COMPILE_LANGUAGE:Fortran>:${TINKERHP_COMMON_FORTRAN_FLAGS};${extra_flags}>
   )
   target_include_directories(${target_name} PRIVATE
+    "${TINKERHP_WRAPPER_MODULE_DIR}"
     "${CMAKE_SOURCE_DIR}/source"
     "${TINKERHP_MAIN_MODULE_DIR}"
   )
@@ -394,12 +432,15 @@ endfunction()
 
 add_library(tinkerhp_modules OBJECT ${MOD_SRCS})
 tinkerhp_configure_fortran_target(tinkerhp_modules "${TINKERHP_MAIN_MODULE_DIR}" "${TINKERHP_GPU_FORTRAN_EXTRA_FLAGS}")
+add_dependencies(tinkerhp_modules tinkerhp_wrapper)
 
 add_library(tinkerhp_fortran_common OBJECT ${TINKERHP_FORTRAN_COMMON_SRCS})
 tinkerhp_configure_fortran_target(tinkerhp_fortran_common "${TINKERHP_MAIN_MODULE_DIR}" "")
+add_dependencies(tinkerhp_fortran_common tinkerhp_wrapper)
 
 add_library(tinkerhp_fortran_gpu OBJECT ${TINKERHP_FORTRAN_GPU_SRCS})
 tinkerhp_configure_fortran_target(tinkerhp_fortran_gpu "${TINKERHP_MAIN_MODULE_DIR}" "${TINKERHP_GPU_FORTRAN_EXTRA_FLAGS}")
+add_dependencies(tinkerhp_fortran_gpu tinkerhp_wrapper)
 
 add_library(tinkerhp_cuda_fortran OBJECT ${DEV_F_SRCS})
 set_target_properties(tinkerhp_cuda_fortran PROPERTIES
@@ -409,9 +450,11 @@ target_compile_options(tinkerhp_cuda_fortran PRIVATE
   $<$<COMPILE_LANGUAGE:Fortran>:${TINKERHP_CUDA_FORTRAN_FLAGS}>
 )
 target_include_directories(tinkerhp_cuda_fortran PRIVATE
+  "${TINKERHP_WRAPPER_MODULE_DIR}"
   "${CMAKE_SOURCE_DIR}/source"
   "${TINKERHP_MAIN_MODULE_DIR}"
 )
+add_dependencies(tinkerhp_cuda_fortran tinkerhp_wrapper)
 target_link_libraries(tinkerhp_cuda_fortran PRIVATE
   tinkerhp_modules
   tinkerhp_2decomp_fft
@@ -593,6 +636,19 @@ set_target_properties(tinkerhp_core PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
+set(_tinkerhp_runtime_rpaths)
+if(TINKERHP_LINK_MODE STREQUAL "SHARED" OR TINKERHP_ENABLE_NN)
+  if(APPLE)
+    set(_tinkerhp_runtime_library_rpath "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+  else()
+    set(_tinkerhp_runtime_library_rpath "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+  endif()
+  list(APPEND _tinkerhp_runtime_rpaths "${_tinkerhp_runtime_library_rpath}")
+  if(TINKERHP_ENABLE_NN)
+    list(APPEND _tinkerhp_runtime_rpaths "${TINKERHP_DEEPHP_PYTHON_LIBRARY_DIR}")
+  endif()
+endif()
+
 foreach(_program IN LISTS TINKERHP_PROGRAM_TARGETS)
   add_executable(${_program} "source/${_program}.f90")
   tinkerhp_apply_main_preprocessor_definitions(${_program})
@@ -636,19 +692,31 @@ foreach(_program IN LISTS TINKERHP_PROGRAM_TARGETS)
     add_dependencies(${_program} tinkerhp_mlinterface_build)
   endif()
   if(TINKERHP_LINK_MODE STREQUAL "SHARED" OR TINKERHP_ENABLE_NN)
-    if(APPLE)
-      set(_tinkerhp_runtime_library_rpath "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
-    else()
-      set(_tinkerhp_runtime_library_rpath "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
-    endif()
     set_target_properties(${_program} PROPERTIES
-      BUILD_RPATH "${_tinkerhp_runtime_library_rpath}"
-      INSTALL_RPATH "${_tinkerhp_runtime_library_rpath}"
+      BUILD_RPATH "${_tinkerhp_runtime_rpaths}"
+      INSTALL_RPATH "${_tinkerhp_runtime_rpaths}"
       BUILD_WITH_INSTALL_RPATH TRUE
     )
   endif()
   install(TARGETS ${_program} RUNTIME DESTINATION "${TINKERHP_INSTALL_BINDIR}")
 endforeach()
+
+if(TINKERHP_INTERNAL_VALIDATE_ONLY AND TINKERHP_ENABLE_NN)
+  set(_tinkerhp_runtime_rpath_probe_source
+    "${CMAKE_CURRENT_BINARY_DIR}/tinkerhp_deephp_runtime_rpath_probe.c")
+  file(WRITE "${_tinkerhp_runtime_rpath_probe_source}" "int main(void) { return 0; }\n")
+  add_executable(tinkerhp-deephp-runtime-rpath-probe EXCLUDE_FROM_ALL
+    "${_tinkerhp_runtime_rpath_probe_source}")
+  set_target_properties(tinkerhp-deephp-runtime-rpath-probe PROPERTIES
+    BUILD_RPATH "${_tinkerhp_runtime_rpaths}"
+    INSTALL_RPATH "${_tinkerhp_runtime_rpaths}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+  )
+  install(TARGETS tinkerhp-deephp-runtime-rpath-probe
+    RUNTIME DESTINATION "${TINKERHP_INSTALL_BINDIR}"
+    COMPONENT tinkerhp-deephp-runtime-rpath-contract
+  )
+endif()
 
 install(TARGETS tinkerhp_core tinkerhp_2decomp_fft
   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
@@ -681,14 +749,17 @@ tinkerhp_generate_build_report(
   TINKERHP_BACKEND "${TINKERHP_BACKEND}"
   TINKERHP_PRECISION "${TINKERHP_PRECISION}"
   TINKERHP_LINK_MODE "${TINKERHP_LINK_MODE}"
+  TINKERHP_NVFORTRAN_OPT_LEVEL "${TINKERHP_NVFORTRAN_OPT_LEVEL_NORMALIZED}"
   TINKERHP_ENABLE_ORTHO_BOX_ONLY "${TINKERHP_ENABLE_ORTHO_BOX_ONLY}"
   TINKERHP_ENABLE_FPA "${TINKERHP_ENABLE_FPA}"
+  TINKERHP_ENABLE_NVFORTRAN_NOINLINE "${TINKERHP_ENABLE_NVFORTRAN_NOINLINE}"
   TINKERHP_ENABLE_NVTX "${TINKERHP_ENABLE_NVTX}"
   TINKERHP_ENABLE_NO_MUTATION "${TINKERHP_ENABLE_NO_MUTATION}"
   TINKERHP_ENABLE_NN "${TINKERHP_ENABLE_NN}"
   TINKERHP_DEEPHP_ENVIRONMENT_ORIGIN "${TINKERHP_DEEPHP_ENVIRONMENT_ORIGIN}"
   TINKERHP_DEEPHP_PYTHON "${TINKERHP_DEEPHP_PYTHON}"
   TINKERHP_DEEPHP_PYTHON_VERSION "${TINKERHP_DEEPHP_PYTHON_VERSION}"
+  TINKERHP_DEEPHP_PYTHON_LIBRARY "${TINKERHP_DEEPHP_PYTHON_LIBRARY}"
   TINKERHP_DEEPHP_CUDA_PROFILE "${TINKERHP_DEEPHP_CUDA_PROFILE}"
   TINKERHP_EFFECTIVE_BINARY_SUFFIX "${TINKERHP_EFFECTIVE_BINARY_SUFFIX}"
   TINKERHP_GPU_ARCHITECTURES "${TINKERHP_GPU_ARCHITECTURES_REPORT}"
@@ -718,6 +789,7 @@ tinkerhp_generate_build_report(
   TINKERHP_INSTALL_BINDIR "${TINKERHP_INSTALL_BINDIR}"
 )
 
+option(BUILD_TESTING "Build Tinker-HP tests." OFF)
 include(CTest)
 if(BUILD_TESTING)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -792,6 +864,25 @@ if(BUILD_TESTING)
     tinkerhp_add_colvars_runtime_test(tinkerhp-colvars-runtime-failure-1 1 --failure)
     tinkerhp_add_colvars_runtime_test(tinkerhp-colvars-runtime-failure-2 2 --failure)
   endif()
+  if(TINKERHP_ENABLE_PLUMED)
+    function(tinkerhp_add_plumed_runtime_test name)
+      add_test(
+        NAME "${name}"
+        COMMAND "${Python3_EXECUTABLE}"
+          "${CMAKE_SOURCE_DIR}/tests/test_plumed_runtime.py"
+          --source-dir "${CMAKE_SOURCE_DIR}"
+          --executable "$<TARGET_FILE:dynamic>"
+      )
+      set_tests_properties("${name}" PROPERTIES
+        ENVIRONMENT
+          "LD_LIBRARY_PATH=${PLUMED_HOME}/lib:$ENV{LD_LIBRARY_PATH};OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+        PROCESSORS 1
+        RUN_SERIAL TRUE
+        TIMEOUT 180
+      )
+    endfunction()
+    tinkerhp_add_plumed_runtime_test(tinkerhp-plumed-runtime-activation-1)
+  endif()
   add_test(
     NAME tinkerhp-minimize-xyz-contract
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_minimize_xyz.py"
@@ -832,6 +923,18 @@ if(BUILD_TESTING)
   set_tests_properties(tinkerhp-mdtraj-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=."
   )
+  add_test(
+    NAME tinkerhp-replica-restart-contract
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_replica_restart_contract.py"
+      --executable "$<TARGET_FILE:dynamic>"
+      --source-dir "${CMAKE_SOURCE_DIR}"
+      --mpi-launcher mpirun
+  )
+  set_tests_properties(tinkerhp-replica-restart-contract PROPERTIES
+    ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+    RUN_SERIAL TRUE
+    TIMEOUT 180
+  )
   add_executable(tinkerhp-initialization-contract tests/test_initialization.f90)
   set_source_files_properties(tests/test_initialization.f90 PROPERTIES
     Fortran_PREPROCESS ON)
@@ -863,14 +966,14 @@ if(BUILD_TESTING)
     COMMAND mpirun -n 1 "$<TARGET_FILE:tinkerhp-parallel-contract>"
   )
   set_tests_properties(tinkerhp-parallel-contract PROPERTIES
-    ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+    ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;TINKER_ASYNC_COVER=1;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
   )
   add_test(
     NAME tinkerhp-parallel-halo-contract
     COMMAND mpirun -n 2 "$<TARGET_FILE:tinkerhp-parallel-contract>"
   )
   set_tests_properties(tinkerhp-parallel-halo-contract PROPERTIES
-    ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+    ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;TINKER_ASYNC_COVER=1;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     PROCESSORS 2
     RUN_SERIAL TRUE
   )
@@ -879,7 +982,7 @@ if(BUILD_TESTING)
     COMMAND mpirun -n 4 "$<TARGET_FILE:tinkerhp-parallel-contract>"
   )
   set_tests_properties(tinkerhp-parallel-root-exchange-contract PROPERTIES
-    ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+    ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;TINKER_ASYNC_COVER=1;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
     PROCESSORS 4
     RUN_SERIAL TRUE
   )
@@ -953,6 +1056,18 @@ if(BUILD_TESTING)
   )
   set_tests_properties(tinkerhp-structure-contract PROPERTIES
     ENVIRONMENT "TINKERHP_SOURCE_DIR=${CMAKE_SOURCE_DIR};TINKER_PARAMS=.;OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+  )
+  add_executable(tinkerhp-vcouple-contract
+    tests/test_vcouple_contract.f90 source/MOD_mutant.f90)
+  tinkerhp_configure_fortran_target(tinkerhp-vcouple-contract
+    "${TINKERHP_MAIN_MODULE_DIR}" "")
+  set_target_properties(tinkerhp-vcouple-contract PROPERTIES
+    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod/vcouple-contract")
+  add_test(
+    NAME tinkerhp-vcouple-contract
+    COMMAND "${CMAKE_COMMAND}"
+      "-Dcontract=$<TARGET_FILE:tinkerhp-vcouple-contract>"
+      -P "${CMAKE_SOURCE_DIR}/tests/run_vcouple_contract.cmake"
   )
   if(TINKERHP_PRECISION STREQUAL "DOUBLE")
     add_test(
@@ -1487,7 +1602,24 @@ if(BUILD_TESTING)
       TIMEOUT 120
     )
   endfunction()
+  function(tinkerhp_add_pimd_dcd_contract name)
+    add_test(
+      NAME "${name}"
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_pimd_dcd_contract.py"
+        --source-dir "${CMAKE_SOURCE_DIR}"
+        --executable "$<TARGET_FILE:pimd>"
+        --mpi-launcher mpirun
+        --mpi-ranks 2
+    )
+    set_tests_properties("${name}" PROPERTIES
+      ENVIRONMENT "OMPI_MCA_oob_tcp_if_include=lo;OMPI_MCA_btl=self,vader"
+      PROCESSORS 2
+      RUN_SERIAL TRUE
+      TIMEOUT 180
+    )
+  endfunction()
   if(TINKERHP_PRECISION STREQUAL "DOUBLE")
+    tinkerhp_add_pimd_dcd_contract(tinkerhp-pimd-dcd-contract)
     tinkerhp_add_pimd_watersmall_scientific_test(
       tinkerhp-scientific-pimd-watersmall-double 1 DOUBLE
       "${CMAKE_BINARY_DIR}/scientific-test-contract" 300)
@@ -1507,6 +1639,7 @@ if(BUILD_TESTING)
       tinkerhp-functional-pimd-restart-malformed-double 1 DOUBLE malformed
       "${CMAKE_BINARY_DIR}/functional-test-contract")
   elseif(TINKERHP_PRECISION STREQUAL "MIXED")
+    tinkerhp_add_pimd_dcd_contract(tinkerhp-pimd-dcd-contract-mixed)
     tinkerhp_add_pimd_watersmall_scientific_test(
       tinkerhp-scientific-pimd-watersmall-mixed 1 MIXED
       "${CMAKE_BINARY_DIR}/scientific-test-contract" 300)

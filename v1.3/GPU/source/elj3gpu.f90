@@ -105,7 +105,8 @@ subroutine elj3c_ac
    use tinMemory
    use tinTypes
    use usage
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work
+   use tinheader, only: inf => Infinity
    use vdw
    use vdw_locArray
    use vdwpot
@@ -174,7 +175,7 @@ subroutine elj3c_ac
 !
 !     Scaling interaction correction for Lennard-Jones
 !
-!$acc parallel loop async(dir_queue) gang vector &
+!$acc parallel loop async(direct_work%queue) gang vector &
 !$acc         present(loc,ired,x,y,z,loc,jvdw,vir,radmin,mutInt,grplist &
 !$acc     ,wgrp,radmin4,epsilon,epsilon4,vcorrect_ik,vcorrect_scale &
 !$acc     ,nev_,ev) &
@@ -253,7 +254,7 @@ subroutine elj3c_ac
 !
 !     find van der Waals energy and derivatives via neighbor list
 !
-!$acc parallel loop gang vector_length(32) async(dir_queue) &
+!$acc parallel loop gang vector_length(32) async(direct_work%queue) &
 !$acc         present(vdwglobnl,ivdw,grplist,wgrp &
 !$acc   ,loc,ired,kred,x,y,z,jvdw,lst,nlst,mutInt,radmin,epsilon &
 !$acc   ,ev,nev_) &
@@ -359,12 +360,11 @@ subroutine elj3c_cu
    use tinMemory ,only: prmem_request
    use timestat  ,only: timer_enter,timer_exit,timer_elj3
    use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
-   use utilcu    ,only: check_launch_kernel,VDW_BLOCK_DIM&
-      &,TRP_BLOCK_DIM,transpose_z3fl
-   use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream&
-      &,rec_stream,def_stream,WARP_SIZE,RED_BUFF_SIZE,inf&
-      &,ered_buff=>ered_buf1,vred_buff,nred_buff,lam_buff&
-      &,reduce_buffer,reduce_energy_action
+   use eljcu     ,only: VDW_BLOCK_DIM,WARP_SIZE
+   use mdevice   ,only: check_launch_kernel, direct_work, reciprocal_work
+   use tinheader   ,only: inf => Infinity
+   use reduction, only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,nred_buff,&
+      &lam_buff,reduce_buffer,reduce_energy_action
    use vdw       ,only: ired,kred,jvdw,ivdw,radmin_c&
       &,epsilon_c,radmin,radmin4,epsilon,epsilon4&
       &,nvdwbloc,nvdwlocnl&
@@ -396,8 +396,6 @@ subroutine elj3c_cu
    zbeg = zbegproc(rank+1)
    zend = zendproc(rank+1)
 
-   def_queue  = dir_queue
-   def_stream = dir_stream
 
    !set the coefficients for the switching function
    mode   = 'VDW'
@@ -424,7 +422,7 @@ subroutine elj3c_cu
 !$acc    ,radmin,epsilon,radmin4,epsilon4,dev &
 !$acc    )
 
-   call lj3_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+   call lj3_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
       &(so_x,so_y,so_z,sgl_id,slc_id&
       &,b2pl,bapl,abpl,cellv_jvdw,i12,mutInt&
       &,epsilon_c,radmin_c,radv,epsv&
@@ -447,7 +445,7 @@ subroutine elj3c_cu
 
 !$acc end host_data
 
-   call reduce_energy_action(ev,nev,ered_buff,def_queue)
+   call reduce_energy_action(ev,nev,ered_buff,direct_work%queue)
 
 end subroutine
 #endif

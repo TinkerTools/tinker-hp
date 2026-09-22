@@ -10,7 +10,7 @@ M_subroutine&
 use tinheader,only : ti_p,ti_eps,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_floor,f_sign
 #else
 use boxes
 use cell
@@ -84,7 +84,7 @@ M_subroutine&
 use tinheader,only : ti_p,ti_eps,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_sign
 #else
 use boxes
 use cell

@@ -28,25 +28,28 @@ subroutine mdsavebeads (istep,dt,polymer)
    use files
    use group
    use inform
-   use interfaces, only: prtxyz
    use iounit
+   use mdtraj, only: dcd_backend, frame_view_t, open_trajectory, write_frame, write_snapshot
    use mdstuf
    use moldyn
    use mpole
    use output
    use polar
    use potent
+   use restart, only: write_restart
+   use status, only: failed, status_t
    use titles
+   use timestat, only: timer_io, timer_enter, timer_exit
    use units
    use mpi
-   use dcdmod
+   use dcdmod, only: dcdio
    use random_mod
    implicit none
    integer, intent(in) :: istep
    real(r_p), intent(in) :: dt
    type(POLYMER_COMM_TYPE), intent(inout) :: polymer
    integer i,j,k,iloc
-   integer ixyz,iind
+   integer iind
    integer ivel,ifrc
    integer iend1,idump,lext
    integer freeunit,trimtext
@@ -60,10 +63,19 @@ subroutine mdsavebeads (istep,dt,polymer)
    character*240 velfile
    character*240 frcfile
    character*240 indfile
+   character*240 dynfile
    character*240 exten
    character*3 numberbeads
    integer :: nproc_write,ibead_beg,ibead_end
    integer,parameter::PERIOD_INBOX_ATOMS=500
+   real(r_p), allocatable :: a_bead(:,:),aalt_bead(:,:)
+   type(status_t) :: restart_status
+   type(status_t) :: snapshot_status
+   type(status_t) :: dcd_status
+   type(status_t) :: cleanup_status
+   type(frame_view_t) :: frame
+   integer :: trajectory_index
+   character(len=240) :: dcdfile
 
    interface 
       subroutine boundspi(polymer,ibead_beg,ibead_end)
@@ -161,11 +173,34 @@ subroutine mdsavebeads (istep,dt,polymer)
 !
 !     update the information needed to restart the trajectory
 !
-   call prtdynbeads(polymer,ibead_beg,ibead_end)
+   allocate(a_bead(3,n),aalt_bead(3,n))
+   call timer_enter(timer_io)
+   do ibead = ibead_beg,ibead_end
+      write(numberbeads, '(i3.3)') ibead
+      dynfile = filename(1:leng)//'_beads'//numberbeads//'.dyn'
+      do i = 1,n
+         wt = convert/mass(i)
+         a_bead(:,i) = polymer%forces(:,i,ibead)*wt
+         if (allocated(polymer%forces_slow)) then
+            aalt_bead(:,i) = polymer%forces_slow(:,i,ibead)*wt
+         else
+            aalt_bead(:,i) = 0.0_re_p
+         end if
+      end do
+      call write_restart(trim(dynfile),title,xbox,ybox,zbox,alpha,beta,gamma,&
+         &polymer%pos(1,:,ibead),polymer%pos(2,:,ibead),polymer%pos(3,:,ibead),&
+         &polymer%vel(:,:,ibead),a_bead,aalt_bead,restart_status)
+      if (failed(restart_status)) then
+         write (6,'(/,a)') trim(restart_status%message)
+         call fatal
+      end if
+   end do
+   deallocate(a_bead,aalt_bead)
+   call timer_exit(timer_io)
 
    if(dcdio) then
-      if(.not. allocated(polymer%dcdinfo)) then
-         allocate(polymer%dcdinfo(polymer%nbeads))
+      if(.not. allocated(polymer%dcd_trajectory)) then
+         allocate(polymer%dcd_trajectory(polymer%nbeads))
       endif
    endif
 
@@ -196,35 +231,49 @@ subroutine mdsavebeads (istep,dt,polymer)
          exten='_beads'//numberbeads
       endif
       !write(*,*) 'globead=' ,globbead(ibeadsloc), 'ranktot=',ranktot
-      if (dcdio) then
 !$acc update host(x,y,z) async
 !$acc wait
+      frame = frame_view_t(atoms=n,host_global=.true.,x=x,y=y,z=z)
+      if (dcdio) then
          if(save_all) then
-            call dcdio_write(polymer%dcdinfo(ibead)&
-               &,filename(1:leng)//trim(exten)//'.dcd',istep,dt,.true.,x,y,z)
+            trajectory_index = ibead
          else
-            call dcdio_write(polymer%dcdinfo(1)&
-               &,filename(1:leng)//trim(exten)//'.dcd',istep,dt,.true.,x,y,z)
+            trajectory_index = 1
+         endif
+         dcdfile = filename(1:leng)//trim(exten)//'.dcd'
+         if (.not.polymer%dcd_trajectory(trajectory_index)%is_active) then
+            call open_trajectory(polymer%dcd_trajectory(trajectory_index),dcd_backend,&
+               &trim(dcdfile),.true.,dcd_status)
+            if (failed(dcd_status)) then
+               write (iout,'(/,a)') trim(dcd_status%message)
+               call close_polymer_trajectories(polymer,cleanup_status)
+               if (failed(cleanup_status)) &
+                  &write (iout,'(/,a)') trim(cleanup_status%message)
+               call fatal
+            end if
+         end if
+         call write_frame(polymer%dcd_trajectory(trajectory_index),frame,istep,dt,dcd_status)
+         if (failed(dcd_status)) then
+            write (iout,'(/,a)') trim(dcd_status%message)
+            call close_polymer_trajectories(polymer,cleanup_status)
+            if (failed(cleanup_status)) &
+               &write (iout,'(/,a)') trim(cleanup_status%message)
+            call fatal
          endif
       else
-         ixyz = freeunit ()
          if (archive) then
             xyzfile = filename(1:leng)//trim(exten)
             call suffix (xyzfile,'arc','old')
-            inquire (file=xyzfile,exist=exist)
-            if (exist) then
-               call openend (ixyz,xyzfile)
-            else
-               open (unit=ixyz,file=xyzfile,status='new')
-            end if
          else
             xyzfile = filename(1:leng)//trim(exten)&
                &//'.'//ext(1:lext)
             call version (xyzfile,'new')
-            open (unit=ixyz,file=xyzfile,status='new')
          end if
-         call prtxyz (ixyz)
-         close (unit=ixyz)
+         call write_snapshot(trim(xyzfile),frame,snapshot_status,archive)
+         if (failed(snapshot_status)) then
+            write (iout,'(/,a)') trim(snapshot_status%message)
+            call fatal
+         end if
 !         write (iout,70)  xyzfile(1:trimtext(xyzfile))
 !   70   format (' Coordinate File',12x,a)
       endif

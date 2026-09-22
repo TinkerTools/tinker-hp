@@ -35,7 +35,7 @@ contains
       use inform ,only: deb_Path
       use mpole
       use neigh
-      use utilgpu,only: dir_queue
+      use mdevice,only: direct_work
       use tinMemory
       use sizes  ,only: tinkerdebug
       implicit none
@@ -44,7 +44,7 @@ contains
       integer i,ninteract
 
       ninteract = 0
-!$acc parallel loop async(dir_queue)
+!$acc parallel loop async(direct_work%queue)
       do i = 1,npolelocnl
          ninteract = ninteract + nelstc(i)
       end do
@@ -116,14 +116,16 @@ contains
       use ewald   , only : aewald
       use group
       use math    , only : sqrtpi
-      use utilgpu , only : def_queue
+      use mdevice , only : default_work
       use mpole   , only : ipole,poleloc,npolelocnl
       use mplpot  , only : m2scale,m3scale,m4scale,m5scale
       use neigh   , only : nelst, nshortelst, elst, shortelst, nelstc,&
          &nshortelstc
       use polar   , only : polarity, thole, pdamp
       use shunt   , only : cut2
-      use utilgpu , only : maxscaling1,maxscaling,dir_queue,warning
+      use scaling  , only : maxscaling1,maxscaling
+      use mdevice  , only : direct_work
+      use inform   , only : warning
       use domdec  , only : loc, nlocnl, nbloc
       use polgrp  , only : allscal_p,typscal_p,numscal_p,scalbeg_p
       use polpot  , only : u1scale, u2scale, u3scale, u4scale
@@ -176,7 +178,7 @@ contains
       if (aewald > 0) alsq2n = 1 / (sqrtpi*aewald)
 
 !$acc parallel loop gang vector_length(32) copy(nprecomp) &
-!$acc         async(dir_queue) default(present)
+!$acc         async(direct_work%queue) default(present)
 !!$acc        private(ki,iscal,fscal)
       PRECOMPUTE_LOOP:&
          &do ii = 1, npolelocnl
@@ -277,7 +279,7 @@ contains
          enddo
 
       end do PRECOMPUTE_LOOP
-!$acc wait(dir_queue)
+!$acc wait(direct_work%queue)
    end subroutine
 
    subroutine tmatxb_pme_compute(mu,efi)
@@ -288,7 +290,7 @@ contains
       use neigh   , only : nelst, elst
       use polar   , only : polarity,  tinypol
       use shunt   , only : cut2
-      use utilgpu , only : def_queue
+      use mdevice , only : default_work
       use domdec  , only : loc
       implicit none
       real(t_p) ,intent(in)   ::  mu(:,:,:)
@@ -323,7 +325,7 @@ contains
          precompute_tmat=.false.
       end if
 
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(default_work%queue) &
 !$acc         present(poleglobnl,ipole,poleloc,polarity,mu,efi) &
 !$acc         present(rx_precompute,ry_precompute,rz_precompute &
 !$acc  ,rr3_bn1_precompute, rr5_bn2_precompute, iploc_precompute &

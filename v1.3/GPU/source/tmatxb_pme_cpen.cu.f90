@@ -4,8 +4,8 @@
 #include "tinker_cudart.h"
 
 module tmatxb_pme_cpencu
-   use utilcu  ,only: BLOCK_DIM,ALL_LANES
-   use utilgpu ,only: BLOCK_SIZE
+   use utilcu  ,only: ALL_LANES
+   use tmatxb_pmecu,only: BLOCK_DIM,BLOCK_SIZE,WARP_SIZE,WARP_SHFT
    use tintypes,only: rpole_elt,real3,real6,real7
    use neigh   ,only: i_bl=>inside_block,d_bl=>disc_block
    private

@@ -36,9 +36,8 @@ subroutine beeman (istep,dt)
    use beeman_inl
    use cutoff
    use domdec
-   use parallel, only: migrate_atoms
-   use deriv     ,only:info_forces,cBond,cNBond,comm_forces,tdes_l&
-      &,dr_stride,de_tot,derivx
+   use deriv    , only: info_forces,cBond,cNBond,comm_forces,tdes_l&
+                , dr_stride,de_tot,derivx
    use energi
    use freeze
    use inform
@@ -48,10 +47,10 @@ subroutine beeman (istep,dt)
    use mpi
    use random_mod
    use timestat
-   use tinheader ,only: re_p
+   use tinheader, only: re_p
    use units
    use usage
-   use utilgpu
+   use parallel , only: migrate_atoms, commpos, commposrec
    implicit none
    integer i,j,istep,iglob
    real(r_p) dt,dt_x,factor

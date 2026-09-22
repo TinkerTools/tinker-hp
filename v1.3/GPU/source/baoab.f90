@@ -27,9 +27,6 @@ subroutine baoab (istep,dt)
    use bath
    use cutoff
    use domdec
-   use parallel, only: migrate_atoms
-   use deriv    ,only:info_forces,cDef,ftot_l,comm_forces
-   use energi   ,only: info_energy,calc_e,chk_energy_fluct
    use freeze
    use inform
    use langevin
@@ -40,14 +37,17 @@ subroutine baoab (istep,dt)
    use random_mod
    use spectra
    use timestat
-   use tinMemory,only: prmem_requestm
-   use tinheader,only: re_p
    use units
    use usage
    use utilbaoab
-   use utils    ,only: set_to_zero1m
-   use utilgpu  ,only: rec_queue,def_queue
    use virial
+   use tinheader, only: re_p
+   use tinMemory, only: prmem_requestm
+   use parallel , only: commpos, commposrec, migrate_atoms
+   use deriv    , only: info_forces,cDef,ftot_l,comm_forces
+   use energi   , only: info_energy,calc_e,chk_energy_fluct,reduceen
+   use mdevice  , only: reciprocal_work
+   use utils    , only: set_to_zero1m
    implicit none
    integer  ,intent(in):: istep
    real(r_p),intent(in):: dt
@@ -121,7 +121,7 @@ subroutine baoab (istep,dt)
 !
    if (.not.ftot_l) then
       call prmem_requestm(derivs,3,nbloc,async=.true.)
-      call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
    end if
 !
    call reinitnl(istep)

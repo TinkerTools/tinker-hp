@@ -40,6 +40,7 @@ set(MOD_SRCS
   source/MOD_parallel.f90
   source/sm_parallel.f90
   source/sm_parallel_communication.f90
+  source/sm_parallel_migration.f90
   source/MOD_couple.f90
   source/MOD_commstuffpi.f90
   source/MOD_ctrpot.f90
@@ -128,6 +129,7 @@ set(MOD_SRCS
   source/MOD_potent.f90
   source/MOD_precis.f90
   source/MOD_ptable.f90
+  source/MOD_scaling.f90
   source/MOD_precompute_polegpu.f90
   source/sm_pme.gpu.f90
   source/MOD_qtb.f90
@@ -160,10 +162,8 @@ set(MOD_SRCS
   source/MOD_usage.f90
   source/MOD_utils.f90
   source/MOD_utilbaoab.f90
-  source/MOD_utilcomm.f90
   source/MOD_utilbaoabpi.f90
   source/MOD_utilvec.f90
-  source/MOD_utilgpu.f90
   source/sm_polar.f90
   source/sm_tmatxb.f90
   source/MOD_mdevice.f90
@@ -182,7 +182,6 @@ set(F_SRCS
   source/alterchg.f90
   source/alterchg.gpu.f90
   source/attach.f90
-  source/basefile.f90
   source/beeman.f90
   source/bicubic.f90
   source/beads.f90
@@ -332,17 +331,13 @@ set(F_SRCS
   source/extra3.f90
   source/fatal.f90
   source/fft_mpi.f90
-  source/field.f90
   source/final.f90
   source/freeunit.f90
   source/geometry.f90
-  source/getkey.f90
   source/getnumb.f90
-  source/getprm.f90
   source/getstring.f90
   source/gettext.f90
   source/getword.f90
-  source/getxyz.f90
   source/gradient.f90
   source/groups.f90
   source/image.f90
@@ -397,8 +392,6 @@ set(F_SRCS
   source/mechanic.f90
   source/mlpot.f90
   source/molecule.f90
-  source/mpistuff.f90
-  source/mpiUtils.gpu.f90
   source/mutate.f90
   source/nblist.f90
   source/nblistgpu.f90
@@ -428,12 +421,7 @@ set(F_SRCS
   source/promoamd.f90
   source/promosmd.f90
   source/prmkey.f90
-  source/prtdynbeads.f90
-  source/prtdyn.f90
-  source/prtxyz.f90
-  source/readdyn.f90
   source/readprm.f90
-  source/readxyz.f90
   source/respa.f90
   source/respa1.f90
   source/rings.f90
@@ -462,6 +450,7 @@ set(F_SRCS
 set(DEV_F_SRCS
   source/MOD_cell.cu.f90
   source/MOD_util.cu.f90
+  source/sm_mdevice.cu.f90
   source/echarge.cu.f90
   source/echglj.cu.f90
   source/echgtrn.cu.f90
@@ -499,6 +488,7 @@ set(TINKERHP_PROGRAM_TARGETS
   pibar
   pimd
   radial
+  testgrad
 )
 
 function(tinkerhp_partition_fortran_sources out_common out_gpu)

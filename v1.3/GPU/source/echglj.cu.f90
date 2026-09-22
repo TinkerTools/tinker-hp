@@ -17,24 +17,25 @@
 #include  "tinker_macro.h"
 module eChgLjcu
    use cudafor
-   use tinheader,only: ti_p,oner
+   use tinheader,only: ti_p,oner,inf => Infinity
    use tintypes ,only: real3
    use sizes    ,only: maxclass,maxvalue
-   use utilcu   ,only: VDW_BLOCK_DIM,ALL_LANES
+   use utilcu   ,only: ALL_LANES
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
    use utilcu   ,only:f_sqrt
 #endif
-   use utilgpu  ,only: inf,BLOCK_SIZE
    use reduction,only: RED_BUFF_SIZE
    use vdw      ,only: vdw_lcut2,vdweAbsurd
    use vdwpot   ,only: ARITHMETIC_RL,GEOMETRIC_RL
 
    implicit none
    private
+   integer,parameter :: BLOCK_DIM=128,VDW_BLOCK_DIM=128,BLOCK_SIZE=32
 #include "atomicOp.h.f90"
 
    !procedure(echg_lj1_kcu_v0),pointer,public :: echg_lj1_kcu
    public:: echg_lj1_kcu_v0,echg_lj1_kcu_v1
+   public :: BLOCK_DIM,VDW_BLOCK_DIM,BLOCK_SIZE
 
 contains
 

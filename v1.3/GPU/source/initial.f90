@@ -3,199 +3,7 @@
 !     Washington University in Saint Louis
 !     University of Texas at Austin
 !
-!     ################################################################
-!     ##                                                            ##
-!     ##  subroutine initial  --  initial values and program setup  ##
-!     ##                                                            ##
-!     ################################################################
-!
-!
-!     "initial" sets up original values for some parameters
-!     and variables that might not otherwise get initialized
-!
-!
 #include "tinker_macro.h"
-subroutine initial(raw_cli)
-   use atoms
-   use beads
-   use bath
-   use bound
-   use cell
-   use config, only: raw_cli_t, publish_legacy_cli
-   use deriv
-   use domdec
-   use energi
-   use files
-   use inform
-   use inter
-   use iounit
-   use keys
-   use linmin
-   use minima
-   use moldyn
-   use neigh
-   use output
-   use params
-   use precis ,only:p_tiny=>tiny,small&
-              ,p_huge=>huge
-   use random_mod
-   use timestat
-   use tinMemory
-   use tinheader
-   use utilgpu
-   use uprior
-   use mpi
-   use virial
-   implicit none
-!$ integer omp_get_num_procs
-   integer ierr
-   integer ::cuda_success=0
-   real(t_p) precise
-   integer :: status,hostnm,getpid,device_type,i=0
-   type(raw_cli_t), intent(in), optional :: raw_cli
-
-!
-!     cores, thread count and options for OpenMP
-!
-   nbeads = 1
-   nbeads_ctr = 0
-   nproc = 1
-   nthread = 1
-!     call omp_set_num_threads (nthread)
-   nrec = 0
-!
-!     default unit numbers for input and output
-!
-   input = 5
-   iout  = 6
-!
-!     command line arguments to the program
-!
-   if (present(raw_cli)) then
-      call publish_legacy_cli(raw_cli)
-   else
-      call command
-   end if
-!
-!     Number of MPI processes and rank of the current MPI process
-!
-   call MPI_COMM_SIZE(MPI_COMM_WORLD,nproctot,ierr)
-   call MPI_COMM_RANK(MPI_COMM_WORLD,ranktot,ierr)
-!     CALL MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
-!    $                         MPI_INFO_NULL, hostcomm,ierr)
-!     CALL MPI_Comm_rank(hostcomm,hostrank,ierr)
-!
-!     Display copyright notice and license number
-!
-   if (ranktot.eq.0) call promo
-
-!
-!     values of machine precision constants
-!
-   p_tiny = precise (1)
-   small  = precise (2)
-   p_huge = precise (3)
-!
-!     number of lines in the keyfile
-!
-   nkey = 0
-!
-!     number of lines in the parameter file
-!
-   nprm = 0
-!
-!     number of atoms in the system
-!
-   n = 0
-!
-!     number of molecules in the system
-!
-!     nmol = 0
-!
-!     number of unit cell replicates
-!
-!     ncell = 0
-!
-!     number of mutated atoms in the system
-!
-   nprior = 0
-!
-!     flags for information levels within the program
-!
-   silent = .false.
-   verbose = .false.
-   debug = .false.
-   abort = .false.
-!
-!     flags for periodic boundaries
-!
-   use_bounds = .false.
-!      use_replica = .false.
-   use_polymer = .false.
-!
-!     Stats on energy
-!
-   etot_ave = 0.0
-   etot_std = 0.0
-!
-!     flags for temperature and pressure baths
-!
-   isothermal = .false.
-   isobaric   = .false.
-!
-!     flags for rebuilding of neighbor lists
-!
-   auto_lst = .true.
-   dovlst = .true.
-   domlst = .true.
-!
-!     type of coordinates file
-!
-   coordtype = 'NONE'
-!
-!     atomic symbols for elements
-!
-   call initatom
-!
-!     Flag for predictor-Corrector
-!
-   polpred  = 'ASPC'
-   use_pred = merge(.true.,.false.,app_id.eq.dynamic_a)
-!
-!     names of biopolymer residue types
-!
-   call initres
-!
-!     Initiate memory manager
-!
-   call init_memhandle
-!
-!     Default moldyn data
-!
-   nalt     = i_init
-   nalt2    = i_init
-   stepfast = i_init
-   stepint  = i_init
-!
-!     default parameters used by optimizations
-!
-   fctmin   = 0.0_ti_p
-   maxiter  = 0
-   nextiter = 0
-   iprint   = -1
-   iwrite   = -1
-   n_fwriten= 0
-   stpmax   = 0.0_ti_p
-!
-!     initialize timer values
-!
-   call initiate_timers()
-   call timer_enter(timer_prog)
-
-   dotstgrad      = .false.
-   calc_e         = .true.
-
-end
 
 subroutine set_nproc()
    use domdec
@@ -345,16 +153,16 @@ end
 subroutine initDevice(platform_ready)
    use deriv  ,only: delambdae,delambdav,delambdaesave,&
       &delambdavsave
-   use domdec ,only: rank,ranktot,hostcomm
+   use domdec ,only: nproc,rank,ranktot,hostcomm
    use energi
    use inter  ,only: einter
    use inform
    use mamd   ,only: aMDwattype
-   use mdevice,only: channel_t,reciprocal_channel
+   use mdevice,only: reciprocal_work,direct_work,init_legacy,publish_warning,&
+      &set_gpu_config,device_number
    use nvshmem
    use pme, only: initialize_pme_device
    use reduction, only: create_reduction_buffers
-   use utilgpu
 #ifdef _OPENACC
    use interfaces,only:C_init_env
 #endif
@@ -364,7 +172,6 @@ subroutine initDevice(platform_ready)
    !use utils
    implicit none
    integer,volatile:: ierr,i
-   type(channel_t) :: reciprocal_work
    logical, intent(in), optional :: platform_ready
    logical :: platform_is_ready
    platform_is_ready = .false.
@@ -373,14 +180,7 @@ subroutine initDevice(platform_ready)
 !     Inititialize gpu stuff
 !
    if (.not.platform_is_ready) then
-      ngpus         = 0
-      nSMP          = 1
-      nSPcores      = 1
-      cores_SMP     = 1
-#ifdef _OPENACC
-      call selectDevice
-      call initDevice_stream
-#endif
+      call init_legacy
    end if
    call init_nvshmem(hostcomm)
    !call mHalte
@@ -399,7 +199,7 @@ subroutine initDevice(platform_ready)
       call MPI_BARRIER(hostcomm,ierr)
    end if
 
-   call set_warning
+   call publish_warning
 !
 !     For blocking computation of direct space
 !
@@ -417,22 +217,16 @@ subroutine initDevice(platform_ready)
 !
 !     set to zero reductions buffers for (action,energy and virial)
 !
-   call create_reduction_buffers(dir_queue)
-   reciprocal_work = reciprocal_channel()
+   call create_reduction_buffers(direct_work%queue)
    call initialize_pme_device(reciprocal_work%queue)
 !
 !     mapping parallelism for gpu execution
 !
 #ifdef _OPENACC
-   call C_init_env(devicenum,nproc,rank,tinkerdebug)
+   call C_init_env(device_number(),nproc,rank,tinkerdebug)
 #endif
 
-   ngangs_rec  = 20
-   gpu_gangs   = 80
-   mod_gangs   = .true.
-   gpu_workers = 1
-   gpu_vector  = 32
+   call set_gpu_config(gangs=80,workers=1,vector=32,modulo=.true.)
 
-!$acc update device(rank,ngpus,devicenum,gpu_gangs &
-!$acc  ,gpu_workers,gpu_vector)
+!$acc update device(rank)
 end subroutine

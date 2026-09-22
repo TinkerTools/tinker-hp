@@ -18,8 +18,9 @@ submodule(mdstate) submdstate
    use random_mod ,only:randomgpu,normalgpu
 #endif
    use titles
+   use tinmemory  ,only: mem_move,prmem_requestm
    use utils
-   use utilgpu
+   use mdevice    ,only: reciprocal_work
    implicit none
    integer i,ndat,n_save
    character*120 mddat(20)
@@ -275,8 +276,8 @@ contains
 #if TINKER_SINGLE_PREC
       __TINKER_FATAL__
 #else
-      if( respa_l)call mem_move_r8(ms_alt ,aalt ,int(3*n,8),rec_stream)
-      if(respa1_l)call mem_move_r8(ms_alt2,aalt2,int(3*n,8),rec_stream)
+      if( respa_l)call mem_move(ms_alt ,aalt (1:3*n,1),int(3*n,8),reciprocal_work%stream)
+      if(respa1_l)call mem_move(ms_alt2,aalt2(1:3*n,1),int(3*n,8),reciprocal_work%stream)
 #endif
    end subroutine
 

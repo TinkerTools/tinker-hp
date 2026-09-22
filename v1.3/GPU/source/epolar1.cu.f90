@@ -20,11 +20,12 @@
 #include "tinker_cudart.h"
 
 module epolar1cu
-   use utilcu  ,only: BLOCK_DIM,ALL_LANES
-   use utilgpu ,only: BLOCK_SIZE&
-      &,WARP_SIZE
+   use utilcu, only: all_lanes
    use reduction,only: RED_BUFF_SIZE
-   use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
+   use tinTypes ,only: real3,real6,mdyn3_r,rpole_elt
+   integer,parameter :: BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32,WARP_SHFT=5
+   integer,parameter :: maxBlock=ishft(1,16)
+   public :: BLOCK_DIM,BLOCK_SIZE,WARP_SIZE,WARP_SHFT,maxBlock
 
 contains
 

@@ -128,7 +128,7 @@ subroutine kmlpot(init,istep)
          if (index(record,'RESPA1').gt.0) ml_embedding_mode=2
       end if
 
-      call ddpme3d
+      if (use_mlpot_only) call ddpme3d
    !
    !     search keywords for MLP commands
    !
@@ -231,9 +231,9 @@ subroutine kmlpot_reset(istep)
    use neigh
    use sizes     ,only: tinkerdebug
    use tinMemory
+   use mdevice, only: reciprocal_work
 #ifdef _OPENACC
    use thrust
-   use utilgpu  ,only: rec_stream
 #endif
    implicit none
    integer,intent(in)::istep
@@ -294,7 +294,7 @@ subroutine kmlpot_reset(istep)
    if (nproc.eq.1) then
 !$acc wait
 !$acc host_data use_device(amloc)
-      call thrust_sort(amloc,namloc,rec_stream)
+      call thrust_sort(amloc,namloc,reciprocal_work%stream)
 !$acc end host_data
    end if
 #endif

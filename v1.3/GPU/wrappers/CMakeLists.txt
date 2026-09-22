@@ -15,8 +15,8 @@ set_target_properties(tinkerhp_wrapper PROPERTIES
 )
 
 target_include_directories(tinkerhp_wrapper PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}"
   "${TINKERHP_WRAPPER_MODULE_DIR}"
+  "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 target_compile_options(tinkerhp_wrapper PRIVATE

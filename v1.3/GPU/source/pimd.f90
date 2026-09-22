@@ -39,7 +39,8 @@ program pimd
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      __TINKER_FATAL__
+      call MPI_FINALIZE(ierr)
+      stop 1
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
@@ -68,7 +69,6 @@ subroutine pimd_bis(raw_cli,status_value)
    use timestat
    use mpi
    use neigh, only: lbuffer
-   use utilgpu ,only: rec_queue
    use tinMemory
    use tinheader
    use ascii, only: int_to_str
@@ -273,7 +273,8 @@ subroutine pimd_bis(raw_cli,status_value)
 !     setup dynamics
 !
    call reset_observables(.true.)
-   call allocpi()
+   call allocpi(status_value)
+   if (failed(status_value)) return
    if(centroid_longrange) then
       use_shortmlist = use_mlist
       use_shortclist = use_clist
@@ -401,7 +402,7 @@ subroutine pimd_bis(raw_cli,status_value)
 !     perform any final tasks before program exit
 !
    call clear_piqtb_communication()
-   call final
+   call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) status_value = cleanup_status

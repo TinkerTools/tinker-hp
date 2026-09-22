@@ -99,6 +99,9 @@ module config
          type(status_t), intent(out) :: status_value
       end subroutine apply_defaults_prm_key
 
+      module subroutine set_potential_defaults()
+      end subroutine set_potential_defaults
+
       module subroutine parse_dynamic_cli(raw_cli, periodic, nstep, timestep_fs, &
             dump_interval_ps, ensemble, temperature, pressure, status_value)
          type(raw_cli_t), intent(in) :: raw_cli

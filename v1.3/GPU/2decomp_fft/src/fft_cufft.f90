@@ -145,9 +145,9 @@ contains
     integer :: ierr
 
     if (nrank==0.and.dcp_verbose) then
-      write(*,*) ' '
+      write(*,*)
       write(*,*) '***** Using the CUFFT engine *****'
-      write(*,*) ' '
+      write(*,*)
     end if
 
     if (format /= PHYSICAL_IN_X) &

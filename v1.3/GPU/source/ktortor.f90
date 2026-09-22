@@ -27,10 +27,10 @@ subroutine ktortor(init)
    use potent
    use tortor
 #ifdef _OPENACC
-   use thrust
 #endif
    use utils
-   use utilgpu
+   use tinMemory, only: prmem_request
+   use tinheader, only: ti_p
    implicit none
    integer i,j,k,m
    integer ia,ib,ic,id,ie

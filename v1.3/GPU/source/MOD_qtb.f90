@@ -807,7 +807,6 @@ contains
 #ifdef _OPENACC
       use openacc
       use cufft
-      use utilgpu, only: rec_queue
 #else
       use glassman
 #endif
@@ -905,9 +904,9 @@ contains
       use random_mod
       use inform
       use ascii, only: int_to_str
+      use mdevice, only: reciprocal_work
 #ifdef _OPENACC
       use cufft
-      use utilgpu  ,only: rec_queue
 #else
       use glassman
 #endif
@@ -936,7 +935,7 @@ contains
 #ifdef _OPENACC
       if(.NOT. host_rand_platform) then
          call normalgpu(r,3*nseg*nbatch_*nbeads&
-            &,0.,1.,rec_queue)
+            &,0.,1.,reciprocal_work%queue)
       endif
 #endif
       if(host_rand_platform) then
@@ -1604,9 +1603,9 @@ contains
 
    subroutine update_fft_plan_qtb(nfft)
       use domdec, only:nloc,rank
+      use mdevice, only: reciprocal_work
 #ifdef _OPENACC
       use cufft
-      use utilgpu, only: rec_queue
       use openacc
 #endif
       use spectra, only: nseg
@@ -1644,7 +1643,7 @@ contains
          &,pnull,0,0&
          &,CUFFT_C2C, 3*nloc_plan*nbeads )
       ierr=ierr+cufftSetStream(plan_qtb&
-         &,acc_get_cuda_stream(rec_queue))
+         &,acc_get_cuda_stream(reciprocal_work%stream))
 #endif
    end subroutine update_fft_plan_qtb
 

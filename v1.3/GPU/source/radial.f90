@@ -45,7 +45,8 @@ program radial
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      __TINKER_FATAL__
+      call MPI_FINALIZE(ierr)
+      stop 1
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
@@ -71,7 +72,7 @@ subroutine radial_bis(raw_cli,status_value)
    use mdevice, only: channel_t, finalize_device
    use parallel, only: parallel_t, release
    use status, only: status_t, failed
-   use structure, only: structure_t
+   use structure, only: read_frame, structure_t
    implicit none
    integer i,j,k
    integer nframe,iframe
@@ -261,12 +262,13 @@ subroutine radial_bis(raw_cli,status_value)
       call suffix (xyzfile,'xyz','old')
       open (unit=iarc,file=xyzfile,status ='old')
       rewind (unit=iarc)
-      call readxyz (iarc)
+      call read_frame(iarc,molecular_structure,status_value)
+      if (failed(status_value)) goto 900
    end if
 !      nframe = 0
 !      do while (.not. abort)
 !         if (.not.dcdio) then
-!           call readxyz (iarc)
+!           call read_frame (iarc,molecular_structure,status_value)
 !         else
 !           call dcdfile_read_next
 !           call dcdfile_skip_next(0)
@@ -318,16 +320,19 @@ subroutine radial_bis(raw_cli,status_value)
    do while (iframe.ge.start .and. iframe.le.stop)
       do j = 1, skip-1
          if (.not.dcdio) then
-            call readxyz (iarc)
+            call read_frame(iarc,molecular_structure,status_value)
+            if (failed(status_value)) exit
          else
             call dcdfile_read_next(dcdinfo)
             call dcdfile_skip_next(dcdinfo,0)
          end if
       end do
+      if (failed(status_value)) exit
       iframe = iframe + step
       skip = step
       if (.not.dcdio) then
-         call readxyz (iarc)
+         call read_frame(iarc,molecular_structure,status_value)
+         if (failed(status_value)) exit
       else
          call dcdfile_read_next(dcdinfo)
          call dcdfile_skip_next(dcdinfo,0)
@@ -368,6 +373,7 @@ subroutine radial_bis(raw_cli,status_value)
    end do
 
 !$acc end data
+   if (failed(status_value)) goto 900
 
 !
 !     ensure a valid frame is loaded and report total frames
@@ -375,7 +381,8 @@ subroutine radial_bis(raw_cli,status_value)
    if(abort) then
       if (.not.dcdio) then
          rewind (unit=iarc)
-         call readxyz (iarc)
+         call read_frame(iarc,molecular_structure,status_value)
+         if (failed(status_value)) goto 900
       else
          call dcdfile_close(dcdinfo)
          call dcdfile_open(dcdinfo,dcdfile)
@@ -462,12 +469,13 @@ subroutine radial_bis(raw_cli,status_value)
 !
 !     perform any final tasks before program exit
 !
+900 continue
    if (dcdio) then
       call dcdfile_close(dcdinfo)
    else
       close (unit=iarc)
    end if
-   call final
+   call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) status_value = cleanup_status

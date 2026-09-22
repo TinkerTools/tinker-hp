@@ -18,13 +18,13 @@ submodule(atomsMirror) subAtoms
    use cell
    use domdec    ,only: rank,nproc,hostcomm,COMM_TINKER,nloc,nbloc,glob
    use deriv     ,only: ftot_l,tdes_l,de_tot,derivx,derivy,derivz
-   use inform    ,only: deb_path
+   use inform    ,only: deb_path,minmaxone
    use moldyn    ,only: v
    use mpi
-   use tinMemory
+   use tinMemory ,only: prmem_requestm,mem_set,mipk
    use sizes     ,only: tinkerdebug
    use units     ,only: convert
-   use utilgpu   ,only: mem_set,rec_stream
+   use mdevice   ,only: reciprocal_work
    use usage
    implicit none
 
@@ -71,19 +71,29 @@ contains
 
    end subroutine
 
-   module subroutine reCast_position
+   module subroutine reCast_position(queue)
       implicit none
       integer i
+      integer, intent(in), optional :: queue
 
       if (t_p.eq.r_p) return
       if (deb_path) print*, "reCast_position"
 
+      if (present(queue)) then
+!$acc parallel loop default(present) async(queue)
+         do i = 1,n
+            xr(i) = real(x(i),t_p)
+            yr(i) = real(y(i),t_p)
+            zr(i) = real(z(i),t_p)
+         end do
+      else
 !$acc parallel loop default(present) async
-      do i = 1,n
-         xr(i) = real(x(i),t_p)
-         yr(i) = real(y(i),t_p)
-         zr(i) = real(z(i),t_p)
-      end do
+         do i = 1,n
+            xr(i) = real(x(i),t_p)
+            yr(i) = real(y(i),t_p)
+            zr(i) = real(z(i),t_p)
+         end do
+      end if
 
    end subroutine
 
@@ -240,7 +250,7 @@ contains
 !$acc end host_data
 
       if (ftot_l.and..not.tdes_l.and.len>0)&
-         &call mem_set(de_tot,zer,len,rec_stream,nloc1)
+         call mem_set(de_tot(nloc1:nloc1+len,1),zer,len,reciprocal_work%stream)
    end subroutine
 
    module subroutine integrate_acc_vel1(aalt,dta,derivs,a,dt)
@@ -317,7 +327,7 @@ contains
 !$acc end host_data
 
       if (ftot_l.and..not.tdes_l.and.slen>0)&
-         &call mem_set(de_tot,zer,slen,rec_stream,nloc1)
+         &call mem_set(de_tot(1:slen+nloc1,1),zer,slen,reciprocal_work%stream,nloc1)
    end subroutine
 
    module subroutine integrate_pos(dt)

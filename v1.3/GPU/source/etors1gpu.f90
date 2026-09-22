@@ -52,10 +52,11 @@ subroutine etors1agpu_(tors1,tors2,tors3,tors4,tors5,tors6,det)
    use mamd
    use potent    ,only: use_amd_dih
    use tinheader ,only: ti_p,re_p
+   use tinmemory ,only: mem_move
    use torpot
    use tors      ,only: ntorsloc,itors
    use usage
-   use utilgpu   ,only: mem_move,rec_stream
+   use mdevice   ,only: reciprocal_work
    use tinMemory ,only: mipk
    use virial
    implicit none
@@ -124,7 +125,7 @@ subroutine etors1agpu_(tors1,tors2,tors3,tors4,tors5,tors6,det)
 !
    if (use_amd_dih) then
       siz = 3*nloc
-      call mem_move(deamdD,det,siz,rec_stream)
+      call mem_move(deamdD(1:siz,1),det(1:siz,1),siz,reciprocal_work%stream)
 !$acc serial async present(eDaMD,et)
       eDaMD = et
 !$acc end serial

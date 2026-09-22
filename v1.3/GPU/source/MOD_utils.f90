@@ -307,6 +307,20 @@ contains
          array1(i) = zero
       end do
    end subroutine
+   subroutine set_to_zero1_md(array1,n,queue)
+      implicit none
+      integer  ,intent(in ):: n
+      integer  ,intent(in ):: queue
+      mdyn_rtyp,intent(out):: array1(*)
+      integer:: i
+      mdyn_rtyp,parameter:: zero=0
+
+!$acc parallel loop &
+!$acc         present(array1(1:n)) async(queue)
+      do i= 1, n
+         array1(i) = zero
+      end do
+   end subroutine
    subroutine set_to_zero1_int(array1,n,queue)
       implicit none
       integer,intent(in ):: n

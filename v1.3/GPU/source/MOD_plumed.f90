@@ -8,7 +8,7 @@
 #include "tinker_macro.h"
 module plumed
    implicit none
-   integer  ncount
+   integer  :: ncount = 0
    logical:: lplumed=.false.
    real(r_p) energyUnits
    real(r_p) lengthUnits
@@ -23,6 +23,8 @@ module plumed
    interface
       module subroutine plumed_init(dt)
          real(r_p),intent(in):: dt
+      end subroutine
+      module subroutine plumed_finalize()
       end subroutine
       module subroutine eplumed(energy,derivs)
          implicit none

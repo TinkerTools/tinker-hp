@@ -17,31 +17,37 @@
 #include "tinker_macro.h"
 subroutine mechanic(configuration, status_value)
    use atoms,only:n
-   use config, only: config_t, apply_defaults_prm_key
+   use config, only: config_t
    use cutoff
    use domdec
    use deriv ,only: ConfigPotential
    use inform
    use iounit
-   use interfaces, only: field
    use neigh ,only: ineignl
    use potent
    use sizes ,only: tinkerdebug
-   use tinMemory ,only: print_memory_usage
+   use tinMemory ,only: print_memory_usage,sd_prmem
    use utils     ,only: Tinker_Wait
    use vdwpot
 #ifdef _OPENACC
    use random_mod
-   use utilgpu,only:rec_queue,thrust_cache_init
+   use mdevice,only:reciprocal_work
+   use thrust,only:thrust_cache_init
    use openacc
 #endif
    use mpi
    use polpot
-   use status, only: clear_status, status_t, failed
+   use status, only: clear_status, set_status, status_invalid_argument, status_t
    implicit none
-   type(config_t), intent(inout), optional :: configuration
-   type(status_t), intent(out), optional :: status_value
-   type(status_t) :: configuration_status
+   type(config_t), intent(in) :: configuration
+   type(status_t), intent(out) :: status_value
+
+   call clear_status(status_value)
+   if (.not.configuration%complete) then
+      call set_status(status_value, status_invalid_argument, &
+         'Mechanic requires completed Configuration')
+      return
+   end if
 !
 !     set the bonded connectivity lists and active atoms
 !
@@ -58,18 +64,6 @@ subroutine mechanic(configuration, status_value)
 !
 !     get the base force field from parameter file and keyfile
 !
-   if (.not.present(configuration)) then
-      call field(.false.)
-   else
-      if (configuration%complete) then
-         call clear_status(configuration_status)
-      else
-         call apply_defaults_prm_key(configuration,configuration_status)
-      end if
-      if (present(status_value)) status_value = configuration_status
-      if (failed(configuration_status)) return
-   end if
-!
 !      call polymer
 !
 !     assign atom types, classes and other atomic information
@@ -83,7 +77,7 @@ subroutine mechanic(configuration, status_value)
 !
 !     initiate Thrust cache memory
 !
-   call thrust_cache_init(n)
+   call thrust_cache_init(n,sd_prmem)
 #endif
    if (nproc.eq.1) then
 !$acc update host(ineignl) async
@@ -179,7 +173,7 @@ subroutine mechanic(configuration, status_value)
 !
 !     init cuda rand engine
 !
-   call init_curand_engine(n,rec_queue)
+   call init_curand_engine(n,reciprocal_work%queue)
 #endif
 !
 !     associate pointers routine
@@ -656,14 +650,15 @@ end
 
 subroutine init_sub_config
    use atoms      ,only: n
+   use domdec     ,only: rank
    use interfaces
    use mdstuf
    use neigh      ,only: defaultlbuffer,defaultlbuffer1,lbuffer
    use potent     ,only: use_chgpen
    use polpot     ,only: use_thole, use_tholed
-   use utilgpu
+   use mdevice    ,only: precomp_allowed,device_name
    use sizes
-   use beads, only: centroid_recip
+   use beads      ,only: centroid_recip
    implicit none
    integer devtyp,devtyp1
    enum,bind(C)
@@ -680,7 +675,7 @@ subroutine init_sub_config
       sub_config = itrf_legacy
       devname(:) = ""
 #ifdef _OPENACC
-      devname = devProp%name
+      call device_name(devname)
       call upcase(devname)
       if (index(devname,'GEFORCE').gt.0) then
          devtyp = dev_geforce
@@ -768,7 +763,7 @@ subroutine configure_routine
       &, clst_enable,clst2_enable
    use sizes  ,only: tinkerdebug
 #ifdef _OPENACC
-   use utilgpu,only: allow_precomp
+   use mdevice,only: precomp_allowed
 #endif
    use vdw    ,only: nvdw
    use vdwpot ,only: vdwtyp
@@ -957,7 +952,7 @@ subroutine configure_routine
          &(configure.eq.conf_tmatxb_pre.or.&
          &(sub_config.eq.itrf_legacy&
 #ifdef _OPENACC
-         &.and.allow_precomp(shft)&
+         &.and.precomp_allowed(shft)&
 #endif
          &))) then
          tmatxb_pme_core_p => tmatxb_pme_compute
@@ -1117,16 +1112,18 @@ end
 !           MPI Async Overlapping computation (Real V Rec)
 !
 subroutine config_cover_routines
+   use domdec, only: nproc, rank
    use interfaces
-   use utilgpu
+   use mdevice, only: direct_work,reciprocal_work
    use inform
    use polpot
    use potent ,only: use_pmecore
+   use mdevice, only: disable_overlap
    implicit none
    logical,parameter:: OK=.false.
 
    ! Association
-   if (dir_queue.ne.rec_queue) then
+   if (direct_work%queue.ne.reciprocal_work%queue) then
 
       if (use_pmecore) then
          if (verbose.and.rank.eq.0) then
@@ -1135,7 +1132,7 @@ subroutine config_cover_routines
             print 13
          end if
 #ifdef _OPENACC
-         call finalize_async_recover
+         call disable_overlap
 #endif
          return
       end if
@@ -1145,7 +1142,7 @@ subroutine config_cover_routines
             &2x,'Affect performances during sequential run')
          print 14
 #ifdef _OPENACC
-         call finalize_async_recover
+         call disable_overlap
 #endif
          return
       end if
@@ -1218,7 +1215,7 @@ subroutine disable_commreal_study
    use interfaces
    use inform  ,only: verbose
    use potent  ,only: use_mpole,use_polar
-   use utilcomm,only: no_commdir
+   use parallel,only: comm_opt
 #ifdef _OPENACC
 #endif
    use tinheader ,only: isrel_build
@@ -1233,7 +1230,7 @@ subroutine disable_commreal_study
       &then
 
       ! Enable ExtraComputation
-      no_commdir=.true.
+      comm_opt%skip_direct=.true.
 12    format(/,&
          &' *****  Bypassing most of real space communications *****')
       if (rank.eq.0.and.verbose) write(*,12)
@@ -1252,8 +1249,11 @@ end subroutine
 
 subroutine gsync(cha,lin)
    use domdec
-   use utilgpu
+   use mdevice, only: reciprocal_work
    use mpi
+#ifdef _OPENACC
+   use cudafor, only: cudaStreamSynchronize, cudaGetErrorString
+#endif
    implicit none
    character(*) cha
    integer  lin
@@ -1262,7 +1262,7 @@ subroutine gsync(cha,lin)
 #ifdef _OPENACC
    !if (tinkerdebug.gt.0) then
       !ierrSync = cudaDeviceSynchronize()
-      ierrSync = cudaStreamSynchronize(rec_stream)
+      ierrSync = cudaStreamSynchronize(reciprocal_work%stream)
    !else
    !   ierrSync = cudaGetLastError()
    !end if

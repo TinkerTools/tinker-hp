@@ -30,10 +30,7 @@ subroutine tmatxb_pmegpu(nrhs,dodiag,mu,efi)
    use atmlst  , only : poleglob
    use mpole   , only : npoleloc,npolebloc
    use polar   , only : polarity, tinypol
-   use utilgpu , only : def_queue, dir_queue, rec_queue
-#ifdef _OPENACC
-   use utilgpu , only : def_stream,dir_stream
-#endif
+   use mdevice, only : direct_work, reciprocal_work
    use domdec  , only : rank
    use inform  , only : deb_Path
    use interfaces ,only : tmatxb_pme_core2,tmatxb_pme_core3,&
@@ -43,7 +40,6 @@ subroutine tmatxb_pmegpu(nrhs,dodiag,mu,efi)
    use timestat, only : timer_tmatxb_pmegpu, timer_enter,timer_exit
    use tmatxb_inl_subroutines , only : ndec, icall
    use utils   , only : set_to_zero1
-   use utilcomm, only : skpPcomm
    use potent  , only : use_polarshortreal
    use precompute_pole
    implicit none
@@ -53,6 +49,7 @@ subroutine tmatxb_pmegpu(nrhs,dodiag,mu,efi)
    real(t_p),intent(out):: efi(:,:,:)
    integer   i,iipole,irhs,j,npoleloc_e
    real(t_p) ipolar,tmp
+
 
    if (use_chgpen) then
 #ifdef _OPENACC
@@ -66,11 +63,6 @@ subroutine tmatxb_pmegpu(nrhs,dodiag,mu,efi)
 
    if(deb_Path) write(*,'(4x,a)') 'tmatxb_pmegpu'
    call timer_enter( timer_tmatxb_pmegpu )
-#ifdef _OPENACC
-   def_queue  = dir_queue
-   def_stream = dir_stream
-#endif
-
    !gather some parameters, then set up the damping factors.
    if (use_polarshortreal) then
       call switch ('SHORTEWALD ')
@@ -78,22 +70,21 @@ subroutine tmatxb_pmegpu(nrhs,dodiag,mu,efi)
    else
       call switch ('EWALD      ')
       ! Enable Matvec kernel split
-      if (dir_queue.ne.rec_queue) ndec=2
+      if (direct_work%queue.ne.reciprocal_work%queue) ndec=2
    end if
 
    if (icall.eq.1)&
-      call set_to_zero1(efi,3*nrhs*npolebloc,def_queue)
+      call set_to_zero1(efi,3*nrhs*npolebloc,direct_work%queue)
 
    ! core computation of matrice-vector product
    call tmatxb_pme_core_p(mu,efi)
 
    if (icall.eq.ndec) then
       if (dodiag) then
-         npoleloc_e = merge(npolebloc,npoleloc,&
-            &(use_polarshortreal.and.skpPcomm))
+         npoleloc_e = npoleloc
          ! if dodiag is true, also compute the "self-induced" field,
          ! i.e., the diagonal portion of the matrix/vector product.
-!$acc  parallel loop collapse(3) async(def_queue) &
+!$acc  parallel loop collapse(3) async(direct_work%queue) &
 !$acc          present(polarity,poleglob,mu,efi)
          do i = 1, npoleloc_e
             do irhs = 1, nrhs
@@ -134,51 +125,59 @@ subroutine resetMatvecStep
    icall = 1
 end subroutine
 
-subroutine tmatxb_gen( X,h,shortRange )
+subroutine tmatxb_gen( X,h,shortRange,skip_communication )
    use domdec     ,only: nproc
    use ewald
    use interfaces ,only: tmatxb_p
    use mpole
-   use parallel, only: polar_ticket_t, polar_post_comm, polar_finish
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm, polar_post_recdir_receive, &
+      &polar_post_recdir_send, polar_finish_recdir, domain_workspace_tp2d, &
+      &domain_workspace_tp3d
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use math
    use inform
    use polar_temp
    use timestat
    use tinMemory  ,only: prmem_request
-   use utilcomm   ,buffermpi1=>buffermpi2d,buffermpi2=>buffermpi2d1
-   use utilgpu    ,only: rec_queue
+   use mdevice    ,only: reciprocal_work
    implicit none
    logical   ,intent(in) :: shortRange
+   logical   ,intent(in) :: skip_communication
    real(t_p) ,intent(inout) :: X(:,:,:)
    real(t_p) ,intent(out):: h(:,:,:)
 
    integer i,j,k,nrhs
-   integer,dimension(nproc) :: reqsend,reqrec,reqrecdirrec,reqrecdirsend
-   type(polar_ticket_t) :: polar_ticket
+   type(polar_comm_t) :: polar_ticket
    real(t_p) term
+   real(t_p), pointer :: buffermpi1(:,:,:),buffermpi2(:,:,:)
+   real(t_p), pointer :: buffermpimu1(:,:,:),buffermpimu2(:,:,:)
    parameter(nrhs=2)
+
 
    if (deb_Path) print*, "  tmatxb_gen"
 
    call prmem_request(dipfield,3,nrhs,max(npoleloc,1))
    call prmem_request(dipfieldbis,3,nrhs,max(npolerecloc,1))
    call prmem_request(murec,3,nrhs,max(npolerecloc,1),async=.true.)
+   call domain_workspace_tp3d(1,3,nrhs,max(npoleloc,1),buffermpimu1)
+   call domain_workspace_tp3d(2,3,nrhs,max(npolerecloc,1),buffermpimu2)
+   call domain_workspace_tp3d(3,3,nrhs,max(npoleloc,1),buffermpi1)
+   call domain_workspace_tp3d(4,3,nrhs,max(npolerecloc,1),buffermpi2)
 
    ! Extension communication
    ! get neighbor contribution of field
    if (shortRange) then
-      if (.not.skpPcomm) then
-         call commdirdirshort(nrhs,1,X,reqrec,reqsend)
-         call commdirdirshort(nrhs,0,X,reqrec,reqsend)
-         call commdirdirshort(nrhs,2,X,reqrec,reqsend)
+      if (.not.skip_communication) then
+         call polar_post_comm(polar_ticket, nrhs, X, shortRange)
+         call polar_finish(polar_ticket, nrhs, X)
       end if
    else
       call polar_post_comm(polar_ticket, nrhs, X)
       call polar_finish(polar_ticket, nrhs, X)
 
-      call commrecdirdipgpu(nrhs,0,murec,X,buffermpimu1,buffermpimu2,reqrec,reqsend)
-      call commrecdirdipgpu(nrhs,1,murec,X,buffermpimu1,buffermpimu2,reqrec,reqsend)
-      call commrecdirdipgpu(nrhs,2,murec,X,buffermpimu1,buffermpimu2,reqrec,reqsend)
+      call polar_post_dip_comm(polar_ticket,nrhs,murec,X,buffermpimu1,buffermpimu2)
+      call polar_finish_dip_comm(polar_ticket,nrhs,murec,X,buffermpimu1,buffermpimu2)
    end if
 
    call timer_enter( timer_realdip )
@@ -197,10 +196,10 @@ subroutine tmatxb_gen( X,h,shortRange )
       call commfieldshort(nrhs,h)
    else
       call commfieldgpu(nrhs,h)
-      call commrecdirsolvgpu(nrhs,0,dipfieldbis,dipfield,buffermpi1,buffermpi2,reqrecdirrec,reqrecdirsend)
-      call commrecdirsolvgpu(nrhs,1,dipfieldbis,dipfield,buffermpi1,buffermpi2,reqrecdirrec,reqrecdirsend)
-      call commrecdirsolvgpu(nrhs,2,dipfieldbis,dipfield,buffermpi1,buffermpi2,reqrecdirrec,reqrecdirsend)
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+      call polar_post_recdir_receive(polar_ticket,nrhs,buffermpi1,reciprocal_work)
+      call polar_post_recdir_send(polar_ticket,nrhs,dipfieldbis,buffermpi2,reciprocal_work)
+      call polar_finish_recdir(polar_ticket,nrhs,dipfield,buffermpi1,reciprocal_work)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
          h(i,j,k) = h(i,j,k) + dipfield(i,j,k) - term*X(i,j,k)
       end do; end do; end do
@@ -217,7 +216,8 @@ subroutine tmatxb_pmegpu1(nrhs,dodiag,mu,efi)
    use neigh   , only : nelst, elst,nelstc,nshortelst, shortelst
    use polar   , only : polarity, thole, pdamp, tinypol
    use shunt   , only : cut2
-   use utilgpu , only : maxscaling1, def_queue, dir_queue
+   use scaling  , only : maxscaling1
+   use mdevice, only : direct_work
    use domdec  , only : rank, loc
    use polgrp  , only : np11, np12, np13, np14, ip11, ip12, ip13,ip14
    use polpot  , only : u1scale, u2scale, u3scale, u4scale
@@ -265,14 +265,12 @@ subroutine tmatxb_pmegpu1(nrhs,dodiag,mu,efi)
 
    if(deb_Path) write(*,'(4x,a)') 'tmatxb_pmegpu1'
    call timer_enter( timer_tmatxb_pmegpu )
-   def_queue = dir_queue
-
 !$acc data present(poleglobnl,ipole,poleloc,polarity,thole,pdamp, &
 !$acc  poleglob) &
 !$acc     present(mu(1:3,:nrhs,:npolebloc),efi(1:3,1:nrhs,:npolebloc))
 
    ! initialize the result vector
-!$acc kernels async(def_queue)
+!$acc kernels async(direct_work%queue)
    efi(1:3,1:nrhs,:npolebloc) = 0
 !$acc end kernels
 
@@ -295,7 +293,7 @@ subroutine tmatxb_pmegpu1(nrhs,dodiag,mu,efi)
 !$acc         vector_length(32) &
 !$acc         private(ki,iscal,fscal) &
 !$acc         present(lst,nlst) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, npolelocnl
       iipole = poleglobnl(ii)
@@ -463,7 +461,7 @@ subroutine tmatxb_pmegpu1(nrhs,dodiag,mu,efi)
    if(dodiag) then
       ! if dodiag is true, also compute the "self-induced" field,
       ! i.e., the diagonal portion of the matrix/vector product.
-!$acc parallel loop gang vector async(def_queue)
+!$acc parallel loop gang vector async(direct_work%queue)
       do i = 1, npoleloc
          iipole = poleglob(i)
          !if no polarisability, take a negligeable value to allow convergence
@@ -513,7 +511,7 @@ subroutine otf_dc_tmatxb_pmegpu(nrhs,dodiag,mu,efi)
    use shunt
    use tinheader ,only: ti_p
    use utils
-   use utilgpu, only: def_queue,dir_queue,def_stream,dir_stream
+   use mdevice, only: direct_work
    implicit none
    integer  ,intent(in ):: nrhs
    logical  ,intent(in ):: dodiag
@@ -524,15 +522,12 @@ subroutine otf_dc_tmatxb_pmegpu(nrhs,dodiag,mu,efi)
    integer ipoleloc,ipolar
    real(t_p) tmp
 
+
    if (deb_Path)&
       &write(*,'(4x,a)') 'otf_dc_tmatxb_pmegpu'
 
-#ifdef _OPENACC
-   def_queue  = dir_queue
-   def_stream = dir_stream
-#endif
    !initialize the result vector
-   call set_to_zero1(efi,size(efi),def_queue)
+   call set_to_zero1(efi,size(efi),direct_work%queue)
 
    call otf_dc_tmatxb_pme_core_p(mu,efi)
 
@@ -541,7 +536,7 @@ subroutine otf_dc_tmatxb_pmegpu(nrhs,dodiag,mu,efi)
 !     if dodiag is true, also compute the "self-induced" field,
 !     i.e., the diagonal portion of the matrix/vector product.
 !
-!$acc  parallel loop collapse(3) async(def_queue) &
+!$acc  parallel loop collapse(3) async(direct_work%queue) &
 !$acc          present(polarity,poleglob,mu,efi)
       do i = 1, npoleloc
          do irhs = 1, nrhs
@@ -578,7 +573,9 @@ subroutine tmatxb_pme_core1(mu,efi)
    use polar   , only : polarity, thole, pdamp
    use shunt   , only : cut2
    use utils   , only : set_to_zero1
-   use utilgpu , only : maxscaling1, def_queue, dir_queue,real3,real6
+   use scaling  , only : maxscaling1
+   use mdevice , only : direct_work
+   use tintypes, only : real3, real6
    use domdec  , only : rank, loc
    use polgrp  , only : np11, np12, np13, np14, ip11, ip12, ip13,ip14
    use polpot  , only : u1scale, u2scale, u3scale, u4scale
@@ -608,6 +605,7 @@ subroutine tmatxb_pme_core1(mu,efi)
    integer   :: iscal(maxscaling1) ! Temporary array to store interaction type for neighbors
    real(t_p) :: fscal(maxscaling1) ! Temporary array to store scaling factors for neighbors
 
+
    if(deb_Path)write(*,'(4x,a)') 'tmatxb_pme_core1'
 
    alsq2  = 2 * aewald**2
@@ -628,7 +626,7 @@ subroutine tmatxb_pme_core1(mu,efi)
 !$acc   poleglobnl,ipole,poleloc,x,y,z) &
 !$acc         present(nlst,lst) &
 !$acc         private(ki,iscal,fscal,dpui,posi) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, npolelocnl
       iipole = poleglobnl(ii)
@@ -765,7 +763,8 @@ subroutine tmatxb_pme_core2(mu,efi)
    use interfaces ,only: tmatxb_correct_interactions
    use polar   , only : polarity, thole, pdamp
    use shunt   , only : cut2
-   use utilgpu , only : def_queue, dir_queue,real3,real6
+   use mdevice , only : direct_work
+   use tintypes, only : real3, real6
    !use polpot  , only : n_uscale,ucorrect_ik,ucorrect_scale
    use potent  , only : use_polarshortreal
    use tinheader  ,only: ti_p
@@ -789,6 +788,7 @@ subroutine tmatxb_pme_core2(mu,efi)
    type(real3):: fkd,fkp    ! Contribution of local pair to efi(iploc)
    real(t_p) uscale,fgrp ! Scaling factor for interaction
    integer :: iga,igb
+
 
    if(deb_Path)write(*,'(4x,a)') 'tmatxb_pme_core2'
    alsq2  = 2 * aewald**2
@@ -821,7 +821,7 @@ subroutine tmatxb_pme_core2(mu,efi)
 !$acc         present(mu,efi,polarity,ipole,poleloc, &
 !$acc  loc,x,y,z,pdamp,thole,lst,nlst) &
 !$acc         private(posi,dpui) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = start, finla
       iipole = poleglobnl(ii)
@@ -918,7 +918,8 @@ subroutine otf_dc_tmatxb_pme_core2(mu,efi)
    use interfaces,only: otf_dc_tmatxb_correct_interactions
    use polar   , only : polarity, thole, pdamp
    use shunt   , only : cut2
-   use utilgpu , only : def_queue, dir_queue,real3,real6
+   use mdevice , only : direct_work
+   use tintypes, only : real3, real6
    !use polpot  , only : n_uscale,ucorrect_ik,ucorrect_scale
    use potent  , only : use_polarshortreal
    use tinheader, only : ti_p
@@ -943,6 +944,7 @@ subroutine otf_dc_tmatxb_pme_core2(mu,efi)
    integer :: iga,igb
 
 
+
    if(deb_Path)&
       &write(*,'(5x,a)') 'otf_dc_tmatxb_pme_core2'
    alsq2  = 2 * aewald**2
@@ -961,7 +963,7 @@ subroutine otf_dc_tmatxb_pme_core2(mu,efi)
 !$acc         present(mu,efi,polarity,ipole,poleloc, &
 !$acc  loc,x,y,z,pdamp,thole,lst,nlst,grplst) &
 !$acc         private(posi,dpui) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, npolelocnl
       iipole  = poleglobnl(ii)
@@ -1078,14 +1080,14 @@ subroutine tmatxb_pme_core3(mu,efi)
    use shunt   , only : cut2
    use tinheader ,only: ti_p,re_p,zeror,zerom
    use tmatxb_inl_subroutines ,only : ndec,icall
-   use utilcomm, only : no_commdir
-   use utilgpu , only : def_queue, dir_queue,real3,real6&
-      &, maxBlock, BLOCK_SIZE, get_GridDim
+   use parallel, only : comm_opt, commfield, commfieldgpu, commfieldshort
+   use tmatxb_pmecu, only : maxBlock, BLOCK_SIZE, BLOCK_DIM
+   use mdevice , only : direct_work, grid_dim
+   use tintypes, only : real3, real6
    use cudafor
    use interfaces, only : cu_tmatxb_pme
-   use utilcu    , only : BLOCK_DIM,check_launch_kernel
-   use utilgpu   , only : def_stream,rec_stream,rec_queue,nSMP,transposez_r6
-   use tmatxb, only : efit=>tmatxb_workspace
+   use mdevice   , only : check_launch_kernel
+   use tmatxb, only : efit=>tmatxb_workspace,transposez_r6
    use tmatxb_pmecu,only: tmatxb_pme_core_cu
    use tmatxb_pme_cpencu ,only: tmatxb_pme_cpen_kcu
    use tinMemory , only : prmem_request
@@ -1100,6 +1102,7 @@ subroutine tmatxb_pme_core3(mu,efi)
    real(t_p) alsq2,alsq2n
    real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
    character*64 rtami
+
 
    if (deb_Path) then
       rtami = 'tmatxb_pme_core3'//merge(' THOLE','',use_thole)&
@@ -1131,7 +1134,7 @@ subroutine tmatxb_pme_core3(mu,efi)
    THOLE_CPEN:if (use_thole) then
 
       range0:if (use_polarshortreal) then
-         if (dyn_gS) gS = get_GridDim(nspnlb2,BLOCK_DIM)
+         if (dyn_gS) gS = grid_dim(nspnlb2,BLOCK_DIM)
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s &
 !$acc    ,b_stat,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit)
 
@@ -1140,17 +1143,17 @@ subroutine tmatxb_pme_core3(mu,efi)
 !    &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)
 !    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit
 !    &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc
-!    &     ,.not.no_commdir
+!    &     ,.not.comm_opt%skip_direct
 !    &     ,cut2,alsq2,alsq2n,aewald
 !    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
-!    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
-         call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+!    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,direct_work%stream)
+         call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,b_stat,ploc_s,iseblst_s,seblst_s(begin)&
             &,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit&
             &,npolelocnl,npolelocnlb,nspnlb2,npolebloc,n&
             &,cut2,alsq2,alsq2n,aewald&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-            &,nproc,.not.no_commdir)
+            &,nproc,.not.comm_opt%skip_direct)
          call check_launch_kernel(" tmatxb_pme_core_cu")
 
 !$acc end host_data
@@ -1160,7 +1163,7 @@ subroutine tmatxb_pme_core3(mu,efi)
          start  = (icall-1)*sized + 1
          start1 = begin+(start-1)*BLOCK_SIZE
          if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
-         if (dyn_gS) gS = get_GridDim(sized,BLOCK_DIM)
+         if (dyn_gS) gS = grid_dim(sized,BLOCK_DIM)
 
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s &
 !$acc     ,b_stat,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit)
@@ -1171,43 +1174,43 @@ subroutine tmatxb_pme_core3(mu,efi)
 !    &     ,ieblst_s(start),eblst_s(start1)
 !    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
 !    &     ,npolelocnlb,sized,npolebloc,n,nproc
-!    &     ,.not.no_commdir
+!    &     ,.not.comm_opt%skip_direct
 !    &     ,cut2,alsq2,alsq2n,aewald
 !    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
-!    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
-         call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+!    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,direct_work%stream)
+         call tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,b_stat,ploc_s&
             &,ieblst_s(start),eblst_s(start1)&
             &,x_s,y_s,z_s,pdamp,thole,polarity,mu,efit&
             &,npolelocnl,npolelocnlb,sized,npolebloc,n&
             &,cut2,alsq2,alsq2n,aewald&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-            &,nproc,.not.no_commdir)
+            &,nproc,.not.comm_opt%skip_direct)
          call check_launch_kernel(" tmatxb_pme_core_cu")
 
 !$acc end host_data
       end if range0
 
       call transposez_r6(efit,efi,ploc_s,npolelocnl,npolebloc&
-         &,def_queue)
+         &,direct_work%queue)
 
       call tmatxb_correct_interactions(mu,efi)
 
    else if (use_chgpen) then
 
       range1:if (use_polarshortreal) then
-         if (dyn_gS) gS = get_GridDim(nspnlb2,BLOCK_DIM)
+         if (dyn_gS) gS = grid_dim(nspnlb2,BLOCK_DIM)
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s &
 !$acc    ,b_stat,x_s,y_s,z_s,palpha,polarity,mu,efit &
 !$acc    ,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,efi )
-         call tmatxb_pme_cpen_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+         call tmatxb_pme_cpen_kcu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,b_stat,ploc_s,iseblst_s,seblst_s(begin)&
             &,x_s,y_s,z_s,palpha,polarity,mu,efit&
             &,npolelocnl,npolelocnlb,nspnlb2,npolebloc,n,pentyp_i,1&
             &,cut2,alsq2,alsq2n,aewald&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,n_uscale,efi&
-            &,nproc,.not.no_commdir)
+            &,nproc,.not.comm_opt%skip_direct)
          call check_launch_kernel(" tmatxb_pme_cpen_kcu")
 !$acc end host_data
       else
@@ -1216,11 +1219,11 @@ subroutine tmatxb_pme_core3(mu,efi)
          start  = (icall-1)*sized + 1
          start1 = begin+(start-1)*BLOCK_SIZE
          if (icall.eq.ndec) sized = npolelocnlb2_pair-start+1
-         if (dyn_gS) gS = get_GridDim(sized,BLOCK_DIM)
+         if (dyn_gS) gS = grid_dim(sized,BLOCK_DIM)
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s &
 !$acc    ,b_stat,x_s,y_s,z_s,palpha,polarity,mu,efit &
 !$acc    ,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,efi )
-         call tmatxb_pme_cpen_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+         call tmatxb_pme_cpen_kcu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,b_stat,ploc_s&
             &,ieblst_s(start),eblst_s(start1)&
             &,x_s,y_s,z_s,palpha,polarity,mu,efit&
@@ -1228,12 +1231,12 @@ subroutine tmatxb_pme_core3(mu,efi)
             &,cut2,alsq2,alsq2n,aewald&
             &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
             &,ucorrect_ik,ucorrect_scale,poleloc,ipole,x,y,z,n_uscale,efi&
-            &,nproc,.not.no_commdir)
+            &,nproc,.not.comm_opt%skip_direct)
          call check_launch_kernel(" tmatxb_pme_cpen_kcu")
 !$acc end host_data
       end if range1
       call transposez_r6(efit,efi,ploc_s,npolelocnl,npolebloc&
-         &,def_queue)
+         &,direct_work%queue)
 
    end if THOLE_CPEN
 #else
@@ -1272,14 +1275,15 @@ subroutine tmatxb_pme_core_v4(mu,efi)
    use tinheader ,only: ti_p
    use tinMemory ,only: prmem_request
    use tmatxb_inl_subroutines ,only : ndec,icall,mu3,mu4,efi3,efi4
-   use utilcomm, only : no_commdir
-   use utilgpu , only : def_queue, dir_queue,real3,real6&
-      &, BLOCK_SIZE
+   use parallel, only : comm_opt, commfield, commfieldgpu, commfieldshort
+   use tmatxb_pmecu , only : BLOCK_SIZE
+   use mdevice , only : direct_work
+   use tintypes, only : real3, real6
 #ifdef _OPENACC
    use cudafor
    use interfaces, only : cu_tmatxb_pme
-   use utilcu    , only : BLOCK_DIM,check_launch_kernel
-   use utilgpu   , only : def_stream,rec_stream, nSMP
+   use tmatxb_pmecu, only : BLOCK_DIM
+   use mdevice   , only : check_launch_kernel
    use tmatxb_pmecu,only: tmatxb_pme_core_v4_cu
 #endif
    implicit none
@@ -1292,6 +1296,7 @@ subroutine tmatxb_pme_core_v4(mu,efi)
    logical,save :: first_in=.true.,dyn_gS=.true.
    real(t_p) alsq2,alsq2n
    real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+
 
    if(deb_Path) write(*,'(4x,a)') 'tmatxb_pme_core_v4'
    p_xbeg = xbegproc(rank+1)
@@ -1330,18 +1335,18 @@ subroutine tmatxb_pme_core_v4(mu,efi)
 !    &     (ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)
 !    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
 !    &     ,npolelocnlb,nspnlb2,npolebloc,n,nproc
-!    &     ,.not.no_commdir
+!    &     ,.not.comm_opt%skip_direct
 !    &     ,cut2,alsq2,alsq2n,aewald
 !    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
-!    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
-      call tmatxb_pme_core_v4_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+!    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,direct_work%stream)
+      call tmatxb_pme_core_v4_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
          &(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(begin)&
          &,x_s,y_s,z_s,pdamp,thole,polarity&
          &,mu,mu3,mu4,efi,efi3,efi4&
          &,npolelocnlb,nspnlb2,npolebloc,n&
          &,cut2,alsq2,alsq2n,aewald&
          &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-         &,nproc,.not.no_commdir)
+         &,nproc,.not.comm_opt%skip_direct)
       call check_launch_kernel(" tmatxb_pme_core_v4_cu")
 
 !$acc end host_data
@@ -1363,11 +1368,11 @@ subroutine tmatxb_pme_core_v4(mu,efi)
 !    &     ,ieblst_s(start),eblst_s(start1)
 !    &     ,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi
 !    &     ,npolelocnlb,sized,npolebloc,n,nproc
-!    &     ,.not.no_commdir
+!    &     ,.not.comm_opt%skip_direct
 !    &     ,cut2,alsq2,alsq2n,aewald
 !    &     , xcell, ycell, zcell,xcell2,ycell2,zcell2
-!    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
-      call tmatxb_pme_core_v4_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+!    &     ,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,direct_work%stream)
+      call tmatxb_pme_core_v4_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
          &(ipole_s,pglob_s,ploc_s&
          &,ieblst_s(start),eblst_s(start1)&
          &,x_s,y_s,z_s,pdamp,thole,polarity&
@@ -1375,7 +1380,7 @@ subroutine tmatxb_pme_core_v4(mu,efi)
          &,npolelocnlb,sized,npolebloc,n&
          &,cut2,alsq2,alsq2n,aewald&
          &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-         &,nproc,.not.no_commdir)
+         &,nproc,.not.comm_opt%skip_direct)
       call check_launch_kernel(" tmatxb_pme_core_v4_cu")
 
 !$acc end host_data
@@ -1417,13 +1422,14 @@ subroutine otf_dc_tmatxb_pme_core3(mu,efi)
    use potent  , only : use_polarshortreal
    use shunt   , only : cut2
    use tinheader ,only: ti_p
-   use utilcomm  ,only: no_commdir
-   use utilgpu , only : def_queue, dir_queue,real3,real6
+   use parallel  ,only: comm_opt, commfield, commfieldgpu, commfieldshort
+   use mdevice , only : direct_work
+   use tintypes, only : real3, real6
 #ifdef _OPENACC
    use cudafor
    use interfaces, only : cu_tmatxb_pme
-   use utilcu    , only : BLOCK_DIM,check_launch_kernel
-   use utilgpu   , only : def_stream, nSMP
+   use tmatxb_pmecu, only : BLOCK_DIM
+   use mdevice   , only : check_launch_kernel
    use tmatxb_pmecu,only: otfdc_tmatxb_pme_core_cu
 #endif
    implicit none
@@ -1434,6 +1440,7 @@ subroutine otf_dc_tmatxb_pme_core3(mu,efi)
    logical,save :: first_in=.true.,dyn_gS=.false.
    real(t_p) alsq2,alsq2n
    real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
+
 
    if(deb_Path)&
       &write(*,'(4x,a)') 'oft_dc_tmatxb_pme_core3'
@@ -1465,13 +1472,13 @@ subroutine otf_dc_tmatxb_pme_core3(mu,efi)
 !$acc    ,iseblst_s,seblst_s,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
 
       if (dyn_gS) gS = max(nspnlb2,4)/4
-      call otfdc_tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+      call otfdc_tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
          &(ipole_s,pglob_s,ploc_s,grplst,iseblst_s,seblst_s(begin)&
          &,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi&
          &,npolelocnlb,nspnlb2,npolebloc,n&
          &,cut2,alsq2,alsq2n,aewald&
          &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-         &,nproc,.not.no_commdir)
+         &,nproc,.not.comm_opt%skip_direct)
 
       call check_launch_kernel(" otf_tmatxb_pme_core_cu")
 
@@ -1483,13 +1490,13 @@ subroutine otf_dc_tmatxb_pme_core3(mu,efi)
 !$acc    ,ieblst_s,eblst_s,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi)
 
       if (dyn_gS) gS = max(npolelocnlb2_pair,4)/4
-      call otfdc_tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+      call otfdc_tmatxb_pme_core_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
          &(ipole_s,pglob_s,ploc_s,grplst,ieblst_s,eblst_s(begin)&
          &,x_s,y_s,z_s,pdamp,thole,polarity,mu,efi&
          &,npolelocnlb,npolelocnlb2_pair,npolebloc,n&
          &,cut2,alsq2,alsq2n,aewald&
          &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend&
-         &,nproc,.not.no_commdir)
+         &,nproc,.not.comm_opt%skip_direct)
       call check_launch_kernel(" otf_dc_tmatxb_pme_core_cu")
 
 !$acc end host_data
@@ -1524,8 +1531,9 @@ subroutine tmatxb_correct_interactions(mu,efi)
    use mpole   , only : ipole,poleloc,npolelocnl,npolebloc
    use polar   , only : polarity, thole, pdamp
    use shunt   , only : cut2
-   use utilgpu , only : def_queue, dir_queue,real3,real6
-   use utilcomm, only : no_commdir
+   use mdevice , only : direct_work
+   use tintypes, only : real3, real6
+   use parallel, only : comm_opt
    use domdec  , only : loc
    use polpot  , only : n_uscale,ucorrect_ik,ucorrect_scale
    use tmatxb_inl_subroutines
@@ -1546,6 +1554,7 @@ subroutine tmatxb_correct_interactions(mu,efi)
    integer :: iga,igb
    real(t_p) uscale,fgrp ! Scaling factor for interaction
 
+
    if (n_uscale.eq.0) return
 
    alsq2  = 2 * aewald**2
@@ -1555,7 +1564,7 @@ subroutine tmatxb_correct_interactions(mu,efi)
    ! Scaling corrections loop
 !$acc parallel loop default(present) &
 !$acc         private(dpui,dpuk,dist,fid,fip,fkd,fkp) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do ii = 1,n_uscale
       iipole   = ucorrect_ik(2*(ii-1)+1)
       kpole    = ucorrect_ik(2*(ii-1)+2)
@@ -1637,7 +1646,8 @@ subroutine otf_dc_tmatxb_correct_interactions(mu,efi)
    use mpole   , only : ipole,poleloc,npolelocnl
    use polar   , only : polarity, thole, pdamp
    use shunt   , only : cut2
-   use utilgpu , only : def_queue, dir_queue,real3,real6
+   use mdevice , only : direct_work
+   use tintypes, only : real3, real6
    use domdec  , only : loc
    use polpot  , only : n_uscale,ucorrect_ik,ucorrect_scale
    use tmatxb_inl_subroutines
@@ -1658,6 +1668,7 @@ subroutine otf_dc_tmatxb_correct_interactions(mu,efi)
    integer   :: iga,igb
    real(t_p) uscale,fgrp ! Scaling factor for interaction
 
+
    if (n_uscale.eq.0) return
 
    alsq2  = 2 * aewald**2
@@ -1667,7 +1678,7 @@ subroutine otf_dc_tmatxb_correct_interactions(mu,efi)
    ! Scaling corrections loop
 !$acc parallel loop default(present) &
 !$acc         private(dpui,dpuk,dist,fid,fip,fkd,fkp) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do ii = 1,n_uscale
       iipole   = ucorrect_ik(2*(ii-1)+1)
       kpole    = ucorrect_ik(2*(ii-1)+2)

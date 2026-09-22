@@ -99,8 +99,9 @@ module pme
          integer,intent(in) :: queue
       end subroutine initialize_pme_device
 
-      module subroutine release_pme_device(queue)
+      module subroutine release_pme_device(queue, cleanup_status)
          integer,intent(in) :: queue
+         integer,intent(out),optional :: cleanup_status
       end subroutine release_pme_device
    end interface
 
@@ -114,6 +115,10 @@ end
 module pme1
    implicit none
    real(t_p),allocatable,target:: qgridmpi(:,:,:,:,:)
+   integer, allocatable :: front_send_req(:), front_recv_req(:)
+   integer, allocatable :: front_split_snd(:), front_split_rcv(:)
+   integer, allocatable :: back_send_req(:), back_recv_req(:)
+   integer, allocatable :: back_split_snd(:), back_split_rcv(:)
    logical :: Is_MPI_GRID1D=.false.,Is_MPI_GRID2D=.false.
    integer MPI_GRID1D,MPI_GRID2D
    integer nfloor,stride

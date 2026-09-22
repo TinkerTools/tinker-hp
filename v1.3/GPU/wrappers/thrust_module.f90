@@ -2,8 +2,14 @@
     use iso_c_binding
     use cudafor
 
+    private
+    public :: thrust_sort,thrust_inclusive_scan,thrust_exclusive_scan
+    public :: thrust_stable_sort_by_key,thrust_remove_zero,thrust_remove
+    public :: thrust_cache_init,thrust_clear_cache_memory
+
     integer(cuda_count_kind),private :: numbytes=0
     logical                 ,private :: mem_alloc=.false.
+    logical                 ,private :: cache_initialized=.false.
     type(c_devptr)          ,private :: thrust_cache_ptr=c_null_ptr
 
     interface thrust_sort
@@ -148,16 +154,31 @@
 
     contains
 
-    subroutine thrust_alloc_cache_memory(n)
+    subroutine thrust_cache_init(n, device_memory)
+    implicit none
+    integer,intent(in) :: n
+    integer(8),intent(inout) :: device_memory
+    integer :: size_integers
+
+    if (.not.cache_initialized) then
+       size_integers = max(250000,n*7)
+       call thrust_alloc_cache_memory(size_integers,device_memory)
+       device_memory = device_memory + size_integers*sizeof(n)
+       cache_initialized = .true.
+    end if
+    end subroutine
+
+    subroutine thrust_alloc_cache_memory(n, device_memory)
     use iso_c_binding ,only: c_associated
     implicit none
     integer,intent(in)::n
+    integer(8),intent(inout)::device_memory
     integer ierr
     type(c_ptr)::ptrc
  20 format('Error deallocating device memory on thurst_module.f90 : return error ',I10,/,A40)
  30 format('Error allocating device memory on thurst_module.f90 : return error ',I10,/,A40)
 
-    if (mem_alloc) call thrust_clear_cache_memory()
+    if (mem_alloc) call thrust_clear_cache_memory(device_memory)
 
     ierr = 0
     numbytes = n*sizeof(n)
@@ -168,8 +189,9 @@
 
     end subroutine
 
-    subroutine thrust_clear_cache_memory()
+    subroutine thrust_clear_cache_memory(device_memory)
     implicit none
+    integer(8),intent(inout) :: device_memory
     integer ierr
  20 format('Error deallocating device memory on thurst_module.f90 : return error ',I10,/,A40)
 
@@ -178,6 +200,9 @@
     if (ierr.ne.cudasuccess) print 20, ierr,cudageterrorstring(ierr)
     call thrust_cache_dealloc
     mem_alloc=.false.
+    device_memory = device_memory - numbytes
+    numbytes = 0
+    cache_initialized = .false.
     end subroutine
 
   end module

@@ -14,7 +14,7 @@ use utilcu  ,only: f_erfc
 use utilcu  ,only: f_sqrt,f_exp
 #  endif
 #endif
-use utilgpu ,only: real3,real6
+use tinTypes,only: real3,real6
 implicit none
 type(real6),intent(in)   ::dpui,dpuk
 type(real3),intent(in)   ::dist
@@ -121,7 +121,7 @@ use utilcu  ,only: f_erfc
 use utilcu  ,only: f_sqrt,f_exp
 #  endif
 #endif
-use utilgpu ,only: real3,real6
+use tinTypes,only: real3,real6
 implicit none
 type(real6),intent(in)   ::dpui
 type(real7),intent(in)   ::dpuk
@@ -227,7 +227,7 @@ use utilcu  ,only: f_erfc
 use utilcu  ,only: f_sqrt,f_exp
 #  endif
 #endif
-use utilgpu ,only: real3,real6
+use tinTypes,only: real3,real6
 implicit none
 integer    ,intent(in) ::ver,fea
 type(real6),intent(in) ::dpui
@@ -304,7 +304,7 @@ use utilcu  ,only: f_erfc
 use utilcu  ,only: f_sqrt,f_exp
 #  endif
 #endif
-use utilgpu ,only: real3,real6
+use tinTypes,only: real3,real6
 implicit none
 integer    ,intent(in) ::pentyp,ver,fea
 type(real6),intent(in) ::dpui
@@ -401,7 +401,7 @@ use utilcu  ,only: f_erfc
 use utilcu  ,only: f_sqrt,f_exp
 #  endif
 #endif
-use utilgpu ,only: real3,real6
+use tinTypes,only: real3,real6
 implicit none
 integer    ,intent(in)   ::pentyp,ver,fea
 type(real6),intent(in)   ::dpui
@@ -498,7 +498,7 @@ use utilcu  ,only: f_erfc
 use utilcu  ,only: f_sqrt,f_exp
 #  endif
 #endif
-use utilgpu ,only: real3,real6
+use tinTypes,only: real3,real6
 implicit none
 type(real6),intent(in)   ::dpui,dpuk,equi,equk
 type(real3),intent(in)   ::dist

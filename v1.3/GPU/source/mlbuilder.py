@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser(description="Build the Deep-HP CFFI plugin")
 parser.add_argument("--module", help="CFFI Python interface input")
 parser.add_argument("--header", help="C interface header input")
 parser.add_argument("--output", help="platform-native plugin output path")
+parser.add_argument("--python-library-dir", help="directory containing the selected shared libpython")
 args = parser.parse_args()
 cmake_mode = args.module is not None
 if not args.module:
@@ -38,6 +39,8 @@ if sys.platform.startswith("linux"):
     # entry.  A slash in DT_NEEDED bypasses RUNPATH, making the plugin
     # unresolvable at runtime.  Publish the basename as the ELF SONAME.
     link_args.append("-Wl,-soname,libmlinterface.so")
+    if args.python_library_dir:
+        link_args.append(f"-Wl,-rpath,{args.python_library_dir}")
     embedded_site_packages = os.pathsep.join(site.getsitepackages())
     source_prefix = f'''
     #include <stdio.h>
@@ -64,6 +67,8 @@ if sys.platform.startswith("linux"):
         free(pythonpath);
     }}
     '''
+elif sys.platform == "darwin" and args.python_library_dir:
+    link_args.append(f"-Wl,-rpath,{args.python_library_dir}")
 ffibuilder.set_source("mlplugin", f'''
     {source_prefix}
     #include "{Path(args.header).resolve()}"

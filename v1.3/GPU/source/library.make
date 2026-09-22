@@ -139,10 +139,8 @@ MOD_USampling.o \
 MOD_utilbaoab.o \
 MOD_utilbaoabpi.o \
 MOD_utils.o \
-MOD_utilcomm.o \
 MOD_utilcu.o \
 MOD_utilvec.o \
-MOD_utilgpu.o \
 MOD_vec.o \
 MOD_virial.o \
 MOD_vdw.o \
@@ -166,7 +164,6 @@ analysis.o \
 angles.o \
 mlpot.o \
 attach.o \
-basefile.o \
 beeman.o \
 bicubic.o \
 baoab.o \
@@ -303,17 +300,13 @@ extra1.o \
 extra3.o \
 fatal.o \
 fft_mpi.o \
-field.o \
 final.o \
 freeunit.o \
 geometry.o \
-getkey.o \
 getnumb.o \
-getprm.o \
 getstring.o \
 gettext.o \
 getword.o \
-getxyz.o \
 gradient.o \
 groups.o \
 image.o \
@@ -360,7 +353,6 @@ mdsavebeads.o \
 mdstat.o \
 mdstatpi.o \
 mechanic.o \
-mpistuff.o \
 molecule.o \
 mutate.o \
 nblist.o \
@@ -390,12 +382,7 @@ promo.o \
 promoamd.o \
 promosmd.o \
 prmkey.o \
-prtdyn.o \
-prtdynbeads.o \
-prtxyz.o \
-readdyn.o \
 readprm.o \
-readxyz.o \
 respa.o \
 respa1.o \
 rings.o \

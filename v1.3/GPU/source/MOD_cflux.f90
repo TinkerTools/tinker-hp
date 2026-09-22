@@ -37,8 +37,9 @@ module cflux
       module subroutine adflux1(dcf,de)
          real(r_p) dcf(*),de(*)
       end subroutine
-      module subroutine adflux2(dcf,de)
+      module subroutine adflux2(dcf,de,q)
          mdyn_rtyp dcf(*),de(*)
+         integer,intent(in),optional :: q
       end subroutine
    end interface
 
@@ -47,9 +48,10 @@ module cflux
          real(t_p) pot(*)
          real(r_p) dcf(*)
       end subroutine
-      module subroutine dcflux2 (pot,dcf)
+      module subroutine dcflux2 (pot,dcf,q)
          real(t_p),intent(in   ):: pot(*)
          mdyn_rtyp,intent(inout):: dcf(*)
+         integer,intent(in),optional :: q
       end subroutine
    end interface
 

@@ -1,5 +1,46 @@
 # Tinker-HP CMake Architecture
 
+## Preset catalog
+
+The public catalog contains exactly 34 configure presets:
+
+- 32 static-core presets: two architecture choices (`native`, `all`), two
+  precision choices (`double`, `fpa`), four mutually exclusive feature states
+  (empty, `colvars`, `nn`, `plumed`), and two builders (Ninja, Unix Makefiles).
+- Two shared-core exceptions: `gpu-all-double-shared` and
+  `gpu-all-fpa-shared`. Both are featureless, all-architecture, Ninja presets.
+
+The public name grammar is:
+
+```text
+platform-architecture-precision-features-link-builder
+```
+
+The `gpu` platform token is always present. Native architecture, static link
+mode, the empty feature state, and Ninja are defaults and are omitted. The
+`all` architecture is explicit, `shared` identifies shared core, and `-make`
+identifies Unix Makefiles. The public precision token `fpa` maps to CMake
+`TINKERHP_PRECISION=MIXED` with `TINKERHP_ENABLE_FPA=ON`; `double` maps to
+`TINKERHP_PRECISION=DOUBLE`. Feature labels map to their CMake switches:
+
+| Name token | Description label | CMake option |
+| --- | --- | --- |
+| `colvars` | `Colvars` | `TINKERHP_ENABLE_COLVARS=ON` |
+| `nn` | `Deep-HP` | `TINKERHP_ENABLE_NN=ON` |
+| `plumed` | `Plumed` | `TINKERHP_ENABLE_PLUMED=ON` |
+
+Static link mode maps to `TINKERHP_LINK_MODE=STATIC`; shared mode maps to
+`TINKERHP_LINK_MODE=SHARED`. Descriptions and `displayName` use the same form:
+
+```text
+GPU <Native Arch|All Arch> <double|fpa> [<feature label>] <Static Core|Shared Core> <Ninja|Makefile>
+```
+
+Every configure preset has a matching build preset and distinct binary
+directory. Test presets remain representative rather than an exhaustive
+matrix. Private SM75 presets remain in `CMakeUserPresets.json` and override
+the public architecture with `75`; they do not expand the public catalog.
+
 ## Scope
 
 The native build owns the maintained NVHPC/MPI-wrapper GPU path. The target
@@ -17,6 +58,17 @@ implementation libraries linked into it as PIC. Colvars remains its external
 The shared core is emitted and installed in the library destination, while
 installed executables use a platform-relative sibling-library RPATH.
 
+The public shared-core surface is intentionally narrow: only
+`gpu-all-double-shared` and `gpu-all-fpa-shared` are exposed. Shared mode is
+not opened to feature, Makefile, or native-architecture variants. Only
+`tinkerhp_core` is shared; its implementation libraries and the optional
+Colvars archive remain static PIC inputs.
+
+This availability does not establish safe parallel MPI execution. NVHPC 24.7
+has documented shared-object MPI named-COMMON corruption during two-rank
+in-place collectives; shared-core MPI validation is deferred until NVHPC 26.1
+or newer. See the [shared-core compatibility issue](../../.scratch/nvhpc-shared-core-mpi-compatibility/issues/01-upgrade-nvhpc-for-shared-core-mpi.md).
+
 ## Precision contract
 
 `DOUBLE` uses `-r8` and the `.gpu` suffix. `MIXED` follows
@@ -30,9 +82,9 @@ disabling FPA changes it to `.mixed`. FPA is intentionally a no-op outside
 mixed precision. `TINKERHP_ENABLE_ORTHO_BOX_ONLY` maps solely to
 `ORTHOGONAL_BOX_SHAPE_ONLY`.
 
-The suffix order preserves feature composition: NN is placed before external
-integration and precision markers, so mixed/FPA executables include `_nn.fpa`
-or `_nn_clv.fpa`.
+The suffix order places the Deep-HP marker before external-integration and
+precision markers, so the public mixed/FPA Deep-HP preset produces `_nn.fpa`.
+The public catalog does not define combined feature presets.
 
 ## External integrations
 
@@ -56,8 +108,13 @@ definitions without claiming GPU numerical validation. The dedicated
 units and configures a build-phase CFFI plugin target. Its inputs are copied to
 the build tree, where `mlbuilder.py` emits a platform-native `mlinterface`
 library. NN executables link it and receive build/install rpaths to the library
-destination; installation includes the plugin but excludes Python environments,
-packages, and models.
+destination and to the selected interpreter's shared `libpython` directory; the
+generated plugin receives the same Python runtime path. Installation includes
+the plugin but excludes Python environments, packages, and models. The path
+uses normal platform RUNPATH semantics, so an ABI-compatible loader override
+is possible; moving the selected environment requires reconfiguration and
+rebuild. Configuration fails when a shared `libpython` path cannot be
+resolved.
 
 Configuration resolves `deep-hp/.venv/bin/python` before an explicit
 `DEEPHP_PYTHON_INTERPRETER`, creating the managed environment with locked `uv`

@@ -36,6 +36,8 @@ subroutine ehal3gpu
    use tinheader  ,only:ti_p,re_p
    use timestat
    use vdwpot
+   use mdevice, only: after, direct_work, reciprocal_work
+   use status, only: failed, status_t
    use mpi
 
    implicit none
@@ -43,6 +45,7 @@ subroutine ehal3gpu
    real(r_p) elrc,aelrc
    character*11 mode
    logical fullrange
+   type(status_t) :: dep_status
 !
    fullrange = .not.(use_vdwshort.or.use_vdwlong)
 !
@@ -112,11 +115,8 @@ subroutine ehal3c_ac
       &,epsilon4,nvdwbloc,nvdwlocnl,nvdwclass,skipvdw12
    use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
    use vdw_locArray
-   use utilgpu   ,only: def_queue,dir_queue,rec_queue
-#ifdef _OPENACC
-   use utilgpu   ,only: dir_stream&
-      &,rec_stream,rec_event,stream_wait_async
-#endif
+   use mdevice   ,only: after,direct_work, gpu_sm_count, reciprocal_work
+   use status    ,only: failed,status_t
    implicit none
    integer i,j,k,kk,ksave,ver,ver1,fea
    integer kt,kglob,kbis,kvloc,kv,ki
@@ -137,6 +137,7 @@ subroutine ehal3c_ac
    logical    do_scale4,ik12
    integer(1) muti,mutik
    character*11 mode
+   type(status_t) :: dep_status
    parameter( ver =__use_ene__+__use_act__&
       &, ver1=ver+__use_sca__ )
 !     &         , fea =__use_mpi__+__use_groups__+__use_softcore__)
@@ -151,20 +152,20 @@ subroutine ehal3c_ac
    !if (use_lambdadyn) fea = fea + __use_lambdadyn__
 
 #ifdef _OPENACC
-   if (dir_queue.ne.rec_queue) then
-!!$acc wait(rec_queue) async(dir_queue)
-      call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue) then
+!!$acc wait(reciprocal_work%queue) async(direct_work%queue)
+      call after(direct_work,reciprocal_work,dep_status)
+      if (failed(dep_status)) __TINKER_FATAL__
    end if
 #endif
-   def_queue = dir_queue
-   call prmem_request(xred,nbloc,queue=def_queue)
-   call prmem_request(yred,nbloc,queue=def_queue)
-   call prmem_request(zred,nbloc,queue=def_queue)
+   call prmem_request(xred,nbloc,queue=direct_work%queue)
+   call prmem_request(yred,nbloc,queue=direct_work%queue)
+   call prmem_request(zred,nbloc,queue=direct_work%queue)
 !
 !     apply any reduction factor to the atomic coordinates
 !
 !$acc parallel loop default(present) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do k = 1,nvdwbloc
       iglob   = ivdw (vdwglob(k))
       i       = loc  (iglob)
@@ -206,7 +207,7 @@ subroutine ehal3c_ac
 !
 !     Compute vdw pairwise scaling interactions
 !
-!$acc parallel loop gang vector async(def_queue) &
+!$acc parallel loop gang vector async(direct_work%queue) &
 !$acc     present(xred,yred,zred,loc,ivdw,loc,jvdw &
 !$acc  ,radmin,radmin4,epsilon,epsilon4,vcorrect_ik,vcorrect_scale &
 !$acc  ,grplist,wgrp,mut) &
@@ -291,7 +292,7 @@ subroutine ehal3c_ac
 !$acc         present(radmin,epsilon,wgrp) &
 !$acc         present(ev,nev_) reduction(+:ev,nev_) &
 !$acc         private(ai12) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, nvdwlocnl
       iivdw = vdwglobnl(ii)
@@ -361,7 +362,7 @@ subroutine ehal3c_ac
       end do
    end do MAINLOOP
 
-!$acc serial async(def_queue) present(nev,nev_)
+!$acc serial async(direct_work%queue) present(nev,nev_)
    nev = nev + int(nev_)
 !$acc end serial
 
@@ -389,15 +390,14 @@ subroutine ehal3c_cu
       &,b_stat,b_rmid,load_nbl2mod
    use potent    ,only: use_lambdadyn,use_vdwshort,use_vdwlong
    use tinheader ,only: ti_p
+   use tinheader   ,only: inf => Infinity
+   use tinMemory ,only: prmem_request
    use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
-   use utilcu    ,only: check_launch_kernel
-   use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream&
-      &,rec_stream,rec_event,stream_wait_async&
-      &,WARP_SIZE,def_stream,inf&
-      &,ered_buff=>ered_buf1,vred_buff,nred_buff,lam_buff&
-      &,reduce_energy_action&
-      &,prmem_request,BLOCK_SIZE,nSMP&
-      &,CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
+   use mdevice   ,only: check_launch_kernel,after,direct_work, gpu_sm_count, reciprocal_work
+   use status    ,only: failed,status_t
+   use cudafor   ,only: CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
+   use reduction ,only: ered_buff=>ered_buf1,vred_buff,nred_buff,lam_buff,&
+      &reduce_energy_action
    use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin4,radmin_c&
       &,epsilon,epsilon4,epsilon_c&
       &,nvdwbloc,nvdwlocnl,nvdwlocnlb,nvdwclass&
@@ -410,12 +410,12 @@ subroutine ehal3c_cu
    integer i,k
    integer iglob,iivdw,iv,hal_Gs,sizvc
    integer ierrSync
+   type(status_t) :: dep_status
    real(t_p)  xbeg,xend,ybeg,yend,zbeg,zend
    real(t_p)  rinv,vdwshortcut2,dt1lamb,dt2lamb
    character*10 mode
 !
    if(deb_Path) write (*,*) 'ehal3c_cu',use_vdwshort,use_vdwlong
-   def_stream = dir_stream
    xbeg  = xbegproc(rank+1)
    xend  = xendproc(rank+1)
    ybeg  = ybegproc(rank+1)
@@ -436,11 +436,12 @@ subroutine ehal3c_cu
    !hal_Gs  = nvdwlocnlb_pair/4
    i       = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
       &(hal_Gs,hal3_kcu,VDW_BLOCK_DIM,0)
-   hal_Gs  = hal_Gs*nSMP*4
+   hal_Gs  = hal_Gs*gpu_sm_count*4
    if (i.ne.0) print*,'Issue detected with ehal1:cudaoccupancy',i
 
-   if (dir_queue.ne.rec_queue)&
-      &call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue)&
+      &call after(direct_work,reciprocal_work,dep_status)
+      if (failed(dep_status)) __TINKER_FATAL__
 
    call apply_vdw_reduction_factor
 !
@@ -456,7 +457,7 @@ subroutine ehal3c_cu
 !$acc    )
    if (use_vdwshort) then
 !$acc host_data use_device(b2pl_1,bapl_1,abpl_1)
-      call hal3s_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+      call hal3s_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
          &(xred,yred,zred,sgl_id,slc_id,loc_ired,b2pl_1,bapl_1&
          &,abpl_1,b_stat,b_rmid,grplist,cellv_jvdw&
          &,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred&
@@ -476,7 +477,7 @@ subroutine ehal3c_cu
 !$acc end host_data
       call check_launch_kernel(" hal3s_kcu ")
    else if (use_vdwlong) then
-      call hal3l_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+      call hal3l_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
          &(xred,yred,zred,sgl_id,slc_id,loc_ired,b2pl,bapl&
          &,abpl,b_stat,b_rmid,grplist,cellv_jvdw&
          &,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred&
@@ -495,7 +496,7 @@ subroutine ehal3c_cu
          &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
       call check_launch_kernel(" hal3l_kcu ")
    else
-      call hal3_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+      call hal3_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
          &(xred,yred,zred,sgl_id,slc_id,loc_ired,b2pl,bapl&
          &,abpl,b_stat,b_rmid,grplist,cellv_jvdw&
          &,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred&
@@ -516,7 +517,7 @@ subroutine ehal3c_cu
    endif
 !$acc end host_data
 
-   call reduce_energy_action(ev,nev,ered_buff,def_queue)
+   call reduce_energy_action(ev,nev,ered_buff,direct_work%queue)
 
 end subroutine
 #endif

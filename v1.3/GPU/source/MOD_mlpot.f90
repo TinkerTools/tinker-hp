@@ -88,7 +88,7 @@ subroutine realloc_position_buffer(rsize,npairs)
       else
          s_save = rsize + ml_pos_buffer
       end if
-      write(*,*) 'realloc_position_buffer: s_save = ',s_save,' rsize = ',rsize
+      !write(*,*) 'realloc_position_buffer:    s_save = ',s_save,' rsize = ',rsize
 
       allocate(xyz_c(s_save*3),atomic_mlpot(s_save),aemlp(s_save)&
          &,d_mlpot(3*s_save),trueat_mlpot(s_save),alch_group(s_save))
@@ -101,7 +101,7 @@ subroutine realloc_position_buffer(rsize,npairs)
          deallocate(d2,dp,edge_src,edge_dst)
       end if
       max_pairs = 2*ceiling(1.01*real(npairs,8))
-      write(*,*) 'realloc_position_buffer: max_pairs = ',max_pairs,' npairs = ',2*npairs
+      !write(*,*) 'realloc_position_buffer: max_pairs = ',max_pairs,' npairs = ',2*npairs
       ! max_pairs = 2*npairs
       allocate(d2(max_pairs),dp(3*max_pairs))
       allocate(edge_src(max_pairs),edge_dst(max_pairs))

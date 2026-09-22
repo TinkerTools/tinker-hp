@@ -1031,21 +1031,17 @@ subroutine cart_to_fracgpu
    use boxes
    use pme,only:pme_ctf,pme_ctf_ready,qi1=>pme_qi1,qi2=>pme_qi2,nfft1,nfft2,nfft3
    use tinheader
-   use mdevice,only:channel_t,reciprocal_channel
+   use mdevice,only:reciprocal_work
    implicit none
    integer i,j,k,m
    integer i1,i2
-   integer rec_queue
-   type(channel_t) rec_channel
    real(t_p) a(3,3)
 
-   rec_channel=reciprocal_channel()
-   rec_queue=rec_channel%queue
 !
 !     set the reciprocal vector transformation matrix
 !
 
-!$acc kernels async(rec_queue) present(pme_ctf)
+!$acc kernels async(reciprocal_work%queue) present(pme_ctf)
 !$acc loop collapse(2)
    do i = 1, 10
       do j = 1, 10
@@ -1055,7 +1051,7 @@ subroutine cart_to_fracgpu
    pme_ctf(1,1) = 1.0_ti_p
 !$acc end kernels
 
-!$acc kernels async(rec_queue) &
+!$acc kernels async(reciprocal_work%queue) &
 !$acc        create(a) present(pme_ctf,recip)
 !$acc loop
    do i = 1, 3
@@ -1216,24 +1212,20 @@ subroutine frac_to_cartgpu
    use boxes
    use pme,only:pme_ftc,pme_ftc_ready,qi1=>pme_qi1,qi2=>pme_qi2,nfft1,nfft2,nfft3
    use tinheader ,only: ti_p
-   use mdevice,only:channel_t,reciprocal_channel
+   use mdevice,only:reciprocal_work
    implicit none
    integer i,j,k,m
    integer i1,i2
-   integer rec_queue
-   type(channel_t) rec_channel
    real(t_p) a(3,3)
 
-   rec_channel=reciprocal_channel()
-   rec_queue=rec_channel%queue
 !
 !     set the reciprocal vector transformation matrix
 !
 !$acc data create(a) &
 !$acc     present(recip,pme_ftc) &
-!$acc     async(rec_queue)
+!$acc     async(reciprocal_work%queue)
 
-!$acc kernels async(rec_queue)
+!$acc kernels async(reciprocal_work%queue)
 !$acc loop collapse(2)
    do i = 1, 10
       do j = 1, 10
@@ -1242,7 +1234,7 @@ subroutine frac_to_cartgpu
    end do
    pme_ftc(1,1) = 1.0_ti_p
 !$acc end kernels
-!$acc kernels async(rec_queue)
+!$acc kernels async(reciprocal_work%queue)
 !$acc loop
    do i = 1, 3
       a(i,1) = real(nfft1,t_p) * recip(i,1)
@@ -1313,9 +1305,9 @@ subroutine reassignpme(init)
       &,quiet_timers
    use tinheader ,only:ti_p,re_p
    use tinMemory
-   use utilcomm  ,only: repartrectemp=>buffMpi_i1
+   use mdevice   ,only: reciprocal_work
+   use parallel  ,only: orderbuffer_gpu, orderbufferrec, orderbufrec_gpu
    use utils     ,only: set_to_zero1
-   use utilgpu   ,only: rec_queue
    implicit none
    real(t_p) disttemp
    real(t_p) jtemp(4),ktemp(4),jtempbis(4),ktempbis(4)
@@ -1329,6 +1321,7 @@ subroutine reassignpme(init)
    integer, allocatable :: req(:)
    integer, allocatable :: counttemp(:)
    integer, allocatable :: domlentemp(:)
+   integer, allocatable :: repartrectemp(:)
    integer, allocatable :: nrecdirrecep(:),precdirrecep(:,:)
    integer, allocatable :: nrecdirreceptemp(:)
    integer, allocatable :: nrecrecep(:),precrecep(:,:)
@@ -1352,7 +1345,10 @@ subroutine reassignpme(init)
    allocate (counttemp(nproc))
    call prmem_request(repartrectemp,n)
    repartrec(:)      = -1
-   if (use_mlpot_only) return
+   if (use_mlpot_only) then
+      call prmem_request(repartrectemp,0,config=mfhostacc)
+      return
+   end if
    allocate (domlentemp(nproc))
    counttemp = 0
 !
@@ -1811,7 +1807,7 @@ subroutine reassignpme(init)
 #ifdef _OPENACC
             sd_prmem =sd_prmem + size(qgridmpi)*szoTp
 #endif
-            call set_to_zero1(qgridmpi,size(qgridmpi),rec_queue)
+            call set_to_zero1(qgridmpi,size(qgridmpi),reciprocal_work%queue)
 !
             if (GridDecomp1d) then
                call set_MPI_GRID1D_type(bsorder/2)
@@ -1858,7 +1854,11 @@ subroutine reassignpme(init)
    end if
 !
 !
-   if (nproc.eq.1) return
+   if (nproc.eq.1) then
+!$acc wait
+      call prmem_request(repartrectemp,0,config=mfhostacc)
+      return
+   end if
 
    call timer_enter( timer_eneig )
    if (deb_Path.and..not.init) print*,'reassignpme'
@@ -1952,12 +1952,14 @@ subroutine reassignpme(init)
       end if
    end do
 
-   call orderbufferrec_gpu
+   call orderbufrec_gpu
 !
 
    deallocate (domlentemp)
    deallocate (counttemp)
    deallocate (req)
+!$acc wait
+   call prmem_request(repartrectemp,0,config=mfhostacc)
    call timer_exit( timer_eneig,quiet_timers )
 end
 !

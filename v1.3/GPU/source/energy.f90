@@ -33,7 +33,6 @@ function energy ()
    use iounit
    use potent
    use tinheader
-   use utilgpu,only: inf_r
    use vdwpot
    implicit none
    real(r_p) energy
@@ -173,7 +172,7 @@ function energy ()
 !
 !     check for an illegal value for the total energy
 !
-   if (tinker_isnan_m(esum).or.esum.eq.inf_r) then
+   if (tinker_isnan_m(esum).or.esum.eq.4*huge(0.0_re_p)) then
       write (0,10) esum
 10    format (/,' ENERGY  --  Illegal Value for the Total',&
          &' Potential Energy',F16.6)

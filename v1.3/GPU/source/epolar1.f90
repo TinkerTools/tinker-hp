@@ -69,6 +69,7 @@ subroutine epolar1c
    use math
    use mpole
    use mutant
+   use parallel, only: commpot, commpotsum, commpotrec
    use polar
    use polpot
    use potent
@@ -410,6 +411,7 @@ subroutine eprecip1
    use math
    use mpole
    use mutant
+   use parallel, only: commpot, commpotsum, commpotrec
    use pme
    use polar
    use polpot
@@ -1231,6 +1233,7 @@ subroutine epreal1c
    use molcul
    use mpole
    use mutant
+   use parallel, only: commpot, commpotsum, commpotrec
    use neigh
    use polar
    use polgrp

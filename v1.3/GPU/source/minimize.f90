@@ -37,7 +37,8 @@ program minimize
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      __TINKER_FATAL__
+      call MPI_FINALIZE(ierr)
+      stop 1
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
@@ -49,26 +50,27 @@ subroutine minimize_bis(raw_cli,status_value)
    use domdec
    use deriv  ,only: ftot_l,cDef,dr_stride3,de_tot&
       &,info_forces,comm_forces
-   use energi ,only: info_energy
+   use energi ,only: info_energy, allreduceen
    use files
    use keys
    use inform
    use iounit
-   use interfaces,only: LBFGS,prtxyz
+   use interfaces,only: LBFGS
+   use mdtraj, only: frame_view_t, write_snapshot
    use output, only: cyclesave
    use scales
    use tinMemory ,only: prmem_requestm
    use usage
-   use utilgpu   ,only: ti_p,re_p
+   use tinheader ,only: ti_p,re_p
    use mdevice, only: channel_t, finalize_device
    use initialization, only: initialize, minimize_application
-   use parallel, only: parallel_t, release
+   use parallel, only: parallel_t, release, sendallpos, assign_direct
    use structure, only: structure_t
    use status, only: status_t, failed
    use mpi
    implicit none
-   integer i,j,imin,ierr
-   integer next,freeunit
+   integer i,j,ierr
+   integer next
    integer iglob
    real(r_p) minimum,minimiz1
    real(r_p) grdmin
@@ -86,6 +88,7 @@ subroutine minimize_bis(raw_cli,status_value)
    type(structure_t) molecular_structure
    type(parallel_t) platform
    type(channel_t) reciprocal_work
+   type(frame_view_t) frame
    type(status_t), intent(out) :: status_value
    type(status_t) cleanup_status
    character*20 keyword
@@ -156,13 +159,14 @@ subroutine minimize_bis(raw_cli,status_value)
       iwrite = 0
    end if
    if (prepare_minimize_xyz) then
-      imin = freeunit ()
       minfile = filename(1:leng)//'.xyz'
       call version (minfile,'new')
       if (rank.eq.0) then
-         open (unit=imin,file=minfile,status='new')
-         call prtxyz (imin)
-         close (unit=imin)
+!$acc update host(x,y,z) async
+!$acc wait
+         frame = frame_view_t(atoms=n,host_global=.true.,x=x,y=y,z=z)
+         call write_snapshot(trim(minfile),frame,status_value)
+         if (failed(status_value)) goto 900
          outfile = minfile
       end if
    end if
@@ -215,7 +219,7 @@ subroutine minimize_bis(raw_cli,status_value)
 !         call commstep
    call sendallpos
    call reCast_position
-   call AllDirAssign
+   call assign_direct
    call reassignpme(.false.)
    call reinitnl(0)
    call mechanicstep(0)
@@ -301,16 +305,17 @@ subroutine minimize_bis(raw_cli,status_value)
 !     write the final coordinates into a file
 !
    if (write_minimize_xyz .and. rank.eq.0) then
-      imin = freeunit ()
-      open (unit=imin,file=minfile,status='old')
-      rewind (unit=imin)
-      call prtxyz (imin)
-      close (unit=imin)
+!$acc update host(x,y,z) async
+!$acc wait
+      frame = frame_view_t(atoms=n,host_global=.true.,x=x,y=y,z=z)
+      call write_snapshot(trim(minfile),frame,status_value)
+      if (failed(status_value)) goto 900
    end if
 !
 !     perform any final tasks before program exit
 !
-   call final
+900 continue
+   call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) status_value = cleanup_status
@@ -334,14 +339,16 @@ function minimiz1 (xx,g)
    use atomsMirror
    use domdec
    use deriv  ,only:info_forces,cDef,ftot_l,comm_forces,get_ftot&
-      &,de_tot,dr_stride3
-   use energi ,only:info_energy
+              ,de_tot,dr_stride3
+   use energi ,only:info_energy,allreduceen
    use inform
    use scales
-   use tinMemory,only:mipk
+   use tinheader,only: re_p
+   use tinMemory,only:mipk,mem_set
    use usage
    use utils  ,only:set_to_zero1m
-   use utilgpu,only:rec_queue,rec_stream,mem_set,ti_p,re_p
+   use mdevice,only:reciprocal_work
+   use parallel,only: sendallpos, assign_direct
    use mpi
    implicit none
    integer i,iglob,ierr
@@ -378,14 +385,14 @@ function minimiz1 (xx,g)
 !      call commstep
    call sendallpos
    call reCast_position
-   call AllDirAssign
+   call assign_direct
    call reassignpme(.false.)
 !
 !     perform dynamic allocation of some local arrays
 !
    allocate (derivs(3,nbloc))
 !$acc enter data create(derivs,e)
-   call set_to_zero1m(derivs,size(derivs),rec_queue)
+   call set_to_zero1m(derivs,size(derivs),reciprocal_work%queue)
    call reinitnl(0)
    call mechanicstep(0)
    call allocstep
@@ -403,7 +410,7 @@ function minimiz1 (xx,g)
    if (ftot_l) then
       siz_ = dr_stride3
       call get_ftot(derivs,nbloc)
-      call mem_set (de_tot,zero_md,siz_,rec_stream)
+      call mem_set (de_tot(1:siz_,1),zero_md,siz_,reciprocal_work%stream)
    end if
    call allreduceen(e)
 

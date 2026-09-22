@@ -13,6 +13,7 @@
  ! num_* defines the total number of threads in charge of *
 #include "tinker_macro.h"
 module eliaison1gpu_inl
+   integer,parameter :: WARP_SHFT=5,maxBlock=ishft(1,16)
    integer,save:: eliaison1cu_call=0
    integer off_bond,num_bond,off_urey,num_urey,off_angl,num_angl&
       &,off_tors,num_tors,off_pitr,num_pitr&
@@ -22,7 +23,6 @@ module eliaison1gpu_inl
       &,off_def ,num_def
 contains
    integer function f_mul_warp( iin ) result( oout )
-      use utilgpu ,only: WARP_SHFT
       integer,intent(in):: iin
       oout = merge( ishft(ishft((iin-1),-WARP_SHFT)+1,WARP_SHFT) , 0&
          &, iin.ne.0)
@@ -54,8 +54,7 @@ subroutine eliaison1cu
    use eliaisoncu,only: eliaison1_kcu,lia_Gs,lia_Bd
    use eliaisoncu_dat,only: grx,gry,grz,grtx,grty,grtz&
       &,eliaisoncu_set_pointers=>attach_p
-   use utilcu    ,only: check_launch_kernel&
-      &,transpose_z3m,TRP_BLOCK_DIM
+   use mdevice   ,only: check_launch_kernel
    use group
    use improp
    use imptor
@@ -77,7 +76,9 @@ subroutine eliaison1cu
    use urey
    use urypot
    use usage
-   use utilgpu
+   use mdevice, only: reciprocal_work
+   use reduction, only: ered_buf1,ered_buff=>ered_buf1,vred_buff,&
+      &reduce_energy_virial
    use virial
    implicit none
    integer i,j,siz
@@ -178,7 +179,7 @@ subroutine eliaison1cu
 !$acc         ,eDaMD,eW1aMD,deW1aMD &
 !$acc         ,x_,y_,z_,x,y,z,loc,iuse &
 !$acc         ,ered_buf1,vred_buff)
-   call eliaison1_kcu<<<lia_Gs,lia_Bd,0,rec_stream>>>&
+   call eliaison1_kcu<<<lia_Gs,lia_Bd,0,reciprocal_work%stream>>>&
       &(&!bond
       &bndglob,ibnd,bl,bk,ba,type,nbondloc,bndunit,cbnd,qbnd,bndtypI&
       &,use_polymer,deb&
@@ -228,15 +229,6 @@ subroutine eliaison1cu
    call check_launch_kernel("<eliaison1_kcu>")
 !$acc end host_data
 
-!      block;  type(dim3) gS,bS;
-!      gS  = dim3((siz-1)/TRP_BLOCK_DIM+1,1,1)
-!      bS  = dim3(TRP_BLOCK_DIM,3,1)
-!!$acc host_data use_device(deb)
-!      call transpose_z3m<<<gS,bS,0,rec_stream>>>( grx,deb,siz )
-!!$acc end host_data
-!      call check_launch_kernel(" transpose_z3f ")
-!      end block
-
    if (use_amd_dih) then
 !$acc parallel loop collapse(2) async default(present)
       do i = 1,nloc; do j=1,3
@@ -258,7 +250,7 @@ subroutine eliaison1cu
 
    if (calc_e.or.use_virial)&
       &call reduce_energy_virial(eb_r,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz&
-      &,g_vzz,ered_buf1,rec_queue)
+      &,g_vzz,ered_buf1,reciprocal_work%queue)
 
    eliaison1cu_call = eliaison1cu_call + 1
 #else

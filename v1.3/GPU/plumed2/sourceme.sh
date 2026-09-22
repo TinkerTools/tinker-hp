@@ -1,10 +1,10 @@
-if [ -n ${TINKERHP_ROOT} ]; then
-   export PATH="$TINKERHP_ROOT/plumed/lib/:$PATH"
-   export LIBRARY_PATH="$TINKERHP_ROOT/plumed/lib/:$LIBRARY_PATH"
-   export LD_LIBRARY_PATH="$TINKERHP_ROOT/plumed/lib/:$LD_LIBRARY_PATH"
+if [ -n "${TINKERHP_ROOT:-}" ]; then
+   export PATH="$TINKERHP_ROOT/plumed/lib/:${PATH:-}"
+   export LIBRARY_PATH="$TINKERHP_ROOT/plumed/lib/:${LIBRARY_PATH:-}"
+   export LD_LIBRARY_PATH="$TINKERHP_ROOT/plumed/lib/:${LD_LIBRARY_PATH:-}"
    export PLUMED_KERNEL="$TINKERHP_ROOT/plumed/lib/libplumedKernel.so"
    export PLUMED_VIMPATH="$TINKERHP_ROOT/plumed2/vim"
-   export PYTHONPATH="$TINKERHP_ROOT/plumed2/python:$PYTHONPATH"
+   export PYTHONPATH="$TINKERHP_ROOT/plumed2/python:${PYTHONPATH:-}"
 else
    echo '             **********************************                 '
    echo ' ***************************************************************'

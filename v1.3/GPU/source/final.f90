@@ -16,12 +16,13 @@
 !
 !
 #include "tinker_precision.h"
-subroutine final
+subroutine final(final_status)
    use analyz
    use angle
    use atmlst
    use atmtyp
    use atoms
+   use beads, only: close_polymer_trajectories, polymer_ctr, polymer_main
    use charge
    use couple
    use dcdmod
@@ -43,7 +44,8 @@ subroutine final
    use molcul
    use mdstate
    use mpi
-   use mdevice, only: channel_t, reciprocal_channel
+   use mdevice, only: default_work, direct_work, finalize_device, phase, phase_active, &
+      &reciprocal_work, sync_work
    use mdtraj , only: close_trajectory, dynamic_trajectory
    use mpole
    use neigh
@@ -53,22 +55,25 @@ subroutine final
    use potent
    use sizes
    use reduction, only: delete_reduction_buffers
-   use status, only: failed, status_t
+   use status, only: enrich_status, failed, set_status, StatusDeviceError, status_t
    use cflux, only: release_cflux_workspaces
    use tmatxb, only: release_tmatxb_workspace
+   use tinMemory, only: s_shmem
    use timestat
    use uprior
-   use utilgpu, only: dir_queue, rec_queue
    use vdw
    use virial, only: delete_vir_device
 #ifdef USE_NVSHMEM
    use nvshmem, only: nvshmem_finalize
 #endif
 #ifdef PLUMED
-   use plumed
+   use plumed, only: lplumed, ncount, plumed_finalize
 #endif
+   use parallel, only: active_polar_tickets
 #ifdef _OPENACC
    use cudafor
+   use thrust, only: thrust_clear_cache_memory
+   use tinMemory, only: sd_prmem
 #endif
    implicit none
 #ifdef COLVARS
@@ -76,12 +81,32 @@ subroutine final
    character(len=8) :: repeat_colvars_finalize
 #endif
    integer i
-   type(channel_t) :: reciprocal_work
+   integer pme_cleanup_code
+   integer final_fail_code, final_fail_any
+   integer final_red_stat
+   logical cleanup_failed, final_failed
+   type(status_t), optional, intent(inout) :: final_status
    type(status_t) :: trajectory_status
+   type(status_t) :: first_cleanup_status
+   type(status_t) :: dev_clean_stat
+
+   final_failed = .false.
 
 #ifdef PLUMED
 !     finalize adapters while borrowed MPI resources still exist
-   if (lplumed) call plumed_f_gfinalize()
+   if (lplumed) then
+      if (ncount <= 0) then
+         write (iout,'(/,a)') 'PLUMED finalization found no eplumed call'
+         final_failed = .true.
+      else
+         write (iout,'(/,a,i0)') 'PLUMED eplumed calls: ', ncount
+      end if
+   end if
+   call plumed_finalize()
+   if (lplumed) then
+      write (iout,'(/,a)') 'PLUMED finalization left an active adapter'
+      final_failed = .true.
+   end if
 #endif
 #ifdef COLVARS
    call colvars_finalize()
@@ -91,10 +116,25 @@ subroutine final
    if (trim(repeat_colvars_finalize) == '1') call colvars_finalize()
 #endif
 !
+   cleanup_failed = .false.
    call close_trajectory(dynamic_trajectory,trajectory_status)
    if (failed(trajectory_status)) then
-      write (iout,'(/,a)') trim(trajectory_status%message)
-      call fatal
+      first_cleanup_status = trajectory_status
+      cleanup_failed = .true.
+   end if
+   call close_polymer_trajectories(polymer_main,trajectory_status)
+   if (failed(trajectory_status) .and. .not.cleanup_failed) then
+      first_cleanup_status = trajectory_status
+      cleanup_failed = .true.
+   end if
+   call close_polymer_trajectories(polymer_ctr,trajectory_status)
+   if (failed(trajectory_status) .and. .not.cleanup_failed) then
+      first_cleanup_status = trajectory_status
+      cleanup_failed = .true.
+   end if
+   if (cleanup_failed) then
+      write (iout,'(/,a)') trim(first_cleanup_status%message)
+      final_failed = .true.
    end if
    call timer_exit(timer_prog)
    if (tinkertime.eq.all_time) call display_timers
@@ -102,21 +142,50 @@ subroutine final
 !
 !     Free ressources
 !
+   if (active_polar_tickets() /= 0) then
+      write (iout,'(/,a)') 'Finalization found an active opaque MPI ticket'
+      final_failed = .true.
+   end if
+
    if (is_fftInit) then
       call fft_final
       call free_FFTgrid_p
       is_fftInit = .false.
    end if
-!$acc wait(dir_queue)
-!$acc wait(rec_queue)
-   call delete_reduction_buffers(dir_queue)
-   call release_cflux_workspaces(dir_queue)
-   call release_polar_workspace(dir_queue)
-   call release_tmatxb_workspace(dir_queue)
-   reciprocal_work = reciprocal_channel()
-   call release_pme_device(reciprocal_work%queue)
+!$acc wait(direct_work%queue)
+!$acc wait(reciprocal_work%queue)
+   call delete_reduction_buffers(direct_work%queue)
+   call release_cflux_workspaces(direct_work%queue)
+   call release_polar_workspace(direct_work%queue)
+   call release_tmatxb_workspace(direct_work%queue)
+   call thrust_clear_cache_memory(sd_prmem)
+   pme_cleanup_code = 0
+   call release_pme_device(reciprocal_work%queue, pme_cleanup_code)
+   if (pme_cleanup_code /= MPI_SUCCESS) then
+      write (iout,'(/,a,i0)') 'PME finalization request cleanup failed: ', pme_cleanup_code
+      final_failed = .true.
+   end if
+   if (pme_device_ready) then
+      write (iout,'(/,a)') 'PME finalization left active device state'
+      final_failed = .true.
+   end if
    call delete_energi_on_device()
    call delete_vir_device()
+   if (phase == phase_active) then
+      call finalize_device(dev_clean_stat)
+      if (failed(dev_clean_stat)) then
+         write (iout,'(/,a)') trim(dev_clean_stat%message)
+         final_failed = .true.
+      end if
+   end if
+   if (phase == phase_active .or. direct_work%queue >= 0 .or. &
+      &reciprocal_work%queue >= 0 .or. default_work%queue >= 0 .or. &
+      &sync_work%queue >= 0 .or. direct_work%stream /= 0 .or. &
+      &reciprocal_work%stream /= 0 .or. default_work%stream /= 0 .or. &
+      &sync_work%stream /= 0) then
+      write (iout,'(/,a)') 'Finalization left an active GPU execution channel'
+      final_failed = .true.
+   end if
 ! Not supported for synchronous computation
 !#ifdef _OPENACC
 !      if (cudaStreamDestroy(dir_stream).ne.0)
@@ -131,7 +200,8 @@ subroutine final
    if (use_charge) call dealloc_shared_chg
    if (use_mpole ) call dealloc_shared_mpole
    if (use_polar ) call dealloc_shared_polar
-   if (use_angle ) call delete_data_kangle
+   if (use_angle .or. use_strbnd .or. use_angang) call dealloc_shared_angles
+   call dealloc_shared_angang
    if (use_opbend) call delete_data_kopbend
    if (use_tors.or.use_tortor) call delete_data_ktors
    if (use_chgflx) call dealloc_shared_chgflx
@@ -139,6 +209,16 @@ subroutine final
    if (use_chgtrn) call dealloc_shared_chgct
    if (use_disp)   call dealloc_shared_disp
    call dealloc_shared_mutate
+   call delete_data_kgeom
+   call dealloc_shared_active
+   call delete_data_bonds
+   call dealloc_shared_attach
+   call dealloc_shared_bitors
+   call dealloc_shared_katom
+   call dealloc_shared_mol
+   call dealloc_shared_scaling
+   call dealloc_shared_torsions
+   call delete_data_kopdist
    call dealloc_polar_predictor
 !
 !     module "analyz"
@@ -422,13 +502,37 @@ subroutine final
 !     module "vdw"
 !
    if (allocated(vdwlocnl)) deallocate (vdwlocnl)
+   if (s_shmem /= 0) then
+      write (iout,'(/,a,i0)') 'Finalization left MPI shared memory bytes: ', s_shmem
+      final_failed = .true.
+   end if
+   final_fail_code = 0
+   if (final_failed) final_fail_code = 1
+   call MPI_Allreduce(final_fail_code, final_fail_any, 1, MPI_INTEGER, &
+      &MPI_MAX, MPI_COMM_WORLD, final_red_stat)
+   if (final_red_stat /= MPI_SUCCESS .or. final_fail_any /= 0) &
+      &final_failed = .true.
 #ifdef USE_NVSHMEM
    call nvshmem_finalize()
 #endif
+   if (final_failed) then
+      write (iout,'(/,a)') 'finalization owner cleanup incomplete'
+   else
+      write (iout,'(/,a)') 'finalization owner cleanup complete'
+   end if
+   if (present(final_status) .and. final_failed) then
+      if (failed(final_status)) then
+         call enrich_status(final_status, 'Finalization owner cleanup incomplete')
+      else
+         call set_status(final_status, StatusDeviceError, &
+            &'Finalization owner cleanup incomplete')
+      end if
+   end if
 !
 !     print a final status message before exiting TINKER-HP
 !
-   if (.not.final_message_suppressed .and. rank.eq.0) write (iout,10)
+   if (.not.final_failed .and. .not.final_message_suppressed .and. &
+      &rank.eq.0) write (iout,10)
 10 format (/,' TINKER-HP is Exiting following Normal Termination')
 !
 !     may need a pause to avoid closing the execution window

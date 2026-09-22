@@ -1301,6 +1301,7 @@ subroutine reassignpmevec(init)
    use math
    use pme
    use potent
+   use parallel, only: orderbuffer, orderbufferrec
    use mpi
    implicit none
    real(t_p) disttemp,jtemp(4),ktemp(4),jtempbis(4),ktempbis(4)

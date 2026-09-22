@@ -12,7 +12,7 @@ M_subroutine  ctf_inl(xr,yr,zr)
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_sign
 #else
 use boxes
 use cell
@@ -29,7 +29,7 @@ M_subroutine  ftc_inl(xr,yr,zr)
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_sign
 #else
 use boxes
 use cell
@@ -46,7 +46,7 @@ M_subroutine image_orth_inl(xr,yr,zr)
 use tinheader,only:ti_p
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_sign
 #else
 use cell
 #endif
@@ -64,7 +64,7 @@ M_subroutine image_inl(xr,yr,zr)
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_floor,f_sign
 #else
 use boxes
 use cell
@@ -107,7 +107,7 @@ M_subroutine image1_inl(xr,yr,zr,info)
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_floor,f_sign
 #else
 use boxes
 use cell
@@ -164,7 +164,7 @@ M_subroutine&
 use tinheader,only:ti_p,re_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_sign
 #else
 use boxes
 use cell
@@ -227,7 +227,7 @@ M_subroutine&
 use tinheader,only:ti_p,prec_eps
 #ifdef TINKER_CUF
 use cellcu
-use utilcu
+use utilcu,only: f_abs,f_sign
 #else
 use boxes
 use cell

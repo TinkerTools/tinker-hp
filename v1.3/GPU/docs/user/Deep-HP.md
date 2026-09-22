@@ -32,12 +32,16 @@ cmake --preset gpu-fpa-nn
 cmake --build --preset gpu-fpa-nn
 ```
 
-For Colvars, use `gpu-fpa-nn-colvars`. CMake uses the local locked
+The public catalog does not define a combined Deep-HP/Colvars preset. CMake
+uses the local locked
 [`deep-hp`](../../deep-hp/README.md) environment when it exists, can use an
 explicit development interpreter, or creates the managed Python 3.11
-environment with `uv`. Before running `dynamic_nn.fpa`, activate or otherwise
-make that selected environment available. CMake installs the native plugin but
-does not install Python packages or models.
+environment with `uv`. Before running `dynamic_nn.fpa`, use the selected
+environment at the path recorded during configuration. CMake installs the
+native plugin and embeds the selected shared `libpython` directory in the
+normal runtime search path, but does not install Python packages or models.
+Moving or recreating the environment requires reconfiguration and rebuild; an
+ABI-compatible loader override remains possible when required by a site.
 
 
 # Run Deep-HP

@@ -80,7 +80,7 @@ contains
 !
 !     calculate the torsional angle energy term
 !
-!$acc parallel loop default(present) present(et) async &
+!$acc parallel loop default(present) present(itors,et) async &
 !$acc         reduction(+:et,net)
       do itor = 1, ntorsloc
          i = torsglob(itor)

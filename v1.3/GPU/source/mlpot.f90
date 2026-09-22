@@ -9,6 +9,7 @@
 module mlpot_inl
 contains
 #include "image.inc.f90"
+#include "convert.inc.f90"
 end module
 
 subroutine set_embedding_weights()
@@ -58,9 +59,10 @@ subroutine ml_potential(dograd)
    use energi
    use mutant
    use potent
+   use tinheader ,only: ti_p
    use sizes     ,only: tinkerdebug
    use tinMemory ,only: prmem_request
-   use utilgpu   ,only: devicenum
+   use mdevice   ,only: device_number
    use neigh     ,only: list_mlpot, ineignl
    use timestat
    use virial
@@ -77,6 +79,7 @@ subroutine ml_potential(dograd)
    integer  ,pointer::c_glob(:),list1(:),list2(:)
    real(t_p),pointer::cell_x(:),cell_y(:),cell_z(:)
    integer :: max_pairs
+   integer :: device_id
    real(c_float), save :: qtot
    real(c_float) :: vlambda_c,elambda_c
    integer,save :: ipass = 0
@@ -103,9 +106,10 @@ subroutine ml_potential(dograd)
    endif
 
    if (f_in) then
+      device_id = device_number()
 !$acc enter data create(dedle_ml,dedlv_ml,vir_ml)
       if (deb_Path) write(*,*) 'init_ml_ressources'
-      ierr =  init_ml_ressources(ranktot,devicenum,trim(model_file)//char(0) &
+      ierr =  init_ml_ressources(ranktot,device_id,trim(model_file)//char(0) &
       &,tinkerdebug, ml_port,use_lambda_int,mlqtot,mlqligand &
       &,gc_stride,n,atomic, nmut, imut)
       if (ierr /= 0) then
@@ -257,7 +261,7 @@ subroutine ml_potential(dograd)
          iloc  = loc(iglob)
 !$acc loop seq
          do j=1,3
-            dmlpot(j,iloc) = dmlpot(j,iloc) + d_mlpot(j+3*(i-1))*mlpotscale
+            dmlpot(j,iloc) = dmlpot(j,iloc) + tp2mdr(d_mlpot(j+3*(i-1))*mlpotscale)
          enddo
          if (iloc.le.nloc) then
             emlpot = emlpot + aemlp(i)

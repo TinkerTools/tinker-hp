@@ -17,12 +17,15 @@ module pmestuffcu
    use math   ,only: pi
    use pme    ,only: maxorder
    use tinheader
-   use utilcu ,only: PME_BLOCK_DIM,PME_GRID_BDIM,PME_FPHI_DIM1,all_lanes
+   use utilcu ,only: all_lanes
    use cellcu ,only: octahedron
    use reduction,only: RED_BUFF_SIZE
 
    integer,parameter ::  level=4
    integer,parameter ::  level1=2
+   integer,parameter ::  PME_BLOCK_DIM=64
+   integer,parameter ::  PME_BLOCK_DIM1=32
+   integer,parameter ::  PME_GRID_BDIM=PME_BLOCK_DIM1
 #if defined(BSORDER_VALUE) && BSORDER_VALUE>5
    integer,parameter :: bsorder=BSORDER_VALUE
 #else

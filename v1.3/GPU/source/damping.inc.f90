@@ -240,6 +240,7 @@ use utilcu ,only: f_erfc, f_abs
 use utilcu ,only: f_exp
 #  endif
 #endif
+!$acc routine
 implicit none
 integer  ,intent(in ):: rorder,pentyp
 real(t_p),intent(in ):: r,alphai,alphak

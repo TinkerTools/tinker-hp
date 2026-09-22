@@ -190,11 +190,28 @@ endif
 
 # -- CPU Optimisation flags
 inline_f__            := -Minline=maxsize:340
+nvfortran_opt_level__ ?= fast
+ifeq ($(nvfortran_opt_level__),fast)
+   nvfortran_opt_flag__ := -fast
+else ifeq ($(nvfortran_opt_level__),O1)
+   nvfortran_opt_flag__ := -O1
+else ifeq ($(nvfortran_opt_level__),O0)
+   nvfortran_opt_flag__ := -O0
+else
+   $(error nvfortran_opt_level__ must be fast, O1, or O0; got '$(nvfortran_opt_level__)')
+endif
+# NVFORTRAN compiler-stability workaround for all Fortran units.
+# Opt in with "nvfortran_gpu_noinline__=-Mnoinline" for an assessment build.
+nvfortran_gpu_noinline__ ?=
+gpu_inline_f__       := $(inline_f__)
+ifneq ($(strip $(nvfortran_gpu_noinline__)),)
+   gpu_inline_f__    :=
+endif
 ifeq ($(opt), release)
-   host_flags_f_      := -traceback -g -fast -Mdalign
+   host_flags_f_      := -traceback -g $(nvfortran_opt_flag__) -Mdalign
    host_flags_cxx_    := -traceback -g -fast -Mdalign -std=c++$(cxx_std) 
    host_flags_cuda_c_ := -std=c++$(cxx_std) -g -O3
-   host_flags_cuda_f_ := -traceback -g -fast -Mdalign $(inline_f__)
+   host_flags_cuda_f_ := -traceback -g $(nvfortran_opt_flag__) -Mdalign $(gpu_inline_f__)
 else ifeq ($(opt), debug)
    host_flags_f_      := -traceback -g -O0 -Mbounds
    host_flags_cxx_    := -std=c++$(cxx_std) -traceback -g -O0 -Mbounds
@@ -244,6 +261,7 @@ endif
 
 # -- Build final flags
 comp_flags_f_         := $(pp_flags_f_) $(host_flags_f_)
+comp_flags_f_         += $(nvfortran_gpu_noinline__)
 decp_flags_f_         := $(host_flags_f_)
 ifeq ($(arch),$(filter $(arch),device gpu))
 ifeq ($(OPENMP_SUPPORT),1)
@@ -258,7 +276,7 @@ ifneq ($(device_flags_f_),$(empty__))
    decp_flags_f_      += $(device_flags_f_)
 endif
 endif
-comp_flags_mod_f_     := $(comp_flags_f_) $(inline_f__)
+comp_flags_mod_f_     := $(comp_flags_f_) $(gpu_inline_f__)
 ifeq ($(arch),$(filter $(arch),device gpu))
    ifeq ($(HIP_SUPPORT),0)
    comp_flags_mod_f_     += $(cuda_flags_f_)
@@ -287,6 +305,7 @@ comp_flags_cuda_f_    := $(pp_flags_cuda_f_) $(host_flags_cuda_f_) $(cuda_flags_
 ifneq ($(device_flags_f_),$(empty__))
 comp_flags_cuda_f_    += $(device_flags_f_)
 endif
+comp_flags_cuda_f_    += $(nvfortran_gpu_noinline__)
 comp_flags_cuda_c_    := $(pp_flags_cuda_c_) $(host_flags_cuda_c_) $(cuda_flags_c_)
 comp_flags_hip_c_     := $(pp_flags_cuda_c_) $(host_flags_hip_c_)
 

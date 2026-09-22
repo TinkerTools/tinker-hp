@@ -108,29 +108,15 @@ module interfaces
    integer ProgramID
 
    interface
-      subroutine field(config_defaults_only)
-         logical, intent(in) :: config_defaults_only
+      subroutine final(final_status)
+         import :: status_t
+         type(status_t), optional, intent(inout) :: final_status
       end subroutine
-      subroutine initial(raw_cli)
-         import :: raw_cli_t
-         type(raw_cli_t), intent(in), optional :: raw_cli
-      end subroutine
-      subroutine getxyz(key_is_loaded)
-         logical, intent(in), optional :: key_is_loaded
-      end subroutine
-      subroutine get_xyz_filename(xyzfile, key_is_loaded)
-         character(len=240), intent(inout) :: xyzfile
-         logical, intent(in), optional :: key_is_loaded
-      end subroutine
+
       subroutine mechanic(configuration, status_value)
          import :: config_t, status_t
-         type(config_t), intent(inout), optional :: configuration
-         type(status_t), intent(out), optional :: status_value
-      end subroutine
-      subroutine prtxyz(ixyz,x_frame,y_frame,z_frame,atom_count_frame)
-         integer, intent(in) :: ixyz
-         real(r_p), optional, intent(in) :: x_frame(:),y_frame(:),z_frame(:)
-         integer, optional, intent(in) :: atom_count_frame
+         type(config_t), intent(in) :: configuration
+         type(status_t), intent(out) :: status_value
       end subroutine
    end interface
 
@@ -221,8 +207,9 @@ module interfaces
          real(t_p),intent(in) :: mu(:,:,:)
          real(t_p),intent(out):: ef(:,:,:)
       end subroutine
-      subroutine tmatxb_gen( X,h,shortRange )
+      subroutine tmatxb_gen( X,h,shortRange,skip_communication )
          logical   ,intent(in) :: shortRange
+         logical   ,intent(in) :: skip_communication
          real(t_p) ,intent(inout) :: X(:,:,:)
          real(t_p) ,intent(out):: h(:,:,:)
       end subroutine
@@ -880,11 +867,6 @@ module interfaces
          integer  , intent(in)    :: nrhs
          real(t_p), intent(inout) :: ef(:,:,:)
       end subroutine commfieldfull
-      subroutine commdirdirfull(nrhs,rule,mu,reqrec,reqsend)
-         integer, intent(in) :: nrhs,rule
-         integer, intent(inout) :: reqrec(*),reqsend(*)
-         real(t_p), intent(inout) ::  mu(:,:,:)
-      end subroutine commdirdirfull
       subroutine inducepcg_group(nrhs,precnd,ef,mu)
          integer  ,intent(in)   :: nrhs
          logical  ,intent(in)   :: precnd
@@ -947,13 +929,6 @@ module interfaces
          external fgvalue
       end subroutine
    end interface
-   interface
-      subroutine sendvecmin(xx)
-         real(r_p) xx(*)
-      end subroutine
-   end interface
-
-
 contains
 
    subroutine tinker_void_sub

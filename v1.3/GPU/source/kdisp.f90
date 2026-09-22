@@ -35,7 +35,7 @@ subroutine kdisp(init,istep)
    use potent
    use sizes
    use tinMemory
-   use utilgpu
+   use tinheader, only: ti_p
    implicit none
    integer i,k,istep,iglob,iproc,idisploc
    integer ia,ic,next

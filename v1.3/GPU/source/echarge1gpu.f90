@@ -16,7 +16,7 @@
 !
 #include "tinker_macro.h"
 module echarge1gpu_inl
-   use utilgpu , only: real3,real3_red,rpole_elt
+   use tinTypes  ,only: real3,real3_red,rpole_elt
    implicit none
 !   include "erfcore_data.inc.f90"
 #include "atomicOp.h.f90"
@@ -84,7 +84,8 @@ subroutine echarge1cgpu
    use timestat
    use tinheader
    use usage
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work, grid_dim, &
+      &begin_direct_overlap, end_direct_overlap
    use virial
    use mpi
    implicit none
@@ -105,8 +106,8 @@ subroutine echarge1cgpu
 !     zero out the Ewald summation energy and derivatives
 !
    if (calc_e) then
-!$acc enter data create(e) async(rec_queue)
-!$acc serial async(rec_queue) present(e,delambdae)
+!$acc enter data create(e) async(reciprocal_work%queue)
+!$acc serial async(reciprocal_work%queue) present(e,delambdae)
       e     = 0.0
       delambdae = 0.0
 !$acc end serial
@@ -122,7 +123,7 @@ subroutine echarge1cgpu
          f  = electric / dielec
          fs = -f * aewald / sqrtpi
          if (calc_e) then
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(chgglob,pchg,e)
             do ii = 1, nionloc
                iichg = chgglob(ii)
@@ -130,7 +131,7 @@ subroutine echarge1cgpu
             end do
          end if
          if (use_lambdadyn) then
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(chgglob,iion,pchg,mut,delambdae)
             do ii = 1, nionloc
                iichg = chgglob(ii)
@@ -205,7 +206,7 @@ subroutine echarge1cgpu
 !
 !     save delambdae for short range computation
 !
-!$acc serial async(rec_queue) present(delambdae,delambdaesave)
+!$acc serial async(reciprocal_work%queue) present(delambdae,delambdaesave)
             delambdaesave = delambdae
 !$acc end serial
          end if
@@ -225,14 +226,14 @@ subroutine echarge1cgpu
    end if
 !
    if (calc_e) then
-!$acc serial present(ecrec,e,ec,ec_r) async(rec_queue)
+!$acc serial present(ecrec,e,ec,ec_r) async(reciprocal_work%queue)
       ec = ec + e + ecrec + enr2en( ec_r )
 !$acc end serial
-!$acc exit data delete(e) async(rec_queue)
+!$acc exit data delete(e) async(reciprocal_work%queue)
    end if
 
    if (use_lambdadyn) then
-!$acc update host(delambdae,delambdaesave) async(rec_queue)
+!$acc update host(delambdae,delambdaesave) async(reciprocal_work%queue)
    end if
 
    call timer_exit(timer_echarge)
@@ -269,7 +270,8 @@ subroutine ecreal1dgpu
    use timestat
    use usage
    use tinTypes
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work, grid_dim, &
+      &begin_direct_overlap, end_direct_overlap
    use virial
    use mpi
    implicit none
@@ -323,7 +325,7 @@ subroutine ecreal1dgpu
 !
 !     Scaling interaction correction subroutines
 !
-!$acc parallel loop gang vector async(dir_queue) &
+!$acc parallel loop gang vector async(direct_work%queue) &
 !$acc         present(ccorrect_ik,ccorrect_scale,loc,x,y,z,wgrp &
 !$acc   ,grplist,mutInt,dec,ec,delambdae,chglist,pchg,pchg_orig &
 !$acc   ,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) &
@@ -388,7 +390,7 @@ subroutine ecreal1dgpu
 !
 !     compute the real space Ewald energy and first derivatives
 !
-!$acc parallel loop gang vector_length(32) async(dir_queue) &
+!$acc parallel loop gang vector_length(32) async(direct_work%queue) &
 !$acc         present(chgglobnl,iion,loc,x,y,z,pchg,pchg_orig &
 !$acc        ,nlst,lst,grplist,wgrp,mutInt &
 !$acc        ,dec,ec,delambdae,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) &
@@ -495,11 +497,9 @@ subroutine ecreal1d_cu
    use shunt
    use timestat
    use usage
-   use utilcu  ,only: BLOCK_DIM,check_launch_kernel
-   use utilgpu ,only: def_queue,dir_queue,dir_stream,def_stream&
-      &, vred_buff,lam_buff,ered_buff=>ered_buf1,nred_buff&
-      &, reduce_energy_virial, reduce_energy_action&
-      &, reduce_buffer, RED_BUFF_SIZE
+   use mdevice  ,only: check_launch_kernel, direct_work
+   use reduction,only: vred_buff,lam_buff,ered_buff=>ered_buf1,nred_buff&
+      &, reduce_energy_virial, reduce_energy_action,reduce_buffer,RED_BUFF_SIZE
    use virial
    implicit none
    integer i,szcik
@@ -547,8 +547,6 @@ subroutine ecreal1d_cu
       scut  = chgshortcut
    end if
 
-   def_stream = dir_stream
-   def_queue  = dir_queue
    szcik      = size(ccorrect_ik,1)
 
 !$acc host_data use_device(iion_s,chg_s,loc_s,ieblst_s,eblst_s &
@@ -557,7 +555,7 @@ subroutine ecreal1d_cu
 !$acc    ,ccorrect_ik,ccorrect_scale,chglist,loc,x,y,z &
 !$acc    )
 
-   call ecreal1_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+   call ecreal1_kcu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
       &( iion_s,chg_s,loc_s,ieblst_s&
       &, eblst_s(2*nionlocnlb_pair+1)&
       &, nionlocnlb,nionlocnlb2_pair,nionbloc,n&
@@ -575,11 +573,11 @@ subroutine ecreal1d_cu
 
    if (calc_e.or.use_virial) then
       call reduce_energy_virial(ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz&
-         &,ered_buff,def_queue)
+         &,ered_buff,direct_work%queue)
    end if
 
    if (use_lambdadyn)&
-      &call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdae,def_queue)
+      &call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdae,direct_work%queue)
 
 end subroutine
 
@@ -614,10 +612,8 @@ subroutine ecreal_lj1_cu
    use shunt   ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
    use timestat
    use usage
-   use utilcu  ,only: BLOCK_DIM,check_launch_kernel&
-      &, TRP_BLOCK_DIM,transpose_z3fl
-   use utilgpu ,only: def_queue,dir_queue,dir_stream,def_stream&
-      &, transpose_az3,get_GridDim
+   use eChgLjcu,only: BLOCK_DIM
+   use mdevice  ,only: check_launch_kernel, direct_work, grid_dim
    use reduction,only: vred_buff,reduce_energy_virial,ered_buff=>ered_buf1
    use vdw     ,only: ired,kred,jvdw,ivdw,radmin_c&
       &, epsilon_c,radmin,radmin4,epsilon,epsilon4&
@@ -651,7 +647,7 @@ subroutine ecreal_lj1_cu
       call cudaMaxGridSize("echg_lj1_kcu_v0",gS)
       first_in=.false.
    end if
-   if(dyn_gS) gs = get_GridDim(nionlocnlb2_pair,BLOCK_DIM)
+   if(dyn_gS) gs = grid_dim(nionlocnlb2_pair,BLOCK_DIM)
 
    p_xbeg = xbegproc(rank+1)
    p_xend = xendproc(rank+1)
@@ -663,8 +659,6 @@ subroutine ecreal_lj1_cu
    coff2  = ewaldcut**2
    aewaldop = 2d0*aewald/sqrtpi
 
-   def_stream = dir_stream
-   def_queue  = dir_queue
 
    v0 = .not.calc_e.and..not.use_virial.and.ndir.eq.1&
       &.and.radepsOpt_l
@@ -677,7 +671,7 @@ subroutine ecreal_lj1_cu
 !$acc   )
 
    if (v0) then
-      call echg_lj1_kcu_v0<<<gS,BLOCK_DIM,0,def_stream>>>&
+      call echg_lj1_kcu_v0<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
          &( x_s,y_s,z_s,iion_s,loc_s,chg_s&
          &, ieblst_s, eblst_s(2*nionlocnlb_pair+1)&
          &, cellv_jvdw,i12,epsilon_c,radmin_c,radv,epsv&
@@ -693,7 +687,7 @@ subroutine ecreal_lj1_cu
          &,ndir,use_virial,skipvdw12)
       call check_launch_kernel(" echg_lj1_kcu_v0")
    else
-      call echg_lj1_kcu_v1<<<gS,BLOCK_DIM,0,def_stream>>>&
+      call echg_lj1_kcu_v1<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
          &( x_s,y_s,z_s,iion_s,loc_s,chg_s&
          &, ieblst_s, eblst_s(2*nionlocnlb_pair+1)&
          &, cellv_jvdw,i12,epsilon_c,radmin_c,radv,epsv&
@@ -714,23 +708,10 @@ subroutine ecreal_lj1_cu
 
    if (calc_e.or.use_virial) then
       call reduce_energy_virial(ec,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz&
-         &,ered_buff,def_queue)
+         &,ered_buff,direct_work%queue)
    end if
 
-   call transpose_az3(d_x,decx,loc_s,nionlocnl,dr_stride,def_queue)
-!      block
-!      integer    sdx
-!      type(dim3) gridS,blockS
-!      sdx    = size(d_x)
-!      gridS  = dim3((sdx-1)/TRP_BLOCK_DIM+1,1,1)
-!      blockS = dim3(TRP_BLOCK_DIM,3,1)
-!!$acc host_data use_device(d_x,dec,loc_s)
-!      call transpose_z3fl<<<gridS,blockS,0,def_stream>>>
-!     &                ( d_x,dec,sdx,nionlocnl,loc_s )
-!      call check_launch_kernel(" transpose_z3fl ")
-!!$acc end host_data
-!      end block
-
+   call transpose_az3(d_x,decx,loc_s,nionlocnl,dr_stride,direct_work%queue)
    !call minmaxone(dec,3*nbloc,'dec')
 
 end subroutine
@@ -781,8 +762,10 @@ subroutine ecrecip1gpu
    use pme1
    use potent
    use timestat
+   use tinMemory ,only: prmem_request
    use utils
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work, grid_dim, &
+      &begin_direct_overlap, end_direct_overlap
    use virial
    use mpi
    implicit none
@@ -848,7 +831,7 @@ subroutine ecrecip1gpu
    call bspline_fill_sitegpu(1)
 #endif
    call set_to_zero1(qgridin_2d(1,1,1,1,1),&
-      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),rec_queue)
+      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),reciprocal_work%queue)
 
    call grid_pchg_site_p
    call timer_exit ( timer_grid1,quiet_timers )
@@ -858,8 +841,8 @@ subroutine ecrecip1gpu
    call commGridFront( qgridin_2d,r_wait )
 
 #ifdef _OPENACC
-   if (rec_queue.ne.dir_queue) then
-      call start_dir_stream_cover
+   if (reciprocal_work%queue.ne.direct_work%queue) then
+      call begin_direct_overlap
       call ecreal1d_cp
    end if
 #endif
@@ -912,12 +895,12 @@ subroutine ecrecip1gpu
    if (use_lambdadyn) then
       f = electric / dielec
       call fphi_chg_site_p
-!$acc parallel loop collapse(2) default(present) async(rec_queue)
+!$acc parallel loop collapse(2) default(present) async(reciprocal_work%queue)
       do i = 1, nionrecloc; do j = 1, 4
             fphirec(j,i) = electric * fphirec(j,i)
          end do; end do
 !         call fphi_to_cphi_chg_sitegpu (fphirec,cphirec)
-!$acc parallel loop default(present) async(rec_queue)
+!$acc parallel loop default(present) async(reciprocal_work%queue)
       do i = 1, nionrecloc
          iichg = chgrecglob(i)
          f1 = pchg(iichg)*fphirec(2,i)
@@ -935,7 +918,7 @@ subroutine ecrecip1gpu
          decrec(2,ii) = decrec(2,ii) + h2
          decrec(3,ii) = decrec(3,ii) + h3
       end do
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc present(chgrecglob,iion,pchg,mut,delambdae)
       do i = 1, nionrecloc
          iichg = chgrecglob(i)
@@ -950,8 +933,8 @@ subroutine ecrecip1gpu
    end if
    call timer_exit ( timer_grid2,quiet_timers )
 #ifdef _OPENACC
-   if (rec_queue.ne.dir_queue) then
-      call end_dir_stream_cover
+   if (reciprocal_work%queue.ne.direct_work%queue) then
+      call end_direct_overlap
    end if
 #endif
 end

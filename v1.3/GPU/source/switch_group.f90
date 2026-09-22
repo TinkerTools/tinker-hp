@@ -18,6 +18,11 @@
 !
 !
 #include "tinker_macro.h"
+module switch_group_inl
+contains
+#include "convert.inc.f90"
+end module
+
 subroutine switch_group(dograd)
    use atoms
    use domdec
@@ -29,9 +34,12 @@ subroutine switch_group(dograd)
    use mpole
    use mpi
    use potent
+#ifdef USE_DETERMINISTIC_REDUCTION
+   use switch_group_inl,only: enr2en
+#endif
    use utils    ,only: set_to_zero1
    use tinheader,only: ti_p
-   use utilgpu
+   use tinMemory,only: prmem_request
    use virial
    implicit none
    logical, intent(in) :: dograd
@@ -46,10 +54,11 @@ subroutine switch_group(dograd)
    logical, save :: is_bipartition
    logical, save :: first_in=.true.
    interface
-      subroutine rot_mat_site(recBuild,nk,poleglobvec)
+      subroutine rot_mat_site(recBuild,nk,poleglobvec,queue_)
          logical,intent(in)::recBuild
          integer,intent(in)::nk
          integer,intent(in)::poleglobvec(nk)
+         integer,intent(in)::queue_
       end subroutine
       function check_bipartition()
          logical :: check_bipartition
@@ -269,10 +278,10 @@ subroutine switch_group(dograd)
       ww = real(wgrp(igroup,igroup),r_p) - real(wgrp(1,2),r_p)
 !$acc serial async present(ep,epgroup,em,emgroup,wgrp)
       if(do_polar) then
-         ep = ep + ww*epgroup
+         ep = ep + ww*enr2en(epgroup)
       endif
       if(do_mpole) then
-         em = em + ww*emgroup
+         em = em + ww*enr2en(emgroup)
       endif
 !$acc end serial
 

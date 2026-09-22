@@ -29,7 +29,7 @@ subroutine angles(init)
 #ifdef _OPENACC
    use thrust
 #endif
-   use utilgpu
+   use tinMemory, only: prmem_request
    implicit none
    integer i,j,k,m,iglob
    integer ia,ib,ic
@@ -262,7 +262,6 @@ subroutine dealloc_shared_angles
    use improp
    use imptor
    use opbend
-   use opdist
    use strbnd
    use tinMemory
    use urey
@@ -306,7 +305,6 @@ subroutine dealloc_shared_angles
    call shmem_request(nbbitors,winnbbitors,[0],config=mhostacc)
    call shmem_request(nbangang,winnbangang,[0],config=mhostonly)
    call shmem_request(nbopbend,winnbopbend,[0],config=mhostacc)
-   call shmem_request(nbopdist,winnbopdist,[0],config=mhostonly)
    call shmem_request(nbimprop,winnbimprop,[0],config=mhostacc)
    call shmem_request(nbimptor,winnbimptor,[0],config=mhostacc)
 end

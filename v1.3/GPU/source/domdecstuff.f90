@@ -25,7 +25,6 @@ subroutine drivermpi
    use mpi
 #ifdef _OPENACC
 #endif
-   use utilcomm
    use tinMemory
    implicit none
    integer iproc, ierr
@@ -72,18 +71,6 @@ subroutine drivermpi
    call prmem_request(pbigshort_recep,nproc,config=mhostonly)
    call prmem_request(pbig_send      ,nproc,config=mhostonly)
    call prmem_request(pbigshort_send ,nproc,config=mhostonly)
-   call prmem_request(reqs_dird_a    ,nproc,config=mhostonly)
-   call prmem_request(reqr_dird_a    ,nproc,config=mhostonly)
-   call prmem_request(reqs_dirdir    ,nproc,config=mhostonly)
-   call prmem_request(reqr_dirdir    ,nproc,config=mhostonly)
-   call prmem_request(reqs_recdir    ,nproc,config=mhostonly)
-   call prmem_request(reqr_recdir    ,nproc,config=mhostonly)
-   call prmem_request(reqs_dirrec    ,nproc,config=mhostonly)
-   call prmem_request(reqr_dirrec    ,nproc,config=mhostonly)
-   call prmem_request(reqs_recdirsolv,nproc,config=mhostonly)
-   call prmem_request(reqr_recdirsolv,nproc,config=mhostonly)
-   call prmem_request(reqs_poleglob  ,nproc,config=mhostonly)
-   call prmem_request(reqr_poleglob  ,nproc,config=mhostonly)
    call prmem_request(cbegproc, nproc)
    call prmem_request(cendproc, nproc)
    call prmem_request(bbegproc, nproc)
@@ -1394,7 +1381,7 @@ subroutine ddpme3d
    use potent
    use mpi
    use tinheader
-   use utilcomm ,only: no_commdir
+   use parallel   ,only: comm_opt, orderbuffer
    implicit none
    integer i,j,k,ierr
    integer nprocloc,rankloc,iproc
@@ -2511,6 +2498,7 @@ subroutine ddpme3dnptaniso(scale,istep)
    use neigh
    use potent
    use mpi
+   use parallel, only: orderbuffer_gpu, orderbufrec_gpu
    use tinheader
    implicit none
    integer nprocloc,rankloc,commloc,iproc
@@ -2898,6 +2886,6 @@ nc_buf = ceiling(neigbuf*nzdd/(2d0*scalc*zbox))
    end do
 !
 80 call orderbuffer_gpu(.false.)
-   call orderbufferrec_gpu
+   call orderbufrec_gpu
 
 end

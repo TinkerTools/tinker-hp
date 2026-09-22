@@ -6,6 +6,7 @@
 #include "tinker_macro.h"
 
 module commstuffpi
+   use parallel, only: commposrec
    implicit none
    ! ReassignRespa Exchange space
    type,private:: t_elt
@@ -146,16 +147,20 @@ contains
       use tinTypes ,only: real3,real3_red
       use tinheader,only: ti_eps
       use tinMemory,only: prmem_request,debMem,mem_inc,extra_alloc
-      use utilcomm ,only: buffMpi_i1,buffMpi_i2
+      use parallel ,only: domain_workspace_i, orderbuffer_gpu
       use mpi
       use sizes    ,only: tinkerdebug
       use qtb
-      use utilgpu
+      use mdevice, only: reciprocal_work
+#ifdef _OPENACC
+      use thrust, only: thrust_sort
+#endif
       implicit none
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
       type(POLYMER_COMM_TYPE), intent(inout),optional :: polymer_ctr
       integer,pointer :: iglob_send(:,:) ! Global index to send to each proc
       integer,pointer :: iglob_recv(:,:) ! Global index to recieve from procs
+      integer,pointer :: buffer_i1(:),buffer_i2(:)
       real(t_p) xr, yr, zr ! adjusted position
       type(t_elt),pointer :: d
       type(real3),pointer :: b
@@ -213,9 +218,9 @@ contains
       call timer_enter( timer_eneig )
 
       s_bufi = 2*nloc*(nneig_send+1)
-      call prmem_request( buffMpi_i1,max(s_bufi,size(buffMpi_i1)) )
+      call domain_workspace_i(1,s_bufi,buffer_i1)
       !Associate iglob_send pointer to buffer
-      iglob_send(1:2*nloc,0:nneig_send) => buffMpi_i1(1:s_bufi)
+      iglob_send(1:2*nloc,0:nneig_send) => buffer_i1(1:s_bufi)
 
 !$acc wait
 !$acc data copyin(pneig_recep, pneig_send) async &
@@ -379,9 +384,9 @@ contains
       n_data_recv(:)= n_data_recv(:)/2
       max_data_recv = maxval(n_data_recv)
       s_bufi        = 2*max_data_recv*nneig_recep
-      call prmem_request( buffMpi_i2,max(s_bufi,size(buffMpi_i2)) )
+      call domain_workspace_i(2,s_bufi,buffer_i2)
       iglob_recv(1:2*max_data_recv,1:nneig_recep)&
-         &=>buffMpi_i2(1:s_bufi)
+         &=>buffer_i2(1:s_bufi)
       if ( max_data_recv.gt.max_atoms_recv ) then
          max_atoms_recv = merge(int(max_data_recv*(1+mem_inc))&
             &,max_data_recv,extra_alloc)
@@ -485,7 +490,9 @@ contains
       end do
       ! sort glob to ensure the same ordering across COMM_POLYMER
 #ifdef _OPENACC
-      call dev_sort(nloc,glob,rec_stream)
+!$acc host_data use_device(glob)
+      call thrust_sort(glob,nloc,reciprocal_work%stream)
+!$acc end host_data
 #endif
       if (btest(tinkerdebug,tindPath).and.&
          &max_data_recv.gt.max_data_recv_save) then
@@ -593,8 +600,8 @@ contains
       endif
 
       if(piqtb) call reassignqtb(nloc_save,max_data_recv&
-         &,nneig_recep, n_data_recv, buffMpi_i2, pneig_recep&
-         &,nneig_send , n_data_send, buffMpi_i1, pneig_send&
+         &,nneig_recep, n_data_recv, buffer_i2, pneig_recep&
+         &,nneig_send , n_data_send, buffer_i1, pneig_send&
          &,max_atoms_recv, max_atoms_send)
 
 !$acc end data
@@ -617,8 +624,7 @@ contains
       use potent
       use timestat ,only: timer_enter,timer_exit,timer_commstep&
          &,quiet_timers
-      use tinMemory,only: prmem_requestm
-      use utilcomm ,only: buffMpi_p1,buffMpi_p2
+      use parallel ,only: domain_workspace_rp
       use beads
       implicit none
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
@@ -627,6 +633,7 @@ contains
       integer i,k,j,tag,ierr,iproc
       integer iloc,iglob,idomlen,ibufbeg
       real(r_p),pointer:: buffer(:,:,:),buffers(:,:,:)
+      real(r_p),pointer:: buffer_rp1(:),buffer_rp2(:)
       integer, allocatable :: reqrec(:),reqsend(:)
       integer,dimension(nproc):: ptemp_recep,ptemp_send
       integer status(MPI_STATUS_SIZE)
@@ -668,12 +675,13 @@ contains
       !Fetch memory from pool
       allocate (reqsend(nproc))
       allocate (reqrec(nproc))
-      call prmem_requestm(buffMpi_p1,3*nbloc*nbeadssend)
-      call prmem_requestm(buffMpi_p2,3*nloc*nbeadssend )
+!$acc wait
+      call domain_workspace_rp(1,3*nbloc*nbeadssend,buffer_rp1)
+      call domain_workspace_rp(2,3*nloc*nbeadssend,buffer_rp2)
       buffer (1:nbeadssend,1:3,1:nbloc)&
-         &=>buffMpi_p1(1:3*nbloc*nbeadssend)
+         &=>buffer_rp1(1:3*nbloc*nbeadssend)
       buffers(1:nbeadssend,1:3,1:nloc)&
-         &=>buffMpi_p2(1:3*nloc*nbeadssend)
+         &=>buffer_rp2(1:3*nloc*nbeadssend)
 !
 !     MPI : begin reception in buffer
 !
@@ -755,9 +763,7 @@ contains
       use pme      ,only: GridDecomp1d
       use timestat ,only: timer_enter,timer_exit,timer_commstep&
          &,quiet_timers
-      use tinMemory,only: prmem_requestm
-      use utilcomm ,only: buffMpi_p1,buffMpi_p2&
-         &,reqsend=>reqs_recdir,reqrec=>reqr_recdir
+      use parallel ,only: domain_workspace_rp
       use beads
       implicit none
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
@@ -768,6 +774,8 @@ contains
       integer rankloc,commloc,nprocloc
       integer status(MPI_STATUS_SIZE)
       real(r_p),pointer :: buffer(:,:,:),buffers(:,:,:)
+      real(r_p),pointer :: buffer_rp1(:),buffer_rp2(:)
+      integer, allocatable :: reqsend(:),reqrec(:)
       integer nbeadsproc,ibeadbeg,ibeadend,nbeadssend
       integer cshift
 
@@ -788,6 +796,9 @@ contains
       ibeadend=polymer%ibead_end(rank_polymer+1)
       nbeadsproc = ibeadend-ibeadbeg+1
       nbeadssend = nbeadsproc+cshift
+      allocate(reqsend(max(1,nproc)),reqrec(max(1,nproc)))
+      reqsend = MPI_REQUEST_NULL
+      reqrec = MPI_REQUEST_NULL
 !
       if (use_pmecore) then
          nprocloc = nrec
@@ -801,14 +812,13 @@ contains
 !
 !     allocate some arrays
 !
-      call prmem_requestm(buffMpi_p1&
-         &,3*max(nblocrecdir,nlocrec2)*nbeadssend )
-      call prmem_requestm(buffMpi_p2&
-         &,3*max(nloc,nlocrec)*nbeadssend)
+!$acc wait
+      call domain_workspace_rp(1,3*max(nblocrecdir,nlocrec2)*nbeadssend,buffer_rp1)
+      call domain_workspace_rp(2,3*max(nloc,nlocrec)*nbeadssend,buffer_rp2)
       buffer (1:nbeadssend,1:3,1:nblocrecdir)&
-         &=>buffMpi_p1(1:3*nblocrecdir*nbeadssend)
+         &=>buffer_rp1(1:3*nblocrecdir*nbeadssend)
       buffers(1:nbeadssend,1:3,1:nloc)&
-         &=>buffMpi_p2(1:3*nloc*nbeadssend)
+         &=>buffer_rp2(1:3*nloc*nbeadssend)
 !
 !     first do dir rec communications
 !
@@ -885,9 +895,9 @@ contains
 !     then do rec rec communications
 !
       buffer (1:nbeadssend,1:3,1:nlocrec2)&
-         &=>buffMpi_p1(1:3*nlocrec2*nbeadssend)
+         &=>buffer_rp1(1:3*nlocrec2*nbeadssend)
       buffers(1:nbeadssend,1:3,1:nlocrec)&
-         &=>buffMpi_p2(1:3*nlocrec*nbeadssend)
+         &=>buffer_rp2(1:3*nlocrec*nbeadssend)
 
 !$acc data present(buffer,buffers)
 !
@@ -948,6 +958,7 @@ contains
 !$acc end data
       nullify(buffer)
       nullify(buffers)
+      deallocate(reqsend,reqrec)
 
       if (deb_Path) write(*,*) '   << commposrecpi'
       call timer_exit( timer_commstep,quiet_timers )
@@ -959,107 +970,27 @@ contains
       use deriv
       use domdec
       use inform,only: deb_Path
-      use mpi
       use potent
       use sizes
       use timestat
-      use tinMemory ,only: prmem_requestm
-      use utilcomm  ,only: buffMpi_p1,buffMpi_p2
+      use mdevice  ,only: default_work
+      use parallel  ,only: accumulate,halo_large,halo_neighbour
       implicit none
       integer, intent(in) :: nbeadsproc
-      real(r_p), intent(inout) :: derivs(3,nbloc,*)
+      real(r_p), target, intent(inout) :: derivs(3,nbloc,*)
       logical, intent(in) :: fast
-      integer i,j,k,tag,ierr,sz,sz2,ii
-      integer reqsend(nproc),reqrec(nproc)
-      real(r_p), pointer :: buffer(:,:,:,:),buffers(:,:,:)
-!      real(r_p) derivs(3,nbloc,nbeads)
-      integer,dimension(nproc):: ptemp_recep,ptemp_send
-      integer status(MPI_STATUS_SIZE)
-      integer ntemp_recep,ntemp_send
+      real(r_p), pointer :: flat(:)
+      integer k, halo
 
 !
       if (nproc.eq.1.or.((use_pmecore).and.(rank.gt.ndir-1))) return
       if (deb_Path) write(*,*) '   >> commforcesblocpi'
 
-      if (fast) then
-         ptemp_recep = pneig_recep
-         ptemp_send  = pneig_send
-         ntemp_recep = nneig_recep
-         ntemp_send  = nneig_send
-      else
-         ptemp_recep = pbig_recep
-         ptemp_send  = pbig_send
-         ntemp_recep = nbig_recep
-         ntemp_send  = nbig_send
-      end if
-!
-!     allocate some arrays
-!
-!$acc wait
-      sz = 3*max(1,nloc)*ntemp_send*nbeadsproc
-      sz2 = 3*nbloc*nbeadsproc
-      call prmem_requestm(buffMpi_p1,sz,async=.false.)
-      call prmem_requestm(buffMpi_p2,sz2,async=.false.)
-      buffer(1:nbeadsproc,1:3,1:max(1,nloc),1:ntemp_send)&
-         &=> buffMpi_p1(1:sz)
-      buffers(1:nbeadsproc,1:3,1:nbloc)&
-         &=>buffMpi_p2(1:sz2)
-!$acc enter data attach(buffer,buffers)
-
-!$acc parallel loop collapse(3) default(present)
-      do k=1,nbeadsproc; do i=1,nbloc; do j=1,3
-               buffers(k,j,i) = derivs(j,i,k)
-            end do ; enddo ; enddo
-!
-!     communicate forces
-!
-!     MPI : begin reception in buffer
-!
-
-!$acc host_data use_device(buffer)
-      do i = 1, ntemp_send
-         tag = nproc*rank + ptemp_send(i) + 1
-         call MPI_IRECV(buffer(1,1,1,i),3*nloc*nbeadsproc,&
-            &MPI_RPREC,ptemp_send(i),tag,&
-            &COMM_TINKER,reqrec(i),ierr)
+      halo = merge(halo_neighbour,halo_large,fast)
+      do k = 1, nbeadsproc
+         flat(1:3*nbloc) => derivs(:,:,k)
+         call accumulate(flat,3,halo,channel=default_work)
       end do
-!$acc end host_data
-!
-!     MPI : begin sending
-!
-
-!$acc wait
-!$acc host_data use_device(buffers)
-      do i = 1, ntemp_recep
-         tag = nproc*ptemp_recep(i) + rank + 1
-         call MPI_ISEND(buffers(1,1,bufbeg(ptemp_recep(i)+1)),&
-            &3*domlen(ptemp_recep(i)+1)*nbeadsproc&
-            &,MPI_RPREC,ptemp_recep(i),tag,&
-            &COMM_TINKER,reqsend(i),ierr)
-      end do
-!$acc end host_data
-!
-      do i = 1, ntemp_send
-         call MPI_WAIT(reqrec(i),status,ierr)
-      end do
-      do i = 1, ntemp_recep
-         call MPI_WAIT(reqsend(i),status,ierr)
-      end do
-!
-!     MPI : move in global arrays
-!
-!$acc parallel loop gang vector collapse(3) async &
-!$acc         present(derivs,buffer)
-      do k=1,nbeadsproc; do i = 1, nloc; do j = 1, 3
-!$acc loop seq
-               do ii = 1, ntemp_send
-                  derivs(j,i,k) = derivs(j,i,k) + buffer(k,j,i,ii)
-               end do
-            enddo ; enddo; enddo
-!
-!$acc exit data detach(buffer,buffers) async
-      nullify(buffer)
-      nullify(buffers)
 
       if (deb_Path) write(*,*) '   << commforcesblocpi'
    end subroutine commforcesblocpi
@@ -1548,8 +1479,7 @@ contains
       use sizes
       use timestat ,only: timer_enter,timer_exit,quiet_timers&
          &,timer_dirreccomm,timer_fmanage
-      use tinMemory,only: prmem_requestm
-      use utilcomm ,only: buffMpi_p1,buffMpi_p2,buffMpi_p3
+      use parallel ,only: domain_workspace_rp
       implicit none
       integer, intent(in) :: nbeadsproc
       real(r_p), intent(inout) :: derivs(3,nbloc,*)
@@ -1562,6 +1492,7 @@ contains
       integer status(MPI_STATUS_SIZE)
       real(r_p),pointer:: buffer(:,:,:,:)
       real(r_p),pointer:: buffers(:,:,:),temprecbuf(:,:,:)
+      real(r_p),pointer:: buffer_rp1(:),buffer_rp2(:),buffer_rp3(:)
 
       !case sequential
       if (nproc.eq.1) then
@@ -1605,20 +1536,21 @@ contains
 !
 !     allocate some arrays
 !
+!$acc wait
       sz1=3*max(max(1,nloc)*nrecdir_send1,nlocrec*nrec_send)*nbeadsproc
       sz2=3*max(1,nblocrecdir)*nbeadsproc
       sz3=3*max(1,nlocrec2)*nbeadsproc
-      call prmem_requestm(buffMpi_p1,max(size(buffMpi_p1),sz1))
-      call prmem_requestm(buffMpi_p2,max(size(buffMpi_p2),sz2))
-      call prmem_requestm(buffMpi_p3,max(size(buffMpi_p3),sz3))
+      call domain_workspace_rp(1,sz1,buffer_rp1)
+      call domain_workspace_rp(2,sz2,buffer_rp2)
+      call domain_workspace_rp(3,sz3,buffer_rp3)
 
       sz1 = 3*max(1,nlocrec)*nrec_send
       buffer(1:nbeadsproc,1:3,1:max(1,nlocrec),1:nrec_send)&
-         &=> buffMpi_p1(1:sz1)
+         &=> buffer_rp1(1:sz1)
       buffers(1:nbeadsproc,1:3,1:max(1,nblocrecdir))&
-         &=> buffMpi_p2(1:sz2)
+         &=> buffer_rp2(1:sz2)
       temprecbuf(1:nbeadsproc,1:3,1:max(1,nlocrec2))&
-         &=> buffMpi_p3(1:sz3)
+         &=> buffer_rp3(1:sz3)
 !$acc enter data attach(buffer,buffers)
 !
 !     first do rec rec communications
@@ -1680,7 +1612,7 @@ contains
       sz1 = 3*max(1,nloc)*nrecdir_send1*nbeadsproc
       nullify(buffer)
       buffer(1:nbeadsproc,1:3,1:max(1,nloc),1:nrecdir_send1)&
-         &=> buffMpi_p1(1:sz1)
+         &=> buffer_rp1(1:sz1)
 !$acc enter data attach(buffer)
 !
 !     then do rec dir communications

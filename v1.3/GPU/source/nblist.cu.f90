@@ -8,9 +8,12 @@ module nblistcu
                  ,d_bl=>disc_block
    use cellcu    ,only: xcell,ycell,zcell,xcell2,ycell2,zcell2,mincell2&
                  ,monoclinic,triclinic
+   use tinheader ,only: ti_p
    use utilcu    ,only: all_lanes,f_sqrt,f_abs
-   use utilgpu   ,only: BLOCK_SIZE,WARP_SIZE,WARP_SHFT,inf
-!  use tinheader ,only: ti_p,ti_eps
+   integer,parameter :: BLOCK_SIZE=32
+   integer,parameter :: WARP_SIZE=32
+   integer,parameter :: WARP_SHFT=5
+   real(t_p),parameter :: inf=4*huge(0.0_ti_p)
    integer,parameter::REORDER_BSIZE=64
    integer,parameter::grp=2
    integer,parameter::InMID_BS=128

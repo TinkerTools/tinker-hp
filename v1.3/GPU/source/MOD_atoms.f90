@@ -54,7 +54,8 @@ module atomsMirror
       module subroutine atomsmirror_init
       end subroutine
 
-      module subroutine reCast_position
+      module subroutine reCast_position(queue)
+         integer, intent(in), optional :: queue
       end subroutine
 
       module subroutine download_position(queue)

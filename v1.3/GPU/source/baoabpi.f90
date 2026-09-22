@@ -36,7 +36,6 @@ subroutine baoabpi(istep,dt)
    use mpi
    use spectra
    use deriv
-   use utilgpu
    use random_mod
    use units
    use bath
@@ -46,6 +45,7 @@ subroutine baoabpi(istep,dt)
    use potent
    use virial
    use polar
+   use tinMemory
    use moldyn
    use utilbaoabpi
    use commstuffpi
@@ -242,4 +242,3 @@ subroutine baoabpi(istep,dt)
    endif
 
 end subroutine baoabpi
-

@@ -12,17 +12,17 @@
 #include "tinker_macro.h"
 module empole1cu
    use tinheader,only: zeror,oner
-   use utilcu   ,only: BLOCK_DIM
-   use utilgpu  ,only: BLOCK_SIZE,WARP_SIZE
    use reduction,only: RED_BUFF_SIZE
    use tinTypes ,only: real3,real6,mdyn3_r,rpole_elt
    use sizes    ,only: maxgrp
    implicit none
    private
+   integer,parameter :: BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32,WARP_SHFT=5
 #include "atomicOp.h.f90"
 
    public:: emreal1_kcu,emreal1s_kcu,emreal1l_kcu,emreal3_kcu &
           , emreal_scaling_cu,emreals_scaling_cu
+   public :: BLOCK_DIM,BLOCK_SIZE,WARP_SIZE,WARP_SHFT
 contains
 
 #include "convert.inc.f90"

@@ -34,12 +34,14 @@ subroutine newinduce_shortrealgpu
    use polpot
    use potent
    use polar_temp,only:mu,ef,murec
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use timestat
    use tinMemory
    use units
    use uprior
    use utils
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work, begin_direct_overlap, end_direct_overlap
+   use inform, only: Tinker_shellEnv
    use mpi
    implicit none
 !
@@ -48,9 +50,8 @@ subroutine newinduce_shortrealgpu
 !     MPI
 !
    integer iipole
-   integer, dimension(nproc):: reqsend,reqrec&
-      &, req2send,req2rec
    integer npoleloc_e
+   type(polar_comm_t) :: comm_ticket
 !
    parameter (nrhs=2)
    real(t_p)  udsum, upsum
@@ -80,13 +81,10 @@ subroutine newinduce_shortrealgpu
    call prmem_request(ef,3,nrhs,max(npolebloc,1),async=.true.)
 !
 #ifdef _OPENACC
-   def_queue = dir_queue
-   def_stream= dir_stream
-
-   if (dir_queue.ne.rec_queue) call start_dir_stream_cover
+   if (direct_work%queue.ne.reciprocal_work%queue) call begin_direct_overlap
 #endif
 
-   call set_to_zero2(mu,ef,3*nrhs*npolebloc,def_queue)
+   call set_to_zero2(mu,ef,3*nrhs*npolebloc,direct_work%queue)
 !
 !     compute the electric fields:
 !
@@ -95,8 +93,6 @@ subroutine newinduce_shortrealgpu
    call timer_exit( timer_realdip,quiet_timers )
 !
    call commfieldshort(nrhs,ef)
-!
-   call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
 !
 !     Reset predictor if MD State Tracking is enabled
 !
@@ -119,7 +115,7 @@ subroutine newinduce_shortrealgpu
 
    if (.not.(use_pred)) then
       if (polgsf.eq.0) then
-!$acc parallel loop collapse(3) async(def_queue) default(present)
+!$acc parallel loop collapse(3) async(direct_work%queue) default(present)
          do i = 1, npoleloc
             do k = 1, nrhs
                do j = 1, 3
@@ -129,7 +125,7 @@ subroutine newinduce_shortrealgpu
             end do
          end do
       else
-!$acc parallel loop collapse(2) async(def_queue) default(present)
+!$acc parallel loop collapse(2) async(direct_work%queue) default(present)
          do i = 1, npoleloc
             do j = 1, 3
                iipole = poleglob(i)
@@ -140,8 +136,8 @@ subroutine newinduce_shortrealgpu
       end if
    end if
 !
-   call commdirdirshort(nrhs,1,mu,reqrec,reqsend)
-   call commdirdirshort(nrhs,2,mu,reqrec,reqsend)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
+   call polar_finish(comm_ticket,nrhs,mu)
 !
 !     now, call the proper solver.
 !
@@ -160,12 +156,12 @@ subroutine newinduce_shortrealgpu
    end if
 !
    !if (nmut.gt.0.and.elambda.eq.0.0) then
-!$acc parallel loop collapse(3) async(def_queue) default(present)
+!$acc parallel loop collapse(3) async(direct_work%queue) default(present)
       do i = 1, npolebloc; do j = 1, nrhs; do k = 1,3
          if (polarity(poleglob(i)).eq.0.0) mu(k,j,i) = 0.0
       end do; end do; end do
    !end if
-!$acc parallel loop collapse(2) async(def_queue) default(present)
+!$acc parallel loop collapse(2) async(direct_work%queue) default(present)
    do i = 1, npolebloc
       do j = 1, 3
          iipole = poleglob(i)
@@ -175,7 +171,7 @@ subroutine newinduce_shortrealgpu
    end do
 
 #ifdef _OPENACC
-   if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+   if (direct_work%queue.ne.reciprocal_work%queue) call end_direct_overlap
 #endif
 !
 !     update the lists of previous induced dipole values
@@ -214,6 +210,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    use math
    use mdstate    ,only: track_mds
    use mpole
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use polar
    use polpot
    use potent     ,only: use_pmecore
@@ -223,8 +220,8 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    use sizes
    use units
    use utils
-   use utilcomm   ,only: skpPcomm
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work, begin_direct_overlap, end_direct_overlap
+   use inform, only: Tinker_shellEnv
    use mpi
    implicit none
 !
@@ -249,8 +246,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    integer iglob, iipole, ierr, commloc
    integer req1, req2, req3, req4
    integer status(MPI_STATUS_SIZE)
-   integer,dimension(nproc) ::reqrec,reqsend,req2rec,req2send&
-      &, reqendrec,reqendsend,req2endrec,req2endsend
+   type(polar_comm_t) :: comm_ticket
    logical tinker_isnan_m,skip_chk
 !
 1000 format(' cgiter shortreal converged after ',I3,' iterations.',/,&
@@ -271,12 +267,8 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 
    ips_call   = ips_call + 1
    commloc    = merge(comm_dir,COMM_TINKER,use_pmecore)
-   npoleloc_e = merge(npolebloc,npoleloc,(skpPcomm))
+   npoleloc_e = npoleloc
    gbuff1     =  0.0_re_p
-#ifdef _OPENACC
-   def_queue  = dir_queue
-   def_stream = dir_stream
-#endif
 
    if (ips_call.eq.1) then
 !$acc enter data create(ggold1,ggold2,gg1,gg2,ggnew1,ggnew2 &
@@ -302,7 +294,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    call prmem_request(diag,npoleloc_e,async=.true.)
 
    if (precnd) then
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(direct_work%queue) default(present)
       do i = 1, npoleloc_e
          iipole  = poleglob(i)
          reg1    = polarity(iipole)
@@ -310,7 +302,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       end do
       if (polprt.ge.2.and.rank.eq.0) write (iout,1040)
    else
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(direct_work%queue) default(present)
       do i = 1, npoleloc_e
          diag(i) = one
       end do
@@ -318,12 +310,12 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !
 !     initialize
 !
-   call set_to_zero2(res,zr,3*nrhs*npoleloc_e,def_queue)
-   call set_to_zero2( pp, h,3*nrhs*npolebloc ,def_queue)
+   call set_to_zero2(res,zr,3*nrhs*npoleloc_e,direct_work%queue)
+   call set_to_zero2( pp, h,3*nrhs*npolebloc ,direct_work%queue)
 !
 !     now, compute the initial direction
 !
-!$acc serial async(def_queue) present(ggold1,ggold2)
+!$acc serial async(direct_work%queue) present(ggold1,ggold2)
    ggold1 = zero
    ggold2 = zero
 !$acc end serial
@@ -341,7 +333,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    !We do exit this sub-routine if (nproc.eq.1)
 !
    call timer_enter ( timer_other )
-!$acc parallel loop collapse(3) async(def_queue) default(present) &
+!$acc parallel loop collapse(3) async(direct_work%queue) default(present) &
 !$acc         present(ggold1,ggold2) reduction(+:ggold1,ggold2)
    do k=1,npoleloc; do j=1,nrhs; do i=1,3
       res(i,j,k) = ef(i,j,k) - h(i,j,k)
@@ -354,8 +346,8 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       end if
    end do; end do; end do
 !
-   if (skpPcomm) then
-!$acc parallel loop collapse(3) async(def_queue) default(present)
+   if (.false.) then
+!$acc parallel loop collapse(3) async(direct_work%queue) default(present)
       do k = npoleloc+1,npolebloc; do j = 1,nrhs; do i = 1,3
          reg1  = ef(i,j,k) - h(i,j,k)
          reg2  = reg1*diag(k)
@@ -369,17 +361,17 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    call timer_exit( timer_other,quiet_timers )
 
    if (nproc.ne.1) then
-!$acc serial async(def_queue) present(gbuff,ggold1,ggold2)
+!$acc serial async(direct_work%queue) present(gbuff,ggold1,ggold2)
       gbuff(1) = ggold1
       gbuff(2) = ggold2
 !$acc end serial
-!$acc wait(def_queue)
+!$acc wait(direct_work%queue)
 !$acc host_data use_device(gbuff)
       call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff,nrhs,MPI_TPREC&
          &,MPI_SUM,commloc,ierr)
       !call MPI_WAIT(req1,status,ierr)
 !$acc end host_data
-!$acc serial async(def_queue) present(ggold1,ggold2,gbuff)
+!$acc serial async(direct_work%queue) present(ggold1,ggold2,gbuff)
       ggold1 = gbuff(1)
       ggold2 = gbuff(2)
 !$acc end serial
@@ -389,11 +381,10 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !
    do it = 1, politer
 !
-      if (.not.skpPcomm) then
+      if (.true.) then
          ! Direct space electrical field comm to neighbors
-         call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
-         call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
-         call commdirdirshort(nrhs,2,pp,reqrec,reqsend)
+         call polar_post_comm(comm_ticket,nrhs,pp,.true.)
+         call polar_finish(comm_ticket,nrhs,pp)
       end if
 !
       call timer_enter( timer_realdip )
@@ -401,7 +392,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       call timer_exit ( timer_realdip,quiet_timers )
 
       call commfieldshort(nrhs,h)
-!$acc serial async(def_queue) &
+!$acc serial async(direct_work%queue) &
 !$acc       present(gg1,gg2,ggnew1,ggnew2,ene1,ene2)
       gg1    = zerom; gg2    = zerom;
       ggnew1 = zerom; ggnew2 = zerom;
@@ -410,7 +401,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 
       call timer_enter( timer_other )
       call pcg_a(6*npoleloc,pp,h,gg1,gg2)
-!!$acc parallel loop collapse(3) async(def_queue)
+!!$acc parallel loop collapse(3) async(direct_work%queue)
 !!$acc         present(gg1,gg2)
 !        do i = 1,npoleloc; do j = 1,nrhs; do k = 1, 3
 !           if (btest(j,0)) then
@@ -421,7 +412,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 !        end do; end do; end do
 
       if (nproc.ne.1) then
-!$acc wait(def_queue)
+!$acc wait(direct_work%queue)
 !$acc host_data use_device(gg1,gg2)
          call MPI_ALLREDUCE(MPI_IN_PLACE,gg1,1,MPI_RPREC,&
             &MPI_SUM,commloc,ierr)
@@ -431,7 +422,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       end if
 
       if (deb_Path) then
-!$acc wait(def_queue)
+!$acc wait(direct_work%queue)
 !$acc update host(gg1,gg2)
          if (gg1.eq.zero) goto 30
          if (gg2.eq.zero) goto 30
@@ -442,17 +433,17 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
          &,mu,pp,res,h,zr,diag,ef)
 
       if (nproc.ne.1) then
-!$acc serial async(def_queue) present(ene1,ene2,ggnew1,ggnew2,gbuff1)
+!$acc serial async(direct_work%queue) present(ene1,ene2,ggnew1,ggnew2,gbuff1)
          gbuff1(1)=ggnew1; gbuff1(2)=ggnew2
          gbuff1(3)=  ene1; gbuff1(4)=  ene2
 !$acc end serial
-!$acc wait(def_queue)
+!$acc wait(direct_work%queue)
 !$acc host_data use_device(gbuff1)
          call MPI_ALLREDUCE(MPI_IN_PLACE,gbuff1(1),2*nrhs,MPI_RPREC&
             &,MPI_SUM,commloc,ierr)
          !call MPI_WAIT(req3,status,ierr)
 !$acc end host_data
-!$acc serial async(def_queue) present(ggnew1,ggnew2,ene1,ene2,gbuff1)
+!$acc serial async(direct_work%queue) present(ggnew1,ggnew2,ene1,ene2,gbuff1)
          ggnew1 = gbuff1(1); ggnew2= gbuff1(2)
          ene1   = gbuff1(3); ene2  = gbuff1(4)
 !$acc end serial
@@ -465,7 +456,7 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
 
       if (btest(precnd1,0)) call projectorOpe(pp,pp,0)
 
-!$acc serial async(def_queue) &
+!$acc serial async(direct_work%queue) &
 !$acc       present(ggold1,ggold2,ggnew1,ggnew2,ene1,ene2,gbuff1)
       ggold1 = ggnew1
       ggold2 = ggnew2
@@ -486,8 +477,8 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
       if (skip_chk) then
          resnrm = 2*poleps
       else
-!$acc update host(gbuff1) async(def_queue)
-!$acc wait(def_queue)
+!$acc update host(gbuff1) async(direct_work%queue)
+!$acc wait(direct_work%queue)
          do k = 1, nrhs
             gnorm(k) = sqrt(ggnew(k)/real(3*npolar,r_p))
          end do
@@ -527,9 +518,8 @@ subroutine inducepcg_shortrealgpu(matvec,nrhs,precnd,ef,mu)
    end if
 
    ! Solution field comm to direct neighbors
-   call commdirdirshort(nrhs,0,mu,reqendrec,reqendsend) ! Reception chanels
-   call commdirdirshort(nrhs,1,mu,reqendrec,reqendsend) ! Send solution
-   call commdirdirshort(nrhs,2,mu,reqendrec,reqendsend) ! Wait comm
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
+   call polar_finish(comm_ticket,nrhs,mu)
 !
 !     finalize and debug printing:
 !
@@ -559,14 +549,14 @@ end
 
  ! Interface added inside MOD_interfaces.f
 subroutine pcg_a(siz,pp,h,gg1,gg2)
-   use utilgpu  ,only: def_queue
+   use mdevice  ,only: direct_work
    implicit none
    integer  ,intent(in   ):: siz
    real(r_p),intent(inout):: gg1,gg2
    real(t_p),intent(in   ):: pp(*),h(*)
    integer i,j
 
-!$acc parallel loop async(def_queue) default(present) &
+!$acc parallel loop async(direct_work%queue) default(present) &
 !$acc         present(gg1,gg2) reduction(+:gg1,gg2)
    do i = 1, siz
       j = (i-1)/3
@@ -579,7 +569,7 @@ subroutine pcg_a(siz,pp,h,gg1,gg2)
 end subroutine
 
 subroutine pcg_aRec(siz,term,pp,dipf,h,gg1,gg2)
-   use utilgpu  ,only: def_queue
+   use mdevice  ,only: direct_work
    implicit none
    integer  ,intent(in   ):: siz
    real(t_p),intent(in   ):: term
@@ -589,7 +579,7 @@ subroutine pcg_aRec(siz,term,pp,dipf,h,gg1,gg2)
    integer i,j
    real(t_p) mh
 
-!$acc parallel loop async(def_queue) default(present) &
+!$acc parallel loop async(direct_work%queue) default(present) &
 !$acc         present(gg1,gg2) reduction(+:gg1,gg2)
    do i = 1, siz
       j  = (i-1)/3
@@ -606,9 +596,8 @@ end subroutine
  ! Interface added inside MOD_interfaces.f
 subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
    &,mu,pp,res,h,zr,diag,ef)
-   use utilgpu  ,only: def_queue
+   use mdevice  ,only: direct_work
    use polpot   ,only: polprt
-   use utilcomm
    implicit none
    integer  ,intent(in   ):: siz,siz1
    real(t_p),intent(in   ):: ggo,ggo2
@@ -621,7 +610,7 @@ subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
 
    nsiz  = 6*siz
    if (polprt.lt.2) then
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(direct_work%queue) &
 !$acc         default(present) &
 !$acc         present(gg,gg2,ggo,ggo2,ggnew1,ggnew2) &
 !$acc         reduction(+:ggnew1,ggnew2)
@@ -643,7 +632,7 @@ subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
          end if
       end do
    else
-!$acc parallel loop async(def_queue) default(present) &
+!$acc parallel loop async(direct_work%queue) default(present) &
 !$acc         present(gg,gg2,ggo,ggo2,ggnew1,ggnew2,ene1,ene2) &
 !$acc         reduction(+:ggnew1,ggnew2,ene1,ene2)
       do i = 1,nsiz
@@ -666,9 +655,9 @@ subroutine pcg_b(siz,siz1,gg,ggo,gg2,ggo2,ggnew1,ene1,ggnew2,ene2&
          end if
       end do
    end if
-   if (skpPcomm) then
+   if (.false.) then
       nsiz1 = 6*siz1
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(direct_work%queue) &
 !$acc         default(present) present(gg,gg2,ggo,ggo2)
       do i = nsiz+1,nsiz1
          j      = (i-1)/3
@@ -687,7 +676,7 @@ end subroutine
 
  ! Interface added inside MOD_interfaces.f
 subroutine pcg_newDirection(siz,ggn,ggo,ggn2,ggo2,zr,pp)
-   use utilgpu ,only: def_queue
+   use mdevice ,only: direct_work
    implicit none
    integer  ,intent(in   ):: siz
    real(t_p),intent(in   ):: ggo,ggo2
@@ -697,7 +686,7 @@ subroutine pcg_newDirection(siz,ggn,ggo,ggn2,ggo2,zr,pp)
    real(t_p) gno,gno2
    integer   i,j
 
-!$acc parallel loop present(pp,zr,ggn,ggo,ggn2,ggo2) async(def_queue)
+!$acc parallel loop present(pp,zr,ggn,ggo,ggn2,ggo2) async(direct_work%queue)
    do i = 1,siz
       j     = (i-1)/3
       gno   = merge(real(ggn2,t_p)/ggo2,real(ggn,t_p)/ggo,btest(j,0))
@@ -712,6 +701,7 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
    use iounit
    use math
    use mpole
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use polar
    use polpot
    use potent
@@ -743,8 +733,7 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
    integer iglob, iipole, ierr
    integer reqnorm,reqdiis(2*ndismx+1)
    integer status(MPI_STATUS_SIZE)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
+   type(polar_comm_t) :: comm_ticket
 !
 1000 format(' itsolv shortreal converged after ',I3,' iterations.',/,&
       &' final residual norm = ',3D14.7)
@@ -762,10 +751,6 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
 
    allocate (munew(3,nrhs,max(1,npolebloc)))
    munew = 0_ti_p
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (req2rec(nproc))
-   allocate (req2send(nproc))
 !
    allocate (h(3,nrhs,max(1,npolebloc)))
    h = 0_ti_p
@@ -791,7 +776,6 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
       call timer_exit( timer_realdip,quiet_timers )
       call commfieldshort(nrhs,h)
 !
-      call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
 !
 !     jacobi step:
 !
@@ -843,8 +827,8 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
          call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
       end if
 !
-      call commdirdirshort(nrhs,1,munew,reqrec,reqsend)
-      call commdirdirshort(nrhs,2,mu,reqrec,reqsend)
+      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew)
+      call polar_finish(comm_ticket,nrhs,mu)
       mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 !
 !     compute the norm of the increment.
@@ -884,10 +868,6 @@ subroutine inducejac_shortrealgpu(matvec,nrhs,dodiis,ef,mu)
 !
 !     free the memory.
 !
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (req2send)
-   deallocate (req2rec)
    deallocate (munew)
    deallocate (h)
    if (dodiis) then

@@ -189,9 +189,12 @@ contains
       use energi
       use moldyn
       use potent
+      use polpot, only: polalg,tcgorder,tcgprec,tcgguess,tcgpeek,tcgomega,&
+         &polalgshort,tcgordershort,tcgprecshort,tcgguessshort,tcgpeekshort,&
+         &tcgomegashort
       use virial
       use tinheader
-      use utilgpu
+      use mdevice, only: reciprocal_work
       use inform
       use utils
       use tinheader
@@ -225,7 +228,7 @@ contains
       real(r_p) epshort,virshort(3,3)
       real(r_p) diploc(3)
 
-      call set_to_zero1m (derivs_,3*nbloc,rec_queue)
+      call set_to_zero1m (derivs_,3*nbloc,reciprocal_work%queue)
 
       save_colvars = use_colvars
       save_plumed = lplumed
@@ -365,7 +368,7 @@ contains
 !      DO i=1,nbloc; do j=1,3
 !        derivs_(j,i) = -mdr2md(dep(j,i))
 !      ENDDO ; ENDDO
-         call set_to_zero1m (derivs_,3*nbloc,rec_queue)
+         call set_to_zero1m (derivs_,3*nbloc,reciprocal_work%queue)
          if (calc_e.or.use_virial) then
 !$acc serial present(epshort,ep,virshort,virsave) async
             epshort = ep
@@ -489,9 +492,11 @@ contains
       use deriv
       use energi
       use inform
-      use polpot
+      use polpot, only: polalg,tcgorder,tcgprec,tcgguess,tcgpeek,tcgomega,&
+         &polalgshort,tcgordershort,tcgprecshort,tcgguessshort,tcgpeekshort,&
+         &tcgomegashort
       use potent
-      use utilgpu
+      use mdevice, only: reciprocal_work
       use utils
       use mpi
       use inform, only: deb_path
@@ -501,6 +506,8 @@ contains
       use spectra
       use colvars
       use plumed
+      use tinMemory,only: prmem_requestm
+      use tinheader, only: re_p
       implicit none
       real(r_p), intent(inout) ::  epot,vir_(3,3)
       real(r_p), intent(inout) :: derivs_(:,:,:)
@@ -538,7 +545,7 @@ contains
       ibeadend=polymer%ibead_end(rank_polymer+1)
       nbeadsproc = ibeadend-ibeadbeg+1
 
-      call set_to_zero1m(derivs_,3*nbloc*nbeadsproc,rec_queue)
+      call set_to_zero1m(derivs_,3*nbloc*nbeadsproc,reciprocal_work%queue)
       if(.not. ANY([do_short,do_int,do_long])) return
 
       nu=real(polymer%nbeads,r_p)
@@ -557,7 +564,7 @@ contains
          call zero_forces_rec
          call prmem_requestm(derivsRec,3,nlocrec2&
          &,nbeadsproc,async=.true.)
-         call set_to_zero1m(derivsRec,3*nlocrec2*nbeadsproc,rec_queue)
+         call set_to_zero1m(derivsRec,3*nlocrec2*nbeadsproc,reciprocal_work%queue)
       endif
 !
 !     save the original state of fast-evolving potentials
@@ -875,9 +882,12 @@ contains
       use energi
       use moldyn
       use potent
+      use polpot, only: polalg,tcgorder,tcgprec,tcgguess,tcgpeek,tcgomega,&
+         &polalgshort,tcgordershort,tcgprecshort,tcgguessshort,tcgpeekshort,&
+         &tcgomegashort
       use virial
       use tinheader
-      use utilgpu
+      use mdevice, only: reciprocal_work
       use inform
       use utils
       use tinheader
@@ -1126,7 +1136,7 @@ contains
       use inform
       use polpot
       use potent
-      use utilgpu
+      use mdevice, only: reciprocal_work
       use utils
       use mpi
       use inform, only: deb_path
@@ -1136,6 +1146,7 @@ contains
       use spectra
       use colvars
       use plumed
+      use tinheader, only: re_p
       implicit none
       real(r_p), intent(inout) ::  epot
       type(POLYMER_COMM_TYPE), intent(inout) :: polymer
@@ -1906,10 +1917,8 @@ contains
    end subroutine pmontepi
 
    subroutine plangevinpi(polymer,dt,istep,bloc)
-      use boxes
       use bath
       use beads
-      use langevin
       use domdec
       use mpi
       use random_mod
@@ -2069,4 +2078,3 @@ contains
    end subroutine pscalepi
 
 end module utilbaoabpi
-

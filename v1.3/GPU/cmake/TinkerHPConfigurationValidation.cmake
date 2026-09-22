@@ -253,6 +253,72 @@ function(tinkerhp_assert_bench6_scientific_registration name precision fpa expec
   endif()
 endfunction()
 
+function(tinkerhp_assert_dhfr_b_scientific_registration name precision expected reference)
+  set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -S "${TINKERHP_SOURCE_DIR}" -B "${build_dir}" -G Ninja
+      -DTINKERHP_INTERNAL_VALIDATE_ONLY=ON
+      -DBUILD_TESTING=ON
+      -DCMAKE_C_COMPILER=gcc
+      -DCMAKE_CXX_COMPILER=g++
+      -DCMAKE_Fortran_COMPILER=gfortran
+      -DTINKERHP_PRECISION=${precision}
+    RESULT_VARIABLE result
+  )
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR "${name} DHFR-B scientific-test configuration failed")
+  endif()
+
+  file(READ "${build_dir}/CTestTestfile.cmake" tests)
+  if(expected STREQUAL "")
+    string(REGEX MATCHALL
+      "add_test\\(\\[=\\[tinkerhp-scientific-dynamic-dhfr-b-double\\]=\\]"
+      registered "${tests}")
+    list(LENGTH registered registration_count)
+    if(NOT registration_count EQUAL 0)
+      message(FATAL_ERROR "${name} unexpectedly registered a DHFR-B scientific test")
+    endif()
+    return()
+  endif()
+
+  string(REGEX MATCHALL
+    "add_test\\(\\[=\\[${expected}\\]=\\]"
+    registered "${tests}")
+  list(LENGTH registered registration_count)
+  if(NOT registration_count EQUAL 1)
+    message(FATAL_ERROR "${name} did not register exactly one DHFR-B scientific test")
+  endif()
+
+  set(test_marker "add_test([=[${expected}]=]")
+  string(FIND "${tests}" "${test_marker}" test_start)
+  string(SUBSTRING "${tests}" ${test_start} -1 test_tail)
+  string(FIND "${test_tail}" "\n" test_line_length)
+  string(SUBSTRING "${test_tail}" 0 ${test_line_length} test_record)
+  foreach(required
+      "--profile\" \"dynamic\""
+      "--precision\" \"${precision}\""
+      "--mpi-launcher\" \"mpirun\""
+      "--mpi-ranks\" \"1\""
+      "dhfr2dyn_B.key"
+      "dhfr2dyn.xyz"
+      "dhfr2dyn.dyn"
+      "${reference}"
+      "dhfr2dyn\" \"25\" \"10\" \"200\" \"4\" \"300\" \"1.0\" \"-k\" \"dhfr2dyn_B")
+    string(FIND "${test_record}" "${required}" required_index)
+    if(required_index EQUAL -1)
+      message(FATAL_ERROR "${name} DHFR-B scientific test is missing ${required}")
+    endif()
+  endforeach()
+
+  file(READ "${TINKERHP_SOURCE_DIR}/examples/dhfr2dyn_B.key" key_contents)
+  string(TOLOWER "${key_contents}" lower_key_contents)
+  string(REGEX MATCH "(^|[\\n\\r])[ \\t]*run-mode[ \\t]+" forced_mode
+    "${lower_key_contents}")
+  if(NOT forced_mode STREQUAL "")
+    message(FATAL_ERROR "${name} DHFR-B fixture still forces a run mode")
+  endif()
+endfunction()
+
 function(tinkerhp_assert_performance_registration name precision fpa enabled expected)
   set(build_dir "${TINKERHP_VALIDATION_DIR}/${name}")
   execute_process(
@@ -569,6 +635,14 @@ function(tinkerhp_assert_iceii_minimize_scientific_registration name precision e
       message(FATAL_ERROR "${name} IceII Minimize scientific test is missing ${required}")
     endif()
   endforeach()
+
+  file(READ "${TINKERHP_SOURCE_DIR}/examples/iceII-large-amoeba_b.key" key_contents)
+  string(TOLOWER "${key_contents}" lower_key_contents)
+  string(REGEX MATCH "(^|[\\n\\r])[ \\t]*run-mode[ \\t]+" forced_mode
+    "${lower_key_contents}")
+  if(NOT forced_mode STREQUAL "")
+    message(FATAL_ERROR "${name} IceII fixture still forces a run mode")
+  endif()
 endfunction()
 
 function(tinkerhp_assert_parallel_bench6_fpa_registration name fpa parallel expected)
@@ -988,25 +1062,224 @@ function(tinkerhp_assert_compatibility_make_submodule_dependencies)
   endif()
 endfunction()
 
-function(tinkerhp_assert_preset_entry name kind)
+function(tinkerhp_find_preset_index result kind name)
   string(JSON length LENGTH "${presets}" ${kind})
-  set(found FALSE)
+  set(found -1)
   math(EXPR last "${length} - 1")
   foreach(index RANGE ${last})
     string(JSON candidate GET "${presets}" ${kind} ${index} name)
     if(candidate STREQUAL name)
-      set(found TRUE)
+      set(found ${index})
     endif()
   endforeach()
-  if(NOT found)
+  set(${result} ${found} PARENT_SCOPE)
+endfunction()
+
+function(tinkerhp_find_public_preset_index result name)
+  string(JSON length LENGTH "${public_presets}" configurePresets)
+  set(found -1)
+  math(EXPR last "${length} - 1")
+  foreach(index RANGE ${last})
+    string(JSON candidate GET "${public_presets}" configurePresets ${index} name)
+    if(candidate STREQUAL name)
+      set(found ${index})
+    endif()
+  endforeach()
+  set(${result} ${found} PARENT_SCOPE)
+endfunction()
+
+function(tinkerhp_assert_preset_entry name kind)
+  tinkerhp_find_preset_index(index ${kind} ${name})
+  if(index EQUAL -1)
     message(FATAL_ERROR "Missing ${kind} entry for ${name}")
   endif()
 endfunction()
 
+function(tinkerhp_assert_preset_reference name kind)
+  tinkerhp_find_preset_index(index ${kind} ${name})
+  if(index EQUAL -1)
+    message(FATAL_ERROR "Missing ${kind} entry for ${name}")
+  endif()
+  string(JSON configure_name GET "${presets}" ${kind} ${index} configurePreset)
+  if(NOT configure_name STREQUAL name)
+    message(FATAL_ERROR "${kind} entry ${name} refers to ${configure_name}")
+  endif()
+endfunction()
+
+function(tinkerhp_assert_preset_metadata name description parent)
+  tinkerhp_find_preset_index(index configurePresets ${name})
+  if(index EQUAL -1)
+    message(FATAL_ERROR "Missing configurePresets entry for ${name}")
+  endif()
+  string(JSON actual_description GET "${presets}" configurePresets ${index} description)
+  string(JSON display_name GET "${presets}" configurePresets ${index} displayName)
+  string(JSON binary_dir GET "${presets}" configurePresets ${index} binaryDir)
+  if(NOT actual_description STREQUAL description
+      OR NOT display_name STREQUAL description
+      OR NOT binary_dir STREQUAL "\${sourceDir}/build/${name}")
+    message(FATAL_ERROR "${name} has incorrect description, display name, or binary directory")
+  endif()
+  if(NOT parent STREQUAL "")
+    string(JSON inherited GET "${presets}" configurePresets ${index} inherits)
+    if(NOT inherited STREQUAL parent)
+      message(FATAL_ERROR "${name} should inherit ${parent}, not ${inherited}")
+    endif()
+  endif()
+endfunction()
+
+function(tinkerhp_assert_preset_cache name variable expected)
+  tinkerhp_find_preset_index(index configurePresets ${name})
+  string(JSON actual GET "${presets}" configurePresets ${index} cacheVariables ${variable})
+  if(NOT actual STREQUAL expected)
+    message(FATAL_ERROR "${name} has ${variable}=${actual}, expected ${expected}")
+  endif()
+endfunction()
+
+function(tinkerhp_assert_effective_cache name variable expected)
+  set(current ${name})
+  set(seen)
+  while(TRUE)
+    list(FIND seen ${current} seen_index)
+    if(NOT seen_index EQUAL -1)
+      message(FATAL_ERROR "${name} has a preset inheritance cycle")
+    endif()
+    list(APPEND seen ${current})
+    tinkerhp_find_preset_index(index configurePresets ${current})
+    if(index EQUAL -1)
+      message(FATAL_ERROR "${name} has unresolved preset inheritance through ${current}")
+    endif()
+    set(json_error "")
+    string(JSON actual ERROR_VARIABLE json_error GET
+      "${presets}" configurePresets ${index} cacheVariables ${variable})
+    if(json_error STREQUAL "NOTFOUND")
+      if(NOT actual STREQUAL expected)
+        message(FATAL_ERROR "${name} resolves ${variable}=${actual}, expected ${expected}")
+      endif()
+      return()
+    endif()
+    set(json_error "")
+    string(JSON inherited ERROR_VARIABLE json_error GET
+      "${presets}" configurePresets ${index} inherits)
+    if(NOT json_error STREQUAL "NOTFOUND")
+      message(FATAL_ERROR "${name} has no ${variable} value in its inheritance chain")
+    endif()
+    set(current ${inherited})
+  endwhile()
+endfunction()
+
+function(tinkerhp_assert_preset_generator name expected)
+  tinkerhp_find_preset_index(index configurePresets ${name})
+  string(JSON actual GET "${presets}" configurePresets ${index} generator)
+  if(NOT actual STREQUAL expected)
+    message(FATAL_ERROR "${name} uses ${actual}, expected ${expected}")
+  endif()
+endfunction()
+
+function(tinkerhp_assert_effective_generator name expected)
+  set(current ${name})
+  set(seen)
+  while(TRUE)
+    list(FIND seen ${current} seen_index)
+    if(NOT seen_index EQUAL -1)
+      message(FATAL_ERROR "${name} has a preset inheritance cycle")
+    endif()
+    list(APPEND seen ${current})
+    tinkerhp_find_preset_index(index configurePresets ${current})
+    if(index EQUAL -1)
+      message(FATAL_ERROR "${name} has unresolved preset inheritance through ${current}")
+    endif()
+    set(json_error "")
+    string(JSON actual ERROR_VARIABLE json_error GET
+      "${presets}" configurePresets ${index} generator)
+    if(json_error STREQUAL "NOTFOUND")
+      if(NOT actual STREQUAL expected)
+        message(FATAL_ERROR "${name} resolves generator ${actual}, expected ${expected}")
+      endif()
+      return()
+    endif()
+    set(json_error "")
+    string(JSON inherited ERROR_VARIABLE json_error GET
+      "${presets}" configurePresets ${index} inherits)
+    if(NOT json_error STREQUAL "NOTFOUND")
+      message(FATAL_ERROR "${name} has no generator in its inheritance chain")
+    endif()
+    set(current ${inherited})
+  endwhile()
+endfunction()
+
+function(tinkerhp_assert_preset_absent name kind)
+  tinkerhp_find_preset_index(index ${kind} ${name})
+  if(NOT index EQUAL -1)
+    message(FATAL_ERROR "Obsolete ${kind} entry ${name} is still registered")
+  endif()
+endfunction()
+
+function(tinkerhp_assert_preset_inherits name parent)
+  tinkerhp_find_preset_index(index configurePresets ${name})
+  string(JSON inherited GET "${presets}" configurePresets ${index} inherits)
+  if(NOT inherited STREQUAL parent)
+    message(FATAL_ERROR "${name} should inherit ${parent}, not ${inherited}")
+  endif()
+endfunction()
+
+function(tinkerhp_assert_user_preset_chain name)
+  set(current ${name})
+  set(seen)
+  while(TRUE)
+    list(FIND seen ${current} seen_index)
+    if(NOT seen_index EQUAL -1)
+      message(FATAL_ERROR "${name} has a preset inheritance cycle")
+    endif()
+    list(APPEND seen ${current})
+    tinkerhp_find_preset_index(index configurePresets ${current})
+    if(NOT index EQUAL -1)
+      set(json_error "")
+      string(JSON inherited ERROR_VARIABLE json_error GET
+        "${presets}" configurePresets ${index} inherits)
+      if(NOT json_error STREQUAL "NOTFOUND")
+        message(FATAL_ERROR "${name} has no inherited parent at ${current}")
+      endif()
+      set(current ${inherited})
+      continue()
+    endif()
+    tinkerhp_find_public_preset_index(public_index ${current})
+    if(NOT public_index EQUAL -1)
+      set(json_error "")
+      string(JSON inherited ERROR_VARIABLE json_error GET
+        "${public_presets}" configurePresets ${public_index} inherits)
+      if(NOT json_error STREQUAL "NOTFOUND")
+        return()
+      endif()
+      set(current ${inherited})
+      continue()
+    endif()
+    message(FATAL_ERROR "${name} has unresolved inheritance through ${current}")
+  endwhile()
+endfunction()
+
 function(tinkerhp_assert_preset name)
-  foreach(kind configurePresets buildPresets testPresets)
-    tinkerhp_assert_preset_entry(${name} ${kind})
-  endforeach()
+  tinkerhp_assert_preset_entry(${name} configurePresets)
+  tinkerhp_assert_preset_reference(${name} buildPresets)
+  tinkerhp_assert_preset_reference(${name} testPresets)
+endfunction()
+
+function(tinkerhp_assert_shared_preset name precision base)
+  tinkerhp_assert_preset_reference(${name} buildPresets)
+  tinkerhp_assert_preset_metadata(
+    ${name} "GPU All Arch ${precision} Shared Core Ninja" ${base})
+  if(precision STREQUAL "double")
+    set(internal_precision DOUBLE)
+  else()
+    set(internal_precision MIXED)
+  endif()
+  tinkerhp_assert_effective_generator(${name} Ninja)
+  tinkerhp_assert_effective_cache(${name} TINKERHP_GPU_ARCHITECTURES all)
+  tinkerhp_assert_effective_cache(${name} TINKERHP_PRECISION ${internal_precision})
+  tinkerhp_assert_effective_cache(${name} TINKERHP_ENABLE_FPA ON)
+  tinkerhp_assert_effective_cache(${name} TINKERHP_ENABLE_COLVARS OFF)
+  tinkerhp_assert_effective_cache(${name} TINKERHP_ENABLE_NN OFF)
+  tinkerhp_assert_effective_cache(${name} TINKERHP_ENABLE_PLUMED OFF)
+  tinkerhp_assert_effective_cache(${name} TINKERHP_LINK_MODE SHARED)
 endfunction()
 
 function(tinkerhp_assert_no_preset_prefix prefix kind)
@@ -1021,12 +1294,25 @@ function(tinkerhp_assert_no_preset_prefix prefix kind)
   endforeach()
 endfunction()
 
-function(tinkerhp_write_fake_python path version modules)
+function(tinkerhp_write_fake_python path version modules has_library)
   file(WRITE "${path}" "#!/bin/sh\nif [ \"$1\" = \"-c\" ]; then\n  case \"$2\" in\n    *version_info*) echo \"${version}\"; exit 0 ;;\n    *sysconfig*) printf '%s\\n%s\\n' '/fake-deephp/lib' 'libpython3.11.so'; exit 0 ;;\n    *) exit ${modules} ;;\n  esac\nfi\nexit 0\n")
+  set(library_dir "${path}.lib")
+  set(library_name "libpython3.11.so")
+  if(has_library)
+    file(MAKE_DIRECTORY "${library_dir}")
+    file(WRITE "${library_dir}/${library_name}" "fake shared library")
+  else()
+    set(library_dir "")
+    set(library_name "")
+  endif()
+  file(READ "${path}" fake_python)
+  string(REPLACE "/fake-deephp/lib" "${library_dir}" fake_python "${fake_python}")
+  string(REPLACE "libpython3.11.so" "${library_name}" fake_python "${fake_python}")
+  file(WRITE "${path}" "${fake_python}")
   file(CHMOD "${path}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endfunction()
 
-function(tinkerhp_validate_nn_configuration name origin version modules cuda expect_success)
+function(tinkerhp_validate_nn_configuration name origin version modules cuda has_library expect_success)
   set(fixture_dir "${TINKERHP_VALIDATION_DIR}/deephp-fixtures/${name}")
   set(project_dir "${fixture_dir}/deep-hp")
   set(fake_python "${fixture_dir}/python")
@@ -1035,7 +1321,7 @@ function(tinkerhp_validate_nn_configuration name origin version modules cuda exp
   file(REMOVE_RECURSE "${fixture_dir}" "${build_dir}")
   file(MAKE_DIRECTORY "${project_dir}")
   file(WRITE "${project_dir}/pyproject.toml" "[project]\nname = 'fake-deep-hp'\n")
-  tinkerhp_write_fake_python("${fake_python}" "${version}" "${modules}")
+  tinkerhp_write_fake_python("${fake_python}" "${version}" "${modules}" "${has_library}")
 
   if(origin STREQUAL "managed-local")
     file(MAKE_DIRECTORY "${project_dir}/.venv/bin")
@@ -1071,13 +1357,24 @@ function(tinkerhp_validate_nn_configuration name origin version modules cuda exp
       -DTINKERHP_ENABLE_NO_MUTATION=ON
     )
   endif()
-  execute_process(COMMAND ${command} RESULT_VARIABLE result)
+  execute_process(
+    COMMAND ${command}
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE configure_output
+    ERROR_VARIABLE configure_error
+  )
   if(expect_success AND NOT result EQUAL 0)
     message(FATAL_ERROR "${name} configuration failed")
   elseif(NOT expect_success AND result EQUAL 0)
     message(FATAL_ERROR "${name} unexpectedly configured")
   endif()
   if(NOT expect_success)
+    if(name STREQUAL "nn-explicit-missing-libpython")
+      string(FIND "${configure_error}\n${configure_output}" "does not provide a usable shared libpython" diagnostic_index)
+      if(diagnostic_index EQUAL -1)
+        message(FATAL_ERROR "${name} did not emit an actionable libpython diagnostic")
+      endif()
+    endif()
     return()
   endif()
 
@@ -1089,6 +1386,11 @@ function(tinkerhp_validate_nn_configuration name origin version modules cuda exp
   string(FIND "${report}" "Deep-HP Python version: ${version}" version_index)
   if(version_index EQUAL -1)
     message(FATAL_ERROR "${name} did not report Python ${version}")
+  endif()
+  set(expected_python_library "${fake_python}.lib/libpython3.11.so")
+  string(FIND "${report}" "Deep-HP shared libpython: ${expected_python_library}" library_report_index)
+  if(library_report_index EQUAL -1)
+    message(FATAL_ERROR "${name} did not report the resolved shared libpython")
   endif()
   if(origin STREQUAL "managed-created")
     string(REGEX MATCH "^([0-9]+)\\." _cuda_match "${cuda}")
@@ -1124,14 +1426,69 @@ function(tinkerhp_validate_nn_configuration name origin version modules cuda exp
   if(plugin_index EQUAL -1)
     message(FATAL_ERROR "${name} does not generate the CFFI plugin in the build graph")
   endif()
-  string(FIND "${ninja}" "/fake-deephp/lib/libpython3.11.so" python_library_index)
-  if(python_library_index EQUAL -1)
-    message(FATAL_ERROR "${name} does not link the Deep-HP Python library")
+  string(FIND "${ninja}" "build bin/dynamic${expected_suffix}:" executable_index)
+  if(executable_index EQUAL -1)
+    message(FATAL_ERROR "${name} does not generate the NN dynamic executable link rule")
+  endif()
+  string(SUBSTRING "${ninja}" ${executable_index} 1200 executable_rule)
+  string(FIND "${executable_rule}" "${expected_python_library}" python_library_index)
+  string(FIND "${executable_rule}" "${fake_python}.lib" python_rpath_index)
+  string(FIND "${executable_rule}" "ORIGIN/../lib" plugin_rpath_index)
+  if(python_library_index EQUAL -1 OR python_rpath_index EQUAL -1 OR plugin_rpath_index EQUAL -1)
+    message(FATAL_ERROR "${name} does not record executable Python and plugin runtime paths")
+  endif()
+  string(FIND "${ninja}" "--python-library-dir ${fake_python}.lib" python_library_dir_index)
+  if(python_library_dir_index EQUAL -1)
+    message(FATAL_ERROR "${name} does not pass the Python runtime path to the plugin builder")
   endif()
   file(READ "${build_dir}/cmake_install.cmake" install_script)
-  string(FIND "${install_script}" "mlinterface" install_index)
-  if(install_index EQUAL -1)
-    message(FATAL_ERROR "${name} does not install the CFFI plugin")
+  string(FIND "${install_script}" "bin/dynamic${expected_suffix}" executable_install_index)
+  string(FIND "${install_script}" "mlinterface" plugin_install_index)
+  if(executable_install_index EQUAL -1 OR plugin_install_index EQUAL -1)
+    message(FATAL_ERROR "${name} does not install the NN executable and CFFI plugin")
+  endif()
+  set(probe_install_dir "${build_dir}/runtime-rpath-install")
+  file(REMOVE_RECURSE "${probe_install_dir}")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" --build "${build_dir}" --target tinkerhp-deephp-runtime-rpath-probe
+    RESULT_VARIABLE probe_build_result
+    OUTPUT_VARIABLE probe_build_output
+    ERROR_VARIABLE probe_build_error
+  )
+  if(NOT probe_build_result EQUAL 0)
+    message(FATAL_ERROR "${name} runtime-RPATH probe build failed:\n${probe_build_output}\n${probe_build_error}")
+  endif()
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" --install "${build_dir}" --prefix "${probe_install_dir}" --component tinkerhp-deephp-runtime-rpath-contract
+    RESULT_VARIABLE probe_install_result
+    OUTPUT_VARIABLE probe_install_output
+    ERROR_VARIABLE probe_install_error
+  )
+  if(NOT probe_install_result EQUAL 0)
+    message(FATAL_ERROR "${name} runtime-RPATH probe install failed:\n${probe_install_output}\n${probe_install_error}")
+  endif()
+  set(installed_probe "${probe_install_dir}/bin/tinkerhp-deephp-runtime-rpath-probe")
+  if(NOT EXISTS "${installed_probe}")
+    message(FATAL_ERROR "${name} did not install the runtime-RPATH probe")
+  endif()
+  find_program(readelf_program readelf)
+  if(NOT readelf_program)
+    message(FATAL_ERROR "${name} cannot inspect the installed ELF runtime-RPATH probe: readelf not found")
+  endif()
+  execute_process(
+    COMMAND "${readelf_program}" -d "${installed_probe}"
+    RESULT_VARIABLE readelf_result
+    OUTPUT_VARIABLE readelf_output
+    ERROR_VARIABLE readelf_error
+  )
+  if(NOT readelf_result EQUAL 0)
+    message(FATAL_ERROR "${name} installed runtime-RPATH probe inspection failed:\n${readelf_error}")
+  endif()
+  string(FIND "${readelf_output}" "RUNPATH" installed_runpath_index)
+  string(FIND "${readelf_output}" "ORIGIN/../lib" installed_plugin_rpath_index)
+  string(FIND "${readelf_output}" "${fake_python}.lib" installed_python_rpath_index)
+  if(installed_runpath_index EQUAL -1 OR installed_plugin_rpath_index EQUAL -1 OR installed_python_rpath_index EQUAL -1)
+    message(FATAL_ERROR "${name} installed executable does not retain the NN runtime RUNPATH:\n${readelf_output}")
   endif()
 endfunction()
 
@@ -1161,13 +1518,49 @@ function(tinkerhp_assert_invalid_link_mode_rejected)
   endif()
 endfunction()
 
-file(READ "${TINKERHP_SOURCE_DIR}/CMakePresets.json" presets)
-foreach(name gpu-double gpu-fpa gpu-fpa-colvars gpu-fpa-nn gpu-fpa-nn-colvars)
+file(READ "${TINKERHP_SOURCE_DIR}/CMakePresets.json" public_presets)
+set(presets "${public_presets}")
+foreach(name gpu-double gpu-fpa gpu-fpa-colvars gpu-fpa-nn gpu-fpa-nn-make)
   tinkerhp_assert_preset(${name})
 endforeach()
-foreach(name gpu-fpa-shared gpu-fpa-shared-colvars)
-  tinkerhp_assert_preset_entry(${name} configurePresets)
-  tinkerhp_assert_preset_entry(${name} buildPresets)
+
+tinkerhp_assert_preset_metadata(
+  gpu-double "GPU Native Arch double Static Core Ninja" "")
+tinkerhp_assert_preset_generator(gpu-double Ninja)
+tinkerhp_assert_preset_cache(gpu-double TINKERHP_GPU_ARCHITECTURES native)
+tinkerhp_assert_preset_cache(gpu-double TINKERHP_PRECISION DOUBLE)
+tinkerhp_assert_preset_cache(gpu-double TINKERHP_ENABLE_FPA ON)
+tinkerhp_assert_preset_cache(gpu-double TINKERHP_ENABLE_COLVARS OFF)
+tinkerhp_assert_preset_cache(gpu-double TINKERHP_ENABLE_NN OFF)
+tinkerhp_assert_preset_cache(gpu-double TINKERHP_ENABLE_PLUMED OFF)
+tinkerhp_assert_preset_cache(gpu-double TINKERHP_LINK_MODE STATIC)
+
+tinkerhp_assert_preset_metadata(
+  gpu-fpa "GPU Native Arch fpa Static Core Ninja" gpu-double)
+tinkerhp_assert_preset_cache(gpu-fpa TINKERHP_PRECISION MIXED)
+tinkerhp_assert_preset_cache(gpu-fpa TINKERHP_ENABLE_FPA ON)
+tinkerhp_assert_preset_metadata(
+  gpu-fpa-colvars "GPU Native Arch fpa Colvars Static Core Ninja" gpu-fpa)
+tinkerhp_assert_preset_cache(gpu-fpa-colvars TINKERHP_ENABLE_COLVARS ON)
+tinkerhp_assert_preset_metadata(
+  gpu-all-double "GPU All Arch double Static Core Ninja" gpu-double)
+tinkerhp_assert_preset_cache(gpu-all-double TINKERHP_GPU_ARCHITECTURES all)
+tinkerhp_assert_preset_metadata(
+  gpu-all-fpa "GPU All Arch fpa Static Core Ninja" gpu-fpa)
+tinkerhp_assert_preset_cache(gpu-all-fpa TINKERHP_GPU_ARCHITECTURES all)
+tinkerhp_assert_preset_metadata(
+  gpu-fpa-nn "GPU Native Arch fpa Deep-HP Static Core Ninja" gpu-fpa)
+tinkerhp_assert_preset_cache(gpu-fpa-nn TINKERHP_ENABLE_NN ON)
+tinkerhp_assert_preset_metadata(
+  gpu-fpa-nn-make "GPU Native Arch fpa Deep-HP Static Core Makefile" gpu-fpa-nn)
+tinkerhp_assert_preset_generator(gpu-fpa-nn-make "Unix Makefiles")
+
+tinkerhp_assert_shared_preset(gpu-all-double-shared double gpu-all-double)
+tinkerhp_assert_shared_preset(gpu-all-fpa-shared fpa gpu-all-fpa)
+foreach(name gpu-fpa-shared gpu-fpa-shared-colvars gpu-fpa-nn-colvars)
+  foreach(kind configurePresets buildPresets testPresets)
+    tinkerhp_assert_preset_absent(${name} ${kind})
+  endforeach()
 endforeach()
 foreach(kind configurePresets buildPresets testPresets)
   tinkerhp_assert_no_preset_prefix(gpu-sm75- ${kind})
@@ -1182,17 +1575,33 @@ foreach(name
     gpu-sm75-double-colvars
     gpu-sm75-double-plumed)
   tinkerhp_assert_preset_entry(${name} configurePresets)
-  tinkerhp_assert_preset_entry(${name} buildPresets)
+  tinkerhp_assert_preset_reference(${name} buildPresets)
 endforeach()
 foreach(name
     gpu-sm75-fpa-shared-colvars
     gpu-sm75-double
     gpu-sm75-double-colvars
     gpu-sm75-double-plumed)
-  tinkerhp_assert_preset_entry(${name} testPresets)
+  tinkerhp_assert_preset_reference(${name} testPresets)
 endforeach()
 foreach(name gpu-sm75-fpa-shared-colvars-make gpu-sm75-double-shared-make)
   tinkerhp_assert_preset(${name})
+endforeach()
+tinkerhp_assert_preset_inherits(gpu-sm75-fpa-shared gpu-all-fpa-shared)
+tinkerhp_assert_preset_inherits(gpu-sm75-fpa-shared-colvars gpu-all-fpa-shared)
+tinkerhp_assert_preset_inherits(gpu-sm75-double-shared-make gpu-all-double-shared)
+foreach(name
+    gpu-sm75-fpa-shared
+    gpu-sm75-fpa-shared-colvars
+    gpu-sm75-fpa-colvars-make
+    gpu-sm75-fpa-nn
+    gpu-sm75-double
+    gpu-sm75-double-make
+    gpu-sm75-double-colvars
+    gpu-sm75-double-plumed
+    gpu-sm75-fpa-shared-colvars-make
+    gpu-sm75-double-shared-make)
+  tinkerhp_assert_user_preset_chain(${name})
 endforeach()
 
 tinkerhp_validate_configuration(double DOUBLE STATIC ON OFF OFF OFF OFF .gpu "" USE_DETERMINISTIC_REDUCTION)
@@ -1218,6 +1627,10 @@ tinkerhp_assert_bench6_scientific_registration(
   bench6-fpa MIXED ON tinkerhp-scientific-dynamic-bench6-fpa
   bench6_r.fpa.dyn.ref)
 tinkerhp_assert_bench6_scientific_registration(bench6-mixed-no-fpa MIXED OFF "" "")
+tinkerhp_assert_dhfr_b_scientific_registration(
+  dhfr-b-double DOUBLE tinkerhp-scientific-dynamic-dhfr-b-double
+  dhfr2dyn_B.double.dyn.ref)
+tinkerhp_assert_dhfr_b_scientific_registration(dhfr-b-mixed MIXED "" "")
 tinkerhp_assert_performance_registration(
   performance-fpa-enabled MIXED ON ON tinkerhp-performance-dynamic-dhfr-b-fpa)
 tinkerhp_assert_performance_registration(performance-option-disabled MIXED ON OFF "")
@@ -1258,15 +1671,16 @@ tinkerhp_assert_nvhpc_makefile_fortran_launcher()
 tinkerhp_assert_makefile_conditional_module_dependencies()
 tinkerhp_assert_compatibility_make_submodule_classification()
 tinkerhp_assert_compatibility_make_submodule_dependencies()
-tinkerhp_validate_nn_configuration(nn-managed-local managed-local 3.11.8 0 12.5 TRUE)
-tinkerhp_validate_nn_configuration(nn-explicit explicit 3.10.14 0 12.5 TRUE)
-tinkerhp_validate_nn_configuration(nn-created-cuda12 managed-created 3.11.8 0 12.5 TRUE)
-tinkerhp_validate_nn_configuration(nn-created-cuda13 managed-created 3.11.8 0 13.1 TRUE)
-tinkerhp_validate_nn_configuration(nn-colvars explicit 3.11.8 0 12.5 TRUE)
-tinkerhp_validate_nn_configuration(nn-composition explicit 3.11.8 0 12.5 TRUE)
-tinkerhp_validate_nn_configuration(nn-managed-wrong-version managed-local 3.10.14 0 12.5 FALSE)
-tinkerhp_validate_nn_configuration(nn-explicit-missing-module explicit 3.11.8 1 12.5 FALSE)
-tinkerhp_validate_nn_configuration(nn-created-unsupported-cuda managed-created 3.11.8 0 11.8 FALSE)
+tinkerhp_validate_nn_configuration(nn-managed-local managed-local 3.11.8 0 12.5 TRUE TRUE)
+tinkerhp_validate_nn_configuration(nn-explicit explicit 3.10.14 0 12.5 TRUE TRUE)
+tinkerhp_validate_nn_configuration(nn-created-cuda12 managed-created 3.11.8 0 12.5 TRUE TRUE)
+tinkerhp_validate_nn_configuration(nn-created-cuda13 managed-created 3.11.8 0 13.1 TRUE TRUE)
+tinkerhp_validate_nn_configuration(nn-colvars explicit 3.11.8 0 12.5 TRUE TRUE)
+tinkerhp_validate_nn_configuration(nn-composition explicit 3.11.8 0 12.5 TRUE TRUE)
+tinkerhp_validate_nn_configuration(nn-managed-wrong-version managed-local 3.10.14 0 12.5 TRUE FALSE)
+tinkerhp_validate_nn_configuration(nn-explicit-missing-module explicit 3.11.8 1 12.5 TRUE FALSE)
+tinkerhp_validate_nn_configuration(nn-created-unsupported-cuda managed-created 3.11.8 0 11.8 TRUE FALSE)
+tinkerhp_validate_nn_configuration(nn-explicit-missing-libpython explicit 3.11.8 0 12.5 FALSE FALSE)
 tinkerhp_assert_deferred_feature_rejected()
 tinkerhp_assert_invalid_link_mode_rejected()
 

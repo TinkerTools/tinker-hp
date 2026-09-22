@@ -9,7 +9,6 @@ module structure
    use status, only: status_t
    use tinheader, only: ti_p, re_p
    implicit none
-   private
 
    ! structure_t is value-copy: its allocatable components own independent host storage.
    type, public :: structure_t

@@ -37,7 +37,6 @@ subroutine baoabrespapi(istep,dt)
    use mpi
    use spectra
    use deriv
-   use utilgpu
    use random_mod
    use units
    use bath
@@ -46,6 +45,7 @@ subroutine baoabrespapi(istep,dt)
    use cutoff
    use utils
    use potent
+   use tinMemory
    use virial
    use polar
    use moldyn
@@ -300,7 +300,6 @@ subroutine baoabrespapi_fast(istep,dta,nsteps,epot,vir_&
    use mpi
    use spectra
    use deriv
-   use utilgpu
    use random_mod
    use units
    use bath
@@ -308,6 +307,7 @@ subroutine baoabrespapi_fast(istep,dta,nsteps,epot,vir_&
    use utilbaoabpi
    use cutoff
    use utils
+   use tinMemory
    use potent
    use virial
    use polar
@@ -398,4 +398,3 @@ subroutine baoabrespapi_fast(istep,dta,nsteps,epot,vir_&
    endif
 
 end subroutine baoabrespapi_fast
-

@@ -34,6 +34,8 @@ module tinheader
    real(t_p)  zeror,oner,twor,halfr
    real(r_p)  zerom,onem,twom,halfm
    mdyn_rtyp  zeromd,onemd,twomd
+   real(t_p)  Infinity
+   real(r_p)  Infinity_r
 
    parameter (&
       &zero1=0,one1=1,two1=2,three1=3&
@@ -49,6 +51,8 @@ module tinheader
 #endif
       &,ti_p  =t_p&
       &,re_p  =r_p&
+      &,Infinity=4*huge(0.0_ti_p)&
+      &,Infinity_r=4*huge(0.0_re_p)&
       &,i_init=-1&
       &,a_init=-1.0&
       &,prec_eps =2*epsilon(zeror)&

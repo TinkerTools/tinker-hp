@@ -23,7 +23,6 @@ subroutine attach
    use domdec
    use iounit
    use inform  ,only: deb_Path
-   use utilgpu
    implicit none
    integer i,j,k,m,ierr
    integer jj,kk
@@ -190,4 +189,17 @@ subroutine alloc_shared_attach
    call shmem_request( n14, winn14,        [n],config=mhostonly)
    call shmem_request( i15, wini15, [maxn15,n],config=mhostonly)
    call shmem_request( n15, winn15,        [n],config=mhostonly)
+end
+
+subroutine dealloc_shared_attach
+   use couple
+   use tinMemory
+   implicit none
+
+   call shmem_request(i13, wini13, [0,0], config=mhostonly)
+   call shmem_request(n13, winn13, [0], config=mhostonly)
+   call shmem_request(i14, wini14, [0,0], config=mhostonly)
+   call shmem_request(n14, winn14, [0], config=mhostonly)
+   call shmem_request(i15, wini15, [0,0], config=mhostonly)
+   call shmem_request(n15, winn15, [0], config=mhostonly)
 end

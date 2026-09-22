@@ -21,14 +21,11 @@
 #include "tinker_cudart.h"
 
 module epolar_cpencu
-   use utilcu  ,only: BLOCK_DIM,ALL_LANES
-   use utilgpu ,only: BLOCK_SIZE&
-      &,WARP_SIZE
-   use reduction,only: RED_BUFF_SIZE
    use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
+   use epolar1cu,only: BLOCK_DIM,BLOCK_SIZE,WARP_SIZE,WARP_SHFT
+   use reduction,only: RED_BUFF_SIZE
    implicit none
    private
-
    public:: epreal_cpen1_kcu,epreal_cpen3_kcu
 contains
 

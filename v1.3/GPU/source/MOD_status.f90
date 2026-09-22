@@ -18,6 +18,7 @@ module status
       enumerator :: status_ok = 0
       enumerator :: status_missing_argument = 1
       enumerator :: status_invalid_argument = 2
+      enumerator :: StatusDeviceError = 3
    end enum
 
    type :: status_t

@@ -36,7 +36,7 @@ subroutine kpolar(init,istep)
    use mpi
    use uprior
    use utils     ,only: set_to_zero1
-   use utilgpu   ,only: rec_queue
+   use mdevice   ,only: reciprocal_work
    use tinheader ,only: ti_p,re_p
    use tinMemory
    use beads     ,only: centroid_longrange
@@ -58,6 +58,7 @@ subroutine kpolar(init,istep)
    character*240 record
    character*240 string
    logical init
+
 !
    if (init) then
 !
@@ -363,7 +364,7 @@ subroutine kpolar(init,istep)
             end do
          end do
 #else
-         call set_to_zero1(udpalt,6*n*maxualt,rec_queue)
+         call set_to_zero1(udpalt,6*n*maxualt,reciprocal_work%queue)
 #endif
 
          if ((integrate.eq.'RESPA1').or.(integrate.eq.'BAOABRESPA1')&
@@ -380,7 +381,7 @@ subroutine kpolar(init,istep)
                end do
             end do
 #else
-            call set_to_zero1(udpalt1,6*n*maxualt,rec_queue)
+            call set_to_zero1(udpalt1,6*n*maxualt,reciprocal_work%queue)
 #endif
          end if
       end if
@@ -401,11 +402,12 @@ subroutine kpolar_reset(istep)
    use polar
    use potent
    use mpi
-   use utilcomm,only:do_not_commpole,no_commdir
+   use parallel,only:comm_opt
+   use tinMemory,only:prmem_request
 #ifdef _OPENACC
    use thrust
 #endif
-   use utilgpu
+   use mdevice,only:reciprocal_work
    implicit none
    integer,intent(in)::istep
    integer i,j,iipole,iglob,iproc
@@ -415,19 +417,20 @@ subroutine kpolar_reset(istep)
    real(t_p) d,distcut2
 !$acc routine(distprocpart1)
 
+
    call prmem_request(poleglob   ,   nbloc,async=.true.)
    call prmem_request(polerecglob,nlocrec2,async=.true.)
 
 !$acc data present(glob,pollist,poleglob,poleloc,nbpole,bufbegpole, &
 !$acc  domlenpole,domlenpolerec,polerecglob,poleloc,polerecloc) &
 !$acc      present(npoleloc,npolebloc,npolerecloc,npolerecloc_old) &
-!$acc      async(rec_queue)
+!$acc      async(reciprocal_work%queue)
 
    !TODO clean this routine
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    npoleloc = 0
 !$acc end serial
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1, nloc
       iglob = glob(i)
       iipole = pollist(iglob)
@@ -445,7 +448,7 @@ subroutine kpolar_reset(istep)
          poleloc(polecount+1) = npole_cap
       end if
    end do
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    bufbegpole(rank+1) = 1
    domlenpole(rank+1) = npoleloc
    npolebloc = npoleloc
@@ -479,14 +482,14 @@ subroutine kpolar_reset(istep)
       end if
    end do
 #else
-   do_not_commpole = .false.
+   comm_opt%pole_ordered = .false.
 #endif
 !
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    npolerecloc_old = npolerecloc
    npolerecloc  = 0
 !$acc end serial
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1, nlocrec
       iglob  = globrec(i)
       iipole = pollist(iglob)
@@ -503,11 +506,11 @@ subroutine kpolar_reset(istep)
          polerecloc(polecount+1) = npole_cap
       end if
    end do
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    domlenpolerec(rank+1) = npolerecloc
 !$acc end serial
 
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = nlocrec+1, nlocrec2
       iglob = globrec(i)
       iipole = pollist(iglob)
@@ -525,14 +528,14 @@ subroutine kpolar_reset(istep)
       end if
    end do
 
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    !npolerecloc2= npolerecloc
    npolerecloc = domlenpolerec(rank+1)
 !$acc end serial
 
 !$acc update host(domlenpole,domlenpolerec,bufbegpole &
 !$acc    ,npoleloc,npolebloc,npolerecloc &
-!$acc    ,polerecglob) async(rec_queue)
+!$acc    ,polerecglob) async(reciprocal_work%queue)
 !$acc end data
 !
 !     npolelocloop = merge( npoleloc,
@@ -545,11 +548,11 @@ subroutine kpolar_reset(istep)
 !
    call prmem_request(poleglobnl,nlocnl,async=.true.)
 
-!$acc serial async(rec_queue) present(npolelocnl)
+!$acc serial async(reciprocal_work%queue) present(npolelocnl)
    npolelocnl = 0
 !$acc end serial
 
-!$acc parallel loop async(rec_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         present(npolelocnl,nbpole,ineignl,pollist, &
 !$acc  polsiz,poleglobnl,polelocnl)
    do i = 1, nlocnl
@@ -569,7 +572,7 @@ subroutine kpolar_reset(istep)
          polelocnl(polecount+1) = npole_cap
       end if
    end do
-!$acc update host(npolelocnl) async(rec_queue)
+!$acc update host(npolelocnl) async(reciprocal_work%queue)
 
 end
 
@@ -586,8 +589,8 @@ subroutine kpolar_reset1(istep)
    use polar
    use potent
    use mpi
-   use utilcomm,only:do_not_commpole
-   use utilgpu
+   use parallel,only:comm_opt
+   use tinMemory,only:prmem_request
    implicit none
    integer,intent(in)::istep
    integer i,j,iipole,iglob,iproc
@@ -595,7 +598,7 @@ subroutine kpolar_reset1(istep)
    integer ipr,ibufbeg
    real(t_p) d
 
-   do_not_commpole = .true.
+   comm_opt%pole_ordered = .true.
    npoleloc = 0
 
    call prmem_request(poleglob   ,   nbloc,async=.true.)
@@ -685,7 +688,6 @@ subroutine kpolar_reset1(istep)
 !
 !$acc update device(polerecglob,polerecloc) async
 !
-   call update_gang_rec(npolerecloc)
 !
    npolelocloop = merge( npoleloc,&
       &(int(npoleloc/16)+1)*16,&
@@ -782,9 +784,8 @@ subroutine orderPole
    use potent  ,only : use_pmecore
    use timestat,only : timer_enter,timer_exit,timer_eneig&
       &, quiet_timers
-   use utilcomm,only : reqs_poleglob,reqr_poleglob&
-      &, do_not_commpole
-   use utilgpu ,only : rec_queue,dir_queue
+   use parallel,only : comm_opt
+   use mdevice  ,only : reciprocal_work
    use sizes   ,only : tinkerdebug
    use mpi
    implicit none
@@ -793,10 +794,16 @@ subroutine orderPole
    integer commloc,tag0,status(MPI_STATUS_SIZE)
    integer npolelocmpi(nproc)
    integer mpi_status1(MPI_STATUS_SIZE)
+   integer, allocatable :: receive_requests(:), send_requests(:)
    parameter(tag0=0)
 
-   if (ndir.eq.1.or.do_not_commpole) return
+
+   if (ndir.eq.1.or.comm_opt%pole_ordered) return
    if (use_pmecore.and.rank.ge.ndir) return
+
+   allocate(receive_requests(max(1,nproc)), send_requests(max(1,nproc)))
+   receive_requests = MPI_REQUEST_NULL
+   send_requests = MPI_REQUEST_NULL
 
    if (use_pmecore) then
       commloc = comm_dir
@@ -810,15 +817,15 @@ subroutine orderPole
    !  --- Short Range
 
    ! update switch
-   do_not_commpole = .true.
+   comm_opt%pole_ordered = .true.
 !
 !     Initiate poleglob sending
 !
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc host_data use_device(poleglob)
    do i = 1, nbig_send
       call MPI_ISEND(poleglob(1),npoleloc,MPI_INT,pbig_send(i)&
-         &,tag0,commloc,reqs_poleglob(i),ierr)
+         &,tag0,commloc,send_requests(i),ierr)
    end do
 
    if (n.eq.npole) then
@@ -862,7 +869,7 @@ subroutine orderPole
       idomlen = domlenpole(ipr)
       ibufbeg = bufbegpole(ipr)
       call MPI_IRECV(poleglob(ibufbeg),idomlen,MPI_INT,pbig_recep(i)&
-         &,tag0,commloc,reqr_poleglob(i),ierr)
+         &,tag0,commloc,receive_requests(i),ierr)
    end do
 !$acc end host_data
 !
@@ -874,16 +881,19 @@ subroutine orderPole
       ipr     = pbig_recep(i) + 1
       idomlen = domlenpole(ipr)
       ibufbeg = bufbegpole(ipr) - 1
-      call MPI_WAIT(reqr_poleglob(i),status,ierr)
+      call MPI_WAIT(receive_requests(i),status,ierr)
       ! Finish npoleloc construction
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
       do j = 1, idomlen
          iipole = poleglob(ibufbeg+j)
          poleloc(iipole) = ibufbeg+j
       end do
-      call MPI_WAIT(reqs_poleglob(i),status,ierr)
    end do
 !$acc end data
+
+   do i = 1, nbig_send
+      call MPI_WAIT(send_requests(i),status,ierr)
+   end do
 
 !
 !     comput nZ_Onlyloc if necessary
@@ -896,6 +906,7 @@ subroutine orderPole
    if (btest(tinkerdebug,0)) call MPI_BARRIER(commloc,ierr)
    if (deb_Path)  write(*,'(3X,A)') '<<  orderPole'
 
+   deallocate(receive_requests, send_requests)
    call timer_exit ( timer_eneig,quiet_timers )
 end subroutine
 !

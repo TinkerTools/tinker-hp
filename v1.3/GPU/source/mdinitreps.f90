@@ -16,18 +16,24 @@
 #include "tinker_precision.h"
 !
 subroutine mdinitreps
+   use atomsMirror, only: n, x, y, z, reCast_position, download_position
+   use boxes, only: xbox, ybox, zbox, alpha, beta, gamma
    use domdec
    use files
    use inform
    use iounit
+   use moldyn, only: v, a, aalt, aalt2
    use potent, only: use_lambdadyn
    use replicas
+   use restart, only: read_restart
+   use status, only: failed, status_t
    implicit none
-   integer lext,freeunit,idyn
+   integer lext
    integer next
    integer num
-   logical exist
+   logical exist,aalt2_present
    real(r_p), allocatable :: derivs(:,:)
+   type(status_t) :: restart_status
    character*7 ext
    character*240 dynfile
    character*3 numberreps
@@ -43,11 +49,19 @@ subroutine mdinitreps
    call version (dynfile,'old')
    inquire (file=dynfile,exist=exist)
    if (exist) then
-      idyn = freeunit ()
-      open (unit=idyn,file=dynfile,status='old')
-      rewind (unit=idyn)
-      call readdyn (idyn)
-      close (unit=idyn)
+      call read_restart(trim(dynfile),n,xbox,ybox,zbox,alpha,beta,gamma,&
+         &x,y,z,v,a,aalt,aalt2,aalt2_present,restart_status)
+      if (failed(restart_status)) then
+         if (rank == 0) write (iout,'(/,a)') trim(restart_status%message)
+         call fatal
+      end if
+      call lattice
+!$acc update device(x(:),y(:),z(:),v,a,aalt,aalt2)
+      if (t_p.ne.r_p) then
+         call reCast_position
+!$acc wait
+         call download_position
+      end if
 !
 !     Do the domain decomposition
 !

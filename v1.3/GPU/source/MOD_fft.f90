@@ -45,6 +45,7 @@
 #include "tinker_macro.h"
 module fft
    use iso_c_binding,only: c_ptr
+   use mdevice    ,only: channel_t
    use sizes        ,only: maxfft
    implicit none
    integer maxtable
@@ -91,14 +92,15 @@ contains
 !
 !     Convert real grid to complex grid for fft mpi
 !
-   subroutine r2c_grid(real_g,size_grid,cmplx_g,rec_queue)
+   subroutine r2c_grid(real_g,size_grid,cmplx_g,recip_channel)
       implicit none
       complex(t_p),intent(out):: cmplx_g(*)
       real   (t_p),intent(in) :: real_g(*)
-      integer     ,intent(in) :: size_grid,rec_queue
+      integer     ,intent(in) :: size_grid
+      type(channel_t),intent(in) :: recip_channel
       integer i
 
-!$acc parallel loop async(rec_queue) present(cmplx_g,real_g)
+!$acc parallel loop async(recip_channel%queue) present(cmplx_g,real_g)
       do i = 1, size_grid
          cmplx_g(i) = cmplx(real_g(2*(i-1)+1),real_g(2*i),kind=t_p)
       end do
@@ -106,14 +108,15 @@ contains
 !
 !     Convert complex grid to real grid for fft mpi
 !
-   subroutine c2r_grid(cmplx_g,size_grid,real_g,rec_queue)
+   subroutine c2r_grid(cmplx_g,size_grid,real_g,recip_channel)
       implicit none
       complex(t_p),intent(in) :: cmplx_g(*)
-      integer     ,intent(in) :: size_grid,rec_queue
+      integer     ,intent(in) :: size_grid
       real   (t_p),intent(out):: real_g(*)
+      type(channel_t),intent(in) :: recip_channel
       integer i
 
-!$acc parallel loop async(rec_queue) present(cmplx_g,real_g)
+!$acc parallel loop async(recip_channel%queue) present(cmplx_g,real_g)
       do i = 1, 2*size_grid
          if (btest(i,0)) then
             real_g(i) = real(cmplx_g((i-1)/2+1),kind=t_p)

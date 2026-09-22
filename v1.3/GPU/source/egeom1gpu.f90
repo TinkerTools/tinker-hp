@@ -43,7 +43,7 @@ subroutine egeom1gpu
    use molcul
    use tinheader ,only:ti_p,re_p
    use usage
-   use utilgpu   ,only:def_queue,rec_queue
+   use mdevice   ,only:reciprocal_work
    use USampling ,only:USdt=>timestep,US_save,Rd_save&
       &,cpt_wh,US_enable,USwrite,step,step_save
    use virial
@@ -112,7 +112,6 @@ subroutine egeom1gpu
    if(deb_Path) write(*,*) 'egeom1gpu'
    eg        = 0.0_ti_p
    save_US   = .false.
-   def_queue = rec_queue
    if (US_enable) save_US=(US_enable.and.mod(step,USwrite).eq.0&
       &.and.step.ne.step_save)
 
@@ -122,7 +121,7 @@ subroutine egeom1gpu
 
    if (npfix.ne.0) then
 
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         default(present)
       do inpfix = 1, npfixloc
          i  = npfixglob(inpfix)
@@ -183,7 +182,7 @@ subroutine egeom1gpu
 !
 !     get energy and derivatives for distance restraint terms
 !
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         default(present)
       do indfix = 1, ndfixloc
          i     = ndfixglob(indfix)
@@ -268,7 +267,7 @@ subroutine egeom1gpu
 !
 !     get energy and derivatives for angle restraint terms
 !
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         default(present)
       do inafix = 1, nafixloc
          i = nafixglob(inafix)
@@ -379,7 +378,7 @@ subroutine egeom1gpu
 !
 !     get energy and derivatives for torsion restraint terms
 !
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         default(present) &
 !$acc         reduction(+:eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do intfix = 1, ntfixloc
@@ -559,7 +558,7 @@ subroutine egeom1gpu
 !
 !$acc parallel loop gang vector_length(32) &
 !$acc         default(present) &
-!$acc         private(r,e) async(def_queue)
+!$acc         private(r,e) async(reciprocal_work%queue)
       do ingfix = 1, ngfixloc
          i = ngfixglob(ingfix)
          ia = igfix(1,i)
@@ -681,7 +680,7 @@ subroutine egeom1gpu
 !
 !     get energy and derivatives for chirality restraint terms
 !
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(reciprocal_work%queue) &
 !$acc         default(present) &
 !$acc         reduction(+:eg,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do inchir = 1, nchirloc
@@ -794,7 +793,7 @@ subroutine egeom1gpu
 !     get energy and derivatives for a Gaussian basin restraint
 !
    if (use_basin) then
-!$acc parallel loop async(def_queue)
+!$acc parallel loop async(reciprocal_work%queue)
       do i = 1, nloc
          iglob = glob(i)
          xi = x(iglob)
@@ -867,7 +866,7 @@ subroutine egeom1gpu
       buffer = 2.5_ti_p
       a = 2048.0_ti_p
       b = 64.0_ti_p
-!$acc parallel loop default(present) async(def_queue)
+!$acc parallel loop default(present) async(reciprocal_work%queue)
       do i = 1, nloc
          iglob = glob(i)
          if (use_group) call groups1_inl (fgrp,i,ngrp,grplist,wgrp)

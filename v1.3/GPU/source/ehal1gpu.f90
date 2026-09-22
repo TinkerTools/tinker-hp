@@ -36,17 +36,18 @@ subroutine ehal1gpu
    use ehal1gpu_inl,only: elrc,vlrc
    use energi     ,only: ev
    use interfaces ,only: ehal1c_p
-   use utilgpu    ,only: def_queue,dir_queue
+   use mdevice    ,only: after,direct_work,reciprocal_work
+   use status     ,only: failed,status_t
    use potent
    use virial     ,only: vir
    use vdwpot     ,only: use_vcorr
    implicit none
    character*11 mode
    logical      fullrange
+   type(status_t) :: dep_status
 !
    ! PME-Core case
    if (use_pmecore.and.rank.ge.ndir) return
-   def_queue = dir_queue
    fullrange = .not.(use_vdwshort.or.use_vdwlong)
 !
 !     choose the method for summing over pairwise interactions
@@ -58,7 +59,7 @@ subroutine ehal1gpu
    if (use_vcorr.and.(fullrange.or.use_vdwlong)) then
       mode = "VDW"
       call evcorr1gpu (mode,elrc,vlrc)
-!$acc serial present(ev,vir,elrc,vlrc) async(def_queue)
+!$acc serial present(ev,vir,elrc,vlrc) async(direct_work%queue)
       ev = ev + elrc
       vir(1,1) = vir(1,1) + vlrc
       vir(2,2) = vir(2,2) + vlrc
@@ -71,7 +72,7 @@ subroutine ehal1gpu
 !
 !     save delambdav for short range computation
 !
-!$acc serial async(def_queue) present(delambdav,delambdavsave)
+!$acc serial async(direct_work%queue) present(delambdav,delambdavsave)
          delambdavsave = delambdav
 !$acc end serial
       end if
@@ -116,11 +117,8 @@ subroutine ehal1c_ac
       &,epsilon4,nvdwbloc,nvdwlocnl,nvdwclass,skipvdw12
    use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
    use vdw_locArray
-   use utilgpu   ,only: def_queue,dir_queue,rec_queue
-#ifdef _OPENACC
-   use utilgpu   ,only: dir_stream&
-      &,rec_stream,rec_event,stream_wait_async
-#endif
+   use mdevice   ,only: after,direct_work, gpu_sm_count, reciprocal_work
+   use status    ,only: failed,status_t
    use virial
    implicit none
    integer i,j,k,kk,ksave,ver,ver1,fea
@@ -142,6 +140,7 @@ subroutine ehal1c_ac
    logical    do_scale4,ik12
    integer(1) muti,mutik
    character*11 mode
+   type(status_t) :: dep_status
    parameter( ver=__use_grd__+__use_ene__+__use_vir__&
       &, ver1=ver+__use_sca__)
 
@@ -155,19 +154,20 @@ subroutine ehal1c_ac
    if (use_lambdadyn) fea = fea + __use_lambdadyn__
 
 #ifdef _OPENACC
-   if (dir_queue.ne.rec_queue) then
-!!$acc wait(rec_queue) async(dir_queue)
-      call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue) then
+!!$acc wait(reciprocal_work%queue) async(direct_work%queue)
+      call after(direct_work,reciprocal_work,dep_status)
+      if (failed(dep_status)) __TINKER_FATAL__
    end if
 #endif
-   call prmem_request(xred,nbloc,queue=def_queue)
-   call prmem_request(yred,nbloc,queue=def_queue)
-   call prmem_request(zred,nbloc,queue=def_queue)
+   call prmem_request(xred,nbloc,queue=direct_work%queue)
+   call prmem_request(yred,nbloc,queue=direct_work%queue)
+   call prmem_request(zred,nbloc,queue=direct_work%queue)
 !
 !     apply any reduction factor to the atomic coordinates
 !
 !$acc parallel loop default(present) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do k = 1,nvdwbloc
       iglob   = ivdw (vdwglob(k))
       i       = loc  (iglob)
@@ -209,7 +209,7 @@ subroutine ehal1c_ac
 !
 !     Compute vdw pairwise scaling interactions
 !
-!$acc parallel loop gang vector async(def_queue) &
+!$acc parallel loop gang vector async(direct_work%queue) &
 !$acc     present(xred,yred,zred,loc,ivdw,loc,jvdw,vir,dev &
 !$acc  ,radmin,radmin4,epsilon,epsilon4,vcorrect_ik,vcorrect_scale &
 !$acc  ,grplist,wgrp,mut) &
@@ -312,7 +312,7 @@ subroutine ehal1c_ac
 !$acc parallel loop gang vector_length(32) default(present) &
 !$acc         present(ev,delambdav,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) &
 !$acc         private(ai12) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:do ii = 1, nvdwlocnl
       iivdw = vdwglobnl(ii)
       iglob = ivdw(iivdw)
@@ -408,7 +408,6 @@ end subroutine
 !      use atoms     ,only: x,y,z
 !      use domdec    ,only: loc
 !      use tinMemory ,only: prmem_request
-!      use utilgpu   ,only: inf,def_queue
 !      use vdw       ,only: ired,ivdw,kred
 !     &              ,nvdwlocnl,nvdwlocnlb,nvdwbloc
 !      use vdw_locArray
@@ -416,13 +415,13 @@ end subroutine
 !      integer   k,i,iglob,iv
 !      real(t_p) rdn,rdn1
 !
-!      call prmem_request(xred    ,nvdwbloc,queue=def_queue)
-!      call prmem_request(yred    ,nvdwbloc,queue=def_queue)
-!      call prmem_request(zred    ,nvdwbloc,queue=def_queue)
+!      call prmem_request(xred    ,nvdwbloc,queue=direct_work%queue)
+!      call prmem_request(yred    ,nvdwbloc,queue=direct_work%queue)
+!      call prmem_request(zred    ,nvdwbloc,queue=direct_work%queue)
 !c
 !c     apply any reduction factor to the atomic coordinates
 !c
-!!$acc parallel loop default(present) async(def_queue)
+!!$acc parallel loop default(present) async(direct_work%queue)
 !      do k = 1,nvdwbloc
 !         iglob    = ivdw(vdwglob(k))
 !         i        = loc  (iglob)
@@ -443,7 +442,8 @@ subroutine apply_vdw_reduction_factor
    use neigh     ,only: sgl_id,slc_id,cellv_jvdw
    use tinheader ,only: ti_p
    use tinMemory ,only: prmem_request
-   use utilgpu   ,only: inf,def_queue
+   use mdevice   ,only: direct_work
+   use tinheader   ,only: inf => Infinity
    use vdw       ,only: ired,ivdw,kred&
       &,nvdwlocnl,nvdwlocnlb,nvdwbloc
    use vdw_locArray
@@ -454,18 +454,18 @@ subroutine apply_vdw_reduction_factor
    nvdwa = max(nvdwbloc,nvdwlocnlb)
 
    ! Reserve memory space
-   call prmem_request(xred    ,nvdwlocnlb,queue=def_queue)
-   call prmem_request(yred    ,nvdwlocnlb,queue=def_queue)
-   call prmem_request(zred    ,nvdwlocnlb,queue=def_queue)
-   call prmem_request(xredc   ,nbloc     ,queue=def_queue)
-   call prmem_request(yredc   ,nbloc     ,queue=def_queue)
-   call prmem_request(zredc   ,nbloc     ,queue=def_queue)
-   call prmem_request(loc_ired,nvdwlocnlb,queue=def_queue)
-   call prmem_request(loc_kred,nvdwlocnlb,queue=def_queue)
+   call prmem_request(xred    ,nvdwlocnlb,queue=direct_work%queue)
+   call prmem_request(yred    ,nvdwlocnlb,queue=direct_work%queue)
+   call prmem_request(zred    ,nvdwlocnlb,queue=direct_work%queue)
+   call prmem_request(xredc   ,nbloc     ,queue=direct_work%queue)
+   call prmem_request(yredc   ,nbloc     ,queue=direct_work%queue)
+   call prmem_request(zredc   ,nbloc     ,queue=direct_work%queue)
+   call prmem_request(loc_ired,nvdwlocnlb,queue=direct_work%queue)
+   call prmem_request(loc_kred,nvdwlocnlb,queue=direct_work%queue)
 !
 !     apply any reduction factor to the atomic coordinates
 !
-!$acc parallel loop default(present) async(def_queue)
+!$acc parallel loop default(present) async(direct_work%queue)
    do k = 1,nvdwa
       if (k.le.nvdwlocnl) then
          iglob    = sgl_id(k)
@@ -516,7 +516,7 @@ subroutine vdw_gradient_reduce
    use deriv  , dev_=>de_ws2
    use inform , only: deb_Path
    use tinheader ,only: ti_p,re_p
-   use utilgpu, only: def_queue
+   use mdevice, only: direct_work
    use group
    implicit none
    integer ii,j,i,il,iglob
@@ -526,7 +526,7 @@ subroutine vdw_gradient_reduce
 12 format(2x,A)
    if (deb_Path) write(*,12) 'ehal1_gradient_reduce'
 
-!$acc parallel loop collapse(2) default(present) async(def_queue)
+!$acc parallel loop collapse(2) default(present) async(direct_work%queue)
    do ii = 1, nvdwbloc
       do j = 1, 3
          iglob  = ivdw(vdwglob(ii))
@@ -573,15 +573,14 @@ subroutine ehal1c_cu
       &,b_stat,b_rmid,load_nbl2mod
    use potent    ,only: use_vdwshort,use_vdwlong,use_lambdadyn
    use tinheader ,only: ti_p
+   use tinheader   ,only: inf => Infinity
+   use tinMemory ,only: prmem_request
    use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
-   use utilcu    ,only: check_launch_kernel
-   use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream&
-      &,rec_stream,rec_event,stream_wait_async&
-      &,warp_size,def_stream,inf,RED_BUFF_SIZE&
-      &,ered_buff=>ered_buf1,vred_buff,nred_buff,lam_buff&
-      &,reduce_energy_virial,zero_evir_red_buffer&
-      &,reduce_buffer,prmem_request,BLOCK_SIZE,nSMP&
-      &,CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
+   use mdevice   ,only: check_launch_kernel,after,direct_work, gpu_sm_count, reciprocal_work
+   use status    ,only: failed,status_t
+   use cudafor   ,only: CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR
+   use reduction ,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,nred_buff&
+      &,lam_buff,reduce_energy_virial,zero_evir_red_buffer,reduce_buffer
    use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin4,radmin_c&
       &,epsilon,epsilon4,epsilon_c&
       &,nvdwbloc,nvdwlocnl,nvdwlocnlb,nvdwclass&
@@ -594,13 +593,13 @@ subroutine ehal1c_cu
    integer i,k
    integer iglob,iivdw,iv,hal_Gs,sizvc
    integer ierrSync
+   type(status_t) :: dep_status
    real(t_p)  xbeg,xend,ybeg,yend,zbeg,zend
    real(t_p)  rinv,vdwshortcut2,dt1lamb,dt2lamb
    logical v0
    character*10 mode
 !
    if(deb_Path) write (*,*) 'ehal1c_cu'
-   def_stream = dir_stream
    xbeg  = xbegproc(rank+1)
    xend  = xendproc(rank+1)
    ybeg  = ybegproc(rank+1)
@@ -629,7 +628,7 @@ subroutine ehal1c_cu
       i       = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(hal_Gs,hal1_v0_kcu,VDW_BLOCK_DIM,0)
    end if
-   hal_Gs  = hal_Gs*nSMP*4
+   hal_Gs  = hal_Gs*gpu_sm_count*4
    if (i.ne.0) print*,'Issue detected with ehal1:cudaoccupancy',i
 
    if (use_lambdadyn) then
@@ -637,10 +636,12 @@ subroutine ehal1c_cu
       dt2lamb = (1d0+ghal)    *2d0*scalpha*(1d0-vlambda)
    end if
 
-   if (dir_queue.ne.rec_queue)&
-      &call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue) then
+      call after(reciprocal_work,direct_work,dep_status)
+      if (failed(dep_status)) __TINKER_FATAL__
+   end if
 
-   !if (use_virial.or.calc_e) call zero_evir_red_buffer(def_queue)
+   !if (use_virial.or.calc_e) call zero_evir_red_buffer(direct_work%queue)
    call apply_vdw_reduction_factor
 !
 !     Call Vdw kernel in CUDA using C2 nblist
@@ -654,7 +655,7 @@ subroutine ehal1c_cu
 !$acc    ,radmin,radmin4,epsilon,epsilon4,dev &
 !$acc    )
    if (use_vdwshort) then
-      call hal1short_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+      call hal1short_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
          &(xred,yred,zred,sgl_id,slc_id,loc_ired,b2pl_1&
          &,bapl_1,abpl_1,b_stat,b_rmid,grplist,cellv_jvdw&
          &,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred&
@@ -673,7 +674,7 @@ subroutine ehal1c_cu
          &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
       call check_launch_kernel(" hal1short_kcu ")
    else if (use_vdwlong) then
-      call hal1long_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+      call hal1long_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
          &(xred,yred,zred,sgl_id,slc_id,loc_ired&
          &,b2pl,bapl,abpl,b_stat,b_rmid,grplist,cellv_jvdw&
          &,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred&
@@ -697,7 +698,7 @@ subroutine ehal1c_cu
          &.and..not.use_group.and..not.use_lambdadyn
 
       if (v0) then
-         call hal1_v0_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+         call hal1_v0_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
             &(xred,yred,zred,sgl_id,slc_id,loc_ired&
             &,b2pl,bapl,abpl,b_stat,b_rmid,grplist,cellv_jvdw&
             &,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred&
@@ -716,7 +717,7 @@ subroutine ehal1c_cu
             &,nproc,ngrp,use_virial,skipvdw12,vcouple.ne.0)
          call check_launch_kernel(" hal1_v0_kcu ")
       else
-         call hal1_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+         call hal1_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
             &(xred,yred,zred,sgl_id,slc_id,loc_ired&
             &,b2pl,bapl,abpl,b_stat,b_rmid,grplist,cellv_jvdw&
             &,epsilon_c,radmin_c,radv,epsv,wgrp,ired,kred&
@@ -739,10 +740,10 @@ subroutine ehal1c_cu
 !$acc end host_data
    if (use_virial.or.calc_e) then
       call reduce_energy_virial(ev,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz&
-         &,g_vzz,ered_buff,def_queue)
+         &,g_vzz,ered_buff,direct_work%queue)
    end if
 
-!$acc parallel loop collapse(2) default(present) async(def_queue)
+!$acc parallel loop collapse(2) default(present) async(direct_work%queue)
    do i = 1,nvdwlocnl; do k = 1,3;
          dev(k,slc_id(i)) = dev(k,slc_id(i))&
             &+ d_x(i+(k-1)*dr_stride)
@@ -751,7 +752,7 @@ subroutine ehal1c_cu
    call vdw_gradient_reduce
 
    if (use_lambdadyn)&
-      &call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdav,def_queue)
+      &call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdav,direct_work%queue)
 
 end subroutine
 #endif
@@ -787,7 +788,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
    use ehal1gpu_inl
 #if defined(_OPENACC) && 1
    use ehal1cu   ,only: VDW_BLOCK_DIM,ehal1short_cu_deb
-   use utilcu    ,only: check_launch_kernel
+   use mdevice   ,only: check_launch_kernel
 #endif
    use energi    ,only: ev=>ev_r
    use group     ,only: ngrp,wgrp,grplist,use_group
@@ -805,18 +806,17 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
    use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
    use vdw_locArray
    use virial    ,only: use_virial
-   use utilgpu   ,only: def_queue,dir_queue,rec_queue&
-      &,ered_buff=>ered_buf1,vred_buff,reduce_energy_virial&
-      &,zero_evir_red_buffer,prmem_request,inf
-#ifdef _OPENACC
-   use utilgpu   ,only: dir_stream,def_stream&
-      &,rec_stream,rec_event,stream_wait_async
-#endif
+   use mdevice   ,only: after,direct_work, reciprocal_work
+   use status    ,only: failed,status_t
+   use tinheader   ,only: inf => Infinity
+   use reduction  ,only: ered_buff=>ered_buf1,vred_buff,reduce_energy_virial&
+      &,zero_evir_red_buffer,RED_BUFF_SIZE,reduce_buffer
    use virial
    implicit none
    integer,intent(in)::maxlst,int1,int2
    integer nlst(nvdwlocnl)
    integer lst(maxlst,nvdwlocnl)
+   type(status_t) :: dep_status
 
    integer i,j,k,kk,ksave
    integer kt,kglob,kbis,kvloc,kv,ki
@@ -854,15 +854,16 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
    ncall = ncall + 1
 
 #ifdef _OPENACC
-   if (dir_queue.ne.rec_queue) then
-!!$acc wait(rec_queue) async(dir_queue)
-      call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue) then
+!!$acc wait(reciprocal_work%queue) async(direct_work%queue)
+      call after(direct_work,reciprocal_work,dep_status)
+      if (failed(dep_status)) __TINKER_FATAL__
    end if
 #endif
 
-   call prmem_request(xred,nbloc,queue=def_queue)
-   call prmem_request(yred,nbloc,queue=def_queue)
-   call prmem_request(zred,nbloc,queue=def_queue)
+   call prmem_request(xred,nbloc,queue=direct_work%queue)
+   call prmem_request(yred,nbloc,queue=direct_work%queue)
+   call prmem_request(zred,nbloc,queue=direct_work%queue)
    if (ncall.eq.1) then
 !$acc wait
    end if
@@ -883,7 +884,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 !     apply any reduction factor to the atomic coordinates
 !
 !$acc parallel loop default(present) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do k = 1,nvdwbloc
       iglob   = ivdw (vdwglob (k))
       i       = loc  (iglob)
@@ -993,7 +994,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 #ifdef _OPENACC
 #if 0
 !$acc parallel loop num_gangs(2) vector_length(32) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, nvdwlocnl
       iivdw = vdwglobnl(ii)
@@ -1058,7 +1059,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 !
 !     apply any reduction factor to the atomic coordinates
 !
-!$acc parallel loop default(present) async(def_queue)
+!$acc parallel loop default(present) async(direct_work%queue)
    do k = 1,nvdwlocnlb
       if (k.le.nvdwlocnl) then
          iglob    = sgl_id(k)
@@ -1085,7 +1086,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
       end if
    end do
 
-   call zero_evir_red_buffer(def_queue)
+   call zero_evir_red_buffer(direct_work%queue)
 !
 !     Call Vdw kernel in CUDA using C2 nblist
 !
@@ -1101,7 +1102,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 
       hal_Gs = nshortvdwlocnlb2_pair/4
       hal_Gs = 1
-      call ehal1short_cu_deb <<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+      call ehal1short_cu_deb <<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
          &(xred,yred,zred,sgl_id,slc_id,loc_ired&
          &,ivblst,vblst(lst_start),cellv_jvdw&
          &,epsilon_c,radmin_c&
@@ -1123,7 +1124,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
    else if (use_vdwlong) then
 
       hal_Gs = nvdwlocnlb2_pair/4
-      call ehal1long_cu <<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+      call ehal1long_cu <<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
          &(xred,yred,zred,sgl_id,slc_id,loc_ired&
          &,ivblst,vblst(lst_start),cellv_jvdw,epsilon_c,radmin_c&
          &,ired,kred,dev,ered_buff,vred_buff&
@@ -1143,7 +1144,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 !$acc end host_data
 
    call reduce_energy_virial(ev,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz&
-      &,ered_buff,def_queue)
+      &,ered_buff,direct_work%queue)
 #endif
 #endif
 
@@ -1168,7 +1169,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 !     apply any reduction factor to the atomic coordinates
 !
 !$acc parallel loop default(present) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do k = 1,nvdwbloc
       iglob   = ivdw (vdwglob (k))
       i       = loc  (iglob)
@@ -1183,7 +1184,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 !     find van der Waals energy and derivatives via neighbor list
 !
 !$acc parallel loop num_gangs(2) vector_length(32) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do ii = 1, nvdwlocnl
       iivdw = vdwglobnl(ii)
       iglob = ivdw(iivdw)
@@ -1238,7 +1239,7 @@ subroutine searchpair(nlst,lst,maxlst,int1,int2)
 #endif
 
 !$acc parallel loop default(present) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do k = 1,nvdwbloc
       iglob   = ivdw (vdwglob (k))
       i       = loc  (iglob)
@@ -1274,7 +1275,7 @@ subroutine searchVdwScaled(xred,yred,zred,&
    use vdw       ,only: ired,kred,jvdw,ivdw,radmin,radmin4,&
       &epsilon,epsilon4,nvdwbloc
    use vdwpot    ,only: vcorrect_ik,vcorrect_scale,n_vscale,dhal,ghal
-   use utilgpu   ,only: def_queue
+   use mdevice   ,only: direct_work
    use virial
    implicit none
    integer i,j,k,kk,ksave
@@ -1309,7 +1310,7 @@ subroutine searchVdwScaled(xred,yred,zred,&
    if(deb_Path) write(*,*) "searchVdwScaled",n_vscale
    rinv = 1.0/(cut-off)
 
-!$acc parallel loop async(def_queue) &
+!$acc parallel loop async(direct_work%queue) &
 !$acc     gang vector &
 !$acc     present(xred,yred,zred,vxx,vxy,vxz,vyy,vyz,vzz) &
 !$acc     present(loc,ivdw,loc,jvdw,vir,dev,radmin,mut, &

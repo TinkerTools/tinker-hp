@@ -78,6 +78,12 @@ module energi
       module subroutine info_energy(rank)
          integer,intent(in)::rank
       end subroutine
+      module subroutine allreduceen(epot)
+         real(r_p), intent(inout) :: epot
+      end subroutine allreduceen
+      module subroutine reduceen(epot)
+         real(r_p), intent(inout) :: epot
+      end subroutine reduceen
    end interface
 
 end module
@@ -107,6 +113,37 @@ contains
 !$acc                  emlpot, &
 !$acc                  ev_r,ec_r,em_r,ep_r,eb_r)
    end subroutine
+
+   module subroutine allreduceen(epot)
+      use domdec, only: COMM_TINKER, nproc, ndir
+      use inter
+      use mpi
+      use parallel, only: reduce_sum, reduction_all
+      use potent, only: use_pmecore
+      implicit none
+      real(r_p), intent(inout) :: epot
+      real(r_p) epot_buffer(1)
+      real(r_p) buffer(22)
+
+      if (nproc.eq.1.or.use_pmecore.and.ndir.eq.1) return
+
+!$acc data create(buffer,epot_buffer)
+!$acc serial
+      buffer = [eba,ea,eb,ec,em,ep,ev,eub,eaa,eopb,eopd,eid,eit,et,ept,ebt,eat,ett,esum,eg,ex,einter]
+      epot_buffer(1) = epot
+!$acc end serial
+!$acc host_data use_device(buffer,epot_buffer)
+      call reduce_sum(buffer, reduction_all)
+      call reduce_sum(epot_buffer, reduction_all)
+!$acc end host_data
+!$acc serial
+      eba=buffer(1); ea=buffer(2); eb=buffer(3); ec=buffer(4); em=buffer(5); ep=buffer(6)
+      ev=buffer(7); eub=buffer(8); eaa=buffer(9); eopb=buffer(10); eopd=buffer(11); eid=buffer(12)
+      eit=buffer(13); et=buffer(14); ept=buffer(15); ebt=buffer(16); eat=buffer(17); ett=buffer(18)
+      esum=buffer(19); eg=buffer(20); ex=buffer(21); einter=buffer(22); epot=epot_buffer(1)
+!$acc end serial
+!$acc end data
+   end subroutine allreduceen
 
    module subroutine info_energy(rank)
       implicit none
@@ -206,5 +243,141 @@ contains
       end if
 !$acc end serial
    end subroutine
+
+!     subroutine reduceen : make the necessary reductions over the processes to get the
+!     total values of the energies
+!
+module subroutine reduceen(epot)
+   use domdec
+   use inter
+   use inform    ,only: deb_Energy
+   use mdevice   ,only: reciprocal_work,sync_work
+   use parallel  ,only: reduce_sum, reduction_all, reduction_root
+   use potent
+   use virial
+   use mpi
+   use timestat
+   use tinheader
+   use tinmemory ,only: mem_move
+   implicit none
+   integer ierr,commloc
+   integer(8) nine
+   real(r_p), intent(inout) :: epot
+   real(r_p) buffer1(10),buffer2(20)
+   real(r_p) vir_copy(3,3)
+   parameter(nine=9)
+!
+   if (ndir.eq.1) return
+
+   call timer_enter(timer_reduceen)
+   if (use_pmecore) then
+      commloc = comm_dir
+   else
+      commloc = COMM_TINKER
+   end if
+!$acc data create(buffer1,buffer2,vir_copy) &
+!$acc     present_or_copy(epot) &
+!$acc     present(eb,eba,eub,eopb,et,ept,ett,ebt,ea &
+!$acc           ,eaa,eopd,eid,eit,ec,ev,er,edsp,em,ep,ect,eg,ex &
+!$acc           ,esum,vir)
+!
+!$acc wait(reciprocal_work%queue)
+!$acc serial
+   buffer1(1) = ec
+   buffer1(2) = em
+   buffer1(3) = ep
+   buffer1(4) = epot
+   buffer1(5) = esum
+   buffer1(6) = ev
+   buffer1(7) = enr2en(edsp)
+   buffer1(8) = enr2en(er )
+   buffer1(9) = enr2en(ect)
+!$acc end serial
+!
+!$acc host_data use_device(buffer1)
+   call reduce_sum(buffer1(1:9), reduction_root)
+!$acc end host_data
+!
+!$acc serial
+   ec     = buffer1(1)
+   em     = buffer1(2)
+   ep     = buffer1(3)
+   epot   = buffer1(4)
+   esum   = buffer1(5)
+   ev     = buffer1(6)
+   edsp   = rp2enr(buffer1(7))
+   er     = rp2enr(buffer1(8))
+   ect    = rp2enr(buffer1(9))
+!$acc end serial
+!
+!   MPI: get virial
+!
+   if (use_virial) then
+      call mem_move(vir_copy(1:nine,1),vir(1:nine,1),nine,sync_work%stream)
+!
+!$acc host_data use_device(vir_copy)
+      call reduce_sum(vir_copy, reduction_all)
+!$acc end host_data
+!
+      call mem_move(vir(1:nine,1),vir_copy(1:nine,1),nine,sync_work%stream)
+   end if
+!
+   if ((use_pmecore).and.(rank.gt.(ndir-1))) goto 10
+   if (.not.deb_Energy) goto 10
+!
+!$acc serial
+   buffer2(1)  = eba
+   buffer2(2)  = ea
+   buffer2(3)  = eb
+   buffer2(4)  = einter
+   buffer2(5)  = eub
+   buffer2(6)  = eaa
+   buffer2(7)  = eopb
+   buffer2(8)  = eopd
+   buffer2(9)  = eid
+   buffer2(10) = eit
+   buffer2(11) = et
+   buffer2(12) = ept
+   buffer2(13) = ebt
+   buffer2(14) = ett
+   buffer2(15) = eg
+   buffer2(16) = ex
+   buffer2(17) = eat
+!$acc end serial
+!
+!$acc host_data use_device(buffer2)
+   ! The debug energy subset follows the direct subgroup when PME cores are split.
+   ! Keep this routing adapter until the domain privately owns that subgroup.
+   if (rank.eq.0) then
+      call MPI_REDUCE(MPI_IN_PLACE,buffer2,20,MPI_RPREC,MPI_SUM,0,commloc,ierr)
+   else
+      call MPI_REDUCE(buffer2,buffer2,20,MPI_RPREC,MPI_SUM,0,commloc,ierr)
+   end if
+!$acc end host_data
+!
+!$acc serial
+   eba   = buffer2(1)
+   ea    = buffer2(2)
+   eb    = buffer2(3)
+   einter= buffer2(4)
+   eub   = buffer2(5)
+   eaa   = buffer2(6)
+   eopb  = buffer2(7)
+   eopd  = buffer2(8)
+   eid   = buffer2(9)
+   eit   = buffer2(10)
+   et    = buffer2(11)
+   ept   = buffer2(12)
+   ebt   = buffer2(13)
+   ett   = buffer2(14)
+   eg    = buffer2(15)
+   ex    = buffer2(16)
+   eat   = buffer2(17)
+!$acc end serial
+
+10 continue
+!$acc end data
+   call timer_exit(timer_reduceen,quiet_timers)
+end subroutine reduceen
 
 end submodule

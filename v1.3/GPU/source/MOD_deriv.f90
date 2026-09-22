@@ -122,7 +122,7 @@ module deriv
       &,debt(:,:),deat(:,:)
    !DIR$ ATTRIBUTES ALIGN:64:: deg,dex
    real(r_p),pointer :: deg(:,:),dex(:,:)
-   real(r_p),pointer :: dmlpot(:,:)
+   mdyn_rtyp,pointer :: dmlpot(:,:)
 
    mdyn_rtyp,pointer,dimension(:) :: derivx,derivy,derivz&
       &,debx,deby,debz,deax,deay,deaz,deubx,deuby,deubz
@@ -223,14 +223,38 @@ module deriv
       end subroutine
    end interface
 
+   interface transpose_az3
+      module procedure transpose_az_l3
+      module procedure transpose_az_d3
+      module procedure transpose_az_f3
+   end interface
+
+   interface
+      module subroutine transpose_az_l3(src,dst,loc,sloc,siz,queue)
+         integer(8),intent(inout) :: src(*)
+         integer(8),intent(inout) :: dst(*)
+         integer,intent(in) :: loc(*),sloc,siz,queue
+      end subroutine
+      module subroutine transpose_az_d3(src,dst,loc,sloc,siz,queue)
+         real(8),intent(inout) :: src(*)
+         real(8),intent(inout) :: dst(*)
+         integer,intent(in) :: loc(*),sloc,siz,queue
+      end subroutine
+      module subroutine transpose_az_f3(src,dst,loc,sloc,siz,queue)
+         real(4),intent(inout) :: src(*)
+         real(4),intent(inout) :: dst(*)
+         integer,intent(in) :: loc(*),sloc,siz,queue
+      end subroutine
+   end interface
+
    ! Force Communications routines
    interface
       module subroutine comm_forces_dd(derivs,opt)
-         mdyn_rtyp derivs(3,*)
+         mdyn_rtyp, target :: derivs(3,*)
          integer,optional:: opt
       end subroutine
       module subroutine comm_forces_dd1(derivs,opt)
-         real(r_p) derivs(3,*)
+         real(r_p), target :: derivs(3,*)
          integer,optional:: opt
       end subroutine
       module subroutine comm_forces_rec(de_rec,opt)
@@ -252,6 +276,34 @@ module deriv
       module subroutine comm_forces(derivs,opt)
          real(r_p) derivs(3,*)
          integer  ,optional:: opt
+      end subroutine
+      module subroutine commforcesrespa1(derivs,rule)
+         real(r_p), intent(inout) :: derivs(:,:)
+         integer, intent(in) :: rule
+      end subroutine
+      module subroutine commforcesbonded(derivs)
+         real(r_p), intent(inout), target, contiguous :: derivs(:,:)
+      end subroutine
+      module subroutine commforcesbloc(derivs)
+         real(r_p), intent(inout), target, contiguous :: derivs(:,:)
+      end subroutine
+      module subroutine commforcesshortbloc(derivs)
+         real(r_p), intent(inout), target, contiguous :: derivs(:,:)
+      end subroutine
+      module subroutine commforce_one(force,rule)
+         real(r_p), intent(inout) :: force(:,:)
+         integer, intent(in), optional :: rule
+      end subroutine
+      module subroutine commforcesrec(derivs)
+         real(r_p), intent(inout) :: derivs(3,*)
+      end subroutine
+      module subroutine commforcesrec1(derivs,derivrec)
+         mdyn_rtyp, intent(inout) :: derivs(3,*)
+         real(r_p), intent(in) :: derivrec(3,*)
+      end subroutine
+      ! Diagnostic-only testgrad exchange owned by deriv; not a production force API.
+      module subroutine commforceststgrad(detot)
+         real(r_p), intent(inout) :: detot(3,*)
       end subroutine
    end interface
 

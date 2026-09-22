@@ -37,7 +37,8 @@ program analyze_beads
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      __TINKER_FATAL__
+      call MPI_FINALIZE(ierr)
+      stop 1
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
@@ -56,9 +57,9 @@ subroutine analyze_beads_bis(raw_cli,status_value)
    use config, only: config_t, raw_cli_t
    use initialization, only: analyze_beads_application, initialize
    use mdevice, only: channel_t, finalize_device
-   use parallel, only: parallel_t, release
+   use parallel, only: parallel_t, release, assign_direct, assign_reciprocal
    use status, only: failed, status_t
-   use structure, only: structure_t
+   use structure, only: read_frame, structure_t
    use iounit
    use mpi
    use beads
@@ -66,13 +67,14 @@ subroutine analyze_beads_bis(raw_cli,status_value)
    use cutoff
    use keys
    use units
-   use utilgpu
+   use tinMemory, only: prmem_requestm
    use utils
    use virial
    use moldyn
    implicit none
    integer i,ierr,j,k,ibead,ibeadglob,ixyz
    integer frame,nbeads_para
+   integer opened_beads
    integer mode,next,nseg
    integer freeunit
    integer trimtext
@@ -101,6 +103,7 @@ subroutine analyze_beads_bis(raw_cli,status_value)
    call initialize(analyze_beads_application, raw_cli, configuration, molecular_structure, &
       &platform, reciprocal_work, status_value)
    if (failed(status_value)) return
+   opened_beads = 0
    ! Preserve the historical parser position after common initialization has
    ! loaded the primary structure directly from the captured command line.
    call nextarg(string,exist)
@@ -108,7 +111,8 @@ subroutine analyze_beads_bis(raw_cli,status_value)
 !     call nblist(0)
 
    call reset_observables(.true.)
-   call allocpi()
+   call allocpi(status_value)
+   if (failed(status_value)) return
 
 !
 !     get the desired types of analysis to be performed
@@ -190,8 +194,11 @@ subroutine analyze_beads_bis(raw_cli,status_value)
          call suffix (xyzfile,'arc','old')
          open (unit=ixyz,file=xyzfile,status ='old')
          rewind (unit=ixyz)
-         call readxyz (ixyz)
+         opened_beads = ibead
+         call read_frame(ixyz,molecular_structure,status_value)
+         if (failed(status_value)) goto 900
       end if
+      if (dcdio) opened_beads = ibead
 !$acc wait
 !$acc parallel loop default(present)
       DO i=1,n
@@ -222,8 +229,8 @@ subroutine analyze_beads_bis(raw_cli,status_value)
       use_shortvlist = .false.
       call load_bead(polymer_main, 0,.true.)
       call lattice
-      call AllDirAssign
-      call AllRecAssign
+      call assign_direct
+      call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
@@ -334,7 +341,8 @@ subroutine analyze_beads_bis(raw_cli,status_value)
 !$acc wait
       do ibead=1,nbeads
          if (.not.dcdio) then
-            call readxyz (polymer_main%dcdinfo(ibead)%idcd)
+            call read_frame(polymer_main%dcdinfo(ibead)%idcd,molecular_structure,status_value)
+            if (failed(status_value)) goto 900
          else
             call dcdfile_read_next(polymer_main%dcdinfo(ibead))
             call dcdfile_skip_next(polymer_main%dcdinfo(ibead),0)
@@ -354,14 +362,15 @@ subroutine analyze_beads_bis(raw_cli,status_value)
 !
 !     perform any final tasks before program exit
 !
-   do ibead=1,nbeads
+900 continue
+   do ibead=1,opened_beads
       if (dcdio) then
          call dcdfile_close(polymer_main%dcdinfo(ibead))
       else
          close (unit=polymer_main%dcdinfo(ibead)%idcd)
       end if
    enddo
-   call final
+   call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) status_value = cleanup_status

@@ -21,6 +21,10 @@ subroutine dcinduce_pme
    use iounit
    use math
    use mpole
+   use parallel, only: comm_state_t=>polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use pme
    use polar
    use polpot
@@ -38,8 +42,7 @@ subroutine dcinduce_pme
 !
    integer ierr, iipole, proc,tag
    integer, allocatable :: reqrecdirsend(:),reqrecdirrec(:)
-   integer, allocatable :: reqsend(:),reqrec(:)
-   integer, allocatable :: req2send(:),req2rec(:)
+   type(comm_state_t) :: comm_ticket, dip_ticket
    integer status(MPI_STATUS_SIZE)
 !
    parameter (nrhs=2)
@@ -105,22 +108,12 @@ subroutine dcinduce_pme
 !
    allocate (reqrecdirsend(nproc))
    allocate (reqrecdirrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (reqrec(nproc))
-   allocate (req2send(nproc))
-   allocate (req2rec(nproc))
 !
 !     compute the electric fields:
 !
    wtime0 = mpi_wtime()
 !
-!     MPI : begin reception
-!
    ctime = 0.0_ti_p
-   if (rank.le.ndir-1) then
-      call commdirdir(nrhs,0,mu,reqrec,reqsend)
-   end if
-!
    if (rank.le.ndir-1) then
       call commrecdirfields(0,cphirec,cphi,buffermpi,buffermpi,&
          &reqrecdirrec,reqrecdirsend)
@@ -220,22 +213,11 @@ subroutine dcinduce_pme
             end do
          end do
       end if
-      call commdirdir(nrhs,1,mu,reqrec,reqsend)
-!
-      call commrecdirdip(nrhs,1,murec,mu,buffermpimu,buffermpimu,&
-         &req2rec,req2send)
-!
-      call commdirdir(nrhs,2,mu,reqrec,reqsend)
-      call commrecdirdip(nrhs,2,murec,mu,buffermpimu,buffermpimu,&
-         &req2rec,req2send)
-
-   else
-
-      call commrecdirdip(nrhs,0,murec,mu,buffermpimu,buffermpimu,&
-         &req2rec,req2send)
-      call commrecdirdip(nrhs,2,murec,mu,buffermpimu,buffermpimu,&
-         &req2rec,req2send)
    end if
+   call polar_post_comm(comm_ticket,nrhs,mu)
+   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
+   call polar_finish_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
 !
 !     now, call the proper solver.
 !
@@ -292,10 +274,6 @@ subroutine dcinduce_pme
 !        deallocate (cphirec)
       deallocate (murec)
    end if
-   deallocate (reqrec)
-   deallocate (reqsend)
-   deallocate (req2rec)
-   deallocate (req2send)
    deallocate (reqrecdirrec)
    deallocate (reqrecdirsend)
 !
@@ -329,6 +307,10 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
    use iounit
    use math
    use mpole
+   use parallel, only: comm_state_t=>polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use polar
    use polpot
    use tinheader
@@ -365,8 +347,7 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
    real(t_p), allocatable ::buffermpimu(:,:,:)
    integer ierr, tag, proc
    integer,allocatable :: reqrecdirrec(:),reqrecdirsend(:)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
+   type(comm_state_t) :: comm_ticket, dip_ticket
    integer reqnorm,reqdiis(2*ndismx+1)
    integer status(MPI_STATUS_SIZE)
 !
@@ -425,10 +406,6 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
    buffermpi2 = 0.0_ti_p
    allocate (reqrecdirsend(nproc))
    allocate (reqrecdirrec(nproc))
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (req2rec(nproc))
-   allocate (req2send(nproc))
 !
 !     main loop:
 !
@@ -436,17 +413,11 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
 !        ctime = 0.0_ti_p
       rnorm = 0.0_ti_p
 !
-!     MPI : begin reception
-!
-      if (rank.le.ndir-1) then
-         call commdirdir(nrhs,0,mu,reqrec,reqsend)
-      else
-         call commrecdirdip(nrhs,0,dipfieldbis,dipfield,&
-            &buffermpimu,buffermpimu,req2rec,req2send)
-      end if
-!
-!      Begin the reception of the reciprocal fields
-!
+      call polar_post_comm(comm_ticket,nrhs,mu)
+      call polar_finish(comm_ticket,nrhs,mu)
+      call polar_post_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
+      call polar_finish_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
+
       if (rank.le.ndir-1) then
          call commrecdirsolv(nrhs,0,dipfieldbis,dipfield,buffermpi1,&
             &buffermpi2,reqrecdirrec,reqrecdirsend)
@@ -564,19 +535,11 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
             munew = 0.0_ti_p
             call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
          end if
-         call commdirdir(nrhs,1,munew,reqrec,reqsend)
-         call commrecdirdip(nrhs,1,murec,munew,buffermpimu,&
-            &buffermpimu,req2rec,req2send)
-!
-         call commdirdir(nrhs,2,mu,reqrec,reqsend)
-         call commrecdirdip(nrhs,2,murec,munew,buffermpimu,&
-            &buffermpimu,req2rec,req2send)
+         call polar_post_comm(comm_ticket,nrhs,mu,.false.,munew)
+         call polar_finish(comm_ticket,nrhs,mu)
+         call polar_post_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu,buffermpimu,.false.)
+         call polar_finish_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu,buffermpimu,.false.)
          mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
-         mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
-
-      else
-         call commrecdirdip(nrhs,2,murec,munew,buffermpimu,&
-            &buffermpimu,req2rec,req2send)
       end if
 !
 !     compute the norm of the increment.
@@ -616,10 +579,6 @@ subroutine inducedc_pme(matvec,nrhs,dodiis,ef,mu,murec)
 !     free the memory.
 !
    deallocate (buffermpimu)
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (req2send)
-   deallocate (req2rec)
    deallocate (reqrecdirsend)
    deallocate (reqrecdirrec)
    if (rank.le.ndir-1) then
@@ -2366,4 +2325,3 @@ subroutine commfield2short(nrhs,ef)
    deallocate (req)
    return
 end
-

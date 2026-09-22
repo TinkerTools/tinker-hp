@@ -20,16 +20,17 @@ subroutine optsave (ncycle,xx)
    use atomsMirror
    use domdec
    use files
-   use interfaces, only: prtxyz
    use iounit
+   use mdtraj, only: frame_view_t, write_snapshot
    use math
    use output
    use scales
+   use status, only: failed, status_t
    use tinheader
    use usage
    use mpi
    implicit none
-   integer i,iopt,iend,iglob
+   integer i,iend,iglob
    integer ncycle
    integer lext,freeunit
    real(r_p) xx(*)
@@ -37,6 +38,8 @@ subroutine optsave (ncycle,xx)
    character*7 ext
    character*240 optfile
    character*240 endfile
+   type(frame_view_t) frame
+   type(status_t) snapshot_status
 !
 !
 !     nothing to do if coordinate type is undefined
@@ -89,37 +92,34 @@ subroutine optsave (ncycle,xx)
 !
 !     get name of archive or intermediate coordinates file
 !
-   iopt = freeunit ()
    if (cyclesave) then
       if (archive) then
          optfile = filename(1:leng)
          call suffix (optfile,'arc','old')
-         inquire (file=optfile,exist=exist)
-         if (exist) then
-            call openend (iopt,optfile)
-         else
-            open (unit=iopt,file=optfile,status='new')
-         end if
       else
          lext = 3
          call numeral (ncycle,ext,lext)
          optfile = filename(1:leng)//'.'//ext(1:lext)
          call version (optfile,'new')
-         open (unit=iopt,file=optfile,status='new')
       end if
    else
       optfile = outfile
       call version (optfile,'old')
-      open (unit=iopt,file=optfile,status='old')
-      rewind (unit=iopt)
    end if
 !
 !     update intermediate file with desired coordinate type
 !
    if (coordtype .eq. 'CARTESIAN') then
-      call prtxyz (iopt)
+!$acc update host(x,y,z) async
+!$acc wait
+      frame = frame_view_t(atoms=n,host_global=.true.,x=x,y=y,z=z)
+      call write_snapshot(trim(optfile),frame,snapshot_status,&
+         &cyclesave .and. archive)
+      if (failed(snapshot_status)) then
+         write (iout,'(/,a)') trim(snapshot_status%message)
+         call fatal
+      end if
    end if
-   close (unit=iopt)
 !
 !     test for requested termination of the optimization
 !

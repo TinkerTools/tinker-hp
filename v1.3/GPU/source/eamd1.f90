@@ -118,7 +118,6 @@ subroutine commforces_energy_aMD(energy,derivs)
    use mamd
    use mpi
    use potent
-   use utilgpu,only: rec_queue
    implicit none
 
    real(r_p),intent(inout):: energy

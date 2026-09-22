@@ -30,9 +30,7 @@ subroutine kangtor(init)
    use tinMemory
    use tors
    use utils
-   use utilgpu,only: rec_queue
 #ifdef _OPENACC
-   use utilgpu,only: rec_stream
    use thrust
 #endif
    implicit none

@@ -24,7 +24,7 @@
 !
 #include "tinker_precision.h"
 subroutine cholesky (nvar,a,b)
-   use utilgpu,only:def_queue
+   use mdevice, only: default_work
    implicit none
    integer i,j,k,nvar
    integer ii,ij,ik,ki,kk
@@ -32,12 +32,12 @@ subroutine cholesky (nvar,a,b)
    real(t_p) r,s,t
    real(t_p) a(*)
    real(t_p) b(*)
-!
+   integer :: default_queue
 !
 !     Cholesky factorization to reduce "A" to (L)(D)(L transpose)
 !     "L" has a unit diagonal; store 1.0/D on the diagonal of "A"
 !
-!$acc serial present(a,b) async(def_queue)
+!$acc serial present(a,b) async(default_work%queue)
    ii = 1
    do i = 1, nvar
       im = i - 1
@@ -109,5 +109,4 @@ subroutine cholesky (nvar,a,b)
       ii = ii - j - 1
    end do
 !$acc end serial
-   return
 end

@@ -33,7 +33,7 @@ subroutine kgeom(init)
    use molcul
    use USampling ,only: init_USampling,US_enable
    use potent
-   use utilgpu   ,only: prmem_request
+   use tinMemory, only: prmem_request
    use tinheader ,only: ti_p,re_p
    implicit none
    integer i,j,k,l,ncap

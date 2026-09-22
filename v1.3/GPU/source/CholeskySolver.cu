@@ -134,7 +134,7 @@ void initcuSolverHandle(cudaStream_t stream){
 }
 
 /* ----------------
-   Reallocation procedure based on MOD_utilgpu.f reallocate_acc
+   Reallocation procedure for the Cholesky solver workspace
    ---------------- */
 void device_reallocate(void** array, const size_t bytesSize, size_t& PrevSize, cudaStream_t stream){
    if ( !(*array) ){

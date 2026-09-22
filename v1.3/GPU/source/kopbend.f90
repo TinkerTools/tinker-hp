@@ -30,9 +30,10 @@ subroutine kopbend(init)
    use kopbnd
    use opbend
    use potent
+   use tinMemory, only: prmem_request
+   use tinheader, only: ti_p
    use utils
    use usage
-   use utilgpu
    implicit none
    integer i,j,it,iangle
    integer ia,ib,ic,id

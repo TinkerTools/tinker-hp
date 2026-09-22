@@ -20,11 +20,10 @@ module eljcu
    use tinheader,only: ti_p
    use tintypes ,only: real3
    use sizes    ,only: maxclass,maxvalue
-   use utilcu   ,only: VDW_BLOCK_DIM,ALL_LANES
+   use utilcu   ,only: ALL_LANES
 #if TINKER_SINGLE_PREC + TINKER_MIXED_PREC
    use utilcu   ,only: f_sqrt
 #endif
-   use utilgpu  ,only: BLOCK_SIZE
    use reduction,only: RED_BUFF_SIZE
    use sizes    ,only: maxgrp
    use vdw      ,only: vdw_lcut2,vdweAbsurd
@@ -32,12 +31,14 @@ module eljcu
 
    implicit none
    private
+   integer,parameter :: VDW_BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32
    integer(1) one1,two1
 #include "atomicOp.h.f90"
 
    parameter( one1=1, two1=2 )
 
    public :: lj1_kcu,lj3_kcu
+   public :: VDW_BLOCK_DIM,BLOCK_SIZE,WARP_SIZE
 
 contains
 

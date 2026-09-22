@@ -30,8 +30,9 @@ module torquegpu_inl
       &,Ax_3_Fold,Ax_Bisector,Ax_Z_Bisect,Ax_Z_Only&
       &,Ax_Z_Then_X,Ax_None
    use sizes
+   use tinheader, only: ti_p
    use mpi
-   use utilgpu
+   use mdevice, only: direct_work
    use timestat
 
    implicit none
@@ -96,7 +97,7 @@ subroutine torquedgpu (trqvec,frcx,frcy,frcz,de,extract)
    if (tinkerdebug.gt.0) then
       j=0
 
-!$acc parallel loop gang vector_length(128) async(dir_queue) &
+!$acc parallel loop gang vector_length(128) async(direct_work%queue) &
 !$acc         present(ipolaxe,loc,ipole, &
 !$acc  xaxis,yaxis,zaxis,poleglobnl) copyin(j)
       do i =1, npolelocnl
@@ -147,7 +148,7 @@ subroutine torquedgpu (trqvec,frcx,frcy,frcz,de,extract)
 !
 !     zero out force components on local frame-defining atoms
 !
-!$acc parallel loop collapse(2) async(dir_queue) &
+!$acc parallel loop collapse(2) async(direct_work%queue) &
 !$acc         present(frcx,frcy,frcz)
    do i = 1, npolelocnl
       do j = 1, 3
@@ -159,7 +160,7 @@ subroutine torquedgpu (trqvec,frcx,frcy,frcz,de,extract)
 !
 !     get the local frame type and the frame-defining atoms
 !
-!$acc parallel loop gang vector_length(64) async(dir_queue) &
+!$acc parallel loop gang vector_length(64) async(direct_work%queue) &
 !$acc         private(trq,del,eps) &
 !$acc         present(trqvec,frcx,frcy,frcz,de) &
 !$acc         present(x,y,z,ipolaxe,loc,ipole, &
@@ -679,7 +680,7 @@ subroutine torquefgpu (trqvec,frcx,frcy,frcz,de,extract)
 !
 
 
-!$acc parallel loop collapse(2) async(dir_queue) &
+!$acc parallel loop collapse(2) async(direct_work%queue) &
 !$acc         present(frcx,frcy,frcz)
    do i = 1, npolelocnl
       do j = 1, 3
@@ -691,7 +692,7 @@ subroutine torquefgpu (trqvec,frcx,frcy,frcz,de,extract)
 !
 !     get the local frame type and the frame-defining atoms
 !
-!$acc parallel loop gang vector_length(64) async(dir_queue) &
+!$acc parallel loop gang vector_length(64) async(direct_work%queue) &
 !$acc         private(trq,del,eps) &
 !$acc         present(trqvec,frcx,frcy,frcz,de) &
 !$acc         present(x,y,z,ipolaxe,loc,ipole, &
@@ -2181,7 +2182,7 @@ subroutine torquegpu_group (trqvec,frcx,frcy,frcz,de)
    if (tinkerdebug.gt.0) then
       j=0
 
-!$acc parallel loop gang vector_length(128) async(dir_queue) &
+!$acc parallel loop gang vector_length(128) async(direct_work%queue) &
 !$acc         present(ipolaxe,loc,ipole, &
 !$acc  xaxis,yaxis,zaxis,globglobgroup,ipolegroup,pollist, &
 !$acc  locgroup,loclocgroup) copyin(j)
@@ -2236,7 +2237,7 @@ subroutine torquegpu_group (trqvec,frcx,frcy,frcz,de)
 !
 !     zero out force components on local frame-defining atoms
 !
-!$acc parallel loop collapse(2) async(dir_queue) &
+!$acc parallel loop collapse(2) async(direct_work%queue) &
 !$acc         present(frcx,frcy,frcz)
    do i = 1, npolegroup
       do j = 1, 3
@@ -2248,7 +2249,7 @@ subroutine torquegpu_group (trqvec,frcx,frcy,frcz,de)
 !
 !     get the local frame type and the frame-defining atoms
 !
-!$acc parallel loop gang vector_length(32) async(dir_queue) &
+!$acc parallel loop gang vector_length(32) async(direct_work%queue) &
 !$acc         private(trq,del,eps) &
 !$acc         present(trqvec,frcx,frcy,frcz,de) &
 !$acc         present(x,y,z,ipolaxe,loc,globglobgroup, &

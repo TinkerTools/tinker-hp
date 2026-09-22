@@ -17,7 +17,6 @@ module initialization
    use status, only: status_t
    use structure, only: structure_t
    implicit none
-   private
 
    type, public :: application_t
       integer :: identity = 0
@@ -31,6 +30,7 @@ module initialization
    type(application_t), parameter, public :: analyze_beads_application = application_t(6)
    type(application_t), parameter, public :: bar_application = application_t(7)
    type(application_t), parameter, public :: pibar_application = application_t(8)
+   type(application_t), parameter, public :: testgrad_application = application_t(9)
 
    integer, parameter, public :: energy_generation = 1
    integer, parameter, public :: bar_file_only = 2
@@ -58,8 +58,14 @@ module initialization
    end type init_probe_t
 
    public :: initialize
+   public :: initialize_defaults
    public :: initialize_state
    interface
+      module subroutine initialize_defaults(raw_cli, status_value)
+         type(raw_cli_t), intent(in) :: raw_cli
+         type(status_t), intent(out) :: status_value
+      end subroutine initialize_defaults
+
       module subroutine initialize(application, raw_cli, configuration, molecular_structure, &
          &platform, reciprocal_work, status_value, probe, mode)
          type(application_t), intent(in) :: application

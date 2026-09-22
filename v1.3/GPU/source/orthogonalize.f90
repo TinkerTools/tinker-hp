@@ -152,6 +152,10 @@ subroutine MatxVec(Rin,Rout)
    use orthogonalize,only: MdiagITmat,lz_AQ,lz_AQ1,l_idx&
       &,EigenVec_l,saveResAmat_l
    use polar
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm, domain_workspace_tp3d
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use polar_temp,only: murec,dipfield,dipfieldbis,diag
    use polpot
    use potent    ,only: use_polarshortreal
@@ -159,32 +163,34 @@ subroutine MatxVec(Rin,Rout)
    use timestat
    use units
    use utils
-   use utilcomm  ,buffermpi1=>buffermpi3d,buffermpi2=>buffermpi3d1
-   use utilgpu
+   use mdevice, only: reciprocal_work
+   use inform, only: Tinker_shellEnv
    implicit none
    integer i,j,k,nrhs
    real(t_p),contiguous:: Rin(:,:,:),Rout(:,:,:)
-   integer  ,dimension(nproc):: reqsend,reqrec,req2send,req2rec
+   integer,dimension(nproc):: req2send,req2rec
+   type(polar_comm_t) :: comm_ticket
+   real(t_p), pointer :: buffermpi1(:,:,:),buffermpi2(:,:,:)
+   real(t_p), pointer :: buffermpimu1(:,:,:),buffermpimu2(:,:,:)
    real(t_p) term
    parameter(nrhs=2)
 
+   call domain_workspace_tp3d(1,3,nrhs,max(npoleloc,1),buffermpi1)
+   call domain_workspace_tp3d(2,3,nrhs,max(npolerecloc,1),buffermpi2)
+   call domain_workspace_tp3d(3,3,nrhs,max(npoleloc,1),buffermpimu1)
+   call domain_workspace_tp3d(4,3,nrhs,max(npolerecloc,1),buffermpimu2)
+
    ! Extension communications
    if (use_polarshortreal) then
-      if (.not.skpPcomm) then
-         call commdirdirshort(nrhs,1,Rin,reqrec,reqsend)
-         call commdirdirshort(nrhs,0,Rin,reqrec,reqsend)
-         call commdirdirshort(nrhs,2,Rin,reqrec,reqsend)
+      if (.true.) then
+         call polar_post_comm(comm_ticket,nrhs,Rin,.true.)
+         call polar_finish(comm_ticket,nrhs,Rin)
       end if
    else
-      call commdirdirgpu(nrhs,0,Rin,reqrec,reqsend)
-      call commdirdirgpu(nrhs,1,Rin,reqrec,reqsend)
-      call commdirdirgpu(nrhs,2,Rin,reqrec,reqsend)
-      call commrecdirdipgpu(nrhs,0,murec,Rin,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
-      call commrecdirdipgpu(nrhs,1,murec,Rin,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
-      call commrecdirdipgpu(nrhs,2,murec,Rin,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
+      call polar_post_comm(comm_ticket,nrhs,Rin)
+      call polar_finish(comm_ticket,nrhs,Rin)
+      call polar_post_dip_comm(comm_ticket,nrhs,murec,Rin,buffermpimu1,buffermpimu2)
+      call polar_finish_dip_comm(comm_ticket,nrhs,murec,Rin,buffermpimu1,buffermpimu2)
    end if
 
    ! Compute matrix Vector product
@@ -215,7 +221,7 @@ subroutine MatxVec(Rin,Rout)
    ! Store result in tall matrix
    if (.not.use_polarshortreal) then
       term = (4.0_ti_p/3.0_ti_p)*aewald**3 / sqrtpi
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
                Rout(i,j,k) = Rout(i,j,k) + dipfield(i,j,k)&
                   &- term*Rin(i,j,k)
@@ -223,7 +229,7 @@ subroutine MatxVec(Rin,Rout)
    end if
 
    if (EigenVec_l.and.saveResAmat_l) then
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
                if (btest(j,0)) then; lz_AQ(i,k,l_idx) = Rout(i,j,k)
                else;                lz_AQ1(i,k,l_idx) = Rout(i,j,k)
@@ -233,7 +239,7 @@ subroutine MatxVec(Rin,Rout)
 
    ! Apply diag preconditionner
    if (MdiagITmat.ne.0) then
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k=1,npoleloc; do j=1,nrhs; do i=1,3
                Rout(i,j,k) = diag(k)*Rout(i,j,k)
             end do; end do; end do
@@ -303,7 +309,7 @@ subroutine InnerProdEf( veca, vecb, sza, Ip1, Ip2 )
    use domdec
    use mpi
    use orthogonalize,only: debg
-   use utilgpu ,only: rec_queue
+   use mdevice ,only: reciprocal_work
    implicit none
    integer  dim3,nrhs
    parameter(dim3=3,nrhs=2)
@@ -314,7 +320,7 @@ subroutine InnerProdEf( veca, vecb, sza, Ip1, Ip2 )
    integer i,j,k
 
    Ip1= 0; Ip2= 0
-!$acc parallel loop async(rec_queue) collapse(3) default(present)
+!$acc parallel loop async(reciprocal_work%queue) collapse(3) default(present)
    do k=1,sza; do j=1,nrhs; do i=1,dim3
             if (btest(j,0)) then
                Ip1 = Ip1 + veca(i,j,k)*vecb(i,j,k)
@@ -382,14 +388,16 @@ subroutine lanzcos_init(k0,compEv,mu_)
    use orthogonalize
    use mpole
    use mpi
+   use polpot, only: polgsf
 #ifdef _OPENACC
    use interfaces ,only: initcuSolver
 #endif
    use inform     ,only: minmaxone
    use polar_temp
    use tinMemory
-   use utilgpu
-   use utilcomm ,buffermpi1=>buffermpi3d,buffermpi2=>buffermpi3d1
+   use parallel, only: domain_workspace_tp3d
+   use mdevice, only: reciprocal_work
+   use inform, only: Tinker_shellEnv
    implicit none
    integer  ,parameter :: nrhs=2
    integer  ,intent(in):: k0,compEv
@@ -399,6 +407,8 @@ subroutine lanzcos_init(k0,compEv,mu_)
    integer i,j,k,ierr,sz
    integer(8) sz_
    logical EigV
+   real(t_p), pointer :: buffermpi1(:,:,:),buffermpi2(:,:,:)
+   real(t_p), pointer :: buffermpimu1(:,:,:),buffermpimu2(:,:,:)
 
    maxKD     = k0
    krylovDim = k0
@@ -419,10 +429,10 @@ subroutine lanzcos_init(k0,compEv,mu_)
    call prmem_request (dipfieldbis,3,nrhs,max(npolerecloc,1))
 
    if (nproc.gt.1) then
-      call prmem_request(buffermpi1  ,3,nrhs,max(npoleloc,1))
-      call prmem_request(buffermpimu1,3,nrhs,max(npoleloc,1))
-      call prmem_request(buffermpi2  ,3,nrhs,max(npolerecloc,1))
-      call prmem_request(buffermpimu2,3,nrhs,max(npolerecloc,1))
+      call domain_workspace_tp3d(1,3,nrhs,max(npoleloc,1),buffermpi1)
+      call domain_workspace_tp3d(2,3,nrhs,max(npoleloc,1),buffermpimu1)
+      call domain_workspace_tp3d(3,3,nrhs,max(npolerecloc,1),buffermpi2)
+      call domain_workspace_tp3d(4,3,nrhs,max(npolerecloc,1),buffermpimu2)
    end if
 
    call Tinker_shellEnv("ORTH",OrthBase,0)
@@ -479,7 +489,7 @@ subroutine lanzcos_init(k0,compEv,mu_)
       MatE1(1:nEigenV,1:nEigenV)=> lz_SS_(k+1:k+nEigenV**2)
 #ifdef _OPENACC
       call init_cublas_handle
-      call initcuSolver(rec_stream)
+      call initcuSolver(reciprocal_work%stream)
 #endif
    end if
 
@@ -495,7 +505,7 @@ subroutine lanzcos_init(k0,compEv,mu_)
    end do
 
    if (polgsf.ne.0) then
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k = 1,npoleloc; do j=1,2; do i=1,3
                if (btest(j,0)) then
                   lz_V(i,j,k,1) = mu_(i,j,k)*diag(k)
@@ -504,7 +514,7 @@ subroutine lanzcos_init(k0,compEv,mu_)
                end if
             end do; end do; end do
    else
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k = 1,npoleloc; do j=1,2; do i=1,3
                if (btest(j,0)) then
                   lz_V(i,j,k,1) = mu_(i,j,k)
@@ -525,7 +535,7 @@ subroutine lanzcos_init(k0,compEv,mu_)
 
    ! Normalisation
    if (EigenVec_l) then
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k = 1,npoleloc; do j=1,2; do i=1,3
                if (btest(j,0)) then
                   temp         = lz_V(i,j,k,1)*real(l2_norm,t_p)
@@ -537,7 +547,7 @@ subroutine lanzcos_init(k0,compEv,mu_)
                lz_V(i,j,k,1) = temp
             end do; end do; end do
    else
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k = 1,npoleloc; do j=1,2; do i=1,3
                if (btest(j,0)) then
                   lz_V(i,j,k,1) = lz_V(i,j,k,1)*real(l2_norm,t_p)
@@ -556,7 +566,8 @@ subroutine lanzcos_iteration
    use mpole
    use orthogonalize
    use polar_temp   ,only: res,diag
-   use utilgpu ,only: rec_queue,Tinker_shellEnv
+   use mdevice ,only: reciprocal_work
+   use inform ,only: Tinker_shellEnv
    use sizes   ,only: tinkerdebug
    implicit none
    integer  i,j,k,kk,it,ierr
@@ -602,7 +613,7 @@ subroutine lanzcos_iteration
    alphaa = alpha; alphaa1=alpha1;
 
    if (MdiagITmat.ne.0) then
-!$acc    parallel loop collapse(3) default(present) async(rec_queue)
+!$acc    parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k=1,npoleloc; do j = 1,2; do i = 1,3
                if (btest(j,0)) then
                   temp  = res(i,j,k) - alphaa*lz_V(i,j,k,1)
@@ -615,7 +626,7 @@ subroutine lanzcos_iteration
                end if
             end do; end do; end do
    else
-!$acc    parallel loop collapse(3) default(present) async(rec_queue)
+!$acc    parallel loop collapse(3) default(present) async(reciprocal_work%queue)
       do k=1,npoleloc; do j = 1,2; do i = 1,3
                if (btest(j,0)) then
                   temp  = res(i,j,k) - alphaa*lz_V(i,j,k,1)
@@ -666,7 +677,7 @@ subroutine lanzcos_iteration
       l_idx = kk
 
       if (EigenVec_l) then
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
          do k=1,npoleloc; do j=1,2; do i=1,3
                   if (btest(j,0)) then
                      lz_V(i,j,k,2) = lz_V(i,j,k,1)
@@ -681,7 +692,7 @@ subroutine lanzcos_iteration
                   end if
                end do; end do; end do
       else
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
          do k=1,npoleloc; do j=1,2; do i=1,3
                   if (btest(j,0)) then
                      lz_V(i,j,k,2) = lz_V(i,j,k,1)
@@ -731,7 +742,7 @@ subroutine lanzcos_iteration
       alphaa= alpha; alphaa1= alpha1
 
       if (MdiagITmat.ne.0) then
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
          do k=1,npoleloc; do j=1,2; do i=1,3
                   if (btest(j,0)) then
                      temp = res(i,j,k) - alphaa*lz_V(i,j,k,1)&
@@ -746,7 +757,7 @@ subroutine lanzcos_iteration
                   end if
                end do; end do; end do
       else
-!$acc parallel loop collapse(3) default(present) async(rec_queue)
+!$acc parallel loop collapse(3) default(present) async(reciprocal_work%queue)
          do k=1,npoleloc; do j=1,2; do i=1,3
                   if (btest(j,0)) then
                      temp = res(i,j,k) - alphaa*lz_V(i,j,k,1)&
@@ -1254,7 +1265,8 @@ end subroutine
 #ifdef _OPENACC
 subroutine init_cublas_handle
    use orthogonalize
-   use utilgpu
+   use mdevice, only: reciprocal_work
+   use inform, only: Tinker_shellEnv
    integer ierr
 
    if (init_cublas_handle_l) then
@@ -1264,7 +1276,7 @@ subroutine init_cublas_handle
    end if
 
    ierr = cublasCreate(cBhandle)
-   ierr = ierr + cublasSetStream(cBhandle, rec_stream)
+   ierr = ierr + cublasSetStream(cBhandle, reciprocal_work%stream)
    if (ierr.ne.0) then
       print*, 'cuBlas init fails ',ierr
    end if
@@ -1427,8 +1439,9 @@ subroutine calcEigenVectorImage
    use mpi
    use mpole      ,only: npoleloc,npolebloc
    use orthogonalize
+   use tinheader  ,only: ti_p
 #ifdef _OPENACC
-   use utilgpu    ,only: rec_stream
+   use mdevice    ,only: reciprocal_work
 #endif
    use sizes      ,only: tinkerdebug
    implicit none
@@ -1503,8 +1516,9 @@ subroutine BuildEMat
    use mpi
    use mpole      ,only: npoleloc,npolebloc
    use orthogonalize
+   use tinheader  ,only: ti_p
 #ifdef _OPENACC
-   use utilgpu    ,only: rec_stream
+   use mdevice    ,only: reciprocal_work
 #endif
    use sizes      ,only: tinkerdebug
    implicit none
@@ -1568,16 +1582,16 @@ subroutine BuildEMat
 #ifdef _OPENACC
    ! Cholesky Factorisation & Inversion
 !$acc host_data use_device(MatE_,MatE1_)
-   call cuPOTRF(nEigenV,MatE_,nEigenV,rec_stream)
-   call cuPOTRI(nEigenV,MatE_,nEigenV,rec_stream)
-   call cuPOTRF(nEigenV,MatE1_,nEigenV,rec_stream)
-   call cuPOTRI(nEigenV,MatE1_,nEigenV,rec_stream)
+   call cuPOTRF(nEigenV,MatE_,nEigenV,reciprocal_work%stream)
+   call cuPOTRI(nEigenV,MatE_,nEigenV,reciprocal_work%stream)
+   call cuPOTRF(nEigenV,MatE1_,nEigenV,reciprocal_work%stream)
+   call cuPOTRI(nEigenV,MatE1_,nEigenV,reciprocal_work%stream)
 !$acc end host_data
 
    ! LU Decomposition & Inversion
 !!$acc host_data use_device(MatE_,MatE1_,Ipivot,MIdk)
 !      call cuGESV(nEigenV,nEigenV,MatE_,nEigenV,Ipivot,MIdk,nEigenV
-!     &           ,rec_stream)
+!     &           ,reciprocal_work%stream)
 !!$acc parallel loop async collapse(2) deviceptr(MatE_,MIdk)
 !      do i = 1,nEigenV**2
 !         do j= 1,nEigenV
@@ -1586,7 +1600,7 @@ subroutine BuildEMat
 !         end do
 !      end do
 !      call cuGESV(nEigenV,nEigenV,MatE1_,nEigenV,Ipivot,MIdk,nEigenV
-!     &           ,rec_stream)
+!     &           ,reciprocal_work%stream)
 !!$acc parallel loop async collapse(2) deviceptr(MatE_,MIdk)
 !      do i = 1,nEigenV**2
 !         do j= 1,nEigenV
@@ -2065,7 +2079,7 @@ end subroutine
 subroutine loadKrylovBase(mu,Amu,beta_,beta1_)
    use orthogonalize
    use mpole
-   use utilgpu  ,only: rec_queue
+   use mdevice  ,only: reciprocal_work
    implicit none
    real(t_p) mu(3,2,*)
    real(t_p) Amu(3,2,*)
@@ -2078,7 +2092,7 @@ subroutine loadKrylovBase(mu,Amu,beta_,beta1_)
    if (.true.) print*, 'loadKrylovBase',wKD
 
    if (wKD.eq.1) then
-!$acc parallel loop collapse(3) async(rec_queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
       do k=1,npoleloc; do j=1,2; do i=1,3
                if (btest(j,0)) then
                   lz_Q (i,k,wKD) =  mu(i,j,k)
@@ -2091,7 +2105,7 @@ subroutine loadKrylovBase(mu,Amu,beta_,beta1_)
    else
       beta = real(beta_ ,t_p)
       beta1= real(beta1_,t_p)
-!$acc parallel loop collapse(3) async(rec_queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
       do k=1,npoleloc; do j=1,2; do i=1,3
                if (btest(j,0)) then
                   lz_Q  (i,k,wKD) =  mu(i,j,k)
@@ -2185,7 +2199,7 @@ subroutine polarEingenTest
    use mpole
    use orthogonalize
    use polar_temp ,only: mu
-   use utilgpu    ,only: Tinker_shellEnv
+   use inform    ,only: Tinker_shellEnv
    use tinheader  ,only: re_p
    implicit none
    integer sz_init,sz_max,i,jump,nlop,ire
@@ -2224,7 +2238,7 @@ subroutine polarEingenVal
    use orthogonalize
    use polar_temp ,only: mu
    use sizes      ,only: tinkerdebug
-   use utilgpu    ,only: Tinker_shellEnv
+   use inform    ,only: Tinker_shellEnv
    use random_mod
    implicit none
    integer i,sz_init
@@ -2273,4 +2287,3 @@ subroutine polarEingenVal
    call load_shift_attr(Eig,lz_T(sz_init+1),sz_init)
 
 end subroutine
-

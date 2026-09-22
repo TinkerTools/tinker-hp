@@ -54,6 +54,7 @@ subroutine empole1c
    use math
    use mpole
    use mutant
+   use parallel, only: commpot, commpotsum, commpotrec
    use pme
    use potent
    use timestat
@@ -363,6 +364,7 @@ subroutine emrecip1
    use math
    use mpole
    use mutant
+   use parallel, only: commpot, commpotsum, commpotrec
    use potent
    use timestat
    use virial
@@ -889,6 +891,7 @@ subroutine emreal1c
    use mplpot
    use mpole
    use mutant
+   use parallel, only: commpot, commpotsum, commpotrec
    use neigh
    use potent
    use shunt

@@ -12,15 +12,16 @@ subroutine rotpolegpu
    use potent ,only: use_pmecore
    use pme    ,only: GridDecomp1d
    use random_mod
-   use utilgpu,only: dir_queue,rec_queue,def_queue
+   use mdevice, only: reciprocal_work
    implicit none
    integer i,iipole,iglob
    real(t_p) a(3,3)
    interface
-      subroutine rot_mat_site(recBuild,nk,poleglobvec)
+      subroutine rot_mat_site(recBuild,nk,poleglobvec,queue_)
          logical,intent(in)::recBuild
          integer,intent(in)::nk
          integer,intent(in)::poleglobvec(nk)
+         integer,intent(in)::queue_
       end subroutine
    end interface
 !
@@ -34,19 +35,16 @@ subroutine rotpolegpu
    ! when deleting second call the it is poleglob's adress which is
    ! lost at runtime
 
-   def_queue=rec_queue
-   call rot_mat_site(.false.,npolelocnl,poleglobnl)
+   call rot_mat_site(.false.,npolelocnl,poleglobnl,reciprocal_work%queue)
    if (use_pmecore) then
-      call rot_mat_site(.false.,npolerecloc,polerecglob)
+      call rot_mat_site(.false.,npolerecloc,polerecglob,reciprocal_work%queue)
    else if (.not.(Bdecomp1d.and.GridDecomp1d)) then
-      call rot_mat_site(.true.,npolerecloc,polerecglob)
+      call rot_mat_site(.true.,npolerecloc,polerecglob,reciprocal_work%queue)
    else if (host_rand_platform.and.nZ_Onlyloc.gt.0) then ! Follow Tinker-HP calls to random
       do i = 1,3*nZ_Onlyloc
          samplevec(i)=random()
       end do
    end if
-   def_queue=dir_queue
-
 end
 !
 !     "rot_mat_site" finds the rotation matrix that converts from
@@ -55,17 +53,17 @@ end
 !     "rotsite" computes the atomic multipoles at a specified site
 !     in the global coordinate frame by applying a rotation matrix
 !
-subroutine rot_mat_site(recBuild,nk,poleglobvec)
+subroutine rot_mat_site(recBuild,nk,poleglobvec,queue_)
    use atoms
    use domdec ,only: repart,rank
    use mdstate
    use mpole
    use random_mod
-   use utilgpu
    implicit none
    logical,intent(in):: recBuild
    integer,intent(in):: nk
    integer,intent(in):: poleglobvec(nk)
+   integer,intent(in):: queue_
    integer ii,iipole,iglob
    integer ix,iy,iz
    integer i,j,k,m
@@ -91,7 +89,7 @@ subroutine rot_mat_site(recBuild,nk,poleglobvec)
       f_in=.false.
    end if
    if (nZ_Onlyloc.gt.0) then
-!$acc serial present(kk) async(def_queue)
+!$acc serial present(kk) async(queue_)
       kk = 0
 !$acc end serial
 #ifdef _OPENACC
@@ -99,7 +97,7 @@ subroutine rot_mat_site(recBuild,nk,poleglobvec)
          do ii = 1, 3*nZ_Onlyloc
             samplevec(ii) = random ()
          end do
-!$acc    update device(samplevec(1:3*nZ_Onlyloc)) async(def_queue)
+!$acc    update device(samplevec(1:3*nZ_Onlyloc)) async(queue_)
       else
          ! This call goes into main asynchronous stream
          call randomgpu(samplevec(1),3*nZ_Onlyloc)
@@ -110,7 +108,7 @@ subroutine rot_mat_site(recBuild,nk,poleglobvec)
 !$acc parallel loop private(a,m2,r2) present(kk) &
 !$acc         present(poleglobvec,ipole,ipolaxe,x,y,z,rpole, &
 !$acc   pole,xaxis,yaxis,zaxis) &
-!$acc         async(def_queue)
+!$acc         async(queue_)
    do ii = 1, nk
       iipole = poleglobvec(ii)
       iglob  = ipole(iipole)

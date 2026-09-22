@@ -40,17 +40,19 @@ subroutine respa1(istep,dt)
    use cutoff
    use domdec
    use deriv
-   use energi  ,only: info_energy,calc_e
+   use energi  ,only: info_energy,calc_e,reduceen
    use freeze
    use group
    use inform
    use mdstuf1
    use moldyn
+   use parallel, only: commposrec
    use timestat
    use potent
    use uprior  ,only: use_pred
    use utils   ,only: set_to_zero1m
-   use utilgpu ,only: prmem_requestm,rec_queue
+   use tinMemory,only: prmem_requestm
+   use mdevice, only: reciprocal_work
    use units
    use usage
    use virial
@@ -105,7 +107,7 @@ subroutine respa1(istep,dt)
 !
    if (.not.ftot_l) then
       call prmem_requestm(derivs,3,nbloc,async=.true.)
-      call set_to_zero1m(derivs,3*nbloc,rec_queue)
+      call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
    end if
 !
 !     get the slow-evolving potential energy and atomic forces
@@ -374,7 +376,7 @@ subroutine respaint1(ealt,viralt,dta,dta2)
    use deriv
    use domdec
    use deriv   ,only: zero_forces_rec
-   use energi  ,only: info_energy,calc_e
+   use energi  ,only: info_energy,calc_e,reduceen
    use freeze
    use inform
    use mdstuf1 ,only: ealt2,viralt2,derivs
@@ -384,7 +386,8 @@ subroutine respaint1(ealt,viralt,dta,dta2)
    use timestat
    use uprior  ,only: use_pred
    use utils   ,only: set_to_zero1m
-   use utilgpu ,only:prmem_requestm,rec_queue
+   use tinMemory,only:prmem_requestm
+   use mdevice, only: reciprocal_work
    use units
    use usage
    use virial
@@ -412,7 +415,7 @@ subroutine respaint1(ealt,viralt,dta,dta2)
 !
       if (.not.ftot_l) then
          call prmem_requestm(derivs,3,nbloc,async=.true.)
-         call set_to_zero1m (derivs,3*nbloc,rec_queue)
+         call set_to_zero1m (derivs,3*nbloc,reciprocal_work%queue)
       end if
 !
 !     get the fast-evolving potential energy and atomic forces
@@ -462,7 +465,7 @@ subroutine respafast1(ealt,viralt,dta)
    use cutoff
    use domdec
    use deriv
-   use energi  ,only: info_energy
+   use energi  ,only: info_energy,reduceen
    use freeze
    use inform
    use mdstuf1 ,only: derivs
@@ -470,7 +473,9 @@ subroutine respafast1(ealt,viralt,dta)
    use mpi
    use timestat
    use utils   ,only: set_to_zero1m
-   use utilgpu ,only: prmem_requestm,rec_queue
+   use tinMemory,only:prmem_requestm
+   use mdevice, only: reciprocal_work
+   use parallel ,only: commposrespa, reassign_respa
    use units
    use usage
    use virial
@@ -493,7 +498,7 @@ subroutine respafast1(ealt,viralt,dta)
 !       Reassign the particules that have changed of domain
 !
 !       -> real space
-      call reassignrespa(stepfast,nalt2)
+      call reassign_respa(stepfast,nalt2)
 !
 !       communicate positions
 !
@@ -501,7 +506,7 @@ subroutine respafast1(ealt,viralt,dta)
 !
       if (.not.ftot_l) then
          call prmem_requestm(derivs,3,nbloc,async=.true.)
-         call set_to_zero1m(derivs,3*nbloc,rec_queue)
+         call set_to_zero1m(derivs,3*nbloc,reciprocal_work%queue)
       end if
 !
       if (stepfast.eq.nalt2) call mechanicsteprespa1(-1,0)

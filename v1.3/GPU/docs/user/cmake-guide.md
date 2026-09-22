@@ -5,32 +5,57 @@
 
 The native CMake path requires NVHPC through MPI wrappers and `nvcc`, uses the
 GPU backend and the generic `2decomp_fft` backend.
-It supports double precision and mixed precision. PLUMED and Colvars remain
-external packages configured by CMake and built before Tinker-HP links.
+It supports double precision and mixed precision. The public preset catalog has
+34 configure presets: 32 static-core combinations and two constrained
+shared-core presets. PLUMED, Colvars, and Deep-HP are separate feature choices
+in this catalog; they are not combined in one public preset.
 
-Configure and build the baseline:
+The common static Ninja workflow is:
 
 ```bash
 cmake --preset gpu-double
 cmake --build --preset gpu-double
 ```
 
-The mixed/FPA workflow is available as a preset:
+The mixed-precision Fixed Precision Arithmetic (FPA) workflow is:
 
 ```bash
 cmake --preset gpu-fpa
 cmake --build --preset gpu-fpa
 ```
 
-The matching Colvars configuration is:
+Feature variants use one suffix at a time. For example:
 
 ```bash
 cmake --preset gpu-fpa-colvars
 cmake --build --preset gpu-fpa-colvars
+
+cmake --preset gpu-fpa-nn
+cmake --build --preset gpu-fpa-nn
+
+cmake --preset gpu-fpa-plumed
+cmake --build --preset gpu-fpa-plumed
 ```
 
-`gpu-fpa` produces executables such as `dynamic.fpa`; `gpu-fpa-colvars`
-produces `dynamic_clv.fpa`.
+`gpu-fpa` produces executables such as `dynamic.fpa`; the Colvars and Deep-HP
+variants add their corresponding executable markers.
+
+For all-architecture compilation, use the explicit `all` token:
+
+```bash
+cmake --preset gpu-all-fpa
+cmake --build --preset gpu-all-fpa
+```
+
+The same static choices are available with Unix Makefiles by adding `-make`:
+
+```bash
+cmake --preset gpu-fpa-make
+cmake --build --preset gpu-fpa-make
+```
+
+Use the matching name for configuration and build. `cmake --list-presets`
+shows the complete public catalog.
 
 ## Shared core linking
 
@@ -40,33 +65,50 @@ and the optional Colvars archive remain static and are compiled as PIC. The
 installed executables use a relative runtime search path to find the installed
 core library.
 
-The FPA shared-core workflows are:
+The public shared-core workflows are deliberately limited to the two
+featureless, all-architecture Ninja presets:
 
 ```bash
-cmake --preset gpu-fpa-shared
-cmake --build --preset gpu-fpa-shared
-cmake --preset gpu-fpa-shared-colvars
-cmake --build --preset gpu-fpa-shared-colvars
+cmake --preset gpu-all-double-shared
+cmake --build --preset gpu-all-double-shared
+
+cmake --preset gpu-all-fpa-shared
+cmake --build --preset gpu-all-fpa-shared
 ```
 
-`gpu-sm75-fpa-shared` and `gpu-sm75-fpa-shared-colvars` select SM75 explicitly
-for environments where native GPU architecture detection is unavailable. Run
+The private SM75 presets select an explicit architecture for sandbox and
+acceptance workflows. They are not part of the public 34-preset matrix. Run
 the SM75 Colvars acceptance test after its build with:
 
 ```bash
 ctest --preset gpu-sm75-fpa-shared-colvars
 ```
 
-The matching Deep-HP workflows are:
+Shared-core preset availability is a configuration declaration, not evidence
+that parallel MPI execution is safe. The current NVHPC compatibility evidence
+defers shared-core MPI validation until NVHPC 26.1 or newer is available. Use
+the maintained static SM75 presets for parallel development and validation.
+
+## Preset naming at a glance
+
+Public static names combine platform, architecture, precision, one optional
+feature, link mode, and builder. Defaults are omitted: `gpu` is the platform,
+native architecture, static link mode, and Ninja builder. `all`, `-make`, and
+`-shared` are explicit when selected. The public precision token `fpa` means
+mixed precision with FPA enabled. Feature suffixes are `-colvars`, `-nn`, and
+`-plumed`; feature choices are mutually exclusive.
+
+The complete matrix and mapping rules are maintained in the [CMake
+architecture guide](../tech/cmake-arch.md). The matching Deep-HP workflow is:
 
 ```bash
 cmake --preset gpu-fpa-nn
 cmake --build --preset gpu-fpa-nn
-cmake --preset gpu-fpa-nn-colvars
-cmake --build --preset gpu-fpa-nn-colvars
 ```
 
-They produce `dynamic_nn.fpa` and `dynamic_nn_clv.fpa`, respectively.
+It produces `dynamic_nn.fpa`. The public catalog does not define a combined
+Deep-HP/Colvars preset; configure those features directly only where that
+workflow is separately supported.
 
 ## Precision and FPA
 
@@ -129,11 +171,15 @@ interpreter must import CFFI, NumPy, PyYAML, CuPy, JAX, and FeNNol.
 Managed creation chooses its `cuda12` or `cuda13` profile from the CUDA runtime
 reported by the NVHPC preflight. The generated native `mlinterface` plugin is
 kept in the build tree, installed with Tinker-HP libraries, and found by NN
-executables automatically. Installation deliberately does not copy Python
-environments, packages, or models. Activate or otherwise expose the selected
-environment before starting a simulation; supply models through the existing
-`ML-MODEL` keyword. See the [Deep-HP environment](../../deep-hp/README.md) for
-its lifecycle.
+executables automatically. The selected interpreter's shared `libpython`
+directory is recorded in the normal build and install runtime search paths for
+both the plugin and NN executables; no plugin-specific `LD_LIBRARY_PATH`
+setting is required. Installation deliberately does not copy Python
+environments, packages, or models. The selected environment must remain at the
+configured path (reconfigure and rebuild after moving or recreating it); an
+ABI-compatible `LD_LIBRARY_PATH` override remains available for site
+integration. Supply models through the existing `ML-MODEL` keyword. See the
+[Deep-HP environment](../../deep-hp/README.md) for its lifecycle.
 
 ## Makefile Build
 It remains possible to build using [Makefile](./makefile-build.md)

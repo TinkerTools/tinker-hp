@@ -44,13 +44,14 @@ contains
    end subroutine
 
    module subroutine dcdio_write(dcdinfo,trajectory_file,istep,dt,append,&
-      &x_frame,y_frame,z_frame)
+      &x_frame,y_frame,z_frame,status_value)
       use atmtyp
       use atoms      ,only: pbcunwrap,pbcWrapIdx
       use boxes
       use inform
       use replicas
       use iso_c_binding, only: C_NULL_CHAR
+      use status, only: clear_status, failed, set_status, status_invalid_argument, status_ok, status_t
       implicit none
       type(dcdinfo_t), intent(inout) :: dcdinfo
       character(*), intent(in) :: trajectory_file
@@ -58,9 +59,11 @@ contains
       real(r_p), intent(in) :: dt
       logical, intent(in) :: append
       real(r_p), intent(in) :: x_frame(:),y_frame(:),z_frame(:)
+      type(status_t), intent(out) :: status_value
+      type(status_t) :: cleanup_status
       integer i,j,k,idcd
       integer freeunit
-      integer(kind=4) :: coord_size
+      integer(kind=4) :: coord_size,ios
       real(kind=4), allocatable :: posw(:)
       real(kind=8) :: box(6)
       logical init,exist
@@ -68,6 +71,9 @@ contains
       character (len=79) :: info1,info2
       character (len=8) :: date
       character (len=10) :: time
+      logical append_positioned
+
+      call clear_status(status_value)
 
       dcdinfo%natoms     = size(x_frame)
       coord_size = 4*dcdinfo%natoms
@@ -76,6 +82,7 @@ contains
       dcdinfo%filename = trim(trajectory_file)
       init       = (dcdinfo%idcd.eq.0)
       idcd = dcdinfo%idcd
+      append_positioned = .false.
 !
       if (init) then
 !
@@ -84,12 +91,22 @@ contains
          inquire (file=trim(dcdinfo%filename),exist=exist)
          if (exist .and. append) then
             open (newunit=idcd,file=trim(dcdinfo%filename)&
-               &,access="stream",status='old',position='append')
+               &,access="stream",status='old',position='append',iostat=ios)
+            if (ios /= 0) then
+               call set_status(status_value,status_invalid_argument,'Unable to open DCD trajectory')
+               return
+            end if
             dcdinfo%idcd=idcd
 !
 !     check header
 !
-            call dcdfile_read_header(dcdinfo,.true.)
+            call dcdio_read_header(dcdinfo,status_value)
+            if (failed(status_value)) then
+               call dcdio_close(dcdinfo,cleanup_status)
+               if (failed(cleanup_status)) status_value = cleanup_status
+               return
+            end if
+            append_positioned = .true.
 !
 !       nevery: frequency output in timesteps
 !
@@ -100,7 +117,11 @@ contains
 !     open dcd trajectory file
 !
             open(newunit=idcd, file=trim(dcdinfo%filename)&
-               &, form="unformatted",access="stream", status="replace")
+               &, form="unformatted",access="stream", status="replace",iostat=ios)
+            if (ios /= 0) then
+               call set_status(status_value,status_invalid_argument,'Unable to open DCD trajectory')
+               return
+            end if
 
             dcdinfo%idcd=idcd
 !
@@ -125,106 +146,148 @@ contains
 !
             dcdinfo%nevery = iwrite
 
-            write(idcd) 84
-            write(idcd) "CORD"
+            write(idcd,iostat=ios) 84
+            if (ios /= 0) goto 900
+            write(idcd,iostat=ios) "CORD"
+            if (ios /= 0) goto 900
 
             inquire(unit=idcd, pos=dcdinfo%nframes_pos)
 
 ! Number of snapshots in file
-            write(idcd) dcdinfo%nframes
+            write(idcd,iostat=ios) dcdinfo%nframes
+            if (ios /= 0) goto 900
 !
 ! Timestep of first snapshot
-            write(idcd) dcdinfo%istart
+            write(idcd,iostat=ios) dcdinfo%istart
+            if (ios /= 0) goto 900
 !
 ! Save snapshots every this many steps
-            write(idcd) dcdinfo%nevery
+            write(idcd,iostat=ios) dcdinfo%nevery
+            if (ios /= 0) goto 900
 !
             inquire(unit=idcd, pos=dcdinfo%iend_pos)
 ! Timestep ! of ! last ! snapshot
-            write(idcd) dcdinfo%iend
+            write(idcd,iostat=ios) dcdinfo%iend
+            if (ios /= 0) goto 900
 
             do i = 1, 5
-               write(idcd) 0
+               write(idcd,iostat=ios) 0
+               if (ios /= 0) goto 900
             end do
 
 ! Simulation timestep
-            write(idcd) dcdinfo%timestep
+            write(idcd,iostat=ios) dcdinfo%timestep
+            if (ios /= 0) goto 900
 
 ! Has unit cell
-            write(idcd) 1
+            write(idcd,iostat=ios) 1
+            if (ios /= 0) goto 900
 
             do i = 1, 8
-               write(idcd) 0
+               write(idcd,iostat=ios) 0
+               if (ios /= 0) goto 900
             end do
             ! Pretend to be CHARMM version 24
-            write(idcd) 24
-            write(idcd) 84
-            write(idcd) 164
+            write(idcd,iostat=ios) 24
+            if (ios /= 0) goto 900
+            write(idcd,iostat=ios) 84
+            if (ios /= 0) goto 900
+            write(idcd,iostat=ios) 164
+            if (ios /= 0) goto 900
 
-            write(idcd) 2
-            write(idcd) info1//C_NULL_CHAR
-            write(idcd) info2//C_NULL_CHAR
+            write(idcd,iostat=ios) 2
+            if (ios /= 0) goto 900
+            write(idcd,iostat=ios) info1//C_NULL_CHAR
+            if (ios /= 0) goto 900
+            write(idcd,iostat=ios) info2//C_NULL_CHAR
+            if (ios /= 0) goto 900
 
-            write(idcd) 164
-            write(idcd) 4
+            write(idcd,iostat=ios) 164
+            if (ios /= 0) goto 900
+            write(idcd,iostat=ios) 4
+            if (ios /= 0) goto 900
 
             ! Number of atoms in each snapshot
-            write(idcd) dcdinfo%natoms
-            write(idcd) 4
+            write(idcd,iostat=ios) dcdinfo%natoms
+            if (ios /= 0) goto 900
+            write(idcd,iostat=ios) 4
+            if (ios /= 0) goto 900
 
-            flush(idcd)
+            flush(idcd,iostat=ios)
+            if (ios /= 0) goto 900
          end if
       end if
 
       allocate (posw(dcdinfo%natoms))
 
-      write(idcd) 48
+      if (append_positioned) then
+         write(idcd,pos=dcdinfo%curr_pos,iostat=ios) 48
+      else
+         write(idcd,iostat=ios) 48
+      end if
+      if (ios /= 0) goto 900
 
       box(1) = xbox
-      write(idcd) box(1) ! A
+      write(idcd,iostat=ios) box(1) ! A
+      if (ios /= 0) goto 900
       box(6) = gamma
-      write(idcd) box(6) ! gamma
+      write(idcd,iostat=ios) box(6) ! gamma
+      if (ios /= 0) goto 900
       box(2) = ybox
-      write(idcd) box(2) ! B
+      write(idcd,iostat=ios) box(2) ! B
+      if (ios /= 0) goto 900
       box(5) = beta
-      write(idcd) box(5) ! beta
+      write(idcd,iostat=ios) box(5) ! beta
+      if (ios /= 0) goto 900
       box(4) = alpha
-      write(idcd) box(4) ! alpha
+      write(idcd,iostat=ios) box(4) ! alpha
+      if (ios /= 0) goto 900
       box(3) = zbox
-      write(idcd) box(3) ! C
+      write(idcd,iostat=ios) box(3) ! C
+      if (ios /= 0) goto 900
 
 
-      write(idcd) 48
-      write(idcd) coord_size
+      write(idcd,iostat=ios) 48
+      if (ios /= 0) goto 900
+      write(idcd,iostat=ios) coord_size
+      if (ios /= 0) goto 900
 
       if (pbcunwrap) then
          call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,1,x_frame)
       else
          do i = 1,dcdinfo%natoms; posw(i) = real(x_frame(i),4); end do
       end if
-      write(idcd) posw(:)
+      write(idcd,iostat=ios) posw(:)
+      if (ios /= 0) goto 900
 
-      write(idcd) coord_size
-      write(idcd) coord_size
+      write(idcd,iostat=ios) coord_size
+      if (ios /= 0) goto 900
+      write(idcd,iostat=ios) coord_size
+      if (ios /= 0) goto 900
 
       if (pbcunwrap) then
          call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,2,y_frame)
       else
          do i = 1,dcdinfo%natoms; posw(i) = real(y_frame(i),4); end do
       end if
-      write(idcd) posw(:)
+      write(idcd,iostat=ios) posw(:)
+      if (ios /= 0) goto 900
 
-      write(idcd) coord_size
-      write(idcd) coord_size
+      write(idcd,iostat=ios) coord_size
+      if (ios /= 0) goto 900
+      write(idcd,iostat=ios) coord_size
+      if (ios /= 0) goto 900
 
       if (pbcunwrap) then
          call unwrap_dcd_pos(posw,pbcWrapIdx,dcdinfo%natoms,3,z_frame)
       else
          do i = 1,dcdinfo%natoms; posw(i) = real(z_frame(i),4); end do
       end if
-      write(idcd) posw(:)
+      write(idcd,iostat=ios) posw(:)
+      if (ios /= 0) goto 900
 
-      write(idcd) coord_size
+      write(idcd,iostat=ios) coord_size
+      if (ios /= 0) goto 900
 
       inquire(unit=idcd, pos=dcdinfo%curr_pos)
 
@@ -232,15 +295,106 @@ contains
       dcdinfo%iend = dcdinfo%iend + dcdinfo%nevery
 
       ! Go back and update header
-      write(idcd, pos=9) dcdinfo%nframes
-      write(idcd, pos=21) dcdinfo%iend
-      write(idcd, pos=dcdinfo%curr_pos)
+      write(idcd, pos=9, iostat=ios) dcdinfo%nframes
+      if (ios /= 0) goto 900
+      write(idcd, pos=21, iostat=ios) dcdinfo%iend
+      if (ios /= 0) goto 900
+      write(idcd, pos=dcdinfo%curr_pos, iostat=ios)
+      if (ios /= 0) goto 900
 
-      flush(idcd)
+      flush(idcd,iostat=ios)
+      if (ios /= 0) goto 900
 
       deallocate (posw)
+      call set_status(status_value,status_ok,'DCD trajectory frame written')
+      return
+900   continue
+      if (allocated(posw)) deallocate(posw)
+      call set_status(status_value,status_invalid_argument,'Unable to write DCD trajectory')
       return
    end
+
+   module subroutine dcdio_read_header(dcdinfo,status_value)
+      use status, only: clear_status, set_status, status_invalid_argument, &
+         &status_ok, status_t
+      implicit none
+      type(dcdinfo_t), intent(inout) :: dcdinfo
+      type(status_t), intent(out) :: status_value
+      integer(kind=4) :: magic_number, ntitle, title_marker, atom_marker
+      integer(kind=4) :: atom_count, charmm_version, has_extra_block
+      integer(kind=4) :: ios
+      integer(kind=8) :: first_frame, expected_size, file_size
+      character(len=4) :: magic_string
+
+      call clear_status(status_value)
+      read(dcdinfo%idcd,pos=1,iostat=ios) magic_number
+      if (ios /= 0) goto 910
+      read(dcdinfo%idcd,pos=5,iostat=ios) magic_string
+      if (ios /= 0 .or. magic_number /= 84 .or. magic_string /= 'CORD') goto 910
+      read(dcdinfo%idcd,pos=9,iostat=ios) dcdinfo%nframes,dcdinfo%istart,&
+         &dcdinfo%nevery,dcdinfo%iend
+      if (ios /= 0) goto 910
+      read(dcdinfo%idcd,pos=45,iostat=ios) dcdinfo%timestep
+      if (ios /= 0) goto 910
+      read(dcdinfo%idcd,pos=49,iostat=ios) has_extra_block
+      if (ios /= 0 .or. has_extra_block /= 1) goto 910
+      read(dcdinfo%idcd,pos=85,iostat=ios) charmm_version
+      if (ios /= 0 .or. charmm_version == 0) goto 910
+      read(dcdinfo%idcd,pos=97,iostat=ios) ntitle
+      if (ios /= 0 .or. ntitle < 0) goto 910
+
+      first_frame = 101 + int(80,kind=8)*int(ntitle,kind=8) + 16
+      read(dcdinfo%idcd,pos=first_frame-16,iostat=ios) title_marker
+      if (ios /= 0 .or. title_marker /= 164) goto 910
+      read(dcdinfo%idcd,pos=first_frame-12,iostat=ios) atom_marker
+      if (ios /= 0 .or. atom_marker /= 4) goto 910
+      read(dcdinfo%idcd,pos=first_frame-8,iostat=ios) atom_count
+      if (ios /= 0 .or. atom_count <= 0 .or. atom_count /= dcdinfo%natoms) goto 910
+      read(dcdinfo%idcd,pos=first_frame-4,iostat=ios) atom_marker
+      if (ios /= 0 .or. atom_marker /= 4) goto 910
+      if (dcdinfo%nframes > 0) then
+         read(dcdinfo%idcd,pos=first_frame,iostat=ios) atom_marker
+         if (ios /= 0 .or. atom_marker /= 48) goto 910
+      end if
+
+      dcdinfo%framesize = dcdinfo%natoms*12 + 80
+      inquire(unit=dcdinfo%idcd,size=file_size,iostat=ios)
+      if (ios /= 0) goto 910
+      expected_size = first_frame - 1 + dcdinfo%framesize*dcdinfo%nframes
+      if (dcdinfo%nframes < 0 .or. file_size /= expected_size) goto 910
+      dcdinfo%nframes_pos = 9
+      dcdinfo%iend_pos = 21
+      dcdinfo%curr_pos = file_size + 1
+      call set_status(status_value,status_ok,'DCD append header read')
+      return
+910   continue
+      call set_status(status_value,status_invalid_argument,&
+         &'Unable to read DCD append header')
+   end subroutine dcdio_read_header
+
+   module subroutine dcdio_close(dcdinfo,status_value)
+      use status, only: clear_status, set_status, status_invalid_argument, status_ok, status_t
+      implicit none
+      type(dcdinfo_t), intent(inout) :: dcdinfo
+      type(status_t), intent(out) :: status_value
+      integer :: ios
+      logical :: opened
+
+      call clear_status(status_value)
+      opened = .false.
+      if (dcdinfo%idcd /= 0) inquire(unit=dcdinfo%idcd,opened=opened)
+      if (opened) then
+         close(dcdinfo%idcd,iostat=ios)
+         if (ios /= 0) then
+            call set_status(status_value,status_invalid_argument,&
+               &'Unable to close DCD trajectory')
+            return
+         end if
+      end if
+      if (allocated(dcdinfo%titlesdcd)) deallocate(dcdinfo%titlesdcd)
+      dcdinfo%idcd = 0
+      call set_status(status_value,status_ok,'DCD trajectory closed')
+   end subroutine dcdio_close
 !
 !     subroutine dcdfile_open: opens file to read trajectory from
 !

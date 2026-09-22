@@ -5,9 +5,10 @@ submodule(beads) sub_beads
 contains
 
    module subroutine allocate_polymer(polymer,nu,allocate_vel&
-      &,allocate_forces,allocate_slow)
+      &,allocate_forces,allocate_slow,status_value)
       use atoms, only: n
       use domdec, only: nproc_polymer
+      use status, only: failed, status_t
       use tinheader, only: re_p
       implicit none
       TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
@@ -15,8 +16,10 @@ contains
       LOGICAL, intent(in) :: allocate_vel, allocate_slow
       LOGICAL, intent(in) :: allocate_forces
       integer :: i
+      type(status_t), intent(out) :: status_value
 
-      call deallocate_polymer(polymer)
+      call deallocate_polymer(polymer,status_value)
+      if (failed(status_value)) return
 !$acc enter data create(polymer) async
 
       max_polymer_index = max_polymer_index +1
@@ -84,10 +87,16 @@ contains
 
    end subroutine allocate_polymer
 
-   module subroutine deallocate_polymer(polymer)
+   module subroutine deallocate_polymer(polymer,status_result)
+      use status, only: failed, status_t
       implicit none
       TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
+      type(status_t), intent(out), optional :: status_result
+      type(status_t) :: status_value
 
+      call close_polymer_trajectories(polymer,status_value)
+      if (present(status_result)) status_result = status_value
+      if (failed(status_value)) return
       if(.not. polymer%allocated) return
 
       polymer%allocated=.false.
@@ -166,6 +175,29 @@ contains
 !$acc wait
    end subroutine deallocate_polymer
 
+   module subroutine close_polymer_trajectories(polymer,status_value)
+      use mdtraj, only: close_trajectory
+      use status, only: clear_status, failed, status_t
+      implicit none
+      TYPE(POLYMER_COMM_TYPE), intent(inout) :: polymer
+      type(status_t), intent(out) :: status_value
+      type(status_t) :: trajectory_status
+      integer :: ibead
+      logical :: close_failed
+
+      call clear_status(status_value)
+      if (.not.allocated(polymer%dcd_trajectory)) return
+      close_failed = .false.
+      do ibead = 1, size(polymer%dcd_trajectory)
+         call close_trajectory(polymer%dcd_trajectory(ibead),trajectory_status)
+         if (failed(trajectory_status) .and. .not.close_failed) then
+            status_value = trajectory_status
+            close_failed = .true.
+         end if
+      end do
+      if (.not.close_failed) deallocate(polymer%dcd_trajectory)
+   end subroutine close_polymer_trajectories
+
    module subroutine initialize_normal_modes(polymer,verbose)
       use domdec
       use atoms
@@ -233,7 +265,7 @@ contains
 
    end subroutine update_nlocpi
 
-   module subroutine allocpi()
+   module subroutine allocpi(status_value)
       use angle
       use atoms
       use bath
@@ -249,10 +281,14 @@ contains
       use units
       use mdstuf
       use mpi
+      use status, only: clear_status, failed, status_t
       implicit none
       integer i,ierr,j,k
+      type(status_t), intent(out) :: status_value
       real(8), allocatable :: WORK(:)
       real(8), allocatable :: WORK_ctr(:),eigMat_ctr(:,:),omkpi_ctr(:)
+
+      call clear_status(status_value)
 
       call update_nlocpi(nloc)
 !$acc wait
@@ -340,13 +376,15 @@ contains
       endif
 
       call allocate_polymer(polymer_main,nbeads&
-         &,.TRUE., .TRUE., .TRUE. )
+         &,.TRUE., .TRUE., .TRUE., status_value )
+      if (failed(status_value)) return
       nbeadsloc = polymer_main%nbeadsloc(rank_polymer+1)
       call initialize_normal_modes(polymer_main,.TRUE.)
 
       if(contract .and. nbeads_ctr>1) then
          call allocate_polymer(polymer_ctr,nbeads_ctr&
-            &,.FALSE.,.FALSE.,.TRUE.)
+            &,.FALSE.,.FALSE.,.TRUE.,status_value)
+         if (failed(status_value)) return
          nbeadsloc_ctr = polymer_ctr%nbeadsloc(rank_polymer+1)
       endif
 

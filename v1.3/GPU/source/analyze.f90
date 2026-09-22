@@ -42,7 +42,8 @@ program analyze
    if (failed(status_value)) then
       if (world_rank.eq.0) write(iout,*) trim(status_value%message)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      __TINKER_FATAL__
+      call MPI_FINALIZE(ierr)
+      stop 1
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
@@ -59,7 +60,7 @@ subroutine analyze_bis(raw_cli,status_value)
    use iounit
    use mdevice, only: channel_t, finalize_device
    use mpi
-   use parallel, only: parallel_t, release
+   use parallel, only: parallel_t, release, assign_direct, assign_reciprocal
    use status, only: failed, enrich_status, set_status, status_invalid_argument, &
       &status_t
    use structure, only: read_frame, structure_t
@@ -190,8 +191,8 @@ subroutine analyze_bis(raw_cli,status_value)
 !       setup for MPI
 !
       call lattice
-      call AllDirAssign
-      call AllRecAssign
+      call assign_direct
+      call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
@@ -241,7 +242,7 @@ subroutine analyze_bis(raw_cli,status_value)
    else
       close (unit=ixyz)
    end if
-   call final
+   call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) status_value = cleanup_status
@@ -453,7 +454,7 @@ subroutine partyze
       write (iout,fstr)  ex,nex
    end if
    if (nemlpot.ne.0) then
-      fstr = '('' ML Potential'',7x,'//form1//')'
+      fstr = '('' ML Potential'',15x,'//form1//')'
       write (iout,fstr)  emlpot,nemlpot
    end if
    return

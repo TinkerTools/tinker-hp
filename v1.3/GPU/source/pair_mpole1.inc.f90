@@ -14,7 +14,7 @@ M_subroutine&
 !$acc routine
 use interfaces,only: m_long
 use tinheader ,only: ti_p,zero1,one1,two1,twor
-use utilgpu   ,only: rpole_elt,real3,real6,mdyn3_r
+use tinTypes  ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
 use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)
@@ -335,7 +335,7 @@ M_subroutine&
    &,e,frc,ttmi,ttmk,poti,potk,ver,fea,deb)
 !$acc routine
 use tinheader ,only: ti_p,zero1,one1,two1,twor
-use utilgpu   ,only: rpole_elt,real3,real6,mdyn3_r
+use tinTypes  ,only: rpole_elt,real3,real6,mdyn3_r
 #ifdef TINKER_CUF
 use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)
@@ -904,7 +904,7 @@ M_subroutine&
    &,aewald,f,alsq2n,alsq2,e,do_correct)
 !$acc routine
 use tinheader ,only: ti_p
-use utilgpu   ,only: rpole_elt,real3,real6
+use tinTypes  ,only: rpole_elt,real3,real6
 #ifdef TINKER_CUF
 use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)
@@ -1035,7 +1035,7 @@ M_subroutine&
 !$acc routine
 use interfaces,only: m_long
 use tinheader ,only: ti_p
-use utilgpu   ,only: rpole_elt,real3,real6
+use tinTypes  ,only: rpole_elt,real3,real6
 #ifdef TINKER_CUF
 use utilcu ,only: f_erfc
 #  if defined(SINGLE)||defined(MIXED)

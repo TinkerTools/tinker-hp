@@ -11,37 +11,150 @@
 !
 #include "tinker_macro.h"
 submodule (initialization) initialization_lifecycle
-   use atoms, only: n
-   use beads, only: read_bead_config
+   use atoms , only: n
+   use beads , only: read_bead_config
    use config, only: config_t, discover_key, discover_prm, apply_early_configuration, &
-      &apply_defaults_prm_key
-   use cflux, only: release_cflux_workspaces
+                     apply_defaults_prm_key
+   use cflux , only: release_cflux_workspaces
    use cutoff, only: use_ewald
    use energi, only: delete_energi_on_device
-   use fft, only: free_FFTgrid_p, fft_final, is_fftInit
+   use fft   , only: free_FFTgrid_p, fft_final, is_fftInit
    use inform, only: app_id, analyze_a, analyze_beads_a, bar_a, dynamic_a, minimize_a, &
-      &pibar_a, pimd_a, radial_a
-   use interfaces, only: initial, mechanic
-   use mdevice, only: initialize_device, reciprocal_channel, finalize_device
+                     pibar_a, pimd_a, radial_a, testgrad_a
+   use interfaces, only: mechanic
+   use mdevice   , only: channel_t, direct_work, initialize_device, &
+                     recip_work => reciprocal_work, default_work, sync_work, finalize_device
    use moldyn, only: a, aalt, aalt2, v
    use mpi, only: MPI_COMM_NULL, MPI_Finalized, MPI_Initialized, MPI_SUCCESS
-   use parallel, only: construct_topology, configure_layout, release, host_handle, &
+   use parallel, only: active_polar_tickets, construct_topology, configure_layout, release, host_handle, &
       &domain_handle, topology_classical, topology_polymer
-   use pme, only: release_pme_device
+   use pme, only: pme_device_ready, release_pme_device
+   use polar, only: release_polar_workspace
    use potent, only: use_charge, use_mpole, use_vdw
    use reduction, only: delete_reduction_buffers
-   use status, only: clear_status, enrich_status, failed, set_status, status_invalid_argument
+   use status, only: clear_status, enrich_status, failed, set_status, status_invalid_argument, status_ok
    use structure, only: load_initial
    use tmatxb, only: release_tmatxb_workspace
-   use tinMemory, only: prmem_requestm
-   use utilgpu, only: dir_queue
+   use tinMemory, only: prmem_requestm, sd_prmem
    use utils, only: set_to_zero2m
    use virial, only: delete_vir_device
+#ifdef _OPENACC
+   use thrust, only: thrust_clear_cache_memory
+#endif
 #ifdef USE_NVSHMEM
    use nvshmem, only: nvshmem_finalize
 #endif
    implicit none
 contains
+
+   module subroutine initialize_defaults(raw_cli, status_value)
+      use atoms
+      use beads
+      use bath
+      use bound
+      use config, only: publish_legacy_cli
+      use deriv
+      use domdec
+      use energi
+      use files
+      use inform
+      use iounit
+      use keys
+      use linmin
+      use minima
+      use moldyn
+      use mpi
+      use neigh
+      use output
+      use params
+      use precis, only: p_tiny => tiny, small, p_huge => huge
+      use timestat
+      use tinMemory
+      use tinheader
+      use uprior
+      implicit none
+      type(raw_cli_t), intent(in) :: raw_cli
+      type(status_t), intent(out) :: status_value
+      integer :: ierr
+      logical :: mpi_ready, mpi_is_finalized
+      real(t_p) :: precise
+
+      call clear_status(status_value)
+      call MPI_Initialized(mpi_ready, ierr)
+      if (ierr /= MPI_SUCCESS .or. .not.mpi_ready) then
+         call set_status(status_value, status_invalid_argument, &
+            'Default initialization requires MPI_Init')
+         return
+      end if
+      call MPI_Finalized(mpi_is_finalized, ierr)
+      if (ierr /= MPI_SUCCESS .or. mpi_is_finalized) then
+         call set_status(status_value, status_invalid_argument, &
+            'Default initialization requires active MPI')
+         return
+      end if
+
+      nbeads = 1
+      nbeads_ctr = 0
+      nproc = 1
+      nthread = 1
+      nrec = 0
+      input = 5
+      iout = 6
+      call publish_legacy_cli(raw_cli)
+      call MPI_COMM_SIZE(MPI_COMM_WORLD,nproctot,ierr)
+      if (ierr /= MPI_SUCCESS) then
+         call set_status(status_value, status_invalid_argument, 'Unable to inspect MPI world size')
+         return
+      end if
+      call MPI_COMM_RANK(MPI_COMM_WORLD,ranktot,ierr)
+      if (ierr /= MPI_SUCCESS) then
+         call set_status(status_value, status_invalid_argument, 'Unable to inspect MPI world rank')
+         return
+      end if
+      if (ranktot.eq.0) call promo
+      p_tiny = precise(1)
+      small = precise(2)
+      p_huge = precise(3)
+      nkey = 0
+      nprm = 0
+      n = 0
+      nprior = 0
+      silent = .false.
+      verbose = .false.
+      debug = .false.
+      abort = .false.
+      use_bounds = .false.
+      use_polymer = .false.
+      etot_ave = 0.0
+      etot_std = 0.0
+      isothermal = .false.
+      isobaric = .false.
+      auto_lst = .true.
+      dovlst = .true.
+      domlst = .true.
+      coordtype = 'NONE'
+      call initatom
+      polpred = 'ASPC'
+      use_pred = (app_id == dynamic_a)
+      call initres
+      call init_memhandle
+      nalt = i_init
+      nalt2 = i_init
+      stepfast = i_init
+      stepint = i_init
+      fctmin = 0.0_ti_p
+      maxiter = 0
+      nextiter = 0
+      iprint = -1
+      iwrite = -1
+      n_fwriten = 0
+      stpmax = 0.0_ti_p
+      call initiate_timers()
+      call timer_enter(timer_prog)
+      dotstgrad = .false.
+      calc_e = .true.
+      call set_status(status_value, status_ok, 'Initialization defaults established')
+   end subroutine initialize_defaults
 
    module subroutine initialize(application, raw_cli, configuration, molecular_structure, &
       &platform, reciprocal_work, status_value, probe, mode)
@@ -106,6 +219,9 @@ contains
       case (pibar_application%identity)
          topology_kind = topology_polymer
          app_id = pibar_a
+      case (testgrad_application%identity)
+         topology_kind = topology_classical
+         app_id = testgrad_a
       case default
          call set_status(status_value, status_invalid_argument, 'Unknown application identity')
          return
@@ -137,7 +253,8 @@ contains
       if (failed(status_value)) return
       call run_phase(phase_legacy_initial, probe, status_value)
       if (failed(status_value)) return
-      call initial(raw_cli)
+      call initialize_defaults(raw_cli, status_value)
+      if (failed(status_value)) return
       if (deferred) then
          configuration = config_t()
          if (application%identity == pibar_application%identity) then
@@ -155,7 +272,7 @@ contains
             return
          end if
          device_ready = .true.
-         reciprocal_work = reciprocal_channel()
+         reciprocal_work = recip_work
          call initDevice(.true.)
          if (mode == bar_file_only .or. mode == platform_bootstrap) return
          call initialize_energy_state(application, raw_cli, configuration, molecular_structure, platform, &
@@ -219,7 +336,7 @@ contains
          return
       end if
       device_ready = .true.
-      reciprocal_work = reciprocal_channel()
+      reciprocal_work = recip_work
       call initDevice(.true.)
       call run_phase(phase_structure, probe, status_value)
       if (failed(status_value)) then
@@ -393,6 +510,8 @@ contains
       type(status_t), intent(inout) :: status_value
       type(status_t) :: cleanup_status
       type(status_t) :: initial_status
+      type(status_t) :: dev_clean_stat
+      integer :: pme_cleanup_code
 
       call clear_status(cleanup_status)
       if (device_ready) then
@@ -401,16 +520,41 @@ contains
             call free_FFTgrid_p
             is_fftInit = .false.
          end if
-         call delete_reduction_buffers(dir_queue)
-         call release_cflux_workspaces(dir_queue)
-         call release_tmatxb_workspace(dir_queue)
-         call release_pme_device(reciprocal_work%queue)
+         call delete_reduction_buffers(direct_work%queue)
+         call release_cflux_workspaces(direct_work%queue)
+         call release_polar_workspace(direct_work%queue)
+         call release_tmatxb_workspace(direct_work%queue)
+!$acc wait
+#ifdef _OPENACC
+         call thrust_clear_cache_memory(sd_prmem)
+#endif
+         pme_cleanup_code = 0
+         call release_pme_device(reciprocal_work%queue, pme_cleanup_code)
+         if (pme_cleanup_code /= MPI_SUCCESS) then
+            call set_status(cleanup_status, status_invalid_argument, &
+               &'Initialization cleanup could not drain PME MPI requests')
+         else if (pme_device_ready) then
+            call set_status(cleanup_status, status_invalid_argument, &
+               &'Initialization cleanup retained PME device state')
+         end if
          call delete_energi_on_device()
          call delete_vir_device()
 #ifdef USE_NVSHMEM
          call nvshmem_finalize()
 #endif
-         call finalize_device(cleanup_status)
+         call finalize_device(dev_clean_stat)
+         if (failed(dev_clean_stat)) cleanup_status = dev_clean_stat
+         if (direct_work%queue >= 0 .or. recip_work%queue >= 0 .or. &
+               &default_work%queue >= 0 .or. sync_work%queue >= 0 .or. &
+               &direct_work%stream /= 0 .or. recip_work%stream /= 0 .or. &
+               &default_work%stream /= 0 .or. sync_work%stream /= 0) then
+            call set_status(cleanup_status, status_invalid_argument, &
+               &'Initialization cleanup retained a GPU execution channel')
+         end if
+         if (active_polar_tickets() /= 0) then
+            call set_status(cleanup_status, status_invalid_argument, &
+               &'Initialization cleanup retained an opaque MPI ticket')
+         end if
          if (failed(cleanup_status)) then
             if (application%identity == dynamic_application%identity) then
                call enrich_status(status_value, 'Dynamic cleanup')

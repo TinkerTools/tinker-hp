@@ -67,9 +67,9 @@ subroutine ebond3gpu
 !$acc    ,eb,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz,bndtypI) &
 !$acc     async &
 #ifdef USE_NVSHMEM_CUDA
-!$acc         deviceptr(d_ibnd,d_bl,d_bk) &
+!$acc         deviceptr(d_ibnd,d_bl,d_bk,d_ba) &
 #else
-!$acc         present(bl,bk,ibnd) &
+!$acc         present(bl,bk,ba,ibnd) &
 #endif
 !$acc       reduction(+:eb,neb) &
 !$acc       private(ded,fgrp)

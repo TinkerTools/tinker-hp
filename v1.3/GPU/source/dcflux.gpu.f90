@@ -60,7 +60,7 @@ contains
       use domdec
       use inform
       use sizes
-      use utilgpu
+      use mdevice, only: default_work
       use virial
       implicit none
       integer   i,ia,ib,ic,ialoc,ibloc,icloc,iangle,ibond
@@ -90,7 +90,7 @@ contains
 !
 !     calculate the charge flux forces due to bond stretches
 !
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(default_work%queue) default(present)
       do ibond = 1, nbondloc
          i = bndglob(ibond)
          ia = ibnd(1,i)
@@ -129,7 +129,7 @@ contains
 !
 !     calculate the charge flux forces due to angle bends
 !
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(default_work%queue) default(present)
       do iangle = 1, nangleloc
          i     = angleglob(iangle)
          ia    = iang(1,i)
@@ -220,7 +220,7 @@ contains
    end
 
    ! Same as dcflux2 except for _dcf_ type which is mdyn_rtyp
-   module subroutine dcflux2 (pot,dcf)
+   module subroutine dcflux2 (pot,dcf,q)
       use atmlst
       use angle
       use atoms
@@ -230,12 +230,13 @@ contains
       use domdec
       use inform
       use sizes
-      use utilgpu
+      use mdevice, only: default_work
       use tinheader
       use virial
       implicit none
       real(t_p),intent(in   ):: pot(*)
       mdyn_rtyp,intent(inout):: dcf(*)
+      integer,intent(in),optional :: q
       integer   i,ia,ib,ic,ialoc,ibloc,icloc,iangle,ibond
       real(t_p) xa,ya,za,xb,yb,zb,xc,yc,zc,xab,yab,zab,xcb,ycb,zcb
       real(t_p) rab,rab2,rab3,rcb,rcb2,rcb3
@@ -248,15 +249,18 @@ contains
       real(t_p) eps,dot
       real(t_p) term,fterm
       real(t_p) termxa,termxc,termya,termyc,termza,termzc
+      integer q_
 !
 !     set tolerance for minimum distance and angle values
 !
       parameter(eps = 0.0001)
+      q_ = default_work%queue
+      if (present(q)) q_ = q
       if (deb_Path) print*, "  dcflux2"
 !
 !     calculate the charge flux forces due to bond stretches
 !
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(q_) default(present)
       do ibond = 1, nbondloc
          i     = bndglob(ibond)
          ia    = ibnd(1,i)
@@ -295,7 +299,7 @@ contains
 !
 !     calculate the charge flux forces due to angle bends
 !
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(q_) default(present)
       do iangle = 1, nangleloc
          i     = angleglob(iangle)
          ia    = iang(1,i)
@@ -392,7 +396,7 @@ contains
       use atmlst
       use domdec
       use mpole
-      use utilgpu
+      use mdevice, only: default_work
       use virial
       implicit none
       real(r_p) dcf(*),de(*)
@@ -400,7 +404,7 @@ contains
       real(t_p) xi,yi,zi
       real(r_p) frcx,frcy,frcz
 
-!$acc parallel loop async(def_queue) default(present) &
+!$acc parallel loop async(default_work%queue) default(present) &
 !$acc         present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) &
 !$acc     reduction(+:g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
       do ii = 1, npolebloc
@@ -431,24 +435,29 @@ contains
       end do
    end subroutine
    ! Same as adflux1 except for _de_ type which is mdyn_rtyp
-   module subroutine adflux2(dcf,de)
+   module subroutine adflux2(dcf,de,q)
       use atoms
       use atmlst
       use domdec
       use inform
       use mpole
-      use utilgpu
+      use mdevice, only: default_work
       use virial
       implicit none
       mdyn_rtyp dcf(*)
       mdyn_rtyp  de(*)
+      integer,intent(in),optional :: q
       integer   ii,iipole,iglob,i
       real(t_p) xi,yi,zi
       mdyn_rtyp frcx,frcy,frcz
+      integer q_
+
+      q_ = default_work%queue
+      if (present(q)) q_ = q
 
       if (use_virial) then
 
-!$acc parallel loop async(def_queue) default(present) &
+!$acc parallel loop async(q_) default(present) &
 !$acc         present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) &
 !$acc     reduction(+:g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          do ii = 1, npolebloc
@@ -478,7 +487,7 @@ contains
 
       else
 
-!$acc parallel loop async(def_queue) default(present)
+!$acc parallel loop async(q_) default(present)
          do ii = 1, npolebloc
             iglob   = ipole(poleglob(ii))
             i       = (loc(iglob)-1)*3

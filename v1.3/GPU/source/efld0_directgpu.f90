@@ -40,14 +40,11 @@ subroutine efld0_directgpu(nrhs,ef)
    use potent   ,only: use_polarshortreal
    use polpot
    use shunt    ,only: cut2
-   use utilgpu  ,only: dir_queue,rec_queue,def_queue,&
-      &warning,maxscaling,maxscaling1
-#ifdef _OPENACC
-   use utilgpu  ,only:rec_stream,dir_stream,stream_wait_async&
-      &,rec_event
-#endif
+   use mdevice  ,only: direct_work
+   use scaling  ,only: maxscaling,maxscaling1
    use timestat ,only: timer_enter,timer_exit,timer_efld0_direct
-   use utilcomm ,only: no_commdir
+   use parallel  ,only: comm_opt
+   use inform   ,only: warning
    implicit none
 
    integer  ,intent(in)   :: nrhs
@@ -77,6 +74,7 @@ subroutine efld0_directgpu(nrhs,ef)
    parameter(half=0.5_ti_p)
    parameter(one =1.0_ti_p)
 
+
    if (use_polarshortreal) then
       lst =>  shortelst
       nlst => nshortelst
@@ -89,7 +87,7 @@ subroutine efld0_directgpu(nrhs,ef)
    dscalevec(:) = [d1scale,d2scale,d3scale,d4scale,0.0_ti_p]
    pscalevec(:) = [0.0_ti_p,p2scale,p3scale,p4scale,p5scale]
 
-!$acc enter data attach(lst,nlst) async(def_queue)
+!$acc enter data attach(lst,nlst) async(direct_work%queue)
    call switch (mode)
 !
    if (deb_Path)&
@@ -99,14 +97,12 @@ subroutine efld0_directgpu(nrhs,ef)
    alsq2  = 2.0_ti_p * aewald**2
    alsq2n = 0.0_ti_p
    if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
-   def_queue = dir_queue
-
 !$acc parallel loop gang vector_length(32) &
 !$acc         copyin(dscalevec,pscalevec) present(ef) &
 !$acc         default(present) &
 !$acc         private(ksp,kd,idscal,fdscal,ipscal,fpscal,ip,nn4,nn15, &
 !$acc  nnp11) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, npolelocnl
       iipole   = poleglobnl(ii)
@@ -286,7 +282,7 @@ subroutine efld0_directgpu(nrhs,ef)
       enddo
 
    end do MAINLOOP
-!$acc exit data detach(nlst,lst) async(def_queue)
+!$acc exit data detach(nlst,lst) async(direct_work%queue)
 
    call timer_exit( timer_efld0_direct )
 end subroutine
@@ -309,11 +305,7 @@ subroutine efld0_directgpu2(nrhs,ef)
    !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
    use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
    use shunt   ,only: cut2
-   use utilgpu ,only: dir_queue,rec_queue,def_queue
-#ifdef _OPENACC
-   use utilgpu ,only: dir_stream,stream_wait_async,&
-      &rec_stream,rec_event
-#endif
+   use mdevice ,only: direct_work
    use timestat   ,only: timer_enter,timer_exit,timer_efld0_direct
    implicit none
 
@@ -340,6 +332,7 @@ subroutine efld0_directgpu2(nrhs,ef)
 
    parameter(one =1.0_ti_p)
 
+
    if (use_chgpen) then
 #ifdef _OPENACC
       __TINKER_FATAL__
@@ -362,10 +355,9 @@ subroutine efld0_directgpu2(nrhs,ef)
       nlst => nelst
       mode = 'EWALD'
    end if
-!$acc enter data attach(lst,nlst) async(def_queue)
+!$acc enter data attach(lst,nlst) async(direct_work%queue)
    call switch (mode)
 !
-   def_queue = dir_queue
    pscale = 1.0
    dscale = 1.0
    alsq2  = 2.0_ti_p * aewald**2
@@ -377,7 +369,7 @@ subroutine efld0_directgpu2(nrhs,ef)
 !$acc         present(poleglobnl,ipole,loc,pdamp, &
 !$acc  thole,x,y,z,rpole,nlst,lst,poleloc,mut,deflambda) &
 !$acc         private(ip) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, npolelocnl
       iipole  = poleglobnl(ii)
@@ -508,7 +500,7 @@ subroutine efld0_directgpu2(nrhs,ef)
       end do NEIGHBORS_LOOP
 
    end do MAINLOOP
-!$acc exit data detach(nlst,lst) async(def_queue)
+!$acc exit data detach(nlst,lst) async(direct_work%queue)
 
    call efld0_direct_correct_scaling(ef)
 
@@ -549,11 +541,8 @@ subroutine efld0_directgpu3(nrhs,ef)
    use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale&
       &,use_thole,use_tholed
    use shunt   ,only: cut2
-   use utilcu     ,only: check_launch_kernel,BLOCK_DIM
-   use utilcomm,only: no_commdir
-   use utilgpu ,only: dir_queue,rec_queue,def_queue,get_GridDim&
-      &,dir_stream,def_stream,stream_wait_async,&
-      &rec_stream,rec_event
+   use parallel,only: comm_opt
+   use mdevice ,only: direct_work, grid_dim, check_launch_kernel
    use utils   ,only: associate_ptr
    use timestat,only: timer_enter,timer_exit,timer_efld0_direct
    use tinMemory    ,only: mipk
@@ -581,6 +570,7 @@ subroutine efld0_directgpu3(nrhs,ef)
    end if
    call timer_enter( timer_efld0_direct )
 
+
    mode      = merge('SHORTEWALD','EWALD',use_polarshortreal)
    call switch (mode)
 
@@ -595,9 +585,6 @@ subroutine efld0_directgpu3(nrhs,ef)
    alsq2     = 2.0_ti_p * aewald**2
    alsq2n    = merge(1.0_re_p/real(sqrtpi*aewald,r_p),zerom&
       &,aewald.gt.zeror)
-   def_queue = dir_queue
-   def_stream= dir_stream
-
    thole_cpen: if (use_thole) then
       n_ = size(tholed)
       if (use_tholed) then
@@ -616,10 +603,10 @@ subroutine efld0_directgpu3(nrhs,ef)
             &(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(start_lst),mutInt&
             &,x_s,y_s,z_s,pdamp,gamma,polarity,rpole,ef,deflambda&
             &,npolelocnlb,nspnlb2,npolebloc,n,nproc,idirdamp&
-            &,use_lambdadyn,.not.no_commdir&
+            &,use_lambdadyn,.not.comm_opt%skip_direct&
             &,cut2,alsq2,alsq2n,aewald,elambda&
             &,xcell,ycell,zcell,xcell2,ycell2,zcell2&
-            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
+            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,direct_work%stream)
 
 !$acc end host_data
       else
@@ -630,22 +617,22 @@ subroutine efld0_directgpu3(nrhs,ef)
             &(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(start_lst),mutInt&
             &,x_s,y_s,z_s,pdamp,gamma,polarity,rpole,ef,deflambda&
             &,npolelocnlb,npnlb2,npolebloc,n,nproc,idirdamp&
-            &,use_lambdadyn,.not.no_commdir&
+            &,use_lambdadyn,.not.comm_opt%skip_direct&
             &,cut2,alsq2,alsq2n,aewald,elambda&
             &,xcell,ycell,zcell,xcell2,ycell2,zcell2&
-            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
+            &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,direct_work%stream)
 
 !$acc end host_data
       end if range0
 
       if (n_dpscale.gt.0) then
-         gS = get_GridDim(n_dpscale,BLOCK_DIM,1)
+         gS = grid_dim(n_dpscale,BLOCK_DIM,1)
 !$acc host_data use_device(dpcorrect_ik,dpcorrect_scale,poleloc,ipole &
 !$acc         ,mut,pdamp,gamma,rpole,x,y,z,ef,deflambda)
-         call efld0_direct_scaling_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+         call efld0_direct_scaling_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(dpcorrect_ik,dpcorrect_scale,poleloc,ipole,mut,pdamp,gamma&
             &,x,y,z,rpole,ef,deflambda,n_dpscale,n,npolebloc,use_tholed&
-            &,use_lambdadyn,elambda,cut2,aewald,alsq2,alsq2n,.not.no_commdir)
+            &,use_lambdadyn,elambda,cut2,aewald,alsq2,alsq2n,.not.comm_opt%skip_direct)
 !$acc end host_data
          call check_launch_kernel( 'efld0_direct_scaling_cu' )
       end if
@@ -653,39 +640,39 @@ subroutine efld0_directgpu3(nrhs,ef)
    else if (use_chgpen) then
 
       range1: if (use_polarshortreal) then
-         gS = get_GridDim(nspnlb2,BLOCK_DIM)
+         gS = grid_dim(nspnlb2,BLOCK_DIM)
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s &
 !$acc    ,x_s,y_s,z_s,pcore,pval,palpha,rpole,ef &
 !$acc    ,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z)
-         call efld0_cpen_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+         call efld0_cpen_kcu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,ploc_s,iseblst_s,seblst_s(start_lst)&
             &,x_s,y_s,z_s,pcore,pval,palpha,rpole,npolelocnl&
             &,npolelocnlb,nspnlb2,npolebloc,n,pentyp_i,cut2,aewald&
             &,ef&
             &,xcell,ycell,zcell,xcell2,ycell2,zcell2&
             &,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z,n_dpscale&
-            &,nproc,.not.no_commdir)
+            &,nproc,.not.comm_opt%skip_direct)
 !$acc end host_data
       else
-         gS = get_GridDim(npnlb2,BLOCK_DIM)
+         gS = grid_dim(npnlb2,BLOCK_DIM)
 !$acc host_data use_device(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s &
 !$acc    ,x_s,y_s,z_s,pcore,pval,palpha,rpole,ef &
 !$acc    ,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z)
-         call efld0_cpen_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+         call efld0_cpen_kcu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,ploc_s,ieblst_s,eblst_s(start_lst)&
             &,x_s,y_s,z_s,pcore,pval,palpha,rpole,npolelocnl&
             &,npolelocnlb,npnlb2,npolebloc,n,pentyp_i,cut2,aewald&
             &,ef&
             &,xcell,ycell,zcell,xcell2,ycell2,zcell2&
             &,dpcorrect_ik,dpcorrect_scale,poleloc,ipole,x,y,z,n_dpscale&
-            &,nproc,.not.no_commdir)
+            &,nproc,.not.comm_opt%skip_direct)
 !$acc end host_data
       end if range1
 
    end if thole_cpen
 
    if (use_lambdadyn.and.elambda.gt.0.0) then
-!$acc parallel loop async(def_queue) collapse(3) present(deflambda)
+!$acc parallel loop async(direct_work%queue) collapse(3) present(deflambda)
       do i =1,npolebloc; do j=1,2; do k=1,3;
                if (deflambda(k,j,i).ne.0.0)&
                   &deflambda(k,j,i) = deflambda(k,j,i)/elambda
@@ -726,11 +713,8 @@ subroutine otf_dc_efld0_directgpu2(nrhs,ef)
    !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
    use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
    use shunt   ,only: cut2
-   use utilgpu ,only: dir_queue,rec_queue,def_queue
-#ifdef _OPENACC
-   use utilgpu ,only: dir_stream,stream_wait_async,&
-      &rec_stream,rec_event
-#endif
+   use mdevice ,only: after,direct_work,reciprocal_work
+   use status  ,only: failed,status_t
    use timestat   ,only: timer_enter,timer_exit,timer_efld0_direct
    implicit none
 
@@ -756,8 +740,10 @@ subroutine otf_dc_efld0_directgpu2(nrhs,ef)
    type(rpole_elt) ip,kp
    type(real3) fid,fip,fkd,fkp,pos
    character*10 mode
+   type(status_t) :: dependency_status
 
    parameter(one =1.0_ti_p)
+
 
    if (use_polarshortreal) then
       lst =>  shortelst
@@ -774,25 +760,25 @@ subroutine otf_dc_efld0_directgpu2(nrhs,ef)
       &write(*,'(3x,a)') 'oft_dc_efld0_directgpu2'
    call timer_enter( timer_efld0_direct )
 
-   def_queue = dir_queue
    pscale = 1.0
    dscale = 1.0
    alsq2  = 2.0_ti_p * aewald**2
    alsq2n = 0.0_ti_p
    if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
 
-!$acc enter data attach(lst,nlst) async(def_queue)
+!$acc enter data attach(lst,nlst) async(direct_work%queue)
 #ifdef _OPENACC
-   if (dir_queue.ne.rec_queue) then
-!!$acc wait(rec_queue) async(rec_queue)
-      call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue) then
+!!$acc wait(direct_work%queue) async(direct_work%queue)
+      call after(direct_work,reciprocal_work,dependency_status)
+      if (failed(dependency_status)) __TINKER_FATAL__
    end if
 #endif
 
 !
 !     diagonal of Z mat.
 !
-!$acc parallel loop default(present) async(def_queue)
+!$acc parallel loop default(present) async(direct_work%queue)
    do ii = 1, npolelocnl
       iipole = poleglobnl(ii)
       iglob  = ipole(iipole)
@@ -822,7 +808,7 @@ subroutine otf_dc_efld0_directgpu2(nrhs,ef)
 !$acc         present(poleglobnl,ipole,loc,pdamp, &
 !$acc  thole,x,y,z,rpole,nlst,lst,poleloc,zmat, &
 !$acc  grplst,atmofst,kofst,npergrp) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, npolelocnl
       iipole  = poleglobnl(ii)
@@ -946,7 +932,7 @@ subroutine otf_dc_efld0_directgpu2(nrhs,ef)
 
    end do MAINLOOP
 
-!$acc exit data detach(nlst,lst) async(def_queue)
+!$acc exit data detach(nlst,lst) async(direct_work%queue)
 
    call efld0_direct_correct_scaling(ef)
 
@@ -981,13 +967,10 @@ subroutine otf_dc_efld0_directgpu3(nrhs,ef)
    use potent  , only : use_polarshortreal
    !use polgrp  ,only: ip11,ip12,ip13,ip14,np11,np12,np13,np14
    use polpot  ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
-   use utilcomm,only: no_commdir
+   use parallel,only: comm_opt
    use shunt   ,only: cut2
-   use utilgpu ,only: dir_queue,rec_queue,def_queue
-#ifdef _OPENACC
-   use utilgpu ,only: dir_stream,def_stream,stream_wait_async,&
-      &rec_stream,rec_event
-#endif
+   use mdevice ,only: after,direct_work,reciprocal_work
+   use status  ,only: failed,status_t
    use timestat   ,only: timer_enter,timer_exit,timer_efld0_direct
    implicit none
 
@@ -1000,6 +983,7 @@ subroutine otf_dc_efld0_directgpu3(nrhs,ef)
    real(t_p) alsq2, alsq2n, invpol
    real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
    character*10 mode
+   type(status_t) :: dependency_status
 
    if (use_polarshortreal) then
       mode = 'SHORTEWALD'
@@ -1010,6 +994,7 @@ subroutine otf_dc_efld0_directgpu3(nrhs,ef)
 !
    if (deb_Path) write(*,'(3x,a)') 'otf_dc_efld0_directgpu3'
    call timer_enter( timer_efld0_direct )
+
 
    p_xbeg = xbegproc(rank+1)
    p_xend = xendproc(rank+1)
@@ -1022,20 +1007,17 @@ subroutine otf_dc_efld0_directgpu3(nrhs,ef)
    alsq2  = 2.0_ti_p * aewald**2
    alsq2n = 0.0_ti_p
    if (aewald .gt. 0.0_ti_p) alsq2n = 1.0_ti_p / (sqrtpi*aewald)
-   def_queue = dir_queue
-
 #ifdef _OPENACC
-   def_stream = dir_stream
-   def_queue  = dir_queue
-   if (dir_queue.ne.rec_queue) then
-!!$acc wait(rec_queue) async(rec_queue)
-      call stream_wait_async(rec_stream,dir_stream,rec_event)
+   if (direct_work%queue.ne.reciprocal_work%queue) then
+!!$acc wait(direct_work%queue) async(direct_work%queue)
+      call after(direct_work,reciprocal_work,dependency_status)
+      if (failed(dependency_status)) __TINKER_FATAL__
    end if
 #endif
 !
 !     diagonal of Z mat.
 !
-!$acc parallel loop default(present) async(def_queue)
+!$acc parallel loop default(present) async(direct_work%queue)
    do ii = 1, npolelocnl
       iipole = poleglobnl(ii)
       iglob  = ipole(iipole)
@@ -1071,7 +1053,7 @@ subroutine otf_dc_efld0_directgpu3(nrhs,ef)
          &,npolelocnlb,nspnlb2,npolebloc,n,nproc&
          &,cut2,alsq2,alsq2n,aewald&
          &, xcell, ycell, zcell,xcell2,ycell2,zcell2&
-         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
+         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,direct_work%stream)
 
 !$acc end host_data
    else
@@ -1087,7 +1069,7 @@ subroutine otf_dc_efld0_directgpu3(nrhs,ef)
          &,npolelocnlb,npolelocnlb2_pair,npolebloc,n,nproc&
          &,cut2,alsq2,alsq2n,aewald&
          &, xcell, ycell, zcell,xcell2,ycell2,zcell2&
-         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,def_stream)
+         &,p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend,direct_work%stream)
 
 
 !$acc end host_data
@@ -1127,7 +1109,7 @@ subroutine efld0_direct_correct_scaling(ef)
    use polar    ,only: pdamp,thole
    use polpot   ,only: dpcorrect_ik,dpcorrect_scale,n_dpscale
    use shunt    ,only: cut2
-   use utilgpu  ,only: dir_queue,def_queue
+   use mdevice  ,only: direct_work
    use timestat ,only: timer_enter,timer_exit,timer_efld0_direct
    implicit none
 
@@ -1147,6 +1129,7 @@ subroutine efld0_direct_correct_scaling(ef)
    type(rpole_elt) ip,kp
 
    parameter(one =1.0_ti_p)
+
 !
    if (deb_Path) write(*,'(4x,a)') 'efld0_direct_correct_scaling'
 
@@ -1160,7 +1143,7 @@ subroutine efld0_direct_correct_scaling(ef)
 !$acc  thole,x,y,z,rpole,nelst,elst,poleloc, &
 !$acc  dpcorrect_ik,dpcorrect_scale,mut,deflambda) &
 !$acc         private(fid,fip,fkd,fkp,pos,ip,kp) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do ii = 1, n_dpscale
       iipole = dpcorrect_ik(2*(ii-1)+1)
       kpole  = dpcorrect_ik(2*(ii-1)+2)

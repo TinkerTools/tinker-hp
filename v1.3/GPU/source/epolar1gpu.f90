@@ -96,9 +96,13 @@ subroutine epolar1cgpu
    use precompute_pole,only:precompute_tmat,polar_precomp
    use sizes
    use tinMemory, only: prmem_request
+   use tinheader, only: ti_p,re_p
    use timestat
    use utils
-   use utilgpu, only: def_queue,dir_queue,rec_queue,start_dir_stream_cover,end_dir_stream_cover
+   use mdevice, only: direct_work, reciprocal_work,&
+      &begin_direct_overlap,end_direct_overlap,query_platform_status,&
+      &record_platform_error
+   use status, only: failed, status_t
    use vec
    use virial
 
@@ -119,6 +123,8 @@ subroutine epolar1cgpu
    real(t_p) time0,time1,time2
    real(t_p) fix(3),fiy(3),fiz(3)
    logical,save:: f_in=.true.
+   type(status_t) :: platform_status
+
 !
    if (npole .eq. 0)  return
    if(deb_Path)write(*,*) 'epolar1cgpu'
@@ -131,7 +137,7 @@ subroutine epolar1cgpu
 !
    aewald = apewald
 !
-!$acc serial async(rec_queue) present(epself,ep,ep_r,eprec)
+!$acc serial async(reciprocal_work%queue) present(epself,ep,ep_r,eprec)
    epself= 0
    ep    = 0.0_re_p
    ep_r  = 0
@@ -148,7 +154,7 @@ subroutine epolar1cgpu
 !
    if (use_lambdadyn) then
       call prmem_request(deflambda,3,2,max(npolebloc,1),async=.true.)
-      call set_to_zero1(deflambda,3*2*npolebloc,rec_queue)
+      call set_to_zero1(deflambda,3*2*npolebloc,reciprocal_work%queue)
    end if
 !
 !     compute the induced dipoles at each polarizable atom
@@ -157,9 +163,9 @@ subroutine epolar1cgpu
    if (use_polarshortreal) then
       if (polalg.eq.5) then
 #ifdef _OPENACC
-         ! FIXME
-         write(0,*) 'short dcinduce solver unavalaible on device'
-         __TINKER_FATAL__
+         call record_platform_error(-9, 'short dcinduce solver is unavailable on device')
+         call timer_exit( timer_polarsolve )
+         return
 #else
          call dcinduce_shortrealgpu
 #endif
@@ -169,9 +175,9 @@ subroutine epolar1cgpu
    else if (use_pmecore) then
       if (polalg.eq.5) then
 #ifdef _OPENACC
-         ! FIXME
-         write(0,*) 'dcinduce solver (pme-core) unavalaible on device'
-         __TINKER_FATAL__
+         call record_platform_error(-9, 'dcinduce solver (pme-core) is unavailable on device')
+         call timer_exit( timer_polarsolve )
+         return
 #else
          call dcinduce_pme
 #endif
@@ -186,13 +192,15 @@ subroutine epolar1cgpu
       end if
    end if
    call timer_exit( timer_polarsolve )
+   call query_platform_status(platform_status)
+   if (failed(platform_status)) return
 !
 !     Reset precompute switch if necessary
 !
    if (polar_precomp) precompute_tmat=.true.
 
 #ifdef _OPENACC
-   if (dir_queue.ne.rec_queue) call start_dir_stream_cover
+   if (direct_work%queue.ne.reciprocal_work%queue) call begin_direct_overlap
 #endif
 !
 !     compute the real space part of the Ewald summation
@@ -207,18 +215,18 @@ subroutine epolar1cgpu
       end if
 
       if (use_pself) then
-         def_queue = dir_queue
+
 #ifdef _OPENACC
-         if (dir_queue.ne.rec_queue) call start_dir_stream_cover
+         if (direct_work%queue.ne.reciprocal_work%queue) call begin_direct_overlap
 #endif
-         call prmem_request(trq,3,npoleloc,queue=def_queue)
+         call prmem_request(trq,3,npoleloc,queue=direct_work%queue)
 !
 !     compute the Ewald self-energy term over all the atoms
 !
          term  = 2.0_ti_p * aewald * aewald
          fterm = -f * aewald / sqrtpi
          term1 = (4.0_ti_p/3.0_ti_p) * f * aewald**3 / sqrtpi
-!$acc parallel loop async(def_queue) default(present) present(epself) &
+!$acc parallel loop async(direct_work%queue) default(present) present(epself) &
 !$acc         reduction(+:epself)
          do ii = 1, npoleloc
             iipole   = poleglob(ii)
@@ -241,7 +249,7 @@ subroutine epolar1cgpu
             trq(3,ii) = term1 * (dix*uiy - diy*uix)
          end do
 
-         call torquegpu(npoleloc,nbloc,poleglob,loc,trq,dep,def_queue)
+         call torquegpu(npoleloc,nbloc,poleglob,loc,trq,dep,direct_work%queue)
 !
 !     compute the cell dipole boundary correction term
 !
@@ -313,7 +321,7 @@ subroutine epolar1cgpu
                   &- rpole(3,iipole)*xufield
             end do
             call torquegpu(npoleloc,nbloc&
-               &,poleglob,loc,trq,dep,def_queue)
+               &,poleglob,loc,trq,dep,direct_work%queue)
 !
 !     boundary correction to virial due to overall cell dipole
 !
@@ -366,7 +374,7 @@ subroutine epolar1cgpu
          end if  !( boundary .eq. VACUUM )
 !
 #ifdef _OPENACC
-         if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+         if (direct_work%queue.ne.reciprocal_work%queue) call end_direct_overlap
 #endif
       end if  !( use_pself )
       call timer_exit( timer_real,quiet_timers )
@@ -385,20 +393,20 @@ subroutine epolar1cgpu
 !
 #ifdef _OPENACC
    !End async compute overlapping if necessary
-   if (dir_queue.ne.rec_queue) then
-      call end_dir_stream_cover
+   if (direct_work%queue.ne.reciprocal_work%queue) then
+      call end_direct_overlap
    end if
 #endif
 !
 !     Sum contribution of all energy
 !
-!$acc serial async(rec_queue) present(ep,epself,ep_r,eprec)
+!$acc serial async(reciprocal_work%queue) present(ep,epself,ep_r,eprec)
    ep = ep + enr2en( epself+ep_r ) + eprec
 !$acc end serial
 !
    if (use_lambdadyn) then
 !
-!$acc parallel loop async(rec_queue) default(present) present(delambdae) &
+!$acc parallel loop async(reciprocal_work%queue) default(present) present(delambdae) &
 !$acc reduction(+:delambdae)
       do i = 1, npoleloc
          iipole = poleglob(i)
@@ -416,7 +424,7 @@ subroutine epolar1cgpu
                &+ uinp(j,iipole)*deflambda(j,1,i))*f
          end do
       end do
-!$acc update host(delambdae) async(rec_queue)
+!$acc update host(delambdae) async(reciprocal_work%queue)
    end if
 end
 !
@@ -467,9 +475,8 @@ subroutine epreal1cgpu
    use tinMemory
    use utils
    use parallel, only: accumulate, extend, halo_large, halo_neighbour
+   use mdevice, only: direct_work
    use cflux      ,pot=>cflux_pot
-   use utilgpu    ,only: def_queue,dir_queue,rec_queue,def_stream,dir_stream,&
-      &rec_stream,mem_set
    use timestat
 
    implicit none
@@ -490,8 +497,6 @@ subroutine epreal1cgpu
 
    call timer_enter( timer_epreal )
 #ifdef _OPENACC
-   def_queue  = dir_queue
-   def_stream = dir_stream
 #endif
 
    if (f_in) then
@@ -516,7 +521,7 @@ subroutine epreal1cgpu
 !
 !     set arrays to store fields
 !
-   call set_to_zero1(trqvec,3*npolelocnl,def_queue)
+   call set_to_zero1(trqvec,3*npolelocnl,direct_work%queue)
 !
 !     set conversion factor, cutoff and switching coefficients
 !
@@ -540,7 +545,7 @@ subroutine epreal1cgpu
 
    if (use_virial) then
 
-!$acc parallel loop async(def_queue) default(present) &
+!$acc parallel loop async(direct_work%queue) default(present) &
 !$acc         present(vxx,vxy,vxz,vyy,vyz,vzz)
       do k = 1, npolelocnl
          iipole = poleglobnl(k)
@@ -587,7 +592,7 @@ subroutine epreal1cgpu
 !     increment the virial due to pairwise Cartesian forces
 !
       if (use_polarshortreal) then
-!$acc serial present(virsave) async(def_queue) &
+!$acc serial present(virsave) async(direct_work%queue) &
 !$acc       present(vxx,vxy,vxz,vyy,vyz,vzz) &
 !$acc       present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          g_vxx  = g_vxx + vxx
@@ -613,7 +618,7 @@ subroutine epreal1cgpu
          vzz = 0.0_re_p
 !$acc end serial
       else
-!$acc serial async(def_queue) &
+!$acc serial async(direct_work%queue) &
 !$acc       present(vxx,vxy,vxz,vyy,vyz,vzz) &
 !$acc       present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz)
          g_vxx  = g_vxx + vxx
@@ -634,11 +639,11 @@ subroutine epreal1cgpu
    end if !( use_virial )
 
    if (use_chgflx) then
-      call accumulate(pot,1,halo_large)
-      call extend(pot,1,halo_neighbour)
-      call dcflux2(pot,de_ws1)
-      call adflux2(de_ws1,dep)
-      call mem_set(pot,zeror,int(nbloc,mipk),rec_stream)
+      call accumulate(pot,1,halo_large,channel=direct_work)
+      call extend(pot,1,halo_neighbour,channel=direct_work)
+      call dcflux2(pot,de_ws1,direct_work%queue)
+      call adflux2(de_ws1,dep,direct_work%queue)
+      call mem_set(pot,zeror,int(nbloc,mipk),direct_work%stream)
    end if
 !
    call timer_exit( timer_epreal )
@@ -672,7 +677,10 @@ subroutine epreal1c_core1(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use virial
    use mpi
    use utils
-   use utilgpu, only: def_queue,real3,real6,rpole_elt,warning,maxscaling,maxscaling1
+   use mdevice, only: direct_work
+   use tinheader,only: ti_p,re_p
+   use tinTypes,only: real3,real6,rpole_elt
+   use scaling, only: maxscaling,maxscaling1
    use timestat
 
    implicit none
@@ -706,6 +714,7 @@ subroutine epreal1c_core1(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    real(t_p),save:: uscalevec(5),dscalevec(5),pscalevec(5)
    logical,save::f_in=.true.
 
+
    if(deb_Path) write(*,'(2x,a)') 'epreal1c_core1'
 !
 !     set conversion factor, cutoff and switching coefficients
@@ -736,14 +745,14 @@ subroutine epreal1c_core1(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 !$acc   scalbeg_n,scalbeg_p,typscal_n,typscal_p, &
 !$acc   elst,nelstc,dep,vir,polelocnl, &
 !$acc   uscalevec,pscalevec,dscalevec) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, npolelocnl
       iipole  = poleglobnl(ii)
       iglob   = ipole (iipole)
       i       = loc(iglob)
       if (i.eq.0.or.i.gt.nbloc) then
-         print*, warning
+         print*, 'invalid local atom index in polarization interaction'
          cycle MAINLOOP
       endif
       nnelst  = nelstc (ii)
@@ -979,7 +988,7 @@ subroutine epreal1c_core2(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use tinheader  ,only: ti_p
    use virial
    use tinTypes,only: real3,real6,rpole_elt,mdyn3_r
-   use utilgpu ,only: def_queue
+   use mdevice, only: direct_work
    use cflux   ,only: pot=>cflux_pot
 
    implicit none
@@ -1004,6 +1013,7 @@ subroutine epreal1c_core2(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    type(real3) :: pos,posi,ufli,uflk,trqi,trqk,frc
    type(mdyn3_r):: frc_r
    parameter(one=1.0_ti_p)
+
 
    if(deb_Path)write(*,'(2x,a)') 'epreal1c_core2'
 !
@@ -1030,7 +1040,7 @@ subroutine epreal1c_core2(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 !$acc         present(poleglobnl,ipole,rpole,thole,pdamp, &
 !$acc  loc,x,y,z,uind,uinp,lst,nlst,pot,dep,vir,polelocnl) &
 !$acc         private(ip,dpui,posi) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    MAINLOOP:&
       &do ii = 1, npolelocnl
       iipole  = poleglobnl(ii)
@@ -1208,9 +1218,9 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use tinheader ,only: ti_p
    use virial
    use cudafor
-   use utilcu    ,only: BLOCK_DIM,check_launch_kernel
-   use utilgpu   ,only: def_queue,real3,real6,real3_red,rpole_elt,get_GridDim,&
-      &maxBlock,BLOCK_SIZE,dir_stream,def_stream,rec_stream,nSMP
+   use mdevice   ,only: check_launch_kernel, direct_work,reciprocal_work,grid_dim
+   use tinTypes   ,only: real3,real6,real3_red,rpole_elt
+   use epolar1cu,only: BLOCK_DIM,BLOCK_SIZE,maxBlock
    use cflux      ,only: pot=>cflux_pot
    use reduction  ,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,nred_buff,&
       &reduce_energy_virial,zero_evir_red_buffer
@@ -1229,6 +1239,7 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    real(t_p) alsq2,alsq2n,f
    real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
    character*64 :: srami
+
 
    if (deb_Path) then
       srami = 'epreal1c_core3'//merge(' SHORT',''&
@@ -1263,12 +1274,12 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
       call cudaMaxGridSize("epreal1c_core_cu",gS)
       if (deb_Path) print*, 'epreal1c blockSize ',gS
       ndec=1
-      if (def_stream.ne.rec_stream) ndec=4
+      if (direct_work%stream.ne.reciprocal_work%stream) ndec=4
       first_in = .false.
       ! TODO Amoebap (check gS for cpen (empole&polar)
    end if
 
-   call zero_evir_red_buffer(def_queue)
+   call zero_evir_red_buffer(direct_work%queue)
 
    if (use_thole) then
 !$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s &
@@ -1279,8 +1290,8 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 
       if (use_polarshortreal) then
 
-         if (dyn_gS) gS = get_GridDim( nspnlb2/2,BLOCK_DIM )
-         call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+         if (dyn_gS) gS = grid_dim( nspnlb2/2,BLOCK_DIM )
+         call epreal1c_core_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,loc_s,plocnl_s&
             &,iseblst_s,seblst_s(lst_beg)&
             &,x_s,y_s,z_s,rpole,pdamp,tholed,thole,uind,uinp&
@@ -1302,8 +1313,8 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
             start  = (i-1)*sized + 1
             start1 = lst_beg+(start-1)*BLOCK_SIZE
             if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
-            if (dyn_gS) gS = get_GridDim( ishft(sized,-1),BLOCK_DIM )
-            call epreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+            if (dyn_gS) gS = grid_dim( ishft(sized,-1),BLOCK_DIM )
+            call epreal1c_core_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
                &(ipole_s,pglob_s,loc_s,plocnl_s&
                &,ieblst_s(start),eblst_s(start1)&
                &,x_s,y_s,z_s,rpole,pdamp,tholed,thole,uind,uinp&
@@ -1317,8 +1328,8 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 
       end if
 
-      gs1 = get_GridDim(n_dpuscale/2,BLOCK_DIM,1)
-      call epreal1c_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>&
+      gs1 = grid_dim(n_dpuscale/2,BLOCK_DIM,1)
+      call epreal1c_scaling_cu<<<gS1,BLOCK_DIM,0,direct_work%stream>>>&
          &( dpucorrect_ik,dpucorrect_scale,ipole,loc&
          &, polelocnl,x,y,z,pdamp,tholed,thole,rpole,uind,uinp&
          &, pot,dep,trqvec,ered_buff,vred_buff&
@@ -1334,8 +1345,8 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 !$acc    ,dpucorrect_ik,dpucorrect_scale,ipole,polelocnl,loc,x,y,z &
 !$acc    )
       if (use_polarshortreal) then
-         if (dyn_gS) gS = get_GridDim( nspnlb2/2,BLOCK_DIM )
-         call epreal_cpen1_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+         if (dyn_gS) gS = grid_dim( nspnlb2/2,BLOCK_DIM )
+         call epreal_cpen1_kcu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,loc_s,plocnl_s&
             &,iseblst_s,seblst_s(lst_beg)&
             &,x_s,y_s,z_s,rpole,uind,uinp,pcore,pval,palpha&
@@ -1353,8 +1364,8 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
             start  = (i-1)*sized + 1
             start1 = lst_beg+(start-1)*BLOCK_SIZE
             if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
-            if (dyn_gS) gS = get_GridDim( ishft(sized,-1),BLOCK_DIM )
-            call epreal_cpen1_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+            if (dyn_gS) gS = grid_dim( ishft(sized,-1),BLOCK_DIM )
+            call epreal_cpen1_kcu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
                &(ipole_s,pglob_s,loc_s,plocnl_s&
                &,ieblst_s(start),eblst_s(start1)&
                &,x_s,y_s,z_s,rpole,uind,uinp,pcore,pval,palpha&
@@ -1372,7 +1383,7 @@ subroutine epreal1c_core3(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    end if !(thole | chgpen)
 
    call reduce_energy_virial(ep,vxx,vxy,vxz,vyy,vyz,vzz&
-      &,ered_buff,def_queue)
+      &,ered_buff,direct_work%queue)
 end
 
 subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
@@ -1413,9 +1424,9 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    use tinheader  ,only: ti_p
    use virial
    use cudafor
-   use utilcu  ,only: BLOCK_DIM,check_launch_kernel
-   use utilgpu ,only: def_queue,real3,real6,real3_red,rpole_elt,get_GridDim,&
-      &maxBlock,BLOCK_SIZE,dir_stream,def_stream,rec_stream,nSMP
+   use mdevice  ,only: check_launch_kernel, direct_work,reciprocal_work,grid_dim
+   use tinTypes ,only: real3,real6,real3_red,rpole_elt
+   use epolar1cu,only: BLOCK_DIM,BLOCK_SIZE,maxBlock
    use cflux   ,only: pot=>cflux_pot
    use reduction,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff,&
       &reduce_energy_virial,zero_evir_red_buffer
@@ -1433,6 +1444,7 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    real(t_p) p_xbeg,p_xend,p_ybeg,p_yend,p_zbeg,p_zend
    logical,save::first_in=.true.
    logical,parameter::dyn_gS=.false.
+
 
    if(deb_Path)write(*,'(2x,a)') 'mpreal1c_core'
 !
@@ -1469,11 +1481,11 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
       call cudaMaxGridSize("mpreal1c_core_cu",gS)
       if (deb_Path) print*, ' mpreal1c blockSize ',gS
       ndec=1
-      if (def_stream.ne.rec_stream) ndec=4
+      if (direct_work%stream.ne.reciprocal_work%stream) ndec=4
       first_in = .false.
    end if
 
-   call zero_evir_red_buffer(def_queue)
+   call zero_evir_red_buffer(direct_work%queue)
 
 !$acc host_data use_device(ipole_s,pglob_s,loc_s,plocnl_s,ieblst_s, &
 !$acc    iseblst_s,eblst_s,seblst_s,x_s,y_s,z_s,rpole,pdamp,tholed, &
@@ -1483,8 +1495,8 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 
    if (use_polarshortreal.or.use_mpoleshortreal) then
 
-      if (dyn_gS) gS = get_GridDim(nspnlb2/2,BLOCK_DIM)
-      call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+      if (dyn_gS) gS = grid_dim(nspnlb2/2,BLOCK_DIM)
+      call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
          &(ipole_s,pglob_s,loc_s,plocnl_s&
          &,iseblst_s,seblst_s(lst_beg)&
          &,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp&
@@ -1505,14 +1517,14 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    else
 
       sized = npolelocnlb2_pair/ndec
-      if (dyn_gS) gS = get_GridDim(sized,BLOCK_DIM)
+      if (dyn_gS) gS = grid_dim(sized,BLOCK_DIM)
 
       ! Split electrostatic kernel to ease recovering process in MPI
       do i = 1,ndec
          start  = (i-1)*sized + 1
          start1 = lst_beg+(start-1)*BLOCK_SIZE
          if (i.eq.ndec) sized = npolelocnlb2_pair-start+1
-         call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,def_stream>>>&
+         call mpreal1c_core_cu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
             &(ipole_s,pglob_s,loc_s,plocnl_s&
             &,ieblst_s(start),eblst_s(start1)&
             &,x_s,y_s,z_s,rpole,pdamp,thole,uind,uinp&
@@ -1528,9 +1540,9 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    end if
 
    if (n_mscale.gt.0) then
-      gS1 = get_GridDim(n_mscale,BLOCK_DIM,1)
+      gS1 = grid_dim(n_mscale,BLOCK_DIM,1)
       if (use_mpoleshortreal) then
-         call emreals_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>&
+         call emreals_scaling_cu<<<gS1,BLOCK_DIM,0,direct_work%stream>>>&
             &( mcorrect_ik,mcorrect_scale,ipole,loc,polelocnl&
             &, x,y,z,rpole,grplist,wgrp&
             &, dep,trqvec,ered_buff,vred_buff&
@@ -1540,7 +1552,7 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
             &,ngrp )
          call check_launch_kernel(" emreals_scaling_cu")
       else
-         call emreal_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>&
+         call emreal_scaling_cu<<<gS1,BLOCK_DIM,0,direct_work%stream>>>&
             &( mcorrect_ik,mcorrect_scale,ipole,loc,polelocnl&
             &, x,y,z,rpole,grplist,wgrp&
             &, dep,trqvec,ered_buff,vred_buff&
@@ -1553,8 +1565,8 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
    end if
 
    if (n_dpuscale.gt.0) then
-      gS1 = get_GridDim(n_dpuscale,BLOCK_DIM,1)
-      call epreal1c_scaling_cu<<<gS1,BLOCK_DIM,0,def_stream>>>&
+      gS1 = grid_dim(n_dpuscale,BLOCK_DIM,1)
+      call epreal1c_scaling_cu<<<gS1,BLOCK_DIM,0,direct_work%stream>>>&
          &( dpucorrect_ik,dpucorrect_scale,ipole,loc&
          &, polelocnl,x,y,z,pdamp,tholed,thole,rpole,uind,uinp&
          &, pot,dep,trqvec,ered_buff,vred_buff&
@@ -1566,7 +1578,7 @@ subroutine mpreal1c_core(trqvec,vxx,vxy,vxz,vyy,vyz,vzz)
 !$acc end host_data
 
    call reduce_energy_virial(ep,vxx,vxy,vxz,vyy,vyz,vzz&
-      &,ered_buff,def_queue)
+      &,ered_buff,direct_work%queue)
 
 end
 #endif
@@ -1593,7 +1605,7 @@ subroutine epreal1c_correct_scale&
    use shunt   ,only: off2
    use tinheader ,only: ti_p
    use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
-   use utilgpu ,only: def_queue
+   use mdevice, only: direct_work
    use cflux   ,only: pot=>cflux_pot
    use virial
    implicit none
@@ -1632,7 +1644,7 @@ subroutine epreal1c_correct_scale&
 !$acc  loc,x,y,z,uind,uinp,elst,nelst,dep,ep,vir,polelocnl, &
 !$acc  dpucorrect_ik,dpucorrect_scale) &
 !$acc         private(pos,ip,kp,dpui,dpuk,trqk,trqi,frc_r,frc) &
-!$acc         async(def_queue)
+!$acc         async(direct_work%queue)
    do ii = 1, n_dpuscale
       iipole   = dpucorrect_ik(2*(ii-1)+1)
       kpole    = dpucorrect_ik(2*(ii-1)+2)
@@ -1829,15 +1841,14 @@ subroutine eprecip1gpu
    use polpot
    use potent
    use timestat
-   use tinMemory, only: mipk,prmem_request
+   use tinMemory, only: mipk,prmem_request,mem_set
    use tinheader ,only: zeror
    use utils
    use parallel, only: accumulate, extend, halo_neighbour
    use cflux      ,pot=>cflux_pot,potrec=>cflux_potrec
-   use mdevice    ,only: channel_t,reciprocal_channel
+   use mdevice    ,only: direct_work,reciprocal_work
    use pme        ,only: ftc=>pme_ftc
-   use utilgpu    ,only: dir_queue,def_queue,mem_set,&
-      &start_dir_stream_cover,end_dir_stream_cover
+   use mdevice    ,only: begin_direct_overlap,end_direct_overlap
    use virial
    implicit none
    integer status(MPI_STATUS_SIZE),tag,ierr,siz
@@ -1863,11 +1874,7 @@ subroutine eprecip1gpu
    real(t_p) cphim(4),cphid(4)
    real(t_p) cphip(4)
    integer  ,dimension(nproc)::reqsend,reqrec,req2send,req2rec
-   integer rec_queue
-   type(channel_t) rec_channel
 
-   rec_channel=reciprocal_channel()
-   rec_queue=rec_channel%queue
 !
 !     return if the Ewald coefficient is zero
 !
@@ -1934,7 +1941,7 @@ subroutine eprecip1gpu
 !
 !     remove scalar sum virial from prior multipole 3-D FFT
 !
-!$acc serial async(rec_queue) &
+!$acc serial async(reciprocal_work%queue) &
 !$acc       present(vxx,vxy,vxz,vyy,vyz,vzz,eprec) &
 !$acc       present(vmxx,vmxy,vmxz,vmyy,vmyz,vmzz)
    eprec   = 0.0_re_p
@@ -1947,7 +1954,7 @@ subroutine eprecip1gpu
 !$acc end serial
 
    call timer_enter( timer_grid1 )
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
    do i = 1, npolerecloc
       do j = 1, 10
          iipole   = polerecglob(i)
@@ -1960,17 +1967,17 @@ subroutine eprecip1gpu
 !     zero out the PME grid
 !
    call set_to_zero1(qgrid2in_2d(1,1,1,1,1),&
-      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),rec_queue)
+      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),reciprocal_work%queue)
 !
 !     convert Cartesian induced dipoles to fractional coordinates
 !
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1, 3
       a(1,i) = real(nfft1,t_p) * recip(i,1)
       a(2,i) = real(nfft2,t_p) * recip(i,2)
       a(3,i) = real(nfft3,t_p) * recip(i,3)
    end do
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
    do i = 1, npolerecloc
       do j = 1, 3
          iipole = polerecglob(i)
@@ -1992,8 +1999,8 @@ subroutine eprecip1gpu
 
 #ifdef _OPENACC
    ! Recover MPI communication with real space computations
-   if (dir_queue.ne.rec_queue) then
-      call start_dir_stream_cover
+   if (direct_work%queue.ne.reciprocal_work%queue) then
+      call begin_direct_overlap
       call epreal1c_cp
    end if
 #endif
@@ -2012,7 +2019,7 @@ subroutine eprecip1gpu
 !     account for zeroth grid point for nonperiodic system
 !
    call timer_enter( timer_scalar )
-!$acc serial async(rec_queue) default(present) present(eprec,er)
+!$acc serial async(reciprocal_work%queue) default(present) present(eprec,er)
    if (.not. use_bounds) then
       expterm = 0.5_ti_p * pi / xbox
       struc2  = qgrid2in_2d(1,1,1,1,1)**2 +&
@@ -2036,7 +2043,7 @@ subroutine eprecip1gpu
 !
 !     complete the transformation of the PME grid
 !
-!$acc parallel loop collapse(3) async(rec_queue) default(present)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue) default(present)
    do k = 1, ksize2(rankloc+1)
       do j = 1, jsize2(rankloc+1)
          do i = 1, isize2(rankloc+1)
@@ -2066,7 +2073,7 @@ subroutine eprecip1gpu
 
 #ifdef _OPENACC
    ! sync streams
-   if (dir_queue.ne.rec_queue) call end_dir_stream_cover
+   if (direct_work%queue.ne.reciprocal_work%queue) call end_direct_overlap
 #endif
 
 !     fphip(1,:) = 0.0_ti_p !flush first line to zero? never use after
@@ -2074,14 +2081,14 @@ subroutine eprecip1gpu
    call timer_enter ( timer_grid2 )
    call fphi_uind_site1_p(fphid,fphip,fphidp)
 
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
    do ii = 1, npolerecloc
       do j = 1, 10
          fphid(j,ii) = electric * fphid(j,ii)
          fphip(j,ii) = electric * fphip(j,ii)
       end do
    end do
-!$acc parallel loop collapse(2) async(rec_queue)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue)
    do ii = 1, npolerecloc
       do j = 1, 20
          fphidp (j,ii) = electric * fphidp(j,ii)
@@ -2094,7 +2101,7 @@ subroutine eprecip1gpu
 !
    call timer_enter( timer_fmanage )
 !$acc parallel loop reduction(+:er) &
-!$acc         async(rec_queue) &
+!$acc         async(reciprocal_work%queue) &
 !$acc         default(present) present(er)
    do i = 1, npolerecloc
       iipole  = polerecglob(i)
@@ -2137,13 +2144,13 @@ subroutine eprecip1gpu
       deprec(2,ii) = deprec(2,ii) + h2
       deprec(3,ii) = deprec(3,ii) + h3
    end do
-!$acc serial async(rec_queue) present(eprec,er)
+!$acc serial async(reciprocal_work%queue) present(eprec,er)
    eprec = eprec + 0.5*er
 !$acc end serial
 !
 !     set the potential to be the induced dipole average
 !
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
    do i = 1, npolerecloc
       do k = 1, 10
          fphidp(k,i) = 0.5_ti_p * fphidp(k,i)
@@ -2153,7 +2160,7 @@ subroutine eprecip1gpu
 !
 !     distribute torques into the induced dipole gradient
 !
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
    do i = 1, npolerecloc
       iipole      = polerecglob(i)
       trqrec(1,i) = cmp(4,i)*cphirec(3,i) - cmp(3,i)*cphirec(4,i)&
@@ -2171,7 +2178,7 @@ subroutine eprecip1gpu
    end do
 
    call torquegpu(npolerecloc,nlocrec2,polerecglob,locrec&
-      &,trqrec,deprec,rec_queue)
+      &,trqrec,deprec,reciprocal_work%queue)
 
    call timer_exit ( timer_fmanage,quiet_timers )
 
@@ -2191,7 +2198,7 @@ subroutine eprecip1gpu
 !$acc         reduction(+:vxx,vxy,vxz,vyy,vyz,vzz) &
 !$acc         present(polerecglob,fphirec,fphid,fphip,uind,uinp &
 !$acc   ,cphirec,cmp,vxx,vxy,vxz,vyy,vyz,vzz) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do i = 1, npolerecloc
       iipole = polerecglob(i)
       do j = 2, 4
@@ -2259,9 +2266,9 @@ subroutine eprecip1gpu
 !
    call timer_enter( timer_grid1 )
    call set_to_zero1(qgridin_2d(1,1,1,1,1),&
-      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),rec_queue)
+      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),reciprocal_work%queue)
 !
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
    do i = 1, npolerecloc
       do j = 2, 4
          iipole = polerecglob(i)
@@ -2290,16 +2297,16 @@ subroutine eprecip1gpu
    ! save qgridout_2d inside qgriq
    call timer_enter(timer_other)
    call utils_amove(2*isize2(rankloc+1)*jsize2(rankloc+1)&
-      &*ksize2(rankloc+1),qgridout_2d,qgrip,rec_queue)
+      &*ksize2(rankloc+1),qgridout_2d,qgrip,reciprocal_work%queue)
    call timer_exit ( timer_other,quiet_timers )
 !
 !     zero out the PME grid
 !
    call timer_enter( timer_grid1 )
    call set_to_zero1(qgridin_2d(1,1,1,1,1),&
-      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),rec_queue)
+      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),reciprocal_work%queue)
 
-!$acc parallel loop collapse(2) async(rec_queue) default(present)
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) default(present)
    do i = 1, npolerecloc
       do j = 2, 4
          iipole = polerecglob(i)
@@ -2334,12 +2341,12 @@ subroutine eprecip1gpu
 !     make the scalar summation over reciprocal lattice
 !
    call timer_enter(timer_other)
-!$acc serial async(rec_queue) default(present)
+!$acc serial async(reciprocal_work%queue) default(present)
    if ((istat2.eq.1).and.(jstat2.eq.1).and.(kstat2.eq.1)) then
       qfac_2d(1,1,1) = 0.0_ti_p
    end if
 !$acc end serial
-!$acc parallel loop collapse(3) async(rec_queue) default(present) &
+!$acc parallel loop collapse(3) async(reciprocal_work%queue) default(present) &
 !$acc         present(vxx,vxy,vxz,vyy,vyz,vzz) &
 !$acc         reduction(+:vxx,vxy,vxz,vyy,vyz,vzz)
    do k3 = kstat2,ked2
@@ -2393,7 +2400,7 @@ subroutine eprecip1gpu
 !     Proceed to atomic update to avoid collision with direct queue
 !     even if it's highly unlikely
 !
-!$acc serial async(rec_queue) default(present) &
+!$acc serial async(reciprocal_work%queue) default(present) &
 !$acc       present(g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) &
 !$acc       present(vxx,vxy,vxz,vyy,vyz,vzz)
    g_vxx =  g_vxx + vxx
@@ -2410,13 +2417,12 @@ subroutine eprecip1gpu
 
    !TODO Amoebap Reduce the communication - (commrecrec + addrec)
    if (use_chgflx) then
-      def_queue = rec_queue
       if (nproc.eq.1) then
          if (npolerecloc.eq.n) then
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
             do i = 1,n; pot(i) = cphirec(1,i); end do
          else
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
             do i = 1,npolerecloc
                iloc = loc(ipole(polerecglob(i)))
                pot(iloc) = cphirec(1,i)
@@ -2424,25 +2430,25 @@ subroutine eprecip1gpu
          end if
       else
          call prmem_request(potrec,nlocrec)
-!$acc parallel loop async(rec_queue) default(present)
+!$acc parallel loop async(reciprocal_work%queue) default(present)
          do i = 1,npolerecloc
             iloc = locrec(ipole(polerecglob(i)))
             potrec(iloc) = cphirec(1,i)
          end do
-         call accumulate(pot,potrec,1)
-         call extend(pot,       1,halo_neighbour)
+         call accumulate(pot,potrec,1,channel=reciprocal_work)
+         call extend(pot,       1,halo_neighbour,channel=reciprocal_work)
       end if
-      call dcflux2( pot,de_ws1 )
-      call adflux2( de_ws1,dep )
-      call mem_set(pot,zeror,int(nbloc,mipk),rec_channel%stream)
+      call dcflux2( pot,de_ws1,reciprocal_work%queue )
+      call adflux2( de_ws1,dep,reciprocal_work%queue )
+      call mem_set(pot,zeror,int(nbloc,mipk),reciprocal_work%stream)
       if (nproc.ne.1) call mem_set&
-         &(potrec,zeror,int(nlocrec,mipk),rec_channel%stream)
+         &(potrec,zeror,int(nlocrec,mipk),reciprocal_work%stream)
    end if
 !
 !     get contribution of the reciprocal permanent electric field to delambdae
 !
    if (use_lambdadyn) then
-!$acc parallel loop async(rec_queue) default(present) present(delambdae) &
+!$acc parallel loop async(reciprocal_work%queue) default(present) present(delambdae) &
 !$acc reduction(+:delambdae)
       do i = 1, npolerecloc
          iipole = polerecglob(i)
@@ -2462,9 +2468,9 @@ subroutine eprecip1gpu
       end do
    end if
 
-!!$acc update host(vxx,vxy,vxz,eprec) async(rec_queue)
+!!$acc update host(vxx,vxy,vxz,eprec) async(reciprocal_work%queue)
 !!$acc update host(deprec,fmp) async
-!!$acc update host(fphip,fphid,fphidp) async(rec_queue)
+!!$acc update host(fphip,fphid,fphidp) async(reciprocal_work%queue)
 !      do i = 0,nproc-1
 !         if (rank.eq.i) then
 !         print*,comput_norm( uind,3*n,2),

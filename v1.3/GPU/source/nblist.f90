@@ -44,7 +44,7 @@ subroutine nblist(istep)
    use timestat
    use tinMemory,only: print_memory_usage,extra_alloc,debMem
    use mpi
-   use utilgpu  ,only: rec_queue
+   use mdevice  ,only: reciprocal_work
    implicit none
    integer istep,modnl
    integer i,j,k
@@ -196,7 +196,7 @@ subroutine init_cell_list_verlet
    use tinMemory ,only:prmem_request,s_prmem,sd_prmem
    use utils     ,only: set_to_zero1_int8&
       &,set_to_zero1_int
-   use utilgpu   ,only:rec_queue
+   use mdevice   ,only:reciprocal_work
    implicit none
    integer i,j
    integer(8),save:: size_elst,size_vlst
@@ -271,16 +271,16 @@ subroutine init_cell_list_verlet
       call prmem_request(nshortelst,        nlocnl,async=.true.)
       call prmem_request(nshortelstc,       nlocnl,async=.true.)
       call prmem_request( shortelst,maxelst,nlocnl,async=.true.)
-      call set_to_zero1_int (nshortelst,   nlocnl,rec_queue)
-      call set_to_zero1_int8( shortelst,size_elst,rec_queue)
+      call set_to_zero1_int (nshortelst,   nlocnl,reciprocal_work%queue)
+      call set_to_zero1_int8( shortelst,size_elst,reciprocal_work%queue)
    end if
 
    if (vlst_enable.and.use_shortvlist) then
       size_vlst = int(nlocnl,8)*int(maxvlst,8)
       call prmem_request(nshortvlst,        nlocnl,async=.true.)
       call prmem_request( shortvlst,maxvlst,nlocnl,async=.true.)
-      call set_to_zero1_int (nshortvlst,   nlocnl,rec_queue)
-      call set_to_zero1_int8( shortvlst,size_vlst,rec_queue)
+      call set_to_zero1_int (nshortvlst,   nlocnl,reciprocal_work%queue)
+      call set_to_zero1_int8( shortvlst,size_vlst,reciprocal_work%queue)
    end if
 
    ! set data to zero
@@ -291,14 +291,14 @@ subroutine init_cell_list_verlet
          nvlst(i) = 0
       end do
    else if (mlst_enable.or.clst_enable) then
-      call set_to_zero1_int(nelst,nlocnl,rec_queue)
+      call set_to_zero1_int(nelst,nlocnl,reciprocal_work%queue)
    else if (vlst_enable) then
-      call set_to_zero1_int(nvlst,nlocnl,rec_queue)
+      call set_to_zero1_int(nvlst,nlocnl,reciprocal_work%queue)
    end if
 
    if (mlst_enable.or.clst_enable)&
-      &call set_to_zero1_int8(elst,size_elst,rec_queue)
-   if (vlst_enable) call set_to_zero1_int8(vlst,size_vlst,rec_queue)
+      &call set_to_zero1_int8(elst,size_elst,reciprocal_work%queue)
+   if (vlst_enable) call set_to_zero1_int8(vlst,size_vlst,reciprocal_work%queue)
 end subroutine
 !
 subroutine mlistcell
@@ -720,6 +720,7 @@ end
 subroutine check_nl_rebuild()
    use atoms
    use domdec
+   use mdevice, only: reciprocal_work
    use mpi
    use neigh
    use nblist_inl
@@ -732,8 +733,8 @@ subroutine check_nl_rebuild()
    if (nproc.lt.4) return
 
    cap = 0
-!$acc wait(rec_queue)
-!$acc parallel loop async(rec_queue) copy(cap)
+!$acc wait(reciprocal_work%queue)
+!$acc parallel loop async(reciprocal_work%queue) copy(cap)
    do ii = 1,nlocnl
       i = loc(ineignl(ii))
       if (i.lt.1.or.i.gt.nbloc) then
@@ -825,8 +826,8 @@ subroutine reinitnl(istep)
    use mlpot   ,only: mlpot_rfield
    use neigh
    use potent  ,only: use_mlpot
-   use utilgpu ,only: rec_queue
-   use utilcomm,only: no_commdir
+   use mdevice ,only: reciprocal_work
+   use parallel,only: comm_opt
    use tinMemory
    use timestat,only: timer_enter,timer_exit,timer_nl&
       &,quiet_timers
@@ -865,7 +866,7 @@ subroutine reinitnl(istep)
 
    !call check_nl_rebuild
 
-   if (no_commdir) then
+   if (comm_opt%skip_direct) then
       distcut = bigbuf + lbuffer
    else
       distcut = bigbuf/2 + lbuffer
@@ -880,9 +881,9 @@ subroutine reinitnl(istep)
 !
 !$acc data copy(nlocnl,abort) &
 !$acc     present(ineignl,glob) &
-!$acc     async(rec_queue)
+!$acc     async(reciprocal_work%queue)
 !
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
    do i = 1,n
       if (i.le.nloc) then
          ineignl(i) = glob(i)
@@ -894,7 +895,7 @@ subroutine reinitnl(istep)
    do iproc = 1, nbig_recep
       idomlen = domlen(pbig_recep(iproc)+1)
       ibufbeg = bufbeg(pbig_recep(iproc)+1)
-!$acc parallel loop async(rec_queue)
+!$acc parallel loop async(reciprocal_work%queue)
       do i = 1, idomlen
          iloc  = ibufbeg+i-1
          iglob = glob(iloc)
@@ -914,7 +915,7 @@ subroutine reinitnl(istep)
       end do
    end do
 !$acc end data
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 
 14 format(' reinitnl  -rank ',I0,' -nloc ',I0,' -nlocnl ',I0)
    write(*,14) rank,nloc,nlocnl

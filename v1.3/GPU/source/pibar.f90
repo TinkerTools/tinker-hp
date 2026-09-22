@@ -48,7 +48,7 @@
 #include "tinker_types.h"
 
 program pibar
-   use config, only: raw_cli_t, capture_raw_cli
+   use config
    use mpi
    use mdevice, only: bind_device
    use status, only: failed, status_t
@@ -66,7 +66,8 @@ program pibar
    if (failed(status_value)) then
       if (world_rank.eq.0) write (6,*) trim(status_value%message)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      error stop 1
+      call MPI_FINALIZE(ierr)
+      stop 1
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
@@ -106,7 +107,7 @@ subroutine pibar_bis(raw_cli,status_value)
    call MPI_Comm_rank(MPI_COMM_WORLD,world_rank,ierr)
    call parse_positional_cli(raw_cli,positional,positional_count,status_value)
    if (failed(status_value)) then
-      call final
+      call final(status_value)
       call finalize_device(cleanup_status)
       call release(platform, cleanup_status)
       return
@@ -141,7 +142,7 @@ subroutine pibar_bis(raw_cli,status_value)
    end if
    if (mode /= 1 .and. mode /= 2) then
       call set_status(status_value,status_invalid_argument,'PIBAR mode must be 1 or 2')
-      call final
+      call final(status_value)
       call finalize_device(cleanup_status)
       call release(platform, cleanup_status)
       return
@@ -161,12 +162,12 @@ subroutine pibar_bis(raw_cli,status_value)
    end if
    if (failed(status_value)) then
       call enrich_status(status_value,'PIBAR')
-      call final
+      call final(status_value)
       call finalize_device(cleanup_status)
       call release(platform, cleanup_status)
       return
    end if
-   call final
+   call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) then
@@ -187,7 +188,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
    use config, only: config_t, max_raw_cli_args, parse_positional_cli, raw_cli_t, &
       &select_positional_cli
    use initialization, only: initialize_state, pibar_application
-   use parallel, only: parallel_t
+   use parallel, only: parallel_t, assign_direct, assign_reciprocal
    use status, only: clear_status, failed, status_t
    use structure, only: read_frame, structure_t
    use atoms
@@ -303,7 +304,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
    if (failed(status_value)) return
 
    !call ddpme3d
-!     call AllDirAssign
+!     call assign_direct
 !     call reassignpme(.true.)
 !     call reinitnl(0)
    silent = .true.
@@ -356,7 +357,8 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
 !     reopen trajectory A using the parameters for state 0
 !
    !set polymer for trajectory A
-   call allocpi
+   call allocpi(status_value)
+   if (failed(status_value)) return
 
    if(.not. allocated(polymer_main%dcdinfo)) then
       allocate(polymer_main%dcdinfo(polymer_main%nbeads))
@@ -405,7 +407,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
 !
    call load_bead(polymer_main, 0,.true.)
    call lattice
-   call AllDirAssign
+   call assign_direct
    call reinitnl(0)
    call nblist(0)
    if (abort) then
@@ -530,8 +532,8 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
       call load_bead(polymer_main, 0,.true.)
       call lattice
       !call ddpme3d
-      call AllDirAssign
-      call AllRecAssign
+      call assign_direct
+      call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
@@ -590,7 +592,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
 !
    call load_bead(polymer_main, 0,.true.)
    call lattice
-   call AllDirAssign
+   call assign_direct
    call reinitnl(0)
    call nblist(0)
 !
@@ -716,8 +718,8 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
       call load_bead(polymer_main, 0,.true.)
       call lattice
       !call ddpme3d
-      call AllDirAssign
-      call AllRecAssign
+      call assign_direct
+      call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
@@ -806,7 +808,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
    ! Reset State 0 parameters
    call load_bead(polymer_main, 0,.true.)
    call lattice
-   call AllDirAssign
+   call assign_direct
    call reinitnl(0)
    call nblist(0)
 
@@ -925,8 +927,8 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
       use_shortvlist = .false.
       call load_bead(polymer_main, 0,.true.)
       call lattice
-      call AllDirAssign
-      call AllRecAssign
+      call assign_direct
+      call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
@@ -988,7 +990,7 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
    call load_bead(polymer_main, 0,.true.)
    call cutoffs
    call lattice
-   call AllDirAssign
+   call assign_direct
    call reinitnl(0)
    call nblist(0)
 !
@@ -1112,8 +1114,8 @@ subroutine makebarpi(raw_cli,configuration,molecular_structure,platform,status_v
       use_shortvlist = .false.
       call load_bead(polymer_main, 0,.true.)
       call lattice
-      call AllDirAssign
-      call AllRecAssign
+   call assign_direct
+   call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)

@@ -13,15 +13,17 @@
 #include "tinker_cudart.h"
 module echargecu
    use sizes   ,only: maxgrp
-   use utilcu  ,only: BLOCK_DIM,ALL_LANES
-   use utilgpu ,only: real3,real6,mdyn3_r,rpole_elt&
-      &,BLOCK_SIZE,RED_BUFF_SIZE,WARP_SIZE
+   use utilcu  ,only: ALL_LANES
+   use tinTypes,only: real3,real6,mdyn3_r,rpole_elt
+   use reduction,only: RED_BUFF_SIZE
 
    implicit none
    private
+   integer,parameter :: BLOCK_DIM=128,BLOCK_SIZE=32,WARP_SIZE=32,WARP_SHFT=5
 #include "atomicOp.h.f90"
 
    public :: ecreal1_kcu,ecreal3_kcu
+   public :: BLOCK_DIM,BLOCK_SIZE,WARP_SIZE,WARP_SHFT
 contains
 
 #include "convert.inc.f90"

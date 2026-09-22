@@ -136,7 +136,7 @@ subroutine bsplgen_chg (w,isite,thetai)
    integer isite
    integer,parameter:: level=2
    real(t_p) w,denom
-   real(t_p) thetai(level,bsorder,*)
+   real(t_p) thetai(level,bsorder)
    real(t_p) temp(maxorder,maxorder)
 
 #ifdef TINKER_DEBUG
@@ -190,7 +190,7 @@ subroutine bsplgen_chg (w,isite,thetai)
    do i = 1, bsorder
 !$acc loop seq
       do j = 1, level
-         thetai(j,i,isite) = temp(bsorder-j+1,i)
+         thetai(j,i) = temp(bsorder-j+1,i)
       end do
    end do
 end
@@ -211,7 +211,7 @@ subroutine bspline_fill_sitegpu(config)
    use neigh    ,only:celle_pole,celle_chg,disp_nbl
    use pme
    use tinheader,only:ti_p,prec1_eps
-   use utilgpu  ,only:rec_queue,nSMP
+   use mdevice, only: reciprocal_work, gpu_sm_count
    use potent
    implicit none
    integer,intent(in),optional::config
@@ -223,6 +223,7 @@ subroutine bspline_fill_sitegpu(config)
    parameter(c_mpole=0,c_charge=1,c_disp=2)
 !$acc routine(bsplgen) seq
 !$acc routine(bsplgen_chg) seq
+
 
    if (present(config)) then
       cfg = config
@@ -261,10 +262,10 @@ subroutine bspline_fill_sitegpu(config)
 
    if (cfg.eq.c_mpole) then
 
-!$acc parallel loop num_gangs(4*nSMP) &
+!$acc parallel loop num_gangs(4*gpu_sm_count) &
 !$acc         present(x,y,z,recip,igrid,thetai1,thetai2, &
 !$acc  thetai3,type_p,glob_p) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
       do k=1,c_n
          iipole = type_p(k)
          i      = glob_p(iipole)
@@ -295,11 +296,10 @@ subroutine bspline_fill_sitegpu(config)
       end do
 
    else if (cfg.eq.c_charge.or.cfg.eq.c_disp) then
-!$acc parallel loop num_gangs(4*nSMP) &
-!$acc         present(x,y,z,recip,igrid,thetai1(1,1,1) &
-!$acc                ,thetai2(1,1,1),thetai3(1,1,1) &
+!$acc parallel loop num_gangs(4*gpu_sm_count) &
+!$acc         present(x,y,z,recip,igrid,thetai1,thetai2,thetai3 &
 !$acc                ,type_p,glob_p) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
       do k=1,c_n
          iichg  = type_p(k)
          i      = glob_p(iichg)
@@ -314,19 +314,19 @@ subroutine bspline_fill_sitegpu(config)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(1,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai1(1,1,1))
+         call bsplgen_chg (w,k,thetai1(1,1,k))
          w    = xi*recip(1,2) + yi*recip(2,2) + zi*recip(3,2)
          fr   = real(nfft2,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(2,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai2(1,1,1))
+         call bsplgen_chg (w,k,thetai2(1,1,k))
          w    = xi*recip(1,3) + yi*recip(2,3) + zi*recip(3,3)
          fr   = real(nfft3,t_p) * (w-anint(w)+0.5_ti_p)
          ifr  = int(fr-pme_eps)
          w    = fr - real(ifr,t_p)
          igrid(3,i) = ifr - bsorder
-         call bsplgen_chg (w,k,thetai3(1,1,1))
+         call bsplgen_chg (w,k,thetai3(1,1,k))
       end do
 
    end if
@@ -347,7 +347,8 @@ subroutine grid_mpole_sitegpu(fmpvec)
    use potent
    use sizes
    use utils
-   use utilgpu,only:rec_queue,ngangs_rec
+   use mdevice, only: reciprocal_work
+   use mdevice,only:gpu_sm_count
    implicit none
    integer istart,iend,jstart,jend,kstart,kend
    integer istat,ied,jstat,jed,kstat,ked
@@ -391,7 +392,7 @@ subroutine grid_mpole_sitegpu(fmpvec)
 !$acc parallel loop gang worker vector_length(32) &
 !$acc         present(polerecglob,igrid,ipole,thetai1,thetai2) &
 !$acc         present(thetai3,fmpvec,qgridin_2d) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do impi = 1,npolerecloc
       isite   = ipole(polerecglob(impi))
       offsetx = 1 - (igrid(1,isite) + grdoff - nlpts)
@@ -508,7 +509,7 @@ subroutine grid_put_site( kind_id,atom_id,attr,nk,prm)
    use potent ,only: use_pmecore
    use sizes
    use utils
-   use utilgpu,only: rec_queue
+   use mdevice, only: reciprocal_work
    implicit none
    integer  ,intent(in):: nk, prm, kind_id(nk), atom_id(n)
    real(t_p),intent(in):: attr(n)
@@ -550,7 +551,7 @@ subroutine grid_put_site( kind_id,atom_id,attr,nk,prm)
 !
 !$acc parallel loop gang worker vector_length(32) &
 !$acc         present(kind_id,atom_id,attr,igrid,thetai1(1,1,1) &
-!$acc   ,thetai2(1,1,1),thetai3(1,1,1),qgridin_2d) async(rec_queue)
+!$acc   ,thetai2(1,1,1),thetai3(1,1,1),qgridin_2d) async(reciprocal_work%queue)
    do impi = 1,nk
       iichg   = kind_id(impi)
       isite   = atom_id(iichg)
@@ -635,7 +636,8 @@ subroutine grid_uind_sitegpu(fuindvec,fuinpvec,qgrid2loc)
    use pme
    use potent
    use utils
-   use utilgpu,only:rec_queue,ngangs_rec
+   use mdevice, only: reciprocal_work
+   use mdevice,only:gpu_sm_count
    implicit none
    integer istart,iend,jstart,jend,kstart,kend
    integer istat,ied,jstat,jed,kstat,ked
@@ -679,7 +681,7 @@ subroutine grid_uind_sitegpu(fuindvec,fuinpvec,qgrid2loc)
 !$acc parallel loop gang worker vector_length(32) &
 !$acc         present(polerecglob,igrid,ipole,thetai1,thetai2) &
 !$acc         present(fuindvec,fuinpvec,qgrid2loc) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do impi = 1,npolerecloc
       isite     = ipole(polerecglob(impi))
       offsetx   = 1 - (igrid(1,isite) + grdoff - nlpts)
@@ -778,7 +780,9 @@ subroutine fphi_mpole_sitegpu
    use mpole
    use pme
    use potent
-   use utilgpu
+   use mdevice, only: reciprocal_work
+   use mdevice, only: gpu_sm_count
+   use tinheader, only: ti_p
    implicit none
    integer istart,iend,jstart,jend,kstart,kend
    integer istarti,iendi,jstarti,jendi,kstarti,kendi
@@ -812,11 +816,11 @@ subroutine fphi_mpole_sitegpu
    istarti = istart1(rankloc+1)
    iendi   = iend1  (rankloc+1)
 !
-!$acc parallel loop num_gangs(ngangs_rec) &
+!$acc parallel loop num_gangs(gpu_sm_count) &
 !$acc         present(polerecglob,ipole,qgridin_2d,igrid,thetai1, &
 !$acc  thetai2,thetai3,kstart1,kend1,jstart1,jend1,kstart1,kend1, &
 !$acc  fphirec) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do impi = 1,npolerecloc
       iipole = polerecglob(impi)
       isite  = ipole(iipole)
@@ -985,7 +989,9 @@ subroutine fphi_chg_sitegpu
    use charge
    use pme
    use potent
-   use utilgpu
+   use tinheader, only: ti_p
+   use mdevice, only: reciprocal_work
+   use mdevice, only: gpu_sm_count
    implicit none
    integer istart,iend,jstart,jend,kstart,kend
    integer istarti,iendi,jstarti,jendi,kstarti,kendi
@@ -1014,7 +1020,7 @@ subroutine fphi_chg_sitegpu
    istarti = istart1(rankloc+1)
    iendi   = iend1  (rankloc+1)
 !
-!$acc parallel loop gang vector async(rec_queue) &
+!$acc parallel loop gang vector async(reciprocal_work%queue) &
 !$acc         present(chgrecglob,iion,qgridin_2d,igrid,thetai1(1,1,1), &
 !$acc  thetai2(1,1,1),thetai3(1,1,1),kstart1,kend1,jstart1,jend1,kstart1,kend1, &
 !$acc  fphirec)
@@ -1125,7 +1131,8 @@ subroutine grid_pchg_force
    use pme    ,only: igrid,nfft1,nfft2,nfft3,bsorder&
       &,thetai1,thetai2,thetai3,qgridin_2d
    use potent ,only: use_pmecore
-   use utilgpu,only: ngangs_rec,rec_queue
+   use mdevice, only: reciprocal_work
+   use mdevice,only: gpu_sm_count
    use tinheader ,only: ti_p
    implicit none
    integer iichg,iglob,iloc,iatm,isite,rankloc&
@@ -1159,7 +1166,7 @@ subroutine grid_pchg_force
    dn2     = real(nfft2,t_p)
    dn3     = real(nfft3,t_p)
 
-!$acc parallel loop gang vector async(rec_queue) &
+!$acc parallel loop gang vector async(reciprocal_work%queue) &
 !$acc         present(chgrecglob,iion,locrec,igrid, &
 !$acc     pchg,thetai1(1,1,1),thetai2(1,1,1),thetai3(1,1,1),qgridin_2d, &
 !$acc     decrec)
@@ -1252,7 +1259,8 @@ subroutine fphi_uind_sitegpu1(fdip_phi1,fdip_phi2,fdip_sum_phi)
    use mpole  ,only: npolerecloc, ipole
    use pme
    use potent
-   use utilgpu,only: rec_queue,ngangs_rec
+   use mdevice, only: reciprocal_work
+   use mdevice,only: gpu_sm_count
    use tinheader ,only: ti_p
    implicit none
    integer istart,iend,jstart,jend,kstart,kend
@@ -1305,11 +1313,11 @@ subroutine fphi_uind_sitegpu1(fdip_phi1,fdip_phi2,fdip_sum_phi)
       ied   = iend1  (rank+1)
    end if
 !
-!$acc parallel loop num_gangs(ngangs_rec) &
+!$acc parallel loop num_gangs(gpu_sm_count) &
 !$acc         present(polerecglob,ipole,igrid,thetai1,thetai2, &
 !$acc   kstart1,kend1,jstart1,jend1,istart1,iend1,fdip_phi1, &
 !$acc   fdip_phi2,fdip_sum_phi) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do impi = 1,npolerecloc
       iipole   = polerecglob(impi)
       iatm     = ipole(iipole)
@@ -1572,7 +1580,8 @@ subroutine fphi_uind_sitegpu2(fdip_phi1,fdip_phi2)
    use pme
    use potent
    use utils
-   use utilgpu,only: rec_queue,ngangs_rec
+   use mdevice, only: reciprocal_work
+   use mdevice,only: gpu_sm_count
    use tinheader ,only: ti_p
    implicit none
    real(t_p),dimension(:,:)::fdip_phi1,fdip_phi2
@@ -1629,12 +1638,12 @@ subroutine fphi_uind_sitegpu2(fdip_phi1,fdip_phi2)
       ied   = iend1  (rank+1)
    end if
 !
-!$acc parallel loop num_gangs(ngangs_rec) &
+!$acc parallel loop num_gangs(gpu_sm_count) &
 !$acc         present(polerecglob,ipole,igrid,thetai1,thetai2, &
 !$acc   kstart1,kend1,jstart1,jend1,istart1,iend1) &
 !$acc         present(fdip_phi1,fdip_phi2,qgrid2in_p) &
 !$acc         private(tuv1,tuv2) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do impi = 1,npolerecloc
       iipole = polerecglob(impi)
       iatm   = ipole(iipole)
@@ -1798,7 +1807,8 @@ subroutine pme_conv_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
    use pme1
    use potent
    use utils
-   use utilgpu
+   use mdevice, only: reciprocal_work
+   use tinheader, only: ti_p
    use timestat
    implicit none
    real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
@@ -1836,7 +1846,7 @@ subroutine pme_conv_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
 
    if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.&
       &(kstart2(rankloc+1).eq.1)) then
-!$acc serial async(rec_queue) present(qgridout_2d)
+!$acc serial async(reciprocal_work%queue) present(qgridout_2d)
       qgridout_2d(1,1,1,1) = 0.0
       qgridout_2d(2,1,1,1) = 0.0
 !$acc end serial
@@ -1844,7 +1854,7 @@ subroutine pme_conv_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
 
 !$acc host_data use_device( &
 !$acc          qgridout_2d,e,vxx,vxy,vxz,vyy,vyz,vzz)
-!$acc parallel loop collapse(3) async(rec_queue) &
+!$acc parallel loop collapse(3) async(reciprocal_work%queue) &
 !$acc         deviceptr( &
 !$acc         qgridout_2d,e,vxx,vxy,vxz,vyy,vyz,vzz) &
 !$acc         reduction(+:e,vxx,vxy,vxz,vyy,vyz,vzz)
@@ -1905,7 +1915,7 @@ subroutine pme_conv_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
       &(kstart2(rankloc+1).eq.1)) then
       if (.not. use_bounds) then
          expterm = 0.5_ti_p * pi / xbox
-!$acc serial async(rec_queue) present(ecrec,qgridout_2d)
+!$acc serial async(reciprocal_work%queue) present(ecrec,qgridout_2d)
          struc2 = qgridout_2d(1,1,1,1)**2 + qgridout_2d(2,1,1,1)**2
          e = f * expterm * struc2
          ecrec = ecrec + e
@@ -1936,7 +1946,8 @@ subroutine pme_convd_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
    use pme1
    use potent
    use utils
-   use utilgpu
+   use mdevice, only: reciprocal_work
+   use tinheader, only: ti_p
    use timestat
    implicit none
    real(r_p) e,vxx,vxy,vxz,vyy,vyz,vzz
@@ -1975,7 +1986,7 @@ subroutine pme_convd_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
 
    if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.&
       &(kstart2(rankloc+1).eq.1)) then
-!$acc serial async(rec_queue) present(qgridout_2d)
+!$acc serial async(reciprocal_work%queue) present(qgridout_2d)
       qgridout_2d(1,1,1,1) = 0.0d0
       qgridout_2d(2,1,1,1) = 0.0d0
 !$acc end serial
@@ -1983,7 +1994,7 @@ subroutine pme_convd_gpu(e,vxx,vxy,vxz,vyy,vyz,vzz)
 
 !$acc host_data use_device( &
 !$acc          qgridout_2d,e,vxx,vxy,vxz,vyy,vyz,vzz)
-!$acc parallel loop collapse(3) async(rec_queue) &
+!$acc parallel loop collapse(3) async(reciprocal_work%queue) &
 !$acc         deviceptr( &
 !$acc         qgridout_2d,e,vxx,vxy,vxz,vyy,vyz,vzz) &
 !$acc         reduction(+:e,vxx,vxy,vxz,vyy,vyz,vzz)
@@ -2061,8 +2072,8 @@ subroutine grid_mpole_sitecu(fmpvec)
    use potent
    use utils
    use pmestuffcu,only:grid_mpole_sitecu_core_1p
-   use utilcu    ,only:PME_BLOCK_DIM1,check_launch_kernel
-   use utilgpu   ,only:rec_stream,rec_queue,nSMP
+   use pmestuffcu,only:PME_BLOCK_DIM1
+   use mdevice,only:check_launch_kernel, reciprocal_work
    implicit none
    integer istat,ied,jstat,jed,kstat,ked
    integer i,j,k,impi
@@ -2094,7 +2105,7 @@ subroutine grid_mpole_sitecu(fmpvec)
 !$acc host_data use_device(polerecglob,celle_glob,ipole,igrid, &
 !$acc        thetai1,thetai2,thetai3,fmpvec,qgridin_2d)
 
-   call grid_mpole_sitecu_core_1p<<<gS,PME_BLOCK_DIM1,0,rec_stream>>>&
+   call grid_mpole_sitecu_core_1p<<<gS,PME_BLOCK_DIM1,0,reciprocal_work%stream>>>&
       &(celle_glob,ipole,igrid,thetai1,thetai2,thetai3&
       &,kstat,ked,jstat,jed,istat,ied&
       &,nfft1,nfft2,nfft3,npolerecloc&
@@ -2141,8 +2152,8 @@ subroutine grid_put_sitecu( kind_id,atom_id,entity,x,y,z,nk,prm )
    use potent
    use sizes
    use utils
-   use utilcu  ,only: PME_GRID_BDIM,check_launch_kernel
-   use utilgpu ,only: rec_stream
+   use pmestuffcu,only: PME_GRID_BDIM
+   use mdevice,only: check_launch_kernel, reciprocal_work
    implicit none
    integer  ,intent(in):: nk, prm, kind_id(*),atom_id(*)
    real(t_p),intent(in):: entity(*),x(*),y(*),z(*)
@@ -2193,7 +2204,7 @@ subroutine grid_put_sitecu( kind_id,atom_id,entity,x,y,z,nk,prm )
 !$acc host_data use_device(kind_id,atom_id,igrid,entity &
 !$acc         ,thetai1,thetai2,thetai3,qgridin_2d &
 !$acc         ,x,y,z)
-      call grid_put_site_kcu1<<<gS,PME_GRID_BDIM,0,rec_stream>>>&
+      call grid_put_site_kcu1<<<gS,PME_GRID_BDIM,0,reciprocal_work%stream>>>&
          &(kind_id,atom_id,igrid,entity,thetai1,thetai2,thetai3&
          &,x,y,z&
          &,kstat,ked,jstat,jed,istat,ied&
@@ -2221,8 +2232,8 @@ subroutine grid_uind_sitecu(fuindvec,fuinpvec,qgrid2loc)
    use potent
    use utils
    use pmestuffcu,only:grid_uind_sitecu_core_1p
-   use utilcu    ,only:PME_BLOCK_DIM1,check_launch_kernel
-   use utilgpu   ,only:rec_stream,rec_queue,nSMP
+   use pmestuffcu,only:PME_BLOCK_DIM1
+   use mdevice,only:check_launch_kernel, reciprocal_work
    implicit none
    integer istat,ied,jstat,jed,kstat,ked
    integer i,j,k,impi
@@ -2258,7 +2269,7 @@ subroutine grid_uind_sitecu(fuindvec,fuinpvec,qgrid2loc)
 !$acc host_data use_device(celle_glob,ipole,igrid,thetai1,thetai2 &
 !$acc        ,thetai3,fuindvec,fuinpvec,qgrid2loc)
 
-   call grid_uind_sitecu_core_1p<<<gS,PME_BLOCK_DIM1,0,rec_stream>>>&
+   call grid_uind_sitecu_core_1p<<<gS,PME_BLOCK_DIM1,0,reciprocal_work%stream>>>&
       &(celle_glob,ipole,igrid,thetai1,thetai2,thetai3&
       &,kstat,ked,jstat,jed,istat,ied&
       &,nfft1,nfft2,nfft3,npolerecloc&
@@ -2281,8 +2292,8 @@ subroutine fphi_mpole_sitecu
    use pme
    use potent
    use pmestuffcu,only:fphi_mpole_core
-   use utilcu    ,only:PME_BLOCK_DIM,check_launch_kernel
-   use utilgpu   ,only:rec_stream,rec_queue,nSMP
+   use pmestuffcu,only:PME_BLOCK_DIM
+   use mdevice,only:check_launch_kernel, reciprocal_work
    implicit none
    integer istat,ied,jstat,jed,kstat,ked
    integer i,rankloc
@@ -2308,7 +2319,7 @@ subroutine fphi_mpole_sitecu
    call set_PME_texture
 
 !$acc host_data use_device(polerecglob,ipole,igrid,fphirec)
-   call fphi_mpole_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
+   call fphi_mpole_core<<<gS,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
       &(kstat,ked,jstat,jed,istat,ied,nfft1,nfft2,nfft3&
       &,npolerecloc,nlocrec,bsorder,nrec_send,nproc&
       &,polerecglob,ipole,igrid,fphirec)
@@ -2331,8 +2342,8 @@ subroutine grid_disp_forcecu
       &,thetai1,thetai2,thetai3,qgridin_2d
    use pmestuffcu,only: grid_calc_frc_kcu,grid_calc_frc_kcu1
    use potent ,only: use_pmecore
-   use utilcu ,only: PME_BLOCK_DIM,check_launch_kernel
-   use utilgpu,only: rec_queue,rec_stream
+   use pmestuffcu,only: PME_BLOCK_DIM
+   use mdevice,only: check_launch_kernel, reciprocal_work
    implicit none
    integer iichg,iglob,iloc,iatm,isite,rankloc&
       &,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3&
@@ -2367,7 +2378,7 @@ subroutine grid_disp_forcecu
    if (f_in) then
       call cudaMaxgridsize("grid_calc_frc_kcu",gS)
       call cudaMaxgridsize("grid_calc_frc_kcu1",gS1)
-      !gS = gS - 2*nSMP
+      !gS = gS - 2*gpu_sm_count
       f_in =.false.
    end if
    call set_pme_texture
@@ -2375,7 +2386,7 @@ subroutine grid_disp_forcecu
 !$acc host_data use_device(disprecglob,idisp,locrec,igrid,csix &
 !$acc         ,thetai1,thetai2,thetai3,dedsprec)
    if (nproc.eq.1.or.nrec.eq.1) then
-      call grid_calc_frc_kcu1<<<gS1,PME_BLOCK_DIM,0,rec_stream>>>&
+      call grid_calc_frc_kcu1<<<gS1,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
          &(disprecglob,idisp,locrec,igrid,csix&
          &,thetai1,thetai2,thetai3&
          &,dedsprec&
@@ -2384,7 +2395,7 @@ subroutine grid_disp_forcecu
          &,1.0,2.0,dn1,dn2,dn3)
       call check_launch_kernel(" grid_calc_frc_kcu1")
    else
-      call grid_calc_frc_kcu<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
+      call grid_calc_frc_kcu<<<gS,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
          &(disprecglob,idisp,locrec,igrid,csix&
          &,thetai1,thetai2,thetai3&
          &,dedsprec&
@@ -2412,8 +2423,8 @@ subroutine grid_pchg_forcecu
       &,thetai1,thetai2,thetai3,qgridin_2d
    use pmestuffcu,only: grid_calc_frc_kcu,grid_calc_frc_kcu1
    use potent ,only: use_pmecore
-   use utilcu ,only: PME_BLOCK_DIM,check_launch_kernel
-   use utilgpu,only: rec_queue,rec_stream
+   use pmestuffcu,only: PME_BLOCK_DIM
+   use mdevice,only: check_launch_kernel, reciprocal_work
    implicit none
    integer iichg,iglob,iloc,iatm,isite,rankloc&
       &,igrd0,jgrd0,kgrd0,i,j,k,i0,j0,k0,it1,it2,it3&
@@ -2449,7 +2460,7 @@ subroutine grid_pchg_forcecu
    if (f_in) then
       call cudaMaxgridsize("grid_calc_frc_kcu",gS)
       call cudaMaxgridsize("grid_calc_frc_kcu1",gS1)
-      !gS = gS - 2*nSMP
+      !gS = gS - 2*gpu_sm_count
       f_in=.false.
    end if
    call set_pme_texture
@@ -2457,7 +2468,7 @@ subroutine grid_pchg_forcecu
 !$acc host_data use_device(chgrecglob,iion,locrec,igrid,pchg &
 !$acc         ,thetai1,thetai2,thetai3,decrec)
    if (nproc.eq.1.or.nrec.eq.1) then
-      call grid_calc_frc_kcu1<<<gS1,PME_BLOCK_DIM,0,rec_stream>>>&
+      call grid_calc_frc_kcu1<<<gS1,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
          &(chgrecglob,iion,locrec,igrid,pchg&
          &,thetai1,thetai2,thetai3&
          &,decrec&
@@ -2466,7 +2477,7 @@ subroutine grid_pchg_forcecu
          &,f,1.0,dn1,dn2,dn3)
       call check_launch_kernel(" grid_calc_frc_kcu1")
    else
-      call grid_calc_frc_kcu<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
+      call grid_calc_frc_kcu<<<gS,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
          &(chgrecglob,iion,locrec,igrid,pchg&
          &,thetai1,thetai2,thetai3&
          &,decrec&
@@ -2494,8 +2505,8 @@ subroutine fphi_chg_sitecu
    use pme
    use potent
    use pmestuffcu ,only: fphi_chg_site_kcu
-   use utilcu ,only: PME_BLOCK_DIM,check_launch_kernel
-   use utilgpu
+   use pmestuffcu,only: PME_BLOCK_DIM
+   use mdevice,only: check_launch_kernel, reciprocal_work
    implicit none
    integer istat,ied,jstat,jed,kstat,ked
    integer iproc,proc,rankloc
@@ -2519,7 +2530,7 @@ subroutine fphi_chg_sitecu
    call set_pme_texture
 
 !$acc host_data use_device(chgrecglob,iion,igrid,fphirec)
-   call fphi_chg_site_kcu<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
+   call fphi_chg_site_kcu<<<gS,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
       &(chgrecglob,iion,igrid,kstat,ked,jstat,jed,istat,ied&
       &,nrec_send,nfft1,nfft2,nfft3,nionrecloc,n&
       &,fphirec)
@@ -2538,8 +2549,8 @@ subroutine fphi_uind_sitecu2(fdip_phi1,fdip_phi2)
    use pme
    use pmestuffcu,only:fphi_uind_sitecu2_core
    use potent
-   use utilcu    ,only:PME_BLOCK_DIM,check_launch_kernel
-   use utilgpu   ,only:rec_stream,rec_queue,nSMP
+   use pmestuffcu,only:PME_BLOCK_DIM
+   use mdevice,only:check_launch_kernel, reciprocal_work, gpu_sm_count
    implicit none
    integer istat,ied,jstat,jed,kstat,ked
    integer i
@@ -2571,10 +2582,10 @@ subroutine fphi_uind_sitecu2(fdip_phi1,fdip_phi2)
    if (first_in) then
       if (nproc.eq.1.or.nrec.eq.1) then
          call cudamaxgridSize("fphi_uind_sitecu2_core_1p",gS)
-         gS = gS - 2*nSMP
+         gS = gS - 2*gpu_sm_count
       else
          call cudamaxgridSize("fphi_uind_sitecu2",gS)
-         gS = gS - 2*nSMP
+         gS = gS - 2*gpu_sm_count
       end if
       first_in=.false.
    end if
@@ -2584,7 +2595,7 @@ subroutine fphi_uind_sitecu2(fdip_phi1,fdip_phi2)
 !$acc    ,kstart1,kend1,jstart1,jend1,istart1,iend1,prec_send)
 
    if (nproc.eq.1.or.nrec.eq.1) then
-      call fphi_uind_sitecu2_core_1p<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
+      call fphi_uind_sitecu2_core_1p<<<gS,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
          &(kstat,ked,jstat,jed,istat,ied&
          &,npolerecloc,nlocrec,bsorder,n1mpimax,n2mpimax,n3mpimax&
          &,nfft1,nfft2,nfft3&
@@ -2593,7 +2604,7 @@ subroutine fphi_uind_sitecu2(fdip_phi1,fdip_phi2)
          &,fdip_phi1,fdip_phi2,first_in)
       call check_launch_kernel("fphi_uind_sitecu2_core_1p")
    else
-      call fphi_uind_sitecu2_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
+      call fphi_uind_sitecu2_core<<<gS,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
          &(kstat,ked,jstat,jed,istat,ied&
          &,npolerecloc,nlocrec,bsorder,n1mpimax,n2mpimax,n3mpimax&
          &,nrec_send,nproc,prec_send,psize,nfft1,nfft2,nfft3&
@@ -2618,8 +2629,8 @@ subroutine fphi_uind_sitecu1(fdip_phi1,fdip_phi2,fdip_sum_phi)
    use pme
    use pmestuffcu,only:fphi_uind_sitecu1_core
    use potent
-   use utilcu    ,only:PME_BLOCK_DIM,check_launch_kernel
-   use utilgpu   ,only:rec_stream,rec_queue,nSMP
+   use pmestuffcu,only:PME_BLOCK_DIM
+   use mdevice,only:check_launch_kernel, reciprocal_work, gpu_sm_count
    implicit none
    integer istat,ied,jstat,jed,kstat,ked
    integer i
@@ -2630,7 +2641,7 @@ subroutine fphi_uind_sitecu1(fdip_phi1,fdip_phi2,fdip_sum_phi)
    integer,save::gS
    logical,save::first_in=.true.
 
-   gS = 4*nSMP
+   gS = 4*gpu_sm_count
    if (use_pmecore) then
       kstat = kstart1(rank_bis+1)
       ked   = kend1  (rank_bis+1)
@@ -2657,7 +2668,7 @@ subroutine fphi_uind_sitecu1(fdip_phi1,fdip_phi2,fdip_sum_phi)
 !$acc   ,fdip_phi1,fdip_phi2,fdip_sum_phi &
 !$acc   ,kstart1,kend1,jstart1,jend1,istart1,iend1,prec_send)
 
-   call fphi_uind_sitecu1_core<<<gS,PME_BLOCK_DIM,0,rec_stream>>>&
+   call fphi_uind_sitecu1_core<<<gS,PME_BLOCK_DIM,0,reciprocal_work%stream>>>&
       &(kstat,ked,jstat,jed,istat,ied,nfft1,nfft2,nfft3&
       &,npolerecloc,nlocrec,bsorder,nrec_send,nproc&
       &,polerecglob,ipole,igrid,fdip_phi1,fdip_phi2,fdip_sum_phi)
@@ -2687,8 +2698,7 @@ subroutine pme_conv_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
    use potent    ,only: use_pmecore
    use timestat
    use tinheader ,only: ti_p
-   use utilcu    ,only: check_launch_kernel
-   use utilgpu   ,only: rec_queue,rec_stream
+   use mdevice   ,only: check_launch_kernel, reciprocal_work
    use reduction ,only: reduce_energy_virial,ered_buff,vred_buf1
    use virial    ,only: use_virial
    implicit none
@@ -2729,7 +2739,7 @@ subroutine pme_conv_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
    gDim    = min(qsz/(2*bDim),mgDim)
 
    if (ist2==1.and.jst2==1.and.kst2==1) then
-!$acc serial async(rec_queue) present(qgridout_2d)
+!$acc serial async(reciprocal_work%queue) present(qgridout_2d)
       qgridout_2d(1,1,1,1) = 0.0
       qgridout_2d(2,1,1,1) = 0.0
 !$acc end serial
@@ -2737,7 +2747,7 @@ subroutine pme_conv_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
 
 !$acc host_data use_device(bsmod1,bsmod2,bsmod3,qgridout_2d &
 !$acc         ,ered_buff,vred_buf1)
-   call pme_conv_kcu<<<gDim,bDim,0,rec_stream>>>&
+   call pme_conv_kcu<<<gDim,bDim,0,reciprocal_work%stream>>>&
       &(bsmod1,bsmod2,bsmod3&
       &,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz&
       &,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3&
@@ -2748,7 +2758,7 @@ subroutine pme_conv_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
 
    if (calc_e.or.use_virial) then
       call reduce_energy_virial(e,vxx,vyz,vyz,vyy,vyz,vzz,&
-         &ered_buff,vred_buf1,rec_queue)
+         &ered_buff,vred_buf1,reciprocal_work%queue)
    end if
 
    call timer_exit ( timer_scalar,quiet_timers )
@@ -2771,8 +2781,7 @@ subroutine pme_convd_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
    use potent    ,only: use_pmecore
    use timestat
    use tinheader ,only: ti_p
-   use utilcu    ,only: check_launch_kernel
-   use utilgpu   ,only: rec_queue,rec_stream
+   use mdevice   ,only: check_launch_kernel, reciprocal_work
    use reduction ,only: reduce_energy_virial,ered_buff,vred_buf1
    use virial    ,only: use_virial
    implicit none
@@ -2815,7 +2824,7 @@ subroutine pme_convd_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
    gDim    = min(qsz/(2*bDim),mgDim)
 
    if (ist2==1.and.jst2==1.and.kst2==1) then
-!$acc serial async(rec_queue) present(qgridout_2d)
+!$acc serial async(reciprocal_work%queue) present(qgridout_2d)
       qgridout_2d(1,1,1,1) = 0.0
       qgridout_2d(2,1,1,1) = 0.0
 !$acc end serial
@@ -2823,7 +2832,7 @@ subroutine pme_convd_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
 
 !$acc host_data use_device(bsmod1,bsmod2,bsmod3,qgridout_2d &
 !$acc         ,ered_buff,vred_buf1)
-   call pme_convd_kcu<<<gDim,bDim,0,rec_stream>>>&
+   call pme_convd_kcu<<<gDim,bDim,0,reciprocal_work%stream>>>&
       &(bsmod1,bsmod2,bsmod3&
       &,kst2,jst2,ist2,qsz1,qsz2,qsz12,qsz&
       &,nff,nf1,nf2,nf3,nfft1,nfft2,nfft3&
@@ -2834,7 +2843,7 @@ subroutine pme_convd_cu(e,vxx,vxy,vxz,vyy,vyz,vzz)
 
    if (calc_e.or.use_virial) then
       call reduce_energy_virial(e,vxx,vyz,vyz,vyy,vyz,vzz&
-         &,ered_buff,vred_buf1,rec_queue)
+         &,ered_buff,vred_buf1,reciprocal_work%queue)
    end if
 
    call timer_exit ( timer_scalar,quiet_timers )
@@ -2843,15 +2852,15 @@ end subroutine
 
 subroutine cudaMaxGridSize(kernelname,gS)
    use cudafor
-   use echargecu  ,only: ecreal1_kcu,ecreal3_kcu
-   use eChgLjcu
-   use empole1cu  ,only: emreal1_kcu,emreal3_kcu
+   use echargecu  ,only: ecreal1_kcu,ecreal3_kcu,charge_block_dim=>BLOCK_DIM
+   use eChgLjcu   ,only: echg_lj1_kcu_v0,chg_lj_block_dim=>BLOCK_DIM
+   use empole1cu  ,only: emreal1_kcu,emreal3_kcu,mpole_block_dim=>BLOCK_DIM
    use epolar1cu  ,only: epreal1c_core_cu&
-      &,epreal3_cu,mpreal1c_core_cu
+      &,epreal3_cu,mpreal1c_core_cu,polar_block_dim=>BLOCK_DIM
    use pmestuffcu
-   use tmatxb_pmecu
-   use utilcu
-   use utilgpu
+   use tmatxb_pmecu,only: tmatxb_pme_core_cu,otfdc_tmatxb_pme_core_cu&
+      &,tmatxb_block_dim=>BLOCK_DIM
+   use mdevice, only: gpu_sm_count
    implicit none
    character(*),intent(in)::kernelname
    integer,intent(out)::gS
@@ -2868,7 +2877,7 @@ subroutine cudaMaxGridSize(kernelname,gS)
    if      (kernelname.eq."fphi_uind_sitecu2") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,fphi_uind_sitecu2_core,PME_BLOCK_DIM,0)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
    else if (kernelname.eq."fphi_uind_sitecu2_core_1p") then
@@ -2876,115 +2885,115 @@ subroutine cudaMaxGridSize(kernelname,gS)
          &(gS,fphi_uind_sitecu2_core_1p,PME_BLOCK_DIM,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."fphi_uind_sitecu1") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,fphi_uind_sitecu1_core,PME_BLOCK_DIM,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."fphi_mpole_core") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,fphi_mpole_core,PME_BLOCK_DIM,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."fphi_chg_site_kcu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,fphi_chg_site_kcu,PME_BLOCK_DIM,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."grid_mpole_core") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,grid_mpole_sitecu_core_1p,PME_BLOCK_DIM1,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."grid_put_site_kcu1") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,grid_put_site_kcu1,PME_BLOCK_DIM1,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."grid_calc_frc_kcu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,grid_calc_frc_kcu,PME_BLOCK_DIM1,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."grid_calc_frc_kcu1") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,grid_calc_frc_kcu1,PME_BLOCK_DIM1,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."grid_uind_core") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
          &(gS,grid_uind_sitecu_core_1p,PME_BLOCK_DIM1,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."ecreal1_kcu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,ecreal1_kcu,BLOCK_DIM,0)
+         &(gS,ecreal1_kcu,charge_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."ecreal3_kcu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,ecreal3_kcu,BLOCK_DIM,0)
+         &(gS,ecreal3_kcu,charge_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."echg_lj1_kcu_v0") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,echg_lj1_kcu_v0,BLOCK_DIM,0)
+         &(gS,echg_lj1_kcu_v0,chg_lj_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."emreal1_kcu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,emreal1_kcu,BLOCK_DIM,0)
+         &(gS,emreal1_kcu,mpole_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."emreal3_kcu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,emreal3_kcu,BLOCK_DIM,0)
+         &(gS,emreal3_kcu,mpole_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."epreal1c_core_cu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,epreal1c_core_cu,BLOCK_DIM,0)
+         &(gS,epreal1c_core_cu,polar_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."mpreal1c_core_cu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,mpreal1c_core_cu,BLOCK_DIM,0)
+         &(gS,mpreal1c_core_cu,polar_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."epreal3_cu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,epreal3_cu,BLOCK_DIM,0)
+         &(gS,epreal3_cu,polar_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."tmatxb_pme_core_cu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,tmatxb_pme_core_cu,BLOCK_DIM,0)
+         &(gS,tmatxb_pme_core_cu,tmatxb_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else if (kernelname.eq."otf_dc_tmatxb_pme_core_cu") then
       ierr = CUDAOCCUPANCYMAXACTIVEBLOCKSPERMULTIPROCESSOR&
-         &(gS,otfdc_tmatxb_pme_core_cu,BLOCK_DIM,0)
+         &(gS,otfdc_tmatxb_pme_core_cu,tmatxb_block_dim,0)
       if (ierr.ne.cudaSuccess)&
          &print 200, ierr,cudageterrorstring(ierr)
-      gS   = gS*nSMP
+      gS   = gS*gpu_sm_count
    else
       print 201, kernelname
       gS = 0
@@ -3099,17 +3108,13 @@ end
 subroutine cmp_to_fmp_sitegpu(cmp,fmp)
    use mpole
    use sizes
-   use mdevice   ,only:channel_t,reciprocal_channel
+   use mdevice   ,only:reciprocal_work
    use pme       ,only:ctf=>pme_ctf,pme_ctf_ready
    use tinheader ,only:ti_p
    implicit none
    integer i,j,k
-   integer rec_queue
-   type(channel_t) rec_channel
    real(t_p),intent(in) ::cmp(10,max(npolerecloc,1))
    real(t_p),intent(out)::fmp(10,max(npolerecloc,1))
-   rec_channel=reciprocal_channel()
-   rec_queue=rec_channel%queue
 !     real(t_p) time0,time1
 !
 !     find the matrix to convert Cartesian to fractional
@@ -3118,7 +3123,7 @@ subroutine cmp_to_fmp_sitegpu(cmp,fmp)
       call cart_to_fracgpu
    end if
 
-!$acc parallel loop collapse(2) async(rec_queue) &
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) &
 !$acc         present(cmp,fmp,ctf)
    do i= 1,npolerecloc
       do j = 1, 10
@@ -3148,17 +3153,13 @@ end
 subroutine fphi_to_cphi_sitegpu(fphi,cphi)
    use mpole
    use sizes
-   use mdevice   ,only:channel_t,reciprocal_channel
+   use mdevice   ,only:reciprocal_work
    use pme       ,only:ftc=>pme_ftc,pme_ftc_ready
    use tinheader ,only:ti_p
    implicit none
    integer i,j,k
-   integer rec_queue
-   type(channel_t) rec_channel
    real(t_p),intent(in )::fphi(20,max(npolerecloc,1))
    real(t_p),intent(out)::cphi(10,max(npolerecloc,1))
-   rec_channel=reciprocal_channel()
-   rec_queue=rec_channel%queue
 !
 !     find the matrix to convert fractional to Cartesian
 !
@@ -3166,7 +3167,7 @@ subroutine fphi_to_cphi_sitegpu(fphi,cphi)
       call frac_to_cartgpu
    end if
 
-!$acc parallel loop collapse(2) async(rec_queue) &
+!$acc parallel loop collapse(2) async(reciprocal_work%queue) &
 !$acc         present(fphi,cphi,ftc)
    do i= 1,npolerecloc
       do j = 1, 10

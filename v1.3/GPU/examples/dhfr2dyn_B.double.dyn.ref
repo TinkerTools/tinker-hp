@@ -1,0 +1,75 @@
+
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            Tinker-HP  ---  Software Tools for Molecular Design         ###
+ ##                                                                          ##
+ ##                       Version 1.2(GPU) Octobre 2020                      ##
+ ##                                                                          ##
+ ##     Copyright (c) Washington University in Saint Louis (WU)              ##
+ ##                   The University of Texas at Austin                      ##
+ ##                   Sorbonne Universites, UPMC (Sorbonne)                  ##
+ ##                              1990-2020                                   ##
+ ###                       All Rights Reserved                              ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+License Number : LICENSENUMBER
+
+Cite this work as :
+
+   Tinker-HP: a Massively Parallel Molecular Dynamics Package for Multiscale
+   Simulations of Large Complex Systems with Advanced Polarizable Force Fields.
+
+   Louis Lagardere, Luc-Henri Jolly, Filippo Lipparini, Felix Aviat,
+   Benjamin Stamm, Zhifeng F. Jing, Matthew Harger, Hedieh Torabifard,
+   G. Andres Cisneros, Michael J. Schnieders, Nohad Gresh, Yvon Maday,
+   Pengyu Y. Ren, Jay W. Ponder and Jean-Philip Piquemal,
+
+   Chem. Sci., 2018, 9, 956-972,  doi: 10.1039/c7sc04531j
+
+
+ ***** Using the CUFFT engine *****
+
+
+ Particle Mesh Ewald Parameters :
+
+     Type                Ewald Alpha    Grid Dimensions    Spline Order
+
+   Electrostatics           0.5446        64   64   64           5
+   Polarization             0.5446        64   64   64           5
+
+ Random Number Generator Initialized with SEED :      243730118
+
+ --- Tinker-HP: loading restart file for dhfr2dyn system ---
+
+ Langevin Molecular Dynamics Trajectory via BAOAB-RESPA-1 Algorithm
+     MD Step     E total   E Potential     E Kinetic       Temp       Pres
+         1   -41878.8842   -68568.4834    26689.5992     380.08   -2189.04
+         2   -42323.3965   -65830.8223    23507.4259     334.76     197.43
+         3   -41919.3914   -63790.2252    21870.8339     311.45    1417.91
+         4   -42334.8610   -65832.2786    23497.4177     334.62   -2802.60
+         5   -42166.5938   -65358.8168    23192.2230     330.27    5546.05
+         6   -42010.7131   -65014.4763    23003.7632     327.59   -3196.81
+         7   -42400.2756   -65418.9804    23018.7049     327.80    1572.80
+         8   -42018.3091   -64922.1743    22903.8652     326.16    1810.36
+         9   -42393.2144   -64205.5652    21812.3508     310.62   -2276.64
+        10   -42293.1180   -64176.2684    21883.1504     311.63    3348.91
+        11   -42348.4665   -66139.6164    23791.1499     338.80   -2130.67
+        12   -42565.6221   -64863.2940    22297.6719     317.53    1615.89
+        13   -42223.3522   -63711.2702    21487.9179     306.00    -132.93
+        14   -42582.1917   -64758.3552    22176.1634     315.80   -1663.28
+        15   -42460.8399   -65033.9226    22573.0827     321.45    2453.67
+        16   -42440.6501   -65000.0560    22559.4058     321.26   -2266.85
+        17   -42662.6786   -64363.6009    21700.9223     309.03     644.96
+        18   -42519.4562   -65121.0162    22601.5600     321.86    -485.89
+        19   -42716.5444   -64744.8245    22028.2801     313.70   -1031.78
+        20   -42633.0113   -64555.4860    21922.4747     312.19     903.67
+        21   -42675.1977   -65471.9555    22796.7578     324.64   -2424.54
+        22   -42767.0147   -64774.2227    22007.2080     313.40     562.82
+        23   -42683.7919   -64725.5616    22041.7697     313.89    -422.59
+        24   -42831.4323   -64760.1416    21928.7092     312.28   -1397.24
+        25   -42766.4914   -65106.3045    22339.8130     318.13     281.57
+
+ TINKER-HP is Exiting following Normal Termination

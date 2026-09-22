@@ -20,6 +20,7 @@ subroutine dcinduce_shortreal
    use iounit
    use math
    use mpole
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use pme
    use polar
    use polpot
@@ -36,8 +37,7 @@ subroutine dcinduce_shortreal
 !     MPI
 !
    integer iipole
-   integer, allocatable :: reqsend(:),reqrec(:)
-   integer, allocatable :: req2send(:),req2rec(:)
+   type(polar_comm_t) :: comm_ticket
 
 
 
@@ -66,10 +66,6 @@ subroutine dcinduce_shortreal
    allocate (ef(3,nrhs,max(1,npolebloc)))
    ef = 0d0
 !
-   allocate (reqsend(nproc))
-   allocate (reqrec(nproc))
-   allocate (req2send(nproc))
-   allocate (req2rec(nproc))
 !
 !     compute the electric fields:
 !
@@ -92,8 +88,6 @@ subroutine dcinduce_shortreal
 !     Factorization of Z has been interleaved with passing fields
 !
    call commfield2short(nrhs,ef)
-!
-   call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
 !
    wtime1 = mpi_wtime()
 !
@@ -135,8 +129,8 @@ subroutine dcinduce_shortreal
       end do
    end if
 
-   call commdirdirshort(nrhs,1,mu,reqrec,reqsend)
-   call commdirdirshort(nrhs,2,mu,reqrec,reqsend)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
+   call polar_finish(comm_ticket,nrhs,mu)
 !
 !     now, call the proper solver.
 !
@@ -184,10 +178,6 @@ subroutine dcinduce_shortreal
          end do
       end do
    end if
-   deallocate (reqrec)
-   deallocate (reqsend)
-   deallocate (req2rec)
-   deallocate (req2send)
    deallocate (ef)
    deallocate (mu)
    return
@@ -201,6 +191,7 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
    use iounit
    use math
    use mpole
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, commfield, commfieldgpu, commfieldshort
    use polar
    use polpot
    use timestat
@@ -230,8 +221,7 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
    integer iglob, iipole, ierr
    integer reqnorm,reqdiis(2*ndismx+1)
    integer status(MPI_STATUS_SIZE)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
+   type(polar_comm_t) :: comm_ticket
 !
 1000 format(' itsolv converged after ',I3,' iterations.',/,&
       &' final residual norm = ',3D14.7)
@@ -251,10 +241,6 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
    allocate (dcfield2(maxdim))
    dcfield1 = 0.0d0
    dcfield2 = 0.0d0
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (req2rec(nproc))
-   allocate (req2send(nproc))
 !
    allocate (h(3,nrhs,max(1,npolebloc)))
    h = 0d0
@@ -281,7 +267,6 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
       call commfieldshort(nrhs,h)
 
 !
-      call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
 !
 !     jacobi step:
 !
@@ -371,8 +356,8 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
          call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
       end if
 !
-      call commdirdirshort(nrhs,1,munew,reqrec,reqsend)
-      call commdirdirshort(nrhs,2,mu,reqrec,reqsend)
+      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew)
+      call polar_finish(comm_ticket,nrhs,mu)
       mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 !
 !     compute the norm of the increment.
@@ -411,10 +396,6 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
 !
 !     free the memory.
 !
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (req2send)
-   deallocate (req2rec)
    deallocate (munew)
    deallocate (dcfield1)
    deallocate (dcfield2)
@@ -429,4 +410,3 @@ subroutine inducedc_shortreal(matvec,nrhs,dodiis,ef,mu)
 
    return
 end
-

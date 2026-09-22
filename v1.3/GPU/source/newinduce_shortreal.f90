@@ -21,11 +21,12 @@ subroutine newinduce_shortreal
    use iounit
    use math
    use mpole
+   use parallel
    use pme
    use polar
    use polpot
    use potent
-   use tinheader ,only:ti_p,re_p
+   use tinheader ,only:ti_p
    use units
    use uprior
    use mpi
@@ -36,8 +37,7 @@ subroutine newinduce_shortreal
 !     MPI
 !
    integer iipole
-   integer, allocatable :: reqsend(:),reqrec(:)
-   integer, allocatable :: req2send(:),req2rec(:)
+   type(polar_comm_t) :: comm_ticket
 
 
 !
@@ -63,10 +63,6 @@ subroutine newinduce_shortreal
    allocate (ef(3,nrhs,max(1,npolebloc)))
    ef = 0_ti_p
 !
-   allocate (reqsend(nproc))
-   allocate (reqrec(nproc))
-   allocate (req2send(nproc))
-   allocate (req2rec(nproc))
 !
 !     compute the electric fields:
 !
@@ -75,8 +71,6 @@ subroutine newinduce_shortreal
    call efld0_direct(nrhs,ef)
 !
    call commfieldshort(nrhs,ef)
-!
-   call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
 !
 !cc$    wtime1 = omp_get_wtime()
 !
@@ -118,8 +112,8 @@ subroutine newinduce_shortreal
       end do
    end if
 !
-   call commdirdirshort(nrhs,1,mu,reqrec,reqsend)
-   call commdirdirshort(nrhs,2,mu,reqrec,reqsend)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
+   call polar_finish(comm_ticket,nrhs,mu)
 !
 !     now, call the proper solver.
 !
@@ -172,10 +166,6 @@ subroutine newinduce_shortreal
       end do
    end if
 !      end if
-   deallocate (reqrec)
-   deallocate (reqsend)
-   deallocate (req2rec)
-   deallocate (req2send)
    deallocate (ef)
    deallocate (mu)
    return
@@ -188,10 +178,11 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
    use iounit
    use math
    use mpole
+   use parallel
    use polar
    use polpot
    use timestat
-   use tinheader ,only:ti_p,re_p
+   use tinheader ,only:ti_p
    use units
    use mpi
    implicit none
@@ -219,10 +210,7 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
    integer iglob, iipole, ierr
    integer req1, req2, req3, req4
    integer status(MPI_STATUS_SIZE)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
-   integer,allocatable :: reqendrec(:),reqendsend(:)
-   integer,allocatable :: req2endrec(:),req2endsend(:)
+   type(polar_comm_t) :: comm_ticket
 !
 1000 format(' cgiter shortreal converged after ',I3,' iterations.',/,&
       &' final energy        = ',2D14.7,/,&
@@ -235,14 +223,6 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
 1030 format(i6,2x,f10.7,2x,f10.7,2x,f10.7)
 1040 format(' Using a diagonal preconditioner.')
 !
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (req2rec(nproc))
-   allocate (req2send(nproc))
-   allocate (reqendsend(nproc))
-   allocate (reqendrec(nproc))
-   allocate (req2endsend(nproc))
-   allocate (req2endrec(nproc))
 !
 !     allocate some memory and setup the preconditioner:
 !
@@ -281,8 +261,6 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
    timerealdip = timerealdip + time2-time1
    call commfieldshort(nrhs,h)
 !
-   call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
-!
    res(:,:,1:npoleloc) = ef(:,:,1:npoleloc)-h(:,:,1:npoleloc)
    do k = 1, nrhs
       do j = 1, 3
@@ -290,6 +268,8 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
       end do
    end do
    pp(:,:,1:npoleloc) = zr(:,:,1:npoleloc)
+   call polar_post_comm(comm_ticket,nrhs,pp,.true.)
+   call polar_finish(comm_ticket,nrhs,pp)
    do k = 1, nrhs
       ggold(k) = sum(res(:,k,:)*zr(:,k,:))
    end do
@@ -298,8 +278,6 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
 !
 !     MPI : begin sending
 !
-   call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
-   call commdirdirshort(nrhs,2,mu,reqrec,reqsend)
    call MPI_WAIT(req1,status,ierr)
 !
 !     now, start the main loop:
@@ -314,8 +292,6 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
 !
 !     MPI : begin reception
 !
-      call commdirdirshort(nrhs,0,pp,reqrec,reqsend)
-
       do k = 1, nrhs
          gg(k) = sum(pp(:,k,1:npoleloc)*h(:,k,1:npoleloc))
       end do
@@ -362,9 +338,8 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
             &pp(:,k,1:npoleloc)
       end do
 !
-      call commdirdirshort(nrhs,1,pp,reqrec,reqsend)
-!
-      call commdirdirshort(nrhs,2,pp,reqrec,reqsend)
+      call polar_post_comm(comm_ticket,nrhs,pp,.true.)
+      call polar_finish(comm_ticket,nrhs,pp)
 !
       ggold = ggnew
       if (resnrm.lt.poleps) then
@@ -377,14 +352,8 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
 !
 !     MPI : begin reception
 !
-   call commdirdirshort(nrhs,0,mu,reqendrec,reqendsend)
-!
-!     MPI : begin sending
-!
-   call commdirdirshort(nrhs,1,mu,reqendrec,reqendsend)
-!
-!
-   call commdirdirshort(nrhs,2,mu,reqendrec,reqendsend)
+   call polar_post_comm(comm_ticket,nrhs,mu,.true.)
+   call polar_finish(comm_ticket,nrhs,mu)
 !
 !     finalize and debug printing:
 !
@@ -404,14 +373,6 @@ subroutine inducepcg_shortreal(matvec,nrhs,precnd,ef,mu)
          write(iout,1030) iglob, (mu(j,2,i), j = 1, 3)
       end do
    end if
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (req2send)
-   deallocate (req2rec)
-   deallocate (reqendsend)
-   deallocate (reqendrec)
-   deallocate (req2endsend)
-   deallocate (req2endrec)
    deallocate (res)
    deallocate (h)
    deallocate (pp)
@@ -427,11 +388,12 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
    use iounit
    use math
    use mpole
+   use parallel
    use polar
    use polpot
    use potent
    use timestat
-   use tinheader ,only:ti_p,re_p
+   use tinheader ,only:ti_p
    use mpi
    implicit none
 !
@@ -458,8 +420,7 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
    integer iglob, iipole, ierr
    integer reqnorm,reqdiis(2*ndismx+1)
    integer status(MPI_STATUS_SIZE)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
+   type(polar_comm_t) :: comm_ticket
 !
 1000 format(' itsolv shortreal converged after ',I3,' iterations.',/,&
       &' final residual norm = ',3D14.7)
@@ -477,10 +438,6 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
 
    allocate (munew(3,nrhs,max(1,npolebloc)))
    munew = 0_ti_p
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (req2rec(nproc))
-   allocate (req2send(nproc))
 !
    allocate (h(3,nrhs,max(1,npolebloc)))
    h = 0_ti_p
@@ -507,7 +464,6 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
       if (it.eq.1) timerealdip = timerealdip + time2-time1
       call commfieldshort(nrhs,h)
 !
-      call commdirdirshort(nrhs,0,mu,reqrec,reqsend)
 !
 !     jacobi step:
 !
@@ -562,8 +518,8 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
       end if
       time2 = mpi_wtime()
 !
-      call commdirdirshort(nrhs,1,munew,reqrec,reqsend)
-      call commdirdirshort(nrhs,2,mu,reqrec,reqsend)
+      call polar_post_comm(comm_ticket,nrhs,mu,.true.,munew)
+      call polar_finish(comm_ticket,nrhs,mu)
       mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 
 !
@@ -603,10 +559,6 @@ subroutine inducejac_shortreal(matvec,nrhs,dodiis,ef,mu)
 !
 !     free the memory.
 !
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (req2send)
-   deallocate (req2rec)
    deallocate (munew)
    deallocate (h)
    if (dodiis) then
@@ -639,7 +591,7 @@ subroutine dbletmatxb_pme(nrhs,dodiag,mu, mu2, efi, efi2)
    use polpot
    use potent
    use shunt
-   use tinheader ,only:ti_p,re_p
+   use tinheader ,only:ti_p
    implicit none
    integer i,nrhs,iglob,kglob,iipole,kkpole,kkpoleloc,nnelst
    integer ipoleloc

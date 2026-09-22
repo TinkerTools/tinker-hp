@@ -91,7 +91,7 @@ subroutine echarge3cgpu
    use shunt
    use timestat
    use usage
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work
    use utilvec
 
    implicit none
@@ -130,7 +130,6 @@ subroutine echarge3cgpu
    f    = electric / dielec
    mode = 'EWALD'
    call switch (mode)
-   call update_gang(nionlocnl)
 !
 !     compute the Ewald self-energy term over all the atoms
 !
@@ -145,7 +144,7 @@ subroutine echarge3cgpu
          call timer_enter(timer_other)
          f  = electric / dielec
          fs = -f * aewald / sqrtpi
-!$acc   parallel loop async(dir_queue) &
+!$acc   parallel loop async(direct_work%queue) &
 !$acc           present(chgglob,pchg)
          do ii = 1, nionloc
             iichg = chgglob(ii)
@@ -195,7 +194,7 @@ subroutine echarge3cgpu
    end if
 
 !$acc serial async
-   !print*, 'echarge3gpu',ec, ec_r, ecrec
+   !print*, 'echarge3gpu',ec, enr2en(ec_r), ecrec
    ec = ec + enr2en( ec_r ) + ecrec
    nec = int(nec_) + nionloc + nec
 !$acc end serial
@@ -247,7 +246,7 @@ subroutine elambdacharge3cgpu
    use shunt
    use timestat
    use usage
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work
    use utilvec
 
    implicit none
@@ -294,7 +293,6 @@ subroutine elambdacharge3cgpu
    f    = electric / dielec
    mode = 'EWALD'
    call switch (mode)
-   call update_gang(nionlocnl)
 !
 !$acc enter data create(elambdarec0,elambdarec1) async
    elambdatemp = elambda
@@ -312,7 +310,7 @@ subroutine elambdacharge3cgpu
          call timer_enter(timer_other)
          f  = electric / dielec
          fs = -f * aewald / sqrtpi
-!$acc   parallel loop async(dir_queue) &
+!$acc   parallel loop async(direct_work%queue) &
 !$acc           present(chgglob,pchg)
          do ii = 1, nionloc
             iichg = chgglob(ii)
@@ -427,7 +425,7 @@ subroutine ecreal3dgpu
    use usage
    use tinheader ,only: ti_p
    use tinTypes
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work
    use virial
    use mpi
    implicit none
@@ -479,7 +477,7 @@ subroutine ecreal3dgpu
 !
 !     Scaling interaction correction subroutines
 !
-!$acc parallel loop gang vector async(dir_queue) &
+!$acc parallel loop gang vector async(direct_work%queue) &
 !$acc         present(ccorrect_ik,ccorrect_scale,loc,x,y,z,mutInt, &
 !$acc   grplist,wgrp,pchg,pchg_orig,ec,nec_) reduction(+:ec,nec_) &
 !$acc         private(ded)
@@ -528,7 +526,7 @@ subroutine ecreal3dgpu
 !
 !     compute the real space Ewald energy and first derivatives
 !
-!$acc parallel loop gang vector_length(32) async(dir_queue) &
+!$acc parallel loop gang vector_length(32) async(direct_work%queue) &
 !$acc         present(chgglobnl,iion,loc,x,y,z,pchg,nlst,lst,mutInt, &
 !$acc    ec,nec_) reduction(+:ec,nec_)
    do ii = 1, nionlocnl
@@ -607,9 +605,8 @@ subroutine ecreal3d_cu
    use shunt
    use timestat
    use usage
-   use utilcu  ,only: BLOCK_DIM,check_launch_kernel
-   use utilgpu ,only: def_queue,dir_queue,dir_stream,def_stream&
-      &, vred_buff,lam_buff,ered_buff=>ered_buf1,nred_buff&
+   use mdevice  ,only: check_launch_kernel, direct_work
+   use reduction,only: vred_buff,lam_buff,ered_buff=>ered_buf1,nred_buff&
       &, reduce_energy_virial, reduce_energy_action
    use virial
    implicit none
@@ -656,8 +653,6 @@ subroutine ecreal3d_cu
       scut  = chgshortcut
    end if
 
-   def_stream = dir_stream
-   def_queue  = dir_queue
    szcik      = size(ccorrect_ik,1)
 
 !$acc host_data use_device(iion_s,chg_s,loc_s,ieblst_s,eblst_s &
@@ -666,7 +661,7 @@ subroutine ecreal3d_cu
 !$acc    ,ccorrect_ik,ccorrect_scale,chglist,loc,x,y,z &
 !$acc    )
 
-   call ecreal3_kcu<<<gS,BLOCK_DIM,0,def_stream>>>&
+   call ecreal3_kcu<<<gS,BLOCK_DIM,0,direct_work%stream>>>&
       &( iion_s,chg_s,loc_s,ieblst_s&
       &, eblst_s(2*nionlocnlb_pair+1)&
       &, nionlocnlb,nionlocnlb2_pair,nionbloc,n&
@@ -682,7 +677,7 @@ subroutine ecreal3d_cu
 
 !$acc end host_data
 
-   call reduce_energy_action(ec,nec,ered_buff,def_queue)
+   call reduce_energy_action(ec,nec,ered_buff,direct_work%queue)
 
 end subroutine
 #endif
@@ -710,7 +705,7 @@ subroutine ecrecipgpu
    use timestat
    use tinheader ,only: ti_p
    use utils     ,only: set_to_zero1
-   use utilgpu   ,only: rec_queue
+   use mdevice   ,only: reciprocal_work
    implicit none
    integer i,j,k
    integer iichg,iglob
@@ -770,7 +765,7 @@ subroutine ecrecipgpu
 !
    call timer_enter( timer_grid1 )
    call set_to_zero1(qgridin_2d(1,1,1,1,1),&
-      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),rec_queue)
+      &2*n1mpimax*n2mpimax*n3mpimax*(nrec_send+1),reciprocal_work%queue)
 !
    call grid_pchg_site_p
    call timer_exit ( timer_grid1,quiet_timers )
@@ -798,14 +793,14 @@ subroutine ecrecipgpu
    nf1 = (nfft1+1) / 2
    nf2 = (nfft2+1) / 2
    nf3 = (nfft3+1) / 2
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.&
       &(kstart2(rankloc+1).eq.1)) then
       qfac_2d(1,1,1) = 0.0_ti_p
    end if
 !$acc end serial
 
-!$acc parallel loop collapse(3) async(rec_queue)
+!$acc parallel loop collapse(3) async(reciprocal_work%queue)
    do k3 = kstart2(rankloc+1),kend2(rankloc+1)
       do k2 = jstart2(rankloc+1),jend2(rankloc+1)
          do k1 = istart2(rankloc+1),iend2(rankloc+1)
@@ -847,7 +842,7 @@ subroutine ecrecipgpu
 !
 !     account for zeroth grid point for nonperiodic system
 !
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    if ((istart2(rankloc+1).eq.1).and.(jstart2(rankloc+1).eq.1).and.&
       &(kstart2(rankloc+1).eq.1)) then
       if (.not. use_bounds) then

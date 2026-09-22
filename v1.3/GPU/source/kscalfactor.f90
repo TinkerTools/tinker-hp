@@ -10,6 +10,7 @@
 !     vecl       length of each gang
 #include "tinker_macro.h"
 module kscalfactor_inl
+   use scaling, only: maxscaling, maxscaling1
    integer maxgangs,vecl,worksize1
    integer,allocatable:: workS(:,:),workS_p(:,:)
    parameter(maxgangs=1024,vecl=128,&
@@ -65,7 +66,7 @@ subroutine scaling_preop(istep)
    use polpot ,only: n_uscale,n_dpscale,n_dpuscale
    use potent ,only: use_polar,fuse_chglj,use_chgpen
    use tinMemory
-   use utilcomm,only: no_commdir
+   use parallel,only: comm_opt
    use vdwpot ,only: n_vscale
    implicit none
    integer,intent(in)::istep
@@ -95,7 +96,7 @@ subroutine scaling_preop(istep)
       call fatal
    end if
 
-   nplocnl_e = merge(npolebloc,npolelocnl,(no_commdir))
+   nplocnl_e = merge(npolebloc,npolelocnl,(comm_opt%skip_direct))
    szo_workspace= nlocnl*(max_factorn+2)*szoi +&
       &nlocnl*max_factorn*szoTp
    if (use_polar) then
@@ -161,7 +162,7 @@ subroutine fuse_scaling_factor_n
    use inform ,only:deb_Path
    use tinMemory ,only:shmem_request,mhostacc
    use kscalfactor_inl
-   use utilgpu,only:maxscaling
+   use scaling,only:maxscaling
 !#ifdef _OPENACC
 !      use thrust ,only:thrust_exclusive_scan
 !#endif
@@ -274,7 +275,7 @@ subroutine fuse_scaling_factor_p
    use polgrp
    use tinMemory ,only:shmem_request,mhostacc
    use kscalfactor_inl
-   use utilgpu,only:maxscaling1
+   use scaling,only:maxscaling1
 !#ifdef _OPENACC
 !      use thrust
 !#endif
@@ -380,6 +381,22 @@ subroutine fuse_scaling_factor_p
 !$acc update device(numscal_p,scalbeg_p,typscal_p,allscal_p)
 end subroutine
 
+subroutine dealloc_shared_scaling
+   use couple
+   use polgrp
+   use tinMemory
+   implicit none
+
+   call shmem_request(numscal_n,winnumscal_n,[0],config=mhostacc)
+   call shmem_request(scalbeg_n,winscalbeg_n,[0],config=mhostacc)
+   call shmem_request(allscal_n,winallscal_n,[0],config=mhostacc)
+   call shmem_request(typscal_n,wintypscal_n,[0],config=mhostacc)
+   call shmem_request(numscal_p,winnumscal_p,[0],config=mhostacc)
+   call shmem_request(scalbeg_p,winscalbeg_p,[0],config=mhostacc)
+   call shmem_request(allscal_p,winallscal_p,[0],config=mhostacc)
+   call shmem_request(typscal_p,wintypscal_p,[0],config=mhostacc)
+end
+
 
 subroutine vdw_scaling
    use atmlst ,only: vdwglobnl,vdwglob
@@ -392,9 +409,9 @@ subroutine vdw_scaling
 #ifdef _OPENACC
    use thrust
 #endif
-   use utilgpu,only: maxscaling
+   use scaling,only: maxscaling
 #ifdef _OPENACC
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    implicit none
    integer i,ii,j,k,cap,iscalbeg
@@ -504,7 +521,7 @@ subroutine vdw_scaling
 !$acc wait
 !$acc host_data use_device(n_factorn,scan_factorn)
    call thrust_exclusive_scan(n_factorn, nvdwlocnl, scan_factorn&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorn(1) = 0
@@ -558,7 +575,7 @@ subroutine vdw_scalingnl
    use vdwpot
 #ifdef _OPENACC
    use thrust
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    implicit none
    integer i,ii,j,k,cap
@@ -652,7 +669,7 @@ subroutine vdw_scalingnl
 #ifdef _OPENACC
 !$acc host_data use_device(n_factorn,scan_factorn)
    call thrust_exclusive_scan(n_factorn, nvdwlocnl, scan_factorn&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorn(1) = 0
@@ -725,7 +742,7 @@ subroutine mpole_scaling
    use tinMemory ,only: prmem_request
 #ifdef _OPENACC
    use thrust
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    use sizes  ,only: tinkerdebug
    implicit none
@@ -814,7 +831,7 @@ subroutine mpole_scaling
 !$acc wait
 !$acc host_data use_device(n_factorn,scan_factorn)
    call thrust_exclusive_scan(n_factorn, npolelocnl, scan_factorn&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorn(1) = 0
@@ -870,11 +887,11 @@ subroutine polar_scaling
 #ifdef _OPENACC
    use thrust
 #endif
-   use utilcomm,only: no_commdir
+   use parallel,only: comm_opt
    use utils  ,only: set_to_zero1
-   use utilgpu,only: rec_queue
+   use mdevice,only: reciprocal_work
 #ifdef _OPENACC
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    !use timestat
    implicit none
@@ -951,7 +968,7 @@ subroutine polar_scaling
 !$acc end serial
 
    call set_to_zero1(scal_factorp(1,1),&
-      &3*(max_factorn+max_factorp)*npolelocnl,rec_queue)
+      &3*(max_factorn+max_factorp)*npolelocnl,reciprocal_work%queue)
 !
 !     Filter scaling factor for vscale
 !
@@ -1079,12 +1096,12 @@ subroutine polar_scaling
 !$acc host_data use_device(n_factorp,n_factorn,n_factordp, &
 !$acc     scan_factorp,scan_factorn,scan_factordp)
    call thrust_exclusive_scan(n_factorn, npolelocnl, scan_factorn&
-      &,rec_stream)
-   if (.not.no_commdir) then
+      &,reciprocal_work%stream)
+   if (.not.comm_opt%skip_direct) then
       call thrust_exclusive_scan(n_factorp, npolelocnl, scan_factorp&
-         &,rec_stream)
+         &,reciprocal_work%stream)
       call thrust_exclusive_scan(n_factordp, npolelocnl, scan_factordp&
-         &,rec_stream)
+         &,reciprocal_work%stream)
    end if
 !$acc end host_data
 #else
@@ -1097,7 +1114,7 @@ subroutine polar_scaling
       scan_factordp(ii) = n_factordp(ii-1) + scan_factordp(ii-1)
    end do
 #endif
-   if (no_commdir) then  ! Skip u and dp if commdirdir is disabled
+   if (comm_opt%skip_direct) then  ! Skip u and dp if commdirdir is disabled
       n_uscale  = 0
       n_dpscale = 0
 !$acc update host(n_uscale,n_dpscale) async
@@ -1144,7 +1161,7 @@ subroutine polar_scaling
          dpucorrect_scale(3*(iscandpu+j-1)+1) = dscale
          dpucorrect_scale(3*(iscandpu+j-1)+2) = pscale
          dpucorrect_scale(3*(iscandpu+j-1)+3) = uscale
-         if (no_commdir) cycle
+         if (comm_opt%skip_direct) cycle
          ! filter (d,p) scaling for efld0_direct
          if (dscale.ne.0.0_ti_p.or.pscale.ne.0.0_ti_p) then
             kdp  = kdp+1
@@ -1184,11 +1201,11 @@ subroutine polar_scaling_cpen
 #ifdef _OPENACC
    use thrust
 #endif
-   use utilcomm,only: no_commdir
+   use parallel,only: comm_opt
    use utils  ,only: set_to_zero1
-   use utilgpu,only: rec_queue
+   use mdevice,only: reciprocal_work
 #ifdef _OPENACC
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    !use timestat
    implicit none
@@ -1263,7 +1280,7 @@ subroutine polar_scaling_cpen
 !$acc end serial
 
    call set_to_zero1(scal_factorp(1,1),&
-      &3*(max_factorn+max_factorp)*npolelocnl,rec_queue)
+      &3*(max_factorn+max_factorp)*npolelocnl,reciprocal_work%queue)
 !
 !     Filter scaling factor for vscale
 !
@@ -1396,12 +1413,12 @@ subroutine polar_scaling_cpen
 !$acc host_data use_device(n_factorp,n_factorn,n_factordp, &
 !$acc     scan_factorp,scan_factorn,scan_factordp)
    call thrust_exclusive_scan(n_factorn, npolelocnl, scan_factorn&
-      &,rec_stream)
-   if (.not.no_commdir) then
+      &,reciprocal_work%stream)
+   if (.not.comm_opt%skip_direct) then
       call thrust_exclusive_scan(n_factorp, npolelocnl, scan_factorp&
-         &,rec_stream)
+         &,reciprocal_work%stream)
       call thrust_exclusive_scan(n_factordp, npolelocnl, scan_factordp&
-         &,rec_stream)
+         &,reciprocal_work%stream)
    end if
 !$acc end host_data
 #else
@@ -1414,7 +1431,7 @@ subroutine polar_scaling_cpen
       scan_factordp(ii) = n_factordp(ii-1) + scan_factordp(ii-1)
    end do
 #endif
-   if (no_commdir) then  ! Skip u and dp if commdirdir is disabled
+   if (comm_opt%skip_direct) then  ! Skip u and dp if commdirdir is disabled
       n_uscale  = 0
       n_dpscale = 0
 !$acc update host(n_uscale,n_dpscale) async
@@ -1461,7 +1478,7 @@ subroutine polar_scaling_cpen
          dpucorrect_scale(3*(iscandpu+j-1)+1) = dscale
          dpucorrect_scale(3*(iscandpu+j-1)+2) = pscale
          dpucorrect_scale(3*(iscandpu+j-1)+3) = uscale
-         if (no_commdir) cycle
+         if (comm_opt%skip_direct) cycle
          ! filter (d,p) scaling for efld0_direct
          if (dscale.ne.0.0_ti_p.or.pscale.ne.0.0_ti_p) then
             kdp  = kdp+1
@@ -1506,9 +1523,9 @@ subroutine polar_scaling1
    use thrust
 #endif
    use utils  ,only: set_to_zero1
-   use utilgpu,only: rec_queue,nSMP
+   use mdevice,only: gpu_sm_count,reciprocal_work
 #ifdef _OPENACC
-   use utilgpu,only:  rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    !use timestat
    implicit none
@@ -1554,7 +1571,7 @@ subroutine polar_scaling1
    zend = zendproc(rank+1)
    pscale41 = 1.0_ti_p-p4scale*p4iscale
    kglob_s=0
-   ngang = min(nSMP*8,(npolelocnl-1)/128+1)
+   ngang = min(gpu_sm_count*8,(npolelocnl-1)/128+1)
 !
 !     Construct induced dipoles scalar product scaling interactions
 !
@@ -1722,11 +1739,11 @@ subroutine polar_scaling1
 !$acc host_data use_device(n_factorp,n_factorn,n_factordp, &
 !$acc     scan_factorp,scan_factorn,scan_factordp)
    call thrust_exclusive_scan(n_factorp, npolelocnl, scan_factorp&
-      &,rec_stream)
+      &,reciprocal_work%stream)
    call thrust_exclusive_scan(n_factorn, npolelocnl, scan_factorn&
-      &,rec_stream)
+      &,reciprocal_work%stream)
    call thrust_exclusive_scan(n_factordp, npolelocnl, scan_factordp&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorp (1) = 0
@@ -1752,9 +1769,9 @@ subroutine polar_scaling1
    call prmem_request( dpcorrect_scale,2*n_dpscale)
    call prmem_request(dpucorrect_scale,3*n_dpuscale)
 
-   call set_to_zero1(  ucorrect_scale,    n_uscale,rec_queue)
-   call set_to_zero1( dpcorrect_scale,2* n_dpscale,rec_queue)
-   call set_to_zero1(dpucorrect_scale,3*n_dpuscale,rec_queue)
+   call set_to_zero1(  ucorrect_scale,    n_uscale,reciprocal_work%queue)
+   call set_to_zero1( dpcorrect_scale,2* n_dpscale,reciprocal_work%queue)
+   call set_to_zero1(dpucorrect_scale,3*n_dpuscale,reciprocal_work%queue)
 
 !$acc parallel loop num_gangs(ngang) vector_length(128) &
 !$acc         private(buff,cpt,i,i1) async &
@@ -1910,7 +1927,7 @@ subroutine mpole_scaling_group
    use mplpot
 #ifdef _OPENACC
    use thrust
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    implicit none
    integer i,ii,j,k,cap
@@ -2012,7 +2029,7 @@ subroutine mpole_scaling_group
 !$acc wait
 !$acc host_data use_device(n_factorn,scan_factorn)
    call thrust_exclusive_scan(n_factorn, npolegroup, scan_factorn&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorn(1) = 0
@@ -2084,9 +2101,9 @@ subroutine polar_scaling1_group
    use thrust
 #endif
    use utils  ,only: set_to_zero1
-   use utilgpu,only: rec_queue
+   use mdevice,only: reciprocal_work
 #ifdef _OPENACC
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    !use timestat
    implicit none
@@ -2292,11 +2309,11 @@ subroutine polar_scaling1_group
 !$acc host_data use_device(n_factorp,n_factorn,n_factordp, &
 !$acc     scan_factorp,scan_factorn,scan_factordp)
    call thrust_exclusive_scan(n_factorp,npolegroup, scan_factorp&
-      &,rec_stream)
+      &,reciprocal_work%stream)
    call thrust_exclusive_scan(n_factorn,npolegroup, scan_factorn&
-      &,rec_stream)
+      &,reciprocal_work%stream)
    call thrust_exclusive_scan(n_factordp,npolegroup,scan_factordp&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorp (1) = 0
@@ -2321,11 +2338,11 @@ subroutine polar_scaling1_group
    call prmem_request(dpucorrect_scale_group,3*n_dpuscale_group)
 
    call set_to_zero1(  ucorrect_scale_group&
-      &,    n_uscale_group,rec_queue)
+      &,    n_uscale_group,reciprocal_work%queue)
    call set_to_zero1( dpcorrect_scale_group&
-      &,2* n_dpscale_group,rec_queue)
+      &,2* n_dpscale_group,reciprocal_work%queue)
    call set_to_zero1(dpucorrect_scale_group&
-      &,3*n_dpuscale_group,rec_queue)
+      &,3*n_dpuscale_group,reciprocal_work%queue)
 
 !$acc parallel loop gang vector private(buff,cpt,i,i1) async &
 !$acc         present(ucorrect_ik_group,ucorrect_scale_group, &
@@ -2496,9 +2513,9 @@ subroutine u_dp_scaling_extent
    use thrust
 #endif
    use utils  ,only: set_to_zero1
-   use utilgpu,only: rec_queue
+   use mdevice,only: reciprocal_work
 #ifdef _OPENACC
-   use utilgpu,only:  rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    !use timestat
    implicit none
@@ -2530,7 +2547,7 @@ subroutine u_dp_scaling_extent
 !$acc     present(poleglob,ipole,n_uscale,n_dpscale, &
 !$acc  allscal_n,typscal_n,scalbeg_n,numscal_n, &
 !$acc  allscal_p,typscal_p,scalbeg_p,numscal_p) &
-!$acc     async(rec_queue)
+!$acc     async(reciprocal_work%queue)
 
    xbeg = xbegproc(rank+1)
    xend = xendproc(rank+1)
@@ -2545,7 +2562,7 @@ subroutine u_dp_scaling_extent
 !
    n_uscale   = 0
    n_dpscale  = 0
-!$acc serial async(rec_queue)
+!$acc serial async(reciprocal_work%queue)
    n_uscale   = 0
    !n_dscale   = 0
    !n_pscale   = 0
@@ -2589,7 +2606,7 @@ subroutine u_dp_scaling_extent
 !$acc parallel loop num_gangs(ngangs) vector_length(vecl) &
 !$acc         private(cpt) &
 !$acc         present(n_factorp,n_factordp,workS,workS_p) &
-!$acc         async(rec_queue)
+!$acc         async(reciprocal_work%queue)
    do ii = 1,npolebloc
       !Fetch and init data
       iglob = ipole(poleglob(ii))
@@ -2659,20 +2676,20 @@ subroutine u_dp_scaling_extent
       n_dpscale     = n_dpscale  + kdp
    end do
 
-!$acc update host(n_uscale,n_dpscale) async(rec_queue)
+!$acc update host(n_uscale,n_dpscale) async(reciprocal_work%queue)
 !
 !     Procede to scan
 !
 #ifdef _OPENACC
-!$acc wait(rec_queue)
+!$acc wait(reciprocal_work%queue)
 !$acc host_data use_device(n_factorp,n_factordp, &
 !$acc     scan_factorp,scan_factordp)
    if (n_uscale.ne.0)&
       &call thrust_exclusive_scan(n_factorp, npolebloc, scan_factorp&
-      &,rec_stream)
+      &,reciprocal_work%stream)
    if (n_dpscale.ne.0)&
       &call thrust_exclusive_scan(n_factordp, npolebloc, scan_factordp&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorp (1) = 0
@@ -2692,11 +2709,11 @@ subroutine u_dp_scaling_extent
    call prmem_request( dpcorrect_scale,2*n_dpscale)
 
    ! Zero memory
-   call set_to_zero1(  ucorrect_scale,    n_uscale,rec_queue)
-   call set_to_zero1( dpcorrect_scale,2* n_dpscale,rec_queue)
+   call set_to_zero1(  ucorrect_scale,    n_uscale,reciprocal_work%queue)
+   call set_to_zero1( dpcorrect_scale,2* n_dpscale,reciprocal_work%queue)
 
 !$acc parallel loop num_gangs(ngangs) vector_length(vecl) &
-!$acc         private(i,i1,cpt) async(rec_queue) &
+!$acc         private(i,i1,cpt) async(reciprocal_work%queue) &
 !$acc         present(ucorrect_ik,ucorrect_scale,dpcorrect_ik, &
 !$acc  dpcorrect_scale,scan_factorp,scan_factordp, &
 !$acc  workS)
@@ -2793,7 +2810,7 @@ subroutine charge_scaling
    use tinMemory ,only: prmem_request
 #ifdef _OPENACC
    use thrust
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    implicit none
    integer i,ii,j,k,cap,iichg,kkchg
@@ -2882,7 +2899,7 @@ subroutine charge_scaling
 !$acc wait
 !$acc host_data use_device(n_factorn,scan_factorn)
    call thrust_exclusive_scan(n_factorn, nionlocnl, scan_factorn&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorn(1) = 0
@@ -2940,7 +2957,7 @@ subroutine charge_lj_scaling
    use vdwpot
 #ifdef _OPENACC
    use thrust
-   use utilgpu,only: rec_stream
+   use mdevice,only: reciprocal_work
 #endif
    implicit none
    integer i,ii,j,k,cap,iichg,kkchg
@@ -3042,7 +3059,7 @@ subroutine charge_lj_scaling
 !$acc wait
 !$acc host_data use_device(n_factorn,scan_factorn)
    call thrust_exclusive_scan(n_factorn, nionlocnl, scan_factorn&
-      &,rec_stream)
+      &,reciprocal_work%stream)
 !$acc end host_data
 #else
    scan_factorn(1) = 0
@@ -3128,7 +3145,7 @@ subroutine check_outboundnl
    use domdec ,only: nbloc,loc
    use mpole  ,only: npolelocnl,ipole
    use potent
-   use utilgpu,only: warning,sugest_vdw
+   use inform  ,only: warning,sugest_vdw
    use vdw    ,only: ivdw,nvdwlocnl
    implicit none
    integer ii,i,iipole,iivdw
@@ -3169,7 +3186,7 @@ subroutine build_scaling_factor(istep)
    use neigh   ,only: ineigup
    use potent
    use polpot  ,only: use_thole
-   use utilcomm,only: no_commdir
+   use parallel,only: comm_opt
    use timestat,only: timer_enter,timer_exit,&
       &timer_scalfactor
    implicit none
@@ -3215,7 +3232,7 @@ subroutine build_scaling_factor(istep)
 
 10 continue
 
-   if (use_polar.and.no_commdir) call orderpole
+   if (use_polar.and.comm_opt%skip_direct) call orderpole
 
    if (deb_Path) print*,"build_scaling_factor -step", istep
 
@@ -3235,7 +3252,7 @@ subroutine build_scaling_factor(istep)
    if (use_polar) then
       if      (use_thole) then
          call polar_scaling_p
-         if (no_commdir) call u_dp_scaling_extent
+         if (comm_opt%skip_direct) call u_dp_scaling_extent
       else if (use_chgpen) then
          call polar_scaling_cpen
       end if

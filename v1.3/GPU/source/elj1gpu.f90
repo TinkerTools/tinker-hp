@@ -35,7 +35,8 @@ subroutine elj1gpu
    use potent
    use virial
    use vdwpot
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work
+   use tinheader, only: inf => Infinity
    implicit none
    real(r_p) elrc,vlrc
    character*11 mode
@@ -47,12 +48,11 @@ subroutine elj1gpu
 !     apply long range van der Waals correction if desired
 !
    if (use_vcorr) then
-      def_queue = dir_queue
       mode = 'VDW'
-!$acc data  create(elrc,vlrc) async(def_queue) &
+!$acc data  create(elrc,vlrc) async(direct_work%queue) &
 !$acc      present(ev,vir)
       call evcorr1gpu (mode,elrc,vlrc)
-!$acc serial async(def_queue)
+!$acc serial async(direct_work%queue)
       ev = ev + elrc
       vir(1,1) = vir(1,1) + vlrc
       vir(2,2) = vir(2,2) + vlrc
@@ -67,7 +67,7 @@ subroutine elj1gpu
 !     save delambdav for short range computation
 !
       if (use_vdwshort) then
-!$acc serial async(def_queue) present(delambdav,delambdavsave)
+!$acc serial async(direct_work%queue) present(delambdav,delambdavsave)
          delambdavsave = delambdav
 !$acc end serial
       end if
@@ -109,7 +109,8 @@ subroutine elj1c_ac
    use tinMemory
    use tinTypes
    use usage
-   use utilgpu
+   use mdevice, only: direct_work, reciprocal_work
+   use tinheader, only: inf => Infinity
    use vdw
    use vdw_locArray
    use vdwpot
@@ -181,7 +182,7 @@ subroutine elj1c_ac
 !
 !     Scaling interaction correction for Lennard-Jones
 !
-!$acc parallel loop async(dir_queue) gang vector private(ded) &
+!$acc parallel loop async(direct_work%queue) gang vector private(ded) &
 !$acc         present(dev,delambdav,ev,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz &
 !$acc                ,g_vzz) &
 !$acc         present(loc,ired,x,y,z,loc,jvdw,vir,radmin,mutInt &
@@ -282,7 +283,7 @@ subroutine elj1c_ac
 !
 !     find van der Waals energy and derivatives via neighbor list
 !
-!$acc parallel loop gang vector_length(32) async(dir_queue) &
+!$acc parallel loop gang vector_length(32) async(direct_work%queue) &
 !$acc         present(vdwglobnl,ivdw,grplist,wgrp &
 !$acc   ,loc,ired,kred,x,y,z,jvdw,lst,nlst,mutInt,radmin,epsilon &
 !$acc   ,ev,dev,delambdav,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz) &
@@ -387,7 +388,7 @@ subroutine elj1c_cu
    use cudafor   ,only: dim3
    use cutoff    ,only: shortheal,vdwshortcut
    use deriv     ,only: dev,devx,de_ws2,d_x,d_y,d_z,delambdav&
-      &,dr_stride
+      &,dr_stride,transpose_az3
    use domdec    ,only: loc,rank,nbloc,nproc,ndir&
       &,xbegproc,xendproc,ybegproc,yendproc,zbegproc&
       &,zendproc,glob
@@ -408,12 +409,11 @@ subroutine elj1c_cu
    use tinMemory ,only: prmem_request
    use timestat  ,only: timer_enter,timer_exit,timer_elj3
    use shunt     ,only: c0,c1,c2,c3,c4,c5,off2,off,cut2,cut
-   use utilcu    ,only: check_launch_kernel,VDW_BLOCK_DIM&
-      &,TRP_BLOCK_DIM,transpose_z3fl
-   use utilgpu   ,only: def_queue,dir_queue,rec_queue,dir_stream&
-      &,rec_stream,def_stream,WARP_SIZE,RED_BUFF_SIZE,inf&
-      &,ered_buff=>ered_buf1,vred_buff,nred_buff,lam_buff&
-      &,reduce_energy_virial,reduce_buffer,transpose_az3
+   use eljcu     ,only: VDW_BLOCK_DIM,WARP_SIZE
+   use mdevice   ,only: check_launch_kernel, direct_work, reciprocal_work
+   use tinheader   ,only: inf => Infinity
+   use reduction  ,only: RED_BUFF_SIZE,ered_buff=>ered_buf1,vred_buff&
+      &,nred_buff,lam_buff,reduce_energy_virial,reduce_buffer
    use vdw       ,only: ired,kred,jvdw,ivdw,radmin_c&
       &,epsilon_c,radmin,radmin4,epsilon,epsilon4&
       &,nvdwbloc,nvdwlocnl&
@@ -446,8 +446,6 @@ subroutine elj1c_cu
    zbeg = zbegproc(rank+1)
    zend = zendproc(rank+1)
 
-   def_queue  = dir_queue
-   def_stream = dir_stream
 
    !set the coefficients for the switching function
    mode   = 'VDW'
@@ -474,7 +472,7 @@ subroutine elj1c_cu
 !$acc    ,radmin,epsilon,radmin4,epsilon4,dev &
 !$acc    )
 
-   call lj1_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,def_stream>>>&
+   call lj1_kcu<<<hal_Gs,VDW_BLOCK_DIM,0,direct_work%stream>>>&
       &(so_x,so_y,so_z,sgl_id,slc_id&
       &,b2pl,bapl,abpl,cellv_jvdw,i12,mutInt&
       &,epsilon_c,radmin_c,radv,epsv&
@@ -499,12 +497,12 @@ subroutine elj1c_cu
 
    if (calc_e.or.use_virial) then
       call reduce_energy_virial(ev,g_vxx,g_vxy,g_vxz,g_vyy,g_vyz,g_vzz&
-         &,ered_buff,def_queue)
+         &,ered_buff,direct_work%queue)
    end if
    if (use_lambdadyn)&
-      &call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdav,def_queue)
+      &call reduce_buffer(lam_buff,RED_BUFF_SIZE,delambdav,direct_work%queue)
 
-   call transpose_az3(d_x,devx,slc_id,na,dr_stride,def_queue)
+   call transpose_az3(d_x,devx,slc_id,na,dr_stride,direct_work%queue)
 
    call timer_exit(timer_elj3)
 end subroutine

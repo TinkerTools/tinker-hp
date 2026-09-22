@@ -227,7 +227,7 @@ subroutine evcorr1 (mode,elrc,vlrc)
    use potent
    use shunt
    use tinheader ,only:ti_p,re_p
-   use utilgpu   ,only: def_queue
+   use mdevice   ,only: default_work
    use vdw
    use vdwpot
    implicit none
@@ -409,7 +409,7 @@ subroutine evcorr1gpu (mode,elrc,vlrc)
    use shunt
    use tinMemory ,only: prmem_request
    use tinheader ,only: ti_p,re_p
-   use utilgpu   ,only: def_queue
+   use mdevice   ,only: default_work
    use vdw
    use vdwpot
    implicit none
@@ -445,7 +445,7 @@ subroutine evcorr1gpu (mode,elrc,vlrc)
 !
 !     zero out the long range van der Waals corrections
 !
-!$acc serial async(def_queue) present(elrc,vlrc)
+!$acc serial async(default_work%queue) present(elrc,vlrc)
    elrc = 0.0_re_p
    vlrc = 0.0_re_p
 !$acc end serial
@@ -509,7 +509,7 @@ subroutine evcorr1gpu (mode,elrc,vlrc)
 !
 !     find the van der Waals energy via double loop search
 !
-!$acc parallel loop collapse(3) async(def_queue) &
+!$acc parallel loop collapse(3) async(default_work%queue) &
 !$acc         reduction(+:elrc,vlrc) &
 !$acc         present(elrc,vlrc,radmin,epsilon,ivt,jvt,mvt)
    do i = 1, nvt
@@ -594,7 +594,7 @@ subroutine evcorr1gpu (mode,elrc,vlrc)
       end do
    end do
 
-!$acc serial async(def_queue) present(elrc,vlrc)
+!$acc serial async(default_work%queue) present(elrc,vlrc)
    elrc = elrc / volbox
    vlrc = vlrc / (3.0_re_p*volbox)
 !$acc end serial

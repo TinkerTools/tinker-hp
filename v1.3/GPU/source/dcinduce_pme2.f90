@@ -20,6 +20,10 @@ subroutine dcinduce_pme2
    use iounit
    use math
    use mpole
+   use parallel, only: comm_state_t=>polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use pme
    use polar
    use polpot
@@ -38,8 +42,7 @@ subroutine dcinduce_pme2
 !
    integer iglob, ierr, iipole
    integer, allocatable :: reqrecdirsend(:),reqrecdirrec(:)
-   integer, allocatable :: reqsend(:),reqrec(:)
-   integer, allocatable :: req2send(:),req2rec(:)
+   type(comm_state_t) :: comm_ticket, dip_ticket
    real(t_p) time0,time1
 !
    parameter (nrhs=2)
@@ -95,10 +98,6 @@ subroutine dcinduce_pme2
 !
    allocate (reqrecdirsend(nproc))
    allocate (reqrecdirrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (reqrec(nproc))
-   allocate (req2send(nproc))
-   allocate (req2rec(nproc))
 !
 !     compute the electric fields:
 !
@@ -134,8 +133,6 @@ subroutine dcinduce_pme2
 !     Factorization of Z has been interleaved with passing fields
 !
    call commfield2(nrhs,ef)
-!
-   call commdirdir(nrhs,0,mu,reqrec,reqsend)
 !
 !       Add direct and reciprocal fields
 !
@@ -190,14 +187,10 @@ subroutine dcinduce_pme2
       end do
    end if
 
-   call commdirdir(nrhs,1,mu,reqrec,reqsend)
-   call commdirdir(nrhs,2,mu,reqrec,reqsend)
-   call commrecdirdip(nrhs,0,murec,mu,buffermpimu1,buffermpimu2,&
-      &req2rec,req2send)
-   call commrecdirdip(nrhs,1,murec,mu,buffermpimu1,buffermpimu2,&
-      &req2rec,req2send)
-   call commrecdirdip(nrhs,2,murec,mu,buffermpimu1,buffermpimu2,&
-      &req2rec,req2send)
+   call polar_post_comm(comm_ticket,nrhs,mu)
+   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu1,buffermpimu2,.false.)
+   call polar_finish_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu1,buffermpimu2,.false.)
 !
 !     now, call the proper solver.
 !
@@ -256,10 +249,6 @@ subroutine dcinduce_pme2
          end do
       end do
    end if
-   deallocate (reqrec)
-   deallocate (reqsend)
-   deallocate (req2rec)
-   deallocate (req2send)
    deallocate (reqrecdirrec)
    deallocate (reqrecdirsend)
    deallocate (buffermpi1)
@@ -281,6 +270,10 @@ subroutine inducedc_pme2(matvec,nrhs,dodiis,ef,mu,murec)
    use iounit
    use math
    use mpole
+   use parallel, only: comm_state_t=>polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use polar
    use polpot
    use timestat
@@ -319,8 +312,7 @@ subroutine inducedc_pme2(matvec,nrhs,dodiis,ef,mu,murec)
    integer reqnorm,reqdiis(2*ndismx+1)
    integer status(MPI_STATUS_SIZE)
    integer,allocatable :: reqrecdirrec(:),reqrecdirsend(:)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
+   type(comm_state_t) :: comm_ticket, dip_ticket
 !
 1000 format(' itsolv converged after ',I3,' iterations.',/,&
       &' final residual norm = ',3D14.7)
@@ -355,10 +347,6 @@ subroutine inducedc_pme2(matvec,nrhs,dodiis,ef,mu,murec)
    dcfield2 = 0.0_ti_p
    allocate (reqrecdirsend(nproc))
    allocate (reqrecdirrec(nproc))
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (req2rec(nproc))
-   allocate (req2send(nproc))
 !
    allocate (h(3,nrhs,max(1,npolebloc)))
    h = 0_ti_p
@@ -388,12 +376,8 @@ subroutine inducedc_pme2(matvec,nrhs,dodiis,ef,mu,murec)
       call commrecdirsolv(nrhs,0,dipfieldbis,dipfield,buffermpi1,&
          &buffermpi2,reqrecdirrec,reqrecdirsend)
 !
-      call commdirdir(nrhs,0,mu,reqrec,reqsend)
       call commrecdirsolv(nrhs,1,dipfieldbis,dipfield,buffermpi1,&
          &buffermpi2,reqrecdirrec,reqrecdirsend)
-!
-      call commrecdirdip(nrhs,0,murec,munew,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
 !
 !     jacobi step:
 !
@@ -495,12 +479,10 @@ subroutine inducedc_pme2(matvec,nrhs,dodiis,ef,mu,murec)
          call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
       end if
 !
-      call commdirdir(nrhs,1,munew,reqrec,reqsend)
-      call commrecdirdip(nrhs,1,murec,munew,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
-      call commdirdir(nrhs,2,mu,reqrec,reqsend)
-      call commrecdirdip(nrhs,2,murec,munew,buffermpimu1,&
-         &buffermpimu2,req2rec,req2send)
+      call polar_post_comm(comm_ticket,nrhs,mu,.false.,munew)
+      call polar_finish(comm_ticket,nrhs,mu)
+      call polar_post_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu1,buffermpimu2,.false.)
+      call polar_finish_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu1,buffermpimu2,.false.)
       mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 !
 !     compute the norm of the increment.
@@ -539,10 +521,6 @@ subroutine inducedc_pme2(matvec,nrhs,dodiis,ef,mu,murec)
 !
 !     free the memory.
 !
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (req2send)
-   deallocate (req2rec)
    deallocate (reqrecdirsend)
    deallocate (reqrecdirrec)
    deallocate (buffermpi1)

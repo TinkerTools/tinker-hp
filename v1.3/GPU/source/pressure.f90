@@ -215,6 +215,7 @@ subroutine ptest
    use bound
    use boxes
    use domdec
+   use energi, only: allreduceen
    use iounit
    use tinheader ,only:ti_p,re_p
    use units

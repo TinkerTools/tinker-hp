@@ -21,7 +21,7 @@ subroutine mdinitbead(dt,polymer)
    use bath
    use beads
    use bound
-   use boxes, only: xbox,ybox,zbox,alpha,beta,gamma
+   use boxes, only: xbox,ybox,zbox,alpha,beta,b_gamma=>gamma
    use couple
    use domdec
    use files
@@ -101,7 +101,7 @@ subroutine mdinitbead(dt,polymer)
             write(*,*) " --- Tinker-HP loading Restart file "&
                &//trim(dynfile)//"  ---"
          endif
-         call read_restart(trim(dynfile),n,xbox,ybox,zbox,alpha,beta,gamma,&
+         call read_restart(trim(dynfile),n,xbox,ybox,zbox,alpha,beta,b_gamma,&
             &x,y,z,v,a,aalt,aalt2,aalt2_present,restart_status)
          if (failed(restart_status)) then
             if (ranktot == 0) write (iout,'(/,a)') trim(restart_status%message)

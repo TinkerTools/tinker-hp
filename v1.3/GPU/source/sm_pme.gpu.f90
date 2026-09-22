@@ -11,7 +11,7 @@
 !
 #include "tinker_macro.h"
 submodule (pme) pme_lifecycle
-   use mpi, only: MPI_Type_free
+   use mpi, only: MPI_SUCCESS, MPI_Type_free, MPI_Waitall, MPI_STATUSES_IGNORE
    use pme1
    use tinMemory, only: prmem_request,mfhostacc,s_prmem,sd_prmem,szoTp
 #ifdef _CUDA
@@ -31,16 +31,52 @@ contains
       pme_device_ready=.true.
    end subroutine initialize_pme_device
 
-   module subroutine release_pme_device(queue)
+   module subroutine release_pme_device(queue, cleanup_status)
       implicit none
       integer,intent(in) :: queue
-      integer :: ierr
+      integer,intent(out),optional :: cleanup_status
+      integer :: ierr, first_error
+
+      first_error = MPI_SUCCESS
 
       pme_ftc_ready=.false.
       pme_ctf_ready=.false.
       if (pme_device_ready) then
 !$acc wait(queue)
 !$acc exit data delete(pme_ftc,pme_ctf)
+      end if
+
+      if (allocated(front_send_req)) then
+         call MPI_Waitall(size(front_send_req),front_send_req,MPI_STATUSES_IGNORE,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
+      end if
+      if (allocated(front_recv_req)) then
+         call MPI_Waitall(size(front_recv_req),front_recv_req,MPI_STATUSES_IGNORE,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
+      end if
+      if (allocated(front_split_snd)) then
+         call MPI_Waitall(size(front_split_snd),front_split_snd,MPI_STATUSES_IGNORE,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
+      end if
+      if (allocated(front_split_rcv)) then
+         call MPI_Waitall(size(front_split_rcv),front_split_rcv,MPI_STATUSES_IGNORE,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
+      end if
+      if (allocated(back_send_req)) then
+         call MPI_Waitall(size(back_send_req),back_send_req,MPI_STATUSES_IGNORE,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
+      end if
+      if (allocated(back_recv_req)) then
+         call MPI_Waitall(size(back_recv_req),back_recv_req,MPI_STATUSES_IGNORE,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
+      end if
+      if (allocated(back_split_snd)) then
+         call MPI_Waitall(size(back_split_snd),back_split_snd,MPI_STATUSES_IGNORE,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
+      end if
+      if (allocated(back_split_rcv)) then
+         call MPI_Waitall(size(back_split_rcv),back_split_rcv,MPI_STATUSES_IGNORE,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
       end if
 
 #ifdef _CUDA
@@ -113,13 +149,24 @@ contains
       end if
       if (Is_MPI_GRID1D) then
          call MPI_Type_free(MPI_GRID1D,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
          Is_MPI_GRID1D=.false.
       end if
       if (Is_MPI_GRID2D) then
          call MPI_Type_free(MPI_GRID2D,ierr)
+         if (ierr /= MPI_SUCCESS .and. first_error == MPI_SUCCESS) first_error = ierr
          Is_MPI_GRID2D=.false.
       end if
+      if (allocated(front_send_req)) deallocate(front_send_req)
+      if (allocated(front_recv_req)) deallocate(front_recv_req)
+      if (allocated(front_split_snd)) deallocate(front_split_snd)
+      if (allocated(front_split_rcv)) deallocate(front_split_rcv)
+      if (allocated(back_send_req)) deallocate(back_send_req)
+      if (allocated(back_recv_req)) deallocate(back_recv_req)
+      if (allocated(back_split_snd)) deallocate(back_split_snd)
+      if (allocated(back_split_rcv)) deallocate(back_split_rcv)
       pme_device_ready=.false.
+      if (present(cleanup_status)) cleanup_status = first_error
    end subroutine release_pme_device
 
 end submodule pme_lifecycle

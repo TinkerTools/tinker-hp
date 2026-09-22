@@ -36,13 +36,14 @@ subroutine respa(istep,dt)
    use cutoff
    use domdec
    use deriv    ,only: info_forces,cNBond,cBond,ftot_l,comm_forces&
-      &,zero_forces_rec
-   use energi   ,only: info_energy,calc_e,chk_energy_fluct
+      &,zero_forces_rec,de_tot
+   use energi   ,only: info_energy,calc_e,chk_energy_fluct,reduceen
    use freeze
    use group
    use inform
    use mdstuf1
    use moldyn
+   use parallel, only: commpos, commposrec, commposrespa, reassign_respa
    use timestat
    use tinMemory,only: prmem_requestm
    use tors
@@ -51,7 +52,7 @@ subroutine respa(istep,dt)
    use potent
    use uprior ,only: use_pred
    use utils
-   use utilgpu  ,only: rec_queue,openacc_abort
+   use mdevice  ,only: reciprocal_work
    use virial
    use improp
    use mpi
@@ -108,7 +109,7 @@ subroutine respa(istep,dt)
 !     Reassign the particules that have changed of domain
 !
 !        -> real space
-      call reassignrespa(stepfast,nalt)
+      call reassign_respa(stepfast,nalt)
 !
 !        communicate positions
 !
@@ -116,7 +117,7 @@ subroutine respa(istep,dt)
 !
       if ( .not.ftot_l ) then
          call prmem_requestm(derivs,3,nbloc,async=.true.)
-         call set_to_zero1m( derivs,3*nbloc,rec_queue)
+         call set_to_zero1m( derivs,3*nbloc,reciprocal_work%queue)
       end if
 !
       call mechanicsteprespa(istep,.true.)
@@ -203,7 +204,7 @@ subroutine respa(istep,dt)
 !
    if (.not.ftot_l) then
       call prmem_requestm(derivs,3,nbloc,async=.true.)
-      call set_to_zero1m( derivs,3*nbloc,rec_queue)
+      call set_to_zero1m( derivs,3*nbloc,reciprocal_work%queue)
    end if
 !
 !     get the slow-evolving potential energy and atomic forces

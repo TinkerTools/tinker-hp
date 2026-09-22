@@ -21,6 +21,10 @@ subroutine dcinduce_pmegpu
    use iounit
    use math
    use mpole
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use pme
    use polar
    use polpot
@@ -39,8 +43,7 @@ subroutine dcinduce_pmegpu
 !
    integer ierr, iipole, proc,tag
    integer, allocatable :: reqrecdirsend(:),reqrecdirrec(:)
-   integer, allocatable :: reqsend(:),reqrec(:)
-   integer, allocatable :: req2send(:),req2rec(:)
+   type(polar_comm_t) :: comm_ticket, dip_ticket
    integer status(MPI_STATUS_SIZE)
 !
    parameter (nrhs=2)
@@ -106,10 +109,6 @@ subroutine dcinduce_pmegpu
 !
    allocate (reqrecdirsend(nproc))
    allocate (reqrecdirrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (reqrec(nproc))
-   allocate (req2send(nproc))
-   allocate (req2rec(nproc))
 !
 !     compute the electric fields:
 !
@@ -118,9 +117,6 @@ subroutine dcinduce_pmegpu
 !     MPI : begin reception
 !
    ctime = 0.0_ti_p
-   if (rank.le.ndir-1) then
-      call commdirdir(nrhs,0,mu,reqrec,reqsend)
-   end if
 !
    if (rank.le.ndir-1) then
       call commrecdirfields(0,cphirec,cphi,buffermpi,buffermpi,&
@@ -215,23 +211,11 @@ subroutine dcinduce_pmegpu
          end if
 
       end if
-      call commdirdir(nrhs,1,mu,reqrec,reqsend)
-!
-      call commrecdirdip(nrhs,1,murec,mu,buffermpimu,buffermpimu,&
-         &req2rec,req2send)
-!
-      call commdirdir(nrhs,2,mu,reqrec,reqsend)
-      call commrecdirdip(nrhs,2,murec,mu,buffermpimu,buffermpimu,&
-         &req2rec,req2send)
-
-   else
-
-      call commrecdirdip(nrhs,0,murec,mu,buffermpimu,buffermpimu,&
-         &req2rec,req2send)
-      call commrecdirdip(nrhs,2,murec,mu,buffermpimu,buffermpimu,&
-         &req2rec,req2send)
-
    end if
+   call polar_post_comm(comm_ticket,nrhs,mu)
+   call polar_finish(comm_ticket,nrhs,mu)
+   call polar_post_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu)
+   call polar_finish_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu)
 !
 !     now, call the proper solver.
 !
@@ -288,10 +272,6 @@ subroutine dcinduce_pmegpu
 !        deallocate (cphirec)
       deallocate (murec)
    end if
-   deallocate (reqrec)
-   deallocate (reqsend)
-   deallocate (req2rec)
-   deallocate (req2send)
    deallocate (reqrecdirrec)
    deallocate (reqrecdirsend)
 !
@@ -310,6 +290,10 @@ subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
    use iounit
    use math
    use mpole
+   use parallel, only: polar_comm_t, polar_post_comm, polar_finish, &
+      &polar_post_dip_comm, polar_finish_dip_comm
+   use parallel, only: commrecdirfields, commrecdirfieldsgpu, commrecdirsolv, commrecdirsolvgpu
+   use parallel, only: commfield, commfieldgpu, commfieldshort
    use polar
    use polpot
    use timestat
@@ -346,8 +330,7 @@ subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
    real(t_p), allocatable ::buffermpimu(:,:,:)
    integer ierr, tag, proc
    integer,allocatable :: reqrecdirrec(:),reqrecdirsend(:)
-   integer,allocatable :: reqrec(:),reqsend(:)
-   integer,allocatable :: req2rec(:),req2send(:)
+   type(polar_comm_t) :: comm_ticket, dip_ticket
    integer reqnorm,reqdiis(2*ndismx+1)
    integer status(MPI_STATUS_SIZE)
 !
@@ -406,10 +389,6 @@ subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
    buffermpi2 = 0.0_ti_p
    allocate (reqrecdirsend(nproc))
    allocate (reqrecdirrec(nproc))
-   allocate (reqrec(nproc))
-   allocate (reqsend(nproc))
-   allocate (req2rec(nproc))
-   allocate (req2send(nproc))
 !
 !     main loop:
 !
@@ -419,13 +398,11 @@ subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
 !
 !     MPI : begin reception
 !
-      if (rank.le.ndir-1) then
-         call commdirdir(nrhs,0,mu,reqrec,reqsend)
-      else
-         call commrecdirdip(nrhs,0,dipfieldbis,dipfield,&
-            &buffermpimu,buffermpimu,req2rec,req2send)
-      end if
-!
+      call polar_post_comm(comm_ticket,nrhs,mu)
+      call polar_finish(comm_ticket,nrhs,mu)
+      call polar_post_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
+      call polar_finish_dip_comm(dip_ticket,nrhs,murec,mu,buffermpimu,buffermpimu,.false.)
+
 !      Begin the reception of the reciprocal fields
 !
       if (rank.le.ndir-1) then
@@ -553,22 +530,16 @@ subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
             call extrap(3*nrhs*npoleloc,nmat-1,xdiis,cex,munew)
          end if
          time2 = mpi_wtime()
-         call commdirdir(nrhs,1,munew,reqrec,reqsend)
-         call commrecdirdip(nrhs,1,murec,munew,buffermpimu,&
-            &buffermpimu,req2rec,req2send)
-!
          time0 = mpi_wtime()
-         call commdirdir(nrhs,2,mu,reqrec,reqsend)
-         call commrecdirdip(nrhs,2,murec,munew,buffermpimu,&
-            &buffermpimu,req2rec,req2send)
+         call polar_post_comm(comm_ticket,nrhs,mu,.false.,munew)
+         call polar_finish(comm_ticket,nrhs,mu)
+         call polar_post_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu,buffermpimu,.false.)
+         call polar_finish_dip_comm(dip_ticket,nrhs,murec,munew,buffermpimu,buffermpimu,.false.)
          mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
          time1 = mpi_wtime()
          time3 = mpi_wtime()
          mu(:,:,1:npoleloc) = munew(:,:,1:npoleloc)
 
-      else
-         call commrecdirdip(nrhs,2,murec,munew,buffermpimu,&
-            &buffermpimu,req2rec,req2send)
       end if
 !
 !     compute the norm of the increment.
@@ -608,10 +579,6 @@ subroutine inducedc_pmegpu(matvec,nrhs,dodiis,ef,mu,murec)
 !     free the memory.
 !
    deallocate (buffermpimu)
-   deallocate (reqsend)
-   deallocate (reqrec)
-   deallocate (req2send)
-   deallocate (req2rec)
    deallocate (reqrecdirsend)
    deallocate (reqrecdirrec)
    if (rank.le.ndir-1) then
@@ -643,9 +610,9 @@ subroutine dc_factorgpu
    use domdec
 #ifdef _OPENACC
    use interfaces ,only: cuPOTRF
-   use utilgpu    ,only: rec_stream
+   use mdevice    ,only: reciprocal_work
 #endif
-   use utilgpu    ,only: prmem_request
+   use tinMemory  ,only: prmem_request
    use utils
    implicit none
    integer k,mdim,knd,kbeg,inf
@@ -675,7 +642,7 @@ subroutine dc_factorgpu
          end do
 
 !$acc host_data use_device(zmatDn)
-         call cuPOTRF(mdim,zmatDn,mdim,rec_stream)
+         call cuPOTRF(mdim,zmatDn,mdim,reciprocal_work%stream)
 !$acc end host_data
 !         call DPOTRF("L",mdim,zmatDn,mdim,inf)
 
@@ -860,13 +827,14 @@ subroutine commfield2gpu(nrhs,ef)
    use mpole
    use potent
    use mpi
-   use utilgpu ,only: prmem_request,dir_queue
-   use utilcomm,only: buff_field
+   use mdevice ,only: direct_work
+   use tinMemory,only: prmem_request
    implicit none
    integer nrhs,i,j,k,l,tag,status(MPI_STATUS_SIZE)
    integer ierr,commloc
    integer req(nproc*nproc)
    real(t_p) ef(3,nrhs,*)
+   real(t_p), allocatable :: buffer(:,:,:,:)
 !
    if (use_pmecore) then
       commloc = comm_dir
@@ -875,20 +843,20 @@ subroutine commfield2gpu(nrhs,ef)
    end if
 !
    if (n_send1>0)&
-      &call prmem_request(buff_field,3,nrhs,&
+      &call prmem_request(buffer,3,nrhs,&
       &max(npoleloc,1),n_send1,async=.true.)
 !
-!$acc host_data use_device(buff_field)
+!$acc host_data use_device(buffer)
    do i = 1, n_send1
       tag = nproc*rank + p_send1(i) + 1
-      call MPI_IRECV(buff_field(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
+      call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
          &p_send1(i),tag,commloc,req(tag),ierr)
    end do
 !$acc end host_data
 !
 !$acc host_data use_device(ef)
    do i = 1, n_recep1
-!$acc wait(dir_queue)
+!$acc wait(direct_work%queue)
       tag = nproc*p_recep1(i) + rank + 1
       call MPI_ISEND(ef(1,1,bufbegpole(p_recep1(i)+1)),&
          &3*nrhs*domlen(p_recep1(i)+1),MPI_TPREC,p_recep1(i),&
@@ -907,16 +875,19 @@ subroutine commfield2gpu(nrhs,ef)
       call MPI_WAIT(req(tag),status,ierr)
    end do
 !
-!$acc parallel loop collapse(4) present(ef,buff_field) async
+!$acc parallel loop collapse(4) present(ef,buffer) async(direct_work%queue)
    do i = 1, n_send1
       do j = 1, npoleloc
          do k = 1, nrhs
             do l = 1,3
-               ef(l,k,j) = ef(l,k,j) + buff_field(l,k,j,i)
+               ef(l,k,j) = ef(l,k,j) + buffer(l,k,j,i)
             end do
          end do
       end do
    end do
+!$acc wait(direct_work%queue)
+   if (allocated(buffer)) &
+      &call prmem_request(buffer,0,0,0,0,async=.false.)
 end
 
 !
@@ -928,8 +899,8 @@ subroutine commfield2shortgpu(nrhs,ef)
    use mpole
    use potent
    use mpi
-   use utilgpu ,only: prmem_request,dir_queue
-   use utilcomm,only: buff_field
+   use mdevice ,only: direct_work
+   use tinMemory,only: prmem_request
    implicit none
    integer nrhs,i,j,k,l,tag,status(MPI_STATUS_SIZE)
    integer ierr,commloc
@@ -943,13 +914,13 @@ subroutine commfield2shortgpu(nrhs,ef)
       commloc = COMM_TINKER
    end if
 
-   if (n_send1>0)&
-      &call prmem_request(buff_field,3,nrhs,&
-      &max(npoleloc,1),n_send1,async=.true.)
+   if (n_sendshort1>0)&
+      &call prmem_request(buffer,3,nrhs,&
+      &max(npoleloc,1),n_sendshort1,async=.true.)
 !
    do i = 1, n_sendshort1
       tag = nproc*rank + p_sendshort1(i) + 1
-      call MPI_IRECV(buff_field(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
+      call MPI_IRECV(buffer(1,1,1,i),3*nrhs*npoleloc,MPI_TPREC,&
          &p_sendshort1(i),tag,commloc,req(tag),ierr)
    end do
 !
@@ -975,11 +946,13 @@ subroutine commfield2shortgpu(nrhs,ef)
       do j = 1, npoleloc
          do k = 1, nrhs
             do l = 1,3
-               ef(l,k,j) = ef(l,k,j) + buff_field(l,k,j,i)
+               ef(l,k,j) = ef(l,k,j) + buffer(l,k,j,i)
             end do
          end do
       end do
    end do
+!$acc wait(direct_work%queue)
+   if (allocated(buffer)) &
+      &call prmem_request(buffer,0,0,0,0,async=.false.)
 !
 end
-

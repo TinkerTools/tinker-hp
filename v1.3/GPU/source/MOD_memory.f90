@@ -103,6 +103,11 @@ module tinMemory
       &,        lDPC=> LogicalDevPointerContainer&
       &,       l1DPC=>Logical1DevPointerContainer
 #endif
+#ifdef _OPENACC
+   !use openacc
+   use cudafor ,only: cuda_stream_kind
+#endif
+
 
    implicit none
    !integer(4),parameter      :: mipk=mipk
@@ -152,7 +157,9 @@ module tinMemory
 
    integer(4),protected :: n_realloc_i
    integer(4),protected :: n_realloc_r
-
+#ifndef _OPENACC
+   integer(4),parameter :: cuda_stream_kind=8
+#endif
    parameter(&
       &szoi         = sizeof(i4)                 ,&
       &szoi1        = sizeof(i1)                 ,&
@@ -188,6 +195,60 @@ module tinMemory
    type(i2dDPC),device,pointer:: i2dDPC_expl(:)
    type(r2dDPC),device,pointer:: r2dDPC_expl(:)
 #endif
+
+   interface mem_move
+      module subroutine mem_move_i4(dst,src,n,stream)
+         integer(4) src(n),dst(n)
+         integer(mipk),intent(in):: n
+         integer(cuda_stream_kind),intent(in):: stream
+      end subroutine
+      module subroutine mem_move_i8(dst,src,n,stream)
+         integer(8) src(n),dst(n)
+         integer(mipk),intent(in):: n
+         integer(cuda_stream_kind),intent(in):: stream
+      end subroutine
+      module subroutine mem_move_r4(dst,src,n,stream)
+         real(4) src(n),dst(n)
+         integer(mipk),intent(in):: n
+         integer(cuda_stream_kind),intent(in):: stream
+      end subroutine
+      module subroutine mem_move_r8(dst,src,n,stream)
+         real(8) src(n),dst(n)
+         integer(mipk),intent(in):: n
+         integer(cuda_stream_kind),intent(in):: stream
+      end subroutine
+   end interface
+
+   interface mem_set
+      module subroutine mem_set_i4(dst,val,n,stream,offset)
+         integer(4) dst(n)
+         integer(4),intent(in):: val
+         integer(mipk),intent(in):: n
+         integer(cuda_stream_kind),intent(in):: stream
+         integer(mipk),optional:: offset
+      end subroutine
+      module subroutine mem_set_i8(dst,val,n,stream,offset)
+         integer(8) dst(n)
+         integer(8),intent(in):: val
+         integer(mipk),intent(in):: n
+         integer(cuda_stream_kind),intent(in):: stream
+         integer(mipk),optional:: offset
+      end subroutine
+      module subroutine mem_set_r4(dst,val,n,stream,offset)
+         real(4) dst(n)
+         real(4),intent(in):: val
+         integer(mipk),intent(in):: n
+         integer(cuda_stream_kind),intent(in):: stream
+         integer(mipk),optional:: offset
+      end subroutine
+      module subroutine mem_set_r8(dst,val,n,stream,offset)
+         real(8) dst(n)
+         real(8),intent(in):: val
+         integer(mipk),intent(in):: n
+         integer(cuda_stream_kind),intent(in):: stream
+         integer(mipk),optional:: offset
+      end subroutine
+   end interface
 
    ! Memory request procedure for shared memory spaces
    interface shmem_request

@@ -46,7 +46,7 @@
 #include "tinker_macro.h"
 
 program bar
-   use config, only: raw_cli_t, capture_raw_cli
+   use config
    use mpi
    use mdevice, only: bind_device
    use status, only: failed, status_t
@@ -64,7 +64,8 @@ program bar
    if (failed(status_value)) then
       if (world_rank.eq.0) write (6,*) trim(status_value%message)
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      error stop 1
+      call MPI_FINALIZE(ierr)
+      stop 1
    end if
    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
    call MPI_FINALIZE(ierr)
@@ -102,7 +103,7 @@ subroutine bar_bis(raw_cli,status_value)
    call MPI_Comm_rank(MPI_COMM_WORLD,world_rank,ierr)
    call parse_positional_cli(raw_cli,positional,positional_count,status_value)
    if (failed(status_value)) then
-      call final
+      call final(status_value)
       call finalize_device(cleanup_status)
       call release(platform, cleanup_status)
       return
@@ -134,7 +135,7 @@ subroutine bar_bis(raw_cli,status_value)
    end if
    if (mode /= 1 .and. mode /= 2) then
       call set_status(status_value,status_invalid_argument,'BAR mode must be 1 or 2')
-      call final
+      call final(status_value)
       call finalize_device(cleanup_status)
       call release(platform, cleanup_status)
       return
@@ -154,12 +155,12 @@ subroutine bar_bis(raw_cli,status_value)
    end if
    if (failed(status_value)) then
       call enrich_status(status_value,'BAR')
-      call final
+      call final(status_value)
       call finalize_device(cleanup_status)
       call release(platform, cleanup_status)
       return
    end if
-   call final
+   call final(status_value)
    call finalize_device(cleanup_status)
    call release(platform, cleanup_status)
    if (failed(cleanup_status)) then
@@ -185,16 +186,15 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
    use dcdmod
    use domdec
    use files
-   use energi ,only: info_energy
+   use energi ,only: info_energy,reduceen
    use inform
-   use initialization, only: initialize_state
-   use initialization, only: bar_application
+   use initialization, only: initialize_state, bar_application
    use iounit
    use keys
    use mutant
    use titles
    use tinheader
-   use parallel, only: parallel_t
+   use parallel, only: parallel_t, assign_direct, assign_reciprocal
    use structure, only: read_frame,structure_t
    implicit none
    integer i,iarc,ibar
@@ -330,8 +330,8 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
 !     the box shape can change between frames
 !
    call lattice
-   call AllDirAssign
-   call AllRecAssign
+   call assign_direct
+   call assign_reciprocal
    call reinitnl(0)
    call mechanicstep(0)
    call nblist(0)
@@ -372,8 +372,8 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
 !
       call lattice
       !call ddpme3d
-      call AllDirAssign
-      call AllRecAssign
+      call assign_direct
+      call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
@@ -411,8 +411,8 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
 !     the box shape can change between frames
 !
    call lattice
-   call AllDirAssign
-   call AllRecAssign
+   call assign_direct
+   call assign_reciprocal
    call reinitnl(0)
    call mechanicstep(0)
    call nblist(0)
@@ -454,8 +454,8 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
 !
       call lattice
       !call ddpme3d
-      call AllDirAssign
-      call AllRecAssign
+      call assign_direct
+      call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
@@ -502,8 +502,8 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
 
    ! Reset State 0 parameters
    call lattice
-   call AllDirAssign
-   call AllRecAssign
+   call assign_direct
+   call assign_reciprocal
    call reinitnl(0)
    call mechanicstep(0)
    call nblist(0)
@@ -536,8 +536,8 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
 !     the box shape can change between frames
 !
       call lattice
-      call AllDirAssign
-      call AllRecAssign
+      call assign_direct
+      call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)
@@ -576,8 +576,8 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
 !
    call cutoffs
    call lattice
-   call AllDirAssign
-   call AllRecAssign
+   call assign_direct
+   call assign_reciprocal
    call reinitnl(0)
    call mechanicstep(0)
    call nblist(0)
@@ -617,8 +617,8 @@ subroutine makebar(raw_cli,configuration,molecular_structure,platform,status_val
 
       !The box shape can change between frames
       call lattice
-      call AllDirAssign
-      call AllRecAssign
+   call assign_direct
+   call assign_reciprocal
       call reinitnl(0)
       call mechanicstep(0)
       call nblist(0)

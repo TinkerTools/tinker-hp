@@ -56,10 +56,11 @@ module mdtraj
          type(status_t),intent(out) :: status_value
       end subroutine write_frame
 
-      module subroutine write_snapshot(filename,frame,status_value)
+      module subroutine write_snapshot(filename,frame,status_value,append)
          character(*),intent(in) :: filename
          type(frame_view_t),intent(in) :: frame
          type(status_t),intent(out) :: status_value
+         logical,intent(in),optional :: append
       end subroutine write_snapshot
 
       module subroutine close_trajectory(writer,status_value)

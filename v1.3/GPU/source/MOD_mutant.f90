@@ -64,4 +64,22 @@ module mutant
    real(t_p) bplambda
    real(t_p) flambdabias
    real(t_p), allocatable :: deflambda(:,:,:)
-end
+
+contains
+
+   subroutine normalize_vcouple(value, invalid)
+      implicit none
+      integer, intent(inout) :: value
+      logical, intent(out) :: invalid
+      integer input_value
+
+      invalid = value.ne.0 .and. value.ne.1
+      if (invalid) then
+         input_value = value
+         value = 0
+         write(*,*) " WARNING !! Unusual value of vcouple",input_value
+         write(*,*) " Disabling van der Waals coupling method"
+      end if
+   end subroutine normalize_vcouple
+
+end module mutant
